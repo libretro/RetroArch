@@ -181,6 +181,10 @@ int rzstd_encode(uint8_t *dst, size_t dst_len,
 
 typedef struct rzstd_blocks rzstd_blocks_t;
 
+/* the most rzstd_blocks_want() asks for: a block of 128 KiB, and the
+ * next block's header or the frame's checksum */
+#define RZSTD_WANT_MAX (128 * 1024 + 4)
+
 /**
  * rzstd_blocks_begin:
  * @src        : one complete frame, which stays where it is until the
@@ -207,6 +211,43 @@ rzstd_blocks_t *rzstd_blocks_begin(const uint8_t *src, size_t src_len);
  * RZSTD_PROCESS_ERROR.
  */
 int rzstd_blocks_step(rzstd_blocks_t *z, const uint8_t **data, size_t *len);
+
+/**
+ * rzstd_blocks_open:
+ *
+ * A frame decoded a block at a time, as for rzstd_blocks_begin(), from
+ * input handed over a piece at a time: what rzstd_blocks_want() asks
+ * for each time, which is the next block and the next block's header.
+ * Each piece is decoded where it is, so it can be read straight into a
+ * buffer of RZSTD_WANT_MAX octets that is used over again.
+ *
+ * Returns: the stream, or NULL when there is no memory.
+ */
+rzstd_blocks_t *rzstd_blocks_open(void);
+
+/**
+ * rzstd_blocks_want:
+ *
+ * Returns: how many octets of the frame rzstd_blocks_give() is to be
+ * handed next, or 0 once the frame is all out.
+ */
+size_t rzstd_blocks_want(const rzstd_blocks_t *z);
+
+/**
+ * rzstd_blocks_give:
+ * @src        : the next rzstd_blocks_want() octets of the frame, which
+ *               need not stay where they are after the call
+ * @len        : how many
+ * @data       : receives where the octets it decoded are, until the next
+ *               call; there may be none
+ * @dlen       : receives how many
+ *
+ * Returns: RZSTD_PROCESS_NEXT, or RZSTD_PROCESS_ERROR. Once
+ * rzstd_blocks_want() is 0 the frame is all out, its size and checksum
+ * as they should be.
+ */
+int rzstd_blocks_give(rzstd_blocks_t *z, const uint8_t *src, size_t len,
+      const uint8_t **data, size_t *dlen);
 
 void rzstd_blocks_free(rzstd_blocks_t *z);
 

@@ -54,7 +54,8 @@ struct zstd_file_context
    file_archive_transfer_t *state;
    uint8_t *decompressed_data;
    rzstd_blocks_t *zs;      /* the frame going out a block at a time */
-   void *owned;             /* and what it is decoded from, if read */
+   uint8_t *in;             /* a block of it read, where it is not lent */
+   int64_t in_at;           /* where the next is read from */
    char inner_filename[PATH_MAX_LENGTH];
    int64_t archive_size;
    size_t decompressed_size;
@@ -73,25 +74,81 @@ static void zstd_derive_inner_filename(const char *path, char *s, size_t len)
       ((char*)ext)[0] = '\0';
 }
 
-/* The CRC of what the frame holds, decoded a block at a time */
-static bool zstd_frame_crc(file_archive_transfer_t *state, uint32_t *crc)
+/* The frame to be decoded a block at a time: from where the stream lends
+ * it whole, or else read a block at a time into a buffer of one */
+static bool zstd_src_begin(struct zstd_file_context *ctx)
 {
-   void           *owned = NULL;
-   const uint8_t  *src;
-   const uint8_t  *blk;
-   size_t          len;
-   rzstd_blocks_t *z     = NULL;
-   int             e     = RZSTD_PROCESS_ERROR;
+   RFILE         *f   = ctx->state->archive_file;
+   const uint8_t *src = NULL;
+
+   rzstd_blocks_free(ctx->zs);
+   free(ctx->in);
+   ctx->zs    = NULL;
+   ctx->in    = NULL;
+   ctx->in_at = 0;
+   if ((uint64_t)ctx->archive_size <= (uint64_t)((size_t)-1))
+   {
+      filestream_seek(f, 0, RETRO_VFS_SEEK_POSITION_START);
+      if (filestream_view(f, ctx->archive_size, &src) == ctx->archive_size)
+         return (ctx->zs = rzstd_blocks_begin(src,
+                  (size_t)ctx->archive_size)) != NULL;
+   }
+   return    (ctx->in = (uint8_t*)malloc(RZSTD_WANT_MAX))
+          && (ctx->zs = rzstd_blocks_open());
+}
+
+/* The frame's next decoded octets: RZSTD_PROCESS_NEXT with some, or
+ * RZSTD_PROCESS_END or RZSTD_PROCESS_ERROR */
+static int zstd_src_next(struct zstd_file_context *ctx,
+      const uint8_t **data, size_t *len)
+{
+   RFILE *f = ctx->state->archive_file;
+
+   *data = NULL;
+   *len  = 0;
+   if (!ctx->in)
+      return rzstd_blocks_step(ctx->zs, data, len);
+   for (;;)
+   {
+      size_t want = rzstd_blocks_want(ctx->zs);
+      /* all of it out, and nothing after it */
+      if (!want)
+         return ctx->in_at == ctx->archive_size
+            ? RZSTD_PROCESS_END : RZSTD_PROCESS_ERROR;
+      if (want > RZSTD_WANT_MAX)
+         return RZSTD_PROCESS_ERROR;
+      filestream_seek(f, ctx->in_at, RETRO_VFS_SEEK_POSITION_START);
+      if (filestream_read(f, ctx->in, (int64_t)want) != (int64_t)want)
+         return RZSTD_PROCESS_ERROR;
+      ctx->in_at += (int64_t)want;
+      if (rzstd_blocks_give(ctx->zs, ctx->in, want, data, len)
+            != RZSTD_PROCESS_NEXT)
+         return RZSTD_PROCESS_ERROR;
+      if (*len)
+         return RZSTD_PROCESS_NEXT;
+   }
+}
+
+static void zstd_src_end(struct zstd_file_context *ctx)
+{
+   rzstd_blocks_free(ctx->zs);
+   free(ctx->in);
+   ctx->zs = NULL;
+   ctx->in = NULL;
+}
+
+/* The CRC of what the frame holds, decoded a block at a time */
+static bool zstd_frame_crc(struct zstd_file_context *ctx, uint32_t *crc)
+{
+   const uint8_t *blk;
+   size_t         len;
+   int            e = RZSTD_PROCESS_ERROR;
 
    *crc = 0;
-   if (     (uint64_t)state->archive_size <= (uint64_t)((size_t)-1)
-         && (src = file_archive_whole(state->archive_file,
-               state->archive_size, &owned))
-         && (z = rzstd_blocks_begin(src, (size_t)state->archive_size)))
-      while ((e = rzstd_blocks_step(z, &blk, &len)) == RZSTD_PROCESS_NEXT)
+   if (zstd_src_begin(ctx))
+      while ((e = zstd_src_next(ctx, &blk, &len)) == RZSTD_PROCESS_NEXT)
          *crc = encoding_crc32(*crc, blk, len);
-   rzstd_blocks_free(z);
-   free(owned);
+   zstd_src_end(ctx);
    return e == RZSTD_PROCESS_END;
 }
 
@@ -190,7 +247,7 @@ static int zstd_parse_file_iterate_step(void *context,
    userdata->size = (uint64_t)content_size;
 
    /* A frame holds no CRC of its content */
-   if (userdata->crc_wanted && !zstd_frame_crc(state, &userdata->crc))
+   if (userdata->crc_wanted && !zstd_frame_crc(ctx, &userdata->crc))
       return -1;
 
    if (file_cb && !file_cb(ctx->inner_filename, valid_exts,
@@ -210,7 +267,7 @@ static void zstd_parse_file_free(void *context)
    if (ctx->decompressed_data)
       free(ctx->decompressed_data);
    rzstd_blocks_free(ctx->zs);
-   free(ctx->owned);
+   free(ctx->in);
    free(ctx);
 }
 
@@ -219,21 +276,11 @@ static bool zstd_stream_decompress_data_to_file_init(
       const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size)
 {
    struct zstd_file_context *ctx = (struct zstd_file_context*)context;
-   const uint8_t *src;
    if (!ctx)
       return false;
    if (!ctx->state->pending_sink || size <= ZSTD_STREAM_OVER)
       return true;
-   rzstd_blocks_free(ctx->zs);
-   free(ctx->owned);
-   ctx->zs    = NULL;
-   ctx->owned = NULL;
-   if (     (uint64_t)ctx->archive_size > (uint64_t)((size_t)-1)
-         || !(src = file_archive_whole(ctx->state->archive_file,
-               ctx->archive_size, &ctx->owned)))
-      return false;
-   return (ctx->zs = rzstd_blocks_begin(src, (size_t)ctx->archive_size))
-      != NULL;
+   return zstd_src_begin(ctx);
 }
 
 static int zstd_stream_decompress_data_to_file_iterate(
@@ -253,17 +300,14 @@ static int zstd_stream_decompress_data_to_file_iterate(
       /* a block to the file per call */
       const uint8_t *blk;
       size_t         len;
-      e = rzstd_blocks_step(ctx->zs, &blk, &len);
+      e = zstd_src_next(ctx, &blk, &len);
       if (     e == RZSTD_PROCESS_ERROR
             || (len && filestream_write(ctx->state->pending_sink, blk,
                   (int64_t)len) != (int64_t)len))
          return -1;
       if (e == RZSTD_PROCESS_NEXT)
          return 0;
-      rzstd_blocks_free(ctx->zs);
-      free(ctx->owned);
-      ctx->zs      = NULL;
-      ctx->owned   = NULL;
+      zstd_src_end(ctx);
       handle->data = NULL;
       return 1;
    }

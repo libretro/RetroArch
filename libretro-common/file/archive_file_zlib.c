@@ -274,6 +274,27 @@ static int64_t zip_member_input(RFILE *f, int64_t off, int64_t len,
    return filestream_read(f, buf, len);
 }
 
+#ifdef ZIP_HAVE_ZSTD
+/* All @csize octets of a member at @off where they lie: in the mapping,
+ * or what the stream lends when it holds all of them; NULL when they
+ * would have to be read */
+static const uint8_t *zip_member_lent(struct file_archive_transfer *state,
+      int64_t off, uint64_t csize)
+{
+   const uint8_t *src = NULL;
+   if (csize > (uint64_t)((size_t)-1))
+      return NULL;
+#ifdef VFS_HAVE_FILE_MAPPING
+   if (state->archive_mmap_data)
+      return state->archive_mmap_data + (size_t)off;
+#endif
+   filestream_seek(state->archive_file, off, RETRO_VFS_SEEK_POSITION_START);
+   if (filestream_view(state->archive_file, csize, &src) == (int64_t)csize)
+      return src;
+   return NULL;
+}
+#endif
+
 /* All @csize octets of a member at @off that is decoded whole: from
  * the mapping, from what the stream lends when it holds all of it, or
  * else read into *@buf, grown to *@cap as need be. NULL on failure. */
@@ -974,21 +995,51 @@ static int zlib_stream_decompress_data_to_file_iterate(
    else if (zip_context->cmode == ZIP_MODE_ZSTD && zip_context->streaming)
    {
       /* A block to the sink per call, from where the decoder leaves
-       * it; the frame is in hand whole */
-      const uint8_t *blk;
-      size_t         len;
+       * it: the frame decoded where it lies whole, in the mapping or
+       * what the stream lends, or else read a block at a time */
+      const uint8_t *blk = NULL;
+      size_t         len = 0;
       int            e;
       if (!zip_context->zs)
       {
-         const uint8_t *src = zip_member_whole(state, zip_context->fdoffset,
-               zip_context->csize, &zip_context->tmpbuf,
-               &zip_context->tmpbuf_len);
-         if (     !src
-               || !(zip_context->zs = rzstd_blocks_begin(src,
-                     (size_t)zip_context->csize)))
+         const uint8_t *src = zip_member_lent(state, zip_context->fdoffset,
+               zip_context->csize);
+         zip_context->boffset = 0;
+         if (src)
+            zip_context->zs = rzstd_blocks_begin(src,
+                  (size_t)zip_context->csize);
+         else if (zip_context_reserve_tmpbuf(zip_context, RZSTD_WANT_MAX))
+         {
+            zip_context->zs    = rzstd_blocks_open();
+            zip_context->begun = true;
+         }
+         if (!zip_context->zs)
             return -1;
       }
-      e = rzstd_blocks_step((rzstd_blocks_t*)zip_context->zs, &blk, &len);
+      if (!zip_context->begun)
+         e = rzstd_blocks_step((rzstd_blocks_t*)zip_context->zs, &blk, &len);
+      else
+      {
+         size_t want = rzstd_blocks_want((rzstd_blocks_t*)zip_context->zs);
+         e = RZSTD_PROCESS_NEXT;
+         if (!want)
+            e = zip_context->boffset == zip_context->csize
+               ? RZSTD_PROCESS_END : RZSTD_PROCESS_ERROR;
+         else
+         {
+            filestream_seek(state->archive_file,
+                  (int64_t)(zip_context->fdoffset + zip_context->boffset),
+                  RETRO_VFS_SEEK_POSITION_START);
+            if (     want > zip_context->csize - zip_context->boffset
+                  || filestream_read(state->archive_file, zip_context->tmpbuf,
+                     (int64_t)want) != (int64_t)want
+                  || rzstd_blocks_give((rzstd_blocks_t*)zip_context->zs,
+                     zip_context->tmpbuf, want, &blk, &len)
+                  != RZSTD_PROCESS_NEXT)
+               e = RZSTD_PROCESS_ERROR;
+         }
+         zip_context->boffset += want;
+      }
       if (e == RZSTD_PROCESS_ERROR)
          return -1;
       if (len)
@@ -1006,7 +1057,8 @@ static int zlib_stream_decompress_data_to_file_iterate(
             || zip_context->crc     != zip_context->expect_crc)
          return -1;
       rzstd_blocks_free((rzstd_blocks_t*)zip_context->zs);
-      zip_context->zs = NULL;
+      zip_context->zs    = NULL;
+      zip_context->begun = false;
       /* A whole-member buffer is not kept past its member. */
       if (zip_context->tmpbuf_len > _READ_CHUNK_SIZE)
       {

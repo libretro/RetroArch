@@ -9,7 +9,8 @@
  * Three 128 KiB blocks: one whose last match is four back; one of
  * noise holding a copy from a thousand back, not worth compressing;
  * one repeating every thousand octets. At every level the frame must
- * come back as it went in. */
+ * come back as it went in, whole and handed over in the pieces
+ * rzstd_blocks_want() asks for, and a piece short is refused. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,6 +20,30 @@
 #define BLK 0x20000
 
 static unsigned seed = 7;
+
+/* @z, @len octets, handed to rzstd_blocks_give() as it asks for them:
+ * 1 when it comes out as @want, and is all there is */
+static int pieces(const uint8_t *z, size_t len, const uint8_t *want,
+      size_t n)
+{
+   rzstd_blocks_t *b  = rzstd_blocks_open();
+   size_t          at = 0, out = 0, w, got;
+   const uint8_t  *d;
+   int             ok = b != NULL;
+
+   while (ok && (w = rzstd_blocks_want(b)))
+   {
+      if (w > RZSTD_WANT_MAX || at + w > len
+            || rzstd_blocks_give(b, z + at, w, &d, &got)
+               != RZSTD_PROCESS_NEXT
+            || out + got > n || (got && memcmp(d, want + out, got)))
+         ok = 0;
+      at  += w;
+      out += got;
+   }
+   rzstd_blocks_free(b);
+   return ok && at == len && out == n;
+}
 static uint8_t rnd(void)
 {
    seed = seed * 1103515245u + 12345u;
@@ -56,12 +81,23 @@ int main(void)
                level, (unsigned long)got, (unsigned long)i);
          fails++;
       }
+      if (!pieces(z, wrote, src, n))
+      {
+         fprintf(stderr, "FAIL: level %d: not the same in pieces\n", level);
+         fails++;
+      }
+      if (pieces(z, wrote - 1, src, n))
+      {
+         fprintf(stderr, "FAIL: level %d: a piece short and still whole\n",
+               level);
+         fails++;
+      }
    }
    free(src);
    free(z);
    free(out);
    if (fails)
       return 1;
-   printf("ok: a raw block between compressed ones, levels 1 to 9\n");
+   printf("ok: a raw block between compressed ones, levels 1 to 9, whole and in pieces\n");
    return 0;
 }
