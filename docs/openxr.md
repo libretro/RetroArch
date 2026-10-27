@@ -269,8 +269,9 @@ to 13 cm the hinge lets go. At 0 the edges touch. It does nothing while
 Snap to Screens is off; screens already placed do not move. Pushed
 past touching, a hinged screen stops there, so two screens can be
 pushed together with no gap and let go touching, with one short buzz per
-push (below a 3 cm gap, the click's); from 1 cm past the stop gives
-way, and from 3 cm the hinge lets go (1.5 and 3.5 cm at a 1 cm gap).
+push (below a 3 cm gap, the click's). From 3 cm past (3.5 cm at a 1 cm
+gap) the hinge lets go and the screen slides on into the other, free
+from 5.5 cm (6 cm); pulled back, it hinges again 5 mm inside that 3 cm.
 With Snap to Screens off nothing stops them, and screens overlap
 freely.
 

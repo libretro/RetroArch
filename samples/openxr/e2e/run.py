@@ -6219,6 +6219,47 @@ def check_edit_hinge_3ds(res, gap=0.0):
                                  last_before(res, 'off', screen2))
 
 
+def check_edit_hinge_push(res):
+    """Screen 2 hinged under screen 1 at Hinge Gap 0 and pushed on 4.5
+    cm past touching overlaps it with no hinge line; pulled back to 2 cm
+    past it hinges again touching, with one long buzz; let go there it
+    rests hinged, the line shown, and taken again it stays hinged with
+    no buzz; saved touching."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    touching = -0.96
+    for a, b, want in (('pushed', 'pull', 0), ('back', 'released', 1),
+                       ('released', 'resting', 1), ('regrab', 'dropped', 1)):
+        frames = [f for f in between(res, a, b, delay=0.2) if screen2(f)]
+        if not frames:
+            errors.append('%s to %s: no frames of screen 2' % (a, b))
+            continue
+        for f in frames:
+            n = len(hinge_lines(f))
+            if n != want:
+                errors.append('%s to %s, frame %d: %d hinge lines, want %d'
+                              % (a, b, f['n'], n, want))
+                break
+        y = screen2(frames[-1])['pose'][1]
+        if want and abs(y - touching) > 1e-4:
+            errors.append('%s to %s: screen 2 at y %.4f, want %.4f '
+                          'touching' % (a, b, y, touching))
+        if not want and y < touching + 0.01:
+            errors.append('%s to %s: screen 2 at y %.4f, want it 1 cm or '
+                          'more into screen 1' % (a, b, y))
+    back = buzzes(res, HINGE_BUZZ, 'pull', 'released')
+    if len(back) != 1:
+        errors.append('%d hinge buzzes pulled back, want 1: %s'
+                      % (len(back), back))
+    taken = buzzes(res, HINGE_BUZZ, 'resting', 'dropped')
+    if taken:
+        errors.append('hinge buzzes taken again, want none: %s' % taken)
+    q = last_before(res, 'off', screen2)
+    if not q or abs(q['pose'][1] - touching) > 1e-4:
+        errors.append('screen 2 saved at %s, want y %.4f touching'
+                      % (q and q['pose'][:3], touching))
+    return errors
+
+
 def check_edit_hinge_gap(res):
     """Screen 2 at the default Hinge Gap: as check_edit_hinge_3ds, its
     top edge 2 cm under screen 1's bottom edge."""
@@ -6990,6 +7031,26 @@ EDIT_CASES += [
          ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_3ds},
+    {'name': 'edit-hinge-push', 'map': '3ds', 'settings': HINGE_3DS,
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(x=0.06, y=0.052), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'pushed'), ('wait', 0.5), ('mark', 'pull'),
+         ('script', script(edit_aim(x=0.06, y=0.027), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'back'), ('wait', 0.5),
+         ('script', edit_aim(x=0.06, y=0.027)),
+         ('mark', 'released'), ('wait', 1), ('mark', 'resting'),
+         ('script', script(edit_aim(x=0.06, y=0.027), EDIT_GRIP)),
+         ('mark', 'regrab'), ('wait', 1),
+         ('script', edit_aim(x=0.06, y=0.027)), ('mark', 'dropped'),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_push},
     {'name': 'edit-hinge-gap', 'map': '3ds', 'settings': HINGE_GAP,
      'script': HEAD_AT_ORIGIN,
      'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())

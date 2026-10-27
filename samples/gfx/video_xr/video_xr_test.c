@@ -3321,7 +3321,8 @@ static void test_snap_targets(void)
 }
 
 /* No jumps: across every zone's edges the snapped pose moves at most
- * twice the hand's step. */
+ * twice the hand's step, but past touching, where the stop lets go at
+ * up to 3.4 times. */
 static void test_snap_continuous(void)
 {
    unsigned i;
@@ -3334,7 +3335,7 @@ static void test_snap_continuous(void)
    {
       snap_at(&set, 1.20 + 0.0005 * i, 0.0, -2.0, 0.0, &p);
       if (i)
-         CHECK(fabs(p.position.x - last.position.x) <= 0.00101);
+         CHECK(fabs(p.position.x - last.position.x) <= 0.00171);
       last = p;
    }
    /* Turning through 5 and 10 degrees 2 cm off the line. */
@@ -3360,8 +3361,8 @@ static void test_snap_continuous(void)
    {
       snap_at(&set, 0.70 + 0.001 * i, 0.0, -1.49, 90.0, &p);
       if (i)
-         CHECK(fabs(p.position.x - last.position.x) <= 0.0021
-               && fabs(p.position.z - last.position.z) <= 0.0021);
+         CHECK(fabs(p.position.x - last.position.x) <= 0.00341
+               && fabs(p.position.z - last.position.z) <= 0.00341);
       last = p;
    }
    for (i = 0; i <= 200; i++)
@@ -3785,6 +3786,216 @@ static void test_grab_kept(void)
    CHECK(!video_xr_grab_kept(&g, &aim, &set, &start, &h));
    CHECK(!(video_xr_grab_hinge(&g, &aim, &set, 0, &start, &pose, &h)
             & VIDEO_XR_SNAP_HINGE));
+}
+
+/* rest_grab's screen 2, the hand x metres past touching screen 1 along
+ * screen 1's up, its fade whole: the snaps held, its edge's gap below
+ * screen 1's in *across, and h's hinge near and pushed through. */
+static unsigned through_snap(const video_xr_quad_set_t *set,
+      const video_xr_grab_t *g, const video_xr_hinge_t *h, double x,
+      double *across, bool *near, bool *through)
+{
+   unsigned bits;
+   video_xr_pose_t aim, start, pose;
+   video_xr_hinge_t got;
+   video_xr_vec3_t m, up, w, e;
+   const video_xr_quad_t *q = &set->quads[0];
+   m.x = 0.0f;
+   m.y = 1.0f;
+   m.z = 0.0f;
+   video_xr_rotate(&q->pose.orientation, &m, &up);
+   video_xr_pose_identity(&aim);
+   aim.position.x = (float)(up.x * (x + 0.02));
+   aim.position.y = (float)(up.y * (x + 0.02));
+   aim.position.z = (float)(up.z * (x + 0.02));
+   start             = g->last;
+   start.position.y -= 0.3f;
+   bits = video_xr_grab_hinge(g, &aim, set, 0, &start, &pose, &got);
+   m.y = g->height * 0.5f;
+   video_xr_rotate(&pose.orientation, &m, &w);
+   m.y = -q->height * 0.5f;
+   video_xr_rotate(&q->pose.orientation, &m, &e);
+   *across = -(((double)pose.position.x + w.x - q->pose.position.x - e.x)
+         * up.x + ((double)pose.position.y + w.y - q->pose.position.y - e.y)
+         * up.y + ((double)pose.position.z + w.z - q->pose.position.z - e.z)
+         * up.z);
+   *near    = video_xr_grab_near_hinge(g, &aim, set, h,
+         VIDEO_XR_HINGE_REACH, 0.0f);
+   *through = video_xr_grab_through(g, &aim, set, h);
+   return bits;
+}
+
+/* Pushed past touching, rest_grab's screen 2 is hinged touching and its
+ * hinge near to VIDEO_XR_SNAP_STOP past; past that the push lets it go,
+ * neither held nor near, overlapping. Once a push has (g->through), from
+ * about VIDEO_XR_SNAP_STOP_ARM short of there it overlaps a little,
+ * neither held nor near, and back short of that it is hinged touching;
+ * apart, as before. Swept in and back, setting and clearing g->through
+ * as the main thread does, nothing hops: it moves no more than the
+ * stop's fade, 3.4 times the hand, and the slip as it lets go is
+ * about a tenth of a millimetre. */
+static void test_grab_through(void)
+{
+   static const double whole[] = { 0.005, 0.015, 0.029 };
+   unsigned i;
+   double a, last = 0.0;
+   bool near, through;
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim;
+   video_xr_hinge_t h;
+   rest_grab(&set, &g, &aim);
+   memset(&h, 0, sizeof(h));
+   h.slot = 0;
+   h.on   = 1;
+   h.edge = 0;
+   for (i = 0; i < 3; i++)
+   {
+      CHECK((through_snap(&set, &g, &h, whole[i], &a, &near, &through)
+               & VIDEO_XR_SNAP_HINGE) && fabs(a) < 1e-5 && near
+            && !through);
+   }
+   CHECK(!(through_snap(&set, &g, &h, 0.031, &a, &near, &through)
+            & VIDEO_XR_SNAP_HINGE) && a < -1e-5 && !near && through);
+   through_snap(&set, &g, &h, 0.04, &a, &near, &through);
+   CHECK(a < -0.001 && a > -0.0399 && !near);
+   through_snap(&set, &g, &h, 0.06, &a, &near, &through);
+   CHECK(fabs(a + 0.06) < 1e-5);
+   g.through = 1;
+   for (i = 0; i < 2; i++)
+   {
+      CHECK(!(through_snap(&set, &g, &h, i ? 0.0299 : 0.026, &a, &near,
+                  &through) & VIDEO_XR_SNAP_HINGE)
+            && a < -1e-5 && a > -0.00015 && !near && through);
+   }
+   CHECK((through_snap(&set, &g, &h, 0.024, &a, &near, &through)
+            & VIDEO_XR_SNAP_HINGE) && fabs(a) < 1e-5 && near && !through);
+   CHECK((through_snap(&set, &g, &h, -0.023, &a, &near, &through)
+            & VIDEO_XR_SNAP_HINGE) && fabs(a - 0.02) < 1e-5);
+   g.through = 0;
+   for (i = 0; i <= 600; i++)
+   {
+      double x   = 0.02 + 0.0001 * ((i <= 300) ? i : 600 - i);
+      bool slip  = false;
+      unsigned bits;
+      if (i <= 300 && !g.through && x > 0.03 + 1e-5)
+      {
+         g.through = 1;
+         slip      = true;
+      }
+      bits = through_snap(&set, &g, &h, x, &a, &near, &through);
+      if (bits & VIDEO_XR_SNAP_HINGE)
+         g.through = 0;
+      if (i)
+         CHECK(fabs(a - last) <= (slip ? 0.00045 : 0.00035));
+      CHECK(((bits & VIDEO_XR_SNAP_HINGE) == 0) == (i <= 300
+            ? x > 0.03 + 1e-5 : x > 0.025 + 1e-5));
+      last = a;
+   }
+}
+
+/* Through (g->through), rest_grab's screen 2 carried 1 um at a time
+ * from 2.45 to 2.65 cm past touching, and let go where it shows, saved
+ * to the micrometre: it rests hinged exactly where it was hinged
+ * carried. */
+static void test_grab_through_rest(void)
+{
+   unsigned i;
+   unsigned odd = 0;
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, start, pose;
+   video_xr_hinge_t h;
+   video_xr_vec3_t m, up;
+   rest_grab(&set, &g, &aim);
+   g.through = 1;
+   m.x = 0.0f;
+   m.y = 1.0f;
+   m.z = 0.0f;
+   video_xr_rotate(&set.quads[0].pose.orientation, &m, &up);
+   start             = g.last;
+   start.position.y -= 0.3f;
+   for (i = 0; i <= 2000; i++)
+   {
+      double x = 0.0245 + 1e-6 * i;
+      bool carried, rests;
+      video_xr_pose_identity(&aim);
+      aim.position.x = (float)(up.x * (x + 0.02));
+      aim.position.y = (float)(up.y * (x + 0.02));
+      aim.position.z = (float)(up.z * (x + 0.02));
+      carried = (video_xr_grab_hinge(&g, &aim, &set, 0, &start, &pose,
+               NULL) & VIDEO_XR_SNAP_HINGE) != 0;
+      pose.position.x = (float)(floor(pose.position.x * 1e6 + 0.5) / 1e6);
+      pose.position.y = (float)(floor(pose.position.y * 1e6 + 0.5) / 1e6);
+      pose.position.z = (float)(floor(pose.position.z * 1e6 + 0.5) / 1e6);
+      rests = video_xr_rest_hinge(&set, 1, 0, g.width, g.height, 0.02f,
+            &pose, &h);
+      odd  += (carried != rests) ? 1u : 0u;
+   }
+   if (odd)
+      printf("  through, carried and rest differ at %u of 2001\n", odd);
+   CHECK(odd == 0);
+}
+
+/* At Hinge Gap 1 the click reaches touching, so a screen held where it
+ * lies touching would click apart. The 3DS pair resting touching, flat
+ * or folded 30, rests hinged at Gap 1 as at 0 and 2; taken where the
+ * hand holds it (video_xr_rest_take, 5 mm past touching), it is hinged
+ * whole and unmoved. Resting 1 cm apart, or touching at Gap 2, the hand
+ * holds it where it lies. */
+static void test_rest_gap_one(void)
+{
+   unsigned i;
+   for (i = 0; i < 3; i++)
+   {
+      video_xr_quad_set_t set;
+      video_xr_rest_t r[4];
+      video_xr_hinge_t h;
+      video_xr_grab_t g;
+      video_xr_pose_t aim, taken, pose;
+      const video_xr_pose_t *at = &set.quads[1].pose;
+      float gap                 = (i == 2) ? 0.02f : 0.01f;
+      rest_under(&set, i ? 30.0 : 0.0, 0.0);
+      CHECK(video_xr_rest_hinges(&set, 0, gap, r, 4) == 1);
+      CHECK(video_xr_rest_hinge(&set, 1, 0, 1.28f, 0.96f, gap, at, &h)
+            && h.slot == 0);
+      taken = *at;
+      video_xr_rest_take(&set, 1, 1.28f, 0.96f, gap, &h, &taken);
+      CHECK((i == 2) == (fabs(taken.position.y - at->position.y)
+               + fabs(taken.position.z - at->position.z) < 1e-6));
+      memset(&g, 0, sizeof(g));
+      video_xr_pose_identity(&aim);
+      g.rel       = taken;
+      g.turn      = taken.orientation;
+      g.last      = *at;
+      g.base      = at->position;
+      g.width     = 1.28f;
+      g.height    = 0.96f;
+      g.slot      = 1;
+      g.state     = VIDEO_XR_GRAB_HELD;
+      g.gap       = (unsigned char)(gap * 100.0f + 0.5f);
+      g.rest_slot = (unsigned char)(h.slot + 1);
+      g.rest_on   = (unsigned char)h.on;
+      g.rest_edge = (unsigned char)h.edge;
+      CHECK((video_xr_grab_hinge(&g, &aim, &set, 0, &taken, &pose, NULL)
+               & VIDEO_XR_SNAP_HINGE)
+            && fabs(pose.position.x - at->position.x) < 1e-5
+            && fabs(pose.position.y - at->position.y) < 1e-5
+            && fabs(pose.position.z - at->position.z) < 1e-5);
+   }
+   {
+      video_xr_quad_set_t set;
+      video_xr_rest_t r[4];
+      video_xr_hinge_t h;
+      video_xr_pose_t taken;
+      rest_under(&set, 30.0, 0.01);
+      CHECK(video_xr_rest_hinges(&set, 0, 0.01f, r, 4) == 1);
+      CHECK(video_xr_rest_hinge(&set, 1, 0, 1.28f, 0.96f, 0.01f,
+            &set.quads[1].pose, &h));
+      taken = set.quads[1].pose;
+      video_xr_rest_take(&set, 1, 1.28f, 0.96f, 0.01f, &h, &taken);
+      CHECK(!memcmp(&taken, &set.quads[1].pose, sizeof(taken)));
+   }
 }
 
 /* Whether set's screen in slot, w x 0.96 where it rests, is taken in
@@ -4486,7 +4697,7 @@ static double hinge_off_line(const video_xr_pose_t *p)
  * toward the user, snaps into the plane, a hinge at 0, its own edge
  * 5 cm off; flat, 1.5 cm in front, 1.5 cm off. The plane and the gap
  * count apart: 0.9 cm under and 2.9 cm in front, clicked flush, it is
- * whole; 1.4 cm over, pulled to 0.8, the snap holds no hinge there; at
+ * whole; 4 cm over, pulled to 2.9, the snap holds no hinge there; at
  * Hinge Gap 1, 0.3 cm over, pulled to 0.4 under by the click's fade,
  * the hand's own gap is in the stop's whole range: whole. */
 static void test_hinge_whole(void)
@@ -4515,12 +4726,12 @@ static void test_hinge_whole(void)
    g.rel.position.z = -1.771f;
    CHECK(video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h)
          & VIDEO_XR_SNAP_HINGE);
-   g.rel.position.y = -0.946f;
+   g.rel.position.y = -0.92f;
    g.rel.position.z = -1.785f;
    video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL);
    CHECK(!(video_xr_snap_hinge(&set, g.slot, 2u, g.width, g.height, 0.0f,
             1.0f, &pose, &h) & VIDEO_XR_SNAP_HINGE));
-   CHECK(NEAR(hinge_off_line(&pose), 0.008));
+   CHECK(NEAR(hinge_off_line(&pose), 0.029));
    CHECK(!(video_xr_grab_hinge(&g, &aim, &set, 2u, &start, &pose, &h)
             & VIDEO_XR_SNAP_HINGE));
    g.gap            = 1;
@@ -5017,7 +5228,7 @@ static void test_gap_free(void)
             | HINGE_LINES | VIDEO_XR_SNAP_PULLING(HINGE_LINES)));
    CHECK(vec_is(&p.position, 0.0, -0.975692, -1.56)
          && fabs(h.gap - 0.08) < 1e-5);
-   hinge_place(&p, &tip, 0.0, 0.48, 0.0, -0.46, -1.787);
+   hinge_place(&p, &tip, 0.0, 0.48, 0.0, -0.445, -1.787);
    CHECK(!(hinge_snap(&set, &p, 1.0f, NULL) & VIDEO_XR_SNAP_HINGE));
    t_gap = 0.0f;
 }
@@ -5091,31 +5302,33 @@ static unsigned stop_snap(unsigned k, double c, float gap,
 }
 
 /* Hinged, pushed past touching it stops there, at every gap set and
- * flat, folded or at a corner: whole 0.5 and 1 cm past, partly 2 cm
- * past, none from 3 (3.5 at Hinge Gap 1, test_gap_stop_one); 3 mm apart
+ * flat, folded or at a corner: whole 0.5 to 2.9 cm past, partly 4 cm
+ * past, none from 5.5 (6 at Hinge Gap 1, test_gap_stop_one); 3 mm apart
  * it is as the gap leaves it (the click at 0, its fade at 2, free at
- * 10). Swept from 1 cm apart to 3.5 past, nothing hops, the click
- * handing over to the stop. */
+ * 10). Swept from 1 cm apart to 10 past, nothing hops, the click
+ * handing over to the stop, which lets go at 4 times the hand at
+ * most. */
 static void test_gap_stop(void)
 {
    static const float gaps[] = { 0.0f, 0.01f, 0.02f, 0.10f };
    static const double apart[] = { 0.0, -1.0, 0.006, 0.003 };
+   static const double whole[] = { 0.005, 0.01, 0.02, 0.029 };
    unsigned k, i, j;
    for (k = 0; k < 3; k++)
    for (i = 0; i < 4; i++)
    {
       double a, last = 0.0;
       unsigned bits;
-      for (j = 0; j < 2; j++)
+      for (j = 0; j < 4; j++)
       {
-         bits = stop_snap(k, j ? 0.01 : 0.005, gaps[i], &a);
+         bits = stop_snap(k, whole[j], gaps[i], &a);
          CHECK((bits & VIDEO_XR_SNAP_HINGE) && fabs(a) < 1e-5);
       }
-      bits = stop_snap(k, 0.02, gaps[i], &a);
-      CHECK(!(bits & VIDEO_XR_SNAP_HINGE) && a < -0.001 && a > -0.0199);
+      bits = stop_snap(k, 0.04, gaps[i], &a);
+      CHECK(!(bits & VIDEO_XR_SNAP_HINGE) && a < -0.001 && a > -0.0399);
       for (j = 0; j < 2; j++)
       {
-         double c = ((i == 1) ? 0.035 : 0.03) + 0.005 * j;
+         double c = ((i == 1) ? 0.06 : 0.055) + 0.005 * j;
          stop_snap(k, c, gaps[i], &a);
          CHECK(fabs(a + c) < 1e-5);
       }
@@ -5124,38 +5337,39 @@ static void test_gap_stop(void)
          bits = stop_snap(k, -0.003, gaps[i], &a);
          CHECK((bits & VIDEO_XR_SNAP_HINGE) && fabs(a - apart[i]) < 1e-5);
       }
-      for (j = 0; j <= 90; j++)
+      for (j = 0; j <= 220; j++)
       {
          stop_snap(k, -0.01 + 0.0005 * j, gaps[i], &a);
          if (j)
-            CHECK(fabs(a - last) <= 0.0015);
+            CHECK(fabs(a - last) <= 0.002);
          last = a;
       }
    }
 }
 
 /* Hinge Gap 1: its click's fade shows touching 5 mm past, so the stop
- * holds it there from 5 to 15 mm past, flat, folded or at a corner,
- * partly at 3 cm and not at all from 3.5; shaken 3 mm about 1 cm past
- * at 8 Hz, it shows touching on every poll. */
+ * holds it there from 5 to 35 mm past, flat, folded or at a corner,
+ * partly at 4.5 cm and not at all from 6; shaken 3 mm about 1 and
+ * 3 cm past at 8 Hz, it shows touching on every poll. */
 static void test_gap_stop_one(void)
 {
-   static const double past[] = { 0.005, 0.01, 0.014 };
+   static const double past[] = { 0.005, 0.01, 0.014, 0.025, 0.034 };
    unsigned k, j;
    for (k = 0; k < 3; k++)
    {
       double a;
       double worst = 0.0;
-      for (j = 0; j < 3; j++)
+      for (j = 0; j < 5; j++)
       {
          unsigned bits = stop_snap(k, past[j], 0.01f, &a);
          CHECK((bits & VIDEO_XR_SNAP_HINGE) && fabs(a) < 1e-5);
       }
-      stop_snap(k, 0.03, 0.01f, &a);
-      CHECK(a < -0.02 && a > -0.0299);
-      for (j = 0; j < 450; j++)
+      stop_snap(k, 0.045, 0.01f, &a);
+      CHECK(a < -0.001 && a > -0.0449);
+      for (j = 0; j < 900; j++)
       {
-         stop_snap(k, 0.01 + 0.003 * sin(j * 0.56), 0.01f, &a);
+         stop_snap(k, ((j < 450) ? 0.01 : 0.03) + 0.003 * sin(j * 0.56),
+               0.01f, &a);
          if (fabs(a) > worst)
             worst = fabs(a);
       }
@@ -5262,7 +5476,7 @@ static double turned_stop_snap(double yaw, double c, float gap)
  * lets go with the hinge, no step over twice the larger beside it (a
  * hop), nor over 1.2 mm, the turn's own swing; up to 3 degrees past
  * square, where the turn swings the edge back toward touching, none
- * over the 0.3 mm the stop's own fade takes. */
+ * over the 0.4 mm the stop's own fade takes. */
 static void test_gap_stop_turned(void)
 {
    static const float gaps[] = { 0.0f, 0.01f, 0.02f, 0.05f, 0.10f };
@@ -5271,7 +5485,7 @@ static void test_gap_stop_turned(void)
    for (i = 0; i < 5; i++)
    {
       double yaw    = -5.0 + 0.5 * y;
-      double most   = (yaw >= 0.0 && yaw <= 3.0) ? 0.0003 : 0.0012;
+      double most   = (yaw >= 0.0 && yaw <= 3.0) ? 0.0004 : 0.0012;
       double last   = turned_stop_snap(yaw, 0.0, gaps[i]);
       double before = 0.0;
       double prev   = 0.0;
@@ -6301,22 +6515,23 @@ static void test_near_hinge(void)
       g.width  = 1.0f;
       g.height = 0.6f;
       CHECK(video_xr_grab_near_hinge(&g, &aim, &set, &h,
-               VIDEO_XR_SNAP_DIST) == (at[k][3] != 0.0));
+               VIDEO_XR_SNAP_DIST, 0.0f) == (at[k][3] != 0.0));
    }
    step_grab(&g, &aim, 0.0, 0.0, -1.8, 0.0, 0.0);
    g.width  = 1.0f;
    g.height = 0.6f;
    set.quads[0].pose.position.z = -1.765f;
    CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h,
-            VIDEO_XR_SNAP_DIST));
+            VIDEO_XR_SNAP_DIST, 0.0f));
    set.quads[0].pose.position.z = -1.79f;
-   CHECK(video_xr_grab_near_hinge(&g, &aim, &set, &h, VIDEO_XR_SNAP_DIST));
+   CHECK(video_xr_grab_near_hinge(&g, &aim, &set, &h, VIDEO_XR_SNAP_DIST,
+            0.0f));
    h.slot = 2;
    CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h,
-            VIDEO_XR_SNAP_DIST));
+            VIDEO_XR_SNAP_DIST, 0.0f));
    h.slot = 0;
    CHECK(!video_xr_grab_near_hinge(&g, &aim, NULL, &h,
-            VIDEO_XR_SNAP_DIST));
+            VIDEO_XR_SNAP_DIST, 0.0f));
    /* A hinge's mark and buzz reach 4.5 cm off its plane. */
    CHECK(fabs(VIDEO_XR_HINGE_REACH - 0.045) < 1e-6);
    set.quads[0].pose.position.z = -1.8f;
@@ -6324,14 +6539,14 @@ static void test_near_hinge(void)
    g.width  = 1.0f;
    g.height = 0.6f;
    CHECK(     video_xr_grab_near_hinge(&g, &aim, &set, &h,
-               VIDEO_XR_HINGE_REACH)
+               VIDEO_XR_HINGE_REACH, 0.0f)
          && !video_xr_grab_near_hinge(&g, &aim, &set, &h,
-               VIDEO_XR_SNAP_DIST));
+               VIDEO_XR_SNAP_DIST, 0.0f));
    step_grab(&g, &aim, 0.0, 0.0, -1.8 - 0.046, 0.0, 0.0);
    g.width  = 1.0f;
    g.height = 0.6f;
    CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h,
-            VIDEO_XR_HINGE_REACH));
+            VIDEO_XR_HINGE_REACH, 0.0f));
 }
 
 #define SMOOTH_MAX 400
@@ -7089,6 +7304,9 @@ int main(void)
    test_rest_hinges();
    test_rest_hinge();
    test_grab_kept();
+   test_grab_through();
+   test_grab_through_rest();
+   test_rest_gap_one();
    test_rest_hinge_sides();
    test_rest_hinge_size();
    test_grab_kept_turn();

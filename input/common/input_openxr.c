@@ -562,7 +562,8 @@ typedef struct input_openxr
 
 static input_openxr_t input_openxr_st;
 
-/* A hand in edit mode: its hold, where its item was as it took it, the
+/* A hand in edit mode: its hold, where it holds its item as it took it
+ * (video_xr_rest_take) and the aim it last moved it by, the
  * scale of what it holds now and at the grab with its size then, the
  * snaps whose buzz may still fire, the free hand's turn and tilt past
  * the steps they hold at (video_xr_grab_step) and the steps whose buzz
@@ -577,6 +578,7 @@ typedef struct input_openxr_hold
 {
    video_xr_grab_t g;
    video_xr_pose_t start;
+   video_xr_pose_t aim;
    video_xr_hinge_t lid;
    retro_time_t buzz_end;
    float scale;
@@ -2541,6 +2543,24 @@ static unsigned input_openxr_edit_holding(const input_openxr_edit_t *e)
    return bits;
 }
 
+/* hold's item where it shows as the other hand takes a screen that
+ * pulled it, the screens in was held before: so it does not hop, and
+ * carries on from there free of that pull. */
+static void input_openxr_edit_rebase(input_openxr_edit_t *e,
+      input_openxr_hold_t *hold, const video_xr_quad_set_t *targets,
+      unsigned was)
+{
+   video_xr_pose_t at, now;
+   if (hold->g.state != VIDEO_XR_GRAB_HELD || !targets)
+      return;
+   video_xr_grab_pose(&hold->g, &hold->aim, targets, was, &hold->start,
+         &at, NULL, NULL);
+   video_xr_grab_pose(&hold->g, &hold->aim, targets,
+         input_openxr_edit_holding(e), &hold->start, &now, NULL, NULL);
+   if (memcmp(&at, &now, sizeof(at)))
+      video_xr_grab_put(&hold->g, &hold->aim, &at);
+}
+
 /* The screens no hand holds that rest in a hinge, for the frame loop:
  * counted again only when one came, went, moved or was let go, or edit
  * mode began. */
@@ -2613,14 +2633,16 @@ static void input_openxr_edit_grab(input_openxr_t *st,
       input_openxr_edit_t *e, unsigned h, int target,
       const video_xr_pose_t *aim, bool tilt)
 {
+   unsigned was;
    video_xr_pose_t inv;
    video_screen_xr_t now;
-   const video_xr_quad_t *q         = &st->quads.quads[target];
-   const video_xr_vec3_t *base      = &st->quads.slots[q->slot].base;
-   input_openxr_hold_t *hold        = &e->hand[h];
-   const input_openxr_hold_t *other = &e->hand[h ^ 1];
+   const video_xr_quad_t *q    = &st->quads.quads[target];
+   const video_xr_vec3_t *base = &st->quads.slots[q->slot].base;
+   input_openxr_hold_t *hold   = &e->hand[h];
+   input_openxr_hold_t *other  = &e->hand[h ^ 1];
    if (other->g.state == VIDEO_XR_GRAB_HELD && other->g.slot == q->slot)
       return;
+   was = input_openxr_edit_holding(e);
    memset(&hold->g, 0, sizeof(hold->g));
    video_xr_pose_invert(aim, &inv);
    video_xr_compose(&inv, &q->pose, &hold->g.rel);
@@ -2634,6 +2656,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->g.tilt   = tilt;
    hold->g.gap    = e->gap;
    hold->start    = q->pose;
+   hold->aim      = *aim;
    hold->armed    = VIDEO_XR_SNAP_ALL | VIDEO_XR_SNAP_GAP;
    /* Taken at a step, it buzzes only once it has left it. */
    hold->rest[0]  = 0.0f;
@@ -2650,6 +2673,9 @@ static void input_openxr_edit_grab(input_openxr_t *st,
                input_openxr_edit_holding(e), q->width, q->height,
                e->gap * 0.01f, &q->pose, &hold->lid))
    {
+      video_xr_rest_take(&st->quads, q->slot, q->width, q->height,
+            e->gap * 0.01f, &hold->lid, &hold->start);
+      video_xr_compose(&inv, &hold->start, &hold->g.rel);
       hold->g.rest_slot = (unsigned char)(hold->lid.slot + 1);
       hold->g.rest_on   = (unsigned char)hold->lid.on;
       hold->g.rest_edge = (unsigned char)hold->lid.edge;
@@ -2675,6 +2701,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->scale0  = now.scale;
    hold->width0  = q->width;
    hold->height0 = q->height;
+   input_openxr_edit_rebase(e, other, e->snap ? &st->quads : NULL, was);
 }
 
 /* Whether hinge, engaged, takes hold anew: not the one hold's lid has
@@ -2711,6 +2738,7 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
    float y = -(float)free_stick[1] / 32767.0f;
    bool pushed = x * x + y * y
       > VIDEO_XR_EDIT_DEADZONE * VIDEO_XR_EDIT_DEADZONE;
+   hold->aim   = *aim;
    video_xr_pose_invert(aim, &inv);
    if (tilt && !hold->g.tilt)
       video_xr_compose(&inv, &hold->g.last, &hold->g.rel);
@@ -2788,9 +2816,10 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
     * there. */
    if (hinged)
    {
-      hold->lid    = hinge;
-      hold->lidded = true;
-      hold->buzzed = true;
+      hold->lid       = hinge;
+      hold->lidded    = true;
+      hold->buzzed    = true;
+      hold->g.through = 0;
       hold->steps |= (video_xr_grab_off_step(&hold->g, aim, head, e->step,
                hold->rest) & ~hinge.axis)
          | video_xr_grab_off_hinge(&hold->g, aim, &hinge, e->step,
@@ -2811,15 +2840,22 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
          hold->lidded = false;
          hold->buzzed = false;
       }
+      /* Pushed past the stop's hold, the hinge ends with it, and the
+       * stop holds short until one takes hold, so a wobble there
+       * neither takes it back nor buzzes. While buzzed, as the frame
+       * loop's mark keeps that far off the plane too. */
+      if (     hold->buzzed
+            && video_xr_grab_through(&hold->g, aim, targets, &hold->lid))
+         hold->g.through = 1;
       /* Out of its hinge's reach, it turns as any free screen; further
        * out, the hinge buzzes again. */
       if (     hold->lidded
             && !video_xr_grab_near_hinge(&hold->g, aim, targets,
-               &hold->lid, VIDEO_XR_SNAP_DIST))
+               &hold->lid, VIDEO_XR_SNAP_DIST, 0.0f))
          hold->lidded = false;
       if (     hold->buzzed && !hold->lidded
             && !video_xr_grab_near_hinge(&hold->g, aim, targets,
-               &hold->lid, VIDEO_XR_HINGE_REACH))
+               &hold->lid, VIDEO_XR_HINGE_REACH, 0.0f))
          hold->buzzed = false;
       if (hold->lidded)
          lid = &hold->lid;

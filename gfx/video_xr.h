@@ -224,6 +224,10 @@ typedef struct video_xr_grab
    unsigned char rest_slot;
    unsigned char rest_on;
    unsigned char rest_edge;
+   /* A push past the stop's hold let its hinge go
+    * (video_xr_grab_through): the stop holds VIDEO_XR_SNAP_STOP_ARM
+    * short until a hinge takes hold again. */
+   unsigned char through;
 } video_xr_grab_t;
 
 /* Where g puts its item for an aim pose: the aim composed with g->rel,
@@ -307,14 +311,16 @@ unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
  * VIDEO_XR_SNAP_FREE metres, the hinge fading out over
  * VIDEO_XR_SNAP_DIST past that. Pushed past touching, a hinged edge
  * stops there within VIDEO_XR_SNAP_STOP metres past where the click
- * lets go of touching, the stop and the hinge fading out by
- * VIDEO_XR_SNAP_STOP_FADE past there. The stop's tick bits (its axis's
- * and VIDEO_XR_SNAP_GAP) count as pulling until the edge is
+ * lets go of touching, the hinge ending there, the stop fading out by
+ * VIDEO_XR_SNAP_STOP_FADE past there; a push that ended it holds
+ * VIDEO_XR_SNAP_STOP_ARM short (video_xr_grab_t's through), so the
+ * hinge takes hold again only that far back. The stop's tick bits (its
+ * axis's and VIDEO_XR_SNAP_GAP) count as pulling until the edge is
  * VIDEO_XR_SNAP_STOP_ARM apart, so it ticks once per push. */
 #define VIDEO_XR_SNAP_CLICK     0.01f
 #define VIDEO_XR_SNAP_FREE      0.10f
-#define VIDEO_XR_SNAP_STOP      0.01f
-#define VIDEO_XR_SNAP_STOP_FADE 0.03f
+#define VIDEO_XR_SNAP_STOP      0.03f
+#define VIDEO_XR_SNAP_STOP_FADE 0.055f
 #define VIDEO_XR_SNAP_STOP_ARM  0.005f
 /* The snaps engaged, each whole: video_xr_snap's low bits. */
 #define VIDEO_XR_SNAP_TURN  1u
@@ -431,6 +437,15 @@ bool video_xr_rest_hinge(const video_xr_quad_set_t *set, unsigned slot,
       unsigned skip, float width, float height, float gap,
       const video_xr_pose_t *pose, video_xr_hinge_t *hinge);
 
+/* Where a hand taking a screen width x height in slot, resting at pose
+ * in h's hinge (video_xr_rest_hinge), gap metres the set gap, holds it,
+ * into pose: touching where the click reaches touching (Hinge Gap 1),
+ * pushed past it as far as the stop starts, which holds it there;
+ * else where it rests. */
+void video_xr_rest_take(const video_xr_quad_set_t *set, unsigned slot,
+      float width, float height, float gap, const video_xr_hinge_t *h,
+      video_xr_pose_t *pose);
+
 /* video_xr_grab_pose with targets and no settings, also giving the
  * hinge it holds (VIDEO_XR_SNAP_HINGE in the snaps returned, never
  * with a clamp holding it back, nor unless the item's own edge is
@@ -445,14 +460,24 @@ unsigned video_xr_grab_hinge(const video_xr_grab_t *g,
 /* Whether g's item, where it is with no snap, has its edge h->edge where
  * h's hinge could take it again, against h's target where targets has
  * it now: within reach metres of its plane, at a gap the hinge
- * reaches, fades included, and overlapping its edge along the line.
- * The stick swings about it within VIDEO_XR_SNAP_DIST; a hinge's mark
- * and buzz keep it within VIDEO_XR_HINGE_REACH, past where it takes
- * hold, so a wobble there neither flickers nor buzzes again. */
+ * reaches, fades included, or past touching no farther than past
+ * metres beyond where the stop holds it whole (video_xr_grab_through),
+ * and overlapping its edge along the line. The stick swings about it
+ * within VIDEO_XR_SNAP_DIST; a hinge's mark and buzz keep it within
+ * VIDEO_XR_HINGE_REACH, past where it takes hold, so a wobble there
+ * neither flickers nor buzzes again. */
 #define VIDEO_XR_HINGE_REACH (1.5f * VIDEO_XR_SNAP_DIST)
 bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
-      const video_xr_hinge_t *h, float reach);
+      const video_xr_hinge_t *h, float reach, float past);
+
+/* Whether g's item, where it is with no snap, has its edge h->edge
+ * pushed past touching h's target farther than the stop holds it
+ * whole, VIDEO_XR_SNAP_STOP_ARM less with g->through: a push that lets
+ * the hinge go. */
+bool video_xr_grab_through(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      const video_xr_hinge_t *h);
 
 /* Whether g still carries the hinge it was taken in (g->rest_slot): its
  * edge within VIDEO_XR_HINGE_REACH of where that hinge could take it

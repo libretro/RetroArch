@@ -255,17 +255,24 @@ static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
          video_xr_hinge_t whole;
          const video_xr_quad_set_t *targets = f->grabs.snap ? set : NULL;
          video_xr_compose(&inv, &aim, &aim);
-         if (video_xr_grab_hinge(g, &aim, targets, holding,
-                  &f->grabs.start[h], &held->pose, &whole)
-               & VIDEO_XR_SNAP_HINGE)
+         /* A push ends a hinge as the main thread sees it (g->through):
+          * till then kept VIDEO_XR_SNAP_STOP_ARM past the stop's hold,
+          * then taken again only once that clears, so a graze or dip
+          * between its polls never blinks the line. */
+         if (     (video_xr_grab_hinge(g, &aim, targets, holding,
+                     &f->grabs.start[h], &held->pose, &whole)
+                  & VIDEO_XR_SNAP_HINGE)
+               && !g->through)
          {
             held->hinge  = whole;
             held->hinged = true;
          }
          /* Kept within VIDEO_XR_HINGE_REACH, past where it takes hold,
           * so a wobble at the hinge's limits does not flicker it. */
-         else if (held->hinged && !video_xr_grab_near_hinge(g, &aim,
-                  targets, &held->hinge, VIDEO_XR_HINGE_REACH))
+         else if (held->hinged && (g->through
+                  || !video_xr_grab_near_hinge(g, &aim, targets,
+                     &held->hinge, VIDEO_XR_HINGE_REACH,
+                     VIDEO_XR_SNAP_STOP_ARM)))
             held->hinged = false;
       }
       openxr_frame_hold_slot(set, g->slot, &held->pose, g);
