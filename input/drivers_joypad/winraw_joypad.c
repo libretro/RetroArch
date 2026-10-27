@@ -55,6 +55,7 @@
 #include "../input_driver.h"
 #include "../common/sony_pad_output.h"
 #include "../common/input_ignore_devices.h"
+#include "../common/win_pad_ident.h"
 #include "../common/hid_sjoy_output.h"
 #include "../common/output_writer.h"
 #include "../common/sony_pad_motion.h"
@@ -178,6 +179,9 @@ typedef struct winraw_joypad_joypad_data
    /* Which of XInput's pads this is, or -1 for one read from raw
     * input. See winraw_joypad_xinput_rescan(). */
    int8_t              xuser;
+   /* A DualShock 4's or DualSense's Bluetooth address, read from either
+    * link; 0 for any other pad */
+   uint64_t            link_addr;
    uint8_t             motion_model; /* enum sony_pad_model, or none    */
    uint8_t             motion_on;    /* bit 0 accelerometer, 1 gyroscope */
    bool                motion_seen;  /* a report has had them            */
@@ -199,6 +203,11 @@ typedef struct winraw_joypad_joypad_data
 
 /* TODO/FIXME - static globals */
 static winraw_joypad_joypad_data_t winraw_joypad_pads[MAX_USERS];
+/* A pad's other link - its cable, while it is on Bluetooth too - not
+ * read while the first is there, and the pad's when it goes */
+static HANDLE winraw_joypad_twin[MAX_USERS];
+/* the slot the next pad added takes: a twin taking over */
+static int winraw_joypad_slot_wanted = -1;
 /* the motion sensors a core has asked of each port (bit 0 the
  * accelerometer, 1 the gyroscope): kept while pads come and go */
 static uint8_t winraw_joypad_motion_want[MAX_USERS];
@@ -962,8 +971,7 @@ static void winraw_joypad_out_open(unsigned slot,
    enum sony_pad_model model = sony_pad_model(vid, pid);
    /* Windows marks the HID device of a pad it drives through XInput
     * with "IG_" in its path */
-   bool xinput               = path
-      && (strstr(path, "IG_") || strstr(path, "ig_"));
+   bool xinput               = win_pad_path_is_xinput(path);
    /* a DualShock 3 with a feature report the size of its state */
    bool sixaxis              = vid == 0x054C && pid == 0x0268
       && feature_len >= 49 && feature_len <= WINRAW_SIXAXIS_LEN;
@@ -1013,9 +1021,7 @@ static void winraw_joypad_out_open(unsigned slot,
             return;
          }
       }
-      dev->bluetooth  =
-            strstr(path, "00001124-0000-1000-8000-00805f9b34fb") != NULL
-         || strstr(path, "00001124-0000-1000-8000-00805F9B34FB") != NULL;
+      dev->bluetooth  = win_pad_path_is_bluetooth(path);
    }
 
    if (!xinput && model == SONY_PAD_DUALSENSE)
@@ -1198,11 +1204,6 @@ static bool                      winraw_joypad_xinput_own;
 static HMODULE                   winraw_joypad_xi_dll;
 static winraw_xinput_get_state_t winraw_joypad_xi_get_state;
 
-static bool winraw_joypad_path_is_xinput(const char *path)
-{
-   return path && (strstr(path, "IG_") || strstr(path, "ig_"));
-}
-
 /* pad_count is the highest connected slot + 1: left to grow, stale
  * slots would look in use to autoconfig during a reconnect. */
 static void winraw_joypad_recount(void)
@@ -1342,6 +1343,47 @@ static void winraw_joypad_xinput_poll(void)
 /* Device arrival / removal                                            */
 /* ------------------------------------------------------------------ */
 
+/* A DualShock 4's or DualSense's Bluetooth address, read from the link
+ * at @path: the serial number over Bluetooth, a feature report over
+ * USB (win_pad_ident.h). 0 for any other pad, or none given. */
+static uint64_t winraw_joypad_sony_addr(const char *path,
+      uint16_t vid, uint16_t pid)
+{
+   enum sony_pad_model model = sony_pad_model(vid, pid);
+   uint64_t addr             = 0;
+   HANDLE h;
+
+   /* the DualShock 4's USB adaptor is a cable to nothing */
+   if (model == SONY_PAD_NONE || pid == 0x0BA0 || !path[0])
+      return 0;
+   /* no access asked: HID's requests need none, and a pad another
+    * program holds open is still read */
+   h = CreateFileA(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+         OPEN_EXISTING, 0, NULL);
+   if (h == INVALID_HANDLE_VALUE)
+      return 0;
+   if (win_pad_path_is_bluetooth(path))
+   {
+      wchar_t wide[64];
+      char serial[64];
+      memset(wide, 0, sizeof(wide));
+      if (     HidD_GetSerialNumberString(h, wide, sizeof(wide))
+            && WideCharToMultiByte(CP_UTF8, 0, wide, -1, serial,
+               sizeof(serial), NULL, NULL) > 0)
+         addr = win_pad_sony_addr_serial(serial);
+   }
+   else
+   {
+      uint8_t feature[64];
+      memset(feature, 0, sizeof(feature));
+      feature[0] = model == SONY_PAD_DS4 ? 0x12 : 0x09;
+      if (HidD_GetFeature(h, feature, sizeof(feature)))
+         addr = win_pad_sony_addr_feature(feature, sizeof(feature));
+   }
+   CloseHandle(h);
+   return addr;
+}
+
 /* Whether a raw input handle still names a device. The handle of a
  * controller that has been unplugged does not. */
 static bool winraw_joypad_handle_alive(HANDLE hDevice)
@@ -1356,6 +1398,8 @@ static bool winraw_joypad_handle_alive(HANDLE hDevice)
 static bool winraw_joypad_add_device(HANDLE hDevice)
 {
    int slot;
+   unsigned t;
+   uint64_t link_addr;
    char device_path[512];
    RID_DEVICE_INFO dev_info;
    UINT name_size                   = 0;
@@ -1368,6 +1412,9 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
    /* Already tracked? */
    if (winraw_joypad_find_pad(hDevice) >= 0)
       return true;
+   for (t = 0; t < MAX_USERS; t++)
+      if (winraw_joypad_twin[t] == hDevice)
+         return true;
 
    /* Get device info to check it is a HID gamepad/joystick */
    dev_info.cbSize = sizeof(dev_info);
@@ -1402,12 +1449,33 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
 
    /* XInput's to read, not raw input's: XInput's pads are looked at
     * again, this one among them. */
-   if (     winraw_joypad_xinput_own
-         && winraw_joypad_path_is_xinput(device_path))
+   if (win_pad_owner(winraw_joypad_xinput_own
+            ? WIN_PAD_DRV_WINRAW_XINPUT : WIN_PAD_DRV_WINRAW,
+            device_path, true, false) == WIN_PAD_VIEW_XINPUT)
    {
       winraw_joypad_xinput_rescan();
       return false;
    }
+
+   /* The other link of a pad already here - its cable plugged in while
+    * it is on Bluetooth - is the same pad, in the same port */
+   link_addr = winraw_joypad_sony_addr(device_path,
+         (uint16_t)dev_info.hid.dwVendorId,
+         (uint16_t)dev_info.hid.dwProductId);
+   if (link_addr)
+      for (t = 0; t < MAX_USERS; t++)
+         if (     winraw_joypad_pads[t].connected
+               && winraw_joypad_pads[t].link_addr == link_addr
+               && !winraw_joypad_twin[t])
+         {
+            winraw_joypad_twin[t] = hDevice;
+            RARCH_LOG("[RawInput Joypad] \"%s\" in slot %u has a second"
+                  " link (%s); it stays one pad.\n",
+                  winraw_joypad_pads[t].name, t,
+                  win_pad_path_is_bluetooth(device_path)
+                  ? "Bluetooth" : "USB");
+            return true;
+         }
 
    /* ---- Handle reconnection race condition ----
     * Windows can send GIDC_ARRIVAL for a newly-assigned handle *before*
@@ -1466,7 +1534,13 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
          }
       }
 
-      slot = (reuse_slot >= 0) ? reuse_slot : winraw_joypad_find_free_slot();
+      if (reuse_slot >= 0)
+         slot = reuse_slot;
+      else if (   winraw_joypad_slot_wanted >= 0
+               && !winraw_joypad_pads[winraw_joypad_slot_wanted].connected)
+         slot = winraw_joypad_slot_wanted;
+      else
+         slot = winraw_joypad_find_free_slot();
    }
    if (slot < 0)
    {
@@ -1482,7 +1556,8 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
    pad->pid     = (uint16_t)dev_info.hid.dwProductId;
 
    strlcpy(pad->path, device_path, sizeof(pad->path));
-   pad->xuser = -1;
+   pad->xuser     = -1;
+   pad->link_addr = link_addr;
 
    /* --- Open the device path for the product string --- */
    if (device_path[0])
@@ -1649,21 +1724,33 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
 
 static void winraw_joypad_remove_device(HANDLE hDevice)
 {
+   HANDLE twin;
    int slot = winraw_joypad_find_pad(hDevice);
    if (slot < 0)
    {
+      unsigned t;
+      for (t = 0; t < MAX_USERS; t++)
+         if (winraw_joypad_twin[t] == hDevice)
+         {
+            winraw_joypad_twin[t] = NULL;
+            return;
+         }
       /* not one of raw input's pads: it may have been XInput's */
       winraw_joypad_xinput_rescan();
       return;
    }
 
+   twin                     = winraw_joypad_twin[slot];
+   winraw_joypad_twin[slot] = NULL;
    {
       winraw_joypad_joypad_data_t *pad = &winraw_joypad_pads[slot];
 
       RARCH_LOG("[RawInput Joypad] Device removed from slot %d: \"%s\".\n",
             slot, pad->name);
 
-      input_autoconfigure_disconnect((unsigned)slot, pad->name);
+      /* its other link carries on in its port: no disconnect */
+      if (!twin)
+         input_autoconfigure_disconnect((unsigned)slot, pad->name);
       winraw_joypad_out_close((unsigned)slot);
 
       if (pad->btn_caps)
@@ -1678,6 +1765,12 @@ static void winraw_joypad_remove_device(HANDLE hDevice)
       winraw_joypad_held[slot].count = 0;
    }
 
+   if (twin)
+   {
+      winraw_joypad_slot_wanted = slot;
+      winraw_joypad_add_device(twin);
+      winraw_joypad_slot_wanted = -1;
+   }
    winraw_joypad_recount();
 }
 
@@ -2178,6 +2271,7 @@ static void *winraw_joypad_joypad_init(void *data)
 {
    memset(winraw_joypad_pads, 0, sizeof(winraw_joypad_pads));
    memset(winraw_joypad_held, 0, sizeof(winraw_joypad_held));
+   memset(winraw_joypad_twin, 0, sizeof(winraw_joypad_twin));
    winraw_joypad_sixaxis_init();
    winraw_joypad_pad_count      = 0;
    winraw_joypad_reports_taken  = 0;
@@ -2231,6 +2325,7 @@ static void winraw_joypad_joypad_destroy(void)
 
    memset(winraw_joypad_pads, 0, sizeof(winraw_joypad_pads));
    memset(winraw_joypad_held, 0, sizeof(winraw_joypad_held));
+   memset(winraw_joypad_twin, 0, sizeof(winraw_joypad_twin));
    winraw_joypad_pad_count = 0;
 
    if (winraw_joypad_xi_dll)
