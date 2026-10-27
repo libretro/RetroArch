@@ -24,8 +24,9 @@
  * a .rar path is an archive (the file browser's Open Archive / Load
  * Archive), "x.rar#member" names a member, the layer picks the RAR
  * backend, lists the members it can unpack, reads one into memory or
- * out to a file, and gives its CRC-32. The archives are the reader's
- * own, in ../../formats/rrar/archives. */
+ * out to a file, and gives its CRC-32, computed where the archive has
+ * none. The archives are the reader's own, in
+ * ../../formats/rrar/archives. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -273,6 +274,8 @@ int main(int argc, char *argv[])
    check_read(dir, "rar5_compressed.rar", "test.bin", 1200, 0x7cca70cdu);
    check_read(dir, "rar5_arm.rar", "elf-Linux-ARMv7-ls", 90808, 0x886f91ebu);
    check_read(dir, "filter.rar", "bsdcat.exe", 204288, 0x4db10349u);
+   /* BLAKE2 in place of a CRC: the CRC is had by unpacking */
+   check_read(dir, "rar5_blake2.rar", "cebula.txt", 814, 0x7e5ec49eu);
    check_extract(dir);
    check_extract_streamed(dir);
    check_refused(dir);

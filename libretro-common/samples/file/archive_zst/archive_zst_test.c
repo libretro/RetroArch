@@ -25,7 +25,8 @@
  * that lends the whole file in place: the member comes out exact every
  * way, and where the VFS lends the frame it is decoded there rather
  * than read. A frame with a window smaller than itself is extracted a
- * block at a time, and with its stated size wrong leaves no file. */
+ * block at a time, and with its stated size wrong leaves no file. The
+ * member's CRC, which a frame does not hold, is had by decoding it. */
 
 /* the lending VFS installs the implementation's own functions as a
  * frontend's */
@@ -38,6 +39,7 @@
 #include <boolean.h>
 #include <libretro.h>
 #include <file/archive_file.h>
+#include <encodings/crc32.h>
 #include <encodings/rzstd.h>
 #include <streams/file_stream.h>
 #include <vfs/vfs_implementation.h>
@@ -272,6 +274,10 @@ int main(void)
    check_extract("extract, plain file", false);
    check_extract("extract, lent", true);
    check_window();
+   install_vfs(false);
+   if (     file_archive_get_file_crc32(ZST_PATH "#archive_zst_test.bin")
+         != encoding_crc32(0, data, DATA_LEN))
+      fail("file_archive_get_file_crc32", "not the member's");
 
    remove(ZST_PATH);
    free(frame);

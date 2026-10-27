@@ -73,6 +73,28 @@ static void zstd_derive_inner_filename(const char *path, char *s, size_t len)
       ((char*)ext)[0] = '\0';
 }
 
+/* The CRC of what the frame holds, decoded a block at a time */
+static bool zstd_frame_crc(file_archive_transfer_t *state, uint32_t *crc)
+{
+   void           *owned = NULL;
+   const uint8_t  *src;
+   const uint8_t  *blk;
+   size_t          len;
+   rzstd_blocks_t *z     = NULL;
+   int             e     = RZSTD_PROCESS_ERROR;
+
+   *crc = 0;
+   if (     (uint64_t)state->archive_size <= (uint64_t)((size_t)-1)
+         && (src = file_archive_whole(state->archive_file,
+               state->archive_size, &owned))
+         && (z = rzstd_blocks_begin(src, (size_t)state->archive_size)))
+      while ((e = rzstd_blocks_step(z, &blk, &len)) == RZSTD_PROCESS_NEXT)
+         *crc = encoding_crc32(*crc, blk, len);
+   rzstd_blocks_free(z);
+   free(owned);
+   return e == RZSTD_PROCESS_END;
+}
+
 static int zstd_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
@@ -167,10 +189,14 @@ static int zstd_parse_file_iterate_step(void *context,
    userdata->crc  = 0;
    userdata->size = (uint64_t)content_size;
 
+   /* A frame holds no CRC of its content */
+   if (userdata->crc_wanted && !zstd_frame_crc(state, &userdata->crc))
+      return -1;
+
    if (file_cb && !file_cb(ctx->inner_filename, valid_exts,
             NULL, 0,
             (uint64_t)state->archive_size, (uint64_t)content_size,
-            0, userdata))
+            userdata->crc, userdata))
       return 0;
 
    return 1;

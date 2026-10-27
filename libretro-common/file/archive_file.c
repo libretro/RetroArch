@@ -482,6 +482,7 @@ bool file_archive_extract_file(
    userdata.list                            = NULL;
    userdata.found_file                      = false;
    userdata.list_only                       = false;
+   userdata.crc_wanted                      = false;
    userdata.crc                             = 0;
    userdata.transfer                        = NULL;
    userdata.dec                             = NULL;
@@ -536,6 +537,7 @@ bool file_archive_get_file_list_noalloc(struct string_list *list,
    userdata.list                            = list;
    userdata.found_file                      = false;
    userdata.list_only                       = true;
+   userdata.crc_wanted                      = false;
    userdata.crc                             = 0;
    userdata.transfer                        = NULL;
    userdata.dec                             = NULL;
@@ -570,6 +572,7 @@ struct string_list *file_archive_get_file_list(const char *path,
    userdata.list                            = string_list_new();
    userdata.found_file                      = false;
    userdata.list_only                       = true;
+   userdata.crc_wanted                      = false;
    userdata.crc                             = 0;
    userdata.transfer                        = NULL;
    userdata.dec                             = NULL;
@@ -1034,6 +1037,7 @@ uint32_t file_archive_get_file_crc32_and_size(const char *path, uint64_t *size)
    memset(&state, 0, sizeof(state));
 
    state.type              = ARCHIVE_TRANSFER_INIT;
+   userdata.crc_wanted     = true;
 
    /* Initialize and open archive first.
       Sets next state type to ITERATE. */

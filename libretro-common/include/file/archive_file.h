@@ -147,6 +147,9 @@ struct archive_extract_userdata
    char current_file_path[PATH_MAX_LENGTH];
    bool found_file;
    bool list_only;
+   /* The member's CRC is wanted: a backend whose archive does not
+    * record one decodes the member to have it */
+   bool crc_wanted;
 };
 
 /* Returns true when parsing should continue. False to stop. */

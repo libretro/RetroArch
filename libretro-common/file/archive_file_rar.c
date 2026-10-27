@@ -68,6 +68,12 @@ static int rar_sink_write(void *ud, const uint8_t *data, size_t len)
    return filestream_write((RFILE*)ud, data, (int64_t)len) != (int64_t)len;
 }
 
+static int rar_crc_write(void *ud, const uint8_t *data, size_t len)
+{
+   *(uint32_t*)ud = encoding_crc32(*(uint32_t*)ud, data, len);
+   return 0;
+}
+
 static int rar_open_archive(struct rar_context_t *ctx,
       file_archive_transfer_t *state)
 {
@@ -336,11 +342,20 @@ static int rar_parse_file_iterate_step(void *context,
       userdata->crc  = entry->crc;
       userdata->size = entry->size;
 
+      /* A RAR 5 member may have a BLAKE2 hash in place of its CRC */
+      if (userdata->crc_wanted && !entry->has_crc)
+      {
+         userdata->crc = 0;
+         if (rrar_archive_extract_sink(ctx->archive, ctx->parse_index,
+                  rar_crc_write, &userdata->crc) != RRAR_OK)
+            return -1;
+      }
+
       /* The entry index travels in cdata; the packed size is reported
        * only for progress. */
       if (file_cb && !file_cb(userdata->current_file_path, valid_exts,
                (const uint8_t*)(size_t)ctx->parse_index, 0,
-               entry->packed_size, entry->size, entry->crc, userdata))
+               entry->packed_size, entry->size, userdata->crc, userdata))
          return 0;
    }
 
