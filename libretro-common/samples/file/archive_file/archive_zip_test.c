@@ -1110,6 +1110,64 @@ static void test_member_lent(void)
    member_sequence(false, true);
 }
 
+/* An entry source is opened only for a member that lies inside the
+ * archive: a central directory claiming more than the archive holds -
+ * a stored member longer than the file, a deflated one whose packed
+ * size runs past it, a header offset past it - is refused at open,
+ * not read from where the mapping ends. */
+static void test_entry_source_bounds(void)
+{
+   static const char payload[] = "short member";
+   const char *tmp_path = "rarch_zip_bounds_test.zip";
+   unsigned    c;
+   for (c = 0; c < 4; c++)
+   {
+      uint8_t  buf[512];
+      size_t   len = 0, cd;
+      int64_t  usize = 0;
+      char     member[64];
+      file_archive_entry_source_t *src;
+
+      len += write_stored_lfh(buf, "m.bin", (const uint8_t*)payload,
+            sizeof(payload) - 1, encoding_crc32(0, (const uint8_t*)payload,
+               sizeof(payload) - 1));
+      cd   = len;
+      len += write_stored_cfh(buf + len, "m.bin", sizeof(payload) - 1,
+            encoding_crc32(0, (const uint8_t*)payload, sizeof(payload) - 1), 0);
+      switch (c)
+      {
+         case 1:   /* stored, and longer than the archive */
+            put_u32(buf + cd + 20, 1u << 20);
+            put_u32(buf + cd + 24, 1u << 20);
+            break;
+         case 2:   /* deflated, packed past the end */
+            put_u16(buf + cd + 10, 8);
+            put_u32(buf + cd + 20, 1u << 20);
+            put_u32(buf + cd + 24, 64);
+            break;
+         case 3:   /* its header past the end */
+            put_u32(buf + cd + 42, 1u << 20);
+            break;
+         default:  /* as it is: opens */
+            break;
+      }
+      len += write_eocd(buf + len, 1, (uint32_t)(len - cd), (uint32_t)cd);
+      write_file(tmp_path, buf, len);
+      snprintf(member, sizeof(member), "%s#m.bin", tmp_path);
+      src = file_archive_entry_source_open(member, &usize);
+      if (c == 0 ? !src || usize != (int64_t)sizeof(payload) - 1 : src != NULL)
+      {
+         printf("[FAIL] entry source bounds, case %u: %s\n", c,
+               src ? "opened" : "refused");
+         failures++;
+      }
+      if (src)
+         file_archive_entry_source_close(src);
+      remove(tmp_path);
+   }
+   printf("[SUCCESS] entry sources open only for members inside the archive\n");
+}
+
 int main(void)
 {
    test_truncated_entry();
@@ -1124,6 +1182,7 @@ int main(void)
    test_member_sequence_reuse();
    test_member_crc_mismatch();
    test_member_lent();
+   test_entry_source_bounds();
 
    if (failures)
    {

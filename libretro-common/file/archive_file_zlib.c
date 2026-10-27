@@ -1070,12 +1070,16 @@ static int file_archive_entry_source_capture(
       return 1;
    if (!string_is_equal(name, s->needle))
       return 1;
-   /* the local-header hop, both arms, mirroring the extract init */
+   /* the local-header hop, both arms, mirroring the extract init: the
+    * offset and the sizes are the archive's word, and the reads made
+    * from the mapping are bounded by them */
    {
       struct file_archive_transfer *state = &s->state;
       uint8_t local_header_buf[4];
       uint8_t *local_header;
       uint32_t nl, el;
+      if ((int64_t)(size_t)cdata + 26 + 4 > state->archive_size)
+         return -1;
 #ifdef VFS_HAVE_FILE_MAPPING
       if (state->archive_mmap_data)
          local_header = state->archive_mmap_data + (size_t)cdata + 26;
@@ -1091,6 +1095,11 @@ static int file_archive_entry_source_capture(
       nl          = read_le(local_header,     2);
       el          = read_le(local_header + 2, 2);
       s->fdoffset = (int64_t)(size_t)cdata + 26 + 4 + nl + el;
+      if (     s->fdoffset > state->archive_size
+            || (int64_t)csize > state->archive_size - s->fdoffset
+            || (     cmode == ZIP_MODE_STORED
+                  && (int64_t)size > state->archive_size - s->fdoffset))
+         return -1;
    }
    s->csize = csize;
    s->usize = size;
