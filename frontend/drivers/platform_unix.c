@@ -745,6 +745,8 @@ static void android_app_free(struct android_app* android_app)
    }
    retro_spsc_free(&android_app->second_display.touches);
    retro_spsc_free(&android_app->second_display.inputs);
+   retro_spsc_free(&android_app->input_reader.events);
+   retro_eventcount_free(&android_app->input_reader.room);
 
    /* A re-created activity's create may have replaced it already */
    if (g_android_early == android_app)
@@ -3780,8 +3782,7 @@ static void android_app_destroy(struct android_app *android_app)
       retro_vfs_deinit_saf();
 #endif
 
-   if (android_app->inputQueue)
-      AInputQueue_detachLooper(android_app->inputQueue);
+   android_input_reader_stop(android_app);
 
    AConfiguration_delete(android_app->config);
    android_lifecycle_set_flags(&android_app->lc, ANDROID_LC_DESTROYED);
@@ -3915,6 +3916,15 @@ static void frontend_unix_init(void *data)
 
    memset(&g_android, 0, sizeof(g_android));
    g_android = (struct android_app*)android_app;
+
+   /* Before the first command is read: it may hand over the input
+    * queue, which only the reader reads */
+   if (!android_input_reader_start(android_app))
+   {
+      frontend_unix_deinit(android_app);
+      frontend_android_shutdown(android_app);
+      return;
+   }
 
    while (!android_app_window(android_app))
    {
