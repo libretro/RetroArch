@@ -132,7 +132,7 @@ void android_app_set_window_settings(bool notch_write_over,
 #endif
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 #include "../gfx/video_upscaler.h"
 #endif
 #include "../gfx/video_views.h"
@@ -8015,7 +8015,7 @@ static size_t setting_get_string_representation_uint_menu_frame_rate(
    return 0;
 }
 
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 static size_t setting_get_string_representation_uint_video_temporal_upscaler_quality(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -13411,7 +13411,7 @@ static const setting_desc_t stereo_desc[] = {
 #include "../settings/settings_def_video_stereo.h"
 };
 
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 static const setting_desc_t upscaler_desc[] = {
 /* GENERATED: rows come from settings_def_video_upscaler.h in order. */
 #include "../settings/settings_def_video_upscaler.h"
@@ -16434,7 +16434,7 @@ static void settings_build_video(
 
          END_SUB_GROUP(list, list_info, parent_group);
 
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
          START_SUB_GROUP(list, list_info, "Temporal Upscaler", &group_info, &subgroup_info, parent_group);
 
          ADD_DESC(upscaler_desc);
@@ -19971,7 +19971,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { hdr_desc, (uint16_t)ARRAY_SIZE(hdr_desc) },
    { vid_desc_19, (uint16_t)ARRAY_SIZE(vid_desc_19) },
    { hdr_desc2, (uint16_t)ARRAY_SIZE(hdr_desc2) },
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    { upscaler_desc, (uint16_t)ARRAY_SIZE(upscaler_desc) },
 #endif
    { vid_desc_20, (uint16_t)ARRAY_SIZE(vid_desc_20) },

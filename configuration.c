@@ -2198,7 +2198,7 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("audio_filter_dir",              settings->paths.directory_audio_filter, true, NULL, true);
    SETTING_PATH("video_shader_dir",              settings->paths.directory_video_shader, true, NULL, true);
    SETTING_PATH("video_filter_dir",              settings->paths.directory_video_filter, true, NULL, true);
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    SETTING_PATH("video_dlss_directory",          settings->paths.directory_dlss, true, NULL, true);
    SETTING_PATH("video_fsr_directory",           settings->paths.directory_fsr, true, NULL, true);
    SETTING_PATH("video_xess_directory",          settings->paths.directory_xess, true, NULL, true);

@@ -635,7 +635,7 @@ VIDEO DRIVER
 #include "../gfx/common/d3d_driver_pacing.c"
 #include "../libretro-common/gfx/nvidia/nvapi_loader.c"
 #endif
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 #include "../gfx/video_upscaler.c"
 #include "../gfx/common/ffx_common.c"
 #include "../gfx/common/xess_common.c"

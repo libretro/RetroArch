@@ -205,7 +205,8 @@ void video_upscaler_detach(void);
 void video_upscaler_set_output(unsigned dims);
 
 /* The interface handed to the core (RETRO_ENVIRONMENT_GET_HW_RENDER_
- * UPSCALER_INTERFACE); NULL without HAVE_NGX or a driver that can. */
+ * UPSCALER_INTERFACE); NULL without HAVE_TEMPORAL_UPSCALER or a driver
+ * that can. */
 const struct retro_hw_render_upscaler_interface *video_upscaler_get_interface(void);
 
 /* The inputs the core set for the frame being presented, taken: NULL

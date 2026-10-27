@@ -26,7 +26,7 @@
 #endif
 
 #include "vulkan_common.h"
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 #include "vulkan_upscaler.h"
 #include "../video_upscaler.h"
 #endif
@@ -1121,7 +1121,7 @@ static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk)
  * the runtime refuses drops the headset, not the device. */
 /* The temporal upscaler's device extensions, the ones @gpu has, when
  * the setting is on: a device made without them cannot run it */
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 #define VULKAN_UPSCALER_EXTS VULKAN_UPSCALER_MAX_EXTS
 static enum video_temporal_upscaler vulkan_upscaler_kind(char *dir, size_t len)
 {
@@ -2242,7 +2242,7 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       RARCH_ERR("[Vulkan] Instance does not support required extensions.\n");
       goto end;
    }
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    {
       char dir[DIR_MAX_LENGTH];
       enum video_temporal_upscaler kind = vulkan_upscaler_kind(dir, sizeof(dir));

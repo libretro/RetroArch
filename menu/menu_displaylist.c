@@ -123,7 +123,7 @@
 #include <file/file_watch.h>
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_display_server.h"
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 #include "../gfx/video_upscaler.h"
 #endif
 #ifdef HAVE_MODELINE
@@ -2346,7 +2346,7 @@ static unsigned menu_displaylist_parse_display_info(file_list_t *list)
                0, 0, NULL))
             count++;
       }
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
       /* Whether the upscaler can be offered, and where its runtime is
        * looked for: the setting is hidden until both are found. */
       video_upscaler_status_string(pbuf, sizeof(pbuf));
@@ -12428,7 +12428,7 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
       case DISPLAYLIST_VIDEO_DLSS_NR_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_VIDEO_DLSS_NR_ENABLE,
@@ -12619,7 +12619,7 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
                         PARSE_ONLY_FLOAT, false) == 0)
                   count++;
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
                {
                   /* The drivers with a backend. The upscaler itself only
                    * with its runtimes found, and kept while on so it can

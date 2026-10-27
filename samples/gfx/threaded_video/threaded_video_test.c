@@ -42,7 +42,7 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/gfx_instrument.h"
 #include "../../../gfx/video_thread_wrapper.h"
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 #include "../../../gfx/video_upscaler.h"
 #endif
 #include "../../../record/record_driver.h"
@@ -10345,7 +10345,7 @@ static void hwring_on_clear(uint64_t image)
 }
 
 
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 /* ------------------------------------------------------------------ */
 /* Lane: the temporal upscaler's inputs ride with their frame.         */
 /*   A core sets the upscaler's inputs for a frame, then pushes it;    */
@@ -11981,7 +11981,7 @@ int main(int argc, char *argv[])
       else
       {
          lane_hw_ring_sync();
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
          lane_hw_ring_upscaler();
 #endif
          lane_hw_image_lifetime(core_path);

@@ -223,7 +223,7 @@ bool android_get_vfs_authorized_locations(
 #include "gfx/video_thread_wrapper.h"
 #endif
 #include "gfx/video_display_server.h"
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 #include "gfx/video_upscaler.h"
 #endif
 #ifdef HAVE_MODELINE
@@ -3802,7 +3802,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_HW_RENDER_UPSCALER_INTERFACE:
       {
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
          const struct retro_hw_render_upscaler_interface **iface =
             (const struct retro_hw_render_upscaler_interface **)data;
          video_upscaler_note_wanted();
@@ -5451,7 +5451,7 @@ static bool core_unload_game(void)
    runloop_state_t *runloop_st    = &runloop_state;
 
    video_driver_free_hw_context();
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    video_upscaler_clear_wanted();
 #endif
 

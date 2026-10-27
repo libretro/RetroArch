@@ -72,7 +72,7 @@
 
 #include "../common/d3d_common.h"
 #include "../common/dxgi_common.h"
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 #include "../common/d3d12_upscaler.h"
 #include "../video_upscaler.h"
 #endif
@@ -540,7 +540,7 @@ typedef struct
    struct retro_hw_render_interface_d3d12 hw_iface;
    D3D12Resource hw_render_texture;
    DXGI_FORMAT hw_render_texture_format;
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    d3d12_upscaler_t *ngx;
    d3d12_upscaler_image_t ngx_out;
 #endif
@@ -5606,7 +5606,7 @@ static void d3d12_gfx_free(void* data)
       return;
 
    d3d12_queue_drain(d3d12);
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    if (d3d12->ngx)
    {
       video_upscaler_detach();
@@ -5919,7 +5919,7 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 
       DXGISetMaximumFrameLatency(d3d12->chain.handle, max_latency);
       DXGIGetMaximumFrameLatency(d3d12->chain.handle, &cur_latency);
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
       if (config_get_ptr()->uints.video_temporal_upscaler)
          video_upscaler_log_probe((enum video_temporal_upscaler)
                config_get_ptr()->uints.video_temporal_upscaler);
@@ -6605,7 +6605,7 @@ static void d3d12_hw_v2_set_texture_fenced(void *data, ID3D12Resource *texture,
       d3d12->queue.handle->lpVtbl->Wait(d3d12->queue.handle, fence, value);
 }
 
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 static bool d3d12_upscaler_optimal_cb(void *data, unsigned mode,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims)
@@ -6932,7 +6932,7 @@ static void *d3d12_gfx_init(const video_info_t* video)
       d3d12->hw_iface.required_state    = D3D12_RESOURCE_STATE_COPY_SOURCE;
       d3d12->hw_iface.set_texture       = d3d12_set_hw_render_texture;
       d3d12->hw_iface.D3DCompile        = D3DCompile;
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
       if (config_get_ptr()->uints.video_temporal_upscaler && video_upscaler_wanted())
       {
          enum video_temporal_upscaler kind = (enum video_temporal_upscaler)
@@ -9677,7 +9677,7 @@ recording_resize_deferred:;
    cmd->lpVtbl->IASetPrimitiveTopology(cmd,
          D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    if (d3d12->ngx && frame)
    {
       unsigned up_dims = VIDEO_SCALE_PACK(width, height);
@@ -10614,7 +10614,7 @@ recording_resize_deferred:;
       d3d12_record_free(d3d12);
 
    d3d12_cmd_execute(d3d12);
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    if (d3d12->ngx)
       d3d12_upscaler_frame_done(d3d12->ngx);
 #endif

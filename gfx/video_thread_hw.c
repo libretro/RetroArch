@@ -25,7 +25,7 @@
 #include "video_thread_hw.h"
 #include "video_thread_hw_fence.h"
 #include "gfx_instrument.h"
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 #include "video_upscaler.h"
 #endif
 #include "../configuration.h"
@@ -108,7 +108,7 @@ typedef struct
     * took back; the next user of the slot waits it first. Handed
     * between the two threads lock-free: video_thread_hw_fence.h. */
    hw_fence_t       fence;
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    /* The temporal upscaler's inputs the core set for this frame, a
     * copy: the core rewrites its own for its next frame while the
     * video thread is still presenting this one, and the driver takes
@@ -1130,7 +1130,7 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
    *taken_back     = 0;
    if (!ring)
       return -1;
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    {
       /* The push is the core's call: its inputs for this frame go with
        * the frame, not to whichever frame the video thread draws next */
@@ -1279,7 +1279,7 @@ void video_thread_hw_before_frame(thread_video_t *thr, int hw_slot,
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
    if (!ring || hw_slot < 0 || hw_slot >= VIDEO_THREAD_HW_RING)
       return;
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    /* (a frame reading the slot again shows the upscaler's last output
     * as a dupe does) */
    video_upscaler_carry_inputs(!reread && ring->slot[hw_slot].has_upscaler
@@ -1576,7 +1576,7 @@ void video_thread_hw_free(thread_video_t *thr)
     * nothing reads the ring after the word says there is no handoff. */
    retro_atomic_store_release_int(&thr->frame.hw_handoff, 0);
    retro_eventcount_free(&ring->ctx_free);
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    /* (a carry still pending points into the ring) */
    video_upscaler_drop_carry();
 #endif

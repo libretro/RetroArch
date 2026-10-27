@@ -56,7 +56,7 @@
 
 #include "../common/vulkan_common.h"
 #include "../common/spirv_shaders.h"
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 #include "../common/vulkan_upscaler.h"
 #include "../video_upscaler.h"
 #endif
@@ -727,7 +727,7 @@ typedef struct vk
 
    } hw;
 
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    /* The temporal upscaler's session on this device, up while a
     * hardware core runs with the setting on; its output of the last
     * frame it took, which a repeated frame shows again. */
@@ -7316,7 +7316,7 @@ static void vulkan_free(void *data)
    {
       vulkan_import_movie_frame(vk, NULL);
       vulkan_wait_own_submissions(vk);
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
       if (vk->ngx)
       {
          video_upscaler_detach();
@@ -7593,7 +7593,7 @@ static void vulkan_invalidate_hw_render_cache(void *data)
    vk->flags              &= ~VK_FLAG_HW_VALID_SEMAPHORE;
 }
 
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
 static bool vulkan_upscaler_optimal_cb(void *data, unsigned mode,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims)
@@ -7675,7 +7675,7 @@ static void vulkan_init_hw_render(vk_t *vk)
    iface->get_device_proc_addr   = vkGetDeviceProcAddr;
    iface->get_instance_proc_addr = vulkan_symbol_wrapper_instance_proc_addr();
 
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    if (config_get_ptr()->uints.video_temporal_upscaler && video_upscaler_wanted())
    {
       enum video_temporal_upscaler kind = (enum video_temporal_upscaler)
@@ -7980,7 +7980,7 @@ static void *vulkan_init(const video_info_t *video)
 
    RARCH_LOG("[Vulkan] Using resolution %ux%u.\n",
          VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    /* (what the upscaler would find, with or without a core to draw for it) */
    if (config_get_ptr()->uints.video_temporal_upscaler)
       video_upscaler_log_probe((enum video_temporal_upscaler)
@@ -12578,7 +12578,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
             /* The format can change on a whim. */
             input.format       = vk->hw.image->create_info.format;
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
             if (vk->ngx)
                vulkan_upscale_input(vk, frame, &input);
 #endif
@@ -13413,7 +13413,7 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]));
    vk->context->swapchain_fences_signalled[frame_index] = true;
-#ifdef HAVE_NGX
+#ifdef HAVE_TEMPORAL_UPSCALER
    if (vk->ngx)
       vulkan_upscaler_frame_done(vk->ngx);
 #endif

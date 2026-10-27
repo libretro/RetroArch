@@ -4,9 +4,9 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
-/* Descriptor and configuration rows are #ifdef HAVE_NGX; the string
- * tables always carry these rows via the strings pass. */
-#if defined(HAVE_NGX) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* Descriptor and configuration rows are #ifdef HAVE_TEMPORAL_UPSCALER;
+ * the string tables always carry these rows via the strings pass. */
+#if defined(HAVE_TEMPORAL_UPSCALER) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_UINT(video_temporal_upscaler, VIDEO_TEMPORAL_UPSCALER,
       "video_temporal_upscaler",
       DEFAULT_VIDEO_TEMPORAL_UPSCALER, SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_temporal_upscaler,

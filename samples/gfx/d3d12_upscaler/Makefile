@@ -55,7 +55,7 @@ else
 endif
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
-           -DHAVE_D3D12 -DHAVE_NGX -DHAVE_THREADS -DHAVE_DYLIB -DHAVE_MENU \
+           -DHAVE_D3D12 -DHAVE_TEMPORAL_UPSCALER -DHAVE_THREADS -DHAVE_DYLIB -DHAVE_MENU \
            -DRARCH_INTERNAL -DHAVE_CONFIGFILE \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/gfx/include \

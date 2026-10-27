@@ -62,7 +62,7 @@ FAKE_FFX  := $(LIBRETRO_COMM_DIR)/samples/gfx/amd/fake_ffx.c
 FAKE_XESS := $(LIBRETRO_COMM_DIR)/samples/gfx/intel/fake_xess.c
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
-           -DHAVE_VULKAN -DHAVE_NGX -DHAVE_THREADS -DHAVE_DYLIB -DHAVE_MENU \
+           -DHAVE_VULKAN -DHAVE_TEMPORAL_UPSCALER -DHAVE_THREADS -DHAVE_DYLIB -DHAVE_MENU \
            -DRARCH_INTERNAL -DHAVE_CONFIGFILE \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/gfx/include \
