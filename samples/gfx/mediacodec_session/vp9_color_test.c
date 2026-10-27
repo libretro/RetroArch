@@ -250,6 +250,54 @@ static void leases(void)
    assert(android_image_queue_free(queue));
 }
 
+static void encoded_transfer(void)
+{
+   mediacodec_frame_exporter_t *exporter, *wrong;
+   mediacodec_output_format_t format;
+   android_image_ops_t ops;
+   android_image_queue_t *queue;
+   android_image_view_t image;
+   video_color_metadata_t color;
+   video_hw_frame_t frame;
+   memset(&format, 0, sizeof(format));
+   memset(&ops, 0, sizeof(ops));
+   memset(&color, 0, sizeof(color));
+   format.width = format.right = 64;
+   format.height = format.bottom = 32;
+   format.serial = format.color_standard = 1;
+   format.color_range = 2;
+   color.primaries = color.matrix = color.range = 1;
+   ops.acquire = acquire;
+   ops.describe = describe;
+   ops.delete_image = delete_image;
+   ops.delete_reader = delete_reader;
+   queue = android_image_queue_new(&native, 1, &ops);
+   exporter = mediacodec_frame_exporter_new(1, IMAGE_PIXFMT_NV12);
+   wrong = mediacodec_frame_exporter_new(1, IMAGE_PIXFMT_P010);
+   assert(queue && exporter && wrong);
+   assert(android_image_queue_acquire(queue, &image) == 1);
+   memset(&frame, 0x55, sizeof(frame));
+   assert(mediacodec_frame_export_color(wrong, &image, &format, &color, &frame) < 0);
+   assert(frame.width == 0x55555555 && !android_image_queue_poll(queue));
+   assert(mediacodec_frame_exporter_free(wrong));
+   color.max_cll = 1000;
+   assert(mediacodec_frame_export_color(exporter, &image, &format, &color, &frame) < 0);
+   color.max_cll = 0;
+   assert(!mediacodec_frame_export_color(exporter, &image, &format, &color, &frame));
+   assert(!frame.color.transfer && frame.pixfmt == IMAGE_PIXFMT_NV12);
+   video_hw_frame_abandon(&frame);
+   assert(android_image_queue_poll(queue) == 1);
+   assert(android_image_queue_acquire(queue, &image) == 1);
+   color.transfer = 2;
+   assert(!mediacodec_frame_export_color(exporter, &image, &format, &color, &frame));
+   assert(frame.color.transfer == 2);
+   video_hw_frame_abandon(&frame);
+   assert(android_image_queue_poll(queue) == 1);
+   assert(mediacodec_frame_exporter_free(exporter));
+   android_image_queue_close(queue);
+   assert(android_image_queue_free(queue));
+}
+
 int main(void)
 {
    assert(!hevc_frame_export_test_main());
@@ -257,6 +305,7 @@ int main(void)
    colors(10);
    input_colors();
    leases();
+   encoded_transfer();
    puts("PASS: VP9 coded/container/native color conflicts, PQ/HLG lease "
         "metadata, mastering/light refinement and retirement; no device "
         "pixels");

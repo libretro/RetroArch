@@ -1830,6 +1830,41 @@ ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/common/vulkan_video_decode.o
    endif
 
+   ifneq ($(filter 1,$(HAVE_RMP4) $(HAVE_RVP9) $(HAVE_RAV1)),)
+      ifeq ($(ANDROID), 1)
+         OBJ += gfx/common/vulkan_android_device.o \
+                gfx/common/android_image_queue.o \
+                gfx/common/android_frame.o \
+                gfx/common/vulkan_android_image.o \
+                gfx/common/vulkan_android_sync.o \
+                gfx/common/vulkan_android_pipeline.o \
+                gfx/common/vulkan_android_submit.o \
+                gfx/common/vulkan_android_queue.o \
+                gfx/common/vulkan_android_cache_entry.o \
+                gfx/common/vulkan_android_cache.o
+         ifeq ($(HAVE_THREADS), 1)
+            OBJ += gfx/common/mediacodec_inventory.o \
+                   gfx/common/android_image_ndk.o \
+                   gfx/common/mediacodec_session.o \
+                   gfx/common/mediacodec_color.o \
+                   gfx/common/mediacodec_frame_export.o
+            ifeq ($(HAVE_RMP4), 1)
+               OBJ += gfx/common/mediacodec_hevc_packet.o \
+                      gfx/common/mediacodec_hevc_decoder.o \
+                      gfx/common/mediacodec_hevc_backend.o
+            endif
+            ifeq ($(HAVE_RVP9), 1)
+               OBJ += gfx/common/mediacodec_vp9_decoder.o \
+                      gfx/common/mediacodec_vp9_backend.o
+            endif
+            ifeq ($(HAVE_RAV1), 1)
+               OBJ += gfx/common/mediacodec_av1_decoder.o \
+                      gfx/common/mediacodec_av1_backend.o
+            endif
+         endif
+      endif
+   endif
+
    ifeq ($(HAVE_SLANG), 1)
       OBJ += gfx/drivers_shader/shader_vulkan.o
    endif

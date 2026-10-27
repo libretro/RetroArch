@@ -130,6 +130,19 @@ static void extended_color(void)
    coded.matrix = 6;
    assert(!mediacodec_color_resolve(&format, &coded, &resolved));
    coded.matrix = 1;
+   format.color_standard = 3;
+   assert(mediacodec_color_resolve(&format, &coded, &resolved));
+   assert(resolved.primaries == 5 && resolved.matrix == 1);
+   coded.primaries = 6;
+   assert(!mediacodec_color_resolve(&format, &coded, &resolved));
+   coded.primaries = 2;
+   coded.matrix = 7;
+   format.color_standard = 5;
+   assert(mediacodec_color_resolve(&format, &coded, &resolved));
+   assert(resolved.primaries == 6 && resolved.matrix == 7);
+   coded.matrix = 6;
+   assert(!mediacodec_color_resolve(&format, &coded, &resolved));
+   coded.matrix = 1;
    for (i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++)
    {
       format.color_standard = invalid[i];

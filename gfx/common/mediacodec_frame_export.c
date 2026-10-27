@@ -51,7 +51,10 @@ int mediacodec_frame_export_color(void *opaque,
    memset(&view, 0, sizeof(view));
    if (!mediacodec_color_resolve(format, coded, &view.color)
          || !view.color.range || !view.color.matrix || view.color.matrix == 2
-         || !view.color.transfer || view.color.transfer == 2
+         || ((!view.color.transfer || view.color.transfer == 2)
+               && (e->pixfmt != IMAGE_PIXFMT_NV12 || view.color.primaries != 1
+                     || view.color.max_cll || view.color.max_fall
+                     || view.color.mastering.present))
          || !view.color.primaries || view.color.primaries == 2)
       return -1;
    view.image = *image;

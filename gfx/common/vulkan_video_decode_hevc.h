@@ -187,6 +187,7 @@ static bool vvd_hevc_open(void *user, const rh265_video *source,
          || !vvd_make_outputs(d) || !vvd_make_commands(d) || !(d->tl = vvd_timeline())
          || !vvd_hevc_params(d)) goto fail;
    ops->decoder = d; ops->decode = vvd_hevc_decode; ops->output = vvd_output;
+   ops->drain = NULL;
    retro_atomic_fetch_add_int(&vvd.live, 1);
    return true;
 fail:

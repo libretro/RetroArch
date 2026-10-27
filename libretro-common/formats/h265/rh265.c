@@ -5494,6 +5494,17 @@ static int rh265_hw_show(rh265_hw_t *hw, bool drain)
    int ret, slot;
    if (hw->session.broken)
       return -1;
+   if (drain && hw->session.ops.drain)
+   {
+      ret = hw->session.ops.drain(hw->session.ops.decoder);
+      if (ret < 0)
+      {
+         hw->session.broken = 1;
+         return -1;
+      }
+      if (ret > 0)
+         return 2;
+   }
    slot = rh265_hw_output_pick(&hw->session.state, hw->session.max_reorder,
          drain || hw->session.pressure);
    if (slot < 0)

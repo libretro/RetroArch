@@ -9159,9 +9159,11 @@ static int rgui_pointer_up(
 static void rgui_media_gpu_draw(rgui_t *rgui, video_frame_info_t *video_info)
 {
    gfx_thumbnail_t thumbnail;
+   video_driver_state_t *video_st = video_state_get_ptr();
    rgui_media_gpu_view_t *view = &rgui->media_gpu_view;
    gfx_media_rect_t *rect = &view->rect;
    unsigned dims = video_info->dims;
+   struct video_viewport vp;
    float sx, sy;
    int startup_token = menu_driver_media_startup_token();
    rgui_media_gpu_consume(rgui);
@@ -9171,8 +9173,15 @@ static void rgui_media_gpu_draw(rgui_t *rgui, video_frame_info_t *video_info)
       menu_driver_media_startup_ready(startup_token);
    if (!view->visible || rect->w <= 0 || rect->h <= 0
          || !VIDEO_SCALE_W(view->source_dims) || !VIDEO_SCALE_H(view->source_dims)) return;
-   sx = (float)VIDEO_SCALE_W(dims) / VIDEO_SCALE_W(view->source_dims);
-   sy = (float)VIDEO_SCALE_H(dims) / VIDEO_SCALE_H(view->source_dims);
+   memset(&vp, 0, sizeof(vp));
+   if (!video_driver_get_viewport_info(&vp)
+         || !VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
+      vp.dims = dims;
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, dims, true, false);
+   sx = (float)VIDEO_SCALE_W(vp.dims) / VIDEO_SCALE_W(view->source_dims);
+   sy = (float)VIDEO_SCALE_H(vp.dims) / VIDEO_SCALE_H(view->source_dims);
    gfx_thumbnail_init_blank(&thumbnail);
    thumbnail.texture = view->texture;
    thumbnail.dims = view->texture_dims;
@@ -9180,9 +9189,13 @@ static void rgui_media_gpu_draw(rgui_t *rgui, video_frame_info_t *video_info)
    thumbnail.flags = view->flags;
    retro_atomic_store_release_int(&thumbnail.status, GFX_THUMBNAIL_STATUS_AVAILABLE);
    gfx_thumbnail_draw(video_info->userdata, dims, &thumbnail,
-         rect->x * sx, rect->y * sy,
+         VIDEO_POS_X(vp.pos) + rect->x * sx,
+         VIDEO_POS_Y(vp.pos) + rect->y * sy,
          VIDEO_SCALE_PACK((unsigned)(rect->w * sx), (unsigned)(rect->h * sy)),
          GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, dims, false, true);
 }
 
 static void rgui_frame(void *data, video_frame_info_t *video_info)

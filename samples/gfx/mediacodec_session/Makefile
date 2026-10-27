@@ -25,3 +25,8 @@ vulkan-gpu-check:
 warm-check:
 	python3 warm_run.py
 .PHONY: warm-check
+
+backend-check:
+	python3 backend_run.py
+all check: backend-check
+.PHONY: backend-check

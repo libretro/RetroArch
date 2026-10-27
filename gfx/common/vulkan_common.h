@@ -31,6 +31,9 @@
 
 #define VULKAN_DIRTY_DYNAMIC_BIT                0x0001
 
+#ifdef ANDROID
+#include <compat/android_native_window.h>
+#endif
 #include "vksym.h"
 
 #include <stddef.h>
@@ -208,7 +211,8 @@ enum vulkan_context_flags
     * present from it is the surface's standing answer, not a request
     * to rebuild again. */
    VK_CTX_FLAG_SUBOPTIMAL_REBUILT           = (1 << 8),
-   VK_CTX_FLAG_VIDEO_GENERAL                = (1 << 9)
+   VK_CTX_FLAG_VIDEO_GENERAL                = (1 << 9),
+   VK_CTX_FLAG_ANDROID_IMAGES               = (1 << 10)
 };
 
 enum gfx_ctx_vulkan_data_flags
@@ -268,6 +272,11 @@ typedef struct vulkan_context
 
    VkPhysicalDeviceProperties gpu_properties;
    VkPhysicalDeviceMemoryProperties memory_properties;
+#if defined(ANDROID) \
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+   unsigned android_sampler_descriptors;
+   bool android_legacy_descriptor_budget;
+#endif
 
    VkPresentModeKHR present_modes[16];
    /* Whether the surface offers FIFO_RELAXED, which is what the

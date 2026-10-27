@@ -15,7 +15,14 @@
 #define RETRO_HW_FRAME_BUFFER_VALID ((void*)-1)
 enum video_texture_update { VIDEO_TEXTURE_UPDATE_REFUSED, VIDEO_TEXTURE_UPDATE_DONE, VIDEO_TEXTURE_UPDATE_DROPPED };
 typedef struct { uint32_t import_formats; } video_device_info_t;
-typedef struct { enum video_texture_update (*import_movie_frame)(void*, const video_frame_import_t*); } video_poke_interface_t;
+typedef struct
+{
+   enum video_texture_update (*import_movie_frame)(void*, const video_frame_import_t*);
+   enum video_texture_update (*import_texture)(void*, uintptr_t*,
+         const video_frame_import_t*, enum texture_filter_type);
+   enum video_texture_update (*prepare_import_texture)(void*, uintptr_t,
+         const video_frame_import_t*);
+} video_poke_interface_t;
 typedef struct
 {
    const video_poke_interface_t *poke;
@@ -56,10 +63,121 @@ static enum video_texture_update import(void *data, const video_frame_import_t *
    return outcome;
 }
 #include "front.inc"
+static unsigned prepare_calls, texture_calls;
+static enum video_texture_update prepare_result;
+static enum video_texture_update prepare_texture(void *data, uintptr_t id,
+      const video_frame_import_t *frame)
+{
+   CHECK(data == &imports && id == 12 && frame->image == 34);
+   prepare_calls++;
+   return prepare_result;
+}
+
+static enum video_texture_update import_texture(void *data, uintptr_t *id,
+      const video_frame_import_t *frame, enum texture_filter_type filter)
+{
+   CHECK(data == &imports && frame->image == 34
+         && filter == TEXTURE_FILTER_LINEAR);
+   texture_calls++;
+   *id = 12;
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
+static void texture_preparation(void)
+{
+   video_poke_interface_t poke;
+   video_frame_import_t frame;
+   uintptr_t id = 0;
+   memset(&poke, 0, sizeof(poke));
+   memset(&frame, 0, sizeof(frame));
+   frame.image = 34;
+   poke.import_texture = import_texture;
+   poke.prepare_import_texture = prepare_texture;
+   video_driver_st.poke = &poke;
+   video_driver_st.data = &imports;
+   threaded = false;
+   CHECK(video_driver_texture_import(&id, &frame, TEXTURE_FILTER_LINEAR)
+         == VIDEO_TEXTURE_UPDATE_DONE);
+   CHECK(id == 12 && texture_calls == 1 && !prepare_calls);
+   prepare_result = VIDEO_TEXTURE_UPDATE_DROPPED;
+   CHECK(video_driver_texture_import(&id, &frame, TEXTURE_FILTER_LINEAR)
+         == VIDEO_TEXTURE_UPDATE_DROPPED);
+   prepare_result = VIDEO_TEXTURE_UPDATE_REFUSED;
+   CHECK(video_driver_texture_import(&id, &frame, TEXTURE_FILTER_LINEAR)
+         == VIDEO_TEXTURE_UPDATE_REFUSED);
+   CHECK(texture_calls == 1 && prepare_calls == 2 && id == 12);
+   prepare_result = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(video_driver_texture_import(&id, &frame, TEXTURE_FILTER_LINEAR)
+         == VIDEO_TEXTURE_UPDATE_DONE);
+   CHECK(texture_calls == 2 && prepare_calls == 3);
+   threaded = true;
+   CHECK(video_driver_texture_import(&id, &frame, TEXTURE_FILTER_LINEAR)
+         == VIDEO_TEXTURE_UPDATE_REFUSED);
+   CHECK(texture_calls == 2 && prepare_calls == 3);
+   threaded = false;
+   video_driver_st.poke = NULL;
+   video_driver_st.data = NULL;
+}
 static void abandon(void *owner, uint64_t done, uint64_t value)
 {
    CHECK(owner == &abandoned && done == 88 && value == 7);
    abandoned++;
+}
+
+#define VIDEO_THREAD_ASYNC_IMPORT 1
+typedef struct
+{
+   uintptr_t handle;
+   void *img;
+   unsigned kind;
+   enum texture_filter_type filter;
+   bool made, dropped;
+} video_thread_async_load_t;
+
+static void async_import(video_thread_async_load_t *n,
+      const video_poke_interface_t *poke, void *driver_data)
+{
+#include "async_import.inc"
+}
+
+static void wrapper_texture_preparation(void)
+{
+   video_thread_async_load_t node;
+   video_poke_interface_t poke;
+   video_frame_import_t frame;
+   memset(&node, 0, sizeof(node));
+   memset(&poke, 0, sizeof(poke));
+   memset(&frame, 0, sizeof(frame));
+   prepare_calls = texture_calls = 0;
+   frame.image = 34;
+   node.kind = VIDEO_THREAD_ASYNC_IMPORT;
+   node.img = &frame;
+   node.filter = TEXTURE_FILTER_LINEAR;
+   poke.prepare_import_texture = prepare_texture;
+   poke.import_texture = import_texture;
+   async_import(&node, &poke, &imports);
+   CHECK(node.handle == 12 && node.made && !node.dropped);
+   CHECK(texture_calls == 1 && !prepare_calls);
+   prepare_result = VIDEO_TEXTURE_UPDATE_DROPPED;
+   async_import(&node, &poke, &imports);
+   CHECK(node.handle == 12 && !node.made && node.dropped);
+   CHECK(texture_calls == 1 && prepare_calls == 1);
+   prepare_result = VIDEO_TEXTURE_UPDATE_DONE;
+   async_import(&node, &poke, &imports);
+   CHECK(node.handle == 12 && !node.made && !node.dropped);
+   CHECK(texture_calls == 2 && prepare_calls == 2);
+   prepare_result = VIDEO_TEXTURE_UPDATE_REFUSED;
+   async_import(&node, &poke, &imports);
+   CHECK(!node.handle && !node.made && !node.dropped);
+   CHECK(texture_calls == 2 && prepare_calls == 3);
+   node.handle = 12;
+   async_import(&node, &poke, NULL);
+   CHECK(!node.handle && texture_calls == 2 && prepare_calls == 3);
+   node.handle = 12;
+   poke.prepare_import_texture = NULL;
+   async_import(&node, &poke, &imports);
+   CHECK(node.handle == 12 && !node.made && !node.dropped);
+   CHECK(texture_calls == 3 && prepare_calls == 3);
 }
 static void frontend(void)
 {
@@ -460,5 +578,5 @@ static void replacement_race(void)
 
 int main(void)
 {
-   frontend(); drivers(); vulkan_movie(); movie_queue(); wrapper_failure(); replacement_race(); printf("Frontend movie GPU handoff: %u failures\n", failures); return failures ? 1 : 0;
+   texture_preparation(); wrapper_texture_preparation(); frontend(); drivers(); vulkan_movie(); movie_queue(); wrapper_failure(); replacement_race(); printf("Frontend movie GPU handoff: %u failures\n", failures); return failures ? 1 : 0;
 }

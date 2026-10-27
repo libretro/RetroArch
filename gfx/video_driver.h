@@ -1433,6 +1433,9 @@ typedef struct video_poke_interface
    bool (*driver_pacing_wait)(void *data, uint64_t frame_id,
          uint64_t next_id, unsigned max_wait_us);
    void (*driver_pacing_mark)(void *data, uint64_t frame_id, unsigned marker);
+   /* Cold owner-thread preparation; all results retain the source lease. */
+   enum video_texture_update (*prepare_import_texture)(void *data, uintptr_t id,
+         const video_frame_import_t *frame);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a

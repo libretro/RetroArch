@@ -12,8 +12,13 @@ with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
     source = (root / 'gfx/video_driver.c').read_text(encoding='utf-8')
     (tmp / 'front.inc').write_text('\n'.join(body(source, s) for s in
-        ('bool video_driver_movie_refresh(', 'void video_driver_movie_clear(')))
+        ('bool video_driver_movie_refresh(', 'void video_driver_movie_clear(',
+         'enum video_texture_update video_driver_texture_import(')))
     source = (root / 'gfx/video_thread_wrapper.c').read_text(encoding='utf-8')
+    start = source.index('      if (n->kind == VIDEO_THREAD_ASYNC_IMPORT)',
+                         source.index('static void video_thread_async_run('))
+    end = source.index('      else if (n->kind == VIDEO_THREAD_ASYNC_UPDATE)', start)
+    (tmp / 'async_import.inc').write_text(source[start:end])
     (tmp / 'wrapper.inc').write_text('\n'.join(body(source, sig) for sig in
         ('bool video_thread_movie_supported(',
          'static enum video_texture_update thread_import_movie_frame(')))

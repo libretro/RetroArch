@@ -24,6 +24,7 @@
 #define __LIBRETRO_SDK_RJNI_H__
 
 #include <jni.h>
+#include <jni/rjni_env.h>
 
 #include <retro_common_api.h>
 #include <retro_atomic.h>
@@ -52,12 +53,6 @@ void rjni_set_vm(JavaVM *vm);
 
 JavaVM *rjni_vm(void);
 
-/* The calling thread's JNIEnv, attaching it to the VM on first use.
- * Returns NULL if no VM is registered or the attach fails. A thread
- * already attached by the VM (a Java-created thread) is recognised and
- * left attached at exit; only threads this function attached are
- * detached by the TLS destructor. */
-JNIEnv *rjni_env(void);
 
 /* Nonzero, after describing and clearing it, if an exception was
  * pending. Uses ExceptionCheck, so no local reference is created. */

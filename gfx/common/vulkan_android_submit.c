@@ -2,6 +2,7 @@
  * GPL-3.0-or-later */
 #include "vulkan_android_submit.h"
 #include "video_import_color.h"
+#include <formats/image.h>
 #include <string.h>
 #include <unistd.h>
 bool vulkan_android_submission_configure(vulkan_android_submission_t *e,
@@ -9,6 +10,12 @@ bool vulkan_android_submission_configure(vulkan_android_submission_t *e,
 {
    unsigned yuv = 0;
    float coefficients[6], hdr[4];
+   /* Coded RGBA8 needs no inferred EOTF; linear output does. */
+   bool encoded = source && !fp16 && source->pixfmt == IMAGE_PIXFMT_NV12
+         && source->color.primaries == 1
+         && (!source->color.transfer || source->color.transfer == 2)
+         && !source->color.max_cll && !source->color.max_fall
+         && !source->color.mastering.present;
    if (!e || !source || e->inflight || e->held_owner || e->broken
          || !source->image.buffer || !source->image.buffer_width
          || !source->image.buffer_height
@@ -16,13 +23,15 @@ bool vulkan_android_submission_configure(vulkan_android_submission_t *e,
          || source->image.top >= source->image.bottom
          || source->image.right > source->image.buffer_width
          || source->image.bottom > source->image.buffer_height
-         || (source->color.transfer != 1 && source->color.transfer != 6
+         || (!encoded && source->color.transfer != 1 && source->color.transfer != 6
                && source->color.transfer != 13 && source->color.transfer != 14
                && source->color.transfer != 15 && source->color.transfer != 16
                && source->color.transfer != 18)
-         || (source->color.primaries != 1 && source->color.primaries != 6
+         || (source->color.primaries != 1 && source->color.primaries != 5
+               && source->color.primaries != 6
                && source->color.primaries != 9)
-         || (source->color.primaries == 6 && source->color.transfer != 1
+         || ((source->color.primaries == 5 || source->color.primaries == 6)
+               && source->color.transfer != 1
                && source->color.transfer != 6 && source->color.transfer != 13)
          || ((source->color.transfer != 16 && source->color.transfer != 18)
                && source->color.primaries == 9)
@@ -141,6 +150,7 @@ int vulkan_android_submission_present(vulkan_android_submission_t *e,
    VkCommandBufferBeginInfo begin;
    VkSubmitInfo submit;
    VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+   VkResult result;
    int status, fd;
    if (!e || !frame || !android_frame_callback(frame->abandon) || !destination
          || !view
@@ -215,8 +225,22 @@ int vulkan_android_submission_present(vulkan_android_submission_t *e,
    e->held_slot = frame->done;
    e->held_generation = frame->done_value;
    e->inflight = 1;
-   if (e->ops.submit(e->ops.submit_context, e->queue, 1, &submit, e->fence)
-         != VK_SUCCESS)
+   result = e->ops.submit(
+         e->ops.submit_context, e->queue, 1, &submit, e->fence);
+   if (result == VK_NOT_READY)
+      return 1;
+   if (result == VK_TIMEOUT)
+   {
+      e->held_owner = NULL;
+      e->inflight = 0;
+      if (!android_frame_unclaim(frame->owner, frame->done, frame->done_value))
+      {
+         e->broken = 1;
+         return -2;
+      }
+      return 0;
+   }
+   if (result != VK_SUCCESS)
    {
       e->broken = 1;
       return -2;

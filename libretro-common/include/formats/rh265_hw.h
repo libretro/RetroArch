@@ -274,6 +274,8 @@ typedef struct rh265_hw_ops
          const rh265_access_unit_t *au, const rh265_nal_t *slices,
          const rh265_hw_picture_t *picture);
    int (*output)(void *decoder, unsigned slot, video_hw_frame_t *frame);
+   /* Optional EOF submission: 0 accepted, 1 busy, negative failure. */
+   int (*drain)(void *decoder);
 } rh265_hw_ops_t;
 
 typedef struct rh265_hw_backend

@@ -124,12 +124,20 @@ static double reference(double x, unsigned mode)
                 : (exp((x - 0.55991073) / 0.17883277) + 0.28466892) / 12.0;
    return 12.5 * pow(x, 1.2);
 }
-static double reference_601(unsigned x, unsigned y, unsigned c, bool fp16, bool srgb)
+static double reference_601(unsigned x, unsigned y, unsigned c,
+      bool fp16, bool srgb, bool pal)
 {
-   static const double to_xyz[3][3] = {
-      {0.393520903659, 0.365258076718, 0.191676946675},
-      {0.212376360705, 0.701059856926, 0.086563782369},
-      {0.018739090650, 0.111933926736, 0.958384733373}
+   static const double to_xyz[2][3][3] = {
+      {
+         {0.393520903659, 0.365258076718, 0.191676946675},
+         {0.212376360705, 0.701059856926, 0.086563782369},
+         {0.018739090650, 0.111933926736, 0.958384733373}
+      },
+      {
+         {0.430553813330, 0.341549803531, 0.178352310191},
+         {0.222004309998, 0.706654765925, 0.071340924076},
+         {0.020182210000, 0.129553373753, 0.939322167007}
+      }
    };
    static const double from_xyz[3][3] = {
       {3.240969941905, -1.537383177570, -0.498610760293},
@@ -151,7 +159,7 @@ static double reference_601(unsigned x, unsigned y, unsigned c, bool fp16, bool 
    {
       xyz[i] = 0.0;
       for (j = 0; j < 3; j++)
-         xyz[i] += to_xyz[i][j] * linear[j];
+         xyz[i] += to_xyz[pal ? 1 : 0][i][j] * linear[j];
    }
    for (i = 0; i < 3; i++)
       value += from_xyz[c][i] * xyz[i];
@@ -170,7 +178,7 @@ static void execute(unsigned mode)
    VkSubmitInfo submit;
    VkFenceCreateInfo fi;
    VkFence fence;
-   bool fp16 = mode != 0 && mode != 4 && mode != 6;
+   bool fp16 = mode < 4 ? mode != 0 : (mode & 1) != 0;
    unsigned x, y, c, bps = fp16 ? 8 : 4;
    float transfer = mode == 2 ? 16.0f
          : mode == 3          ? 18.0f
@@ -190,10 +198,12 @@ static void execute(unsigned mode)
    words[2] = 2;
    words[3] = 3;
    words[4] = words[5] = 8;
+   words[6] = 1;
+   words[7] = mode == 1 ? 13 : (unsigned)transfer;
    if (mode >= 4)
    {
-      words[6] = 6;
-      words[7] = mode >= 6 ? 13 : 6;
+      words[6] = mode >= 8 ? 5 : 6;
+      words[7] = mode % 4 >= 2 ? 13 : 6;
    }
    memcpy(&words[16], &transfer, 4);
    memcpy(&words[19], &linear, 4);
@@ -264,7 +274,7 @@ static void execute(unsigned mode)
                           mapped[((y + 3) * 8 + x + 2) * 4 + c] / 255.0, mode);
             double actual;
             if (mode >= 4)
-               expected = reference_601(x, y, c, fp16, mode >= 6);
+               expected = reference_601(x, y, c, fp16, mode % 4 >= 2, mode >= 8);
             if (fp16)
             {
                uint16_t h;
@@ -391,7 +401,7 @@ int main(void)
    ops.destroy_shader = vkDestroyShaderModule;
    ops.create_pipeline = vkCreateComputePipelines;
    ops.destroy_pipeline = vkDestroyPipeline;
-   for (i = 0; i < 8; i++)
+   for (i = 0; i < 12; i++)
       execute(i);
    vkDestroySampler(device, sampler, NULL);
    vkDestroyImageView(device, source_view, NULL);

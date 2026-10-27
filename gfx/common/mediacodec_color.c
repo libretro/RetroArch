@@ -36,8 +36,16 @@ bool mediacodec_color_resolve(const mediacodec_output_format_t *native,
       primaries = 5;
       matrix = 5;
       break;
+   case 3:
+      primaries = 5;
+      matrix = 1;
+      break;
    case 4:
       primaries = matrix = 6;
+      break;
+   case 5:
+      primaries = 6;
+      matrix = 7;
       break;
    case 6:
       primaries = matrix = 9;

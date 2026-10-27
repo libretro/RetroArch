@@ -6084,6 +6084,13 @@ enum video_texture_update video_driver_texture_import(uintptr_t *id,
 #endif
    if (!id || !frame || !poke || !poke->import_texture || !video_st->data)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (*id && poke->prepare_import_texture)
+   {
+      enum video_texture_update result = poke->prepare_import_texture(
+            video_st->data, *id, frame);
+      if (result != VIDEO_TEXTURE_UPDATE_DONE)
+         return result;
+   }
    return poke->import_texture(video_st->data, id, frame, filter);
 }
 

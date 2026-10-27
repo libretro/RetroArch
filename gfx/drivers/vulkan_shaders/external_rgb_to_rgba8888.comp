@@ -25,7 +25,7 @@ void main()
    vec3 rgb = textureLod(Source, uv, 0.0).rgb;
    vec4 hdr = vec4(uintBitsToFloat(words[16]), uintBitsToFloat(words[17]),
          uintBitsToFloat(words[18]), uintBitsToFloat(words[19]));
-   if (words[6] == 6u)
+   if (words[6] == 5u || words[6] == 6u)
    {
       if (words[7] == 13u)
          rgb = vec3(video_hdr_linear_srgb(rgb.r),
@@ -33,9 +33,13 @@ void main()
       else
          rgb = mix(rgb / 4.5, pow((rgb + 0.099) / 1.099, vec3(1.0 / 0.45)),
                greaterThanEqual(rgb, vec3(0.081)));
-      rgb = vec3(dot(rgb, vec3(0.93954206, 0.05018136, 0.01027658)),
-            dot(rgb, vec3(0.01777222, 0.96579286, 0.01643491)),
-            dot(rgb, vec3(-0.00162160, -0.00436975, 1.00599135)));
+      if (words[6] == 5u)
+         rgb = vec3(dot(rgb, vec3(1.04404321, -0.04404321, 0.0)),
+               rgb.g, dot(rgb, vec3(0.0, 0.01179338, 0.98820662)));
+      else
+         rgb = vec3(dot(rgb, vec3(0.93954206, 0.05018136, 0.01027658)),
+               dot(rgb, vec3(0.01777222, 0.96579286, 0.01643491)),
+               dot(rgb, vec3(-0.00162160, -0.00436975, 1.00599135)));
       if (hdr.w >= 0.0)
          rgb = vec3(video_hdr_srgb(rgb.r), video_hdr_srgb(rgb.g),
                video_hdr_srgb(rgb.b));
