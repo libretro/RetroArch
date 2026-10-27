@@ -412,7 +412,7 @@ build-retroarch-webos-armv7a:
     paths:
     - ${XCPROJECT_NAME}.zip
     - retroarch-repo/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   script:
     - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -config Release -scheme RetroArch -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/${XCCONFIG} archive
@@ -469,7 +469,7 @@ build-retroarch-ios-arm64:
   artifacts:
     paths:
     - retroarch-repo/
-    expire_in: 1 week
+    expire_in: 10 min
   script:
     - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -destination ${XCDESTINATION} -config Release -scheme "${XCSCHEME}" -xcconfig pkg/apple/iOS/${XCCONFIG} build
     - mkdir .retroarch-repo
@@ -488,7 +488,7 @@ build-retroarch-ios9:
   artifacts:
     paths:
     - retroarch-repo/
-    expire_in: 1 week
+    expire_in: 10 min
   script:
     - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -config Release -scheme "${XCSCHEME}" -xcconfig pkg/apple/iOS/GitLabCI.xcconfig build
     - mkdir .retroarch-repo
@@ -619,7 +619,7 @@ build-retroarch-android-normal:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   script:
   script:
     - |
@@ -637,7 +637,7 @@ build-retroarch-android-aarch64:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   script:
     - |
       set -e
@@ -654,7 +654,7 @@ build-retroarch-android-ra32:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   script:
     - |
       set -e
@@ -671,7 +671,7 @@ build-retroarch-android-playstore-normal:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   script:
     - |
       set -e
@@ -688,7 +688,7 @@ build-retroarch-android-playstore-plus:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   script:
     - |
       set -e
@@ -707,7 +707,7 @@ build-static-retroarch-libnx-aarch64:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Static dummy builds without a core so its a good check if it properly builds
@@ -748,7 +748,7 @@ build-static-retroarch-psp:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -793,7 +793,7 @@ build-static-retroarch-vita:
     paths:
     -  retroarch-precompiled/
     -  retroarch-precompiled-gl/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -839,7 +839,7 @@ build-static-retroarch-ps2:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -872,7 +872,7 @@ build-static-retroarch-psl1ght:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -905,7 +905,7 @@ build-static-retroarch-orbis:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -938,7 +938,7 @@ build-static-retroarch-djgpp:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs: []
   script:
@@ -969,7 +969,7 @@ build-static-retroarch-ctr:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -989,7 +989,7 @@ build-static-retroarch-ctr-legacy:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs: []
   script:
@@ -1032,7 +1032,7 @@ build-static-retroarch-wiiu:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -1074,7 +1074,7 @@ build-static-retroarch-wii:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -1118,7 +1118,7 @@ build-static-retroarch-ngc:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -1156,7 +1156,7 @@ build-static-retroarch-emscripten:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 week
+    expire_in: 10 min
   dependencies: []
   needs:
     # Dummy build requires no core
