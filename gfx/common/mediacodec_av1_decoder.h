@@ -30,5 +30,6 @@ bool mediacodec_av1_decoder_open(JNIEnv *, const uint8_t *av1c, size_t,
 int mediacodec_av1_decoder_finish(void *, bool discard);
 void mediacodec_av1_decoder_close(rav1_hw_ops_t *);
 bool mediacodec_av1_decoder_retire_poll(mediacodec_av1_decoder_t *);
+int mediacodec_av1_decoder_retire_fd(const mediacodec_av1_decoder_t *);
 RETRO_END_DECLS
 #endif

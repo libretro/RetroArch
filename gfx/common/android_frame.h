@@ -19,6 +19,9 @@ typedef struct android_frame_view
  * Close/free remain producer-worker operations. Export/claim/finish do not
  * allocate, wait or call native image APIs. */
 android_frame_pool_t *android_frame_pool_new(unsigned count);
+/* Cold setup. A return retains its notifier through publication and wake. */
+bool android_frame_pool_set_retire_notifier(android_frame_pool_t *pool,
+      void *user, void (*retain)(void *), void (*notify_unref)(void *));
 void android_frame_pool_close(android_frame_pool_t *pool);
 bool android_frame_pool_free(android_frame_pool_t *pool);
 /* 0 consumes image ticket into a frame; 1 BUSY/-1 refusal take nothing and

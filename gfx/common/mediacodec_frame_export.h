@@ -10,6 +10,9 @@ RETRO_BEGIN_DECLS
 typedef struct mediacodec_frame_exporter mediacodec_frame_exporter_t;
 mediacodec_frame_exporter_t *mediacodec_frame_exporter_new(
       unsigned slots, unsigned pixfmt);
+bool mediacodec_frame_exporter_set_retire_notifier(
+      mediacodec_frame_exporter_t *exporter, void *user,
+      void (*retain)(void *), void (*notify_unref)(void *));
 /* Cold owner after producer closure; false retains live renderer leases. */
 bool mediacodec_frame_exporter_free(mediacodec_frame_exporter_t *exporter);
 /* Resolved coded/container metadata; explicit native conflicts refuse before

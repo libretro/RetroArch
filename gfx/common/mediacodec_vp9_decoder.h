@@ -34,5 +34,6 @@ int mediacodec_vp9_decoder_drain(void *);
 int mediacodec_vp9_decoder_finish(void *, bool discard);
 void mediacodec_vp9_decoder_close(rvp9_hw_ops_t *);
 bool mediacodec_vp9_decoder_retire_poll(mediacodec_vp9_decoder_t *);
+int mediacodec_vp9_decoder_retire_fd(const mediacodec_vp9_decoder_t *);
 RETRO_END_DECLS
 #endif

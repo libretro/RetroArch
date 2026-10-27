@@ -34,5 +34,6 @@ bool mediacodec_hevc_decoder_open(JNIEnv *env, const rh265_video *source,
 void mediacodec_hevc_decoder_close(rh265_hw_ops_t *ops);
 /* Cold retirement executor only. True consumes decoder. */
 bool mediacodec_hevc_decoder_retire_poll(mediacodec_hevc_decoder_t *decoder);
+int mediacodec_hevc_decoder_retire_fd(const mediacodec_hevc_decoder_t *decoder);
 RETRO_END_DECLS
 #endif

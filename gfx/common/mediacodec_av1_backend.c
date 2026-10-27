@@ -4,6 +4,7 @@
 #if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE)                   \
       && defined(RETRO_ATOMIC_HAS_PTR)
 #include "mediacodec_frame_export.h"
+#include "mediacodec_retire.h"
 #include <formats/image.h>
 #include <rthreads/retro_eventcount.h>
 #include <pthread.h>
@@ -37,6 +38,20 @@ static void mediacodec_av1_backend_context_unref(
       mediacodec_av1_backend_context_free(c);
 }
 
+static void mediacodec_av1_backend_retain(void *opaque)
+{
+   mediacodec_av1_backend_context_t *c
+         = (mediacodec_av1_backend_context_t *)opaque;
+   retro_atomic_fetch_add_int(&c->refs, 1);
+}
+static void mediacodec_av1_backend_notify_unref(void *opaque)
+{
+   mediacodec_av1_backend_context_t *c
+         = (mediacodec_av1_backend_context_t *)opaque;
+   if (retro_atomic_load_acquire_int(&c->state))
+      retro_eventcount_notify(&c->wake);
+   mediacodec_av1_backend_context_unref(c);
+}
 static void mediacodec_av1_backend_publish(
       mediacodec_av1_backend_context_t *c, int state)
 {
@@ -94,10 +109,25 @@ static void *mediacodec_av1_backend_retire(void *opaque)
    }
    decoder = c->retired;
    if (decoder)
-      while (!mediacodec_av1_decoder_retire_poll(decoder))
+      for (;;)
       {
+         int fd;
          key = retro_eventcount_prepare_wait(&c->wake);
-         retro_eventcount_commit_wait_timeout(&c->wake, key, 10000);
+         if (mediacodec_av1_decoder_retire_poll(decoder))
+         {
+            retro_eventcount_cancel_wait(&c->wake);
+            break;
+         }
+         fd = mediacodec_av1_decoder_retire_fd(decoder);
+         if (fd >= 0)
+         {
+            retro_eventcount_cancel_wait(&c->wake);
+            /* An unprovable fence retains the bounded owner. */
+            if (!mediacodec_retire_fence(fd))
+               return NULL;
+         }
+         else
+            retro_eventcount_commit_wait(&c->wake, key);
       }
    mediacodec_av1_backend_context_unref(c);
    return NULL;
@@ -195,7 +225,9 @@ static bool mediacodec_av1_backend_open(void *opaque,
    retro_atomic_int_init(&c->refs, 2);
    c->exporter = mediacodec_frame_exporter_new(slots,
          sequence->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12);
-   if (!c->exporter)
+   if (!c->exporter || !mediacodec_frame_exporter_set_retire_notifier(
+             c->exporter, c, mediacodec_av1_backend_retain,
+             mediacodec_av1_backend_notify_unref))
    {
       mediacodec_av1_backend_context_free(c);
       return false;

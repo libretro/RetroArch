@@ -28,6 +28,13 @@ mediacodec_frame_exporter_t *mediacodec_frame_exporter_new(
    }
    return e;
 }
+bool mediacodec_frame_exporter_set_retire_notifier(
+      mediacodec_frame_exporter_t *e, void *user,
+      void (*retain)(void *), void (*notify_unref)(void *))
+{
+   return e && android_frame_pool_set_retire_notifier(
+         e->pool, user, retain, notify_unref);
+}
 bool mediacodec_frame_exporter_free(mediacodec_frame_exporter_t *e)
 {
    if (!e)

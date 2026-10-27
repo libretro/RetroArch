@@ -42,6 +42,8 @@ bool android_image_queue_return(
 /* Worker only: bounded zero-timeout fence polls, then release images/fds.
  * Reader and AImages survive close until every ticket/fence retires. */
 unsigned android_image_queue_poll(android_image_queue_t *q);
+/* Retirement owner only: borrowed fence after close, -1 without one. */
+int android_image_queue_retire_fd(const android_image_queue_t *q);
 void android_image_queue_close(android_image_queue_t *q);
 /* Worker only, after close: true when every acquired image/fence retired.
  * Does not delete the reader; stop its codec before freeing the queue. */

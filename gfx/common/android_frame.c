@@ -14,6 +14,9 @@ typedef struct android_frame_slot
 } android_frame_slot_t;
 struct android_frame_pool
 {
+   void *notify_user;
+   void (*retain)(void *);
+   void (*notify_unref)(void *);
    unsigned count;
    bool closed;
    android_frame_slot_t slot[32];
@@ -34,6 +37,16 @@ android_frame_pool_t *android_frame_pool_new(unsigned count)
    for (i = 0; i < count; i++)
       retro_atomic_int_init(&p->slot[i].state, 0);
    return p;
+}
+bool android_frame_pool_set_retire_notifier(android_frame_pool_t *p,
+      void *user, void (*retain)(void *), void (*notify_unref)(void *))
+{
+   if (!p || p->closed || p->retain || !user || !retain || !notify_unref)
+      return false;
+   p->notify_user = user;
+   p->retain = retain;
+   p->notify_unref = notify_unref;
+   return true;
 }
 void android_frame_pool_close(android_frame_pool_t *p)
 {
@@ -58,6 +71,9 @@ bool android_frame_finish(
 {
    android_frame_pool_t *p = (android_frame_pool_t *)owner;
    android_frame_slot_t *s;
+   void *notify_user;
+   void (*retain)(void *);
+   void (*notify_unref)(void *);
    if (!p || index >= p->count || fd < -1)
       return false;
    s = &p->slot[(unsigned)index];
@@ -70,8 +86,15 @@ bool android_frame_finish(
       retro_atomic_store_release_int(&s->state, 2);
       return false;
    }
+   notify_user = p->notify_user;
+   retain = p->retain;
+   notify_unref = p->notify_unref;
+   if (retain)
+      retain(notify_user);
    memset(&s->view, 0, sizeof(s->view));
    retro_atomic_store_release_int(&s->state, 0);
+   if (notify_unref)
+      notify_unref(notify_user);
    return true;
 }
 static void android_frame_abandon(

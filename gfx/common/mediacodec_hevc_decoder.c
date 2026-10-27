@@ -211,6 +211,10 @@ static int mediacodec_hevc_decoder_drain(void *opaque)
    d->eos = 1;
    return 0;
 }
+int mediacodec_hevc_decoder_retire_fd(const mediacodec_hevc_decoder_t *d)
+{
+   return d ? android_image_queue_retire_fd(d->images) : -1;
+}
 bool mediacodec_hevc_decoder_retire_poll(mediacodec_hevc_decoder_t *d)
 {
    unsigned i;

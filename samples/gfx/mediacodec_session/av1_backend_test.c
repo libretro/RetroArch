@@ -159,6 +159,11 @@ int mediacodec_av1_decoder_finish(void *decoder, bool discard)
    return 0;
 }
 
+int mediacodec_av1_decoder_retire_fd(const mediacodec_av1_decoder_t *decoder)
+{
+   (void)decoder;
+   return -1;
+}
 bool mediacodec_av1_decoder_retire_poll(mediacodec_av1_decoder_t *decoder)
 {
    assert(sthread_get_current_thread_id() != caller_thread);
@@ -256,6 +261,7 @@ int main(void)
    mediacodec_output_format_t format;
    video_color_metadata_t color;
    video_hw_frame_t frame;
+   void *release_a, *release_b;
    struct mediacodec_av1_decoder *decoder;
    static uint8_t unsized[256];
    unsigned i;
@@ -296,12 +302,18 @@ int main(void)
    assert(open_owner(&b) && mediacodec_av1_backend_active(&backend) == 2);
    opens = native_opens;
    assert(!open_owner(&rejected) && native_opens == opens);
+   release_a = ((struct mediacodec_av1_decoder *)a.decoder)->importer.context;
+   release_b = ((struct mediacodec_av1_decoder *)b.decoder)->importer.context;
+   mediacodec_av1_backend_retain(release_a);
+   mediacodec_av1_backend_retain(release_b);
    backend.offer.close(&a);
    backend.offer.close(&b);
    for (i = 0; i < 1000 && retro_atomic_load_acquire_int(&polls) < 2; i++)
       retro_sleep(1);
    assert(!retro_atomic_load_acquire_int(&retired));
    retro_atomic_store_release_int(&retire_gate, 1);
+   mediacodec_av1_backend_notify_unref(release_a);
+   mediacodec_av1_backend_notify_unref(release_b);
    wait_idle(&backend);
    assert(retro_atomic_load_acquire_int(&retired) == 2);
    sequence.max_width--;
@@ -340,11 +352,19 @@ int main(void)
          &format, &sequence, &color, &frame));
    assert(frame.pixfmt == IMAGE_PIXFMT_P010 && frame.color.transfer == 16
          && frame.color.max_cll == 4000);
+   opens = retro_atomic_load_acquire_int(&polls);
    backend.offer.close(&a);
-   retro_sleep(30);
+   for (i = 0; i < 2000 && retro_atomic_load_acquire_int(&polls) == opens; i++)
+      retro_sleep(1);
+   assert(retro_atomic_load_acquire_int(&polls) > opens);
+   opens = retro_atomic_load_acquire_int(&polls);
+   retro_sleep(50);
+   assert(retro_atomic_load_acquire_int(&polls) == opens);
    assert(mediacodec_av1_backend_active(&backend) == 1);
+   notify_race = 1;
    video_hw_frame_abandon(&frame);
    wait_idle(&backend);
+   notify_race = 0;
    assert(android_image_queue_poll(images) == 1 && deleted == 1);
    android_image_queue_close(images);
    assert(android_image_queue_free(images));

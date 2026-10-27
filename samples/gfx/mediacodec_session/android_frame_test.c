@@ -10,6 +10,7 @@
 #include <retro_atomic.h>
 #include <formats/image.h>
 #include "../../../gfx/common/android_frame.h"
+#include "../../../gfx/common/mediacodec_retire.h"
 static int native, deleted;
 static int acquire(void *reader, void **image, int *fd)
 {
@@ -56,6 +57,85 @@ static void render(void *unused)
       retro_atomic_store_release_int(&ready, 0);
    }
    return;
+}
+static unsigned notifier_refs, notifications;
+static void notifier_retain(void *user)
+{
+   assert(user == &notifications && !notifier_refs);
+   notifier_refs++;
+}
+static void notifier_complete(void *user)
+{
+   assert(user == &notifications && notifier_refs == 1);
+   assert(android_frame_pool_free(pool));
+   pool = NULL;
+   notifications++;
+   notifier_refs--;
+}
+#ifndef _WIN32
+static int retirement_fd;
+static retro_atomic_int_t fence_entered, fence_completed;
+static void fence_executor(void *unused)
+{
+   (void)unused;
+   retro_atomic_store_release_int(&fence_entered, 1);
+   assert(mediacodec_retire_fence(retirement_fd));
+   retro_atomic_store_release_int(&fence_completed, 1);
+}
+#endif
+static void retirement_events(const android_image_ops_t *ops)
+{
+   static android_frame_view_t view, claimed;
+   static video_hw_frame_t frame;
+#ifndef _WIN32
+   int done[2];
+   sthread_t *thread;
+#endif
+   queue = android_image_queue_new(&native, 1, ops);
+   pool = android_frame_pool_new(1);
+   assert(queue && pool);
+   assert(!android_frame_pool_set_retire_notifier(pool, NULL,
+         notifier_retain, notifier_complete));
+   assert(android_frame_pool_set_retire_notifier(pool, &notifications,
+         notifier_retain, notifier_complete));
+   assert(!android_frame_pool_set_retire_notifier(pool, &notifications,
+         notifier_retain, notifier_complete));
+   memset(&view, 0, sizeof(view));
+   view.format.serial = 1;
+   view.pixfmt = IMAGE_PIXFMT_NV12;
+   assert(android_image_queue_acquire(queue, &view.image) == 1);
+   assert(!android_frame_export(pool, &view, &frame));
+   assert(android_frame_claim(frame.owner, frame.done, frame.done_value,
+         frame.image, &claimed));
+   android_frame_pool_close(pool);
+   android_image_queue_close(queue);
+   assert(!android_frame_finish(frame.owner, frame.done, frame.done_value + 1, -1));
+   assert(!notifier_refs && !notifications);
+#ifdef _WIN32
+   assert(android_frame_finish(frame.owner, frame.done, frame.done_value, -1));
+   assert(android_image_queue_retire_fd(queue) == -1);
+#else
+   assert(pipe(done) == 0);
+   assert(android_frame_finish(frame.owner, frame.done, frame.done_value, done[0]));
+   retirement_fd = android_image_queue_retire_fd(queue);
+   assert(retirement_fd == done[0] && !android_image_queue_poll(queue));
+   assert(!mediacodec_retire_fence(-1));
+   retro_atomic_int_init(&fence_entered, 0);
+   retro_atomic_int_init(&fence_completed, 0);
+   thread = sthread_create(fence_executor, NULL);
+   assert(thread);
+   while (!retro_atomic_load_acquire_int(&fence_entered))
+      sthread_yield();
+   assert(!retro_atomic_load_acquire_int(&fence_completed));
+   assert(write(done[1], "x", 1) == 1);
+   sthread_join(thread);
+   assert(retro_atomic_load_acquire_int(&fence_completed));
+   close(done[1]);
+#endif
+   assert(!pool && !notifier_refs && notifications == 1);
+   assert(android_image_queue_poll(queue) == 1);
+   assert(android_image_queue_retire_fd(queue) == -1);
+   assert(android_image_queue_free(queue));
 }
 int main(void)
 {
@@ -141,6 +221,7 @@ int main(void)
    android_image_queue_close(queue);
    assert(android_image_queue_free(queue));
    assert(deleted == 10002);
+   retirement_events(&ops);
 #ifdef _WIN32
    puts("PASS: opaque Android leases and 10000 threaded handoffs; native fence "
         "not executed on Windows");

@@ -125,6 +125,11 @@ void mediacodec_hevc_decoder_close(rh265_hw_ops_t *ops)
    memset(ops, 0, sizeof(*ops));
    decoder->importer.enqueue(decoder->importer.context, decoder);
 }
+int mediacodec_hevc_decoder_retire_fd(const mediacodec_hevc_decoder_t *decoder)
+{
+   (void)decoder;
+   return -1;
+}
 bool mediacodec_hevc_decoder_retire_poll(mediacodec_hevc_decoder_t *decoder)
 {
    assert(sthread_get_current_thread_id() != caller_thread);
@@ -183,6 +188,7 @@ int main(void)
    mediacodec_output_format_t format;
    rh265_video_color_t color;
    video_hw_frame_t frame;
+   void *release_a, *release_b;
    struct mediacodec_hevc_decoder *decoder;
    caller_thread = sthread_get_current_thread_id();
    retro_atomic_int_init(&retire_gate, 0);
@@ -239,6 +245,10 @@ int main(void)
    opens = native_opens;
    assert(!backend.offer.open(backend.offer.user, source, &params, 2, &rejected)
          && native_opens == opens);
+   release_a = ((struct mediacodec_hevc_decoder *)a.decoder)->importer.context;
+   release_b = ((struct mediacodec_hevc_decoder *)b.decoder)->importer.context;
+   mediacodec_hevc_backend_retain(release_a);
+   mediacodec_hevc_backend_retain(release_b);
    backend.offer.close(&a);
    backend.offer.close(&b);
    assert(!a.decoder && !b.decoder);
@@ -249,6 +259,8 @@ int main(void)
    assert(!backend.offer.open(backend.offer.user, source, &params, 2, &rejected)
          && native_opens == opens);
    retro_atomic_store_release_int(&retire_gate, 1);
+   mediacodec_hevc_backend_notify_unref(release_a);
+   mediacodec_hevc_backend_notify_unref(release_b);
    wait_idle(&backend);
    assert(retro_atomic_load_acquire_int(&retired) == 2);
    /* Actual exported frame-pool lease holds a closed epoch alive. No native
@@ -271,12 +283,20 @@ int main(void)
    assert(!decoder->importer.export_image(
          decoder->importer.context, &image, &format, &color, &frame));
    assert(frame.pixfmt == IMAGE_PIXFMT_P010);
+   opens = retro_atomic_load_acquire_int(&polls);
    backend.offer.close(&a);
-   retro_sleep(30);
+   for (i = 0; i < 2000 && retro_atomic_load_acquire_int(&polls) == opens; i++)
+      retro_sleep(1);
+   assert(retro_atomic_load_acquire_int(&polls) > opens);
+   opens = retro_atomic_load_acquire_int(&polls);
+   retro_sleep(50);
+   assert(retro_atomic_load_acquire_int(&polls) == opens);
    assert(mediacodec_hevc_backend_active(&backend) == 1
          && retro_atomic_load_acquire_int(&retired) == 2);
+   notify_race = 1;
    video_hw_frame_abandon(&frame);
    wait_idle(&backend);
+   notify_race = 0;
    assert(android_image_queue_poll(images) == 1 && deleted == 1);
    android_image_queue_close(images);
    assert(android_image_queue_free(images));

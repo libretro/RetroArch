@@ -208,6 +208,23 @@ unsigned android_image_queue_poll(android_image_queue_t *q)
    }
    return released;
 }
+int android_image_queue_retire_fd(const android_image_queue_t *q)
+{
+   unsigned i;
+   if (!q || !q->closed)
+      return -1;
+   for (i = 0; i < q->count; i++)
+   {
+      const android_image_ticket_t *t = &q->ticket[i];
+      if (retro_atomic_load_acquire_int(&t->state) == 2)
+      {
+         int fd = t->done_fd >= 0 ? t->done_fd : t->ready_fd;
+         if (fd >= 0)
+            return fd;
+      }
+   }
+   return -1;
+}
 void android_image_queue_close(android_image_queue_t *q)
 {
    if (q)

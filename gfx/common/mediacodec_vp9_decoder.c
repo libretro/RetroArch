@@ -216,6 +216,10 @@ int mediacodec_vp9_decoder_finish(void *opaque, bool discard)
    return d->output_eos && !d->tag ? 0 : 1;
 }
 
+int mediacodec_vp9_decoder_retire_fd(const mediacodec_vp9_decoder_t *d)
+{
+   return d ? android_image_queue_retire_fd(d->images) : -1;
+}
 bool mediacodec_vp9_decoder_retire_poll(mediacodec_vp9_decoder_t *d)
 {
    if (!d)
