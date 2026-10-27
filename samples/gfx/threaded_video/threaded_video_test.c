@@ -8820,23 +8820,25 @@ static void lane_surface_4k(void)
    for (i = 0; i < 60; i++)
    {
       unsigned slot = i & 1;
-      int64_t t0, t1;
+      int64_t t0, t1, deadline;
       unsigned before = surf_releases;
       unsigned waited = 0;
       enum gfx_surface_submit_result r;
 
       /* A released descriptor can still name a GPU-owned lent slot.
-       * Return that slot before writing it, outside the submit timing. */
+       * Unpaced frontend iterations do not bound GPU completion time. */
+      deadline = cpu_features_get_time_usec() + 2000000;
       while ((s->inflight || !gfx_surface_slot_writable(s, slot))
-            && waited < 16)
+            && cpu_features_get_time_usec() < deadline)
       {
          run_frames(1);
          waited++;
       }
       CHECK(!s->inflight && gfx_surface_slot_writable(s, slot),
-            "4K frame %u: slot not writable within 16 frames", i);
+            "4K frame %u: slot not writable within two seconds (%u frames)",
+            i, waited);
       if (s->inflight || !gfx_surface_slot_writable(s, slot))
-         continue;
+         break;
       waited = 0;
       before = surf_releases;
 
@@ -8852,13 +8854,19 @@ static void lane_surface_4k(void)
          continue;
       submit_us[n_sub++] = t1 - t0;
       submit_total      += t1 - t0;
-      while (surf_releases == before && waited < 8)
+      deadline = cpu_features_get_time_usec() + 2000000;
+      while (surf_releases == before
+            && cpu_features_get_time_usec() < deadline)
       {
          run_frames(1);
          waited++;
       }
-      CHECK(waited < 8, "4K frame %u: slot not released within 8 frames", i);
+      CHECK(surf_releases != before,
+            "4K frame %u: slot not released within two seconds (%u frames)",
+            i, waited);
       release_frames[n_rel++] = waited;
+      if (surf_releases == before)
+         break;
       if (!first)
          first = s->handle;
    }
@@ -8893,7 +8901,7 @@ static void lane_surface_4k(void)
             (long long)(submit_total / n_sub));
 #endif
    }
-   CHECK(n_sub >= 30, "only %u of 60 4K submits were accepted", n_sub);
+   CHECK(n_sub == 60, "only %u of 60 4K submits were accepted", n_sub);
    if (s->handle && video_driver_texture_can_update())
       CHECK(s->handle == first, "4K in-place driver replaced the texture");
 
