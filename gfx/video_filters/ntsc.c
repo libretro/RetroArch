@@ -19,15 +19,17 @@
 #define NTSC_MAX_WIDTH 1024
 #define PHASE_MAX 16 // Max phases for Atari 2600
 
-typedef struct { int Y, I, Q; } yiq_t;
+/* Widest decode window, in samples either side (Atari). */
+#define NTSC_MAX_TAPS 8
 
-/* Scratch for one worker: four line buffers plus the YIQ cache.  Held
- * per thread rather than on the stack - as locals these came to 45264
- * bytes of frame in the work callback, against the 64 KB thread stack
- * rthreads asks for on Vita. */
-#define NTSC_SCRATCH_INTS  (4 * NTSC_MAX_WIDTH * 2)
-#define NTSC_SCRATCH_BYTES (NTSC_SCRATCH_INTS * sizeof(int) \
-      + NTSC_MAX_WIDTH * sizeof(yiq_t))
+/* Scratch for one worker: the decoded I/Q/Y lines, then the composite
+ * line padded by the widest window on each side and its two carrier
+ * products. Held per thread rather than on the stack, which on Vita is
+ * the 64 KB rthreads asks for. */
+#define NTSC_LINE_INTS     (NTSC_MAX_WIDTH * 2)
+#define NTSC_PAD_INTS      (NTSC_MAX_WIDTH * 2 + 2 * NTSC_MAX_TAPS)
+#define NTSC_SCRATCH_BYTES ((3 * NTSC_LINE_INTS + 3 * NTSC_PAD_INTS) \
+      * sizeof(int))
 
 struct softfilter_thread_data {
    void       *out_data;
@@ -38,11 +40,12 @@ struct softfilter_thread_data {
    unsigned    height;
    int         first;
    void       *scratch;
-   int        *cbuf;
    int        *lineI;
    int        *lineQ;
    int        *lineY;
-   yiq_t      *yiq_cache;
+   int        *cpad;
+   int        *prodI;
+   int        *prodQ;
 };
 
 struct filter_data {
@@ -71,10 +74,44 @@ static inline void yiq_to_rgb(int Y, int I, int Q, int *r, int *g, int *b) {
     *b = (bv < 0) ? 0 : (bv > 255 ? 255 : bv);
 }
 
+/* The decode window's half-width in samples (taps) and its divisor are
+ * fixed per system, so the window pass is built once per width: the
+ * divide by a constant becomes a multiply or shift, as the compiler
+ * picks, with C's truncating result unchanged. */
+#define NTSC_WINDOW_PASS(name, TAPS) \
+static void name(const int *cpad, const int *prodI, const int *prodQ, \
+      unsigned ow, int artifacts, int c64, int *lineI, int *lineQ, \
+      int *lineY) \
+{ \
+   unsigned x; \
+   int accI = 0, accQ = 0, j; \
+   /* The window for x covers positions x - TAPS .. x + TAPS - 1, which \
+    * sit at x .. x + 2 * TAPS - 1 in the padded arrays. */ \
+   for (j = 0; j < 2 * (TAPS); j++) \
+   { \
+      accI += prodI[j]; \
+      accQ += prodQ[j]; \
+   } \
+   for (x = 0; x < ow; x++) \
+   { \
+      const int *c = cpad + x + (TAPS); \
+      int notchedY = c64 \
+         ? (c[-1] + (c[0] * 2) + c[1]) >> 2 \
+         : (c[-2] + (c[-1] * 4) + (c[0] * 6) + (c[1] * 4) + c[2]) >> 4; \
+      lineI[x] = accI / ((TAPS) * 256); \
+      lineQ[x] = accQ / ((TAPS) * 256); \
+      lineY[x] = ((notchedY * (256 - artifacts)) + (c[0] * artifacts)) >> 8; \
+      accI    += prodI[x + 2 * (TAPS)] - prodI[x]; \
+      accQ    += prodQ[x + 2 * (TAPS)] - prodQ[x]; \
+   } \
+}
+
+NTSC_WINDOW_PASS(ntsc_window_pass4, 4)
+NTSC_WINDOW_PASS(ntsc_window_pass6, 6)
+NTSC_WINDOW_PASS(ntsc_window_pass8, 8)
+
 static void ntsc_process_line(const struct filter_data *filt, 
-      const struct softfilter_thread_data *thr, unsigned y, 
-      int *cbuf, int *lineI, int *lineQ, int *lineY, yiq_t *yiq_cache,
-      void *dst_ptr) {
+      const struct softfilter_thread_data *thr, unsigned y, void *dst_ptr) {
    unsigned width = thr->width;
    unsigned ow = width * 2;
    int phases = filt->phase_count;
@@ -84,59 +121,84 @@ static void ntsc_process_line(const struct filter_data *filt,
    int frame_offset = (filt->nes_frame_count % 2) * (phases / 2);
    int line_mult = (filt->pal_mode) ? (phase_step + 1) : phase_step;
    int line_phase = (frame_offset + ((thr->first + (int)y) * line_mult)) % phases;
+   int taps = (filt->atari_mode) ? 8 : (filt->c64_mode ? 4 : 6);
+   /* Composite samples padded by 'taps' on each side with the edge
+    * sample repeated (the clamp the window and the notch read through),
+    * and each padded position's sample times the carrier at that
+    * position: a window sum then needs no clamp, no modulo and no
+    * multiply. */
+   int *lineI = thr->lineI, *lineQ = thr->lineQ, *lineY = thr->lineY;
+   int *cpad  = thr->cpad, *prodI = thr->prodI, *prodQ = thr->prodQ;
+   int n      = (int)ow + 2 * taps;
+   int ph, j;
 
-   for (unsigned x = 0; x < width; x++) {
-      int r, g, b, Y, I, Q;
-      if (filt->in_fmt == SOFTFILTER_FMT_RGB565) {
-         uint16_t p = ((uint16_t*)thr->in_data)[y * (thr->in_pitch/2) + x];
+   /* Encode: Y plus the chroma on the carrier, two samples per pixel,
+    * the carrier advancing phase_step per sample. */
+   ph = line_phase;
+   if (filt->in_fmt == SOFTFILTER_FMT_RGB565) {
+      const uint16_t *in = (const uint16_t*)thr->in_data + y * (thr->in_pitch / 2);
+      for (unsigned x = 0; x < width; x++) {
+         int r, g, b, Y, I, Q;
+         uint16_t p = in[x];
          r = (p >> 11) & 0x1f; g = (p >> 5) & 0x3f; b = p & 0x1f;
          /* Widen with the top bits copied down, so full scale is 255. */
          r = (r << 3) | (r >> 2); g = (g << 2) | (g >> 4); b = (b << 3) | (b >> 2);
-      } else {
-         uint32_t p = ((uint32_t*)thr->in_data)[y * (thr->in_pitch/4) + x];
-         r = (p >> 16) & 0xFF; g = (p >> 8) & 0xFF; b = p & 0xFF;
+         rgb_to_yiq(r, g, b, &Y, &I, &Q);
+         cpad[taps + 2 * x]     = Y + ((I * filt->lut_cos[ph] + Q * filt->lut_sin[ph]) >> 8);
+         if ((ph += phase_step) >= phases) ph -= phases;
+         cpad[taps + 2 * x + 1] = Y + ((I * filt->lut_cos[ph] + Q * filt->lut_sin[ph]) >> 8);
+         if ((ph += phase_step) >= phases) ph -= phases;
       }
-      rgb_to_yiq(r, g, b, &Y, &I, &Q);
-      yiq_cache[x].Y = Y; yiq_cache[x].I = I; yiq_cache[x].Q = Q;
-      
-      for (int p_idx = 0; p_idx < 2; p_idx++) {
-         int ph = (line_phase + (x * phase_step * 2) + (p_idx * phase_step)) % phases;
-         cbuf[x * 2 + p_idx] = Y + ((I * filt->lut_cos[ph] + Q * filt->lut_sin[ph]) >> 8);
+   } else {
+      const uint32_t *in = (const uint32_t*)thr->in_data + y * (thr->in_pitch / 4);
+      for (unsigned x = 0; x < width; x++) {
+         int r, g, b, Y, I, Q;
+         uint32_t p = in[x];
+         r = (p >> 16) & 0xFF; g = (p >> 8) & 0xFF; b = p & 0xFF;
+         rgb_to_yiq(r, g, b, &Y, &I, &Q);
+         cpad[taps + 2 * x]     = Y + ((I * filt->lut_cos[ph] + Q * filt->lut_sin[ph]) >> 8);
+         if ((ph += phase_step) >= phases) ph -= phases;
+         cpad[taps + 2 * x + 1] = Y + ((I * filt->lut_cos[ph] + Q * filt->lut_sin[ph]) >> 8);
+         if ((ph += phase_step) >= phases) ph -= phases;
       }
    }
+   for (j = 0; j < taps; j++) {
+      cpad[j]                = cpad[taps];
+      cpad[taps + ow + j]    = cpad[taps + ow - 1];
+   }
 
-   for (unsigned x = 0; x < ow; x++) {
-      int accI = 0, accQ = 0;
-      int taps = (filt->atari_mode) ? 8 : (filt->c64_mode ? 4 : 6); 
-      
-      for (int t = -taps; t < taps; t++) {
-         /* Signed: x is unsigned, and x + t is negative at the left edge */
-         int pos = (int)x + t;
-         int idx = (pos < 0) ? 0 : (pos >= (int)ow ? (int)ow - 1 : pos);
-         int ph = (line_phase + pos * phase_step) % phases;
-         if (ph < 0)
-            ph += phases;
-         accI += cbuf[idx] * filt->lut_cos[ph];
-         accQ += cbuf[idx] * filt->lut_sin[ph];
-      }
-      lineI[x] = accI / (taps * 256); lineQ[x] = accQ / (taps * 256);
+   /* Demodulate: the window multiplies each position's sample by the
+    * carrier at that position (position = padded index - taps, phase
+    * line_phase + position * phase_step, wrapped into [0, phases)). */
+   ph = (line_phase - taps * phase_step) % phases;
+   if (ph < 0)
+      ph += phases;
+   for (j = 0; j < n; j++) {
+      prodI[j] = cpad[j] * filt->lut_cos[ph];
+      prodQ[j] = cpad[j] * filt->lut_sin[ph];
+      if ((ph += phase_step) >= phases) ph -= phases;
+   }
 
-      int i_m2 = (x > 1) ? (int)x - 2 : 0, i_m1 = (x > 0) ? (int)x - 1 : 0;
-      int i_p1 = (x < ow - 1) ? (int)x + 1 : (int)ow - 1, i_p2 = (x < ow - 2) ? (int)x + 2 : (int)ow - 1;
-      
-      // Notch filter optimized for system-specific bandwidth
-      int notchedY = (filt->c64_mode) ? 
-         (cbuf[i_m1] + (cbuf[x] * 2) + cbuf[i_p1]) >> 2 :
-         (cbuf[i_m2] + (cbuf[i_m1] * 4) + (cbuf[x] * 6) + (cbuf[i_p1] * 4) + cbuf[i_p2]) >> 4;
-
-      lineY[x] = ((notchedY * (256 - filt->artifacts)) + (cbuf[x] * filt->artifacts)) >> 8;
+   switch (taps) {
+      case 4:
+         ntsc_window_pass4(cpad, prodI, prodQ, ow, filt->artifacts,
+               filt->c64_mode, lineI, lineQ, lineY);
+         break;
+      case 8:
+         ntsc_window_pass8(cpad, prodI, prodQ, ow, filt->artifacts,
+               filt->c64_mode, lineI, lineQ, lineY);
+         break;
+      default:
+         ntsc_window_pass6(cpad, prodI, prodQ, ow, filt->artifacts,
+               filt->c64_mode, lineI, lineQ, lineY);
+         break;
    }
 
    for (unsigned x = 0; x < ow; x++) {
       int Y = lineY[x], I = lineI[x], Q = lineQ[x];
       if (filt->sharpness > 0) {
          int x_m1 = (x > 0) ? (int)x - 1 : 0, x_p1 = (x < ow - 1) ? (int)x + 1 : (int)ow - 1;
-         int edge = (Y << 1) - (lineY[x_m1] + lineY[x_p1]);
+         int edge = (Y * 2) - (lineY[x_m1] + lineY[x_p1]);
          Y += (edge * filt->sharpness) >> 9;
          Y = (Y < 0) ? 0 : (Y > 255 ? 255 : Y);
       }
@@ -161,8 +223,7 @@ static void ntsc_work_cb(void *data, void *thread_data) {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
    for (unsigned y = 0; y < thr->height; y++) {
       void *dst = (uint8_t*)thr->out_data + (y * thr->out_pitch);
-      ntsc_process_line(filt, thr, y, thr->cbuf, thr->lineI, thr->lineQ,
-            thr->lineY, thr->yiq_cache, dst);
+      ntsc_process_line(filt, thr, y, dst);
    }
 }
 
@@ -210,17 +271,18 @@ static void *ntsc_create(const struct softfilter_config *config,
    }
    for (unsigned i = 0; i < threads; i++) {
       struct softfilter_thread_data *thr = &filt->workers[i];
-      /* one block per worker, so the four line buffers and the YIQ
-       * cache stay adjacent rather than landing in five allocations */
+      /* one block per worker, so the line buffers stay adjacent
+       * rather than landing in six allocations */
       if (!(thr->scratch = calloc(1, NTSC_SCRATCH_BYTES))) {
          ntsc_destroy(filt);
          return NULL;
       }
-      thr->cbuf      = (int*)thr->scratch;
-      thr->lineI     = thr->cbuf  + NTSC_MAX_WIDTH * 2;
-      thr->lineQ     = thr->lineI + NTSC_MAX_WIDTH * 2;
-      thr->lineY     = thr->lineQ + NTSC_MAX_WIDTH * 2;
-      thr->yiq_cache = (yiq_t*)(void*)(thr->lineY + NTSC_MAX_WIDTH * 2);
+      thr->lineI     = (int*)thr->scratch;
+      thr->lineQ     = thr->lineI + NTSC_LINE_INTS;
+      thr->lineY     = thr->lineQ + NTSC_LINE_INTS;
+      thr->cpad      = thr->lineY + NTSC_LINE_INTS;
+      thr->prodI     = thr->cpad  + NTSC_PAD_INTS;
+      thr->prodQ     = thr->prodI + NTSC_PAD_INTS;
    }
    return filt;
 }
