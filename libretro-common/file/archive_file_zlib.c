@@ -49,9 +49,9 @@
 
 #ifdef ARCHIVE_HAVE_ZLIB
 #include <zlib.h>
-#else
-#include <encodings/deflate.h>
 #endif
+/* Deflate64, and DEFLATE without zlib */
+#include <encodings/deflate.h>
 
 /* Either decoder will do for a member stored with Zstandard; rzstd is
  * preferred where a build has it, and the reference remains available
@@ -63,6 +63,12 @@
 
 #ifdef HAVE_RBZIP2
 #include <encodings/rbzip2.h>
+#endif
+
+/* LZMA members decode through the 7z backend's LZMA decoder. */
+#ifdef HAVE_7ZIP
+#define ZIP_HAVE_LZMA 1
+#include <7z/r7z_lzma.h>
 #endif
 
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
@@ -81,11 +87,34 @@
 
 enum file_archive_compression_mode
 {
-   ZIP_MODE_STORED   = 0,
-   ZIP_MODE_DEFLATED = 8,
-   ZIP_MODE_BZIP2    = 12,
-   ZIP_MODE_ZSTD     = 93
+   ZIP_MODE_STORED    = 0,
+   ZIP_MODE_DEFLATED  = 8,
+   ZIP_MODE_DEFLATE64 = 9,
+   ZIP_MODE_BZIP2     = 12,
+   ZIP_MODE_LZMA      = 14,
+   ZIP_MODE_ZSTD      = 93
 };
+
+/* The modes decoded whole, in one call, into a buffer of the member's
+ * size. */
+#ifdef ZIP_HAVE_ZSTD
+#define ZIP_WHOLE_ZSTD(m)  ((m) == ZIP_MODE_ZSTD)
+#else
+#define ZIP_WHOLE_ZSTD(m)  0
+#endif
+#ifdef HAVE_RBZIP2
+#define ZIP_WHOLE_BZIP2(m) ((m) == ZIP_MODE_BZIP2)
+#else
+#define ZIP_WHOLE_BZIP2(m) 0
+#endif
+#ifdef ZIP_HAVE_LZMA
+#define ZIP_WHOLE_LZMA(m)  ((m) == ZIP_MODE_LZMA)
+#else
+#define ZIP_WHOLE_LZMA(m)  0
+#endif
+#define ZIP_MODE_WHOLE(m)  (     (m) == ZIP_MODE_DEFLATE64 \
+                              || ZIP_WHOLE_ZSTD(m) || ZIP_WHOLE_BZIP2(m) \
+                              || ZIP_WHOLE_LZMA(m))
 
 typedef struct
 {
@@ -208,7 +237,6 @@ static int64_t zip_member_input(RFILE *f, int64_t off, int64_t len,
    return filestream_read(f, buf, len);
 }
 
-#if defined(ZIP_HAVE_ZSTD) || defined(HAVE_RBZIP2)
 /* All @csize octets of a member at @off that is decoded whole: from
  * the mapping, from what the stream lends when it holds all of it, or
  * else read into *@buf, grown to *@cap as need be. NULL on failure. */
@@ -237,15 +265,35 @@ static const uint8_t *zip_member_whole(struct file_archive_transfer *state,
    return *buf;
 }
 
-/* A Zstandard or bzip2 member, @csize octets at @src, decoded whole
- * into @dst, which holds exactly its @usize; true when it decodes to
- * that and to @crc. *@bz is made at the first bzip2 member. */
+/* A member of a mode decoded whole, @csize octets at @src, into @dst,
+ * which holds exactly its @usize; true when it decodes to that and to
+ * @crc. *@bz is made at the first bzip2 member. */
 static bool zip_decode_whole(unsigned cmode, void **bz, uint8_t *dst,
       uint32_t usize, const uint8_t *src, uint32_t csize, uint32_t crc)
 {
    size_t result = 0;
    bool   ok     = false;
    (void)bz;
+   if (cmode == ZIP_MODE_DEFLATE64)
+      ok = rinflate64_decode(dst, usize, src, csize, &result)
+         == RDEFLATE_PROCESS_END;
+#ifdef ZIP_HAVE_LZMA
+   /* the LZMA SDK's version, the properties' size, the properties,
+    * then the stream */
+   if (cmode == ZIP_MODE_LZMA)
+   {
+      rlzma_dec_t *dec;
+      if (     csize < 4 + RLZMA_PROPS_SIZE
+            || src[2] != RLZMA_PROPS_SIZE || src[3] != 0
+            || !(dec = (rlzma_dec_t*)malloc(sizeof(*dec))))
+         return false;
+      ok = rlzma_dec_init(dec, src + 4) == RLZMA_OK
+         && rlzma_dec_decode(dec, dst, usize, src + 4 + RLZMA_PROPS_SIZE,
+               csize - 4 - RLZMA_PROPS_SIZE) == RLZMA_OK;
+      free(dec);
+      result = usize;
+   }
+#endif
 #ifdef ZIP_HAVE_ZSTD
    if (cmode == ZIP_MODE_ZSTD)
       ok = rzstd_decode(dst, usize, src, csize, &result) == RZSTD_PROCESS_END;
@@ -261,7 +309,6 @@ static bool zip_decode_whole(unsigned cmode, void **bz, uint8_t *dst,
 #endif
    return ok && result == usize && encoding_crc32(0, dst, usize) == crc;
 }
-#endif
 
 static bool zlib_stream_decompress_data_to_file_init(
       void *context, file_archive_file_handle_t *handle,
@@ -609,9 +656,7 @@ static int zlib_stream_decompress_data_to_file_iterate(
 
       return 0;   /* still more data to process */
    }
-#if defined(ZIP_HAVE_ZSTD) || defined(HAVE_RBZIP2)
-   else if (     zip_context->cmode == ZIP_MODE_ZSTD
-              || zip_context->cmode == ZIP_MODE_BZIP2)
+   else if (ZIP_MODE_WHOLE(zip_context->cmode))
    {
       const uint8_t *src = zip_member_whole(state, zip_context->fdoffset,
             zip_context->csize, &zip_context->tmpbuf,
@@ -633,7 +678,6 @@ static int zlib_stream_decompress_data_to_file_iterate(
       handle->data = zip_context->decompressed_data;
       return 1;
    }
-#endif
 
    /* No idea what kind of compression this is */
    return -1;
@@ -957,7 +1001,8 @@ again:
    if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
       return 0;
 
-   *cmode         = read_le(zip_context->directory_entry + 10, 2); /* compression mode: 0 store, 8 deflate, 12 bzip2, 93 zstd */
+   /* 0 store, 8 deflate, 9 deflate64, 12 bzip2, 14 lzma, 93 zstd */
+   *cmode         = read_le(zip_context->directory_entry + 10, 2);
    *checksum      = read_le(zip_context->directory_entry + 16, 4); /* CRC32 */
    *csize         = read_le(zip_context->directory_entry + 20, 4); /* compressed size */
    *size          = read_le(zip_context->directory_entry + 24, 4); /* uncompressed size */
@@ -1180,13 +1225,7 @@ file_archive_entry_source_t *file_archive_entry_source_open(
          s->tmpbuf_len = _READ_CHUNK_SIZE;
       }
    }
-#ifdef ZIP_HAVE_ZSTD
-   else if (s->cmode == ZIP_MODE_ZSTD) { }
-#endif
-#ifdef HAVE_RBZIP2
-   else if (s->cmode == ZIP_MODE_BZIP2) { }
-#endif
-   else if (s->cmode != ZIP_MODE_STORED)
+   else if (s->cmode != ZIP_MODE_STORED && !ZIP_MODE_WHOLE(s->cmode))
       goto error_stop;               /* unknown method */
 
    free(archive);
@@ -1234,11 +1273,10 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
       return n;
    }
 
-#if defined(ZIP_HAVE_ZSTD) || defined(HAVE_RBZIP2)
-   /* Zstandard and bzip2 members do not stop part way: the first read
+   /* The modes decoded whole do not stop part way: the first read
     * decodes all of it straight into dst, which has room to the
     * member's end */
-   if (s->cmode == ZIP_MODE_ZSTD || s->cmode == ZIP_MODE_BZIP2)
+   if (ZIP_MODE_WHOLE(s->cmode))
    {
       const uint8_t *src;
       if (s->out_off)
@@ -1251,7 +1289,6 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
       s->out_off = s->usize;
       return (int64_t)s->usize;
    }
-#endif
 
    /* DEFLATED: inflate directly into dst until n produced or end */
 #ifdef ARCHIVE_HAVE_ZLIB

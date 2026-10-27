@@ -25,6 +25,7 @@ WINDOW_SOURCES := decompress_window_test.c \
            $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+           $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
@@ -47,8 +48,6 @@ WINDOW_LIBS   := -lz
 # without HAVE_ZLIB ship with; its output-window handling differs.
 ifeq ($(BUILTIN_DEFLATE),1)
    WINDOW_CFLAGS  += -DARCHIVE_USE_BUILTIN_DEFLATE
-   WINDOW_SOURCES += $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c
-   WINDOW_OBJS    := $(call sample_objs,$(WINDOW_SOURCES:.c=.o))
 else
    WINDOW_CFLAGS  += -DHAVE_ZLIB
 endif

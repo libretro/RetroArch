@@ -111,6 +111,7 @@ jobs:
             archive_zstd_test
             archive_zst_test
             archive_bz2_test
+            archive_zip_methods_test
             archive_rar_test
             archive_stream_test
             archive_7z_test
