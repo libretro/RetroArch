@@ -475,6 +475,7 @@ public:
    QTabWidget* browserAndPlaylistTabWidget();
    QString getPlaylistDefaultCore(QString plName);
    ViewOptionsDialog* viewOptionsDialog();
+   ShortcutsDialog* shortcutsDialog();
    QVector<QHash<QString, QString> > getCoreInfo();
    void setTheme(Theme theme = THEME_SYSTEM_DEFAULT);
    Theme theme();
@@ -679,6 +680,7 @@ private:
    QString m_sidebarPending[4];
    bool m_sidebarAcceptDrop = false;
    ViewOptionsDialog *m_viewOptionsDialog;
+   ShortcutsDialog *m_shortcutsDialog;
    CoreInfoDialog *m_coreInfoDialog;
    QStyle *m_defaultStyle;
    QPalette m_defaultPalette;

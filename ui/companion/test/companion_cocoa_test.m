@@ -740,6 +740,32 @@ int main(int argc, char **argv)
       [ow orderOut:nil];
    }
 
+   /* --- Controller Shortcuts window: an empty row of each kind; text
+    * typed on the first sets combination 1, and its row follows --- */
+   {
+      extern char stub_entry_text[256][64];
+      NSWindow *ow; NSTableView *ot; id ds;
+      NSTableColumn *tc;
+      memset(stub_entry_text, 0, sizeof(stub_entry_text));
+      [ctrl performSelector:NSSelectorFromString(@"showShortcuts:") withObject:nil];
+      pump(data, 200);
+      ow = [ctrl valueForKey:@"scWindow"]; ot = [ctrl valueForKey:@"scTable"];
+      CHECK(ow && [ow isVisible] && ot, "Controller Shortcuts window shown");
+      CHECK([ot numberOfRows] == 2, "an empty combination and macro row (%ld)", (long)[ot numberOfRows]);
+      ds = [ot dataSource];
+      tc = [ot tableColumnWithIdentifier:@"sctext"];
+      [ds tableView:ot setObjectValue:@"l3+r3 : menu_toggle" forTableColumn:tc row:0];
+      CHECK(!strcmp(stub_entry_text[1], "l3+r3 : menu_toggle"), "editing the row sets combination 1");
+      CHECK([ot numberOfRows] == 3, "its row and a new empty one (%ld)", (long)[ot numberOfRows]);
+      {
+         id v = [ds tableView:ot objectValueForTableColumn:[ot tableColumnWithIdentifier:@"sclabel"] row:0];
+         CHECK([[v description] isEqualToString:@"Combination 1"], "row label (got %s)", [[v description] UTF8String]);
+      }
+      [ds tableView:ot setObjectValue:@"" forTableColumn:tc row:0];
+      CHECK(!stub_entry_text[1][0] && [ot numberOfRows] == 2, "an empty text takes it out");
+      [ow orderOut:nil];
+   }
+
    /* --- hide / unhide, new / delete playlists --- */
    {
       NSInteger before = [leftTable numberOfRows];

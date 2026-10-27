@@ -1682,6 +1682,7 @@ MainWindow::MainWindow(QWidget *parent) :
    /* Companion settings live in retroarch.cfg (settings_t) now, shared
     * with the native companions. */
    m_viewOptionsDialog   = new ViewOptionsDialog(this, 0);
+   m_shortcutsDialog     = new ShortcutsDialog(this);
    m_playlistEntryDialog = new PlaylistEntryDialog(this, 0);
 
    /* default NULL parameter for parent wasn't added until 5.7 */
@@ -3111,6 +3112,7 @@ PlaylistEntryDialog* MainWindow::playlistEntryDialog()
 }
 
 ViewOptionsDialog* MainWindow::viewOptionsDialog() {return m_viewOptionsDialog;}
+ShortcutsDialog* MainWindow::shortcutsDialog() {return m_shortcutsDialog;}
 
 void MainWindow::setCoreActions()
 {
@@ -4861,6 +4863,9 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
    viewMenu->addAction(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS),
             mainwindow->viewOptionsDialog(), SLOT(showDialog()));
+   viewMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS),
+            mainwindow->shortcutsDialog(), SLOT(showDialog()));
 
    helpMenu = menu->addMenu(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));

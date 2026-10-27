@@ -637,6 +637,7 @@ static int cw_file_icon(const char *path, DWORD attrs, UINT flags)
 #define COMPANION_WIN32_OPTS_CLASS  "RetroArchCompanionCoreOptions"
 #define COMPANION_WIN32_SHP_CLASS   "RetroArchCompanionShaderParams"
 #define COMPANION_WIN32_SET_CLASS   "RetroArchCompanionOptions"
+#define COMPANION_WIN32_SC_CLASS    "RetroArchCompanionShortcuts"
 #define COMPANION_WIN32_TITLE      "RetroArch"
 /* Startup window size, matching the Qt companion, clamped to the work
  * area with a floor so it stays usable on sub-720p displays (a 640x480
@@ -793,6 +794,7 @@ typedef struct ui_companion_win32_wimp
    HWND opts_hwnd, opts_list;          /* Core Options (Qt's dialog) */
    HWND shp_hwnd, shp_list, shp_edit;  /* Shader Parameters */
    HWND set_hwnd, set_list, set_edit;  /* Options (Qt's View > Options) */
+   HWND sc_hwnd, sc_list, sc_edit, sc_help; /* Controller Shortcuts */
    HWND cores_list;
    bool cores_class_registered;
    /* When the Load Core window was opened to run a specific content
@@ -3790,6 +3792,152 @@ static void cw_set_show(ui_companion_win32_wimp_t *w)
    SetForegroundWindow(w->set_hwnd);
 }
 
+/* --- Controller Shortcuts window ----------------------------------------
+ * The hotkeys list's combinations and macros as rows of text: picking a
+ * row puts its text in the field below and how it is written under the
+ * list; Apply sets it, an empty field takes it out, and the rows are
+ * read again - the empty row to add the next moves on. */
+
+static void cw_sc_fill(ui_companion_win32_wimp_t *w, int keep)
+{
+   size_t i, n;
+   if (!w->sc_list)
+      return;
+   SendMessageA(w->sc_list, LVM_DELETEALLITEMS, 0, 0);
+   n = companion_core_shortcut_count(w->core);
+   for (i = 0; i < n; i++)
+   {
+      LVITEMA it;
+      char label[64], text[512];
+      memset(&it, 0, sizeof(it));
+      it.mask    = LVIF_TEXT;
+      it.iItem   = (int)i;
+      it.pszText = (LPSTR)companion_core_shortcut_label(w->core, i, label, sizeof(label));
+      cw_lv_item(w->sc_list, LVM_INSERTITEMA, 0, &it);
+      it.iSubItem = 1;
+      it.pszText  = (LPSTR)companion_core_shortcut_get(w->core, i, text, sizeof(text));
+      cw_lv_item(w->sc_list, LVM_SETITEMTEXTA, (WPARAM)i, &it);
+   }
+   if (keep >= 0 && (size_t)keep < n)
+      ListView_SetItemState(w->sc_list, keep, LVIS_SELECTED | LVIS_FOCUSED,
+            LVIS_SELECTED | LVIS_FOCUSED);
+}
+
+static int cw_sc_selected(ui_companion_win32_wimp_t *w)
+{
+   return (int)SendMessageA(w->sc_list, LVM_GETNEXTITEM, (WPARAM)-1,
+         MAKELPARAM(LVNI_SELECTED, 0));
+}
+
+static void cw_sc_select(ui_companion_win32_wimp_t *w, int item)
+{
+   char text[512];
+   char help[2048];
+   if (item < 0)
+      return;
+   cw_set_text(w->sc_edit, companion_core_shortcut_get(w->core, (size_t)item,
+            text, sizeof(text)));
+   cw_set_text(w->sc_help, companion_core_shortcut_help(w->core,
+            companion_core_shortcut_is_macro(w->core, (size_t)item),
+            help, sizeof(help)));
+}
+
+static LRESULT CALLBACK cw_sc_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+   ui_companion_win32_wimp_t *w = g_win32_wimp;
+   switch (msg)
+   {
+      case WM_SIZE:
+         if (w && w->sc_list)
+         {
+            RECT rc;
+            GetClientRect(hwnd, &rc);
+            MoveWindow(w->sc_list, 0, 0, rc.right, rc.bottom - 94, TRUE);
+            MoveWindow(w->sc_help, 5, rc.bottom - 89, rc.right - 10, 56, TRUE);
+            MoveWindow(w->sc_edit, 5, rc.bottom - 29, rc.right - 190, 24, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_SC_APPLY), rc.right - 180, rc.bottom - 29, 85, 24, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_SC_CLOSE), rc.right - 90,  rc.bottom - 29, 85, 24, TRUE);
+         }
+         return 0;
+      case WM_CLOSE:
+         ShowWindow(hwnd, SW_HIDE);
+         return 0;
+      case WM_COMMAND:
+         if (!w)
+            break;
+         switch (LOWORD(wparam))
+         {
+            case IDC_CW_SC_APPLY:
+            case IDOK:
+               {
+                  int sel = cw_sc_selected(w);
+                  char txt[512];
+                  cw_get_text(w->sc_edit, txt, sizeof(txt));
+                  if (sel < 0 || !companion_core_shortcut_set(w->core, (size_t)sel, txt))
+                  {
+                     MessageBeep(MB_ICONEXCLAMATION);
+                     return 0;
+                  }
+                  cw_sc_fill(w, sel);
+                  cw_sc_select(w, cw_sc_selected(w));
+               }
+               return 0;
+            case IDC_CW_SC_CLOSE:
+            case IDCANCEL:
+               ShowWindow(hwnd, SW_HIDE);
+               return 0;
+         }
+         break;
+      case WM_NOTIFY:
+         if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_SC_LIST)
+         {
+            NMHDR *hdr = (NMHDR*)lparam;
+            if (hdr->code == NM_DBLCLK || hdr->code == NM_RETURN)
+            {
+               SetFocus(w->sc_edit);
+               SendMessageA(w->sc_edit, EM_SETSEL, 0, -1);
+               return 0;
+            }
+            if (hdr->code == LVN_ITEMCHANGED)
+            {
+               NMLISTVIEW *nm = (NMLISTVIEW*)lparam;
+               if ((nm->uChanged & LVIF_STATE) && (nm->uNewState & LVIS_SELECTED))
+                  cw_sc_select(w, nm->iItem);
+            }
+         }
+         break;
+   }
+   return CwDefWindowProc(hwnd, msg, wparam, lparam);
+}
+
+static void cw_sc_show(ui_companion_win32_wimp_t *w)
+{
+   if (!w->sc_hwnd)
+   {
+      HINSTANCE inst = GetModuleHandleA(NULL);
+      w->sc_hwnd = cw_table_window(w, COMPANION_WIN32_SC_CLASS, cw_sc_wndproc,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS),
+            640, &w->sc_list, IDC_CW_SC_LIST);
+      if (!w->sc_hwnd)
+         return;
+      cw_table_column(w, w->sc_list, 0, "Shortcut", 160);
+      cw_table_column(w, w->sc_list, 1, "As written", 450);
+      w->sc_help = cw_create(0, "STATIC", "",
+            WS_CHILD | WS_VISIBLE | SS_LEFT,
+            0, 0, 0, 0, w->sc_hwnd, (HMENU)IDC_CW_SC_HELP, inst, NULL);
+      w->sc_edit = cw_create(WS_EX_CLIENTEDGE, "EDIT", "",
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_AUTOHSCROLL,
+            0, 0, 0, 0, w->sc_hwnd, (HMENU)IDC_CW_SC_EDIT, inst, NULL);
+      cw_table_button(w->sc_hwnd, "Apply", IDC_CW_SC_APPLY, true);
+      cw_table_button(w->sc_hwnd, "Close", IDC_CW_SC_CLOSE, false);
+      cw_table_font(w->sc_hwnd);
+   }
+   cw_sc_fill(w, 0);
+   cw_sc_select(w, cw_sc_selected(w));
+   ShowWindow(w->sc_hwnd, SW_SHOW);
+   SetForegroundWindow(w->sc_hwnd);
+}
+
 /* Qt's Load Custom Core: a file picker for a core library. */
 /* Qt's Load Custom Core: pick a core library from disk and load it.
  * From the File menu (@owner the companion) and from the Load Core
@@ -4827,6 +4975,9 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_OPTIONS:
                cw_set_show(w);
                return 0;
+            case IDM_CW_SHORTCUTS:
+               cw_sc_show(w);
+               return 0;
             case IDC_CW_CORE_INFO_BTN:
                cw_info_toggle(w);
                return 0;
@@ -5235,6 +5386,8 @@ static HMENU cw_build_menu(ui_companion_win32_wimp_t *w)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS));
    cw_append_menu(view, MF_STRING, IDM_CW_OPTIONS,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS));
+   cw_append_menu(view, MF_STRING, IDM_CW_SHORTCUTS,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS));
 
    {
       /* Same top-level titles as the Qt menubar, from the same strings. */
@@ -5710,6 +5863,8 @@ static void ui_companion_win32_wimp_deinit(void *data)
       DestroyWindow(w->shp_hwnd);
    if (w->set_hwnd)
       DestroyWindow(w->set_hwnd);
+   if (w->sc_hwnd)
+      DestroyWindow(w->sc_hwnd);
    if (w->cores_class_registered)
       cw_unregister_class(COMPANION_WIN32_CORES_CLASS, GetModuleHandleA(NULL));
    cw_log_drain(w->hwnd);

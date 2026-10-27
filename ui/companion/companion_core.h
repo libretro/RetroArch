@@ -523,6 +523,28 @@ bool        companion_core_setting_set(companion_core_t *core, size_t i, const c
 size_t      companion_core_setting_choice_count(companion_core_t *core, size_t i);
 const char *companion_core_setting_choice(companion_core_t *core, size_t i, size_t c);
 
+/* --- Controller shortcuts (the hotkeys list's entries and macros) -----
+ * Combinations (input_combo_N) and macros (input_macro_N) as rows of
+ * text, each as the configuration writes it: every combination there
+ * is by its number and an empty row to add the next, then the same for
+ * macros. companion_core_shortcut_count() reads what there is; the
+ * other calls go by that reading, so call it again after a set. */
+size_t      companion_core_shortcut_count(companion_core_t *core);
+bool        companion_core_shortcut_is_macro(companion_core_t *core, size_t i);
+/* "Combination 3", "New combination", "Macro 1", "New macro" */
+const char *companion_core_shortcut_label(companion_core_t *core, size_t i,
+      char *s, size_t len);
+const char *companion_core_shortcut_get(companion_core_t *core, size_t i,
+      char *s, size_t len);
+/* Set from text; an empty text takes the row's number out. False when
+ * the text is not read as a combination or a macro, which is then left
+ * as it was. */
+bool        companion_core_shortcut_set(companion_core_t *core, size_t i,
+      const char *text);
+/* How a row is written, and for a combination what it can do. */
+const char *companion_core_shortcut_help(companion_core_t *core, bool macro,
+      char *s, size_t len);
+
 /* --- Core Options (Qt's Core Options dialog) ---------------------------
  * The running core's options as a flat table: one row per visible
  * option with a description, its possible values (labels) and the

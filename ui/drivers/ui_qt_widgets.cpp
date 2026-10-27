@@ -10,6 +10,10 @@
 #include <QDropEvent>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QHeaderView>
+#include <QLabel>
+#include <QLineEdit>
+#include <QTableWidget>
 #include <QHash>
 #include <QInputDialog>
 #include <QKeyEvent>
@@ -2256,6 +2260,101 @@ bool PlaylistEntryDialog::showDialog(const PlaylistEntry &entry)
    loadPlaylistOptions();
    setEntryValues(entry);
    return (exec() == QDialog::Accepted);
+}
+
+ShortcutsDialog::ShortcutsDialog(QWidget *parent) :
+   QDialog(parent)
+   ,m_table(new QTableWidget(0, 2, this))
+   ,m_help(new QLabel(this))
+   ,m_edit(new QLineEdit(this))
+{
+   QHBoxLayout *row     = new QHBoxLayout();
+   QPushButton *apply   = new QPushButton("Apply", this);
+   QPushButton *close   = new QPushButton("Close", this);
+   QVBoxLayout *layout  = new QVBoxLayout();
+   QStringList headers;
+
+   setWindowTitle(QString(msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS)).remove('&'));
+   headers << "Shortcut" << "As written";
+   m_table->setHorizontalHeaderLabels(headers);
+   m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
+   m_table->setSelectionMode(QAbstractItemView::SingleSelection);
+   m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+   m_table->horizontalHeader()->setStretchLastSection(true);
+   m_table->verticalHeader()->hide();
+   m_help->setWordWrap(true);
+   apply->setDefault(true);
+
+   row->addWidget(m_edit, 1);
+   row->addWidget(apply);
+   row->addWidget(close);
+   layout->addWidget(m_table, 1);
+   layout->addWidget(m_help);
+   layout->addLayout(row);
+   setLayout(layout);
+   resize(640, 420);
+
+   connect(m_table, SIGNAL(itemSelectionChanged()), this, SLOT(onRowChanged()));
+   connect(m_edit, SIGNAL(returnPressed()), this, SLOT(onApply()));
+   connect(apply, SIGNAL(clicked()), this, SLOT(onApply()));
+   connect(close, SIGNAL(clicked()), this, SLOT(hide()));
+}
+
+void ShortcutsDialog::fill(int keep)
+{
+   companion_core_t *core = ui_companion_qt_core();
+   size_t i, n            = companion_core_shortcut_count(core);
+   char label[64], text[512];
+
+   m_table->blockSignals(true);
+   m_table->setRowCount((int)n);
+   for (i = 0; i < n; i++)
+   {
+      m_table->setItem((int)i, 0, new QTableWidgetItem(QString::fromUtf8(
+                  companion_core_shortcut_label(core, i, label, sizeof(label)))));
+      m_table->setItem((int)i, 1, new QTableWidgetItem(QString::fromUtf8(
+                  companion_core_shortcut_get(core, i, text, sizeof(text)))));
+   }
+   m_table->blockSignals(false);
+   if (keep >= 0 && keep < (int)n)
+      m_table->selectRow(keep);
+   onRowChanged();
+}
+
+void ShortcutsDialog::onRowChanged()
+{
+   companion_core_t *core = ui_companion_qt_core();
+   int row                = m_table->currentRow();
+   char text[512], help[2048];
+   if (row < 0)
+      return;
+   m_edit->setText(QString::fromUtf8(companion_core_shortcut_get(core,
+               (size_t)row, text, sizeof(text))));
+   m_help->setText(QString::fromUtf8(companion_core_shortcut_help(core,
+               companion_core_shortcut_is_macro(core, (size_t)row),
+               help, sizeof(help))));
+}
+
+void ShortcutsDialog::onApply()
+{
+   int row       = m_table->currentRow();
+   QByteArray in = m_edit->text().toUtf8();
+   if (row < 0 || !companion_core_shortcut_set(ui_companion_qt_core(),
+            (size_t)row, in.constData()))
+   {
+      QApplication::beep();
+      return;
+   }
+   fill(row);
+}
+
+void ShortcutsDialog::showDialog()
+{
+   fill(0);
+   show();
+   raise();
+   activateWindow();
 }
 
 CoreInfoDialog::CoreInfoDialog(MainWindow *mainwindow, QWidget *parent) :

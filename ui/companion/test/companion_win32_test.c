@@ -420,6 +420,43 @@ int main(void)
       ol = ow ? FindWindowExA(ow, NULL, "SysListView32", NULL) : NULL;
       CHECK(ol && SendMessageA(ol, LVM_GETITEMCOUNT, 0, 0) == 13, "13 settings listed");
       if (ow) ShowWindow(ow, SW_HIDE);
+      /* Controller Shortcuts: an empty row of each kind; a combination
+       * typed on the first and applied is set, and its row follows */
+      {
+         extern char stub_entry_text[256][64];
+         HWND edit;
+         memset(stub_entry_text, 0, sizeof(stub_entry_text));
+         send_command(hwnd, IDM_CW_SHORTCUTS);
+         pump(data, 300);
+         ow = find_class_window("RetroArchCompanionShortcuts");
+         CHECK(ow && IsWindowVisible(ow), "Controller Shortcuts window shown");
+         ol   = ow ? FindWindowExA(ow, NULL, "SysListView32", NULL) : NULL;
+         edit = ow ? GetDlgItem(ow, IDC_CW_SC_EDIT) : NULL;
+         CHECK(ol && SendMessageA(ol, LVM_GETITEMCOUNT, 0, 0) == 2,
+               "an empty combination and an empty macro row");
+         if (ol && edit)
+         {
+            lv_text(ol, 0, 0, buf, sizeof(buf));
+            CHECK(string_is_equal(buf, "New combination"), "first row (got %s)", buf);
+            SetWindowTextA(edit, "l3+r3 : menu_toggle");
+            send_command(ow, IDC_CW_SC_APPLY);
+            CHECK(string_is_equal(stub_entry_text[1], "l3+r3 : menu_toggle"),
+                  "Apply sets combination 1 (got %s)", stub_entry_text[1]);
+            CHECK(SendMessageA(ol, LVM_GETITEMCOUNT, 0, 0) == 3, "its row and a new empty one");
+            lv_text(ol, 0, 1, buf, sizeof(buf));
+            CHECK(string_is_equal(buf, "l3+r3 : menu_toggle"), "the row shows it (got %s)", buf);
+            SetWindowTextA(edit, "nonsense");
+            send_command(ow, IDC_CW_SC_APPLY);
+            CHECK(string_is_equal(stub_entry_text[1], "l3+r3 : menu_toggle"),
+                  "text that does not read leaves it");
+            ListView_SetItemState(ol, 0, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+            SetWindowTextA(edit, "");
+            send_command(ow, IDC_CW_SC_APPLY);
+            CHECK(!stub_entry_text[1][0] && SendMessageA(ol, LVM_GETITEMCOUNT, 0, 0) == 2,
+                  "an empty field takes it out");
+         }
+         if (ow) ShowWindow(ow, SW_HIDE);
+      }
       core_option_manager_free(test_runloop.core_options);
       test_runloop.core_options = NULL;
    }

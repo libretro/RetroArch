@@ -71,6 +71,11 @@ enum
    IDC_CW_SET_EDIT,
    IDC_CW_SET_APPLY,
    IDC_CW_SET_CLOSE,
+   IDC_CW_SC_LIST,        /* Controller Shortcuts window */
+   IDC_CW_SC_EDIT,
+   IDC_CW_SC_HELP,
+   IDC_CW_SC_APPLY,
+   IDC_CW_SC_CLOSE,
    IDM_CW_LOAD_CORE  = 50101,
    IDM_CW_LOAD_CONTENT,
    IDM_CW_REFRESH,
@@ -101,6 +106,7 @@ enum
    IDM_CW_CORE_OPTIONS,
    IDM_CW_SHADER_PARAMS,
    IDM_CW_OPTIONS,
+   IDM_CW_SHORTCUTS,
    IDM_CW_UNLOAD_CORE,
    IDM_CW_LOAD_CUSTOM_CORE,
    /* IDM_CW_DOCK_FIRST + companion_dock_id: View > Closed Docks shows

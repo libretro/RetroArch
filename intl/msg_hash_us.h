@@ -31115,6 +31115,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
    "&Settings..."
    )
+MSG_HASH( /* The desktop companion's window of controller combinations and macros, as the hotkeys list has them */
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS,
+   "Controller &Shortcuts..."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
    "Remember dock positions:"

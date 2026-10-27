@@ -216,3 +216,60 @@ bool task_push_dbscan(const char *path, retro_task_callback_t cb)
    strlcpy(stub_last_scan_dir, path ? path : "", sizeof(stub_last_scan_dir));
    return true;
 }
+
+/* Entries and macros (input_driver.c): kept by number as their text. An
+ * entry reads when it has a colon, a macro when it has a digit, as a
+ * stand-in for the real parsers; sixteen of each at most. */
+char stub_entry_text[256][64];
+char stub_macro_text[256][64];
+
+static bool stub_shortcut_put(char (*t)[64], unsigned n, const char *spec,
+      bool (*reads)(const char *))
+{
+   unsigned i, had = 0;
+   if (!n || n > 255 || !reads(spec))
+      return false;
+   for (i = 1; i < 256; i++)
+      if (t[i][0] && i != n)
+         had++;
+   if (!t[n][0] && had >= 16)
+      return false;
+   strlcpy(t[n], spec, sizeof(t[n]));
+   return true;
+}
+
+static bool stub_entry_reads(const char *s) { return strchr(s, ':') != NULL; }
+static bool stub_macro_reads(const char *s) { return strpbrk(s, "0123456789") != NULL; }
+
+bool input_entry_add(unsigned number, const char *spec)
+{ return stub_shortcut_put(stub_entry_text, number, spec, stub_entry_reads); }
+bool input_entry_remove(unsigned number)
+{
+   if (!number || number > 255 || !stub_entry_text[number][0])
+      return false;
+   stub_entry_text[number][0] = '\0';
+   return true;
+}
+size_t input_entry_spec(unsigned number, char *s, size_t len)
+{
+   if (!number || number > 255 || !stub_entry_text[number][0])
+      return 0;
+   return strlcpy(s, stub_entry_text[number], len);
+}
+size_t input_entry_targets(char *s, size_t len)
+{ return strlcpy(s, "menu_toggle|quit|macro_1", len); }
+bool input_macro_set(unsigned number, const char *spec)
+{ return stub_shortcut_put(stub_macro_text, number, spec, stub_macro_reads); }
+bool input_macro_remove(unsigned number)
+{
+   if (!number || number > 255 || !stub_macro_text[number][0])
+      return false;
+   stub_macro_text[number][0] = '\0';
+   return true;
+}
+size_t input_macro_spec(unsigned number, char *s, size_t len)
+{
+   if (!number || number > 255 || !stub_macro_text[number][0])
+      return 0;
+   return strlcpy(s, stub_macro_text[number], len);
+}

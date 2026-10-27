@@ -872,6 +872,73 @@ static void test_settings_table(void)
    companion_core_free(c);
 }
 
+/* Controller shortcuts: the hotkeys list's entries and macros as rows of
+ * text, an empty row of each kind to add the next. */
+extern char stub_entry_text[256][64];
+extern char stub_macro_text[256][64];
+
+static void test_shortcuts(void)
+{
+   companion_core_t *c = make_core();
+   char buf[256];
+   size_t n;
+   unsigned i;
+
+   memset(stub_entry_text, 0, sizeof(stub_entry_text));
+   memset(stub_macro_text, 0, sizeof(stub_macro_text));
+   n = companion_core_shortcut_count(c);
+   CHECK(n == 2, "with none, one empty row of each kind (got %u)", (unsigned)n);
+   CHECK(!companion_core_shortcut_is_macro(c, 0) && companion_core_shortcut_is_macro(c, 1),
+         "combinations come first, then macros");
+   CHECK(string_is_equal(companion_core_shortcut_label(c, 0, buf, sizeof(buf)), "New combination"),
+         "the empty combination row (got %s)", buf);
+   CHECK(!*companion_core_shortcut_get(c, 0, buf, sizeof(buf)), "an empty row has no text");
+
+   /* added on the empty row, under the lowest number free */
+   CHECK(companion_core_shortcut_set(c, 0, "l3+r3 : menu_toggle"), "a combination is added");
+   CHECK(string_is_equal(stub_entry_text[1], "l3+r3 : menu_toggle"), "it is number 1");
+   n = companion_core_shortcut_count(c);
+   CHECK(n == 3 && string_is_equal(companion_core_shortcut_label(c, 0, buf, sizeof(buf)), "Combination 1"),
+         "the row is Combination 1 and a new empty row follows");
+   CHECK(string_is_equal(companion_core_shortcut_get(c, 0, buf, sizeof(buf)), "l3+r3 : menu_toggle"),
+         "the row reads back as written");
+   CHECK(!companion_core_shortcut_set(c, 0, "nonsense"), "text that does not read is refused");
+   CHECK(string_is_equal(stub_entry_text[1], "l3+r3 : menu_toggle"), "and the entry is left as it was");
+
+   /* a macro, on its empty row */
+   CHECK(companion_core_shortcut_set(c, 2, "down 2, a 4"), "a macro is added");
+   n = companion_core_shortcut_count(c);
+   CHECK(n == 4 && companion_core_shortcut_is_macro(c, 2)
+         && string_is_equal(companion_core_shortcut_label(c, 2, buf, sizeof(buf)), "Macro 1"),
+         "the macro is a row of its own after the combinations");
+   CHECK(!companion_core_shortcut_set(c, 3, "no steps"), "a macro that does not read is refused");
+
+   /* the lowest number free is taken */
+   strlcpy(stub_entry_text[3], "a : quit", sizeof(stub_entry_text[3]));
+   companion_core_shortcut_count(c);
+   CHECK(companion_core_shortcut_set(c, 2, "b : quit") && string_is_equal(stub_entry_text[2], "b : quit"),
+         "the empty row adds number 2, the lowest free");
+
+   /* an empty text takes the number out */
+   n = companion_core_shortcut_count(c);
+   CHECK(companion_core_shortcut_set(c, 0, "  ") && !stub_entry_text[1][0], "an empty text takes it out");
+   CHECK(companion_core_shortcut_count(c) == n - 1, "and its row goes");
+
+   /* full: no empty row to add a seventeenth */
+   for (i = 1; i <= 16; i++)
+      snprintf(stub_entry_text[i], sizeof(stub_entry_text[i]), "a : quit");
+   n = companion_core_shortcut_count(c);
+   CHECK(n == 16 + 2, "sixteen combinations, no empty row for them (got %u)", (unsigned)n);
+   CHECK(!companion_core_shortcut_set(c, 99, "a : quit"), "a row past the table is refused");
+
+   CHECK(strstr(companion_core_shortcut_help(c, false, buf, sizeof(buf)), "menu_toggle|quit") != NULL,
+         "a combination's help lists what it can do");
+   CHECK(*companion_core_shortcut_help(c, true, buf, sizeof(buf)), "a macro has help");
+   memset(stub_entry_text, 0, sizeof(stub_entry_text));
+   memset(stub_macro_text, 0, sizeof(stub_macro_text));
+   companion_core_free(c);
+}
+
 /* Hidden playlists: the comma-separated setting Qt's context menu
  * maintains, parsed and written in C (string_split drops empty parts on
  * every Qt back to 4, which Qt's own split() flag does not). */
@@ -1375,6 +1442,7 @@ int main(void)
    test_rename_add_install();
    test_options_and_shader_params();
    test_settings_table();
+   test_shortcuts();
    test_hidden_new_delete();
    test_hidden_playlists();
    test_run_paths();

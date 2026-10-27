@@ -341,6 +341,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSWindow *optsWindow;  NSTableView *optsTable;   /* View > Core Options */
    NSWindow *shpWindow;   NSTableView *shpTable;    /* View > Shader Parameters */
    NSWindow *setWindow;   NSTableView *setTable;    /* View > Options */
+   NSWindow *scWindow;    NSTableView *scTable;     /* View > Controller Shortcuts */
    NSTabView *browserTabs;            /* Playlists | File Browser */
    NSButton *brUp, *brStart, *brDownloads; /* Qt's browser toolbar */
    NSScrollView *playlistsScroll;
@@ -430,6 +431,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)openDocs:(id)sender;
 - (void)showCoreOptions:(id)sender;
 - (void)showOptions:(id)sender;
+- (void)showShortcuts:(id)sender;
 - (void)settingActivate:(id)sender;
 - (void)applyTheme;
 - (void)optionCycle:(id)sender;
@@ -1661,6 +1663,9 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS))
       action:@selector(showOptions:) keyEquivalent:@","];
    [item setTarget:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS))
+      action:@selector(showShortcuts:) keyEquivalent:@""];
+   [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
    item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION))
       action:@selector(openDocs:) keyEquivalent:@""];
@@ -2556,7 +2561,8 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    if (optsWindow) { [optsWindow orderOut:nil]; RELEASE(optsWindow); }
    if (shpWindow)  { [shpWindow orderOut:nil];  RELEASE(shpWindow); }
    if (setWindow)  { [setWindow orderOut:nil];  RELEASE(setWindow); }
-   RELEASE(optsTable); RELEASE(shpTable); RELEASE(setTable);
+   if (scWindow)   { [scWindow orderOut:nil];   RELEASE(scWindow); }
+   RELEASE(optsTable); RELEASE(shpTable); RELEASE(setTable); RELEASE(scTable);
    free(rowMap);
    rowMap = NULL;
    string_list_free(infoKeys);
@@ -2661,6 +2667,13 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       return nil;
    if (tv == setTable)
       help = companion_core_setting_sublabel(wimp->core, (size_t)row);
+   else if (tv == scTable)
+   {
+      static char sc_help[2048];
+      help = companion_core_shortcut_help(wimp->core,
+            companion_core_shortcut_is_macro(wimp->core, (size_t)row),
+            sc_help, sizeof(sc_help));
+   }
    else if (tv == optsTable)
       help = companion_core_option_info(wimp->core, (size_t)row);
    return (help && *help) ? [NSString stringWithUTF8String:help] : nil;
@@ -2676,6 +2689,8 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       return (NSInteger)companion_core_shader_param_count(wimp->core);
    if (tv == setTable)
       return (NSInteger)companion_core_setting_count(wimp->core);
+   if (tv == scTable)
+      return (NSInteger)companion_core_shortcut_count(wimp->core);
    if (tv == playlists)
       return browseMode
          ? (NSInteger)companion_core_browse_dir_count(wimp->core)
@@ -2763,6 +2778,13 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       }
       else
          s = companion_core_setting_label(wimp->core, (size_t)row);
+   }
+   else if (tv == scTable)
+   {
+      static char scbuf[512];
+      s = [[col identifier] isEqualToString:@"sctext"]
+         ? companion_core_shortcut_get(wimp->core, (size_t)row, scbuf, sizeof(scbuf))
+         : companion_core_shortcut_label(wimp->core, (size_t)row, scbuf, sizeof(scbuf));
    }
    else if (tv == coresTable)
       s = [[col identifier] isEqualToString:@"core"]
@@ -4052,6 +4074,13 @@ static const char *cc_thumb_subdir(int t)
 {
    if (tv == shpTable && wimp && [[col identifier] isEqualToString:@"pval"])
       companion_core_shader_param_set(wimp->core, (size_t)row, [[obj description] floatValue]);
+   else if (tv == scTable && wimp && [[col identifier] isEqualToString:@"sctext"])
+   {
+      /* the rows follow what there is: the empty row moves on */
+      if (!companion_core_shortcut_set(wimp->core, (size_t)row, [[obj description] UTF8String]))
+         NSBeep();
+      [scTable reloadData];
+   }
    else if (tv == setTable && wimp && [[col identifier] isEqualToString:@"sval"])
    {
       if (!companion_core_setting_set(wimp->core, (size_t)row, [[obj description] UTF8String]))
@@ -4081,6 +4110,28 @@ static const char *cc_thumb_subdir(int t)
    }
    [setTable reloadData];
    [setWindow makeKeyAndOrderFront:nil];
+}
+
+/* --- Controller Shortcuts window ----------------------------------------
+ * The hotkeys list's combinations and macros as rows of text, the text
+ * editable; how a row is written is its tooltip. An empty text takes
+ * the row out. */
+- (void)showShortcuts:(id)sender
+{
+   if (!scWindow)
+   {
+      NSTableView *tv = nil;
+      scWindow = [self makeTableWindow:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS)
+         columns:[NSArray arrayWithObjects:@"Shortcut", @"As written", nil]
+         ids:[NSArray arrayWithObjects:@"sclabel", @"sctext", nil]
+         widths:[NSArray arrayWithObjects:[NSNumber numberWithDouble:160.0], [NSNumber numberWithDouble:450.0], nil]
+         table:&tv
+         buttons:[NSArray array] actions:[NSArray array]];
+      scTable = tv;
+      [[scTable tableColumnWithIdentifier:@"sctext"] setEditable:YES];
+   }
+   [scTable reloadData];
+   [scWindow makeKeyAndOrderFront:nil];
 }
 
 - (void)settingActivate:(id)sender
