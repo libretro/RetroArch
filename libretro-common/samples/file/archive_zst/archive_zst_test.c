@@ -24,7 +24,8 @@
  * extracted through a transfer, from a plain file and through a VFS
  * that lends the whole file in place: the member comes out exact every
  * way, and where the VFS lends the frame it is decoded there rather
- * than read. */
+ * than read. A frame with a window smaller than itself is extracted a
+ * block at a time, and with its stated size wrong leaves no file. */
 
 /* the lending VFS installs the implementation's own functions as a
  * frontend's */
@@ -41,9 +42,13 @@
 #include <streams/file_stream.h>
 #include <vfs/vfs_implementation.h>
 
+#include "archive_zst_fixtures.h"
+
 #define ZST_PATH  "archive_zst_test.bin.zst"
 #define OUT_PATH  "archive_zst_test.out"
 #define DATA_LEN  (3 * 1024 * 1024 + 17)
+#define WIN_PATH  "archive_zst_win.bin.zst"
+#define WIN_LEN   655300
 
 static unsigned       failures;
 static uint8_t       *data;
@@ -162,6 +167,82 @@ static void check_extract(const char *what, bool lend)
    remove(OUT_PATH);
 }
 
+static void gen(uint8_t *d, size_t n, uint32_t x, unsigned alpha)
+{
+   size_t i;
+   for (i = 0; i < n; i++)
+   {
+      x    = x * 1103515245u + 12345u;
+      d[i] = (uint8_t)('a' + (x >> 16) % alpha);
+   }
+}
+
+/* fx_win_zst extracted, and with its stated size one out */
+static void check_window(void)
+{
+   uint8_t *want = (uint8_t*)malloc(WIN_LEN);
+   uint8_t  fx[sizeof(fx_win_zst)];
+   unsigned i, k;
+
+   if (!want)
+   {
+      fail("window", "no memory");
+      return;
+   }
+   gen(want, 131000, 7, 2);
+   for (i = 1; i < 5; i++)
+      memcpy(want + i * 131000, want, 131000);
+   gen(want + 655000, 300, 9, 26);
+
+   install_vfs(false);
+   for (k = 0; k < 2; k++)
+   {
+      struct archive_extract_userdata userdata;
+      file_archive_transfer_t state;
+      unsigned extracted = 0;
+      bool     returnerr = true;
+      void    *got       = NULL;
+      int64_t  got_len   = 0;
+      FILE    *f;
+      const char *what = k ? "window, size wrong" : "window";
+
+      memcpy(fx, fx_win_zst, sizeof(fx));
+      /* the low octet of the content size, after the magic, the frame
+       * header descriptor and the window descriptor */
+      if (k)
+         fx[6] ^= 1;
+      if (     !(f = fopen(WIN_PATH, "wb"))
+            || fwrite(fx, 1, sizeof(fx), f) != sizeof(fx))
+      {
+         fail(what, "cannot write");
+         if (f)
+            fclose(f);
+         continue;
+      }
+      fclose(f);
+      memset(&state, 0, sizeof(state));
+      memset(&userdata, 0, sizeof(userdata));
+      state.type       = ARCHIVE_TRANSFER_INIT;
+      userdata.cb_data = &extracted;
+      while (file_archive_parse_file_iterate(&state, &returnerr, WIN_PATH,
+               NULL, extract_cb, &userdata) == 0) { }
+      if (k)
+      {
+         if (extracted || filestream_read_file(OUT_PATH, &got, &got_len))
+            fail(what, "extracted");
+      }
+      else if (extracted != 1)
+         fail(what, "not extracted");
+      else if (!filestream_read_file(OUT_PATH, &got, &got_len)
+            || got_len != WIN_LEN || memcmp(got, want, WIN_LEN))
+         fail(what, "member differs");
+      free(got);
+      remove(OUT_PATH);
+   }
+   remove(WIN_PATH);
+   free(want);
+}
+
 int main(void)
 {
    size_t   cap;
@@ -190,6 +271,7 @@ int main(void)
    check_read("read, lent", true);
    check_extract("extract, plain file", false);
    check_extract("extract, lent", true);
+   check_window();
 
    remove(ZST_PATH);
    free(frame);

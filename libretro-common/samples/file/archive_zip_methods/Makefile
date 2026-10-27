@@ -4,7 +4,7 @@ TARGET := archive_zip_methods_test
 
 LIBRETRO_COMM_DIR := ../../..
 
-# Deflate64, LZMA and bzip2 zip members, mapped with MMAP=1 (the
+# Deflate64, LZMA, bzip2 and Zstandard zip members, mapped with MMAP=1 (the
 # default) and read through the stream with MMAP=0. HAVE_7ZIP brings
 # the LZMA decoder.
 SOURCES := \
@@ -20,6 +20,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_7z.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_bz2.c \
+	$(LIBRETRO_COMM_DIR)/file/archive_file_zstd.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_archive.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.c \
@@ -38,12 +39,13 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_rbzip2.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-override CPPFLAGS += -DHAVE_COMPRESSION -DHAVE_7ZIP -DHAVE_RBZIP2 -I$(LIBRETRO_COMM_DIR)/include
+override CPPFLAGS += -DHAVE_COMPRESSION -DHAVE_7ZIP -DHAVE_RBZIP2 -DHAVE_RZSTD -I$(LIBRETRO_COMM_DIR)/include
 CFLAGS            += -Wall -pedantic -std=gnu99 -g1
 
 MMAP ?= 1

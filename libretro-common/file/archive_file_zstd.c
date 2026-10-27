@@ -45,10 +45,16 @@
 #define ZSTD_MAGIC         "\x28\xB5\x2F\xFD"
 #define ZSTD_MAGIC_LEN     4
 
+/* Bigger than this, a file bound for disk is written out a block at a
+ * time */
+#define ZSTD_STREAM_OVER   (256 * 1024)
+
 struct zstd_file_context
 {
    file_archive_transfer_t *state;
    uint8_t *decompressed_data;
+   rzstd_blocks_t *zs;      /* the frame going out a block at a time */
+   void *owned;             /* and what it is decoded from, if read */
    char inner_filename[PATH_MAX_LENGTH];
    int64_t archive_size;
    size_t decompressed_size;
@@ -177,6 +183,8 @@ static void zstd_parse_file_free(void *context)
       return;
    if (ctx->decompressed_data)
       free(ctx->decompressed_data);
+   rzstd_blocks_free(ctx->zs);
+   free(ctx->owned);
    free(ctx);
 }
 
@@ -185,9 +193,21 @@ static bool zstd_stream_decompress_data_to_file_init(
       const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size)
 {
    struct zstd_file_context *ctx = (struct zstd_file_context*)context;
+   const uint8_t *src;
    if (!ctx)
       return false;
-   return true;
+   if (!ctx->state->pending_sink || size <= ZSTD_STREAM_OVER)
+      return true;
+   rzstd_blocks_free(ctx->zs);
+   free(ctx->owned);
+   ctx->zs    = NULL;
+   ctx->owned = NULL;
+   if (     (uint64_t)ctx->archive_size > (uint64_t)((size_t)-1)
+         || !(src = file_archive_whole(ctx->state->archive_file,
+               ctx->archive_size, &ctx->owned)))
+      return false;
+   return (ctx->zs = rzstd_blocks_begin(src, (size_t)ctx->archive_size))
+      != NULL;
 }
 
 static int zstd_stream_decompress_data_to_file_iterate(
@@ -201,6 +221,26 @@ static int zstd_stream_decompress_data_to_file_iterate(
 
    if (!ctx || !handle)
       return -1;
+
+   if (ctx->zs)
+   {
+      /* a block to the file per call */
+      const uint8_t *blk;
+      size_t         len;
+      e = rzstd_blocks_step(ctx->zs, &blk, &len);
+      if (     e == RZSTD_PROCESS_ERROR
+            || (len && filestream_write(ctx->state->pending_sink, blk,
+                  (int64_t)len) != (int64_t)len))
+         return -1;
+      if (e == RZSTD_PROCESS_NEXT)
+         return 0;
+      rzstd_blocks_free(ctx->zs);
+      free(ctx->owned);
+      ctx->zs      = NULL;
+      ctx->owned   = NULL;
+      handle->data = NULL;
+      return 1;
+   }
 
    if (ctx->decompressed_data)
    {

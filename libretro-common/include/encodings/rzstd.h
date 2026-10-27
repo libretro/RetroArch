@@ -177,15 +177,38 @@ int rzstd_encode(uint8_t *dst, size_t dst_len,
  * implementation's default. */
 #define RZSTD_WINDOW_LOG_MAX 27
 
-/* No streaming interface is offered.
+/* -------- a frame a block at a time -------- */
+
+typedef struct rzstd_blocks rzstd_blocks_t;
+
+/**
+ * rzstd_blocks_begin:
+ * @src        : one complete frame, which stays where it is until the
+ *               stream is freed
+ * @src_len    : its exact length
  *
- * One was declared here, both directions, for a caller that cannot hold
- * a whole frame. No caller in this tree is one: both CHD readers hold a
- * hunk entire, and every other user above starts from a complete frame.
- * Eleven entry points were declared and none was ever implemented:
- * nothing would have noticed them breaking, because nothing called
- * them. Absent is honest where declared was not.
+ * A frame decoded a block at a time, for one too big to have whole in
+ * memory: through a buffer of its window and two blocks more, which
+ * the matches reach back into.
+ *
+ * Returns: the stream, or NULL when @src is not a frame or its window
+ * cannot be had.
  */
+rzstd_blocks_t *rzstd_blocks_begin(const uint8_t *src, size_t src_len);
+
+/**
+ * rzstd_blocks_step:
+ * @data       : receives where the block's octets are, until the next
+ *               call
+ * @len        : receives how many
+ *
+ * Returns: RZSTD_PROCESS_NEXT with a block, RZSTD_PROCESS_END once the
+ * frame is all out and its size and end are as they should be, or
+ * RZSTD_PROCESS_ERROR.
+ */
+int rzstd_blocks_step(rzstd_blocks_t *z, const uint8_t **data, size_t *len);
+
+void rzstd_blocks_free(rzstd_blocks_t *z);
 
 /**
  * rzstd_error_name:

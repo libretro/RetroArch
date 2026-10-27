@@ -152,6 +152,7 @@ typedef struct
    void    *bz;            /* the bzip2 decoder, made at the first
                               bzip2 member and kept */
    void    *z64;           /* a streaming Deflate64 member's decoder */
+   void    *zs;            /* a streaming Zstandard member's decoder */
    void    *lz;            /* a streaming LZMA member's decoder, */
    uint16_t *lz_probs;     /* and its probabilities */
    size_t   in_have;       /* input in tmpbuf not yet taken */
@@ -218,6 +219,10 @@ static void zip_context_reset_member(zip_context_t *zip_context)
       rinflate64_free(zip_context->z64);
       zip_context->z64 = NULL;
    }
+#ifdef ZIP_HAVE_ZSTD
+   rzstd_blocks_free((rzstd_blocks_t*)zip_context->zs);
+#endif
+   zip_context->zs        = NULL;
    free(zip_context->lz);
    free(zip_context->lz_probs);
    zip_context->lz        = NULL;
@@ -427,11 +432,10 @@ static bool zlib_stream_decompress_data_to_file_init(
    zip_context->out_off               = 0;
    zip_context->cmode                 = cmode;
 
-   /* A member bound for a file goes through a window and is written
-    * out as it goes, Zstandard's aside, which is decoded whole into
-    * memory that has to hold it, as anything not bound for a file is */
-   zip_context->streaming = cmode != ZIP_MODE_ZSTD
-         && state->pending_sink && (size > ZIP_STREAM_WINDOW);
+   /* A member bound for a file is written out as it goes; anything
+    * else is decoded whole into memory that has to hold it */
+   zip_context->streaming = state->pending_sink
+         && (size > ZIP_STREAM_WINDOW);
    if (!zip_context->streaming && size > (uint64_t)((size_t)-1))
       return false;
 #ifdef ARCHIVE_HAVE_ZLIB
@@ -967,6 +971,54 @@ static int zlib_stream_decompress_data_to_file_iterate(
       return 0;
    }
 #endif
+#ifdef ZIP_HAVE_ZSTD
+   else if (zip_context->cmode == ZIP_MODE_ZSTD && zip_context->streaming)
+   {
+      /* A block to the sink per call, from where the decoder leaves
+       * it; the frame is in hand whole */
+      const uint8_t *blk;
+      size_t         len;
+      int            e;
+      if (!zip_context->zs)
+      {
+         const uint8_t *src = zip_member_whole(state, zip_context->fdoffset,
+               zip_context->csize, &zip_context->tmpbuf,
+               &zip_context->tmpbuf_len);
+         if (     !src
+               || !(zip_context->zs = rzstd_blocks_begin(src,
+                     (size_t)zip_context->csize)))
+            return -1;
+      }
+      e = rzstd_blocks_step((rzstd_blocks_t*)zip_context->zs, &blk, &len);
+      if (e == RZSTD_PROCESS_ERROR)
+         return -1;
+      if (len)
+      {
+         zip_context->crc      = encoding_crc32(zip_context->crc, blk, len);
+         zip_context->out_off += len;
+         if (     zip_context->out_off > zip_context->usize
+               || filestream_write(state->pending_sink, blk, (int64_t)len)
+               != (int64_t)len)
+            return -1;
+      }
+      if (e == RZSTD_PROCESS_NEXT)
+         return 0;
+      if (     zip_context->out_off != zip_context->usize
+            || zip_context->crc     != zip_context->expect_crc)
+         return -1;
+      rzstd_blocks_free((rzstd_blocks_t*)zip_context->zs);
+      zip_context->zs = NULL;
+      /* A whole-member buffer is not kept past its member. */
+      if (zip_context->tmpbuf_len > _READ_CHUNK_SIZE)
+      {
+         free(zip_context->tmpbuf);
+         zip_context->tmpbuf     = NULL;
+         zip_context->tmpbuf_len = 0;
+      }
+      handle->data = NULL;
+      return 1;
+   }
+#endif
 #ifdef HAVE_RBZIP2
    else if (zip_context->cmode == ZIP_MODE_BZIP2 && zip_context->streaming)
    {
@@ -1338,6 +1390,7 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    zip_context->tmpbuf_len        = 0;
    zip_context->bz                = NULL;
    zip_context->z64               = NULL;
+   zip_context->zs                = NULL;
    zip_context->lz                = NULL;
    zip_context->lz_probs          = NULL;
    zip_context->begun             = false;
@@ -1546,6 +1599,9 @@ static void zip_parse_file_free(void *context)
    zip_context_t *zip_context = (zip_context_t *)context;
    zip_context_free_stream(zip_context, false);
    rinflate64_free(zip_context->z64);
+#ifdef ZIP_HAVE_ZSTD
+   rzstd_blocks_free((rzstd_blocks_t*)zip_context->zs);
+#endif
    free(zip_context->lz);
    free(zip_context->lz_probs);
 #ifdef HAVE_RBZIP2

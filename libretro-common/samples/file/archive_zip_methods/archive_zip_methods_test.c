@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Zip members stored with Deflate64 (method 9) and LZMA (method 14),
- * in archives 7-Zip wrote. Each member is listed, read whole, extracted
+/* Zip members stored with Deflate64 (method 9), LZMA (14), bzip2 (12)
+ * and Zstandard (93). Each member is listed, read whole, extracted
  * through a transfer and read through an entry source, and must come
  * out as it went in; a member whose recorded CRC is wrong is refused,
  * and so is an LZMA member whose header does not hold 5 octets of
@@ -47,12 +47,14 @@
 #define NEAR_LEN 6000
 #define BIG_LEN  693300
 #define REP_LEN  700000
+#define WIN_LEN  655300
 
 static unsigned failures;
 static uint8_t  far_data[FAR_LEN];
 static uint8_t  near_data[NEAR_LEN];
 static uint8_t  big_data[BIG_LEN];
 static uint8_t  rep_data[REP_LEN];
+static uint8_t  win_data[WIN_LEN];
 
 static void fail(const char *what, const char *detail)
 {
@@ -100,10 +102,14 @@ static void text(uint8_t *d, size_t n)
 
 /* far.bin: a block of 33000, again, then 300 more; near.bin: 2000
  * three times; big.bin: the block 21 times, then 300; rep.bin: 2000
- * of words 350 times */
+ * of words 350 times; win.bin: 131000 of a and b 5 times, then 300 */
 static void make_contents(void)
 {
    unsigned i;
+   gen(win_data, 131000, 7, 2);
+   for (i = 1; i < 5; i++)
+      memcpy(win_data + i * 131000, win_data, 131000);
+   gen(win_data + 655000, 300, 9, 26);
    for (i = 0; i < 21; i++)
       gen(big_data + i * 33000, 33000, 1, 2);
    gen(big_data + 693000, 300, 5, 3);
@@ -344,11 +350,15 @@ int main(void)
    test_big("BZip2, big", fx_big_bzip2, sizeof(fx_big_bzip2), "rep.bin",
          rep_data, REP_LEN);
 #endif
+#ifdef HAVE_RZSTD
+   test_big("Zstandard, big", fx_big_zstd, sizeof(fx_big_zstd), "win.bin",
+         win_data, WIN_LEN);
+#endif
    if (failures)
    {
       printf("%u check(s) failed\n", failures);
       return 1;
    }
-   printf("archive_zip_methods_test: Deflate64, LZMA and bzip2 members read and extracted, big ones a window at a time\n");
+   printf("archive_zip_methods_test: Deflate64, LZMA, bzip2 and Zstandard members read and extracted, big ones a window at a time\n");
    return 0;
 }
