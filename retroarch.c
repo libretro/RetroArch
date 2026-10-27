@@ -6993,6 +6993,16 @@ void main_exit(void *args)
 #endif
    retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
+   /* After the core is unloaded: its deinit still closes the files it
+    * has open on a network share, and closing one needs the pool's
+    * connection. */
+#ifdef HAVE_SMBCLIENT
+   smb_shutdown();
+#endif
+#ifdef HAVE_NFSCLIENT
+   nfs_shutdown();
+#endif
+
    if (runloop_st->perfcnt_enable)
    {
       RARCH_LOG("[PERF] Performance counters (RetroArch):\n");
@@ -10669,13 +10679,6 @@ static void retroarch_main_quit_finish(bool first)
 
 #if defined(WEBOS) && defined(HAVE_WAYLAND)
    shutdown_webos_contexts();
-#endif
-
-#ifdef HAVE_SMBCLIENT
-   smb_shutdown();
-#endif
-#ifdef HAVE_NFSCLIENT
-   nfs_shutdown();
 #endif
 }
 
