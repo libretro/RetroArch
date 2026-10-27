@@ -20,7 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* The PPMd variant H model RAR 2.9 packs with, and RAR's range decoder.
+/* The PPMd variant H model RAR 2.9 packs with, and RAR's range decoder
+ * and 7z's.
  *
  * PPMd var.H is Dmitry Shkarin's prediction by partial matching (public
  * domain, 2001); RAR pairs it with a carry-less range coder of its own.
@@ -92,7 +93,10 @@ typedef struct rrar_ppmd7
    uint8_t   hb2flag[256];
 } rrar_ppmd7_t;
 
-/* RAR's range decoder, over a span of the packed data. */
+/* The range decoder, RAR's or 7z's, over a span of the packed data.
+ * 7z's renormalises on the range alone, without RAR's carry-less step,
+ * and a binary decision leaves the 1 side what the scale does not
+ * divide. */
 typedef struct rrar_ppmd7_range
 {
    const uint8_t *p;
@@ -101,6 +105,7 @@ typedef struct rrar_ppmd7_range
    uint32_t       code;
    uint32_t       low;
    uint32_t       past;    /* bytes read past the end, as zeros */
+   int            sevenz;  /* 7z's coder */
 } rrar_ppmd7_range_t;
 
 /* Once, before anything else. */
@@ -119,6 +124,11 @@ void rrar_ppmd7_init(rrar_ppmd7_t *p, unsigned max_order);
  * block. */
 bool rrar_ppmd7_range_init(rrar_ppmd7_range_t *rc, const uint8_t *data,
       const uint8_t *end, uint32_t past);
+
+/* 7z's decoder at @data, a PPMd coder's whole stream: a zero octet,
+ * then the code. false if the bytes cannot start one. */
+bool rrar_ppmd7z_range_init(rrar_ppmd7_range_t *rc, const uint8_t *data,
+      const uint8_t *end);
 
 /* The next byte, or a negative number if the data is not PPMd's. */
 int rrar_ppmd7_decode_symbol(rrar_ppmd7_t *p, rrar_ppmd7_range_t *rc);

@@ -146,6 +146,16 @@ static INLINE uint32_t ppmd_rc_byte(rrar_ppmd7_range_t *rc)
 
 static INLINE void ppmd_rc_normalize(rrar_ppmd7_range_t *rc)
 {
+   if (rc->sevenz)
+   {
+      while (rc->range < PPMD_RC_TOP)
+      {
+         rc->code    = (rc->code << 8) | ppmd_rc_byte(rc);
+         rc->range <<= 8;
+         rc->low   <<= 8;
+      }
+      return;
+   }
    for (;;)
    {
       if ((rc->low ^ (rc->low + rc->range)) >= PPMD_RC_TOP)
@@ -180,6 +190,21 @@ static INLINE void ppmd_rc_decode(rrar_ppmd7_range_t *rc,
  * size0 * range exactly when the quotient is under size0. */
 static INLINE unsigned ppmd_rc_bit(rrar_ppmd7_range_t *rc, uint32_t size0)
 {
+   if (rc->sevenz)
+   {
+      /* 7z's gives the 1 side what the scale does not divide */
+      uint32_t bound = (rc->range >> (PPMD_INT_BITS + PPMD_PERIOD_BITS)) * size0;
+      if (rc->code - rc->low < bound)
+      {
+         rc->range = bound;
+         ppmd_rc_normalize(rc);
+         return 0;
+      }
+      rc->low   += bound;
+      rc->range -= bound;
+      ppmd_rc_normalize(rc);
+      return 1;
+   }
    rc->range >>= PPMD_INT_BITS + PPMD_PERIOD_BITS;
    if (rc->code - rc->low < size0 * rc->range)
    {
@@ -1031,13 +1056,25 @@ bool rrar_ppmd7_range_init(rrar_ppmd7_range_t *rc, const uint8_t *data,
       const uint8_t *end, uint32_t past)
 {
    unsigned i;
-   rc->p     = data;
-   rc->end   = end;
-   rc->past  = past;
-   rc->low   = 0;
-   rc->range = 0xFFFFFFFFu;
-   rc->code  = 0;
+   rc->p      = data;
+   rc->end    = end;
+   rc->past   = past;
+   rc->low    = 0;
+   rc->range  = 0xFFFFFFFFu;
+   rc->code   = 0;
+   rc->sevenz = 0;
    for (i = 0; i < 4; i++)
       rc->code = (rc->code << 8) | ppmd_rc_byte(rc);
    return rc->code < 0xFFFFFFFFu;
+}
+
+bool rrar_ppmd7z_range_init(rrar_ppmd7_range_t *rc, const uint8_t *data,
+      const uint8_t *end)
+{
+   if (data >= end || *data)
+      return false;
+   if (!rrar_ppmd7_range_init(rc, data + 1, end, 0))
+      return false;
+   rc->sevenz = 1;
+   return true;
 }

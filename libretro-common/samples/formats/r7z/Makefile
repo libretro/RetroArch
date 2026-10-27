@@ -4,6 +4,7 @@ TARGET       := r7z_lzma_props_test
 TARGET_TEST2 := r7z_archive_detach_test
 TARGET_TEST3 := r7z_bcj2_test
 TARGET_TEST4 := r7z_stored_test
+TARGET_TEST5 := r7z_methods_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -21,7 +22,10 @@ ARCHIVE_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.c \
-	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.c
+	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.c \
+	$(LIBRETRO_COMM_DIR)/formats/rar/rrar_ppmd7.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_rbzip2.c
 
 OBJS         := $(call sample_objs,$(SOURCES:.c=.o))
 ARCHIVE_OBJS := $(call sample_objs,$(ARCHIVE_SOURCES:.c=.o))
@@ -34,14 +38,18 @@ BCJ2_OBJS    := r7z_bcj2_test.o $(SAMPLE_OBJDIR)/counted/r7z_archive.o \
 STORED_OBJS  := r7z_stored_test.o \
                 $(filter-out r7z_archive_detach_test.o,$(ARCHIVE_OBJS))
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g1 -I$(LIBRETRO_COMM_DIR)/include
+# PPMd, BZip2, Deflate and Deflate64
+METHODS_OBJS := r7z_methods_test.o \
+                $(filter-out r7z_archive_detach_test.o,$(ARCHIVE_OBJS))
+
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -I$(LIBRETRO_COMM_DIR)/include -DHAVE_RBZIP2
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
+all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -70,14 +78,20 @@ r7z_stored_test.o: r7z_stored_test.c r7z_stored_fixtures.h
 $(TARGET_TEST4): $(STORED_OBJS)
 	$(CC) $(STORED_OBJS) $(LDFLAGS) -o $@
 
-check: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
+r7z_methods_test.o: r7z_methods_test.c r7z_methods_fixtures.h
+
+$(TARGET_TEST5): $(METHODS_OBJS)
+	$(CC) $(METHODS_OBJS) $(LDFLAGS) -o $@
+
+check: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5)
 	./$(TARGET)
 	./$(TARGET_TEST2)
 	./$(TARGET_TEST3)
 	./$(TARGET_TEST4)
+	./$(TARGET_TEST5)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(OBJS) $(ARCHIVE_OBJS) r7z_bcj2_test.o r7z_stored_test.o
+	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(OBJS) $(ARCHIVE_OBJS) r7z_bcj2_test.o r7z_stored_test.o r7z_methods_test.o
 
 .PHONY: all check clean

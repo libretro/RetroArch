@@ -24,6 +24,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_bcj2.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.c \
+	$(LIBRETRO_COMM_DIR)/formats/rar/rrar_ppmd7.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \

@@ -1913,6 +1913,9 @@ DEPENDENCIES
 #include "../libretro-common/formats/7z/r7z_lzma2.c"
 #include "../libretro-common/formats/7z/r7z_bcj2.c"
 #include "../libretro-common/formats/7z/r7z_filters.c"
+#ifndef HAVE_RRAR
+#include "../libretro-common/formats/rar/rrar_ppmd7.c"
+#endif
 #endif
 
 

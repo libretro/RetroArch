@@ -110,6 +110,22 @@ void     rinflate_set_start_bit(void *stream, int bits);
  * one of the RDEFLATE_PROCESS_* codes. */
 int   rinflate_process(void *stream, size_t *read, size_t *wrote);
 
+/**
+ * rinflate64_decode:
+ * @dst        : where the stream decodes to, @dst_len octets of room
+ * @src        : a raw Deflate64 stream (no header), @src_len octets
+ * @wrote      : receives the octets decoded (may be NULL)
+ *
+ * Deflate64 - RFC 1951 with a 64 KiB window, a 16-bit length extension
+ * and distance codes 30 and 31 - decoded whole, in one call, into a
+ * buffer that holds all of it, as zip (method 9) and 7z store it.
+ *
+ * Returns: RDEFLATE_PROCESS_END, or RDEFLATE_PROCESS_ERROR for a stream
+ * that is malformed, ends early or decodes to more than @dst_len.
+ **/
+int   rinflate64_decode(uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len, size_t *wrote);
+
 /* -------- compression (deflate) -------- */
 
 /* level: 0 (store) .. 9 (maximum). */

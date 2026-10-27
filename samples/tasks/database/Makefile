@@ -167,7 +167,8 @@ SOURCES_C += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_archive.c \
 				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.c \
 				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.c \
 				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_bcj2.c \
-				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.c
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.c \
+				 $(LIBRETRO_COMM_DIR)/formats/rar/rrar_ppmd7.c
 endif
 
 ifeq ($(HAVE_THREADS), 1)

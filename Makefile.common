@@ -2207,6 +2207,9 @@ ifeq ($(HAVE_RRAR),1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_rar.o \
           $(LIBRETRO_COMM_DIR)/formats/rar/rrar_archive.o \
           $(LIBRETRO_COMM_DIR)/formats/rar/rrar_ppmd7.o
+else ifeq ($(HAVE_7ZIP),1)
+   # 7z's PPMd shares the RAR reader's model.
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/rar/rrar_ppmd7.o
 endif
 
 # The built-in bzip2 decoder: one C file, no dependency.

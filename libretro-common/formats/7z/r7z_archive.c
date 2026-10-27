@@ -57,6 +57,12 @@
 #include <7z/r7z_lzma2.h>
 #include <7z/r7z_bcj2.h>
 #include <7z/r7z_filters.h>
+#include <encodings/deflate.h>
+#ifdef HAVE_RBZIP2
+#include <encodings/rbzip2.h>
+#endif
+
+#include "../rar/rrar_ppmd7.h"
 
 /* --------------------------------------------------------------------
  * Header block ids
@@ -91,6 +97,10 @@
 
 /* Coder method ids, as stored in the folder's coder list. */
 #define METHOD_COPY   0x00
+#define METHOD_PPMD   0x030401
+#define METHOD_DEFLATE 0x040108
+#define METHOD_DEFLATE64 0x040109
+#define METHOD_BZIP2  0x040202
 #define METHOD_DELTA  0x03
 #define METHOD_LZMA2  0x21
 #define METHOD_LZMA   0x030101
@@ -347,6 +357,9 @@ struct r7z_archive
    size_t         cached_len;
    uint32_t       cached_folder;
    int            cached_borrowed; /* the archive's own bytes: not freed */
+
+   void          *bz;              /* the bzip2 decoder, made at the first
+                                      BZip2 coder */
 
    /* A folder decode that has been started and paused part way.
     *
@@ -1559,6 +1572,88 @@ static int decode_coder(r7z_archive_t *a, const coder_t *c,
          rfilters_ia64_decode(0, out, out_len);
          return R7Z_OK;
 
+      case METHOD_DEFLATE:
+      {
+         void  *z = rinflate_new(-15);
+         size_t rd = 0, wr = 0;
+         int    st;
+         if (!z)
+            return R7Z_ERROR_MEM;
+         rinflate_set_in(z, in, in_len);
+         rinflate_set_out(z, out, out_len);
+         st = rinflate_process(z, &rd, &wr);
+         rinflate_free(z);
+         return (st == RDEFLATE_PROCESS_END && wr == out_len)
+            ? R7Z_OK : R7Z_ERROR_DATA;
+      }
+
+      case METHOD_DEFLATE64:
+      {
+         size_t wr = 0;
+         return (     rinflate64_decode(out, out_len, in, in_len, &wr)
+                         == RDEFLATE_PROCESS_END
+                   && wr == out_len) ? R7Z_OK : R7Z_ERROR_DATA;
+      }
+
+#ifdef HAVE_RBZIP2
+      case METHOD_BZIP2:
+      {
+         size_t wr = 0;
+         int    e;
+         if (!a->bz && !(a->bz = rbzip2_new()))
+            return R7Z_ERROR_MEM;
+         e = rbzip2_decode((rbzip2_t*)a->bz, out, out_len, in, in_len, &wr);
+         if (e == RBZIP2_ERROR_MEM)
+            return R7Z_ERROR_MEM;
+         return (e == RBZIP2_OK && wr == out_len) ? R7Z_OK : R7Z_ERROR_DATA;
+      }
+#endif
+
+      case METHOD_PPMD:
+      {
+         /* order, then the model's memory, little endian */
+         const uint8_t     *pr = a->props + c->prop_offset;
+         rrar_ppmd7_t      *m;
+         rrar_ppmd7_range_t rc;
+         uint32_t           mem;
+         unsigned           order;
+         size_t             i;
+         int                res = R7Z_OK;
+         if (c->prop_size < 5)
+            return R7Z_ERROR_DATA;
+         order = pr[0];
+         mem   = (uint32_t)pr[1] | ((uint32_t)pr[2] << 8)
+               | ((uint32_t)pr[3] << 16) | ((uint32_t)pr[4] << 24);
+         if (order < 2 || order > 64 || mem < (1u << 11)
+               || mem > 0xFFFFFFFFu - 12 * 3)
+            return R7Z_ERROR_DATA;
+         if (!(m = (rrar_ppmd7_t*)malloc(sizeof(*m))))
+            return R7Z_ERROR_MEM;
+         rrar_ppmd7_construct(m);
+         if (!rrar_ppmd7_alloc(m, mem))
+         {
+            free(m);
+            return R7Z_ERROR_MEM;
+         }
+         rrar_ppmd7_init(m, order);
+         if (!rrar_ppmd7z_range_init(&rc, in, in + in_len))
+            res = R7Z_ERROR_DATA;
+         for (i = 0; res == R7Z_OK && i < out_len; i++)
+         {
+            int sym = rrar_ppmd7_decode_symbol(m, &rc);
+            if (sym < 0)
+               res = R7Z_ERROR_DATA;
+            else
+               out[i] = (uint8_t)sym;
+         }
+         /* what the stream holds, and no more */
+         if (res == R7Z_OK && rc.past > 4)
+            res = R7Z_ERROR_DATA;
+         rrar_ppmd7_free(m);
+         free(m);
+         return res;
+      }
+
       default:
          break;
    }
@@ -2153,6 +2248,9 @@ static int decode_encoded_header(r7z_archive_t *a, rd_t *r,
       *out_len = (size_t)tmp.folders[0].unpack_size;
    }
 
+#ifdef HAVE_RBZIP2
+   rbzip2_free((rbzip2_t*)tmp.bz);
+#endif
    free(tmp.pack_sizes);
    free(tmp.coders);
    free(tmp.props);
@@ -2305,6 +2403,9 @@ void r7z_archive_close(r7z_archive_t *a)
    retro_atomic_store_release_int(&a->prog_state, 0);
    if (!a->cached_borrowed)
       free(a->cached_data);
+#ifdef HAVE_RBZIP2
+   rbzip2_free((rbzip2_t*)a->bz);
+#endif
    free(a->header_buf);
    free(a->next_buf);
    free(a->pack_sizes);
