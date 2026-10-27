@@ -7800,6 +7800,11 @@ void video_driver_set_window_refresh_rate(float hz)
    video_driver_st.window_refresh_known = false;
 }
 
+float video_driver_get_core_hz(void)
+{
+   return video_driver_st.core_hz;
+}
+
 float video_driver_get_refresh_rate(void)
 {
    float rate;

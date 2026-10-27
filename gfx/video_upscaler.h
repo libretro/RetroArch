@@ -173,6 +173,11 @@ void video_upscaler_clear_wanted(void);
 #define VIDEO_UPSCALER_MODE_SHARPNESS(mode)       (((mode) >> 16) & 0xffu)  /* 0 to 100 */
 unsigned video_upscaler_mode(unsigned out_dims);
 
+/* The frame time the upscalers weigh their history by: the core's own
+ * when it gave one, else the period of its frame, which is what a
+ * presented frame advances the content by whatever the clock did */
+float video_upscaler_frame_time_ms(const struct retro_hw_upscaler_inputs *inputs);
+
 /* NGX_MODE_PACK_SHARP: an enum ngx_perf_quality, an enum
  * ngx_dlss_render_preset and the sharpness */
 unsigned video_upscaler_mode_ngx(unsigned mode);

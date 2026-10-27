@@ -105,7 +105,7 @@ void ffx_common_dispatch(ffx_upscale_dispatch_t *d,
    d->upscale_size.height   = VIDEO_SCALE_H(out_dims);
    d->enable_sharpening     = sharpness ? 1 : 0;
    d->sharpness             = (float)sharpness / 100.0f;
-   d->frame_time_delta      = inputs->frame_time_ms > 0.0f ? inputs->frame_time_ms : 16.667f;
+   d->frame_time_delta      = video_upscaler_frame_time_ms(inputs);
    d->pre_exposure          = inputs->pre_exposure == 0.0f ? 1.0f : inputs->pre_exposure;
    d->reset                 = (reset || (inputs->flags & RETRO_HW_UPSCALER_RESET)) ? 1 : 0;
    /* The camera a core does not describe: a near plane and a far one

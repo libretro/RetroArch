@@ -386,6 +386,17 @@ static unsigned video_upscaler_quality(unsigned out_dims)
       ? VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED : VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY;
 }
 
+float video_upscaler_frame_time_ms(const struct retro_hw_upscaler_inputs *inputs)
+{
+   float hz;
+   if (inputs->frame_time_ms > 0.0f)
+      return inputs->frame_time_ms;
+   hz = video_driver_get_core_hz();
+   if (hz > 0.0f)
+      return 1000.0f / hz;
+   return 1000.0f / 60.0f;
+}
+
 unsigned video_upscaler_mode(unsigned out_dims)
 {
    settings_t *settings = config_get_ptr();

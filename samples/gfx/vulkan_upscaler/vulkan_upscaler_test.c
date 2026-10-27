@@ -56,6 +56,8 @@ static bool load_vulkan(void) { return true; }
 #include "../../../gfx/common/vulkan_upscaler.h"
 #include <file/file_path.h>
 #include "fake_ngx.h"
+
+extern float stub_core_hz;
 #include "../../../libretro-common/samples/gfx/amd/fake_ffx.h"
 #include "../../../libretro-common/samples/gfx/intel/fake_xess.h"
 
@@ -1584,13 +1586,20 @@ int main(void)
          && out.layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
    /* The next frame: the same feature, no reset, the core's reset
-    * honoured when asked */
+    * honoured when asked; a frame time the core left at 0 is the
+    * period of its frame (DLSS weighs its history by it, 0 is not a
+    * frame) */
+   inputs.frame_time_ms = 0.0f;
+   stub_core_hz         = 50.0f;
    begin_frame();
    CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY, 0,
             VIDEO_SCALE_PACK(1920, 1080), &out));
    end_frame();
    vulkan_ngx_frame_done(ngx);
    CHECK(rec->creates == 1 && rec->evals == 2 && rec->eval[1].reset == 0);
+   CHECK(rec->eval[1].frame_time == 20.0f);
+   inputs.frame_time_ms = 16.6f;
+   stub_core_hz         = 0.0f;
    /* (and the core's transparency mask reaches DLSS as the mask it
     * reads, the current color's bias; a stand-in image) */
    inputs.flags |= RETRO_HW_UPSCALER_RESET;

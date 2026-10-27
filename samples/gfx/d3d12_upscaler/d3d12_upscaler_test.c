@@ -39,6 +39,7 @@
 #include "../../../libretro-common/samples/gfx/intel/fake_xess.h"
 
 extern const char *stub_video_ident;
+extern float stub_core_hz;
 
 /* The DLSS runtime in @dir: the stand-in feature library built beside
  * the test, under the runtime's name, so its version can be read */
@@ -515,7 +516,8 @@ static void test_ffx(settings_t *settings, texture_t *color, texture_t *mv,
    inputs.jitter_y   = -0.125f;
    inputs.mv_scale_x = 2.0f;
    inputs.mv_scale_y = 0.0f;
-   inputs.frame_time_ms = 0.0f;   /* unknown: a 60 Hz frame */
+   inputs.frame_time_ms = 0.0f;   /* unknown: the core's 50 Hz frame */
+   stub_core_hz         = 50.0f;
    in.texture = color->resource;
    in.format  = color->format;
    in.state   = color->state;
@@ -556,7 +558,8 @@ static void test_ffx(settings_t *settings, texture_t *color, texture_t *mv,
    CHECK(rec->dispatch[0].mv_scale_x == 2.0f && rec->dispatch[0].mv_scale_y == 1.0f);
    CHECK(rec->dispatch[0].render_w == 1280 && rec->dispatch[0].upscale_w == 1920);
    CHECK(rec->dispatch[0].reset == 1 && !rec->dispatch[0].sharpening);
-   CHECK(rec->dispatch[0].frame_time > 16.6f && rec->dispatch[0].frame_time < 16.7f);
+   CHECK(rec->dispatch[0].frame_time == 20.0f);
+   stub_core_hz = 0.0f;
    CHECK(rec->dispatch[0].flags == FFX_UPSCALE_FLAG_NON_LINEAR_COLOR_SRGB);
    CHECK(out.dims == VIDEO_SCALE_PACK(1920, 1080) && out.format == DXGI_FORMAT_R8G8B8A8_UNORM
          && out.state == D3D12_RESOURCE_STATE_COPY_SOURCE);
@@ -1185,13 +1188,20 @@ int main(void)
    CHECK(px[0] == (300 & 0xff) && px[1] == 200 && px[2] == 1 && px[3] == 0);
 
    /* The next frame: the same feature, no reset, the core's reset
-    * honoured when asked */
+    * honoured when asked; a frame time the core left at 0 is the
+    * period of its frame (DLSS weighs its history by it, 0 is not a
+    * frame) */
+   inputs.frame_time_ms = 0.0f;
+   stub_core_hz         = 50.0f;
    begin_frame();
    CHECK(d3d12_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY, 0,
             VIDEO_SCALE_PACK(1920, 1080), &out));
    end_frame();
    d3d12_ngx_frame_done(ngx);
    CHECK(rec->creates == 1 && rec->evals == 2 && rec->eval[1].reset == 0);
+   CHECK(rec->eval[1].frame_time == 20.0f);
+   inputs.frame_time_ms = 16.6f;
+   stub_core_hz         = 0.0f;
    /* (and the core's transparency mask reaches DLSS as the mask it
     * reads, the current color's bias; a stand-in resource) */
    inputs.flags |= RETRO_HW_UPSCALER_RESET;

@@ -2839,6 +2839,9 @@ void video_shader_driver_set_parameter(struct video_shader *live_shader,
 
 float video_driver_get_refresh_rate(void);
 
+/* The frame rate the core declared, 0 before one did */
+float video_driver_get_core_hz(void);
+
 /**
  * video_driver_get_window_refresh_rate:
  *

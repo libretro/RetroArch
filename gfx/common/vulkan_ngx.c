@@ -1271,7 +1271,7 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
          inputs->pre_exposure == 0.0f ? 1.0f : inputs->pre_exposure);
    lib->param.set_f(p, NGX_PARAM_DLSS_EXPOSURE_SCALE,
          inputs->exposure_scale == 0.0f ? 1.0f : inputs->exposure_scale);
-   lib->param.set_f(p, NGX_PARAM_FRAME_TIME_DELTA_MS, inputs->frame_time_ms);
+   lib->param.set_f(p, NGX_PARAM_FRAME_TIME_DELTA_MS, video_upscaler_frame_time_ms(inputs));
    lib->param.set_ui(p, NGX_PARAM_DLSS_RENDER_SUBRECT_WIDTH, VIDEO_SCALE_W(color->dims));
    lib->param.set_ui(p, NGX_PARAM_DLSS_RENDER_SUBRECT_HEIGHT, VIDEO_SCALE_H(color->dims));
    lib->param.set_ui(p, NGX_PARAM_DLSS_INPUT_COLOR_SUBRECT_X, 0);
