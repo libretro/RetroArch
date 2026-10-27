@@ -26,8 +26,10 @@ endif
 all: $(TARGET)
 $(TARGET): $(SOURCES) $(REPO_ROOT)/gfx/drivers/drm_gfx.c $(REPO_ROOT)/gfx/common/drm_common.c
 	$(CC) $(CFLAGS) -o $@ $(SOURCES) $(LDFLAGS)
-check: $(TARGET)
+check: fetch-check $(TARGET)
 	./run_vm.sh ./$(TARGET)
+fetch-check:
+	python3 fetch_debs_test.py
 clean:
 	rm -f $(TARGET)
-.PHONY: all check clean
+.PHONY: all check fetch-check clean

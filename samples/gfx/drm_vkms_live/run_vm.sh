@@ -13,6 +13,7 @@
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
+. "$here/fetch_debs.sh"
 
 hwe_kernel() {
    apt-cache depends linux-image-generic-hwe-24.04 2>/dev/null \
@@ -45,18 +46,11 @@ if [ -z "${KERNEL_DIR:-}" ]; then
       [ -n "$kver" ] || { echo "run_vm.sh: no HWE kernel in apt"; exit 1; }
       echo "run_vm.sh: fetching $kver"
       mkdir -p "$KERNEL_DIR" "$work/deb"
-      # Bounded and retried: a download stalled on a mirror resumes
-      for i in 1 2 3; do
-         (cd "$work/deb" && timeout 300 apt-get download \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            "linux-image-unsigned-$kver" "linux-modules-$kver" >/dev/null) \
-            && break
-         [ $i = 3 ] && { echo "run_vm.sh: could not fetch $kver"; exit 1; }
-         echo "run_vm.sh: fetching $kver stalled (attempt $i)"
-      done
+      download_debs "$work/deb" "linux-image-unsigned-$kver" \
+         "linux-modules-$kver" \
+         || { echo "run_vm.sh: could not fetch $kver"; exit 1; }
       # vkms is in the modules, or in the extra ones, by kernel
-      (cd "$work/deb" && timeout 300 apt-get download "linux-modules-extra-$kver" \
-         >/dev/null 2>&1) || true
+      download_debs "$work/deb" "linux-modules-extra-$kver" || true
       for d in "$work"/deb/*.deb; do
          dpkg-deb -x "$d" "$work/root"
       done
