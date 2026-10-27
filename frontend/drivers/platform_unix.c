@@ -3955,6 +3955,11 @@ static bool frontend_unix_set_gamemode(bool on)
 }
 #endif
 
+#if defined(__linux__) && !defined(ANDROID) && defined(RARCH_HAVE_DBUS_RUNTIME)
+static bool orca_narrator_init(void);
+static void orca_narrator_shutdown(void);
+#endif
+
 static void frontend_unix_deinit(void *data)
 {
    settings_t *settings = config_get_ptr();
@@ -3976,7 +3981,6 @@ static void frontend_unix_deinit(void *data)
 #ifdef UNIX_GAMEMODE
    gamemode_linux_set(false, true);
 #endif
-}
 
 
 #ifdef UNIX_SYSTEM_CA
@@ -4014,8 +4018,9 @@ static void frontend_unix_load_system_ca(void)
 }
 
 #if defined(__linux__) && !defined(ANDROID) && defined(RARCH_HAVE_DBUS_RUNTIME)
-static bool orca_narrator_init(void);
+   orca_narrator_shutdown();
 #endif
+}
 
 static void frontend_unix_init(void *data)
 {
@@ -5086,10 +5091,13 @@ typedef struct orca_narrator
    bool pending;
    bool interrupt;
    bool probe;
+   bool shutdown;
+   sthread_t *thread;
    retro_atomic_int_t available;
 } orca_narrator_t;
 
 static orca_narrator_t *orca_narrator;
+static bool orca_narrator_stopped;
 
 static bool orca_send_method(const rdbus_t *rd,
       rdbus_connection_t *conn, bool interrupt, const char *text)
@@ -5164,8 +5172,14 @@ static void orca_narrator_worker(void *data)
 
       slock_lock(ctl->lock);
 
-      while (!ctl->probe && !ctl->pending)
+      while (!ctl->shutdown && !ctl->probe && !ctl->pending)
          scond_wait(ctl->cond, ctl->lock);
+
+      if (ctl->shutdown)
+      {
+         slock_unlock(ctl->lock);
+         break;
+      }
 
       pending = ctl->pending;
       interrupt = ctl->interrupt;
@@ -5216,15 +5230,23 @@ static void orca_narrator_worker(void *data)
          }
       }
    }
+
+   if (conn && rd)
+   {
+      rd->connection_close(conn);
+      rd->connection_unref(conn);
+   }
 }
 
 static bool orca_narrator_init(void)
 {
    orca_narrator_t *ctl = orca_narrator;
 
+   if (orca_narrator_stopped)
+      return false;
+
    if (!ctl)
    {
-      sthread_t *thread;
 
       ctl = (orca_narrator_t*)calloc(1, sizeof(*ctl));
       if (!ctl)
@@ -5245,16 +5267,14 @@ static bool orca_narrator_init(void)
 
       ctl->probe = true;
 
-      thread = sthread_create(orca_narrator_worker, ctl);
-      if (!thread)
+      ctl->thread = sthread_create(orca_narrator_worker, ctl);
+      if (!ctl->thread)
       {
          scond_free(ctl->cond);
          slock_free(ctl->lock);
          free(ctl);
          return false;
       }
-
-      sthread_detach(thread);
 
       /* This first version assumes narrator calls are serialized
        * by the frontend. The worker itself never changes this pointer. */
@@ -5292,6 +5312,30 @@ static bool orca_narrator_speak(const char *text, int priority)
    slock_unlock(ctl->lock);
 
    return true;
+}
+
+static void orca_narrator_shutdown(void)
+{
+   orca_narrator_t *ctl = orca_narrator;
+
+   orca_narrator_stopped = true;
+
+   if (!ctl)
+      return;
+
+   slock_lock(ctl->lock);
+   ctl->shutdown = true;
+   ctl->pending = false;
+   ctl->probe = false;
+   scond_signal(ctl->cond);
+   slock_unlock(ctl->lock);
+
+   sthread_join(ctl->thread);
+
+   orca_narrator = NULL;
+   scond_free(ctl->cond);
+   slock_free(ctl->lock);
+   free(ctl);
 }
 
 #endif
