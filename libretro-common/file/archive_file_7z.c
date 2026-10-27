@@ -51,9 +51,6 @@
 struct sevenzip_context_t
 {
    r7z_archive_t *archive;
-   /* Cache of the last extracted member, owned here so the handle
-    * handed to the caller stays valid until the next call. */
-   uint8_t       *output;
    uint32_t       parse_index;
    uint32_t       decompress_index;
 };
@@ -87,7 +84,6 @@ static void sevenzip_parse_file_free(void *context)
    if (!sevenzip_context)
       return;
 
-   free(sevenzip_context->output);
    /* The mapping and the stream belong to archive_file.c, which
     * releases them after this. */
    r7z_archive_close(sevenzip_context->archive);
@@ -103,6 +99,29 @@ typedef struct
    size_t  size;
    bool    found;
 } sevenzip_decomp_state_t;
+
+/* One slice of decoding member @index's folder: R7Z_PENDING while
+ * there is more, and on R7Z_OK the member where it is held in the
+ * archive's folder cache - decoded there, or, for a stored folder of a
+ * mapped archive, the archive itself - valid until another folder is
+ * decoded. Nothing is copied. */
+static int sevenzip_member_step(r7z_archive_t *a, uint32_t index,
+      const uint8_t **data, size_t *len)
+{
+   const r7z_entry_t *e = r7z_archive_entry(a, index);
+   int                res;
+   if (!e || e->is_dir)
+      return R7Z_ERROR_PARAM;
+   if (!e->size)
+   {
+      *data = (const uint8_t*)"";
+      *len  = 0;
+      return R7Z_OK;
+   }
+   if ((res = r7z_archive_decode_step(a, index)) != R7Z_OK)
+      return res;
+   return r7z_archive_entry_borrow(a, index, data, len);
+}
 
 /* Called once per entry while the driver walks the archive. Starts the
  * decode of the wanted member and stops the scan; the iterate loop
@@ -137,9 +156,9 @@ static int sevenzip_file_decompressed(
    {
       struct sevenzip_context_t *ctx =
          (struct sevenzip_context_t*)userdata->transfer->context;
-      uint8_t *member     = NULL;
-      size_t   member_len = 0;
-      int      res;
+      const uint8_t *member     = NULL;
+      size_t         member_len = 0;
+      int            res;
 
       if (!ctx || !ctx->archive)
          return 1;
@@ -149,14 +168,15 @@ static int sevenzip_file_decompressed(
        * to yield to. */
       do
       {
-         res = r7z_archive_extract_slice(ctx->archive,
+         res = sevenzip_member_step(ctx->archive,
                (uint32_t)(size_t)cdata, &member, &member_len);
       } while (res == R7Z_PENDING);
 
       if (res != R7Z_OK)
          return 1;
 
-      /* RetroArch expects a NUL after the data. */
+      /* the caller's to keep, with a NUL after the data: copied out of
+       * where the member is held, once */
       if ((*st->buf = malloc(member_len + 1)))
       {
          ((char*)(*st->buf))[member_len] = '\0';
@@ -165,7 +185,6 @@ static int sevenzip_file_decompressed(
          st->size  = member_len;
          st->found = true;
       }
-      free(member);
    }
 
    return 0;
@@ -265,9 +284,9 @@ static int sevenzip_stream_decompress_data_to_file_iterate(
 {
    struct sevenzip_context_t *sevenzip_context =
       (struct sevenzip_context_t*)context;
-   uint8_t *member     = NULL;
-   size_t   member_len = 0;
-   int      res;
+   const uint8_t *member     = NULL;
+   size_t         member_len = 0;
+   int            res;
 
    /* The callers loop while this returns 0, so 0 means "not finished,
     * call again" and never "failed". Returning it on error spins them
@@ -280,22 +299,18 @@ static int sevenzip_stream_decompress_data_to_file_iterate(
     * decoded in one go, and this is the return value the archive layer
     * turns into a yield. Callers that cannot yield still get the whole
     * member, they just get it through several calls. */
-   res = r7z_archive_extract_slice(sevenzip_context->archive,
-         sevenzip_context->decompress_index,
-         &member, &member_len);
+   res = sevenzip_member_step(sevenzip_context->archive,
+         sevenzip_context->decompress_index, &member, &member_len);
 
    if (res == R7Z_PENDING)
       return 0;
    if (res != R7Z_OK)
       return -1;
 
-   /* The caller reads through handle->data until it calls back in, so
-    * the previous member cannot be released any earlier than this. */
-   free(sevenzip_context->output);
-   sevenzip_context->output = member;
-
+   /* The caller only reads the member, and is done with it before it
+    * calls back in for another: lent where it is held */
    if (handle)
-      handle->data = sevenzip_context->output;
+      handle->data = (uint8_t*)member;
 
    return 1;
 }

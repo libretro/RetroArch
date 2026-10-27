@@ -113,6 +113,7 @@ jobs:
             archive_bz2_test
             archive_rar_test
             archive_stream_test
+            archive_7z_test
             config_file_test
             path_resolve_realpath_test
             fill_pathname_test
