@@ -429,6 +429,7 @@ bool	netplay_request_device_p16	1	0
 bool	input_stylus_enable	1	1
 bool	input_stylus_require_contact_for_click	1	1
 bool	input_stylus_hover_moves_pointer	1	1
+bool	input_stylus_hide_overlay	1	1
 int	custom_viewport_x	0	0
 int	custom_viewport_y	0	0
 int	video_windowed_position_x	1	0
