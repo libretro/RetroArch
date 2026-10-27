@@ -56,6 +56,11 @@
 
 #include "../common/vulkan_common.h"
 #include "../common/spirv_shaders.h"
+#ifdef HAVE_VAAPI
+#include "../common/vaapi_hevc_vulkan_cache.h"
+#include "../common/vaapi_hevc_backend.h"
+#include "../common/vulkan_android_queue.h"
+#endif
 #ifdef HAVE_TEMPORAL_UPSCALER
 #include "../common/vulkan_upscaler.h"
 #include "../video_upscaler.h"
@@ -259,6 +264,10 @@ struct vk_texture
    VkFormat format;              /* enum alignment */
    enum vk_texture_type type;
    uint8_t flags;
+#ifdef HAVE_VAAPI
+   vaapi_hevc_vulkan_cache_t *vaapi_cache;
+   struct vk_texture *vaapi_next;
+#endif
 };
 
 struct vk_per_frame
@@ -823,6 +832,10 @@ typedef struct vk
    struct vk_texture *android_textures;
    unsigned android_device_support;
 #endif
+#ifdef HAVE_VAAPI
+   struct vk_texture *vaapi_textures;
+   vulkan_android_queue_t vaapi_submissions;
+#endif
    uintptr_t movie_texture;
    bool movie_pending;
    /* The threaded wrapper's frame buffers (frame_mem_alloc): mapped
@@ -848,6 +861,10 @@ typedef struct vk
    } tracker;
    uint32_t flags;
 } vk_t;
+
+#ifdef HAVE_VAAPI
+#include "vulkan_vaapi_backend.h"
+#endif
 
 #if defined(ANDROID) && defined(HAVE_THREADS) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
@@ -1997,6 +2014,25 @@ static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture)
       texture->android_cache = NULL;
    }
 #endif
+#ifdef HAVE_VAAPI
+   if (texture->vaapi_cache)
+   {
+      struct vk_texture **link = &vk->vaapi_textures;
+      vaapi_hevc_vulkan_cache_t *cache = texture->vaapi_cache;
+      while (*link && *link != texture)
+         link = &(*link)->vaapi_next;
+      if (*link)
+         *link = texture->vaapi_next;
+      texture->vaapi_next  = NULL;
+      texture->vaapi_cache = NULL;
+      vaapi_hevc_vulkan_cache_close(cache);
+      if (!vaapi_hevc_vulkan_cache_free(cache))
+      {
+         vaapi_hevc_vulkan_cache_defer(cache);
+         return;
+      }
+   }
+#endif
    while (*cur)
    {
       struct vk_stream_state *st = *cur;
@@ -2019,6 +2055,13 @@ static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture)
 static void vulkan_deferred_cmds_tick(vk_t *vk)
 {
    struct vk_deferred_cmd **cur = &vk->deferred_cmds;
+#ifdef HAVE_VAAPI
+   {
+      struct vk_texture *texture;
+      for (texture = vk->vaapi_textures; texture; texture = texture->vaapi_next)
+         vaapi_hevc_vulkan_cache_poll(texture->vaapi_cache);
+   }
+#endif
    while (*cur)
    {
       struct vk_deferred_cmd *node = *cur;
@@ -7516,6 +7559,9 @@ static void vulkan_free(void *data)
 #ifdef VULKAN_ANDROID_DECODERS
    vulkan_android_decoder_withdraw(vk);
 #endif
+#ifdef HAVE_VAAPI
+   vaapi_hevc_backend_withdraw(&vulkan_vaapi_backend, vk);
+#endif
 
    if (vk->context && vk->context->device)
    {
@@ -8333,7 +8379,9 @@ static void *vulkan_init(const video_info_t *video)
 
 #if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
       /* previews decoded on the GPU, where the device can */
-#ifdef VULKAN_ANDROID_DECODERS
+#ifdef HAVE_VAAPI
+      vulkan_vaapi_decoder_publish(vk, vulkan_video_decode_init(vk->context));
+#elif defined(VULKAN_ANDROID_DECODERS)
       vulkan_android_decoder_publish(vk, vulkan_video_decode_init(vk->context));
 #else
       vulkan_video_decode_init(vk->context);
@@ -9510,6 +9558,18 @@ static bool vulkan_present_retained_once(vk_t *vk)
    vulkan_upload_batch_submit(vk);
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
+#endif
+#ifdef HAVE_VAAPI
+   if (vulkan_android_queue_flush(&vk->vaapi_submissions, vkQueueSubmit)
+         != VK_SUCCESS)
+   {
+#ifdef HAVE_THREADS
+      slock_unlock(vk->context->queue_lock);
+#endif
+      vk->context->swapchain_fences_signalled[frame_index] = false;
+      video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+      return false;
+   }
 #endif
    vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]));
@@ -14272,6 +14332,18 @@ static bool vulkan_frame(void *data, const void *frame,
       return false;
    }
 #else
+#ifdef HAVE_VAAPI
+   if (vulkan_android_queue_flush(&vk->vaapi_submissions, vkQueueSubmit)
+         != VK_SUCCESS)
+   {
+#ifdef HAVE_THREADS
+      slock_unlock(vk->context->queue_lock);
+#endif
+      vk->context->swapchain_fences_signalled[frame_index] = false;
+      video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+      return false;
+   }
+#endif
    vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]));
    vk->context->swapchain_fences_signalled[frame_index] = true;
@@ -15616,6 +15688,9 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
             || defined(HAVE_RECORD_MEDIACODEC))
 #include "vulkan_android_video.h"
 #endif
+#ifdef HAVE_VAAPI
+#include "vulkan_vaapi_video.h"
+#endif
 
 /* Sample exported planes directly, or copy into a buffer when no views
  * are available. Both paths preserve the producer's layout and lease. */
@@ -15676,6 +15751,10 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
             || defined(HAVE_RECORD_MEDIACODEC))
    if (android_frame_callback(f->abandon))
       return vulkan_android_renderer_import(vk, texture, f);
+#endif
+#ifdef HAVE_VAAPI
+   if (vaapi_frame_callback(f->abandon))
+      return vulkan_vaapi_renderer_import(vk, texture, f);
 #endif
 
    if (     !vulkan_video_layout(&layout, w, h, source_pixfmt, f->yuv)
@@ -15916,6 +15995,9 @@ static enum video_texture_update vulkan_import_texture(void *data,
             || defined(HAVE_RECORD_MEDIACODEC))
    opaque_input = f && android_frame_callback(f->abandon);
 #endif
+#ifdef HAVE_VAAPI
+   opaque_input = opaque_input || (f && vaapi_frame_callback(f->abandon));
+#endif
 
    if (     !vk || !vk->context || !id || !f
          || (!opaque_input && !(vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE))
@@ -15970,6 +16052,15 @@ static enum video_texture_update vulkan_import_texture(void *data,
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
 #endif
+#ifdef HAVE_VAAPI
+   if (vaapi_frame_callback(f->abandon)
+         && vulkan_vaapi_renderer_prepare(vk, texture, f)
+               != VIDEO_TEXTURE_UPDATE_DONE)
+   {
+      vulkan_texture_retire(vk, texture);
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+#endif
    /* A texture nobody has seen: its first frame or none */
    if ((r = vulkan_import_convert(vk, texture, f))
          != VIDEO_TEXTURE_UPDATE_DONE)
@@ -15981,9 +16072,9 @@ static enum video_texture_update vulkan_import_texture(void *data,
    return r;
 }
 
-#if defined(ANDROID) \
+#if defined(HAVE_VAAPI) || (defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
-            || defined(HAVE_RECORD_MEDIACODEC))
+            || defined(HAVE_RECORD_MEDIACODEC)))
 static enum video_texture_update vulkan_prepare_import_texture(void *data,
       uintptr_t handle, const video_frame_import_t *frame)
 {
@@ -15992,6 +16083,17 @@ static enum video_texture_update vulkan_prepare_import_texture(void *data,
    VkFormat format;
    if (!vk || !texture || !frame)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+#ifdef HAVE_VAAPI
+   if (vaapi_frame_callback(frame->abandon))
+   {
+      format = frame->output_pixfmt == IMAGE_PIXFMT_FP16
+            ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R8G8B8A8_UNORM;
+      if (texture->dims != frame->dims || texture->format != format)
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      return vulkan_vaapi_renderer_prepare(vk, texture, frame);
+   }
+#endif
+#ifdef ANDROID
    if (!android_frame_callback(frame->abandon))
       return VIDEO_TEXTURE_UPDATE_DONE;
    format = frame->output_pixfmt == IMAGE_PIXFMT_FP16
@@ -15999,6 +16101,9 @@ static enum video_texture_update vulkan_prepare_import_texture(void *data,
    if (texture->dims != frame->dims || texture->format != format)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    return vulkan_android_renderer_prepare(vk, texture, frame);
+#else
+   return VIDEO_TEXTURE_UPDATE_DONE;
+#endif
 }
 #endif
 
@@ -16021,9 +16126,9 @@ static enum video_texture_update vulkan_import_movie_frame(void *data,
    if (vk->movie_texture
          && ((struct vk_texture*)vk->movie_texture)->dims != f->dims)
       vulkan_import_movie_frame(vk, NULL);
-#if defined(ANDROID) \
+#if defined(HAVE_VAAPI) || (defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
-            || defined(HAVE_RECORD_MEDIACODEC))
+            || defined(HAVE_RECORD_MEDIACODEC)))
    if (vk->movie_texture)
    {
       result = vulkan_prepare_import_texture(vk, vk->movie_texture, f);
@@ -16780,9 +16885,9 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_driver_pacing_set,
    vulkan_driver_pacing_wait,
    vulkan_driver_pacing_mark,
-#if defined(ANDROID) \
+#if defined(HAVE_VAAPI) || (defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
-            || defined(HAVE_RECORD_MEDIACODEC))
+            || defined(HAVE_RECORD_MEDIACODEC)))
    vulkan_prepare_import_texture
 #else
    NULL

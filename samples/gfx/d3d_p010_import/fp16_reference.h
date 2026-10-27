@@ -8,7 +8,7 @@ static double fp16_reference_half(uint16_t bits)
    return bits & 32768 ? -value : value;
 }
 static void fp16_reference(unsigned depth, unsigned full, unsigned transfer,
-      unsigned flags, unsigned y, unsigned u, unsigned v, float out[3])
+      unsigned flags, double y, double u, double v, float out[3])
 {
    double scale = depth == 10 ? 4.0 : 1.0;
    double ym = full ? (depth == 10 ? 1023.0 : 255.0) : 219.0 * scale;

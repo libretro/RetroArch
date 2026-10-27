@@ -26,6 +26,10 @@
 #endif
 
 #include "vulkan_common.h"
+#ifdef HAVE_VAAPI
+#include "vaapi_hevc_vulkan_cache.h"
+#include "vulkan_prime_device.h"
+#endif
 #if defined(ANDROID) && defined(HAVE_THREADS)
 #include "../../record/record_android_capture_device.h"
 #endif
@@ -107,6 +111,11 @@ static dylib_t                       vulkan_library;
 static bool                          vulkan_library_custom;
 #endif
 static VkInstance                    cached_instance_vk;
+#ifdef HAVE_VAAPI
+static uint32_t                      cached_instance_api_vk;
+static bool                          cached_instance_properties2_vk;
+static bool                          cached_prime_import_vk;
+#endif
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "win_vulkan_dxgi.h"
 #endif
@@ -959,6 +968,13 @@ static const char *vulkan_optional_device_extensions[] = {
     * HDR still works via the colour space alone. */
    , "VK_EXT_hdr_metadata"
 #endif
+#ifdef HAVE_VAAPI
+   , "VK_KHR_external_memory_fd"
+   , "VK_EXT_external_memory_dma_buf"
+   , "VK_EXT_image_drm_format_modifier"
+   , "VK_EXT_queue_family_foreign"
+   , "VK_KHR_image_format_list"
+#endif
 #if defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
             || defined(HAVE_RECORD_MEDIACODEC))
@@ -1169,6 +1185,11 @@ static unsigned vulkan_optional_device_count(
             || defined(HAVE_RECORD_MEDIACODEC))
    if (!own_device)
       while (count && vulkan_android_device_extension(
+                        vulkan_optional_device_extensions[count - 1]))
+         count--;
+#elif defined(HAVE_VAAPI)
+   if (!own_device || vk->context.xr)
+      while (count && vulkan_prime_device_extension(
                         vulkan_optional_device_extensions[count - 1]))
          count--;
 #else
@@ -1614,6 +1635,26 @@ static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vulkan_v1_get_instance_proc_addr
    return vulkan_symbol_wrapper_instance_proc_addr()(instance, name);
 }
 
+#ifdef HAVE_VAAPI
+static VkResult vulkan_prime_create_device(void *user, VkPhysicalDevice gpu,
+      const VkDeviceCreateInfo *info, VkDevice *device)
+{
+   return vulkan_context_create_device(
+         (gfx_ctx_vulkan_data_t*)user, gpu, info, NULL, device);
+}
+#endif
+
+static VkResult vulkan_context_create_own_device(gfx_ctx_vulkan_data_t *vk,
+      VkPhysicalDevice gpu, const VkDeviceCreateInfo *info, VkDevice *device)
+{
+#ifdef HAVE_VAAPI
+   return vulkan_prime_device_create(vk, gpu, info, device,
+         &vk->context.prime_import_device, vulkan_prime_create_device);
+#else
+   return vulkan_context_create_device(vk, gpu, info, NULL, device);
+#endif
+}
+
 static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
    uint32_t queue_count;
@@ -1692,6 +1733,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    /* Set below for a device made here; a core's has none of ours */
    vk->context.flags &= ~VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+#ifdef HAVE_VAAPI
+   vk->context.prime_import_device = false;
+#endif
    vk->context.video_lanes         = 0;
    vk->context.video_codec_operations = 0;
    vk->context.video_decode_family = 0;
@@ -1829,6 +1873,19 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    vkGetPhysicalDeviceProperties(vk->context.gpu,
          &vk->context.gpu_properties);
+#ifdef HAVE_VAAPI
+   memset(&vk->context.drm_identity, 0, sizeof(vk->context.drm_identity));
+   if (vk->context.properties2_instance == vk->context.instance)
+   {
+      PFN_vkGetInstanceProcAddr proc = vulkan_symbol_wrapper_instance_proc_addr();
+      const char *name = vulkan_drm_properties_command(
+            vk->context.instance_api_version, vk->context.instance_properties2);
+      if (proc && name)
+         vulkan_drm_identity_query(&vk->context.drm_identity, vk->context.gpu,
+               vkEnumerateDeviceExtensionProperties,
+               (PFN_vkGetPhysicalDeviceProperties2)proc(vk->context.instance, name));
+   }
+#endif
    vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
          &vk->context.memory_properties);
 
@@ -2047,6 +2104,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
                   &android_plan, device_info.pNext);
       }
 #endif
+#ifdef HAVE_VAAPI
+      vk->context.prime_import_device = vulkan_prime_device_filter(
+            vk->context.gpu_properties.apiVersion, vk->context.instance_api_version,
+            true, vk->context.drm_identity.valid && !vk->context.xr,
+            enabled_device_extensions, &enabled_device_extension_count);
+#endif
       device_info.pNext = vulkan_anti_lag_chain(vk, vk->context.gpu,
             &anti_lag_features, device_info.pNext);
 
@@ -2060,6 +2123,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       {
          vk->context.device = cached_device_vk;
          cached_device_vk   = NULL;
+#ifdef HAVE_VAAPI
+         vk->context.prime_import_device = cached_prime_import_vk;
+#endif
          if (cached_timeline_vk)
             vk->context.flags |=  VK_CTX_FLAG_TIMELINE_SEMAPHORE;
          else
@@ -2138,8 +2204,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             vinfo.queueCreateInfoCount    = nq;
             vinfo.pQueueCreateInfos       = qi;
             vinfo.enabledExtensionCount   = next;
-            if (vulkan_context_create_device(vk, vk->context.gpu,
-                     &vinfo, NULL, &dev) == VK_SUCCESS)
+            if (vulkan_context_create_own_device(vk, vk->context.gpu,
+                     &vinfo, &dev) == VK_SUCCESS)
             {
                vk->context.video_decode_family = video.decode_family;
                vk->context.video_xfer_family   = video.xfer_family;
@@ -2157,8 +2223,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             }
          }
          if (     dev == VK_NULL_HANDLE
-               && vulkan_context_create_device(vk, vk->context.gpu,
-                  &device_info, NULL, &dev) != VK_SUCCESS)
+               && vulkan_context_create_own_device(vk, vk->context.gpu,
+                  &device_info, &dev) != VK_SUCCESS)
          {
             dev = VK_NULL_HANDLE;
 #if defined(ANDROID) \
@@ -2168,8 +2234,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
                      enabled_device_extensions, &enabled_device_extension_count))
             {
                device_info.enabledExtensionCount = enabled_device_extension_count;
-               if (vulkan_context_create_device(vk, vk->context.gpu,
-                        &device_info, NULL, &dev) != VK_SUCCESS)
+               if (vulkan_context_create_own_device(vk, vk->context.gpu,
+                        &device_info, &dev) != VK_SUCCESS)
                   dev = VK_NULL_HANDLE;
             }
 #endif
@@ -2541,6 +2607,18 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       instance = VK_NULL_HANDLE;
       goto end;
    }
+
+#ifdef HAVE_VAAPI
+   vk->context.properties2_instance = instance;
+   vk->context.instance_api_version = info.pApplicationInfo
+         && info.pApplicationInfo->apiVersion
+         ? info.pApplicationInfo->apiVersion : VK_API_VERSION_1_0;
+   vk->context.instance_properties2 = false;
+   for (i = 0; i < info.enabledExtensionCount; i++)
+      if (string_is_equal(info.ppEnabledExtensionNames[i],
+               VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+         vk->context.instance_properties2 = true;
+#endif
 
 end:
    free((void*)instance_extensions);
@@ -4606,7 +4684,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
     * The display is often physically connected to the integrated GPU,
     * so the discrete GPU may not report HDR surface formats even though
     * the display supports HDR.  Query all other physical devices for
-    * HDR formats and merge them in — on Windows the DWM compositor
+    * HDR formats and merge them in â€” on Windows the DWM compositor
     * handles presentation, so HDR formats reported by ANY device for
     * this surface will work. */
    if (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT)
@@ -4700,7 +4778,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
          /* Advertise HDR capabilities to the menu based on which
           * surface formats the driver actually enumerates.
-          * The colorspace extension alone is not enough — some
+          * The colorspace extension alone is not enough â€” some
           * drivers expose the extension without any HDR surface
           * formats. */
          {
@@ -4768,7 +4846,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          {
             /* HDR10 mode: always A2B10G10R10 + ST.2084 PQ.
              * Shaders that output RGBA16F with PQ data get quantised
-             * to 10-bit by the swapchain — R16G16B16A16_SFLOAT is not
+             * to 10-bit by the swapchain â€” R16G16B16A16_SFLOAT is not
              * paired with HDR10_ST2084 on any known implementation. */
             vk->context.flags &= ~VK_CTX_FLAG_HDR_SCRGB;
 
@@ -5654,6 +5732,11 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    {
       vk->context.instance = cached_instance_vk;
       cached_instance_vk   = NULL;
+#ifdef HAVE_VAAPI
+      vk->context.properties2_instance = vk->context.instance;
+      vk->context.instance_api_version = cached_instance_api_vk;
+      vk->context.instance_properties2 = cached_instance_properties2_vk;
+#endif
       /* Only the create wrapper sees the enabled extensions. */
       if (cached_instance_hdr_vk)
          vk->context.flags |=  VK_CTX_FLAG_HDR_SUPPORT;
@@ -5817,6 +5900,10 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    if (vulkan_android_cache_device_pending(vk->context.device))
       video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
 #endif
+#ifdef HAVE_VAAPI
+   if (vaapi_hevc_vulkan_cache_device_pending(vk->context.device))
+      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
+#endif
 #if defined(ANDROID) && defined(HAVE_THREADS)
    if (record_android_capture_device_pending(vk->context.device))
       video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
@@ -5829,6 +5916,13 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_gpu_vk            = vk->context.gpu;
       cached_gpu_index_vk      = vk->context.gpu_index;
       cached_instance_vk       = vk->context.instance;
+#ifdef HAVE_VAAPI
+      cached_prime_import_vk   = vk->context.prime_import_device;
+      cached_instance_api_vk   = vk->context.properties2_instance == vk->context.instance
+            ? vk->context.instance_api_version : 0;
+      cached_instance_properties2_vk = vk->context.properties2_instance == vk->context.instance
+            && vk->context.instance_properties2;
+#endif
       cached_destroy_device_vk = vk->context.destroy_device;
       cached_instance_hdr_vk   =
          (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT) ? true : false;
@@ -5876,6 +5970,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
             || defined(HAVE_RECORD_MEDIACODEC))
          vulkan_android_cache_device_destroying(vk->context.device);
 #endif
+#ifdef HAVE_VAAPI
+         vaapi_hevc_vulkan_cache_device_destroying(vk->context.device);
+#endif
          vkDestroyDevice(vk->context.device, NULL);
 #if defined(ANDROID) && defined(HAVE_THREADS)
          record_android_capture_device_destroyed(vk->context.device);
@@ -5884,6 +5981,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
             || defined(HAVE_RECORD_MEDIACODEC))
          vulkan_android_cache_device_destroyed(vk->context.device);
+#endif
+#ifdef HAVE_VAAPI
+         vaapi_hevc_vulkan_cache_device_destroyed(vk->context.device);
 #endif
          vk->context.device = NULL;
       }

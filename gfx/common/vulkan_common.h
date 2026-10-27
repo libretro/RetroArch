@@ -35,6 +35,9 @@
 #include <compat/android_native_window.h>
 #endif
 #include "vksym.h"
+#ifdef HAVE_VAAPI
+#include "vulkan_drm_identity.h"
+#endif
 
 #include <stddef.h>
 #include <boolean.h>
@@ -274,6 +277,13 @@ typedef struct vulkan_context
 
    VkPhysicalDeviceProperties gpu_properties;
    VkPhysicalDeviceMemoryProperties memory_properties;
+#ifdef HAVE_VAAPI
+   VkInstance properties2_instance;
+   vulkan_drm_identity_t drm_identity;
+   uint32_t instance_api_version;
+   bool instance_properties2;
+   bool prime_import_device;
+#endif
 #if defined(ANDROID) \
       && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
             || defined(HAVE_RECORD_MEDIACODEC))

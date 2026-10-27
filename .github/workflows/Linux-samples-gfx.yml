@@ -32,6 +32,61 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
+  vaapi-hevc-parameters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    env:
+      APT_PKGS: build-essential clang libva-dev libdrm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers ffmpeg gcc-mingw-w64-x86-64 wine64
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 15
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Strict C89 HEVC buffer ABI and cold session ownership
+        run: |
+          make -C samples/gfx/vaapi_hevc clean check CC=${{ matrix.cc }} SANITIZER=address,undefined
+          make -C libretro-common/samples/formats/h265 rh265_slice_info_test CC=${{ matrix.cc }} SANITIZER=address,undefined
+          libretro-common/samples/formats/h265/rh265_slice_info_test
+      - name: Execute sampled-plane conversion, foreign ownership and native pixel oracle
+        run: ASAN_OPTIONS=detect_leaks=0 make -C samples/gfx/vaapi_hevc gpu-check CC=${{ matrix.cc }} SANITIZER=address,undefined
+      - name: Opaque VA producer and renderer return publication under TSan
+        if: matrix.cc == 'gcc'
+        run: |
+          make -C samples/gfx/vaapi_hevc tsan-check CC=gcc RUNNER="setarch $(uname -m) -R"
+
+      - name: Windows ownership contracts against the same VA headers
+        if: matrix.cc == 'gcc'
+        run: |
+          set -eu
+          sdk="$RUNNER_TEMP/vaapi-sdk"
+          mkdir -p "$sdk"
+          cp -R /usr/include/va "$sdk/va"
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -C samples/gfx/vaapi_hevc clean
+          make -j2 -C samples/gfx/vaapi_hevc check CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe VAAPI_CFLAGS="-isystem $sdk" LDFLAGS=-static RUNNER=wine
+
   metal-frame-lease:
     runs-on: ubuntu-latest
     timeout-minutes: 10
