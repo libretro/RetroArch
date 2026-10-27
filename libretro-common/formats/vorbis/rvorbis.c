@@ -2490,6 +2490,9 @@ static INLINE void rvq_neon_pair2(int32_t *e0, int32_t *e2,
 
 RVQ_WRAPS static void imdct_step3_iter0_loop_q(int n, int32_t *e, int i_off, int k_off, int32_t *A)
 {
+   int32_t *ee0 = e + i_off;
+   int32_t *ee2 = ee0 + k_off;
+   int i;
 #if RVQ_HAVE_NEON_MDCT
    {
       int32_t *ee0 = e + i_off;
@@ -2507,10 +2510,6 @@ RVQ_WRAPS static void imdct_step3_iter0_loop_q(int n, int32_t *e, int i_off, int
       return;
    }
 #endif
-
-   int32_t *ee0 = e + i_off;
-   int32_t *ee2 = ee0 + k_off;
-   int i;
 
    assert((n & 3) == 0);
    for (i=(n>>2); i > 0; --i)
@@ -2553,6 +2552,10 @@ RVQ_WRAPS static void imdct_step3_iter0_loop_q(int n, int32_t *e, int i_off, int
 
 RVQ_WRAPS static void imdct_step3_inner_r_loop_q(int lim, int32_t *e, int d0, int k_off, int32_t *A, int k1)
 {
+   int i;
+   int32_t k00_20, k01_21;
+   int32_t *e0 = e + d0;
+   int32_t *e2 = e0 + k_off;
 #if RVQ_HAVE_NEON_MDCT
    {
       int i;
@@ -2569,12 +2572,6 @@ RVQ_WRAPS static void imdct_step3_inner_r_loop_q(int lim, int32_t *e, int d0, in
       return;
    }
 #endif
-
-   int i;
-   int32_t k00_20, k01_21;
-
-   int32_t *e0 = e + d0;
-   int32_t *e2 = e0 + k_off;
 
    for (i=lim >> 2; i > 0; --i) {
       k00_20 = e0[-0] - e2[-0];

@@ -39,6 +39,7 @@
 #include <math.h>
 
 #include <boolean.h>
+#include <retro_inline.h>
 #include <retro_atomic.h>
 
 #if TARGET_OS_IPHONE
@@ -463,7 +464,7 @@ static void coreaudio_wait_free(coreaudio_t *dev)
 
 /* Lock-free ring buffer operations */
 
-static inline size_t rb_write_avail(coreaudio_t *dev)
+static INLINE size_t rb_write_avail(coreaudio_t *dev)
 {
    size_t filled = retro_atomic_load_acquire_size(&dev->filled);
    return (filled < dev->usable) ? dev->usable - filled : 0;
@@ -1421,9 +1422,6 @@ static void *coreaudio_init(const char *device,
                kAudioUnitScope_Global, 0, &device_id, &device_size) == noErr
             && device_id != 0)
       {
-         /* Kept for the clock, which is asked of the device rather
-          * than of this driver's own counting. */
-         dev->device_id = device_id;
          static const AudioObjectPropertySelector dev_sel[3] = {
             kAudioDevicePropertyBufferFrameSize,
             kAudioDevicePropertyLatency,
@@ -1432,6 +1430,9 @@ static void *coreaudio_init(const char *device,
          ca_addr_t prop;
          AudioStreamID stream_id = 0;
          UInt32 total = 0, size, i;
+         /* Kept for the clock, which is asked of the device rather
+          * than of this driver's own counting. */
+         dev->device_id = device_id;
          prop.mScope   = kAudioDevicePropertyScopeOutput;
          prop.mElement = CA_ELEMENT_MAIN;
          for (i = 0; i < 3; i++)
@@ -2133,13 +2134,14 @@ static OSStatus coreaudio_mic_input_cb(void *ref,
          && list.mBuffers[0].mData && list.mBuffers[0].mDataByteSize)
    {
       size_t got = list.mBuffers[0].mDataByteSize;
+      size_t room, excess;
       if (got > bytes)
          got = bytes;
       /* Lock-free: the ring is SPSC and this thread is its only
        * producer.  Room is measured against ring_size, not the
        * rounded-up physical capacity. */
-      size_t room   = retro_spsc_write_avail(&mic->ring);
-      size_t excess = mic->ring.capacity - mic->ring_size;
+      room   = retro_spsc_write_avail(&mic->ring);
+      excess = mic->ring.capacity - mic->ring_size;
       room          = room > excess ? room - excess : 0;
       if (room >= got)
          retro_spsc_write(&mic->ring, list.mBuffers[0].mData, got);

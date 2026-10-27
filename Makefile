@@ -131,6 +131,13 @@ ifneq ($(CXX_BUILD), 1)
       # string literal, which no declaration of ours can help: this lane
       # is here for declarations, comments and C99 syntax.
       CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long -Werror=declaration-after-statement -Wno-variadic-macros -Wno-overlength-strings
+      ifeq ($(OS), Darwin)
+         # Keep the SDK's long-long declarations visible in C89 mode.
+         CFLAGS += -U__STRICT_ANSI__
+         ifeq ($(shell $(CC) --version 2>&1 | head -n 1 | grep -c "clang"),1)
+            CFLAGS += -Wno-c99-extensions
+         endif
+      endif
       ifneq ($(findstring Win32,$(OS)),)
          CFLAGS += -include libretro-common/include/compat/mingw_math.h
       endif
@@ -158,6 +165,9 @@ DEF_FLAGS := -I. $(INCLUDE_DIRS) -Ideps $(filter-out -I.,$(DEF_FLAGS)) \
 CFLAGS += $(DEF_FLAGS)
 CXXFLAGS += $(DEF_FLAGS) -D__STDC_CONSTANT_MACROS
 OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
+ifneq ($(C89_BUILD),)
+   OBJCFLAGS := $(filter-out -std=c89 -ansi -pedantic -Werror=pedantic -Werror=declaration-after-statement,$(OBJCFLAGS)) $(C99_CFLAGS)
+endif
 
 ifeq ($(HAVE_CXX), 1)
    ifeq ($(CXX_BUILD), 1)

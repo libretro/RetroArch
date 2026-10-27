@@ -1,6 +1,11 @@
 CC ?= cc
 CFLAGS ?= -O2 -Wall -Wextra -std=c89
 CFLAGS += -I../../../include
+GC_SECTIONS := -Wl,--gc-sections
+ifeq ($(shell uname -s),Darwin)
+CFLAGS += -D_DARWIN_C_SOURCE
+GC_SECTIONS := -Wl,-dead_strip
+endif
 TARGETS := rmp4_vp9_hw_stream_test rwebm_language_test rmp4_vp9_config_test rvp9_config_test rvp9_reference_test rvp9_hw_session_test rwebm_hw_stream_test
 THREADS ?= 1
 PIXEL_FLAGS :=
@@ -71,7 +76,7 @@ rvp9_hw_session_test: rvp9_hw_session_test.c ../../../formats/vp9/rvp9.c ../../.
 rwebm_hw_stream_test: rwebm_hw_stream_test.c $(WEBM_SOURCES) ../../../formats/webm/rwebm_video.c \
  ../../../include/formats/rvp9_hw.h ../../../include/formats/rwebm_video.h ../../../include/formats/rvp9_color.h
 	$(CC) $(CFLAGS) -D_POSIX_C_SOURCE=200809L -DHAVE_RWEBM -DHAVE_RVP9 -ffunction-sections -fdata-sections \
-	 rwebm_hw_stream_test.c $(WEBM_SOURCES) -o $@ $(LDFLAGS) -Wl,--gc-sections -lm
+	 rwebm_hw_stream_test.c $(WEBM_SOURCES) -o $@ $(LDFLAGS) $(GC_SECTIONS) -lm
 
 rwebm_language_test: rwebm_language_test.c ../../../formats/webm/rwebm.c ../../../include/formats/rwebm.h
 	$(CC) $(CFLAGS) rwebm_language_test.c ../../../formats/webm/rwebm.c -o $@ $(LDFLAGS) -lm

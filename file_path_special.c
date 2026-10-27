@@ -103,6 +103,11 @@ bool fill_pathname_application_data(char *s, size_t len)
    CFStringRef parent_path;
    CFURLRef bundle_url, parent_url;
    CFBundleRef bundle = CFBundleGetMainBundle();
+#if !HAVE_STEAM
+   char portable_buf[PATH_MAX_LENGTH] = {0};
+   CFStringRef key;
+   const char *appdata;
+#endif
    if (!bundle)
       return false;
 
@@ -119,13 +124,12 @@ bool fill_pathname_application_data(char *s, size_t len)
    return true;
 #else
    /* if portable.txt exists next to the app then we use that directory */
-   char portable_buf[PATH_MAX_LENGTH] = {0};
    fill_pathname_join(portable_buf, s, "portable.txt", sizeof(portable_buf));
    if (path_is_valid(portable_buf))
       return true;
 
    /* if the app itself says it's portable we obey that as well */
-   CFStringRef key = CFStringCreateWithCString(NULL, "RAPortableInstall", kCFStringEncodingUTF8);
+   key = CFStringCreateWithCString(NULL, "RAPortableInstall", kCFStringEncodingUTF8);
    if (key)
    {
       CFBooleanRef val = CFBundleGetValueForInfoDictionaryKey(bundle, key);
@@ -140,7 +144,7 @@ bool fill_pathname_application_data(char *s, size_t len)
    }
 
    /* otherwise we use ~/Library/Application Support/RetroArch */
-   const char *appdata = getenv("HOME");
+   appdata = getenv("HOME");
    if (appdata)
    {
       fill_pathname_join(s, appdata,

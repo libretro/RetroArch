@@ -1156,6 +1156,11 @@ else ifeq ($(OS), Win32)
       OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
              $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.o
    endif
+else ifeq ($(OS), Darwin)
+   ifneq ($(filter 1,$(HAVE_COCOA) $(HAVE_COREAUDIO)),)
+      OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
+             $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.o
+   endif
 endif
 
 ifeq ($(HAVE_THREAD_STORAGE), 1)
