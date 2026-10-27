@@ -124,6 +124,21 @@ jobs:
             done
           done
 
+      - name: Link media-enabled Android unity frontend
+        run: |
+          set -eu
+          features="-DHAVE_RAAC -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RVP9 -DHAVE_RAV1 -DHAVE_RVORBIS -DHAVE_ROPUS"
+          "$MEDIA_NDK/ndk-build" -j2 \
+            NDK_PROJECT_PATH=. \
+            APP_BUILD_SCRIPT=pkg/android/phoenix-common/jni/Android.mk \
+            NDK_APPLICATION_MK=pkg/android/phoenix-common/jni/Application.mk \
+            NDK_OUT="$RUNNER_TEMP/android-media-obj" \
+            NDK_LIBS_OUT="$RUNNER_TEMP/android-media-libs" \
+            TARGET_ABIS=arm64-v8a APP_ABI=arm64-v8a \
+            GLES=3 NDK_GL_HEADER_VER=android-29 APP_PLATFORM=android-29 \
+            APP_CFLAGS="$features" APP_CPPFLAGS="$features"
+          test -s "$RUNNER_TEMP/android-media-libs/arm64-v8a/libretroarch-activity.so"
+
   codec-inventory:
     runs-on: ubuntu-latest
     strategy:

@@ -583,6 +583,10 @@ VIDEO IMAGE
 #include "../libretro-common/formats/vp9/rvp9.c"
 #endif
 
+#ifdef HAVE_RAV1
+#include "../libretro-common/formats/av1/rav1_hw.c"
+#endif
+
 #ifdef HAVE_RMPEG1
 #include "../libretro-common/formats/mpeg1/rmpeg1_ps.c"
 #include "../libretro-common/formats/mpeg1/rmpeg1_video.c"
