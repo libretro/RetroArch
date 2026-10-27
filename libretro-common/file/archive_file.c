@@ -157,6 +157,25 @@ unsigned file_archive_open_hints(int64_t size)
       : RETRO_VFS_FILE_ACCESS_HINT_NONE;
 }
 
+const uint8_t *file_archive_whole(RFILE *file, int64_t size, void **owned)
+{
+   const uint8_t *src = NULL;
+   *owned = NULL;
+   filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START);
+   if (filestream_view(file, size, &src) == size)
+      return src;
+   if (!(*owned = malloc((size_t)size)))
+      return NULL;
+   filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START);
+   if (filestream_read(file, *owned, size) != size)
+   {
+      free(*owned);
+      *owned = NULL;
+      return NULL;
+   }
+   return (const uint8_t*)*owned;
+}
+
 static int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
@@ -924,7 +943,7 @@ const struct file_archive_file_backend *file_archive_get_rar_file_backend(void)
 
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
 {
-#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB) || defined(HAVE_RZSTD) || defined(HAVE_RRAR) || defined(HAVE_COMPRESSION)
+#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB) || defined(HAVE_RZSTD) || defined(HAVE_RRAR) || defined(HAVE_RBZIP2) || defined(HAVE_COMPRESSION)
    char newpath[PATH_MAX_LENGTH];
    const char *file_ext          = NULL;
    char *last                    = NULL;
@@ -953,6 +972,11 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
 #ifdef HAVE_RZSTD
    if (string_is_equal_noncase(file_ext, "zst"))
       return &zstd_backend;
+#endif
+
+#ifdef HAVE_RBZIP2
+   if (string_is_equal_noncase(file_ext, "bz2"))
+      return &bz2_backend;
 #endif
 
 #ifdef HAVE_RRAR

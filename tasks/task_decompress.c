@@ -486,6 +486,9 @@ void *task_push_decompress(
 #ifdef HAVE_RZSTD
           && strcasecmp(ext, "zst") != 0
 #endif
+#ifdef HAVE_RBZIP2
+          && strcasecmp(ext, "bz2") != 0
+#endif
 #ifdef HAVE_RRAR
           && strcasecmp(ext, "rar") != 0
 #endif

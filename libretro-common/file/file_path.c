@@ -204,6 +204,9 @@ const char *path_get_archive_delim(const char *path)
                /* Check ".rar" */
                else if (c3 == 'r' && c2 == 'a' && c1 == 'r')
                   return delim;
+               /* Check ".bz2" */
+               else if (c3 == 'b' && c2 == 'z' && delim[-1] == '2')
+                  return delim;
             }
          }
       }

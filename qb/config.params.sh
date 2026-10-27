@@ -267,6 +267,7 @@ HAVE_ZLIB=no               # zlib support (uses the built-in DEFLATE codec when 
 HAVE_7ZIP=yes              # 7z archive support
 HAVE_RRAR=yes              # RAR archive support
 HAVE_RZSTD=yes             # Built-in Zstandard codec
+HAVE_RBZIP2=yes            # Built-in bzip2 decoder (.bz2, bzip2 zip members)
 HAVE_CHD=yes               # CHD disc image support
 HAVE_RCHD=yes              # Read CHD images with the built-in reader instead of libchdr
 CXX_CHD=no

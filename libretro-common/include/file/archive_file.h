@@ -289,6 +289,19 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
 unsigned file_archive_open_hints(int64_t size);
 
 /**
+ * file_archive_whole:
+ * @size                         : octets in @file
+ * @owned                        : receives a buffer for the caller to
+ *                                 free, or NULL
+ *
+ * Returns: all of @file, where the stream lends it whole (a mapping, a
+ * read-ahead window) or else read into *@owned; NULL on failure. What
+ * is lent holds until the next call on @file.
+ **/
+const uint8_t *file_archive_whole(struct RFILE *file, int64_t size,
+      void **owned);
+
+/**
  * file_archive_get_file_crc32:
  * @path                         : filename path of archive
  *
@@ -312,6 +325,7 @@ uint32_t file_archive_get_file_crc32_and_size(const char *path, uint64_t *size);
 extern const struct file_archive_file_backend zlib_backend;
 extern const struct file_archive_file_backend sevenzip_backend;
 extern const struct file_archive_file_backend zstd_backend;
+extern const struct file_archive_file_backend bz2_backend;
 extern const struct file_archive_file_backend rar_backend;
 
 /* ---- incremental archive entry source ----

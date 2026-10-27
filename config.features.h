@@ -302,6 +302,12 @@
 #define SUPPORTS_ZSTD false
 #endif
 
+#ifdef HAVE_RBZIP2
+#define SUPPORTS_BZIP2 true
+#else
+#define SUPPORTS_BZIP2 false
+#endif
+
 #ifdef HAVE_DYLIB
 #define SUPPORTS_DYLIB true
 #else

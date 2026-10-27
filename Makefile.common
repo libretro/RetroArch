@@ -2209,6 +2209,14 @@ ifeq ($(HAVE_RRAR),1)
           $(LIBRETRO_COMM_DIR)/formats/rar/rrar_ppmd7.o
 endif
 
+# The built-in bzip2 decoder: one C file, no dependency.
+HAVE_RBZIP2 ?= 1
+ifeq ($(HAVE_RBZIP2),1)
+   DEFINES += -DHAVE_RBZIP2
+   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rbzip2.o \
+          $(LIBRETRO_COMM_DIR)/file/archive_file_bz2.o
+endif
+
 # The built-in Zstandard codec: one C file, no dependency.
 ifeq ($(HAVE_RZSTD),1)
    DEFINES += -DHAVE_RZSTD
@@ -2786,8 +2794,11 @@ ifeq ($(HAVE_NETWORKING), 1)
       HAVE_CHEEVOS_RVZ ?= $(if $(filter 1,$(HAVE_RZSTD)),1,0)
       ifeq ($(HAVE_CHEEVOS_RVZ), 1)
          DEFINES += -DHAVE_CHEEVOS_RVZ
-         OBJ += $(LIBRETRO_COMM_DIR)/formats/rvz/rvz.o \
-                $(LIBRETRO_COMM_DIR)/encodings/encoding_rbzip2.o
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/rvz/rvz.o
+         # bzip2 groups, decoded as the archive layer does
+         ifneq ($(HAVE_RBZIP2), 1)
+            OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rbzip2.o
+         endif
          ifneq ($(HAVE_CRYPTO), 1)
             OBJ += $(LIBRETRO_COMM_DIR)/crypto/crypto.o
          endif

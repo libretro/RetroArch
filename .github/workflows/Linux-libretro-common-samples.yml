@@ -110,6 +110,7 @@ jobs:
             archive_zip_test
             archive_zstd_test
             archive_zst_test
+            archive_bz2_test
             archive_rar_test
             archive_stream_test
             config_file_test

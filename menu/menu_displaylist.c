@@ -3726,6 +3726,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_RZSTD
          {SUPPORTS_ZSTD, "Zstandard"},
 #endif
+#ifdef HAVE_RBZIP2
+         {SUPPORTS_BZIP2, "bzip2"},
+#endif
 #ifdef HAVE_RRAR
          {SUPPORTS_RAR, "RAR"},
 #endif

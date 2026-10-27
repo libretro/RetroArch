@@ -61,6 +61,10 @@
 #include <encodings/rzstd.h>
 #endif
 
+#ifdef HAVE_RBZIP2
+#include <encodings/rbzip2.h>
+#endif
+
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
 #define CENTRAL_FILE_HEADER_SIGNATURE 0x02014b50
 #endif
@@ -79,6 +83,7 @@ enum file_archive_compression_mode
 {
    ZIP_MODE_STORED   = 0,
    ZIP_MODE_DEFLATED = 8,
+   ZIP_MODE_BZIP2    = 12,
    ZIP_MODE_ZSTD     = 93
 };
 
@@ -103,6 +108,9 @@ typedef struct
 #endif
    uint8_t *tmpbuf;
    size_t   tmpbuf_len;
+#ifdef HAVE_RBZIP2
+   rbzip2_t *bz;           /* made at the first bzip2 member, kept */
+#endif
    /* The whole member, or a ZIP_STREAM_WINDOW of it when streaming */
    uint8_t *decompressed_data;
    uint32_t win_len;       /* size of decompressed_data */
@@ -547,25 +555,22 @@ static int zlib_stream_decompress_data_to_file_iterate(
 
       return 0;   /* still more data to process */
    }
-#ifdef ZIP_HAVE_ZSTD
-   else if (zip_context->cmode == ZIP_MODE_ZSTD)
+#if defined(ZIP_HAVE_ZSTD) || defined(HAVE_RBZIP2)
+   else if (     zip_context->cmode == ZIP_MODE_ZSTD
+              || zip_context->cmode == ZIP_MODE_BZIP2)
    {
-      size_t result;
-      int    zerr;
+      /* Decoded whole, from the mapping, from what the stream lends
+       * when it holds all of the member, or else read */
+      const uint8_t *src    = NULL;
+      size_t         result = 0;
+      int            zerr   = 1;
 
 #ifdef VFS_HAVE_FILE_MAPPING
       if (state->archive_mmap_data)
-      {
-         zerr = (rzstd_decode(
-               zip_context->decompressed_data, zip_context->usize,
-               state->archive_mmap_data + (size_t)zip_context->fdoffset,
-               zip_context->csize, &result) != RZSTD_PROCESS_END);
-      }
+         src = state->archive_mmap_data + (size_t)zip_context->fdoffset;
       else
 #endif
       {
-         /* The whole frame, lent if the stream holds it all, else read */
-         const uint8_t *src = NULL;
          filestream_seek(state->archive_file,
                zip_context->fdoffset,
                RETRO_VFS_SEEK_POSITION_START);
@@ -582,12 +587,25 @@ static int zlib_stream_decompress_data_to_file_iterate(
                return -1;
             src = zip_context->tmpbuf;
          }
+      }
 
+#ifdef ZIP_HAVE_ZSTD
+      if (zip_context->cmode == ZIP_MODE_ZSTD)
          zerr = (rzstd_decode(
                zip_context->decompressed_data, zip_context->usize,
                src, zip_context->csize, &result)
                != RZSTD_PROCESS_END);
+#endif
+#ifdef HAVE_RBZIP2
+      if (zip_context->cmode == ZIP_MODE_BZIP2)
+      {
+         if (!zip_context->bz && !(zip_context->bz = rbzip2_new()))
+            return -1;
+         zerr = rbzip2_decode(zip_context->bz,
+               zip_context->decompressed_data, zip_context->usize,
+               src, zip_context->csize, &result) != RBZIP2_OK;
       }
+#endif
 
       if (     zerr
             || result != zip_context->usize
@@ -855,6 +873,9 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
 #endif
    zip_context->tmpbuf            = NULL;
    zip_context->tmpbuf_len        = 0;
+#ifdef HAVE_RBZIP2
+   zip_context->bz                = NULL;
+#endif
    zip_context->entry_crc         = 0;
    zip_context->expect_crc        = 0;
    zip_context->crc               = 0;
@@ -929,7 +950,7 @@ again:
    if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
       return 0;
 
-   *cmode         = read_le(zip_context->directory_entry + 10, 2); /* compression mode, 0 = store, 8 = deflate */
+   *cmode         = read_le(zip_context->directory_entry + 10, 2); /* compression mode: 0 store, 8 deflate, 12 bzip2, 93 zstd */
    *checksum      = read_le(zip_context->directory_entry + 16, 4); /* CRC32 */
    *csize         = read_le(zip_context->directory_entry + 20, 4); /* compressed size */
    *size          = read_le(zip_context->directory_entry + 24, 4); /* uncompressed size */
@@ -1011,6 +1032,9 @@ static void zip_parse_file_free(void *context)
 {
    zip_context_t *zip_context = (zip_context_t *)context;
    zip_context_free_stream(zip_context, false);
+#ifdef HAVE_RBZIP2
+   rbzip2_free(zip_context->bz);
+#endif
    free(zip_context);
 }
 

@@ -47,6 +47,11 @@
 #define HAVE_RRAR 1
 #endif
 
+/* Nor has the bzip2 decoder. */
+#ifndef HAVE_RBZIP2
+#define HAVE_RBZIP2 1
+#endif
+
 #if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
 #ifndef HAVE_OPENGLES
 #define HAVE_OPENGLES  1
@@ -139,6 +144,11 @@ ARCHIVE FILE
 #include "../libretro-common/file/archive_file_zstd.c"
 #endif
 
+#ifdef HAVE_RBZIP2
+#include "../libretro-common/file/archive_file_bz2.c"
+#include "../libretro-common/encodings/encoding_rbzip2.c"
+#endif
+
 #ifdef HAVE_RRAR
 #include "../libretro-common/file/archive_file_rar.c"
 #include "../libretro-common/formats/rar/rrar_archive.c"
@@ -226,7 +236,6 @@ ACHIEVEMENTS
 
 #if defined(HAVE_CHEEVOS_RVZ) && defined(HAVE_RZSTD)
 #include "../libretro-common/formats/rvz/rvz.c"
-#include "../libretro-common/encodings/encoding_rbzip2.c"
 #ifndef HAVE_CRYPTO
 /* its AES, without the rest of the crypto library */
 #include "../libretro-common/crypto/crypto.c"

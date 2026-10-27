@@ -67,27 +67,6 @@ static void zstd_derive_inner_filename(const char *path, char *s, size_t len)
       ((char*)ext)[0] = '\0';
 }
 
-/* The whole of @file, lent where the stream can (a mapping, a
- * read-ahead window), else read into *@owned for the caller to free */
-static const uint8_t *zstd_whole(RFILE *file, int64_t size, void **owned)
-{
-   const uint8_t *src = NULL;
-   *owned = NULL;
-   filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START);
-   if (filestream_view(file, size, &src) == size)
-      return src;
-   if (!(*owned = malloc((size_t)size)))
-      return NULL;
-   filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START);
-   if (filestream_read(file, *owned, size) != size)
-   {
-      free(*owned);
-      *owned = NULL;
-      return NULL;
-   }
-   return (const uint8_t*)*owned;
-}
-
 static int zstd_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
@@ -229,7 +208,7 @@ static int zstd_stream_decompress_data_to_file_iterate(
       return 1;
    }
 
-   if (!(src = zstd_whole(ctx->state->archive_file, ctx->archive_size,
+   if (!(src = file_archive_whole(ctx->state->archive_file, ctx->archive_size,
                &owned)))
       return -1;
 
@@ -286,7 +265,7 @@ static int64_t zstd_file_read(
    /* The frame is decoded where the stream lends it, so the stream
     * stays open until it is */
    if (     (file_size = filestream_get_size(file)) <= 0
-         || !(src = zstd_whole(file, file_size, &owned)))
+         || !(src = file_archive_whole(file, file_size, &owned)))
       goto done;
 
    content_size = rzstd_frame_content_size(src, (size_t)file_size);

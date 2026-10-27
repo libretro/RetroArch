@@ -7684,6 +7684,9 @@ static void retroarch_print_features(void)
 #ifdef HAVE_RZSTD
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_ZSTD,            "zstd",            "Zstandard support");
 #endif
+#ifdef HAVE_RBZIP2
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_BZIP2,           "bzip2",           "bzip2 support");
+#endif
 #ifdef HAVE_RRAR
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_RAR,             "rar",             "RAR support");
 #endif
