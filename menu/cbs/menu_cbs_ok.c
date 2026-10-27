@@ -4933,6 +4933,13 @@ static int action_ok_input_gca_enable(const char *path,
    winusb_bind_request(WINUSB_BIND_GCA, true);
    return 0;
 }
+
+static int action_ok_input_xid_enable(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   winusb_bind_request(WINUSB_BIND_XID, true);
+   return 0;
+}
 #endif
 
 static int action_ok_start_recording(const char *path,
@@ -9783,6 +9790,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_INPUT_DS3_ENABLE,                    action_ok_input_ds3_enable},
          {MENU_ENUM_LABEL_INPUT_DS3_RESTORE,                   action_ok_input_ds3_restore},
          {MENU_ENUM_LABEL_INPUT_GCA_ENABLE,                    action_ok_input_gca_enable},
+         {MENU_ENUM_LABEL_INPUT_XID_ENABLE,                    action_ok_input_xid_enable},
 #endif
 #ifdef HAVE_AUDIOMIXER
          {MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,         action_ok_audio_add_to_mixer_and_collection},

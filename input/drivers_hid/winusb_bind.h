@@ -16,9 +16,12 @@
 #ifndef _WINUSB_BIND_H
 #define _WINUSB_BIND_H
 
+#include <string.h>
+
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_inline.h>
+#include <compat/strcasestr.h>
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) \
    && defined(HAVE_WINUSB) && defined(HAVE_THREADS)
@@ -27,12 +30,28 @@
 
 RETRO_BEGIN_DECLS
 
+/* An original Xbox pad, whoever made it, from the device's compatible
+ * ids (a double-NUL-terminated list) and its USB ids: its interface is
+ * XID, class 0x58 subclass 0x42. The DVD remote's receiver and Steel
+ * Battalion's controller are XID too, with other reports. */
+static INLINE bool winusb_is_xid(const char *ids, unsigned vid, unsigned pid)
+{
+   if (     (vid == 0x045e && pid == 0x0284)
+         || (vid == 0x0a7b && pid == 0xd000))
+      return false;
+   for (; *ids; ids += strlen(ids) + 1)
+      if (compat_strcasestr(ids, "Class_58&SubClass_42"))
+         return true;
+   return false;
+}
+
 #ifdef HAVE_WINUSB_BIND
 /* Command-line arguments the elevated copy of RetroArch is started
  * with; an installer may start it with one too. */
 #define WINUSB_BIND_ARG     "--winusb-bind-ds3"
 #define WINUSB_RESTORE_ARG  "--winusb-restore-ds3"
 #define WINUSB_BIND_GCA_ARG "--winusb-bind-gca"
+#define WINUSB_BIND_XID_ARG "--winusb-bind-xid"
 
 /* What is moved: the DualShock 3s, or the Wii U GameCube adapters.
  * Windows' own driver cannot start either; it cannot run the adapter
@@ -40,7 +59,9 @@ RETRO_BEGIN_DECLS
 enum winusb_bind_kind
 {
    WINUSB_BIND_DS3 = 0,
-   WINUSB_BIND_GCA
+   WINUSB_BIND_GCA,
+   /* original Xbox pads: no driver of Windows' runs them at all */
+   WINUSB_BIND_XID
 };
 
 /* A DualShock 3, by its USB ids. */
@@ -70,6 +91,9 @@ bool winusb_bind_request(enum winusb_bind_kind kind, bool bind);
  * Both on the frontend's thread. */
 void winusb_bind_gca_seen(bool waiting);
 bool winusb_bind_gca_waiting(void);
+/* The same for an original Xbox pad */
+void winusb_bind_xid_seen(bool waiting);
+bool winusb_bind_xid_waiting(void);
 #endif
 
 RETRO_END_DECLS

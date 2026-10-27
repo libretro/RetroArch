@@ -10,8 +10,9 @@
  * layout instead, and the Switch Pro's to its greeting and commands.
  * A handler that keeps its state as a view is held, after every report,
  * to its view saying what its getters say; the DualShock 3's to the
- * copying handler's axes. The 8BitDo SN30 Pro's is new too, and held to
- * its reports' layout and its rumble report. */
+ * copying handler's axes. The 8BitDo SN30 Pro's and the original Xbox
+ * pad's are new too, and held to their reports' layout and their rumble
+ * reports. */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -22,6 +23,7 @@
 #include "input/common/sony_pad_output.h"
 #include "input/common/sony_pad_motion.h"
 #include <retro_timers.h>
+#include "input/drivers_hid/winusb_bind.h"
 
 /* shorter than the Wii U Pro's buttons, which end at 0x0E */
 #define WIIUPRO_SHORT 0x0E
@@ -2759,12 +2761,145 @@ static void test_sony_touch(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- the original Xbox pad (XID): new, held to its report ---- */
+
+static void test_xid(void)
+{
+   /* the report's pressure bytes 4 to 11 and byte 2's bits, from bit 0,
+    * as the RetroPad's buttons */
+   static const unsigned pressed[8] = {
+      RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_R, RETRO_DEVICE_ID_JOYPAD_L,
+      RETRO_DEVICE_ID_JOYPAD_L2, RETRO_DEVICE_ID_JOYPAD_R2 };
+   static const unsigned bits[8] = {
+      RETRO_DEVICE_ID_JOYPAD_UP, RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_START, RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RETRO_DEVICE_ID_JOYPAD_L3, RETRO_DEVICE_ID_JOYPAD_R3 };
+   const pad_connection_interface_t *ifc = &pad_connection_xid;
+   uint8_t p[32];
+   unsigned n, i, bad = 0, had = failures, count;
+   int dummy_handle;
+   void *dev = ifc->init(&dummy_handle, 0, &stub_hid);
+
+   CHECK(dev != NULL, "xid: no device");
+   if (!dev)
+      return;
+   srand(5);
+   for (n = 0; n < 20000; n++)
+   {
+      uint32_t want = 0;
+      input_bits_t got;
+      for (i = 0; i < sizeof(p); i++)
+         p[i] = (uint8_t)rand();
+      p[0] = 0x00;
+      p[1] = 20;
+      /* the edges: a sticks' extremes, a pressure at the threshold */
+      if (n < 16)
+      {
+         for (i = 12; i < 20; i += 2)
+         {
+            p[i]     = (n & 1) ? 0x00 : 0xff;
+            p[i + 1] = (n & 1) ? 0x80 : 0x7f;
+         }
+         for (i = 4; i < 12; i++)
+            p[i] = (uint8_t)(0x54 + (n & 3));
+      }
+      deliver(ifc, dev, p, 20);
+      for (i = 0; i < 8; i++)
+      {
+         if (p[2] & (1u << i))
+            want |= 1u << bits[i];
+         if (p[4 + i] > 0x55)
+            want |= 1u << pressed[i];
+         /* a pressure 0..255 reaches 0..32767, monotonic */
+         if (ifc->get_axis(dev, 4 + i) != (int16_t)((p[4 + i] * 32767 + 127) / 255)
+               && abs(ifc->get_axis(dev, 4 + i) - (p[4 + i] * 32767) / 255) > 128)
+            bad++;
+      }
+      ifc->get_buttons(dev, &got);
+      for (i = 0; i < 32; i++)
+         if (   !!BIT256_GET(got, i) != !!(want & (1u << i))
+             || !!ifc->button(dev, (uint16_t)i) != !!(want & (1u << i)))
+            bad++;
+      /* X right, Y down, as the frontend's axes; the full reach, no
+       * overflow at -32768 */
+      for (i = 0; i < 4; i++)
+      {
+         int32_t raw = (int16_t)(uint16_t)(p[12 + i * 2] | (p[13 + i * 2] << 8));
+         int32_t exp = (i & 1) ? -1 - raw : raw;
+         if (ifc->get_axis(dev, i) != exp)
+            bad++;
+      }
+   }
+   CHECK(!bad, "xid: %u reads disagree with the report", bad);
+   /* full pressure reads 32767, none 0 */
+   memset(p, 0, sizeof(p));
+   p[1] = 20;
+   p[4] = 0xff;
+   deliver(ifc, dev, p, 20);
+   CHECK(ifc->get_axis(dev, 4) == 32767 && ifc->get_axis(dev, 5) == 0,
+         "xid: pressure does not reach 0 to 32767");
+   /* a short report, or another report, is not taken */
+   {
+      int16_t ax = ifc->get_axis(dev, 4);
+      memset(p, 0, sizeof(p));
+      p[1] = 20;
+      deliver(ifc, dev, p, 19);
+      p[1] = 26;   /* a Steel Battalion's */
+      deliver(ifc, dev, p, 26);
+      p[0] = 0x01; p[1] = 20;
+      deliver(ifc, dev, p, 20);
+      CHECK(ifc->get_axis(dev, 4) == ax, "xid: a report not the pad's was taken");
+   }
+   /* rumble: output report 0, the left motor at byte 3, the right at 5;
+    * sent from the packet handler, once a change */
+   memset(p, 0, sizeof(p));
+   p[1] = 20;
+   deliver(ifc, dev, p, 20);
+   count = sent_count;
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0x4000);
+   CHECK(sent_count == count, "xid: rumble sent outside the packet handler");
+   deliver(ifc, dev, p, 20);
+   CHECK(sent_count == count + 1 && sent_len == 6 && sent[0] == 0 && sent[1] == 6
+         && sent[2] == 0 && sent[3] == 0xff && sent[4] == 0 && sent[5] == 0x40,
+         "xid: rumble report not 00 06 00 ff 00 40");
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   deliver(ifc, dev, p, 20);
+   CHECK(sent_count == count + 1, "xid: rumble sent again unchanged");
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0);
+   ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0);
+   deliver(ifc, dev, p, 20);
+   CHECK(sent_count == count + 2 && !sent[3] && !sent[5], "xid: rumble not stopped");
+   ifc->deinit(dev);
+
+   /* found by its interface's class, whoever made it; not the DVD
+    * remote's receiver or Steel Battalion's controller */
+   CHECK(winusb_is_xid("USB\\Class_58&SubClass_42&Prot_00\0USB\\Class_58&SubClass_42\0USB\\Class_58\0", 0x045e, 0x0202),
+         "xid: Microsoft's pad not found by its class");
+   CHECK(winusb_is_xid("USB\\CLASS_58&SUBCLASS_42\0", 0x0738, 0x4522),
+         "xid: a third-party pad not found by its class");
+   CHECK(!winusb_is_xid("USB\\Class_58&SubClass_42&Prot_00\0", 0x045e, 0x0284),
+         "xid: the DVD remote's receiver taken for a pad");
+   CHECK(!winusb_is_xid("USB\\Class_58&SubClass_42&Prot_00\0", 0x0a7b, 0xd000),
+         "xid: Steel Battalion's controller taken for a pad");
+   CHECK(!winusb_is_xid("USB\\Class_FF&SubClass_5D&Prot_01\0USB\\Class_FF\0", 0x045e, 0x028e),
+         "xid: an Xbox 360 pad taken for an original Xbox pad");
+   CHECK(!winusb_is_xid("\0", 0x045e, 0x0202), "xid: a device with no ids taken");
+
+   printf("[%s] xid: buttons, pressures and sticks from the report on 20000 reports; other reports left; rumble from the packet handler, once a change; found by class, not the remote or Steel Battalion\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
    stub_hid.set_report   = stub_set_report;
    test_ps4();
    test_wiiugca();
+   test_xid();
    test_adapter(&pad_connection_ps2adapter, "ps2adapter", false);
    test_adapter(&pad_connection_psxadapter, "psxadapter", true);
    test_usbpad(&pad_connection_snesusb, "snesusb", ref_snesusb_map, 0, 5);

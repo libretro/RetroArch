@@ -187,6 +187,8 @@ extern pad_connection_interface_t pad_connection_switch2_pro;
 extern pad_connection_interface_t pad_connection_snesusb;
 extern pad_connection_interface_t pad_connection_nesusb;
 extern pad_connection_interface_t pad_connection_wiiugca;
+/* an original Xbox pad: by its USB interface class, not by its ids */
+extern pad_connection_interface_t pad_connection_xid;
 extern pad_connection_interface_t pad_connection_ps2adapter;
 extern pad_connection_interface_t pad_connection_psxadapter;
 extern pad_connection_interface_t pad_connection_retrode;

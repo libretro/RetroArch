@@ -924,6 +924,19 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  +3) \
 DECL_AXIS(r_y_minus, -3)
 
+/* An original Xbox pad (input/connect/connect_xid.c): the RetroPad's
+ * buttons, and each face button's and trigger's pressure as an axis */
+#define HID_XID_BINDS \
+HID_RETROPAD_BINDS \
+DECL_AXIS(b,  +4)  /* A     */ \
+DECL_AXIS(a,  +5)  /* B     */ \
+DECL_AXIS(y,  +6)  /* X     */ \
+DECL_AXIS(x,  +7)  /* Y     */ \
+DECL_AXIS(r,  +8)  /* Black */ \
+DECL_AXIS(l,  +9)  /* White */ \
+DECL_AXIS(l2, +10) \
+DECL_AXIS(r2, +11)
+
 /* the DualSense's handler gives its PS button as 16 */
 #define HID_DUALSENSE_BINDS \
 HID_RETROPAD_BINDS \
@@ -941,6 +954,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("DualSense Wireless Controller", "hid", HID_DUALSENSE_BINDS),
    DECL_AUTOCONF_DEVICE("DualSense Edge Wireless Controller", "hid", HID_DUALSENSE_BINDS),
 #ifdef _WIN32
+   DECL_AUTOCONF_DEVICE("Original Xbox Controller", "hid", HID_XID_BINDS),
    DECL_AUTOCONF_DEVICE("Controller (Xbox One For Windows)", "hid", HID_XBOX_BINDS),
    DECL_AUTOCONF_DEVICE("Controller (Xbox 360 For Windows)", "hid", HID_XBOX_BINDS),
    DECL_AUTOCONF_DEVICE("Controller (XBOX 360 For Windows)", "hid", HID_XBOX_BINDS),

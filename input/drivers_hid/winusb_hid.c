@@ -446,6 +446,16 @@ static bool winusb_hid_handled(uint16_t vid, uint16_t pid)
                     || entry->iface == &pad_connection_wiiugca);
 }
 
+static bool winusb_hid_is_xid(HDEVINFO devs, SP_DEVINFO_DATA *info,
+      unsigned vid, unsigned pid)
+{
+   char ids[512];
+   memset(ids, 0, sizeof(ids));
+   return SetupDiGetDeviceRegistryPropertyA(devs, info, SPDRP_COMPATIBLEIDS,
+            NULL, (BYTE*)ids, sizeof(ids) - 2, NULL)
+      && winusb_is_xid(ids, vid, pid);
+}
+
 /* A control transfer on the default pipe, waited for: the length moved,
  * or -1. */
 static int32_t winusb_hid_control(winusb_device_t *dev, UCHAR type,
@@ -1196,7 +1206,8 @@ static bool winusb_switch2_open(winusb_hid_t *hid, winusb_device_t *dev)
 }
 
 static void winusb_hid_open(winusb_hid_t *hid, const char *path,
-      const char *instance, uint16_t vid, uint16_t pid, bool hidclass)
+      const char *instance, uint16_t vid, uint16_t pid, bool hidclass,
+      bool xid)
 {
    int number;
    winusb_device_t *dev;
@@ -1206,7 +1217,7 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       return;
    if (!(dev = (winusb_device_t*)calloc(1, sizeof(*dev))))
       return;
-   entry          = find_connection_entry(vid, pid, "");
+   entry          = xid ? NULL : find_connection_entry(vid, pid, "");
    dev->hid       = hid;
    dev->slot      = -1;
    dev->vid       = vid;
@@ -1222,7 +1233,9 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
    retro_atomic_int_init(&dev->player, 0);
    dev->generic   = hidclass && !entry;
    strlcpy(dev->instance, instance, sizeof(dev->instance));
-   strlcpy(dev->name, entry ? entry->name : "HID Gamepad", sizeof(dev->name));
+   strlcpy(dev->name, entry ? entry->name
+         : xid ? pad_connection_xid.get_name(NULL) : "HID Gamepad",
+         sizeof(dev->name));
    /* the Bluetooth HID service's id is in a Bluetooth pad's instance */
    dev->bluetooth = hidclass && compat_strcasestr(instance,
          "00001124-0000-1000-8000-00805f9b34fb") != NULL;
@@ -1311,7 +1324,17 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
    }
 
    /* the pad's handler starts it here */
-   if (dev->generic)
+   if (xid)
+   {
+      joypad_connection_entry_t xid_entry;
+      xid_entry.name  = dev->name;
+      xid_entry.vid   = vid;
+      xid_entry.pid   = pid;
+      xid_entry.iface = &pad_connection_xid;
+      dev->slot       = pad_connection_pad_init_entry(hid->slots, &xid_entry,
+            dev, &winusb_hid);
+   }
+   else if (dev->generic)
    {
       joypad_connection_entry_t gen_entry;
       gen_entry.name  = dev->name;
@@ -1572,7 +1595,7 @@ static void winusb_hidclass_scan(winusb_hid_t *hid)
       }
       if (pad)
          winusb_hid_open(hid, detail.d.DevicePath, instance,
-               attr.VendorID, attr.ProductID, true);
+               attr.VendorID, attr.ProductID, true, false);
    }
    SetupDiDestroyDeviceInfoList(ifs);
 }
@@ -1583,8 +1606,10 @@ static void winusb_hid_scan(winusb_hid_t *hid)
    DWORD i;
    HDEVINFO devs;
 #ifdef HAVE_WINUSB_BIND
-   /* a Wii U GameCube adapter on a driver other than WinUSB */
+   /* a Wii U GameCube adapter, or an original Xbox pad, on a driver
+    * other than WinUSB */
    bool gca_elsewhere = false;
+   bool xid_elsewhere = false;
 #endif
 
    hid->busy_seen = 0;
@@ -1600,6 +1625,7 @@ static void winusb_hid_scan(winusb_hid_t *hid)
       char path[MAX_PATH];
       unsigned vid, pid;
       const char *ids;
+      bool xid;
 
       info.cbSize = sizeof(info);
       if (!SetupDiEnumDeviceInfo(devs, i, &info))
@@ -1607,18 +1633,24 @@ static void winusb_hid_scan(winusb_hid_t *hid)
       if (     !SetupDiGetDeviceInstanceIdA(devs, &info, instance,
                   sizeof(instance), NULL)
             || !(ids = strstr(instance, "VID_"))
-            || sscanf(ids, "VID_%4x&PID_%4x", &vid, &pid) != 2
-            || !winusb_hid_handled((uint16_t)vid, (uint16_t)pid)
+            || sscanf(ids, "VID_%4x&PID_%4x", &vid, &pid) != 2)
+         continue;
+      xid = winusb_hid_is_xid(devs, &info, vid, pid);
+      if (     (!xid && !winusb_hid_handled((uint16_t)vid, (uint16_t)pid))
             || winusb_hid_find(hid, instance))
          continue;
-      if (     !SetupDiGetDeviceRegistryPropertyA(devs, &info, SPDRP_SERVICE,
-                  NULL, (BYTE*)service, sizeof(service), NULL)
-            || !string_is_equal_noncase(service, "WinUSB"))
+      if (!SetupDiGetDeviceRegistryPropertyA(devs, &info, SPDRP_SERVICE,
+                  NULL, (BYTE*)service, sizeof(service), NULL))
+         service[0] = '\0';
+      if (!string_is_equal_noncase(service, "WinUSB"))
       {
          RARCH_LOG("[WinUSB] %s is not bound to WinUSB.\n", instance);
 #ifdef HAVE_WINUSB_BIND
          if (winusb_bind_is_gca(vid, pid))
             gca_elsewhere = true;
+         /* with no driver at all; one on XBCD is read by DirectInput */
+         else if (xid && !*service)
+            xid_elsewhere = true;
 #endif
          continue;
       }
@@ -1630,7 +1662,7 @@ static void winusb_hid_scan(winusb_hid_t *hid)
       if (winusb_hid_interface_path(devs, &info, instance,
                path, sizeof(path)))
          winusb_hid_open(hid, path, instance, (uint16_t)vid, (uint16_t)pid,
-               false);
+               false, xid);
    }
    if (devs != INVALID_HANDLE_VALUE)
       SetupDiDestroyDeviceInfoList(devs);
@@ -1646,6 +1678,7 @@ static void winusb_hid_scan(winusb_hid_t *hid)
             gca_elsewhere = false;
    }
    winusb_bind_gca_seen(gca_elsewhere);
+   winusb_bind_xid_seen(xid_elsewhere);
 #endif
    /* one unplugged while held elsewhere is said again when it is back */
    for (i = hid->busy_count; i-- > 0; )

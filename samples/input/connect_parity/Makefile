@@ -1,7 +1,7 @@
 # The converted pad handlers of input/connect against the copying
-# handlers they replace, and the DualSense's and both Switch Pro
-# Controllers' against their reports; the DualShock 3's axes against
-# the copying handler's.
+# handlers they replace, and the DualSense's, both Switch Pro
+# Controllers' and the original Xbox pad's against their reports; the
+# DualShock 3's axes against the copying handler's.
 ROOT   := ../../..
 TARGET := connect_parity_test
 CC     ?= cc
@@ -14,6 +14,7 @@ SOURCES := connect_parity_test.c \
            $(ROOT)/input/connect/connect_switch_pro.c \
            $(ROOT)/input/connect/connect_switch2_pro.c \
            $(ROOT)/input/connect/connect_wiiugca.c \
+           $(ROOT)/input/connect/connect_xid.c \
            $(ROOT)/input/connect/connect_ps2adapter.c \
            $(ROOT)/input/connect/connect_psxadapter.c \
            $(ROOT)/input/connect/connect_snesusb.c \
@@ -27,6 +28,7 @@ SOURCES := connect_parity_test.c \
            $(ROOT)/input/connect/connect_gamecube_pc.c \
            $(ROOT)/input/common/input_hid_common.c \
            $(ROOT)/libretro-common/encodings/encoding_crc32.c \
+           $(ROOT)/libretro-common/compat/compat_strcasestr.c \
            $(ROOT)/libretro-common/features/features_cpu.c \
            $(ROOT)/libretro-common/time/rtime.c
 ifneq ($(SANITIZER),)

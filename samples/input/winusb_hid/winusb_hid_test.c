@@ -99,6 +99,7 @@ static bool beside;
 bool input_driver_hid_beside(const void *hid_data) { return beside; }
 /* the scan's word to the menu on an adapter nothing could open */
 void winusb_bind_gca_seen(bool waiting) { }
+void winusb_bind_xid_seen(bool waiting) { }
 
 /* ---- winusb.dll ---- */
 
@@ -629,7 +630,7 @@ static void test_hidclass(const char *path)
    caps_in = 64; caps_out = 48; caps_id = 1; firmware = 0x0224;
    connected_port = -1;
    winusb_hid_open(hid, path, "HID\\VID_054C&PID_0CE6&MI_03\\1",
-         0x054c, 0x0ce6, true);
+         0x054c, 0x0ce6, true, false);
    CHECK(hid->devices && connected_port == 0, "hid class: the pad is not on port 1");
    if (!hid->devices)
       return;
@@ -700,7 +701,7 @@ static void test_hidclass(const char *path)
     * handler is given the report hidraw would give */
    caps_in = 9; caps_out = 0; caps_id = 0;
    winusb_hid_open(hid, path, "HID\\VID_081F&PID_E401\\1",
-         0x081f, 0xe401, true);
+         0x081f, 0xe401, true, false);
    CHECK(hid->devices && hid->devices->strip_id && hid->devices->in_len == 9,
          "hid class: a pad without report IDs was not known as one");
    memset(r, 0, sizeof(r));
@@ -732,7 +733,7 @@ static void test_hidclass(const char *path)
    winusb_hidclass_api.FreePreparsedData = h_free_pp_counted;
    frees_pp = 0;
    winusb_hid_open(hid, path, "HID\\VID_1234&PID_5678\\1",
-         0x1234, 0x5678, true);
+         0x1234, 0x5678, true, false);
    CHECK(hid->devices && hid->devices->generic && !hid->devices->strip_id
          && !strcmp(hid->devices->name, "Generic Pad"),
          "hid class: a pad with no handler was not taken, read whole, by its name");
@@ -788,7 +789,7 @@ static void test_hidclass(const char *path)
     * free one once the others have theirs, as on the Mac */
    generic_dup = true;
    winusb_hid_open(hid, path, "HID\\VID_1234&PID_5678\\2",
-         0x1234, 0x5678, true);
+         0x1234, 0x5678, true, false);
    CHECK(   hid->devices && hid->devices->gen.values == 5
          && hid->devices->gen.value[0].id == 0
          && hid->devices->gen.value[1].id == 3
@@ -810,7 +811,7 @@ static void test_hidclass(const char *path)
     * onto axes 4 and 5, 0 at rest, as SDL splits them */
    generic_xbox = true;
    winusb_hid_open(hid, path, "HID\\VID_045E&PID_02FF&IG_00\\1",
-         0x045e, 0x02ff, true);
+         0x045e, 0x02ff, true, false);
    g_npressed    = 0;
    g_value[0x30] = g_value[0x31] = g_value[0x33] = g_value[0x34] = 32768;
    g_value[0x32] = 32768;   /* both at rest */
@@ -879,7 +880,7 @@ static void test_hidclass(const char *path)
    sjoy_mode = true;
    caps_in = 9; caps_out = 5; caps_id = 0;
    winusb_hid_open(hid, path, "HID\\VID_0925&PID_8866&Col01\\1",
-         0x0925, 0x8866, true);
+         0x0925, 0x8866, true, false);
    CHECK(hid->devices && hid->devices->generic
          && hid->devices->gen.out.fields == 1,
          "hid class: an MP-8866's rumble report was not found");
@@ -927,7 +928,7 @@ static void test_hidclass(const char *path)
          product_name = names[k];
          caps_in = 9; caps_out = 0; caps_id = 0;
          winusb_hid_open(hid, path, k ? "HID\\VID_0079&PID_0011\\2"
-               : "HID\\VID_0079&PID_0011\\1", 0x0079, 0x0011, true);
+               : "HID\\VID_0079&PID_0011\\1", 0x0079, 0x0011, true, false);
          CHECK(hid->devices, "hid class: a pad on 0079:0011 was not taken");
          if (!hid->devices)
             continue;
@@ -959,7 +960,7 @@ static void test_hidclass(const char *path)
    caps_in = 78; caps_out = 78; caps_id = 1;
    winusb_hid_open(hid, path,
          "HID\\{00001124-0000-1000-8000-00805F9B34FB}_VID&0002054C_PID&0CE6\\2",
-         0x054c, 0x0ce6, true);
+         0x054c, 0x0ce6, true, false);
    CHECK(hid->devices && winusb_hid_is_bluetooth(hid->devices),
          "hid class: a pad on Bluetooth is not said to be");
    r[0] = 0x01;
@@ -1184,7 +1185,7 @@ static void test_gc_adapter(const char *path)
    }
    setups_before = n_setups;
    winusb_hid_open(hid, path, "USB\\VID_057E&PID_0337\\1", 0x057e, 0x0337,
-         false);
+         false, false);
    CHECK(hid->devices != NULL, "gc adapter: not opened");
    if (hid->devices)
    {
@@ -1207,6 +1208,59 @@ static void test_gc_adapter(const char *path)
    }
    winusb_hid.free(hid);
    CHECK(ga_in_aborted, "gc adapter: its read was not stopped at free");
+   winusb_api = saved;
+}
+
+/* An original Xbox pad, by a maker the table does not know: opened as
+ * the XID handler's, read from its IN pipe, written to on its OUT pipe;
+ * nothing sent to start it. */
+static void test_xid_pad(const char *path)
+{
+   winusb_api_t saved = winusb_api;
+   winusb_hid_t *hid;
+   int writes_before;
+
+   winusb_api.Initialize             = f_initialize;
+   winusb_api.Free                   = f_free;
+   winusb_api.ControlTransfer        = f_control;
+   winusb_api.ReadPipe               = ga_read;
+   winusb_api.WritePipe              = ga_write;
+   winusb_api.AbortPipe              = ga_abort;
+   winusb_api.GetOverlappedResult    = ga_result;
+   winusb_api.QueryInterfaceSettings = ga_iface;
+   winusb_api.QueryPipe              = ga_pipe;
+
+   CHECK(!winusb_hid_handled(0x0738, 0x4522),
+         "xid: a third-party pad is in the table, so this lane proves nothing");
+   hid = (winusb_hid_t*)winusb_hid.init();
+   CHECK(hid != NULL, "xid: init failed");
+   if (!hid)
+   {
+      winusb_api = saved;
+      return;
+   }
+   ga_read_pipe  = 0;
+   ga_in_aborted = false;
+   writes_before = ga_writes;
+   winusb_hid_open(hid, path, "USB\\VID_0738&PID_4522\\1", 0x0738, 0x4522,
+         false, true);
+   CHECK(hid->devices != NULL, "xid: not opened");
+   if (hid->devices)
+   {
+      winusb_device_t *dev = hid->devices;
+      int i;
+      CHECK(string_is_equal(dev->name, "Original Xbox Controller"),
+            "xid: not named as the XID handler names it");
+      CHECK(dev->slot >= 0, "xid: given no slot");
+      CHECK(dev->ep_in == GA_IN && dev->ep_out == GA_OUT,
+            "xid: its interrupt pipes were not the ones it has");
+      CHECK(ga_writes == writes_before, "xid: something was sent to start it");
+      for (i = 0; i < 200 && !ga_read_pipe; i++)
+         Sleep(5);
+      CHECK(ga_read_pipe == GA_IN, "xid: not read from its IN pipe");
+   }
+   winusb_hid.free(hid);
+   CHECK(ga_in_aborted, "xid: its read was not stopped at free");
    winusb_api = saved;
 }
 
@@ -1253,15 +1307,15 @@ int main(void)
             NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
       CHECK(other != INVALID_HANDLE_VALUE, "the stand-in could not be held");
       winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268,
-            false);
+            false, false);
       winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268,
-            false);
+            false, false);
       CHECK(!hid->devices && connected_port == -1 && hid->busy_count == 1,
             "a pad another program has open was not left to it, once");
       CloseHandle(other);
    }
    winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268,
-            false);
+            false, false);
    CHECK(hid->devices && connected_port == 0, "the pad is not on port 1");
    CHECK(hid->busy_count == 0, "the pad was still counted as held elsewhere");
    dev = hid->devices;
@@ -1336,7 +1390,7 @@ int main(void)
    unplugged = 0;
    InterlockedExchange(&pause_submit, 1);
    winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268,
-            false);
+            false, false);
    CHECK(hid->devices != NULL, "the pad did not come back");
    CHECK(WaitForSingleObject(submit_entered, 2000) == WAIT_OBJECT_0,
          "the reader did not reach the submission gate");
@@ -1361,6 +1415,7 @@ int main(void)
    test_hidclass(path);
    test_switch2_wake();
    test_gc_adapter(path);
+   test_xid_pad(path);
 
    CloseHandle(submit_entered);
    CloseHandle(allow_submit);

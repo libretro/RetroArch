@@ -136,6 +136,16 @@ static bool winusb_bind_one(HDEVINFO devs, SP_DEVINFO_DATA *dev,
    return di_install(NULL, devs, dev, &drv, 0, &reboot) != FALSE;
 }
 
+static bool winusb_bind_is_xid(HDEVINFO devs, SP_DEVINFO_DATA *dev,
+      unsigned vid, unsigned pid)
+{
+   char ids[512];
+   memset(ids, 0, sizeof(ids));
+   return SetupDiGetDeviceRegistryPropertyA(devs, dev, SPDRP_COMPATIBLEIDS,
+            NULL, (BYTE*)ids, sizeof(ids) - 2, NULL)
+      && winusb_is_xid(ids, vid, pid);
+}
+
 /* Every pad of @kind plugged in: to WinUSB with @bind, else back to
  * Windows' own choice. How many were changed; -1 when it cannot be
  * done here. */
@@ -179,13 +189,17 @@ static int winusb_bind_all(enum winusb_bind_kind kind, bool bind)
                   sizeof(instance), NULL)
             || !(ids = strstr(instance, "VID_"))
             || sscanf(ids, "VID_%4x&PID_%4x", &vid, &pid) != 2
-            || !(kind == WINUSB_BIND_GCA ? winusb_bind_is_gca(vid, pid)
-                                         : winusb_bind_is_ds3(vid, pid)))
+            || !(  kind == WINUSB_BIND_GCA ? winusb_bind_is_gca(vid, pid)
+                 : kind == WINUSB_BIND_XID ? winusb_bind_is_xid(devs, &dev, vid, pid)
+                 : winusb_bind_is_ds3(vid, pid)))
          continue;
       if (!SetupDiGetDeviceRegistryPropertyA(devs, &dev, SPDRP_SERVICE,
                NULL, (BYTE*)service, sizeof(service), NULL))
          service[0] = '\0';
       on_winusb = string_is_equal_noncase(service, "WinUSB");
+      /* an Xbox pad on a driver of its own (XBCD, libusb) is left there */
+      if (kind == WINUSB_BIND_XID && *service && !on_winusb)
+         continue;
       if (bind && !on_winusb)
       {
          if (winusb_bind_one(devs, &dev, install))
@@ -234,6 +248,11 @@ bool winusb_bind_command(const char *arg, int *ret)
    {
       bind = true;
       kind = WINUSB_BIND_GCA;
+   }
+   else if (string_is_equal(arg, WINUSB_BIND_XID_ARG))
+   {
+      bind = true;
+      kind = WINUSB_BIND_XID;
    }
    else
       return false;
@@ -286,6 +305,26 @@ bool winusb_bind_gca_waiting(void)
    return winusb_bind_gca_waits;
 }
 
+/* an original Xbox pad that nothing could open, as the last scan saw */
+static bool winusb_bind_xid_waits;
+
+void winusb_bind_xid_seen(bool waiting)
+{
+   if (waiting && !winusb_bind_xid_waits)
+   {
+      const char *msg = msg_hash_to_str(MSG_INPUT_XID_NEEDS_ENABLING);
+      RARCH_LOG("[WinUSB] %s\n", msg);
+      runloop_msg_queue_push(msg, strlen(msg), 1, 300, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
+   winusb_bind_xid_waits = waiting;
+}
+
+bool winusb_bind_xid_waiting(void)
+{
+   return winusb_bind_xid_waits;
+}
+
 static void winusb_bind_thread(void *data)
 {
    char self[MAX_PATH];
@@ -312,7 +351,9 @@ static void winusb_bind_thread(void *data)
       sei.fMask        = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI;
       sei.lpVerb       = "runas";
       sei.lpFile       = self;
-      sei.lpParameters = (winusb_bind_job.kind == WINUSB_BIND_GCA)
+      sei.lpParameters = (winusb_bind_job.kind == WINUSB_BIND_XID)
+         ? WINUSB_BIND_XID_ARG
+         : (winusb_bind_job.kind == WINUSB_BIND_GCA)
          ? WINUSB_BIND_GCA_ARG
          : winusb_bind_job.bind ? WINUSB_BIND_ARG : WINUSB_RESTORE_ARG;
       sei.nShow        = SW_HIDE;
@@ -348,7 +389,11 @@ static void winusb_bind_task_handler(retro_task_t *task)
       return;
    }
    result = winusb_bind_job.result;
-   if (winusb_bind_job.kind == WINUSB_BIND_GCA)
+   if (winusb_bind_job.kind == WINUSB_BIND_XID)
+      msg = (result == -2) ? MSG_INPUT_XID_DECLINED
+          : (result <= 0 || result == 255) ? MSG_INPUT_XID_NOT_CHANGED
+          : MSG_INPUT_XID_ENABLED;
+   else if (winusb_bind_job.kind == WINUSB_BIND_GCA)
       msg = (result == -2) ? MSG_INPUT_GCA_DECLINED
           : (result <= 0 || result == 255) ? MSG_INPUT_GCA_NOT_CHANGED
           : MSG_INPUT_GCA_ENABLED;
@@ -375,7 +420,7 @@ bool winusb_bind_request(enum winusb_bind_kind kind, bool bind)
             WINUSB_BIND_IDLE, WINUSB_BIND_RUNNING))
       return false;
    winusb_bind_job.kind   = kind;
-   winusb_bind_job.bind   = bind || kind == WINUSB_BIND_GCA;
+   winusb_bind_job.bind   = bind || kind != WINUSB_BIND_DS3;
    winusb_bind_job.result = -1;
    if (!(task = task_init()))
    {
@@ -390,8 +435,10 @@ bool winusb_bind_request(enum winusb_bind_kind kind, bool bind)
    }
    sthread_detach(thread);
    task->handler = winusb_bind_task_handler;
-   task->title   = strdup(msg_hash_to_str(kind == WINUSB_BIND_GCA
-            ? MSG_INPUT_GCA_ASKING : MSG_INPUT_DS3_ASKING));
+   task->title   = strdup(msg_hash_to_str(
+              kind == WINUSB_BIND_XID ? MSG_INPUT_XID_ASKING
+            : kind == WINUSB_BIND_GCA ? MSG_INPUT_GCA_ASKING
+            : MSG_INPUT_DS3_ASKING));
    task->flags  &= ~RETRO_TASK_FLG_MUTE;
    task_queue_push(task);
    return true;
