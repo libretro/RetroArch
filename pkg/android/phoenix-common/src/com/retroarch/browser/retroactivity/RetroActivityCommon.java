@@ -1846,11 +1846,6 @@ public class RetroActivityCommon extends NativeActivity
   private boolean  keyboardActive;
   private boolean  keyboardSuppressWatcher;
 
-  /* Read by SecondDisplayController on the UI thread */
-  boolean isKeyboardActive() {
-    return keyboardActive;
-  }
-
   /**
    * Raises the native system keyboard for menu text entry.
    *
@@ -1984,9 +1979,9 @@ public class RetroActivityCommon extends NativeActivity
     });
   }
 
-  /* On a one-focus system the IME refuses the field while the second
-   * display's window holds the focus; it serves the field again only
-   * after this returns */
+  /* On a one-focus system the IME refuses the field while another
+   * window holds the focus; it serves the field again only after this
+   * returns */
   @Override
   public void onWindowFocusChanged(boolean hasFocus) {
     super.onWindowFocusChanged(hasFocus);

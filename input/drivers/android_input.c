@@ -943,8 +943,8 @@ static void android_input_focus_lost(struct android_app *android_app)
    retro_atomic_store_release_int(&android_app->unfocused, 1);
 }
 
-/* After a poll's rings and commands: acted on once, and only when the
- * focus of the two windows changed */
+/* After a poll's commands: acted on once, and only when the Activity's
+ * focus changed */
 static void android_input_focus_settle(struct android_app *android_app)
 {
    switch (android_focus_settle(&android_app->focus))
@@ -1128,8 +1128,7 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_GAINED_FOCUS:
       case APP_CMD_LOST_FOCUS:
          android_focus_activity(&android_app->focus,
-               cmd == APP_CMD_GAINED_FOCUS,
-               (int64_t)cpu_features_get_time_usec());
+               cmd == APP_CMD_GAINED_FOCUS);
          break;
 
       case APP_CMD_DESTROY:
@@ -1139,13 +1138,6 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_SECOND_WINDOW_CHANGED:
          video_driver_restore_windows();
-         break;
-
-      case APP_CMD_SECOND_GAINED_FOCUS:
-      case APP_CMD_SECOND_LOST_FOCUS:
-         android_focus_second(&android_app->focus,
-               cmd == APP_CMD_SECOND_GAINED_FOCUS,
-               (int64_t)cpu_features_get_time_usec());
          break;
    }
 }
@@ -1180,7 +1172,6 @@ static void android_input_poll_second_touches(android_input_t *android,
       /* Window 0 would map through the main viewport: a clear raced */
       if (!surface || !window || touch.generation != surface)
          continue;
-      android_focus_second_input(&android_app->focus);
       for (i = 0; i < count; i++)
          if (android->second_pointer_id[i] == touch.pointer_id)
             break;
@@ -2565,8 +2556,7 @@ static void android_input_key_read(AInputEvent *event, int source,
    key->meta_state = AKeyEvent_getMetaState(event);
 }
 
-/* A key from the input queue or the second display's window; *handled
- * is the queue's answer, which SecondDisplayController repeats */
+/* A key from the input queue; *handled is the queue's answer */
 static void android_input_key_fields(int port, bool is_keyboard,
       const android_input_fields_t *key, int *handled)
 {
@@ -3160,35 +3150,6 @@ static void android_input_poll_events(android_input_t *android,
       retro_eventcount_notify(&r->room);
 }
 
-/* The keys and stick moves the second display's window received since
- * the last poll, handled as the input queue's are */
-static void android_input_poll_second_inputs(android_input_t *android,
-      struct android_app *android_app)
-{
-   android_input_fields_t in;
-   retro_spsc_t *ring = &android_app->second_display.inputs;
-
-   while (retro_spsc_read_avail(ring) >= sizeof(in))
-   {
-      bool is_keyboard;
-      int port;
-      int handled = 1;
-
-      retro_spsc_read(ring, &in, sizeof(in));
-      port = android_input_resolve_port(android, android_app,
-            android_input_map_id(in.device_id), in.source, &is_keyboard);
-      if (in.type == AINPUT_EVENT_TYPE_KEY)
-         android_input_key_fields(port, is_keyboard, &in, &handled);
-      else
-         android_input_dpad_fields(android_app, port, in.axes,
-               p_AMotionEvent_getAxisValue != NULL);
-      /* A canceled up comes as the focus leaves the window: not use */
-      if (     in.type != AINPUT_EVENT_TYPE_KEY
-            || !(in.flags & AKEY_EVENT_FLAG_CANCELED))
-         android_focus_second_input(&android_app->focus);
-   }
-}
-
 static void android_input_poll_user(android_input_t *android)
 {
    struct android_app *android_app = (struct android_app*)g_android;
@@ -3472,7 +3433,6 @@ static void android_input_poll(void *data)
       android_input_poll_events(android, android_app);
       /* After the looper: a ring write that woke it is settled now */
       android_input_poll_second_touches(android, android_app);
-      android_input_poll_second_inputs(android, android_app);
    }
 
    android_input_poll_press_groups();
