@@ -159,6 +159,80 @@ static void check_extract(const char *dir)
    filestream_delete(out);
 }
 
+static int extract_cb(const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size,
+      uint32_t checksum, struct archive_extract_userdata *userdata)
+{
+   if (file_archive_perform_mode((const char*)userdata->cb_data, valid_exts,
+            cdata, cmode, csize, size, checksum, userdata))
+      userdata->found_file = true;
+   return 1;
+}
+
+/* @archive's member, through a transfer, into @out */
+static bool extract_to(const char *archive, const char *out)
+{
+   struct archive_extract_userdata userdata;
+   file_archive_transfer_t state;
+   bool returnerr = true;
+   memset(&state, 0, sizeof(state));
+   memset(&userdata, 0, sizeof(userdata));
+   state.type       = ARCHIVE_TRANSFER_INIT;
+   userdata.cb_data = (void*)out;
+   while (file_archive_parse_file_iterate(&state, &returnerr, archive,
+            NULL, extract_cb, &userdata) == 0) { }
+   return userdata.found_file;
+}
+
+/* A member bigger than its window and the room around it, extracted to
+ * a file: it goes there as it is unpacked, not whole through memory,
+ * and comes out right; with a byte of its data changed, no file is
+ * left. */
+static void check_extract_streamed(const char *dir)
+{
+   char        path[2048];
+   const char *out = "archive_rar_test_big.out";
+   const char *bad = "archive_rar_test_bad.rar";
+   uint8_t    *chunk = (uint8_t*)malloc(1 << 20);
+   void       *arc   = NULL;
+   int64_t     len   = 0, got = 0, rd;
+   uint32_t    crc   = 0;
+   RFILE      *f;
+
+   archive_path(path, sizeof(path), dir, "ppmd_lzss_conversion.rar", NULL);
+   filestream_delete(out);
+   if (!extract_to(path, out))
+      fail("streamed extract", path);
+   if ((f = filestream_open(out, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+   {
+      while ((rd = filestream_read(f, chunk, 1 << 20)) > 0)
+      {
+         crc  = encoding_crc32(crc, chunk, (size_t)rd);
+         got += rd;
+      }
+      filestream_close(f);
+   }
+   if (got != 241647978 || crc != 0xf72b4477u)
+      fail("streamed extract", out);
+   filestream_delete(out);
+
+   if (filestream_read_file(path, &arc, &len) && len > 1000)
+   {
+      ((uint8_t*)arc)[len / 2] ^= 0x10;
+      if (filestream_write_file(bad, arc, len))
+      {
+         extract_to(bad, out);
+         if (path_is_valid(out))
+            fail("streamed extract, a byte changed", "file left");
+      }
+   }
+   free(arc);
+   free(chunk);
+   filestream_delete(out);
+   filestream_delete(bad);
+}
+
 static void check_refused(const char *dir)
 {
    char path[2048];
@@ -200,6 +274,7 @@ int main(int argc, char *argv[])
    check_read(dir, "rar5_arm.rar", "elf-Linux-ARMv7-ls", 90808, 0x886f91ebu);
    check_read(dir, "filter.rar", "bsdcat.exe", 204288, 0x4db10349u);
    check_extract(dir);
+   check_extract_streamed(dir);
    check_refused(dir);
 
    if (failures)

@@ -149,6 +149,52 @@ static void check_watched(rrar_archive_t *a, uint32_t i, const uint8_t *want,
    free(dst);
 }
 
+/* What a member streamed out is held to: the octets of the whole
+ * decode, in order, and how many came */
+typedef struct
+{
+   const uint8_t *want;
+   size_t         len;
+   size_t         at;
+   int            wrong;
+   int            stop_at;       /* calls before it says stop, or -1 */
+} sunk_t;
+
+static int sunk_take(void *ud, const uint8_t *data, size_t len)
+{
+   sunk_t *k = (sunk_t *)ud;
+   if (k->stop_at >= 0 && k->stop_at-- == 0)
+      return 1;
+   if (len > k->len - k->at || memcmp(data, k->want + k->at, len))
+      k->wrong = 1;
+   else
+      k->at += len;
+   return 0;
+}
+
+/* The member streamed out, through a buffer smaller than it where it is
+ * big (this test builds the reader to stream every member, a piece at
+ * a time): the same octets as whole; and stopped by the sink, stopped */
+static void check_sunk(rrar_archive_t *a, uint32_t index,
+      const uint8_t *want, size_t len, const char *name)
+{
+   sunk_t k;
+   k.want    = want;
+   k.len     = len;
+   k.at      = 0;
+   k.wrong   = 0;
+   k.stop_at = -1;
+   CHECK(rrar_archive_extract_sink(a, index, sunk_take, &k) == RRAR_OK
+         && !k.wrong && k.at == len, name);
+   if (len)
+   {
+      k.at      = 0;
+      k.stop_at = 0;
+      CHECK(rrar_archive_extract_sink(a, index, sunk_take, &k)
+            == RRAR_ERROR_CANCELLED, name);
+   }
+}
+
 static void check_mode(const char *dir, const char *file,
       const struct expect *want, unsigned num_want, int through_reads)
 {
@@ -190,7 +236,10 @@ static void check_mode(const char *dir, const char *file,
          if (out && e->has_crc)
             CHECK(encoding_crc32(0, out, out_len) == e->crc, e->name);
          if (out)
+         {
             check_watched(a, i, out, out_len, e->name);
+            check_sunk(a, i, out, out_len, e->name);
+         }
          free(out);
       }
       for (w = 0; w < num_want; w++)

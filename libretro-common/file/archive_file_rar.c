@@ -50,12 +50,23 @@
 struct rar_context_t
 {
    rrar_archive_t *archive;
+   file_archive_transfer_t *state;
    /* The last extracted member, owned here so the handle handed to the
     * caller stays valid until the next call. */
    uint8_t        *output;
    uint32_t        parse_index;
    uint32_t        decompress_index;
+   bool            to_sink;   /* the member goes to the file as it comes */
 };
+
+/* A member bound for a file, bigger than this, goes to it as it is
+ * unpacked rather than whole through memory */
+#define RAR_SINK_OVER (256 * 1024)
+
+static int rar_sink_write(void *ud, const uint8_t *data, size_t len)
+{
+   return filestream_write((RFILE*)ud, data, (int64_t)len) != (int64_t)len;
+}
 
 static int rar_open_archive(struct rar_context_t *ctx,
       file_archive_transfer_t *state)
@@ -210,13 +221,13 @@ static bool rar_stream_decompress_data_to_file_init(
    (void)handle;
    (void)cmode;
    (void)csize;
-   (void)size;
 
    if (!ctx)
       return false;
 
    /* The parse step hands the entry index through cdata. */
    ctx->decompress_index = (uint32_t)(size_t)cdata;
+   ctx->to_sink          = ctx->state->pending_sink && size > RAR_SINK_OVER;
    return true;
 }
 
@@ -229,9 +240,22 @@ static int rar_stream_decompress_data_to_file_iterate(
    uint8_t *member     = NULL;
    size_t   member_len = 0;
 
-   if (     !ctx || !ctx->archive
-         || rrar_archive_extract(ctx->archive, ctx->decompress_index,
-               &member, &member_len) != RRAR_OK)
+   if (!ctx || !ctx->archive)
+      return -1;
+
+   /* in the file as it comes, whole */
+   if (ctx->to_sink)
+   {
+      if (rrar_archive_extract_sink(ctx->archive, ctx->decompress_index,
+               rar_sink_write, ctx->state->pending_sink) != RRAR_OK)
+         return -1;
+      if (handle)
+         handle->data = NULL;
+      return 1;
+   }
+
+   if (rrar_archive_extract(ctx->archive, ctx->decompress_index,
+            &member, &member_len) != RRAR_OK)
       return -1;
 
    /* The caller reads through handle->data until it calls back in, so
@@ -268,6 +292,7 @@ static int rar_parse_file_init(file_archive_transfer_t *state,
       goto error;
 
    state->context = ctx;
+   ctx->state     = state;
 
    if (!rar_open_archive(ctx, state))
       goto error;

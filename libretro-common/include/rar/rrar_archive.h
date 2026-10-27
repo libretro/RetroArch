@@ -233,6 +233,26 @@ typedef struct rrar_watch
 int rrar_archive_extract_to(rrar_archive_t *a, uint32_t index,
       uint8_t *dst, size_t dst_size, const rrar_watch_t *watch);
 
+/**
+ * rrar_archive_extract_sink:
+ * @a          : opened archive
+ * @index      : entry index
+ * @sink       : handed the entry's octets in order, as they are final;
+ *               returns nonzero to have the decode stop
+ * @ud         : for @sink
+ *
+ * The same as rrar_archive_extract(), for a member too big to have
+ * whole in memory: one bigger than its window and 6 MiB more is
+ * unpacked through a buffer of that size, which moves along it. The
+ * CRC is checked once all of it has been handed over: on an error what
+ * @sink was given is not to be kept.
+ *
+ * Returns: RRAR_OK, RRAR_ERROR_CANCELLED if @sink stopped it, or
+ * another negative RRAR_ERROR_* code.
+ */
+int rrar_archive_extract_sink(rrar_archive_t *a, uint32_t index,
+      int (*sink)(void *ud, const uint8_t *data, size_t len), void *ud);
+
 RETRO_END_DECLS
 
 #endif

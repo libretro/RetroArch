@@ -15,6 +15,9 @@ SOURCES := \
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g1 -I$(LIBRETRO_COMM_DIR)/include
+# every member streamed out, in steps of 16 KiB, so the archives' small
+# members go through rrar_archive_extract_sink()'s buffer too
+CFLAGS += -DRRAR_SINK_ALWAYS -DRRAR_SINK_STEP=0x4000
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)
