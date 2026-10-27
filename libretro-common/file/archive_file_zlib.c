@@ -186,6 +186,21 @@ static bool zip_context_reserve_tmpbuf(zip_context_t *zip_context,
    return true;
 }
 
+/* Up to @len octets of member data at @off: lent from the stream
+ * where it can, otherwise read into @buf. A lent pointer holds until
+ * the next call on @f. Callers keep @len to a slice whose output is
+ * still in cache for the CRC. */
+static int64_t zip_member_input(RFILE *f, int64_t off, int64_t len,
+      uint8_t *buf, const uint8_t **ptr)
+{
+   int64_t rd;
+   filestream_seek(f, off, RETRO_VFS_SEEK_POSITION_START);
+   if ((rd = filestream_view(f, len, ptr)) > 0)
+      return rd;
+   *ptr = buf;
+   return filestream_read(f, buf, len);
+}
+
 static bool zlib_stream_decompress_data_to_file_init(
       void *context, file_archive_file_handle_t *handle,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size)
@@ -331,18 +346,6 @@ static bool zlib_stream_decompress_data_to_file_init(
 #endif
       zip_context->inflating = true;
    }
-#ifdef ZIP_HAVE_ZSTD
-   else if (cmode == ZIP_MODE_ZSTD)
-   {
-      /* Compressed data is read whole and decompressed in one shot
-       * during iterate */
-      if (!mapped && !zip_context_reserve_tmpbuf(zip_context, csize))
-      {
-         zip_context_reset_member(zip_context);
-         return false;
-      }
-   }
-#endif
 
    return true;
 }
@@ -406,7 +409,7 @@ static int zlib_stream_decompress_data_to_file_iterate(
    }
    else if (zip_context->cmode == ZIP_MODE_DEFLATED)
    {
-      uint8_t *dptr;
+      const uint8_t *dptr;
       int to_read = MIN(zip_context->csize - zip_context->boffset, _READ_CHUNK_SIZE);
       /* File was uncompressed or decompression finished before */
       if (!zip_context->inflating)
@@ -422,25 +425,20 @@ static int zlib_stream_decompress_data_to_file_iterate(
       else
 #endif
       {
-         /* Read some compressed data from file to the temp buffer */
-         filestream_seek(state->archive_file,
+         rd = zip_member_input(state->archive_file,
                zip_context->fdoffset + zip_context->boffset,
-               RETRO_VFS_SEEK_POSITION_START);
-         rd = filestream_read(state->archive_file, zip_context->tmpbuf, to_read);
-         if (rd < 0)
-            return -1;
+               to_read, zip_context->tmpbuf, &dptr);
          /* Unexpected EOF before csize: returning 0 would spin forever
           * in file_archive_walk's tight iterate loop (seen with short
           * or stalled VFS backends such as SMB). */
-         if (rd == 0)
+         if (rd <= 0)
             return -1;
-         dptr = zip_context->tmpbuf;
       }
 
       zip_context->boffset           += rd;
 
 #ifdef ARCHIVE_HAVE_ZLIB
-      zip_context->zstream->next_in   = dptr;
+      zip_context->zstream->next_in   = (Bytef*)dptr;
       zip_context->zstream->avail_in  = (uInt)rd;
 
       for (;;)
@@ -566,17 +564,28 @@ static int zlib_stream_decompress_data_to_file_iterate(
       else
 #endif
       {
-         /* Read all compressed data, then decompress */
+         /* The whole frame, lent if the stream holds it all, else read */
+         const uint8_t *src = NULL;
          filestream_seek(state->archive_file,
                zip_context->fdoffset,
                RETRO_VFS_SEEK_POSITION_START);
-         if (filestream_read(state->archive_file,
-                  zip_context->tmpbuf, zip_context->csize) < 0)
-            return -1;
+         if (filestream_view(state->archive_file,
+                  zip_context->csize, &src) != (int64_t)zip_context->csize)
+         {
+            if (!zip_context_reserve_tmpbuf(zip_context, zip_context->csize))
+               return -1;
+            filestream_seek(state->archive_file,
+                  zip_context->fdoffset,
+                  RETRO_VFS_SEEK_POSITION_START);
+            if (filestream_read(state->archive_file,
+                     zip_context->tmpbuf, zip_context->csize) < 0)
+               return -1;
+            src = zip_context->tmpbuf;
+         }
 
          zerr = (rzstd_decode(
                zip_context->decompressed_data, zip_context->usize,
-               zip_context->tmpbuf, zip_context->csize, &result)
+               src, zip_context->csize, &result)
                != RZSTD_PROCESS_END);
       }
 
@@ -1194,17 +1203,15 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
             else
 #endif
             {
+               const uint8_t *iptr;
                int64_t rd;
                if (chunk > _READ_CHUNK_SIZE)
                   chunk = _READ_CHUNK_SIZE;
-               filestream_seek(s->state.archive_file,
-                     s->fdoffset + s->in_off,
-                     RETRO_VFS_SEEK_POSITION_START);
-               rd = filestream_read(s->state.archive_file,
-                     s->tmpbuf, chunk);
+               rd = zip_member_input(s->state.archive_file,
+                     s->fdoffset + s->in_off, chunk, s->tmpbuf, &iptr);
                if (rd <= 0)
                   return -1;
-               z->next_in  = s->tmpbuf;
+               z->next_in  = (Bytef*)iptr;
                z->avail_in = (uInt)rd;
                chunk       = (uint32_t)rd;
             }
@@ -1260,14 +1267,10 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
             int64_t rd;
             if (chunk > _READ_CHUNK_SIZE)
                chunk = _READ_CHUNK_SIZE;
-            filestream_seek(s->state.archive_file,
-                  s->fdoffset + s->in_off,
-                  RETRO_VFS_SEEK_POSITION_START);
-            rd = filestream_read(s->state.archive_file,
-                  s->tmpbuf, chunk);
+            rd = zip_member_input(s->state.archive_file,
+                  s->fdoffset + s->in_off, chunk, s->tmpbuf, &iptr);
             if (rd <= 0)
                return -1;
-            iptr  = s->tmpbuf;
             chunk = (uint32_t)rd;
          }
          rinflate_set_in(s->z, iptr, chunk);

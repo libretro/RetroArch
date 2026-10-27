@@ -24,12 +24,17 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 override CPPFLAGS += -DHAVE_COMPRESSION -I$(LIBRETRO_COMM_DIR)/include
+
+# Zstandard members inside a zip, while .zst stays without a backend
+archive_zip_test.o $(call sample_objs,$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o): \
+   override CPPFLAGS += -DHAVE_RZSTD
 CFLAGS            += -Wall -pedantic -std=gnu99 -g1
 
 ifneq ($(SANITIZER),)

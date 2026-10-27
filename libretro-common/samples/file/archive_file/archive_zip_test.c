@@ -59,6 +59,10 @@
  *   make SANITIZER=address
  */
 
+/* the lending VFS installs the implementation's own functions as a
+ * frontend's */
+#define VFS_FRONTEND
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,10 +72,64 @@
 #include <lists/string_list.h>
 #include <encodings/crc32.h>
 #include <encodings/deflate.h>
+#ifdef HAVE_RZSTD
+#include <encodings/rzstd.h>
+#endif
 #include <streams/file_stream.h>
 #include <file/file_path.h>
+#include <vfs/vfs_implementation.h>
+#include <libretro.h>
 
 static int failures = 0;
+
+/* A frontend VFS that lends the first part of the archive from its
+ * own copy and counts what it is asked to read */
+static const uint8_t *lend_map;
+static int64_t        lend_len;
+static uint64_t       lend_read;
+
+static const uint8_t *lend_mapped_ptr(void *hfile, int64_t *len)
+{
+   (void)hfile;
+   *len = lend_len;
+   return lend_map;
+}
+
+static int64_t lend_read_cb(struct retro_vfs_file_handle *h, void *s,
+      uint64_t len)
+{
+   int64_t r = retro_vfs_file_read_impl(h, s, len);
+   if (r > 0)
+      lend_read += (uint64_t)r;
+   return r;
+}
+
+static void lend_vfs(const uint8_t *map, int64_t len)
+{
+   static struct retro_vfs_interface iface;
+   struct retro_vfs_interface_info info;
+
+   memset(&iface, 0, sizeof(iface));
+   iface.get_path = retro_vfs_file_get_path_impl;
+   iface.open     = retro_vfs_file_open_impl;
+   iface.close    = retro_vfs_file_close_impl;
+   iface.size     = retro_vfs_file_size_impl;
+   iface.tell     = retro_vfs_file_tell_impl;
+   iface.seek     = retro_vfs_file_seek_impl;
+   iface.read     = lend_read_cb;
+   iface.write    = retro_vfs_file_write_impl;
+   iface.flush    = retro_vfs_file_flush_impl;
+   iface.remove   = retro_vfs_file_remove_impl;
+   iface.rename   = retro_vfs_file_rename_impl;
+
+   lend_map  = map;
+   lend_len  = len;
+   lend_read = 0;
+   info.required_interface_version = map ? FILESTREAM_REQUIRED_VFS_VERSION : 0;
+   info.iface                      = map ? &iface : NULL;
+   filestream_vfs_init(&info);
+   filestream_set_mapped_ptr_cb(map ? lend_mapped_ptr : NULL);
+}
 
 /* --- tiny ZIP builders (little-endian byte layout) ----------------- */
 
@@ -705,8 +763,16 @@ static void test_missing_backend_reports_failure(void)
  * DEFLATE member spanning several 128 KiB input slices is followed by
  * small DEFLATE and STORED ones, and every member must come out
  * byte-exact.  Run again with every recorded CRC wrong, every member
- * must be refused and none written. */
-#define SEQ_MEMBERS 6
+ * must be refused and none written.  Run again through a VFS that
+ * lends the first members in place: they are inflated from what it
+ * lends, the large one through an entry source too, rather than read,
+ * and the rest are read. */
+#define SEQ_MEMBERS 7
+#ifdef HAVE_RZSTD
+#define SEQ_ZSTD    93
+#else
+#define SEQ_ZSTD    0
+#endif
 
 typedef struct
 {
@@ -750,6 +816,20 @@ static bool seq_deflate(seq_member_t *m)
    return true;
 }
 
+#ifdef HAVE_RZSTD
+static bool seq_zstd(seq_member_t *m)
+{
+   size_t bound = rzstd_compress_bound(m->size);
+   size_t wrote = 0;
+   if (     !(m->packed = (uint8_t*)malloc(bound))
+         || rzstd_encode(m->packed, bound, m->data, m->size, 3, &wrote)
+            != RZSTD_PROCESS_END)
+      return false;
+   m->csize = (uint32_t)wrote;
+   return true;
+}
+#endif
+
 static int seq_extract_cb(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t checksum, struct archive_extract_userdata *userdata)
@@ -764,11 +844,11 @@ static int seq_extract_cb(const char *name, const char *valid_exts,
    return 1;
 }
 
-static void member_sequence(bool corrupt)
+static void member_sequence(bool corrupt, bool lend)
 {
-   static const unsigned methods[SEQ_MEMBERS] = { 8, 0, 8, 8, 0, 8 };
+   static const unsigned methods[SEQ_MEMBERS] = { 8, 0, 8, SEQ_ZSTD, 8, 0, 8 };
    static const uint32_t sizes[SEQ_MEMBERS]   =
-      { 3000, 777, 512 * 1024, 5000, 1, 1 };
+      { 3000, 777, 512 * 1024, 20000, 5000, 1, 1 };
    const char *tmp_path = "rarch_zip_seq_test.zip";
    seq_member_t m[SEQ_MEMBERS];
    struct archive_extract_userdata userdata;
@@ -809,6 +889,13 @@ static void member_sequence(bool corrupt)
          if (!seq_deflate(&m[i]))
             ok = false;
       }
+#ifdef HAVE_RZSTD
+      else if (m[i].method == SEQ_ZSTD)
+      {
+         if (!seq_zstd(&m[i]))
+            ok = false;
+      }
+#endif
       else
          m[i].csize = m[i].size;
       cap += 30 + 46 + 2 * 16 + m[i].csize;
@@ -845,7 +932,7 @@ static void member_sequence(bool corrupt)
          put_u16(buf + len + 28, 0);
          memcpy(buf + len + 30, name, nl);
          memcpy(buf + len + 30 + nl,
-               m[i].method == 8 ? m[i].packed : m[i].data, m[i].csize);
+               m[i].packed ? m[i].packed : m[i].data, m[i].csize);
          len += 30 + nl + m[i].csize;
       }
 
@@ -871,8 +958,63 @@ static void member_sequence(bool corrupt)
       state.type       = ARCHIVE_TRANSFER_INIT;
       userdata.cb_data = &extracted;
 
+      /* lent up to the fifth member's header */
+      if (lend)
+         lend_vfs(buf, (int64_t)offsets[4]);
+
       while (file_archive_parse_file_iterate(&state, &returnerr, tmp_path,
                NULL, seq_extract_cb, &userdata) == 0) { }
+
+      if (lend)
+      {
+         uint64_t iterate_read = lend_read;
+         char     member[64];
+         file_archive_entry_source_t *src;
+         int64_t  usize = 0;
+         uint8_t *got   = (uint8_t*)malloc(m[2].size);
+         int64_t  done  = 0;
+
+
+         /* the headers in the lent part are read, the members not */
+         if (iterate_read > len - offsets[4] + 4096)
+         {
+            printf("FAIL  lent members: %llu octets read, not lent\n",
+                  (unsigned long long)iterate_read);
+            ok = false;
+         }
+
+         snprintf(member, sizeof(member), "%s#m2.bin", tmp_path);
+         lend_read = 0;
+         if (!got || !(src = file_archive_entry_source_open(member, &usize))
+               || usize != (int64_t)m[2].size)
+            ok = false;
+         else
+         {
+            for (;;)
+            {
+               int64_t n = file_archive_entry_source_read(src,
+                     got + done, 4096);
+               if (n <= 0)
+                  break;
+               done += n;
+            }
+            file_archive_entry_source_close(src);
+            if (done != (int64_t)m[2].size || memcmp(got, m[2].data, m[2].size))
+            {
+               printf("FAIL  lent entry source: %lld of %u octets right\n",
+                     (long long)done, m[2].size);
+               ok = false;
+            }
+            else if (lend_read >= m[2].csize)
+            {
+               printf("FAIL  lent entry source: %llu octets read, not lent\n",
+                     (unsigned long long)lend_read);
+               ok = false;
+            }
+         }
+         free(got);
+         lend_vfs(NULL, 0);
+      }
 
       remove(tmp_path);
 
@@ -926,6 +1068,8 @@ static void member_sequence(bool corrupt)
    }
    else if (corrupt)
       printf("ok    members failing their recorded CRC are refused\n");
+   else if (lend)
+      printf("ok    members are decoded from what the VFS lends\n");
    else
       printf("ok    mixed DEFLATE/STORED members extract intact through "
              "one transfer\n");
@@ -933,12 +1077,17 @@ static void member_sequence(bool corrupt)
 
 static void test_member_sequence_reuse(void)
 {
-   member_sequence(false);
+   member_sequence(false, false);
 }
 
 static void test_member_crc_mismatch(void)
 {
-   member_sequence(true);
+   member_sequence(true, false);
+}
+
+static void test_member_lent(void)
+{
+   member_sequence(false, true);
 }
 
 int main(void)
@@ -954,6 +1103,7 @@ int main(void)
    test_missing_backend_reports_failure();
    test_member_sequence_reuse();
    test_member_crc_mismatch();
+   test_member_lent();
 
    if (failures)
    {
