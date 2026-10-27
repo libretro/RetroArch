@@ -188,6 +188,18 @@ void aes_cbc_encrypt(const struct aes_ctx *ctx, uint8_t *iv,
       const uint8_t *in, uint8_t *out, size_t len);
 
 /**
+ * aes_cbc_decrypt:
+ * @iv                : 16 octets; left holding the last ciphertext
+ *                      block, so a caller can continue the chain.
+ * @len               : a multiple of 16.
+ *
+ * CBC decryption, several blocks at once where the cipher runs on
+ * instructions made for it. @in and @out may alias.
+ **/
+void aes_cbc_decrypt(const struct aes_ctx *ctx, uint8_t *iv,
+      const uint8_t *in, uint8_t *out, size_t len);
+
+/**
  * aes_cbc_encrypt_lanes:
  * @n                 : independent chains, each @len octets (a
  *                      multiple of 16) from in[i] to out[i] under

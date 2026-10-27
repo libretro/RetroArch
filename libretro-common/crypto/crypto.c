@@ -426,9 +426,8 @@ static void aes_x86_encrypt_block(const struct aes_ctx *ctx,
 }
 
 /* Inverse cipher on the encryption schedule: aesdec wants the round
- * keys through InvMixColumns, applied here per block, as decryption
- * only serves the short Kerberos messages and keeps the context and
- * every other caller unchanged. */
+ * keys through InvMixColumns, applied here per block; a run of blocks
+ * goes through aes_x86_cbc_decrypt(), which makes them once. */
 AES_TARGET_X86
 static void aes_x86_decrypt_block(const struct aes_ctx *ctx,
       const uint8_t *in, uint8_t *out)
@@ -502,6 +501,77 @@ static void aes_x86_cbc_lanes(const struct aes_ctx *ctx, unsigned n,
       aes_x86_cbc4(k, rounds, iv, in, out, len);
    for (; n; n--, iv++, in++, out++)
       aes_x86_cbc1(k, rounds, iv, in, out, len);
+}
+
+/* CBC decryption has no chain to wait on: eight blocks go through the
+ * inverse cipher at once, each XORed with the ciphertext before it.
+ * The InvMixColumns round keys are made once per call. Every block's
+ * ciphertext is held in a register before its plaintext is stored, so
+ * @in and @out may alias. */
+AES_TARGET_X86
+static void aes_x86_cbc_decrypt(const struct aes_ctx *ctx, uint8_t *iv,
+      const uint8_t *in, uint8_t *out, size_t len)
+{
+   __m128i  k[15];
+   __m128i  prev = _mm_loadu_si128((const __m128i*)iv);
+   unsigned r, nr = ctx->rounds;
+
+   k[0]  = aes_x86_bswap32(_mm_loadu_si128((const __m128i*)ctx->rk));
+   k[nr] = aes_x86_bswap32(_mm_loadu_si128((const __m128i*)(ctx->rk + 4 * nr)));
+   for (r = 1; r < nr; r++)
+      k[r] = _mm_aesimc_si128(aes_x86_bswap32(
+               _mm_loadu_si128((const __m128i*)(ctx->rk + 4 * r))));
+
+   while (len >= 128)
+   {
+      __m128i c0 = _mm_loadu_si128((const __m128i*)(in));
+      __m128i c1 = _mm_loadu_si128((const __m128i*)(in +  16));
+      __m128i c2 = _mm_loadu_si128((const __m128i*)(in +  32));
+      __m128i c3 = _mm_loadu_si128((const __m128i*)(in +  48));
+      __m128i c4 = _mm_loadu_si128((const __m128i*)(in +  64));
+      __m128i c5 = _mm_loadu_si128((const __m128i*)(in +  80));
+      __m128i c6 = _mm_loadu_si128((const __m128i*)(in +  96));
+      __m128i c7 = _mm_loadu_si128((const __m128i*)(in + 112));
+      __m128i b0 = _mm_xor_si128(c0, k[nr]);
+      __m128i b1 = _mm_xor_si128(c1, k[nr]);
+      __m128i b2 = _mm_xor_si128(c2, k[nr]);
+      __m128i b3 = _mm_xor_si128(c3, k[nr]);
+      __m128i b4 = _mm_xor_si128(c4, k[nr]);
+      __m128i b5 = _mm_xor_si128(c5, k[nr]);
+      __m128i b6 = _mm_xor_si128(c6, k[nr]);
+      __m128i b7 = _mm_xor_si128(c7, k[nr]);
+      for (r = nr - 1; r > 0; r--)
+      {
+         __m128i kr = k[r];
+         b0 = _mm_aesdec_si128(b0, kr); b1 = _mm_aesdec_si128(b1, kr);
+         b2 = _mm_aesdec_si128(b2, kr); b3 = _mm_aesdec_si128(b3, kr);
+         b4 = _mm_aesdec_si128(b4, kr); b5 = _mm_aesdec_si128(b5, kr);
+         b6 = _mm_aesdec_si128(b6, kr); b7 = _mm_aesdec_si128(b7, kr);
+      }
+      _mm_storeu_si128((__m128i*)(out),       _mm_xor_si128(_mm_aesdeclast_si128(b0, k[0]), prev));
+      _mm_storeu_si128((__m128i*)(out +  16), _mm_xor_si128(_mm_aesdeclast_si128(b1, k[0]), c0));
+      _mm_storeu_si128((__m128i*)(out +  32), _mm_xor_si128(_mm_aesdeclast_si128(b2, k[0]), c1));
+      _mm_storeu_si128((__m128i*)(out +  48), _mm_xor_si128(_mm_aesdeclast_si128(b3, k[0]), c2));
+      _mm_storeu_si128((__m128i*)(out +  64), _mm_xor_si128(_mm_aesdeclast_si128(b4, k[0]), c3));
+      _mm_storeu_si128((__m128i*)(out +  80), _mm_xor_si128(_mm_aesdeclast_si128(b5, k[0]), c4));
+      _mm_storeu_si128((__m128i*)(out +  96), _mm_xor_si128(_mm_aesdeclast_si128(b6, k[0]), c5));
+      _mm_storeu_si128((__m128i*)(out + 112), _mm_xor_si128(_mm_aesdeclast_si128(b7, k[0]), c6));
+      prev = c7;
+      in  += 128;
+      out += 128;
+      len -= 128;
+   }
+   for (; len >= 16; in += 16, out += 16, len -= 16)
+   {
+      __m128i c = _mm_loadu_si128((const __m128i*)in);
+      __m128i b = _mm_xor_si128(c, k[nr]);
+      for (r = nr - 1; r > 0; r--)
+         b = _mm_aesdec_si128(b, k[r]);
+      _mm_storeu_si128((__m128i*)out,
+            _mm_xor_si128(_mm_aesdeclast_si128(b, k[0]), prev));
+      prev = c;
+   }
+   _mm_storeu_si128((__m128i*)iv, prev);
 }
 
 /* CTR with eight blocks in flight so the AES unit's latency is hidden,
@@ -828,6 +898,73 @@ static void aes_arm_cbc_lanes(const struct aes_ctx *ctx, unsigned n,
       aes_arm_cbc4(k, rounds, iv, in, out, len);
    for (; n; n--, iv++, in++, out++)
       aes_arm_cbc1(k, rounds, iv, in, out, len);
+}
+
+/* CBC decryption, eight blocks at once as the x86 form above. AESD
+ * takes the round key before the inverse substitution, so a round is
+ * AESIMC on the state, then AESD with the round key through AESIMC. */
+AES_TARGET_ARM
+static void aes_arm_cbc_decrypt(const struct aes_ctx *ctx, uint8_t *iv,
+      const uint8_t *in, uint8_t *out, size_t len)
+{
+   uint8x16_t k[15];
+   uint8x16_t prev = vld1q_u8(iv);
+   unsigned   r, nr = ctx->rounds;
+
+   k[0]  = aes_arm_rk(ctx, 0);
+   k[nr] = aes_arm_rk(ctx, nr);
+   for (r = 1; r < nr; r++)
+      k[r] = vaesimcq_u8(aes_arm_rk(ctx, r));
+
+   while (len >= 128)
+   {
+      uint8x16_t c0 = vld1q_u8(in);
+      uint8x16_t c1 = vld1q_u8(in +  16);
+      uint8x16_t c2 = vld1q_u8(in +  32);
+      uint8x16_t c3 = vld1q_u8(in +  48);
+      uint8x16_t c4 = vld1q_u8(in +  64);
+      uint8x16_t c5 = vld1q_u8(in +  80);
+      uint8x16_t c6 = vld1q_u8(in +  96);
+      uint8x16_t c7 = vld1q_u8(in + 112);
+      uint8x16_t b0 = vaesdq_u8(c0, k[nr]);
+      uint8x16_t b1 = vaesdq_u8(c1, k[nr]);
+      uint8x16_t b2 = vaesdq_u8(c2, k[nr]);
+      uint8x16_t b3 = vaesdq_u8(c3, k[nr]);
+      uint8x16_t b4 = vaesdq_u8(c4, k[nr]);
+      uint8x16_t b5 = vaesdq_u8(c5, k[nr]);
+      uint8x16_t b6 = vaesdq_u8(c6, k[nr]);
+      uint8x16_t b7 = vaesdq_u8(c7, k[nr]);
+      for (r = nr - 1; r > 0; r--)
+      {
+         const uint8x16_t kr = k[r];
+         b0 = vaesdq_u8(vaesimcq_u8(b0), kr); b1 = vaesdq_u8(vaesimcq_u8(b1), kr);
+         b2 = vaesdq_u8(vaesimcq_u8(b2), kr); b3 = vaesdq_u8(vaesimcq_u8(b3), kr);
+         b4 = vaesdq_u8(vaesimcq_u8(b4), kr); b5 = vaesdq_u8(vaesimcq_u8(b5), kr);
+         b6 = vaesdq_u8(vaesimcq_u8(b6), kr); b7 = vaesdq_u8(vaesimcq_u8(b7), kr);
+      }
+      vst1q_u8(out,       veorq_u8(veorq_u8(b0, k[0]), prev));
+      vst1q_u8(out +  16, veorq_u8(veorq_u8(b1, k[0]), c0));
+      vst1q_u8(out +  32, veorq_u8(veorq_u8(b2, k[0]), c1));
+      vst1q_u8(out +  48, veorq_u8(veorq_u8(b3, k[0]), c2));
+      vst1q_u8(out +  64, veorq_u8(veorq_u8(b4, k[0]), c3));
+      vst1q_u8(out +  80, veorq_u8(veorq_u8(b5, k[0]), c4));
+      vst1q_u8(out +  96, veorq_u8(veorq_u8(b6, k[0]), c5));
+      vst1q_u8(out + 112, veorq_u8(veorq_u8(b7, k[0]), c6));
+      prev = c7;
+      in  += 128;
+      out += 128;
+      len -= 128;
+   }
+   for (; len >= 16; in += 16, out += 16, len -= 16)
+   {
+      uint8x16_t c = vld1q_u8(in);
+      uint8x16_t b = vaesdq_u8(c, k[nr]);
+      for (r = nr - 1; r > 0; r--)
+         b = vaesdq_u8(vaesimcq_u8(b), k[r]);
+      vst1q_u8(out, veorq_u8(veorq_u8(b, k[0]), prev));
+      prev = c;
+   }
+   vst1q_u8(iv, prev);
 }
 
 /* CTR with eight blocks in flight, the round keys loaded once per
@@ -1344,6 +1481,38 @@ void aes_cbc_encrypt_lanes(const struct aes_ctx *ctx, unsigned n,
       }
       memcpy(iv[l], x, 16);
    }
+}
+
+void aes_cbc_decrypt(const struct aes_ctx *ctx, uint8_t *iv,
+      const uint8_t *in, uint8_t *out, size_t len)
+{
+   uint8_t prev[16], c[16];
+   size_t  off;
+   unsigned i;
+
+#if defined(AES_HAVE_X86_PATH)
+   if (aes_x86_available())
+   {
+      aes_x86_cbc_decrypt(ctx, iv, in, out, len);
+      return;
+   }
+#elif defined(AES_HAVE_ARM_PATH)
+   if (aes_arm_available())
+   {
+      aes_arm_cbc_decrypt(ctx, iv, in, out, len);
+      return;
+   }
+#endif
+   memcpy(prev, iv, 16);
+   for (off = 0; off + 16 <= len; off += 16)
+   {
+      memcpy(c, in + off, 16);
+      aes_decrypt_block_c(ctx, c, out + off);
+      for (i = 0; i < 16; i++)
+         out[off + i] ^= prev[i];
+      memcpy(prev, c, 16);
+   }
+   memcpy(iv, prev, 16);
 }
 
 /* Double in GF(2^128) with the CMAC polynomial. */
