@@ -256,6 +256,9 @@ struct overlay_desc
    float range_x_mod, range_y_mod;
    float mod_x, mod_y, mod_w, mod_h;
    float delta_x, delta_y;
+   /* the delta its image was last drawn at: a movable desc's geometry
+    * goes to the driver only when it moves */
+   float sent_dx, sent_dy;
    float x;
    float y;
    /* These are 'raw' x/y values shifted
@@ -412,6 +415,8 @@ typedef struct input_overlay_pointer_state
    uint8_t device_mask;
 } input_overlay_pointer_state_t;
 
+#define INPUT_OVERLAY_ST(ol) (&(ol)->overlay_states[(ol)->state_cur])
+
 struct input_overlay
 {
    struct overlay *overlays;
@@ -419,7 +424,10 @@ struct input_overlay
    char *path;
    void *iface_data;
    const video_overlay_interface_t *iface;
-   input_overlay_state_t overlay_state;
+   /* This poll's state and the last one's, flipped each poll, so the
+    * last is kept without a copy: INPUT_OVERLAY_ST() is this poll's */
+   input_overlay_state_t overlay_states[2];
+   unsigned state_cur;
    input_overlay_pointer_state_t pointer_state;
    struct texture_image **images;
    /* One block: the pack's texture handle per unique image (the first

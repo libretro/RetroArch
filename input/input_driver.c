@@ -4030,7 +4030,7 @@ static int16_t input_overlay_lightgun_state(
 
    return (   rarch_id < RARCH_BIND_LIST_END
            && (   ptr_st->lightgun.multitouch_id == rarch_id
-               || BIT256_GET(ol->overlay_state.buttons, rarch_id)));
+               || BIT256_GET(INPUT_OVERLAY_ST(ol)->buttons, rarch_id)));
 }
 
 static int16_t input_overlay_pointer_state(input_overlay_t *ol,
@@ -4538,7 +4538,7 @@ static int16_t input_state_device(
                if (  (port == 0)
                    && input_st->overlay_ptr
                    && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
-                   && BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, id))
+                   && BIT256_GET(INPUT_OVERLAY_ST(input_st->overlay_ptr)->buttons, id))
                {
 #ifdef HAVE_MENU
                   bool menu_driver_alive        = (menu_state_get_ptr()->flags &
@@ -4585,7 +4585,7 @@ static int16_t input_state_device(
                      && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE))
                {
                   input_overlay_state_t
-                     *ol_state          = &input_st->overlay_ptr->overlay_state;
+                     *ol_state          = INPUT_OVERLAY_ST(input_st->overlay_ptr);
 
                   if (OVERLAY_GET_KEY(ol_state, id))
                      res               |= 1;
@@ -4677,7 +4677,7 @@ static int16_t input_state_device(
                            )
                         {
                            input_overlay_state_t *ol_state =
-                              &input_st->overlay_ptr->overlay_state;
+                              INPUT_OVERLAY_ST(input_st->overlay_ptr);
                            int16_t ol_analog               =
                                  ol_state->analog[base];
 
@@ -5080,7 +5080,7 @@ static bool input_state_device_mask_plain(
          && input_st->overlay_ptr
          && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE))
    {
-      unsigned held = input_st->overlay_ptr->overlay_state.buttons.data[0]
+      unsigned held = INPUT_OVERLAY_ST(input_st->overlay_ptr)->buttons.data[0]
          & 0xffff;
 #ifdef HAVE_MENU
       bool menu_alive = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
@@ -6095,7 +6095,7 @@ static bool input_overlay_poll(
       if (desc_prio > highest_prio)
       {
          highest_prio = desc_prio;
-         memset(out, 0, sizeof(*out));
+         memset(out, 0, offsetof(input_overlay_state_t, touch));
          for (j = 0; j < i; j++)
             BIT32_CLEAR(descs[j].touch_mask, touch_idx);
       }
@@ -6153,7 +6153,7 @@ static bool input_overlay_poll(
    }
 
    if (ol->flags & INPUT_OVERLAY_BLOCKED)
-      memset(out, 0, sizeof(*out));
+      memset(out, 0, offsetof(input_overlay_state_t, touch));
 
    return any_hitbox_pressed;
 }
@@ -6171,10 +6171,17 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
    if (!OVERLAY_HAS_IMAGE(&desc->image) || !(desc->flags & OVERLAY_DESC_MOVABLE))
       return;
 
-   if (ol->iface->vertex_geom)
+   /* unchanged: a D3D driver would map and rewrite its vertex buffer,
+    * threaded video would queue a packet, for the same rectangle */
+   if (     ol->iface->vertex_geom
+         && (desc->delta_x != desc->sent_dx || desc->delta_y != desc->sent_dy))
+   {
       ol->iface->vertex_geom(ol->iface_data, desc->image_index,
             desc->mod_x + desc->delta_x, desc->mod_y + desc->delta_y,
             desc->mod_w, desc->mod_h);
+      desc->sent_dx = desc->delta_x;
+      desc->sent_dy = desc->delta_y;
+   }
 
    desc->delta_x = 0.0f;
    desc->delta_y = 0.0f;
@@ -6587,6 +6594,8 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
       if (OVERLAY_HAS_IMAGE(&desc->image))
          ol->iface->vertex_geom(ol->iface_data, desc->image_index,
                desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
+      desc->sent_dx = 0.0f;
+      desc->sent_dy = 0.0f;
    }
 }
 
@@ -7332,7 +7341,7 @@ INPUT_NOINLINE static void input_poll_overlay(
       unsigned analog_dpad_mode,
       float axis_threshold)
 {
-   input_overlay_state_t old_ol_state;
+   input_overlay_state_t *old_ol_state;
    int i, j;
    input_overlay_t *ol                      = (input_overlay_t*)ol_data;
    int blocked_touch_idx                    = -1;
@@ -7342,7 +7351,7 @@ INPUT_NOINLINE static void input_poll_overlay(
    bool button_pressed                      = false;
    input_driver_state_t *input_st           = &input_driver_st;
    void *input_data                         = input_st->current_data;
-   input_overlay_state_t *ol_state          = &ol->overlay_state;
+   input_overlay_state_t *ol_state          = INPUT_OVERLAY_ST(ol);
    input_overlay_pointer_state_t *ptr_state = &ol->pointer_state;
    input_driver_t *input                    = (input_driver_t*)input_st->current_driver;
    enum overlay_show_input_type
@@ -7362,9 +7371,13 @@ INPUT_NOINLINE static void input_poll_overlay(
    if (!ol_state)
       return;
 
-   memcpy(&old_ol_state, ol_state,
-         sizeof(old_ol_state));
-   memset(ol_state, 0, sizeof(*ol_state));
+   /* the last poll's state stays where it is: this poll writes the
+    * other, its keys, sticks and buttons cleared, its touches as read */
+   old_ol_state          = ol_state;
+   ol->state_cur        ^= 1;
+   ol_state              = INPUT_OVERLAY_ST(ol);
+   memset(ol_state, 0, offsetof(input_overlay_state_t, touch));
+   ol_state->touch_count = 0;
 
    if (ol_ptr_enable)
    {
@@ -7398,34 +7411,34 @@ INPUT_NOINLINE static void input_poll_overlay(
       joypad_info.auto_binds          = NULL;
       joypad_info.axis_threshold      = 0.0f;
 
-      /* Get driver input.
+      /* Get driver input: each finger from what the driver published,
+       * at one look, or asked of the driver.
        * Bound check first: the PRESSED query must never be issued
        * with idx == OVERLAY_MAX_TOUCH, since drivers index their
        * touch arrays by idx and are not required to range-check it. */
-      for (i = 0;
-               (i < OVERLAY_MAX_TOUCH)
-            && input_frame_or_driver(input,
-               input_data,
-               joypad,
-               &joypad_info,
-               NULL,
-               keyboard_mapping_blocked,
-               0,
-               device,
-               i,
-               RETRO_DEVICE_ID_POINTER_PRESSED);
-            i++)
+      for (i = 0; i < OVERLAY_MAX_TOUCH; i++)
       {
-         ol_state->touch[i] = VIDEO_POS_PACK(
-               input_frame_or_driver(input, input_data, joypad,                   &joypad_info, NULL, keyboard_mapping_blocked, 0,
-                  device, i, RETRO_DEVICE_ID_POINTER_X),
-               input_frame_or_driver(input, input_data, joypad,                   &joypad_info, NULL, keyboard_mapping_blocked, 0,
-                  device, i, RETRO_DEVICE_ID_POINTER_Y));
+         uint32_t pos;
+         int down = input_pointer_frame_finger(0, device, (unsigned)i, &pos);
+         if (down < 0)
+         {
+            if (!input->input_state(input_data, joypad, &joypad_info,
+                     NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED))
+               break;
+            pos = VIDEO_POS_PACK(
+                  input->input_state(input_data, joypad, &joypad_info,
+                     NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_X),
+                  input->input_state(input_data, joypad, &joypad_info,
+                     NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_Y));
+         }
+         else if (!down)
+            break;
+         ol_state->touch[i] = pos;
       }
       ol_state->touch_count = i;
 
       /* Update lookup table of new to old touch indexes */
-      input_overlay_track_touch_inputs(ol_state, &old_ol_state);
+      input_overlay_track_touch_inputs(ol_state, old_ol_state);
 
       /* Poll overlay */
       for (i = 0; i < ol_state->touch_count; i++)
@@ -7448,13 +7461,14 @@ INPUT_NOINLINE static void input_poll_overlay(
             if (old_i == old_blocked_touch_idx)
             {
                blocked_touch_idx = i;
-               if (BIT256_GET(old_ol_state.buttons, RARCH_OVERLAY_NEXT))
+               if (BIT256_GET(old_ol_state->buttons, RARCH_OVERLAY_NEXT))
                   BIT256_SET(ol_state->buttons, RARCH_OVERLAY_NEXT);
                continue;
             }
          }
 
-         memset(&polled_data, 0, sizeof(struct input_overlay_state));
+         /* its keys, sticks and buttons: its touches are not used */
+         memset(&polled_data, 0, offsetof(input_overlay_state_t, touch));
 
          /* Check hitboxes only if this touch pointer
           * is not controlling a pointing device.
@@ -7530,9 +7544,9 @@ INPUT_NOINLINE static void input_poll_overlay(
    /* CAPSLOCK SCROLLOCK NUMLOCK */
    for (i = (int)ARRAY_SIZE(ol_state->keys); i-- > 0;)
    {
-      if (ol_state->keys[i] != old_ol_state.keys[i])
+      if (ol_state->keys[i] != old_ol_state->keys[i])
       {
-         uint32_t orig_bits = old_ol_state.keys[i];
+         uint32_t orig_bits = old_ol_state->keys[i];
          uint32_t new_bits  = ol_state->keys[i];
          osk_state_changed  = true;
 
@@ -7556,9 +7570,9 @@ INPUT_NOINLINE static void input_poll_overlay(
       if (ol_state->analog[j])
          continue;
 
-      if ((BIT256_GET(ol->overlay_state.buttons, bind_plus)))
+      if ((BIT256_GET(INPUT_OVERLAY_ST(ol)->buttons, bind_plus)))
          ol_state->analog[j] += 0x7fff;
-      if ((BIT256_GET(ol->overlay_state.buttons, bind_minus)))
+      if ((BIT256_GET(INPUT_OVERLAY_ST(ol)->buttons, bind_minus)))
          ol_state->analog[j] -= 0x7fff;
    }
 
@@ -7669,13 +7683,13 @@ INPUT_NOINLINE static void input_poll_overlay(
    if (     input->keypress_vibrate
          && settings->bools.vibrate_on_keypress
          && ol_state->touch_count
-         && ol_state->touch_count >= old_ol_state.touch_count)
+         && ol_state->touch_count >= old_ol_state->touch_count)
    {
       if (     osk_state_changed
             || bits_any_different(
                      ol_state->buttons.data,
-                     old_ol_state.buttons.data,
-                     ARRAY_SIZE(old_ol_state.buttons.data))
+                     old_ol_state->buttons.data,
+                     ARRAY_SIZE(old_ol_state->buttons.data))
          )
          input->keypress_vibrate();
    }
@@ -11537,7 +11551,7 @@ static void input_overlay_enable_(bool enable)
        * them (input_overlay_video_teardown), the driver still there. */
       ol->iface = NULL;
 
-      memset(&ol->overlay_state, 0, sizeof(input_overlay_state_t));
+      memset(ol->overlay_states, 0, sizeof(ol->overlay_states));
       memset(&ol->pointer_state, 0, sizeof(input_overlay_pointer_state_t));
    }
 }
@@ -11689,7 +11703,7 @@ void input_driver_menu_combo_source_gate(input_bits_t *bits)
    /* the buttons the overlay alone holds */
    for (i = 0; i < 16; i++)
       if (     BIT256_GET_PTR(bits, i)
-            && BIT256_GET(ol->overlay_state.buttons, i)
+            && BIT256_GET(INPUT_OVERLAY_ST(ol)->buttons, i)
             && !(input_st->system_buttons_not_overlay & (1u << i)))
          only |= (uint16_t)(1u << i);
    if (!only)
@@ -12169,7 +12183,7 @@ static bool input_keys_pressed_other_sources(
 
 #ifdef HAVE_OVERLAY
    if (               input_st->overlay_ptr &&
-         ((BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, i))))
+         ((BIT256_GET(INPUT_OVERLAY_ST(input_st->overlay_ptr)->buttons, i))))
       return true;
 #endif
 
@@ -12205,7 +12219,7 @@ static unsigned input_pad_buttons_other_sources(
 
 #ifdef HAVE_OVERLAY
    if (input_st->overlay_ptr)
-      held |= input_st->overlay_ptr->overlay_state.buttons.data[0] & 0xffff;
+      held |= INPUT_OVERLAY_ST(input_st->overlay_ptr)->buttons.data[0] & 0xffff;
 #endif
 
    return held;
@@ -12260,7 +12274,7 @@ static void input_hotkeys_maybe_held(input_driver_state_t *input_st,
       maybe[w] = k->key_down[w] | k->has_mbutton[w] | pad_behind[w];
 #ifdef HAVE_OVERLAY
       if (input_st->overlay_ptr)
-         maybe[w] |= input_st->overlay_ptr->overlay_state.buttons.data[w];
+         maybe[w] |= INPUT_OVERLAY_ST(input_st->overlay_ptr)->buttons.data[w];
 #endif
    }
    maybe[RARCH_MENU_TOGGLE >> 5] |= (1u << (RARCH_MENU_TOGGLE & 31));
@@ -16045,7 +16059,7 @@ void input_driver_poll(void)
                && turbo_enable
                && overlay_pointer
                && (overlay_pointer->flags & INPUT_OVERLAY_ALIVE)
-               && BIT256_GET(overlay_pointer->overlay_state.buttons, turbo_btn_id))
+               && BIT256_GET(INPUT_OVERLAY_ST(overlay_pointer)->buttons, turbo_btn_id))
             input_st->turbo_btns.frame_enable[i] = true;
 #endif
 
@@ -16064,7 +16078,7 @@ void input_driver_poll(void)
          if (     (i == 0)
                && overlay_pointer
                && (overlay_pointer->flags & INPUT_OVERLAY_ALIVE)
-               && BIT256_GET(overlay_pointer->overlay_state.buttons, RARCH_HOLD_ENABLE))
+               && BIT256_GET(INPUT_OVERLAY_ST(overlay_pointer)->buttons, RARCH_HOLD_ENABLE))
             input_st->hold_btns.frame_enable[i] = true;
 #endif
 
@@ -16271,7 +16285,7 @@ void input_driver_poll(void)
                   if (poll_overlay && i == 0)
                   {
                      input_overlay_state_t *ol_state  = overlay_pointer
-                        ? &overlay_pointer->overlay_state : NULL;
+                        ? INPUT_OVERLAY_ST(overlay_pointer) : NULL;
                      if (ol_state)
                         current_button_value |= BIT256_GET(ol_state->buttons, j);
                   }
@@ -16337,7 +16351,7 @@ void input_driver_poll(void)
                   {
                      input_overlay_state_t *ol_state  =
                           overlay_pointer
-                        ? &overlay_pointer->overlay_state
+                        ? INPUT_OVERLAY_ST(overlay_pointer)
                         : NULL;
                      if (ol_state)
                         current_button_value |= BIT256_GET(ol_state->buttons, j);

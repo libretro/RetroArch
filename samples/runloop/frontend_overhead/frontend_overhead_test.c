@@ -3111,10 +3111,10 @@ static bool combo_opens(unsigned pad, unsigned overlay)
    for (i = 0; i < 16; i++)
       if (pad & (1u << i))
          syn_buttons |= 1u << (input_autoconf_binds[0][i].joykey & 31);
-   BIT256_CLEAR_ALL(input_st->overlay_ptr->overlay_state.buttons);
+   BIT256_CLEAR_ALL(INPUT_OVERLAY_ST(input_st->overlay_ptr)->buttons);
    for (i = 0; i < 16; i++)
       if (overlay & (1u << i))
-         BIT256_SET(input_st->overlay_ptr->overlay_state.buttons, i);
+         BIT256_SET(INPUT_OVERLAY_ST(input_st->overlay_ptr)->buttons, i);
    /* a poll for the pad, then the system's input as the run loop
     * collects it, and the gate as the run loop applies it */
    input_driver_poll();
@@ -3182,12 +3182,12 @@ static void lane_menu_combo_gate(void)
       unsigned saved_combo = settings->uints.input_menu_toggle_gamepad_combo;
       settings->uints.input_menu_toggle_gamepad_combo = INPUT_COMBO_L3_R3;
       syn_buttons = 0;
-      BIT256_SET(ol.overlay_state.buttons, RETRO_DEVICE_ID_JOYPAD_L3);
-      BIT256_SET(ol.overlay_state.buttons, RETRO_DEVICE_ID_JOYPAD_R3);
+      BIT256_SET(INPUT_OVERLAY_ST(&ol)->buttons, RETRO_DEVICE_ID_JOYPAD_L3);
+      BIT256_SET(INPUT_OVERLAY_ST(&ol)->buttons, RETRO_DEVICE_ID_JOYPAD_R3);
       run_loop_frames(3);
       CHECK(!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE),
             "menu combination: the run loop opened the menu for two overlay buttons");
-      BIT256_CLEAR_ALL(ol.overlay_state.buttons);
+      BIT256_CLEAR_ALL(INPUT_OVERLAY_ST(&ol)->buttons);
       run_loop_frames(2);
       settings->uints.input_menu_toggle_gamepad_combo = saved_combo;
    }

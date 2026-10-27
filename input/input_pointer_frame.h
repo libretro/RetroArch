@@ -383,6 +383,30 @@ static bool input_pointer_frame_pos(unsigned port, unsigned device,
    return false;
 }
 
+/* Finger @idx of the pointer @port reads as @device (RETRO_DEVICE_POINTER
+ * or RARCH_DEVICE_POINTER_SCREEN), down or not and where, packed, at one
+ * look: what reading PRESSED, X and Y in turn gives. 1 down, 0 not; -1
+ * if the frontend does not hold it and the driver is to be asked. */
+static int input_pointer_frame_finger(unsigned port, unsigned device,
+      unsigned idx, uint32_t *pos)
+{
+   unsigned i;
+   uint32_t vp_pos     = 0;
+   uint32_t screen_pos = 0;
+   bool down;
+
+   if (!input_pointers.count)
+      return -1;
+   *pos = 0;
+   i    = input_pointer_of_port(port, device);
+   if (i < input_pointers.count && i < MAX_USERS)
+      input_pointers.read_as[i] = device;
+   if (!input_pointer_touch(i, idx, &vp_pos, &screen_pos, &down))
+      return 0;
+   *pos = (device == RARCH_DEVICE_POINTER_SCREEN) ? screen_pos : vp_pos;
+   return down ? 1 : 0;
+}
+
 /* One value of a mouse, a pointer or a lightgun's aim. False if the
  * frontend does not hold it and the driver is to be asked. */
 static bool input_pointer_frame_read(unsigned port, unsigned device,
