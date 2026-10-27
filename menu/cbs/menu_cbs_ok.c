@@ -4945,7 +4945,7 @@ static int action_ok_input_device_ignore_change(size_t entry_idx,
             (unsigned)vid, (unsigned)pid);
    }
    settings->flags |= SETTINGS_FLG_MODIFIED;
-   joypad_driver_reinit(input_state_get_ptr()->current_data,
+   joypad_driver_reinit(input_driver_current_data(),
          settings->arrays.input_joypad_driver);
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
