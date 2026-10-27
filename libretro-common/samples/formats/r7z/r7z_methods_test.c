@@ -14,6 +14,7 @@
 #include <7z/r7z_archive.h>
 #include <7z/r7z_filters.h>
 #include <7z/r7z_lzma2.h>
+#include <7z/r7z_lzma_stream.h>
 #include <encodings/crc32.h>
 #include <encodings/deflate.h>
 
@@ -181,6 +182,103 @@ static void staged(const char *what, const uint8_t *fx, size_t fx_len,
    }
    free(bad);
    free(want);
+}
+
+/* blocks.txt out of LZMA2 blocks that each start the dictionary over:
+ * whole, and in slices */
+static void lzma2_blocks(void)
+{
+   size_t         n    = 600000, k, len = 0;
+   uint8_t       *want = (uint8_t*)malloc(n);
+   uint8_t       *got  = NULL;
+   r7z_archive_t *a    = NULL;
+   int            r;
+   text(want, 2000);
+   for (k = 1; k < 300; k++)
+      memcpy(want + k * 2000, want, 2000);
+   if (r7z_archive_open(&a, fx_lzma2_blocks, sizeof(fx_lzma2_blocks))
+         != R7Z_OK)
+      check(0, "LZMA2 blocks", "opens");
+   else
+   {
+      r = r7z_archive_extract(a, 0, &got, &len);
+      check(r == R7Z_OK && len == n && !memcmp(got, want, n),
+            "LZMA2 blocks", "extracted whole");
+      free(got);
+      r7z_archive_close(a);
+   }
+   a = NULL;
+   if (r7z_archive_open(&a, fx_lzma2_blocks, sizeof(fx_lzma2_blocks))
+         == R7Z_OK)
+   {
+      got = NULL;
+      while ((r = r7z_archive_extract_slice(a, 0, &got, &len))
+            == R7Z_PENDING) { }
+      check(r == R7Z_OK && len == n && !memcmp(got, want, n),
+            "LZMA2 blocks", "extracted in slices");
+      free(got);
+      r7z_archive_close(a);
+   }
+   free(want);
+}
+
+/* lits.bin: 8200 octets of 64 values from '0' on */
+static void lits(uint8_t *d, size_t n)
+{
+   uint32_t x = 7;
+   size_t   i;
+   for (i = 0; i < n; i++)
+   {
+      x    = lcg(x);
+      d[i] = (uint8_t)(0x30 + (x >> 16) % 64);
+   }
+}
+
+/* An LZMA stream of nearly all literals through a window of its 4 KiB
+ * dictionary, wrapping twice: each wrap's first literal takes its
+ * context from the window's last octet, and its position from the
+ * stream's start. Fed input 100 octets at a time. */
+static void lzma_ring(void)
+{
+   size_t          n     = 8200, made = 0, fed = 13;
+   uint8_t        *want  = (uint8_t*)malloc(n);
+   uint8_t        *got   = (uint8_t*)malloc(n);
+   uint8_t         win[4096];
+   rlzma_stream_t *ls    = (rlzma_stream_t*)malloc(sizeof(*ls));
+   uint16_t       *probs = (uint16_t*)malloc(
+         RLZMA_STREAM_NUM_PROBS(3, 0) * sizeof(uint16_t));
+   int             ok;
+   lits(want, n);
+   ok = rlzma_stream_init(ls, fx_lzma_ring, probs, win, sizeof(win))
+      == RLZMA_OK;
+   if (ok)
+      rlzma_stream_reset(ls);
+   while (ok && made < n)
+   {
+      size_t from  = ls->dic_pos;
+      size_t limit = sizeof(win);
+      size_t take  = sizeof(fx_lzma_ring) - fed;
+      int    status;
+      if (take > 100)
+         take = 100;
+      if (limit - from > n - made)
+         limit = from + (n - made);
+      if (rlzma_stream_decode(ls, limit, fx_lzma_ring + fed, &take,
+               fed + take == sizeof(fx_lzma_ring), &status) != RLZMA_OK
+            || (!take && ls->dic_pos == from))
+         ok = 0;
+      fed += take;
+      memcpy(got + made, win + from, ls->dic_pos - from);
+      made += ls->dic_pos - from;
+      if (ls->dic_pos == sizeof(win))
+         ls->dic_pos = 0;
+   }
+   check(ok && made == n && !memcmp(got, want, n), "LZMA",
+         "through a window its dictionary's size, wrapping");
+   free(want);
+   free(got);
+   free(ls);
+   free(probs);
 }
 
 /* code.so: its size and CRC */
@@ -496,12 +594,14 @@ int main(void)
    staged("BZip2, stepped", fx_big_bzip2, sizeof(fx_big_bzip2), 2000);
 #endif
    deflate64();
+   lzma2_blocks();
+   lzma_ring();
    arm64();
    if (failures)
    {
       printf("%d failure(s)\n", failures);
       return 1;
    }
-   printf("r7z_methods_test: every coder's archive extracted, PPMd, Deflate and BZip2 a step at a time, Deflate64 whole, ARM64\n");
+   printf("r7z_methods_test: every coder's archive extracted, PPMd, Deflate and BZip2 a step at a time, Deflate64 whole, LZMA2 blocks, LZMA through a ring, ARM64\n");
    return 0;
 }

@@ -343,7 +343,7 @@ static dummy_res_t try_dummy(const rlzma_stream_t *s,
    const uint16_t  *prob;
    dummy_res_t      res;
 
-   pos_state = ((uint32_t)(s->dic_pos) & (((uint32_t)1 << s->pb) - 1)) << 4;
+   pos_state = ((uint32_t)(s->total_pos) & (((uint32_t)1 << s->pb) - 1)) << 4;
 
    prob = probs + IS_MATCH + COMBINED_PS_STATE;
    RC_IF_BIT_0_CHECK(prob)
@@ -357,9 +357,10 @@ static dummy_res_t try_dummy(const rlzma_stream_t *s,
 
       lit_mask  = ((uint32_t)0x100 << s->lp) - ((uint32_t)0x100 >> s->lc);
       lit_state = 0;
-      if (s->dic_pos != 0)
-         lit_state = ((((uint32_t)s->dic_pos << 8)
-                  + (uint32_t)s->dic[s->dic_pos - 1]) & lit_mask) << s->lc;
+      if (s->total_pos != 0)
+         lit_state = ((((uint32_t)s->total_pos << 8)
+                  + (uint32_t)s->dic[(s->dic_pos ? s->dic_pos : s->dic_size)
+                     - 1]) & lit_mask) << s->lc;
 
       prob = probs + LITERAL + (uint32_t)3 * lit_state;
 
@@ -573,7 +574,7 @@ static int decode_real(rlzma_stream_t *s, size_t dic_limit,
    do
    {
       uint16_t *prob;
-      uint32_t  pos_state = ((uint32_t)dic_pos & pb_mask) << 4;
+      uint32_t  pos_state = ((uint32_t)total_pos & pb_mask) << 4;
       uint32_t  len;
 
       prob = probs_is_match + COMBINED_PS_STATE;
@@ -585,12 +586,21 @@ static int decode_real(rlzma_stream_t *s, size_t dic_limit,
 
          RC_UPDATE_0(prob)
 
-         /* The first byte of the window has no predecessor; its context
-          * is zero, exactly as in the one-shot decoder. */
+         /* The stream's first byte, or the first since the dictionary
+          * was reset, has no predecessor; its context is zero, exactly
+          * as in the one-shot decoder. Positions count from there,
+          * wherever in the window it is; the byte before the window's
+          * start is its end. */
          lit_state = 0;
-         if (dic_pos != 0)
-            lit_state = ((((uint32_t)dic_pos << 8)
-                     + (uint32_t)dic[dic_pos - 1]) & lit_mask) << lc;
+         if (total_pos != 0)
+         {
+            if (dic_pos != 0)
+               lit_state = ((((uint32_t)total_pos << 8)
+                        + (uint32_t)dic[dic_pos - 1]) & lit_mask) << lc;
+            else
+               lit_state = ((((uint32_t)total_pos << 8)
+                        + (uint32_t)dic[dic_size - 1]) & lit_mask) << lc;
+         }
 
          /* The masked context is already scaled by 0x100, so the stride
           * is 3 (one literal slot), not the full 0x300 table. */
@@ -1004,9 +1014,11 @@ void rlzma_stream_reset_parts(rlzma_stream_t *s, int init_dic, int init_state)
     * state while continuing the previous chunk's dictionary, or reset
     * the dictionary while the range coder carries on. Collapsing them
     * into one operation would make those chunk types undecodable. */
+   /* A dictionary reset forgets what came before, which positions
+    * then count from; where the window is written next stays, so what
+    * the caller has not read of it yet is still there. */
    if (init_dic)
    {
-      s->dic_pos    = 0;
       s->total_pos  = 0;
       s->got_marker = 0;
    }
@@ -1033,6 +1045,9 @@ void rlzma_stream_reset_parts(rlzma_stream_t *s, int init_dic, int init_state)
 
 void rlzma_stream_reset(rlzma_stream_t *s)
 {
+   if (!s)
+      return;
+   s->dic_pos = 0;
    rlzma_stream_reset_parts(s, 1, 1);
 }
 
