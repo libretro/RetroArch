@@ -8015,6 +8015,7 @@ void video_driver_vr_driver_changed(void)
 bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 {
    video_info_t video;
+   bool defer_unthreaded_init = false;
    unsigned scale, width, height;
 #ifdef HAVE_VIDEO_FILTER
    bool frame_rgb32;
@@ -8259,6 +8260,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
                "unthreaded for this session.\n");
    }
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   defer_unthreaded_init = !video.is_threaded && video_thread_host_is_held();
+#endif
    if (video.is_threaded)
    {
       bool ret;
@@ -8283,7 +8287,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          return false;
       }
    }
-   else
+   else if (!defer_unthreaded_init)
 #endif
       video_st->data = video_st->current_video->init(&video);
 
@@ -8294,6 +8298,10 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
    /* and so does a Windows one */
    VIDEO_WIN32_RELEASE_KEPT_WINDOW();
+
+   /* Activation must not wait on the retained window's sleeping thread. */
+   if (defer_unthreaded_init)
+      video_st->data = video_st->current_video->init(&video);
 
    if (!video_st->data)
    {
