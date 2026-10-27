@@ -5137,14 +5137,24 @@ static retro_time_t prlane_last_present(void *data)
       : prlane_last_out - prlane_period;
 }
 
+/* The paced rate, from the gaps between the core's frames. A gap of two
+ * periods or more is the box taking the CPU away (a busy CI runner),
+ * which no pacing can make up; it is left out with its frames, and
+ * counted in @stalls. Every hold pattern a case has (120 on 144 is one
+ * or two panel periods) stays under it, so a wrong period still shows. */
 static double pacing_rate_measure(thread_video_t *thr, float display_hz,
-      double panel_hz, double content_fps, bool timestamps)
+      double panel_hz, double content_fps, bool timestamps,
+      unsigned *stalls)
 {
    settings_t *settings = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    unsigned n = (unsigned)(content_fps * 2.0);
-   uint64_t f0;
-   retro_time_t t0, took;
+   retro_time_t stall_us = (retro_time_t)(2000000.0 / content_fps);
+   retro_time_t took     = 0;
+   uint64_t frames       = 0;
+   uint64_t f_last;
+   retro_time_t t_last;
+   unsigned i;
 
    /* The fake driver reads the panel's timing on the video thread:
     * changed only with that thread idle, as the frame handed over next
@@ -5161,12 +5171,30 @@ static double pacing_rate_measure(thread_video_t *thr, float display_hz,
    /* Settle: the period, render and core estimates */
    run_frames(n / 4);
    video_thread_wait_idle();
-   f0 = core_frames();
-   t0 = cpu_features_get_time_usec();
-   run_frames(n);
-   took = cpu_features_get_time_usec() - t0;
-   return took > 0
-      ? (double)(core_frames() - f0) * 1000000.0 / (double)took : 0.0;
+   *stalls = 0;
+   f_last  = core_frames();
+   t_last  = cpu_features_get_time_usec();
+   for (i = 0; i < n; i++)
+   {
+      uint64_t f;
+      retro_time_t t, gap;
+      run_frames(1);
+      f   = core_frames();
+      t   = cpu_features_get_time_usec();
+      gap = t - t_last;
+      if (f == f_last)
+         continue;
+      if (gap >= stall_us * (retro_time_t)(f - f_last))
+         (*stalls)++;
+      else
+      {
+         took   += gap;
+         frames += f - f_last;
+      }
+      f_last = f;
+      t_last = t;
+   }
+   return took > 0 ? (double)frames * 1000000.0 / (double)took : 0.0;
 }
 
 static void lane_pacing_rate(void)
@@ -5229,11 +5257,11 @@ static void lane_pacing_rate(void)
       for (ts = 0; ts < 2; ts++)
       {
          double best = 0.0, fps;
-         unsigned t;
+         unsigned t, stalls = 0;
          for (t = 0; t < 3; t++)
          {
             fps = pacing_rate_measure(thr, cases[c].display_hz,
-                  cases[c].panel_hz, cases[c].content_fps, ts != 0);
+                  cases[c].panel_hz, cases[c].content_fps, ts != 0, &stalls);
             if (fabs(fps - cases[c].expect) < fabs(best - cases[c].expect))
                best = fps;
             if (fabs(best - cases[c].expect) <= cases[c].expect * 0.02)
@@ -5246,9 +5274,10 @@ static void lane_pacing_rate(void)
                cases[c].display_hz,
                ts ? "present timestamps" : "no timestamps (vsync off)",
                best, cases[c].expect);
-         fprintf(stderr, "   pacing rate: %5.1f fps on %8.3f Hz, %-13s %.2f fps\n",
+         fprintf(stderr, "   pacing rate: %5.1f fps on %8.3f Hz, %-13s %.2f fps"
+               " (%u stalls left out)\n",
                cases[c].content_fps, cases[c].panel_hz,
-               ts ? "timestamps:" : "clock grid:", best);
+               ts ? "timestamps:" : "clock grid:", best, stalls);
       }
 
    run_us(0);

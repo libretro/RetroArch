@@ -3724,7 +3724,12 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
          drained            = true;
          thr->handoff.drains++;
       }
-      if (thr->content_due < next)
+      /* Not before the display's next vblank. A grid laid from the
+       * video thread's clock is only its last completion plus a
+       * period, late whenever that thread was: clamped to it, the
+       * schedule lost that lateness every frame on a busy machine. */
+      if (     thr->content_due < next
+            && (snap.flags & VIDEO_THREAD_STAT_F_PHASE_DISPLAY))
          thr->content_due = next;
       /* The vblank nearest the due time, not the first at or after it:
        * the due time accumulates in the content's period and the grid
