@@ -2,7 +2,7 @@
  * track with a NULL filename, then seek by sector and read.
  *
  * This is a different cdfs path from reading a file sequentially, and
- * cdfs_backend_compare.c does not reach it. cheevos_rvz aside, every
+ * cdfs_backend_compare.c does not reach it. RVZ aside, every
  * hash of a CHD goes through cdfs_seek_sector and cdfs_read_file in
  * rc_hash_handle_chd_read_sector, so a reader that agrees on file
  * contents and disagrees on seeks would still produce wrong hashes.

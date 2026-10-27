@@ -224,9 +224,11 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos_menu.c"
 #include "../cheevos/cheevos_badge.c"
 
-#if defined(HAVE_CHEEVOS_RVZ)
-#ifdef HAVE_RZSTD
-#include "../cheevos/cheevos_rvz.c"
+#if defined(HAVE_CHEEVOS_RVZ) && defined(HAVE_RZSTD)
+#include "../libretro-common/formats/rvz/rvz.c"
+#ifndef HAVE_CRYPTO
+/* its AES, without the rest of the crypto library */
+#include "../libretro-common/crypto/crypto.c"
 #endif
 #endif
 

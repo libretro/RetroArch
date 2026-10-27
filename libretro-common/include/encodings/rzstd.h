@@ -54,7 +54,7 @@
  *                             compressed size before it allocates.
  *                             This is the only caller that compresses,
  *                             and the reason the encoder exists at all.
- *   cheevos/cheevos_rvz.c     decompresses one-shot, and reads a
+ *   formats/rvz/rvz.c         decompresses one-shot, and reads a
  *                             frame's declared content size to size
  *                             its buffer.
  *   file/archive_file_zstd.c  decompresses an archive member, and

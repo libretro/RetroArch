@@ -51,8 +51,11 @@
 #include "streams/chd_stream.h"
 #endif
 
-#ifdef HAVE_CHEEVOS_RVZ
-#include "cheevos_rvz.h"
+/* RVZ images are read with formats/rvz, which needs Zstandard for
+ * nearly every file */
+#if defined(HAVE_CHEEVOS_RVZ) && defined(HAVE_RZSTD)
+#define CHEEVOS_RVZ_READER
+#include <formats/rvz.h>
 #endif
 
 #include "cheevos.h"
@@ -1407,6 +1410,104 @@ static void* rc_hash_handle_cd_open_track(
    }
 }
 
+#ifdef CHEEVOS_RVZ_READER
+/* rc_hash reads an RVZ file through these as the disc image it stands
+ * for, a read at a time: the reader seeks for itself. */
+typedef struct
+{
+   rvz_t  *rvz;
+   int64_t pos;
+} rcheevos_rvz_t;
+
+static void* RC_CCONV rcheevos_rvz_open(const char* path)
+{
+   rcheevos_rvz_t* handle;
+   rvz_t*          rvz = rvz_open(path);
+
+   if (!rvz)
+      return NULL;
+   if (!(handle = (rcheevos_rvz_t*)malloc(sizeof(*handle))))
+   {
+      rvz_close(rvz);
+      return NULL;
+   }
+   handle->rvz = rvz;
+   handle->pos = 0;
+   return handle;
+}
+
+static void RC_CCONV rcheevos_rvz_seek(void* file_handle, int64_t offset, int origin)
+{
+   rcheevos_rvz_t* handle = (rcheevos_rvz_t*)file_handle;
+
+   switch (origin)
+   {
+      case SEEK_SET:
+         handle->pos = offset;
+         break;
+      case SEEK_CUR:
+         handle->pos += offset;
+         break;
+      case SEEK_END:
+         handle->pos = (int64_t)rvz_disc_size(handle->rvz) + offset;
+         break;
+   }
+   if (handle->pos < 0)
+      handle->pos = 0;
+}
+
+static int64_t RC_CCONV rcheevos_rvz_tell(void* file_handle)
+{
+   return ((rcheevos_rvz_t*)file_handle)->pos;
+}
+
+static size_t RC_CCONV rcheevos_rvz_read(void* file_handle, void* buffer, size_t requested_bytes)
+{
+   rcheevos_rvz_t* handle = (rcheevos_rvz_t*)file_handle;
+   int64_t         got    = rvz_read(handle->rvz, (uint64_t)handle->pos,
+         buffer, requested_bytes);
+
+   if (got <= 0)
+      return 0;
+   handle->pos += got;
+   return (size_t)got;
+}
+
+static void RC_CCONV rcheevos_rvz_close(void* file_handle)
+{
+   rcheevos_rvz_t* handle = (rcheevos_rvz_t*)file_handle;
+
+   if (handle)
+   {
+      rvz_close(handle->rvz);
+      free(handle);
+   }
+}
+
+/* A Wii or GameCube disc as its header's magic words say, or
+ * RC_CONSOLE_UNKNOWN for a file the reader does not take */
+static uint32_t rcheevos_rvz_get_console_id(const char* path)
+{
+   uint8_t  magic[8];
+   uint32_t console_id = RC_CONSOLE_UNKNOWN;
+   rvz_t*   rvz        = rvz_open(path);
+
+   if (!rvz)
+      return console_id;
+   if (rvz_read(rvz, 0x18, magic, sizeof(magic)) == (int64_t)sizeof(magic))
+   {
+      if (     magic[0] == 0x5D && magic[1] == 0x1C
+            && magic[2] == 0x9E && magic[3] == 0xA3)
+         console_id = RC_CONSOLE_WII;
+      else if (magic[4] == 0xC2 && magic[5] == 0x33
+            && magic[6] == 0x9F && magic[7] == 0x3D)
+         console_id = RC_CONSOLE_GAMECUBE;
+   }
+   rvz_close(rvz);
+   return console_id;
+}
+#endif
+
 static void rc_hash_reset_cdreader_hooks(void)
 {
    struct rc_hash_cdreader cdreader;
@@ -2008,24 +2109,26 @@ bool rcheevos_load(const void *data)
    {
       uint32_t console_id = RC_CONSOLE_UNKNOWN;
 
-#ifdef HAVE_CHEEVOS_RVZ
-      if (string_is_equal_noncase(path_get_extension(info->path), "rvz"))
+#ifdef CHEEVOS_RVZ_READER
+      /* The file reader is kept from one load to the next, so it is
+       * set for every load: the RVZ one for a file it reads, and the
+       * default for anything else - a disc image loaded after an RVZ
+       * was otherwise opened with the RVZ reader, and its hash failed. */
+      if (     string_is_equal_noncase(path_get_extension(info->path), "rvz")
+            && (console_id = rcheevos_rvz_get_console_id(info->path))
+               != RC_CONSOLE_UNKNOWN)
       {
-         console_id = rcheevos_rvz_get_console_id(info->path);
+         struct rc_hash_filereader filereader;
 
-         /* Only register custom file reader for valid RVZ files */
-         if (console_id != RC_CONSOLE_UNKNOWN)
-         {
-            struct rc_hash_filereader filereader;
-
-            filereader.open  = rcheevos_rvz_open;
-            filereader.seek  = rcheevos_rvz_seek;
-            filereader.tell  = rcheevos_rvz_tell;
-            filereader.read  = rcheevos_rvz_read;
-            filereader.close = rcheevos_rvz_close;
-            rc_hash_init_custom_filereader(&filereader);
-         }
+         filereader.open  = rcheevos_rvz_open;
+         filereader.seek  = rcheevos_rvz_seek;
+         filereader.tell  = rcheevos_rvz_tell;
+         filereader.read  = rcheevos_rvz_read;
+         filereader.close = rcheevos_rvz_close;
+         rc_hash_init_custom_filereader(&filereader);
       }
+      else
+         rc_hash_init_custom_filereader(NULL);
 #endif
 
       {

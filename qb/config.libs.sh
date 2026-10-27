@@ -1108,6 +1108,10 @@ if [ "$HAVE_RETRONFS" = 'auto' ]; then HAVE_RETRONFS=yes; fi
 # so libsmb2 asked for and not found is an error.
 check_enabled NETWORKING RETROSMB 'built-in SMB client' 'Networking is' false
 check_enabled CRYPTO RETROSMB 'built-in SMB client' 'crypto is' false
+
+# RVZ hashing reads the groups with Zstandard
+check_enabled CHEEVOS CHEEVOS_RVZ 'RVZ hashing for RetroAchievements' 'cheevos is' false
+check_enabled RZSTD CHEEVOS_RVZ 'RVZ hashing for RetroAchievements' 'RZSTD is' false
 if [ "$HAVE_RETROSMB" = 'auto' ]; then
    if [ "$HAVE_SMBCLIENT" = 'yes' ] || [ "$HAVE_LIBSMB" = 'yes' ]; then
       HAVE_RETROSMB=no
