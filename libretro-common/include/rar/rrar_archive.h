@@ -189,9 +189,8 @@ const rrar_entry_t *rrar_archive_entry(const rrar_archive_t *a,
  * @out_len    : receives the entry's size
  *
  * Unpacks one entry and checks it against the archive's CRC-32, if the
- * archive has one for it. The
- * caller frees *@out. An empty entry yields a valid one-byte buffer and
- * a length of zero.
+ * archive has one for it. The caller frees *@out, which has one octet
+ * more than *@out_len, the caller's to write, as for a NUL.
  *
  * Returns: RRAR_OK, or a negative RRAR_ERROR_* code, in which case
  * *@out is NULL.

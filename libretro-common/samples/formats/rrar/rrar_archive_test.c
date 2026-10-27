@@ -239,6 +239,9 @@ static void check_mode(const char *dir, const char *file,
          {
             check_watched(a, i, out, out_len, e->name);
             check_sunk(a, i, out, out_len, e->name);
+            /* the octet to spare after it, which a sanitizer sees
+             * written */
+            out[out_len] = '\0';
          }
          free(out);
       }

@@ -1123,6 +1123,20 @@ static int unpack_watch(rrar_unpack_t *u)
 #ifndef RRAR_SINK_STEP
 #define RRAR_SINK_STEP  0x100000
 #endif
+/* how far past the window the buffer reaches, at most: the window moves
+ * down once that much more is final, so each octet is moved about once
+ * where the window is no bigger than this; a test makes it smaller */
+#ifndef RRAR_SINK_EXTRA_MAX
+#define RRAR_SINK_EXTRA_MAX 0x4000000
+#endif
+
+/* How far the buffer reaches past @window: as far again, within bounds */
+static uint64_t unpack_sink_extra(uint64_t window)
+{
+   if (window > RRAR_SINK_EXTRA_MAX)
+      return RRAR_SINK_EXTRA_MAX;
+   return window < RRAR_SINK_STEP ? RRAR_SINK_STEP : window;
+}
 static int unpack_emit(rrar_unpack_t *u, const uint8_t *data, size_t len)
 {
    if (!len)
@@ -1181,7 +1195,7 @@ static int unpack_flush(rrar_unpack_t *u)
    keep = at > u->window ? at - u->window : 0;
    if (keep > u->flushed)
       keep = u->flushed;
-   if (keep - u->base >= (uint64_t)(u->cap / 4))
+   if (keep - u->base >= unpack_sink_extra(u->window))
    {
       size_t shift = (size_t)(keep - u->base);
       memmove(u->out, u->out + shift, (size_t)u->pos - shift);
@@ -1939,9 +1953,12 @@ static int unpack_member(const uint8_t *packed, size_t packed_len,
 
 /* The buffer a member is streamed out through: its window, a filter's
  * largest block, and room to go on decoding while one is waited for */
+/* The window, as far past it as it moves by, and room for a filter's
+ * block */
 static uint64_t unpack_sink_cap(uint64_t window)
 {
-   return window + FILTER5_BLOCK_MAX + 2 * RRAR_SINK_STEP + RRAR_SINK_SLACK;
+   return window + unpack_sink_extra(window) + FILTER5_BLOCK_MAX
+      + 2 * RRAR_SINK_STEP + RRAR_SINK_SLACK;
 }
 
 /* A member of @size unpacked through a buffer of unpack_sink_cap(),
@@ -2715,7 +2732,8 @@ int rrar_archive_extract(rrar_archive_t *a, uint32_t index,
       return RRAR_ERROR_UNSUPPORTED;
 
    size = (size_t)e->size;
-   if (!(buf = (uint8_t *)malloc(size ? size : 1)))
+   /* an octet to spare, for a NUL */
+   if (size == (size_t)-1 || !(buf = (uint8_t *)malloc(size + 1)))
       return RRAR_ERROR_MEM;
    if ((r = rrar_extract_into(a, e, buf, NULL)) != RRAR_OK)
    {

@@ -147,16 +147,12 @@ static int rar_file_decompressed(
                   &member, &member_len) != RRAR_OK)
          return 1;
 
-      /* RetroArch expects a NUL after the data. */
-      if ((*st->buf = malloc(member_len + 1)))
-      {
-         ((char*)(*st->buf))[member_len] = '\0';
-         if (member_len)
-            memcpy(*st->buf, member, member_len);
-         st->size  = member_len;
-         st->found = true;
-      }
-      free(member);
+      /* the caller's to keep, with a NUL after the data in the octet
+       * to spare */
+      member[member_len] = '\0';
+      *st->buf  = member;
+      st->size  = member_len;
+      st->found = true;
    }
 
    return 0;
