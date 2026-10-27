@@ -411,6 +411,9 @@ reset_eq(struct EQF *f)
     memset(f->h, 0, sizeof(f->h));
 }
 
+/* At four samples per chroma period the decoder runs this through
+ * EQF_STEP below instead. */
+#if (CRT_CC_SAMPLES != 4)
 static int
 eqf(struct EQF *f, int s)
 {
@@ -439,6 +442,37 @@ eqf(struct EQF *f, int s)
 
     return (r[0] + r[1] + r[2]);
 }
+#endif
+
+/* eqf() on locals: P names a filter's state (lf, hf, the gains, the
+ * four low and high stages and the history), loaded from a struct EQF
+ * by EQF_LOCALS. EQF_STEP runs one sample through it exactly as eqf()
+ * does and leaves the result in OUT. */
+#define EQF_LOCALS(P, F) \
+    const int P##lf = (F).lf, P##hf = (F).hf; \
+    const int P##g0 = (F).g[0], P##g1 = (F).g[1], P##g2 = (F).g[2]; \
+    int P##L0 = (F).fL[0], P##L1 = (F).fL[1], P##L2 = (F).fL[2], P##L3 = (F).fL[3]; \
+    int P##H0 = (F).fH[0], P##H1 = (F).fH[1], P##H2 = (F).fH[2], P##H3 = (F).fH[3]; \
+    int P##h0 = (F).h[0], P##h1 = (F).h[1], P##h2 = (F).h[2]
+
+#define EQF_STEP(P, S, OUT) \
+    do { \
+        int s_ = (S); \
+        P##L0 += (P##lf * (s_ - P##L0) + EQ_R) >> EQ_P; \
+        P##H0 += (P##hf * (s_ - P##H0) + EQ_R) >> EQ_P; \
+        P##L1 += (P##lf * (P##L0 - P##L1) + EQ_R) >> EQ_P; \
+        P##H1 += (P##hf * (P##H0 - P##H1) + EQ_R) >> EQ_P; \
+        P##L2 += (P##lf * (P##L1 - P##L2) + EQ_R) >> EQ_P; \
+        P##H2 += (P##hf * (P##H1 - P##H2) + EQ_R) >> EQ_P; \
+        P##L3 += (P##lf * (P##L2 - P##L3) + EQ_R) >> EQ_P; \
+        P##H3 += (P##hf * (P##H2 - P##H3) + EQ_R) >> EQ_P; \
+        (OUT) = ((P##L3 * P##g0) >> EQ_P) \
+              + (((P##H3 - P##L3) * P##g1) >> EQ_P) \
+              + (((P##h2 - P##H3) * P##g2) >> EQ_P); \
+        P##h2 = P##h1; \
+        P##h1 = P##h0; \
+        P##h0 = s_; \
+    } while (0)
 
 #endif
 
@@ -760,6 +794,12 @@ crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out)
     struct crt_yiq *yiqA, *yiqB;
     int line, s, bpp, pitch;
     int bright = v->bright;
+    /* Read once: every pixel is stored through an unsigned char
+     * pointer, which may alias these, so they were fetched again for
+     * every pixel. */
+    const int contrast   = v->contrast;
+    const int blend      = v->blend;
+    const int out_format = v->out_format;
     signed char *sig;
 
     if (!v->frame_ok) {
@@ -801,7 +841,34 @@ crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out)
         reset_eq(&eqI_l);
         reset_eq(&eqQ_l);
 
-#if (CRT_CC_SAMPLES == 4)
+#if (CRT_CC_SAMPLES == 4) && !USE_CONVOLUTION
+        {
+            /* eqf() for Y, I and Q side by side with their state in
+             * locals: through the struct pointers, every store to out[]
+             * (ints too) could alias the state, so it was reloaded and
+             * stored back on every sample. Same updates in the same
+             * order, so the same result. */
+            EQF_LOCALS(y_, eqY_l);
+            EQF_LOCALS(i_, eqI_l);
+            EQF_LOCALS(q_, eqQ_l);
+            const int w0 = wave[0], w1 = wave[1], w2 = wave[2], w3 = wave[3];
+            for (i = L; i < R; i++) {
+                int sv = sig[i], ry, ri, rq, wi, wq;
+                switch (i & 3) {
+                    case 0:  wi = w0; wq = w3; break;
+                    case 1:  wi = w1; wq = w0; break;
+                    case 2:  wi = w2; wq = w1; break;
+                    default: wi = w3; wq = w2; break;
+                }
+                EQF_STEP(y_, sv + bright, ry);
+                EQF_STEP(i_, sv * wi >> 9, ri);
+                EQF_STEP(q_, sv * wq >> 9, rq);
+                out[i].y = ry * 16; /* may be negative */
+                out[i].i = ri >> 3;
+                out[i].q = rq >> 3;
+            }
+        }
+#elif (CRT_CC_SAMPLES == 4)
         for (i = L; i < R; i++) {
             out[i].y = eqf(&eqY_l, sig[i] + bright) * 16; /* may be negative */
             out[i].i = eqf(&eqI_l, sig[i] * wave[(i + 0) & 3] >> 9) >> 3;
@@ -836,9 +903,9 @@ crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out)
             q = ((yiqA->q * L) >> 14) + ((yiqB->q * R) >> 14);
 
             /* YIQ to RGB */
-            r = (((y + 3879 * i + 2556 * q) >> 12) * v->contrast) >> 8;
-            g = (((y - 1126 * i - 2605 * q) >> 12) * v->contrast) >> 8;
-            b = (((y - 4530 * i + 7021 * q) >> 12) * v->contrast) >> 8;
+            r = (((y + 3879 * i + 2556 * q) >> 12) * contrast) >> 8;
+            g = (((y - 1126 * i - 2605 * q) >> 12) * contrast) >> 8;
+            b = (((y - 4530 * i + 7021 * q) >> 12) * contrast) >> 8;
 
             if (r < 0) r = 0;
             if (g < 0) g = 0;
@@ -847,10 +914,10 @@ crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out)
             if (g > 255) g = 255;
             if (b > 255) b = 255;
 
-            if (v->blend) {
+            if (blend) {
                 aa = (r << 16 | g << 8 | b);
 
-                switch (v->out_format) {
+                switch (out_format) {
                     case CRT_PIX_FORMAT_RGB:
                     case CRT_PIX_FORMAT_RGBA:
                         bb = cL[0] << 16 | cL[1] << 8 | cL[2];
@@ -876,7 +943,7 @@ crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out)
                 bb = (r << 16 | g << 8 | b);
             }
 
-            switch (v->out_format) {
+            switch (out_format) {
                 case CRT_PIX_FORMAT_RGB:
                     cL[0] = bb >> 16 & 0xff;
                     cL[1] = bb >>  8 & 0xff;
@@ -1173,6 +1240,59 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
         }
     }
 
+    {
+        /* Loop invariants, held where a store to the signal (signed
+         * char, which may alias anything) cannot make the compiler fetch
+         * them again: the level scale and black level, each column's
+         * source offset (a divide per sample before), and the filters'
+         * coefficients. Their history is reset at every line, so it
+         * lives in locals for the line. RGB input, the format the
+         * softfilter wrapper feeds this, gets its own loop. */
+        const int white   = WHITE_LEVEL * v->white_point / 100;
+        const int black   = BLACK_LEVEL + v->black_point;
+        const int cY      = iirY.c, cI = iirI.c, cQ = iirQ.c;
+        int modI[4], modQ[4];
+        int col[AV_LEN];
+
+        for (x = 0; x < 4; x++) {
+            modI[x] = ph * ccmodI[x & (CRT_CC_SAMPLES - 1)];
+            modQ[x] = ph * ccmodQ[x & (CRT_CC_SAMPLES - 1)];
+        }
+        if (s->format == CRT_PIX_FORMAT_RGB && CRT_CC_SAMPLES == 4
+                && destw <= AV_LEN) {
+            for (x = 0; x < destw; x++)
+                col[x] = ((x * s->w) / destw) * 3;
+            for (y = 0; y < desth; y++) {
+                int field_offset = (s->field * s->h + desth) / desth / 2;
+                int sy           = (y * s->h) / desth + field_offset;
+                int hY = 0, hI = 0, hQ = 0;
+                const unsigned char *row;
+                signed char *dst;
+                if (sy >= s->h) sy = s->h;
+                row = s->data + (size_t)sy * s->w * 3;
+                dst = &v->analog[xo + (y + yo) * CRT_HRES];
+                for (x = 0; x < destw; x++) {
+                    const unsigned char *pix = row + col[x];
+                    int rA = pix[0], gA = pix[1], bA = pix[2];
+                    int fy = (19595 * rA + 38470 * gA +  7471 * bA) >> 14;
+                    int fi = (39059 * rA - 18022 * gA - 21103 * bA) >> 14;
+                    int fq = (13894 * rA - 34275 * gA + 20382 * bA) >> 14;
+                    int xoff = (x + xo) & 3;
+                    int ire;
+                    hY += EXP_MUL(fy - hY, cY);
+                    hI += EXP_MUL(fi - hI, cI);
+                    hQ += EXP_MUL(fq - hQ, cQ);
+                    ire = black + ((hY + (hI * modI[xoff] >> 4)
+                                       + (hQ * modQ[xoff] >> 4)) * white >> 10);
+                    if (ire < 0)   ire = 0;
+                    if (ire > 110) ire = 110;
+                    dst[x] = (signed char)ire;
+                }
+            }
+            goto modulated;
+        }
+    }
+
     for (y = 0; y < desth; y++) {
         int field_offset;
         int sy;
@@ -1244,6 +1364,7 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
             v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire;
         }
     }
+modulated:
     for (n = 0; n < CRT_CC_VPER; n++) {
         for (x = 0; x < CRT_CC_SAMPLES; x++) {
             v->ccf[n][x] = iccf[x] * 128; /* may be negative */
