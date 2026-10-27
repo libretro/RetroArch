@@ -826,7 +826,7 @@ retro_time_t cocoa_last_vblank_time(void)
       if (!screen)
          return;
 
-      CGRect screenSize    = [screen bounds];
+      CGRect screenSize    = [[UIApplication sharedApplication].keyWindow bounds];
 
       if (ios_running_on_ipad())
       {
@@ -854,67 +854,11 @@ retro_time_t cocoa_last_vblank_time(void)
        * memory everywhere but arm64 */
       UIEdgeInsets inset   = apple_rt_get_large_struct(UIEdgeInsets, window,
             sel_registerName("safeAreaInsets"));
-      /* UIWindowScene.effectiveGeometry is an iOS 16 API that older
-       * SDKs do not declare, so it is resolved entirely at runtime via
-       * objc_msgSend - same cost as a compiled property access.
-       * Capability is checked once per process (-1 = not yet checked). */
-      static SEL sel_window_scene        = NULL;
-      static SEL sel_effective_geometry  = NULL;
-      static SEL sel_iface_orientation   = NULL;
-      static int has_scene_geometry      = -1;
-      UIInterfaceOrientation orientation = (UIInterfaceOrientation)0;
-      if (has_scene_geometry == -1)
-      {
-         Class cls              = NSClassFromString(@"UIWindowScene");
-         sel_window_scene       = sel_registerName("windowScene");
-         sel_effective_geometry = sel_registerName("effectiveGeometry");
-         sel_iface_orientation  = sel_registerName("interfaceOrientation");
-         has_scene_geometry     = (cls && [cls instancesRespondToSelector:
-               sel_effective_geometry]) ? 1 : 0;
-      }
-      if (has_scene_geometry)
-      {
-         id scene = ((id (*)(id, SEL))objc_msgSend)(window, sel_window_scene);
-         if (scene)
-         {
-            id geometry = ((id (*)(id, SEL))objc_msgSend)(scene,
-                  sel_effective_geometry);
-            if (geometry)
-               orientation = (UIInterfaceOrientation)
-                     ((NSInteger (*)(id, SEL))objc_msgSend)(geometry,
-                           sel_iface_orientation);
-         }
-      }
-      /* 0 == unknown */
-      if (orientation == (UIInterfaceOrientation)0)
-         orientation = (UIInterfaceOrientation)apple_rt_get_long(
-               [UIApplication sharedApplication],
-               sel_registerName("statusBarOrientation"));
 
-      switch (orientation)
-      {
-         case UIInterfaceOrientationPortrait:
-            self.view.frame = CGRectMake(screenSize.origin.x,
-                  screenSize.origin.y + inset.top,
-                  screenSize.size.width,
-                  screenSize.size.height - inset.top);
-            break;
-         case UIInterfaceOrientationLandscapeLeft:
-            self.view.frame = CGRectMake(screenSize.origin.x + inset.right,
-                  screenSize.origin.y,
-                  screenSize.size.width - inset.right * 2,
-                  screenSize.size.height);
-            break;
-         case UIInterfaceOrientationLandscapeRight:
-            self.view.frame = CGRectMake(screenSize.origin.x + inset.left,
-                  screenSize.origin.y,
-                  screenSize.size.width - inset.left * 2,
-                  screenSize.size.height);
-            break;
-         default:
-            self.view.frame = screenSize;
-            break;
-      }
+      self.view.frame = CGRectMake(screenSize.origin.x + inset.left,
+                                   screenSize.origin.y + inset.top,
+                                   screenSize.size.width - (inset.left + inset.right),
+                                   screenSize.size.height - inset.top);
    }
 }
 
