@@ -1452,6 +1452,12 @@ RZSTD_BODY_INLINE int rzstd_huf_decode_body(const rzstd_huf_t *huf, const uint8_
                    * The stores were a quarter of this loop. */
                   {
                      uint64_t w0 = 0, w1 = 0, w2 = 0, w3 = 0;
+                     /* where in the word the i-th byte in memory is */
+#ifdef RZSTD_BIG_ENDIAN
+#define RZSTD_LANE(i) (56 - (i) * 8)
+#else
+#define RZSTD_LANE(i) ((i) * 8)
+#endif
 
                      for (i = 0; i < 5; i++)
                      {
@@ -1460,10 +1466,10 @@ RZSTD_BODY_INLINE int rzstd_huf_decode_body(const rzstd_huf_t *huf, const uint8_
                         uint32_t e2 = ent[f[2].bits >> sh];
                         uint32_t e3 = ent[f[3].bits >> sh];
 
-                        w0 |= (uint64_t)(uint8_t)(e0 >> 8) << (i * 8);
-                        w1 |= (uint64_t)(uint8_t)(e1 >> 8) << (i * 8);
-                        w2 |= (uint64_t)(uint8_t)(e2 >> 8) << (i * 8);
-                        w3 |= (uint64_t)(uint8_t)(e3 >> 8) << (i * 8);
+                        w0 |= (uint64_t)(uint8_t)(e0 >> 8) << RZSTD_LANE(i);
+                        w1 |= (uint64_t)(uint8_t)(e1 >> 8) << RZSTD_LANE(i);
+                        w2 |= (uint64_t)(uint8_t)(e2 >> 8) << RZSTD_LANE(i);
+                        w3 |= (uint64_t)(uint8_t)(e3 >> 8) << RZSTD_LANE(i);
 
                         f[0].bits <<= (e0 & 63);
                         f[1].bits <<= (e1 & 63);
@@ -1480,6 +1486,7 @@ RZSTD_BODY_INLINE int rzstd_huf_decode_body(const rzstd_huf_t *huf, const uint8_
                      memcpy(dst + pos[1], &w1, 8);
                      memcpy(dst + pos[2], &w2, 8);
                      memcpy(dst + pos[3], &w3, 8);
+#undef RZSTD_LANE
                   }
                   pos[0] += 5; pos[1] += 5; pos[2] += 5; pos[3] += 5;
                   rzstd_fast_reload(&f[0]);
