@@ -48,6 +48,7 @@ RETRO_BEGIN_DECLS
 #define RESAMPLER_SIMD_AVX2     (1 << 12)
 #define RESAMPLER_SIMD_VFPU     (1 << 13)
 #define RESAMPLER_SIMD_PS       (1 << 14)
+#define RESAMPLER_SIMD_AVX512   (1 << 22)
 
 enum resampler_quality
 {

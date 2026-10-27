@@ -47,8 +47,46 @@
 #include <xmmintrin.h>
 #endif
 
-#if defined(__AVX__)
+/* The AVX and AVX-512 kernels are built whenever the compiler can emit
+ * them for a single function, whatever the build's baseline, and are
+ * only selected when cpu_features_get() reports the CPU and OS support
+ * them. A build for a baseline CPU therefore still carries them, and a
+ * compiler too old for per-function targets simply leaves them out.
+ * MSVC allows any intrinsic in any function and needs no attribute. */
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
+#if defined(_MSC_VER) && !defined(__clang__)
+#if _MSC_VER >= 1600
+#define SINC_HAVE_AVX 1
+#define SINC_TARGET_AVX
+#endif
+#if _MSC_VER >= 1911
+#define SINC_HAVE_AVX512 1
+#define SINC_TARGET_AVX512
+#endif
+#elif (defined(__clang__) && __clang_major__ >= 4) \
+   || (defined(__GNUC__) && !defined(__clang__) \
+      && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)))
+#define SINC_HAVE_AVX 1
+#define SINC_HAVE_AVX512 1
+#define SINC_TARGET_AVX    __attribute__((target("avx")))
+#define SINC_TARGET_AVX512 __attribute__((target("avx512f")))
+#elif defined(__AVX__)
+#define SINC_HAVE_AVX 1
+#define SINC_TARGET_AVX
+#endif
+#endif
+
+#if defined(SINC_HAVE_AVX) || defined(SINC_HAVE_AVX512)
 #include <immintrin.h>
+#endif
+
+/* MSVC leaves the upper YMM/ZMM halves dirty on return; clear them so
+ * the SSE code that follows pays no transition penalty. GCC and Clang
+ * insert this themselves for target functions. */
+#if defined(_MSC_VER) && !defined(__clang__)
+#define SINC_ZEROUPPER() _mm256_zeroupper()
+#else
+#define SINC_ZEROUPPER()
 #endif
 
 /* Rough SNR values for upsampling:
@@ -306,7 +344,8 @@ static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
 }
 #endif
 
-#if defined(__AVX__)
+#ifdef SINC_HAVE_AVX
+SINC_TARGET_AVX
 static void resampler_sinc_process_avx_kaiser(void *re_, struct resampler_data *data)
 {
    rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
@@ -373,8 +412,10 @@ static void resampler_sinc_process_avx_kaiser(void *re_, struct resampler_data *
    }
 
    data->output_frames = out_frames;
+   SINC_ZEROUPPER();
 }
 
+SINC_TARGET_AVX
 static void resampler_sinc_process_avx(void *re_, struct resampler_data *data)
 {
    rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
@@ -435,6 +476,159 @@ static void resampler_sinc_process_avx(void *re_, struct resampler_data *data)
    }
 
    data->output_frames = out_frames;
+   SINC_ZEROUPPER();
+}
+#endif
+
+#ifdef SINC_HAVE_AVX512
+/* Sixteen taps per step with a fused multiply-add. taps is a multiple
+ * of 8, so a tail of 8 may be left over; a masked load covers it with
+ * zeroes in the upper lanes instead of a second loop, and cannot fault
+ * past the end because masked-off lanes are never read. */
+#define SINC_AVX512_SUM(sum) \
+   _mm256_add_ps(_mm512_castps512_ps256(sum), \
+      _mm256_castpd_ps(_mm512_extractf64x4_pd(_mm512_castps_pd(sum), 1)))
+
+/* Both channels' 8 partial sums down to [l, r] in one register, stored
+ * as the output frame with a single 64-bit store. */
+#define SINC_AVX512_STORE(out, res_l, res_r) \
+   do { \
+      __m128 l4_ = _mm_add_ps(_mm256_castps256_ps128(res_l), \
+            _mm256_extractf128_ps(res_l, 1)); \
+      __m128 r4_ = _mm_add_ps(_mm256_castps256_ps128(res_r), \
+            _mm256_extractf128_ps(res_r, 1)); \
+      __m128 lr_ = _mm_hadd_ps(l4_, r4_); \
+      lr_        = _mm_hadd_ps(lr_, lr_); \
+      _mm_storel_epi64((__m128i*)(out), _mm_castps_si128(lr_)); \
+   } while (0)
+
+SINC_TARGET_AVX512
+static void resampler_sinc_process_avx512_kaiser(void *re_, struct resampler_data *data)
+{
+   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
+   unsigned phases                = 1 << (resamp->phase_bits + resamp->subphase_bits);
+   uint32_t ratio                 = phases / data->ratio;
+   const float *input             = data->data_in;
+   float *output                  = data->data_out;
+   size_t frames                  = data->input_frames;
+   size_t out_frames              = 0;
+   unsigned taps                  = resamp->taps;
+   unsigned taps2                 = taps * 2;
+   unsigned full                  = taps & ~15u;
+   __mmask16 tail                 = (taps & 8) ? 0x00FF : 0;
+
+   while (frames)
+   {
+      SINC_PUSH_INPUT_SAMPLES(resamp, input, taps, phases, frames);
+
+      {
+         const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+         const float *buffer_r    = resamp->buffer_r + resamp->ptr;
+         while (resamp->time < phases)
+         {
+            /* C89: all declarations at top of block */
+            unsigned i;
+            __m256 res_l, res_r;
+            unsigned phase           = resamp->time >> resamp->subphase_bits;
+            const float *phase_table = resamp->phase_table + phase * taps2;
+            const float *delta_table = phase_table + taps;
+            __m512 delta             = _mm512_set1_ps((float)
+                  (resamp->time & resamp->subphase_mask) * resamp->subphase_mod);
+            __m512 sum_l             = _mm512_setzero_ps();
+            __m512 sum_r             = _mm512_setzero_ps();
+
+            for (i = 0; i < full; i += 16)
+            {
+               __m512 sinc_v = _mm512_fmadd_ps(_mm512_loadu_ps(delta_table + i),
+                     delta, _mm512_loadu_ps(phase_table + i));
+               sum_l = _mm512_fmadd_ps(_mm512_loadu_ps(buffer_l + i), sinc_v, sum_l);
+               sum_r = _mm512_fmadd_ps(_mm512_loadu_ps(buffer_r + i), sinc_v, sum_r);
+            }
+            if (tail)
+            {
+               __m512 sinc_v = _mm512_fmadd_ps(
+                     _mm512_maskz_loadu_ps(tail, delta_table + i), delta,
+                     _mm512_maskz_loadu_ps(tail, phase_table + i));
+               sum_l = _mm512_fmadd_ps(
+                     _mm512_maskz_loadu_ps(tail, buffer_l + i), sinc_v, sum_l);
+               sum_r = _mm512_fmadd_ps(
+                     _mm512_maskz_loadu_ps(tail, buffer_r + i), sinc_v, sum_r);
+            }
+
+            res_l     = SINC_AVX512_SUM(sum_l);
+            res_r     = SINC_AVX512_SUM(sum_r);
+            SINC_AVX512_STORE(output, res_l, res_r);
+
+            output += 2;
+            out_frames++;
+            resamp->time += ratio;
+         }
+      }
+   }
+
+   data->output_frames = out_frames;
+   SINC_ZEROUPPER();
+}
+
+SINC_TARGET_AVX512
+static void resampler_sinc_process_avx512(void *re_, struct resampler_data *data)
+{
+   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
+   unsigned phases                = 1 << (resamp->phase_bits + resamp->subphase_bits);
+   uint32_t ratio                 = phases / data->ratio;
+   const float *input             = data->data_in;
+   float *output                  = data->data_out;
+   size_t frames                  = data->input_frames;
+   size_t out_frames              = 0;
+   unsigned taps                  = resamp->taps;
+   unsigned full                  = taps & ~15u;
+   __mmask16 tail                 = (taps & 8) ? 0x00FF : 0;
+
+   while (frames)
+   {
+      SINC_PUSH_INPUT_SAMPLES(resamp, input, taps, phases, frames);
+
+      {
+         const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+         const float *buffer_r    = resamp->buffer_r + resamp->ptr;
+         while (resamp->time < phases)
+         {
+            /* C89: all declarations at top of block */
+            unsigned i;
+            __m256 res_l, res_r;
+            unsigned phase           = resamp->time >> resamp->subphase_bits;
+            const float *phase_table = resamp->phase_table + phase * taps;
+            __m512 sum_l             = _mm512_setzero_ps();
+            __m512 sum_r             = _mm512_setzero_ps();
+
+            for (i = 0; i < full; i += 16)
+            {
+               __m512 sinc_v = _mm512_loadu_ps(phase_table + i);
+               sum_l = _mm512_fmadd_ps(_mm512_loadu_ps(buffer_l + i), sinc_v, sum_l);
+               sum_r = _mm512_fmadd_ps(_mm512_loadu_ps(buffer_r + i), sinc_v, sum_r);
+            }
+            if (tail)
+            {
+               __m512 sinc_v = _mm512_maskz_loadu_ps(tail, phase_table + i);
+               sum_l = _mm512_fmadd_ps(
+                     _mm512_maskz_loadu_ps(tail, buffer_l + i), sinc_v, sum_l);
+               sum_r = _mm512_fmadd_ps(
+                     _mm512_maskz_loadu_ps(tail, buffer_r + i), sinc_v, sum_r);
+            }
+
+            res_l     = SINC_AVX512_SUM(sum_l);
+            res_r     = SINC_AVX512_SUM(sum_r);
+            SINC_AVX512_STORE(output, res_l, res_r);
+
+            output += 2;
+            out_frames++;
+            resamp->time += ratio;
+         }
+      }
+   }
+
+   data->output_frames = out_frames;
+   SINC_ZEROUPPER();
 }
 #endif
 
@@ -1124,13 +1318,17 @@ static sinc_process_t sinc_select_process(int kaiser,
       process = kaiser
          ? resampler_sinc_process_sse_kaiser : resampler_sinc_process_sse;
 #endif
-#if defined(__AVX__)
+#ifdef SINC_HAVE_AVX
    if ((mask & RESAMPLER_SIMD_AVX) && enable_avx)
       process = kaiser
          ? resampler_sinc_process_avx_kaiser : resampler_sinc_process_avx;
-#else
-   (void)enable_avx;
 #endif
+#ifdef SINC_HAVE_AVX512
+   if ((mask & RESAMPLER_SIMD_AVX512) && enable_avx)
+      process = kaiser
+         ? resampler_sinc_process_avx512_kaiser : resampler_sinc_process_avx512;
+#endif
+   (void)enable_avx;
 #if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
    if (mask & RESAMPLER_SIMD_NEON)
       process = kaiser

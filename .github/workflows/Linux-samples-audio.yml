@@ -1179,7 +1179,9 @@ jobs:
       - name: Build and run sinc kernel dispatch test (C89, ASan + UBSan)
         working-directory: samples/audio/sinc_dispatch
         run: |
-          # The SSE-only build must still pick SSE when AVX is requested.
+          # A baseline build carries the AVX and AVX-512 kernels through
+          # per-function targets and runs each one the runner supports
+          # against the scalar kernel; the -mavx build must agree.
           make -j$(nproc) check SANITIZER=address,undefined
           if grep -qw avx /proc/cpuinfo; then
             make clean
