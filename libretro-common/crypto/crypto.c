@@ -69,6 +69,11 @@
 #endif
 #endif
 
+/* A statement for each of eight, four or one interleaved chains */
+#define AES_CBC_EACH8(S) S(0) S(1) S(2) S(3) S(4) S(5) S(6) S(7)
+#define AES_CBC_EACH4(S) S(0) S(1) S(2) S(3)
+#define AES_CBC_EACH1(S) S(0)
+
 int crypto_memeq_ct(const void *a, const void *b, size_t len)
 {
    const volatile uint8_t *pa = (const volatile uint8_t*)a;
@@ -438,6 +443,69 @@ static void aes_x86_decrypt_block(const struct aes_ctx *ctx,
    _mm_storeu_si128((__m128i*)out, b);
 }
 
+/* CBC chains interleaved so the AES unit's latency on each is hidden
+ * behind the others, the round keys loaded and byte-swapped once per
+ * call. Eight chains, four or one, each kept in a register of its own:
+ * held in an array indexed by a count known only at run time, they
+ * lived on the stack, and every round of every chain waited on a
+ * store and a load besides the cipher. */
+
+#define AES_X86_CBC(name, EACH) \
+AES_TARGET_X86 \
+static void name(const __m128i *k, unsigned rounds, uint8_t *const *iv, \
+      const uint8_t *const *in, uint8_t *const *out, size_t len) \
+{ \
+   __m128i  x0, x1, x2, x3, x4, x5, x6, x7; \
+   size_t   off; \
+   unsigned r; \
+   EACH(AES_X86_CBC_LOAD) \
+   for (off = 0; off < len; off += 16) \
+   { \
+      EACH(AES_X86_CBC_IN) \
+      for (r = 1; r < rounds; r++) \
+      { \
+         const __m128i kr = k[r]; \
+         EACH(AES_X86_CBC_ROUND) \
+      } \
+      { \
+         const __m128i kr = k[rounds]; \
+         EACH(AES_X86_CBC_LAST) \
+      } \
+   } \
+   EACH(AES_X86_CBC_STORE) \
+   (void)x0; (void)x1; (void)x2; (void)x3; \
+   (void)x4; (void)x5; (void)x6; (void)x7; \
+}
+#define AES_X86_CBC_LOAD(l)  x##l = _mm_loadu_si128((const __m128i*)iv[l]);
+#define AES_X86_CBC_IN(l)    x##l = _mm_xor_si128(_mm_xor_si128(x##l, \
+      _mm_loadu_si128((const __m128i*)(in[l] + off))), k[0]);
+#define AES_X86_CBC_ROUND(l) x##l = _mm_aesenc_si128(x##l, kr);
+#define AES_X86_CBC_LAST(l)  x##l = _mm_aesenclast_si128(x##l, kr); \
+      _mm_storeu_si128((__m128i*)(out[l] + off), x##l);
+#define AES_X86_CBC_STORE(l) _mm_storeu_si128((__m128i*)iv[l], x##l);
+
+AES_X86_CBC(aes_x86_cbc8, AES_CBC_EACH8)
+AES_X86_CBC(aes_x86_cbc4, AES_CBC_EACH4)
+AES_X86_CBC(aes_x86_cbc1, AES_CBC_EACH1)
+
+AES_TARGET_X86
+static void aes_x86_cbc_lanes(const struct aes_ctx *ctx, unsigned n,
+      uint8_t *const *iv, const uint8_t *const *in, uint8_t *const *out,
+      size_t len)
+{
+   __m128i  k[15];
+   unsigned r, rounds = ctx->rounds;
+
+   for (r = 0; r <= rounds; r++)
+      k[r] = aes_x86_bswap32(_mm_loadu_si128((const __m128i*)(ctx->rk + 4 * r)));
+   for (; n >= 8; n -= 8, iv += 8, in += 8, out += 8)
+      aes_x86_cbc8(k, rounds, iv, in, out, len);
+   for (; n >= 4; n -= 4, iv += 4, in += 4, out += 4)
+      aes_x86_cbc4(k, rounds, iv, in, out, len);
+   for (; n; n--, iv++, in++, out++)
+      aes_x86_cbc1(k, rounds, iv, in, out, len);
+}
+
 /* CTR with eight blocks in flight so the AES unit's latency is hidden,
  * the round keys loaded and byte-swapped once per call rather than once
  * per round. The counter block is kept byte-reversed, where its 32-bit
@@ -705,6 +773,63 @@ static void aes_arm_decrypt_block(const struct aes_ctx *ctx,
    for (r--; r > 0; r--)
       b = vaesdq_u8(vaesimcq_u8(b), vaesimcq_u8(aes_arm_rk(ctx, r)));
    vst1q_u8(out, veorq_u8(b, aes_arm_rk(ctx, 0)));
+}
+
+/* CBC chains interleaved, each in a register of its own, as the x86
+ * form above; the round keys loaded once. */
+#define AES_ARM_CBC(name, EACH) \
+AES_TARGET_ARM \
+static void name(const uint8x16_t *k, unsigned rounds, uint8_t *const *iv, \
+      const uint8_t *const *in, uint8_t *const *out, size_t len) \
+{ \
+   uint8x16_t x0, x1, x2, x3, x4, x5, x6, x7; \
+   size_t     off; \
+   unsigned   r; \
+   EACH(AES_ARM_CBC_LOAD) \
+   for (off = 0; off < len; off += 16) \
+   { \
+      EACH(AES_ARM_CBC_IN) \
+      for (r = 0; r + 1 < rounds; r++) \
+      { \
+         const uint8x16_t kr = k[r]; \
+         EACH(AES_ARM_CBC_ROUND) \
+      } \
+      { \
+         const uint8x16_t kr = k[r], kl = k[r + 1]; \
+         EACH(AES_ARM_CBC_LAST) \
+      } \
+   } \
+   EACH(AES_ARM_CBC_STORE) \
+   (void)x0; (void)x1; (void)x2; (void)x3; \
+   (void)x4; (void)x5; (void)x6; (void)x7; \
+}
+#define AES_ARM_CBC_LOAD(l)  x##l = vld1q_u8(iv[l]);
+#define AES_ARM_CBC_IN(l)    x##l = veorq_u8(x##l, vld1q_u8(in[l] + off));
+#define AES_ARM_CBC_ROUND(l) x##l = vaesmcq_u8(vaeseq_u8(x##l, kr));
+#define AES_ARM_CBC_LAST(l)  x##l = veorq_u8(vaeseq_u8(x##l, kr), kl); \
+      vst1q_u8(out[l] + off, x##l);
+#define AES_ARM_CBC_STORE(l) vst1q_u8(iv[l], x##l);
+
+AES_ARM_CBC(aes_arm_cbc8, AES_CBC_EACH8)
+AES_ARM_CBC(aes_arm_cbc4, AES_CBC_EACH4)
+AES_ARM_CBC(aes_arm_cbc1, AES_CBC_EACH1)
+
+AES_TARGET_ARM
+static void aes_arm_cbc_lanes(const struct aes_ctx *ctx, unsigned n,
+      uint8_t *const *iv, const uint8_t *const *in, uint8_t *const *out,
+      size_t len)
+{
+   uint8x16_t k[15];
+   unsigned   r, rounds = ctx->rounds;
+
+   for (r = 0; r <= rounds; r++)
+      k[r] = aes_arm_rk(ctx, r);
+   for (; n >= 8; n -= 8, iv += 8, in += 8, out += 8)
+      aes_arm_cbc8(k, rounds, iv, in, out, len);
+   for (; n >= 4; n -= 4, iv += 4, in += 4, out += 4)
+      aes_arm_cbc4(k, rounds, iv, in, out, len);
+   for (; n; n--, iv++, in++, out++)
+      aes_arm_cbc1(k, rounds, iv, in, out, len);
 }
 
 /* CTR with eight blocks in flight, the round keys loaded once per
@@ -1179,6 +1304,48 @@ void aes_ctr_crypt(const struct aes_ctx *ctx, uint8_t *counter,
    }
 
    crypto_memzero(ks, sizeof(ks));
+}
+
+void aes_cbc_encrypt(const struct aes_ctx *ctx, uint8_t *iv,
+      const uint8_t *in, uint8_t *out, size_t len)
+{
+   aes_cbc_encrypt_lanes(ctx, 1, &iv, &in, &out, len);
+}
+
+void aes_cbc_encrypt_lanes(const struct aes_ctx *ctx, unsigned n,
+      uint8_t *const *iv, const uint8_t *const *in, uint8_t *const *out,
+      size_t len)
+{
+   unsigned l;
+
+#if defined(AES_HAVE_X86_PATH)
+   if (aes_x86_available())
+   {
+      aes_x86_cbc_lanes(ctx, n, iv, in, out, len);
+      return;
+   }
+#elif defined(AES_HAVE_ARM_PATH)
+   if (aes_arm_available())
+   {
+      aes_arm_cbc_lanes(ctx, n, iv, in, out, len);
+      return;
+   }
+#endif
+   for (l = 0; l < n; l++)
+   {
+      size_t   off;
+      unsigned i;
+      uint8_t  x[16];
+      memcpy(x, iv[l], 16);
+      for (off = 0; off < len; off += 16)
+      {
+         for (i = 0; i < 16; i++)
+            x[i] ^= in[l][off + i];
+         aes_encrypt_block(ctx, x, x);
+         memcpy(out[l] + off, x, 16);
+      }
+      memcpy(iv[l], x, 16);
+   }
 }
 
 /* Double in GF(2^128) with the CMAC polynomial. */

@@ -1235,6 +1235,66 @@ START_TEST(test_streams)
 }
 END_TEST
 
+/* CBC: SP 800-38A F.2.1, then interleaved chains - in place and not,
+ * 128- and 256-bit keys - against one block at a time through
+ * aes_encrypt_block(). */
+START_TEST(test_aes_cbc)
+{
+   static uint8_t in[13][1024], out[13][1024], ref[13][1024];
+   uint8_t key[32], iv[13][16], rv[16], ct[64], pt[64], v[16];
+   unsigned it, l, i;
+   struct aes_ctx a;
+
+   unhex(key, 16, "2b7e151628aed2a6abf7158809cf4f3c");
+   unhex(v, 16, "000102030405060708090a0b0c0d0e0f");
+   unhex(pt, 64, "6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e51"
+         "30c81c46a35ce411e5fbc1191a0a52eff69f2445df4f9b17ad2b417be66c3710");
+   ck_assert_int_eq(aes_init(&a, key, 16), 0);
+   aes_cbc_encrypt(&a, v, pt, ct, 64);
+   ck_hex(ct, 64, "7649abac8119b246cee98e9b12e9197d5086cb9b507219ee95db113a917678b2"
+         "73bed6b8e3c1743b7116e69e222295163ff1caa1681fac09120eca307586e1a7");
+   ck_assert_int_eq(memcmp(v, ct + 48, 16), 0);
+
+   for (it = 0; it < 200; it++)
+   {
+      unsigned       n       = 1 + bulk_rand() % 13;
+      size_t         len     = 16 * (bulk_rand() % 65);
+      int            inplace = (it & 2) != 0;
+      uint8_t       *ivp[13], *outp[13];
+      const uint8_t *inp[13];
+      for (i = 0; i < 32; i++)
+         key[i] = (uint8_t)bulk_rand();
+      ck_assert_int_eq(aes_init(&a, key, (it & 1) ? 32 : 16), 0);
+      for (l = 0; l < n; l++)
+      {
+         size_t off;
+         for (i = 0; i < 16; i++)
+            iv[l][i] = (uint8_t)bulk_rand();
+         for (i = 0; i < len; i++)
+            in[l][i] = (uint8_t)bulk_rand();
+         memcpy(rv, iv[l], 16);
+         for (off = 0; off < len; off += 16)
+         {
+            for (i = 0; i < 16; i++)
+               rv[i] ^= in[l][off + i];
+            aes_encrypt_block(&a, rv, rv);
+            memcpy(ref[l] + off, rv, 16);
+         }
+         ivp[l]  = iv[l];
+         inp[l]  = in[l];
+         outp[l] = inplace ? in[l] : out[l];
+      }
+      aes_cbc_encrypt_lanes(&a, n, ivp, inp, outp, len);
+      for (l = 0; l < n; l++)
+      {
+         ck_assert_int_eq(memcmp(outp[l], ref[l], len), 0);
+         if (len)
+            ck_assert_int_eq(memcmp(iv[l], ref[l] + len - 16, 16), 0);
+      }
+   }
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s = suite_create(SUITE_NAME);
@@ -1264,6 +1324,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_krb5_enctypes);
    tcase_add_test(tc_core, test_bulk_paths);
    tcase_add_test(tc_core, test_streams);
+   tcase_add_test(tc_core, test_aes_cbc);
    suite_add_tcase(s, tc_core);
    return s;
 }

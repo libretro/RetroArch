@@ -177,6 +177,32 @@ void aes_ctr_crypt(const struct aes_ctx *ctx, uint8_t *counter,
       const uint8_t *in, uint8_t *out, size_t len);
 
 /**
+ * aes_cbc_encrypt:
+ * @iv                : 16 octets; left holding the last ciphertext
+ *                      block, so a caller can continue the chain.
+ * @len               : a multiple of 16.
+ *
+ * CBC encryption. @in and @out may alias.
+ **/
+void aes_cbc_encrypt(const struct aes_ctx *ctx, uint8_t *iv,
+      const uint8_t *in, uint8_t *out, size_t len);
+
+/**
+ * aes_cbc_encrypt_lanes:
+ * @n                 : independent chains, each @len octets (a
+ *                      multiple of 16) from in[i] to out[i] under
+ *                      iv[i], which is left as aes_cbc_encrypt()
+ *                      leaves it.
+ *
+ * A CBC chain waits on the cipher block by block; where the cipher
+ * runs on instructions made for it, independent chains are interleaved
+ * so their waits overlap.
+ **/
+void aes_cbc_encrypt_lanes(const struct aes_ctx *ctx, unsigned n,
+      uint8_t *const *iv, const uint8_t *const *in, uint8_t *const *out,
+      size_t len);
+
+/**
  * aes_cmac:
  *
  * CMAC (RFC 4493 / SP 800-38B) of @len octets under @ctx, 16-octet
