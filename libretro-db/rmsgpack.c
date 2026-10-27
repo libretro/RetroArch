@@ -30,6 +30,8 @@
 #include <string.h>
 
 #include <retro_endianness.h>
+#include <boolean.h>
+#include <streams/file_stream.h>
 
 #include "rmsgpack.h"
 
@@ -410,237 +412,211 @@ int rmsgpack_read_uint(intfstream_t *fd, uint64_t *s, size_t len)
    return 0;
 }
 
-static int rmsgpack_read_int(intfstream_t *fd, int64_t *s, size_t len)
+/* ---- reading a value ----
+ *
+ * A value is read from a window the stream lends where it can
+ * (intfstream_view), so a field is taken from memory rather than
+ * through a read call of its own; what the window does not hold is
+ * read. The stream is left where the value ends. */
+
+#define RMSGPACK_VIEW 65536
+
+struct rmsgpack_src
 {
-   union { uint64_t u64; uint32_t u32; uint16_t u16; uint8_t u8; } tmp;
+   intfstream_t  *fd;
+   const uint8_t *p;     /* lent octets not yet taken */
+   const uint8_t *end;
+   uint64_t       pos;   /* the stream position p stands for */
+   uint64_t       size;
+   bool           lent;  /* the stream is past pos */
+   bool           view;  /* the stream lends at all */
+};
 
-   tmp.u64 = 0;
-   if (rmsgpack_read_exact(fd, &tmp, len) == -1)
-      return -1;
+static void rmsgpack_src_init(struct rmsgpack_src *s, intfstream_t *fd)
+{
+   int64_t pos  = intfstream_tell(fd);
+   int64_t size = intfstream_get_size(fd);
+   s->fd   = fd;
+   s->p    = NULL;
+   s->end  = NULL;
+   s->pos  = pos  > 0 ? (uint64_t)pos  : 0;
+   /* a stream that does not know its size bounds nothing */
+   s->size = size >= 0 ? (uint64_t)size : ~(uint64_t)0;
+   s->lent = false;
+   s->view = true;
+}
 
-   switch (len)
+/* Puts the stream back on the position */
+static void rmsgpack_src_done(struct rmsgpack_src *s)
+{
+   if (s->lent)
+      intfstream_seek(s->fd, (int64_t)s->pos, RETRO_VFS_SEEK_POSITION_START);
+   s->lent = false;
+   s->p    = s->end = NULL;
+}
+
+/* Whether @len octets at the position are lent */
+static bool rmsgpack_src_window(struct rmsgpack_src *s, size_t len)
+{
+   const uint8_t *ptr = NULL;
+   int64_t        n;
+   if ((size_t)(s->end - s->p) >= len)
+      return true;
+   if (!s->view)
+      return false;
+   if (     s->lent
+         && intfstream_seek(s->fd, (int64_t)s->pos,
+            RETRO_VFS_SEEK_POSITION_START) < 0)
+      return false;
+   n       = intfstream_view(s->fd, len > RMSGPACK_VIEW ? len : RMSGPACK_VIEW, &ptr);
+   s->lent = n > 0;
+   if (n < 0)
+      s->view = false;
+   if (n <= 0)
    {
-      case 1:
-         *s = (int8_t)tmp.u8;
-         break;
-      case 2:
-         *s = (int16_t)swap_if_little16(tmp.u16);
-         break;
-      case 4:
-         *s = (int32_t)swap_if_little32(tmp.u32);
-         break;
-      case 8:
-         *s = (int64_t)swap_if_little64(tmp.u64);
-         break;
+      s->p = s->end = NULL;
+      return false;
    }
+   s->p   = ptr;
+   s->end = ptr + n;
+   return (size_t)n >= len;
+}
+
+/* @len octets at the position into @dst, and past them */
+static int rmsgpack_src_read(struct rmsgpack_src *s, void *dst, size_t len)
+{
+   if (!len)
+      return 0;
+   if (rmsgpack_src_window(s, len))
+   {
+      memcpy(dst, s->p, len);
+      s->p   += len;
+      s->pos += len;
+      return 0;
+   }
+   /* more than a window: read where the position is */
+   rmsgpack_src_done(s);
+   if (rmsgpack_read_exact(s->fd, dst, len) == -1)
+      return -1;
+   s->pos += len;
    return 0;
 }
 
-static int rmsgpack_read_buff(intfstream_t *fd, size_t size, char **pbuff, uint64_t *len)
+/* A big endian number of @len octets (1, 2, 4 or 8) */
+static int rmsgpack_src_uint(struct rmsgpack_src *s, uint64_t *v, size_t len)
 {
-   ssize_t read_len;
-   uint64_t tmp_len   = 0;
-   int64_t  remaining;
-   int64_t  here;
-   int64_t  total;
+   uint8_t        tmp[8];
+   const uint8_t *q = tmp;
+   size_t         i;
+   if (rmsgpack_src_window(s, len))
+   {
+      q       = s->p;
+      s->p   += len;
+      s->pos += len;
+   }
+   else if (rmsgpack_src_read(s, tmp, len) == -1)
+      return -1;
+   *v = 0;
+   for (i = 0; i < len; i++)
+      *v = (*v << 8) | q[i];
+   return 0;
+}
 
-   if (rmsgpack_read_uint(fd, &tmp_len, size) == -1)
-      return -1;
+/* @len octets, the payload of a string or binary, in a fresh
+ * allocation ending in a 0 */
+/* the octets the stream has left */
+static uint64_t rmsgpack_src_left(const struct rmsgpack_src *s)
+{
+   return s->size > s->pos ? s->size - s->pos : 0;
+}
 
-   /* Pre-patch tmp_len was an attacker-controlled uint64 fed
-    * directly into malloc((size_t)(tmp_len + 1)).  Three
-    * problems:
-    *   - tmp_len = UINT64_MAX wraps to malloc(0) returning a
-    *     small block; the subsequent intfstream_read with
-    *     (size_t)UINT64_MAX bytes would heap-overflow on any
-    *     stream that could deliver them.
-    *   - tmp_len = 0xFFFFFFFE forces a ~4 GiB malloc on 64-bit
-    *     (which Linux overcommit happily grants) for a 5-byte
-    *     STR32 input, OOM-killing the process.  On 32-bit the
-    *     (size_t) cast truncates and creates a heap overflow.
-    *   - Even when malloc returns NULL the code dereferenced
-    *     *pbuff at line 396 and (*pbuff)[read_len] at line 404.
-    *
-    * Fix: bound tmp_len against the remaining bytes in the
-    * stream (a buffer can't legitimately claim more bytes than
-    * are left to read), reject the SIZE_MAX edge to avoid the
-    * +1 wrap, and NULL-check the malloc. */
-   here  = intfstream_tell(fd);
-   total = intfstream_get_size(fd);
-   if (here < 0 || total < 0 || here > total)
+static int rmsgpack_src_buff(struct rmsgpack_src *s, uint64_t len, char **pbuff)
+{
+   /* a payload claims no more than the stream has left */
+   if (len > rmsgpack_src_left(s) || len >= (uint64_t)((size_t)-1))
       return -1;
-   remaining = total - here;
-   if (tmp_len > (uint64_t)remaining)
+   if (!(*pbuff = (char*)malloc((size_t)len + 1)))
       return -1;
-   if (tmp_len >= (uint64_t)((size_t)-1))
-      return -1;
-
-   *pbuff             = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char));
-   if (!*pbuff)
-      return -1;
-
-   if (rmsgpack_read_exact(fd, *pbuff, (size_t)tmp_len) == -1)
+   if (rmsgpack_src_read(s, *pbuff, (size_t)len) == -1)
    {
       free(*pbuff);
       *pbuff = NULL;
       return -1;
    }
-
-   read_len           = (ssize_t)tmp_len;
-   *len               = (uint64_t)read_len;
-   (*pbuff)[read_len] = 0;
-
+   (*pbuff)[len] = 0;
    return 0;
 }
 
-static int rmsgpack_read_depth(intfstream_t *fd,
+static int rmsgpack_src_value(struct rmsgpack_src *s,
       struct rmsgpack_read_callbacks *callbacks, void *data,
       unsigned depth);
 
-static int rmsgpack_read_map(intfstream_t *fd, uint32_t len,
-        struct rmsgpack_read_callbacks *callbacks, void *data,
-        unsigned depth)
+/* A map or array of @len entries (@pairs: a map) */
+static int rmsgpack_src_items(struct rmsgpack_src *s, uint64_t len,
+      bool pairs, struct rmsgpack_read_callbacks *callbacks, void *data,
+      unsigned depth)
 {
-   int rv;
-   unsigned i;
-   int64_t  here, total;
+   int      rv;
+   uint64_t i;
 
-   /* Pre-patch len was an attacker-controlled uint32 from the
-    * file (MAP16 or MAP32 header) handed straight to the callback
-    * which calloc'd 'len * sizeof(rmsgpack_dom_pair)' (~80 bytes
-    * per pair).  A 5-byte MAP32 header '0xdf 0x10 0x00 0x00 0x00'
-    * (len = 2^28) demanded a ~21 GiB calloc, OOM-killing the
-    * process.  Even where calloc succeeded, the subsequent
-    * iteration recursed into rmsgpack_read len times, doubling
-    * the dom reader stack on each recursion until it ran out.
-    *
-    * A map cannot legitimately claim more entries than the
-    * stream has bytes left to encode them: the smallest possible
-    * key+value pair is 2 bytes (one type byte each).  Reject
-    * len > remaining_bytes / 2. */
-   here  = intfstream_tell(fd);
-   total = intfstream_get_size(fd);
-   if (here >= 0 && total >= 0 && here <= total)
+   /* No container claims more entries than the stream has octets
+    * left for: an entry is one octet at least, a pair two. */
+   if (len > rmsgpack_src_left(s) / (pairs ? 2u : 1u))
+      return -1;
+   if (pairs)
    {
-      uint64_t remaining = (uint64_t)(total - here);
-      if ((uint64_t)len > remaining / 2u)
-         return -1;
+      if (     callbacks->read_map_start
+            && (rv = callbacks->read_map_start((uint32_t)len, data)) < 0)
+         return rv;
    }
-
-   if (     (     callbacks->read_map_start)
-         && (rv = callbacks->read_map_start(len, data)) < 0)
+   else if (callbacks->read_array_start
+         && (rv = callbacks->read_array_start((uint32_t)len, data)) < 0)
       return rv;
 
-   for (i = 0; i < len; i++)
-   {
-      if ((rv = rmsgpack_read_depth(fd, callbacks, data, depth)) < 0)
+   for (i = 0; i < (pairs ? 2 * len : len); i++)
+      if ((rv = rmsgpack_src_value(s, callbacks, data, depth)) < 0)
          return rv;
-      if ((rv = rmsgpack_read_depth(fd, callbacks, data, depth)) < 0)
-         return rv;
-   }
-
    return 0;
 }
 
-static int rmsgpack_read_array(intfstream_t *fd, uint32_t len,
+static int rmsgpack_src_value(struct rmsgpack_src *s,
       struct rmsgpack_read_callbacks *callbacks, void *data,
       unsigned depth)
 {
-   int rv;
-   unsigned i;
-   int64_t  here, total;
-
-   /* Same primitive as rmsgpack_read_map above.  Smallest
-    * possible array element is 1 byte (a fixint), so len cannot
-    * legitimately exceed the number of bytes left in the
-    * stream. */
-   here  = intfstream_tell(fd);
-   total = intfstream_get_size(fd);
-   if (here >= 0 && total >= 0 && here <= total)
-   {
-      uint64_t remaining = (uint64_t)(total - here);
-      if ((uint64_t)len > remaining)
-         return -1;
-   }
-
-   if (     (     callbacks->read_array_start)
-         && (rv = callbacks->read_array_start(len, data)) < 0)
-      return rv;
-
-   for (i = 0; i < len; i++)
-   {
-      if ((rv = rmsgpack_read_depth(fd, callbacks, data, depth)) < 0)
-         return rv;
-   }
-
-   return 0;
-}
-
-int rmsgpack_read(intfstream_t *fd,
-      struct rmsgpack_read_callbacks *callbacks, void *data)
-{
-   return rmsgpack_read_depth(fd, callbacks, data, 0);
-}
-
-static int rmsgpack_read_depth(intfstream_t *fd,
-      struct rmsgpack_read_callbacks *callbacks, void *data,
-      unsigned depth)
-{
-   int rv;
    uint64_t tmp_len  = 0;
    uint64_t tmp_uint = 0;
-   int64_t tmp_int   = 0;
-   uint8_t type      = 0;
-   char *buff        = NULL;
+   uint8_t  type;
+   char    *buff     = NULL;
 
    if (depth >= RMSGPACK_MAX_DEPTH)
       return -1;
    depth++;
 
-   if (rmsgpack_read_exact(fd, &type, sizeof(uint8_t)) == -1)
+   if (s->p < s->end)
+   {
+      type = *s->p++;
+      s->pos++;
+   }
+   else if (rmsgpack_src_read(s, &type, 1) == -1)
       return -1;
 
    if (type < MPF_FIXMAP)
-   {
-      if (callbacks->read_int)
-         return callbacks->read_int(type, data);
-      return 0;
-   }
+      return callbacks->read_int ? callbacks->read_int(type, data) : 0;
    else if (type < MPF_FIXARRAY)
-   {
-      tmp_len = type - MPF_FIXMAP;
-      return rmsgpack_read_map(fd, (uint32_t)tmp_len, callbacks, data, depth);
-   }
+      return rmsgpack_src_items(s, type - MPF_FIXMAP, true, callbacks, data, depth);
    else if (type < MPF_FIXSTR)
-   {
-      tmp_len = type - MPF_FIXARRAY;
-      return rmsgpack_read_array(fd, (uint32_t)tmp_len, callbacks, data, depth);
-   }
+      return rmsgpack_src_items(s, type - MPF_FIXARRAY, false, callbacks, data, depth);
    else if (type < MPF_NIL)
    {
-      ssize_t _len = 0;
-      tmp_len      = type - MPF_FIXSTR;
-      if (!(buff = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char))))
+      if (rmsgpack_src_buff(s, type - MPF_FIXSTR, &buff) == -1)
          return -1;
-      if (rmsgpack_read_exact(fd, buff, (size_t)tmp_len) == -1)
-      {
-         free(buff);
-         return -1;
-      }
-      _len       = (ssize_t)tmp_len;
-      buff[_len] = '\0';
       if (callbacks->read_string)
-         return callbacks->read_string(buff, (uint32_t)_len, data);
-      if (buff)
-         free(buff);
+         return callbacks->read_string(buff, (uint32_t)(type - MPF_FIXSTR), data);
+      free(buff);
       return 0;
    }
    else if (type > MPF_MAP32)
-   {
-      if (callbacks->read_int)
-         return callbacks->read_int(type - 0xff - 1, data);
-      return 0;
-   }
+      return callbacks->read_int ? callbacks->read_int(type - 0xff - 1, data) : 0;
 
    switch (type)
    {
@@ -659,19 +635,26 @@ static int rmsgpack_read_depth(intfstream_t *fd,
       case _MPF_BIN8:
       case _MPF_BIN16:
       case _MPF_BIN32:
-         if ((rv = rmsgpack_read_buff(fd, (size_t)(1 << (type - _MPF_BIN8)),
-                     &buff, &tmp_len)) < 0)
-            return rv;
-         if (callbacks->read_bin)
+      case _MPF_STR8:
+      case _MPF_STR16:
+      case _MPF_STR32:
+      {
+         bool str = type >= _MPF_STR8;
+         if (     rmsgpack_src_uint(s, &tmp_len,
+                     (size_t)1 << (type - (str ? _MPF_STR8 : _MPF_BIN8))) == -1
+               || rmsgpack_src_buff(s, tmp_len, &buff) == -1)
+            return -1;
+         if (str && callbacks->read_string)
+            return callbacks->read_string(buff, (uint32_t)tmp_len, data);
+         if (!str && callbacks->read_bin)
             return callbacks->read_bin(buff, (uint32_t)tmp_len, data);
          break;
+      }
       case _MPF_UINT8:
       case _MPF_UINT16:
       case _MPF_UINT32:
       case _MPF_UINT64:
-         tmp_len  = UINT64_C(1) << (type - _MPF_UINT8);
-         tmp_uint = 0;
-         if (rmsgpack_read_uint(fd, &tmp_uint, (size_t)tmp_len) == -1)
+         if (rmsgpack_src_uint(s, &tmp_uint, (size_t)1 << (type - _MPF_UINT8)) == -1)
             return -1;
          if (callbacks->read_uint)
             return callbacks->read_uint(tmp_uint, data);
@@ -680,36 +663,44 @@ static int rmsgpack_read_depth(intfstream_t *fd,
       case _MPF_INT16:
       case _MPF_INT32:
       case _MPF_INT64:
-         tmp_len = UINT64_C(1) << (type - _MPF_INT8);
-         tmp_int = 0;
-         if (rmsgpack_read_int(fd, &tmp_int, (size_t)tmp_len) == -1)
+      {
+         size_t  len = (size_t)1 << (type - _MPF_INT8);
+         int64_t v;
+         if (rmsgpack_src_uint(s, &tmp_uint, len) == -1)
             return -1;
+         /* sign extended from its width */
+         if (len < 8 && (tmp_uint >> (8 * len - 1)) & 1)
+            tmp_uint |= ~(uint64_t)0 << (8 * len);
+         v = (int64_t)tmp_uint;
          if (callbacks->read_int)
-            return callbacks->read_int(tmp_int, data);
+            return callbacks->read_int(v, data);
          break;
-      case _MPF_STR8:
-      case _MPF_STR16:
-      case _MPF_STR32:
-         if ((rv = rmsgpack_read_buff(fd, (size_t)(1 << (type - _MPF_STR8)), &buff, &tmp_len)) < 0)
-            return rv;
-         if (callbacks->read_string)
-            return callbacks->read_string(buff, (uint32_t)tmp_len, data);
-         break;
+      }
       case _MPF_ARRAY16:
       case _MPF_ARRAY32:
-         if (rmsgpack_read_uint(fd, &tmp_len, 2<<(type - _MPF_ARRAY16)) != -1)
-            return rmsgpack_read_array(fd, (uint32_t)tmp_len, callbacks, data, depth);
-         return -1;
+         if (rmsgpack_src_uint(s, &tmp_len, (size_t)2 << (type - _MPF_ARRAY16)) == -1)
+            return -1;
+         return rmsgpack_src_items(s, tmp_len, false, callbacks, data, depth);
       case _MPF_MAP16:
       case _MPF_MAP32:
-         if (rmsgpack_read_uint(fd, &tmp_len, 2<<(type - _MPF_MAP16)) != -1)
-            return rmsgpack_read_map(fd, (uint32_t)tmp_len, callbacks, data, depth);
-         return -1;
+         if (rmsgpack_src_uint(s, &tmp_len, (size_t)2 << (type - _MPF_MAP16)) == -1)
+            return -1;
+         return rmsgpack_src_items(s, tmp_len, true, callbacks, data, depth);
    }
 
-   if (buff)
-      free(buff);
+   free(buff);
    return 0;
+}
+
+int rmsgpack_read(intfstream_t *fd,
+      struct rmsgpack_read_callbacks *callbacks, void *data)
+{
+   struct rmsgpack_src s;
+   int                 rv;
+   rmsgpack_src_init(&s, fd);
+   rv = rmsgpack_src_value(&s, callbacks, data, 0);
+   rmsgpack_src_done(&s);
+   return rv;
 }
 
 /**

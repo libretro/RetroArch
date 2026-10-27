@@ -2,3 +2,5 @@
 /c_converter
 /libretrodb_tool
 /rmsgpack_test
+/samples/rmsgpack/rmsgpack_overflow_test
+/samples/rmsgpack/rmsgpack_window_test

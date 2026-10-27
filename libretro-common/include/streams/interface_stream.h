@@ -98,6 +98,20 @@ void intfstream_rewind(intfstream_internal_t *intf);
 
 int64_t intfstream_tell(intfstream_internal_t *intf);
 
+/**
+ * intfstream_view:
+ *
+ * intfstream_read() without the copy: points @ptr at up to @len
+ * octets at the stream position, where the stream holds them, and
+ * moves past them as a read of that many would.
+ *
+ * Returns: the octets lent, 0 at the end, or -1 when the stream holds
+ * nothing there it can lend; the caller then reads. Lent octets stay
+ * valid until the next call on @intf and must not be written.
+ */
+int64_t intfstream_view(intfstream_internal_t *intf, uint64_t len,
+      const uint8_t **ptr);
+
 int intfstream_eof(intfstream_internal_t *intf);
 
 void intfstream_putc(intfstream_internal_t *intf, int c);

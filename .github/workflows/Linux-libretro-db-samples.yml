@@ -93,6 +93,7 @@ jobs:
           # failure.  These are built AND executed.
           declare -a RUN_TARGETS=(
             rmsgpack_overflow_test
+            rmsgpack_window_test
             libretrodb_leak_test
           )
 

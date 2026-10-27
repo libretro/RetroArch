@@ -483,6 +483,42 @@ int64_t intfstream_read(intfstream_internal_t *intf, void *s, uint64_t len)
    return -1;
 }
 
+int64_t intfstream_view(intfstream_internal_t *intf, uint64_t len,
+      const uint8_t **ptr)
+{
+   if (!intf || !ptr)
+      return -1;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_view(intf->file.fp, (int64_t)len, ptr);
+      case INTFSTREAM_BUFFERED:
+         {
+            uint64_t p = intf->buffered.pos;
+            uint64_t n = len;
+            if (p >= intf->buffered.size || !n)
+               return 0;
+            if (n > intf->buffered.size - p)
+               n = intf->buffered.size - p;
+            if (n > intf->buffered.cap)
+               n = intf->buffered.cap;
+            if (   !(p >= intf->buffered.lo && p < intf->buffered.hi)
+                && !intfstream_buffered_fill(intf, p, n))
+               return -1;
+            if (n > intf->buffered.hi - p)
+               n = intf->buffered.hi - p;
+            *ptr               = intf->buffered.buf + (p - intf->buffered.lo);
+            intf->buffered.pos = p + n;
+            return (int64_t)n;
+         }
+      default:
+         break;
+   }
+
+   return -1;
+}
+
 int64_t intfstream_write(intfstream_internal_t *intf,
       const void *s, uint64_t len)
 {

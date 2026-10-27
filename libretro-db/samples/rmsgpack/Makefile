@@ -1,10 +1,10 @@
-TARGET := rmsgpack_overflow_test
+TARGET  := rmsgpack_overflow_test
+TARGET2 := rmsgpack_window_test
 
 LIBRETRODB_DIR    := ../..
 LIBRETRO_COMM_DIR := ../../../libretro-common
 
-SOURCES := \
-	rmsgpack_overflow_test.c \
+COMMON := \
 	$(LIBRETRODB_DIR)/rmsgpack.c \
 	$(LIBRETRODB_DIR)/rmsgpack_dom.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
@@ -22,7 +22,8 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS  := rmsgpack_overflow_test.o $(COMMON:.c=.o)
+OBJS2 := rmsgpack_window_test.o $(COMMON:.c=.o)
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g \
            -I$(LIBRETRO_COMM_DIR)/include \
@@ -37,7 +38,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET2)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -45,7 +46,10 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(TARGET2): $(OBJS2)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(TARGET2) rmsgpack_overflow_test.o rmsgpack_window_test.o $(COMMON:.c=.o)
 
 .PHONY: clean
