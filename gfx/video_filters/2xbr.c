@@ -59,6 +59,12 @@ struct softfilter_thread_data
    unsigned height;
    int first;
    int last;
+   /* This worker's YUV keys: one per source pixel of its rows and the
+    * two rows either side, each row padded by two keys on both ends.
+    * Rows past the frame and the padding repeat the nearest edge key,
+    * which is the clamp the 5x5 neighbourhood reads through. Sized at
+    * create for the largest frame, and filled by the worker itself. */
+   uint16_t *keys;
 };
 
 struct filter_data
@@ -69,11 +75,10 @@ struct filter_data
    /* Rows in the whole frame, for clamping the 5x5 neighbourhood at
     * its top and bottom whichever slice a worker has. */
    unsigned frame_height;
-   /* One YUV key per source pixel, RGBtoYUV of its RGB565 value,
-    * filled once a frame before the workers run so the edge decisions
-    * compare two loaded keys instead of looking both pixels up again. */
-   uint16_t *keys;
-   size_t    keys_cap;
+   /* The largest frame create was told of; a worker's keys hold its
+    * share of one that size. */
+   unsigned max_width;
+   unsigned max_height;
    uint16_t RGBtoYUV[65536];
    uint16_t tbl_5_to_8[32];
    uint16_t tbl_6_to_8[64];
@@ -232,6 +237,8 @@ static void SetupFormat(void * data)
    }
 }
 
+static void twoxbr_generic_destroy(void *data);
+
 static void *twoxbr_generic_create(const struct softfilter_config *config,
       unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
@@ -245,16 +252,30 @@ static void *twoxbr_generic_create(const struct softfilter_config *config,
       return NULL;
    filt->workers = (struct softfilter_thread_data*)
       calloc(threads, sizeof(struct softfilter_thread_data));
-   filt->threads  = threads;
-   filt->in_fmt   = in_fmt;
-   filt->keys_cap = (size_t)max_width * max_height;
-   filt->keys     = (uint16_t*)malloc(filt->keys_cap * sizeof(*filt->keys));
-   if (!filt->workers || !filt->keys)
+   filt->threads    = threads;
+   filt->in_fmt     = in_fmt;
+   filt->max_width  = max_width;
+   filt->max_height = max_height;
+   if (!filt->workers)
    {
-      free(filt->keys);
-      free(filt->workers);
       free(filt);
       return NULL;
+   }
+   {
+      /* A worker gets at most ceil(height / threads) rows, plus two
+       * either side; a row is the width plus two keys at each end. */
+      size_t rows = (max_height + threads - 1) / threads + 4;
+      size_t cols = (size_t)max_width + 4;
+      unsigned i;
+      for (i = 0; i < threads; i++)
+      {
+         if (!(filt->workers[i].keys = (uint16_t*)
+                  malloc(rows * cols * sizeof(uint16_t))))
+         {
+            twoxbr_generic_destroy(filt);
+            return NULL;
+         }
+      }
    }
 
    SetupFormat(filt);
@@ -277,8 +298,13 @@ static void twoxbr_generic_destroy(void *data)
    if (!filt)
       return;
 
-   free(filt->keys);
-   free(filt->workers);
+   if (filt->workers)
+   {
+      unsigned i;
+      for (i = 0; i < filt->threads; i++)
+         free(filt->workers[i].keys);
+      free(filt->workers);
+   }
    free(filt);
 }
 
@@ -514,8 +540,103 @@ static void twoxbr_generic_destroy(void *data)
          out += 2
 #endif
 
-static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
-      int first, int last, uint32_t *src,
+/* Fills a worker's padded key rows: row j holds the frame row
+ * first - 2 + j, clamped into the frame, and each row repeats its end
+ * keys twice past either side. */
+#define TWOXBR_FILL_KEYS(TYPE, KEY_OF) \
+   { \
+      unsigned j_, x_; \
+      unsigned kw_ = width + 4; \
+      for (j_ = 0; j_ < height + 4; j_++) \
+      { \
+         int fy_          = first - 2 + (int)j_; \
+         const TYPE *row_; \
+         uint16_t *k_     = keys + (size_t)j_ * kw_; \
+         if (fy_ < 0) \
+            fy_ = 0; \
+         if (fy_ > (int)frame_height - 1) \
+            fy_ = (int)frame_height - 1; \
+         row_ = (const TYPE*)((const uint8_t*)src \
+               + ((long)fy_ - first) * (long)src_stride * (long)sizeof(TYPE)); \
+         for (x_ = 0; x_ < width; x_++) \
+            k_[x_ + 2] = KEY_OF(row_[x_]); \
+         k_[0] = k_[1] = k_[2]; \
+         k_[width + 2] = k_[width + 3] = k_[width + 1]; \
+      } \
+   }
+
+/* One worker's rows. The 5x5 neighbourhood is clamped to the frame:
+ * the keys through the padded rows above, the 3x3 pixels through
+ * clamped indices. A pixel equal to enough of its four direct
+ * neighbours that none of the four corner rules can fire (each needs
+ * PE to differ from both pixels beside that corner) is copied out
+ * without loading the rest of its neighbourhood. */
+#define TWOXBR_ROWS(TYPE, FILTRO) \
+   for (y = 0; y < height; y++) \
+   { \
+      unsigned abs_y   = (unsigned)first + y; \
+      int up1          = abs_y >= 1 ? -1 : 0; \
+      int dn1          = abs_y + 1 < frame_height ? 1 : 0; \
+      const TYPE *rm1  = src + up1 * (int)src_stride; \
+      const TYPE *r0   = src; \
+      const TYPE *rp1  = src + dn1 * (int)src_stride; \
+      const uint16_t *km2 = keys + (size_t)(y + 0) * (width + 4) + 2; \
+      const uint16_t *km1 = km2 + (width + 4); \
+      const uint16_t *k0  = km1 + (width + 4); \
+      const uint16_t *kp1 = k0  + (width + 4); \
+      const uint16_t *kp2 = kp1 + (width + 4); \
+      TYPE *out           = dst; \
+      for (x = 0; x < width; x++) \
+      { \
+         TYPE E[4]; \
+         TYPE ex, e, i, ke, ki, ex2, ex3, px; \
+         unsigned xm1   = x ? x - 1 : 0; \
+         unsigned xp1   = x + 1 < width ? x + 1 : x; \
+         TYPE PB = rm1[x]; \
+         TYPE PD = r0[xm1]; \
+         TYPE PE = r0[x]; \
+         TYPE PF = r0[xp1]; \
+         TYPE PH = rp1[x]; \
+         if (     (PE == PH || PE == PF) && (PE == PF || PE == PB) \
+               && (PE == PB || PE == PD) && (PE == PD || PE == PH)) \
+         { \
+            out[0] = out[1] = out[dst_stride] = out[dst_stride + 1] = PE; \
+            out += 2; \
+            continue; \
+         } \
+         { \
+            int xi          = (int)x; \
+            TYPE PA         = rm1[xm1]; \
+            TYPE PC         = rm1[xp1]; \
+            TYPE PG         = rp1[xm1]; \
+            TYPE _PI        = rp1[xp1]; \
+            uint16_t K_A1 = km2[xi - 1], K_B1 = km2[xi],   K_C1 = km2[xi + 1]; \
+            uint16_t K_A0 = km1[xi - 2], K_PA = km1[xi - 1], K_PB = km1[xi]; \
+            uint16_t K_PC = km1[xi + 1], K_C4 = km1[xi + 2]; \
+            uint16_t K_D0 = k0[xi - 2],  K_PD = k0[xi - 1],  K_PE = k0[xi]; \
+            uint16_t K_PF = k0[xi + 1],  K_F4 = k0[xi + 2]; \
+            uint16_t K_G0 = kp1[xi - 2], K_PG = kp1[xi - 1], K_PH = kp1[xi]; \
+            uint16_t K__PI = kp1[xi + 1], K_I4 = kp1[xi + 2]; \
+            uint16_t K_G5 = kp2[xi - 1], K_H5 = kp2[xi],   K_I5 = kp2[xi + 1]; \
+            /* \
+             * Map of the pixels:          A1 B1 C1 \
+             *                          A0 PA PB PC C4 \
+             *                          D0 PD PE PF F4 \
+             *                          G0 PG PH _PI I4 \
+             *                             G5 H5 I5 \
+             */ \
+            twoxbr_function(FILTRO, filt); \
+         } \
+      } \
+      src += src_stride; \
+      dst += 2 * dst_stride; \
+   }
+
+#define TWOXBR_KEY_565(p)  filt->RGBtoYUV[p]
+#define TWOXBR_KEY_8888(p) filt->RGBtoYUV[XRGB8888_TO_RGB565(p)]
+
+static void twoxbr_generic_xrgb8888(void *data, uint16_t *keys,
+      unsigned width, unsigned height, int first, const uint32_t *src,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
    unsigned x, y;
@@ -524,73 +645,16 @@ static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
    uint32_t pg_blue_mask     = BLUE_MASK8888;
    uint32_t pg_lbmask        = PG_LBMASK8888;
    uint32_t pg_alpha_mask    = ALPHA_MASK8888;
-   struct filter_data *filt = (struct filter_data*)data;
+   struct filter_data *filt  = (struct filter_data*)data;
+   unsigned frame_height     = filt->frame_height;
 
-   (void)last;
-
-   for (y = 0; y < height; y++)
-   {
-      /* The 5x5 neighbourhood, clamped to the frame: rows above and
-       * below the edge repeat the edge row, as columns do at the sides. */
-      unsigned abs_y   = (unsigned)first + y;
-      int up1          = abs_y >= 1 ? -1 : 0;
-      int up2          = abs_y >= 2 ? -2 : up1;
-      int dn1          = abs_y + 1 < filt->frame_height ? 1 : 0;
-      int dn2          = abs_y + 2 < filt->frame_height ? 2 : dn1;
-      const uint32_t *rm1 = src + up1 * (int)src_stride;
-      const uint32_t *r0  = src;
-      const uint32_t *rp1 = src + dn1 * (int)src_stride;
-      const uint16_t *k0 = filt->keys + (size_t)abs_y * width;
-      const uint16_t *km2 = k0 + up2 * (int)width;
-      const uint16_t *km1 = k0 + up1 * (int)width;
-      const uint16_t *kp1 = k0 + dn1 * (int)width;
-      const uint16_t *kp2 = k0 + dn2 * (int)width;
-      uint32_t *out       = dst;
-
-      for (x = 0; x < width; x++)
-      {
-         uint32_t E[4];
-         uint32_t ex, e, i, ke, ki, ex2, ex3, px;
-         unsigned xm1   = x ? x - 1 : 0;
-         unsigned xm2   = x > 1 ? x - 2 : xm1;
-         unsigned xp1   = x + 1 < width ? x + 1 : x;
-         unsigned xp2   = x + 2 < width ? x + 2 : xp1;
-         uint32_t PA = rm1[xm1];
-         uint32_t PB = rm1[x];
-         uint32_t PC = rm1[xp1];
-         uint32_t PD = r0[xm1];
-         uint32_t PE = r0[x];
-         uint32_t PF = r0[xp1];
-         uint32_t PG = rp1[xm1];
-         uint32_t PH = rp1[x];
-         uint32_t _PI = rp1[xp1];
-         uint16_t K_A1 = km2[xm1], K_B1 = km2[x],   K_C1 = km2[xp1];
-         uint16_t K_A0 = km1[xm2], K_PA = km1[xm1], K_PB = km1[x];
-         uint16_t K_PC = km1[xp1], K_C4 = km1[xp2];
-         uint16_t K_D0 = k0[xm2],  K_PD = k0[xm1],  K_PE = k0[x];
-         uint16_t K_PF = k0[xp1],  K_F4 = k0[xp2];
-         uint16_t K_G0 = kp1[xm2], K_PG = kp1[xm1], K_PH = kp1[x];
-         uint16_t K__PI = kp1[xp1], K_I4 = kp1[xp2];
-         uint16_t K_G5 = kp2[xm1], K_H5 = kp2[x],   K_I5 = kp2[xp1];
-
-         /*
-          * Map of the pixels:          A1 B1 C1
-          *                          A0 PA PB PC C4
-          *                          D0 PD PE PF F4
-          *                          G0 PG PH _PI I4
-          *                             G5 H5 I5
-          */
-
-         twoxbr_function(FILTRO_RGB8888, filt);
-      }
-
-      src += src_stride;
-      dst += 2 * dst_stride;
-   }
+   TWOXBR_FILL_KEYS(uint32_t, TWOXBR_KEY_8888)
+   TWOXBR_ROWS(uint32_t, FILTRO_RGB8888)
+   (void)pg_alpha_mask;
 }
 
-static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
-      int first, int last, uint16_t *src,
+static void twoxbr_generic_rgb565(void *data, uint16_t *keys,
+      unsigned width, unsigned height, int first, const uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
    unsigned x, y;
@@ -599,68 +663,10 @@ static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
    uint16_t pg_green_mask   = GREEN_MASK565;
    uint16_t pg_blue_mask    = BLUE_MASK565;
    uint16_t pg_lbmask       = PG_LBMASK565;
+   unsigned frame_height    = filt->frame_height;
 
-   (void)last;
-
-   for (y = 0; y < height; y++)
-   {
-      /* The 5x5 neighbourhood, clamped to the frame: rows above and
-       * below the edge repeat the edge row, as columns do at the sides. */
-      unsigned abs_y   = (unsigned)first + y;
-      int up1          = abs_y >= 1 ? -1 : 0;
-      int up2          = abs_y >= 2 ? -2 : up1;
-      int dn1          = abs_y + 1 < filt->frame_height ? 1 : 0;
-      int dn2          = abs_y + 2 < filt->frame_height ? 2 : dn1;
-      const uint16_t *rm1 = src + up1 * (int)src_stride;
-      const uint16_t *r0  = src;
-      const uint16_t *rp1 = src + dn1 * (int)src_stride;
-      const uint16_t *k0 = filt->keys + (size_t)abs_y * width;
-      const uint16_t *km2 = k0 + up2 * (int)width;
-      const uint16_t *km1 = k0 + up1 * (int)width;
-      const uint16_t *kp1 = k0 + dn1 * (int)width;
-      const uint16_t *kp2 = k0 + dn2 * (int)width;
-      uint16_t *out       = dst;
-
-      for (x = 0; x < width; x++)
-      {
-         uint16_t E[4];
-         uint16_t ex, e, i, ke, ki, ex2, ex3, px;
-         unsigned xm1   = x ? x - 1 : 0;
-         unsigned xm2   = x > 1 ? x - 2 : xm1;
-         unsigned xp1   = x + 1 < width ? x + 1 : x;
-         unsigned xp2   = x + 2 < width ? x + 2 : xp1;
-         uint16_t PA = rm1[xm1];
-         uint16_t PB = rm1[x];
-         uint16_t PC = rm1[xp1];
-         uint16_t PD = r0[xm1];
-         uint16_t PE = r0[x];
-         uint16_t PF = r0[xp1];
-         uint16_t PG = rp1[xm1];
-         uint16_t PH = rp1[x];
-         uint16_t _PI = rp1[xp1];
-         uint16_t K_A1 = km2[xm1], K_B1 = km2[x],   K_C1 = km2[xp1];
-         uint16_t K_A0 = km1[xm2], K_PA = km1[xm1], K_PB = km1[x];
-         uint16_t K_PC = km1[xp1], K_C4 = km1[xp2];
-         uint16_t K_D0 = k0[xm2],  K_PD = k0[xm1],  K_PE = k0[x];
-         uint16_t K_PF = k0[xp1],  K_F4 = k0[xp2];
-         uint16_t K_G0 = kp1[xm2], K_PG = kp1[xm1], K_PH = kp1[x];
-         uint16_t K__PI = kp1[xp1], K_I4 = kp1[xp2];
-         uint16_t K_G5 = kp2[xm1], K_H5 = kp2[x],   K_I5 = kp2[xp1];
-
-         /*
-          * Map of the pixels:          A1 B1 C1
-          *                          A0 PA PB PC C4
-          *                          D0 PD PE PF F4
-          *                          G0 PG PH _PI I4
-          *                             G5 H5 I5
-          */
-
-         twoxbr_function(FILTRO_RGB565, filt);
-      }
-
-      src += src_stride;
-      dst += 2 * dst_stride;
-   }
+   TWOXBR_FILL_KEYS(uint16_t, TWOXBR_KEY_565)
+   TWOXBR_ROWS(uint16_t, FILTRO_RGB565)
 }
 
 /* Plain 2x pixel doubling, for a frame whose keys could not be
@@ -724,8 +730,8 @@ static void twoxbr_work_cb_rgb565(void *data, void *thread_data)
    unsigned width = thr->width;
    unsigned height = thr->height;
 
-   twoxbr_generic_rgb565(data, width, height,
-         thr->first, thr->last, input,
+   twoxbr_generic_rgb565(data, thr->keys, width, height,
+         thr->first, input,
          (unsigned)(thr->in_pitch / SOFTFILTER_BPP_RGB565),
          output,
          (unsigned)(thr->out_pitch / SOFTFILTER_BPP_RGB565));
@@ -740,10 +746,10 @@ static void twoxbr_work_cb_xrgb8888(void *data, void *thread_data)
    unsigned width = thr->width;
    unsigned height = thr->height;
 
-   twoxbr_generic_xrgb8888(data, width, height,
-         thr->first, thr->last, input,
+   twoxbr_generic_xrgb8888(data, thr->keys, width, height,
+         thr->first, input,
          (unsigned)(thr->in_pitch / SOFTFILTER_BPP_XRGB8888),
-        output,
+         output,
          (unsigned)(thr->out_pitch / SOFTFILTER_BPP_XRGB8888));
 }
 
@@ -759,39 +765,11 @@ static void twoxbr_generic_packets(void *data,
 
    filt->frame_height = height;
 
-   /* The frame's YUV keys, one table lookup per source pixel. A frame
-    * bigger than the keys buffer grows it; if that fails, this frame
-    * is pixel-doubled instead, since the workers index keys by the
-    * frame's own width and height and would read past a buffer sized
-    * for a smaller one. */
-   if ((size_t)width * height > filt->keys_cap)
-   {
-      uint16_t *keys = (uint16_t*)realloc(filt->keys,
-            (size_t)width * height * sizeof(*keys));
-      if (keys)
-      {
-         filt->keys     = keys;
-         filt->keys_cap = (size_t)width * height;
-      }
-      else
-         have_keys      = false;
-   }
-   if (have_keys)
-   {
-      unsigned x, y;
-      uint16_t *k = filt->keys;
-      for (y = 0; y < height; y++)
-      {
-         const uint8_t *row = (const uint8_t*)input + y * input_stride;
-         if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
-            for (x = 0; x < width; x++)
-               *k++ = filt->RGBtoYUV[((const uint16_t*)row)[x]];
-         else
-            for (x = 0; x < width; x++)
-               *k++ = filt->RGBtoYUV[XRGB8888_TO_RGB565(
-                     ((const uint32_t*)row)[x])];
-      }
-   }
+   /* The workers' keys are sized for the largest frame create was told
+    * of; a bigger one (which the softfilter contract rules out) is
+    * pixel-doubled rather than read past them. */
+   if (width > filt->max_width || height > filt->max_height)
+      have_keys = false;
 
    for (i = 0; i < filt->threads; i++)
    {
