@@ -49,6 +49,7 @@
 #include "../../retroarch.h"
 
 #include "../../verbosity.h"
+#include "../common/input_ignore_devices.h"
 
 #include <queues/task_queue.h>
 
@@ -832,6 +833,16 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
       if (job->next_xuser < 4)
          job->xuser[idx] = (int)job->next_xuser++;
       goto enum_iteration_done;
+   }
+
+   /* Another program reads it and stands in for it (Steam Input) */
+   if (input_device_ignored((uint16_t)pad->vid, (uint16_t)pad->pid))
+   {
+      IDirectInputDevice8_Release(dev);
+      free(pad->joy_name);
+      free(pad->joy_friendly_name);
+      memset(pad, 0, sizeof(*pad));
+      return DIENUM_CONTINUE;
    }
 
    /* Set data format to simple joystick */

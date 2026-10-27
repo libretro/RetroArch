@@ -606,6 +606,8 @@ static const char *dinput_joypad_name(unsigned port)
 #include <dinput.h>
 #include <mmsystem.h>
 
+#include "../common/input_ignore_devices.h"
+
 /* ---------------------------------------------------------------------------
  * dinput_joypad_cleanup_pad
  *
@@ -747,6 +749,10 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
     * PID is in the high 16 bits. */
    pad->vid = (int32_t)(inst->guidProduct.Data1 & 0xFFFFu);
    pad->pid = (int32_t)(inst->guidProduct.Data1 >> 16);
+
+   /* Another program reads it and stands in for it (Steam Input) */
+   if (input_device_ignored((uint16_t)pad->vid, (uint16_t)pad->pid))
+      goto cfg_failed;
 
    /* Set data format to extended joystick state.
     * If either SetDataFormat or SetCooperativeLevel fails the device

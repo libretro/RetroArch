@@ -54,6 +54,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 #include "../common/sony_pad_output.h"
+#include "../common/input_ignore_devices.h"
 #include "../common/hid_sjoy_output.h"
 #include "../common/output_writer.h"
 #include "../common/sony_pad_motion.h"
@@ -1382,6 +1383,11 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
       return false;
    if (   dev_info.hid.usUsage != HID_USAGE_GENERIC_JOYSTICK
        && dev_info.hid.usUsage != HID_USAGE_GENERIC_GAMEPAD)
+      return false;
+
+   /* Another program reads it and stands in for it (Steam Input) */
+   if (input_device_ignored((uint16_t)dev_info.hid.dwVendorId,
+            (uint16_t)dev_info.hid.dwProductId))
       return false;
 
    /* The device path, which says which physical controller this is. */

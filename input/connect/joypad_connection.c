@@ -24,6 +24,7 @@
 #include "../../verbosity.h"
 
 #include "joypad_connection.h"
+#include "../common/input_ignore_devices.h"
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -995,6 +996,9 @@ int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn,
 
    if (pad < 0)
       return -1;
+   /* Another program reads it and stands in for it (Steam Input) */
+   if (entry && input_device_ignored(entry->vid, entry->pid))
+      return -1;
 
    if (!(conn = &joyconn[pad]))
       return -1;
@@ -1035,6 +1039,8 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    void *data, hid_driver_t *driver)
 {
    joypad_connection_entry_t *entry = find_connection_entry(vid, pid, name);
+   if (input_device_ignored(vid, pid))
+      return -1;
    return pad_connection_pad_init_entry(joyconn, entry, data, driver);
 }
 

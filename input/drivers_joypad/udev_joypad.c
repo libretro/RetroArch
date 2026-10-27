@@ -45,6 +45,7 @@
 #include "../common/linux_not_joystick.h"
 #include "../common/output_writer.h"
 #include "../common/linux_pad_members.h"
+#include "../common/input_ignore_devices.h"
 
 #include "../../configuration.h"
 #include "../../config.def.h"
@@ -969,6 +970,16 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    {
       RARCH_LOG("[udev] Ignoring \"%s\" (%04x:%04x, %s): tagged as a"
             " joystick, but it is not one.\n",
+            pad->ident, pad->vid, pad->pid, path);
+      pad->ident[0] = '\0';
+      pad->vid      = pad->pid = 0;
+      return -2;
+   }
+   /* Another program reads it and stands in for it (Steam Input) */
+   if (input_device_ignored((uint16_t)pad->vid, (uint16_t)pad->pid))
+   {
+      RARCH_LOG("[udev] Ignoring \"%s\" (%04x:%04x, %s): listed in"
+            " SDL_GAMECONTROLLER_IGNORE_DEVICES.\n",
             pad->ident, pad->vid, pad->pid, path);
       pad->ident[0] = '\0';
       pad->vid      = pad->pid = 0;
