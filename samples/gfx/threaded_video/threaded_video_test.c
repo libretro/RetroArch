@@ -42,6 +42,9 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/gfx_instrument.h"
 #include "../../../gfx/video_thread_wrapper.h"
+#ifdef HAVE_NGX
+#include "../../../gfx/video_upscaler.h"
+#endif
 #include "../../../record/record_driver.h"
 #include "../../../gfx/font_driver.h"
 #include "../../../menu/menu_driver.h"
@@ -10341,6 +10344,164 @@ static void hwring_on_clear(uint64_t image)
       hwring_overlaps++;
 }
 
+
+#ifdef HAVE_NGX
+/* ------------------------------------------------------------------ */
+/* Lane: the temporal upscaler's inputs ride with their frame.         */
+/*   A core sets the upscaler's inputs for a frame, then pushes it;    */
+/*   the driver takes them inside its frame call. Under the wrapper    */
+/*   that call is on the video thread, frames later, by which time the */
+/*   core has set the inputs of a newer frame, or they were taken for  */
+/*   the one before: the driver then upscaled with the wrong jitter    */
+/*   and motion, or showed the frame raw. Every hardware frame drawn   */
+/*   must take exactly the inputs its own frame was pushed with.       */
+/* ------------------------------------------------------------------ */
+
+/* The inputs the core sets: one struct rewritten every frame, as a
+ * core's is, jitter_x the serial of the image it is for */
+static struct retro_hw_upscaler_inputs hwupsc_inputs;
+static unsigned hwupsc_serial;
+static struct { uint64_t image; unsigned serial; } hwupsc_images[16];
+static unsigned hwupsc_drawn, hwupsc_wrong, hwupsc_missing;
+static const struct retro_hw_render_upscaler_interface *hwupsc_iface;
+
+static bool hwupsc_optimal(void *data, unsigned mode, unsigned out_dims,
+      unsigned *render_dims, unsigned *min_dims, unsigned *max_dims)
+{
+   (void)data; (void)mode; (void)out_dims;
+   (void)render_dims; (void)min_dims; (void)max_dims;
+   return false;
+}
+
+/* The core's thread, before it clears the image it then hands over */
+static void hwupsc_on_clear(uint64_t image)
+{
+   unsigned i;
+   if (!image || !hwupsc_iface)
+      return;
+   hwupsc_serial++;
+   for (i = 0; i < 16; i++)
+      if (hwupsc_images[i].image == image || !hwupsc_images[i].image)
+         break;
+   if (i < 16)
+   {
+      hwupsc_images[i].image  = image;
+      hwupsc_images[i].serial = hwupsc_serial;
+   }
+   memset(&hwupsc_inputs, 0, sizeof(hwupsc_inputs));
+   hwupsc_inputs.jitter_x = (float)hwupsc_serial;
+   hwupsc_iface->set_inputs(hwupsc_iface->handle, &hwupsc_inputs);
+}
+
+/* The video thread's frame call: a hardware frame takes its inputs.
+ * The wait comes first, between the frame's claim and the driver's
+ * take: the core pushes a frame or two more in it, with their inputs. */
+static bool hwupsc_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   retro_sleep(hwring_present_ms);
+   if (frame == RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      const struct retro_hw_upscaler_inputs *in = video_upscaler_take_inputs();
+      unsigned i, want = 0;
+      for (i = 0; i < 16; i++)
+         if (hwupsc_images[i].image == hwring_installed)
+            want = hwupsc_images[i].serial;
+      /* (a frame pushed before the hook was armed has no inputs to
+       * take, rightly) */
+      if (want)
+      {
+         hwupsc_drawn++;
+         if (!in)
+            hwupsc_missing++;
+         else if ((unsigned)in->jitter_x != want)
+            hwupsc_wrong++;
+      }
+   }
+   hwring_installed = 0;
+   return hwring_inner->frame(data, frame, dims, frame_count,
+         pitch, msg, video_info);
+}
+
+static void lane_hw_ring_upscaler(void)
+{
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   void (*ring)(int) = lib
+      ? (void (*)(int))dylib_proc(lib, "harness_core_hw_ring") : NULL;
+   void (*on_clear)(void (*)(uint64_t)) = lib
+      ? (void (*)(void (*)(uint64_t)))dylib_proc(lib,
+            "harness_core_hw_ring_on_clear") : NULL;
+   video_upscaler_backend_t backend;
+   thread_video_t *thr;
+
+   if (!ring || !on_clear)
+   {
+      CHECK(0, "hw ring upscaler: the harness core has no ring mode");
+      return;
+   }
+   set_threaded_via_setting(true);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   hwlane_pump(5);
+   expect_wrapper(true, "hw ring upscaler");
+   thr = (thread_video_t*)video_state_get_ptr()->data;
+   if (!thr || !thr->frame.hw_ring)
+   {
+      CHECK(0, "hw ring upscaler: the wrapper has no hardware ring for this driver");
+      set_threaded_via_setting(false);
+      hwlane_pump(5);
+      return;
+   }
+
+   /* (an upscaler session: the interface exists while one is attached) */
+   backend.data    = NULL;
+   backend.optimal = hwupsc_optimal;
+   video_upscaler_attach(&backend);
+   hwupsc_iface = video_upscaler_get_interface();
+   CHECK(hwupsc_iface != NULL, "hw ring upscaler: the upscaler interface is handed out");
+   memset(hwupsc_images, 0, sizeof(hwupsc_images));
+   hwupsc_serial = hwupsc_drawn = hwupsc_wrong = hwupsc_missing = 0;
+
+   hwring_inner        = thr->driver;
+   hwring_driver       = *thr->driver;
+   hwring_driver.frame = hwupsc_frame;
+   hwring_present_ms   = 30;
+   hwring_installed    = 0;
+   set_driver(thr, &hwring_driver);
+   hwring_inner_poke           = thr->poke;
+   hwring_poke                 = *thr->poke;
+   hwring_poke.hw_ring_install = hwring_install;
+   set_poke(thr, &hwring_poke);
+   on_clear(hwupsc_on_clear);
+   ring(3);
+   hwlane_pump(HWRING_SLOW_FRAMES);
+   video_thread_wait_idle();
+   ring(0);
+   on_clear(NULL);
+   set_poke(thr, hwring_inner_poke);
+   set_driver(thr, hwring_inner);
+   video_upscaler_take_inputs();
+   video_upscaler_detach();
+   hwupsc_iface = NULL;
+
+   CHECK(hwupsc_drawn >= HWRING_SLOW_FRAMES / 12,
+         "hw ring upscaler: %u hardware frames drawn behind a slow present:"
+         " the lane proved nothing", hwupsc_drawn);
+   CHECK(hwupsc_missing == 0,
+         "hw ring upscaler: %u of %u hardware frames drawn took no upscaler"
+         " inputs", hwupsc_missing, hwupsc_drawn);
+   CHECK(hwupsc_wrong == 0,
+         "hw ring upscaler: %u of %u hardware frames drawn took another"
+         " frame's upscaler inputs", hwupsc_wrong, hwupsc_drawn);
+   if (!hwupsc_missing && !hwupsc_wrong && hwupsc_drawn >= HWRING_SLOW_FRAMES / 12)
+      fprintf(stderr, "[pass] hw ring upscaler: %u hardware frames each took"
+            " their own upscaler inputs behind a slow present\n", hwupsc_drawn);
+   set_threaded_via_setting(false);
+   hwlane_pump(5);
+}
+#endif
+
 #ifdef HAVE_VULKAN
 /* The Vulkan context the driver is on now; the context driver's data
  * is replaced by a reinit, so it is fetched again after each. */
@@ -11820,6 +11981,9 @@ int main(int argc, char *argv[])
       else
       {
          lane_hw_ring_sync();
+#ifdef HAVE_NGX
+         lane_hw_ring_upscaler();
+#endif
          lane_hw_image_lifetime(core_path);
       }
       goto shutdown;

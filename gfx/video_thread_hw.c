@@ -25,6 +25,9 @@
 #include "video_thread_hw.h"
 #include "video_thread_hw_fence.h"
 #include "gfx_instrument.h"
+#ifdef HAVE_NGX
+#include "video_upscaler.h"
+#endif
 #include "../configuration.h"
 #include "../verbosity.h"
 
@@ -105,6 +108,14 @@ typedef struct
     * took back; the next user of the slot waits it first. Handed
     * between the two threads lock-free: video_thread_hw_fence.h. */
    hw_fence_t       fence;
+#ifdef HAVE_NGX
+   /* The temporal upscaler's inputs the core set for this frame, a
+    * copy: the core rewrites its own for its next frame while the
+    * video thread is still presenting this one, and the driver takes
+    * them inside its frame call, on that thread. */
+   struct retro_hw_upscaler_inputs upscaler;
+   bool             has_upscaler;
+#endif
 } hw_slot_t;
 
 enum hw_api
@@ -1119,6 +1130,17 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
    *taken_back     = 0;
    if (!ring)
       return -1;
+#ifdef HAVE_NGX
+   {
+      /* The push is the core's call: its inputs for this frame go with
+       * the frame, not to whichever frame the video thread draws next */
+      const struct retro_hw_upscaler_inputs *inputs = video_upscaler_take_set_inputs();
+      hw_slot_t *s   = &ring->slot[ring->index];
+      s->has_upscaler = inputs != NULL;
+      if (inputs)
+         s->upscaler = *inputs;
+   }
+#endif
    /* A core that did not ask for its framebuffer rendered into the one
     * it has: that slot is the frame, and the ring stays on it */
    stay = (ring->api == HW_API_GL && !ring->gl_queried);
@@ -1257,6 +1279,12 @@ void video_thread_hw_before_frame(thread_video_t *thr, int hw_slot,
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
    if (!ring || hw_slot < 0 || hw_slot >= VIDEO_THREAD_HW_RING)
       return;
+#ifdef HAVE_NGX
+   /* (a frame reading the slot again shows the upscaler's last output
+    * as a dupe does) */
+   video_upscaler_carry_inputs(!reread && ring->slot[hw_slot].has_upscaler
+         ? &ring->slot[hw_slot].upscaler : NULL);
+#endif
    switch (ring->api)
    {
 #ifdef HAVE_VULKAN
@@ -1548,6 +1576,10 @@ void video_thread_hw_free(thread_video_t *thr)
     * nothing reads the ring after the word says there is no handoff. */
    retro_atomic_store_release_int(&thr->frame.hw_handoff, 0);
    retro_eventcount_free(&ring->ctx_free);
+#ifdef HAVE_NGX
+   /* (a carry still pending points into the ring) */
+   video_upscaler_drop_carry();
+#endif
    free(ring);
    thr->frame.hw_ring = NULL;
 }

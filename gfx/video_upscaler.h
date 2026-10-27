@@ -212,6 +212,17 @@ const struct retro_hw_render_upscaler_interface *video_upscaler_get_interface(vo
  * when it set none. The driver reads them inside video_refresh. */
 const struct retro_hw_upscaler_inputs *video_upscaler_take_inputs(void);
 
+/* The threaded video wrapper: at the core's push, on the core's thread,
+ * the inputs the core set for the frame pushed; and before the wrapper
+ * drives the driver with that frame on its own thread, those inputs
+ * (its copy, or NULL) for the driver's take there. Once carried, the
+ * driver's takes come from the carry alone. */
+const struct retro_hw_upscaler_inputs *video_upscaler_take_set_inputs(void);
+void video_upscaler_carry_inputs(const struct retro_hw_upscaler_inputs *inputs);
+/* When the wrapper's ring goes: the driver's takes are the core's
+ * own again */
+void video_upscaler_drop_carry(void);
+
 RETRO_END_DECLS
 
 #endif

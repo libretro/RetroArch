@@ -369,6 +369,11 @@ void video_upscaler_log_probe(enum video_temporal_upscaler kind)
 
 static const video_upscaler_backend_t *upscaler_backend;
 static const struct retro_hw_upscaler_inputs *upscaler_inputs;
+/* Under the threaded video wrapper the driver takes on the video
+ * thread what the wrapper carried there for the frame, never the
+ * pointer the core set on the main thread for a newer one */
+static const struct retro_hw_upscaler_inputs *upscaler_carried;
+static bool upscaler_carrying;
 static unsigned upscaler_out_dims;
 
 static unsigned video_upscaler_quality(unsigned out_dims)
@@ -471,6 +476,8 @@ void video_upscaler_detach(void)
 {
    upscaler_backend = NULL;
    upscaler_inputs  = NULL;
+   upscaler_carried = NULL;
+   upscaler_carrying = false;
 }
 
 void video_upscaler_set_output(unsigned dims)
@@ -516,9 +523,36 @@ static void video_upscaler_set_inputs(void *handle,
 
 const struct retro_hw_upscaler_inputs *video_upscaler_take_inputs(void)
 {
+   const struct retro_hw_upscaler_inputs *inputs;
+   if (upscaler_carrying)
+   {
+      upscaler_carrying = false;
+      inputs            = upscaler_carried;
+      upscaler_carried  = NULL;
+      return inputs;
+   }
+   inputs          = upscaler_inputs;
+   upscaler_inputs = NULL;
+   return inputs;
+}
+
+const struct retro_hw_upscaler_inputs *video_upscaler_take_set_inputs(void)
+{
    const struct retro_hw_upscaler_inputs *inputs = upscaler_inputs;
    upscaler_inputs = NULL;
    return inputs;
+}
+
+void video_upscaler_carry_inputs(const struct retro_hw_upscaler_inputs *inputs)
+{
+   upscaler_carried  = inputs;
+   upscaler_carrying = true;
+}
+
+void video_upscaler_drop_carry(void)
+{
+   upscaler_carried  = NULL;
+   upscaler_carrying = false;
 }
 
 static const struct retro_hw_render_upscaler_interface upscaler_iface = {
