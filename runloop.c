@@ -7997,6 +7997,7 @@ static enum runloop_state_enum runloop_check_state(
       if (input_st->overlay_ptr)
       {
          if (     settings->bools.input_stylus_enable
+               && settings->bools.input_stylus_hide_overlay
                && android_input_stylus_recently_active())
             input_st->overlay_ptr->flags |=  INPUT_OVERLAY_STYLUS_HIDDEN;
          else

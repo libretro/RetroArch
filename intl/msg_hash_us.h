@@ -10996,6 +10996,14 @@ MSG_HASH(
    "Allow stylus hover (without touching screen) to move the cursor. Essential for drawing and painting games or lightgun games. Turn OFF if cursor moves unexpectedly."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HIDE_OVERLAY,
+   "Hide Overlay While Using Stylus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_STYLUS_HIDE_OVERLAY,
+   "Hide the on-screen overlay while the stylus is in use, and show it again once the stylus has been idle for two seconds. A stylus hovering counts only when 'Stylus Hover Moves Cursor' is on. Turn OFF to keep the overlay on screen, to play with it while using the stylus on the screen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    "Stylus Pressure Sensitivity"
    )

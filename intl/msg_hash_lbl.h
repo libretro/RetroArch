@@ -1427,6 +1427,10 @@ MSG_HASH(
    "input_stylus_hover_moves_pointer"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_STYLUS_HIDE_OVERLAY,
+   "input_stylus_hide_overlay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    "input_stylus_pressure_sensitivity"
    )

@@ -10248,6 +10248,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_STYLUS_ENABLE,                   PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK, PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,      PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_INPUT_STYLUS_HIDE_OVERLAY,             PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,    PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT,  true},
 #endif

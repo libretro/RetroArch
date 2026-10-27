@@ -1563,8 +1563,10 @@ static INLINE void android_input_poll_event_type_motion(
 
       /* Refresh overlay auto-hide timer (runloop.c reads this) only after the
        * enable gate, so a passing pen does not hide the overlay for a user
-       * who has disabled S-Pen support. */
-      g_android_stylus_last_event_ns = (int64_t)cpu_features_get_time_usec() * 1000;
+       * who has disabled S-Pen support. A pen hovering is not in use
+       * unless hovering moves the pointer (#19824). */
+      if (!is_hover_action || input_config_get_stylus_hover_moves_pointer())
+         g_android_stylus_last_event_ns = (int64_t)cpu_features_get_time_usec() * 1000;
 
       stylus_cfg.require_contact      =
          input_config_get_stylus_require_contact_for_click();

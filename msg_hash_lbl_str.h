@@ -3583,6 +3583,11 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_INPUT_STYLUS_HOVER_MOVES_POINTER_STR "input_stylus_hover_moves_pointer"
 #endif
 #if defined(HAVE_MENU) && (((defined(ANDROID))))
+#define MENU_ENUM_LABEL_INPUT_STYLUS_HIDE_OVERLAY_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_INPUT_STYLUS_HIDE_OVERLAY)
+#else
+#define MENU_ENUM_LABEL_INPUT_STYLUS_HIDE_OVERLAY_STR "input_stylus_hide_overlay"
+#endif
+#if defined(HAVE_MENU) && (((defined(ANDROID))))
 #define MENU_ENUM_LABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY)
 #else
 #define MENU_ENUM_LABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY_STR "input_stylus_pressure_sensitivity"

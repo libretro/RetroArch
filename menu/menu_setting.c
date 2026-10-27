@@ -16931,6 +16931,21 @@ static void settings_build_input(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_stylus_hide_overlay,
+                  MENU_ENUM_LABEL_INPUT_STYLUS_HIDE_OVERLAY,
+                  MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HIDE_OVERLAY,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.input_stylus_pressure_sensitivity,

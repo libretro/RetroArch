@@ -1259,6 +1259,7 @@ typedef struct settings
       bool input_stylus_enable;
       bool input_stylus_require_contact_for_click;
       bool input_stylus_hover_moves_pointer;
+      bool input_stylus_hide_overlay;
 #endif
 
 #if defined(HAVE_COCOATOUCH)
