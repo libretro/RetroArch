@@ -288,14 +288,12 @@ ifneq ($(SANITIZER),)
    LOCAL_LDFLAGS  += -fsanitize=$(SANITIZER)
 endif
 
-ifneq ($(PLAY_STORE_BUILD),1)
-   ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
-      LOCAL_LDFLAGS += -Wl,-z,max-page-size=16384,-z,common-page-size=16384
-   endif
+ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+   LOCAL_LDFLAGS += -Wl,-z,max-page-size=16384,-z,common-page-size=16384
+endif
 
-   ifeq ($(TARGET_ARCH_ABI),x86_64)
-      LOCAL_LDFLAGS += -Wl,-z,max-page-size=16384,-z,common-page-size=16384
-   endif
+ifeq ($(TARGET_ARCH_ABI),x86_64)
+   LOCAL_LDFLAGS += -Wl,-z,max-page-size=16384,-z,common-page-size=16384
 endif
 
 include $(BUILD_SHARED_LIBRARY)
