@@ -4934,15 +4934,6 @@ bool input_macro_start(unsigned number, unsigned user)
     * played. Not started. */
    if (!config_get_ptr()->bools.input_remap_binds_enable)
       return false;
-#ifdef HAVE_NETWORKING
-   /* Nor with netplay on. Hosting with nobody connected, a macro
-    * started was never given to the core: netplay takes the player's
-    * input for itself, and not at the poll a step is taken at. Until
-    * it is known what a macro should be in a netplay game, it is not
-    * one. */
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-      return false;
-#endif
    for (m = 0; m < input_macros.count; m++)
       if (input_macros.macro[m].number == number)
          break;

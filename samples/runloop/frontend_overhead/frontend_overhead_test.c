@@ -7082,14 +7082,17 @@ static void lane_macro_modes(void)
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
    {
-      CHECK(!input_macro_start(1, 0) && !input_macro_playing(0),
-            "macro modes: a macro was started with netplay on");
+      run_loop_frames(10);
+      CHECK(input_macro_start(1, 0), "macro modes: with netplay on a macro does not start");
+      MM_PLAY(FRAMES);
+      mm_runs(seen, FRAMES, got, sizeof(got));
+      snprintf(why, sizeof(why), "macro modes: hosting netplay the core was given \"%s\", not \"" MM_SAID "\"", got);
+      CHECK(!strcmp(got, MM_SAID), why);
    }
    else
       printf("[skip] macro modes, netplay: could not be turned on here\n");
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
-   CHECK(input_macro_start(1, 0), "macro modes: with netplay off again a macro does not start");
-   MM_PLAY(FRAMES);
+   run_loop_frames(10);
    }
 #endif
 #undef MM_PLAY
@@ -7106,8 +7109,7 @@ static void lane_macro_modes(void)
    if (failures == had)
       printf("[pass] macro modes: the core is given a macro as it is written when"
             " frames are stepped while paused, under run-ahead, while a replay is"
-            " recorded and when it is played back; with netplay on one is not"
-            " started\n");
+            " recorded and when it is played back, and hosting netplay\n");
 #endif
 }
 
