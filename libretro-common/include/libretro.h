@@ -4496,6 +4496,12 @@ enum retro_hw_render_interface_type
     */
    RETRO_HW_RENDER_INTERFACE_GSKIT_PS2  = 5,
 
+   /**
+    * PlayStation 3 RSX (PSL1GHT).
+    * @see retro_hw_render_interface_rsx in libretro_rsx.h
+    */
+   RETRO_HW_RENDER_INTERFACE_RSX        = 6,
+
    /** @private Defined to ensure <tt>sizeof(retro_hw_render_interface_type) == sizeof(int)</tt>.
     * Do not use. */
    RETRO_HW_RENDER_INTERFACE_DUMMY      = INT_MAX
@@ -6588,6 +6594,9 @@ enum retro_hw_context_type
 
    /* Direct3D9, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
    RETRO_HW_CONTEXT_D3D9             = 10,
+
+   /* PlayStation 3 RSX, see libretro_rsx.h */
+   RETRO_HW_CONTEXT_RSX              = 11,
 
    /** Dummy value to ensure sizeof(enum retro_hw_context_type) == sizeof(int). Do not use. */
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
