@@ -348,51 +348,105 @@ static int rsmb_recv_raw(struct rsmb_ctx *c, size_t *len)
 
 /* ---- signing and sealing ------------------------------------------ */
 
-/* The 16-octet signature of msg (its signature field zeroed), by the
- * connection's algorithm: HMAC-SHA256 on 2.x, AES-CMAC on 3.x, AES-GMAC
- * on 3.1.1 when the server chose it - the nonce being the MessageId and
- * then the sender (1 for the server) and CANCEL bits. */
-static void rsmb_mac(struct rsmb_ctx *c, const uint8_t *msg, size_t len,
-      int from_server, uint8_t *mac)
+/* A message in pieces: a READ reply's payload received where the
+ * caller wants it, its header and any trailer in c->rx. */
+struct rsmb_seg
 {
+   const uint8_t *p;
+   size_t         len;
+};
+
+/* The 16-octet signature of a message (its signature field zeroed),
+ * by the connection's algorithm: HMAC-SHA256 on 2.x, AES-CMAC on 3.x,
+ * AES-GMAC on 3.1.1 when the server chose it - the nonce being the
+ * MessageId and then the sender (1 for the server) and CANCEL bits.
+ * The header is in the first piece; one piece takes the one-shot. */
+static void rsmb_mac(struct rsmb_ctx *c, const struct rsmb_seg *seg,
+      unsigned n, int from_server, uint8_t *mac)
+{
+   const uint8_t *msg = seg[0].p;
+   unsigned       i;
+
    if (c->dialect == DIALECT_311 && c->sign_alg == SIGN_AES_GMAC)
    {
       uint8_t nonce[12];
       memcpy(nonce, msg + 24, 8);
       smb_put32(nonce + 8, (from_server ? 1u : 0u)
             | (smb_get16(msg + 12) == SMB2_CANCEL_CMD ? 2u : 0u));
-      aes_gcm_encrypt(&c->sign_gcm, nonce, 12, msg, len, NULL, 0, NULL, mac);
+      if (n == 1)
+         aes_gcm_encrypt(&c->sign_gcm, nonce, 12, msg, seg[0].len,
+               NULL, 0, NULL, mac);
+      else
+      {
+         struct aes_gcm_stream gs;
+         aes_gcm_stream_init(&gs, &c->sign_gcm, nonce, 12);
+         for (i = 0; i < n; i++)
+            aes_gcm_stream_aad(&gs, seg[i].p, seg[i].len);
+         aes_gcm_stream_tag(&gs, mac);
+         crypto_memzero(&gs, sizeof(gs));
+      }
    }
    else if (c->dialect >= DIALECT_300)
    {
       struct aes_ctx a;
       aes_init(&a, c->signing_key, 16);
-      aes_cmac(&a, msg, len, mac);
+      if (n == 1)
+         aes_cmac(&a, msg, seg[0].len, mac);
+      else
+      {
+         struct aes_cmac_ctx m;
+         aes_cmac_init(&m, &a);
+         for (i = 0; i < n; i++)
+            aes_cmac_update(&m, seg[i].p, seg[i].len);
+         aes_cmac_final(&m, mac);
+      }
       crypto_memzero(&a, sizeof(a));
    }
+   else if (n == 1)
+      hmac_sha256(c->signing_key, 16, msg, seg[0].len, mac);
    else
-      hmac_sha256(c->signing_key, 16, msg, len, mac);
+   {
+      struct hmac_sha256_ctx h;
+      hmac_sha256_init(&h, c->signing_key, 16);
+      for (i = 0; i < n; i++)
+         hmac_sha256_update(&h, seg[i].p, seg[i].len);
+      hmac_sha256_final(&h, mac);
+   }
 }
 
 static void rsmb_sign(struct rsmb_ctx *c, uint8_t *msg, size_t len)
 {
-   uint8_t mac[32];
+   uint8_t         mac[32];
+   struct rsmb_seg seg;
    smb_put32(msg + 16, smb_get32(msg + 16) | SMB2_FLAGS_SIGNED);
    memset(msg + 48, 0, 16);
-   rsmb_mac(c, msg, len, 0, mac);
+   seg.p   = msg;
+   seg.len = len;
+   rsmb_mac(c, &seg, 1, 0, mac);
    memcpy(msg + 48, mac, 16);
+}
+
+/* @hdr is the first piece's octets, writable: the signature field is
+ * zeroed for the MAC and put back. */
+static int rsmb_verify_segs(struct rsmb_ctx *c, uint8_t *hdr,
+      const struct rsmb_seg *seg, unsigned n)
+{
+   uint8_t got[16], mac[32];
+   if (!(smb_get32(hdr + 16) & SMB2_FLAGS_SIGNED))
+      return -1;
+   memcpy(got, hdr + 48, 16);
+   memset(hdr + 48, 0, 16);
+   rsmb_mac(c, seg, n, 1, mac);
+   memcpy(hdr + 48, got, 16);
+   return crypto_memeq_ct(got, mac, 16) ? 0 : -1;
 }
 
 static int rsmb_verify_sig(struct rsmb_ctx *c, uint8_t *msg, size_t len)
 {
-   uint8_t got[16], mac[32];
-   if (!(smb_get32(msg + 16) & SMB2_FLAGS_SIGNED))
-      return -1;
-   memcpy(got, msg + 48, 16);
-   memset(msg + 48, 0, 16);
-   rsmb_mac(c, msg, len, 1, mac);
-   memcpy(msg + 48, got, 16);
-   return crypto_memeq_ct(got, mac, 16) ? 0 : -1;
+   struct rsmb_seg seg;
+   seg.p   = msg;
+   seg.len = len;
+   return rsmb_verify_segs(c, msg, &seg, 1);
 }
 
 /* Wraps msg (len octets, in c->tx after the transform header slot)
@@ -525,21 +579,294 @@ static int rsmb_send_msg(struct rsmb_ctx *c, size_t body_len, int preauth,
    return rsmb_send_raw(c, msg, len);
 }
 
+/* What a fetch has in flight: a READ reply to one of these requests
+ * is received with its data at out + offs[slot], where the caller
+ * wants it, rather than in c->rx. */
+struct rsmb_route
+{
+   const uint64_t *mids;
+   const size_t   *offs;
+   const size_t   *lens;
+   uint8_t        *out;
+   unsigned        n;
+   unsigned        slot;      /* the request a reply's data went to; n if none */
+   uint32_t        placed;    /* how much went there */
+};
+
+/* the header and a READ response up to its Buffer */
+#define RSMB_READ_HEAD (SMB2_HDR_SIZE + 16)
+
+static int rsmb_recv_bytes(struct rsmb_ctx *c, uint8_t *dst, size_t len)
+{
+   if (len && socket_receive_all_blocking_with_timeout(c->fd, dst, len,
+            (int)c->timeout * 1000) <= 0)
+   {
+      rsmb_err(c, "receive failed or timed out");
+      return -1;
+   }
+   return 0;
+}
+
+/* The request a plain header @h of an @len-octet message answers, if
+ * it is a successful READ whose data can be placed; its data's offset
+ * and length. -1 when the message is to be received whole. */
+static int rsmb_route_find(const struct rsmb_route *rt, const uint8_t *h,
+      size_t len, uint32_t *doff, uint32_t *dlen)
+{
+   const uint8_t *r = h + SMB2_HDR_SIZE;
+   uint64_t       mid;
+   unsigned       i;
+
+   if (     h[0] != 0xfe
+         || smb_get16(h + 12) != SMB2_READ
+         || smb_get32(h + 8)  != STATUS_SUCCESS
+         || smb_get32(h + 20) != 0                 /* NextCommand */
+         || smb_get16(r)      != 17)
+      return -1;
+   *doff = r[2];
+   *dlen = smb_get32(r + 4);
+   if (*doff < RSMB_READ_HEAD || !*dlen || *doff > len || *dlen > len - *doff)
+      return -1;
+   mid = smb_get64(h + 24);
+   for (i = 0; i < rt->n; i++)
+      if (rt->mids[i] == mid)
+         break;
+   if (i == rt->n || *dlen > rt->lens[i])
+      return -1;
+   return (int)i;
+}
+
+/* A sealed message of @n octets, its first four in c->rx: received,
+ * authenticated and unsealed, a placeable READ reply's data straight
+ * into its request's place - decrypted there in place, after the tag
+ * (GCM) or with the MAC (CCM). c->rx is left with the plain header
+ * and any trailer after it. */
+static int rsmb_recv_sealed(struct rsmb_ctx *c, size_t n, size_t *len,
+      struct rsmb_route *rt)
+{
+   uint8_t *th  = c->rx;
+   uint8_t *msg = c->rx + SMB2_TRANSFORM_HDR_SIZE;
+   uint8_t *dst = NULL;
+   size_t   mlen, head, tail = 0;
+   uint32_t doff = 0, dlen = 0;
+   uint8_t  tag[16];
+   int      slot = -1, ok;
+
+   if (     !c->encrypt || n < SMB2_TRANSFORM_HDR_SIZE + SMB2_HDR_SIZE
+         || rsmb_recv_bytes(c, th + 4, SMB2_TRANSFORM_HDR_SIZE - 4) != 0)
+      goto bad;
+   mlen = smb_get32(th + 36);
+   if (mlen != n - SMB2_TRANSFORM_HDR_SIZE || smb_get64(th + 44) != c->session_id)
+      goto bad;
+   head = mlen < RSMB_READ_HEAD ? mlen : RSMB_READ_HEAD;
+   if (rsmb_recv_bytes(c, msg, head) != 0)
+      return -1;
+
+   if (c->cipher == CIPHER_AES128_GCM)
+   {
+      struct aes_gcm_ctx    g;
+      struct aes_gcm_stream gs;
+      uint8_t               plain[256];   /* doff is one octet */
+
+      aes_gcm_init(&g, c->dec_key, 16);
+      aes_gcm_stream_init(&gs, &g, th + 20, 12);
+      aes_gcm_stream_aad(&gs, th + 20, 32);
+      /* the header decrypted aside to route by; the ciphertext stays
+       * for the tag */
+      aes_gcm_stream_crypt(&gs, 0, msg, plain, head);
+      if (head < mlen)
+         slot = rsmb_route_find(rt, plain, mlen, &doff, &dlen);
+      if (slot < 0)
+      {
+         crypto_memzero(&g, sizeof(g));
+         crypto_memzero(&gs, sizeof(gs));
+         crypto_memzero(plain, sizeof(plain));
+         if (rsmb_recv_bytes(c, msg + head, mlen - head) != 0)
+            return -1;
+         *len = n;
+         if (rsmb_unseal(c, len) != 0)
+            goto bad;
+         return 0;
+      }
+      dst  = rt->out + rt->offs[slot];
+      tail = mlen - doff - dlen;
+      if (     rsmb_recv_bytes(c, msg + head, doff - head) != 0
+            || rsmb_recv_bytes(c, dst, dlen) != 0
+            || rsmb_recv_bytes(c, msg + doff, tail) != 0)
+         return -1;
+      aes_gcm_stream_hash_ct(&gs, msg, doff);
+      aes_gcm_stream_hash_ct(&gs, dst, dlen);
+      aes_gcm_stream_hash_ct(&gs, msg + doff, tail);
+      aes_gcm_stream_tag(&gs, tag);
+      ok = crypto_memeq_ct(tag, th + 4, 16);
+      if (ok)
+      {
+         aes_gcm_stream_crypt(&gs, 0, msg, plain, doff);
+         aes_gcm_stream_crypt(&gs, doff, dst, dst, dlen);
+         aes_gcm_stream_crypt(&gs, (uint64_t)doff + dlen,
+               msg + doff, msg + doff, tail);
+         memcpy(c->rx, plain, doff);
+         memmove(c->rx + doff, msg + doff, tail);
+      }
+      crypto_memzero(&g, sizeof(g));
+      crypto_memzero(&gs, sizeof(gs));
+      crypto_memzero(plain, sizeof(plain));
+   }
+   else
+   {
+      /* CCM authenticates the plaintext, so the message is decrypted
+       * in order as it arrives, the data in its place */
+      struct aes_ctx        a;
+      struct aes_ccm_stream cs;
+
+      if (     aes_init(&a, c->dec_key, 16) != 0
+            || aes_ccm_stream_init(&cs, &a, th + 20, 11, th + 20, 32,
+               mlen, 16) != 0)
+         goto bad;
+      aes_ccm_stream_decrypt(&cs, msg, msg, head);
+      if (head < mlen)
+         slot = rsmb_route_find(rt, msg, mlen, &doff, &dlen);
+      if (slot < 0)
+      {
+         if (rsmb_recv_bytes(c, msg + head, mlen - head) != 0)
+            return -1;
+         aes_ccm_stream_decrypt(&cs, msg + head, msg + head, mlen - head);
+         doff = (uint32_t)mlen;
+      }
+      else
+      {
+         dst  = rt->out + rt->offs[slot];
+         tail = mlen - doff - dlen;
+         if (rsmb_recv_bytes(c, msg + head, doff - head) != 0)
+            return -1;
+         aes_ccm_stream_decrypt(&cs, msg + head, msg + head, doff - head);
+         if (rsmb_recv_bytes(c, dst, dlen) != 0)
+            return -1;
+         aes_ccm_stream_decrypt(&cs, dst, dst, dlen);
+         if (rsmb_recv_bytes(c, msg + doff, tail) != 0)
+            return -1;
+         aes_ccm_stream_decrypt(&cs, msg + doff, msg + doff, tail);
+      }
+      aes_ccm_stream_tag(&cs, tag);
+      ok = crypto_memeq_ct(tag, th + 4, 16);
+      crypto_memzero(&a, sizeof(a));
+      if (ok)
+         memmove(c->rx, msg, doff + tail);
+      else if (dst)
+         crypto_memzero(dst, dlen);
+   }
+   crypto_memzero(tag, sizeof(tag));
+   if (!ok)
+      goto bad;
+   if (slot < 0)
+   {
+      *len = mlen;
+      return 0;
+   }
+   rt->slot   = (unsigned)slot;
+   rt->placed = dlen;
+   *len       = doff + tail;
+   return 0;
+
+bad:
+   rsmb_err(c, "unseal failed");
+   return -1;
+}
+
+/* rsmb_recv_raw() for a fetch: one message, a placeable READ reply's
+ * data received straight into its request's place, its signature
+ * checked over the pieces (*checked set). Sealed messages come back
+ * unsealed. */
+static int rsmb_recv_routed(struct rsmb_ctx *c, size_t *len,
+      struct rsmb_route *rt, int *checked)
+{
+   uint8_t  nb[8];
+   size_t   n, head;
+   uint32_t doff, dlen;
+   int      slot;
+
+   *checked = 0;
+   rt->slot = rt->n;
+   /* the length and the first octets of the message, which say
+    * whether it is sealed: every frame is longer than these */
+   if (rsmb_recv_bytes(c, nb, 8) != 0)
+      return -1;
+   n = ((size_t)nb[1] << 16) | ((size_t)nb[2] << 8) | nb[3];
+   if (nb[0] != 0 || n < SMB2_HDR_SIZE || n > c->buf_size)
+   {
+      rsmb_err(c, "bad frame");
+      return -1;
+   }
+   memcpy(c->rx, nb + 4, 4);
+   if (c->rx[0] == 0xfd)
+   {
+      if (rsmb_recv_sealed(c, n, len, rt) != 0)
+         return -1;
+      *checked = rt->slot != rt->n;
+      return 0;
+   }
+
+   head = n < RSMB_READ_HEAD ? n : RSMB_READ_HEAD;
+   if (rsmb_recv_bytes(c, c->rx + 4, head - 4) != 0)
+      return -1;
+   if (head < n && (slot = rsmb_route_find(rt, c->rx, n, &doff, &dlen)) >= 0)
+   {
+      uint8_t *dst  = rt->out + rt->offs[slot];
+      size_t   tail = n - doff - dlen;
+      if (     rsmb_recv_bytes(c, c->rx + head, doff - head) != 0
+            || rsmb_recv_bytes(c, dst, dlen) != 0
+            || rsmb_recv_bytes(c, c->rx + doff, tail) != 0)
+         return -1;
+      if (c->signing && c->session_ready && !c->encrypt)
+      {
+         struct rsmb_seg seg[3];
+         seg[0].p = c->rx;        seg[0].len = doff;
+         seg[1].p = dst;          seg[1].len = dlen;
+         seg[2].p = c->rx + doff; seg[2].len = tail;
+         if (rsmb_verify_segs(c, c->rx, seg, tail ? 3 : 2) != 0)
+         {
+            rsmb_err(c, "bad signature");
+            return -1;
+         }
+      }
+      *checked   = 1;
+      rt->slot   = (unsigned)slot;
+      rt->placed = dlen;
+      *len       = doff + tail;
+      return 0;
+   }
+   if (rsmb_recv_bytes(c, c->rx + head, n - head) != 0)
+      return -1;
+   *len = n;
+   return 0;
+}
+
 /* Receive the next real reply (interim STATUS_PENDING ones are
  * skipped) into @c->rx, unsealed and verified; its id in @mid, its
- * status in c->status, its credit grant added to the balance. */
-static int rsmb_recv_msg(struct rsmb_ctx *c, size_t *rlen, uint64_t *mid)
+ * status in c->status, its credit grant added to the balance. With
+ * @rt, a READ reply's data is received where @rt says instead. */
+static int rsmb_recv_msg(struct rsmb_ctx *c, size_t *rlen, uint64_t *mid,
+      struct rsmb_route *rt)
 {
+   int checked = 0;
    for (;;)
    {
-      if (rsmb_recv_raw(c, rlen) != 0)
-         return -1;
-      if (c->rx[0] == 0xfd)
+      if (rt)
       {
-         if (!c->encrypt || rsmb_unseal(c, rlen) != 0)
-         {
-            rsmb_err(c, "unseal failed");
+         if (rsmb_recv_routed(c, rlen, rt, &checked) != 0)
             return -1;
+      }
+      else
+      {
+         if (rsmb_recv_raw(c, rlen) != 0)
+            return -1;
+         if (c->rx[0] == 0xfd)
+         {
+            if (!c->encrypt || rsmb_unseal(c, rlen) != 0)
+            {
+               rsmb_err(c, "unseal failed");
+               return -1;
+            }
          }
       }
       if (*rlen < SMB2_HDR_SIZE || c->rx[0] != 0xfe)
@@ -554,7 +881,7 @@ static int rsmb_recv_msg(struct rsmb_ctx *c, size_t *rlen, uint64_t *mid)
    *mid      = smb_get64(c->rx + 24);
    c->status = smb_get32(c->rx + 8);
    c->credits += (int)smb_get16(c->rx + 14);
-   if (c->signing && c->session_ready && !c->encrypt
+   if (c->signing && c->session_ready && !c->encrypt && !checked
          && rsmb_verify_sig(c, c->rx, *rlen) != 0)
    {
       rsmb_err(c, "bad signature");
@@ -574,7 +901,7 @@ static int rsmb_call(struct rsmb_ctx *c, size_t body_len,
       return -1;
    do
    {
-      if (rsmb_recv_msg(c, &rlen, &got) != 0)
+      if (rsmb_recv_msg(c, &rlen, &got, NULL) != 0)
          return -1;
    } while (got != mid);
    if (preauth && c->dialect == DIALECT_311
@@ -1564,12 +1891,19 @@ static int64_t rsmb_fetch(struct rsmb_ctx *c, struct rsmb_file *f,
       }
       if (!inflight)
          break;
-      /* take one reply and match it */
+      /* take one reply and match it; a READ's data is received
+       * straight into its place in @out */
       {
-         size_t   rlen;
-         uint64_t mid;
-         unsigned slot = RSMB_PIPELINE;
-         if (rsmb_recv_msg(c, &rlen, &mid) != 0)
+         size_t            rlen;
+         uint64_t          mid;
+         unsigned          slot = RSMB_PIPELINE;
+         struct rsmb_route rt;
+         rt.mids = mids;
+         rt.offs = offs;
+         rt.lens = lens;
+         rt.out  = out;
+         rt.n    = inflight;
+         if (rsmb_recv_msg(c, &rlen, &mid, &rt) != 0)
             return -1;
          for (i = 0; i < inflight; i++)
             if (mids[i] == mid)
@@ -1594,14 +1928,17 @@ static int64_t rsmb_fetch(struct rsmb_ctx *c, struct rsmb_file *f,
          {
             const uint8_t *r = c->rx + SMB2_HDR_SIZE;
             uint32_t doff = r[2], got = smb_get32(r + 4);
-            if (doff < SMB2_HDR_SIZE || doff + got > rlen || got > lens[slot])
+            if (rt.slot == slot)
+               got = rt.placed;
+            else if (doff < SMB2_HDR_SIZE || doff + got > rlen || got > lens[slot])
             {
                rsmb_err(c, "bad read reply");
                fail = 1;
             }
             else
-            {
                memcpy(out + offs[slot], c->rx + doff, got);
+            if (!fail)
+            {
                /* a short or empty reply ends the contiguous run
                 * there, whatever later chunks answered */
                if (got < lens[slot])

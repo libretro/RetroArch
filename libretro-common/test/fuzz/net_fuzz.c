@@ -146,11 +146,19 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t len)
    {
       struct rsmb_stat st;
       struct rsmb_dir *d;
+      struct rsmb_file *f;
       rsmb_stat(c, "a", &st);
       if ((d = rsmb_opendir(c, "/")))
       {
          while (rsmb_readdir(c, d)) ;
          rsmb_closedir(c, d);
+      }
+      /* READ replies are received into the caller's buffer */
+      if ((f = rsmb_open(c, "a", RSMB_O_RDONLY)))
+      {
+         static uint8_t buf[1 << 16];
+         rsmb_read(c, f, buf, sizeof(buf));
+         rsmb_close(c, f);
       }
    }
    rsmb_free(c);
