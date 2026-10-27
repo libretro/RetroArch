@@ -106,6 +106,12 @@ typedef struct android_input_pointer
    int32_t id;
    float x;
    float y;
+   /* its contact: the ellipse's axes in pixels, and its orientation in
+    * ten-thousandths of a radian (input/common/overlay_contact.h) */
+   uint16_t major;
+   uint16_t minor;
+   int16_t angle;
+   int16_t pad;
 } android_input_pointer_t;
 
 /* An event from the input queue as the input reader wrote it into its
@@ -137,7 +143,7 @@ typedef struct android_input_event
    (offsetof(android_input_event_t, pointer) \
     + (size_t)(pointers) * sizeof(android_input_pointer_t))
 
-/* The input reader's ring, in bytes: some 1500 keys, or 200 touches
+/* The input reader's ring, in bytes: some 1500 keys, or near 200 touches
  * of all ten fingers. Full, the reader leaves the rest in the input
  * queue until the app thread makes room. */
 #define ANDROID_INPUT_RING_BYTES 65536

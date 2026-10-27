@@ -13002,6 +13002,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,           PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,   PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,   PARSE_ONLY_UINT,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_METHOD,                 PARSE_ONLY_UINT,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_METHOD,                 PARSE_ONLY_UINT,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_CONTACT_SCALE,               PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,        PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,                 PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,                  PARSE_ONLY_BOOL,  false },
@@ -13067,6 +13070,24 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = input_overlay_enable &&
                          BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ABXY_AREA);
                      break;
+                  /* only Android's driver reports a finger's contact */
+#ifdef ANDROID
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_METHOD:
+                     build_list[i].checked = input_overlay_enable &&
+                         BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_DPAD_AREA);
+                     break;
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_METHOD:
+                     build_list[i].checked = input_overlay_enable &&
+                         BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ABXY_AREA);
+                     break;
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_CONTACT_SCALE:
+                     build_list[i].checked = input_overlay_enable
+                        && (  (  BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_DPAD_AREA)
+                              && settings->uints.input_overlay_dpad_method)
+                           || (  BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ABXY_AREA)
+                              && settings->uints.input_overlay_abxy_method));
+                     break;
+#endif
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE:
                      build_list[i].checked = input_overlay_enable &&
                          (BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_LEFT)

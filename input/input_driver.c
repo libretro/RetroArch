@@ -50,6 +50,7 @@
 #endif
 #include "common/input_device_pins.h"
 #include "common/input_ignore_devices.h"
+#include "common/overlay_contact.h"
 #ifdef HAVE_OVERLAY
 #include "../led/led_defines.h"
 #endif
@@ -2262,6 +2263,20 @@ bool input_driver_poll_viewport(struct video_viewport *vp)
       return false;
    *vp = input_pointers.vp;
    return true;
+}
+
+static uint32_t input_touch_contacts[16];
+static int16_t  input_touch_angles[16];
+static unsigned input_touch_contact_count;
+
+void input_driver_publish_touch_contacts(const uint32_t *contacts,
+      const int16_t *angles, unsigned count)
+{
+   if (count > ARRAY_SIZE(input_touch_contacts))
+      count = ARRAY_SIZE(input_touch_contacts);
+   memcpy(input_touch_contacts, contacts, count * sizeof(*contacts));
+   memcpy(input_touch_angles,   angles,   count * sizeof(*angles));
+   input_touch_contact_count = count;
 }
 
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
@@ -6042,6 +6057,56 @@ static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc,
  *
  * @return true if touch pointer is inside any hitbox
  **/
+/* The ways a finger's contact covers on a D-pad or face-button area
+ * (common/overlay_contact.h), from the contact the driver published
+ * for touch @touch_idx; with none, the way its centre lies */
+static void input_overlay_get_eightway_contact(const input_overlay_t *ol,
+      const struct overlay_desc *desc, overlay_eightway_config_t *eightway,
+      input_bits_t *out, int touch_idx, float x_dist, float y_dist,
+      float touch_scale, unsigned contact_scale)
+{
+   video_viewport_t vp;
+   unsigned dirs;
+   unsigned major = 0;
+   unsigned minor = 0;
+   float angle    = 0.0f;
+   float w        = 0.0f;
+   float h        = 0.0f;
+
+   memset(&vp, 0, sizeof(vp));
+   if (     touch_idx >= 0
+         && (unsigned)touch_idx < input_touch_contact_count
+         && input_driver_poll_viewport(&vp))
+   {
+      /* the pointer's space: the window for a full-screen overlay, as
+       * its touches are read, else the drawn area */
+      unsigned dims = ((ol->active->flags & OVERLAY_FULL_SCREEN)
+            || video_driver_get_views_layout()) ? vp.full_dims : vp.dims;
+      w     = (float)VIDEO_SCALE_W(dims) * ol->active->mod_w * desc->range_x;
+      h     = (float)VIDEO_SCALE_H(dims) * ol->active->mod_h * desc->range_y;
+      if (w > 0.0f && h > 0.0f)
+      {
+         major = OVERLAY_CONTACT_MAJOR(input_touch_contacts[touch_idx]);
+         minor = OVERLAY_CONTACT_MINOR(input_touch_contacts[touch_idx]);
+         angle = OVERLAY_CONTACT_ANGLE(input_touch_angles[touch_idx]);
+      }
+   }
+
+   dirs = overlay_contact_dirs(x_dist / desc->range_x, y_dist / desc->range_y,
+         major, minor, angle,
+         major ? touch_scale / w : 0.0f, major ? touch_scale / h : 0.0f,
+         (float)contact_scale / 100.0f);
+
+   if (dirs & OVERLAY_CONTACT_UP)
+      bits_or_bits(out->data, eightway->up.data, ARRAY_SIZE(out->data));
+   if (dirs & OVERLAY_CONTACT_DOWN)
+      bits_or_bits(out->data, eightway->down.data, ARRAY_SIZE(out->data));
+   if (dirs & OVERLAY_CONTACT_LEFT)
+      bits_or_bits(out->data, eightway->left.data, ARRAY_SIZE(out->data));
+   if (dirs & OVERLAY_CONTACT_RIGHT)
+      bits_or_bits(out->data, eightway->right.data, ARRAY_SIZE(out->data));
+}
+
 static bool input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,
@@ -6127,9 +6192,21 @@ static bool input_overlay_poll(
              * gate input_overlay_get_eightway_state NULL-derefs
              * on eightway->slope_high below. */
             if (desc->eightway_config)
-               input_overlay_get_eightway_state(
-                     desc, desc->eightway_config,
-                     &out->buttons, x_dist, y_dist);
+            {
+               settings_t *settings = config_get_ptr();
+               unsigned method      = (desc->type == OVERLAY_TYPE_DPAD_AREA)
+                  ? settings->uints.input_overlay_dpad_method
+                  : settings->uints.input_overlay_abxy_method;
+               if (method != OVERLAY_CONTACT_METHOD_AREA)
+                  input_overlay_get_eightway_state(
+                        desc, desc->eightway_config,
+                        &out->buttons, x_dist, y_dist);
+               if (method != OVERLAY_CONTACT_METHOD_VECTOR)
+                  input_overlay_get_eightway_contact(ol, desc,
+                        desc->eightway_config, &out->buttons, touch_idx,
+                        x_dist, y_dist, touch_scale,
+                        settings->uints.input_overlay_contact_scale);
+            }
             break;
          case OVERLAY_TYPE_ANALOG_RIGHT:
             base = 2;
@@ -15820,6 +15897,7 @@ void input_driver_poll(void)
    /* a driver that keeps its mice publishes them in its poll; one that
     * does not is asked for them, as before */
    input_pointer_frames_clear();
+   input_touch_contact_count = 0;
    if (input && input->poll)
       input->poll(input_st->current_data);
 #ifdef HAVE_OPENXR

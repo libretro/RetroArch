@@ -1584,6 +1584,18 @@ MSG_HASH(
    "input_overlay_analog_recenter_zone"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_METHOD,
+   "input_overlay_dpad_method"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_METHOD,
+   "input_overlay_abxy_method"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_CONTACT_SCALE,
+   "input_overlay_contact_scale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SETTINGS_BEGIN,
    "input_settings_begin"
    )

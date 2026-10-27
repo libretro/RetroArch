@@ -1538,6 +1538,14 @@ unsigned input_driver_pointer_read_as(unsigned i);
  * all; a bit in @down if it is pressed. The three are separate: a
  * contact at 0,0 is a contact, and one that has lifted may keep its
  * place (@present without @down). */
+/* Each touch's contact, as the touchscreen reports it, for touch @i
+ * of the driver's pointer: @contacts as OVERLAY_CONTACT_PACK(major,
+ * minor) in pixels, @angles its orientation in ten-thousandths of a
+ * radian, 0 upright and positive clockwise. From the driver's poll;
+ * none is had again until the next. For the overlay's D-pad and face
+ * buttons (input/common/overlay_contact.h). */
+void input_driver_publish_touch_contacts(const uint32_t *contacts,
+      const int16_t *angles, unsigned count);
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
       unsigned present, unsigned down);
 

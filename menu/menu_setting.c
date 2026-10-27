@@ -148,6 +148,7 @@ void android_app_set_window_settings(bool notch_write_over,
 #include "../manual_content_scan.h"
 #include "../input/input_osk.h"
 #include "../input/input_remapping.h"
+#include "../input/common/overlay_contact.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -8635,6 +8636,24 @@ static size_t setting_get_string_representation_input_rotation(
          break;
       case INPUT_ROTATION_AUTO:
          e = MENU_ENUM_LABEL_VALUE_INPUT_ROTATION_AUTO;
+         break;
+   }
+   return strlcpy(s, msg_hash_to_str(e), len);
+}
+
+static size_t setting_get_string_representation_overlay_contact_method(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   enum msg_hash_enums e = MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_VECTOR;
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case OVERLAY_CONTACT_METHOD_AREA:
+         e = MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_AREA;
+         break;
+      case OVERLAY_CONTACT_METHOD_BOTH:
+         e = MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH;
          break;
    }
    return strlcpy(s, msg_hash_to_str(e), len);

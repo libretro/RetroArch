@@ -631,8 +631,11 @@ uint	netplay_input_latency_frames_min	1	0
 uint	netplay_input_latency_frames_range	1	0
 uint	streaming_mode	1	STREAMING_MODE_TWITCH
 uint	input_overlay_abxy_diagonal_sensitivity	1	50
+uint	input_overlay_abxy_method	1	0
 uint	input_overlay_analog_recenter_zone	1	0
+uint	input_overlay_contact_scale	1	100
 uint	input_overlay_dpad_diagonal_sensitivity	1	80
+uint	input_overlay_dpad_method	1	0
 uint	input_overlay_show_inputs	1	OVERLAY_SHOW_INPUT_TOUCHED
 uint	input_overlay_show_inputs_port	1	0
 uint	network_cmd_port	1	55355
@@ -1341,8 +1344,11 @@ uint	netplay_input_latency_frames_min	1	0
 uint	netplay_input_latency_frames_range	1	0
 uint	streaming_mode	1	STREAMING_MODE_TWITCH
 uint	input_overlay_abxy_diagonal_sensitivity	1	50
+uint	input_overlay_abxy_method	1	0
 uint	input_overlay_analog_recenter_zone	1	0
+uint	input_overlay_contact_scale	1	100
 uint	input_overlay_dpad_diagonal_sensitivity	1	80
+uint	input_overlay_dpad_method	1	0
 uint	input_overlay_show_inputs	1	OVERLAY_SHOW_INPUT_PHYSICAL
 uint	input_overlay_show_inputs_port	1	0
 uint	network_cmd_port	1	55355
@@ -2076,8 +2082,11 @@ uint	netplay_input_latency_frames_min	1	0
 uint	netplay_input_latency_frames_range	1	0
 uint	streaming_mode	1	STREAMING_MODE_TWITCH
 uint	input_overlay_abxy_diagonal_sensitivity	1	50
+uint	input_overlay_abxy_method	1	0
 uint	input_overlay_analog_recenter_zone	1	0
+uint	input_overlay_contact_scale	1	100
 uint	input_overlay_dpad_diagonal_sensitivity	1	80
+uint	input_overlay_dpad_method	1	0
 uint	input_overlay_show_inputs	1	OVERLAY_SHOW_INPUT_PHYSICAL
 uint	input_overlay_show_inputs_port	1	0
 uint	network_cmd_port	1	55355

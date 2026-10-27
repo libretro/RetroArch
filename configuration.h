@@ -433,6 +433,9 @@ typedef struct settings
       unsigned input_overlay_dpad_diagonal_sensitivity;
       unsigned input_overlay_abxy_diagonal_sensitivity;
       unsigned input_overlay_analog_recenter_zone;
+      unsigned input_overlay_dpad_method;
+      unsigned input_overlay_abxy_method;
+      unsigned input_overlay_contact_scale;
       unsigned input_overlay_lightgun_trigger_delay;
       unsigned input_overlay_lightgun_two_touch_input;
       unsigned input_overlay_lightgun_three_touch_input;

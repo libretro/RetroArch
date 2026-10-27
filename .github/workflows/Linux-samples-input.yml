@@ -708,6 +708,20 @@ jobs:
           make clean
           echo "[pass] ignore_devices_test (ASan)"
 
+      - name: Build and run overlay_contact_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/overlay_contact
+        run: |
+          set -eu
+          # A finger's contact on an overlay D-pad or face-button area:
+          # each tip of the ellipse the touchscreen reports presses the
+          # way it lies, sized per axis, with a dead zone at the middle;
+          # with no size, the way the centre lies.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          timeout 60 ./overlay_contact_test
+          make clean
+          echo "[pass] overlay_contact_test (ASan)"
+
       - name: Build and run win_pad_ident_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/win_pad_ident

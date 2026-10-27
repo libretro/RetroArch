@@ -4401,8 +4401,11 @@ static const struct config_uint_row config_uint_rows[] = {
 #endif
 #if defined(HAVE_OVERLAY)
    CFG_ROW(uints.input_overlay_abxy_diagonal_sensitivity, INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY, DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY),
+   CFG_ROW(uints.input_overlay_abxy_method, INPUT_OVERLAY_ABXY_METHOD, DEFAULT_OVERLAY_ABXY_METHOD),
    CFG_ROW(uints.input_overlay_analog_recenter_zone, INPUT_OVERLAY_ANALOG_RECENTER_ZONE, DEFAULT_INPUT_OVERLAY_ANALOG_RECENTER_ZONE),
+   CFG_ROW(uints.input_overlay_contact_scale, INPUT_OVERLAY_CONTACT_SCALE, DEFAULT_OVERLAY_CONTACT_SCALE),
    CFG_ROW(uints.input_overlay_dpad_diagonal_sensitivity, INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY, DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY),
+   CFG_ROW(uints.input_overlay_dpad_method, INPUT_OVERLAY_DPAD_METHOD, DEFAULT_OVERLAY_DPAD_METHOD),
    CFG_ROW(uints.input_overlay_show_inputs, INPUT_OVERLAY_SHOW_INPUTS, DEFAULT_OVERLAY_SHOW_INPUTS),
    CFG_ROW(uints.input_overlay_show_inputs_port, INPUT_OVERLAY_SHOW_INPUTS_PORT, DEFAULT_OVERLAY_SHOW_INPUTS_PORT),
 #endif

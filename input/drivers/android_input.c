@@ -57,6 +57,7 @@
 #include "android_key_state.h"
 #include "android_stylus_map.h"
 #include "../common/output_writer.h"
+#include "../common/overlay_contact.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
@@ -232,6 +233,10 @@ typedef struct android_input
    sensor_t gyroscope_state;                    /* float alignment */
    float mouse_x_prev, mouse_y_prev;
    struct input_pointer pointer[MAX_TOUCH];     /* int16_t alignment */
+   /* each pointer's contact, kept in step with pointer[] and handed to
+    * the frontend each poll (input_driver_publish_touch_contacts) */
+   uint32_t contact[MAX_TOUCH];
+   int16_t contact_angle[MAX_TOUCH];
    /* The second display's fingers (RARCH_DEVICE_POINTER_SECOND), by the
     * order they went down */
    struct input_pointer second_pointer[MAX_TOUCH];
@@ -1741,6 +1746,12 @@ static INLINE void android_input_poll_event_type_motion(
       memmove(android->pointer + motion_ptr,
             android->pointer + motion_ptr + 1,
             (MAX_TOUCH - motion_ptr - 1) * sizeof(struct input_pointer));
+      memmove(android->contact + motion_ptr,
+            android->contact + motion_ptr + 1,
+            (MAX_TOUCH - motion_ptr - 1) * sizeof(*android->contact));
+      memmove(android->contact_angle + motion_ptr,
+            android->contact_angle + motion_ptr + 1,
+            (MAX_TOUCH - motion_ptr - 1) * sizeof(*android->contact_angle));
       if (android->pointer_count > 0)
          android->pointer_count--;
    }
@@ -1778,6 +1789,9 @@ static INLINE void android_input_poll_event_type_motion(
          float y = ev->pointer[motion_ptr].y;
 
          android_pointer_set(android, motion_ptr, &vp, x, y);
+         android->contact[motion_ptr]       = OVERLAY_CONTACT_PACK(
+               ev->pointer[motion_ptr].major, ev->pointer[motion_ptr].minor);
+         android->contact_angle[motion_ptr] = ev->pointer[motion_ptr].angle;
 
          android->pointer_count = MAX(
                android->pointer_count,
@@ -2654,9 +2668,18 @@ static size_t android_input_reader_pointers(const AInputEvent *event,
    ev->relative_y   = 0.0f;
    for (i = 0; i < count && i < MAX_TOUCH; i++)
    {
-      ev->pointer[i].id = AMotionEvent_getPointerId(event, i);
-      ev->pointer[i].x  = AMotionEvent_getX(event, i);
-      ev->pointer[i].y  = AMotionEvent_getY(event, i);
+      float major = AMotionEvent_getTouchMajor(event, i);
+      float minor = AMotionEvent_getTouchMinor(event, i);
+      ev->pointer[i].id    = AMotionEvent_getPointerId(event, i);
+      ev->pointer[i].x     = AMotionEvent_getX(event, i);
+      ev->pointer[i].y     = AMotionEvent_getY(event, i);
+      ev->pointer[i].major = (uint16_t)(major > 0.0f
+            ? (major < 65535.0f ? major : 65535.0f) : 0.0f);
+      ev->pointer[i].minor = (uint16_t)(minor > 0.0f
+            ? (minor < 65535.0f ? minor : 65535.0f) : 0.0f);
+      ev->pointer[i].angle = OVERLAY_CONTACT_ANGLE_Q(
+            AMotionEvent_getOrientation(event, i));
+      ev->pointer[i].pad   = 0;
    }
    ev->pointer_count = (int32_t)i;
    if (ptr < count)
@@ -3453,6 +3476,12 @@ static void android_input_poll(void *data)
    }
 
    android_input_poll_press_groups();
+
+   /* each finger's contact, for the overlay's D-pad and face buttons */
+   if (android && android->pointer_count)
+      input_driver_publish_touch_contacts(android->contact,
+            android->contact_angle,
+            MIN(android->pointer_count, MAX_TOUCH));
 
    android_input_focus_settle(android_app);
 }

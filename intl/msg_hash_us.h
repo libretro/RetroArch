@@ -15416,6 +15416,30 @@ MSG_HASH(
    "Analog stick input will be relative to first touch if pressed within this zone."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_METHOD,
+   "D-Pad Input Method"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_METHOD,
+   "How the D-pad reads a touch. 'Direction': the way the finger's centre lies. 'Contact Area': every way the finger's contact covers, so a thumb laid across two directions presses both. 'Both': either."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_METHOD,
+   "ABXY Input Method"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_METHOD,
+   "How the face buttons read a touch. 'Direction': the button the finger's centre is nearest. 'Contact Area': every button the finger's contact covers, so a thumb between two presses both. 'Both': either."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_CONTACT_SCALE,
+   "Contact Area Size"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_CONTACT_SCALE,
+   "How large a finger's contact counts, against the size the touchscreen reports. Raise it for a touchscreen that reports small contacts."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Overlay"
    )
@@ -27215,6 +27239,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SOCD_UP,
    "Up Priority"
+   )
+MSG_HASH( /* An overlay D-pad or face buttons read the way the finger's centre lies */
+   MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_VECTOR,
+   "Direction"
+   )
+MSG_HASH( /* ... every way the finger's contact on the touchscreen covers */
+   MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_AREA,
+   "Contact Area"
+   )
+MSG_HASH( /* ... either of the two */
+   MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
+   "Both"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS,
