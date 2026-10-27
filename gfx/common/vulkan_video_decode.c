@@ -1766,11 +1766,14 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    vvd.general     = (ctx->flags & VK_CTX_FLAG_VIDEO_GENERAL) != 0;
    vvd.mem         = ctx->memory_properties;
 #ifdef _WIN32
-   /* NVIDIA 610.47 corrupts H.264 and faults on AV1 intra block copy. */
+   /* NVIDIA H.264 corruption; 610.47 also faults on AV1 intra block copy. */
    vvd.h264_broken = ctx->gpu_properties.vendorID == 0x10de
-      && ctx->gpu_properties.driverVersion == ((610u << 22) | (47u << 14));
+      && (ctx->gpu_properties.driverVersion == ((610u << 22) | (47u << 14))
+         || (ctx->gpu_properties.deviceID == 0x2b85
+            && ctx->gpu_properties.driverVersion == ((621u << 22) | (1u << 14))));
 #ifdef HAVE_RAV1
-   vvd.av1_intrabc_broken = vvd.h264_broken;
+   vvd.av1_intrabc_broken = ctx->gpu_properties.vendorID == 0x10de
+      && ctx->gpu_properties.driverVersion == ((610u << 22) | (47u << 14));
 #endif
 #endif
    vvd.gfx_family  = ctx->graphics_queue_index;

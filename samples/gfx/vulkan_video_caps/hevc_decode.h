@@ -391,6 +391,47 @@ done:
 
 #include "h26x_webm_decode.h"
 
+#ifdef _WIN32
+static int h264_driver_admission(vulkan_context_t *ctx)
+{
+   static const struct
+   {
+      uint32_t vendor, device, driver;
+      int h264, av1;
+   } cases[] = {
+      {0x10de, 0x2b85, (621u << 22) | (1u << 14), 1, 0},
+      {0x10de, 0x2b85, (621u << 22) | (2u << 14), 0, 0},
+      {0x10de, 0x2684, (621u << 22) | (1u << 14), 0, 0},
+      {0x1002, 0x2b85, (621u << 22) | (1u << 14), 0, 0},
+      {0x10de, 0x2684, (610u << 22) | (47u << 14), 1, 1}
+   };
+   uint32_t vendor = ctx->gpu_properties.vendorID;
+   uint32_t device = ctx->gpu_properties.deviceID;
+   uint32_t driver = ctx->gpu_properties.driverVersion;
+   unsigned i;
+   int ok = 1;
+   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+   {
+      ctx->gpu_properties.vendorID = cases[i].vendor;
+      ctx->gpu_properties.deviceID = cases[i].device;
+      ctx->gpu_properties.driverVersion = cases[i].driver;
+      if (!vulkan_video_decode_init(ctx)
+            || vvd.h264_broken != !!cases[i].h264)
+         ok = 0;
+#ifdef HAVE_RAV1
+      if (vvd.av1_intrabc_broken != !!cases[i].av1) ok = 0;
+#endif
+      vulkan_video_decode_deinit();
+      if (!ok) break;
+   }
+   ctx->gpu_properties.vendorID = vendor;
+   ctx->gpu_properties.deviceID = device;
+   ctx->gpu_properties.driverVersion = driver;
+   printf("H.264 driver admission and independent AV1 guard: %s\n", ok ? "PASS" : "FAIL");
+   return ok;
+}
+#endif
+
 static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
       uint32_t family, uint32_t graphics, uint32_t codecs, PFN_vkGetInstanceProcAddr get)
 {
@@ -483,6 +524,9 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
    vulkan_symbol_wrapper_vkCreateImage = sample_image_fault;
    vulkan_symbol_wrapper_vkCreateImageView = sample_view_fault;
    if ((getenv("H26X_TEST_WEBM") || getenv("H26X_TEST_MP4"))) ctx->video_codec_operations = codecs;
+#ifdef _WIN32
+   if (!h264_driver_admission(ctx)) goto done;
+#endif
    if (!vulkan_video_decode_init(ctx)) goto done;
    if ((getenv("H26X_TEST_WEBM") || getenv("H26X_TEST_MP4")))
    {
