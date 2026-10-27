@@ -26,6 +26,7 @@
  *    vertices land where the RSX is pointed at, inside their buffer,
  *    and vertices queued for the RSX are not written over by the next
  *    draw, message or frame.
+ *  - font_batches: large batches, independent font cursors and GPU fences.
  *  - native_menu_frame, menu_dupe_frame: a menu with no new core
  *    frame is presented, over the last core frame if there is one.
  *
@@ -131,6 +132,7 @@ s32 rsxAddressToOffset(const void *ptr, u32 *offset)
 static gcmContextData fake_context;
 static void *fake_host_addr;
 static u32 fake_labels[256];
+static bool fake_defer_backend;
 static u8  fake_ucode[64];
 static rsxProgramConst  fake_const;
 static rsxProgramAttrib fake_attrib;
@@ -147,8 +149,9 @@ s32 rsxInit(gcmContextData **context, u32 cmdSize, u32 ioSize,
 }
 
 void rsxFinish(gcmContextData *context, u32 ref_value) { rsx_finish_calls++; }
+void rsxSetWaitForIdle(gcmContextData *context) { }
 void rsxSetWriteBackendLabel(gcmContextData *context, u8 index, u32 value)
-{ fake_labels[index] = value; }
+{ if (!fake_defer_backend) fake_labels[index] = value; }
 u32 *gcmGetLabelAddress(const u8 index) { return &fake_labels[index]; }
 u32  gcmGetFlipStatus(void) { return 0; }
 void gcmResetFlipStatus(void) { }
@@ -177,6 +180,9 @@ void rsxBindVertexArrayAttrib(gcmContextData *c, u8 attr, u16 frequency,
       u32 offset, u8 stride, u8 elems, u8 dtype, u8 location) { }
 void rsxClearSurface(gcmContextData *c, u32 clear_mask) { }
 static unsigned rsx_draw_calls;
+static unsigned rsx_vertex_invalidations;
+void rsxInvalidateVertexCache(gcmContextData *context)
+{ rsx_vertex_invalidations++; }
 void rsxDrawVertexArray(gcmContextData *c, u32 type, u32 start, u32 count)
 { rsx_draw_calls++; }
 void rsxFlushBuffer(gcmContextData *c) { }
@@ -200,6 +206,12 @@ void rsxSetColorMask(gcmContextData *c, u32 mask) { }
 void rsxSetColorMaskMrt(gcmContextData *c, u32 mask) { }
 void rsxSetDepthFunc(gcmContextData *c, u32 func) { }
 void rsxSetDepthTestEnable(gcmContextData *c, u32 enable) { }
+void rsxSetDepthWriteEnable(gcmContextData *c, u32 enable) { }
+void rsxSetStencilTestEnable(gcmContextData *c, u32 enable) { }
+void rsxSetLogicOpEnable(gcmContextData *c, u32 enable) { }
+void rsxSetCullFaceEnable(gcmContextData *c, u32 enable) { }
+void rsxSetPolygonOffsetFillEnable(gcmContextData *c, u32 enable) { }
+void rsxSetShadeModel(gcmContextData *c, u32 mode) { }
 void rsxSetScissor(gcmContextData *c, u16 x, u16 y, u16 w, u16 h) { }
 void rsxSetSurface(gcmContextData *c, const gcmSurface *surface) { }
 void rsxSetUserClipPlaneControl(gcmContextData *c, u32 plane0,
@@ -844,6 +856,87 @@ static void test_font_queue(void)
    printf("font_queue: ok\n");
 }
 
+/* Ozone batches may exceed the initial font buffer. */
+static void test_font_batches(void)
+{
+   video_coords_t coords;
+   rsx_t *rsx       = driver_up();
+   rsx_font_t *font = (rsx_font_t*)rsx_font_init(rsx, NULL, 12.0f, false);
+   rsx_font_t *other = (rsx_font_t*)rsx_font_init(rsx, NULL, 12.0f, false);
+   unsigned count = 9384;
+   float *data = (float*)malloc(count * 8 * sizeof(float));
+   rsx_vertex_t *queued[RSX_FONT_VERTEX_PAGES];
+   unsigned i, draws, live, finishes = rsx_finish_calls;
+   unsigned first_draw = rsx_draw_calls;
+   unsigned invalidations = rsx_vertex_invalidations;
+   CHECK(font && other && data, "font_batches: allocation");
+   if (!font || !other || !data)
+      exit(1);
+   for (i = 0; i < count * 8; i++)
+      data[i] = 1.0f;
+   memset(&coords, 0, sizeof(coords));
+   coords.vertex    = data;
+   coords.tex_coord = data + count * 2;
+   coords.color     = data + count * 4;
+   coords.vertices  = 6;
+   rsx_font_draw_vertices(rsx, font, &coords);
+   rsx_font_draw_vertices(rsx, other, &coords);
+   CHECK(other->vertex_pages[0].used == 6,
+         "font_batches: font cursors shared");
+   rsx_font_draw_vertices(rsx, font, &coords);
+   CHECK(font->vertex_pages[0].used == 12,
+         "font_batches: other font moved cursor");
+
+   fake_defer_backend = true;
+   coords.vertices = count;
+   draws = rsx_draw_calls;
+   live = rsx_live();
+   rsx_fail_at = rsx_alloc_calls + 1;
+   rsx_font_draw_vertices(rsx, font, &coords);
+   CHECK(rsx_draw_calls == draws && rsx_live() == live,
+         "font_batches: allocation failure submitted a draw");
+   CHECK(font->vertices[0].r == 1.0f,
+         "font_batches: allocation failure overwrote queued text");
+   rsx_fail_at = 0;
+   fake_labels[RSX_FONT_VERTEX_LABEL] = rsx_font_vertex_serial;
+   for (i = 0; i < RSX_FONT_VERTEX_PAGES; i++)
+   {
+      data[count * 4] = (float)(i + 2);
+      rsx_font_draw_vertices(rsx, font, &coords);
+      queued[i] = font->vertices;
+      CHECK(font->vertex_pages[font->vertex_page].capacity >= count,
+            "font_batches: oversized batch outside allocation");
+      CHECK(font->vertices[count - 1].a == 1.0f,
+            "font_batches: oversized batch truncated");
+   }
+   draws = rsx_draw_calls;
+   rsx_font_draw_vertices(rsx, font, &coords);
+   CHECK(rsx_draw_calls == draws,
+         "font_batches: reused a buffer still on the GPU");
+   for (i = 0; i < RSX_FONT_VERTEX_PAGES; i++)
+      CHECK(queued[i][0].r == (float)(i + 2),
+            "font_batches: pending page %u overwritten", i);
+   fake_labels[RSX_FONT_VERTEX_LABEL] = rsx_font_vertex_serial;
+   rsx_font_draw_vertices(rsx, font, &coords);
+   CHECK(rsx_draw_calls == draws + 1,
+         "font_batches: completed pages not reused");
+   draws = rsx_draw_calls;
+   coords.vertices = (unsigned)-1;
+   rsx_font_draw_vertices(rsx, font, &coords);
+   CHECK(rsx_draw_calls == draws, "font_batches: size overflow accepted");
+   CHECK(rsx_finish_calls == finishes, "font_batches: waits for the GPU");
+   CHECK(rsx_vertex_invalidations - invalidations
+         == rsx_draw_calls - first_draw,
+         "font_batches: vertex cache not invalidated between batches");
+   fake_defer_backend = false;
+   fake_labels[RSX_FONT_VERTEX_LABEL] = rsx_font_vertex_serial;
+   free(data);
+   rsx_font_free(other, false);
+   rsx_font_free(font, false);
+   driver_down(rsx);
+   printf("font_batches: ok\n");
+}
+
 /* A duped core frame is drawn again behind the menu, as the surface
  * it was drawn to has been cleared */
 static void test_menu_dupe_frame(void)
@@ -882,6 +975,110 @@ static void test_menu_dupe_frame(void)
    printf("menu_dupe_frame: ok\n");
 }
 
+static void test_hw_interface(void)
+{
+   const struct retro_hw_render_interface *base = NULL;
+   const struct retro_hw_render_interface_rsx *iface;
+   struct retro_rsx_image image;
+   video_frame_info_t info;
+   rsx_t *rsx;
+   unsigned draws, allocations, finishes;
+   memset(&info, 0, sizeof(info));
+   CHECK(!rsx_get_hw_render_interface(NULL, &base),
+         "hw_interface: no interface without a driver");
+   fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
+   rsx = driver_up();
+   CHECK(!rsx_get_hw_render_interface(rsx, &base),
+         "hw_interface: software cores keep the software path");
+   driver_down(rsx);
+   fake_hwr.context_type = RETRO_HW_CONTEXT_RSX;
+   rsx = driver_up();
+   CHECK(rsx_get_hw_render_interface(rsx, &base),
+         "hw_interface: negotiated RSX interface available");
+   iface = (const struct retro_hw_render_interface_rsx*)base;
+   CHECK(iface->interface_type == RETRO_HW_RENDER_INTERFACE_RSX
+         && iface->interface_version == RETRO_HW_RENDER_INTERFACE_RSX_VERSION,
+         "hw_interface: type and version advertised");
+   CHECK(iface->context == rsx->context && iface->io_address == fake_host_addr,
+         "hw_interface: frontend owns context and mapping");
+   CHECK(iface->io_size == HOST_SIZE && iface->io_used >= CB_SIZE
+         && iface->io_used < iface->io_size,
+         "hw_interface: host mapping excludes command buffer");
+   rsx->video_info.is_threaded = true;
+   CHECK(!rsx_get_hw_render_interface(rsx, &base),
+         "hw_interface: threaded access refused");
+   image.offset = 0x10000;
+   image.pitch = 512 * 4;
+   image.width = 480;
+   image.height = 272;
+   CHECK(!iface->set_image(iface->handle, &image),
+         "hw_interface: threaded image submission refused");
+   rsx->video_info.is_threaded = false;
+   CHECK(iface->set_image(iface->handle, &image),
+         "hw_interface: core-owned texture accepted");
+   allocations = rsx_alloc_calls;
+   finishes = rsx_finish_calls;
+   draws = rsx_draw_calls;
+   rsx_frame(rsx, RETRO_HW_FRAME_BUFFER_VALID, VIDEO_SCALE_PACK(480, 272),
+         0, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1 && rsx_alloc_calls == allocations,
+         "hw_interface: GPU image displayed without allocation or CPU upload");
+   CHECK(rsx_finish_calls == finishes,
+         "hw_interface: handoff does not wait for the GPU");
+   image.pitch = 1;
+   CHECK(!iface->set_image(iface->handle, &image),
+         "hw_interface: invalid pitch rejected");
+   draws = rsx_draw_calls;
+   rsx_frame(rsx, RETRO_HW_FRAME_BUFFER_VALID, VIDEO_SCALE_PACK(480, 272),
+         1, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws, "hw_interface: rejected image not reused");
+   image.pitch = 512 * 4;
+   image.offset = UINT32_MAX - 128;
+   CHECK(!iface->set_image(iface->handle, &image),
+         "hw_interface: overflowing local-memory range rejected");
+   CHECK(iface->set_image(iface->handle, NULL),
+         "hw_interface: cached image released");
+   driver_down(rsx);
+   fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
+   printf("hw_interface: ok\n");
+}
+
+static void test_hw_retirement(void)
+{
+   const struct retro_hw_render_interface *base = NULL;
+   const struct retro_hw_render_interface_rsx_v2 *iface;
+   rsx_t *rsx;
+   void *memory;
+   unsigned live, finishes;
+   fake_hwr.context_type = RETRO_HW_CONTEXT_RSX;
+   fake_hwr.version_major = 2;
+   rsx = driver_up();
+   CHECK(rsx_get_hw_render_interface(rsx, &base), "hw_retirement: v2 available");
+   iface = (const struct retro_hw_render_interface_rsx_v2*)base;
+   CHECK(iface->base.interface_version == 2 && iface->retire_memory,
+         "hw_retirement: retirement callback advertised");
+   memory = rsxMemalign(128, 128);
+   live = rsx_live();
+   finishes = rsx_finish_calls;
+   fake_defer_backend = true;
+   CHECK(iface->retire_memory(iface->base.handle, memory),
+         "hw_retirement: allocation ownership transferred");
+   rsx_collect_retired_memory();
+   CHECK(rsx_live() == live && rsx_finish_calls == finishes,
+         "hw_retirement: pending GPU memory preserved without waiting");
+   free(rsx->white_texture);
+   free(rsx);
+   CHECK(rsx_retired_memory_count == 1, "hw_retirement: survives driver teardown");
+   fake_labels[RSX_RETIRED_MEMORY_LABEL] = rsx_retired_memory_serial;
+   rsx_collect_retired_memory();
+   CHECK(rsx_retired_memory_count == 0, "hw_retirement: completed allocation freed");
+   rsx_release_all();
+   fake_defer_backend = false;
+   fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
+   fake_hwr.version_major = 0;
+   printf("hw_retirement: ok\n");
+}
+
 int main(int argc, char **argv)
 {
    static const struct
@@ -889,6 +1086,8 @@ int main(int argc, char **argv)
       const char *name;
       void (*run)(void);
    } tests[] = {
+      { "hw_interface", test_hw_interface },
+      { "hw_retirement", test_hw_retirement },
       { "texture_grow",  test_texture_grow  },
       { "texture_fail",  test_texture_fail  },
       { "frame_fail",    test_frame_fail    },
@@ -900,6 +1099,7 @@ int main(int argc, char **argv)
       { "native_menu_frame", test_native_menu_frame },
       { "menu_frame_vertices", test_menu_frame_vertices },
       { "font_queue", test_font_queue },
+      { "font_batches", test_font_batches },
       { "menu_dupe_frame", test_menu_dupe_frame },
    };
    unsigned i;

@@ -40,6 +40,9 @@
 #include <formats/video_hw_frame.h>
 #include "../cores/internal_cores.h"
 #include "video_driver.h"
+#if defined(__PSL1GHT__) && defined(HAVE_GCM)
+#include <libretro_rsx.h>
+#endif
 #include "video_hdr_metadata.h"
 #include "gfx_media_display.h"
 #if defined(HAVE_X11) && defined(HAVE_XRANDR)
@@ -1909,6 +1912,10 @@ video_driver_t *hw_render_context_driver(
 #else
          break;
 #endif
+#if defined(__PSL1GHT__) && defined(HAVE_GCM)
+      case RETRO_HW_CONTEXT_RSX:
+         return &video_gcm;
+#endif
       case RETRO_HW_CONTEXT_VULKAN:
 #if defined(HAVE_VULKAN)
          return &video_vulkan;
@@ -1965,6 +1972,10 @@ const char *hw_render_context_name(
    if (type == RETRO_HW_CONTEXT_D3D12)
       return "d3d12";
 #endif
+#if defined(__PSL1GHT__) && defined(HAVE_GCM)
+   if (type == RETRO_HW_CONTEXT_RSX)
+      return "rsx";
+#endif
    return "N/A";
 }
 
@@ -2001,6 +2012,10 @@ static enum retro_hw_context_type hw_render_context_type(const char *s)
 #ifdef HAVE_D3D12
    if (string_is_equal(s, "d3d12"))
       return RETRO_HW_CONTEXT_D3D12;
+#endif
+#if defined(__PSL1GHT__) && defined(HAVE_GCM)
+   if (string_is_equal(s, "rsx"))
+      return RETRO_HW_CONTEXT_RSX;
 #endif
    return RETRO_HW_CONTEXT_NONE;
 }
@@ -5594,13 +5609,16 @@ bool video_driver_find_driver(
       {
          switch (rdr_type)
          {
+#if defined(__PSL1GHT__) && defined(HAVE_GCM)
+            case RETRO_HW_CONTEXT_RSX:
+#endif
             case RETRO_HW_CONTEXT_OPENGL_CORE:
             case RETRO_HW_CONTEXT_VULKAN:
             case RETRO_HW_CONTEXT_D3D9:
             case RETRO_HW_CONTEXT_D3D10:
             case RETRO_HW_CONTEXT_D3D11:
             case RETRO_HW_CONTEXT_D3D12:
-#if defined(HAVE_VULKAN) || defined(HAVE_D3D9) || defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(HAVE_OPENGL_CORE)
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D9) || defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(HAVE_OPENGL_CORE) || (defined(__PSL1GHT__) && defined(HAVE_GCM))
                RARCH_LOG("[Video] Using HW render, %s driver forced.\n",
                      rdr_context_name);
 
@@ -5722,6 +5740,10 @@ bool video_driver_is_hw_context(void)
 
 bool video_driver_render_context_is_main_thread_only(void)
 {
+#if defined(__PSL1GHT__) && defined(HAVE_GCM)
+   if (video_driver_st.hw_render.context_type == RETRO_HW_CONTEXT_RSX)
+      return true;
+#endif
 #if TARGET_OS_IPHONE
    /* The iOS Cocoa GL/GLES backends ("gl", "glcore") render through a
     * GLKView, whose drawable and backing CAEAGLLayer may only be touched

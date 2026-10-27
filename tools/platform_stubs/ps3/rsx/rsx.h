@@ -95,6 +95,7 @@ void rsxBindVertexArrayAttrib(gcmContextData *context, u8 attr,
       u16 frequency, u32 offset, u8 stride, u8 elems, u8 dtype,
       u8 location);
 void rsxClearSurface(gcmContextData *context, u32 clear_mask);
+void rsxInvalidateVertexCache(gcmContextData *context);
 void rsxDrawVertexArray(gcmContextData *context, u32 type, u32 start,
       u32 count);
 void rsxFinish(gcmContextData *context, u32 ref_value);
@@ -120,6 +121,13 @@ void rsxSetColorMask(gcmContextData *context, u32 mask);
 void rsxSetColorMaskMrt(gcmContextData *context, u32 mask);
 void rsxSetDepthFunc(gcmContextData *context, u32 func);
 void rsxSetDepthTestEnable(gcmContextData *context, u32 enable);
+#define GCM_SHADE_MODEL_SMOOTH 0x1d01
+void rsxSetDepthWriteEnable(gcmContextData *context, u32 enable);
+void rsxSetStencilTestEnable(gcmContextData *context, u32 enable);
+void rsxSetLogicOpEnable(gcmContextData *context, u32 enable);
+void rsxSetCullFaceEnable(gcmContextData *context, u32 enable);
+void rsxSetPolygonOffsetFillEnable(gcmContextData *context, u32 enable);
+void rsxSetShadeModel(gcmContextData *context, u32 mode);
 void rsxSetScissor(gcmContextData *context, u16 x, u16 y, u16 w, u16 h);
 void rsxSetSurface(gcmContextData *context, const gcmSurface *surface);
 void rsxSetUserClipPlaneControl(gcmContextData *context, u32 plane0,
@@ -133,6 +141,7 @@ void rsxSetViewport(gcmContextData *context, u16 x, u16 y, u16 width,
 void rsxSetViewportClip(gcmContextData *context, u8 sel, u16 width,
       u16 height);
 void rsxSetWaitLabel(gcmContextData *context, u8 index, u32 value);
+void rsxSetWaitForIdle(gcmContextData *context);
 void rsxSetWriteBackendLabel(gcmContextData *context, u8 index,
       u32 value);
 void rsxSetZMinMaxControl(gcmContextData *context, u8 cullNearFar,
