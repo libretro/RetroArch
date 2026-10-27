@@ -398,3 +398,38 @@ size_t rfilters_ia64_decode(uint32_t ip, uint8_t *data, size_t len)
 
    return i;
 }
+
+size_t rfilters_arm64_decode(uint32_t ip, uint8_t *data, size_t len)
+{
+   size_t i;
+
+   len &= ~(size_t)3;
+   for (i = 0; i < len; i += 4)
+   {
+      uint32_t pc = ip + (uint32_t)i;
+      uint32_t v  = rf_get_le32(data + i);
+
+      if ((v >> 26) == 0x25)
+      {
+         /* BL: a 26-bit word offset */
+         v = 0x94000000 | ((v - (pc >> 2)) & 0x03FFFFFF);
+         rf_set_le32(data + i, v);
+      }
+      else if ((v & 0x9F000000) == 0x90000000)
+      {
+         /* ADRP: a 21-bit page offset, converted only within +-512 MiB,
+          * the range one test of the sum covers */
+         uint32_t src = ((v >> 29) & 3) | ((v >> 3) & 0x001FFFFC);
+         uint32_t dst;
+         if ((src + 0x00020000) & 0x001C0000)
+            continue;
+         dst = src - (pc >> 12);
+         v  &= 0x9000001F;
+         v  |= (dst & 3) << 29;
+         v  |= (dst & 0x0003FFFC) << 3;
+         v  |= (0u - (dst & 0x00020000)) & 0x00E00000;
+         rf_set_le32(data + i, v);
+      }
+   }
+   return len;
+}

@@ -12,6 +12,9 @@
 #include <stdint.h>
 
 #include <7z/r7z_archive.h>
+#include <7z/r7z_filters.h>
+#include <7z/r7z_lzma2.h>
+#include <encodings/crc32.h>
 #include <encodings/deflate.h>
 
 #include "r7z_methods_fixtures.h"
@@ -178,6 +181,96 @@ static void staged(const char *what, const uint8_t *fx, size_t fx_len)
    free(want);
 }
 
+/* code.so: its size and CRC */
+#define ARM64_LEN 13736
+#define ARM64_CRC 0xc73465bdu
+
+/* 96 instruction words: a BL, an ADRP within the filter's range (at
+ * both ends of it first) and one past it, by turns */
+static void arm64_edges(uint8_t *d)
+{
+   int k;
+   for (k = 0; k < 96; k++)
+   {
+      uint32_t w;
+      int32_t  imm;
+      if (k % 3 == 0)
+         w = 0x94000000u | ((uint32_t)(k * 7919 - 300000) & 0x3FFFFFFu);
+      else
+      {
+         if (k % 3 == 1)
+            imm = k == 1 ? -0x20000 : k == 4 ? 0x1FFFF
+               : (k * 4099) % 0x40000 - 0x20000;
+         else
+            imm = (0x20000 + k * 37) * (k % 2 ? 1 : -1);
+         w = 0x90000000u | (((uint32_t)imm & 3) << 29)
+           | ((((uint32_t)imm >> 2) & 0x7FFFF) << 5) | (uint32_t)(k & 31);
+      }
+      d[k * 4]     = (uint8_t)w;
+      d[k * 4 + 1] = (uint8_t)(w >> 8);
+      d[k * 4 + 2] = (uint8_t)(w >> 16);
+      d[k * 4 + 3] = (uint8_t)(w >> 24);
+   }
+}
+
+/* code.so back out of 7-Zip's ARM64 filter, and out of XZ Utils', which
+ * started at 4096: converted from 0 it is not code.so */
+static void arm64(void)
+{
+   r7z_archive_t *a   = NULL;
+   uint8_t       *got = NULL;
+   uint8_t       *buf = (uint8_t*)malloc(ARM64_LEN);
+   uint16_t      *probs = (uint16_t*)malloc(RLZMA2_NUM_PROBS * sizeof(uint16_t));
+   rlzma2_dec_t  *dec = (rlzma2_dec_t*)malloc(sizeof(*dec));
+   size_t         len = 0, fed = sizeof(fx_arm64_xz);
+   int            status = 0;
+
+   if (r7z_archive_open(&a, fx_arm64, sizeof(fx_arm64)) != R7Z_OK)
+      check(0, "ARM64", "opens");
+   else
+   {
+      int r = r7z_archive_extract(a, 0, &got, &len);
+      check(r == R7Z_OK && len == ARM64_LEN
+            && encoding_crc32(0, got, len) == ARM64_CRC, "ARM64",
+            "7-Zip's extracted");
+      free(got);
+      r7z_archive_close(a);
+   }
+
+   /* 64 KiB of dictionary: property 8 */
+   check(   rlzma2_dec_init(dec, 8, probs, buf, ARM64_LEN) == RLZMA_OK
+         && rlzma2_dec_decode(dec, ARM64_LEN, fx_arm64_xz, &fed, 1,
+               &status) == RLZMA_OK
+         && dec->lzma.dic_pos == ARM64_LEN, "ARM64", "XZ Utils' unpacked");
+   {
+      uint8_t *at0 = (uint8_t*)malloc(ARM64_LEN);
+      memcpy(at0, buf, ARM64_LEN);
+      rfilters_arm64_decode(4096, buf, ARM64_LEN);
+      check(encoding_crc32(0, buf, ARM64_LEN) == ARM64_CRC, "ARM64",
+            "XZ Utils' converted back from 4096");
+      rfilters_arm64_decode(0, at0, ARM64_LEN);
+      check(encoding_crc32(0, at0, ARM64_LEN) != ARM64_CRC, "ARM64",
+            "and not from 0");
+      free(at0);
+   }
+   {
+      uint8_t want[384], got_e[384];
+      fed = sizeof(fx_arm64_edges_xz);
+      arm64_edges(want);
+      check(   rlzma2_dec_init(dec, 8, probs, got_e, sizeof(got_e)) == RLZMA_OK
+            && rlzma2_dec_decode(dec, sizeof(got_e), fx_arm64_edges_xz,
+                  &fed, 1, &status) == RLZMA_OK
+            && dec->lzma.dic_pos == sizeof(got_e), "ARM64, edges",
+            "XZ Utils' unpacked");
+      rfilters_arm64_decode(4194304, got_e, sizeof(got_e));
+      check(!memcmp(got_e, want, sizeof(want)), "ARM64, edges",
+            "back, forward, at the ends of the range and past them");
+   }
+   free(buf);
+   free(probs);
+   free(dec);
+}
+
 /* A Deflate64 stream with the fixed codes, written LSB first */
 struct bits
 {
@@ -307,11 +400,12 @@ int main(void)
    staged("PPMd, stepped", fx_big_ppmd, sizeof(fx_big_ppmd));
    staged("Deflate, stepped", fx_big_deflate, sizeof(fx_big_deflate));
    deflate64();
+   arm64();
    if (failures)
    {
       printf("%d failure(s)\n", failures);
       return 1;
    }
-   printf("r7z_methods_test: every coder's archive extracted, PPMd and Deflate a step at a time, Deflate64 whole\n");
+   printf("r7z_methods_test: every coder's archive extracted, PPMd and Deflate a step at a time, Deflate64 whole, ARM64\n");
    return 0;
 }

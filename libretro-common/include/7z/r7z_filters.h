@@ -87,6 +87,8 @@ size_t rfilters_armt_decode (uint32_t ip, uint8_t *data, size_t len);
 size_t rfilters_ppc_decode  (uint32_t ip, uint8_t *data, size_t len);
 size_t rfilters_sparc_decode(uint32_t ip, uint8_t *data, size_t len);
 size_t rfilters_ia64_decode (uint32_t ip, uint8_t *data, size_t len);
+/* ARM64: BL, and ADRP within +-512 MiB of the instruction */
+size_t rfilters_arm64_decode(uint32_t ip, uint8_t *data, size_t len);
 
 RETRO_END_DECLS
 

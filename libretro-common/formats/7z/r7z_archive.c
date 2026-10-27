@@ -1627,6 +1627,27 @@ static int decode_coder(r7z_archive_t *a, const coder_t *c,
          rfilters_armt_decode(0, out, out_len);
          return R7Z_OK;
 
+      case METHOD_ARM64:
+      {
+         /* the stream's offset, when it is not 0 */
+         uint32_t ip = 0;
+         if (in_len != out_len)
+            return R7Z_ERROR_DATA;
+         if (c->prop_size == 4)
+         {
+            const uint8_t *pr = a->props + c->prop_offset;
+            ip = (uint32_t)pr[0] | ((uint32_t)pr[1] << 8)
+               | ((uint32_t)pr[2] << 16) | ((uint32_t)pr[3] << 24);
+            if (ip & 3)
+               return R7Z_ERROR_DATA;
+         }
+         else if (c->prop_size)
+            return R7Z_ERROR_DATA;
+         memcpy(out, in, out_len);
+         rfilters_arm64_decode(ip, out, out_len);
+         return R7Z_OK;
+      }
+
       case METHOD_BRA_PPC:
          if (in_len != out_len)
             return R7Z_ERROR_DATA;
