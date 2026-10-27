@@ -4110,6 +4110,10 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
        * saves. */
       {
          size_t       produced = 0;
+         /* The search moves the recent offsets as it goes; a block
+          * stored raw instead leaves the decoder's where they were,
+          * so they go back with it. */
+         uint32_t     rep_was[3];
          rzstd_seq_t *seq      = (rzstd_seq_t*)malloc(
                (take / RZSTD_ENC_MIN_MATCH + 1) * sizeof(rzstd_seq_t));
          uint8_t     *lits     = (uint8_t*)malloc(take);
@@ -4117,6 +4121,9 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
          size_t       lit_len  = 0;
          int          ok       = 0;
 
+         rep_was[0] = rep[0];
+         rep_was[1] = rep[1];
+         rep_was[2] = rep[2];
          if (!hash)
          {
             /* Cleared once for the whole input, not once a block. */
@@ -4460,6 +4467,9 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
             in += take;
             continue;
          }
+         rep[0] = rep_was[0];
+         rep[1] = rep_was[1];
+         rep[2] = rep_was[2];
       }
 
       rzstd_write_block_header(dst + at, (uint32_t)take,

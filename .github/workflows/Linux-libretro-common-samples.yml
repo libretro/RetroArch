@@ -102,6 +102,7 @@ jobs:
             snprintf
             unbase64_test
             crc32_test
+            rzstd_raw_block_test
             rinflate_window_test
             rdeflate_hash_test
             emscripten_mmap_test
