@@ -331,11 +331,11 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     if (Build.VERSION.SDK_INT < 31)
       updateMetrics(p.getResources(), display);
     window = p.getWindow();
-    /* It takes focus, so a focus mode or a tap can give it the pad; it
-     * never takes the soft keyboard itself */
+    /* Never focused: a tap would leave its display the pad, and the app
+     * under it would get it once the Presentation goes */
     if (window != null)
-      window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
-          | WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+      window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+          | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
     /* BACK goes to native code; never cancel on it */
     p.setCancelable(false);
     view   = new SurfaceView(p.getContext());
