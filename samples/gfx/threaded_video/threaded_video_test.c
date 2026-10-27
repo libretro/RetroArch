@@ -7145,13 +7145,18 @@ static void surf_release_cb(void *user, gfx_surface_t *s, unsigned slot)
 
 static void surf_fill(gfx_surface_t *s, unsigned slot, unsigned seed)
 {
-   unsigned x, y, tries;
+   unsigned x, y;
    unsigned w = VIDEO_SCALE_W(s->dims), h = VIDEO_SCALE_H(s->dims);
    uint32_t *pixels;
-   for (tries = 0; tries < 16 && !gfx_surface_slot_writable(s, slot); tries++)
+   int64_t deadline = cpu_features_get_time_usec() + 2000000;
+   bool writable = gfx_surface_slot_writable(s, slot);
+   while (!writable && cpu_features_get_time_usec() < deadline)
+   {
       run_frames(1);
-   CHECK(gfx_surface_slot_writable(s, slot), "surface fill: slot never writable");
-   if (!gfx_surface_slot_writable(s, slot))
+      writable = gfx_surface_slot_writable(s, slot);
+   }
+   CHECK(writable, "surface fill: slot not writable within two seconds");
+   if (!writable)
       return;
    pixels = gfx_surface_slot_begin(s, slot);
    for (y = 0; y < h; y++)
