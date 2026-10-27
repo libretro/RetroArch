@@ -432,10 +432,11 @@ static bool zlib_stream_decompress_data_to_file_init(
    zip_context->out_off               = 0;
    zip_context->cmode                 = cmode;
 
-   /* A member bound for a file is written out as it goes; anything
-    * else is decoded whole into memory that has to hold it */
+   /* A member bound for a file is written out as it goes, a stored one
+    * however small, from where it lies; anything else is decoded whole
+    * into memory that has to hold it */
    zip_context->streaming = state->pending_sink
-         && (size > ZIP_STREAM_WINDOW);
+         && (size > ZIP_STREAM_WINDOW || cmode == ZIP_MODE_STORED);
    if (!zip_context->streaming && size > (uint64_t)((size_t)-1))
       return false;
 #ifdef ARCHIVE_HAVE_ZLIB
@@ -445,7 +446,8 @@ static bool zlib_stream_decompress_data_to_file_init(
       return false;
 #endif
    zip_context->win_len   = zip_context->streaming
-         ? ZIP_STREAM_WINDOW : (size_t)size;
+         ? (size < ZIP_STREAM_WINDOW ? (size_t)size : ZIP_STREAM_WINDOW)
+         : (size_t)size;
    zip_context->win_pos   = 0;
 
 #ifdef ZIP_HAVE_LZMA
@@ -505,7 +507,7 @@ static bool zlib_stream_decompress_data_to_file_init(
    /* NULL-check the decompressed_data malloc: the iterate step and
     * the inflate output binding below dereference it. */
    if (!(zip_context->decompressed_data = (uint8_t*)malloc(
-               zip_context->win_len)))
+               zip_context->win_len ? zip_context->win_len : 1)))
       return false;
 
    if (cmode == ZIP_MODE_DEFLATE64 && zip_context->streaming)
@@ -612,7 +614,8 @@ static int zlib_stream_decompress_data_to_file_iterate(
    if (zip_context->cmode == ZIP_MODE_STORED && zip_context->streaming)
    {
       /* A window's worth to the sink per call: straight from the
-       * mapping where there is one, through the window otherwise */
+       * mapping where there is one, or what the stream lends, through
+       * the window otherwise */
       const uint8_t *src;
       uint64_t left = zip_context->usize - zip_context->out_off;
       size_t   n    = left < zip_context->win_len
@@ -623,15 +626,11 @@ static int zlib_stream_decompress_data_to_file_iterate(
             + (size_t)(zip_context->fdoffset + zip_context->out_off);
       else
 #endif
-      {
-         filestream_seek(state->archive_file,
+      if (zip_member_input(state->archive_file,
                (int64_t)(zip_context->fdoffset + zip_context->out_off),
-               RETRO_VFS_SEEK_POSITION_START);
-         if (filestream_read(state->archive_file,
-                  zip_context->decompressed_data, n) != (int64_t)n)
-            return -1;
-         src = zip_context->decompressed_data;
-      }
+               (int64_t)n, zip_context->decompressed_data, &src)
+            != (int64_t)n)
+         return -1;
       zip_context->crc      = encoding_crc32(zip_context->crc, src, n);
       if (filestream_write(state->pending_sink, src, n) != (int64_t)n)
          return -1;
@@ -1175,37 +1174,30 @@ static int zip_file_decompressed(
    {
       file_archive_file_handle_t handle = {0};
 
+      /* Called in case core has need_fullpath enabled: written out as
+       * it is decoded, a stored member from where it lies */
+      if (decomp_state->opt_file)
+      {
+         if (file_archive_perform_mode(decomp_state->opt_file, valid_exts,
+                  cdata, cmode, csize, size, crc32, userdata))
+            decomp_state->size = 0;
+         else
+            decomp_state->failed = true;
+         decomp_state->found = true;
+         return 1;
+      }
+
+      /* Called in case core has need_fullpath disabled: the decoded
+       * member is handed over as RetroArch's ROM buffer */
       if (zip_file_decompressed_handle(userdata->transfer,
                &handle, cdata, cmode, csize, size, crc32))
       {
-         if (decomp_state->opt_file != 0)
-         {
-            /* Called in case core has need_fullpath enabled. */
-            bool success = filestream_write_file(decomp_state->opt_file, handle.data, size);
-
-            /* Note: Do not free handle.data here - this
-             * will be done when stream is deinitialised */
-            handle.data = NULL;
-
-            decomp_state->size = 0;
-
-            if (!success)
-               return -1;
-         }
-         else
-         {
-            /* Called in case core has need_fullpath disabled.
-             * Will move decompressed content directly into
-             * RetroArch's ROM buffer. */
-            zip_context_t *zip_context = (zip_context_t *)userdata->transfer->context;
-
-            decomp_state->size = 0;
-            *decomp_state->buf             = handle.data;
-            decomp_state->size             = size;
-            /* We keep the data, prevent its deallocation during free */
-            zip_context->decompressed_data = NULL;
-            handle.data = NULL;
-         }
+         zip_context_t *zip_context = (zip_context_t *)userdata->transfer->context;
+         *decomp_state->buf             = handle.data;
+         decomp_state->size             = size;
+         /* We keep the data, prevent its deallocation during free */
+         zip_context->decompressed_data = NULL;
+         handle.data = NULL;
       }
       else
          decomp_state->failed = true;

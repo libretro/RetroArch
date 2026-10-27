@@ -1077,6 +1077,40 @@ static void member_sequence(bool corrupt, bool lend)
             free(got);
          }
 
+      /* read to a file, as for a core that wants a path: written as it
+       * is decoded, a stored member from where it lies, and with a
+       * wrong CRC not written at all */
+      for (i = 0; i < SEQ_MEMBERS; i++)
+      {
+         char    member[64];
+         void   *got     = NULL;
+         int64_t got_len = 0;
+         int64_t rd;
+         snprintf(member, sizeof(member), "%s#m%u.bin", tmp_path, i);
+         remove("rarch_zip_seq_file.bin");
+         rd = file_archive_compressed_read(member, NULL,
+               "rarch_zip_seq_file.bin", &got_len);
+         if (corrupt)
+         {
+            if (rd || path_is_valid("rarch_zip_seq_file.bin"))
+            {
+               printf("FAIL  member sequence: m%u.bin (method %u) read to "
+                      "a file despite a wrong CRC\n", i, m[i].method);
+               ok = false;
+            }
+         }
+         else if (!rd || !filestream_read_file("rarch_zip_seq_file.bin",
+                  &got, &got_len) || got_len != (int64_t)m[i].size
+               || memcmp(got, m[i].data, m[i].size))
+         {
+            printf("FAIL  member sequence: m%u.bin (method %u) differs "
+                   "read to a file\n", i, m[i].method);
+            ok = false;
+         }
+         free(got);
+         remove("rarch_zip_seq_file.bin");
+      }
+
       remove(tmp_path);
 
       if (extracted != (corrupt ? 0 : SEQ_MEMBERS))
