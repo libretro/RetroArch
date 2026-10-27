@@ -373,6 +373,96 @@ static void deflate64(void)
    check(rinflate64_decode(got, n, s, len - 2, &w) == RDEFLATE_PROCESS_ERROR,
          "Deflate64", "cut short");
 
+   /* a piece at a time: input in parts, what each leaves unread given
+    * again in front of the next, out through windows that matches
+    * reach back past */
+   {
+      static const size_t parts[3] = { 1100, 4096, 65536 };
+      /* the last by turns: 777, 70000, 1, 65536 and 30000 */
+      static const size_t wins[4]  = { 1, 777, 70000, 0 };
+      static const size_t turns[5] = { 777, 70000, 1, 65536, 30000 };
+      unsigned a, b;
+      for (a = 0; a < 3; a++)
+         for (b = 0; b < 4; b++)
+         {
+            void    *z    = rinflate64_new();
+            uint8_t *in   = (uint8_t*)malloc(parts[a] + RINFLATE64_LOOKAHEAD);
+            uint8_t *win  = (uint8_t*)malloc(70000);
+            unsigned call = 0;
+            size_t   fed  = 0, have = 0, made = 0;
+            int      st   = RDEFLATE_PROCESS_NEXT, ok = 1, more = 1;
+            while (st == RDEFLATE_PROCESS_NEXT && ok)
+            {
+               size_t used = 0, wr = 0;
+               size_t room = wins[b] ? wins[b] : turns[call++ % 5];
+               /* more input only when it was asked for: the window did
+                * not fill */
+               if (more && fed < len)
+               {
+                  size_t k = len - fed < parts[a] ? len - fed : parts[a];
+                  memcpy(in + have, s + fed, k);
+                  fed  += k;
+                  have += k;
+               }
+               st    = rinflate64_process(z, in, have, fed == len, &used,
+                     win, room, &wr);
+               more  = wr < room;
+               if (     wr > n - made || memcmp(win, want + made, wr)
+                     || (more && fed < len
+                        && have - used >= RINFLATE64_LOOKAHEAD)
+                     || (!used && !wr && fed == len))
+                  ok = 0;
+               made += wr;
+               memmove(in, in + used, have - used);
+               have -= used;
+            }
+            check(ok && st == RDEFLATE_PROCESS_END && made == n,
+                  "Deflate64", "a piece at a time");
+            rinflate64_free(z);
+            free(in);
+            free(win);
+         }
+   }
+
+   /* a distance back to the first octet, and one before it, the
+    * first decoded through a window short of where it reaches */
+   b.p = s; b.at = 0; b.acc = 0; b.n = 0;
+   put(&b, 1, 1);
+   put(&b, 1, 2);
+   for (i = 0; i < 40000; i++)
+      put_lit(&b, want[i]);
+   put_match(&b, 300, 40000);
+   put_lit(&b, 256);
+   if (b.n)
+      put(&b, 0, 8 - b.n);
+   {
+      void  *z = rinflate64_new();
+      size_t used = 0, wr = 0, made = 0;
+      int    st;
+      do
+      {
+         st    = rinflate64_process(z, s + used, b.at - used, 1, &w, got + made,
+               5000, &wr);
+         used += w;
+         made += wr;
+      } while (st == RDEFLATE_PROCESS_NEXT && wr);
+      check(st == RDEFLATE_PROCESS_END && made == 40300
+            && !memcmp(got, want, 40000) && !memcmp(got + 40000, want, 300),
+            "Deflate64", "a distance back to the first octet");
+      rinflate64_free(z);
+   }
+   b.p = s; b.at = 0; b.acc = 0; b.n = 0;
+   put(&b, 1, 1);
+   put(&b, 1, 2);
+   for (i = 0; i < 40000; i++)
+      put_lit(&b, want[i]);
+   put_match(&b, 300, 40001);
+   put_lit(&b, 256);
+   if (b.n)
+      put(&b, 0, 8 - b.n);
+   check(rinflate64_decode(got, n, s, b.at, &w) == RDEFLATE_PROCESS_ERROR,
+         "Deflate64", "a distance one before the first octet");
+
    /* a distance back before the start */
    b.p = s; b.at = 0; b.acc = 0; b.n = 0;
    put(&b, 1, 1);

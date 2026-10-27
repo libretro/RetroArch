@@ -139,6 +139,41 @@ int   rinflate_process(void *stream, size_t *read, size_t *wrote);
 int   rinflate64_decode(uint8_t *dst, size_t dst_len,
       const uint8_t *src, size_t src_len, size_t *wrote);
 
+/* What rinflate64_process() leaves unread of an input that is not the
+ * last: fewer octets than this, which the next call is given again in
+ * front of what follows them. */
+#define RINFLATE64_LOOKAHEAD 1024
+
+/**
+ * rinflate64_new:
+ *
+ * A Deflate64 decoder that runs a piece at a time: into a buffer of
+ * the caller's that need not hold the whole stream, from input that
+ * can arrive in parts. It keeps the last 64 KiB it decoded for the
+ * matches that reach back into it. NULL when out of memory.
+ **/
+void *rinflate64_new(void);
+void  rinflate64_free(void *stream);
+
+/**
+ * rinflate64_process:
+ * @in         : the next of the stream, @in_len octets
+ * @final      : nonzero when nothing follows @in
+ * @consumed   : receives how many of @in were taken (may be NULL); an
+ *               input that is not the last is taken up to fewer than
+ *               RINFLATE64_LOOKAHEAD octets from its end, and the rest
+ *               goes first in the next call's
+ * @out        : where to decode to, @out_len octets of room
+ * @wrote      : receives the octets decoded into @out (may be NULL)
+ *
+ * Returns: RDEFLATE_PROCESS_END at the end of the stream,
+ * RDEFLATE_PROCESS_NEXT when @out is full or more input is wanted, or
+ * RDEFLATE_PROCESS_ERROR.
+ **/
+int   rinflate64_process(void *stream, const uint8_t *in, size_t in_len,
+      int final, size_t *consumed, uint8_t *out, size_t out_len,
+      size_t *wrote);
+
 /* -------- compression (deflate) -------- */
 
 /* level: 0 (store) .. 9 (maximum). */

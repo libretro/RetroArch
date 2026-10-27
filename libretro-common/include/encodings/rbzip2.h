@@ -103,6 +103,34 @@ int rbzip2_begin(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
 int rbzip2_step(rbzip2_t *bz, size_t *wrote);
 
 /**
+ * rbzip2_begin_blocks:
+ * @src      : the stream, from "BZh" on, which stays where it is until
+ *             the stream is done
+ * @src_len  : octets at @src
+ *
+ * The same, each block into the decoder's own buffer, for a stream
+ * whose whole output is not wanted in one place. The buffer grows to
+ * the largest block, which the run-length coding before the transform
+ * lets reach 51 times the block size.
+ *
+ * Returns: RBZIP2_OK, or an RBZIP2_ERROR_* value.
+ **/
+int rbzip2_begin_blocks(rbzip2_t *bz, const uint8_t *src, size_t src_len);
+
+/**
+ * rbzip2_step_block:
+ * @block    : receives where the block's octets are, until the next call
+ * @len      : receives how many
+ *
+ * The next block of the stream rbzip2_begin_blocks() bound, its CRC
+ * checked, or the end of the stream and the CRC of them all.
+ *
+ * Returns: RBZIP2_PENDING with a block, RBZIP2_OK at the end, or an
+ * RBZIP2_ERROR_* value.
+ **/
+int rbzip2_step_block(rbzip2_t *bz, const uint8_t **block, size_t *len);
+
+/**
  * rbzip2_decode_alloc:
  * @dst      : receives the decoded octets, allocated with malloc() and
  *             the caller's to free; one octet past them is room to spare

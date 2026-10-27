@@ -3472,9 +3472,9 @@ suspend:
  * Deflate64) is RFC 1951 with a 64 KiB window, length code 285 taking
  * 16 extra bits over a base of 3 rather than standing for 258, and
  * distance codes 30 and 31 in use: 32769 and 49153, with 14 extra
- * bits. Its streams are decoded here whole into a buffer that holds
- * all they decode to, so the window is that buffer and needs no ring;
- * the resumable decoder above stays RFC 1951's alone. */
+ * bits. A stream decodes into a buffer of the caller's a piece at a
+ * time, matches reaching back past it into a 64 KiB ring of what came
+ * before; the decoder above stays RFC 1951's alone. */
 
 #define RINF64_LUT_BITS 9
 
@@ -3485,6 +3485,16 @@ struct rinf64_table
    uint16_t sym[288];
 };
 
+#define RINF64_WINDOW 65536
+
+enum rinf64_state
+{
+   RINF64_HEADER = 0,                   /* a block's header next */
+   RINF64_SYMBOLS,                      /* in a coded block */
+   RINF64_STORED,                       /* in a stored block */
+   RINF64_DONE
+};
+
 struct rinf64
 {
    struct rinf64_table lit;
@@ -3492,8 +3502,18 @@ struct rinf64
    const uint8_t      *p;
    const uint8_t      *end;
    uint64_t            bits;
+   uint64_t            total;           /* octets decoded so far */
    size_t              over;            /* zeros read past the end */
    unsigned            n;
+   uint32_t            copy_len;        /* a match part way, */
+   uint32_t            copy_dist;       /* from this far back */
+   uint32_t            stored_left;
+   uint32_t            rpos;            /* where the ring is written next */
+   int                 state;
+   int                 last;            /* the block in hand is the last */
+   int                 held;            /* a literal the out had no room
+                                           for, or -1 */
+   uint8_t             ring[RINF64_WINDOW]; /* what came before the out */
 };
 
 static const uint16_t rinf64_len_base[29] = {
@@ -3508,8 +3528,26 @@ static const uint8_t rinf64_dist_extra[32] = {
    0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,
    14,14 };
 
+/* At least @k bits in hand, k <= 57. With eight octets or more to go,
+ * the next eight are taken in one load and the whole ones that fit
+ * counted: the bits above n are then the octets still to come, which
+ * the next load puts there again, so they stay as they are. */
 static INLINE void rinf64_need(struct rinf64 *s, unsigned k)
 {
+   if (s->n >= k)
+      return;
+   if (s->end - s->p >= 8)
+   {
+      const uint8_t *q = s->p;
+      uint64_t       w = (uint64_t)q[0]         | ((uint64_t)q[1] << 8)
+                       | ((uint64_t)q[2] << 16) | ((uint64_t)q[3] << 24)
+                       | ((uint64_t)q[4] << 32) | ((uint64_t)q[5] << 40)
+                       | ((uint64_t)q[6] << 48) | ((uint64_t)q[7] << 56);
+      s->bits |= w << s->n;
+      s->p    += (63 - s->n) >> 3;
+      s->n    |= 56;
+      return;
+   }
    while (s->n < k)
    {
       uint64_t b = s->p < s->end ? *s->p++ : (s->over++, 0u);
@@ -3674,103 +3712,309 @@ static int rinf64_tables(struct rinf64 *s, int dynamic)
    return 0;
 }
 
-int rinflate64_decode(uint8_t *dst, size_t dst_len,
-      const uint8_t *src, size_t src_len, size_t *wrote)
+void *rinflate64_new(void)
 {
    struct rinf64 *s = (struct rinf64*)malloc(sizeof(*s));
-   size_t         at   = 0;
-   int            last = 0, ret = RDEFLATE_PROCESS_ERROR;
-
-   if (wrote)
-      *wrote = 0;
    if (!s)
-      return RDEFLATE_PROCESS_ERROR;
-   s->p    = src;
-   s->end  = src + src_len;
-   s->bits = 0;
-   s->n    = 0;
-   s->over = 0;
+      return NULL;
+   s->p           = NULL;
+   s->end         = NULL;
+   s->bits        = 0;
+   s->total       = 0;
+   s->over        = 0;
+   s->n           = 0;
+   s->copy_len    = 0;
+   s->copy_dist   = 0;
+   s->stored_left = 0;
+   s->rpos        = 0;
+   s->state       = RINF64_HEADER;
+   s->last        = 0;
+   s->held        = -1;
+   return s;
+}
 
-   while (!last)
+void rinflate64_free(void *stream)
+{
+   free(stream);
+}
+
+/* @len octets of a match from @dist back into @o at @a: from the out
+ * where it reaches that far, from the ring before it. Where the out
+ * is then. */
+static INLINE size_t rinf64_copy(struct rinf64 *s, uint8_t *o, size_t a,
+      uint32_t dist, uint32_t len)
+{
+   if (dist <= a)
    {
-      uint32_t type;
-      last = (int)rinf64_bits(s, 1);
-      type = rinf64_bits(s, 2);
-      if (type == 0)
+      const uint8_t *f = o + a - dist;
+      if (dist >= len)
+         memmove(o + a, f, len);
+      else
       {
-         /* stored: from the next octet boundary, a length and its
-          * complement, then that many octets */
-         uint32_t len, nlen;
-         s->bits >>= s->n & 7;
-         s->n     -= s->n & 7;
-         len  = rinf64_bits(s, 16);
-         nlen = rinf64_bits(s, 16);
-         if ((len ^ 0xffffu) != nlen || len > dst_len - at)
-            goto done;
-         for (; len && s->n >= 8; len--)
-         {
-            dst[at++] = (uint8_t)s->bits;
-            s->bits >>= 8;
-            s->n     -= 8;
-         }
-         if (len > (size_t)(s->end - s->p))
-            goto done;
-         memcpy(dst + at, s->p, len);
-         s->p += len;
-         at   += len;
-         continue;
+         uint32_t k;
+         for (k = 0; k < len; k++)
+            o[a + k] = f[k];
       }
-      if (type == 3 || rinf64_tables(s, type == 2))
-         goto done;
-      for (;;)
+      return a + len;
+   }
+   {
+      /* the part before the out, from the ring, then on in the out */
+      uint32_t back = dist - (uint32_t)a;
+      uint32_t r    = (s->rpos - back) & (RINF64_WINDOW - 1);
+      uint32_t k    = 0;
+      for (; k < len && k < back; k++)
       {
-         int sym = rinf64_decode_sym(s, &s->lit);
-         if (sym < 0)
-            goto done;
-         if (sym < 256)
+         o[a + k] = s->ring[r];
+         r        = (r + 1) & (RINF64_WINDOW - 1);
+      }
+      for (; k < len; k++)
+         o[a + k] = o[a + k - dist];
+   }
+   return a + len;
+}
+
+/* The last of @n octets decoded into @o, kept for the next call's
+ * matches */
+static void rinf64_keep(struct rinf64 *s, const uint8_t *o, size_t n)
+{
+   if (n >= RINF64_WINDOW)
+   {
+      memcpy(s->ring, o + n - RINF64_WINDOW, RINF64_WINDOW);
+      s->rpos = 0;
+      return;
+   }
+   while (n)
+   {
+      uint32_t room = RINF64_WINDOW - s->rpos;
+      uint32_t k    = n < room ? (uint32_t)n : room;
+      memcpy(s->ring + s->rpos, o, k);
+      s->rpos = (s->rpos + k) & (RINF64_WINDOW - 1);
+      o      += k;
+      n      -= k;
+   }
+}
+
+int rinflate64_process(void *stream, const uint8_t *in, size_t in_len,
+      int final, size_t *consumed, uint8_t *out, size_t out_len,
+      size_t *wrote)
+{
+   struct rinf64 *s  = (struct rinf64*)stream;
+   size_t         at = 0;
+   int            ret = RDEFLATE_PROCESS_NEXT;
+
+   s->p   = in;
+   s->end = in + in_len;
+
+/* not the last input, and less of it than a header or a symbol may
+ * read: the caller brings more first */
+#define RINF64_SHORT() (!final \
+      && (size_t)(s->end - s->p) < RINFLATE64_LOOKAHEAD)
+
+   for (;;)
+   {
+      /* a literal, or a match, the out filled up before */
+      if (s->held >= 0)
+      {
+         if (at == out_len)
+            break;
+         out[at++] = (uint8_t)s->held;
+         s->held   = -1;
+      }
+      if (s->copy_len)
+      {
+         uint32_t k = out_len - at < s->copy_len
+            ? (uint32_t)(out_len - at) : s->copy_len;
+         at = rinf64_copy(s, out, at, s->copy_dist, k);
+         s->copy_len -= k;
+         if (s->copy_len)
+            break;
+      }
+
+      if (s->state == RINF64_DONE)
+      {
+         ret = RDEFLATE_PROCESS_END;
+         break;
+      }
+
+      if (s->state == RINF64_HEADER)
+      {
+         uint32_t type;
+         if (s->last)
          {
-            if (at >= dst_len)
-               goto done;
-            dst[at++] = (uint8_t)sym;
+            s->state = RINF64_DONE;
             continue;
          }
-         if (sym == 256)
+         if (RINF64_SHORT())
             break;
+         s->last = (int)rinf64_bits(s, 1);
+         type    = rinf64_bits(s, 2);
+         if (type == 0)
          {
-            uint32_t len, dist;
-            int      dsym;
-            sym -= 257;
-            if (sym >= 29)
-               goto done;
-            len  = rinf64_len_base[sym] + rinf64_bits(s, rinf64_len_extra[sym]);
-            if ((dsym = rinf64_decode_sym(s, &s->dist)) < 0 || dsym >= 32)
-               goto done;
-            dist = rinf64_dist_base[dsym] + rinf64_bits(s, rinf64_dist_extra[dsym]);
-            if (dist > at || len > dst_len - at)
-               goto done;
-            if (dist >= len)
-               memmove(dst + at, dst + at - dist, len);
-            else
+            /* from the next octet boundary, a length and its
+             * complement, then that many octets */
+            uint32_t len, nlen;
+            s->bits >>= s->n & 7;
+            s->n     -= s->n & 7;
+            len  = rinf64_bits(s, 16);
+            nlen = rinf64_bits(s, 16);
+            if ((len ^ 0xffffu) != nlen)
+               goto error;
+            s->stored_left = len;
+            s->state       = RINF64_STORED;
+         }
+         else if (type == 3 || rinf64_tables(s, type == 2))
+            goto error;
+         else
+            s->state = RINF64_SYMBOLS;
+         if (s->over * 8 > s->n)
+            goto error;            /* ran past the input */
+         continue;
+      }
+
+      if (s->state == RINF64_STORED)
+      {
+         /* what the bit buffer holds first, then the input itself */
+         while (s->stored_left && s->n >= 8 && at < out_len)
+         {
+            out[at++]  = (uint8_t)s->bits;
+            s->bits  >>= 8;
+            s->n      -= 8;
+            s->stored_left--;
+         }
+         if (s->stored_left && at < out_len)
+         {
+            size_t k = (size_t)(s->end - s->p);
+            if (k > s->stored_left)
+               k = s->stored_left;
+            if (k > out_len - at)
+               k = out_len - at;
+            memcpy(out + at, s->p, k);
+            s->p           += k;
+            at             += k;
+            s->stored_left -= (uint32_t)k;
+            if (s->stored_left && s->p == s->end)
             {
-               uint8_t       *o = dst + at;
-               const uint8_t *f = o - dist;
-               uint32_t       k;
-               for (k = 0; k < len; k++)
-                  o[k] = f[k];
+               if (final)
+                  goto error;
+               break;
             }
-            at += len;
+         }
+         if (s->stored_left)
+            break;
+         s->state = RINF64_HEADER;
+         continue;
+      }
+
+      /* a coded block's symbols */
+      {
+         /* where the input runs short of a symbol's worth, unless it
+          * is the last */
+         uintptr_t lim    = final ? (uintptr_t)-1
+            : (uintptr_t)s->end - RINFLATE64_LOOKAHEAD;
+         uint64_t  before = s->total;
+         for (;;)
+         {
+            int sym;
+            if ((uintptr_t)s->p > lim)
+               goto suspend;
+            if ((sym = rinf64_decode_sym(s, &s->lit)) < 0)
+               goto error;
+            if (sym < 256)
+            {
+               if (at < out_len)
+               {
+                  out[at++] = (uint8_t)sym;
+                  continue;
+               }
+               s->held = sym;
+               goto suspend;
+            }
+            if (sym == 256)
+               break;
+            {
+               uint32_t len, dist, room;
+               int      dsym;
+               sym -= 257;
+               if (sym >= 29)
+                  goto error;
+               len  = rinf64_len_base[sym] + rinf64_bits(s, rinf64_len_extra[sym]);
+               if ((dsym = rinf64_decode_sym(s, &s->dist)) < 0 || dsym >= 32)
+                  goto error;
+               dist = rinf64_dist_base[dsym] + rinf64_bits(s, rinf64_dist_extra[dsym]);
+               if (dist <= at && len <= out_len - at)
+               {
+                  /* within the out, and room for it: as a whole
+                   * stream decoded at once always is */
+                  uint8_t       *o = out + at;
+                  const uint8_t *f = o - dist;
+                  if (dist >= len)
+                     memmove(o, f, len);
+                  else
+                  {
+                     uint32_t k;
+                     for (k = 0; k < len; k++)
+                        o[k] = f[k];
+                  }
+                  at += len;
+                  continue;
+               }
+               if ((uint64_t)dist > before + at)
+                  goto error;
+               room = out_len - at < len ? (uint32_t)(out_len - at) : len;
+               at   = rinf64_copy(s, out, at, dist, room);
+               if (room < len)
+               {
+                  s->copy_len  = len - room;
+                  s->copy_dist = dist;
+                  goto suspend;
+               }
+            }
          }
       }
       if (s->over * 8 > s->n)
-         goto done;               /* ran past the input */
+         goto error;
+      s->state = RINF64_HEADER;
    }
-   if (s->over * 8 <= s->n)
-   {
-      ret = RDEFLATE_PROCESS_END;
-      if (wrote)
-         *wrote = at;
-   }
-done:
-   free(s);
+suspend:
+#undef RINF64_SHORT
+   if (s->over * 8 > s->n)
+      goto error;
+   /* the final input, used up with the stream not done */
+   if (     ret == RDEFLATE_PROCESS_NEXT && final && at < out_len
+         && s->p == s->end && s->state != RINF64_DONE
+         && !s->copy_len && s->held < 0)
+      goto error;
+   rinf64_keep(s, out, at);
+   s->total += at;
+   if (consumed)
+      *consumed = (size_t)(s->p - in);
+   if (wrote)
+      *wrote = at;
+   return ret;
+error:
+   if (consumed)
+      *consumed = (size_t)(s->p - in);
+   if (wrote)
+      *wrote = at;
+   return RDEFLATE_PROCESS_ERROR;
+}
+
+int rinflate64_decode(uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len, size_t *wrote)
+{
+   void  *z   = rinflate64_new();
+   size_t got = 0;
+   int    ret;
+   if (wrote)
+      *wrote = 0;
+   if (!z)
+      return RDEFLATE_PROCESS_ERROR;
+   ret = rinflate64_process(z, src, src_len, 1, NULL, dst, dst_len, &got);
+   /* more than the buffer holds */
+   if (ret == RDEFLATE_PROCESS_NEXT)
+      ret = RDEFLATE_PROCESS_ERROR;
+   if (ret == RDEFLATE_PROCESS_END && wrote)
+      *wrote = got;
+   rinflate64_free(z);
    return ret;
 }

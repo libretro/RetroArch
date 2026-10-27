@@ -45,10 +45,14 @@
 
 #define FAR_LEN  66300
 #define NEAR_LEN 6000
+#define BIG_LEN  693300
+#define REP_LEN  700000
 
 static unsigned failures;
 static uint8_t  far_data[FAR_LEN];
 static uint8_t  near_data[NEAR_LEN];
+static uint8_t  big_data[BIG_LEN];
+static uint8_t  rep_data[REP_LEN];
 
 static void fail(const char *what, const char *detail)
 {
@@ -66,11 +70,46 @@ static void gen(uint8_t *d, size_t n, uint32_t x, unsigned alpha)
    }
 }
 
+/* @n octets of words out of a vocabulary of 40 */
+static void text(uint8_t *d, size_t n)
+{
+   uint8_t  vocab[40][9];
+   unsigned vlen[40], w, k;
+   uint32_t x = 1;
+   size_t   at = 0;
+   for (w = 0; w < 40; w++)
+   {
+      x       = x * 1103515245u + 12345u;
+      vlen[w] = 2 + (x >> 16) % 7;
+      for (k = 0; k < vlen[w]; k++)
+      {
+         x           = x * 1103515245u + 12345u;
+         vocab[w][k] = (uint8_t)(97 + (x >> 16) % 26);
+      }
+   }
+   while (at < n)
+   {
+      x = x * 1103515245u + 12345u;
+      w = (x >> 16) % 40;
+      for (k = 0; k < vlen[w] && at < n; k++)
+         d[at++] = vocab[w][k];
+      if (at < n)
+         d[at++] = ' ';
+   }
+}
+
 /* far.bin: a block of 33000, again, then 300 more; near.bin: 2000
- * three times */
+ * three times; big.bin: the block 21 times, then 300; rep.bin: 2000
+ * of words 350 times */
 static void make_contents(void)
 {
    unsigned i;
+   for (i = 0; i < 21; i++)
+      gen(big_data + i * 33000, 33000, 1, 2);
+   gen(big_data + 693000, 300, 5, 3);
+   text(rep_data, 2000);
+   for (i = 1; i < 350; i++)
+      memcpy(rep_data + i * 2000, rep_data, 2000);
    gen(far_data, 33000, 1, 2);
    memcpy(far_data + 33000, far_data, 33000);
    gen(far_data + 66000, 300, 2, 2);
@@ -243,6 +282,51 @@ static void test_archive(const char *what, const uint8_t *fx, size_t len,
    free(zip);
 }
 
+/* @name, the archive's one member and bigger than the window it is
+ * extracted through, every way; with its CRC wrong, or a byte of its
+ * stream changed, no file is left */
+static void test_big(const char *what, const uint8_t *fx, size_t len,
+      const char *name, const uint8_t *want, size_t n)
+{
+   uint8_t *zip  = (uint8_t*)malloc(len);
+   const uint8_t *cd = fx + get32(fx + len - 22 + 16);
+   uint32_t local    = get32(cd + 42);
+   size_t   data     = local + 30 + (fx[local + 26] | (fx[local + 27] << 8))
+                     + (fx[local + 28] | (fx[local + 29] << 8));
+   size_t   csize    = get32(cd + 20);
+   char     out[96], detail[64];
+   unsigned k;
+
+   if (!write_file(ZIP_PATH, fx, len))
+      fail(what, "cannot write");
+   if (extract_all(ZIP_PATH) != 1)
+      fail(what, "not extracted");
+   check_member(what, name, want, n);
+
+   snprintf(out, sizeof(out), "%s.%s", OUT_PATH, name);
+   for (k = 0; k < 2; k++)
+   {
+      memcpy(zip, fx, len);
+      if (k == 0)
+      {
+         zip[cd + 16 - fx] ^= 1;
+         zip[local + 14]   ^= 1;
+      }
+      else
+         zip[data + csize / 2] ^= 0x10;
+      snprintf(detail, sizeof(detail), "%s, %s", what,
+            k ? "a byte of the stream changed" : "CRC wrong");
+      if (!write_file(ZIP_PATH, zip, len))
+         fail(detail, "cannot write");
+      extract_all(ZIP_PATH);
+      if (path_is_valid(out))
+         fail(detail, "extracted");
+      remove(out);
+   }
+   remove(ZIP_PATH);
+   free(zip);
+}
+
 int main(void)
 {
    make_contents();
@@ -250,11 +334,21 @@ int main(void)
 #ifdef HAVE_7ZIP
    test_archive("LZMA", fx_lzma, sizeof(fx_lzma), true);
 #endif
+   test_big("Deflate64, big", fx_big_deflate64, sizeof(fx_big_deflate64),
+         "big.bin", big_data, BIG_LEN);
+#ifdef HAVE_7ZIP
+   test_big("LZMA, big", fx_big_lzma, sizeof(fx_big_lzma), "big.bin",
+         big_data, BIG_LEN);
+#endif
+#ifdef HAVE_RBZIP2
+   test_big("BZip2, big", fx_big_bzip2, sizeof(fx_big_bzip2), "rep.bin",
+         rep_data, REP_LEN);
+#endif
    if (failures)
    {
       printf("%u check(s) failed\n", failures);
       return 1;
    }
-   printf("archive_zip_methods_test: Deflate64 and LZMA members read and extracted\n");
+   printf("archive_zip_methods_test: Deflate64, LZMA and bzip2 members read and extracted, big ones a window at a time\n");
    return 0;
 }

@@ -1,4 +1,4 @@
-/* 7z archives 7-Zip 16.02 wrote of t.txt (3000 octets of words) and
+/* 7z archives 7-Zip 23.01 wrote of t.txt (3000 octets of words) and
  * b.bin (1500 octets i * 7 + (i >> 9)), as r7z_methods_test.c makes
  * them, one per coder: PPMd at 7-Zip's order 6 and at order 2, BZip2,
  * Deflate and Deflate64. fx_big_* are big.txt, the first 20000 octets

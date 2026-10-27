@@ -74,6 +74,9 @@ struct rbzip2
    uint32_t        *tt;             /* a block, then each entry's next */
    uint32_t        *inv;            /* each entry's previous */
    uint8_t         *raw;            /* the block untransformed */
+   uint8_t         *own;            /* a block at a time: where it goes */
+   size_t           own_cap;
+   int              blocks;         /* rbzip2_begin_blocks() bound it */
    uint32_t         max_block;
    uint32_t         combined;       /* the block CRCs so far */
    uint32_t         tt_cap;
@@ -132,6 +135,7 @@ void rbzip2_free(rbzip2_t *bz)
    free(bz->tt);
    free(bz->inv);
    free(bz->raw);
+   free(bz->own);
    free(bz);
 }
 
@@ -608,11 +612,44 @@ int rbzip2_begin(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
 {
    if (!bz)
       return RBZIP2_ERROR_DATA;
+   bz->blocks   = 0;
    bz->out.dst  = dst;
    bz->out.cap  = dst_len;
    bz->out.at   = 0;
    bz->out.grow = 0;
    return rbz_start(bz, src, src_len);
+}
+
+int rbzip2_begin_blocks(rbzip2_t *bz, const uint8_t *src, size_t src_len)
+{
+   if (!bz)
+      return RBZIP2_ERROR_DATA;
+   bz->blocks = 1;
+   return rbz_start(bz, src, src_len);
+}
+
+int rbzip2_step_block(rbzip2_t *bz, const uint8_t **block, size_t *len)
+{
+   int e;
+   *block = NULL;
+   *len   = 0;
+   if (!bz || !bz->blocks)
+      return RBZIP2_ERROR_DATA;
+   /* each block from the start of the decoder's own buffer, which
+    * grows to the largest */
+   bz->out.dst  = bz->own;
+   bz->out.cap  = bz->own_cap;
+   bz->out.at   = 0;
+   bz->out.grow = 1;
+   e            = rbz_next(bz);
+   bz->own      = bz->out.dst;
+   bz->own_cap  = bz->out.cap;
+   if (e == RBZIP2_PENDING)
+   {
+      *block = bz->own;
+      *len   = bz->out.at;
+   }
+   return e;
 }
 
 int rbzip2_step(rbzip2_t *bz, size_t *wrote)
@@ -631,6 +668,7 @@ int rbzip2_decode_alloc(rbzip2_t *bz, const uint8_t *src, size_t src_len,
    *wrote   = 0;
    if (!bz)
       return RBZIP2_ERROR_DATA;
+   bz->blocks   = 0;
    bz->out.dst  = NULL;
    bz->out.cap  = 0;
    bz->out.at   = 0;

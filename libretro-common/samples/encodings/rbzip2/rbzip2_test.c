@@ -197,6 +197,26 @@ int main(void)
       if (e != RBZIP2_OK || w != 350000 || steps < 4)
          fail("a stream a block at a time", steps);
    }
+   /* each block where the decoder leaves it, one after another the
+    * stream's octets */
+   if (rbzip2_begin_blocks(bz, s, sn) != RBZIP2_OK)
+      fail("a stream begun a block at a time", 0);
+   else
+   {
+      const uint8_t *blk;
+      size_t         len, at = 0;
+      unsigned       blocks = 0;
+      int            e;
+      while ((e = rbzip2_step_block(bz, &blk, &len)) == RBZIP2_PENDING)
+      {
+         if (!len || len > 350000 - at || memcmp(blk, d + at, len))
+            fail("a block where the decoder leaves it", blocks);
+         at += len;
+         blocks++;
+      }
+      if (e != RBZIP2_OK || at != 350000 || blocks < 4)
+         fail("a stream's blocks one after another", blocks);
+   }
    if (rbzip2_begin(bz, o, 349999, s, sn) == RBZIP2_OK)
    {
       int e;
@@ -222,6 +242,15 @@ int main(void)
       while ((e = rbzip2_step(bz, &w)) == RBZIP2_PENDING) { }
       if (e != RBZIP2_ERROR_DATA)
          fail("a block CRC wrong, a block at a time", 0);
+   }
+   if (rbzip2_begin_blocks(bz, s, sn) == RBZIP2_OK)
+   {
+      const uint8_t *blk;
+      size_t         len;
+      int            e;
+      while ((e = rbzip2_step_block(bz, &blk, &len)) == RBZIP2_PENDING) { }
+      if (e != RBZIP2_ERROR_DATA)
+         fail("a block CRC wrong, where the decoder leaves it", 0);
    }
    memcpy(s, fx_a, sizeof(fx_a));
    s[sizeof(fx_a) - 2] ^= 0x10;      /* the stream's */
