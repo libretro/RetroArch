@@ -20,6 +20,7 @@ SOURCES := bsv_replay_init_test.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
+           $(LIBRETRO_COMM_DIR)/encodings/encoding_xxh64.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
            $(LIBRETRO_COMM_DIR)/features/features_cpu.c \

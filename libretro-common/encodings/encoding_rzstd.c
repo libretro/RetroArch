@@ -55,6 +55,8 @@
  *                               256, and the single-segment case where
  *                               the content size doubles as the window.
  *   Blocks (3.1.1.2)            raw, RLE and compressed.
+ *   Checksum (3.1.1)            a frame's XXH64, taken over each block
+ *                               as it is decoded, where it lies.
  *   Reverse bitstream (4)       the backwards, MSB-first reader the
  *                               entropy streams use, and the padding
  *                               marker in the final byte.
@@ -73,10 +75,6 @@
  *
  * Not built:
  *
- *   Checksum                    a frame's XXH64 is skipped, not
- *                               verified. A caller expecting a stated
- *                               checksum to be checked does not get
- *                               that.
  *   Huffman literal encoding    literals are emitted raw. Legal, and
  *                               costs ratio.
  *   Encoder refinements         one hash with no chain, so only the
@@ -156,6 +154,7 @@
 #include <retro_inline.h>
 #include <compat/intrinsics.h>
 #include <encodings/rzstd.h>
+#include <encodings/xxh64.h>
 
 /* The decode loops spend much of their time on variable shifts, which
  * BMI2 does in one flagless instruction where baseline x86-64 takes
@@ -2690,19 +2689,20 @@ static int rzstd_frame_block(const uint8_t *src, size_t src_len,
    return RZ_OK;
 }
 
-/* After the last block: the frame's end, and all of it, @total octets,
- * what the header said. */
-static int rzstd_frame_end(size_t src_len, const rzstd_frame_header_t *h,
-      size_t *at, uint64_t total)
+/* After the last block: the frame's end, and all of it, @total octets
+ * whose XXH64 @xs holds, what the header said. */
+static int rzstd_frame_end(const uint8_t *src, size_t src_len,
+      const rzstd_frame_header_t *h, size_t *at, uint64_t total,
+      const xxh64_state_t *xs)
 {
    /* Section 3.1.1: the optional checksum is the low four bytes of the
-    * frame content's XXH64. It is skipped rather than verified, which
-    * is noted because a caller may reasonably expect it to be checked
-    * when the frame says it is there. */
+    * frame content's XXH64 */
    if (h->has_checksum)
    {
       if (src_len < *at + 4)
          return RZ_TRUNCATED;
+      if (rzstd_rd32(src + *at) != (uint32_t)xxh64_digest(xs))
+         return RZ_DATA;
       *at += 4;
    }
    if (h->has_content_size && total != h->content_size)
@@ -2719,6 +2719,7 @@ static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
       rzstd_frame_state_t *st)
 {
    rzstd_frame_header_t h;
+   xxh64_state_t        xs;
    size_t               at   = 0;
    size_t               out  = 0;
    int                  last = 0;
@@ -2726,11 +2727,18 @@ static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
 
    if ((e = rzstd_frame_begin(src, src_len, &h, &at, st)) != RZ_OK)
       return e;
+   xxh64_reset(&xs, 0);
    while (!last)
+   {
+      size_t from = out;
       if ((e = rzstd_frame_block(src, src_len, &at, dst, dst_len, &out,
                   st, &last)) != RZ_OK)
          return e;
-   if ((e = rzstd_frame_end(src_len, &h, &at, out)) != RZ_OK)
+      /* while the block is still in cache */
+      if (h.has_checksum)
+         xxh64_update(&xs, dst + from, out - from);
+   }
+   if ((e = rzstd_frame_end(src, src_len, &h, &at, out, &xs)) != RZ_OK)
       return e;
 
    if (wrote)
@@ -2746,6 +2754,7 @@ struct rzstd_blocks
 {
    rzstd_frame_state_t  st;
    rzstd_frame_header_t h;
+   xxh64_state_t        xs;       /* the checksum so far */
    uint64_t             total;    /* octets decoded */
    const uint8_t       *src;
    uint8_t             *buf;      /* the window, and room for a block */
@@ -2771,6 +2780,7 @@ rzstd_blocks_t *rzstd_blocks_begin(const uint8_t *src, size_t src_len)
    z->out     = 0;
    z->done    = 0;
    z->buf     = NULL;
+   xxh64_reset(&z->xs, 0);
    if (rzstd_frame_begin(src, src_len, &z->h, &z->at, &z->st) != RZ_OK)
    {
       free(z);
@@ -2816,12 +2826,15 @@ int rzstd_blocks_step(rzstd_blocks_t *z, const uint8_t **data, size_t *len)
             &z->out, &z->st, &last) != RZ_OK)
       return RZSTD_PROCESS_ERROR;
    z->total += z->out - from;
+   if (z->h.has_checksum)
+      xxh64_update(&z->xs, z->buf + from, z->out - from);
    *data     = z->buf + from;
    *len      = z->out - from;
    if (last)
    {
       /* the frame's end, and nothing after it */
-      if (     rzstd_frame_end(z->src_len, &z->h, &z->at, z->total) != RZ_OK
+      if (     rzstd_frame_end(z->src, z->src_len, &z->h, &z->at, z->total,
+                  &z->xs) != RZ_OK
             || z->at != z->src_len)
          return RZSTD_PROCESS_ERROR;
       z->done = 1;

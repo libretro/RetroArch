@@ -25,8 +25,9 @@
  * that lends the whole file in place: the member comes out exact every
  * way, and where the VFS lends the frame it is decoded there rather
  * than read. A frame with a window smaller than itself is extracted a
- * block at a time, and with its stated size wrong leaves no file. The
- * member's CRC, which a frame does not hold, is had by decoding it. */
+ * block at a time; with its stated size or its checksum wrong it is
+ * neither read nor extracted. The member's CRC, which a frame does not
+ * hold, is had by decoding it. */
 
 /* the lending VFS installs the implementation's own functions as a
  * frontend's */
@@ -179,7 +180,8 @@ static void gen(uint8_t *d, size_t n, uint32_t x, unsigned alpha)
    }
 }
 
-/* fx_win_zst extracted, and with its stated size one out */
+/* fx_win_zst extracted and read, and refused with its stated size one
+ * out or its checksum wrong */
 static void check_window(void)
 {
    uint8_t *want = (uint8_t*)malloc(WIN_LEN);
@@ -197,7 +199,7 @@ static void check_window(void)
    gen(want + 655000, 300, 9, 26);
 
    install_vfs(false);
-   for (k = 0; k < 2; k++)
+   for (k = 0; k < 3; k++)
    {
       struct archive_extract_userdata userdata;
       file_archive_transfer_t state;
@@ -206,13 +208,17 @@ static void check_window(void)
       void    *got       = NULL;
       int64_t  got_len   = 0;
       FILE    *f;
-      const char *what = k ? "window, size wrong" : "window";
+      const char *what = k == 2 ? "window, checksum wrong"
+         : k ? "window, size wrong" : "window";
 
       memcpy(fx, fx_win_zst, sizeof(fx));
       /* the low octet of the content size, after the magic, the frame
        * header descriptor and the window descriptor */
-      if (k)
+      if (k == 1)
          fx[6] ^= 1;
+      /* the frame's last octet: its checksum's highest */
+      if (k == 2)
+         fx[sizeof(fx) - 1] ^= 1;
       if (     !(f = fopen(WIN_PATH, "wb"))
             || fwrite(fx, 1, sizeof(fx), f) != sizeof(fx))
       {
@@ -232,6 +238,11 @@ static void check_window(void)
       {
          if (extracted || filestream_read_file(OUT_PATH, &got, &got_len))
             fail(what, "extracted");
+         free(got);
+         got = NULL;
+         if (file_archive_compressed_read(WIN_PATH "#archive_zst_win.bin",
+                  &got, NULL, &got_len))
+            fail(what, "read");
       }
       else if (extracted != 1)
          fail(what, "not extracted");

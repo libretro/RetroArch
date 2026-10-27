@@ -6,7 +6,8 @@ LIBRETRO_COMM_DIR := ../../..
 
 SOURCES := \
 	rzstd_raw_block_test.c \
-	$(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_xxh64.c
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O2 -I$(LIBRETRO_COMM_DIR)/include
 

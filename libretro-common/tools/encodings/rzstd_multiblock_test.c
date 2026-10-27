@@ -6,7 +6,8 @@
  * two blocks in, so nothing shorter than 256 KB caught it.
  *
  *   cc -I libretro-common/include -o rzstd_multiblock_test <this> \
- *      libretro-common/encodings/encoding_rzstd.c -lzstd
+ *      libretro-common/encodings/encoding_rzstd.c \
+ *      libretro-common/encodings/encoding_xxh64.c -lzstd
  *   (the reference decoder, from the system's libzstd, is the oracle)
  */
 #include <stdio.h>

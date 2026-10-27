@@ -7,7 +7,8 @@
  *
  *   cc -I libretro-common/include -o rzstd_fse_test \
  *      libretro-common/tools/encodings/rzstd_fse_test.c \
- *      libretro-common/encodings/encoding_rzstd.c
+ *      libretro-common/encodings/encoding_rzstd.c \
+ *      libretro-common/encodings/encoding_xxh64.c
  */
 /* Builds the three tables RFC 8878 predefines and checks the spread. */
 #include <stdio.h>

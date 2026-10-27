@@ -146,6 +146,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/formats/rar/rrar_archive.c \
 	$(LIBRETRO_COMM_DIR)/formats/rar/rrar_ppmd7.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_xxh64.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_rbzip2.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \

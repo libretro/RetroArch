@@ -2269,6 +2269,7 @@ endif
 ifeq ($(HAVE_RZSTD),1)
    DEFINES += -DHAVE_RZSTD
    OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.o \
+          $(LIBRETRO_COMM_DIR)/encodings/encoding_xxh64.o \
           $(LIBRETRO_COMM_DIR)/streams/trans_stream_rzstd.o
 endif
 
