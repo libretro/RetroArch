@@ -893,6 +893,8 @@ typedef struct
    uint32_t core_hold_gun[MAX_USERS];
    uint8_t  core_hold_pointer[MAX_USERS];
    bool core_hold_armed;
+   /* tested with core_hold_armed in the core's read */
+   bool enabler_tap_active;
    /* any of cmd_buttons or cmd_analog is held */
    bool cmd_input;
    /* The same for what the run loop and the menu see - the RetroPad

@@ -3299,6 +3299,155 @@ static void hf_press(uint32_t first, uint32_t then)
    run_loop_frames(3);
 }
 
+/* "Hotkey Enable Tap Delay": Select shares the enabler's button. A tap
+ * reaches the core on release for as long as it was held, a hold once
+ * the delay passes, and a hotkey keeps it from the core. */
+static unsigned et_select(void)
+{
+   return input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+         RETRO_DEVICE_ID_JOYPAD_SELECT) ? 1 : 0;
+}
+
+static unsigned et_select_mask(void)
+{
+   return (input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+         RETRO_DEVICE_ID_JOYPAD_MASK) >> RETRO_DEVICE_ID_JOYPAD_SELECT) & 1;
+}
+
+static void lane_enabler_tap(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_pause = input_config_binds[0][RARCH_PAUSE_TOGGLE];
+   struct retro_keybind saved_en    = input_config_binds[0][RARCH_ENABLE_HOTKEY];
+   struct retro_keybind saved_sel   = input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_SELECT];
+   struct retro_keybind saved_b     = input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B];
+   unsigned saved_delay             = settings->uints.input_hotkey_tap_delay;
+   const uint32_t pause_bit = 1u << 20, en_bit = 1u << 23, b_bit = 1u << 19;
+   unsigned had = failures, seen, i;
+   retro_time_t t0;
+   void *core;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(pm_runs = (long (*)(void))dlsym(core, "harness_core_runs"))
+       || !joypad_real)
+   {
+      CHECK(false, "enabler tap: the harness core's entry point or the joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat                  = 0;
+   syn_buttons              = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+
+   input_config_binds[0][RARCH_PAUSE_TOGGLE].joykey            = 20;
+   input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey           = 23;
+   input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = 23;
+   input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B].joykey      = 19;
+   binds_written_by_a_lane();
+
+   /* off: nothing armed */
+   settings->uints.input_hotkey_tap_delay = 0;
+   syn_buttons = en_bit;
+   run_loop_frames(3);
+   CHECK(!input_st->enabler_tap_active, "enabler tap: armed with the setting off");
+   syn_buttons = 0;
+   run_loop_frames(3);
+
+   settings->uints.input_hotkey_tap_delay = 1000;
+
+   /* a one-frame tap: kept while down, two frames on release */
+   syn_buttons = en_bit;
+   run_loop_frames(1);
+   CHECK(!et_select() && !et_select_mask(), "enabler tap: the game saw the enabler while down");
+   syn_buttons = 0;
+   seen = 0;
+   for (i = 0; i < 5; i++)
+   {
+      run_loop_frames(1);
+      seen += et_select();
+   }
+   CHECK(seen == 2, "enabler tap: a one-frame tap was not two frames of Select on release");
+
+   /* a four-frame tap: four frames on release, by mask too */
+   syn_buttons = en_bit;
+   run_loop_frames(4);
+   CHECK(!et_select(), "enabler tap: the game saw a held enabler before the delay");
+   syn_buttons = 0;
+   seen = 0;
+   for (i = 0; i < 8; i++)
+   {
+      run_loop_frames(1);
+      seen += et_select_mask();
+   }
+   CHECK(seen == 4, "enabler tap: a four-frame tap was not four frames of Select");
+
+   /* used for a hotkey: the game never sees it */
+   CHECK(!hf_paused(), "enabler tap: paused before the hotkey");
+   syn_buttons = en_bit;
+   run_loop_frames(2);
+   syn_buttons = en_bit | pause_bit;
+   run_loop_frames(2);
+   seen = et_select();
+   syn_buttons = 0;
+   for (i = 0; i < 4; i++)
+   {
+      run_loop_frames(1);
+      seen += et_select();
+   }
+   CHECK(seen == 0, "enabler tap: the game saw the enabler used for a hotkey");
+   CHECK(hf_paused(), "enabler tap: the hotkey did not pause");
+   hf_press(en_bit, pause_bit);
+   CHECK(!hf_paused(), "enabler tap: the hotkey did not unpause");
+
+   /* held past the delay: the game's, with its other buttons; then a
+    * hotkey takes it back at once */
+   settings->uints.input_hotkey_tap_delay = 20;
+   syn_buttons = en_bit;
+   t0 = cpu_features_get_time_usec();
+   while (cpu_features_get_time_usec() - t0 < 30000)
+   {
+      run_loop_frames(1);
+      retro_sleep(2);
+   }
+   run_loop_frames(2);
+   CHECK(et_select(), "enabler tap: held past the delay, the game did not see it");
+   syn_buttons = en_bit | b_bit;
+   run_loop_frames(2);
+   CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B),
+         "enabler tap: held past the delay, the game's other buttons were blocked");
+   syn_buttons = en_bit | pause_bit;
+   run_loop_frames(2);
+   CHECK(!et_select(), "enabler tap: a hotkey after the delay did not take it back");
+   syn_buttons = 0;
+   run_loop_frames(3);
+   CHECK(!et_select() && !input_st->enabler_tap_active,
+         "enabler tap: still armed after release");
+   if (hf_paused())
+      hf_press(en_bit, pause_bit);
+
+   settings->uints.input_hotkey_tap_delay = saved_delay;
+   input_config_binds[0][RARCH_PAUSE_TOGGLE]            = saved_pause;
+   input_config_binds[0][RARCH_ENABLE_HOTKEY]           = saved_en;
+   input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_SELECT] = saved_sel;
+   input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B]      = saved_b;
+   binds_written_by_a_lane();
+   syn_buttons              = 0;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(3);
+   if (failures == had)
+      fprintf(stderr, "[pass] enabler-tap lane (tap on release for as long as held,"
+            " hold after the delay, never with a hotkey)\n");
+#endif
+}
+
 static void lane_hotkey_facts(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -9744,6 +9893,7 @@ int main(int argc, char *argv[])
       lane_menu_pause();
       lane_gun_buttons_kept_mice();
       lane_hotkey_facts();
+      lane_enabler_tap();
       lane_ai_presses();
       lane_menu_repeat_rates();
       lane_pointer_store();

@@ -13850,6 +13850,32 @@ INPUT_NOINLINE static void input_entries_commands(void)
       command_event((enum event_command)commands[i], NULL);
 }
 
+/* "Hotkey Enable Tap Delay": the game buttons the hotkey enabler is
+ * also bound to are kept from the core until it is known whether a
+ * hotkey follows. A tap is played on release, a hold passes after the
+ * delay, and a hotkey swallows it. */
+enum
+{
+   ENABLER_TAP_IDLE = 0,
+   ENABLER_TAP_HELD,
+   ENABLER_TAP_PASS,
+   ENABLER_TAP_SWALLOW,
+   ENABLER_TAP_PLAY
+};
+
+static struct
+{
+   retro_time_t since;
+   unsigned     gen;      /* binds generation + 1 the mask was made at */
+   uint16_t     mask;
+   uint16_t     withhold;
+   uint16_t     force;
+   uint16_t     frames;   /* held; then left to play */
+   uint8_t      port;     /* core port */
+   uint8_t      state;
+   bool         down;
+} input_enabler_tap;
+
 static void input_keys_pressed(
       unsigned port,
       unsigned hotkey_port,
@@ -13908,9 +13934,11 @@ static void input_keys_pressed(
             RARCH_ENABLE_HOTKEY))
       {
          enable_hotkey_pressed = true;
+         input_enabler_tap.down = true;
          if (input_st->input_hotkey_block_counter < input_hotkey_block_delay)
             input_st->input_hotkey_block_counter++;
-         else
+         /* held past the tap delay, it is the game's button */
+         else if (input_enabler_tap.state != ENABLER_TAP_PASS)
             input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
       }
       else
@@ -16844,9 +16872,26 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       }
    }
 
-   /* buttons and keys held back since the menu closed, until let go */
-   if (input_st->core_hold_armed)
+   /* buttons and keys held back since the menu closed, until let go;
+    * and the enabler's game buttons (Hotkey Enable Tap Delay) */
+   if (input_st->core_hold_armed | input_st->enabler_tap_active)
    {
+      if (     input_st->enabler_tap_active
+            && port == input_enabler_tap.port
+            && (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD
+            && idx == 0)
+      {
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+            result = (int16_t)(((uint16_t)result & ~input_enabler_tap.withhold)
+                  | input_enabler_tap.force);
+         else if (id < RARCH_FIRST_CUSTOM_BIND)
+         {
+            if (input_enabler_tap.withhold & (1u << id))
+               result = 0;
+            if (input_enabler_tap.force & (1u << id))
+               result = 1;
+         }
+      }
       if (     (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD
             && idx == 0)
       {
@@ -17377,6 +17422,126 @@ INPUT_NOINLINE static void input_entries_work_frame(
    }
 }
 
+/* The hotkey port's RetroPad buttons sharing the enabler's button or key */
+INPUT_NOINLINE static void input_enabler_tap_mask(unsigned hotkey_port)
+{
+   settings_t *settings                 = config_get_ptr();
+   unsigned gen                         = input_config_binds_generation() + 1;
+   unsigned joy                         = settings->uints.input_joypad_index[hotkey_port];
+   const struct retro_keybind *autob    = input_autoconf_binds[joy < MAX_USERS ? joy : 0];
+   const struct retro_keybind *en       = INPUT_CONFIG_BIND(hotkey_port, RARCH_ENABLE_HOTKEY);
+   uint16_t en_pad = en->joykey != NO_BTN ? en->joykey : autob[RARCH_ENABLE_HOTKEY].joykey;
+   unsigned en_key = RETRO_KEYBIND_KEY(en);
+   uint16_t mask   = 0;
+   unsigned id, c;
+
+   for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+   {
+      const struct retro_keybind *b = &input_config_binds[hotkey_port][id];
+      uint16_t pad = b->joykey != NO_BTN ? b->joykey : autob[id].joykey;
+      if (     (en_pad != NO_BTN && pad == en_pad)
+            || (en_key != RETROK_UNKNOWN && RETRO_KEYBIND_KEY(b) == en_key))
+         mask |= (uint16_t)(1u << id);
+   }
+   /* the core port the hotkeys' port is read on */
+   input_enabler_tap.port = (uint8_t)hotkey_port;
+   for (c = 0; c < MAX_USERS; c++)
+      if (settings->uints.input_remap_port_map[c][0] == hotkey_port)
+      {
+         input_enabler_tap.port = (uint8_t)c;
+         break;
+      }
+   input_enabler_tap.mask = mask;
+   input_enabler_tap.gen  = gen;
+}
+
+INPUT_NOINLINE static void input_enabler_tap_frame(
+      input_driver_state_t *input_st, unsigned delay_ms,
+      unsigned hotkey_port, bool menu_alive, const input_bits_t *bits)
+{
+   bool down    = input_enabler_tap.down;
+   bool hotkey  = false;
+   unsigned w;
+
+   input_enabler_tap.down = false;
+   if (     !menu_alive
+         && input_enabler_tap.gen != input_config_binds_generation() + 1)
+      input_enabler_tap_mask(hotkey_port);
+   if (menu_alive || !input_enabler_tap.mask)
+   {
+      input_enabler_tap.state    = ENABLER_TAP_IDLE;
+      input_enabler_tap.withhold = input_enabler_tap.force = 0;
+      input_st->enabler_tap_active = false;
+      return;
+   }
+   /* any hotkey other than the enabler */
+   for (w = RARCH_FIRST_META_KEY >> 5; w < ARRAY_SIZE(bits->data); w++)
+   {
+      uint32_t word = bits->data[w];
+      if (w == (RARCH_FIRST_META_KEY >> 5))
+         word &= ~((1u << (RARCH_FIRST_META_KEY & 31)) - 1);
+      if (w == (RARCH_ENABLE_HOTKEY >> 5))
+         word &= ~(1u << (RARCH_ENABLE_HOTKEY & 31));
+      if (word)
+         hotkey = true;
+   }
+
+   switch (input_enabler_tap.state)
+   {
+      case ENABLER_TAP_PLAY:
+         if (input_enabler_tap.frames && --input_enabler_tap.frames)
+            break;
+         input_enabler_tap.state = ENABLER_TAP_IDLE;
+         /* fall through: a new press as it ends */
+      case ENABLER_TAP_IDLE:
+         if (down)
+         {
+            input_enabler_tap.state  = ENABLER_TAP_HELD;
+            input_enabler_tap.since  = cpu_features_get_time_usec();
+            input_enabler_tap.frames = 1;
+         }
+         break;
+      case ENABLER_TAP_HELD:
+         if (hotkey)
+            input_enabler_tap.state = ENABLER_TAP_SWALLOW;
+         else if (!down)
+         {
+            /* two frames at least, for a core that polls late */
+            input_enabler_tap.state  = ENABLER_TAP_PLAY;
+            if (input_enabler_tap.frames < 2)
+               input_enabler_tap.frames = 2;
+         }
+         else
+         {
+            if (input_enabler_tap.frames < 0xffff)
+               input_enabler_tap.frames++;
+            if (cpu_features_get_time_usec() - input_enabler_tap.since
+                  >= (retro_time_t)delay_ms * 1000)
+               input_enabler_tap.state = ENABLER_TAP_PASS;
+         }
+         break;
+      case ENABLER_TAP_PASS:
+         if (!down)
+            input_enabler_tap.state = ENABLER_TAP_IDLE;
+         else if (hotkey)
+            input_enabler_tap.state = ENABLER_TAP_SWALLOW;
+         break;
+      case ENABLER_TAP_SWALLOW:
+         if (!down)
+            input_enabler_tap.state = ENABLER_TAP_IDLE;
+         break;
+   }
+
+   input_enabler_tap.withhold =
+         (   input_enabler_tap.state == ENABLER_TAP_HELD
+          || input_enabler_tap.state == ENABLER_TAP_SWALLOW)
+      ? input_enabler_tap.mask : 0;
+   input_enabler_tap.force    = (input_enabler_tap.state == ENABLER_TAP_PLAY)
+      ? input_enabler_tap.mask : 0;
+   input_st->enabler_tap_active = input_enabler_tap.state != ENABLER_TAP_IDLE
+                               && input_enabler_tap.state != ENABLER_TAP_PASS;
+}
+
 void input_driver_collect_system_input(input_driver_state_t *input_st,
       settings_t *settings, input_bits_t *current_bits)
 {
@@ -17730,6 +17895,21 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    if (input_entries.work)
       input_entries_work_frame(input_st, joypad, hotkey_port,
             settings->bools.input_hotkey_device_merge, current_bits);
+
+   if (settings->uints.input_hotkey_tap_delay)
+      input_enabler_tap_frame(input_st, settings->uints.input_hotkey_tap_delay,
+            hotkey_port,
+#ifdef HAVE_MENU
+            menu_is_alive,
+#else
+            false,
+#endif
+            current_bits);
+   else if (input_enabler_tap.state)
+   {
+      input_enabler_tap.state      = ENABLER_TAP_IDLE;
+      input_st->enabler_tap_active = false;
+   }
 }
 
 #if defined(HAVE_MENU) && defined(HAVE_ACCESSIBILITY)

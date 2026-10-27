@@ -9347,6 +9347,7 @@ unsigned menu_displaylist_build_list(
             {
                static const menu_displaylist_settings_row_t dl_rows_1[] = {
                   { MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_INPUT_HOTKEY_TAP_DELAY, PARSE_ONLY_UINT, false },
                   { MENU_ENUM_LABEL_INPUT_HOTKEY_DEVICE_MERGE, PARSE_ONLY_BOOL, false },
                   { MENU_ENUM_LABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1, PARSE_ONLY_BOOL, false },
                };

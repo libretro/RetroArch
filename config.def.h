@@ -2036,6 +2036,8 @@
 #endif
 #define DEFAULT_INPUT_POLL_TYPE_BEHAVIOR 2
 #define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
+/* Off: the hotkey enabler reaches the game as it is pressed */
+#define DEFAULT_INPUT_HOTKEY_TAP_DELAY 0
 #define DEFAULT_INPUT_HOTKEY_DEVICE_MERGE false
 #define DEFAULT_INPUT_HOTKEY_FOLLOWS_PLAYER1 false
 

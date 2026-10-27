@@ -19,6 +19,11 @@ S_UINT_EX(input_hotkey_block_delay, INPUT_HOTKEY_BLOCK_DELAY,
       DEFAULT_INPUT_HOTKEY_BLOCK_DELAY, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 600, 1, 0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Hotkey Enable Delay (Frames)",
       "Add a delay in frames before normal input is blocked after pressing the assigned 'Hotkey Enable' key. Allows normal input from the 'Hotkey Enable' key to be captured when it is mapped to another action (e.g. RetroPad 'Select').")
+S_UINT_EX(input_hotkey_tap_delay, INPUT_HOTKEY_TAP_DELAY,
+      "input_hotkey_tap_delay",
+      DEFAULT_INPUT_HOTKEY_TAP_DELAY, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1000, 10, 0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Hotkey Enable Tap Delay (ms)",
+      "Where 'Hotkey Enable' is also a game button (e.g. 'Select'), keep it from the game until it is known not to be for a hotkey: a tap with no hotkey reaches the game when it is let go, for as long as it was held; a hold reaches it once this many milliseconds pass with no hotkey; used with a hotkey, the game never sees it. 0 turns this off.")
 S_BOOL(input_hotkey_device_merge, INPUT_HOTKEY_DEVICE_MERGE,
       "input_hotkey_device_merge",
       DEFAULT_INPUT_HOTKEY_DEVICE_MERGE, SD_FLAG_NONE, 0, 0,
