@@ -103,6 +103,7 @@ jobs:
           # failure.  These are built AND executed.
           declare -a RUN_TARGETS=(
             rslc_test
+            float_to_s16_test
             float_to_s32_test
             compat_fnmatch_test
             snprintf
