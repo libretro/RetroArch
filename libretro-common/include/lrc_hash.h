@@ -127,6 +127,22 @@ void sha512_stream_final(struct sha512_state *p, uint8_t *digest);
 void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20]);
 
 /**
+ * SHA1DigestMany:
+ * @data    : the first message
+ * @stride  : from each message to the next
+ * @len     : each message's length
+ * @n       : the messages
+ * @digests : 20 octets for each, one after another
+ *
+ * SHA1Digest() of @n messages of the same length, the i-th at
+ * @data + i * @stride. Where the hardware does the rounds, two run
+ * side by side, which is close to twice as fast as one after the
+ * other.
+ **/
+void SHA1DigestMany(const uint8_t *data, size_t stride, size_t len,
+      unsigned n, uint8_t *digests);
+
+/**
  * Streaming SHA-1, alongside the one-shot SHA1Digest() above.
  */
 struct sha1_state

@@ -506,57 +506,108 @@ static void SHA1Reset(struct sha1_state *context)
    context->corrupted  = 0;
 }
 
+/* The block functions take a run of whole blocks straight from the
+ * caller's buffer and keep the state in registers across it: one
+ * block at a time through the context, each was copied into
+ * context->block, the state loaded and stored around it, and the
+ * instruction set asked about again.
+ *
+ * The two-lane forms run two independent messages through the rounds
+ * side by side. A round waits on the one before it, and the hardware
+ * rounds have a latency of several cycles each, so a single message
+ * leaves the unit idle most of the time; a second one fills it. They
+ * serve SHA1DigestMany(). */
 #if defined(SHA_HAVE_ARM_PATH)
-SHA_TARGET_ARM
-static void sha1_block_hw(uint32_t *state, const uint8_t *in)
+static const uint32_t sha1_arm_k[4] =
 {
-   static const uint32_t hw_k[4] =
+   0x5A827999, 0x6ED9EBA1, 0x8F1BBCDC, 0xCA62C1D6
+};
+
+/* Round group i of one lane: the schedule, then four rounds. e1 is
+ * taken from the current A, so it has to be read before the round
+ * overwrites it. */
+#define SHA1_ARM_GROUP(i, m, abcd, e) \
+   do { \
+      uint32x4_t _w; \
+      uint32_t   _e1; \
+      if ((i) >= 4) \
+         m[(i) & 3] = vsha1su1q_u32( \
+               vsha1su0q_u32(m[(i) & 3], m[((i) + 1) & 3], m[((i) + 2) & 3]), \
+               m[((i) + 3) & 3]); \
+      _w  = vaddq_u32(m[(i) & 3], vdupq_n_u32(sha1_arm_k[(i) / 5])); \
+      _e1 = vsha1h_u32(vgetq_lane_u32(abcd, 0)); \
+      if ((i) < 5) \
+         abcd = vsha1cq_u32(abcd, e, _w); \
+      else if ((i) < 10 || (i) >= 15) \
+         abcd = vsha1pq_u32(abcd, e, _w); \
+      else \
+         abcd = vsha1mq_u32(abcd, e, _w); \
+      e = _e1; \
+   } while (0)
+
+SHA_TARGET_ARM
+static void sha1_hw_blocks(uint32_t *state, const uint8_t *in, size_t n)
+{
+   uint32x4_t abcd = vld1q_u32(state);
+   uint32_t   e    = state[4];
+
+   while (n--)
    {
-      0x5A827999, 0x6ED9EBA1, 0x8F1BBCDC, 0xCA62C1D6
-   };
-   uint32x4_t m[4], abcd, abcd_save;
-   uint32_t   e, e_save, e1;
-   unsigned   i;
+      uint32x4_t m[4], abcd_save = abcd;
+      uint32_t   e_save = e;
+      unsigned   i;
 
-   abcd      = vld1q_u32(state);
-   e         = state[4];
-   abcd_save = abcd;
-   e_save    = e;
-
-   for (i = 0; i < 4; i++)
-      m[i] = vreinterpretq_u32_u8(vrev32q_u8(vld1q_u8(in + 16 * i)));
-
-   for (i = 0; i < 20; i++)
-   {
-      uint32x4_t w;
-
-      if (i >= 4)
-         m[i & 3] = vsha1su1q_u32(
-               vsha1su0q_u32(m[i & 3], m[(i + 1) & 3], m[(i + 2) & 3]),
-               m[(i + 3) & 3]);
-
-      w  = vaddq_u32(m[i & 3], vdupq_n_u32(hw_k[i / 5]));
-      /* Taken from the current A, so it has to be read before the
-       * round overwrites it. */
-      e1 = vsha1h_u32(vgetq_lane_u32(abcd, 0));
-
-      if (i < 5)
-         abcd = vsha1cq_u32(abcd, e, w);
-      else if (i < 10 || i >= 15)
-         abcd = vsha1pq_u32(abcd, e, w);
-      else
-         abcd = vsha1mq_u32(abcd, e, w);
-
-      e = e1;
+      for (i = 0; i < 4; i++)
+         m[i] = vreinterpretq_u32_u8(vrev32q_u8(vld1q_u8(in + 16 * i)));
+      for (i = 0; i < 20; i++)
+         SHA1_ARM_GROUP(i, m, abcd, e);
+      abcd = vaddq_u32(abcd, abcd_save);
+      e   += e_save;
+      in  += 64;
    }
+   vst1q_u32(state, abcd);
+   state[4] = e;
+}
 
-   vst1q_u32(state, vaddq_u32(abcd, abcd_save));
-   state[4] = e + e_save;
+SHA_TARGET_ARM
+static void sha1_hw_blocks2(uint32_t *s0, uint32_t *s1,
+      const uint8_t *p0, const uint8_t *p1, size_t n)
+{
+   uint32x4_t a0 = vld1q_u32(s0), a1 = vld1q_u32(s1);
+   uint32_t   e0 = s0[4], e1 = s1[4];
+
+   while (n--)
+   {
+      uint32x4_t m0[4], m1[4], a0_save = a0, a1_save = a1;
+      uint32_t   e0_save = e0, e1_save = e1;
+      unsigned   i;
+
+      for (i = 0; i < 4; i++)
+      {
+         m0[i] = vreinterpretq_u32_u8(vrev32q_u8(vld1q_u8(p0 + 16 * i)));
+         m1[i] = vreinterpretq_u32_u8(vrev32q_u8(vld1q_u8(p1 + 16 * i)));
+      }
+      for (i = 0; i < 20; i++)
+      {
+         SHA1_ARM_GROUP(i, m0, a0, e0);
+         SHA1_ARM_GROUP(i, m1, a1, e1);
+      }
+      a0  = vaddq_u32(a0, a0_save);
+      a1  = vaddq_u32(a1, a1_save);
+      e0 += e0_save;
+      e1 += e1_save;
+      p0 += 64;
+      p1 += 64;
+   }
+   vst1q_u32(s0, a0);
+   vst1q_u32(s1, a1);
+   s0[4] = e0;
+   s1[4] = e1;
 }
 #elif defined(SHA_HAVE_X86_PATH)
 /* SHA1RNDS4 takes the round function as an immediate, so the twenty
  * groups are written out rather than looped. */
-#define SHA1_X86_GROUP(f, idx) \
+#define SHA1_X86_GROUP(f, idx, m, abcd, ea, eb) \
    do { \
       __m128i _w, _t; \
       if ((idx) >= 4) \
@@ -574,50 +625,90 @@ static void sha1_block_hw(uint32_t *state, const uint8_t *in)
       _t   = ea; ea = eb; eb = _t; \
    } while (0)
 
+#define SHA1_X86_ROUNDS(G) \
+   G(0,  0); G(0,  1); G(0,  2); G(0,  3); G(0,  4); \
+   G(1,  5); G(1,  6); G(1,  7); G(1,  8); G(1,  9); \
+   G(2, 10); G(2, 11); G(2, 12); G(2, 13); G(2, 14); \
+   G(3, 15); G(3, 16); G(3, 17); G(3, 18); G(3, 19)
+
+#define SHA1_X86_ONE(f, i) SHA1_X86_GROUP(f, i, m, abcd, ea, eb)
+#define SHA1_X86_TWO(f, i) \
+   SHA1_X86_GROUP(f, i, m0, a0, ea0, eb0); \
+   SHA1_X86_GROUP(f, i, m1, a1, ea1, eb1)
+
+/* A full 128-bit lane reverse rather than the per-word swap SHA-256
+ * uses: SHA1RNDS4 consumes the message words in the opposite order
+ * within the vector. */
+#define SHA1_X86_MASK() _mm_set_epi64x( \
+      (long long)0x0001020304050607ULL, (long long)0x08090a0b0c0d0e0fULL)
+
 SHA_TARGET_X86
-static void sha1_block_hw(uint32_t *state, const uint8_t *in)
+static void sha1_hw_blocks(uint32_t *state, const uint8_t *in, size_t n)
 {
-   /* A full 128-bit lane reverse rather than the per-word swap SHA-256
-    * uses: SHA1RNDS4 consumes the message words in the opposite order
-    * within the vector. */
-   const __m128i mask = _mm_set_epi64x(
-         (long long)0x0001020304050607ULL, (long long)0x08090a0b0c0d0e0fULL);
-   __m128i m[4], abcd, ea, eb, abcd_save, e_save;
-   unsigned i;
-
-   abcd = _mm_shuffle_epi32(
+   const __m128i mask = SHA1_X86_MASK();
+   __m128i abcd = _mm_shuffle_epi32(
          _mm_loadu_si128((const __m128i *)(const void *)state), 0x1B);
-   ea   = _mm_set_epi32((int)state[4], 0, 0, 0);
+   __m128i e    = _mm_set_epi32((int)state[4], 0, 0, 0);
 
-   abcd_save = abcd;
-   e_save    = ea;
+   while (n--)
+   {
+      __m128i  m[4], ea = e, eb, abcd_save = abcd;
+      unsigned i;
 
-   for (i = 0; i < 4; i++)
-      m[i] = _mm_shuffle_epi8(
-            _mm_loadu_si128((const __m128i *)(const void *)(in + 16 * i)), mask);
+      for (i = 0; i < 4; i++)
+         m[i] = _mm_shuffle_epi8(
+               _mm_loadu_si128((const __m128i *)(const void *)(in + 16 * i)), mask);
+      SHA1_X86_ROUNDS(SHA1_X86_ONE);
+      e    = _mm_sha1nexte_epu32(ea, e);
+      abcd = _mm_add_epi32(abcd, abcd_save);
+      in  += 64;
+   }
+   _mm_storeu_si128((__m128i *)(void *)state, _mm_shuffle_epi32(abcd, 0x1B));
+   state[4] = (uint32_t)_mm_extract_epi32(e, 3);
+}
 
-   SHA1_X86_GROUP(0,  0); SHA1_X86_GROUP(0,  1);
-   SHA1_X86_GROUP(0,  2); SHA1_X86_GROUP(0,  3);
-   SHA1_X86_GROUP(0,  4); SHA1_X86_GROUP(1,  5);
-   SHA1_X86_GROUP(1,  6); SHA1_X86_GROUP(1,  7);
-   SHA1_X86_GROUP(1,  8); SHA1_X86_GROUP(1,  9);
-   SHA1_X86_GROUP(2, 10); SHA1_X86_GROUP(2, 11);
-   SHA1_X86_GROUP(2, 12); SHA1_X86_GROUP(2, 13);
-   SHA1_X86_GROUP(2, 14); SHA1_X86_GROUP(3, 15);
-   SHA1_X86_GROUP(3, 16); SHA1_X86_GROUP(3, 17);
-   SHA1_X86_GROUP(3, 18); SHA1_X86_GROUP(3, 19);
+SHA_TARGET_X86
+static void sha1_hw_blocks2(uint32_t *s0, uint32_t *s1,
+      const uint8_t *p0, const uint8_t *p1, size_t n)
+{
+   const __m128i mask = SHA1_X86_MASK();
+   __m128i a0 = _mm_shuffle_epi32(
+         _mm_loadu_si128((const __m128i *)(const void *)s0), 0x1B);
+   __m128i a1 = _mm_shuffle_epi32(
+         _mm_loadu_si128((const __m128i *)(const void *)s1), 0x1B);
+   __m128i e0 = _mm_set_epi32((int)s0[4], 0, 0, 0);
+   __m128i e1 = _mm_set_epi32((int)s1[4], 0, 0, 0);
 
-   ea   = _mm_sha1nexte_epu32(ea, e_save);
-   abcd = _mm_add_epi32(abcd, abcd_save);
+   while (n--)
+   {
+      __m128i  m0[4], m1[4], ea0 = e0, ea1 = e1, eb0, eb1;
+      __m128i  a0_save = a0, a1_save = a1;
+      unsigned i;
 
-   _mm_storeu_si128((__m128i *)(void *)state,
-         _mm_shuffle_epi32(abcd, 0x1B));
-   state[4] = (uint32_t)_mm_extract_epi32(ea, 3);
+      for (i = 0; i < 4; i++)
+      {
+         m0[i] = _mm_shuffle_epi8(
+               _mm_loadu_si128((const __m128i *)(const void *)(p0 + 16 * i)), mask);
+         m1[i] = _mm_shuffle_epi8(
+               _mm_loadu_si128((const __m128i *)(const void *)(p1 + 16 * i)), mask);
+      }
+      SHA1_X86_ROUNDS(SHA1_X86_TWO);
+      e0  = _mm_sha1nexte_epu32(ea0, e0);
+      e1  = _mm_sha1nexte_epu32(ea1, e1);
+      a0  = _mm_add_epi32(a0, a0_save);
+      a1  = _mm_add_epi32(a1, a1_save);
+      p0 += 64;
+      p1 += 64;
+   }
+   _mm_storeu_si128((__m128i *)(void *)s0, _mm_shuffle_epi32(a0, 0x1B));
+   _mm_storeu_si128((__m128i *)(void *)s1, _mm_shuffle_epi32(a1, 0x1B));
+   s0[4] = (uint32_t)_mm_extract_epi32(e0, 3);
+   s1[4] = (uint32_t)_mm_extract_epi32(e1, 3);
 }
 #endif
 
 #ifdef SHA_NEED_SCALAR
-static void SHA1ProcessMessageBlockScalar(struct sha1_state *context)
+static void sha1_scalar_blocks(uint32_t *digest, const uint8_t *block, size_t n)
 {
    const unsigned K[] =            /* Constants defined in SHA-1   */
    {
@@ -631,96 +722,108 @@ static void SHA1ProcessMessageBlockScalar(struct sha1_state *context)
    unsigned    W[80];              /* Word sequence                */
    unsigned    A, B, C, D, E;      /* Word buffers                 */
 
-   /* Initialize the first 16 words in the array W */
-   for (t = 0; t < 16; t++)
+   for (; n; n--, block += 64)
    {
-      W[t] = ((unsigned) context->block[t * 4]) << 24;
-      W[t] |= ((unsigned) context->block[t * 4 + 1]) << 16;
-      W[t] |= ((unsigned) context->block[t * 4 + 2]) << 8;
-      W[t] |= ((unsigned) context->block[t * 4 + 3]);
+      /* Initialize the first 16 words in the array W */
+      for (t = 0; t < 16; t++)
+      {
+         W[t] = ((unsigned) block[t * 4]) << 24;
+         W[t] |= ((unsigned) block[t * 4 + 1]) << 16;
+         W[t] |= ((unsigned) block[t * 4 + 2]) << 8;
+         W[t] |= ((unsigned) block[t * 4 + 3]);
+      }
+
+      for (t = 16; t < 80; t++)
+         W[t] = SHA1CircularShift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]);
+
+      A = digest[0];
+      B = digest[1];
+      C = digest[2];
+      D = digest[3];
+      E = digest[4];
+
+      for (t = 0; t < 20; t++)
+      {
+         temp  =  SHA1CircularShift(5,A) +
+            ((B & C) | ((~B) & D)) + E + W[t] + K[0];
+         temp &= 0xFFFFFFFF;
+         E     = D;
+         D     = C;
+         C     = SHA1CircularShift(30,B);
+         B     = A;
+         A     = temp;
+      }
+
+      for (t = 20; t < 40; t++)
+      {
+         temp  = SHA1CircularShift(5,A) + (B ^ C ^ D) + E + W[t] + K[1];
+         temp &= 0xFFFFFFFF;
+         E     = D;
+         D     = C;
+         C     = SHA1CircularShift(30,B);
+         B     = A;
+         A     = temp;
+      }
+
+      for (t = 40; t < 60; t++)
+      {
+         temp  = SHA1CircularShift(5,A) +
+            ((B & C) | (B & D) | (C & D)) + E + W[t] + K[2];
+         temp &= 0xFFFFFFFF;
+         E     = D;
+         D     = C;
+         C     = SHA1CircularShift(30,B);
+         B     = A;
+         A     = temp;
+      }
+
+      for (t = 60; t < 80; t++)
+      {
+         temp = SHA1CircularShift(5,A) + (B ^ C ^ D) + E + W[t] + K[3];
+         temp &= 0xFFFFFFFF;
+         E = D;
+         D = C;
+         C = SHA1CircularShift(30,B);
+         B = A;
+         A = temp;
+      }
+
+      digest[0] =
+         (digest[0] + A) & 0xFFFFFFFF;
+      digest[1] =
+         (digest[1] + B) & 0xFFFFFFFF;
+      digest[2] =
+         (digest[2] + C) & 0xFFFFFFFF;
+      digest[3] =
+         (digest[3] + D) & 0xFFFFFFFF;
+      digest[4] =
+         (digest[4] + E) & 0xFFFFFFFF;
    }
-
-   for (t = 16; t < 80; t++)
-      W[t] = SHA1CircularShift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]);
-
-   A = context->digest[0];
-   B = context->digest[1];
-   C = context->digest[2];
-   D = context->digest[3];
-   E = context->digest[4];
-
-   for (t = 0; t < 20; t++)
-   {
-      temp  =  SHA1CircularShift(5,A) +
-         ((B & C) | ((~B) & D)) + E + W[t] + K[0];
-      temp &= 0xFFFFFFFF;
-      E     = D;
-      D     = C;
-      C     = SHA1CircularShift(30,B);
-      B     = A;
-      A     = temp;
-   }
-
-   for (t = 20; t < 40; t++)
-   {
-      temp  = SHA1CircularShift(5,A) + (B ^ C ^ D) + E + W[t] + K[1];
-      temp &= 0xFFFFFFFF;
-      E     = D;
-      D     = C;
-      C     = SHA1CircularShift(30,B);
-      B     = A;
-      A     = temp;
-   }
-
-   for (t = 40; t < 60; t++)
-   {
-      temp  = SHA1CircularShift(5,A) +
-         ((B & C) | (B & D) | (C & D)) + E + W[t] + K[2];
-      temp &= 0xFFFFFFFF;
-      E     = D;
-      D     = C;
-      C     = SHA1CircularShift(30,B);
-      B     = A;
-      A     = temp;
-   }
-
-   for (t = 60; t < 80; t++)
-   {
-      temp = SHA1CircularShift(5,A) + (B ^ C ^ D) + E + W[t] + K[3];
-      temp &= 0xFFFFFFFF;
-      E = D;
-      D = C;
-      C = SHA1CircularShift(30,B);
-      B = A;
-      A = temp;
-   }
-
-   context->digest[0] =
-      (context->digest[0] + A) & 0xFFFFFFFF;
-   context->digest[1] =
-      (context->digest[1] + B) & 0xFFFFFFFF;
-   context->digest[2] =
-      (context->digest[2] + C) & 0xFFFFFFFF;
-   context->digest[3] =
-      (context->digest[3] + D) & 0xFFFFFFFF;
-   context->digest[4] =
-      (context->digest[4] + E) & 0xFFFFFFFF;
 }
 #endif
 
-static void SHA1ProcessMessageBlock(struct sha1_state *context)
+
+/* Whole blocks from @in into @digest, the instruction set asked about
+ * once for the run. */
+static void sha1_blocks(uint32_t *digest, const uint8_t *in, size_t n)
 {
+   if (!n)
+      return;
 #if defined(SHA_ARM_DISPATCH) || defined(SHA_X86_DISPATCH)
    if (cpu_features_get() & RETRO_SIMD_SHA1)
-      sha1_block_hw(context->digest, context->block);
+      sha1_hw_blocks(digest, in, n);
    else
-      SHA1ProcessMessageBlockScalar(context);
+      sha1_scalar_blocks(digest, in, n);
 #elif defined(SHA_HAVE_ARM_PATH) || defined(SHA_HAVE_X86_PATH)
-   sha1_block_hw(context->digest, context->block);
+   sha1_hw_blocks(digest, in, n);
 #else
-   SHA1ProcessMessageBlockScalar(context);
+   sha1_scalar_blocks(digest, in, n);
 #endif
+}
 
+static void SHA1ProcessMessageBlock(struct sha1_state *context)
+{
+   sha1_blocks(context->digest, context->block, 1);
    context->block_index = 0;
 }
 
@@ -825,6 +928,16 @@ static void SHA1Input(struct sha1_state *context,
    {
       unsigned l = 64 - (unsigned)context->block_index;
 
+      /* Whole blocks are hashed where they lie */
+      if (l == 64 && len >= 64)
+      {
+         unsigned whole = len & ~63u;
+         sha1_blocks(context->digest, message_array, whole / 64);
+         message_array += whole;
+         len           -= whole;
+         continue;
+      }
+
       if (len < l)
          l = len;
 
@@ -871,15 +984,79 @@ void sha1_stream_block(struct sha1_state *p, const uint8_t *data)
    SHA1ProcessMessageBlock(p);
 }
 
+static const uint32_t sha1_iv[5] =
+{
+   0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0
+};
+
+/* The last @len % 64 octets of a @len octet message, at @tail, padded
+ * into one or two blocks at @out. Returns the blocks. */
+static size_t sha1_pad(uint8_t *out, const uint8_t *tail, size_t len)
+{
+   size_t   rest = len % 64;
+   size_t   n    = rest < 56 ? 1 : 2;
+   uint64_t bits = (uint64_t)len << 3;
+   unsigned i;
+
+   if (rest)
+      memcpy(out, tail, rest);
+   out[rest] = 0x80;
+   memset(out + rest + 1, 0, n * 64 - rest - 1 - 8);
+   for (i = 0; i < 8; i++)
+      out[n * 64 - 1 - i] = (uint8_t)(bits >> (8 * i));
+   return n;
+}
+
+static void sha1_out(const uint32_t *state, uint8_t *digest)
+{
+   unsigned i;
+   for (i = 0; i < 20; i++)
+      digest[i] = (uint8_t)(state[i >> 2] >> (8 * (3 - (i & 3))));
+}
+
 void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20])
 {
-   struct sha1_state sha;
+   uint32_t state[5];
+   uint8_t  last[128];
+   size_t   whole = len & ~(size_t)63;
 
-   SHA1Reset(&sha);
-   sha1_stream_update(&sha, data, len);
+   memcpy(state, sha1_iv, sizeof(state));
+   sha1_blocks(state, data, whole / 64);
+   sha1_blocks(state, last, sha1_pad(last, data + whole, len));
+   sha1_out(state, digest);
+}
 
-   if (!SHA1Result(&sha, digest))
-      memset(digest, 0, 20);
+void SHA1DigestMany(const uint8_t *data, size_t stride, size_t len,
+      unsigned n, uint8_t *digests)
+{
+   unsigned i = 0;
+#if defined(SHA_HAVE_ARM_PATH) || defined(SHA_HAVE_X86_PATH)
+#if defined(SHA_ARM_DISPATCH) || defined(SHA_X86_DISPATCH)
+   if (cpu_features_get() & RETRO_SIMD_SHA1)
+#endif
+   {
+      size_t whole = len & ~(size_t)63;
+      for (; i + 2 <= n; i += 2)
+      {
+         const uint8_t *p0 = data + (size_t)i * stride;
+         const uint8_t *p1 = p0 + stride;
+         uint32_t       s0[5], s1[5];
+         uint8_t        l0[128], l1[128];
+         size_t         k;
+
+         memcpy(s0, sha1_iv, sizeof(s0));
+         memcpy(s1, sha1_iv, sizeof(s1));
+         sha1_hw_blocks2(s0, s1, p0, p1, whole / 64);
+         k = sha1_pad(l0, p0 + whole, len);
+         sha1_pad(l1, p1 + whole, len);
+         sha1_hw_blocks2(s0, s1, l0, l1, k);
+         sha1_out(s0, digests + 20 * (size_t)i);
+         sha1_out(s1, digests + 20 * (size_t)i + 20);
+      }
+   }
+#endif
+   for (; i < n; i++)
+      SHA1Digest(data + (size_t)i * stride, len, digests + 20 * (size_t)i);
 }
 
 int sha1_calculate(const char *path, char *result)
