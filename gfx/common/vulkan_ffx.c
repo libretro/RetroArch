@@ -382,9 +382,9 @@ bool vulkan_ffx_upscale(vulkan_ffx_t *ffx, VkCommandBuffer cmd,
          ffx->reset_pending ? VK_IMAGE_LAYOUT_UNDEFINED
                             : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_IMAGE_LAYOUT_GENERAL,
-         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
    if (vulkan_upscaler_input_needs_move(&inputs->motion_vectors))
       vulkan_upscaler_move_input(cmd, &inputs->motion_vectors, true);
    if (vulkan_upscaler_input_needs_move(&inputs->depth))
@@ -420,6 +420,7 @@ bool vulkan_ffx_upscale(vulkan_ffx_t *ffx, VkCommandBuffer cmd,
    vulkan_ffx_resource(&d.output, &img, FFX_USAGE_UAV, FFX_STATE_UNORDERED_ACCESS);
    ffx_common_dispatch(&d, inputs, color->dims, out_dims, ffx->reset_pending,
          FFX_MODE_SHARPNESS(mode));
+   vulkan_upscaler_full_barrier(cmd);
    res = ffx->lib->dispatch(&ffx->context, &d.header);
    ffx->reset_pending = false;
 
@@ -429,9 +430,9 @@ bool vulkan_ffx_upscale(vulkan_ffx_t *ffx, VkCommandBuffer cmd,
       vulkan_upscaler_move_input(cmd, &inputs->depth, false);
    vulkan_upscaler_barrier(cmd, ffx->out.image, VK_IMAGE_ASPECT_COLOR_BIT,
          VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
    if (res != FFX_RETURN_OK)
    {
       RARCH_ERR("[Vulkan] Temporal Upscaler: FSR dispatch failed (%u).\n",

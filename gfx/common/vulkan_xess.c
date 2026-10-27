@@ -376,9 +376,9 @@ bool vulkan_xess_upscale(vulkan_xess_t *xess, VkCommandBuffer cmd,
          xess->state.reset_pending ? VK_IMAGE_LAYOUT_UNDEFINED
                                    : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_IMAGE_LAYOUT_GENERAL,
-         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
    img.image  = (uint64_t)(uintptr_t)color->image;
    img.view   = (uint64_t)(uintptr_t)color->view;
    img.format = (unsigned)color->format;
@@ -411,6 +411,7 @@ bool vulkan_xess_upscale(vulkan_xess_t *xess, VkCommandBuffer cmd,
    e.reset_history        = (xess->state.reset_pending || (inputs->flags & RETRO_HW_UPSCALER_RESET)) ? 1 : 0;
    e.input_width          = VIDEO_SCALE_W(color->dims);
    e.input_height         = VIDEO_SCALE_H(color->dims);
+   vulkan_upscaler_full_barrier(cmd);
    res = xess->lib->vk.execute(xess->context, (void*)cmd, &e);
    xess->state.reset_pending = false;
 
@@ -424,9 +425,9 @@ bool vulkan_xess_upscale(vulkan_xess_t *xess, VkCommandBuffer cmd,
    vulkan_xess_move(cmd, &inputs->transparency_mask, false);
    vulkan_upscaler_barrier(cmd, xess->out.image, VK_IMAGE_ASPECT_COLOR_BIT,
          VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
    if (XESS_FAILED(res))
    {
       RARCH_ERR("[Vulkan] Temporal Upscaler: XeSS execute failed (%d).\n", (int)res);

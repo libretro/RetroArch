@@ -218,6 +218,9 @@ static bool setup_vulkan(void)
    VkCommandPoolCreateInfo pinfo;
    VkCommandBufferAllocateInfo ainfo;
    VkDebugUtilsMessengerCreateInfoEXT minfo;
+   VkValidationFeaturesEXT vfeat;
+   VkValidationFeatureEnableEXT venable[1] = {
+      VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT };
    const char *layers[1]  = { "VK_LAYER_KHRONOS_validation" };
    const char *exts[1]    = { VK_EXT_DEBUG_UTILS_EXTENSION_NAME };
    const char *dev_exts[VULKAN_NGX_MAX_EXTS];
@@ -244,8 +247,17 @@ static bool setup_vulkan(void)
    app.pEngineName        = "RetroArch";
    app.engineVersion      = 0;
    app.apiVersion         = VK_API_VERSION_1_1;
+   /* (with the layer's hazard tracking: a barrier a library's own
+    * stages fall outside of is an error here, not a frame now and then
+    * on a GPU that overlaps them) */
+   vfeat.sType                          = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+   vfeat.pNext                          = NULL;
+   vfeat.enabledValidationFeatureCount  = 1;
+   vfeat.pEnabledValidationFeatures     = venable;
+   vfeat.disabledValidationFeatureCount = 0;
+   vfeat.pDisabledValidationFeatures    = NULL;
    iinfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-   iinfo.pNext                   = NULL;
+   iinfo.pNext                   = validation ? &vfeat : NULL;
    iinfo.flags                   = 0;
    iinfo.pApplicationInfo        = &app;
    iinfo.enabledLayerCount       = validation ? 1 : 0;
@@ -1155,6 +1167,49 @@ static void test_mode_for(image_t *color, image_t *mv, image_t *depth)
  * Resolution's output with the core's guides, made again only once a
  * changed setting has held, dropped when turned off, and a core
  * without it (an older driver) leaving Super Resolution alone */
+/* Frames follow each other on the queue with nothing waited between
+ * them; the library writes its output with whatever stage it likes (the
+ * stand-in clears it through the transfer stage). Two in one command
+ * buffer, as the layer tracks hazards: the barriers around an evaluate
+ * must order the library's work against the frame before, however it
+ * was done */
+static void test_barriers(image_t *color, image_t *mv, image_t *depth)
+{
+   fake_ngx_record_t *rec = record();
+   vulkan_ngx_t *ngx;
+   vulkan_ngx_image_t in, out;
+   struct retro_hw_upscaler_inputs inputs;
+   unsigned evals = rec->evals;
+   int errors     = validation_errors;
+
+   ngx = vulkan_ngx_init(instance, gpu, device, vkGetInstanceProcAddr,
+         vkGetDeviceProcAddr, &mem_props, "Zdir");
+   CHECK(ngx != NULL);
+   if (!ngx)
+      return;
+   memset(&inputs, 0, sizeof(inputs));
+   set_input(&inputs.motion_vectors, mv);
+   set_input(&inputs.depth, depth);
+   in.image  = color->image;
+   in.view   = color->view;
+   in.layout = color->layout;
+   in.format = color->format;
+   in.dims   = VIDEO_SCALE_PACK(1280, 720);
+
+   begin_frame();
+   CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY, 0,
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   CHECK(vulkan_ngx_upscale(ngx, cmd, &in, &inputs, NGX_PERF_QUALITY_MAX_QUALITY, 0,
+            VIDEO_SCALE_PACK(1920, 1080), &out));
+   end_frame();
+   vulkan_ngx_frame_done(ngx);
+   CHECK(rec->evals == evals + 2);
+   CHECK(validation_errors == errors);
+
+   vkDeviceWaitIdle(device);
+   vulkan_ngx_free(ngx);
+}
+
 static void test_nr(settings_t *settings, image_t *color, image_t *mv,
       image_t *depth)
 {
@@ -1735,6 +1790,7 @@ int main(void)
    CHECK(video_upscaler_get_interface() == NULL);
 
    test_mode_for(&color, &mv, &depth);
+   test_barriers(&color, &mv, &depth);
    test_nr(settings, &color, &mv, &depth);
 
    /* DLSS behind the dispatch: the frontend's mode word translated to

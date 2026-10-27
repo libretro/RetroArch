@@ -44,6 +44,33 @@ typedef struct ext_props { char name[256]; uint32_t spec; } ext_props_t;
 static ext_props_t inst_exts[1];
 static ext_props_t device_exts[2];
 
+/* The library's own GPU work on the output, through the transfer stage
+ * as a library may: a clear of the Vulkan output it was handed, with
+ * the device's entry points from Init's vkGetDeviceProcAddr */
+typedef void *(CONV *gdpa_t)(void *device, const char *name);
+typedef void (CONV *clear_color_t)(void *cmd, void *image, int layout,
+      const void *color, uint32_t count, const void *ranges);
+static clear_color_t clear_color_image;
+static void clear_output(void *cmd, const void *res)
+{
+   const struct
+   {
+      void *view; void *image;
+      uint32_t aspect, base_mip, levels, base_layer, layers;
+   } *r = res;
+   uint32_t range[5];
+   float color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+   if (!clear_color_image || !res || !r->image)
+      return;
+   range[0] = r->aspect;
+   range[1] = r->base_mip;
+   range[2] = r->levels;
+   range[3] = r->base_layer;
+   range[4] = r->layers;
+   /* (VK_IMAGE_LAYOUT_GENERAL, where the output is for an evaluate) */
+   clear_color_image(cmd, r->image, 1, color, 1, range);
+}
+
 static fake_ngx_record_t rec;
 
 static param_slot_t *slot(param_t *p, const char *name, int make)
@@ -207,6 +234,13 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char *project, int eng
       return FAIL;
    rec.init_calls++;
    rec.init_device   = dev;
+   clear_color_image = NULL;
+   if (gdpa != (void*)1)
+   {
+      gdpa_t get;
+      memcpy(&get, &gdpa, sizeof(get));
+      clear_color_image = (clear_color_t)get(dev, "vkCmdClearColorImage");
+   }
    rec.init_path0    = (paths[0] && paths[0][0]) ? paths[0][0][0] : 0;
    init_info         = common_info;
    memset(&caps, 0, sizeof(caps));
@@ -369,6 +403,7 @@ EXPORT int CONV NVSDK_NGX_VULKAN_EvaluateFeature(void *cmd, const int *h, param_
    }
    copy_res(&e->color, get_p(p, "Color"));
    copy_res(&e->output, get_p(p, "Output"));
+   clear_output(cmd, get_p(p, "Output"));
    copy_res(&e->depth, get_p(p, "Depth"));
    copy_res(&e->motion_vectors, get_p(p, "MotionVectors"));
    copy_res(&e->exposure, get_p(p, "ExposureTexture"));

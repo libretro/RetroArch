@@ -132,6 +132,10 @@ bool vulkan_upscaler_input_needs_move(const struct retro_hw_upscaler_image *img)
 void vulkan_upscaler_move_input(VkCommandBuffer cmd,
       const struct retro_hw_upscaler_image *img, bool to_read);
 
+/* Everything written so far, by any stage, before whatever a library
+ * reads or writes with: which stages it uses is its own business */
+void vulkan_upscaler_full_barrier(VkCommandBuffer cmd);
+
 /* Frames an image or feature a submitted frame may read stays alive
  * for, past the swapchain's depth */
 #define VULKAN_UPSCALER_RETIRE_FRAMES 20

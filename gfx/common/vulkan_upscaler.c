@@ -257,10 +257,20 @@ void vulkan_upscaler_move_input(VkCommandBuffer cmd,
          vulkan_upscaler_aspect((VkFormat)img->format),
          to_read ? layout : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          to_read ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : layout,
-         to_read ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_SHADER_READ_BIT,
-         to_read ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
-         to_read ? VK_PIPELINE_STAGE_ALL_COMMANDS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-         to_read ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+         to_read ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_MEMORY_READ_BIT,
+         to_read ? VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+}
+
+void vulkan_upscaler_full_barrier(VkCommandBuffer cmd)
+{
+   VkMemoryBarrier barrier;
+   barrier.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+   barrier.pNext         = NULL;
+   barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+   barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &barrier, 0, NULL, 0, NULL);
 }
 
 bool vulkan_upscaler_output_create(VkDevice device,
@@ -287,9 +297,11 @@ bool vulkan_upscaler_output_create(VkDevice device,
    image.arrayLayers           = 1;
    image.samples               = VK_SAMPLE_COUNT_1_BIT;
    image.tiling                = VK_IMAGE_TILING_OPTIMAL;
+   /* (written by the library however it likes to: a transfer too) */
    image.usage                 = VK_IMAGE_USAGE_STORAGE_BIT
                                | VK_IMAGE_USAGE_SAMPLED_BIT
-                               | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+                               | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                               | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
    image.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    image.queueFamilyIndexCount = 0;
    image.pQueueFamilyIndices   = NULL;

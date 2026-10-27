@@ -157,6 +157,19 @@ static void vulkan_ngx_barrier(VkCommandBuffer cmd, VkImage image,
          1, &barrier);
 }
 
+/* Everything written so far, by any stage, before whatever DLSS reads
+ * or writes with: which stages it uses is its own business */
+static void vulkan_ngx_full_barrier(VkCommandBuffer cmd)
+{
+   VkMemoryBarrier barrier;
+   barrier.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+   barrier.pNext         = NULL;
+   barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+   barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &barrier, 0, NULL, 0, NULL);
+}
+
 static bool vulkan_ngx_in_list(const char **list, unsigned count,
       const char *name)
 {
@@ -769,9 +782,11 @@ static bool vulkan_ngx_create_output(vulkan_ngx_t *ngx, VkFormat format,
    image.arrayLayers           = 1;
    image.samples               = VK_SAMPLE_COUNT_1_BIT;
    image.tiling                = VK_IMAGE_TILING_OPTIMAL;
+   /* (written by the library however it likes to: a transfer too) */
    image.usage                 = VK_IMAGE_USAGE_STORAGE_BIT
                                | VK_IMAGE_USAGE_SAMPLED_BIT
-                               | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+                               | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                               | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
    image.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    image.queueFamilyIndexCount = 0;
    image.pQueueFamilyIndices   = NULL;
@@ -924,10 +939,9 @@ static void vulkan_ngx_move_input(VkCommandBuffer cmd,
          vulkan_ngx_aspect((VkFormat)img->format),
          to_read ? layout : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          to_read ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : layout,
-         to_read ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_SHADER_READ_BIT,
-         to_read ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
-         to_read ? VK_PIPELINE_STAGE_ALL_COMMANDS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-         to_read ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+         to_read ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_MEMORY_READ_BIT,
+         to_read ? VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 }
 
 /* Whether a create's result says NGX's core has no Neural Rendering */
@@ -1068,9 +1082,9 @@ static bool vulkan_ngx_nr(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
          ngx->nr_reset ? VK_IMAGE_LAYOUT_UNDEFINED
                        : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_IMAGE_LAYOUT_GENERAL,
-         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
    if (vulkan_ngx_input_needs_move(&inputs->motion_vectors))
       vulkan_ngx_move_input(cmd, &inputs->motion_vectors, true);
    if (vulkan_ngx_input_needs_move(&inputs->depth))
@@ -1122,6 +1136,7 @@ static bool vulkan_ngx_nr(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    lib->param.set_ui(p, NGX_PARAM_DLSSNR_MVEC_SUBRECT "BaseY", 0);
    lib->param.set_ui(p, NGX_PARAM_DLSSNR_MVEC_SUBRECT "Width", VIDEO_SCALE_W(mv_dims));
    lib->param.set_ui(p, NGX_PARAM_DLSSNR_MVEC_SUBRECT "Height", VIDEO_SCALE_H(mv_dims));
+   vulkan_ngx_full_barrier(cmd);
    res = lib->vulkan.evaluate_feature((void*)cmd, ngx->nr_feature, p, NULL);
    ngx->nr_reset = false;
 
@@ -1131,9 +1146,9 @@ static bool vulkan_ngx_nr(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
       vulkan_ngx_move_input(cmd, &inputs->depth, false);
    vulkan_ngx_barrier(cmd, ngx->nr_image, VK_IMAGE_ASPECT_COLOR_BIT,
          VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
    if (NGX_FAILED(res))
    {
       RARCH_ERR("[Vulkan] Temporal Upscaler: DLSS Neural Rendering evaluate failed (0x%08x).\n",
@@ -1221,9 +1236,9 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
          ngx->reset_pending ? VK_IMAGE_LAYOUT_UNDEFINED
                             : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_IMAGE_LAYOUT_GENERAL,
-         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_MEMORY_WRITE_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
    if (vulkan_ngx_input_needs_move(&inputs->motion_vectors))
       vulkan_ngx_move_input(cmd, &inputs->motion_vectors, true);
    if (vulkan_ngx_input_needs_move(&inputs->depth))
@@ -1285,6 +1300,7 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    lib->param.set_i(p, NGX_PARAM_DLSS_INDICATOR_INVERT_X, 0);
    lib->param.set_i(p, NGX_PARAM_DLSS_INDICATOR_INVERT_Y, 0);
    reset = ngx->reset_pending || (inputs->flags & RETRO_HW_UPSCALER_RESET);
+   vulkan_ngx_full_barrier(cmd);
    res = lib->vulkan.evaluate_feature((void*)cmd, ngx->feature, p, NULL);
    ngx->reset_pending = false;
 
@@ -1294,9 +1310,9 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
       vulkan_ngx_move_input(cmd, &inputs->depth, false);
    vulkan_ngx_barrier(cmd, ngx->out_image, VK_IMAGE_ASPECT_COLOR_BIT,
          VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
    if (NGX_FAILED(res))
    {
       RARCH_ERR("[Vulkan] Temporal Upscaler: evaluate failed (0x%08x).\n",
