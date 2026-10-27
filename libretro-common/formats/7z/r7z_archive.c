@@ -385,6 +385,7 @@ struct r7z_archive
     * bounded by that port's own decode. */
    uint8_t       *pend_b2buf[4];
    size_t         pend_b2len[4];
+   int            pend_b2borrowed[4]; /* the archive's own bytes: not freed */
    uint32_t       pend_b2port;     /* next port to resolve, 0..4 */
    uint32_t       pend_b2at;       /* index of the BCJ2 coder */
    uint32_t       pend_b2in;       /* input-port base of that coder */
@@ -1587,9 +1588,11 @@ static int folder_input_offsets(r7z_archive_t *a, uint32_t fi,
 }
 
 /* Produce the bytes arriving at one input port of the folder's coder
- * graph. Returns a malloc'd buffer the caller frees. */
+ * graph: a malloc'd buffer the caller frees, or, for a packed stream
+ * of an archive in memory, the archive's own bytes, *@borrowed set. */
 static int resolve_input(r7z_archive_t *a, uint32_t fi, uint32_t port,
-      uint32_t coder_out_base, uint8_t **out, size_t *out_len)
+      uint32_t coder_out_base, uint8_t **out, size_t *out_len,
+      int *borrowed)
 {
    folder_t *f = &a->folders[fi];
    uint32_t  b;
@@ -1625,6 +1628,13 @@ static int resolve_input(r7z_archive_t *a, uint32_t fi, uint32_t port,
                || (uint64_t)n > (uint64_t)a->len - 32 - off)
             return R7Z_ERROR_DATA;
 
+         *out_len  = n;
+         *borrowed = a->data != NULL;
+         if (a->data)
+         {
+            *out = (uint8_t *)(a->data + 32 + (size_t)off);
+            return R7Z_OK;
+         }
          *out = (uint8_t *)malloc(n ? n : 1);
          if (!*out)
             return R7Z_ERROR_MEM;
@@ -1634,7 +1644,6 @@ static int resolve_input(r7z_archive_t *a, uint32_t fi, uint32_t port,
             *out = NULL;
             return res;
          }
-         *out_len = n;
          return R7Z_OK;
       }
    }
@@ -1657,7 +1666,8 @@ static int resolve_input(r7z_archive_t *a, uint32_t fi, uint32_t port,
             {
                uint8_t *in = NULL;
                size_t   in_len = 0;
-               size_t   want;
+               int      in_borrowed = 0;
+               size_t   want = 0;
                uint8_t *dst;
                uint32_t in_base = 0;
                uint32_t z;
@@ -1670,38 +1680,33 @@ static int resolve_input(r7z_archive_t *a, uint32_t fi, uint32_t port,
                   in_base += a->coders[f->coder_first + z].num_in;
 
                res = resolve_input(a, fi, in_base, coder_out_base,
-                     &in, &in_len);
+                     &in, &in_len, &in_borrowed);
                if (res != R7Z_OK)
                   return res;
 
-               if (coder_out_base + out_port >= a->num_coder_unpack_sizes)
+               dst = NULL;
+               if (     coder_out_base + out_port >= a->num_coder_unpack_sizes
+                     || a->coder_unpack_sizes[coder_out_base + out_port]
+                        > (uint64_t)((size_t)-1))
+                  res = R7Z_ERROR_DATA;
+               else
                {
-                  free(in);
-                  return R7Z_ERROR_DATA;
+                  want = (size_t)a->coder_unpack_sizes[coder_out_base + out_port];
+                  if (!(dst = (uint8_t *)malloc(want ? want : 1)))
+                     res = R7Z_ERROR_MEM;
+                  else
+                     res = decode_coder(a, c, in, in_len, dst, want);
                }
-               if (a->coder_unpack_sizes[coder_out_base + out_port]
-                     > (uint64_t)((size_t)-1))
-               {
+               if (!in_borrowed)
                   free(in);
-                  return R7Z_ERROR_DATA;
-               }
-               want = (size_t)a->coder_unpack_sizes[coder_out_base + out_port];
-
-               dst = (uint8_t *)malloc(want ? want : 1);
-               if (!dst)
-               {
-                  free(in);
-                  return R7Z_ERROR_MEM;
-               }
-               res = decode_coder(a, c, in, in_len, dst, want);
-               free(in);
                if (res != R7Z_OK)
                {
                   free(dst);
                   return res;
                }
-               *out     = dst;
-               *out_len = want;
+               *out      = dst;
+               *out_len  = want;
+               *borrowed = 0;
                return R7Z_OK;
             }
             seen += c->num_out;
@@ -1719,6 +1724,7 @@ static int decode_folder_bcj2(r7z_archive_t *a, uint32_t fi,
    folder_t *f = &a->folders[fi];
    uint8_t  *bufs[4];
    size_t    lens[4];
+   int       borrowed[4];
    uint32_t  in_base = 0;
    uint32_t  coder_out_base = 0;
    uint32_t  i;
@@ -1728,8 +1734,9 @@ static int decode_folder_bcj2(r7z_archive_t *a, uint32_t fi,
 
    for (i = 0; i < 4; i++)
    {
-      bufs[i] = NULL;
-      lens[i] = 0;
+      bufs[i]     = NULL;
+      lens[i]     = 0;
+      borrowed[i] = 0;
    }
 
    if (a->coders[f->coder_first + bcj2_at].num_in != 4)
@@ -1747,7 +1754,7 @@ static int decode_folder_bcj2(r7z_archive_t *a, uint32_t fi,
    for (i = 0; i < 4; i++)
    {
       res = resolve_input(a, fi, in_base + i, coder_out_base,
-            &bufs[i], &lens[i]);
+            &bufs[i], &lens[i], &borrowed[i]);
       if (res != R7Z_OK)
          goto done;
    }
@@ -1789,7 +1796,8 @@ static int decode_folder_bcj2(r7z_archive_t *a, uint32_t fi,
 
 done:
    for (i = 0; i < 4; i++)
-      free(bufs[i]);
+      if (!borrowed[i])
+         free(bufs[i]);
    return res;
 }
 
@@ -2340,8 +2348,10 @@ static void decode_pending_reset(r7z_archive_t *a)
       uint32_t k;
       for (k = 0; k < 4; k++)
       {
-         free(a->pend_b2buf[k]);
-         a->pend_b2buf[k] = NULL;
+         if (!a->pend_b2borrowed[k])
+            free(a->pend_b2buf[k]);
+         a->pend_b2buf[k]      = NULL;
+         a->pend_b2borrowed[k] = 0;
          a->pend_b2len[k] = 0;
       }
    }
@@ -2754,13 +2764,16 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
                      }
                      if (!a->pend_in_borrowed)
                         free(a->pend_in);
-                     a->pend_in_borrowed = 0;
-                     if (!(a->pend_in = (uint8_t *)malloc(n ? n : 1)))
+                     /* where it lies, when the archive is in memory */
+                     a->pend_in_borrowed = a->data != NULL;
+                     if (a->data)
+                        a->pend_in = (uint8_t *)(a->data + 32 + (size_t)off);
+                     else if (!(a->pend_in = (uint8_t *)malloc(n ? n : 1)))
                      {
                         decode_pending_reset(a);
                         return R7Z_ERROR_MEM;
                      }
-                     if (r7z_fetch(a, 32 + off, a->pend_in, n) != R7Z_OK)
+                     else if (r7z_fetch(a, 32 + off, a->pend_in, n) != R7Z_OK)
                      {
                         decode_pending_reset(a);
                         return R7Z_ERROR_DATA;
@@ -2799,8 +2812,9 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
             a->pend_dec   = NULL;
             a->pend_probs = NULL;
 
-            a->pend_b2buf[i] = a->pend_out;
-            a->pend_b2len[i] = a->pend_out_len;
+            a->pend_b2buf[i]      = a->pend_out;
+            a->pend_b2len[i]      = a->pend_out_len;
+            a->pend_b2borrowed[i] = 0;
             a->pend_out      = NULL;
             a->pend_out_len  = 0;
             a->pend_b2port++;
@@ -2813,7 +2827,7 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
        * whose port is fed by a chain. See the coverage note in
        * r7z_bcj2.h before changing this. */
       res = resolve_input(a, fi, a->pend_b2in + i, a->pend_base,
-            &a->pend_b2buf[i], &a->pend_b2len[i]);
+            &a->pend_b2buf[i], &a->pend_b2len[i], &a->pend_b2borrowed[i]);
       if (res != R7Z_OK)
       {
          decode_pending_reset(a);
