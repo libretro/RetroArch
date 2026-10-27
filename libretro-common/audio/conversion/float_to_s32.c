@@ -19,6 +19,10 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+/* retro_environment.h spells MSVC's SSE/SSE2 targets as __SSE__/__SSE2__,
+ * which the SIMD paths below test. */
+#include <retro_environment.h>
+
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
