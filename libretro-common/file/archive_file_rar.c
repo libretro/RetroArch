@@ -99,7 +99,7 @@ typedef struct
 static int rar_file_decompressed(
       const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode,
-      uint32_t csize, uint32_t size,
+      uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    rar_decomp_state_t *st = (rar_decomp_state_t*)userdata->cb_data;
@@ -203,7 +203,7 @@ static int64_t rar_file_read(
 
 static bool rar_stream_decompress_data_to_file_init(
       void *context, file_archive_file_handle_t *handle,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size)
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size)
 {
    struct rar_context_t *ctx = (struct rar_context_t*)context;
 
@@ -301,29 +301,21 @@ static int rar_parse_file_iterate_step(void *context,
 
    entry = rrar_archive_entry(ctx->archive, ctx->parse_index);
 
-   /* Directories, members this reader cannot unpack (solid, encrypted,
-    * an older packer) and members of 4 GiB or more, which the uint32_t
-    * sizes here cannot describe, are passed over: the rest of the
+   /* Directories and members this reader cannot unpack (solid,
+    * encrypted, an older packer) are passed over: the rest of the
     * archive stays usable. */
-   if (     entry
-         && !entry->is_dir
-         && entry->supported
-         && entry->size <= (uint64_t)0xFFFFFFFFu)
+   if (entry && !entry->is_dir && entry->supported)
    {
-      uint32_t size = (uint32_t)entry->size;
-
       strlcpy(userdata->current_file_path, entry->name,
             sizeof(userdata->current_file_path));
       userdata->crc  = entry->crc;
-      userdata->size = size;
+      userdata->size = entry->size;
 
       /* The entry index travels in cdata; the packed size is reported
        * only for progress. */
       if (file_cb && !file_cb(userdata->current_file_path, valid_exts,
                (const uint8_t*)(size_t)ctx->parse_index, 0,
-               entry->packed_size > (uint64_t)0xFFFFFFFFu
-               ? 0xFFFFFFFFu : (uint32_t)entry->packed_size,
-               size, entry->crc, userdata))
+               entry->packed_size, entry->size, entry->crc, userdata))
          return 0;
    }
 

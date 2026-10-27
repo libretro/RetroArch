@@ -51,7 +51,7 @@ struct zstd_file_context
    uint8_t *decompressed_data;
    char inner_filename[PATH_MAX_LENGTH];
    int64_t archive_size;
-   uint32_t decompressed_size;
+   size_t decompressed_size;
    bool parsed;
 };
 
@@ -147,13 +147,13 @@ static int zstd_parse_file_iterate_step(void *context,
       || content_size == ZSTD_SIZE_ERROR)
       return -1;
 
-   /* decompressed_size is a uint32_t and feeds a later malloc; reject
-    * values that would truncate to a smaller size and mismatch the
-    * length the decode actually produces. */
-   if (content_size > UINT32_MAX)
+   /* decompressed_size feeds a later malloc; reject values that would
+    * truncate on a 32-bit host and mismatch the length the decode
+    * actually produces. */
+   if ((uint64_t)content_size > (uint64_t)SIZE_MAX)
       return -1;
 
-   ctx->decompressed_size = (uint32_t)content_size;
+   ctx->decompressed_size = (size_t)content_size;
 
    strlcpy(userdata->current_file_path, ctx->inner_filename,
          sizeof(userdata->current_file_path));
@@ -163,7 +163,7 @@ static int zstd_parse_file_iterate_step(void *context,
 
    if (file_cb && !file_cb(ctx->inner_filename, valid_exts,
             NULL, 0,
-            (uint32_t)state->archive_size, (uint32_t)content_size,
+            (uint64_t)state->archive_size, (uint64_t)content_size,
             0, userdata))
       return 0;
 
@@ -182,7 +182,7 @@ static void zstd_parse_file_free(void *context)
 
 static bool zstd_stream_decompress_data_to_file_init(
       void *context, file_archive_file_handle_t *handle,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size)
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size)
 {
    struct zstd_file_context *ctx = (struct zstd_file_context*)context;
    if (!ctx)

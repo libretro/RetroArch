@@ -33,6 +33,8 @@
 #include <encodings/crc32.h>
 #include <string/stdstring.h>
 
+#include <limits.h>
+
 /* The ZIP DEFLATE backend can be built against zlib or against the
  * clean-room inflate implementation in encodings/deflate.h.  Define
  * ARCHIVE_HAVE_ZLIB to use zlib, ARCHIVE_USE_BUILTIN_DEFLATE to use the
@@ -79,6 +81,12 @@
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
 
+/* ZIP64: the end of the directory, and where to find it */
+#define ZIP64_END_OF_CENTRAL_DIR_SIGNATURE         0x06064b50
+#define ZIP64_END_OF_CENTRAL_DIR_LOCATOR_SIGNATURE 0x07064b50
+/* the extra field that holds a member's 64-bit sizes and offset */
+#define ZIP64_EXTRA_ID 0x0001
+
 #define _READ_CHUNK_SIZE   (128*1024)   /* Read 128KiB compressed chunks */
 /* Output window a deflated member is inflated through when it goes
  * to a file: written out each time it fills, instead of the whole
@@ -123,11 +131,14 @@ typedef struct
    uint8_t *directory_entry;
    uint8_t *directory_end;
    uint64_t fdoffset;
-   uint32_t boffset, csize, usize;
+   uint64_t entry_offset;  /* local header of the entry in hand */
+   uint64_t boffset, csize, usize;
+   uint64_t out_off;       /* bytes of output produced so far */
+   size_t   win_len;       /* size of decompressed_data */
+   size_t   win_pos;       /* bytes of it filled (rinflate) */
    uint32_t entry_crc;     /* central-directory CRC of the entry in hand */
    uint32_t expect_crc;    /* CRC the member in progress has to match */
    uint32_t crc;           /* CRC of the output produced so far */
-   uint32_t out_off;       /* bytes of output produced so far */
    unsigned cmode;
 #ifdef ARCHIVE_HAVE_ZLIB
    z_stream *zstream;      /* kept across members */
@@ -141,8 +152,6 @@ typedef struct
                               bzip2 member and kept */
    /* The whole member, or a ZIP_STREAM_WINDOW of it when streaming */
    uint8_t *decompressed_data;
-   uint32_t win_len;       /* size of decompressed_data */
-   uint32_t win_pos;       /* bytes of it filled (rinflate) */
    bool     inflating;     /* a DEFLATE member is in progress */
    bool     streaming;     /* output goes to state->pending_sink */
 } zip_context_t;
@@ -155,6 +164,11 @@ static INLINE uint32_t read_le(const uint8_t *data, size_t len)
    for (i = 0; i < len; i += 8)
       val |= (uint32_t)*data++ << i;
    return val;
+}
+
+static INLINE uint64_t read_le64(const uint8_t *data)
+{
+   return (uint64_t)read_le(data, 4) | ((uint64_t)read_le(data + 4, 4) << 32);
 }
 
 static void zip_context_free_stream(
@@ -241,9 +255,11 @@ static int64_t zip_member_input(RFILE *f, int64_t off, int64_t len,
  * the mapping, from what the stream lends when it holds all of it, or
  * else read into *@buf, grown to *@cap as need be. NULL on failure. */
 static const uint8_t *zip_member_whole(struct file_archive_transfer *state,
-      int64_t off, uint32_t csize, uint8_t **buf, size_t *cap)
+      int64_t off, uint64_t csize, uint8_t **buf, size_t *cap)
 {
    const uint8_t *src = NULL;
+   if (csize > (uint64_t)((size_t)-1))
+      return NULL;
 #ifdef VFS_HAVE_FILE_MAPPING
    if (state->archive_mmap_data)
       return state->archive_mmap_data + (size_t)off;
@@ -253,11 +269,11 @@ static const uint8_t *zip_member_whole(struct file_archive_transfer *state,
       return src;
    if (*cap < csize)
    {
-      uint8_t *p = (uint8_t*)realloc(*buf, csize ? csize : 1);
+      uint8_t *p = (uint8_t*)realloc(*buf, csize ? (size_t)csize : 1);
       if (!p)
          return NULL;
       *buf = p;
-      *cap = csize;
+      *cap = (size_t)csize;
    }
    filestream_seek(state->archive_file, off, RETRO_VFS_SEEK_POSITION_START);
    if (filestream_read(state->archive_file, *buf, csize) != (int64_t)csize)
@@ -269,7 +285,7 @@ static const uint8_t *zip_member_whole(struct file_archive_transfer *state,
  * which holds exactly its @usize; true when it decodes to that and to
  * @crc. *@bz is made at the first bzip2 member. */
 static bool zip_decode_whole(unsigned cmode, void **bz, uint8_t *dst,
-      uint32_t usize, const uint8_t *src, uint32_t csize, uint32_t crc)
+      size_t usize, const uint8_t *src, size_t csize, uint32_t crc)
 {
    size_t result = 0;
    bool   ok     = false;
@@ -312,7 +328,7 @@ static bool zip_decode_whole(unsigned cmode, void **bz, uint8_t *dst,
 
 static bool zlib_stream_decompress_data_to_file_init(
       void *context, file_archive_file_handle_t *handle,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size)
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size)
 {
    int64_t offsetData;
    uint8_t *local_header;
@@ -321,9 +337,19 @@ static bool zlib_stream_decompress_data_to_file_init(
    bool mapped                = false;
    zip_context_t *zip_context = (zip_context_t *)context;
    struct file_archive_transfer *state = zip_context->state;
+   /* The local header of the entry the walk is on. cdata carries it
+    * too, but a pointer cannot hold an offset past 4 GiB on a 32-bit
+    * host. */
+   uint64_t local                      = zip_context->entry_offset;
+
+   (void)cdata;
 
    /* free previous data if left unfinished */
    zip_context_reset_member(zip_context);
+
+   if (local > (uint64_t)state->archive_size - 30
+         || state->archive_size < 30)
+      return false;
 
 #ifdef VFS_HAVE_FILE_MAPPING
    mapped = (state->archive_mmap_data != NULL);
@@ -333,19 +359,15 @@ static bool zlib_stream_decompress_data_to_file_init(
 #ifdef VFS_HAVE_FILE_MAPPING
    if (state->archive_mmap_data)
    {
-      /* cdata is a file offset taken from the central directory and is
-       * not otherwise validated, so bound the 30-byte local header
-       * (26 skipped + 4 read here) against the mapping before reading
-       * it - a crafted offset near the end of the archive would
-       * otherwise read past the mmap. */
-      if ((int64_t)(size_t)cdata + 26 + 4 > state->archive_size)
-         return false;
-      local_header = state->archive_mmap_data + (size_t)cdata + 26;
+      /* The offset is the central directory's word: the 30-byte
+       * local header (26 skipped + 4 read here) was bounded against
+       * the archive above, before anything is read from the mapping. */
+      local_header = state->archive_mmap_data + (size_t)local + 26;
    }
    else
 #endif
    {
-      filestream_seek(state->archive_file, (int64_t)(size_t)cdata + 26, RETRO_VFS_SEEK_POSITION_START);
+      filestream_seek(state->archive_file, (int64_t)local + 26, RETRO_VFS_SEEK_POSITION_START);
       if (filestream_read(state->archive_file, local_header_buf, 4) != 4)
          return false;
       local_header = local_header_buf;
@@ -353,7 +375,7 @@ static bool zlib_stream_decompress_data_to_file_init(
 
    offsetNL = read_le(local_header,     2); /* file name length */
    offsetEL = read_le(local_header + 2, 2); /* extra field length */
-   offsetData = (int64_t)(size_t)cdata + 26 + 4 + offsetNL + offsetEL;
+   offsetData = (int64_t)local + 26 + 4 + offsetNL + offsetEL;
 
    /* offsetData and the member sizes come from the archive and drive
     * the mmap reads in the iterate step below (memcpy of usize bytes
@@ -373,9 +395,9 @@ static bool zlib_stream_decompress_data_to_file_init(
     * archive, and there it is bounded below. */
    if (       offsetData < 0
          ||   offsetData          > state->archive_size
-         || (int64_t)csize        > state->archive_size - offsetData
+         ||   csize > (uint64_t)(state->archive_size - offsetData)
          || (      cmode == ZIP_MODE_STORED
-               && (int64_t)size   > state->archive_size - offsetData))
+               &&   size  > (uint64_t)(state->archive_size - offsetData)))
       return false;
 
    zip_context->fdoffset              = offsetData;
@@ -387,12 +409,22 @@ static bool zlib_stream_decompress_data_to_file_init(
    zip_context->out_off               = 0;
    zip_context->cmode                 = cmode;
 
-   /* A deflated member bound for a file is inflated through a window
-    * and written out as it goes; anything else is decoded whole */
-   zip_context->streaming = (cmode == ZIP_MODE_DEFLATED)
+   /* A stored or deflated member bound for a file goes through a
+    * window and is written out as it goes; anything else is decoded
+    * whole, into memory that has to hold it. */
+   zip_context->streaming = (cmode == ZIP_MODE_DEFLATED
+            || cmode == ZIP_MODE_STORED)
          && state->pending_sink && (size > ZIP_STREAM_WINDOW);
+   if (!zip_context->streaming && size > (uint64_t)((size_t)-1))
+      return false;
+#ifdef ARCHIVE_HAVE_ZLIB
+   /* zlib's avail_out holds 32 bits */
+   if (     !zip_context->streaming && cmode == ZIP_MODE_DEFLATED
+         && size > 0xFFFFFFFFu)
+      return false;
+#endif
    zip_context->win_len   = zip_context->streaming
-         ? ZIP_STREAM_WINDOW : size;
+         ? ZIP_STREAM_WINDOW : (size_t)size;
    zip_context->win_pos   = 0;
 
    /* NULL-check the decompressed_data malloc: the iterate step and
@@ -437,7 +469,7 @@ static bool zlib_stream_decompress_data_to_file_init(
       zip_context->zstream->next_in   = NULL;
       zip_context->zstream->avail_in  = 0;
       zip_context->zstream->next_out  = zip_context->decompressed_data;
-      zip_context->zstream->avail_out = zip_context->win_len;
+      zip_context->zstream->avail_out = (uInt)zip_context->win_len;
 #else
       /* The output buffer (the full decompressed_data) is bound once
        * on the first iterate call; only compressed input is fed
@@ -463,7 +495,7 @@ static bool zlib_stream_decompress_data_to_file_init(
  * pending sink and empties the window */
 static bool zip_context_flush_window(zip_context_t *zip_context)
 {
-   uint32_t filled;
+   size_t filled;
 #ifdef ARCHIVE_HAVE_ZLIB
    filled = zip_context->win_len - zip_context->zstream->avail_out;
 #else
@@ -474,7 +506,7 @@ static bool zip_context_flush_window(zip_context_t *zip_context)
       return false;
 #ifdef ARCHIVE_HAVE_ZLIB
    zip_context->zstream->next_out  = zip_context->decompressed_data;
-   zip_context->zstream->avail_out = zip_context->win_len;
+   zip_context->zstream->avail_out = (uInt)zip_context->win_len;
 #else
    zip_context->win_pos = 0;
    rinflate_set_out(zip_context->zstream,
@@ -490,14 +522,48 @@ static int zlib_stream_decompress_data_to_file_iterate(
    zip_context_t *zip_context = (zip_context_t *)context;
    struct file_archive_transfer *state = zip_context->state;
 
-   if (zip_context->cmode == ZIP_MODE_STORED)
+   if (zip_context->cmode == ZIP_MODE_STORED && zip_context->streaming)
+   {
+      /* A window's worth to the sink per call: straight from the
+       * mapping where there is one, through the window otherwise */
+      const uint8_t *src;
+      uint64_t left = zip_context->usize - zip_context->out_off;
+      size_t   n    = left < zip_context->win_len
+         ? (size_t)left : zip_context->win_len;
+#ifdef VFS_HAVE_FILE_MAPPING
+      if (state->archive_mmap_data)
+         src = state->archive_mmap_data
+            + (size_t)(zip_context->fdoffset + zip_context->out_off);
+      else
+#endif
+      {
+         filestream_seek(state->archive_file,
+               (int64_t)(zip_context->fdoffset + zip_context->out_off),
+               RETRO_VFS_SEEK_POSITION_START);
+         if (filestream_read(state->archive_file,
+                  zip_context->decompressed_data, n) != (int64_t)n)
+            return -1;
+         src = zip_context->decompressed_data;
+      }
+      zip_context->crc      = encoding_crc32(zip_context->crc, src, n);
+      if (filestream_write(state->pending_sink, src, n) != (int64_t)n)
+         return -1;
+      zip_context->out_off += n;
+      if (zip_context->out_off < zip_context->usize)
+         return 0;
+      if (zip_context->crc != zip_context->expect_crc)
+         return -1;
+      handle->data = NULL;
+      return 1;
+   }
+   else if (zip_context->cmode == ZIP_MODE_STORED)
    {
 #ifdef VFS_HAVE_FILE_MAPPING
       /* Simply copy the data to the output buffer */
       if (zip_context->state->archive_mmap_data)
          memcpy(zip_context->decompressed_data,
                zip_context->state->archive_mmap_data + (size_t)zip_context->fdoffset,
-               zip_context->usize);
+               (size_t)zip_context->usize);
       else
 #endif
       {
@@ -510,7 +576,7 @@ static int zlib_stream_decompress_data_to_file_iterate(
       }
 
       if (encoding_crc32(0, zip_context->decompressed_data,
-               zip_context->usize) != zip_context->expect_crc)
+               (size_t)zip_context->usize) != zip_context->expect_crc)
          return -1;
 
       handle->data = zip_context->decompressed_data;
@@ -519,7 +585,9 @@ static int zlib_stream_decompress_data_to_file_iterate(
    else if (zip_context->cmode == ZIP_MODE_DEFLATED)
    {
       const uint8_t *dptr;
-      int to_read = MIN(zip_context->csize - zip_context->boffset, _READ_CHUNK_SIZE);
+      uint64_t left    = zip_context->csize - zip_context->boffset;
+      int64_t  to_read = left < _READ_CHUNK_SIZE
+         ? (int64_t)left : _READ_CHUNK_SIZE;
       /* File was uncompressed or decompression finished before */
       if (!zip_context->inflating)
          return 1;
@@ -528,14 +596,15 @@ static int zlib_stream_decompress_data_to_file_iterate(
       if (state->archive_mmap_data)
       {
          /* Decompress from the mapped file */
-         dptr = state->archive_mmap_data + (size_t)zip_context->fdoffset + zip_context->boffset;
+         dptr = state->archive_mmap_data
+            + (size_t)(zip_context->fdoffset + zip_context->boffset);
          rd   = to_read;
       }
       else
 #endif
       {
          rd = zip_member_input(state->archive_file,
-               zip_context->fdoffset + zip_context->boffset,
+               (int64_t)(zip_context->fdoffset + zip_context->boffset),
                to_read, zip_context->tmpbuf, &dptr);
          /* Unexpected EOF before csize: returning 0 would spin forever
           * in file_archive_walk's tight iterate loop (seen with short
@@ -565,9 +634,9 @@ static int zlib_stream_decompress_data_to_file_iterate(
 
          out  = zip_context->zstream->next_out;
          zret = inflate(zip_context->zstream, 0);
-         zip_context->crc     = encoding_crc32(zip_context->crc, out,
+         zip_context->crc      = encoding_crc32(zip_context->crc, out,
                (size_t)(zip_context->zstream->next_out - out));
-         zip_context->out_off = (uint32_t)zip_context->zstream->total_out;
+         zip_context->out_off += (uint64_t)(zip_context->zstream->next_out - out);
 
          /* With the whole member as output, one call takes all the
           * input */
@@ -620,8 +689,8 @@ static int zlib_stream_decompress_data_to_file_iterate(
          zip_context->crc      = encoding_crc32(zip_context->crc,
                zip_context->decompressed_data + zip_context->win_pos,
                got_out);
-         zip_context->win_pos += (uint32_t)got_out;
-         zip_context->out_off += (uint32_t)got_out;
+         zip_context->win_pos += got_out;
+         zip_context->out_off += got_out;
          /* END: stream finished.  NEXT with no further progress means this
           * input chunk is drained; fetch the next one on the outer loop. */
          if (st == RDEFLATE_PROCESS_END)
@@ -663,8 +732,8 @@ static int zlib_stream_decompress_data_to_file_iterate(
             &zip_context->tmpbuf_len);
       if (     !src
             || !zip_decode_whole(zip_context->cmode, &zip_context->bz,
-               zip_context->decompressed_data, zip_context->usize,
-               src, zip_context->csize, zip_context->expect_crc))
+               zip_context->decompressed_data, (size_t)zip_context->usize,
+               src, (size_t)zip_context->csize, zip_context->expect_crc))
          return -1;
 
       /* A whole-member buffer is not kept past its member. */
@@ -686,8 +755,8 @@ static int zlib_stream_decompress_data_to_file_iterate(
 static bool zip_file_decompressed_handle(
       file_archive_transfer_t *transfer,
       file_archive_file_handle_t* handle,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize,
-      uint32_t size, uint32_t crc32)
+      const uint8_t *cdata, unsigned cmode, uint64_t csize,
+      uint64_t size, uint32_t crc32)
 {
    int ret   = 0;
 
@@ -728,7 +797,7 @@ typedef struct
 static int zip_file_decompressed(
       const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode,
-      uint32_t csize, uint32_t size,
+      uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    decomp_state_t* decomp_state = (decomp_state_t*)userdata->cb_data;
@@ -851,6 +920,7 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    int64_t read_pos = state->archive_size;
    int64_t read_block = MIN(read_pos, (ssize_t)sizeof(footer_buf));
    int64_t directory_size, directory_offset;
+   uint64_t entries;
    zip_context_t *zip_context = NULL;
 
    /* Minimal ZIP file size is 22 bytes */
@@ -891,6 +961,40 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    /* Read directory info and do basic sanity checks. */
    directory_size   = read_le(footer + 12, 4);
    directory_offset = read_le(footer + 16, 4);
+   entries          = read_le(footer + 10, 2);
+
+   /* A field at its largest says the ZIP64 record holds it: found
+    * through the locator, the 20 octets before this record */
+   if (     entries          == 0xFFFFu
+         || directory_size   == 0xFFFFFFFFu
+         || directory_offset == 0xFFFFFFFFu)
+   {
+      uint8_t loc[20], rec[56];
+      int64_t at = read_pos + (footer - footer_buf);
+      uint64_t rec_off;
+      if (at < 20)
+         return -1;
+      filestream_seek(state->archive_file, at - 20,
+            RETRO_VFS_SEEK_POSITION_START);
+      if (     filestream_read(state->archive_file, loc, 20) != 20
+            || read_le(loc, 4) != ZIP64_END_OF_CENTRAL_DIR_LOCATOR_SIGNATURE)
+         return -1;
+      rec_off = read_le64(loc + 8);
+      if (rec_off > (uint64_t)(at - 20) || (uint64_t)(at - 20) - rec_off < 56)
+         return -1;
+      filestream_seek(state->archive_file, (int64_t)rec_off,
+            RETRO_VFS_SEEK_POSITION_START);
+      if (     filestream_read(state->archive_file, rec, 56) != 56
+            || read_le(rec, 4) != ZIP64_END_OF_CENTRAL_DIR_SIGNATURE)
+         return -1;
+      entries = read_le64(rec + 32);
+      if (     read_le64(rec + 40) > (uint64_t)state->archive_size
+            || read_le64(rec + 48) > (uint64_t)state->archive_size)
+         return -1;
+      directory_size   = (int64_t)read_le64(rec + 40);
+      directory_offset = (int64_t)read_le64(rec + 48);
+   }
+
    if (directory_size > state->archive_size
          || directory_offset > state->archive_size)
       return -1;
@@ -934,6 +1038,7 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    zip_context->decompressed_data = NULL;
    zip_context->inflating         = false;
    zip_context->fdoffset          = 0;
+   zip_context->entry_offset      = 0;
    zip_context->csize             = 0;
    zip_context->usize             = 0;
 
@@ -945,7 +1050,8 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    }
 
    state->context = zip_context;
-   state->step_total = read_le(footer + 10, 2); /* total entries */;
+   state->step_total = entries > (uint64_t)UINT_MAX
+      ? UINT_MAX : (unsigned)entries;
 
    return 0;
 }
@@ -975,14 +1081,51 @@ static int zip_entry_is_appledouble(const uint8_t *name, uint32_t len)
    return (len - i >= 2 && name[i] == '.' && name[i + 1] == '_');
 }
 
+/* The ZIP64 extra field among @extra's @len octets: each of *@size,
+ * *@csize and *@offset that is at its 32-bit largest is read from it,
+ * in that order. false when one is wanted and the field does not hold
+ * it. */
+static bool zip64_extra(const uint8_t *extra, uint32_t len,
+      uint64_t *size, uint64_t *csize, uint64_t *offset)
+{
+   uint64_t *want[3];
+   unsigned  n = 0, i;
+   if (*size   == 0xFFFFFFFFu)
+      want[n++] = size;
+   if (*csize  == 0xFFFFFFFFu)
+      want[n++] = csize;
+   if (*offset == 0xFFFFFFFFu)
+      want[n++] = offset;
+   if (!n)
+      return true;
+   while (len >= 4)
+   {
+      uint32_t id = read_le(extra, 2), sz = read_le(extra + 2, 2);
+      if (sz > len - 4)
+         return false;
+      if (id == ZIP64_EXTRA_ID)
+      {
+         if (sz < 8 * n)
+            return false;
+         for (i = 0; i < n; i++)
+            *want[i] = read_le64(extra + 4 + 8 * i);
+         return true;
+      }
+      extra += 4 + sz;
+      len   -= 4 + sz;
+   }
+   return false;
+}
+
 static int zip_parse_file_iterate_step_internal(
       zip_context_t * zip_context, char *filename,
       const uint8_t **cdata,
-      unsigned *cmode, uint32_t *size, uint32_t *csize,
+      unsigned *cmode, uint64_t *size, uint64_t *csize,
       uint32_t *checksum, unsigned *payback)
 {
    uint8_t *entry;
-   uint32_t signature, namelength, extralength, commentlength, offset;
+   uint32_t signature, namelength, extralength, commentlength;
+   uint64_t offset;
 
 again:
    entry = zip_context->directory_entry;
@@ -1043,7 +1186,14 @@ again:
 
    offset   = read_le(zip_context->directory_entry + 42, 4); /* relative offset of local file header */
 
-   *cdata   = (uint8_t*)(size_t)offset; /* store file offset in data pointer */
+   if (!zip64_extra(zip_context->directory_entry + 46 + namelength,
+            extralength, size, csize, &offset))
+      return -1;
+
+   /* the offset is kept whole for the member's init; the pointer
+    * carries it where it fits */
+   zip_context->entry_offset = offset;
+   *cdata   = (uint8_t*)(size_t)offset;
 
    *payback = 46 + namelength + extralength + commentlength;
 
@@ -1057,8 +1207,8 @@ static int zip_parse_file_iterate_step(void *context,
    zip_context_t *zip_context = (zip_context_t *)context;
    const uint8_t *cdata       = NULL;
    uint32_t checksum          = 0;
-   uint32_t size              = 0;
-   uint32_t csize             = 0;
+   uint64_t size              = 0;
+   uint64_t csize             = 0;
    unsigned cmode             = 0;
    unsigned payload           = 0;
    int ret                    = zip_parse_file_iterate_step_internal(zip_context,
@@ -1096,8 +1246,8 @@ struct file_archive_entry_source
 {
    file_archive_transfer_t state;      /* keeps the mapping/file open */
    int64_t  fdoffset;                  /* entry data start in archive */
-   uint32_t csize, usize;
-   uint32_t in_off, out_off;
+   uint64_t csize, usize;
+   uint64_t in_off, out_off;
    uint32_t crc;                       /* the member's, recorded      */
    unsigned cmode;
    void    *z;                         /* z_stream / rinflate handle  */
@@ -1113,7 +1263,7 @@ struct file_archive_entry_source
 static int file_archive_entry_source_capture(
       const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode,
-      uint32_t csize, uint32_t size,
+      uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    file_archive_entry_source_t *s =
@@ -1130,18 +1280,23 @@ static int file_archive_entry_source_capture(
     * from the mapping are bounded by them */
    {
       struct file_archive_transfer *state = &s->state;
+      /* the walk's own word for where the entry is: cdata cannot hold
+       * an offset past 4 GiB on a 32-bit host */
+      uint64_t local = ((zip_context_t*)state->context)->entry_offset;
       uint8_t local_header_buf[4];
       uint8_t *local_header;
       uint32_t nl, el;
-      if ((int64_t)(size_t)cdata + 26 + 4 > state->archive_size)
+      (void)cdata;
+      if (state->archive_size < 30
+            || local > (uint64_t)state->archive_size - 30)
          return -1;
 #ifdef VFS_HAVE_FILE_MAPPING
       if (state->archive_mmap_data)
-         local_header = state->archive_mmap_data + (size_t)cdata + 26;
+         local_header = state->archive_mmap_data + (size_t)local + 26;
       else
 #endif
       {
-         filestream_seek(state->archive_file, (int64_t)(size_t)cdata + 26,
+         filestream_seek(state->archive_file, (int64_t)local + 26,
                RETRO_VFS_SEEK_POSITION_START);
          if (filestream_read(state->archive_file, local_header_buf, 4) != 4)
             return -1;
@@ -1149,11 +1304,11 @@ static int file_archive_entry_source_capture(
       }
       nl          = read_le(local_header,     2);
       el          = read_le(local_header + 2, 2);
-      s->fdoffset = (int64_t)(size_t)cdata + 26 + 4 + nl + el;
+      s->fdoffset = (int64_t)local + 26 + 4 + nl + el;
       if (     s->fdoffset > state->archive_size
-            || (int64_t)csize > state->archive_size - s->fdoffset
+            || csize > (uint64_t)(state->archive_size - s->fdoffset)
             || (     cmode == ZIP_MODE_STORED
-                  && (int64_t)size > state->archive_size - s->fdoffset))
+                  && size > (uint64_t)(state->archive_size - s->fdoffset)))
          return -1;
    }
    s->csize = csize;
@@ -1200,6 +1355,10 @@ file_archive_entry_source_t *file_archive_entry_source_open(
    } while (ret == 0 && !s->found);
 
    if (!s->found)
+      goto error_stop;
+
+   /* what is decoded or bound whole has to fit in memory */
+   if (s->cmode != ZIP_MODE_STORED && s->usize > (uint64_t)((size_t)-1))
       goto error_stop;
 
    if (s->cmode == ZIP_MODE_DEFLATED)
@@ -1260,16 +1419,17 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
 #ifdef VFS_HAVE_FILE_MAPPING
       if (s->state.archive_mmap_data)
          memcpy(dst, s->state.archive_mmap_data
-               + (size_t)s->fdoffset + s->out_off, (size_t)n);
+               + (size_t)(s->fdoffset + s->out_off), (size_t)n);
       else
 #endif
       {
          filestream_seek(s->state.archive_file,
-               s->fdoffset + s->out_off, RETRO_VFS_SEEK_POSITION_START);
+               (int64_t)(s->fdoffset + s->out_off),
+               RETRO_VFS_SEEK_POSITION_START);
          if (filestream_read(s->state.archive_file, dst, n) != n)
             return -1;
       }
-      s->out_off += (uint32_t)n;
+      s->out_off += (uint64_t)n;
       return n;
    }
 
@@ -1283,8 +1443,8 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
          return -1;
       if (     !(src = zip_member_whole(&s->state, s->fdoffset, s->csize,
                   &s->tmpbuf, &s->tmpbuf_len))
-            || !zip_decode_whole(s->cmode, &s->bz, dst, s->usize, src,
-                  s->csize, s->crc))
+            || !zip_decode_whole(s->cmode, &s->bz, dst, (size_t)s->usize,
+                  src, (size_t)s->csize, s->crc))
          return -1;
       s->out_off = s->usize;
       return (int64_t)s->usize;
@@ -1294,20 +1454,25 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
 #ifdef ARCHIVE_HAVE_ZLIB
    {
       z_stream *z = (z_stream*)s->z;
+      /* zlib counts in 32 bits */
+      if (n > 0x40000000)
+         n = 0x40000000;
       z->next_out  = dst;
       z->avail_out = (uInt)n;
       while (z->avail_out > 0)
       {
          if (z->avail_in == 0)
          {
-            uint32_t chunk = s->csize - s->in_off;
+            uint64_t chunk = s->csize - s->in_off;
             if (chunk == 0)
                break;
 #ifdef VFS_HAVE_FILE_MAPPING
             if (s->state.archive_mmap_data)
             {
+               if (chunk > 0x40000000)
+                  chunk = 0x40000000;
                z->next_in  = s->state.archive_mmap_data
-                     + (size_t)s->fdoffset + s->in_off;
+                     + (size_t)(s->fdoffset + s->in_off);
                z->avail_in = (uInt)chunk;
             }
             else
@@ -1318,12 +1483,13 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
                if (chunk > _READ_CHUNK_SIZE)
                   chunk = _READ_CHUNK_SIZE;
                rd = zip_member_input(s->state.archive_file,
-                     s->fdoffset + s->in_off, chunk, s->tmpbuf, &iptr);
+                     (int64_t)(s->fdoffset + s->in_off), (int64_t)chunk,
+                     s->tmpbuf, &iptr);
                if (rd <= 0)
                   return -1;
                z->next_in  = (Bytef*)iptr;
                z->avail_in = (uInt)rd;
-               chunk       = (uint32_t)rd;
+               chunk       = (uint64_t)rd;
             }
             s->in_off += chunk;
          }
@@ -1337,7 +1503,7 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
       }
       {
          int64_t produced = n - (int64_t)z->avail_out;
-         s->out_off += (uint32_t)produced;
+         s->out_off += (uint64_t)produced;
          return produced;
       }
    }
@@ -1352,14 +1518,14 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
       int64_t produced = 0;
       if (!s->out_expect)
       {
-         rinflate_set_out(s->z, dst, s->usize);
+         rinflate_set_out(s->z, dst, (size_t)s->usize);
          s->out_expect = dst;
       }
       else if (dst != s->out_expect)
          return -1;
       while (produced < n)
       {
-         uint32_t chunk = s->csize - s->in_off;
+         uint64_t chunk = s->csize - s->in_off;
          const uint8_t *iptr;
          if (chunk == 0)
             break;
@@ -1369,7 +1535,7 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
             if (chunk > _READ_CHUNK_SIZE)
                chunk = _READ_CHUNK_SIZE;
             iptr = s->state.archive_mmap_data
-                  + (size_t)s->fdoffset + s->in_off;
+                  + (size_t)(s->fdoffset + s->in_off);
          }
          else
 #endif
@@ -1378,12 +1544,13 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
             if (chunk > _READ_CHUNK_SIZE)
                chunk = _READ_CHUNK_SIZE;
             rd = zip_member_input(s->state.archive_file,
-                  s->fdoffset + s->in_off, chunk, s->tmpbuf, &iptr);
+                  (int64_t)(s->fdoffset + s->in_off), (int64_t)chunk,
+                  s->tmpbuf, &iptr);
             if (rd <= 0)
                return -1;
-            chunk = (uint32_t)rd;
+            chunk = (uint64_t)rd;
          }
-         rinflate_set_in(s->z, iptr, chunk);
+         rinflate_set_in(s->z, iptr, (size_t)chunk);
          s->in_off += chunk;
          for (;;)
          {
@@ -1401,7 +1568,7 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
                break;                  /* chunk consumed */
          }
       }
-      s->out_off    += (uint32_t)produced;
+      s->out_off    += (uint64_t)produced;
       s->out_expect += produced;
       return produced;
    }

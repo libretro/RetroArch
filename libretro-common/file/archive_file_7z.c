@@ -129,7 +129,7 @@ static int sevenzip_member_step(r7z_archive_t *a, uint32_t index,
 static int sevenzip_file_decompressed(
       const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode,
-      uint32_t csize, uint32_t size,
+      uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    sevenzip_decomp_state_t *st =
@@ -260,7 +260,7 @@ static int64_t sevenzip_file_read(
 
 static bool sevenzip_stream_decompress_data_to_file_init(
       void *context, file_archive_file_handle_t *handle,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size)
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size)
 {
    struct sevenzip_context_t *sevenzip_context =
       (struct sevenzip_context_t*)context;
@@ -359,8 +359,8 @@ static int sevenzip_parse_file_iterate_step_internal(
       char *s,
       const uint8_t **cdata,
       unsigned *cmode,
-      uint32_t *size,
-      uint32_t *csize,
+      uint64_t *size,
+      uint64_t *csize,
       uint32_t *checksum,
       unsigned *payback,
       struct archive_extract_userdata *userdata)
@@ -385,28 +385,13 @@ static int sevenzip_parse_file_iterate_step_internal(
       if (!sevenzip_name_to_char(entry->name, s, PATH_MAX_LENGTH))
          return -1;
 
-      /* The vtable reports sizes as uint32_t, but 7z stores them as
-       * 64-bit. A member of 4 GiB or more cannot be described here, and
-       * truncating would hand the caller a wrapped length to write from
-       * a full-length buffer. Skip such an entry instead: the scan
-       * carries on and everything else in the archive stays usable. */
-      if (entry->size > (uint64_t)0xFFFFFFFFu)
-      {
-         /* Blank the name too: the caller passes whatever is in it to
-          * file_cb, and a named entry reporting zero bytes is worse
-          * than no entry at all. */
-         s[0]     = '\0';
-         *payback = 1;
-         return 1;
-      }
-
       *cmode    = 0; /* unused for 7zip */
       *checksum = entry->crc;
-      *size     = (uint32_t)entry->size;
+      *size     = entry->size;
       /* The packed size of an individual member is not meaningful for
        * 7z: members share a solid folder's compressed stream. Callers
        * use this only for progress reporting. */
-      *csize    = (uint32_t)entry->size;
+      *csize    = entry->size;
 
       *cdata    = (uint8_t *)(size_t)sevenzip_context->parse_index;
    }
@@ -423,8 +408,8 @@ static int sevenzip_parse_file_iterate_step(void *context,
 {
    const uint8_t *cdata = NULL;
    uint32_t checksum    = 0;
-   uint32_t size        = 0;
-   uint32_t csize       = 0;
+   uint64_t size        = 0;
+   uint64_t csize       = 0;
    unsigned cmode       = 0;
    unsigned payload     = 0;
    struct sevenzip_context_t *sevenzip_context =

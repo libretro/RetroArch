@@ -138,7 +138,7 @@ static void bz2_parse_file_free(void *context)
 
 static bool bz2_stream_decompress_data_to_file_init(
       void *context, file_archive_file_handle_t *handle,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size)
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size)
 {
    (void)handle;
    (void)cdata;

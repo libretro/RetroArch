@@ -98,7 +98,7 @@ static void install_vfs(bool lend)
 }
 
 static int extract_cb(const char *name, const char *valid_exts,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size,
       uint32_t checksum, struct archive_extract_userdata *userdata)
 {
    if (file_archive_perform_mode(OUT_PATH, valid_exts, cdata, cmode,

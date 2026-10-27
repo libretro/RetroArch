@@ -43,9 +43,9 @@
  * oracle functions below):
  *
  *   zstd_parse_file_iterate_step() [iterate path]:
- *       if (content_size > UINT32_MAX)
+ *       if (content_size > SIZE_MAX)
  *           return -1;
- *       ctx->decompressed_size = (uint32_t)content_size;
+ *       ctx->decompressed_size = (size_t)content_size;
  *
  *   zstd_file_read() [decompress-in-place path]:
  *       if (content_size >= SIZE_MAX)
@@ -72,6 +72,10 @@
 
 static int failures = 0;
 
+/* What the iterate path makes of a size past 32 bits: a 64-bit host
+ * can allocate it, a 32-bit one cannot */
+#define ITER_PAST_32 ((unsigned long long)SIZE_MAX > UINT32_MAX ? 0 : -1)
+
 /* --- oracle: the patched iterate-path guard --------------------- *
  * Must be kept in sync with archive_file_zstd.c:
  *     zstd_parse_file_iterate_step.
@@ -81,7 +85,7 @@ static int oracle_iterate_guard(unsigned long long content_size)
    if (   content_size == ZSTD_CONTENTSIZE_UNKNOWN
        || content_size == ZSTD_CONTENTSIZE_ERROR)
       return -1;
-   if (content_size > UINT32_MAX)
+   if (content_size > (unsigned long long)SIZE_MAX)
       return -1;
    return 0;
 }
@@ -113,16 +117,16 @@ int main(void)
    size_t i;
    /* These cases exercise the boundaries the guards protect.  Each
     * case lists the expected verdict for both the iterate path
-    * (uint32_t destination) and the read path (size_t + 1). */
+    * (size_t destination) and the read path (size_t + 1). */
    case_t cases[] = {
       /* label                           value                   iter  read */
       { "zero",                           0,                       0,   0 },
       { "typical small",                  1024,                    0,   0 },
       { "100 MiB",                        100ULL * 1024 * 1024,    0,   0 },
       { "UINT32_MAX exactly",             (unsigned long long)UINT32_MAX, 0,  0 },
-      { "UINT32_MAX + 1  (iterate trunc)",(unsigned long long)UINT32_MAX + 1, -1, 0 },
-      { "4 GiB  (iterate trunc)",         4ULL * 1024 * 1024 * 1024, -1, 0 },
-      { "2^63           (iterate trunc)", 1ULL << 63,               -1, 0 },
+      { "UINT32_MAX + 1 (past 32 bits)",  (unsigned long long)UINT32_MAX + 1, ITER_PAST_32, 0 },
+      { "4 GiB          (past 32 bits)",  4ULL * 1024 * 1024 * 1024, ITER_PAST_32, 0 },
+      { "2^63           (past 32 bits)",  1ULL << 63,               ITER_PAST_32, 0 },
       { "ZSTD_CONTENTSIZE_ERROR sentinel",ZSTD_CONTENTSIZE_ERROR,   -1, -1 },
       { "ZSTD_CONTENTSIZE_UNKNOWN",       ZSTD_CONTENTSIZE_UNKNOWN, -1, -1 },
       /* SIZE_MAX case -- on 64-bit, SIZE_MAX == ULLONG_MAX - 1,
@@ -130,7 +134,7 @@ int main(void)
        * catches it.  On 32-bit, SIZE_MAX is far smaller and the
        * >= SIZE_MAX branch catches it first.  Either way: rejected
        * on the read path.  On the iterate path it's also rejected
-       * (too big for uint32_t). */
+       * (past what size_t holds, or the error sentinel). */
       { "SIZE_MAX (read-path guard)",     (unsigned long long)SIZE_MAX, -1, -1 },
    };
 

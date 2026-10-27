@@ -39,8 +39,8 @@ static int file_archive_get_file_list_cb(
       const char *valid_exts,
       const uint8_t *cdata,
       unsigned cmode,
-      uint32_t csize,
-      uint32_t size,
+      uint64_t csize,
+      uint64_t size,
       uint32_t checksum,
       struct archive_extract_userdata *userdata)
 {
@@ -93,7 +93,7 @@ static int file_archive_get_file_list_cb(
 
 static int file_archive_extract_cb(const char *name, const char *valid_exts,
       const uint8_t *cdata,
-      unsigned cmode, uint32_t csize, uint32_t size,
+      unsigned cmode, uint64_t csize, uint64_t size,
       uint32_t checksum, struct archive_extract_userdata *userdata)
 {
    const char *ext                   = path_get_extension(name);
@@ -732,7 +732,7 @@ int file_archive_perform_mode_step(file_archive_transfer_t *state)
  * Returns 1 if it finished immediately, 0 if it parked and wants to be
  * resumed through file_archive_perform_mode_step(), -1 on failure. */
 int file_archive_perform_mode_start(const char *path, const char *valid_exts,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    file_archive_transfer_t *state;
@@ -770,7 +770,7 @@ int file_archive_perform_mode_start(const char *path, const char *valid_exts,
 }
 
 bool file_archive_perform_mode(const char *path, const char *valid_exts,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    /* The blocking form, for callers that need the whole member before

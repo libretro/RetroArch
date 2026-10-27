@@ -28,7 +28,7 @@
 
 static int file_decompressed_target_file(const char *name,
       const char *valid_exts, const uint8_t *cdata,
-      unsigned cmode, uint32_t csize, uint32_t size,
+      unsigned cmode, uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    return 0;
@@ -89,7 +89,7 @@ static bool archive_name_is_safe(const char *name)
 static int file_decompressed_subdir(const char *name,
       const char *valid_exts,
       const uint8_t *cdata,
-      unsigned cmode, uint32_t csize, uint32_t size,
+      unsigned cmode, uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    char path_dir[DIR_MAX_LENGTH];
@@ -181,7 +181,7 @@ static int file_decompressed_subdir(const char *name,
 }
 
 static int file_decompressed(const char *name, const char *valid_exts,
-   const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+   const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size,
    uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    char path[PATH_MAX_LENGTH];

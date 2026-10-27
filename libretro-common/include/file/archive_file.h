@@ -93,6 +93,7 @@ typedef struct file_archive_transfer
     * pending_active is what makes this visible to the iterate loop;
     * everything else is the state that call needs to resume. */
    file_archive_file_handle_t pending_handle;
+   uint64_t pending_size;
    /* The member's output, opened beside pending_path and renamed over
     * it when the member completes (filestream_open_atomic()).  A
     * backend that can produce output a piece at a time writes it here
@@ -100,7 +101,6 @@ typedef struct file_archive_transfer
     * pending_handle.data, which is written here at the end. */
    struct RFILE *pending_sink;
    char     pending_path[PATH_MAX_LENGTH];
-   uint32_t pending_size;
    bool     pending_active;
    /* The scan asked to stop while a member was still parked. The stop
     * is honoured once the pending decode has drained, not before, or
@@ -151,7 +151,7 @@ struct archive_extract_userdata
 
 /* Returns true when parsing should continue. False to stop. */
 typedef int (*file_archive_file_cb)(const char *name, const char *valid_exts,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata);
 
 struct file_archive_file_backend
@@ -169,7 +169,7 @@ struct file_archive_file_backend
 
    bool     (*stream_decompress_data_to_file_init)(
       void *context, file_archive_file_handle_t *handle,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size);
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size);
    int      (*stream_decompress_data_to_file_iterate)(
       void *context,
       file_archive_file_handle_t *handle);
@@ -251,7 +251,7 @@ int64_t file_archive_read_at(void *ud, uint64_t off, void *dst, size_t len);
  * failure.
  */
 int file_archive_perform_mode_start(const char *name, const char *valid_exts,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata);
 
 /**
@@ -265,7 +265,7 @@ int file_archive_perform_mode_start(const char *name, const char *valid_exts,
 int file_archive_perform_mode_step(file_archive_transfer_t *state);
 
 bool file_archive_perform_mode(const char *name, const char *valid_exts,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      const uint8_t *cdata, unsigned cmode, uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata);
 
 int file_archive_compressed_read(
