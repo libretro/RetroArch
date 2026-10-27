@@ -22,6 +22,7 @@
 #include <retro_math.h>
 
 #include "../configuration.h"
+#include "../content.h"
 #include "../list_special.h"
 #include "../gfx/video_driver.h"
 #include "../audio/audio_driver.h"
@@ -81,9 +82,25 @@ void recording_gpu_frame_info(struct video_frame_info *info,bool capture)
 }
 void recording_gpu_poll(void)
 {
+   if (recording_state.start_pending)
+   {
+      runloop_state_t *loop = runloop_state_get_ptr();
+      if (loop->quit_pending || loop->content_closing)
+         command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+   }
    record_nvenc_poll();
    record_metal_poll();
    recording_gpu_reinit_poll();
+}
+void recording_start_frame(void)
+{
+   if (!recording_state.start_pending || runloop_is_content_switching()
+         || content_load_state_in_progress(NULL)
+         || runloop_state_get_ptr()->auto_state_load_pending)
+      return;
+   recording_state.start_pending = false;
+   if (!recording_init())
+      command_event(CMD_EVENT_RECORD_DEINIT, NULL);
 }
 void recording_gpu_stop(void) { record_nvenc_stop(); record_metal_stop(); }
 bool recording_gpu_pending(void) { return record_nvenc_pending() || record_metal_pending(); }
@@ -181,6 +198,13 @@ bool recording_deinit(void)
    bool history_list_enable        = config_get_ptr()->bools.history_list_enable;
 #endif
 
+   if (recording_st->start_pending)
+   {
+      recording_st->start_pending = false;
+      recording_st->path[0] = '\0';
+      return true;
+   }
+
    if (recording_gpu_cancel_start())
    {
       recording_st->driver = NULL;
@@ -261,6 +285,14 @@ bool recording_init(void)
 
    if (!recording_enable)
       return false;
+
+   if (content_load_state_in_progress(NULL)
+         || runloop_st->auto_state_load_pending)
+   {
+      recording_st->start_pending = true;
+      return true;
+   }
+   recording_st->start_pending = false;
 
 #ifndef HAVE_RECORD_NVENC
    if (nvenc_native)

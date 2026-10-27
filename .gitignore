@@ -387,3 +387,5 @@ samples/gfx/d3d12_upscaler/Zdir/
 samples/gfx/d3d12_upscaler/Zdir_fsr/
 samples/gfx/d3d12_upscaler/Zdir_xess/
 samples/gfx/d3d12_upscaler/Zdir_none/
+samples/record/ffmpeg_pipeline/record_finalize_fragment.c
+samples/record/ffmpeg_pipeline/record_start_fragment.c

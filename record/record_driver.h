@@ -170,6 +170,7 @@ struct recording
    bool enable;
    bool streaming_enable;
    bool use_output_dir;
+   bool start_pending;
 };
 
 typedef struct recording recording_state_t;
@@ -210,6 +211,7 @@ extern const record_driver_t record_metal;
 struct video_frame_info;
 void recording_gpu_frame_info(struct video_frame_info *info,bool capture);
 void recording_gpu_poll(void);
+void recording_start_frame(void);
 void recording_gpu_stop(void);
 bool recording_gpu_pending(void);
 /* Main owner: coalesce reinit flags while native users retire. The existing

@@ -11155,6 +11155,7 @@ bool core_run(void)
       if (runloop_st->auto_state_load_pending)
          runloop_st->auto_state_load_core_ran = true;
       audio_driver_frame_end();
+      recording_start_frame();
    }
 
 #ifdef HAVE_GAME_AI

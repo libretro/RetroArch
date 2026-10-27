@@ -10579,6 +10579,8 @@ static bool retroarch_main_quit_begin(void)
    if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
       return false;
    recording_gpu_stop();
+   if (recording_state_get_ptr()->start_pending)
+      command_event(CMD_EVENT_RECORD_DEINIT, NULL);
    if (   settings->bools.savestate_auto_save
        && runloop_st->current_core_type != CORE_TYPE_DUMMY)
       command_event_save_auto_state();

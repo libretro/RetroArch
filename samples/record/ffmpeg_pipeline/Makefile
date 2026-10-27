@@ -79,7 +79,10 @@ endif
 record_finalize_fragment.c: $(CORE_DIR)/record/record_driver.c
 	sed -n '/^bool recording_deinit(void)/,/^void streaming_set_state/p' $< | sed '$$d' > $@
 
-record_finalize_test.o: record_finalize_fragment.c
+record_start_fragment.c: $(CORE_DIR)/record/record_driver.c
+	sed -n '/^void recording_gpu_poll(void)/,/^void recording_gpu_stop(void)/p' $< | sed '$$d' > $@
+
+record_finalize_test.o: record_finalize_fragment.c record_start_fragment.c
 record_audio_growth_test.o: $(CORE_DIR)/record/drivers/record_ffmpeg.c
 record_video_stride_test.o: $(CORE_DIR)/record/drivers/record_ffmpeg.c
 
@@ -97,6 +100,6 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET).exe $(OBJS) ffmpeg_pipeline_test.mkv record_finalize_fragment.c
+	rm -f $(TARGET) $(TARGET).exe $(OBJS) ffmpeg_pipeline_test.mkv record_finalize_fragment.c record_start_fragment.c
 
 .PHONY: clean
