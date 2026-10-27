@@ -171,6 +171,14 @@ jobs:
           set -eu
           timeout 180 python3 samples/input/overlay_on_screen/overlay_apng_press_on_screen_test.py ./retroarch
 
+      - name: Run overlay_stick_on_screen_test (a movable stick follows the finger and returns, threaded off and on)
+        shell: bash
+        run: |
+          set -eu
+          # A movable stick's geometry is sent only when it moves; the
+          # picture shows nothing a move needed was left out.
+          timeout 180 python3 samples/input/overlay_on_screen/overlay_stick_on_screen_test.py ./retroarch
+
       - name: Run statistics_on_screen_test (threaded video off, then on)
         shell: bash
         run: |

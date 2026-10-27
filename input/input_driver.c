@@ -7606,9 +7606,12 @@ INPUT_NOINLINE static void input_poll_overlay(
       }
    }
 
+   /* From the touches, but where the overlay shows the physical
+    * controller: with Show Inputs off too, or a movable stick took the
+    * controller's stick, at rest, over the finger's every poll */
    button_pressed = input_overlay_add_inputs(ol, ol_state, input_st,
          settings,
-         (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
+         (input_overlay_show_inputs != OVERLAY_SHOW_INPUT_PHYSICAL),
          input_overlay_show_inputs_port);
 
    /* Block other touchscreen input as needed. A stylus-hidden overlay
