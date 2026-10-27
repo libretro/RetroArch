@@ -201,6 +201,8 @@ jobs:
           ./vfs_readahead_test.exe
           RETRO_VFS_PREFETCH=touch ./vfs_readahead_test.exe
           RETRO_VFS_PREFETCH=none ./vfs_readahead_test.exe
+          # ... and never on, or stalling, the reader's thread.
+          ./vfs_prefetch_offthread_test.exe
 
       # The Win64 fastjmp_set stores xmm6-xmm15 with movaps and faults
       # on a misaligned buffer. Linux has no such stores, so the Linux

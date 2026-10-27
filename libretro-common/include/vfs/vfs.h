@@ -164,7 +164,7 @@ struct libretro_vfs_implementation_file
    /* CreateFileMapping handle backing `mapped`; NULL when unmapped */
    HANDLE map_handle;
 #if !defined(_XBOX) && !defined(HAVE_MMAP)
-   void *warm;   /* pre-Windows 8 read-ahead thread, NULL until used */
+   void *warm;   /* mapped read-ahead thread, NULL until used */
 #endif
 #endif
    char *buf;

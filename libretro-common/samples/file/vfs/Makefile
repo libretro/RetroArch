@@ -11,6 +11,7 @@ TARGET_TEST7 := vfs_rename_replace_test
 TARGET_TEST8 := vfs_prefetch_test
 TARGET_TEST9 := vfs_readahead_test
 TARGET_TEST10 := vfs_view_test
+TARGET_TEST11 := vfs_prefetch_offthread_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -31,7 +32,8 @@ OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 	vfs_large_file_test.o vfs_seek_contract_test.o \
 	vfs_bulk_read_test.o filestream_rbuf_fault_test.o \
 	vfs_v5_metadata_test.o vfs_rename_replace_test.o \
-	vfs_prefetch_test.o vfs_readahead_test.o vfs_view_test.o $(COMMON_OBJS)
+	vfs_prefetch_test.o vfs_readahead_test.o vfs_view_test.o \
+	vfs_prefetch_offthread_test.o $(COMMON_OBJS)
 
 # vfs_view_test also hashes through sha1_calculate(), whose dispatch
 # asks features_cpu.c what the CPU has.
@@ -60,6 +62,14 @@ RA_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
 ifeq ($(UNAME_S),Linux)
    RA_LIBS := -lpthread
 endif
+
+# vfs_prefetch_offthread_test links its own vfs_implementation.o, built
+# with the read-ahead thread and VFS_WIN32_PREFETCH_HOOK pointed at the
+# test's slow stand-in for PrefetchVirtualMemory. Scoped to this object:
+# every other build calls the real function.
+HOOK_VFS_OBJ := vfs_implementation_prefetch_hook.o
+HOOK_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
+	$(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o
 
 # vfs_rename_replace_test runs the replace-on-rename branch the consoles
 # take, so that one target links its own vfs_implementation.o built
@@ -136,7 +146,7 @@ endif
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(TARGET_TEST9) \
-	$(TARGET_TEST10) $(RENAME_TARGET)
+	$(TARGET_TEST10) $(TARGET_TEST11) $(RENAME_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -167,6 +177,13 @@ retro_eventcount_ra.o: $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 	$(CC) -c -o $@ $< $(CFLAGS) -DHAVE_THREADS
 
 $(TARGET_TEST9): vfs_readahead_test.o $(RA_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(RA_LIBS)
+
+$(HOOK_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c prefetch_hook.h
+	$(CC) -c -o $@ $< $(CFLAGS) -DHAVE_THREADS -I. -include prefetch_hook.h \
+		-DVFS_WIN32_PREFETCH_HOOK=vfs_prefetch_test_hook
+
+$(TARGET_TEST11): vfs_prefetch_offthread_test.o $(HOOK_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(RA_LIBS)
 
 # vfs_large_file_test builds sparse fixtures of 3 GiB and 5 GiB.  They
@@ -218,11 +235,12 @@ clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
 		$(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9) $(TARGET_TEST10) \
+		$(TARGET_TEST11) \
 		$(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
-		$(RA_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o
+		$(RA_VFS_OBJ) $(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o
 	rm -rf v5_meta_dir
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin
-	rm -f rbuf_fault.txt vfs_readahead_fixture.bin
+	rm -f rbuf_fault.txt vfs_readahead_fixture.bin vfs_prefetch_offthread.bin
 	rm -f vfs_view_fixture.bin vfs_view_update.bin vfs_view_empty.bin
 	rm -f rename_replace.bin rename_replace.bin.old rename_replace.bin.tmp
 	rm -f bulk_select.bin bulk_select_w.bin bulk_roundtrip.bin \

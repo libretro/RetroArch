@@ -160,6 +160,7 @@ jobs:
             vfs_mapped_ptr_test
             vfs_prefetch_test
             vfs_readahead_test
+            vfs_prefetch_offthread_test
             vfs_view_test
             vfs_prefetch_retarget_test
             vfs_prefetch_view_test
@@ -1275,10 +1276,12 @@ jobs:
           set -o pipefail
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean MMAP=0
-          make CC=x86_64-w64-mingw32-gcc MMAP=0 vfs_readahead_test
+          make CC=x86_64-w64-mingw32-gcc MMAP=0 vfs_readahead_test vfs_prefetch_offthread_test
           timeout 120 wine ./vfs_readahead_test.exe
           RETRO_VFS_PREFETCH=touch timeout 120 wine ./vfs_readahead_test.exe
           RETRO_VFS_PREFETCH=none timeout 120 wine ./vfs_readahead_test.exe
+          # The prefetch never runs on, or stalls, the reader.
+          timeout 120 wine ./vfs_prefetch_offthread_test.exe
           make clean MMAP=0
 
       - name: Build and run native DVD packets under Wine
