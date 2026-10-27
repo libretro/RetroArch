@@ -1701,6 +1701,7 @@ static const input_device_driver_t *input_snapshot_for(
       input_driver_state_t *st, const input_device_driver_t *drv)
 {
    input_snapshot_bridge_t *bridge = &input_snapshot_bridge;
+   unsigned i;
 
    /* The driver it stands in for already: that was decided below when
     * it was set up, and nothing that decides it has changed since (the
@@ -1717,7 +1718,8 @@ static const input_device_driver_t *input_snapshot_for(
    if (bridge->real != drv)
    {
       memset(bridge->pads, 0, sizeof(bridge->pads));
-      memset(bridge->view, 0, sizeof(bridge->view));
+      for (i = 0; i < MAX_USERS; i++)
+         bridge->view[i] = NULL;
       st->frame_valid.snapshot  = 0;
       st->frame_valid.pad_state = 0;
       bridge->real                = drv;
