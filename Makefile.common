@@ -2768,7 +2768,6 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rcheevos/runtime_progress.o \
              deps/rcheevos/src/rcheevos/trigger.o \
              deps/rcheevos/src/rcheevos/value.o \
-             deps/rcheevos/src/rhash/aes.o \
              deps/rcheevos/src/rhash/cdreader.o \
              deps/rcheevos/src/rhash/hash.o \
              deps/rcheevos/src/rhash/hash_disc.o \
@@ -2796,6 +2795,14 @@ ifeq ($(HAVE_NETWORKING), 1)
             OBJ += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.o \
                    $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.o
          endif
+      endif
+
+      # The hashes' AES (3DS titles) is the crypto library's wherever
+      # crypto.o is built, rcheevos' own elsewhere.
+      ifneq ($(filter 1,$(HAVE_CRYPTO) $(HAVE_CHEEVOS_RVZ)),)
+         OBJ += cheevos/cheevos_aes.o
+      else
+         OBJ += deps/rcheevos/src/rhash/aes.o
       endif
 
       ifeq ($(HAVE_LUA), 1)
