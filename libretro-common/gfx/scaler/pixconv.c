@@ -158,6 +158,237 @@ void conv_0rgb1555_rgb565(void *output_, const void *input_,
    }
 }
 
+/* AVX2 and AVX-512BW forms of the 16-bit -> 32-bit converters the video
+ * drivers run every frame (RGB565 -> ARGB/ABGR, 0RGB1555 -> ARGB). They
+ * are built per function, whatever the build's baseline, and chosen at
+ * run time, so older CPUs keep the SSE2 path and older compilers simply
+ * leave them out. Only RetroArch's own build (RARCH_INTERNAL), or one
+ * that asks with PIXCONV_RUNTIME_SIMD, compiles them: the choice reads
+ * cpu_features_get(), and cores that carry pixconv.c need not link
+ * features_cpu.c. */
+#if !defined(SCALER_NO_SIMD) && defined(__SSE2__) \
+   && (defined(RARCH_INTERNAL) || defined(PIXCONV_RUNTIME_SIMD)) \
+   && (defined(__x86_64__) || defined(__i386__) \
+      || defined(_M_X64) || defined(_M_IX86))
+#if defined(_MSC_VER) && !defined(__clang__)
+#if _MSC_VER >= 1911
+#define PIXCONV_HAVE_WIDE 1
+#define PIXCONV_TARGET_AVX2
+#define PIXCONV_TARGET_AVX512
+#endif
+#elif (defined(__clang__) && __clang_major__ >= 4) \
+   || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5)
+#define PIXCONV_HAVE_WIDE 1
+#define PIXCONV_TARGET_AVX2   __attribute__((target("avx2")))
+#define PIXCONV_TARGET_AVX512 __attribute__((target("avx512f,avx512bw")))
+#endif
+#endif
+
+#ifdef PIXCONV_HAVE_WIDE
+#include <immintrin.h>
+#include <retro_atomic.h>
+#include <features/features_cpu.h>
+
+enum pixconv_16to32
+{
+   PIXCONV_565_ARGB = 0,
+   PIXCONV_565_ABGR,
+   PIXCONV_1555_ARGB
+};
+
+/* MSVC leaves the upper vector halves dirty on return; GCC and Clang
+ * clear them themselves for target functions. */
+#if defined(_MSC_VER) && !defined(__clang__)
+#define PIXCONV_ZEROUPPER() _mm256_zeroupper()
+#else
+#define PIXCONV_ZEROUPPER()
+#endif
+
+/* 0 = SSE2 path, 1 = AVX2, 2 = AVX-512BW. Several threads convert
+ * (video, recording, menu), so the one-time answer is published with
+ * an atomic store; racing first calls compute the same value. */
+static retro_atomic_int_t pixconv_tier_cached;
+
+#ifdef PIXCONV_TEST_HOOKS
+/* -1 picks by CPU; otherwise caps the tier for a test. */
+int pixconv_tier_cap = -1;
+#endif
+
+static int pixconv_simd_tier(void)
+{
+   int tier = retro_atomic_load_acquire_int(&pixconv_tier_cached);
+   if (tier & 4)
+      tier &= 3;
+   else
+   {
+      uint64_t cpu = cpu_features_get();
+      tier = 0;
+      if (cpu & RETRO_SIMD_AVX2)
+         tier = 1;
+      if (cpu & RETRO_SIMD_AVX512)
+         tier = 2;
+      retro_atomic_store_release_int(&pixconv_tier_cached, 4 | tier);
+   }
+#ifdef PIXCONV_TEST_HOOKS
+   if (pixconv_tier_cap >= 0 && tier > pixconv_tier_cap)
+      tier = pixconv_tier_cap;
+#endif
+   return tier;
+}
+
+static INLINE uint32_t pixconv_16to32_px(uint16_t c, int fmt)
+{
+   switch (fmt)
+   {
+      case PIXCONV_565_ABGR:
+         return 0xff000000u | pixconv_rgb565_to_xbgr8888(c);
+      case PIXCONV_1555_ARGB:
+         return 0xff000000u | pixconv_0rgb1555_to_xrgb8888(c);
+      default:
+         break;
+   }
+   return 0xff000000u | pixconv_rgb565_to_xrgb8888(c);
+}
+
+/* The SSE2 arithmetic at a wider width: each channel masked to the top
+ * of a 16-bit lane and multiplied so the high half holds it expanded to
+ * 8 bits, then the bytes interleaved into pixels. 565 and 1555 differ
+ * only in red's shift and green's mask and multiplier; ARGB and ABGR
+ * only in which of red and blue pairs with green. */
+#define PIXCONV_16TO32_CONSTS(fmt) \
+   int      r_shift = ((fmt) == PIXCONV_1555_ARGB) ? 0 : 1; \
+   int16_t  g_mask  = ((fmt) == PIXCONV_1555_ARGB) \
+      ? (int16_t)(0x1f << 5) : (int16_t)(0x3f << 5); \
+   int16_t  g_mul   = ((fmt) == PIXCONV_1555_ARGB) \
+      ? (int16_t)0x4200 : (int16_t)0x2080; \
+   int      swap_rb = ((fmt) == PIXCONV_565_ABGR)
+
+PIXCONV_TARGET_AVX2
+static void pixconv_16to32_avx2(uint32_t *output, const uint16_t *input,
+      int width, int height, int out_stride, int in_stride, int fmt)
+{
+   int h;
+   PIXCONV_16TO32_CONSTS(fmt);
+   const __m128i rs     = _mm_cvtsi32_si128(r_shift);
+   const __m256i mask_r = _mm256_set1_epi16(0x1f << 10);
+   const __m256i mask_g = _mm256_set1_epi16(g_mask);
+   const __m256i mask_b = _mm256_set1_epi16(0x1f << 5);
+   const __m256i mul_r  = _mm256_set1_epi16(0x0210);
+   const __m256i mul_g  = _mm256_set1_epi16(g_mul);
+   const __m256i mul_b  = _mm256_set1_epi16(0x4200);
+   const __m256i a      = _mm256_set1_epi16(0x00ff);
+
+   for (h = 0; h < height;
+         h++, output += out_stride >> 2, input += in_stride >> 1)
+   {
+      int w = 0;
+      for (; w + 16 <= width; w += 16)
+      {
+         __m256i lo, hi, c0, c2;
+         const __m256i in = _mm256_loadu_si256((const __m256i*)(input + w));
+         __m256i r = _mm256_mulhi_epi16(_mm256_and_si256(
+                  _mm256_srl_epi16(in, rs), mask_r), mul_r);
+         __m256i g = _mm256_mulhi_epi16(_mm256_and_si256(in, mask_g), mul_g);
+         __m256i b = _mm256_mulhi_epi16(_mm256_and_si256(
+                  _mm256_slli_epi16(in, 5), mask_b), mul_b);
+         c0 = swap_rb ? r : b;
+         c2 = swap_rb ? b : r;
+         /* unpack works per 128-bit lane: lo holds pixels 0-3 and 8-11,
+          * hi 4-7 and 12-15; the permutes put them back in order. */
+         lo = _mm256_or_si256(_mm256_unpacklo_epi8(c0, g),
+               _mm256_slli_si256(_mm256_unpacklo_epi8(c2, a), 2));
+         hi = _mm256_or_si256(_mm256_unpackhi_epi8(c0, g),
+               _mm256_slli_si256(_mm256_unpackhi_epi8(c2, a), 2));
+         _mm256_storeu_si256((__m256i*)(output + w),
+               _mm256_permute2x128_si256(lo, hi, 0x20));
+         _mm256_storeu_si256((__m256i*)(output + w + 8),
+               _mm256_permute2x128_si256(lo, hi, 0x31));
+      }
+      for (; w < width; w++)
+         output[w] = pixconv_16to32_px(input[w], fmt);
+   }
+   PIXCONV_ZEROUPPER();
+}
+
+PIXCONV_TARGET_AVX512
+static void pixconv_16to32_avx512(uint32_t *output, const uint16_t *input,
+      int width, int height, int out_stride, int in_stride, int fmt)
+{
+   int h;
+   PIXCONV_16TO32_CONSTS(fmt);
+   const __m128i rs     = _mm_cvtsi32_si128(r_shift);
+   const __m512i mask_r = _mm512_set1_epi16(0x1f << 10);
+   const __m512i mask_g = _mm512_set1_epi16(g_mask);
+   const __m512i mask_b = _mm512_set1_epi16(0x1f << 5);
+   const __m512i mul_r  = _mm512_set1_epi16(0x0210);
+   const __m512i mul_g  = _mm512_set1_epi16(g_mul);
+   const __m512i mul_b  = _mm512_set1_epi16(0x4200);
+   const __m512i a      = _mm512_set1_epi16(0x00ff);
+   /* unpack leaves 128-bit lanes of four pixels as lo 0,2,4,6 and
+    * hi 1,3,5,7 (in blocks of four); these put the eight in order. */
+   const __m512i first  = _mm512_set_epi64(11, 10, 3, 2, 9, 8, 1, 0);
+   const __m512i second = _mm512_set_epi64(15, 14, 7, 6, 13, 12, 5, 4);
+
+   for (h = 0; h < height;
+         h++, output += out_stride >> 2, input += in_stride >> 1)
+   {
+      int w = 0;
+      /* The last block takes the row's tail through masks: loads and
+       * stores past the row are suppressed, not issued. */
+      for (; w < width; w += 32)
+      {
+         __m512i lo, hi, c0, c2, in, r, g, b;
+         int left         = width - w;
+         __mmask32 m_in   = (left >= 32) ? (__mmask32)0xffffffffu
+            : (__mmask32)((1u << left) - 1u);
+         __mmask16 m_out0 = (left >= 16) ? (__mmask16)0xffff
+            : (__mmask16)((1u << left) - 1u);
+         __mmask16 m_out1 = (left >= 32) ? (__mmask16)0xffff
+            : (left > 16) ? (__mmask16)((1u << (left - 16)) - 1u)
+            : (__mmask16)0;
+         in = _mm512_maskz_loadu_epi16(m_in, input + w);
+         r  = _mm512_mulhi_epi16(_mm512_and_si512(
+                  _mm512_srl_epi16(in, rs), mask_r), mul_r);
+         g  = _mm512_mulhi_epi16(_mm512_and_si512(in, mask_g), mul_g);
+         b  = _mm512_mulhi_epi16(_mm512_and_si512(
+                  _mm512_slli_epi16(in, 5), mask_b), mul_b);
+         c0 = swap_rb ? r : b;
+         c2 = swap_rb ? b : r;
+         lo = _mm512_or_si512(_mm512_unpacklo_epi8(c0, g),
+               _mm512_bslli_epi128(_mm512_unpacklo_epi8(c2, a), 2));
+         hi = _mm512_or_si512(_mm512_unpackhi_epi8(c0, g),
+               _mm512_bslli_epi128(_mm512_unpackhi_epi8(c2, a), 2));
+         _mm512_mask_storeu_epi32(output + w, m_out0,
+               _mm512_permutex2var_epi64(lo, first, hi));
+         _mm512_mask_storeu_epi32(output + w + 16, m_out1,
+               _mm512_permutex2var_epi64(lo, second, hi));
+      }
+   }
+   PIXCONV_ZEROUPPER();
+}
+
+/* Runs the conversion wide and returns 1, or returns 0 for the caller's
+ * own SSE2 path. */
+static int pixconv_16to32_wide(void *output, const void *input,
+      int width, int height, int out_stride, int in_stride, int fmt)
+{
+   switch (pixconv_simd_tier())
+   {
+      case 2:
+         pixconv_16to32_avx512((uint32_t*)output, (const uint16_t*)input,
+               width, height, out_stride, in_stride, fmt);
+         return 1;
+      case 1:
+         pixconv_16to32_avx2((uint32_t*)output, (const uint16_t*)input,
+               width, height, out_stride, in_stride, fmt);
+         return 1;
+      default:
+         break;
+   }
+   return 0;
+}
+#endif
+
 void conv_0rgb1555_argb8888(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
@@ -176,6 +407,12 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
    int max_width = width - 7;
 #elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
    int max_width = width - 7;
+#endif
+
+#ifdef PIXCONV_HAVE_WIDE
+   if (pixconv_16to32_wide(output_, input_, width, height,
+            out_stride, in_stride, PIXCONV_1555_ARGB))
+      return;
 #endif
 
    for (h = 0; h < height;
@@ -266,6 +503,12 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
    int max_width            = width - 3;
 #elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
    int max_width            = width - 7;
+#endif
+
+#ifdef PIXCONV_HAVE_WIDE
+   if (pixconv_16to32_wide(output_, input_, width, height,
+            out_stride, in_stride, PIXCONV_565_ARGB))
+      return;
 #endif
 
    for (h = 0; h < height;
@@ -373,7 +616,13 @@ void conv_rgb565_abgr8888(void *output_, const void *input_,
 #elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
    int max_width            = width - 7;
 #endif
-    for (h = 0; h < height;
+ #ifdef PIXCONV_HAVE_WIDE
+   if (pixconv_16to32_wide(output_, input_, width, height,
+            out_stride, in_stride, PIXCONV_565_ABGR))
+      return;
+#endif
+
+   for (h = 0; h < height;
          h++, output += out_stride >> 2, input += in_stride >> 1)
    {
       int w = 0;

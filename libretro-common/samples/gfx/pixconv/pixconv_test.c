@@ -481,6 +481,44 @@ static void test_32_to_16(uint32_t *in, uint16_t *out)
    }
 }
 
+#ifdef PIXCONV_TEST_HOOKS
+/* pixconv.c's cap on its run-time tier (SSE2 = 0, AVX2 = 1, AVX-512 = 2);
+ * this build compiles the wide paths in. */
+extern int pixconv_tier_cap;
+
+/* Every row width up to 100 at odd strides, so each length of the wide
+ * paths' tails (the AVX-512 one is masked) meets every misalignment;
+ * the guard word after each row must survive. */
+static void test_16_to_32_widths(const char *name, conv_fn fn,
+      uint32_t (*ref)(uint32_t))
+{
+   static uint16_t in[3 * 112];
+   static uint32_t out[3 * 112];
+   int width, row, x;
+   for (x = 0; x < 3 * 112; x++)
+      in[x] = (uint16_t)(x * 2654435761u >> 7);
+   for (width = 1; width <= 100; width++)
+   {
+      int stride = width + 1 + (width & 3);
+      for (x = 0; x < 3 * 112; x++)
+         out[x] = 0x5a5a5a5au;
+      fn(out, in, width, 3, stride * 4, stride * 2);
+      for (row = 0; row < 3; row++)
+      {
+         for (x = 0; x < width; x++)
+            check(name, (unsigned)(row * stride + x),
+                  out[row * stride + x],
+                  0xff000000u | ref(in[row * stride + x]));
+         if (out[row * stride + width] != 0x5a5a5a5au)
+         {
+            printf("FAIL %s width %d: wrote past the row\n", name, width);
+            failures++;
+         }
+      }
+   }
+}
+#endif
+
 int main(void)
 {
    unsigned i;
@@ -504,6 +542,33 @@ int main(void)
    test_sizeless_converter();
    test_abgr_scaler();
    test_copy_into_rect();
+
+#ifdef PIXCONV_TEST_HOOKS
+   /* Each tier the CPU allows, widest last; the full runs below then
+    * use the widest. */
+   {
+      int cap;
+      for (cap = 0; cap <= 2; cap++)
+      {
+         pixconv_tier_cap = cap;
+         test_16_to_32("conv_rgb565_argb8888", conv_rgb565_argb8888,
+               in16, out32, ref_565_rgb, 0xff000000u);
+         test_16_to_32("conv_rgb565_abgr8888", conv_rgb565_abgr8888,
+               in16, out32, ref_565_bgr, 0xff000000u);
+         test_16_to_32_widths("conv_rgb565_argb8888", conv_rgb565_argb8888,
+               ref_565_rgb);
+         test_16_to_32_widths("conv_rgb565_abgr8888", conv_rgb565_abgr8888,
+               ref_565_bgr);
+         for (i = 0; i < NPIX; i++)
+            in16[i] = (uint16_t)(i & 0x7fff);
+         test_16_to_32("conv_0rgb1555_argb8888", conv_0rgb1555_argb8888,
+               in16, out32, ref_1555_rgb, 0xff000000u);
+         for (i = 0; i < NPIX; i++)
+            in16[i] = (uint16_t)i;
+      }
+      pixconv_tier_cap = -1;
+   }
+#endif
 
    test_16_to_32("conv_rgb565_argb8888", conv_rgb565_argb8888,
          in16, out32, ref_565_rgb, 0xff000000u);

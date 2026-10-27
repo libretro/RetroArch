@@ -225,10 +225,12 @@ jobs:
             rbmp_test
             rbmp_encode_test
             # Every 16-bit input through each pixconv converter, with
-            # SSE2, with MMX only, and with no SIMD at all.
+            # SSE2, with MMX only, and with no SIMD at all; the wide
+            # build also runs each AVX2 / AVX-512 tier the runner has.
             pixconv_test
             pixconv_test_nosimd
             pixconv_test_scalar
+            pixconv_test_wide
             rpng_chunk_overflow_test
             rpng_roundtrip_test
             rpng_decode_corpus_test
