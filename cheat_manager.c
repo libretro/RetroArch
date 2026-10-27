@@ -27,6 +27,8 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
+#include <retro_environment.h>
+#include <compat/intrinsics.h>
 #include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
@@ -1193,14 +1195,246 @@ static void cheat_manager_setup_search_meta(
    }
 }
 
+/* First address from @idx, stepping by @step, below @limit whose match
+ * byte is set; @limit when there is none. Clear bytes are scanned over
+ * a machine word at a time (16, 32 or 64 bytes with SSE2, AVX2 or
+ * AVX-512BW), since after a search or two nearly all of them are clear.
+ * An item is judged by its first match byte alone, as the search does,
+ * so a set byte part-way through an item rounds back to the item's
+ * start and is looked at there. */
+#if defined(__SSE2__) && (defined(__x86_64__) || defined(__i386__) \
+      || defined(_M_X64) || defined(_M_IX86))
+#include <emmintrin.h>
+#define CHEAT_SCAN_SSE2 1
+#if defined(_MSC_VER) && !defined(__clang__)
+#if _MSC_VER >= 1911
+#define CHEAT_SCAN_WIDE 1
+#define CHEAT_SCAN_TARGET_AVX2
+#define CHEAT_SCAN_TARGET_AVX512
+#endif
+#elif defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
+/* PlayStation clang and clang-cl declare only the intrinsics of ISAs
+ * the whole build enables: a wide tier only where the baseline has it. */
+#if defined(__AVX2__) && defined(__AVX512F__) && defined(__AVX512BW__)
+#define CHEAT_SCAN_WIDE 1
+#define CHEAT_SCAN_TARGET_AVX2
+#define CHEAT_SCAN_TARGET_AVX512
+#endif
+#elif (defined(__clang__) && __clang_major__ >= 4) \
+   || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5)
+#define CHEAT_SCAN_WIDE 1
+#define CHEAT_SCAN_TARGET_AVX2   __attribute__((target("avx2")))
+#define CHEAT_SCAN_TARGET_AVX512 __attribute__((target("avx512f,avx512bw")))
+#endif
+#endif
+
+#ifdef CHEAT_SCAN_WIDE
+#include <immintrin.h>
+
+/* Index of the first set byte in [i, limit), or limit. */
+CHEAT_SCAN_TARGET_AVX2
+static unsigned cheat_scan_avx2(const uint8_t *m, unsigned i, unsigned limit)
+{
+   while (limit - i >= 32)
+   {
+      unsigned zero = (unsigned)_mm256_movemask_epi8(_mm256_cmpeq_epi8(
+               _mm256_loadu_si256((const __m256i*)(m + i)),
+               _mm256_setzero_si256()));
+      if (zero != 0xffffffffu)
+         return i + (unsigned)compat_ctz(~zero);
+      i += 32;
+   }
+   return i;
+}
+
+CHEAT_SCAN_TARGET_AVX512
+static unsigned cheat_scan_avx512(const uint8_t *m, unsigned i, unsigned limit)
+{
+   while (limit - i >= 64)
+   {
+      __mmask64 set = _mm512_test_epi8_mask(
+            _mm512_loadu_si512((const void*)(m + i)),
+            _mm512_set1_epi8((char)0xff));
+      if (set)
+         return i + (unsigned)compat_ctz_u64((uint64_t)set);
+      i += 64;
+   }
+   return i;
+}
+
+#ifdef CHEAT_SCAN_TEST_HOOKS
+/* -1 picks by CPU; otherwise caps the tier for a test. */
+int cheat_scan_tier_cap = -1;
+#endif
+
+/* 0 = SSE2, 1 = AVX2, 2 = AVX-512BW; looked up on the first search,
+ * which runs on the main thread like every search. */
+static int cheat_scan_tier(void)
+{
+   static int tier = -1;
+   if (tier < 0)
+   {
+      uint64_t cpu = cpu_features_get();
+      tier = (cpu & RETRO_SIMD_AVX512) ? 2 : (cpu & RETRO_SIMD_AVX2) ? 1 : 0;
+   }
+#ifdef CHEAT_SCAN_TEST_HOOKS
+   if (cheat_scan_tier_cap >= 0 && tier > cheat_scan_tier_cap)
+      return cheat_scan_tier_cap;
+#endif
+   return tier;
+}
+#endif
+
+static unsigned cheat_skip_unmatched(const uint8_t *m, unsigned idx,
+      unsigned limit, unsigned step)
+{
+   unsigned i = idx;
+   for (;;)
+   {
+      if (i >= limit)
+         return limit;
+#ifdef CHEAT_SCAN_WIDE
+      switch (cheat_scan_tier())
+      {
+         case 2:
+            i = cheat_scan_avx512(m, i, limit);
+            break;
+         case 1:
+            i = cheat_scan_avx2(m, i, limit);
+            break;
+         default:
+            break;
+      }
+#endif
+#ifdef CHEAT_SCAN_SSE2
+      while (limit - i >= 16)
+      {
+         unsigned zero = (unsigned)_mm_movemask_epi8(_mm_cmpeq_epi8(
+                  _mm_loadu_si128((const __m128i*)(m + i)),
+                  _mm_setzero_si128()));
+         if (zero != 0xffffu)
+         {
+            i += (unsigned)compat_ctz(~zero & 0xffffu);
+            break;
+         }
+         i += 16;
+      }
+#else
+      while (limit - i >= sizeof(uint32_t))
+      {
+         uint32_t w;
+         memcpy(&w, m + i, sizeof(w));
+         if (w)
+            break;
+         i += sizeof(uint32_t);
+      }
+#endif
+      while (i < limit && !m[i])
+         i++;
+      if (i >= limit)
+         return limit;
+      /* Back to the start of the item holding byte i. */
+      i -= (i - idx) % step;
+      if (m[i])
+         return i;
+      i += step;
+   }
+}
+
+/* An item's value at byte, 16- or 32-bit size in the given order. */
+static INLINE unsigned cheat_read_item(const unsigned char *p,
+      unsigned bytes, bool big_endian)
+{
+   switch (bytes)
+   {
+      case 2:
+         return big_endian ? ((unsigned)p[0] << 8) | p[1]
+                           : p[0] | ((unsigned)p[1] << 8);
+      case 4:
+         return big_endian
+            ? ((unsigned)p[0] << 24) | ((unsigned)p[1] << 16)
+              | ((unsigned)p[2] << 8) | p[3]
+            : p[0] | ((unsigned)p[1] << 8)
+              | ((unsigned)p[2] << 16) | ((unsigned)p[3] << 24);
+      default:
+         break;
+   }
+   return p[0];
+}
+
+/* One region's items at byte size or wider, where an item is one
+ * match: the search type is chosen once, outside the loop. Same rule as
+ * the general path - an item still in the running that fails the test
+ * has its match bytes cleared and the count lowered. */
+#define CHEAT_SEARCH_ITEMS(COND) \
+   for (;; idx += bytes) \
+   { \
+      unsigned cs, ps; \
+      if (idx >= end || end - idx < bytes) \
+         break; \
+      if (!matches[idx]) \
+      { \
+         idx = cheat_skip_unmatched(matches, idx, end - bytes + 1, bytes); \
+         if (idx >= end || end - idx < bytes) \
+            break; \
+      } \
+      cs = cheat_read_item(curr + (idx - start), bytes, big_endian); \
+      ps = cheat_read_item(prev + idx, bytes, big_endian); \
+      (void)ps; /* unread by an exact-value search */ \
+      if (!(COND)) \
+      { \
+         switch (bytes) \
+         { \
+            case 4: \
+               matches[idx + 3] = 0; \
+               matches[idx + 2] = 0; \
+               /* fall through */ \
+            case 2: \
+               matches[idx + 1] = 0; \
+               /* fall through */ \
+            default: \
+               matches[idx]     = 0; \
+               break; \
+         } \
+         if (num > 0) \
+            num--; \
+      } \
+   }
+
+static void cheat_search_whole_items(enum cheat_search_type type,
+      const unsigned char *curr, unsigned start, unsigned end,
+      unsigned bytes, bool big_endian, uint8_t *matches,
+      const unsigned char *prev, unsigned *num_matches,
+      unsigned exact, unsigned plus, unsigned minus)
+{
+   unsigned idx = (start + bytes - 1) / bytes * bytes;
+   /* Counted in a local: stores through the uint8_t match array may
+    * alias anything, so the count would be reloaded every item. */
+   unsigned num = *num_matches;
+   switch (type)
+   {
+      case CHEAT_SEARCH_TYPE_EXACT:   CHEAT_SEARCH_ITEMS(cs == exact)      break;
+      case CHEAT_SEARCH_TYPE_LT:      CHEAT_SEARCH_ITEMS(cs <  ps)         break;
+      case CHEAT_SEARCH_TYPE_GT:      CHEAT_SEARCH_ITEMS(cs >  ps)         break;
+      case CHEAT_SEARCH_TYPE_LTE:     CHEAT_SEARCH_ITEMS(cs <= ps)         break;
+      case CHEAT_SEARCH_TYPE_GTE:     CHEAT_SEARCH_ITEMS(cs >= ps)         break;
+      case CHEAT_SEARCH_TYPE_EQ:      CHEAT_SEARCH_ITEMS(cs == ps)         break;
+      case CHEAT_SEARCH_TYPE_NEQ:     CHEAT_SEARCH_ITEMS(cs != ps)         break;
+      case CHEAT_SEARCH_TYPE_EQPLUS:  CHEAT_SEARCH_ITEMS(cs == ps + plus)  break;
+      case CHEAT_SEARCH_TYPE_EQMINUS: CHEAT_SEARCH_ITEMS(cs == ps - minus) break;
+   }
+   *num_matches = num;
+}
+
 static int cheat_manager_search(enum cheat_search_type search_type)
 {
    size_t _len;
    char msg[100];
    cheat_manager_t   *cheat_st = &cheat_manager_state;
-   cheat_region_t region       = { NULL, 0, 0 };
    unsigned char *curr         = NULL;
    unsigned char *prev         = cheat_st->prev_memory_buf;
+   unsigned int r              = 0;
+   unsigned int region_start   = 0;
    unsigned int idx            = 0;
    unsigned int curr_val       = 0;
    unsigned int prev_val       = 0;
@@ -1223,16 +1457,46 @@ static int cheat_manager_search(enum cheat_search_type search_type)
 
    cheat_manager_setup_search_meta(cheat_st->search_bit_size, &bytes_per_item, &mask, &bits);
 
-   /* little endian FF000000 = 256 */
-   for (idx = 0; idx < cheat_st->total_memory_size; idx = idx + bytes_per_item)
+   /* Region by region: an item is searched only where it lies whole
+    * inside one region, at addresses that are multiples of its size.
+    * An item whose match byte is clear was ruled out by an earlier
+    * search and cannot match again, so runs of them are stepped over
+    * by cheat_skip_unmatched rather than visited one at a time; after
+    * the first search or two that is nearly all of memory.
+    * little endian FF000000 = 256 */
+   for (r = 0, region_start = 0; r < cheat_st->num_memory_buffers;
+         region_start += cheat_st->memory_size_list[r], r++)
    {
+      unsigned region_end = region_start + cheat_st->memory_size_list[r];
+      curr   = cheat_st->memory_buf_list[r];
+      offset = region_start;
+      idx    = (region_start + bytes_per_item - 1)
+         / bytes_per_item * bytes_per_item;
+
+      if (bits == 8)
+      {
+         cheat_search_whole_items(search_type, curr, region_start,
+               region_end, bytes_per_item, cheat_st->big_endian,
+               cheat_st->matches, prev, &cheat_st->num_matches,
+               cheat_st->search_exact_value,
+               cheat_st->search_eqplus_value,
+               cheat_st->search_eqminus_value);
+         continue;
+      }
+
+      for (;; idx += bytes_per_item)
+      {
       unsigned byte_part;
 
-      if (!cheat_region_seek(&region, idx, bytes_per_item))
-         continue;
-      curr   = region.base;
-      offset = region.start;
-
+      if (region_end - idx < bytes_per_item || idx >= region_end)
+         break;
+      if (!cheat_st->matches[idx])
+      {
+         idx = cheat_skip_unmatched(cheat_st->matches, idx,
+               region_end - bytes_per_item + 1, bytes_per_item);
+         if (idx >= region_end || region_end - idx < bytes_per_item)
+            break;
+      }
       switch (bytes_per_item)
       {
          case 2:
@@ -1244,12 +1508,18 @@ static int cheat_manager_search(enum cheat_search_type search_type)
                *(prev + idx) + (*(prev + idx + 1) * 256);
             break;
          case 4:
+            /* Unsigned shifts: a top byte of 0x80 or more times 2^24 in
+             * int overflowed, which is undefined. Same value. */
             curr_val = cheat_st->big_endian ?
-               (*(curr + idx - offset) * 256 * 256 * 256) + (*(curr + idx + 1 - offset) * 256 * 256) + (*(curr + idx + 2 - offset) * 256) + *(curr + idx + 3 - offset) :
-               *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256) + (*(curr + idx + 2 - offset) * 256 * 256) + (*(curr + idx + 3 - offset) * 256 * 256 * 256);
+               ((unsigned)curr[idx - offset] << 24) | ((unsigned)curr[idx + 1 - offset] << 16)
+               | ((unsigned)curr[idx + 2 - offset] << 8) | curr[idx + 3 - offset] :
+               curr[idx - offset] | ((unsigned)curr[idx + 1 - offset] << 8)
+               | ((unsigned)curr[idx + 2 - offset] << 16) | ((unsigned)curr[idx + 3 - offset] << 24);
             prev_val = cheat_st->big_endian ?
-               (*(prev + idx) * 256 * 256 * 256) + (*(prev + idx + 1) * 256 * 256) + (*(prev + idx + 2) * 256) + *(prev + idx + 3) :
-               *(prev + idx) + (*(prev + idx + 1) * 256) + (*(prev + idx + 2) * 256 * 256) + (*(prev + idx + 3) * 256 * 256 * 256);
+               ((unsigned)prev[idx] << 24) | ((unsigned)prev[idx + 1] << 16)
+               | ((unsigned)prev[idx + 2] << 8) | prev[idx + 3] :
+               prev[idx] | ((unsigned)prev[idx + 1] << 8)
+               | ((unsigned)prev[idx + 2] << 16) | ((unsigned)prev[idx + 3] << 24);
             break;
          case 1:
          default:
@@ -1314,6 +1584,7 @@ static int cheat_manager_search(enum cheat_search_type search_type)
                   cheat_st->num_matches--;
             }
          }
+      }
       }
    }
 

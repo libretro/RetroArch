@@ -30,6 +30,9 @@ bool core_get_system_info(struct retro_system_info *info) { (void)info; return f
 bool core_set_cheat(retro_ctx_cheat_info_t *info) { (void)info; return true; }
 bool core_reset_cheat(void) { return true; }
 retro_time_t cpu_features_get_time_usec(void) { return 0; }
+/* No SIMD reported: the search scans with its baseline path here;
+ * samples/cheats/cheat_search runs the wider ones. */
+uint64_t cpu_features_get(void) { return 0; }
 bool input_set_rumble_state(unsigned port, enum retro_rumble_effect e,
       uint16_t strength) { (void)port; (void)e; (void)strength; return true; }
 config_file_t *config_file_new_from_path_to_string(const char *p) { (void)p; return NULL; }
