@@ -159,4 +159,62 @@ static INLINE uint64_t win_pad_sony_addr_serial(const char *s)
    return digits == 12 ? addr : 0;
 }
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include <windows.h>
+
+/* The Bluetooth address of the DualShock 4 or DualSense at @path, read
+ * from that link; 0 for any other pad, or none given. The device is
+ * opened asking no access - HID's requests need none, and a pad
+ * another program holds is still read - and HID's two calls are found
+ * in hid.dll, so a build that links no HID library has this too. Where
+ * a pad connects, never on a frame: the pad answers. */
+static INLINE uint64_t win_pad_sony_addr(const char *path,
+      uint16_t vid, uint16_t pid)
+{
+   typedef BOOLEAN (WINAPI *get_serial_t)(HANDLE, PVOID, ULONG);
+   typedef BOOLEAN (WINAPI *get_feature_t)(HANDLE, PVOID, ULONG);
+   get_serial_t  get_serial;
+   get_feature_t get_feature;
+   HMODULE hid;
+   HANDLE h;
+   uint64_t addr = 0;
+   bool ds4      = vid == 0x054C && (pid == 0x05C4 || pid == 0x09CC);
+   bool ds       = vid == 0x054C && (pid == 0x0CE6 || pid == 0x0DF2);
+
+   if ((!ds4 && !ds) || !path || !*path)
+      return 0;
+   if (!(hid = LoadLibraryA("hid.dll")))
+      return 0;
+   get_serial  = (get_serial_t)GetProcAddress(hid,
+         "HidD_GetSerialNumberString");
+   get_feature = (get_feature_t)GetProcAddress(hid, "HidD_GetFeature");
+   h = CreateFileA(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+         OPEN_EXISTING, 0, NULL);
+   if (h != INVALID_HANDLE_VALUE)
+   {
+      if (win_pad_path_is_bluetooth(path))
+      {
+         WCHAR wide[64];
+         char serial[64];
+         memset(wide, 0, sizeof(wide));
+         if (     get_serial && get_serial(h, wide, sizeof(wide))
+               && WideCharToMultiByte(CP_UTF8, 0, wide, -1, serial,
+                  sizeof(serial), NULL, NULL) > 0)
+            addr = win_pad_sony_addr_serial(serial);
+      }
+      else
+      {
+         uint8_t feature[64];
+         memset(feature, 0, sizeof(feature));
+         feature[0] = ds4 ? 0x12 : 0x09;
+         if (get_feature && get_feature(h, feature, sizeof(feature)))
+            addr = win_pad_sony_addr_feature(feature, sizeof(feature));
+      }
+      CloseHandle(h);
+   }
+   FreeLibrary(hid);
+   return addr;
+}
+#endif
+
 #endif

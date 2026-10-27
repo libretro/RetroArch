@@ -67,18 +67,18 @@ static const pad_t pads[] = {
    { "DualShock 4, Bluetooth", {
       { "\\\\?\\HID#{00001124-0000-1000-8000-00805f9b34fb}_VID&0002054c_PID&09cc#9&2a1b&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
         true, 0x054C, 0x09CC, DS4_SERIAL, { 0 } } }, 1, { 1, 1, 1, 1 }, false },
-   /* on Bluetooth, and plugged in to charge: one pad to raw input;
-    * DirectInput gives no path to tell it by */
+   /* on Bluetooth, and plugged in to charge: one pad, its address
+    * read from either link */
    { "DualShock 4, Bluetooth and USB", {
       { "\\\\?\\HID#{00001124-0000-1000-8000-00805f9b34fb}_VID&0002054c_PID&09cc#9&2a1b&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
         true, 0x054C, 0x09CC, DS4_SERIAL, { 0 } },
       { "\\\\?\\HID#VID_054C&PID_09CC&MI_03#8&2c1f&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
-        true, 0x054C, 0x09CC, NULL, DS4_FEATURE } }, 2, { 1, 1, 2, 2 }, false },
+        true, 0x054C, 0x09CC, NULL, DS4_FEATURE } }, 2, { 1, 1, 1, 1 }, false },
    { "DualSense, Bluetooth and USB", {
       { "\\\\?\\hid#{00001124-0000-1000-8000-00805f9b34fb}_vid&0002054c_pid&0ce6#9&11&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
         true, 0x054C, 0x0CE6, DS_SERIAL, { 0 } },
       { "\\\\?\\HID#VID_054C&PID_0CE6&MI_03#8&3d&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
-        true, 0x054C, 0x0CE6, NULL, DS_FEATURE } }, 2, { 1, 1, 2, 2 }, false },
+        true, 0x054C, 0x0CE6, NULL, DS_FEATURE } }, 2, { 1, 1, 1, 1 }, false },
    { "Switch Pro, Bluetooth", {
       { "\\\\?\\HID#{00001124-0000-1000-8000-00805f9b34fb}_VID&0002057e_PID&2009#9&3&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
         true, 0x057E, 0x2009, NULL, { 0 } } }, 1, { 1, 1, 1, 1 }, false },
@@ -148,8 +148,9 @@ int main(void)
                   && input_ignore_devices_names(steam_list, lk->vid, lk->pid));
             if (v == WIN_PAD_VIEW_NONE)
                continue;
-            /* raw input reads a pad's second link as its first */
-            if (v == WIN_PAD_VIEW_RAW)
+            /* raw input and DirectInput read a pad's second link as
+             * its first */
+            if (v == WIN_PAD_VIEW_RAW || v == WIN_PAD_VIEW_DINPUT)
             {
                uint64_t a = link_addr(lk);
                unsigned r;
@@ -173,8 +174,7 @@ int main(void)
       return 1;
    }
    printf("[pass] win_pad_ident: %u controllers, one port each under every"
-         " Windows joypad driver; a pad on cable and Bluetooth is one to"
-         " raw input\n",
+         " Windows joypad driver; a pad on cable and Bluetooth is one\n",
          (unsigned)(sizeof(pads) / sizeof(pads[0])));
    return 0;
 }

@@ -1343,47 +1343,6 @@ static void winraw_joypad_xinput_poll(void)
 /* Device arrival / removal                                            */
 /* ------------------------------------------------------------------ */
 
-/* A DualShock 4's or DualSense's Bluetooth address, read from the link
- * at @path: the serial number over Bluetooth, a feature report over
- * USB (win_pad_ident.h). 0 for any other pad, or none given. */
-static uint64_t winraw_joypad_sony_addr(const char *path,
-      uint16_t vid, uint16_t pid)
-{
-   enum sony_pad_model model = sony_pad_model(vid, pid);
-   uint64_t addr             = 0;
-   HANDLE h;
-
-   /* the DualShock 4's USB adaptor is a cable to nothing */
-   if (model == SONY_PAD_NONE || pid == 0x0BA0 || !path[0])
-      return 0;
-   /* no access asked: HID's requests need none, and a pad another
-    * program holds open is still read */
-   h = CreateFileA(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-         OPEN_EXISTING, 0, NULL);
-   if (h == INVALID_HANDLE_VALUE)
-      return 0;
-   if (win_pad_path_is_bluetooth(path))
-   {
-      wchar_t wide[64];
-      char serial[64];
-      memset(wide, 0, sizeof(wide));
-      if (     HidD_GetSerialNumberString(h, wide, sizeof(wide))
-            && WideCharToMultiByte(CP_UTF8, 0, wide, -1, serial,
-               sizeof(serial), NULL, NULL) > 0)
-         addr = win_pad_sony_addr_serial(serial);
-   }
-   else
-   {
-      uint8_t feature[64];
-      memset(feature, 0, sizeof(feature));
-      feature[0] = model == SONY_PAD_DS4 ? 0x12 : 0x09;
-      if (HidD_GetFeature(h, feature, sizeof(feature)))
-         addr = win_pad_sony_addr_feature(feature, sizeof(feature));
-   }
-   CloseHandle(h);
-   return addr;
-}
-
 /* Whether a raw input handle still names a device. The handle of a
  * controller that has been unplugged does not. */
 static bool winraw_joypad_handle_alive(HANDLE hDevice)
@@ -1459,7 +1418,7 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
 
    /* The other link of a pad already here - its cable plugged in while
     * it is on Bluetooth - is the same pad, in the same port */
-   link_addr = winraw_joypad_sony_addr(device_path,
+   link_addr = win_pad_sony_addr(device_path,
          (uint16_t)dev_info.hid.dwVendorId,
          (uint16_t)dev_info.hid.dwProductId);
    if (link_addr)

@@ -754,6 +754,11 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    if (input_device_ignored((uint16_t)pad->vid, (uint16_t)pad->pid))
       goto cfg_failed;
 
+   /* A pad already listed, on its other link */
+   pad->link_addr = dinput_pad_link_addr(dev, pad->vid, pad->pid);
+   if (dinput_pad_is_link(job->pads, job->cnt, pad->link_addr))
+      goto cfg_failed;
+
    /* Set data format to extended joystick state.
     * If either SetDataFormat or SetCooperativeLevel fails the device
     * is unusable - release everything and move on to the next pad. */

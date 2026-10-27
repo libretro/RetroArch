@@ -46,6 +46,7 @@
 #include <dinput.h>
 
 #include "../input_driver.h"
+#include "../common/win_pad_ident.h"
 
 /* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
 #define ARRAY_SIZE_RGB_BUTTONS 128
@@ -73,6 +74,8 @@ struct dinput_joypad_data
    LONG                 rumble_direction;
    DIENVELOPE           rumble_envelope;
    DICONSTANTFORCE      rumble_force;
+   /* A DualShock 4's or DualSense's Bluetooth address; 0 for another */
+   uint64_t             link_addr;
 };
 
 /* TODO/FIXME - globals referenced outside; candidate for context-struct refactor */
@@ -166,5 +169,42 @@ void dinput_pad_report_rumble(unsigned port,
       const struct dinput_joypad_data *pad);
 
 RETRO_END_DECLS
+
+/* A DualShock 4's or DualSense's Bluetooth address, from the HID path
+ * DirectInput gives for @dev; 0 for any other pad. A pad on cable and
+ * Bluetooth at once is two devices to DirectInput and one pad. For the
+ * enumeration's walk, off the frontend's thread: the pad answers. */
+static INLINE uint64_t dinput_pad_link_addr(LPDIRECTINPUTDEVICE8 dev,
+      int32_t vid, int32_t pid)
+{
+   DIPROPGUIDANDPATH gp;
+   char path[MAX_PATH];
+
+   if (vid != 0x054C)
+      return 0;
+   memset(&gp, 0, sizeof(gp));
+   gp.diph.dwSize       = sizeof(gp);
+   gp.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+   gp.diph.dwHow        = DIPH_DEVICE;
+   if (     FAILED(IDirectInputDevice8_GetProperty(dev, DIPROP_GUIDANDPATH,
+                  &gp.diph))
+         || WideCharToMultiByte(CP_ACP, 0, gp.wszPath, -1, path,
+                  sizeof(path), NULL, NULL) <= 0)
+      return 0;
+   return win_pad_sony_addr(path, (uint16_t)vid, (uint16_t)pid);
+}
+
+/* Whether one of the first @cnt pads has Bluetooth address @addr: this
+ * is its other link, and not read */
+static INLINE bool dinput_pad_is_link(const struct dinput_joypad_data *pads,
+      unsigned cnt, uint64_t addr)
+{
+   unsigned i;
+   if (addr)
+      for (i = 0; i < cnt; i++)
+         if (pads[i].link_addr == addr)
+            return true;
+   return false;
+}
 
 #endif

@@ -836,8 +836,11 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
       goto enum_iteration_done;
    }
 
-   /* Another program reads it and stands in for it (Steam Input) */
-   if (input_device_ignored((uint16_t)pad->vid, (uint16_t)pad->pid))
+   /* Another program reads it and stands in for it (Steam Input), or
+    * a pad already listed, on its other link */
+   pad->link_addr = dinput_pad_link_addr(dev, pad->vid, pad->pid);
+   if (     input_device_ignored((uint16_t)pad->vid, (uint16_t)pad->pid)
+         || dinput_pad_is_link(job->pads, job->cnt, pad->link_addr))
    {
       IDirectInputDevice8_Release(dev);
       free(pad->joy_name);
