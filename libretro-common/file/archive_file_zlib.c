@@ -65,6 +65,12 @@
 
 #ifdef HAVE_RBZIP2
 #include <encodings/rbzip2.h>
+
+/* How far a streaming bzip2 member is read ahead of its decoder, in a
+ * ring of twice it */
+#ifndef ZIP_BZIP2_AHEAD
+#define ZIP_BZIP2_AHEAD RBZIP2_AHEAD
+#endif
 #endif
 
 /* LZMA members decode through the 7z backend's LZMA decoder. */
@@ -259,6 +265,33 @@ static bool zip_context_reserve_tmpbuf(zip_context_t *zip_context,
    return true;
 }
 
+#ifdef HAVE_RBZIP2
+/* The bzip2 member read on into the ring of @cap at tmpbuf, up to
+ * where the decoder has @taken it to, a whole ring ahead, or its end */
+static bool zip_bzip2_fill(struct file_archive_transfer *state,
+      zip_context_t *zip_context, uint64_t taken, size_t cap)
+{
+   uint64_t to = taken + cap;
+   if (to > zip_context->csize)
+      to = zip_context->csize;
+   filestream_seek(state->archive_file,
+         (int64_t)(zip_context->fdoffset + zip_context->boffset),
+         RETRO_VFS_SEEK_POSITION_START);
+   while (zip_context->boffset < to)
+   {
+      size_t at = (size_t)(zip_context->boffset % cap);
+      size_t n  = cap - at;
+      if (n > to - zip_context->boffset)
+         n = (size_t)(to - zip_context->boffset);
+      if (filestream_read(state->archive_file, zip_context->tmpbuf + at,
+               (int64_t)n) != (int64_t)n)
+         return false;
+      zip_context->boffset += n;
+   }
+   return true;
+}
+#endif
+
 /* Up to @len octets of member data at @off: lent from the stream
  * where it can, otherwise read into @buf. A lent pointer holds until
  * the next call on @f. Callers keep @len to a slice whose output is
@@ -274,7 +307,7 @@ static int64_t zip_member_input(RFILE *f, int64_t off, int64_t len,
    return filestream_read(f, buf, len);
 }
 
-#ifdef ZIP_HAVE_ZSTD
+#if defined(ZIP_HAVE_ZSTD) || defined(HAVE_RBZIP2)
 /* All @csize octets of a member at @off where they lie: in the mapping,
  * or what the stream lends when it holds all of them; NULL when they
  * would have to be read */
@@ -1074,41 +1107,60 @@ static int zlib_stream_decompress_data_to_file_iterate(
    else if (zip_context->cmode == ZIP_MODE_BZIP2 && zip_context->streaming)
    {
       /* A block to the sink per call, from where the decoder leaves
-       * it; the stream is in hand whole, the mapping's or read */
+       * it: the stream decoded where it lies whole, in the mapping or
+       * what the stream lends, or else read through a ring that holds
+       * at least a block's most ahead of the decoder */
+      rbzip2_t      *bz;
       const uint8_t *blk;
       size_t         len;
       int            e;
       if (!zip_context->begun)
       {
-         const uint8_t *src;
-#ifdef VFS_HAVE_FILE_MAPPING
-         if (state->archive_mmap_data)
-            src = state->archive_mmap_data + (size_t)zip_context->fdoffset;
-         else
-#endif
-         {
-            if (     zip_context->csize > (uint64_t)((size_t)-1)
-                  || !zip_context_reserve_tmpbuf(zip_context,
-                     zip_context->csize ? (size_t)zip_context->csize : 1))
-               return -1;
-            filestream_seek(state->archive_file,
-                  (int64_t)zip_context->fdoffset,
-                  RETRO_VFS_SEEK_POSITION_START);
-            if (filestream_read(state->archive_file, zip_context->tmpbuf,
-                     (int64_t)zip_context->csize)
-                  != (int64_t)zip_context->csize)
-               return -1;
-            src = zip_context->tmpbuf;
-         }
+         const uint8_t *src = zip_member_lent(state, zip_context->fdoffset,
+               zip_context->csize);
+         size_t         cap = 2 * (size_t)ZIP_BZIP2_AHEAD;
+         zip_context->boffset = 0;
          if (     !zip_context->bz
                && !(zip_context->bz = rbzip2_new()))
             return -1;
-         if (rbzip2_begin_blocks((rbzip2_t*)zip_context->bz, src,
-                  (size_t)zip_context->csize) != RBZIP2_OK)
+         if (!src)
+         {
+            if (zip_context->csize < cap)
+               cap = zip_context->csize ? (size_t)zip_context->csize : 1;
+            if (!zip_context_reserve_tmpbuf(zip_context, cap))
+               return -1;
+            if (!zip_bzip2_fill(state, zip_context, 0, cap))
+               return -1;
+            src = zip_context->tmpbuf;
+         }
+         if (rbzip2_begin_ring((rbzip2_t*)zip_context->bz, src,
+                  src == zip_context->tmpbuf
+                  ? (size_t)zip_context->boffset
+                  : (size_t)zip_context->csize, NULL, 0) != RBZIP2_OK)
             return -1;
          zip_context->begun = true;
       }
-      e = rbzip2_step_block((rbzip2_t*)zip_context->bz, &blk, &len);
+      bz = (rbzip2_t*)zip_context->bz;
+      if (     zip_context->boffset
+            && zip_context->boffset < zip_context->csize
+            && zip_context->boffset - rbzip2_taken(bz) < ZIP_BZIP2_AHEAD)
+      {
+         /* the ring filled again up to what the decoder still needs,
+          * and that handed over again, in two where it wraps */
+         size_t   cap  = 2 * (size_t)ZIP_BZIP2_AHEAD;
+         uint64_t t    = rbzip2_taken(bz);
+         size_t   from = (size_t)(t % cap);
+         size_t   have;
+         if (!zip_bzip2_fill(state, zip_context, t, cap))
+            return -1;
+         have = (size_t)(zip_context->boffset - t);
+         if (have > cap - from)
+            rbzip2_input(bz, zip_context->tmpbuf + from, cap - from,
+                  zip_context->tmpbuf, have - (cap - from));
+         else
+            rbzip2_input(bz, zip_context->tmpbuf + from, have, NULL, 0);
+      }
+      e = rbzip2_step_block(bz, &blk, &len);
       if (e == RBZIP2_PENDING)
       {
          zip_context->crc      = encoding_crc32(zip_context->crc, blk, len);

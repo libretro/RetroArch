@@ -49,6 +49,10 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 override CPPFLAGS += -DHAVE_COMPRESSION -DHAVE_7ZIP -DHAVE_RBZIP2 -DHAVE_RZSTD -I$(LIBRETRO_COMM_DIR)/include
 CFLAGS            += -Wall -pedantic -std=gnu99 -g1
 
+# A bzip2 member read with MMAP=0 goes through a ring that wraps round
+# within it
+override CPPFLAGS += -DZIP_BZIP2_AHEAD=1500
+
 MMAP ?= 1
 ifeq ($(MMAP),1)
    override CPPFLAGS += -DHAVE_MMAP
