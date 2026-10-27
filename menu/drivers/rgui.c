@@ -3098,6 +3098,7 @@ static void rgui_media_gpu_consume(rgui_t *rgui)
 static void rgui_media_close(rgui_t *rgui, bool context_reset)
 {
    rgui_media_gpu_view_t draw;
+   menu_media_controls_context_reset(&rgui->media, context_reset);
    memset(&draw, 0, sizeof(draw));
    rgui_media_gpu_publish(rgui, &draw);
    gfx_media_cpu_retire(rgui->media_player);
@@ -3109,7 +3110,6 @@ static void rgui_media_close(rgui_t *rgui, bool context_reset)
    rgui->media_path[0] = '\0';
    if (!context_reset)
       gfx_media_subtitle_update(rgui->media.subtitle, NULL, NULL, 0, 0, false);
-   menu_media_controls_context_reset(&rgui->media);
 }
 
 static bool rgui_media_present(void *user, const video_player_frame_t *frame)
@@ -3292,6 +3292,18 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
          target.state = rgui_media_state; target.pause = rgui_media_pause;
          target.seek = rgui_media_seek;
       }
+   }
+   if (rgui->media.resume_path && !target.user)
+   {
+      target.user = rgui;
+      target.identity = rgui->media_player ? (void*)rgui->media_player
+         : rgui->media_gpu.anim_sess;
+      target.state = rgui_media_state;
+      target.pause = rgui_media_pause;
+      target.seek = rgui_media_seek;
+      target.source_path = rgui->media_path;
+      menu_media_controls_resume(&rgui->media, &target, now);
+      memset(&target, 0, sizeof(target));
    }
    target.source_path = target.user ? rgui->media_path : NULL;
    menu_input_get_pointer_state(&rgui->media_pointer);
@@ -9556,7 +9568,7 @@ static void rgui_context_reset(void *data, bool is_threaded)
    if (!rgui)
       return;
 
-   menu_media_controls_context_reset(&rgui->media);
+   menu_media_controls_context_reset(&rgui->media, true);
    if (!disp_get_ptr()->dispctx)
       gfx_display_init_first_driver(disp_get_ptr(), is_threaded);
    video_driver_monitor_reset();

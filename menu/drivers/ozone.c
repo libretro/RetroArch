@@ -10907,7 +10907,7 @@ static void ozone_context_destroy(void *data)
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, ozone_frame() may be mid-render on
     * the video thread when this runs on the main thread. */
-   menu_media_controls_context_reset(&ozone->media);
+   menu_media_controls_context_reset(&ozone->media, true);
    ozone->context_generation++;
    (void)retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
 

@@ -14,6 +14,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <string/stdstring.h>
 
@@ -166,6 +167,26 @@ void menu_media_controls_settings_iterate(menu_media_controls_t *media)
    }
 }
 
+void menu_media_controls_resume(menu_media_controls_t *media,
+      const gfx_media_target_t *target, int64_t now)
+{
+   gfx_media_playback_state_t state;
+   if (!media->resume_path || !target || !target->user
+         || !target->source_path || !*target->source_path)
+      return;
+   if (string_is_equal(media->resume_path, target->source_path))
+   {
+      if (!target->state || !target->pause || !target->seek
+            || !target->state(target->user, now, &state)
+            || !state.seekable || state.seeking
+            || !target->pause(target->user, media->resume.paused, now)
+            || !target->seek(target->user, media->resume.position_us, now))
+         return;
+   }
+   free(media->resume_path);
+   media->resume_path = NULL;
+}
+
 bool menu_media_controls_update(menu_media_controls_t *media,
       const gfx_media_target_t *target, unsigned width, unsigned height,
       const menu_input_pointer_t *pointer, int64_t now)
@@ -173,6 +194,7 @@ bool menu_media_controls_update(menu_media_controls_t *media,
    settings_t *settings = config_get_ptr();
    gfx_media_target_t active;
    bool subtitle_changed = false;
+   menu_media_controls_resume(media, target, now);
    if (media->settings_open) return false;
    memset(&active, 0, sizeof(active));
    if (target)
@@ -248,6 +270,14 @@ void menu_media_controls_thumbnail(menu_media_controls_t *media,
    gfx_media_target_t target;
    gfx_media_playback_state_t state;
    bool once, completed;
+   if (media->resume_path)
+   {
+      gfx_media_controls_thumbnail_target(primary, &target);
+      if (!target.source_path
+            || !string_is_equal(media->resume_path, target.source_path))
+         gfx_media_controls_thumbnail_target(secondary, &target);
+      menu_media_controls_resume(media, &target, now);
+   }
    if (media->settings_open) return;
    once = menu_media_controls_continuous(media, shown);
    completed = gfx_thumbnail_take_completed(primary);
@@ -313,8 +343,23 @@ bool menu_media_controls_release(menu_media_controls_t *media,
    return true;
 }
 
-void menu_media_controls_context_reset(menu_media_controls_t *media)
+void menu_media_controls_context_reset(menu_media_controls_t *media, bool preserve)
 {
+   gfx_media_target_t *target = &media->controls.target;
+   if (!preserve)
+   {
+      free(media->resume_path);
+      media->resume_path = NULL;
+   }
+   else if (!media->resume_path && target->user && target->state
+         && target->source_path && *target->source_path
+         && target->state(target->user, menu_state_get_ptr()->current_time_us,
+               &media->resume) && media->resume.seekable)
+   {
+      if (media->resume.seeking)
+         media->resume.position_us = media->resume.seek_target_us;
+      media->resume_path = strdup(target->source_path);
+   }
    gfx_media_subtitle_suspend(media->subtitle);
    media->context_reset = true;
    media->subtitle_seeking = false;
@@ -341,6 +386,8 @@ void menu_media_controls_subtitle_caption(const gfx_media_subtitle_view_t *view,
 
 void menu_media_controls_cancel(menu_media_controls_t *media)
 {
+   free(media->resume_path);
+   media->resume_path = NULL;
    menu_media_display_publish(media, true);
    menu_media_queue_free(media->queue);
    media->queue = NULL;

@@ -106,7 +106,7 @@ typedef struct fake_player
    int64_t last_seek;
    unsigned seeks, pauses, advances;
    int last_direction;
-   bool available, pause_refused;
+   bool available, pause_refused, seek_refused;
 } fake_player_t;
 static bool fake_state(void *p, int64_t now, gfx_thumbnail_playback_state_t *out)
 { CHECK(!drawing); (void)now; *out = ((fake_player_t*)p)->state; return ((fake_player_t*)p)->available; }
@@ -120,7 +120,7 @@ static bool fake_pause(void *p, bool paused, int64_t now)
    return true;
 }
 static bool fake_seek(void *p, int64_t target, int64_t now)
-{ fake_player_t *f = (fake_player_t*)p; (void)now; f->last_seek = target; f->state.position_us = target; f->seeks++; return true; }
+{ fake_player_t *f = (fake_player_t*)p; (void)now; if (f->seek_refused) return false; f->last_seek = target; f->state.position_us = target; f->seeks++; return true; }
 static bool fake_step(void *user, int direction)
 {
    fake_player_t *f = (fake_player_t*)user;
@@ -713,7 +713,7 @@ static void settings_button(void)
       CHECK(!media.controls.held && !media.controls.row_focus);
       CHECK(gfx_media_controls_consume(&media.mailbox, &view));
       CHECK(view.settings_preview && !view.visible);
-      menu_media_controls_context_reset(&media);
+      menu_media_controls_context_reset(&media, true);
       CHECK(gfx_media_controls_consume(&media.mailbox, &view));
       CHECK(view.settings_preview && !view.visible);
       CHECK(file_list_append(stack[0], "/settings", "", 0, 0, 0));
@@ -1195,6 +1195,72 @@ static void subtitles_without_transport(void)
    free(media);
 }
 
+static void context_resume(void)
+{
+   menu_media_controls_t *media = (menu_media_controls_t*)calloc(1, sizeof(*media));
+   fake_player_t player;
+   gfx_media_target_t target;
+   char path[] = "movie.mp4";
+   CHECK(media != NULL);
+   if (!media) return;
+   memset(&player, 0, sizeof(player));
+   memset(&target, 0, sizeof(target));
+   player.available = true;
+   player.state.seekable = true;
+   player.state.duration_us = 10000000;
+   player.state.position_us = 3000000;
+   player.state.paused = true;
+   target.user = &player;
+   target.identity = &player;
+   target.state = fake_state;
+   target.pause = fake_pause;
+   target.seek = fake_seek;
+   target.source_path = path;
+   menu_media_controls_update(media, &target, 640, 480, NULL, 1);
+   menu_media_controls_context_reset(media, true);
+   CHECK(media->resume_path && media->resume.position_us == 3000000);
+   menu_media_controls_context_reset(media, true);
+   path[0] = 'X';
+   target.source_path = "movie.mp4";
+   player.available = false;
+   player.state.position_us = 0;
+   player.state.paused = false;
+   menu_media_controls_update(media, &target, 640, 480, NULL, 2);
+   CHECK(media->resume_path && !player.seeks);
+   player.available = true;
+   player.pause_refused = true;
+   menu_media_controls_update(media, &target, 640, 480, NULL, 3);
+   CHECK(media->resume_path && !player.seeks);
+   player.pause_refused = false;
+   player.seek_refused = true;
+   menu_media_controls_update(media, &target, 640, 480, NULL, 4);
+   CHECK(media->resume_path && !player.seeks);
+   player.seek_refused = false;
+   media->settings_open = true;
+   menu_media_controls_update(media, &target, 640, 480, NULL, 5);
+   CHECK(!media->resume_path && player.seeks == 1);
+   CHECK(player.state.paused && player.state.position_us == 3000000);
+   media->settings_open = false;
+   player.state.seeking = true;
+   player.state.seek_target_us = 7000000;
+   menu_media_controls_context_reset(media, true);
+   CHECK(media->resume_path && media->resume.position_us == 7000000);
+   player.state.seeking = false;
+   target.source_path = "other.mp4";
+   menu_media_controls_update(media, &target, 640, 480, NULL, 6);
+   CHECK(!media->resume_path && player.seeks == 1);
+   menu_media_controls_context_reset(media, true);
+   CHECK(media->resume_path != NULL);
+   menu_media_controls_context_reset(media, false);
+   CHECK(!media->resume_path);
+   menu_media_controls_update(media, &target, 640, 480, NULL, 7);
+   menu_media_controls_context_reset(media, true);
+   CHECK(media->resume_path != NULL);
+   menu_media_controls_cancel(media);
+   CHECK(!media->resume_path);
+   free(media);
+}
+
 int main(void)
 {
    test_settings.uints.media_player_seek_seconds = 5;
@@ -1219,6 +1285,7 @@ int main(void)
    menu_transport();
    file_buttons();
    settings_button();
+   context_resume();
 #ifdef HAVE_THREADS
    mailbox_races();
 #endif

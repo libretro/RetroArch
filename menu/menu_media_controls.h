@@ -10,6 +10,8 @@ struct menu_media_queue;
 
 typedef struct menu_media_controls
 {
+   gfx_media_playback_state_t resume;
+   char *resume_path;
    struct menu_media_queue *queue;
    void *settings_user;
    void (*settings_hide)(void *user);
@@ -46,7 +48,9 @@ bool menu_media_controls_action(menu_media_controls_t *media,
 bool menu_media_controls_release(menu_media_controls_t *media,
       unsigned x, unsigned y, int64_t now);
 void menu_media_controls_cancel(menu_media_controls_t *media);
-void menu_media_controls_context_reset(menu_media_controls_t *media);
+void menu_media_controls_context_reset(menu_media_controls_t *media, bool preserve);
+void menu_media_controls_resume(menu_media_controls_t *media,
+      const gfx_media_target_t *target, int64_t now);
 void menu_media_controls_subtitle_caption(const gfx_media_subtitle_view_t *view,
       char *text, size_t size);
 void menu_media_controls_time(char *out, size_t size, int64_t us);

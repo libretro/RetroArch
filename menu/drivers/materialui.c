@@ -9983,7 +9983,7 @@ static void materialui_context_destroy(void *data)
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, materialui_frame() may be mid-render
     * on the video thread when this runs on the main thread. */
-   menu_media_controls_context_reset(&mui->media);
+   menu_media_controls_context_reset(&mui->media, true);
    mui->context_generation++;
    gfx_thumbnail_reset(&mui->browser_thumbnail);
 

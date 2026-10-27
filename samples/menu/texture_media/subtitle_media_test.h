@@ -66,7 +66,7 @@ static bool media_test_embedded_subtitles(menu_media_controls_t *media,
          if (!view || view->track_count != 2 || !strstr(view->text, "UTF-8 \303\251"))
             return false;
          owner = media->subtitle;
-         menu_media_controls_context_reset(media);
+         menu_media_controls_context_reset(media, true);
          if (!media_subtitle_wait(media, menu_st, draw,
                   choice == 1 ? "Embedded second" : "Embedded first")
                || media->subtitle != owner)
@@ -148,7 +148,7 @@ static bool media_test_subtitles(menu_media_controls_t *media,
       valid = media_subtitle_wait(media, menu_st, draw, "English track") && valid;
       valid = media_subtitle_capture(24) && valid;
       owner = media->subtitle;
-      menu_media_controls_context_reset(media);
+      menu_media_controls_context_reset(media, true);
       valid = media_subtitle_wait(media, menu_st, draw, "English track") && valid;
       valid = valid && media->subtitle == owner;
       if (getenv("MEDIA_TEST_SUBTITLE_CONTEXT"))

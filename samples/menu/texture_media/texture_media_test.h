@@ -43,6 +43,7 @@ static int test_release(test_viewer_t *v,unsigned x,unsigned y) { return ozone_p
 #include "../../../tasks/task_content.h"
 #include "../../../paths.h"
 #include "../../../frontend/frontend.h"
+#include "../../../driver.h"
 #include <time/rtime.h>
 #ifdef _WIN32
 #include "../../../gfx/common/win32_common.h"
@@ -524,6 +525,28 @@ int main(int argc,char **argv)
    printf("texture seek: pending=%d paused=%d position_us=%ld ticks=%d\n",
          (int)seeking,(int)state.paused,(long)state.position_us,tick);
    CHECK("seek lands while user pause is preserved",!seeking&&state.paused&&state.position_us>0);
+   {
+      int64_t position = state.position_us;
+      bool restored = false;
+      driver_uninit(DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET);
+      drivers_init(config_get_ptr(), DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET, false);
+      viewer = (test_viewer_t*)menu_st->userdata;
+      old_poke = video->poke;
+      if (!native_gpu)
+         video->poke = &poke;
+      for (tick = 0; tick < 2000 && !restored; tick++)
+      {
+         render(menu_st);
+         restored = gfx_thumbnail_get_playback_state(test_thumbnail(viewer),
+               menu_st->current_time_us, &state)
+               && !state.seeking && state.paused
+               && state.position_us >= position - 100000
+               && state.position_us <= position + 100000;
+         if (!restored)
+            retro_sleep(1);
+      }
+      CHECK("video reinit preserves the paused movie position", restored);
+   }
    CHECK("Stop is consumed by the transport",test_action(viewer,MENU_ACTION_START)==MENU_ACTION_NOOP);
    seeking=true;
    for(tick=0;tick<2000&&seeking;tick++)

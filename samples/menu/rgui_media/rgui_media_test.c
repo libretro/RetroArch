@@ -573,6 +573,24 @@ int main(int argc, char **argv)
    }
    printf("seek result: ticks=%d pending=%d paused=%d position=%.6f duration=%.6f\n", tick, (int)state.seeking, (int)state.paused, (double)state.position_us/1000000.0, (double)state.duration_us/1000000.0);
    MEDIA_CHECK("real RGUI seek lands while pause is preserved", !seeking && state.paused && state.position_us > 0);
+   {
+      int64_t position = state.position_us;
+      bool restored = false;
+      driver_uninit(DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET);
+      drivers_init(settings, DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET, false);
+      rgui = (rgui_t*)menu_st->userdata;
+      for (tick = 0; tick < 2000 && !restored; tick++)
+      {
+         media_render(menu_st);
+         restored = rgui_media_state(rgui, menu_st->current_time_us, &state)
+               && !state.seeking && state.paused
+               && state.position_us >= position - 100000
+               && state.position_us <= position + 100000;
+         if (!restored)
+            retro_sleep(1);
+      }
+      MEDIA_CHECK("video reinit preserves the paused movie position", restored);
+   }
    MEDIA_CHECK("Stop is consumed by the RGUI transport",
          rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_START) == MENU_ACTION_NOOP);
    seeking = true;
