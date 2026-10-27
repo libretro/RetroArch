@@ -56,6 +56,7 @@
 #endif
 #include "android_key_state.h"
 #include "android_stylus_map.h"
+#include "../common/output_writer.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
@@ -749,12 +750,18 @@ static bool android_state_flush_pending = false;
  * the flush has run, or -1. See android_input_flush_pending_state(). */
 static int android_state_ack_cmd = -1;
 
-/* Set by the keypress haptic callback, consumed by
- * android_input_flush_pending_haptics() at the top of the next runloop
- * iteration. Cleared by the lifecycle handlers: the runloop blocks in the
- * poll while backgrounded, so a press left pending would otherwise be
- * delivered on the resume that follows. */
-static bool android_keypress_vibrate_pending = false;
+/* Set by the keypress haptic callback and taken by the haptic thread
+ * at once - or, with no thread, by android_input_flush_pending_haptics()
+ * at the top of the next runloop iteration. Cleared by the lifecycle
+ * handlers: the runloop blocks in the poll while backgrounded, so a
+ * press left pending would otherwise be delivered on the resume that
+ * follows. */
+static retro_atomic_int_t android_keypress_vibrate_pending;
+/* The thread that makes the buzz the moment a press asks for it, not a
+ * frame later: the press can come on a core's libco stack, where Java
+ * is not to be entered, and the runloop's top is up to a frame away. */
+static input_output_writer_t *android_haptic_writer;
+static void android_input_haptic_writer_cb(void *userdata, bool last);
 
 /* Hands a held-back APP_CMD_PAUSE/APP_CMD_STOP acknowledgement to the
  * lifecycle callback waiting for it in android_app_set_activity_state(). */
@@ -910,7 +917,7 @@ static void android_input_focus_lost(struct android_app *android_app)
          (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
                android_app->gyroscopeSensor;
 
-   android_keypress_vibrate_pending = false;
+   retro_atomic_store_release_int(&android_keypress_vibrate_pending, 0);
    runloop_set_platform_paused(true);
    video_driver_set_stub_frame();
 
@@ -1024,7 +1031,7 @@ static void android_input_poll_main_cmd(void)
             if (cmd == APP_CMD_PAUSE)
             {
                android_state_flush_pending = true;
-               android_keypress_vibrate_pending = false;
+               retro_atomic_store_release_int(&android_keypress_vibrate_pending, 0);
                if (hold_ack)
                   android_state_ack_cmd = APP_CMD_PAUSE;
             }
@@ -1049,7 +1056,7 @@ static void android_input_poll_main_cmd(void)
          if (cmd == APP_CMD_PAUSE)
          {
             android_state_flush_pending = true;
-            android_keypress_vibrate_pending = false;
+            retro_atomic_store_release_int(&android_keypress_vibrate_pending, 0);
             if (hold_ack)
                android_state_ack_cmd    = APP_CMD_PAUSE;
          }
@@ -1073,7 +1080,7 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_STOP:
       {
-         android_keypress_vibrate_pending = false;
+         retro_atomic_store_release_int(&android_keypress_vibrate_pending, 0);
 
          /* Normally flushed on the preceding APP_CMD_PAUSE already. When
           * that has not happened - its acknowledgement timed out while
@@ -1102,7 +1109,7 @@ static void android_input_poll_main_cmd(void)
          break;
       case APP_CMD_TERM_WINDOW:
       {
-         android_keypress_vibrate_pending = false;
+         retro_atomic_store_release_int(&android_keypress_vibrate_pending, 0);
 
          video_context_surface_destroy();
 
@@ -1121,7 +1128,7 @@ static void android_input_poll_main_cmd(void)
          break;
 
       case APP_CMD_DESTROY:
-         android_keypress_vibrate_pending = false;
+         retro_atomic_store_release_int(&android_keypress_vibrate_pending, 0);
          android_app->destroyRequested = 1;
          break;
 
@@ -1277,6 +1284,10 @@ static void *android_input_init(const char *joypad_driver)
 
    if (!android)
       return NULL;
+
+   if (!android_haptic_writer)
+      android_haptic_writer = input_output_writer_new(
+            android_input_haptic_writer_cb, NULL);
 
    android->mouse_activated = false;
    android->pads_connected = 0;
@@ -3756,6 +3767,9 @@ static void android_input_free_input(void *data)
 
    android_app->input_alive         = false;
 
+   input_output_writer_free(android_haptic_writer);
+   android_haptic_writer = NULL;
+
 #ifdef HAVE_DYLIB
    dylib_close((dylib_t)libandroid_handle);
    libandroid_handle = NULL;
@@ -3959,30 +3973,30 @@ static void android_input_keypress_vibrate(void)
 {
    /* Late polling can reach this on a core's libco stack. Even entering
     * Java to post a Runnable is unsafe there: ART only knows the OS stack.
-    * Repeats within one iteration coalesce into a single buzz. */
-   android_keypress_vibrate_pending = true;
+    * Waking the haptic thread is not Java. Repeats before it gets to
+    * them coalesce into a single buzz. */
+   retro_atomic_store_release_int(&android_keypress_vibrate_pending, 1);
+   if (android_haptic_writer)
+      input_output_writer_wake(android_haptic_writer);
 }
 
-void android_input_flush_pending_haptics(void)
+/* The buzz, if one is pending and the app is in front: on the haptic
+ * thread, or on the runloop where there is none */
+static void android_input_haptic_now(void)
 {
    static const int keyboard_press = 3;
    struct android_app *android_app = g_android;
    JNIEnv *env;
 
-   if (!android_keypress_vibrate_pending)
+   if (!retro_atomic_exchange_int(&android_keypress_vibrate_pending, 0))
       return;
-
-   android_keypress_vibrate_pending = false;
-
-   if (!android_app)
+   if (!android_app || !android_app->doHapticFeedback)
       return;
 
    /* Feedback belongs to the current interaction, not a later resume. */
-   if (     android_app->destroyRequested
-         || android_lifecycle_state(&android_app->lc) != APP_CMD_RESUME
+   if (     android_lifecycle_state(&android_app->lc) != APP_CMD_RESUME
          || !android_app_window(android_app)
-         || retro_atomic_load_relaxed_int(&android_app->unfocused)
-         || !android_app->doHapticFeedback)
+         || retro_atomic_load_relaxed_int(&android_app->unfocused))
       return;
 
    if (!(env = jni_thread_getenv()))
@@ -3990,6 +4004,20 @@ void android_input_flush_pending_haptics(void)
 
    CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
          android_app->doHapticFeedback, (jint)keyboard_press);
+}
+
+static void android_input_haptic_writer_cb(void *userdata, bool last)
+{
+   (void)userdata;
+   if (!last)
+      android_input_haptic_now();
+}
+
+void android_input_flush_pending_haptics(void)
+{
+   if (     !android_haptic_writer
+         && !(g_android && g_android->destroyRequested))
+      android_input_haptic_now();
 }
 
 input_driver_t input_android = {

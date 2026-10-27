@@ -1033,7 +1033,7 @@ INPUT
 #endif
 
 /* the thread the joypad drivers write to their controllers from */
-#if defined(HAVE_XINPUT) || defined(HAVE_WINRAWINPUT) || defined(HAVE_UDEV)
+#if defined(HAVE_XINPUT) || defined(HAVE_WINRAWINPUT) || defined(HAVE_UDEV) || defined(ANDROID)
 #include "../input/common/output_writer.c"
 #endif
 
