@@ -13,6 +13,13 @@
 #ifndef SAMPLES_INPUT_CONFIG_STUBS_H__
 #define SAMPLES_INPUT_CONFIG_STUBS_H__
 
+/* the frontend's, for a driver that asks; the user's list is the
+ * settings', here none */
+#ifdef _INPUT_IGNORE_DEVICES_H
+bool input_device_ignored(uint16_t vid, uint16_t pid)
+{ return input_ignore_devices_check(NULL, vid, pid); }
+#endif
+
 unsigned input_config_get_mouse_index(unsigned port)
 { return ((settings_t*)config_get_ptr())->uints.input_mouse_index[port]; }
 

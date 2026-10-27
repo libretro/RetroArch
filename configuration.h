@@ -1335,6 +1335,9 @@ typedef struct settings
 #ifdef ANDROID
       char input_android_physical_keyboard[NAME_MAX_LENGTH];
 #endif
+      /* Controllers the user leaves out, as SDL's
+       * SDL_GAMECONTROLLER_IGNORE_DEVICES writes them: "054c/09cc,..." */
+      char input_ignore_devices[512];
       char audio_device[NAME_MAX_LENGTH];
       /* Desktop companion dock layout, one plain row per dock:
        * "<area>,<shown>,<width>,<height>,<tabbed_with>,<raised>" - see

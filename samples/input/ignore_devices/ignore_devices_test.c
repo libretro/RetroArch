@@ -46,14 +46,45 @@ int main(void)
 #else
    setenv("SDL_GAMECONTROLLER_IGNORE_DEVICES", "0x054c/0x09cc", 1);
 #endif
-   CHECK(input_device_ignored(0x054c, 0x09cc), "the variable is not read");
-   CHECK(!input_device_ignored(0, 0), "a controller with no ids was ignored");
+   CHECK(input_ignore_devices_check(NULL, 0x054c, 0x09cc), "the variable is not read");
+   CHECK(!input_ignore_devices_check(NULL, 0, 0), "a controller with no ids was ignored");
+   CHECK(input_ignore_devices_check("045e/028e", 0x045e, 0x028e),
+         "the user's list is not read beside the variable");
+   CHECK(!input_ignore_devices_check("045e/028e", 0x054c, 0x0ce6),
+         "a controller in neither list was ignored");
+
+   /* the user's list, as the menu changes it */
+   {
+      char list[24] = "";
+      uint16_t vid = 0, pid = 0;
+      CHECK(input_ignore_devices_add(list, sizeof(list), 0x054c, 0x09cc)
+            && !strcmp(list, "054c/09cc"), "the first entry is not \"054c/09cc\"");
+      CHECK(input_ignore_devices_add(list, sizeof(list), 0x045e, 0x028e)
+            && !strcmp(list, "054c/09cc,045e/028e"), "a second is not added after");
+      CHECK(input_ignore_devices_add(list, sizeof(list), 0x054c, 0x09cc)
+            && !strcmp(list, "054c/09cc,045e/028e"), "one already there was added again");
+      CHECK(!input_ignore_devices_add(list, sizeof(list), 0x057e, 0x2009)
+            && !strcmp(list, "054c/09cc,045e/028e"), "one with no room was added");
+      CHECK(input_ignore_devices_at(list, 1, &vid, &pid) && vid == 0x045e && pid == 0x028e,
+            "the second entry is not 045e/028e");
+      CHECK(!input_ignore_devices_at(list, 2, &vid, &pid), "an entry past the last");
+      input_ignore_devices_remove(list, 0x054c, 0x09cc);
+      CHECK(!strcmp(list, "045e/028e"), "the first taken out leaves something else");
+      input_ignore_devices_remove(list, 0x045e, 0x028e);
+      CHECK(!*list, "the last taken out leaves something else");
+   }
+   {
+      char list[64] = " 0x054c/0x09cc, junk ,045e/028e,054c/09cc";
+      input_ignore_devices_remove(list, 0x054c, 0x09cc);
+      CHECK(!strcmp(list, "junk ,045e/028e"),
+            "taking out every entry of one, written two ways, leaves something else");
+   }
 
    if (failures)
    {
       fprintf(stderr, "FAIL ignore_devices_test: %u failures\n", failures);
       return 1;
    }
-   fprintf(stderr, "PASS ignore_devices_test: the list as Steam writes it and as SDL reads it\n");
+   fprintf(stderr, "PASS ignore_devices_test: the list as Steam writes it and as SDL reads it; the user's, as the menu changes it\n");
    return 0;
 }

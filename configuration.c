@@ -2038,6 +2038,7 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("input_driver",                 settings->arrays.input_driver, false, NULL, true);
    SETTING_ARRAY("input_joypad_driver",          settings->arrays.input_joypad_driver, false, NULL, true);
    SETTING_ARRAY("input_keyboard_layout",        settings->arrays.input_keyboard_layout, false, NULL, true);
+   SETTING_ARRAY("input_ignore_devices",         settings->arrays.input_ignore_devices, false, NULL, true);
 #ifdef ANDROID
    SETTING_ARRAY("input_android_physical_keyboard", settings->arrays.input_android_physical_keyboard, false, NULL, true);
 #endif

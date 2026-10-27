@@ -25,6 +25,10 @@ static int claim_add(retro_atomic_int_t *p, int value)
 #define retro_atomic_fetch_add_int(p, value) claim_add(p, value)
 #include "../../../input/connect/joypad_connection.c"
 
+/* the frontend's; the user's list is the settings', here none */
+bool input_device_ignored(uint16_t vid, uint16_t pid)
+{ return input_ignore_devices_check(NULL, vid, pid); }
+
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }

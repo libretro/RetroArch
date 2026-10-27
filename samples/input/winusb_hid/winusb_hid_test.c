@@ -31,6 +31,11 @@
 #include "input/drivers_hid/winusb_hid.c"
 #include "input/common/sony_pad_output.h"
 #include "../joypad_bridge_checked/bridge_view.h"
+#include "input/common/input_ignore_devices.h"
+
+/* the frontend's; the user's list is the settings', here none */
+bool input_device_ignored(uint16_t vid, uint16_t pid)
+{ return input_ignore_devices_check(NULL, vid, pid); }
 
 /* winusb as the HID joypad driver (hid_joypad.c) has it */
 static void *bridge_hid;

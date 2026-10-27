@@ -31928,6 +31928,14 @@ MSG_HASH( /* Under a DualShock 3 on WinUSB: selecting it gives every DualShock 3
    MENU_ENUM_LABEL_VALUE_PORT_DS3_RESTORE,
    "- Restore Windows Driver"
    )
+MSG_HASH( /* Under a controller: selecting it makes RetroArch stop reading this model of controller - for one another program also shows as a virtual controller, which would otherwise be read twice */
+   MENU_ENUM_LABEL_VALUE_PORT_IGNORE,
+   "- Ignore This Controller"
+   )
+MSG_HASH( /* A controller model the user chose to ignore, as its USB vendor and product IDs in hexadecimal; selecting it reads it again */
+   MENU_ENUM_LABEL_VALUE_INPUT_IGNORED_DEVICE,
+   "Ignored Controller %04X:%04X (select to use it again)"
+   )
 MSG_HASH( /* Shown while a Wii U GameCube adapter is plugged in that Windows' own driver cannot run: selecting it moves the adapter to Windows' WinUSB driver, after one administrator prompt */
    MENU_ENUM_LABEL_VALUE_INPUT_GCA_ENABLE,
    "Enable Wii U GameCube Adapter"
@@ -33194,6 +33202,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_DS3_ENABLED,
    "DualShock 3 support enabled. The controller reconnects by itself."
+   )
+MSG_HASH( /* %u is the controller's number, then its USB vendor and product IDs */
+   MSG_INPUT_DEVICE_IGNORED,
+   "Controller %u (%04X:%04X) is ignored and no longer read."
+   )
+MSG_HASH( /* the controller's USB vendor and product IDs */
+   MSG_INPUT_DEVICE_UNIGNORED,
+   "Controller %04X:%04X is read again."
    )
 MSG_HASH(
    MSG_INPUT_DS3_RESTORED,

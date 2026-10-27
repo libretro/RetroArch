@@ -152,6 +152,7 @@
 #include "../misc/reboot2payload/reboot2payload.h"
 #endif
 #include "../input/input_remapping.h"
+#include "../input/common/input_ignore_devices.h"
 
 #ifdef HAVE_MICROPHONE
 #include "../audio/microphone_driver.h"
@@ -3054,6 +3055,36 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
             count++;
       }
 #endif
+
+      /* A controller read twice - itself and another program's virtual
+       * one of it - only the user can tell: a row to leave this model
+       * out */
+      if (     (input_config_get_device_vid(port)
+               || input_config_get_device_pid(port))
+            && menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_IGNORE), "",
+                  MENU_ENUM_LABEL_INPUT_DEVICE_IGNORE,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+         count++;
+   }
+
+   /* The models left out, each a row to read it again; entry_idx is its
+    * place in the list */
+   {
+      uint16_t vid, pid;
+      unsigned n;
+      settings_t *settings = config_get_ptr();
+      for (n = 0; input_ignore_devices_at(
+               settings->arrays.input_ignore_devices, n, &vid, &pid); n++)
+      {
+         snprintf(entry, sizeof(entry),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_IGNORED_DEVICE),
+               (unsigned)vid, (unsigned)pid);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_INPUT_DEVICE_UNIGNORE,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, n, NULL))
+            count++;
+      }
    }
 
 #ifdef HAVE_WINUSB_BIND

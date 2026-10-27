@@ -81,6 +81,7 @@
 #include "../../tasks/task_file_transfer.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
+#include "../../input/common/input_ignore_devices.h"
 #include "../../paths.h"
 #include "../../playlist.h"
 #include "../../retroarch.h"
@@ -4906,6 +4907,63 @@ static int action_ok_input_bt_pair(const char *path,
    menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
+}
+
+/* Information > Input Information: the model of controller on the
+ * entry's port left out, or one left out read again; the controller
+ * driver is restarted for it, as only a connect looks. */
+static int action_ok_input_device_ignore_change(size_t entry_idx,
+      bool ignore)
+{
+   char msg[128];
+   size_t _len               = 0;
+   uint16_t vid              = 0;
+   uint16_t pid              = 0;
+   settings_t *settings      = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   char *list                = settings->arrays.input_ignore_devices;
+
+   if (ignore)
+   {
+      vid = input_config_get_device_vid((unsigned)entry_idx);
+      pid = input_config_get_device_pid((unsigned)entry_idx);
+      if (     (!vid && !pid)
+            || !input_ignore_devices_add(list,
+               sizeof(settings->arrays.input_ignore_devices), vid, pid))
+         return 0;
+      _len = snprintf(msg, sizeof(msg),
+            msg_hash_to_str(MSG_INPUT_DEVICE_IGNORED),
+            (unsigned)entry_idx + 1, (unsigned)vid, (unsigned)pid);
+   }
+   else
+   {
+      if (!input_ignore_devices_at(list, (unsigned)entry_idx, &vid, &pid))
+         return 0;
+      input_ignore_devices_remove(list, vid, pid);
+      _len = snprintf(msg, sizeof(msg),
+            msg_hash_to_str(MSG_INPUT_DEVICE_UNIGNORED),
+            (unsigned)vid, (unsigned)pid);
+   }
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   joypad_driver_reinit(input_state_get_ptr()->current_data,
+         settings->arrays.input_joypad_driver);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+   return 0;
+}
+
+static int action_ok_input_device_ignore(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_input_device_ignore_change(entry_idx, true);
+}
+
+static int action_ok_input_device_unignore(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_input_device_ignore_change(entry_idx, false);
 }
 
 #ifdef HAVE_WINUSB_BIND
@@ -9794,6 +9852,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
          {MENU_ENUM_LABEL_RUN_MUSIC,                           action_ok_audio_run},
          {MENU_ENUM_LABEL_INPUT_BT_PAIR,                       action_ok_input_bt_pair},
+         {MENU_ENUM_LABEL_INPUT_DEVICE_IGNORE,                 action_ok_input_device_ignore},
+         {MENU_ENUM_LABEL_INPUT_DEVICE_UNIGNORE,               action_ok_input_device_unignore},
 #ifdef HAVE_WINUSB_BIND
          {MENU_ENUM_LABEL_INPUT_DS3_ENABLE,                    action_ok_input_ds3_enable},
          {MENU_ENUM_LABEL_INPUT_DS3_RESTORE,                   action_ok_input_ds3_restore},

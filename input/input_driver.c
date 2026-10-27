@@ -49,6 +49,7 @@
 #include "input_key_lane.h"
 #endif
 #include "common/input_device_pins.h"
+#include "common/input_ignore_devices.h"
 #ifdef HAVE_OVERLAY
 #include "../led/led_defines.h"
 #endif
@@ -14354,6 +14355,13 @@ unsigned input_config_get_rumble_gain(void)
 {
    settings_t *settings = config_get_ptr();
    return settings ? settings->uints.input_rumble_gain : DEFAULT_RUMBLE_GAIN;
+}
+
+bool input_device_ignored(uint16_t vid, uint16_t pid)
+{
+   settings_t *settings = config_get_ptr();
+   return input_ignore_devices_check(
+         settings ? settings->arrays.input_ignore_devices : NULL, vid, pid);
 }
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)

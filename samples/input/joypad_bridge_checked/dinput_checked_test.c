@@ -4,6 +4,10 @@
  * device is opened, so it runs under Wine with none. */
 #include "../../../input/drivers_joypad/dinput_joypad.c"
 
+/* the frontend's; the user's list is the settings', here none */
+bool input_device_ignored(uint16_t vid, uint16_t pid)
+{ return input_ignore_devices_check(NULL, vid, pid); }
+
 #include "bridge_view.h"
 
 int main(void)

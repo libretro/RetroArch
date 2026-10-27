@@ -36,6 +36,11 @@
 #include <rthreads/rthreads.h>
 
 #include "input/connect/joypad_connection.h"
+#include "input/common/input_ignore_devices.h"
+
+/* the frontend's; the user's list is the settings', here none */
+bool input_device_ignored(uint16_t vid, uint16_t pid)
+{ return input_ignore_devices_check(NULL, vid, pid); }
 
 /* ---- the rest of RetroArch, stubbed ---- */
 
