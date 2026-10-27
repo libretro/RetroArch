@@ -193,6 +193,38 @@ static void check(const char *path, const uint8_t *fx, size_t fx_len,
    remove(path);
 }
 
+/* @fx with an octet of its packed stream changed: big.bin is not left
+ * behind, whether that fails its CRC or its stream */
+static void check_refused(const char *path, const uint8_t *fx, size_t fx_len,
+      size_t at)
+{
+   struct archive_extract_userdata userdata;
+   file_archive_transfer_t state;
+   unsigned extracted = 0;
+   bool     returnerr = true;
+   uint8_t *bad = (uint8_t*)malloc(fx_len);
+   FILE    *f;
+   memcpy(bad, fx, fx_len);
+   bad[at] ^= 0x20;
+   if (!(f = fopen(path, "wb")) || fwrite(bad, 1, fx_len, f) != fx_len)
+      fail("cannot write", path);
+   if (f)
+      fclose(f);
+   memset(&state, 0, sizeof(state));
+   memset(&userdata, 0, sizeof(userdata));
+   state.type       = ARCHIVE_TRANSFER_INIT;
+   userdata.cb_data = &extracted;
+   while (file_archive_parse_file_iterate(&state, &returnerr, path,
+            NULL, extract_cb, &userdata) == 0) { }
+   if (path_is_valid(OUT_PREFIX "big.bin"))
+      fail("left behind with its stream changed", path);
+   remove(OUT_PREFIX "a.bin");
+   remove(OUT_PREFIX "big.bin");
+   remove(OUT_PREFIX "c.bin");
+   remove(path);
+   free(bad);
+}
+
 int main(void)
 {
    static const struct member solid[3] = {
@@ -200,10 +232,22 @@ int main(void)
    static const struct member stored[2] = {
       { "a.bin", 1500, 0 }, { "b.bin", 900, 1 } };
    static const struct member bcj2[1] = { { "prog.bin", 6000, 3 } };
+   /* big.bin, between the others in its folder, is streamed out where
+    * the folder is LZMA's or LZMA2's */
+   static const struct member big[3] = {
+      { "a.bin", 1500, 0 }, { "big.bin", 700000, 2 }, { "c.bin", 900, 1 } };
 
    check("archive_7z_test_solid.7z", fx_solid, sizeof(fx_solid), solid, 3);
    check("archive_7z_test_stored.7z", fx_stored, sizeof(fx_stored), stored, 2);
    check("archive_7z_test_bcj2.7z", fx_bcj2_copy, sizeof(fx_bcj2_copy), bcj2, 1);
+   check("archive_7z_test_lzma2.7z", fx_big_lzma2, sizeof(fx_big_lzma2), big, 3);
+   check("archive_7z_test_lzma.7z", fx_big_lzma, sizeof(fx_big_lzma), big, 3);
+   check("archive_7z_test_deflate.7z", fx_big_deflate, sizeof(fx_big_deflate),
+         big, 3);
+   /* three quarters into the packed stream, which runs from 32 to the
+    * header the start header points at: big.bin's share of it */
+   check_refused("archive_7z_test_bad.7z", fx_big_lzma2, sizeof(fx_big_lzma2),
+         32 + (fx_big_lzma2[12] | (fx_big_lzma2[13] << 8)) * 3 / 4);
    if (failures)
    {
       printf("%u check(s) failed\n", failures);

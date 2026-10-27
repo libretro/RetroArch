@@ -51,9 +51,14 @@
 struct sevenzip_context_t
 {
    r7z_archive_t *archive;
+   file_archive_transfer_t *state;
    uint32_t       parse_index;
    uint32_t       decompress_index;
+   bool           streaming;  /* the member goes to the sink in pieces */
 };
+
+/* A member bound for a file, bigger than this, is streamed to it */
+#define SEVENZIP_STREAM_OVER (256 * 1024)
 
 static int sevenzip_open_archive(struct sevenzip_context_t *ctx,
       file_archive_transfer_t *state)
@@ -268,13 +273,26 @@ static bool sevenzip_stream_decompress_data_to_file_init(
    (void)handle;
    (void)cmode;
    (void)csize;
-   (void)size;
 
    if (!sevenzip_context)
       return false;
 
    /* The parse step hands the entry index through cdata. */
    sevenzip_context->decompress_index = (uint32_t)(size_t)cdata;
+   sevenzip_context->streaming        = false;
+
+   /* A big member bound for a file goes to it through a window, where
+    * its folder's coders allow; anything else is decoded whole */
+   if (     sevenzip_context->state->pending_sink
+         && size > SEVENZIP_STREAM_OVER)
+   {
+      int res = r7z_archive_stream_begin(sevenzip_context->archive,
+            sevenzip_context->decompress_index);
+      if (res == R7Z_OK)
+         sevenzip_context->streaming = true;
+      else if (res != R7Z_ERROR_UNSUPPORTED)
+         return false;
+   }
 
    return true;
 }
@@ -294,6 +312,23 @@ static int sevenzip_stream_decompress_data_to_file_iterate(
     * is not even cheap. Failure is -1. */
    if (!sevenzip_context || !sevenzip_context->archive)
       return -1;
+
+   if (sevenzip_context->streaming)
+   {
+      res = r7z_archive_stream_step(sevenzip_context->archive,
+            &member, &member_len);
+      if (res == R7Z_PENDING)
+         return (!member_len || filestream_write(
+                  sevenzip_context->state->pending_sink, member,
+                  (int64_t)member_len) == (int64_t)member_len) ? 0 : -1;
+      sevenzip_context->streaming = false;
+      if (res != R7Z_OK)
+         return -1;
+      /* in the sink, whole */
+      if (handle)
+         handle->data = NULL;
+      return 1;
+   }
 
    /* Sliced rather than whole: a solid folder is tens of milliseconds
     * decoded in one go, and this is the return value the archive layer
@@ -339,6 +374,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
       goto error;
 
    state->context = sevenzip_context;
+   sevenzip_context->state = state;
 
    if (!sevenzip_open_archive(sevenzip_context, state))
       goto error;
