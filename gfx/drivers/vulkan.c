@@ -7619,20 +7619,43 @@ static void vulkan_upscale_input(vk_t *vk, const void *frame,
    video_upscaler_set_output(out_dims);
    if (frame)
    {
+      bool ok;
       color.image  = input->image;
       color.view   = input->view;
       color.layout = input->layout;
       color.format = input->format;
       color.dims   = input->dims;
-      if (!inputs || !vulkan_upscaler_upscale(vk->ngx, vk->cmd, &color, inputs,
-               video_upscaler_mode(out_dims), out_dims, &vk->ngx_out))
+      ok = inputs && vulkan_upscaler_upscale(vk->ngx, vk->cmd, &color, inputs,
+               video_upscaler_mode(out_dims), out_dims, &vk->ngx_out);
+      /* TRACE */
+      if (inputs)
+         RARCH_DBG("[TU] f%u sync%u in flags %x jit %.4f %.4f color %ux%u mv %ux%u fmt %u st %u depth %ux%u fmt %u st %u mask %ux%u out %ux%u ok %d\n",
+               (unsigned)video_driver_get_frame_count(), vk->context->current_frame_index,
+               inputs->flags, inputs->jitter_x, inputs->jitter_y,
+               VIDEO_SCALE_W(color.dims), VIDEO_SCALE_H(color.dims),
+               inputs->motion_vectors.width, inputs->motion_vectors.height,
+               inputs->motion_vectors.format, inputs->motion_vectors.state,
+               inputs->depth.width, inputs->depth.height, inputs->depth.format,
+               inputs->depth.state, inputs->transparency_mask.width,
+               inputs->transparency_mask.height,
+               VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims), (int)ok);
+      else
+         RARCH_DBG("[TU] f%u sync%u NO INPUTS color %ux%u\n",
+               (unsigned)video_driver_get_frame_count(), vk->context->current_frame_index,
+               VIDEO_SCALE_W(color.dims), VIDEO_SCALE_H(color.dims));
+      if (!ok)
       {
          vk->ngx_out.image = VK_NULL_HANDLE;
          return;
       }
    }
    else if (!vk->ngx_out.image)
+   {
+      RARCH_DBG("[TU] f%u dupe, no output\n", (unsigned)video_driver_get_frame_count());
       return;
+   }
+   else
+      RARCH_DBG("[TU] f%u dupe\n", (unsigned)video_driver_get_frame_count());
    input->image  = vk->ngx_out.image;
    input->view   = vk->ngx_out.view;
    input->layout = vk->ngx_out.layout;

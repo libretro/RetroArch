@@ -1286,6 +1286,7 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
    lib->param.set_i(p, NGX_PARAM_DLSS_INDICATOR_INVERT_Y, 0);
    reset = ngx->reset_pending || (inputs->flags & RETRO_HW_UPSCALER_RESET);
    res = lib->vulkan.evaluate_feature((void*)cmd, ngx->feature, p, NULL);
+   RARCH_DBG("[TU] evaluate reset %d quality %x res 0x%x\n", (int)reset, quality, (unsigned)res);
    ngx->reset_pending = false;
 
    if (vulkan_ngx_input_needs_move(&inputs->motion_vectors))
