@@ -14,25 +14,36 @@ typedef void (*sinc_kernel_t)(void *, struct resampler_data *);
 
 static unsigned failures;
 
-/* The widest arm this build compiles that the mask allows. */
+/* The widest arm this build compiles that the mask allows; on x86 its
+ * direct-read form up to that tier's crossover tap count. */
 static sinc_kernel_t expected(resampler_simd_mask_t mask, int kaiser,
-      int avx_tier)
+      int avx_tier, unsigned taps)
 {
    (void)avx_tier;
+   (void)taps;
 #ifdef SINC_HAVE_AVX512
    if ((mask & RESAMPLER_SIMD_AVX512) && avx_tier)
-      return kaiser ? resampler_sinc_process_avx512_kaiser
-                    : resampler_sinc_process_avx512;
+      return (taps <= SINC_IL_TAPS_AVX512)
+         ? (kaiser ? resampler_sinc_process_avx512_il_kaiser
+                   : resampler_sinc_process_avx512_il)
+         : (kaiser ? resampler_sinc_process_avx512_kaiser
+                   : resampler_sinc_process_avx512);
 #endif
 #ifdef SINC_HAVE_AVX
    if ((mask & RESAMPLER_SIMD_AVX) && avx_tier)
-      return kaiser ? resampler_sinc_process_avx_kaiser
-                    : resampler_sinc_process_avx;
+      return (taps <= SINC_IL_TAPS_AVX)
+         ? (kaiser ? resampler_sinc_process_avx_il_kaiser
+                   : resampler_sinc_process_avx_il)
+         : (kaiser ? resampler_sinc_process_avx_kaiser
+                   : resampler_sinc_process_avx);
 #endif
 #if defined(__SSE__)
    if (mask & RESAMPLER_SIMD_SSE)
-      return kaiser ? resampler_sinc_process_sse_kaiser
-                    : resampler_sinc_process_sse;
+      return (taps <= SINC_IL_TAPS_SSE)
+         ? (kaiser ? resampler_sinc_process_sse_il_kaiser
+                   : resampler_sinc_process_sse_il)
+         : (kaiser ? resampler_sinc_process_sse_kaiser
+                   : resampler_sinc_process_sse);
 #endif
 #if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
    if (mask & RESAMPLER_SIMD_NEON)
@@ -46,14 +57,20 @@ static sinc_kernel_t expected(resampler_simd_mask_t mask, int kaiser,
 static const char *kernel_name(sinc_kernel_t k)
 {
 #ifdef SINC_HAVE_AVX512
+   if (k == resampler_sinc_process_avx512_il_kaiser) return "avx512_il_kaiser";
+   if (k == resampler_sinc_process_avx512_il)        return "avx512_il";
    if (k == resampler_sinc_process_avx512_kaiser) return "avx512_kaiser";
    if (k == resampler_sinc_process_avx512)        return "avx512";
 #endif
 #ifdef SINC_HAVE_AVX
+   if (k == resampler_sinc_process_avx_il_kaiser) return "avx_il_kaiser";
+   if (k == resampler_sinc_process_avx_il)        return "avx_il";
    if (k == resampler_sinc_process_avx_kaiser) return "avx_kaiser";
    if (k == resampler_sinc_process_avx)        return "avx";
 #endif
 #if defined(__SSE__)
+   if (k == resampler_sinc_process_sse_il_kaiser) return "sse_il_kaiser";
+   if (k == resampler_sinc_process_sse_il)        return "sse_il";
    if (k == resampler_sinc_process_sse_kaiser) return "sse_kaiser";
    if (k == resampler_sinc_process_sse)        return "sse";
 #endif
@@ -103,8 +120,7 @@ int main(void)
    for (s = 0; s < sizeof(shapes) / sizeof(shapes[0]); s++)
       for (m = 0; m < sizeof(masks) / sizeof(masks[0]); m++)
       {
-         sinc_kernel_t want = expected(masks[m].mask, shapes[s].kaiser,
-               shapes[s].avx_tier);
+         sinc_kernel_t want;
          rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)
             sinc_resampler_init_hq(4.0, shapes[s].quality, masks[m].mask,
                   shapes[s].hq);
@@ -115,10 +131,13 @@ int main(void)
             failures++;
             continue;
          }
+         want = expected(masks[m].mask, shapes[s].kaiser,
+               shapes[s].avx_tier, re->taps);
          /* Stages run the one-phase layout through the same choice;
           * the shadow is the kernel's twin. */
          if (     re->dec[0].process
-               != expected(masks[m].mask, 0, shapes[s].avx_tier)
+               != expected(masks[m].mask, 0, shapes[s].avx_tier,
+                  re->dec[0].taps)
                || re->dec[SINC_DEC_STAGES].process != re->process)
          {
             printf("FAIL %s/%s: stage %s, shadow %s\n", shapes[s].name,
@@ -156,34 +175,45 @@ int main(void)
 
    /* Every kernel the CPU can run must produce what the scalar one
     * does, to rounding (the FMA kernels round once per tap, not twice).
+    * Each SIMD tier is pinned in turn, and the input is fed both as one
+    * batch and as a stream of uneven batches, some shorter than the
+    * filter, so the vector kernels' seam carries history across calls.
     * Kernels the CPU lacks are skipped rather than run. */
    {
       static float in[4096 * 2], ref[4096 * 8 * 2], out[4096 * 8 * 2];
-      unsigned odd_taps = 0;
       uint64_t cpu = cpu_features_get();
-      resampler_simd_mask_t have = (resampler_simd_mask_t)cpu;
+      static const resampler_simd_mask_t tiers[] = {
+         RESAMPLER_SIMD_SSE,
+         RESAMPLER_SIMD_SSE | RESAMPLER_SIMD_AVX,
+         RESAMPLER_SIMD_SSE | RESAMPLER_SIMD_AVX | RESAMPLER_SIMD_AVX512
+      };
       static const double ratios[] = { 48000.0 / 32040.5, 48000.0 / 44100.0,
          44100.0 / 48000.0 };
       /* 0.95 widens the kernel to a tap count that is an odd multiple
-       * of 8, which runs the AVX-512 kernels' masked tail. */
+       * of 8, which runs the AVX-512 kernels' tail block. */
       static const double bands[] = { 4.0, 0.95 };
-      unsigned i, r, b;
+      unsigned i, r, b, t, chunked, odd_taps = 0;
       for (i = 0; i < 4096; i++)
       {
          in[2 * i + 0] = (float)sin(i * 0.0137) * 0.7f;
          in[2 * i + 1] = (float)cos(i * 0.0211) * 0.5f;
       }
-      for (s = 0; s < sizeof(shapes) / sizeof(shapes[0]); s++)
+      for (t = 0; t < sizeof(tiers) / sizeof(tiers[0]); t++)
+      {
+         if ((tiers[t] & (resampler_simd_mask_t)cpu) != tiers[t])
+            continue;
+         for (s = 0; s < sizeof(shapes) / sizeof(shapes[0]); s++)
          for (b = 0; b < sizeof(bands) / sizeof(bands[0]); b++)
          for (r = 0; r < sizeof(ratios) / sizeof(ratios[0]); r++)
+         for (chunked = 0; chunked < 2; chunked++)
          {
-            struct resampler_data d;
-            size_t n_ref;
+            size_t n_ref = 0, n_out = 0, at = 0;
             float worst = 0.0f;
             void *c = sinc_resampler_init_hq(bands[b], shapes[s].quality, 0,
                   shapes[s].hq);
             void *v = sinc_resampler_init_hq(bands[b], shapes[s].quality,
-                  have, shapes[s].hq);
+                  tiers[t], shapes[s].hq);
+            uint32_t seed = 12345u + s * 7 + r;
             if (!c || !v)
             {
                printf("FAIL %s band %.2f: compare init\n", shapes[s].name,
@@ -193,20 +223,36 @@ int main(void)
                resampler_sinc_free(v);
                continue;
             }
-            d.data_in      = in;
-            d.input_frames = 4096;
-            d.ratio        = ratios[r];
-            d.data_out     = ref;
-            resampler_sinc_process(c, &d);
-            n_ref          = d.output_frames;
-            d.data_out     = out;
-            resampler_sinc_process(v, &d);
             if (((rarch_sinc_resampler_t*)v)->taps & 8)
                odd_taps++;
-            if (d.output_frames != n_ref)
+            while (at < 4096)
+            {
+               struct resampler_data d;
+               size_t n = 4096 - at;
+               if (chunked)
+               {
+                  seed = seed * 1103515245u + 12345u;
+                  n    = 1 + (seed >> 16) % 700;
+                  if ((seed >> 8) & 1)
+                     n = 1 + (seed >> 20) % 24;
+                  if (n > 4096 - at)
+                     n = 4096 - at;
+               }
+               d.data_in      = in + 2 * at;
+               d.input_frames = n;
+               d.ratio        = ratios[r];
+               d.data_out     = ref + 2 * n_ref;
+               resampler_sinc_process(c, &d);
+               n_ref         += d.output_frames;
+               d.data_out     = out + 2 * n_out;
+               resampler_sinc_process(v, &d);
+               n_out         += d.output_frames;
+               at            += n;
+            }
+            if (n_out != n_ref)
             {
                printf("FAIL %s: %u frames, scalar %u\n", shapes[s].name,
-                     (unsigned)d.output_frames, (unsigned)n_ref);
+                     (unsigned)n_out, (unsigned)n_ref);
                failures++;
             }
             else
@@ -218,8 +264,9 @@ int main(void)
                }
             if (worst > 1e-5f)
             {
-               printf("FAIL %s band %.2f ratio %.4f: %s off scalar by %g\n",
+               printf("FAIL %s band %.2f ratio %.4f %s: %s off scalar by %g\n",
                      shapes[s].name, bands[b], ratios[r],
+                     chunked ? "chunked" : "one batch",
                      kernel_name(((rarch_sinc_resampler_t*)v)->process),
                      worst);
                failures++;
@@ -227,6 +274,7 @@ int main(void)
             resampler_sinc_free(c);
             resampler_sinc_free(v);
          }
+      }
       if (!odd_taps)
       {
          printf("FAIL no shape reached a tap count off a multiple of 16\n");
