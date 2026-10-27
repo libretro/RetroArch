@@ -1016,10 +1016,30 @@ static void member_sequence(bool corrupt, bool lend)
          lend_vfs(NULL, 0);
       }
 
+      /* read whole, a member failing its CRC is no member, not an
+       * empty one */
+      if (corrupt)
+         for (i = 0; i < SEQ_MEMBERS; i++)
+         {
+            char    member[64];
+            void   *got = NULL;
+            int64_t got_len = -1;
+            snprintf(member, sizeof(member), "%s#m%u.bin", tmp_path, i);
+            if (file_archive_compressed_read(member, &got, NULL, &got_len))
+            {
+               printf("FAIL  member sequence: m%u.bin (method %u) read "
+                      "whole despite a wrong CRC, %lld octets\n", i,
+                      m[i].method, (long long)got_len);
+               ok = false;
+            }
+            free(got);
+         }
+
       remove(tmp_path);
 
       if (extracted != (corrupt ? 0 : SEQ_MEMBERS))
          ok = false;
+
 
       for (i = 0; i < SEQ_MEMBERS; i++)
       {

@@ -644,6 +644,7 @@ typedef struct
    void **buf;
    size_t size;
    bool found;
+   bool failed;   /* found, and it would not decode */
 } decomp_state_t;
 
 /* Extract the relative path (needle) from a
@@ -708,6 +709,8 @@ static int zip_file_decompressed(
             handle.data = NULL;
          }
       }
+      else
+         decomp_state->failed = true;
 
       decomp_state->found = true;
    }
@@ -763,7 +766,7 @@ static int64_t zip_file_read(
    if (decomp.needle)
       free(decomp.needle);
 
-   if (!decomp.found)
+   if (!decomp.found || decomp.failed)
       return -1;
 
    return (int64_t)decomp.size;
