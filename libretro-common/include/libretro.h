@@ -5566,7 +5566,9 @@ struct retro_log_callback
 /** Indicates CPU support for the ASIMD instruction set. */
 #define RETRO_SIMD_ASIMD    (1 << 21)
 
-/** Indicates CPU support for the AVX512 instruction set. */
+/** Indicates CPU support for the AVX-512 x86-64-v4 baseline:
+ * AVX-512 F, CD, BW, DQ and VL are all present and the OS saves
+ * ZMM state. */
 #define RETRO_SIMD_AVX512   (1 << 22)
 
 /** Indicates CPU support for the LZCNT instruction (x86 ABM / ARM CLZ). */
