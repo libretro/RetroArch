@@ -6,6 +6,7 @@ CFLAGS += -std=gnu99 -O1 -g1 -Wall -Wno-unused-function \
 SRCS := hw_ring_queue_test.c \
  $(ROOT)/libretro-common/rthreads/rthreads.c \
  $(ROOT)/libretro-common/rthreads/retro_eventcount.c \
+ $(ROOT)/libretro-common/compat/compat_strl.c \
  $(ROOT)/libretro-common/features/features_cpu.c \
  $(ROOT)/libretro-common/time/rtime.c
 ifeq ($(OS),Windows_NT)

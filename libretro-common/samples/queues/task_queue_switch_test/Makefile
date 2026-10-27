@@ -16,6 +16,7 @@ SOURCES := \
 	task_queue_switch_test.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 

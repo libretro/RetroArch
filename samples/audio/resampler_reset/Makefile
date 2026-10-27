@@ -16,6 +16,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.c \
 	$(CORE_DIR)/audio/drivers_resampler/cc_resampler.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memalign.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 CFLAGS += -Wall $(INCDIRS) -D_GNU_SOURCE

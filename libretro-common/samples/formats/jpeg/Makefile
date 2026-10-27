@@ -7,6 +7,7 @@ LIBRETRO_COMM_DIR := ../../..
 SOURCES := \
 	rjpeg_test.c \
 	$(LIBRETRO_COMM_DIR)/formats/jpeg/rjpeg.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))

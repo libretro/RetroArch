@@ -11,6 +11,7 @@ SOURCES := \
 	retro_spsc_bench.c \
 	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))

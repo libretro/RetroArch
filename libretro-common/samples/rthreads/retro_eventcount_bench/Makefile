@@ -11,6 +11,7 @@ SOURCES := \
 	retro_eventcount_bench.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 # SCOND=1 builds against rthreads' scond instead of the platform's

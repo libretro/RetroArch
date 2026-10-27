@@ -10,6 +10,7 @@ LIBRETRO_COMM_DIR := ../../..
 SOURCES := \
 	video_player_test.c \
 	$(LIBRETRO_COMM_DIR)/formats/video_player.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 

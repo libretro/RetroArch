@@ -21,6 +21,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
 	$(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
 	$(LIBRETRO_COMM_DIR)/formats/dds/rdds.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 

@@ -8,6 +8,7 @@
  * in the fast set on a plain 16-core part. */
 
 #include "rthreads.c"
+#include "../../../compat/compat_strl.c"
 #include "../../../features/features_cpu.c"
 
 #include <sys/stat.h>

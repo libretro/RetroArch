@@ -5,6 +5,7 @@ CFLAGS += -std=gnu89 -O1 -g1 -Wall -Wextra -DHAVE_THREADS \
           -I$(ROOT) -I$(ROOT)/libretro-common/include
 SOURCES := winraw_mouse_buttons_test.c \
            $(ROOT)/libretro-common/rthreads/rthreads.c \
+           $(ROOT)/libretro-common/compat/compat_strl.c \
            $(ROOT)/libretro-common/features/features_cpu.c \
            $(ROOT)/libretro-common/time/rtime.c
 LDFLAGS += -lpthread

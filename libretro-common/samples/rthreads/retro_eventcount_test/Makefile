@@ -11,6 +11,7 @@ SOURCES := \
 	retro_eventcount_test.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 CFLAGS  += -Wall -W -std=gnu99 -g1 -O1 \

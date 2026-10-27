@@ -29,6 +29,7 @@ SOURCES := connect_parity_test.c \
            $(ROOT)/input/common/input_hid_common.c \
            $(ROOT)/libretro-common/encodings/encoding_crc32.c \
            $(ROOT)/libretro-common/compat/compat_strcasestr.c \
+           $(ROOT)/libretro-common/compat/compat_strl.c \
            $(ROOT)/libretro-common/features/features_cpu.c \
            $(ROOT)/libretro-common/time/rtime.c
 ifneq ($(SANITIZER),)

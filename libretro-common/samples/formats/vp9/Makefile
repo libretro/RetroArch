@@ -20,7 +20,7 @@ WEBM_SOURCES := ../../../formats/vp9/rvp9.c ../../../formats/webm/rwebm.c \
  ../../../formats/video_player.c \
  ../../../formats/image_transfer.c ../../../formats/vp8/rvp8.c \
  ../../../formats/image/image_blit_bands.c ../../../formats/image/image_hdr_blit.c \
- ../../../features/features_cpu.c ../../../time/rtime.c
+ ../../../compat/compat_strl.c ../../../features/features_cpu.c ../../../time/rtime.c
 
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
@@ -42,7 +42,7 @@ rwebm_h26x_hw_test: rwebm_h26x_hw_test.c $(WEBM_SOURCES) ../../../formats/webm/r
 MP4_SOURCES := ../../../formats/mp4/rmp4.c ../../../formats/vp9/rvp9.c \
  ../../../formats/vp8/rvp8.c ../../../formats/h264/rh264.c ../../../formats/h265/rh265.c \
  ../../../formats/image/image_blit_bands.c ../../../formats/image/image_hdr_blit.c \
- ../../../features/features_cpu.c ../../../time/rtime.c
+ ../../../compat/compat_strl.c ../../../features/features_cpu.c ../../../time/rtime.c
 
 rmp4_h26x_stream_test: rmp4_h26x_stream_test.c $(MP4_SOURCES) ../../../formats/mp4/rmp4_video.c
 	$(CC) $(CFLAGS) $(PIXEL_FLAGS) -D_POSIX_C_SOURCE=200809L -DHAVE_RMP4 -DHAVE_RVP9 \

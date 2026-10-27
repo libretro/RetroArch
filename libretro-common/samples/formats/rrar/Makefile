@@ -7,6 +7,7 @@ LIBRETRO_COMM_DIR := ../../..
 SOURCES := \
 	rrar_archive_test.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/formats/rar/rrar_archive.c \
