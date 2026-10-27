@@ -176,6 +176,35 @@ int main(void)
       decodes(bz, s, sn + 1, d, n, o, "a stream with more after it", i);
    }
 
+   /* a block at a time: what each step has written is final, and
+    * the last step is the stream's end */
+   shape(d, 350000, 7);
+   sn = bz_write(s, sizeof(s), d, 350000, 1, 7);
+   if (rbzip2_begin(bz, o, 350000, s, sn) != RBZIP2_OK)
+      fail("a stream begun", 0);
+   else
+   {
+      size_t   last = 0;
+      unsigned steps = 0;
+      int      e;
+      while ((e = rbzip2_step(bz, &w)) == RBZIP2_PENDING)
+      {
+         if (w <= last || w > 350000 || memcmp(o, d, w))
+            fail("a step's blocks", steps);
+         last = w;
+         steps++;
+      }
+      if (e != RBZIP2_OK || w != 350000 || steps < 4)
+         fail("a stream a block at a time", steps);
+   }
+   if (rbzip2_begin(bz, o, 349999, s, sn) == RBZIP2_OK)
+   {
+      int e;
+      while ((e = rbzip2_step(bz, &w)) == RBZIP2_PENDING) { }
+      if (e != RBZIP2_ERROR_SPACE)
+         fail("a block at a time, a buffer one octet short", 0);
+   }
+
    /* what must fail */
    n  = gen_a(d);
    for (i = 0; i < sizeof(fx_a); i++)
@@ -187,6 +216,13 @@ int main(void)
    bzw_lie = 0;
    if (rbzip2_decode(bz, o, n, s, sn, &w) != RBZIP2_ERROR_DATA)
       fail("a block CRC wrong", 0);
+   if (rbzip2_begin(bz, o, n, s, sn) == RBZIP2_OK)
+   {
+      int e;
+      while ((e = rbzip2_step(bz, &w)) == RBZIP2_PENDING) { }
+      if (e != RBZIP2_ERROR_DATA)
+         fail("a block CRC wrong, a block at a time", 0);
+   }
    memcpy(s, fx_a, sizeof(fx_a));
    s[sizeof(fx_a) - 2] ^= 0x10;      /* the stream's */
    if (rbzip2_decode(bz, o, n, s, sizeof(fx_a), &w) != RBZIP2_ERROR_DATA)
@@ -215,6 +251,6 @@ int main(void)
       printf("%d failure(s)\n", failures);
       return 1;
    }
-   printf("rbzip2_test: every stream decoded, every bad one refused\n");
+   printf("rbzip2_test: every stream decoded, whole and a block at a time, every bad one refused\n");
    return 0;
 }

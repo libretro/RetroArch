@@ -45,6 +45,7 @@
 
 RETRO_BEGIN_DECLS
 
+#define RBZIP2_PENDING     1    /* rbzip2_step(): a block, and more to come */
 #define RBZIP2_OK          0
 #define RBZIP2_ERROR_DATA  -1   /* not a stream, corrupt, or a CRC fails */
 #define RBZIP2_ERROR_SPACE -2   /* decodes to more than the buffer holds */
@@ -70,6 +71,36 @@ void rbzip2_free(rbzip2_t *bz);
  **/
 int rbzip2_decode(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
       const uint8_t *src, size_t src_len, size_t *wrote);
+
+/**
+ * rbzip2_begin:
+ * @dst      : where the stream decodes to
+ * @dst_len  : capacity of @dst
+ * @src      : the stream, from "BZh" on, which stays where it is
+ *             until the stream is done
+ * @src_len  : octets at @src
+ *
+ * The same, a block at a time: binds the stream and its output, for
+ * rbzip2_step() to decode. A block is at most 900 000 octets.
+ *
+ * Returns: RBZIP2_OK, or an RBZIP2_ERROR_* value.
+ **/
+int rbzip2_begin(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len);
+
+/**
+ * rbzip2_step:
+ * @wrote    : receives the octets decoded so far (may be NULL), what is
+ *             in @dst before them final
+ *
+ * Decodes the next block of the stream rbzip2_begin() bound, its CRC
+ * checked, or reads the end of the stream and checks the CRC of them
+ * all.
+ *
+ * Returns: RBZIP2_PENDING after a block, RBZIP2_OK at the end, or an
+ * RBZIP2_ERROR_* value.
+ **/
+int rbzip2_step(rbzip2_t *bz, size_t *wrote);
 
 /**
  * rbzip2_decode_alloc:

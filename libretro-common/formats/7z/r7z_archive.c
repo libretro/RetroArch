@@ -363,8 +363,9 @@ struct r7z_archive
 
    /* A folder decode that has been started and paused part way.
     *
-    * The LZMA, LZMA2, PPMd and Deflate stages pause: they are nearly
-    * all of the time, and each decodes in order to an output limit.
+    * The LZMA, LZMA2, PPMd, Deflate and BZip2 stages pause: they are
+    * nearly all of the time, and each decodes in order to an output
+    * limit, BZip2's a block.
     * Every other coder in a chain, the branch filters included, runs
     * to completion in one go because each is a single linear pass of
     * a few milliseconds over the whole buffer.
@@ -2505,9 +2506,9 @@ const r7z_entry_t *r7z_archive_entry(const r7z_archive_t *a, uint32_t index)
  * about 67 ms, four dropped frames.
  *
  * These two functions do the same work in bounded slices. The LZMA,
- * LZMA2, PPMd and Deflate stages pause, because they are nearly all of
- * the time and each decodes in order to an output limit. Every other
- * coder,
+ * LZMA2, PPMd, Deflate and BZip2 stages pause, because they are nearly
+ * all of the time and each decodes in order to an output limit, BZip2's
+ * a block. Every other coder,
  * the branch filters included, is a single linear pass of one to three
  * milliseconds over the whole buffer, so it runs to completion within
  * one slice rather than being restructured.
@@ -2524,6 +2525,10 @@ static void stage_dec_free(r7z_archive_t *a)
 {
    if (a->pend_method == METHOD_PPMD)
       ppmd_close((r7z_ppmd_t *)a->pend_dec);
+#ifdef HAVE_RBZIP2
+   else if (a->pend_method == METHOD_BZIP2)
+      rbzip2_free((rbzip2_t *)a->pend_dec);
+#endif
    else if (a->pend_method == METHOD_DEFLATE)
    {
       if (a->pend_dec)
@@ -2586,12 +2591,16 @@ static void decode_pending_reset(r7z_archive_t *a)
 
 /* True when this coder is one whose decode can be paused: LZMA2
  * through r7z_lzma2, plain LZMA through r7z_lzma_stream, PPMd a symbol
- * at a time and Deflate through rinflate. Everything else is a single
- * linear pass. */
+ * at a time, Deflate through rinflate and BZip2 a block at a time.
+ * Everything else is a single linear pass. */
 static int coder_is_resumable(const coder_t *c)
 {
    return (     c->method == METHOD_LZMA2 || c->method == METHOD_LZMA
-             || c->method == METHOD_PPMD  || c->method == METHOD_DEFLATE);
+             || c->method == METHOD_PPMD  || c->method == METHOD_DEFLATE
+#ifdef HAVE_RBZIP2
+             || c->method == METHOD_BZIP2
+#endif
+             );
 }
 
 /* The cached folder, decoded whole and checked, is there to be read. */
@@ -2735,6 +2744,26 @@ static int decode_slice_deflate(r7z_archive_t *a, int *done)
    return R7Z_OK;
 }
 
+#ifdef HAVE_RBZIP2
+/* Run one slice of a paused BZip2 stage: a block, up to 900 000
+ * octets, its CRC checked. */
+static int decode_slice_bzip2(r7z_archive_t *a, int *done)
+{
+   size_t wrote = 0;
+   int    e     = rbzip2_step((rbzip2_t *)a->pend_dec, &wrote);
+   *done = 0;
+   r7z_progress_at(a, wrote);
+   if (e == RBZIP2_PENDING)
+      return R7Z_OK;
+   if (e == RBZIP2_ERROR_MEM)
+      return R7Z_ERROR_MEM;
+   if (e != RBZIP2_OK || wrote != a->pend_out_len)
+      return R7Z_ERROR_DATA;
+   *done = 1;
+   return R7Z_OK;
+}
+#endif
+
 /* One slice of whichever paused stage c is. */
 static int decode_slice(r7z_archive_t *a, const coder_t *c, int *done)
 {
@@ -2746,6 +2775,10 @@ static int decode_slice(r7z_archive_t *a, const coder_t *c, int *done)
          return decode_slice_lzma(a, done);
       case METHOD_PPMD:
          return decode_slice_ppmd(a, done);
+#ifdef HAVE_RBZIP2
+      case METHOD_BZIP2:
+         return decode_slice_bzip2(a, done);
+#endif
       default:
          return decode_slice_deflate(a, done);
    }
@@ -2799,6 +2832,21 @@ static int decode_stage_begin(r7z_archive_t *a, const folder_t *f)
    if (c->method == METHOD_PPMD)
       return ppmd_open(a, c, a->pend_in, a->pend_in_len,
             (r7z_ppmd_t **)&a->pend_dec);
+#ifdef HAVE_RBZIP2
+   /* a decoder of its own: a folder decoded whole meanwhile uses the
+    * archive's */
+   if (c->method == METHOD_BZIP2)
+   {
+      int e;
+      if (!(a->pend_dec = rbzip2_new()))
+         return R7Z_ERROR_MEM;
+      e = rbzip2_begin((rbzip2_t *)a->pend_dec, a->pend_out,
+            a->pend_out_len, a->pend_in, a->pend_in_len);
+      if (e == RBZIP2_ERROR_MEM)
+         return R7Z_ERROR_MEM;
+      return e == RBZIP2_OK ? R7Z_OK : R7Z_ERROR_DATA;
+   }
+#endif
    if (c->method == METHOD_DEFLATE)
    {
       if (!(a->pend_dec = rinflate_new(-15)))

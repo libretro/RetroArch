@@ -44,19 +44,6 @@ struct rbz_table
    unsigned max_len;
 };
 
-struct rbzip2
-{
-   uint32_t        *tt;             /* a block, then each entry's next */
-   uint32_t        *inv;            /* each entry's previous */
-   uint8_t         *raw;            /* the block untransformed */
-   uint32_t         tt_cap;
-   uint32_t         crc[8][256];    /* CRC-32, MSB first, eight at a time */
-   uint32_t         unz[256];       /* each octet's count in the block */
-   struct rbz_table table[RBZ_GROUPS_MAX];
-   uint8_t          len[RBZ_GROUPS_MAX][RBZ_ALPHA_MAX];
-   uint8_t          selector[RBZ_SEL_MAX];
-};
-
 /* The input, read most significant bit first through a 64-bit window.
  * Past the end it reads zeros, counted in @over: a stream is short when
  * more of them were taken than the window still holds. */
@@ -68,6 +55,35 @@ struct rbz_in
    size_t         over;
    unsigned       n;
 };
+
+/* Where a block's output goes: a buffer of fixed size, or one grown
+ * as it fills. */
+struct rbz_out
+{
+   uint8_t *dst;
+   size_t   cap;
+   size_t   at;
+   int      grow;
+};
+
+struct rbzip2
+{
+   /* the stream in hand, between rbzip2_step() calls */
+   struct rbz_in    in;
+   struct rbz_out   out;
+   uint32_t        *tt;             /* a block, then each entry's next */
+   uint32_t        *inv;            /* each entry's previous */
+   uint8_t         *raw;            /* the block untransformed */
+   uint32_t         max_block;
+   uint32_t         combined;       /* the block CRCs so far */
+   uint32_t         tt_cap;
+   uint32_t         crc[8][256];    /* CRC-32, MSB first, eight at a time */
+   uint32_t         unz[256];       /* each octet's count in the block */
+   struct rbz_table table[RBZ_GROUPS_MAX];
+   uint8_t          len[RBZ_GROUPS_MAX][RBZ_ALPHA_MAX];
+   uint8_t          selector[RBZ_SEL_MAX];
+};
+
 
 #define RBZ_FILL(p, end, buf, n, over) \
    while ((n) <= 56) \
@@ -212,15 +228,6 @@ static uint32_t rbz_crc(const rbzip2_t *bz, const uint8_t *p, size_t len)
    return ~v;
 }
 
-/* Where a block's output goes: a buffer of fixed size, or one grown
- * as it fills. */
-struct rbz_out
-{
-   uint8_t *dst;
-   size_t   cap;
-   size_t   at;
-   int      grow;
-};
 
 /* Room for @n more octets */
 static int rbz_room(struct rbz_out *o, size_t n)
@@ -515,11 +522,11 @@ static int rbz_block(rbzip2_t *bz, struct rbz_in *in, uint32_t max_block,
    return RBZIP2_OK;
 }
 
-static int rbz_stream(rbzip2_t *bz, struct rbz_out *out,
-      const uint8_t *src, size_t src_len)
+/* The stream at @src: its header read and the block buffers sized for
+ * it, ready for its first block */
+static int rbz_start(rbzip2_t *bz, const uint8_t *src, size_t src_len)
 {
-   struct rbz_in in;
-   uint32_t max_block, combined = 0;
+   uint32_t max_block;
 
    if (     !bz || src_len < 4
          || src[0] != 'B' || src[1] != 'Z' || src[2] != 'h'
@@ -542,72 +549,104 @@ static int rbz_stream(rbzip2_t *bz, struct rbz_out *out,
       }
    }
 
-   in.p    = src + 4;
-   in.end  = src + src_len;
-   in.buf  = 0;
-   in.n    = 0;
-   in.over = 0;
-   for (;;)
-   {
-      uint32_t hi = rbz_bits(&in, 24);
-      uint32_t lo = rbz_bits(&in, 24);
-      if (hi == 0x314159u && lo == 0x265359u)
-      {
-         uint32_t crc;
-         int      e = rbz_block(bz, &in, max_block, out, &crc);
-         if (e != RBZIP2_OK)
-            return e;
-         combined = ((combined << 1) | (combined >> 31)) ^ crc;
-      }
-      else if (hi == 0x177245u && lo == 0x385090u)
-      {
-         uint32_t want = rbz_bits(&in, 16) << 16;
-         want |= rbz_bits(&in, 16);
-         if (rbz_short(&in) || want != combined)
-            return RBZIP2_ERROR_DATA;
-         break;
-      }
-      else
-         return RBZIP2_ERROR_DATA;
-   }
+   bz->max_block = max_block;
+   bz->combined  = 0;
+   bz->in.p      = src + 4;
+   bz->in.end    = src + src_len;
+   bz->in.buf    = 0;
+   bz->in.n      = 0;
+   bz->in.over   = 0;
    return RBZIP2_OK;
+}
+
+/* The next block, or the end of the stream and its CRC */
+static int rbz_next(rbzip2_t *bz)
+{
+   uint32_t hi = rbz_bits(&bz->in, 24);
+   uint32_t lo = rbz_bits(&bz->in, 24);
+   if (hi == 0x314159u && lo == 0x265359u)
+   {
+      uint32_t crc;
+      int      e = rbz_block(bz, &bz->in, bz->max_block, &bz->out, &crc);
+      if (e != RBZIP2_OK)
+         return e;
+      bz->combined = ((bz->combined << 1) | (bz->combined >> 31)) ^ crc;
+      return RBZIP2_PENDING;
+   }
+   if (hi == 0x177245u && lo == 0x385090u)
+   {
+      uint32_t want = rbz_bits(&bz->in, 16) << 16;
+      want |= rbz_bits(&bz->in, 16);
+      if (rbz_short(&bz->in) || want != bz->combined)
+         return RBZIP2_ERROR_DATA;
+      return RBZIP2_OK;
+   }
+   return RBZIP2_ERROR_DATA;
+}
+
+/* The rest of the stream rbz_start() began */
+static int rbz_stream(rbzip2_t *bz)
+{
+   int e;
+   while ((e = rbz_next(bz)) == RBZIP2_PENDING) { }
+   return e;
 }
 
 int rbzip2_decode(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
       const uint8_t *src, size_t src_len, size_t *wrote)
 {
-   struct rbz_out out;
-   int            e;
-   out.dst  = dst;
-   out.cap  = dst_len;
-   out.at   = 0;
-   out.grow = 0;
-   e        = rbz_stream(bz, &out, src, src_len);
+   int e = rbzip2_begin(bz, dst, dst_len, src, src_len);
+   if (e == RBZIP2_OK)
+      e = rbz_stream(bz);
    if (wrote)
-      *wrote = e == RBZIP2_OK ? out.at : 0;
+      *wrote = e == RBZIP2_OK ? bz->out.at : 0;
+   return e;
+}
+
+int rbzip2_begin(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len)
+{
+   if (!bz)
+      return RBZIP2_ERROR_DATA;
+   bz->out.dst  = dst;
+   bz->out.cap  = dst_len;
+   bz->out.at   = 0;
+   bz->out.grow = 0;
+   return rbz_start(bz, src, src_len);
+}
+
+int rbzip2_step(rbzip2_t *bz, size_t *wrote)
+{
+   int e = rbz_next(bz);
+   if (wrote)
+      *wrote = bz->out.at;
    return e;
 }
 
 int rbzip2_decode_alloc(rbzip2_t *bz, const uint8_t *src, size_t src_len,
       uint8_t **dst, size_t *wrote)
 {
-   struct rbz_out out;
-   int            e;
+   int e;
    *dst     = NULL;
    *wrote   = 0;
-   out.dst  = NULL;
-   out.cap  = 0;
-   out.at   = 0;
-   out.grow = 1;
+   if (!bz)
+      return RBZIP2_ERROR_DATA;
+   bz->out.dst  = NULL;
+   bz->out.cap  = 0;
+   bz->out.at   = 0;
+   bz->out.grow = 1;
    /* about what bzip2 makes of most data, to start */
-   if ((e = rbz_room(&out, src_len * 4)) == RBZIP2_OK)
-      e = rbz_stream(bz, &out, src, src_len);
+   if (     (e = rbz_room(&bz->out, src_len * 4)) == RBZIP2_OK
+         && (e = rbz_start(bz, src, src_len)) == RBZIP2_OK)
+      e = rbz_stream(bz);
    if (e != RBZIP2_OK)
    {
-      free(out.dst);
+      free(bz->out.dst);
+      bz->out.dst = NULL;
       return e;
    }
-   *dst   = out.dst;
-   *wrote = out.at;
+   *dst   = bz->out.dst;
+   *wrote = bz->out.at;
+   bz->out.dst = NULL;
    return RBZIP2_OK;
 }

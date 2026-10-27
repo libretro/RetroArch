@@ -104,10 +104,12 @@ static void archive(const char *what, const uint8_t *fx, size_t fx_len)
    r7z_archive_close(a);
 }
 
-/* big.txt's folder, decoded a step at a time: it takes several, what
+/* big.txt's folder, or rep.txt's: @unit octets of t.txt's words 300000
+ * / @unit times over, decoded a step at a time: it takes several, what
  * is decoded so far is there to be read from the front, at one place,
  * and is big.txt's; a byte changed in the packed stream is refused. */
-static void staged(const char *what, const uint8_t *fx, size_t fx_len)
+static void staged(const char *what, const uint8_t *fx, size_t fx_len,
+      size_t unit)
 {
    size_t         n    = 300000, last = 0, k;
    uint8_t       *want = (uint8_t*)malloc(n);
@@ -118,9 +120,9 @@ static void staged(const char *what, const uint8_t *fx, size_t fx_len)
    unsigned       steps = 0, partial = 0;
    int            r, moved = 0, wrong = 0;
 
-   text(want, 20000);
-   for (k = 1; k < 15; k++)
-      memcpy(want + k * 20000, want, 20000);
+   text(want, unit);
+   for (k = 1; k < n / unit; k++)
+      memcpy(want + k * unit, want, unit);
 
    if (r7z_archive_open(&a, fx, fx_len) != R7Z_OK)
       check(0, what, "opens");
@@ -397,8 +399,12 @@ int main(void)
 #endif
    archive("Deflate", fx_deflate, sizeof(fx_deflate));
    archive("Deflate64", fx_deflate64, sizeof(fx_deflate64));
-   staged("PPMd, stepped", fx_big_ppmd, sizeof(fx_big_ppmd));
-   staged("Deflate, stepped", fx_big_deflate, sizeof(fx_big_deflate));
+   staged("PPMd, stepped", fx_big_ppmd, sizeof(fx_big_ppmd), 20000);
+   staged("Deflate, stepped", fx_big_deflate, sizeof(fx_big_deflate),
+         20000);
+#ifdef HAVE_RBZIP2
+   staged("BZip2, stepped", fx_big_bzip2, sizeof(fx_big_bzip2), 2000);
+#endif
    deflate64();
    arm64();
    if (failures)
@@ -406,6 +412,6 @@ int main(void)
       printf("%d failure(s)\n", failures);
       return 1;
    }
-   printf("r7z_methods_test: every coder's archive extracted, PPMd and Deflate a step at a time, Deflate64 whole, ARM64\n");
+   printf("r7z_methods_test: every coder's archive extracted, PPMd, Deflate and BZip2 a step at a time, Deflate64 whole, ARM64\n");
    return 0;
 }
