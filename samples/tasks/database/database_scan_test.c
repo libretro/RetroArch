@@ -3016,12 +3016,15 @@ int main(int argc, char **argv)
 
       strlcpy(config_get_ptr()->paths.path_content_database, uncl_db,
             sizeof(config_get_ptr()->paths.path_content_database));
+      /* the playlist the scan below must not write, not a run's
+       * before */
+      sprintf(p, "%s/Unclaimed 3DS.lpl", pl_dir);
+      filestream_delete(p);
       if (!run_scan(uncl_in))
       {
          check(0, "unclaimed 3DS scan started", "task_push_dbscan refused");
          goto done;
       }
-      sprintf(p, "%s/Unclaimed 3DS.lpl", pl_dir);
       check(scan_completed && !path_is_valid(p),
             "3DS database no core claims passed over", "no playlist");
 
@@ -3040,6 +3043,7 @@ int main(int argc, char **argv)
             && file_contains(p, "CTR-P-UNCL|serial"),
             "Scan Without Core Match: unclaimed 3DS database",
             "CTR-P-UNCL|serial");
+      filestream_delete(p);
    }
 
    /* scan_serial_and_crc makes the crc a requirement after a 3DS

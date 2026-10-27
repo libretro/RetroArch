@@ -247,10 +247,14 @@ $(BEGIN_TEST)$(EXE_EXT): $(BEGIN_TEST_OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(BEGIN_TEST_OBJECTS) $(LDFLAGS) \
 	      -Wl,--wrap=task_nbio_slice_open $(LIBS)
 
+# The scan test runs twice in one root: what a run leaves behind must
+# not decide the next one's checks. A sanitized build gives the budget
+# test its sanitizer's allowance, as CI does.
 check: $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT) $(BEGIN_TEST)$(EXE_EXT)
 	./$(INDEX_TEST)$(EXE_EXT)
-	./$(SCAN_TEST)$(EXE_EXT)
-	./$(BEGIN_TEST)$(EXE_EXT)
+	root=$$(mktemp -d) && ./$(SCAN_TEST)$(EXE_EXT) "$$root" \
+	   && ./$(SCAN_TEST)$(EXE_EXT) "$$root"; r=$$?; rm -rf "$$root"; exit $$r
+	./$(BEGIN_TEST)$(EXE_EXT) $(if $(SANITIZER),sanitize)
 
 %.o: %.c
 	$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
