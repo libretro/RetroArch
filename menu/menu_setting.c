@@ -8598,8 +8598,22 @@ static size_t setting_get_string_representation_input_touchpad(
       case INPUT_TOUCHPAD_MOUSE:
          e = MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE;
          break;
+      case INPUT_TOUCHPAD_HALVES:
+         e = MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_HALVES;
+         break;
    }
    return strlcpy(s, msg_hash_to_str(e), len);
+}
+
+/* A touchpad half's RetroPad button, by its name */
+static size_t setting_get_string_representation_input_touchpad_half(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   const char *desc;
+   if (!setting)
+      return 0;
+   desc = input_config_bind_map_get_desc(*setting->value.target.unsigned_integer);
+   return strlcpy(s, desc ? desc : "", len);
 }
 
 static size_t setting_get_string_representation_input_rotation(
@@ -12452,6 +12466,8 @@ static bool setting_append_list_input_player_options(
       char keyboard_index[64];
       char aim_stick[64];
       char touchpad[64];
+      char touchpad_left[64];
+      char touchpad_right[64];
       char bind_all[64];
       char bind_all_save_autoconfig[64];
       char bind_defaults[64];
@@ -12484,6 +12500,12 @@ static bool setting_append_list_input_player_options(
             user + 1);
       snprintf(touchpad, sizeof(touchpad),
             MENU_ENUM_LABEL_INPUT_TOUCHPAD_STR,
+            user + 1);
+      snprintf(touchpad_left, sizeof(touchpad_left),
+            MENU_ENUM_LABEL_INPUT_TOUCHPAD_LEFT_STR,
+            user + 1);
+      snprintf(touchpad_right, sizeof(touchpad_right),
+            MENU_ENUM_LABEL_INPUT_TOUCHPAD_RIGHT_STR,
             user + 1);
       snprintf(bind_all, sizeof(bind_all),
             MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX_STR,
@@ -12640,6 +12662,42 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, INPUT_TOUCHPAD_LAST - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_TOUCHPAD + user));
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_touchpad_left[user],
+            touchpad_left,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_LEFT),
+            RETRO_DEVICE_ID_JOYPAD_SELECT,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index_offset  = user;
+      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
+      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_input_touchpad_half)
+      menu_settings_list_current_add_range(list, list_info, 0, RARCH_FIRST_CUSTOM_BIND - 1, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_TOUCHPAD_LEFT + user));
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_touchpad_right[user],
+            touchpad_right,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_RIGHT),
+            RETRO_DEVICE_ID_JOYPAD_START,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index_offset  = user;
+      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
+      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_input_touchpad_half)
+      menu_settings_list_current_add_range(list, list_info, 0, RARCH_FIRST_CUSTOM_BIND - 1, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_TOUCHPAD_RIGHT + user));
 
       CONFIG_UINT_ALT(
             list, list_info,

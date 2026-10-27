@@ -379,6 +379,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_mouse_index,                ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_keyboard_index,             MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_aim_stick,                  MENU_ENUM_SUBLABEL_INPUT_AIM_STICK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touchpad,                   MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touchpad_left,              MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD_LEFT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touchpad_right,             MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD_RIGHT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_adc_type,                   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_reservation_type,    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_reserved_device_name, MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME)
@@ -4058,6 +4060,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          {
             MENU_ENUM_LABEL_INPUT_TOUCHPAD,
             action_bind_sublabel_input_touchpad
+         },
+         {
+            MENU_ENUM_LABEL_INPUT_TOUCHPAD_LEFT,
+            action_bind_sublabel_input_touchpad_left
+         },
+         {
+            MENU_ENUM_LABEL_INPUT_TOUCHPAD_RIGHT,
+            action_bind_sublabel_input_touchpad_right
          },
          {
             MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,

@@ -6234,6 +6234,8 @@ void config_set_defaults(settings_t *target)
       settings->uints.input_keyboard_index[i] = 0;
       settings->uints.input_aim_stick[i]      = INPUT_AIM_STICK_NONE;
       settings->uints.input_touchpad[i]       = INPUT_TOUCHPAD_POINTER;
+      settings->uints.input_touchpad_left[i]  = RETRO_DEVICE_ID_JOYPAD_SELECT;
+      settings->uints.input_touchpad_right[i] = RETRO_DEVICE_ID_JOYPAD_START;
    }
 
 #ifdef HAVE_VIDEO_WINDOWS
@@ -7327,6 +7329,16 @@ static bool config_load_file(const char *path, settings_t *settings)
          CONFIG_GET_INT_BASE(conf, settings, uints.input_touchpad[i], prefix);
          if (settings->uints.input_touchpad[i] >= INPUT_TOUCHPAD_LAST)
             settings->uints.input_touchpad[i] = INPUT_TOUCHPAD_POINTER;
+
+         strlcpy_lit(prefix + _len, "_touchpad_left", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_touchpad_left[i], prefix);
+         if (settings->uints.input_touchpad_left[i] >= RARCH_FIRST_CUSTOM_BIND)
+            settings->uints.input_touchpad_left[i] = RETRO_DEVICE_ID_JOYPAD_SELECT;
+
+         strlcpy_lit(prefix + _len, "_touchpad_right", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_touchpad_right[i], prefix);
+         if (settings->uints.input_touchpad_right[i] >= RARCH_FIRST_CUSTOM_BIND)
+            settings->uints.input_touchpad_right[i] = RETRO_DEVICE_ID_JOYPAD_START;
 
          strlcpy_lit(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], prefix);
@@ -9849,6 +9861,20 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
 
+      strlcpy_lit(cfg + _len, "_touchpad_left",     sizeof(cfg) - _len);
+      if (   !minimal
+          || settings->uints.input_touchpad_left[i] != defaults->uints.input_touchpad_left[i])
+         config_set_int(conf, cfg, settings->uints.input_touchpad_left[i]);
+      else
+         config_unset(conf, cfg);
+
+      strlcpy_lit(cfg + _len, "_touchpad_right",    sizeof(cfg) - _len);
+      if (   !minimal
+          || settings->uints.input_touchpad_right[i] != defaults->uints.input_touchpad_right[i])
+         config_set_int(conf, cfg, settings->uints.input_touchpad_right[i]);
+      else
+         config_unset(conf, cfg);
+
       /* What the user configured, which is not what the setting holds
        * while a driver restart has put controllers back on their
        * ports. */
@@ -10503,6 +10529,22 @@ int8_t config_save_overrides(enum override_type type,
             strlcpy_lit(cfg + _len, "_touchpad", sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_touchpad[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_touchpad[i]);
+         }
+
+         if (settings->uints.input_touchpad_left[i]
+               != overrides->uints.input_touchpad_left[i])
+         {
+            strlcpy_lit(cfg + _len, "_touchpad_left", sizeof(cfg) - _len);
+            config_set_int(conf, cfg, overrides->uints.input_touchpad_left[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_touchpad_left[i]);
+         }
+
+         if (settings->uints.input_touchpad_right[i]
+               != overrides->uints.input_touchpad_right[i])
+         {
+            strlcpy_lit(cfg + _len, "_touchpad_right", sizeof(cfg) - _len);
+            config_set_int(conf, cfg, overrides->uints.input_touchpad_right[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_touchpad_right[i]);
          }
 
          /* The live value is what the user configured, not a port a

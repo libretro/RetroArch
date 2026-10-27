@@ -166,6 +166,10 @@ typedef struct settings
       unsigned input_aim_stick[MAX_USERS];
       /* 0 off, 1 a touchscreen, 2 a mouse: enum input_touchpad */
       unsigned input_touchpad[MAX_USERS];
+      /* the RetroPad buttons the touchpad's halves press, in its
+       * Buttons mode */
+      unsigned input_touchpad_left[MAX_USERS];
+      unsigned input_touchpad_right[MAX_USERS];
 
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];

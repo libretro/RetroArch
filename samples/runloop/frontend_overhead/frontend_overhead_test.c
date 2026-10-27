@@ -8271,6 +8271,50 @@ static void lane_touchpad(void)
    syn_joypad.get_touchpad      = NULL;
    input_st->touchpad_requested[0] = false;
 
+   /* "Halves as Buttons": a click on each half is a RetroPad button of
+    * its own, both with a finger on each; nothing without the click */
+   {
+      bool remap_was = settings->bools.input_remap_binds_enable;
+#define HALF_READ(id) input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, (id))
+      settings->bools.input_remap_binds_enable = true;
+      settings->uints.input_touchpad[0]        = INPUT_TOUCHPAD_HALVES;
+      settings->uints.input_touchpad_left[0]   = RETRO_DEVICE_ID_JOYPAD_SELECT;
+      settings->uints.input_touchpad_right[0]  = RETRO_DEVICE_ID_JOYPAD_START;
+      input_config_binds_changed();
+      touch_lent.touch_down = 0;
+      touch_finger(0, true, -9000, 0);
+      run_loop_frames(1);
+      CHECK(!HALF_READ(RETRO_DEVICE_ID_JOYPAD_SELECT) && !HALF_READ(RETRO_DEVICE_ID_JOYPAD_START),
+            "touchpad halves: a finger on the pad, not pressed in, pressed a button");
+      touch_lent.touch_down |= INPUT_PAD_TOUCH_PRESS;
+      run_loop_frames(1);
+      CHECK(HALF_READ(RETRO_DEVICE_ID_JOYPAD_SELECT) && !HALF_READ(RETRO_DEVICE_ID_JOYPAD_START),
+            "touchpad halves: the left half pressed in is not the left half's button alone");
+      touch_finger(0, true, 9000, 0);
+      run_loop_frames(1);
+      CHECK(!HALF_READ(RETRO_DEVICE_ID_JOYPAD_SELECT) && HALF_READ(RETRO_DEVICE_ID_JOYPAD_START),
+            "touchpad halves: the right half pressed in is not the right half's button alone");
+      touch_finger(1, true, -9000, 0);
+      run_loop_frames(1);
+      CHECK(HALF_READ(RETRO_DEVICE_ID_JOYPAD_SELECT) && HALF_READ(RETRO_DEVICE_ID_JOYPAD_START),
+            "touchpad halves: a finger on each half pressed in is not both buttons");
+      settings->uints.input_touchpad_left[0] = RETRO_DEVICE_ID_JOYPAD_A;
+      input_config_binds_changed();
+      run_loop_frames(1);
+      CHECK(HALF_READ(RETRO_DEVICE_ID_JOYPAD_A) && !HALF_READ(RETRO_DEVICE_ID_JOYPAD_SELECT),
+            "touchpad halves: the left half's button set to A is not A");
+      TOUCH_READ();
+      CHECK(!pd0 && !mx && !ml, "touchpad halves: the pad was also the pointer or the mouse");
+      settings->uints.input_touchpad[0] = INPUT_TOUCHPAD_POINTER;
+      input_config_binds_changed();
+      run_loop_frames(1);
+      CHECK(!HALF_READ(RETRO_DEVICE_ID_JOYPAD_A) && !HALF_READ(RETRO_DEVICE_ID_JOYPAD_START),
+            "touchpad halves: in another mode the halves still pressed buttons");
+      settings->uints.input_touchpad_left[0]   = RETRO_DEVICE_ID_JOYPAD_SELECT;
+      settings->bools.input_remap_binds_enable = remap_was;
+#undef HALF_READ
+   }
+
    touch_lent.touch_down = 0;
    settings->uints.input_touchpad[0] = INPUT_TOUCHPAD_POINTER;
    fast_forward(false);
@@ -8284,7 +8328,9 @@ static void lane_touchpad(void)
             " moves once a poll, small ones added up, and a press a left or"
             " with two fingers a right click; off or without one, nothing;"
             " as RETRO_DEVICE_TOUCHPAD, the fingers down in order, lent or"
-            " copied once a poll, and the port's mapping off once read\n");
+            " copied once a poll, and the port's mapping off once read; as"
+            " halves, a click on each half its own button, both with a finger"
+            " on each\n");
 #else
    printf("[skip] touchpad: needs the test drivers\n");
 #endif

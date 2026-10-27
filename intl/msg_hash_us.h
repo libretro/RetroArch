@@ -12732,9 +12732,29 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
    "Mouse"
    )
+MSG_HASH( /* Controller Touchpad value: a click on each half of the touchpad is a button */
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_HALVES,
+   "Halves as Buttons"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_LEFT,
+   "Touchpad Left Half"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_RIGHT,
+   "Touchpad Right Half"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD,
-   "What the touchpad on this port's controller is to the core, on a DualShock 4 or DualSense with the 'hid' controller driver. 'Touchscreen': a finger on the pad touches that spot on the screen, two fingers two spots. 'Mouse': moving a finger moves the mouse, and pressing the pad in clicks, with two fingers on it a right click."
+   "What the touchpad on this port's controller is to the core, on a DualShock 4 or DualSense. 'Touchscreen': a finger on the pad touches that spot on the screen, two fingers two spots. 'Mouse': moving a finger moves the mouse, and pressing the pad in clicks, with two fingers on it a right click. 'Halves as Buttons': pressing the pad in on its left or right half presses the button set for that half, both with a finger on each; needs 'Remap Controls'."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD_LEFT,
+   "With 'Controller Touchpad' set to 'Halves as Buttons': the RetroPad button pressing the left half of the touchpad in presses."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD_RIGHT,
+   "With 'Controller Touchpad' set to 'Halves as Buttons': the RetroPad button pressing the right half of the touchpad in presses."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AIM_STICK,

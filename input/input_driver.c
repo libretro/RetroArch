@@ -4869,7 +4869,8 @@ static struct
 {
    bool     valid;
    uint16_t rows_differ;           /* bit u: user u has a button or an axis mapped away from itself */
-   uint16_t work;                  /* ... or a macro playing: the poll has remap work for user u */
+   uint16_t halves;                /* bit u: user u's touchpad halves are buttons */
+   uint16_t work;                  /* ... or a macro playing, or halves: the poll has remap work for user u */
    uint16_t ident16[MAX_USERS];    /* bit n: the RetroPad's n-th is mapped to itself */
 } input_remap_kept;
 
@@ -4883,6 +4884,7 @@ INPUT_NOINLINE static void input_remap_kept_make(void)
    const settings_t *settings = config_get_ptr();
    unsigned gen               = input_config_binds_generation();
    uint16_t differ            = 0;
+   uint16_t halves            = 0;
 
    for (user = 0; user < MAX_USERS; user++)
    {
@@ -4890,13 +4892,16 @@ INPUT_NOINLINE static void input_remap_kept_make(void)
       uint16_t ident      = 0;
       if (memcmp(row, unmapped_row, sizeof(unmapped_row)))
          differ |= (uint16_t)(1u << user);
+      if (settings->uints.input_touchpad[user] == INPUT_TOUCHPAD_HALVES)
+         halves |= (uint16_t)(1u << user);
       for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
          if (row[id] == id)
             ident |= (uint16_t)(1u << id);
       input_remap_kept.ident16[user] = ident;
    }
    input_remap_kept.rows_differ = differ;
-   input_remap_kept.work        = differ | input_macros.users;
+   input_remap_kept.halves      = halves;
+   input_remap_kept.work        = differ | halves | input_macros.users;
    /* a change made while this was done, from another thread: asked
     * again at the next reading */
    input_remap_kept.valid       = (input_config_binds_generation() == gen);
@@ -4919,7 +4924,8 @@ void input_driver_poll_between_frames(void (*poll)(void))
 static void input_macro_stop(unsigned user)
 {
    input_macros.users     &= (uint16_t)~(1u << user);
-   input_remap_kept.work   = input_remap_kept.rows_differ | input_macros.users;
+   input_remap_kept.work   = input_remap_kept.rows_differ
+      | input_remap_kept.halves | input_macros.users;
 }
 
 /* Macro @number starts for @user, from its first step; one already
@@ -4945,7 +4951,8 @@ bool input_macro_start(unsigned number, unsigned user)
    input_macros.users          |= (uint16_t)(1u << user);
    if (!input_remap_kept.valid)
       input_remap_kept_make();
-   input_remap_kept.work        = input_remap_kept.rows_differ | input_macros.users;
+   input_remap_kept.work        = input_remap_kept.rows_differ
+      | input_remap_kept.halves | input_macros.users;
    return true;
 }
 
@@ -5154,6 +5161,26 @@ static INLINE int input_touchpad_nth(unsigned fingers, unsigned n)
    if (n == 0)
       return (fingers & 1) ? 0 : (fingers & 2) ? 1 : -1;
    return (n == 1 && fingers == 3) ? 1 : -1;
+}
+
+/* The touchpad's Buttons mode: the RetroPad buttons a click presses,
+ * the left half's for a finger left of the middle, the right half's
+ * for one right of it - both, with a finger on each, as a PlayStation
+ * game reads it. Read where the driver keeps the pad, once a poll. */
+static unsigned input_touchpad_halves(const settings_t *settings,
+      const input_device_driver_t *joypad, unsigned joy_idx, unsigned port)
+{
+   const input_pad_view_t *view = input_pad_touchpad(joypad, joy_idx);
+   unsigned bits                = 0;
+   unsigned f;
+   if (!view || !(view->touch_down & INPUT_PAD_TOUCH_PRESS))
+      return 0;
+   for (f = 0; f < 2; f++)
+      if (view->touch_down & (1u << f))
+         bits |= 1u << (input_touchpad_x(view, f) < 0
+               ? settings->uints.input_touchpad_left[port]
+               : settings->uints.input_touchpad_right[port]);
+   return bits & 0xffff;
 }
 
 /* RETRO_DEVICE_TOUCHPAD */
@@ -16253,6 +16280,10 @@ void input_driver_poll(void)
                 * pressed as a remapped button is */
                if (input_macros.users & (1u << i))
                   handle->buttons[i].data[0] |= input_macro_frame((unsigned)i);
+               /* the touchpad's halves, pressed in: as remapped buttons */
+               if (input_remap_kept.halves & (1u << i))
+                  handle->buttons[i].data[0] |= input_touchpad_halves(
+                        settings, joypad, joypad_info[i].joy_idx, (unsigned)i);
 
                for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
                {

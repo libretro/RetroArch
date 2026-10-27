@@ -256,6 +256,9 @@ enum input_touchpad
    INPUT_TOUCHPAD_OFF = 0,
    INPUT_TOUCHPAD_POINTER,   /* a touchscreen */
    INPUT_TOUCHPAD_MOUSE,
+   /* a click on the left or the right half presses a RetroPad button
+    * of each (input_playerN_touchpad_left, _right) */
+   INPUT_TOUCHPAD_HALVES,
    INPUT_TOUCHPAD_LAST
 };
 

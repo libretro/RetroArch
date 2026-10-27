@@ -1500,6 +1500,14 @@ MSG_HASH(
    "input_player%u_touchpad"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCHPAD_LEFT,
+   "input_player%u_touchpad_left"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCHPAD_RIGHT,
+   "input_player%u_touchpad_right"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
    "input_player%u_joypad_index"
    )
