@@ -21,9 +21,14 @@ concurrency:
 
 jobs:
   samples:
-    name: Build and run libretro-common/samples
+    name: Build and run libretro-common/samples (${{ matrix.group }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [codecs, formats, core]
     env:
+      SAMPLE_GROUP: ${{ matrix.group }}
       APT_PKGS: build-essential zlib1g-dev clang ffmpeg ccache
     timeout-minutes: 15
 
@@ -60,8 +65,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.group }}-${{ github.sha }}
           restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.group }}-
             ccache-${{ github.workflow }}-${{ github.job }}-
 
       - name: Enable ccache
@@ -341,6 +347,7 @@ jobs:
             # metadata, retries and frame leases, and WebM dispatch
             # into it.
             rmp4_vp9_config_test
+            rmp4_vp9_hw_stream_test
             rvp9_config_test
             rvp9_reference_test
             rvp9_hw_session_test
@@ -440,6 +447,14 @@ jobs:
 
           for d in "${MKDIRS[@]}"; do
             rel=${d#./}
+            case "$rel" in
+              formats/av1|formats/h264|formats/h265|formats/vp9) group=codecs ;;
+              formats/*) group=formats ;;
+              *) group=core ;;
+            esac
+            if [[ "$group" != "$SAMPLE_GROUP" ]]; then
+              continue
+            fi
             printf '========================================\n'
             printf '[%s] %s\n' "$(is_in "$rel" "${SKIP_DIRS[@]}" && echo skip || echo build)" "$rel"
             printf '========================================\n'
@@ -450,7 +465,7 @@ jobs:
             fi
 
             # Build
-            if ! ( cd "$d" && make clean all $MAKE_ARGS ); then
+            if ! ( cd "$d" && make clean && timeout 300 make -j2 all $MAKE_ARGS ); then
               printf '\n::error title=Build failed::%s failed to build\n' "$rel"
               fails=$((fails+1))
               continue
@@ -522,6 +537,7 @@ jobs:
           fi
 
       - name: Parse a generated DVD VOB with the native readers
+        if: matrix.group == 'formats'
         shell: bash
         working-directory: libretro-common/samples/formats/dvd
         run: |
@@ -546,6 +562,7 @@ jobs:
           done
 
       - name: Reconstruct progressive H262 I pictures against a reference
+        if: matrix.group == 'formats'
         shell: bash
         working-directory: libretro-common/samples/formats/dvd
         run: |
@@ -563,6 +580,7 @@ jobs:
           ./rdvd_h262_test "$fixture" "$reference"
 
       - name: Compile-test retro_atomic.h from a C++11 TU
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common
         run: |
@@ -677,6 +695,7 @@ jobs:
           rm -rf "$tmpdir"
 
       - name: Run retro_atomic_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/atomic/retro_atomic_test
         run: |
@@ -698,6 +717,7 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./retro_atomic_test
 
       - name: Run video_player_test under Clang + ThreadSanitizer, and threadless
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/formats/video_player
         run: |
@@ -720,6 +740,7 @@ jobs:
           done
 
       - name: Run rtime_localtime_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/time/rtime_localtime_test
         run: |
@@ -735,6 +756,7 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./rtime_localtime_test
 
       - name: Run retro_triple_buffer_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/queues/retro_triple_buffer_test
         run: |
@@ -750,6 +772,7 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./retro_triple_buffer_test
 
       - name: Run audio_mixer_voice_threads_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/audio/audio_mixer_voice_threads
         run: |
@@ -765,6 +788,7 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./audio_mixer_voice_threads_test
 
       - name: Run mpsc_stack_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/queues/mpsc_stack_test
         run: |
@@ -786,6 +810,7 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./mpsc_stack_test
 
       - name: Run retro_spsc_test on the POSIX shm mirror
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/queues/retro_spsc_test
         run: |
@@ -798,6 +823,7 @@ jobs:
           ./retro_spsc_test
 
       - name: Run retro_spsc_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/queues/retro_spsc_test
         run: |
@@ -823,6 +849,7 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./retro_spsc_test
 
       - name: Run retro_eventcount_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/rthreads/retro_eventcount_test
         run: |
@@ -849,6 +876,7 @@ jobs:
           CC=clang make check SANITIZER=thread
 
       - name: Run rzip_parallel_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/streams/rzip
         run: |
@@ -869,6 +897,7 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./rzip_parallel_test
 
       - name: Run crc32_test under Clang + ThreadSanitizer
+        if: matrix.group == 'core'
         shell: bash
         working-directory: libretro-common/samples/encodings/crc32
         run: |
@@ -889,6 +918,7 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./crc32_test
 
       - name: Prefix refill boundaries and sliding-window I/O
+        if: matrix.group == 'formats'
         run: |
           make -B -C libretro-common/samples/formats/data_transfer data_transfer_prefix_test data_transfer_window_test COUNT_IO=1 SAMPLE_OBJDIR=obj-inert-strict CFLAGS='-Wall -pedantic -std=gnu99 -O2 -g1 -DDT_STRICT -DDT_COUNT_IO -DHAVE_MMAP -D_GNU_SOURCE -I../../../include'
           cd libretro-common/samples/formats/data_transfer
@@ -907,7 +937,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.group }}-${{ github.sha }}
 
   # memmap.h picks between libretro-common's mman shim and the
   # platform's own <sys/mman.h>, and Emscripten is the target where
