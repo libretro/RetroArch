@@ -2791,6 +2791,11 @@ ifeq ($(HAVE_NETWORKING), 1)
          ifneq ($(HAVE_CRYPTO), 1)
             OBJ += $(LIBRETRO_COMM_DIR)/crypto/crypto.o
          endif
+         # LZMA and LZMA2 groups, decoded as the 7z backend does
+         ifneq ($(HAVE_7ZIP), 1)
+            OBJ += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.o \
+                   $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.o
+         endif
       endif
 
       ifeq ($(HAVE_LUA), 1)

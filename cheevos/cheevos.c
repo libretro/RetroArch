@@ -2139,10 +2139,10 @@ bool rcheevos_load(const void *data)
 
 #ifdef CHEEVOS_RVZ_READER
       /* The file reader is kept from one load to the next, so it is
-       * set for every load: the RVZ one for a file it reads, and the
-       * default for anything else - a disc image loaded after an RVZ
-       * was otherwise opened with the RVZ reader, and its hash failed. */
-      if (     string_is_equal_noncase(path_get_extension(info->path), "rvz")
+       * set for every load: the RVZ one for a file it reads, the
+       * default for anything else. */
+      const char* ext = path_get_extension(info->path);
+      if (     (string_is_equal_noncase(ext, "rvz") || string_is_equal_noncase(ext, "wia"))
             && (console_id = rcheevos_rvz_get_console_id(info->path))
                != RC_CONSOLE_UNKNOWN)
       {

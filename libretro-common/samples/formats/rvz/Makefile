@@ -11,6 +11,8 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/crypto/crypto.c \
 	$(LIBRETRO_COMM_DIR)/hash/lrc_hash.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
+	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.c \
+	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \

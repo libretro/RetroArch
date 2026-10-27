@@ -224,17 +224,261 @@ static void emit(struct out *o, const void *p, size_t len)
    o->len += len;
 }
 
+/* the file's compression method, as the disc struct numbers it */
+#define M_NONE  0
+#define M_PURGE 1
+#define M_LZMA  3
+#define M_LZMA2 4
+#define M_ZSTD  5
+
 struct config
 {
    const char *name;
    int      wii;
    uint32_t chunk;
-   int      zstd;
+   int      method;
    int      encrypted;
    int      segments;   /* the partition's data in 1 or 2; 3 is 2,
                          * the first not a whole hash block */
    int      exceptions;
+   int      wia;        /* WIA rather than RVZ */
 };
+
+/* ---- LZMA, as an encoder that emits literals only ----
+ *
+ * Every octet is coded as a literal, with the range coder and the
+ * adaptive model a real encoder uses (lc 3, lp 0, pb 2), so what the
+ * reader decodes is a genuine LZMA stream; it simply finds no
+ * matches. LZMA2 chunks come from it too, the model carried across
+ * chunks or reset as their control octet says. */
+
+#define LZ_PROPS 0x5d   /* lc 3, lp 0, pb 2 */
+
+struct lzenc
+{
+   uint64_t low;
+   uint32_t range;
+   uint32_t cache_size;
+   uint8_t  cache;
+   uint16_t is_match[16];        /* state 0, by position */
+   uint16_t lit[8 * 0x300];      /* by the previous octet's top three bits */
+};
+
+static void lz_model(struct lzenc *e)
+{
+   unsigned i;
+   for (i = 0; i < 16; i++)
+      e->is_match[i] = 1024;
+   for (i = 0; i < 8 * 0x300; i++)
+      e->lit[i] = 1024;
+}
+
+static void lz_coder(struct lzenc *e)
+{
+   e->low        = 0;
+   e->range      = 0xffffffffu;
+   e->cache      = 0;
+   e->cache_size = 1;
+}
+
+static void lz_shift(struct lzenc *e, struct out *o)
+{
+   if ((uint32_t)e->low < 0xff000000u || (e->low >> 32) != 0)
+   {
+      uint8_t t = e->cache;
+      do
+      {
+         uint8_t b = (uint8_t)(t + (uint8_t)(e->low >> 32));
+         emit(o, &b, 1);
+         t = 0xff;
+      } while (--e->cache_size);
+      e->cache = (uint8_t)(e->low >> 24);
+   }
+   e->cache_size++;
+   e->low = (e->low & 0x00ffffffu) << 8;
+}
+
+static void lz_bit(struct lzenc *e, struct out *o, uint16_t *p, unsigned bit)
+{
+   uint32_t bound = (e->range >> 11) * *p;
+   if (!bit)
+   {
+      e->range = bound;
+      *p      += (2048 - *p) >> 5;
+   }
+   else
+   {
+      e->low   += bound;
+      e->range -= bound;
+      *p      -= *p >> 5;
+   }
+   while (e->range < (1u << 24))
+   {
+      e->range <<= 8;
+      lz_shift(e, o);
+   }
+}
+
+/* [from, from + len) of @d, as literals; @d from 0 is the window */
+static void lz_literals(struct lzenc *e, struct out *o, const uint8_t *d,
+      size_t from, size_t len)
+{
+   size_t at;
+   for (at = from; at < from + len; at++)
+   {
+      unsigned prev = at ? d[at - 1] : 0, sym = 1, i;
+      uint16_t *lit = e->lit + 0x300 * (prev >> 5);
+      lz_bit(e, o, &e->is_match[at & 3], 0);
+      for (i = 0; i < 8; i++)
+      {
+         unsigned bit = (d[at] >> (7 - i)) & 1;
+         lz_bit(e, o, &lit[sym], bit);
+         sym = sym * 2 + bit;
+      }
+   }
+}
+
+static void lz_flush(struct lzenc *e, struct out *o)
+{
+   unsigned i;
+   for (i = 0; i < 5; i++)
+      lz_shift(e, o);
+}
+
+/* A raw LZMA stream of @d, with no end marker, as WIA and RVZ store
+ * one */
+static void lzma_raw(struct out *o, const uint8_t *d, size_t len)
+{
+   struct lzenc e;
+   lz_model(&e);
+   lz_coder(&e);
+   lz_literals(&e, o, d, 0, len);
+   lz_flush(&e, o);
+}
+
+/* An LZMA2 stream of @d: LZMA chunks, continuing the model or
+ * resetting it, and stored chunks, then the end */
+static void lzma2_raw(struct out *o, const uint8_t *d, size_t len)
+{
+   struct lzenc e;
+   size_t       at = 0;
+   int          first = 1, after_stored = 0;
+   while (at < len)
+   {
+      size_t   n = len - at;
+      unsigned kind = first ? 0 : rnd() % 5;
+      uint8_t  h[6];
+      if (kind == 4 && !first)
+      {
+         /* stored, up to 64 KiB */
+         if (n > 0x10000)
+            n = 0x10000;
+         h[0] = 0x02;
+         h[1] = (uint8_t)((n - 1) >> 8);
+         h[2] = (uint8_t)(n - 1);
+         emit(o, h, 3);
+         emit(o, d + at, n);
+         after_stored = 1;
+      }
+      else
+      {
+         struct out c;
+         unsigned   ctl;
+         /* the first chunk resets everything; after it, carry on, or
+          * reset the state, or that and the props */
+         if (first)
+            ctl = 0xe0;
+         else if (kind == 1 || after_stored)
+            ctl = 0xa0;
+         else if (kind == 2)
+            ctl = 0xc0;
+         else
+            ctl = 0x80;
+         if (n > 0xe000)
+            n = 0xe000;
+         if (ctl >= 0xa0 || first)
+            lz_model(&e);
+         lz_coder(&e);
+         memset(&c, 0, sizeof(c));
+         lz_literals(&e, &c, d, at, n);
+         lz_flush(&e, &c);
+         if (c.len > 0x10000)
+            fail("an LZMA2 chunk over 64 KiB packed", "writer");
+         h[0] = (uint8_t)(ctl | ((n - 1) >> 16));
+         h[1] = (uint8_t)((n - 1) >> 8);
+         h[2] = (uint8_t)(n - 1);
+         h[3] = (uint8_t)((c.len - 1) >> 8);
+         h[4] = (uint8_t)(c.len - 1);
+         h[5] = LZ_PROPS;
+         emit(o, h, ctl >= 0xc0 ? 6 : 5);
+         emit(o, c.d, c.len);
+         free(c.d);
+         after_stored = 0;
+      }
+      first = 0;
+      at   += n;
+   }
+   emit(o, NULL, 1);
+}
+
+/* @in compressed with the method into @o */
+static void squeeze(int method, struct out *o, const uint8_t *in, size_t len)
+{
+   if (method == M_LZMA)
+      lzma_raw(o, in, len);
+   else if (method == M_LZMA2)
+      lzma2_raw(o, in, len);
+#ifdef HAVE_RZSTD
+   else if (method == M_ZSTD)
+   {
+      size_t   cap = rzstd_compress_bound(len), wrote = 0;
+      uint8_t *z   = (uint8_t*)malloc(cap);
+      if (rzstd_encode(z, cap, in, len, 1, &wrote) != RZSTD_PROCESS_END)
+      {
+         fail("zstd encode", "writer");
+         wrote = 0;
+      }
+      emit(o, z, wrote);
+      free(z);
+   }
+#endif
+}
+
+/* A PURGE body: the lists as they are, padded to 4 octets, a segment
+ * for each run of octets not zero, and the SHA-1 of all of it */
+static void purge(struct out *o, const uint8_t *lists, size_t lists_len,
+      const uint8_t *d, size_t len)
+{
+   size_t from = o->len, at = 0;
+   emit(o, lists, lists_len);
+   while (lists_len && (o->len - from) & 3)
+      emit(o, NULL, 1);
+   while (at < len)
+   {
+      size_t  end, gap;
+      uint8_t h[8];
+      while (at < len && !d[at])
+         at++;
+      if (at == len)
+         break;
+      /* a run ends at eight zeros, or now and then sooner */
+      for (end = at, gap = 0; end < len && gap < 8; end++)
+         gap = d[end] ? 0 : gap + 1;
+      end -= gap;
+      if (end - at > 64 && (rnd() & 1))
+         end = at + 1 + rnd() % (end - at - 1);
+      put32(h, (uint32_t)at);
+      put32(h + 4, (uint32_t)(end - at));
+      emit(o, h, 8);
+      emit(o, d + at, end - at);
+      at = end;
+   }
+   {
+      uint8_t hash[20];
+      SHA1Digest(o->d + from, o->len - from, hash);
+      emit(o, hash, 20);
+   }
+}
 
 struct exc
 {
@@ -294,11 +538,15 @@ static void add_group(struct writer *w, const struct space *sp,
       uint64_t a, uint64_t b, const uint8_t *lists, size_t lists_len,
       int has_exc)
 {
+   const struct config *cfg = w->cfg;
    struct out body;
    uint8_t    ent[12];
    uint32_t   packed = 0, size;
-   int        compress = w->cfg->zstd && (rnd() & 3) != 0;
+   /* RVZ may store a group as it is in any method; WIA compresses all */
+   int        compressible = cfg->method != M_NONE && cfg->method != M_PURGE;
+   int        compress = compressible && (cfg->wia || (rnd() & 3) != 0);
    int        zero = !has_exc, junky = 0;
+   size_t     ent_len = cfg->wia ? 8 : 12;
    unsigned   j;
    uint64_t   x;
    size_t     data_at;
@@ -314,53 +562,48 @@ static void add_group(struct writer *w, const struct space *sp,
       put32(ent, (uint32_t)(w->file.len / 4));
       put32(ent + 4, 0);
       put32(ent + 8, 0);
-      emit(&w->groups, ent, 12);
+      emit(&w->groups, ent, ent_len);
       w->n_groups++;
       w->zero_any = 1;
       return;
    }
-   emit(&body, lists, lists_len);
-   if (lists_len && !compress)
-      while (body.len & 3)
-         emit(&body, NULL, 1);
-   data_at = body.len;
-   for (j = 0; j < sp->nj && !junky; j++)
-      junky = sp->j[j].len && sp->j[j].off < b && sp->j[j].off + sp->j[j].len > a;
-   if (junky && (!w->packed_any || (rnd() % 4) != 0))
-   {
-      pack(&body, sp, a, b);
-      packed = (uint32_t)(body.len - data_at);
-      w->packed_any = 1;
-   }
+   if (cfg->method == M_PURGE)
+      purge(&body, lists, lists_len, sp->d + a, (size_t)(b - a));
    else
-      emit(&body, sp->d + a, (size_t)(b - a));
+   {
+      emit(&body, lists, lists_len);
+      if (lists_len && !compress)
+         while (body.len & 3)
+            emit(&body, NULL, 1);
+      data_at = body.len;
+      for (j = 0; j < sp->nj && !junky && !cfg->wia; j++)
+         junky = sp->j[j].len && sp->j[j].off < b && sp->j[j].off + sp->j[j].len > a;
+      if (junky && (!w->packed_any || (rnd() % 4) != 0))
+      {
+         pack(&body, sp, a, b);
+         packed = (uint32_t)(body.len - data_at);
+         w->packed_any = 1;
+      }
+      else
+         emit(&body, sp->d + a, (size_t)(b - a));
+   }
 
-   size = (uint32_t)body.len;
-#ifdef HAVE_RZSTD
+   put32(ent, (uint32_t)(w->file.len / 4));
    if (compress)
    {
-      size_t cap = rzstd_compress_bound(body.len), wrote = 0;
-      uint8_t *z = (uint8_t*)malloc(cap);
-      if (rzstd_encode(z, cap, body.d, body.len, 1, &wrote) != RZSTD_PROCESS_END)
-      {
-         fail("zstd encode", w->cfg->name);
-         wrote = 0;
-      }
-      put32(ent, (uint32_t)(w->file.len / 4));
-      emit(&w->file, z, wrote);
-      size = 0x80000000u | (uint32_t)wrote;
-      free(z);
+      size_t at = w->file.len;
+      squeeze(cfg->method, &w->file, body.d, body.len);
+      size = (uint32_t)(w->file.len - at) | (cfg->wia ? 0 : 0x80000000u);
       w->compressed_any = 1;
    }
    else
-#endif
    {
-      put32(ent, (uint32_t)(w->file.len / 4));
       emit(&w->file, body.d, body.len);
+      size = (uint32_t)body.len;
    }
    put32(ent + 4, size);
    put32(ent + 8, packed);
-   emit(&w->groups, ent, 12);
+   emit(&w->groups, ent, ent_len);
    w->n_groups++;
    free(body.d);
 }
@@ -371,21 +614,13 @@ static void add_table(struct writer *w, const struct out *t, uint64_t *off, uint
    while (w->file.len & 3)
       emit(&w->file, NULL, 1);
    *off = w->file.len;
-#ifdef HAVE_RZSTD
-   if (w->cfg->zstd)
-   {
-      size_t cap = rzstd_compress_bound(t->len), wrote = 0;
-      uint8_t *z = (uint8_t*)malloc(cap);
-      rzstd_encode(z, cap, t->d, t->len, 3, &wrote);
-      emit(&w->file, z, wrote);
-      *size = (uint32_t)wrote;
-      free(z);
-      return;
-   }
-#endif
-   emit(&w->file, t->d, t->len);
-   *size = (uint32_t)t->len;
+   if (w->cfg->method != M_NONE && w->cfg->method != M_PURGE)
+      squeeze(w->cfg->method, &w->file, t->d, t->len);
+   else
+      emit(&w->file, t->d, t->len);
+   *size = (uint32_t)(w->file.len - *off);
 }
+
 
 /* The groups of raw data [start, start + size) of the disc */
 static void add_raw(struct writer *w, struct out *raw, const struct space *disc,
@@ -647,7 +882,7 @@ static bool write_rvz(const struct config *cfg, const char *path, struct image *
    add_table(&w, &w.groups, &group_off, &group_size);
    memset(dt, 0, sizeof(dt));
    put32(dt + 0x00, cfg->wii ? 2 : 1);
-   put32(dt + 0x04, cfg->zstd ? 5 : 0);
+   put32(dt + 0x04, (uint32_t)cfg->method);
    put32(dt + 0x08, 1);
    put32(dt + 0x0c, cfg->chunk);
    memcpy(dt + 0x10, disc.d, 0x80);
@@ -665,9 +900,22 @@ static bool write_rvz(const struct config *cfg, const char *path, struct image *
    put32(dt + 0xc4, w.n_groups);
    put64(dt + 0xc8, group_off);
    put32(dt + 0xd0, group_size);
+   /* the LZMA properties as the 7-Zip SDK stores them: LZMA's octet
+    * and dictionary size, LZMA2's dictionary code */
+   if (cfg->method == M_LZMA)
+   {
+      dt[0xd4] = 5;
+      dt[0xd5] = LZ_PROPS;
+      dt[0xd8] = 0x40;   /* 4 MiB, little endian */
+   }
+   else if (cfg->method == M_LZMA2)
+   {
+      dt[0xd4] = 1;
+      dt[0xd5] = 22;     /* 4 MiB */
+   }
 
    memset(head, 0, sizeof(head));
-   memcpy(head, "RVZ\x01", 4);
+   memcpy(head, cfg->wia ? "WIA\x01" : "RVZ\x01", 4);
    put32(head + 4, 0x01000000);
    put32(head + 8, 0x00030000);
    put32(head + 0x0c, sizeof(dt));
@@ -678,9 +926,9 @@ static bool write_rvz(const struct config *cfg, const char *path, struct image *
    memcpy(w.file.d, head, 0x48);
    memcpy(w.file.d + 0x48, dt, sizeof(dt));
 
-   if (cfg->zstd && !w.compressed_any)
+   if (cfg->method != M_NONE && cfg->method != M_PURGE && !w.compressed_any)
       fail("the writer stored no group compressed", cfg->name);
-   if (!w.packed_any)
+   if (!cfg->wia && !w.packed_any)
       fail("the writer packed no group", cfg->name);
 
    img->iso      = disc.d;
@@ -799,7 +1047,9 @@ static void check_image(const struct config *cfg, const struct image *img)
    }
 
    /* anywhere, any size, across every boundary */
-   for (i = 0; i < 300; i++)
+   /* fewer where a group is slow to decode: LZMA, and 2 MiB groups
+    * of literals the encoder here makes */
+   for (i = 0; i < (cfg->method == M_LZMA || cfg->method == M_LZMA2 ? 12u : 300u); i++)
    {
       uint64_t off  = ((uint64_t)rnd() << 16 ^ rnd()) % img->size;
       size_t   want = (i & 7) == 0 ? 1 + rnd() % sizeof(buf) : 1 + rnd() % 0x9000;
@@ -879,23 +1129,34 @@ static void check_damage(const struct config *cfg, const struct image *img)
 int main(int argc, char **argv)
 {
    static const struct config cfgs[] = {
-      { "gc-32k-none",       0, 0x8000,   0, 0, 1, 0 },
-      { "gc-128k-zstd",      0, 0x20000,  1, 0, 1, 0 },
-      { "gc-2m-zstd",        0, 0x200000, 1, 0, 1, 0 },
-      { "gc-4m-none",        0, 0x400000, 0, 0, 1, 0 },
-      { "wii-32k-zstd",      1, 0x8000,   1, 1, 2, 1 },
-      { "wii-32k-none",      1, 0x8000,   0, 1, 1, 1 },
-      { "wii-128k-zstd",     1, 0x20000,  1, 1, 2, 1 },
-      { "wii-128k-none",     1, 0x20000,  0, 1, 2, 1 },
-      { "wii-512k-zstd",     1, 0x80000,  1, 1, 1, 1 },
-      { "wii-2m-zstd",       1, 0x200000, 1, 1, 2, 1 },
-      { "wii-2m-none",       1, 0x200000, 0, 1, 1, 1 },
-      { "wii-4m-zstd",       1, 0x400000, 1, 1, 2, 1 },
-      { "wii-4m-none",       1, 0x400000, 0, 1, 1, 1 },
-      { "wii-128k-plain",    1, 0x20000,  1, 0, 2, 1 },
-      { "wii-32k-seg37",     1, 0x8000,   1, 1, 3, 1 },
-      { "wii-128k-seg37",    1, 0x20000,  0, 1, 3, 1 },
-      { "wii-2m-no-exc",     1, 0x200000, 1, 1, 2, 0 }
+      /* name                wii chunk    method   enc seg exc wia */
+      { "gc-32k-none",       0, 0x8000,   M_NONE,  0, 1, 0, 0 },
+      { "gc-128k-zstd",      0, 0x20000,  M_ZSTD,  0, 1, 0, 0 },
+      { "gc-2m-zstd",        0, 0x200000, M_ZSTD,  0, 1, 0, 0 },
+      { "gc-4m-none",        0, 0x400000, M_NONE,  0, 1, 0, 0 },
+      { "wii-32k-zstd",      1, 0x8000,   M_ZSTD,  1, 2, 1, 0 },
+      { "wii-32k-none",      1, 0x8000,   M_NONE,  1, 1, 1, 0 },
+      { "wii-128k-zstd",     1, 0x20000,  M_ZSTD,  1, 2, 1, 0 },
+      { "wii-128k-none",     1, 0x20000,  M_NONE,  1, 2, 1, 0 },
+      { "wii-512k-zstd",     1, 0x80000,  M_ZSTD,  1, 1, 1, 0 },
+      { "wii-2m-zstd",       1, 0x200000, M_ZSTD,  1, 2, 1, 0 },
+      { "wii-2m-none",       1, 0x200000, M_NONE,  1, 1, 1, 0 },
+      { "wii-4m-zstd",       1, 0x400000, M_ZSTD,  1, 2, 1, 0 },
+      { "wii-4m-none",       1, 0x400000, M_NONE,  1, 1, 1, 0 },
+      { "wii-128k-plain",    1, 0x20000,  M_ZSTD,  0, 2, 1, 0 },
+      { "wii-32k-seg37",     1, 0x8000,   M_ZSTD,  1, 3, 1, 0 },
+      { "wii-128k-seg37",    1, 0x20000,  M_NONE,  1, 3, 1, 0 },
+      { "wii-2m-no-exc",     1, 0x200000, M_ZSTD,  1, 2, 0, 0 },
+      { "gc-128k-lzma",      0, 0x20000,  M_LZMA,  0, 1, 0, 0 },
+      { "wii-128k-lzma",     1, 0x20000,  M_LZMA,  1, 2, 1, 0 },
+      { "gc-2m-lzma2",       0, 0x200000, M_LZMA2, 0, 1, 0, 0 },
+      { "wii-32k-lzma2",     1, 0x8000,   M_LZMA2, 1, 3, 1, 0 },
+      { "wia-gc-2m-none",    0, 0x200000, M_NONE,  0, 1, 0, 1 },
+      { "wia-gc-2m-purge",   0, 0x200000, M_PURGE, 0, 1, 0, 1 },
+      { "wia-wii-2m-purge",  1, 0x200000, M_PURGE, 1, 2, 1, 1 },
+      { "wia-wii-2m-lzma",   1, 0x200000, M_LZMA,  1, 2, 1, 1 },
+      { "wia-wii-4m-lzma2",  1, 0x400000, M_LZMA2, 1, 2, 1, 1 },
+      { "wia-gc-4m-lzma2",   0, 0x400000, M_LZMA2, 0, 1, 0, 1 }
    };
    const char *dir = argc > 1 ? argv[1] : NULL;
    unsigned c, run = 0;
@@ -910,7 +1171,7 @@ int main(int argc, char **argv)
       struct image img;
       char path[1024];
 #ifndef HAVE_RZSTD
-      if (cfg->zstd)
+      if (cfg->method == M_ZSTD)
          continue;
 #endif
       if (dir && strlen(dir) > sizeof(path) - 64)
@@ -921,7 +1182,7 @@ int main(int argc, char **argv)
       if (cfg->wii && cfg->exceptions && !img.n_exc)
          fail("the writer made no exceptions", cfg->name);
       check_image(cfg, &img);
-      if (c == 0 || c == 6)
+      if (c == 0 || c == 6 || c == 18 || c == 24)
          check_damage(cfg, &img);
       free(img.iso);
       free(img.file);

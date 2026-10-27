@@ -445,10 +445,8 @@ static void aes_x86_decrypt_block(const struct aes_ctx *ctx,
 
 /* CBC chains interleaved so the AES unit's latency on each is hidden
  * behind the others, the round keys loaded and byte-swapped once per
- * call. Eight chains, four or one, each kept in a register of its own:
- * held in an array indexed by a count known only at run time, they
- * lived on the stack, and every round of every chain waited on a
- * store and a load besides the cipher. */
+ * call. Eight chains, four or one, each in a register of its own, so
+ * no round waits on a store and a load besides the cipher. */
 
 #define AES_X86_CBC(name, EACH) \
 AES_TARGET_X86 \

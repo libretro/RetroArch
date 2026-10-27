@@ -230,6 +230,11 @@ ACHIEVEMENTS
 /* its AES, without the rest of the crypto library */
 #include "../libretro-common/crypto/crypto.c"
 #endif
+#ifndef HAVE_7ZIP
+/* its LZMA and LZMA2, without the 7z backend */
+#include "../libretro-common/formats/7z/r7z_lzma_stream.c"
+#include "../libretro-common/formats/7z/r7z_lzma2.c"
+#endif
 #endif
 
 #include "../deps/rcheevos/src/rc_client.c"

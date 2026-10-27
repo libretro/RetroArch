@@ -40,6 +40,9 @@
 #include <formats/rvz.h>
 #include <crypto/crypto.h>
 #include <lrc_hash.h>
+#include <7z/r7z_lzma.h>
+#include <7z/r7z_lzma_stream.h>
+#include <7z/r7z_lzma2.h>
 #ifdef HAVE_RZSTD
 #include <encodings/rzstd.h>
 #endif
@@ -55,9 +58,14 @@
 #define RVZ_PART_ENTRY     48
 #define RVZ_RAW_ENTRY      24
 #define RVZ_GROUP_ENTRY    12
+#define WIA_GROUP_ENTRY    8
 #define RVZ_EXCEPTION      22
 #define RVZ_COMP_NONE      0
-#define RVZ_COMP_ZSTD      5
+#define RVZ_COMP_PURGE     1    /* WIA only */
+#define RVZ_COMP_BZIP2     2
+#define RVZ_COMP_LZMA      3
+#define RVZ_COMP_LZMA2     4
+#define RVZ_COMP_ZSTD      5    /* RVZ only */
 #define RVZ_SEED_WORDS     17
 #define RVZ_PRNG_WORDS     521
 /* the groups one hash block can need: one per chunk, and one more
@@ -124,6 +132,7 @@ struct rvz
    struct rvz_group  *groups;
    struct rvz_slot   *slots;    /* for a hash block's groups */
    uint8_t           *zbuf;     /* a compressed group, as read */
+   uint16_t          *probs;    /* the LZMA model, for LZMA and LZMA2 */
    uint8_t           *zeros;    /* a group's worth of zeroed data */
    uint8_t           *block;    /* the hash block reassembled */
    uint8_t           *hashes;   /* its 64 sectors' hash areas */
@@ -170,6 +179,8 @@ struct rvz
    uint32_t           block_index; /* and block, or UINT32_MAX */
    int                disc_type;
    bool               encrypted;
+   bool               wia;      /* WIA rather than RVZ */
+   uint8_t            lzma_props[RLZMA_PROPS_SIZE]; /* LZMA2: [0] alone */
    uint8_t            head[RVZ_HEAD_SIZE];
    uint8_t            dhead[RVZ_DHEAD];
 };
@@ -222,6 +233,84 @@ static bool rvz_grow(uint8_t **buf, size_t *cap, size_t need)
    return true;
 }
 
+/* An LZMA stream carries no end: a group is decoded as far as its
+ * @n_lists exception lists say, then @tail octets more. */
+static int rvz_lzma(rvz_t *z, uint8_t *dst, size_t cap,
+      const uint8_t *src, size_t src_len, unsigned n_lists, size_t tail,
+      size_t *len)
+{
+   rlzma_stream_t lz;
+   size_t         want = 0, used = 0;
+   unsigned       l;
+   int            status;
+
+   if (rlzma_stream_init(&lz, z->lzma_props, z->probs, dst, cap) != RLZMA_OK)
+      return RVZ_ERROR_DATA;
+   rlzma_stream_reset(&lz);
+   /* each list's count, then its exceptions; then the rest */
+   for (l = 0; l <= 2 * n_lists; l++)
+   {
+      size_t in = src_len - used;
+      if (l == 2 * n_lists)
+         want += tail;
+      else if (!(l & 1))
+         want += 2;
+      else
+         want += (((size_t)dst[want - 2] << 8) | dst[want - 1]) * RVZ_EXCEPTION;
+      if (want > cap)
+         return RVZ_ERROR_DATA;
+      if (want == lz.dic_pos)
+         continue;
+      if (     rlzma_stream_decode(&lz, want, src + used, &in, 1, &status) != RLZMA_OK
+            || lz.dic_pos != want)
+         return RVZ_ERROR_DATA;
+      used += in;
+   }
+   *len = want;
+   return RVZ_OK;
+}
+
+/* @src (@src_len octets) decompressed with the file's method into @dst,
+ * at most @cap octets; @len receives what came out. Where the method
+ * does not mark its own end, the output is @n_lists exception lists
+ * and then @tail octets. */
+static int rvz_decompress(rvz_t *z, uint8_t *dst, size_t cap,
+      const uint8_t *src, size_t src_len, unsigned n_lists, size_t tail,
+      size_t *len)
+{
+   size_t in = src_len;
+   int    status;
+
+   *len = 0;
+   if (!cap)
+      return RVZ_ERROR_DATA;
+   switch (z->compression)
+   {
+#ifdef HAVE_RZSTD
+      case RVZ_COMP_ZSTD:
+         return rzstd_decode(dst, cap, src, src_len, len) == RZSTD_PROCESS_END
+            ? RVZ_OK : RVZ_ERROR_DATA;
+#endif
+      case RVZ_COMP_LZMA:
+         /* the output is the window: a group is one stream */
+         return rvz_lzma(z, dst, cap, src, src_len, n_lists, tail, len);
+      case RVZ_COMP_LZMA2:
+      {
+         rlzma2_dec_t lz;
+         if (rlzma2_dec_init(&lz, z->lzma_props[0], z->probs, dst, cap) != RLZMA_OK)
+            return RVZ_ERROR_DATA;
+         if (     rlzma2_dec_decode(&lz, cap, src, &in, 1, &status) != RLZMA_OK
+               || status == RLZMA2_STATUS_NEEDS_MORE_INPUT)
+            return RVZ_ERROR_DATA;
+         *len = lz.lzma.dic_pos;
+         return RVZ_OK;
+      }
+      default:
+         break;
+   }
+   return RVZ_ERROR_UNSUPPORTED;
+}
+
 /* A table stored compressed with the file's method, or as it is, into
  * z->tab: exactly @len octets. */
 static int rvz_table(rvz_t *z, uint64_t off, uint32_t stored, size_t len)
@@ -229,28 +318,69 @@ static int rvz_table(rvz_t *z, uint64_t off, uint32_t stored, size_t len)
    int e;
    if (!z->tab && !(z->tab = (uint8_t*)malloc(len ? len : 1)))
       return RVZ_ERROR_MEM;
-   if (z->compression == RVZ_COMP_NONE)
+   /* tables are stored as they are under NONE and PURGE alike */
+   if (z->compression == RVZ_COMP_NONE || z->compression == RVZ_COMP_PURGE)
    {
       if (stored < len)
          return RVZ_ERROR_DATA;
       return rvz_need(z, off, z->tab, len);
    }
-#ifdef HAVE_RZSTD
-   if (z->compression == RVZ_COMP_ZSTD)
    {
       size_t wrote = 0;
       if (!rvz_grow(&z->zbuf, &z->zbuf_cap, stored))
          return RVZ_ERROR_MEM;
       if ((e = rvz_need(z, off, z->zbuf, stored)) != RVZ_OK)
          return e;
-      if (     rzstd_decode(z->tab, len, z->zbuf, stored, &wrote) != RZSTD_PROCESS_END
-            || wrote != len)
-         return RVZ_ERROR_DATA;
-      return RVZ_OK;
+      if ((e = rvz_decompress(z, z->tab, len, z->zbuf, stored, 0, len, &wrote)) != RVZ_OK)
+         return e;
+      return wrote == len ? RVZ_OK : RVZ_ERROR_DATA;
    }
-#endif
-   (void)e;
-   return RVZ_ERROR_UNSUPPORTED;
+}
+
+/* A PURGE group (@src, @src_len octets) into @dst: @n_lists exception
+ * lists, stored as they are and padded to 4 octets, then @data_len
+ * octets of zeros with its segments laid over them. A SHA-1 ends the
+ * group; the heads' hashes already cover the tables that locate it.
+ * Returns the octets written, 0 for a group that does not parse. */
+static size_t rvz_purge(uint8_t *dst, size_t data_len, unsigned n_lists,
+      const uint8_t *src, size_t src_len)
+{
+   size_t   pos = 0, lists;
+   unsigned l;
+   if (src_len < 20)
+      return 0;
+   src_len -= 20;
+   for (l = 0; l < n_lists; l++)
+   {
+      size_t n;
+      if (src_len - pos < 2)
+         return 0;
+      n = ((size_t)src[pos] << 8) | src[pos + 1];
+      if ((src_len - pos - 2) / RVZ_EXCEPTION < n)
+         return 0;
+      pos += 2 + n * RVZ_EXCEPTION;
+   }
+   if (n_lists)
+      pos = (pos + 3) & ~(size_t)3;
+   if (pos > src_len)
+      return 0;
+   lists = pos;
+   memcpy(dst, src, lists);
+   memset(dst + lists, 0, data_len);
+   while (pos < src_len)
+   {
+      uint32_t at, size;
+      if (src_len - pos < 8)
+         return 0;
+      at   = rvz_be32(src + pos);
+      size = rvz_be32(src + pos + 4);
+      pos += 8;
+      if (size > src_len - pos || at > data_len || size > data_len - at)
+         return 0;
+      memcpy(dst + lists + at, src + pos, size);
+      pos += size;
+   }
+   return lists + data_len;
 }
 
 /* ---- padding: the lagged Fibonacci generator the discs use ---- */
@@ -390,7 +520,7 @@ static int rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
       s->group   = g;
       return RVZ_OK;
    }
-   if (into && !n_lists && !grp->packed)
+   if (into && !n_lists && !grp->packed && z->compression != RVZ_COMP_PURGE)
    {
       if (!grp->compressed)
       {
@@ -398,27 +528,31 @@ static int rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
             return RVZ_ERROR_DATA;
          return rvz_need(z, grp->off, into, data_len);
       }
-#ifdef HAVE_RZSTD
       {
          size_t wrote = 0;
-         if (z->compression != RVZ_COMP_ZSTD)
-            return RVZ_ERROR_UNSUPPORTED;
          if (!rvz_grow(&z->zbuf, &z->zbuf_cap, grp->size))
             return RVZ_ERROR_MEM;
          if ((e = rvz_need(z, grp->off, z->zbuf, grp->size)) != RVZ_OK)
             return e;
-         if (     rzstd_decode(into, data_len, z->zbuf, grp->size, &wrote)
-                  != RZSTD_PROCESS_END
-               || wrote != data_len)
-            return RVZ_ERROR_DATA;
-         return RVZ_OK;
+         if ((e = rvz_decompress(z, into, data_len, z->zbuf, grp->size,
+                     0, data_len, &wrote)) != RVZ_OK)
+            return e;
+         return wrote == data_len ? RVZ_OK : RVZ_ERROR_DATA;
       }
-#else
-      return RVZ_ERROR_UNSUPPORTED;
-#endif
    }
 
-   if (!grp->compressed)
+   if (z->compression == RVZ_COMP_PURGE)
+   {
+      size_t cap = n_lists * (2 + (size_t)0xffff * RVZ_EXCEPTION) + 4 + data_len;
+      if (     !rvz_grow(&z->zbuf, &z->zbuf_cap, grp->size)
+            || !rvz_grow(&s->raw, &s->raw_cap, cap))
+         return RVZ_ERROR_MEM;
+      if ((e = rvz_need(z, grp->off, z->zbuf, grp->size)) != RVZ_OK)
+         return e;
+      if (!(len = rvz_purge(s->raw, data_len, n_lists, z->zbuf, grp->size)))
+         return RVZ_ERROR_DATA;
+   }
+   else if (!grp->compressed)
    {
       if (!rvz_grow(&s->raw, &s->raw_cap, grp->size))
          return RVZ_ERROR_MEM;
@@ -428,30 +562,27 @@ static int rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
    }
    else
    {
-#ifdef HAVE_RZSTD
-      int64_t cs;
-      size_t  cap;
-      if (z->compression != RVZ_COMP_ZSTD)
-         return RVZ_ERROR_UNSUPPORTED;
+      /* the most a group can hold: its lists and its data, packed or
+       * not; a Zstandard frame may say exactly */
+      size_t cap = n_lists * (2 + (size_t)0xffff * RVZ_EXCEPTION)
+                 + (grp->packed ? grp->packed : data_len);
       if (!rvz_grow(&z->zbuf, &z->zbuf_cap, grp->size))
          return RVZ_ERROR_MEM;
       if ((e = rvz_need(z, grp->off, z->zbuf, grp->size)) != RVZ_OK)
          return e;
-      /* the frame says how large it decompresses; when it does not,
-       * the most a group can hold: its lists and its data, packed
-       * or not */
-      cs  = rzstd_frame_content_size(z->zbuf, grp->size);
-      cap = n_lists * (2 + (size_t)0xffff * RVZ_EXCEPTION)
-          + (grp->packed ? grp->packed : data_len);
-      if (cs >= 0 && (uint64_t)cs < cap)
-         cap = (size_t)cs;
+#ifdef HAVE_RZSTD
+      if (z->compression == RVZ_COMP_ZSTD)
+      {
+         int64_t cs = rzstd_frame_content_size(z->zbuf, grp->size);
+         if (cs >= 0 && (uint64_t)cs < cap)
+            cap = (size_t)cs;
+      }
+#endif
       if (!rvz_grow(&s->raw, &s->raw_cap, cap))
          return RVZ_ERROR_MEM;
-      if (rzstd_decode(s->raw, cap, z->zbuf, grp->size, &len) != RZSTD_PROCESS_END)
-         return RVZ_ERROR_DATA;
-#else
-      return RVZ_ERROR_UNSUPPORTED;
-#endif
+      if ((e = rvz_decompress(z, s->raw, cap, z->zbuf, grp->size, n_lists,
+               grp->packed ? grp->packed : data_len, &len)) != RVZ_OK)
+         return e;
    }
    p = s->raw;
 
@@ -468,7 +599,7 @@ static int rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
    }
    s->exc     = n_lists ? p : NULL;
    s->exc_len = pos;
-   if (n_lists && !grp->compressed)
+   if (n_lists && (!grp->compressed || z->compression == RVZ_COMP_PURGE))
       pos = (pos + 3) & ~(size_t)3;
    if (pos > len)
       return RVZ_ERROR_DATA;
@@ -763,7 +894,8 @@ static int rvz_read_run(rvz_t *z)
             take = (size_t)(g_len - in_g);
          if (z->raw.group == r->group + g)
             memcpy(at, z->raw.data + in_g, take);
-         else if (grp->size && !grp->compressed && !grp->packed)
+         else if (grp->size && !grp->compressed && !grp->packed
+               && z->compression != RVZ_COMP_PURGE)
          {
             /* stored as it is: asked for where it is to go */
             if (grp->size < g_len)
@@ -908,6 +1040,7 @@ void rvz_free(rvz_t *z)
    free(z->block);
    free(z->hashes);
    free(z->h0);
+   free(z->probs);
    free(z->disc);
    free(z->tab);
    free(z);
@@ -985,9 +1118,20 @@ static int rvz_open_groups(rvz_t *z)
       return RVZ_ERROR_MEM;
    for (i = 0; i < z->n_groups; i++)
    {
-      const uint8_t *e  = z->tab + (size_t)i * RVZ_GROUP_ENTRY;
+      const uint8_t *e  = z->tab + (size_t)i * (z->wia ? WIA_GROUP_ENTRY : RVZ_GROUP_ENTRY);
       uint32_t       sz = rvz_be32(e + 4);
       z->groups[i].off        = (uint64_t)rvz_be32(e) * 4;
+      if (z->wia)
+      {
+         /* every group in the file's method; no packing */
+         z->groups[i].size       = sz;
+         z->groups[i].compressed = z->compression != RVZ_COMP_NONE
+                                && z->compression != RVZ_COMP_PURGE;
+         z->groups[i].packed     = 0;
+         if (z->groups[i].off + z->groups[i].size > z->file_size)
+            return RVZ_ERROR_DATA;
+         continue;
+      }
       z->groups[i].size       = sz & 0x7fffffffu;
       /* nothing is read from past the end of the file */
       if (z->groups[i].off + z->groups[i].size > z->file_size)
@@ -1086,7 +1230,9 @@ static int rvz_open_run(rvz_t *z)
             /* the file head, its own hash over everything before it */
             if ((e = rvz_need(z, 0, z->head, RVZ_HEAD_SIZE)) != RVZ_OK)
                return e;
-            if (memcmp(z->head, "RVZ\x01", 4))
+            if (!memcmp(z->head, "WIA\x01", 4))
+               z->wia = true;
+            else if (memcmp(z->head, "RVZ\x01", 4))
                return RVZ_ERROR_DATA;
             SHA1Digest(z->head, RVZ_HEAD_SIZE - 20, hash);
             if (memcmp(hash, z->head + RVZ_HEAD_SIZE - 20, 20))
@@ -1132,6 +1278,32 @@ static int rvz_open_run(rvz_t *z)
                   || z->n_parts > 64 || z->part_size > 0x1000
                   || z->n_raw > 0x100000 || z->n_groups > 0x1000000)
                return RVZ_ERROR_DATA;
+            /* RVZ alone has chunks under 2 MiB, Zstandard, and not
+             * PURGE */
+            if (     (z->wia && (z->chunk % RVZ_BLOCK
+                        || z->compression == RVZ_COMP_ZSTD))
+                  || (!z->wia && z->compression == RVZ_COMP_PURGE))
+               return RVZ_ERROR_DATA;
+            /* the LZMA properties, as the 7-Zip SDK stores them */
+            if (z->compression == RVZ_COMP_LZMA || z->compression == RVZ_COMP_LZMA2)
+            {
+               unsigned n = z->compression == RVZ_COMP_LZMA ? RLZMA_PROPS_SIZE : 1;
+               size_t   probs;
+               if (d[0xd4] < n)
+                  return RVZ_ERROR_DATA;
+               memcpy(z->lzma_props, d + 0xd5, n);
+               if (z->compression == RVZ_COMP_LZMA)
+               {
+                  unsigned v = z->lzma_props[0];
+                  if (v >= 9 * 5 * 5)
+                     return RVZ_ERROR_DATA;
+                  probs = RLZMA_STREAM_NUM_PROBS(v % 9, (v / 9) % 5);
+               }
+               else
+                  probs = RLZMA2_NUM_PROBS;
+               if (!(z->probs = (uint16_t*)malloc(probs * sizeof(uint16_t))))
+                  return RVZ_ERROR_MEM;
+            }
             z->encrypted = z->dhead[0x61] == 0;
             z->data_max  = z->chunk;
             z->stage     = RVZ_STAGE_PARTS;
@@ -1153,8 +1325,8 @@ static int rvz_open_run(rvz_t *z)
             z->stage = RVZ_STAGE_GROUPS;
             break;
          case RVZ_STAGE_GROUPS:
-            if ((e = rvz_table(z, z->group_off, z->group_size,
-                     (size_t)z->n_groups * RVZ_GROUP_ENTRY)) != RVZ_OK)
+            if ((e = rvz_table(z, z->group_off, z->group_size, (size_t)z->n_groups
+                     * (z->wia ? WIA_GROUP_ENTRY : RVZ_GROUP_ENTRY))) != RVZ_OK)
                return e;
             if ((e = rvz_open_groups(z)) != RVZ_OK)
                return e;

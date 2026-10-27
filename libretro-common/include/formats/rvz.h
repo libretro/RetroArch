@@ -30,16 +30,16 @@
 
 RETRO_BEGIN_DECLS
 
-/* RVZ, the GameCube and Wii disc image format, read as the disc image
- * it stands for: every read returns the octets an ISO of the same
- * disc holds at that offset. Wii partitions, stored decrypted and
- * without their hashes, come back hashed and encrypted, with the
+/* RVZ and WIA, the GameCube and Wii disc image formats, read as the
+ * disc image they stand for: every read returns the octets an ISO of
+ * the same disc holds at that offset. Wii partitions, stored decrypted
+ * and without their hashes, come back hashed and encrypted, with the
  * file's hash exceptions applied; padding stored as a generator seed
  * comes back as the padding.
  *
- * Groups stored uncompressed or with Zstandard are read; a file whose
- * groups use another method opens, and reads of those groups fail.
- * Zstandard needs HAVE_RZSTD.
+ * Groups stored uncompressed, with LZMA or LZMA2, with Zstandard (RVZ,
+ * needing HAVE_RZSTD) or PURGE (WIA) are read; a file whose groups use
+ * bzip2 opens, and reads of those groups fail.
  *
  * The reader does no file I/O of its own and holds no file. Each range
  * of the file it needs is described to the caller as a request, which

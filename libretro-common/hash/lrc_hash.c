@@ -507,10 +507,9 @@ static void SHA1Reset(struct sha1_state *context)
 }
 
 /* The block functions take a run of whole blocks straight from the
- * caller's buffer and keep the state in registers across it: one
- * block at a time through the context, each was copied into
- * context->block, the state loaded and stored around it, and the
- * instruction set asked about again.
+ * caller's buffer and keep the state in registers across it, with
+ * nothing copied into the context and the instruction set asked about
+ * once per run.
  *
  * The two-lane forms run two independent messages through the rounds
  * side by side. A round waits on the one before it, and the hardware
