@@ -1,0 +1,76 @@
+/* Copyright  (C) 2010-2026 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (rbzip2.h).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/* Clean-room decoder for the bzip2 stream format.
+ *
+ * A stream is "BZh", a block size digit, then blocks: each the
+ * Burrows-Wheeler transform of up to 100 000 x digit octets, coded as
+ * move-to-front ranks with runs of rank 0 in bijective base 2 and two
+ * to six Huffman tables, under a run-length coding of the input
+ * applied before the transform. Each block carries the CRC of what it
+ * decodes to, and the end of the stream the combination of them all;
+ * both are checked.
+ *
+ * Decoding only, of one whole stream held in memory into a buffer
+ * already sized for it, as the WIA disc image format stores its
+ * groups. Blocks marked randomised, which no bzip2 has written since
+ * 0.9.5, are refused. No file I/O. */
+
+#ifndef __LIBRETRO_SDK_FORMAT_RBZIP2_H__
+#define __LIBRETRO_SDK_FORMAT_RBZIP2_H__
+
+#include <stddef.h>
+#include <stdint.h>
+
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
+#define RBZIP2_OK          0
+#define RBZIP2_ERROR_DATA  -1   /* not a stream, corrupt, or a CRC fails */
+#define RBZIP2_ERROR_SPACE -2   /* decodes to more than the buffer holds */
+#define RBZIP2_ERROR_MEM   -3
+
+typedef struct rbzip2 rbzip2_t;
+
+/* A decoder; its block buffer is allocated at the first block and kept
+ * for the next stream. NULL when out of memory. */
+rbzip2_t *rbzip2_new(void);
+
+void rbzip2_free(rbzip2_t *bz);
+
+/**
+ * rbzip2_decode:
+ * @dst      : where the stream decodes to
+ * @dst_len  : capacity of @dst
+ * @src      : the stream, from "BZh" on
+ * @src_len  : octets at @src; anything after the stream's end is ignored
+ * @wrote    : receives the octets decoded (may be NULL)
+ *
+ * Returns: RBZIP2_OK, or an RBZIP2_ERROR_* value.
+ **/
+int rbzip2_decode(rbzip2_t *bz, uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len, size_t *wrote);
+
+RETRO_END_DECLS
+
+#endif

@@ -103,6 +103,7 @@ jobs:
             unbase64_test
             crc32_test
             rzstd_raw_block_test
+            rbzip2_test
             rinflate_window_test
             rdeflate_hash_test
             emscripten_mmap_test
