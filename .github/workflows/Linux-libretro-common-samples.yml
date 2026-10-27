@@ -110,6 +110,7 @@ jobs:
             snprintf
             unbase64_test
             crc32_test
+            xxhash_test
             rzstd_raw_block_test
             rbzip2_test
             rinflate_window_test
