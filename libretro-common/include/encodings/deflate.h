@@ -88,6 +88,19 @@ void  rinflate_set_in(void *stream, const uint8_t *in, size_t in_size);
 void  rinflate_set_out(void *stream, uint8_t *out, size_t out_size);
 
 /**
+ * rinflate_extend_out:
+ * @stream       : stream returned by rinflate_new()
+ * @out_size     : the output's new size, from where rinflate_set_out()
+ *                 put its start
+ *
+ * Moves the end of the bound output, keeping what is written and where:
+ * a decode into one buffer runs a part at a time, its matches reaching
+ * back into the buffer itself. A size short of what is written is
+ * ignored.
+ **/
+void  rinflate_extend_out(void *stream, size_t out_size);
+
+/**
  * rinflate_set_dictionary:
  *
  * Primes the 32KB back-reference window with the tail of @dict, so a

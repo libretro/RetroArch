@@ -277,13 +277,13 @@ int r7z_archive_decode_step(r7z_archive_t *a, uint32_t index);
  * @avail      : receives how many of them are there to be read
  *
  * How much of entry @index has been decoded. A folder whose last coder
- * decodes in order - LZMA or LZMA2, which is to say nearly all of them -
- * fills the buffer it will be held in from the front, and what is in it
- * is final: @data points into it, at the same place from the first call
- * to the last and for as long as the folder is held, and @avail grows
- * to the entry's size. A folder that ends in a filter gives nothing
- * until it is done, and then everything. The bytes are not checked
- * against a CRC until the folder is.
+ * decodes in order - LZMA, LZMA2, PPMd or Deflate, which is to say
+ * nearly all of them - fills the buffer it will be held in from the
+ * front, and what is in it is final: @data points into it, at the same
+ * place from the first call to the last and for as long as the folder
+ * is held, and @avail grows to the entry's size. A folder that ends in
+ * a filter gives nothing until it is done, and then everything. The
+ * bytes are not checked against a CRC until the folder is.
  *
  * Any thread.
  *

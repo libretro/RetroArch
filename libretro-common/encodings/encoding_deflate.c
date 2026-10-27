@@ -900,6 +900,13 @@ void rinflate_set_out(void *data, uint8_t *out, size_t size)
    s->wprior = s->whave;
 }
 
+void rinflate_extend_out(void *data, size_t size)
+{
+   struct rinflate *s = (struct rinflate*)data;
+   if (size >= s->out_pos)
+      s->out_size = size;
+}
+
 /* Prime the back-reference window with the tail of @dict, for resuming
  * raw-deflate decode mid-stream (indexed random access into gzip
  * members: the index stores the 32KB of plaintext preceding each entry

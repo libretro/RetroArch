@@ -363,11 +363,11 @@ struct r7z_archive
 
    /* A folder decode that has been started and paused part way.
     *
-    * Only the LZMA and LZMA2 stages pause: they are 97% of the time
-    * and their decoders already take an output limit. Every other
-    * coder in a chain, the branch filters included, runs to
-    * completion in one go because each is a single linear pass of a
-    * few milliseconds over the whole buffer.
+    * The LZMA, LZMA2, PPMd and Deflate stages pause: they are nearly
+    * all of the time, and each decodes in order to an output limit.
+    * Every other coder in a chain, the branch filters included, runs
+    * to completion in one go because each is a single linear pass of
+    * a few milliseconds over the whole buffer.
     *
     * pend_folder is 0xFFFFFFFF when nothing is in flight. */
    uint32_t       pend_folder;
@@ -378,10 +378,13 @@ struct r7z_archive
    uint8_t       *pend_out;        /* buffer being filled */
    size_t         pend_out_len;
    int            pend_pass;       /* a Copy stage: pend_out is pend_in */
-   void          *pend_dec;        /* rlzma2_dec_t, when one is live */
+   void          *pend_dec;        /* the stage's decoder, when one is
+                                      live: see stage_dec_free() */
    uint16_t      *pend_probs;
    size_t         pend_fed;        /* input consumed by this stage */
+   size_t         pend_made;       /* output a Deflate stage has made */
    uint32_t       pend_base;       /* coder_unpack_sizes base for folder */
+   uint32_t       pend_method;     /* the method pend_dec decodes */
 
    /* What a reader on another thread may look at while one thread calls
     * r7z_archive_decode_step(): the buffer the folder is being decoded
@@ -1418,6 +1421,79 @@ fail:
  * the end of one.
  * -------------------------------------------------------------------- */
 
+/* A PPMd coder part way: the model, the range decoder over the
+ * coder's whole input, and the octets decoded so far. */
+typedef struct r7z_ppmd
+{
+   rrar_ppmd7_t       m;
+   rrar_ppmd7_range_t rc;
+   size_t             pos;
+} r7z_ppmd_t;
+
+static void ppmd_close(r7z_ppmd_t *p)
+{
+   if (!p)
+      return;
+   rrar_ppmd7_free(&p->m);
+   free(p);
+}
+
+/* The PPMd decoder for coder @c over @in. */
+static int ppmd_open(const r7z_archive_t *a, const coder_t *c,
+      const uint8_t *in, size_t in_len, r7z_ppmd_t **out)
+{
+   /* order, then the model's memory, little endian */
+   const uint8_t *pr = a->props + c->prop_offset;
+   r7z_ppmd_t    *p;
+   uint32_t       mem;
+   unsigned       order;
+   *out = NULL;
+   if (c->prop_size < 5)
+      return R7Z_ERROR_DATA;
+   order = pr[0];
+   mem   = (uint32_t)pr[1] | ((uint32_t)pr[2] << 8)
+         | ((uint32_t)pr[3] << 16) | ((uint32_t)pr[4] << 24);
+   if (order < 2 || order > 64 || mem < (1u << 11)
+         || mem > 0xFFFFFFFFu - 12 * 3)
+      return R7Z_ERROR_DATA;
+   if (!(p = (r7z_ppmd_t*)malloc(sizeof(*p))))
+      return R7Z_ERROR_MEM;
+   rrar_ppmd7_construct(&p->m);
+   if (!rrar_ppmd7_alloc(&p->m, mem))
+   {
+      free(p);
+      return R7Z_ERROR_MEM;
+   }
+   rrar_ppmd7_init(&p->m, order);
+   p->pos = 0;
+   if (!rrar_ppmd7z_range_init(&p->rc, in, in + in_len))
+   {
+      ppmd_close(p);
+      return R7Z_ERROR_DATA;
+   }
+   *out = p;
+   return R7Z_OK;
+}
+
+/* Decode on to @limit of @out's @out_len octets; at the end, the
+ * stream must not have run past its input. */
+static int ppmd_run(r7z_ppmd_t *p, uint8_t *out, size_t limit,
+      size_t out_len)
+{
+   size_t i;
+   for (i = p->pos; i < limit; i++)
+   {
+      int sym = rrar_ppmd7_decode_symbol(&p->m, &p->rc);
+      if (sym < 0)
+         return R7Z_ERROR_DATA;
+      out[i] = (uint8_t)sym;
+   }
+   p->pos = limit;
+   if (limit == out_len && p->rc.past > 4)
+      return R7Z_ERROR_DATA;
+   return R7Z_OK;
+}
+
 static int decode_coder(r7z_archive_t *a, const coder_t *c,
       const uint8_t *in, size_t in_len,
       uint8_t *out, size_t out_len)
@@ -1611,46 +1687,12 @@ static int decode_coder(r7z_archive_t *a, const coder_t *c,
 
       case METHOD_PPMD:
       {
-         /* order, then the model's memory, little endian */
-         const uint8_t     *pr = a->props + c->prop_offset;
-         rrar_ppmd7_t      *m;
-         rrar_ppmd7_range_t rc;
-         uint32_t           mem;
-         unsigned           order;
-         size_t             i;
-         int                res = R7Z_OK;
-         if (c->prop_size < 5)
-            return R7Z_ERROR_DATA;
-         order = pr[0];
-         mem   = (uint32_t)pr[1] | ((uint32_t)pr[2] << 8)
-               | ((uint32_t)pr[3] << 16) | ((uint32_t)pr[4] << 24);
-         if (order < 2 || order > 64 || mem < (1u << 11)
-               || mem > 0xFFFFFFFFu - 12 * 3)
-            return R7Z_ERROR_DATA;
-         if (!(m = (rrar_ppmd7_t*)malloc(sizeof(*m))))
-            return R7Z_ERROR_MEM;
-         rrar_ppmd7_construct(m);
-         if (!rrar_ppmd7_alloc(m, mem))
-         {
-            free(m);
-            return R7Z_ERROR_MEM;
-         }
-         rrar_ppmd7_init(m, order);
-         if (!rrar_ppmd7z_range_init(&rc, in, in + in_len))
-            res = R7Z_ERROR_DATA;
-         for (i = 0; res == R7Z_OK && i < out_len; i++)
-         {
-            int sym = rrar_ppmd7_decode_symbol(m, &rc);
-            if (sym < 0)
-               res = R7Z_ERROR_DATA;
-            else
-               out[i] = (uint8_t)sym;
-         }
-         /* what the stream holds, and no more */
-         if (res == R7Z_OK && rc.past > 4)
-            res = R7Z_ERROR_DATA;
-         rrar_ppmd7_free(m);
-         free(m);
+         r7z_ppmd_t *p;
+         int         res = ppmd_open(a, c, in, in_len, &p);
+         if (res != R7Z_OK)
+            return res;
+         res = ppmd_run(p, out, out_len, out_len);
+         ppmd_close(p);
          return res;
       }
 
@@ -2441,9 +2483,10 @@ const r7z_entry_t *r7z_archive_entry(const r7z_archive_t *a, uint32_t index)
  * single uninterruptible block of work: a 2.8 MiB solid folder takes
  * about 67 ms, four dropped frames.
  *
- * These two functions do the same work in bounded slices. Only the
- * LZMA and LZMA2 stages pause, because they are 97% of the time and
- * their decoders already accept an output limit. Every other coder,
+ * These two functions do the same work in bounded slices. The LZMA,
+ * LZMA2, PPMd and Deflate stages pause, because they are nearly all of
+ * the time and each decodes in order to an output limit. Every other
+ * coder,
  * the branch filters included, is a single linear pass of one to three
  * milliseconds over the whole buffer, so it runs to completion within
  * one slice rather than being restructured.
@@ -2454,6 +2497,24 @@ const r7z_entry_t *r7z_archive_entry(const r7z_archive_t *a, uint32_t index)
  * 60 Hz frame, which leaves room for everything else in the frame.
  * Larger slices scale linearly: 256 KiB is already 7 ms. */
 #define R7Z_SLICE_BYTES (64 * 1024)
+
+/* The paused stage's decoder, freed as what it is. */
+static void stage_dec_free(r7z_archive_t *a)
+{
+   if (a->pend_method == METHOD_PPMD)
+      ppmd_close((r7z_ppmd_t *)a->pend_dec);
+   else if (a->pend_method == METHOD_DEFLATE)
+   {
+      if (a->pend_dec)
+         rinflate_free(a->pend_dec);
+   }
+   else
+      free(a->pend_dec);
+   free(a->pend_probs);
+   a->pend_dec    = NULL;
+   a->pend_probs  = NULL;
+   a->pend_method = 0;
+}
 
 static void decode_pending_reset(r7z_archive_t *a)
 {
@@ -2466,17 +2527,15 @@ static void decode_pending_reset(r7z_archive_t *a)
       free(a->pend_in);
    if (!a->pend_pass)
       free(a->pend_out);
-   free(a->pend_dec);
-   free(a->pend_probs);
+   stage_dec_free(a);
    a->pend_in          = NULL;
    a->pend_in_borrowed = 0;
    a->pend_pass        = 0;
    a->pend_out    = NULL;
-   a->pend_dec    = NULL;
-   a->pend_probs  = NULL;
    a->pend_in_len = 0;
    a->pend_out_len = 0;
    a->pend_fed    = 0;
+   a->pend_made   = 0;
    {
       uint32_t k;
       for (k = 0; k < 4; k++)
@@ -2504,12 +2563,14 @@ static void decode_pending_reset(r7z_archive_t *a)
    a->pend_base   = 0;
 }
 
-/* True when this coder is one whose decode can be paused. Both LZMA
- * flavours qualify: LZMA2 through r7z_lzma2, plain LZMA through
- * r7z_lzma_stream. Everything else is a single linear pass. */
+/* True when this coder is one whose decode can be paused: LZMA2
+ * through r7z_lzma2, plain LZMA through r7z_lzma_stream, PPMd a symbol
+ * at a time and Deflate through rinflate. Everything else is a single
+ * linear pass. */
 static int coder_is_resumable(const coder_t *c)
 {
-   return (c->method == METHOD_LZMA2 || c->method == METHOD_LZMA);
+   return (     c->method == METHOD_LZMA2 || c->method == METHOD_LZMA
+             || c->method == METHOD_PPMD  || c->method == METHOD_DEFLATE);
 }
 
 /* The cached folder, decoded whole and checked, is there to be read. */
@@ -2609,6 +2670,66 @@ static int decode_slice_lzma(r7z_archive_t *a, int *done)
    return R7Z_OK;
 }
 
+/* Run one slice of a paused PPMd stage. */
+static int decode_slice_ppmd(r7z_archive_t *a, int *done)
+{
+   r7z_ppmd_t *p     = (r7z_ppmd_t *)a->pend_dec;
+   size_t      limit = p->pos + R7Z_SLICE_BYTES;
+   int         res;
+   if (limit > a->pend_out_len)
+      limit = a->pend_out_len;
+   res = ppmd_run(p, a->pend_out, limit, a->pend_out_len);
+   r7z_progress_at(a, p->pos);
+   *done = (res == R7Z_OK && p->pos == a->pend_out_len);
+   return res;
+}
+
+/* Run one slice of a paused Deflate stage: its whole input and the
+ * buffer it decodes into are bound once, and each slice moves the end
+ * of the output on, so matches reach back into the buffer itself. */
+static int decode_slice_deflate(r7z_archive_t *a, int *done)
+{
+   size_t limit = a->pend_made + R7Z_SLICE_BYTES;
+   size_t wr    = 0;
+   int    st;
+   if (limit > a->pend_out_len)
+      limit = a->pend_out_len;
+   rinflate_extend_out(a->pend_dec, limit);
+   st            = rinflate_process(a->pend_dec, NULL, &wr);
+   a->pend_made += wr;
+   r7z_progress_at(a, a->pend_made);
+   *done = 0;
+   if (st == RDEFLATE_PROCESS_END)
+   {
+      if (a->pend_made != a->pend_out_len)
+         return R7Z_ERROR_DATA;
+      *done = 1;
+      return R7Z_OK;
+   }
+   /* short of the limit, the input ran out; at the end of the
+    * output, the stream goes on past it */
+   if (     st != RDEFLATE_PROCESS_NEXT || a->pend_made < limit
+         || a->pend_made == a->pend_out_len)
+      return R7Z_ERROR_DATA;
+   return R7Z_OK;
+}
+
+/* One slice of whichever paused stage c is. */
+static int decode_slice(r7z_archive_t *a, const coder_t *c, int *done)
+{
+   switch (c->method)
+   {
+      case METHOD_LZMA2:
+         return decode_slice_lzma2(a, c, done);
+      case METHOD_LZMA:
+         return decode_slice_lzma(a, done);
+      case METHOD_PPMD:
+         return decode_slice_ppmd(a, done);
+      default:
+         return decode_slice_deflate(a, done);
+   }
+}
+
 /* Set up the stage at a->pend_coder, ready for slicing or immediate
  * execution. */
 static int decode_stage_begin(r7z_archive_t *a, const folder_t *f)
@@ -2653,6 +2774,19 @@ static int decode_stage_begin(r7z_archive_t *a, const folder_t *f)
    }
 
    /* Stand up a decoder that survives between slices. */
+   a->pend_method = c->method;
+   if (c->method == METHOD_PPMD)
+      return ppmd_open(a, c, a->pend_in, a->pend_in_len,
+            (r7z_ppmd_t **)&a->pend_dec);
+   if (c->method == METHOD_DEFLATE)
+   {
+      if (!(a->pend_dec = rinflate_new(-15)))
+         return R7Z_ERROR_MEM;
+      rinflate_set_in(a->pend_dec, a->pend_in, a->pend_in_len);
+      rinflate_set_out(a->pend_dec, a->pend_out, 0);
+      a->pend_made = 0;
+      return R7Z_OK;
+   }
    if (c->method == METHOD_LZMA2)
    {
       if (c->prop_size < 1)
@@ -2714,10 +2848,7 @@ static int decode_stage_begin(r7z_archive_t *a, const folder_t *f)
  * Returns 1 when the whole chain is done. */
 static int decode_stage_finish(r7z_archive_t *a, const folder_t *f)
 {
-   free(a->pend_dec);
-   free(a->pend_probs);
-   a->pend_dec   = NULL;
-   a->pend_probs = NULL;
+   stage_dec_free(a);
 
    if (a->pend_pass)
       a->pend_pass = 0;   /* pend_in as it was, borrowed or not */
@@ -2942,9 +3073,7 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
          {
             int stage_done = 0;
 
-            res = (pc->method == METHOD_LZMA2)
-               ? decode_slice_lzma2(a, pc, &stage_done)
-               : decode_slice_lzma(a, &stage_done);
+            res = decode_slice(a, pc, &stage_done);
 
             if (res != R7Z_OK)
             {
@@ -2955,10 +3084,7 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
                return R7Z_OK;
 
             /* Port complete: hand its buffer over and move on. */
-            free(a->pend_dec);
-            free(a->pend_probs);
-            a->pend_dec   = NULL;
-            a->pend_probs = NULL;
+            stage_dec_free(a);
 
             a->pend_b2buf[i]      = a->pend_out;
             a->pend_b2len[i]      = a->pend_out_len;
@@ -3156,9 +3282,7 @@ static int decode_folder_slice(r7z_archive_t *a, uint32_t fi, int *done)
    {
       int stage_done = 0;
 
-      res = (c->method == METHOD_LZMA2)
-         ? decode_slice_lzma2(a, c, &stage_done)
-         : decode_slice_lzma(a, &stage_done);
+      res = decode_slice(a, c, &stage_done);
 
       if (res != R7Z_OK)
       {

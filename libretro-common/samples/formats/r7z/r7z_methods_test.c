@@ -101,6 +101,83 @@ static void archive(const char *what, const uint8_t *fx, size_t fx_len)
    r7z_archive_close(a);
 }
 
+/* big.txt's folder, decoded a step at a time: it takes several, what
+ * is decoded so far is there to be read from the front, at one place,
+ * and is big.txt's; a byte changed in the packed stream is refused. */
+static void staged(const char *what, const uint8_t *fx, size_t fx_len)
+{
+   size_t         n    = 300000, last = 0, k;
+   uint8_t       *want = (uint8_t*)malloc(n);
+   uint8_t       *bad  = (uint8_t*)malloc(fx_len);
+   uint8_t       *got  = NULL;
+   const uint8_t *at   = NULL;
+   r7z_archive_t *a    = NULL;
+   unsigned       steps = 0, partial = 0;
+   int            r, moved = 0, wrong = 0;
+
+   text(want, 20000);
+   for (k = 1; k < 15; k++)
+      memcpy(want + k * 20000, want, 20000);
+
+   if (r7z_archive_open(&a, fx, fx_len) != R7Z_OK)
+      check(0, what, "opens");
+   else
+   {
+      do
+      {
+         const uint8_t *data  = NULL;
+         size_t         avail = 0;
+         r = r7z_archive_decode_step(a, 0);
+         steps++;
+         if (r7z_archive_decode_peek(a, 0, &data, &avail) == R7Z_OK
+               && avail)
+         {
+            if (at && data != at)
+               moved = 1;
+            at = data;
+            if (avail < last || avail > n || memcmp(data, want, avail))
+               wrong = 1;
+            if (avail < n)
+               partial++;
+            last = avail;
+         }
+      } while (r == R7Z_PENDING && steps < 1000);
+      check(r == R7Z_OK, what, "decoded a step at a time");
+      check(steps >= 4, what, "over several steps");
+      check(partial >= 2, what, "readable part way");
+      check(!moved && !wrong && last == n, what,
+            "read from the front, in one place");
+      r = r7z_archive_extract(a, 0, &got, &k);
+      check(r == R7Z_OK && k == n && !memcmp(got, want, n), what,
+            "extracted");
+      free(got);
+      r7z_archive_close(a);
+   }
+
+   /* a byte in the middle of the packed stream, which begins at 32 */
+   memcpy(bad, fx, fx_len);
+   bad[32 + (fx_len - 32) / 4] ^= 0x40;
+   a = NULL;
+   if (r7z_archive_open(&a, bad, fx_len) == R7Z_OK)
+   {
+      steps = 0;
+      while ((r = r7z_archive_decode_step(a, 0)) == R7Z_PENDING
+            && ++steps < 1000) { }
+      /* the folder may carry no CRC of its own: then the member's
+       * refuses it */
+      if (r == R7Z_OK)
+      {
+         got = NULL;
+         r   = r7z_archive_extract(a, 0, &got, &k);
+         free(got);
+      }
+      check(r < 0, what, "a changed byte refused");
+      r7z_archive_close(a);
+   }
+   free(bad);
+   free(want);
+}
+
 /* A Deflate64 stream with the fixed codes, written LSB first */
 struct bits
 {
@@ -227,12 +304,14 @@ int main(void)
 #endif
    archive("Deflate", fx_deflate, sizeof(fx_deflate));
    archive("Deflate64", fx_deflate64, sizeof(fx_deflate64));
+   staged("PPMd, stepped", fx_big_ppmd, sizeof(fx_big_ppmd));
+   staged("Deflate, stepped", fx_big_deflate, sizeof(fx_big_deflate));
    deflate64();
    if (failures)
    {
       printf("%d failure(s)\n", failures);
       return 1;
    }
-   printf("r7z_methods_test: every coder's archive extracted, Deflate64 whole\n");
+   printf("r7z_methods_test: every coder's archive extracted, PPMd and Deflate a step at a time, Deflate64 whole\n");
    return 0;
 }
