@@ -1646,6 +1646,10 @@
 /* Allow players to pause */
 #define DEFAULT_NETPLAY_ALLOW_PAUSING false
 
+/* Sync both analog sticks of joypad ports. Clients older than
+ * netplay protocol 8 cannot join a host with this on. */
+#define DEFAULT_NETPLAY_ANALOG_JOYPADS true
+
 /* Allow connections in slave mode */
 #define DEFAULT_NETPLAY_ALLOW_SLAVES true
 

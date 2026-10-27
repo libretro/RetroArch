@@ -90,6 +90,19 @@ S_BOOL(netplay_allow_pausing, NETPLAY_ALLOW_PAUSING,
 /* The configuration row lives under defined(HAVE_NETWORKING); other passes are
  * unaffected. */
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_NETWORKING))
+S_BOOL(netplay_analog_joypads, NETPLAY_ANALOG_JOYPADS,
+      "netplay_analog_joypads",
+      DEFAULT_NETPLAY_ANALOG_JOYPADS, SD_FLAG_NONE, 0, 0,
+      "Sync Analog Sticks",
+      "Send the analog sticks of joypad ports as well as their buttons. Players on versions of RetroArch older than this one cannot join while this is on.")
+#endif
+#endif
+/* Descriptor and configuration rows are #if defined(HAVE_NETWORKING); the string
+ * tables always carry this row via the strings pass. */
+#if defined(HAVE_NETWORKING) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* The configuration row lives under defined(HAVE_NETWORKING); other passes are
+ * unaffected. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_NETWORKING))
 S_BOOL_EX(netplay_allow_slaves, NETPLAY_ALLOW_SLAVES,
       "netplay_allow_slaves",
       DEFAULT_NETPLAY_ALLOW_SLAVES, SD_FLAG_ADVANCED, 0, 0, setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0,

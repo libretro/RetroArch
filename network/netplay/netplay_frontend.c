@@ -1285,7 +1285,9 @@ bool netplay_handshake_init(netplay_t *netplay,
       );
 
       if (connection->netplay_protocol < LOW_NETPLAY_PROTOCOL_VERSION ||
-            connection->netplay_protocol > HIGH_NETPLAY_PROTOCOL_VERSION)
+            connection->netplay_protocol > HIGH_NETPLAY_PROTOCOL_VERSION ||
+            (   (netplay->flags & NETPLAY_FLAG_ANALOG_JOYPADS)
+             && connection->netplay_protocol < NETPLAY_PROTOCOL_ANALOG_JOYPADS))
       {
          /* Send it so that a proper notification can be shown there. */
          netplay_handshake_init_send(netplay, connection, 0);
@@ -2083,7 +2085,7 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
          netplay->flags |= NETPLAY_FLAG_HAVE_UPDOWN_DEVICE;
 
       pad.port   = (unsigned)i;
-      pad.device = device;
+      pad.device = NETPLAY_DEVICE_FOR_CORE(device);
       core_set_controller_port_device(&pad);
    }
 
@@ -5420,7 +5422,8 @@ static void netplay_handle_play_spectate(netplay_t *netplay,
                      retro_ctx_controller_info_t pad;
 
                      pad.port   = (unsigned)i;
-                     pad.device = netplay->config_devices[i];
+                     pad.device = NETPLAY_DEVICE_FOR_CORE(
+                           netplay->config_devices[i]);
                      core_set_controller_port_device(&pad);
 
                      netplay->device_share_modes[i] = share_mode;
@@ -5481,7 +5484,8 @@ static void netplay_handle_play_spectate(netplay_t *netplay,
                   devices    = 1U << i;
 
                   pad.port   = (unsigned)i;
-                  pad.device = netplay->config_devices[i];
+                  pad.device = NETPLAY_DEVICE_FOR_CORE(
+                        netplay->config_devices[i]);
                   core_set_controller_port_device(&pad);
 
                   netplay->device_share_modes[i] = share_mode;
@@ -7998,9 +8002,17 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
             netplay->flags &= ~NETPLAY_FLAG_NAT_TRAVERSAL;
       }
 
+      netplay->flags &= ~NETPLAY_FLAG_ANALOG_JOYPADS;
       for (i = 0; i < MAX_INPUT_DEVICES; i++)
       {
          uint32_t device = input_config_get_device(i);
+
+         if (     settings->bools.netplay_analog_joypads
+               && (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD)
+         {
+            device          = NETPLAY_DEVICE_ANALOG_JOYPAD(device);
+            netplay->flags |= NETPLAY_FLAG_ANALOG_JOYPADS;
+         }
 
          netplay->config_devices[i] = device;
 

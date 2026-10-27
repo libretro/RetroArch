@@ -125,11 +125,56 @@ static void t_decode(void)
    free(mouse);
 }
 
+/* A joypad port sent as analog: the core gets back the device it set,
+ * subclass and all, and the state carries buttons and both sticks */
+static void t_analog_joypad(void)
+{
+   static const uint32_t devs[] = {
+      RETRO_DEVICE_JOYPAD,
+      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0),
+      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 5) };
+   static const uint32_t others[] = {
+      RETRO_DEVICE_NONE, RETRO_DEVICE_ANALOG,
+      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG, 1),
+      RETRO_DEVICE_MOUSE, RETRO_DEVICE_KEYBOARD, RETRO_DEVICE_LIGHTGUN };
+   uint32_t *st = words(3);
+   unsigned i;
+
+   printf("   analog joypads: the core sees its own device, both sticks sync\n");
+   for (i = 0; i < sizeof(devs) / sizeof(devs[0]); i++)
+   {
+      uint32_t wire = NETPLAY_DEVICE_ANALOG_JOYPAD(devs[i]);
+      CHECK((wire & RETRO_DEVICE_MASK) == RETRO_DEVICE_ANALOG, "sent as analog");
+      CHECK(NETPLAY_DEVICE_FOR_CORE(wire) == devs[i], "joypad given back");
+   }
+   for (i = 0; i < sizeof(others) / sizeof(others[0]); i++)
+      CHECK(NETPLAY_DEVICE_FOR_CORE(others[i]) == others[i], "others untouched");
+
+   st[0] = UINT32_C(1) << RETRO_DEVICE_ID_JOYPAD_A;
+   st[1] = (uint32_t)(uint16_t)-32768 | ((uint32_t)(uint16_t)32767 << 16);
+   st[2] = (uint32_t)(uint16_t)1234;
+   CHECK(netplay_input_decode(st, 3, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_A) == 1, "joypad query, button");
+   CHECK(netplay_input_decode(st, 3, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_B) == 0, "joypad query, other button");
+   CHECK(netplay_input_decode(st, 3, RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X) == -32768,
+         "left x, full");
+   CHECK(netplay_input_decode(st, 3, RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y) == 32767,
+         "left y, full");
+   CHECK(netplay_input_decode(st, 3, RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X) == 1234,
+         "right x");
+   free(st);
+}
+
 int main(void)
 {
    printf("netplay input:\n");
    t_real_clients();
    t_decode();
+   t_analog_joypad();
    if (failures)
    {
       printf("%u failure(s)\n", failures);

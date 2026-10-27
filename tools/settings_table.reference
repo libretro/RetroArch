@@ -52,6 +52,7 @@ bool	video_scanline_sync	1	0
 bool	video_ctx_scaling	1	0
 bool	netplay_fade_chat	1	1
 bool	netplay_allow_pausing	1	0
+bool	netplay_analog_joypads	1	1
 bool	netplay_allow_slaves	1	1
 bool	netplay_require_slaves	1	0
 bool	playlist_entry_rename	1	1
@@ -774,6 +775,7 @@ bool	video_scanline_sync	1	0
 bool	video_ctx_scaling	1	0
 bool	netplay_fade_chat	1	1
 bool	netplay_allow_pausing	1	0
+bool	netplay_analog_joypads	1	1
 bool	netplay_allow_slaves	1	1
 bool	netplay_require_slaves	1	0
 bool	playlist_entry_rename	1	1
@@ -1487,6 +1489,7 @@ bool	video_scanline_sync	1	0
 bool	video_ctx_scaling	1	0
 bool	netplay_fade_chat	1	1
 bool	netplay_allow_pausing	1	0
+bool	netplay_analog_joypads	1	1
 bool	netplay_allow_slaves	1	1
 bool	netplay_require_slaves	1	0
 bool	playlist_entry_rename	1	1

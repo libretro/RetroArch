@@ -112,6 +112,20 @@ jobs:
             make -C samples/network/mcp_server check
           make -C samples/network/mcp_server clean
 
+      - name: Netplay input bookkeeping
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # netplay_frontend.c's input decode, real-client mask, analog
+          # joypad ports and relay host setup, as they ship
+          make -C samples/network/netplay_input clean
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
+            make -C samples/network/netplay_input check SANITIZER=address,undefined
+          make -C samples/network/netplay_input clean
+          make -C samples/network/netplay_input CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
+          make -C samples/network/netplay_input clean
+
       - name: GET_LOG's ring, written from four threads while read
         shell: bash
         working-directory: ${{ github.workspace }}

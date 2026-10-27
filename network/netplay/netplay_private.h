@@ -66,6 +66,18 @@
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
+/* A joypad port sent as analog, so its sticks sync with its buttons.
+ * The core is still given the joypad device it asked for. */
+#define NETPLAY_DEVICE_ANALOG_JOYPAD_FLAG ((uint32_t)1 << 30)
+#define NETPLAY_DEVICE_ANALOG_JOYPAD(device) \
+   (((device) & ~(uint32_t)RETRO_DEVICE_MASK) | RETRO_DEVICE_ANALOG \
+    | NETPLAY_DEVICE_ANALOG_JOYPAD_FLAG)
+#define NETPLAY_DEVICE_FOR_CORE(device) \
+   (((device) & NETPLAY_DEVICE_ANALOG_JOYPAD_FLAG) \
+    ? (((device) & ~(NETPLAY_DEVICE_ANALOG_JOYPAD_FLAG \
+          | (uint32_t)RETRO_DEVICE_MASK)) | RETRO_DEVICE_JOYPAD) \
+    : (device))
+
 /* Quirks mandated by how particular cores save states. This is distilled from
  * the larger set of quirks that the quirks environment can communicate. */
 #define NETPLAY_QUIRK_INITIALIZATION     (1 << 0)
@@ -518,7 +530,9 @@ enum netplay_flags
    /* Host settings */
    NETPLAY_FLAG_ALLOW_PAUSING                 = (1 << 13),
    /* A BSV recording is staging this frame's input queries */
-   NETPLAY_FLAG_BSV_CAPTURING                 = (1 << 14)
+   NETPLAY_FLAG_BSV_CAPTURING                 = (1 << 14),
+   /* Joypad ports travel as analog (NETPLAY_DEVICE_ANALOG_JOYPAD) */
+   NETPLAY_FLAG_ANALOG_JOYPADS                = (1 << 15)
 };
 
 struct netplay
