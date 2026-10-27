@@ -318,6 +318,14 @@ int main(void)
    const char *p = "roms/set.BZ2#game.bin";
    if (path_get_archive_delim(p) != p + 12)
       fail("path_get_archive_delim", "\".bz2#\" not a member");
+   if (!path_is_compressed_file("roms/set.bz2"))
+      fail("path_is_compressed_file", "set.bz2 is not an archive");
+   if (!path_is_compressed_file("roms/SET.Bz2"))
+      fail("path_is_compressed_file", "SET.Bz2 is not an archive");
+   if (path_is_compressed_file("roms/set.bz"))
+      fail("path_is_compressed_file", "set.bz is an archive");
+   if (!path_is_compressed_file("roms/set.7Z"))
+      fail("path_is_compressed_file", "set.7Z is not an archive");
    test_zip(false);
    test_zip(true);
    test_bz2();

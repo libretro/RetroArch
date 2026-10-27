@@ -137,8 +137,16 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_rzstd.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
+	$(LIBRETRO_COMM_DIR)/file/archive_file_zstd.c \
+	$(LIBRETRO_COMM_DIR)/file/archive_file_bz2.c \
+	$(LIBRETRO_COMM_DIR)/file/archive_file_rar.c \
+	$(LIBRETRO_COMM_DIR)/formats/rar/rrar_archive.c \
+	$(LIBRETRO_COMM_DIR)/formats/rar/rrar_ppmd7.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_rbzip2.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
@@ -152,6 +160,7 @@ SOURCES_C := \
 SCAN_TEST_DEFINES ?= -DSCAN_READER_PARK_USEC=30000000 \
 	-DSCAN_READER_CUTOFF=65536
 DEFINES    = -DHAVE_LIBRETRODB -DHAVE_COMPRESSION \
+	-DHAVE_RZSTD -DHAVE_RBZIP2 -DHAVE_RRAR \
 	$(SCAN_TEST_DEFINES) $(SCAN_DEFINES)
 
 LIBS += -lm
@@ -167,8 +176,7 @@ SOURCES_C += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_archive.c \
 				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.c \
 				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.c \
 				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_bcj2.c \
-				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.c \
-				 $(LIBRETRO_COMM_DIR)/formats/rar/rrar_ppmd7.c
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.c
 endif
 
 ifeq ($(HAVE_THREADS), 1)

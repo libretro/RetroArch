@@ -298,7 +298,11 @@ bool path_is_compressed_file(const char *path)
    switch (tolower((unsigned char)ext[0]))
    {
       case '7':
-         return ext[1] == 'z' && ext[2] == '\0';
+         return tolower((unsigned char)ext[1]) == 'z' && ext[2] == '\0';
+      case 'b':
+         return tolower((unsigned char)ext[1]) == 'z'
+             && ext[2] == '2'
+             && ext[3] == '\0';
       case 'a':
          return tolower((unsigned char)ext[1]) == 'p'
              && tolower((unsigned char)ext[2]) == 'k'

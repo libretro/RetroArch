@@ -58,6 +58,10 @@
 #include "../../../libretro-db/libretrodb.h"
 #include "spend_window.h"
 
+#include <encodings/rzstd.h>
+#include "../../../libretro-common/samples/encodings/rbzip2/bz_write.h"
+#include "scan_archives.h"
+
 #define SCAN_TIMEOUT_SECONDS 120
 
 
@@ -791,12 +795,13 @@ static int write_cia(const char *path, uint32_t crc)
    return ok;
 }
 
-/* A one-entry zip using the stored method, so no compressor is needed
- * and the bytes are entirely predictable.  Written by hand because
- * the point is to exercise the scanner's archive handling, not to
- * depend on a fixture checked into the tree. */
-static int write_zip(const char *path, const char *member,
-      const uint8_t *data, uint32_t len, uint32_t crc)
+/* A one-entry zip whose member @data (@clen octets) is stored with
+ * @method and stands for @len octets with crc32 @crc.  Written by hand
+ * because the point is to exercise the scanner's archive handling, not
+ * to depend on a fixture checked into the tree. */
+static int write_zip_method(const char *path, const char *member,
+      unsigned method, const uint8_t *data, uint32_t clen, uint32_t len,
+      uint32_t crc)
 {
    FILE    *f = fopen(path, "wb");
    uint16_t nlen = (uint16_t)strlen(member);
@@ -812,21 +817,21 @@ static int write_zip(const char *path, const char *member,
    /* local file header */
    memset(h, 0, 30);
    PUT32(h,      0x04034b50); PUT16(h + 4,  20); PUT16(h + 6, 0);
-   PUT16(h + 8,  0);          /* stored */
+   PUT16(h + 8,  method);
    PUT16(h + 10, 0); PUT16(h + 12, 0);
-   PUT32(h + 14, crc); PUT32(h + 18, len); PUT32(h + 22, len);
+   PUT32(h + 14, crc); PUT32(h + 18, clen); PUT32(h + 22, len);
    PUT16(h + 26, nlen); PUT16(h + 28, 0);
    fwrite(h, 1, 30, f);
    fwrite(member, 1, nlen, f);
-   fwrite(data, 1, len, f);
+   fwrite(data, 1, clen, f);
 
    /* central directory */
    local_off = 0;
    memset(h, 0, 46);
    PUT32(h,      0x02014b50); PUT16(h + 4, 20); PUT16(h + 6, 20);
-   PUT16(h + 8,  0); PUT16(h + 10, 0);
+   PUT16(h + 8,  0); PUT16(h + 10, method);
    PUT16(h + 12, 0); PUT16(h + 14, 0);
-   PUT32(h + 16, crc); PUT32(h + 20, len); PUT32(h + 24, len);
+   PUT32(h + 16, crc); PUT32(h + 20, clen); PUT32(h + 24, len);
    PUT16(h + 28, nlen); PUT16(h + 30, 0); PUT16(h + 32, 0);
    PUT16(h + 34, 0); PUT16(h + 36, 0); PUT32(h + 38, 0);
    PUT32(h + 42, local_off);
@@ -838,12 +843,29 @@ static int write_zip(const char *path, const char *member,
    PUT32(h,      0x06054b50);
    PUT16(h + 8,  1); PUT16(h + 10, 1);
    PUT32(h + 12, 46 + nlen);
-   PUT32(h + 16, 30 + nlen + len);
+   PUT32(h + 16, 30 + nlen + clen);
    fwrite(h, 1, 22, f);
    fclose(f);
 #undef PUT16
 #undef PUT32
    return 1;
+}
+
+/* The same with the member stored as it is */
+static int write_zip(const char *path, const char *member,
+      const uint8_t *data, uint32_t len, uint32_t crc)
+{
+   return write_zip_method(path, member, 0, data, len, len, crc);
+}
+
+static int write_bytes(const char *path, const uint8_t *d, size_t n)
+{
+   FILE *f = fopen(path, "wb");
+   int   ok;
+   if (!f)
+      return 0;
+   ok = fwrite(d, 1, n, f) == n;
+   return (fclose(f) == 0) && ok;
 }
 
 static int file_contains(const char *path, const char *needle)
@@ -2080,6 +2102,116 @@ fixture:
    check(0, "fixture", "could not write the mixed set");
 }
 
+#define ARC_LEN   2048
+#define ARC_KINDS 6
+
+/* An archive of each kind the scanner opens, matched through its
+ * member: by the CRC the archive records (7z, RAR, zip), by one the
+ * member is decoded for where none is recorded (RAR 5 with BLAKE2,
+ * .zst), or as it is listed (.bz2). Each archive's own CRC matches
+ * nothing. The core loads 7z, zip and RAR archives as they are, and
+ * none of its extensions is test.bin's: that archive is matched by its
+ * first member. */
+static void archive_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   char        db[512], dir[512], p[1024], lpl[1024], what[96];
+   char        crcs[ARC_KINDS][16], old_db[PATH_MAX_LENGTH];
+   db_rec_t    recs[ARC_KINDS];
+   uint8_t     d[ARC_LEN];
+   uint8_t    *c   = NULL;
+   size_t      cap = 16384, clen = 0;
+   uint32_t    i, x;
+   unsigned    k;
+   bool        started;
+   const char *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/archive_db", root);
+   sprintf(dir, "%s/archive_%s", root, threaded ? "t" : "r");
+   path_mkdir(db);
+   path_mkdir(dir);
+   if (!(c = (uint8_t*)malloc(cap)))
+      goto fixture;
+
+   for (i = 0; i < ARC_LEN; i++)
+      d[i] = (uint8_t)((i * 41 + 9) & 0xFF);
+   set_rec(&recs[0], "Arc Seven", crc_of(d, ARC_LEN), ARC_LEN);
+   sprintf(p, "%s/a1.7z", dir);
+   if (!write_bytes(p, fx_scan_7z, sizeof(fx_scan_7z)))
+      goto fixture;
+
+   set_rec(&recs[1], "Arc Rar", 0x7CCA70CDu, 1200);
+   sprintf(p, "%s/b2.rar", dir);
+   if (!write_bytes(p, fx_scan_rar5, sizeof(fx_scan_rar5)))
+      goto fixture;
+
+   set_rec(&recs[2], "Arc Blake", 0x7E5EC49Eu, 814);
+   sprintf(p, "%s/b3.rar", dir);
+   if (!write_bytes(p, fx_scan_rar5_blake2, sizeof(fx_scan_rar5_blake2)))
+      goto fixture;
+
+   /* three members of their own, made here */
+   for (k = 0; k < 3; k++)
+   {
+      static const char *const names[3] = {
+         "Arc Zst", "Arc Bzip", "Arc Zip Zstd" };
+      x = 5 + k;
+      for (i = 0; i < ARC_LEN; i++)
+      {
+         x    = x * 1103515245u + 12345u;
+         d[i] = (uint8_t)('a' + (x >> 16) % 6);
+      }
+      set_rec(&recs[3 + k], names[k], crc_of(d, ARC_LEN), ARC_LEN);
+      if (k == 1)
+         clen = bz_write(c, cap, d, ARC_LEN, 1, 1);
+      else if (rzstd_encode(c, cap, d, ARC_LEN, 3, &clen)
+            != RZSTD_PROCESS_END)
+         clen = 0;
+      if (!clen)
+         goto fixture;
+      if (k == 0)
+         sprintf(p, "%s/c4.rd.zst", dir);
+      else if (k == 1)
+         sprintf(p, "%s/c5.rd.bz2", dir);
+      else
+         sprintf(p, "%s/c6.zip", dir);
+      if (k < 2 ? !write_bytes(p, c, clen)
+            : !write_zip_method(p, "c6.rd", 93, c, (uint32_t)clen, ARC_LEN,
+               recs[5].crc))
+         goto fixture;
+   }
+   free(c);
+   c = NULL;
+
+   sprintf(p, "%s/Test Archives.rdb", db);
+   if (!write_db_set(p, recs, ARC_KINDS))
+      goto fixture;
+   for (k = 0; k < ARC_KINDS; k++)
+      sprintf(crcs[k], "%08X|crc", (unsigned)recs[k].crc);
+
+   sprintf(lpl, "%s/Test Archives.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(threaded);
+   strlcpy(old_db, config_get_ptr()->paths.path_content_database,
+         sizeof(old_db));
+   strlcpy(config_get_ptr()->paths.path_content_database, db,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   started = run_scan(dir);
+   strlcpy(config_get_ptr()->paths.path_content_database, old_db,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   for (k = 0; k < ARC_KINDS; k++)
+   {
+      sprintf(what, "%s matched through its member %s", recs[k].name, q);
+      check(started && scan_completed && file_contains(lpl, recs[k].name)
+            && file_contains(lpl, crcs[k]), what, crcs[k]);
+   }
+   return;
+
+fixture:
+   free(c);
+   check(0, "fixture", "could not write the archives");
+}
+
 #define CUE_TRACK_SIZE 5000
 
 /* No reader is sent a cue's or a gdi's track: they sort first, and
@@ -2631,6 +2763,20 @@ int main(int argc, char **argv)
       fclose(f);
    }
    sprintf(p, "%s/reader_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/archive_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"Archive Test\"\n"
+            "corename = \"ArchiveTest\"\n"
+            "supported_extensions = \"rd|txt|7z|zip|rar\"\n"
+            "database = \"Test Archives\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/archive_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
 
 #ifdef HAVE_THREADS
@@ -3453,6 +3599,8 @@ int main(int argc, char **argv)
       order_lane(root, pl_dir, false);
       mix_lane(root, pl_dir, true);
       mix_lane(root, pl_dir, false);
+      archive_lane(root, pl_dir, true);
+      archive_lane(root, pl_dir, false);
       cue_lane(root, reader_db, false);
       cue_lane(root, reader_db, true);
       strlcpy(config_get_ptr()->paths.path_content_database, reader_db,
