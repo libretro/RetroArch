@@ -6394,6 +6394,10 @@ static int action_ok_core_options_flush(const char *path,
    return 0;
 }
 
+#if defined(_MSC_VER) && _MSC_VER == 1400
+/* VC8's optimizer crashes on this function in Griffin builds. */
+#pragma optimize("", off)
+#endif
 static int action_ok_dialog_init(struct menu_state *menu_st)
 {
    menu_displaylist_info_t info;
@@ -6431,6 +6435,10 @@ error:
    menu_displaylist_info_free(&info);
    return -1;
 }
+
+#if defined(_MSC_VER) && _MSC_VER == 1400
+#pragma optimize("", on)
+#endif
 
 int action_ok_quit(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {

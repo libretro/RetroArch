@@ -56,6 +56,9 @@ jobs:
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
 
+      - name: Check the VC8 dialog optimizer workaround
+        run: python3 tools/msvc2005_dialog_check.py
+
       - name: Compile and link what pkg/msvc/msvc-6 builds
         shell: bash
         run: |
