@@ -250,6 +250,7 @@ OBJ += frontend/frontend_driver.o \
        record/drivers/record_wav.o \
        record/drivers/record_nvenc.o \
        record/drivers/record_metal.o \
+       record/drivers/record_mediacodec.o \
        command.o \
        msg_hash.o \
        intl/msg_hash_us.o \
@@ -1825,12 +1826,16 @@ ifeq ($(HAVE_VULKAN), 1)
           gfx/common/vulkan_common.o \
           $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o
 
+   ifeq ($(ANDROID)$(HAVE_THREADS), 11)
+      OBJ += record/record_android_capture_device.o
+   endif
+
    # H.264/HEVC previews decoded on the GPU
    ifneq ($(findstring 1, $(HAVE_RMP4) $(HAVE_RWEBM)),)
       OBJ += gfx/common/vulkan_video_decode.o
    endif
 
-   ifneq ($(filter 1,$(HAVE_RMP4) $(HAVE_RVP9) $(HAVE_RAV1)),)
+   ifneq ($(filter 1,$(HAVE_RMP4) $(HAVE_RVP9) $(HAVE_RAV1) $(HAVE_RECORD_MEDIACODEC)),)
       ifeq ($(ANDROID), 1)
          OBJ += gfx/common/vulkan_android_device.o \
                 gfx/common/android_image_queue.o \
@@ -3306,4 +3311,27 @@ ifneq ($(findstring Win32,$(OS)),)
          OBJ += gfx/common/win_wgl_dxgi.o
       endif
    endif
+endif
+
+ifeq ($(HAVE_RECORD_MEDIACODEC), 1)
+   ifneq ($(ANDROID)$(HAVE_VULKAN)$(HAVE_THREADS)$(HAVE_CONFIGFILE), 1111)
+      $(error MediaCodec recording requires Android, Vulkan, threads and config files)
+   endif
+   DEFINES += -DHAVE_RECORD_MEDIACODEC
+   MEDIA_RECORD_OBJ := record/record_mediacodec_encoder.o \
+      record/record_audio_tap.o \
+      record/record_mux_mediacodec.o record/record_mediacodec_worker.o \
+      record/record_aac_probe.o \
+      record/record_mp4_audio_edit.o record/record_mediacodec_file_edit.o \
+      record/record_mediacodec_surface.o record/record_mediacodec_file.o \
+      record/record_session_mediacodec.o record/record_dispatch_mediacodec.o \
+      record/record_gpu_dispatch_mediacodec.o record/record_mediacodec_gpu_worker.o \
+      record/record_android_capture_config.o record/record_android_capture_request.o \
+      record/record_android_capture_images.o record/record_android_capture_submit.o \
+      record/record_android_capture_pipe.o record/record_android_capture_pool.o \
+      record/record_android_capture_ops.o record/record_android_capture_egl.o \
+      record/record_android_capture_gl.o record/record_android_capture_draw.o \
+      record/record_gpu_queue.o record/record_audio_queue.o
+   MEDIA_RECORD_OBJ := $(filter-out $(OBJ),$(MEDIA_RECORD_OBJ))
+   OBJ += $(MEDIA_RECORD_OBJ)
 endif

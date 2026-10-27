@@ -484,6 +484,9 @@ typedef struct
    uint64_t free_samples_count;
 
    struct audio_record_source *record_source;
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+   struct record_audio_tap *record_tap;
+#endif
    struct string_list *devices_list;
    /* The driver whose device_list_new built devices_list, so that its
     * device_list_free is the one that releases it - not whichever
@@ -1248,6 +1251,9 @@ void audio_driver_pipeline_wake(void);
  **/
 void audio_driver_state_lock(void);
 void audio_driver_state_unlock(void);
+struct record_audio_tap;
+int audio_driver_record_tap_install(struct record_audio_tap *tap);
+bool audio_driver_record_tap_remove(struct record_audio_tap *tap);
 
 /* Bits of audio_driver_state_t::runloop_snapshot. */
 enum audio_runloop_snapshot_bits

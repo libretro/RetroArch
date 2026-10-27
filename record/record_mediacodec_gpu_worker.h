@@ -29,9 +29,10 @@ int record_mediacodec_gpu_worker_step(record_mediacodec_gpu_worker_t *worker);
  * Can be called after any error; no further draws/posts occur. */
 int record_mediacodec_gpu_worker_retire_step(
       record_mediacodec_gpu_worker_t *worker);
-/* ONLY after matching context destruction and independent GPU-read completion
- * proof or device loss. Clears GL bookkeeping and returns pending slots without
- * GL calls. Queued descriptors must still drain through retire_step. */
+/* ONLY after matching context/owned GL namespace destruction and independent
+ * GPU-read completion proof or device loss. Clears GL bookkeeping and returns
+ * pending slots without GL calls. Queued descriptors must still drain through
+ * retire_step. */
 void record_mediacodec_gpu_worker_after_context_retired(
       record_mediacodec_gpu_worker_t *worker);
 /* Borrowed components remain caller-owned. Refuses active/undrained service. */

@@ -20,6 +20,7 @@ struct record_android_capture_submit
    unsigned width, height, family;
    int ready_fd;
    bool initialized, inflight, waiting, exported, taken, broken, gpu_retired;
+   bool recorded, committed, completion_pending;
 };
 
 static void record_acs_destroy_gpu(record_android_capture_submit_t *e)
@@ -158,34 +159,25 @@ static bool record_acs_export(record_android_capture_submit_t *e)
    return true;
 }
 
-int record_android_capture_submit_push(record_android_capture_submit_t *e,
+static bool record_acs_source_valid(record_android_capture_submit_t *e,
       const record_android_capture_source_t *s)
 {
-   VkCommandBufferBeginInfo begin;
-   VkImageMemoryBarrier before[2], after[2];
-   VkImageCopy region;
-   VkSubmitInfo submit;
-   VkPipelineStageFlags stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-   VkResult result;
-   unsigned i;
-   if (!e || e->broken || !s || !s->image || s->image == e->image || !s->owner
-         || !s->release || s->ready == e->done
+   return !(!e || e->broken || !s || !s->image || s->image == e->image
+         || !s->owner || !s->release || s->ready == e->done
          || (s->format != e->format
                && !(e->format == VK_FORMAT_R8G8B8A8_UNORM
                      && s->format == VK_FORMAT_R8G8B8A8_SRGB))
          || !record_acs_access(s->layout) || s->width > 16384
          || s->height > 16384 || s->x > s->width || s->y > s->height
-         || e->width > s->width - s->x || e->height > s->height - s->y)
-      return -1;
-   if (e->waiting || e->inflight || e->owner)
-      return 0;
-   if (e->ops.reset_command(e->command, 0) != VK_SUCCESS)
-      goto failed;
-   memset(&begin, 0, sizeof(begin));
-   begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-   begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-   if (e->ops.begin(e->command, &begin) != VK_SUCCESS)
-      goto failed;
+         || e->width > s->width - s->x || e->height > s->height - s->y);
+}
+
+static void record_acs_copy(record_android_capture_submit_t *e,
+      const record_android_capture_source_t *s, VkCommandBuffer command)
+{
+   VkImageMemoryBarrier before[2], after[2];
+   VkImageCopy region;
+   unsigned i;
    memset(before, 0, sizeof(before));
    for (i = 0; i < 2; i++)
    {
@@ -208,7 +200,7 @@ int record_android_capture_submit_push(record_android_capture_submit_t *e,
    before[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT;
    before[1].dstQueueFamilyIndex = e->family;
    before[1].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-   e->ops.barrier(e->command, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+   e->ops.barrier(command, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 2, before);
    memset(&region, 0, sizeof(region));
    region.srcSubresource.aspectMask = region.dstSubresource.aspectMask
@@ -219,7 +211,7 @@ int record_android_capture_submit_push(record_android_capture_submit_t *e,
    region.extent.width = e->width;
    region.extent.height = e->height;
    region.extent.depth = 1;
-   e->ops.copy(e->command, s->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+   e->ops.copy(command, s->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
          e->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
    memcpy(after, before, sizeof(after));
    after[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -232,8 +224,29 @@ int record_android_capture_submit_push(record_android_capture_submit_t *e,
    after[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT;
    after[1].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
    after[1].dstAccessMask = 0;
-   e->ops.barrier(e->command, VK_PIPELINE_STAGE_TRANSFER_BIT,
+   e->ops.barrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 2, after);
+}
+
+int record_android_capture_submit_push(record_android_capture_submit_t *e,
+      const record_android_capture_source_t *s)
+{
+   VkCommandBufferBeginInfo begin;
+   VkSubmitInfo submit;
+   VkPipelineStageFlags stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+   VkResult result;
+   if (!record_acs_source_valid(e, s))
+      return -1;
+   if (e->waiting || e->inflight || e->owner)
+      return 0;
+   if (e->ops.reset_command(e->command, 0) != VK_SUCCESS)
+      goto failed;
+   memset(&begin, 0, sizeof(begin));
+   begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   if (e->ops.begin(e->command, &begin) != VK_SUCCESS)
+      goto failed;
+   record_acs_copy(e, s, e->command);
    if (e->ops.end(e->command) != VK_SUCCESS
          || e->ops.reset_fences(e->device, 1, &e->fence) != VK_SUCCESS)
       goto failed;
@@ -270,13 +283,96 @@ failed:
    return -1;
 }
 
+int record_android_capture_submit_record(record_android_capture_submit_t *e,
+      const record_android_capture_source_t *s, VkCommandBuffer command)
+{
+   VkCommandBufferBeginInfo begin;
+   if (!record_acs_source_valid(e, s) || !command || command == e->command
+         || s->ready)
+      return -1;
+   if (e->waiting || e->inflight || e->owner)
+      return 0;
+   memset(&begin, 0, sizeof(begin));
+   begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   if (e->ops.reset_command(e->command, 0) != VK_SUCCESS
+         || e->ops.begin(e->command, &begin) != VK_SUCCESS
+         || e->ops.end(e->command) != VK_SUCCESS
+         || e->ops.reset_fences(e->device, 1, &e->fence) != VK_SUCCESS)
+   {
+      e->broken = true;
+      return -1;
+   }
+   record_acs_copy(e, s, command);
+   e->owner = s->owner;
+   e->release_source = s->release;
+   e->recorded = e->waiting = true;
+   return 1;
+}
+
+static int record_acs_complete_recorded(record_android_capture_submit_t *e)
+{
+   VkSubmitInfo submit;
+   VkResult result;
+   memset(&submit, 0, sizeof(submit));
+   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.commandBufferCount = 1;
+   submit.pCommandBuffers = &e->command;
+   submit.signalSemaphoreCount = 1;
+   submit.pSignalSemaphores = &e->done;
+   result = e->ops.submit(e->ops.context, e->queue, 1, &submit, e->fence);
+   if (result == VK_TIMEOUT)
+      return 0;
+   e->completion_pending = false;
+   e->inflight = true;
+   if (result != VK_SUCCESS && result != VK_NOT_READY)
+   {
+      e->broken = true;
+      return -1;
+   }
+   if (result == VK_SUCCESS && !e->broken)
+   {
+      record_acs_export(e);
+      if (e->broken)
+         return -1;
+   }
+   return 1;
+}
+
+int record_android_capture_submit_commit(record_android_capture_submit_t *e)
+{
+   if (!e || e->gpu_retired || !e->recorded || e->committed)
+      return -1;
+   e->initialized = e->committed = e->completion_pending = true;
+   return record_acs_complete_recorded(e);
+}
+
+bool record_android_capture_submit_abort_recorded(
+      record_android_capture_submit_t *e)
+{
+   if (!e || e->gpu_retired || !e->recorded || e->committed)
+      return false;
+   e->release_source(e->owner, false);
+   e->owner = NULL;
+   e->recorded = e->waiting = false;
+   return true;
+}
+
 static int record_acs_retire(record_android_capture_submit_t *e)
 {
    VkResult result;
+   if (e->gpu_retired)
+      return e->owner || e->inflight || e->completion_pending ? -1 : 1;
+   if (e->recorded && !e->committed)
+      return 0;
+   if (e->completion_pending)
+   {
+      int completion = record_acs_complete_recorded(e);
+      if (completion <= 0)
+         return completion;
+   }
    if (!e->inflight)
       return 1;
-   if (e->gpu_retired)
-      return -1;
    result = e->ops.fence_status(e->device, e->fence);
    if (result == VK_NOT_READY)
       return 0;
@@ -329,6 +425,7 @@ bool record_android_capture_submit_release(record_android_capture_submit_t *e)
    if (!e || e->broken || !e->waiting || !e->taken || e->inflight || e->owner)
       return false;
    e->waiting = e->exported = e->taken = false;
+   e->recorded = e->committed = e->completion_pending = false;
    return true;
 }
 
@@ -345,6 +442,7 @@ int record_android_capture_submit_discard(record_android_capture_submit_t *e)
       e->ops.close_fd(e->ops.context, e->ready_fd);
    e->ready_fd = -1;
    e->waiting = e->exported = e->taken = false;
+   e->recorded = e->committed = e->completion_pending = false;
    return 1;
 }
 
@@ -355,6 +453,9 @@ bool record_android_capture_submit_prepare_device_destroy(
    if (!e || e->gpu_retired)
       return true;
    e->broken = true;
+   if (e->recorded && (!e->committed || e->completion_pending)
+         && !queue_quiesced)
+      return false;
    if (e->inflight && !queue_quiesced)
    {
       result = e->ops.fence_status(e->device, e->fence);
@@ -379,6 +480,7 @@ bool record_android_capture_submit_after_device_destroy(
    e->owner = NULL;
    e->ready_fd = -1;
    e->waiting = e->inflight = e->exported = e->taken = false;
+   e->recorded = e->committed = e->completion_pending = false;
    e->broken = true;
    e->device = VK_NULL_HANDLE;
    return true;

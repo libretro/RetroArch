@@ -15,6 +15,7 @@ static AMediaFormat config, output_formats[2];
 static ANativeWindow window;
 static int stage, lookup, missing, libraries, codecs, windows, formats, names;
 static int output_mode, metadata, owned, output_calls, releases, finishes;
+static int stops, stop_fault;
 static unsigned serial;
 static const char *test_mime = "video/hevc";
 static unsigned hdr_mode, format_fault, normalized_profile;
@@ -72,7 +73,8 @@ static media_status_t start(AMediaCodec *c)
 static media_status_t stop(AMediaCodec *c)
 {
    assert(c == &codec && windows == 1);
-   return 0;
+   stops++;
+   return stop_fault ? -99 : 0;
 }
 static media_status_t delete_codec(AMediaCodec *c)
 {
@@ -495,6 +497,39 @@ int main(void)
    }
    test_mime = "video/hevc";
    normalized_profile = hdr_mode = 0;
+   assert(!record_mediacodec_encoder_stop(NULL));
+   for (i = 0; i < 4; i++)
+   {
+      s = open_encoder();
+      assert(s);
+      format_ready(s);
+      output_mode = 1;
+      assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_PACKET);
+      if (i == 2)
+      {
+         stage = 13;
+         assert(!record_mediacodec_encoder_release(s));
+         stage = 0;
+      }
+      if (i == 3)
+         assert(record_mediacodec_encoder_finish(s));
+      before = stops;
+      stop_fault = i == 1;
+      assert(record_mediacodec_encoder_stop(s) == !stop_fault);
+      assert(stops == before + 1 && codecs == 1 && windows == 1
+            && libraries == 2 && formats == 2);
+      assert(record_mediacodec_encoder_stop(s) == !stop_fault);
+      assert(!record_mediacodec_encoder_surface(s));
+      assert(!record_mediacodec_encoder_format(s));
+      assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_ERROR
+            && !packet.data && !packet.size);
+      assert(!record_mediacodec_encoder_release(s));
+      assert(!record_mediacodec_encoder_finish(s));
+      record_mediacodec_encoder_free(s);
+      assert(stops == before + 1);
+      balanced();
+      stop_fault = 0;
+   }
    puts("PASS: Surface encoder startup faults, borrowed packets, format "
         "changes, "
         "zero-timeout output, bounds, EOS and cleanup; native APIs mocked");

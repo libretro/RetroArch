@@ -110,15 +110,31 @@ struct record_mediacodec_encoder
    int profile, base_profile;
    unsigned char hdr_static[25];
    bool started, failed, held, input_eos, output_eos;
-   bool audio, seen_input, closing;
+   bool audio, seen_input, closing, stop_attempted, stopped;
 };
+bool record_mediacodec_encoder_stop(record_mediacodec_encoder_t *s)
+{
+   if (!s)
+      return false;
+   if (s->stop_attempted)
+      return s->stopped;
+   s->stop_attempted = true;
+   s->failed = true;
+   s->held = false;
+   memset(&s->packet, 0, sizeof(s->packet));
+   if (!s->started || s->stop(s->codec) != AMEDIA_OK)
+      return false;
+   s->started = false;
+   s->stopped = true;
+   return true;
+}
 void record_mediacodec_encoder_free(record_mediacodec_encoder_t *s)
 {
    if (!s)
       return;
    if (s->codec)
    {
-      if (s->started)
+      if (s->started && !s->stop_attempted)
          s->stop(s->codec);
       s->delete_codec(s->codec);
    }
@@ -304,6 +320,8 @@ record_mediacodec_encoder_t *record_mediacodec_encoder_audio_new(
    RECORD_AAC_LOAD(
          s->get_integer, record_mc_get_integer_fn, "AMediaFormat_getInt32");
    RECORD_AAC_LOAD(
+         s->get_buffer, record_mc_get_buffer_fn, "AMediaFormat_getBuffer");
+   RECORD_AAC_LOAD(
          s->input, record_mc_input_fn, "AMediaCodec_dequeueInputBuffer");
    RECORD_AAC_LOAD(
          s->input_buffer, record_mc_buffer_fn, "AMediaCodec_getInputBuffer");
@@ -447,6 +465,23 @@ void *record_mediacodec_encoder_surface(record_mediacodec_encoder_t *s)
 void *record_mediacodec_encoder_format(record_mediacodec_encoder_t *s)
 {
    return s && !s->failed ? s->format : NULL;
+}
+bool record_mediacodec_encoder_audio_config(record_mediacodec_encoder_t *s,
+      const void **data, size_t *bytes)
+{
+   void *buffer = NULL;
+   size_t size = 0;
+   if (data)
+      *data = NULL;
+   if (bytes)
+      *bytes = 0;
+   if (!s || !data || !bytes || s->failed || !s->audio || !s->format
+         || !s->get_buffer(s->format, "csd-0", &buffer, &size)
+         || !buffer || !size)
+      return false;
+   *data = buffer;
+   *bytes = size;
+   return true;
 }
 bool record_mediacodec_encoder_finish(record_mediacodec_encoder_t *s)
 {
@@ -631,6 +666,16 @@ void *record_mediacodec_encoder_format(record_mediacodec_encoder_t *s)
    (void)s;
    return NULL;
 }
+bool record_mediacodec_encoder_audio_config(record_mediacodec_encoder_t *s,
+      const void **data, size_t *bytes)
+{
+   (void)s;
+   if (data)
+      *data = NULL;
+   if (bytes)
+      *bytes = 0;
+   return false;
+}
 int record_mediacodec_encoder_pump(
       record_mediacodec_encoder_t *s, record_mediacodec_packet_t *packet)
 {
@@ -645,6 +690,11 @@ bool record_mediacodec_encoder_release(record_mediacodec_encoder_t *s)
    return false;
 }
 bool record_mediacodec_encoder_finish(record_mediacodec_encoder_t *s)
+{
+   (void)s;
+   return false;
+}
+bool record_mediacodec_encoder_stop(record_mediacodec_encoder_t *s)
 {
    (void)s;
    return false;

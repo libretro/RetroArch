@@ -229,8 +229,18 @@ enum video_thread_async_kind
 {
    VIDEO_THREAD_ASYNC_LOAD = 0,
    VIDEO_THREAD_ASYNC_UPDATE,
-   VIDEO_THREAD_ASYNC_IMPORT
+   VIDEO_THREAD_ASYNC_IMPORT,
+   VIDEO_THREAD_ASYNC_JOB
 };
+
+/* Cold render-owner job. Payload and node survive through done/release.
+ * Results are opaque, never texture handles. Missing drivers are valid input. */
+typedef struct video_thread_async_job
+{
+   uintptr_t (*run)(void *driver_data, const video_poke_interface_t *poke,
+         void *user);
+   void *user;
+} video_thread_async_job_t;
 
 typedef struct video_thread_async_load
 {

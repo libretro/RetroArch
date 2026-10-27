@@ -11,7 +11,7 @@ static int recording_reinit_flags;
 bool recording_gpu_defer_reinit(int flags)
 {
    if (!recording_reinit_flags
-         && (!(flags & DRIVER_VIDEO_MASK) || !recording_gpu_pending()))
+         && (!(flags & DRIVER_VIDEO_MASK) || !recording_gpu_reset_pending()))
       return false;
    recording_reinit_flags |= flags;
    recording_gpu_stop();
@@ -31,7 +31,7 @@ void recording_gpu_reinit_poll(void)
       return;
    }
    recording_gpu_stop();
-   if (recording_gpu_pending())
+   if (recording_gpu_reset_pending())
       return;
    flags = recording_reinit_flags;
    recording_reinit_flags = 0;

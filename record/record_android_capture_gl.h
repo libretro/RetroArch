@@ -51,14 +51,22 @@ bool record_android_capture_gl_begin(record_android_capture_gl_t *capture,
 bool record_android_capture_gl_end(
       record_android_capture_gl_t *capture, unsigned slot);
 /* One zero-timeout query. 1 permits producer reuse, 0 pending, -1 error.
- * A failed end cannot prove retirement: retain the slot until context loss. */
+ * A failed end retains the slot until terminal recovery or independent
+ * context retirement proves completion. */
 int record_android_capture_gl_poll(
       record_android_capture_gl_t *capture, unsigned slot);
+/* Terminal worker recovery, same context current, no more source draws.
+ * A fresh fence covers every preceding command, including failed slot fences.
+ * One creation/flush or one zero-timeout query per call. 1 proves all reads
+ * retired, 0 pending, -1 retains unproven reads. No frame is drawn again. */
+int record_android_capture_gl_recover_step(
+      record_android_capture_gl_t *capture);
 /* Worker context current, every begun slot retired. Refuses otherwise.
  * Native image destruction failures retain remaining ownership for retry. */
 bool record_android_capture_gl_free(record_android_capture_gl_t *capture);
-/* ONLY after context destruction AND independent proof all GPU reads retired
- * (or device loss). Context destruction alone is not completion proof. No GL
+/* ONLY after context/owned GL namespace destruction AND independent proof all
+ * GPU reads retired (or device loss). Shared objects must also be retired.
+ * Context destruction alone is not completion proof. No GL
  * calls follow; explicit EGL images/syncs still require free. */
 void record_android_capture_gl_after_context_retired(
       record_android_capture_gl_t *capture);

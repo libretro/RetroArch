@@ -68,7 +68,8 @@
 #include "../common/vulkan_video_decode.h"
 #endif
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
 #include "../common/vulkan_android_cache.h"
 #include "../common/vulkan_android_queue.h"
 #endif
@@ -83,6 +84,9 @@
 #endif
 
 #include "../../record/record_driver.h"
+#if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
+#include "../../record/record_android_capture_renderer.h"
+#endif
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
@@ -218,7 +222,8 @@ struct vk_texture
    VkBuffer buffer;              /* ptr alignment */
    VkDeviceMemory memory;        /* ptr alignment */
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    vulkan_android_cache_t *android_cache;
    struct vk_texture *android_next;
 #endif
@@ -772,7 +777,8 @@ typedef struct vk
     * only, like the two lists above. */
    struct vk_stream_state *stream_states;
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    vulkan_android_queue_t android_submissions;
    struct vk_texture *android_textures;
    unsigned android_device_support;
@@ -804,7 +810,8 @@ typedef struct vk
 } vk_t;
 
 #if defined(ANDROID) && defined(HAVE_THREADS) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
 #include "vulkan_android_backend.h"
 #endif
 
@@ -1931,7 +1938,8 @@ static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture)
 {
    struct vk_stream_state **cur = &vk->stream_states;
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    if (texture->android_cache)
    {
       struct vk_texture **link = &vk->android_textures;
@@ -4309,7 +4317,7 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
          /* Compute tight flush range from dirty rectangle
           * instead of flushing the entire allocation.
           * Aligns offset down and size up to nonCoherentAtomSize
-          * as required by the spec (§12.1). */
+          * as required by the spec (Â§12.1). */
          unsigned y1               = VIDEO_SCALE_H(font->dirty_xy1);
          VkDeviceSize flush_offset = (VkDeviceSize)
                         VIDEO_SCALE_H(font->dirty_xy0) * staging_tex->stride
@@ -4677,7 +4685,7 @@ static void vulkan_font_render_msg(
 #include "../font_layout.h"
    }
 
-   /* ── Flush: atlas upload + draw ─────────────────────────────────
+   /* â”€â”€ Flush: atlas upload + draw â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     * Inlined from the former vulkan_font_flush().  By issuing the
     * Vulkan commands directly we eliminate:
     *   - packing/unpacking through struct vk_draw_triangles
@@ -4799,7 +4807,7 @@ static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font)
 
    /* Bind VBO and issue indexed draw.
     * Font glyphs are always quads (4 verts each) drawn via the
-    * shared index buffer — no need for the generic branch. */
+    * shared index buffer â€” no need for the generic branch. */
    vkCmdBindVertexBuffers(vk->cmd, 0, 1,
          &font->range.buffer, &font->range.offset);
 
@@ -5670,7 +5678,7 @@ static void vulkan_init_pipelines(vk_t *vk)
     * VK_FORMAT_B8G8R8A8_UNORM.  On KMS and some other
     * platforms, the swapchain may use VK_FORMAT_R8G8B8A8_UNORM
     * instead, making the pipeline incompatible with the active
-    * render pass at draw time — a Vulkan validation error that
+    * render pass at draw time â€” a Vulkan validation error that
     * many drivers (especially RADV on AMD) turn into a
     * segfault.
     *
@@ -5679,7 +5687,7 @@ static void vulkan_init_pipelines(vk_t *vk)
     * pipelines may not be format-compatible if the swapchain
     * format differs from B8G8R8A8.  However, the HDR path
     * is only active when HDR is supported AND the display uses
-    * a wide-gamut format — in which case a separate set of
+    * a wide-gamut format â€” in which case a separate set of
     * HDR display pipelines (indices 4-5) is built against the
     * correct render pass at lines 3444-3453.  The menu shader
     * pipelines (ribbon, snow, bokeh) used through
@@ -8160,7 +8168,8 @@ static void *vulkan_init(const video_info_t *video)
 
       vulkan_init_frame_resources(vk, 0);
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
       vk->android_device_support = vk->context->flags
             & (VK_CTX_FLAG_ANDROID_IMAGES | VK_CTX_FLAG_TIMELINE_SEMAPHORE);
 #if !defined(HAVE_THREADS) || !defined(RETRO_ATOMIC_LOCK_FREE) || !defined(RETRO_ATOMIC_HAS_PTR)
@@ -8336,7 +8345,7 @@ built:
    /* When rendering through the SDR offscreen buffer, the filter chain's
     * final pass must use the SDR render pass to match the framebuffer format.
     * The default filter chain has spirv_hdr_frag built in and renders directly to
-    * the swapchain — only custom shader chains need the SDR render pass.
+    * the swapchain â€” only custom shader chains need the SDR render pass.
     * Passthrough (direct to swapchain) when:
     *   scRGB mode: shader emits RGBA16F (scRGB)
     *   HDR10 mode: shader emits A2B10G10R10 (HDR10 PQ) or RGBA16F */
@@ -8690,7 +8699,7 @@ static bool vulkan_shader_load_step(void *data,
       goto cleanup;
    }
 
-   /* All passes compiled — finalize */
+   /* All passes compiled â€” finalize */
    RARCH_LOG("[Vulkan] Deferred: finalizing chain...\n");
 
    if (vulkan_filter_chain_finalize(ds->new_chain))
@@ -9678,7 +9687,7 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       }
    }
 
-   /* Upload VBO — 4 unique vertices per quad, indexed draw. */
+   /* Upload VBO â€” 4 unique vertices per quad, indexed draw. */
    {
       struct vk_buffer_range range;
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
@@ -9989,7 +9998,7 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
       vkCmdSetScissor(vk->cmd,  0, 1, &sci);
    }
 
-   /* Upload VBO — 4 unique vertices, indexed draw. */
+   /* Upload VBO â€” 4 unique vertices, indexed draw. */
    {
       struct vk_buffer_range range;
 
@@ -11795,6 +11804,70 @@ static void vulkan_menu_upload(vk_t *vk, unsigned frame_index)
 }
 #endif
 
+#if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
+static record_android_capture_renderer_t *vulkan_record_gpu(vk_t *vk,
+      const video_frame_info_t *info, const struct vk_image *backbuffer)
+{
+   record_android_capture_source_t source;
+   record_android_capture_renderer_t *recording
+         = (record_android_capture_renderer_t *)info->recording_gpu;
+   unsigned mode = 0;
+   bool menu = recording && (recording->flags & RECORD_ANDROID_CAPTURE_MENU);
+   if (!recording || !recording->context || !recording->record
+         || !recording->release || !recording->submitted
+         || !info->recording_gpu_capture
+         || (info->frame_repeat && !(recording->flags & RECORD_ANDROID_CAPTURE_MENU))
+         || !backbuffer->image || !vk->cmd
+         || !(vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         || !(vk->android_device_support & VK_CTX_FLAG_ANDROID_IMAGES)
+         || (vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)
+         || (vk->flags & VK_FLAG_OPEN_XR) || (!menu && (VIDEO_POS_X(vk->vp.pos) < 0
+               || VIDEO_POS_Y(vk->vp.pos) < 0))
+         || !VIDEO_SCALE_W(menu ? vk->vp.full_dims : vk->vp.dims)
+         || !VIDEO_SCALE_H(menu ? vk->vp.full_dims : vk->vp.dims))
+      return NULL;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+      mode = vk->context->flags & VK_CTX_FLAG_HDR_SCRGB ? 2 : 1;
+#endif
+   memset(&source, 0, sizeof(source));
+   source.image = backbuffer->image;
+   source.owner = recording->context;
+   source.release = recording->release;
+   source.format = vk->context->swapchain_format;
+   source.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   source.width = VIDEO_SCALE_W(vk->vp.full_dims);
+   source.height = VIDEO_SCALE_H(vk->vp.full_dims);
+   source.x = menu ? 0 : (unsigned)VIDEO_POS_X(vk->vp.pos);
+   source.y = menu ? 0 : (unsigned)VIDEO_POS_Y(vk->vp.pos);
+   return recording->record(recording->context, &source, vk->cmd,
+                info->recording_gpu_timestamp, menu ? vk->vp.full_dims : vk->vp.dims, mode)
+               == 1
+         ? recording
+         : NULL;
+}
+
+static void vulkan_record_service(const video_frame_info_t *info)
+{
+   record_android_capture_renderer_t *recording
+         = (record_android_capture_renderer_t *)info->recording_gpu;
+   if (recording && recording->context && recording->service)
+      recording->service(recording->context);
+}
+
+static VkResult vulkan_record_submit(vk_t *vk, const VkSubmitInfo *submit,
+      unsigned frame_index, record_android_capture_renderer_t *recording)
+{
+   VkResult result = vkQueueSubmit(vk->context->queue, 1, submit,
+         vk->context->swapchain_fences[frame_index]);
+   vk->context->swapchain_fences_signalled[frame_index] = result == VK_SUCCESS;
+   if (recording)
+      recording->submitted(recording->context, result);
+   vulkan_check_device_lost(vk, result);
+   return result;
+}
+#endif
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -11808,6 +11881,15 @@ static bool vulkan_frame(void *data, const void *frame,
    VkRenderPassBeginInfo rp_info;
    VkCommandBufferBeginInfo begin_info;
    VkSemaphore signal_semaphores[2 + RETRO_VIDEO_VIEWS_MAX];
+#if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
+   record_android_capture_renderer_t *recording = NULL;
+   VkResult recording_result;
+#endif
+#if defined(ANDROID) \
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
+   VkResult android_queue_result;
+#endif
    retro_perf_tick_t c_lock                      = 0;
    vk_t *vk                                      = (vk_t*)data;
    vulkan_filter_chain_t *filter_chain           = NULL;
@@ -11912,7 +11994,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    {
       struct vk_texture *texture;
       for (texture = vk->android_textures; texture; texture = texture->android_next)
@@ -11994,7 +12077,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Use the offscreen buffer when the shader's output format doesn't match
     * the swapchain format and the HDR pipeline needs to convert.
     * The default filter chain already contains the internal HDR shader
-    * (spirv_hdr_frag) so it renders directly to the swapchain — no offscreen needed.
+    * (spirv_hdr_frag) so it renders directly to the swapchain â€” no offscreen needed.
     * Custom shader chains need offscreen unless they emit HDR natively. */
    if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       && filter_chain != vk->filter_chain_default)
@@ -12198,13 +12281,13 @@ static bool vulkan_frame(void *data, const void *frame,
             GFX_INSTR_INC(GFX_INSTR_FRAME_COPY_HOST);
             dst = (uint8_t*)chain->texture.mapped;
             if (chain->texture.stride == pitch)
-               /* Stride matches pitch — single contiguous copy regardless
+               /* Stride matches pitch â€” single contiguous copy regardless
                 * of whether pitch == frame_width * bpp (there may be
                 * trailing padding per row, but the layout is identical). */
                memcpy(dst, src, (size_t)chain->texture.stride * frame_height);
             else
             {
-               /* Stride and pitch differ — copy each row.
+               /* Stride and pitch differ â€” copy each row.
                 * Use the tight pixel width to avoid copying garbage. */
                unsigned row_bytes = frame_width * bpp;
                for (y = 0; y < frame_height; y++,
@@ -13211,6 +13294,10 @@ static bool vulkan_frame(void *data, const void *frame,
    else if (!views_direct_tex)
       vulkan_views_end_frame(vk, video_info, view_chains);
 
+#if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
+   recording = vulkan_record_gpu(vk, video_info, backbuffer);
+#endif
+
    if (
             (backbuffer->image != VK_NULL_HANDLE)
          && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
@@ -13481,21 +13568,38 @@ static bool vulkan_frame(void *data, const void *frame,
    c_lock = cpu_features_get_perf_counter() - c_lock;
 #endif
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
-   if (vulkan_android_queue_flush(&vk->android_submissions, vkQueueSubmit)
-         != VK_SUCCESS)
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
+   android_queue_result = vulkan_android_queue_flush(
+         &vk->android_submissions, vkQueueSubmit);
+   if (android_queue_result != VK_SUCCESS)
    {
 #ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
+#endif
+#if defined(HAVE_RECORD_MEDIACODEC) && defined(HAVE_THREADS)
+      if (recording)
+         recording->submitted(recording->context, android_queue_result);
 #endif
       vk->context->swapchain_fences_signalled[frame_index] = false;
       video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
       return false;
    }
 #endif
+#if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
+   vulkan_record_service(video_info);
+   recording_result
+         = vulkan_record_submit(vk, &submit_info, frame_index, recording);
+   if (recording_result != VK_SUCCESS)
+   {
+      slock_unlock(vk->context->queue_lock);
+      return false;
+   }
+#else
    vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]));
    vk->context->swapchain_fences_signalled[frame_index] = true;
+#endif
 #ifdef HAVE_TEMPORAL_UPSCALER
    if (vk->ngx)
       vulkan_upscaler_frame_done(vk->ngx);
@@ -14830,7 +14934,8 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
 }
 
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
 #include "vulkan_android_video.h"
 #endif
 
@@ -14889,7 +14994,8 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    }
 #endif
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    if (android_frame_callback(f->abandon))
       return vulkan_android_renderer_import(vk, texture, f);
 #endif
@@ -15128,7 +15234,8 @@ static enum video_texture_update vulkan_import_texture(void *data,
    VkFormat output_format;
    bool opaque_input = false;
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    opaque_input = f && android_frame_callback(f->abandon);
 #endif
 
@@ -15176,7 +15283,8 @@ static enum video_texture_update vulkan_import_texture(void *data,
          || filter == TEXTURE_FILTER_MIPMAP_LINEAR)
       texture->flags |= VK_TEX_FLAG_DEFAULT_SMOOTH;
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    if (opaque_input && vulkan_android_renderer_prepare(vk, texture, f)
          != VIDEO_TEXTURE_UPDATE_DONE)
    {
@@ -15196,7 +15304,8 @@ static enum video_texture_update vulkan_import_texture(void *data,
 }
 
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
 static enum video_texture_update vulkan_prepare_import_texture(void *data,
       uintptr_t handle, const video_frame_import_t *frame)
 {
@@ -15235,7 +15344,8 @@ static enum video_texture_update vulkan_import_movie_frame(void *data,
          && ((struct vk_texture*)vk->movie_texture)->dims != f->dims)
       vulkan_import_movie_frame(vk, NULL);
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    if (vk->movie_texture)
    {
       result = vulkan_prepare_import_texture(vk, vk->movie_texture, f);
@@ -15262,8 +15372,21 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
    info->get_instance_proc_addr = (retro_proc_address_t)
       vulkan_symbol_wrapper_instance_proc_addr();
    info->queue_family           = vk->context->graphics_queue_index;
+   info->queue                  = (void*)vk->context->queue;
+   info->queue_lock             = NULL;
+   info->recording_caps         = 0;
+#if defined(ANDROID) && defined(HAVE_THREADS)
+   info->queue_lock             = vk->context->queue_lock;
+#if defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+      || defined(HAVE_RECORD_MEDIACODEC)
+   info->recording_caps         =
+         (vk->android_device_support & VK_CTX_FLAG_ANDROID_IMAGES)
+         ? VIDEO_DEVICE_CAP_ANDROID_CAPTURE_INTEROP : 0;
+#endif
+#endif
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    info->import_formats =
          (vk->android_device_support & VK_CTX_FLAG_ANDROID_IMAGES)
                || ((vk->android_device_support & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
@@ -15980,7 +16103,8 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_driver_pacing_wait,
    vulkan_driver_pacing_mark,
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    vulkan_prepare_import_texture
 #else
    NULL
@@ -16848,7 +16972,7 @@ static void vulkan_render_overlay(vk_t *vk, unsigned dims)
                      (vk->overlay.images[idx].flags & VK_TEX_FLAG_MIPMAP)
                         ? vk->samplers.mipmap_linear : vk->samplers.linear))
             {
-               /* Batch full — flush what we have and add again. */
+               /* Batch full â€” flush what we have and add again. */
                vulkan_descriptor_batch_flush(vk->context->device, batch);
                vulkan_descriptor_batch_add(batch, sets[i],
                      ubo.buffer, ubo.offset, sizeof(vk->mvp),

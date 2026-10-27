@@ -94,6 +94,7 @@ struct record_params
    bool allow_frame_drop;
    /* Prefer a hardware H.264 encoder for the built-in presets. */
    bool hw_encoder;
+   bool menu_source;
 };
 
 struct record_video_data
@@ -208,12 +209,16 @@ extern const record_driver_t *record_drivers[];
 RETRO_BEGIN_DECLS
 extern const record_driver_t record_nvenc;
 extern const record_driver_t record_metal;
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_MEDIACODEC_TEST)
+extern const record_driver_t record_mediacodec;
+#endif
 struct video_frame_info;
 void recording_gpu_frame_info(struct video_frame_info *info,bool capture);
 void recording_gpu_poll(void);
 void recording_start_frame(void);
 void recording_gpu_stop(void);
 bool recording_gpu_pending(void);
+bool recording_gpu_reset_pending(void);
 /* Main owner: coalesce reinit flags while native users retire. The existing
  * GPU poll applies the reinit once, or drops it during content/quit teardown. */
 bool recording_gpu_defer_reinit(int flags);
@@ -222,6 +227,12 @@ bool recording_gpu_defer_start(const record_driver_t *driver);
 bool recording_gpu_cancel_start(void);
 RETRO_END_DECLS
 static INLINE bool recording_is_native_gpu(const record_driver_t *driver)
-{ return driver==&record_nvenc || driver==&record_metal; }
+{
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_MEDIACODEC_TEST)
+   if (driver == &record_mediacodec)
+      return true;
+#endif
+   return driver == &record_nvenc || driver == &record_metal;
+}
 
 #endif

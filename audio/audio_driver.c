@@ -97,6 +97,9 @@ static bool audio_driver_pipeline_transport_publish(uint32_t tempo_q16,
 #include "../list_special.h"
 #include "../file_path_special.h"
 #include "../record/record_driver.h"
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#include "../record/record_audio_tap.h"
+#endif
 #include "../tasks/task_content.h"
 #include "../runloop.h"
 #include "../midi_driver.h"
@@ -1268,6 +1271,13 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_pending = NULL;
    audio_st->pipe_pending_bytes = 0;
    audio_driver_inline_free(audio_st);
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+   if (audio_st->record_tap)
+   {
+      record_audio_tap_retire(audio_st->record_tap, true);
+      audio_st->record_tap = NULL;
+   }
+#endif
    audio_st->transport_lpf_only = false;
 
    /* The pause tail continues the waveform, and across a core swap or a
@@ -3141,6 +3151,11 @@ static void audio_driver_pause_track(audio_driver_state_t *audio_st,
       audio_st->pause_mute_frames -= (unsigned)n;
    }
 
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+   if (audio_st->record_tap)
+      record_audio_tap_push(audio_st->record_tap, buf, num_frames,
+            is_float, audio_st->out_rate);
+#endif
    audio_st->last_out[0] = audio_driver_pause_read(buf, is_float,
          ((num_frames - 1) * 2) + 0);
    audio_st->last_out[1] = audio_driver_pause_read(buf, is_float,
@@ -3288,6 +3303,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * fall through to the float resampler path below (which is exactly
     * where the redundant int16<->float round-trip is avoided). */
    if (audio->write_raw
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+         && !audio_st->record_tap
+#endif
          && !audio_st->resampler_hq
          && !is_float
          /* The resume ramp and the pause mute are applied on the last
@@ -5341,6 +5359,64 @@ void audio_driver_state_unlock(void)
 #ifdef HAVE_THREADS
    if (audio_driver_st.state_lock)
       slock_unlock(audio_driver_st.state_lock);
+#endif
+}
+
+int audio_driver_record_tap_install(struct record_audio_tap *tap)
+{
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+   audio_driver_state_t *s = &audio_driver_st;
+   int result = -1;
+   if (!tap)
+      return -1;
+#ifdef HAVE_THREADS
+   if (s->state_lock && !slock_try_lock(s->state_lock))
+      return 0;
+#endif
+   if (s->record_tap == tap)
+      result = 1;
+   else if (!s->record_tap && (AUDIO_FLAGS_GET(s) & AUDIO_FLAG_ACTIVE)
+         && s->out_rate == record_audio_tap_rate(tap)
+         && record_audio_tap_begin(tap))
+   {
+      s->record_tap = tap;
+      result = 1;
+   }
+#ifdef HAVE_THREADS
+   if (s->state_lock)
+      slock_unlock(s->state_lock);
+#endif
+   return result;
+#else
+   (void)tap;
+   return -1;
+#endif
+}
+
+bool audio_driver_record_tap_remove(struct record_audio_tap *tap)
+{
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+   audio_driver_state_t *s = &audio_driver_st;
+   bool ready;
+   if (!tap)
+      return true;
+#ifdef HAVE_THREADS
+   if (s->state_lock && !slock_try_lock(s->state_lock))
+      return false;
+#endif
+   if (s->record_tap == tap)
+   {
+      s->record_tap = NULL;
+      record_audio_tap_retire(tap, false);
+   }
+   ready = record_audio_tap_end(tap, NULL);
+#ifdef HAVE_THREADS
+   if (s->state_lock)
+      slock_unlock(s->state_lock);
+#endif
+   return ready;
+#else
+   return tap == NULL;
 #endif
 }
 

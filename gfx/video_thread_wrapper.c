@@ -2022,6 +2022,13 @@ static void video_thread_async_run(thread_video_t *thr)
             GFX_INSTR_INC(n->dropped ? GFX_INSTR_TEX_UPDATE_DROPPED
                   : GFX_INSTR_TEX_UPDATE);
       }
+      else if (n->kind == VIDEO_THREAD_ASYNC_JOB)
+      {
+         const video_thread_async_job_t *job
+               = (const video_thread_async_job_t *)n->img;
+         n->handle = job && job->run
+               ? job->run(driver_data, poke, job->user) : 0;
+      }
       else
       {
          const struct texture_image *ti =

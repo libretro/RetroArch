@@ -15,6 +15,7 @@ static AMediaFormat config, output_format;
 static int stage, missing, lookup, libraries, codecs, formats, queues;
 static int input_busy, input_owned, output_owned, output_mode, input_calls;
 static int allocation_fail;
+static int stops, stop_fault;
 static unsigned expected_rate, expected_channels;
 static size_t capacity = 8, queued_bytes;
 static uint64_t queued_pts;
@@ -58,7 +59,8 @@ static media_status_t start(AMediaCodec *c)
 static media_status_t stop(AMediaCodec *c)
 {
    assert(c == &codec);
-   return 0;
+   stops++;
+   return stop_fault ? -99 : 0;
 }
 static media_status_t destroy(AMediaCodec *c)
 {
@@ -188,6 +190,16 @@ static AMediaFormat *get_format(AMediaCodec *c)
    formats++;
    return &output_format;
 }
+static unsigned char asc[2] = {0x12, 0x10};
+static int config_fault;
+static bool get_buffer(AMediaFormat *f, const char *key,
+      void **data, size_t *bytes)
+{
+   assert(f == &output_format && !strcmp(key, "csd-0"));
+   *data = config_fault == 2 ? NULL : asc;
+   *bytes = config_fault == 3 ? 0 : sizeof(asc);
+   return config_fault != 1;
+}
 dylib_t dylib_load(const char *name)
 {
    assert(!strcmp(name, "libmediandk.so"));
@@ -224,6 +236,7 @@ function_t dylib_proc(dylib_t lib, const char *name)
    FN("AMediaFormat_setString", set_string);
    FN("AMediaFormat_setInt32", set_integer);
    FN("AMediaFormat_getInt32", get_integer);
+   FN("AMediaFormat_getBuffer", get_buffer);
    FN("AMediaCodec_dequeueInputBuffer", input);
    FN("AMediaCodec_getInputBuffer", input_buffer);
    FN("AMediaCodec_queueInputBuffer", queue);
@@ -248,9 +261,10 @@ int main(void)
 {
    record_mediacodec_encoder_t *s;
    record_mediacodec_packet_t packet;
-   size_t accepted;
+   size_t accepted, config_bytes;
+   const void *config_data;
    int i, before;
-   for (missing = 1; missing <= 17; missing++)
+   for (missing = 1; missing <= 18; missing++)
    {
       assert(!open_audio(44100, 2));
       balanced();
@@ -295,8 +309,20 @@ int main(void)
    }
    assert(record_mediacodec_encoder_audio_submit(s, pcm, 2, 108, &accepted) == 1
          && accepted == 2 && queued_pts == 2448);
+   config_data = asc;
+   config_bytes = 99;
+   assert(!record_mediacodec_encoder_audio_config(s, &config_data,
+            &config_bytes) && !config_data && !config_bytes);
    output_mode = 1;
    assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_FORMAT);
+   assert(record_mediacodec_encoder_audio_config(s, &config_data,
+            &config_bytes) && config_data == asc && config_bytes == 2);
+   for (config_fault = 1; config_fault <= 3; config_fault++)
+      assert(!record_mediacodec_encoder_audio_config(s, &config_data,
+               &config_bytes) && !config_data && !config_bytes);
+   config_fault = 0;
+   assert(!record_mediacodec_encoder_audio_config(s, NULL, &config_bytes));
+   assert(!record_mediacodec_encoder_audio_config(s, &config_data, NULL));
    output_mode = 2;
    assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_PACKET
          && packet.size == 3);
@@ -412,6 +438,28 @@ int main(void)
    record_mediacodec_encoder_free(s);
    balanced();
    input_busy = 0;
+   for (i = 0; i < 2; i++)
+   {
+      s = open_audio(44100, 2);
+      assert(s);
+      assert(record_mediacodec_encoder_audio_submit(s, pcm, 2, 0, &accepted)
+            == 1);
+      stop_fault = i;
+      before = stops;
+      assert(record_mediacodec_encoder_stop(s) == !stop_fault);
+      assert(!record_mediacodec_encoder_audio_config(s, &config_data,
+               &config_bytes) && !config_data && !config_bytes);
+      assert(record_mediacodec_encoder_stop(s) == !stop_fault);
+      assert(codecs == 1 && formats == 1 && libraries == 1);
+      accepted = 99;
+      assert(record_mediacodec_encoder_audio_submit(s, pcm, 2, 2, &accepted)
+            == -1 && !accepted);
+      assert(record_mediacodec_encoder_audio_finish(s, 2) == -1);
+      record_mediacodec_encoder_free(s);
+      assert(stops == before + 1);
+      balanced();
+      stop_fault = 0;
+   }
    puts("PASS: worker AAC PCM ownership, partial/BUSY input, bounded silence, "
         "sample-clock timestamps, EOS, native faults and format validation; "
         "APIs mocked");

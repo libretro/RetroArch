@@ -1046,6 +1046,11 @@ enum video_device_api
    VIDEO_DEVICE_METAL
 };
 
+enum video_device_recording_cap
+{
+   VIDEO_DEVICE_CAP_ANDROID_CAPTURE_INTEROP = 1
+};
+
 typedef struct video_device_info
 {
    enum video_device_api api;
@@ -1056,14 +1061,17 @@ typedef struct video_device_info
    void *instance;
    void *physical_device;
    void *device;
-   /* D3D12's immutable render queue, borrowed with the device. */
+   /* Vulkan or D3D12 render queue, borrowed with the device. */
    void *queue;
+   /* Existing Vulkan queue serialization; cold render-owner jobs only. */
+   void *queue_lock;
    retro_proc_address_t get_instance_proc_addr;
    /* The driver's queue family: an image the driver imports is either
     * exclusive to it or shared with it (concurrent). */
    unsigned queue_family;
    /* image_pixfmt bits import_texture takes; 0 when it takes none. */
    uint32_t import_formats;
+   uint32_t recording_caps;
 } video_device_info_t;
 
 /* A frame that lives on the driver's device; handles are given as

@@ -55,6 +55,15 @@ void *record_mediacodec_encoder_format(record_mediacodec_encoder_t *e)
    assert(e->format);
    return e;
 }
+bool record_mediacodec_encoder_audio_config(record_mediacodec_encoder_t *e,
+      const void **data, size_t *bytes)
+{
+   (void)e;
+   (void)data;
+   (void)bytes;
+   assert(0);
+   return false;
+}
 bool record_mediacodec_encoder_release(record_mediacodec_encoder_t *e)
 {
    assert(e->borrowed);

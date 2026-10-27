@@ -273,7 +273,8 @@ typedef struct vulkan_context
    VkPhysicalDeviceProperties gpu_properties;
    VkPhysicalDeviceMemoryProperties memory_properties;
 #if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1))
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
    unsigned android_sampler_descriptors;
    bool android_legacy_descriptor_budget;
 #endif

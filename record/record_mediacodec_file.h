@@ -4,6 +4,7 @@
 #define RECORD_MEDIACODEC_FILE_H
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <stdint.h>
 RETRO_BEGIN_DECLS
 typedef struct record_mediacodec_file record_mediacodec_file_t;
 /* Cold I/O worker only: creation and final sync/close can block this worker.
@@ -20,6 +21,9 @@ record_mediacodec_file_t *record_mediacodec_file_adopt_fresh(
       int *owned_fd, int *error);
 /* Borrowed until close; destroy the muxer and stop all users first. */
 int record_mediacodec_file_descriptor(const record_mediacodec_file_t *file);
+/* Cold I/O owner, after destroying the mux. Rewrites only trailing moov. */
+bool record_mediacodec_file_audio_edit(record_mediacodec_file_t *file,
+      uint64_t skip, uint64_t frames, unsigned roll, int *error);
 /* Cold I/O owner, consumes file even on error. complete requests final fsync
  * after successful mux finalization. Closes once, including on EINTR: never
  * retry a descriptor number that may already have been reused. */

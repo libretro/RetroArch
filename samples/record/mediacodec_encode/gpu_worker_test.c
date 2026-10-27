@@ -1,5 +1,8 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
+#ifdef NDEBUG
+#error GPU retirement acceptance requires assertions
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -10,6 +13,7 @@
 static bool active, terminal, complete, reading[16], fenced[16];
 static unsigned posts, draws, imports, closes, retire_scopes, begins;
 static int failure, restore_fail;
+static bool recovery_fails;
 static int64_t pts;
 bool record_mediacodec_surface_begin(record_mediacodec_surface_t *s)
 {
@@ -90,6 +94,17 @@ int record_android_capture_gl_poll(
    reading[slot] = fenced[slot] = false;
    return 1;
 }
+int record_android_capture_gl_recover_step(record_android_capture_gl_t *c)
+{
+   assert(c == CAPTURE && active);
+   if (recovery_fails)
+      return -1;
+   if (!complete)
+      return 0;
+   memset(reading, 0, sizeof(reading));
+   memset(fenced, 0, sizeof(fenced));
+   return 1;
+}
 void record_android_capture_gl_after_context_retired(
       record_android_capture_gl_t *c)
 {
@@ -109,6 +124,7 @@ static void reset(void)
    for (i = 0; i < 16; i++)
       assert(!reading[i] && !fenced[i]);
    terminal = complete = false;
+   recovery_fails = false;
    posts = draws = imports = closes = retire_scopes = begins = 0;
    failure = restore_fail = 0;
    pts = -1;
@@ -186,6 +202,7 @@ int main(void)
       assert(record_mediacodec_gpu_worker_step(w) == -1);
       assert(record_gpu_queue_finish(q));
       failure = 0;
+      recovery_fails = i == 5;
       if (i >= 4)
       {
          assert(record_mediacodec_gpu_worker_retire_step(w)
@@ -200,6 +217,21 @@ int main(void)
       assert(posts == (i >= 6 ? 1u : 0u));
       assert(record_mediacodec_gpu_worker_free(w) && record_gpu_queue_free(q));
    }
+   reset();
+   q = record_gpu_queue_new(1);
+   w = create(q, 1);
+   assert(w);
+   submit(q, 0, 0, false);
+   failure = 5;
+   assert(record_mediacodec_gpu_worker_step(w) == -1);
+   failure = 0;
+   assert(record_gpu_queue_finish(q));
+   assert(record_mediacodec_gpu_worker_retire_step(w) == 0);
+   assert(!record_mediacodec_gpu_worker_free(w));
+   complete = true;
+   assert(record_mediacodec_gpu_worker_retire_step(w) == 2);
+   assert(draws == 1 && !posts);
+   assert(record_mediacodec_gpu_worker_free(w) && record_gpu_queue_free(q));
    reset();
    q = record_gpu_queue_new(3);
    w = create(q, 3);

@@ -16,9 +16,10 @@ struct record_android_capture_gl
 {
    record_android_capture_gl_ops_t ops;
    record_capture_gl_slot_t slots[16];
+   GLsync recovery;
    EGLDisplay display;
    unsigned count;
-   bool failed;
+   bool failed, recovered;
 };
 static bool record_capture_gl_extension(const char *list, const char *name)
 {
@@ -36,6 +37,8 @@ bool record_android_capture_gl_free(record_android_capture_gl_t *c)
    unsigned i;
    if (!c)
       return true;
+   if (c->recovery)
+      return false;
    for (i = 0; i < c->count; i++)
       if (c->slots[i].reading || c->slots[i].done)
          return false;
@@ -228,6 +231,41 @@ int record_android_capture_gl_poll(
    s->ended = false;
    return 1;
 }
+int record_android_capture_gl_recover_step(record_android_capture_gl_t *c)
+{
+   unsigned i;
+   GLenum status;
+   if (!c)
+      return -1;
+   c->failed = true;
+   if (c->recovered)
+      return 1;
+   if (!c->recovery)
+   {
+      c->recovery = c->ops.fence(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      if (!c->recovery)
+         return -1;
+      c->ops.flush();
+      return 0;
+   }
+   status = c->ops.poll(c->recovery, 0, 0);
+   if (status == GL_TIMEOUT_EXPIRED)
+      return 0;
+   if (status != GL_ALREADY_SIGNALED && status != GL_CONDITION_SATISFIED)
+      return -1;
+   c->ops.delete_fence(c->recovery);
+   c->recovery = NULL;
+   for (i = 0; i < c->count; i++)
+   {
+      record_capture_gl_slot_t *s = &c->slots[i];
+      if (s->done)
+         c->ops.delete_fence(s->done);
+      s->done = NULL;
+      s->reading = s->ended = false;
+   }
+   c->recovered = true;
+   return 1;
+}
 void record_android_capture_gl_after_context_retired(
       record_android_capture_gl_t *c)
 {
@@ -235,6 +273,8 @@ void record_android_capture_gl_after_context_retired(
    if (!c)
       return;
    c->failed = true;
+   c->recovery = NULL;
+   c->recovered = true;
    for (i = 0; i < c->count; i++)
    {
       c->slots[i].texture = 0;
