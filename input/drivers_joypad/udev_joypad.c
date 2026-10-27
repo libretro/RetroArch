@@ -120,6 +120,8 @@ struct udev_joypad
 
    char ident[NAME_MAX_LENGTH];
    char phys[NAME_MAX_LENGTH];
+   /* the pad's HID device, which its other nodes share */
+   char hid_syspath[256];
 
    /* Sensor (IMU) support: sibling evdev node for accelerometer/gyroscope */
    int sensor_fd;
@@ -838,7 +840,7 @@ typedef struct udev_pad_nodes
 } udev_pad_nodes_t;
 
 static void udev_find_members(struct udev_device *gamepad_dev,
-      const struct udev_joypad *pad, uint64_t own, udev_pad_nodes_t *n)
+      struct udev_joypad *pad, uint64_t own, udev_pad_nodes_t *n)
 {
    size_t count = 0;
    struct udev_enumerate *enumerate;
@@ -847,7 +849,11 @@ static void udev_find_members(struct udev_device *gamepad_dev,
          gamepad_dev, "hid", NULL);
    /* a DualShock 3's pressures are in its reports alone */
    bool want_reports = pad->vid == 0x054c && pad->pid == 0x0268;
+   const char *syspath = hid_parent ? udev_device_get_syspath(hid_parent) : NULL;
 
+   pad->hid_syspath[0] = '\0';
+   if (syspath)
+      strlcpy(pad->hid_syspath, syspath, sizeof(pad->hid_syspath));
    if (hid_parent && (enumerate = udev_enumerate_new(udev_joypad_fd)))
    {
       udev_enumerate_add_match_parent(enumerate, hid_parent);
@@ -1165,115 +1171,74 @@ static void udev_joypad_remove_device(const char *path)
    }
 }
 
-static void udev_hotplug_sensor_add(struct udev_device *sensor_dev,
-      const char *sensor_path)
+/* A node that comes or goes after its pad: its motion sensors or its
+ * touchpad, as udev_find_members() would have given it a role */
+static void udev_hotplug_member(struct udev_device *dev, const char *devnode,
+      bool add)
 {
    int i;
-   struct udev_device *sensor_parent;
-   const char *sensor_parent_syspath;
+   struct udev_device *parent;
+   const char *syspath, *sysname, *tag;
+   linux_pad_node_t node;
+   linux_pad_members_t m;
 
-   sensor_parent = udev_device_get_parent_with_subsystem_devtype(
-         sensor_dev, "hid", NULL);
-   if (!sensor_parent)
-      return;
-   sensor_parent_syspath = udev_device_get_syspath(sensor_parent);
-   if (!sensor_parent_syspath)
-      return;
-
-   for (i = 0; i < MAX_USERS; i++)
+   if (!add)
    {
-      struct udev_device *pad_dev, *pad_parent;
-      const char *pad_parent_syspath;
-      struct udev_joypad *pad = &udev_pads[i];
-
-      if (pad->fd < 0 || pad->sensor_fd >= 0)
-         continue;
-
-      pad_dev = udev_device_new_from_devnum(
-            udev_joypad_fd, 'c', pad->device);
-      if (!pad_dev)
-         continue;
-
-      pad_parent = udev_device_get_parent_with_subsystem_devtype(
-            pad_dev, "hid", NULL);
-      if (pad_parent)
+      for (i = 0; i < MAX_USERS; i++)
       {
-         pad_parent_syspath = udev_device_get_syspath(pad_parent);
-         if (  pad_parent_syspath
-            && string_is_equal(sensor_parent_syspath, pad_parent_syspath))
+         struct udev_joypad *pad = &udev_pads[i];
+         if (     pad->touch_fd >= 0 && pad->touch_path
+               && string_is_equal(pad->touch_path, devnode))
+            udev_close_touch_node(pad);
+         else if (pad->sensor_fd >= 0 && pad->sensor_path
+               && string_is_equal(pad->sensor_path, devnode))
          {
-            udev_device_unref(pad_dev);
-            udev_open_sensor_node(pad, sensor_path, i);
-            return;
+            close(pad->sensor_fd);
+            pad->sensor_fd = -1;
+            free(pad->sensor_path);
+            pad->sensor_path          = NULL;
+            pad->sensor_accel_enabled = false;
+            pad->sensor_gyro_enabled  = false;
+            pad->sensor_has_accel     = false;
+            pad->sensor_has_gyro      = false;
+            pad->sensor_accel_on_rxyz_codes = false;
+            RARCH_LOG("[udev] Pad #%u: sensor removed.\n", i);
          }
       }
-      udev_device_unref(pad_dev);
-   }
-}
-
-/* A touchpad node that came after its pad */
-static void udev_hotplug_touch_add(struct udev_device *dev, const char *path)
-{
-   int i;
-   struct udev_device *parent = udev_device_get_parent_with_subsystem_devtype(
-         dev, "hid", NULL);
-   const char *syspath        = parent ? udev_device_get_syspath(parent) : NULL;
-
-   if (!syspath)
       return;
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      struct udev_joypad *pad = &udev_pads[i];
-      struct udev_device *pad_dev, *pad_parent;
-      const char *pad_syspath;
-      bool same;
-      if (pad->fd < 0 || pad->touch_fd >= 0)
-         continue;
-      if (!(pad_dev = udev_device_new_from_devnum(udev_joypad_fd, 'c', pad->device)))
-         continue;
-      pad_parent  = udev_device_get_parent_with_subsystem_devtype(pad_dev, "hid", NULL);
-      pad_syspath = pad_parent ? udev_device_get_syspath(pad_parent) : NULL;
-      same        = pad_syspath && string_is_equal(syspath, pad_syspath);
-      udev_device_unref(pad_dev);
-      if (same)
-      {
-         udev_open_touch_node(pad, path, i);
-         return;
-      }
    }
-}
 
-static void udev_hotplug_touch_remove(const char *path)
-{
-   int i;
-   for (i = 0; i < MAX_USERS; i++)
-      if (     udev_pads[i].touch_fd >= 0 && udev_pads[i].touch_path
-            && string_is_equal(udev_pads[i].touch_path, path))
-         udev_close_touch_node(&udev_pads[i]);
-}
+   sysname = udev_device_get_sysname(dev);
+   if (     !sysname || !string_starts_with_size(sysname, "event",
+               STRLEN_CONST("event"))
+         || !(parent  = udev_device_get_parent_with_subsystem_devtype(
+               dev, "hid", NULL))
+         || !(syspath = udev_device_get_syspath(parent)))
+      return;
 
-static void udev_hotplug_sensor_remove(const char *path)
-{
-   int i;
+   memset(&node, 0, sizeof(node));
+   node.event    = true;
+   node.rdev     = (uint64_t)udev_device_get_devnum(dev);
+   tag           = udev_device_get_property_value(dev, "ID_INPUT_ACCELEROMETER");
+   node.accel    = tag && string_is_equal(tag, "1");
+   tag           = udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD");
+   node.touchpad = tag && string_is_equal(tag, "1");
+
    for (i = 0; i < MAX_USERS; i++)
    {
       struct udev_joypad *pad = &udev_pads[i];
-      if (  pad->sensor_fd >= 0
-         && pad->sensor_path
-         && string_is_equal(pad->sensor_path, path))
+      if (     pad->fd < 0 || !*pad->hid_syspath
+            || !string_is_equal(pad->hid_syspath, syspath))
+         continue;
+      linux_pad_members_choose(&node, 1, (uint64_t)pad->device, false, &m);
+      if (m.touchpad == 0)
       {
-         close(pad->sensor_fd);
-         pad->sensor_fd = -1;
-         free(pad->sensor_path);
-         pad->sensor_path          = NULL;
-         pad->sensor_accel_enabled = false;
-         pad->sensor_gyro_enabled  = false;
-         pad->sensor_has_accel     = false;
-         pad->sensor_has_gyro      = false;
-         pad->sensor_accel_on_rxyz_codes = false;
-         RARCH_LOG("[udev] Pad #%u: sensor removed.\n", i);
-         break;
+         if (pad->touch_fd < 0)
+            udev_open_touch_node(pad, devnode, i);
       }
+      else if (m.sensors[0] == 0 && pad->sensor_fd < 0)
+         udev_open_sensor_node(pad, devnode, i);
+      return;
    }
 }
 
@@ -1364,27 +1329,13 @@ static void udev_joypad_poll(void)
                udev_check_device(dev, devnode);
             }
          }
-         else if (devnode)
+         /* one of a pad's other nodes, coming or going */
+         else if (devnode && action)
          {
-            /* Check for sensor node hotplug */
-            const char *accel_val = udev_device_get_property_value(
-                  dev, "ID_INPUT_ACCELEROMETER");
-            const char *touch_val = udev_device_get_property_value(
-                  dev, "ID_INPUT_TOUCHPAD");
-            if (accel_val && string_is_equal(accel_val, "1"))
-            {
-               if (string_is_equal(action, "add"))
-                  udev_hotplug_sensor_add(dev, devnode);
-               else if (string_is_equal(action, "remove"))
-                  udev_hotplug_sensor_remove(devnode);
-            }
-            else if (touch_val && string_is_equal(touch_val, "1"))
-            {
-               if (string_is_equal(action, "add"))
-                  udev_hotplug_touch_add(dev, devnode);
-               else if (string_is_equal(action, "remove"))
-                  udev_hotplug_touch_remove(devnode);
-            }
+            if (string_is_equal(action, "add"))
+               udev_hotplug_member(dev, devnode, true);
+            else if (string_is_equal(action, "remove"))
+               udev_hotplug_member(dev, devnode, false);
          }
 
          udev_device_unref(dev);
