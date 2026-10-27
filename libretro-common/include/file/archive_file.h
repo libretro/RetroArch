@@ -340,9 +340,13 @@ extern const struct file_archive_file_backend rar_backend;
  *
  * Contract: dst regions across successive read() calls must be
  * sequential and contiguous (the data_transfer source fill satisfies
- * this naturally); the built-in inflate binds its output window once
- * and the source verifies the cursor.  Returns bytes produced, 0 at
- * end of entry, -1 on error.  Only backends whose entries are
+ * this naturally), and dst has room to the entry's end: n paces the
+ * decode, and a read may produce more - the built-in inflate a whole
+ * input slice, a Zstandard or bzip2 member, which does not stop part
+ * way, all of itself straight into dst at the first read.  The
+ * built-in inflate binds its output window once and the source
+ * verifies the cursor.  Returns bytes produced, 0 at end of entry, -1
+ * on error.  Only backends whose entries are
  * independently decodable provide sources (ZIP; 7z solid blocks
  * cannot), so a NULL open is a normal "use the classic whole-entry
  * path" signal, not an error. */

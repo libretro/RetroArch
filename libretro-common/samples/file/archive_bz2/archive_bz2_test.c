@@ -24,8 +24,8 @@
  * .bz2 files, which stand for the file named as they are without the
  * extension. Each is listed, read whole with
  * file_archive_compressed_read() and extracted through a transfer, and
- * must come out as it went in; a zip member whose recorded CRC is wrong
- * is refused, and a "#" after ".bz2" names a member. The streams are
+ * must come out as it went in, zip members through an entry source as
+ * well; a zip member whose recorded CRC is wrong is refused, and a "#" after ".bz2" names a member. The streams are
  * bz_write.h's, as the rbzip2 sample makes them. */
 
 #include <stdio.h>
@@ -219,6 +219,17 @@ static void test_zip(bool wrong_crc)
       if (file_archive_compressed_read(ZIP_PATH "#m1.bin", &buf, NULL, &len))
          fail("zip, CRCs wrong", "read whole");
       free(buf);
+      {
+         int64_t  usize = 0;
+         uint8_t *got   = (uint8_t*)malloc(sizes[0]);
+         file_archive_entry_source_t *src =
+               file_archive_entry_source_open(ZIP_PATH "#m0.bin", &usize);
+         if (!src || file_archive_entry_source_read(src, got, 4096) >= 0)
+            fail("zip, CRCs wrong", "read through an entry source");
+         if (src)
+            file_archive_entry_source_close(src);
+         free(got);
+      }
       for (i = 0; i < N_MEMBERS; i++)
       {
          sprintf(name, "m%u.bin", i);
@@ -235,9 +246,29 @@ static void test_zip(bool wrong_crc)
          fail("zip", "not every member extracted");
       for (i = 0; i < N_MEMBERS; i++)
       {
+         char     member[64];
+         int64_t  usize = 0, done = 0, got_n;
+         uint8_t *got = (uint8_t*)malloc(sizes[i] + 1);
+         file_archive_entry_source_t *src;
          sprintf(name, "m%u.bin", i);
          check_extracted("zip", name, data[i], sizes[i]);
          check_member("zip", ZIP_PATH, name, data[i], sizes[i], crc[i]);
+         /* through an entry source, as content loads it */
+         snprintf(member, sizeof(member), "%s#%s", ZIP_PATH, name);
+         if (     !(src = file_archive_entry_source_open(member, &usize))
+               || usize != (int64_t)sizes[i])
+            fail("zip", "no entry source");
+         else
+         {
+            while ((got_n = file_archive_entry_source_read(src, got + done,
+                        4096)) > 0)
+               done += got_n;
+            if (done != (int64_t)sizes[i] || memcmp(got, data[i], sizes[i]))
+               fail("zip", "differs through an entry source");
+         }
+         if (src)
+            file_archive_entry_source_close(src);
+         free(got);
       }
    }
    remove(ZIP_PATH);

@@ -1016,6 +1016,48 @@ static void member_sequence(bool corrupt, bool lend)
          lend_vfs(NULL, 0);
       }
 
+      /* every member through an entry source, as content loads it; a
+       * member decoded whole is checked against its CRC there too */
+      if (!lend)
+         for (i = 0; i < SEQ_MEMBERS; i++)
+         {
+            char     member[64];
+            int64_t  usize = 0, done = 0, got_n;
+            uint8_t *got   = (uint8_t*)malloc(m[i].size + 1);
+            file_archive_entry_source_t *src;
+            snprintf(member, sizeof(member), "%s#m%u.bin", tmp_path, i);
+            if (!(src = file_archive_entry_source_open(member, &usize))
+                  || usize != (int64_t)m[i].size)
+            {
+               printf("FAIL  member sequence: m%u.bin (method %u) opens no "
+                      "entry source\n", i, m[i].method);
+               ok = false;
+            }
+            else
+            {
+               while ((got_n = file_archive_entry_source_read(src,
+                           got + done, 4096)) > 0)
+                  done += got_n;
+               if (corrupt && m[i].method == SEQ_ZSTD && SEQ_ZSTD && got_n >= 0)
+               {
+                  printf("FAIL  member sequence: m%u.bin (method %u) read "
+                         "through an entry source despite a wrong CRC\n",
+                         i, m[i].method);
+                  ok = false;
+               }
+               else if (!corrupt && (done != (int64_t)m[i].size
+                        || memcmp(got, m[i].data, m[i].size)))
+               {
+                  printf("FAIL  member sequence: m%u.bin (method %u) differs "
+                         "through an entry source\n", i, m[i].method);
+                  ok = false;
+               }
+            }
+            if (src)
+               file_archive_entry_source_close(src);
+            free(got);
+         }
+
       /* read whole, a member failing its CRC is no member, not an
        * empty one */
       if (corrupt)

@@ -108,9 +108,8 @@ typedef struct
 #endif
    uint8_t *tmpbuf;
    size_t   tmpbuf_len;
-#ifdef HAVE_RBZIP2
-   rbzip2_t *bz;           /* made at the first bzip2 member, kept */
-#endif
+   void    *bz;            /* the bzip2 decoder, made at the first
+                              bzip2 member and kept */
    /* The whole member, or a ZIP_STREAM_WINDOW of it when streaming */
    uint8_t *decompressed_data;
    uint32_t win_len;       /* size of decompressed_data */
@@ -208,6 +207,61 @@ static int64_t zip_member_input(RFILE *f, int64_t off, int64_t len,
    *ptr = buf;
    return filestream_read(f, buf, len);
 }
+
+#if defined(ZIP_HAVE_ZSTD) || defined(HAVE_RBZIP2)
+/* All @csize octets of a member at @off that is decoded whole: from
+ * the mapping, from what the stream lends when it holds all of it, or
+ * else read into *@buf, grown to *@cap as need be. NULL on failure. */
+static const uint8_t *zip_member_whole(struct file_archive_transfer *state,
+      int64_t off, uint32_t csize, uint8_t **buf, size_t *cap)
+{
+   const uint8_t *src = NULL;
+#ifdef VFS_HAVE_FILE_MAPPING
+   if (state->archive_mmap_data)
+      return state->archive_mmap_data + (size_t)off;
+#endif
+   filestream_seek(state->archive_file, off, RETRO_VFS_SEEK_POSITION_START);
+   if (filestream_view(state->archive_file, csize, &src) == (int64_t)csize)
+      return src;
+   if (*cap < csize)
+   {
+      uint8_t *p = (uint8_t*)realloc(*buf, csize ? csize : 1);
+      if (!p)
+         return NULL;
+      *buf = p;
+      *cap = csize;
+   }
+   filestream_seek(state->archive_file, off, RETRO_VFS_SEEK_POSITION_START);
+   if (filestream_read(state->archive_file, *buf, csize) != (int64_t)csize)
+      return NULL;
+   return *buf;
+}
+
+/* A Zstandard or bzip2 member, @csize octets at @src, decoded whole
+ * into @dst, which holds exactly its @usize; true when it decodes to
+ * that and to @crc. *@bz is made at the first bzip2 member. */
+static bool zip_decode_whole(unsigned cmode, void **bz, uint8_t *dst,
+      uint32_t usize, const uint8_t *src, uint32_t csize, uint32_t crc)
+{
+   size_t result = 0;
+   bool   ok     = false;
+   (void)bz;
+#ifdef ZIP_HAVE_ZSTD
+   if (cmode == ZIP_MODE_ZSTD)
+      ok = rzstd_decode(dst, usize, src, csize, &result) == RZSTD_PROCESS_END;
+#endif
+#ifdef HAVE_RBZIP2
+   if (cmode == ZIP_MODE_BZIP2)
+   {
+      if (!*bz && !(*bz = rbzip2_new()))
+         return false;
+      ok = rbzip2_decode((rbzip2_t*)*bz, dst, usize, src, csize, &result)
+         == RBZIP2_OK;
+   }
+#endif
+   return ok && result == usize && encoding_crc32(0, dst, usize) == crc;
+}
+#endif
 
 static bool zlib_stream_decompress_data_to_file_init(
       void *context, file_archive_file_handle_t *handle,
@@ -559,58 +613,13 @@ static int zlib_stream_decompress_data_to_file_iterate(
    else if (     zip_context->cmode == ZIP_MODE_ZSTD
               || zip_context->cmode == ZIP_MODE_BZIP2)
    {
-      /* Decoded whole, from the mapping, from what the stream lends
-       * when it holds all of the member, or else read */
-      const uint8_t *src    = NULL;
-      size_t         result = 0;
-      int            zerr   = 1;
-
-#ifdef VFS_HAVE_FILE_MAPPING
-      if (state->archive_mmap_data)
-         src = state->archive_mmap_data + (size_t)zip_context->fdoffset;
-      else
-#endif
-      {
-         filestream_seek(state->archive_file,
-               zip_context->fdoffset,
-               RETRO_VFS_SEEK_POSITION_START);
-         if (filestream_view(state->archive_file,
-                  zip_context->csize, &src) != (int64_t)zip_context->csize)
-         {
-            if (!zip_context_reserve_tmpbuf(zip_context, zip_context->csize))
-               return -1;
-            filestream_seek(state->archive_file,
-                  zip_context->fdoffset,
-                  RETRO_VFS_SEEK_POSITION_START);
-            if (filestream_read(state->archive_file,
-                     zip_context->tmpbuf, zip_context->csize) < 0)
-               return -1;
-            src = zip_context->tmpbuf;
-         }
-      }
-
-#ifdef ZIP_HAVE_ZSTD
-      if (zip_context->cmode == ZIP_MODE_ZSTD)
-         zerr = (rzstd_decode(
+      const uint8_t *src = zip_member_whole(state, zip_context->fdoffset,
+            zip_context->csize, &zip_context->tmpbuf,
+            &zip_context->tmpbuf_len);
+      if (     !src
+            || !zip_decode_whole(zip_context->cmode, &zip_context->bz,
                zip_context->decompressed_data, zip_context->usize,
-               src, zip_context->csize, &result)
-               != RZSTD_PROCESS_END);
-#endif
-#ifdef HAVE_RBZIP2
-      if (zip_context->cmode == ZIP_MODE_BZIP2)
-      {
-         if (!zip_context->bz && !(zip_context->bz = rbzip2_new()))
-            return -1;
-         zerr = rbzip2_decode(zip_context->bz,
-               zip_context->decompressed_data, zip_context->usize,
-               src, zip_context->csize, &result) != RBZIP2_OK;
-      }
-#endif
-
-      if (     zerr
-            || result != zip_context->usize
-            || encoding_crc32(0, zip_context->decompressed_data,
-               zip_context->usize) != zip_context->expect_crc)
+               src, zip_context->csize, zip_context->expect_crc))
          return -1;
 
       /* A whole-member buffer is not kept past its member. */
@@ -873,9 +882,7 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
 #endif
    zip_context->tmpbuf            = NULL;
    zip_context->tmpbuf_len        = 0;
-#ifdef HAVE_RBZIP2
    zip_context->bz                = NULL;
-#endif
    zip_context->entry_crc         = 0;
    zip_context->expect_crc        = 0;
    zip_context->crc               = 0;
@@ -1033,7 +1040,7 @@ static void zip_parse_file_free(void *context)
    zip_context_t *zip_context = (zip_context_t *)context;
    zip_context_free_stream(zip_context, false);
 #ifdef HAVE_RBZIP2
-   rbzip2_free(zip_context->bz);
+   rbzip2_free((rbzip2_t*)zip_context->bz);
 #endif
    free(zip_context);
 }
@@ -1046,9 +1053,12 @@ struct file_archive_entry_source
    int64_t  fdoffset;                  /* entry data start in archive */
    uint32_t csize, usize;
    uint32_t in_off, out_off;
+   uint32_t crc;                       /* the member's, recorded      */
    unsigned cmode;
    void    *z;                         /* z_stream / rinflate handle  */
+   void    *bz;                        /* the bzip2 decoder           */
    uint8_t *tmpbuf;                    /* input chunks without mmap   */
+   size_t   tmpbuf_len;
    uint8_t *out_expect;                /* rinflate cursor guard       */
    const char *needle;                 /* entry name, during open only */
    uint8_t  found;
@@ -1103,6 +1113,7 @@ static int file_archive_entry_source_capture(
    }
    s->csize = csize;
    s->usize = size;
+   s->crc   = crc32;
    s->cmode = cmode;
    s->found = 1;
    return 1;
@@ -1166,8 +1177,15 @@ file_archive_entry_source_t *file_archive_entry_source_open(
       {
          if (!(s->tmpbuf = (uint8_t*)malloc(_READ_CHUNK_SIZE)))
             goto error_stop;
+         s->tmpbuf_len = _READ_CHUNK_SIZE;
       }
    }
+#ifdef ZIP_HAVE_ZSTD
+   else if (s->cmode == ZIP_MODE_ZSTD) { }
+#endif
+#ifdef HAVE_RBZIP2
+   else if (s->cmode == ZIP_MODE_BZIP2) { }
+#endif
    else if (s->cmode != ZIP_MODE_STORED)
       goto error_stop;               /* unknown method */
 
@@ -1215,6 +1233,25 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
       s->out_off += (uint32_t)n;
       return n;
    }
+
+#if defined(ZIP_HAVE_ZSTD) || defined(HAVE_RBZIP2)
+   /* Zstandard and bzip2 members do not stop part way: the first read
+    * decodes all of it straight into dst, which has room to the
+    * member's end */
+   if (s->cmode == ZIP_MODE_ZSTD || s->cmode == ZIP_MODE_BZIP2)
+   {
+      const uint8_t *src;
+      if (s->out_off)
+         return -1;
+      if (     !(src = zip_member_whole(&s->state, s->fdoffset, s->csize,
+                  &s->tmpbuf, &s->tmpbuf_len))
+            || !zip_decode_whole(s->cmode, &s->bz, dst, s->usize, src,
+                  s->csize, s->crc))
+         return -1;
+      s->out_off = s->usize;
+      return (int64_t)s->usize;
+   }
+#endif
 
    /* DEFLATED: inflate directly into dst until n produced or end */
 #ifdef ARCHIVE_HAVE_ZLIB
@@ -1347,6 +1384,9 @@ void file_archive_entry_source_close(file_archive_entry_source_t *s)
       rinflate_free(s->z);
 #endif
    }
+#ifdef HAVE_RBZIP2
+   rbzip2_free((rbzip2_t*)s->bz);
+#endif
    free(s->tmpbuf);
    file_archive_parse_file_iterate_stop(&s->state);
    free(s);
