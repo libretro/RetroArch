@@ -31,7 +31,20 @@ D=$(acl_dir "${TMPDIR:-/tmp}" || acl_dir "$(pwd)" || acl_dir /var/tmp || true)
 [ -n "$D" ] || { echo "skip: no directory with POSIX ACL support for the AD DC"; exit 0; }
 chmod 755 $D; mkdir -p $D/share; chmod 777 $D/share
 stop() { pkill -f "samba -F -s $D/etc/smb.conf" 2>/dev/null || true; pkill -f "configfile=$D/etc/smb.conf" 2>/dev/null || true; sleep 0.5; }
-cleanup() { stop; rm -rf $D; }
+# The daemons' children can still be writing under $D when stop()
+# returns: wait for every process naming it to go before removing it,
+# and keep the matrix's own exit status rather than the removal's.
+cleanup() {
+   st=$?
+   stop
+   n=0
+   while pgrep -f "$D/" >/dev/null 2>&1 && [ $n -lt 50 ]; do
+      pkill -9 -f "$D/" 2>/dev/null || true
+      sleep 0.1; n=$((n + 1))
+   done
+   rm -rf "$D" 2>/dev/null || { sleep 0.5; rm -rf "$D" || true; }
+   exit $st
+}
 trap cleanup EXIT
 # nothing else may hold 445 or 88
 systemctl stop smbd nmbd samba-ad-dc winbind 2>/dev/null || true
