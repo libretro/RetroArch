@@ -80,6 +80,7 @@ int main(void)
    /* a pad with six axes of its own, the left stick pushed right */
    memset(pad, 0, sizeof(*pad));
    pad->sensor_fd = -1;
+   pad->touch_fd  = -1;
    pad->axes[0]   = 20000;
    udev_pad_set_fd(0, evdev[0]);
    udev_pressure_attach(pad, sv[0], &axes);

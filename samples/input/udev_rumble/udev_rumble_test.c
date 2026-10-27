@@ -152,6 +152,7 @@ static void pad_plug(void)
    fcntl(pad_rd, F_SETFL, fcntl(pad_rd, F_GETFL) | O_NONBLOCK);
    memset(&udev_pads[0], 0, sizeof(udev_pads[0]));
    udev_pads[0].sensor_fd   = -1;
+   udev_pads[0].touch_fd    = -1;
    udev_pads[0].num_effects = 16;
    udev_pad_set_fd(0, fds[1]);
    udev_rumble_attach(0, fds[1]);
