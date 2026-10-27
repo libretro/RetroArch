@@ -890,8 +890,8 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
    }
 
    if ((su == VP_JOB_FINISHED || su == VP_JOB_COMPLETED)
-         && (p->flags & VP_HW) && !p->presented)
-      return video_player_request_software(p)
+         && !p->presented)
+      return (p->flags & VP_HW) && video_player_request_software(p)
          ? VIDEO_PLAYER_PLAYING : VIDEO_PLAYER_ENDED;
    if (p->movie_us && (su == VP_JOB_READY || su == VP_JOB_FINISHED
             || su == VP_JOB_COMPLETED))
@@ -1121,6 +1121,8 @@ finished:
          && image_transfer_anim_stream_completed(p->stream, p->type);
    if ((p->flags & VP_HW) && !p->presented && video_player_request_software(p))
       return VIDEO_PLAYER_PLAYING;
+   if (!p->presented)
+      return VIDEO_PLAYER_ENDED;
    if (p->movie_us)
    {
       p->inline_finished = true;
