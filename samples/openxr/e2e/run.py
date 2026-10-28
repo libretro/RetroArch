@@ -4264,6 +4264,25 @@ def edit_aim_turned(x=0.0, y=0.0, pitch=0.0, yaw=0.0, z=-1.8):
                      y + 1.8 * math.tan(math.radians(pitch)), z))
 
 
+def edit_shake(x, y, deg, secs):
+    """Steps gripping with edit_aim_turned()'s hand at x, y for secs
+    seconds, its aim turned every 0.02 s as the unit tests' t_shake
+    turns it: deg degrees in pitch and yaw at 8 Hz and a fifth of that
+    at 2.3 Hz, the yaw a quarter period behind."""
+    steps = []
+    for k in range(int(round(secs / 0.02))):
+        t = k * 0.02
+        a = 2.0 * math.pi * 8.0 * t
+        b = 2.0 * math.pi * 2.3 * t + 1.0
+        p = deg * (math.sin(a) + 0.2 * math.sin(b))
+        w = deg * (math.sin(a - math.pi / 2.0)
+                   + 0.2 * math.sin(b - math.pi / 2.0))
+        steps += [('script', script(edit_aim_turned(x, y, pitch=p, yaw=w),
+                                    EDIT_GRIP)),
+                  ('wait', 0.02)]
+    return steps
+
+
 def outline_size(w, h):
     """An outline's quad round an item w by h."""
     return tuple((s + 2.0 * OUTLINE_GAP) / (1.0 - 2.0 * OUTLINE_F)
@@ -6322,6 +6341,26 @@ def check_edit_hinge_twitch(res, gap=0.02):
                                  last_before(res, 'off', screen2))
 
 
+def check_edit_hinge_shaken(res):
+    """Screen 2 hinged at the default Hinge Gap, its aim shaken half a
+    degree as the unit tests' t_shake shakes a hand, 2.8 cm past
+    touching, where the stop's hold ends, and 9.8 cm apart, where the
+    free gap's does: one hinge line on every frame from the hinge to
+    the last shake, and one long buzz in all, as it took hold."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    frames = between(res, 'still', 'shaken2')
+    if not frames:
+        errors.append('no frames from the hinge to the last shake')
+    off = [f['n'] for f in frames if len(hinge_lines(f)) != 1]
+    if off:
+        errors.append('%d of %d frames without one hinge line, from frame '
+                      '%d' % (len(off), len(frames), off[0]))
+    taken = buzzes(res, HINGE_BUZZ)
+    if len(taken) != 1:
+        errors.append('%d hinge buzzes, want 1' % len(taken))
+    return errors
+
+
 def check_edit_hinge_settle(res):
     """Screen 2 hinged flat at the default Hinge Gap and carried 4.9 cm
     under screen 1, where it shows hinged past the click's reach: let go
@@ -7213,6 +7252,25 @@ EDIT_CASES += [
          ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_settle},
+    {'name': 'edit-hinge-shaken', 'map': '3ds',
+     'settings': dict(HINGE_GAP, video_openxr_edit_smoothing='0'),
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'still'),
+         ('script', script(edit_aim(x=0.06, y=0.044), EDIT_GRIP)),
+         ('wait', 0.5)] + edit_shake(0.06, 0.044, 0.5, 2) + [
+         ('mark', 'shaken1'),
+         ('script', script(edit_aim(x=0.06, y=-0.082), EDIT_GRIP)),
+         ('wait', 0.5)] + edit_shake(0.06, -0.082, 0.5, 2) + [
+         ('mark', 'shaken2'),
+         ('script', edit_aim(x=0.06, y=-0.082)), ('mark', 'released'),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_shaken},
     {'name': 'edit-smooth', 'map': '3ds',
      'settings': dict(SAVE, video_openxr_edit_smoothing='2'),
      'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(True)},

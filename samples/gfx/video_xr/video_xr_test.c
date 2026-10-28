@@ -3840,7 +3840,7 @@ static unsigned through_snap(const video_xr_quad_set_t *set,
          * up.y + ((double)pose.position.z + w.z - q->pose.position.z - e.z)
          * up.z);
    *near    = video_xr_grab_near_hinge(g, &aim, set, h,
-         VIDEO_XR_HINGE_REACH, 0.0f);
+         VIDEO_XR_HINGE_REACH);
    *through = video_xr_grab_through(g, &aim, set, h);
    return bits;
 }
@@ -7033,38 +7033,37 @@ static void test_near_hinge(void)
       g.width  = 1.0f;
       g.height = 0.6f;
       CHECK(video_xr_grab_near_hinge(&g, &aim, &set, &h,
-               VIDEO_XR_SNAP_DIST, 0.0f) == (at[k][3] != 0.0));
+               VIDEO_XR_SNAP_DIST) == (at[k][3] != 0.0));
    }
    step_grab(&g, &aim, 0.0, 0.0, -1.8, 0.0, 0.0);
    g.width  = 1.0f;
    g.height = 0.6f;
    set.quads[0].pose.position.z = -1.765f;
    CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h,
-            VIDEO_XR_SNAP_DIST, 0.0f));
+            VIDEO_XR_SNAP_DIST));
    set.quads[0].pose.position.z = -1.79f;
-   CHECK(video_xr_grab_near_hinge(&g, &aim, &set, &h, VIDEO_XR_SNAP_DIST,
-            0.0f));
+   CHECK(video_xr_grab_near_hinge(&g, &aim, &set, &h, VIDEO_XR_SNAP_DIST));
    h.slot = 2;
    CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h,
-            VIDEO_XR_SNAP_DIST, 0.0f));
+            VIDEO_XR_SNAP_DIST));
    h.slot = 0;
    CHECK(!video_xr_grab_near_hinge(&g, &aim, NULL, &h,
-            VIDEO_XR_SNAP_DIST, 0.0f));
-   /* A hinge's mark and buzz reach 4.5 cm off its plane. */
+            VIDEO_XR_SNAP_DIST));
+   /* The hinge a hold was taken in reaches 4.5 cm off its plane. */
    CHECK(fabs(VIDEO_XR_HINGE_REACH - 0.045) < 1e-6);
    set.quads[0].pose.position.z = -1.8f;
    step_grab(&g, &aim, 0.0, 0.0, -1.8 + 0.044, 0.0, 0.0);
    g.width  = 1.0f;
    g.height = 0.6f;
    CHECK(     video_xr_grab_near_hinge(&g, &aim, &set, &h,
-               VIDEO_XR_HINGE_REACH, 0.0f)
+               VIDEO_XR_HINGE_REACH)
          && !video_xr_grab_near_hinge(&g, &aim, &set, &h,
-               VIDEO_XR_SNAP_DIST, 0.0f));
+               VIDEO_XR_SNAP_DIST));
    step_grab(&g, &aim, 0.0, 0.0, -1.8 - 0.046, 0.0, 0.0);
    g.width  = 1.0f;
    g.height = 0.6f;
    CHECK(!video_xr_grab_near_hinge(&g, &aim, &set, &h,
-            VIDEO_XR_HINGE_REACH, 0.0f));
+            VIDEO_XR_HINGE_REACH));
 }
 
 #define SMOOTH_MAX 400

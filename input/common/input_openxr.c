@@ -2772,6 +2772,15 @@ static bool input_openxr_edit_settle(const input_openxr_edit_t *e,
    return false;
 }
 
+/* hold's mark, if buzzed, in its grab for the frame loop. */
+static void input_openxr_edit_show_mark(input_openxr_hold_t *hold)
+{
+   hold->g.mark_slot = hold->buzzed
+      ? (unsigned char)(hold->mark.slot + 1) : 0;
+   hold->g.mark_on   = hold->buzzed ? (unsigned char)hold->mark.on : 0;
+   hold->g.mark_edge = hold->buzzed ? (unsigned char)hold->mark.edge : 0;
+}
+
 /* Hand h grabs st->quads' quad target: the item keeps its place in
  * the aim's frame, wherever the hand is, its yaw from the aim's heading,
  * and its pitch and roll. A second hand on an item does nothing. */
@@ -2830,6 +2839,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
       hold->buzzed      = true;
       hold->mark        = hold->lid;
       hold->out         = 0;
+      input_openxr_edit_show_mark(hold);
    }
    if (q->slot != VIDEO_XR_MENU_SLOT)
       config_get_video_screen_xr(q->slot, &now);
@@ -2931,18 +2941,6 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
                      || hinge.on != kept.on || hinge.edge != kept.edge)))
             hold->g.rest_slot = 0;
       }
-      /* Its target taken by the other hand ends the mark and the lid
-       * at once, hinged elsewhere or not, so letting that go takes it
-       * again only anew, with the buzz. */
-      if (     hold->buzzed
-            && ((input_openxr_edit_holding(e) >> hold->mark.slot) & 1u))
-      {
-         hold->buzzed = false;
-         hold->out    = 0;
-      }
-      if (     hold->lidded
-            && ((input_openxr_edit_holding(e) >> hold->lid.slot) & 1u))
-         hold->lidded = false;
       /* The one state the buzz, lid, rims and line follow: a hinge a
        * let-go would settle into takes it at once; seen out of that
        * range INPUT_OPENXR_HINGE_DEBOUNCE_US on end, it lets go, so a
@@ -2967,6 +2965,7 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
          if (now - hold->out >= INPUT_OPENXR_HINGE_DEBOUNCE_US)
             hold->buzzed = false;
       }
+      input_openxr_edit_show_mark(hold);
       if (pushed != hold->pushed)
       {
          if (hinged)
@@ -3019,8 +3018,8 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
       const video_xr_hinge_t *lid = NULL;
       /* Pushed past the stop's hold, the hinge ends with it, and the
        * stop holds short until one takes hold, so a wobble there
-       * neither takes it back nor buzzes. While marked, as the frame
-       * loop's mark keeps that far off the plane too. */
+       * neither takes it back nor buzzes. While marked, as its mark
+       * keeps that far off the plane too. */
       if (     hold->buzzed
             && video_xr_grab_through(&hold->g, aim, targets, &hold->mark))
          hold->g.through = 1;
@@ -3028,7 +3027,7 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
        * screen. */
       if (     hold->lidded && !hold->buzzed
             && !video_xr_grab_near_hinge(&hold->g, aim, targets,
-               &hold->lid, VIDEO_XR_SNAP_DIST, 0.0f))
+               &hold->lid, VIDEO_XR_SNAP_DIST))
          hold->lidded = false;
       if (hold->lidded)
          lid = &hold->lid;
@@ -3063,6 +3062,7 @@ static void input_openxr_edit_let_go(input_openxr_edit_t *e,
    hold->buzzed = false;
    hold->out    = 0;
    hold->trails = 0;
+   input_openxr_edit_show_mark(hold);
    if (!shown)
    {
       hold->g.state = VIDEO_XR_GRAB_NONE;
@@ -3316,13 +3316,23 @@ static void input_openxr_edit_poll(input_openxr_t *st,
          bool shown = input_openxr_edit_shown(&st->quads, hold->g.slot)
             && base->x == hold->g.base.x && base->y == hold->g.base.y
             && base->z == hold->g.base.z;
-         /* Its mark's target gone, the mark ends at once. */
+         /* Its mark's target gone or taken by the other hand, the mark
+          * ends at once, the hand tracked or not, so letting that go
+          * takes it again only anew, with the buzz. */
          if (     hold->buzzed
-               && !input_openxr_edit_shown(&st->quads, hold->mark.slot))
+               && (!input_openxr_edit_shown(&st->quads, hold->mark.slot)
+                  || ((input_openxr_edit_holding(e) >> hold->mark.slot)
+                     & 1u)))
          {
             hold->buzzed = false;
             hold->out    = 0;
+            input_openxr_edit_show_mark(hold);
          }
+         /* Its lid's target taken ends the lid too, hinged elsewhere or
+          * not. */
+         if (     hold->lidded
+               && ((input_openxr_edit_holding(e) >> hold->lid.slot) & 1u))
+            hold->lidded = false;
          if (!grip || !shown)
          {
             /* As it showed before the grip began to open: the hand

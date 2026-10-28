@@ -7573,13 +7573,25 @@ static void t_grab_held(openxr_grabs_t *g)
    g->hand[1].state           = VIDEO_XR_GRAB_HELD;
 }
 
+/* Hand h's mark as the main thread publishes it: on target slot's edge
+ * on by its own edge edge; slot ~0u, none. */
+static void t_mark(openxr_grabs_t *g, unsigned h, unsigned slot,
+      unsigned on, unsigned edge)
+{
+   bool none            = slot == ~0u;
+   g->hand[h].mark_slot = none ? 0 : (unsigned char)(slot + 1u);
+   g->hand[h].mark_on   = none ? 0 : (unsigned char)on;
+   g->hand[h].mark_edge = none ? 0 : (unsigned char)edge;
+}
+
 /* Hand 1 lets go of what it holds at count seq, where it last put it,
- * as the main thread hands it over. */
+ * as the main thread hands it over, its mark gone. */
 static void t_grab_let_go(openxr_grabs_t *g, unsigned seq, float x)
 {
    g->hand[1].state           = VIDEO_XR_GRAB_RELEASED;
    g->hand[1].release_seq     = seq;
    g->hand[1].last.position.x = x;
+   t_mark(g, 1, ~0u, 0, 0);
    g->let_go[g->hand[1].slot] = g->hand[1];
 }
 
@@ -7844,12 +7856,17 @@ static void test_frame_grabs_snap(void)
          "the frame loop snapped it to %.5f, the main thread's call to %.5f",
          layers[0].pose.position.y, want.position.y);
    /* Snapped flush on screen 1's top edge it hinges there, and the
-    * frame loop keeps the hinge the main thread's call finds, where it
-    * draws it. */
+    * frame loop draws the hinge the main thread's call finds and marks
+    * where it draws it. */
    memset(&wh, 0, sizeof(wh));
-   CHECK((video_xr_grab_hinge(&grabs.hand[1], &t_aim_pose, &set, 1u,
-               &grabs.start[1], &want, &wh) & VIDEO_XR_SNAP_HINGE)
-         && f.hinged == 2u && f.held[1].hinged,
+   CHECK(video_xr_grab_hinge(&grabs.hand[1], &t_aim_pose, &set, 1u,
+            &grabs.start[1], &want, &wh) & VIDEO_XR_SNAP_HINGE,
+         "the main thread's call finds no hinge");
+   t_mark(&grabs, 1, wh.slot, wh.on, wh.edge);
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 2500);
+   openxr_frame_layers(&f, 2500, layers, ptrs);
+   CHECK(f.hinged == 2u && f.held[1].hinged,
          "hinged %#x on the frame loop, %d kept", f.hinged,
          (int)f.held[1].hinged);
    video_xr_pose_identity(&pw);
@@ -7866,6 +7883,7 @@ static void test_frame_grabs_snap(void)
          "on %u edge %u at %.4f", f.hinges[1].slot, f.hinges[1].on,
          f.hinges[1].point.y, wh.slot, wh.on, pw.position.y);
    grabs.snap = false;
+   t_mark(&grabs, 1, ~0u, 0, 0);
    openxr_frame_publish_grabs(&f, &grabs);
    openxr_frame_place_screens(&f, 3000);
    openxr_frame_layers(&f, 3000, layers, ptrs);
@@ -7929,47 +7947,89 @@ static void test_frame_grabs_stop(void)
    }
 }
 
-/* As the main thread's poll with the hand's aim where it is, hand 1's
- * through: set as a push lets the hinge *lid holds go, cleared as one
- * takes hold, published as it changes; *lid as it last held. */
-static void t_main_through(openxr_frame_t *f, openxr_grabs_t *grabs,
-      const video_xr_quad_set_t *set, bool *lidded, video_xr_hinge_t *lid)
+/* The main thread's mark for hand 1, as its poll keeps it. */
+typedef struct t_main
+{
+   video_xr_hinge_t mark;
+   XrTime out;
+   bool marked;
+} t_main_t;
+
+/* INPUT_OPENXR_HINGE_DEBOUNCE_US, in XrTime's nanoseconds. */
+#define T_MARK_NS 150000000
+
+/* As the main thread's poll at time with hand 1's aim where it is
+ * (input_openxr_edit_move): the hinge it was taken in kept while
+ * video_xr_grab_kept; a hinge a let-go there settles in marked at
+ * once, the mark gone T_MARK_NS out of that; through set as a push
+ * lets the marked hinge go, cleared as one takes hold; published as
+ * any of them changes. */
+static void t_main_poll(openxr_frame_t *f, openxr_grabs_t *grabs,
+      const video_xr_quad_set_t *set, XrTime time, t_main_t *m)
 {
    video_xr_pose_t pose;
    video_xr_hinge_t hinge;
-   video_xr_grab_t *g    = &grabs->hand[1];
-   unsigned char through = g->through;
-   bool hinged           = (video_xr_grab_hinge(g, &t_aim_pose, set, 1u,
+   const video_xr_hinge_t *c = NULL;
+   video_xr_grab_t *g        = &grabs->hand[1];
+   video_xr_grab_t was       = *g;
+   bool hinged               = (video_xr_grab_hinge(g, &t_aim_pose, set, 1u,
             &grabs->start[1], &pose, &hinge) & VIDEO_XR_SNAP_HINGE) != 0;
-   if (hinged)
+   if (g->rest_slot)
    {
-      *lid       = hinge;
-      g->through = 0;
+      video_xr_hinge_t kept;
+      if (     !video_xr_grab_kept(g, &t_aim_pose, set, &grabs->start[1],
+                  &kept)
+            || (hinged && (hinge.slot != kept.slot || hinge.on != kept.on
+                  || hinge.edge != kept.edge)))
+         g->rest_slot = 0;
    }
-   else if (*lidded && video_xr_grab_through(g, &t_aim_pose, set, lid))
+   if (     hinged
+         && video_xr_grab_settle(g, &t_aim_pose, set, 1u, &hinge, &pose))
+      c = &hinge;
+   else if (m->marked
+         && video_xr_grab_settle(g, &t_aim_pose, set, 1u, &m->mark, &pose))
+      c = &m->mark;
+   if (c)
+   {
+      m->mark   = *c;
+      m->marked = true;
+      m->out    = 0;
+   }
+   else if (m->marked && !m->out)
+      m->out = time;
+   else if (m->marked && time - m->out >= T_MARK_NS)
+      m->marked = false;
+   if (hinged)
+      g->through = 0;
+   else if (m->marked
+         && video_xr_grab_through(g, &t_aim_pose, set, &m->mark))
       g->through = 1;
-   *lidded = hinged;
-   if (g->through != through)
+   t_mark(grabs, 1, m->marked ? m->mark.slot : ~0u, m->mark.on,
+         m->mark.edge);
+   if (     g->through != was.through || g->rest_slot != was.rest_slot
+         || g->mark_slot != was.mark_slot || g->mark_on != was.mark_on
+         || g->mark_edge != was.mark_edge)
       openxr_frame_publish_grabs(f, grabs);
 }
 
 /* Screen 0 hinged on screen 1's top edge at Hinge Gap 0, pushed down
- * through it 1 mm a frame to 5 cm past and back, its through set and
- * cleared as the main thread does: its line shows to 3 cm past, not
- * from 3.1, nor back until 2.5 cm; no frame moves it more than the
- * stop's fade, 3.4 times the hand. Shaken 3 mm at 8 Hz about 3 cm past, the line goes once and
- * stays gone; about 2.5 cm, it comes back once and stays. Shown 2.8 cm
- * past, a through published there takes its line at once. */
+ * through it 1 mm a frame to 5 cm past and back, then shaken 3 mm at
+ * 8 Hz about 3 cm past and about 2.5 cm, the main thread polling each
+ * frame (t_main_poll): no frame moves it more than the stop's fade,
+ * 3.4 times the hand, and the line follows the published mark on
+ * every frame. Marked 2.8 cm past, a through published there keeps
+ * the line; the mark dropped takes it at once. Main's side:
+ * test_edit_gap_push and test_edit_gap_push_shaken. */
 static void test_frame_grabs_push(void)
 {
    unsigned i;
    unsigned ends  = 0;
    unsigned takes = 0;
-   bool was       = true;
-   bool on        = true;
-   bool lidded    = false;
+   unsigned off   = 0;
+   bool was       = false;
+   bool on        = false;
    float last     = 0.08f;
-   video_xr_hinge_t lid;
+   t_main_t m;
    openxr_runtime_t rt;
    openxr_session_t s;
    openxr_swapchains_t sc;
@@ -7979,7 +8039,7 @@ static void test_frame_grabs_push(void)
    XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
    const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
 
-   memset(&lid, 0, sizeof(lid));
+   memset(&m, 0, sizeof(m));
    t_grab_frame(&rt, &s, &sc, &f, &set);
    t_grab_held(&grabs);
    grabs.snap = true;
@@ -7999,34 +8059,27 @@ static void test_frame_grabs_push(void)
       if (i > 100)
          x = ((i <= 300) ? 0.03 : 0.025) + 0.003 * sin((i - 101) * 0.5);
       t_aim_pose.position.y = (float)(0.08 - x);
-      t_main_through(&f, &grabs, &set, &lidded, &lid);
+      t_main_poll(&f, &grabs, &set, time, &m);
       openxr_frame_place_screens(&f, time);
       openxr_frame_layers(&f, time, layers, ptrs);
       on = (f.hinged & 2u) != 0;
       if (i && i <= 100)
-      {
          CHECK(fabs(layers[0].pose.position.y - last) <= 0.00341,
                "%s %u mm past: moved %.2f mm", (i <= 50) ? "in" : "back",
                k, fabs(layers[0].pose.position.y - last) * 1e3);
-         CHECK(on == (k <= ((i <= 50) ? 30u : 25u)),
-               "%s %u mm past: hinged %#x", (i <= 50) ? "in" : "back", k,
-               f.hinged);
-      }
-      if (i > 101)
-      {
-         ends  += (was && !on) ? 1u : 0u;
-         takes += (!was && on) ? 1u : 0u;
-      }
-      if (i == 300)
-         CHECK(ends == 1 && takes == 0,
-               "shaken about 3 cm past: ended %u, taken %u", ends, takes);
-      last = layers[0].pose.position.y;
-      was  = on;
+      off   += (on != m.marked) ? 1u : 0u;
+      ends  += (was && !on) ? 1u : 0u;
+      takes += (i && !was && on) ? 1u : 0u;
+      last   = layers[0].pose.position.y;
+      was    = on;
    }
-   CHECK(ends == 1 && takes == 1 && was,
-         "shaken about 2.5 cm past: ended %u, taken %u, hinged %d", ends,
-         takes, (int)was);
+   CHECK(!off && ends && takes,
+         "%u frames off the published mark; it ended %u, was taken %u",
+         off, ends, takes);
    t_aim_pose.position.y = 0.08f - 0.028f;
+   t_mark(&grabs, 1, 1, 0, 1);
+   grabs.hand[1].through = 0;
+   openxr_frame_publish_grabs(&f, &grabs);
    openxr_frame_place_screens(&f, 1000 + 501 * (XrTime)11111111);
    openxr_frame_layers(&f, 1000 + 501 * (XrTime)11111111, layers, ptrs);
    on = (f.hinged & 2u) != 0;
@@ -8034,24 +8087,28 @@ static void test_frame_grabs_push(void)
    openxr_frame_publish_grabs(&f, &grabs);
    openxr_frame_place_screens(&f, 1000 + 502 * (XrTime)11111111);
    openxr_frame_layers(&f, 1000 + 502 * (XrTime)11111111, layers, ptrs);
-   CHECK(on && f.hinged == 0u,
-         "2.8 cm past: hinged %d, then through: hinged %#x", (int)on,
-         f.hinged);
+   was = (f.hinged & 2u) != 0;
+   t_mark(&grabs, 1, ~0u, 0, 0);
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 1000 + 503 * (XrTime)11111111);
+   openxr_frame_layers(&f, 1000 + 503 * (XrTime)11111111, layers, ptrs);
+   CHECK(on && was && f.hinged == 0u,
+         "2.8 cm past: hinged %d, through: hinged %d, the mark dropped: "
+         "hinged %#x", (int)on, (int)was, f.hinged);
    t_grab_free(&rt, &s, &sc, &f);
 }
 
 /* Screen 0 hinged on screen 1's top edge at Hinge Gap 0, the main
- * thread polling every third frame. Held 2.9 cm past, the frames
- * between graze 3.02 cm past: the line stays on every frame. Pushed
- * through to 3.2 cm and back to 2.6, the frames between dip to 2.45:
- * it stays off, through kept. Once the main thread sees 2.45, the line
- * is back from that frame. */
+ * thread polling every third frame (t_main_poll). Held 2.9 cm past,
+ * the frames between graze 3.02 cm past; pushed through to 3.2 cm and
+ * back to 2.6, the frames between dip to 2.45; then held at 2.45: the
+ * line follows the published mark on every frame, whatever the frames
+ * between show. Main's side: test_edit_mark_shaken. */
 static void test_frame_grabs_graze(void)
 {
    unsigned i;
    unsigned blinks = 0;
-   bool lidded     = false;
-   video_xr_hinge_t lid;
+   t_main_t mk;
    openxr_runtime_t rt;
    openxr_session_t s;
    openxr_swapchains_t sc;
@@ -8061,7 +8118,7 @@ static void test_frame_grabs_graze(void)
    XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
    const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
 
-   memset(&lid, 0, sizeof(lid));
+   memset(&mk, 0, sizeof(mk));
    t_grab_frame(&rt, &s, &sc, &f, &set);
    t_grab_held(&grabs);
    grabs.snap = true;
@@ -8092,22 +8149,16 @@ static void test_frame_grabs_graze(void)
       if (!(i % 3))
       {
          t_aim_pose.position.y = (float)(0.08 - m);
-         t_main_through(&f, &grabs, &set, &lidded, &lid);
+         t_main_poll(&f, &grabs, &set, time, &mk);
       }
       t_aim_pose.position.y = (float)(0.08 - x);
       openxr_frame_place_screens(&f, time);
       openxr_frame_layers(&f, time, layers, ptrs);
       on = (f.hinged & 2u) != 0;
-      if (i >= 30 && i < 60)
-         blinks += (!on || grabs.hand[1].through) ? 1u : 0u;
-      if (i >= 72 && i < 120)
-         blinks += (on || !grabs.hand[1].through) ? 1u : 0u;
-      if (i >= 120)
-         blinks += (!on || grabs.hand[1].through) ? 1u : 0u;
+      blinks += (on != mk.marked) ? 1u : 0u;
       if (i == 59 || i == 119 || i == 160)
-         CHECK(blinks == 0, "frame %u: %u frames off the main thread's "
-               "hinge, through %u", i, blinks,
-               (unsigned)grabs.hand[1].through);
+         CHECK(blinks == 0, "frame %u: %u frames off the published mark",
+               i, blinks);
    }
    t_grab_free(&rt, &s, &sc, &f);
 }
@@ -8159,9 +8210,9 @@ static void test_frame_grabs_snap_two(void)
 
 /* The hinge where the frame draws: the anchor a quarter turn left,
  * screen 0 held flush on screen 1's top edge as test_frame_grabs_snap
- * holds it hinges there, the hinge on screen 0's drawn bottom edge,
+ * holds it, marked there, the hinge on screen 0's drawn bottom edge,
  * its line along that edge, flat the way screen 1's drawn top faces.
- * Let go, no hinge. */
+ * Let go, no hinge. Main's side: test_edit_mark_switch. */
 static void test_frame_grabs_hinge(void)
 {
    openxr_runtime_t rt;
@@ -8193,6 +8244,7 @@ static void test_frame_grabs_hinge(void)
    video_xr_grab_pose(&grabs.hand[1], &aim, NULL, 0, NULL, &grabs.start[1],
          NULL, NULL);
    grabs.start[1].position.y -= 0.1f;
+   t_mark(&grabs, 1, 1, 0, 1);
    openxr_frame_publish_grabs(&f, &grabs);
    openxr_frame_place_screens(&f, 1000);
    video_xr_compose(&f.screens.pose, &aim, &t_aim_pose);
@@ -8237,9 +8289,10 @@ static void test_frame_grabs_hinge(void)
    t_grab_free(&rt, &s, &sc, &f);
 }
 
-/* Lost, the hand keeps its hinge as it keeps the pose, drawn where a
- * recenter puts the screens; the other hand taking the hinge's target
- * ends it, and that hand letting go does not bring it back. */
+/* Lost, the hand keeps its marked hinge as it keeps the pose, drawn
+ * where a recenter puts the screens; the other hand taking the hinge's
+ * target ends it, and that hand letting go does not bring it back.
+ * Main's side: test_edit_mark_debounce's rows for screen 1 taken. */
 static void test_frame_grabs_hinge_kept(void)
 {
    openxr_runtime_t rt;
@@ -8248,7 +8301,7 @@ static void test_frame_grabs_hinge_kept(void)
    openxr_frame_t f;
    video_xr_quad_set_t set;
    openxr_grabs_t grabs;
-   video_xr_pose_t at;
+   video_xr_pose_t at, inv;
    video_xr_vec3_t was;
    XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
    const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
@@ -8263,10 +8316,12 @@ static void test_frame_grabs_hinge_kept(void)
    video_xr_grab_pose(&grabs.hand[1], &t_aim_pose, NULL, 0, NULL,
          &grabs.start[1], NULL, NULL);
    grabs.start[1].position.y -= 0.1f;
+   t_mark(&grabs, 1, 1, 0, 1);
    openxr_frame_publish_grabs(&f, &grabs);
    openxr_frame_place_screens(&f, 1000);
    openxr_frame_layers(&f, 1000, layers, ptrs);
    was = f.hinges[1].point;
+   video_xr_pose_invert(&f.screens.pose, &inv);
    CHECK(f.hinged == 2u && f.held[1].hinge.slot == 1,
          "held: hinged %#x on slot %u", f.hinged, f.held[1].hinge.slot);
    /* Lost, the head turned a quarter left and recentered on. */
@@ -8281,7 +8336,8 @@ static void test_frame_grabs_hinge_kept(void)
    openxr_frame_place_screens(&f, 2000);
    openxr_frame_layers(&f, 2000, layers, ptrs);
    video_xr_pose_identity(&at);
-   at.position = f.held[1].hinge.point;
+   at.position = was;
+   video_xr_compose(&inv, &at, &at);
    video_xr_compose(&f.screens.pose, &at, &at);
    CHECK(     f.hinged == 2u && f.held[1].hinged
          && t_near(f.hinges[1].point.x, at.position.x)
@@ -8292,8 +8348,11 @@ static void test_frame_grabs_hinge_kept(void)
          "%.3f,%.3f,%.3f", f.hinged, f.hinges[1].point.x,
          f.hinges[1].point.y, f.hinges[1].point.z, at.position.x,
          at.position.y, at.position.z);
-   /* The left hand takes screen 1, then lets it go. */
+   /* The left hand takes screen 1, which ends the mark in the same
+    * publish, then lets it go. */
    grabs.hand[0]                 = grabs.hand[1];
+   t_mark(&grabs, 0, ~0u, 0, 0);
+   t_mark(&grabs, 1, ~0u, 0, 0);
    grabs.hand[0].slot            = 1;
    grabs.hand[0].rel.position.y  = -1.09f;
    grabs.hand[0].last.position.y = -1.0f;
@@ -8440,41 +8499,40 @@ static bool t_hinge_midway(const openxr_frame_t *f,
 }
 
 /* Hand 1 holding screen 0 as grabs has it, n frames at 90 Hz, its aim
- * at t from path shaken by m metres and deg degrees: how often the
- * frame loop's hinge for it came or went, in *on whether it shows at
- * the end, in *off_line the frames it shows one off the last whole
- * one's edges or its line off midway between them. */
+ * at t from path shaken by m metres and deg degrees, the main thread
+ * polling every third frame (t_main_poll): how often the frame loop's
+ * hinge for it came or went, in *on whether it shows at the end, in
+ * *off_line the frames it shows other than the published mark or its
+ * line off midway between the edges. */
 static unsigned t_hinge_shaken(openxr_frame_t *f,
-      const video_xr_quad_set_t *set, const openxr_grabs_t *grabs,
+      const video_xr_quad_set_t *set, openxr_grabs_t *grabs,
       void (*path)(double t, video_xr_pose_t *aim), unsigned n, double m,
       double deg, bool *on, unsigned *off_line)
 {
    unsigned i;
-   video_xr_hinge_t last;
+   t_main_t mk;
    unsigned changes = 0;
    bool shown       = false;
    XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
    const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
-   memset(&last, 0, sizeof(last));
+   memset(&mk, 0, sizeof(mk));
    *off_line = 0;
    for (i = 0; i < n; i++)
    {
-      video_xr_pose_t pose;
-      video_xr_hinge_t wh;
       double t    = i / 90.0;
       XrTime time = 1000 + (XrTime)i * 11111111;
       bool was    = shown;
       path(t, &t_aim_pose);
       t_shaken(&t_aim_pose, t, m, deg);
+      if (!(i % 3))
+         t_main_poll(f, grabs, set, time, &mk);
       openxr_frame_place_screens(f, time);
       openxr_frame_layers(f, time, layers, ptrs);
       shown = ((f->hinged >> 1) & 1u) != 0;
       if (i && shown != was)
          changes++;
-      if (video_xr_grab_hinge(&grabs->hand[1], &t_aim_pose, set, 1u,
-               &grabs->start[1], &pose, &wh) & VIDEO_XR_SNAP_HINGE)
-         last = wh;
-      if (shown && !t_hinge_midway(f, set, &last))
+      if (     shown != mk.marked
+            || (shown && !t_hinge_midway(f, set, &mk.mark)))
          (*off_line)++;
    }
    *on = shown;
@@ -8515,11 +8573,12 @@ static void t_path_slide(double t, video_xr_pose_t *aim)
 }
 
 /* The hand shaking 1 mm and 0.15 degrees, the frame loop's hinge comes
- * on once and stays at each of the hinge's limits: carried in from in
- * front of screen 1's plane, lowered across the free gap, taken where
- * it hinges and carried along and back through the grab's fade, and
- * held at a square corner. While it shows, its line lies midway
- * between the edges. */
+ * on once with the published mark and stays at each of the hinge's
+ * limits: carried in from in front of screen 1's plane, lowered across
+ * the free gap, taken where it hinges and carried along and back
+ * through the grab's fade, and held at a square corner. While it
+ * shows, its line lies midway between the edges. Main's side:
+ * test_edit_mark_shaken. */
 static void test_frame_grabs_hinge_shaken(void)
 {
    static const char *what[4] = { "depth", "gap", "fade", "square" };
@@ -8582,25 +8641,29 @@ static void test_frame_grabs_hinge_shaken(void)
    }
 }
 
-/* Out of the hinge's reach, not before: flush it shows; carried 4 cm in
- * front of screen 1's plane it still shows, its line midway, 2 cm in
- * front; 5 cm in front it goes, and back to 4 cm it stays gone, the
- * hinge not whole there; flush again it shows. */
+/* Flush, then carried 4 cm in front of screen 1's plane, 5 cm, back to
+ * 4 cm and flush, 0.2 s at each, the main thread polling each frame
+ * (t_main_poll): the line follows the published mark on every frame,
+ * midway between the edges 4 cm in front while it shows, gone by the
+ * end of 5 cm and back flush. Main's side: test_edit_mark_debounce. */
 static void test_frame_grabs_hinge_reach(void)
 {
-   static const float out[5]  = { 0.0f, 0.04f, 0.05f, 0.04f, 0.0f };
-   static const unsigned want[5] = { 1, 1, 0, 0, 1 };
-   unsigned i;
+   static const float out[5] = { 0.0f, 0.04f, 0.05f, 0.04f, 0.0f };
+   unsigned i, j;
+   unsigned off   = 0;
+   unsigned shown = 0;
+   unsigned apart = 0;
+   t_main_t mk;
    openxr_runtime_t rt;
    openxr_session_t s;
    openxr_swapchains_t sc;
    openxr_frame_t f;
    video_xr_quad_set_t set;
    openxr_grabs_t grabs;
-   video_xr_hinge_t flush;
    XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
    const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
 
+   memset(&mk, 0, sizeof(mk));
    t_grab_frame(&rt, &s, &sc, &f, &set);
    t_grab_held(&grabs);
    grabs.snap = true;
@@ -8610,21 +8673,225 @@ static void test_frame_grabs_hinge_reach(void)
    grabs.start[1].position.y -= 0.3f;
    t_aim_ok = true;
    openxr_frame_publish_grabs(&f, &grabs);
-   memset(&flush, 0, sizeof(flush));
    for (i = 0; i < 5; i++)
    {
+      for (j = 0; j < 18; j++)
+      {
+         XrTime time = 1000 + (XrTime)(i * 18 + j) * 11111111;
+         bool on;
+         t_path_still(0.0, &t_aim_pose);
+         t_aim_pose.position.z += out[i];
+         t_main_poll(&f, &grabs, &set, time, &mk);
+         openxr_frame_place_screens(&f, time);
+         openxr_frame_layers(&f, time, layers, ptrs);
+         on   = ((f.hinged >> 1) & 1u) != 0;
+         off += (on != mk.marked) ? 1u : 0u;
+         if (i == 1 && on)
+         {
+            shown++;
+            apart += t_hinge_midway(&f, &set, &mk.mark) ? 1u : 0u;
+         }
+      }
+      CHECK(     !off && (i != 1 || (shown && apart == shown))
+            && (i == 1 || i == 3 || mk.marked == (out[i] == 0.0f)),
+            "%.0f cm out: %u frames off the published mark, %u of %u "
+            "shown midway, marked %d", out[i] * 100.0f, off, apart, shown,
+            (int)mk.marked);
+   }
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
+/* The line and rims follow the published mark (t_mark), nothing of
+ * the frame's own: marked, screen 0 shows that hinge on every frame,
+ * midway between the edges, flush on screen 1's top edge, 4 cm in front
+ * of its plane or 12 cm above it; unmarked, flush where it hinges
+ * exactly, none; the mark switched to screen 2's left edge, that one
+ * from the publish's first frame; its target not in the quads or held
+ * by the other hand, none. */
+static void test_frame_grabs_mark(void)
+{
+   static const float up[3]     = { 0.0f, 0.0f, 0.12f };
+   static const float toward[3] = { 0.0f, 0.04f, 0.0f };
+   unsigned i, j;
+   video_xr_hinge_t k;
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   /* Screen 2 70 cm right of screen 0, off any pull. */
+   set.quads[3]                 = set.quads[2];
+   set.quads[3].pose.position.x = 2.5f;
+   set.quads[3].pose.position.y = 0.0f;
+   set.quads[3].screen          = 2;
+   set.quads[3].slot            = 2;
+   set.num_quads                = 4;
+   set.slots[2].layers          = 1;
+   set.slots[2].edit_seq        = 2;
+   openxr_frame_publish(&f, &set);
+   t_grab_held(&grabs);
+   grabs.snap = true;
+   t_path_still(0.0, &t_aim_pose);
+   video_xr_grab_pose(&grabs.hand[1], &t_aim_pose, NULL, 0, NULL,
+         &grabs.start[1], NULL, NULL);
+   grabs.start[1].position.y -= 0.3f;
+   t_aim_ok = true;
+   memset(&k, 0, sizeof(k));
+   k.slot = 1;
+   k.on   = 0;
+   k.edge = 1;
+   t_mark(&grabs, 1, 1, 0, 1);
+   openxr_frame_publish_grabs(&f, &grabs);
+   for (i = 0; i < 3; i++)
+      for (j = 0; j < 3; j++)
+      {
+         XrTime time = 1000 + (XrTime)(i * 3 + j) * 11111111;
+         t_path_still(0.0, &t_aim_pose);
+         t_aim_pose.position.y += up[i];
+         t_aim_pose.position.z += toward[i];
+         openxr_frame_place_screens(&f, time);
+         openxr_frame_layers(&f, time, layers, ptrs);
+         CHECK(f.hinged == 2u && t_hinge_midway(&f, &set, &k),
+               "marked %.0f cm up, %.0f cm toward, frame %u: hinged %#x "
+               "on %u/%u/%u", up[i] * 100.0f, toward[i] * 100.0f, j,
+               f.hinged, f.hinges[1].slot, f.hinges[1].on,
+               f.hinges[1].edge);
+      }
+   /* Flush, where it hinges whole: the frame's own snap holds it, but
+    * with no mark there is no line. */
+   t_mark(&grabs, 1, ~0u, 0, 0);
+   openxr_frame_publish_grabs(&f, &grabs);
+   t_path_still(0.0, &t_aim_pose);
+   openxr_frame_place_screens(&f, 1000 + 9 * (XrTime)11111111);
+   openxr_frame_layers(&f, 1000 + 9 * (XrTime)11111111, layers, ptrs);
+   CHECK(f.hinged == 0u && !f.held[1].hinged
+         && t_near(layers[0].pose.position.y, 0.08f),
+         "unmarked flush: hinged %#x at %.4f", f.hinged,
+         layers[0].pose.position.y);
+   /* The mark switched to screen 2's left edge, by screen 0's right. */
+   k.slot = 2;
+   k.on   = 3;
+   k.edge = 2;
+   t_mark(&grabs, 1, 2, 3, 2);
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 1000 + 10 * (XrTime)11111111);
+   openxr_frame_layers(&f, 1000 + 10 * (XrTime)11111111, layers, ptrs);
+   CHECK(     f.hinged == 2u && f.hinges[1].slot == 2
+         && f.hinges[1].on == 3 && f.hinges[1].edge == 2
+         && t_hinge_midway(&f, &set, &k),
+         "switched: hinged %#x on %u/%u/%u", f.hinged, f.hinges[1].slot,
+         f.hinges[1].on, f.hinges[1].edge);
+   /* Marked on a screen not in the frame's quads: no line, no rim cut. */
+   t_mark(&grabs, 1, 3, 0, 1);
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 1000 + 11 * (XrTime)11111111);
+   openxr_frame_layers(&f, 1000 + 11 * (XrTime)11111111, layers, ptrs);
+   CHECK(f.hinged == 0u, "its target not in the quads: hinged %#x",
+         f.hinged);
+   t_mark(&grabs, 1, 2, 3, 2);
+   /* The left hand holds screen 2, the mark not yet gone. */
+   grabs.hand[0]                 = grabs.hand[1];
+   grabs.hand[0].slot            = 2;
+   grabs.hand[0].last            = set.quads[3].pose;
+   grabs.hand[0].width           = 1.6f;
+   grabs.hand[0].height          = 0.96f;
+   t_mark(&grabs, 0, ~0u, 0, 0);
+   openxr_frame_publish_grabs(&f, &grabs);
+   t_aim_ok = false;
+   openxr_frame_place_screens(&f, 1000 + 12 * (XrTime)11111111);
+   openxr_frame_layers(&f, 1000 + 12 * (XrTime)11111111, layers, ptrs);
+   CHECK(f.hinged == 0u, "its target held: hinged %#x", f.hinged);
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
+/* still shaken as openxr_input_test.c's t_shake shakes a hand on a
+ * device, at t seconds, k its step: turned deg degrees in pitch and yaw
+ * at 8 Hz and a fifth of that at 2.3 Hz, the yaw a quarter period
+ * behind, and moved 0.3 mm each way. */
+static void t_shake_device(video_xr_pose_t *aim, const video_xr_pose_t *still,
+      double t, unsigned k, double deg)
+{
+   unsigned i;
+   double turn[2];
+   double a = 2.0 * T_PI * 8.0 * t;
+   double b = 2.0 * T_PI * 2.3 * t + 1.0;
+   double m = 0.0003 * sin(k * 1.3);
+   turn[0]  = deg * (sin(a) + 0.2 * sin(b));
+   turn[1]  = deg * (sin(a - T_PI / 2.0) + 0.2 * sin(b - T_PI / 2.0));
+   *aim     = *still;
+   for (i = 0; i < 2; i++)
+   {
+      video_xr_pose_t d;
+      double half = turn[i] * T_PI / 360.0;
+      video_xr_pose_identity(&d);
+      d.orientation.w = (float)cos(half);
+      if (i)
+         d.orientation.y = (float)sin(half);
+      else
+         d.orientation.x = (float)sin(half);
+      video_xr_compose(aim, &d, aim);
+   }
+   aim->position.x += (float)m;
+   aim->position.y += (float)m;
+   aim->position.z += (float)m;
+}
+
+/* Screen 0 marked on screen 1's top edge, held 2.8 cm past touching,
+ * at the end of the stop's hold, its aim shaken every frame as
+ * t_shake_device shakes it (0.5 degrees), the main thread publishing
+ * every third frame with its mark steady: in 1920 frames the line
+ * never flips. The mark dropped at publish 300, the line goes from
+ * that publish's first frame, never before. */
+static void test_frame_grabs_mark_shaken(void)
+{
+   unsigned i;
+   unsigned before = 0;
+   unsigned after  = 0;
+   video_xr_pose_t still;
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   t_grab_held(&grabs);
+   grabs.snap = true;
+   t_path_still(0.0, &still);
+   video_xr_grab_pose(&grabs.hand[1], &still, NULL, 0, NULL,
+         &grabs.start[1], NULL, NULL);
+   grabs.start[1].position.y -= 0.3f;
+   still.position.y          -= 0.028f;
+   t_mark(&grabs, 1, 1, 0, 1);
+   t_aim_ok = true;
+   for (i = 0; i < 1920; i++)
+   {
       XrTime time = 1000 + (XrTime)i * 11111111;
-      t_path_still(0.0, &t_aim_pose);
-      t_aim_pose.position.z += out[i];
+      if (!(i % 3))
+      {
+         if (i / 3 == 300)
+            t_mark(&grabs, 1, ~0u, 0, 0);
+         openxr_frame_publish_grabs(&f, &grabs);
+      }
+      t_shake_device(&t_aim_pose, &still, i / 90.0, i, 0.5);
       openxr_frame_place_screens(&f, time);
       openxr_frame_layers(&f, time, layers, ptrs);
-      if (!i)
-         flush = f.hinges[1];
-      CHECK(     ((f.hinged >> 1) & 1u) == want[i]
-            && (i != 1 || t_hinge_midway(&f, &set, &flush)),
-            "%.0f cm out: hinged %#x, want %u", out[i] * 100.0f, f.hinged,
-            want[i]);
+      if (i < 900)
+         before += (f.hinged != 2u) ? 1u : 0u;
+      else
+         after  += (f.hinged != 0u) ? 1u : 0u;
    }
+   CHECK(!before && !after,
+         "shaken 2.8 cm past: %u frames off while marked, %u on after",
+         before, after);
    t_grab_free(&rt, &s, &sc, &f);
 }
 
@@ -8914,11 +9181,12 @@ static void test_frame_grabs_rests(void)
    t_grab_free(&rt, &s, &sc, &f);
 }
 
-/* A hold taken where its screen rests hinged shows that hinge from its
- * first frame, tracked or not, and stays where it was taken while the
- * grab's fade is none; the same hold without it is not hinged there;
- * 5 cm toward the viewer, out of the hinge's reach, it lets go. The
- * held item's bottom edge rests on screen 2's top edge, touching. */
+/* A hold taken where its screen rests hinged, marked in its first
+ * publish, shows that hinge from its first frame, tracked or not, and
+ * stays where it was taken while the grab's fade is none; the same
+ * hold without it is not hinged there; 5 cm toward the viewer it shows
+ * till the mark goes. The held item's bottom edge rests on screen 2's
+ * top edge, touching. Main's side: test_edit_rest_take. */
 static void test_frame_grabs_rest_kept(void)
 {
    unsigned i;
@@ -8945,6 +9213,7 @@ static void test_frame_grabs_rest_kept(void)
          grabs.hand[1].rest_slot = 2;
          grabs.hand[1].rest_on   = 0;
          grabs.hand[1].rest_edge = 1;
+         t_mark(&grabs, 1, 1, 0, 1);
       }
       openxr_frame_publish_grabs(&f, &grabs);
       openxr_frame_place_screens(&f, 1000);
@@ -8972,22 +9241,32 @@ static void test_frame_grabs_rest_kept(void)
          aim.position.z += 0.05f;
          video_xr_compose(&f.screens.pose, &aim, &t_aim_pose);
          openxr_frame_layers(&f, 3000, layers, ptrs);
-         CHECK(f.hinged == 0u, "5 cm toward the viewer: hinged %#x",
+         CHECK(f.hinged == 2u, "5 cm toward the viewer, marked: hinged %#x",
                f.hinged);
+         t_mark(&grabs, 1, ~0u, 0, 0);
+         openxr_frame_publish_grabs(&f, &grabs);
+         openxr_frame_place_screens(&f, 4000);
+         openxr_frame_layers(&f, 4000, layers, ptrs);
+         CHECK(f.hinged == 0u, "the mark gone: hinged %#x", f.hinged);
       }
       t_grab_free(&rt, &s, &sc, &f);
    }
 }
 
 /* A hold taken where its screen rests hinged, pulled straight off
- * screen 2's plane 2 mm a frame to 4.8 cm and back: no frame moves it
- * more than twice the hand, though the hinge's reach ends with the
- * grab's fade short of whole. The line shows to 4.4 cm, not from 4.6,
- * nor back at 3.2 cm; back in the plane, the hinge whole, it does. */
+ * screen 2's plane 2 mm a frame to 4.8 cm and back, the main thread
+ * polling each frame (t_main_poll), marked from the grab: no frame
+ * moves it more than twice the hand, though the hinge's reach ends
+ * with the grab's fade short of whole. The line follows the published
+ * mark on every frame, gone out there and back in the plane. Main's
+ * side: test_edit_rest_take_out. */
 static void test_frame_grabs_rest_out(void)
 {
    unsigned i;
-   float last = 0.0f;
+   unsigned off  = 0;
+   bool gone     = false;
+   float last    = 0.0f;
+   t_main_t mk;
    openxr_runtime_t rt;
    openxr_session_t s;
    openxr_swapchains_t sc;
@@ -9006,28 +9285,38 @@ static void test_frame_grabs_rest_out(void)
    grabs.hand[1].rest_slot       = 2;
    grabs.hand[1].rest_on         = 0;
    grabs.hand[1].rest_edge       = 1;
+   memset(&mk, 0, sizeof(mk));
+   mk.mark.slot = 1;
+   mk.mark.on   = 0;
+   mk.mark.edge = 1;
+   mk.marked    = true;
+   t_mark(&grabs, 1, 1, 0, 1);
    openxr_frame_publish_grabs(&f, &grabs);
    t_aim_ok = true;
    for (i = 0; i <= 48; i++)
    {
+      bool on;
       unsigned k  = (i <= 24) ? i : 48 - i;
       XrTime time = 1000 + (XrTime)i * 11111111;
       video_xr_pose_identity(&aim);
       aim.position.y = 0.08f;
       aim.position.z = -0.8f + 0.002f * k;
       video_xr_compose(&f.screens.pose, &aim, &t_aim_pose);
+      t_main_poll(&f, &grabs, &set, time, &mk);
       openxr_frame_place_screens(&f, time);
       openxr_frame_layers(&f, time, layers, ptrs);
       if (i)
          CHECK(fabs(layers[0].pose.position.z - last) <= 0.00401,
                "%s %.1f cm off: moved %.2f mm", (i <= 24) ? "out" : "back",
                0.2 * k, fabs(layers[0].pose.position.z - last) * 1e3);
-      last = layers[0].pose.position.z;
-      if (i <= 24 || k == 16 || k == 0)
-         CHECK(f.hinged == ((i <= 24 ? k <= 22 : k == 0) ? 2u : 0u),
-               "%s %.1f cm off: hinged %#x", (i <= 24) ? "out" : "back",
-               0.2 * k, f.hinged);
+      last  = layers[0].pose.position.z;
+      on    = f.hinged == 2u;
+      off  += (on != mk.marked || (f.hinged & ~2u)) ? 1u : 0u;
+      gone  = gone || !mk.marked;
    }
+   CHECK(!off && gone && mk.marked,
+         "%u frames off the published mark; gone %d, back in the plane %d",
+         off, (int)gone, (int)mk.marked);
    t_grab_free(&rt, &s, &sc, &f);
 }
 
@@ -9309,6 +9598,8 @@ int main(void)
    test_frame_grabs_hinge_kept();
    test_frame_grabs_hinge_shaken();
    test_frame_grabs_hinge_reach();
+   test_frame_grabs_mark();
+   test_frame_grabs_mark_shaken();
    test_frame_grabs_threaded();
    test_frame_layer_budget();
    test_frame_grabs_rests();

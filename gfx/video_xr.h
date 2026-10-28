@@ -228,6 +228,12 @@ typedef struct video_xr_grab
     * (video_xr_grab_through): the stop holds VIDEO_XR_SNAP_STOP_ARM
     * short until a hinge takes hold again. */
    unsigned char through;
+   /* The hinge the main thread marks, where a let-go would settle it,
+    * kept a moment after the hand leaves: its target's slot plus one
+    * (0, none), the target's edge and its own. */
+   unsigned char mark_slot;
+   unsigned char mark_on;
+   unsigned char mark_edge;
 } video_xr_grab_t;
 
 /* Where g puts its item for an aim pose: the aim composed with g->rel,
@@ -477,16 +483,15 @@ unsigned video_xr_grab_hinge(const video_xr_grab_t *g,
 /* Whether g's item, where it is with no snap, has its edge h->edge where
  * h's hinge could take it again, against h's target where targets has
  * it now: within reach metres of its plane, at a gap the hinge
- * reaches, fades included, or past touching no farther than past
- * metres beyond where the stop holds it whole (video_xr_grab_through),
- * and overlapping its edge along the line. The stick swings about it
- * within VIDEO_XR_SNAP_DIST; a hinge's mark and buzz keep it within
- * VIDEO_XR_HINGE_REACH, past where it takes hold, so a wobble there
- * neither flickers nor buzzes again. */
+ * reaches, fades included, or past touching where the stop holds it
+ * whole (video_xr_grab_through), and overlapping its edge along the
+ * line. The stick swings about it within VIDEO_XR_SNAP_DIST; the hinge
+ * a hold was taken in keeps it within VIDEO_XR_HINGE_REACH, past where
+ * it takes hold (video_xr_grab_kept). */
 #define VIDEO_XR_HINGE_REACH (1.5f * VIDEO_XR_SNAP_DIST)
 bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
-      const video_xr_hinge_t *h, float reach, float past);
+      const video_xr_hinge_t *h, float reach);
 
 /* Whether g's item, where it is with no snap, has its edge h->edge
  * pushed past touching h's target farther than the stop holds it
@@ -504,6 +509,14 @@ bool video_xr_grab_through(const video_xr_grab_t *g,
 bool video_xr_grab_kept(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
       const video_xr_pose_t *start, video_xr_hinge_t *kept);
+
+/* The hinge the main thread marks for g's item (g->mark_slot) into h,
+ * placed on set's edges as they are with the item at pose. False with
+ * no mark, or its target in holding (a bit per slot a hand holds) or
+ * not in set's quads. */
+bool video_xr_grab_marked(const video_xr_grab_t *g,
+      const video_xr_pose_t *pose, const video_xr_quad_set_t *set,
+      unsigned holding, video_xr_hinge_t *h);
 
 /* g holds its item at pose for aim, its place and its turn. */
 void video_xr_grab_put(video_xr_grab_t *g, const video_xr_pose_t *aim,

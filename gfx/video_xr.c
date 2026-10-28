@@ -3337,7 +3337,7 @@ static bool video_xr_grab_hinge_pair(const video_xr_grab_t *g,
 
 bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
-      const video_xr_hinge_t *h, float reach, float past)
+      const video_xr_hinge_t *h, float reach)
 {
    video_xr_snap_pair_t p;
    double gap = g->gap * 0.01f;
@@ -3345,8 +3345,7 @@ bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
       return false;
    return fabs(p.plane) <= reach
       && ((p.across < 0.0)
-         ? video_xr_snap_stop_held(-p.across - past, gap,
-               g->through != 0)
+         ? video_xr_snap_stop_held(-p.across, gap, g->through != 0)
          : video_xr_snap_gap_share(p.across, gap) > 0.0)
       && p.overlap > 0.0;
 }
@@ -3374,10 +3373,47 @@ bool video_xr_grab_kept(const video_xr_grab_t *g,
    kept->on   = g->rest_on;
    kept->edge = g->rest_edge;
    if (video_xr_grab_near_hinge(g, aim, targets, kept,
-            VIDEO_XR_HINGE_REACH, 0.0f))
+            VIDEO_XR_HINGE_REACH))
       return true;
    video_xr_grab_aimed(g, aim, &pose);
    return video_xr_snap_fade(start, &pose) < 1.0f;
+}
+
+bool video_xr_grab_marked(const video_xr_grab_t *g,
+      const video_xr_pose_t *pose, const video_xr_quad_set_t *set,
+      unsigned holding, video_xr_hinge_t *h)
+{
+   unsigned i;
+   unsigned ti = set->num_quads;
+   unsigned hi = set->num_quads;
+   if (!g->mark_slot)
+      return false;
+   memset(h, 0, sizeof(*h));
+   h->slot = g->mark_slot - 1u;
+   h->on   = g->mark_on;
+   h->edge = g->mark_edge;
+   /* The other hand can take its target later in the poll that
+    * publishes it. */
+   if (holding & (1u << h->slot))
+      return false;
+   /* On the edges as they are; crossed, on the one drawn later, as the
+    * quads draw in order. */
+   for (i = 0; i < set->num_quads; i++)
+   {
+      const video_xr_quad_t *q = &set->quads[i];
+      if (q->kind == VIDEO_XR_QUAD_MENU)
+         continue;
+      if (ti == set->num_quads && q->slot == h->slot)
+         ti = i;
+      if (hi == set->num_quads && q->slot == g->slot)
+         hi = i;
+   }
+   /* Its target not in this frame's quads: no line, no rim cut. */
+   if (ti == set->num_quads)
+      return false;
+   video_xr_hinge_place(h, pose, g->width, g->height, &set->quads[ti],
+         hi > ti);
+   return true;
 }
 
 unsigned video_xr_grab_hinge(const video_xr_grab_t *g,

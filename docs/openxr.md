@@ -123,8 +123,8 @@ the menu's outline is. While a held screen is hinged (see **Snap to
 Screens**), its edge and the edge it hinges on lose their outline, and a
 6 mm green line runs along the hinge where the two overlap, midway
 between the edges and drawn a centimetre nearer the eye so it shows
-over both screens, from when the hinge takes hold until the screen
-leaves its reach.
+over both screens, while a let-go would settle the screen into the
+hinge and for 0.15 s after.
 Two screens no hand holds that rest exactly where a hinge holds one of
 them, so that taking it up would leave it there, show the same: any
 screen let go where a hinge holds it, or set out so. Screens only near
@@ -226,11 +226,11 @@ degrees of parallel and 3 cm of its plane, up to 10 cm out from the
 edge: it turns exactly parallel to that edge and moves into the other's
 plane, keeping its gap from that edge, centres or ends level along it,
 keeping its angle, like the two halves of a DS. The green line
-shows from then until the edge is 4.5 cm off the other's plane, 13 cm
-out from its edge or past its ends, and stays when the screen is let go
-where the hinge holds it. A screen taken up where it rests
-hinged starts hinged, with no buzz, until it is carried out of
-that reach, another hinge takes hold or the other hand takes
+shows wherever a let-go would settle the screen into that hinge, and
+0.15 s longer once it leaves, so a shaking hand never flickers it; it
+stays when the screen is let go there. A screen taken up where it rests
+hinged starts hinged, with no buzz, until it is carried out of the
+hinge it rests in, another hinge takes hold or the other hand takes
 the screen it hinges on. At a fold or a square corner with a gap
 only the screen carried in does: the other one's edge is off its
 plane, so it is taken up free. Screens that would overlap do not
