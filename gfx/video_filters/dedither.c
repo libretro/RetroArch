@@ -10,48 +10,10 @@
 #define filter_data dedither_filter_data
 #endif
 
-/* Vector tiers: SSE2 where the build has it (all x86-64), AVX2 picked at
- * create from the SIMD mask, NEON on ARMv8 and ARM builds with NEON.
- * Each works out every test of a run of pixels at once, branch-free, and
- * gives the plain code's output to the bit. SOFTFILTER_NO_SIMD leaves
- * them out. */
-#if !defined(SOFTFILTER_NO_SIMD) && (defined(__SSE2__) || defined(_M_X64) \
-   || (defined(_M_IX86_FP) && _M_IX86_FP >= 2))
-#define DEDITHER_HAVE_SSE2 1
-#include <emmintrin.h>
-
-#if defined(_MSC_VER) && !defined(__clang__)
-#if _MSC_VER >= 1911
-#define DEDITHER_HAVE_AVX2 1
-#define DEDITHER_TARGET_AVX2
-#endif
-#elif defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
-/* PlayStation clang and clang-cl declare only the intrinsics of ISAs
- * the whole build enables, so AVX2 is built only where the baseline
- * has it. */
-#ifdef __AVX2__
-#define DEDITHER_HAVE_AVX2 1
-#define DEDITHER_TARGET_AVX2
-#endif
-#elif (defined(__clang__) && __clang_major__ >= 4) \
-   || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5)
-#define DEDITHER_HAVE_AVX2 1
-#define DEDITHER_TARGET_AVX2 __attribute__((target("avx2")))
-#endif
-
-#ifdef DEDITHER_HAVE_AVX2
-#include <immintrin.h>
-#if defined(_MSC_VER) && !defined(__clang__)
-#define DEDITHER_ZEROUPPER() _mm256_zeroupper()
-#else
-#define DEDITHER_ZEROUPPER()
-#endif
-#endif
-#elif !defined(SOFTFILTER_NO_SIMD) && (defined(__ARM_NEON) \
-   || defined(__ARM_NEON__) || defined(_M_ARM64))
-#define DEDITHER_HAVE_NEON 1
-#include <arm_neon.h>
-#endif
+/* Vector tiers (see softfilter_simd.h): each works out every test of a
+ * run of pixels at once, branch-free, and gives the plain code's output
+ * to the bit. */
+#include "softfilter_simd.h"
 
 /* The threshold below which two XRGB8888 pixels count as the same colour:
  * the sum of their red, green and blue differences. */
@@ -168,7 +130,7 @@ static INLINE uint16_t dedither_pixel_rgb565(const uint16_t *line,
 
 /* ---- SSE2 ---- */
 
-#ifdef DEDITHER_HAVE_SSE2
+#ifdef SOFTFILTER_HAVE_SSE2
 /* pix_equal of four pixel pairs: all ones where the colours count as the
  * same. The byte differences are summed over red, green and blue in each
  * pixel's 32 bits. */
@@ -251,12 +213,12 @@ static unsigned dedither_run_rgb565_sse2(const uint16_t *line,
    }
    return x;
 }
-#endif /* DEDITHER_HAVE_SSE2 */
+#endif /* SOFTFILTER_HAVE_SSE2 */
 
 /* ---- AVX2: the SSE2 runs, twice as wide ---- */
 
-#ifdef DEDITHER_HAVE_AVX2
-DEDITHER_TARGET_AVX2
+#ifdef SOFTFILTER_HAVE_AVX2
+SOFTFILTER_TARGET_AVX2
 static INLINE __m256i dedither_eq_avx2(__m256i a, __m256i b)
 {
    __m256i d = _mm256_and_si256(_mm256_or_si256(_mm256_subs_epu8(a, b),
@@ -279,7 +241,7 @@ static INLINE __m256i dedither_eq_avx2(__m256i a, __m256i b)
       _mm256_or_si256(_mm256_and_si256(m, a), _mm256_andnot_si256(m, b))
 #define DEDITHER_LD_256(p) _mm256_loadu_si256((const __m256i*)(p))
 
-DEDITHER_TARGET_AVX2
+SOFTFILTER_TARGET_AVX2
 static unsigned dedither_run_xrgb8888_avx2(const uint32_t *line,
       ptrdiff_t stride, uint32_t *out, unsigned x, unsigned x_end)
 {
@@ -306,11 +268,11 @@ static unsigned dedither_run_xrgb8888_avx2(const uint32_t *line,
       _mm256_storeu_si256((__m256i*)(out + x),
             DEDITHER_SELECT_256(_mm256_or_si256(h_dit, v_dit), blend, h3));
    }
-   DEDITHER_ZEROUPPER();
+   SOFTFILTER_ZEROUPPER();
    return x;
 }
 
-DEDITHER_TARGET_AVX2
+SOFTFILTER_TARGET_AVX2
 static unsigned dedither_run_rgb565_avx2(const uint16_t *line,
       ptrdiff_t stride, uint16_t *out, unsigned x, unsigned x_end)
 {
@@ -337,14 +299,14 @@ static unsigned dedither_run_rgb565_avx2(const uint16_t *line,
       _mm256_storeu_si256((__m256i*)(out + x),
             DEDITHER_SELECT_256(_mm256_or_si256(h_dit, v_dit), blend, h3));
    }
-   DEDITHER_ZEROUPPER();
+   SOFTFILTER_ZEROUPPER();
    return x;
 }
-#endif /* DEDITHER_HAVE_AVX2 */
+#endif /* SOFTFILTER_HAVE_AVX2 */
 
 /* ---- NEON ---- */
 
-#ifdef DEDITHER_HAVE_NEON
+#ifdef SOFTFILTER_HAVE_NEON
 static INLINE uint32x4_t dedither_eq_neon(uint32x4_t a, uint32x4_t b)
 {
    /* Byte differences, alpha dropped, summed per pixel */
@@ -417,7 +379,7 @@ static unsigned dedither_run_rgb565_neon(const uint16_t *line,
    }
    return x;
 }
-#endif /* DEDITHER_HAVE_NEON */
+#endif /* SOFTFILTER_HAVE_NEON */
 
 static void *dedither_generic_create(const struct softfilter_config *config,
       unsigned in_fmt, unsigned out_fmt,
@@ -439,17 +401,17 @@ static void *dedither_generic_create(const struct softfilter_config *config,
    }
    filt->threads = threads;
    filt->in_fmt  = in_fmt;
-#if defined(DEDITHER_HAVE_SSE2)
+#if defined(SOFTFILTER_HAVE_SSE2)
    filt->run_xrgb8888 = dedither_run_xrgb8888_sse2;
    filt->run_rgb565   = dedither_run_rgb565_sse2;
-#ifdef DEDITHER_HAVE_AVX2
+#ifdef SOFTFILTER_HAVE_AVX2
    if (simd & SOFTFILTER_SIMD_AVX2)
    {
       filt->run_xrgb8888 = dedither_run_xrgb8888_avx2;
       filt->run_rgb565   = dedither_run_rgb565_avx2;
    }
 #endif
-#elif defined(DEDITHER_HAVE_NEON)
+#elif defined(SOFTFILTER_HAVE_NEON)
    filt->run_xrgb8888 = dedither_run_xrgb8888_neon;
    filt->run_rgb565   = dedither_run_rgb565_neon;
 #endif

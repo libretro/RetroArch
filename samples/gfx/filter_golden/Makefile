@@ -1,11 +1,12 @@
 # Each listed video filter against its recorded output hashes; see
 # filter_golden_test.c.
-FILTERS := 2xsai super2xsai supereagle phosphor2x blargg_ntsc_snes dedither 2xbr
+FILTERS := 2xsai super2xsai supereagle phosphor2x blargg_ntsc_snes dedither 2xbr \
+	pixel_art_aa normal4x grid4x gameboy4x dot_matrix_4x
 # Blargg NTSC SNES again with each other tvtype, which builds a
 # different table (RF also leaves the fields unmerged).
 SNES_TV := rf rgb svideo
 # The filters with vector code, which also get a build without it.
-SIMD_FILTERS := blargg_ntsc_snes dedither 2xbr
+SIMD_FILTERS := blargg_ntsc_snes dedither 2xbr pixel_art_aa 2xsai
 C_TARGETS := $(addsuffix _c,$(addprefix golden_,$(SIMD_FILTERS)))
 TARGETS := $(addprefix golden_,$(FILTERS)) \
 	$(addprefix golden_blargg_ntsc_snes_,$(SNES_TV)) \

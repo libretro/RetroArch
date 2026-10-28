@@ -122,6 +122,9 @@ static const unsigned sizes[][2] = {
    { 64, 48 }, { 255, 31 }, { 256, 224 }, { 320, 240 }
 };
 #define NSIZE (sizeof(sizes) / sizeof(sizes[0]))
+/* Room for the largest frame at the largest scale (4x of 320x240, five
+ * pixels of slack a row, 4 bytes a pixel). */
+#define GOLDEN_OUT_BYTES (1290 * 960 * 4)
 
 static const uint32_t golden[2][2][NSIZE] = {
 #include GOLDEN_H
@@ -133,9 +136,9 @@ int main(void)
    const struct softfilter_implementation *impl = softfilter_get_implementation(0);
    uint16_t *src16 = (uint16_t*)malloc(330 * 250 * 2);
    uint32_t *src32 = (uint32_t*)malloc(330 * 250 * 4);
-   uint8_t  *out   = (uint8_t*)malloc(900 * 500 * 4);
+   uint8_t  *out   = (uint8_t*)malloc(GOLDEN_OUT_BYTES);
    /* One worker's output, which more workers must match. */
-   uint8_t  *one   = (uint8_t*)malloc(900 * 500 * 4);
+   uint8_t  *one   = (uint8_t*)malloc(GOLDEN_OUT_BYTES);
    unsigned content, f, s, t, bad = 0;
    unsigned simd = host_simd_mask();
    int print = getenv("GOLDEN_PRINT") != NULL;
@@ -187,6 +190,7 @@ int main(void)
                void *d;
                /* Created larger than the frame, as RetroArch does for a
                 * core whose size varies; every second run exactly. */
+               memset(pk, 0, sizeof(pk));
                max_w = (t & 1) ? W + 13 : W;
                max_h = (t & 1) ? H + 7  : H;
                d     = impl->create(&cfg, fmt, ofmt, max_w, max_h,
@@ -196,7 +200,7 @@ int main(void)
                 * writes, which the hash covers, so a write past a row
                 * shows. */
                os    = (size_t)(ow + 5) * obpp;
-               memset(out, 0x11, 900 * 500 * 4);
+               memset(out, 0x11, GOLDEN_OUT_BYTES);
                {
                   /* Rows at a stride wider than the frame. */
                   uint8_t *in = (uint8_t*)calloc(H, is);

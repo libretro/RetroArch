@@ -49,58 +49,12 @@
 
 #define TWOXBR_SCALE 2
 
-/* The full rule is inlined where it is called: as a call, the loop
- * around it costs detailed frames several percent. */
-#if defined(_MSC_VER)
-#define TWOXBR_FORCE_INLINE __forceinline
-#elif defined(__GNUC__) || defined(__clang__)
-#define TWOXBR_FORCE_INLINE INLINE __attribute__((always_inline))
-#else
-#define TWOXBR_FORCE_INLINE INLINE
-#endif
 
-/* Vector tiers for runs of pixels that are only copied (see TWOXBR_ROWS):
- * SSE2 where the build has it (all x86-64), AVX2 picked at create from
- * the SIMD mask, NEON on ARMv8 and ARM builds with NEON. */
-#if !defined(SOFTFILTER_NO_SIMD) && (defined(__SSE2__) || defined(_M_X64) \
-   || (defined(_M_IX86_FP) && _M_IX86_FP >= 2))
-#define TWOXBR_HAVE_SSE2 1
-#include <emmintrin.h>
+/* Vector tiers for runs of pixels that are only copied (see
+ * TWOXBR_ROWS and softfilter_simd.h). */
+#include "softfilter_simd.h"
 
-#if defined(_MSC_VER) && !defined(__clang__)
-#if _MSC_VER >= 1911
-#define TWOXBR_HAVE_AVX2 1
-#define TWOXBR_TARGET_AVX2
-#endif
-#elif defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
-/* PlayStation clang and clang-cl declare only the intrinsics of ISAs
- * the whole build enables, so AVX2 is built only where the baseline
- * has it. */
-#ifdef __AVX2__
-#define TWOXBR_HAVE_AVX2 1
-#define TWOXBR_TARGET_AVX2
-#endif
-#elif (defined(__clang__) && __clang_major__ >= 4) \
-   || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5)
-#define TWOXBR_HAVE_AVX2 1
-#define TWOXBR_TARGET_AVX2 __attribute__((target("avx2")))
-#endif
-
-#ifdef TWOXBR_HAVE_AVX2
-#include <immintrin.h>
-#if defined(_MSC_VER) && !defined(__clang__)
-#define TWOXBR_ZEROUPPER() _mm256_zeroupper()
-#else
-#define TWOXBR_ZEROUPPER()
-#endif
-#endif
-#elif !defined(SOFTFILTER_NO_SIMD) && (defined(__ARM_NEON) \
-   || defined(__ARM_NEON__) || defined(_M_ARM64))
-#define TWOXBR_HAVE_NEON 1
-#include <arm_neon.h>
-#endif
-
-#if defined(TWOXBR_HAVE_SSE2) || defined(TWOXBR_HAVE_NEON)
+#if defined(SOFTFILTER_HAVE_SSE2) || defined(SOFTFILTER_HAVE_NEON)
 #define TWOXBR_VECTOR 1
 #endif
 
@@ -318,7 +272,7 @@ static void SetupFormat(void * data)
  * && (PE == PB || PE == PD) && (PE == PD || PE == PH)
  * The runs test that for a vector of pixels. */
 
-#ifdef TWOXBR_HAVE_SSE2
+#ifdef SOFTFILTER_HAVE_SSE2
 #define TWOXBR_COPIED_SSE2(EQ, PE, PB, PD, PF, PH) _mm_and_si128( \
       _mm_and_si128(_mm_or_si128(EQ(PE, PH), EQ(PE, PF)), \
                     _mm_or_si128(EQ(PE, PF), EQ(PE, PB))), \
@@ -360,9 +314,9 @@ static unsigned twoxbr_run_xrgb8888_sse2(const uint32_t *rm1,
    _mm_storeu_si128((__m128i*)(dst + dst_stride + 2 * x + 4), hi);
    return ~(unsigned)_mm_movemask_ps(_mm_castsi128_ps(ok)) & 0xFu;
 }
-#endif /* TWOXBR_HAVE_SSE2 */
+#endif /* SOFTFILTER_HAVE_SSE2 */
 
-#ifdef TWOXBR_HAVE_AVX2
+#ifdef SOFTFILTER_HAVE_AVX2
 #define TWOXBR_COPIED_AVX2(EQ, PE, PB, PD, PF, PH) _mm256_and_si256( \
       _mm256_and_si256(_mm256_or_si256(EQ(PE, PH), EQ(PE, PF)), \
                        _mm256_or_si256(EQ(PE, PF), EQ(PE, PB))), \
@@ -381,7 +335,7 @@ static unsigned twoxbr_run_xrgb8888_sse2(const uint32_t *rm1,
       _mm256_storeu_si256((__m256i*)((dst) + dst_stride + 2 * (x) + n), b_); \
 }
 
-TWOXBR_TARGET_AVX2
+SOFTFILTER_TARGET_AVX2
 static unsigned twoxbr_run_rgb565_avx2(const uint16_t *rm1,
       const uint16_t *r0, const uint16_t *rp1, uint16_t *dst,
       size_t dst_stride, unsigned x)
@@ -397,11 +351,11 @@ static unsigned twoxbr_run_rgb565_avx2(const uint16_t *rm1,
    m = ~(unsigned)_mm_movemask_epi8(_mm_packs_epi16(
             _mm256_castsi256_si128(ok), _mm256_extracti128_si256(ok, 1)))
       & 0xFFFFu;
-   TWOXBR_ZEROUPPER();
+   SOFTFILTER_ZEROUPPER();
    return m;
 }
 
-TWOXBR_TARGET_AVX2
+SOFTFILTER_TARGET_AVX2
 static unsigned twoxbr_run_xrgb8888_avx2(const uint32_t *rm1,
       const uint32_t *r0, const uint32_t *rp1, uint32_t *dst,
       size_t dst_stride, unsigned x)
@@ -415,12 +369,12 @@ static unsigned twoxbr_run_xrgb8888_avx2(const uint32_t *rm1,
    unsigned m;
    TWOXBR_STORE_DOUBLED_256(dst, x, lo, hi, 8)
    m = ~(unsigned)_mm256_movemask_ps(_mm256_castsi256_ps(ok)) & 0xFFu;
-   TWOXBR_ZEROUPPER();
+   SOFTFILTER_ZEROUPPER();
    return m;
 }
-#endif /* TWOXBR_HAVE_AVX2 */
+#endif /* SOFTFILTER_HAVE_AVX2 */
 
-#ifdef TWOXBR_HAVE_NEON
+#ifdef SOFTFILTER_HAVE_NEON
 #define TWOXBR_COPIED_NEON(AND, OR, EQ, PE, PB, PD, PF, PH) AND( \
       AND(OR(EQ(PE, PH), EQ(PE, PF)), OR(EQ(PE, PF), EQ(PE, PB))), \
       AND(OR(EQ(PE, PB), EQ(PE, PD)), OR(EQ(PE, PD), EQ(PE, PH))))
@@ -469,7 +423,7 @@ static unsigned twoxbr_run_xrgb8888_neon(const uint32_t *rm1,
    return twoxbr_zero_bytes_neon(vmovn_u16(vcombine_u16(vmovn_u32(ok),
                vdup_n_u16(0xFFFF)))) & 0xFu;
 }
-#endif /* TWOXBR_HAVE_NEON */
+#endif /* SOFTFILTER_HAVE_NEON */
 
 static void twoxbr_generic_destroy(void *data);
 
@@ -514,12 +468,12 @@ static void *twoxbr_generic_create(const struct softfilter_config *config,
 
    SetupFormat(filt);
 
-#if defined(TWOXBR_HAVE_SSE2)
+#if defined(SOFTFILTER_HAVE_SSE2)
    filt->run_rgb565     = twoxbr_run_rgb565_sse2;
    filt->run_xrgb8888   = twoxbr_run_xrgb8888_sse2;
    filt->lanes_rgb565   = 8;
    filt->lanes_xrgb8888 = 4;
-#ifdef TWOXBR_HAVE_AVX2
+#ifdef SOFTFILTER_HAVE_AVX2
    if (simd & SOFTFILTER_SIMD_AVX2)
    {
       filt->run_rgb565     = twoxbr_run_rgb565_avx2;
@@ -528,7 +482,7 @@ static void *twoxbr_generic_create(const struct softfilter_config *config,
       filt->lanes_xrgb8888 = 8;
    }
 #endif
-#elif defined(TWOXBR_HAVE_NEON)
+#elif defined(SOFTFILTER_HAVE_NEON)
    filt->run_rgb565     = twoxbr_run_rgb565_neon;
    filt->run_xrgb8888   = twoxbr_run_xrgb8888_neon;
    filt->lanes_rgb565   = 8;
@@ -826,7 +780,7 @@ static void twoxbr_generic_destroy(void *data)
  * (km2 the keys two rows up, the others following at width + 4). One
  * function per format, for both the vector and the one-by-one paths. */
 #define TWOXBR_FULL_FN(NAME, TYPE, FILTRO, MASKS) \
-static TWOXBR_FORCE_INLINE void NAME(const struct filter_data *filt, \
+static SOFTFILTER_FORCE_INLINE void NAME(const struct filter_data *filt, \
       const TYPE *rm1, const TYPE *r0, const TYPE *rp1, \
       const uint16_t *km2, TYPE *dst, unsigned dst_stride, \
       unsigned width, unsigned xx_) \
@@ -903,11 +857,12 @@ static TWOXBR_FORCE_INLINE void NAME(const struct filter_data *filt, \
  * runs on those of them that are not, which is what TWOXBR_PIXEL does
  * one by one; the first pixel and those too near the end of the row for
  * a vector go one by one. After a vector in which no pixel was copied,
- * the next 1, 3, 7 and up to 63 vectors' worth go one by one, counting
- * on from row to row, so detail (where the vector would be wasted work)
- * costs no more than it did. */
+ * the next 1, 3, 7 and up to 63 vectors' worth of pixels go one by one,
+ * running on into the rows below when a row ends first, so detail
+ * (where the vector would be wasted work) costs no more than it did. */
 #define TWOXBR_ROWS(TYPE, FILTRO, FULL_FN, RUN, LANES) \
    { unsigned misses_ = 0; \
+     unsigned pending_ = 0; /* one-by-one pixels left from the row above */ \
    for (y = 0; y < height; y++) \
    { \
       unsigned abs_y   = (unsigned)first + y; \
@@ -920,7 +875,7 @@ static TWOXBR_FORCE_INLINE void NAME(const struct filter_data *filt, \
       { \
          /* where the next vector is tried: never without one, and \
           * not on the first pixel (its left neighbour is clamped) */ \
-         unsigned try_    = RUN ? 1 + (LANES) * ((1u << misses_) - 1) : width; \
+         unsigned try_    = RUN ? 1 + pending_ : width; \
          x = 0; \
          for (;;) \
          { \
@@ -946,6 +901,8 @@ static TWOXBR_FORCE_INLINE void NAME(const struct filter_data *filt, \
              * and up to 63 vectors' worth go one by one */ \
             try_ = x + (LANES) * ((1u << misses_) - 1); \
          } \
+         if (RUN) \
+            pending_ = try_ > width ? try_ - width : 0; \
       } \
       src += src_stride; \
       dst += 2 * dst_stride; \
