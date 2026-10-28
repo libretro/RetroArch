@@ -5980,8 +5980,21 @@ enum retro_sensor_action
  *
  * Addresses more than one sensor of the same kind on a single port.
  * Index 0 denotes the controller itself and encodes to the values already in
- * use (<tt>RETRO_SENSOR_SUBDEVICE(0, id) == id</tt>). Index 1 and above denote
- * sub-devices, in whatever order the device type implies.
+ * use (<tt>RETRO_SENSOR_SUBDEVICE(0, id) == id</tt>). Index 1 denotes the part
+ * of the controller held in the left hand: a Wii Remote's Nunchuk, or the
+ * left Joy-Con of a pair held as one controller (whose index 0 is the right
+ * one). Higher indices are left for controllers with more parts.
+ *
+ * A core learns whether the frontend has a sub-device's sensor from the
+ * enable action, \c retro_set_sensor_state_t returning \c true for it; a
+ * reading of 0 says nothing, as a frontend without it returns 0 for every
+ * read. For instance:
+ * @code
+ * bool nunchuk = sensor.set_sensor_state(port, (enum retro_sensor_action)
+ *       RETRO_SENSOR_SUBDEVICE(1, RETRO_SENSOR_ACCELEROMETER_ENABLE), 100);
+ * float x      = sensor.get_sensor_input(port,
+ *       RETRO_SENSOR_SUBDEVICE(1, RETRO_SENSOR_ACCELEROMETER_X));
+ * @endcode
  *
  * @note \c retro_sensor_action is an enum, so an encoded action must be cast at
  * the call site. \c RETRO_SENSOR_DUMMY pins the underlying type to \c int, so
