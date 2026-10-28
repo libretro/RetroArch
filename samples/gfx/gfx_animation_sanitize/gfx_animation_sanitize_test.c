@@ -791,6 +791,77 @@ static void test_line_layout_cache(void)
    gfx_animation_deinit();
 }
 
+/* The smooth ticker's width cache, keyed by the string's bytes: a
+ * label edited in place, one a prefix of another and two of a length
+ * that differ only in their bytes each get their own widths, three
+ * hundred labels round the cache come back right, and warm frames
+ * allocate nothing. */
+
+static unsigned cached_width(font_data_t *font, const char *str)
+{
+   gfx_animation_ctx_ticker_smooth_t ticker;
+   char     dst[64];
+   unsigned x_offset  = 0;
+   unsigned dst_width = 0;
+   memset(&ticker, 0, sizeof(ticker));
+   ticker.dst_str       = dst;
+   ticker.dst_str_len   = sizeof(dst);
+   ticker.dst_str_width = &dst_width;
+   ticker.x_offset      = &x_offset;
+   ticker.src_str       = str;
+   ticker.font          = font;
+   ticker.field_width   = 4096;
+   ticker.font_scale    = 1.0f;
+   gfx_animation_ticker_smooth(&ticker);
+   if (strcmp(dst, str))
+      return 0;
+   return dst_width;
+}
+
+static void test_width_cache(void)
+{
+   font_data_t font;
+   char        label[32];
+   char        many[300][24];
+   unsigned    allocations;
+   unsigned    i, pass;
+
+   memset(&font, 0, sizeof(font));
+   strcpy(label, "abcde");
+   CHECK(cached_width(&font, label) == 40, "width cache: first label");
+   strcpy(label, "ab\xe4\xb8\xad");
+   CHECK(cached_width(&font, label) == 32,
+         "width cache: same length, other bytes");
+   strcpy(label, "ab\xe4\xb8\xadz");
+   CHECK(cached_width(&font, label) == 40,
+         "width cache: the last label and one more byte");
+   strcpy(label, "ab");
+   CHECK(cached_width(&font, label) == 16,
+         "width cache: a prefix of the last label");
+   CHECK(cached_width(&font, "abcde") == 40,
+         "width cache: the first label again");
+
+   for (i = 0; i < 300; i++)
+   {
+      unsigned n = 1 + i % 20, k;
+      for (k = 0; k < n; k++)
+         many[i][k] = (char)('a' + (i + k) % 26);
+      many[i][n] = '\0';
+   }
+   for (pass = 0; pass < 2; pass++)
+      for (i = 0; i < 300; i++)
+         CHECK(cached_width(&font, many[i]) == 8 * (1 + i % 20),
+               "width cache: labels round the cache");
+
+   cached_width(&font, many[7]);
+   allocations = animation_test_allocations;
+   for (i = 0; i < 1000; i++)
+      cached_width(&font, many[7]);
+   CHECK(animation_test_allocations == allocations,
+         "width cache: warm frames allocate nothing");
+   gfx_animation_deinit();
+}
+
 static void test_clipped_label_boundary(void)
 {
    gfx_animation_ctx_ticker_t ticker;
@@ -825,6 +896,7 @@ int main(void)
    test_line_ticker_smooth();
    test_widget_handover();
    test_line_layout_cache();
+   test_width_cache();
 
    printf("pushes=%d callbacks=%d ticker calls=%d\n",
          pushes, cb_calls, ticker_calls);

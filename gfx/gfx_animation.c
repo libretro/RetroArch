@@ -19,6 +19,7 @@
 
 #include <compat/strl.h>
 #include <encodings/utf.h>
+#include <encodings/xxh64.h>
 #include <retro_math.h>
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
@@ -1346,6 +1347,7 @@ typedef struct
    unsigned *widths;      /* owned per-character advance widths */
    font_data_t *font;     /* compared, never dereferenced */
    size_t num_chars;
+   size_t len;            /* bytes in str */
    uint32_t hash;
    uint32_t generation;
    uint32_t last_use;     /* lookup sequence stamp for eviction */
@@ -1357,15 +1359,15 @@ static ticker_wcache_entry_t ticker_wcache
       [TICKER_WCACHE_SETS][TICKER_WCACHE_WAYS];
 static uint32_t ticker_wcache_seq = 0;
 
-static uint32_t ticker_wcache_hash(const char *s)
+/* FNV-1a for the spacers and ellipses, XXH64 for the labels */
+static uint32_t ticker_wcache_hash(const char *s, size_t len)
 {
-   /* FNV-1a, 32-bit */
    uint32_t h = 0x811c9dc5u;
-   while (*s)
-   {
-      h ^= (uint8_t)*s++;
-      h *= 0x01000193u;
-   }
+   size_t   i;
+   if (len >= 8)
+      return (uint32_t)xxh64(s, len, 0);
+   for (i = 0; i < len; i++)
+      h = (h ^ (uint8_t)s[i]) * 0x01000193u;
    return h;
 }
 
@@ -1402,7 +1404,8 @@ static const ticker_wcache_entry_t *ticker_wcache_get(
    size_t num_chars;
    unsigned *widths;
    unsigned total     = 0;
-   uint32_t hash      = ticker_wcache_hash(str);
+   size_t len         = strlen(str);
+   uint32_t hash      = ticker_wcache_hash(str, len);
    uint32_t gen       = font_driver_get_generation();
    ticker_wcache_entry_t *set =
          ticker_wcache[hash & (TICKER_WCACHE_SETS - 1)];
@@ -1418,7 +1421,8 @@ static const ticker_wcache_entry_t *ticker_wcache_get(
             && (e->font       == font)
             && (e->generation == gen)
             && (e->font_scale == font_scale)
-            && (strcmp(e->str, str) == 0))
+            && (e->len        == len)
+            && (memcmp(e->str, str, len) == 0))
       {
          e->last_use = ticker_wcache_seq;
          return e;
@@ -1461,15 +1465,17 @@ static const ticker_wcache_entry_t *ticker_wcache_get(
 
    ticker_wcache_entry_clear(victim);
 
-   if (!(victim->str = strdup(str)))
+   if (!(victim->str = (char*)malloc(len + 1)))
    {
       free(widths);
       return NULL;
    }
+   memcpy(victim->str, str, len + 1);
 
    victim->widths      = widths;
    victim->font        = font;
    victim->num_chars   = num_chars;
+   victim->len         = len;
    victim->hash        = hash;
    victim->generation  = gen;
    victim->last_use    = ticker_wcache_seq;
@@ -1918,6 +1924,7 @@ typedef struct
    char *str;
    char *wrapped;
    font_data_t *font;
+   size_t str_len;
    size_t num_lines;
    size_t wrapped_len;
    size_t line_len;
@@ -1961,7 +1968,7 @@ static const ticker_lcache_entry_t *ticker_lcache_get(
    if (src_len + 11 > PATH_MAX_LENGTH
          || wrap_capacity > PATH_MAX_LENGTH)
       return NULL;
-   hash       = ticker_wcache_hash(str);
+   hash       = ticker_wcache_hash(str, src_len);
    generation = font_driver_get_generation();
    set        = ticker_lcache[hash & (TICKER_LCACHE_SETS - 1)];
    victim     = &set[0];
@@ -1973,7 +1980,8 @@ static const ticker_lcache_entry_t *ticker_lcache_get(
             && e->generation == generation && e->font_scale == font_scale
             && e->line_len == line_len && e->wrap_capacity == wrap_capacity
             && e->wideglyph_width == wideglyph_width
-            && e->wideglyph == wideglyph && strcmp(e->str, str) == 0)
+            && e->wideglyph == wideglyph && e->str_len == src_len
+            && memcmp(e->str, str, src_len) == 0)
       {
          e->last_use = ticker_lcache_seq;
          return e;
@@ -2010,6 +2018,7 @@ static const ticker_lcache_entry_t *ticker_lcache_get(
    victim->str             = owned_str;
    victim->wrapped         = owned_wrapped;
    victim->font            = font;
+   victim->str_len         = src_len;
    victim->num_lines       = num_lines;
    victim->wrapped_len     = wrapped_len;
    victim->line_len        = line_len;

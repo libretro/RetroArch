@@ -10,6 +10,7 @@ SOURCES := gfx_animation_sanitize_test.c \
            stubs_retroarch.c \
            $(REPO_ROOT)/gfx/gfx_animation.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+           $(LIBRETRO_COMM_DIR)/encodings/encoding_xxh64.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c
 
