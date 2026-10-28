@@ -101,6 +101,11 @@
 
 #include "platform_unix.h"
 
+#if defined(__linux__) && !defined(ANDROID)
+#include "../../gfx/common/dbus_runtime.h"
+#endif
+
+
 #ifdef WEBOS
 #include <formats/rjson.h>
 #endif
@@ -3855,6 +3860,11 @@ static bool frontend_unix_set_gamemode(bool on)
 #endif
 }
 
+#if defined(__linux__) && !defined(ANDROID) && defined(RARCH_HAVE_DBUS_RUNTIME)
+static bool orca_narrator_init(void);
+static void orca_narrator_shutdown(void);
+#endif
+
 static void frontend_unix_deinit(void *data)
 {
    settings_t *settings = config_get_ptr();
@@ -3874,10 +3884,17 @@ static void frontend_unix_deinit(void *data)
 #endif
 
    frontend_unix_set_gamemode(false);
+#if defined(__linux__) && !defined(ANDROID) && defined(RARCH_HAVE_DBUS_RUNTIME)
+   orca_narrator_shutdown();
+#endif
 }
 
 static void frontend_unix_init(void *data)
 {
+#if defined(__linux__) && !defined(ANDROID) && defined(RARCH_HAVE_DBUS_RUNTIME)
+   orca_narrator_init();
+#endif
+
 #ifdef ANDROID
    char device_model[PROP_VALUE_MAX] = {0};
    JNIEnv                     *env   = NULL;
@@ -4757,9 +4774,279 @@ static const char* accessibility_unix_language_code(const char* language)
    return "en";
 }
 
+
+#if defined(__linux__) && !defined(ANDROID) && defined(RARCH_HAVE_DBUS_RUNTIME)
+
+#define ORCA_BUS_NAME "org.gnome.Orca1.Service"
+#define ORCA_BUS_PATH "/org/gnome/Orca1/Service"
+#define ORCA_SPEECH_PATH "/org/gnome/Orca1/Service/SpeechManager"
+#define ORCA_TEXT_MAX 8192
+
+typedef struct orca_narrator
+{
+   slock_t *lock;
+   scond_t *cond;
+   char text[ORCA_TEXT_MAX];
+   bool pending;
+   bool interrupt;
+   bool probe;
+   bool shutdown;
+   sthread_t *thread;
+   retro_atomic_int_t available;
+} orca_narrator_t;
+
+static orca_narrator_t *orca_narrator;
+static bool orca_narrator_stopped;
+
+static bool orca_send_method(const rdbus_t *rd,
+      rdbus_connection_t *conn, bool interrupt, const char *text)
+{
+   rdbus_message_t *msg;
+   rdbus_message_t *reply;
+   bool ok;
+
+   if (interrupt)
+   {
+      rdbus_bool_t stop = 1;
+
+      msg = rd->message_new_method_call(
+            ORCA_BUS_NAME, ORCA_SPEECH_PATH,
+            "org.gnome.Orca1.SpeechManager", "InterruptSpeech");
+
+      if (!msg)
+         return false;
+
+      ok = rd->message_append_args(msg,
+            RDBUS_TYPE_BOOLEAN, &stop, RDBUS_TYPE_INVALID);
+
+      reply = ok ? rd->connection_send_with_reply_and_block(
+            conn, msg, 500, NULL) : NULL;
+
+      rd->message_unref(msg);
+
+      if (!reply)
+         return false;
+
+      rd->message_unref(reply);
+   }
+
+   msg = rd->message_new_method_call(
+         ORCA_BUS_NAME, ORCA_BUS_PATH,
+         "org.gnome.Orca1.Service", "SpeakMessage");
+
+   if (!msg)
+      return false;
+
+   ok = rd->message_append_args(msg,
+         RDBUS_TYPE_STRING, &text, RDBUS_TYPE_INVALID);
+
+   reply = ok ? rd->connection_send_with_reply_and_block(
+         conn, msg, 500, NULL) : NULL;
+
+   rd->message_unref(msg);
+
+   if (!reply)
+      return false;
+
+   rd->message_unref(reply);
+   return true;
+}
+
+static void orca_narrator_worker(void *data)
+{
+   orca_narrator_t *ctl = (orca_narrator_t*)data;
+   const rdbus_t *rd = NULL;
+   rdbus_connection_t *conn = NULL;
+
+   sthread_setname("ra-orca");
+
+   rd = rdbus_get();
+
+   for (;;)
+   {
+      char text[ORCA_TEXT_MAX];
+      bool pending;
+      bool interrupt;
+      bool owner = false;
+
+      slock_lock(ctl->lock);
+
+      while (!ctl->shutdown && !ctl->probe && !ctl->pending)
+         scond_wait(ctl->cond, ctl->lock);
+
+      if (ctl->shutdown)
+      {
+         slock_unlock(ctl->lock);
+         break;
+      }
+
+      pending = ctl->pending;
+      interrupt = ctl->interrupt;
+
+      if (pending)
+         memcpy(text, ctl->text, sizeof(text));
+
+      ctl->pending = false;
+      ctl->probe = false;
+
+      slock_unlock(ctl->lock);
+
+      if (rd)
+      {
+         rdbus_error_t err;
+
+         if (!conn)
+         {
+            rd->error_init(&err);
+            conn = rd->bus_get_private(RDBUS_BUS_SESSION, &err);
+            rd->error_free(&err);
+
+            if (conn)
+               rd->connection_set_exit_on_disconnect(conn, 0);
+         }
+
+         if (conn)
+         {
+            rd->error_init(&err);
+            owner = rd->bus_name_has_owner(
+                  conn, ORCA_BUS_NAME, &err) != 0;
+            rd->error_free(&err);
+         }
+      }
+
+      retro_atomic_store_release_int(
+            &ctl->available, owner ? 1 : 0);
+
+      if (pending && owner)
+      {
+         if (!orca_send_method(rd, conn, interrupt, text))
+         {
+            retro_atomic_store_release_int(&ctl->available, 0);
+
+            rd->connection_close(conn);
+            rd->connection_unref(conn);
+            conn = NULL;
+         }
+      }
+   }
+
+   if (conn && rd)
+   {
+      rd->connection_close(conn);
+      rd->connection_unref(conn);
+   }
+}
+
+static bool orca_narrator_init(void)
+{
+   orca_narrator_t *ctl = orca_narrator;
+
+   if (orca_narrator_stopped)
+      return false;
+
+   if (!ctl)
+   {
+
+      ctl = (orca_narrator_t*)calloc(1, sizeof(*ctl));
+      if (!ctl)
+         return false;
+
+      ctl->lock = slock_new();
+      ctl->cond = scond_new();
+
+      if (!ctl->lock || !ctl->cond)
+      {
+         if (ctl->cond)
+            scond_free(ctl->cond);
+         if (ctl->lock)
+            slock_free(ctl->lock);
+         free(ctl);
+         return false;
+      }
+
+      ctl->probe = true;
+
+      ctl->thread = sthread_create(orca_narrator_worker, ctl);
+      if (!ctl->thread)
+      {
+         scond_free(ctl->cond);
+         slock_free(ctl->lock);
+         free(ctl);
+         return false;
+      }
+
+      /* This first version assumes narrator calls are serialized
+       * by the frontend. The worker itself never changes this pointer. */
+      orca_narrator = ctl;
+   }
+
+   return true;
+}
+
+static bool orca_narrator_speak(const char *text, int priority)
+{
+   orca_narrator_t *ctl;
+
+   if (!orca_narrator_init())
+      return false;
+
+   ctl = orca_narrator;
+
+   if (!retro_atomic_load_acquire_int(&ctl->available))
+   {
+      slock_lock(ctl->lock);
+      ctl->probe = true;
+      scond_signal(ctl->cond);
+      slock_unlock(ctl->lock);
+      return false;
+   }
+
+   slock_lock(ctl->lock);
+
+   snprintf(ctl->text, sizeof(ctl->text), "%s", text);
+   ctl->interrupt = priority >= 10;
+   ctl->pending = true;
+
+   scond_signal(ctl->cond);
+   slock_unlock(ctl->lock);
+
+   return true;
+}
+
+static void orca_narrator_shutdown(void)
+{
+   orca_narrator_t *ctl = orca_narrator;
+
+   orca_narrator_stopped = true;
+
+   if (!ctl)
+      return;
+
+   slock_lock(ctl->lock);
+   ctl->shutdown = true;
+   ctl->pending = false;
+   ctl->probe = false;
+   scond_signal(ctl->cond);
+   slock_unlock(ctl->lock);
+
+   sthread_join(ctl->thread);
+
+   orca_narrator = NULL;
+   scond_free(ctl->cond);
+   slock_free(ctl->lock);
+   free(ctl);
+}
+
+#endif
+
 static bool accessibility_speak_unix(int speed,
       const char* speak_text, int priority)
 {
+#if defined(__linux__) && !defined(ANDROID) && defined(RARCH_HAVE_DBUS_RUNTIME)
+   if (speak_text && orca_narrator_speak(speak_text, priority))
+      return true;
+#endif
+
    int pid;
    settings_t *settings   = config_get_ptr();
    unsigned engine        = settings
@@ -4827,8 +5114,24 @@ static bool accessibility_speak_unix(int speed,
             cmd[6] = (char*)speak_text;
             execvp("spd-say", cmd);
 
-            RARCH_WARN("Could not execute spd-say.\n");
-            /* Prevent interfere with the parent process */
+            /* Speech Dispatcher could not be launched.
+             * Fall back to eSpeak-NG, then legacy eSpeak. */
+            {
+               char *fallback[] = {
+                  (char*)"espeak-ng",
+                  voice_out,
+                  speed_out,
+                  (char*)speak_text,
+                  NULL
+               };
+
+               execvp("espeak-ng", fallback);
+
+               fallback[0] = (char*)"espeak";
+               execvp("espeak", fallback);
+            }
+
+            RARCH_WARN("Could not execute spd-say, espeak-ng, or espeak.\n");
             _exit(EXIT_FAILURE);
          }
          else
@@ -4838,7 +5141,11 @@ static bool accessibility_speak_unix(int speed,
             cmd[1] = voice_out;
             cmd[2] = speed_out;
             cmd[3] = (char*)speak_text;
-            execvp("espeak", cmd);
+            cmd[0] = (char*)"espeak-ng";
+          execvp("espeak-ng", cmd);
+
+          cmd[0] = (char*)"espeak";
+          execvp("espeak", cmd);
 
             RARCH_WARN("Could not execute espeak.\n");
             /* Prevent interfere with the parent process */
