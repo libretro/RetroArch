@@ -26,6 +26,10 @@
 #include "../../../menu/menu_cbs.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/video_thread_wrapper.h"
+#ifdef HAVE_GFX_WIDGETS
+#include "../../../gfx/gfx_display.h"
+#include "../../../gfx/gfx_widgets.h"
+#endif
 #include "../../../input/input_driver.h"
 #include "../../../input/input_defines.h"
 #include "../../../input/input_remapping.h"
@@ -3778,6 +3782,47 @@ static void test_window_ui_layer_dims(void)
          == VIDEO_SCALE_PACK(400, 480));
 }
 
+#ifdef HAVE_GFX_WIDGETS
+static gfx_display_ctx_draw_t logo_test_seen;
+static unsigned logo_test_draws;
+
+static void logo_test_draw(gfx_display_ctx_draw_t *draw, void *data,
+      unsigned video_dims)
+{
+   (void)data;
+   (void)video_dims;
+   logo_test_seen = *draw;
+   logo_test_draws++;
+}
+
+/* The idle logo: one quad, centred, a quarter of the shorter side; no
+ * texture, nothing drawn */
+static void test_window_idle_logo(void)
+{
+   static video_frame_info_t info;
+   static gfx_display_ctx_driver_t driver;
+   gfx_display_t *p_disp           = disp_get_ptr();
+   gfx_display_ctx_driver_t *saved = p_disp->dispctx;
+   memset(&info, 0, sizeof(info));
+   memset(&driver, 0, sizeof(driver));
+   driver.draw              = logo_test_draw;
+   driver.handles_transform = true;
+   p_disp->dispctx          = &driver;
+   info.disp_userdata       = p_disp;
+   info.dims                = VIDEO_SCALE_PACK(800, 480);
+   logo_test_draws          = 0;
+   gfx_widgets_draw_idle_logo(&info, 0);
+   CHECK(logo_test_draws == 0);
+   gfx_widgets_draw_idle_logo(&info, 7);
+   CHECK(logo_test_draws == 1);
+   CHECK(logo_test_seen.texture == 7);
+   CHECK(logo_test_seen.dims == VIDEO_SCALE_PACK(120, 120));
+   CHECK(logo_test_seen.pos
+         == VIDEO_POS_PACK(VIDEO_PX(340.0f), VIDEO_PX(180.0f)));
+   p_disp->dispctx = saved;
+}
+#endif
+
 int main(int argc, char **argv)
 {
 #ifdef VIDEO_SCREENS_RUNTIME_TEST
@@ -3820,6 +3865,9 @@ int main(int argc, char **argv)
    test_window_pointer_mapping();
    test_window_generation();
    test_window_ui_layer_dims();
+#ifdef HAVE_GFX_WIDGETS
+   test_window_idle_logo();
+#endif
    test_window_frame_snapshot();
    test_window_menu_settings();
    test_window_menu_display();

@@ -13664,6 +13664,13 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_GFX_WIDGETS)
+      /* Nothing else to show here: the logo on the cleared black */
+      if (views && video_info->windows && video_info->windows->logo)
+         gfx_widgets_draw_idle_logo(video_info,
+               video_info->windows->logo_texture);
+#endif
+
       /* Touch overlays would straddle both eyes, and stay out of the UI
        * layer a headset shows. */
 #ifdef HAVE_OVERLAY

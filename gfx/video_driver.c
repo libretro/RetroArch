@@ -24,6 +24,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <file/file_path.h>
 #include <retro_math.h>
 #include <memalign.h>
 #include <retro_timers.h>
@@ -3750,6 +3751,37 @@ void video_driver_hw_request_restore(const struct video_hw_request *req)
          (int)req->cb.context_type);
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_GFX_WIDGETS)
+/* The idle logo, loaded the first frame it is wanted; app thread */
+static gfx_surface_t *video_driver_windows_logo = NULL;
+
+/* The logo from the widgets' icon set, once the widgets know where it
+ * is. Its own frame keeps the path off the frame function's stack. */
+static VIDEO_NOINLINE void video_driver_windows_logo_load(void)
+{
+   char path[PATH_MAX_LENGTH];
+   const char *dir = dispwidget_get_ptr()->monochrome_png_path;
+   if (!*dir)
+      return;
+   video_driver_windows_logo = gfx_surface_new_still(
+         gfx_display_texture_filter());
+   if (!video_driver_windows_logo)
+      return;
+   fill_pathname_join_special(path, dir, "retroarch.png", sizeof(path));
+   gfx_surface_submit_path(video_driver_windows_logo, path,
+         gfx_surface_wants_rgba());
+}
+
+/* The logo's texture when @want; 0 while it loads, or without its
+ * file, which is not tried again until the driver is made again */
+static uintptr_t video_driver_windows_logo_texture(bool want)
+{
+   if (want && !video_driver_windows_logo)
+      video_driver_windows_logo_load();
+   return GFX_SURFACE_HANDLE(video_driver_windows_logo);
+}
+#endif
+
 void video_driver_free_internal(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
@@ -3792,6 +3824,12 @@ void video_driver_free_internal(void)
             || d->state == SHADER_LOAD_COMPILING)
          video_driver_shader_deferred_cancel("The video driver went away.");
    }
+
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_GFX_WIDGETS)
+   /* Its texture is this driver's */
+   gfx_surface_free(video_driver_windows_logo);
+   video_driver_windows_logo = NULL;
+#endif
 
    /* Drop the OSD font before the driver that owns its GPU objects
     * goes away. Only for drivers that have handed the lifecycle up;
@@ -4685,6 +4723,11 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    out->display     = route.display;
    out->window_keep = route.keep ? 1u << VIDEO_WINDOWS_PRESENTATION : 0;
    out->logo        = route.logo;
+#ifdef HAVE_GFX_WIDGETS
+   /* Only the app thread loads it; a redraw shows what it has */
+   out->logo_texture = redraw ? video_st->windows.logo_texture
+      : video_driver_windows_logo_texture(out->logo);
+#endif
    memset(out->window_screens, 0, sizeof(out->window_screens));
    /* With a display, its one window, whatever it shows */
    if (out->display)
