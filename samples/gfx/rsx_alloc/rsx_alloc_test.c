@@ -55,6 +55,8 @@ static struct
 static unsigned rsx_alloc_calls;   /* rsxMemalign calls so far */
 static unsigned rsx_fail_at;       /* the call to fail, 1-based; 0 none */
 static unsigned rsx_finish_calls;
+static unsigned rsx_depth_test_calls;
+static u32 rsx_depth_test_enable;
 
 static unsigned rsx_live(void)
 {
@@ -206,7 +208,11 @@ void rsxSetClearDepthStencil(gcmContextData *c, u32 value) { }
 void rsxSetColorMask(gcmContextData *c, u32 mask) { }
 void rsxSetColorMaskMrt(gcmContextData *c, u32 mask) { }
 void rsxSetDepthFunc(gcmContextData *c, u32 func) { }
-void rsxSetDepthTestEnable(gcmContextData *c, u32 enable) { }
+void rsxSetDepthTestEnable(gcmContextData *c, u32 enable)
+{
+   rsx_depth_test_calls++;
+   rsx_depth_test_enable = enable;
+}
 void rsxSetDepthWriteEnable(gcmContextData *c, u32 enable) { }
 void rsxSetStencilTestEnable(gcmContextData *c, u32 enable) { }
 void rsxSetLogicOpEnable(gcmContextData *c, u32 enable) { }
@@ -1055,6 +1061,44 @@ static void test_hw_interface(void)
    printf("hw_interface: ok\n");
 }
 
+static void test_hw_frame_state(void)
+{
+   uint16_t pixels[4] = { 0, 0, 0, 0 };
+   video_frame_info_t info;
+   rsx_t *rsx;
+   unsigned calls, draws;
+   memset(&info, 0, sizeof(info));
+   fake_hwr.context_type = RETRO_HW_CONTEXT_RSX;
+   rsx = driver_up();
+
+   rsx_depth_test_enable = GCM_TRUE;
+   calls = rsx_depth_test_calls;
+   rsx_frame(rsx, RETRO_HW_FRAME_BUFFER_VALID, 0, 0, 0, NULL, &info);
+   CHECK(rsx_depth_test_calls == calls + 1
+         && rsx_depth_test_enable == GCM_FALSE,
+         "hw_frame_state: hardware frame restores frontend state");
+
+   rsx_depth_test_enable = GCM_TRUE;
+   calls = rsx_depth_test_calls;
+   draws = rsx_draw_calls;
+   rsx_frame(rsx, pixels, VIDEO_SCALE_PACK(2, 2), 1, 4, NULL, &info);
+   CHECK(rsx_depth_test_calls == calls + 1
+         && rsx_depth_test_enable == GCM_FALSE
+         && rsx_draw_calls == draws + 1,
+         "hw_frame_state: software fallback restores frontend state");
+
+   rsx_depth_test_enable = GCM_TRUE;
+   calls = rsx_depth_test_calls;
+   rsx_frame(rsx, NULL, 0, 2, 0, NULL, &info);
+   CHECK(rsx_depth_test_calls == calls
+         && rsx_depth_test_enable == GCM_TRUE,
+         "hw_frame_state: duplicate frame does not reset state");
+
+   driver_down(rsx);
+   fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
+   printf("hw_frame_state: ok\n");
+}
+
 /* Retired memory is fenced once at the next frame and freed when the
  * GPU passes it, never waited for. */
 static void test_hw_retirement(void)
@@ -1105,6 +1149,7 @@ int main(int argc, char **argv)
       void (*run)(void);
    } tests[] = {
       { "hw_interface", test_hw_interface },
+      { "hw_frame_state", test_hw_frame_state },
       { "hw_retirement", test_hw_retirement },
       { "texture_grow",  test_texture_grow  },
       { "texture_fail",  test_texture_fail  },
