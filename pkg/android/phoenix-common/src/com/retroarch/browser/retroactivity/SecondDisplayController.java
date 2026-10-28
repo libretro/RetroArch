@@ -59,6 +59,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static final int FLAG_PRIVATE  = 8;
   static final int FLAG_PHYSICAL = 16;
   static final int FLAG_REFUSED  = 32;
+  static final int FLAG_DEFAULT  = 64;
 
   private static final String TAG = "RetroArch";
   private static final int REFOCUS_TIMEOUT_MS = 1000;
@@ -369,6 +370,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
         f |= FLAG_OWN;
         ownListed = true;
       }
+      if (list.ids[i] == Display.DEFAULT_DISPLAY)
+        f |= FLAG_DEFAULT;
       if (d.isValid())
         f |= FLAG_VALID;
       if (Build.VERSION.SDK_INT < 20 || d.getState() == Display.STATE_ON)
