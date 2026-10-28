@@ -59,6 +59,11 @@
  * plays are skipped. */
 #define INPUT_OPENXR_HINGE_BUZZ_AMP 0.8f
 #define INPUT_OPENXR_HINGE_BUZZ_NS  150000000
+/* How long a held screen's hinge stays marked once out of where a
+ * let-go would settle in it (us): a shaking hand never flickers it. */
+#define INPUT_OPENXR_HINGE_DEBOUNCE_US 150000
+/* The most each poll seen out adds to that (us): a stall saw no hand. */
+#define INPUT_OPENXR_HINGE_OUT_STEP_US 50000
 /* Half a stick's travel. */
 #define INPUT_OPENXR_YIELD_STICK   0x4000
 /* Polls in a row with neither of edit mode's grab nor its menu bound
@@ -584,18 +589,7 @@ typedef struct input_openxr_trail
    unsigned char settle_edge;
 } input_openxr_trail_t;
 
-/* A hand in edit mode: its hold, where it holds its item as it took it
- * (video_xr_rest_take) and the aim it last moved it by, its trail, the
- * scale of what it holds now and at the grab with its size then, the
- * snaps whose buzz may still fire, the free hand's turn and tilt past
- * the steps they hold at (video_xr_grab_step) and the steps whose buzz
- * may still fire, and last poll's free stick past its deadzone, hinge,
- * grip and reset, for their changes; the hinge it last swung on, if
- * lidded, for the stick and the steps once that lets it go, until its
- * edge leaves where that hinge could take it again, and if buzzed, its
- * buzz spent until the edge leaves VIDEO_XR_HINGE_REACH, either ending
- * as the other hand takes its target; and when its hinge's last buzz
- * ends (us). */
+/* A hand in edit mode. */
 typedef struct input_openxr_hold
 {
    video_xr_grab_t g;
@@ -604,8 +598,11 @@ typedef struct input_openxr_hold
    input_openxr_trail_t trail[INPUT_OPENXR_EDIT_TRAIL];
    unsigned trails;   /* entries held */
    unsigned trail_at; /* the newest */
-   video_xr_hinge_t lid;
+   retro_time_t polled; /* its last tracked poll (us) */
+   video_xr_hinge_t lid;  /* the hinge last swung on, while lidded */
+   video_xr_hinge_t mark; /* while buzzed, where a let-go settles */
    retro_time_t buzz_end;
+   retro_time_t out;      /* seen out of it since (us), 0 in */
    float scale;
    float scale0;
    float width0;
@@ -2651,15 +2648,35 @@ static unsigned input_openxr_edit_armed(unsigned armed, unsigned snapped)
    return (armed & ~snapped & buzz) | (buzz & ~pulling);
 }
 
+/* The hinge a let-go of hold's item, where aim puts it now, settles in
+ * on targets: hinge if it does (NULL: none), else its mark if that
+ * does; NULL: neither. */
+static const video_xr_hinge_t *input_openxr_edit_settles(
+      const input_openxr_edit_t *e, const input_openxr_hold_t *hold,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      const video_xr_hinge_t *hinge)
+{
+   video_xr_pose_t pose;
+   if (     hinge
+         && video_xr_grab_settle(&hold->g, aim, targets,
+            input_openxr_edit_holding(e), hinge, &pose))
+      return hinge;
+   if (     hold->buzzed
+         && video_xr_grab_settle(&hold->g, aim, targets,
+            input_openxr_edit_holding(e), &hold->mark, &pose))
+      return &hold->mark;
+   return NULL;
+}
+
 /* hold's trail gains where its item shows now, where aim puts it
- * unsnapped, and whether a let-go there settles in its hinge on targets
- * (NULL: none). */
+ * unsnapped, and whether a let-go there settles in its hinge, or else
+ * its mark, on targets (NULL: none). */
 static void input_openxr_edit_trail(const input_openxr_edit_t *e,
       input_openxr_hold_t *hold, retro_time_t now,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets)
 {
-   video_xr_pose_t settled;
    input_openxr_trail_t *at;
+   const video_xr_hinge_t *h;
    const input_openxr_trail_t *newest = &hold->trail[hold->trail_at];
    const input_openxr_trail_t *before = &hold->trail[(hold->trail_at
          + INPUT_OPENXR_EDIT_TRAIL - 1) % INPUT_OPENXR_EDIT_TRAIL];
@@ -2682,13 +2699,13 @@ static void input_openxr_edit_trail(const input_openxr_edit_t *e,
    at->settle_edge = 0;
    video_xr_grab_pose(&hold->g, aim, NULL, 0, NULL, &at->hand, NULL,
          NULL);
-   if (     hold->hinged
-         && video_xr_grab_settle(&hold->g, aim, targets,
-               input_openxr_edit_holding(e), &hold->lid, &settled))
+   h = input_openxr_edit_settles(e, hold, aim, targets,
+         hold->hinged ? &hold->lid : NULL);
+   if (h)
    {
-      at->settle_slot = (unsigned char)(hold->lid.slot + 1);
-      at->settle_on   = (unsigned char)hold->lid.on;
-      at->settle_edge = (unsigned char)hold->lid.edge;
+      at->settle_slot = (unsigned char)(h->slot + 1);
+      at->settle_on   = (unsigned char)h->on;
+      at->settle_edge = (unsigned char)h->edge;
    }
 }
 
@@ -2721,6 +2738,38 @@ static void input_openxr_edit_put(input_openxr_edit_t *e,
          &hold->g.last, &values, NULL);
    values.scale = hold->scale;
    input_openxr_edit_write(e, hold, &values);
+}
+
+/* Where hold's item, let go while its mark shows, settles in it on
+ * targets: from its trail's entry *at if a let-go there settles in the
+ * mark, else from the newest entry where one does, *at then that. */
+static bool input_openxr_edit_settle(const input_openxr_edit_t *e,
+      const input_openxr_hold_t *hold, const video_xr_quad_set_t *targets,
+      const input_openxr_trail_t **at, video_xr_pose_t *pose)
+{
+   unsigned i;
+   unsigned n                       = hold->trail_at;
+   const input_openxr_trail_t *from = *at;
+   if (!hold->buzzed || !targets)
+      return false;
+   for (i = 0; i <= hold->trails; i++)
+   {
+      if (     from->settle_slot == hold->mark.slot + 1u
+            && from->settle_on == hold->mark.on
+            && from->settle_edge == hold->mark.edge)
+      {
+         if (!video_xr_hinge_settle(targets, hold->g.slot,
+                  input_openxr_edit_holding(e) & ~(1u << hold->g.slot),
+                  from->width, from->height, e->gap * 0.01f, &hold->mark,
+                  &from->hand, pose))
+            return false;
+         *at = from;
+         return true;
+      }
+      from = &hold->trail[n];
+      n    = (n + INPUT_OPENXR_EDIT_TRAIL - 1) % INPUT_OPENXR_EDIT_TRAIL;
+   }
+   return false;
 }
 
 /* Hand h grabs st->quads' quad target: the item keeps its place in
@@ -2779,6 +2828,8 @@ static void input_openxr_edit_grab(input_openxr_t *st,
       hold->armed       = 0;
       hold->lidded      = true;
       hold->buzzed      = true;
+      hold->mark        = hold->lid;
+      hold->out         = 0;
    }
    if (q->slot != VIDEO_XR_MENU_SLOT)
       config_get_video_screen_xr(q->slot, &now);
@@ -2799,6 +2850,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->width0  = q->width;
    hold->height0 = q->height;
    hold->trails  = 0;
+   hold->polled  = when;
    input_openxr_edit_trail(e, hold, when, aim, NULL);
    /* Taken hinged, a let-go settles in that hinge from the start. */
    hold->trail[hold->trail_at].settle_slot = hold->g.rest_slot;
@@ -2807,40 +2859,36 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    input_openxr_edit_rebase(e, other, e->snap ? &st->quads : NULL, was);
 }
 
-/* Whether hinge, engaged, takes hold anew: not the one hold's lid has
- * buzzed for already. */
+/* Whether hinge takes hold anew: not the one hold's mark shows. */
 static bool input_openxr_edit_attach(const input_openxr_hold_t *hold,
       const video_xr_hinge_t *hinge)
 {
-   return !hold->buzzed || hold->lid.slot != hinge->slot
-      || hold->lid.on != hinge->on || hold->lid.edge != hinge->edge;
+   return !hold->buzzed || hold->mark.slot != hinge->slot
+      || hold->mark.on != hinge->on || hold->mark.edge != hinge->edge;
 }
 
-/* A held item to where the hand puts it now, turned and tilted by the
- * free hand's stick in steps, the turn's from facing head (NULL: none),
- * or swung about a hinge's edge in steps from flat,
- * snapped to targets' screens unless NULL, keeping an engaged snap's
- * turn as that stick lets go or starts a push,
- * fading in from where it was taken, its settings with it. The trigger
- * lets its pitch and roll follow from where it is; a clamp holds it
- * again, so it resumes from the limit. Returns the snaps engaged or
- * pulling (video_xr_snap), in *stepped whether a step took hold with
- * its buzz armed, and in *attached whether a hinge took hold anew. */
+/* A held item to where the hand puts it, stepped by the free stick and
+ * snapped to targets unless NULL. Returns the snaps engaged or pulling
+ * (video_xr_snap); *stepped: a step took hold with its buzz armed;
+ * *attached: its mark took hold anew. */
 static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
       input_openxr_hold_t *hold, const video_xr_pose_t *aim,
       const video_xr_vec3_t *head, bool tilt, const int16_t *stick,
       const int16_t *free_stick, double dt,
-      const video_xr_quad_set_t *targets, bool *stepped, bool *attached)
+      const video_xr_quad_set_t *targets, bool *stepped, bool *attached,
+      retro_time_t now)
 {
    unsigned snapped, axes, held;
    video_xr_pose_t inv, pose;
    video_screen_xr_t values;
    video_xr_hinge_t hinge;
+   const video_xr_hinge_t *c;
    bool hinged = false;
    float x = (float)free_stick[0] / 32767.0f;
    float y = -(float)free_stick[1] / 32767.0f;
    bool pushed = x * x + y * y
       > VIDEO_XR_EDIT_DEADZONE * VIDEO_XR_EDIT_DEADZONE;
+   *attached   = false;
    hold->aim   = *aim;
    video_xr_pose_invert(aim, &inv);
    if (tilt && !hold->g.tilt)
@@ -2883,6 +2931,42 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
                      || hinge.on != kept.on || hinge.edge != kept.edge)))
             hold->g.rest_slot = 0;
       }
+      /* Its target taken by the other hand ends the mark and the lid
+       * at once, hinged elsewhere or not, so letting that go takes it
+       * again only anew, with the buzz. */
+      if (     hold->buzzed
+            && ((input_openxr_edit_holding(e) >> hold->mark.slot) & 1u))
+      {
+         hold->buzzed = false;
+         hold->out    = 0;
+      }
+      if (     hold->lidded
+            && ((input_openxr_edit_holding(e) >> hold->lid.slot) & 1u))
+         hold->lidded = false;
+      /* The one state the buzz, lid, rims and line follow: a hinge a
+       * let-go would settle into takes it at once; seen out of that
+       * range INPUT_OPENXR_HINGE_DEBOUNCE_US on end, it lets go, so a
+       * shaking hand never flickers it. */
+      c = input_openxr_edit_settles(e, hold, aim, targets,
+            hinged ? &hinge : NULL);
+      *attached = c && input_openxr_edit_attach(hold, c);
+      if (*attached)
+      {
+         hold->mark   = *c;
+         hold->buzzed = true;
+      }
+      if (c)
+         hold->out = 0;
+      else if (hold->buzzed)
+      {
+         retro_time_t gap = now - hold->polled;
+         if (!hold->out)
+            hold->out = now;
+         else if (gap > INPUT_OPENXR_HINGE_OUT_STEP_US)
+            hold->out += gap - INPUT_OPENXR_HINGE_OUT_STEP_US;
+         if (now - hold->out >= INPUT_OPENXR_HINGE_DEBOUNCE_US)
+            hold->buzzed = false;
+      }
       if (pushed != hold->pushed)
       {
          if (hinged)
@@ -2914,14 +2998,12 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
       hold->rest[1] = 0.0f;
       hold->hinged  = hinged;
    }
-   *attached = hinged && input_openxr_edit_attach(hold, &hinge);
    /* As the snaps' buzz, armed by where the item is, however it got
     * there. */
    if (hinged)
    {
       hold->lid       = hinge;
       hold->lidded    = true;
-      hold->buzzed    = true;
       hold->g.through = 0;
       hold->steps |= (video_xr_grab_off_step(&hold->g, aim, head, e->step,
                hold->rest) & ~hinge.axis)
@@ -2935,31 +3017,19 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
    else
    {
       const video_xr_hinge_t *lid = NULL;
-      /* Its target taken by the other hand ends the hinge, so letting
-       * that go takes it again only anew, with the buzz. */
-      if (     hold->buzzed
-            && ((input_openxr_edit_holding(e) >> hold->lid.slot) & 1u))
-      {
-         hold->lidded = false;
-         hold->buzzed = false;
-      }
       /* Pushed past the stop's hold, the hinge ends with it, and the
        * stop holds short until one takes hold, so a wobble there
-       * neither takes it back nor buzzes. While buzzed, as the frame
+       * neither takes it back nor buzzes. While marked, as the frame
        * loop's mark keeps that far off the plane too. */
       if (     hold->buzzed
-            && video_xr_grab_through(&hold->g, aim, targets, &hold->lid))
+            && video_xr_grab_through(&hold->g, aim, targets, &hold->mark))
          hold->g.through = 1;
-      /* Out of its hinge's reach, it turns as any free screen; further
-       * out, the hinge buzzes again. */
-      if (     hold->lidded
+      /* Out of its hinge's reach, its mark gone, it turns as any free
+       * screen. */
+      if (     hold->lidded && !hold->buzzed
             && !video_xr_grab_near_hinge(&hold->g, aim, targets,
                &hold->lid, VIDEO_XR_SNAP_DIST, 0.0f))
          hold->lidded = false;
-      if (     hold->buzzed && !hold->lidded
-            && !video_xr_grab_near_hinge(&hold->g, aim, targets,
-               &hold->lid, VIDEO_XR_HINGE_REACH, 0.0f))
-         hold->buzzed = false;
       if (hold->lidded)
          lid = &hold->lid;
       hold->steps |= video_xr_grab_off_step(&hold->g, aim, head, e->step,
@@ -2990,6 +3060,9 @@ static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
 static void input_openxr_edit_let_go(input_openxr_edit_t *e,
       input_openxr_hold_t *hold, bool shown)
 {
+   hold->buzzed = false;
+   hold->out    = 0;
+   hold->trails = 0;
    if (!shown)
    {
       hold->g.state = VIDEO_XR_GRAB_NONE;
@@ -3020,7 +3093,7 @@ static void input_openxr_edit_publish(input_openxr_t *st,
    openxr_frame_publish_grabs(st->frame, &e->grabs);
 }
 
-/* Every hold let go where it is. */
+/* Every hold let go where it is, or settled in its mark. */
 static void input_openxr_edit_let_go_all(input_openxr_edit_t *e)
 {
    unsigned h;
@@ -3028,8 +3101,14 @@ static void input_openxr_edit_let_go_all(input_openxr_edit_t *e)
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
       if (e->hand[h].g.state == VIDEO_XR_GRAB_HELD)
       {
-         input_openxr_edit_let_go(e, &e->hand[h], true);
-         input_openxr_edit_place(&input_openxr_st.quads, &e->hand[h].g);
+         video_xr_pose_t pose;
+         input_openxr_hold_t *hold      = &e->hand[h];
+         const input_openxr_trail_t *at = &hold->trail[hold->trail_at];
+         if (input_openxr_edit_settle(e, hold,
+                  e->snap ? &input_openxr_st.quads : NULL, &at, &pose))
+            input_openxr_edit_put(e, hold, at, &pose);
+         input_openxr_edit_let_go(e, hold, true);
+         input_openxr_edit_place(&input_openxr_st.quads, &hold->g);
          let_go = true;
       }
    if (let_go)
@@ -3081,8 +3160,11 @@ static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause,
     * until let go. */
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
    {
-      e->hand[h].grip  = true;
-      e->hand[h].reset = true;
+      e->hand[h].grip   = true;
+      e->hand[h].reset  = true;
+      e->hand[h].buzzed = false;
+      e->hand[h].out    = 0;
+      e->hand[h].trails = 0;
    }
    e->next = true;
    e->prev = true;
@@ -3234,31 +3316,26 @@ static void input_openxr_edit_poll(input_openxr_t *st,
          bool shown = input_openxr_edit_shown(&st->quads, hold->g.slot)
             && base->x == hold->g.base.x && base->y == hold->g.base.y
             && base->z == hold->g.base.z;
+         /* Its mark's target gone, the mark ends at once. */
+         if (     hold->buzzed
+               && !input_openxr_edit_shown(&st->quads, hold->mark.slot))
+         {
+            hold->buzzed = false;
+            hold->out    = 0;
+         }
          if (!grip || !shown)
          {
             /* As it showed before the grip began to open: the hand
              * twitches as it does. */
             if (shown)
             {
+               video_xr_pose_t pose;
                const input_openxr_trail_t *at =
                   input_openxr_edit_rewind(hold, now);
-               video_xr_pose_t pose = at->shown;
-               if (at->settle_slot && targets)
-               {
-                  video_xr_hinge_t k;
-                  memset(&k, 0, sizeof(k));
-                  k.slot = at->settle_slot - 1u;
-                  k.on   = at->settle_on;
-                  k.edge = at->settle_edge;
-                  /* Exactly into the hinge it showed, so it rests there
-                   * green, among the screens held once it is let go. */
-                  if (!video_xr_hinge_settle(targets, hold->g.slot,
-                           input_openxr_edit_holding(e)
-                           & ~(1u << hold->g.slot), at->width,
-                           at->height, e->gap * 0.01f, &k, &at->hand,
-                           &pose))
-                     pose = at->shown;
-               }
+               /* Exactly into the hinge it showed, so it rests there
+                * green, among the screens held once it is let go. */
+               if (!input_openxr_edit_settle(e, hold, targets, &at, &pose))
+                  pose = at->shown;
                input_openxr_edit_put(e, hold, at, &pose);
             }
             input_openxr_edit_let_go(e, hold, shown);
@@ -3292,7 +3369,7 @@ static void input_openxr_edit_poll(input_openxr_t *st,
                at = &head.position;
             }
             snapped = input_openxr_edit_move(e, hold, &aim, at, tilt, stick,
-                  free_stick, dt, targets, &stepped, &attached);
+                  free_stick, dt, targets, &stepped, &attached, now);
             /* A new apply cuts the one playing short: ticks due inside
              * the hinge's buzz are skipped, their snaps still spent. */
             if (attached)
@@ -3306,6 +3383,7 @@ static void input_openxr_edit_poll(input_openxr_t *st,
                input_openxr_edit_tick(st, h, INPUT_OPENXR_SNAP_TICK_NS,
                      INPUT_OPENXR_SNAP_TICK_AMP);
             hold->armed = input_openxr_edit_armed(hold->armed, snapped);
+            hold->polled = now;
             input_openxr_edit_trail(e, hold, now, &aim, targets);
          }
       }

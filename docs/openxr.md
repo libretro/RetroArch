@@ -250,9 +250,10 @@ hinge it rests in, where holding it moves nothing, holds at once. The
 holding hand gets a short buzz as a snap takes hold, and none again from
 that snap until the screen has left its pull. A hinge taking hold gets a
 longer, stronger buzz instead, and short buzzes due while it plays are
-skipped; it comes again only once the green line has gone, or for
-another edge, so a swing past square and back, or a wobble where the
-hinge takes hold, does not repeat it. The menu neither snaps nor is
+skipped; it comes again only once the hinge has let go, 0.15 s after
+the screen leaves where it would settle, or for another edge, so a
+swing past square and back, or a wobble where the hinge takes hold,
+does not repeat it. The menu neither snaps nor is
 snapped to. Let go, it stays where, turned and as large as it was a
 moment (0.08 s) before the grip opened, so the hand's twitch as it
 opens does not move it, and that is where it is saved.
