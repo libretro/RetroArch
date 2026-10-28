@@ -3448,6 +3448,139 @@ static void lane_enabler_tap(void)
 #endif
 }
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+/* A pad's poll comes after the hotkey pass, so a press reaches the core
+ * a frame before the pass sees it. Here the pad's poll takes the
+ * frame's buttons, as a driver's does. Under each poll mode, read by
+ * button and as a mask: a tap is kept from the core from its first
+ * frame and played on release, and a hold past the delay is the
+ * game's. */
+static uint32_t et_next;
+
+static void et_poll(void)
+{
+   syn_buttons = et_next;
+}
+
+/* the enabler held @held frames, then let go for six: the frames the
+ * core saw Select, as bits */
+static unsigned et_polled_run(void (*trace_last)(unsigned*, int*),
+      unsigned held)
+{
+   unsigned i;
+   unsigned frames = 0;
+   for (i = 0; i < held + 6; i++)
+   {
+      unsigned b;
+      int axes[4];
+      et_next = (i < held) ? (1u << 23) : 0;
+      run_loop_frames(1);
+      trace_last(&b, axes);
+      if (b & (1u << RETRO_DEVICE_ID_JOYPAD_SELECT))
+         frames |= 1u << i;
+   }
+   return frames;
+}
+#endif
+
+static void lane_enabler_tap_polled(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   static const char *mode_name[3] = { "early", "normal", "late" };
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_en  = input_config_binds[0][RARCH_ENABLE_HOTKEY];
+   struct retro_keybind saved_sel = input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_SELECT];
+   unsigned saved_delay           = settings->uints.input_hotkey_tap_delay;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   unsigned had = failures;
+   unsigned m, r;
+   void *core;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !joypad_real)
+   {
+      CHECK(false, "enabler tap, polled: the harness core's trace entry points or the joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   syn_joypad.poll          = et_poll;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat                  = 0;
+   syn_buttons              = 0;
+   et_next                  = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+
+   input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey           = 23;
+   input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = 23;
+   binds_written_by_a_lane();
+
+   for (m = POLL_TYPE_EARLY; m <= POLL_TYPE_LATE; m++)
+      for (r = 1; r <= 2; r++)
+      {
+         unsigned frames, n, b;
+         unsigned first, held;
+         int axes[4];
+         retro_time_t t0;
+
+         core_set_poll_type(m);
+         trace((int)r, 0);
+         settings->uints.input_hotkey_tap_delay = 1000;
+         run_loop_frames(3);
+         frames = et_polled_run(trace_last, 4);
+         for (n = 0, b = frames >> 4; b; b &= b - 1)
+            n++;
+         printf("[info] enabler tap, %s polling, read %s: Select on frames 0x%03x\n",
+               mode_name[m], r == 1 ? "by button" : "as a mask", frames);
+         CHECK(!(frames & 0xf),
+               "enabler tap, polled: the core saw a held enabler");
+         CHECK(n == 4,
+               "enabler tap, polled: a four-frame tap was not four frames of Select");
+
+         settings->uints.input_hotkey_tap_delay = 20;
+         et_next = 1u << 23;
+         run_loop_frames(1);
+         trace_last(&first, axes);
+         t0 = cpu_features_get_time_usec();
+         while (cpu_features_get_time_usec() - t0 < 30000)
+         {
+            run_loop_frames(1);
+            retro_sleep(2);
+         }
+         run_loop_frames(2);
+         trace_last(&held, axes);
+         et_next = 0;
+         run_loop_frames(4);
+         CHECK(!(first & (1u << RETRO_DEVICE_ID_JOYPAD_SELECT)),
+               "enabler tap, polled: the core saw a hold's first frame");
+         CHECK(held & (1u << RETRO_DEVICE_ID_JOYPAD_SELECT),
+               "enabler tap, polled: held past the delay, the core did not see it");
+      }
+
+   trace(0, 0);
+   core_set_poll_type(POLL_TYPE_LATE);
+   settings->uints.input_hotkey_tap_delay = saved_delay;
+   input_config_binds[0][RARCH_ENABLE_HOTKEY]           = saved_en;
+   input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_SELECT] = saved_sel;
+   binds_written_by_a_lane();
+   syn_buttons              = 0;
+   et_next                  = 0;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(3);
+   if (failures == had)
+      fprintf(stderr, "[pass] enabler-tap polled lane (kept from its first"
+            " frame under early, normal and late polling)\n");
+#endif
+}
+
 static void lane_hotkey_facts(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -10144,6 +10277,7 @@ int main(int argc, char *argv[])
       lane_gun_buttons_kept_mice();
       lane_hotkey_facts();
       lane_enabler_tap();
+      lane_enabler_tap_polled();
       lane_ai_presses();
       lane_menu_repeat_rates();
       lane_pointer_store();
