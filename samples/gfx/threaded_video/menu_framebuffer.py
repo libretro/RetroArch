@@ -77,7 +77,11 @@ FUNCTIONS
 #define RGUI_UPSCALE_AUTO 1
 #define GFX_DISP_FLAG_FB_DIRTY 1
 typedef struct { uint16_t *data; unsigned width, height; } frame_buf_t;
-typedef struct { frame_buf_t frame_buf, upscale_buf; } rgui_t;
+typedef struct {
+   frame_buf_t frame_buf, upscale_buf;
+   uint16_t *upscale_line;
+   unsigned upscale_line_width;
+} rgui_t;
 typedef struct { unsigned flags, framebuf_dims; } gfx_display_t;
 typedef struct { struct { unsigned menu_rgui_internal_upscale_level; } uints; } settings_t;
 struct poke {
@@ -162,8 +166,8 @@ static void check_upscale(thread_video_t *thr)
       for (y = 0; y < width; y++)
          for (x = 0; x < width; x++)
          {
-            unsigned sx = (x * ((4 << 16) / width)) >> 16;
-            unsigned sy = (y * ((4 << 16) / width)) >> 16;
+            unsigned sx = x * 4 / width;
+            unsigned sy = y * 4 / width;
             assert(((uint16_t*)taken->frame)[y * width + x] == pixels[sy * 4 + sx]);
          }
       rgui_set_texture(&rgui);
@@ -209,6 +213,7 @@ static void check_upscale(thread_video_t *thr)
    taken = (struct video_thread_menu_texture*)retro_triple_buffer_take(&thr->texture.frames);
    assert(taken && !(display.flags & GFX_DISP_FLAG_FB_DIRTY));
    assert(!memcmp(taken->frame, pixels, sizeof(pixels)));
+   free(rgui.upscale_line);
 }
 
 

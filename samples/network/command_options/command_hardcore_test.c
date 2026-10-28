@@ -28,6 +28,7 @@ void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 bool command_event(enum event_command cmd, void *data)
 { (void)cmd; (void)data; return false; }
 bool command_interfaces_held(void) { return false; }
+void command_frame_start(void) { }
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 { (void)state; (void)data; return false; }
 bool retroarch_ctl(enum rarch_ctl_state state, void *data)
