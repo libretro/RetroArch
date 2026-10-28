@@ -45,6 +45,8 @@ void rcheevos_pause_hardcore(void);
 void rcheevos_hardcore_enabled_changed(void);
 void rcheevos_toggle_hardcore_paused(void);
 bool rcheevos_hardcore_active(void);
+/* Hardcore mode in force: on, with a game whose achievements are loaded */
+bool rcheevos_hardcore_in_game(void);
 
 bool rcheevos_is_pause_allowed(void);
 void rcheevos_spectating_changed(void);

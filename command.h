@@ -616,9 +616,9 @@ struct cmd_action_map
    const struct cmd_rows *rows;
 };
 
-#ifdef HAVE_SCREENSHOTS
+#if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)
 /* GET_FRAME [size]: the frame on screen, as image content where the
- * interface carries one */
+ * interface carries one; a PNG, built in memory */
 #define COMMAND_FRAME_SIZE     320
 #define COMMAND_FRAME_SIZE_MIN 64
 #define COMMAND_FRAME_SIZE_MAX 640
@@ -660,6 +660,9 @@ void command_run_frames_forget(void);
  * a frame job, a queue, held input - as hardcore mode takes effect. */
 const char *command_tools_refused(void);
 void command_hardcore_entered(void);
+/* On the main thread each frame, before commands are read: what other
+ * threads left for it, and a MENU request whose menu closed. */
+void command_frame_start(void);
 void command_run_frames_free_frame(void);
 
 /* SET_INPUT <player> <control> <value> / RELEASE_INPUT [player], and
@@ -946,10 +949,10 @@ static const struct cmd_param cmd_params_playlist[] = {
       CMD_PARAM_INT, false, NULL, NULL, "0" },
    { NULL }
 };
-#ifdef HAVE_SCREENSHOTS
+#if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)
 static const struct cmd_param cmd_params_get_frame[] = {
    { "size", "The longest side at most, 64 to 640; 320 when left out.",
-      CMD_PARAM_INT, false, NULL, NULL, NULL },
+      CMD_PARAM_INT, false, NULL, NULL, "320" },
    { NULL }
 };
 #endif
@@ -1237,7 +1240,7 @@ static const struct cmd_action_map action_map[] = {
 #endif
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
    { "GET_STATUS",       command_get_status,       "No argument", "PLAYING, PAUSED or CONTENTLESS, with the system and the content's file name.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
-#ifdef HAVE_SCREENSHOTS
+#if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)
    { "GET_FRAME",        command_get_frame,        "[size]", "The content's frame on screen now, as an image scaled down to fit size; nothing is written. For what memory cannot say - a game whose RAM is not charted, or checking it.", CMD_INFO_READ_ONLY, cmd_params_get_frame },
 #endif
    { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_option, &cmd_rows_option },

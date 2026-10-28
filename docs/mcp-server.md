@@ -610,7 +610,9 @@ the layout RetroArch's achievements use when they know no console.
 `GET_MEMORY_MAP` lists the two as `system` and `save`, in the address
 space `core`. These are offsets into the core's RAM, not the console's
 addresses: the SNES's work RAM at `$7E0000` is `0` here, which is also the
-address RetroAchievements' notes give for it. Reads run across from one
+address RetroAchievements' notes give for it. Other consoles' notes may
+place RAM elsewhere - the NES's save RAM at `0x6000`, say, is straight
+after system RAM here. Reads run across from one
 to the other, `WATCH` and conditions take them, and `WRITE_CORE_MEMORY`
 writes them.
 

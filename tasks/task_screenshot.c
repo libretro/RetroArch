@@ -816,7 +816,8 @@ static bool screenshot_dump(
          return false;
       }
 
-      task->type         = TASK_TYPE_BLOCKING;
+      /* a frame writes no file, so it waits on no screenshot */
+      task->type         = frame_max ? TASK_TYPE_NONE : TASK_TYPE_BLOCKING;
       task->state        = state;
       task->handler      = task_screenshot_handler;
       if (savestate || frame_max)
@@ -1153,7 +1154,9 @@ static bool take_screenshot_or_frame(
             || video_driver_cached_frame_is_hw_render())
          prefer_vp_read           = true;
       /* Avoid GPU screenshots with savestates */
-      if (video_gpu_screenshot && !savestate)
+      /* nor with a frame: a software core's own frame needs no read
+       * back from the GPU, nor the present a read back asks for */
+      if (video_gpu_screenshot && !savestate && !frame_max)
          prefer_vp_read           = true;
    }
    /* No way to infer screenshot directory. */
