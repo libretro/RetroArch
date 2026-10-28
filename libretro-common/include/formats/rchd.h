@@ -572,8 +572,12 @@ int rchd_feed_at(rchd_t *chd, uint64_t offset, int source,
  * hunk, and at the maximum hunk size that is half a megabyte of
  * memcpy the caller has already paid for once.
  *
- * @data must stay valid and unmoved until the next rchd_read_step()
- * returns something other than RCHD_PENDING. That rules out any buffer
+ * @data must stay valid and unmoved until the decoder is done with
+ * it: until a later rchd_read_step() either finishes the read (returns
+ * something other than RCHD_PENDING) or asks for a different range. A
+ * caller may therefore lend one staging buffer per request and refill
+ * it for the next one. Lent bytes are used once; asking for the same
+ * range again means supplying it again. That rules out any buffer
  * whose pages can be released underneath the decoder while it works,
  * and it rules out a base pointer that can move: a growing arena may
  * reallocate, so re-read the base after growing it and borrow from the
