@@ -3803,6 +3803,11 @@ int r7z_archive_decode_step(r7z_archive_t *a, uint32_t index)
 #ifndef R7Z_STREAM_KEEP
 #define R7Z_STREAM_KEEP  4096
 #endif
+/* BZip2's ring, when the archive is read: twice what one block can take
+ * up */
+#ifndef R7Z_BZIP2_RING
+#define R7Z_BZIP2_RING   (2 * (size_t)RBZIP2_AHEAD)
+#endif
 /* Octets a converter may leave for the next piece: an IA-64 bundle */
 #define R7Z_FILTER_TAIL  16
 #define R7Z_STREAM_STAGES 3
@@ -3994,7 +3999,7 @@ static int src_open(r7z_archive_t *a, r7z_src_t *s, const coder_t *c,
 #ifdef HAVE_RBZIP2
       if (c->method == METHOD_BZIP2)
       {
-         s->buf_cap = 2 * (size_t)RBZIP2_AHEAD;
+         s->buf_cap = R7Z_BZIP2_RING;
          if ((uint64_t)s->buf_cap > pk_len)
             s->buf_cap = (size_t)pk_len;
       }

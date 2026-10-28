@@ -19,6 +19,11 @@
 
 #include "../../file/archive_7z/archive_7z_fixtures.h"
 #include "r7z_filter_fixtures.h"
+/* fx_big_bzip2 from there; its fx_big_deflate is another than the one
+ * above */
+#define fx_big_deflate methods_big_deflate
+#include "r7z_methods_fixtures.h"
+#undef fx_big_deflate
 
 static int    failures;
 static size_t total;
@@ -283,6 +288,89 @@ static void dense(int read)
    r7z_archive_close(a);
 }
 
+/* @n octets that do not compress: PPMd's input for them is about as
+ * long as they are */
+static void noise(uint8_t *d, size_t n)
+{
+   uint32_t x = 362436069u;
+   size_t   at;
+   for (at = 0; at < n; at++)
+   {
+      x ^= x << 13;
+      x ^= x >> 17;
+      x ^= x << 5;
+      d[at] = (uint8_t)(x >> 11);
+   }
+}
+
+/* One entry from @fx, streamed from memory and through reads, against
+ * @want: PPMd over noise, its input read a few octets past where each
+ * step stops short of the end of what is fetched; BZip2 in blocks that
+ * go round its ring */
+static void streamed_one(const char *what, const uint8_t *fx, size_t len,
+      uint32_t i, const uint8_t *want, size_t want_len)
+{
+   int read;
+   for (read = 0; read < 2; read++)
+   {
+      struct mem     m;
+      r7z_archive_t *a = NULL;
+      const uint8_t *d;
+      size_t         at = 0, n;
+      int            res, ok = 1;
+      m.d = fx;
+      m.n = len;
+      if (     (read ? r7z_archive_open_read(&a, len, read_at, &m)
+                     : r7z_archive_open(&a, fx, len)) != R7Z_OK
+            || r7z_archive_stream_begin(a, i) != R7Z_OK)
+      {
+         check(0, what, i);
+         r7z_archive_close(a);
+         continue;
+      }
+      while ((res = r7z_archive_stream_step(a, &d, &n)) == R7Z_PENDING)
+      {
+         if (n > want_len - at || (n && memcmp(d, want + at, n)))
+            ok = 0;
+         at += n;
+      }
+      check(ok && res == R7Z_OK && at == want_len, what, i);
+      r7z_archive_close(a);
+   }
+}
+
+static void noisy_and_blocks(void)
+{
+   static uint8_t want[6000];
+   r7z_archive_t *a = NULL;
+   uint32_t       i;
+   noise(want, sizeof(want));
+   streamed_one("PPMd over noise", fx_m_noise, sizeof(fx_m_noise), 0,
+         want, sizeof(want));
+#ifdef HAVE_RBZIP2
+   if (r7z_archive_open(&a, fx_big_bzip2, sizeof(fx_big_bzip2)) != R7Z_OK)
+   {
+      check(0, "BZip2 blocks", 0);
+      return;
+   }
+   for (i = 0; i < r7z_archive_num_entries(a); i++)
+   {
+      uint8_t *w = NULL;
+      size_t   w_len = 0;
+      if (     r7z_archive_entry(a, i)->is_dir
+            || !r7z_archive_entry(a, i)->size)
+         continue;
+      if (r7z_archive_extract(a, i, &w, &w_len) != R7Z_OK)
+         check(0, "BZip2 blocks, whole", i);
+      else
+         streamed_one("BZip2 blocks", fx_big_bzip2, sizeof(fx_big_bzip2),
+               i, w, w_len);
+      counted_free(w);
+   }
+   r7z_archive_close(a);
+#endif
+}
+
 int main(void)
 {
    int r;
@@ -310,6 +398,7 @@ int main(void)
       filtered("BCJ2", fx_m_bcj2, sizeof(fx_m_bcj2), r);
       filtered("BCJ and Copy", fx_m_copy, sizeof(fx_m_copy), r);
    }
+   noisy_and_blocks();
    if (failures)
       return 1;
    printf("r7z_stream_test: solid folders' entries streamed, in order once, "

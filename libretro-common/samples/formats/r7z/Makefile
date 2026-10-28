@@ -75,7 +75,8 @@ r7z_bcj2_test.o: r7z_bcj2_test.c r7z_bcj2_fixtures.h
 $(SAMPLE_OBJDIR)/counted/r7z_archive.o: $(LIBRETRO_COMM_DIR)/formats/7z/r7z_archive.c r7z_counted_alloc.h
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -include r7z_counted_alloc.h -DR7Z_STREAM_SLICE=4096 \
-	   -DR7Z_STREAM_CHUNK=256 -DR7Z_STREAM_KEEP=1100 -c $< -o $@
+	   -DR7Z_STREAM_CHUNK=256 -DR7Z_STREAM_KEEP=1100 \
+	   -DR7Z_BZIP2_RING=2560 -c $< -o $@
 
 $(TARGET_TEST3): $(BCJ2_OBJS)
 	$(CC) $(BCJ2_OBJS) $(LDFLAGS) -o $@
@@ -88,7 +89,7 @@ $(TARGET_TEST4): $(STORED_OBJS)
 r7z_methods_test.o: r7z_methods_test.c r7z_methods_fixtures.h
 
 r7z_stream_test.o: r7z_stream_test.c ../../file/archive_7z/archive_7z_fixtures.h \
-   r7z_filter_fixtures.h
+   r7z_filter_fixtures.h r7z_methods_fixtures.h
 
 $(TARGET_TEST6): $(STREAM_OBJS)
 	$(CC) $(STREAM_OBJS) $(LDFLAGS) -o $@
