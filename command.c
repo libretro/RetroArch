@@ -63,6 +63,7 @@
 #include "core_info.h"
 #include "playlist.h"
 #include <queues/task_queue.h>
+#include <retro_atomic.h>
 #include "cheat_manager.h"
 #include "content.h"
 #include "dynamic.h"
@@ -965,9 +966,10 @@ static bool command_screenshot(command_t *cmd)
    return true;
 }
 
+#ifdef HAVE_RPNG
 /* GET_FRAME [size]: the frame on screen as image content, scaled to fit
- * a square of @size and never up. Nothing is written, so it is cheap
- * enough to call while a queued STEPS plays. */
+ * a square of @size and never up. Nothing is written: a software core's
+ * frame is copied, a hardware core's read back from the GPU. */
 bool command_get_frame(command_t *cmd, const char *arg)
 {
    command_deferred_t *d;
@@ -1011,6 +1013,7 @@ bool command_get_frame(command_t *cmd, const char *arg)
    command_deferred_take(d, cmd);
    return true;
 }
+#endif
 #endif
 
 /* A command answered once the work it starts is through: by @ok, else
@@ -3677,18 +3680,44 @@ void command_run_frames_free_frame(void)
 const char *command_tools_refused(void)
 {
 #ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
+   if (rcheevos_hardcore_in_game())
       return "achievements hardcore mode is on; the player can turn it off";
 #endif
    return NULL;
 }
 
+#ifdef HAVE_THREADS
+/* hardcore mode took effect on a task thread, as a game's achievements
+ * finish loading: what it stops waits for the main thread's next frame */
+static retro_atomic_int_t command_hardcore_due;
+#endif
+
 void command_hardcore_entered(void)
 {
+#ifdef HAVE_THREADS
+   if (!task_is_on_main_thread())
+   {
+      retro_atomic_store_release_int(&command_hardcore_due, 1);
+      return;
+   }
+#endif
+   /* a queued job keeps why it ended, told once hardcore mode is off */
    if (runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_RUN_FRAMES)
       command_run_frames_cancel("achievements hardcore mode is on");
-   command_run_frames_forget();
+   else
+      command_run_frames_forget();
    input_driver_command_release(MAX_USERS);
+}
+
+void command_frame_start(void)
+{
+#ifdef HAVE_THREADS
+   if (retro_atomic_exchange_int(&command_hardcore_due, 0))
+      command_hardcore_entered();
+#endif
+#ifdef HAVE_MENU
+   command_menu_closed();
+#endif
 }
 
 void command_run_frames_forget(void)
@@ -5799,33 +5828,44 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
    return NULL;
 }
 
-/* A core with no memory map still hands over its RAM as blocks: system
- * RAM from address 0, save RAM straight after it, as the achievements
- * lay them out when they know no console - so system RAM is at the
- * addresses RetroAchievements' notes give. @n is 0 for system RAM, 1 for
- * save RAM; NULL where the core has none. */
-static uint8_t *command_memory_core_block(unsigned n, size_t *start,
-      size_t *size)
+/* A core with no memory map still hands over its RAM as blocks, once a
+ * game is loaded: system RAM from address 0 and save RAM straight after
+ * it, as the achievements lay them out when they know no console - for
+ * the SNES, the addresses RetroAchievements' notes give. Fills @blocks
+ * (data, start, size) for the system and the save block, a NULL data
+ * where the core has none; false where it has neither. */
+struct command_ram_block
+{
+   uint8_t *data;
+   size_t   start;
+   size_t   size;
+};
+
+static bool command_memory_core_blocks(struct command_ram_block blocks[2])
 {
    runloop_state_t        *runloop_st = runloop_state_get_ptr();
-   retro_ctx_memory_info_t sys;
-   retro_ctx_memory_info_t save;
-   if (     !runloop_st->current_core.retro_get_memory_data
+   retro_ctx_memory_info_t info;
+   memset(blocks, 0, 2 * sizeof(*blocks));
+   if (     !(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED)
+         || !runloop_st->current_core.retro_get_memory_data
          || !runloop_st->current_core.retro_get_memory_size)
-      return NULL;
-   sys.id = RETRO_MEMORY_SYSTEM_RAM;
-   core_get_memory(&sys);
-   if (!sys.data)
-      sys.size = 0;
-   *start = 0;
-   *size  = sys.size;
-   if (n == 0)
-      return sys.size ? (uint8_t*)sys.data : NULL;
-   save.id = RETRO_MEMORY_SAVE_RAM;
-   core_get_memory(&save);
-   *start = sys.size;
-   *size  = save.data ? save.size : 0;
-   return *size ? (uint8_t*)save.data : NULL;
+      return false;
+   info.id = RETRO_MEMORY_SYSTEM_RAM;
+   core_get_memory(&info);
+   if (info.data && info.size)
+   {
+      blocks[0].data = (uint8_t*)info.data;
+      blocks[0].size = info.size;
+   }
+   info.id = RETRO_MEMORY_SAVE_RAM;
+   core_get_memory(&info);
+   if (info.data && info.size)
+   {
+      blocks[1].data  = (uint8_t*)info.data;
+      blocks[1].start = blocks[0].size;
+      blocks[1].size  = info.size;
+   }
+   return blocks[0].data || blocks[1].data;
 }
 
 static uint8_t *command_memory_get_pointer(
@@ -5835,21 +5875,17 @@ static uint8_t *command_memory_get_pointer(
 {
    if (!sys_info || sys_info->mmaps.num_descriptors == 0)
    {
-      unsigned n;
-      bool     any = false;
+      struct command_ram_block blocks[2];
+      unsigned                 n;
+      bool                     any = command_memory_core_blocks(blocks);
       for (n = 0; n < 2; n++)
-      {
-         size_t   start = 0;
-         size_t   size  = 0;
-         uint8_t *block = command_memory_core_block(n, &start, &size);
-         if (block)
-            any = true;
-         if (block && address >= start && address < start + size)
+         if (     blocks[n].data && address >= blocks[n].start
+               && address < blocks[n].start + blocks[n].size)
          {
-            *max_bytes = (unsigned int)(start + size - address);
-            return block + (address - start);
+            *max_bytes = (unsigned int)(blocks[n].start + blocks[n].size
+                  - address);
+            return blocks[n].data + (address - blocks[n].start);
          }
-      }
       if (any)
          strlcpy_lit(s, " -1 no descriptor for address\n", len);
       else
@@ -5916,15 +5952,15 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
     * it, in an address space named core */
    if (!mmap || !mmap->num_descriptors)
    {
+      struct command_ram_block blocks[2];
+      command_memory_core_blocks(blocks);
       for (i = 0; i < 2; i++)
       {
-         size_t start = 0;
-         size_t size  = 0;
-         char   s_start[24], s_len[24];
-         if (!command_memory_core_block(i, &start, &size))
+         char s_start[24], s_len[24];
+         if (!blocks[i].data)
             continue;
-         command_hex(s_start, start);
-         command_hex(s_len,   size);
+         command_hex(s_start, blocks[i].start);
+         command_hex(s_len,   blocks[i].size);
          _len += (size_t)snprintf(reply + _len,
                COMMAND_LIST_REPLY_MAX + 1 - _len,
                "%s\t%s\t0\t0\t%s\trw\tlittle\tcore\n", s_start, s_len,

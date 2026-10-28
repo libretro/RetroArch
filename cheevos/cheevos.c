@@ -849,6 +849,11 @@ bool rcheevos_hardcore_active(void)
    return rcheevos_locals.hardcore_being_enabled;
 }
 
+bool rcheevos_hardcore_in_game(void)
+{
+   return rcheevos_hardcore_active() && rcheevos_is_game_loaded();
+}
+
 void rcheevos_pause_hardcore(void)
 {
    rcheevos_locals.hardcore_allowed = false;

@@ -1293,7 +1293,7 @@ int main(int argc, char **argv)
       CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n")
             && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       /* so does achievements' hardcore mode taking effect, which lets
-       * go of held input too */
+       * go of held input too, and says why the queue ended */
       reply[0]=0;
       CHECK(command_steps(&cmd,"run 100|on"));
       runloop_iterate();
@@ -1303,7 +1303,8 @@ int main(int argc, char **argv)
       CHECK(input_driver_command_held(0,axes) == 0
             && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       reply[0]=0;
-      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,
+            "QUEUED 0\nPREVIOUS ERROR achievements hardcore mode is on\n"));
       /* idle is time the content sat paused: a frame it runs ends it */
       reply[0]=0;
       CHECK(command_steps(&cmd,"run 1|on"));
