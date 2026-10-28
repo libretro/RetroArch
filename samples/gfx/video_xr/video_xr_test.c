@@ -4118,10 +4118,13 @@ static int settle_rests(video_xr_quad_set_t *set, float w, float gap,
  * 2 cm, level from within twice VIDEO_XR_SNAP_DIST: centres, or a
  * narrower screen's ends. Turned 4.9 degrees off parallel, by a roll or
  * a yaw, it settles parallel; past VIDEO_XR_SNAP_ANGLE, where a grab's
- * hinge lets go, not. None in front of screen 1's plane, overlapping
- * too little along, folded past square, folded 7.5 degrees (the turn to
- * flat fading, it would move again), with the target skipped, or with
- * no set. Each settled pose rests there. */
+ * hinge lets go, not. Folded 7.5 degrees, it settles at the 5 the turn
+ * to flat's fade shows. None in front of screen 1's plane, overlapping
+ * too little along, folded past square, with the target skipped, or
+ * with no set. Each settled pose rests there. 4 m tall and folded 8
+ * degrees, its middle too far out of screen 1's plane for the turn's
+ * whole pull, it does not rest, and the settle refuses the pose it
+ * gives. */
 static void test_hinge_settle(void)
 {
    /* Hinge Gap, the hand apart (pushed below 0), settled apart, in cm. */
@@ -4151,7 +4154,7 @@ static void test_hinge_settle(void)
    video_xr_quad_set_t set;
    video_xr_grab_t g;
    video_xr_pose_t hand, pose, want, aim;
-   video_xr_hinge_t h;
+   video_xr_hinge_t h, k;
    video_xr_quat_t q;
    memset(&h, 0, sizeof(h));
    h.slot = 0;
@@ -4250,9 +4253,24 @@ static void test_hinge_settle(void)
    rest_under(&set, 95.0, 0.02);
    CHECK(!video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, 0.02f, &h,
             &set.quads[1].pose, &pose));
+   rest_under(&set, 5.0, 0.02);
+   want = set.quads[1].pose;
    rest_under(&set, 7.5, 0.02);
-   CHECK(!video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, 0.02f, &h,
-            &set.quads[1].pose, &pose));
+   hand = set.quads[1].pose;
+   CHECK(video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, 0.02f, &h,
+            &hand, &pose)
+         && settle_same(&pose, &want));
+   hinge_set(&set);
+   hinge_turn(&q, 1.0, 0.0, 0.0, -8.0);
+   hinge_place(&want, &q, 0.0, 2.0, 0.0, -0.48, -1.8);
+   rest_add(&set, 1, 1.28f, 4.0f, &want);
+   hinge_turn(&q, 1.0, 0.0, 0.0, -9.0);
+   hinge_place(&hand, &q, 0.0, 2.0, 0.0, -0.48, -1.8);
+   pose.position.x = 1000.0f;
+   CHECK(!video_xr_rest_hinge(&set, 1, 0, 1.28f, 4.0f, 0.0f, &want, &k)
+         && !video_xr_hinge_settle(&set, 1, 0, 1.28f, 4.0f, 0.0f, &h,
+            &hand, &pose)
+         && pose.position.x != 1000.0f);
 
    /* A grab settles from where its aim puts its item. */
    rest_grab(&set, &g, &aim);
@@ -4327,6 +4345,227 @@ static void test_hinge_settle_taken(void)
                   row[i][1]);
             failures++;
          }
+      }
+   }
+}
+
+/* Screen 2 held deg degrees off flat with screen 1 in the hinge of
+ * kind k, its edge gap metres out from screen 1's: 0 its top edge
+ * under screen 1's bottom, tipped toward the user; 1 its bottom over
+ * screen 1's top, likewise; 2 its left edge on screen 1's right,
+ * turned toward the user about the vertical. */
+static void fold_place(unsigned k, double deg, double gap,
+      video_xr_pose_t *p)
+{
+   video_xr_quat_t q;
+   if (k == 0)
+   {
+      hinge_turn(&q, 1.0, 0.0, 0.0, -deg);
+      hinge_place(p, &q, 0.0, 0.48, 0.0, -0.48 - gap, -1.8);
+   }
+   else if (k == 1)
+   {
+      hinge_turn(&q, 1.0, 0.0, 0.0, deg);
+      hinge_place(p, &q, 0.0, -0.48, 0.0, 0.48 + gap, -1.8);
+   }
+   else
+   {
+      hinge_turn(&q, 0.0, 1.0, 0.0, -deg);
+      hinge_place(p, &q, -0.64, 0.0, 0.8 + gap, 0.0, -1.8);
+   }
+}
+
+/* Screen 2 of the 3DS layout gripped at pose, held still: its fade
+ * whole, or none but the hinge it rests in (taken, unless NULL). */
+static void fold_grab(video_xr_grab_t *g, const video_xr_pose_t *pose,
+      float gap, const video_xr_hinge_t *taken)
+{
+   memset(g, 0, sizeof(*g));
+   g->rel    = *pose;
+   g->turn   = pose->orientation;
+   g->last   = *pose;
+   g->base   = pose->position;
+   g->width  = 1.28f;
+   g->height = 0.96f;
+   g->slot   = 1;
+   g->state  = VIDEO_XR_GRAB_HELD;
+   g->tilt   = true;
+   g->gap    = (unsigned char)(gap * 100.0f + 0.5f);
+   if (taken)
+   {
+      g->rest_slot = (unsigned char)(taken->slot + 1);
+      g->rest_edge = (unsigned char)taken->edge;
+      g->rest_on   = (unsigned char)taken->on;
+   }
+}
+
+/* Screen 2 held hinged deg degrees off flat with screen 1, by its top,
+ * bottom or side edge, or off square at a corner, at Hinge Gap 0 and
+ * 2: shown where the turn puts it, whole within VIDEO_XR_SNAP_ANGLE,
+ * then catching up at twice the hand's speed to twice that, let go it
+ * settles there, rests listed, and taken up it shows unmoved with the
+ * hand back where it held it. With screen 1 turned, so rounding leaves
+ * a flat rest a hair off its goal, a rest flat, square or in the fade
+ * is taken likewise and keeps its hinge. */
+static void test_hinge_fold_rest(void)
+{
+   static const double flat[] = { 0.0, 1.0, 3.0, 4.9, 5.1, 6.0, 7.5,
+      9.0, 9.9, 10.1, 12.0, 30.0 };
+   static const double square[] = { 75.0, 79.0, 80.5, 82.0, 83.7, 84.9,
+      85.1, 87.0, 89.9, 90.0 };
+   /* Screen 1's yaw, pitch and roll; 1 puts screen 2 back through its
+    * settings. */
+   static const float turned[3][4] = { { 61.7f, -8.2f, 0.0f, 0.0f },
+      { 123.4f, 5.6f, -7.8f, 0.0f }, { -33.0f, 12.5f, 2.0f, 1.0f } };
+   /* fold_place's kind, the fold resting, the hand's fold taking it. */
+   static const double rests[4][3] = { { 0.0, 0.0, 0.0 },
+      { 0.0, 7.5, 8.75 }, { 2.0, 90.0, 90.0 }, { 2.0, 82.5, 81.25 } };
+   static const unsigned he[3] = { 0, 1, 3 };
+   static const unsigned te[3] = { 1, 0, 2 };
+   unsigned row;
+   const unsigned nf = sizeof(flat) / sizeof(flat[0]);
+   const unsigned n  = 6 * nf
+      + 2 * (unsigned)(sizeof(square) / sizeof(square[0]));
+   for (row = 0; row < n; row++)
+   {
+      unsigned i, nr;
+      video_xr_quad_set_t set;
+      video_xr_rest_t r[8];
+      video_xr_grab_t g;
+      video_xr_pose_t hand, aim, start, shown, pose, take, again;
+      video_xr_hinge_t h, k;
+      double a, off, want, back;
+      int listed = 0;
+      int ok;
+      bool sq      = row >= 6 * nf;
+      unsigned j   = sq ? 2 : row / (2 * nf);
+      float gap    = (sq ? (row - 6 * nf) % 2 : (row / nf) % 2)
+         ? 0.02f : 0.0f;
+      double deg   = sq ? square[(row - 6 * nf) / 2] : flat[row % nf];
+      const video_xr_quat_t *q1;
+      memset(&h, 0, sizeof(h));
+      h.edge = he[j];
+      h.on   = te[j];
+      hinge_set(&set);
+      fold_place(j, deg, gap, &hand);
+      rest_add(&set, 1, 1.28f, 0.96f, &hand);
+      q1 = &set.quads[0].pose.orientation;
+      a  = sq ? 90.0 - deg : deg;
+      off = (a <= VIDEO_XR_SNAP_ANGLE) ? 0.0
+         : (a < 2.0 * VIDEO_XR_SNAP_ANGLE)
+         ? 2.0 * (a - VIDEO_XR_SNAP_ANGLE) : a;
+      want = sq ? 90.0 - off : off;
+      back = (a <= VIDEO_XR_SNAP_ANGLE) ? want : deg;
+
+      video_xr_pose_identity(&aim);
+      fold_grab(&g, &hand, gap, NULL);
+      start             = hand;
+      start.position.x += 1.0f;
+      ok = (video_xr_grab_hinge(&g, &aim, &set, 0, &start, &shown, &k)
+            & VIDEO_XR_SNAP_HINGE)
+         && k.slot == 0 && k.edge == h.edge && k.on == h.on
+         && fabs(turn_apart(&shown.orientation, q1) - want) <= 0.01
+         && video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, gap, &h,
+               &hand, &pose)
+         && settle_same(&pose, &shown);
+      if (ok)
+      {
+         set.quads[1].pose = pose;
+         nr = video_xr_rest_hinges(&set, 0, gap, r, 8);
+         for (i = 0; i < nr; i++)
+            if (     rest_is(&r[i], 1, h.edge, 0, h.on)
+                  || rest_is(&r[i], 0, h.on, 1, h.edge))
+               listed = 1;
+         take = pose;
+         video_xr_rest_take(&set, 1, 1.28f, 0.96f, gap, &h, &take);
+         fold_grab(&g, &take, gap, &h);
+         ok = listed
+            && (video_xr_grab_hinge(&g, &aim, &set, 0, &pose, &again, &k)
+               & VIDEO_XR_SNAP_HINGE)
+            && settle_same(&again, &pose)
+            && fabs(turn_apart(&take.orientation, q1) - back) <= 0.01;
+      }
+      if (!ok)
+      {
+         printf("  FAIL %s:%d: %s edge, Hinge Gap %.0f, held %.1f deg "
+               "off %s\n", __FILE__, __LINE__,
+               (j == 0) ? "top" : (j == 1) ? "bottom" : "side",
+               gap * 100.0f, a, sq ? "square" : "flat");
+         failures++;
+      }
+   }
+   for (row = 0; row < 24; row++)
+   {
+      unsigned i, nr;
+      video_xr_quad_set_t set;
+      video_xr_rest_t r[8];
+      video_xr_grab_t g;
+      video_screen_xr_t s;
+      video_xr_vec3_t base;
+      video_xr_pose_t rest, take, aim, again, pose;
+      video_xr_hinge_t h, k;
+      int listed = 0;
+      int ok;
+      const float *t  = turned[row / 8];
+      const double *f = rests[(row / 2) % 4];
+      unsigned j      = (unsigned)f[0];
+      float gap       = (row & 1) ? 0.02f : 0.0f;
+      const video_xr_quat_t *q1;
+      memset(&h, 0, sizeof(h));
+      h.edge = he[j];
+      h.on   = te[j];
+      memset(&s, 0, sizeof(s));
+      s.yaw   = t[0];
+      s.pitch = t[1];
+      s.roll  = t[2];
+      s.scale = 1.0f;
+      base.x  = 0.0f;
+      base.y  = 0.0f;
+      base.z  = -1.8f;
+      hinge_set(&set);
+      video_xr_item_pose(&base, &s, &set.quads[0].pose);
+      q1 = &set.quads[0].pose.orientation;
+      fold_place(j, f[1], gap, &rest);
+      rest.position.z += 1.8f;
+      video_xr_compose(&set.quads[0].pose, &rest, &rest);
+      if (f[1] == 0.0)
+         rest.orientation = *q1;
+      if (t[3] != 0.0f)
+      {
+         memset(&s, 0, sizeof(s));
+         s.scale = 1.0f;
+         video_xr_item_settings(&base, &rest, &s);
+         video_xr_item_pose(&base, &s, &rest);
+      }
+      rest_add(&set, 1, 1.28f, 0.96f, &rest);
+      nr = video_xr_rest_hinges(&set, 0, gap, r, 8);
+      for (i = 0; i < nr; i++)
+         if (     rest_is(&r[i], 1, h.edge, 0, h.on)
+               || rest_is(&r[i], 0, h.on, 1, h.edge))
+            listed = 1;
+      take = rest;
+      video_xr_rest_take(&set, 1, 1.28f, 0.96f, gap, &h, &take);
+      video_xr_pose_identity(&aim);
+      fold_grab(&g, &take, gap, &h);
+      ok = listed
+         && fabs(turn_apart(&take.orientation, q1) - f[2]) <= 0.01
+         && fabs(turn_apart(&take.orientation, &rest.orientation)
+               - fabs(f[2] - f[1])) <= 0.01
+         && (video_xr_grab_hinge(&g, &aim, &set, 0, &rest, &again, &k)
+            & VIDEO_XR_SNAP_HINGE)
+         && k.slot == 0 && k.edge == h.edge && k.on == h.on
+         && settle_same(&again, &rest)
+         && video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, gap, &h,
+               &take, &pose)
+         && settle_same(&pose, &rest);
+      if (!ok)
+      {
+         printf("  FAIL %s:%d: screen 1 turned %.1f %.1f %.1f%s, %s "
+               "edge, Hinge Gap %.0f, resting %.1f deg off flat\n",
+               __FILE__, __LINE__, t[0], t[1], t[2],
+               t[3] != 0.0f ? " (from settings)" : "",
+               j ? "side" : "top", gap * 100.0f, f[1]);
+         failures++;
       }
    }
 }
@@ -7590,6 +7829,7 @@ int main(void)
    test_rest_hinge_size();
    test_hinge_settle();
    test_hinge_settle_taken();
+   test_hinge_fold_rest();
    test_grab_kept_turn();
    test_smooth_steady();
    test_smooth_tremor();

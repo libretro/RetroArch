@@ -1448,6 +1448,24 @@ static double video_xr_snap_nearer(double a, double b)
    return (fabs(a) <= fabs(b)) ? a : b;
 }
 
+/* Goal i of a screen snapping to q: 0 parallel, q's own turn; 1 and 2
+ * square, a quarter turn either way about its up. */
+static void video_xr_snap_goal(const video_xr_quad_t *q, unsigned i,
+      video_xr_quat_t *goal)
+{
+   video_xr_pose_t turn, g;
+   if (!i)
+   {
+      *goal = q->pose.orientation;
+      return;
+   }
+   video_xr_pose_identity(&turn);
+   turn.orientation.y = (i == 1) ? 0.70710678f : -0.70710678f;
+   turn.orientation.w = 0.70710678f;
+   video_xr_compose(&q->pose, &turn, &g);
+   *goal = g.orientation;
+}
+
 /* q as a target for a screen at pose, a and b its half width and
  * height; false when too far off in turn or place to pull at all. */
 static bool video_xr_snap_target(const video_xr_quad_t *q,
@@ -1456,23 +1474,20 @@ static bool video_xr_snap_target(const video_xr_quad_t *q,
 {
    unsigned i;
    double gx, gy, gz;
-   video_xr_pose_t inv, rel, turn, goal;
+   video_xr_pose_t inv, rel;
    t->q      = q;
-   t->goal   = q->pose.orientation;
+   video_xr_snap_goal(q, 0, &t->goal);
    t->angle  = video_xr_quat_angle(&pose->orientation, &t->goal);
    t->square = false;
-   video_xr_pose_identity(&turn);
-   for (i = 0; i < 2; i++)
+   for (i = 1; i < 3; i++)
    {
       double e;
-      /* A quarter turn either way about its up. */
-      turn.orientation.y = i ? -0.70710678f : 0.70710678f;
-      turn.orientation.w = 0.70710678f;
-      video_xr_compose(&q->pose, &turn, &goal);
-      e = video_xr_quat_angle(&pose->orientation, &goal.orientation);
+      video_xr_quat_t goal;
+      video_xr_snap_goal(q, i, &goal);
+      e = video_xr_quat_angle(&pose->orientation, &goal);
       if (e < t->angle)
       {
-         t->goal   = goal.orientation;
+         t->goal   = goal;
          t->angle  = e;
          t->square = true;
       }
@@ -2516,6 +2531,77 @@ static bool video_xr_rest_holds(const video_xr_quad_set_t *set,
          * cos(VIDEO_XR_SNAP_FOLD_TIE * VIDEO_XR_PI / 360.0);
 }
 
+/* hand turned on about the middle of c's edge he until the snap's turn
+ * to target, parallel or square about its up as video_xr_snap_target,
+ * shows c from it: c turned y degrees off short of twice
+ * VIDEO_XR_SNAP_ANGLE shows from x, where x less the turn's pull
+ * (2r - x) is y. */
+static void video_xr_rest_unturn(const video_xr_quad_t *c,
+      const video_xr_quad_t *target, unsigned he, video_xr_pose_t *hand)
+{
+   unsigned i;
+   double half, x, k;
+   video_xr_pose_t goal, at, by;
+   video_xr_vec3_t mid, out, e, f;
+   double r[3]               = { 0.0, 0.0, 0.0 };
+   double y                  = 2.0 * VIDEO_XR_SNAP_ANGLE;
+   double n                  = 0.0;
+   double s                  = 1.0;
+   const video_xr_quat_t *qc = &c->pose.orientation;
+   video_xr_pose_identity(&goal);
+   for (i = 0; i < 3; i++)
+   {
+      /* The turn off each goal as an axis and angle: acos would lose a
+       * turn of hundredths of a degree to float rounding. */
+      double v[3], m, a, d;
+      const video_xr_quat_t *g = &goal.orientation;
+      video_xr_snap_goal(target, i, &goal.orientation);
+      v[0] = (double)g->w * qc->x - (double)g->x * qc->w
+         - (double)g->y * qc->z + (double)g->z * qc->y;
+      v[1] = (double)g->w * qc->y + (double)g->x * qc->z
+         - (double)g->y * qc->w - (double)g->z * qc->x;
+      v[2] = (double)g->w * qc->z - (double)g->x * qc->y
+         + (double)g->y * qc->x - (double)g->z * qc->w;
+      d    = video_xr_quat_dot(g, qc);
+      m    = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+      a    = 2.0 * atan2(m, fabs(d)) * 180.0 / VIDEO_XR_PI;
+      if (a < y)
+      {
+         at   = goal;
+         y    = a;
+         n    = m;
+         s    = (d < 0.0) ? -1.0 : 1.0;
+         r[0] = v[0];
+         r[1] = v[1];
+         r[2] = v[2];
+      }
+   }
+   video_xr_snap_edge(he, c->width * 0.5, c->height * 0.5, &mid, &out,
+         &half);
+   /* A turn to the goal that moves c less than video_xr_rest_exact sees
+    * is rounding, which a flat rest on a turned target carries. */
+   if (     n <= 0.0
+         || (y <= VIDEO_XR_SNAP_FOLD_TIE
+            && y * VIDEO_XR_PI / 180.0
+               * sqrt((double)mid.x * mid.x + (double)mid.y * mid.y)
+               <= VIDEO_XR_SNAP_TIE))
+      return;
+   x = (y + 2.0 * VIDEO_XR_SNAP_ANGLE) * 0.5;
+   k = s * sin(x * VIDEO_XR_PI / 360.0) / n;
+   video_xr_pose_identity(&by);
+   by.orientation.x = (float)(r[0] * k);
+   by.orientation.y = (float)(r[1] * k);
+   by.orientation.z = (float)(r[2] * k);
+   by.orientation.w = (float)cos(x * VIDEO_XR_PI / 360.0);
+   video_xr_compose(&at, &by, &at);
+   hand->orientation = at.orientation;
+   video_xr_rotate(qc, &mid, &e);
+   video_xr_rotate(&hand->orientation, &mid, &f);
+   hand->position.x += e.x - f.x;
+   hand->position.y += e.y - f.y;
+   hand->position.z += e.z - f.z;
+}
+
 /* Where a hand taking screen c, resting in the hinge of its edge he on
  * target's edge te, holds it (video_xr_rest_take). */
 static void video_xr_rest_hand(const video_xr_quad_t *c,
@@ -2527,6 +2613,7 @@ static void video_xr_rest_hand(const video_xr_quad_t *c,
    video_xr_vec3_t m, w;
    double s = video_xr_snap_stop_from(gap) + VIDEO_XR_SNAP_STOP_ARM;
    *hand    = c->pose;
+   video_xr_rest_unturn(c, target, he, hand);
    video_xr_pose_invert(&c->pose, &inv);
    video_xr_compose(&inv, &target->pose, &rel);
    video_xr_snap_pair(&rel, target->width * 0.5, target->height * 0.5,
