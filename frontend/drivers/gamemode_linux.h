@@ -31,8 +31,9 @@
  *    password. The daemon drops the hold by itself when our connection
  *    goes away, so a crash never leaves the machine in performance mode.
  *    As with the Windows Low-Latency Power Plan, the hold only applies
- *    on AC power: it follows UPower's OnBattery (or the power supplies
- *    in sysfs without UPower), released when the charger is pulled and
+ *    on AC power: it follows UPower's OnBattery (or, without UPower,
+ *    the power supplies in sysfs, re-read when the kernel announces a
+ *    power supply change), released when the charger is pulled and
  *    held again when it is plugged back in.
  *
  * Screensaver inhibit, the other default, RetroArch already does through

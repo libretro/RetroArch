@@ -13,6 +13,8 @@
 #   plug     fake_upower on AC: pulling the charger releases the hold,
 #            plugging back in holds again
 #   unplugged  fake_upower starts on battery: no hold until plugged in
+#   nowake   no UPower, under strace: the helper follows the kernel's
+#            uevents and never wakes on a timer (skipped without strace)
 #
 # Every lane also checks the I/O priority on all threads. Needs Linux,
 # libdbus-1.so.3 and dbus-daemon; skips without them.
@@ -121,5 +123,35 @@ lane refuse org.freedesktop.UPower.PowerProfiles refuse refuse
 lane none   ""                                   ""     none
 lane plug      org.freedesktop.UPower.PowerProfiles "" plug      ac
 lane unplugged org.freedesktop.UPower.PowerProfiles "" unplugged battery
+
+# Without UPower the helper must wait on the kernel's uevent socket, not
+# re-check on a timer: a NETLINK_KOBJECT_UEVENT socket bound, and no
+# poll() with the fallback's 5000 ms timeout.
+if command -v strace >/dev/null 2>&1 \
+      && strace -o /dev/null true >/dev/null 2>&1; then
+   log="$work/nowake.log"
+   : > "$log"
+   "$work/fake_ppd" org.freedesktop.UPower.PowerProfiles "$log" &
+   ppd_pid=$!
+   i=0
+   while ! grep -qx ready "$log" && [ $i -lt 100 ]; do sleep 0.05; i=$((i + 1)); done
+   if timeout 60 strace -f -e trace=socket,bind,poll -o "$work/nowake.trace" \
+         "$work/gamemode_test" "$log" hold > "$work/nowake.out" 2>&1 \
+         && grep -q 'socket(AF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT)' "$work/nowake.trace" \
+         && grep -Eq 'bind\(.*nl_groups=0x0*1[,}]' "$work/nowake.trace" \
+         && ! grep -q 'poll(.*, 5000)' "$work/nowake.trace"; then
+      echo "PASS nowake"
+   else
+      echo "FAIL nowake: expected a bound uevent socket and no timed re-check" >&2
+      grep -E 'NETLINK|nl_groups|5000\)' "$work/nowake.trace" | sed 's/^/   /' >&2 || :
+      sed 's/^/   /' "$work/nowake.out" >&2
+      fail=1
+   fi
+   kill "$ppd_pid" 2>/dev/null || :
+   wait "$ppd_pid" 2>/dev/null || :
+   ppd_pid=
+else
+   echo "skip nowake: no strace"
+fi
 
 exit $fail

@@ -36,6 +36,10 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/netlink.h>
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <rthreads/rthreads.h>
@@ -149,8 +153,9 @@ static const char *const gamemode_ppd_paths[2] = {
 #define GAMEMODE_UPOWER_PATH "/org/freedesktop/UPower"
 #define GAMEMODE_PROPS_IFACE "org.freedesktop.DBus.Properties"
 
-/* Without UPower nothing announces a plug change, so the power supply
- * is looked at again this often instead. */
+/* Without UPower, the kernel's own uevents announce a plug change. Only
+ * where that socket cannot be had is the power supply looked at again
+ * this often instead. */
 #define GAMEMODE_SYSFS_RECHECK_MS 5000
 
 /* One word: Game Mode wanted, and whether the worker runs. Callers set
@@ -407,11 +412,71 @@ static bool gamemode_ppd_open(const rdbus_t *rd, int *fd)
    return true;
 }
 
+/* The kernel's uevent broadcast (the group udev itself listens to),
+ * which an unprivileged process may receive. -1 where it cannot be had,
+ * a container without it say. */
+static int gamemode_uevent_open(void)
+{
+   struct sockaddr_nl sa;
+   int s = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);
+
+   if (s < 0)
+      return -1;
+   fcntl(s, F_SETFD, FD_CLOEXEC);
+   fcntl(s, F_SETFL, O_NONBLOCK);
+   memset(&sa, 0, sizeof(sa));
+   sa.nl_family = AF_NETLINK;
+   sa.nl_groups = 1;
+   if (bind(s, (struct sockaddr*)&sa, sizeof(sa)) != 0)
+   {
+      close(s);
+      return -1;
+   }
+   return s;
+}
+
+/* Reads every queued uevent; true when one was for a power supply (a
+ * charger plugged or pulled, a battery changing state). A message is
+ * "ACTION@devpath" then KEY=VALUE strings, each NUL-terminated. At
+ * worst a stray message costs one sysfs read. */
+static bool gamemode_uevent_drain(int s)
+{
+   char buf[4096];
+   bool hit = false;
+
+   for (;;)
+   {
+      char *p, *end;
+      ssize_t n = recv(s, buf, sizeof(buf) - 1, 0);
+      if (n < 0)
+      {
+         /* Events were dropped: one of them may have been ours. */
+         if (errno == ENOBUFS)
+         {
+            hit = true;
+            continue;
+         }
+         if (errno == EINTR)
+            continue;
+         break;
+      }
+      if (n == 0)
+         break;
+      buf[n] = '\0';
+      end    = buf + n;
+      for (p = buf; p < end; p += strlen(p) + 1)
+         if (!strcmp(p, "SUBSYSTEM=power_supply"))
+            hit = true;
+   }
+   return hit;
+}
+
 static void gamemode_ppd_thread(void *data)
 {
    int fd              = -1;
+   int nl              = -1;
    bool on_battery     = false;
-   bool have_upower    = false;
+   bool no_upower      = false;
    bool recheck        = true;
    bool logged_battery = false;
    const rdbus_t *rd   = NULL;
@@ -423,8 +488,8 @@ static void gamemode_ppd_thread(void *data)
 
    for (;;)
    {
-      struct pollfd pfd[2];
-      int nfd;
+      struct pollfd pfd[3];
+      int nfd, ret, timeout;
       int state = retro_atomic_load_acquire_int(&gamemode_ppd_state);
       bool want = (state & GAMEMODE_PPD_WANT) != 0;
 
@@ -433,6 +498,12 @@ static void gamemode_ppd_thread(void *data)
          gamemode_ppd_release(rd);
          gamemode_ppd_close(rd);
          rd = NULL;
+      }
+      if (!rd && nl >= 0)
+      {
+         close(nl);
+         nl        = -1;
+         no_upower = false;
       }
 
       if (want && !rd && gamemode_ppd_rd && !gamemode_ppd_gave_up)
@@ -474,11 +545,21 @@ static void gamemode_ppd_thread(void *data)
          }
       }
 
-      if (recheck || !have_upower)
+      if (recheck)
       {
-         on_battery = gamemode_upower_on_battery(rd, gamemode_ppd_conn,
-               &have_upower);
-         if (!have_upower)
+         if (!no_upower)
+         {
+            bool have_upower;
+            on_battery = gamemode_upower_on_battery(rd, gamemode_ppd_conn,
+                  &have_upower);
+            /* Asked once; from then on the kernel says when to look. */
+            if (!have_upower)
+            {
+               no_upower = true;
+               nl        = gamemode_uevent_open();
+            }
+         }
+         if (no_upower)
             on_battery = gamemode_sysfs_on_battery();
          recheck = false;
       }
@@ -500,21 +581,40 @@ static void gamemode_ppd_thread(void *data)
       pfd[0].fd      = gamemode_ppd_wake[0];
       pfd[0].events  = POLLIN;
       pfd[0].revents = 0;
-      pfd[1].fd      = fd;
-      pfd[1].events  = POLLIN;
-      pfd[1].revents = 0;
+      nfd            = 1;
+      timeout        = -1;
       /* Refused or absent: no plug change can matter, so only a leave
        * is waited for. */
-      nfd            = gamemode_ppd_gave_up ? 1 : 2;
-      if (poll(pfd, nfd, (have_upower || nfd == 1)
-               ? -1 : GAMEMODE_SYSFS_RECHECK_MS) < 0)
+      if (!gamemode_ppd_gave_up)
+      {
+         pfd[1].fd      = fd;
+         pfd[1].events  = POLLIN;
+         pfd[1].revents = 0;
+         nfd            = 2;
+         if (nl >= 0)
+         {
+            pfd[2].fd      = nl;
+            pfd[2].events  = POLLIN;
+            pfd[2].revents = 0;
+            nfd            = 3;
+         }
+         else if (no_upower)
+            timeout = GAMEMODE_SYSFS_RECHECK_MS;
+      }
+
+      if ((ret = poll(pfd, nfd, timeout)) < 0)
          continue;
+      if (ret == 0)
+         recheck = true; /* the fallback's time is up */
       if (pfd[0].revents & POLLIN)
       {
          char buf[64];
          while (read(gamemode_ppd_wake[0], buf, sizeof(buf)) > 0) { }
       }
-      if (nfd == 2 && (pfd[1].revents & (POLLHUP | POLLERR)))
+      if (nfd == 3 && (pfd[2].revents & POLLIN)
+            && gamemode_uevent_drain(nl))
+         recheck = true;
+      if (nfd >= 2 && (pfd[1].revents & (POLLHUP | POLLERR)))
       {
          /* The bus went away, and the hold with it. */
          gamemode_ppd_held    = false;
