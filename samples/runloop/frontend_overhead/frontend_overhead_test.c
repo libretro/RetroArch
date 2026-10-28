@@ -8663,6 +8663,19 @@ static void lane_hw_context_restart(void)
    video_driver_state_t *video_st = video_state_get_ptr();
    unsigned had                   = failures;
    bool before, after;
+#if defined(HAVE_OPENGL)
+   video_driver_t saved_driver;
+#ifdef HAVE_OPENGL_CORE
+   video_driver_t *hw_driver = &video_gl3;
+#else
+   video_driver_t *hw_driver = &video_gl2;
+#endif
+
+   /* Exercise the restart bookkeeping without opening a GPU context. */
+   saved_driver      = *hw_driver;
+   *hw_driver        = video_null;
+   hw_driver->ident  = saved_driver.ident;
+#endif
 
    /* what RETRO_ENVIRONMENT_SET_HW_RENDER leaves behind */
    memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
@@ -8686,14 +8699,22 @@ static void lane_hw_context_restart(void)
          "hw restart: after a driver restart the frontend no longer knows the core renders with the GPU");
    CHECK(hw_lane_destroys == 1,
          "hw restart: the core's context was not destroyed exactly once");
+   CHECK(hw_lane_resets == 1,
+         "hw restart: the core's context was not reset exactly once");
 
    /* as the lanes after this found it */
    memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
    retro_atomic_store_release_int(&video_st->hw_context_type,
          (int)RETRO_HW_CONTEXT_NONE);
+   video_driver_restore_cached(config_get_ptr());
    command_event(CMD_EVENT_REINIT, NULL);
    run_loop_frames(2);
+   CHECK(video_st->current_video == &video_null,
+         "hw restart: the forced GPU driver leaked into the next lane");
 
+#if defined(HAVE_OPENGL)
+   *hw_driver = saved_driver;
+#endif
    if (failures == had)
       printf("[pass] hw restart: across a driver restart a GPU-rendering"
             " core's request comes back, its context is destroyed once"
@@ -9711,6 +9732,8 @@ int main(int argc, char *argv[])
    const char *load_poll_env = getenv("HARNESS_LOAD_POLL");
    unsigned    load_poll     = POLL_TYPE_LATE;
    (void)argc;
+
+   setvbuf(stdout, NULL, _IOLBF, 0);
 
    if (load_poll_env)
    {
