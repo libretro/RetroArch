@@ -590,11 +590,15 @@ static void walk_hold(int want)
 
 database_info_index_job_t *__real_database_info_index_job_new(
       const char *rdb_path, size_t max_bytes, unsigned want);
+/* When set, the most every index build may take: 1 refuses them all,
+ * as a spent or too small budget does. */
+static size_t index_cap;
+
 database_info_index_job_t *__wrap_database_info_index_job_new(
       const char *rdb_path, size_t max_bytes, unsigned want)
 {
    database_info_index_job_t *job = __real_database_info_index_job_new(
-         rdb_path, max_bytes, want);
+         rdb_path, index_cap ? index_cap : max_bytes, want);
 
    if (   job && walk_name && strstr(rdb_path, walk_name)
        && __real_task_queue_is_threaded())
@@ -3098,6 +3102,82 @@ static void arc_gate_lane(const char *root, const char *pl_dir,
 
 fixture:
    check(0, "fixture", "could not write the arcade gate set");
+}
+
+/* Writes @n plain .ct files of MF_MEMBER_LEN bytes into @dir, the k-th
+ * with CRC @crc + k, and their records. */
+static bool write_plain_ct(const char *dir, unsigned n, uint32_t crc,
+      db_rec_t *rec)
+{
+   static uint8_t d[MF_MEMBER_LEN];
+   static char    names[GATE_ZIPS][16];
+   char           p[1024];
+   unsigned       k;
+
+   for (k = 0; k < n; k++)
+   {
+      FILE *f;
+
+      fill_forced(d, MF_MEMBER_LEN, 83 + k, crc + k);
+      sprintf(p, "%s/up%u.ct", dir, k);
+      if (!(f = fopen(p, "wb")))
+         return false;
+      fwrite(d, 1, MF_MEMBER_LEN, f);
+      fclose(f);
+      sprintf(names[k], "Gate UP%u", k);
+      set_rec(&rec[k], names[k], crc + k, MF_MEMBER_LEN);
+   }
+   return true;
+}
+
+/* Plain files against a database whose crc index build is refused:
+ * the refusal is kept, so each file after the first costs its one
+ * query walk and no further build attempt. */
+static void unindexed_plain_lane(const char *root, const char *pl_dir)
+{
+   char      db[512], dir[2][512], p[1024], lpl[1024], detail[64];
+   db_rec_t  rec[GATE_ZIPS];
+   unsigned  k, opens[2];
+   bool      started[2];
+
+   sprintf(db,     "%s/unindexed_plain_db", root);
+   sprintf(dir[0], "%s/unindexed_plain_1",  root);
+   sprintf(dir[1], "%s/unindexed_plain_4",  root);
+   path_mkdir(db);
+   path_mkdir(dir[0]);
+   path_mkdir(dir[1]);
+   if (   !write_plain_ct(dir[1], GATE_ZIPS, 0x0CA70050u, rec)
+       || !write_plain_ct(dir[0], 1, 0x0CA70050u, rec))
+      goto fixture;
+   sprintf(p, "%s/Test Cart Gate.rdb", db);
+   if (!write_db_set(p, rec, GATE_ZIPS))
+      goto fixture;
+   sprintf(lpl, "%s/Test Cart Gate.lpl", pl_dir);
+   use_queue(false);
+   use_db(db);
+
+   /* One file, then four: what the last three add. */
+   for (k = 0; k < 2; k++)
+   {
+      filestream_delete(lpl);
+      index_cap  = 1;
+      rdb_opens  = 0;
+      started[k] = run_scan(dir[k]) && scan_completed;
+      opens[k]   = rdb_opens;
+      index_cap  = 0;
+   }
+   check(   started[0] && started[1] && file_contains(lpl, "Gate UP0")
+         && file_contains(lpl, "Gate UP3"),
+         "unindexed: plain files matched", "Gate UP0 to Gate UP3");
+   sprintf(detail, "%u opens for 1 file, %u for %u", opens[0], opens[1],
+         GATE_ZIPS);
+   check(   started[0] && started[1] && opens[1] >= opens[0]
+         && opens[1] - opens[0] <= GATE_ZIPS - 1,
+         "unindexed: a refused index is not built again", detail);
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the unindexed plain set");
 }
 
 /* Scans @dir with @db's two databases in name order, then in reverse:
@@ -5855,6 +5935,7 @@ int main(int argc, char **argv)
       base_paths_lane(root, pl_dir, false);
       arc_gate_lane(root, pl_dir, true);
       arc_gate_lane(root, pl_dir, false);
+      unindexed_plain_lane(root, pl_dir);
       sibling_lane(root, pl_dir, true);
       sibling_lane(root, pl_dir, false);
       dual_match_lane(root, pl_dir, true);

@@ -177,7 +177,10 @@ enum db_state_flags_enum
     * walks a time. */
    DB_STATE_FLAG_SIZE_CHECKED             = (1 << 4),
    /* A core claiming this database matches archive members. */
-   DB_STATE_FLAG_ARCHIVE_MEMBER           = (1 << 5)
+   DB_STATE_FLAG_ARCHIVE_MEMBER           = (1 << 5),
+   /* Its crc index build was refused.  The budget only shrinks, so a
+    * retry would walk the database again to the same answer. */
+   DB_STATE_FLAG_NO_CRC_INDEX             = (1 << 6)
 };
 
 #ifdef HAVE_LIBRETRODB
@@ -2263,13 +2266,18 @@ static bool task_database_fill_db_min_max(database_state_handle_t *db_state,
     * lookup reads the database once. */
    if (   rdb && *rdb
        && !db_state->crc_index[db_state->list_index]
+       && !(db_state->flags[db_state->list_index]
+          & DB_STATE_FLAG_NO_CRC_INDEX)
        && db_state->index_budget)
    {
       database_info_crc_index_t *ci = NULL;
 
       if (!task_database_index_take(db_state, &ci, serial, &has_serial))
          return false;
-      if (ci)
+      if (!ci)
+         db_state->flags[db_state->list_index] |=
+            DB_STATE_FLAG_NO_CRC_INDEX;
+      else
       {
          size_t used = database_info_crc_index_bytes(ci);
          db_state->index_budget = (used < db_state->index_budget)
@@ -2575,13 +2583,18 @@ static enum scan_verdict task_database_iterate_crc_lookup(
       if (rdb && *rdb)
       {
          if (   !db_state->crc_index[db_state->list_index]
+             && !(db_state->flags[db_state->list_index]
+                & DB_STATE_FLAG_NO_CRC_INDEX)
              && db_state->index_budget)
          {
             database_info_crc_index_t *ci = NULL;
 
             if (!task_database_index_take(db_state, &ci, NULL, NULL))
                return SCAN_VERDICT_CONTINUE;
-            if (ci)
+            if (!ci)
+               db_state->flags[db_state->list_index] |=
+                  DB_STATE_FLAG_NO_CRC_INDEX;
+            else
             {
                size_t used = database_info_crc_index_bytes(ci);
                db_state->index_budget = (used < db_state->index_budget)
