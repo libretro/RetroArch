@@ -763,6 +763,8 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
 #define VIDEO_XR_TAG_Y          ((VIDEO_XR_CURSOR_H - VIDEO_XR_TAG_ROWS) / 2)
 #define VIDEO_XR_BACK_Y         ((VIDEO_XR_CURSOR_H - VIDEO_XR_BACK_CELL) / 2)
 #define VIDEO_XR_HINGE_Y        ((VIDEO_XR_CURSOR_H - VIDEO_XR_HINGE_ROWS) / 2)
+/* Rows of the hinge's column nothing is drawn in, either way up. */
+#define VIDEO_XR_HINGE_HIDDEN_Y 0
 /* The beam's strips: white at this level, fading in over their first
  * FADE_IN texels; the one into nothing out over its last FADE_OUT. */
 #define VIDEO_XR_BEAM_LEVEL     160

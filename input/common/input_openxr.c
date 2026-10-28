@@ -1674,41 +1674,83 @@ static void input_openxr_hinge_hide(unsigned *hide, unsigned slot,
       hide[slot] |= 1u << edge;
 }
 
-/* This frame's hinges: in hide, by slot, the edges whose rims go, each
- * held screen's paired edge and its target's, then both edges of each
- * pair at rest no hand holds (of a screen's two adjacent ones, the
- * first); from a to b each line set shows, the hands' first. Returns
- * the lines. */
+/* A hidden hinge slot's line: VIDEO_XR_HINGE_WIDTH along the x of
+ * slot's screen from its middle, else of set's first quad; false with
+ * no quad. */
+static bool input_openxr_hinge_hidden(const video_xr_quad_set_t *set,
+      unsigned slot, video_xr_vec3_t *a, video_xr_vec3_t *b)
+{
+   unsigned i;
+   video_xr_vec3_t x;
+   const video_xr_quad_t *q = set->num_quads ? &set->quads[0] : NULL;
+   for (i = 0; i < set->num_quads; i++)
+      if (     set->quads[i].kind != VIDEO_XR_QUAD_MENU
+            && set->quads[i].slot == slot)
+      {
+         q = &set->quads[i];
+         break;
+      }
+   if (!q)
+      return false;
+   x.x  = VIDEO_XR_HINGE_WIDTH;
+   x.y  = 0.0f;
+   x.z  = 0.0f;
+   video_xr_rotate(&q->pose.orientation, &x, &x);
+   *a   = q->pose.position;
+   b->x = a->x + x.x;
+   b->y = a->y + x.y;
+   b->z = a->z + x.z;
+   return true;
+}
+
+/* This frame's hinge slots, one for each hand holding a screen, hand 0
+ * first, then one for each pair at rest: in hide, by slot, the edges
+ * whose rims go, each held screen's paired edge and its target's, then
+ * both edges of each pair at rest no hand holds (of a screen's two
+ * adjacent ones, the first); from a to b each slot's line, bit k of
+ * shown set where slot k's shows. A slot with no line shown is hidden
+ * in place, so a mark or a wobble moves no layer. Returns the slots. */
 static unsigned input_openxr_hinges(const openxr_frame_t *f,
       const video_xr_quad_set_t *set, unsigned *hide, video_xr_vec3_t *a,
-      video_xr_vec3_t *b)
+      video_xr_vec3_t *b, unsigned *shown)
 {
    unsigned h, i, r;
    unsigned holding = 0;
    unsigned lines   = 0;
    memset(hide, 0, VIDEO_XR_MAX_SLOTS * sizeof(*hide));
+   *shown = 0;
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
    {
       const video_xr_hinge_t *k     = &f->hinges[h];
       const video_xr_quad_t *held   = NULL;
       const video_xr_quad_t *target = NULL;
-      if (!((f->hinged >> h) & 1u))
+      bool hinged                   = ((f->hinged >> h) & 1u) != 0;
+      bool line;
+      if (     f->grabs.hand[h].state != VIDEO_XR_GRAB_HELD
+            || f->grabs.hand[h].slot >= VIDEO_XR_MENU_SLOT)
          continue;
-      hide[f->held[h].slot] |= 1u << k->edge;
-      input_openxr_hinge_hide(hide, k->slot, k->on);
+      if (hinged)
+      {
+         hide[f->grabs.hand[h].slot] |= 1u << k->edge;
+         input_openxr_hinge_hide(hide, k->slot, k->on);
+      }
       for (i = 0; i < set->num_quads; i++)
       {
          const video_xr_quad_t *q = &set->quads[i];
          if (q->kind == VIDEO_XR_QUAD_MENU)
             continue;
-         if (!held && q->slot == f->held[h].slot)
+         if (!held && q->slot == f->grabs.hand[h].slot)
             held = q;
          if (!target && q->slot == k->slot)
             target = q;
       }
-      if (     held && target
-            && video_xr_hinge_line(k, held->width, held->height, target,
-               &a[lines], &b[lines]))
+      line = hinged && held && target
+         && video_xr_hinge_line(k, held->width, held->height, target,
+            &a[lines], &b[lines]);
+      if (line)
+         *shown |= 1u << lines;
+      if (     line || input_openxr_hinge_hidden(set,
+               f->grabs.hand[h].slot, &a[lines], &b[lines]))
          lines++;
    }
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
@@ -1722,8 +1764,9 @@ static unsigned input_openxr_hinges(const openxr_frame_t *f,
       const video_xr_quad_t *held   = NULL;
       const video_xr_quad_t *target = NULL;
       bool over                     = false;
-      if (((holding >> p->slot) | (holding >> p->target)) & 1u)
-         continue;
+      bool line                     = false;
+      bool idle                     =
+         !(((holding >> p->slot) | (holding >> p->target)) & 1u);
       for (i = 0; i < set->num_quads; i++)
       {
          const video_xr_quad_t *q = &set->quads[i];
@@ -1737,19 +1780,24 @@ static unsigned input_openxr_hinges(const openxr_frame_t *f,
          if (!target && q->slot == p->target)
             target = q;
       }
-      if (!held || !target)
-         continue;
-      input_openxr_hinge_hide(hide, p->slot, p->edge);
-      input_openxr_hinge_hide(hide, p->target, p->on);
-      memset(&k, 0, sizeof(k));
-      k.edge = p->edge;
-      k.slot = p->target;
-      k.on   = p->on;
-      /* On the edges as they are; crossed, on the one drawn later. */
-      video_xr_hinge_place(&k, &held->pose, held->width, held->height,
-            target, over);
-      if (video_xr_hinge_line(&k, held->width, held->height, target,
-               &a[lines], &b[lines]))
+      if (idle && held && target)
+      {
+         input_openxr_hinge_hide(hide, p->slot, p->edge);
+         input_openxr_hinge_hide(hide, p->target, p->on);
+         memset(&k, 0, sizeof(k));
+         k.edge = p->edge;
+         k.slot = p->target;
+         k.on   = p->on;
+         /* On the edges as they are; crossed, on the one drawn later. */
+         video_xr_hinge_place(&k, &held->pose, held->width, held->height,
+               target, over);
+         line = video_xr_hinge_line(&k, held->width, held->height, target,
+               &a[lines], &b[lines]);
+      }
+      if (line)
+         *shown |= 1u << lines;
+      if (     line || input_openxr_hinge_hidden(set, p->slot, &a[lines],
+               &b[lines]))
          lines++;
    }
    return lines;
@@ -1872,11 +1920,12 @@ static void input_openxr_hinge_lift(const video_xr_vec3_t *p,
 
 /* A hinge's line from a to b, each end lifted toward eye and the ribbon
  * facing it; the strip a texel in from each end, so filtering there
- * meets green alone. */
+ * meets green alone; hidden, from rows of its column nothing is drawn
+ * in. */
 static const XrCompositionLayerBaseHeader *input_openxr_hinge_layer(
       XrCompositionLayerQuad *l, const video_xr_vec3_t *a,
       const video_xr_vec3_t *b, const video_xr_vec3_t *eye,
-      XrSpace space, XrSwapchain cursor)
+      XrSpace space, XrSwapchain cursor, bool hidden)
 {
    video_xr_pose_t pose;
    video_xr_vec3_t p, q, d;
@@ -1900,7 +1949,8 @@ static const XrCompositionLayerBaseHeader *input_openxr_hinge_layer(
    l->eyeVisibility                    = XR_EYE_VISIBILITY_BOTH;
    l->subImage.swapchain               = cursor;
    l->subImage.imageRect.offset.x      = VIDEO_XR_HINGE_X + 1;
-   l->subImage.imageRect.offset.y      = VIDEO_XR_HINGE_Y;
+   l->subImage.imageRect.offset.y      = hidden
+      ? VIDEO_XR_HINGE_HIDDEN_Y : VIDEO_XR_HINGE_Y;
    l->subImage.imageRect.extent.width  = VIDEO_XR_HINGE_COLS - 2;
    l->subImage.imageRect.extent.height = VIDEO_XR_HINGE_ROWS;
    l->pose.orientation.x               = pose.orientation.x;
@@ -2001,6 +2051,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    video_xr_vec3_t from[OPENXR_HINGE_LAYERS];
    video_xr_vec3_t to[OPENXR_HINGE_LAYERS];
    unsigned lines     = 0;
+   unsigned shown     = 0;
    unsigned n         = 0;
    unsigned dots      = 0;
    unsigned rays      = 0;
@@ -2082,7 +2133,8 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    }
    if (laser == VIDEO_XR_LIVE_EDIT && cap > OPENXR_KEPT_EXTRA_LAYERS)
    {
-      lines  = input_openxr_hinges(st->frame, set, hide, from, to);
+      lines  = input_openxr_hinges(st->frame, set, hide, from, to,
+            &shown);
       lit    = input_openxr_edit_lit(&st->frame->grabs, pointed);
       n      = input_openxr_outlines(st, set, space, cursor, lit, hide,
             false, layers, 0, cap - OPENXR_KEPT_EXTRA_LAYERS);
@@ -2112,7 +2164,8 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    {
       for (h = 0; h < lines; h++)
          layers[n++] = input_openxr_hinge_layer(&st->hinge_lines[h],
-               &from[h], &to[h], &head.position, space, cursor);
+               &from[h], &to[h], &head.position, space, cursor,
+               !((shown >> h) & 1u));
       if (beaming)
          for (h = 0; h < rays && n + (tagged ? 1u : 0u)
                + OPENXR_KEPT_EXTRA_LAYERS < cap; h++)

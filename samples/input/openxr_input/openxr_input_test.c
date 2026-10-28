@@ -5431,6 +5431,142 @@ static void t_lifted(float ax, float ay, float az, float bx, float by,
    *len      = (float)sqrt(dx * dx + dy * dy + dz * dz);
 }
 
+/* openxr_frame_hold from t_grabs into set, each hand at main's last
+ * pose, the screens unturned. */
+static void t_follow(video_xr_quad_set_t *set)
+{
+   unsigned h, i;
+   unsigned holding  = 0;
+   t_xr_frame.grabs  = t_grabs;
+   t_xr_frame.hinged = 0;
+   for (h = 0; h < 2; h++)
+      if (     t_grabs.hand[h].state == VIDEO_XR_GRAB_HELD
+            && t_grabs.hand[h].slot < VIDEO_XR_MAX_SLOTS)
+         holding |= 1u << t_grabs.hand[h].slot;
+   for (h = 0; h < 2; h++)
+   {
+      const video_xr_grab_t *g = &t_grabs.hand[h];
+      if (g->state != VIDEO_XR_GRAB_HELD || g->slot >= VIDEO_XR_MAX_SLOTS)
+         continue;
+      for (i = 0; i < set->num_quads; i++)
+         if (set->quads[i].slot == g->slot && !set->slots[g->slot].fixed)
+         {
+            set->quads[i].pose   = g->last;
+            set->quads[i].width  = g->width;
+            set->quads[i].height = g->height;
+         }
+      if (video_xr_grab_marked(g, &g->last, set, holding,
+               &t_xr_frame.hinges[h]))
+         t_xr_frame.hinged |= 1u << h;
+   }
+}
+
+/* What an edit mode layer shows: 1 an outline, 2 the menu's handle, 3 a
+ * hinge slot, 4 a beam, 5 the tag, 6 a dot; in *cut what a mark may
+ * change, an outline's crop (its offset into its column and width) or
+ * a slot's first row. */
+static unsigned t_kind(const XrCompositionLayerBaseHeader *l, int32_t *cut)
+{
+   const XrCompositionLayerQuad *q = (const XrCompositionLayerQuad*)l;
+   int32_t x                       = q->subImage.imageRect.offset.x;
+   *cut                            = 0;
+   if (q->subImage.imageRect.extent.height == VIDEO_XR_OUTLINE_DIM)
+   {
+      *cut = (x - ((x >= VIDEO_XR_OUTLINE_X(1))
+               ? VIDEO_XR_OUTLINE_X(1) : VIDEO_XR_OUTLINE_X(0))) * 1024
+         + q->subImage.imageRect.extent.width;
+      return 1;
+   }
+   if (x == VIDEO_XR_HANDLE_X(0) || x == VIDEO_XR_HANDLE_X(1))
+      return 2;
+   if (x == VIDEO_XR_HINGE_X + 1)
+   {
+      *cut = q->subImage.imageRect.offset.y;
+      return 3;
+   }
+   if (x == VIDEO_XR_BEAM_X(0) || x == VIDEO_XR_BEAM_X(1))
+      return 4;
+   if (q->subImage.imageRect.extent.height == VIDEO_XR_TAG_ROWS)
+      return 5;
+   return 6;
+}
+
+/* Whether q is a hinge slot's layer from a to b, hidden or shown. */
+static bool t_slot_is(const XrCompositionLayerQuad *q, bool hidden,
+      float ax, float ay, float az, float bx, float by, float bz)
+{
+   video_xr_vec3_t m;
+   float len;
+   t_lifted(ax, ay, az, bx, by, bz, &m, &len);
+   return q->subImage.imageRect.offset.x == VIDEO_XR_HINGE_X + 1
+      && q->subImage.imageRect.offset.y
+         == (hidden ? VIDEO_XR_HINGE_HIDDEN_Y : VIDEO_XR_HINGE_Y)
+      && q->subImage.imageRect.extent.width == VIDEO_XR_HINGE_COLS - 2
+      && q->subImage.imageRect.extent.height == VIDEO_XR_HINGE_ROWS
+      && t_near(q->size.height, VIDEO_XR_HINGE_WIDTH)
+      && t_near(q->size.width, len) && t_near(q->pose.position.x, m.x)
+      && t_near(q->pose.position.y, m.y) && t_near(q->pose.position.z, m.z);
+}
+
+/* A frame's edit mode layers: how many, each one's kind and cut. */
+typedef struct
+{
+   unsigned n;
+   unsigned kind[OPENXR_MAX_EXTRA_LAYERS];
+   int32_t cut[OPENXR_MAX_EXTRA_LAYERS];
+} t_layout_t;
+
+/* Three frames between two polls, from t_quads and t_grabs through
+ * t_follow, the head tracked, against s, the first frame and the last
+ * one's cuts (s->n 0: this is the first): adds to *counts the frames
+ * whose count is not the first's, to *moved those whose kinds by index
+ * are not; returns those whose cuts are not the last's. */
+static unsigned t_frames(t_layout_t *s, unsigned *counts, unsigned *moved)
+{
+   unsigned f, i;
+   video_xr_quad_set_t shown;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   unsigned changed = 0;
+   bool head        = t_head_tracked;
+   bool cursor      = t_cursor;
+   t_head_tracked   = true;
+   t_cursor         = true;
+   shown            = t_quads;
+   t_follow(&shown);
+   for (f = 0; f < 3; f++)
+   {
+      bool order = false;
+      bool cut   = false;
+      unsigned n = t_hooks.frame_layers(t_hooks.user, t_time, &shown,
+            t_xr_session.local_space, layers, OPENXR_MAX_EXTRA_LAYERS,
+            &t_under);
+      if (!s->n)
+      {
+         s->n = n;
+         for (i = 0; i < n; i++)
+            s->kind[i] = t_kind(layers[i], &s->cut[i]);
+         continue;
+      }
+      if (n != s->n)
+      {
+         (*counts)++;
+         continue;
+      }
+      for (i = 0; i < n; i++)
+      {
+         int32_t c;
+         order = order || t_kind(layers[i], &c) != s->kind[i];
+         cut   = cut || c != s->cut[i];
+         s->cut[i] = c;
+      }
+      *moved  += order ? 1u : 0u;
+      changed += cut ? 1u : 0u;
+   }
+   t_head_tracked = head;
+   t_cursor       = cursor;
+   return changed;
+}
+
 /* The frame loop's hinges: the held screen's paired edge and its
  * target's lose their rim, the rest of each outline as before; a green
  * line along each hinge where the edges overlap, midway across the
@@ -5466,8 +5602,9 @@ static void test_edit_hinge_layers(void)
    shown            = t_quads;
    /* Screen 2 held 2 cm under screen 1, the right hand on it. */
    shown.quads[2].pose.position.y = -0.80f;
-   t_xr_frame.held[1].slot        = 1;
-   t_xr_frame.held[1].state       = VIDEO_XR_GRAB_HELD;
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_xr_frame.grabs.hand[1].slot  = 1;
+   t_xr_frame.grabs.hand[1].state = VIDEO_XR_GRAB_HELD;
    t_xr_frame.hinged              = 2u;
    k                              = &t_xr_frame.hinges[1];
    memset(k, 0, sizeof(*k));
@@ -5601,8 +5738,8 @@ static void test_edit_hinge_layers(void)
    shown.quads[3].screen          = 2;
    shown.quads[3].slot            = 2;
    shown.num_quads                = 4;
-   t_xr_frame.held[0].slot        = 2;
-   t_xr_frame.held[0].state       = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.grabs.hand[0].slot  = 2;
+   t_xr_frame.grabs.hand[0].state = VIDEO_XR_GRAB_HELD;
    t_xr_frame.hinged              = 3u;
    k                              = &t_xr_frame.hinges[0];
    memset(k, 0, sizeof(*k));
@@ -5666,7 +5803,7 @@ static void test_edit_hinge_layers(void)
          (int)q->subImage.imageRect.offset.x, q->pose.position.x);
    q = (const XrCompositionLayerQuad*)layers[2];
    t_layer_axis(q, 1.0f, 0.0f, 0.0f, &ax);
-   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1)
          && q->subImage.imageRect.extent.width
             == VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP
          && t_near(ax.x, -1.0f)
@@ -5680,6 +5817,7 @@ static void test_edit_hinge_layers(void)
          && t_near(q->size.width, len),
          "the side line: at x %.4f, %.4f long; want %.4f, %.4f",
          q->pose.position.x, q->size.width, m.x, len);
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
    t_xr_frame.hinged = 0;
    t_xr_frame.backs  = 0;
    t_head_tracked    = false;
@@ -5803,14 +5941,20 @@ static void test_edit_rest(void)
          == VIDEO_XR_OUTLINE_X(0) + VIDEO_XR_OUTLINE_CROP,
          "room for the outlines alone: %u layers, screen 1's offset %d", n,
          (int)q->subImage.imageRect.offset.x);
-   /* Held again, its pair gives way. */
+   /* Held again, its pair gives way, hidden in its slot after the
+    * hand's own. */
    t_xr_frame.grabs.hand[1].state = VIDEO_XR_GRAB_HELD;
    n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
          OPENXR_MAX_EXTRA_LAYERS, &t_under);
    q = (const XrCompositionLayerQuad*)layers[0];
-   CHECK(     n == 4
+   CHECK(     n == 6
          && q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
-         && q->subImage.imageRect.extent.width == VIDEO_XR_OUTLINE_DIM,
+         && q->subImage.imageRect.extent.width == VIDEO_XR_OUTLINE_DIM
+         && t_slot_is((const XrCompositionLayerQuad*)layers[4], true,
+            x, shown.quads[2].pose.position.y, -1.8f,
+            x + VIDEO_XR_HINGE_WIDTH, shown.quads[2].pose.position.y, -1.8f)
+         && t_slot_is((const XrCompositionLayerQuad*)layers[5], true,
+            0.0f, 0.0f, -1.8f, VIDEO_XR_HINGE_WIDTH, 0.0f, -1.8f),
          "held again: %u layers, screen 1's offset %d width %d", n,
          (int)q->subImage.imageRect.offset.x,
          (int)q->subImage.imageRect.extent.width);
@@ -8844,7 +8988,9 @@ static void test_edit_mark_debounce(void)
  * settles in it either side. Marked there, its mark never flips, with
  * one long buzz, and every publish carries it. Swept from 1 cm inside
  * the stop's end or the plane's to 2 cm out, past the shake's reach,
- * and back, it flips twice, with two. */
+ * and back, it flips twice, with two. Three frames a poll keep their
+ * layer count, every layer's index and every outline's crop, but in
+ * the polls where it flips. */
 static void test_edit_mark_shaken(void)
 {
    /* The Hinge Gap; the hand's mean metres apart (negative: past
@@ -8873,11 +9019,16 @@ static void test_edit_mark_shaken(void)
    unsigned i, k;
    for (i = 0; i < sizeof(spots) / sizeof(spots[0]); i++)
    {
-      unsigned fails = 0;
-      unsigned flips = 0;
-      unsigned pubs  = 0;
-      unsigned l     = t_longs[2];
-      unsigned want  = (spots[i].sweep < 2) ? 2u : 0u;
+      t_layout_t lay;
+      unsigned fails  = 0;
+      unsigned flips  = 0;
+      unsigned pubs   = 0;
+      unsigned counts = 0;
+      unsigned moved  = 0;
+      unsigned cuts   = 0;
+      unsigned stray  = 0;
+      unsigned l      = t_longs[2];
+      unsigned want   = (spots[i].sweep < 2) ? 2u : 0u;
       double y, z;
       bool was;
       t_hinged_at(spots[i].gap, 0.0, 0.0);
@@ -8890,11 +9041,14 @@ static void test_edit_mark_shaken(void)
       t_tilt_polls(2, 0.0f, false);
       was     = hold->buzzed;
       CHECK(was, "spot %u: not marked before the shake", i);
+      lay.n   = 0;
+      t_frames(&lay, &counts, &moved);
       t_still = t_aim[2];
       y       = t_still.position.y;
       z       = t_still.position.z;
       for (k = 0; k < 640; k++)
       {
+         unsigned c;
          /* 3 cm further out by poll 320, back by 640. */
          double d = 0.03 * ((k < 320) ? k : 640 - k) / 320.0;
          if (spots[i].sweep == 0)
@@ -8910,6 +9064,9 @@ static void test_edit_mark_shaken(void)
                   input_openxr_edit_holding(&input_openxr_edit),
                   &hold->mark, &pose))
             fails++;
+         c      = t_frames(&lay, &counts, &moved);
+         cuts  += c;
+         stray += (c && hold->buzzed == was) ? c : 0u;
          flips += (hold->buzzed != was) ? 1u : 0u;
          was    = hold->buzzed;
          if (     t_grabs.hand[1].mark_slot
@@ -8925,9 +9082,308 @@ static void test_edit_mark_shaken(void)
             "shaken at spot %u: %u flips, %u long buzzes, out %u polls, "
             "%u published off its mark", i, flips, t_longs[2] - l, fails,
             pubs);
+      CHECK(!counts && !moved && cuts == want && !stray,
+            "shaken at spot %u, its frames: %u with another layer count, "
+            "%u with layers moved, %u cut otherwise, %u of them in polls "
+            "it did not flip; want %u", i, counts, moved, cuts, stray,
+            want);
       t_take_end();
    }
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_xr_frame.hinged = 0;
    t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+}
+
+/* Edit mode's hinge lines are slots: one for each hand holding a
+ * screen, hand 0 first, then one for each pair at rest. A slot whose
+ * line does not show is drawn in place from its screen's middle, at
+ * rows of the image transparent either way up: a mark taken or let go
+ * changes no count or index, and a pair whose screen a hand holds is
+ * hidden in its slot. Short of room the beams go first, then the tag,
+ * then slots from the end, then outlines. */
+static void test_edit_hinge_slots(void)
+{
+   unsigned i, n, at, c, k;
+   int32_t cut;
+   uint8_t *px;
+   video_xr_quad_set_t shown;
+   const XrCompositionLayerQuad *q;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   XrSpace local;
+   float sx[4], sy[4];
+   unsigned first                  = 0;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+
+   /* Screen 2 held 20 cm under screen 1, then in its hinge, then out
+    * past its mark's 150 ms: one slot after the outlines throughout. */
+   t_hinged_at(VIDEO_OPENXR_EDIT_HINGE_GAP_0, 0.0, 0.0);
+   local          = t_xr_session.local_space;
+   t_head_tracked = true;
+   t_cursor       = true;
+   for (i = 0; i < 3; i++)
+   {
+      bool on = i == 1;
+      t_carry_under(on ? 0.0 : 0.2, 0.07, false);
+      t_tilt_polls(on ? 2 : 20, 0.0f, false);
+      shown = t_quads;
+      t_follow(&shown);
+      n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+            OPENXR_MAX_EXTRA_LAYERS, &t_under);
+      if (!i)
+         first = n;
+      for (at = 0, c = 0; at < n; at++)
+         c += t_kind(layers[at], &cut) == 3;
+      q = (const XrCompositionLayerQuad*)layers[4];
+      CHECK(     hold->buzzed == on
+            && t_grabs.hand[1].mark_slot == (on ? 1u : 0u)
+            && n == first && t_under == 2 && c == 1
+            && t_kind(layers[4], &cut) == 3
+            && q->subImage.imageRect.offset.y
+               == (on ? VIDEO_XR_HINGE_Y : VIDEO_XR_HINGE_HIDDEN_Y),
+            "held, %s: marked %d (%u published), %u layers of %u, %u "
+            "under, %u slots, layer 4 at row %d", on ? "hinged" : "free",
+            (int)hold->buzzed, t_grabs.hand[1].mark_slot, n, first,
+            t_under, c, (int)q->subImage.imageRect.offset.y);
+   }
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_xr_frame.hinged = 0;
+   t_cursor          = false;
+   t_head_tracked    = false;
+   t_take_end();
+
+   /* Hands 0 and 1 holding screens 4 and 5, screens 2 and 3 resting on
+    * screen 1's right and bottom edges. */
+   t_edit_start();
+   local          = t_xr_session.local_space;
+   t_head_tracked = true;
+   t_cursor       = true;
+   shown          = t_quads;
+   for (i = 2; i < 6; i++)
+   {
+      shown.quads[i]        = shown.quads[0];
+      shown.quads[i].slot   = i - 1;
+      shown.quads[i].screen = i - 1;
+   }
+   shown.quads[2].pose.position.x = 1.6f;
+   shown.quads[3].pose.position.y = -0.96f;
+   shown.quads[4].pose.position.x = -2.0f;
+   shown.quads[5].pose.position.x = -2.0f;
+   shown.quads[5].pose.position.y = 1.2f;
+   shown.num_quads                = 6;
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_xr_frame.hinged                = 0;
+   t_xr_frame.grabs.hand[0].state   = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.grabs.hand[0].slot    = 3;
+   t_xr_frame.grabs.hand[1].state   = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.grabs.hand[1].slot    = 4;
+   t_xr_frame.grabs.num_rests       = 2;
+   t_xr_frame.grabs.rests[0].slot   = 0;
+   t_xr_frame.grabs.rests[0].edge   = 2;
+   t_xr_frame.grabs.rests[0].target = 1;
+   t_xr_frame.grabs.rests[0].on     = 3;
+   t_xr_frame.grabs.rests[1].slot   = 0;
+   t_xr_frame.grabs.rests[1].edge   = 1;
+   t_xr_frame.grabs.rests[1].target = 2;
+   t_xr_frame.grabs.rests[1].on     = 0;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   for (at = 0, c = 0; at < n; at++)
+      c += t_kind(layers[at], &cut) == 3;
+   CHECK(     n > 10 && c == 4 && t_under == 5
+         && t_slot_is((const XrCompositionLayerQuad*)layers[7], true,
+            -2.0f, 0.0f, -1.8f, -2.0f + VIDEO_XR_HINGE_WIDTH, 0.0f, -1.8f)
+         && t_slot_is((const XrCompositionLayerQuad*)layers[8], true,
+            -2.0f, 1.2f, -1.8f, -2.0f + VIDEO_XR_HINGE_WIDTH, 1.2f, -1.8f)
+         && t_slot_is((const XrCompositionLayerQuad*)layers[9], false,
+            0.8f, -0.48f, -1.8f, 0.8f, 0.48f, -1.8f)
+         && t_slot_is((const XrCompositionLayerQuad*)layers[10], false,
+            -0.8f, -0.48f, -1.8f, 0.8f, -0.48f, -1.8f),
+         "two hands, two pairs at rest: %u layers, %u under, %u slots; "
+         "want hand 0's and hand 1's hidden on screens 4 and 5, then both "
+         "lines, after seven outlines", n, t_under, c);
+   for (i = 0; i < 4; i++)
+   {
+      q     = (const XrCompositionLayerQuad*)layers[(n > 10) ? 7 + i : 0];
+      sx[i] = q->pose.position.x;
+      sy[i] = q->pose.position.y;
+   }
+
+   /* Short of room, one layer at a time: the beams go, then the tag,
+    * then slots from the end; the outlines last. */
+   for (c = n; c >= OPENXR_KEPT_EXTRA_LAYERS; c--)
+   {
+      unsigned kinds[7];
+      unsigned r    = c - OPENXR_KEPT_EXTRA_LAYERS;
+      unsigned o    = (r < 7) ? r : 7;
+      unsigned l    = (r - o < 4) ? r - o : 4;
+      unsigned t    = (r - o - l > 0) ? 1u : 0u;
+      unsigned b    = (r - o - l - t < 2) ? r - o - l - t : 2u;
+      unsigned j    = 0;
+      unsigned slid = 0;
+      memset(kinds, 0, sizeof(kinds));
+      at = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+            c, &t_under);
+      for (k = 0; k < at; k++)
+      {
+         unsigned kind = t_kind(layers[k], &cut);
+         kinds[kind]++;
+         if (kind != 3)
+            continue;
+         q = (const XrCompositionLayerQuad*)layers[k];
+         if (     k != 7 + j || j >= 4 || !t_near(q->pose.position.x, sx[j])
+               || !t_near(q->pose.position.y, sy[j]))
+            slid++;
+         j++;
+      }
+      CHECK(     at == o + l + t + b + 2 && kinds[1] + kinds[2] == o
+            && kinds[3] == l && kinds[5] == t && kinds[4] == b
+            && kinds[6] == 2 && !slid,
+            "room for %u: %u layers, %u outlines, %u slots (%u out of "
+            "place), %u tags, %u beams, %u dots; want %u, %u, %u, %u, %u",
+            c, at, kinds[1] + kinds[2], kinds[3], slid, kinds[5], kinds[4],
+            kinds[6], o, l, t, b, 2u);
+   }
+
+   /* Hand 1 on screen 2 instead: the right edge's pair hidden in its
+    * slot on screen 1, the count the same. */
+   t_xr_frame.grabs.hand[1].slot = 1;
+   at = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(     at == n && n > 10
+         && t_slot_is((const XrCompositionLayerQuad*)layers[7], true,
+            -2.0f, 0.0f, -1.8f, -2.0f + VIDEO_XR_HINGE_WIDTH, 0.0f, -1.8f)
+         && t_slot_is((const XrCompositionLayerQuad*)layers[8], true,
+            1.6f, 0.0f, -1.8f, 1.6f + VIDEO_XR_HINGE_WIDTH, 0.0f, -1.8f)
+         && t_slot_is((const XrCompositionLayerQuad*)layers[9], true,
+            0.0f, 0.0f, -1.8f, VIDEO_XR_HINGE_WIDTH, 0.0f, -1.8f)
+         && t_slot_is((const XrCompositionLayerQuad*)layers[10], false,
+            -0.8f, -0.48f, -1.8f, 0.8f, -0.48f, -1.8f),
+         "screen 2 held: %u layers of %u, want its pair hidden in place",
+         at, n);
+
+   /* The bottom edge's pair listed from screen 3, then hand 1 on
+    * screen 3: that pair hidden in its slot on screen 3, the count the
+    * same. */
+   t_xr_frame.grabs.rests[1].slot   = 2;
+   t_xr_frame.grabs.rests[1].edge   = 0;
+   t_xr_frame.grabs.rests[1].target = 0;
+   t_xr_frame.grabs.rests[1].on     = 1;
+   for (i = 0; i < 2; i++)
+   {
+      bool own = i == 1;
+      float hx = own ? 0.0f : -2.0f;
+      float hy = own ? -0.96f : 1.2f;
+      t_xr_frame.grabs.hand[1].slot = own ? 2 : 4;
+      at = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+            OPENXR_MAX_EXTRA_LAYERS, &t_under);
+      CHECK(     at == n && n > 10
+            && t_slot_is((const XrCompositionLayerQuad*)layers[7], true,
+               -2.0f, 0.0f, -1.8f, -2.0f + VIDEO_XR_HINGE_WIDTH, 0.0f,
+               -1.8f)
+            && t_slot_is((const XrCompositionLayerQuad*)layers[8], true,
+               hx, hy, -1.8f, hx + VIDEO_XR_HINGE_WIDTH, hy, -1.8f)
+            && t_slot_is((const XrCompositionLayerQuad*)layers[9], false,
+               0.8f, -0.48f, -1.8f, 0.8f, 0.48f, -1.8f)
+            && (own
+               ? t_slot_is((const XrCompositionLayerQuad*)layers[10], true,
+                  0.0f, -0.96f, -1.8f, VIDEO_XR_HINGE_WIDTH, -0.96f, -1.8f)
+               : t_slot_is((const XrCompositionLayerQuad*)layers[10],
+                  false, -0.8f, -0.48f, -1.8f, 0.8f, -0.48f, -1.8f)),
+            "screen 3's pair, screen 3 %s: %u layers of %u, want it %s",
+            own ? "held" : "free", at, n,
+            own ? "hidden in place on screen 3" : "shown");
+   }
+
+   /* Hand 0 holding screen 4 on screen 1's left edge, hand 1 screen 5
+    * on its top, the right edge's pair at rest: each hand's mark taken
+    * and let go in turn moves no slot and changes no count. */
+   shown.quads[4].pose.position.x = -1.6f;
+   shown.quads[5].pose.position.x = 0.0f;
+   shown.quads[5].pose.position.y = 0.96f;
+   memset(&t_grabs, 0, sizeof(t_grabs));
+   for (i = 0; i < 2; i++)
+   {
+      video_xr_grab_t *g = &t_grabs.hand[i];
+      g->state           = VIDEO_XR_GRAB_HELD;
+      g->slot            = 3 + i;
+      g->last            = shown.quads[4 + i].pose;
+      g->width           = shown.quads[4 + i].width;
+      g->height          = shown.quads[4 + i].height;
+      g->mark_on         = i ? 0 : 3;
+      g->mark_edge       = i ? 1 : 2;
+   }
+   t_grabs.num_rests = 1;
+   t_grabs.rests[0]  = t_xr_frame.grabs.rests[0];
+   for (i = 0; i < 5; i++)
+   {
+      /* Per hand, hidden on its screen, then its line. */
+      static const float ends[2][2][6] = {
+         { { -1.6f, 0.0f, -1.8f, -1.6f + VIDEO_XR_HINGE_WIDTH, 0.0f, -1.8f },
+           { -0.8f, -0.48f, -1.8f, -0.8f, 0.48f, -1.8f } },
+         { { 0.0f, 0.96f, -1.8f, VIDEO_XR_HINGE_WIDTH, 0.96f, -1.8f },
+           { -0.8f, 0.48f, -1.8f, 0.8f, 0.48f, -1.8f } } };
+      static const unsigned marks[5] = { 0, 1, 3, 2, 0 };
+      unsigned j;
+      unsigned m    = marks[i];
+      unsigned slid = 0;
+      bool placed;
+      t_grabs.hand[0].mark_slot = (m & 1u) ? 1 : 0;
+      t_grabs.hand[1].mark_slot = (m & 2u) ? 1 : 0;
+      t_follow(&shown);
+      at = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+            OPENXR_MAX_EXTRA_LAYERS, &t_under);
+      if (!i)
+         first = at;
+      for (k = 0, c = 0; k < at; k++)
+         if (t_kind(layers[k], &cut) == 3)
+         {
+            c++;
+            if (k < 7 || k > 9)
+               slid++;
+         }
+      placed = at > 9 && t_slot_is((const XrCompositionLayerQuad*)layers[9],
+            false, 0.8f, -0.48f, -1.8f, 0.8f, 0.48f, -1.8f);
+      for (j = 0; j < 2 && placed; j++)
+      {
+         unsigned on     = (m >> j) & 1u;
+         const float *e  = ends[j][on];
+         placed          = t_slot_is(
+               (const XrCompositionLayerQuad*)layers[7 + j], !on, e[0],
+               e[1], e[2], e[3], e[4], e[5]);
+      }
+      CHECK(     at == first && c == 3 && !slid && placed
+            && t_xr_frame.hinged == m,
+            "marks %#x (shown %#x): %u layers of %u, %u slots, %u out of "
+            "place, %s", m, t_xr_frame.hinged, at, first, c, slid,
+            placed ? "each where it shows" : "one not where it shows");
+   }
+   memset(&t_grabs, 0, sizeof(t_grabs));
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_xr_frame.hinged = 0;
+   t_cursor          = false;
+   t_head_tracked    = false;
+   t_edit_end();
+
+   /* The hidden rows, either way up: nothing drawn. */
+   px = (uint8_t*)malloc((size_t)VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4);
+   CHECK(px != NULL, "no room for the image");
+   if (!px)
+      return;
+   video_xr_cursor_pixels(px);
+   for (i = 0, c = 0; i < VIDEO_XR_HINGE_ROWS; i++)
+      for (k = VIDEO_XR_HINGE_X + 1;
+            k < VIDEO_XR_HINGE_X + VIDEO_XR_HINGE_COLS - 1; k++)
+      {
+         const uint8_t *a = px + ((size_t)(VIDEO_XR_HINGE_HIDDEN_Y + i)
+               * VIDEO_XR_CURSOR_W + k) * 4;
+         const uint8_t *b = px + ((size_t)(VIDEO_XR_CURSOR_H - 1
+                  - VIDEO_XR_HINGE_HIDDEN_Y - i) * VIDEO_XR_CURSOR_W + k)
+            * 4;
+         c += (a[0] | a[1] | a[2] | a[3]) ? 1u : 0u;
+         c += (b[0] | b[1] | b[2] | b[3]) ? 1u : 0u;
+      }
+   free(px);
+   CHECK(c == 0, "%u texels drawn in the hidden rows", c);
 }
 
 /* Hand 2 lets go: by the grip (how 0), a recenter (1) or edit mode's
@@ -9222,6 +9678,7 @@ int main(void)
    test_edit_hinge_layers();
    test_edit_rest();
    test_edit_rest_corner();
+   test_edit_hinge_slots();
    test_edit_rest_take();
    test_edit_rest_swing();
    test_edit_rest_take_two();

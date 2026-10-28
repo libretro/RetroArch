@@ -4155,6 +4155,8 @@ BACK_RECT = (BACK_X + BACK_MARGIN, BACK_Y + BACK_MARGIN, BACK_DIM, BACK_DIM)
 HINGE_COLS, HINGE_ROWS = 128, 4
 HINGE_X = BACK_X + BACK_CELL + 1
 HINGE_Y = (OUTLINE_DIM - HINGE_ROWS) // 2
+# A hidden hinge slot's rows, empty either way up.
+HINGE_HIDDEN_Y = 0
 # The hinge's line, VIDEO_XR_HINGE_WIDTH wide, each end
 # VIDEO_XR_HINGE_LIFT nearer the head; its strip's green,
 # VIDEO_XR_HINGE_RB/_G at VIDEO_XR_HINGE_LEVEL, premultiplied. An
@@ -4327,7 +4329,12 @@ def outlines(frame, lit=None):
 
 
 def hinge_lines(frame):
-    """Edit mode's green hinge lines."""
+    """Edit mode's green hinge lines, the slots shown."""
+    return [q for q in hinge_slots(frame) if q['rect'][1] == HINGE_Y]
+
+
+def hinge_slots(frame):
+    """Edit mode's hinge slots, shown or hidden."""
     return [q for q in quads(frame)
             if q['flags'] & BLEND and q['rect'][0] == HINGE_X + 1]
 
@@ -6346,7 +6353,10 @@ def check_edit_hinge_shaken(res):
     degree as the unit tests' t_shake shakes a hand, 2.8 cm past
     touching, where the stop's hold ends, and 9.8 cm apart, where the
     free gap's does: one hinge line on every frame from the hinge to
-    the last shake, and one long buzz in all, as it took hold."""
+    the last shake, and one long buzz in all, as it took hold. Every
+    frame from the grab's first held frame has the same layers and
+    hinge slots, the held screen's slot hidden until the hinge shows;
+    from the hinge on, the same outline rects too."""
     errors = edit_log_errors(res, ['on', 'off'])
     frames = between(res, 'still', 'shaken2')
     if not frames:
@@ -6355,6 +6365,29 @@ def check_edit_hinge_shaken(res):
     if off:
         errors.append('%d of %d frames without one hinge line, from frame '
                       '%d' % (len(off), len(frames), off[0]))
+
+    def counts(f):
+        return len(quads(f)), len(hinge_slots(f))
+
+    def rects(f):
+        return [tuple(o['rect']) for o in outlines(f)]
+    # The first held frame is the first with the held screen's slot,
+    # hidden as the hinge has not shown yet.
+    held = between(res, 'grab', 'shaken2')
+    held = held[next((i for i, f in enumerate(held)
+                      if len(hinge_slots(f)) > len(hinge_lines(f))),
+                     len(held)):]
+    if not held:
+        errors.append('no frame from the grab to the last shake with the '
+                      'held screen\'s hinge slot hidden')
+    for what, fs, key in (('layers and hinge slots', held, counts),
+                          ('outline rects', frames, rects)):
+        moved = [f for f in fs if key(f) != key(fs[0])]
+        if moved:
+            errors.append('%d of %d frames with other %s than frame %d %s, '
+                          'from frame %d %s'
+                          % (len(moved), len(fs), what, fs[0]['n'],
+                             key(fs[0]), moved[0]['n'], key(moved[0])))
     taken = buzzes(res, HINGE_BUZZ)
     if len(taken) != 1:
         errors.append('%d hinge buzzes, want 1' % len(taken))
@@ -8573,7 +8606,7 @@ GL_EDIT = ['edit-grab', 'edit-grab-threaded', 'edit-command', 'edit-follow',
            'edit-outlines', 'edit-outlines-flush', 'edit-beam',
            'edit-fallback', 'edit-no-map', 'edit-lazy', 'edit-two-hands',
            'edit-choose', 'edit-snap', 'edit-tag', 'edit-tag-narrow',
-           'edit-back']
+           'edit-back', 'edit-hinge-3ds', 'edit-hinge-shaken']
 GL_EDIT_MENU = ['edit-menu-front', 'edit-menu-size']
 for custom_driver in GL_BASE:
     GL_BASE[custom_driver] += [c['name'] for c in CUSTOM_CASES] + GL_EDIT
