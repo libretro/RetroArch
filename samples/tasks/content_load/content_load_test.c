@@ -2240,7 +2240,10 @@ static void lane_content_reply(const char *dir)
  * by the clock; waiting out a whole period first makes this open the
  * one that starts it, so the screenshot opens well inside the same
  * window, not across a reset that would hand it a fresh one. */
+/* tasks/task_nbio_slice.c's window period */
+#define SS_SLICE_PERIOD_USEC 16666
 static bool ss_hog_stop;
+static retro_time_t ss_hog_open;
 static void ss_hog_handler(retro_task_t *task)
 {
    nbio_budget_t b;
@@ -2249,10 +2252,23 @@ static void ss_hog_handler(retro_task_t *task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
       return;
    }
-   retro_sleep(17);
+   /* by the clock: a signal can cut a sleep short */
+   while (cpu_features_get_time_usec() - ss_hog_open < 17000)
+      retro_sleep(1);
    task_nbio_slice_open(&b);
+   ss_hog_open = b.start;
    while (task_nbio_slice_within_budget(&b, 0, 0)) { }
    task_nbio_slice_close(&b);
+}
+
+/* A check the harness was descheduled through for a whole period may
+ * have handed the screenshot a fresh window; such a run proves nothing
+ * either way and is taken again. */
+static bool ss_check_late(void)
+{
+   task_queue_check();
+   return cpu_features_get_time_usec() - ss_hog_open
+      >= SS_SLICE_PERIOD_USEC;
 }
 
 static bool ss_is_screenshot(retro_task_t *task, void *user_data)
@@ -2297,7 +2313,7 @@ static void lane_screenshot_steps(const char *dir)
    settings_t *settings = config_get_ptr();
    retro_task_t *hog;
    char path[600], file[640];
-   unsigned had = failures, checks = 0, rows = 240;
+   unsigned had = failures, checks = 0, rows = 240, late = 0, attempt;
 
    if (!core_is_up())
    {
@@ -2320,28 +2336,35 @@ static void lane_screenshot_steps(const char *dir)
    /* With fullpath the name is the file, as given */
    snprintf(path, sizeof(path), "%s/harness_shot.png", dir);
    snprintf(file, sizeof(file), "%s", path);
-   remove(file);
-   CHECK(take_screenshot(dir, path, false, false, true, true),
-         "the screenshot was not started");
-   while (ss_in_flight() && checks < 4 * rows)
+   for (attempt = 0; attempt < 3; attempt++)
    {
-      task_queue_check();
-      checks++;
+      remove(file);
+      CHECK(take_screenshot(dir, path, false, false, true, true),
+            "the screenshot was not started");
+      for (checks = 0, late = 0; ss_in_flight() && checks < 4 * rows; checks++)
+         late += ss_check_late();
+      CHECK(!ss_in_flight(), "the screenshot did not finish in %u checks", checks);
+      CHECK(ss_png_complete(file), "the screenshot file is not a whole PNG");
+      if (!late)
+         break;
    }
-   CHECK(!ss_in_flight(), "the screenshot did not finish in %u checks", checks);
-   CHECK(checks >= rows,
+   CHECK(!late, "a period-long stall in each of %u attempts", attempt);
+   CHECK(late || checks >= rows,
          "the screenshot finished in %u checks for %u rows: encoded in one go",
          checks, rows);
-   CHECK(ss_png_complete(file), "the screenshot file is not a whole PNG");
    remove(file);
 
    /* Cancelled part way through */
-   CHECK(take_screenshot(dir, path, false, false, true, true),
-         "the second screenshot was not started");
+   for (attempt = 0; attempt < 3; attempt++)
    {
       unsigned n;
-      for (n = 0; n < 20; n++)
-         task_queue_check();
+      CHECK(take_screenshot(dir, path, false, false, true, true),
+            "the second screenshot was not started");
+      for (n = 0, late = 0; n < 20; n++)
+         late += ss_check_late();
+      if (ss_in_flight() || !late)
+         break;
+      remove(file);
    }
    CHECK(ss_in_flight(), "the second screenshot was already done");
    {
