@@ -76,6 +76,11 @@ struct core_option_manager
    nested_list_t *option_map;
    /* Value hashes of every option, one allocation */
    uint32_t *val_hashes;
+   /* Past CORE_OPTION_SCAN_MAX options, each option's index plus one at
+    * its key hash, probed on; 0 is empty. key_mask + 1 slots, at least
+    * twice the options */
+   uint32_t *key_slots;
+   size_t key_mask;
 
    size_t cats_size;
    size_t size;

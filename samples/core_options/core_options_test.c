@@ -303,6 +303,53 @@ static void t_legacy_append_failures(void)
    fail_append(0);
 }
 
+/* Keys found by their index, @n of them: few enough to be looked for in
+ * order, or six hundred in their slots; every one at its own place, near
+ * misses not at all, and the display of each set by its key */
+#define LOOKUP_N 600
+static void t_lookup(size_t n)
+{
+   static struct retro_variable vars[LOOKUP_N + 1];
+   static char keys[LOOKUP_N][16];
+   static const char *misses[] = { "opt_6000", "opt_00", "opt_",
+      "opt_0000x", "OPT_0001", "x" };
+   core_option_manager_t *opt;
+   size_t i, idx;
+   unsigned ok = 0;
+
+   printf("   lookup: %u keys by index, misses, display\n", (unsigned)n);
+   write_conf("");
+   for (i = 0; i < n; i++)
+   {
+      snprintf(keys[i], sizeof(keys[i]), "opt_%04u", (unsigned)i);
+      vars[i].key   = keys[i];
+      vars[i].value = "Option; on|off";
+   }
+   vars[n].key   = NULL;
+   vars[n].value = NULL;
+   opt = core_option_manager_new_vars(CONF_PATH, NULL, vars);
+   CHECK(opt != NULL, "manager not created");
+   if (!opt)
+      return;
+   for (i = 0; i < n; i++)
+      if (core_option_manager_get_idx(opt, keys[i], &idx) && idx == i)
+         ok++;
+   CHECK(ok == n, "a key not found at its index");
+   for (i = 0; i < sizeof(misses) / sizeof(misses[0]); i++)
+      CHECK(!core_option_manager_get_idx(opt, misses[i], &idx),
+            "a key no option has found");
+   CHECK(!core_option_manager_get_idx(opt, "", &idx), "the empty key found");
+   for (i = 0; i < n; i += 7)
+      core_option_manager_set_display(opt, keys[i], false);
+   core_option_manager_set_display(opt, "opt_9999", false);
+   ok = 0;
+   for (i = 0; i < n; i++)
+      if (opt->opts[i].visible == (i % 7 != 0))
+         ok++;
+   CHECK(ok == n, "display set on the wrong option");
+   core_option_manager_free(opt);
+}
+
 int main(void)
 {
    printf("core_options\n");
@@ -310,6 +357,8 @@ int main(void)
    t_v2_append_failures();
    t_legacy();
    t_legacy_append_failures();
+   t_lookup(30);
+   t_lookup(LOOKUP_N);
    remove(CONF_PATH);
 
    if (failures)

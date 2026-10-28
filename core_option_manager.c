@@ -591,6 +591,69 @@ static uint32_t core_option_manager_hash_string(const char *str)
    return (hash ? hash : 1);
 }
 
+/* Up to this many options are looked for in order, which is quicker
+ * than probing the slots */
+#define CORE_OPTION_SCAN_MAX 64
+
+/* The slots of every keyed option, the first of a key kept */
+static bool core_option_manager_index_keys(core_option_manager_t *opt)
+{
+   size_t cap = 4, i;
+   if (opt->size <= CORE_OPTION_SCAN_MAX)
+      return true;
+   while (cap < 2 * opt->size)
+      cap <<= 1;
+   if (!(opt->key_slots = (uint32_t*)calloc(cap, sizeof(uint32_t))))
+      return false;
+   opt->key_mask = cap - 1;
+   for (i = 0; i < opt->size; i++)
+   {
+      const struct core_option *option = &opt->opts[i];
+      size_t at = option->key_hash & opt->key_mask;
+      if (!option->key)
+         continue;
+      for (;;)
+      {
+         uint32_t slot = opt->key_slots[at];
+         if (!slot)
+         {
+            opt->key_slots[at] = (uint32_t)(i + 1);
+            break;
+         }
+         if (     opt->opts[slot - 1].key_hash == option->key_hash
+               && string_is_equal(opt->opts[slot - 1].key, option->key))
+            break;
+         at = (at + 1) & opt->key_mask;
+      }
+   }
+   return true;
+}
+
+/* The index of the option of @key, or -1 */
+static INLINE size_t core_option_manager_find(
+      const core_option_manager_t *opt, const char *key)
+{
+   uint32_t hash = core_option_manager_hash_string(key);
+   size_t   at;
+   if (!opt->key_slots)
+   {
+      for (at = 0; at < opt->size; at++)
+         if (     opt->opts[at].key_hash == hash
+               && string_is_equal(key, opt->opts[at].key))
+            return at;
+      return (size_t)-1;
+   }
+   for (at = hash & opt->key_mask; ; at = (at + 1) & opt->key_mask)
+   {
+      uint32_t slot = opt->key_slots[at];
+      if (!slot)
+         return (size_t)-1;
+      if (     opt->opts[slot - 1].key_hash == hash
+            && string_is_equal(key, opt->opts[slot - 1].key))
+         return slot - 1;
+   }
+}
+
 /* Sanitises a core option value label, handling the case
  * where an explicit label is not provided and performing
  * conversion of various true/false identifiers to
@@ -829,6 +892,8 @@ core_option_manager_t *core_option_manager_new_vars(
    opt->opts                        = NULL;
    opt->size                        = 0;
    opt->val_hashes                  = NULL;
+   opt->key_slots                   = NULL;
+   opt->key_mask                    = 0;
    opt->option_map                  = nested_list_init();
    opt->updated                     = false;
    opt->log                         = true;
@@ -903,6 +968,9 @@ core_option_manager_t *core_option_manager_new_vars(
       else
          goto error;
    }
+
+   if (!core_option_manager_index_keys(opt))
+      goto error;
 
    if (config_src)
       config_file_free(config_src);
@@ -1135,6 +1203,8 @@ core_option_manager_t *core_option_manager_new(
    opt->opts                         = NULL;
    opt->size                         = 0;
    opt->val_hashes                   = NULL;
+   opt->key_slots                    = NULL;
+   opt->key_mask                     = 0;
    opt->option_map                   = nested_list_init();
    opt->updated                      = false;
    opt->log                          = true;
@@ -1255,6 +1325,9 @@ core_option_manager_t *core_option_manager_new(
          goto error;
    }
 
+   if (!core_option_manager_index_keys(opt))
+      goto error;
+
    if (config_src)
       config_file_free(config_src);
 
@@ -1337,6 +1410,7 @@ void core_option_manager_free(core_option_manager_t *opt)
    free(opt->cats);
    free(opt->opts);
    free(opt->val_hashes);
+   free(opt->key_slots);
    free(opt);
 }
 
@@ -1490,26 +1564,12 @@ bool core_option_manager_get_category_visible(core_option_manager_t *opt,
 bool core_option_manager_get_idx(core_option_manager_t *opt,
       const char *key, size_t *idx)
 {
-   uint32_t key_hash;
    size_t i;
-   if (!opt || (!key || !*key) || !idx)
+   if (!opt || (!key || !*key) || !idx
+         || (i = core_option_manager_find(opt, key)) == (size_t)-1)
       return false;
-   key_hash = core_option_manager_hash_string(key);
-
-   for (i = 0; i < opt->size; i++)
-   {
-      struct core_option *option = &opt->opts[i];
-
-      if (     (key_hash == option->key_hash)
-            && (option->key && *option->key)
-            && string_is_equal(key, option->key))
-      {
-         *idx = i;
-         return true;
-      }
-   }
-
-   return false;
+   *idx = i;
+   return true;
 }
 
 /**
@@ -1909,29 +1969,17 @@ void core_option_manager_set_default(core_option_manager_t *opt,
 void core_option_manager_set_display(core_option_manager_t *opt,
       const char *key, bool visible)
 {
-   uint32_t key_hash;
+   struct core_option *option;
    size_t i;
-   if (!opt || (!key || !*key))
+   if (!opt || (!key || !*key)
+         || (i = core_option_manager_find(opt, key)) == (size_t)-1)
       return;
-   key_hash = core_option_manager_hash_string(key);
-
-   for (i = 0; i < opt->size; i++)
-   {
-      struct core_option *option = &opt->opts[i];
-
-      if (     (key_hash == option->key_hash)
-            && (option->key && *option->key)
-            && string_is_equal(key, option->key))
-      {
-         if (option->visible != visible && !opt->log)
-            RARCH_DBG("[Core] Set display: %s = %s\n",
-                  option->key,
-                  visible ? "visible" : "hidden");
-
-         option->visible = visible;
-         return;
-      }
-   }
+   option = &opt->opts[i];
+   if (option->visible != visible && !opt->log)
+      RARCH_DBG("[Core] Set display: %s = %s\n",
+            option->key,
+            visible ? "visible" : "hidden");
+   option->visible = visible;
 }
 
 /**********************/
