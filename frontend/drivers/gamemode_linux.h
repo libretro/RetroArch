@@ -30,6 +30,10 @@
  *    which desktop polkit policy grants an active session without a
  *    password. The daemon drops the hold by itself when our connection
  *    goes away, so a crash never leaves the machine in performance mode.
+ *    As with the Windows Low-Latency Power Plan, the hold only applies
+ *    on AC power: it follows UPower's OnBattery (or the power supplies
+ *    in sysfs without UPower), released when the charger is pulled and
+ *    held again when it is plugged back in.
  *
  * Screensaver inhibit, the other default, RetroArch already does through
  * its own Suspend Screensaver setting. */
@@ -43,8 +47,8 @@ RETRO_BEGIN_DECLS
 
 /**
  * Enters or leaves Game Mode. Returns at once: the D-Bus exchange runs
- * on a short-lived helper thread and its outcome is only logged. False
- * when nothing could be applied at all.
+ * on a helper thread that lives while Game Mode is on, and its outcome
+ * is only logged. False when nothing could be applied at all.
  *
  * @exiting: the process is about to end. Only the I/O priority is put
  * back; the profile hold goes with the bus connection when the process

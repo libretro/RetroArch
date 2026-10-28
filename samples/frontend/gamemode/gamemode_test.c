@@ -9,10 +9,16 @@
  *    "performance" profile and leaving releases that same hold;
  *  - leaving with @exiting set never starts a helper.
  *
+ *  - the performance profile is only held on AC power: pulling the
+ *    charger releases it, plugging back in holds it again.
+ *
  *   gamemode_test <log file> hold|refuse|none
+ *   gamemode_test <log file> plug|unplugged <fake_upower pid>
  *
  * "hold" and "refuse" expect run.sh's fake_ppd on DBUS_SYSTEM_BUS_ADDRESS
- * writing to <log file>; "none" expects nothing to answer there.
+ * writing to <log file>; "none" expects nothing to answer there. "plug"
+ * and "unplugged" also expect fake_upower, starting on AC or on battery,
+ * which flips the power source on each SIGUSR1.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +26,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/syscall.h>
 
 #include <rthreads/rthreads.h>
@@ -140,6 +147,46 @@ static int wait_count(const char *log, const char *prefix, int want)
    return 0;
 }
 
+/* Flips fake_upower's power source and waits until it has. */
+static void flip(const char *log, long pid, int want_battery_lines)
+{
+   kill((pid_t)pid, SIGUSR1);
+   wait_count(log, "battery ", want_battery_lines);
+}
+
+static int plug_test(const char *log, const char *mode, long pid)
+{
+   if (!strcmp(mode, "plug"))
+   {
+      CHECK(gamemode_linux_set(true, false), "entering reported failure");
+      CHECK(wait_count(log, "hold performance", 1), "no hold on AC");
+      flip(log, pid, 1);
+      CHECK(wait_line(log, "release 41"), "pulling the charger did not release the hold");
+      flip(log, pid, 2);
+      CHECK(wait_count(log, "hold performance", 2), "plugging back in did not hold again");
+      CHECK(gamemode_linux_set(false, false), "leaving reported failure");
+      CHECK(wait_line(log, "release 42"), "leaving did not release the second hold");
+   }
+   else
+   {
+      CHECK(gamemode_linux_set(true, false), "entering reported failure");
+      CHECK(ioprio_of(0) == IOPRIO_BE0, "I/O priority not raised on battery");
+      usleep(500000);
+      CHECK(count_lines(log, "hold ") == 0, "held the performance profile on battery");
+      flip(log, pid, 1);
+      CHECK(wait_count(log, "hold performance", 1), "plugging in did not hold");
+      CHECK(gamemode_linux_set(false, false), "leaving reported failure");
+      CHECK(wait_line(log, "release 41"), "leaving did not release");
+   }
+   usleep(200000);
+   CHECK(count_lines(log, "release") == count_lines(log, "hold "),
+         "holds and releases do not pair up");
+   if (fails)
+      return 1;
+   printf("PASS %s\n", mode);
+   return 0;
+}
+
 int main(int argc, char **argv)
 {
    const char *log, *mode;
@@ -151,6 +198,8 @@ int main(int argc, char **argv)
       return 2;
    log  = argv[1];
    mode = argv[2];
+   if (argc > 3)
+      return plug_test(log, mode, strtol(argv[3], NULL, 10));
 
    before = ioprio_of(0);
    CHECK(before != IOPRIO_BE0, "test needs a starting I/O priority other than BE/0");

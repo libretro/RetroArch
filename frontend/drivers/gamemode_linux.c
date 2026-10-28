@@ -33,6 +33,11 @@
 #include "../../verbosity.h"
 
 #if defined(RARCH_HAVE_DBUS_RUNTIME) && defined(HAVE_THREADS)
+#include <stdio.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <retro_miscellaneous.h>
+#include <compat/strl.h>
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
 #define GAMEMODE_HAVE_PPD 1
@@ -125,7 +130,7 @@ static void gamemode_ioprio_leave(void) { }
 #endif
 
 /* ---------------------------------------------------------------------
- * Performance profile hold through power-profiles-daemon
+ * Performance profile hold through power-profiles-daemon, on AC only
  * ------------------------------------------------------------------- */
 
 #ifdef GAMEMODE_HAVE_PPD
@@ -140,18 +145,28 @@ static const char *const gamemode_ppd_paths[2] = {
    "/net/hadess/PowerProfiles"
 };
 
-/* One word: the hold wanted, and whether a helper is at work. Callers
- * set WANT and start a helper only when BUSY was clear; the helper
- * clears BUSY only when what it last did still matches WANT, so a
- * change made while it worked is never lost and no lock is needed. */
+#define GAMEMODE_UPOWER_NAME "org.freedesktop.UPower"
+#define GAMEMODE_UPOWER_PATH "/org/freedesktop/UPower"
+#define GAMEMODE_PROPS_IFACE "org.freedesktop.DBus.Properties"
+
+/* Without UPower nothing announces a plug change, so the power supply
+ * is looked at again this often instead. */
+#define GAMEMODE_SYSFS_RECHECK_MS 5000
+
+/* One word: Game Mode wanted, and whether the worker runs. Callers set
+ * WANT and start a worker only when BUSY was clear, else wake it; the
+ * worker clears BUSY only when WANT is still clear as it last read it,
+ * so a change made while it worked is never lost and no lock is needed.
+ * The worker lives only while Game Mode is on. */
 #define GAMEMODE_PPD_WANT (1 << 0)
 #define GAMEMODE_PPD_BUSY (1 << 1)
 
 static retro_atomic_int_t gamemode_ppd_state;
+/* Wake pipe: made on the first request, before any worker exists. */
+static int                gamemode_ppd_wake[2] = { -1, -1 };
 
-/* Owned by whichever helper holds BUSY; the CAS that hands BUSY over
- * orders them between helpers. The connection stays open between
- * helpers, since the hold lasts only as long as it does. */
+/* Owned by whichever worker holds BUSY; the CAS that hands BUSY over
+ * orders them between workers. */
 static const rdbus_t      *gamemode_ppd_rd;
 static rdbus_connection_t *gamemode_ppd_conn;
 static uint32_t            gamemode_ppd_cookie;
@@ -166,13 +181,104 @@ static bool gamemode_ppd_unknown(const rdbus_error_t *err)
           || !strcmp(err->name, RDBUS_ERROR_NAME_HAS_NO_OWNER));
 }
 
-static void gamemode_ppd_close(const rdbus_t *rd)
+/* The first line of a small sysfs file, newline cut off. */
+static bool gamemode_read_line(const char *name, const char *file,
+      char *buf, size_t len)
 {
-   if (!gamemode_ppd_conn)
-      return;
-   rd->connection_close(gamemode_ppd_conn);
-   rd->connection_unref(gamemode_ppd_conn);
-   gamemode_ppd_conn = NULL;
+   size_t n;
+   FILE *f;
+   char path[PATH_MAX_LENGTH];
+
+   strlcpy(path, "/sys/class/power_supply/", sizeof(path));
+   strlcat(path, name, sizeof(path));
+   strlcat(path, "/", sizeof(path));
+   strlcat(path, file, sizeof(path));
+   if (!(f = fopen(path, "r")))
+      return false;
+   n = fread(buf, 1, len - 1, f);
+   fclose(f);
+   buf[n] = '\0';
+   while (n && (buf[n - 1] == '\n' || buf[n - 1] == ' '))
+      buf[--n] = '\0';
+   return true;
+}
+
+/* Without UPower: on battery when a mains supply is present and none
+ * is online, or when there is no mains supply and a battery is
+ * discharging. A desktop with no supplies listed is on AC. */
+static bool gamemode_sysfs_on_battery(void)
+{
+   bool mains = false, mains_online = false, discharging = false;
+   DIR *dir   = opendir("/sys/class/power_supply");
+
+   if (!dir)
+      return false;
+   for (;;)
+   {
+      char val[32];
+      struct dirent *ent = readdir(dir);
+      if (!ent)
+         break;
+      if (     ent->d_name[0] == '.'
+            || !gamemode_read_line(ent->d_name, "type", val, sizeof(val)))
+         continue;
+      if (!strcmp(val, "Mains"))
+      {
+         mains = true;
+         if (     gamemode_read_line(ent->d_name, "online", val, sizeof(val))
+               && !strcmp(val, "1"))
+            mains_online = true;
+      }
+      else if (!strcmp(val, "Battery"))
+      {
+         if (     gamemode_read_line(ent->d_name, "status", val, sizeof(val))
+               && !strcmp(val, "Discharging"))
+            discharging = true;
+      }
+   }
+   closedir(dir);
+   return mains ? !mains_online : discharging;
+}
+
+/* UPower's OnBattery. False when UPower does not answer, @have says
+ * whether it did. */
+static bool gamemode_upower_on_battery(const rdbus_t *rd,
+      rdbus_connection_t *conn, bool *have)
+{
+   bool on_battery        = false;
+   const char *iface      = GAMEMODE_UPOWER_NAME;
+   const char *prop       = "OnBattery";
+   rdbus_message_t *reply = NULL;
+   rdbus_message_t *msg   = rd->message_new_method_call(GAMEMODE_UPOWER_NAME,
+         GAMEMODE_UPOWER_PATH, GAMEMODE_PROPS_IFACE, "Get");
+
+   *have = false;
+   if (!msg)
+      return false;
+   if (     rd->message_append_args(msg,
+               RDBUS_TYPE_STRING, &iface,
+               RDBUS_TYPE_STRING, &prop,
+               RDBUS_TYPE_INVALID)
+         && (reply = rd->connection_send_with_reply_and_block(conn,
+               msg, RDBUS_TIMEOUT_USE_DEFAULT, NULL)))
+   {
+      rdbus_iter_t it, var;
+      if (     rd->message_iter_init(reply, &it)
+            && rd->message_iter_get_arg_type(&it) == RDBUS_TYPE_VARIANT)
+      {
+         rd->message_iter_recurse(&it, &var);
+         if (rd->message_iter_get_arg_type(&var) == RDBUS_TYPE_BOOLEAN)
+         {
+            rdbus_bool_t b = 0;
+            rd->message_iter_get_basic(&var, &b);
+            on_battery = b != 0;
+            *have      = true;
+         }
+      }
+      rd->message_unref(reply);
+   }
+   rd->message_unref(msg);
+   return on_battery;
 }
 
 static void gamemode_ppd_hold(const rdbus_t *rd)
@@ -184,19 +290,6 @@ static void gamemode_ppd_hold(const rdbus_t *rd)
    const char *app     = "org.libretro.RetroArch";
 
    rd->error_init(&err);
-   if (!gamemode_ppd_conn)
-   {
-      if (!(gamemode_ppd_conn = rd->bus_get_private(RDBUS_BUS_SYSTEM, &err)))
-      {
-         RARCH_LOG("[GameMode] No system bus; the performance profile is not held.\n");
-         rd->error_free(&err);
-         gamemode_ppd_gave_up = true;
-         return;
-      }
-      /* A lost system bus ends the connection, not RetroArch. */
-      rd->connection_set_exit_on_disconnect(gamemode_ppd_conn, 0);
-   }
-
    for (i = 0; i < 2; i++)
    {
       rdbus_message_t *reply;
@@ -239,7 +332,6 @@ static void gamemode_ppd_hold(const rdbus_t *rd)
                err.name ? err.name : "no reason given");
          rd->error_free(&err);
          gamemode_ppd_gave_up = true;
-         gamemode_ppd_close(rd);
          return;
       }
       rd->error_free(&err);
@@ -248,7 +340,6 @@ static void gamemode_ppd_hold(const rdbus_t *rd)
    RARCH_LOG("[GameMode] No power profiles daemon on the system bus; "
          "the CPU's power mode is left alone.\n");
    gamemode_ppd_gave_up = true;
-   gamemode_ppd_close(rd);
 }
 
 static void gamemode_ppd_release(const rdbus_t *rd)
@@ -275,50 +366,181 @@ static void gamemode_ppd_release(const rdbus_t *rd)
          rd->message_unref(reply);
       rd->message_unref(msg);
    }
-
-   /* Closing would drop the hold anyway; the explicit release keeps
-    * ppd's log tidy. Nothing needs the connection until the next hold. */
-   gamemode_ppd_close(rd);
    RARCH_LOG("[GameMode] Released the performance power profile.\n");
+}
+
+static void gamemode_ppd_close(const rdbus_t *rd)
+{
+   if (!gamemode_ppd_conn)
+      return;
+   rd->connection_close(gamemode_ppd_conn);
+   rd->connection_unref(gamemode_ppd_conn);
+   gamemode_ppd_conn = NULL;
+}
+
+/* Opens the system bus and starts following UPower. False without a
+ * bus; @fd is the socket to wait on. */
+static bool gamemode_ppd_open(const rdbus_t *rd, int *fd)
+{
+   rdbus_error_t err;
+
+   rd->error_init(&err);
+   if (!(gamemode_ppd_conn = rd->bus_get_private(RDBUS_BUS_SYSTEM, &err)))
+   {
+      rd->error_free(&err);
+      return false;
+   }
+   /* A lost system bus ends the connection, not RetroArch. */
+   rd->connection_set_exit_on_disconnect(gamemode_ppd_conn, 0);
+   if (!rd->connection_get_unix_fd(gamemode_ppd_conn, fd))
+   {
+      gamemode_ppd_close(rd);
+      return false;
+   }
+   rd->bus_add_match(gamemode_ppd_conn,
+         "type='signal',sender='" GAMEMODE_UPOWER_NAME "',"
+         "path='" GAMEMODE_UPOWER_PATH "',"
+         "interface='" GAMEMODE_PROPS_IFACE "',member='PropertiesChanged'",
+         &err);
+   if (rd->error_is_set(&err))
+      rd->error_free(&err);
+   return true;
 }
 
 static void gamemode_ppd_thread(void *data)
 {
-   int state;
+   int fd              = -1;
+   bool on_battery     = false;
+   bool have_upower    = false;
+   bool recheck        = true;
+   bool logged_battery = false;
+   const rdbus_t *rd   = NULL;
    (void)data;
    sthread_setname("ra-gamemode");
 
    if (!gamemode_ppd_rd && !(gamemode_ppd_rd = rdbus_get()))
-   {
       RARCH_LOG("[GameMode] libdbus is not available; the performance profile is not held.\n");
-      gamemode_ppd_gave_up = true;
-   }
 
    for (;;)
    {
-      bool want;
+      struct pollfd pfd[2];
+      int nfd;
+      int state = retro_atomic_load_acquire_int(&gamemode_ppd_state);
+      bool want = (state & GAMEMODE_PPD_WANT) != 0;
 
-      state = retro_atomic_load_acquire_int(&gamemode_ppd_state);
-      want  = (state & GAMEMODE_PPD_WANT) != 0;
-
-      if (gamemode_ppd_rd)
+      if (!want && rd)
       {
-         if (want && !gamemode_ppd_held && !gamemode_ppd_gave_up)
-            gamemode_ppd_hold(gamemode_ppd_rd);
-         else if (!want)
-            gamemode_ppd_release(gamemode_ppd_rd);
+         gamemode_ppd_release(rd);
+         gamemode_ppd_close(rd);
+         rd = NULL;
       }
 
-      /* Done if WANT is still what was just served. */
-      if (retro_atomic_cas_int(&gamemode_ppd_state, state,
-               state & ~GAMEMODE_PPD_BUSY))
-         break;
+      if (want && !rd && gamemode_ppd_rd && !gamemode_ppd_gave_up)
+      {
+         if (gamemode_ppd_open(gamemode_ppd_rd, &fd))
+         {
+            rd             = gamemode_ppd_rd;
+            recheck        = true;
+            logged_battery = false;
+         }
+         else
+         {
+            RARCH_LOG("[GameMode] No system bus; the performance profile is not held.\n");
+            gamemode_ppd_gave_up = true;
+         }
+      }
+
+      if (!rd)
+      {
+         /* Nothing to hold or follow: done if WANT is still what was
+          * just served, else serve the change. */
+         if (retro_atomic_cas_int(&gamemode_ppd_state, state,
+                  state & ~GAMEMODE_PPD_BUSY))
+            break;
+         continue;
+      }
+
+      /* Whatever the bus sent meanwhile: a UPower property change
+       * means the power source may have changed. */
+      {
+         rdbus_message_t *m;
+         rd->connection_read_write(gamemode_ppd_conn, 0);
+         while ((m = rd->connection_pop_message(gamemode_ppd_conn)))
+         {
+            if (rd->message_is_signal(m, GAMEMODE_PROPS_IFACE,
+                     "PropertiesChanged"))
+               recheck = true;
+            rd->message_unref(m);
+         }
+      }
+
+      if (recheck || !have_upower)
+      {
+         on_battery = gamemode_upower_on_battery(rd, gamemode_ppd_conn,
+               &have_upower);
+         if (!have_upower)
+            on_battery = gamemode_sysfs_on_battery();
+         recheck = false;
+      }
+
+      if (on_battery)
+      {
+         if (gamemode_ppd_held || !logged_battery)
+            RARCH_LOG("[GameMode] On battery power; the performance profile is not held.\n");
+         logged_battery = true;
+         gamemode_ppd_release(rd);
+      }
+      else
+      {
+         logged_battery = false;
+         if (!gamemode_ppd_held && !gamemode_ppd_gave_up)
+            gamemode_ppd_hold(rd);
+      }
+
+      pfd[0].fd      = gamemode_ppd_wake[0];
+      pfd[0].events  = POLLIN;
+      pfd[0].revents = 0;
+      pfd[1].fd      = fd;
+      pfd[1].events  = POLLIN;
+      pfd[1].revents = 0;
+      /* Refused or absent: no plug change can matter, so only a leave
+       * is waited for. */
+      nfd            = gamemode_ppd_gave_up ? 1 : 2;
+      if (poll(pfd, nfd, (have_upower || nfd == 1)
+               ? -1 : GAMEMODE_SYSFS_RECHECK_MS) < 0)
+         continue;
+      if (pfd[0].revents & POLLIN)
+      {
+         char buf[64];
+         while (read(gamemode_ppd_wake[0], buf, sizeof(buf)) > 0) { }
+      }
+      if (nfd == 2 && (pfd[1].revents & (POLLHUP | POLLERR)))
+      {
+         /* The bus went away, and the hold with it. */
+         gamemode_ppd_held    = false;
+         gamemode_ppd_gave_up = true;
+         gamemode_ppd_close(rd);
+         rd = NULL;
+      }
    }
 }
 
 static bool gamemode_ppd_request(bool want)
 {
    sthread_t *thread;
+
+   if (gamemode_ppd_wake[0] < 0)
+   {
+      if (pipe(gamemode_ppd_wake) != 0)
+      {
+         gamemode_ppd_wake[0] = gamemode_ppd_wake[1] = -1;
+         return false;
+      }
+      fcntl(gamemode_ppd_wake[0], F_SETFL, O_NONBLOCK);
+      fcntl(gamemode_ppd_wake[1], F_SETFL, O_NONBLOCK);
+      fcntl(gamemode_ppd_wake[0], F_SETFD, FD_CLOEXEC);
+      fcntl(gamemode_ppd_wake[1], F_SETFD, FD_CLOEXEC);
+   }
 
    for (;;)
    {
@@ -330,7 +552,12 @@ static bool gamemode_ppd_request(bool want)
       if (!retro_atomic_cas_int(&gamemode_ppd_state, cur, next))
          continue;
       if (cur & GAMEMODE_PPD_BUSY)
-         return true; /* the helper at work picks the change up */
+      {
+         /* The worker picks the change up once woken. */
+         char c = 0;
+         if (write(gamemode_ppd_wake[1], &c, 1) < 0) { }
+         return true;
+      }
       break;
    }
 

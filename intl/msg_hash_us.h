@@ -35374,11 +35374,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
-   "Raises RetroArch's disk access priority and holds the system's performance power profile (through power-profiles-daemon or tuned-ppd), which can improve performance, reduce latency and fix audio crackling. The previous profile is restored when Game Mode is turned off or RetroArch exits."
+   "Raises RetroArch's disk access priority and holds the system's performance power profile (through power-profiles-daemon or tuned-ppd), which can improve performance, reduce latency and fix audio crackling. The performance profile only applies when plugged in. The previous profile is restored when Game Mode is turned off or RetroArch exits."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
-   "Game Mode raises RetroArch's disk access priority and asks the system's power profile service (power-profiles-daemon or tuned-ppd) to hold the performance profile, which keeps the processor in its fastest power mode. This can improve latency, fix audio crackling and maximize overall performance.\nNo extra software is needed beyond what desktop distributions ship. The hold is released when Game Mode is turned off or RetroArch exits, including after a crash."
+   "Game Mode raises RetroArch's disk access priority and asks the system's power profile service (power-profiles-daemon or tuned-ppd) to hold the performance profile, which keeps the processor in its fastest power mode. This can improve latency, fix audio crackling and maximize overall performance. The performance profile is only held while plugged in: it is released when the charger is pulled and held again when it is plugged back in.\nNo extra software is needed beyond what desktop distributions ship. The hold is released when Game Mode is turned off or RetroArch exits, including after a crash."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
