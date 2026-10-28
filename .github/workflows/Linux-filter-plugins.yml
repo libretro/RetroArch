@@ -10,7 +10,8 @@ name: CI Linux filter plugins
 # byte with 2, 3 and 4 workers running at once.  The same run is repeated
 # with the plugins and the harness built under ASan, UBSan and
 # LeakSanitizer, and under ThreadSanitizer.  The NTSC, 2xBR, NTSC-CRT,
-# 2xSaI-family, Phosphor2x and Blargg NTSC SNES filters are also held
+# 2xSaI-family, Phosphor2x, Blargg NTSC SNES and De-Dither filters are
+# also held
 # byte for byte to output hashes recorded from their earlier
 # implementations
 # (samples/gfx/{ntsc,xbr,crt}_filter_golden and samples/gfx/filter_golden).

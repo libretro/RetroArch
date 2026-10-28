@@ -2,7 +2,8 @@
  * its table with GOLDEN_H at build time; the Makefile builds one binary
  * per filter it lists) against output hashes recorded from its earlier
  * implementation: game-like frames (flat areas, banded
- * gradients, tiles, outlined sprites, dither) and noise, each pixel
+ * gradients, tiles, outlined sprites, checkerboard dither and dither in
+ * alternating rows) and noise, each pixel
  * format the filter takes, widths and heights from 1 up, frames
  * smaller than the size
  * the filter was created for, and one to four workers. Two, three and
@@ -97,6 +98,10 @@ static void game_frame(uint16_t *p, unsigned W, unsigned H)
          }
          if (y > H / 3 && y < H / 3 + 20 && ((x + y) & 1) && x > 4 && x < W / 2)
             c = 0x7bef;
+         /* Rows alternating between two colours: dither that runs
+          * down but not across */
+         if (y > 2 * H / 3 && y < 2 * H / 3 + 12 && x > W / 2 && x + 4 < W)
+            c = (y & 1) ? 0x39e7 : 0x6b2d;
          p[y * W + x] = c;
       }
    for (s = 0; s < 12 && W > 4 && H > 4; s++)

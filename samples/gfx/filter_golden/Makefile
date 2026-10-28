@@ -1,6 +1,6 @@
 # Each listed video filter against its recorded output hashes; see
 # filter_golden_test.c.
-FILTERS := 2xsai super2xsai supereagle phosphor2x blargg_ntsc_snes
+FILTERS := 2xsai super2xsai supereagle phosphor2x blargg_ntsc_snes dedither
 # Blargg NTSC SNES again with each other tvtype, which builds a
 # different table (RF also leaves the fields unmerged).
 SNES_TV := rf rgb svideo
