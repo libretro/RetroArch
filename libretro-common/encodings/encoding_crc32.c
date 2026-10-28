@@ -37,7 +37,8 @@
  *
  * Three implementations, in descending order of speed:
  *
- *   1. Carry-less multiply folding (x86 PCLMULQDQ, chosen at runtime).
+ *   1. Carry-less multiply folding (x86 PCLMULQDQ, chosen at runtime),
+ *      512 bits wide where AVX-512 has VPCLMULQDQ.
  *   2. ARMv8 CRC32 instructions (chosen at compile time).
  *   3. Slicing-by-8 over a const table (every other target, both endians).
  *
@@ -98,6 +99,34 @@
      && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
      /* GCC 4.4 introduced both wmmintrin.h and x86 target attributes. */
 #    define CRC32_HAVE_PCLMUL_PATH 1
+#  endif
+   /* VPCLMULQDQ on ZMM: GCC 8, clang 6 (Apple's 11), Visual Studio 2019;
+    * clang for PlayStation and clang-cl declare it only where the whole
+    * build has it. x86-64 only, as XXH3's AVX-512 is. */
+#  if defined(CRC32_HAVE_PCLMUL_PATH) && (defined(__x86_64__) || defined(_M_X64))
+#    if defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
+#      if defined(__VPCLMULQDQ__) && defined(__AVX512BW__) \
+         && defined(__AVX512VL__)
+#        define CRC32_HAVE_VPCLMUL_PATH 1
+#        define CRC32_TARGET_VPCLMUL
+#      endif
+#    elif defined(_MSC_VER)
+#      if _MSC_VER >= 1920
+#        define CRC32_HAVE_VPCLMUL_PATH 1
+#        define CRC32_TARGET_VPCLMUL
+#      endif
+#    elif defined(__clang__)
+#      if (defined(__apple_build_version__) && __clang_major__ >= 11) \
+         || (!defined(__apple_build_version__) && __clang_major__ >= 6)
+#        define CRC32_HAVE_VPCLMUL_PATH 1
+#      endif
+#    elif defined(__GNUC__) && __GNUC__ >= 8
+#      define CRC32_HAVE_VPCLMUL_PATH 1
+#    endif
+#    if defined(CRC32_HAVE_VPCLMUL_PATH) && !defined(CRC32_TARGET_VPCLMUL)
+#      define CRC32_TARGET_VPCLMUL __attribute__((target( \
+         "avx512f,avx512bw,avx512vl,vpclmulqdq,pclmul")))
+#    endif
 #  endif
 #endif
 
@@ -209,18 +238,16 @@ static INLINE __m128i crc32_fold16(__m128i x, __m128i k)
 }
 
 CRC32_TARGET_PCLMUL
+static uint32_t crc32_pclmul_tail(__m128i x0, const uint8_t *data, size_t len);
+
+CRC32_TARGET_PCLMUL
 static uint32_t crc32_pclmul(uint32_t crc, const uint8_t *data, size_t len)
 {
    const __m128i k1k2   = _mm_set_epi32((int)CRC32_K2_HI, (int)CRC32_K2_LO,
                                         (int)CRC32_K1_HI, (int)CRC32_K1_LO);
    const __m128i k3k4   = _mm_set_epi32((int)CRC32_K4_HI, (int)CRC32_K4_LO,
                                         (int)CRC32_K3_HI, (int)CRC32_K3_LO);
-   const __m128i k5     = _mm_set_epi32(0, 0,
-                                        (int)CRC32_K5_HI, (int)CRC32_K5_LO);
-   const __m128i mupp   = _mm_set_epi32((int)CRC32_PP_HI, (int)CRC32_PP_LO,
-                                        (int)CRC32_MU_HI, (int)CRC32_MU_LO);
-   const __m128i mask32 = _mm_set_epi32(0, 0, 0, -1);
-   __m128i x0, x1, x2, x3, t;
+   __m128i x0, x1, x2, x3;
 
    /* Below four accumulators' worth, the reduction tail dominates. */
    if (len < 64)
@@ -253,6 +280,23 @@ static uint32_t crc32_pclmul(uint32_t crc, const uint8_t *data, size_t len)
    x1 = _mm_xor_si128(crc32_fold16(x0, k3k4), x1);
    x2 = _mm_xor_si128(crc32_fold16(x1, k3k4), x2);
    x0 = _mm_xor_si128(crc32_fold16(x2, k3k4), x3);
+   return crc32_pclmul_tail(x0, data, len);
+}
+
+/* One 128-bit accumulator and what is left, under 64 octets more than
+ * its 16: folded on 16 at a time, then reduced to the remainder */
+CRC32_TARGET_PCLMUL
+static uint32_t crc32_pclmul_tail(__m128i x0, const uint8_t *data, size_t len)
+{
+   const __m128i k3k4   = _mm_set_epi32((int)CRC32_K4_HI, (int)CRC32_K4_LO,
+                                        (int)CRC32_K3_HI, (int)CRC32_K3_LO);
+   const __m128i k5     = _mm_set_epi32(0, 0,
+                                        (int)CRC32_K5_HI, (int)CRC32_K5_LO);
+   const __m128i mupp   = _mm_set_epi32((int)CRC32_PP_HI, (int)CRC32_PP_LO,
+                                        (int)CRC32_MU_HI, (int)CRC32_MU_LO);
+   const __m128i mask32 = _mm_set_epi32(0, 0, 0, -1);
+   __m128i t;
+   uint32_t crc;
 
    while (len >= 16)
    {
@@ -281,6 +325,120 @@ static uint32_t crc32_pclmul(uint32_t crc, const uint8_t *data, size_t len)
       crc = crc32_slice_by_8(crc, data, len);
    return crc;
 }
+
+#if defined(CRC32_HAVE_VPCLMUL_PATH)
+#include <immintrin.h>
+#include <retro_atomic.h>
+#if defined(_MSC_VER)
+#include <intrin.h>
+#else
+#include <cpuid.h>
+#endif
+
+/* AVX-512 with VPCLMULQDQ: four 128-bit lanes to a register, four
+ * registers, 256 octets a turn; then one register 64 at a time, its
+ * lanes folded into the one the 128-bit tail goes on with */
+
+/* The K() above of each lane: x^(4*512 + 32) and x^(4*512 - 32), and so
+ * on, as {high dword, low dword} pairs, the - 32 one first */
+#define CRC32_K2048 0x00000001, 0x322D1430, 0x00000001, 0x1542778A
+#define CRC32_K512  0x00000001, 0xC6E41596, 0x00000001, 0x54442BD4
+#define CRC32_K384  0x00000001, 0x74359406, 0x00000000, 0x3DB1ECDC
+#define CRC32_K256  0x00000001, 0x5A546366, 0x00000000, 0xF1DA05AA
+#define CRC32_K128  0x00000000, 0xCCAA009E, 0x00000001, 0x751997D0
+
+#define CRC32_LANE(k) _mm512_broadcast_i32x4(_mm_set_epi32(k))
+#define CRC32_FOLD64(x, k, d) _mm512_ternarylogic_epi64( \
+      _mm512_clmulepi64_epi128((x), (k), 0x00), \
+      _mm512_clmulepi64_epi128((x), (k), 0x11), (d), 0x96)
+
+CRC32_TARGET_VPCLMUL
+static uint32_t crc32_vpclmul(uint32_t crc, const uint8_t *data, size_t len)
+{
+   const __m512i k2048 = CRC32_LANE(CRC32_K2048);
+   const __m512i k512  = CRC32_LANE(CRC32_K512);
+   /* lane 0 on past three, 1 past two, 2 past one, 3 as it is */
+   const __m512i kl    = _mm512_inserti32x4(_mm512_inserti32x4(
+         _mm512_inserti32x4(_mm512_setzero_si512(),
+            _mm_set_epi32(CRC32_K384), 0), _mm_set_epi32(CRC32_K256), 1),
+         _mm_set_epi32(CRC32_K128), 2);
+   __m512i z0, z1, z2, z3;
+   __m256i y;
+
+   z0 = _mm512_xor_si512(_mm512_loadu_si512((const void*)data),
+         _mm512_castsi128_si512(_mm_cvtsi32_si128((int)crc)));
+   z1 = _mm512_loadu_si512((const void*)(data +  64));
+   z2 = _mm512_loadu_si512((const void*)(data + 128));
+   z3 = _mm512_loadu_si512((const void*)(data + 192));
+   data += 256;
+   len  -= 256;
+   while (len >= 256)
+   {
+      z0 = CRC32_FOLD64(z0, k2048, _mm512_loadu_si512((const void*)data));
+      z1 = CRC32_FOLD64(z1, k2048,
+            _mm512_loadu_si512((const void*)(data +  64)));
+      z2 = CRC32_FOLD64(z2, k2048,
+            _mm512_loadu_si512((const void*)(data + 128)));
+      z3 = CRC32_FOLD64(z3, k2048,
+            _mm512_loadu_si512((const void*)(data + 192)));
+      data += 256;
+      len  -= 256;
+   }
+   z1 = CRC32_FOLD64(z0, k512, z1);
+   z2 = CRC32_FOLD64(z1, k512, z2);
+   z0 = CRC32_FOLD64(z2, k512, z3);
+   while (len >= 64)
+   {
+      z0 = CRC32_FOLD64(z0, k512, _mm512_loadu_si512((const void*)data));
+      data += 64;
+      len  -= 64;
+   }
+   z0 = _mm512_mask_mov_epi64(CRC32_FOLD64(z0, kl, _mm512_setzero_si512()),
+         0xC0, z0);
+   y  = _mm256_xor_si256(_mm512_castsi512_si256(z0),
+         _mm512_extracti64x4_epi64(z0, 1));
+   return crc32_pclmul_tail(_mm_xor_si128(_mm256_castsi256_si128(y),
+         _mm256_extracti128_si256(y, 1)), data, len);
+}
+#undef CRC32_FOLD64
+#undef CRC32_LANE
+
+/* AVX-512, which says the OS keeps ZMM state, and leaf 7's VPCLMULQDQ
+ * (ECX bit 10): asked once */
+static retro_atomic_int_t crc32_vp_state; /* 0 not yet, 1 no, 2 yes */
+
+static int crc32_have_vpclmul(void)
+{
+   int st = retro_atomic_load_acquire_int(&crc32_vp_state);
+   if (!st)
+   {
+      uint32_t ecx = 0;
+      if (cpu_features_get() & RETRO_SIMD_AVX512)
+      {
+#if defined(_MSC_VER)
+         int r[4];
+         __cpuidex(r, 0, 0);
+         if (r[0] >= 7)
+         {
+            __cpuidex(r, 7, 0);
+            ecx = (uint32_t)r[2];
+         }
+#else
+         unsigned a, b, c, d;
+         if (__get_cpuid_max(0, NULL) >= 7)
+         {
+            __cpuid_count(7, 0, a, b, c, d);
+            ecx = c;
+         }
+#endif
+      }
+      st = (ecx & (1u << 10)) ? 2 : 1;
+      retro_atomic_store_release_int(&crc32_vp_state, st);
+   }
+   return st == 2;
+}
+#endif
+
 
 /* Detection lives in cpu_features_get(), which probes once behind an
  * acquire/release pair and is the frontend's single answer to "what
@@ -462,6 +620,11 @@ uint32_t encoding_crc32(uint32_t crc, const uint8_t *data, size_t len)
 #elif defined(CRC32_HAVE_ARM_PATH)
    crc = crc32_arm(crc, data, len);
 #elif defined(CRC32_HAVE_PCLMUL_PATH)
+#if defined(CRC32_HAVE_VPCLMUL_PATH)
+   if (len >= 256 && crc32_have_vpclmul())
+      crc = crc32_vpclmul(crc, data, len);
+   else
+#endif
    if (len >= 64 && crc32_have_pclmul())
       crc = crc32_pclmul(crc, data, len);
    else

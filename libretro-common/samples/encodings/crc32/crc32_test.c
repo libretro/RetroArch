@@ -277,14 +277,17 @@ static void length_alignment_sweep(void)
 static void fold_boundaries(void)
 {
    /* +/-1 around every size where an implementation changes gear: the
-    * 64-byte four-way fold, the 16-byte single fold, and page-sized
+    * 64-byte four-way fold, the 16-byte single fold, the 256-octet
+    * 512-bit fold and the 64-octet one after it, and page-sized
     * multiples for good measure. */
    static const size_t sizes[] = {
        1,   2,   3,   7,   8,   9,  15,  16,  17,
       31,  32,  33,  47,  48,  49,  62,  63,  64,  65,  66,
       79,  80,  81,  95,  96,  97, 111, 112, 113, 127, 128, 129,
      143, 144, 145, 175, 176, 191, 192, 193, 255, 256, 257,
-     511, 512, 513, 1023, 1024, 1025, 4095, 4096, 4097,
+     319, 320, 321, 383, 384, 385, 447, 448, 449,
+     511, 512, 513, 767, 768, 769, 1023, 1024, 1025,
+     1279, 1280, 1281, 2047, 2048, 2049, 4095, 4096, 4097,
      65535, 65536, 65537
    };
    unsigned k;
