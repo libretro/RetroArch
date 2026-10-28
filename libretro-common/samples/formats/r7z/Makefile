@@ -86,7 +86,8 @@ $(TARGET_TEST4): $(STORED_OBJS)
 
 r7z_methods_test.o: r7z_methods_test.c r7z_methods_fixtures.h
 
-r7z_stream_test.o: r7z_stream_test.c ../../file/archive_7z/archive_7z_fixtures.h
+r7z_stream_test.o: r7z_stream_test.c ../../file/archive_7z/archive_7z_fixtures.h \
+   r7z_filter_fixtures.h
 
 $(TARGET_TEST6): $(STREAM_OBJS)
 	$(CC) $(STREAM_OBJS) $(LDFLAGS) -o $@

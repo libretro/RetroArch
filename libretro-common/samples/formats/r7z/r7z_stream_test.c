@@ -1,11 +1,13 @@
 /* Entries streamed out of a solid folder with r7z_archive_stream_*():
  * the three of the LZMA2 and LZMA archives in
- * ../../file/archive_7z/archive_7z_fixtures.h, from memory and through
- * positioned reads. Streamed in order, each after the first goes on
- * from where the one before ended - r7z_archive.c is built with its
- * allocations counted, and the later ones allocate nothing - and out of
- * order the stream starts again; every way they come out as
- * r7z_archive_extract() gives them. */
+ * ../../file/archive_7z/archive_7z_fixtures.h, and of each converter's
+ * in r7z_filter_fixtures.h, from memory and through positioned reads.
+ * Streamed in order, each after the first goes on from where the one
+ * before ended - r7z_archive.c is built with its allocations counted,
+ * and the later ones allocate nothing - and out of order the stream
+ * starts again; every way they come out as r7z_archive_extract() gives
+ * them, and the converters' as code_like() made them. Two converters in
+ * a row are not streamed, and are extracted whole. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +17,7 @@
 #include <7z/r7z_archive.h>
 
 #include "../../file/archive_7z/archive_7z_fixtures.h"
+#include "r7z_filter_fixtures.h"
 
 static int    failures;
 static size_t total;
@@ -142,14 +145,190 @@ static void run(const char *what, const uint8_t *fx, size_t len, int read)
    r7z_archive_close(a);
 }
 
+/* @n octets of something like code, file @which's: a few plain words
+ * over and over, and every so often one of the call, branch and jump
+ * forms the converters rewrite, each 4 octets so the RISC ones stay on
+ * their words, x86's call and jump padded out to 8 and an IA-64 bundle
+ * of 16 with a branch in its third slot */
+static void code_like(uint8_t *d, size_t n, unsigned which)
+{
+   static const uint8_t forms[13][16] = {
+      { 0xE8, 0x10, 0, 0, 0, 0x90, 0x90, 0x90 },  /* x86 call */
+      { 0xE9, 0x20, 0, 0, 0, 0x90, 0x90, 0x90 },  /* x86 jmp */
+      { 0x10, 0, 0, 0xEB },                       /* ARM BL */
+      { 0, 0xF0, 0x10, 0xF8 },                    /* Thumb BL pair */
+      { 0x10, 0, 0, 0x94 },                       /* ARM64 BL */
+      { 0x10, 0, 0, 0x90 },                       /* ARM64 ADRP */
+      { 0x48, 0, 0x10, 0x01 },                    /* PPC bl */
+      { 0x40, 0, 0, 0x10 },                       /* SPARC call */
+      { 0x55, 0x48, 0x89, 0xE5 },
+      { 0x8B, 0x45, 0xFC, 0x90 },
+      { 0xC3, 0x90, 0x90, 0x90 },
+      { 0x00, 0x00, 0xA0, 0xE1 },
+      { 0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x10, 0, 0x50 } };
+   static const unsigned lens[13] = { 8, 8, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+      16 };
+   uint32_t x = 2463534242u + which * 977u;
+   size_t   at = 0;
+   while (at < n)
+   {
+      unsigned f, k;
+      x ^= x << 13;
+      x ^= x >> 17;
+      x ^= x << 5;
+      /* a form one time in four, else a plain word */
+      f = (x & 3) ? 8 + ((x >> 4) & 3) : (x >> 8) % 8;
+      if (f == 7 && (x & 0x100000))
+         f = 12;
+      for (k = 0; k < lens[f] && at < n; k++, at++)
+         d[at] = forms[f][k];
+   }
+}
+
+/* A converter's archive: each entry streamed in order, then out of it,
+ * as code_like() made it */
+static void filtered(const char *what, const uint8_t *fx, size_t len,
+      int read)
+{
+   static const size_t sizes[3] = { 6001, 4500, 7003 };
+   static const uint32_t order[6] = { 0, 1, 2, 1, 2, 0 };
+   static uint8_t want[7003];
+   struct mem     m;
+   r7z_archive_t *a = NULL;
+   unsigned       k;
+
+   m.d = fx;
+   m.n = len;
+   if ((read ? r7z_archive_open_read(&a, len, read_at, &m)
+             : r7z_archive_open(&a, fx, len)) != R7Z_OK)
+   {
+      check(0, what, 0);
+      return;
+   }
+   for (k = 0; k < 6; k++)
+   {
+      uint32_t       i  = order[k];
+      size_t         at = 0, n, before = total;
+      const uint8_t *d;
+      int            res, ok = 1;
+      code_like(want, sizes[i], i);
+      if (r7z_archive_stream_begin(a, i) != R7Z_OK)
+      {
+         check(0, what, i);
+         continue;
+      }
+      check(k == 1 || k == 2 ? total == before : 1, "in order, going on", i);
+      while ((res = r7z_archive_stream_step(a, &d, &n)) == R7Z_PENDING)
+      {
+         if (n > sizes[i] - at || (n && memcmp(d, want + at, n)))
+            ok = 0;
+         at += n;
+      }
+      check(ok && res == R7Z_OK && at == sizes[i], what, i);
+   }
+   r7z_archive_stream_end(a);
+   r7z_archive_close(a);
+}
+
+/* @n octets of x86 calls and jumps and of E8 and E9 that are not, close
+ * together, so some are always about where a piece ends */
+static void x86_dense(uint8_t *d, size_t n)
+{
+   uint32_t x = 13u;
+   size_t   at;
+   for (at = 0; at < n; at++)
+   {
+      x ^= x << 13;
+      x ^= x >> 17;
+      x ^= x << 5;
+      d[at] = (x & 1) ? (uint8_t)(0xE8 | ((x >> 1) & 1))
+            : (uint8_t)((x >> 2) & 3);
+   }
+}
+
+/* x86 calls across where the pieces end, which the converter's state
+ * carries over */
+static void dense(int read)
+{
+   static uint8_t want[9000];
+   struct mem     m;
+   r7z_archive_t *a = NULL;
+   const uint8_t *d;
+   size_t         at = 0, n;
+   int            res, ok = 1;
+
+   m.d = fx_f_dense;
+   m.n = sizeof(fx_f_dense);
+   x86_dense(want, sizeof(want));
+   if (     (read ? r7z_archive_open_read(&a, m.n, read_at, &m)
+                  : r7z_archive_open(&a, m.d, m.n)) != R7Z_OK
+         || r7z_archive_stream_begin(a, 0) != R7Z_OK)
+   {
+      check(0, "x86, dense", 0);
+      r7z_archive_close(a);
+      return;
+   }
+   while ((res = r7z_archive_stream_step(a, &d, &n)) == R7Z_PENDING)
+   {
+      if (n > sizeof(want) - at || (n && memcmp(d, want + at, n)))
+         ok = 0;
+      at += n;
+   }
+   check(ok && res == R7Z_OK && at == sizeof(want), "x86, dense", 0);
+   r7z_archive_close(a);
+}
+
+/* Two converters: not streamed, and whole as code_like() made them */
+static void two_filters(void)
+{
+   static const size_t sizes[3] = { 6001, 4500, 7003 };
+   static uint8_t want[7003];
+   r7z_archive_t *a = NULL;
+   uint32_t       i;
+   if (r7z_archive_open(&a, fx_f_two, sizeof(fx_f_two)) != R7Z_OK)
+   {
+      check(0, "two converters", 0);
+      return;
+   }
+   check(r7z_archive_stream_begin(a, 0) == R7Z_ERROR_UNSUPPORTED,
+         "two converters, not streamed", 0);
+   for (i = 0; i < 3; i++)
+   {
+      uint8_t *got = NULL;
+      size_t   got_len = 0;
+      code_like(want, sizes[i], i);
+      check(r7z_archive_extract(a, i, &got, &got_len) == R7Z_OK
+            && got_len == sizes[i] && !memcmp(got, want, got_len),
+            "two converters, whole", i);
+      counted_free(got);
+   }
+   r7z_archive_close(a);
+}
+
 int main(void)
 {
+   int r;
    run("LZMA2", fx_big_lzma2, sizeof(fx_big_lzma2), 0);
    run("LZMA2, read", fx_big_lzma2, sizeof(fx_big_lzma2), 1);
    run("LZMA", fx_big_lzma, sizeof(fx_big_lzma), 0);
    run("LZMA, read", fx_big_lzma, sizeof(fx_big_lzma), 1);
+   for (r = 0; r < 2; r++)
+   {
+      filtered("BCJ", fx_f_bcj, sizeof(fx_f_bcj), r);
+      filtered("BCJ, LZMA2", fx_f_bcjl2, sizeof(fx_f_bcjl2), r);
+      filtered("ARM", fx_f_arm, sizeof(fx_f_arm), r);
+      filtered("ARMT", fx_f_armt, sizeof(fx_f_armt), r);
+      filtered("ARM64", fx_f_arm64, sizeof(fx_f_arm64), r);
+      filtered("PPC", fx_f_ppc, sizeof(fx_f_ppc), r);
+      filtered("SPARC", fx_f_sparc, sizeof(fx_f_sparc), r);
+      filtered("IA64", fx_f_ia64, sizeof(fx_f_ia64), r);
+      filtered("Delta", fx_f_delta, sizeof(fx_f_delta), r);
+      dense(r);
+   }
+   two_filters();
    if (failures)
       return 1;
-   printf("r7z_stream_test: a solid folder's entries streamed, in order once\n");
+   printf("r7z_stream_test: solid folders' entries streamed, in order once, "
+         "through every converter\n");
    return 0;
 }
