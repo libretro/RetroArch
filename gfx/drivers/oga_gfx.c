@@ -113,6 +113,10 @@ typedef struct oga_video
    /* A core's views laid out on the screen, upright, for the blit that
     * turns them onto the panel */
    oga_surface_t *views_surface;
+   /* Where the last views frame put its views on views_surface; the
+    * surface is cleared only when that changes. */
+   video_views_rect_t views_cuts[VIDEO_VIEWS_MAX_PLACEMENTS];
+   unsigned views_cut_count;
    const font_renderer_driver_t *font_driver;
    void *font;
    int msg_width;
@@ -609,6 +613,11 @@ static void *oga_init(const video_info_t *video)
       }
    }
 
+   /* For a core's views: made now, at the screen's size, so the first
+    * views frame allocates nothing. Without it views are drawn whole. */
+   vid->views_surface = oga_create_surface(vid->fd, vid->drm_width,
+         vid->drm_height, RK_FORMAT_BGRA_8888, false);
+
    /* What views are laid out on: the screen as it is seen */
    video_driver_set_output_dims(VIDEO_SCALE_PACK(vid->drm_width,
             vid->drm_height));
@@ -888,9 +897,11 @@ static bool oga_views_frame(oga_video_t *vid, const void *frame,
       const video_frame_info_t *info, oga_framebuf_t *page,
       unsigned int blend)
 {
-   unsigned i;
+   unsigned i, n;
    unsigned screen;
    oga_rect_t whole;
+   video_views_rect_t cuts[VIDEO_VIEWS_MAX_PLACEMENTS];
+   unsigned char which[VIDEO_VIEWS_MAX_PLACEMENTS];
    const video_views_layout_t *layout;
    bool views = info && frame && info->views.num_views
       && !info->views_layout.offscreen
@@ -899,12 +910,9 @@ static bool oga_views_frame(oga_video_t *vid, const void *frame,
       && width == VIDEO_SCALE_W(dims) && height == VIDEO_SCALE_H(dims)
       && video_views_fit_frame(&info->views, dims);
 
-   if (views && !vid->views_surface)
-   {
-      vid->views_surface = oga_create_surface(vid->fd, vid->drm_width,
-            vid->drm_height, RK_FORMAT_BGRA_8888, false);
-      views              = vid->views_surface != NULL;
-   }
+   /* Made at init; without it the frame is drawn whole */
+   if (!vid->views_surface)
+      views = false;
    retro_atomic_store_release_int(&vid->views_fallback,
          (info && info->views.num_views && !views) ? 1 : 0);
    if (!views)
@@ -917,21 +925,39 @@ static bool oga_views_frame(oga_video_t *vid, const void *frame,
 
    layout = &info->views_layout;
    screen = VIDEO_SCALE_PACK(vid->drm_width, vid->drm_height);
-   rga_clear_surface(vid->views_surface, 0);
-   for (i = 0; i < layout->num_placements; i++)
+   /* Where each visible view lands this frame */
+   for (i = 0, n = 0; i < layout->num_placements
+         && i < VIDEO_VIEWS_MAX_PLACEMENTS; i++)
    {
-      video_views_rect_t cut, from;
-      const video_views_placement_t *p = &layout->placements[i];
-
-      if (!video_views_visible(layout, p, screen, &cut))
+      if (!video_views_visible(layout, &layout->placements[i], screen,
+               &cuts[n]))
          continue;
-      video_views_cut_source(&info->views.views[p->view], &p->dst, &cut,
+      which[n++] = (unsigned char)i;
+   }
+
+   /* The views overwrite the same rectangles every frame, so what lies
+    * outside them only needs black again when they move. */
+   if (     n != vid->views_cut_count
+         || memcmp(cuts, vid->views_cuts, n * sizeof(cuts[0])))
+   {
+      rga_clear_surface(vid->views_surface, 0);
+      memcpy(vid->views_cuts, cuts, n * sizeof(cuts[0]));
+      vid->views_cut_count = n;
+   }
+
+   for (i = 0; i < n; i++)
+   {
+      video_views_rect_t from;
+      const video_views_rect_t *cut    = &cuts[i];
+      const video_views_placement_t *p = &layout->placements[which[i]];
+
+      video_views_cut_source(&info->views.views[p->view], &p->dst, cut,
             &from);
       oga_blit(vid->frame_surface,
             sx + VIDEO_POS_X(from.pos), sy + VIDEO_POS_Y(from.pos),
             (int)VIDEO_SCALE_W(from.dims), (int)VIDEO_SCALE_H(from.dims),
-            vid->views_surface, VIDEO_POS_X(cut.pos), VIDEO_POS_Y(cut.pos),
-            (int)VIDEO_SCALE_W(cut.dims), (int)VIDEO_SCALE_H(cut.dims),
+            vid->views_surface, VIDEO_POS_X(cut->pos), VIDEO_POS_Y(cut->pos),
+            (int)VIDEO_SCALE_W(cut->dims), (int)VIDEO_SCALE_H(cut->dims),
             0, vid->scale_mode, 0);
    }
    whole.x = whole.y = 0;
