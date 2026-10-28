@@ -8048,8 +8048,7 @@ static void rgui_set_texture(void *data)
       {
          unsigned out_width;
          unsigned out_height;
-         uint32_t x_ratio, y_ratio;
-         unsigned y_src, prev_y_src;
+         unsigned x_src, y_src, prev_y_src, rem;
          unsigned x_dst, y_dst;
          size_t out_pitch;
          uint16_t *cols, *line;
@@ -8112,18 +8111,22 @@ static void rgui_set_texture(void *data)
          /* Perform nearest neighbour upscaling
           * NB: We're duplicating code here, but trying to handle
           * this with a polymorphic function is too much of a drag... */
-         x_ratio    = ((fb_width  << 16) / out_width);
-         y_ratio    = ((fb_height << 16) / out_height);
          cols       = rgui->upscale_line;
          line       = cols + out_width;
          prev_y_src = fb_height;
 
-         for (x_dst = 0; x_dst < out_width; x_dst++)
-            cols[x_dst] = (uint16_t)((x_dst * x_ratio) >> 16);
-
-         for (y_dst = 0; y_dst < out_height; y_dst++)
+         /* Source of each output pixel: floor(dst * fb / out),
+          * stepped, so at a whole factor each source pixel is
+          * repeated exactly that many times */
+         for (x_dst = 0, x_src = 0, rem = 0; x_dst < out_width; x_dst++)
          {
-            y_src = (y_dst * y_ratio) >> 16;
+            cols[x_dst] = (uint16_t)x_src;
+            for (rem += fb_width; rem >= out_width; rem -= out_width)
+               x_src++;
+         }
+
+         for (y_dst = 0, y_src = 0, rem = 0; y_dst < out_height; y_dst++)
+         {
             if (y_src != prev_y_src)
             {
                const uint16_t *src = frame_buf->data + (y_src * fb_width);
@@ -8133,6 +8136,8 @@ static void rgui_set_texture(void *data)
             }
             memcpy((uint8_t*)out_frame + y_dst * out_pitch, line,
                   out_width * sizeof(uint16_t));
+            for (rem += fb_height; rem >= out_height; rem -= out_height)
+               y_src++;
          }
 
          /* Draw upscaled texture */
