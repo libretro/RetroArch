@@ -2635,11 +2635,26 @@ static bool rsx_frame(void* data, const void* frame,
    bool widgets_active              = video_info->widgets_active;
 #endif
    bool draw                        = false;
+   /* The core shares the FIFO and leaves its own state behind.
+    * Restore the frontend's state before anything of ours is drawn:
+    * a core frame (hardware or CPU fallback), or a duped frame that
+    * still gets the menu, overlay, OSD or widgets drawn on top.  A
+    * bare dupe draws nothing and skips it. */
+   bool restore                     = gcm->hw_render && (frame || msg
+#ifdef HAVE_MENU
+         || (gcm->menu_frame_enable && menu_is_alive) || statistics_show
+#endif
+#ifdef HAVE_OVERLAY
+         || gcm->overlay_enable
+#endif
+#ifdef HAVE_GFX_WIDGETS
+         || widgets_active
+#endif
+         );
 
    rsx_collect_retired_memory();
    rsx_fence_retired_memory(gcm->context);
-   /* The core shares the FIFO and leaves its own state behind */
-   if (gcm->hw_render && frame)
+   if (restore)
    {
       unsigned attrib;
       rsxSetSurface(gcm->context, &gcm->surface[gcm->nextBuffer]);

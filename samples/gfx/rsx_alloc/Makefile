@@ -33,6 +33,9 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+# the test #includes the driver, so a driver edit must rebuild it
+rsx_alloc_test.o: $(REPO_ROOT)/gfx/drivers/rsx_gfx.c
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 

@@ -1094,6 +1094,19 @@ static void test_hw_frame_state(void)
          && rsx_depth_test_enable == GCM_TRUE,
          "hw_frame_state: duplicate frame does not reset state");
 
+   /* A dupe with the menu on top draws, so it must not inherit the
+    * core's state either. */
+   info.menu_st_flags     = MENU_ST_FLAG_ALIVE;
+   rsx->menu_frame_enable = true;
+   rsx_depth_test_enable  = GCM_TRUE;
+   calls = rsx_depth_test_calls;
+   rsx_frame(rsx, NULL, 0, 3, 0, NULL, &info);
+   CHECK(rsx_depth_test_calls == calls + 1
+         && rsx_depth_test_enable == GCM_FALSE,
+         "hw_frame_state: duplicate frame under the menu restores frontend state");
+   rsx->menu_frame_enable = false;
+   info.menu_st_flags     = 0;
+
    driver_down(rsx);
    fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
    printf("hw_frame_state: ok\n");
