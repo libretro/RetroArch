@@ -340,6 +340,9 @@ bitmapfont_lut_t *bitmapfont_get_lut(void)
       }
    }
 
+   if (!bitmapfont_build_rows(font, FONT_WIDTH, FONT_HEIGHT))
+      goto error;
+
    return font;
 
 error:
@@ -349,10 +352,46 @@ error:
    return NULL;
 }
 
+bool bitmapfont_build_rows(bitmapfont_lut_t *font,
+      unsigned glyph_width, unsigned glyph_height)
+{
+   size_t symbol_index;
+   size_t num_glyphs = (font->glyph_max - font->glyph_min) + 1;
+   uint16_t *rows    = (uint16_t*)malloc(
+         num_glyphs * glyph_height * sizeof(uint16_t));
+
+   if (!rows)
+      return false;
+
+   free(font->rows);
+   font->rows = rows;
+
+   for (symbol_index = 0; symbol_index < num_glyphs; symbol_index++)
+   {
+      const bool *symbol_lut = font->lut[symbol_index];
+      unsigned i, j;
+
+      for (j = 0; j < glyph_height; j++)
+      {
+         unsigned mask = 0;
+
+         for (i = 0; i < glyph_width; i++)
+            if (symbol_lut[i + (j * glyph_width)])
+               mask |= 1u << i;
+
+         *rows++ = (uint16_t)mask;
+      }
+   }
+
+   return true;
+}
+
 void bitmapfont_free_lut(bitmapfont_lut_t *font)
 {
    if (!font)
       return;
+
+   free(font->rows);
 
    if (font->lut)
    {

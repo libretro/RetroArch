@@ -36,6 +36,11 @@ extern const unsigned char bitmap_bin[1792];
 typedef struct
 {
    bool **lut;
+   /* The same pixels as one mask per glyph row,
+    * bit i set where column i has a pixel:
+    *   rows[(glyph * glyph_height) + row]
+    * Lets a blit walk only the set pixels. */
+   uint16_t *rows;
    uint16_t glyph_min;
    uint16_t glyph_max;
 } bitmapfont_lut_t;
@@ -48,6 +53,12 @@ typedef struct
  * bitmapfont_free_lut().
  * Returns NULL in the event of an error. */
 bitmapfont_lut_t *bitmapfont_get_lut(void);
+
+/* Fills font->rows from font->lut, for glyphs up to
+ * 16 pixels wide. For use by font loaders.
+ * Returns false if memory runs out. */
+bool bitmapfont_build_rows(bitmapfont_lut_t *font,
+      unsigned glyph_width, unsigned glyph_height);
 
 void bitmapfont_free_lut(bitmapfont_lut_t *font);
 

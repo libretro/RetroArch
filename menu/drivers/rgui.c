@@ -345,6 +345,12 @@ typedef struct
    frame_buf_t frame_buf;
    frame_buf_t background_buf;
    frame_buf_t upscale_buf;
+   /* For the upscale: the source column of each output column, then
+    * one output row, built once and copied to each row that repeats
+    * it (the output may be a loaned driver buffer, which is not read
+    * back). Grown only when the output gets wider. */
+   uint16_t *upscale_line;
+   unsigned upscale_line_width;
 
    thumbnail_t fs_thumbnail;
    thumbnail_t mini_thumbnail;
@@ -4227,6 +4233,104 @@ static void rgui_prepare_colors(
 
 /* rgui_blit_line() */
 
+/* A blit walks only the pixels a glyph has: each row mask
+ * (bitmapfont_lut_t.rows) is taken 5 columns at a time, and these
+ * give the set columns of each 5-bit run, in ascending order, so
+ * pixels are written in the same order as a scan of the row. */
+static const uint8_t rgui_glyph_run_count[32] = {
+   0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+   1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5
+};
+
+static const uint8_t rgui_glyph_run_cols[32][5] = {
+   {0, 0, 0, 0, 0},
+   {0, 0, 0, 0, 0},
+   {1, 0, 0, 0, 0},
+   {0, 1, 0, 0, 0},
+   {2, 0, 0, 0, 0},
+   {0, 2, 0, 0, 0},
+   {1, 2, 0, 0, 0},
+   {0, 1, 2, 0, 0},
+   {3, 0, 0, 0, 0},
+   {0, 3, 0, 0, 0},
+   {1, 3, 0, 0, 0},
+   {0, 1, 3, 0, 0},
+   {2, 3, 0, 0, 0},
+   {0, 2, 3, 0, 0},
+   {1, 2, 3, 0, 0},
+   {0, 1, 2, 3, 0},
+   {4, 0, 0, 0, 0},
+   {0, 4, 0, 0, 0},
+   {1, 4, 0, 0, 0},
+   {0, 1, 4, 0, 0},
+   {2, 4, 0, 0, 0},
+   {0, 2, 4, 0, 0},
+   {1, 2, 4, 0, 0},
+   {0, 1, 2, 4, 0},
+   {3, 4, 0, 0, 0},
+   {0, 3, 4, 0, 0},
+   {1, 3, 4, 0, 0},
+   {0, 1, 3, 4, 0},
+   {2, 3, 4, 0, 0},
+   {0, 2, 3, 4, 0},
+   {1, 2, 3, 4, 0},
+   {0, 1, 2, 3, 4}
+};
+
+static INLINE void rgui_blit_glyph(uint16_t *dst, unsigned fb_width,
+      const uint16_t *rows, unsigned height, uint16_t color)
+{
+   unsigned j;
+
+   for (j = 0; j < height; j++, dst += fb_width)
+   {
+      unsigned mask = rows[j];
+      uint16_t *run = dst;
+
+      for (; mask; mask >>= 5, run += 5)
+      {
+         const uint8_t *cols = rgui_glyph_run_cols[mask & 31];
+         unsigned count      = rgui_glyph_run_count[mask & 31];
+         unsigned k;
+
+         for (k = 0; k < count; k++)
+            run[cols[k]] = color;
+      }
+   }
+}
+
+static INLINE void rgui_blit_glyph_shadow(uint16_t *dst, unsigned fb_width,
+      const uint16_t *rows, unsigned height,
+      const uint16_t *color_buf, const uint16_t *shadow_color_buf)
+{
+   unsigned j;
+
+   for (j = 0; j < height; j++, dst += fb_width)
+   {
+      unsigned mask = rows[j];
+      uint16_t *run = dst;
+
+      for (; mask; mask >>= 5, run += 5)
+      {
+         const uint8_t *cols = rgui_glyph_run_cols[mask & 31];
+         unsigned count      = rgui_glyph_run_count[mask & 31];
+         unsigned k;
+
+         for (k = 0; k < count; k++)
+         {
+            uint16_t *frame_buf_ptr = run + cols[k];
+
+            /* Text pixel + right shadow */
+            memcpy(frame_buf_ptr, color_buf, 2 * sizeof(uint16_t));
+
+            /* Bottom shadow */
+            frame_buf_ptr += fb_width;
+            memcpy(frame_buf_ptr, shadow_color_buf, 2 * sizeof(uint16_t));
+         }
+      }
+   }
+}
+
 static void rgui_blit_line_regular(
       rgui_t *rgui,
       unsigned fb_width,
@@ -4237,11 +4341,10 @@ static void rgui_blit_line_regular(
       uint16_t shadow_color)
 {
    uint16_t *frame_buf_data = rgui->frame_buf.data;
-   bool **lut               = rgui->fonts.regular->lut;
+   const uint16_t *rows     = rgui->fonts.regular->rows;
 
    while (message && *message)
    {
-      unsigned i, j;
       uint8_t symbol = (uint8_t)*message++;
 
       if (symbol >= RGUI_NUM_FONT_GLYPHS_REGULAR)
@@ -4249,18 +4352,10 @@ static void rgui_blit_line_regular(
 
       if (symbol != ' ')
       {
-         bool *symbol_lut = lut[symbol];
+         const uint16_t *symbol_rows = rows + (symbol * FONT_HEIGHT);
 
-         for (j = 0; j < FONT_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_WIDTH; i++)
-            {
-               if (*(symbol_lut + i + (j * FONT_WIDTH)))
-                  *(frame_buf_data + buff_offset + i) = color;
-            }
-         }
+         rgui_blit_glyph(frame_buf_data + (y * fb_width) + x, fb_width,
+               symbol_rows, FONT_HEIGHT, color);
       }
 
       x += FONT_WIDTH_STRIDE;
@@ -4277,7 +4372,7 @@ static void rgui_blit_line_regular_shadow(
       uint16_t shadow_color)
 {
    uint16_t *frame_buf_data = rgui->frame_buf.data;
-   bool **lut               = rgui->fonts.regular->lut;
+   const uint16_t *rows     = rgui->fonts.regular->rows;
    uint16_t color_buf[2];
    uint16_t shadow_color_buf[2];
 
@@ -4289,7 +4384,6 @@ static void rgui_blit_line_regular_shadow(
 
    while (message && *message)
    {
-      unsigned i, j;
       uint8_t symbol = (uint8_t)*message++;
 
       if (symbol >= RGUI_NUM_FONT_GLYPHS_REGULAR)
@@ -4297,27 +4391,10 @@ static void rgui_blit_line_regular_shadow(
 
       if (symbol != ' ')
       {
-         bool *symbol_lut = lut[symbol];
+         const uint16_t *symbol_rows = rows + (symbol * FONT_HEIGHT);
 
-         for (j = 0; j < FONT_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_WIDTH; i++)
-            {
-               if (*(symbol_lut + i + (j * FONT_WIDTH)))
-               {
-                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
-
-                  /* Text pixel + right shadow */
-                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
-
-                  /* Bottom shadow */
-                  frame_buf_ptr += fb_width;
-                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
-               }
-            }
-         }
+         rgui_blit_glyph_shadow(frame_buf_data + (y * fb_width) + x,
+               fb_width, symbol_rows, FONT_HEIGHT, color_buf, shadow_color_buf);
       }
 
       x += FONT_WIDTH_STRIDE;
@@ -4334,7 +4411,7 @@ static void rgui_blit_line_extended(
       uint16_t shadow_color)
 {
    uint16_t *frame_buf_data = rgui->frame_buf.data;
-   bool **lut               = rgui->fonts.regular->lut;
+   const uint16_t *rows     = rgui->fonts.regular->rows;
 
    while (message && *message)
    {
@@ -4343,8 +4420,7 @@ static void rgui_blit_line_extended(
          message++;
       else
       {
-         unsigned i, j;
-         bool *symbol_lut = NULL;
+         const uint16_t *symbol_rows = NULL;
          uint32_t symbol  = utf8_walk(&message);
 
          /* Stupid cretinous hack: 'oe' ligatures are not
@@ -4360,18 +4436,10 @@ static void rgui_blit_line_extended(
          if (symbol >= RGUI_NUM_FONT_GLYPHS_EXTENDED)
             continue;
 
-         symbol_lut = lut[symbol];
+         symbol_rows = rows + (symbol * FONT_HEIGHT);
 
-         for (j = 0; j < FONT_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_WIDTH; i++)
-            {
-               if (*(symbol_lut + i + (j * FONT_WIDTH)))
-                  *(frame_buf_data + buff_offset + i) = color;
-            }
-         }
+         rgui_blit_glyph(frame_buf_data + (y * fb_width) + x, fb_width,
+               symbol_rows, FONT_HEIGHT, color);
       }
 
       x += FONT_WIDTH_STRIDE;
@@ -4390,7 +4458,7 @@ static void rgui_blit_line_extended_shadow(
    uint16_t color_buf[2];
    uint16_t shadow_color_buf[2];
    uint16_t *frame_buf_data = rgui->frame_buf.data;
-   bool **lut               = rgui->fonts.regular->lut;
+   const uint16_t *rows     = rgui->fonts.regular->rows;
 
    color_buf[0]             = color;
    color_buf[1]             = shadow_color;
@@ -4405,8 +4473,7 @@ static void rgui_blit_line_extended_shadow(
          message++;
       else
       {
-         unsigned i, j;
-         bool *symbol_lut   = NULL;
+         const uint16_t *symbol_rows = NULL;
          uint32_t symbol    = utf8_walk(&message);
 
          /* Stupid cretinous hack: 'oe' ligatures are not
@@ -4422,27 +4489,10 @@ static void rgui_blit_line_extended_shadow(
          if (symbol >= RGUI_NUM_FONT_GLYPHS_EXTENDED)
             continue;
 
-         symbol_lut = lut[symbol];
+         symbol_rows = rows + (symbol * FONT_HEIGHT);
 
-         for (j = 0; j < FONT_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_WIDTH; i++)
-            {
-               if (*(symbol_lut + i + (j * FONT_WIDTH)))
-               {
-                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
-
-                  /* Text pixel + right shadow */
-                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
-
-                  /* Bottom shadow */
-                  frame_buf_ptr += fb_width;
-                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
-               }
-            }
-         }
+         rgui_blit_glyph_shadow(frame_buf_data + (y * fb_width) + x,
+               fb_width, symbol_rows, FONT_HEIGHT, color_buf, shadow_color_buf);
       }
 
       x += FONT_WIDTH_STRIDE;
@@ -4472,8 +4522,7 @@ static void rgui_blit_line_cjk(
          message++;
       else
       {
-         unsigned i, j;
-         bool *symbol_lut = NULL;
+         const uint16_t *symbol_rows = NULL;
          uint32_t symbol  = utf8_walk(&message);
 
          /* TODO/FIXME: check if really needed */
@@ -4484,26 +4533,18 @@ static void rgui_blit_line_cjk(
 
          /* Find glyph LUT data */
          if (symbol <= font_eng->glyph_max)
-            symbol_lut = font_eng->lut[symbol];
+            symbol_rows = font_eng->rows + (symbol * FONT_10X10_HEIGHT);
          else if ((symbol >= font_chn->glyph_min) && (symbol <= font_chn->glyph_max))
-            symbol_lut = font_chn->lut[symbol - font_chn->glyph_min];
+            symbol_rows = font_chn->rows + ((symbol - font_chn->glyph_min) * FONT_10X10_HEIGHT);
          else if ((symbol >= font_jpn->glyph_min) && (symbol <= font_jpn->glyph_max))
-            symbol_lut = font_jpn->lut[symbol - font_jpn->glyph_min];
+            symbol_rows = font_jpn->rows + ((symbol - font_jpn->glyph_min) * FONT_10X10_HEIGHT);
          else if ((symbol >= font_kor->glyph_min) && (symbol <= font_kor->glyph_max))
-            symbol_lut = font_kor->lut[symbol - font_kor->glyph_min];
+            symbol_rows = font_kor->rows + ((symbol - font_kor->glyph_min) * FONT_10X10_HEIGHT);
          else
             continue;
 
-         for (j = 0; j < FONT_10X10_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_10X10_WIDTH; i++)
-            {
-               if (*(symbol_lut + i + (j * FONT_10X10_WIDTH)))
-                  *(frame_buf_data + buff_offset + i) = color;
-            }
-         }
+         rgui_blit_glyph(frame_buf_data + (y * fb_width) + x, fb_width,
+               symbol_rows, FONT_10X10_HEIGHT, color);
       }
 
       x += FONT_10X10_WIDTH_STRIDE;
@@ -4540,8 +4581,7 @@ static void rgui_blit_line_cjk_shadow(
          message++;
       else
       {
-         unsigned i, j;
-         bool *symbol_lut = NULL;
+         const uint16_t *symbol_rows = NULL;
          uint32_t symbol  = utf8_walk(&message);
 
          /* TODO/FIXME: check if really needed */
@@ -4552,35 +4592,18 @@ static void rgui_blit_line_cjk_shadow(
 
          /* Find glyph LUT data */
          if (symbol <= font_eng->glyph_max)
-            symbol_lut = font_eng->lut[symbol];
+            symbol_rows = font_eng->rows + (symbol * FONT_10X10_HEIGHT);
          else if ((symbol >= font_chn->glyph_min) && (symbol <= font_chn->glyph_max))
-            symbol_lut = font_chn->lut[symbol - font_chn->glyph_min];
+            symbol_rows = font_chn->rows + ((symbol - font_chn->glyph_min) * FONT_10X10_HEIGHT);
          else if ((symbol >= font_jpn->glyph_min) && (symbol <= font_jpn->glyph_max))
-            symbol_lut = font_jpn->lut[symbol - font_jpn->glyph_min];
+            symbol_rows = font_jpn->rows + ((symbol - font_jpn->glyph_min) * FONT_10X10_HEIGHT);
          else if ((symbol >= font_kor->glyph_min) && (symbol <= font_kor->glyph_max))
-            symbol_lut = font_kor->lut[symbol - font_kor->glyph_min];
+            symbol_rows = font_kor->rows + ((symbol - font_kor->glyph_min) * FONT_10X10_HEIGHT);
          else
             continue;
 
-         for (j = 0; j < FONT_10X10_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_10X10_WIDTH; i++)
-            {
-               if (*(symbol_lut + i + (j * FONT_10X10_WIDTH)))
-               {
-                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
-
-                  /* Text pixel + right shadow */
-                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
-
-                  /* Bottom shadow */
-                  frame_buf_ptr += fb_width;
-                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
-               }
-            }
-         }
+         rgui_blit_glyph_shadow(frame_buf_data + (y * fb_width) + x,
+               fb_width, symbol_rows, FONT_10X10_HEIGHT, color_buf, shadow_color_buf);
       }
 
       x += FONT_10X10_WIDTH_STRIDE;
@@ -4607,8 +4630,7 @@ static void rgui_blit_line_rus(
          message++;
       else
       {
-         unsigned i, j;
-         bool *symbol_lut = NULL;
+         const uint16_t *symbol_rows = NULL;
          uint32_t symbol  = utf8_walk(&message);
 
          /* TODO/FIXME: check if really needed */
@@ -4619,22 +4641,14 @@ static void rgui_blit_line_rus(
 
          /* Find glyph LUT data */
          if (symbol <= font_eng->glyph_max)
-            symbol_lut = font_eng->lut[symbol];
+            symbol_rows = font_eng->rows + (symbol * FONT_10X10_HEIGHT);
          else if ((symbol >= font_rus->glyph_min) && (symbol <= font_rus->glyph_max))
-            symbol_lut = font_rus->lut[symbol - font_rus->glyph_min];
+            symbol_rows = font_rus->rows + ((symbol - font_rus->glyph_min) * FONT_10X10_HEIGHT);
          else
             continue;
 
-         for (j = 0; j < FONT_10X10_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_10X10_WIDTH; i++)
-            {
-               if (*(symbol_lut + i + (j * FONT_10X10_WIDTH)))
-                  *(frame_buf_data + buff_offset + i) = color;
-            }
-         }
+         rgui_blit_glyph(frame_buf_data + (y * fb_width) + x, fb_width,
+               symbol_rows, FONT_10X10_HEIGHT, color);
       }
 
       x += FONT_10X10_WIDTH_STRIDE;
@@ -4669,8 +4683,7 @@ static void rgui_blit_line_rus_shadow(
          message++;
       else
       {
-         unsigned i, j;
-         bool *symbol_lut = NULL;
+         const uint16_t *symbol_rows = NULL;
          uint32_t symbol  = utf8_walk(&message);
 
          /* TODO/FIXME: check if really needed */
@@ -4681,31 +4694,14 @@ static void rgui_blit_line_rus_shadow(
 
          /* Find glyph LUT data */
          if (symbol <= font_eng->glyph_max)
-            symbol_lut = font_eng->lut[symbol];
+            symbol_rows = font_eng->rows + (symbol * FONT_10X10_HEIGHT);
          else if ((symbol >= font_rus->glyph_min) && (symbol <= font_rus->glyph_max))
-            symbol_lut = font_rus->lut[symbol - font_rus->glyph_min];
+            symbol_rows = font_rus->rows + ((symbol - font_rus->glyph_min) * FONT_10X10_HEIGHT);
          else
             continue;
 
-         for (j = 0; j < FONT_10X10_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_10X10_WIDTH; i++)
-            {
-               if (*(symbol_lut + i + (j * FONT_10X10_WIDTH)))
-               {
-                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
-
-                  /* Text pixel + right shadow */
-                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
-
-                  /* Bottom shadow */
-                  frame_buf_ptr += fb_width;
-                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
-               }
-            }
-         }
+         rgui_blit_glyph_shadow(frame_buf_data + (y * fb_width) + x,
+               fb_width, symbol_rows, FONT_10X10_HEIGHT, color_buf, shadow_color_buf);
       }
 
       x += FONT_10X10_WIDTH_STRIDE;
@@ -4732,28 +4728,19 @@ static void rgui_blit_line_6x10(
          message++;
       else
       {
-         unsigned i, j;
-         bool *symbol_lut = NULL;
+         const uint16_t *symbol_rows = NULL;
          uint32_t symbol  = utf8_walk(&message);
 
          /* Find glyph LUT data */
          if (symbol <= font_eng->glyph_max)
-            symbol_lut = font_eng->lut[symbol];
+            symbol_rows = font_eng->rows + (symbol * FONT_6X10_HEIGHT);
          else if ((symbol >= font_lse->glyph_min) && (symbol <= font_lse->glyph_max))
-            symbol_lut = font_lse->lut[symbol - font_lse->glyph_min];
+            symbol_rows = font_lse->rows + ((symbol - font_lse->glyph_min) * FONT_6X10_HEIGHT);
          else
             continue;
 
-         for (j = 0; j < FONT_6X10_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_6X10_WIDTH; i++)
-            {
-               if (*(symbol_lut + i + (j * FONT_6X10_WIDTH)))
-                  *(frame_buf_data + buff_offset + i) = color;
-            }
-         }
+         rgui_blit_glyph(frame_buf_data + (y * fb_width) + x, fb_width,
+               symbol_rows, FONT_6X10_HEIGHT, color);
       }
 
       x += FONT_6X10_WIDTH_STRIDE;
@@ -4788,37 +4775,19 @@ static void rgui_blit_line_6x10_shadow(
          message++;
       else
       {
-         unsigned i, j;
-         bool *symbol_lut = NULL;
+         const uint16_t *symbol_rows = NULL;
          uint32_t symbol  = utf8_walk(&message);
 
          /* Find glyph LUT data */
          if (symbol <= font_eng->glyph_max)
-            symbol_lut = font_eng->lut[symbol];
+            symbol_rows = font_eng->rows + (symbol * FONT_6X10_HEIGHT);
          else if ((symbol >= font_lse->glyph_min) && (symbol <= font_lse->glyph_max))
-            symbol_lut = font_lse->lut[symbol - font_lse->glyph_min];
+            symbol_rows = font_lse->rows + ((symbol - font_lse->glyph_min) * FONT_6X10_HEIGHT);
          else
             continue;
 
-         for (j = 0; j < FONT_6X10_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_6X10_WIDTH; i++)
-            {
-               if (*(symbol_lut + i + (j * FONT_6X10_WIDTH)))
-               {
-                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
-
-                  /* Text pixel + right shadow */
-                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
-
-                  /* Bottom shadow */
-                  frame_buf_ptr += fb_width;
-                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
-               }
-            }
-         }
+         rgui_blit_glyph_shadow(frame_buf_data + (y * fb_width) + x,
+               fb_width, symbol_rows, FONT_6X10_HEIGHT, color_buf, shadow_color_buf);
       }
 
       x += FONT_6X10_WIDTH_STRIDE;
@@ -8013,6 +7982,9 @@ static void rgui_free(void *data)
    rgui_fonts_free(rgui);
    rgui_buffers_free(rgui);
    rgui_upscale_buf_free(&rgui->upscale_buf);
+   free(rgui->upscale_line);
+   rgui->upscale_line       = NULL;
+   rgui->upscale_line_width = 0;
 }
 
 static void rgui_set_texture_frame(video_driver_state_t *video_st,
@@ -8077,9 +8049,10 @@ static void rgui_set_texture(void *data)
          unsigned out_width;
          unsigned out_height;
          uint32_t x_ratio, y_ratio;
-         unsigned x_src, y_src;
+         unsigned y_src, prev_y_src;
          unsigned x_dst, y_dst;
          size_t out_pitch;
+         uint16_t *cols, *line;
          uint16_t *out_frame      = NULL;
          frame_buf_t *frame_buf   = &rgui->frame_buf;
          frame_buf_t *upscale_buf = &rgui->upscale_buf;
@@ -8094,6 +8067,16 @@ static void rgui_set_texture(void *data)
          {
             out_width  = internal_upscale_level * fb_width;
             out_height = internal_upscale_level * fb_height;
+         }
+
+         if (rgui->upscale_line_width < out_width)
+         {
+            uint16_t *upscale_line = (uint16_t*)realloc(rgui->upscale_line,
+                  (size_t)out_width * 2 * sizeof(uint16_t));
+            if (!upscale_line)
+               goto upscale_failed;
+            rgui->upscale_line       = upscale_line;
+            rgui->upscale_line_width = out_width;
          }
 
          out_pitch = (size_t)out_width * sizeof(uint16_t);
@@ -8117,17 +8100,7 @@ static void rgui_set_texture(void *data)
 
             if (!(upscale_buf->data = (uint16_t*)
                   calloc(out_width * out_height, sizeof(uint16_t))))
-            {
-               /* Uh oh... This could mean we don't have enough
-                * memory, so disable upscaling and draw the usual
-                * framebuffer... */
-               configuration_set_uint(settings,
-                     settings->uints.menu_rgui_internal_upscale_level,
-                     RGUI_UPSCALE_NONE);
-               rgui_set_texture_frame(video_st, frame_buf->data,
-                     false, p_disp->framebuf_dims, 1.0f);
-               return;
-            }
+               goto upscale_failed;
          }
 
          if (!out_frame)
@@ -8139,18 +8112,27 @@ static void rgui_set_texture(void *data)
          /* Perform nearest neighbour upscaling
           * NB: We're duplicating code here, but trying to handle
           * this with a polymorphic function is too much of a drag... */
-         x_ratio = ((fb_width  << 16) / out_width);
-         y_ratio = ((fb_height << 16) / out_height);
+         x_ratio    = ((fb_width  << 16) / out_width);
+         y_ratio    = ((fb_height << 16) / out_height);
+         cols       = rgui->upscale_line;
+         line       = cols + out_width;
+         prev_y_src = fb_height;
+
+         for (x_dst = 0; x_dst < out_width; x_dst++)
+            cols[x_dst] = (uint16_t)((x_dst * x_ratio) >> 16);
 
          for (y_dst = 0; y_dst < out_height; y_dst++)
          {
-            uint16_t *row = (uint16_t*)((uint8_t*)out_frame + y_dst * out_pitch);
             y_src = (y_dst * y_ratio) >> 16;
-            for (x_dst = 0; x_dst < out_width; x_dst++)
+            if (y_src != prev_y_src)
             {
-               x_src = (x_dst * x_ratio) >> 16;
-               row[x_dst] = frame_buf->data[(y_src * fb_width) + x_src];
+               const uint16_t *src = frame_buf->data + (y_src * fb_width);
+               for (x_dst = 0; x_dst < out_width; x_dst++)
+                  line[x_dst] = src[cols[x_dst]];
+               prev_y_src = y_src;
             }
+            memcpy((uint8_t*)out_frame + y_dst * out_pitch, line,
+                  out_width * sizeof(uint16_t));
          }
 
          /* Draw upscaled texture */
@@ -8158,6 +8140,17 @@ static void rgui_set_texture(void *data)
             false, VIDEO_SCALE_PACK(out_width, out_height), 1.0f);
       }
    }
+   return;
+
+upscale_failed:
+   /* Uh oh... This could mean we don't have enough
+    * memory, so disable upscaling and draw the usual
+    * framebuffer... */
+   configuration_set_uint(settings,
+         settings->uints.menu_rgui_internal_upscale_level,
+         RGUI_UPSCALE_NONE);
+   rgui_set_texture_frame(video_st, rgui->frame_buf.data,
+         false, p_disp->framebuf_dims, 1.0f);
 }
 
 static void rgui_navigation_clear(void *data, bool pending_push)
@@ -9565,6 +9558,9 @@ static void rgui_toggle(void *userdata, bool menu_on)
          free(rgui->upscale_buf.data);
          rgui->upscale_buf.data = NULL;
       }
+      free(rgui->upscale_line);
+      rgui->upscale_line       = NULL;
+      rgui->upscale_line_width = 0;
    }
 }
 

@@ -172,6 +172,9 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
       }
    }
 
+   if (!bitmapfont_build_rows(font, FONT_6X10_WIDTH, FONT_6X10_HEIGHT))
+      goto error;
+
    /* Clean up */
    free(bitmap_raw);
 
@@ -344,6 +347,9 @@ bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language)
          }
       }
    }
+
+   if (!bitmapfont_build_rows(font, FONT_10X10_WIDTH, FONT_10X10_HEIGHT))
+      goto error;
 
    /* Clean up */
    free(bitmap_raw);
