@@ -1016,6 +1016,12 @@ uint32_t file_archive_get_file_crc32(const char *path)
  **/
 uint32_t file_archive_get_file_crc32_and_size(const char *path, uint64_t *size)
 {
+   return file_archive_get_file_crc32_size_and_ext(path, size, NULL, 0);
+}
+
+uint32_t file_archive_get_file_crc32_size_and_ext(const char *path,
+      uint64_t *size, char *ext, size_t len)
+{
    file_archive_transfer_t state;
    struct archive_extract_userdata userdata        = {0};
    bool returnerr                                  = false;
@@ -1088,9 +1094,13 @@ uint32_t file_archive_get_file_crc32_and_size(const char *path, uint64_t *size)
    if (!found)
    {
       *size = 0;
+      if (ext && len)
+         *ext = '\0';
       return 0;
    }
 
+   if (ext && len)
+      strlcpy(ext, path_get_extension(userdata.current_file_path), len);
    *size = userdata.size;
    return userdata.crc;
 }
