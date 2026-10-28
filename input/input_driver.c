@@ -1912,10 +1912,11 @@ bool input_driver_set_sensor(
 {
    const input_driver_t *current_driver;
    bool enabled    = false;
+   unsigned base   = RETRO_SENSOR_BASE(action);
    bool is_disable =
-         (action == RETRO_SENSOR_ACCELEROMETER_DISABLE)
-      || (action == RETRO_SENSOR_GYROSCOPE_DISABLE)
-      || (action == RETRO_SENSOR_ILLUMINANCE_DISABLE);
+         (base == RETRO_SENSOR_ACCELEROMETER_DISABLE)
+      || (base == RETRO_SENSOR_GYROSCOPE_DISABLE)
+      || (base == RETRO_SENSOR_ILLUMINANCE_DISABLE);
 
    if (!input_driver_st.current_data)
       return false;
@@ -8680,6 +8681,7 @@ bool input_set_sensor_state(unsigned port,
       joy_idx, input_sensors_enable, action, rate);
 }
 
+/* ===== BEGIN input core sensor wrappers ===== */
 /* Core-facing wrappers that track which sensors the core has enabled.
  * Used as the retro_sensor_interface callbacks so the frontend knows
  * what the core requested independently of shader/platform enables. */
@@ -8687,6 +8689,39 @@ bool input_core_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
    input_driver_state_t *input_st = &input_driver_st;
+   unsigned idx                   = RETRO_SENSOR_INDEX(action);
+
+   /* A sub-device's sensor (RETRO_SENSOR_SUBDEVICE): passed on as it
+    * came, for a joypad driver that knows the controller's parts */
+   if (idx)
+   {
+      uint8_t bit;
+      if (idx > INPUT_SENSOR_SUBDEVICES)
+         return false;
+      switch (RETRO_SENSOR_BASE(action))
+      {
+         case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+            bit = (uint8_t)(1u << (2 * (idx - 1)));
+            break;
+         case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         case RETRO_SENSOR_GYROSCOPE_DISABLE:
+            bit = (uint8_t)(2u << (2 * (idx - 1)));
+            break;
+         default:
+            return false;
+      }
+      if (     RETRO_SENSOR_BASE(action) == RETRO_SENSOR_ACCELEROMETER_ENABLE
+            || RETRO_SENSOR_BASE(action) == RETRO_SENSOR_GYROSCOPE_ENABLE)
+      {
+         if (!input_set_sensor_state(port, action, rate))
+            return false;
+         input_st->core_sub_sensors |= bit;
+         return true;
+      }
+      input_st->core_sub_sensors &= (uint8_t)~bit;
+      return input_set_sensor_state(port, action, rate);
+   }
 
    switch (action)
    {
@@ -8713,6 +8748,24 @@ bool input_core_set_sensor_state(unsigned port,
 float input_core_get_sensor_state(unsigned port, unsigned id)
 {
    input_driver_state_t *input_st = &input_driver_st;
+   unsigned idx                   = RETRO_SENSOR_INDEX(id);
+
+   if (idx)
+   {
+      unsigned base = RETRO_SENSOR_BASE(id);
+      unsigned bit;
+      if (idx > INPUT_SENSOR_SUBDEVICES)
+         return 0.0f;
+      if (base <= RETRO_SENSOR_ACCELEROMETER_Z)
+         bit = 1u << (2 * (idx - 1));
+      else if (base <= RETRO_SENSOR_GYROSCOPE_Z)
+         bit = 2u << (2 * (idx - 1));
+      else
+         return 0.0f;
+      if (!(input_st->core_sub_sensors & bit))
+         return 0.0f;
+      return input_get_sensor_state(port, id);
+   }
 
    /* Only return data for sensor types the core has enabled */
    if (id <= RETRO_SENSOR_ACCELEROMETER_Z && !input_st->core_accel_rate)
@@ -8724,6 +8777,7 @@ float input_core_get_sensor_state(unsigned port, unsigned id)
 
    return input_get_sensor_state(port, id);
 }
+/* ===== END input core sensor wrappers ===== */
 
 const char *joypad_driver_name(unsigned i)
 {
@@ -8845,8 +8899,14 @@ static float input_get_sensor_state_internal(
    unsigned joy_idx;
    bool input_sensors_enable = false;
    float sensitivity         = 1.0f;
-   unsigned fetch_id         = id;
+   /* a sub-device's sensor is turned and scaled as the controller's;
+    * the profile's axis remap is the controller's own */
+   unsigned idx              = RETRO_SENSOR_INDEX(id);
+   unsigned fetch_id;
    float sign                = 1.0f;
+
+   id                        = RETRO_SENSOR_BASE(id);
+   fetch_id                  = id;
 
    /* Return 0 if settings unavailable (e.g., during driver transitions) */
    if (!settings)
@@ -8863,7 +8923,7 @@ static float input_get_sensor_state_internal(
       return 0.0f;
 
    /* Apply sensor axis remap from autoconfig profile */
-   if (id <= RETRO_SENSOR_GYROSCOPE_Z)
+   if (!idx && id <= RETRO_SENSOR_GYROSCOPE_Z)
    {
       const input_sensor_map_t *map = input_config_get_sensor_map(joy_idx);
       if (map && map->axes[id].source >= 0)
@@ -8942,7 +9002,8 @@ static float input_get_sensor_state_internal(
 #endif /* HAVE_COCOATOUCH */
 
    /* Get raw sensor value (use fetch_id for rotated axes) */
-   raw_value = input_driver_get_sensor(joy_idx, true, fetch_id);
+   raw_value = input_driver_get_sensor(joy_idx, true,
+         RETRO_SENSOR_SUBDEVICE(idx, fetch_id));
 
    /* Apply sensitivity and rotation sign */
    return raw_value * sensitivity * sign;

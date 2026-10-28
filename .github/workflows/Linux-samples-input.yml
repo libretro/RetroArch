@@ -1124,6 +1124,19 @@ jobs:
           timeout 120 ./udev_rumble_test
           make clean
           echo "[pass] udev_rumble_test"
+      - name: Build and run sensor_subdevice_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/sensor_subdevice
+        run: |
+          set -eu
+          # A core's sensor calls for a controller's sub-device (the
+          # Nunchuk, a left Joy-Con) through the frontend's wrappers as
+          # they ship: passed on with the index once enabled, refused
+          # when no driver has it, the controller's own unchanged.
+          make clean && make SANITIZER=address,undefined
+          UBSAN_OPTIONS=halt_on_error=1 timeout 60 ./sensor_subdevice_test
+          make clean
+          echo "[pass] sensor_subdevice_test"
       - name: Build and run dingux_rumble_test (ASan + UBSan, then TSan)
         shell: bash
         working-directory: samples/input/dingux_rumble

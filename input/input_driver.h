@@ -618,6 +618,9 @@ struct input_driver
  * changes only in its own poll: lent to the readers between two polls
  * in place of a copy (input_driver.c, the snapshot bridge). What each
  * field holds is what button(), axis() and get_buttons() answer. */
+/* sensor sub-devices a core may address (RETRO_SENSOR_SUBDEVICE),
+ * after the controller itself */
+#define INPUT_SENSOR_SUBDEVICES 4
 #define INPUT_PAD_VIEW_AXES 16
 #define INPUT_PAD_VIEW_HATS 4
 #define INPUT_PAD_VIEW_TOUCHES 2
@@ -1021,6 +1024,9 @@ typedef struct
    bool platform_menu_button;
    unsigned core_accel_rate; /* >0 means core wants accel at this rate */
    unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
+   /* the sub-devices' sensors the core has enabled: bit 2(i-1) the
+    * accelerometer of sub-device i, bit 2(i-1)+1 its gyroscope */
+   uint8_t core_sub_sensors;
    /* First-press port assignment, see input_first_press_apply():
     * buttons seen released on a user with no core port, the users to
     * map at the next frame boundary, and whether any of it is live. */

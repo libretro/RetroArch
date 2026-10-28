@@ -44,6 +44,11 @@ typedef struct _sdl3_joypad
    uint16_t        rumble[2];   /* raw magnitude per retro_rumble_effect (strong/weak) */
    bool            sensor_accel; /* Whether or not the sensor has been connected. */
    bool            sensor_gyro;
+   /* sensor sub-device 1 (RETRO_SENSOR_SUBDEVICE): the part in the left
+    * hand, a Wii Remote's Nunchuk or the left Joy-Con of a pair, which
+    * SDL reports as its _L sensors */
+   bool            sensor_accel_l;
+   bool            sensor_gyro_l;
    uint8_t         touch_fingers; /* the first touchpad's, at most two */
 } sdl3_joypad_t;
 
@@ -359,6 +364,10 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
          SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_ACCEL, true);
       if (has_gyro && pad->sensor_gyro)
          SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_GYRO, true);
+      if (pad->sensor_accel_l && SDL_GamepadHasSensor(gamepad, SDL_SENSOR_ACCEL_L))
+         SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_ACCEL_L, true);
+      if (pad->sensor_gyro_l && SDL_GamepadHasSensor(gamepad, SDL_SENSOR_GYRO_L))
+         SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_GYRO_L, true);
 
       if (SDL_GetNumGamepadTouchpads(gamepad) > 0)
       {
@@ -389,11 +398,15 @@ static void sdl3_joypad_disconnect(SDL_JoystickID jid)
 
       /* Keep the requested sensor state so it can be restored on reconnect. */
       {
-         bool sensor_accel = sdl3_joypads[i].sensor_accel;
-         bool sensor_gyro  = sdl3_joypads[i].sensor_gyro;
+         bool sensor_accel   = sdl3_joypads[i].sensor_accel;
+         bool sensor_gyro    = sdl3_joypads[i].sensor_gyro;
+         bool sensor_accel_l = sdl3_joypads[i].sensor_accel_l;
+         bool sensor_gyro_l  = sdl3_joypads[i].sensor_gyro_l;
          memset(&sdl3_joypads[i], 0, sizeof(sdl3_joypads[i]));
-         sdl3_joypads[i].sensor_accel = sensor_accel;
-         sdl3_joypads[i].sensor_gyro  = sensor_gyro;
+         sdl3_joypads[i].sensor_accel   = sensor_accel;
+         sdl3_joypads[i].sensor_gyro    = sensor_gyro;
+         sdl3_joypads[i].sensor_accel_l = sensor_accel_l;
+         sdl3_joypads[i].sensor_gyro_l  = sensor_gyro_l;
       }
       return;
    }
@@ -717,6 +730,28 @@ static bool sdl3_joypad_set_sensor_state(unsigned pad,
 
    gamepad = sdl3_joypads[pad].gamepad;
 
+   if (RETRO_SENSOR_INDEX(action) == 1)
+   {
+      unsigned base  = RETRO_SENSOR_BASE(action);
+      bool gyro      =    base == RETRO_SENSOR_GYROSCOPE_ENABLE
+                       || base == RETRO_SENSOR_GYROSCOPE_DISABLE;
+      bool enable    =    base == RETRO_SENSOR_GYROSCOPE_ENABLE
+                       || base == RETRO_SENSOR_ACCELEROMETER_ENABLE;
+      SDL_SensorType type = gyro ? SDL_SENSOR_GYRO_L : SDL_SENSOR_ACCEL_L;
+
+      if (     !gyro
+            && base != RETRO_SENSOR_ACCELEROMETER_ENABLE
+            && base != RETRO_SENSOR_ACCELEROMETER_DISABLE)
+         return false;
+      if (gyro)
+         sdl3_joypads[pad].sensor_gyro_l  = enable;
+      else
+         sdl3_joypads[pad].sensor_accel_l = enable;
+      if (gamepad && SDL_GamepadHasSensor(gamepad, type))
+         return SDL_SetGamepadSensorEnabled(gamepad, type, enable);
+      return !enable;
+   }
+
    switch (action)
    {
       case RETRO_SENSOR_GYROSCOPE_ENABLE:
@@ -759,6 +794,7 @@ static bool sdl3_joypad_get_sensor_input(unsigned pad, unsigned id, float *value
 {
    SDL_SensorType sensor_type;
    float sensor_data[3];
+   bool left;
 
    if (pad >= MAX_USERS)
       return false;
@@ -766,10 +802,15 @@ static bool sdl3_joypad_get_sensor_input(unsigned pad, unsigned id, float *value
    if (!sdl3_joypads[pad].gamepad)
       return false;
 
+   if (RETRO_SENSOR_INDEX(id) > 1)
+      return false;
+   left = RETRO_SENSOR_INDEX(id) == 1;
+   id   = RETRO_SENSOR_BASE(id);
+
    if ((id >= RETRO_SENSOR_ACCELEROMETER_X) && (id <= RETRO_SENSOR_ACCELEROMETER_Z))
-      sensor_type = SDL_SENSOR_ACCEL;
+      sensor_type = left ? SDL_SENSOR_ACCEL_L : SDL_SENSOR_ACCEL;
    else if ((id >= RETRO_SENSOR_GYROSCOPE_X) && (id <= RETRO_SENSOR_GYROSCOPE_Z))
-      sensor_type = SDL_SENSOR_GYRO;
+      sensor_type = left ? SDL_SENSOR_GYRO_L : SDL_SENSOR_GYRO;
    else
       return false;
 

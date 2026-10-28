@@ -27,6 +27,8 @@
 
 #define SDL_SUPPORTS_RUMBLE  SDL_VERSION_ATLEAST(2, 0, 9)
 #define SDL_SUPPORTS_SENSORS SDL_VERSION_ATLEAST(2, 0, 14)
+/* the _L sensors: a Wii Remote's Nunchuk, the left Joy-Con of a pair */
+#define SDL_SUPPORTS_SENSORS_L SDL_VERSION_ATLEAST(2, 26, 0)
 #define SDL_SUPPORTS_TOUCHPAD SDL_VERSION_ATLEAST(2, 0, 14)
 #define SDL_SUPPORTS_HIDAPI_WII SDL_VERSION_ATLEAST(2, 26, 0)
 #define SDL_SUPPORTS_HIDAPI_PS3 SDL_VERSION_ATLEAST(2, 26, 0)
@@ -583,6 +585,31 @@ static bool sdl2_joypad_set_sensor_state(unsigned pad, enum retro_sensor_action 
    sdl2_joypad_t *joypad = (sdl2_joypad_t*)&sdl2_pads[pad];
    (void)joypad; /* maybe unused */
 
+   /* sensor sub-device 1 (RETRO_SENSOR_SUBDEVICE): the part in the
+    * left hand */
+   if (RETRO_SENSOR_INDEX(action))
+   {
+#if SDL_SUPPORTS_SENSORS_L
+      unsigned base = RETRO_SENSOR_BASE(action);
+      SDL_SensorType type;
+      if (RETRO_SENSOR_INDEX(action) != 1)
+         return false;
+      if (     base == RETRO_SENSOR_GYROSCOPE_ENABLE
+            || base == RETRO_SENSOR_GYROSCOPE_DISABLE)
+         type = SDL_SENSOR_GYRO_L;
+      else if (base == RETRO_SENSOR_ACCELEROMETER_ENABLE
+            || base == RETRO_SENSOR_ACCELEROMETER_DISABLE)
+         type = SDL_SENSOR_ACCEL_L;
+      else
+         return false;
+      if (SDL_GameControllerHasSensor(joypad->controller, type))
+         return !SDL_GameControllerSetSensorEnabled(joypad->controller, type,
+               (SDL_bool)(   base == RETRO_SENSOR_GYROSCOPE_ENABLE
+                          || base == RETRO_SENSOR_ACCELEROMETER_ENABLE));
+#endif
+      return false;
+   }
+
    switch (action)
    {
 #if SDL_SUPPORTS_SENSORS
@@ -615,9 +642,18 @@ static bool sdl2_joypad_get_sensor_input(unsigned pad, unsigned id, float *value
    sdl2_joypad_t *joypad = (sdl2_joypad_t*)&sdl2_pads[pad];
    SDL_SensorType sensor_type;
    float sensor_data[3];
+   unsigned idx = RETRO_SENSOR_INDEX(id);
 
    if (!joypad->controller)
       return false;
+#if SDL_SUPPORTS_SENSORS_L
+   if (idx > 1)
+      return false;
+#else
+   if (idx)
+      return false;
+#endif
+   id = RETRO_SENSOR_BASE(id);
 
    if ((id >= RETRO_SENSOR_ACCELEROMETER_X) && (id <= RETRO_SENSOR_ACCELEROMETER_Z))
       sensor_type = SDL_SENSOR_ACCEL;
@@ -625,6 +661,11 @@ static bool sdl2_joypad_get_sensor_input(unsigned pad, unsigned id, float *value
       sensor_type = SDL_SENSOR_GYRO;
    else
       return false;
+#if SDL_SUPPORTS_SENSORS_L
+   if (idx)
+      sensor_type = sensor_type == SDL_SENSOR_ACCEL
+         ? SDL_SENSOR_ACCEL_L : SDL_SENSOR_GYRO_L;
+#endif
 
    if (SDL_GameControllerGetSensorData(joypad->controller, sensor_type, sensor_data, 3) < 0)
       return false;

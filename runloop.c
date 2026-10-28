@@ -5724,6 +5724,7 @@ void runloop_event_deinit_core(void)
       input_driver_state_t *input_st = input_state_get_ptr();
       input_st->core_accel_rate      = 0;
       input_st->core_gyro_rate       = 0;
+      input_st->core_sub_sensors     = 0;
    }
 
    video_driver_cached_frame_retire();
