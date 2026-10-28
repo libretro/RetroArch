@@ -110,6 +110,18 @@ static void ANativeWindow_release(ANativeWindow *window)
    window->refs--;
 }
 
+/* What the windows asked Java to show */
+static unsigned requests;
+static unsigned last_ordinal;
+static bool last_given_up;
+
+static void android_second_display_request(unsigned ordinal, bool given_up)
+{
+   requests++;
+   last_ordinal  = ordinal;
+   last_given_up = given_up;
+}
+
 #include "second_surface_driver.h"
 
 static unsigned failures;
@@ -137,10 +149,15 @@ static void window_reset(void)
    app_thread_gone       = false;
 }
 
-static void poll_once(void)
+static void poll_for(void *who)
 {
    video_window_event_t events[4];
-   android_windows_poll(&owner, events, 4);
+   android_windows_poll(who, events, 4);
+}
+
+static void poll_once(void)
+{
+   poll_for(&owner);
 }
 
 #define SURFACE_CHANGED(win, w, h) \
@@ -149,6 +166,113 @@ static void poll_once(void)
 #define SURFACE_DESTROYED() \
    Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeSurfaceDestroyed( \
          NULL, NULL)
+
+/* Window 1 on display 2, made and shown on @a by 'owner', then kept
+ * as a driver teardown keeps it */
+static android_window_t *window_kept(ANativeWindow *a)
+{
+   android_window_t *kept = (android_window_t*)calloc(1, sizeof(*kept));
+   memset(&app, 0, sizeof(app));
+   memset(a, 0, sizeof(*a));
+   memset(&native, 0, sizeof(native));
+   kept->common.owner              = &owner;
+   kept->common.native             = &native;
+   kept->common.request.screen     = 1;
+   kept->common.request.generation = 7;
+   kept->common.request.display    = 2;
+   native.state                    = kept;
+   native.generation               = 7;
+   android_windows[1]              = kept;
+   SURFACE_CHANGED(a, 1240, 1080);
+   poll_once();
+   requests = 0;
+   android_windows_keep(&owner, &native);
+   return kept;
+}
+
+/* A driver reinit: the old owner keeps the window up, the next one
+ * takes it, or it goes once nobody did */
+static void test_handover(void)
+{
+   static int next_owner;
+   ANativeWindow a;
+   android_window_t *kept;
+   video_window_native_t taken;
+   unsigned display;
+   int bound_surface;
+
+   /* Kept, then taken and let go of by the next owner */
+   kept          = window_kept(&a);
+   bound_surface = retro_atomic_load_acquire_int(
+         &app.second_display.bound_surface);
+   CHECK(bound_surface > 0, "the first owner showed the surface");
+   CHECK(requests == 0, "keep asks Java nothing");
+   CHECK(a.refs == 1, "keep holds the surface");
+   CHECK(!native.state && !native.surface,
+         "the old owner's record is cleared");
+   CHECK(android_windows[1] == kept && !kept->common.owner,
+         "the window stays, owned by none");
+   android_windows_free(&owner, android_windows_destroy);
+   CHECK(requests == 0 && android_windows[1] == kept,
+         "the old context's sweep passes it by");
+   memset(&taken, 0, sizeof(taken));
+   display = 0;
+   CHECK(android_windows_take(&next_owner, 1, &taken, &display)
+         && display == 2, "the next owner takes it, on its display");
+   CHECK(     android_windows[1] == kept && taken.state == kept
+         && taken.surface == &a && kept->node
+         && taken.dims == kept->node->dims && taken.dims
+         && taken.configured && taken.presentable
+         && taken.generation == 7
+         && taken.kind == VIDEO_WINDOW_NATIVE_ANDROID,
+         "with its surface, size and generation");
+   CHECK(     retro_atomic_load_acquire_int(
+               &app.second_display.bound_surface) == bound_surface
+         && retro_atomic_load_acquire_int(
+               &app.second_display.bound_window) == 1
+         && retro_atomic_load_acquire_int(
+               &app.second_display.bound_generation) == 7,
+         "input maps into it as before");
+   CHECK(!android_windows_take(&owner, 1, &native, &display),
+         "a window with an owner is not taken");
+   android_windows_release_kept();
+   CHECK(requests == 0 && android_windows[1] == kept && a.refs == 1,
+         "a taken window is not let go of");
+   android_windows_destroy(&next_owner, &taken);
+   CHECK(requests == 1 && last_ordinal == 0 && last_given_up,
+         "the next owner's destroy hides it, once");
+   CHECK(a.refs == 0 && !android_windows[1] && !taken.state,
+         "and releases it");
+
+   /* Taken, then Java takes the surface back */
+   kept = window_kept(&a);
+   memset(&taken, 0, sizeof(taken));
+   CHECK(android_windows_take(&next_owner, 1, &taken, &display),
+         "taken again");
+   SURFACE_DESTROYED();
+   poll_for(&next_owner);
+   CHECK(!taken.surface && !taken.presentable && !taken.configured
+         && a.refs == 0, "the next owner's poll lets the surface go");
+   CHECK(!retro_atomic_load_acquire_int(&app.second_display.bound_surface),
+         "input stops mapping into it");
+   CHECK(android_windows[1] == kept && requests == 0,
+         "the window stays until it is let go of");
+   android_windows_destroy(&next_owner, &taken);
+   CHECK(requests == 1 && !android_windows[1], "then it goes");
+
+   /* Nobody took it */
+   kept = window_kept(&a);
+   android_windows_release_kept();
+   CHECK(requests == 1 && last_ordinal == 0 && last_given_up,
+         "one nobody took is hidden, once");
+   CHECK(a.refs == 0 && !android_windows[1], "and released");
+   CHECK(!retro_atomic_load_acquire_int(&app.second_display.bound_surface)
+         && !retro_atomic_load_acquire_int(
+            &app.second_display.bound_window),
+         "input stops mapping into it");
+   android_windows_release_kept();
+   CHECK(requests == 1, "a second release asks nothing");
+}
 
 int main(void)
 {
@@ -229,6 +353,9 @@ int main(void)
    CHECK(!waited && changed_cmds == 0, "nothing posted to a gone thread");
    poll_once();
    CHECK(a.refs == 0, "released all the same");
+
+   android_windows[1] = NULL;
+   test_handover();
 
    if (failures)
    {

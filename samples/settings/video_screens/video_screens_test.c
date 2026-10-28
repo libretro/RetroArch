@@ -2179,6 +2179,70 @@ static void test_window_shown_lag(void)
    video_driver_publish_window_displays(displays, 2);
 }
 
+static void window_test_free(void *data)
+{
+   (void)data;
+}
+
+/* A driver reinit: the teardown clears every layout, and the next
+ * driver's init takes the kept Presentation and publishes it again,
+ * with no screens. Still shown on display 2, so a close no placement
+ * saw before the reinit keeps it there. */
+static void test_window_shown_reinit(void)
+{
+   static video_views_layout_t layout;
+   static video_views_map_t map;
+   video_window_display_t displays[2];
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Screen-2");
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   /* Game Screen 2 shown on display 2, RetroArch moved to display 1 */
+   window_test_run();
+   window_test_draw(1);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   window_test_run();
+   displays[0].own = true;
+   displays[1].own = false;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   window_test_driver.free = window_test_free;
+   video_driver_free_internal();
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   video_st->data = &window_test_driver;
+   video_st->poke = &window_test_poke;
+   memset(&layout, 0, sizeof(layout));
+   memset(&map, 0, sizeof(map));
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 1, 2,
+         &layout, &map, 0, VIDEO_SCALE_PACK(1240, 1080));
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   /* The game closed before the reinit */
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_CORE_RUNNING;
+   video_driver_clear_views();
+   window_test_run();
+   CHECK(window_test_seen.window_keep
+         == 1u << VIDEO_WINDOWS_PRESENTATION);
+   CHECK(window_test_seen.display == 2);
+   settings->uints.video_menu_follows = 0;
+   menu_st->flags                     = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+   /* The list the later tests expect */
+   displays[0].own = false;
+   displays[1].own = true;
+   video_driver_publish_window_displays(displays, 2);
+}
+
 /* The Presentation moved to another display while still wanted: what
  * it drew on the old display, or on the new one before the move, is
  * not shown until it draws from the snapshot that moved it */
@@ -3719,6 +3783,7 @@ int main(int argc, char **argv)
    test_window_moves();
    test_window_shown_lag();
    test_window_shown_moved();
+   test_window_shown_reinit();
    test_window_ui_targets();
    test_window_pointer_mapping();
    test_window_generation();

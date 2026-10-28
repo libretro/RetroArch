@@ -54,6 +54,7 @@
 #endif
 #if defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS)
 #include "../frontend/drivers/platform_unix.h"
+#include "common/android_windows.h"
 #endif
 
 /* Decided here, at the top, because an #ifdef on a macro defined
@@ -209,6 +210,13 @@ void gfx_ctx_wl_release_kept(void);
 #define VIDEO_WIN32_RELEASE_KEPT_WINDOW() win32_window_release_kept()
 #else
 #define VIDEO_WIN32_RELEASE_KEPT_WINDOW() ((void)0)
+#endif
+
+/* and the second display's (gfx/common/android_windows.c) */
+#if defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS)
+#define VIDEO_ANDROID_RELEASE_KEPT_WINDOWS() android_windows_release_kept()
+#else
+#define VIDEO_ANDROID_RELEASE_KEPT_WINDOWS() ((void)0)
 #endif
 
 /* Forward declarations */
@@ -3802,6 +3810,11 @@ void video_driver_free_internal(void)
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
+#if defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS)
+   /* No driver follows to take what this one left up */
+   if (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+      android_windows_release_kept();
+#endif
    video_driver_set_hdr_output_mode(0);
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 0);
 
@@ -8658,6 +8671,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          gfx_ctx_wl_release_kept();
 #endif
          VIDEO_WIN32_RELEASE_KEPT_WINDOW();
+         VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
          RARCH_ERR("[Video] Cannot open threaded video driver. Exiting...\n");
          return false;
       }
@@ -8684,6 +8698,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          && (video_st->data = video_st->current_video->init(&video)))
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 #endif
+   /* Android's after the GLES fallback, which takes them too */
+   VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
 
    if (!video_st->data)
    {

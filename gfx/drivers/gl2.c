@@ -6670,13 +6670,18 @@ static void gl2_views_ui_end(gl2_t *gl, video_frame_info_t *video_info)
 /* Events a frame takes from the context's windows */
 #define GL2_WINDOW_EVENTS 8
 
-/* Window @w let go: its GPU objects, then the context's window, and
- * input stops mapping into it */
-static void gl2_window_retire(gl2_t *gl, unsigned w)
+/* Window @w let go: its GPU objects, then the context's window, which
+ * @keep leaves up for the next driver where the context can, and input
+ * stops mapping into it */
+static void gl2_window_retire(gl2_t *gl, unsigned w, bool keep)
 {
-   struct gl2_window *win = &gl->windows.win[w];
+   struct gl2_window *win             = &gl->windows.win[w];
+   const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
    gl2_vv_target_drop(gl, &win->canvas_target, &win->canvas);
-   gl->ctx_driver->windows->destroy(gl->ctx_data, &win->native);
+   if (keep && ctx->keep)
+      ctx->keep(gl->ctx_data, &win->native);
+   else
+      ctx->destroy(gl->ctx_data, &win->native);
    video_driver_publish_window_layout(w, 0, 0, NULL, NULL, 0, 0);
    memset(win, 0, sizeof(*win));
    gl->windows.held.live &= ~(1u << w);
@@ -6687,7 +6692,30 @@ static void gl2_windows_retire_all(gl2_t *gl)
    unsigned w;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (gl->windows.held.live & (1u << w))
-         gl2_window_retire(gl, w);
+         gl2_window_retire(gl, w, true);
+}
+
+/* The windows the last driver left up, adopted as they are: still
+ * shown, touches off-screen, until a frame draws them */
+static void gl2_windows_take(gl2_t *gl)
+{
+   static const video_views_layout_t no_layout;
+   static const video_views_map_t no_map;
+   unsigned w;
+   const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
+   if (!ctx || !ctx->take)
+      return;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      struct gl2_window *win = &gl->windows.win[w];
+      unsigned display       = 0;
+      if (!ctx->take(gl->ctx_data, w, &win->native, &display))
+         continue;
+      gl->windows.held.live       |= 1u << w;
+      gl->windows.held.display[w]  = display;
+      video_driver_publish_window_layout(w, win->native.generation,
+            display, &no_layout, &no_map, 0, win->native.dims);
+   }
 }
 
 /* Window @w's screens back in the main window, until the next restore
@@ -6699,7 +6727,7 @@ static void gl2_window_attach(gl2_t *gl, const video_windows_frame_t *f,
       video_driver_attach_windows(f->window_screens[w], f->restore);
    gl->windows.held.failed |= 1u << w;
    if (gl->windows.held.live & (1u << w))
-      gl2_window_retire(gl, w);
+      gl2_window_retire(gl, w, false);
 }
 
 /* Window @w for @f's screens there, on @f's display */
@@ -6834,7 +6862,7 @@ static bool gl2_windows_draw(gl2_t *gl,
    video_windows_steps(&gl->windows.held, f, &retire, &create);
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (retire & (1u << w))
-         gl2_window_retire(gl, w);
+         gl2_window_retire(gl, w, false);
    if (!f)
       return false;
    /* Marked after steps(), which clears the marks when this frame's
@@ -6851,11 +6879,13 @@ static bool gl2_windows_draw(gl2_t *gl,
             "Its screens stay in the main window.\n");
       gl2_window_attach(gl, f, w);
    }
-   /* Views the main window drew whole are not drawn here either */
+   /* Views the main window drew whole are not drawn here either, nor
+    * a kept window, which keeps its last image */
    if (!gl->views.active)
       return false;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (     (gl->windows.held.live & (1u << w))
+            && !(f->window_keep & (1u << w))
             && gl2_window_draw(gl, video_info, w, new_frame))
          drawn = true;
    return drawn;
@@ -8705,6 +8735,9 @@ static void *gl2_init(const video_info_t *video)
 #ifdef GL2_VIEWS
    /* get_flags reads it before the first frame too */
    gl2_views_publish(gl);
+#ifdef HAVE_VIDEO_WINDOWS
+   gl2_windows_take(gl);
+#endif
 #endif
 
    /* Init leaves the core's context current for context_reset on this

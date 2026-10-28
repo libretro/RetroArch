@@ -1,8 +1,9 @@
 # The second display's surface, from the Android UI thread to the
 # renderer: nativeSurfaceChanged(), nativeSurfaceDestroyed() and
 # android_second_surface_term() from frontend/drivers/platform_unix.c,
-# android_windows_poll() from gfx/common/android_windows.c, taken out
-# of their files at build time by extract.awk.
+# android_windows_poll() and the keep across a driver reinit from
+# gfx/common/android_windows.c, taken out of their files at build time
+# by extract.awk.
 include ../../sample_objdir.mk
 
 TARGET   := android_second_surface_test$(EXE)
@@ -29,7 +30,7 @@ second_surface_driver.h: extract.awk $(CORE_DIR)/frontend/drivers/platform_unix.
 		$(CORE_DIR)/gfx/common/android_windows.c
 	( awk -v FUNCS=android_second_surface_free,android_second_surface_term,$(JNI)_nativeSurfaceChanged,$(JNI)_nativeSurfaceDestroyed \
 	     -f extract.awk $(CORE_DIR)/frontend/drivers/platform_unix.c && \
-	  awk -v FUNCS=android_windows_at,android_windows_poll \
+	  awk -v FUNCS=android_windows_at,android_windows_poll,android_windows_let_go,android_windows_destroy,android_windows_keep,android_windows_take,android_windows_release_kept,android_windows_free \
 	     -f extract.awk $(CORE_DIR)/gfx/common/android_windows.c ) > $@.tmp
 	mv $@.tmp $@
 

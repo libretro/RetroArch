@@ -122,6 +122,14 @@ typedef struct gfx_ctx_window_driver
    bool (*bind_gl)(void *owner, video_window_native_t *window);
    bool (*present_gl)(void *owner, video_window_native_t *window);
    void (*destroy)(void *owner, video_window_native_t *window);
+   /* Optional. keep is destroy at the renderer's teardown, with the
+    * window left up as last drawn. take, at the next renderer's init,
+    * adopts screen @screen's kept window into @window, and the display
+    * it is on into *@display. One nobody takes goes once the next
+    * driver is up. */
+   void (*keep)(void *owner, video_window_native_t *window);
+   bool (*take)(void *owner, unsigned screen,
+         video_window_native_t *window, unsigned *display);
 } gfx_ctx_window_driver_t;
 
 #define VIDEO_WINDOW_EVENT_BIT(kind) (1u << VIDEO_WINDOW_EVENT_##kind)

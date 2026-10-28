@@ -1511,6 +1511,32 @@ static void test_windows_steps_ui(void)
    held.display[1] = 3;
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 2u && create == 0);
+
+   /* Taken from the last driver: held while kept, let go when the keep
+    * ends, held for screens on its display, made again on another */
+   memset(&frame, 0, sizeof(frame));
+   memset(&held, 0, sizeof(held));
+   held.live         = 2u;
+   held.display[1]   = 2;
+   frame.display     = 2;
+   frame.restore     = 5;
+   frame.window_keep = 1u << VIDEO_WINDOWS_PRESENTATION;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 0);
+   frame.display     = 0;
+   frame.window_keep = 0;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u);
+   memset(&held, 0, sizeof(held));
+   held.live         = 2u;
+   held.display[1]   = 2;
+   frame.display     = 2;
+   frame.window_screens[VIDEO_WINDOWS_PRESENTATION] = 2u;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 0);
+   frame.display     = 3;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u && create == 2u);
 }
 
 int main(void)
