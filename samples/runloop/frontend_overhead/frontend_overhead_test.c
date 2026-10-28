@@ -666,7 +666,7 @@ static void lane_device_registry(void)
       /* back to the pads and the mapping the other lanes expect */
       for (i = 0; i < MAX_USERS; i++)
          settings->uints.input_joypad_index[i] = i;
-         input_driver_deadzones_refresh();
+      input_driver_deadzones_refresh();
       input_driver_registry_restart();
       for (i = 0; i < 8; i++)
          input_autoconfigure_connect("Harness pad", NULL, NULL,
