@@ -1057,8 +1057,6 @@ INPUT
 #include "../input/drivers_joypad/udev_joypad.c"
 #endif
 
-#endif
-
 #ifdef HAVE_TEST_DRIVERS
 #include "../input/drivers_joypad/test_joypad.c"
 #include "../input/drivers/test_input.c"
