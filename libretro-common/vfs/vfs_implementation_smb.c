@@ -1319,27 +1319,30 @@ int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
 
 int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
 {
-   int ret;
+   int ret = -1;
    struct smb2_context *ctx;
    struct smb_slot *slot;
-   if (!stream || !stream->smb_fh)
+   intptr_t fh;
+   if (!stream || !stream->smb_ctx)
       return -1;
    ctx  = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
    slot = (struct smb_slot *)(void *)(uintptr_t)stream->smb_slot;
-   if (!ctx)
-      return -1;
+   fh   = stream->smb_fh;
    smb_prefetch_stop(stream);
-   /* a dead transport: the handle went with the session */
-   if (!smb_ctx_active(ctx))
-      ret = -1;
-   else
-      ret = smb2_close(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh);
+   /* no handle after a failed mend; on a dead transport the handle
+    * went with the session */
+   if (fh && smb_ctx_active(ctx))
+      ret = smb2_close(ctx, (struct smb2fh *)fh);
    stream->smb_fh   = (intptr_t)-1;
    stream->smb_ctx  = (intptr_t)0;
    stream->smb_slot = (intptr_t)0;
    free((void*)(uintptr_t)stream->smb_reopen);
    stream->smb_reopen = (intptr_t)0;
-   smb_give(ctx, slot);
+   /* the server may be gone after a failed mend: no goodbye */
+   if (!fh && !slot)
+      smb_ctx_free(ctx);
+   else
+      smb_give(ctx, slot);
    return ret;
 }
 

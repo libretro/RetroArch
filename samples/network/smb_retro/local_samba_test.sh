@@ -184,10 +184,27 @@ restart_round() { # binary order label
       echo "FAIL: $3 across a server restart ($2 first): $(cat $D/out)"; exit 1
    fi
 }
+# A server that never comes back: the reads fail, and closing the
+# streams still lets their connections go (the sanitizer lane's LSan).
+gone_round() { # binary label
+   rm -f $D/share/idle.bin $D/share/idle_w.bin
+   stop; sleep 0.3; conf SMB3_11 default; smbd -s $D/smb.conf -D; sleep 1
+   $RUN ./$1$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO 10 g >$D/out 2>&1 &
+   idler=$!
+   sleep 3
+   stop
+   if wait $idler; then
+      echo "ok:   $2: streams closed after the server went for good"
+   else
+      echo "FAIL: $2 after the server went for good: $(cat $D/out)"; exit 1
+   fi
+}
 restart_round smb_idle_test r "built-in client"
 restart_round smb_idle_test w "built-in client"
+gone_round smb_idle_test "built-in client"
 if [ -n "${WITH_LIBSMB2:-}" ]; then
    restart_round smb_idle_test_libsmb2 r "libsmb2"
    restart_round smb_idle_test_libsmb2 w "libsmb2"
+   gone_round smb_idle_test_libsmb2 "libsmb2"
 fi
 echo "[pass] smb_retro local samba matrix"
