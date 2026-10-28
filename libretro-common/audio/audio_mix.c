@@ -22,13 +22,13 @@
 
 #include <retro_environment.h>
 
-#if defined(__SSE2__)
-#include <emmintrin.h>
-#elif defined(__ALTIVEC__)
-#include <altivec.h>
-#endif
-
 #include <audio/audio_mix.h>
+
+#if defined(AUDIO_MIX_HAVE_SSE2)
+#include <emmintrin.h>
+#elif defined(AUDIO_MIX_HAVE_NEON)
+#include <arm_neon.h>
+#endif
 
 void audio_mix_volume_C(float *s, const float *in, float vol, size_t len)
 {
@@ -37,35 +37,55 @@ void audio_mix_volume_C(float *s, const float *in, float vol, size_t len)
       s[i] += in[i] * vol;
 }
 
-#ifdef __SSE2__
+/* The vector versions do the C loop's multiply and add per sample, so
+ * they give the same sums (but for denormals, which 32-bit ARM's NEON
+ * takes as zero). */
+#if defined(AUDIO_MIX_HAVE_SSE2)
 void audio_mix_volume_SSE2(float *s, const float *in, float vol, size_t len)
 {
-   size_t i, remaining_samples;
-   __m128 volume = _mm_set1_ps(vol);
+   size_t i       = 0;
+   __m128 volume  = _mm_set1_ps(vol);
 
-   for (i = 0; i + 16 <= len; i += 16, s += 16, in += 16)
+   for (; i + 8 <= len; i += 8)
    {
-      unsigned j;
-      __m128 input[4];
-      __m128 additive[4];
-
-      input[0]    = _mm_loadu_ps(s +  0);
-      input[1]    = _mm_loadu_ps(s +  4);
-      input[2]    = _mm_loadu_ps(s +  8);
-      input[3]    = _mm_loadu_ps(s + 12);
-
-      additive[0] = _mm_mul_ps(volume, _mm_loadu_ps(in +  0));
-      additive[1] = _mm_mul_ps(volume, _mm_loadu_ps(in +  4));
-      additive[2] = _mm_mul_ps(volume, _mm_loadu_ps(in +  8));
-      additive[3] = _mm_mul_ps(volume, _mm_loadu_ps(in + 12));
-
-      for (j = 0; j < 4; j++)
-         _mm_storeu_ps(s + 4 * j, _mm_add_ps(input[j], additive[j]));
+      __m128 a = _mm_add_ps(_mm_loadu_ps(s + i),
+            _mm_mul_ps(_mm_loadu_ps(in + i),     volume));
+      __m128 b = _mm_add_ps(_mm_loadu_ps(s + i + 4),
+            _mm_mul_ps(_mm_loadu_ps(in + i + 4), volume));
+      _mm_storeu_ps(s + i,     a);
+      _mm_storeu_ps(s + i + 4, b);
    }
+   if (i + 4 <= len)
+   {
+      _mm_storeu_ps(s + i, _mm_add_ps(_mm_loadu_ps(s + i),
+            _mm_mul_ps(_mm_loadu_ps(in + i), volume)));
+      i += 4;
+   }
+   for (; i < len; i++)
+      s[i] += in[i] * vol;
+}
+#elif defined(AUDIO_MIX_HAVE_NEON)
+void audio_mix_volume_NEON(float *s, const float *in, float vol, size_t len)
+{
+   size_t i            = 0;
+   float32x4_t volume  = vdupq_n_f32(vol);
 
-   remaining_samples = len - i;
-
-   for (i = 0; i < remaining_samples; i++)
+   for (; i + 8 <= len; i += 8)
+   {
+      float32x4_t a = vaddq_f32(vld1q_f32(s + i),
+            vmulq_f32(vld1q_f32(in + i),     volume));
+      float32x4_t b = vaddq_f32(vld1q_f32(s + i + 4),
+            vmulq_f32(vld1q_f32(in + i + 4), volume));
+      vst1q_f32(s + i,     a);
+      vst1q_f32(s + i + 4, b);
+   }
+   if (i + 4 <= len)
+   {
+      vst1q_f32(s + i, vaddq_f32(vld1q_f32(s + i),
+            vmulq_f32(vld1q_f32(in + i), volume)));
+      i += 4;
+   }
+   for (; i < len; i++)
       s[i] += in[i] * vol;
 }
 #endif

@@ -30,10 +30,22 @@
 
 RETRO_BEGIN_DECLS
 
-#if defined(__SSE2__)
+/* SSE2 wherever the whole build has it (all x86-64, MSVC included,
+ * and 32-bit x86 built with it), NEON on ARMv8 and ARM builds with
+ * it, the C loop elsewhere. AUDIO_MIX_NO_SIMD leaves them out. */
+#if !defined(AUDIO_MIX_NO_SIMD) && (defined(__SSE2__) || defined(_M_X64) \
+   || (defined(_M_IX86_FP) && _M_IX86_FP >= 2))
+#define AUDIO_MIX_HAVE_SSE2 1
 #define audio_mix_volume           audio_mix_volume_SSE2
 
 void audio_mix_volume_SSE2(float *out,
+      const float *in, float vol, size_t samples);
+#elif !defined(AUDIO_MIX_NO_SIMD) && (defined(__ARM_NEON) \
+   || defined(__ARM_NEON__) || defined(_M_ARM64))
+#define AUDIO_MIX_HAVE_NEON 1
+#define audio_mix_volume           audio_mix_volume_NEON
+
+void audio_mix_volume_NEON(float *out,
       const float *in, float vol, size_t samples);
 #else
 #define audio_mix_volume           audio_mix_volume_C
