@@ -1325,4 +1325,56 @@ check "windows: vulkan second output" \
    "-DHAVE_VULKAN -DHAVE_DYLIB -DHAVE_VIDEO_WINDOWS -Igfx/include" \
    gfx/common/vulkan_common.c
 
+
+# PlayStation clang declares in immintrin.h only the intrinsics of the
+# ISAs the whole build enables, so a kernel built under a per-function
+# target("avx2") or target("avx512f") that the host compiles cleanly
+# does not exist there: the PS4 has AVX alone, the PS5 AVX2 and no
+# AVX-512. Every unit carrying a per-function target or 256/512-bit
+# intrinsics is found by content rather than listed, so a new one is
+# checked the day it lands, and compiled (not only parsed) for each
+# console's own target triple, which brings that console's __SCE__ and
+# CPU baseline. Host libc headers stand in for the SDK's.
+echo "== playstation x86 SIMD units =="
+SIMD_PAT='target\("(avx|fma|sse4|bmi|f16c)|_mm256_|_mm512_'
+if git rev-parse --git-dir > /dev/null 2>&1; then
+   SIMD_TU=$(git grep -lE "$SIMD_PAT" -- '*.c' ':!deps/' ':!samples/' \
+      ':!libretro-common/samples/' ':!tools/' ':!pkg/' ':!os/' ':!wiiu/')
+else
+   SIMD_TU=$(grep -rlE --include='*.c' "$SIMD_PAT" . \
+      | sed 's|^\./||' \
+      | grep -vE '^(deps|samples|libretro-common/samples|tools|pkg|os|wiiu)/')
+fi
+SCE_CC=${SCE_CC:-clang}
+SCE_SYS="-isystem /usr/include"
+[ -d /usr/include/x86_64-linux-gnu ] \
+   && SCE_SYS="$SCE_SYS -isystem /usr/include/x86_64-linux-gnu"
+SCE_DEFS="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_REWIND -DHAVE_CHEATS -D_BSD_SOURCE"
+for sce in "ps4 x86_64-scei-ps4 -DORBIS -Itools/platform_stubs/orbis" \
+      "ps5 x86_64-sie-ps5"; do
+   set -- $sce
+   sce_name=$1; sce_triple=$2; shift 2
+   sce_extra="$*"
+   if ! command -v "$SCE_CC" > /dev/null 2>&1 \
+         || ! "$SCE_CC" --target=$sce_triple -x c -c -o /dev/null /dev/null \
+            > /dev/null 2>&1; then
+      echo "skip  $sce_name: SIMD units (no clang for $sce_triple)"
+      continue
+   fi
+   bad=0
+   for tu in $SIMD_TU; do
+      if ! out=$("$SCE_CC" --target=$sce_triple $SCE_SYS $HOSTOFF $INC \
+            $SCE_DEFS $sce_extra \
+            -O2 -Wall -Werror=implicit-function-declaration \
+            -c -o /dev/null "$tu" 2>&1); then
+         echo "FAIL  $sce_name: SIMD units"
+         echo "      $tu"
+         show_out "$out"
+         fail=1; bad=1
+      fi
+   done
+   [ "$bad" = 1 ] \
+      || echo "ok    $sce_name: SIMD units ($(echo $SIMD_TU | wc -w) files)"
+done
+
 exit $fail
