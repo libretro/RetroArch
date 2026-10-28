@@ -1214,19 +1214,28 @@ static uint32_t window_test_get_flags(void *data)
    return window_test_flags;
 }
 
-/* Two 4x2 screens side by side in an 8x2 frame, drawn by the test
- * driver into an 800x480 window, the second screen Separate */
-static void window_test_begin(void)
+/* Two 4x2 screens side by side in an 8x2 frame */
+static void window_test_views(void)
 {
    static struct retro_video_view views[2];
    struct retro_video_views map;
-   video_driver_state_t *video_st = video_state_get_ptr();
-   settings_t *settings           = config_get_ptr();
    memset(views, 0, sizeof(views));
    views[0].width  = views[1].width  = 4;
    views[0].height = views[1].height = 2;
    views[1].x      = 4;
    views[1].screen = 1;
+   memset(&map, 0, sizeof(map));
+   map.views     = views;
+   map.num_views = 2;
+   CHECK(video_driver_set_views(&map));
+}
+
+/* window_test_views() drawn by the test driver into an 800x480
+ * window, the second screen Separate */
+static void window_test_begin(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
    memset(&window_test_driver, 0, sizeof(window_test_driver));
    window_test_driver.frame         = window_test_frame;
    window_test_driver.viewport_info = window_test_viewport;
@@ -1255,10 +1264,7 @@ static void window_test_begin(void)
    settings->arrays.video_screen_display[1][0]   = '\0';
    window_test_flags = (1u << GFX_CTX_FLAGS_VIDEO_VIEWS)
                      | (1u << GFX_CTX_FLAGS_VIDEO_WINDOWS);
-   memset(&map, 0, sizeof(map));
-   map.views     = views;
-   map.num_views = 2;
-   CHECK(video_driver_set_views(&map));
+   window_test_views();
 }
 
 static void window_test_run(void)
@@ -2035,6 +2041,199 @@ static void test_window_moves(void)
          NULL, NULL, 0, 0);
    window_test_end();
    /* The list the later tests expect */
+   video_driver_publish_window_displays(displays, 2);
+}
+
+/* The Presentation drawn from the last snapshot on its display, as a
+ * driver publishes it */
+static void window_test_draw(unsigned generation)
+{
+   video_views_layout_t layout;
+   video_driver_window_layout_screens(&window_test_seen,
+         window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION],
+         VIDEO_SCALE_PACK(1240, 1080), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION,
+         generation, window_test_seen.display, &layout,
+         &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1240, 1080));
+}
+
+/* The threaded wrapper draws behind the app thread: a layout drawn
+ * before the snapshot that last let the Presentation go or moved it is
+ * not shown, so make before break holds. Nothing is published here
+ * until the test says the video side drew. */
+static void test_window_shown_lag(void)
+{
+   video_window_display_t displays[2];
+   unsigned i;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Screen-2");
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   /* No lag: drawn from the snapshot that asked, it shows at once */
+   window_test_run();
+   CHECK(video_st->windows_host.make == 2);
+   window_test_draw(1);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.make);
+   CHECK(video_st->windows_host.moving == 1);
+   displays[0].own = true;
+   displays[1].own = false;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   /* The game closes; RetroArch arrives under the kept Presentation,
+    * which is then let go of */
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_CORE_RUNNING;
+   video_driver_clear_views();
+   window_test_run();
+   CHECK(window_test_seen.window_keep
+         == 1u << VIDEO_WINDOWS_PRESENTATION);
+   displays[0].own = false;
+   displays[1].own = true;
+   video_driver_publish_window_displays(displays, 2);
+   for (i = 0; i <= VIDEO_WINDOWS_HOLD_FRAMES; i++)
+      window_test_run();
+   CHECK(!window_test_seen.window_keep);
+   CHECK(window_test_seen.display == 0);
+   /* Not drawn yet: the newest layout still names display 2 */
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   /* The game starts again at once: display 2 gets a new Presentation,
+    * which must draw before RetroArch leaves */
+   runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_CORE_RUNNING;
+   window_test_views();
+   window_test_run();
+   CHECK(video_st->windows_host.make == 2);
+   CHECK(!video_st->windows_host.moving);
+   window_test_run();
+   CHECK(video_st->windows_host.make == 2);
+   CHECK(!video_st->windows_host.moving);
+   window_test_draw(2);
+   window_test_run();
+   CHECK(!video_st->windows_host.make);
+   CHECK(video_st->windows_host.moving == 1);
+   displays[0].own = true;
+   displays[1].own = false;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   /* Without a map, the menu following Game Screen 2: open, the
+    * Presentation shows it on display 2 */
+   video_driver_clear_views();
+   window_test_run();
+   CHECK(window_test_seen.display == 0);
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   window_test_draw(3);
+   window_test_run();
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(!video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   /* Closed and opened again: the wrapper took back the snapshot that
+    * let it go, so the window lives on and draws the later one. Before
+    * that draw, what it showed does not count. */
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 0);
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   window_test_draw(3);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   window_test_run();
+   CHECK(!video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   window_test_run();
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   /* Closed, then at once Game Screen 1 is set to display 2: RetroArch moves
+    * there, and keeps no Presentation that is being let go of */
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 0);
+   strlcpy(settings->arrays.video_screen_display[0], "Screen-2",
+         sizeof(settings->arrays.video_screen_display[0]));
+   window_test_run();
+   CHECK(video_st->windows_host.moving == 2);
+   CHECK(!video_st->windows_host.keep);
+   CHECK(!window_test_seen.window_keep);
+   settings->arrays.video_screen_display[0][0] = '\0';
+   settings->uints.video_menu_follows          = 0;
+   menu_st->flags                              = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+   /* The list the later tests expect */
+   displays[0].own = false;
+   displays[1].own = true;
+   video_driver_publish_window_displays(displays, 2);
+}
+
+/* The Presentation moved to another display while still wanted: what
+ * it drew on the old display, or on the new one before the move, is
+ * not shown until it draws from the snapshot that moved it */
+static void test_window_shown_moved(void)
+{
+   video_window_display_t displays[3];
+   settings_t *settings       = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   uint16_t saved_menu        = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   window_test_display(&displays[2], 3, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-3");
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 3);
+   /* Game Screen 2 on Auto: the second panel */
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   window_test_draw(1);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   /* Moved to display 3: the newest layout is on display 2 */
+   strlcpy(settings->arrays.video_screen_display[1], "Screen-3",
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.display == 3);
+   CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+         == 2u);
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   window_test_draw(2);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 3);
+   /* Back to 2 and on to 3 again before it draws: the layout on 3 is
+    * from before the move */
+   settings->arrays.video_screen_display[1][0] = '\0';
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   strlcpy(settings->arrays.video_screen_display[1], "Screen-3",
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.display == 3);
+   CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+         == 2u);
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   window_test_draw(4);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 3);
+   settings->arrays.video_screen_display[1][0] = '\0';
+   menu_st->flags = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+   /* The list the later tests expect */
+   displays[0].own = false;
+   displays[1].own = true;
    video_driver_publish_window_displays(displays, 2);
 }
 
@@ -3131,6 +3330,7 @@ static scond_t *snapshot_ready;
 static bool snapshot_done;
 static const video_windows_frame_t *snapshot_windows_at;
 static video_windows_frame_t snapshot_windows;
+static unsigned snapshot_drawn;
 static int snapshot_data;
 
 static void *snapshot_init(const video_info_t *info)
@@ -3153,6 +3353,8 @@ static bool snapshot_frame(void *data, const void *frame, unsigned dims,
    snapshot_windows_at = info->windows;
    if (info->windows)
       snapshot_windows = *info->windows;
+   /* The serial a window layout published now carries */
+   snapshot_drawn = video_state_get_ptr()->windows_drawn;
    snapshot_done = true;
    scond_signal(snapshot_ready);
    slock_unlock(snapshot_lock);
@@ -3166,7 +3368,8 @@ static void snapshot_free(void *data)
 #endif
 
 /* The threaded wrapper hands the video thread its own copy of the
- * frame's windows, never the main thread's */
+ * frame's windows, never the main thread's, and stamps its serial
+ * before the driver draws it */
 static void test_window_frame_snapshot(void)
 {
 #ifdef HAVE_THREADS
@@ -3178,7 +3381,7 @@ static void test_window_frame_snapshot(void)
    video_info_t info;
    uint32_t pixel = 0;
    bool initialized;
-   unsigned restore;
+   unsigned restore, serial;
    window_test_begin();
    window_test_run();
    window_test_end();
@@ -3186,6 +3389,8 @@ static void test_window_frame_snapshot(void)
    memset(&frame, 0, sizeof(frame));
    frame.windows = window_test_handed;
    restore       = owned->restore;
+   /* A snapshot the main thread's frames have not drawn */
+   serial        = ++owned->serial;
    memset(&driver, 0, sizeof(driver));
    memset(&info, 0, sizeof(info));
    driver.init        = snapshot_init;
@@ -3211,6 +3416,7 @@ static void test_window_frame_snapshot(void)
       owned->settings[1].mode   = VIDEO_WINDOW_HIDDEN;
       owned->plan.separate_mask = 0;
       owned->restore++;
+      owned->serial++;
       if (!snapshot_done)
          scond_wait_timeout(snapshot_ready, snapshot_lock, 2000000);
       CHECK(snapshot_done);
@@ -3219,6 +3425,7 @@ static void test_window_frame_snapshot(void)
       CHECK(snapshot_windows.settings[1].mode == VIDEO_WINDOW_SEPARATE);
       CHECK(snapshot_windows.plan.separate_mask == 2u);
       CHECK(snapshot_windows.restore == restore);
+      CHECK(snapshot_drawn == serial);
       slock_unlock(snapshot_lock);
       /* A frame without windows hands none on */
       frame.windows = NULL;
@@ -3388,8 +3595,15 @@ static void test_window_redraw(void)
    static video_driver_t driver;
    const video_driver_t *threaded = NULL;
    void *data                     = NULL;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   const unsigned both            =
+        VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU)
+      | VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS);
    video_window_display_t displays[3];
+   video_window_ui_target_t ui[VIDEO_WINDOW_UI_LAYERS];
+   video_windows_route_t route;
    video_info_t info;
+   unsigned layer;
    window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
          true, "Built-in Screen");
    window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
@@ -3409,6 +3623,9 @@ static void test_window_redraw(void)
    window_test_begin();
    if (video_init_thread(&threaded, &data, &driver, info))
    {
+      /* The main thread's frames go straight to the test driver, as
+       * without the wrapper; window_test_redraw() installs it */
+      video_st->thread_wrapper_active = false;
       /* An external monitor takes Game Screen 1: Game Screen 2's Presentation
        * first on RetroArch's display; a redraw keeps the route */
       video_driver_publish_window_displays(displays, 3);
@@ -3420,6 +3637,31 @@ static void test_window_redraw(void)
       CHECK(window_test_seen.plan.separate_mask == 2u);
       CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
             == 2u);
+      CHECK(window_test_seen.serial == video_st->windows.serial);
+
+      /* With the UI, a keep and the logo routed: every UI layer is the
+       * main window's, the rest as routed */
+      route                        = video_st->windows_route;
+      memcpy(ui, video_st->windows_ui, sizeof(ui));
+      video_st->windows_route.ui   = both;
+      video_st->windows_route.keep = 1;
+      video_st->windows_route.logo = true;
+      for (layer = 0; layer < VIDEO_WINDOW_UI_LAYERS; layer++)
+         video_st->windows_ui[layer].window = VIDEO_WINDOWS_PRESENTATION;
+      window_test_redraw(threaded, data);
+      for (layer = 0; layer < VIDEO_WINDOW_UI_LAYERS; layer++)
+      {
+         CHECK(window_test_seen.ui[layer].window == 0);
+         CHECK(!window_test_seen.ui[layer].wait);
+      }
+      CHECK(window_test_seen.window_ui[VIDEO_WINDOWS_PRESENTATION]
+            == both);
+      CHECK(window_test_seen.window_keep
+            == 1u << VIDEO_WINDOWS_PRESENTATION);
+      CHECK(window_test_seen.logo);
+      CHECK(window_test_seen.serial == video_st->windows.serial);
+      video_st->windows_route = route;
+      memcpy(video_st->windows_ui, ui, sizeof(ui));
 
       /* Nowhere to go: still attached */
       displays[1].on = false;
@@ -3475,6 +3717,8 @@ int main(int argc, char **argv)
    test_window_displays();
    test_window_display_names();
    test_window_moves();
+   test_window_shown_lag();
+   test_window_shown_moved();
    test_window_ui_targets();
    test_window_pointer_mapping();
    test_window_generation();
