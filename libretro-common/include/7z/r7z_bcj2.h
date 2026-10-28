@@ -164,35 +164,38 @@ int r7z_bcj2_decode_part(r7z_bcj2_state_t *st,
       const uint8_t *jump_buf, size_t jump_len,
       const uint8_t *rc_buf,   size_t rc_len);
 
+/* One of the four inputs a piece at a time: @len octets at @p, @pos of
+ * them taken, and @more set while more of it is to come */
+typedef struct r7z_bcj2_in
+{
+   const uint8_t *p;
+   size_t         len;
+   size_t         pos;
+   int            more;
+} r7z_bcj2_in_t;
+
 /**
- * r7z_bcj2_decode_piece:
+ * r7z_bcj2_decode_in:
  * @st         : conversion state, prepared with r7z_bcj2_state_init()
  * @dst        : where this piece of the output goes, @dst_cap octets of
  *               room, more than 4
  * @wrote      : receives how many octets went there
- * @main_buf   : the next of the main stream, @main_len octets
- * @main_used  : receives how many of them were taken; the rest go first
- *               in the next call
- * @call_buf .. @rc_len : the other three streams whole, the same on
- *               every call
+ * @main_in .. @rc_in : the four inputs, each as far as it has come
  *
- * As r7z_bcj2_decode_part(), with the main stream and the output a piece
- * at a time: converts until @main_buf is used up or @dst has no room
- * left for a converted branch. At the end of the output,
- * r7z_bcj2_decode_done() says whether the targets were all used.
+ * As r7z_bcj2_decode_part(), with every input and the output a piece at
+ * a time: converts until @dst has no room left for a branch, the main
+ * input is used up, or a branch candidate needs more of the range
+ * coder's input or of its targets' than is there while more is to come,
+ * which it waits for unread. Each input's pos says how far it was taken; the
+ * caller hands over more of the ones that ran short and calls again,
+ * and at the end sees that the targets were all used.
  *
  * Returns: RBCJ2_PENDING, or a negative RBCJ2_ERROR_* code.
  */
-int r7z_bcj2_decode_piece(r7z_bcj2_state_t *st,
+int r7z_bcj2_decode_in(r7z_bcj2_state_t *st,
       uint8_t *dst, size_t dst_cap, size_t *wrote,
-      const uint8_t *main_buf, size_t main_len, size_t *main_used,
-      const uint8_t *call_buf, size_t call_len,
-      const uint8_t *jump_buf, size_t jump_len,
-      const uint8_t *rc_buf,   size_t rc_len);
-
-/* RBCJ2_OK if every target of @call_len and @jump_len was used */
-int r7z_bcj2_decode_done(const r7z_bcj2_state_t *st, size_t call_len,
-      size_t jump_len);
+      r7z_bcj2_in_t *main_in, r7z_bcj2_in_t *call_in,
+      r7z_bcj2_in_t *jump_in, r7z_bcj2_in_t *rc_in);
 
 /**
  * r7z_bcj2_decode:
