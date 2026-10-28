@@ -70,12 +70,14 @@ void r7z_bcj2_state_init(r7z_bcj2_state_t *st)
    st->started = 0;
 }
 
-int r7z_bcj2_decode_part(r7z_bcj2_state_t *st,
+/* With @more, the main stream goes on past @main_buf: running out of it
+ * is a pause rather than an error */
+static int bcj2_run(r7z_bcj2_state_t *st,
       uint8_t *dst, size_t dst_len, size_t dst_limit,
       const uint8_t *main_buf, size_t main_len,
       const uint8_t *call_buf, size_t call_len,
       const uint8_t *jump_buf, size_t jump_len,
-      const uint8_t *rc_buf,   size_t rc_len)
+      const uint8_t *rc_buf,   size_t rc_len, int more)
 {
    if (!st)
       return RBCJ2_ERROR_PARAM;
@@ -137,7 +139,7 @@ int r7z_bcj2_decode_part(r7z_bcj2_state_t *st,
          return RBCJ2_PENDING;
 
       if (st->main_pos == main_len)
-         return RBCJ2_ERROR_DATA;
+         return more ? RBCJ2_PENDING : RBCJ2_ERROR_DATA;
 
       b = main_buf[st->main_pos++];
       dst[st->dst_pos++] = b;
@@ -245,6 +247,10 @@ int r7z_bcj2_decode_part(r7z_bcj2_state_t *st,
       }
    }
 
+   /* a piece's room filled to the last octet */
+   if (more)
+      return RBCJ2_PENDING;
+
    /* Every byte of the target streams must have been used. Leftovers
     * mean the streams disagree about how many branches were
     * converted, which would have produced wrong output had the output
@@ -253,6 +259,46 @@ int r7z_bcj2_decode_part(r7z_bcj2_state_t *st,
       return RBCJ2_ERROR_DATA;
 
    return RBCJ2_OK;
+}
+
+int r7z_bcj2_decode_part(r7z_bcj2_state_t *st,
+      uint8_t *dst, size_t dst_len, size_t dst_limit,
+      const uint8_t *main_buf, size_t main_len,
+      const uint8_t *call_buf, size_t call_len,
+      const uint8_t *jump_buf, size_t jump_len,
+      const uint8_t *rc_buf,   size_t rc_len)
+{
+   return bcj2_run(st, dst, dst_len, dst_limit, main_buf, main_len,
+         call_buf, call_len, jump_buf, jump_len, rc_buf, rc_len, 0);
+}
+
+int r7z_bcj2_decode_piece(r7z_bcj2_state_t *st,
+      uint8_t *dst, size_t dst_cap, size_t *wrote,
+      const uint8_t *main_buf, size_t main_len, size_t *main_used,
+      const uint8_t *call_buf, size_t call_len,
+      const uint8_t *jump_buf, size_t jump_len,
+      const uint8_t *rc_buf,   size_t rc_len)
+{
+   int res;
+   *wrote     = 0;
+   *main_used = 0;
+   if (!st || dst_cap <= 4)
+      return RBCJ2_ERROR_PARAM;
+   st->main_pos = 0;
+   st->dst_pos  = 0;
+   /* stopped with room for a converted branch's four octets */
+   res = bcj2_run(st, dst, dst_cap, dst_cap - 4, main_buf, main_len,
+         call_buf, call_len, jump_buf, jump_len, rc_buf, rc_len, 1);
+   *wrote     = st->dst_pos;
+   *main_used = st->main_pos;
+   return res;
+}
+
+int r7z_bcj2_decode_done(const r7z_bcj2_state_t *st, size_t call_len,
+      size_t jump_len)
+{
+   return st->call_pos == call_len && st->jump_pos == jump_len
+      ? RBCJ2_OK : RBCJ2_ERROR_DATA;
 }
 
 int r7z_bcj2_decode(uint8_t *dst, size_t dst_len,

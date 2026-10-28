@@ -6,8 +6,9 @@
  * before ended - r7z_archive.c is built with its allocations counted,
  * and the later ones allocate nothing - and out of order the stream
  * starts again; every way they come out as r7z_archive_extract() gives
- * them, and the converters' as code_like() made them. Two converters in
- * a row are not streamed, and are extracted whole. */
+ * them, and the converters', the other coders' and BCJ2's as
+ * code_like() made them. r7z_archive.c is built here to make and read
+ * a few KiB a step, so every coder takes many. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -185,14 +186,16 @@ static void code_like(uint8_t *d, size_t n, unsigned which)
    }
 }
 
-/* A converter's archive: each entry streamed in order, then out of it,
- * as code_like() made it */
+/* An archive of code_like()'s three files, or of s.bin, the first of
+ * them cut short: each entry streamed in order, then out of it, as
+ * code_like() made it */
 static void filtered(const char *what, const uint8_t *fx, size_t len,
       int read)
 {
-   static const size_t sizes[3] = { 6001, 4500, 7003 };
+   static const size_t   sizes[3] = { 6001, 4500, 7003 };
    static const uint32_t order[6] = { 0, 1, 2, 1, 2, 0 };
-   static uint8_t want[7003];
+   static uint8_t        want[7003];
+   unsigned              files = fx == fx_m_copy ? 1 : 3;
    struct mem     m;
    r7z_archive_t *a = NULL;
    unsigned       k;
@@ -207,8 +210,9 @@ static void filtered(const char *what, const uint8_t *fx, size_t len,
    }
    for (k = 0; k < 6; k++)
    {
-      uint32_t       i  = order[k];
-      size_t         at = 0, n, before = total;
+      uint32_t       i  = files == 1 ? 0 : order[k];
+      size_t         at = 0, n, before = total, size = files == 1 ? 3001
+                       : sizes[i];
       const uint8_t *d;
       int            res, ok = 1;
       code_like(want, sizes[i], i);
@@ -217,14 +221,15 @@ static void filtered(const char *what, const uint8_t *fx, size_t len,
          check(0, what, i);
          continue;
       }
-      check(k == 1 || k == 2 ? total == before : 1, "in order, going on", i);
+      check(files == 3 && (k == 1 || k == 2) ? total == before : 1,
+            "in order, going on", i);
       while ((res = r7z_archive_stream_step(a, &d, &n)) == R7Z_PENDING)
       {
-         if (n > sizes[i] - at || (n && memcmp(d, want + at, n)))
+         if (n > size - at || (n && memcmp(d, want + at, n)))
             ok = 0;
          at += n;
       }
-      check(ok && res == R7Z_OK && at == sizes[i], what, i);
+      check(ok && res == R7Z_OK && at == size, what, i);
    }
    r7z_archive_stream_end(a);
    r7z_archive_close(a);
@@ -278,33 +283,6 @@ static void dense(int read)
    r7z_archive_close(a);
 }
 
-/* Two converters: not streamed, and whole as code_like() made them */
-static void two_filters(void)
-{
-   static const size_t sizes[3] = { 6001, 4500, 7003 };
-   static uint8_t want[7003];
-   r7z_archive_t *a = NULL;
-   uint32_t       i;
-   if (r7z_archive_open(&a, fx_f_two, sizeof(fx_f_two)) != R7Z_OK)
-   {
-      check(0, "two converters", 0);
-      return;
-   }
-   check(r7z_archive_stream_begin(a, 0) == R7Z_ERROR_UNSUPPORTED,
-         "two converters, not streamed", 0);
-   for (i = 0; i < 3; i++)
-   {
-      uint8_t *got = NULL;
-      size_t   got_len = 0;
-      code_like(want, sizes[i], i);
-      check(r7z_archive_extract(a, i, &got, &got_len) == R7Z_OK
-            && got_len == sizes[i] && !memcmp(got, want, got_len),
-            "two converters, whole", i);
-      counted_free(got);
-   }
-   r7z_archive_close(a);
-}
-
 int main(void)
 {
    int r;
@@ -324,11 +302,17 @@ int main(void)
       filtered("IA64", fx_f_ia64, sizeof(fx_f_ia64), r);
       filtered("Delta", fx_f_delta, sizeof(fx_f_delta), r);
       dense(r);
+      filtered("ARM and Delta", fx_f_two, sizeof(fx_f_two), r);
+      filtered("PPMd", fx_m_ppmd, sizeof(fx_m_ppmd), r);
+      filtered("BZip2", fx_m_bzip2, sizeof(fx_m_bzip2), r);
+      filtered("Deflate", fx_m_deflate, sizeof(fx_m_deflate), r);
+      filtered("Deflate64", fx_m_deflate64, sizeof(fx_m_deflate64), r);
+      filtered("BCJ2", fx_m_bcj2, sizeof(fx_m_bcj2), r);
+      filtered("BCJ and Copy", fx_m_copy, sizeof(fx_m_copy), r);
    }
-   two_filters();
    if (failures)
       return 1;
    printf("r7z_stream_test: solid folders' entries streamed, in order once, "
-         "through every converter\n");
+         "through every coder\n");
    return 0;
 }

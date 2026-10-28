@@ -3770,106 +3770,516 @@ int r7z_archive_decode_step(r7z_archive_t *a, uint32_t index)
 /* --------------------------------------------------------------------
  * One entry streamed out of its folder
  *
- * A folder of one LZMA or LZMA2 coder decodes through a window of its
- * dictionary's size rather than into a buffer of the whole folder: the
- * window is all a match can reach back into. What passes through it
- * that is the entry's is handed out from where it lies, and the rest of
- * a solid folder ahead of it is decoded and let go.
+ * The folder's first coder - LZMA, LZMA2, PPMd, Deflate, Deflate64,
+ * BZip2 or Copy - is its source, a piece at a time: LZMA through a
+ * window of its dictionary's size rather than a buffer of the whole
+ * folder, the window being all a match can reach back into; Deflate
+ * and Deflate64 keep their own windows, BZip2 a block, PPMd nothing
+ * the output need stay for. What passes that is the entry's is handed
+ * out where it lies, and the rest of a solid folder ahead of it is
+ * decoded and let go.
  *
- * One branch converter or Delta after the LZMA coder takes each piece
- * copied out of the window, which the matches still read unconverted:
- * what it converts is handed out from that copy, and the few octets of
- * an instruction it has not yet seen the end of wait for the next piece.
+ * Up to three branch converters or Delta after the source take each
+ * piece copied out of what made it, which an LZMA window's matches still
+ * read unconverted: what one converts goes on to the next, and the few
+ * octets of an instruction it has not yet seen the end of wait for the
+ * next piece.
+ *
+ * A BCJ2 folder streams its main input from the coder that makes it;
+ * the call, jump and range coder inputs, a small part of the whole, are
+ * decoded whole first.
  * -------------------------------------------------------------------- */
 
-/* Folder octets decoded per step */
+/* Folder octets made per step */
+#ifndef R7Z_STREAM_SLICE
 #define R7Z_STREAM_SLICE (256 * 1024)
+#endif
 /* Packed octets read per fetch, when the archive is not in memory */
+#ifndef R7Z_STREAM_CHUNK
 #define R7Z_STREAM_CHUNK (128 * 1024)
+#endif
+/* What a fetch keeps of the last, in front of the next: more than
+ * Deflate64 leaves unread and the 1024 octets PPMd stops short of */
+#ifndef R7Z_STREAM_KEEP
+#define R7Z_STREAM_KEEP  4096
+#endif
 /* Octets a converter may leave for the next piece: an IA-64 bundle */
 #define R7Z_FILTER_TAIL  16
+#define R7Z_STREAM_STAGES 3
+/* A converter's buffer: a piece, with what every one before it and it
+ * kept */
+#define R7Z_STAGE_CAP (R7Z_STREAM_SLICE \
+      + R7Z_FILTER_TAIL * (R7Z_STREAM_STAGES + 1))
+
+/* A coder's output, a piece at a time, from its packed stream */
+typedef struct r7z_src
+{
+   uint64_t       method;
+   uint64_t       size;      /* octets it makes */
+   uint64_t       made;
+   uint64_t       pack_off;  /* file offset of what is fetched next */
+   uint64_t       pack_left;
+   const uint8_t *in;        /* the packed stream, where it lies or read */
+   size_t         in_len, in_pos;
+   uint8_t       *buf;       /* read: a chunk and what it kept; BZip2's
+                                ring */
+   size_t         buf_cap;
+   uint64_t       ring_at;   /* BZip2: the ring's octets read in */
+   uint8_t       *win;       /* LZMA's window, or where the others make
+                                their pieces */
+   size_t         win_len, from;
+   void          *dec;
+   uint16_t      *probs;
+   const uint8_t *blk;       /* BZip2: the block, and how much is out */
+   size_t         blk_len, blk_at;
+} r7z_src_t;
+
+/* A converter after the source */
+typedef struct r7z_stage
+{
+   uint64_t method;
+   uint64_t fpos;    /* the folder offset of fb[0] */
+   uint8_t *fb;      /* the last piece copied in, and what waited */
+   size_t   conv;    /* converted octets in fb */
+   size_t   fend;    /* and all of them */
+   uint32_t ip;      /* the stream offset converted from */
+   uint32_t x86;
+   unsigned dist;
+   int      in_done; /* nothing more comes to it */
+   uint8_t  delta[RFILTERS_DELTA_STATE_SIZE];
+} r7z_stage_t;
 
 struct r7z_stream
 {
-   uint64_t       made;     /* folder octets decoded */
-   uint64_t       lo, hi;   /* the entry's, within the folder */
-   uint64_t       pack_off; /* file offset of what is fetched next */
-   uint64_t       pack_left;
-   const uint8_t *in;
-   uint8_t       *win;
-   uint8_t       *buf;      /* the packed chunk, when the archive is read */
-   void          *dec;      /* rlzma2_dec_t or rlzma_stream_t */
-   uint16_t      *probs;
-   size_t         in_len, in_pos;
-   size_t         win_len;
-   size_t         from;     /* where in win the next octets are */
-   uint32_t       crc;      /* the entry's so far */
-   uint32_t       fcrc;     /* the folder's so far, when it has one */
-   uint32_t       index;
-   uint32_t       folder;
-   int            lzma2;
-   int            whole;    /* the entry is the whole folder */
-   int            done;     /* the entry is out: the next may go on */
-   /* the converter after the LZMA coder, 0 for none */
-   uint64_t       raw;      /* folder octets out of the LZMA coder */
-   uint64_t       fpos;     /* the folder offset of fb[0] */
-   uint64_t       filter;
-   uint8_t       *fb;       /* what it converts, copied out of win: a
-                               window's and what waited */
-   size_t         rd;       /* fb's next octet to hand out */
-   size_t         conv;     /* fb's converted octets end */
-   size_t         fend;     /* and what is copied into it */
-   uint32_t       ip;       /* the stream offset converted from */
-   uint32_t       x86;
-   unsigned       dist;
-   uint8_t        delta[RFILTERS_DELTA_STATE_SIZE];
+   uint64_t          made;      /* folder octets handed on */
+   uint64_t          lo, hi;    /* the entry's, within the folder */
+   uint32_t          crc;       /* the entry's so far */
+   uint32_t          fcrc;      /* the folder's so far, when it has one */
+   uint32_t          index;
+   uint32_t          folder;
+   int               whole;     /* the entry is the whole folder */
+   int               done;      /* the entry is out: the next may go on */
+   r7z_src_t         src;
+   /* BCJ2: the other three inputs, whole, and the piece of main the
+    * converter has not yet taken */
+   int               bcj2;
+   r7z_bcj2_state_t  bst;
+   uint8_t          *side[3];
+   size_t            side_len[3];
+   int               side_borrowed[3];
+   const uint8_t    *mp;
+   size_t            mn;
+   uint8_t          *bout;
+   uint64_t          bmade;
+   unsigned          nstages;
+   r7z_stage_t       stage[R7Z_STREAM_STAGES];
+   /* the last piece made and not all handed on yet */
+   const uint8_t    *ready;
+   size_t            ready_len;
+   int               pipe_done;
 };
 
-/* A folder of an LZMA or LZMA2 coder and a converter after it, each of
- * one input and one output, the second taking the first's: what a
- * stream can take a piece at a time */
-static int stream_filter_shape(const r7z_archive_t *a, uint32_t fi)
+/* ---- the source ---- */
+
+static void src_close(r7z_src_t *s)
 {
-   const folder_t *f = &a->folders[fi];
-   const coder_t  *c = &a->coders[f->coder_first];
-   uint32_t        base = 0, k, m;
-   for (k = 0; k < fi; k++)
-      for (m = 0; m < a->folders[k].num_coders; m++)
-         base += a->coders[a->folders[k].coder_first + m].num_out;
-   switch (c[1].method)
+   switch (s->method)
    {
-      case METHOD_BCJ:
-      case METHOD_BCJ_X86:
-      case METHOD_BRA_ARM:
-      case METHOD_BRA_ARMT:
-      case METHOD_ARM64:
-      case METHOD_BRA_PPC:
-      case METHOD_BRA_SPARC:
-      case METHOD_BRA_IA64:
-      case METHOD_DELTA:
+      case METHOD_PPMD:
+         ppmd_close((r7z_ppmd_t*)s->dec);
          break;
+      case METHOD_DEFLATE:
+         if (s->dec)
+            rinflate_free(s->dec);
+         break;
+      case METHOD_DEFLATE64:
+         if (s->dec)
+            rinflate64_free(s->dec);
+         break;
+#ifdef HAVE_RBZIP2
+      case METHOD_BZIP2:
+         if (s->dec)
+            rbzip2_free((rbzip2_t*)s->dec);
+         break;
+#endif
       default:
-         return 0;
+         free(s->dec);
+         break;
    }
-   return c[0].num_in == 1 && c[0].num_out == 1
-       && c[1].num_in == 1 && c[1].num_out == 1
-       && f->num_bonds == 1
-       && a->bonds[f->bond_first] == 1 && a->bonds[f->bond_first + 1] == 0
-       && a->folder_pack[f->pack_first] == 0 && f->main_out == 1
-       && base + 1 < a->num_coder_unpack_sizes
-       && a->coder_unpack_sizes[base] == f->unpack_size;
+   free(s->win);
+   free(s->buf);
+   free(s->probs);
+   memset(s, 0, sizeof(*s));
 }
+
+/* Packed octets on, read in behind what the last fetch kept */
+static int src_refill(const r7z_archive_t *a, r7z_src_t *s)
+{
+   size_t keep, n;
+   if (!s->buf || !s->pack_left || s->in_len - s->in_pos >= R7Z_STREAM_KEEP)
+      return R7Z_OK;
+   keep = s->in_len - s->in_pos;
+   if (keep)
+      memmove(s->buf, s->buf + s->in_pos, keep);
+   n = s->buf_cap - keep;
+   if ((uint64_t)n > s->pack_left)
+      n = (size_t)s->pack_left;
+   if (r7z_fetch(a, s->pack_off, s->buf + keep, n) != R7Z_OK)
+      return R7Z_ERROR_DATA;
+   s->in         = s->buf;
+   s->in_len     = keep + n;
+   s->in_pos     = 0;
+   s->pack_off  += n;
+   s->pack_left -= n;
+   return R7Z_OK;
+}
+
+#ifdef HAVE_RBZIP2
+/* BZip2's ring read on up to what the decoder still needs, and handed
+ * over again, in two where it wraps */
+static int src_ring(const r7z_archive_t *a, r7z_src_t *s)
+{
+   uint64_t t = rbzip2_taken((rbzip2_t*)s->dec);
+   size_t   from, have;
+   while (s->pack_left && s->ring_at - t < s->buf_cap)
+   {
+      size_t at = (size_t)(s->ring_at % s->buf_cap);
+      size_t n  = s->buf_cap - at;
+      if ((uint64_t)n > s->buf_cap - (s->ring_at - t))
+         n = (size_t)(s->buf_cap - (s->ring_at - t));
+      if ((uint64_t)n > s->pack_left)
+         n = (size_t)s->pack_left;
+      if (r7z_fetch(a, s->pack_off, s->buf + at, n) != R7Z_OK)
+         return R7Z_ERROR_DATA;
+      s->ring_at   += n;
+      s->pack_off  += n;
+      s->pack_left -= n;
+   }
+   from = (size_t)(t % s->buf_cap);
+   have = (size_t)(s->ring_at - t);
+   if (have > s->buf_cap - from)
+      rbzip2_input((rbzip2_t*)s->dec, s->buf + from, s->buf_cap - from,
+            s->buf, have - (s->buf_cap - from));
+   else
+      rbzip2_input((rbzip2_t*)s->dec, s->buf + from, have, NULL, 0);
+   return R7Z_OK;
+}
+#endif
+
+/* Coder @c making @size octets from the packed stream of @pk_len at
+ * archive offset @pk_off */
+static int src_open(r7z_archive_t *a, r7z_src_t *s, const coder_t *c,
+      uint64_t pk_off, uint64_t pk_len, uint64_t size)
+{
+   size_t piece = (uint64_t)R7Z_STREAM_SLICE < size
+      ? (size_t)R7Z_STREAM_SLICE : (size_t)size;
+
+   memset(s, 0, sizeof(*s));
+   s->method = c->method;
+   s->size   = size;
+   if (     pk_off > (uint64_t)a->len || pk_len > (uint64_t)a->len - pk_off
+         || !size)
+      return R7Z_ERROR_DATA;
+
+   /* in memory, the packed stream is input where it lies */
+   if (a->data)
+   {
+      s->in     = a->data + (size_t)pk_off;
+      s->in_len = (size_t)pk_len;
+   }
+   else
+   {
+      s->pack_off  = pk_off;
+      s->pack_left = pk_len;
+#ifdef HAVE_RBZIP2
+      if (c->method == METHOD_BZIP2)
+      {
+         s->buf_cap = 2 * (size_t)RBZIP2_AHEAD;
+         if ((uint64_t)s->buf_cap > pk_len)
+            s->buf_cap = (size_t)pk_len;
+      }
+      else
+#endif
+         s->buf_cap = R7Z_STREAM_CHUNK + R7Z_STREAM_KEEP;
+      if (!(s->buf = (uint8_t*)malloc(s->buf_cap ? s->buf_cap : 1)))
+         return R7Z_ERROR_MEM;
+      if (     c->method != METHOD_BZIP2
+            && src_refill(a, s) != R7Z_OK)
+         return R7Z_ERROR_DATA;
+   }
+
+   switch (c->method)
+   {
+      case METHOD_COPY:
+         if (pk_len != size)
+            return R7Z_ERROR_DATA;
+         return R7Z_OK;
+      case METHOD_LZMA:
+      case METHOD_LZMA2:
+      {
+         uint32_t dict = 0, lc = 0, lp = 0;
+         if (c->method == METHOD_LZMA2)
+         {
+            if (     c->prop_size < 1
+                  || rlzma2_dec_dic_size_from_prop(a->props[c->prop_offset],
+                     &dict) != RLZMA_OK)
+               return R7Z_ERROR_DATA;
+         }
+         else
+         {
+            const uint8_t *pr = a->props + c->prop_offset;
+            uint32_t       d;
+            if (c->prop_size < RLZMA_PROPS_SIZE || (d = pr[0]) >= 9 * 5 * 5)
+               return R7Z_ERROR_DATA;
+            lc   = d % 9;
+            lp   = (d / 9) % 5;
+            dict = (uint32_t)pr[1] | ((uint32_t)pr[2] << 8)
+                 | ((uint32_t)pr[3] << 16) | ((uint32_t)pr[4] << 24);
+            if (lc + lp > RLZMA_STREAM_LCLP_MAX)
+               return R7Z_ERROR_DATA;
+         }
+         if (dict < 4096)
+            dict = 4096;
+         s->win_len = (uint64_t)dict < size ? (size_t)dict : (size_t)size;
+         if (     (uint64_t)s->win_len != ((uint64_t)dict < size
+                  ? (uint64_t)dict : size)
+               || !(s->win = (uint8_t*)malloc(s->win_len)))
+            return R7Z_ERROR_MEM;
+         if (c->method == METHOD_LZMA2)
+         {
+            if (     !(s->dec   = malloc(sizeof(rlzma2_dec_t)))
+                  || !(s->probs = (uint16_t*)malloc(RLZMA2_NUM_PROBS
+                        * sizeof(uint16_t))))
+               return R7Z_ERROR_MEM;
+            return rlzma2_dec_init((rlzma2_dec_t*)s->dec,
+                  a->props[c->prop_offset], s->probs, s->win, s->win_len)
+               == RLZMA_OK ? R7Z_OK : R7Z_ERROR_DATA;
+         }
+         if (     !(s->dec   = malloc(sizeof(rlzma_stream_t)))
+               || !(s->probs = (uint16_t*)malloc(
+                     (size_t)RLZMA_STREAM_NUM_PROBS(lc, lp) * sizeof(uint16_t))))
+            return R7Z_ERROR_MEM;
+         if (rlzma_stream_init((rlzma_stream_t*)s->dec,
+                  a->props + c->prop_offset, s->probs, s->win, s->win_len)
+               != RLZMA_OK)
+            return R7Z_ERROR_DATA;
+         rlzma_stream_reset((rlzma_stream_t*)s->dec);
+         return R7Z_OK;
+      }
+      case METHOD_PPMD:
+      {
+         int res;
+         if (!(s->win = (uint8_t*)malloc(piece)))
+            return R7Z_ERROR_MEM;
+         if ((res = ppmd_open(a, c, s->in, s->in_len,
+                  (r7z_ppmd_t**)&s->dec)) != R7Z_OK)
+            return res;
+         s->in_pos = (size_t)(((r7z_ppmd_t*)s->dec)->rc.p - s->in);
+         return R7Z_OK;
+      }
+      case METHOD_DEFLATE:
+         if (     !(s->win = (uint8_t*)malloc(piece))
+               || !(s->dec = rinflate_new(-15)))
+            return R7Z_ERROR_MEM;
+         return R7Z_OK;
+      case METHOD_DEFLATE64:
+         if (     !(s->win = (uint8_t*)malloc(piece))
+               || !(s->dec = rinflate64_new()))
+            return R7Z_ERROR_MEM;
+         return R7Z_OK;
+#ifdef HAVE_RBZIP2
+      case METHOD_BZIP2:
+      {
+         int e;
+         if (!(s->dec = rbzip2_new()))
+            return R7Z_ERROR_MEM;
+         if (a->data)
+            e = rbzip2_begin_blocks((rbzip2_t*)s->dec, s->in, s->in_len);
+         else
+         {
+            /* the ring filled, then begun on */
+            if (pk_len < 4)
+               return R7Z_ERROR_DATA;
+            while (s->pack_left && s->ring_at < s->buf_cap)
+            {
+               size_t n = s->buf_cap - (size_t)s->ring_at;
+               if ((uint64_t)n > s->pack_left)
+                  n = (size_t)s->pack_left;
+               if (r7z_fetch(a, s->pack_off, s->buf + s->ring_at, n)
+                     != R7Z_OK)
+                  return R7Z_ERROR_DATA;
+               s->ring_at   += n;
+               s->pack_off  += n;
+               s->pack_left -= n;
+            }
+            e = rbzip2_begin_ring((rbzip2_t*)s->dec, s->buf,
+                  (size_t)s->ring_at, NULL, 0);
+         }
+         if (e == RBZIP2_ERROR_MEM)
+            return R7Z_ERROR_MEM;
+         return e == RBZIP2_OK ? R7Z_OK : R7Z_ERROR_DATA;
+      }
+#endif
+      default:
+         break;
+   }
+   return R7Z_ERROR_UNSUPPORTED;
+}
+
+/* Up to @limit more of what the coder makes, *@out where it lies, until
+ * the next call */
+static int src_next(r7z_archive_t *a, r7z_src_t *s, size_t limit,
+      const uint8_t **out, size_t *n)
+{
+   int finish;
+   *out = NULL;
+   *n   = 0;
+   if ((uint64_t)limit > s->size - s->made)
+      limit = (size_t)(s->size - s->made);
+   if (!limit)
+      return R7Z_OK;
+#ifdef HAVE_RBZIP2
+   if (s->method != METHOD_BZIP2)
+#endif
+      if (src_refill(a, s) != R7Z_OK)
+         return R7Z_ERROR_DATA;
+   finish = !s->pack_left;
+
+   switch (s->method)
+   {
+      case METHOD_COPY:
+         if (limit > s->in_len - s->in_pos)
+            limit = s->in_len - s->in_pos;
+         *out       = s->in + s->in_pos;
+         *n         = limit;
+         s->in_pos += limit;
+         break;
+      case METHOD_LZMA:
+      case METHOD_LZMA2:
+      {
+         size_t *dic_pos, avail = s->in_len - s->in_pos;
+         int     status = 0, res;
+         dic_pos = s->method == METHOD_LZMA2
+            ? &((rlzma2_dec_t*)s->dec)->lzma.dic_pos
+            : &((rlzma_stream_t*)s->dec)->dic_pos;
+         if (limit > s->win_len - *dic_pos)
+            limit = s->win_len - *dic_pos;
+         res = s->method == METHOD_LZMA2
+            ? rlzma2_dec_decode((rlzma2_dec_t*)s->dec, *dic_pos + limit,
+                  s->in + s->in_pos, &avail, finish, &status)
+            : rlzma_stream_decode((rlzma_stream_t*)s->dec, *dic_pos + limit,
+                  s->in + s->in_pos, &avail, finish, &status);
+         if (res != RLZMA_OK)
+            return R7Z_ERROR_DATA;
+         s->in_pos += avail;
+         *out       = s->win + s->from;
+         *n         = *dic_pos - s->from;
+         s->from    = *dic_pos;
+         /* the window wraps where it ends */
+         if (*dic_pos == s->win_len)
+         {
+            *dic_pos = 0;
+            s->from  = 0;
+         }
+         /* nothing made, nothing taken, and nothing more to take */
+         if (!*n && !avail && finish && s->in_pos == s->in_len)
+            return R7Z_ERROR_DATA;
+         break;
+      }
+      case METHOD_PPMD:
+      {
+         r7z_ppmd_t *p = (r7z_ppmd_t*)s->dec;
+         size_t      i;
+         /* the range decoder over what the fetch kept and read in */
+         if (s->buf)
+         {
+            p->rc.p   = s->in + s->in_pos;
+            p->rc.end = s->in + s->in_len;
+         }
+         for (i = 0; i < limit; i++)
+         {
+            int sym;
+            if (s->pack_left && (size_t)(p->rc.end - p->rc.p) < 1024)
+               break;
+            if ((sym = rrar_ppmd7_decode_symbol(&p->m, &p->rc)) < 0)
+               return R7Z_ERROR_DATA;
+            s->win[i] = (uint8_t)sym;
+         }
+         s->in_pos = (size_t)(p->rc.p - s->in);
+         if (s->made + i == s->size && p->rc.past > 4)
+            return R7Z_ERROR_DATA;
+         *out = s->win;
+         *n   = i;
+         break;
+      }
+      case METHOD_DEFLATE:
+      {
+         size_t rd = 0, wr = 0;
+         int    st;
+         rinflate_set_in(s->dec, s->in + s->in_pos, s->in_len - s->in_pos);
+         rinflate_set_out(s->dec, s->win, limit);
+         st         = rinflate_process(s->dec, &rd, &wr);
+         s->in_pos += rd;
+         if (     st == RDEFLATE_PROCESS_ERROR
+               || (st == RDEFLATE_PROCESS_END && s->made + wr != s->size)
+               || (!rd && !wr && finish))
+            return R7Z_ERROR_DATA;
+         *out = s->win;
+         *n   = wr;
+         break;
+      }
+      case METHOD_DEFLATE64:
+      {
+         size_t rd = 0, wr = 0;
+         int    st = rinflate64_process(s->dec, s->in + s->in_pos,
+               s->in_len - s->in_pos, finish, &rd, s->win, limit, &wr);
+         s->in_pos += rd;
+         if (     st == RDEFLATE_PROCESS_ERROR
+               || (st == RDEFLATE_PROCESS_END && s->made + wr != s->size)
+               || (!rd && !wr && finish))
+            return R7Z_ERROR_DATA;
+         *out = s->win;
+         *n   = wr;
+         break;
+      }
+#ifdef HAVE_RBZIP2
+      case METHOD_BZIP2:
+         if (s->blk_at == s->blk_len)
+         {
+            int e;
+            if (s->buf && src_ring(a, s) != R7Z_OK)
+               return R7Z_ERROR_DATA;
+            e = rbzip2_step_block((rbzip2_t*)s->dec, &s->blk, &s->blk_len);
+            if (e != RBZIP2_PENDING || !s->blk_len)
+               return R7Z_ERROR_DATA;
+            s->blk_at = 0;
+         }
+         if (limit > s->blk_len - s->blk_at)
+            limit = s->blk_len - s->blk_at;
+         *out       = s->blk + s->blk_at;
+         *n         = limit;
+         s->blk_at += limit;
+         break;
+#endif
+      default:
+         return R7Z_ERROR_UNSUPPORTED;
+   }
+   s->made += *n;
+   return R7Z_OK;
+}
+
+/* ---- the converters ---- */
 
 /* @n octets at @d converted in place, at stream offset @ip: how many
  * are, the rest waiting on what follows */
-static size_t stream_convert(struct r7z_stream *st, uint8_t *d, size_t n,
+static size_t stage_convert(r7z_stage_t *g, uint8_t *d, size_t n,
       uint32_t ip)
 {
-   switch (st->filter)
+   switch (g->method)
    {
       case METHOD_BCJ:
       case METHOD_BCJ_X86:
-         return rfilters_x86_decode(&st->x86, ip, d, n);
+         return rfilters_x86_decode(&g->x86, ip, d, n);
       case METHOD_BRA_ARM:
          return rfilters_arm_decode(ip, d, n);
       case METHOD_BRA_ARMT:
@@ -3885,33 +4295,312 @@ static size_t stream_convert(struct r7z_stream *st, uint8_t *d, size_t n,
       default:
          break;
    }
-   rfilters_delta_decode(st->delta, st->dist, d, n);
+   rfilters_delta_decode(g->delta, g->dist, d, n);
    return n;
+}
+
+static int stage_is_converter(uint64_t method)
+{
+   switch (method)
+   {
+      case METHOD_BCJ:
+      case METHOD_BCJ_X86:
+      case METHOD_BRA_ARM:
+      case METHOD_BRA_ARMT:
+      case METHOD_ARM64:
+      case METHOD_BRA_PPC:
+      case METHOD_BRA_SPARC:
+      case METHOD_BRA_IA64:
+      case METHOD_DELTA:
+         return 1;
+      default:
+         break;
+   }
+   return 0;
+}
+
+/* Converter @c's properties into @g, and its buffer: a piece and what
+ * waits */
+static int stage_open(const r7z_archive_t *a, r7z_stage_t *g,
+      const coder_t *c)
+{
+   memset(g, 0, sizeof(*g));
+   g->method = c->method;
+   if (c->method == METHOD_DELTA)
+   {
+      if (c->prop_size < 1)
+         return R7Z_ERROR_DATA;
+      g->dist = (unsigned)a->props[c->prop_offset] + 1;
+   }
+   else if (c->method == METHOD_ARM64 && c->prop_size)
+   {
+      const uint8_t *pr = a->props + c->prop_offset;
+      if (c->prop_size != 4)
+         return R7Z_ERROR_DATA;
+      g->ip = (uint32_t)pr[0] | ((uint32_t)pr[1] << 8)
+            | ((uint32_t)pr[2] << 16) | ((uint32_t)pr[3] << 24);
+      if (g->ip & 3)
+         return R7Z_ERROR_DATA;
+   }
+   return (g->fb = (uint8_t*)malloc(R7Z_STAGE_CAP))
+      ? R7Z_OK : R7Z_ERROR_MEM;
+}
+
+/* ---- the pipeline ---- */
+
+/* BCJ2's next piece, from the main input's and the other three whole */
+static int bcj2_next(r7z_archive_t *a, struct r7z_stream *st,
+      uint64_t size, const uint8_t **out, size_t *n, int *done)
+{
+   size_t wrote = 0, used = 0;
+   int    res;
+   *out  = st->bout;
+   *n    = 0;
+   *done = 0;
+   if (!st->mn && st->src.made < st->src.size)
+   {
+      if ((res = src_next(a, &st->src, R7Z_STREAM_SLICE, &st->mp, &st->mn))
+            != R7Z_OK)
+         return res;
+   }
+   if (st->mn)
+   {
+      size_t cap = (uint64_t)R7Z_STREAM_SLICE < size - st->bmade + 4
+         ? (size_t)R7Z_STREAM_SLICE : (size_t)(size - st->bmade + 4);
+      if (r7z_bcj2_decode_piece(&st->bst, st->bout, cap, &wrote,
+               st->mp, st->mn, &used, st->side[0], st->side_len[0],
+               st->side[1], st->side_len[1], st->side[2], st->side_len[2])
+            != RBCJ2_PENDING)
+         return R7Z_ERROR_DATA;
+      st->mp    += used;
+      st->mn    -= used;
+      st->bmade += wrote;
+      *n         = wrote;
+   }
+   if (st->bmade > size)
+      return R7Z_ERROR_DATA;
+   if (!st->mn && st->src.made == st->src.size)
+   {
+      if (     st->bmade != size
+            || r7z_bcj2_decode_done(&st->bst, st->side_len[0],
+               st->side_len[1]) != RBCJ2_OK)
+         return R7Z_ERROR_DATA;
+      *done = 1;
+   }
+   return R7Z_OK;
+}
+
+/* The next piece out of pipeline level @level: the source or BCJ2 at 0,
+ * each converter after; *@done once it has made all it will */
+static int pipe_next(r7z_archive_t *a, struct r7z_stream *st,
+      unsigned level, uint64_t size, const uint8_t **out, size_t *n,
+      int *done)
+{
+   r7z_stage_t   *g;
+   const uint8_t *p;
+   size_t         pn, keep;
+   int            res, d;
+
+   if (!level)
+   {
+      if (st->bcj2)
+         return bcj2_next(a, st, size, out, n, done);
+      res   = src_next(a, &st->src, R7Z_STREAM_SLICE, out, n);
+      *done = st->src.made == st->src.size;
+      return res;
+   }
+   g    = &st->stage[level - 1];
+   keep = g->fend - g->conv;
+   if (keep)
+      memmove(g->fb, g->fb + g->conv, keep);
+   g->fpos += g->conv;
+   g->conv  = 0;
+   g->fend  = keep;
+   if (!g->in_done)
+   {
+      if ((res = pipe_next(a, st, level - 1, size, &p, &pn, &d)) != R7Z_OK)
+         return res;
+      if (pn)
+         memcpy(g->fb + keep, p, pn);
+      g->fend   += pn;
+      g->in_done = d;
+   }
+   g->conv = stage_convert(g, g->fb, g->fend, g->ip + (uint32_t)g->fpos);
+   /* the folder's last octets pass as they are */
+   if (g->in_done)
+      g->conv = g->fend;
+   else if (g->fend - g->conv > R7Z_FILTER_TAIL)
+      return R7Z_ERROR_DATA;
+   *out  = g->fb;
+   *n    = g->conv;
+   *done = g->in_done;
+   return R7Z_OK;
 }
 
 void r7z_archive_stream_end(r7z_archive_t *a)
 {
    struct r7z_stream *st;
+   unsigned           k;
    if (!a || !(st = a->stream))
       return;
-   free(st->win);
-   free(st->fb);
-   free(st->buf);
-   free(st->dec);
-   free(st->probs);
+   src_close(&st->src);
+   for (k = 0; k < 3; k++)
+      if (!st->side_borrowed[k])
+         free(st->side[k]);
+   free(st->bout);
+   for (k = 0; k < st->nstages; k++)
+      free(st->stage[k].fb);
    free(st);
    a->stream = NULL;
+}
+
+/* The archive offset and length of the packed stream into input port
+ * @port of folder @fi; 0 if no packed stream feeds it */
+static int pack_stream_of(const r7z_archive_t *a, uint32_t fi,
+      uint32_t port, uint64_t *off, uint64_t *len)
+{
+   const folder_t *f = &a->folders[fi];
+   uint32_t        pk = 0, i, k;
+   for (k = 0; k < fi; k++)
+      pk += a->folders[k].num_pack;
+   *off = 32 + a->pack_base + f->pack_offset;
+   for (i = 0; i < f->num_pack; i++)
+   {
+      if (pk + i >= a->num_pack)
+         return 0;
+      if (a->folder_pack[f->pack_first + i] == port)
+      {
+         *len = a->pack_sizes[pk + i];
+         return 1;
+      }
+      *off += a->pack_sizes[pk + i];
+   }
+   return 0;
+}
+
+/* Folder @fi's chain as it streams: a source and converters after it in
+ * a line, its first coder's output the folder's size; or BCJ2 with its
+ * main input made by a coder of its own from a packed stream. Sets up
+ * @st, or says R7Z_ERROR_UNSUPPORTED. */
+static int stream_open(r7z_archive_t *a, struct r7z_stream *st,
+      uint32_t fi)
+{
+   const folder_t *f    = &a->folders[fi];
+   const coder_t  *c    = &a->coders[f->coder_first];
+   uint32_t        base = 0, k, m, b2 = 0xFFFFFFFFu;
+   uint64_t        off, len;
+
+   for (k = 0; k < fi; k++)
+      for (m = 0; m < a->folders[k].num_coders; m++)
+         base += a->coders[a->folders[k].coder_first + m].num_out;
+   for (k = 0; k < f->num_coders; k++)
+      if (c[k].method == METHOD_BCJ2)
+         b2 = k;
+
+   if (b2 == 0xFFFFFFFFu)
+   {
+      /* a line: coder k takes coder k - 1's output, the first a packed
+       * stream's, and every one makes the folder's size */
+      if (f->num_coders > 1 + R7Z_STREAM_STAGES || f->num_pack != 1)
+         return R7Z_ERROR_UNSUPPORTED;
+      for (k = 0; k < f->num_coders; k++)
+         if (     c[k].num_in != 1 || c[k].num_out != 1
+               || (k && !stage_is_converter(c[k].method))
+               || base + k >= a->num_coder_unpack_sizes
+               || a->coder_unpack_sizes[base + k] != f->unpack_size)
+            return R7Z_ERROR_UNSUPPORTED;
+      for (k = 0; k < f->num_bonds; k++)
+         if (     a->bonds[f->bond_first + k * 2]
+                  != a->bonds[f->bond_first + k * 2 + 1] + 1)
+            return R7Z_ERROR_UNSUPPORTED;
+      if (     f->main_out != f->num_coders - 1
+            || !pack_stream_of(a, fi, 0, &off, &len))
+         return R7Z_ERROR_UNSUPPORTED;
+      if (     stage_is_converter(c[0].method) || c[0].method == METHOD_BCJ2
+#ifndef HAVE_RBZIP2
+            || c[0].method == METHOD_BZIP2
+#endif
+         )
+         return R7Z_ERROR_UNSUPPORTED;
+      st->nstages = f->num_coders - 1;
+      for (k = 1; k < f->num_coders; k++)
+      {
+         int res = stage_open(a, &st->stage[k - 1], &c[k]);
+         if (res != R7Z_OK)
+            return res;
+      }
+      return src_open(a, &st->src, &c[0], off, len, f->unpack_size);
+   }
+
+   /* BCJ2, the folder's output, its main input a packed stream or a
+    * coder's from one */
+   {
+      static const coder_t copy = { METHOD_COPY, 1, 1, 0, 0 };
+      const coder_t *x = &copy;
+      uint32_t in_base = 0, out_base = 0, i;
+      uint64_t size;
+      int      res;
+      for (k = 0; k < b2; k++)
+      {
+         in_base  += c[k].num_in;
+         out_base += c[k].num_out;
+      }
+      if (     c[b2].num_in != 4 || c[b2].num_out != 1
+            || f->main_out != out_base)
+         return R7Z_ERROR_UNSUPPORTED;
+      if (pack_stream_of(a, fi, in_base, &off, &len))
+         size = len;
+      else
+      {
+         uint32_t x_in = 0, x_out = 0, b, want;
+         for (b = 0; b < f->num_bonds; b++)
+            if (a->bonds[f->bond_first + b * 2] == in_base)
+               break;
+         if (b == f->num_bonds)
+            return R7Z_ERROR_UNSUPPORTED;
+         want = a->bonds[f->bond_first + b * 2 + 1];
+         /* the coder whose output it is, of one input and one output */
+         for (k = 0; k < f->num_coders; k++)
+         {
+            if (want >= x_out && want < x_out + c[k].num_out)
+               break;
+            x_in  += c[k].num_in;
+            x_out += c[k].num_out;
+         }
+         if (     k == f->num_coders
+               || c[k].num_in != 1 || c[k].num_out != 1
+               || stage_is_converter(c[k].method)
+               || c[k].method == METHOD_BCJ2
+               || base + x_out >= a->num_coder_unpack_sizes
+               || !pack_stream_of(a, fi, x_in, &off, &len))
+            return R7Z_ERROR_UNSUPPORTED;
+         x    = &c[k];
+         size = a->coder_unpack_sizes[base + x_out];
+      }
+      /* the call, jump and range coder inputs, whole */
+      for (i = 0; i < 3; i++)
+         if ((res = resolve_input(a, fi, in_base + 1 + i, base,
+                  &st->side[i], &st->side_len[i], &st->side_borrowed[i]))
+               != R7Z_OK)
+         {
+            st->side_borrowed[i] = 1;
+            return res == R7Z_ERROR_MEM ? res : R7Z_ERROR_UNSUPPORTED;
+         }
+      if (!(st->bout = (uint8_t*)malloc(R7Z_STREAM_SLICE)))
+         return R7Z_ERROR_MEM;
+      st->bcj2 = 1;
+      r7z_bcj2_state_init(&st->bst);
+      return src_open(a, &st->src, x, off, len, size);
+   }
 }
 
 int r7z_archive_stream_begin(r7z_archive_t *a, uint32_t index)
 {
    const r7z_entry_t *e;
    const folder_t    *f;
-   const coder_t     *c;
    struct r7z_stream *st;
-   uint32_t           pk, dict = 0;
-   uint64_t           pk_off;
-   uint32_t           lc = 0, lp = 0;
+   int                res;
+   unsigned           k;
 
    if (!a || index >= a->num_entries)
       return R7Z_ERROR_PARAM;
@@ -3935,210 +4624,25 @@ int r7z_archive_stream_begin(r7z_archive_t *a, uint32_t index)
    if (e->is_dir || !e->size || e->folder >= a->num_folders)
       return R7Z_ERROR_UNSUPPORTED;
    f = &a->folders[e->folder];
-   if (     f->num_pack != 1
-         || (f->num_coders == 2 && !stream_filter_shape(a, e->folder))
-         || f->num_coders > 2)
-      return R7Z_ERROR_UNSUPPORTED;
-   c = &a->coders[f->coder_first];
-   if (c->method != METHOD_LZMA2 && c->method != METHOD_LZMA)
-      return R7Z_ERROR_UNSUPPORTED;
    if (     e->offset_in_folder > f->unpack_size
-         || e->size > f->unpack_size - e->offset_in_folder
-         || folder_input_offsets(a, e->folder, &pk, &pk_off) != R7Z_OK
-         || pk_off > (uint64_t)a->len - 32
-         || a->pack_sizes[pk] > (uint64_t)a->len - 32 - pk_off)
+         || e->size > f->unpack_size - e->offset_in_folder)
       return R7Z_ERROR_DATA;
-
-   if (c->method == METHOD_LZMA2)
-   {
-      if (     c->prop_size < 1
-            || rlzma2_dec_dic_size_from_prop(a->props[c->prop_offset],
-               &dict) != RLZMA_OK)
-         return R7Z_ERROR_DATA;
-   }
-   else
-   {
-      const uint8_t *pr = a->props + c->prop_offset;
-      uint32_t       d;
-      if (c->prop_size < RLZMA_PROPS_SIZE || (d = pr[0]) >= 9 * 5 * 5)
-         return R7Z_ERROR_DATA;
-      lc   = d % 9;
-      lp   = (d / 9) % 5;
-      dict = (uint32_t)pr[1] | ((uint32_t)pr[2] << 8)
-           | ((uint32_t)pr[3] << 16) | ((uint32_t)pr[4] << 24);
-      if (lc + lp > RLZMA_STREAM_LCLP_MAX)
-         return R7Z_ERROR_DATA;
-   }
-   if (dict < 4096)
-      dict = 4096;
 
    if (!(st = (struct r7z_stream*)calloc(1, sizeof(*st))))
       return R7Z_ERROR_MEM;
-   a->stream     = st;
-   if (f->num_coders == 2)
+   for (k = 0; k < 3; k++)
+      st->side_borrowed[k] = 1;
+   a->stream = st;
+   st->index = index;
+   st->folder = e->folder;
+   st->lo    = e->offset_in_folder;
+   st->hi    = e->offset_in_folder + e->size;
+   st->whole = !st->lo && st->hi == f->unpack_size;
+   if ((res = stream_open(a, st, e->folder)) != R7Z_OK)
    {
-      const coder_t *fc = c + 1;
-      st->filter = fc->method;
-      if (fc->method == METHOD_DELTA)
-      {
-         if (fc->prop_size < 1)
-            goto data;
-         st->dist = (unsigned)a->props[fc->prop_offset] + 1;
-      }
-      else if (fc->method == METHOD_ARM64 && fc->prop_size)
-      {
-         const uint8_t *pr = a->props + fc->prop_offset;
-         if (fc->prop_size != 4)
-            goto data;
-         st->ip = (uint32_t)pr[0] | ((uint32_t)pr[1] << 8)
-                | ((uint32_t)pr[2] << 16) | ((uint32_t)pr[3] << 24);
-         if (st->ip & 3)
-            goto data;
-      }
+      r7z_archive_stream_end(a);
+      return res;
    }
-   st->index     = index;
-   st->folder    = e->folder;
-   st->lzma2     = c->method == METHOD_LZMA2;
-   st->lo        = e->offset_in_folder;
-   st->hi        = e->offset_in_folder + e->size;
-   st->whole     = !st->lo && st->hi == f->unpack_size;
-   st->crc       = 0;
-   st->fcrc      = 0;
-   st->pack_off  = 32 + pk_off;
-   st->pack_left = a->pack_sizes[pk];
-   st->win_len   = (uint64_t)dict < f->unpack_size ? (size_t)dict
-                 : (size_t)f->unpack_size;
-   if (     (uint64_t)st->win_len != ((uint64_t)dict < f->unpack_size
-               ? (uint64_t)dict : f->unpack_size)
-         || !(st->win = (uint8_t*)malloc(st->win_len)))
-      goto mem;
-   /* a piece is at most the window's */
-   if (     st->filter
-         && !(st->fb = (uint8_t*)malloc(st->win_len + R7Z_FILTER_TAIL)))
-      goto mem;
-
-   /* in memory, the packed stream is input where it lies */
-   if (a->data)
-   {
-      st->in        = a->data + (size_t)st->pack_off;
-      st->in_len    = (size_t)st->pack_left;
-      st->pack_left = 0;
-   }
-   else if (!(st->buf = (uint8_t*)malloc(R7Z_STREAM_CHUNK)))
-      goto mem;
-
-   if (st->lzma2)
-   {
-      if (     !(st->dec   = malloc(sizeof(rlzma2_dec_t)))
-            || !(st->probs = (uint16_t*)malloc(RLZMA2_NUM_PROBS
-                  * sizeof(uint16_t))))
-         goto mem;
-      if (rlzma2_dec_init((rlzma2_dec_t*)st->dec, a->props[c->prop_offset],
-               st->probs, st->win, st->win_len) != RLZMA_OK)
-         goto data;
-   }
-   else
-   {
-      if (     !(st->dec   = malloc(sizeof(rlzma_stream_t)))
-            || !(st->probs = (uint16_t*)malloc(
-                  (size_t)RLZMA_STREAM_NUM_PROBS(lc, lp) * sizeof(uint16_t))))
-         goto mem;
-      if (rlzma_stream_init((rlzma_stream_t*)st->dec,
-               a->props + c->prop_offset, st->probs, st->win, st->win_len)
-            != RLZMA_OK)
-         goto data;
-      rlzma_stream_reset((rlzma_stream_t*)st->dec);
-   }
-   return R7Z_OK;
-mem:
-   r7z_archive_stream_end(a);
-   return R7Z_ERROR_MEM;
-data:
-   r7z_archive_stream_end(a);
-   return R7Z_ERROR_DATA;
-}
-
-/* Up to @limit more folder octets out of the LZMA coder, *@out where
- * they lie in the window, until the next call */
-static int stream_raw(r7z_archive_t *a, struct r7z_stream *st, size_t limit,
-      const uint8_t **out, size_t *n)
-{
-   size_t *dic_pos, avail;
-   int     status = 0, finish, res;
-
-   /* the next packed chunk, when the last is used up */
-   if (st->in_pos == st->in_len && st->pack_left)
-   {
-      size_t k = st->pack_left < R7Z_STREAM_CHUNK
-         ? (size_t)st->pack_left : R7Z_STREAM_CHUNK;
-      if (r7z_fetch(a, st->pack_off, st->buf, k) != R7Z_OK)
-         return R7Z_ERROR_DATA;
-      st->in         = st->buf;
-      st->in_len     = k;
-      st->in_pos     = 0;
-      st->pack_off  += k;
-      st->pack_left -= k;
-   }
-   finish = !st->pack_left;
-
-   dic_pos = st->lzma2 ? &((rlzma2_dec_t*)st->dec)->lzma.dic_pos
-      : &((rlzma_stream_t*)st->dec)->dic_pos;
-   if (limit > st->win_len - *dic_pos)
-      limit = st->win_len - *dic_pos;
-   avail = st->in_len - st->in_pos;
-   res   = st->lzma2
-      ? rlzma2_dec_decode((rlzma2_dec_t*)st->dec, *dic_pos + limit,
-            st->in + st->in_pos, &avail, finish, &status)
-      : rlzma_stream_decode((rlzma_stream_t*)st->dec, *dic_pos + limit,
-            st->in + st->in_pos, &avail, finish, &status);
-   if (res != RLZMA_OK)
-      return R7Z_ERROR_DATA;
-   st->in_pos += avail;
-   *out        = st->win + st->from;
-   *n          = *dic_pos - st->from;
-   st->raw    += *n;
-   st->from    = *dic_pos;
-   /* the window wraps where it ends */
-   if (*dic_pos == st->win_len)
-   {
-      *dic_pos = 0;
-      st->from = 0;
-   }
-   /* nothing made, nothing taken, and nothing more to take */
-   if (!*n && !avail && finish && st->in_pos == st->in_len)
-      return R7Z_ERROR_DATA;
-   return R7Z_OK;
-}
-
-/* The next converted octets in fb, from what waited and the next piece:
- * all of it once the folder is out, its last octets as they are */
-static int stream_filtered(r7z_archive_t *a, struct r7z_stream *st,
-      uint64_t size)
-{
-   const uint8_t *out;
-   size_t         n, keep = st->fend - st->conv;
-   uint64_t       left = size - st->raw;
-   if (keep)
-      memmove(st->fb, st->fb + st->conv, keep);
-   st->fpos += st->conv;
-   st->rd    = 0;
-   st->conv  = 0;
-   st->fend  = keep;
-   if (left)
-   {
-      int res = stream_raw(a, st, left < R7Z_STREAM_SLICE
-            ? (size_t)left : R7Z_STREAM_SLICE, &out, &n);
-      if (res != R7Z_OK)
-         return res;
-      memcpy(st->fb + keep, out, n);
-      st->fend += n;
-   }
-   st->conv = stream_convert(st, st->fb, st->fend,
-         st->ip + (uint32_t)st->fpos);
-   if (st->raw == size)
-      st->conv = st->fend;
-   else if (st->fend - st->conv > R7Z_FILTER_TAIL)
-      return R7Z_ERROR_DATA;
    return R7Z_OK;
 }
 
@@ -4147,9 +4651,7 @@ int r7z_archive_stream_step(r7z_archive_t *a, const uint8_t **data,
 {
    struct r7z_stream *st;
    const folder_t    *f;
-   const uint8_t     *out;
    size_t             made;
-   uint64_t           left;
    int                res;
 
    *data = NULL;
@@ -4175,40 +4677,35 @@ int r7z_archive_stream_step(r7z_archive_t *a, const uint8_t **data,
       return res;
    }
 
-   left = st->hi - st->made;
-   if (!st->filter)
+   /* what was made and not handed on, which may be the next entry's */
+   if (!st->ready_len)
    {
-      if ((res = stream_raw(a, st, left < R7Z_STREAM_SLICE
-               ? (size_t)left : R7Z_STREAM_SLICE, &out, &made)) != R7Z_OK)
+      if (st->pipe_done)
          goto data;
+      if ((res = pipe_next(a, st, st->nstages, f->unpack_size, &st->ready,
+               &st->ready_len, &st->pipe_done)) != R7Z_OK)
+      {
+         r7z_archive_stream_end(a);
+         return res;
+      }
    }
-   else
-   {
-      /* converted octets yet to hand out, which may be the next entry's */
-      if (     st->rd == st->conv
-            && (res = stream_filtered(a, st, f->unpack_size)) != R7Z_OK)
-         goto data;
-      out  = st->fb + st->rd;
-      made = st->conv - st->rd;
-      if ((uint64_t)made > left)
-         made = (size_t)left;
-      st->rd += made;
-      /* the folder all out and the entry not */
-      if (!made && st->raw == f->unpack_size)
-         goto data;
-   }
+   made = st->ready_len;
+   if ((uint64_t)made > st->hi - st->made)
+      made = (size_t)(st->hi - st->made);
 
    if (st->whole && !a->entries[st->index].has_crc && f->has_crc)
-      st->fcrc = encoding_crc32(st->fcrc, out, made);
+      st->fcrc = encoding_crc32(st->fcrc, st->ready, made);
    /* what of it is the entry's */
    if (st->made + made > st->lo)
    {
       size_t skip = st->made < st->lo ? (size_t)(st->lo - st->made) : 0;
-      *data   = out + skip;
+      *data   = st->ready + skip;
       *len    = made - skip;
       st->crc = encoding_crc32(st->crc, *data, *len);
    }
-   st->made += made;
+   st->made      += made;
+   st->ready     += made;
+   st->ready_len -= made;
    return R7Z_PENDING;
 data:
    r7z_archive_stream_end(a);

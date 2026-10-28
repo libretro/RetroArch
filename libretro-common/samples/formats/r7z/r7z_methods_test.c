@@ -1,6 +1,7 @@
 /* The coders 7-Zip writes besides LZMA: PPMd, BZip2, Deflate and
  * Deflate64. An archive of each that 7-Zip wrote (r7z_methods_fixtures.h)
- * extracts octet for octet, whole and in slices. Deflate64 itself,
+ * extracts octet for octet, whole and in slices, and streams as it
+ * extracts. Deflate64 itself,
  * through rinflate64_decode(): a stream written here reaches what
  * RFC 1951 cannot, distance codes 30 and 31 and a length taken from 16
  * extra bits, and a stream that refers back before its start or is cut
@@ -103,6 +104,74 @@ static void archive(const char *what, const uint8_t *fx, size_t fx_len)
       free(got);
    }
    r7z_archive_close(a);
+}
+
+struct mem
+{
+   const uint8_t *d;
+   size_t         n;
+};
+
+static int64_t read_at(void *ud, uint64_t off, void *dst, size_t len)
+{
+   const struct mem *m = (const struct mem*)ud;
+   if (off >= m->n)
+      return 0;
+   if (len > m->n - off)
+      len = (size_t)(m->n - off);
+   memcpy(dst, m->d + off, len);
+   return (int64_t)len;
+}
+
+/* Every member of a 7-Zip archive streamed, in order, as it extracts:
+ * from memory, and through positioned reads */
+static void streamed_way(const char *what, const uint8_t *fx, size_t fx_len,
+      int read)
+{
+   r7z_archive_t *a = NULL;
+   uint32_t       i;
+   struct mem     m;
+   m.d = fx;
+   m.n = fx_len;
+   if ((read ? r7z_archive_open_read(&a, fx_len, read_at, &m)
+             : r7z_archive_open(&a, fx, fx_len)) != R7Z_OK)
+   {
+      check(0, what, "opens to stream");
+      return;
+   }
+   for (i = 0; i < r7z_archive_num_entries(a); i++)
+   {
+      uint8_t       *want = NULL;
+      size_t         want_len = 0, at = 0, n;
+      const uint8_t *d;
+      int            r, ok = 1;
+      if (     r7z_archive_entry(a, i)->is_dir
+            || !r7z_archive_entry(a, i)->size)
+         continue;
+      if (     r7z_archive_extract(a, i, &want, &want_len) != R7Z_OK
+            || r7z_archive_stream_begin(a, i) != R7Z_OK)
+      {
+         check(0, what, "streams");
+         free(want);
+         continue;
+      }
+      while ((r = r7z_archive_stream_step(a, &d, &n)) == R7Z_PENDING)
+      {
+         if (n > want_len - at || (n && memcmp(d, want + at, n)))
+            ok = 0;
+         at += n;
+      }
+      check(ok && r == R7Z_OK && at == want_len, what,
+            read ? "streamed through reads" : "streamed from memory");
+      free(want);
+   }
+   r7z_archive_close(a);
+}
+
+static void streamed(const char *what, const uint8_t *fx, size_t fx_len)
+{
+   streamed_way(what, fx, fx_len, 0);
+   streamed_way(what, fx, fx_len, 1);
 }
 
 /* big.txt's folder, or rep.txt's: @unit octets of t.txt's words 300000
@@ -593,6 +662,18 @@ int main(void)
 #ifdef HAVE_RBZIP2
    staged("BZip2, stepped", fx_big_bzip2, sizeof(fx_big_bzip2), 2000);
 #endif
+   streamed("PPMd", fx_ppmd, sizeof(fx_ppmd));
+   streamed("PPMd, order 2", fx_ppmd_o2, sizeof(fx_ppmd_o2));
+   streamed("Deflate", fx_deflate, sizeof(fx_deflate));
+   streamed("Deflate64", fx_deflate64, sizeof(fx_deflate64));
+   streamed("PPMd, big", fx_big_ppmd, sizeof(fx_big_ppmd));
+   streamed("Deflate, big", fx_big_deflate, sizeof(fx_big_deflate));
+#ifdef HAVE_RBZIP2
+   streamed("BZip2", fx_bzip2, sizeof(fx_bzip2));
+   streamed("BZip2, blocks", fx_big_bzip2, sizeof(fx_big_bzip2));
+#endif
+   streamed("LZMA2 blocks", fx_lzma2_blocks, sizeof(fx_lzma2_blocks));
+   streamed("ARM64", fx_arm64, sizeof(fx_arm64));
    deflate64();
    lzma2_blocks();
    lzma_ring();
@@ -602,6 +683,6 @@ int main(void)
       printf("%d failure(s)\n", failures);
       return 1;
    }
-   printf("r7z_methods_test: every coder's archive extracted, PPMd, Deflate and BZip2 a step at a time, Deflate64 whole, LZMA2 blocks, LZMA through a ring, ARM64\n");
+   printf("r7z_methods_test: every coder's archive extracted and streamed, PPMd, Deflate and BZip2 a step at a time, Deflate64 whole, LZMA2 blocks, LZMA through a ring, ARM64\n");
    return 0;
 }

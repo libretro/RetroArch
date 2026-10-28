@@ -2,8 +2,8 @@
  * stream and the call and jump targets each from a coder or stored,
  * and the range coder's stream stored. Two archives 7-Zip wrote
  * (r7z_bcj2_fixtures.h) are extracted from memory and through
- * positioned reads, whole and in slices, and must come out as the
- * octets they were made from. From memory the packed streams are read
+ * positioned reads, whole, in slices and streamed, and must come out
+ * as the octets they were made from. From memory the packed streams are read
  * where they lie: an extraction from memory allocates less than one
  * through reads by more than half the archive, where it would be the
  * same if they were copied. */
@@ -150,6 +150,31 @@ static void one(const char *what, const uint8_t *fx, size_t fx_len,
    gen(want, n);
    m.d = fx;
    m.n = fx_len;
+   for (way = 0; way < 2; way++)
+   {
+      r7z_archive_t *a = NULL;
+      const uint8_t *d;
+      size_t         got, at = 0;
+      int            r, ok = 1;
+      const char    *how = way ? "streamed through reads"
+                           : "streamed from memory";
+      r = way ? r7z_archive_open_read(&a, fx_len, read_at, &m)
+              : r7z_archive_open(&a, fx, fx_len);
+      if (r != R7Z_OK || r7z_archive_stream_begin(a, 0) != R7Z_OK)
+      {
+         check(what, how, 0);
+         r7z_archive_close(a);
+         continue;
+      }
+      while ((r = r7z_archive_stream_step(a, &d, &got)) == R7Z_PENDING)
+      {
+         if (got > n - at || (got && memcmp(d, want + at, got)))
+            ok = 0;
+         at += got;
+      }
+      check(what, how, ok && r == R7Z_OK && at == n);
+      r7z_archive_close(a);
+   }
    for (way = 0; way < 4; way++)
    {
       r7z_archive_t *a   = NULL;
@@ -196,6 +221,6 @@ int main(void)
       printf("%d failure(s)\n", failures);
       return 1;
    }
-   printf("r7z_bcj2_test: both archives extracted every way\n");
+   printf("r7z_bcj2_test: both archives extracted and streamed every way\n");
    return 0;
 }

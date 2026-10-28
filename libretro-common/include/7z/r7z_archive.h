@@ -299,15 +299,16 @@ int r7z_archive_decode_peek(const r7z_archive_t *a, uint32_t index,
  * @index      : the entry to stream out
  *
  * Starts entry @index out of its folder a piece at a time, for one that
- * is too big to have whole in memory, or in a folder that is: a folder
- * of one LZMA or LZMA2 coder, or of one and a branch converter or Delta
- * after it, decodes through a window of its dictionary's size. One
- * entry is streamed at a time, beside whatever else the archive is
- * doing; after one is all out, an entry later in the same folder goes
- * on from where it ended, so a folder's entries streamed in order
- * decode it once.
+ * is too big to have whole in memory, or in a folder that is. A folder
+ * of LZMA, LZMA2, PPMd, Deflate, Deflate64, BZip2 or Copy, with up to
+ * three branch converters or Delta after it, decodes in pieces - LZMA
+ * through a window of its dictionary's size - and a BCJ2 folder its
+ * main input so, the other three whole. One entry is streamed at a
+ * time, beside whatever else the archive is doing; after one is all
+ * out, an entry later in the same folder goes on from where it ended,
+ * so a folder's entries streamed in order decode it once.
  *
- * Returns: R7Z_OK, R7Z_ERROR_UNSUPPORTED for a folder of other coders,
+ * Returns: R7Z_OK, R7Z_ERROR_UNSUPPORTED for a folder of another shape,
  * which the entry is decoded whole from instead, or another negative
  * R7Z_ERROR_* code.
  */

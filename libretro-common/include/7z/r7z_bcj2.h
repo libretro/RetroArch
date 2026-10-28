@@ -165,6 +165,36 @@ int r7z_bcj2_decode_part(r7z_bcj2_state_t *st,
       const uint8_t *rc_buf,   size_t rc_len);
 
 /**
+ * r7z_bcj2_decode_piece:
+ * @st         : conversion state, prepared with r7z_bcj2_state_init()
+ * @dst        : where this piece of the output goes, @dst_cap octets of
+ *               room, more than 4
+ * @wrote      : receives how many octets went there
+ * @main_buf   : the next of the main stream, @main_len octets
+ * @main_used  : receives how many of them were taken; the rest go first
+ *               in the next call
+ * @call_buf .. @rc_len : the other three streams whole, the same on
+ *               every call
+ *
+ * As r7z_bcj2_decode_part(), with the main stream and the output a piece
+ * at a time: converts until @main_buf is used up or @dst has no room
+ * left for a converted branch. At the end of the output,
+ * r7z_bcj2_decode_done() says whether the targets were all used.
+ *
+ * Returns: RBCJ2_PENDING, or a negative RBCJ2_ERROR_* code.
+ */
+int r7z_bcj2_decode_piece(r7z_bcj2_state_t *st,
+      uint8_t *dst, size_t dst_cap, size_t *wrote,
+      const uint8_t *main_buf, size_t main_len, size_t *main_used,
+      const uint8_t *call_buf, size_t call_len,
+      const uint8_t *jump_buf, size_t jump_len,
+      const uint8_t *rc_buf,   size_t rc_len);
+
+/* RBCJ2_OK if every target of @call_len and @jump_len was used */
+int r7z_bcj2_decode_done(const r7z_bcj2_state_t *st, size_t call_len,
+      size_t jump_len);
+
+/**
  * r7z_bcj2_decode:
  * @dst        : output buffer
  * @dst_len    : exact number of bytes to produce
