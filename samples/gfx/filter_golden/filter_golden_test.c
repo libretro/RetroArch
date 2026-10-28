@@ -1,13 +1,14 @@
-/* One of the 2xSaI family of video filters (gfx/video_filters/2xsai.c,
- * super2xsai.c or supereagle.c, chosen with FILTER_C and its table with
- * GOLDEN_H at build time) against output hashes recorded from its
- * earlier implementation: game-like frames (flat areas, banded
- * gradients, tiles, outlined sprites, dither) and noise, both pixel
- * formats, widths and heights from 1 up, frames smaller than the size
+/* A video filter (gfx/video_filters/<name>.c, chosen with FILTER_C and
+ * its table with GOLDEN_H at build time; the Makefile builds one binary
+ * per filter it lists) against output hashes recorded from its earlier
+ * implementation: game-like frames (flat areas, banded
+ * gradients, tiles, outlined sprites, dither) and noise, each pixel
+ * format the filter takes, widths and heights from 1 up, frames
+ * smaller than the size
  * the filter was created for, and one to four workers. Two, three and
  * four workers must also give one worker's output byte for byte: the
- * neighbourhood reaches two rows down, and a worker whose slice ends
- * just above the bottom must clamp against the frame. Any change to how
+ * neighbourhoods that reach rows below must clamp against the frame,
+ * not the worker's slice. Any change to how
  * it computes must keep every byte; run with GOLDEN_PRINT=1 in the
  * environment to print the table for a deliberate change. */
 
@@ -89,9 +90,9 @@ int main(void)
    const struct softfilter_implementation *impl = softfilter_get_implementation(0);
    uint16_t *src16 = (uint16_t*)malloc(330 * 250 * 2);
    uint32_t *src32 = (uint32_t*)malloc(330 * 250 * 4);
-   uint8_t  *out   = (uint8_t*)malloc(700 * 500 * 4);
+   uint8_t  *out   = (uint8_t*)malloc(900 * 500 * 4);
    /* One worker's output, which more workers must match. */
-   uint8_t  *one   = (uint8_t*)malloc(700 * 500 * 4);
+   uint8_t  *one   = (uint8_t*)malloc(900 * 500 * 4);
    unsigned content, f, s, t, bad = 0;
    int print = getenv("GOLDEN_PRINT") != NULL;
 
@@ -120,20 +121,33 @@ int main(void)
                   | ((uint32_t)((c >> 5) & 63) << 10)
                   | ((uint32_t)(c & 31) << 3) | (rnd() & 0x070307);
             }
+            if (!(impl->query_input_formats() & (f ? SOFTFILTER_FMT_XRGB8888
+                        : SOFTFILTER_FMT_RGB565)))
+               h = 0; /* a format the filter does not take */
+            else
             for (t = 1; t <= 4; t++)
             {
                unsigned fmt = f ? SOFTFILTER_FMT_XRGB8888 : SOFTFILTER_FMT_RGB565;
+               unsigned outs = impl->query_output_formats(fmt);
+               unsigned ofmt = (outs & fmt) ? fmt
+                  : (outs & SOFTFILTER_FMT_XRGB8888) ? SOFTFILTER_FMT_XRGB8888
+                  : SOFTFILTER_FMT_RGB565;
                unsigned bpp = f ? 4 : 2, ow, oh, k, max_w, max_h;
+               unsigned obpp = (ofmt == SOFTFILTER_FMT_XRGB8888) ? 4 : 2;
                struct softfilter_work_packet pk[4];
-               size_t is = (W + 3) * bpp, os = (2 * W + 5) * bpp;
+               size_t is = (W + 3) * bpp, os;
                void *d;
                /* Created larger than the frame, as RetroArch does for a
                 * core whose size varies; every second run exactly. */
                max_w = (t & 1) ? W + 13 : W;
                max_h = (t & 1) ? H + 7  : H;
-               d     = impl->create(&cfg, fmt, fmt, max_w, max_h, t, 0, NULL);
+               d     = impl->create(&cfg, fmt, ofmt, max_w, max_h, t, 0, NULL);
                impl->query_output_size(d, &ow, &oh, W, H);
-               memset(out, 0x11, 700 * 500 * 4);
+               /* Rows of the output five pixels wider than the filter
+                * writes, which the hash covers, so a write past a row
+                * shows. */
+               os    = (size_t)(ow + 5) * obpp;
+               memset(out, 0x11, 900 * 500 * 4);
                {
                   /* Rows at a stride wider than the frame. */
                   uint8_t *in = (uint8_t*)calloc(H, is);

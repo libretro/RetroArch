@@ -9,10 +9,10 @@ name: CI Linux filter plugins
 # takes more than one worker must give the single-worker output byte for
 # byte with 2, 3 and 4 workers running at once.  The same run is repeated
 # with the plugins and the harness built under ASan, UBSan and
-# LeakSanitizer, and under ThreadSanitizer.  The NTSC, 2xBR, NTSC-CRT and
-# 2xSaI-family filters are also held byte for byte to output hashes
-# recorded from their earlier implementations
-# (samples/gfx/{ntsc,xbr,crt,sai}_filter_golden).
+# LeakSanitizer, and under ThreadSanitizer.  The NTSC, 2xBR, NTSC-CRT,
+# 2xSaI-family and Phosphor2x filters are also held byte for byte to
+# output hashes recorded from their earlier implementations
+# (samples/gfx/{ntsc,xbr,crt}_filter_golden and samples/gfx/filter_golden).
 
 on:
   push:
@@ -26,7 +26,7 @@ on:
       - 'samples/gfx/ntsc_filter_golden/**'
       - 'samples/gfx/xbr_filter_golden/**'
       - 'samples/gfx/crt_filter_golden/**'
-      - 'samples/gfx/sai_filter_golden/**'
+      - 'samples/gfx/filter_golden/**'
       - '.github/workflows/Linux-filter-plugins.yml'
   pull_request:
     paths:
@@ -37,7 +37,7 @@ on:
       - 'samples/gfx/ntsc_filter_golden/**'
       - 'samples/gfx/xbr_filter_golden/**'
       - 'samples/gfx/crt_filter_golden/**'
-      - 'samples/gfx/sai_filter_golden/**'
+      - 'samples/gfx/filter_golden/**'
       - '.github/workflows/Linux-filter-plugins.yml'
   workflow_dispatch:
 
@@ -91,7 +91,7 @@ jobs:
         run: |
           set -eu
           for t in ntsc_filter_golden xbr_filter_golden crt_filter_golden \
-                   sai_filter_golden; do
+                   filter_golden; do
              make -C samples/gfx/$t check
              make -C samples/gfx/$t clean
              make -C samples/gfx/$t check SANITIZER=address,undefined
