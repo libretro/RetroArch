@@ -8,7 +8,10 @@
  * the filter was created for, and one to four workers. Two, three and
  * four workers must also give one worker's output byte for byte: the
  * neighbourhoods that reach rows below must clamp against the frame,
- * not the worker's slice. Any change to how
+ * not the worker's slice. One worker created with the SIMD mask
+ * RetroArch would pass on this machine must give the same bytes as one
+ * created with none, so a filter's vector paths are held to its plain
+ * ones. Any change to how
  * it computes must keep every byte; run with GOLDEN_PRINT=1 in the
  * environment to print the table for a deliberate change. */
 
@@ -26,7 +29,42 @@ static int gfa(void *u, const char *k, float **v, unsigned *n, const float *d, u
 { (void)u; (void)k; (void)d; (void)dn; *v = NULL; *n = 0; return 0; }
 static int gia(void *u, const char *k, int **v, unsigned *n, const int *d, unsigned dn)
 { (void)u; (void)k; (void)d; (void)dn; *v = NULL; *n = 0; return 0; }
-static int gs(void *u, const char *k, char **v, const char *d) { (void)u; (void)k; (void)d; *v = NULL; return 0; }
+/* GOLDEN_STR, when built with it, answers every string setting (the
+ * Blargg NTSC SNES tvtype), so a filter's other setups get tables of
+ * their own. */
+static int gs(void *u, const char *k, char **v, const char *d)
+{
+   (void)u; (void)k; (void)d;
+#ifdef GOLDEN_STR
+   *v = strdup(GOLDEN_STR);
+   return *v != NULL;
+#else
+   *v = NULL;
+   return 0;
+#endif
+}
+
+/* The SIMD bits RetroArch's cpu_features_get() would report here, for
+ * the ones filters look at; 0 where the compiler cannot tell. */
+static unsigned host_simd_mask(void)
+{
+   unsigned mask = 0;
+#if (defined(__GNUC__) || defined(__clang__)) \
+   && (defined(__x86_64__) || defined(__i386__))
+   __builtin_cpu_init();
+   if (__builtin_cpu_supports("sse2"))
+      mask |= SOFTFILTER_SIMD_SSE | SOFTFILTER_SIMD_SSE2;
+   if (__builtin_cpu_supports("avx2"))
+      mask |= SOFTFILTER_SIMD_AVX2;
+   if (     __builtin_cpu_supports("avx2")
+         && __builtin_cpu_supports("avx512f")
+         && __builtin_cpu_supports("avx512bw")
+         && __builtin_cpu_supports("avx512dq")
+         && __builtin_cpu_supports("avx512vl"))
+      mask |= SOFTFILTER_SIMD_AVX512;
+#endif
+   return mask;
+}
 
 static uint32_t fnv1a(const unsigned char *p, size_t n, uint32_t h)
 {
@@ -94,6 +132,7 @@ int main(void)
    /* One worker's output, which more workers must match. */
    uint8_t  *one   = (uint8_t*)malloc(900 * 500 * 4);
    unsigned content, f, s, t, bad = 0;
+   unsigned simd = host_simd_mask();
    int print = getenv("GOLDEN_PRINT") != NULL;
 
    for (content = 0; content < 2; content++)
@@ -125,7 +164,11 @@ int main(void)
                         : SOFTFILTER_FMT_RGB565)))
                h = 0; /* a format the filter does not take */
             else
-            for (t = 1; t <= 4; t++)
+            /* One to four workers, then (t == 5) one worker created
+             * with the host's SIMD mask, which must also give the
+             * first run's output byte for byte; the hash covers the
+             * first four. */
+            for (t = 1; t <= (simd ? 5u : 4u); t++)
             {
                unsigned fmt = f ? SOFTFILTER_FMT_XRGB8888 : SOFTFILTER_FMT_RGB565;
                unsigned outs = impl->query_output_formats(fmt);
@@ -141,7 +184,8 @@ int main(void)
                 * core whose size varies; every second run exactly. */
                max_w = (t & 1) ? W + 13 : W;
                max_h = (t & 1) ? H + 7  : H;
-               d     = impl->create(&cfg, fmt, ofmt, max_w, max_h, t, 0, NULL);
+               d     = impl->create(&cfg, fmt, ofmt, max_w, max_h,
+                     t == 5 ? 1 : t, t == 5 ? simd : 0, NULL);
                impl->query_output_size(d, &ow, &oh, W, H);
                /* Rows of the output five pixels wider than the filter
                 * writes, which the hash covers, so a write past a row
@@ -160,14 +204,20 @@ int main(void)
                      pk[k].work(d, pk[k].thread_data);
                   free(in);
                }
-               h = fnv1a(out, os * oh, h);
+               if (t < 5)
+                  h = fnv1a(out, os * oh, h);
                if (t == 1)
                   memcpy(one, out, os * oh);
                else if (memcmp(one, out, os * oh))
                {
-                  printf("FAIL %s %s %ux%u: %u workers differ from one\n",
-                        content ? "noise" : "game", f ? "xrgb8888" : "rgb565",
-                        W, H, t);
+                  if (t == 5)
+                     printf("FAIL %s %s %ux%u: SIMD mask 0x%x differs from 0\n",
+                           content ? "noise" : "game", f ? "xrgb8888" : "rgb565",
+                           W, H, simd);
+                  else
+                     printf("FAIL %s %s %ux%u: %u workers differ from one\n",
+                           content ? "noise" : "game", f ? "xrgb8888" : "rgb565",
+                           W, H, t);
                   bad++;
                }
                impl->destroy(d);

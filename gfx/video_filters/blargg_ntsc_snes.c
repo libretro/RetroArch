@@ -48,6 +48,9 @@ struct filter_data
 {
    struct softfilter_thread_data *workers;
    struct snes_ntsc_t *ntsc;
+   /* The low-res and hires blitters for this machine, picked at create */
+   snes_ntsc_blit_t blit;
+   snes_ntsc_blit_t blit_hires;
    unsigned threads;
    unsigned in_fmt;
    int burst;
@@ -175,8 +178,10 @@ static void *blargg_ntsc_snes_generic_create(const struct softfilter_config *con
    }
    /* Apparently the code is not thread-safe,
     * so force single threaded operation... */
-   filt->threads = threads;
-   filt->in_fmt  = in_fmt;
+   filt->threads    = threads;
+   filt->in_fmt     = in_fmt;
+   filt->blit       = retroarch_snes_ntsc_pick_blit(0, simd);
+   filt->blit_hires = retroarch_snes_ntsc_pick_blit(1, simd);
 
    blargg_ntsc_snes_initialize(filt, config, userdata);
 
@@ -214,10 +219,10 @@ static void blargg_ntsc_snes_render_rgb565(void *data, int width, int height,
     * 'first' starts where a single pass would be on that row. */
    int burst = (filt->frame_burst + first) % snes_ntsc_burst_count;
    if (width <= 256 || !hires_blit)
-      retroarch_snes_ntsc_blit(filt->ntsc, input, pitch, burst,
+      filt->blit(filt->ntsc, input, pitch, burst,
             width, height, output, outpitch * 2, first, last);
    else
-      retroarch_snes_ntsc_blit_hires(filt->ntsc, input, pitch, burst,
+      filt->blit_hires(filt->ntsc, input, pitch, burst,
             width, height, output, outpitch * 2, first, last);
 }
 

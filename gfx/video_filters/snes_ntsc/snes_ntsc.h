@@ -4,6 +4,8 @@
 #ifndef SNES_NTSC_H
 #define SNES_NTSC_H
 
+#include <stdint.h>
+
 #include "snes_ntsc_config.h"
 
 #ifdef __cplusplus
@@ -59,6 +61,14 @@ void retroarch_snes_ntsc_blit_hires( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T con
 		long in_row_width, int burst_phase, int in_width, int in_height,
 		void* rgb_out, long out_pitch, int first, int last);
 
+/* The blitter to use for this machine: retroarch_snes_ntsc_blit (hires 0)
+or retroarch_snes_ntsc_blit_hires (hires 1), or a vector version of it that
+gives the same output. simd is the softfilter SIMD mask. */
+typedef void (*snes_ntsc_blit_t)( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input,
+		long in_row_width, int burst_phase, int in_width, int in_height,
+		void* rgb_out, long out_pitch, int first, int last);
+snes_ntsc_blit_t retroarch_snes_ntsc_pick_blit( int hires, unsigned simd );
+
 /* Number of output pixels written by low-res blitter for given input width. Width
 might be rounded down slightly; use SNES_NTSC_IN_WIDTH() on result to find rounded
 value. Guaranteed not to round 256 down at all. */
@@ -83,7 +93,7 @@ Use snes_ntsc_black for unused pixels. Declares variables, so must be before fir
 statement in a block (unless you're using C++). */
 #define SNES_NTSC_BEGIN_ROW( ntsc, burst, pixel0, pixel1, pixel2 ) \
 	char const* ktable = \
-		(char const*) (ntsc)->table + burst * (snes_ntsc_burst_size * sizeof (snes_ntsc_rgb_t));\
+		(char const*) (ntsc)->table + burst * (snes_ntsc_burst_size * sizeof (snes_ntsc_entry_t));\
 	SNES_NTSC_BEGIN_ROW_6_( pixel0, pixel1, pixel2, SNES_NTSC_IN_FORMAT, ktable )
 
 /* Begins input pixel */
@@ -102,27 +112,27 @@ statement in a block (unless you're using C++). */
 /* Hires equivalents */
 #define SNES_NTSC_HIRES_ROW( ntsc, burst, pixel1, pixel2, pixel3, pixel4, pixel5 ) \
 	char const* ktable = \
-		(char const*) (ntsc)->table + burst * (snes_ntsc_burst_size * sizeof (snes_ntsc_rgb_t));\
+		(char const*) (ntsc)->table + burst * (snes_ntsc_burst_size * sizeof (snes_ntsc_entry_t));\
 	unsigned const snes_ntsc_pixel1_ = (pixel1);\
-	snes_ntsc_rgb_t const* kernel1  = SNES_NTSC_IN_FORMAT( ktable, snes_ntsc_pixel1_ );\
+	snes_ntsc_entry_t const* kernel1  = SNES_NTSC_IN_FORMAT( ktable, snes_ntsc_pixel1_ );\
 	unsigned const snes_ntsc_pixel2_ = (pixel2);\
-	snes_ntsc_rgb_t const* kernel2  = SNES_NTSC_IN_FORMAT( ktable, snes_ntsc_pixel2_ );\
+	snes_ntsc_entry_t const* kernel2  = SNES_NTSC_IN_FORMAT( ktable, snes_ntsc_pixel2_ );\
 	unsigned const snes_ntsc_pixel3_ = (pixel3);\
-	snes_ntsc_rgb_t const* kernel3  = SNES_NTSC_IN_FORMAT( ktable, snes_ntsc_pixel3_ );\
+	snes_ntsc_entry_t const* kernel3  = SNES_NTSC_IN_FORMAT( ktable, snes_ntsc_pixel3_ );\
 	unsigned const snes_ntsc_pixel4_ = (pixel4);\
-	snes_ntsc_rgb_t const* kernel4  = SNES_NTSC_IN_FORMAT( ktable, snes_ntsc_pixel4_ );\
+	snes_ntsc_entry_t const* kernel4  = SNES_NTSC_IN_FORMAT( ktable, snes_ntsc_pixel4_ );\
 	unsigned const snes_ntsc_pixel5_ = (pixel5);\
-	snes_ntsc_rgb_t const* kernel5  = SNES_NTSC_IN_FORMAT( ktable, snes_ntsc_pixel5_ );\
-	snes_ntsc_rgb_t const* kernel0 = kernel1;\
-	snes_ntsc_rgb_t const* kernelx0;\
-	snes_ntsc_rgb_t const* kernelx1 = kernel1;\
-	snes_ntsc_rgb_t const* kernelx2 = kernel1;\
-	snes_ntsc_rgb_t const* kernelx3 = kernel1;\
-	snes_ntsc_rgb_t const* kernelx4 = kernel1;\
-	snes_ntsc_rgb_t const* kernelx5 = kernel1
+	snes_ntsc_entry_t const* kernel5  = SNES_NTSC_IN_FORMAT( ktable, snes_ntsc_pixel5_ );\
+	snes_ntsc_entry_t const* kernel0 = kernel1;\
+	snes_ntsc_entry_t const* kernelx0;\
+	snes_ntsc_entry_t const* kernelx1 = kernel1;\
+	snes_ntsc_entry_t const* kernelx2 = kernel1;\
+	snes_ntsc_entry_t const* kernelx3 = kernel1;\
+	snes_ntsc_entry_t const* kernelx4 = kernel1;\
+	snes_ntsc_entry_t const* kernelx5 = kernel1
 
 #define SNES_NTSC_HIRES_OUT( x, rgb_out, bits ) {\
-	snes_ntsc_rgb_t raw_ =\
+	snes_ntsc_entry_t raw_ =\
 		kernel0  [ x       ] + kernel2  [(x+5)%7+14] + kernel4  [(x+3)%7+28] +\
 		kernelx0 [(x+7)%7+7] + kernelx2 [(x+5)%7+21] + kernelx4 [(x+3)%7+35] +\
 		kernel1  [(x+6)%7  ] + kernel3  [(x+4)%7+14] + kernel5  [(x+2)%7+28] +\
@@ -135,33 +145,57 @@ statement in a block (unless you're using C++). */
 enum { snes_ntsc_entry_size = 128 };
 enum { snes_ntsc_palette_size = 0x2000 };
 typedef unsigned long snes_ntsc_rgb_t;
+
+/* Where snes_ntsc.c has vector blitters (SSE2 on x86, where the build
+ * has it, which also enables the AVX2 tier; NEON on ARM), table entries
+ * are 32 bits: they are built in snes_ntsc_rgb_t and kept to their low
+ * 32 bits, which is all the blitters need, since they only add, mask
+ * and shift them and what reaches an output pixel comes from bits 30
+ * and below, which a sum of the truncated entries keeps exactly. That is
+ * one vector lane per entry, and half the table where unsigned long is
+ * 8 bytes. Elsewhere entries stay snes_ntsc_rgb_t for the scalar
+ * blitters. */
+#if !defined(SNES_NTSC_NO_SIMD) && SNES_NTSC_OUT_DEPTH == 16 && \
+	(defined(__SSE2__) || defined(_M_X64) || \
+	 (defined(_M_IX86_FP) && _M_IX86_FP >= 2) || \
+	 defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(_M_ARM64))
+#define SNES_NTSC_VECTOR 1
+typedef uint32_t snes_ntsc_entry_t;
+#else
+typedef snes_ntsc_rgb_t snes_ntsc_entry_t;
+#endif
 struct snes_ntsc_t {
-	snes_ntsc_rgb_t table [snes_ntsc_palette_size] [snes_ntsc_entry_size];
+	/* The vector blitters read whole vectors, a lane or two of which
+	 * can fall one entry before the first kernel or two past the last;
+	 * those lanes are blended away, but must be readable. */
+	snes_ntsc_entry_t pad_lo [8];
+	snes_ntsc_entry_t table [snes_ntsc_palette_size] [snes_ntsc_entry_size];
+	snes_ntsc_entry_t pad_hi [8];
 };
 enum { snes_ntsc_burst_size = snes_ntsc_entry_size / snes_ntsc_burst_count };
 
 #define SNES_NTSC_RGB16( ktable, n ) \
-	(snes_ntsc_rgb_t const*) (ktable + ((n & 0x001E) | (n >> 1 & 0x03E0) | (n >> 2 & 0x3C00)) * \
-			(snes_ntsc_entry_size / 2 * sizeof (snes_ntsc_rgb_t)))
+	(snes_ntsc_entry_t const*) (ktable + ((n & 0x001E) | (n >> 1 & 0x03E0) | (n >> 2 & 0x3C00)) * \
+			(snes_ntsc_entry_size / 2 * sizeof (snes_ntsc_entry_t)))
 
 #define SNES_NTSC_BGR15( ktable, n ) \
-	(snes_ntsc_rgb_t const*) (ktable + ((n << 9 & 0x3C00) | (n & 0x03E0) | (n >> 10 & 0x001E)) * \
-			(snes_ntsc_entry_size / 2 * sizeof (snes_ntsc_rgb_t)))
+	(snes_ntsc_entry_t const*) (ktable + ((n << 9 & 0x3C00) | (n & 0x03E0) | (n >> 10 & 0x001E)) * \
+			(snes_ntsc_entry_size / 2 * sizeof (snes_ntsc_entry_t)))
 
 /* common 3->7 ntsc macros */
 #define SNES_NTSC_BEGIN_ROW_6_( pixel0, pixel1, pixel2, ENTRY, table ) \
 	unsigned const snes_ntsc_pixel0_ = (pixel0);\
-	snes_ntsc_rgb_t const* kernel0  = ENTRY( table, snes_ntsc_pixel0_ );\
+	snes_ntsc_entry_t const* kernel0  = ENTRY( table, snes_ntsc_pixel0_ );\
 	unsigned const snes_ntsc_pixel1_ = (pixel1);\
-	snes_ntsc_rgb_t const* kernel1  = ENTRY( table, snes_ntsc_pixel1_ );\
+	snes_ntsc_entry_t const* kernel1  = ENTRY( table, snes_ntsc_pixel1_ );\
 	unsigned const snes_ntsc_pixel2_ = (pixel2);\
-	snes_ntsc_rgb_t const* kernel2  = ENTRY( table, snes_ntsc_pixel2_ );\
-	snes_ntsc_rgb_t const* kernelx0;\
-	snes_ntsc_rgb_t const* kernelx1 = kernel0;\
-	snes_ntsc_rgb_t const* kernelx2 = kernel0
+	snes_ntsc_entry_t const* kernel2  = ENTRY( table, snes_ntsc_pixel2_ );\
+	snes_ntsc_entry_t const* kernelx0;\
+	snes_ntsc_entry_t const* kernelx1 = kernel0;\
+	snes_ntsc_entry_t const* kernelx2 = kernel0
 
 #define SNES_NTSC_RGB_OUT_14_( x, rgb_out, bits, shift ) {\
-	snes_ntsc_rgb_t raw_ =\
+	snes_ntsc_entry_t raw_ =\
 		kernel0  [x       ] + kernel1  [(x+12)%7+14] + kernel2  [(x+10)%7+28] +\
 		kernelx0 [(x+7)%14] + kernelx1 [(x+ 5)%7+21] + kernelx2 [(x+ 3)%7+35];\
 	SNES_NTSC_CLAMP_( raw_, shift );\
@@ -173,8 +207,8 @@ enum { snes_ntsc_burst_size = snes_ntsc_entry_size / snes_ntsc_burst_count };
 #define snes_ntsc_clamp_mask     (snes_ntsc_rgb_builder * 3 / 2)
 #define snes_ntsc_clamp_add      (snes_ntsc_rgb_builder * 0x101)
 #define SNES_NTSC_CLAMP_( io, shift ) {\
-	snes_ntsc_rgb_t sub = (io) >> (9-(shift)) & snes_ntsc_clamp_mask;\
-	snes_ntsc_rgb_t clamp = snes_ntsc_clamp_add - sub;\
+	snes_ntsc_entry_t sub = (io) >> (9-(shift)) & snes_ntsc_clamp_mask;\
+	snes_ntsc_entry_t clamp = snes_ntsc_clamp_add - sub;\
 	io |= clamp;\
 	clamp -= sub;\
 	io &= clamp;\
