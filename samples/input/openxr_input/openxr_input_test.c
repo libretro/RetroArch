@@ -6853,9 +6853,10 @@ static void t_turn_aim(double pitch, double yaw, double roll)
 }
 
 /* Edit mode at Hinge Gap gap, screen 2 taken under screen 1 folded fold
- * degrees, apart metres further under, and carried 7 cm along the edge,
- * polled until it hinges. */
-static void t_hinged_at(unsigned gap, double fold, double apart)
+ * degrees, apart metres further under and x along, and carried 7 cm on
+ * along the edge, polled until it hinges. */
+static void t_hinged_along(unsigned gap, double fold, double apart,
+      double x)
 {
    unsigned i;
    t_gap  = gap;
@@ -6863,10 +6864,17 @@ static void t_hinged_at(unsigned gap, double fold, double apart)
    t_edit_start();
    t_snap_under(fold);
    t_gap_shift(apart);
+   t_quads.quads[t_quads.num_quads - 1].pose.position.x = (float)x;
+   t_aim[2].position.x = (float)x;
    t_tilt_polls(1, 0.0f, false);
-   t_aim[2].position.x = 0.07f;
+   t_aim[2].position.x = (float)(x + 0.07);
    for (i = 0; i < 10 && !input_openxr_edit.hand[1].hinged; i++)
       t_tilt_polls(1, 0.0f, false);
+}
+
+static void t_hinged_at(unsigned gap, double fold, double apart)
+{
+   t_hinged_along(gap, fold, apart, 0.0);
 }
 
 /* Tilting with the hand rolled 1 to 4 degrees, the stick swings screen
@@ -7424,11 +7432,13 @@ static void test_edit_gap_tick_turned(void)
 
 /* The stick swings screen 2 from 30 degrees, carried or tilting: taken
  * 2.6 cm under it shows 2 (the click), 3.5 under 3 (its fade), 6 under
- * 6 (free); the gap holds through the swing and is saved so. */
+ * 6 (free); the gap holds through the swing. Let go, it is saved so,
+ * but from the fade settled at 2. */
 static void test_edit_gap_swing(void)
 {
-   static const double under[] = { 0.026, 0.035, 0.06 };
-   static const double shown[] = { 0.02, 0.03, 0.06 };
+   static const double under[]   = { 0.026, 0.035, 0.06 };
+   static const double shown[]   = { 0.02, 0.03, 0.06 };
+   static const double settled[] = { 0.02, 0.02, 0.06 };
    unsigned i, k, u;
    t_angles = VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF;
    for (u = 0; u < 3; u++)
@@ -7457,7 +7467,7 @@ static void test_edit_gap_swing(void)
       t_clock += 10000;
       t_edit_poll();
       gap = t_under_gap(&plane);
-      CHECK(     worst < 1e-4 && fabs(gap - shown[u]) < 1e-4
+      CHECK(     worst < 1e-4 && fabs(gap - settled[u]) < 1e-4
             && fabs(t_xr[1].pitch - pitch0) > 5.0f,
             "%s from %.3f under: worst %.5f, saved gap %.4f, pitch %.3f"
             " from %.3f", k ? "tilting" : "carried", under[u], worst, gap,
@@ -8214,6 +8224,228 @@ static void test_edit_release_rewind(void)
    t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
 }
 
+/* n polls 10 ms apart, the right hand gripping, and the left on the
+ * menu's handle too if menu. */
+static void t_menu_polls(unsigned n, bool menu)
+{
+   unsigned i;
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   if (menu)
+      t_hold("edit/grab", 1, 1.0f, 0.0f);
+   for (i = 0; i < n; i++)
+   {
+      t_clock += 10000;
+      t_edit_poll();
+   }
+}
+
+/* Where the right hand puts screen 2 with no snap: its top edge's
+ * middle under screen 1's bottom edge, and in *along its x. */
+static double t_hand_gap(double *along)
+{
+   video_xr_pose_t pose;
+   video_xr_vec3_t m, w;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   video_xr_grab_pose(&hold->g, &hold->aim, NULL, 0, NULL, &pose, NULL,
+         NULL);
+   m.x = 0.0f;
+   m.y = 0.3f;
+   m.z = 0.0f;
+   video_xr_rotate(&pose.orientation, &m, &w);
+   *along = (double)pose.position.x + w.x;
+   return -0.48 - ((double)pose.position.y + w.y);
+}
+
+/* The right hand, gripping screen 2, carried in 1 mm steps until it
+ * puts it apart metres under screen 1 (negative: past touching), its
+ * middle at x along, as t_hand_gap measures it. */
+static void t_carry_under(double apart, double along, bool menu)
+{
+   unsigned k, n;
+   double x;
+   double dy = t_hand_gap(&x) - apart;
+   double dx = along - x;
+   double y0 = t_aim[2].position.y;
+   double x0 = t_aim[2].position.x;
+   n = (unsigned)ceil((fabs(dy) > fabs(dx) ? fabs(dy) : fabs(dx)) / 0.001);
+   for (k = 1; k <= n; k++)
+   {
+      t_aim[2].position.y = (float)(y0 + dy * k / n);
+      t_aim[2].position.x = (float)(x0 + dx * k / n);
+      t_menu_polls(1, menu);
+   }
+}
+
+/* Screen 2 hinged under screen 1, flat and folded 30, carried to where
+ * a row's hand puts it, held still and let go. Within
+ * VIDEO_XR_HINGE_SETTLE of Hinge Gap 2 it settles at the gap, from the
+ * stop's hold at Gap 0 touching, and 4 cm off level, level; listed at
+ * rest and saved there, and taken again it is hinged at once with no
+ * long buzz. Elsewhere it rests where it shows: listed at a free gap,
+ * not past 10 cm, pushed through or with Snap to Screens off. The left
+ * hand holding the menu changes nothing. */
+static void test_edit_settle(void)
+{
+   /* The Hinge Gap, Snap to Screens, the left hand on the menu; where
+    * the hand puts it, metres apart and along; the gap let go (-1: as
+    * it showed); level; how many listed. Taken 7 cm short of where it
+    * is let go, so its snaps are whole. */
+   static const struct
+   {
+      unsigned gap;
+      bool snap, menu;
+      double apart, along, want;
+      bool level;
+      unsigned rests;
+   } rows[] = {
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_2, true, false, 0.049, 0.07, 0.02,
+         false, 1 },
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_2, true, false, 0.035, 0.07, 0.02,
+         false, 1 },
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_2, true, false, 0.003, 0.07, 0.02,
+         false, 1 },
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_2, true, false, 0.055, 0.07, 0.055,
+         false, 1 },
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_0, true, false, 0.025, 0.07, 0.0,
+         false, 1 },
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_0, true, false, -0.02, 0.07, 0.0,
+         false, 1 },
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_2, true, false, 0.02, 0.04, 0.02,
+         true, 1 },
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_2, true, false, 0.105, 0.07, -1.0,
+         false, 0 },
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_2, true, false, -0.035, 0.07, -1.0,
+         false, 0 },
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_2, false, false, 0.049, 0.07, -1.0,
+         false, 0 },
+      { VIDEO_OPENXR_EDIT_HINGE_GAP_2, true, true, 0.049, 0.07, 0.02,
+         false, 1 } };
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   unsigned i, j, k;
+   for (j = 0; j < 2; j++)
+      for (i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+      {
+         bool through, menu, at_once;
+         unsigned l;
+         double gap, along, plane, before, x;
+         video_xr_pose_t saved;
+         if (rows[i].snap)
+            t_hinged_along(rows[i].gap, j * 30.0,
+                  rows[i].gap == VIDEO_OPENXR_EDIT_HINGE_GAP_2 ? 0.02 : 0.0,
+                  rows[i].along - 0.07);
+         else
+         {
+            t_gap  = rows[i].gap;
+            t_snap = false;
+            t_edit_start();
+            t_snap_under(j * 30.0);
+            t_gap_shift(0.02);
+            t_tilt_polls(1, 0.0f, false);
+            t_aim[2].position.x = 0.07f;
+            t_tilt_polls(1, 0.0f, false);
+         }
+         if (rows[i].menu)
+         {
+            t_aim[1].position.x = 2.0f;
+            t_aim[1].position.y = t_handle_y(0.6f);
+         }
+         t_carry_under(rows[i].apart, rows[i].along, rows[i].menu);
+         t_menu_polls(9, rows[i].menu);
+         through = hold->g.through != 0;
+         menu    = input_openxr_edit.hand[0].g.state == VIDEO_XR_GRAB_HELD
+            && input_openxr_edit.hand[0].g.slot == VIDEO_XR_MENU_SLOT;
+         before  = t_under_gap(&plane);
+         x       = t_edge_along(true);
+         t_let_go();
+         if (rows[i].menu)
+            t_hold("edit/grab", 1, 1.0f, 0.0f);
+         t_clock += 10000;
+         t_edit_poll();
+         gap   = t_under_gap(&plane);
+         along = t_edge_along(true);
+         video_xr_item_pose(&t_quads.slots[1].base, &t_xr[1], &saved);
+         CHECK(     t_grabs.let_go[1].state == VIDEO_XR_GRAB_RELEASED
+               && menu == rows[i].menu
+               && (rows[i].apart >= 0.0 || rows[i].want >= 0.0
+                  || (through && before < 0.0))
+               && fabs(gap - (rows[i].want < 0.0 ? before : rows[i].want))
+                  < 1e-5
+               && fabs(along - (rows[i].level ? 0.0 : x)) < 1e-5
+               && t_grabs.num_rests == rows[i].rests
+               && t_pose_close(&saved, &t_grabs.let_go[1].last),
+               "settle row %u, fold %u: menu held %d, through %d, gap "
+               "%.5f from %.5f, along %.5f from %.5f, %u at rest, saved "
+               "at %.4f,%.4f,%.4f, let go at %.4f,%.4f,%.4f", i, j * 30,
+               (int)menu, (int)through, gap, before, along, x,
+               t_grabs.num_rests, saved.position.x, saved.position.y,
+               saved.position.z, t_grabs.let_go[1].last.position.x,
+               t_grabs.let_go[1].last.position.y,
+               t_grabs.let_go[1].last.position.z);
+         /* Shown where it was saved, as the driver publishes it. */
+         for (k = 0; k < t_quads.num_quads; k++)
+            if (t_quads.quads[k].slot == 1)
+               video_xr_item_pose(&t_quads.slots[1].base, &t_xr[1],
+                     &t_quads.quads[k].pose);
+         l = t_longs[2];
+         t_menu_polls(2, rows[i].menu);
+         at_once = hold->hinged;
+         t_menu_polls(1, rows[i].menu);
+         CHECK(     (hold->g.rest_slot != 0) == (rows[i].rests != 0)
+               && (!rows[i].rests
+                  || (at_once && hold->hinged && t_longs[2] == l)),
+               "settle row %u, fold %u, taken again: kept %u, hinged %d "
+               "then %d, %u long buzzes", i, j * 30,
+               (unsigned)hold->g.rest_slot, (int)at_once,
+               (int)hold->hinged, t_longs[2] - l);
+         t_take_end();
+      }
+   t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+}
+
+/* As test_edit_release_twitch, from 4.9 cm apart at Hinge Gap 2 and
+ * from 4 cm off level at the gap, the aim turned 0.6 degrees in pitch
+ * or yaw as the grip opens: each settles at the gap, level from off
+ * it, listed and saved there. */
+static void test_edit_settle_twitch(void)
+{
+   static const double turn[][2] = { { 0.6, 0.0 }, { -0.6, 0.0 },
+      { 0.0, 0.6 }, { 0.0, -0.6 } };
+   /* The hand's metres apart and along. */
+   static const double from[][2] = { { 0.049, 0.07 }, { 0.02, 0.04 } };
+   unsigned i, j, k;
+   for (k = 0; k < 2; k++)
+      for (j = 0; j < 2; j++)
+         for (i = 0; i < 4; i++)
+         {
+            double gap, along, plane, x;
+            video_xr_pose_t saved;
+            t_hinged_along(VIDEO_OPENXR_EDIT_HINGE_GAP_2, j * 30.0, 0.02,
+                  from[k][1] - 0.07);
+            t_carry_under(from[k][0], from[k][1], false);
+            t_tilt_polls(9, 0.0f, false);
+            x = t_edge_along(true);
+            t_turn_aim(turn[i][0], turn[i][1], 0.0);
+            t_let_go();
+            t_clock += 10000;
+            t_edit_poll();
+            gap   = t_under_gap(&plane);
+            along = t_edge_along(true);
+            video_xr_item_pose(&t_quads.slots[1].base, &t_xr[1], &saved);
+            CHECK(     t_grabs.num_rests == 1 && fabs(gap - 0.02) < 1e-5
+                  && fabs(along - (k ? 0.0 : x)) < 1e-5
+                  && t_pose_close(&saved, &t_grabs.let_go[1].last),
+                  "settle twitch from %.3f apart at %.2f, fold %u, pitch "
+                  "%+.1f yaw %+.1f: %u at rest, gap %.5f, along %.5f from "
+                  "%.5f, saved at %.4f,%.4f,%.4f", from[k][0], from[k][1],
+                  j * 30, turn[i][0], turn[i][1], t_grabs.num_rests, gap,
+                  along, x, saved.position.x, saved.position.y,
+                  saved.position.z);
+            t_take_end();
+         }
+   t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+}
+
 /* A hand lets go and grips the same item again before quads planned at
  * the release come: it takes the item where the headset shows it, where
  * the hand left it, not where the last quads had it. Once they come,
@@ -8351,6 +8583,8 @@ int main(void)
    test_edit_release_moving();
    test_edit_release_rewind();
    test_edit_release_twitch();
+   test_edit_settle();
+   test_edit_settle_twitch();
    test_edit_regrab();
    test_edit_frame_aim();
    test_edit_outlines();

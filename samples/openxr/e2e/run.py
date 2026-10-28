@@ -6322,6 +6322,57 @@ def check_edit_hinge_twitch(res, gap=0.02):
                                  last_before(res, 'off', screen2))
 
 
+def check_edit_hinge_settle(res):
+    """Screen 2 hinged flat at the default Hinge Gap and carried 4.9 cm
+    under screen 1, where it shows hinged past the click's reach: let go
+    there, it settles at the gap, its hinge line on every frame from
+    the hold to the rest, and is saved there; taken again, nothing
+    buzzes."""
+    errors = edit_log_errors(res, ['on', 'off'])
+
+    def line(gap):
+        def hinge(f):
+            x, length = span(screen2(f)['pose'][0] - 0.64,
+                             screen2(f)['pose'][0] + 0.64, -0.8, 0.8)
+            return (x, -0.48 - gap / 2.0, -1.8), length
+        return hinge
+
+    def at_gap(what, q, gap):
+        if not q:
+            return ['%s: no frame of screen 2' % what]
+        turn = euler(tuple(q['pose'][3:]))
+        edge = quad_point(q, 0.0, 0.48)
+        if (     any(abs(a) > 0.05 for a in turn)
+                or abs(edge[1] + 0.48 + gap) > HINGE_GAP_POS
+                or abs(edge[2] + 1.8) > HINGE_GAP_POS):
+            return ['%s turned %s, top edge at %s, want flat on y %.3f, '
+                    'z -1.8' % (what, [round(a, 3) for a in turn],
+                                [round(v, 4) for v in edge], -0.48 - gap)]
+        return []
+    for a, b, gap in (('held4', 'released', 0.049),
+                      ('released', 'resting', 0.02)):
+        frames = [f for f in between(res, a, b, delay=0.2) if screen2(f)]
+        errors += hinge_line_errors(frames, line(gap), 0)
+        for f in frames:
+            e = at_gap('frame %d from %s' % (f['n'], a), screen2(f), gap)
+            if e:
+                errors += e
+                break
+    cfg = saved(res)
+    v = [float(cfg.get('video_screen2_xr_' + k, '0'))
+         for k in ('x', 'y', 'z', 'yaw', 'pitch', 'roll')]
+    pose = (tuple(b + o for b, o in zip(S1, v[:3])), from_euler(*v[3:]))
+    errors += at_gap('screen 2 saved',
+                     {'pose': list(pose[0]) + list(pose[1])}, 0.02)
+    taken = buzzes(res, HINGE_BUZZ, 'resting', 'dropped')
+    if taken:
+        errors.append('%d hinge buzzes taking screen 2 again where it '
+                      'settled, want 0: %s' % (len(taken), taken))
+    return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                                 pose, (1.28, 0.96),
+                                 last_before(res, 'off', screen2))
+
+
 def check_edit_snap_square(res):
     """Screen 2, turned by the left stick from 18 degrees short of
     square at screen 1's right corner, shows and is saved exactly
@@ -7144,6 +7195,24 @@ EDIT_CASES += [
          ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_twitch},
+    {'name': 'edit-hinge-settle', 'map': '3ds',
+     'settings': dict(HINGE_GAP, video_openxr_edit_smoothing='0'),
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06, y=-0.033), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'held4'), ('wait', 1),
+         ('script', edit_aim(x=0.06, y=-0.033)),
+         ('mark', 'released'), ('wait', 1), ('mark', 'resting'),
+         ('script', script(edit_aim(x=0.06, y=-0.033), EDIT_GRIP)),
+         ('wait', 1), ('script', edit_aim(x=0.06, y=-0.033)),
+         ('mark', 'dropped'), ('wait', 1),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_settle},
     {'name': 'edit-smooth', 'map': '3ds',
      'settings': dict(SAVE, video_openxr_edit_smoothing='2'),
      'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(True)},

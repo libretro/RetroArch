@@ -576,6 +576,12 @@ typedef struct input_openxr_trail
    float height;
    float scale;
    retro_time_t t;
+   /* Where the hand put it, unsnapped, and the hinge a let-go there
+    * settles in: its target's slot plus one (0, none) and both edges. */
+   video_xr_pose_t hand;
+   unsigned char settle_slot;
+   unsigned char settle_on;
+   unsigned char settle_edge;
 } input_openxr_trail_t;
 
 /* A hand in edit mode: its hold, where it holds its item as it took it
@@ -2645,10 +2651,15 @@ static unsigned input_openxr_edit_armed(unsigned armed, unsigned snapped)
    return (armed & ~snapped & buzz) | (buzz & ~pulling);
 }
 
-/* hold's trail gains where its item shows now. */
-static void input_openxr_edit_trail(input_openxr_hold_t *hold,
-      retro_time_t now)
+/* hold's trail gains where its item shows now, where aim puts it
+ * unsnapped, and whether a let-go there settles in its hinge on targets
+ * (NULL: none). */
+static void input_openxr_edit_trail(const input_openxr_edit_t *e,
+      input_openxr_hold_t *hold, retro_time_t now,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets)
 {
+   video_xr_pose_t settled;
+   input_openxr_trail_t *at;
    const input_openxr_trail_t *newest = &hold->trail[hold->trail_at];
    const input_openxr_trail_t *before = &hold->trail[(hold->trail_at
          + INPUT_OPENXR_EDIT_TRAIL - 1) % INPUT_OPENXR_EDIT_TRAIL];
@@ -2660,11 +2671,25 @@ static void input_openxr_edit_trail(input_openxr_hold_t *hold,
       if (hold->trails < INPUT_OPENXR_EDIT_TRAIL)
          hold->trails++;
    }
-   hold->trail[hold->trail_at].t      = now;
-   hold->trail[hold->trail_at].shown  = hold->g.last;
-   hold->trail[hold->trail_at].width  = hold->g.width;
-   hold->trail[hold->trail_at].height = hold->g.height;
-   hold->trail[hold->trail_at].scale  = hold->scale;
+   at              = &hold->trail[hold->trail_at];
+   at->t           = now;
+   at->shown       = hold->g.last;
+   at->width       = hold->g.width;
+   at->height      = hold->g.height;
+   at->scale       = hold->scale;
+   at->settle_slot = 0;
+   at->settle_on   = 0;
+   at->settle_edge = 0;
+   video_xr_grab_pose(&hold->g, aim, NULL, 0, NULL, &at->hand, NULL,
+         NULL);
+   if (     hold->hinged
+         && video_xr_grab_settle(&hold->g, aim, targets,
+               input_openxr_edit_holding(e), &hold->lid, &settled))
+   {
+      at->settle_slot = (unsigned char)(hold->lid.slot + 1);
+      at->settle_on   = (unsigned char)hold->lid.on;
+      at->settle_edge = (unsigned char)hold->lid.edge;
+   }
 }
 
 /* hold's newest trail entry INPUT_OPENXR_EDIT_REWIND_US old at now,
@@ -2680,16 +2705,17 @@ static const input_openxr_trail_t *input_openxr_edit_rewind(
    return &hold->trail[at];
 }
 
-/* hold's item put as its trail's entry at shows it, with no snap, from
- * its last aim. */
+/* hold's item put at pose as large as its trail's entry at shows it,
+ * with no snap, from its last aim. */
 static void input_openxr_edit_put(input_openxr_edit_t *e,
-      input_openxr_hold_t *hold, const input_openxr_trail_t *at)
+      input_openxr_hold_t *hold, const input_openxr_trail_t *at,
+      const video_xr_pose_t *pose)
 {
    video_screen_xr_t values;
    hold->g.width  = at->width;
    hold->g.height = at->height;
    hold->scale    = at->scale;
-   video_xr_grab_put(&hold->g, &hold->aim, &at->shown);
+   video_xr_grab_put(&hold->g, &hold->aim, pose);
    video_views_xr_reset(&values, 1);
    video_xr_grab_pose(&hold->g, &hold->aim, NULL, 0, NULL,
          &hold->g.last, &values, NULL);
@@ -2773,7 +2799,11 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->width0  = q->width;
    hold->height0 = q->height;
    hold->trails  = 0;
-   input_openxr_edit_trail(hold, when);
+   input_openxr_edit_trail(e, hold, when, aim, NULL);
+   /* Taken hinged, a let-go settles in that hinge from the start. */
+   hold->trail[hold->trail_at].settle_slot = hold->g.rest_slot;
+   hold->trail[hold->trail_at].settle_on   = hold->g.rest_on;
+   hold->trail[hold->trail_at].settle_edge = hold->g.rest_edge;
    input_openxr_edit_rebase(e, other, e->snap ? &st->quads : NULL, was);
 }
 
@@ -3209,8 +3239,28 @@ static void input_openxr_edit_poll(input_openxr_t *st,
             /* As it showed before the grip began to open: the hand
              * twitches as it does. */
             if (shown)
-               input_openxr_edit_put(e, hold,
-                     input_openxr_edit_rewind(hold, now));
+            {
+               const input_openxr_trail_t *at =
+                  input_openxr_edit_rewind(hold, now);
+               video_xr_pose_t pose = at->shown;
+               if (at->settle_slot && targets)
+               {
+                  video_xr_hinge_t k;
+                  memset(&k, 0, sizeof(k));
+                  k.slot = at->settle_slot - 1u;
+                  k.on   = at->settle_on;
+                  k.edge = at->settle_edge;
+                  /* Exactly into the hinge it showed, so it rests there
+                   * green, among the screens held once it is let go. */
+                  if (!video_xr_hinge_settle(targets, hold->g.slot,
+                           input_openxr_edit_holding(e)
+                           & ~(1u << hold->g.slot), at->width,
+                           at->height, e->gap * 0.01f, &k, &at->hand,
+                           &pose))
+                     pose = at->shown;
+               }
+               input_openxr_edit_put(e, hold, at, &pose);
+            }
             input_openxr_edit_let_go(e, hold, shown);
             /* Where it rests now, for the hinges counted below. */
             if (shown)
@@ -3256,7 +3306,7 @@ static void input_openxr_edit_poll(input_openxr_t *st,
                input_openxr_edit_tick(st, h, INPUT_OPENXR_SNAP_TICK_NS,
                      INPUT_OPENXR_SNAP_TICK_AMP);
             hold->armed = input_openxr_edit_armed(hold->armed, snapped);
-            input_openxr_edit_trail(hold, now);
+            input_openxr_edit_trail(e, hold, now, &aim, targets);
          }
       }
       /* Taken from anywhere, the hand's aim is needed: untracked, it

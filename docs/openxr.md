@@ -265,17 +265,18 @@ Off turns and tilts it smoothly, with no steps and no buzz.
 **Hinge Gap** (2 cm by default) is the gap Snap to Screens leaves
 between screens that meet edge to edge, side by side, at a corner or
 hinged at an angle: 0, 1, 2, 3, 5 or 10 cm. A screen within 1 cm of it
-clicks to it exactly, with a short buzz; anywhere else from touching
-to 10 cm the gap stays where the hand puts it, still hinged, and from 10
-to 13 cm the hinge lets go. At 0 the edges touch. It does nothing while
-Snap to Screens is off; screens already placed do not move. Pushed
-past touching, a hinged screen stops there, so two screens can be
-pushed together with no gap and let go touching, with one short buzz per
-push (below a 3 cm gap, the click's). From 3 cm past (3.5 cm at a 1 cm
-gap) the hinge lets go and the screen slides on into the other, free
-from 5.5 cm (6 cm); pulled back, it hinges again 5 mm inside that 3 cm.
-With Snap to Screens off nothing stops them, and screens overlap
-freely.
+clicks to it exactly, with a short buzz; let go within 3 cm of it, or
+within 6 cm of level along the edge, a hinged screen settles there
+exactly; anywhere else from touching to 10 cm the gap stays where the
+hand puts it, still hinged, and from 10 to 13 cm the hinge lets go. At
+0 the edges touch. It does nothing while Snap to Screens is off;
+screens already placed do not move. Pushed past touching, a hinged
+screen stops there, so two screens can be pushed together with no gap
+and let go touching, with one short buzz per push (below a 3 cm gap,
+the click's). From 3 cm past (3.5 cm at a 1 cm gap) the hinge lets go
+and the screen slides on into the other, free from 5.5 cm (6 cm);
+pulled back, it hinges again 5 mm inside that 3 cm. With Snap to
+Screens off nothing stops them, and screens overlap freely.
 
 **Edit Smoothing** (Medium by default) steadies the controllers' aim
 while editing, so a screen held far out on the laser does not shake
