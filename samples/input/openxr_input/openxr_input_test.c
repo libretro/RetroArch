@@ -5216,18 +5216,22 @@ static void t_snap_commit(bool tilt)
 
 static void test_edit_snap_commit(void)
 {
+   float back;
    t_snap_commit(false);
    t_snap_commit(true);
    /* In the fade, the grip let go with the stick still pushed: left
-    * where it shows. */
+    * where it showed 80 ms before. */
    t_take_square(true, false);
-   t_turn_polls(12, -1.0f, 10000, false);
+   t_turn_polls(4, -1.0f, 10000, false);
+   back = t_xr[1].yaw;
+   t_turn_polls(8, -1.0f, 10000, false);
    t_let_go();
    t_hold("edit/stick", 1, -1.0f, 0.0f);
    t_edit_poll();
    CHECK(     input_openxr_edit.hand[1].g.state != VIDEO_XR_GRAB_HELD
-         && t_deg_near(t_xr[1].yaw, -85.6),
-         "the grip let go in the fade: yaw %.3f", t_xr[1].yaw);
+         && t_deg_near(t_xr[1].yaw, -75.6) && t_deg_near(back, -75.6),
+         "the grip let go in the fade: yaw %.3f, shown %.3f 80 ms before",
+         t_xr[1].yaw, back);
    t_take_end();
    /* Snap to Screens off: nothing snaps, nothing sticks. */
    t_take_square(false, false);
@@ -5738,6 +5742,7 @@ static void test_edit_rest(void)
    CHECK(     input_openxr_edit.hand[1].hinged && t_grabs.num_rests == 0,
          "carried hinged: hinged %d, %u at rest",
          (int)input_openxr_edit.hand[1].hinged, t_grabs.num_rests);
+   t_tilt_polls(8, 0.0f, false);
    t_let_go();
    t_edit_poll();
    CHECK(     t_grabs.hand[1].state == VIDEO_XR_GRAB_RELEASED
@@ -5822,19 +5827,20 @@ static void test_edit_rest(void)
          t_grabs.num_rests);
    t_take_end();
 
-   /* Hinged again by the poll that lets it go, it rests in its record. */
+   /* Carried off in the grip's last 80 ms, it is let go hinged, resting
+    * in the record that lets it go. */
    t_take_under(0.0, false);
+   t_tilt_polls(8, 0.0f, false);
    t_aim[2].position.z += 0.1f;
    t_tilt_polls(1, 0.0f, false);
    CHECK(     !input_openxr_edit.hand[1].hinged && t_grabs.num_rests == 0,
          "carried off: hinged %d, %u at rest",
          (int)input_openxr_edit.hand[1].hinged, t_grabs.num_rests);
-   t_aim[2].position.z -= 0.1f;
    t_let_go();
    t_edit_poll();
    CHECK(     t_grabs.hand[1].state == VIDEO_XR_GRAB_RELEASED
          && t_grabs.num_rests == 1,
-         "let go as it hinged: state %u, %u at rest",
+         "let go hinged from 80 ms before: state %u, %u at rest",
          t_grabs.hand[1].state, t_grabs.num_rests);
    t_take_end();
 
@@ -6810,6 +6816,59 @@ static double t_under_gap(double *plane)
    return -0.48 - ((double)pose.position.y + w.y);
 }
 
+static void t_qmul(const XrQuaternionf *a, const XrQuaternionf *b,
+      XrQuaternionf *o)
+{
+   XrQuaternionf r;
+   r.w = a->w * b->w - a->x * b->x - a->y * b->y - a->z * b->z;
+   r.x = a->w * b->x + a->x * b->w + a->y * b->z - a->z * b->y;
+   r.y = a->w * b->y - a->x * b->z + a->y * b->w + a->z * b->x;
+   r.z = a->w * b->z + a->x * b->y - a->y * b->x + a->z * b->w;
+   *o = r;
+}
+
+/* The right hand's aim turned pitch, yaw and roll degrees about its own
+ * x, y and z, in that order. */
+static void t_turn_aim(double pitch, double yaw, double roll)
+{
+   unsigned i;
+   double deg[3];
+   deg[0] = pitch;
+   deg[1] = yaw;
+   deg[2] = roll;
+   for (i = 0; i < 3; i++)
+   {
+      XrQuaternionf d;
+      double half = deg[i] * M_PI / 360.0;
+      memset(&d, 0, sizeof(d));
+      d.w = (float)cos(half);
+      if (i == 0)
+         d.x = (float)sin(half);
+      else if (i == 1)
+         d.y = (float)sin(half);
+      else
+         d.z = (float)sin(half);
+      t_qmul(&t_aim[2].orientation, &d, &t_aim[2].orientation);
+   }
+}
+
+/* Edit mode at Hinge Gap gap, screen 2 taken under screen 1 folded fold
+ * degrees, apart metres further under, and carried 7 cm along the edge,
+ * polled until it hinges. */
+static void t_hinged_at(unsigned gap, double fold, double apart)
+{
+   unsigned i;
+   t_gap  = gap;
+   t_snap = true;
+   t_edit_start();
+   t_snap_under(fold);
+   t_gap_shift(apart);
+   t_tilt_polls(1, 0.0f, false);
+   t_aim[2].position.x = 0.07f;
+   for (i = 0; i < 10 && !input_openxr_edit.hand[1].hinged; i++)
+      t_tilt_polls(1, 0.0f, false);
+}
+
 /* Tilting with the hand rolled 1 to 4 degrees, the stick swings screen
  * 2 from 12 degrees through flat's fade band under screen 1, or from
  * about 12 short through square's at its corner: its hinged edge never
@@ -6935,6 +6994,7 @@ static void test_edit_gap_stop(void)
             if (fabs(gap) > worst)
                worst = fabs(gap);
          }
+         t_tilt_polls(8, 0.0f, false);
          t_let_go();
          t_clock += 10000;
          t_edit_poll();
@@ -7231,6 +7291,7 @@ static void test_edit_gap_push_rest(void)
             t_aim[2].position.y = (float)(y + 0.001 * k);
             t_tilt_polls(1, 0.0f, false);
          }
+         t_tilt_polls(8, 0.0f, false);
          was    = hold->hinged;
          before = t_under_gap(&plane);
          CHECK(was == want, "Hinge Gap %u cm, %u mm past from %u: hinged %d",
@@ -7817,7 +7878,7 @@ static void test_edit_hinge_attach(void)
  * published. */
 static void test_edit_smoothing(void)
 {
-   unsigned n;
+   unsigned i, n;
    video_xr_pose_t a, b, want;
    video_xr_grab_t held;
    video_screen_xr_t s;
@@ -7856,10 +7917,16 @@ static void test_edit_smoothing(void)
    CHECK(g->state == VIDEO_XR_GRAB_HELD
          && t_near(g->rel.position.x, -a.position.x),
          "taken from %.4f", -g->rel.position.x);
-   /* The hand moves on: what the frame loop shows is what is let go. */
+   /* The hand moves on and holds there 90 ms: what the frame loop
+    * shows is what is let go. */
    t_aim[2].position.x = 0.05f;
    t_time += 11111111;
    t_hooks.aim(t_hooks.user, 1, local, t_time, &a);
+   for (i = 0; i < 9; i++)
+   {
+      t_clock += 10000;
+      t_edit_poll();
+   }
    held = *g;
    video_xr_grab_pose(&held, &a, NULL, 0, NULL, &want, &s, NULL);
    t_let_go();
@@ -7915,10 +7982,10 @@ static void test_edit_smoothing(void)
    t_edit_end();
 }
 
-/* Let go with the hand still moving: the release poll's own aim puts
- * the item, so the frame loop, which showed it from each frame's aim,
- * shows no step back to the poll before; the stick moves nothing then.
- * Untracked at the release, it stays where the last poll put it. */
+/* Let go with the hand still moving: the release poll's own aim is not
+ * used, so with no time passing it stays where the poll before put it;
+ * the stick moves nothing then. Untracked at the release, it stays
+ * where the last poll put it. */
 static void test_edit_release_moving(void)
 {
    t_edit_start();
@@ -7931,10 +7998,10 @@ static void test_edit_release_moving(void)
    t_aim[2].position.x = 0.5f;
    t_edit_poll();
    CHECK(     t_grabs.let_go[0].state == VIDEO_XR_GRAB_RELEASED
-         && t_near(t_grabs.let_go[0].last.position.x, 0.5f)
+         && t_near(t_grabs.let_go[0].last.position.x, 0.3f)
          && t_near(t_grabs.let_go[0].last.position.z, -1.8f)
          && t_near(t_grabs.let_go[0].width, 1.6f)
-         && t_near(t_xr[0].x, 0.5f) && t_near(t_xr[0].z, 0.0f)
+         && t_near(t_xr[0].x, 0.3f) && t_near(t_xr[0].z, 0.0f)
          && t_near(t_xr[0].scale, 1.0f),
          "let go moving: at %.3f, saved x %.3f z %.3f scale %.3f",
          t_grabs.let_go[0].last.position.x, t_xr[0].x, t_xr[0].z,
@@ -7956,6 +8023,195 @@ static void test_edit_release_moving(void)
          "let go untracked: at %.3f, saved %.3f",
          t_grabs.let_go[0].last.position.x, t_xr[0].x);
    t_edit_end();
+}
+
+/* a and b the same place to 0.1 mm, and turn to 1e-4 of a quaternion. */
+static bool t_pose_close(const video_xr_pose_t *a, const video_xr_pose_t *b)
+{
+   const video_xr_quat_t *p = &a->orientation;
+   const video_xr_quat_t *q = &b->orientation;
+   double s = ((double)p->x * q->x + (double)p->y * q->y
+         + (double)p->z * q->z + (double)p->w * q->w) < 0.0 ? -1.0 : 1.0;
+   return fabs((double)a->position.x - b->position.x) < 1e-4
+      && fabs((double)a->position.y - b->position.y) < 1e-4
+      && fabs((double)a->position.z - b->position.z) < 1e-4
+      && fabs(p->x - s * q->x) < 1e-4 && fabs(p->y - s * q->y) < 1e-4
+      && fabs(p->z - s * q->z) < 1e-4 && fabs(p->w - s * q->w) < 1e-4;
+}
+
+/* Hinged exactly at Hinge Gap 2 under screen 1, flat and folded 30
+ * degrees, and held still: the grip opening turns the aim in pitch or
+ * yaw, or, which the hinge holds anyway, in roll or across. Let go, it
+ * rests hinged at the gap, saved where it is let go. */
+static void test_edit_release_twitch(void)
+{
+   /* Pitch, yaw and roll in degrees, and metres across. */
+   static const double twitch[][4] = {
+      {  0.4, 0.0, 0.0, 0.0 }, { -0.4, 0.0, 0.0, 0.0 },
+      {  0.6, 0.0, 0.0, 0.0 }, { -0.6, 0.0, 0.0, 0.0 },
+      { 0.0,  0.4, 0.0, 0.0 }, { 0.0, -0.4, 0.0, 0.0 },
+      { 0.0,  1.0, 0.0, 0.0 }, { 0.0, -1.0, 0.0, 0.0 },
+      { 0.0,  2.0, 0.0, 0.0 }, { 0.0, -2.0, 0.0, 0.0 },
+      { 0.0, 0.0,  2.0, 0.0 }, { 0.0, 0.0, -2.0, 0.0 },
+      { 0.0, 0.0, 0.0,  0.01 }, { 0.0, 0.0, 0.0, -0.01 } };
+   unsigned i, j;
+   const video_xr_pose_t *at = &t_grabs.let_go[1].last;
+   for (j = 0; j < 2; j++)
+      for (i = 0; i < sizeof(twitch) / sizeof(twitch[0]); i++)
+      {
+         bool hinged;
+         double gap, plane;
+         video_xr_pose_t saved;
+         t_hinged_at(VIDEO_OPENXR_EDIT_HINGE_GAP_2, j * 30.0, 0.02);
+         t_tilt_polls(9, 0.0f, false);
+         hinged = input_openxr_edit.hand[1].hinged;
+         t_turn_aim(twitch[i][0], twitch[i][1], twitch[i][2]);
+         t_aim[2].position.y += (float)twitch[i][3];
+         t_let_go();
+         t_clock += 10000;
+         t_edit_poll();
+         gap = t_under_gap(&plane);
+         video_xr_item_pose(&t_quads.slots[1].base, &t_xr[1], &saved);
+         CHECK(     hinged && t_grabs.num_rests == 1
+               && fabs(gap - 0.02) < 1e-5 && t_pose_close(&saved, at),
+               "twitch, fold %u, pitch %+.1f yaw %+.1f roll %+.1f across "
+               "%+.0f mm: hinged %d, %u at rest, gap %.5f, saved at "
+               "%.4f,%.4f,%.4f, let go at %.4f,%.4f,%.4f", j * 30,
+               twitch[i][0], twitch[i][1], twitch[i][2],
+               twitch[i][3] * 1000.0, (int)hinged, t_grabs.num_rests, gap,
+               saved.position.x, saved.position.y, saved.position.z,
+               at->position.x, at->position.y, at->position.z);
+         t_take_end();
+      }
+   t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+}
+
+/* Screen 1 taken at x 0 and carried n polls us apart, the hand dx
+ * further along x each, the last lost of them untracked, then let go
+ * with the hand still moving: where it is let go, and in *hand where
+ * the hand was then. */
+static double t_rewind(unsigned n, retro_time_t us, double dx,
+      unsigned lost, double *hand)
+{
+   unsigned i;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_clock += us;
+   t_edit_poll();
+   for (i = 1; i <= n + 1; i++)
+   {
+      if (i > n)
+         t_let_go();
+      if (i + lost > n)
+         t_aim_tracked[2] = false;
+      t_aim[2].position.x = (float)(dx * i);
+      t_clock += us;
+      t_edit_poll();
+   }
+   *hand = t_aim[2].position.x;
+   return t_grabs.let_go[0].last.position.x;
+}
+
+/* A grip let go puts its item where it showed the newest trail entry
+ * at least INPUT_OPENXR_EDIT_REWIND_US back, entries at least
+ * INPUT_OPENXR_EDIT_TRAIL_US apart, untracked polls adding none: past
+ * the hand's twitch as the grip opens. A hold shorter than that lets go
+ * where it was taken. The size is the rewound entry's too. */
+static void test_edit_release_rewind(void)
+{
+   unsigned i;
+   double x, hand, gap, plane, edge;
+   float width, scale, grown;
+   video_xr_pose_t saved;
+   x = t_rewind(30, 10000, 0.001, 0, &hand);
+   CHECK(     t_grabs.let_go[0].state == VIDEO_XR_GRAB_RELEASED
+         && fabs(hand - x - 0.008) < 1e-5 && fabs(t_xr[0].x - x) < 1e-5,
+         "rewind at 10 ms polls: let go at %.4f, saved %.4f, the hand at "
+         "%.4f, want 8 mm short", x, t_xr[0].x, hand);
+   t_edit_end();
+   x = t_rewind(300, 1000, 0.0001, 0, &hand);
+   CHECK(     t_grabs.let_go[0].state == VIDEO_XR_GRAB_RELEASED
+         && hand - x > 0.008 - 1e-5 && hand - x < 0.0089 + 1e-5
+         && fabs(t_xr[0].x - x) < 1e-5,
+         "rewind at 1 ms polls: let go at %.5f, saved %.5f, the hand at "
+         "%.5f, want 8.0 to 8.9 mm short", x, t_xr[0].x, hand);
+   t_edit_end();
+   x = t_rewind(5, 10000, 0.001, 0, &hand);
+   CHECK(fabs(x) < 1e-5 && fabs(t_xr[0].x) < 1e-5,
+         "held 50 ms: let go at %.4f, saved %.4f, want where it was taken",
+         x, t_xr[0].x);
+   t_edit_end();
+   x = t_rewind(30, 10000, 0.001, 3, &hand);
+   CHECK(fabs(x - 0.023) < 1e-5 && fabs(t_xr[0].x - x) < 1e-5,
+         "untracked for 3 polls: let go at %.4f, saved %.4f, want 0.023",
+         x, t_xr[0].x);
+   t_edit_end();
+
+   /* Grown on the stick for the last 50 ms: undone. */
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   for (i = 0; i < 10; i++)
+   {
+      t_clock += 10000;
+      t_edit_poll();
+   }
+   width = input_openxr_edit.hand[1].g.width;
+   scale = t_xr[0].scale;
+   t_hold("edit/stick", 2, 1.0f, 0.0f);
+   for (i = 0; i < 5; i++)
+   {
+      t_clock += 10000;
+      t_edit_poll();
+   }
+   grown = input_openxr_edit.hand[1].g.width;
+   t_let_go();
+   t_clock += 10000;
+   t_edit_poll();
+   CHECK(     grown > 1.65f && t_near(t_grabs.let_go[0].width, width)
+         && t_near(t_xr[0].scale, scale)
+         && t_near(t_grabs.let_go[0].last.position.x, 0.0f),
+         "grown to %.3f as let go: %.3f wide, scale %.3f, at %.3f, want "
+         "%.3f, %.3f", grown, t_grabs.let_go[0].width, t_xr[0].scale,
+         t_grabs.let_go[0].last.position.x, width, scale);
+   t_edit_end();
+
+   /* Hinged at Hinge Gap 2, then grown in the grip's last 80 ms: let go
+    * as it showed before, its edge at the gap. */
+   t_hinged_at(VIDEO_OPENXR_EDIT_HINGE_GAP_2, 0.0, 0.02);
+   t_tilt_polls(9, 0.0f, false);
+   width = input_openxr_edit.hand[1].g.width;
+   scale = t_xr[1].scale;
+   t_hold("edit/stick", 2, 1.0f, 0.0f);
+   for (i = 0; i < 7; i++)
+   {
+      t_clock += 10000;
+      t_edit_poll();
+   }
+   grown = input_openxr_edit.hand[1].g.width;
+   t_let_go();
+   t_clock += 10000;
+   t_edit_poll();
+   gap  = t_under_gap(&plane);
+   /* t_under_gap's edge is 0.3 over the middle: flat, the let-go's own
+    * is half its height. */
+   edge = gap + 0.3 - 0.5 * t_grabs.let_go[1].height;
+   video_xr_item_pose(&t_quads.slots[1].base, &t_xr[1], &saved);
+   CHECK(     grown > width * 1.04f
+         && t_near(t_grabs.let_go[1].width, width)
+         && t_near(t_xr[1].scale, scale) && fabs(gap - 0.02) < 1e-5
+         && fabs(edge - 0.02) < 1e-5 && t_grabs.num_rests == 1
+         && t_pose_close(&saved, &t_grabs.let_go[1].last),
+         "hinged, grown to %.3f as let go: %.3f wide, scale %.3f, want "
+         "%.3f, %.3f; gap %.5f, its edge %.5f, %u at rest, saved at "
+         "%.4f,%.4f,%.4f, let go at %.4f,%.4f,%.4f", grown,
+         t_grabs.let_go[1].width, t_xr[1].scale, width, scale, gap, edge,
+         t_grabs.num_rests,
+         saved.position.x, saved.position.y, saved.position.z,
+         t_grabs.let_go[1].last.position.x,
+         t_grabs.let_go[1].last.position.y,
+         t_grabs.let_go[1].last.position.z);
+   t_take_end();
+   t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
 }
 
 /* A hand lets go and grips the same item again before quads planned at
@@ -8093,6 +8349,8 @@ int main(void)
    test_edit_simple_and_view();
    test_edit_hold_record();
    test_edit_release_moving();
+   test_edit_release_rewind();
+   test_edit_release_twitch();
    test_edit_regrab();
    test_edit_frame_aim();
    test_edit_outlines();

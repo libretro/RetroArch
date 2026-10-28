@@ -253,7 +253,9 @@ longer, stronger buzz instead, and short buzzes due while it plays are
 skipped; it comes again only once the green line has gone, or for
 another edge, so a swing past square and back, or a wobble where the
 hinge takes hold, does not repeat it. The menu neither snaps nor is
-snapped to. Where it is let go is where it is saved.
+snapped to. Let go, it stays where, turned and as large as it was a
+moment (0.08 s) before the grip opened, so the hand's twitch as it
+opens does not move it, and that is where it is saved.
 
 **Snap to Angles** (15 degrees by default) is the step the other hand's
 stick turns and tilts a held item in: 15, 30, 45 or 90 degrees. A

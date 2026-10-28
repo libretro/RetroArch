@@ -4256,6 +4256,14 @@ def edit_aim(x=0.0, y=0.0, roll=None, z=-1.8):
     return aim_line((x, y, 0.0), (x, y, z), roll=roll)
 
 
+def edit_aim_turned(x=0.0, y=0.0, pitch=0.0, yaw=0.0, z=-1.8):
+    """edit_aim()'s hand, its aim turned pitch degrees up and yaw degrees
+    left, as the unit test's t_turn_aim turns them."""
+    return aim_line((x, y, 0.0),
+                    (x - 1.8 * math.tan(math.radians(yaw)),
+                     y + 1.8 * math.tan(math.radians(pitch)), z))
+
+
 def outline_size(w, h):
     """An outline's quad round an item w by h."""
     return tuple((s + 2.0 * OUTLINE_GAP) / (1.0 - 2.0 * OUTLINE_F)
@@ -4676,29 +4684,32 @@ def check_edit_release(res):
 
 
 def check_edit_release_moving(res):
-    """Let go mid-sweep: screen 1 is saved where the release poll's aim
-    put it, the last place it was shown, and no frame after the release
-    shows it short of the furthest place any frame showed it."""
+    """Let go mid-sweep: screen 1 is let go and saved where a frame at
+    most a poll (100 ms at FPS10) before the release showed it, not
+    where the release poll's aim puts it, and no frame after the release
+    shows it further back."""
     errors = edit_log_errors(res, ['on'], exact=False)
-    want = (0.3, 0.0, -1.8)
     xs = [(f['t_us'], screen1_left(f)['pose'][0])
           for f in between(res, 'sweep', None, edit_screen0)]
     t_rel = res.marks['released'] * 1e6
-    before = [x for t, x in xs if t <= t_rel]
+    poll, slack = 100000, 20000
+    back = [x for t, x in xs if t_rel - poll - slack <= t <= t_rel + slack]
     late = [x for t, x in xs if t > t_rel]
-    if not before or not late:
+    rest = [screen1_left(f) for f in
+            between(res, 'released', None, edit_screen0, 1.0)]
+    if not back or not late or not rest:
         return errors + ['no frames around the release']
-    top = max(before)
+    want = (rest[-1]['pose'][0], 0.0, -1.8)
+    if not any(abs(want[0] - x) <= 0.002 for x in back):
+        errors.append('screen 1 let go at %.3f, want where a frame showed '
+                      'it a poll before the release: %s'
+                      % (want[0], [round(x, 3) for x in back]))
     for x in late:
-        if x < top - 0.002:
-            errors.append('after the release screen 1 stepped back from '
-                          '%.3f to %.3f' % (top, x))
+        if x < want[0] - 0.002:
+            errors.append('after the release screen 1 stepped back to '
+                          '%.3f, past where it was let go' % x)
             break
-        top = max(top, x)
-    errors += pose_errors('screen 1 let go',
-                          [screen1_left(f) for f in
-                           between(res, 'released', None, edit_screen0,
-                                   1.0)], want, ID)
+    errors += pose_errors('screen 1 let go', rest, want, ID)
     return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
                                  (want, ID), (1.6, 0.96))
 
@@ -6266,6 +6277,51 @@ def check_edit_hinge_gap(res):
     return check_edit_hinge_3ds(res, 0.02)
 
 
+def check_edit_hinge_twitch(res, gap=0.02):
+    """Screen 2 hinged flat at the default Hinge Gap and held still, let
+    go as the aim turns half a degree up, and again half a degree down
+    once taken where it rests: each time it rests at the gap where it
+    showed before the grip opened, its hinge line on every frame after
+    the release, and is saved there."""
+    errors = edit_log_errors(res, ['on', 'off'])
+
+    def hinge(f):
+        x, length = span(screen2(f)['pose'][0] - 0.64,
+                         screen2(f)['pose'][0] + 0.64, -0.8, 0.8)
+        return (x, -0.48 - gap / 2.0, -1.8), length
+
+    def at_gap(what, q):
+        if not q:
+            return ['%s: no frame of screen 2' % what]
+        turn = euler(tuple(q['pose'][3:]))
+        edge = quad_point(q, 0.0, 0.48)
+        if (     any(abs(a) > 0.05 for a in turn)
+                or abs(edge[1] + 0.48 + gap) > HINGE_GAP_POS
+                or abs(edge[2] + 1.8) > HINGE_GAP_POS):
+            return ['%s turned %s, top edge at %s, want flat on y %.3f, '
+                    'z -1.8' % (what, [round(a, 3) for a in turn],
+                                [round(v, 4) for v in edge], -0.48 - gap)]
+        return []
+    for rel, rest in (('released', 'resting'), ('released2', 'resting2')):
+        frames = [f for f in between(res, rel, rest, delay=0.2)
+                  if screen2(f)]
+        errors += hinge_line_errors(frames, hinge, 0)
+        for f in frames:
+            e = at_gap('frame %d after %s' % (f['n'], rel), screen2(f))
+            if e:
+                errors += e
+                break
+    cfg = saved(res)
+    v = [float(cfg.get('video_screen2_xr_' + k, '0'))
+         for k in ('x', 'y', 'z', 'yaw', 'pitch', 'roll')]
+    pose = (tuple(b + o for b, o in zip(S1, v[:3])), from_euler(*v[3:]))
+    errors += at_gap('screen 2 saved',
+                     {'pose': list(pose[0]) + list(pose[1])})
+    return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                                 pose, (1.28, 0.96),
+                                 last_before(res, 'off', screen2))
+
+
 def check_edit_snap_square(res):
     """Screen 2, turned by the left stick from 18 degrees short of
     square at screen 1's right corner, shows and is saved exactly
@@ -7071,6 +7127,23 @@ EDIT_CASES += [
          ('send', EDIT), ('wait', 2), ('mark', 'off'),
          ('wait', 1)],
      'check': check_edit_hinge_gap},
+    {'name': 'edit-hinge-twitch', 'map': '3ds',
+     'settings': dict(HINGE_GAP, video_openxr_edit_smoothing='0'),
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'), ('wait', 1),
+         ('script', edit_aim_turned(x=0.06, pitch=0.5)),
+         ('mark', 'released'), ('wait', 1), ('mark', 'resting'),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('script', edit_aim_turned(x=0.06, pitch=-0.5)),
+         ('mark', 'released2'), ('wait', 1), ('mark', 'resting2'),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_twitch},
     {'name': 'edit-smooth', 'map': '3ds',
      'settings': dict(SAVE, video_openxr_edit_smoothing='2'),
      'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(True)},
