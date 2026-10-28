@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "snes_ntsc.h"
+#include "../softfilter.h"
 
 /* Copyright (C) 2006-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
