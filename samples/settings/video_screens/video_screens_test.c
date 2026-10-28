@@ -3746,6 +3746,38 @@ static void test_window_redraw(void)
 #endif
 }
 
+/* A UI layer in another window lays out at its target's size, waiting
+ * or not; one in the main window at the main window's UI size */
+static void test_window_ui_layer_dims(void)
+{
+   static video_frame_info_t info;
+   static video_windows_frame_t frame;
+   memset(&info, 0, sizeof(info));
+   memset(&frame, 0, sizeof(frame));
+   info.dims = VIDEO_SCALE_PACK(800, 480);
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(800, 480));
+   info.views_layout.ui_per_eye = true;
+   info.views_layout.ui_dims    = VIDEO_SCALE_PACK(400, 480);
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_NOTIFICATIONS)
+         == VIDEO_SCALE_PACK(400, 480));
+   info.windows = &frame;
+   frame.ui[VIDEO_WINDOW_UI_MENU].window = VIDEO_WINDOWS_PRESENTATION;
+   frame.ui[VIDEO_WINDOW_UI_MENU].dims   = VIDEO_SCALE_PACK(1240, 1080);
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1240, 1080));
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_NOTIFICATIONS)
+         == VIDEO_SCALE_PACK(400, 480));
+   frame.ui[VIDEO_WINDOW_UI_MENU].wait   = true;
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1240, 1080));
+   frame.ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(400, 480));
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_LAYERS)
+         == VIDEO_SCALE_PACK(400, 480));
+}
+
 int main(int argc, char **argv)
 {
 #ifdef VIDEO_SCREENS_RUNTIME_TEST
@@ -3787,6 +3819,7 @@ int main(int argc, char **argv)
    test_window_ui_targets();
    test_window_pointer_mapping();
    test_window_generation();
+   test_window_ui_layer_dims();
    test_window_frame_snapshot();
    test_window_menu_settings();
    test_window_menu_display();

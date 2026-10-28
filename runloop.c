@@ -8326,8 +8326,8 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
-   /* Per-eye UI lays out at one eye's size. */
-   output_dims = video_driver_get_ui_dims();
+   /* The menu lays out at its window's size: one eye's for per-eye UI */
+   output_dims = video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU);
 
    gfx_animation_update(
          current_time,
@@ -8360,7 +8360,8 @@ static enum runloop_state_enum runloop_check_state(
          gfx_widgets_iterate(
                p_disp,
                settings,
-               output_dims,
+               video_driver_get_ui_layer_dims(
+                  VIDEO_WINDOW_UI_NOTIFICATIONS),
                video_is_fullscreen,
                settings->paths.directory_assets,
                settings->paths.path_font,

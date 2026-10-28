@@ -4197,6 +4197,16 @@ unsigned video_driver_get_ui_dims(void)
          video_driver_get_output_dims());
 }
 
+unsigned video_frame_ui_layer_dims(const video_frame_info_t *video_info,
+      unsigned layer)
+{
+   const video_windows_frame_t *f = video_info->windows;
+   if (     f && layer < VIDEO_WINDOW_UI_LAYERS
+         && f->ui[layer].window && f->ui[layer].dims)
+      return f->ui[layer].dims;
+   return video_views_ui_dims(&video_info->views_layout, video_info->dims);
+}
+
 unsigned video_driver_get_ui_layer_window(unsigned layer)
 {
 #ifdef HAVE_VIDEO_WINDOWS
@@ -7520,7 +7530,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
          (     video_info->widgets_active
             && retro_atomic_load_relaxed_int(&p_dispwidget->worker))
       ? gfx_widgets_scale_factor(video_info->disp_userdata, settings,
-            video_driver_get_ui_dims(), video_info->fullscreen)
+            video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_NOTIFICATIONS),
+            video_info->fullscreen)
       : 0.0f;
 #endif
 
