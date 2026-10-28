@@ -1124,6 +1124,23 @@ jobs:
           timeout 120 ./udev_rumble_test
           make clean
           echo "[pass] udev_rumble_test"
+      - name: Build and run dingux_rumble_test (ASan + UBSan, then TSan)
+        shell: bash
+        working-directory: samples/input/dingux_rumble
+        run: |
+          set -eu
+          # The Dingux joypad driver's vibration motor, through evdev
+          # and the output writer: the first node that plays a sine is
+          # taken, the strengths and gain are written as they change and
+          # not again, a motor slow to take an upload does not hold the
+          # call, and stopping the driver lets the motor go.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          timeout 120 ./dingux_rumble_test
+          timeout 120 ./dingux_rumble_test_nothreads
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
+          timeout 120 ./dingux_rumble_test
+          make clean
+          echo "[pass] dingux_rumble_test"
       - name: Build and run udev_player_lights_test (ASan + UBSan, then TSan)
         shell: bash
         working-directory: samples/input/udev_player_lights

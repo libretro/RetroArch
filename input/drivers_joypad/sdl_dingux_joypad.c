@@ -26,10 +26,11 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
-#if defined(HAVE_LIBSHAKE)
-#include <shake.h>
-#include "../../configuration.h"
-#include "../../config.def.h"
+#if defined(__linux__)
+#define SDL_DINGUX_HAS_RUMBLE 1
+#include <retro_atomic.h>
+#include "../common/linux_ff.h"
+#include "../common/output_writer.h"
 #endif
 
 /* RS-90 devices:
@@ -123,7 +124,7 @@
 #define SDL_DINGUX_SDLK_MENU   SDLK_HOME
 #endif
 
-#if defined(HAVE_LIBSHAKE)
+#if defined(SDL_DINGUX_HAS_RUMBLE)
 /* 5 ms period == 200 Hz
  * > Meissner's Corpuscle registers this
  *   as 'fast' motion */
@@ -134,20 +135,21 @@
  *   this as 'slow' motion */
 #define SDL_DINGUX_RUMBLE_STRONG_PERIOD 142
 
+/* The motor is written from the output writer's thread: the frontend's
+ * notes what it wants, the strong strength over the weak in one word,
+ * and the gain beside it. The motor's state is the writer's. */
 typedef struct
 {
-   int id;
-   uint16_t strength;
-   Shake_Effect effect;
-   bool active;
-} dingux_joypad_rumble_effect_t;
-
-typedef struct
-{
-   Shake_Device *device;
-   dingux_joypad_rumble_effect_t weak;
-   dingux_joypad_rumble_effect_t strong;
+   input_output_writer_t *writer;
+   struct linux_ff_motor motor[2]; /* [RETRO_RUMBLE_STRONG], [RETRO_RUMBLE_WEAK] */
+   int fd;
+   int gain;                       /* written, or -1 */
+   uint32_t want;                  /* the frontend's last asked */
+   bool has_gain;
 } dingux_joypad_rumble_t;
+
+static retro_atomic_int_t dingux_rumble_want;
+static retro_atomic_int_t dingux_rumble_want_gain;
 #endif
 
 typedef struct
@@ -155,7 +157,7 @@ typedef struct
 #if defined(SDL_DINGUX_HAS_ANALOG)
    SDL_Joystick *device;
 #endif
-#if defined(HAVE_LIBSHAKE)
+#if defined(SDL_DINGUX_HAS_RUMBLE)
    dingux_joypad_rumble_t rumble;
 #endif
    unsigned num_axes;
@@ -169,171 +171,117 @@ typedef struct
 
 static dingux_joypad_t dingux_joypad;
 
-#if defined(HAVE_LIBSHAKE)
-static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
+#if defined(SDL_DINGUX_HAS_RUMBLE)
+/* What is wanted of the motor, written if it differs from what was. On
+ * the writer's thread; on the frontend's only when there is no writer.
+ * @last: the motor is let go. */
+static void sdl_dingux_rumble_write(void *data, bool last)
 {
-   unsigned rumble_gain = input_config_get_rumble_gain();
-   bool weak_uploaded   = false;
-   bool strong_uploaded = false;
+   dingux_joypad_rumble_t *rumble = (dingux_joypad_rumble_t*)data;
+   uint32_t want;
+   int gain;
 
-   if (Shake_NumOfDevices() < 1)
-      goto error;
-
-   /* Open shake device */
-   rumble->device = Shake_Open(0);
-
-   if (!rumble->device)
-      goto error;
-
-   /* Check whether shake device has the required
-    * feature set */
-   if (   !Shake_QueryEffectSupport(rumble->device, SHAKE_EFFECT_PERIODIC)
-       || !Shake_QueryWaveformSupport(rumble->device, SHAKE_PERIODIC_SINE))
-      goto error;
-
-   /* In most cases it is recommended to use SHAKE_EFFECT_PERIODIC
-    * instead of SHAKE_EFFECT_RUMBLE. All devices that support
-    * SHAKE_EFFECT_RUMBLE support SHAKE_EFFECT_PERIODIC (square,
-    * triangle, sine) and vice versa */
-
-   /* Initialise weak rumble effect */
-   if (Shake_InitEffect(&rumble->weak.effect, SHAKE_EFFECT_PERIODIC) != SHAKE_OK)
-      goto error;
-
-   rumble->weak.effect.u.periodic.waveform  = SHAKE_PERIODIC_SINE;
-   rumble->weak.effect.u.periodic.period    = SDL_DINGUX_RUMBLE_WEAK_PERIOD;
-   rumble->weak.effect.u.periodic.magnitude = 0;
-   rumble->weak.id                          = Shake_UploadEffect(rumble->device, &rumble->weak.effect);
-
-   if (rumble->weak.id == SHAKE_ERROR)
-      goto error;
-   weak_uploaded = true;
-
-   /* Initialise strong rumble effect */
-   if (Shake_InitEffect(&rumble->strong.effect, SHAKE_EFFECT_PERIODIC) != SHAKE_OK)
-      goto error;
-
-   rumble->strong.effect.u.periodic.waveform  = SHAKE_PERIODIC_SINE;
-   rumble->strong.effect.u.periodic.period    = SDL_DINGUX_RUMBLE_STRONG_PERIOD;
-   rumble->strong.effect.u.periodic.magnitude = 0;
-   rumble->strong.id                          = Shake_UploadEffect(rumble->device, &rumble->strong.effect);
-
-   if (rumble->strong.id == SHAKE_ERROR)
-      goto error;
-   strong_uploaded = true;
-
-   /* Set gain, if supported */
-   if (Shake_QueryGainSupport(rumble->device))
-      if (Shake_SetGain(rumble->device, (int)rumble_gain) != SHAKE_OK)
-         goto error;
-
-   return true;
-
-error:
-   RARCH_WARN("[libShake] Input device does not support rumble effects.\n");
-
-   if (rumble->device)
+   if (last)
    {
-      if (weak_uploaded)
-         Shake_EraseEffect(rumble->device, rumble->weak.id);
-
-      if (strong_uploaded)
-         Shake_EraseEffect(rumble->device, rumble->strong.id);
-
-      Shake_Close(rumble->device);
-      rumble->device = NULL;
+      linux_ff_motor_erase(rumble->fd, &rumble->motor[RETRO_RUMBLE_STRONG]);
+      linux_ff_motor_erase(rumble->fd, &rumble->motor[RETRO_RUMBLE_WEAK]);
+      close(rumble->fd);
+      rumble->fd = -1;
+      return;
    }
 
-   return false;
+   gain = retro_atomic_load_acquire_int(&dingux_rumble_want_gain);
+   if (     rumble->has_gain
+         && gain != rumble->gain
+         && linux_ff_gain(rumble->fd, (unsigned)gain))
+      rumble->gain = gain;
+
+   want = (uint32_t)retro_atomic_load_acquire_int(&dingux_rumble_want);
+   linux_ff_motor_set(rumble->fd, &rumble->motor[RETRO_RUMBLE_STRONG],
+         SDL_DINGUX_RUMBLE_STRONG_PERIOD, (uint16_t)(want >> 16));
+   linux_ff_motor_set(rumble->fd, &rumble->motor[RETRO_RUMBLE_WEAK],
+         SDL_DINGUX_RUMBLE_WEAK_PERIOD, (uint16_t)want);
 }
 
-static bool sdl_dingux_rumble_update(Shake_Device *device,
-      dingux_joypad_rumble_effect_t *effect,
-      uint16_t strength, uint16_t max_strength)
+static void sdl_dingux_rumble_wake(dingux_joypad_rumble_t *rumble)
 {
-   /* If strength is zero, halt rumble effect */
-   if (strength == 0)
-   {
-      if (effect->active)
-      {
-         if (Shake_Stop(device, effect->id) != SHAKE_OK)
-            return false;
-         effect->active = false;
-      }
+   if (rumble->writer)
+      input_output_writer_wake(rumble->writer);
+   else
+      sdl_dingux_rumble_write(rumble, false);
+}
 
-      return true;
-   }
+static void sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
+{
+   rumble->fd = linux_ff_open_sine(2, &rumble->has_gain);
+   if (rumble->fd < 0)
+      return;
+   linux_ff_motor_init(&rumble->motor[RETRO_RUMBLE_STRONG]);
+   linux_ff_motor_init(&rumble->motor[RETRO_RUMBLE_WEAK]);
+   rumble->gain = -1;
+   rumble->want = 0;
+   retro_atomic_store_release_int(&dingux_rumble_want, 0);
+   retro_atomic_store_release_int(&dingux_rumble_want_gain,
+         (int)input_config_get_rumble_gain());
+   rumble->writer = input_output_writer_new(sdl_dingux_rumble_write, rumble);
+   /* the gain, written as the motor is found */
+   sdl_dingux_rumble_wake(rumble);
+}
 
-   /* If strength has changed, update effect */
-   if (strength != effect->strength)
-   {
-      int id;
-
-      effect->effect.id                   = effect->id;
-      effect->effect.u.periodic.magnitude = (max_strength * strength) / 0xFFFF;
-      id                                  = Shake_UploadEffect(device, &effect->effect);
-
-      if (id == SHAKE_ERROR)
-         return false;
-
-      effect->id                          = id;
-      effect->strength                    = strength;
-   }
-
-   /* If effect is currently idle, activate it */
-   if (!effect->active)
-   {
-      if (Shake_Play(device, effect->id) != SHAKE_OK)
-         return false;
-      effect->active = true;
-   }
-
-   return true;
+static void sdl_dingux_rumble_deinit(dingux_joypad_rumble_t *rumble)
+{
+   if (rumble->fd < 0)
+      return;
+   if (rumble->writer)
+      input_output_writer_free(rumble->writer);
+   else
+      sdl_dingux_rumble_write(rumble, true);
+   rumble->writer = NULL;
+   rumble->fd     = -1;
 }
 
 static bool sdl_dingux_joypad_set_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
+   dingux_joypad_rumble_t *rumble = &dingux_joypad.rumble;
+   uint32_t want;
 
-   if ((pad != 0) || !joypad->rumble.device)
+   if (pad != 0 || rumble->fd < 0)
       return false;
 
    switch (effect)
    {
       case RETRO_RUMBLE_STRONG:
-         return sdl_dingux_rumble_update(joypad->rumble.device,
-               &joypad->rumble.strong, strength,
-               SHAKE_RUMBLE_STRONG_MAGNITUDE_MAX);
-      case RETRO_RUMBLE_WEAK:
-         return sdl_dingux_rumble_update(joypad->rumble.device,
-               &joypad->rumble.weak, strength,
-               SHAKE_RUMBLE_WEAK_MAGNITUDE_MAX);
-      default:
+         want = (rumble->want & 0xFFFFu) | ((uint32_t)strength << 16);
          break;
+      case RETRO_RUMBLE_WEAK:
+         want = (rumble->want & 0xFFFF0000u) | strength;
+         break;
+      default:
+         return false;
    }
 
-   return false;
+   /* a core asking the same each frame costs nothing */
+   if (want != rumble->want)
+   {
+      rumble->want = want;
+      retro_atomic_store_release_int(&dingux_rumble_want, (int)want);
+      sdl_dingux_rumble_wake(rumble);
+   }
+   return true;
 }
 
 static bool sdl_dingux_joypad_set_rumble_gain(unsigned pad, unsigned gain)
 {
-   dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
+   dingux_joypad_rumble_t *rumble = &dingux_joypad.rumble;
 
-   if ((pad != 0) || !joypad->rumble.device)
+   if (pad != 0 || rumble->fd < 0 || !rumble->has_gain)
       return false;
-
-   /* Gain is automatically capped by Shake_SetGain(),
-    * but do it explicitly here for clarity */
    if (gain > 100)
       gain = 100;
-
-   /* Set gain */
-   if (Shake_QueryGainSupport(joypad->rumble.device))
-      if (Shake_SetGain(joypad->rumble.device, (int)gain) == SHAKE_OK)
-         return true;
-
-   return false;
+   retro_atomic_store_release_int(&dingux_rumble_want_gain, (int)gain);
+   sdl_dingux_rumble_wake(rumble);
+   return true;
 }
 #endif
 
@@ -361,8 +309,7 @@ static void sdl_dingux_joypad_connect(void)
       joypad->num_axes = SDL_JoystickNumAxes(joypad->device);
 #endif
 
-#if defined(HAVE_LIBSHAKE)
-   /* Configure rumble interface */
+#if defined(SDL_DINGUX_HAS_RUMBLE)
    sdl_dingux_rumble_init(&joypad->rumble);
 #endif
 
@@ -391,23 +338,14 @@ static void sdl_dingux_joypad_disconnect(void)
    if (joypad->connected)
       input_autoconfigure_disconnect(0, sdl_dingux_joypad.ident);
 
-#if defined(HAVE_LIBSHAKE)
-   if (joypad->rumble.device)
-   {
-      if (joypad->rumble.weak.active)
-         Shake_Stop(joypad->rumble.device, joypad->rumble.weak.id);
-
-      if (joypad->rumble.strong.active)
-         Shake_Stop(joypad->rumble.device, joypad->rumble.strong.id);
-
-      Shake_EraseEffect(joypad->rumble.device, joypad->rumble.weak.id);
-      Shake_EraseEffect(joypad->rumble.device, joypad->rumble.strong.id);
-
-      Shake_Close(joypad->rumble.device);
-   }
+#if defined(SDL_DINGUX_HAS_RUMBLE)
+   sdl_dingux_rumble_deinit(&joypad->rumble);
 #endif
 
    memset(joypad, 0, sizeof(dingux_joypad_t));
+#if defined(SDL_DINGUX_HAS_RUMBLE)
+   joypad->rumble.fd = -1;
+#endif
 }
 
 static void sdl_dingux_joypad_destroy(void)
@@ -420,11 +358,6 @@ static void sdl_dingux_joypad_destroy(void)
    /* Flush out all pending events */
    while (SDL_PollEvent(&event));
 
-#if defined(HAVE_LIBSHAKE)
-   /* De-initialise rumble interface */
-   Shake_Quit();
-#endif
-
 #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
    input_driver_set_platform_menu_button(false);
 #endif
@@ -436,6 +369,9 @@ static void *sdl_dingux_joypad_init(void *data)
    uint32_t sdl_subsystem_flags = SDL_WasInit(0);
 
    memset(joypad, 0, sizeof(dingux_joypad_t));
+#if defined(SDL_DINGUX_HAS_RUMBLE)
+   joypad->rumble.fd = -1;
+#endif
 #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
    input_driver_set_platform_menu_button(false);
 #endif
@@ -452,11 +388,6 @@ static void *sdl_dingux_joypad_init(void *data)
       if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0)
          return NULL;
    }
-#endif
-
-#if defined(HAVE_LIBSHAKE)
-   /* Initialise rumble interface */
-   Shake_Init();
 #endif
 
    /* Connect joypad */
@@ -782,7 +713,7 @@ input_device_driver_t sdl_dingux_joypad = {
    sdl_dingux_joypad_get_buttons,
    sdl_dingux_joypad_axis,
    sdl_dingux_joypad_poll,
-#if defined(HAVE_LIBSHAKE)
+#if defined(SDL_DINGUX_HAS_RUMBLE)
    sdl_dingux_joypad_set_rumble,
    sdl_dingux_joypad_set_rumble_gain,
 #else

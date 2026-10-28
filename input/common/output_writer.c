@@ -38,6 +38,9 @@ struct input_output_writer
    void *userdata;
    sthread_t *thread;
    retro_atomic_int_t quit;
+   /* a wake is on its way and the writer has yet to look: another
+    * needs no syscall */
+   retro_atomic_int_t pending;
 #ifdef _WIN32
    HANDLE wake;
 #else
@@ -118,6 +121,8 @@ static void input_output_writer_thread(void *data)
             quit = true;
       }
 #endif
+      /* before the driver looks, so a wake from here on is not lost */
+      retro_atomic_exchange_int(&writer->pending, 0);
       if (retro_atomic_load_acquire_int(&writer->quit))
          quit = true;
       writer->cb(writer->userdata, quit);
@@ -143,6 +148,7 @@ input_output_writer_t *input_output_writer_new_timed(
    writer->cb       = cb;
    writer->userdata = userdata;
    retro_atomic_store_release_int(&writer->quit, 0);
+   retro_atomic_store_release_int(&writer->pending, 0);
 
 #ifdef _WIN32
    if (!(writer->wake = CreateEventA(NULL, FALSE, FALSE, NULL)))
@@ -175,10 +181,8 @@ input_output_writer_t *input_output_writer_new_timed(
    return writer;
 }
 
-void input_output_writer_wake(input_output_writer_t *writer)
+static void input_output_writer_signal(input_output_writer_t *writer)
 {
-   if (!writer)
-      return;
 #ifdef _WIN32
    SetEvent(writer->wake);
 #else
@@ -193,12 +197,18 @@ void input_output_writer_wake(input_output_writer_t *writer)
 #endif
 }
 
+void input_output_writer_wake(input_output_writer_t *writer)
+{
+   if (writer && !retro_atomic_exchange_int(&writer->pending, 1))
+      input_output_writer_signal(writer);
+}
+
 void input_output_writer_free(input_output_writer_t *writer)
 {
    if (!writer)
       return;
    retro_atomic_store_release_int(&writer->quit, 1);
-   input_output_writer_wake(writer);
+   input_output_writer_signal(writer);
    sthread_join(writer->thread);
 #ifdef _WIN32
    CloseHandle(writer->wake);

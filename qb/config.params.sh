@@ -213,7 +213,6 @@ HAVE_WGI=auto              # Windows.Gaming.Input for Xbox pads on the HID drive
 HAVE_LIBUSB=auto           # Libusb HID support
 C89_LIBUSB=no
 HAVE_BLISSBOX=auto         # Blissbox support
-HAVE_LIBSHAKE=no           # libShake haptic feedback support
 HAVE_RPILED=auto           # RPI led support
 HAVE_TEST_DRIVERS=yes      # Test input driver
 

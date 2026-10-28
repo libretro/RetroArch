@@ -32,7 +32,8 @@ RETRO_BEGIN_DECLS
  * Nothing is queued here and nothing is passed through: a wake says
  * only that there is something to look at. Wakes that arrive while the
  * thread is writing fold into one, so a controller slow to answer is
- * given the latest of what is wanted and not each value in turn.
+ * given the latest of what is wanted and not each value in turn; a
+ * wake while one is still on its way makes no syscall.
  *
  * There is no lock. The thread is woken through an event (Windows) or
  * a pipe. */

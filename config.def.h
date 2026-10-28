@@ -2172,7 +2172,7 @@
 
 /* Defines the strength of rumble effects
  * on OpenDingux devices */
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#if defined(DINGUX) && defined(__linux__)
 #define DEFAULT_RUMBLE_GAIN 50
 #else
 #define DEFAULT_RUMBLE_GAIN 100

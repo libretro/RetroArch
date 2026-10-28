@@ -1037,7 +1037,8 @@ INPUT
 #endif
 
 /* the thread the joypad drivers write to their controllers from */
-#if defined(HAVE_XINPUT) || defined(HAVE_WINRAWINPUT) || defined(HAVE_UDEV) || defined(ANDROID)
+#if defined(HAVE_XINPUT) || defined(HAVE_WINRAWINPUT) || defined(HAVE_UDEV) || defined(ANDROID) \
+   || (defined(DINGUX) && defined(HAVE_SDL_DINGUX))
 #include "../input/common/output_writer.c"
 #endif
 
@@ -1056,15 +1057,6 @@ INPUT
 #include "../input/drivers_joypad/udev_joypad.c"
 #endif
 
-#if defined(HAVE_LIBSHAKE)
-#include "../deps/libShake/src/common/error.c"
-#include "../deps/libShake/src/common/helpers.c"
-#include "../deps/libShake/src/common/presets.c"
-#if TARGET_OS_OSX
-#include "../deps/libShake/src/osx/shake.c"
-#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
-#include "../deps/libShake/src/linux/shake.c"
-#endif
 #endif
 
 #ifdef HAVE_TEST_DRIVERS

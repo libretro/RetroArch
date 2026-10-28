@@ -83,17 +83,19 @@ int main(void)
    xinput_rumble_start();
    CHECK(xinput_rumble_writer != NULL, "the rumble writer did not start");
 
-   /* a controller slow to answer: the call returns at once, and the
-    * strength still arrives */
-   slow_ms = 60;
+   /* a controller slow to answer: the call returns before it has,
+    * and the strength still arrives. Said by the write not being done
+    * yet as the call returns, not by a time, which a loaded machine
+    * can overrun. */
+   slow_ms = 300;
    t0      = now_ms();
    CHECK(xinput_joypad_rumble(1, RETRO_RUMBLE_STRONG, 0x8000), "rumble was refused");
    took    = now_ms() - t0;
-   CHECK(took < 20.0, "the call waited for a controller that takes 60 ms to answer");
+   CHECK(N(calls) == 0, "the call waited for a controller that takes 300 ms to answer");
    settle(1);
    CHECK(N(calls) == 1 && N(last_user) == 1 && N(last_left) == 0x8000 && N(last_right) == 0,
          "the strength did not arrive");
-   printf("   ok   a controller that takes 60 ms to answer: the call returns in %.2f ms and the strength still arrives\n", took);
+   printf("   ok   a controller that takes 300 ms to answer: the call returns in %.2f ms and the strength still arrives\n", took);
 
    /* many strengths while the controller is busy: it is given the
     * latest, not each in turn */
@@ -102,11 +104,13 @@ int main(void)
    for (i = 1; i <= 20; i++)
       xinput_joypad_rumble(1, RETRO_RUMBLE_STRONG, (uint16_t)(0x1000 + i));
    took   = now_ms() - t0;
+   /* a call that waited would have seen the first write done */
+   CHECK(N(calls) == before, "twenty calls waited for the controller");
    settle(before + 1);
-   Sleep(200);
+   for (i = 0; i < 400 && N(last_left) != 0x1000 + 20; i++)
+      Sleep(5);
    CHECK(N(last_left) == 0x1000 + 20, "the last strength written is not the last one asked for");
    CHECK(N(calls) - before < 20, "every strength was written one by one");
-   CHECK(took < 20.0, "twenty calls waited for the controller");
    printf("   ok   twenty strengths in %.2f ms: %ld written, the last one last\n",
          took, (long)(N(calls) - before));
    slow_ms = 0;

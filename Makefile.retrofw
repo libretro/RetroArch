@@ -114,7 +114,6 @@ HAVE_PATCH = 1
 HAVE_XDELTA = 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
 HAVE_CHEATS = 1
 HAVE_CHEEVOS = 0
-HAVE_LIBSHAKE = 0
 HAVE_CORE_INFO_CACHE = 1
 HAVE_OSS =1
 
