@@ -40,12 +40,12 @@
 #include "../../config.h"
 #endif
 
-/* Builds without config.h keep GameMode; configure builds follow
+/* Builds without config.h keep Game Mode; configure builds follow
  * --enable/--disable-gamemode. */
-#if defined(__linux__) && !defined(ANDROID) && __STDC_VERSION__ >= 199901L \
+#include "gamemode_linux.h"
+#if defined(RARCH_HAVE_GAMEMODE_LINUX) \
       && (!defined(HAVE_CONFIG_H) || defined(HAVE_GAMEMODE))
-#include "../../deps/feralgamemode/gamemode_client.h"
-#define FERAL_GAMEMODE
+#define UNIX_GAMEMODE
 #endif
 
 #ifdef ANDROID
@@ -3790,70 +3790,12 @@ static void android_app_destroy(struct android_app *android_app)
 }
 #endif
 
+#ifdef UNIX_GAMEMODE
 static bool frontend_unix_set_gamemode(bool on)
 {
-#ifdef FERAL_GAMEMODE
-   /* Once gamemode_query_status() reports failure (typically because
-    * libgamemode.so is not installed), there is no point repeatedly
-    * re-probing on every config load or menu toggle - the result will
-    * not change for the lifetime of the process, and each probe emits
-    * a warning. Latch the unavailable state and short-circuit. */
-   static bool gamemode_unavailable = false;
-   /* Only leave GameMode if this process entered it, so shutdown
-    * with the setting off never loads libgamemode. */
-   static bool gamemode_entered     = false;
-   int gamemode_status;
-   bool gamemode_active;
-
-   if (gamemode_unavailable)
-      return false;
-   if (!on && !gamemode_entered)
-      return true;
-
-   gamemode_status  = gamemode_query_status();
-   gamemode_active  = (gamemode_status == 2);
-
-   if (gamemode_status < 0)
-   {
-      if (on)
-         RARCH_WARN("[GameMode] GameMode cannot be enabled on this system (\"%s.\") "
-               "https://github.com/FeralInteractive/gamemode needs to be installed.\n",
-               gamemode_error_string());
-
-      gamemode_unavailable = true;
-      return false;
-   }
-
-   if (gamemode_active == on)
-   {
-      gamemode_entered = on;
-      return true;
-   }
-
-   if (on)
-   {
-      if (gamemode_request_start() != 0)
-      {
-         RARCH_WARN("[GameMode] Failed to enter GameMode: %s.\n", gamemode_error_string());
-         return false;
-      }
-      gamemode_entered = true;
-   }
-   else
-   {
-      if (gamemode_request_end() != 0)
-      {
-         RARCH_WARN("[GameMode] Failed to exit GameMode: %s.\n", gamemode_error_string());
-         return false;
-      }
-      gamemode_entered = false;
-   }
-
-   return true;
-#else
-   return false;
-#endif
+   return gamemode_linux_set(on, false);
 }
+#endif
 
 static void frontend_unix_deinit(void *data)
 {
@@ -3873,7 +3815,9 @@ static void frontend_unix_deinit(void *data)
       frontend_unix_set_screen_brightness(DEFAULT_SCREEN_BRIGHTNESS);
 #endif
 
-   frontend_unix_set_gamemode(false);
+#ifdef UNIX_GAMEMODE
+   gamemode_linux_set(false, true);
+#endif
 }
 
 static void frontend_unix_init(void *data)
@@ -4968,7 +4912,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    is_narrator_running_android,                         /* is_narrator_running */
    accessibility_speak_android,                         /* accessibility_speak */
 #endif
-#ifdef FERAL_GAMEMODE
+#ifdef UNIX_GAMEMODE
    frontend_unix_set_gamemode,
 #else
    NULL,

@@ -235,8 +235,7 @@ HAVE_MPV=no                # MPV support
 # System integration
 HAVE_DBUS=no               # dbus support
 HAVE_SYSTEMD=auto          # Systemd support
-HAVE_GAMEMODE=yes          # Feral GameMode support (Linux)
-C89_GAMEMODE=no
+HAVE_GAMEMODE=yes          # Game Mode support (Linux)
 
 # Image, audio and video codecs
 HAVE_FREETYPE=auto         # FreeType support

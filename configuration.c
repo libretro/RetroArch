@@ -7966,13 +7966,11 @@ static bool config_load_file(const char *path, settings_t *settings)
    if (!config_get_entry(conf, "user_language"))
       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
 
-   /* If GameMode is enabled in the config but libgamemode is not
-    * available, warn once. Do NOT clear the setting: that would
-    * silently overwrite the user's preference in retroarch.cfg, so
-    * a transient failure (sandbox path issue, library not yet
-    * installed, etc.) would force them to re-enable it manually on
-    * every subsequent launch. The probe is latched inside the
-    * frontend driver, so it will not be retried this session. */
+   /* Enter Game Mode when the config asks for it. Do NOT clear the
+    * setting when part of it is unavailable (no power profile
+    * service, say): that would silently overwrite the user's
+    * preference in retroarch.cfg. Entering again on a later config
+    * load is a no-op in the frontend driver. */
    if (     settings->bools.gamemode_enable
          && frontend_driver_has_gamemode())
       frontend_driver_set_gamemode(true);

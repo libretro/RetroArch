@@ -1,89 +1,101 @@
 #!/bin/sh
-# GameMode lifecycle check.
+# Game Mode check (frontend/drivers/gamemode_linux.c).
 #
-# Runs the built ./retroarch headless (null drivers, a few frames of
-# menu) against a stub libgamemode.so.0 that logs every call, and checks:
+# Builds gamemode_test against the real gamemode_linux.c and libdbus
+# loaded at run time, starts a private dbus-daemon and points the
+# system bus at it, then runs four lanes:
 #
-#   disabled  gamemode_enable = false: libgamemode is never called,
-#             neither at startup nor at shutdown.
-#   enabled   gamemode_enable = true: GameMode is entered at startup and
-#             left at shutdown.  This lane also proves the stub is the
-#             library actually loaded, so a clean 'disabled' run means
-#             something.
+#   hold     fake_ppd owns org.freedesktop.UPower.PowerProfiles: the
+#            performance profile is held on enter and released on leave
+#   legacy   fake_ppd owns only net.hadess.PowerProfiles (ppd < 0.20)
+#   refuse   the daemon answers HoldProfile with an error
+#   none     no daemon at all: nothing blocks, I/O priority still applies
 #
-# Requires a completed build in the repo root (./configure && make),
-# with GameMode support compiled in.  From the repo root:
+# Every lane also checks the I/O priority on all threads. Needs Linux,
+# libdbus-1.so.3 and dbus-daemon; skips without them.
 #
 #   samples/frontend/gamemode/run.sh
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
-bin="$root/retroarch"
+lrc="$root/libretro-common"
 cc=${CC:-cc}
 
-# A job that runs every sample without building the frontend (the
-# unclaimed-samples workflow) has nothing to check this against.
-if [ ! -x "$bin" ]; then
-   echo "skip: no built retroarch in $root (./configure && make first)"
-   exit 0
+if [ "$(uname -s)" != Linux ]; then
+   echo "skip: Linux only"; exit 0
+fi
+if ! command -v dbus-daemon >/dev/null 2>&1; then
+   echo "skip: no dbus-daemon"; exit 0
 fi
 
 work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
+daemon_pid=
+ppd_pid=
+cleanup()
+{
+   [ -n "$ppd_pid" ] && kill "$ppd_pid" 2>/dev/null || :
+   [ -n "$daemon_pid" ] && kill "$daemon_pid" 2>/dev/null || :
+   rm -rf "$work"
+}
+trap cleanup EXIT
 
-"$cc" -std=c89 -pedantic -Wall -Werror -fPIC -shared \
-   -Wl,-soname,libgamemode.so.0 \
-   -o "$work/libgamemode.so.0" "$here/gamemode_stub.c"
+if ! "$cc" -std=gnu99 -Wall -o "$work/fake_ppd" "$here/fake_ppd.c" \
+      -I"$root" -I"$lrc/include" -DHAVE_DYLIB -l:libdbus-1.so.3 \
+      2> "$work/cc.log"; then
+   echo "skip: cannot link libdbus-1.so.3"; cat "$work/cc.log"; exit 0
+fi
+
+# gamemode_linux.c builds as C89, as it does in RetroArch.
+c89="-std=c89 -pedantic -Werror=declaration-after-statement -Wno-long-long"
+defs="-DHAVE_THREADS -DHAVE_DYLIB -I$root -I$lrc/include"
+for src in "$root/frontend/drivers/gamemode_linux.c" \
+           "$root/gfx/common/dbus_runtime.c" \
+           "$lrc/rthreads/rthreads.c" \
+           "$lrc/dynamic/dylib.c"; do
+   "$cc" $c89 -Wall -Werror -c $defs -o "$work/$(basename "$src" .c).o" "$src"
+done
+"$cc" -std=gnu99 -Wall -Werror -c $defs -o "$work/gamemode_test.o" "$here/gamemode_test.c"
+"$cc" -o "$work/gamemode_test" "$work"/*.o -lpthread -ldl
+
+dbus-daemon --session --nofork --print-address=3 3> "$work/addr" &
+daemon_pid=$!
+i=0
+while [ ! -s "$work/addr" ] && [ $i -lt 100 ]; do sleep 0.05; i=$((i + 1)); done
+DBUS_SYSTEM_BUS_ADDRESS=$(head -n 1 "$work/addr")
+export DBUS_SYSTEM_BUS_ADDRESS
 
 fail=0
 
-run_lane()
+lane()
 {
-   lane=$1
-   enable=$2
-   log="$work/$lane.log"
-   cfg="$work/$lane.cfg"
-
+   name=$1 busname=$2 ppdmode=$3 testmode=$4
+   log="$work/$name.log"
    : > "$log"
-   cat > "$cfg" <<EOF
-video_driver = "null"
-audio_driver = "null"
-input_driver = "null"
-input_joypad_driver = "null"
-menu_driver = "rgui"
-config_save_on_exit = "false"
-gamemode_enable = "$enable"
-EOF
-
-   HOME="$work" XDG_CONFIG_HOME="$work" \
-   GAMEMODE_STUB_LOG="$log" LD_LIBRARY_PATH="$work" \
-      timeout 60 "$bin" --config="$cfg" --menu --max-frames=5 \
-      > "$work/$lane.out" 2>&1 || {
-         echo "FAIL $lane: retroarch exited with $?" >&2
-         cat "$work/$lane.out" >&2
-         fail=1
-         return
-      }
+   ppd_pid=
+   if [ -n "$busname" ]; then
+      "$work/fake_ppd" "$busname" "$log" $ppdmode &
+      ppd_pid=$!
+      i=0
+      while ! grep -qx ready "$log" && [ $i -lt 100 ]; do sleep 0.05; i=$((i + 1)); done
+   fi
+   if timeout 60 "$work/gamemode_test" "$log" "$testmode" > "$work/$name.out" 2>&1; then
+      echo "PASS $name"
+   else
+      echo "FAIL $name" >&2
+      sed 's/^/   /' "$work/$name.out" >&2
+      fail=1
+   fi
+   if [ -n "$ppd_pid" ]; then
+      kill "$ppd_pid" 2>/dev/null || :
+      wait "$ppd_pid" 2>/dev/null || :
+      ppd_pid=
+   fi
 }
 
-run_lane disabled false
-if [ -s "$work/disabled.log" ]; then
-   echo "FAIL disabled: libgamemode called with gamemode_enable = false:" >&2
-   sed 's/^/   /' "$work/disabled.log" >&2
-   fail=1
-else
-   echo "PASS disabled"
-fi
-
-run_lane enabled true
-if grep -qx request_start "$work/enabled.log" \
-      && grep -qx request_end "$work/enabled.log"; then
-   echo "PASS enabled"
-else
-   echo "FAIL enabled: expected request_start and request_end, got:" >&2
-   sed 's/^/   /' "$work/enabled.log" >&2
-   fail=1
-fi
+lane hold   org.freedesktop.UPower.PowerProfiles ""     hold
+lane legacy net.hadess.PowerProfiles             ""     hold
+lane refuse org.freedesktop.UPower.PowerProfiles refuse refuse
+lane none   ""                                   ""     none
 
 exit $fail

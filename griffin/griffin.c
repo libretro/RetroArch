@@ -1595,6 +1595,7 @@ FRONTEND
 #include "../frontend/drivers/platform_qnx.c"
 #elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
 #include "../frontend/drivers/platform_unix.c"
+#include "../frontend/drivers/gamemode_linux.c"
 #if defined(ANDROID)
 #include "../libretro-common/jni/rjni.c"
 #endif

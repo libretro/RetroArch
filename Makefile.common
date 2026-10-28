@@ -190,7 +190,8 @@ ifneq ($(findstring Linux,$(OS)),)
 endif
 
 ifeq ($(HAVE_UNIX), 1)
-   OBJ += frontend/drivers/platform_unix.o
+   OBJ += frontend/drivers/platform_unix.o \
+          frontend/drivers/gamemode_linux.o
 
 	ifeq ($(UNIX_CWD_ENV), 1)
 		DEF_FLAGS += -DRARCH_UNIX_CWD_ENV
