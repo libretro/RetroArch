@@ -139,6 +139,124 @@ static void rd_adler_blocks(uint32_t *pa, uint32_t *pb,
    *pa = a + rd_adler_hsum(vs1);
 }
 
+/* Wider blocks, chosen at runtime: AVX2's 32 octets and AVX-512's 64, the
+ * weighted sum by pmaddubsw - each pair of octets times weights of 64 at
+ * most is under 32767 - and pmaddwd. The sums that make b only part it
+ * up differently, so NMAX holds as it is. AVX-512 on x86-64 only, as the
+ * other AVX-512 paths are; clang for PlayStation and clang-cl declare
+ * the intrinsics only where the whole build has them. */
+#  if defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
+#    if defined(__AVX2__)
+#      define RD_ADLER_AVX2 1
+#    endif
+#    if defined(__AVX512BW__) && (defined(__x86_64__) || defined(_M_X64))
+#      define RD_ADLER_AVX512 1
+#    endif
+#    define RD_TARGET(t)
+#  elif defined(_MSC_VER)
+#    if _MSC_VER >= 1700
+#      define RD_ADLER_AVX2 1
+#    endif
+#    if _MSC_VER >= 1911 && defined(_M_X64)
+#      define RD_ADLER_AVX512 1
+#    endif
+#    define RD_TARGET(t)
+#  elif (defined(__clang__) && __clang_major__ >= 4) \
+     || (!defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 5)
+#    define RD_ADLER_AVX2 1
+#    if defined(__x86_64__)
+#      define RD_ADLER_AVX512 1
+#    endif
+#    define RD_TARGET(t) __attribute__((target(t)))
+#  endif
+
+#  if defined(RD_ADLER_AVX2)
+#  include <immintrin.h>
+#  include <features/features_cpu.h>
+
+RD_TARGET("avx2")
+static void rd_adler_blocks32(uint32_t *pa, uint32_t *pb,
+      const uint8_t *buf, size_t blocks)
+{
+   const __m256i zero = _mm256_setzero_si256();
+   const __m256i w    = _mm256_setr_epi8(32, 31, 30, 29, 28, 27, 26, 25,
+         24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9,
+         8, 7, 6, 5, 4, 3, 2, 1);
+   const __m256i ones = _mm256_set1_epi16(1);
+   __m256i vs1        = zero;
+   __m256i vps        = zero;
+   __m256i vs2        = zero;
+   uint32_t a         = *pa;
+   uint32_t b         = *pb;
+   size_t n           = blocks;
+
+   while (n--)
+   {
+      __m256i v = _mm256_loadu_si256((const __m256i*)buf);
+      vps = _mm256_add_epi32(vps, vs1);
+      vs1 = _mm256_add_epi32(vs1, _mm256_sad_epu8(v, zero));
+      vs2 = _mm256_add_epi32(vs2,
+            _mm256_madd_epi16(_mm256_maddubs_epi16(v, w), ones));
+      buf += 32;
+   }
+
+   *pb = b + (uint32_t)(blocks << 5) * a
+           + (rd_adler_hsum(_mm_add_epi32(_mm256_castsi256_si128(vps),
+                 _mm256_extracti128_si256(vps, 1))) << 5)
+           +  rd_adler_hsum(_mm_add_epi32(_mm256_castsi256_si128(vs2),
+                 _mm256_extracti128_si256(vs2, 1)));
+   *pa = a + rd_adler_hsum(_mm_add_epi32(_mm256_castsi256_si128(vs1),
+                 _mm256_extracti128_si256(vs1, 1)));
+}
+
+#  if defined(RD_ADLER_AVX512)
+RD_TARGET("avx512f,avx512bw")
+static void rd_adler_blocks64(uint32_t *pa, uint32_t *pb,
+      const uint8_t *buf, size_t blocks)
+{
+   const __m512i zero = _mm512_setzero_si512();
+   const __m512i w    = _mm512_set_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+         12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+         28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+         44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+         60, 61, 62, 63, 64);
+   const __m512i ones = _mm512_set1_epi16(1);
+   __m512i vs1        = zero;
+   __m512i vps        = zero;
+   __m512i vs2        = zero;
+   uint32_t a         = *pa;
+   uint32_t b         = *pb;
+   size_t n           = blocks;
+
+   while (n--)
+   {
+      __m512i v = _mm512_loadu_si512((const void*)buf);
+      vps = _mm512_add_epi32(vps, vs1);
+      vs1 = _mm512_add_epi32(vs1, _mm512_sad_epu8(v, zero));
+      vs2 = _mm512_add_epi32(vs2,
+            _mm512_madd_epi16(_mm512_maddubs_epi16(v, w), ones));
+      buf += 64;
+   }
+
+   *pb = b + (uint32_t)(blocks << 6) * a
+           + ((uint32_t)_mm512_reduce_add_epi32(vps) << 6)
+           +  (uint32_t)_mm512_reduce_add_epi32(vs2);
+   *pa = a + (uint32_t)_mm512_reduce_add_epi32(vs1);
+}
+#  endif
+
+/* The widest blocks this CPU and its OS take: 64, 32 or 16 */
+static unsigned rd_adler_widest(void)
+{
+   uint64_t simd = cpu_features_get();
+#    if defined(RD_ADLER_AVX512)
+   if (simd & RETRO_SIMD_AVX512)
+      return 64;
+#    endif
+   return (simd & RETRO_SIMD_AVX2) ? 32 : 16;
+}
+#  endif
+
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON)
 #include <arm_neon.h>
 #define RD_ADLER_SIMD 1
@@ -221,12 +339,29 @@ static void rd_adler_blocks(uint32_t *pa, uint32_t *pb,
 #define RD_ADLER_BLOCK 16
 #endif
 
-/* Fold up to RD_ADLER_NMAX bytes into (a, b) with no reduction inside. */
+/* Fold up to RD_ADLER_NMAX bytes into (a, b) with no reduction inside:
+ * the widest blocks first, then 16 at a time, then a byte at a time. */
 static void rd_adler_run(uint32_t *pa, uint32_t *pb,
-      const uint8_t *buf, size_t n)
+      const uint8_t *buf, size_t n, unsigned wide)
 {
    uint32_t a = *pa;
    uint32_t b = *pb;
+#if defined(RD_ADLER_AVX2)
+   if (wide > 16 && n >= wide)
+   {
+      size_t blocks = n / wide;
+#  if defined(RD_ADLER_AVX512)
+      if (wide == 64)
+         rd_adler_blocks64(&a, &b, buf, blocks);
+      else
+#  endif
+         rd_adler_blocks32(&a, &b, buf, blocks);
+      buf += blocks * wide;
+      n   -= blocks * wide;
+   }
+#else
+   (void)wide;
+#endif
    if (n >= RD_ADLER_BLOCK)
    {
       size_t blocks = n / RD_ADLER_BLOCK;
@@ -244,8 +379,8 @@ static void rd_adler_run(uint32_t *pa, uint32_t *pb,
    *pb = b;
 }
 
-static uint32_t rd_adler32_update(uint32_t adler,
-      const uint8_t *buf, size_t len)
+static uint32_t rd_adler32_on(uint32_t adler, const uint8_t *buf,
+      size_t len, unsigned wide)
 {
    uint32_t a = adler & 0xffff;
    uint32_t b = (adler >> 16) & 0xffff;
@@ -253,12 +388,23 @@ static uint32_t rd_adler32_update(uint32_t adler,
    {
       size_t n = len > RD_ADLER_NMAX ? RD_ADLER_NMAX : len;
       len -= n;
-      rd_adler_run(&a, &b, buf, n);
+      rd_adler_run(&a, &b, buf, n, wide);
       buf += n;
       a %= RD_ADLER_MODULUS;
       b %= RD_ADLER_MODULUS;
    }
    return (b << 16) | a;
+}
+
+static uint32_t rd_adler32_update(uint32_t adler,
+      const uint8_t *buf, size_t len)
+{
+#if defined(RD_ADLER_AVX2)
+   /* below two of the wide blocks the 16-octet ones do as well */
+   if (len >= 128)
+      return rd_adler32_on(adler, buf, len, rd_adler_widest());
+#endif
+   return rd_adler32_on(adler, buf, len, 16);
 }
 
 /* Test entry point for tools/encodings/adler32_test.c: the kernel above is
@@ -269,6 +415,23 @@ static uint32_t rd_adler32_update(uint32_t adler,
 uint32_t rd_probe_adler32(uint32_t adler, const uint8_t *buf, size_t len)
 {
    return rd_adler32_update(adler, buf, len);
+}
+
+/* The widest blocks this CPU takes, and the same as rd_probe_adler32()
+ * through blocks of @wide octets, 16, 32 or 64, no wider than that */
+unsigned rd_probe_adler32_widest(void)
+{
+#if defined(RD_ADLER_AVX2)
+   return rd_adler_widest();
+#else
+   return 16;
+#endif
+}
+
+uint32_t rd_probe_adler32_on(uint32_t adler, const uint8_t *buf, size_t len,
+      unsigned wide)
+{
+   return rd_adler32_on(adler, buf, len, wide);
 }
 
 /* ===================== inflate (RFC 1951 / RFC 1950) ===================== */
