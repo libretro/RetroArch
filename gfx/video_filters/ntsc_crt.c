@@ -18,6 +18,8 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <retro_atomic.h>
+
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation ntsc_crt_get_implementation
 #define softfilter_thread_data        ntsc_crt_softfilter_thread_data
@@ -583,7 +585,6 @@ crt_init(struct CRT *v, int w, int h, int f, unsigned char *out)
 #define CRT_LCG_A 214019u
 #define CRT_LCG_C 140327895u
 
-#ifdef CRT_HAVE_LANES
 static void crt_lcg_coef(unsigned k, unsigned *A, unsigned *C)
 {
     unsigned ra = 1, rc = 0, ba = CRT_LCG_A, bc = CRT_LCG_C;
@@ -606,21 +607,53 @@ static unsigned crt_lcg_jump(unsigned rn, unsigned k)
     crt_lcg_coef(k, &A, &C);
     return A * rn + C;
 }
-#endif
 
 #ifdef CRT_HAVE_LANES
 static size_t crt_noise_lanes(int lanes, const signed char *an,
         signed char *out, size_t n, unsigned rn, int nn);
 #endif
 
-/* The first half of demodulation, in line order: noise, vertical sync,
+/* Noise for samples [first, last) of the signal, into v->inp: sample i
+ * gets the generator's (i + 1)th number from v->rn, so ranges can be
+ * done in any order, or at once. v->rn moves on in demodulate_begin. */
+static void
+crt_noise_range(struct CRT *v, size_t first, size_t last, int noise,
+        int lanes)
+{
+    size_t i  = first;
+    unsigned rn = crt_lcg_jump((unsigned)v->rn, (unsigned)first);
+#ifdef CRT_HAVE_LANES
+    /* Most of it in lanes, the rest below from the state they reached */
+    if (lanes) {
+        size_t done = crt_noise_lanes(lanes, v->analog + first,
+                v->inp + first, last - first, rn, noise);
+        rn  = crt_lcg_jump(rn, (unsigned)done);
+        i  += done;
+    }
+#else
+    (void)lanes;
+#endif
+    for (; i < last; i++) {
+        int s;
+        /* The LCG wraps by design; in unsigned it does so defined. */
+        rn = CRT_LCG_A * rn + CRT_LCG_C;
+        /* signal + noise */
+        s = v->analog[i] + ((((int)((rn >> 16) & 0xff)) - 0x7f) * noise >> 8);
+        if (s >  127) { s =  127; }
+        if (s < -127) { s = -127; }
+        v->inp[i] = (signed char)s;
+    }
+}
+
+/* The first half of demodulation, in line order, once the noise is in
+ * (crt_noise_range over the whole signal): vertical sync,
  * then for each active line the horizontal sync search and colour carrier
  * accumulation - which carry from one line to the next - and the
  * parameters the rest of the line's decoding needs, into v->lines. */
 static void
-crt_demodulate_begin(struct CRT *v, int noise, int lanes)
+crt_demodulate_begin(struct CRT *v, int noise)
 {
-    int i, j, line, rn;
+    int i, j, line;
     signed char *sig;
     int s = 0;
     int field, ratio;
@@ -634,6 +667,9 @@ crt_demodulate_begin(struct CRT *v, int noise, int lanes)
     int max_e; /* approx maximum energy in a scan line */
 #endif
 
+#if !CRT_DO_BLOOM
+    (void)noise;
+#endif
     bpp = crt_bpp4fmt(v->out_format);
     v->frame_ok = (bpp != 0);
     if (bpp == 0) {
@@ -647,7 +683,6 @@ crt_demodulate_begin(struct CRT *v, int noise, int lanes)
     huesn >>= 11; /* make 4-bit */
     huecs >>= 11;
 
-    rn = v->rn;
 #if !CRT_DO_VSYNC
     /* determine field before we add noise,
      * otherwise it's not reliably recoverable
@@ -668,29 +703,8 @@ found_field:
     field = (j > (CRT_HRES / 2));
     v->vsync = -3;
 #endif
-    i = 0;
-#ifdef CRT_HAVE_LANES
-    /* Most of the signal in lanes, and the rest below from the state
-     * the lanes reached, so the numbers and v->rn are the same. */
-    if (lanes) {
-        i  = (int)crt_noise_lanes(lanes, v->analog, v->inp, CRT_INPUT_SIZE,
-                (unsigned)rn, noise);
-        rn = (int)crt_lcg_jump((unsigned)rn, (unsigned)i);
-    }
-#else
-    (void)lanes;
-#endif
-    for (; i < CRT_INPUT_SIZE; i++) {
-        int nn = noise;
-        /* The LCG wraps by design; in unsigned it does so defined. */
-        rn = (int)(CRT_LCG_A * (unsigned)rn + CRT_LCG_C);
-        /* signal + noise */
-        s = v->analog[i] + (((((rn >> 16) & 0xff) - 0x7f) * nn) >> 8);
-        if (s >  127) { s =  127; }
-        if (s < -127) { s = -127; }
-        v->inp[i] = s;
-    }
-    v->rn = rn;
+    /* The generator's state after the whole signal's noise */
+    v->rn = (int)crt_lcg_jump((unsigned)v->rn, CRT_INPUT_SIZE);
 
 #if CRT_DO_VSYNC
     /* Look for vertical sync.
@@ -901,6 +915,21 @@ struct crt_lanes {
     int n;            /* lanes per batch: 0 (scalar only), 8 or 16 */
     signed char *sig; /* [AV_LEN + 1][n] */
     int *y, *i, *q;   /* [AV_LEN + 1][n] each */
+};
+
+/* One frame's encoding parameters, from crt_modulate_begin, for
+ * crt_modulate_lines: the active area, levels, filter coefficients,
+ * carrier phases and each sample's source column (col) and its byte
+ * offset in an RGB row (col3). */
+struct crt_mod_frame {
+    int destw, desth;
+    int xo, yo;
+    int white, black;
+    int cY, cI, cQ;
+    int field_offset;
+    int modI[4], modQ[4];
+    int col[AV_LEN];
+    int col3[AV_LEN];
 };
 
 /* The encoder's lanes: one source row per lane, converted to Y, I and Q
@@ -1741,9 +1770,14 @@ iirf(struct IIRLP *f, int s)
 #endif
 }
 
-static void
-crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s,
-        const struct crt_mod_lanes *ml)
+/* The part of encoding done once a frame: the sync and burst of every
+ * line, the decoder's starting carrier, and the frame's parameters into
+ * 'mf' (the active area always). Returns 1 when the video lines are
+ * left to crt_modulate_lines, 0 when they are done (or there is
+ * nothing to do). */
+static int
+crt_modulate_begin(struct CRT *v, struct NTSC_SETTINGS *s,
+        struct crt_mod_frame *mf)
 {
     int x, y, xo, yo;
     int destw = AV_LEN;
@@ -1806,7 +1840,8 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s,
 
     bpp = crt_bpp4fmt(s->format);
     if (bpp == 0) {
-        return; /* just to be safe */
+        mf->desth = 0;
+        return 0; /* just to be safe */
     }
     xo = AV_BEG  + s->xoffset + (AV_LEN    - destw) / 2;
     yo = CRT_TOP + s->yoffset + (CRT_LINES - desth) / 2;
@@ -1868,71 +1903,38 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s,
         }
     }
 
-    {
-        /* Loop invariants, held where a store to the signal (signed
-         * char, which may alias anything) cannot make the compiler fetch
-         * them again: the level scale and black level, each column's
-         * source offset (a divide per sample before), and the filters'
-         * coefficients. Their history is reset at every line, so it
-         * lives in locals for the line. RGB input, the format the
-         * softfilter wrapper feeds this, gets its own loop. */
-        const int white   = WHITE_LEVEL * v->white_point / 100;
-        const int black   = BLACK_LEVEL + v->black_point;
-        const int cY      = iirY.c, cI = iirI.c, cQ = iirQ.c;
-        int modI[4], modQ[4];
-        int col[AV_LEN];
+    /* The colour carrier the decoder starts from, from the burst */
+    for (n = 0; n < CRT_CC_VPER; n++) {
+        for (x = 0; x < CRT_CC_SAMPLES; x++) {
+            v->ccf[n][x] = iccf[x] * 128; /* may be negative */
+        }
+    }
 
+    mf->destw = destw;
+    mf->desth = desth;
+    mf->xo    = xo;
+    mf->yo    = yo;
+
+    /* RGB input with 4 samples a cycle, the format the softfilter
+     * wrapper feeds this, leaves the video lines to
+     * crt_modulate_lines; anything else is encoded here. */
+    if (s->format == CRT_PIX_FORMAT_RGB && CRT_CC_SAMPLES == 4
+            && destw <= AV_LEN) {
+        mf->white = WHITE_LEVEL * v->white_point / 100;
+        mf->black = BLACK_LEVEL + v->black_point;
+        mf->cY    = iirY.c;
+        mf->cI    = iirI.c;
+        mf->cQ    = iirQ.c;
+        mf->field_offset = (s->field * s->h + desth) / desth / 2;
         for (x = 0; x < 4; x++) {
-            modI[x] = ph * ccmodI[x & (CRT_CC_SAMPLES - 1)];
-            modQ[x] = ph * ccmodQ[x & (CRT_CC_SAMPLES - 1)];
+            mf->modI[x] = ph * ccmodI[x & (CRT_CC_SAMPLES - 1)];
+            mf->modQ[x] = ph * ccmodQ[x & (CRT_CC_SAMPLES - 1)];
         }
-        if (s->format == CRT_PIX_FORMAT_RGB && CRT_CC_SAMPLES == 4
-                && destw <= AV_LEN) {
-            y = 0;
-#ifdef CRT_HAVE_LANES
-            /* Whole batches of lines in lanes; the rest below. Every
-             * line writes only its own row, so the order is free. */
-            if (ml && ml->n && (unsigned)s->w <= ml->w_cap) {
-                for (x = 0; x < destw; x++)
-                    col[x] = (x * s->w) / destw;
-                for (; y + ml->n <= desth; y += ml->n)
-                    crt_modulate_lanes(v, s, ml, y, desth, destw, col,
-                            xo, yo, black, white, cY, cI, cQ, modI, modQ);
-            }
-#else
-            (void)ml;
-#endif
-            for (x = 0; x < destw; x++)
-                col[x] = ((x * s->w) / destw) * 3;
-            for (; y < desth; y++) {
-                int field_offset = (s->field * s->h + desth) / desth / 2;
-                int sy           = (y * s->h) / desth + field_offset;
-                int hY = 0, hI = 0, hQ = 0;
-                const unsigned char *row;
-                signed char *dst;
-                if (sy >= s->h) sy = s->h;
-                row = s->data + (size_t)sy * s->w * 3;
-                dst = &v->analog[xo + (y + yo) * CRT_HRES];
-                for (x = 0; x < destw; x++) {
-                    const unsigned char *pix = row + col[x];
-                    int rA = pix[0], gA = pix[1], bA = pix[2];
-                    int fy = (19595 * rA + 38470 * gA +  7471 * bA) >> 14;
-                    int fi = (39059 * rA - 18022 * gA - 21103 * bA) >> 14;
-                    int fq = (13894 * rA - 34275 * gA + 20382 * bA) >> 14;
-                    int xoff = (x + xo) & 3;
-                    int ire;
-                    hY += EXP_MUL(fy - hY, cY);
-                    hI += EXP_MUL(fi - hI, cI);
-                    hQ += EXP_MUL(fq - hQ, cQ);
-                    ire = black + ((hY + (hI * modI[xoff] >> 4)
-                                       + (hQ * modQ[xoff] >> 4)) * white >> 10);
-                    if (ire < 0)   ire = 0;
-                    if (ire > 110) ire = 110;
-                    dst[x] = (signed char)ire;
-                }
-            }
-            goto modulated;
+        for (x = 0; x < destw; x++) {
+            mf->col[x]  = (x * s->w) / destw;
+            mf->col3[x] = mf->col[x] * 3;
         }
+        return 1;
     }
 
     for (y = 0; y < desth; y++) {
@@ -2006,10 +2008,62 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s,
             v->analog[(x + xo) + (y + yo) * CRT_HRES] = ire;
         }
     }
-modulated:
-    for (n = 0; n < CRT_CC_VPER; n++) {
-        for (x = 0; x < CRT_CC_SAMPLES; x++) {
-            v->ccf[n][x] = iccf[x] * 128; /* may be negative */
+    return 0;
+}
+
+/* The video lines [first, last) of the frame crt_modulate_begin set up
+ * (0 to mf->desth), each into its own row of the signal: whole batches
+ * of lines in lanes, the rest one by one. Lines are independent, so
+ * bands of them can be encoded at once, each with its own 'ml'. */
+static void
+crt_modulate_lines(struct CRT *v, const struct NTSC_SETTINGS *s,
+        const struct crt_mod_frame *mf, const struct crt_mod_lanes *ml,
+        int first, int last)
+{
+    /* Loop invariants, held where a store to the signal (signed
+     * char, which may alias anything) cannot make the compiler fetch
+     * them again. The filters' history is reset at every line, so it
+     * lives in locals for the line. */
+    const int destw = mf->destw, desth = mf->desth;
+    const int xo    = mf->xo,    yo    = mf->yo;
+    const int white = mf->white, black = mf->black;
+    const int cY    = mf->cY, cI = mf->cI, cQ = mf->cQ;
+    const int *modI = mf->modI, *modQ = mf->modQ;
+    const int *col  = mf->col3;
+    int x, y = first;
+#ifdef CRT_HAVE_LANES
+    if (ml && ml->n && (unsigned)s->w <= ml->w_cap) {
+        for (; y + ml->n <= last; y += ml->n)
+            crt_modulate_lanes(v, s, ml, y, desth, destw, mf->col,
+                    xo, yo, black, white, cY, cI, cQ, modI, modQ);
+    }
+#else
+    (void)ml;
+#endif
+    for (; y < last; y++) {
+        int sy = (y * s->h) / desth + mf->field_offset;
+        int hY = 0, hI = 0, hQ = 0;
+        const unsigned char *row;
+        signed char *dst;
+        if (sy >= s->h) sy = s->h;
+        row = s->data + (size_t)sy * s->w * 3;
+        dst = &v->analog[xo + (y + yo) * CRT_HRES];
+        for (x = 0; x < destw; x++) {
+            const unsigned char *pix = row + col[x];
+            int rA = pix[0], gA = pix[1], bA = pix[2];
+            int fy = (19595 * rA + 38470 * gA +  7471 * bA) >> 14;
+            int fi = (39059 * rA - 18022 * gA - 21103 * bA) >> 14;
+            int fq = (13894 * rA - 34275 * gA + 20382 * bA) >> 14;
+            int xoff = (x + xo) & 3;
+            int ire;
+            hY += EXP_MUL(fy - hY, cY);
+            hI += EXP_MUL(fi - hI, cI);
+            hQ += EXP_MUL(fq - hQ, cQ);
+            ire = black + ((hY + (hI * modI[xoff] >> 4)
+                               + (hQ * modQ[xoff] >> 4)) * white >> 10);
+            if (ire < 0)   ire = 0;
+            if (ire > 110) ire = 110;
+            dst[x] = (signed char)ire;
         }
     }
 }
@@ -2048,15 +2102,15 @@ struct softfilter_thread_data
     unsigned     height;
     int          first;
     int          last;
-    /* this worker's active lines [line_first, line_last) and the output
-     * rows [row_first, row_last) they, and nothing else, write */
+    /* without lock-free atomics, this worker's band of active lines
+     * [line_first, line_last), which it decodes */
     int          line_first;
     int          line_last;
-    unsigned     row_first;
-    unsigned     row_last;
     struct crt_yiq *scratch;
     /* this worker's lane buffers; n is 0 when it decodes line by line */
     struct crt_lanes lanes;
+    /* and for encoding; n is 0 when it encodes line by line */
+    struct crt_mod_lanes mod_lanes;
 };
 
 /* -----------------------------------------------------------------------
@@ -2084,11 +2138,22 @@ struct filter_data
     /* lanes per step for the passes that need no buffers (noise):
      * 0, 8 or 16, from the SIMD mask given to create */
     int lanes_tier;
-    /* the encoder's lane buffers (it runs before the workers, once) */
-    struct crt_mod_lanes mod_lanes;
+    /* every worker's encoder lane buffers, one block made at create */
     void *mod_lane_mem;
-    /* set by the packets pass when this frame was modulated */
-    int frame_ready;
+
+    /* This frame, from the packets pass. Its work is a list of tasks,
+     * which the workers take in order as each comes free (see
+     * ntsc_crt_task): mod_tasks bands of lines to encode and add noise
+     * to, then the line-ordered start of decoding, then dec_tasks bands
+     * of lines to decode. tasks is 0 when there is nothing to do. */
+    struct crt_mod_frame mod;
+    int mod_lines;  /* 1 when the bands encode their video lines */
+    int mod_tasks;
+    int dec_tasks;
+    int tasks;
+    retro_atomic_int_t next_task;
+    retro_atomic_int_t mod_done;   /* encoding tasks finished */
+    retro_atomic_int_t begin_done; /* 1 once the decoding start is in */
 
     /* output buffer (XRGB8888) */
     unsigned char *out_buf;
@@ -2186,6 +2251,8 @@ static void ntsc_crt_output_size(void *data,
     *out_height = height;
 }
 
+static void ntsc_crt_destroy(void *data);
+
 static void *ntsc_crt_create(const struct softfilter_config *config,
         unsigned in_fmt, unsigned out_fmt,
         unsigned max_width, unsigned max_height,
@@ -2208,7 +2275,6 @@ static void *ntsc_crt_create(const struct softfilter_config *config,
         free(filt->scratch); free(filt->workers); free(filt); return NULL;
     }
 
-    /* single-threaded — CRT state is not thread-safe */
     filt->threads = threads;
     filt->in_fmt  = in_fmt;
 
@@ -2223,24 +2289,30 @@ static void *ntsc_crt_create(const struct softfilter_config *config,
         size_t sigb = (rows * nl + 63) & ~(size_t)63;
         size_t intb = (rows * nl * sizeof(int) + 63) & ~(size_t)63;
         size_t per  = sigb + 3 * intb;
-        /* The encoder's: three [max_width][nl] source planes and the
-         * [AV_LEN][nl] levels. A frame wider than create was told of,
+        /* Each worker's encoder's: three [max_width][nl] source planes
+         * and the [AV_LEN][nl] levels. A frame wider than create was told of,
          * which the softfilter contract rules out, is encoded line by
          * line instead. */
         size_t plane = ((size_t)max_width * nl * sizeof(int) + 63)
             & ~(size_t)63;
         size_t lvls  = ((size_t)AV_LEN * nl * sizeof(int) + 63)
             & ~(size_t)63;
+        size_t mper  = 3 * plane + lvls;
         if (nl && max_width
-                && (filt->mod_lane_mem = malloc(3 * plane + lvls + 63))) {
-            unsigned char *at = (unsigned char*)
+                && (filt->mod_lane_mem = malloc(mper * threads + 63))) {
+            unsigned char *base = (unsigned char*)
                 (((uintptr_t)filt->mod_lane_mem + 63) & ~(uintptr_t)63);
-            filt->mod_lanes.n     = nl;
-            filt->mod_lanes.w_cap = max_width;
-            filt->mod_lanes.y     = (int*)(void*)at;
-            filt->mod_lanes.i     = (int*)(void*)(at + plane);
-            filt->mod_lanes.q     = (int*)(void*)(at + 2 * plane);
-            filt->mod_lanes.out   = (int*)(void*)(at + 3 * plane);
+            unsigned w;
+            for (w = 0; w < threads; w++) {
+                struct crt_mod_lanes *ml = &filt->workers[w].mod_lanes;
+                unsigned char *at        = base + mper * w;
+                ml->n     = nl;
+                ml->w_cap = max_width;
+                ml->y     = (int*)(void*)at;
+                ml->i     = (int*)(void*)(at + plane);
+                ml->q     = (int*)(void*)(at + 2 * plane);
+                ml->out   = (int*)(void*)(at + 3 * plane);
+            }
         }
         if (nl && (filt->lane_mem = malloc(per * threads + 63))) {
             unsigned char *base = (unsigned char*)
@@ -2262,7 +2334,7 @@ static void *ntsc_crt_create(const struct softfilter_config *config,
     /* Cleared: crt_demodulate does not write every pixel of it, and
      * whatever it leaves is copied to the screen. */
     out_buf = (unsigned char*)calloc(max_width * max_height, 3);
-    if (!out_buf) { free(filt->scratch); free(filt->workers); free(filt); return NULL; }
+    if (!out_buf) { ntsc_crt_destroy(filt); return NULL; }
 
     filt->out_buf   = out_buf;
     filt->out_buf_w = max_width;
@@ -2329,9 +2401,9 @@ static void ntsc_crt_destroy(void *data)
 /* -----------------------------------------------------------------------
  * The actual work callback — called from RetroArch's worker thread
  * ----------------------------------------------------------------------- */
-/* Once a frame, before the workers: convert the input, modulate it,
- * and run the line-ordered first half of demodulation. Returns 0 when
- * the frame cannot be processed, leaving the workers nothing to do. */
+/* Once a frame, before the workers: convert the input and do the part
+ * of encoding that is done once a frame. Returns 0 when the frame
+ * cannot be processed, leaving the workers nothing to do. */
 static int ntsc_crt_prepare(struct filter_data *filt, const void *in_data,
         unsigned width, unsigned height, size_t in_pitch, unsigned colfmt)
 {
@@ -2387,9 +2459,8 @@ static int ntsc_crt_prepare(struct filter_data *filt, const void *in_data,
     filt->ntsc.frame  = filt->frame & 1;
     filt->ntsc.hue    = filt->hue;
 
-    /* ---- Encode → signal → decode ---- */
-    crt_modulate(&filt->crt, &filt->ntsc, &filt->mod_lanes);
-    crt_demodulate_begin(&filt->crt, filt->noise, filt->lanes_tier);
+    /* ---- Encoding's once-a-frame part; the rest is the tasks ---- */
+    filt->mod_lines = crt_modulate_begin(&filt->crt, &filt->ntsc, &filt->mod);
 
     /* ---- Advance field/frame counters ---- */
     filt->field ^= 1;
@@ -2398,26 +2469,139 @@ static int ntsc_crt_prepare(struct filter_data *filt, const void *in_data,
     return 1;
 }
 
-/* A worker: decode its band of lines, then copy its band of output rows
- * to the destination. */
+/* ---- The frame's tasks ----
+ * Encoding: task k encodes video lines [16k, 16k + 16) into their
+ * signal rows and adds the noise to its rows of the signal; the first
+ * and last also take the rows above and below the picture, which hold
+ * sync and burst alone. Then one task finds the syncs and each line's
+ * colour, in line order (crt_demodulate_begin), once every encoding
+ * task is done. Then task j decodes active lines [16j, 16j + 16) and
+ * copies the output rows they draw to the destination.
+ *
+ * Workers take the tasks in order as each comes free, so a task waits
+ * only on tasks already taken, which their workers are running: the
+ * work cannot stall however many workers there are or whether they run
+ * at once, and a single worker (or a caller running the packets one
+ * after another) simply does every task itself. Every task writes its
+ * own lines and rows, as before, so the output is unchanged. */
+#define CRT_TASK_LINES 32 /* a multiple of every lane count */
+
+#if defined(__SSE2__) || defined(_M_X64) \
+   || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#include <emmintrin.h>
+#define CRT_RELAX() _mm_pause()
+#elif (defined(__GNUC__) || defined(__clang__)) && defined(__aarch64__)
+#define CRT_RELAX() __asm__ __volatile__("yield")
+#else
+#define CRT_RELAX()
+#endif
+
+/* Encoding task k: its video lines, then the noise on its rows. */
+static void ntsc_crt_encode_task(struct filter_data *filt,
+        struct softfilter_thread_data *thr, int k)
+{
+    const struct crt_mod_frame *mf = &filt->mod;
+    int first = k * CRT_TASK_LINES;
+    int last  = first + CRT_TASK_LINES;
+    int r0, r1;
+    if (last > mf->desth) last = mf->desth;
+    if (filt->mod_lines && first < last)
+        crt_modulate_lines(&filt->crt, &filt->ntsc, mf, &thr->mod_lanes,
+                first, last);
+    r0 = (k == 0)                   ? 0        : mf->yo + first;
+    r1 = (k == filt->mod_tasks - 1) ? CRT_VRES : mf->yo + first + CRT_TASK_LINES;
+    crt_noise_range(&filt->crt, (size_t)r0 * CRT_HRES,
+            (size_t)r1 * CRT_HRES, filt->noise, filt->lanes_tier);
+}
+
+/* Where a band of active lines may end at or after line b: a line with
+ * no rows of its own (more lines than output rows) still draws one, the
+ * next line's first, which that line then draws over or blends with, so
+ * the two go in the same band. */
+static int ntsc_crt_band_edge(const struct CRT *v, int b)
+{
+    while (b > 0 && b < CRT_LINES && !v->lines[b - 1].skip
+            && v->lines[b - 1].end <= v->lines[b - 1].beg)
+        b++;
+    return b;
+}
+
+/* Decode active lines [lf, ll) and copy the output rows they own: from
+ * the first's first row to the next line's, the lines from 0 starting
+ * at row 0 and the lines to the bottom ending there, so the bands of
+ * lines split the rows between them and every row is copied once. */
+static void ntsc_crt_decode(struct filter_data *filt,
+        struct softfilter_thread_data *thr, int lf, int ll)
+{
+    int height = (int)thr->height;
+    int rf, rl, y;
+
+    lf = ntsc_crt_band_edge(&filt->crt, lf);
+    ll = ntsc_crt_band_edge(&filt->crt, ll);
+    if (lf >= ll)
+        return;
+
+    crt_demodulate_lines(&filt->crt, lf, ll, thr->scratch, &thr->lanes);
+
+    rf = (lf == 0)         ? 0      : filt->crt.lines[lf].beg;
+    rl = (ll == CRT_LINES) ? height : filt->crt.lines[ll].beg;
+    if (rf < 0)       rf = 0;
+    if (rf > height)  rf = height;
+    if (rl < rf)      rl = rf;
+    if (rl > height)  rl = height;
+
+    for (y = rf; y < rl; y++) {
+        uint32_t *dst_row = (uint32_t*)
+                            ((uint8_t*)thr->out_data + y * thr->out_pitch);
+        const unsigned char *src_row = filt->out_buf + (size_t)y * thr->width * 3;
+        rgb_to_xrgb8888(src_row, dst_row, thr->width);
+    }
+}
+
+#if defined(RETRO_ATOMIC_LOCK_FREE)
+static void ntsc_crt_task(struct filter_data *filt,
+        struct softfilter_thread_data *thr, int t)
+{
+    if (t < filt->mod_tasks) {
+        ntsc_crt_encode_task(filt, thr, t);
+        retro_atomic_fetch_add_int(&filt->mod_done, 1);
+    } else if (t == filt->mod_tasks) {
+        while (retro_atomic_load_acquire_int(&filt->mod_done)
+                < filt->mod_tasks)
+            CRT_RELAX();
+        crt_demodulate_begin(&filt->crt, filt->noise);
+        retro_atomic_store_release_int(&filt->begin_done, 1);
+    } else {
+        int lf = (t - filt->mod_tasks - 1) * CRT_TASK_LINES;
+        int ll = lf + CRT_TASK_LINES;
+        if (ll > CRT_LINES) ll = CRT_LINES;
+        while (!retro_atomic_load_acquire_int(&filt->begin_done))
+            CRT_RELAX();
+        ntsc_crt_decode(filt, thr, lf, ll);
+    }
+}
+#endif
+
+/* A worker: take the frame's tasks until there are none left; without
+ * lock-free atomics, decode the band of lines the packets pass gave it
+ * (that pass having done the rest). */
 static void ntsc_crt_work_cb(void *data, void *thread_data)
 {
     struct filter_data             *filt = (struct filter_data*)data;
     struct softfilter_thread_data  *thr  = (struct softfilter_thread_data*)thread_data;
-    unsigned y;
 
-    if (!filt->frame_ready)
+    if (!filt->tasks)
         return;
-
-    crt_demodulate_lines(&filt->crt, thr->line_first, thr->line_last,
-            thr->scratch, &thr->lanes);
-
-    for (y = thr->row_first; y < thr->row_last; y++) {
-        uint32_t *dst_row = (uint32_t*)
-                            ((uint8_t*)thr->out_data + y * thr->out_pitch);
-        const unsigned char *src_row = filt->out_buf + y * thr->width * 3;
-        rgb_to_xrgb8888(src_row, dst_row, thr->width);
+#if defined(RETRO_ATOMIC_LOCK_FREE)
+    for (;;) {
+        int t = retro_atomic_fetch_add_int(&filt->next_task, 1);
+        if (t >= filt->tasks)
+            break;
+        ntsc_crt_task(filt, thr, t);
     }
+#else
+    ntsc_crt_decode(filt, thr, thr->line_first, thr->line_last);
+#endif
 }
 
 /* -----------------------------------------------------------------------
@@ -2432,24 +2616,33 @@ static void ntsc_crt_packets(void *data,
     unsigned i;
     struct filter_data *filt = (struct filter_data*)data;
 
-    filt->frame_ready = ntsc_crt_prepare(filt, input, width, height,
-            input_stride, filt->in_fmt);
+    filt->tasks = 0;
+    if (ntsc_crt_prepare(filt, input, width, height,
+            input_stride, filt->in_fmt)) {
+        filt->mod_tasks = (filt->mod.desth + CRT_TASK_LINES - 1)
+            / CRT_TASK_LINES;
+        if (filt->mod_tasks < 1)
+            filt->mod_tasks = 1;
+        filt->dec_tasks = (CRT_LINES + CRT_TASK_LINES - 1) / CRT_TASK_LINES;
+        filt->tasks     = filt->mod_tasks + 1 + filt->dec_tasks;
+    }
+#if defined(RETRO_ATOMIC_LOCK_FREE)
+    /* The workers are woken after this, which orders these for them */
+    retro_atomic_store_relaxed_int(&filt->next_task, 0);
+    retro_atomic_store_relaxed_int(&filt->mod_done, 0);
+    retro_atomic_store_relaxed_int(&filt->begin_done, 0);
+#else
+    /* Encoding and the start of decoding here; bands of lines after */
+    if (filt->tasks) {
+        int k;
+        for (k = 0; k < filt->mod_tasks; k++)
+            ntsc_crt_encode_task(filt, &filt->workers[0], k);
+        crt_demodulate_begin(&filt->crt, filt->noise);
+    }
+#endif
 
     for (i = 0; i < filt->threads; i++) {
         struct softfilter_thread_data *thr = &filt->workers[i];
-        int lf = (int)((CRT_LINES * i) / filt->threads);
-        int ll = (int)((CRT_LINES * (i + 1)) / filt->threads);
-        int rf, rl;
-
-        /* Rows split where the lines do: a band's rows run from its first
-         * line's first row to the next band's, the first band from row 0
-         * and the last to the bottom, so every row is copied once. */
-        rf = (i == 0) ? 0 : filt->crt.lines[lf].beg;
-        rl = (i + 1 == filt->threads) ? (int)height : filt->crt.lines[ll].beg;
-        if (rf < 0)            rf = 0;
-        if (rf > (int)height)  rf = (int)height;
-        if (rl < rf)           rl = rf;
-        if (rl > (int)height)  rl = (int)height;
 
         thr->out_data   = (uint8_t*)output;
         thr->in_data    = (const uint8_t*)input;
@@ -2458,10 +2651,8 @@ static void ntsc_crt_packets(void *data,
         thr->width      = width;
         thr->height     = height;
         thr->colfmt     = filt->in_fmt;
-        thr->line_first = lf;
-        thr->line_last  = ll;
-        thr->row_first  = (unsigned)rf;
-        thr->row_last   = (unsigned)rl;
+        thr->line_first = (int)((CRT_LINES * i) / filt->threads);
+        thr->line_last  = (int)((CRT_LINES * (i + 1)) / filt->threads);
         thr->scratch    = filt->scratch + (size_t)i * (AV_LEN + 1);
 
         packets[i].work        = ntsc_crt_work_cb;
