@@ -1,7 +1,8 @@
 #ifndef RGA_API_STUB_H
 #define RGA_API_STUB_H
 /* Stand-in for Rockchip librga's RgaApi.h: the types, enumerants and
- * prototypes gfx/drivers/oga_gfx.c uses, with the values and layouts
+ * prototypes gfx/drivers/oga_gfx.c and
+ * gfx/drivers_context/drm_go2_ctx.c use, with the values and layouts
  * librga gives them, so the driver is compiled - and its calls are
  * checked - where librga is not installed. */
 enum

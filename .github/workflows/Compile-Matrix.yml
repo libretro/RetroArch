@@ -19,7 +19,7 @@ jobs:
   compile-matrix: # every codec combination real builds select, not just this one
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential libgl-dev libegl-dev libgles-dev libsdl1.2-dev gcc-mingw-w64-x86-64 clang gcc-aarch64-linux-gnu gcc-mipsel-linux-gnu libdrm-dev
+      APT_PKGS: build-essential libgl-dev libegl-dev libgles-dev libsdl1.2-dev gcc-mingw-w64-x86-64 clang gcc-aarch64-linux-gnu gcc-mipsel-linux-gnu libdrm-dev libgbm-dev
     timeout-minutes: 30
     steps:
       - name: Checkout

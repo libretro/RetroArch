@@ -111,7 +111,7 @@ def sources(roots):
                       if d not in ('.git', 'deps', 'pkg', 'media',
                                    'dxsdk', 'MESA', 'vulkan', 'GL',
                                    'GLES2', 'GLES3', 'EGL', 'KHR',
-                                   'vita_pib', 'libgo2', 'libogc',
+                                   'vita_pib', 'libogc',
                                    'lwbt', 'lwip', 'libwiikeyboard')]
             for fn in fns:
                 # embedded shader sources are not C

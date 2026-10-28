@@ -363,6 +363,13 @@ platform_video "dispmanx video" "-DHAVE_DISPMANX" "-I$STUBS/videocore" \
 platform_video "oga video" "-DHAVE_ODROIDGO2" \
    "-I$STUBS/rga -I/usr/include/libdrm" \
    gfx/drivers/oga_gfx.c /usr/include/xf86drm.h
+# Its GL context: the RGA rotate and page flip that libgo2 used to do,
+# against the same librga stand-in.
+platform_video "go2 drm context" \
+   "-DHAVE_ODROIDGO2 -DHAVE_KMS -DHAVE_EGL -DHAVE_OPENGLES -DHAVE_GLSL" \
+   "-I$STUBS/rga -I/usr/include/libdrm" \
+   gfx/drivers_context/drm_go2_ctx.c \
+   "/usr/include/xf86drm.h /usr/include/gbm.h /usr/include/EGL/egl.h"
 
 # The Direct3D drivers, against the DirectX headers the tree vendors in
 # gfx/include/dxsdk. Six drivers no other lane compiles, and they read

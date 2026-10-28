@@ -3246,11 +3246,8 @@ endif
 
 ifeq ($(HAVE_ODROIDGO2), 1)
   DEFINES += -DHAVE_ODROIDGO2
-  LIBS += -lrga -lpng -lz
-  INCLUDE_DIRS += -I$(DEPS_DIR)/libgo2/include
-  OBJ += $(DEPS_DIR)/libgo2/src/display.o \
-         $(DEPS_DIR)/libgo2/src/queue.o \
-         gfx/drivers/oga_gfx.o
+  LIBS += -lrga
+  OBJ += gfx/drivers/oga_gfx.o
 endif
 
 ifeq ($(HAVE_GAME_AI),1)

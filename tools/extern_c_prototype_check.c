@@ -35,7 +35,7 @@ static const char *const keywords[] = {
 };
 static const char *const skip_dirs[] = {
    ".git", "deps", "pkg", "media", "dxsdk", "MESA", "vulkan", "GL",
-   "GLES2", "GLES3", "EGL", "KHR", "vita_pib", "libgo2", "libogc",
+   "GLES2", "GLES3", "EGL", "KHR", "vita_pib", "libogc",
    "lwbt", "lwip", "libwiikeyboard"
 };
 static const char *const shader_exts[] = {
