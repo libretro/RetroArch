@@ -70,14 +70,14 @@ static void *upscale_1_5x_generic_create(const struct softfilter_config *config,
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
-   if (!(filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data))))
+   if (!(filt->workers = (struct softfilter_thread_data*)calloc(threads ? threads : 1, sizeof(struct softfilter_thread_data))))
    {
       free(filt);
       return NULL;
    }
-   /* Apparently the code is not thread-safe,
-    * so force single threaded operation... */
-   filt->threads = 1;
+   /* Each group of 2 source rows makes 3 output rows on its own, so
+    * the groups are split between the workers. */
+   filt->threads = threads ? threads : 1;
    filt->in_fmt  = in_fmt;
    return filt;
 }
@@ -242,26 +242,31 @@ static void upscale_1_5x_generic_packets(void *data,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride)
 {
-   /* We are guaranteed single threaded operation
-    * (filt->threads = 1) so we don't need to loop
-    * over threads and can cull some code. This only
-    * makes the tiniest performance difference, but
-    * every little helps when running on an o3DS... */
-   struct filter_data *filt           = (struct filter_data*)data;
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[0];
+   unsigned i;
+   struct filter_data *filt = (struct filter_data*)data;
+   /* Whole groups of 2 source rows per worker; rows past the last
+    * whole group make no output, as before. */
+   unsigned groups          = height / 2;
 
-   thr->out_data                      = (uint8_t*)output;
-   thr->in_data                       = (const uint8_t*)input;
-   thr->out_pitch                     = output_stride;
-   thr->in_pitch                      = input_stride;
-   thr->width                         = width;
-   thr->height                        = height;
+   for (i = 0; i < filt->threads; i++)
+   {
+      struct softfilter_thread_data *thr = &filt->workers[i];
+      unsigned g_start = (groups * i) / filt->threads;
+      unsigned g_end   = (groups * (i + 1)) / filt->threads;
 
-   if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
-      packets[0].work                 = upscale_1_5x_work_cb_xrgb8888;
-   else if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
-      packets[0].work                 = upscale_1_5x_work_cb_rgb565;
-   packets[0].thread_data             = thr;
+      thr->out_data  = (uint8_t*)output + (size_t)g_start * 3 * output_stride;
+      thr->in_data   = (const uint8_t*)input + (size_t)g_start * 2 * input_stride;
+      thr->out_pitch = output_stride;
+      thr->in_pitch  = input_stride;
+      thr->width     = width;
+      thr->height    = (g_end - g_start) * 2;
+
+      if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
+         packets[i].work = upscale_1_5x_work_cb_xrgb8888;
+      else if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
+         packets[i].work = upscale_1_5x_work_cb_rgb565;
+      packets[i].thread_data = thr;
+   }
 }
 
 static const struct softfilter_implementation upscale_1_5x_generic = {
