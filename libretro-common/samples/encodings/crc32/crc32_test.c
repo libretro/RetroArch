@@ -671,6 +671,116 @@ static void concurrent_stress(void)
 
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/* 8. The MSB-first CRCs: Ogg's CRC-32 and CRC-16/CCITT               */
+/* ------------------------------------------------------------------ */
+
+/* Bit by bit, from the polynomials as they are written */
+static uint32_t ogg_bitwise(uint32_t crc, const uint8_t *data, size_t len)
+{
+   size_t i;
+   int    b;
+   for (i = 0; i < len; i++)
+   {
+      crc ^= (uint32_t)data[i] << 24;
+      for (b = 0; b < 8; b++)
+         crc = (crc & 0x80000000U) ? ((crc << 1) ^ 0x04C11DB7U) : (crc << 1);
+   }
+   return crc;
+}
+
+static uint16_t ccitt_bitwise(uint16_t crc, const uint8_t *data, size_t len)
+{
+   size_t i;
+   int    b;
+   for (i = 0; i < len; i++)
+   {
+      crc ^= (uint16_t)(data[i] << 8);
+      for (b = 0; b < 8; b++)
+         crc = (uint16_t)((crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1));
+   }
+   return crc;
+}
+
+/* Every length to 1200 at 16 alignments, from two seeds; the folds'
+ * seams; and a 64 KiB buffer split anywhere */
+static void msb_crcs(void)
+{
+   static const size_t seams[] = { 63, 64, 65, 79, 80, 127, 128, 129,
+      255, 256, 257, 319, 320, 321, 511, 512, 513, 767, 768, 769, 1023,
+      1024, 1025, 2047, 2048, 2049, 4095, 4096, 4097, 65535, 65536 };
+   size_t   big = 65536 + 16, n, off, k;
+   uint8_t *m   = (uint8_t *)malloc(big);
+   long     cases = 0;
+   int      bad   = 0;
+
+   if (!m)
+   {
+      printf("[FAIL] %-26s out of memory\n", "MSB-first CRCs");
+      failures++;
+      return;
+   }
+   for (n = 0; n < big; n++)
+      m[n] = (uint8_t)(n * 2654435761U >> 13);
+
+   for (n = 0; n <= SWEEP_MAX && bad < 8; n++)
+      for (off = 0; off < 16; off++)
+      {
+         uint32_t s32 = (n & 1) ? 0xFFFFFFFFU : 0x1234ABCDU;
+         uint16_t s16 = (n & 1) ? 0xFFFF : 0x1D0F;
+         if (encoding_crc32_ogg(0, m + off, n) != ogg_bitwise(0, m + off, n)
+               || encoding_crc32_ogg(s32, m + off, n)
+                  != ogg_bitwise(s32, m + off, n)
+               || encoding_crc16_ccitt(s16, m + off, n)
+                  != ccitt_bitwise(s16, m + off, n)
+               || encoding_crc16_ccitt(0, m + off, n)
+                  != ccitt_bitwise(0, m + off, n))
+         {
+            printf("[FAIL] %-26s len=%lu align=%lu\n", "MSB-first CRCs",
+                  (unsigned long)n, (unsigned long)off);
+            bad++;
+         }
+         cases += 4;
+      }
+   for (k = 0; k < sizeof(seams) / sizeof(seams[0]) && bad < 8; k++)
+      for (off = 0; off < 16; off++)
+      {
+         n = seams[k];
+         if (     encoding_crc32_ogg(0x5A5A5A5AU, m + off, n)
+                  != ogg_bitwise(0x5A5A5A5AU, m + off, n)
+               || encoding_crc16_ccitt(0xFFFF, m + off, n)
+                  != ccitt_bitwise(0xFFFF, m + off, n))
+         {
+            printf("[FAIL] %-26s seam len=%lu align=%lu\n",
+                  "MSB-first CRCs", (unsigned long)n, (unsigned long)off);
+            bad++;
+         }
+         cases += 2;
+      }
+   {
+      uint32_t want32 = ogg_bitwise(0, m, 65536);
+      uint16_t want16 = ccitt_bitwise(0xFFFF, m, 65536);
+      for (k = 0; k <= 65536 && bad < 8; k += 1 + (k >> 4))
+      {
+         if (     encoding_crc32_ogg(encoding_crc32_ogg(0, m, k), m + k,
+                     65536 - k) != want32
+               || encoding_crc16_ccitt(encoding_crc16_ccitt(0xFFFF, m, k),
+                     m + k, 65536 - k) != want16)
+         {
+            printf("[FAIL] %-26s split at %lu\n", "MSB-first CRCs",
+                  (unsigned long)k);
+            bad++;
+         }
+         cases += 2;
+      }
+   }
+   free(m);
+   failures += bad;
+   if (!bad)
+      printf("[ok]   %-26s %ld cases, Ogg's and CCITT's\n",
+            "MSB-first CRCs", cases);
+}
+
 int main(void)
 {
    /* The concurrency check runs FIRST and must stay first.  Its whole
@@ -688,6 +798,7 @@ int main(void)
    cross_path_agreement();
    guard_page();
    concurrent_stress();
+   msb_crcs();
 
    printf("%s\n", failures ? "FAILED" : "PASS");
    return failures ? 1 : 0;

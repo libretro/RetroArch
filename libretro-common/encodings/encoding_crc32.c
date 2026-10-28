@@ -450,6 +450,211 @@ static int crc32_have_pclmul(void)
    return (cpu_features_get() & RETRO_SIMD_PCLMUL) != 0;
 }
 
+/* clang for PlayStation and clang-cl: where the build has the ISAs */
+#if !(defined(__clang__) && (defined(_MSC_VER) || defined(__SCE__))) \
+   || (defined(__SSSE3__) && defined(__PCLMUL__))
+/* ------------------------------------------------------------------ */
+/* MSB-first CRCs by carry-less folding: Ogg's CRC-32, CRC-16/CCITT   */
+/* ------------------------------------------------------------------ */
+
+/* Neither is reflected, so the octets are the polynomial as they come:
+ * each 16 of them, byte-swapped, is 128 coefficients with the first
+ * octet's top bit the highest. The register's seed is the same as that
+ * many bits added to the front of the message. Folding keeps one
+ * accumulator A with A ~ every octet so far (mod P), placed as their
+ * last 16: A * x^D = A_hi * x^(D+64) + A_lo * x^D, each part times
+ * x^n mod P, which for a 16- or 32-bit P leaves the product inside 128
+ * bits. A itself and what is left after it are then the table path's,
+ * from a seed of 0, which needs no reduction of its own.
+ *
+ * The constants are x^n mod P, for 0x104C11DB7 and 0x11021 */
+
+static uint32_t crc32_ogg_table(uint32_t crc, const uint8_t *data,
+      size_t len);
+static uint32_t crc16_ccitt_table(uint32_t crc, const uint8_t *data,
+      size_t len);
+
+typedef uint32_t (*crc_msb_table_t)(uint32_t crc, const uint8_t *data,
+      size_t len);
+
+typedef struct crc_msb
+{
+   uint32_t        k576, k512;   /* four accumulators on */
+   uint32_t        k192, k128;   /* one */
+   uint32_t        k2112, k2048; /* four 512-bit ones on */
+   uint32_t        k448, k384, k320, k256; /* lanes into one */
+   unsigned        width;
+   crc_msb_table_t table;
+} crc_msb_t;
+
+static const crc_msb_t crc_msb_ogg = {
+   0x8833794CU, 0xE6228B11U, 0xC5B9CD4CU, 0xE8A45605U,
+   0xCBCF3BCBU, 0x88FE2237U,
+   0x64BF7A9BU, 0x8C3828A8U, 0x569700E5U, 0x75BE46B7U,
+   32, crc32_ogg_table
+};
+
+static const crc_msb_t crc_msb_c16 = {
+   0x8832U, 0x13FCU, 0x650BU, 0xAEFCU,
+   0xF17EU, 0xFD50U,
+   0x2535U, 0xCDE2U, 0x26AAU, 0x8E29U,
+   16, crc16_ccitt_table
+};
+
+#if defined(_MSC_VER)
+#include <tmmintrin.h>
+#define CRC32_TARGET_MSB
+#else
+#include <tmmintrin.h>
+#define CRC32_TARGET_MSB __attribute__((target("pclmul,ssse3")))
+#endif
+
+#define CRC_MSB_K(hi, lo) _mm_set_epi32(0, (int)(hi), 0, (int)(lo))
+#define CRC_MSB_REV _mm_setr_epi8(15, 14, 13, 12, 11, 10, 9, 8, \
+      7, 6, 5, 4, 3, 2, 1, 0)
+#define CRC_MSB_LOAD(p) _mm_shuffle_epi8( \
+      _mm_loadu_si128((const __m128i*)(const void*)(p)), rev)
+
+CRC32_TARGET_MSB
+static INLINE __m128i crc_msb_fold(__m128i x, __m128i k, __m128i d)
+{
+   return _mm_xor_si128(_mm_xor_si128(_mm_clmulepi64_si128(x, k, 0x11),
+         _mm_clmulepi64_si128(x, k, 0x00)), d);
+}
+
+/* One accumulator, the octets after it 16 at a time, then it and the
+ * rest through the table */
+CRC32_TARGET_MSB
+static uint32_t crc_msb_tail(const crc_msb_t *m, __m128i x0,
+      const uint8_t *data, size_t len)
+{
+   const __m128i rev  = CRC_MSB_REV;
+   const __m128i k128 = CRC_MSB_K(m->k192, m->k128);
+   uint8_t       a[16];
+   while (len >= 16)
+   {
+      x0    = crc_msb_fold(x0, k128, CRC_MSB_LOAD(data));
+      data += 16;
+      len  -= 16;
+   }
+   _mm_storeu_si128((__m128i*)(void*)a, _mm_shuffle_epi8(x0, rev));
+   return m->table(m->table(0, a, 16), data, len);
+}
+
+/* At least 64 octets, from the register @crc */
+CRC32_TARGET_MSB
+static uint32_t crc_msb_pclmul(const crc_msb_t *m, uint32_t crc,
+      const uint8_t *data, size_t len)
+{
+   const __m128i rev  = CRC_MSB_REV;
+   const __m128i k512 = CRC_MSB_K(m->k576, m->k512);
+   const __m128i k128 = CRC_MSB_K(m->k192, m->k128);
+   __m128i x0, x1, x2, x3;
+
+   x0 = _mm_xor_si128(CRC_MSB_LOAD(data),
+         _mm_set_epi32((int)(crc << (32 - m->width)), 0, 0, 0));
+   x1 = CRC_MSB_LOAD(data + 16);
+   x2 = CRC_MSB_LOAD(data + 32);
+   x3 = CRC_MSB_LOAD(data + 48);
+   data += 64;
+   len  -= 64;
+   while (len >= 64)
+   {
+      x0    = crc_msb_fold(x0, k512, CRC_MSB_LOAD(data));
+      x1    = crc_msb_fold(x1, k512, CRC_MSB_LOAD(data + 16));
+      x2    = crc_msb_fold(x2, k512, CRC_MSB_LOAD(data + 32));
+      x3    = crc_msb_fold(x3, k512, CRC_MSB_LOAD(data + 48));
+      data += 64;
+      len  -= 64;
+   }
+   x1 = crc_msb_fold(x0, k128, x1);
+   x2 = crc_msb_fold(x1, k128, x2);
+   x0 = crc_msb_fold(x2, k128, x3);
+   return crc_msb_tail(m, x0, data, len);
+}
+
+#if defined(CRC32_HAVE_VPCLMUL_PATH)
+#define CRC_MSB_K4(hi, lo) _mm512_broadcast_i32x4(CRC_MSB_K(hi, lo))
+#define CRC_MSB_FOLD64(x, k, d) _mm512_ternarylogic_epi64( \
+      _mm512_clmulepi64_epi128((x), (k), 0x00), \
+      _mm512_clmulepi64_epi128((x), (k), 0x11), (d), 0x96)
+#define CRC_MSB_LOAD64(p) _mm512_shuffle_epi8( \
+      _mm512_loadu_si512((const void*)(p)), rev4)
+
+/* At least 256 octets: four 512-bit accumulators, then one, its lanes
+ * into the 128-bit tail */
+CRC32_TARGET_VPCLMUL
+static uint32_t crc_msb_vpclmul(const crc_msb_t *m, uint32_t crc,
+      const uint8_t *data, size_t len)
+{
+   const __m512i rev4  = _mm512_broadcast_i32x4(CRC_MSB_REV);
+   const __m512i k2048 = CRC_MSB_K4(m->k2112, m->k2048);
+   const __m512i k512  = CRC_MSB_K4(m->k576, m->k512);
+   const __m512i kl    = _mm512_inserti32x4(_mm512_inserti32x4(
+         _mm512_inserti32x4(_mm512_setzero_si512(),
+            CRC_MSB_K(m->k448, m->k384), 0), CRC_MSB_K(m->k320, m->k256), 1),
+         CRC_MSB_K(m->k192, m->k128), 2);
+   __m512i z0, z1, z2, z3;
+   __m256i y;
+
+   z0 = _mm512_xor_si512(CRC_MSB_LOAD64(data), _mm512_castsi128_si512(
+         _mm_set_epi32((int)(crc << (32 - m->width)), 0, 0, 0)));
+   z1 = CRC_MSB_LOAD64(data +  64);
+   z2 = CRC_MSB_LOAD64(data + 128);
+   z3 = CRC_MSB_LOAD64(data + 192);
+   data += 256;
+   len  -= 256;
+   while (len >= 256)
+   {
+      z0    = CRC_MSB_FOLD64(z0, k2048, CRC_MSB_LOAD64(data));
+      z1    = CRC_MSB_FOLD64(z1, k2048, CRC_MSB_LOAD64(data +  64));
+      z2    = CRC_MSB_FOLD64(z2, k2048, CRC_MSB_LOAD64(data + 128));
+      z3    = CRC_MSB_FOLD64(z3, k2048, CRC_MSB_LOAD64(data + 192));
+      data += 256;
+      len  -= 256;
+   }
+   z1 = CRC_MSB_FOLD64(z0, k512, z1);
+   z2 = CRC_MSB_FOLD64(z1, k512, z2);
+   z0 = CRC_MSB_FOLD64(z2, k512, z3);
+   while (len >= 64)
+   {
+      z0    = CRC_MSB_FOLD64(z0, k512, CRC_MSB_LOAD64(data));
+      data += 64;
+      len  -= 64;
+   }
+   z0 = _mm512_mask_mov_epi64(CRC_MSB_FOLD64(z0, kl, _mm512_setzero_si512()),
+         0xC0, z0);
+   y  = _mm256_xor_si256(_mm512_castsi512_si256(z0),
+         _mm512_extracti64x4_epi64(z0, 1));
+   return crc_msb_tail(m, _mm_xor_si128(_mm256_castsi256_si128(y),
+         _mm256_extracti128_si256(y, 1)), data, len);
+}
+#undef CRC_MSB_LOAD64
+#undef CRC_MSB_FOLD64
+#undef CRC_MSB_K4
+#endif
+
+/* The fold, where the CPU has it and @len is worth it; else the table */
+static uint32_t crc_msb(const crc_msb_t *m, uint32_t crc,
+      const uint8_t *data, size_t len)
+{
+#if defined(CRC32_HAVE_VPCLMUL_PATH)
+   if (len >= 256 && crc32_have_vpclmul())
+      return crc_msb_vpclmul(m, crc, data, len);
+#endif
+   if (     len >= 64
+         && (cpu_features_get() & (RETRO_SIMD_PCLMUL | RETRO_SIMD_SSSE3))
+            == (RETRO_SIMD_PCLMUL | RETRO_SIMD_SSSE3))
+      return crc_msb_pclmul(m, crc, data, len);
+   return m->table(crc, data, len);
+}
+#undef CRC_MSB_LOAD
+#undef CRC_MSB_REV
+#undef CRC_MSB_K
+#define CRC32_HAVE_MSB_PATH 1
+
+#endif
+
 #endif /* x86 */
 
 /* ------------------------------------------------------------------ */
@@ -540,8 +745,10 @@ static uint32_t crc32_arm(uint32_t crc, const uint8_t *data, size_t len)
  * than of any particular CRC.
  */
 
-uint16_t encoding_crc16_ccitt(uint16_t crc, const uint8_t *data, size_t len)
+static uint32_t crc16_ccitt_table(uint32_t seed, const uint8_t *data,
+      size_t len)
 {
+   uint16_t crc = (uint16_t)seed;
    while (len >= 8)
    {
       crc = (uint16_t)(
@@ -570,7 +777,8 @@ uint16_t encoding_crc16_ccitt(uint16_t crc, const uint8_t *data, size_t len)
    return crc;
 }
 
-uint32_t encoding_crc32_ogg(uint32_t crc, const uint8_t *data, size_t len)
+static uint32_t crc32_ogg_table(uint32_t crc, const uint8_t *data,
+      size_t len)
 {
    /* Slicing-by-8, as for the reflected variant above, but assembling
     * each word from bytes rather than loading it. The reflected path
@@ -606,6 +814,24 @@ uint32_t encoding_crc32_ogg(uint32_t crc, const uint8_t *data, size_t len)
    }
 
    return crc;
+}
+
+uint16_t encoding_crc16_ccitt(uint16_t crc, const uint8_t *data, size_t len)
+{
+#if defined(CRC32_HAVE_MSB_PATH)
+   return (uint16_t)crc_msb(&crc_msb_c16, crc, data, len);
+#else
+   return (uint16_t)crc16_ccitt_table(crc, data, len);
+#endif
+}
+
+uint32_t encoding_crc32_ogg(uint32_t crc, const uint8_t *data, size_t len)
+{
+#if defined(CRC32_HAVE_MSB_PATH)
+   return crc_msb(&crc_msb_ogg, crc, data, len);
+#else
+   return crc32_ogg_table(crc, data, len);
+#endif
 }
 
 uint32_t encoding_crc32(uint32_t crc, const uint8_t *data, size_t len)
