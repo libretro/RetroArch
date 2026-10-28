@@ -298,6 +298,10 @@ struct rchd
     * borrowed supply points @pending at the caller's memory and this
     * still has to be freed. */
    uint8_t           *pending_owned;
+   /* What @pending_owned holds. Sized to a hunk once the image is open,
+    * so a read never allocates: it reuses this, and grows it only for a
+    * blob larger than a hunk, which chdman never writes. */
+   size_t             pending_cap;
    int                pending_borrowed;
    size_t             pending_size;
    size_t             pending_have;
@@ -370,6 +374,14 @@ struct rchd
     * interleaved into the caller's buffer. */
    uint8_t           *cd_scratch;
 
+#ifdef HAVE_RCHD_FLAC
+   /* The CD FLAC decoder. Every cdfl hunk of an image is headerless
+    * FLAC with one geometry, so one decoder is made and rewound per
+    * hunk instead of built and torn down for each. */
+   rflac_t           *cdfl;
+   uint32_t           cdfl_block_size;
+#endif
+
    rchd_track_t      *tracks;
    uint32_t           track_count;
 
@@ -399,15 +411,18 @@ static int rchd_want(rchd_t *chd, uint64_t offset, size_t len, int source,
    if (chd->pending_off != offset || chd->pending_size != len
          || chd->pending_src != source)
    {
-      uint8_t *buf;
-
       if (len == 0)
          return 1;
-      if (!(buf = (uint8_t*)malloc(len)))
-         return -1;
-      free(chd->pending_owned);
-      chd->pending          = buf;
-      chd->pending_owned    = buf;
+      if (len > chd->pending_cap)
+      {
+         uint8_t *buf = (uint8_t*)malloc(len);
+         if (!buf)
+            return -1;
+         free(chd->pending_owned);
+         chd->pending_owned = buf;
+         chd->pending_cap   = len;
+      }
+      chd->pending          = chd->pending_owned;
       chd->pending_borrowed = 0;
       chd->pending_size = len;
       chd->pending_have = 0;
@@ -416,7 +431,15 @@ static int rchd_want(rchd_t *chd, uint64_t offset, size_t len, int source,
    }
 
    if (chd->pending_have >= len)
+   {
+      /* Borrowed bytes are only good until the read that borrowed them
+       * finishes. They are handed to the caller of this once; a later
+       * request for the same range collects it again rather than
+       * trusting a pointer whose owner may have moved on. */
+      if (chd->pending_borrowed)
+         chd->pending_src = -1;
       return 1;
+   }
 
    req->offset = offset + chd->pending_have;
    req->length = (uint32_t)(len - chd->pending_have);
@@ -492,8 +515,8 @@ int rchd_feed_borrow(rchd_t *chd, uint64_t offset, int source,
          || len < chd->pending_size)
       return rchd_feed_at(chd, offset, source, data, len);
 
-   free(chd->pending_owned);
-   chd->pending_owned    = NULL;
+   /* The owned buffer stays allocated for the next request that is
+    * not borrowed; only @pending points away from it. */
    chd->pending          = (uint8_t*)data;
    chd->pending_have     = chd->pending_size;
    chd->pending_borrowed = 1;
@@ -1098,6 +1121,9 @@ void rchd_free(rchd_t *chd)
 #endif
    free(chd->cache);
    free(chd->cd_scratch);
+#ifdef HAVE_RCHD_FLAC
+   rflac_free(chd->cdfl);
+#endif
    free(chd->tracks);
    free(chd->sec_frame);
    free(chd->av_lookup);
@@ -1117,6 +1143,9 @@ static size_t rchd_map_raw_bytes(const rchd_t *chd)
       return (size_t)chd->info.hunk_count * 4;
    return 0;   /* compressed: the length is in the map header */
 }
+
+static int rchd_cache_alloc(rchd_t *chd);
+static void rchd_cd_scratch_alloc(rchd_t *chd);
 
 int rchd_open_step(rchd_t *chd, rchd_request_t *req)
 {
@@ -1236,12 +1265,23 @@ int rchd_open_step(rchd_t *chd, rchd_request_t *req)
          rchd_infer_unit_bytes(chd);
          if ((err = rchd_build_tracks(chd)) != RCHD_OK)
             return err;
+         /* Everything a read needs is allocated here, at open, rather
+          * than on the first read after it: the staging buffer (shrunk
+          * or grown from whatever the map and metadata needed to one
+          * hunk, which bounds every compressed blob), the decoded-hunk
+          * cache, and the CD codecs' sector scratch. A read then
+          * allocates nothing. Any of these that fails here is
+          * allocated on first use as before. */
          free(chd->pending_owned);
-         chd->pending       = NULL;
-         chd->pending_owned = NULL;
+         chd->pending          = NULL;
+         chd->pending_owned    = (uint8_t*)malloc(chd->info.hunk_bytes);
+         chd->pending_cap      = chd->pending_owned ? chd->info.hunk_bytes : 0;
+         chd->pending_borrowed = 0;
          chd->pending_size = 0;
          chd->pending_have = 0;
          chd->state        = RCHD_OPEN_DONE;
+         rchd_cache_alloc(chd);
+         rchd_cd_scratch_alloc(chd);
          /* falls through */
 
       case RCHD_OPEN_DONE:
@@ -1872,12 +1912,45 @@ static void rchd_cd_rebuild(uint8_t *sec)
  * Two channels of sixteen bits, and no header to say so -- the geometry
  * is the hunk's, so the decoder is told it rather than being handed a
  * fabricated one. */
+/* The CD FLAC decoder for hunks of @sector_bytes of audio, rewound to
+ * the start of a stream. Built once and kept: rebuilding it per hunk
+ * cost a handful of allocations for every audio hunk read. */
+static rflac_t *rchd_cdfl_decoder(rchd_t *chd, uint32_t sector_bytes)
+{
+   rflac_format_t fmt;
+   /* The encoder sizes its blocks from the whole hunk rather than from
+    * one sector: a quarter of the payload, halved until it is no larger
+    * than a sector's worth of samples. A decoder told anything smaller
+    * rejects the first frame it reads, because the block it declares
+    * will not fit what the decoder allocated. */
+   uint32_t       bs = sector_bytes / 4;
+
+   while (bs > RCHD_CD_SECTOR_SIZE)
+      bs /= 2;
+
+   if (chd->cdfl && chd->cdfl_block_size == bs)
+   {
+      rflac_reset(chd->cdfl);
+      return chd->cdfl;
+   }
+
+   rflac_free(chd->cdfl);
+   chd->cdfl            = NULL;
+   fmt.block_size       = bs;
+   fmt.sample_rate      = 44100;
+   fmt.channels         = 2;
+   fmt.bits_per_sample  = 16;
+   if (!(chd->cdfl = rflac_new_raw(&fmt)))
+      return NULL;
+   chd->cdfl_block_size = bs;
+   return chd->cdfl;
+}
+
 static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
       uint32_t src_len, uint8_t *dst, uint32_t dst_len)
 {
    uint32_t       frames = dst_len / RCHD_CD_FRAME_SIZE;
    uint32_t       sector_bytes;
-   rflac_format_t fmt;
    rflac_t       *d;
    size_t         want;
    size_t         got = 0;
@@ -1903,24 +1976,7 @@ static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
 
    want = sector_bytes / 4;
 
-   /* The encoder sizes its blocks from the whole hunk rather than from
-    * one sector: a quarter of the payload, halved until it is no larger
-    * than a sector's worth of samples. A decoder told anything smaller
-    * rejects the first frame it reads, because the block it declares
-    * will not fit what the decoder allocated. */
-   {
-      uint32_t bs = sector_bytes / 4;
-
-      while (bs > RCHD_CD_SECTOR_SIZE)
-         bs /= 2;
-      fmt.block_size = bs;
-   }
-
-   fmt.sample_rate     = 44100;
-   fmt.channels        = 2;
-   fmt.bits_per_sample = 16;
-
-   if (!(d = rflac_new_raw(&fmt)))
+   if (!(d = rchd_cdfl_decoder(chd, sector_bytes)))
       return RCHD_ERROR_MEM;
    rflac_set_out_s16(d, (int16_t*)(void*)sectors, want);
    rflac_set_in(d, src, src_len);
@@ -1933,7 +1989,6 @@ static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
       if (e != RFLAC_PROCESS_NEXT || wr == 0)
          break;
    }
-   rflac_free(d);
 
    if (got != want)
       return RCHD_ERROR_DATA;
@@ -2365,6 +2420,29 @@ static int rchd_cache_alloc(rchd_t *chd)
       chd->cached = (uint32_t)-1;
    }
    return RCHD_OK;
+}
+
+/* The CD codecs decode a hunk's sectors into a scratch buffer before
+ * reassembling frames; an image compressed with any of them gets it at
+ * open, and one compressed with CD FLAC gets its decoder too. */
+static void rchd_cd_scratch_alloc(rchd_t *chd)
+{
+   unsigned i;
+   for (i = 0; i < 4; i++)
+   {
+      uint32_t c = chd->info.compressors[i];
+      if (     c == RCHD_CODEC_CD_ZLIB || c == RCHD_CODEC_CD_ZSTD
+            || c == RCHD_CODEC_CD_LZMA || c == RCHD_CODEC_CD_FLAC)
+      {
+         if (!chd->cd_scratch)
+            chd->cd_scratch = (uint8_t*)malloc(chd->info.hunk_bytes);
+#ifdef HAVE_RCHD_FLAC
+         if (c == RCHD_CODEC_CD_FLAC)
+            rchd_cdfl_decoder(chd, (chd->info.hunk_bytes
+                     / RCHD_CD_FRAME_SIZE) * RCHD_CD_SECTOR_SIZE);
+#endif
+      }
+   }
 }
 
 /* Which hunk actually holds a hunk's data, following a self reference
