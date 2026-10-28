@@ -74,15 +74,32 @@ static INLINE int64_t cc_i16_mulq(int64_t a, int64_t b)
 }
 
 /* Q24 counterpart of cc_int(): P(x*b) clamped to [-0.5, 0.5].
- * P(u) = u - 0.75*u^3 + 0.25*u^5 = u*(1 - 0.25*u^2*(3 - u^2)). */
+ * P(u) = u - 0.75*u^3 + 0.25*u^5 = u*(1 - 0.25*u^2*(3 - u^2)).
+ *
+ * P is odd and reaches 0.5 at u = 1 with a minimum there, so past it
+ * the clamp decides. In Q24 every |u| from 1 + 2048 ulp up to 10.6
+ * comes out exactly +-0.5 (checked value by value), and from there the
+ * products below overflow int64, so those go straight to +-0.5 too:
+ * the value P is clamped to, without the overflow. The resamplers pass
+ * |u| below 4 except for a while after a large ratio jump (slow motion
+ * on and off). The kernels' outer taps fall here, and skip the
+ * polynomial. */
+#define CC_I16_CLAMPED (CC_I16_ONE + 2048)
+
 static INLINE int64_t cc_i16_int(int64_t x, int64_t b)
 {
    int64_t u = cc_i16_mulq(x, b);
+   if (u >=  CC_I16_CLAMPED)
+      return  CC_I16_HALF;
+   if (u <= -CC_I16_CLAMPED)
+      return -CC_I16_HALF;
 #if (CC_RESAMPLER_PRECISION > 0)
-   int64_t u2 = cc_i16_mulq(u, u);
-   int64_t t  = cc_i16_mulq(u2, ((int64_t)3 << CC_I16_FRAC_BITS) - u2);
-   t          = cc_i16_mulq(t, CC_I16_ONE >> 2);      /* * 0.25 */
-   u          = cc_i16_mulq(u, CC_I16_ONE - t);       /* u * (1 - ...) */
+   {
+      int64_t u2 = cc_i16_mulq(u, u);
+      int64_t t  = cc_i16_mulq(u2, ((int64_t)3 << CC_I16_FRAC_BITS) - u2);
+      t          = cc_i16_mulq(t, CC_I16_ONE >> 2);      /* * 0.25 */
+      u          = cc_i16_mulq(u, CC_I16_ONE - t);       /* u * (1 - ...) */
+   }
 #endif
    if      (u >  CC_I16_HALF) u =  CC_I16_HALF;
    else if (u < -CC_I16_HALF) u = -CC_I16_HALF;
@@ -184,17 +201,20 @@ static void cc_i16_upsample(void *re_, struct resampler_data_int16 *data)
 
       while (re->distance < CC_I16_ONE && outp != outp_max)
       {
-         int     i;
-         int64_t ol = 0;
-         int64_t orr = 0;
-
-         for (i = 0; i < 4; i++)
-         {
-            int64_t x = re->distance + CC_I16_ONE - (int64_t)i * CC_I16_ONE;
-            int64_t k = cc_i16_kernel(x, b);
-            ol  += re->buf_l[i] * k;
-            orr += re->buf_r[i] * k;
-         }
+         /* Tap i's kernel is cc_i16_int(x + 0.5) - cc_i16_int(x - 0.5)
+          * at x = distance + 1 - i, so neighbouring taps share an end:
+          * five evaluations make the four kernels, not eight. */
+         int64_t d  = re->distance;
+         int64_t e0 = cc_i16_int(d +     CC_I16_ONE + CC_I16_HALF, b);
+         int64_t e1 = cc_i16_int(d +                  CC_I16_HALF, b);
+         int64_t e2 = cc_i16_int(d -                  CC_I16_HALF, b);
+         int64_t e3 = cc_i16_int(d -     CC_I16_ONE - CC_I16_HALF, b);
+         int64_t e4 = cc_i16_int(d - 2 * CC_I16_ONE - CC_I16_HALF, b);
+         int64_t k0 = e0 - e1, k1 = e1 - e2, k2 = e2 - e3, k3 = e3 - e4;
+         int64_t ol  = re->buf_l[0] * k0 + re->buf_l[1] * k1
+                     + re->buf_l[2] * k2 + re->buf_l[3] * k3;
+         int64_t orr = re->buf_r[0] * k0 + re->buf_r[1] * k1
+                     + re->buf_r[2] * k2 + re->buf_r[3] * k3;
 
          outp[0]       = cc_i16_sat(ol);
          outp[1]       = cc_i16_sat(orr);
