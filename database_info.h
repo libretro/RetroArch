@@ -179,9 +179,9 @@ size_t database_info_crc_index_count(const database_info_crc_index_t *idx);
 bool database_info_crc_index_size_range(
       const database_info_crc_index_t *idx, int64_t *min, int64_t *max);
 
-/* Records whose crc is @crc, in file order, with
+/* Records whose crc is @crc or @archive_crc, in file order, with
  * @fields extracted - the same list database_info_list_new_filtered()
- * returns for "{crc:...}".  NULL if the lookup could not be
+ * returns for "{crc:or(...)}".  NULL if the lookup could not be
  * served, so the caller falls back to the query path. */
 /* @rdb_path is the database the caller believes @idx describes; the
  * lookup refuses if it does not match, so an index paired with the
@@ -189,7 +189,7 @@ bool database_info_crc_index_size_range(
  * another system's records.  Pass NULL to skip the check. */
 database_info_list_t *database_info_list_new_crc(
       database_info_crc_index_t *idx, const char *rdb_path,
-      uint32_t crc, unsigned fields);
+      uint32_t crc, uint32_t archive_crc, unsigned fields);
 
 /* The same treatment for the serial lookup disc content uses.  A
  * serial is variable-length, so the index keeps a hash and the

@@ -358,7 +358,7 @@ static int write_db_many(const char *path, int count)
 static void crc_lookup(database_info_crc_index_t *idx,
       const char *path, uint32_t crc, char *out, size_t len)
 {
-   database_info_list_t *l = database_info_list_new_crc(idx, path, crc,
+   database_info_list_t *l = database_info_list_new_crc(idx, path, crc, 0,
          DB_EXTRACT_SCAN_FIELDS);
    out[0] = '\0';
    if (l)

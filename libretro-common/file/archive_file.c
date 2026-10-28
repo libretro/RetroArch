@@ -1016,11 +1016,12 @@ uint32_t file_archive_get_file_crc32(const char *path)
  **/
 uint32_t file_archive_get_file_crc32_and_size(const char *path, uint64_t *size)
 {
-   return file_archive_get_file_crc32_size_and_ext(path, size, NULL, 0);
+   return file_archive_get_file_crc32_size_and_ext(path, size, NULL, 0,
+         NULL);
 }
 
 uint32_t file_archive_get_file_crc32_size_and_ext(const char *path,
-      uint64_t *size, char *ext, size_t len)
+      uint64_t *size, char *ext, size_t len, unsigned *entries)
 {
    file_archive_transfer_t state;
    struct archive_extract_userdata userdata        = {0};
@@ -1086,6 +1087,8 @@ uint32_t file_archive_get_file_crc32_size_and_ext(const char *path,
          break;
    }
 
+   if (entries)
+      *entries = found ? state.step_total : 0;
    file_archive_parse_file_iterate_stop(&state);
 
    /* Report nothing rather than whichever entry the walk stopped on:

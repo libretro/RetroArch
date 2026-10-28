@@ -277,11 +277,16 @@ static void check(int ok, const char *what, const char *detail)
 /* Linked with --wrap=libretrodb_open.  An index build opens its
  * database once and walks it once, so this counts the walks. */
 static unsigned rdb_opens = 0;
+/* Opens of databases whose path holds open_name. */
+static const char *open_name;
+static unsigned    named_opens;
 
 int __real_libretrodb_open(const char *path, libretrodb_t *db, bool write);
 int __wrap_libretrodb_open(const char *path, libretrodb_t *db, bool write)
 {
    rdb_opens++;
+   if (open_name && path && strstr(path, open_name))
+      named_opens++;
    return __real_libretrodb_open(path, db, write);
 }
 
@@ -522,10 +527,10 @@ static retro_atomic_int_t look_late;
 
 database_info_list_t *__real_database_info_list_new_crc(
       database_info_crc_index_t *idx, const char *rdb_path,
-      uint32_t crc, unsigned fields);
+      uint32_t crc, uint32_t archive_crc, unsigned fields);
 database_info_list_t *__wrap_database_info_list_new_crc(
       database_info_crc_index_t *idx, const char *rdb_path,
-      uint32_t crc, unsigned fields)
+      uint32_t crc, uint32_t archive_crc, unsigned fields)
 {
    unsigned k;
 
@@ -554,7 +559,7 @@ database_info_list_t *__wrap_database_info_list_new_crc(
          break;
       }
    return __real_database_info_list_new_crc(idx, rdb_path, crc,
-         fields);
+         archive_crc, fields);
 }
 
 /* Linked with --wrap: index builds.  On the threaded queue, the build
@@ -670,9 +675,9 @@ static int                gate_slow;
 static retro_atomic_int_t gate_on_scan;
 
 uint32_t __real_file_archive_get_file_crc32_size_and_ext(const char *path,
-      uint64_t *size, char *ext, size_t len);
+      uint64_t *size, char *ext, size_t len, unsigned *entries);
 uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
-      uint64_t *size, char *ext, size_t len)
+      uint64_t *size, char *ext, size_t len, unsigned *entries)
 {
    uint32_t crc;
 
@@ -685,7 +690,7 @@ uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
          retro_sleep(1);
    }
    crc = __real_file_archive_get_file_crc32_size_and_ext(path, size,
-         ext, len);
+         ext, len, entries);
    if (gate_n && size && *size == gate_size)
    {
       retro_time_t until   = cpu_features_get_time_usec() + HOLD_USEC;
@@ -3104,6 +3109,156 @@ fixture:
    check(0, "fixture", "could not write the arcade gate set");
 }
 
+/* An arcade set whose first member is a cartridge ROM: its extension is
+ * claimed and its CRC is in the cartridge database, and the set's own
+ * CRC is in a database a core listing zip claims.  An archive of
+ * several members takes either CRC in each database, so x.zip is
+ * written for the arcade database and nothing is expanded. */
+static void arc_cart_first_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static uint8_t d[2][MF_MEMBER_LEN];
+   char           db[512], dir[512], p[1024], lpl[2][1024];
+   char           what[64], detail[64], crc[16];
+   db_rec_t       arc, cart;
+   zip_entry_t    e[2];
+   int            reads;
+   bool           started;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/arc_cart_first_db", root);
+   sprintf(dir, "%s/arc_cart_first",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   fill_forced(d[0], MF_MEMBER_LEN, 73, 0x0CA70030u);
+   fill_forced(d[1], MF_MEMBER_LEN, 79, 0x0CA70031u);
+   memset(e, 0, sizeof(e));
+   e[0].name = "a.ct";
+   e[0].data = d[0];
+   e[0].len  = MF_MEMBER_LEN;
+   e[0].crc  = 0x0CA70030u;
+   e[1].name = "b.ar";
+   e[1].data = d[1];
+   e[1].len  = MF_MEMBER_LEN;
+   e[1].crc  = 0x0CA70031u;
+   sprintf(p, "%s/ac0.zip", dir);
+   if (   !write_zip_entries(p, e, 2)
+       || !set_whole_rec(&arc, "Gate AC0", p))
+      goto fixture;
+   set_rec(&cart, "Gate AC0 Cart", 0x0CA70030u, MF_MEMBER_LEN);
+   sprintf(p, "%s/Test Arc Gate.rdb", db);
+   if (!write_db_set(p, &arc, 1))
+      goto fixture;
+   sprintf(p, "%s/Test Cart Gate.rdb", db);
+   if (!write_db_set(p, &cart, 1))
+      goto fixture;
+
+   sprintf(lpl[0], "%s/Test Arc Gate.lpl",  pl_dir);
+   sprintf(lpl[1], "%s/Test Cart Gate.lpl", pl_dir);
+   filestream_delete(lpl[0]);
+   filestream_delete(lpl[1]);
+   use_queue(threaded);
+   use_db(db);
+   retro_atomic_store_release_int(&reads_begun, 0);
+   begun_size = ARC_ZIP_LEN;
+   started    = run_scan(dir) && scan_completed;
+   begun_size = 0;
+   reads      = retro_atomic_load_acquire_int(&reads_begun);
+
+   sprintf(crc, "%08X|crc", (unsigned)arc.crc);
+   sprintf(what, "arcade set, cart ROM first: x.zip %s", q);
+   check(   started && file_contains(lpl[0], "ac0.zip\"")
+         && file_contains(lpl[0], crc)
+         && !file_contains(lpl[0], "ac0.zip#")
+         && !file_contains(lpl[1], "ac0.zip"), what,
+         "ac0.zip in the arcade playlist, not expanded");
+   sprintf(what, "arcade set, cart ROM first: read whole once %s", q);
+   sprintf(detail, "%d whole reads", reads);
+   check(started && reads == 1, what, detail);
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the arcade set");
+}
+
+/* Arcade sets whose readers' whole reads fail: the scan reads them
+ * whole itself and keeps each reader's member CRC, so every archive's
+ * directory is read once. */
+static void reader_fail_arcade_lane(const char *root, const char *pl_dir)
+{
+   static uint8_t d[2][MF_MEMBER_LEN];
+   static char    names[GATE_ZIPS][16];
+   char           db[512], dir[512], p[1024], lpl[1024], want[32];
+   char           detail[64];
+   db_rec_t       arc[GATE_ZIPS];
+   zip_entry_t    e[2];
+   unsigned       k;
+   int            fails, stored;
+   bool           started, all = true;
+
+   if (!readers_expected())
+   {
+      check(1, "failed arcade reads: member CRC kept", "no readers");
+      return;
+   }
+   sprintf(db,  "%s/arc_fail_db", root);
+   sprintf(dir, "%s/arc_fail",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   memset(e, 0, sizeof(e));
+   e[0].name = "a.ar";
+   e[1].name = "b.ar";
+   for (k = 0; k < GATE_ZIPS; k++)
+   {
+      fill_forced(d[0], MF_MEMBER_LEN, 89 + k, 0x0CA70060u + 2 * k);
+      fill_forced(d[1], MF_MEMBER_LEN, 97 + k, 0x0CA70061u + 2 * k);
+      e[0].data = d[0];
+      e[0].len  = MF_MEMBER_LEN;
+      e[0].crc  = 0x0CA70060u + 2 * k;
+      e[1].data = d[1];
+      e[1].len  = MF_MEMBER_LEN;
+      e[1].crc  = 0x0CA70061u + 2 * k;
+      sprintf(p, "%s/rf%u.zip", dir, k);
+      sprintf(names[k], "Gate RF%u", k);
+      if (   !write_zip_entries(p, e, 2)
+          || !set_whole_rec(&arc[k], names[k], p))
+         goto fixture;
+   }
+   sprintf(p, "%s/Test Arc Gate.rdb", db);
+   if (!write_db_set(p, arc, GATE_ZIPS))
+      goto fixture;
+
+   sprintf(lpl, "%s/Test Arc Gate.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(true);
+   use_db(db);
+   retro_atomic_store_release_int(&reader_fails, 0);
+   retro_atomic_store_release_int(&stored_reads, 0);
+   fail_size   = ARC_ZIP_LEN;
+   stored_name = "/arc_fail/";
+   started     = run_scan(dir) && scan_completed;
+   fail_size   = 0;
+   stored_name = NULL;
+   fails       = retro_atomic_load_acquire_int(&reader_fails);
+   stored      = retro_atomic_load_acquire_int(&stored_reads);
+
+   for (k = 0; k < GATE_ZIPS; k++)
+   {
+      sprintf(want, "rf%u.zip\"", k);
+      all = all && file_contains(lpl, want);
+   }
+   check(started && all, "failed arcade reads: matched whole as x.zip",
+         "rf0.zip to rf3.zip");
+   sprintf(detail, "%d reader reads failed, %d directory reads", fails,
+         stored);
+   check(   started && fails == GATE_ZIPS && stored == GATE_ZIPS,
+         "failed arcade reads: member CRC kept", detail);
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the failed arcade set");
+}
+
 /* Writes @n plain .ct files of MF_MEMBER_LEN bytes into @dir, the k-th
  * with CRC @crc + k, and their records. */
 static bool write_plain_ct(const char *dir, unsigned n, uint32_t crc,
@@ -3178,6 +3333,144 @@ static void unindexed_plain_lane(const char *root, const char *pl_dir)
 
 fixture:
    check(0, "fixture", "could not write the unindexed plain set");
+}
+
+/* Arcade sets whose first members carry a claimed cartridge extension
+ * and match nothing there: the sets are matched whole and the
+ * cartridge database, claimed only for that extension, is never
+ * opened. */
+static void arc_folder_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static uint8_t d[2][MF_MEMBER_LEN];
+   static char    names[GATE_ZIPS][16];
+   char           db[512], dir[512], p[1024], lpl[1024], want[32];
+   char           what[64], detail[64];
+   db_rec_t       arc[GATE_ZIPS], cart;
+   zip_entry_t    e[2];
+   unsigned       k, opens;
+   bool           started, all = true;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/arc_folder_db", root);
+   sprintf(dir, "%s/arc_folder",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   memset(e, 0, sizeof(e));
+   e[0].name = "a.ct";
+   e[1].name = "b.ar";
+   for (k = 0; k < GATE_ZIPS; k++)
+   {
+      fill_forced(d[0], MF_MEMBER_LEN, 101 + k, 0x0CA70070u + 2 * k);
+      fill_forced(d[1], MF_MEMBER_LEN, 107 + k, 0x0CA70071u + 2 * k);
+      e[0].data = d[0];
+      e[0].len  = MF_MEMBER_LEN;
+      e[0].crc  = 0x0CA70070u + 2 * k;
+      e[1].data = d[1];
+      e[1].len  = MF_MEMBER_LEN;
+      e[1].crc  = 0x0CA70071u + 2 * k;
+      sprintf(p, "%s/af%u.zip", dir, k);
+      sprintf(names[k], "Gate AF%u", k);
+      if (   !write_zip_entries(p, e, 2)
+          || !set_whole_rec(&arc[k], names[k], p))
+         goto fixture;
+   }
+   set_rec(&cart, "Gate AF Cart", 0x0CA7007Fu, MF_MEMBER_LEN);
+   sprintf(p, "%s/Test Arc Gate.rdb", db);
+   if (!write_db_set(p, arc, GATE_ZIPS))
+      goto fixture;
+   sprintf(p, "%s/Test Cart Gate.rdb", db);
+   if (!write_db_set(p, &cart, 1))
+      goto fixture;
+
+   sprintf(lpl, "%s/Test Arc Gate.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(threaded);
+   use_db(db);
+   open_name   = "Test Cart Gate";
+   named_opens = 0;
+   started     = run_scan(dir) && scan_completed;
+   opens       = named_opens;
+   open_name   = NULL;
+
+   for (k = 0; k < GATE_ZIPS; k++)
+   {
+      sprintf(want, "af%u.zip\"", k);
+      all = all && file_contains(lpl, want);
+   }
+   sprintf(what, "arcade folder: sets matched whole %s", q);
+   check(started && all, what, "af0.zip to af3.zip");
+   sprintf(what, "arcade folder: no cartridge database walked %s", q);
+   sprintf(detail, "%u opens", opens);
+   check(started && opens == 0, what, detail);
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the arcade folder");
+}
+
+/* Cartridge zips whose database is claimed only for the member's
+ * extension, with every index build refused.  The member pass leaves
+ * that database out, so each zip costs the walks the expansion makes
+ * and no more. */
+static void unindexed_member_lane(const char *root, const char *pl_dir)
+{
+   static const char *const file[GATE_ZIPS] = {
+      "ui0.zip", "ui1.zip", "ui2.zip", "ui3.zip" };
+   static const char *const name[GATE_ZIPS] = {
+      "Gate UI0", "Gate UI1", "Gate UI2", "Gate UI3" };
+   char      db[512], dir[2][512], p[1024], lpl[1024], want[32];
+   char      detail[64];
+   db_rec_t  rec[GATE_ZIPS];
+   unsigned  k, opens[2];
+   bool      started[2], all = true;
+
+   sprintf(db,     "%s/unindexed_db", root);
+   sprintf(dir[0], "%s/unindexed_1",  root);
+   sprintf(dir[1], "%s/unindexed_4",  root);
+   path_mkdir(db);
+   path_mkdir(dir[0]);
+   path_mkdir(dir[1]);
+   for (k = 0; k < GATE_ZIPS; k++)
+      if (   !write_gate_zip(dir[1], file[k], "rom.ct", name[k],
+               0x0CA70040u + k, &rec[k])
+          || (!k && !write_gate_zip(dir[0], file[k], "rom.ct", name[k],
+               0x0CA70040u + k, &rec[k])))
+         goto fixture;
+   sprintf(p, "%s/Test Cart Gate.rdb", db);
+   if (!write_db_set(p, rec, GATE_ZIPS))
+      goto fixture;
+   sprintf(lpl, "%s/Test Cart Gate.lpl", pl_dir);
+   use_queue(false);
+   use_db(db);
+
+   /* One zip, then four: what the last three add. */
+   for (k = 0; k < 2; k++)
+   {
+      filestream_delete(lpl);
+      index_cap  = 1;
+      rdb_opens  = 0;
+      started[k] = run_scan(dir[k]) && scan_completed;
+      opens[k]   = rdb_opens;
+      index_cap  = 0;
+   }
+   for (k = 0; k < GATE_ZIPS; k++)
+   {
+      sprintf(want, "%s#rom.ct", file[k]);
+      all = all && file_contains(lpl, want);
+   }
+   check(started[0] && started[1] && all,
+         "unindexed: cart zips matched as x.zip#member",
+         "ui0.zip#rom.ct to ui3.zip#rom.ct");
+   sprintf(detail, "%u opens for 1 zip, %u for %u", opens[0], opens[1],
+         GATE_ZIPS);
+   check(   started[0] && started[1] && opens[1] >= opens[0]
+         && opens[1] - opens[0] <= GATE_ZIPS - 1,
+         "unindexed: one database walk per later zip", detail);
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the unindexed set");
 }
 
 /* Scans @dir with @db's two databases in name order, then in reverse:
@@ -5935,7 +6228,13 @@ int main(int argc, char **argv)
       base_paths_lane(root, pl_dir, false);
       arc_gate_lane(root, pl_dir, true);
       arc_gate_lane(root, pl_dir, false);
+      arc_cart_first_lane(root, pl_dir, true);
+      arc_cart_first_lane(root, pl_dir, false);
+      arc_folder_lane(root, pl_dir, true);
+      arc_folder_lane(root, pl_dir, false);
       unindexed_plain_lane(root, pl_dir);
+      reader_fail_arcade_lane(root, pl_dir);
+      unindexed_member_lane(root, pl_dir);
       sibling_lane(root, pl_dir, true);
       sibling_lane(root, pl_dir, false);
       dual_match_lane(root, pl_dir, true);

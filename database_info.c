@@ -1250,7 +1250,7 @@ static size_t db_crc_gather(const database_info_crc_index_t *idx,
 
 database_info_list_t *database_info_list_new_crc(
       database_info_crc_index_t *idx, const char *rdb_path,
-      uint32_t crc, unsigned fields)
+      uint32_t crc, uint32_t archive_crc, unsigned fields)
 {
    /* Working set for one lookup.  A run longer than this is handed
     * back to the query path rather than truncated - see
@@ -1277,6 +1277,9 @@ database_info_list_t *database_info_list_new_crc(
 
    found = db_crc_gather(idx, crc, hits, found,
          sizeof(hits) / sizeof(hits[0]));
+   if (found != (size_t)-1 && archive_crc && archive_crc != crc)
+      found = db_crc_gather(idx, archive_crc, hits, found,
+            sizeof(hits) / sizeof(hits[0]));
 
    /* Too many records share this crc to answer from the index; let
     * the query path, which has no such bound, handle it. */
