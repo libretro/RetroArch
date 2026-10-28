@@ -504,11 +504,22 @@ void sdl3_ctx_input_driver(void *data,
 
 bool sdl3_next_window_is_sdl3(void)
 {
-   settings_t *settings = config_get_ptr();
-   const char *video    = settings->arrays.video_driver;
-   return string_is_equal(video, "sdl3")
-       || string_is_equal(settings->arrays.video_context_driver,
-             string_is_equal(video, "vulkan") ? "vk_sdl3" : "gl_sdl3");
+   /* The driver in front, and through it the context the drivers ask
+    * sdl3_ctx_enabled() about. A core's gl/glcore/vulkan request
+    * swaps the setting and keeps the user's choice in
+    * cached_driver_id, which sdl3_ctx_enabled() honours. A driver
+    * with no context driver (d3d*, metal, ...) never makes an SDL3
+    * window, whatever the context setting still says. */
+   const char *video = config_get_ptr()->arrays.video_driver;
+   if (string_is_equal(video, "sdl3"))
+      return true;
+   if (string_is_equal(video, "vulkan"))
+      return sdl3_ctx_enabled("vk_sdl3");
+   if (     string_is_equal(video, "gl")
+         || string_is_equal(video, "glcore")
+         || string_is_equal(video, "gl1"))
+      return sdl3_ctx_enabled("gl_sdl3");
+   return false;
 }
 
 bool sdl3_ctx_enabled(const char *ctx_ident)

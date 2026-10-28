@@ -199,9 +199,11 @@ static bool sdl3_ctx_set_video_mode(void *data,
       bool fullscreen)
 {
    gfx_ctx_sdl3_data_t *sdl = (gfx_ctx_sdl3_data_t*)data;
+   bool had_window;
 
    if (!sdl)
       return false;
+   had_window = sdl->win != NULL;
 
    /* GL attributes must be set before the window is created. */
    if (!sdl->win)
@@ -231,6 +233,14 @@ static bool sdl3_ctx_set_video_mode(void *data,
    if (!sdl3_window_set_video_mode(&sdl->win, dims, fullscreen,
             SDL_WINDOW_OPENGL))
       goto error;
+
+   /* Restyled in place (GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE): the
+    * window and its context are the ones already current, the vsync
+    * probe and interval stand, and nothing was taken from the cache,
+    * so a toggle costs no rebind, no swap-interval calls and no
+    * cached-context ack. */
+   if (had_window && sdl->ctx)
+      return true;
 
    /* Hold onto the context across video reinit (hw_render.cache_context). */
    if (!sdl->ctx && sdl3_gl_cached_ctx)
