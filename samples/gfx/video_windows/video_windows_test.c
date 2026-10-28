@@ -1501,6 +1501,16 @@ static void test_windows_steps_ui(void)
    frame.window_keep = 0;
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 2u && create == 0);
+   /* A keep never makes a window: not one that is down, nor one up
+    * on another display */
+   held.live         = 0;
+   frame.window_keep = 1u << VIDEO_WINDOWS_PRESENTATION;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 0);
+   held.live       = 2u;
+   held.display[1] = 3;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u && create == 0);
 }
 
 int main(void)

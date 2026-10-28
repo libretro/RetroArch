@@ -2920,6 +2920,12 @@ static void video_thread_loop(void *data)
                 * value carried from the main thread is whatever it read
                 * when the frame was built and is superseded here. */
                video_info->swap_count = thr->video_st->swap_count;
+#ifdef HAVE_VIDEO_WINDOWS
+               /* The snapshot the driver's window layouts are drawn
+                * from */
+               if (video_info->windows)
+                  thr->video_st->windows_drawn = video_info->windows->serial;
+#endif
                /* Retain what this frame puts on screen when the setting
                 * is on and the driver can put it there again. Shader
                 * sub-frames opt out: each is a different shader output

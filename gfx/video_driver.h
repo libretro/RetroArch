@@ -1732,6 +1732,8 @@ typedef struct video_window_layout
    unsigned window_dims;
    /* The display it was drawn on */
    unsigned display;
+   /* The serial of the frame snapshot it was drawn from */
+   unsigned serial;
    unsigned generation;
 } video_window_layout_t;
 
@@ -1746,6 +1748,10 @@ typedef struct video_window_layouts
    unsigned next;                 /* the publisher's: slot to fill */
    unsigned last;                 /* the publisher's: slot + 1 */
    unsigned held;                 /* the main thread's: slot + 1 */
+   /* The main thread's: the serial of the snapshot that last asked
+    * for the window differently; a layout drawn before it is not
+    * shown */
+   unsigned from;
 } video_window_layouts_t;
 
 /* The platform's displays, handed over by index as the window layouts
@@ -2140,6 +2146,12 @@ typedef struct
    retro_atomic_int_t windows_failed;
    unsigned windows_forced_attached;
    unsigned windows_restore;
+   /* A bit a window id: those the last snapshot wanted, 0 while
+    * windows are off; main thread */
+   unsigned windows_wanted;
+   /* The serial of the snapshot the driver draws: the video thread's
+    * under the wrapper */
+   unsigned windows_drawn;
 #endif
 } video_driver_state_t;
 

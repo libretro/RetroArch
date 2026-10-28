@@ -593,12 +593,24 @@ void video_window_place_rect(video_window_rect_t *rect,
       rect->y = area->y + area->h - rect->h;
 }
 
+unsigned video_windows_wanted(const video_windows_frame_t *frame)
+{
+   unsigned w;
+   unsigned wanted = 0;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (     frame->window_screens[w] || frame->window_ui[w]
+            || (frame->window_keep & (1u << w)))
+         wanted |= 1u << w;
+   return wanted;
+}
+
 void video_windows_steps(video_windows_held_t *held,
       const video_windows_frame_t *frame, unsigned *retire,
       unsigned *create)
 {
    unsigned w;
    unsigned wanted = 0;
+   unsigned kept   = 0;
    *retire         = 0;
    if (frame)
    {
@@ -606,18 +618,20 @@ void video_windows_steps(video_windows_held_t *held,
       if (frame->restore != held->restore)
          held->failed = 0;
       held->restore = frame->restore;
+      wanted        = video_windows_wanted(frame);
+      kept          = frame->window_keep;
       for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       {
          unsigned bit = 1u << w;
-         if (     !frame->window_screens[w] && !frame->window_ui[w]
-               && !(frame->window_keep & bit))
-            continue;
-         wanted |= bit;
-         if ((held->live & bit) && held->display[w] != frame->display)
+         if (     (held->live & wanted & bit)
+               && held->display[w] != frame->display)
             *retire |= bit;
       }
    }
    held->failed &= wanted;
    *retire      |= held->live & ~wanted;
-   *create       = wanted & ~(held->live & ~*retire) & ~held->failed;
+   /* A keep only holds a window that is up: one made for it is never
+    * drawn */
+   *create       = wanted & ~kept & ~(held->live & ~*retire)
+      & ~held->failed;
 }

@@ -354,6 +354,8 @@ typedef struct video_windows_frame
    unsigned core_dims;
    /* Counts video_driver_restore_windows() */
    unsigned restore;
+   /* Counts the main thread's snapshots; a redraw's is the last drawn */
+   unsigned serial;
    /* Where the platform puts the windows: a display's ordinal, 0 where
     * the native layer places each one itself */
    unsigned display;
@@ -440,7 +442,8 @@ void video_driver_attach_windows(unsigned screens, unsigned restore);
 /* Window @window's layout as drawn on display @display (an ordinal, 0
  * where the native layer placed it), from the thread that runs the
  * context, one at a time per window; latest wins. @window_dims are
- * client pixels, which input points arrive in. NULL clears it. */
+ * client pixels, which input points arrive in. NULL clears it. It
+ * carries the serial of the snapshot being drawn. */
 void video_driver_publish_window_layout(unsigned window,
       unsigned generation, unsigned display,
       const video_views_layout_t *layout,
@@ -456,7 +459,8 @@ bool video_driver_translate_window_point(unsigned window,
       uint32_t *result);
 
 /* App thread: the display window @window has drawn on since it was
- * made, 0 while it has not or is gone; its client size in *@dims
+ * made, 0 while it has not or is gone, or has not drawn since the
+ * snapshots last asked for it differently; its client size in *@dims
  * (may be NULL) */
 unsigned video_driver_window_shown(unsigned window, unsigned *dims);
 
@@ -474,10 +478,14 @@ typedef struct video_windows_held
    unsigned display[RETRO_VIDEO_VIEWS_MAX];
 } video_windows_held_t;
 
+/* @frame's ids with screens, UI layers or a keep, a bit an id: those
+ * it wants a window for, or holds one for (a keep). Pure, any thread. */
+unsigned video_windows_wanted(const video_windows_frame_t *frame);
+
 /* For @frame, NULL while windows are off: in *@retire the live ids to
  * let go of, those with nothing to show now or made for another
- * display; in *@create the ids with screens, UI layers or a keep and no
- * window, those that failed since the restore count last moved left
+ * display; in *@create the ids with screens or UI layers, no keep and
+ * no window, those that failed since the restore count last moved left
  * out. An id in both is made again. The caller keeps live, failed and
  * display as it makes and lets go of windows. Pure, any thread. */
 void video_windows_steps(video_windows_held_t *held,
