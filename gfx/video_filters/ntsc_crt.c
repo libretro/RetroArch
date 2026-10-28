@@ -530,12 +530,95 @@ crt_init(struct CRT *v, int w, int h, int f, unsigned char *out)
 
 }
 
+/* SIMD tiers for the passes that run several lines or samples at once
+ * (see "Several lines at once" below). */
+#define CRT_LANES_MAX 16
+
+#if (CRT_CC_SAMPLES == 4) && !USE_CONVOLUTION && !CRT_DO_BLOOM \
+    && (defined(__x86_64__) || defined(__i386__) \
+     || defined(_M_X64) || defined(_M_IX86))
+#if defined(_MSC_VER) && !defined(__clang__)
+#if _MSC_VER >= 1911
+#define CRT_HAVE_LANES_AVX2   1
+#define CRT_HAVE_LANES_AVX512 1
+#define CRT_TARGET_AVX2
+#define CRT_TARGET_AVX512
+#endif
+#elif defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
+/* PlayStation clang and clang-cl declare only the intrinsics of ISAs
+ * the whole build enables, so a tier is built only where the baseline
+ * has it. */
+#ifdef __AVX2__
+#define CRT_HAVE_LANES_AVX2 1
+#define CRT_TARGET_AVX2
+#ifdef __AVX512F__
+#define CRT_HAVE_LANES_AVX512 1
+#define CRT_TARGET_AVX512
+#endif
+#endif
+#elif (defined(__clang__) && __clang_major__ >= 4) \
+   || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5)
+#define CRT_HAVE_LANES_AVX2   1
+#define CRT_HAVE_LANES_AVX512 1
+#define CRT_TARGET_AVX2   __attribute__((target("avx2")))
+#define CRT_TARGET_AVX512 __attribute__((target("avx512f")))
+#endif
+#endif
+
+#if defined(CRT_HAVE_LANES_AVX2) || defined(CRT_HAVE_LANES_AVX512)
+#define CRT_HAVE_LANES 1
+#include <immintrin.h>
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#define CRT_ZEROUPPER() _mm256_zeroupper()
+#else
+#define CRT_ZEROUPPER()
+#endif
+#endif
+
+/* The noise generator: rn' = a * rn + c in 32 bits. Applying it k times
+ * is again one multiply and add, with A = a^k and C = c * (a^(k-1) +
+ * ... + 1), all mod 2^32, so a lane can start k steps ahead and step k
+ * at a time and see exactly the numbers the one-at-a-time loop does. */
+#define CRT_LCG_A 214019u
+#define CRT_LCG_C 140327895u
+
+#ifdef CRT_HAVE_LANES
+static void crt_lcg_coef(unsigned k, unsigned *A, unsigned *C)
+{
+    unsigned ra = 1, rc = 0, ba = CRT_LCG_A, bc = CRT_LCG_C;
+    while (k) {
+        if (k & 1) {
+            rc = ba * rc + bc;
+            ra = ba * ra;
+        }
+        bc = ba * bc + bc;
+        ba = ba * ba;
+        k >>= 1;
+    }
+    *A = ra;
+    *C = rc;
+}
+
+static unsigned crt_lcg_jump(unsigned rn, unsigned k)
+{
+    unsigned A, C;
+    crt_lcg_coef(k, &A, &C);
+    return A * rn + C;
+}
+#endif
+
+#ifdef CRT_HAVE_LANES
+static size_t crt_noise_lanes(int lanes, const signed char *an,
+        signed char *out, size_t n, unsigned rn, int nn);
+#endif
+
 /* The first half of demodulation, in line order: noise, vertical sync,
  * then for each active line the horizontal sync search and colour carrier
  * accumulation - which carry from one line to the next - and the
  * parameters the rest of the line's decoding needs, into v->lines. */
 static void
-crt_demodulate_begin(struct CRT *v, int noise)
+crt_demodulate_begin(struct CRT *v, int noise, int lanes)
 {
     int i, j, line, rn;
     signed char *sig;
@@ -585,10 +668,22 @@ found_field:
     field = (j > (CRT_HRES / 2));
     v->vsync = -3;
 #endif
-    for (i = 0; i < CRT_INPUT_SIZE; i++) {
+    i = 0;
+#ifdef CRT_HAVE_LANES
+    /* Most of the signal in lanes, and the rest below from the state
+     * the lanes reached, so the numbers and v->rn are the same. */
+    if (lanes) {
+        i  = (int)crt_noise_lanes(lanes, v->analog, v->inp, CRT_INPUT_SIZE,
+                (unsigned)rn, noise);
+        rn = (int)crt_lcg_jump((unsigned)rn, (unsigned)i);
+    }
+#else
+    (void)lanes;
+#endif
+    for (; i < CRT_INPUT_SIZE; i++) {
         int nn = noise;
         /* The LCG wraps by design; in unsigned it does so defined. */
-        rn = (int)(214019u * (unsigned)rn + 140327895u);
+        rn = (int)(CRT_LCG_A * (unsigned)rn + CRT_LCG_C);
         /* signal + noise */
         s = v->analog[i] + (((((rn >> 16) & 0xff) - 0x7f) * nn) >> 8);
         if (s >  127) { s =  127; }
@@ -802,8 +897,6 @@ vsync_found:
  * buffers are made at create; the tier comes from the SIMD mask
  * RetroArch passes there, so the plugin needs nothing of its own to
  * detect the CPU. */
-#define CRT_LANES_MAX 16
-
 struct crt_lanes {
     int n;            /* lanes per batch: 0 (scalar only), 8 or 16 */
     signed char *sig; /* [AV_LEN + 1][n] */
@@ -820,46 +913,7 @@ struct crt_mod_lanes {
     int *out;
 };
 
-#if (CRT_CC_SAMPLES == 4) && !USE_CONVOLUTION && !CRT_DO_BLOOM \
-    && (defined(__x86_64__) || defined(__i386__) \
-     || defined(_M_X64) || defined(_M_IX86))
-#if defined(_MSC_VER) && !defined(__clang__)
-#if _MSC_VER >= 1911
-#define CRT_HAVE_LANES_AVX2   1
-#define CRT_HAVE_LANES_AVX512 1
-#define CRT_TARGET_AVX2
-#define CRT_TARGET_AVX512
-#endif
-#elif defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
-/* PlayStation clang and clang-cl declare only the intrinsics of ISAs
- * the whole build enables, so a tier is built only where the baseline
- * has it. */
-#ifdef __AVX2__
-#define CRT_HAVE_LANES_AVX2 1
-#define CRT_TARGET_AVX2
-#ifdef __AVX512F__
-#define CRT_HAVE_LANES_AVX512 1
-#define CRT_TARGET_AVX512
-#endif
-#endif
-#elif (defined(__clang__) && __clang_major__ >= 4) \
-   || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5)
-#define CRT_HAVE_LANES_AVX2   1
-#define CRT_HAVE_LANES_AVX512 1
-#define CRT_TARGET_AVX2   __attribute__((target("avx2")))
-#define CRT_TARGET_AVX512 __attribute__((target("avx512f")))
-#endif
-#endif
-
-#if defined(CRT_HAVE_LANES_AVX2) || defined(CRT_HAVE_LANES_AVX512)
-#define CRT_HAVE_LANES 1
-#include <immintrin.h>
-
-#if defined(_MSC_VER) && !defined(__clang__)
-#define CRT_ZEROUPPER() _mm256_zeroupper()
-#else
-#define CRT_ZEROUPPER()
-#endif
+#ifdef CRT_HAVE_LANES
 
 /* One equaliser step on vectors of lanes: EQF_STEP's updates, in its
  * order, with the history shifted after the output is formed. */
@@ -1149,6 +1203,138 @@ static void crt_modulate_lanes(struct CRT *v, const struct NTSC_SETTINGS *s,
                 dst[k][x] = (signed char)src[k];
         }
     }
+}
+/* ---- Noise in lanes ----
+ * demodulate_begin's noise pass over the whole signal, many samples a
+ * step: each lane holds the generator state for its own sample, steps
+ * by the lane count with crt_lcg_coef's constants, and does the scalar
+ * loop's arithmetic. Several vectors at once hide the multiply's
+ * latency. Returns how many samples it wrote (a multiple of the step);
+ * the caller finishes the rest from crt_lcg_jump. */
+#ifdef CRT_HAVE_LANES_AVX2
+CRT_TARGET_AVX2
+static size_t crt_noise_avx2(const signed char *an, signed char *out,
+        size_t n, unsigned rn, int nn)
+{
+    unsigned st[32], A, C;
+    size_t i;
+    int j;
+    __m256i v0, v1, v2, v3;
+    const __m256i ff  = _mm256_set1_epi32(0xff);
+    const __m256i k7f = _mm256_set1_epi32(0x7f);
+    const __m256i vnn = _mm256_set1_epi32(nn);
+    const __m256i lo  = _mm256_set1_epi32(-127);
+    const __m256i hi  = _mm256_set1_epi32(127);
+    const __m256i ord = _mm256_setr_epi32(0, 4, 1, 5, 2, 6, 3, 7);
+    __m256i vA, vC;
+    for (j = 0; j < 32; j++) {
+        rn    = CRT_LCG_A * rn + CRT_LCG_C;
+        st[j] = rn;
+    }
+    crt_lcg_coef(32, &A, &C);
+    vA = _mm256_set1_epi32((int)A);
+    vC = _mm256_set1_epi32((int)C);
+    v0 = _mm256_loadu_si256((const __m256i*)(st +  0));
+    v1 = _mm256_loadu_si256((const __m256i*)(st +  8));
+    v2 = _mm256_loadu_si256((const __m256i*)(st + 16));
+    v3 = _mm256_loadu_si256((const __m256i*)(st + 24));
+#define CRT_NOISE_A2(V, OFF, S) \
+    { \
+        __m256i t_ = _mm256_sub_epi32(_mm256_and_si256( \
+                    _mm256_srli_epi32(V, 16), ff), k7f); \
+        t_ = _mm256_srai_epi32(_mm256_mullo_epi32(t_, vnn), 8); \
+        S  = _mm256_add_epi32(_mm256_cvtepi8_epi32(_mm_loadl_epi64( \
+                    (const __m128i*)(an + i + (OFF)))), t_); \
+        S  = _mm256_min_epi32(_mm256_max_epi32(S, lo), hi); \
+        V  = _mm256_add_epi32(_mm256_mullo_epi32(V, vA), vC); \
+    }
+    for (i = 0; i + 32 <= n; i += 32) {
+        __m256i s0, s1, s2, s3, b;
+        CRT_NOISE_A2(v0,  0, s0)
+        CRT_NOISE_A2(v1,  8, s1)
+        CRT_NOISE_A2(v2, 16, s2)
+        CRT_NOISE_A2(v3, 24, s3)
+        /* Narrowing packs per 128-bit lane: 4-sample groups come out
+         * as s0 s1 s2 s3 (low halves) then the high halves; the
+         * permute puts them back in sample order. In range, so the
+         * saturation never acts. */
+        b = _mm256_packs_epi16(_mm256_packs_epi32(s0, s1),
+                _mm256_packs_epi32(s2, s3));
+        _mm256_storeu_si256((__m256i*)(out + i),
+                _mm256_permutevar8x32_epi32(b, ord));
+    }
+#undef CRT_NOISE_A2
+    CRT_ZEROUPPER();
+    return i;
+}
+#endif
+
+#ifdef CRT_HAVE_LANES_AVX512
+CRT_TARGET_AVX512
+static size_t crt_noise_avx512(const signed char *an, signed char *out,
+        size_t n, unsigned rn, int nn)
+{
+    unsigned st[64], A, C;
+    size_t i;
+    int j;
+    __m512i v0, v1, v2, v3;
+    const __m512i ff  = _mm512_set1_epi32(0xff);
+    const __m512i k7f = _mm512_set1_epi32(0x7f);
+    const __m512i vnn = _mm512_set1_epi32(nn);
+    const __m512i lo  = _mm512_set1_epi32(-127);
+    const __m512i hi  = _mm512_set1_epi32(127);
+    __m512i vA, vC;
+    for (j = 0; j < 64; j++) {
+        rn    = CRT_LCG_A * rn + CRT_LCG_C;
+        st[j] = rn;
+    }
+    crt_lcg_coef(64, &A, &C);
+    vA = _mm512_set1_epi32((int)A);
+    vC = _mm512_set1_epi32((int)C);
+    v0 = _mm512_loadu_si512((const void*)(st +  0));
+    v1 = _mm512_loadu_si512((const void*)(st + 16));
+    v2 = _mm512_loadu_si512((const void*)(st + 32));
+    v3 = _mm512_loadu_si512((const void*)(st + 48));
+#define CRT_NOISE_A5(V, OFF) \
+    { \
+        __m512i t_ = _mm512_sub_epi32(_mm512_and_si512( \
+                    _mm512_srli_epi32(V, 16), ff), k7f); \
+        __m512i s_; \
+        t_ = _mm512_srai_epi32(_mm512_mullo_epi32(t_, vnn), 8); \
+        s_ = _mm512_add_epi32(_mm512_cvtepi8_epi32(_mm_loadu_si128( \
+                    (const __m128i*)(an + i + (OFF)))), t_); \
+        s_ = _mm512_min_epi32(_mm512_max_epi32(s_, lo), hi); \
+        _mm_storeu_si128((__m128i*)(out + i + (OFF)), \
+                _mm512_cvtepi32_epi8(s_)); \
+        V  = _mm512_add_epi32(_mm512_mullo_epi32(V, vA), vC); \
+    }
+    for (i = 0; i + 64 <= n; i += 64) {
+        CRT_NOISE_A5(v0,  0)
+        CRT_NOISE_A5(v1, 16)
+        CRT_NOISE_A5(v2, 32)
+        CRT_NOISE_A5(v3, 48)
+    }
+#undef CRT_NOISE_A5
+    CRT_ZEROUPPER();
+    return i;
+}
+#endif
+
+/* Samples [0, n) of the noise pass in lanes when there are any; returns
+ * how many were done. */
+static size_t crt_noise_lanes(int lanes, const signed char *an,
+        signed char *out, size_t n, unsigned rn, int nn)
+{
+#ifdef CRT_HAVE_LANES_AVX512
+    if (lanes == 16)
+        return crt_noise_avx512(an, out, n, rn, nn);
+#endif
+#ifdef CRT_HAVE_LANES_AVX2
+    if (lanes)
+        return crt_noise_avx2(an, out, n, rn, nn);
+#endif
+    (void)lanes; (void)an; (void)out; (void)n; (void)rn; (void)nn;
+    return 0;
 }
 #endif /* CRT_HAVE_LANES */
 
@@ -1895,6 +2081,9 @@ struct filter_data
     struct crt_yiq *scratch;
     /* every worker's lane buffers, one block made at create */
     void *lane_mem;
+    /* lanes per step for the passes that need no buffers (noise):
+     * 0, 8 or 16, from the SIMD mask given to create */
+    int lanes_tier;
     /* the encoder's lane buffers (it runs before the workers, once) */
     struct crt_mod_lanes mod_lanes;
     void *mod_lane_mem;
@@ -2027,6 +2216,7 @@ static void *ntsc_crt_create(const struct softfilter_config *config,
      * lanes: the transposed signal and the decoded Y, I and Q, each
      * started on a 64-byte boundary. Without them the workers decode
      * line by line, as before. */
+    filt->lanes_tier = crt_lanes_for(simd);
     {
         int    nl   = crt_lanes_for(simd);
         size_t rows = (size_t)AV_LEN + 1;
@@ -2199,7 +2389,7 @@ static int ntsc_crt_prepare(struct filter_data *filt, const void *in_data,
 
     /* ---- Encode → signal → decode ---- */
     crt_modulate(&filt->crt, &filt->ntsc, &filt->mod_lanes);
-    crt_demodulate_begin(&filt->crt, filt->noise);
+    crt_demodulate_begin(&filt->crt, filt->noise, filt->lanes_tier);
 
     /* ---- Advance field/frame counters ---- */
     filt->field ^= 1;
