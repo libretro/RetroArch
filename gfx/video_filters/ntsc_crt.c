@@ -810,6 +810,16 @@ struct crt_lanes {
     int *y, *i, *q;   /* [AV_LEN + 1][n] each */
 };
 
+/* The encoder's lanes: one source row per lane, converted to Y, I and Q
+ * once per source pixel ([w_cap][n] each), and the signal levels the
+ * lanes produce, [AV_LEN][n], before they go to their rows. */
+struct crt_mod_lanes {
+    int n;
+    unsigned w_cap;
+    int *y, *i, *q;
+    int *out;
+};
+
 #if (CRT_CC_SAMPLES == 4) && !USE_CONVOLUTION && !CRT_DO_BLOOM \
     && (defined(__x86_64__) || defined(__i386__) \
      || defined(_M_X64) || defined(_M_IX86))
@@ -990,6 +1000,155 @@ static void crt_decode_lanes(struct CRT *v, const int *idx,
     crt_eq_pass_avx2(&eqI, lanes->sig, L, R, wi,   bright, lanes->i);
     crt_eq_pass_avx2(&eqQ, lanes->sig, L, R, wq,   bright, lanes->q);
 #endif
+}
+/* ---- The encoder in lanes ----
+ * Each line of the modulator runs three one-pole filters along its
+ * samples from zero and turns them into a signal level; lines are
+ * independent, so they run in lanes as the decoder's do, with the
+ * scalar loop's integer operations in its order. */
+/* EXP_P, the filters' fixed-point shift, defined with the modulator
+ * further down; checked equal there. */
+#define CRT_MOD_EXP_P 11
+#define CRT_MOD_STEP_V(ADD, SUB, MUL, SRAI, MIN, MAX) \
+    hY  = ADD(hY, SRAI(MUL(SUB(fy, hY), vcY), CRT_MOD_EXP_P)); \
+    hI  = ADD(hI, SRAI(MUL(SUB(fi, hI), vcI), CRT_MOD_EXP_P)); \
+    hQ  = ADD(hQ, SRAI(MUL(SUB(fq, hQ), vcQ), CRT_MOD_EXP_P)); \
+    ire = ADD(vblack, SRAI(MUL(ADD(ADD(hY, SRAI(MUL(hI, mi[xoff]), 4)), \
+                                   SRAI(MUL(hQ, mq[xoff]), 4)), \
+                               vwhite), 10)); \
+    ire = MIN(MAX(ire, vlo), vhi)
+
+#ifdef CRT_HAVE_LANES_AVX2
+#define CRT_A2_MIN(a, b) _mm256_min_epi32(a, b)
+#define CRT_A2_MAX(a, b) _mm256_max_epi32(a, b)
+
+CRT_TARGET_AVX2
+static void crt_mod_pass_avx2(const int *ty, const int *ti, const int *tq,
+        const int *colc, int destw, int xo, int black, int white,
+        int cY, int cI, int cQ, const int *modI, const int *modQ, int *out)
+{
+    const __m256i vcY = _mm256_set1_epi32(cY);
+    const __m256i vcI = _mm256_set1_epi32(cI);
+    const __m256i vcQ = _mm256_set1_epi32(cQ);
+    const __m256i vblack = _mm256_set1_epi32(black);
+    const __m256i vwhite = _mm256_set1_epi32(white);
+    const __m256i vlo = _mm256_setzero_si256();
+    const __m256i vhi = _mm256_set1_epi32(110);
+    __m256i mi[4], mq[4];
+    __m256i hY = vlo, hI = vlo, hQ = vlo;
+    int x, m;
+    for (m = 0; m < 4; m++) {
+        mi[m] = _mm256_set1_epi32(modI[m]);
+        mq[m] = _mm256_set1_epi32(modQ[m]);
+    }
+    for (x = 0; x < destw; x++) {
+        size_t c   = (size_t)colc[x] * 8;
+        __m256i fy = _mm256_loadu_si256((const __m256i*)(ty + c));
+        __m256i fi = _mm256_loadu_si256((const __m256i*)(ti + c));
+        __m256i fq = _mm256_loadu_si256((const __m256i*)(tq + c));
+        int xoff   = (x + xo) & 3;
+        __m256i ire;
+        CRT_MOD_STEP_V(CRT_A2_ADD, CRT_A2_SUB, CRT_A2_MUL, CRT_A2_SRAI,
+                CRT_A2_MIN, CRT_A2_MAX);
+        _mm256_storeu_si256((__m256i*)(out + (size_t)x * 8), ire);
+    }
+    CRT_ZEROUPPER();
+}
+#endif
+
+#ifdef CRT_HAVE_LANES_AVX512
+#define CRT_A5_MIN(a, b) _mm512_min_epi32(a, b)
+#define CRT_A5_MAX(a, b) _mm512_max_epi32(a, b)
+
+CRT_TARGET_AVX512
+static void crt_mod_pass_avx512(const int *ty, const int *ti, const int *tq,
+        const int *colc, int destw, int xo, int black, int white,
+        int cY, int cI, int cQ, const int *modI, const int *modQ, int *out)
+{
+    const __m512i vcY = _mm512_set1_epi32(cY);
+    const __m512i vcI = _mm512_set1_epi32(cI);
+    const __m512i vcQ = _mm512_set1_epi32(cQ);
+    const __m512i vblack = _mm512_set1_epi32(black);
+    const __m512i vwhite = _mm512_set1_epi32(white);
+    const __m512i vlo = _mm512_setzero_si512();
+    const __m512i vhi = _mm512_set1_epi32(110);
+    __m512i mi[4], mq[4];
+    __m512i hY = vlo, hI = vlo, hQ = vlo;
+    int x, m;
+    for (m = 0; m < 4; m++) {
+        mi[m] = _mm512_set1_epi32(modI[m]);
+        mq[m] = _mm512_set1_epi32(modQ[m]);
+    }
+    for (x = 0; x < destw; x++) {
+        size_t c   = (size_t)colc[x] * 16;
+        __m512i fy = _mm512_loadu_si512((const void*)(ty + c));
+        __m512i fi = _mm512_loadu_si512((const void*)(ti + c));
+        __m512i fq = _mm512_loadu_si512((const void*)(tq + c));
+        int xoff   = (x + xo) & 3;
+        __m512i ire;
+        CRT_MOD_STEP_V(CRT_A5_ADD, CRT_A5_SUB, CRT_A5_MUL, CRT_A5_SRAI,
+                CRT_A5_MIN, CRT_A5_MAX);
+        _mm512_storeu_si512((void*)(out + (size_t)x * 16), ire);
+    }
+    CRT_ZEROUPPER();
+}
+#endif
+
+/* Modulates the n lines from y0 into their signal rows: each lane's
+ * source row converted once per pixel, the lanes run, and each lane's
+ * levels copied to its row. 'colc' is each sample's source column. */
+static void crt_modulate_lanes(struct CRT *v, const struct NTSC_SETTINGS *s,
+        const struct crt_mod_lanes *ml, int y0, int desth, int destw,
+        const int *colc, int xo, int yo, int black, int white,
+        int cY, int cI, int cQ, const int *modI, const int *modQ)
+{
+    const int nl = ml->n;
+    const unsigned char *rows[CRT_LANES_MAX];
+    int k, x;
+    for (k = 0; k < nl; k++) {
+        int y            = y0 + k;
+        int field_offset = (s->field * s->h + desth) / desth / 2;
+        int sy           = (y * s->h) / desth + field_offset;
+        if (sy >= s->h) sy = s->h;
+        rows[k] = s->data + (size_t)sy * s->w * 3;
+    }
+    /* Column by column, so each column's lanes are stored together
+     * rather than one value per cache line, lane after lane. */
+    for (x = 0; x < s->w; x++) {
+        int *py = ml->y + (size_t)x * nl;
+        int *pi = ml->i + (size_t)x * nl;
+        int *pq = ml->q + (size_t)x * nl;
+        for (k = 0; k < nl; k++) {
+            const unsigned char *pix = rows[k] + (size_t)x * 3;
+            int rA = pix[0], gA = pix[1], bA = pix[2];
+            py[k] = (19595 * rA + 38470 * gA +  7471 * bA) >> 14;
+            pi[k] = (39059 * rA - 18022 * gA - 21103 * bA) >> 14;
+            pq[k] = (13894 * rA - 34275 * gA + 20382 * bA) >> 14;
+        }
+    }
+#ifdef CRT_HAVE_LANES_AVX512
+    if (nl == 16)
+        crt_mod_pass_avx512(ml->y, ml->i, ml->q, colc, destw, xo, black,
+                white, cY, cI, cQ, modI, modQ, ml->out);
+    else
+#endif
+    {
+#ifdef CRT_HAVE_LANES_AVX2
+        crt_mod_pass_avx2(ml->y, ml->i, ml->q, colc, destw, xo, black,
+                white, cY, cI, cQ, modI, modQ, ml->out);
+#endif
+    }
+    {
+        signed char *dst[CRT_LANES_MAX];
+        for (k = 0; k < nl; k++)
+            dst[k] = &v->analog[xo + (y0 + k + yo) * CRT_HRES];
+        /* Sample by sample, reading each sample's lanes together. */
+        for (x = 0; x < destw; x++) {
+            const int *src = ml->out + (size_t)x * nl;
+            for (k = 0; k < nl; k++)
+                dst[k][x] = (signed char)src[k];
+        }
+    }
 }
 #endif /* CRT_HAVE_LANES */
 
@@ -1291,6 +1450,9 @@ crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out,
 #endif
 
 #define EXP_P         11
+#if defined(CRT_MOD_EXP_P) && (CRT_MOD_EXP_P != EXP_P)
+#error "the encoder lanes' CRT_MOD_EXP_P must equal EXP_P"
+#endif
 #define EXP_ONE       (1 << EXP_P)
 #define EXP_MASK      (EXP_ONE - 1)
 #define EXP_PI        6434
@@ -1394,7 +1556,8 @@ iirf(struct IIRLP *f, int s)
 }
 
 static void
-crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
+crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s,
+        const struct crt_mod_lanes *ml)
 {
     int x, y, xo, yo;
     int destw = AV_LEN;
@@ -1539,9 +1702,23 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
         }
         if (s->format == CRT_PIX_FORMAT_RGB && CRT_CC_SAMPLES == 4
                 && destw <= AV_LEN) {
+            y = 0;
+#ifdef CRT_HAVE_LANES
+            /* Whole batches of lines in lanes; the rest below. Every
+             * line writes only its own row, so the order is free. */
+            if (ml && ml->n && (unsigned)s->w <= ml->w_cap) {
+                for (x = 0; x < destw; x++)
+                    col[x] = (x * s->w) / destw;
+                for (; y + ml->n <= desth; y += ml->n)
+                    crt_modulate_lanes(v, s, ml, y, desth, destw, col,
+                            xo, yo, black, white, cY, cI, cQ, modI, modQ);
+            }
+#else
+            (void)ml;
+#endif
             for (x = 0; x < destw; x++)
                 col[x] = ((x * s->w) / destw) * 3;
-            for (y = 0; y < desth; y++) {
+            for (; y < desth; y++) {
                 int field_offset = (s->field * s->h + desth) / desth / 2;
                 int sy           = (y * s->h) / desth + field_offset;
                 int hY = 0, hI = 0, hQ = 0;
@@ -1718,6 +1895,9 @@ struct filter_data
     struct crt_yiq *scratch;
     /* every worker's lane buffers, one block made at create */
     void *lane_mem;
+    /* the encoder's lane buffers (it runs before the workers, once) */
+    struct crt_mod_lanes mod_lanes;
+    void *mod_lane_mem;
     /* set by the packets pass when this frame was modulated */
     int frame_ready;
 
@@ -1853,6 +2033,25 @@ static void *ntsc_crt_create(const struct softfilter_config *config,
         size_t sigb = (rows * nl + 63) & ~(size_t)63;
         size_t intb = (rows * nl * sizeof(int) + 63) & ~(size_t)63;
         size_t per  = sigb + 3 * intb;
+        /* The encoder's: three [max_width][nl] source planes and the
+         * [AV_LEN][nl] levels. A frame wider than create was told of,
+         * which the softfilter contract rules out, is encoded line by
+         * line instead. */
+        size_t plane = ((size_t)max_width * nl * sizeof(int) + 63)
+            & ~(size_t)63;
+        size_t lvls  = ((size_t)AV_LEN * nl * sizeof(int) + 63)
+            & ~(size_t)63;
+        if (nl && max_width
+                && (filt->mod_lane_mem = malloc(3 * plane + lvls + 63))) {
+            unsigned char *at = (unsigned char*)
+                (((uintptr_t)filt->mod_lane_mem + 63) & ~(uintptr_t)63);
+            filt->mod_lanes.n     = nl;
+            filt->mod_lanes.w_cap = max_width;
+            filt->mod_lanes.y     = (int*)(void*)at;
+            filt->mod_lanes.i     = (int*)(void*)(at + plane);
+            filt->mod_lanes.q     = (int*)(void*)(at + 2 * plane);
+            filt->mod_lanes.out   = (int*)(void*)(at + 3 * plane);
+        }
         if (nl && (filt->lane_mem = malloc(per * threads + 63))) {
             unsigned char *base = (unsigned char*)
                 (((uintptr_t)filt->lane_mem + 63) & ~(uintptr_t)63);
@@ -1932,6 +2131,7 @@ static void ntsc_crt_destroy(void *data)
     if (filt->out_buf) free(filt->out_buf);
     free(filt->scratch);
     free(filt->lane_mem);
+    free(filt->mod_lane_mem);
     free(filt->workers);
     free(filt);
 }
@@ -1998,7 +2198,7 @@ static int ntsc_crt_prepare(struct filter_data *filt, const void *in_data,
     filt->ntsc.hue    = filt->hue;
 
     /* ---- Encode → signal → decode ---- */
-    crt_modulate(&filt->crt, &filt->ntsc);
+    crt_modulate(&filt->crt, &filt->ntsc, &filt->mod_lanes);
     crt_demodulate_begin(&filt->crt, filt->noise);
 
     /* ---- Advance field/frame counters ---- */

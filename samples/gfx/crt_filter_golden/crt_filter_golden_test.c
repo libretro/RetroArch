@@ -6,7 +6,7 @@
  * sizes (smaller than the size it was created for too), one and seven
  * workers, and four frames in a row - field parity, frame parity and the
  * noise generator all carry from frame to frame. The whole table is
- * checked once per decode tier the CPU has - line by line, 8 lines in
+ * checked once per SIMD tier the CPU has - line by line, 8 lines in
  * AVX2 lanes, 16 in AVX-512 - since the tier comes from the SIMD mask
  * given to create. Any change to how it computes must keep every byte;
  * run with GOLDEN_PRINT=1 in the environment to print the table for a
@@ -185,6 +185,6 @@ int main(void)
       return 1;
    }
    printf("crt_filter_golden: output matches the recorded hashes "
-         "at %u decode tier(s)\n", nmask);
+         "at %u SIMD tier(s)\n", nmask);
    return 0;
 }
