@@ -279,6 +279,7 @@ OBJ += \
        tasks/task_core_backup.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_xxh64.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o
 
 ifeq ($(HAVE_TRANSLATE), 1)
@@ -493,7 +494,8 @@ endif
 
 ifeq ($(HAVE_STATESTREAM), 1)
    DEFINES += -DHAVE_STATESTREAM
-   OBJ += input/bsv/uint32s_index.o
+   OBJ += input/bsv/uint32s_index.o \
+          $(LIBRETRO_COMM_DIR)/encodings/encoding_xxh3.o
 endif
 
 ifeq ($(HAVE_RUNAHEAD), 1)
@@ -2269,7 +2271,6 @@ endif
 ifeq ($(HAVE_RZSTD),1)
    DEFINES += -DHAVE_RZSTD
    OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.o \
-          $(LIBRETRO_COMM_DIR)/encodings/encoding_xxh64.o \
           $(LIBRETRO_COMM_DIR)/streams/trans_stream_rzstd.o
 endif
 

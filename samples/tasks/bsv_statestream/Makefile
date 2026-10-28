@@ -15,6 +15,7 @@ SOURCES := bsv_statestream_test.c \
            $(REPO_ROOT)/tasks/task_movie.c \
            $(REPO_ROOT)/input/bsv/bsvmovie.c \
            $(REPO_ROOT)/input/bsv/uint32s_index.c \
+           $(LIBRETRO_COMM_DIR)/encodings/encoding_xxh3.c \
            $(REPO_ROOT)/libretro-db/rmsgpack.c \
            $(REPO_ROOT)/libretro-db/rmsgpack_dom.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
@@ -39,7 +40,7 @@ SOURCES := bsv_statestream_test.c \
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_BSV_MOVIE -DHAVE_RZSTD -DHAVE_STATESTREAM -DHAVE_THREADS \
-           -I$(REPO_ROOT) -I$(REPO_ROOT)/deps \
+           -I$(REPO_ROOT) \
            -I$(LIBRETRO_COMM_DIR)/include
 
 LDFLAGS += -lpthread -lm

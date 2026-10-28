@@ -23,13 +23,12 @@
 #include <retro_common_api.h>
 #include "../../verbosity.h"
 
-#define XXH_INLINE_ALL
-#include <xxHash/xxhash.h>
+#include <encodings/xxh3.h>
 
 #define HASHMAP_CAP 65536
 /* A test build can define its own hash to force collisions. */
 #ifndef uint32s_hash_bytes
-#define uint32s_hash_bytes(bytes, len) XXH32(bytes,len,0)
+#define uint32s_hash_bytes(bytes, len) ((uint32_t)xxh3_64(bytes, len, 0))
 #endif
 
 /* Room for one more object in every per-object list, so the pushes

@@ -164,7 +164,6 @@ COMPRESSION
 #include "../libretro-common/encodings/encoding_deflate.c"
 #ifdef HAVE_RZSTD
 #include "../libretro-common/encodings/encoding_rzstd.c"
-#include "../libretro-common/encodings/encoding_xxh64.c"
 #include "../libretro-common/streams/trans_stream_rzstd.c"
 #endif
 #include "../libretro-common/streams/trans_stream_deflate.c"
@@ -179,6 +178,7 @@ ENCODINGS
 ============================================================ */
 #include "../libretro-common/encodings/encoding_utf.c"
 #include "../libretro-common/encodings/encoding_crc32.c"
+#include "../libretro-common/encodings/encoding_xxh64.c"
 #include "../libretro-common/encodings/encoding_base64.c"
 
 /*============================================================
@@ -916,6 +916,9 @@ INPUT
 #ifdef HAVE_BSV_MOVIE
 #include "../input/bsv/bsvmovie.c"
 #include "../input/bsv/uint32s_index.c"
+#ifdef HAVE_STATESTREAM
+#include "../libretro-common/encodings/encoding_xxh3.c"
+#endif
 #endif
 #include "../input/input_keymaps.c"
 #include "../tasks/task_autodetect.c"

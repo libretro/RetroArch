@@ -41,7 +41,7 @@
 #include "../../input/input_driver.h"
 
 #if defined(ORBIS)
-#include "../../deps/xxHash/xxhash.h"
+#include <encodings/xxh64.h>
 #endif
 
 #if defined(VITA)
@@ -367,24 +367,20 @@ static void gl_glsl_print_linker_log(GLuint obj)
 }
 
 #if defined(ORBIS)
-static XXH64_hash_t gl_glsl_hash_shader(
+static uint64_t gl_glsl_hash_shader(
       const char **source, const int source_length)
 {
-   int n;
-   XXH64_hash_t hash;
-   XXH64_state_t *state = XXH64_createState();
+   int           n;
+   xxh64_state_t state;
 
-   XXH64_reset(state, 0xAABBCCDDu);
+   xxh64_reset(&state, 0xAABBCCDDu);
    for (n = 0; n < source_length; n++)
-      XXH64_update(state, source[n], strlen(source[n]));
-   hash = XXH64_digest(state);
-   XXH64_freeState(state);
-
-   return hash;
+      xxh64_update(&state, source[n], strlen(source[n]));
+   return xxh64_digest(&state);
 }
 
 /* The shader binary stored under @hash, if there is one */
-static bool gl_glsl_load_binary_shader(GLuint shader, XXH64_hash_t hash)
+static bool gl_glsl_load_binary_shader(GLuint shader, uint64_t hash)
 {
    GLint status;
    char key[32];
