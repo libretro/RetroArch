@@ -345,6 +345,10 @@ platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
    gfx/drivers/sdl_rs90_gfx.c /usr/include/SDL/SDL.h
 platform_video "wiiu gx2 video" "-DWIIU $HOSTOFF" \
    "-Ios/wiiu/include -Ios/wiiu" gfx/drivers/gx2_gfx.c ""
+# The iosuhax client, devoptab and libfat sector interface that replaced
+# deps/libiosuhax, against newlib's devoptab order.
+platform_video "wiiu iosuhax" "-DWIIU -D__wiiu__ -DHAVE_IOSUHAX $HOSTOFF" \
+   "-Ios/wiiu/include -Itools/platform_stubs/wiiu" os/wiiu/fs/iosuhax.c ""
 platform_video "hub75 video" "" "" gfx/drivers/hub75_gfx.c ""
 platform_video "openvg video" "-DHAVE_VG -DHAVE_EGL" \
    "-Itools/platform_stubs/openvg" gfx/drivers/vg.c ""

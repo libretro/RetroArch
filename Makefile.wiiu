@@ -114,7 +114,7 @@ endif
 
       INCDIRS +=
       # for stb, libfat, iosuhax
-      INCDIRS += -Ideps -Ideps/libfat/include -Ideps/libiosuhax/include
+      INCDIRS += -Ideps -Ideps/libfat/include -Ios/wiiu/fs
       # pad_functions uses wiiu/input.h
       INCDIRS += -Iinput/include
 

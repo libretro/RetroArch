@@ -3074,10 +3074,9 @@ endif
 
 ifeq ($(WANT_IOSUHAX), 1)
    DEFINES += -DHAVE_IOSUHAX
-   INCLUDE_DIRS += -I$(DEPS_DIR)/libiosuhax/include
-   OBJ += $(DEPS_DIR)/libiosuhax/source/iosuhax.o \
-          $(DEPS_DIR)/libiosuhax/source/iosuhax_devoptab.o \
-          $(DEPS_DIR)/libiosuhax/source/iosuhax_disc_interface.o
+   # libfat includes iosuhax_disc_interface.h by name
+   INCLUDE_DIRS += -Ios/wiiu/fs
+   OBJ += os/wiiu/fs/iosuhax.o
 endif
 
 ifeq ($(WANT_LIBFAT), 1)

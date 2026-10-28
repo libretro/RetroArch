@@ -1994,9 +1994,7 @@ DEPENDENCIES
 #endif
 
 #ifdef WANT_IOSUHAX
-#include "../deps/libiosuhax/source/iosuhax.c"
-#include "../deps/libiosuhax/source/iosuhax_devoptab.c"
-#include "../deps/libiosuhax/source/iosuhax_disc_interface.c"
+#include "../os/wiiu/fs/iosuhax.c"
 #endif
 
 /*============================================================

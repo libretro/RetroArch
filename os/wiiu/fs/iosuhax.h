@@ -1,5 +1,5 @@
 /***************************************************************************
- * Copyright (C) 2015
+ * Copyright (C) 2016
  * by Dimok
  *
  * This software is provided 'as-is', without any express or implied
@@ -21,22 +21,32 @@
  * 3. This notice may not be removed or altered from any source
  * distribution.
  ***************************************************************************/
-#ifndef __IOSUHAX_DEVOPTAB_H_
-#define __IOSUHAX_DEVOPTAB_H_
+
+/* Altered for RetroArch: the parts of libiosuhax RetroArch uses, taken
+ * out of deps/libiosuhax. Only what os/wiiu/main.c calls is public;
+ * libfat's sector interface is in iosuhax_disc_interface.h. */
+
+#ifndef __WIIU_IOSUHAX_H
+#define __WIIU_IOSUHAX_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//! virtual name example:   sd or odd (for sd:/ or odd:/ access)
-//! fsaFd:                  fd received by IOSUHAX_FSA_Open();
-//! dev_path:               (optional) if a device should be mounted to the mount_path. If NULL no IOSUHAX_FSA_Mount is not executed.
-//! mount_path:             path to map to virtual device name
-int mount_fs(const char *virt_name, int fsaFd, const char *dev_path, const char *mount_path);
+/* NULL opens /dev/iosuhax; any other device is checked to be one */
+int IOSUHAX_Open(const char *dev);
+int IOSUHAX_Close(void);
+
+int IOSUHAX_FSA_Open(void);
+int IOSUHAX_FSA_Close(int fsaFd);
+
+/* Makes @mount_path, already mounted in IOSU, reachable through newlib
+ * as "@virt_name:/..." on the FSA client @fsaFd. */
+int mount_fs(const char *virt_name, int fsaFd, const char *mount_path);
 int unmount_fs(const char *virt_name);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __IOSUHAX_DEVOPTAB_H_
+#endif

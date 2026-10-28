@@ -21,6 +21,10 @@
  * 3. This notice may not be removed or altered from any source
  * distribution.
  ***************************************************************************/
+
+/* Altered for RetroArch: moved here from deps/libiosuhax unchanged in
+ * what it offers - libfat's view of the Wii U SD and USB devices. */
+
 #ifndef _IOSUHAX_DISC_INTERFACE_H_
 #define _IOSUHAX_DISC_INTERFACE_H_
 

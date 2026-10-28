@@ -21,9 +21,8 @@
 
 #if defined(HAVE_IOSUHAX) && defined(HAVE_LIBFAT)
 #include <fat.h>
-#include <iosuhax.h>
-#include <iosuhax_devoptab.h>
 #include <sys/iosupport.h>
+#include "fs/iosuhax.h"
 #endif
 
 #include "hbl.h"
@@ -199,7 +198,7 @@ void __mount_filesystems(void)
    {
       fatInitDefault();
       fsaFd = IOSUHAX_FSA_Open();
-      mount_fs("storage_usb", fsaFd, NULL, "/vol/storage_usb01");
+      mount_fs("storage_usb", fsaFd, "/vol/storage_usb01");
       return;
    } 
 #endif
