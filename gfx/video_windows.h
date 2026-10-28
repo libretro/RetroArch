@@ -240,6 +240,17 @@ enum video_window_ui_layer
 
 #define VIDEO_WINDOW_UI_BIT(layer) (1u << (layer))
 
+/* Of @layers, VIDEO_WINDOW_UI_BIT()s, those with something to draw: the
+ * menu while open, the notifications as VIDEO_VIEWS_UI_WANTED() asks.
+ * A macro, so @widgets is asked last. */
+#define VIDEO_WINDOW_UI_DRAWN(layers, menu, msg, statistics, widgets) \
+   (  ((((layers) & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU)) && (menu)) \
+         ? VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU) : 0u) \
+    | (VIDEO_VIEWS_UI_WANTED((layers) \
+            & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS), \
+            0, msg, statistics, widgets) \
+         ? VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS) : 0u))
+
 /* The window placed on a display of its own: the Presentation */
 #define VIDEO_WINDOWS_PRESENTATION 1
 

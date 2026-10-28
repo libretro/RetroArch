@@ -382,6 +382,12 @@ struct gl2
       video_windows_held_t  held;
       /* gl2_frame()'s, for the preset's passes in them */
       unsigned              frame_count;
+      /* The UI layers drawn in another window, in one image */
+      struct gl2_views_fbo  ui;
+      video_views_target_t  ui_target;
+      /* This frame: the window the image is still to go in, 0 for
+       * none */
+      unsigned              ui_window;
    } windows;
 #endif
 

@@ -1539,6 +1539,48 @@ static void test_windows_steps_ui(void)
    CHECK(retire == 2u && create == 2u);
 }
 
+static unsigned widgets_asked;
+static bool widgets_visible(bool visible)
+{
+   widgets_asked++;
+   return visible;
+}
+
+static void test_window_ui_drawn(void)
+{
+   const unsigned menu  = VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU);
+   const unsigned notes = VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS);
+   const char *none     = NULL;
+   const char *empty    = "";
+   const char *text     = "Saved state";
+   /* Nothing away, nothing drawn away */
+   CHECK(VIDEO_WINDOW_UI_DRAWN(0u, true, text, true, true) == 0);
+   /* A closed menu has nothing to draw; a message is not the menu's */
+   CHECK(VIDEO_WINDOW_UI_DRAWN(menu, false, text, true, true) == 0);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(menu, true, none, false, false) == menu);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(notes, true, none, false, false) == 0);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(notes, false, empty, false, false) == 0);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(notes, false, text, false, false) == notes);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(notes, false, none, true, false) == notes);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(notes, false, none, false, true) == notes);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(menu | notes, true, none, false, false)
+         == menu);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(menu | notes, false, none, false, true)
+         == notes);
+   /* The widgets are asked only when nothing else answered */
+   widgets_asked = 0;
+   CHECK(VIDEO_WINDOW_UI_DRAWN(menu, true, none, false,
+            widgets_visible(true)) == menu);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(notes, false, text, false,
+            widgets_visible(true)) == notes);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(notes, false, none, true,
+            widgets_visible(true)) == notes);
+   CHECK(widgets_asked == 0);
+   CHECK(VIDEO_WINDOW_UI_DRAWN(notes, false, none, false,
+            widgets_visible(false)) == 0);
+   CHECK(widgets_asked == 1);
+}
+
 int main(void)
 {
    test_windows_policy();
@@ -1553,6 +1595,7 @@ int main(void)
    test_window_place();
    test_windows_steps();
    test_windows_steps_ui();
+   test_window_ui_drawn();
    if (failures)
       return 1;
    puts("video_windows: ok");
