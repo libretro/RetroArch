@@ -50,6 +50,47 @@ static uint8_t rnd(void)
    return (uint8_t)(seed >> 19);
 }
 
+/* @z, @len octets, through rzstd_blocks_begin(): 1 when it comes out
+ * as @want, @n octets */
+static int stepped(const uint8_t *z, size_t len, const uint8_t *want,
+      size_t n)
+{
+   rzstd_blocks_t *b   = rzstd_blocks_begin(z, len);
+   size_t          out = 0, got;
+   const uint8_t  *d;
+   int             e   = RZSTD_PROCESS_ERROR;
+   int             ok  = b != NULL;
+
+   while (ok && (e = rzstd_blocks_step(b, &d, &got)) == RZSTD_PROCESS_NEXT)
+   {
+      if (out + got > n || (got && memcmp(d, want + out, got)))
+         ok = 0;
+      out += got;
+   }
+   rzstd_blocks_free(b);
+   return ok && e == RZSTD_PROCESS_END && out == n;
+}
+
+/* Many megabytes in a window of 2^@log: a single-segment frame of
+ * rzstd_encode()'s, its header made one with a window descriptor and
+ * no size, so that decoding a block at a time goes round the ring many
+ * times, with matches across where it comes round */
+static int ring(const uint8_t *src, size_t n, uint8_t *z, size_t cap,
+      unsigned log)
+{
+   size_t wrote = 0;
+   if (     rzstd_encode(z, cap, src, n, 9, &wrote) != RZSTD_PROCESS_END
+         || wrote < 9 || z[4] != 0xa0)
+      return 0;
+   /* magic, descriptor 0, window, then the blocks after the old
+    * header's four-octet size */
+   z[4] = 0;
+   z[5] = (uint8_t)((log - 10) << 3);
+   memmove(z + 6, z + 9, wrote - 9);
+   wrote -= 3;
+   return stepped(z, wrote, src, n) && pieces(z, wrote, src, n);
+}
+
 int main(void)
 {
    size_t   n = 3 * BLK, i, cap = rzstd_compress_bound(3 * BLK), wrote, got;
@@ -96,8 +137,38 @@ int main(void)
    free(src);
    free(z);
    free(out);
+
+   /* six megabytes of few letters, with runs copied from up to 120 KiB
+    * back */
+   n   = 6 * 1024 * 1024;
+   cap = rzstd_compress_bound(n);
+   src = (uint8_t*)malloc(n);
+   z   = (uint8_t*)malloc(cap);
+   for (i = 0; i < n; )
+   {
+      size_t run  = 64 + rnd() * 8;
+      size_t back = 1024 + ((size_t)rnd() << 9);
+      if (i > back && (rnd() & 1))
+         for (; run && i < n; run--, i++)
+            src[i] = src[i - back];
+      else
+         for (; run && i < n; run--, i++)
+            src[i] = (uint8_t)('a' + (rnd() & 3));
+   }
+   if (!ring(src, n, z, cap, 17))
+   {
+      fprintf(stderr, "FAIL: a window of 128 KiB, a block at a time\n");
+      fails++;
+   }
+   if (!ring(src, n, z, cap, 20))
+   {
+      fprintf(stderr, "FAIL: a window of 1 MiB, a block at a time\n");
+      fails++;
+   }
+   free(src);
+   free(z);
    if (fails)
       return 1;
-   printf("ok: a raw block between compressed ones, levels 1 to 9, whole and in pieces\n");
+   printf("ok: a raw block between compressed ones, levels 1 to 9, whole and in pieces; a ring gone round\n");
    return 0;
 }

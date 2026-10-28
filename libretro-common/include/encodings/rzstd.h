@@ -192,8 +192,9 @@ typedef struct rzstd_blocks rzstd_blocks_t;
  * @src_len    : its exact length
  *
  * A frame decoded a block at a time, for one too big to have whole in
- * memory: through a buffer of its window and two blocks more, which
- * the matches reach back into.
+ * memory: through a ring of its window and two blocks more, at least a
+ * megabyte, which the matches reach back into. Each block comes out
+ * whole where it was decoded.
  *
  * Returns: the stream, or NULL when @src is not a frame or its window
  * cannot be had.
