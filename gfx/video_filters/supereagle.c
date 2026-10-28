@@ -37,7 +37,9 @@ struct softfilter_thread_data
    unsigned width;
    unsigned height;
    int first;
-   int last;
+   /* frame rows below this worker's slice, which its neighbourhood
+    * may read into */
+   unsigned below;
 };
 
 struct filter_data
@@ -215,7 +217,7 @@ static void supereagle_generic_destroy(void *data)
 #endif
 
 static void supereagle_generic_xrgb8888(unsigned width, unsigned height,
-      int first, int last, uint32_t *src,
+      int first, unsigned below, uint32_t *src,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
    unsigned finish;
@@ -229,8 +231,13 @@ static void supereagle_generic_xrgb8888(unsigned width, unsigned height,
        * a worker that does not start at the top can always read back
        * into the preceding slice. */
       unsigned prevline  = (first == 0 && row == 0) ? 0 : src_stride;
-      unsigned nextline  = (last && height <= 1) ? 0 : src_stride;
-      unsigned nextline2 = (last && height <= 2) ? nextline : 2 * src_stride;
+      /* Rows below this one in the frame: the rest of this slice and
+       * the slices after it. Clamped against the frame, not the
+       * slice: a worker whose slice ends a row above the bottom,
+       * behind a one-row slice, would otherwise read past it. */
+      unsigned rows_below = (height - 1) + below;
+      unsigned nextline   = rows_below >= 1 ? src_stride : 0;
+      unsigned nextline2  = rows_below >= 2 ? 2 * src_stride : nextline;
 
       for (finish = width; finish; finish -= 1)
       {
@@ -251,7 +258,7 @@ static void supereagle_generic_xrgb8888(unsigned width, unsigned height,
 }
 
 static void supereagle_generic_rgb565(unsigned width, unsigned height,
-      int first, int last, uint16_t *src,
+      int first, unsigned below, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
    unsigned finish;
@@ -265,8 +272,13 @@ static void supereagle_generic_rgb565(unsigned width, unsigned height,
        * a worker that does not start at the top can always read back
        * into the preceding slice. */
       unsigned prevline  = (first == 0 && row == 0) ? 0 : src_stride;
-      unsigned nextline  = (last && height <= 1) ? 0 : src_stride;
-      unsigned nextline2 = (last && height <= 2) ? nextline : 2 * src_stride;
+      /* Rows below this one in the frame: the rest of this slice and
+       * the slices after it. Clamped against the frame, not the
+       * slice: a worker whose slice ends a row above the bottom,
+       * behind a one-row slice, would otherwise read past it. */
+      unsigned rows_below = (height - 1) + below;
+      unsigned nextline   = rows_below >= 1 ? src_stride : 0;
+      unsigned nextline2  = rows_below >= 2 ? 2 * src_stride : nextline;
 
       for (finish = width; finish; finish -= 1)
       {
@@ -295,7 +307,7 @@ static void supereagle_work_cb_rgb565(void *data, void *thread_data)
    unsigned height  = thr->height;
 
    supereagle_generic_rgb565(width, height,
-         thr->first, thr->last, input,
+         thr->first, thr->below, input,
          (unsigned)(thr->in_pitch / SOFTFILTER_BPP_RGB565),
          output,
          (unsigned)(thr->out_pitch / SOFTFILTER_BPP_RGB565));
@@ -310,7 +322,7 @@ static void supereagle_work_cb_xrgb8888(void *data, void *thread_data)
    unsigned height  = thr->height;
 
    supereagle_generic_xrgb8888(width, height,
-         thr->first, thr->last, input,
+         thr->first, thr->below, input,
          (unsigned)(thr->in_pitch / SOFTFILTER_BPP_XRGB8888),
          output,
          (unsigned)(thr->out_pitch / SOFTFILTER_BPP_XRGB8888));
@@ -339,7 +351,7 @@ static void supereagle_generic_packets(void *data,
 
       /* Workers need to know if they can access pixels outside their given buffer. */
       thr->first             = y_start;
-      thr->last              = y_end == height;
+      thr->below             = height - y_end;
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work     = supereagle_work_cb_rgb565;

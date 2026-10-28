@@ -9,9 +9,10 @@ name: CI Linux filter plugins
 # takes more than one worker must give the single-worker output byte for
 # byte with 2, 3 and 4 workers running at once.  The same run is repeated
 # with the plugins and the harness built under ASan, UBSan and
-# LeakSanitizer, and under ThreadSanitizer.  The NTSC, 2xBR and NTSC-CRT
-# filters are also held byte for byte to output hashes recorded from
-# their earlier implementations (samples/gfx/{ntsc,xbr,crt}_filter_golden).
+# LeakSanitizer, and under ThreadSanitizer.  The NTSC, 2xBR, NTSC-CRT and
+# 2xSaI-family filters are also held byte for byte to output hashes
+# recorded from their earlier implementations
+# (samples/gfx/{ntsc,xbr,crt,sai}_filter_golden).
 
 on:
   push:
@@ -25,6 +26,7 @@ on:
       - 'samples/gfx/ntsc_filter_golden/**'
       - 'samples/gfx/xbr_filter_golden/**'
       - 'samples/gfx/crt_filter_golden/**'
+      - 'samples/gfx/sai_filter_golden/**'
       - '.github/workflows/Linux-filter-plugins.yml'
   pull_request:
     paths:
@@ -35,6 +37,7 @@ on:
       - 'samples/gfx/ntsc_filter_golden/**'
       - 'samples/gfx/xbr_filter_golden/**'
       - 'samples/gfx/crt_filter_golden/**'
+      - 'samples/gfx/sai_filter_golden/**'
       - '.github/workflows/Linux-filter-plugins.yml'
   workflow_dispatch:
 
@@ -81,13 +84,14 @@ jobs:
           make -C samples/gfx/filter_plugins clean
           make -C samples/gfx/filter_plugins check SANITIZER=address,undefined
 
-      - name: NTSC, 2xBR and NTSC-CRT filter output against their recorded hashes
+      - name: NTSC, 2xBR, NTSC-CRT and 2xSaI-family filter output against their recorded hashes
         env:
           ASAN_OPTIONS: abort_on_error=1:detect_leaks=1:print_stacktrace=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: |
           set -eu
-          for t in ntsc_filter_golden xbr_filter_golden crt_filter_golden; do
+          for t in ntsc_filter_golden xbr_filter_golden crt_filter_golden \
+                   sai_filter_golden; do
              make -C samples/gfx/$t check
              make -C samples/gfx/$t clean
              make -C samples/gfx/$t check SANITIZER=address,undefined
