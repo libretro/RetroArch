@@ -25,7 +25,10 @@
  * extension. Each is listed, read whole with
  * file_archive_compressed_read() and extracted through a transfer, and
  * must come out as it went in, zip members through an entry source as
- * well; a zip member whose recorded CRC is wrong is refused, and a "#" after ".bz2" names a member. The streams are
+ * well; a zip member whose recorded CRC is wrong is refused, and a "#"
+ * after ".bz2" names a member. A .bz2 is kept from its listing when it
+ * is small and decoded again when it is not, through a ring where it is
+ * not mapped, and a changed one leaves nothing behind. The streams are
  * bz_write.h's, as the rbzip2 sample makes them. */
 
 #include <stdio.h>
@@ -138,7 +141,10 @@ static void check_extracted(const char *what, const char *name,
    char     out[64];
    void    *got = NULL;
    int64_t  got_len = 0;
-   snprintf(out, sizeof(out), "%s.%s", OUT_PATH, name);
+   if (name)
+      snprintf(out, sizeof(out), "%s.%s", OUT_PATH, name);
+   else
+      snprintf(out, sizeof(out), "%s", OUT_PATH);
    if (     !filestream_read_file(out, &got, &got_len)
          || got_len != (int64_t)n || memcmp(got, want, n))
       fail(what, "extracted");
@@ -280,34 +286,59 @@ static void test_zip(bool wrong_crc)
    free(zip);
 }
 
-static void test_bz2(void)
+/* A .bz2 of @n octets: listed, read whole, read to a file and
+ * extracted, kept from its listing under ARCHIVE_BZ2_KEEP and decoded
+ * again past it; with a byte of it changed, nothing comes out */
+static void test_bz2(const char *what, size_t n, unsigned level)
 {
-   size_t   n    = 300000, c = n + n / 2 + 4096, plen;
+   size_t   c    = n + n / 2 + 4096, plen;
    uint8_t *data = (uint8_t*)malloc(n);
    uint8_t *bz   = (uint8_t*)malloc(c);
    struct string_list *list;
+   void    *buf = NULL;
+   int64_t  len = 0;
 
    fill(data, n, 2);
-   plen = bz_write(bz, c, data, n, 2, 9);
+   plen = bz_write(bz, c, data, n, level, 9);
    if (!write_file(BZ2_PATH, bz, plen))
-      fail(".bz2", "cannot write");
+      fail(what, "cannot write");
    if (     !(list = file_archive_get_file_list(BZ2_PATH, NULL))
          || list->size != 1
          || strcmp(list->elems[0].data, "archive_bz2_test.bin"))
-      fail(".bz2", "listed as its name without the extension");
+      fail(what, "listed as its name without the extension");
    string_list_free(list);
-   check_member(".bz2", BZ2_PATH, "archive_bz2_test.bin", data, n,
+   check_member(what, BZ2_PATH, "archive_bz2_test.bin", data, n,
          encoding_crc32(0, data, n));
    if (extract_all(BZ2_PATH) != 1)
-      fail(".bz2", "not extracted");
-   check_extracted(".bz2", "archive_bz2_test.bin", data, n);
-   {
-      void   *buf = NULL;
-      int64_t len = 0;
-      if (file_archive_compressed_read(BZ2_PATH "#other.bin", &buf, NULL, &len))
-         fail(".bz2", "a member it does not have read");
-      free(buf);
-   }
+      fail(what, "not extracted");
+   check_extracted(what, "archive_bz2_test.bin", data, n);
+   if (     file_archive_compressed_read(BZ2_PATH "#archive_bz2_test.bin",
+               NULL, OUT_PATH, &len) <= 0
+         || len != (int64_t)n)
+      fail(what, "read to a file");
+   check_extracted(what, NULL, data, n);
+   if (file_archive_compressed_read(BZ2_PATH "#other.bin", &buf, NULL, &len))
+      fail(what, "a member it does not have read");
+   free(buf);
+   buf = NULL;
+
+   /* a byte of the last block's changed */
+   bz[plen - 20] ^= 0x10;
+   if (!write_file(BZ2_PATH, bz, plen))
+      fail(what, "cannot write");
+   if (file_archive_compressed_read(BZ2_PATH "#archive_bz2_test.bin",
+            &buf, NULL, &len))
+      fail(what, "a changed stream read whole");
+   free(buf);
+   if (file_archive_compressed_read(BZ2_PATH "#archive_bz2_test.bin",
+            NULL, OUT_PATH, &len) || path_is_valid(OUT_PATH))
+      fail(what, "a changed stream read to a file");
+   remove(OUT_PATH);
+   extract_all(BZ2_PATH);
+   if (path_is_valid(OUT_PATH ".archive_bz2_test.bin"))
+      fail(what, "a changed stream extracted");
+   remove(OUT_PATH ".archive_bz2_test.bin");
+
    remove(BZ2_PATH);
    free(data);
    free(bz);
@@ -328,7 +359,9 @@ int main(void)
       fail("path_is_compressed_file", "set.7Z is not an archive");
    test_zip(false);
    test_zip(true);
-   test_bz2();
+   /* kept from its listing, and too big to be */
+   test_bz2(".bz2", 60000, 2);
+   test_bz2(".bz2 past what is kept, through the ring", 1000000, 1);
    if (failures)
    {
       printf("%u check(s) failed\n", failures);

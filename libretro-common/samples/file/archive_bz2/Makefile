@@ -35,6 +35,15 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 override CPPFLAGS += -DHAVE_COMPRESSION -DHAVE_RBZIP2 -I$(LIBRETRO_COMM_DIR)/include
 CFLAGS            += -Wall -pedantic -std=gnu99 -g1
 
+# A .bz2 is kept from its listing up to 100000 octets, and one read
+# through the stream wraps round a ring of 128 KiB. MMAP=1 maps it
+# instead.
+override CPPFLAGS += -DARCHIVE_BZ2_KEEP=100000 -DARCHIVE_BZ2_AHEAD=65536
+MMAP ?= 0
+ifeq ($(MMAP),1)
+   override CPPFLAGS += -DHAVE_MMAP
+endif
+
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
