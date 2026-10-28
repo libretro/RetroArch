@@ -2511,6 +2511,12 @@ bool video_driver_views_status_changed(void);
  * eye's UI size when views are drawn side by side or top-bottom. */
 unsigned video_driver_get_ui_dims(void);
 
+/* Any thread: the size frame @video_info draws UI layer @layer at: its
+ * target's when drawn in another window, else the main window's UI
+ * size */
+unsigned video_frame_ui_layer_dims(const video_frame_info_t *video_info,
+      unsigned layer);
+
 /* App thread: the window UI layer @layer lays out for this frame, 0
  * for the main window */
 unsigned video_driver_get_ui_layer_window(unsigned layer);

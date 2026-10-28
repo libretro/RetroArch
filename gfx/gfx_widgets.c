@@ -3056,9 +3056,9 @@ void gfx_widgets_worker_step(void *data,
    if (!retro_atomic_load_acquire_int(&p_dispwidget->worker))
       return;
 
-   /* Per-eye UI lays out at one eye's size. */
-   widget_dims = video_views_ui_dims(&video_info->views_layout,
-         video_info->dims);
+   /* At the notifications' window's size: one eye's for per-eye UI */
+   widget_dims = video_frame_ui_layer_dims(video_info,
+         VIDEO_WINDOW_UI_NOTIFICATIONS);
 
    if (gfx_widgets_update_layout(disp_get_ptr(),
             video_info->widget_scale_factor, widget_dims,
