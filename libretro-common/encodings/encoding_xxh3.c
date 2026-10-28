@@ -64,7 +64,7 @@
      /* Clang's immintrin.h for PlayStation and clang-cl declares only
       * the intrinsics of ISAs the whole build enables: a path is built
       * when the baseline has it */
-#    if defined(__AVX512F__)
+#    if defined(__AVX512F__) && defined(__AVX512BW__)
 #      define XXH3_HAVE_AVX512 1
 #    endif
 #    if defined(__AVX2__)
@@ -75,8 +75,8 @@
 #    endif
 #    define XXH3_TARGET(t)
 #  elif defined(_MSC_VER)
-     /* AVX-512 intrinsics from Visual Studio 2017, AVX2 from 2012 */
-#    if _MSC_VER >= 1910
+     /* AVX-512 intrinsics from Visual Studio 2017 15.3, AVX2 from 2012 */
+#    if _MSC_VER >= 1911
 #      define XXH3_HAVE_AVX512 1
 #    endif
 #    if _MSC_VER >= 1700
@@ -91,10 +91,14 @@
 #      define XXH3_HAVE_SSE2   1
 #      define XXH3_TARGET(t) __attribute__((target(t)))
 #    endif
+#  elif defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5
+     /* GCC 5 brought AVX-512BW and target attributes for it */
+#    define XXH3_HAVE_AVX512 1
+#    define XXH3_HAVE_AVX2   1
+#    define XXH3_HAVE_SSE2   1
+#    define XXH3_TARGET(t) __attribute__((target(t)))
 #  elif defined(__GNUC__) && !defined(__clang__) \
      && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))
-     /* GCC 4.9 brought AVX-512F and target attributes for it */
-#    define XXH3_HAVE_AVX512 1
 #    define XXH3_HAVE_AVX2   1
 #    define XXH3_HAVE_SSE2   1
 #    define XXH3_TARGET(t) __attribute__((target(t)))
@@ -494,14 +498,52 @@ static uint64_t xxh3_long_scalar(const uint8_t *in, size_t len, uint64_t seed)
 /* A stripe is taken only once there is more after it: the input's last
  * stripe is keyed apart, and the hash of 240 octets or fewer is not the
  * accumulators'. Between calls up to XXH3_HELD octets are held, after
- * the last stripe taken. */
-#define XXH3_HELD 256
+ * the last stripe taken; pieces over XXH3_HOLD go where they lie. */
+#define XXH3_HELD 1024
+#define XXH3_HOLD 256
+
+/* @len octets from @p to @d, the short ones in two fixed copies that
+ * overlap */
+static INLINE void xxh3_hold(uint8_t *d, const uint8_t *p, size_t len)
+{
+   if (len > 64)
+      memcpy(d, p, len);
+   else if (len > 32)
+   {
+      memcpy(d, p, 32);
+      memcpy(d + len - 32, p + len - 32, 32);
+   }
+   else if (len >= 16)
+   {
+      memcpy(d, p, 16);
+      memcpy(d + len - 16, p + len - 16, 16);
+   }
+   else if (len >= 8)
+   {
+      memcpy(d, p, 8);
+      memcpy(d + len - 8, p + len - 8, 8);
+   }
+   else if (len >= 4)
+   {
+      memcpy(d, p, 4);
+      memcpy(d + len - 4, p + len - 4, 4);
+   }
+   else if (len)
+   {
+      d[0]       = p[0];
+      d[len / 2] = p[len / 2];
+      d[len - 1] = p[len - 1];
+   }
+}
 
 /* What xxh3_update() does past what it holds, round each path's run:
  * the stripes held, the one they end inside made whole from the front
  * of the input, which goes on past it; then the input's own, where
  * they lie, at least one octet left */
-#define XXH3_TAKE(RUN) \
+#define XXH3_FILL(d, p, fill) memcpy((d), (p), (fill))
+#define XXH3_KEEP(d, p, len)  memcpy((d), (p), (len))
+#define XXH3_TAKE(RUN) XXH3_TAKE_WITH(RUN, XXH3_FILL, XXH3_KEEP)
+#define XXH3_TAKE_WITH(RUN, FILL, KEEP) \
 { \
    const uint8_t *sec  = s->seed ? s->sec : xxh3_secret; \
    uint8_t       *held = s->buf + XXH3_STRIPE; \
@@ -511,7 +553,7 @@ static uint64_t xxh3_long_scalar(const uint8_t *in, size_t len, uint64_t seed)
    if (h & (XXH3_STRIPE - 1)) \
    { \
       size_t fill = XXH3_STRIPE - (h & (XXH3_STRIPE - 1)); \
-      memcpy(held + h, p, fill); \
+      FILL(held + h, p, fill); \
       p   += fill; \
       len -= fill; \
       n++; \
@@ -523,11 +565,11 @@ static uint64_t xxh3_long_scalar(const uint8_t *in, size_t len, uint64_t seed)
    /* the last stripe taken and what is left after it, in one copy where \
     * they lie together */ \
    if (m) \
-      memcpy(s->buf, p + (m - 1) * XXH3_STRIPE, XXH3_STRIPE + len); \
+      KEEP(s->buf, p + (m - 1) * XXH3_STRIPE, XXH3_STRIPE + len); \
    else \
    { \
-      memcpy(s->buf, held + (n - 1) * XXH3_STRIPE, XXH3_STRIPE); \
-      memcpy(held, p, len); \
+      KEEP(s->buf, held + (n - 1) * XXH3_STRIPE, XXH3_STRIPE); \
+      KEEP(held, p, len); \
    } \
 }
 
@@ -983,9 +1025,36 @@ static INLINE void xxh3_run_avx512(uint64_t *acc, const uint8_t *in,
    *pos = k;
 }
 
-XXH3_TARGET("avx512f")
+/* Each stripe the next run reads is stored as one vector, which the
+ * load finds whole in the store queue: the one the held octets end
+ * inside, made whole in a register; the last stripe taken; and the
+ * 1 to 64 octets after it, read under a mask */
+#define XXH3_FILL512(d, p, fill) do { \
+   size_t   off_ = XXH3_STRIPE - (fill); \
+   uint8_t *st_  = (d) - off_; \
+   _mm512_storeu_si512((void*)st_, _mm512_mask_loadu_epi8( \
+         _mm512_loadu_si512((const void*)st_), \
+         (__mmask64)(~0ULL << off_), (const void*)((p) - off_))); \
+} while (0)
+#define XXH3_KEEP512(d, p, len) do { \
+   size_t         n_ = (len); \
+   uint8_t       *d_ = (d); \
+   const uint8_t *p_ = (p); \
+   if (n_ > XXH3_STRIPE) \
+   { \
+      _mm512_storeu_si512((void*)d_, _mm512_loadu_si512((const void*)p_)); \
+      d_ += XXH3_STRIPE; \
+      p_ += XXH3_STRIPE; \
+      n_ -= XXH3_STRIPE; \
+   } \
+   _mm512_storeu_si512((void*)d_, _mm512_maskz_loadu_epi8( \
+         (__mmask64)(~0ULL >> (XXH3_STRIPE - n_)), (const void*)p_)); \
+} while (0)
+XXH3_TARGET("avx512f,avx512bw")
 static void xxh3_take_avx512(xxh3_state_t *s, const uint8_t *p, size_t len)
-XXH3_TAKE(xxh3_run_avx512)
+XXH3_TAKE_WITH(xxh3_run_avx512, XXH3_FILL512, XXH3_KEEP512)
+#undef XXH3_KEEP512
+#undef XXH3_FILL512
 #endif
 
 #if defined(XXH3_HAVE_NEON)
@@ -1227,11 +1296,11 @@ void xxh3_update(xxh3_state_t *s, const void *data, size_t len)
 {
    size_t h = s->held;
    s->total += len;
-   if (h + len > XXH3_HELD)
+   if (h + len > XXH3_HELD || len > XXH3_HOLD)
       xxh3_take(s, (const uint8_t*)data, len);
-   else if (len)
+   else
    {
-      memcpy(s->buf + XXH3_STRIPE + h, data, len);
+      xxh3_hold(s->buf + XXH3_STRIPE + h, (const uint8_t*)data, len);
       s->held = (uint32_t)(h + len);
    }
 }

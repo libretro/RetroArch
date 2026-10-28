@@ -321,8 +321,11 @@ int main(void)
    /* XXH3 in pieces, through each path's blocks */
    for (p = 0; p < np; p++)
    {
-      static const size_t steps[] = { 1, 7, 63, 64, 65, 240, 241, 1000,
-         1023, 1024, 1025, 3000, 0 };
+      static const size_t steps[] = { 1, 7, 63, 64, 65, 100, 240, 241,
+         255, 256, 257, 1000, 1023, 1024, 1025, 3000, 0 };
+      static const size_t after[] = { 7, 63, 64, 65, 255, 256, 257, 300,
+         1000 };
+      unsigned lead;
 #if defined(XXH3_HAVE_SSE2)
       retro_atomic_store_release_int(&xxh3_path, paths[p].id);
 #endif
@@ -338,6 +341,27 @@ int main(void)
                fail("xxh3 in pieces", v->len, v->seed, h, v->hash);
          }
       }
+      /* held octets ending at every place in a stripe, then pieces that
+       * are held after them, fill the stripe or go where they lie, and
+       * leave every count of octets over */
+      for (lead = 1; lead <= 64; lead++)
+         for (i = 0; i < sizeof(after) / sizeof(after[0]); i++)
+         {
+            static xxh3_state_t st;
+            uint64_t seed = (lead & 1) ? 0 : (uint64_t)lead * PRIME64;
+            size_t   len  = 5000 + lead, at, k;
+            uint64_t want = xxh3_64(buf, len, seed), h;
+            xxh3_reset(&st, seed);
+            xxh3_update(&st, buf, lead);
+            for (at = lead; at < len; at += k)
+            {
+               k = after[i] < len - at ? after[i] : len - at;
+               xxh3_update(&st, buf + at, k);
+            }
+            checks++;
+            if ((h = xxh3_digest(&st)) != want)
+               fail("xxh3 after a held lead", (unsigned)len, seed, h, want);
+         }
       for (n = 0; n <= 3 * 1024 + 64; n++)
       {
          uint64_t seed = (n & 1) ? 0 : (uint64_t)n * PRIME64;

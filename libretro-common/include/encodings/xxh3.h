@@ -48,7 +48,7 @@ uint64_t xxh3_64(const void *data, size_t len, uint64_t seed);
 
 /* The same hash taken over pieces handed to it one after another,
  * XXH3_64bits_update() and its digest. Pieces are taken where they lie
- * a 64-octet stripe at a time; at most 256 octets are held between
+ * a 64-octet stripe at a time; at most 1024 octets are held between
  * calls, after the last stripe taken. */
 typedef struct xxh3_state
 {
@@ -56,7 +56,7 @@ typedef struct xxh3_state
    uint64_t total;         /* octets taken */
    uint64_t seed;
    uint8_t  sec[192];      /* the seeded secret, with a seed */
-   uint8_t  buf[64 + 256]; /* the last stripe taken, then what is held */
+   uint8_t  buf[64 + 1024]; /* the last stripe taken, then what is held */
    uint32_t held;          /* how much is held */
    unsigned pos;           /* the next stripe's place in its block */
 } xxh3_state_t;
