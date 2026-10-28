@@ -343,6 +343,18 @@ static void test_display_key(void)
    CHECK(!strcmp(small, "aaa 2"));
 }
 
+/* The record the display list's JNI frame holds eight of */
+static void test_display_record(void)
+{
+   video_window_display_t d;
+   memset(&d, 0, sizeof(d));
+   d.is_default = true;
+   CHECK(d.is_default);
+   /* is_default fits in padding: the eight records the JNI frame
+    * holds keep their size */
+   CHECK(sizeof(video_window_display_t) == 116);
+}
+
 static void test_selected_layout(void)
 {
    video_views_map_t map;
@@ -725,6 +737,7 @@ int main(void)
    test_windows_attached();
    test_windows_route();
    test_display_key();
+   test_display_record();
    test_selected_layout();
    test_second_output_touch();
    test_window_events();

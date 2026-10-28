@@ -199,6 +199,8 @@ typedef struct video_window_display
    bool physical;
    /* A Presentation failed on it since the list last changed */
    bool refused;
+   /* The platform's default display: Android's DEFAULT_DISPLAY */
+   bool is_default;
    char name[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
    /* The product's name, for the menu only; empty where unknown */
    char model[VIDEO_WINDOW_DISPLAY_MODEL_SIZE];
