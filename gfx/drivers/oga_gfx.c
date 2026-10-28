@@ -22,6 +22,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <poll.h>
 #include <sys/mman.h>
 #include <rga/RgaApi.h>
 #include <xf86drm.h>
@@ -57,7 +58,19 @@
 
 #define ALIGN(val, align) (((val) + (align) - 1) & ~((align) - 1))
 
+/* Scanout pages: one on screen, one queued to flip, one being drawn. */
 #define NUM_PAGES 3
+/* Bound on one wait for a flip, so a lost event cannot hang. */
+#define OGA_FLIP_TIMEOUT_MS 100
+
+/* What a page was last drawn with, for deciding whether its borders
+ * need clearing. */
+enum oga_page_mode
+{
+   OGA_PAGE_GAME = 0,
+   OGA_PAGE_MENU,
+   OGA_PAGE_VIEWS
+};
 
 typedef struct oga_rect
 {
@@ -69,10 +82,12 @@ typedef struct oga_rect
 
 typedef struct oga_surface
 {
-   uint8_t* map;
+   uint8_t* map;        /* NULL when only the RGA touches it */
+   size_t size;
    int width;
    int height;
-   int pitch;
+   int pitch;           /* bytes, as the kernel allocated it */
+   int wstride;         /* the same in pixels, for the RGA */
    int prime_fd;
    int rk_format;
    int display_fd;
@@ -83,11 +98,14 @@ typedef struct oga_framebuf
 {
    oga_surface_t* surface;
    uint32_t fb_id;
+   unsigned clear_gen;  /* rect_gen its borders were last cleared for */
+   bool dirty;          /* drawn over outside the picture (message) */
 } oga_framebuf_t;
 
 typedef struct oga_video
 {
    drmModeModeInfo mode;
+   drmModeCrtc *orig_crtc;
    oga_surface_t *frame_surface;
    oga_surface_t *menu_surface;
    oga_framebuf_t *pages[NUM_PAGES];
@@ -107,11 +125,23 @@ typedef struct oga_video
    int rotation;
    uint32_t crtc_id;
    uint32_t connector_id;
+   /* Packed size of the picture in menu_surface */
+   uint32_t menu_dims;
+   /* Where the last frame went on the page, packed (x,w) and (y,h),
+    * and with what; any change bumps rect_gen so each page clears its
+    * borders once. */
+   uint32_t last_xw;
+   uint32_t last_yh;
+   unsigned last_mode;
+   unsigned rect_gen;
    float display_ar;
    /* For get_flags: the last frame with a map was drawn whole */
    retro_atomic_int_t views_fallback;
    bool threaded;
    bool views_seen;
+   bool flip_pending;
+   bool crtc_set;
+   bool no_flip;        /* the driver refused page flips */
    char last_msg[128];
 } oga_video_t;
 
@@ -213,10 +243,36 @@ err_01:
    return false;
 }
 
-static oga_surface_t* oga_create_surface(int display_fd,
-      int width, int height, int rk_format)
+static void oga_destroy_surface(oga_surface_t* surface)
 {
-   struct drm_mode_create_dumb args = {0};
+   struct drm_mode_destroy_dumb args;
+
+   if (!surface)
+      return;
+
+   if (surface->map)
+      munmap(surface->map, surface->size);
+   if (surface->prime_fd >= 0)
+      close(surface->prime_fd);
+   if (surface->handle)
+   {
+      args.handle = surface->handle;
+      if (drmIoctl(surface->display_fd,
+               DRM_IOCTL_MODE_DESTROY_DUMB, &args) < 0)
+         RARCH_ERR("DRM_IOCTL_MODE_DESTROY_DUMB failed.\n");
+   }
+
+   free(surface);
+}
+
+/* A dumb buffer the RGA reads or writes through its prime fd; mapped
+ * for the CPU only when @map is set. */
+static oga_surface_t* oga_create_surface(int display_fd,
+      int width, int height, int rk_format, bool map)
+{
+   struct drm_mode_create_dumb args;
+   int bytes                        = (rk_format == RK_FORMAT_BGRA_8888)
+      ? 4 : 2;
    oga_surface_t* surface           = (oga_surface_t*)
       calloc(1, sizeof(oga_surface_t));
    if (!surface)
@@ -224,73 +280,77 @@ static oga_surface_t* oga_create_surface(int display_fd,
       RARCH_ERR("Error allocating surface.\n");
       return NULL;
    }
+   surface->prime_fd   = -1;
+   surface->display_fd = display_fd;
 
+   memset(&args, 0, sizeof(args));
    args.width  = width;
    args.height = height;
-   args.bpp    = rk_format == RK_FORMAT_BGRA_8888 ? 32 : 16;
-   args.flags  = 0;
+   args.bpp    = bytes * 8;
 
    if (drmIoctl(display_fd, DRM_IOCTL_MODE_CREATE_DUMB, &args) < 0)
    {
       RARCH_ERR("DRM_IOCTL_MODE_CREATE_DUMB failed.\n");
-      goto out;
+      goto error;
    }
 
-   surface->display_fd = display_fd;
    surface->handle     = args.handle;
+   surface->size       = (size_t)args.size;
    surface->width      = width;
    surface->height     = height;
-   surface->pitch      = width * args.bpp / 8;
+   /* The kernel pads rows (to 64 bytes on Rockchip): its pitch, not
+    * width * bpp, is where each row starts. */
+   surface->pitch      = (int)args.pitch;
+   surface->wstride    = (int)args.pitch / bytes;
    surface->rk_format  = rk_format;
 
-   if (drmPrimeHandleToFD(display_fd, surface->handle, DRM_RDWR | DRM_CLOEXEC, &surface->prime_fd) < 0)
+   if (drmPrimeHandleToFD(display_fd, surface->handle,
+            DRM_RDWR | DRM_CLOEXEC, &surface->prime_fd) < 0)
    {
       RARCH_ERR("drmPrimeHandleToFD failed.\n");
-      goto out;
+      surface->prime_fd = -1;
+      goto error;
    }
 
-   surface->map = mmap(NULL, args.size, PROT_READ | PROT_WRITE, MAP_SHARED, surface->prime_fd, 0);
-   if (surface->map == MAP_FAILED)
+   if (map)
    {
-      RARCH_ERR("mmap failed.\n");
-      return NULL;
+      void *p = mmap(NULL, surface->size, PROT_READ | PROT_WRITE,
+            MAP_SHARED, surface->prime_fd, 0);
+      if (p == MAP_FAILED)
+      {
+         RARCH_ERR("mmap failed.\n");
+         goto error;
+      }
+      surface->map = (uint8_t*)p;
    }
 
    return surface;
 
-out:
-   free(surface);
+error:
+   oga_destroy_surface(surface);
    return NULL;
-}
-
-static void oga_destroy_surface(oga_surface_t* surface)
-{
-   int io;
-   struct drm_mode_destroy_dumb args = { 0 };
-
-   args.handle = surface->handle;
-
-   io          = drmIoctl(surface->display_fd,
-         DRM_IOCTL_MODE_DESTROY_DUMB, &args);
-   if (io < 0)
-      RARCH_ERR("DRM_IOCTL_MODE_DESTROY_DUMB failed.\n");
-
-   free(surface);
 }
 
 static oga_framebuf_t* oga_create_framebuf(oga_surface_t* surface)
 {
    int ret;
-   const uint32_t handles[4] = {surface->handle, 0, 0, 0};
-   const uint32_t pitches[4] = {surface->pitch, 0, 0, 0};
-   const uint32_t offsets[4] = {0, 0, 0, 0};
-   oga_framebuf_t* framebuf  = calloc(1, sizeof(oga_framebuf_t));
+   uint32_t handles[4], pitches[4], offsets[4];
+   oga_framebuf_t* framebuf;
 
-   if (!framebuf)
+   if (!surface)
+      return NULL;
+   if (!(framebuf = (oga_framebuf_t*)calloc(1, sizeof(oga_framebuf_t))))
    {
       RARCH_ERR("Error allocating framebuf.\n");
+      oga_destroy_surface(surface);
       return NULL;
    }
+
+   handles[0] = surface->handle;
+   pitches[0] = (uint32_t)surface->pitch;
+   handles[1] = handles[2] = handles[3] = 0;
+   pitches[1] = pitches[2] = pitches[3] = 0;
+   offsets[0] = offsets[1] = offsets[2] = offsets[3] = 0;
 
    framebuf->surface = surface;
    ret               = drmModeAddFB2(surface->display_fd,
@@ -308,6 +368,7 @@ static oga_framebuf_t* oga_create_framebuf(oga_surface_t* surface)
    if (ret)
    {
       RARCH_ERR("drmModeAddFB2 failed.\n");
+      oga_destroy_surface(surface);
       free(framebuf);
       return NULL;
    }
@@ -317,11 +378,81 @@ static oga_framebuf_t* oga_create_framebuf(oga_surface_t* surface)
 
 static void oga_destroy_framebuf(oga_framebuf_t* framebuf)
 {
+   if (!framebuf)
+      return;
    if (drmModeRmFB(framebuf->surface->display_fd, framebuf->fb_id) != 0)
       RARCH_ERR("drmModeRmFB failed.\n");
 
    oga_destroy_surface(framebuf->surface);
    free(framebuf);
+}
+
+static void oga_page_flip_handler(int fd, unsigned frame,
+      unsigned sec, unsigned usec, void *data)
+{
+   ((oga_video_t*)data)->flip_pending = false;
+}
+
+static drmEventContext oga_evctx = {
+   2,                      /* DRM_EVENT_CONTEXT_VERSION for this handler */
+   NULL,                   /* vblank_handler */
+   oga_page_flip_handler
+};
+
+/* Waits up to timeout_ms (0 polls) for the queued flip to land.
+ * Returns true once nothing is pending. */
+static bool oga_wait_flip(oga_video_t *vid, int timeout_ms)
+{
+   while (vid->flip_pending)
+   {
+      int ret;
+      struct pollfd p;
+      p.fd      = vid->fd;
+      p.events  = POLLIN;
+      p.revents = 0;
+      ret       = poll(&p, 1, timeout_ms);
+      if (ret < 0 && errno == EINTR)
+         continue;
+      if (ret <= 0)
+      {
+         /* A timed-out wait gives the flip up for lost; a poll leaves
+          * it pending. */
+         if (timeout_ms > 0)
+            vid->flip_pending = false;
+         break;
+      }
+      drmHandleEvent(vid->fd, &oga_evctx);
+   }
+   return !vid->flip_pending;
+}
+
+static void oga_set_crtc(oga_video_t *vid, uint32_t fb_id)
+{
+   if (drmModeSetCrtc(vid->fd, vid->crtc_id, fb_id, 0, 0,
+            &vid->connector_id, 1, &vid->mode))
+      RARCH_ERR("drmModeSetCrtc failed.\n");
+   vid->crtc_set = true;
+}
+
+/* The first frame sets the mode; every frame after is a page flip,
+ * which the kernel carries out at the next vblank on its own. */
+static void oga_present(oga_video_t *vid, uint32_t fb_id)
+{
+   if (!vid->crtc_set || vid->no_flip)
+   {
+      oga_set_crtc(vid, fb_id);
+      return;
+   }
+
+   if (!drmModePageFlip(vid->fd, vid->crtc_id, fb_id,
+            DRM_MODE_PAGE_FLIP_EVENT, vid))
+      vid->flip_pending = true;
+   else if (errno != EBUSY)
+   {
+      RARCH_WARN("[OGA] Page flip refused, presenting with drmModeSetCrtc.\n");
+      vid->no_flip = true;
+      oga_set_crtc(vid, fb_id);
+   }
 }
 
 static void oga_free(void *data)
@@ -331,6 +462,17 @@ static void oga_free(void *data)
 
    if (!vid)
       return;
+
+   oga_wait_flip(vid, OGA_FLIP_TIMEOUT_MS);
+   if (vid->orig_crtc)
+   {
+      drmModeSetCrtc(vid->fd, vid->orig_crtc->crtc_id,
+            vid->orig_crtc->buffer_id,
+            vid->orig_crtc->x, vid->orig_crtc->y,
+            &vid->connector_id, 1, &vid->orig_crtc->mode);
+      drmModeFreeCrtc(vid->orig_crtc);
+      vid->orig_crtc = NULL;
+   }
 
    if (vid->font_driver && vid->font)
       vid->font_driver->free(vid->font);
@@ -348,8 +490,7 @@ static void oga_free(void *data)
    oga_destroy_surface(vid->frame_surface);
    oga_destroy_surface(vid->msg_surface);
    oga_destroy_surface(vid->menu_surface);
-   if (vid->views_surface)
-      oga_destroy_surface(vid->views_surface);
+   oga_destroy_surface(vid->views_surface);
 
    close(vid->fd);
 
@@ -382,14 +523,21 @@ static void *oga_init(const video_info_t *video)
    if (!oga_create_display(vid))
    {
       RARCH_ERR("Error initializing drm.\n");
+      free(vid);
       return NULL;
    }
 
    vid->display_ar = (float)vid->mode.vdisplay / vid->mode.hdisplay;
    vid->drm_width = vid->mode.vdisplay;
    vid->drm_height = vid->mode.hdisplay;
+   vid->orig_crtc  = drmModeGetCrtc(vid->fd, vid->crtc_id);
+   vid->rect_gen   = 1;
 
-   vid->menu_surface = oga_create_surface(vid->fd, vid->drm_width, vid->drm_height, RK_FORMAT_BGRA_8888);
+   /* RGUI's frame is 16-bit, which the RGA reads as it is. Made here
+    * at the screen's size so opening the menu allocates nothing. */
+   vid->menu_surface = oga_create_surface(vid->fd, vid->drm_width,
+         vid->drm_height, RK_FORMAT_RGB_565, true);
+   vid->menu_dims    = VIDEO_SCALE_PACK(vid->drm_width, vid->drm_height);
    vid->threaded = video->is_threaded;
 
    /*
@@ -403,8 +551,16 @@ static void *oga_init(const video_info_t *video)
    vid->scale_mode = video->ctx_scaling << 1 | video->smooth;
    vid->rotation = 0;
 
-   vid->frame_surface = oga_create_surface(vid->fd, geom->max_width, geom->max_height, video->rgb32 ? RK_FORMAT_BGRA_8888 : RK_FORMAT_RGB_565);
-   vid->msg_surface   = oga_create_surface(vid->fd, vid->drm_width, vid->drm_height, RK_FORMAT_BGRA_8888);
+   vid->frame_surface = oga_create_surface(vid->fd, geom->max_width,
+         geom->max_height, video->rgb32 ? RK_FORMAT_BGRA_8888
+         : RK_FORMAT_RGB_565, true);
+   vid->msg_surface   = oga_create_surface(vid->fd, vid->drm_width,
+         vid->drm_height, RK_FORMAT_BGRA_8888, true);
+   if (!vid->menu_surface || !vid->frame_surface || !vid->msg_surface)
+   {
+      oga_free(vid);
+      return NULL;
+   }
    vid->last_msg[0]   = 0;
 
    if (settings->bools.video_font_enable)
@@ -436,12 +592,21 @@ static void *oga_init(const video_info_t *video)
       }
    }
 
+   /* The pages take the core's depth: a 16-bit core's frames go to
+    * the panel at 16 bits, which halves what the RGA writes and what
+    * the display controller reads each frame. Menu, messages and views
+    * are converted by the RGA on the way. */
    for (i = 0; i < NUM_PAGES; ++i)
    {
-      oga_surface_t* surface = oga_create_surface(vid->fd, vid->drm_height, vid->drm_width, RK_FORMAT_BGRA_8888);
-      vid->pages[i] = oga_create_framebuf(surface);
+      vid->pages[i] = oga_create_framebuf(oga_create_surface(vid->fd,
+               vid->drm_height, vid->drm_width,
+               video->rgb32 ? RK_FORMAT_BGRA_8888 : RK_FORMAT_RGB_565,
+               false));
       if (!vid->pages[i])
+      {
+         oga_free(vid);
          return NULL;
+      }
    }
 
    /* What views are laid out on: the screen as it is seen */
@@ -460,8 +625,8 @@ static void rga_clear_surface(oga_surface_t* surface, int color)
    dst.rect.yoffset = 0;
    dst.rect.width   = surface->width;
    dst.rect.height  = surface->height;
-   dst.rect.wstride = dst.rect.width;
-   dst.rect.hstride = dst.rect.height;
+   dst.rect.wstride = surface->wstride;
+   dst.rect.hstride = surface->height;
    dst.rect.format  = surface->rk_format;
    dst.color        = color;
 
@@ -585,20 +750,32 @@ static void oga_blit(oga_surface_t* src, int sx, int sy, int sw, int sh,
       oga_surface_t* dst, int dx, int dy, int dw, int dh,
       int rotation, int scale_mode, unsigned int blend)
 {
-   rga_info_t s = {
-      .fd = src->prime_fd,
-      .rect = { sx, sy, sw, sh, src->width, src->height, src->rk_format },
-      .rotation = rotation,
-      .mmuFlag = 1,
-      .scale_mode = scale_mode,
-      .blend = blend,
-   };
+   rga_info_t s, d;
 
-   rga_info_t d = {
-      .fd = dst->prime_fd,
-      .rect = { dx, dy, dw, dh, dst->width, dst->height, dst->rk_format },
-      .mmuFlag = 1,
-   };
+   memset(&s, 0, sizeof(s));
+   s.fd           = src->prime_fd;
+   s.mmuFlag      = 1;
+   s.rotation     = rotation;
+   s.scale_mode   = scale_mode;
+   s.blend        = blend;
+   s.rect.xoffset = sx;
+   s.rect.yoffset = sy;
+   s.rect.width   = sw;
+   s.rect.height  = sh;
+   s.rect.wstride = src->wstride;
+   s.rect.hstride = src->height;
+   s.rect.format  = src->rk_format;
+
+   memset(&d, 0, sizeof(d));
+   d.fd           = dst->prime_fd;
+   d.mmuFlag      = 1;
+   d.rect.xoffset = dx;
+   d.rect.yoffset = dy;
+   d.rect.width   = dw;
+   d.rect.height  = dh;
+   d.rect.wstride = dst->wstride;
+   d.rect.hstride = dst->height;
+   d.rect.format  = dst->rk_format;
 
    c_RkRgaBlit(&s, &d, NULL);
 }
@@ -668,6 +845,38 @@ static void oga_calc_bounds(oga_rect_t* r, int dw, int dh, int sw, int sh, float
    }
 }
 
+/* Makes @page ready for a picture at @r drawn as @mode. The blit
+ * writes every pixel inside @r, so only the borders around it can
+ * hold anything stale, and only once the picture moved, a message was
+ * drawn over the page, or a blend has to land on black. Each page is
+ * cleared once per change instead of every frame. */
+static void oga_prepare_page(oga_video_t *vid, oga_framebuf_t *page,
+      const oga_rect_t *r, unsigned mode, unsigned int blend)
+{
+   uint32_t xw  = ((uint32_t)r->x << 16) | ((uint32_t)r->w & 0xFFFF);
+   uint32_t yh  = ((uint32_t)r->y << 16) | ((uint32_t)r->h & 0xFFFF);
+   unsigned key = mode | ((unsigned)vid->rotation << 4);
+   bool full    =  r->x == 0 && r->y == 0
+               && r->w >= vid->drm_width && r->h >= vid->drm_height;
+
+   if (     xw  != vid->last_xw
+         || yh  != vid->last_yh
+         || key != vid->last_mode)
+   {
+      vid->last_xw   = xw;
+      vid->last_yh   = yh;
+      vid->last_mode = key;
+      vid->rect_gen++;
+   }
+
+   if (     blend
+         || page->dirty
+         || (page->clear_gen != vid->rect_gen && !full))
+      rga_clear_surface(page->surface, 0);
+   page->clear_gen = vid->rect_gen;
+   page->dirty     = false;
+}
+
 /* A core's views: each placement scaled by the RGA straight from the
  * frame's surface into an upright surface the size of the screen, cut
  * to its own eye's area and the screen, which one more blit turns onto
@@ -676,11 +885,12 @@ static void oga_calc_bounds(oga_rect_t* r, int dw, int dh, int sw, int sh, float
  * the frame whole. False when the frame is to be drawn whole. */
 static bool oga_views_frame(oga_video_t *vid, const void *frame,
       unsigned dims, unsigned width, unsigned height, int sx, int sy,
-      const video_frame_info_t *info, oga_surface_t *page_surface,
+      const video_frame_info_t *info, oga_framebuf_t *page,
       unsigned int blend)
 {
    unsigned i;
    unsigned screen;
+   oga_rect_t whole;
    const video_views_layout_t *layout;
    bool views = info && frame && info->views.num_views
       && !info->views_layout.offscreen
@@ -692,7 +902,7 @@ static bool oga_views_frame(oga_video_t *vid, const void *frame,
    if (views && !vid->views_surface)
    {
       vid->views_surface = oga_create_surface(vid->fd, vid->drm_width,
-            vid->drm_height, RK_FORMAT_BGRA_8888);
+            vid->drm_height, RK_FORMAT_BGRA_8888, false);
       views              = vid->views_surface != NULL;
    }
    retro_atomic_store_release_int(&vid->views_fallback,
@@ -724,8 +934,12 @@ static bool oga_views_frame(oga_video_t *vid, const void *frame,
             (int)VIDEO_SCALE_W(cut.dims), (int)VIDEO_SCALE_H(cut.dims),
             0, vid->scale_mode, 0);
    }
+   whole.x = whole.y = 0;
+   whole.w = vid->drm_width;
+   whole.h = vid->drm_height;
+   oga_prepare_page(vid, page, &whole, OGA_PAGE_VIEWS, blend);
    oga_blit(vid->views_surface, 0, 0, vid->drm_width, vid->drm_height,
-         page_surface, 0, 0, vid->drm_height, vid->drm_width,
+         page->surface, 0, 0, vid->drm_height, vid->drm_width,
          vid->rotation, vid->scale_mode, blend);
    return true;
 }
@@ -734,12 +948,13 @@ static bool oga_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   unsigned width = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
+   oga_rect_t r;
+   unsigned width              = VIDEO_SCALE_W(dims);
+   unsigned height             = VIDEO_SCALE_H(dims);
    oga_video_t *vid            = (oga_video_t*)data;
-   oga_framebuf_t* page        = vid->pages[vid->cur_page];
-   oga_surface_t *page_surface = page->surface;
-   float aspect_ratio          = video_driver_get_aspect_ratio();
+   oga_framebuf_t* page;
+   oga_surface_t *page_surface;
+   float aspect_ratio;
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
@@ -747,11 +962,19 @@ static bool oga_frame(void *data, const void *frame,
    if (unlikely(!frame || width == 0 || height == 0))
       return true;
 
-   if (unlikely(video_info->input_driver_nonblock_state) && !vid->threaded)
-   {
-      if (frame_count % 4 != 0)
-         return true;
-   }
+   /* Fast-forward or vsync off: with the last flip still queued, this
+    * frame is not shown rather than waited for - and since nothing is
+    * drawn for it, it costs no RGA work either. With the flip landed
+    * the frame goes out, so the panel shows one frame per refresh and
+    * the core runs as fast as it can. */
+   if (     (video_info->input_driver_nonblock_state || !video_info->vsync)
+         && vid->flip_pending
+         && !oga_wait_flip(vid, 0))
+      return true;
+
+   page         = vid->pages[vid->cur_page];
+   page_surface = page->surface;
+   aspect_ratio = video_driver_get_aspect_ratio();
 
    if (msg && vid->font)
    {
@@ -759,19 +982,19 @@ static bool oga_frame(void *data, const void *frame,
             msg = NULL;
    }
 
-   rga_clear_surface(page_surface, 0);
-
 #ifdef HAVE_MENU
    if (menu_is_alive)
    {
-      oga_rect_t r;
       menu_driver_frame(true, video_info);
+      if (!vid->menu_surface || !vid->menu_dims)
+         return true;
 
-      width        = vid->menu_surface->width;
-      height       = vid->menu_surface->height;
+      width        = VIDEO_SCALE_W(vid->menu_dims);
+      height       = VIDEO_SCALE_H(vid->menu_dims);
       aspect_ratio = (float)width / height;
 
       oga_calc_bounds(&r, vid->drm_width, vid->drm_height, width, height, aspect_ratio, vid->display_ar);
+      oga_prepare_page(vid, page, &r, OGA_PAGE_MENU, 0);
       oga_blit(vid->menu_surface, 0, 0, width, height,
             page_surface, r.y, r.x, r.h, r.w, HAL_TRANSFORM_ROT_270, vid->scale_mode, 0);
    }
@@ -781,7 +1004,6 @@ static bool oga_frame(void *data, const void *frame,
       uint8_t* src = (uint8_t*)frame;
       uint8_t* dst = (uint8_t*)vid->frame_surface->map;
       unsigned int blend = video_info->runloop_is_paused ? 0x800105 : 0;
-      oga_rect_t r;
       int sx       = 0;
       int sy       = 0;
       bool lent    = oga_frame_window(vid->frame_surface, frame,
@@ -804,19 +1026,26 @@ static bool oga_frame(void *data, const void *frame,
             ? (size_t)pitch : (size_t)dst_pitch;
          int    yy        = (int)height;
 
-         while (yy > 0)
+         /* Rows that are packed on both sides are one copy */
+         if (pitch == (unsigned)dst_pitch)
+            memcpy(dst, src, (size_t)dst_pitch * height);
+         else
          {
-             memcpy(dst, src, row);
-             src += pitch;
-             dst += dst_pitch;
-             --yy;
+            while (yy > 0)
+            {
+                memcpy(dst, src, row);
+                src += pitch;
+                dst += dst_pitch;
+                --yy;
+            }
          }
       }
 
       if (!oga_views_frame(vid, frame, dims, width, height, sx, sy,
-               video_info, page_surface, blend))
+               video_info, page, blend))
       {
          oga_calc_bounds(&r, vid->drm_width, vid->drm_height, width, height, aspect_ratio, vid->display_ar);
+         oga_prepare_page(vid, page, &r, OGA_PAGE_GAME, blend);
          oga_blit(vid->frame_surface, sx, sy, width, height,
                page_surface, r.y, r.x, r.h, r.w, vid->rotation, vid->scale_mode, blend);
       }
@@ -827,58 +1056,66 @@ static bool oga_frame(void *data, const void *frame,
       oga_blit(vid->msg_surface, 0, 0, vid->msg_width, vid->msg_height,
             page_surface, 0, 0, vid->msg_height, vid->msg_width,
             HAL_TRANSFORM_ROT_270, vid->scale_mode, 0xff0105);
+      /* It may lie over the borders, which the next frame on this page
+       * does not redraw */
+      page->dirty = true;
    }
 
-   if (unlikely(drmModeSetCrtc(vid->fd, vid->crtc_id, page->fb_id, 0, 0, &vid->connector_id, 1, &vid->mode) != 0))
-      RARCH_ERR("drmModeSetCrtc failed.\n");
+   /* The RGA work above ran while the last flip was landing. */
+   oga_wait_flip(vid, OGA_FLIP_TIMEOUT_MS);
+   oga_present(vid, page->fb_id);
 
    vid->cur_page = (vid->cur_page + 1) % NUM_PAGES;
 
    return true;
 }
 
+/* RGUI's frame, kept at its own depth: the RGA reads 16 and 32 bits
+ * alike, so this is a row copy, not a pixel conversion. The surface
+ * is made again only when the frame outgrows it or changes depth. */
 static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned dims, float alpha)
 {
-   oga_video_t *vid             = (oga_video_t*)data;
-   unsigned i, j;
-   /* Borrowed from drm_gfx
-    *
-    * We have to go on a pixel format conversion adventure
-    * for now, until we can convince RGUI to output
-    * in an 8888 format. */
-   unsigned int src_pitch        = VIDEO_SCALE_W(dims) * 2;
-   unsigned int dst_pitch        = VIDEO_SCALE_W(dims) * 4;
-   char *frame_output;
+   unsigned i;
+   const uint8_t *src;
+   uint8_t *dst;
+   oga_video_t *vid = (oga_video_t*)data;
+   unsigned w       = VIDEO_SCALE_W(dims);
+   unsigned h       = VIDEO_SCALE_H(dims);
+   int format       = rgb32 ? RK_FORMAT_BGRA_8888 : RK_FORMAT_RGB_565;
+   size_t row       = (size_t)w * (rgb32 ? 4 : 2);
 
-   if (     vid->menu_surface->width  != (int)VIDEO_SCALE_W(dims)
-         || vid->menu_surface->height != (int)VIDEO_SCALE_H(dims))
+   if (!vid || !frame || !w || !h)
+      return;
+
+   if (     !vid->menu_surface
+         ||  vid->menu_surface->rk_format != format
+         ||  vid->menu_surface->width     <  (int)w
+         ||  vid->menu_surface->height    <  (int)h)
    {
       oga_destroy_surface(vid->menu_surface);
-      vid->menu_surface = oga_create_surface(vid->fd, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
-            RK_FORMAT_BGRA_8888);
-   }
-
-   /* The output pixel array with the converted pixels. */
-   frame_output = (char*)vid->menu_surface->map;
-
-   for (i = 0; i < VIDEO_SCALE_H(dims); i++)
-   {
-      const uint16_t *src_row = (const uint16_t*)frame + (src_pitch / 2 * i);
-      uint32_t *dst_row       = (uint32_t*)(void*)
-         (frame_output + (dst_pitch * i));
-
-      for (j = 0; j < src_pitch / 2; j++)
+      vid->menu_surface = oga_create_surface(vid->fd, w, h, format, true);
+      if (!vid->menu_surface)
       {
-         uint16_t src_pix = src_row[j];
-         /* The hex AND is for keeping only the part
-          * we need for each component. */
-         uint32_t R       = (src_pix << 8) & 0x00FF0000;
-         uint32_t G       = (src_pix << 4) & 0x0000FF00;
-         uint32_t B       = (src_pix << 0) & 0x000000FF;
-         dst_row[j]       = (0x00 | R | G | B);
+         vid->menu_dims = 0;
+         return;
       }
    }
+
+   src = (const uint8_t*)frame;
+   dst = vid->menu_surface->map;
+   if (row == (size_t)vid->menu_surface->pitch)
+      memcpy(dst, src, row * h);
+   else
+   {
+      for (i = 0; i < h; i++)
+      {
+         memcpy(dst, src, row);
+         src += row;
+         dst += vid->menu_surface->pitch;
+      }
+   }
+   vid->menu_dims = VIDEO_SCALE_PACK(w, h);
 }
 
 /* TODO/FIXME - implement */
