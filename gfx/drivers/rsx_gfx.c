@@ -2639,7 +2639,7 @@ static bool rsx_frame(void* data, const void* frame,
    rsx_collect_retired_memory();
    rsx_fence_retired_memory(gcm->context);
    /* The core shares the FIFO and leaves its own state behind */
-   if (gcm->hw_render && frame == RETRO_HW_FRAME_BUFFER_VALID)
+   if (gcm->hw_render && frame)
    {
       unsigned attrib;
       rsxSetSurface(gcm->context, &gcm->surface[gcm->nextBuffer]);
