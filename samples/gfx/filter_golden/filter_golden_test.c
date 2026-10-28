@@ -200,7 +200,10 @@ int main(void)
                 * writes, which the hash covers, so a write past a row
                 * shows. */
                os    = (size_t)(ow + 5) * obpp;
-               memset(out, 0x11, GOLDEN_OUT_BYTES);
+               /* Only what the hash and the comparison cover: clearing
+                * the whole 5 MB buffer for every run was most of the
+                * suite's time under the sanitizers. */
+               memset(out, 0x11, os * oh);
                {
                   /* Rows at a stride wider than the frame. */
                   uint8_t *in = (uint8_t*)calloc(H, is);

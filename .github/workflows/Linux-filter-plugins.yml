@@ -90,10 +90,11 @@ jobs:
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: |
           set -eu
+          jobs=$(getconf _NPROCESSORS_ONLN)
           for t in ntsc_filter_golden crt_filter_golden filter_golden; do
-             make -C samples/gfx/$t check
+             make -C samples/gfx/$t -j"$jobs" check
              make -C samples/gfx/$t clean
-             make -C samples/gfx/$t check SANITIZER=address,undefined
+             make -C samples/gfx/$t -j"$jobs" check SANITIZER=address,undefined
           done
 
       - name: Load and run every plugin under ThreadSanitizer

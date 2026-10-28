@@ -51,10 +51,15 @@ $(C_TARGETS): golden_%_c: filter_golden_test.c golden_%.h \
 		-DGOLDEN_H='"golden_$*.h"' -DFILTER_NAME='"golden_$*_c"' \
 		-o $@ filter_golden_test.c $(LDFLAGS)
 
-check: $(TARGETS)
-	@set -e; for t in $(TARGETS); do ./$$t; done
+# One target a test, so make -j builds and runs them side by side.
+RUNS := $(addprefix run_,$(TARGETS))
+
+check: $(RUNS)
+
+$(RUNS): run_%: %
+	@./$*
 
 clean:
 	rm -f $(TARGETS)
 
-.PHONY: all check clean
+.PHONY: all check clean $(RUNS)
