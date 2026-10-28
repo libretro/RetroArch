@@ -305,22 +305,17 @@ unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
 #define VIDEO_XR_SNAP_DIST  0.03f
 #define VIDEO_XR_SNAP_ANGLE 5.0f
 #define VIDEO_XR_SNAP_NEAR  0.30f
-/* Edges that meet, side by side, at a corner or hinged, leave a gap:
- * the set one within VIDEO_XR_SNAP_CLICK metres of it, fading out over
- * as far again; else where the hand puts it, from touching to
- * VIDEO_XR_SNAP_FREE metres, the hinge fading out over
- * VIDEO_XR_SNAP_DIST past that. Pushed past touching, a hinged edge
- * stops there within VIDEO_XR_SNAP_STOP metres past where the click
- * lets go of touching, the hinge ending there, the stop fading out by
- * VIDEO_XR_SNAP_STOP_FADE past there; a push that ended it holds
- * VIDEO_XR_SNAP_STOP_ARM short (video_xr_grab_t's through), so the
- * hinge takes hold again only that far back. The stop's tick bits (its
- * axis's and VIDEO_XR_SNAP_GAP) count as pulling until the edge is
- * VIDEO_XR_SNAP_STOP_ARM apart, so it ticks once per push. */
+/* Meeting edges click to the set gap within this of it (m). */
 #define VIDEO_XR_SNAP_CLICK     0.01f
+/* Else the gap is where the hand leaves it, touching to this (m). */
 #define VIDEO_XR_SNAP_FREE      0.10f
+/* A hinged edge pushed past touching stops there, whole this far past
+ * where the click lets go (m); past that the hinge ends. */
 #define VIDEO_XR_SNAP_STOP      0.03f
+/* The stop fades to none this far past where the click lets go (m). */
 #define VIDEO_XR_SNAP_STOP_FADE 0.055f
+/* A push that ended the hinge holds this short of where it takes hold
+ * again; the stop ticks again once the edge is this far apart (m). */
 #define VIDEO_XR_SNAP_STOP_ARM  0.005f
 /* The snaps engaged, each whole: video_xr_snap's low bits. */
 #define VIDEO_XR_SNAP_TURN  1u
@@ -439,12 +434,34 @@ bool video_xr_rest_hinge(const video_xr_quad_set_t *set, unsigned slot,
 
 /* Where a hand taking a screen width x height in slot, resting at pose
  * in h's hinge (video_xr_rest_hinge), gap metres the set gap, holds it,
- * into pose: touching where the click reaches touching (Hinge Gap 1),
- * pushed past it as far as the stop starts, which holds it there;
- * else where it rests. */
+ * into pose: touching, pushed VIDEO_XR_SNAP_STOP_ARM past where the stop
+ * starts, which holds it there, so a let-go after a drift short of that
+ * stays touching; else where it rests. */
 void video_xr_rest_take(const video_xr_quad_set_t *set, unsigned slot,
       float width, float height, float gap, const video_xr_hinge_t *h,
       video_xr_pose_t *pose);
+
+/* A screen let go hinged settles: its edge to the set gap from within
+ * VIDEO_XR_HINGE_SETTLE metres of it, apart; touching from the stop's
+ * hold; level along the edge from within the level pull's reach; else
+ * where it is. */
+#define VIDEO_XR_HINGE_SETTLE 0.03f
+
+/* Where screen slot, width x height metres, its hand putting it at
+ * hand, settles in hinge h (its target's slot and both edges) on set's
+ * screens but those in skip, gap metres the set gap: h held whole from
+ * there, nothing else pulling, then to its settle points, into pose.
+ * False if h does not engage it there or what it gives is not exact
+ * (video_xr_rest_hinges would not list it). */
+bool video_xr_hinge_settle(const video_xr_quad_set_t *set, unsigned slot,
+      unsigned skip, float width, float height, float gap,
+      const video_xr_hinge_t *h, const video_xr_pose_t *hand,
+      video_xr_pose_t *pose);
+
+/* video_xr_hinge_settle for g's item where aim puts it with no snap. */
+bool video_xr_grab_settle(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_hinge_t *h, video_xr_pose_t *pose);
 
 /* video_xr_grab_pose with targets and no settings, also giving the
  * hinge it holds (VIDEO_XR_SNAP_HINGE in the snaps returned, never

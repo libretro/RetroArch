@@ -3609,7 +3609,10 @@ static int rest_is(const video_xr_rest_t *r, unsigned slot, unsigned edge,
  * 12 cm apart, 1 mm out of the plane, skipped or fixed; max caps them.
  * None only near a hinge: 7 mm into Hinge Gap 0's click, 3.2 cm apart
  * at Hinge Gap 2 (inside its click), centres 2 cm off level; 3.2 cm at
- * Hinge Gap 0 is a free gap, held there. */
+ * Hinge Gap 0 is a free gap, held there. None inside a settle band off
+ * its point, which a let-go would move: 4.5 cm at Hinge Gap 2, 2.5 at
+ * 0, 0.5 at 3, 7.5 at 5; 5.5 cm at Hinge Gap 2 is past it, and touching
+ * rests at every gap. */
 static void test_rest_hinges(void)
 {
    unsigned i;
@@ -3618,6 +3621,10 @@ static void test_rest_hinges(void)
    video_xr_rest_t r[8];
    static const double grid[4][2] = {
       { -0.8, 0.48 }, { 0.8, 0.48 }, { -0.8, -0.48 }, { 0.8, -0.48 } };
+   /* Hinge Gap, apart, metres. */
+   static const double band[4][2] = {
+      { 0.02, 0.045 }, { 0.0, 0.025 }, { 0.03, 0.005 }, { 0.05, 0.075 } };
+   static const double gaps[6] = { 0.0, 0.01, 0.02, 0.03, 0.05, 0.10 };
 
    rest_under(&set, 0.0, 0.0);
    CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 1
@@ -3675,6 +3682,19 @@ static void test_rest_hinges(void)
    rest_under(&set, 0.0, 0.0);
    set.quads[1].pose.position.x = 0.02f;
    CHECK(video_xr_rest_hinges(&set, 0, 0.0f, r, 8) == 0);
+
+   for (i = 0; i < 4; i++)
+   {
+      rest_under(&set, 0.0, band[i][1]);
+      CHECK(video_xr_rest_hinges(&set, 0, (float)band[i][0], r, 8) == 0);
+   }
+   rest_under(&set, 0.0, 0.055);
+   CHECK(video_xr_rest_hinges(&set, 0, 0.02f, r, 8) == 1
+         && rest_is(&r[0], 0, 1, 1, 0));
+   rest_under(&set, 0.0, 0.0);
+   for (i = 0; i < 6; i++)
+      CHECK(video_xr_rest_hinges(&set, 0, (float)gaps[i], r, 8) == 1
+            && rest_is(&r[0], 0, 1, 1, 0));
 }
 
 /* Whether a and b are the same pose to rounding. */
@@ -3940,8 +3960,8 @@ static void test_grab_through_rest(void)
 /* At Hinge Gap 1 the click reaches touching, so a screen held where it
  * lies touching would click apart. The 3DS pair resting touching, flat
  * or folded 30, rests hinged at Gap 1 as at 0 and 2; taken where the
- * hand holds it (video_xr_rest_take, 5 mm past touching), it is hinged
- * whole and unmoved. Resting 1 cm apart, or touching at Gap 2, the hand
+ * hand holds it (video_xr_rest_take, 1 cm past touching, 5 mm at Gap
+ * 2), it is hinged whole and unmoved. Resting 1 cm apart, the hand
  * holds it where it lies. */
 static void test_rest_gap_one(void)
 {
@@ -3961,8 +3981,9 @@ static void test_rest_gap_one(void)
             && h.slot == 0);
       taken = *at;
       video_xr_rest_take(&set, 1, 1.28f, 0.96f, gap, &h, &taken);
-      CHECK((i == 2) == (fabs(taken.position.y - at->position.y)
-               + fabs(taken.position.z - at->position.z) < 1e-6));
+      CHECK(fabs(taken.position.y - at->position.y
+               - ((i == 2) ? 0.005 : 0.01)) < 1e-6
+            && fabs(taken.position.z - at->position.z) < 1e-6);
       memset(&g, 0, sizeof(g));
       video_xr_pose_identity(&aim);
       g.rel       = taken;
@@ -4050,6 +4071,264 @@ static void test_rest_hinge_size(void)
          && h.slot == 0 && h.on == 1 && h.edge == 0);
    CHECK(!video_xr_rest_hinge(&set, 1, 0, q->width, q->height + 0.02f,
             0.02f, &q->pose, &h));
+}
+
+/* Whether a and b are the same pose to 0.01 mm and 0.01 degrees. */
+static int settle_same(const video_xr_pose_t *a, const video_xr_pose_t *b)
+{
+   return fabs(a->position.x - b->position.x) <= 1e-5
+      && fabs(a->position.y - b->position.y) <= 1e-5
+      && fabs(a->position.z - b->position.z) <= 1e-5
+      && turn_apart(&a->orientation, &b->orientation) <= 0.01;
+}
+
+/* Whether screen 2, w wide, settled at pose in h from hand, rests there
+ * exactly: put there in set, the pair is listed at rest and taken in h,
+ * settling again from where a hand takes it leaves it, and it keeps
+ * hand's fold. */
+static int settle_rests(video_xr_quad_set_t *set, float w, float gap,
+      const video_xr_hinge_t *h, const video_xr_pose_t *hand,
+      const video_xr_pose_t *pose)
+{
+   video_xr_rest_t r[8];
+   video_xr_hinge_t k;
+   video_xr_pose_t take, again;
+   set->quads[1].pose  = *pose;
+   set->quads[1].width = w;
+   take                = *pose;
+   video_xr_rest_take(set, 1, w, 0.96f, gap, h, &take);
+   return video_xr_rest_hinges(set, 0, gap, r, 8) == 1
+      && (rest_is(&r[0], 1, 0, 0, 1) || rest_is(&r[0], 0, 1, 1, 0))
+      && video_xr_rest_hinge(set, 1, 0, w, 0.96f, gap, pose, &k)
+      && k.slot == h->slot && k.edge == h->edge && k.on == h->on
+      && video_xr_hinge_settle(set, 1, 0, w, 0.96f, gap, h, &take,
+            &again)
+      && settle_same(&again, pose)
+      && turn_apart(&pose->orientation, &hand->orientation) <= 0.01;
+}
+
+#define SETTLE_FREE 100.0
+#define SETTLE_NONE 200.0
+
+/* Screen 2 let go under screen 1, flat and folded 30 degrees, in the
+ * hinge of its top edge on screen 1's bottom: to the set gap from within
+ * VIDEO_XR_HINGE_SETTLE of it apart, touching from the stop's hold,
+ * where it is at a free gap past that, and not at all past the hinge's
+ * reach (Hinge Gap 10 to 11 cm, where it engages). Along, at Hinge Gap
+ * 2 cm, level from within twice VIDEO_XR_SNAP_DIST: centres, or a
+ * narrower screen's ends. Turned 4.9 degrees off parallel, by a roll or
+ * a yaw, it settles parallel; past VIDEO_XR_SNAP_ANGLE, where a grab's
+ * hinge lets go, not. None in front of screen 1's plane, overlapping
+ * too little along, folded past square, folded 7.5 degrees (the turn to
+ * flat fading, it would move again), with the target skipped, or with
+ * no set. Each settled pose rests there. */
+static void test_hinge_settle(void)
+{
+   /* Hinge Gap, the hand apart (pushed below 0), settled apart, in cm. */
+   static const double row[][3] = {
+      { 0.0, 0.0, 0.0 }, { 0.0, 0.3, 0.0 }, { 0.0, 1.5, 0.0 },
+      { 0.0, 2.9, 0.0 }, { 0.0, -1.0, 0.0 }, { 0.0, -2.9, 0.0 },
+      { 0.0, 3.1, SETTLE_FREE }, { 0.0, 9.9, SETTLE_FREE },
+      { 0.0, 10.5, SETTLE_NONE }, { 0.0, -3.2, SETTLE_NONE },
+      { 1.0, 0.0, 1.0 }, { 1.0, 3.9, 1.0 }, { 1.0, -0.3, 1.0 },
+      { 1.0, -1.0, 0.0 }, { 1.0, -3.4, 0.0 },
+      { 1.0, 4.1, SETTLE_FREE }, { 1.0, -3.6, SETTLE_NONE },
+      { 2.0, 0.0, 0.0 }, { 2.0, 0.3, 2.0 }, { 2.0, 3.5, 2.0 },
+      { 2.0, 4.9, 2.0 }, { 2.0, 5.1, SETTLE_FREE },
+      { 2.0, 9.9, SETTLE_FREE }, { 2.0, -2.9, 0.0 },
+      { 3.0, 0.5, 3.0 }, { 3.0, 5.9, 3.0 }, { 3.0, 6.1, SETTLE_FREE },
+      { 5.0, 1.9, SETTLE_FREE }, { 5.0, 8.1, SETTLE_FREE },
+      { 5.0, 2.1, 5.0 }, { 5.0, 7.9, 5.0 },
+      { 10.0, 6.9, SETTLE_FREE }, { 10.0, 7.1, 10.0 },
+      { 10.0, 11.0, 10.0 }, { 10.0, 11.5, SETTLE_NONE }
+   };
+   /* Screen 2's centre off screen 1's, its width, where it settles. */
+   static const double along[][3] = {
+      { 0.029, 1.28, 0.0 }, { 0.04, 1.28, 0.0 }, { 0.059, 1.28, 0.0 },
+      { 0.061, 1.28, 0.061 }, { 0.31, 0.9, 0.35 }, { -0.31, 0.9, -0.35 }
+   };
+   unsigned i, f;
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t hand, pose, want, aim;
+   video_xr_hinge_t h;
+   video_xr_quat_t q;
+   memset(&h, 0, sizeof(h));
+   h.slot = 0;
+   h.edge = 0;
+   h.on   = 1;
+   for (f = 0; f < 2; f++)
+   {
+      double fold = f ? 30.0 : 0.0;
+      for (i = 0; i < sizeof(row) / sizeof(row[0]); i++)
+      {
+         float gap = (float)(row[i][0] * 0.01);
+         bool ok;
+         rest_under(&set, fold, row[i][1] * 0.01);
+         hand = set.quads[1].pose;
+         ok   = video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, gap, &h,
+               &hand, &pose);
+         if (row[i][2] == SETTLE_NONE)
+            ok = !ok;
+         else
+         {
+            if (row[i][2] == SETTLE_FREE)
+               want = hand;
+            else
+            {
+               rest_under(&set, fold, row[i][2] * 0.01);
+               want = set.quads[1].pose;
+            }
+            ok = ok && settle_same(&pose, &want)
+               && settle_rests(&set, 1.28f, gap, &h, &hand, &pose);
+         }
+         if (!ok)
+         {
+            printf("  FAIL %s:%d: fold %.0f, Hinge Gap %.0f, %.1f cm apart\n",
+                  __FILE__, __LINE__, fold, row[i][0], row[i][1]);
+            failures++;
+         }
+      }
+      for (i = 0; i < sizeof(along) / sizeof(along[0]); i++)
+      {
+         float w = (float)along[i][1];
+         rest_under(&set, fold, 0.02);
+         set.quads[1].width            = w;
+         set.quads[1].pose.position.x += (float)along[i][0];
+         hand                          = set.quads[1].pose;
+         want                          = hand;
+         want.position.x               = (float)along[i][2];
+         if (!(video_xr_hinge_settle(&set, 1, 0, w, 0.96f, 0.02f, &h,
+                     &hand, &pose)
+               && settle_same(&pose, &want)
+               && settle_rests(&set, w, 0.02f, &h, &hand, &pose)))
+         {
+            printf("  FAIL %s:%d: fold %.0f, %.1f cm along\n", __FILE__,
+                  __LINE__, fold, along[i][0] * 100.0);
+            failures++;
+         }
+      }
+   }
+
+   rest_under(&set, 0.0, 0.02);
+   hand             = set.quads[1].pose;
+   hand.position.z += 0.031f;
+   CHECK(!video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, 0.02f, &h,
+            &hand, &pose));
+   hinge_turn(&q, 0.0, 0.0, 1.0, 5.5);
+   hinge_place(&hand, &q, 0.0, 0.48, 0.0, -0.48 - 0.02, -1.8);
+   CHECK(!video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, 0.02f, &h,
+            &hand, &pose));
+   for (i = 0; i < 4; i++)
+   {
+      bool ok;
+      double deg = (i & 1) ? 5.1 : 4.9;
+      rest_under(&set, 0.0, 0.02);
+      want = set.quads[1].pose;
+      hinge_turn(&q, 0.0, (i & 2) ? 1.0 : 0.0, (i & 2) ? 0.0 : 1.0, deg);
+      hinge_place(&hand, &q, 0.0, 0.48, 0.0, -0.48 - 0.02, -1.8);
+      ok = video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, 0.02f, &h,
+            &hand, &pose);
+      if ((i & 1) ? ok : !(ok && settle_same(&pose, &want)
+               && settle_rests(&set, 1.28f, 0.02f, &h, &want, &pose)))
+      {
+         printf("  FAIL %s:%d: %s %.1f deg off parallel\n", __FILE__,
+               __LINE__, (i & 2) ? "yaw" : "roll", deg);
+         failures++;
+      }
+   }
+   rest_under(&set, 0.0, 0.02);
+   hand             = set.quads[1].pose;
+   hand.position.x += 1.411f;
+   CHECK(!video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, 0.02f, &h,
+            &hand, &pose));
+   hand = set.quads[1].pose;
+   CHECK(!video_xr_hinge_settle(&set, 1, 1u << 0, 1.28f, 0.96f, 0.02f,
+            &h, &hand, &pose));
+   CHECK(!video_xr_hinge_settle(NULL, 1, 0, 1.28f, 0.96f, 0.02f, &h,
+            &hand, &pose));
+   rest_under(&set, 95.0, 0.02);
+   CHECK(!video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, 0.02f, &h,
+            &set.quads[1].pose, &pose));
+   rest_under(&set, 7.5, 0.02);
+   CHECK(!video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, 0.02f, &h,
+            &set.quads[1].pose, &pose));
+
+   /* A grab settles from where its aim puts its item. */
+   rest_grab(&set, &g, &aim);
+   g.rel.position.y -= 0.01f;
+   hand              = set.quads[1].pose;
+   hand.position.y  -= 0.01f;
+   CHECK(video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, 0.02f, &h,
+            &hand, &want)
+         && video_xr_grab_settle(&g, &aim, &set, 0, &h, &pose)
+         && settle_same(&pose, &want)
+         && settle_same(&want, &set.quads[1].pose));
+   CHECK(!video_xr_grab_settle(&g, &aim, NULL, 0, &h, &pose));
+}
+
+/* Screen 2 resting touching under screen 1, flat and folded 30 degrees,
+ * taken where the hand holds it (video_xr_rest_take) and let go after
+ * the hand drifts across the edge: touching while it drifts less than
+ * VIDEO_XR_SNAP_STOP_ARM apart, so a still re-grab never moves it to
+ * the gap; past that, by the settle bands. */
+static void test_hinge_settle_taken(void)
+{
+   /* Hinge Gap in cm, the drift apart (pushed below 0) in mm, settled
+    * apart in cm. */
+   static const double row[][3] = {
+      { 0.0, 0.02, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 4.9, 0.0 },
+      { 0.0, -1.0, 0.0 }, { 0.0, 5.1, 0.0 }, { 0.0, 10.0, 0.0 },
+      { 1.0, 0.02, 0.0 }, { 1.0, 1.0, 0.0 }, { 1.0, 4.9, 0.0 },
+      { 1.0, -1.0, 0.0 }, { 1.0, 5.1, 1.0 }, { 1.0, 10.0, 1.0 },
+      { 2.0, 0.02, 0.0 }, { 2.0, 1.0, 0.0 }, { 2.0, 4.9, 0.0 },
+      { 2.0, -1.0, 0.0 }, { 2.0, 5.1, 2.0 }, { 2.0, 10.0, 2.0 },
+      { 3.0, 0.02, 0.0 }, { 3.0, 1.0, 0.0 }, { 3.0, 4.9, 0.0 },
+      { 3.0, -1.0, 0.0 }, { 3.0, 5.1, 3.0 }, { 3.0, 10.0, 3.0 },
+      { 5.0, 0.02, 0.0 }, { 5.0, 1.0, 0.0 }, { 5.0, 4.9, 0.0 },
+      { 5.0, -1.0, 0.0 }, { 5.0, 5.1, SETTLE_FREE },
+      { 5.0, 10.0, SETTLE_FREE },
+      { 10.0, 0.02, 0.0 }, { 10.0, 1.0, 0.0 }, { 10.0, 4.9, 0.0 },
+      { 10.0, -1.0, 0.0 }, { 10.0, 5.1, SETTLE_FREE },
+      { 10.0, 10.0, SETTLE_FREE }
+   };
+   unsigned i, f;
+   video_xr_quad_set_t set;
+   video_xr_pose_t hand, pose, want;
+   video_xr_hinge_t h;
+   memset(&h, 0, sizeof(h));
+   h.slot = 0;
+   h.edge = 0;
+   h.on   = 1;
+   for (f = 0; f < 2; f++)
+   {
+      double fold = f ? 30.0 : 0.0;
+      for (i = 0; i < sizeof(row) / sizeof(row[0]); i++)
+      {
+         float gap = (float)(row[i][0] * 0.01);
+         rest_under(&set, fold, 0.0);
+         hand = set.quads[1].pose;
+         video_xr_rest_take(&set, 1, 1.28f, 0.96f, gap, &h, &hand);
+         hand.position.y -= (float)(row[i][1] * 0.001);
+         if (row[i][2] == SETTLE_FREE)
+            want = hand;
+         else
+         {
+            rest_under(&set, fold, row[i][2] * 0.01);
+            want = set.quads[1].pose;
+         }
+         if (!(video_xr_hinge_settle(&set, 1, 0, 1.28f, 0.96f, gap, &h,
+                     &hand, &pose)
+               && settle_same(&pose, &want)
+               && settle_rests(&set, 1.28f, gap, &h, &hand, &pose)))
+         {
+            printf("  FAIL %s:%d: fold %.0f, Hinge Gap %.0f, %.2f mm "
+                  "apart\n", __FILE__, __LINE__, fold, row[i][0],
+                  row[i][1]);
+            failures++;
+         }
+      }
+   }
 }
 
 /* The hinge a grab was taken in turns it whole whatever the fade, even
@@ -7309,6 +7588,8 @@ int main(void)
    test_rest_gap_one();
    test_rest_hinge_sides();
    test_rest_hinge_size();
+   test_hinge_settle();
+   test_hinge_settle_taken();
    test_grab_kept_turn();
    test_smooth_steady();
    test_smooth_tremor();
