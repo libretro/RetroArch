@@ -987,7 +987,7 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    char share[256];
    struct smb2fh *fh;
    int flags = 0;
-   struct smb2_context *smb_context;
+   struct smb2_context *smb_context, *fresh;
    struct smb_slot *slot;
    if (!stream)
       return false;
@@ -1035,8 +1035,11 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    fh = smb2_open(smb_context, full_path, flags);
    if (!fh)
    {
-      if ((smb_context = smb_heal(smb_context, slot, share)))
-         fh = smb2_open(smb_context, full_path, flags);
+      if ((fresh = smb_heal(smb_context, slot, share)))
+      {
+         smb_context = fresh;
+         fh          = smb2_open(smb_context, full_path, flags);
+      }
       if (!fh)
       {
          smb_give(smb_context, slot);
@@ -1345,7 +1348,7 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
    char full_path[PATH_MAX_LENGTH];
    char share[256];
    struct smb2dir *dir;
-   struct smb2_context *smb_context;
+   struct smb2_context *smb_context, *fresh;
    struct smb_slot *slot;
    smb_dir_handle *handle;
 
@@ -1394,8 +1397,11 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
    dir = smb2_opendir(smb_context, full_path);
    if (!dir)
    {
-      if ((smb_context = smb_heal(smb_context, slot, share)))
-         dir = smb2_opendir(smb_context, full_path);
+      if ((fresh = smb_heal(smb_context, slot, share)))
+      {
+         smb_context = fresh;
+         dir         = smb2_opendir(smb_context, full_path);
+      }
       if (!dir)
       {
          smb_give(smb_context, slot);
@@ -1485,7 +1491,7 @@ int retro_vfs_stat_smb(const char *path, int64_t *size)
    char rel_path[PATH_MAX_LENGTH];
    char share[256];
    struct smb2_stat_64 st;
-   struct smb2_context *smb_context;
+   struct smb2_context *smb_context, *fresh;
    struct smb_slot *slot;
 
    smb_effective_share(path, share, sizeof(share));
@@ -1514,8 +1520,9 @@ int retro_vfs_stat_smb(const char *path, int64_t *size)
       return 0;
    if (smb2_stat(smb_context, rel_path, &st) < 0)
    {
-      if (!(smb_context = smb_heal(smb_context, slot, share))
-            || smb2_stat(smb_context, rel_path, &st) < 0)
+      if ((fresh = smb_heal(smb_context, slot, share)))
+         smb_context = fresh;
+      if (!fresh || smb2_stat(smb_context, rel_path, &st) < 0)
       {
          smb_give(smb_context, slot);
          return 0;

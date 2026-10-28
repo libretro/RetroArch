@@ -13,12 +13,14 @@ int main(int argc, char **argv)
 {
    struct smb_settings cfg;
    libretro_vfs_implementation_file stream;
+   libretro_vfs_implementation_file held[2];
    smb_dir_handle *dh;
    struct smbc_dirent *ent;
    char url[512];
    uint8_t buf[4096];
    int64_t size = 0;
    int found = 0;
+   int i;
 
    if (argc < 5)
       return 2;
@@ -74,6 +76,28 @@ int main(int argc, char **argv)
       fprintf(stderr, "FAIL: readdir\n");
       return 1;
    }
+   /* both pool slots held by open files: a missing path's stat, open
+    * and opendir each connect privately, and LSan sees any of those
+    * connections a failure does not close */
+   snprintf(url, sizeof(url), "smb://%s/%s/rsmb_test.bin", argv[1], argv[2]);
+   memset(held, 0, sizeof(held));
+   for (i = 0; i < 2; i++)
+      if (!retro_vfs_file_open_smb(&held[i], url, RETRO_VFS_FILE_ACCESS_READ, 0))
+      {
+         fprintf(stderr, "FAIL: open %d of 2\n", i + 1);
+         return 1;
+      }
+   snprintf(url, sizeof(url), "smb://%s/%s/rsmb_missing.bin", argv[1], argv[2]);
+   memset(&stream, 0, sizeof(stream));
+   if (     retro_vfs_stat_smb(url, NULL) != 0
+         || retro_vfs_file_open_smb(&stream, url, RETRO_VFS_FILE_ACCESS_READ, 0)
+         || retro_vfs_opendir_smb(url, false))
+   {
+      fprintf(stderr, "FAIL: a missing path was found\n");
+      return 1;
+   }
+   for (i = 0; i < 2; i++)
+      retro_vfs_file_close_smb(&held[i]);
    /* the share browser: with no share configured, smb://server lists
     * the shares; "share" is there, IPC$ and the hidden one are not */
    smb_shutdown();
