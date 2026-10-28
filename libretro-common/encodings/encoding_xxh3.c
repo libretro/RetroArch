@@ -1236,30 +1236,8 @@ uint64_t xxh3_64(const void *data, size_t len, uint64_t seed)
    return xxh3_long(in, len, seed);
 }
 
-
-void xxh3_reset(xxh3_state_t *s, uint64_t seed)
-{
-   memcpy(s->acc, xxh3_init_acc, sizeof(xxh3_init_acc));
-   s->total = 0;
-   s->seed  = seed;
-   s->held  = 0;
-   s->pos   = 0;
-   if (seed)
-      xxh3_keys(s->sec, seed);
-}
-
-#if defined(_MSC_VER)
-#define XXH3_NOINLINE __declspec(noinline)
-#elif defined(__GNUC__)
-#define XXH3_NOINLINE __attribute__((noinline))
-#else
-#define XXH3_NOINLINE
-#endif
-
-/* The path's take, apart, so the copy into what is held is all a short
- * piece costs */
-static XXH3_NOINLINE void xxh3_take(xxh3_state_t *s, const uint8_t *p,
-      size_t len)
+/* The path's take, which a state keeps from its reset on */
+static void (*xxh3_take_fn(void))(xxh3_state_t *, const uint8_t *, size_t)
 {
 #if defined(XXH3_HAVE_SSE2)
    int path = retro_atomic_load_acquire_int(&xxh3_path);
@@ -1267,28 +1245,19 @@ static XXH3_NOINLINE void xxh3_take(xxh3_state_t *s, const uint8_t *p,
       path = xxh3_choose();
 #if defined(XXH3_HAVE_AVX512)
    if (path == 4)
-   {
-      xxh3_take_avx512(s, p, len);
-      return;
-   }
+      return xxh3_take_avx512;
 #endif
 #if defined(XXH3_HAVE_AVX2)
    if (path == 3)
-   {
-      xxh3_take_avx2(s, p, len);
-      return;
-   }
+      return xxh3_take_avx2;
 #endif
    if (path == 2)
-   {
-      xxh3_take_sse2(s, p, len);
-      return;
-   }
-   xxh3_take_scalar(s, p, len);
+      return xxh3_take_sse2;
+   return xxh3_take_scalar;
 #elif defined(XXH3_HAVE_NEON)
-   xxh3_take_neon(s, p, len);
+   return xxh3_take_neon;
 #else
-   xxh3_take_scalar(s, p, len);
+   return xxh3_take_scalar;
 #endif
 }
 
@@ -1297,12 +1266,24 @@ void xxh3_update(xxh3_state_t *s, const void *data, size_t len)
    size_t h = s->held;
    s->total += len;
    if (h + len > XXH3_HELD || len > XXH3_HOLD)
-      xxh3_take(s, (const uint8_t*)data, len);
+      s->take(s, (const uint8_t*)data, len);
    else
    {
       xxh3_hold(s->buf + XXH3_STRIPE + h, (const uint8_t*)data, len);
       s->held = (uint32_t)(h + len);
    }
+}
+
+void xxh3_reset(xxh3_state_t *s, uint64_t seed)
+{
+   memcpy(s->acc, xxh3_init_acc, sizeof(xxh3_init_acc));
+   s->total = 0;
+   s->seed  = seed;
+   s->held  = 0;
+   s->pos   = 0;
+   s->take  = xxh3_take_fn();
+   if (seed)
+      xxh3_keys(s->sec, seed);
 }
 
 uint64_t xxh3_digest(const xxh3_state_t *s)

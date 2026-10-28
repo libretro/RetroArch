@@ -59,6 +59,8 @@ typedef struct xxh3_state
    uint8_t  buf[64 + 1024]; /* the last stripe taken, then what is held */
    uint32_t held;          /* how much is held */
    unsigned pos;           /* the next stripe's place in its block */
+   /* what takes the pieces past what is held, on this CPU's path */
+   void   (*take)(struct xxh3_state *s, const uint8_t *p, size_t len);
 } xxh3_state_t;
 
 /**
