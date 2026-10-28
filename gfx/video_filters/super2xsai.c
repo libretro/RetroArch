@@ -234,17 +234,35 @@ static void supertwoxsai_generic_xrgb8888(unsigned width, unsigned height,
          int xp1 = (finish > 1) ? 1 : 0;
          int xp2 = (finish > 2) ? 2 : (int)finish - 1;
 
-         supertwoxsai_declare_variables(uint32_t, in, prevline, nextline, nextline2,
-               xm1, xp1, xp2);
+         /* A flat 2x2 block - the pixel and its right, lower and
+          * lower-right neighbours all one colour - comes out as that
+          * colour in all four pixels whichever rule applies (the
+          * tie-break's terms all cancel, and the colour blended with
+          * itself is the colour), so it is written without loading the
+          * rest of the neighbourhood or running the rules. */
+         uint32_t flat_ = *in;
+         if (     flat_ == *(in + xp1)
+               && flat_ == *(in + nextline)
+               && flat_ == *(in + nextline + xp1))
+         {
+            out[0] = out[1] = out[dst_stride] = out[dst_stride + 1] = flat_;
+            ++in;
+            out += 2;
+         }
+         else
+         {
+            supertwoxsai_declare_variables(uint32_t, in, prevline, nextline, nextline2,
+                  xm1, xp1, xp2);
 
-         /*---------------------------    B1 B2
-          *                             4  5  6 S2
-          *                             1  2  3 S1
-          *                               A1 A2
-          *--------------------------------------
-          */
+            /*---------------------------    B1 B2
+             *                             4  5  6 S2
+             *                             1  2  3 S1
+             *                               A1 A2
+             *--------------------------------------
+             */
 
-         supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_xrgb8888, supertwoxsai_interpolate2_xrgb8888);
+            supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_xrgb8888, supertwoxsai_interpolate2_xrgb8888);
+         }
       }
 
       src += src_stride;
@@ -283,17 +301,35 @@ static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
          int xp1 = (finish > 1) ? 1 : 0;
          int xp2 = (finish > 2) ? 2 : (int)finish - 1;
 
-         supertwoxsai_declare_variables(uint16_t, in, prevline, nextline, nextline2,
-               xm1, xp1, xp2);
+         /* A flat 2x2 block - the pixel and its right, lower and
+          * lower-right neighbours all one colour - comes out as that
+          * colour in all four pixels whichever rule applies (the
+          * tie-break's terms all cancel, and the colour blended with
+          * itself is the colour), so it is written without loading the
+          * rest of the neighbourhood or running the rules. */
+         uint16_t flat_ = *in;
+         if (     flat_ == *(in + xp1)
+               && flat_ == *(in + nextline)
+               && flat_ == *(in + nextline + xp1))
+         {
+            out[0] = out[1] = out[dst_stride] = out[dst_stride + 1] = flat_;
+            ++in;
+            out += 2;
+         }
+         else
+         {
+            supertwoxsai_declare_variables(uint16_t, in, prevline, nextline, nextline2,
+                  xm1, xp1, xp2);
 
-         /*---------------------------    B1 B2
-          *                             4  5  6 S2
-          *                             1  2  3 S1
-          *                               A1 A2
-          *--------------------------------------
-          */
+            /*---------------------------    B1 B2
+             *                             4  5  6 S2
+             *                             1  2  3 S1
+             *                               A1 A2
+             *--------------------------------------
+             */
 
-         supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_rgb565, supertwoxsai_interpolate2_rgb565);
+            supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_rgb565, supertwoxsai_interpolate2_rgb565);
+         }
       }
 
       src += src_stride;

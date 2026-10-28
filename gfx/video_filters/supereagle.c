@@ -178,25 +178,33 @@ static void supereagle_generic_destroy(void *data)
          } \
          else if (color5 == color3 && color2 == color6) \
          { \
-            int r = 0; \
-            r += supereagle_result(color6, color5, color1, colorA1); \
-            r += supereagle_result(color6, color5, color4, colorB1); \
-            r += supereagle_result(color6, color5, colorA2, colorS1); \
-            r += supereagle_result(color6, color5, colorB2, colorS2); \
-            if (r > 0) \
-            { \
-               product1b = product2a = color2; \
-               product1a = product2b = interpolate_cb(color5, color6); \
-            } \
-            else if (r < 0) \
-            { \
-               product2b = product1a = color5; \
-               product1b = product2a = interpolate_cb(color5, color6); \
-            } \
+            /* A flat 2x2 block: each tie-break term compares color6 \
+             * and color5 alike, so r is 0 and every product is the \
+             * block's colour; most of a game frame lands here. */ \
+            if (color5 == color6) \
+               product1a = product1b = product2a = product2b = color5; \
             else \
             { \
-               product2b = product1a = color5; \
-               product1b = product2a = color2; \
+               int r = 0; \
+               r += supereagle_result(color6, color5, color1, colorA1); \
+               r += supereagle_result(color6, color5, color4, colorB1); \
+               r += supereagle_result(color6, color5, colorA2, colorS1); \
+               r += supereagle_result(color6, color5, colorB2, colorS2); \
+               if (r > 0) \
+               { \
+                  product1b = product2a = color2; \
+                  product1a = product2b = interpolate_cb(color5, color6); \
+               } \
+               else if (r < 0) \
+               { \
+                  product2b = product1a = color5; \
+                  product1b = product2a = interpolate_cb(color5, color6); \
+               } \
+               else \
+               { \
+                  product2b = product1a = color5; \
+                  product1b = product2a = color2; \
+               } \
             } \
          } \
          else \
