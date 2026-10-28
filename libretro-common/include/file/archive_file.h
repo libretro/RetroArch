@@ -325,6 +325,24 @@ uint32_t file_archive_get_file_crc32(const char *path);
  **/
 uint32_t file_archive_get_file_crc32_and_size(const char *path, uint64_t *size);
 
+/**
+ * file_archive_get_file_crc32_size_and_ext:
+ * @path                         : filename path of archive
+ * @size                         : size of the file inside the archive
+ * @ext                          : that file's extension, or "" when
+ *                                 not found; may be NULL
+ * @len                          : size of @ext in bytes
+ * @entries                      : the archive's entry count as its
+ *                                 header gives it, or 0 when not
+ *                                 found; may be NULL
+ *
+ * Returns: CRC32 of the specified file in the archive, otherwise 0.
+ * If no path within the archive is specified, the first
+ * file found inside is used.
+ **/
+uint32_t file_archive_get_file_crc32_size_and_ext(const char *path,
+      uint64_t *size, char *ext, size_t len, unsigned *entries);
+
 extern const struct file_archive_file_backend zlib_backend;
 extern const struct file_archive_file_backend sevenzip_backend;
 extern const struct file_archive_file_backend zstd_backend;

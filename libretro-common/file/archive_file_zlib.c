@@ -1370,9 +1370,18 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
    uint8_t footer_buf[1024];
-   uint8_t *footer = footer_buf;
+   uint8_t loc_buf[20], rec_buf[56];
+   /* A mapped archive is read where it lies: the end record, the ZIP64
+    * records and the central directory alike. */
+#ifdef VFS_HAVE_FILE_MAPPING
+   uint8_t *map = state->archive_mmap_data;
+#else
+   uint8_t *map = NULL;
+#endif
+   const uint8_t *footer = footer_buf;
    int64_t read_pos = state->archive_size;
    int64_t read_block = MIN(read_pos, (ssize_t)sizeof(footer_buf));
+   int64_t eocd_at = 0;
    int64_t directory_size, directory_offset;
    uint64_t entries;
    zip_context_t *zip_context = NULL;
@@ -1384,31 +1393,53 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    /* Find the end of central directory record by scanning
     * the file from the end towards the beginning.
     */
-   for (;;)
+   if (map)
    {
-      if (--footer < footer_buf)
+      for (footer = map + (size_t)state->archive_size - 22; ; footer--)
       {
-         if (read_pos <= 0)
-            return -1; /* reached beginning of file */
-
-         /* Read 21 bytes of overlaps except on the first block. */
-         if (read_pos == state->archive_size)
-            read_pos = read_pos - read_block;
-         else
-            read_pos = MAX(read_pos - read_block + 21, 0);
-
-         /* Seek to read_pos and read read_block bytes. */
-         filestream_seek(state->archive_file, read_pos, RETRO_VFS_SEEK_POSITION_START);
-         if (filestream_read(state->archive_file, footer_buf, read_block) != read_block)
+         if (read_le(footer, 4) == END_OF_CENTRAL_DIR_SIGNATURE)
+         {
+            unsigned comment_len = read_le(footer + 20, 2);
+            if ((int64_t)(footer - map) + 22 + comment_len
+                  == state->archive_size)
+               break;
+         }
+         if (footer == map)
             return -1;
-
-         footer = footer_buf + read_block - 22;
       }
-      if (read_le(footer, 4) == END_OF_CENTRAL_DIR_SIGNATURE)
+      eocd_at = (int64_t)(footer - map);
+   }
+   else
+   {
+      for (;;)
       {
-         unsigned comment_len = read_le(footer + 20, 2);
-         if (read_pos + (footer - footer_buf) + 22 + comment_len == state->archive_size)
-            break; /* found it! */
+         if (--footer < footer_buf)
+         {
+            if (read_pos <= 0)
+               return -1; /* reached beginning of file */
+
+            /* Read 21 bytes of overlaps except on the first block. */
+            if (read_pos == state->archive_size)
+               read_pos = read_pos - read_block;
+            else
+               read_pos = MAX(read_pos - read_block + 21, 0);
+
+            /* Seek to read_pos and read read_block bytes. */
+            filestream_seek(state->archive_file, read_pos, RETRO_VFS_SEEK_POSITION_START);
+            if (filestream_read(state->archive_file, footer_buf, read_block) != read_block)
+               return -1;
+
+            footer = footer_buf + read_block - 22;
+         }
+         if (read_le(footer, 4) == END_OF_CENTRAL_DIR_SIGNATURE)
+         {
+            unsigned comment_len = read_le(footer + 20, 2);
+            if (read_pos + (footer - footer_buf) + 22 + comment_len == state->archive_size)
+            {
+               eocd_at = read_pos + (footer - footer_buf);
+               break; /* found it! */
+            }
+         }
       }
    }
 
@@ -1423,23 +1454,35 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
          || directory_size   == 0xFFFFFFFFu
          || directory_offset == 0xFFFFFFFFu)
    {
-      uint8_t loc[20], rec[56];
-      int64_t at = read_pos + (footer - footer_buf);
+      const uint8_t *loc = loc_buf, *rec = rec_buf;
+      int64_t at = eocd_at;
       uint64_t rec_off;
       if (at < 20)
          return -1;
-      filestream_seek(state->archive_file, at - 20,
-            RETRO_VFS_SEEK_POSITION_START);
-      if (     filestream_read(state->archive_file, loc, 20) != 20
-            || read_le(loc, 4) != ZIP64_END_OF_CENTRAL_DIR_LOCATOR_SIGNATURE)
+      if (map)
+         loc = map + (size_t)(at - 20);
+      else
+      {
+         filestream_seek(state->archive_file, at - 20,
+               RETRO_VFS_SEEK_POSITION_START);
+         if (filestream_read(state->archive_file, loc_buf, 20) != 20)
+            return -1;
+      }
+      if (read_le(loc, 4) != ZIP64_END_OF_CENTRAL_DIR_LOCATOR_SIGNATURE)
          return -1;
       rec_off = read_le64(loc + 8);
       if (rec_off > (uint64_t)(at - 20) || (uint64_t)(at - 20) - rec_off < 56)
          return -1;
-      filestream_seek(state->archive_file, (int64_t)rec_off,
-            RETRO_VFS_SEEK_POSITION_START);
-      if (     filestream_read(state->archive_file, rec, 56) != 56
-            || read_le(rec, 4) != ZIP64_END_OF_CENTRAL_DIR_SIGNATURE)
+      if (map)
+         rec = map + (size_t)rec_off;
+      else
+      {
+         filestream_seek(state->archive_file, (int64_t)rec_off,
+               RETRO_VFS_SEEK_POSITION_START);
+         if (filestream_read(state->archive_file, rec_buf, 56) != 56)
+            return -1;
+      }
+      if (read_le(rec, 4) != ZIP64_END_OF_CENTRAL_DIR_SIGNATURE)
          return -1;
       entries = read_le64(rec + 32);
       if (     read_le64(rec + 40) > (uint64_t)state->archive_size
@@ -1469,13 +1512,16 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
       return -1;
 
    /* This is a ZIP file, allocate one block of memory for both the
-    * context and the entire directory, then read the directory.
+    * context and the entire directory, then read the directory; a
+    * mapped one is walked in place.
     */
-   zip_context = (zip_context_t*)malloc(sizeof(zip_context_t) + (size_t)directory_size);
+   zip_context = (zip_context_t*)malloc(sizeof(zip_context_t)
+         + (map ? 0 : (size_t)directory_size));
    if (!zip_context)
       return -1;
    zip_context->state             = state;
-   zip_context->directory         = (uint8_t*)(zip_context + 1);
+   zip_context->directory         = map ? map + (size_t)directory_offset
+                                        : (uint8_t*)(zip_context + 1);
    zip_context->directory_entry   = zip_context->directory;
    zip_context->directory_end     = zip_context->directory + (size_t)directory_size;
    zip_context->zstream           = NULL;
@@ -1502,11 +1548,14 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    zip_context->csize             = 0;
    zip_context->usize             = 0;
 
-   filestream_seek(state->archive_file, directory_offset, RETRO_VFS_SEEK_POSITION_START);
-   if (filestream_read(state->archive_file, zip_context->directory, directory_size) != directory_size)
+   if (!map)
    {
-      free(zip_context);
-      return -1;
+      filestream_seek(state->archive_file, directory_offset, RETRO_VFS_SEEK_POSITION_START);
+      if (filestream_read(state->archive_file, zip_context->directory, directory_size) != directory_size)
+      {
+         free(zip_context);
+         return -1;
+      }
    }
 
    state->context = zip_context;

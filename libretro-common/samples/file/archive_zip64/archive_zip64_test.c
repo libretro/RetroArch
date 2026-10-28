@@ -73,6 +73,16 @@
 
 static unsigned failures;
 
+/* Linked with --wrap=filestream_read: reads through the stream. */
+static unsigned stream_reads;
+
+int64_t __real_filestream_read(RFILE *stream, void *data, int64_t len);
+int64_t __wrap_filestream_read(RFILE *stream, void *data, int64_t len)
+{
+   stream_reads++;
+   return __real_filestream_read(stream, data, len);
+}
+
 static void fail(const char *what, const char *detail)
 {
    printf("[FAIL] %s: %s\n", what, detail);
@@ -328,6 +338,66 @@ static bool listed(const char *archive, unsigned n)
    return ok;
 }
 
+/* @archive's first member's CRC and size: @crc and @n, and, mapped,
+ * taken from the archive where it lies, with no read through the
+ * stream for the end record, the ZIP64 records or the directory. */
+static void check_in_place(const char *what, const char *archive,
+      uint32_t crc, uint64_t n)
+{
+   uint64_t size = 0;
+   uint32_t got;
+
+   stream_reads = 0;
+   got          = file_archive_get_file_crc32_and_size(archive, &size);
+   if (got != crc || size != n)
+      fail(what, "first member's CRC and size");
+#ifdef HAVE_MMAP
+   else if (stream_reads)
+      fail(what, "read through the stream while mapped");
+#endif
+}
+
+/* One stored member and an archive comment: the end record is found
+ * past the comment. */
+static void test_plain_in_place(void)
+{
+   static const uint8_t note[] = "no ZIP64 here\n";
+   static uint8_t zip[512];
+   struct member m;
+   size_t at, cd;
+
+   m.name   = "plain.txt";
+   m.data   = note;
+   m.method = 0;
+   m.usize  = m.csize = sizeof(note) - 1;
+   m.big_sizes  = false;
+   m.big_offset = false;
+   m.offset = 0;
+   m.crc    = encoding_crc32(0, note, sizeof(note) - 1);
+
+   at  = local_header(zip, &m);
+   memcpy(zip + at, note, sizeof(note) - 1);
+   at += sizeof(note) - 1;
+   cd  = at;
+   at += central_header(zip + at, &m);
+   memset(zip + at, 0, 22);
+   put32(zip + at, 0x06054b50u);
+   put16(zip + at + 8, 1);
+   put16(zip + at + 10, 1);
+   put32(zip + at + 12, (uint32_t)(at - cd));
+   put32(zip + at + 16, (uint32_t)cd);
+   put16(zip + at + 20, 3);
+   memcpy(zip + at + 22, "PK!", 3);
+   at += 22 + 3;
+
+   if (!write_file(ZIP_PATH, zip, at))
+      fail("plain", "cannot write");
+   else
+      check_in_place("plain, first member in place", ZIP_PATH, m.crc,
+            m.usize);
+   remove(ZIP_PATH);
+}
+
 static void test_small(void)
 {
    uint8_t *stored  = (uint8_t*)malloc(STORED_LEN);
@@ -382,6 +452,8 @@ static void test_small(void)
       fail("ZIP64", "cannot write");
    if (!listed(ZIP_PATH, 3))
       fail("ZIP64", "listed");
+   check_in_place("ZIP64, first member in place", ZIP_PATH, m[0].crc,
+         STORED_LEN);
    check_member("ZIP64, stored", ZIP_PATH, "stored.bin", stored, STORED_LEN);
    check_member("ZIP64, deflated", ZIP_PATH, "deflate.bin", plain,
          DEFLATE_LEN);
@@ -555,6 +627,7 @@ static void test_big(void)
 
 int main(void)
 {
+   test_plain_in_place();
    test_small();
    test_big();
    if (failures)
