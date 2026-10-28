@@ -52,13 +52,72 @@ struct sevenzip_context_t
 {
    r7z_archive_t *archive;
    file_archive_transfer_t *state;
+   uint8_t       *member;     /* a member gathered out of a stream */
+   size_t         gathered;
    uint32_t       parse_index;
    uint32_t       decompress_index;
    bool           streaming;  /* the member goes to the sink in pieces */
+   bool           gathering;  /* or into member */
 };
 
 /* A member bound for a file, bigger than this, is streamed to it */
 #define SEVENZIP_STREAM_OVER (256 * 1024)
+
+/* A folder of other members, bigger than this, is never held whole: a
+ * member wanted out of it is streamed, and the next one in the folder
+ * goes on from there */
+#ifndef SEVENZIP_FOLDER_KEEP
+#define SEVENZIP_FOLDER_KEEP (32 * 1024 * 1024)
+#endif
+
+static bool sevenzip_stream_whole(r7z_archive_t *a, uint32_t index)
+{
+   const r7z_entry_t *e = r7z_archive_entry(a, index);
+   uint64_t           folder;
+   if (!e || e->is_dir || !e->size)
+      return false;
+   folder = r7z_archive_folder_size(a, e->folder);
+   return folder > SEVENZIP_FOLDER_KEEP
+      && !(e->offset_in_folder == 0 && e->size == folder);
+}
+
+/* Member @index streamed into *@out (a NUL after it), in one go; false
+ * where its folder cannot be streamed or it does not come out */
+static bool sevenzip_stream_into(r7z_archive_t *a, uint32_t index,
+      uint8_t **out, size_t *len)
+{
+   const r7z_entry_t *e = r7z_archive_entry(a, index);
+   const uint8_t     *d;
+   size_t             n, at = 0;
+   uint8_t           *m;
+   int                res;
+   if (     !e || e->size >= (uint64_t)((size_t)-1)
+         || r7z_archive_stream_begin(a, index) != R7Z_OK)
+      return false;
+   if (!(m = (uint8_t*)malloc((size_t)e->size + 1)))
+   {
+      r7z_archive_stream_end(a);
+      return false;
+   }
+   while ((res = r7z_archive_stream_step(a, &d, &n)) == R7Z_PENDING)
+   {
+      if (n > e->size - at)
+         break;
+      if (n)
+         memcpy(m + at, d, n);
+      at += n;
+   }
+   if (res != R7Z_OK || at != e->size)
+   {
+      r7z_archive_stream_end(a);
+      free(m);
+      return false;
+   }
+   m[at] = '\0';
+   *out  = m;
+   *len  = at;
+   return true;
+}
 
 static int sevenzip_open_archive(struct sevenzip_context_t *ctx,
       file_archive_transfer_t *state)
@@ -92,6 +151,7 @@ static void sevenzip_parse_file_free(void *context)
    /* The mapping and the stream belong to archive_file.c, which
     * releases them after this. */
    r7z_archive_close(sevenzip_context->archive);
+   free(sevenzip_context->member);
    free(sevenzip_context);
 }
 
@@ -170,6 +230,17 @@ static int sevenzip_file_decompressed(
       if (     !ctx || !ctx->archive
             || !(e = r7z_archive_entry(ctx->archive, index)) || e->is_dir)
          return 1;
+
+      /* out of a big folder of others, streamed to it */
+      if (     sevenzip_stream_whole(ctx->archive, index)
+            && sevenzip_stream_into(ctx->archive, index, &member,
+               &member_len))
+      {
+         *st->buf  = member;
+         st->size  = member_len;
+         st->found = true;
+         return 0;
+      }
 
       /* Sliced, but driven to completion here: the caller of
        * compressed_file_read wants the bytes on return and has nowhere
@@ -279,18 +350,36 @@ static bool sevenzip_stream_decompress_data_to_file_init(
    /* The parse step hands the entry index through cdata. */
    sevenzip_context->decompress_index = (uint32_t)(size_t)cdata;
    sevenzip_context->streaming        = false;
+   sevenzip_context->gathering        = false;
+   free(sevenzip_context->member);
+   sevenzip_context->member           = NULL;
+   sevenzip_context->gathered         = 0;
 
-   /* A big member bound for a file goes to it through a window, where
+   /* A big member bound for a file goes to it through a window, and
+    * one out of a big folder of others into a buffer of its own, where
     * its folder's coders allow; anything else is decoded whole */
-   if (     sevenzip_context->state->pending_sink
-         && size > SEVENZIP_STREAM_OVER)
    {
-      int res = r7z_archive_stream_begin(sevenzip_context->archive,
+      bool sink  =  sevenzip_context->state->pending_sink
+                 && size > SEVENZIP_STREAM_OVER;
+      bool apart = !sink && sevenzip_stream_whole(sevenzip_context->archive,
             sevenzip_context->decompress_index);
-      if (res == R7Z_OK)
-         sevenzip_context->streaming = true;
-      else if (res != R7Z_ERROR_UNSUPPORTED)
-         return false;
+      if (sink || apart)
+      {
+         int res = r7z_archive_stream_begin(sevenzip_context->archive,
+               sevenzip_context->decompress_index);
+         if (res == R7Z_OK)
+         {
+            if (     apart
+                  && (size >= (uint64_t)((size_t)-1)
+                  || !(sevenzip_context->member = (uint8_t*)malloc(
+                        (size_t)size + 1))))
+               return false;
+            sevenzip_context->streaming = sink;
+            sevenzip_context->gathering = apart;
+         }
+         else if (res != R7Z_ERROR_UNSUPPORTED)
+            return false;
+      }
    }
 
    return true;
@@ -311,6 +400,30 @@ static int sevenzip_stream_decompress_data_to_file_iterate(
     * is not even cheap. Failure is -1. */
    if (!sevenzip_context || !sevenzip_context->archive)
       return -1;
+
+   if (sevenzip_context->gathering)
+   {
+      const r7z_entry_t *e = r7z_archive_entry(sevenzip_context->archive,
+            sevenzip_context->decompress_index);
+      res = r7z_archive_stream_step(sevenzip_context->archive,
+            &member, &member_len);
+      if (res == R7Z_PENDING)
+      {
+         if (member_len > e->size - sevenzip_context->gathered)
+            return -1;
+         if (member_len)
+            memcpy(sevenzip_context->member + sevenzip_context->gathered,
+                  member, member_len);
+         sevenzip_context->gathered += member_len;
+         return 0;
+      }
+      sevenzip_context->gathering = false;
+      if (res != R7Z_OK || sevenzip_context->gathered != e->size)
+         return -1;
+      if (handle)
+         handle->data = sevenzip_context->member;
+      return 1;
+   }
 
    if (sevenzip_context->streaming)
    {

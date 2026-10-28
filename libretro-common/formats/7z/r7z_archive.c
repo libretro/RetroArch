@@ -3799,8 +3799,10 @@ struct r7z_stream
    uint32_t       crc;      /* the entry's so far */
    uint32_t       fcrc;     /* the folder's so far, when it has one */
    uint32_t       index;
+   uint32_t       folder;
    int            lzma2;
    int            whole;    /* the entry is the whole folder */
+   int            done;     /* the entry is out: the next may go on */
 };
 
 void r7z_archive_stream_end(r7z_archive_t *a)
@@ -3828,8 +3830,23 @@ int r7z_archive_stream_begin(r7z_archive_t *a, uint32_t index)
 
    if (!a || index >= a->num_entries)
       return R7Z_ERROR_PARAM;
-   r7z_archive_stream_end(a);
    e = &a->entries[index];
+   /* a later entry of the folder the last one streamed came out of
+    * goes on from where that one ended, the folder decoded once */
+   if (     (st = a->stream) && st->done && !e->is_dir && e->size
+         && e->folder == st->folder && e->offset_in_folder >= st->made
+         && e->size <= a->folders[e->folder].unpack_size
+            - e->offset_in_folder)
+   {
+      st->index = index;
+      st->lo    = e->offset_in_folder;
+      st->hi    = e->offset_in_folder + e->size;
+      st->crc   = 0;
+      st->whole = 0;
+      st->done  = 0;
+      return R7Z_OK;
+   }
+   r7z_archive_stream_end(a);
    if (e->is_dir || !e->size || e->folder >= a->num_folders)
       return R7Z_ERROR_UNSUPPORTED;
    f = &a->folders[e->folder];
@@ -3872,6 +3889,7 @@ int r7z_archive_stream_begin(r7z_archive_t *a, uint32_t index)
       return R7Z_ERROR_MEM;
    a->stream     = st;
    st->index     = index;
+   st->folder    = e->folder;
    st->lzma2     = c->method == METHOD_LZMA2;
    st->lo        = e->offset_in_folder;
    st->hi        = e->offset_in_folder + e->size;
@@ -3939,11 +3957,12 @@ int r7z_archive_stream_step(r7z_archive_t *a, const uint8_t **data,
 
    *data = NULL;
    *len  = 0;
-   if (!a || !(st = a->stream))
+   if (!a || !(st = a->stream) || st->done)
       return R7Z_ERROR_PARAM;
-   f = &a->folders[a->entries[st->index].folder];
+   f = &a->folders[st->folder];
 
-   /* the entry's last octet passed: what is to be checked of it */
+   /* the entry's last octet passed: what is to be checked of it; the
+    * stream is kept for a later entry of the folder, if there is more */
    if (st->made >= st->hi)
    {
       const r7z_entry_t *e = &a->entries[st->index];
@@ -3952,7 +3971,10 @@ int r7z_archive_stream_step(r7z_archive_t *a, const uint8_t **data,
          res = R7Z_ERROR_CRC;
       else if (st->whole && !e->has_crc && f->has_crc && st->fcrc != f->crc)
          res = R7Z_ERROR_CRC;
-      r7z_archive_stream_end(a);
+      if (res != R7Z_OK || st->hi == f->unpack_size)
+         r7z_archive_stream_end(a);
+      else
+         st->done = 1;
       return res;
    }
 

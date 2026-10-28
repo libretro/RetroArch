@@ -299,9 +299,12 @@ int r7z_archive_decode_peek(const r7z_archive_t *a, uint32_t index,
  * @index      : the entry to stream out
  *
  * Starts entry @index out of its folder a piece at a time, for one that
- * is too big to have whole in memory: a folder of one LZMA or LZMA2
- * coder decodes through a window of its dictionary's size. One entry is
- * streamed at a time, beside whatever else the archive is doing.
+ * is too big to have whole in memory, or in a folder that is: a folder
+ * of one LZMA or LZMA2 coder decodes through a window of its
+ * dictionary's size. One entry is streamed at a time, beside whatever
+ * else the archive is doing; after one is all out, an entry later in
+ * the same folder goes on from where it ended, so a folder's entries
+ * streamed in order decode it once.
  *
  * Returns: R7Z_OK, R7Z_ERROR_UNSUPPORTED for a folder of other coders,
  * which the entry is decoded whole from instead, or another negative
@@ -318,13 +321,13 @@ int r7z_archive_stream_begin(r7z_archive_t *a, uint32_t index);
  * Decodes the next piece of the folder, up to 256 KiB.
  *
  * Returns: R7Z_PENDING with a piece, R7Z_OK once the entry is all out
- * and checked against its CRC, or a negative R7Z_ERROR_* code; either
- * of those ends the stream.
+ * and checked against its CRC, or a negative R7Z_ERROR_* code, which
+ * ends the stream.
  */
 int r7z_archive_stream_step(r7z_archive_t *a, const uint8_t **data,
       size_t *len);
 
-/* Ends a stream before its end, freeing its window. */
+/* Ends a stream, freeing its window. */
 void r7z_archive_stream_end(r7z_archive_t *a);
 
 RETRO_END_DECLS

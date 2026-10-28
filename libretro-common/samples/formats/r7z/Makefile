@@ -5,6 +5,7 @@ TARGET_TEST2 := r7z_archive_detach_test
 TARGET_TEST3 := r7z_bcj2_test
 TARGET_TEST4 := r7z_stored_test
 TARGET_TEST5 := r7z_methods_test
+TARGET_TEST6 := r7z_stream_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -35,6 +36,10 @@ ARCHIVE_OBJS := $(call sample_objs,$(ARCHIVE_SOURCES:.c=.o))
 BCJ2_OBJS    := r7z_bcj2_test.o $(SAMPLE_OBJDIR)/counted/r7z_archive.o \
                 $(filter-out r7z_archive_detach_test.o %/r7z_archive.o,$(ARCHIVE_OBJS))
 
+# a solid folder's entries streamed, allocations counted
+STREAM_OBJS  := r7z_stream_test.o $(SAMPLE_OBJDIR)/counted/r7z_archive.o \
+                $(filter-out r7z_archive_detach_test.o %/r7z_archive.o,$(ARCHIVE_OBJS))
+
 # stored folders, from memory and through reads
 STORED_OBJS  := r7z_stored_test.o \
                 $(filter-out r7z_archive_detach_test.o,$(ARCHIVE_OBJS))
@@ -50,7 +55,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5)
+all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -81,18 +86,24 @@ $(TARGET_TEST4): $(STORED_OBJS)
 
 r7z_methods_test.o: r7z_methods_test.c r7z_methods_fixtures.h
 
+r7z_stream_test.o: r7z_stream_test.c ../../file/archive_7z/archive_7z_fixtures.h
+
+$(TARGET_TEST6): $(STREAM_OBJS)
+	$(CC) $(STREAM_OBJS) $(LDFLAGS) -o $@
+
 $(TARGET_TEST5): $(METHODS_OBJS)
 	$(CC) $(METHODS_OBJS) $(LDFLAGS) -o $@
 
-check: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5)
+check: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6)
 	./$(TARGET)
 	./$(TARGET_TEST2)
 	./$(TARGET_TEST3)
 	./$(TARGET_TEST4)
 	./$(TARGET_TEST5)
+	./$(TARGET_TEST6)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(OBJS) $(ARCHIVE_OBJS) r7z_bcj2_test.o r7z_stored_test.o r7z_methods_test.o
+	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(OBJS) $(ARCHIVE_OBJS) r7z_bcj2_test.o r7z_stored_test.o r7z_methods_test.o r7z_stream_test.o
 
 .PHONY: all check clean

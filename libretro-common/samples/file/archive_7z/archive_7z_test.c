@@ -24,9 +24,10 @@
  * stored one and a BCJ2 one 7-Zip wrote are listed, every member read
  * whole with file_archive_compressed_read() and every member extracted
  * through one transfer, solid members one after another from the
- * folder held. Built with HAVE_MMAP the archives are mapped, and the
- * members handed out where the folder cache holds them; every member
- * must come out as it went in either way. */
+ * folder held, or out of a folder over SEVENZIP_FOLDER_KEEP streamed,
+ * each going on from the one before. Built with HAVE_MMAP the archives
+ * are mapped, and the members handed out where the folder cache holds
+ * them; every member must come out as it went in either way. */
 
 #include <stdio.h>
 #include <stdlib.h>

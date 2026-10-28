@@ -160,6 +160,7 @@ jobs:
             r7z_bcj2_test
             r7z_stored_test
             r7z_methods_test
+            r7z_stream_test
             rzip_archive_test
             # The RAR reader on real archives (LZ and PPMd blocks,
             # filters, Unicode names) and on mangled copies of them.

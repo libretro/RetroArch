@@ -43,6 +43,10 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 override CPPFLAGS += -DHAVE_COMPRESSION -DHAVE_7ZIP -I$(LIBRETRO_COMM_DIR)/include
 CFLAGS            += -Wall -pedantic -std=gnu99 -g1
 
+# A folder of others over 64 KiB is never held whole, so the big ones
+# here have their members streamed one after another
+override CPPFLAGS += -DSEVENZIP_FOLDER_KEEP=65536
+
 MMAP ?= 1
 ifeq ($(MMAP),1)
    override CPPFLAGS += -DHAVE_MMAP
