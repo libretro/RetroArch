@@ -2022,7 +2022,7 @@ static const char *udev_joypad_name(unsigned pad)
    return udev_pads[pad].ident;
 }
 
-static bool udev_set_sensor_state(unsigned port,
+static bool udev_joypad_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
    struct udev_joypad *pad;
@@ -2059,7 +2059,7 @@ static bool udev_set_sensor_state(unsigned port,
    return false;
 }
 
-static bool udev_get_sensor_input(unsigned port,
+static bool udev_joypad_get_sensor_input(unsigned port,
       unsigned id, float *value)
 {
    const struct udev_joypad *pad;
@@ -2149,8 +2149,8 @@ input_device_driver_t udev_joypad = {
 #else
    NULL, /* set_rumble_gain */
 #endif
-   udev_set_sensor_state,
-   udev_get_sensor_input,
+   udev_joypad_set_sensor_state,
+   udev_joypad_get_sensor_input,
    udev_joypad_name,
    "udev",
 #if defined(__linux__)

@@ -1200,6 +1200,8 @@ LEDS
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../led/drivers/led_win32_keyboard.c"
+#elif defined(HAVE_X11)
+#include "../led/drivers/led_x11_keyboard.c"
 #endif
 
 /*============================================================

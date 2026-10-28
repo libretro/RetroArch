@@ -57,14 +57,14 @@ typedef struct gfx_ctx_x_vk_data
    xcb_connection_t *wsi_conn;
 } gfx_ctx_x_vk_data_t;
 
-typedef struct Hints
+typedef struct x_vk_hints
 {
    unsigned long flags;
    unsigned long functions;
    unsigned long decorations;
    long          inputMode;
    unsigned long status;
-} Hints;
+} x_vk_hints_t;
 
 
 static int x_vk_nul_handler(Display *dpy, XErrorEvent *event) { return 0; }
@@ -411,7 +411,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
       /* We could have just set _NET_WM_WINDOW_TYPE_DOCK instead, 
        * but that removes the window from any taskbar/panel,
        * so we are forced to use the old motif hints method. */
-      Hints hints;
+      x_vk_hints_t hints;
       Atom property     = XInternAtom(g_x11_dpy, "_MOTIF_WM_HINTS", False);
 
       hints.flags       = 2;
