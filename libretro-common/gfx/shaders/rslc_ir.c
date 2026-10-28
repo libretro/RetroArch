@@ -2147,34 +2147,38 @@ static uint32_t spv_lvalue(struct spv_emit *e, uint32_t node, unsigned *sc, bool
          const struct rslc_var *v = e->c->prog.vars[n->a];
          if (e->vars[v->id].is_const)
          {
-            /* Initialise local constants where they are read, so
-             * unused branches do not populate their arrays. */
+            /* A folded constant indexed dynamically needs storage.
+             * A global gets one Private variable initialised with the
+             * constant.  A local gets a fresh Function variable at
+             * every access, stored right before it is read, as
+             * glslang's "indexable": the store stays inside the branch
+             * that reads it, and each variable is written once before
+             * its only read, so drivers can still fold it into a
+             * constant table. */
             struct spv_var *sv = &e->vars[v->id];
             uint32_t cid = spv_const_var(e, v);
             unsigned vsc = v->global ? SPV_SC_PRIVATE : SPV_SC_FUNCTION;
             *sc = vsc; *laid = false; *std140 = false;
             if (!cid)
                return 0;
+            if (!v->global)
+            {
+               uint32_t ptr = spv_local(e, v->type, v->name ? v->name->str : NULL, 0);
+               if (!ptr || !spv_store(e, ptr, cid))
+                  return 0;
+               return ptr;
+            }
             if (!sv->ptr)
             {
                uint32_t ptrt = spv_ptr_to(e, v->type, vsc);
                if (!ptrt)
                   return 0;
                sv->ptr = spv_id(e);
-               if (v->global)
-               {
-                  if (!spv_inst4(e, SPV_SEC_TYPES, SpvOpVariable, ptrt, sv->ptr, vsc, cid))
-                     return 0;
-               }
-               else if (!spv_w(e, &e->func_vars, (4u << 16) | SpvOpVariable)
-                     || !spv_w(e, &e->func_vars, ptrt) || !spv_w(e, &e->func_vars, sv->ptr)
-                     || !spv_w(e, &e->func_vars, vsc))
+               if (!spv_inst4(e, SPV_SEC_TYPES, SpvOpVariable, ptrt, sv->ptr, vsc, cid))
                   return 0;
                if (v->name && !spv_name(e, sv->ptr, v->name->str))
                   return 0;
             }
-            if (!v->global && !spv_store(e, sv->ptr, cid))
-               return 0;
             return sv->ptr;
          }
          return spv_var_ptr(e, v, sc, laid, std140);
