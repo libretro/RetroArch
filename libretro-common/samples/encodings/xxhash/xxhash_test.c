@@ -26,7 +26,9 @@
  * each of XXH3's turns and for many blocks. XXH64 is taken in one call
  * and in pieces of every size; XXH3's long inputs go through each path
  * this CPU can run, which must all agree with each other at every
- * length up to three blocks and at every alignment. */
+ * length up to three blocks and at every alignment. XXH3 taken in
+ * pieces must be what it is in one call, through each path, for the
+ * vectors and for every length to three blocks, split anywhere. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -164,10 +166,41 @@ typedef struct
 {
    const char *name;
    path_fn     fn;
+   int         id;   /* xxh3_path for it */
 } path_t;
 
 static unsigned failures;
 static unsigned checks;
+
+static uint64_t rng = 88172645463325252ULL;
+
+static size_t next_rand(size_t below)
+{
+   rng ^= rng << 13;
+   rng ^= rng >> 7;
+   rng ^= rng << 17;
+   return (size_t)(rng % below);
+}
+
+/* @len octets at @in through an xxh3_state_t in pieces: of @step each,
+ * or, with @step 0, of random sizes up to two blocks */
+static uint64_t xxh3_pieces(const uint8_t *in, size_t len, uint64_t seed,
+      size_t step)
+{
+   static xxh3_state_t st;
+   size_t at = 0;
+   xxh3_reset(&st, seed);
+   xxh3_update(&st, in, 0);
+   while (at < len)
+   {
+      size_t k = step ? step : 1 + next_rand(2 * 1024 + 70);
+      if (k > len - at)
+         k = len - at;
+      xxh3_update(&st, in + at, k);
+      at += k;
+   }
+   return xxh3_digest(&st);
+}
 
 static void fail(const char *what, unsigned len, uint64_t seed,
       uint64_t got, uint64_t want)
@@ -196,6 +229,7 @@ int main(void)
    }
 
    paths[np].name = "scalar";
+   paths[np].id   = 1;
    paths[np++].fn = xxh3_long_scalar;
 #if defined(XXH3_HAVE_SSE2)
    {
@@ -203,12 +237,14 @@ int main(void)
       if (simd & RETRO_SIMD_SSE2)
       {
          paths[np].name = "SSE2";
+         paths[np].id   = 2;
          paths[np++].fn = xxh3_long_sse2;
       }
 #if defined(XXH3_HAVE_AVX2)
       if (simd & RETRO_SIMD_AVX2)
       {
          paths[np].name = "AVX2";
+         paths[np].id   = 3;
          paths[np++].fn = xxh3_long_avx2;
       }
 #endif
@@ -216,12 +252,14 @@ int main(void)
       if (simd & RETRO_SIMD_AVX512)
       {
          paths[np].name = "AVX-512";
+         paths[np].id   = 4;
          paths[np++].fn = xxh3_long_avx512;
       }
 #endif
    }
 #elif defined(XXH3_HAVE_NEON)
    paths[np].name = "NEON";
+   paths[np].id   = 0;
    paths[np++].fn = xxh3_long_neon;
 #endif
 
@@ -277,6 +315,37 @@ int main(void)
          checks++;
          if (h != want)
             fail(paths[p].name, (unsigned)n, seed, h, want);
+      }
+   }
+
+   /* XXH3 in pieces, through each path's blocks */
+   for (p = 0; p < np; p++)
+   {
+      static const size_t steps[] = { 1, 7, 63, 64, 65, 240, 241, 1000,
+         1023, 1024, 1025, 3000, 0 };
+#if defined(XXH3_HAVE_SSE2)
+      retro_atomic_store_release_int(&xxh3_path, paths[p].id);
+#endif
+      for (i = 0; i < sizeof(xxh3_spec) / sizeof(xxh3_spec[0]); i++)
+      {
+         const vec_t *v = &xxh3_spec[i];
+         unsigned     k;
+         for (k = 0; k < sizeof(steps) / sizeof(steps[0]); k++)
+         {
+            uint64_t h = xxh3_pieces(buf, v->len, v->seed, steps[k]);
+            checks++;
+            if (h != v->hash)
+               fail("xxh3 in pieces", v->len, v->seed, h, v->hash);
+         }
+      }
+      for (n = 0; n <= 3 * 1024 + 64; n++)
+      {
+         uint64_t seed = (n & 1) ? 0 : (uint64_t)n * PRIME64;
+         uint64_t want = xxh3_64(buf + (n & 7), n, seed);
+         uint64_t h    = xxh3_pieces(buf + (n & 7), n, seed, 0);
+         checks++;
+         if (h != want)
+            fail("xxh3 split anywhere", (unsigned)n, seed, h, want);
       }
    }
 

@@ -357,9 +357,9 @@ static const uint8_t *xxh3_keys(uint8_t *buf, uint64_t seed)
 /* The accumulators merged with the words of secret at @mkey, and the
  * avalanche */
 static INLINE uint64_t xxh3_merge(const uint64_t *acc, const uint64_t *mkey,
-      size_t len)
+      uint64_t len)
 {
-   uint64_t h = (uint64_t)len * XXH3_P64_1;
+   uint64_t h = len * XXH3_P64_1;
    h += xxh3_fold(acc[0] ^ mkey[0], acc[1] ^ mkey[1]);
    h += xxh3_fold(acc[2] ^ mkey[2], acc[3] ^ mkey[3]);
    h += xxh3_fold(acc[4] ^ mkey[4], acc[5] ^ mkey[5]);
@@ -369,9 +369,9 @@ static INLINE uint64_t xxh3_merge(const uint64_t *acc, const uint64_t *mkey,
 
 /* The same, merged with the secret at @sec, eleven octets in */
 static INLINE uint64_t xxh3_merge_sec(const uint64_t *acc,
-      const uint8_t *sec, size_t len)
+      const uint8_t *sec, uint64_t len)
 {
-   uint64_t h = (uint64_t)len * XXH3_P64_1;
+   uint64_t h = len * XXH3_P64_1;
    h += xxh3_fold(acc[0] ^ xxh3_rd64(sec + 11), acc[1] ^ xxh3_rd64(sec + 19));
    h += xxh3_fold(acc[2] ^ xxh3_rd64(sec + 27), acc[3] ^ xxh3_rd64(sec + 35));
    h += xxh3_fold(acc[4] ^ xxh3_rd64(sec + 43), acc[5] ^ xxh3_rd64(sec + 51));
@@ -429,6 +429,136 @@ static uint64_t xxh3_long_scalar(const uint8_t *in, size_t len, uint64_t seed)
    xxh3_stripe_scalar(acc, in + len - XXH3_STRIPE, sec + XXH3_LAST_KEY);
    return xxh3_merge_sec(acc, sec, total);
 }
+
+/* ---- a stripe at a time, for xxh3_update() ----
+ *
+ * @n stripes at @in, then @n2 at @in2, into @acc: the first the
+ * *@pos'th of its block, keyed with @sec. A block is scrambled as its
+ * sixteenth stripe goes in, so a caller hands over only stripes with
+ * more input after them. Within a block the stripes only add, so those
+ * at @in, what xxh3_update() held and has just made whole, go in at
+ * the end of their block or of the call when they do not end it: by
+ * then the copies that made them can be read back without waiting on
+ * them. Whole blocks take the loop the one-call paths do. Each path has
+ * one, round these loops. */
+
+#define XXH3_LATE(STRIPE) do { \
+   for (; lc_; lc_--, lp_ += XXH3_STRIPE, lk_++) \
+      STRIPE(lp_, sec + 8 * lk_); \
+} while (0)
+
+#define XXH3_RUN(STRIPE, SCRAMBLE, BLOCKS) do { \
+   const uint8_t *lp_ = in; \
+   size_t         lc_ = 0; \
+   unsigned       lk_ = k; \
+   int            seg_; \
+   if (k + n < XXH3_STRIPES) \
+   { \
+      lc_ = n; \
+      k  += (unsigned)n; \
+      n   = 0; \
+   } \
+   for (seg_ = 0; ; seg_++) \
+   { \
+      for (; k && n; n--, in += XXH3_STRIPE) \
+      { \
+         STRIPE(in, sec + 8 * k); \
+         if (++k == XXH3_STRIPES) \
+         { \
+            XXH3_LATE(STRIPE); \
+            SCRAMBLE; \
+            k = 0; \
+         } \
+      } \
+      BLOCKS; \
+      for (; n; n--, in += XXH3_STRIPE, k++) \
+         STRIPE(in, sec + 8 * k); \
+      if (seg_) \
+         break; \
+      in = in2; \
+      n  = n2; \
+   } \
+   XXH3_LATE(STRIPE); \
+} while (0)
+
+/* the whole blocks, keyed from memory */
+#define XXH3_BLOCKS(STRIPE, SCRAMBLE) \
+   for (; n >= XXH3_STRIPES; n -= XXH3_STRIPES, in += XXH3_BLOCK) \
+   { \
+      size_t s_; \
+      for (s_ = 0; s_ < XXH3_STRIPES; s_++) \
+         STRIPE(in + s_ * XXH3_STRIPE, sec + 8 * s_); \
+      SCRAMBLE; \
+   }
+
+/* A stripe is taken only once there is more after it: the input's last
+ * stripe is keyed apart, and the hash of 240 octets or fewer is not the
+ * accumulators'. Between calls up to XXH3_HELD octets are held, after
+ * the last stripe taken. */
+#define XXH3_HELD 256
+
+/* What xxh3_update() does past what it holds, round each path's run:
+ * the stripes held, the one they end inside made whole from the front
+ * of the input, which goes on past it; then the input's own, where
+ * they lie, at least one octet left */
+#define XXH3_TAKE(RUN) \
+{ \
+   const uint8_t *sec  = s->seed ? s->sec : xxh3_secret; \
+   uint8_t       *held = s->buf + XXH3_STRIPE; \
+   size_t         h    = s->held; \
+   size_t         n    = h / XXH3_STRIPE; \
+   size_t         m; \
+   if (h & (XXH3_STRIPE - 1)) \
+   { \
+      size_t fill = XXH3_STRIPE - (h & (XXH3_STRIPE - 1)); \
+      memcpy(held + h, p, fill); \
+      p   += fill; \
+      len -= fill; \
+      n++; \
+   } \
+   m = (len - 1) / XXH3_STRIPE; \
+   RUN(s->acc, held, n, p, m, &s->pos, sec); \
+   len -= m * XXH3_STRIPE; \
+   s->held = (uint32_t)len; \
+   /* the last stripe taken and what is left after it, in one copy where \
+    * they lie together */ \
+   if (m) \
+      memcpy(s->buf, p + (m - 1) * XXH3_STRIPE, XXH3_STRIPE + len); \
+   else \
+   { \
+      memcpy(s->buf, held + (n - 1) * XXH3_STRIPE, XXH3_STRIPE); \
+      memcpy(held, p, len); \
+   } \
+}
+
+static void xxh3_scramble_scalar(uint64_t *acc, const uint8_t *sec)
+{
+   unsigned i;
+   for (i = 0; i < 8; i++)
+   {
+      uint64_t x = acc[i];
+      x ^= x >> 47;
+      x ^= xxh3_rd64(sec + XXH3_SECRET - XXH3_STRIPE + 8 * i);
+      acc[i] = x * XXH3_P32_1;
+   }
+}
+
+#define XXH3_STRIPE_SC(p, key) xxh3_stripe_scalar(acc, (p), (key))
+static INLINE void xxh3_run_scalar(uint64_t *acc, const uint8_t *in,
+      size_t n, const uint8_t *in2, size_t n2, unsigned *pos,
+      const uint8_t *sec)
+{
+   unsigned k = *pos;
+   XXH3_RUN(XXH3_STRIPE_SC, xxh3_scramble_scalar(acc, sec),
+         XXH3_BLOCKS(XXH3_STRIPE_SC, xxh3_scramble_scalar(acc, sec)));
+   *pos = k;
+}
+
+#if !defined(XXH3_HAVE_NEON)
+static void xxh3_take_scalar(xxh3_state_t *s, const uint8_t *p, size_t len)
+XXH3_TAKE(xxh3_run_scalar)
+#endif
+#undef XXH3_STRIPE_SC
 
 #if defined(XXH3_HAVE_SSE2)
 
@@ -516,6 +646,42 @@ static uint64_t xxh3_long_sse2(const uint8_t *in, size_t len, uint64_t seed)
    _mm_storeu_si128((__m128i*)(void*)(acc + 6), _mm_add_epi64(P3, _mm_shuffle_epi32(D3, 0x4E)));
    return xxh3_merge_sec(acc, sec, total);
 }
+
+XXH3_TARGET("sse2")
+static INLINE void xxh3_run_sse2(uint64_t *acc, const uint8_t *in,
+      size_t n, const uint8_t *in2, size_t n2, unsigned *pos,
+      const uint8_t *sec)
+{
+   const uint8_t *ks    = sec + XXH3_SECRET - XXH3_STRIPE;
+   const __m128i  prime = _mm_set1_epi32((int)XXH3_P32_1);
+   unsigned       k     = *pos;
+   __m128i        P0 = XXH3_LD128(acc);
+   __m128i        P1 = XXH3_LD128(acc + 2);
+   __m128i        P2 = XXH3_LD128(acc + 4);
+   __m128i        P3 = XXH3_LD128(acc + 6);
+   __m128i        D0 = _mm_setzero_si128();
+   __m128i        D1 = _mm_setzero_si128();
+   __m128i        D2 = _mm_setzero_si128();
+   __m128i        D3 = _mm_setzero_si128();
+#define XXH3_SCRAMBLE4_SSE2 do { \
+   XXH3_SCRAMBLE_SSE2(P0, D0, ks); \
+   XXH3_SCRAMBLE_SSE2(P1, D1, ks + 16); \
+   XXH3_SCRAMBLE_SSE2(P2, D2, ks + 32); \
+   XXH3_SCRAMBLE_SSE2(P3, D3, ks + 48); \
+} while (0)
+   XXH3_RUN(XXH3_STRIPE_SSE2, XXH3_SCRAMBLE4_SSE2,
+         XXH3_BLOCKS(XXH3_STRIPE_SSE2, XXH3_SCRAMBLE4_SSE2));
+#undef XXH3_SCRAMBLE4_SSE2
+   _mm_storeu_si128((__m128i*)(void*)acc,       _mm_add_epi64(P0, _mm_shuffle_epi32(D0, 0x4E)));
+   _mm_storeu_si128((__m128i*)(void*)(acc + 2), _mm_add_epi64(P1, _mm_shuffle_epi32(D1, 0x4E)));
+   _mm_storeu_si128((__m128i*)(void*)(acc + 4), _mm_add_epi64(P2, _mm_shuffle_epi32(D2, 0x4E)));
+   _mm_storeu_si128((__m128i*)(void*)(acc + 6), _mm_add_epi64(P3, _mm_shuffle_epi32(D3, 0x4E)));
+   *pos = k;
+}
+
+XXH3_TARGET("sse2")
+static void xxh3_take_sse2(xxh3_state_t *s, const uint8_t *p, size_t len)
+XXH3_TAKE(xxh3_run_sse2)
 #undef XXH3_PART_SSE2
 #undef XXH3_STRIPE_SSE2
 #undef XXH3_SCRAMBLE_SSE2
@@ -598,6 +764,58 @@ static uint64_t xxh3_long_avx2(const uint8_t *in, size_t len, uint64_t seed)
 #undef XXH3_SCRAMBLE_AVX2
    return xxh3_merge_sec(acc, sec, total);
 }
+
+XXH3_TARGET("avx2")
+static INLINE void xxh3_run_avx2(uint64_t *acc, const uint8_t *in,
+      size_t n, const uint8_t *in2, size_t n2, unsigned *pos,
+      const uint8_t *sec)
+{
+   const __m256i  prime = _mm256_set1_epi32((int)XXH3_P32_1);
+   unsigned       k     = *pos;
+   __m256i        P0 = _mm256_loadu_si256((const __m256i*)(const void*)acc);
+   __m256i        P1 = _mm256_loadu_si256((const __m256i*)(const void*)(acc + 4));
+   __m256i        D0 = _mm256_setzero_si256();
+   __m256i        D1 = _mm256_setzero_si256();
+#define XXH3_STRIPE_AVX2(p, kk) do { \
+   __m256i d0_  = _mm256_loadu_si256((const __m256i*)(const void*)(p)); \
+   __m256i d1_  = _mm256_loadu_si256((const __m256i*)(const void*)((p) + 32)); \
+   __m256i dk0_ = _mm256_xor_si256(d0_, \
+         _mm256_loadu_si256((const __m256i*)(const void*)(kk))); \
+   __m256i dk1_ = _mm256_xor_si256(d1_, \
+         _mm256_loadu_si256((const __m256i*)(const void*)((kk) + 32))); \
+   XXH3_PREFETCH(p); \
+   P0 = _mm256_add_epi64(P0, _mm256_mul_epu32(dk0_, _mm256_srli_epi64(dk0_, 32))); \
+   P1 = _mm256_add_epi64(P1, _mm256_mul_epu32(dk1_, _mm256_srli_epi64(dk1_, 32))); \
+   D0 = _mm256_add_epi64(D0, d0_); \
+   D1 = _mm256_add_epi64(D1, d1_); \
+} while (0)
+#define XXH3_SCRAMBLE_AVX2(P, D, kk) do { \
+   __m256i x_ = _mm256_add_epi64((P), _mm256_shuffle_epi32((D), 0x4E)); \
+   x_ = _mm256_xor_si256(x_, _mm256_srli_epi64(x_, 47)); \
+   x_ = _mm256_xor_si256(x_, _mm256_loadu_si256((const __m256i*)(const void*)(kk))); \
+   (P) = _mm256_add_epi64(_mm256_mul_epu32(x_, prime), \
+         _mm256_slli_epi64(_mm256_mul_epu32(_mm256_srli_epi64(x_, 32), prime), 32)); \
+   (D) = _mm256_setzero_si256(); \
+} while (0)
+#define XXH3_SCRAMBLE2_AVX2 do { \
+   XXH3_SCRAMBLE_AVX2(P0, D0, sec + XXH3_SECRET - XXH3_STRIPE); \
+   XXH3_SCRAMBLE_AVX2(P1, D1, sec + XXH3_SECRET - XXH3_STRIPE + 32); \
+} while (0)
+   XXH3_RUN(XXH3_STRIPE_AVX2, XXH3_SCRAMBLE2_AVX2,
+         XXH3_BLOCKS(XXH3_STRIPE_AVX2, XXH3_SCRAMBLE2_AVX2));
+#undef XXH3_SCRAMBLE2_AVX2
+#undef XXH3_STRIPE_AVX2
+#undef XXH3_SCRAMBLE_AVX2
+   _mm256_storeu_si256((__m256i*)(void*)acc,
+         _mm256_add_epi64(P0, _mm256_shuffle_epi32(D0, 0x4E)));
+   _mm256_storeu_si256((__m256i*)(void*)(acc + 4),
+         _mm256_add_epi64(P1, _mm256_shuffle_epi32(D1, 0x4E)));
+   *pos = k;
+}
+
+XXH3_TARGET("avx2")
+static void xxh3_take_avx2(xxh3_state_t *s, const uint8_t *p, size_t len)
+XXH3_TAKE(xxh3_run_avx2)
 #endif
 
 #if defined(XXH3_HAVE_AVX512)
@@ -702,6 +920,72 @@ static uint64_t xxh3_long_avx512(const uint8_t *in, size_t len, uint64_t seed)
 {
    return seed ? xxh3_avx512(in, len, seed, 1) : xxh3_avx512(in, len, 0, 0);
 }
+
+XXH3_TARGET("avx512f")
+static INLINE void xxh3_run_avx512(uint64_t *acc, const uint8_t *in,
+      size_t n, const uint8_t *in2, size_t n2, unsigned *pos,
+      const uint8_t *sec)
+{
+#define XXH3_K(j) _mm512_loadu_si512((const void*)(sec + 8 * (j)))
+#define XXH3_S(p, key) do { \
+   __m512i d_  = _mm512_loadu_si512((const void*)(p)); \
+   __m512i dk_ = _mm512_xor_si512(d_, (key)); \
+   XXH3_PREFETCH(p); \
+   P = _mm512_add_epi64(P, _mm512_mul_epu32(dk_, _mm512_srli_epi64(dk_, 32))); \
+   D = _mm512_add_epi64(D, d_); \
+} while (0)
+#define XXH3_SM(p, kp) XXH3_S(p, _mm512_loadu_si512((const void*)(kp)))
+#define XXH3_SCRAMBLE512 do { \
+   __m512i x_ = _mm512_add_epi64(P, _mm512_shuffle_epi32(D, (_MM_PERM_ENUM)0x4E)); \
+   x_ = _mm512_ternarylogic_epi64(x_, _mm512_srli_epi64(x_, 47), ks, 0x96); \
+   P  = _mm512_add_epi64(_mm512_mul_epu32(x_, prime), \
+         _mm512_slli_epi64(_mm512_mul_epu32(_mm512_srli_epi64(x_, 32), \
+               prime), 32)); \
+   D  = _mm512_setzero_si512(); \
+} while (0)
+/* the whole blocks with their keys in registers */
+#define XXH3_BLOCKS512 \
+   if (n >= XXH3_STRIPES) \
+   { \
+      const __m512i k0  = XXH3_K(0),  k1  = XXH3_K(1),  k2  = XXH3_K(2); \
+      const __m512i k3  = XXH3_K(3),  k4  = XXH3_K(4),  k5  = XXH3_K(5); \
+      const __m512i k6  = XXH3_K(6),  k7  = XXH3_K(7),  k8  = XXH3_K(8); \
+      const __m512i k9  = XXH3_K(9),  k10 = XXH3_K(10), k11 = XXH3_K(11); \
+      const __m512i k12 = XXH3_K(12), k13 = XXH3_K(13), k14 = XXH3_K(14); \
+      const __m512i k15 = XXH3_K(15); \
+      for (; n >= XXH3_STRIPES; n -= XXH3_STRIPES, in += XXH3_BLOCK) \
+      { \
+         XXH3_S(in,       k0);  XXH3_S(in + 64,  k1); \
+         XXH3_S(in + 128, k2);  XXH3_S(in + 192, k3); \
+         XXH3_S(in + 256, k4);  XXH3_S(in + 320, k5); \
+         XXH3_S(in + 384, k6);  XXH3_S(in + 448, k7); \
+         XXH3_S(in + 512, k8);  XXH3_S(in + 576, k9); \
+         XXH3_S(in + 640, k10); XXH3_S(in + 704, k11); \
+         XXH3_S(in + 768, k12); XXH3_S(in + 832, k13); \
+         XXH3_S(in + 896, k14); XXH3_S(in + 960, k15); \
+         XXH3_SCRAMBLE512; \
+      } \
+   }
+   const __m512i prime = _mm512_set1_epi32((int)XXH3_P32_1);
+   const __m512i ks    = XXH3_K(16);
+   unsigned      k     = *pos;
+   __m512i       P     = _mm512_loadu_si512((const void*)acc);
+   __m512i       D     = _mm512_setzero_si512();
+
+   XXH3_RUN(XXH3_SM, XXH3_SCRAMBLE512, XXH3_BLOCKS512);
+#undef XXH3_BLOCKS512
+#undef XXH3_SCRAMBLE512
+#undef XXH3_SM
+#undef XXH3_S
+#undef XXH3_K
+   _mm512_storeu_si512((void*)acc,
+         _mm512_add_epi64(P, _mm512_shuffle_epi32(D, (_MM_PERM_ENUM)0x4E)));
+   *pos = k;
+}
+
+XXH3_TARGET("avx512f")
+static void xxh3_take_avx512(xxh3_state_t *s, const uint8_t *p, size_t len)
+XXH3_TAKE(xxh3_run_avx512)
 #endif
 
 #if defined(XXH3_HAVE_NEON)
@@ -783,6 +1067,38 @@ static uint64_t xxh3_long_neon(const uint8_t *in, size_t len, uint64_t seed)
    vst1q_u64(acc + 6, vaddq_u64(P3, vextq_u64(D3, D3, 1)));
    return xxh3_merge_sec(acc, sec, total);
 }
+
+static INLINE void xxh3_run_neon(uint64_t *acc, const uint8_t *in,
+      size_t n, const uint8_t *in2, size_t n2, unsigned *pos,
+      const uint8_t *sec)
+{
+   const uint8_t   *ks    = sec + XXH3_SECRET - XXH3_STRIPE;
+   const uint32x2_t prime = vdup_n_u32(XXH3_P32_1);
+   unsigned         k     = *pos;
+   uint64x2_t       P0 = vld1q_u64(acc);
+   uint64x2_t       P1 = vld1q_u64(acc + 2);
+   uint64x2_t       P2 = vld1q_u64(acc + 4);
+   uint64x2_t       P3 = vld1q_u64(acc + 6);
+   uint64x2_t       D0 = vdupq_n_u64(0);
+   uint64x2_t       D1 = D0, D2 = D0, D3 = D0;
+#define XXH3_SCRAMBLE4_NEON do { \
+   XXH3_SCRAMBLE_NEON(P0, D0, ks); \
+   XXH3_SCRAMBLE_NEON(P1, D1, ks + 16); \
+   XXH3_SCRAMBLE_NEON(P2, D2, ks + 32); \
+   XXH3_SCRAMBLE_NEON(P3, D3, ks + 48); \
+} while (0)
+   XXH3_RUN(XXH3_STRIPE_NEON, XXH3_SCRAMBLE4_NEON,
+         XXH3_BLOCKS(XXH3_STRIPE_NEON, XXH3_SCRAMBLE4_NEON));
+#undef XXH3_SCRAMBLE4_NEON
+   vst1q_u64(acc,     vaddq_u64(P0, vextq_u64(D0, D0, 1)));
+   vst1q_u64(acc + 2, vaddq_u64(P1, vextq_u64(D1, D1, 1)));
+   vst1q_u64(acc + 4, vaddq_u64(P2, vextq_u64(D2, D2, 1)));
+   vst1q_u64(acc + 6, vaddq_u64(P3, vextq_u64(D3, D3, 1)));
+   *pos = k;
+}
+
+static void xxh3_take_neon(xxh3_state_t *s, const uint8_t *p, size_t len)
+XXH3_TAKE(xxh3_run_neon)
 #undef XXH3_PART_NEON
 #undef XXH3_STRIPE_NEON
 #undef XXH3_SCRAMBLE_NEON
@@ -849,4 +1165,91 @@ uint64_t xxh3_64(const void *data, size_t len, uint64_t seed)
    if (len <= 240)
       return xxh3_129to240(in, len, seed);
    return xxh3_long(in, len, seed);
+}
+
+
+void xxh3_reset(xxh3_state_t *s, uint64_t seed)
+{
+   memcpy(s->acc, xxh3_init_acc, sizeof(xxh3_init_acc));
+   s->total = 0;
+   s->seed  = seed;
+   s->held  = 0;
+   s->pos   = 0;
+   if (seed)
+      xxh3_keys(s->sec, seed);
+}
+
+#if defined(_MSC_VER)
+#define XXH3_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__)
+#define XXH3_NOINLINE __attribute__((noinline))
+#else
+#define XXH3_NOINLINE
+#endif
+
+/* The path's take, apart, so the copy into what is held is all a short
+ * piece costs */
+static XXH3_NOINLINE void xxh3_take(xxh3_state_t *s, const uint8_t *p,
+      size_t len)
+{
+#if defined(XXH3_HAVE_SSE2)
+   int path = retro_atomic_load_acquire_int(&xxh3_path);
+   if (!path)
+      path = xxh3_choose();
+#if defined(XXH3_HAVE_AVX512)
+   if (path == 4)
+   {
+      xxh3_take_avx512(s, p, len);
+      return;
+   }
+#endif
+#if defined(XXH3_HAVE_AVX2)
+   if (path == 3)
+   {
+      xxh3_take_avx2(s, p, len);
+      return;
+   }
+#endif
+   if (path == 2)
+   {
+      xxh3_take_sse2(s, p, len);
+      return;
+   }
+   xxh3_take_scalar(s, p, len);
+#elif defined(XXH3_HAVE_NEON)
+   xxh3_take_neon(s, p, len);
+#else
+   xxh3_take_scalar(s, p, len);
+#endif
+}
+
+void xxh3_update(xxh3_state_t *s, const void *data, size_t len)
+{
+   size_t h = s->held;
+   s->total += len;
+   if (h + len > XXH3_HELD)
+      xxh3_take(s, (const uint8_t*)data, len);
+   else if (len)
+   {
+      memcpy(s->buf + XXH3_STRIPE + h, data, len);
+      s->held = (uint32_t)(h + len);
+   }
+}
+
+uint64_t xxh3_digest(const xxh3_state_t *s)
+{
+   const uint8_t *held = s->buf + XXH3_STRIPE;
+   const uint8_t *sec;
+   uint64_t       acc[8];
+   unsigned       pos = s->pos;
+
+   if (s->total <= 240)
+      return xxh3_64(held, (size_t)s->total, s->seed);
+   sec = s->seed ? s->sec : xxh3_secret;
+   memcpy(acc, s->acc, sizeof(acc));
+   xxh3_run_scalar(acc, held, (s->held - 1) / XXH3_STRIPE, NULL, 0, &pos,
+         sec);
+   /* which may start in the stripe before */
+   xxh3_stripe_scalar(acc, held + s->held - XXH3_STRIPE, sec + XXH3_LAST_KEY);
+   return xxh3_merge_sec(acc, sec, s->total);
 }
