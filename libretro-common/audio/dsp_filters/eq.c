@@ -21,6 +21,7 @@
  */
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -175,10 +176,34 @@ static INLINE int64_t eq_rsh(int64_t v, unsigned s)
    return (v >= 0) ? ((v + h) >> s) : -(((-v) + h) >> s);
 }
 
-static INLINE uint32_t eq_abs32(int32_t v)
+/* eq_rsh(v, 30) for the butterflies' products, and eq_rsh(v, 1) for an
+ * int32 value, without a branch: rounding half away from zero is
+ * floor((v + h - (v < 0)) / 2^s) (v >> 63 being -1 or 0), and halving is v / 2 rounded down
+ * plus one for odd positive v. Both take >> of a negative value as the
+ * arithmetic shift it is on every target this builds for (as the lane
+ * code elsewhere does); they make the same numbers as eq_rsh. */
+static INLINE int32_t eq_rsh30(int64_t v)
 {
-   return (uint32_t)(v < 0 ? -v : v);
+   return (int32_t)((v + ((int64_t)1 << 29) + (v >> 63)) >> 30);
 }
+
+/* The same, spelled differently for the imaginary part, so GCC on
+ * AArch64 does not pair the two into a vector, moving both products
+ * from general to vector registers and back for one add and shift. */
+static INLINE int32_t eq_rsh30_alt(int64_t v)
+{
+   return (int32_t)((v + ((int64_t)1 << 29) - (v < 0)) >> 30);
+}
+
+static INLINE int32_t eq_half32(int32_t v)
+{
+   return (v >> 1) + (v & 1 & (int32_t)(v >= 0));
+}
+
+/* 1 when v is outside (-2^29, 2^29), the range the butterflies keep
+ * every value in: |v| >= EQ_I16_LIMIT. */
+#define EQ_I16_OVER(v) ((uint32_t)(v) + (uint32_t)(EQ_I16_LIMIT - 1) \
+      > (uint32_t)(2 * EQ_I16_LIMIT - 2))
 
 /* In-place radix-2 transform on interleaved Q-format complex values in
  * bit-reversed order; dir is -1 forward and +1 inverse, matching the
@@ -188,39 +213,54 @@ static void eq_fft_i(const struct eq_data *eq, int32_t *x, int dir, int *exp)
    unsigned step, i, j;
    unsigned n        = eq->fft->size;
    const int32_t *tw = eq->twiddle_i + 2 * (size_t)n;
-   uint32_t m        = 0;
+   unsigned over     = 0;
 
    for (i = 0; i < 2 * n; i++)
-      m |= eq_abs32(x[i]);
+      over |= EQ_I16_OVER(x[i]);
 
    for (step = 1; step < n; step <<= 1)
    {
-      int phase_step = (int)n * dir / (int)step;
+      ptrdiff_t wstep = 2 * (ptrdiff_t)((int)n * dir / (int)step);
       /* |a| + |w * b| stays below 2^31 while every value is below 2^29. */
-      if (m >= (uint32_t)EQ_I16_LIMIT)
+      if (over)
       {
          for (i = 0; i < 2 * n; i++)
-            x[i] = (int32_t)eq_rsh(x[i], 1);
+            x[i] = eq_half32(x[i]);
          (*exp)++;
       }
-      m = 0;
+      over = 0;
       for (i = 0; i < n; i += step << 1)
       {
-         for (j = i; j < i + step; j++)
+         const int32_t *w = tw + wstep;
+         int32_t *a       = x + 2 * i;
+         int32_t *b       = x + 2 * (i + step);
+         /* The first twiddle is (2^30, 0) exactly, so its products
+          * round back to b itself. */
          {
-            const int32_t *w = tw + 2 * (phase_step * (int)(j - i));
-            int32_t *a       = x + 2 * j;
-            int32_t *b       = x + 2 * (j + step);
-            int32_t tr       = (int32_t)eq_rsh((int64_t)w[0] * b[0]
-                  - (int64_t)w[1] * b[1], 30);
-            int32_t ti       = (int32_t)eq_rsh((int64_t)w[0] * b[1]
-                  + (int64_t)w[1] * b[0], 30);
-            b[0]             = a[0] - tr;
-            b[1]             = a[1] - ti;
-            a[0]            += tr;
-            a[1]            += ti;
-            m |= eq_abs32(a[0]) | eq_abs32(a[1])
-               | eq_abs32(b[0]) | eq_abs32(b[1]);
+            int32_t a0 = a[0], a1 = a[1];
+            int32_t b0 = b[0], b1 = b[1];
+            b[0]       = a0 - b0;
+            b[1]       = a1 - b1;
+            a[0]       = a0 + b0;
+            a[1]       = a1 + b1;
+            over |= EQ_I16_OVER(a[0]) | EQ_I16_OVER(a[1])
+                  | EQ_I16_OVER(b[0]) | EQ_I16_OVER(b[1]);
+         }
+         a += 2;
+         b += 2;
+         for (j = 1; j < step; j++, w += wstep, a += 2, b += 2)
+         {
+            int32_t tr = eq_rsh30((int64_t)w[0] * b[0]
+                  - (int64_t)w[1] * b[1]);
+            int32_t ti = eq_rsh30_alt((int64_t)w[0] * b[1]
+                  + (int64_t)w[1] * b[0]);
+            int32_t a0 = a[0], a1 = a[1];
+            b[0]       = a0 - tr;
+            b[1]       = a1 - ti;
+            a[0]       = a0 + tr;
+            a[1]       = a1 + ti;
+            over |= EQ_I16_OVER(a[0]) | EQ_I16_OVER(a[1])
+                  | EQ_I16_OVER(b[0]) | EQ_I16_OVER(b[1]);
          }
       }
    }
