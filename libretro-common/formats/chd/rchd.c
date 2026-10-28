@@ -170,12 +170,14 @@
 /* Container limits. A hunk is bounded by the format; the map and
  * metadata bounds are ours, sized well above anything a real image
  * carries, so a corrupt header cannot ask for an unbounded allocation. */
-/* What a hunk may measure, which the format sets differently either
- * side of version 5: half a megabyte from version 5, and sixteen
- * megabytes before it. A single ceiling is wrong both ways -- too
- * generous for version 5 and too mean for the versions that allow more,
- * where it would refuse an image another reader accepts. */
-#define RCHD_MAX_HUNK_BYTES_V5  (512 * 1024)
+/* What a hunk may measure, which differs either side of version 5:
+ * one megabyte from version 5 -- the largest hunk chdman will write
+ * (its HUNK_SIZE_MAX) -- and sixteen megabytes before it. A single
+ * ceiling is wrong both ways -- too generous for version 5 and too mean
+ * for the versions that allow more, where it would refuse an image
+ * another reader accepts. Half a megabyte here refused every version 5
+ * CD image made with a hunk above 524288 bytes. */
+#define RCHD_MAX_HUNK_BYTES_V5  (1024 * 1024)
 #define RCHD_MAX_HUNK_BYTES_OLD (16 * 1024 * 1024)
 #define RCHD_MAX_MAP_BYTES   (64 * 1024 * 1024)
 #define RCHD_MAX_METADATA    (16 * 1024 * 1024)
