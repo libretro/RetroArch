@@ -11,7 +11,9 @@
  * Video filters (.so under video_filters) take one frame in each input
  * format they support, and those that take more than one worker must
  * give the single-worker output byte for byte with 2, 3 and 4 workers
- * running at once; audio filters (under dsp_filters) take a block
+ * running at once - created with the SIMD mask RetroArch would pass on
+ * this CPU, so a filter's wide paths run here too; audio filters (under
+ * dsp_filters) take a block
  * through the float path and, when the plugin has one, the int16 path.
  * Every setting is left at the default the plugin asks for.  Returns
  * 0 when every plugin loads and runs. */
@@ -108,6 +110,28 @@ static void run_frame_threaded(const struct softfilter_implementation *impl,
          pthread_join(tid[t], NULL);
 }
 
+/* The SIMD bits RetroArch's cpu_features_get() would report here, for
+ * the ones filters look at; 0 where the compiler cannot tell. */
+static unsigned host_simd_mask(void)
+{
+   unsigned mask = 0;
+#if (defined(__GNUC__) || defined(__clang__)) \
+   && (defined(__x86_64__) || defined(__i386__))
+   __builtin_cpu_init();
+   if (__builtin_cpu_supports("sse2"))
+      mask |= SOFTFILTER_SIMD_SSE | SOFTFILTER_SIMD_SSE2;
+   if (__builtin_cpu_supports("avx2"))
+      mask |= SOFTFILTER_SIMD_AVX2;
+   if (     __builtin_cpu_supports("avx2")
+         && __builtin_cpu_supports("avx512f")
+         && __builtin_cpu_supports("avx512bw")
+         && __builtin_cpu_supports("avx512dq")
+         && __builtin_cpu_supports("avx512vl"))
+      mask |= SOFTFILTER_SIMD_AVX512;
+#endif
+   return mask;
+}
+
 /* Runs SPLIT_FRAMES frames with the given worker count; returns the
  * last frame's output, or NULL when the filter does not take that
  * many workers (it reports fewer), which is not a failure. */
@@ -121,7 +145,7 @@ static uint8_t *run_split(const struct softfilter_implementation *impl,
    uint8_t *out;
    struct softfilter_work_packet packets[16];
    void *filt = impl->create(cfg, in_fmt, out_fmt, SPLIT_W, SPLIT_H,
-         threads, 0, NULL);
+         threads, host_simd_mask(), NULL);
    if (!filt)
       return NULL;
    n = impl->query_num_threads(filt);
@@ -238,7 +262,8 @@ static void test_video(const char *path, void *lib)
          FAIL("%s: input format %u has no usable output format", path, in_fmt);
          continue;
       }
-      if (!(filt = impl->create(&cfg, in_fmt, out_fmt, IN_W, IN_H, 2, 0, NULL)))
+      if (!(filt = impl->create(&cfg, in_fmt, out_fmt, IN_W, IN_H, 2,
+                  host_simd_mask(), NULL)))
       {
          FAIL("%s: create failed for input format %u", path, in_fmt);
          continue;

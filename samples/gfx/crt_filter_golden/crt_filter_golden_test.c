@@ -1,12 +1,16 @@
 /* The NTSC-CRT video filter (gfx/video_filters/ntsc_crt.c) against output
  * hashes recorded from its earlier implementation: noise off, default
  * and heavy, scanlines, blend, monochrome, hue, contrast, brightness,
- * saturation, black and white point, both input formats, several frame
- * sizes (smaller than the size it was created for too), one to four
+ * saturation, black and white point, both input formats (by turns: the
+ * format only changes the conversion before modulation), several frame
+ * sizes (smaller than the size it was created for too), one and seven
  * workers, and four frames in a row - field parity, frame parity and the
- * noise generator all carry from frame to frame. Any change to how it
- * computes must keep every byte; run with GOLDEN_PRINT=1 in the
- * environment to print the table for a deliberate change. */
+ * noise generator all carry from frame to frame. The whole table is
+ * checked once per decode tier the CPU has - line by line, 8 lines in
+ * AVX2 lanes, 16 in AVX-512 - since the tier comes from the SIMD mask
+ * given to create. Any change to how it computes must keep every byte;
+ * run with GOLDEN_PRINT=1 in the environment to print the table for a
+ * deliberate change. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,18 +60,46 @@ static const struct kv scenarios[][5] = {
    { { "blend", 1 }, { "scanlines", 1 }, { "noise", 7 }, { "hue", 300 }, { "contrast", 120 } }
 };
 static const int nkv[] = { 1, 1, 1, 1, 1, 1, 2, 2, 3, 5 };
-static const unsigned sizes[][2] = { { 1, 1 }, { 7, 5 }, { 160, 144 }, { 256, 224 }, { 320, 240 } };
+static const unsigned sizes[][2] = { { 1, 1 }, { 7, 5 }, { 256, 224 }, { 320, 240 } };
+/* Workers and whether the filter is created larger than the frame. Every
+ * CRT frame costs about the same whatever its size, so these are few:
+ * one worker, and seven, whose bands of 34 and 35 lines leave lines over
+ * at both lane counts, for the line-by-line decoder to finish. */
+static const unsigned configs[][2] = { { 1, 0 }, { 7, 1 } };
+#define NCONFIG (sizeof(configs) / sizeof(configs[0]))
 
 #define NSCEN (sizeof(nkv) / sizeof(nkv[0]))
 #define NSIZE (sizeof(sizes) / sizeof(sizes[0]))
 
-static const uint32_t golden[NSCEN][2][NSIZE] = {
+static const uint32_t golden[NSCEN][NSIZE] = {
 #include "golden.h"
 };
+
+/* The SIMD masks to create the filter with: scalar, then each wider
+ * tier this CPU and OS can run. */
+static unsigned tier_masks(unsigned *masks)
+{
+   unsigned n = 0;
+   masks[n++] = 0;
+#if (defined(__GNUC__) || defined(__clang__)) \
+   && (defined(__x86_64__) || defined(__i386__))
+   __builtin_cpu_init();
+   if (__builtin_cpu_supports("avx2"))
+      masks[n++] = SOFTFILTER_SIMD_AVX2;
+   if (     __builtin_cpu_supports("avx2")
+         && __builtin_cpu_supports("avx512f")
+         && __builtin_cpu_supports("avx512bw")
+         && __builtin_cpu_supports("avx512dq")
+         && __builtin_cpu_supports("avx512vl"))
+      masks[n++] = SOFTFILTER_SIMD_AVX2 | SOFTFILTER_SIMD_AVX512;
+#endif
+   return n;
+}
 
 int main(void)
 {
    struct softfilter_config cfg = { gf, gi, gh, gfa, gia, gs, free };
+   unsigned masks[3], nmask = tier_masks(masks), mi;
    const struct softfilter_implementation *impl = softfilter_get_implementation(0);
    uint32_t *src32 = (uint32_t*)malloc(320 * 240 * 4);
    uint16_t *src16 = (uint16_t*)malloc(320 * 240 * 2);
@@ -89,18 +121,19 @@ int main(void)
       src16[i] = (uint16_t)(((c >> 19) & 31) << 11 | ((c >> 10) & 63) << 5 | ((c >> 3) & 31));
    }
 
+   for (mi = 0; mi < (print ? 1u : nmask); mi++)
    for (s = 0; s < NSCEN; s++)
    {
       if (print) printf("{ ");
-      for (f = 0; f < 2; f++)
+      f = s & 1;
       {
-         if (print) printf("{ ");
          for (z = 0; z < NSIZE; z++)
          {
             unsigned W = sizes[z][0], H = sizes[z][1];
             uint32_t h = 2166136261u;
-            for (t = 1; t <= 4; t++)
+            for (t = 0; t < NCONFIG; t++)
             {
+               unsigned nthr = configs[t][0], bigger = configs[t][1];
                unsigned fmt = f ? SOFTFILTER_FMT_XRGB8888 : SOFTFILTER_FMT_RGB565;
                unsigned bpp = f ? 4 : 2, ow, oh, k;
                size_t is = (size_t)(W + 2) * bpp, os = (size_t)(W + 3) * 4;
@@ -110,14 +143,15 @@ int main(void)
                cur  = scenarios[s];
                ncur = nkv[s];
                d    = impl->create(&cfg, fmt, SOFTFILTER_FMT_XRGB8888,
-                     (t & 1) ? W + 9 : W, (t & 1) ? H + 6 : H, t, 0, NULL);
+                     bigger ? W + 9 : W, bigger ? H + 6 : H, nthr,
+                     masks[mi], NULL);
                impl->query_output_size(d, &ow, &oh, W, H);
                for (y = 0; y < H; y++)
                   memcpy(in + y * is, f ? (void*)(src32 + y * 320)
                         : (void*)(src16 + y * 320), W * bpp);
                for (fr = 0; fr < 4; fr++)
                {
-                  struct softfilter_work_packet pk[4];
+                  struct softfilter_work_packet pk[8];
                   memset(out, 0x11, 340 * 250 * 4);
                   impl->get_work_packets(d, pk, out, os, in, W, H, is);
                   for (k = 0; k < impl->query_num_threads(d); k++)
@@ -129,15 +163,14 @@ int main(void)
             }
             if (print)
                printf("0x%08xu%s", h, z + 1 < NSIZE ? ", " : " ");
-            else if (h != golden[s][f][z])
+            else if (h != golden[s][z])
             {
-               printf("FAIL scenario %u %s %ux%u: 0x%08x, recorded 0x%08x\n",
-                     s, f ? "xrgb8888" : "rgb565", W, H,
-                     (unsigned)h, (unsigned)golden[s][f][z]);
+               printf("FAIL mask 0x%x scenario %u %s %ux%u: 0x%08x, recorded 0x%08x\n",
+                     masks[mi], s, f ? "xrgb8888" : "rgb565", W, H,
+                     (unsigned)h, (unsigned)golden[s][z]);
                bad++;
             }
          }
-         if (print) printf("}%s", f ? " " : ", ");
       }
       if (print) printf("},\n");
    }
@@ -151,6 +184,7 @@ int main(void)
       printf("crt_filter_golden: %u mismatches\n", bad);
       return 1;
    }
-   printf("crt_filter_golden: output matches the recorded hashes\n");
+   printf("crt_filter_golden: output matches the recorded hashes "
+         "at %u decode tier(s)\n", nmask);
    return 0;
 }

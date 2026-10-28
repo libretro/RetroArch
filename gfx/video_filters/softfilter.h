@@ -39,6 +39,9 @@ extern "C" {
 #define SOFTFILTER_SIMD_AVX2     (1 << 12)
 #define SOFTFILTER_SIMD_VFPU     (1 << 13)
 #define SOFTFILTER_SIMD_PS       (1 << 14)
+/* RetroArch's RETRO_SIMD_AVX512 bit: AVX-512 F, CD, BW, DQ and VL, with
+ * the OS saving ZMM state. */
+#define SOFTFILTER_SIMD_AVX512   (1 << 22)
 
 /* A bit-mask of all supported SIMD instruction sets.
  * Allows an implementation to pick different

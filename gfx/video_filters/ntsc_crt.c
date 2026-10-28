@@ -788,11 +788,366 @@ vsync_found:
  * three equalisers and the resampling into the output rows each line
  * owns. Lines are independent here, so bands of them can be decoded at
  * once; 'out' is AV_LEN + 1 entries of scratch per caller. */
-static void
-crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out)
+/* ---- Several lines at once -------------------------------------------
+ * Lines are independent once demodulate_begin has run, and without
+ * bloom they all cover the same samples, so up to 16 run in lockstep,
+ * one per SIMD lane (AVX2: 8, AVX-512: 16). Each lane does exactly the
+ * scalar decoder's integer operations in the same order - multiplies
+ * keep the low 32 bits and shifts are arithmetic, as int arithmetic is
+ * on every target this builds for - so the output is unchanged.
+ *
+ * The lanes' signal is transposed into one byte per lane per sample,
+ * and the decoded Y, I and Q are left interleaved likewise, sample s of
+ * lane k at [s * lanes + k], for crt_render_line to read in place. The
+ * buffers are made at create; the tier comes from the SIMD mask
+ * RetroArch passes there, so the plugin needs nothing of its own to
+ * detect the CPU. */
+#define CRT_LANES_MAX 16
+
+struct crt_lanes {
+    int n;            /* lanes per batch: 0 (scalar only), 8 or 16 */
+    signed char *sig; /* [AV_LEN + 1][n] */
+    int *y, *i, *q;   /* [AV_LEN + 1][n] each */
+};
+
+#if (CRT_CC_SAMPLES == 4) && !USE_CONVOLUTION && !CRT_DO_BLOOM \
+    && (defined(__x86_64__) || defined(__i386__) \
+     || defined(_M_X64) || defined(_M_IX86))
+#if defined(_MSC_VER) && !defined(__clang__)
+#if _MSC_VER >= 1911
+#define CRT_HAVE_LANES_AVX2   1
+#define CRT_HAVE_LANES_AVX512 1
+#define CRT_TARGET_AVX2
+#define CRT_TARGET_AVX512
+#endif
+#elif defined(__clang__) && (defined(__SCE__) || defined(_MSC_VER))
+/* PlayStation clang and clang-cl declare only the intrinsics of ISAs
+ * the whole build enables, so a tier is built only where the baseline
+ * has it. */
+#ifdef __AVX2__
+#define CRT_HAVE_LANES_AVX2 1
+#define CRT_TARGET_AVX2
+#ifdef __AVX512F__
+#define CRT_HAVE_LANES_AVX512 1
+#define CRT_TARGET_AVX512
+#endif
+#endif
+#elif (defined(__clang__) && __clang_major__ >= 4) \
+   || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 5)
+#define CRT_HAVE_LANES_AVX2   1
+#define CRT_HAVE_LANES_AVX512 1
+#define CRT_TARGET_AVX2   __attribute__((target("avx2")))
+#define CRT_TARGET_AVX512 __attribute__((target("avx512f")))
+#endif
+#endif
+
+#if defined(CRT_HAVE_LANES_AVX2) || defined(CRT_HAVE_LANES_AVX512)
+#define CRT_HAVE_LANES 1
+#include <immintrin.h>
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#define CRT_ZEROUPPER() _mm256_zeroupper()
+#else
+#define CRT_ZEROUPPER()
+#endif
+
+/* One equaliser step on vectors of lanes: EQF_STEP's updates, in its
+ * order, with the history shifted after the output is formed. */
+#define CRT_EQ_STEP_V(ADD, SUB, MUL, SRAI, S, O) \
+    L0 = ADD(L0, SRAI(ADD(MUL(lf, SUB(S, L0)), rnd), EQ_P)); \
+    H0 = ADD(H0, SRAI(ADD(MUL(hf, SUB(S, H0)), rnd), EQ_P)); \
+    L1 = ADD(L1, SRAI(ADD(MUL(lf, SUB(L0, L1)), rnd), EQ_P)); \
+    H1 = ADD(H1, SRAI(ADD(MUL(hf, SUB(H0, H1)), rnd), EQ_P)); \
+    L2 = ADD(L2, SRAI(ADD(MUL(lf, SUB(L1, L2)), rnd), EQ_P)); \
+    H2 = ADD(H2, SRAI(ADD(MUL(hf, SUB(H1, H2)), rnd), EQ_P)); \
+    L3 = ADD(L3, SRAI(ADD(MUL(lf, SUB(L2, L3)), rnd), EQ_P)); \
+    H3 = ADD(H3, SRAI(ADD(MUL(hf, SUB(H2, H3)), rnd), EQ_P)); \
+    O  = ADD(ADD(SRAI(MUL(L3, g0), EQ_P), \
+                 SRAI(MUL(SUB(H3, L3), g1), EQ_P)), \
+             SRAI(MUL(SUB(h2, H3), g2), EQ_P)); \
+    h2 = h1; \
+    h1 = h0; \
+    h0 = S
+
+#ifdef CRT_HAVE_LANES_AVX2
+#define CRT_A2_ADD(a, b)  _mm256_add_epi32(a, b)
+#define CRT_A2_SUB(a, b)  _mm256_sub_epi32(a, b)
+#define CRT_A2_MUL(a, b)  _mm256_mullo_epi32(a, b)
+#define CRT_A2_SRAI(a, n) _mm256_srai_epi32(a, n)
+
+/* One equaliser (Y when wave is NULL, else I or Q) over samples [L, R)
+ * of 8 lanes. */
+CRT_TARGET_AVX2
+static void crt_eq_pass_avx2(const struct EQF *t, const signed char *sig,
+        int L, int R, const int *wave, int bright, int *dst)
 {
-    struct crt_yiq *yiqA, *yiqB;
-    int line, s, bpp, pitch;
+    const __m256i lf  = _mm256_set1_epi32(t->lf);
+    const __m256i hf  = _mm256_set1_epi32(t->hf);
+    const __m256i g0  = _mm256_set1_epi32(t->g[0]);
+    const __m256i g1  = _mm256_set1_epi32(t->g[1]);
+    const __m256i g2  = _mm256_set1_epi32(t->g[2]);
+    const __m256i rnd = _mm256_set1_epi32(EQ_R);
+    const __m256i vb  = _mm256_set1_epi32(bright);
+    __m256i L0 = _mm256_setzero_si256(), L1 = L0, L2 = L0, L3 = L0;
+    __m256i H0 = L0, H1 = L0, H2 = L0, H3 = L0;
+    __m256i h0 = L0, h1 = L0, h2 = L0;
+    int i;
+    for (i = L; i < R; i++) {
+        __m256i sv = _mm256_cvtepi8_epi32(
+                _mm_loadl_epi64((const __m128i*)(sig + (size_t)i * 8)));
+        __m256i o;
+        if (wave) {
+            sv = _mm256_srai_epi32(_mm256_mullo_epi32(sv,
+                        _mm256_loadu_si256((const __m256i*)
+                            (wave + (i & 3) * 8))), 9);
+        } else {
+            sv = _mm256_add_epi32(sv, vb);
+        }
+        CRT_EQ_STEP_V(CRT_A2_ADD, CRT_A2_SUB, CRT_A2_MUL, CRT_A2_SRAI, sv, o);
+        o = wave ? _mm256_srai_epi32(o, 3) : _mm256_slli_epi32(o, 4);
+        _mm256_storeu_si256((__m256i*)(dst + (size_t)i * 8), o);
+    }
+    CRT_ZEROUPPER();
+}
+#endif
+
+#ifdef CRT_HAVE_LANES_AVX512
+#define CRT_A5_ADD(a, b)  _mm512_add_epi32(a, b)
+#define CRT_A5_SUB(a, b)  _mm512_sub_epi32(a, b)
+#define CRT_A5_MUL(a, b)  _mm512_mullo_epi32(a, b)
+#define CRT_A5_SRAI(a, n) _mm512_srai_epi32(a, n)
+
+/* The same over 16 lanes. */
+CRT_TARGET_AVX512
+static void crt_eq_pass_avx512(const struct EQF *t, const signed char *sig,
+        int L, int R, const int *wave, int bright, int *dst)
+{
+    const __m512i lf  = _mm512_set1_epi32(t->lf);
+    const __m512i hf  = _mm512_set1_epi32(t->hf);
+    const __m512i g0  = _mm512_set1_epi32(t->g[0]);
+    const __m512i g1  = _mm512_set1_epi32(t->g[1]);
+    const __m512i g2  = _mm512_set1_epi32(t->g[2]);
+    const __m512i rnd = _mm512_set1_epi32(EQ_R);
+    const __m512i vb  = _mm512_set1_epi32(bright);
+    __m512i L0 = _mm512_setzero_si512(), L1 = L0, L2 = L0, L3 = L0;
+    __m512i H0 = L0, H1 = L0, H2 = L0, H3 = L0;
+    __m512i h0 = L0, h1 = L0, h2 = L0;
+    int i;
+    for (i = L; i < R; i++) {
+        __m512i sv = _mm512_cvtepi8_epi32(
+                _mm_loadu_si128((const __m128i*)(sig + (size_t)i * 16)));
+        __m512i o;
+        if (wave) {
+            sv = _mm512_srai_epi32(_mm512_mullo_epi32(sv,
+                        _mm512_loadu_si512((const void*)
+                            (wave + (i & 3) * 16))), 9);
+        } else {
+            sv = _mm512_add_epi32(sv, vb);
+        }
+        CRT_EQ_STEP_V(CRT_A5_ADD, CRT_A5_SUB, CRT_A5_MUL, CRT_A5_SRAI, sv, o);
+        o = wave ? _mm512_srai_epi32(o, 3) : _mm512_slli_epi32(o, 4);
+        _mm512_storeu_si512((void*)(dst + (size_t)i * 16), o);
+    }
+    CRT_ZEROUPPER();
+}
+#endif
+
+/* Decodes the lanes' lines idx[0..n) into lanes->y/i/q. */
+static void crt_decode_lanes(struct CRT *v, const int *idx,
+        const struct crt_lanes *lanes, int bright)
+{
+    const int nl = lanes->n;
+    const int L  = v->lines[idx[0]].L;
+    const int R  = v->lines[idx[0]].R;
+    /* Each lane's carrier for I (wave[i & 3]) and Q (wave[(i + 3) & 3])
+     * at the four sample phases. */
+    int wi[4 * CRT_LANES_MAX], wq[4 * CRT_LANES_MAX];
+    int k, m, i;
+
+    for (k = 0; k < nl; k++) {
+        const struct crt_line *cl = &v->lines[idx[k]];
+        const signed char *src    = v->inp + cl->pos;
+        signed char *dst          = lanes->sig + k;
+        for (i = L; i < R; i++) {
+            dst[(size_t)i * nl] = src[i];
+        }
+        for (m = 0; m < 4; m++) {
+            wi[m * nl + k] = cl->wave[m];
+            wq[m * nl + k] = cl->wave[(m + 3) & 3];
+        }
+    }
+
+#ifdef CRT_HAVE_LANES_AVX512
+    if (nl == 16) {
+        crt_eq_pass_avx512(&eqY, lanes->sig, L, R, NULL, bright, lanes->y);
+        crt_eq_pass_avx512(&eqI, lanes->sig, L, R, wi,   bright, lanes->i);
+        crt_eq_pass_avx512(&eqQ, lanes->sig, L, R, wq,   bright, lanes->q);
+        return;
+    }
+#endif
+#ifdef CRT_HAVE_LANES_AVX2
+    crt_eq_pass_avx2(&eqY, lanes->sig, L, R, NULL, bright, lanes->y);
+    crt_eq_pass_avx2(&eqI, lanes->sig, L, R, wi,   bright, lanes->i);
+    crt_eq_pass_avx2(&eqQ, lanes->sig, L, R, wq,   bright, lanes->q);
+#endif
+}
+#endif /* CRT_HAVE_LANES */
+
+/* The lane count a filter created with this SIMD mask decodes with. */
+static int crt_lanes_for(unsigned simd)
+{
+#ifdef CRT_HAVE_LANES_AVX512
+    if (simd & SOFTFILTER_SIMD_AVX512) {
+        return 16;
+    }
+#endif
+#ifdef CRT_HAVE_LANES_AVX2
+    if (simd & SOFTFILTER_SIMD_AVX2) {
+        return 8;
+    }
+#endif
+    (void)simd;
+    return 0;
+}
+
+/* One line's output rows from its decoded samples. Sample s's Y, I and
+ * Q are py[s * stride], pi[s * stride] and pq[s * stride], so the same
+ * code reads the scalar decoder's struct crt_yiq array (stride 3) and
+ * the lane decoder's interleaved buffers (stride = lane count). */
+static void
+crt_render_line(struct CRT *v, const struct crt_line *cl,
+        const int *py, const int *pi, const int *pq, size_t stride,
+        int bpp, int pitch, int contrast, int blend, int out_format)
+{
+    unsigned pos;
+    unsigned scanR = cl->scanR;
+    int scanL      = cl->scanL;
+    int dx         = cl->dx;
+    int beg        = cl->beg;
+    int end        = cl->end;
+    int L, R, s;
+    unsigned char *cL, *cR;
+
+    cL = v->out + (beg * pitch);
+    cR = cL + pitch;
+
+    for (pos = scanL; pos < scanR && cL < cR; pos += dx) {
+        int y, i, q;
+        int r, g, b;
+        int aa, bb;
+
+        R = pos & 0xfff;
+        L = 0xfff - R;
+        s = pos >> 12;
+
+        {
+            size_t a_ = (size_t)s * stride, b_ = a_ + stride;
+            /* interpolate between samples if needed */
+            y = ((py[a_] * L) >>  2) + ((py[b_] * R) >>  2);
+            i = ((pi[a_] * L) >> 14) + ((pi[b_] * R) >> 14);
+            q = ((pq[a_] * L) >> 14) + ((pq[b_] * R) >> 14);
+        }
+
+        /* YIQ to RGB */
+        r = (((y + 3879 * i + 2556 * q) >> 12) * contrast) >> 8;
+        g = (((y - 1126 * i - 2605 * q) >> 12) * contrast) >> 8;
+        b = (((y - 4530 * i + 7021 * q) >> 12) * contrast) >> 8;
+
+        if (r < 0) r = 0;
+        if (g < 0) g = 0;
+        if (b < 0) b = 0;
+        if (r > 255) r = 255;
+        if (g > 255) g = 255;
+        if (b > 255) b = 255;
+
+        if (blend) {
+            aa = (r << 16 | g << 8 | b);
+
+            switch (out_format) {
+                case CRT_PIX_FORMAT_RGB:
+                case CRT_PIX_FORMAT_RGBA:
+                    bb = cL[0] << 16 | cL[1] << 8 | cL[2];
+                    break;
+                case CRT_PIX_FORMAT_BGR:
+                case CRT_PIX_FORMAT_BGRA:
+                    bb = cL[2] << 16 | cL[1] << 8 | cL[0];
+                    break;
+                case CRT_PIX_FORMAT_ARGB:
+                    bb = cL[1] << 16 | cL[2] << 8 | cL[3];
+                    break;
+                case CRT_PIX_FORMAT_ABGR:
+                    bb = cL[3] << 16 | cL[2] << 8 | cL[1];
+                    break;
+                default:
+                    bb = 0;
+                    break;
+            }
+
+            /* blend with previous color there */
+            bb = (((aa & 0xfefeff) >> 1) + ((bb & 0xfefeff) >> 1));
+        } else {
+            bb = (r << 16 | g << 8 | b);
+        }
+
+        switch (out_format) {
+            case CRT_PIX_FORMAT_RGB:
+                cL[0] = bb >> 16 & 0xff;
+                cL[1] = bb >>  8 & 0xff;
+                cL[2] = bb >>  0 & 0xff;
+                break;
+
+            case CRT_PIX_FORMAT_RGBA:
+                cL[0] = bb >> 16 & 0xff;
+                cL[1] = bb >>  8 & 0xff;
+                cL[2] = bb >>  0 & 0xff;
+                cL[3] = 0xff;
+                break;
+
+            case CRT_PIX_FORMAT_BGR:
+                cL[0] = bb >>  0 & 0xff;
+                cL[1] = bb >>  8 & 0xff;
+                cL[2] = bb >> 16 & 0xff;
+                break;
+
+            case CRT_PIX_FORMAT_BGRA:
+                cL[0] = bb >>  0 & 0xff;
+                cL[1] = bb >>  8 & 0xff;
+                cL[2] = bb >> 16 & 0xff;
+                cL[3] = 0xff;
+                break;
+
+            case CRT_PIX_FORMAT_ARGB:
+                cL[0] = 0xff;
+                cL[1] = bb >> 16 & 0xff;
+                cL[2] = bb >>  8 & 0xff;
+                cL[3] = bb >>  0 & 0xff;
+                break;
+
+            case CRT_PIX_FORMAT_ABGR:
+                cL[0] = 0xff;
+                cL[1] = bb >>  0 & 0xff;
+                cL[2] = bb >>  8 & 0xff;
+                cL[3] = bb >> 16 & 0xff;
+                break;
+
+            default:
+                break;
+        }
+
+        cL += bpp;
+    }
+
+    /* duplicate extra lines */
+    for (s = beg + 1; s < (end - v->scanlines); s++) {
+        memcpy(v->out + s * pitch, v->out + (s - 1) * pitch, pitch);
+    }
+}
+
+static void
+crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out,
+        const struct crt_lanes *lanes)
+{
+    int line, bpp, pitch;
     int bright = v->bright;
     /* Read once: every pixel is stored through an unsigned char
      * pointer, which may alias these, so they were fetched again for
@@ -807,14 +1162,53 @@ crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out)
     }
     bpp   = crt_bpp4fmt(v->out_format);
     pitch = v->outw * bpp;
+    line  = CRT_TOP + first;
 
-    for (line = CRT_TOP + first; line < CRT_TOP + last; line++) {
+#ifdef CRT_HAVE_LANES
+    /* Whole batches of lines, one per lane, in line order; what is left
+     * (fewer lines than lanes) takes the scalar loop below. Lines that
+     * are skipped do nothing either way, so the rows are drawn in the
+     * same order as one line at a time. */
+    if (lanes && lanes->n) {
+        const int nl = lanes->n;
+        for (;;) {
+            int idx[CRT_LANES_MAX] = { 0 };
+            int n = 0, l2, k;
+            for (l2 = line; l2 < CRT_TOP + last && n < nl; l2++) {
+                if (!v->lines[l2 - CRT_TOP].skip) {
+                    idx[n++] = l2 - CRT_TOP;
+                }
+            }
+            if (n < nl) {
+                break;
+            }
+            /* Lockstep needs one sample range for all of them; without
+             * bloom every line has [0, AV_LEN). */
+            for (k = 1; k < nl; k++) {
+                if (     v->lines[idx[k]].L != v->lines[idx[0]].L
+                      || v->lines[idx[k]].R != v->lines[idx[0]].R) {
+                    break;
+                }
+            }
+            if (k < nl) {
+                break;
+            }
+            crt_decode_lanes(v, idx, lanes, bright);
+            for (k = 0; k < nl; k++) {
+                crt_render_line(v, &v->lines[idx[k]], lanes->y + k,
+                        lanes->i + k, lanes->q + k, (size_t)nl, bpp,
+                        pitch, contrast, blend, out_format);
+            }
+            line = l2;
+        }
+    }
+#else
+    (void)lanes;
+#endif
+
+    for (; line < CRT_TOP + last; line++) {
         const struct crt_line *cl = &v->lines[line - CRT_TOP];
-        unsigned pos, scanR;
-        int scanL, dx;
         int L, R, i;
-        int beg, end;
-        unsigned char *cL, *cR;
 #if (CRT_CC_SAMPLES == 4)
         const int *wave = cl->wave;
 #else
@@ -824,11 +1218,6 @@ crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out)
         struct EQF eqY_l, eqI_l, eqQ_l;
 
         if (cl->skip) { continue; }
-        beg   = cl->beg;
-        end   = cl->end;
-        dx    = cl->dx;
-        scanL = cl->scanL;
-        scanR = cl->scanR;
         L     = cl->L;
         R     = cl->R;
         sig   = v->inp + cl->pos;
@@ -882,119 +1271,9 @@ crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out)
         }
 #endif
 
-        cL = v->out + (beg * pitch);
-        cR = cL + pitch;
-
-        for (pos = scanL; pos < scanR && cL < cR; pos += dx) {
-            int y, i, q;
-            int r, g, b;
-            int aa, bb;
-
-            R = pos & 0xfff;
-            L = 0xfff - R;
-            s = pos >> 12;
-
-            yiqA = out + s;
-            yiqB = out + s + 1;
-
-            /* interpolate between samples if needed */
-            y = ((yiqA->y * L) >>  2) + ((yiqB->y * R) >>  2);
-            i = ((yiqA->i * L) >> 14) + ((yiqB->i * R) >> 14);
-            q = ((yiqA->q * L) >> 14) + ((yiqB->q * R) >> 14);
-
-            /* YIQ to RGB */
-            r = (((y + 3879 * i + 2556 * q) >> 12) * contrast) >> 8;
-            g = (((y - 1126 * i - 2605 * q) >> 12) * contrast) >> 8;
-            b = (((y - 4530 * i + 7021 * q) >> 12) * contrast) >> 8;
-
-            if (r < 0) r = 0;
-            if (g < 0) g = 0;
-            if (b < 0) b = 0;
-            if (r > 255) r = 255;
-            if (g > 255) g = 255;
-            if (b > 255) b = 255;
-
-            if (blend) {
-                aa = (r << 16 | g << 8 | b);
-
-                switch (out_format) {
-                    case CRT_PIX_FORMAT_RGB:
-                    case CRT_PIX_FORMAT_RGBA:
-                        bb = cL[0] << 16 | cL[1] << 8 | cL[2];
-                        break;
-                    case CRT_PIX_FORMAT_BGR:
-                    case CRT_PIX_FORMAT_BGRA:
-                        bb = cL[2] << 16 | cL[1] << 8 | cL[0];
-                        break;
-                    case CRT_PIX_FORMAT_ARGB:
-                        bb = cL[1] << 16 | cL[2] << 8 | cL[3];
-                        break;
-                    case CRT_PIX_FORMAT_ABGR:
-                        bb = cL[3] << 16 | cL[2] << 8 | cL[1];
-                        break;
-                    default:
-                        bb = 0;
-                        break;
-                }
-
-                /* blend with previous color there */
-                bb = (((aa & 0xfefeff) >> 1) + ((bb & 0xfefeff) >> 1));
-            } else {
-                bb = (r << 16 | g << 8 | b);
-            }
-
-            switch (out_format) {
-                case CRT_PIX_FORMAT_RGB:
-                    cL[0] = bb >> 16 & 0xff;
-                    cL[1] = bb >>  8 & 0xff;
-                    cL[2] = bb >>  0 & 0xff;
-                    break;
-
-                case CRT_PIX_FORMAT_RGBA:
-                    cL[0] = bb >> 16 & 0xff;
-                    cL[1] = bb >>  8 & 0xff;
-                    cL[2] = bb >>  0 & 0xff;
-                    cL[3] = 0xff;
-                    break;
-
-                case CRT_PIX_FORMAT_BGR:
-                    cL[0] = bb >>  0 & 0xff;
-                    cL[1] = bb >>  8 & 0xff;
-                    cL[2] = bb >> 16 & 0xff;
-                    break;
-
-                case CRT_PIX_FORMAT_BGRA:
-                    cL[0] = bb >>  0 & 0xff;
-                    cL[1] = bb >>  8 & 0xff;
-                    cL[2] = bb >> 16 & 0xff;
-                    cL[3] = 0xff;
-                    break;
-
-                case CRT_PIX_FORMAT_ARGB:
-                    cL[0] = 0xff;
-                    cL[1] = bb >> 16 & 0xff;
-                    cL[2] = bb >>  8 & 0xff;
-                    cL[3] = bb >>  0 & 0xff;
-                    break;
-
-                case CRT_PIX_FORMAT_ABGR:
-                    cL[0] = 0xff;
-                    cL[1] = bb >>  0 & 0xff;
-                    cL[2] = bb >>  8 & 0xff;
-                    cL[3] = bb >> 16 & 0xff;
-                    break;
-
-                default:
-                    break;
-            }
-
-            cL += bpp;
-        }
-
-        /* duplicate extra lines */
-        for (s = beg + 1; s < (end - v->scanlines); s++) {
-            memcpy(v->out + s * pitch, v->out + (s - 1) * pitch, pitch);
-        }
+        crt_render_line(v, cl, &out->y, &out->i, &out->q,
+                sizeof(*out) / sizeof(int), bpp, pitch, contrast, blend,
+                out_format);
     }
 }
 
@@ -1413,6 +1692,8 @@ struct softfilter_thread_data
     unsigned     row_first;
     unsigned     row_last;
     struct crt_yiq *scratch;
+    /* this worker's lane buffers; n is 0 when it decodes line by line */
+    struct crt_lanes lanes;
 };
 
 /* -----------------------------------------------------------------------
@@ -1435,6 +1716,8 @@ struct filter_data
 
     /* AV_LEN + 1 entries of line scratch per worker */
     struct crt_yiq *scratch;
+    /* every worker's lane buffers, one block made at create */
+    void *lane_mem;
     /* set by the packets pass when this frame was modulated */
     int frame_ready;
 
@@ -1542,7 +1825,6 @@ static void *ntsc_crt_create(const struct softfilter_config *config,
     struct filter_data *filt;
     unsigned char *out_buf;
     (void)out_fmt;
-    (void)simd;
     (void)userdata;
 
     filt = (struct filter_data*)calloc(1, sizeof(*filt));
@@ -1560,6 +1842,32 @@ static void *ntsc_crt_create(const struct softfilter_config *config,
     /* single-threaded — CRT state is not thread-safe */
     filt->threads = threads;
     filt->in_fmt  = in_fmt;
+
+    /* Lane buffers for every worker, when the CPU can decode lines in
+     * lanes: the transposed signal and the decoded Y, I and Q, each
+     * started on a 64-byte boundary. Without them the workers decode
+     * line by line, as before. */
+    {
+        int    nl   = crt_lanes_for(simd);
+        size_t rows = (size_t)AV_LEN + 1;
+        size_t sigb = (rows * nl + 63) & ~(size_t)63;
+        size_t intb = (rows * nl * sizeof(int) + 63) & ~(size_t)63;
+        size_t per  = sigb + 3 * intb;
+        if (nl && (filt->lane_mem = malloc(per * threads + 63))) {
+            unsigned char *base = (unsigned char*)
+                (((uintptr_t)filt->lane_mem + 63) & ~(uintptr_t)63);
+            unsigned w;
+            for (w = 0; w < threads; w++) {
+                struct crt_lanes *ln = &filt->workers[w].lanes;
+                unsigned char *at    = base + per * w;
+                ln->n   = nl;
+                ln->sig = (signed char*)at;
+                ln->y   = (int*)(void*)(at + sigb);
+                ln->i   = (int*)(void*)(at + sigb + intb);
+                ln->q   = (int*)(void*)(at + sigb + 2 * intb);
+            }
+        }
+    }
 
     /* Allocate CRT output buffer: RGB (3 bpp) */
     /* Cleared: crt_demodulate does not write every pixel of it, and
@@ -1623,6 +1931,7 @@ static void ntsc_crt_destroy(void *data)
     if (filt->in_buf)  free(filt->in_buf);
     if (filt->out_buf) free(filt->out_buf);
     free(filt->scratch);
+    free(filt->lane_mem);
     free(filt->workers);
     free(filt);
 }
@@ -1711,7 +2020,7 @@ static void ntsc_crt_work_cb(void *data, void *thread_data)
         return;
 
     crt_demodulate_lines(&filt->crt, thr->line_first, thr->line_last,
-            thr->scratch);
+            thr->scratch, &thr->lanes);
 
     for (y = thr->row_first; y < thr->row_last; y++) {
         uint32_t *dst_row = (uint32_t*)
