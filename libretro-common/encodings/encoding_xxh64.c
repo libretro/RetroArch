@@ -60,25 +60,25 @@ static INLINE uint32_t xxh64_rd32(const uint8_t *p)
    return swap_if_big32(v);
 }
 
-/* The whole stripes of @p up to @end through the lanes @v, which are
- * held in registers for it; returns where the stripes stop.
+/* The whole stripes of @p up to @end, at least one, through the lanes
+ * @v, which are held in registers for it; returns where the stripes
+ * stop.
  *
- * An odd stripe first, then two a turn, so the loop's count and branch
- * come once per 64 octets. Each lane's two rounds sit together: the
- * lanes are chains of multiplies, bound by the multiplier whichever
- * order they are written in, and held this way they need no more
- * registers than a call leaves free. */
+ * The lanes are chains of multiplies, bound by the multiplier however
+ * the loop is unrolled, so it takes a stripe a turn; what it saves is
+ * the branch a varying length mispredicts: one stripe is taken without
+ * the loop. */
 static INLINE const uint8_t *xxh64_stripes(uint64_t *v, const uint8_t *p,
       const uint8_t *end)
 {
-   uint64_t       v1 = v[0];
-   uint64_t       v2 = v[1];
-   uint64_t       v3 = v[2];
-   uint64_t       v4 = v[3];
-   size_t         n  = (size_t)(end - p);
-   const uint8_t *two = p + (n & ~(size_t)31);
+   uint64_t       v1   = v[0];
+   uint64_t       v2   = v[1];
+   uint64_t       v3   = v[2];
+   uint64_t       v4   = v[3];
+   size_t         n    = (size_t)(end - p);
+   const uint8_t *stop = p + (n & ~(size_t)31);
 
-   if (n & 32)
+   if (n < 64)
    {
       XXH64_ROUND(v1, xxh64_rd64(p));
       XXH64_ROUND(v2, xxh64_rd64(p + 8));
@@ -86,18 +86,15 @@ static INLINE const uint8_t *xxh64_stripes(uint64_t *v, const uint8_t *p,
       XXH64_ROUND(v4, xxh64_rd64(p + 24));
       p += 32;
    }
-   while (p != two)
-   {
-      XXH64_ROUND(v1, xxh64_rd64(p));
-      XXH64_ROUND(v1, xxh64_rd64(p + 32));
-      XXH64_ROUND(v2, xxh64_rd64(p + 8));
-      XXH64_ROUND(v2, xxh64_rd64(p + 40));
-      XXH64_ROUND(v3, xxh64_rd64(p + 16));
-      XXH64_ROUND(v3, xxh64_rd64(p + 48));
-      XXH64_ROUND(v4, xxh64_rd64(p + 24));
-      XXH64_ROUND(v4, xxh64_rd64(p + 56));
-      p += 64;
-   }
+   else
+      do
+      {
+         XXH64_ROUND(v1, xxh64_rd64(p));
+         XXH64_ROUND(v2, xxh64_rd64(p + 8));
+         XXH64_ROUND(v3, xxh64_rd64(p + 16));
+         XXH64_ROUND(v4, xxh64_rd64(p + 24));
+         p += 32;
+      } while (p != stop);
    v[0] = v1;
    v[1] = v2;
    v[2] = v3;
@@ -218,7 +215,8 @@ void xxh64_update(xxh64_state_t *s, const void *data, size_t len)
       s->memsize = 0;
    }
 
-   p = xxh64_stripes(s->v, p, end);
+   if (end - p >= 32)
+      p = xxh64_stripes(s->v, p, end);
    if (p != end)
    {
       memcpy(s->mem, p, (size_t)(end - p));
