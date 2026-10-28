@@ -944,7 +944,10 @@ static int write_db_set(const char *path, const db_rec_t *recs,
 
    bfixmap(&meta, 1);
    bfixstr(&meta, "count");
-   bbyte(&meta, (uint8_t)n);
+   if (n < 0x80)
+      bbyte(&meta, (uint8_t)n);
+   else
+      buint32(&meta, n);
 
    off = 16 + (uint64_t)body.len;
    memcpy(hdr, "RARCHDB", 7);
