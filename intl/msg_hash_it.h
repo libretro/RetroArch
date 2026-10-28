@@ -1347,6 +1347,7 @@ static const struct
    char s_e6e43c7d[48];
    char s_c1ddd207[51];
    char s_ded83500[31];
+   char s_69c06e41[9];
    char s_690802fe[16];
    char s_7895cc5b[21];
    char s_e46faa42[18];
@@ -2129,6 +2130,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[35];
+   char s_e09bad69[12];
+   char s_f66c7b67[12];
    char s_b9d37039[163];
    char s_d0a04fe4[13];
    char s_c682e4e2[13];
@@ -5588,6 +5591,7 @@ static const struct
    "(Landscape) Regolazione Aspetto della copertura",
    "(Portrait) Aggiustamento dell'aspetto dell'overlay",
    "Autocarica copertura preferita",
+   "Entrambi",
    "Sovrapposizioni",
    "Overlay per Lightgun",
    "Overlay del Mouse",
@@ -6376,6 +6380,8 @@ static const struct
 #endif
 #endif
    "Disattiva composizione del Desktop",
+   "Predefinito",
+   "Predefinito",
    "Il driver grafico non \303\250 compatibile con il driver video corrente in RetroArch, tornando a"
    "l driver %s. Riavviare RetroArch affinch\303\251 le modifiche abbiano effetto.",
    "Filtro video",
@@ -8822,7 +8828,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (182860u
+      (sizeof(msg_hash_it_blob) == (182893u
 #ifdef ANDROID
        + 376u
 #endif
@@ -10601,6 +10607,7 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -11382,6 +11389,8 @@ static const msg_hash_id_t msg_hash_it_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,

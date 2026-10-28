@@ -1199,6 +1199,7 @@ static const struct
    char s_e6e43c7d[46];
    char s_c1ddd207[46];
    char s_ded83500[45];
+   char s_69c06e41[9];
    char s_690802fe[13];
    char s_d654f042[23];
    char s_568de57c[23];
@@ -1948,6 +1949,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[46];
+   char s_e09bad69[7];
+   char s_f66c7b67[7];
    char s_b9d37039[169];
    char s_d0a04fe4[14];
    char s_c682e4e2[17];
@@ -4738,6 +4741,7 @@ static const struct
    "(Vaakakuva) P\303\244\303\244llyksen kuvasuhteen s\303\244\303\244t\303\266",
    "(Pystykuva) P\303\244\303\244llyksen kuvasuhteen s\303\244\303\244t\303\266",
    "Lataa ensisijainen p\303\244\303\244llys automaattisesti",
+   "Molemmat",
    "P\303\244\303\244llykset",
    "P\303\244\303\244llyksen n\303\244kyvyys",
    "P\303\244\303\244llyksen esiasetus",
@@ -5496,6 +5500,8 @@ static const struct
 #endif
 #endif
    "Poista k\303\244yt\303\266st\303\244 ty\303\266p\303\266yd\303\244n kompositointi",
+   "Oletus",
+   "Oletus",
    "Grafiikka ohjaimesi ei ole yhteensopiva nykyisen RetroArchin video ajurin kanssa, palataan %s aj"
    "uriin. K\303\244ynnist\303\244 RetroArch uudelleen, jotta muutokset tulevat voimaan.",
    "Videosuodatin",
@@ -7559,7 +7565,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123624u
+      (sizeof(msg_hash_fi_blob) == (123647u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9084,6 +9090,7 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
@@ -9832,6 +9839,8 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,

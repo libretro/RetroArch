@@ -1589,6 +1589,7 @@ static const struct
    char s_e6e43c7d[57];
    char s_c1ddd207[55];
    char s_ded83500[52];
+   char s_69c06e41[6];
    char s_690802fe[16];
    char s_7895cc5b[27];
    char s_e46faa42[25];
@@ -2448,6 +2449,12 @@ static const struct
 #endif
    char s_f4341e25[38];
    char s_964cf6c8[19];
+   char s_b9942e59[11];
+   char s_d173c82d[17];
+   char s_84a2ce72[11];
+   char s_e09bad69[15];
+   char s_dcf8a6a3[7];
+   char s_f66c7b67[15];
    char s_cc973e8a[7];
    char s_b9d37039[164];
    char s_79f9b43b[22];
@@ -2638,7 +2645,6 @@ static const struct
    char s_6fbfde48[33];
    char s_a72a3c80[12];
    char s_482ee1f1[12];
-   char s_3794746e[14];
    char s_214b7699[12];
    char s_3e628390[8];
    char s_6b25e2a0[20];
@@ -3279,7 +3285,6 @@ static const struct
    char s_d1b3c47b[268];
    char s_27919f0b[251];
 #endif
-   char s_96ff4e5d[381];
    char s_f9db39ef[114];
 #ifdef UDEV_TOUCH_SUPPORT
    char s_d46604e4[97];
@@ -4151,10 +4156,6 @@ static const struct
    char s_d62ed5dc[446];
    char s_2e69508b[433];
    char s_7e96b5ce[49];
-   char s_1c796a6e_0[500];
-   char s_1c796a6e_1[163];
-   char s_5233fa60[475];
-   char s_ec60d5b6[438];
    char s_3547866d_0[500];
    char s_3547866d_1[175];
    char s_d73ccef3_0[500];
@@ -6656,6 +6657,7 @@ static const struct
    "Relaci\303\263n de aspecto de superposici\303\263n (modo horizontal)",
    "Relaci\303\263n de aspecto de superposici\303\263n (modo vertical)",
    "Cargar autom\303\241ticamente la superposici\303\263n preferida",
+   "Ambos",
    "Superposiciones",
    "Superposici\303\263n de lightgun",
    "Superposici\303\263n de rat\303\263n",
@@ -7523,6 +7525,12 @@ static const struct
 #endif
    "Desactivar composici\303\263n de escritorio",
    "Directorio de DLSS",
+   "Intensidad",
+   "Estructura local",
+   "Tono local",
+   "Predeterminado",
+   "Estilo",
+   "Predeterminado",
    "V\303\255deo",
    "Tu controlador de gr\303\241ficos no es compatible con el controlador de v\303\255deo actual de "
    "RetroArch, que pasa a utilizar %s. Reinicia RetroArch para aplicar los cambios.",
@@ -7715,7 +7723,6 @@ static const struct
    "Calidad del reescalador temporal",
    "Autom\303\241tico",
    "Equilibrado",
-   "Nativo (DLAA)",
    "Rendimiento",
    "Calidad",
    "M\303\241ximo rendimiento",
@@ -8771,11 +8778,6 @@ static const struct
    "toca la pantalla como si est\303\241 lo bastante cerca de la misma y pulsas el bot\303\263n late"
    "ral.",
 #endif
-   "Establece lo que hace el panel t\303\241ctil del mando de este puerto en el n\303\272cleo, para "
-   "mandos DualShock\302\2404 o DualSense con el controlador de mandos \"hid\". Pantalla t\303\241ct"
-   "il: pon un dedo en el mando para tocar esa zona de la pantalla, dos dedos tocar\303\241n dos zon"
-   "as. Rat\303\263n: mueve un dedo para mover el rat\303\263n, pulsa el panel para hacer clic, puls"
-   "a con dos dedos para hacer clic derecho.",
    "Ajusta la escala X/Y de las coordenadas de la pantalla t\303\241ctil para adaptarlas al escalado"
    " de la pantalla del SO.",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -10324,26 +10326,6 @@ static const struct
    "otogramas que indique el n\303\272cleo, mejorando el ritmo de fotogramas al ejecutar, por ejempl"
    "o, contenidos a 30 FPS en una pantalla a 60 Hz, o contenidos a 60 FPS en una pantalla de 120 Hz.",
    "Cambia los ajustes de sincronizaci\303\263n de v\303\255deo.",
-   "Reescala los contenidos renderizados por hardware con un escalador temporal en los controladores"
-   " para Vulkan y Direct3D\302\24012 utilizando los vectores de profundidad y movimiento exportados"
-   " por el n\303\272cleo, aquellos n\303\272cleos que no exporten dichos vectores se seguir\303\241"
-   "n mostrando tal cual. NVIDIA DLSS Super Resolution necesita el paquete de tiempo de ejecuci\303"
-   "\263n oficial de DLSS (nvngx_dlss.dll en Windows, libnvidia-ngx-dlss.so en Linux) en el director"
-   "io de DLSS y un controlador de NVIDIA con NGX; Retr",
-   "oArch no incluye nada. Esta opci\303\263n se mostrar\303\241 \303\272nicamente cuando se encuent"
-   "ren estos archivos. Para ver su estado, ve a Estad\303\255sticas/Informaci\303\263n del sistema.",
-   "El modelo de DLSS que utilizar\303\241 el reescalador. El valor predeterminado dejar\303\241 ele"
-   "gir al paquete de tiempo de ejecuci\303\263n (su modelo transformador para los modos Nativa, Cal"
-   "idad y Equilibrado). El preajuste K utilizar\303\241 ese modelo transformador en todos los modos"
-   ": la mejor imagen, costando m\303\241s recursos de GPU. El preajuste J es su primo hermano con a"
-   "lgo menos de efecto fantasma (\"ghosting\") y algo m\303\241s de parpadeos. Los cambios se aplic"
-   "ar\303\241n en el siguiente fotograma.",
-   "El modo del reescalador: indica c\303\263mo de peque\303\261a ser\303\241 la imagen que renderiz"
-   "ar\303\241 el n\303\272cleo. Calidad renderizar\303\241 2/3 del tama\303\261o de salida, Equilib"
-   "rado un 58\302\240%, Rendimiento m\303\241ximo 1/3, Nativa conservar\303\241 el tama\303\261o de"
-   " salida y se limitar\303\241 a suavizar bordes (con DLAA). El valor autom\303\241tico elegir\303"
-   "\241 las opciones Calidad o Equilibrado si la resoluci\303\263n supera las 1440 l\303\255neas. E"
-   "l n\303\272cleo actualizar\303\241 su tama\303\261o con cada fotograma.",
    "Ejecuta el n\303\272cleo y el controlador de v\303\255deo en hilos distintos para que la imagen "
    "mantenga su cadencia cuando el n\303\272cleo tenga tirones y cuando se solape con la cadena de s"
    "haders y con el fotograma presentado. Si se utiliza esta opci\303\263n con Ritmo de visualizaci"
@@ -11154,7 +11136,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (261673u
+      (sizeof(msg_hash_es_blob) == (259784u
 #ifdef ANDROID
        + 329u
 #endif
@@ -13308,6 +13290,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -14166,6 +14149,12 @@ static const msg_hash_id_t msg_hash_es_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_DIRECTORY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_INTENSITY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_LOCAL_TONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_PACING,
@@ -14356,7 +14345,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE,
@@ -14987,7 +14975,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
@@ -15855,9 +15842,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER_PRESET,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER_QUALITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,

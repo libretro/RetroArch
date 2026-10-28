@@ -1463,6 +1463,7 @@ static const struct
    char s_e6e43c7d[46];
    char s_c1ddd207[46];
    char s_ded83500[46];
+   char s_69c06e41[6];
    char s_690802fe[16];
    char s_7895cc5b[24];
    char s_e46faa42[16];
@@ -2273,6 +2274,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[40];
+   char s_e09bad69[12];
+   char s_f66c7b67[12];
    char s_cc973e8a[7];
    char s_b9d37039[177];
    char s_d0a04fe4[17];
@@ -6046,6 +6049,7 @@ static const struct
    "(Paisaxe) Axuste de aspecto de superposici\303\263n",
    "(Retrato) Axuste de aspecto de superposici\303\263n",
    "Carga autom\303\241tica de superposici\303\263n preferida",
+   "Ambos",
    "Superposici\303\263ns",
    "Arma lixeira superposta",
    "Rato superposto",
@@ -6866,6 +6870,8 @@ static const struct
 #endif
 #endif
    "Desactivar a composici\303\263n do escritorio",
+   "Por defecto",
+   "Por defecto",
    "V\303\255deo",
    "O teu controlador de gr\303\241ficos non \303\251 compatible co controlador de v\303\255deo actu"
    "al en RetroArch, volvendo ao controlador %s. Reinicie RetroArch para que os cambios te\303\261an"
@@ -9776,7 +9782,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (211504u
+      (sizeof(msg_hash_gl_blob) == (211534u
 #ifdef ANDROID
        + 365u
 #endif
@@ -11686,6 +11692,7 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -12495,6 +12502,8 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,

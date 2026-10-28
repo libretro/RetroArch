@@ -142,6 +142,7 @@ static const struct
    char s_25e86ee3[12];
    char s_e2c6c781[24];
    char s_164566fb[14];
+   char s_69c06e41[6];
    char s_7f10fcd2[7];
    char s_7206ddda[7];
    char s_0f1d488a[12];
@@ -429,6 +430,7 @@ static const struct
    "ISKLJU\304\214ENO",
    "Internetsko a\305\276uriranje",
    "Otvori arhivu",
+   "Oboje",
    "Ni\305\241ta",
    "Ni\305\241ta",
    "Performanse",
@@ -595,7 +597,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
-      (sizeof(msg_hash_hr_blob) == (4249u
+      (sizeof(msg_hash_hr_blob) == (4255u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -767,6 +769,7 @@ static const msg_hash_id_t msg_hash_hr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,

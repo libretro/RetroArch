@@ -1563,6 +1563,7 @@ static const struct
    char s_e6e43c7d[51];
    char s_c1ddd207[52];
    char s_ded83500[37];
+   char s_69c06e41[9];
    char s_690802fe[28];
    char s_7895cc5b[26];
    char s_e46faa42[24];
@@ -2408,6 +2409,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[37];
+   char s_e09bad69[12];
+   char s_f66c7b67[12];
    char s_cc973e8a[8];
    char s_b9d37039[182];
    char s_1249554a[19];
@@ -6546,6 +6549,7 @@ static const struct
    "(Paysage) Ajustement d'aspect de la surimpression ",
    "(Portrait) Ajustement d'aspect de la surimpression ",
    "Charger la surimpression pr\303\251f\303\251r\303\251e",
+   "Les deux",
    "Surimpressions \303\240 l'\303\251cran ",
    "Pistolet en surimpression",
    "Souris en surimpression",
@@ -7401,6 +7405,8 @@ static const struct
 #endif
 #endif
    "D\303\251sactiver la composition de bureau",
+   "Par d\303\251faut",
+   "Par d\303\251faut",
    "Vid\303\251o ",
    "Votre pilote graphique n'est pas compatible avec le pilote vid\303\251o actuel de RetroArch, ret"
    "our au pilote %s. Veuillez red\303\251marrer RetroArch pour que les modifications prennent effet"
@@ -11024,7 +11030,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (258728u
+      (sizeof(msg_hash_fr_blob) == (258761u
 #ifdef ANDROID
        + 373u
 #endif
@@ -13139,6 +13145,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -13983,6 +13990,8 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DXGI_PRESENT,

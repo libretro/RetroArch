@@ -1278,6 +1278,7 @@ static const struct
    char s_e6e43c7d[52];
    char s_c1ddd207[52];
    char s_ded83500[43];
+   char s_69c06e41[7];
    char s_690802fe[19];
    char s_7895cc5b[34];
    char s_e46faa42[28];
@@ -1973,6 +1974,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[58];
+   char s_e09bad69[16];
+   char s_f66c7b67[16];
    char s_cc973e8a[10];
    char s_b9d37039[264];
    char s_d0a04fe4[25];
@@ -6525,6 +6528,7 @@ static const struct
    "\264",
    "\345\204\252\345\205\210\343\202\252\343\203\274\343\203\220\343\203\274\343\203\254\343\202\244"
    "\343\202\222\350\207\252\345\213\225\343\203\255\343\203\274\343\203\211",
+   "\344\270\241\346\226\271",
    "\343\202\252\343\203\274\343\203\220\343\203\274\343\203\254\343\202\244",
    "\343\202\252\343\203\274\343\203\220\343\203\274\343\203\254\343\202\244\343\203\251\343\202\244"
    "\343\203\210\343\202\254\343\203\263",
@@ -7575,6 +7579,8 @@ static const struct
    "\343\203\207\343\202\271\343\202\257\343\203\210\343\203\203\343\203\227\343\202\263\343\203\263"
    "\343\203\235\343\202\270\343\202\267\343\203\247\343\203\263\343\202\222\347\204\241\345\212\271"
    "\343\201\253\343\201\231\343\202\213",
+   "\343\203\207\343\203\225\343\202\251\343\203\253\343\203\210",
+   "\343\203\207\343\203\225\343\202\251\343\203\253\343\203\210",
    "\343\203\223\343\203\207\343\202\252",
    "\344\275\277\347\224\250\344\270\255\343\201\256\343\202\260\343\203\251\343\203\225\343\202\243"
    "\343\203\203\343\202\257\343\203\211\343\203\251\343\202\244\343\203\220\343\201\257 RetroArch "
@@ -13946,7 +13952,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (200066u
+      (sizeof(msg_hash_ja_blob) == (200105u
 #ifdef ANDROID
        + 484u
 #endif
@@ -15551,6 +15557,7 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -16245,6 +16252,8 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,

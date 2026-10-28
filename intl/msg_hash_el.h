@@ -950,6 +950,8 @@ static const struct
 #if defined(DINGUX) && defined(DINGUX_BETA)
    char s_f98e1e26[47];
 #endif
+   char s_e09bad69[29];
+   char s_f66c7b67[29];
    char s_cc973e8a[26];
    char s_d0a04fe4[26];
    char s_49f9815b[63];
@@ -3285,6 +3287,10 @@ static const struct
    "\316\232\316\254\316\270\316\265\317\204\316\277\317\202 \316\241\317\205\316\270\316\274\317"
    "\214\317\202 \316\221\316\275\316\261\316\275\316\255\317\211\317\203\316\267\317\202",
 #endif
+   "\316\240\317\201\316\277\316\272\316\261\316\270\316\277\317\201\316\271\317\203\316\274\316\255"
+   "\316\275\316\277",
+   "\316\240\317\201\316\277\316\272\316\261\316\270\316\277\317\201\316\271\317\203\316\274\316\255"
+   "\316\275\316\277",
    "\316\237\316\264\316\267\316\263\317\214\317\202 \316\222\316\257\316\275\317\204\316\265\316"
    "\277",
    "\316\246\316\257\316\273\317\204\317\201\316\277 \316\222\316\257\316\275\317\204\316\265\316"
@@ -4746,7 +4752,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (68407u
+      (sizeof(msg_hash_el_blob) == (68465u
 #ifdef HAVE_LAKKA
        + 35u
 #endif
@@ -5783,6 +5789,8 @@ static const msg_hash_id_t msg_hash_el_ids[] =
 #if defined(DINGUX) && defined(DINGUX_BETA)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
 #endif
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,

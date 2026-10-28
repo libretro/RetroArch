@@ -1284,6 +1284,7 @@ static const struct
    char s_e6e43c7d[22];
    char s_c1ddd207[22];
    char s_ded83500[31];
+   char s_69c06e41[7];
    char s_690802fe[13];
    char s_7895cc5b[16];
    char s_e46faa42[13];
@@ -2019,6 +2020,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[19];
+   char s_e09bad69[7];
+   char s_f66c7b67[7];
    char s_cc973e8a[7];
    char s_b9d37039[115];
    char s_d0a04fe4[13];
@@ -5683,6 +5686,7 @@ static const struct
    "(\347\233\264\345\220\221) \351\253\230\345\272\246\350\252\277\346\225\264",
    "\350\207\252\345\213\225\350\274\211\345\205\245\346\234\200\344\275\263\350\246\206\350\223\213"
    "\345\205\203\344\273\266",
+   "\345\205\250\351\203\250",
    "\350\246\206\350\223\213\345\205\203\344\273\266",
    "\346\250\241\346\223\254\345\205\211\347\267\232\346\247\215",
    "\346\250\241\346\223\254\346\273\221\351\274\240",
@@ -6543,6 +6547,8 @@ static const struct
 #endif
 #endif
    "\347\246\201\347\224\250\346\241\214\351\235\242\347\265\204\344\273\266",
+   "\351\240\220\350\250\255",
+   "\351\240\220\350\250\255",
    "\351\241\257\347\244\272",
    "\350\243\235\347\275\256\347\232\204\345\234\226\345\275\242\351\251\205\345\213\225\344\270\215"
    "\347\233\270\345\256\271, \350\250\255\345\256\232\350\256\212\346\233\264\345\233\236\343\200"
@@ -10477,7 +10483,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cht_blob_check[
-      (sizeof(msg_hash_cht_blob) == (120768u
+      (sizeof(msg_hash_cht_blob) == (120789u
 #ifdef ANDROID
        + 157u
 #endif
@@ -12067,6 +12073,7 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -12801,6 +12808,8 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,

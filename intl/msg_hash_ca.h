@@ -1556,6 +1556,7 @@ static const struct
    char s_e6e43c7d[58];
    char s_c1ddd207[52];
    char s_ded83500[51];
+   char s_69c06e41[8];
    char s_690802fe[15];
    char s_7895cc5b[29];
    char s_e46faa42[21];
@@ -2396,6 +2397,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[40];
+   char s_e09bad69[12];
+   char s_f66c7b67[12];
    char s_cc973e8a[7];
    char s_b9d37039[198];
    char s_79f9b43b[27];
@@ -6504,6 +6507,7 @@ static const struct
    "Relaci\303\263 d'aspecte de la superposici\303\263 (mode horitzontal)",
    "Relaci\303\263 d'aspecte de superposici\303\263 (Mode vertical)",
    "Carrega Autom\303\240ticament la Superposici\303\263 Preferida",
+   "Ambdues",
    "Superposicions",
    "Superposa la pistola de llum",
    "Superposa el ratol\303\255",
@@ -7355,6 +7359,8 @@ static const struct
 #endif
 #endif
    "Desactiva la composici\303\263 d\342\200\231escriptori",
+   "Per defecte",
+   "Per defecte",
    "V\303\255deo",
    "El vostre controlador de gr\303\240fics no \303\251s compatible amb el controlador de v\303\255d"
    "eo actual del RetroArch, s\342\200\231usar\303\240 el controlador %s com a alternativa. Reinicie"
@@ -10820,7 +10826,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (243944u
+      (sizeof(msg_hash_ca_blob) == (243976u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12927,6 +12933,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -13766,6 +13773,8 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_PACING,

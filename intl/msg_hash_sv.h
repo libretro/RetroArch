@@ -1537,6 +1537,7 @@ static const struct
    char s_e6e43c7d[44];
    char s_c1ddd207[44];
    char s_ded83500[43];
+   char s_69c06e41[6];
    char s_690802fe[11];
    char s_7895cc5b[22];
    char s_e46faa42[15];
@@ -2336,6 +2337,8 @@ static const struct
 #endif
    char s_f4341e25[33];
    char s_964cf6c8[13];
+   char s_e09bad69[9];
+   char s_f66c7b67[9];
    char s_b9d37039[174];
    char s_79f9b43b[25];
    char s_1249554a[18];
@@ -2358,6 +2361,7 @@ static const struct
    char s_2e6ad26e[8];
    char s_43e9897c[42];
    char s_7fbf0860[11];
+   char s_594f79fd[12];
    char s_f417f6f1[18];
    char s_020e2bc5[16];
    char s_59f183c8[21];
@@ -2508,15 +2512,30 @@ static const struct
    char s_bcddf275[7];
    char s_16aa0100[21];
    char s_46ab38b2[43];
+   char s_9e5c39b2[35];
+   char s_9e5c39b3[35];
+   char s_9e5c39b4[35];
+   char s_9e5c39b5[35];
    char s_bddbac76[9];
+   char s_9e5c39b6[33];
+   char s_9e5c39b7[35];
+   char s_9e5c39b8[25];
+   char s_9e5c39b9[19];
+   char s_9e5c39ba[19];
    char s_9e5c39bb[53];
    char s_9e5c39bc[50];
+   char s_9e5c39bd[19];
+   char s_9e5c39be[19];
+   char s_9e5c39bf[19];
+   char s_66ae393b[42];
+   char s_9e5c39c0[19];
    char s_6fbfde48[35];
    char s_482ee1f1[11];
-   char s_3794746e[31];
+   char s_3794746e[48];
    char s_214b7699[10];
    char s_3e628390[9];
    char s_6b25e2a0[15];
+   char s_574badd6[34];
    char s_258060bf[22];
    char s_3bbc8b05[39];
    char s_e595f6df[36];
@@ -2556,6 +2575,7 @@ static const struct
    char s_6448376a[8];
    char s_b9e24170[26];
    char s_30140cb5[14];
+   char s_0bb834d5[13];
    char s_25a21976[70];
    char s_95a59dc0[11];
    char s_24244577[14];
@@ -3146,7 +3166,6 @@ static const struct
    char s_d1b3c47b[189];
    char s_27919f0b[179];
 #endif
-   char s_96ff4e5d[382];
    char s_f9db39ef[102];
 #ifdef UDEV_TOUCH_SUPPORT
    char s_d46604e4[76];
@@ -3907,6 +3926,7 @@ static const struct
    char s_15cad80e[410];
    char s_01e5fbea[332];
    char s_0653bf6a[446];
+   char s_42375c6b[115];
    char s_123f401f[91];
    char s_0d96ed73[44];
    char s_9f0fd076[136];
@@ -4016,9 +4036,11 @@ static const struct
    char s_2e69508b[331];
    char s_7e96b5ce[48];
    char s_1c796a6e_0[500];
-   char s_1c796a6e_1[40];
-   char s_5233fa60[447];
-   char s_ec60d5b6[429];
+   char s_1c796a6e_1[106];
+   char s_5233fa60_0[500];
+   char s_5233fa60_1[29];
+   char s_ec60d5b6[437];
+   char s_800838c4[325];
    char s_3547866d_0[500];
    char s_3547866d_1[26];
    char s_d73ccef3_0[500];
@@ -4058,6 +4080,7 @@ static const struct
    char s_74e69f4b[88];
    char s_5562855e[36];
    char s_75325963[51];
+   char s_119c6503[116];
    char s_6ac06624[143];
    char s_f765b650[48];
    char s_7059a595[56];
@@ -6462,6 +6485,7 @@ static const struct
    "(Liggande) Justera \303\266verl\303\244ggsf\303\266rh\303\245llande",
    "(St\303\245ende) Justera \303\266verl\303\244ggsf\303\266rh\303\245llande",
    "L\303\244s automatiskt in f\303\266redraget \303\266verl\303\244gg",
+   "B\303\245da",
    "\303\226verl\303\244gg",
    "\303\226verl\303\244gg ljuspistol",
    "\303\226verl\303\244gg mus",
@@ -7268,6 +7292,8 @@ static const struct
 #endif
    "Inaktivera skrivbordskomposition",
    "DLSS-katalog",
+   "Standard",
+   "Standard",
    "Din grafikdrivrutin \303\244r inte kompatibel med aktuella videodrivrutinen i RetroArch, faller "
    "tillbaka p\303\245 drivrutinen %s. Starta om RetroArch f\303\266r att \303\244ndringen ska ta ef"
    "fekt.",
@@ -7292,6 +7318,7 @@ static const struct
    "Tvingad",
    "F\303\266rhandling om exklusivt helsk\303\244rmsl\303\244ge",
    "Avslappnad",
+   "FSR-katalog",
    "Helsk\303\244rmsvisning",
    "Helsk\303\244rmsl\303\244ge",
    "Bredd f\303\266r helsk\303\244rm",
@@ -7442,15 +7469,30 @@ static const struct
    "Videor",
    "Temporal uppskalning",
    "F\303\266rinst\303\244llning f\303\266r temporal uppskalning",
+   "F\303\266rinst\303\244llning A (CNN, DLSS 2/3)",
+   "F\303\266rinst\303\244llning B (CNN, DLSS 2/3)",
+   "F\303\266rinst\303\244llning C (CNN, DLSS 2/3)",
+   "F\303\266rinst\303\244llning D (CNN, DLSS 2/3)",
    "Standard",
+   "F\303\266rinst\303\244llning E (CNN, DLSS 3)",
+   "F\303\266rinst\303\244llning F (CNN, DLSS 2/3)",
+   "F\303\266rinst\303\244llning G (CNN)",
+   "F\303\266rinst\303\244llning H",
+   "F\303\266rinst\303\244llning I",
    "F\303\266rinst\303\244llning J (transformer, f\303\244rre sp\303\266kbilder)",
    "F\303\266rinst\303\244llning K (transformer, b\303\244sta kvalitet)",
+   "F\303\266rinst\303\244llning L",
+   "F\303\266rinst\303\244llning M",
+   "F\303\266rinst\303\244llning N",
+   " (finns inte i denna DLSS-k\303\266rtidsmilj\303\266)",
+   "F\303\266rinst\303\244llning O",
    "Kvalitet f\303\266r temporal uppskalning",
    "Balanserad",
-   "Ursprunglig uppl\303\266sning (DLAA)",
+   "Ursprunglig uppl\303\266sning (endast kantutj\303\244mning)",
    "Prestanda",
    "Kvalitet",
    "Ultraprestanda",
+   "Sk\303\244rpa f\303\266r temporal uppskalning",
    "Tr\303\245dad videopipeline",
    "Synkronisering av tr\303\245dad videovisning",
    "Upprepa bildrutor med tr\303\245dad video",
@@ -7490,6 +7532,7 @@ static const struct
    "Separat",
    "Visa f\303\266nsterdekorationer",
    "F\303\266nsterbredd",
+   "XeSS-katalog",
    "Synkronisera exakt till inneh\303\245llets bildhastighet (G-Sync, FreeSync)",
    "Ljudlatens",
    "Klientbuffert",
@@ -8502,12 +8545,6 @@ static const struct
    "tt klick. AV: Pekpennan kan klicka genom att vidr\303\266ra sk\303\244rmen ELLER genom att hovra"
    " och trycka p\303\245 sidoknappen.",
 #endif
-   "Vad pekplattan p\303\245 handkontrollen i den h\303\244r porten motsvarar f\303\266r k\303\244rn"
-   "an n\303\244r en DualShock 4 eller DualSense anv\303\244nder handkontrolldrivrutinen \342\200"
-   "\235hid\342\200\235. \342\200\235Peksk\303\244rm\342\200\235: ett finger p\303\245 plattan r\303"
-   "\266r vid den platsen p\303\245 sk\303\244rmen och tv\303\245 fingrar vid tv\303\245 platser. "
-   "\342\200\235Mus\342\200\235: att dra med ett finger flyttar musen, ett tryck p\303\245 plattan k"
-   "lickar och tv\303\245 fingrar ger ett h\303\266gerklick.",
    "Justera x/y-skalan f\303\266r peksk\303\244rmens koordinater f\303\266r att anpassa den till OS-"
    "niv\303\245ns sk\303\244rmskalning.",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -9769,6 +9806,8 @@ static const struct
    "ngskedjan p\303\245 kompositorns oberoende v\303\244xlingss\303\266kv\303\244g. \342\200\235Tvin"
    "gat\342\200\235 v\303\244ljer uttryckligen exklusivt l\303\244ge och beh\303\245ller det. Kr\303"
    "\244ver VK_EXT_full_screen_exclusive.",
+   "Katalogen som FidelityFX SDK:s FSR-bibliotek l\303\244ses in fr\303\245n. Standard: \342\200\235"
+   "upscalers/fsr\342\200\235 i RetroArch-katalogen.",
    "Visning i helsk\303\244rm. Kan \303\244ndras vid k\303\266rtid. Kan \303\245sidos\303\244ttas me"
    "d en kommandoradsv\303\244xel.",
    "\303\204ndra inst\303\244llningar f\303\266r helsk\303\244rmsl\303\244ge.",
@@ -10020,27 +10059,34 @@ static const struct
    "\244r du k\303\266r t.ex. 30 fps inneh\303\245ll p\303\245 en 60 Hz sk\303\244rm eller 60 fps in"
    "neh\303\245ll p\303\245 en 120 Hz sk\303\244rm.",
    "\303\204ndra inst\303\244llningar f\303\266r videosynkronisering.",
-   "Skala upp h\303\245rdvarurenderat inneh\303\245ll med temporal uppskalning i drivrutinerna Vulka"
-   "n och Direct3D 12, med hj\303\244lp av djup- och r\303\266relsevektorer som k\303\244rnan tillha"
-   "ndah\303\245ller. K\303\244rnor som inte tillhandah\303\245ller n\303\245gra vektorer visas utan"
-   " uppskalning. NVIDIA DLSS Super Resolution kr\303\244ver den officiella DLSS-k\303\266rtidsmilj"
-   "\303\266n (nvngx_dlss.dll p\303\245 Windows, libnvidia-ngx-dlss.so p\303\245 Linux) i DLSS-katal"
-   "ogen och en NVIDIA-drivrutin med NGX. Dessa ing\303\245r inte. Alternativet visas endast n\303"
-   "\244r b\303\245da finns. Se S",
-   "tatistik/Systeminformation f\303\266r status.",
-   "DLSS-modellen som uppskalaren anv\303\244nder. Standard l\303\245ter k\303\266rmilj\303\266n v"
-   "\303\244lja modell (transformermodellen f\303\266r Ursprunglig, Kvalitet och Balanserad). F\303"
-   "\266rinst\303\244llning K anv\303\244nder transformermodellen i alla l\303\244gen och ger b\303"
-   "\244st bildkvalitet till priset av h\303\266gre belastning p\303\245 grafikprocessorn. F\303\266"
-   "rinst\303\244llning J anv\303\244nder en n\303\244rbesl\303\244ktad modell med n\303\245got f"
-   "\303\244rre sp\303\266kbilder och lite mer flimmer. \303\204ndringen tr\303\244der i kraft vid n"
-   "\303\244sta bildruta.",
-   "Uppskalningsl\303\244ge: vilken uppl\303\266sning k\303\244rnan renderar i j\303\244mf\303\266rt"
-   " med bildsk\303\244rmens uppl\303\266sning. Kvalitet renderar med 2/3 av utdatauppl\303\266sning"
-   "en, Balanserad med 58 %, Prestanda med 1/2 och Ultraprestanda med 1/3. Ursprunglig uppl\303\266s"
-   "ning beh\303\245ller utdatauppl\303\266sningen och anv\303\244nder bara kantutj\303\244mning (DL"
-   "AA). Auto v\303\244ljer Kvalitet, eller Balanserad \303\266ver 1440 linjer. K\303\244rnan f\303"
-   "\245r information om storleken f\303\266r varje bildruta.",
+   "Skala upp h\303\245rdvarurenderat inneh\303\245ll med temporal uppskalning i Vulkan- och Direct3"
+   "D 12-drivrutinerna, med hj\303\244lp av djup- och r\303\266relsevektorer som k\303\244rnan tillh"
+   "andah\303\245ller. K\303\244rnor som inte tillhandah\303\245ller n\303\245gra vektorer visas uta"
+   "n uppskalning. Varje metod anv\303\244nder tillverkarens bibliotek, som inte ing\303\245r: DLSS "
+   "kr\303\244ver DLSS-k\303\266rtidsmilj\303\266n i DLSS-katalogen och en NVIDIA-drivrutin; FSR kr"
+   "\303\244ver FidelityFX SDK-biblioteket i FSR-katalogen (FSR 4 p\303\245 grafikkort som st\303"
+   "\266der det, annars FSR 3.1); ",
+   "XeSS kr\303\244ver libxess i XeSS-katalogen och fungerar p\303\245 alla grafikkort. Se Systeminf"
+   "ormation f\303\266r status.",
+   "DLSS-modellen som uppskalningen anv\303\244nder (endast DLSS, eller den uppskalningsmetod som Op"
+   "tiScaler ers\303\244tter). Standard l\303\245ter k\303\266rtidsmilj\303\266n v\303\244lja. A til"
+   "l G \303\244r CNN-modellerna i DLSS 2 och 3. K \303\244r transformatormodellen i DLSS 4 och ger "
+   "b\303\244st bild men belastar grafikkortet mer. J \303\244r en besl\303\244ktad modell med mindr"
+   "e eftersl\303\244pning men visst flimmer. Senare bokst\303\244ver tillh\303\266r nyare k\303\266"
+   "rtidsmilj\303\266er. Om den inl\303\244sta k\303\266rtidsmilj\303\266n saknar den valda modellen"
+   " anv\303\244nds Standard. \303\204ndringen b\303\266rjar",
+   " g\303\244lla vid n\303\244sta bildruta.",
+   "Uppskalningsl\303\244ge: hur mycket mindre \303\244n sk\303\244rmen k\303\244rnan renderar. Kval"
+   "itet renderar med cirka 2/3 av utdatauppl\303\266sningen, Balanserad med cirka 58 %, Prestanda m"
+   "ed 1/2 och Ultraprestanda med 1/3 (varje uppskalningsmetod har egna proportioner). Ursprunglig u"
+   "ppl\303\266sning beh\303\245ller utdatauppl\303\266sningen och anv\303\244nder bara kantutj\303"
+   "\244mning. Auto v\303\244ljer Kvalitet, eller Balanserad \303\266ver 1440 linjer. K\303\244rnan "
+   "f\303\245r storleken f\303\266r varje bildruta.",
+   "Sk\303\244rpan som uppskalningsmetoden till\303\244mpar p\303\245 resultatet, i procent. 0 st"
+   "\303\244nger av den. FSR anv\303\244nder sin egen sk\303\244rpning. DLSS 2.5.1 och senare saknar"
+   " sk\303\244rpning och ignorerar inst\303\244llningen, men OptiScaler till\303\244mpar sitt RCAS-"
+   "steg med denna styrka p\303\245 b\303\245de DLSS och XeSS. \303\204ndringen b\303\266rjar g\303"
+   "\244lla vid n\303\244sta bildruta.",
    "K\303\266r k\303\244rnan och videodrivrutinen i separata tr\303\245dar s\303\245 att bildsk\303"
    "\244rmen beh\303\245ller sin takt n\303\244r k\303\244rnan hackar och s\303\245 att k\303\244rna"
    "n \303\266verlappar shaderkedjan och presentationen. Med \342\200\235Tr\303\245dad synkroniserin"
@@ -10128,6 +10174,8 @@ static const struct
    "tstorlek.",
    "Visa f\303\266nstrets titelrad och ramar.",
    "Ange den anpassade bredden f\303\266r visningsf\303\266nstret.",
+   "Katalogen som XeSS-biblioteket (libxess.dll) l\303\244ses in fr\303\245n. Standard: \342\200\235"
+   "upscalers/xess\342\200\235 i RetroArch-katalogen.",
    "Ingen avvikelse fr\303\245n k\303\244rnans efterfr\303\245gade timing. Anv\303\244nd f\303\266r "
    "sk\303\244rmar med variabel uppdateringsfrekvens (G-sync, FreeSync, HDMI 2.1 VRR).",
    "Wi-Fi-drivrutin att anv\303\244nda. (Kr\303\244ver omstart)",
@@ -10841,7 +10889,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (221423u
+      (sizeof(msg_hash_sv_blob) == (222242u
 #ifdef ANDROID
        + 361u
 #endif
@@ -12942,6 +12990,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -13740,6 +13789,8 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_DIRECTORY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DXGI_PRESENT,
@@ -13762,6 +13813,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSR_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -13912,15 +13964,30 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_A,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_B,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_C,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_D,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_E,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_F,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_G,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_H,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_I,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_J,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_K,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_L,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_M,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_N,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_NOT_IN_RUNTIME,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_O,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_SHARPNESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
@@ -13960,6 +14027,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_XESS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER,
@@ -14543,7 +14611,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
@@ -15303,6 +15370,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FSR_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -15414,6 +15482,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER_PRESET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER_QUALITY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER_SHARPNESS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
@@ -15451,6 +15520,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_XESS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,

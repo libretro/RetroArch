@@ -1590,6 +1590,7 @@ static const struct
    char s_e6e43c7d[40];
    char s_c1ddd207[38];
    char s_ded83500[32];
+   char s_69c06e41[14];
    char s_690802fe[11];
    char s_7895cc5b[23];
    char s_e46faa42[15];
@@ -2454,6 +2455,23 @@ static const struct
 #endif
    char s_f4341e25[35];
    char s_964cf6c8[13];
+   char s_a40142d6[28];
+   char s_5aeb5cb9[20];
+   char s_b9942e59[7];
+   char s_d173c82d[21];
+   char s_84a2ce72[14];
+   char s_74def6a5[21];
+   char s_28774055[16];
+   char s_28774056[16];
+   char s_28774057[16];
+   char s_e09bad69[14];
+   char s_27993823[25];
+   char s_b85928b7[24];
+   char s_207186e9[29];
+   char s_dcf8a6a3[6];
+   char s_f09399af[20];
+   char s_f66c7b67[14];
+   char s_efe678d9[11];
    char s_cc973e8a[9];
    char s_b9d37039[187];
    char s_79f9b43b[27];
@@ -2478,6 +2496,7 @@ static const struct
    char s_2e6ad26e[12];
    char s_43e9897c[42];
    char s_7fbf0860[12];
+   char s_594f79fd[12];
    char s_f417f6f1[29];
    char s_020e2bc5[21];
    char s_59f183c8[25];
@@ -2641,14 +2660,32 @@ static const struct
    char s_730df420[12];
    char s_bcddf275[10];
    char s_16aa0100[22];
+   char s_46ab38b2[33];
+   char s_9e5c39b2[32];
+   char s_9e5c39b3[32];
+   char s_9e5c39b4[32];
+   char s_9e5c39b5[32];
    char s_bddbac76[14];
+   char s_9e5c39b6[30];
+   char s_9e5c39b7[32];
+   char s_9e5c39b8[22];
+   char s_9e5c39b9[16];
+   char s_9e5c39ba[16];
+   char s_9e5c39bb[60];
+   char s_9e5c39bc[57];
+   char s_9e5c39bd[16];
+   char s_9e5c39be[16];
+   char s_9e5c39bf[16];
+   char s_66ae393b[32];
+   char s_9e5c39c0[16];
    char s_6fbfde48[43];
    char s_a72a3c80[14];
    char s_482ee1f1[8];
-   char s_3794746e[18];
+   char s_3794746e[36];
    char s_214b7699[13];
    char s_3e628390[12];
    char s_6b25e2a0[23];
+   char s_574badd6[29];
    char s_258060bf[28];
    char s_3bbc8b05[34];
    char s_e595f6df[32];
@@ -2689,6 +2726,7 @@ static const struct
    char s_6448376a[5];
    char s_b9e24170[36];
    char s_30140cb5[23];
+   char s_0bb834d5[13];
    char s_25a21976[63];
    char s_95a59dc0[15];
    char s_24244577[15];
@@ -3288,8 +3326,6 @@ static const struct
    char s_d1b3c47b[257];
    char s_27919f0b[262];
 #endif
-   char s_96ff4e5d_0[500];
-   char s_96ff4e5d_1[54];
    char s_f9db39ef[143];
 #ifdef UDEV_TOUCH_SUPPORT
    char s_d46604e4[111];
@@ -4032,6 +4068,16 @@ static const struct
 #endif
 #endif
    char s_ab839b13[152];
+   char s_9c3126f6[113];
+   char s_a9d0ac44[108];
+   char s_60cf8ce7[347];
+   char s_bf6397c7[44];
+   char s_6cf40c1b[87];
+   char s_445f65a0[80];
+   char s_7ac326d3[205];
+   char s_374a2bd1[190];
+   char s_a5c9a6e5[183];
+   char s_c5e08911[447];
    char s_135d20b8[52];
    char s_62e196a9_0[500];
    char s_62e196a9_1[226];
@@ -4052,6 +4098,7 @@ static const struct
    char s_15cad80e[491];
    char s_01e5fbea[326];
    char s_0653bf6a[501];
+   char s_42375c6b[134];
    char s_123f401f[117];
    char s_0d96ed73[41];
    char s_9f0fd076[148];
@@ -4162,7 +4209,12 @@ static const struct
    char s_2e69508b[399];
    char s_7e96b5ce[41];
    char s_1c796a6e_0[500];
-   char s_1c796a6e_1[96];
+   char s_1c796a6e_1[108];
+   char s_5233fa60_0[500];
+   char s_5233fa60_1[86];
+   char s_ec60d5b6_0[500];
+   char s_ec60d5b6_1[35];
+   char s_800838c4[439];
    char s_3547866d_0[500];
    char s_3547866d_1[116];
    char s_d73ccef3_0[500];
@@ -4202,9 +4254,12 @@ static const struct
    char s_74e69f4b[90];
    char s_5562855e[58];
    char s_75325963[60];
+   char s_119c6503[129];
    char s_6ac06624[138];
    char s_f765b650[52];
    char s_7059a595[61];
+   char s_c7d672df_0[500];
+   char s_c7d672df_1[97];
    char s_c85b2f0f[336];
    char s_6d1448c0[51];
    char s_cf0b487b[112];
@@ -6766,6 +6821,7 @@ static const struct
    "Coigeart\303\272 Gn\303\251 Forleagan (T\303\255rdhreach)",
    "Coigeart\303\272 Gn\303\251 Forleagan (Portr\303\241id)",
    "Uathl\303\263d\303\241il Forleagan is Fearr",
+   "An d\303\241 cheann",
    "Forleagain",
    "Forleagan Gunna Solais",
    "Luch Forleagan",
@@ -7650,6 +7706,23 @@ static const struct
 #endif
    "D\303\255chumasaigh Comhdh\303\251anamh Deisce",
    "Eolaire DLSS",
+   "Masc Craicinn Uathoibr\303\255och",
+   "Rindre\303\241il N\303\251arach",
+   "D\303\251ine",
+   "Strucht\303\272r \303\201iti\303\272il",
+   "Ton \303\201iti\303\272il",
+   "R\303\251amhshocr\303\272 M\303\272nla",
+   "R\303\251amhshocr\303\272 1",
+   "R\303\251amhshocr\303\272 2",
+   "R\303\251amhshocr\303\272 3",
+   "R\303\251amhshocr\303\272",
+   "Rindre\303\241il N\303\251arach DLSS",
+   "Strucht\303\272r an Chraicinn",
+   "Lean an Strucht\303\272r \303\201iti\303\272il",
+   "St\303\255l",
+   "Cos\303\272il le scann\303\241n",
+   "R\303\251amhshocr\303\272",
+   "N\303\241d\303\272rtha",
    "F\303\255se\303\241n",
    "N\303\255l do thiom\303\241na\303\255 grafaic\303\255 comhoiri\303\272nach leis an tiom\303\241n"
    "a\303\255 f\303\255se reatha i RetroArch, agus \303\272s\303\241idtear an tiom\303\241na\303\255"
@@ -7676,6 +7749,7 @@ static const struct
    "\303\211igeantach",
    "Idirbhearta\303\255ocht Eisiach L\303\241nsc\303\241ile\303\241in",
    "Suaimhneach",
+   "Eolaire FSR",
    "Taispe\303\241ntas L\303\241nsc\303\241ile\303\241in",
    "M\303\263d L\303\241nsc\303\241ile\303\241in",
    "Leithead L\303\241nsc\303\241ile\303\241in",
@@ -7839,14 +7913,32 @@ static const struct
    "Sioncr\303\263n\303\272",
    "F\303\255se\303\241in",
    "Uasghr\303\241daitheoir Ama",
+   "R\303\251amhshocr\303\272 Uasghr\303\241daithe Ama",
+   "R\303\251amhshocr\303\272 A (CNN, DLSS 2/3)",
+   "R\303\251amhshocr\303\272 B (CNN, DLSS 2/3)",
+   "R\303\251amhshocr\303\272 C (CNN, DLSS 2/3)",
+   "R\303\251amhshocr\303\272 D (CNN, DLSS 2/3)",
    "R\303\251amhshocr\303\272",
+   "R\303\251amhshocr\303\272 E (CNN, DLSS 3)",
+   "R\303\251amhshocr\303\272 F (CNN, DLSS 2/3)",
+   "R\303\251amhshocr\303\272 G (CNN)",
+   "R\303\251amhshocr\303\272 H",
+   "R\303\251amhshocr\303\272 I",
+   "R\303\251amhshocr\303\272 J (Trasfhoirmeoir, n\303\255os l\303\272 taibhsi\303\272ch\303\241in)",
+   "R\303\251amhshocr\303\272 K (Trasfhoirmeoir, an caighde\303\241n is fearr)",
+   "R\303\251amhshocr\303\272 L",
+   "R\303\251amhshocr\303\272 M",
+   "R\303\251amhshocr\303\272 N",
+   " (n\303\255l s\303\251 sa runtime DLSS seo)",
+   "R\303\251amhshocr\303\272 O",
    "C\303\241il\303\255ocht an Uasghr\303\241daithe Thimpiri\303\272il",
    "Uathoibr\303\255och",
    "Cothrom",
-   "D\303\272chasach (DLAA)",
+   "D\303\272chasach (frith-ailias\303\272 amh\303\241in)",
    "Feidhm\303\255ocht",
    "C\303\241il\303\255ocht",
    "Feidhm\303\255ocht den Scoth",
+   "G\303\251ire an Uas-sc\303\241laithe Ama",
    "P\303\255bl\303\255ne F\303\255se Sn\303\241ithithe",
    "Luas Taispe\303\241na F\303\255se Sn\303\241ithithe",
    "Athr\303\241 Fr\303\241ma F\303\255se Sn\303\241ithithe",
@@ -7888,6 +7980,7 @@ static const struct
    "Scar",
    "Maisi\303\272ch\303\241in Fuinneoige Taispe\303\241in",
    "Leithead na Fuinneoige",
+   "Eolaire XeSS",
    "Sioncr\303\263naigh le R\303\241ta Fr\303\241ma \303\201bhar Beacht (G-Sync, FreeSync)",
    "Lagacht Fuaime",
    "Maol\303\241n Cliant",
@@ -9080,15 +9173,6 @@ static const struct
    "ce\303\241il tr\303\255 theagmh\303\241il a dh\303\251anamh leis an sc\303\241ile\303\241n N\303"
    "\223 tr\303\255d an gcnaipe taobh a choinne\303\241il ag lu\303\255 agus a bhr\303\272.",
 #endif
-   "Is \303\251 an rud at\303\241 i gceist leis an bpain\303\251al tadhaill ar an rialt\303\263ir se"
-   "o n\303\241 feidhmi\303\272lacht at\303\241 comhth\303\241ite go domhain sa ch\303\263ras, nuair"
-   " a \303\272s\303\241idtear tiom\303\241na\303\255 rialt\303\263ra 'hid' le DualShock 4 n\303\263"
-   " DualSense. 'Sc\303\241ile\303\241n tadhaill': m\303\241 chuirtear m\303\251ar ar an bpain\303"
-   "\251al, freagra\303\255onn s\303\251 don phointe sin ar an sc\303\241ile\303\241n; m\303\241 chu"
-   "irtear dh\303\241 mh\303\251ar air, freagra\303\255onn s\303\251 do dh\303\241 phointe. 'Luiche'"
-   ": m\303\241 bhogtar m\303\251ar, bogtar an c\303\272rs\303\263ir luiche; m\303\241 bhr\303\272it"
-   "ear an pain\303\251al, d\303\251antar clice\303\241il, agus m\303\241 ",
-   "bh\303\255onn dh\303\241 mh\303\251ar air, d\303\251antar clice\303\241il ar dheis.",
    "Coigeartaigh sc\303\241la x/y chomhordan\303\241id\303\255 an sc\303\241ile\303\241in teagmh\303"
    "\241il chun freastal ar sc\303\241l\303\272 taispe\303\241na ar leibh\303\251al an ch\303\263rai"
    "s oibri\303\272ch\303\241in.",
@@ -10513,6 +10597,38 @@ static const struct
    "\303\232s\303\241ideann bainisteoir\303\255 fuinneog comhdh\303\251anamh chun \303\251ifeachta"
    "\303\255 amhairc a chur i bhfeidhm, fuinneoga neamhfhreagracha a bhrath, i measc ruda\303\255 ei"
    "le.",
+   "An t-eolaire \303\263nar l\303\263d\303\241iltear an t-am rite DLSS. R\303\251amhshocr\303\272: "
+   "'upscalers/dlss' laistigh d'eolaire RetroArch.",
+   "Lig don mh\303\272nla an craiceann a aimsi\303\272 \303\251 f\303\251in, agus \303\251 a ch\303"
+   "\263ire\303\241il ar leith \303\263n gcuid eile den fhr\303\241ma.",
+   "Rith samhail Rindre\303\241la N\303\251ar\303\272il DLSS 5 ar an bhfr\303\241ma at\303\241 m\303"
+   "\251adaithe i sc\303\241la. D\303\251anann s\303\251 an soilsi\303\272 agus na h\303\241bhair a "
+   "athoibri\303\272, ag baint \303\272s\303\241ide as an doimhneacht agus an ghluaiseacht a shol"
+   "\303\241thra\303\255onn an cro\303\255-inneall; caitheann s\303\251 c\303\272pla milleasoicind i"
+   "n aghaidh an fhr\303\241ma. Tagann an \303\251ifeacht i bhfeidhm ar an gc\303\251ad fhr\303\241m"
+   "a eile.",
+   "Neart forioml\303\241n an mh\303\272nla, i gc\303\251atad\303\241n.",
+   "An d\303\251ine a oibr\303\255onn an tsamhail mionsonra\303\255 agus strucht\303\272r dromchla, "
+   "i gc\303\251atad\303\241n.",
+   "An m\303\251id a athoibr\303\255onn an tsamhail solas agus sc\303\241th \303\241iti\303\272il, i"
+   " gc\303\251atad\303\241n.",
+   "An tsamhail Rindre\303\241la N\303\251ar\303\272il at\303\241 le h\303\272s\303\241id. M\303\241"
+   " fh\303\241gtar ar an r\303\251amhshocr\303\272 \303\251, ligfear don am rite an rogha a dh\303"
+   "\251anamh. Gan a bheith uimhrithe mar at\303\241 an R\303\251amhshocr\303\272 Uasghr\303\241dait"
+   "he Sealadach.",
+   "M\303\272nla Rindre\303\241la N\303\251ar\303\272il DLSS 5, a ritheann ar aschur DLSS. Teasta"
+   "\303\255onn an comhad nvngx_dlssnr.dll i bhfillte\303\241n DLSS, chomh maith le tiom\303\241na"
+   "\303\255 NVIDIA ina bhfuil an comhad sin ar f\303\241il.",
+   "Neart an strucht\303\272ir ar an gcraiceann, mar ch\303\251atad\303\241n. M\303\241 roghna\303"
+   "\255tear 'Local Structure' \342\200\224 an socr\303\272 r\303\251amhshocraithe don mh\303\272nla"
+   " \342\200\224 \303\272s\303\241idfear 'Local Structure' ansin freisin.",
+   "Pr\303\263if\303\255l phr\303\263ise\303\241la an mh\303\272nla. \342\200\213\342\200\213Is \303"
+   "\255 an r\303\251amhshocr\303\272 an ceann is l\303\241idre: b\303\255onn codarsnacht \303\241it"
+   "i\303\272il n\303\255os m\303\263 agus soilsi\303\272 n\303\255os doimhne i gceist, agus uairean"
+   "ta b\303\255onn na dathanna r\303\263sh\303\241ithithe. D\303\251anann an rogha 'Natural' an rud"
+   " c\303\251anna ar bhealach n\303\255os s\303\251imhe, agus coinn\303\255onn s\303\255 na toin n"
+   "\303\255os gaire do na cinn bhunaidh. Laghda\303\255onn an rogha 'Cinematic' an lonradh chun cum"
+   "a a thabhairt don \303\255omh\303\241 at\303\241 cos\303\272il le scann\303\241n.",
    "Tiom\303\241na\303\255 f\303\255se le h\303\272s\303\241id. (Atos\303\272 ag teast\303\241il)",
    "Lig don tiom\303\241na\303\255 grafaic\303\255 luas na bhfr\303\241ma\303\255 a rial\303\272 tr"
    "\303\255 ionchur a phr\303\263ise\303\241il n\303\255os d\303\251ana\303\255 agus scuaine ghearr"
@@ -10584,6 +10700,8 @@ static const struct
    " an slabhra malartaithe ar chonair smeach neamhsple\303\241ch an chomhdh\303\251anamh. Glacann '"
    "Forced' an m\303\263d eisiach go sainr\303\241ite agus coinn\303\255onn s\303\251 \303\251. \303"
    "\211il\303\255onn s\303\251 VK_EXT_full_screen_exclusive.",
+   "An t-eolaire \303\263nar l\303\263d\303\241iltear leabharlann FSR de chuid FidelityFX SDK. R\303"
+   "\251amhshocr\303\272: 'upscalers/fsr' laistigh d'eolaire RetroArch.",
    "Taispe\303\241in i l\303\241nsc\303\241ile\303\241n. Is f\303\251idir \303\251 seo a athr\303"
    "\272 ag am rithe. Is f\303\251idir \303\251 a sh\303\241r\303\272 le lasc l\303\255ne ordaithe.",
    "Athraigh socruithe m\303\263d l\303\241nsc\303\241ile\303\241in.",
@@ -10903,12 +11021,37 @@ static const struct
    "Uasghr\303\241daigh \303\241bhar rindre\303\241ilte le crua-earra\303\255 le huasghr\303\241dait"
    "heoir ama ar na tiom\303\241naithe Vulkan agus Direct3D 12, \303\263 na veicteoir\303\255 doimhn"
    "eachta agus gluaisne a easp\303\263rt\303\241lann an cro\303\255; taispe\303\241ntar cro\303\255"
-   "leac\303\241in nach n-easp\303\263rt\303\241lann aon cheann mar at\303\241 siad. Teasta\303\255o"
-   "nn an t-am rith oifigi\303\272il DLSS (nvngx_dlss.dll ar Windows, libnvidia-ngx-dlss.so ar Linux"
-   ") \303\263 NVIDIA DLSS Super Resolution san Eolaire DLSS agus tiom\303\241na\303\255 NVIDIA le N"
-   "GX; n\303\255l aon rud pac\303\241ilte. N\303\255 thairgtear \303\251 ach amh\303\241i",
-   "n nuair a aims\303\255tear an d\303\241 cheann. F\303\251ach Staitistic\303\255/Faisn\303\251is "
-   "C\303\263rais le haghaidh st\303\241dais.",
+   "leac\303\241in nach n-easp\303\263rt\303\241lann aon cheann mar at\303\241 siad. Ritheann gach c"
+   "eann ar leabharlann a dh\303\255olt\303\263ra, n\303\255 pac\303\241ilte: teasta\303\255onn am r"
+   "ith DLSS san Eolaire DLSS agus tiom\303\241na\303\255 NVIDIA \303\263 DLSS; FSR leabharlann SDK "
+   "FidelityFX san Eolaire FSR (FSR 4 ar na GPUanna a bhfuil s\303\251 acu, seachas ",
+   "FSR 3.1); XeSS libxess san Eolaire XeSS, ar aon GPU. F\303\251ach ar Fhaisn\303\251is an Ch\303"
+   "\263rais le haghaidh st\303\241dais.",
+   "An tsamhail DLSS a ritheann an t-uasghr\303\241d\303\263ir (DLSS amh\303\241in; faoi OptiScaler,"
+   " cib\303\251 uasghr\303\241d\303\263ir a chuireann s\303\251 ina ionad). Ligeann an r\303\251amh"
+   "shocr\303\272 don am rithe rogha a dh\303\251anamh. Is iad A go G na samhlacha CNN de DLSS 2 agu"
+   "s 3; is \303\251 K an tsamhail claochlad\303\241in de DLSS 4, an \303\255omh\303\241 is fearr ar"
+   " chostas GPU n\303\255os airde, J a deirfi\303\272r le n\303\255os l\303\272 taibhs\303\255 agus"
+   " roinnt caochadh; is iad na litreacha n\303\255os d\303\251ana\303\255 litreacha na n-amanna rit"
+   "he n\303\255os nua\303\255. Titeann litir nach bhfuil ag an am rithe",
+   " luchtaithe ar ais go R\303\251amhshocr\303\272. Tagann s\303\251 i bhfeidhm ar an gc\303\251ad "
+   "fhr\303\241ma eile.",
+   "M\303\263d an uasghr\303\241daitheora: c\303\251 mh\303\251ad n\303\255os l\303\272 n\303\241 an"
+   " sc\303\241ile\303\241n a rindre\303\241lann an cro\303\255. Rindre\303\241il ardchaighde\303"
+   "\241in ag thart ar 2/3 den mh\303\251id aschuir, Cothrom ag thart ar 58%, Feidhm\303\255ocht ag "
+   "1/2, Ultra-Fheidhm\303\255ocht ag 1/3 (c\303\263imheasa gach uasghr\303\241d\303\263ra f\303\251"
+   "in); Coinn\303\255onn d\303\272chasach an m\303\251id aschuir agus n\303\255 dh\303\251anann s"
+   "\303\251 ach frith-ailias. Roghna\303\255onn an c\303\263ras 'Quality' go huathoibr\303\255och, "
+   "n\303\263 'Balanced' m\303\241 bh\303\255onn n\303\255os m\303\263 n\303\241 1440 l\303\255ne i "
+   "gceist. Cuirtear an cro\303\255 ar an eolas faoin m\303\251id",
+   " at\303\241 ag teast\303\241il do gach fr\303\241ma.",
+   "G\303\251ar\303\272 a chuireann an t-uasghr\303\241daitheoir i bhfeidhm ar a aschur, i gc\303"
+   "\251atad\303\241n; cialla\303\255onn 0 go bhfuil s\303\251 m\303\272chta. D\303\251anann FSR g"
+   "\303\251ar\303\272 tr\303\255 ch\303\251im ar leith d\303\241 chuid f\303\251in. N\303\255l aon "
+   "gh\303\251ar\303\272 i gceist le DLSS 2.5.1 n\303\241 le leaganacha n\303\255os d\303\251ana\303"
+   "\255, agus d\303\251anann siad neamhaird de; \303\241fach, cuireann OptiScaler a ch\303\251im RC"
+   "AS i bhfeidhm ag an d\303\251ine seo, do DLSS agus XeSS araon. Tagann an t-athr\303\272 i bhfeid"
+   "hm ar an gc\303\251ad fhr\303\241ma eile.",
    "Rith an cro\303\255 agus an tiom\303\241na\303\255 f\303\255se ar shn\303\241itheanna ar leithli"
    "gh, ionas go gcoinn\303\255onn an taispe\303\241int a chad\303\241ns nuair a bh\303\255onn an cr"
    "o\303\255 ag stad agus nuair a bh\303\255onn forlu\303\255 idir an cro\303\255 agus an slabhra s"
@@ -11008,10 +11151,22 @@ static const struct
    " radhairc chro\303\255.",
    "Taispe\303\241in barra teidil agus teorainneacha na fuinneoige.",
    "Socraigh an leithead saincheaptha don fhuinneog taispe\303\241na.",
+   "An t-eolaire \303\263nar l\303\263d\303\241iltear an leabharlann XeSS (libxess.dll). R\303\251am"
+   "hshocr\303\272: 'upscalers/xess' laistigh d'eolaire RetroArch.",
    "Gan aon diall \303\263n am a iarradh sa cro\303\255. \303\232s\303\241id le haghaidh sc\303\241i"
    "le\303\241in R\303\241ta Athnuachana Athraitheach (G-Sync, FreeSync, HDMI 2.1 VRR).",
    "Tiom\303\241na\303\255 Wi-Fi le h\303\272s\303\241id. (Atos\303\272 ag teast\303\241il)",
    "Scanadh le haghaidh l\303\255onra\303\255 gan sreang agus nasc a bhun\303\272.",
+   "Athra\303\255onn s\303\251 go c\303\263ip den phlean cumhachta gn\303\255omhach Windows a choinn"
+   "\303\255onn an pr\303\263ise\303\241la\303\255 ag luas ioml\303\241n - staid \303\255osta agus u"
+   "asta an phr\303\263ise\303\241la\303\255 ag 100%, tosa\303\255ocht fuinnimh ar fheidhm\303\255oc"
+   "ht - gan aon chro\303\255the p\303\241irce\303\241ilte, d\303\251anann s\303\251 athmheas\303"
+   "\272n\303\272 ar staideanna feidhm\303\255ochta gach 5 soicind in ionad gach 15 ms, agus coinn"
+   "\303\255onn s\303\251 naisc PCI Express, calafoirt USB agus naisc USB 3 as coigilt cumhachta, ag"
+   " gearradh gn\303\255omha\303\255ocht cur isteach eithne agus moilleanna m\303\272scailte. N\303"
+   "\255 bha",
+   "ineann s\303\251 ach nuair a bh\303\255onn s\303\251 plug\303\241ilte isteach. Athch\303\263ir"
+   "\303\255tear an plean bunaidh ar scor.",
    "Agus an Plean Cumhachta \303\215seal-Latency ar si\303\272l, coinnigh cro\303\255 gach pr\303"
    "\263ise\303\241la\303\255 as a staideanna d\303\255omhaoin freisin, ionas nach g\303\241 d\303"
    "\272iseacht roimh rith. Tarraing\303\255onn an pr\303\263ise\303\241la\303\255 an chumhacht ioml"
@@ -11772,7 +11927,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (254566u
+      (sizeof(msg_hash_ga_blob) == (259126u
 #ifdef ANDROID
        + 390u
 #endif
@@ -13917,6 +14072,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -14780,6 +14936,23 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_DIRECTORY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_AUTO_MASK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_INTENSITY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_LOCAL_TONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_1,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_2,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_3,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE_FOLLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_CINEMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_NATURAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_PACING,
@@ -14804,6 +14977,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSR_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -14967,7 +15141,24 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_A,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_B,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_C,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_D,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_E,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_F,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_G,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_H,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_I,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_J,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_K,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_L,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_M,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_N,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_NOT_IN_RUNTIME,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_O,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
@@ -14975,6 +15166,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_SHARPNESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
@@ -15015,6 +15207,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_XESS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER,
@@ -15604,7 +15797,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
@@ -16344,6 +16536,16 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_DIRECTORY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_AUTO_MASK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_INTENSITY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_TONE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_PRESET,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_SKIN_STRUCTURE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_STYLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DXGI_PRESENT,
@@ -16362,6 +16564,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FSR_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -16471,6 +16674,9 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER_PRESET,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER_QUALITY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER_SHARPNESS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
@@ -16508,9 +16714,11 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_XESS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN_IDLE_DISABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,

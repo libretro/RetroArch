@@ -1401,6 +1401,7 @@ static const struct
    char s_e6e43c7d[49];
    char s_c1ddd207[47];
    char s_ded83500[40];
+   char s_69c06e41[7];
    char s_690802fe[12];
    char s_7895cc5b[25];
    char s_e46faa42[16];
@@ -2214,6 +2215,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[31];
+   char s_e09bad69[10];
+   char s_f66c7b67[10];
    char s_b9d37039[169];
    char s_d0a04fe4[15];
    char s_c682e4e2[17];
@@ -5798,6 +5801,7 @@ static const struct
    "Al\304\235ustigo de surmeta\304\265a proporcio (horizontala)",
    "Al\304\235ustigo de surmeta\304\265a proporcio (vertikala)",
    "A\305\255tomate \305\235argi preferatan surmeta\304\265on",
+   "Amba\305\255",
    "Surmeta\304\265oj",
    "Surmeta\304\265o de \"lightgun\"",
    "Musa surmeta\304\265o",
@@ -6619,6 +6623,8 @@ static const struct
 #endif
 #endif
    "Malebligi labortablan kunmeton",
+   "Defa\305\255lta",
+   "Defa\305\255lta",
    "Via grafika pelilo ne estas kongrua kun la kuranta videa pelilo en RetroArch, retropa\305\235ant"
    "e al la pelilo %s. Bonvolu rekomencigi RetroArch, por ke la \305\235an\304\235oj efiki\304\235u.",
    "Videa filtrilo",
@@ -9152,7 +9158,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171349u
+      (sizeof(msg_hash_eo_blob) == (171376u
 #ifdef ANDROID
        + 312u
 #endif
@@ -10984,6 +10990,7 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -11796,6 +11803,8 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,

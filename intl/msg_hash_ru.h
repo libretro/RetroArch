@@ -1438,6 +1438,7 @@ static const struct
    char s_e6e43c7d[87];
    char s_c1ddd207[89];
    char s_ded83500[40];
+   char s_69c06e41[7];
    char s_690802fe[15];
    char s_7895cc5b[65];
    char s_e46faa42[36];
@@ -2245,6 +2246,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[66];
+   char s_e09bad69[24];
+   char s_f66c7b67[24];
    char s_cc973e8a[11];
    char s_b9d37039[294];
    char s_d0a04fe4[36];
@@ -8325,6 +8328,7 @@ static const struct
    "\213\320\271 \321\200\320\265\320\266\320\270\320\274)",
    "\320\220\320\262\321\202\320\276\320\267\320\260\320\263\321\200\321\203\320\267\320\272\320\260"
    " \320\276\320\262\320\265\321\200\320\273\320\265\321\217",
+   "\320\236\320\261\320\260",
    "\320\236\320\262\320\265\321\200\320\273\320\265\320\270",
    "\320\222\320\262\320\276\320\264 \321\201\320\262\320\265\321\202\320\276\320\262\320\276\320"
    "\263\320\276 \320\277\320\270\321\201\321\202\320\276\320\273\320\265\321\202\320\260 \321\201 "
@@ -9849,6 +9853,8 @@ static const struct
    "\320\236\321\202\320\272\320\273\321\216\321\207\320\270\321\202\321\214 \320\272\320\276\320"
    "\274\320\277\320\276\320\267\320\270\321\206\320\270\321\216 \320\276\320\272\320\276\320\275"
    "\320\275\320\276\320\263\320\276 \320\274\320\265\320\275\321\216",
+   "\320\237\320\276 \321\203\320\274\320\276\320\273\321\207\320\260\320\275\320\270\321\216",
+   "\320\237\320\276 \321\203\320\274\320\276\320\273\321\207\320\260\320\275\320\270\321\216",
    "\320\222\320\270\320\264\320\265\320\276",
    "\320\223\321\200\320\260\321\204\320\270\321\207\320\265\321\201\320\272\320\270\320\271 \320"
    "\264\321\200\320\260\320\271\320\262\320\265\321\200 \321\201\320\270\321\201\321\202\320\265"
@@ -19303,7 +19309,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ru_blob_check[
-      (sizeof(msg_hash_ru_blob) == (309177u
+      (sizeof(msg_hash_ru_blob) == (309232u
 #ifdef ANDROID
        + 547u
 #endif
@@ -21171,6 +21177,7 @@ static const msg_hash_id_t msg_hash_ru_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -21977,6 +21984,8 @@ static const msg_hash_id_t msg_hash_ru_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,

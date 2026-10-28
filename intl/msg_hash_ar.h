@@ -1429,6 +1429,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[42];
+   char s_e09bad69[19];
+   char s_f66c7b67[19];
    char s_cc973e8a[35];
    char s_b9d37039[242];
    char s_d0a04fe4[24];
@@ -4793,6 +4795,8 @@ static const struct
 #endif
    "\330\252\330\271\330\267\331\212\331\204 \330\252\331\203\331\210\331\212\331\206 \330\263\330"
    "\267\330\255 \330\247\331\204\331\205\331\203\330\252\330\250",
+   "\330\247\331\204\330\247\331\201\330\252\330\261\330\247\330\266\331\212",
+   "\330\247\331\204\330\247\331\201\330\252\330\261\330\247\330\266\331\212",
    "\331\206\330\270\330\247\331\205 \330\252\330\264\330\272\331\212\331\204 \330\247\331\204\331"
    "\201\331\212\330\257\331\212\331\210",
    "\331\205\330\264\330\272\331\204 \330\247\331\204\330\261\330\263\331\210\331\205\330\247\330"
@@ -7916,7 +7920,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (106913u
+      (sizeof(msg_hash_ar_blob) == (106951u
 #ifdef HAVE_LAKKA
        + 287u
 #endif
@@ -9543,6 +9547,8 @@ static const msg_hash_id_t msg_hash_ar_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,

@@ -2092,6 +2092,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[31];
+   char s_e09bad69[10];
+   char s_f66c7b67[10];
    char s_b9d37039[173];
    char s_d0a04fe4[13];
    char s_c682e4e2[13];
@@ -6267,6 +6269,8 @@ static const struct
 #endif
 #endif
    "Desktop Compositie Deactiveren",
+   "Standaard",
+   "Standaard",
    "Uw grafische stuurprogramma is niet compatibel met de huidige video driver in RetroArch, die ter"
    "ugvalt op de %s driver. Herstart RetroArch om de wijzigingen door te voeren.",
    "Videofilters",
@@ -8645,7 +8649,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (173060u
+      (sizeof(msg_hash_nl_blob) == (173080u
 #ifdef ANDROID
        + 375u
 #endif
@@ -11170,6 +11174,8 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,

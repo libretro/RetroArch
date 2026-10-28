@@ -1298,6 +1298,7 @@ static const struct
    char s_e6e43c7d[37];
    char s_c1ddd207[41];
    char s_ded83500[29];
+   char s_69c06e41[7];
    char s_690802fe[10];
    char s_7895cc5b[21];
    char s_e46faa42[18];
@@ -1998,6 +1999,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[26];
+   char s_e09bad69[10];
+   char s_f66c7b67[10];
    char s_b9d37039[179];
    char s_d0a04fe4[12];
    char s_c682e4e2[13];
@@ -5355,6 +5358,7 @@ static const struct
    "\303\232prava aspektu p\305\231ekryt\303\255 (krajina)",
    "\303\232prava p\305\231ekryvn\303\251ho aspektu (portr\303\251t)",
    "Preferovan\303\251 Auto-P\305\231ekryt\303\255",
+   "Oboj\303\255",
    "P\305\231ekryvy",
    "P\305\231ekryt\303\255 Lightgunu",
    "P\305\231ekryt\303\255 my\305\241\303\255",
@@ -6075,6 +6079,8 @@ static const struct
 #endif
 #endif
    "Zak\303\241zat slo\305\276en\303\255 plochy",
+   "V\303\275choz\303\255",
+   "V\303\275choz\303\255",
    "V\303\241\305\241 grafick\303\275 ovlada\304\215 nen\303\255 kompatibiln\303\255 s aktu\303\241l"
    "n\303\255m video ovlada\304\215em v RetroArch, tak\305\276e se vr\303\241t\303\255 k %s ovlada"
    "\304\215i. Restartujte pros\303\255m RetroArch, aby se zm\304\233ny projevily.",
@@ -8802,7 +8808,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162107u
+      (sizeof(msg_hash_cs_blob) == (162134u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10452,6 +10458,7 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -11151,6 +11158,8 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,

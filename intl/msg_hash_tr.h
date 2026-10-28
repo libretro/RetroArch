@@ -1343,6 +1343,7 @@ static const struct
    char s_e6e43c7d[32];
    char s_c1ddd207[31];
    char s_ded83500[41];
+   char s_69c06e41[9];
    char s_690802fe[11];
    char s_7895cc5b[20];
    char s_e46faa42[16];
@@ -2075,6 +2076,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[42];
+   char s_e09bad69[12];
+   char s_f66c7b67[12];
    char s_b9d37039[202];
    char s_d0a04fe4[15];
    char s_c682e4e2[17];
@@ -5585,6 +5588,7 @@ static const struct
    "(Manzara) Kaplama En Boy Ayar\304\261",
    "(Portre) Kaplama En Boy Ayar\304\261",
    "Tercih Edilen Kaplamay\304\261 Otomatik Y\303\274kle",
+   "\304\260kiside",
    "Kaplamalar",
    "Lightgun Kaplamas\304\261",
    "Fare Kaplamas\304\261",
@@ -6339,6 +6343,8 @@ static const struct
 #endif
 #endif
    "Masa\303\274st\303\274 Bile\305\237imi Devre D\304\261\305\237\304\261 B\304\261rak",
+   "Varsay\304\261lan",
+   "Varsay\304\261lan",
    "Grafik s\303\274r\303\274c\303\274n\303\274z RetroArch'taki mevcut video s\303\274r\303\274c\303"
    "\274s\303\274 ile uyumlu de\304\237il ve %s s\303\274r\303\274c\303\274s\303\274ne geri d\303"
    "\266n\303\274l\303\274yor. L\303\274tfen de\304\237i\305\237ikliklerin ge\303\247erli olmas\304"
@@ -9186,7 +9192,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169955u
+      (sizeof(msg_hash_tr_blob) == (169988u
 #ifdef ANDROID
        + 340u
 #endif
@@ -10890,6 +10896,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -11621,6 +11628,8 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,

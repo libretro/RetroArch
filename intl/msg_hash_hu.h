@@ -1375,6 +1375,7 @@ static const struct
    char s_e6e43c7d[38];
    char s_c1ddd207[38];
    char s_ded83500[45];
+   char s_69c06e41[11];
    char s_690802fe[20];
    char s_7895cc5b[22];
    char s_e46faa42[14];
@@ -2144,6 +2145,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[31];
+   char s_e09bad69[17];
+   char s_f66c7b67[17];
    char s_cc973e8a[7];
    char s_b9d37039[186];
    char s_d0a04fe4[15];
@@ -5824,6 +5827,7 @@ static const struct
    "R\303\241t\303\251t k\303\251par\303\241ny hangol\303\241s (fekv\305\221)",
    "R\303\241t\303\251t k\303\251par\303\241ny hangol\303\241s (\303\241ll\303\263)",
    "A prefer\303\241lt r\303\241t\303\251t automatikus bet\303\266lt\303\251se",
+   "Mindkett\305\221",
    "K\303\251perny\305\221r\303\241t\303\251tek",
    "R\303\241t\303\251t f\303\251nypisztoly",
    "R\303\241t\303\251t eg\303\251r",
@@ -6622,6 +6626,8 @@ static const struct
 #endif
 #endif
    "Asztali composition letilt\303\241sa",
+   "Alap\303\251rtelmezett",
+   "Alap\303\251rtelmezett",
    "Vide\303\263",
    "A grafikus illeszt\305\221 nem kompatibilis a RetroArch jelenlegi vide\303\263illesz\305\221j"
    "\303\251vel, vissza\303\241ll\303\241s a %s illeszt\305\221re. Ind\303\255tsa \303\272jra a Retr"
@@ -9801,7 +9807,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (187708u
+      (sizeof(msg_hash_hu_blob) == (187753u
 #ifdef ANDROID
        + 316u
 #endif
@@ -11607,6 +11613,7 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -12375,6 +12382,8 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,

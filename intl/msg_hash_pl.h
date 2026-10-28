@@ -1525,6 +1525,7 @@ static const struct
    char s_e6e43c7d[40];
    char s_c1ddd207[40];
    char s_ded83500[45];
+   char s_69c06e41[4];
    char s_690802fe[10];
    char s_7895cc5b[32];
    char s_e46faa42[16];
@@ -2351,6 +2352,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[29];
+   char s_e09bad69[10];
+   char s_f66c7b67[10];
    char s_cc973e8a[6];
    char s_b9d37039[167];
    char s_d0a04fe4[12];
@@ -6256,6 +6259,7 @@ static const struct
    "(Pejza\305\274) Regulacja proporcji nak\305\202adki",
    "(Portret) Regulacja proporcji nak\305\202adki",
    "Automatycznie \305\202aduj preferowan\304\205 nak\305\202adk\304\231",
+   "Oba",
    "Nak\305\202adki",
    "Nak\305\202adka pistoletu \305\233wietlnego",
    "Nak\305\202adka myszy",
@@ -7092,6 +7096,8 @@ static const struct
 #endif
 #endif
    "Wy\305\202\304\205cz kompozycj\304\231 pulpitu",
+   "Domy\305\233lny",
+   "Domy\305\233lny",
    "Wideo",
    "Sterownik grafiki nie jest kompatybilny z bie\305\274\304\205cym sterownikiem wideo w RetroArch,"
    " powr\303\263t do sterownika %s. Uruchom ponownie RetroArch, aby zmiany odnios\305\202y efekt.",
@@ -10217,7 +10223,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (200318u
+      (sizeof(msg_hash_pl_blob) == (200342u
 #ifdef ANDROID
        + 385u
 #endif
@@ -12246,6 +12252,7 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -13071,6 +13078,8 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,

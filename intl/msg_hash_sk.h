@@ -1543,6 +1543,7 @@ static const struct
    char s_e6e43c7d[41];
    char s_c1ddd207[41];
    char s_ded83500[44];
+   char s_69c06e41[4];
    char s_690802fe[10];
    char s_7895cc5b[25];
    char s_e46faa42[13];
@@ -2354,6 +2355,8 @@ static const struct
 #endif
 #endif
    char s_f4341e25[38];
+   char s_e09bad69[12];
+   char s_f66c7b67[12];
    char s_b9d37039[165];
    char s_79f9b43b[23];
    char s_1249554a[22];
@@ -6485,6 +6488,7 @@ static const struct
    "(Krajinka) \303\232prava pomeru str\303\241n overlay",
    "(Portr\303\251t) \303\232prava pomeru str\303\241n overlay",
    "Automaticky na\304\215\303\255ta\305\245 preferovan\303\275 overlay",
+   "Obe",
    "Prekrytia",
    "Sveteln\303\241 zbra\305\210 overlay",
    "My\305\241 overlay",
@@ -7310,6 +7314,8 @@ static const struct
 #endif
 #endif
    "Vypn\303\272\305\245 kompoz\303\255ciu pracovnej plochy",
+   "Predvolen\303\251",
+   "Predvolen\303\251",
    "V\303\241\305\241 grafick\303\275 ovl\303\241da\304\215 nie je kompatibiln\303\275 s aktu\303"
    "\241lnym video ovl\303\241da\304\215om v RetroArch, prep\303\255na sa na ovl\303\241da\304\215 %"
    "s. Pre uplatnenie zmien re\305\241tartujte RetroArch.",
@@ -11071,7 +11077,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (217938u
+      (sizeof(msg_hash_sk_blob) == (217966u
 #ifdef ANDROID
        + 389u
 #endif
@@ -13173,6 +13179,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -13983,6 +13990,8 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DXGI_PRESENT,
