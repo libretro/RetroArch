@@ -229,6 +229,20 @@ VLA (Variable Length Array)
 Do not use VLAs (Variable Length Array) in C source files. These are not
 C89-compliant.
 
+String literals
+---------------
+Keep string literals within C90's guaranteed limit of 509 characters,
+excluding the terminating null character. The limit applies AFTER adjacent
+string literals are concatenated: splitting a long string across quoted
+lines does not fix it. Count the resulting string, not the source spelling
+of escape sequences; UTF-8 text can occupy multiple bytes per character.
+
+This also applies to MSG_HASH text, help messages and strings expanded from
+macros or included headers. Shorten the text or use separately stored strings
+combined at runtime where necessary. Do not suppress -Woverlength-strings
+to hide a new violation. Guard platform-specific messages for their platform;
+shared message headers are compiled by legacy targets too.
+
 Struct initialization
 ---------------------
 If a struct is set in stone - its ABI is fixed and not subject to change -
