@@ -26,6 +26,8 @@
 
 #include <libretro_dspfilter.h>
 
+#include "dsp_round.h"
+
 struct panning_data
 {
    float left[2];
@@ -81,8 +83,8 @@ static void panning_process_i16(void *data,
                     + (int64_t)right * pan->left_i[1];
       int64_t r     = (int64_t)left * pan->right_i[0]
                     + (int64_t)right * pan->right_i[1];
-      l = (l >= 0) ? ((l + 32768) >> 16) : -(((-l) + 32768) >> 16);
-      r = (r >= 0) ? ((r + 32768) >> 16) : -(((-r) + 32768) >> 16);
+      l = dsp_round_shift(l, 16);
+      r = dsp_round_shift(r, 16);
       if      (l >  32767) l =  32767;
       else if (l < -32768) l = -32768;
       if      (r >  32767) r =  32767;

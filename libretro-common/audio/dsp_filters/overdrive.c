@@ -27,6 +27,8 @@
 #include <retro_inline.h>
 #include <libretro_dspfilter.h>
 
+#include "dsp_round.h"
+
 /* int16 path: the shaper is a table of the float curve over
  * [-16, 16) in Q20 input units, 128 points per unit, read with linear
  * interpolation; signals run in Q28 (1.0 = full scale). */
@@ -122,12 +124,10 @@ static void overdrive_process(void *data, struct dspfilter_output *output,
    overdrive_run((struct overdrive_data*)data, input->samples, input->frames);
 }
 
-/* Round-half-away-from-zero arithmetic shift, defined for negative
- * values without relying on implementation-defined >> of signed. */
+/* Round-half-away-from-zero arithmetic shift (see dsp_round.h). */
 static INLINE int64_t overdrive_rsh(int64_t v, unsigned s)
 {
-   int64_t h = (int64_t)1 << (s - 1);
-   return (v >= 0) ? ((v + h) >> s) : -(((-v) + h) >> s);
+   return dsp_round_shift(v, s);
 }
 
 static INLINE int32_t overdrive_shape_i(const struct overdrive_data *od,

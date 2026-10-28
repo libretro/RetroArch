@@ -28,6 +28,8 @@
 #include <retro_math.h>
 #include <libretro_dspfilter.h>
 
+#include "dsp_round.h"
+
 #define CHORUS_MAX_DELAY 4096
 #define CHORUS_DELAY_MASK (CHORUS_MAX_DELAY - 1)
 
@@ -164,16 +166,14 @@ static void chorus_process_i16(void *data,
        * The wet term folds the Q16 chorus and the Q16 gain: (gain*chorus)>>16. */
       acc = (int64_t)ch->mix_dry_i * in0
           + ((int64_t)ch->mix_wet_i * chorus_l >> 16);
-      v   = (acc >= 0) ?  (int32_t)(( acc + 32768) >> 16)
-                       : -(int32_t)((-acc + 32768) >> 16);
+      v   = (int32_t)dsp_round_shift(acc, 16);
       if      (v >  32767) v =  32767;
       else if (v < -32768) v = -32768;
       out[0] = (int16_t)v;
 
       acc = (int64_t)ch->mix_dry_i * in1
           + ((int64_t)ch->mix_wet_i * chorus_r >> 16);
-      v   = (acc >= 0) ?  (int32_t)(( acc + 32768) >> 16)
-                       : -(int32_t)((-acc + 32768) >> 16);
+      v   = (int32_t)dsp_round_shift(acc, 16);
       if      (v >  32767) v =  32767;
       else if (v < -32768) v = -32768;
       out[1] = (int16_t)v;

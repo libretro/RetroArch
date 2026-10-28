@@ -28,6 +28,8 @@
 #include <retro_miscellaneous.h>
 #include <libretro_dspfilter.h>
 
+#include "dsp_round.h"
+
 struct echo_channel
 {
    float *buffer;
@@ -163,9 +165,9 @@ static void echo_process_i16(void *data,
 
       /* echo *= amp (Q16 * Q16 -> Q16). */
       p      = echo_l * echo->amp_q;
-      echo_l = (p >= 0) ? ((p + 32768) >> 16) : -(((-p) + 32768) >> 16);
+      echo_l = dsp_round_shift(p, 16);
       p      = echo_r * echo->amp_q;
-      echo_r = (p >= 0) ? ((p + 32768) >> 16) : -(((-p) + 32768) >> 16);
+      echo_r = dsp_round_shift(p, 16);
 
       left   = (int64_t)in0 * 65536 + echo_l;   /* Q16 */
       right  = (int64_t)in1 * 65536 + echo_r;
@@ -175,8 +177,8 @@ static void echo_process_i16(void *data,
          int32_t fbq = echo->channels[c].feedback_q;
          int64_t fl  = echo_l * fbq;   /* Q32 */
          int64_t fr  = echo_r * fbq;
-         fl = (fl >= 0) ? ((fl + 32768) >> 16) : -(((-fl) + 32768) >> 16); /* Q16 */
-         fr = (fr >= 0) ? ((fr + 32768) >> 16) : -(((-fr) + 32768) >> 16);
+         fl = dsp_round_shift(fl, 16); /* Q16 */
+         fr = dsp_round_shift(fr, 16);
 
          echo->channels[c].buffer_i[(echo->channels[c].ptr << 1) + 0] =
                echo_sat_q16((int64_t)in0 * 65536 + fl);
@@ -187,14 +189,12 @@ static void echo_process_i16(void *data,
                (echo->channels[c].ptr + 1) % echo->channels[c].frames;
       }
 
-      v = (left >= 0) ?  (int32_t)(( left + 32768) >> 16)
-                      : -(int32_t)((-left + 32768) >> 16);
+      v = (int32_t)dsp_round_shift(left, 16);
       if      (v >  32767) v =  32767;
       else if (v < -32768) v = -32768;
       out[0] = (int16_t)v;
 
-      v = (right >= 0) ?  (int32_t)(( right + 32768) >> 16)
-                       : -(int32_t)((-right + 32768) >> 16);
+      v = (int32_t)dsp_round_shift(right, 16);
       if      (v >  32767) v =  32767;
       else if (v < -32768) v = -32768;
       out[1] = (int16_t)v;

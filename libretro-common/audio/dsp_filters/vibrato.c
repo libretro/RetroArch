@@ -29,6 +29,8 @@
 #include <retro_math.h>
 #include <libretro_dspfilter.h>
 
+#include "dsp_round.h"
+
 #define sqr(a) ((a) * (a))
 
 #define VIBRATO_BASE_DELAY_SEC 0.002f /* 2 ms */
@@ -69,17 +71,13 @@ static int32_t hermite_interp_i16(int32_t x, const int16_t *y)
    int32_t r;
 
    p   = acc * x;
-   acc = ((p >= 0) ?  ((p + 32768) >> 16)
-                   : -(((-p) + 32768) >> 16)) + c2 * 65536;
+   acc = (dsp_round_shift(p, 16)) + c2 * 65536;
    p   = acc * x;
-   acc = ((p >= 0) ?  ((p + 32768) >> 16)
-                   : -(((-p) + 32768) >> 16)) + c1 * 65536;
+   acc = (dsp_round_shift(p, 16)) + c1 * 65536;
    p   = acc * x;
-   acc = ((p >= 0) ?  ((p + 32768) >> 16)
-                   : -(((-p) + 32768) >> 16)) + c0 * 65536;
+   acc = (dsp_round_shift(p, 16)) + c0 * 65536;
    /* acc is Q16 of 2*result; result = acc / (2 * 65536) = acc / 131072. */
-   r   = (acc >= 0) ?  (int32_t)(( acc + 65536) >> 17)
-                    : -(int32_t)((-acc + 65536) >> 17);
+   r   = (int32_t)dsp_round_shift(acc, 17);
    if      (r >  32767) r =  32767;
    else if (r < -32768) r = -32768;
    return r;

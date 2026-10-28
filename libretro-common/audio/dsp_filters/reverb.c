@@ -28,6 +28,8 @@
 #include <retro_inline.h>
 #include <libretro_dspfilter.h>
 
+#include "dsp_round.h"
+
 struct comb
 {
    float *buffer;
@@ -98,11 +100,16 @@ static INLINE int64_t rsat_q16(int64_t v)
    return v;
 }
 
+/* A Q32 product rounded to Q16, half away from zero. */
+static INLINE int64_t rround_q16(int64_t p)
+{
+   return dsp_round_shift(p, 16);
+}
+
 /* Q16 multiply with round-half-away-from-zero, for the int16 path. */
 static INLINE int64_t rmul_q16(int64_t x, int32_t g)
 {
-   int64_t p = x * (int64_t)g;
-   return (p >= 0) ? ((p + 32768) >> 16) : -(((-p) + 32768) >> 16);
+   return rround_q16(x * (int64_t)g);
 }
 
 static INLINE int64_t comb_process_i16(struct comb *c, int64_t input)
@@ -201,8 +208,7 @@ static int32_t revmodel_process_i16(struct revmodel *rev, int32_t in)
       mono_out  = allpass_process_i16(&rev->allpassL[i], mono_out);
 
    res = (int64_t)in * rev->dry_q + rmul_q16(mono_out, rev->wet1_q);   /* Q16 */
-   v   = (res >= 0) ?  (int32_t)(( res + 32768) >> 16)
-                    : -(int32_t)((-res + 32768) >> 16);
+   v   = (int32_t)rround_q16(res);
    if      (v >  32767) v =  32767;
    else if (v < -32768) v = -32768;
    return v;

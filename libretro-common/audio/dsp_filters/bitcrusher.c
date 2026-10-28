@@ -26,6 +26,8 @@
 
 #include <libretro_dspfilter.h>
 
+#include "dsp_round.h"
+
 struct bitcrusher_data
 {
    int32_t held_i[2];
@@ -56,8 +58,7 @@ static float bitcrusher_quantize(float x, float scale)
 static int32_t bitcrusher_quantize_i16(int32_t s, int32_t scale)
 {
    int64_t num = (int64_t)s * scale;
-   int64_t q   = (num >= 0) ? ((num + 16384) >> 15)
-                            : -(((-num) + 16384) >> 15);
+   int64_t q   = dsp_round_shift(num, 15);
    int64_t y;
 
    num = q * 32768;
@@ -103,7 +104,7 @@ static int16_t bitcrusher_mix_i16(int32_t in, int32_t held, int32_t mix_q16)
 {
    int64_t d = (int64_t)(held - in) * mix_q16;
    int64_t v;
-   d = (d >= 0) ? ((d + 32768) >> 16) : -(((-d) + 32768) >> 16);
+   d = dsp_round_shift(d, 16);
    v = in + d;
    if      (v >  32767)
       v =  32767;

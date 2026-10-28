@@ -30,6 +30,8 @@
 #include <retro_math.h>
 #include <libretro_dspfilter.h>
 
+#include "dsp_round.h"
+
 #define PHASER_LFO_SHAPE 4.0
 #define PHASER_LFO_SKIP_SAMPLES 20
 
@@ -134,8 +136,7 @@ static void phaser_process(void *data, struct dspfilter_output *output,
 
 static INLINE int64_t phaser_rsh(int64_t v, unsigned s)
 {
-   int64_t h = (int64_t)1 << (s - 1);
-   return (v >= 0) ? ((v + h) >> s) : -(((-v) + h) >> s);
+   return dsp_round_shift(v, s);
 }
 
 static INLINE int32_t phaser_sat(int64_t v)
