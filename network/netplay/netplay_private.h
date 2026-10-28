@@ -523,7 +523,7 @@ enum netplay_flags
    /* Are we the server? */
    NETPLAY_FLAG_IS_SERVER                     = (1 << 1),
    NETPLAY_FLAG_NAT_TRAVERSAL                 = (1 << 2),
-   /* Have we checked whether CRCs are valid at all? */
+   /* Has a check matched since the last state we loaded? */
    NETPLAY_FLAG_CRC_VALIDITY_CHECKED          = (1 << 3),
    /* Are they valid? */
    NETPLAY_FLAG_CRCS_VALID                    = (1 << 4),
@@ -687,6 +687,8 @@ struct netplay
 
    /* Frequency with which to check CRCs */
    uint32_t check_frames;
+   /* The frame of the last state loaded from the host */
+   uint32_t crc_load_frame;
 
    /* How far behind did we fall? */
    uint32_t catch_up_behind;

@@ -7,7 +7,9 @@
  * the RAM, to stand in for a large one. NETPLAY_E2E_DESYNC: frames run
  * after the first state load before the RAM is upset once.
  * NETPLAY_E2E_PACE_MS: milliseconds slept a frame (4 if unset), to make
- * one peer lag the other.
+ * one peer lag the other. NETPLAY_E2E_JUNK: the state carries a count of
+ * its own serializations, which differs between peers and never reaches
+ * the RAM, as a core that stores a timestamp would.
  *
  * Paced at about 250 frames a second by default: null video runs
  * unthrottled, and the logs would grow by the hundred thousand lines. */
@@ -43,6 +45,8 @@ static uint8_t  ram[RAM_SIZE];
 static uint32_t frame;
 static uint32_t pixels[64];
 static size_t   pad;
+static uint32_t junk;
+static uint32_t serials;
 static unsigned desync_after;
 static unsigned since_load;
 static unsigned pace_ms;
@@ -87,9 +91,12 @@ void retro_init(void)
    const char *l = getenv("NETPLAY_E2E_LOG");
    const char *u = getenv("NETPLAY_E2E_DESYNC");
    const char *m = getenv("NETPLAY_E2E_PACE_MS");
+   const char *j = getenv("NETPLAY_E2E_JUNK");
    pad      = p ? (size_t)strtoul(p, NULL, 10) : 0;
    desync_after = u ? (unsigned)strtoul(u, NULL, 10) : 0;
    pace_ms  = m ? (unsigned)strtoul(m, NULL, 10) : 4;
+   junk     = (j && *j == '1') ? 4 : 0;
+   serials  = 0;
    loaded   = false;
    since_load = 0;
    log_file = l ? fopen(l, "w") : NULL;
@@ -170,7 +177,7 @@ void retro_run(void)
    pace(pace_ms);
 }
 
-size_t retro_serialize_size(void) { return 4 + RAM_SIZE + pad; }
+size_t retro_serialize_size(void) { return 4 + RAM_SIZE + junk + pad; }
 
 bool retro_serialize(void *data, size_t size)
 {
@@ -180,10 +187,15 @@ bool retro_serialize(void *data, size_t size)
       return false;
    memcpy(d, &frame, 4);
    memcpy(d + 4, ram, RAM_SIZE);
+   if (junk)
+   {
+      serials++;
+      memcpy(d + 4 + RAM_SIZE, &serials, 4);
+   }
    /* the padding follows the RAM, so it compresses no better than a
     * real core's state */
    for (i = 0; i < pad; i++)
-      d[4 + RAM_SIZE + i] = (uint8_t)(ram[i % RAM_SIZE] ^ (i * 2654435761u >> 13));
+      d[4 + RAM_SIZE + junk + i] = (uint8_t)(ram[i % RAM_SIZE] ^ (i * 2654435761u >> 13));
    return true;
 }
 

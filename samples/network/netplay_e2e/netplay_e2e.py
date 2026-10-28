@@ -14,10 +14,14 @@ port's stick. Passes when:
   - a lockstep peer never re-runs a frame, but after a resync: lockstep
     asked for, lockstep for a state too large to roll back, and a
     lockstep host with a rollback client
-  - a lockstep client whose RAM is upset is caught at a check frame and
-    given the host's state: frames differ for a while, then never again,
-    also when the client lags the host and the state arrives labeled
-    with a frame it has not reached
+  - a client whose RAM is upset is caught at a check frame and given the
+    host's state: frames differ for a while, then never again; in
+    lockstep, also when the client lags the host and the state arrives
+    labeled with a frame it has not reached; in rollback, with input
+    latency, so some checks wait for the client to reach their frame
+  - a core whose states never hash alike (a count in them that differs
+    between peers) is resynced once at most past the join, then its
+    checks are turned off
 
 Usage: netplay_e2e.py /path/to/retroarch /path/to/netplay_e2e_libretro.so
 """
@@ -113,7 +117,7 @@ def replays(order, start):
 
 
 def run(retroarch, core, analog, label, host_extra=None, client_extra=None,
-        pad=0, lockstep=(False, False), desync=0, client_pace=4):
+        pad=0, lockstep=(False, False), desync=0, client_pace=4, junk=False):
     d     = tempfile.mkdtemp(prefix="netplay_e2e_")
     nport = free_port(socket.SOCK_STREAM)
     rport = free_port(socket.SOCK_DGRAM)
@@ -127,7 +131,8 @@ def run(retroarch, core, analog, label, host_extra=None, client_extra=None,
             "network_remote_enable": "true",
             "network_remote_enable_user_p1": "true",
             "network_remote_base_port": str(rport)}))
-        env = dict(os.environ, NETPLAY_E2E_PAD=str(pad))
+        env = dict(os.environ, NETPLAY_E2E_PAD=str(pad),
+                   NETPLAY_E2E_JUNK="1" if junk else "0")
         host_log, client_log = (os.path.join(d, n + ".log")
                                 for n in ("host", "client"))
 
@@ -216,6 +221,15 @@ def run(retroarch, core, analog, label, host_extra=None, client_extra=None,
                          % (label, moved, len(shared)))
         if not analog and moved:
             fails.append("%s: the stick crossed with sync off (%d frames)" % (label, moved))
+        if junk:
+            with open(os.path.join(d, "client.txt"), errors="replace") as f:
+                text  = f.read()
+            loads = text.count("Loaded the host's state")
+            if loads > 2:
+                fails.append("%s: the client loaded the host's state %d times"
+                             % (label, loads))
+            if "desync checks are off" not in text:
+                fails.append("%s: the CRC checks were never turned off" % label)
         for dev in host_dev + client_dev:
             if dev & ~0xff00 not in (0, 1):
                 fails.append("%s: the core was given device 0x%x" % (label, dev))
@@ -253,6 +267,12 @@ def main():
     # is labeled with when it arrives
     fails += run(retroarch, core, True, "lockstep, a desync mended, slow client",
                  lock, lock, lockstep=(True, True), desync=200, client_pace=12)
+    # the host's input latency makes the client lag the frames the host
+    # confirms, so some CRCs arrive before the client has run their frame
+    fails += run(retroarch, core, True, "rollback, a desync mended",
+                 {"netplay_input_latency_frames_min": "8"}, None, desync=200)
+    fails += run(retroarch, core, True, "states that never hash alike",
+                 junk=True)
     # past the size rollback keeps one of per frame: lockstep unasked
     fails += run(retroarch, core, True, "a 40 MB state", pad=40 << 20,
                  lockstep=(True, True))

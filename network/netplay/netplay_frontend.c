@@ -3898,6 +3898,41 @@ static bool netplay_resolve_input(netplay_t *netplay,
    return ret;
 }
 
+/* Compare the host's CRC for a frame with ours. The first check at or
+ * after a state we loaded from the host decides whether CRCs can be
+ * compared at all: that state is the host's, so a mismatch there means
+ * this core's hashes differ between peers whatever they run, and a
+ * resync could never mend it. Any later mismatch is a desync, and asks
+ * for the host's state. */
+static void netplay_check_frame_crc(netplay_t *netplay,
+      struct delta_frame *delta, uint32_t remote_crc)
+{
+   uint32_t local_crc;
+
+   if (     !(netplay->flags & NETPLAY_FLAG_CRCS_VALID)
+         || !remote_crc
+         || (int32_t)(delta->frame - netplay->crc_load_frame) < 0)
+      return;
+
+   local_crc = netplay_frame_local_crc(netplay, delta);
+   /* lockstep: this frame was not hashed */
+   if (!local_crc && (netplay->flags & NETPLAY_FLAG_LOCKSTEP))
+      return;
+
+   if (local_crc == remote_crc)
+      netplay->flags |= NETPLAY_FLAG_CRC_VALIDITY_CHECKED;
+   else if (!(netplay->flags & NETPLAY_FLAG_CRC_VALIDITY_CHECKED))
+   {
+      RARCH_WARN("[Netplay] CRCs differ from the host's right after its "
+            "state was loaded; desync checks are off for this core.\n");
+      netplay->flags &= ~NETPLAY_FLAG_CRCS_VALID;
+   }
+   else if (netplay->check_frames)
+      netplay_cmd_request_savestate(netplay);
+   else
+      RARCH_WARN("[Netplay] Netplay CRCs mismatch!\n");
+}
+
 static void netplay_handle_frame_hash(netplay_t *netplay,
       struct delta_frame *delta)
 {
@@ -3913,34 +3948,7 @@ static void netplay_handle_frame_hash(netplay_t *netplay,
       }
    }
    else
-   {
-      if ((netplay->flags & NETPLAY_FLAG_CRCS_VALID) && delta->crc)
-      {
-         /* We have a remote CRC, so check it. */
-         uint32_t local_crc = netplay_frame_local_crc(netplay, delta);
-
-         if (!local_crc && (netplay->flags & NETPLAY_FLAG_LOCKSTEP))
-            return;
-
-         if (local_crc != delta->crc)
-         {
-            /* If the very first check frame is wrong,
-               they probably just don't work. */
-            if (!(netplay->flags & NETPLAY_FLAG_CRC_VALIDITY_CHECKED))
-            {
-               netplay->flags &= ~NETPLAY_FLAG_CRCS_VALID;
-               return;
-            }
-
-            if (netplay->check_frames)
-               netplay_cmd_request_savestate(netplay);
-            else
-               RARCH_WARN("[Netplay] Netplay CRCs mismatch!\n");
-         }
-         else
-            netplay->flags |= NETPLAY_FLAG_CRC_VALIDITY_CHECKED;
-      }
-   }
+      netplay_check_frame_crc(netplay, delta, delta->crc);
 }
 
 /**
@@ -6784,18 +6792,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (!found)
                break;
 
+            /* We've already replayed up to this frame, so we can check it
+             * directly */
             if (buffer[0] <= netplay->other_frame_count)
-            {
-               /* We've already replayed up to this frame, so we can check it
-                * directly */
-               uint32_t local_crc = netplay_frame_local_crc(
-                     netplay, &netplay->buffer[tmp_ptr]);
-
-               /* Problem! (lockstep: if this frame was hashed at all) */
-               if (     buffer[1] != local_crc
-                     && (local_crc || !(netplay->flags & NETPLAY_FLAG_LOCKSTEP)))
-                  netplay_cmd_request_savestate(netplay);
-            }
+               netplay_check_frame_crc(netplay, &netplay->buffer[tmp_ptr],
+                     buffer[1]);
             /* We'll have to check it when we catch up */
             else
                netplay->buffer[tmp_ptr].crc = buffer[1];
@@ -7058,9 +7059,13 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
 
             /* Make sure our states are correct. */
-            netplay->flags &= ~NETPLAY_FLAG_SAVESTATE_REQUEST_OUTSTANDING;
+            netplay->flags &= ~(NETPLAY_FLAG_SAVESTATE_REQUEST_OUTSTANDING
+                              | NETPLAY_FLAG_CRC_VALIDITY_CHECKED);
+            netplay->crc_load_frame                = load_frame_count;
             netplay->other_ptr                     = load_ptr;
             netplay->other_frame_count             = load_frame_count;
+            RARCH_LOG("[Netplay] Loaded the host's state at frame %u.\n",
+                  load_frame_count);
 
             break;
          }
