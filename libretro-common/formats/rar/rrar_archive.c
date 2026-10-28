@@ -177,8 +177,8 @@ typedef struct rrar_unpack
    uint8_t    *out;
    /* pos, size and watch_at are counted from out[0], which is the
     * member's octet base: 0 when the member is unpacked whole, further
-    * on as a member streamed out through a buffer of its window's size
-    * moves along (rrar_archive_extract_sink()) */
+    * on each time a member streamed out round a ring comes round to its
+    * start (rrar_archive_extract_sink()) */
    uint64_t    pos;
    uint64_t    size;
 
@@ -221,10 +221,12 @@ typedef struct rrar_unpack
    uint8_t            *work;      /* the filters' second copy */
 
    /* Streamed out: where out[0] is in the member, how much of it has
-    * been handed over, and to whom */
+    * been handed over, and to whom; out is a ring, and ext where it
+    * ended the last time round, 0 before it has come round */
    uint64_t            base;
    uint64_t            flushed;
    size_t              cap;       /* the size of out */
+   size_t              ext;
    int               (*sink)(void *ud, const uint8_t *data, size_t len);
    void               *sink_ud;
    uint8_t            *fbuf;      /* a filter's block, filtered */
@@ -1114,29 +1116,29 @@ static int unpack_watch(rrar_unpack_t *u)
 
 /* A member streamed out: what of it is final goes to the sink in order -
  * up to the next filter's block, which goes once it is all there and
- * filtered in a copy, the buffer keeping the octets as they were for
- * the matches still to come - and the buffer then moves along, keeping
- * a window's worth behind where it has got to. */
+ * filtered in a copy, the ring keeping the octets as they were for the
+ * matches still to come. The ring is the window, a filter's block and
+ * two steps: once the next step would not fit before its end, the
+ * decoder goes on from its start, and a match reaching back before the
+ * start is copied from the end and on from the start. */
 #define RRAR_SINK_SLACK 0x10000
 /* how often what is final is handed over; a test makes it smaller, and
  * with RRAR_SINK_ALWAYS streams even a member that would fit whole */
 #ifndef RRAR_SINK_STEP
 #define RRAR_SINK_STEP  0x100000
 #endif
-/* how far past the window the buffer reaches, at most: the window moves
- * down once that much more is final, so each octet is moved about once
- * where the window is no bigger than this; a test makes it smaller */
-#ifndef RRAR_SINK_EXTRA_MAX
-#define RRAR_SINK_EXTRA_MAX 0x4000000
-#endif
-
-/* How far the buffer reaches past @window: as far again, within bounds */
-static uint64_t unpack_sink_extra(uint64_t window)
+/* @len octets of the member from @at, which may be in the end of the
+ * ring before its start: the part before, then the part after */
+static const uint8_t *unpack_ring(const rrar_unpack_t *u, uint64_t at,
+      size_t *len)
 {
-   if (window > RRAR_SINK_EXTRA_MAX)
-      return RRAR_SINK_EXTRA_MAX;
-   return window < RRAR_SINK_STEP ? RRAR_SINK_STEP : window;
+   if (at >= u->base)
+      return u->out + (size_t)(at - u->base);
+   if (*len > u->base - at)
+      *len = (size_t)(u->base - at);
+   return u->out + u->ext - (size_t)(u->base - at);
 }
+
 static int unpack_emit(rrar_unpack_t *u, const uint8_t *data, size_t len)
 {
    if (!len)
@@ -1149,7 +1151,6 @@ static int unpack_emit(rrar_unpack_t *u, const uint8_t *data, size_t len)
 static int unpack_flush(rrar_unpack_t *u)
 {
    uint64_t at = u->base + u->pos;
-   uint64_t keep;
    int      r;
 
    for (;;)
@@ -1165,9 +1166,13 @@ static int unpack_flush(rrar_unpack_t *u)
          if (f->start < to)
             to = f->start;
       }
-      if ((r = unpack_emit(u, u->out + (size_t)(u->flushed - u->base),
-                  (size_t)(to - u->flushed))) != RRAR_OK)
-         return r;
+      while (u->flushed < to)
+      {
+         size_t         n = (size_t)(to - u->flushed);
+         const uint8_t *d = unpack_ring(u, u->flushed, &n);
+         if ((r = unpack_emit(u, d, n)) != RRAR_OK)
+            return r;
+      }
       if (u->next_filter >= u->num_filters || u->flushed < f->start
             || at < f->start + f->length)
          break;
@@ -1177,7 +1182,16 @@ static int unpack_flush(rrar_unpack_t *u)
          return RRAR_ERROR_MEM;
       if (f->length > FILTER5_BLOCK_MAX)
          return RRAR_ERROR_DATA;
-      memcpy(u->fbuf, u->out + (size_t)(f->start - u->base), f->length);
+      {
+         size_t got = 0;
+         while (got < f->length)
+         {
+            size_t         n = f->length - got;
+            const uint8_t *d = unpack_ring(u, f->start + got, &n);
+            memcpy(u->fbuf + got, d, n);
+            got += n;
+         }
+      }
       do
       {
          if ((r = filter_apply(u, &u->filters[u->next_filter], u->fbuf))
@@ -1191,23 +1205,21 @@ static int unpack_flush(rrar_unpack_t *u)
          return r;
    }
 
-   /* along, keeping a window's worth and what is not handed over yet */
-   keep = at > u->window ? at - u->window : 0;
-   if (keep > u->flushed)
-      keep = u->flushed;
-   if (keep - u->base >= unpack_sink_extra(u->window))
+   /* round to the start, once the next step would not fit; what is not
+    * handed over yet, and the window, stay in the end until the decoder
+    * gets that far again, which the ring is sized for */
+   if (u->pos + RRAR_SINK_STEP + RRAR_SINK_SLACK > u->cap)
    {
-      size_t shift = (size_t)(keep - u->base);
-      memmove(u->out, u->out + shift, (size_t)u->pos - shift);
-      u->base += shift;
-      u->pos  -= shift;
-      u->size -= shift;
+      u->ext   = (size_t)u->pos;
+      u->base += u->pos;
+      u->size -= u->pos;
+      u->pos   = 0;
    }
    u->watch_at = u->pos + RRAR_SINK_STEP;
-   if (u->watch_at > u->cap - RRAR_SINK_SLACK)
-      u->watch_at = u->cap - RRAR_SINK_SLACK;
-   /* a filter's block waiting longer than the buffer can hold */
-   if (u->watch_at <= u->pos && u->pos < u->size)
+   /* a filter's block waiting longer than the ring can keep */
+   if (     u->flushed < u->base
+         && u->ext - (size_t)(u->base - u->flushed)
+            < u->watch_at + RRAR_SINK_SLACK)
       return RRAR_ERROR_UNSUPPORTED;
    return RRAR_OK;
 }
@@ -1219,14 +1231,28 @@ static INLINE void emit_literal(rrar_unpack_t *u, uint8_t byte)
    u->out[(size_t)u->pos++] = byte;
 }
 
-/* A match that reaches back before the member's start, or to no
- * distance at all: what is not there is zeros. */
-static size_t copy_match_edge(uint8_t *out, size_t pos, uint32_t offset, uint32_t length)
+/* A match that reaches back before out[0]: from the end of the ring
+ * where it has come round (@ext, 0 when not), and on from out[0]; or
+ * else before the member's start, or to no distance at all, where what
+ * is not there is zeros. */
+static size_t copy_match_edge(uint8_t *out, size_t pos, uint32_t offset,
+      uint32_t length, size_t ext)
 {
    uint8_t *dst = out + pos;
 
    if (offset == 0)
       memset(dst, 0, length);
+   else if (ext && offset - pos <= ext)
+   {
+      size_t   back = offset - pos;
+      uint32_t k    = back < length ? (uint32_t)back : length;
+      uint32_t i;
+
+      memmove(dst, out + ext - back, k);
+      /* (from out[0] on, pos + k behind) */
+      for (i = k; i < length; i++)
+         dst[i] = out[i - k];
+   }
    else
    {
       size_t   before = offset - pos;
@@ -1244,7 +1270,7 @@ static size_t copy_match_edge(uint8_t *out, size_t pos, uint32_t offset, uint32_
 /* @length bytes from @offset back, to @out at @pos. Past the member's end
  * they are not written. The position after them. */
 static INLINE size_t copy_match(uint8_t *out, size_t pos, size_t size,
-      uint32_t offset, uint32_t length)
+      uint32_t offset, uint32_t length, size_t ext)
 {
    uint8_t       *dst;
    const uint8_t *src;
@@ -1253,7 +1279,7 @@ static INLINE size_t copy_match(uint8_t *out, size_t pos, size_t size,
    if (length > size - pos)
       length = (uint32_t)(size - pos);
    if (offset == 0 || offset > pos)
-      return copy_match_edge(out, pos, offset, length);
+      return copy_match_edge(out, pos, offset, length, ext);
    next = pos + length;
 
    dst = out + pos;
@@ -1280,7 +1306,8 @@ static INLINE size_t copy_match(uint8_t *out, size_t pos, size_t size,
 
 static void emit_match(rrar_unpack_t *u, uint32_t offset, uint32_t length)
 {
-   u->pos = copy_match(u->out, (size_t)u->pos, (size_t)u->size, offset, length);
+   u->pos = copy_match(u->out, (size_t)u->pos, (size_t)u->size, offset,
+         length, u->ext);
 }
 
 /* What an LZ block's symbols stand for. */
@@ -1331,6 +1358,7 @@ static int unpack_lz(rrar_unpack_t *u)
    size_t      size = (size_t)u->size;
    /* (to the member's end, or to where the watcher is next told) */
    size_t      stop = u->watch_at < u->size ? (size_t)u->watch_at : size;
+   size_t      ext  = u->ext;
    int         r    = RRAR_OK;
 
    while (pos < stop)
@@ -1476,7 +1504,7 @@ static int unpack_lz(rrar_unpack_t *u)
       }
       u->last_offset = offs;
       u->last_length = len;
-      pos = copy_match(out, pos, size, offs, len);
+      pos = copy_match(out, pos, size, offs, len, ext);
    }
 
    u->br  = br;
@@ -1895,7 +1923,7 @@ static int unpack50(rrar_unpack_t *u)
          }
          if (rrar_br_overrun(&br))
             return RRAR_ERROR_DATA;
-         pos = copy_match(out, pos, size, (uint32_t)dist, len);
+         pos = copy_match(out, pos, size, (uint32_t)dist, len, u->ext);
       }
       if (block_done || pos >= size)
          break;
@@ -1951,14 +1979,15 @@ static int unpack_member(const uint8_t *packed, size_t packed_len,
    return r;
 }
 
-/* The buffer a member is streamed out through: its window, a filter's
- * largest block, and room to go on decoding while one is waited for */
-/* The window, as far past it as it moves by, and room for a filter's
- * block */
+/* The ring a member is streamed out through: its window or a filter's
+ * largest block and a step past it, whichever is more, and two steps
+ * more for what is decoded after the start comes round */
 static uint64_t unpack_sink_cap(uint64_t window)
 {
-   return window + unpack_sink_extra(window) + FILTER5_BLOCK_MAX
-      + 2 * RRAR_SINK_STEP + RRAR_SINK_SLACK;
+   uint64_t keep = window;
+   if (keep < (uint64_t)FILTER5_BLOCK_MAX + RRAR_SINK_STEP)
+      keep = (uint64_t)FILTER5_BLOCK_MAX + RRAR_SINK_STEP;
+   return keep + 2 * RRAR_SINK_STEP + 2 * RRAR_SINK_SLACK;
 }
 
 /* A member of @size unpacked through a buffer of unpack_sink_cap(),

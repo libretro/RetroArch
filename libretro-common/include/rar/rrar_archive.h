@@ -241,10 +241,10 @@ int rrar_archive_extract_to(rrar_archive_t *a, uint32_t index,
  * @ud         : for @sink
  *
  * The same as rrar_archive_extract(), for a member too big to have
- * whole in memory: one bigger than its window and 6 MiB more is
- * unpacked through a buffer of that size, which moves along it. The
- * CRC is checked once all of it has been handed over: on an error what
- * @sink was given is not to be kept.
+ * whole in memory: one bigger than its window or 5 MiB, whichever is
+ * more, and a little over 2 MiB more is unpacked round a ring of that
+ * size. The CRC is checked once all of it has been handed over: on an
+ * error what @sink was given is not to be kept.
  *
  * Returns: RRAR_OK, RRAR_ERROR_CANCELLED if @sink stopped it, or
  * another negative RRAR_ERROR_* code.
