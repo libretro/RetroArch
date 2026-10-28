@@ -13,9 +13,10 @@
 /* Vector tiers: SSE2 where the build has it (all x86-64), AVX2 picked at
  * create from the SIMD mask, NEON on ARMv8 and ARM builds with NEON.
  * Each works out every test of a run of pixels at once, branch-free, and
- * gives the plain code's output to the bit. */
-#if defined(__SSE2__) || defined(_M_X64) \
-   || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+ * gives the plain code's output to the bit. SOFTFILTER_NO_SIMD leaves
+ * them out. */
+#if !defined(SOFTFILTER_NO_SIMD) && (defined(__SSE2__) || defined(_M_X64) \
+   || (defined(_M_IX86_FP) && _M_IX86_FP >= 2))
 #define DEDITHER_HAVE_SSE2 1
 #include <emmintrin.h>
 
@@ -46,7 +47,8 @@
 #define DEDITHER_ZEROUPPER()
 #endif
 #endif
-#elif defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(_M_ARM64)
+#elif !defined(SOFTFILTER_NO_SIMD) && (defined(__ARM_NEON) \
+   || defined(__ARM_NEON__) || defined(_M_ARM64))
 #define DEDITHER_HAVE_NEON 1
 #include <arm_neon.h>
 #endif

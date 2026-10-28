@@ -155,7 +155,8 @@ typedef unsigned long snes_ntsc_rgb_t;
  * one vector lane per entry, and half the table where unsigned long is
  * 8 bytes. Elsewhere entries stay snes_ntsc_rgb_t for the scalar
  * blitters. */
-#if !defined(SNES_NTSC_NO_SIMD) && SNES_NTSC_OUT_DEPTH == 16 && \
+#if !defined(SNES_NTSC_NO_SIMD) && !defined(SOFTFILTER_NO_SIMD) && \
+	SNES_NTSC_OUT_DEPTH == 16 && \
 	(defined(__SSE2__) || defined(_M_X64) || \
 	 (defined(_M_IX86_FP) && _M_IX86_FP >= 2) || \
 	 defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(_M_ARM64))

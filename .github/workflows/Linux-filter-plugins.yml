@@ -11,10 +11,9 @@ name: CI Linux filter plugins
 # with the plugins and the harness built under ASan, UBSan and
 # LeakSanitizer, and under ThreadSanitizer.  The NTSC, 2xBR, NTSC-CRT,
 # 2xSaI-family, Phosphor2x, Blargg NTSC SNES and De-Dither filters are
-# also held
-# byte for byte to output hashes recorded from their earlier
+# also held byte for byte to output hashes recorded from their earlier
 # implementations
-# (samples/gfx/{ntsc,xbr,crt}_filter_golden and samples/gfx/filter_golden).
+# (samples/gfx/{ntsc,crt}_filter_golden and samples/gfx/filter_golden).
 
 on:
   push:
@@ -26,7 +25,6 @@ on:
       - 'libretro-common/include/libretro_dspfilter.h'
       - 'samples/gfx/filter_plugins/**'
       - 'samples/gfx/ntsc_filter_golden/**'
-      - 'samples/gfx/xbr_filter_golden/**'
       - 'samples/gfx/crt_filter_golden/**'
       - 'samples/gfx/filter_golden/**'
       - '.github/workflows/Linux-filter-plugins.yml'
@@ -37,7 +35,6 @@ on:
       - 'libretro-common/include/libretro_dspfilter.h'
       - 'samples/gfx/filter_plugins/**'
       - 'samples/gfx/ntsc_filter_golden/**'
-      - 'samples/gfx/xbr_filter_golden/**'
       - 'samples/gfx/crt_filter_golden/**'
       - 'samples/gfx/filter_golden/**'
       - '.github/workflows/Linux-filter-plugins.yml'
@@ -92,8 +89,7 @@ jobs:
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: |
           set -eu
-          for t in ntsc_filter_golden xbr_filter_golden crt_filter_golden \
-                   filter_golden; do
+          for t in ntsc_filter_golden crt_filter_golden filter_golden; do
              make -C samples/gfx/$t check
              make -C samples/gfx/$t clean
              make -C samples/gfx/$t check SANITIZER=address,undefined
