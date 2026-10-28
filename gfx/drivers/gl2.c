@@ -7455,6 +7455,14 @@ static bool gl2_frame(void *data, const void *frame,
             video_info->views_layout.ui_dims);
 #endif
 
+#if defined(GL2_VIEWS) && defined(HAVE_VIDEO_WINDOWS) \
+   && defined(HAVE_GFX_WIDGETS)
+   /* Nothing else to show here: the logo on the cleared black */
+   if (views && video_info->windows && video_info->windows->logo)
+      gfx_widgets_draw_idle_logo(video_info,
+            video_info->windows->logo_texture);
+#endif
+
    /* Touch overlays would straddle both eyes. */
 #ifdef HAVE_OVERLAY
    if (     (gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu
