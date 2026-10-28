@@ -183,6 +183,8 @@ int main(void)
       static float in[4096 * 2], ref[4096 * 8 * 2], out[4096 * 8 * 2];
       uint64_t cpu = cpu_features_get();
       static const resampler_simd_mask_t tiers[] = {
+         0,
+         RESAMPLER_SIMD_NEON,
          RESAMPLER_SIMD_SSE,
          RESAMPLER_SIMD_SSE | RESAMPLER_SIMD_AVX,
          RESAMPLER_SIMD_SSE | RESAMPLER_SIMD_AVX | RESAMPLER_SIMD_AVX512

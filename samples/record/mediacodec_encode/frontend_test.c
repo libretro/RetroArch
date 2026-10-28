@@ -67,6 +67,7 @@ void command_playlist_push_write(
 
 runloop_state_t *runloop_state_get_ptr(void) { return &loop; }
 retro_time_t cpu_features_get_time_usec(void) { return wall_us; }
+uint64_t cpu_features_get(void) { return 0; }
 int audio_driver_record_tap_install(struct record_audio_tap *tap)
 {
    if (tap_busy) return 0;

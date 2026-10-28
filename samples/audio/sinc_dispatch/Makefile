@@ -12,7 +12,9 @@ TARGET = sinc_dispatch_test
 # features_cpu.c decides which kernels the output check may run.
 CPPFLAGS += -D_POSIX_C_SOURCE=200112L
 SOURCES = sinc_dispatch_test.c $(COMMON)/memmap/memalign.c \
- $(COMMON)/features/features_cpu.c
+ $(COMMON)/features/features_cpu.c \
+ $(COMMON)/compat/compat_strl.c \
+ $(COMMON)/time/rtime.c
 # The armeabi assembly kernels in place of the NEON intrinsics.
 ifeq ($(NEON_ASM),1)
 CPPFLAGS += -DHAVE_ARM_NEON_ASM_OPTIMIZATIONS

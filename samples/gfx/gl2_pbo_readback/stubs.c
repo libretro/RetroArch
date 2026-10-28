@@ -23,6 +23,7 @@ void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
 static settings_t stub_settings;
 settings_t *config_get_ptr(void) { return &stub_settings; }
 retro_time_t cpu_features_get_time_usec(void) { return 0; }
+uint64_t cpu_features_get(void) { return 0; }
 uint32_t runloop_get_flags(void) { return 0; }
 static recording_state_t stub_recording;
 recording_state_t *recording_state_get_ptr(void) { return &stub_recording; }

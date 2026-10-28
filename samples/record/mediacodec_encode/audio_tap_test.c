@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../../../record/record_audio_tap.c"
+uint64_t cpu_features_get(void) { return 0; }
 static unsigned calls, fail_at;
 static uint64_t accepted;
 static int16_t expected[10000];

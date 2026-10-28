@@ -11,6 +11,7 @@
 #define AUDIO_PAUSE_TAIL_FRAMES 512
 static audio_driver_state_t audio_driver_st;
 #include "audio_tap_fragment.c"
+uint64_t cpu_features_get(void) { return 0; }
 static retro_atomic_int_t entered, release_pass;
 static unsigned pushes;
 static int submit(
