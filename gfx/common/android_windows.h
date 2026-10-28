@@ -40,6 +40,14 @@ void android_windows_update(void *owner, video_window_native_t *window,
 unsigned android_windows_poll(void *owner, video_window_event_t *events,
       unsigned capacity);
 void android_windows_destroy(void *owner, video_window_native_t *window);
+/* gfx_ctx_window_driver_t's keep and take: the window stays up, and
+ * Java is asked nothing */
+void android_windows_keep(void *owner, video_window_native_t *window);
+bool android_windows_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display);
+/* Main thread, once the next driver is up: a kept window nobody took
+ * goes */
+void android_windows_release_kept(void);
 /* Window @screen if @owner made it, else NULL */
 android_window_t *android_windows_find(void *owner, unsigned screen);
 

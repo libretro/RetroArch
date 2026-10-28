@@ -141,13 +141,31 @@ static void android_gfx_ctx_window_destroy(void *owner,
    android_windows_destroy(owner, window);
 }
 
+/* The EGL surface dies with this context's EGLDisplay; the next driver
+ * makes its own */
+static void android_gfx_ctx_window_keep(void *owner,
+      video_window_native_t *window)
+{
+   android_ctx_data_t *and = (android_ctx_data_t*)owner;
+   android_window_t *state = window ? (android_window_t*)window->state : NULL;
+   if (state && state->common.owner == owner && state->gl_surface)
+   {
+      egl_window_surface_free(&and->egl, (EGLSurface)state->gl_surface);
+      state->gl_surface = NULL;
+      state->gl_window  = NULL;
+   }
+   android_windows_keep(owner, window);
+}
+
 static const gfx_ctx_window_driver_t android_gfx_ctx_windows = {
    android_windows_create,
    android_windows_update,
    android_gfx_ctx_window_poll,
    android_gfx_ctx_window_bind_gl,
    android_gfx_ctx_window_present_gl,
-   android_gfx_ctx_window_destroy
+   android_gfx_ctx_window_destroy,
+   android_gfx_ctx_window_keep,
+   android_windows_take
 };
 #endif
 

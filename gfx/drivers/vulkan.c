@@ -6824,6 +6824,7 @@ static bool vulkan_views_make(vk_t *vk, struct vk_image *img, unsigned dims);
 static bool vulkan_views_retire(vk_t *vk, struct vk_image *img);
 #ifdef HAVE_VIDEO_WINDOWS
 static void vulkan_windows_free(vk_t *vk);
+static void vulkan_windows_take(vk_t *vk);
 #endif
 
 /* The views compositor, with these calls bound in */
@@ -8343,6 +8344,9 @@ static void *vulkan_init(const video_info_t *video)
    vk->context->flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
    vulkan_note_built(vk);
    vulkan_views_publish(vk);
+#ifdef HAVE_VIDEO_WINDOWS
+   vulkan_windows_take(vk);
+#endif
    return vk;
 
 error:
@@ -10851,11 +10855,13 @@ static void vulkan_views_ui_end(vk_t *vk, video_frame_info_t *video_info,
 #define VK_WINDOW_EVENTS 8
 
 /* Window @w let go of: its output retired, then the context's window,
- * and input stops mapping into it. Never waits: while its output is
- * not done the id stays live, and a later frame finishes it. */
-static void vulkan_window_retire(vk_t *vk, unsigned w)
+ * which @keep leaves up for the next driver where the context can, and
+ * input stops mapping into it. Never waits: while its output is not
+ * done the id stays live, and a later frame finishes it. */
+static void vulkan_window_retire(vk_t *vk, unsigned w, bool keep)
 {
-   struct vk_window *win = &vk->windows.win[w];
+   struct vk_window *win              = &vk->windows.win[w];
+   const gfx_ctx_window_driver_t *ctx = vk->ctx_driver->windows;
    if (!(vk->windows.held.live & (1u << w)))
       return;
    if (!(win->flags & VK_WINDOW_FLAG_CLOSE))
@@ -10867,7 +10873,10 @@ static void vulkan_window_retire(vk_t *vk, unsigned w)
    if (     (win->flags & VK_WINDOW_FLAG_OUTPUT)
          && !vulkan_output_retire(&win->output))
       return;
-   vk->ctx_driver->windows->destroy(vk->ctx_data, &win->native);
+   if (keep && ctx->keep)
+      ctx->keep(vk->ctx_data, &win->native);
+   else
+      ctx->destroy(vk->ctx_data, &win->native);
    memset(win, 0, sizeof(*win));
    vk->windows.held.live &= ~(1u << w);
 }
@@ -10880,7 +10889,7 @@ static void vulkan_window_attach(vk_t *vk,
    if (f)
       video_driver_attach_windows(f->window_screens[w], f->restore);
    vk->windows.held.failed |= 1u << w;
-   vulkan_window_retire(vk, w);
+   vulkan_window_retire(vk, w, false);
 }
 
 /* Window @w for @f's screens there, on @f's display */
@@ -10988,12 +10997,12 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       /* Those let go of on an earlier frame whose output is done now */
       for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
          if (vk->windows.win[w].flags & VK_WINDOW_FLAG_CLOSE)
-            vulkan_window_retire(vk, w);
+            vulkan_window_retire(vk, w, false);
    }
    video_windows_steps(&vk->windows.held, f, &retire, &create);
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (retire & (1u << w))
-         vulkan_window_retire(vk, w);
+         vulkan_window_retire(vk, w, false);
    if (!f)
       return;
    /* Marked after steps(), which clears the marks when this frame's
@@ -11209,7 +11218,8 @@ static void vulkan_windows_present(vk_t *vk,
 }
 
 /* The driver's teardown, after its own submissions: every window let
- * go of, waiting on each output's own fences */
+ * go of, waiting on each output's own fences, and left up where the
+ * context can keep it */
 static void vulkan_windows_free(vk_t *vk)
 {
    unsigned w;
@@ -11217,11 +11227,38 @@ static void vulkan_windows_free(vk_t *vk)
       return;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
    {
+      bool keep;
       if (!(vk->windows.held.live & (1u << w)))
          continue;
+      /* A window placement already dropped goes */
+      keep = !(vk->windows.win[w].flags & VK_WINDOW_FLAG_CLOSE);
       if (vk->windows.win[w].flags & VK_WINDOW_FLAG_OUTPUT)
          vulkan_output_finish(&vk->windows.win[w].output);
-      vulkan_window_retire(vk, w);
+      vulkan_window_retire(vk, w, keep);
+   }
+}
+
+/* The windows the last driver left up, adopted as they are: still
+ * shown, touches off-screen, until a frame draws them */
+static void vulkan_windows_take(vk_t *vk)
+{
+   static const video_views_layout_t no_layout;
+   static const video_views_map_t no_map;
+   unsigned w;
+   const gfx_ctx_window_driver_t *ctx = vk->ctx_driver
+      ? vk->ctx_driver->windows : NULL;
+   if (!ctx || !ctx->take)
+      return;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      struct vk_window *win = &vk->windows.win[w];
+      unsigned display      = 0;
+      if (!ctx->take(vk->ctx_data, w, &win->native, &display))
+         continue;
+      vk->windows.held.live       |= 1u << w;
+      vk->windows.held.display[w]  = display;
+      video_driver_publish_window_layout(w, win->native.generation,
+            display, &no_layout, &no_map, 0, win->native.dims);
    }
 }
 #endif

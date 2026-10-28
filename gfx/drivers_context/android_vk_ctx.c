@@ -351,7 +351,9 @@ static const gfx_ctx_window_driver_t android_gfx_ctx_vk_windows = {
    android_windows_poll,
    NULL, /* bind_gl */
    NULL, /* present_gl */
-   android_windows_destroy
+   android_windows_destroy,
+   android_windows_keep,
+   android_windows_take
 };
 
 const gfx_ctx_driver_t gfx_ctx_vk_android = {
