@@ -684,6 +684,73 @@ static uint32_t crc_msb(const crc_msb_t *m, uint32_t crc,
 #define CRC32_TARGET_ARM
 #endif
 
+/* Three chains of CRC32X, each a lane of 1 KiB, keep the instruction's
+ * latency of two or three cycles filled where one chain waits on it.
+ * The lanes are put back together as one moved on past a lane's zeros
+ * is a linear map of the register, a nibble at a time:
+ *    crc = on(on(c0) ^ c1) ^ c2
+ * crc32_arm_on[j][v] is v << 4j moved on 1024 zero octets. */
+#define CRC32_ARM_LANE 1024
+
+static const uint32_t crc32_arm_on[8][16] = {
+   {
+      0x00000000U, 0xF891F16FU, 0x2A52E49FU, 0xD2C315F0U, 0x54A5C93EU,
+      0xAC343851U, 0x7EF72DA1U, 0x8666DCCEU, 0xA94B927CU, 0x51DA6313U,
+      0x831976E3U, 0x7B88878CU, 0xFDEE5B42U, 0x057FAA2DU, 0xD7BCBFDDU,
+      0x2F2D4EB2U
+   },
+   {
+      0x00000000U, 0x89E622B9U, 0xC8BD4333U, 0x415B618AU, 0x4A0B8027U,
+      0xC3EDA29EU, 0x82B6C314U, 0x0B50E1ADU, 0x9417004EU, 0x1DF122F7U,
+      0x5CAA437DU, 0xD54C61C4U, 0xDE1C8069U, 0x57FAA2D0U, 0x16A1C35AU,
+      0x9F47E1E3U
+   },
+   {
+      0x00000000U, 0xF35F06DDU, 0x3DCF0BFBU, 0xCE900D26U, 0x7B9E17F6U,
+      0x88C1112BU, 0x46511C0DU, 0xB50E1AD0U, 0xF73C2FECU, 0x04632931U,
+      0xCAF32417U, 0x39AC22CAU, 0x8CA2381AU, 0x7FFD3EC7U, 0xB16D33E1U,
+      0x4232353CU
+   },
+   {
+      0x00000000U, 0x35095999U, 0x6A12B332U, 0x5F1BEAABU, 0xD4256664U,
+      0xE12C3FFDU, 0xBE37D556U, 0x8B3E8CCFU, 0x733BCA89U, 0x46329310U,
+      0x192979BBU, 0x2C202022U, 0xA71EACEDU, 0x9217F574U, 0xCD0C1FDFU,
+      0xF8054646U
+   },
+   {
+      0x00000000U, 0xE6779512U, 0x179E2C65U, 0xF1E9B977U, 0x2F3C58CAU,
+      0xC94BCDD8U, 0x38A274AFU, 0xDED5E1BDU, 0x5E78B194U, 0xB80F2486U,
+      0x49E69DF1U, 0xAF9108E3U, 0x7144E95EU, 0x97337C4CU, 0x66DAC53BU,
+      0x80AD5029U
+   },
+   {
+      0x00000000U, 0xBCF16328U, 0xA293C011U, 0x1E62A339U, 0x9E568663U,
+      0x22A7E54BU, 0x3CC54672U, 0x8034255AU, 0xE7DC0A87U, 0x5B2D69AFU,
+      0x454FCA96U, 0xF9BEA9BEU, 0x798A8CE4U, 0xC57BEFCCU, 0xDB194CF5U,
+      0x67E82FDDU
+   },
+   {
+      0x00000000U, 0x14C9134FU, 0x2992269EU, 0x3D5B35D1U, 0x53244D3CU,
+      0x47ED5E73U, 0x7AB66BA2U, 0x6E7F78EDU, 0xA6489A78U, 0xB2818937U,
+      0x8FDABCE6U, 0x9B13AFA9U, 0xF56CD744U, 0xE1A5C40BU, 0xDCFEF1DAU,
+      0xC837E295U
+   },
+   {
+      0x00000000U, 0x97E032B1U, 0xF4B16323U, 0x63515192U, 0x3213C007U,
+      0xA5F3F2B6U, 0xC6A2A324U, 0x51429195U, 0x6427800EU, 0xF3C7B2BFU,
+      0x9096E32DU, 0x0776D19CU, 0x56344009U, 0xC1D472B8U, 0xA285232AU,
+      0x3565119BU
+   }
+};
+
+static INLINE uint32_t crc32_arm_lane_on(uint32_t c)
+{
+   return crc32_arm_on[0][ c        & 15] ^ crc32_arm_on[1][(c >>  4) & 15]
+        ^ crc32_arm_on[2][(c >>  8) & 15] ^ crc32_arm_on[3][(c >> 12) & 15]
+        ^ crc32_arm_on[4][(c >> 16) & 15] ^ crc32_arm_on[5][(c >> 20) & 15]
+        ^ crc32_arm_on[6][(c >> 24) & 15] ^ crc32_arm_on[7][ c >> 28      ];
+}
+
 CRC32_TARGET_ARM
 static uint32_t crc32_arm(uint32_t crc, const uint8_t *data, size_t len)
 {
@@ -692,6 +759,24 @@ static uint32_t crc32_arm(uint32_t crc, const uint8_t *data, size_t len)
       crc = __crc32b(crc, *data);
       data++;
       len--;
+   }
+   while (len >= 3 * CRC32_ARM_LANE)
+   {
+      uint32_t c1 = 0, c2 = 0;
+      size_t   i;
+      for (i = 0; i < CRC32_ARM_LANE; i += 8)
+      {
+         uint64_t v0, v1, v2;
+         memcpy(&v0, data + i, sizeof(v0));
+         memcpy(&v1, data + CRC32_ARM_LANE + i, sizeof(v1));
+         memcpy(&v2, data + 2 * CRC32_ARM_LANE + i, sizeof(v2));
+         crc = __crc32d(crc, v0);
+         c1  = __crc32d(c1, v1);
+         c2  = __crc32d(c2, v2);
+      }
+      crc   = crc32_arm_lane_on(crc32_arm_lane_on(crc) ^ c1) ^ c2;
+      data += 3 * CRC32_ARM_LANE;
+      len  -= 3 * CRC32_ARM_LANE;
    }
    while (len >= 8)
    {
