@@ -171,7 +171,13 @@ bool nfs_init_cfg(const struct nfs_settings *new_cfg)
 void nfs_shutdown(void)
 {
    struct nfs_pool *old = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
-   if (old && retro_atomic_cas_ptr(&nfs_pool_ptr, old, NULL))
+   /* A slot still held is a call still in flight: a task the exit's
+    * drain left stuck on a dead server.  Unpublish the pool so nothing
+    * new takes from it, but do not free it under that call - the
+    * process is on its way out. */
+   if (     old
+         && retro_atomic_cas_ptr(&nfs_pool_ptr, old, NULL)
+         && !nfs_pool_busy(old))
       nfs_pool_free(old);
 }
 

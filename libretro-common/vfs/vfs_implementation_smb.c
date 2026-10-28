@@ -735,7 +735,13 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
 void smb_shutdown(void)
 {
    struct smb_pool *old = (struct smb_pool*)retro_atomic_load_acquire_ptr(&smb_pool_ptr);
-   if (old && retro_atomic_cas_ptr(&smb_pool_ptr, old, NULL))
+   /* A slot still held is a connection still in use: an open stream
+    * nobody closed, or a task the exit's drain left stuck on a dead
+    * share.  Unpublish the pool so nothing new takes from it, but do
+    * not free it under them - the process is on its way out. */
+   if (     old
+         && retro_atomic_cas_ptr(&smb_pool_ptr, old, NULL)
+         && !smb_pool_busy(old))
       smb_pool_free(old);
 }
 
