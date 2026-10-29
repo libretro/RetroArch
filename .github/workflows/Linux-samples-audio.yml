@@ -554,7 +554,7 @@ jobs:
           # audio/drivers/rwebaudio.c against a stand-in for its
           # JavaScript half: frames of the layout the page took go out
           # one plane per channel, and every byte count is in frames of
-          # that layout. Then emscripten/library_rwebaudio.js itself
+          # that layout. Then os/emscripten/library_rwebaudio.js itself
           # under Node with a mock AudioContext: the destination is
           # widened only past stereo and only as far as its
           # maxChannelCount allows, and a stereo one is left as it was.

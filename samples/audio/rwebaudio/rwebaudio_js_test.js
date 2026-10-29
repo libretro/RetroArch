@@ -1,4 +1,4 @@
-/* emscripten/library_rwebaudio.js under Node, against a mock
+/* os/emscripten/library_rwebaudio.js under Node, against a mock
  * AudioContext: the destination is widened only as far as its
  * maxChannelCount and only past stereo, passes channels through as
  * they are, and each queued buffer carries one plane per channel. A
@@ -42,7 +42,7 @@ const sandbox = {
    autoAddDeps: () => {},
 };
 vm.createContext(sandbox);
-vm.runInContext(fs.readFileSync(path.join(__dirname, "../../../emscripten/library_rwebaudio.js"), "utf8"), sandbox);
+vm.runInContext(fs.readFileSync(path.join(__dirname, "../../../os/emscripten/library_rwebaudio.js"), "utf8"), sandbox);
 check(lib !== null, "the library did not register");
 
 /* what emscripten makes of it: $X is X, the rest _X */
