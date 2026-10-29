@@ -276,7 +276,7 @@ int main(void)
       glslang_output out;
       struct slang_blob *vs, *fs;
       char key[33];
-      CHECK(slang_compile_pass_detached("a.slang", false, &out, key), "detached compile");
+      CHECK(slang_compile_pass_detached("a.slang", &out, key), "detached compile");
       slang_blob_table_stats(&n, &reused);
       CHECK(n == 0, "a detached compile lists nothing");
       CHECK(strlen(key) == 32, "the detached compile names the pass's key");
@@ -290,7 +290,7 @@ int main(void)
       CHECK(live.pass[0].vertex_blob == vs && live.pass[0].fragment_blob == fs,
             "by reference");
       /* a second offer of a listed pass is dropped, references and all */
-      CHECK(slang_compile_pass_detached("a.slang", false, &out, key), "detached compile again");
+      CHECK(slang_compile_pass_detached("a.slang", &out, key), "detached compile again");
       vs = slang_blob_ref(out.vertex_blob);
       glslang_output_free(&out);
       slang_blob_offer(key, vs, NULL);

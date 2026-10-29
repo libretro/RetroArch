@@ -27,19 +27,18 @@
 #include "../../verbosity.h"
 
 /* glslang's process state - its TLS key and the built-in symbol tables
- * every compile shares - is set up once per video driver and kept
- * while it lives, rather than per compile: finishing it frees the TLS
- * key under any other thread inside glslang, and the tables are most
- * of a compile's cost. Starting and finishing happen with no compile
- * in flight (video_driver_init_internal() before the video thread
- * exists, video_driver_free_internal() after it is gone); a compile
- * reads the state word alone. */
+ * every compile shares - is started once, before any thread compiles
+ * (video_driver_init_internal(), ahead of the video thread and the
+ * shader tasks), and kept for the life of the process: finishing it
+ * frees the TLS key under any thread still inside glslang, a task left
+ * running past the queue's exit included, and the tables are most of a
+ * compile's cost. A compile reads the state word alone. */
 #define GLSLANG_PROCESS_DOWN     0
 #define GLSLANG_PROCESS_STARTING 1
 #define GLSLANG_PROCESS_UP       2
 
 static retro_atomic_int_t glslang_process_state;
-static TBuiltInResource   glslang_resources;   /* fixed while up */
+static TBuiltInResource   glslang_resources;   /* fixed once up */
 
 static void glslang_resources_fill(TBuiltInResource *r)
 {
@@ -152,15 +151,6 @@ extern "C" void glslang_process_init(void)
    retro_atomic_store_release_int(&glslang_process_state, GLSLANG_PROCESS_UP);
 }
 
-extern "C" void glslang_process_deinit(void)
-{
-   if (!retro_atomic_cas_int(&glslang_process_state,
-            GLSLANG_PROCESS_UP, GLSLANG_PROCESS_STARTING))
-      return;
-   glslang::FinalizeProcess();
-   retro_atomic_store_release_int(&glslang_process_state, GLSLANG_PROCESS_DOWN);
-}
-
 static bool glslang_compile_spirv_impl(const char *src, EShLanguage language,
       std::vector<uint32_t> *spirv)
 {
@@ -217,7 +207,7 @@ extern "C" bool glslang_compile_spirv(const char *source,
 
    if (!source)
       return false;
-   /* a caller with no video driver around it: tools, harnesses */
+   /* a caller that started no video driver: tools, harnesses */
    if (retro_atomic_load_acquire_int(&glslang_process_state)
          != GLSLANG_PROCESS_UP)
    {

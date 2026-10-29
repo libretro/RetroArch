@@ -1185,7 +1185,6 @@ struct shader_precompile
    retro_atomic_int_t             live;    /* tasks not yet through */
    retro_atomic_int_t             stop;    /* the load ended */
    retro_atomic_int_t             waker;   /* the stepper's ident, or -1 */
-   bool                           hlsl_or_msl;
 };
 
 static void shader_precompile_unref(struct shader_precompile *p)
@@ -1230,7 +1229,7 @@ static void shader_precompile_handler(retro_task_t *task)
       /* an earlier pass names the same file: its stages are listed by
        * the time this pass's step runs, and the step takes them */
       retro_atomic_store_release_int(&slot->state, SHADER_PRECOMPILE_FAILED);
-   else if (slang_compile_pass_detached(p->path[i], p->hlsl_or_msl, &output,
+   else if (slang_compile_pass_detached(p->path[i], &output,
             slot->key))
    {
       slot->vs = slang_blob_ref(output.vertex_blob);
@@ -1421,7 +1420,6 @@ static struct shader_precompile *shader_precompile_start(
    struct video_shader *shader;
    struct shader_precompile *p = NULL;
    retro_task_t *task;
-   const char *ident;
    unsigned i, tasks, pushed;
 
    if (!task_queue_is_threaded())
@@ -1445,10 +1443,7 @@ static struct shader_precompile *shader_precompile_start(
          goto fail;
       p->n++;
    }
-   ident          = video_driver_get_ident();
-   p->hlsl_or_msl = ident && (   string_starts_with(ident, "d3d1")
-                              || string_is_equal(ident, "metal"));
-   tasks          = p->n < SHADER_PRECOMPILE_TASKS
+   tasks = p->n < SHADER_PRECOMPILE_TASKS
       ? p->n : SHADER_PRECOMPILE_TASKS;
    retro_atomic_int_init(&p->next, 0);
    retro_atomic_int_init(&p->refs, (int)tasks + 1);
@@ -3748,10 +3743,6 @@ void video_driver_free_internal(void)
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
-#if defined(HAVE_SLANG) && defined(HAVE_GLSLANG)
-   /* the driver and its thread are gone: no compile in flight */
-   glslang_process_deinit();
-#endif
    video_driver_set_hdr_output_mode(0);
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 0);
 
@@ -8069,7 +8060,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 
    video_st->movie_refused = false;
 #if defined(HAVE_SLANG) && defined(HAVE_GLSLANG)
-   /* before the video thread exists: no compile in flight */
+   /* before the video thread and the shader tasks exist */
    glslang_process_init();
 #endif
    /* Bound before any driver or wrapper exists: under threaded video

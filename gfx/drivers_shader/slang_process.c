@@ -1531,26 +1531,22 @@ static bool slang_compile_stage(const char *source,
          *compiler = "rslc";
          return true;
       }
-      /* glslang is one process-wide instance: a detached compile leaves
-       * the stage to the chain's own thread rather than enter it beside
-       * that thread, which tells the user */
-      if (detached)
-         return false;
-      /* the line a tester reports: which stage, of which file, and why */
+      /* the line a tester reports: which stage, of which file, and why;
+       * a detached compile tells the user nothing */
 #if defined(HAVE_GLSLANG)
-      RARCH_WARN("[Slang] rslc rejected the %s stage of \"%s\" (pass %.16s): %s; compiling it with glslang.\n",
-            stage == GLSLANG_COMPILE_STAGE_VERTEX ? "vertex" : "fragment",
-            path, key, err);
+      if (!detached)
+         RARCH_WARN("[Slang] rslc rejected the %s stage of \"%s\" (pass %.16s): %s; compiling it with glslang.\n",
+               stage == GLSLANG_COMPILE_STAGE_VERTEX ? "vertex" : "fragment",
+               path, key, err);
 #else
-      RARCH_ERR("[Slang] rslc rejected the %s stage of \"%s\" (pass %.16s): %s\n",
-            stage == GLSLANG_COMPILE_STAGE_VERTEX ? "vertex" : "fragment",
-            path, key, err);
+      if (!detached)
+         RARCH_ERR("[Slang] rslc rejected the %s stage of \"%s\" (pass %.16s): %s\n",
+               stage == GLSLANG_COMPILE_STAGE_VERTEX ? "vertex" : "fragment",
+               path, key, err);
 #endif
    }
 #endif
 #if defined(HAVE_GLSLANG)
-   if (detached)
-      return false;
    *compiler = "glslang";
    if (!glslang_compile_spirv(source, stage, &words, &nwords))
       return false;
@@ -1607,9 +1603,9 @@ bool glslang_compile_shader_cached(const char *shader_path,
 /* The compile of one pass.  Detached, it runs on a thread that is not
  * the chain's: it reads and compiles as the chain's thread would and
  * writes the cache, but neither asks the blob table nor lists in it,
- * prints no text, falls back to no other compiler and tells the user
- * nothing; @key_out (33 bytes) gets the pass's cache key, under which
- * the chain's thread offers the stages to the table (slang_blob_offer). */
+ * prints no text and tells the user nothing; @key_out (33 bytes) gets
+ * the cache key of the compiler that made the stages, under which the
+ * chain's thread offers them to the table (slang_blob_offer). */
 static bool slang_compile_pass(const char *shader_path,
       glslang_output *output, void *include_cache,
       const struct slang_text_target *text, bool detached, char *key_out)
@@ -1769,6 +1765,10 @@ static bool slang_compile_pass(const char *shader_path,
 #endif
 
       RARCH_LOG("[Slang] Compiled \"%s\" with %s.\n", shader_path, used);
+#if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
+      if (key_out && used != compiler)
+         strlcpy(key_out, fallback_filename, 33);
+#endif
 
       /* Save to cache under the compiler that produced the words, so a
        * fallback compile never answers for the other one. */
@@ -1822,20 +1822,13 @@ bool glslang_compile_shader_text(const char *shader_path,
          false, NULL);
 }
 
-bool slang_compile_pass_detached(const char *shader_path, bool hlsl_or_msl,
+bool slang_compile_pass_detached(const char *shader_path,
       glslang_output *output, char *key)
 {
-#if defined(HAVE_RSLC)
-   (void)hlsl_or_msl;
-#if defined(HAVE_GLSLANG)
-   /* under glslang the chain's thread compiles, as before */
-   if (!slang_prefer_rslc())
-      return false;
-#endif
+#if defined(HAVE_RSLC) || defined(HAVE_GLSLANG)
    return slang_compile_pass(shader_path, output, NULL, NULL, true, key);
 #else
    (void)shader_path;
-   (void)hlsl_or_msl;
    (void)output;
    (void)key;
    return false;

@@ -45,10 +45,10 @@ bool glslang_compile_spirv(const char *source,
       enum glslang_compile_stage stage,
       uint32_t **spirv, size_t *spirv_len);
 
-/* Start and finish glslang's process state, with no compile in
- * flight. A compile starts it itself when nothing did. */
+/* Starts glslang's process state, kept for the life of the process;
+ * before any thread compiles. A compile starts it itself when nothing
+ * did. */
 void glslang_process_init(void);
-void glslang_process_deinit(void);
 
 RETRO_END_DECLS
 
