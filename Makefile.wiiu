@@ -365,7 +365,7 @@ $(BUILD_DIR)/%.o: %.s %.depend
 %.depend: ;
 %.last: ;
 
-$(ELF2RPL):
+$(ELF2RPL): os/wiiu/wut/elf2rpl/main.cpp os/wiiu/wut/elf2rpl/elf.h
 	@$(if $(Q), echo MAKE $@,)
 	$(Q)$(MAKE) -C os/wiiu/wut/elf2rpl/
 

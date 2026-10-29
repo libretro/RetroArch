@@ -756,6 +756,20 @@ read(ElfFile &file, const std::string &filename)
          auto &sym = symTab[index];
          auto symType = sym.info & 0xf;
 
+         /* A symbol still undefined after the link is a weak reference
+          * nothing defined. The link already wrote its final value -
+          * zero, or a branch to itself - which does not depend on where
+          * the module loads, so there is nothing for the loader to do.
+          * Handed to it, the relocation names an undefined symbol and a
+          * branch to address zero no 24-bit displacement reaches. */
+         if (index != 0 && sym.shndx == elf::SHN_UNDEF)
+         {
+            if (verbose >= verbose_loaded_relocations)
+               std::cout << "Relocation at 0x" << std::hex << rela.offset
+                  << " against an undefined weak symbol dropped" << std::endl;
+            continue;
+         }
+
          if (symType == elf::STT_SECTION && sym.value == CodeAddress) {
             if (rela.offset < CodeAddress || rela.offset >= DataAddress) {
                std::cout << "Unexpected symbol referenced in relocation section " << name << std::endl;
