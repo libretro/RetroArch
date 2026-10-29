@@ -51,8 +51,9 @@ void openxr_host_stage_changed(openxr_host_t *h)
 }
 
 /* A recenter's remake: what the core drew in the old seated space keeps
- * its poses in the new, so its world moves with the screens. Run in the
- * swap's locked span: no headset frame shows the new space without it. */
+ * its poses in the new, so its world moves with the screens. The views
+ * handed out move here; a projection already published carries with
+ * the space the swap publishes. */
 static void openxr_host_carry(void *user, int from, int to)
 {
    openxr_host_t *h = (openxr_host_t*)user;
@@ -62,7 +63,6 @@ static void openxr_host_carry(void *user, int from, int to)
    for (i = 0; i < 4; i++)
       if (h->handed[i].seq == from)
          h->handed[i].seq = to;
-   openxr_frame_move_projection(h->frame, from, to);
 }
 
 static bool openxr_host_make_space(openxr_host_t *h,

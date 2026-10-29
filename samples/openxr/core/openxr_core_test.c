@@ -274,9 +274,19 @@ static XrSpace t_stage_space;
 static bool    t_in_stage_set;
 static XrPosef t_in_stage;
 static unsigned t_in_stage_invalid;
+/* Run as a track space is made, before the swap publishes it: a
+ * headset frame on another thread while the swap is under way. */
+static void (*t_at_remake)(void);
 static XRAPI_ATTR XrResult XRAPI_CALL t_create_space(XrSession s,
       const XrReferenceSpaceCreateInfo *ci, XrSpace *out)
 {
+   if (t_at_remake)
+   {
+      void (*at)(void) = t_at_remake;
+      t_at_remake      = NULL;
+      at();
+      t_at_remake      = at;
+   }
    if (t_space_fail_at && t_spaces_made + 1 == t_space_fail_at)
       return XR_ERROR_RUNTIME_FAILURE;
    if (ci->referenceSpaceType == XR_REFERENCE_SPACE_TYPE_STAGE)
@@ -1678,7 +1688,7 @@ static void test_track_space(void)
    origin.position.z    = -0.5f;
    t_stage_missing      = false;
 
-   /* LOCAL at the origin given, swapped in under the lock. */
+   /* LOCAL at the origin given, published without the lock. */
    t_locks = t_unlocks = 0;
    space   = RETRO_VR_REFERENCE_SPACE_LOCAL;
    CHECK(openxr_session_swap_track_space(&s, &space, &origin,
@@ -1690,10 +1700,15 @@ static void test_track_space(void)
          t_space_pose.position.z);
    CHECK(retro_atomic_load_acquire_int(&s.track_seq) == 1,
          "seq %d after the first", retro_atomic_load_acquire_int(&s.track_seq));
-   CHECK(t_locks == 1 && t_unlocks == 1, "not swapped under the lock");
+   CHECK(!t_locks && !t_unlocks, "the swap took the lock");
+   CHECK(openxr_session_take_track(&s)
+         && openxr_session_take_track(&s)->space == s.track_space
+         && openxr_session_take_track(&s)->seq == 1,
+         "the frame does not see the first space");
    first = s.track_space;
 
-   /* STAGE replaces it; the old one goes under the lock. */
+   /* STAGE replaces it; the old one goes at the frame's next take,
+    * never under a frame that may still submit in it. */
    t_spaces_destroyed = 0;
    space              = RETRO_VR_REFERENCE_SPACE_STAGE;
    CHECK(openxr_session_swap_track_space(&s, &space, &origin,
@@ -1705,9 +1720,11 @@ static void test_track_space(void)
          && t_near(t_space_pose.orientation.w, 1.0f),
          "STAGE made away from the room's origin: z %.2f",
          t_space_pose.position.z);
-   CHECK(t_spaces_destroyed == 1 && t_space_destroyed_last == first
-         && t_space_destroy_in_lock,
-         "the old space: %u destroyed, in the lock %d", t_spaces_destroyed,
+   CHECK(!t_spaces_destroyed, "the swap destroyed the space a frame uses");
+   CHECK(     openxr_session_take_track(&s)->space == s.track_space
+         && t_spaces_destroyed == 1 && t_space_destroyed_last == first
+         && !t_space_destroy_in_lock,
+         "the old space: %u destroyed, in a lock %d", t_spaces_destroyed,
          (int)t_space_destroy_in_lock);
    CHECK(retro_atomic_load_acquire_int(&s.track_seq) == 2, "seq after STAGE");
 
@@ -1725,6 +1742,7 @@ static void test_track_space(void)
    CHECK(LOGGED("[OpenXR] No STAGE space: tracked content is seated.\n"),
          "log: %s", t_log);
    t_stage_missing = false;
+   openxr_session_take_track(&s);
 
    /* No STAGE and no LOCAL: nothing changes, nothing is logged. */
    first              = s.track_space;
@@ -2135,7 +2153,8 @@ static void test_host(void)
          "the views the core was given did not go on in the new space");
    openxr_seq_read(&f.proj_seq, f.proj_words, &p, sizeof(p));
    CHECK(     p.active
-         && p.track_seq == retro_atomic_load_acquire_int(&s.track_seq)
+         && openxr_frame_track_shows((const openxr_track_t*)
+               retro_atomic_load_acquire_ptr(&s.track), p.track_seq)
          && t_near(p.pose[0].position.x, -0.032f),
          "the projection shown did not go on in the new space");
    flags = 0;
@@ -2404,7 +2423,9 @@ static void test_host_recenter_paused(void)
    openxr_seq_read(&f.proj_seq, f.proj_words, &shown, sizeof(shown));
    CHECK(     openxr_host_has_given(&h) && p.track_seq == seq
          && t_near(p.pose[0].position.x, -0.25f)
-         && shown.track_seq == seq && t_near(shown.pose[0].position.x, -0.25f),
+         && openxr_frame_track_shows((const openxr_track_t*)
+               retro_atomic_load_acquire_ptr(&s.track), shown.track_seq)
+         && t_near(shown.pose[0].position.x, -0.25f),
          "the paused frame's views did not go on in the new space");
    memset(&t_proj, 0, sizeof(t_proj));
    openxr_frame_run(&f);
@@ -2506,9 +2527,9 @@ static void t_xr_frame(void)
       t_xr_no_proj++;
 }
 
-/* A headset frame between a recenter's swap and its carry would show
- * the new space without the projection: none gets in, running or
- * paused. */
+/* A headset frame while a recenter's swap is under way, or right after
+ * it, shows the projection: the old space with it, or the new one it
+ * carries to - running or paused. */
 static void test_host_recenter_locked(void)
 {
    openxr_runtime_t rt;
@@ -2549,12 +2570,13 @@ static void test_host_recenter_locked(void)
       t_xr         = &f;
       t_xr_frames  = 0;
       t_xr_no_proj = 0;
-      t_at_unlock  = t_xr_frame;
+      t_at_remake  = t_xr_frame;
       if (pass)
          openxr_host_place_kept(&h);
       else
          openxr_host_sample(&h, 0, &flags);
-      t_at_unlock  = NULL;
+      t_at_remake  = NULL;
+      t_xr_frame();
       CHECK(retro_atomic_load_acquire_int(&s.track_seq) != seq,
             "%s: no remake", pass ? "paused" : "running");
       CHECK(t_xr_frames && !t_xr_no_proj,
@@ -4944,10 +4966,11 @@ static void test_screen_placement_seated(void)
    t_xr            = &f;
    t_xr_frames     = 0;
    t_xr_off        = 0;
-   t_at_unlock     = t_xr_frame_screens;
+   t_at_remake     = t_xr_frame_screens;
    space           = RETRO_VR_REFERENCE_SPACE_STAGE;
    openxr_host_set_space(&h, &space, &w, &ht);
-   t_at_unlock     = NULL;
+   t_at_remake     = NULL;
+   t_xr_frame_screens();
    t_stage_missing = false;
    CHECK(space == RETRO_VR_REFERENCE_SPACE_LOCAL && t_xr_frames && !t_xr_off,
          "no STAGE: %u of %u headset frames at the fallback's makes showed "
@@ -5522,6 +5545,25 @@ static void test_frame_thread_hooks(void)
    }
 }
 
+static void t_carry_noted(void *user, int from, int to)
+{
+   (void)user; (void)from; (void)to;
+}
+
+/* Swap and show a frame: whether the projection went out, in the track
+ * space the swap published. */
+static bool t_carry_shown(openxr_frame_t *f, openxr_session_t *s)
+{
+   memset(&t_proj, 0, sizeof(t_proj));
+   openxr_frame_run(f);
+   return t_last_layer_count == 1
+      && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION
+      && t_proj.space == s->track_space;
+}
+
+/* A recenter's remake carries a projection drawn in the space before:
+ * read as the frame's track space allows, never rewritten, through
+ * consecutive carries, and not through a remake without one. */
 static void test_frame_carried_seq(void)
 {
    static int binding;
@@ -5530,45 +5572,204 @@ static void test_frame_carried_seq(void)
    openxr_swapchains_t sc;
    openxr_frame_t f;
    openxr_projection_t p, got;
+   XrPosef origin;
+   enum retro_vr_reference_space space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   unsigned n  = 0;
+   int cb_user = 0;
+   int drawn;
 
    t_frame_fresh(&rt, &s, &sc, &f);
+   memset(&origin, 0, sizeof(origin));
+   origin.orientation.w = 1.0f;
+   openxr_session_swap_track_space(&s, &space, &origin, NULL, NULL);
+   CHECK(openxr_slot_create(&sc, OPENXR_PROJECTION_SLOT, 44, false,
+            VIDEO_SCALE_PACK(64, 48), 2, t_images_cb, &cb_user, &n),
+         "projection slot");
+   retro_atomic_store_release_int(&sc.slots[OPENXR_PROJECTION_SLOT].content, 1);
+   openxr_session_set_alive(&s, true);
+   retro_atomic_store_release_int(&s.state, XR_SESSION_STATE_FOCUSED);
+
    memset(&p, 0, sizeof(p));
    p.active             = true;
-   p.track_seq          = 10;
-   p.width              = 400;
-   p.height             = 240;
+   p.width              = 64;
+   p.height             = 48;
    p.pose[0].position.x = -0.03f;
    p.pose[1].position.x = 0.03f;
-   p.fov[0].angleLeft   = -0.75f;
-   p.fov[1].angleRight  = 0.8f;
-   openxr_session_lock(&s);
+   p.track_seq = drawn  = retro_atomic_load_acquire_int(&s.track_seq);
    openxr_frame_publish_projection(&f, &p);
-   openxr_frame_move_projection(&f, 10, 11);
-   CHECK(openxr_frame_carried_seq(&f, 10) == 11, "first carry missing");
-   openxr_frame_move_projection(&f, 11, 12);
-   CHECK(openxr_frame_carried_seq(&f, 10) == 12
-         && openxr_frame_carried_seq(&f, 11) == 12
-         && openxr_frame_carried_seq(&f, 9) == 9,
-         "consecutive carries not composed");
+   CHECK(t_carry_shown(&f, &s), "drawn in the space: not shown");
+
+   /* Two recenters between frames: carried through both, as drawn. */
+   openxr_session_swap_track_space(&s, &space, &origin, t_carry_noted, NULL);
+   openxr_session_swap_track_space(&s, &space, &origin, t_carry_noted, NULL);
+   CHECK(t_carry_shown(&f, &s), "not carried through two recenters");
    openxr_seq_read(&f.proj_seq, f.proj_words, &got, sizeof(got));
-   p.track_seq = 12;
-   CHECK(!memcmp(&p, &got, sizeof(p)), "carry changed projection poses or size");
-   openxr_frame_clear_projection(&f);
-   openxr_frame_move_projection(&f, 12, 13);
-   CHECK(openxr_frame_carried_seq(&f, 10) == 13,
-         "carry lost a queued projection while none was published");
-   openxr_frame_move_projection(&f, 20, 21);
-   CHECK(openxr_frame_carried_seq(&f, 20) == 21
-         && openxr_frame_carried_seq(&f, 10) == 10,
-         "unrelated space was included in carry");
-   openxr_session_unlock(&s);
+   CHECK(!memcmp(&p, &got, sizeof(p)) && got.track_seq == drawn,
+         "the carry rewrote the projection: seq %d", got.track_seq);
+
+   /* A remake without a carry orphans it, and a carry after that does
+    * not reach back past the remake. */
+   openxr_session_swap_track_space(&s, &space, &origin, NULL, NULL);
+   CHECK(!t_carry_shown(&f, &s), "shown in a space remade without a carry");
+   openxr_session_swap_track_space(&s, &space, &origin, t_carry_noted, NULL);
+   CHECK(!t_carry_shown(&f, &s), "carried from before an uncarried remake");
+   p.track_seq = retro_atomic_load_acquire_int(&s.track_seq) - 1;
+   openxr_frame_publish_projection(&f, &p);
+   CHECK(t_carry_shown(&f, &s), "drawn in the remade space: not carried");
+
+   /* A new session starts with no carry. */
    openxr_session_reset(&s);
    openxr_session_create(&s, &binding);
    openxr_frame_session_created(&f);
-   openxr_session_lock(&s);
-   CHECK(openxr_frame_carried_seq(&f, 20) == 20,
-         "new session kept a carry mapping");
-   openxr_session_unlock(&s);
+   CHECK(!s.carry_from && !s.carry_to, "a new session kept a carry");
+   openxr_session_swap_track_space(&s, &space, &origin, NULL, NULL);
+   CHECK(!t_carry_shown(&f, &s), "a carry outlived its session");
+
+   openxr_slot_destroy(&sc, OPENXR_PROJECTION_SLOT);
+   t_frame_free(&rt, &s, &f);
+}
+
+/* Spaces by the handle the threaded fakes give: 0x1000 + n. */
+#define T_MT_SPACES 4096
+static retro_atomic_int_t t_mt_made;
+static retro_atomic_int_t t_mt_alive[T_MT_SPACES];
+static retro_atomic_int_t t_mt_bad_destroys;
+static retro_atomic_int_t t_mt_dead_submits;
+static retro_atomic_int_t t_mt_no_proj;
+static retro_atomic_int_t t_mt_frames;
+static retro_atomic_int_t t_mt_done;
+static openxr_session_t  *t_mt_session;
+static openxr_frame_t    *t_mt_frame;
+
+static XRAPI_ATTR XrResult XRAPI_CALL t_mt_create_space(XrSession s,
+      const XrReferenceSpaceCreateInfo *ci, XrSpace *out)
+{
+   int n = retro_atomic_fetch_add_int(&t_mt_made, 1);
+   (void)s; (void)ci;
+   if (n >= T_MT_SPACES)
+      return XR_ERROR_LIMIT_REACHED;
+   retro_atomic_store_release_int(&t_mt_alive[n], 1);
+   *out = (XrSpace)(uintptr_t)(0x1000 + n);
+   return XR_SUCCESS;
+}
+
+static XRAPI_ATTR XrResult XRAPI_CALL t_mt_destroy_space(XrSpace sp)
+{
+   uintptr_t n = (uintptr_t)sp - 0x1000;
+   if (     n < T_MT_SPACES
+         && !retro_atomic_exchange_int(&t_mt_alive[n], 0))
+      retro_atomic_fetch_add_int(&t_mt_bad_destroys, 1);
+   return XR_SUCCESS;
+}
+
+static XRAPI_ATTR XrResult XRAPI_CALL t_mt_end_frame(XrSession s,
+      const XrFrameEndInfo *ei)
+{
+   (void)s;
+   retro_atomic_fetch_add_int(&t_mt_frames, 1);
+   if (     !ei->layerCount
+         || ei->layers[0]->type != XR_TYPE_COMPOSITION_LAYER_PROJECTION)
+      retro_atomic_fetch_add_int(&t_mt_no_proj, 1);
+   else
+   {
+      uintptr_t n = (uintptr_t)((const XrCompositionLayerProjection*)
+            ei->layers[0])->space - 0x1000;
+      if (n >= T_MT_SPACES || !retro_atomic_load_acquire_int(&t_mt_alive[n]))
+         retro_atomic_fetch_add_int(&t_mt_dead_submits, 1);
+   }
+   return XR_SUCCESS;
+}
+
+static void t_mt_core(void *arg)
+{
+   enum retro_vr_reference_space space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   XrPosef origin;
+   unsigned i;
+   (void)arg;
+   memset(&origin, 0, sizeof(origin));
+   origin.orientation.w = 1.0f;
+   for (i = 0; i < 2000; i++)
+      openxr_session_swap_track_space(t_mt_session, &space, &origin,
+            t_carry_noted, NULL);
+   retro_atomic_store_release_int(&t_mt_done, 1);
+}
+
+static void t_mt_xr(void *arg)
+{
+   (void)arg;
+   while (!retro_atomic_load_acquire_int(&t_mt_done))
+      openxr_frame_run(t_mt_frame);
+}
+
+/* A core thread remaking its track space, each time with a carry, while
+ * the frame loop's thread submits: every frame shows the projection, in
+ * a space nothing has destroyed, and each space is destroyed once. */
+static void test_track_swap_threads(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_projection_t p;
+   XrPosef origin;
+   sthread_t *core, *xr;
+   enum retro_vr_reference_space space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   unsigned n  = 0;
+   int cb_user = 0;
+   int alive   = 0;
+   int i;
+
+   t_frame_fresh(&rt, &s, &sc, &f);
+   s.hooks.lock           = NULL;
+   s.hooks.unlock         = NULL;
+   s.CreateReferenceSpace = t_mt_create_space;
+   s.DestroySpace         = t_mt_destroy_space;
+   f.EndFrame             = t_mt_end_frame;
+   memset(&origin, 0, sizeof(origin));
+   origin.orientation.w = 1.0f;
+   openxr_session_swap_track_space(&s, &space, &origin, NULL, NULL);
+   CHECK(openxr_slot_create(&sc, OPENXR_PROJECTION_SLOT, 44, false,
+            VIDEO_SCALE_PACK(64, 48), 2, t_images_cb, &cb_user, &n),
+         "projection slot");
+   retro_atomic_store_release_int(&sc.slots[OPENXR_PROJECTION_SLOT].content, 1);
+   openxr_session_set_alive(&s, true);
+   retro_atomic_store_release_int(&s.state, XR_SESSION_STATE_FOCUSED);
+   memset(&p, 0, sizeof(p));
+   p.active    = true;
+   p.width     = 64;
+   p.height    = 48;
+   p.track_seq = retro_atomic_load_acquire_int(&s.track_seq);
+   openxr_frame_publish_projection(&f, &p);
+   openxr_frame_run(&f);
+
+   t_mt_session = &s;
+   t_mt_frame   = &f;
+   core = sthread_create(t_mt_core, NULL);
+   xr   = sthread_create(t_mt_xr, NULL);
+   CHECK(core && xr, "threads");
+   if (core)
+      sthread_join(core);
+   if (xr)
+      sthread_join(xr);
+   openxr_frame_run(&f);
+
+   for (i = 0; i < T_MT_SPACES; i++)
+      alive += retro_atomic_load_acquire_int(&t_mt_alive[i]);
+   CHECK(retro_atomic_load_acquire_int(&t_mt_frames) > 1,
+         "the frame loop ran no frames beside the swaps");
+   CHECK(!retro_atomic_load_acquire_int(&t_mt_dead_submits),
+         "%d frames submitted in a destroyed space",
+         retro_atomic_load_acquire_int(&t_mt_dead_submits));
+   CHECK(!retro_atomic_load_acquire_int(&t_mt_no_proj),
+         "%d of %d frames left the carried projection out",
+         retro_atomic_load_acquire_int(&t_mt_no_proj),
+         retro_atomic_load_acquire_int(&t_mt_frames));
+   CHECK(!retro_atomic_load_acquire_int(&t_mt_bad_destroys),
+         "%d spaces destroyed twice",
+         retro_atomic_load_acquire_int(&t_mt_bad_destroys));
+   CHECK(alive == 1, "%d spaces left of %d made, want the current one",
+         alive, retro_atomic_load_acquire_int(&t_mt_made));
+   openxr_slot_destroy(&sc, OPENXR_PROJECTION_SLOT);
    t_frame_free(&rt, &s, &f);
 }
 
@@ -6531,10 +6732,9 @@ static void test_gl_host_yield(void)
    t_gl_books_closed("yield");
 }
 
-static openxr_frame_t *t_gl_carry_frame;
 static void t_gl_carry(void *user, int from, int to)
 {
-   openxr_frame_move_projection(t_gl_carry_frame, from, to);
+   (void)user; (void)from; (void)to;
 }
 
 static void test_gl_host_projection(void)
@@ -6601,7 +6801,6 @@ static void test_gl_host_projection(void)
    t_sc_wait            = XR_TIMEOUT_EXPIRED;
    p.pose[0].position.x = -0.07f;
    CHECK(t_gl_draw(xr, slot, dims, 2, 4, &p) && t_gate_step(1), "queued");
-   t_gl_carry_frame = &xr->frame;
    CHECK(openxr_session_swap_track_space(&xr->session, &space, &origin,
             t_gl_carry, NULL)
          && openxr_session_swap_track_space(&xr->session, &space, &origin,
@@ -6610,10 +6809,11 @@ static void test_gl_host_projection(void)
    CHECK(t_gate_step(1), "frame");
    openxr_seq_read(&xr->frame.proj_seq, xr->frame.proj_words, &got,
          sizeof(got));
-   CHECK(     got.track_seq == seq + 2 && got.pose[0].position.x == -0.07f
+   CHECK(     got.track_seq == seq && got.pose[0].position.x == -0.07f
          && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION
+         && t_proj.space == xr->session.track_space
          && t_proj_views[0].pose.position.x == -0.07f,
-         "carried: seq %d of %d, x %f", got.track_seq, seq + 2,
+         "carried: seq %d drawn in %d, x %f", got.track_seq, seq,
          t_proj_views[0].pose.position.x);
 
    /* Another eye size, its image not copied yet: the old images show,
@@ -6681,6 +6881,7 @@ int main(void)
    test_frame();
    test_frame_thread_hooks();
    test_frame_carried_seq();
+   test_track_swap_threads();
    test_frame_pacing();
    test_frame_lost();
    test_track_space();

@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
 #include <string.h>
 
 #include <retro_atomic.h>
@@ -232,8 +233,14 @@ error:
 
 void openxr_session_destroy(openxr_session_t *s)
 {
-   if (s->track_space)
-      s->DestroySpace(s->track_space);
+   openxr_track_t *t;
+   openxr_session_take_track(s);
+   if ((t = (openxr_track_t*)retro_atomic_exchange_ptr(&s->track, NULL)))
+   {
+      s->DestroySpace(t->space);
+      free(t);
+   }
+   s->carry_from = s->carry_to = 0;
    if (s->view_space)
       s->DestroySpace(s->view_space);
    if (s->local_space)
@@ -252,6 +259,7 @@ bool openxr_session_swap_track_space(openxr_session_t *s,
 {
    XrResult res;
    XrReferenceSpaceCreateInfo rci;
+   openxr_track_t *t, *old;
    XrSpace fresh                     = XR_NULL_HANDLE;
    enum retro_vr_reference_space got = RETRO_VR_REFERENCE_SPACE_LOCAL;
    bool stage_failed                 = false;
@@ -292,20 +300,47 @@ bool openxr_session_swap_track_space(openxr_session_t *s,
       if (stage_failed)
          RARCH_WARN("[OpenXR] No STAGE space: tracked content is seated.\n");
    }
-   /* The XR thread submits in it, and places the screens by it, under
-    * the lock. */
-   openxr_session_lock(s);
-   if (s->track_space)
-      s->DestroySpace(s->track_space);
-   s->track_space  = fresh;
-   s->track_origin = *origin;
-   s->track_local  = (got == RETRO_VR_REFERENCE_SPACE_LOCAL);
-   retro_atomic_fetch_add_int(&s->track_seq, 1);
+   if (!(t = (openxr_track_t*)malloc(sizeof(*t))))
+   {
+      s->DestroySpace(fresh);
+      return false;
+   }
+   /* Consecutive carries make one range. */
+   if (swapped)
+   {
+      if (from != s->carry_to)
+         s->carry_from = from;
+      s->carry_to = from + 1;
+   }
+   t->space       = fresh;
+   t->origin      = *origin;
+   t->seq         = from + 1;
+   t->carry_from  = s->carry_from;
+   t->carry_to    = s->carry_to;
+   t->local       = (got == RETRO_VR_REFERENCE_SPACE_LOCAL);
+   s->track_space = fresh;
+   retro_atomic_store_release_int(&s->track_seq, from + 1);
+   /* The frame loop may be submitting in the old one: it goes at that
+    * thread's next frame, which takes this one. */
+   if ((old = (openxr_track_t*)retro_atomic_exchange_ptr(&s->track, t)))
+      mpsc_stack_push(&s->track_retired, &old->park);
    if (swapped)
       swapped(user, from, from + 1);
-   openxr_session_unlock(s);
    *space = got;
    return true;
+}
+
+const openxr_track_t *openxr_session_take_track(openxr_session_t *s)
+{
+   mpsc_stack_node_t *n = mpsc_stack_drain(&s->track_retired);
+   while (n)
+   {
+      openxr_track_t *t = (openxr_track_t*)n;
+      n                 = n->next;
+      s->DestroySpace(t->space);
+      free(t);
+   }
+   return (const openxr_track_t*)retro_atomic_load_acquire_ptr(&s->track);
 }
 
 /* Keeps lost: a lost instance cannot make a new session. */

@@ -128,9 +128,8 @@ typedef struct openxr_frame
    /* The drawing thread's projection, the same way. */
    retro_atomic_int_t proj_seq;
    retro_atomic_int_t proj_words[2 * OPENXR_WORDS(openxr_projection_t)];
-   /* Consecutive carried spaces, under the graphics lock. */
-   int carry_from;
-   int carry_to;
+   /* The track space this frame uses (openxr_session_take_track). */
+   const openxr_track_t *track;    /* the frame loop's thread */
    retro_atomic_int_t recenter;
    /* Each move of the anchor, the hotkey's or the runtime's. */
    retro_atomic_int_t recenters;
@@ -254,17 +253,13 @@ void openxr_frame_request_rate(openxr_frame_t *f, float hz);
 void openxr_frame_publish(openxr_frame_t *f, const video_xr_quad_set_t *set);
 /* The projection the XR thread submits from now on, behind the
  * screens; left out until its slot releases an image, and once the
- * track space it was drawn in is replaced. Published in the same
- * graphics-lock span as its slot's release, so a new image never goes
- * out with the previous poses. */
+ * track space it was drawn in is replaced without a carry. Published
+ * right after its slot's release, in the same graphics-lock span where
+ * the host has a lock, so a new image never goes out with the previous
+ * poses. */
 void openxr_frame_publish_projection(openxr_frame_t *f,
       const openxr_projection_t *p);
 void openxr_frame_clear_projection(openxr_frame_t *f);
-/* The drawing thread: a projection drawn in the track space numbered
- * from goes on, with the same poses, in the one numbered to. */
-void openxr_frame_move_projection(openxr_frame_t *f, int from, int to);
-/* A queued projection's space after carries; caller holds the graphics lock. */
-int openxr_frame_carried_seq(openxr_frame_t *f, int seq);
 void openxr_frame_get_anchor(openxr_frame_t *f, video_xr_pose_t *anchor);
 void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out);
 /* Any thread: where the screens go (enum video_openxr_placement). */

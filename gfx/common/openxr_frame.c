@@ -169,8 +169,9 @@ static const XrSwapchain *openxr_frame_chains(openxr_slot_t *slot,
    return (*layers && slot->old[0]) ? slot->old : NULL;
 }
 
-/* The published quads whose slot shows an image. The caller
- * holds the graphics lock, so no slot changes under it. */
+/* The published quads whose slot shows an image. No slot changes
+ * under it: slots change under the graphics lock, or on this thread
+ * where the host has none. */
 static unsigned openxr_frame_layers(openxr_frame_t *f,
       XrCompositionLayerQuad *layers,
       const XrCompositionLayerBaseHeader **ptrs)
@@ -223,9 +224,17 @@ static unsigned openxr_frame_layers(openxr_frame_t *f,
    return n;
 }
 
-/* The published projection, if its slot has content and its space is
- * the session's. The caller holds the graphics lock, so neither
- * changes under it. */
+/* Whether what was drawn in the track space numbered seq shows in t:
+ * drawn in it, or in one a recenter's remake carried to it. */
+static bool openxr_frame_track_shows(const openxr_track_t *t, int seq)
+{
+   return t && (   seq == t->seq
+                || (   t->carry_to == t->seq
+                    && seq >= t->carry_from && seq < t->carry_to));
+}
+
+/* The published projection, if its slot has content and it was drawn
+ * in the frame's track space or one carried to it. */
 static bool openxr_frame_projection(openxr_frame_t *f,
       XrCompositionLayerProjection *layer,
       XrCompositionLayerProjectionView *views)
@@ -236,13 +245,12 @@ static bool openxr_frame_projection(openxr_frame_t *f,
    const XrSwapchain *chains = NULL;
    openxr_projection_t p;
    openxr_slot_t *slot       = &f->sc->slots[OPENXR_PROJECTION_SLOT];
+   const openxr_track_t *t   = f->track;
    openxr_seq_read(&f->proj_seq, f->proj_words, &p, sizeof(p));
    if (     !p.active
          || !(chains = openxr_frame_chains(slot, &dims, &count))
          || count < 2
-         || !f->session->track_space
-         || p.track_seq != retro_atomic_load_acquire_int(
-               &f->session->track_seq))
+         || !openxr_frame_track_shows(t, p.track_seq))
       return false;
    w = MIN(p.width,  VIDEO_SCALE_W(dims));
    h = MIN(p.height, VIDEO_SCALE_H(dims));
@@ -265,7 +273,7 @@ static bool openxr_frame_projection(openxr_frame_t *f,
    layer->type       = XR_TYPE_COMPOSITION_LAYER_PROJECTION;
    layer->next       = NULL;
    layer->layerFlags = 0;
-   layer->space      = f->session->track_space;
+   layer->space      = t->space;
    layer->viewCount  = 2;
    layer->views      = views;
    return true;
@@ -317,31 +325,31 @@ static void openxr_frame_recenter(openxr_frame_t *f, XrTime time)
 
 /* Where Recenter puts the screens: a seated world's origin while
  * tracked content holds one, so a recenter moves both in one frame;
- * else the anchor. Under the graphics lock, as the space is replaced. */
+ * else the anchor, by the frame's track space. */
 static void openxr_frame_screens_anchor(openxr_frame_t *f,
       video_xr_pose_t *out)
 {
-   const openxr_session_t *s = f->session;
+   const openxr_track_t *t = f->track;
    /* Lives until the session goes; core_vr_content's sample remakes it. */
-   if (!s->track_space || !s->track_local)
+   if (!t || !t->local)
    {
       *out = f->tracked.anchor;
       return;
    }
-   out->orientation.x = s->track_origin.orientation.x;
-   out->orientation.y = s->track_origin.orientation.y;
-   out->orientation.z = s->track_origin.orientation.z;
-   out->orientation.w = s->track_origin.orientation.w;
-   out->position.x    = s->track_origin.position.x;
-   out->position.y    = s->track_origin.position.y;
-   out->position.z    = s->track_origin.position.z;
+   out->orientation.x = t->origin.orientation.x;
+   out->orientation.y = t->origin.orientation.y;
+   out->orientation.z = t->origin.orientation.z;
+   out->orientation.w = t->origin.orientation.w;
+   out->position.x    = t->origin.position.x;
+   out->position.y    = t->origin.position.y;
+   out->position.z    = t->origin.position.z;
 }
 
 /* Where the screens are for the frame shown at time, published for the
  * laser: Fixed in Room where Recenter puts them; Follow Head in VIEW
  * space; Lazy Follow at an anchor that stays until the head turns well
  * away, then glides back in front of it, and that each recenter puts
- * where Recenter puts them. Under the graphics lock. */
+ * where Recenter puts them. */
 static void openxr_frame_place_screens(openxr_frame_t *f, XrTime time)
 {
    video_xr_pose_t at;
@@ -517,6 +525,7 @@ static bool openxr_frame_wait_begin(openxr_frame_t *f,
    }
    b->waited       = true;
    b->display_time = state.predictedDisplayTime;
+   f->track        = openxr_session_take_track(f->session);
    b->period       = state.predictedDisplayPeriod;
    session_state = retro_atomic_load_acquire_int(&f->session->state);
    /* A headset that is not worn reports periods that are not its own. */
@@ -753,8 +762,7 @@ void openxr_frame_session_created(openxr_frame_t *f)
    video_xr_pose_identity(&f->screens.pose);
    f->screens.view = 0;
    f->lazy_valid   = false;
-   f->carry_from   = 0;
-   f->carry_to     = 0;
+   f->track        = NULL;
    openxr_frame_publish_tracked(f);
    openxr_seq_publish(&f->screens_seq, f->screens_words,
          &f->screens, sizeof(f->screens));
@@ -1109,24 +1117,6 @@ void openxr_frame_clear_projection(openxr_frame_t *f)
    openxr_projection_t none;
    memset(&none, 0, sizeof(none));
    openxr_seq_publish(&f->proj_seq, f->proj_words, &none, sizeof(none));
-}
-
-void openxr_frame_move_projection(openxr_frame_t *f, int from, int to)
-{
-   openxr_projection_t p;
-   if (from != f->carry_to)
-      f->carry_from = from;
-   f->carry_to = to;
-   openxr_seq_read(&f->proj_seq, f->proj_words, &p, sizeof(p));
-   if (p.track_seq != from)
-      return;
-   p.track_seq = to;
-   openxr_seq_publish(&f->proj_seq, f->proj_words, &p, sizeof(p));
-}
-
-int openxr_frame_carried_seq(openxr_frame_t *f, int seq)
-{
-   return (seq >= f->carry_from && seq < f->carry_to) ? f->carry_to : seq;
 }
 
 void openxr_frame_get_anchor(openxr_frame_t *f, video_xr_pose_t *anchor)
