@@ -292,6 +292,23 @@ static void *avfoundation_record_init(const struct record_params *params)
             AVEncoderBitRateKey: @(audioBitRate)
          };
 
+         if (![handle->assetWriter canApplyOutputSettings:audioSettings
+                      forMediaType:AVMediaTypeAudio])
+         {
+            NSMutableDictionary *fallback =
+                  [NSMutableDictionary dictionaryWithDictionary:audioSettings];
+            [fallback removeObjectForKey:AVEncoderBitRateKey];
+            audioSettings = fallback;
+            if (![handle->assetWriter canApplyOutputSettings:audioSettings
+                         forMediaType:AVMediaTypeAudio])
+            {
+               RARCH_ERR("[AVFoundation] Unsupported AAC output settings\n");
+               avfoundation_release_handle(handle);
+               return NULL;
+            }
+            RARCH_WARN("[AVFoundation] AAC bitrate preset unsupported; using encoder default\n");
+         }
+
          /* Create audio input */
          handle->audioInput = [[AVAssetWriterInput alloc]
                                initWithMediaType:AVMediaTypeAudio
@@ -324,7 +341,7 @@ static void *avfoundation_record_init(const struct record_params *params)
       }
 
       RARCH_LOG("[AVFoundation] Initialized recording to %s (%ux%u @ %.2f fps, "
-                "video %u kbps, audio %u kbps)\n",
+                "video %u kbps, audio preset %u kbps)\n",
                 params->filename, handle->width, handle->height,
                 handle->fps, videoBitRate / 1000, audioBitRate / 1000);
    }
@@ -378,6 +395,7 @@ static bool avfoundation_record_push_video(void *data,
    record_avfoundation_t *handle = (record_avfoundation_t*)data;
    CVPixelBufferRef pixelBuffer  = NULL;
    CVReturn result;
+   __block bool success         = false;
 
    if (!handle || !video_data)
       return false;
@@ -527,15 +545,16 @@ static bool avfoundation_record_push_video(void *data,
 
       /* Append pixel buffer on encoding queue */
       dispatch_sync(handle->encodingQueue, ^{
-         if (handle->videoInput.readyForMoreMediaData)
-            [handle->pixelBufferAdaptor appendPixelBuffer:pixelBuffer
+         if (handle->assetWriter.status == AVAssetWriterStatusWriting
+               && handle->videoInput.readyForMoreMediaData)
+            success = [handle->pixelBufferAdaptor appendPixelBuffer:pixelBuffer
                                   withPresentationTime:presentationTime];
       });
 
       CVPixelBufferRelease(pixelBuffer);
    }
 
-   return true;
+   return success;
 }
 
 static bool avfoundation_record_push_audio(void *data,
@@ -546,6 +565,7 @@ static bool avfoundation_record_push_audio(void *data,
    CMBlockBufferRef blockBuffer         = NULL;
    CMFormatDescriptionRef formatDesc    = NULL;
    OSStatus status;
+   __block bool success                = false;
 
    if (!handle || !handle->audioInput || !audio_data || !audio_data->data)
       return false;
@@ -622,14 +642,15 @@ static bool avfoundation_record_push_audio(void *data,
 
       /* Append on encoding queue */
       dispatch_sync(handle->encodingQueue, ^{
-         if (handle->audioInput.readyForMoreMediaData)
-            [handle->audioInput appendSampleBuffer:sampleBuffer];
+         if (handle->assetWriter.status == AVAssetWriterStatusWriting
+               && handle->audioInput.readyForMoreMediaData)
+            success = [handle->audioInput appendSampleBuffer:sampleBuffer];
       });
 
       CFRelease(sampleBuffer);
    }
 
-   return true;
+   return success;
 }
 
 static bool avfoundation_record_finalize(void *data)

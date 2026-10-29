@@ -8,6 +8,7 @@ on:
       - 'libretro-common/formats/h265/rh265_sps_crop.c'
       - 'libretro-common/include/formats/rh265_sps_crop.h'
       - 'record/drivers/record_metal.*'
+      - 'record/drivers/record_avfoundation*'
       - 'record/record_driver.*'
       - 'gfx/drivers/metal.m'
       - 'Makefile.common'
@@ -32,6 +33,7 @@ on:
       - 'libretro-common/formats/h265/rh265_sps_crop.c'
       - 'libretro-common/include/formats/rh265_sps_crop.h'
       - 'record/drivers/record_metal.*'
+      - 'record/drivers/record_avfoundation*'
       - 'record/record_driver.*'
       - 'gfx/drivers/metal.m'
       - 'Makefile.common'
@@ -66,6 +68,8 @@ jobs:
       - name: Portable ownership and failure contracts
         working-directory: samples/record/videotoolbox_encode
         run: make check thread_test worker_thread_test audio_thread_test av_session_thread_test && ./thread_test && ./worker_thread_test && ./audio_thread_test && ./av_session_thread_test
+      - name: Native AAC property ABI and advertised rates
+        run: make -C samples/record/videotoolbox_encode native-audio-check
       - name: Native hardware encoder and independent pixels
         run: |
           rc=0

@@ -8,28 +8,18 @@
 static double avfoundation_nearest_aac_sample_rate(double rate)
 {
    AudioFormatPropertyID prop = kAudioFormatProperty_AvailableEncodeSampleRates;
-   AudioStreamBasicDescription desc;
+   UInt32 format = kAudioFormatMPEG4AAC;
    UInt32 size = 0;
    OSStatus status;
 
-   desc.mFormatID         = kAudioFormatMPEG4AAC;
-   desc.mSampleRate       = 0;
-   desc.mFormatFlags      = 0;
-   desc.mBytesPerPacket   = 0;
-   desc.mFramesPerPacket  = 0;
-   desc.mBytesPerFrame    = 0;
-   desc.mChannelsPerFrame = 0;
-   desc.mBitsPerChannel   = 0;
-   desc.mReserved         = 0;
-
-   status = AudioFormatGetPropertyInfo(prop, sizeof(desc), &desc, &size);
+   status = AudioFormatGetPropertyInfo(prop, sizeof(format), &format, &size);
    if (status == noErr && size > 0)
    {
       UInt32 capacity = size;
       AudioValueRange *ranges = (AudioValueRange*)malloc(size);
       if (ranges)
       {
-         status = AudioFormatGetProperty(prop, sizeof(desc), &desc,
+         status = AudioFormatGetProperty(prop, sizeof(format), &format,
                &size, ranges);
          if (status == noErr && size <= capacity && !(size % sizeof(AudioValueRange)))
          {

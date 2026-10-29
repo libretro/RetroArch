@@ -8,14 +8,16 @@ static unsigned mode,allocation_fail;
 static AudioValueRange rates[2]={{32000,32000},{48000,48000}};
 OSStatus AudioFormatGetPropertyInfo(AudioFormatPropertyID property,UInt32 bytes,const void *input,UInt32 *size)
 {
-   const AudioStreamBasicDescription *desc=(const AudioStreamBasicDescription*)input;
-   assert(property==1 && bytes==sizeof(*desc) && desc->mFormatID==2
-         && !desc->mReserved && !desc->mSampleRate);
+   assert(property==kAudioFormatProperty_AvailableEncodeSampleRates
+         && bytes==sizeof(UInt32) && input
+         && *(const UInt32*)input==kAudioFormatMPEG4AAC);
    *size=sizeof(rates); return mode==1?-1:0;
 }
 OSStatus AudioFormatGetProperty(AudioFormatPropertyID property,UInt32 bytes,const void *input,UInt32 *size,void *output)
 {
-   (void)property; (void)bytes; (void)input;
+   assert(property==kAudioFormatProperty_AvailableEncodeSampleRates
+         && bytes==sizeof(UInt32) && input
+         && *(const UInt32*)input==kAudioFormatMPEG4AAC);
    assert(*size==sizeof(rates));
    if (mode==3) return -1;
    memcpy(output,rates,mode==2?sizeof(rates[0]):sizeof(rates));
@@ -39,6 +41,11 @@ int main(void)
    mode=0; allocation_fail=1; assert(avfoundation_nearest_aac_sample_rate(44100)==44100);
    allocation_fail=0; rates[0].mMinimum=rates[0].mMaximum=0;
    rates[1].mMinimum=48000; rates[1].mMaximum=32000;
+   assert(avfoundation_nearest_aac_sample_rate(22050)==22050);
+   mode=0;
+   rates[0].mMinimum=rates[0].mMaximum=8000;
+   rates[1].mMinimum=rates[1].mMaximum=22050;
+   assert(avfoundation_nearest_aac_sample_rate(8000)==8000);
    assert(avfoundation_nearest_aac_sample_rate(22050)==22050);
    puts("PASS: AAC rate ranges, actual response size, malformed ranges and fallback failures");
    return 0;
