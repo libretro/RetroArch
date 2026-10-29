@@ -106,7 +106,6 @@ CFLAGS += -I. -Ilibretro-common/include
 #CFLAGS += -DRARCH_INTERNAL
 CFLAGS += -DRARCH_CONSOLE -DIS_SALAMANDER
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 CFLAGS += -Werror=implicit-function-declaration
 
 ASFLAGS	:=	-g $(ARCH) -O3
@@ -139,13 +138,12 @@ $(TARGET).elf: $(OBJ)
 PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
 
 CC      := $(PREFIX)gcc
-CXX     := $(PREFIX)g++
 AS      := $(PREFIX)as
 AR      := $(PREFIX)ar
 OBJCOPY := $(PREFIX)objcopy
 STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
-LD      := $(CXX)
+LD      := $(CC)
 
 ifeq ($(strip $(CTRBANNERTOOL)),)
 	ifneq ($(findstring Linux,$(shell uname)),)
@@ -171,19 +169,6 @@ else
 	MAKEROM = $(CTRMAKEROM)
 endif
 
-%.o: %.vsh %.gsh
-	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
-	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
-	rm $*.shbin
-
-%.o: %.vsh
-	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
-	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
-	rm $*.shbin
-
-%.o: %.cpp
-	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
-
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
 
@@ -195,8 +180,6 @@ endif
 
 %.a:
 	$(AR) -rc $@ $^
-
-%.vsh:
 
 $(TARGET).smdh: $(APP_ICON)
 	$(DEVKITTOOLS)/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
