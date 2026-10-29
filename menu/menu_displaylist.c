@@ -147,9 +147,9 @@
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
 #include "../core_backup.h"
-#include "../misc/cpufreq/cpufreq.h"
+#include "../os/lakka/cpufreq/cpufreq.h"
 #ifdef HAVE_LAKKA_SWITCH
-#include "../misc/reboot2payload/reboot2payload.h"
+#include "../os/lakka/reboot2payload/reboot2payload.h"
 #endif
 #include "../input/input_remapping.h"
 #include "../input/common/input_ignore_devices.h"

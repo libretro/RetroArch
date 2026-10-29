@@ -28,8 +28,8 @@
 #include <string/stdstring.h>
 
 #include "reboot2payload.h"
-#include "../../configuration.h"
-#include "../../verbosity.h"
+#include "../../../configuration.h"
+#include "../../../verbosity.h"
 
 #define R2P_SYSFS_DIR      "/sys/devices/r2p"
 #define R2P_SYSFS_ACTION   R2P_SYSFS_DIR "/action"

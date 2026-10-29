@@ -46,12 +46,12 @@
 #endif
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
-#include "../misc/cpufreq/cpufreq.h"
+#include "../../os/lakka/cpufreq/cpufreq.h"
 #ifdef HAVE_LAKKA
 #include "../../lakka.h"
 #endif
 #ifdef HAVE_LAKKA_SWITCH
-#include "../../misc/reboot2payload/reboot2payload.h"
+#include "../../os/lakka/reboot2payload/reboot2payload.h"
 #endif
 #include "../../audio/audio_driver.h"
 

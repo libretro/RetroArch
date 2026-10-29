@@ -225,7 +225,7 @@
 #ifdef HAVE_BLUETOOTH
 #include "bluetooth/bluetooth_driver.h"
 #endif
-#include "misc/cpufreq/cpufreq.h"
+#include "os/lakka/cpufreq/cpufreq.h"
 #include "led/led_driver.h"
 #include "midi_driver.h"
 #include "core.h"
@@ -279,7 +279,7 @@
 #include <retro_dirent.h>
 #include "lakka.h"
 #ifdef HAVE_LAKKA_SWITCH
-#include "misc/reboot2payload/reboot2payload.h"
+#include "os/lakka/reboot2payload/reboot2payload.h"
 #endif
 #include <systemd/sd-daemon.h>
 #endif

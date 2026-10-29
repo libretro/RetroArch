@@ -83,7 +83,7 @@
 #endif
 #include "../performance_counters.h"
 #include "../version.h"
-#include "../misc/cpufreq/cpufreq.h"
+#include "../os/lakka/cpufreq/cpufreq.h"
 
 #ifdef HAVE_LIBNX
 #include <switch.h>

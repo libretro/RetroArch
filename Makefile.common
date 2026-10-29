@@ -690,7 +690,7 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += network/drivers_wifi/connmanctl.o
-   OBJ += misc/cpufreq/cpufreq.o
+   OBJ += os/lakka/cpufreq/cpufreq.o
    LIBS += -lsystemd
 endif
 
@@ -1055,7 +1055,7 @@ endif
 
 ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
-   OBJ += misc/reboot2payload/reboot2payload.o
+   OBJ += os/lakka/reboot2payload/reboot2payload.o
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)

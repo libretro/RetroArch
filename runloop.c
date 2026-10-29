@@ -232,7 +232,7 @@ bool android_get_vfs_authorized_locations(
 #ifdef HAVE_BLUETOOTH
 #include "bluetooth/bluetooth_driver.h"
 #endif
-#include "misc/cpufreq/cpufreq.h"
+#include "os/lakka/cpufreq/cpufreq.h"
 #include "led/led_driver.h"
 #include "midi_driver.h"
 #include "location_driver.h"

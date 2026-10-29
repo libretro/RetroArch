@@ -25,7 +25,7 @@
 #include <retro_miscellaneous.h>
 
 #include "cpufreq.h"
-#include "../../configuration.h"
+#include "../../../configuration.h"
 
 #define REFRESH_TIMEOUT  2
 #define CPU_POLICIES_DIR "/sys/devices/system/cpu/cpufreq/"

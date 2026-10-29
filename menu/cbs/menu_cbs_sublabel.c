@@ -42,7 +42,7 @@
 #ifdef HAVE_BLUETOOTH
 #include "../../bluetooth/bluetooth_driver.h"
 #endif
-#include "../../misc/cpufreq/cpufreq.h"
+#include "../../os/lakka/cpufreq/cpufreq.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
