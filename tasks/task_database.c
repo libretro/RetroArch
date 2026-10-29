@@ -1214,12 +1214,19 @@ static void scan_readers_wake(scan_readers_t *blk)
       task_queue_wake(blk->idents[r]);
 }
 
-/* No I/O: a plain path that the default or the archive branch would
+/* No I/O: a plain path, or with an SMB client an smb:// one (its VFS
+ * pools connections), that the default or the archive branch would
  * CRC whole. */
 static bool scan_reader_eligible(const char *path)
 {
    if (   !path
+#ifdef HAVE_SMBCLIENT
+       || (   strstr(path, "://")
+           && !string_starts_with_size(path, "smb://",
+                 STRLEN_CONST("smb://")))
+#else
        || strstr(path, "://")
+#endif
        || strlen(path) >= PATH_MAX_LENGTH
        || path_contains_compressed_file(path))
       return false;
