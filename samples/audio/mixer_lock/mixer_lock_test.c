@@ -38,6 +38,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sched.h>
 
 #include <boolean.h>
 #include <retro_atomic.h>
@@ -165,6 +166,20 @@ static void finish_on_mix_thread(audio_mixer_voice_t *voice)
 }
 
 static retro_atomic_int_t stress_stop;
+
+/* A pass: holds the state lock, as a flush does, until let go. */
+extern retro_atomic_int_t stub_dsp_frees;
+static retro_atomic_int_t pass_entered, pass_release;
+static void *held_pass(void *arg)
+{
+   (void)arg;
+   audio_driver_state_lock();
+   retro_atomic_store_release_int(&pass_entered, 1);
+   while (!retro_atomic_load_acquire_int(&pass_release))
+      sched_yield();
+   audio_driver_state_unlock();
+   return NULL;
+}
 
 static void *stress_mix(void *arg)
 {
@@ -492,6 +507,40 @@ int main(void)
       for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
          audio_driver_mixer_remove_stream(i);
       CHECK(playing() == 0, "stress: %d plays left counted", playing());
+   }
+
+   /* 13. The DSP filter is swapped and freed from the main thread while
+    *     a pass runs, without waiting for it: what the pass may still be
+    *     running is freed once it is over. */
+   STAGE(13);
+   {
+      pthread_t pass;
+      int frees = retro_atomic_load_acquire_int(&stub_dsp_frees);
+      CHECK(audio_driver_dsp_filter_init("a.dsp"), "dsp: init a");
+      CHECK(retro_atomic_load_acquire_int(&audio_driver_st.dsp_caps) == 1,
+            "dsp: a float-only filter is not published as one");
+      retro_atomic_store_release_int(&pass_entered, 0);
+      retro_atomic_store_release_int(&pass_release, 0);
+      pthread_create(&pass, NULL, held_pass, NULL);
+      while (!retro_atomic_load_acquire_int(&pass_entered))
+         sched_yield();
+      CHECK(audio_driver_dsp_filter_init("b.dsp"), "dsp: init b");
+      audio_driver_dsp_filter_free();
+      CHECK(retro_atomic_load_acquire_int(&stub_dsp_frees) == frees,
+            "dsp: a filter was freed under a pass");
+      CHECK(!AUDIO_DRIVER_PTR_GET(&audio_driver_st.dsp)
+            && !retro_atomic_load_acquire_int(&audio_driver_st.dsp_caps),
+            "dsp: the filter is still published");
+      retro_atomic_store_release_int(&pass_release, 1);
+      pthread_join(pass, NULL);
+      audio_driver_dsp_reap(&audio_driver_st);
+      CHECK(retro_atomic_load_acquire_int(&stub_dsp_frees) == frees + 2,
+            "dsp: %d of 2 retired filters freed after the pass",
+            retro_atomic_load_acquire_int(&stub_dsp_frees) - frees);
+      CHECK(audio_driver_dsp_filter_init("c.dsp"), "dsp: init c");
+      audio_driver_dsp_filter_free();
+      CHECK(retro_atomic_load_acquire_int(&stub_dsp_frees) == frees + 3,
+            "dsp: a filter no pass runs was not freed at once");
    }
    slock_free(audio_driver_st.state_lock);
    audio_driver_st.state_lock = NULL;

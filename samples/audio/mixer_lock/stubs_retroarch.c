@@ -292,6 +292,44 @@ size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
 bool audio_mixer_has_float_voices(void) { return true; }
 bool audio_mixer_has_s16_voices(void) { return false; }
 
+/* --- DSP filter ------------------------------------------------------- */
+
+#include <audio/dsp_filter.h>
+
+struct retro_dsp_filter { int unused; };
+retro_atomic_int_t stub_dsp_frees;
+
+retro_dsp_filter_t *retro_dsp_filter_new(const char *filter_config,
+      void *string_data, float sample_rate)
+{
+   (void)filter_config; (void)string_data; (void)sample_rate;
+   return (retro_dsp_filter_t*)calloc(1, sizeof(retro_dsp_filter_t));
+}
+
+void retro_dsp_filter_free(retro_dsp_filter_t *dsp)
+{
+   retro_atomic_fetch_add_int(&stub_dsp_frees, 1);
+   free(dsp);
+}
+
+void retro_dsp_filter_process(retro_dsp_filter_t *dsp,
+      struct retro_dsp_data *data)
+{
+   (void)dsp; (void)data;
+}
+
+bool retro_dsp_filter_supports_int16(retro_dsp_filter_t *dsp)
+{
+   (void)dsp;
+   return false;
+}
+
+void retro_dsp_filter_process_int16(retro_dsp_filter_t *dsp,
+      struct retro_dsp_data_int16 *data)
+{
+   (void)dsp; (void)data;
+}
+
 /* --- everything the locking paths must not reach --------------------- */
 
 static void unreachable(const char *what)

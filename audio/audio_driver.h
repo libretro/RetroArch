@@ -66,6 +66,21 @@
 
 RETRO_BEGIN_DECLS
 
+/* The DSP filter and the record tap are published with pointer atomics
+ * and retired once no pass that could have read them is still running:
+ * a holder of the state lock counts itself in and out of pass_seq. A
+ * backend without pointer atomics changes them under the lock. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#define AUDIO_DRIVER_PASS_EPOCH
+typedef retro_atomic_ptr_t audio_driver_ptr_t;
+#define AUDIO_DRIVER_PTR_GET(p)    retro_atomic_load_acquire_ptr(p)
+#define AUDIO_DRIVER_PTR_SET(p, v) retro_atomic_store_release_ptr(p, v)
+#else
+typedef void *audio_driver_ptr_t;
+#define AUDIO_DRIVER_PTR_GET(p)    (*(p))
+#define AUDIO_DRIVER_PTR_SET(p, v) (*(p) = (v))
+#endif
+
 #ifdef HAVE_AUDIOMIXER
 typedef struct audio_mixer_stream
 {
@@ -489,7 +504,9 @@ typedef struct
 
    struct audio_record_source *record_source;
 #if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
-   struct record_audio_tap *record_tap;
+   audio_driver_ptr_t record_tap;       /* struct record_audio_tap */
+   /* Taken out of record_tap, not yet past the passes that saw it. */
+   struct record_audio_tap *record_tap_detached;
 #endif
    struct string_list *devices_list;
    /* The driver whose device_list_new built devices_list, so that its
@@ -532,7 +549,10 @@ typedef struct
     */
    int16_t *sample_accum;
 #ifdef HAVE_DSP_FILTER
-   retro_dsp_filter_t *dsp;
+   audio_driver_ptr_t dsp;              /* retro_dsp_filter_t */
+   /* Filters swapped out while a pass may still run them; the main
+    * thread's, each freed once pass_seq has moved off dsp_retired_seq. */
+   retro_dsp_filter_t *dsp_retired[4];
 #endif
    const retro_resampler_t *resampler;
 
@@ -606,11 +626,9 @@ typedef struct
     * of passes however finely the producer publishes. */
    /**
     * Held across a pipeline pass, and by the main thread whenever it
-    * changes something a pass reads: the DSP filter pointer. With the
-    * threaded pipeline a pass runs on the audio thread, so a menu
-    * action that swaps the DSP filter would otherwise race it - the
-    * filter free is a use-after-free window. Uncontended on
-    * the frame-synchronous path, where both are the same thread.
+    * changes something a pass reads: the resampler and the device.
+    * Uncontended on the frame-synchronous path, where both are the
+    * same thread.
     * Never held across a device write.
     */
    slock_t *state_lock;
@@ -801,6 +819,14 @@ typedef struct
     * once a frame on the main thread with no audio lock held; see
     * audio_driver_take_reinit_request(). */
    retro_atomic_int_t reinit_request;
+   /* Odd while a holder of the state lock - a pass - runs. */
+   retro_atomic_int_t pass_seq;
+#ifdef HAVE_DSP_FILTER
+   /* What the filter allows, for readers outside a pass: 0 none, 1 a
+    * float-only filter, 2 one with an int16 path. */
+   retro_atomic_int_t dsp_caps;
+   int dsp_retired_seq;
+#endif
 #ifdef HAVE_AUDIOMIXER
    /* mixer_streams[] is changed by the main and task threads holding
     * mixer_table_owner (AUDIO_MIXER_TABLE_*), and never by the mix: a
@@ -1260,7 +1286,8 @@ void audio_driver_pipeline_wake(void);
  * audio_driver_state_lock:
  * audio_driver_state_unlock:
  *
- * Guards the DSP filter against a pipeline pass on the audio thread. Cheap and safe to call before the audio driver is up:
+ * Guards the resampler and the device against a pipeline pass on the
+ * audio thread. Cheap and safe to call before the audio driver is up:
  * the lock exists for the driver's lifetime and both are no-ops
  * without it.
  **/

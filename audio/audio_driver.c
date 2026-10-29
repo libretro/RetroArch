@@ -33,6 +33,10 @@
 
 #include "audio_driver.h"
 
+#ifdef HAVE_DSP_FILTER
+static void audio_driver_dsp_reap(audio_driver_state_t *audio_st);
+#endif
+
 /* The mixer's stream table is held without a lock where compare-and-swap
  * is atomic; see audio_driver_mixer_hold(). */
 #if defined(HAVE_THREADS) \
@@ -1280,10 +1284,13 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_pending_bytes = 0;
    audio_driver_inline_free(audio_st);
 #if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
-   if (audio_st->record_tap)
    {
-      record_audio_tap_retire(audio_st->record_tap, true);
-      audio_st->record_tap = NULL;
+      struct record_audio_tap *tap = (struct record_audio_tap*)
+         AUDIO_DRIVER_PTR_GET(&audio_st->record_tap);
+      AUDIO_DRIVER_PTR_SET(&audio_st->record_tap, NULL);
+      if (tap)
+         record_audio_tap_retire(tap, true);
+      audio_st->record_tap_detached = NULL;
    }
 #endif
    audio_st->transport_lpf_only = false;
@@ -2625,8 +2632,7 @@ static bool audio_driver_mixer_use_s16(bool is_float)
                 &audio_driver_st.runloop_snapshot) & AUDIO_SNAP_FASTPATH_S16)
           && !is_float
 #ifdef HAVE_DSP_FILTER
-          && (!audio_driver_st.dsp
-                || retro_dsp_filter_supports_int16(audio_driver_st.dsp))
+          && retro_atomic_load_acquire_int(&audio_driver_st.dsp_caps) != 1
 #endif
           ;
 }
@@ -3162,9 +3168,13 @@ static void audio_driver_pause_track(audio_driver_state_t *audio_st,
    }
 
 #if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
-   if (audio_st->record_tap)
-      record_audio_tap_push(audio_st->record_tap, buf, num_frames,
-            is_float, audio_st->out_rate);
+   {
+      struct record_audio_tap *tap = (struct record_audio_tap*)
+         AUDIO_DRIVER_PTR_GET(&audio_st->record_tap);
+      if (tap)
+         record_audio_tap_push(tap, buf, num_frames, is_float,
+               audio_st->out_rate);
+   }
 #endif
    audio_st->last_out[0] = audio_driver_pause_read(buf, is_float,
          ((num_frames - 1) * 2) + 0);
@@ -3297,6 +3307,10 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          (audio_st->mute_enable || aflags & AUDIO_FLAG_MUTED)
                ? 0.0f
                : audio_st->volume_gain;
+#ifdef HAVE_DSP_FILTER
+   retro_dsp_filter_t *dsp        = (retro_dsp_filter_t*)
+         AUDIO_DRIVER_PTR_GET(&audio_st->dsp);
+#endif
 
    /* Record the core's delivered sample format for the statistics overlay. */
    audio_st->stat_core_is_float = is_float;
@@ -3314,7 +3328,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * where the redundant int16<->float round-trip is avoided). */
    if (audio->write_raw
 #if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
-         && !audio_st->record_tap
+         && !AUDIO_DRIVER_PTR_GET(&audio_st->record_tap)
 #endif
          && !audio_st->resampler_hq
          && !is_float
@@ -3330,7 +3344,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          && !audio_st->virtualize
          && !midi_driver_synth_active()
 #ifdef HAVE_DSP_FILTER
-         && !audio_st->dsp
+         && !dsp
 #endif
 #ifdef HAVE_AUDIOMIXER
          && !retro_atomic_load_acquire_int(&audio_st->mixer_streams_playing)
@@ -3524,7 +3538,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          /* Run an int16-capable DSP chain in place on the writable view,
           * then resample its output.  When a synth was summed above the
           * view already holds game+synth. */
-         if (audio_st->dsp && audio_st->input_data_int16)
+         if (dsp && audio_st->input_data_int16)
          {
             struct retro_dsp_data_int16 dsp_data;
             if (!work)
@@ -3537,7 +3551,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             dsp_data.input_frames = rs_frames;
             dsp_data.output       = NULL;
             dsp_data.output_frames = 0;
-            retro_dsp_filter_process_int16(audio_st->dsp, &dsp_data);
+            retro_dsp_filter_process_int16(dsp, &dsp_data);
             rs_in     = dsp_data.output;
             rs_frames = dsp_data.output_frames;
          }
@@ -3815,7 +3829,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             || (audio_volume_gain != 1.0f)
             || synth_on
 #ifdef HAVE_DSP_FILTER
-            || (audio_st->dsp != NULL)
+            || (dsp != NULL)
 #endif
             ;
 
@@ -3826,7 +3840,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             && audio_volume_gain == 1.0f
             && !synth_on
 #ifdef HAVE_DSP_FILTER
-            && !audio_st->dsp
+            && !dsp
 #endif
          )
       {
@@ -3882,7 +3896,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
 #ifdef HAVE_DSP_FILTER
    /* If we want to process our audio for reasons besides resampling... */
-   if (audio_st->dsp)
+   if (dsp)
    {
       struct retro_dsp_data dsp_data;
 
@@ -3897,7 +3911,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
        * the DSP filter will set them to useful values, most likely to be
        * the same as the inputs. */
 
-      retro_dsp_filter_process(audio_st->dsp, &dsp_data);
+      retro_dsp_filter_process(dsp, &dsp_data);
 
       /* If the DSP filter succeeded... */
       if (dsp_data.output)
@@ -5349,11 +5363,12 @@ static void audio_driver_pipeline_signal(audio_driver_state_t *audio_st)
 /**
  * audio_driver_state_lock:
  *
- * Guards the DSP filter, the resampler and the device's write and
- * control calls against the audio thread. Created before consumers
- * start; retained until both the pipeline and mixer are torn down.
- * The mixer's stream table is not under it: see
- * audio_driver_mixer_hold().
+ * Guards the resampler and the device's write and control calls
+ * against the audio thread. Created before consumers start; retained
+ * until both the pipeline and mixer are torn down. A holder counts
+ * itself in pass_seq, which is what the DSP filter and the record tap
+ * are retired against; neither they nor the mixer's stream table (see
+ * audio_driver_mixer_hold()) is changed under it.
  **/
 void audio_driver_state_lock(void)
 {
@@ -5361,10 +5376,19 @@ void audio_driver_state_lock(void)
    if (audio_driver_st.state_lock)
       slock_lock(audio_driver_st.state_lock);
 #endif
+#ifdef AUDIO_DRIVER_PASS_EPOCH
+   /* Fenced against a retire's: a pass counted after the retire looked
+    * reads the pointer it cleared. */
+   retro_atomic_fetch_add_int(&audio_driver_st.pass_seq, 1);
+   retro_atomic_thread_fence_seq_cst();
+#endif
 }
 
 void audio_driver_state_unlock(void)
 {
+#ifdef AUDIO_DRIVER_PASS_EPOCH
+   retro_atomic_fetch_add_int(&audio_driver_st.pass_seq, 1);
+#endif
 #ifdef HAVE_THREADS
    if (audio_driver_st.state_lock)
       slock_unlock(audio_driver_st.state_lock);
@@ -5375,27 +5399,40 @@ int audio_driver_record_tap_install(struct record_audio_tap *tap)
 {
 #if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
    audio_driver_state_t *s = &audio_driver_st;
-   int result = -1;
+   struct record_audio_tap *cur;
    if (!tap)
       return -1;
-#ifdef HAVE_THREADS
+#ifdef AUDIO_DRIVER_PASS_EPOCH
+   /* Again once the pass under way is over. */
+   if (retro_atomic_load_acquire_int(&s->pass_seq) & 1)
+      return 0;
+   /* Again once a tap coming out has ended. */
+   if (s->record_tap_detached)
+      return 0;
+#elif defined(HAVE_THREADS)
    if (s->state_lock && !slock_try_lock(s->state_lock))
       return 0;
 #endif
-   if (s->record_tap == tap)
-      result = 1;
-   else if (!s->record_tap && (AUDIO_FLAGS_GET(s) & AUDIO_FLAG_ACTIVE)
-         && s->out_rate == record_audio_tap_rate(tap)
-         && record_audio_tap_begin(tap))
+   cur = (struct record_audio_tap*)AUDIO_DRIVER_PTR_GET(&s->record_tap);
+   if (cur != tap)
    {
-      s->record_tap = tap;
-      result = 1;
+      if (     cur
+            || !(AUDIO_FLAGS_GET(s) & AUDIO_FLAG_ACTIVE)
+            || s->out_rate != record_audio_tap_rate(tap)
+            || !record_audio_tap_begin(tap))
+         cur = NULL;
+      else
+      {
+         /* Begun before the store that lets a pass see it. */
+         AUDIO_DRIVER_PTR_SET(&s->record_tap, tap);
+         cur = tap;
+      }
    }
-#ifdef HAVE_THREADS
+#if !defined(AUDIO_DRIVER_PASS_EPOCH) && defined(HAVE_THREADS)
    if (s->state_lock)
       slock_unlock(s->state_lock);
 #endif
-   return result;
+   return cur == tap ? 1 : -1;
 #else
    (void)tap;
    return -1;
@@ -5409,6 +5446,25 @@ bool audio_driver_record_tap_remove(struct record_audio_tap *tap)
    bool ready;
    if (!tap)
       return true;
+#ifdef AUDIO_DRIVER_PASS_EPOCH
+   /* The pass under way pushes to the tap still; then it comes out, and
+    * ends once no pass that could have seen it remains. */
+   if (s->record_tap_detached != tap)
+   {
+      if (retro_atomic_load_acquire_int(&s->pass_seq) & 1)
+         return false;
+      if (retro_atomic_cas_ptr(&s->record_tap, tap, NULL))
+         s->record_tap_detached = tap;
+   }
+   retro_atomic_thread_fence_seq_cst();
+   if (retro_atomic_load_acquire_int(&s->pass_seq) & 1)
+      return false;
+   if (s->record_tap_detached == tap)
+   {
+      s->record_tap_detached = NULL;
+      record_audio_tap_retire(tap, false);
+   }
+#else
 #ifdef HAVE_THREADS
    if (s->state_lock && !slock_try_lock(s->state_lock))
       return false;
@@ -5418,8 +5474,9 @@ bool audio_driver_record_tap_remove(struct record_audio_tap *tap)
       s->record_tap = NULL;
       record_audio_tap_retire(tap, false);
    }
+#endif
    ready = record_audio_tap_end(tap, NULL);
-#ifdef HAVE_THREADS
+#if !defined(AUDIO_DRIVER_PASS_EPOCH) && defined(HAVE_THREADS)
    if (s->state_lock)
       slock_unlock(s->state_lock);
 #endif
@@ -7634,6 +7691,9 @@ void audio_driver_frame_end(void)
 #ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_reap();
 #endif
+#ifdef HAVE_DSP_FILTER
+   audio_driver_dsp_reap(audio_st);
+#endif
 
    /* A core audio callback fills the accumulator on the audio thread and
     * audio_driver_callback() flushes it there; touching it here would
@@ -8308,14 +8368,69 @@ size_t audio_driver_sample_batch_rewind(
 #endif
 
 #ifdef HAVE_DSP_FILTER
+/* Frees the filters retired before the pass that may have run them
+ * ended; the main thread's. */
+static void audio_driver_dsp_reap(audio_driver_state_t *audio_st)
+{
+   unsigned i;
+#ifdef AUDIO_DRIVER_PASS_EPOCH
+   if (     !audio_st->dsp_retired[0]
+         || retro_atomic_load_acquire_int(&audio_st->pass_seq)
+            == audio_st->dsp_retired_seq)
+      return;
+#endif
+   for (i = 0; i < ARRAY_SIZE(audio_st->dsp_retired); i++)
+   {
+      if (audio_st->dsp_retired[i])
+         retro_dsp_filter_free(audio_st->dsp_retired[i]);
+      audio_st->dsp_retired[i] = NULL;
+   }
+}
+
+/* A filter taken out of dsp: freed now unless a pass is running, which
+ * may still have it. */
+static void audio_driver_dsp_retire(audio_driver_state_t *audio_st,
+      retro_dsp_filter_t *old)
+{
+#ifdef AUDIO_DRIVER_PASS_EPOCH
+   unsigned i;
+   int seq;
+#endif
+   if (!old)
+      return;
+#ifdef AUDIO_DRIVER_PASS_EPOCH
+   retro_atomic_thread_fence_seq_cst();
+   seq = retro_atomic_load_acquire_int(&audio_st->pass_seq);
+   if (seq & 1)
+   {
+      audio_driver_dsp_reap(audio_st);
+      for (i = 0; i < ARRAY_SIZE(audio_st->dsp_retired); i++)
+         if (!audio_st->dsp_retired[i])
+         {
+            audio_st->dsp_retired[i]  = old;
+            audio_st->dsp_retired_seq = seq;
+            return;
+         }
+   }
+#endif
+   retro_dsp_filter_free(old);
+}
+
 void audio_driver_dsp_filter_free(void)
 {
-   audio_driver_state_t *audio_st  = &audio_driver_st;
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   retro_dsp_filter_t   *old;
+#ifdef AUDIO_DRIVER_PASS_EPOCH
+   old = (retro_dsp_filter_t*)retro_atomic_exchange_ptr(&audio_st->dsp, NULL);
+#else
    audio_driver_state_lock();
-   if (audio_st->dsp)
-      retro_dsp_filter_free(audio_st->dsp);
+   old           = (retro_dsp_filter_t*)audio_st->dsp;
    audio_st->dsp = NULL;
    audio_driver_state_unlock();
+#endif
+   retro_atomic_store_release_int(&audio_st->dsp_caps, 0);
+   audio_driver_dsp_retire(audio_st, old);
+   audio_driver_dsp_reap(audio_st);
 }
 
 bool audio_driver_dsp_filter_init(const char *device)
@@ -8336,9 +8451,21 @@ bool audio_driver_dsp_filter_init(const char *device)
    if (!audio_driver_dsp)
       return false;
 
-   audio_driver_state_lock();
-   audio_driver_st.dsp = audio_driver_dsp;
-   audio_driver_state_unlock();
+   retro_atomic_store_release_int(&audio_driver_st.dsp_caps,
+         retro_dsp_filter_supports_int16(audio_driver_dsp) ? 2 : 1);
+#ifdef AUDIO_DRIVER_PASS_EPOCH
+   audio_driver_dsp_retire(&audio_driver_st, (retro_dsp_filter_t*)
+         retro_atomic_exchange_ptr(&audio_driver_st.dsp, audio_driver_dsp));
+#else
+   {
+      retro_dsp_filter_t *old;
+      audio_driver_state_lock();
+      old                 = (retro_dsp_filter_t*)audio_driver_st.dsp;
+      audio_driver_st.dsp = audio_driver_dsp;
+      audio_driver_state_unlock();
+      audio_driver_dsp_retire(&audio_driver_st, old);
+   }
+#endif
 
    return true;
 }
@@ -9952,7 +10079,7 @@ bool audio_driver_set_input_rate(double input)
          || audio_st->callback.callback
          || audio_st->inline_transport
 #ifdef HAVE_DSP_FILTER
-         || audio_st->dsp
+         || retro_atomic_load_acquire_int(&audio_st->dsp_caps)
 #endif
          || settings->bools.audio_time_stretch
          || settings->bools.audio_time_stretch_lowpass)
@@ -10334,6 +10461,9 @@ void audio_driver_menu_sample(bool by_clock)
 
 #ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_reap();
+#endif
+#ifdef HAVE_DSP_FILTER
+   audio_driver_dsp_reap(audio_st);
 #endif
 
 #ifdef HAVE_THREADS

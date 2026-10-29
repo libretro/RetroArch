@@ -82,7 +82,7 @@ int main(void)
    }
 #endif
    assert(audio_driver_record_tap_remove(t));
-   assert(!audio_driver_st.record_tap);
+   assert(!AUDIO_DRIVER_PTR_GET(&audio_driver_st.record_tap));
    assert(record_audio_tap_end(t, &end) && end == 32);
    assert(record_audio_tap_free(t) && record_audio_tap_free(other));
 #ifdef HAVE_THREADS
