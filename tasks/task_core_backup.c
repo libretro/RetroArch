@@ -42,7 +42,7 @@
 #endif
 
 #if defined(ANDROID)
-#include "../play_feature_delivery/play_feature_delivery.h"
+#include "../os/android/play_feature_delivery.h"
 #endif
 
 /* A low common denominator transfer quantum.  On a slow (speed class

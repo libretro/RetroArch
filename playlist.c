@@ -39,7 +39,7 @@
 #include "core_info.h"
 
 #if defined(ANDROID)
-#include "play_feature_delivery/play_feature_delivery.h"
+#include "os/android/play_feature_delivery.h"
 #include <compat/strl.h>
 #ifdef __MACH__
 #include <TargetConditionals.h>

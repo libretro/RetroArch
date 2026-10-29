@@ -66,7 +66,7 @@
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
 #include "../../../core_updater_list.h"
-#include "../../../play_feature_delivery/play_feature_delivery.h"
+#include "../../../os/android/play_feature_delivery.h"
 #include "../../../tasks/tasks_internal.h"
 
 #define NUM_CORES 8

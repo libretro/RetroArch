@@ -42,7 +42,7 @@
 
 #if defined(ANDROID)
 #include "../file_path_special.h"
-#include "../play_feature_delivery/play_feature_delivery.h"
+#include "../os/android/play_feature_delivery.h"
 #endif
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)

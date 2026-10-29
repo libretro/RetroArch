@@ -21,7 +21,7 @@
 #include <retro_atomic.h>
 
 #include <string/stdstring.h>
-#include "../frontend/drivers/platform_unix.h"
+#include "../../frontend/drivers/platform_unix.h"
 
 #include "play_feature_delivery.h"
 #include <queues/task_queue.h>

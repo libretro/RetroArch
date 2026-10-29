@@ -2096,7 +2096,7 @@ TIME
 ANDROID PLAY FEATURE DELIVERY
 ============================================================ */
 #if defined(ANDROID)
-#include "../play_feature_delivery/play_feature_delivery.c"
+#include "../os/android/play_feature_delivery.c"
 #endif
 
 

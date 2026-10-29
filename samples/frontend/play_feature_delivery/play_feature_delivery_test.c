@@ -13,7 +13,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../../play_feature_delivery/play_feature_delivery.c"
+#include "../../../os/android/play_feature_delivery.c"
 
 static unsigned failures;
 #define CHECK(cond, ...) \

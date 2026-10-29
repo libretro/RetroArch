@@ -179,7 +179,7 @@ void android_app_set_window_settings(bool notch_write_over,
 #endif
 
 #if defined(ANDROID)
-#include "../play_feature_delivery/play_feature_delivery.h"
+#include "../os/android/play_feature_delivery.h"
 #endif
 
 #ifdef HAVE_LANGEXTRA

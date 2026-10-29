@@ -830,7 +830,7 @@ check "psp: psp_joypad"        "$PSP_DEFS $CDECL" input/drivers_joypad/psp_joypa
 check "orbis: ps4_audio"       "$HOSTOFF -Itools/platform_stubs/orbis -DORBIS $CDECL" audio/drivers/ps4_audio.c
 check "qnx: alsa_qsa"          "$HOSTOFF -Itools/platform_stubs/qnx -D__QNX__ $CDECL" audio/drivers/alsa_qsa.c
 check "android: vfs saf"       "$HOSTOFF -Itools/platform_stubs/android -DANDROID $CDECL" libretro-common/vfs/vfs_implementation_saf.c
-check "android: play delivery" "$HOSTOFF -Itools/platform_stubs/android -DANDROID $CDECL" play_feature_delivery/play_feature_delivery.c
+check "android: play delivery" "$HOSTOFF -Itools/platform_stubs/android -DANDROID $CDECL" os/android/play_feature_delivery.c
 # the Android build carries the built-in NFS client and its backend
 # (HAVE_RETRONFS in pkg/android/phoenix-common/jni/Android.mk) and the
 # prefetcher both network backends read through

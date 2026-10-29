@@ -107,7 +107,7 @@
 #endif
 
 #if defined(ANDROID)
-#include "play_feature_delivery/play_feature_delivery.h"
+#include "os/android/play_feature_delivery.h"
 #include "frontend/drivers/platform_unix.h"
 #include "input/drivers/android_input.h"
 #endif

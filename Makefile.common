@@ -3203,7 +3203,7 @@ endif
 ###  downloader)                  ###
 #####################################
 ifeq ($(ANDROID), 1)
-   OBJ += play_feature_delivery/play_feature_delivery.o
+   OBJ += os/android/play_feature_delivery.o
 endif
 
 ### Steam integration using mist

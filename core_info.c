@@ -45,7 +45,7 @@
 #endif
 
 #if defined(ANDROID)
-#include "play_feature_delivery/play_feature_delivery.h"
+#include "os/android/play_feature_delivery.h"
 #ifdef __MACH__
 #include <TargetConditionals.h>
 #endif
