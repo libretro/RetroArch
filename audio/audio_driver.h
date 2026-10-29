@@ -71,11 +71,15 @@ typedef struct audio_mixer_stream
 {
    audio_mixer_sound_t *handle;
    audio_mixer_voice_t *voice;
+   /* What the table does once the play has finished; run by the table's
+    * holder, never by the mix. */
    audio_mixer_stop_cb_t stop_cb;
    void *buf;
    char *name;
    size_t bufsize;
+   size_t play_serial;   /* the voice's play, for a stop to recognise it */
    float volume;
+   unsigned play_tag;    /* the sound's tag while it plays, 0 when not */
    enum audio_mixer_stream_type stream_type;
    enum audio_mixer_type type;
    enum audio_mixer_state state;
@@ -602,11 +606,10 @@ typedef struct
     * of passes however finely the producer publishes. */
    /**
     * Held across a pipeline pass, and by the main thread whenever it
-    * changes something a pass reads: the DSP filter pointer and the
-    * mixer's voices. With the threaded pipeline a pass runs on the
-    * audio thread, so a menu action that swaps the DSP filter or
-    * starts a sound would otherwise race it - the filter free is a
-    * use-after-free window, the mixer a torn voice. Uncontended on
+    * changes something a pass reads: the DSP filter pointer. With the
+    * threaded pipeline a pass runs on the audio thread, so a menu
+    * action that swaps the DSP filter would otherwise race it - the
+    * filter free is a use-after-free window. Uncontended on
     * the frame-synchronous path, where both are the same thread.
     * Never held across a device write.
     */
@@ -798,10 +801,23 @@ typedef struct
     * once a frame on the main thread with no audio lock held; see
     * audio_driver_take_reinit_request(). */
    retro_atomic_int_t reinit_request;
+#ifdef HAVE_AUDIOMIXER
+   /* mixer_streams[] is changed by the main and task threads holding
+    * mixer_table_owner (AUDIO_MIXER_TABLE_*), and never by the mix: a
+    * play the mix finishes leaves its tag in mixer_finished[] and bumps
+    * mixer_finish_seq, and the table's next holder settles it. */
+   retro_eventcount_t mixer_table_ec;
+   retro_atomic_int_t mixer_table_owner;
+   retro_atomic_int_t mixer_finished[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
+   retro_atomic_int_t mixer_finish_seq;
+   retro_atomic_int_t mixer_finish_seen;
+   retro_atomic_int_t mixer_streams_playing; /* written by the holder */
+   unsigned mixer_install_seq;
+   bool mixer_table_ec_ok;
+#endif
    bool mute_enable;
 #ifdef HAVE_AUDIOMIXER
    bool mixer_mute_enable;
-   uint8_t mixer_streams_playing;  /* Count of currently playing mixer streams */
 #endif
 
    /* Sample the flush delta-time when fast forwarding to find the correct ratio. */
@@ -1244,8 +1260,7 @@ void audio_driver_pipeline_wake(void);
  * audio_driver_state_lock:
  * audio_driver_state_unlock:
  *
- * Guards the DSP filter and the mixer against a pipeline pass on the
- * audio thread. Cheap and safe to call before the audio driver is up:
+ * Guards the DSP filter against a pipeline pass on the audio thread. Cheap and safe to call before the audio driver is up:
  * the lock exists for the driver's lifetime and both are no-ops
  * without it.
  **/
@@ -1338,6 +1353,9 @@ bool *audio_get_bool_ptr(enum audio_action action);
 
 #ifdef HAVE_AUDIOMIXER
 audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i);
+
+/* Main thread, once a frame: settles the plays the mix has finished. */
+void audio_driver_mixer_reap(void);
 
 /* Main-thread transport setup: snapshot initialized mixer output format.
  * False with rate0/s16false when audio is unavailable. */

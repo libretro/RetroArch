@@ -32,6 +32,14 @@
 #endif
 
 #include "audio_driver.h"
+
+/* The mixer's stream table is held without a lock where compare-and-swap
+ * is atomic; see audio_driver_mixer_hold(). */
+#if defined(HAVE_THREADS) \
+   && (defined(RETRO_ATOMIC_LOCK_FREE) || defined(RETRO_ATOMIC_BACKEND_PS2))
+#define AUDIO_MIXER_TABLE_OWNERSHIP
+#endif
+
 #include "../defaults.h"
 #include "audio_stretch.h"
 #include "audio_speed_lpf.h"
@@ -1391,18 +1399,20 @@ static bool audio_driver_deinit_internal(bool audio_enable)
 }
 
 #ifdef HAVE_AUDIOMIXER
+static void audio_driver_mixer_hold(void);
+static void audio_driver_mixer_release(void);
+static void audio_driver_mixer_remove_stream_held(unsigned i);
+
 static void audio_driver_mixer_deinit(void)
 {
    unsigned i;
 
+   audio_driver_mixer_hold();
    AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_MIXER_ACTIVE
                                       | AUDIO_FLAG_MIXER_INITED);
-
    for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
-   {
-      audio_driver_mixer_stop_stream(i);
-      audio_driver_mixer_remove_stream(i);
-   }
+      audio_driver_mixer_remove_stream_held(i);
+   audio_driver_mixer_release();
 
    audio_mixer_done();
 }
@@ -3323,7 +3333,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          && !audio_st->dsp
 #endif
 #ifdef HAVE_AUDIOMIXER
-         && audio_st->mixer_streams_playing == 0
+         && !retro_atomic_load_acquire_int(&audio_st->mixer_streams_playing)
 #endif
       )
    {
@@ -4256,7 +4266,8 @@ const char *audio_driver_mixer_get_stream_name(unsigned i)
 
 unsigned audio_driver_mixer_get_streams_playing(void)
 {
-   return audio_driver_st.mixer_streams_playing;
+   return (unsigned)retro_atomic_load_acquire_int(
+         &audio_driver_st.mixer_streams_playing);
 }
 
 #endif
@@ -5147,7 +5158,17 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    if (     (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED)
          && audio_driver_mixer_init_rate != settings->uints.audio_output_sample_rate)
       audio_driver_mixer_deinit();
+#ifdef AUDIO_MIXER_TABLE_OWNERSHIP
+   /* Kept for the process, like the table: a mixer task can still
+    * reach for it after a deinit. */
+   if (!audio_driver_st.mixer_table_ec_ok)
+      audio_driver_st.mixer_table_ec_ok =
+         retro_eventcount_init(&audio_driver_st.mixer_table_ec);
+   if (     !(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED)
+         && audio_driver_st.mixer_table_ec_ok)
+#else
    if (!(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED))
+#endif
    {
       audio_mixer_init(settings->uints.audio_output_sample_rate);
       audio_driver_mixer_init_rate = settings->uints.audio_output_sample_rate;
@@ -5328,23 +5349,11 @@ static void audio_driver_pipeline_signal(audio_driver_state_t *audio_st)
 /**
  * audio_driver_state_lock:
  *
- * Guards mixer streams and the DSP filter against the audio thread.
- * Created before consumers start; retained until both the pipeline
- * and mixer are torn down.
- *
- * This lock is the deliberate remainder of the subsystem's threading
- * design, not a candidate for the atomics treatment the rest of the
- * audio state received. Everything cheap to publish already crosses
- * without it - runloop_snapshot, the AUDIO_FLAGS word, the SPSC pipe
- * ring, the eventcount wakeups - and what it still serializes is the
- * part atomics cannot: the driver's own write() and control calls
- * against device reinit, the resampler and DSP instances against
- * their replacement, the mixer's voice table against task-thread
- * play() calls, and a nesting contract the mixer_lock sample pins.
- * The per-batch cost is one uncontended acquire around work that is
- * microseconds of resampling and device I/O; the batch budget holds
- * with room. Shrinking a section here is welcome; removing the lock
- * means re-answering every one of those ownership questions at once.
+ * Guards the DSP filter, the resampler and the device's write and
+ * control calls against the audio thread. Created before consumers
+ * start; retained until both the pipeline and mixer are torn down.
+ * The mixer's stream table is not under it: see
+ * audio_driver_mixer_hold().
  **/
 void audio_driver_state_lock(void)
 {
@@ -7622,6 +7631,9 @@ void audio_driver_frame_end(void)
    audio_driver_state_t *audio_st  = &audio_driver_st;
 
    audio_driver_publish_runloop();
+#ifdef HAVE_AUDIOMIXER
+   audio_driver_mixer_reap();
+#endif
 
    /* A core audio callback fills the accumulator on the audio thread and
     * audio_driver_callback() flushes it there; touching it here would
@@ -8428,6 +8440,131 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    return false;
 }
 
+/* The stream table is held by whoever changes it - the main thread and
+ * task threads - and never by the mix. Holding it is a compare-and-swap
+ * on mixer_table_owner; a second holder parks on mixer_table_ec, and a
+ * holder lets go with an exchange that notifies only when one waits.
+ * Where compare-and-swap is not atomic (the volatile backend), it is
+ * the state lock (AUDIO_MIXER_TABLE_OWNERSHIP unset). */
+#define AUDIO_MIXER_TABLE_FREE   0
+#define AUDIO_MIXER_TABLE_HELD   1
+#define AUDIO_MIXER_TABLE_WANTED 2   /* held, and a caller is parked */
+
+/* A sound's tag: its slot in the low bits, and above them a count of
+ * the sounds the table has taken in, so a finish the mix reports for a
+ * sound since replaced is told apart. Set as the sound is taken in,
+ * before any voice plays it. */
+#define AUDIO_MIXER_TAG_SLOT_BITS 5
+#define AUDIO_MIXER_TAG_SLOT(tag) \
+   ((tag) & ((1u << AUDIO_MIXER_TAG_SLOT_BITS) - 1))
+#define AUDIO_MIXER_TAG_SEQ_MASK  ((1u << (31 - AUDIO_MIXER_TAG_SLOT_BITS)) - 1)
+typedef char audio_mixer_tag_slot_fits[
+   (AUDIO_MIXER_MAX_SYSTEM_STREAMS <= (1 << AUDIO_MIXER_TAG_SLOT_BITS)) ? 1 : -1];
+
+static void audio_driver_mixer_reap_held(void);
+
+static void audio_driver_mixer_hold(void)
+{
+#ifdef AUDIO_MIXER_TABLE_OWNERSHIP
+   audio_driver_state_t *st = &audio_driver_st;
+   /* Without its eventcount the mixer never started, so no task thread
+    * reaches the table to contend for it. */
+   if (     !retro_atomic_cas_int(&st->mixer_table_owner,
+               AUDIO_MIXER_TABLE_FREE, AUDIO_MIXER_TABLE_HELD)
+         && st->mixer_table_ec_ok)
+   {
+      while (retro_atomic_exchange_int(&st->mixer_table_owner,
+               AUDIO_MIXER_TABLE_WANTED) != AUDIO_MIXER_TABLE_FREE)
+      {
+         int key = retro_eventcount_prepare_wait(&st->mixer_table_ec);
+         if (retro_atomic_load_acquire_int(&st->mixer_table_owner)
+               == AUDIO_MIXER_TABLE_WANTED)
+            retro_eventcount_commit_wait(&st->mixer_table_ec, key);
+         else
+            retro_eventcount_cancel_wait(&st->mixer_table_ec);
+      }
+   }
+#else
+   audio_driver_state_lock();
+#endif
+   audio_driver_mixer_reap_held();
+}
+
+static void audio_driver_mixer_release(void)
+{
+#ifdef AUDIO_MIXER_TABLE_OWNERSHIP
+   audio_driver_state_t *st = &audio_driver_st;
+   if (     retro_atomic_exchange_int(&st->mixer_table_owner,
+               AUDIO_MIXER_TABLE_FREE) == AUDIO_MIXER_TABLE_WANTED
+         && st->mixer_table_ec_ok)
+      retro_eventcount_notify(&st->mixer_table_ec);
+#else
+   audio_driver_state_unlock();
+#endif
+}
+
+/* The mix's stop callback, for every play: it only reports a finish. */
+static void audio_mixer_finished_cb(audio_mixer_sound_t *sound,
+      unsigned reason)
+{
+   unsigned tag;
+   if (reason != AUDIO_MIXER_SOUND_FINISHED
+         || !(tag = audio_mixer_sound_tag(sound)))
+      return;
+   retro_atomic_store_release_int(
+         &audio_driver_st.mixer_finished[AUDIO_MIXER_TAG_SLOT(tag)],
+         (int)tag);
+   retro_atomic_fetch_add_int(&audio_driver_st.mixer_finish_seq, 1);
+}
+
+static unsigned audio_driver_mixer_tag_new(unsigned i)
+{
+   unsigned seq = ++audio_driver_st.mixer_install_seq & AUDIO_MIXER_TAG_SEQ_MASK;
+   if (!seq)
+      seq = audio_driver_st.mixer_install_seq = 1;
+   return (seq << AUDIO_MIXER_TAG_SLOT_BITS) | i;
+}
+
+/* Starts slot i's sound on a voice; the holder's. */
+static audio_mixer_voice_t *audio_driver_mixer_voice_start(unsigned i,
+      bool looped, float volume, bool use_s16)
+{
+   audio_mixer_stream_t *stream = &audio_driver_st.mixer_streams[i];
+   if (use_s16)
+      stream->voice = audio_mixer_play_s16(stream->handle, looped,
+            GAIN_TO_Q16(volume), audio_driver_st.resampler_ident,
+            audio_driver_st.resampler_quality, audio_mixer_finished_cb);
+   else
+      stream->voice = audio_mixer_play(stream->handle, looped, volume,
+            audio_driver_st.resampler_ident,
+            audio_driver_st.resampler_quality, audio_mixer_finished_cb);
+   stream->play_serial = 0;
+   stream->play_tag    = 0;
+   if (stream->voice)
+   {
+      stream->play_tag = audio_mixer_sound_tag(stream->handle);
+      audio_mixer_voice_clock(stream->voice, NULL, NULL, &stream->play_serial);
+   }
+   return stream->voice;
+}
+
+/* Whether slot i's play is still on its voice. */
+static bool audio_driver_mixer_voice_live(const audio_mixer_stream_t *stream)
+{
+   size_t serial = 0;
+   return stream->voice && stream->play_serial
+      && audio_mixer_voice_clock(stream->voice, NULL, NULL, &serial)
+      && serial == stream->play_serial;
+}
+
+static void audio_driver_mixer_playing_add(int n)
+{
+   int now = retro_atomic_load_acquire_int(
+         &audio_driver_st.mixer_streams_playing) + n;
+   retro_atomic_store_release_int(&audio_driver_st.mixer_streams_playing,
+         now < 0 ? 0 : now);
+}
+
 static int audio_mixer_find_index(
       audio_mixer_sound_t *sound)
 {
@@ -8442,61 +8579,48 @@ static int audio_mixer_find_index(
    return -1;
 }
 
+static void audio_driver_mixer_stop_stream_held(unsigned i);
+static void audio_driver_mixer_remove_stream_held(unsigned i);
+static void audio_driver_mixer_play_stream_held(unsigned i, unsigned type,
+      audio_mixer_stop_cb_t stop_cb);
+
+/* What the table does once a play has finished, run by its holder. */
+static void audio_driver_mixer_slot_clear(unsigned i)
+{
+   audio_mixer_stream_t *stream = &audio_driver_st.mixer_streams[i];
+   if (stream->handle)
+      audio_mixer_destroy(stream->handle);
+   if (stream->name)
+      free(stream->name);
+   stream->name     = NULL;
+   stream->state    = AUDIO_STREAM_STATE_NONE;
+   stream->volume   = 0.0f;
+   stream->buf      = NULL;
+   stream->stop_cb  = NULL;
+   stream->handle   = NULL;
+   stream->voice    = NULL;
+   stream->play_tag = 0;
+   audio_driver_mixer_playing_add(-1);
+}
+
 static void audio_mixer_play_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
    int idx = audio_mixer_find_index(sound);
-
-   switch (reason)
-   {
-      case AUDIO_MIXER_SOUND_FINISHED:
-         audio_mixer_destroy(sound);
-
-         if (idx >= 0)
-         {
-            unsigned i = (unsigned)idx;
-
-            if (*audio_driver_st.mixer_streams[i].name)
-               free(audio_driver_st.mixer_streams[i].name);
-
-            audio_driver_st.mixer_streams[i].name    = NULL;
-            audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
-            audio_driver_st.mixer_streams[i].volume  = 0.0f;
-            audio_driver_st.mixer_streams[i].buf     = NULL;
-            audio_driver_st.mixer_streams[i].stop_cb = NULL;
-            audio_driver_st.mixer_streams[i].handle  = NULL;
-            audio_driver_st.mixer_streams[i].voice   = NULL;
-            if (audio_driver_st.mixer_streams_playing > 0)
-               audio_driver_st.mixer_streams_playing--;
-         }
-         break;
-      case AUDIO_MIXER_SOUND_STOPPED:
-         break;
-      case AUDIO_MIXER_SOUND_REPEATED:
-         break;
-   }
+   if (reason == AUDIO_MIXER_SOUND_FINISHED && idx >= 0)
+      audio_driver_mixer_slot_clear((unsigned)idx);
 }
 
 static void audio_mixer_menu_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
    int idx = audio_mixer_find_index(sound);
-
-   switch (reason)
+   if (reason == AUDIO_MIXER_SOUND_FINISHED && idx >= 0)
    {
-      case AUDIO_MIXER_SOUND_FINISHED:
-         if (idx >= 0)
-         {
-            unsigned i                              = (unsigned)idx;
-            audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_STOPPED;
-            audio_driver_st.mixer_streams[i].volume  = 0.0f;
-            if (audio_driver_st.mixer_streams_playing > 0)
-               audio_driver_st.mixer_streams_playing--;
-         }
-         break;
-      case AUDIO_MIXER_SOUND_STOPPED:
-      case AUDIO_MIXER_SOUND_REPEATED:
-         break;
+      audio_driver_st.mixer_streams[idx].state  = AUDIO_STREAM_STATE_STOPPED;
+      audio_driver_st.mixer_streams[idx].volume = 0.0f;
+      audio_driver_st.mixer_streams[idx].voice  = NULL;
+      audio_driver_mixer_playing_add(-1);
    }
 }
 
@@ -8504,56 +8628,62 @@ static void audio_mixer_play_stop_sequential_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
    int idx = audio_mixer_find_index(sound);
-
-   switch (reason)
+   unsigned i;
+   if (reason != AUDIO_MIXER_SOUND_FINISHED || idx < 0)
+      return;
+   i = (unsigned)idx;
+   audio_driver_mixer_slot_clear(i);
+   audio_driver_st.mixer_streams[i].stream_type = (i < AUDIO_MIXER_MAX_STREAMS)
+      ? AUDIO_STREAM_TYPE_USER : AUDIO_STREAM_TYPE_SYSTEM;
+   for (i++; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
    {
-      case AUDIO_MIXER_SOUND_FINISHED:
-         audio_mixer_destroy(sound);
-
-         if (idx >= 0)
-         {
-            unsigned i = (unsigned)idx;
-
-            if (*audio_driver_st.mixer_streams[i].name)
-               free(audio_driver_st.mixer_streams[i].name);
-
-            if (i < AUDIO_MIXER_MAX_STREAMS)
-               audio_driver_st.mixer_streams[i].stream_type = AUDIO_STREAM_TYPE_USER;
-            else
-               audio_driver_st.mixer_streams[i].stream_type = AUDIO_STREAM_TYPE_SYSTEM;
-
-            audio_driver_st.mixer_streams[i].name           = NULL;
-            audio_driver_st.mixer_streams[i].state          = AUDIO_STREAM_STATE_NONE;
-            audio_driver_st.mixer_streams[i].volume         = 0.0f;
-            audio_driver_st.mixer_streams[i].buf            = NULL;
-            audio_driver_st.mixer_streams[i].stop_cb        = NULL;
-            audio_driver_st.mixer_streams[i].handle         = NULL;
-            audio_driver_st.mixer_streams[i].voice          = NULL;
-            if (audio_driver_st.mixer_streams_playing > 0)
-               audio_driver_st.mixer_streams_playing--;
-
-            i++;
-
-            for (; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
-            {
-               if (audio_driver_st.mixer_streams[i].state
-                     == AUDIO_STREAM_STATE_STOPPED)
-               {
-                  audio_driver_mixer_play_stream_sequential(i);
-                  break;
-               }
-            }
-         }
+      if (audio_driver_st.mixer_streams[i].state == AUDIO_STREAM_STATE_STOPPED)
+      {
+         audio_driver_mixer_play_stream_held(i,
+               AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+               audio_mixer_play_stop_sequential_cb);
          break;
-      case AUDIO_MIXER_SOUND_STOPPED:
-      case AUDIO_MIXER_SOUND_REPEATED:
-         break;
+      }
    }
 }
 
-/* Defined below, next to their locking public entry points. */
-static void audio_driver_mixer_stop_stream_locked(unsigned i);
-static void audio_driver_mixer_remove_stream_locked(unsigned i);
+/* Settles the plays the mix has finished since the last holder looked. */
+static void audio_driver_mixer_reap_held(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   int seq = retro_atomic_load_acquire_int(&st->mixer_finish_seq);
+   unsigned i;
+   if (seq == retro_atomic_load_acquire_int(&st->mixer_finish_seen))
+      return;
+   retro_atomic_store_release_int(&st->mixer_finish_seen, seq);
+   for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+   {
+      audio_mixer_stream_t *stream = &st->mixer_streams[i];
+      unsigned tag = (unsigned)retro_atomic_load_acquire_int(
+            &st->mixer_finished[i]);
+      /* The sound's tag is its slot's for every play of it: a finish
+       * counts once the play on the slot now is off its voice. */
+      if (!tag || tag != stream->play_tag
+            || audio_driver_mixer_voice_live(stream))
+         continue;
+      stream->play_tag = 0;
+      if (stream->stop_cb)
+         stream->stop_cb(stream->handle, AUDIO_MIXER_SOUND_FINISHED);
+   }
+}
+
+/* Main thread, once a frame: finished plays are settled even when
+ * nothing else reaches the table. */
+void audio_driver_mixer_reap(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   if (     retro_atomic_load_acquire_int(&st->mixer_finish_seq)
+         == retro_atomic_load_acquire_int(&st->mixer_finish_seen)
+         || !(AUDIO_FLAGS_GET(st) & AUDIO_FLAG_MIXER_INITED))
+      return;
+   audio_driver_mixer_hold();
+   audio_driver_mixer_release();
+}
 
 static bool audio_driver_mixer_get_free_stream_slot(
       unsigned *id, enum audio_mixer_stream_type type)
@@ -8647,9 +8777,11 @@ static bool audio_driver_mixer_add_stream_internal(
        * resampled whole here, and the audio thread mixes on meanwhile.
        * Everything else it reads - the resampler and the mixer's rate -
        * is set by audio init, on this thread. */
-      if (params->buf_owner)
+      if (params->buf_owner || params->type == AUDIO_MIXER_TYPE_WAV)
          /* borrowed: the sound reads straight out of the owner's bytes,
-          * and destroy hands them back - no copy is made */
+          * and destroy hands them back - no copy is made. A WAV is
+          * converted whole by its load, which copies the samples it
+          * keeps, so the caller's bytes are only read for the call. */
          buf = params->buf;
       else
       {
@@ -8665,14 +8797,10 @@ static bool audio_driver_mixer_add_stream_internal(
                   audio_driver_st.resampler_ident,
                   audio_driver_st.resampler_quality,
                   use_s16);
-            /* WAV is a special case - input buffer is not
-             * free()'d when sound playback is complete (it is
-             * converted to a PCM buffer, which is free()'d instead),
-             * so release the source here */
+            /* The sound keeps none of the source: a lender has its
+             * bytes back here, and the caller's own were never copied. */
             if (params->buf_owner)
                params->buf_owner_free(params->buf_owner);
-            else
-               free(buf);
             buf = NULL;
             break;
          case AUDIO_MIXER_TYPE_WAV_STREAM:
@@ -8764,10 +8892,10 @@ static bool audio_driver_mixer_add_stream_internal(
    }
 
    /* Claim the slot and start the voice. */
-   audio_driver_state_lock();
+   audio_driver_mixer_hold();
    if (!(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED))
    {
-      audio_driver_state_unlock();
+      audio_driver_mixer_release();
       audio_mixer_destroy(handle);
       return false;
    }
@@ -8776,25 +8904,24 @@ static bool audio_driver_mixer_add_stream_internal(
    {
       case AUDIO_MIXER_SLOT_SELECTION_MANUAL:
          free_slot = params->slot_selection_idx;
-         /* If we are using a manually specified
-          * slot, must free any existing stream
-          * before assigning the new one. The lock is already
-          * held here, so the unlocked internals are what run. */
-         audio_driver_mixer_stop_stream_locked(free_slot);
-         audio_driver_mixer_remove_stream_locked(free_slot);
+         /* A manually chosen slot gives up whatever it held. */
+         audio_driver_mixer_remove_stream_held(free_slot);
          break;
       case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
       default:
          if (!audio_driver_mixer_get_free_stream_slot(
                   &free_slot, params->stream_type))
          {
-            audio_driver_state_unlock();
+            audio_driver_mixer_release();
             audio_mixer_destroy(handle);
             return false;
          }
          break;
    }
 
+   audio_mixer_sound_set_tag(handle, audio_driver_mixer_tag_new(free_slot));
+   audio_driver_st.mixer_streams[free_slot].handle   = handle;
+   audio_driver_st.mixer_streams[free_slot].play_tag = 0;
    switch (params->state)
    {
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
@@ -8802,15 +8929,8 @@ static bool audio_driver_mixer_add_stream_internal(
          /* fall-through */
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
       case AUDIO_STREAM_STATE_PLAYING:
-         if (use_s16)
-            voice = audio_mixer_play_s16(handle, looped,
-                  GAIN_TO_Q16(params->volume),
-                  audio_driver_st.resampler_ident,
-                  audio_driver_st.resampler_quality, stop_cb);
-         else
-            voice = audio_mixer_play(handle, looped, params->volume,
-                  audio_driver_st.resampler_ident,
-                  audio_driver_st.resampler_quality, stop_cb);
+         voice = audio_driver_mixer_voice_start(free_slot, looped,
+               params->volume, use_s16);
          break;
       default:
          break;
@@ -8820,7 +8940,8 @@ static bool audio_driver_mixer_add_stream_internal(
     * publishing a playing slot or incrementing its counter. */
    if (prepared && !voice)
    {
-      audio_driver_state_unlock();
+      audio_driver_st.mixer_streams[free_slot].handle = NULL;
+      audio_driver_mixer_release();
       audio_mixer_destroy(handle);
       return false;
    }
@@ -8830,7 +8951,6 @@ static bool audio_driver_mixer_add_stream_internal(
    audio_driver_st.mixer_streams[free_slot].name        =
       (params->basename && *params->basename) ? strdup(params->basename) : NULL;
    audio_driver_st.mixer_streams[free_slot].buf         = buf;
-   audio_driver_st.mixer_streams[free_slot].handle      = handle;
    audio_driver_st.mixer_streams[free_slot].voice       = voice;
    audio_driver_st.mixer_streams[free_slot].stream_type = params->stream_type;
    audio_driver_st.mixer_streams[free_slot].type        = params->type;
@@ -8841,19 +8961,19 @@ static bool audio_driver_mixer_add_stream_internal(
    if (   params->state == AUDIO_STREAM_STATE_PLAYING
        || params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED
        || params->state == AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL)
-      audio_driver_st.mixer_streams_playing++;
+      audio_driver_mixer_playing_add(1);
 
    if (params->out_slot)
       *params->out_slot = (int)free_slot;
 
-   /* Capture the static-pool voice and its play identity while the
-    * existing state lock still excludes mixer retirement. A session
-    * can then read its atomic clock without borrowing slot metadata. */
+   /* The static-pool voice and its play identity, taken while the
+    * table is held so no retirement runs between them. A session can
+    * then read its atomic clock without borrowing slot metadata. */
    if (out_voice && out_serial && voice
          && audio_mixer_voice_clock(voice, NULL, NULL, out_serial))
       *out_voice = voice;
 
-   audio_driver_state_unlock();
+   audio_driver_mixer_release();
 
    return true;
 }
@@ -8912,88 +9032,87 @@ bool audio_driver_mixer_add_prepared_stream(audio_mixer_stream_params_t *params,
 
 int64_t audio_driver_mixer_stream_byte_tell(unsigned i)
 {
-   audio_mixer_voice_t *voice;
+   int64_t tell = -1;
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return -1;
-   if (audio_driver_st.mixer_streams[i].state == AUDIO_STREAM_STATE_NONE)
-      return -1;
-   if (!(voice = audio_driver_st.mixer_streams[i].voice))
-      return -1;
-   return (int64_t)audio_mixer_voice_buffer_tell(voice);
+   audio_driver_mixer_hold();
+   if (     audio_driver_st.mixer_streams[i].state != AUDIO_STREAM_STATE_NONE
+         && audio_driver_st.mixer_streams[i].voice)
+      tell = (int64_t)audio_mixer_voice_buffer_tell(
+            audio_driver_st.mixer_streams[i].voice);
+   audio_driver_mixer_release();
+   return tell;
 }
 
 void audio_driver_mixer_stream_set_repeat(unsigned i, bool repeat)
 {
-   if (i < AUDIO_MIXER_MAX_SYSTEM_STREAMS
-         && audio_driver_st.mixer_streams[i].state != AUDIO_STREAM_STATE_NONE)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
+      return;
+   audio_driver_mixer_hold();
+   if (audio_driver_st.mixer_streams[i].state != AUDIO_STREAM_STATE_NONE)
       audio_mixer_voice_set_repeat(audio_driver_st.mixer_streams[i].voice,
             repeat);
+   audio_driver_mixer_release();
 }
 
 void audio_driver_mixer_stream_set_paused(unsigned i, bool paused)
 {
-   if (i < AUDIO_MIXER_MAX_SYSTEM_STREAMS
-         && audio_driver_st.mixer_streams[i].state != AUDIO_STREAM_STATE_NONE)
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
+      return;
+   audio_driver_mixer_hold();
+   if (audio_driver_st.mixer_streams[i].state != AUDIO_STREAM_STATE_NONE)
       audio_mixer_voice_set_paused(audio_driver_st.mixer_streams[i].voice,
             paused);
+   audio_driver_mixer_release();
 }
 
 void audio_driver_mixer_stream_set_avail(unsigned i, size_t avail)
 {
-   audio_mixer_voice_t *voice;
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
-   if (audio_driver_st.mixer_streams[i].state == AUDIO_STREAM_STATE_NONE)
-      return;
-   if (!(voice = audio_driver_st.mixer_streams[i].voice))
-      return;
-   audio_mixer_voice_set_avail(voice, avail);
+   audio_driver_mixer_hold();
+   if (     audio_driver_st.mixer_streams[i].state != AUDIO_STREAM_STATE_NONE
+         && audio_driver_st.mixer_streams[i].voice)
+      audio_mixer_voice_set_avail(audio_driver_st.mixer_streams[i].voice,
+            avail);
+   audio_driver_mixer_release();
 }
 
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i)
 {
+   enum audio_mixer_state state;
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return AUDIO_STREAM_STATE_NONE;
-
-   return audio_driver_st.mixer_streams[i].state;
+   audio_driver_mixer_hold();
+   state = audio_driver_st.mixer_streams[i].state;
+   audio_driver_mixer_release();
+   return state;
 }
 
-static void audio_driver_mixer_play_stream_internal(
-      unsigned i, unsigned type)
+static void audio_driver_mixer_play_stream_held(unsigned i, unsigned type,
+      audio_mixer_stop_cb_t stop_cb)
+{
+   audio_mixer_stream_t *stream = &audio_driver_st.mixer_streams[i];
+   if (stream->state != AUDIO_STREAM_STATE_STOPPED)
+      return;
+   stream->stop_cb = stop_cb;
+   audio_driver_mixer_voice_start(i,
+         type == AUDIO_STREAM_STATE_PLAYING_LOOPED, 1.0f,
+         audio_driver_mixer_use_s16(audio_driver_st.stat_core_is_float));
+   stream->state = (enum audio_mixer_state)type;
+   audio_driver_mixer_playing_add(1);
+}
+
+static void audio_driver_mixer_play_stream_internal(unsigned i,
+      unsigned type, audio_mixer_stop_cb_t stop_cb, bool restart)
 {
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
-
-   audio_driver_state_lock();
-
-   switch (audio_driver_st.mixer_streams[i].state)
-   {
-      case AUDIO_STREAM_STATE_STOPPED:
-         if (audio_driver_mixer_use_s16(audio_driver_st.stat_core_is_float))
-            audio_driver_st.mixer_streams[i].voice =
-               audio_mixer_play_s16(audio_driver_st.mixer_streams[i].handle,
-                  (type == AUDIO_STREAM_STATE_PLAYING_LOOPED) ? true : false,
-                  AUDIO_MIXER_GAIN_UNITY,
-                  audio_driver_st.resampler_ident,
-                  audio_driver_st.resampler_quality,
-                  audio_driver_st.mixer_streams[i].stop_cb);
-         else
-            audio_driver_st.mixer_streams[i].voice =
-               audio_mixer_play(audio_driver_st.mixer_streams[i].handle,
-                  (type == AUDIO_STREAM_STATE_PLAYING_LOOPED) ? true : false,
-                  1.0f, audio_driver_st.resampler_ident,
-                  audio_driver_st.resampler_quality,
-                  audio_driver_st.mixer_streams[i].stop_cb);
-         audio_driver_st.mixer_streams[i].state = (enum audio_mixer_state)type;
-         audio_driver_st.mixer_streams_playing++;
-         break;
-      case AUDIO_STREAM_STATE_PLAYING:
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-      case AUDIO_STREAM_STATE_NONE:
-         break;
-   }
-   audio_driver_state_unlock();
+   audio_driver_mixer_hold();
+   if (restart)
+      audio_driver_mixer_stop_stream_held(i);
+   audio_driver_mixer_play_stream_held(i, type, stop_cb);
+   audio_driver_mixer_release();
 }
 
 #if defined(HAVE_MENU)
@@ -9145,21 +9264,20 @@ end:
 
 void audio_driver_mixer_play_stream(unsigned i)
 {
-   audio_driver_st.mixer_streams[i].stop_cb = audio_mixer_play_stop_cb;
-   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
+   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING,
+         audio_mixer_play_stop_cb, false);
 }
 
 void audio_driver_mixer_play_menu_sound_looped(unsigned i)
 {
-   audio_driver_st.mixer_streams[i].stop_cb = audio_mixer_menu_stop_cb;
-   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING_LOOPED);
+   audio_driver_mixer_play_stream_internal(i,
+         AUDIO_STREAM_STATE_PLAYING_LOOPED, audio_mixer_menu_stop_cb, false);
 }
 
 void audio_driver_mixer_play_menu_sound(unsigned i)
 {
-   audio_driver_st.mixer_streams[i].stop_cb = audio_mixer_menu_stop_cb;
-   audio_driver_mixer_stop_stream(i);
-   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
+   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING,
+         audio_mixer_menu_stop_cb, true);
 }
 
 void audio_driver_mixer_play_scroll_sound(bool direction_up)
@@ -9174,14 +9292,15 @@ void audio_driver_mixer_play_scroll_sound(bool direction_up)
 
 void audio_driver_mixer_play_stream_looped(unsigned i)
 {
-   audio_driver_st.mixer_streams[i].stop_cb = audio_mixer_play_stop_cb;
-   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING_LOOPED);
+   audio_driver_mixer_play_stream_internal(i,
+         AUDIO_STREAM_STATE_PLAYING_LOOPED, audio_mixer_play_stop_cb, false);
 }
 
 void audio_driver_mixer_play_stream_sequential(unsigned i)
 {
-   audio_driver_st.mixer_streams[i].stop_cb = audio_mixer_play_stop_sequential_cb;
-   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL);
+   audio_driver_mixer_play_stream_internal(i,
+         AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+         audio_mixer_play_stop_sequential_cb, false);
 }
 
 float audio_driver_mixer_get_stream_volume(unsigned i)
@@ -9194,44 +9313,35 @@ float audio_driver_mixer_get_stream_volume(unsigned i)
 
 void audio_driver_mixer_set_stream_volume(unsigned i, float vol)
 {
-   audio_mixer_voice_t *voice             = NULL;
+   audio_mixer_voice_t *voice;
 
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
-   audio_driver_state_lock();
-
+   audio_driver_mixer_hold();
    audio_driver_st.mixer_streams[i].volume = vol;
-
-   voice                                  =
-      audio_driver_st.mixer_streams[i].voice;
-
-   if (voice)
+   if ((voice = audio_driver_st.mixer_streams[i].voice))
       audio_mixer_voice_set_volume(voice, DB_TO_GAIN(vol));
-   audio_driver_state_unlock();
+   audio_driver_mixer_release();
 }
 
-/* Callers already holding the state lock use this; the public
- * entry point below takes the lock and calls it. The lock is a
- * plain mutex, so a locked caller that reached the public entry
- * point instead would deadlock against itself. */
-static void audio_driver_mixer_stop_stream_locked(unsigned i)
+static void audio_driver_mixer_stop_stream_held(unsigned i)
 {
-   switch (audio_driver_st.mixer_streams[i].state)
+   audio_mixer_stream_t *stream = &audio_driver_st.mixer_streams[i];
+   switch (stream->state)
    {
       case AUDIO_STREAM_STATE_PLAYING:
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-         {
-            audio_mixer_voice_t *voice     = audio_driver_st.mixer_streams[i].voice;
-
-            if (voice)
-               audio_mixer_stop(voice);
-            audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_STOPPED;
-            audio_driver_st.mixer_streams[i].volume  = 1.0f;
-            if (audio_driver_st.mixer_streams_playing > 0)
-               audio_driver_st.mixer_streams_playing--;
-         }
+         /* A play the mix has finished is over already, and its voice
+          * may be another slot's now. */
+         if (audio_driver_mixer_voice_live(stream))
+            audio_mixer_stop(stream->voice);
+         stream->voice    = NULL;
+         stream->play_tag = 0;
+         stream->state    = AUDIO_STREAM_STATE_STOPPED;
+         stream->volume   = 1.0f;
+         audio_driver_mixer_playing_add(-1);
          break;
       case AUDIO_STREAM_STATE_STOPPED:
       case AUDIO_STREAM_STATE_NONE:
@@ -9243,43 +9353,29 @@ void audio_driver_mixer_stop_stream(unsigned i)
 {
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
-   audio_driver_state_lock();
-   audio_driver_mixer_stop_stream_locked(i);
-   audio_driver_state_unlock();
+   audio_driver_mixer_hold();
+   audio_driver_mixer_stop_stream_held(i);
+   audio_driver_mixer_release();
 }
 
-static void audio_driver_mixer_remove_stream_locked(unsigned i)
+static void audio_driver_mixer_remove_stream_held(unsigned i)
 {
-   switch (audio_driver_st.mixer_streams[i].state)
-   {
-      case AUDIO_STREAM_STATE_PLAYING:
-      case AUDIO_STREAM_STATE_PLAYING_LOOPED:
-      case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-         audio_driver_mixer_stop_stream_locked(i);
-         /* fall-through */
-      case AUDIO_STREAM_STATE_STOPPED:
-         {
-            audio_mixer_sound_t *handle = audio_driver_st.mixer_streams[i].handle;
-            if (handle)
-               audio_mixer_destroy(handle);
-
-            /* A stream loaded without a basename - every menu sound -
-             * carries a NULL name, so the pointer is tested before the
-             * bytes behind it. */
-            if (audio_driver_st.mixer_streams[i].name)
-               free(audio_driver_st.mixer_streams[i].name);
-
-            audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
-            audio_driver_st.mixer_streams[i].stop_cb = NULL;
-            audio_driver_st.mixer_streams[i].volume  = 0.0f;
-            audio_driver_st.mixer_streams[i].handle  = NULL;
-            audio_driver_st.mixer_streams[i].voice   = NULL;
-            audio_driver_st.mixer_streams[i].name    = NULL;
-         }
-         break;
-      case AUDIO_STREAM_STATE_NONE:
-         break;
-   }
+   audio_mixer_stream_t *stream = &audio_driver_st.mixer_streams[i];
+   if (stream->state == AUDIO_STREAM_STATE_NONE)
+      return;
+   audio_driver_mixer_stop_stream_held(i);
+   if (stream->handle)
+      audio_mixer_destroy(stream->handle);
+   /* A stream loaded without a basename - every menu sound - carries a
+    * NULL name. */
+   if (stream->name)
+      free(stream->name);
+   stream->state   = AUDIO_STREAM_STATE_NONE;
+   stream->stop_cb = NULL;
+   stream->volume  = 0.0f;
+   stream->handle  = NULL;
+   stream->voice   = NULL;
+   stream->name    = NULL;
 }
 
 void audio_driver_mixer_remove_stream_clocked(unsigned i,
@@ -9288,21 +9384,21 @@ void audio_driver_mixer_remove_stream_clocked(unsigned i,
    size_t current = 0;
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS || !voice || !serial)
       return;
-   audio_driver_state_lock();
+   audio_driver_mixer_hold();
    if (audio_driver_st.mixer_streams[i].voice == voice
          && audio_mixer_voice_clock(voice, NULL, NULL, &current)
          && current == serial)
-      audio_driver_mixer_remove_stream_locked(i);
-   audio_driver_state_unlock();
+      audio_driver_mixer_remove_stream_held(i);
+   audio_driver_mixer_release();
 }
 
 void audio_driver_mixer_remove_stream(unsigned i)
 {
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
-   audio_driver_state_lock();
-   audio_driver_mixer_remove_stream_locked(i);
-   audio_driver_state_unlock();
+   audio_driver_mixer_hold();
+   audio_driver_mixer_remove_stream_held(i);
+   audio_driver_mixer_release();
 }
 
 bool audio_driver_mixer_toggle_mute(void)
@@ -10235,6 +10331,10 @@ void audio_driver_menu_sample(bool by_clock)
    bool check_flush                       = !(
             !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf);
+
+#ifdef HAVE_AUDIOMIXER
+   audio_driver_mixer_reap();
+#endif
 
 #ifdef HAVE_THREADS
    /* The audio consumer supplies menu silence at the device's cadence. */

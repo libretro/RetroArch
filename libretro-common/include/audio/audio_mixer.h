@@ -133,6 +133,11 @@ void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
 void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
       int64_t end_granule);
 
+/* The caller's word for a sound, for its stop callback: set before
+ * the play, read by the callback on the mixing thread. */
+void audio_mixer_sound_set_tag(audio_mixer_sound_t *sound, unsigned tag);
+unsigned audio_mixer_sound_tag(const audio_mixer_sound_t *sound);
+
 /* Resident prefix of a windowed sound's source buffer: bounds the
  * decoder's container header parse at open.  0 = fully resident. */
 void audio_mixer_sound_set_avail(audio_mixer_sound_t *sound, size_t avail);

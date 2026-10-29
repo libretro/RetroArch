@@ -125,7 +125,7 @@
 struct audio_mixer_sound
 {
    enum audio_mixer_type type;
-   void* user_data;
+   unsigned tag;
 
    union
    {
@@ -1570,6 +1570,17 @@ void audio_mixer_sound_set_initial_paused(audio_mixer_sound_t *sound,
       bool paused)
 {
    if (sound) sound->initial_paused = paused;
+}
+
+void audio_mixer_sound_set_tag(audio_mixer_sound_t *sound, unsigned tag)
+{
+   if (sound)
+      sound->tag = tag;
+}
+
+unsigned audio_mixer_sound_tag(const audio_mixer_sound_t *sound)
+{
+   return sound ? sound->tag : 0;
 }
 
 void audio_mixer_sound_set_avail(audio_mixer_sound_t *sound, size_t avail)

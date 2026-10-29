@@ -1,4 +1,15 @@
-/* Harness for the mixer's state_lock discipline.
+/* Harness for the mixer's stream table: how it is held, and what the
+ * mix may do to it.
+ *
+ * The table is held by the main and task threads (audio_driver_mixer_
+ * hold), never by the mix, and the mix's stop callbacks only report a
+ * finish for the table's next holder to settle. A sequential play's
+ * callback used to start the next stream itself, from inside the mix
+ * and under the state lock the mix holds - against itself, on a
+ * non-recursive mutex. The sequential stage below fires that finish
+ * from a mix thread holding the state lock; the stress stage plays,
+ * stops, adds and removes from two threads while a third finishes
+ * voices.
  *
  * The state lock is a plain non-recursive mutex, so any path that
  * reaches a locking entry point while already holding it parks that
@@ -95,6 +106,7 @@ static void counting_owner_free(void *owner)
  * state lock free, so the audio thread mixes on meanwhile. The load
  * stubs call this; a try-lock that fails means this thread holds it. */
 extern void (*stub_load_hook)(void);
+extern const void *stub_wav_source;
 static unsigned loads_seen       = 0;
 static unsigned loads_under_lock = 0;
 static void lock_free_during_load(void)
@@ -104,6 +116,11 @@ static void lock_free_during_load(void)
       slock_unlock(audio_driver_st.state_lock);
    else
       loads_under_lock++;
+#ifdef AUDIO_MIXER_TABLE_OWNERSHIP
+   if (retro_atomic_load_acquire_int(&audio_driver_st.mixer_table_owner)
+         != AUDIO_MIXER_TABLE_FREE)
+      loads_under_lock++;
+#endif
 }
 
 static void fill_params(audio_mixer_stream_params_t *p, unsigned slot)
@@ -120,8 +137,77 @@ static void fill_params(audio_mixer_stream_params_t *p, unsigned slot)
    p->state               = AUDIO_STREAM_STATE_STOPPED;
 }
 
-extern unsigned stub_sound_destroys;
+extern retro_atomic_int_t stub_sound_destroys;
 extern bool stub_play_fail;
+extern bool stub_voice_finish(audio_mixer_voice_t *voice);
+extern audio_mixer_voice_t *stub_voice_at(unsigned i);
+extern unsigned stub_voice_count(void);
+
+static int playing(void)
+{
+   return retro_atomic_load_acquire_int(&audio_driver_st.mixer_streams_playing);
+}
+
+/* The mix: it finishes a play holding the state lock, as a flush does. */
+static void *finish_under_mix(void *voice)
+{
+   slock_lock(audio_driver_st.state_lock);
+   stub_voice_finish((audio_mixer_voice_t*)voice);
+   slock_unlock(audio_driver_st.state_lock);
+   return NULL;
+}
+
+static void finish_on_mix_thread(audio_mixer_voice_t *voice)
+{
+   pthread_t mix;
+   pthread_create(&mix, NULL, finish_under_mix, voice);
+   pthread_join(mix, NULL);
+}
+
+static retro_atomic_int_t stress_stop;
+
+static void *stress_mix(void *arg)
+{
+   (void)arg;
+   while (!retro_atomic_load_acquire_int(&stress_stop))
+   {
+      unsigned i;
+      slock_lock(audio_driver_st.state_lock);
+      for (i = 0; i < stub_voice_count(); i++)
+         stub_voice_finish(stub_voice_at(i));
+      slock_unlock(audio_driver_st.state_lock);
+   }
+   return NULL;
+}
+
+/* A mixer task: user streams added on a free slot and removed again. */
+static void *stress_task(void *arg)
+{
+   unsigned n;
+   (void)arg;
+   for (n = 0; n < 3000; n++)
+   {
+      audio_mixer_stream_params_t p;
+      int at = -1;
+      memset(&p, 0, sizeof(p));
+      p.buf                 = dummy_wav;
+      p.bufsize             = sizeof(dummy_wav);
+      p.volume              = 1.0f;
+      p.slot_selection_type = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;
+      p.stream_type         = AUDIO_STREAM_TYPE_USER;
+      p.type                = AUDIO_MIXER_TYPE_WAV;
+      p.state               = (n & 1) ? AUDIO_STREAM_STATE_PLAYING
+                                      : AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL;
+      p.out_slot            = &at;
+      if (audio_driver_mixer_add_stream(&p) && at >= 0)
+      {
+         audio_driver_mixer_get_stream_state((unsigned)at);
+         if (n & 2)
+            audio_driver_mixer_remove_stream((unsigned)at);
+      }
+   }
+   return NULL;
+}
 
 static void prepared_adoption(unsigned slot)
 {
@@ -145,7 +231,7 @@ static void prepared_adoption(unsigned slot)
       installed = 123;
       voice = NULL;
       serial = 123;
-      before = stub_sound_destroys;
+      before = (unsigned)retro_atomic_load_acquire_int(&stub_sound_destroys);
       sound = audio_mixer_load_wav_stream(malloc(64), 64);
       loads = loads_seen;
       stub_load_hook = lock_free_during_load;
@@ -180,7 +266,7 @@ static void prepared_adoption(unsigned slot)
       }
       stub_load_hook = NULL;
       CHECK(loads_seen == loads, "adoption reloaded the prepared sound");
-      CHECK(stub_sound_destroys == before + 1,
+      CHECK((unsigned)retro_atomic_load_acquire_int(&stub_sound_destroys) == before + 1,
             "prepared case %u did not destroy exactly once", pass);
       if (pass != 5)
       {
@@ -209,6 +295,11 @@ int main(void)
    pthread_create(&dog, NULL, watchdog, NULL);
 
    audio_driver_st.state_lock = slock_new();
+#ifdef AUDIO_MIXER_TABLE_OWNERSHIP
+   /* What audio_driver_init_internal() makes before the mixer starts. */
+   audio_driver_st.mixer_table_ec_ok =
+      retro_eventcount_init(&audio_driver_st.mixer_table_ec);
+#endif
    if (!audio_driver_st.state_lock)
    {
       printf("FAIL: could not create the state lock\n");
@@ -255,6 +346,9 @@ int main(void)
    params.type = AUDIO_MIXER_TYPE_WAV;
    CHECK(audio_driver_mixer_add_stream(&params),
          "add_stream of a WAV into a manual slot failed");
+   /* A WAV's load copies the samples it keeps: it reads the caller's
+    * bytes, not a copy of them. */
+   CHECK(stub_wav_source == dummy_wav, "the WAV was copied before its load");
    stub_load_hook = NULL;
    CHECK(loads_seen == 2, "%u sounds built, want 2", loads_seen);
    CHECK(loads_under_lock == 0,
@@ -329,11 +423,75 @@ int main(void)
    }
    {
       unsigned releases = owner_frees;
-      unsigned playing = audio_driver_st.mixer_streams_playing;
+      int before = playing();
       prepared_adoption(slot);
       CHECK(owner_frees == releases, "prepared adoption released params owner");
-      CHECK(audio_driver_st.mixer_streams_playing == playing,
-            "prepared adoption leaked a playing counter");
+      CHECK(playing() == before, "prepared adoption leaked a playing counter");
+   }
+
+   /* 10. A sequential play the mix finishes: the next stopped stream
+    *     starts, settled by the table's holder - not by the mix, which
+    *     holds the state lock as it mixes. */
+   STAGE(10);
+   {
+      unsigned a = AUDIO_MIXER_MAX_STREAMS, b = AUDIO_MIXER_MAX_STREAMS + 1;
+      audio_mixer_voice_t *voice;
+      fill_params(&params, a);
+      CHECK(audio_driver_mixer_add_stream(&params), "sequential: load a");
+      fill_params(&params, b);
+      CHECK(audio_driver_mixer_add_stream(&params), "sequential: load b");
+      audio_driver_mixer_play_stream_sequential(a);
+      voice = audio_driver_st.mixer_streams[a].voice;
+      CHECK(voice && playing() == 1, "sequential: a plays");
+      finish_on_mix_thread(voice);
+      CHECK(audio_driver_st.mixer_streams[a].state
+            == AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+            "sequential: the mix changed the table");
+      audio_driver_mixer_reap();
+      CHECK(audio_driver_st.mixer_streams[a].state == AUDIO_STREAM_STATE_NONE,
+            "sequential: a was not retired");
+      CHECK(audio_driver_st.mixer_streams[b].state
+            == AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL && playing() == 1,
+            "sequential: b did not follow a");
+      finish_on_mix_thread(audio_driver_st.mixer_streams[b].voice);
+      audio_driver_mixer_reap();
+      CHECK(audio_driver_st.mixer_streams[b].state == AUDIO_STREAM_STATE_NONE
+            && playing() == 0, "sequential: b was not retired");
+      /* A finish reaped twice is settled once. */
+      audio_driver_mixer_reap();
+      CHECK(playing() == 0, "sequential: a finish settled twice");
+   }
+
+   /* 11. Menu sounds replayed on the main thread and streams added and
+    *     removed by a task while a mix finishes whatever plays. */
+   STAGE(11);
+   {
+      pthread_t mix, task;
+      unsigned n, i;
+      fill_params(&params, slot);
+      CHECK(audio_driver_mixer_add_stream(&params), "stress: menu sound");
+      retro_atomic_store_release_int(&stress_stop, 0);
+      pthread_create(&mix, NULL, stress_mix, NULL);
+      pthread_create(&task, NULL, stress_task, NULL);
+      for (n = 0; n < 3000; n++)
+      {
+         STAGE(1100 + (int)(n / 100));
+         audio_driver_mixer_play_menu_sound(slot);
+         audio_driver_mixer_set_stream_volume(slot, 0.0f);
+         audio_driver_mixer_reap();
+         if (n & 1)
+            audio_driver_mixer_stop_stream(slot);
+      }
+      pthread_join(task, NULL);
+      retro_atomic_store_release_int(&stress_stop, 1);
+      pthread_join(mix, NULL);
+      STAGE(12);
+      for (i = 0; i < stub_voice_count(); i++)
+         stub_voice_finish(stub_voice_at(i));
+      audio_driver_mixer_reap();
+      for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+         audio_driver_mixer_remove_stream(i);
+      CHECK(playing() == 0, "stress: %d plays left counted", playing());
    }
    slock_free(audio_driver_st.state_lock);
    audio_driver_st.state_lock = NULL;
