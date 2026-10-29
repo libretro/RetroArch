@@ -64,7 +64,7 @@
 #endif
 
 #if defined(DINGUX)
-#include "../../dingux/dingux_utils.h"
+#include "../../os/dingux/dingux_utils.h"
 #endif
 
 #include <boolean.h>

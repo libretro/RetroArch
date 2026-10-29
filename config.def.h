@@ -46,7 +46,7 @@
 /* Required for OpenDingux IPU filter + refresh
  * rate settings */
 #if defined(DINGUX)
-#include "dingux/dingux_utils.h"
+#include "os/dingux/dingux_utils.h"
 #endif
 
 /* Required for 'show inputs on overlay' setting */

@@ -1246,7 +1246,7 @@ ifeq ($(TARGET), retroarch_orbis)
 endif
 
 ifeq ($(DINGUX), 1)
-   OBJ += dingux/dingux_utils.o
+   OBJ += os/dingux/dingux_utils.o
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)

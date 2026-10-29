@@ -1604,7 +1604,7 @@ FRONTEND
 #endif
 
 #if defined(DINGUX)
-#include "../dingux/dingux_utils.c"
+#include "../os/dingux/dingux_utils.c"
 #endif
 
 #include "../core_info.c"

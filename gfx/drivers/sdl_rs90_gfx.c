@@ -37,7 +37,7 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../../dingux/dingux_utils.h"
+#include "../../os/dingux/dingux_utils.h"
 
 #include "../../verbosity.h"
 #include "../bitmapfont.h"
