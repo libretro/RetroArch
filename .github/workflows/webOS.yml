@@ -159,9 +159,9 @@ jobs:
           bash .github/workflows/scripts/ccache-make.sh -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} ADD_SDL2_LIB=1 \
           SDL2_PREBUILT_ARCHIVE="file:///tmp/sdl2-prebuilt/${SDL2_NAME}" \
           -j"$(getconf _NPROCESSORS_ONLN)"
-          mkdir -p webos/arm
-          mv webos/com.retroarch.webos_${RARCH_VERSION}_arm.ipk \
-             webos/arm/com.retroarch.webos-legacy-gles2-no-wayland_${RARCH_VERSION}_arm.ipk
+          mkdir -p pkg/webos/arm
+          mv pkg/webos/com.retroarch.webos_${RARCH_VERSION}_arm.ipk \
+             pkg/webos/arm/com.retroarch.webos-legacy-gles2-no-wayland_${RARCH_VERSION}_arm.ipk
         env:
           DEBUG: ${{ github.event_name == 'release' && '0' || '1' }}
           SDL2_NAME: ${{ steps.sdl2.outputs.name }}
@@ -170,7 +170,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: com.retroarch.webos-legacy-gles2-no-wayland_${{ env.RARCH_VERSION }}_${{ github.sha }}_arm.ipk
-          path: webos/arm/com.retroarch.webos-legacy-gles2-no-wayland_${{ env.RARCH_VERSION }}_arm.ipk
+          path: pkg/webos/arm/com.retroarch.webos-legacy-gles2-no-wayland_${{ env.RARCH_VERSION }}_arm.ipk
           archive: false
 
       - name: Compile RA (default)
@@ -184,9 +184,9 @@ jobs:
           SDL2_PREBUILT_ARCHIVE="file:///tmp/sdl2-prebuilt/${SDL2_NAME}" \
           HAVE_XKBCOMMON=1 HAVE_USERLAND=1 HAVE_EGL=1 HAVE_WAYLAND=1 \
           HAVE_OPENGLES3=1 HAVE_OPENGLES3_1=1 HAVE_OPENGLES3_2=1 -j"$(getconf _NPROCESSORS_ONLN)"
-          mkdir -p webos/arm
-          mv webos/com.retroarch.webos_${RARCH_VERSION}_arm.ipk \
-            webos/arm/com.retroarch.webos_${RARCH_VERSION}_arm.ipk
+          mkdir -p pkg/webos/arm
+          mv pkg/webos/com.retroarch.webos_${RARCH_VERSION}_arm.ipk \
+            pkg/webos/arm/com.retroarch.webos_${RARCH_VERSION}_arm.ipk
         env:
           DEBUG: ${{ github.event_name == 'release' && '0' || '1' }}
           SDL2_NAME: ${{ steps.sdl2.outputs.name }}
@@ -195,16 +195,16 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: com.retroarch.webos_${{ env.RARCH_VERSION }}_${{ github.sha }}_arm.ipk
-          path: webos/arm/com.retroarch.webos_${{ env.RARCH_VERSION }}_arm.ipk
+          path: pkg/webos/arm/com.retroarch.webos_${{ env.RARCH_VERSION }}_arm.ipk
           archive: false
 
       - name: Generate Manifest (default only)
         if: github.repository == 'webosbrew/Retroarch'
         shell: bash
         run: |
-          webosbrew-gen-manifest -o webos/${PACKAGE_NAME}.manifest.json \
-              -p webos/arm/${PACKAGE_NAME}_${RARCH_VERSION}_arm.ipk \
-              -i https://github.com/webosbrew/RetroArch/raw/webos/webos/icon160.png \
+          webosbrew-gen-manifest -o pkg/webos/${PACKAGE_NAME}.manifest.json \
+              -p pkg/webos/arm/${PACKAGE_NAME}_${RARCH_VERSION}_arm.ipk \
+              -i https://github.com/libretro/RetroArch/raw/master/pkg/webos/icon160.png \
               -l https://github.com/webosbrew/RetroArch
 
       - name: Compile RA (aarch64)
@@ -220,9 +220,9 @@ jobs:
           HAVE_OPENGLES3=1 HAVE_OPENGLES3_1=1 HAVE_OPENGLES3_2=1 \
           HAVE_WAYLAND_BACKPORT=0 HAVE_64TO32BIT_BRIDGE=1 SET_ELF_INTERPRETER=1 HAVE_UDEV=1 \
           ARES_PACKAGE_ARGS="-A arm" -j"$(getconf _NPROCESSORS_ONLN)"
-          mkdir -p webos/aarch64
-          mv webos/com.retroarch.webos_${{ env.RARCH_VERSION }}_arm.ipk \
-            webos/aarch64/com.retroarch.webos_${{ env.RARCH_VERSION }}_aarch64.ipk
+          mkdir -p pkg/webos/aarch64
+          mv pkg/webos/com.retroarch.webos_${{ env.RARCH_VERSION }}_arm.ipk \
+            pkg/webos/aarch64/com.retroarch.webos_${{ env.RARCH_VERSION }}_aarch64.ipk
         env:
           DEBUG: ${{ github.event_name == 'release' && '0' || '1' }}
 
@@ -244,7 +244,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: com.retroarch.webos_${{ env.RARCH_VERSION }}_${{ github.sha }}_aarch64.ipk
-          path: webos/aarch64/com.retroarch.webos_${{ env.RARCH_VERSION }}_aarch64.ipk
+          path: pkg/webos/aarch64/com.retroarch.webos_${{ env.RARCH_VERSION }}_aarch64.ipk
           archive: false
 
       - name: Release
@@ -258,7 +258,7 @@ jobs:
           omitBody: true
           omitPrereleaseDuringUpdate: true
           artifacts: |
-            webos/arm/com.retroarch.webos_${{ env.RARCH_VERSION }}_arm.ipk
-            webos/arm/com.retroarch.webos-legacy-gles2-no-wayland_${{ env.RARCH_VERSION }}_arm.ipk
-            webos/aarch64/com.retroarch.webos_${{ env.RARCH_VERSION }}_aarch64.ipk
-            webos/${{ env.PACKAGE_NAME }}.manifest.json
+            pkg/webos/arm/com.retroarch.webos_${{ env.RARCH_VERSION }}_arm.ipk
+            pkg/webos/arm/com.retroarch.webos-legacy-gles2-no-wayland_${{ env.RARCH_VERSION }}_arm.ipk
+            pkg/webos/aarch64/com.retroarch.webos_${{ env.RARCH_VERSION }}_aarch64.ipk
+            pkg/webos/${{ env.PACKAGE_NAME }}.manifest.json
