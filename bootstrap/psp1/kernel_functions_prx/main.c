@@ -15,8 +15,6 @@ void exitspawn_kernel(const char *fileName, SceSize args, void *argp)
    int k1;
    struct SceKernelLoadExecVSHParam game_param;
 
-   memset(&game_param,0,sizeof(game_param));
-
    game_param.size              = sizeof(game_param);
    game_param.args              = args;
    game_param.argp              = argp;
