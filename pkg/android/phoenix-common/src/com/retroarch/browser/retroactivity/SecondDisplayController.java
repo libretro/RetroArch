@@ -65,6 +65,9 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
 
   private final RetroActivityCommon activity;
   private final DisplayManager displayManager;
+  /* For bare(): managers whose contexts are on two different displays */
+  private final DisplayManager[] bareManagers = new DisplayManager[2];
+  private final int[] bareIds = new int[2];
   private final Handler handler = new Handler(Looper.getMainLooper());
   /* The last published list, without the failure marking; its ids by
    * ordinal - 1 */
@@ -260,12 +263,42 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
         }
       }
       list.flags[i] = f;
-      d.getRealSize(size);
+      /* From API 31 getRealSize() can report the Activity's window,
+       * which follows RetroArch's own moves */
+      if (Build.VERSION.SDK_INT >= 31)
+        bare(displays, d).getRealSize(size);
+      else
+        d.getRealSize(size);
       list.widths[i]  = size.x;
       list.heights[i] = size.y;
       list.names[i]   = d.getName();
     }
     return list;
+  }
+
+  /* d from a context on another display: a Display made for its
+   * context's own display reports that context's configuration, which
+   * follows RetroArch's moves. d itself when it is the only display. */
+  private Display bare(Display[] displays, Display d)
+  {
+    int id = d.getDisplayId();
+    for (int s = 0; s < bareManagers.length; s++)
+    {
+      Display b;
+      for (int i = 0; bareManagers[s] == null && i < displays.length; i++)
+        if (displays[i].getDisplayId() != id)
+        {
+          bareIds[s]      = displays[i].getDisplayId();
+          bareManagers[s] = (DisplayManager)activity.getApplicationContext()
+              .createDisplayContext(displays[i])
+              .getSystemService(Context.DISPLAY_SERVICE);
+        }
+      if (bareManagers[s] == null)
+        break;
+      if (bareIds[s] != id && (b = bareManagers[s].getDisplay(id)) != null)
+        return b;
+    }
+    return d;
   }
 
   private void publish(DisplayList list)
