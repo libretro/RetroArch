@@ -5348,6 +5348,18 @@ static void audio_driver_pipeline_pass_done(audio_driver_state_t *audio_st,
  * producers that run without one (menu audio, rewind reversal), and before
  * a full-ring space wait that would otherwise prevent the frame from ending.
  **/
+#ifdef HAVE_THREADS
+/* A pause or resume the consumer has yet to carry out: a consumer
+ * parked for data returns to audio_driver_callback() to do it. */
+static bool audio_driver_pipeline_pause_pending(audio_driver_state_t *audio_st)
+{
+   return retro_atomic_load_acquire_int(&audio_st->pipe_tail_seq)
+         != retro_atomic_load_relaxed_int(&audio_st->pipe_tail_seen)
+      || retro_atomic_load_acquire_int(&audio_st->pipe_resume_seq)
+         != retro_atomic_load_relaxed_int(&audio_st->pipe_resume_seen);
+}
+#endif
+
 static void audio_driver_pipeline_signal(audio_driver_state_t *audio_st)
 {
 #ifdef HAVE_THREADS
@@ -5615,71 +5627,19 @@ bool audio_driver_core_silenced(void)
          &audio_driver_st.core_silenced) != 0;
 }
 
-void audio_driver_pause_fade(bool paused)
+/* Ends the stream on a period-matched ramp, written to the device: the
+ * thread that writes to it, under the state lock. */
+static void audio_driver_pause_tail(audio_driver_state_t *audio_st,
+      const audio_driver_t *audio, bool write)
 {
-   audio_driver_state_t *audio_st = &audio_driver_st;
-   const audio_driver_t *audio    = audio_st->current_audio;
-   bool was_silenced;
    unsigned i;
 
-   if (     !audio
-         || !audio->write
-         || !audio_st->context_audio_data
-         || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE))
-      return;
-
-   /* Whether the stream is already down decides what a resume has to do, so
-    * read it before the store below overwrites it. */
-   was_silenced = audio_driver_core_silenced();
-
-   /* Published before the lock is taken, so a core delivering on a thread of
-    * its own stops handing audio over while this waits for the flush already
-    * in flight. See audio_driver_core_silenced(). */
-   retro_atomic_store_release_int(&audio_st->core_silenced, paused ? 1 : 0);
-
-   /* Everything below writes to the device or touches state audio_driver_
-    * flush() owns, and flush runs on whichever thread the core delivers on.
-    * Without the lock the tail lands in the middle of a core thread's own
-    * write and that thread's buffer arrives behind it at full level. */
-   audio_driver_state_lock();
-
-   if (!paused)
-   {
-      /* Ramp the first frames of whatever comes back, in audio_driver_flush;
-       * nothing to write here, the core has not produced it yet.
-       *
-       * Only when the stream was actually taken down: a resume can arrive
-       * without its pause (menu_pause_libretro turned off from inside the
-       * menu it paused), and ramping audio that never stopped is a dip in the
-       * middle of it. */
-      if (was_silenced)
-      {
-         audio_st->fade_in_pending = true;
-         /* And refill the device ahead of that first frame; see
-          * audio_driver_resume_topup(). */
-         audio_st->resume_topup_pending = true;
-      }
-      /* Whatever the pipeline was holding at the pause is long gone; do not
-       * take the resumed audio for it. */
-      audio_st->pause_mute_frames = 0;
-      audio_driver_state_unlock();
-      return;
-   }
-
-   audio_st->fade_in_frames  = 0;
-   audio_st->fade_in_pending = false;
-#ifdef HAVE_THREADS
-   /* Nothing published so far reaches the device: the tail below ends
-    * the stream, and the consumer takes the ring out up to here. */
-   retro_atomic_store_release_size(&audio_st->pipe_discard_to,
-         retro_atomic_load_acquire_size(&audio_st->pipe_ring.head));
-   retro_atomic_fetch_add_int(&audio_st->pipe_discard_gen, 1);
-   audio_driver_pipe_fade_publish(audio_st, false, 0);
-#endif
+   audio_st->fade_in_frames = 0;
 
    /* Only when something was playing is there a step to smooth. */
-   if (     audio_st->last_out[0] != 0.0f
-         || audio_st->last_out[1] != 0.0f)
+   if (     write
+         && (  audio_st->last_out[0] != 0.0f
+            || audio_st->last_out[1] != 0.0f))
    {
       float    ramp[AUDIO_PAUSE_TAIL_FRAMES * 2];
       unsigned period = audio_driver_pause_tail_period(audio_st);
@@ -5758,6 +5718,131 @@ void audio_driver_pause_fade(bool paused)
     * ended the sound. Safe to discard here and nowhere else: the output is
     * going to silence either way. */
    audio_driver_inline_reset(audio_st);
+}
+
+/* What a resume resets: the stream comes back on a ramp from
+ * audio_driver_flush(), and the device is refilled ahead of it when it
+ * was down; see audio_driver_resume_topup(). */
+static void audio_driver_resume_reset(audio_driver_state_t *audio_st,
+      bool was_silenced)
+{
+   if (was_silenced)
+      audio_st->resume_topup_pending = true;
+   /* Whatever the pipeline was holding at the pause is long gone; do not
+    * take the resumed audio for it. */
+   audio_st->pause_mute_frames = 0;
+}
+
+#ifdef HAVE_THREADS
+/* The consumer's, before each pass: the main thread's pause and resume
+ * requests, oldest first. Also the main thread's as it stops the parked
+ * consumer, which writes no tail into the stopped device. */
+static void audio_driver_pipeline_pause_apply(audio_driver_state_t *audio_st,
+      bool write_tail)
+{
+   int tail   = retro_atomic_load_acquire_int(&audio_st->pipe_tail_seq);
+   int resume = retro_atomic_load_acquire_int(&audio_st->pipe_resume_seq);
+   bool do_tail   = tail
+      != retro_atomic_load_relaxed_int(&audio_st->pipe_tail_seen);
+   bool do_resume = resume
+      != retro_atomic_load_relaxed_int(&audio_st->pipe_resume_seen);
+   if (!do_tail && !do_resume)
+      return;
+   audio_driver_state_lock();
+   if (do_resume && do_tail && resume - tail < 0)
+   {
+      audio_driver_resume_reset(audio_st, retro_atomic_load_acquire_int(
+               &audio_st->pipe_resume_topup) != 0);
+      do_resume = false;
+   }
+   if (do_tail)
+      audio_driver_pause_tail(audio_st, audio_st->current_audio, write_tail);
+   if (do_resume)
+      audio_driver_resume_reset(audio_st, retro_atomic_load_acquire_int(
+               &audio_st->pipe_resume_topup) != 0);
+   audio_driver_state_unlock();
+   retro_atomic_store_release_int(&audio_st->pipe_tail_seen, tail);
+   retro_atomic_store_release_int(&audio_st->pipe_resume_seen, resume);
+}
+#endif
+
+void audio_driver_pause_fade(bool paused)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   const audio_driver_t *audio    = audio_st->current_audio;
+   bool was_silenced;
+
+   if (     !audio
+         || !audio->write
+         || !audio_st->context_audio_data
+         || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE))
+      return;
+
+   /* Whether the stream is already down decides what a resume has to do, so
+    * read it before the store below overwrites it. */
+   was_silenced = audio_driver_core_silenced();
+
+   /* Published first, so a core delivering on a thread of its own stops
+    * handing audio over at once. See audio_driver_core_silenced(). */
+   retro_atomic_store_release_int(&audio_st->core_silenced, paused ? 1 : 0);
+
+#ifdef HAVE_THREADS
+   if (paused)
+   {
+      /* Nothing published so far reaches the device: the tail ends the
+       * stream, and the consumer takes the ring out up to here. */
+      retro_atomic_store_release_size(&audio_st->pipe_discard_to,
+            retro_atomic_load_acquire_size(&audio_st->pipe_ring.head));
+      retro_atomic_fetch_add_int(&audio_st->pipe_discard_gen, 1);
+      audio_driver_pipe_fade_publish(audio_st, false, 0);
+   }
+
+   /* With the threaded pipeline the consumer writes the tail and resets
+    * for the resume: nothing here waits for it, nor writes to the
+    * device beside it. */
+   if (audio_st->pipe_threaded)
+   {
+      int seq = retro_atomic_fetch_add_int(&audio_st->pipe_pause_seq, 1) + 1;
+      if (paused)
+      {
+         audio_st->fade_in_pending = false;
+         retro_atomic_store_release_int(&audio_st->pipe_tail_seq, seq);
+      }
+      else
+      {
+         /* Only when the stream was actually taken down: a resume can
+          * arrive without its pause (menu_pause_libretro turned off from
+          * inside the menu it paused), and ramping audio that never
+          * stopped is a dip in the middle of it. */
+         if (was_silenced)
+            audio_st->fade_in_pending = true;
+         retro_atomic_store_release_int(&audio_st->pipe_resume_topup,
+               was_silenced ? 1 : 0);
+         retro_atomic_store_release_int(&audio_st->pipe_resume_seq, seq);
+      }
+      audio_driver_pipeline_signal(audio_st);
+      return;
+   }
+#endif
+
+   /* Everything below writes to the device or touches state audio_driver_
+    * flush() owns, and flush runs on whichever thread the core delivers on.
+    * Without the lock the tail lands in the middle of a core thread's own
+    * write and that thread's buffer arrives behind it at full level. */
+   audio_driver_state_lock();
+   if (paused)
+   {
+      audio_st->fade_in_pending = false;
+      audio_driver_pause_tail(audio_st, audio, true);
+   }
+   else
+   {
+      /* Ramp the first frames of whatever comes back, in audio_driver_flush;
+       * only when the stream was actually taken down. */
+      if (was_silenced)
+         audio_st->fade_in_pending = true;
+      audio_driver_resume_reset(audio_st, was_silenced);
+   }
    audio_driver_state_unlock();
 }
 
@@ -6967,6 +7052,8 @@ static bool audio_driver_transport_wait(audio_driver_state_t *st, size_t need,
       retro_atomic_store_release_int(&st->pipe_wake, 0);
       return false;
    }
+   if (audio_driver_pipeline_pause_pending(st))
+      return false;
    events = retro_atomic_load_acquire_size(&st->pipe_layouts.head)
       - retro_atomic_load_relaxed_size(&st->pipe_layouts.tail);
    ready = retro_spsc_read_avail(&st->pipe_ring) >= need
@@ -6981,7 +7068,8 @@ static bool audio_driver_transport_wait(audio_driver_state_t *st, size_t need,
       - retro_atomic_load_relaxed_size(&st->pipe_layouts.tail);
    if (    retro_spsc_read_avail(&st->pipe_ring) >= need
         || (metadata_threshold && events >= metadata_threshold)
-        || retro_atomic_load_acquire_int(&st->pipe_wake))
+        || retro_atomic_load_acquire_int(&st->pipe_wake)
+        || audio_driver_pipeline_pause_pending(st))
       retro_eventcount_cancel_wait(&st->pipe_data);
    else
    {
@@ -7253,6 +7341,8 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
                retro_atomic_load_relaxed_size(&audio_st->pipe_ring.tail),
                0, audio_st->pipe_ring.capacity);
       }
+      if (audio_driver_pipeline_pause_pending(audio_st))
+         return;
       gen = retro_atomic_load_acquire_int(&audio_st->pipe_data_gen);
       key = retro_eventcount_prepare_wait(&audio_st->pipe_data);
       /* The re-check the condition variable used to get from holding
@@ -7260,7 +7350,8 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
        * above and this registration cannot be slept through. */
       if (    retro_spsc_read_avail(&audio_st->pipe_ring) >= need
            || retro_atomic_load_acquire_int(&audio_st->pipe_wake)
-           || retro_atomic_load_acquire_int(&audio_st->pipe_data_gen) != gen)
+           || retro_atomic_load_acquire_int(&audio_st->pipe_data_gen) != gen
+           || audio_driver_pipeline_pause_pending(audio_st))
       {
          retro_eventcount_cancel_wait(&audio_st->pipe_data);
          continue;
@@ -9582,9 +9673,13 @@ bool audio_driver_callback(void)
    if (audio_driver_st.pipe_threaded)
    {
 #ifdef HAVE_MENU
-      uint64_t accepted = (snap & AUDIO_SNAP_MENU_SOURCE) ? audio_driver_st.sink_accepted : 0;
+      uint64_t accepted;
 #endif
       (void)core_paused;
+      audio_driver_pipeline_pause_apply(&audio_driver_st, true);
+#ifdef HAVE_MENU
+      accepted = (snap & AUDIO_SNAP_MENU_SOURCE) ? audio_driver_st.sink_accepted : 0;
+#endif
       if (audio_driver_st.pipe_transport)
          audio_driver_transport_consume(&audio_driver_st);
       else
@@ -10259,6 +10354,8 @@ bool audio_driver_stop(void)
 #endif
       /* The wrapper has parked the consumer before returning from stop. */
 #ifdef HAVE_THREADS
+      if (audio_st->pipe_threaded)
+         audio_driver_pipeline_pause_apply(audio_st, false);
       if (!audio_driver_pipeline_transport_discard(0))
 #endif
       {

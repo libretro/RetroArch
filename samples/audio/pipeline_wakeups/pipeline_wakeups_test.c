@@ -391,12 +391,20 @@ static void tap_samples(const void *buf, size_t samples)
    }
 }
 
+/* Writes the device takes from the main thread: with the threaded
+ * pipeline only the consumer writes to it. */
+static uintptr_t           main_thread_id;
+static retro_atomic_int_t  main_thread_writes;
+
 static ssize_t cdev_write(void *data, const void *buf, size_t len)
 {
    size_t samples = len / device_sample_bytes;
    size_t written = 0;
    int    laps    = 8;
    (void)data;
+
+   if (sthread_get_current_thread_id() == main_thread_id)
+      retro_atomic_fetch_add_int(&main_thread_writes, 1);
 
    if (retro_atomic_load_acquire_int(&dev_fail_now))
       return -1;
@@ -1439,6 +1447,8 @@ static void pause_boundary_fill(float amp)
    }
 }
 
+static int writes_before_pause;
+
 static void pause_boundary_pause_parked(void *userdata)
 {
    (void)userdata;
@@ -1446,11 +1456,22 @@ static void pause_boundary_pause_parked(void *userdata)
     * with the callback parked, or drops against a ring already full of
     * the same stale level - unplayed source either way. */
    submit_frame((size_t)(CORE_RATE / FPS), 1);
+   writes_before_pause = retro_atomic_load_acquire_int(&main_thread_writes);
    audio_driver_pause_fade(true);
-   /* The tail just written is the stream's own; everything at the
-    * stale level from here on is a protocol failure. */
-   retro_atomic_store_release_int(&tap_stale, 0);
-   retro_atomic_store_release_int(&tap_on, 1);
+   /* The tail is the consumer's to write, not this thread's. */
+   if (retro_atomic_load_acquire_int(&main_thread_writes)
+         != writes_before_pause)
+   {
+      fprintf(stderr, "the pause wrote to the device from the main thread\n");
+      fixture_failures++;
+   }
+}
+
+static bool tail_written(void *userdata)
+{
+   (void)userdata;
+   return retro_atomic_load_acquire_int(&audio_driver_st.pipe_tail_seen)
+      == retro_atomic_load_acquire_int(&audio_driver_st.pipe_tail_seq);
 }
 
 static void pause_boundary_resume_parked(void *userdata)
@@ -1478,6 +1499,13 @@ static void pause_boundary_case(void)
 
    audio_thread_apply_control(st->context_audio_data,
          pause_boundary_pause_parked, NULL);
+
+   /* The consumer ends the stream on its tail; everything at the stale
+    * level from there on is a protocol failure. */
+   if (!wait_progress(tail_written, NULL))
+      fixture_failures++;
+   retro_atomic_store_release_int(&tap_stale, 0);
+   retro_atomic_store_release_int(&tap_on, 1);
 
    /* The consumer takes the stale frames out unplayed. */
    if (!wait_progress(ring_emptied, NULL))
@@ -1657,6 +1685,7 @@ int main(int argc, char **argv)
    const char *tempo = getenv("TEMPO");
    const char *layout = getenv("LAYOUT");
    size_t i;
+   main_thread_id = sthread_get_current_thread_id();
    if (!retro_eventcount_init(&progress_ev))
       return 2;
    use_wrapper = getenv("WRAPPER") != NULL;

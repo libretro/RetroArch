@@ -1097,6 +1097,18 @@ typedef struct
    retro_atomic_size_t pipe_menu_to;
    retro_atomic_int_t  pipe_discard_gen;
    int                 pipe_discard_seen;
+   /* A pause's tail and a resume's reset, asked for by the main thread
+    * and carried out by the consumer, the only thread that writes to
+    * the device. Each request takes the next pipe_pause_seq into its
+    * own word; the consumer acts on what is newer than the pipe_*_seen
+    * it keeps, oldest first, and stores each once it is done.
+    * pipe_resume_topup says the resume's stream was down. */
+   retro_atomic_int_t  pipe_pause_seq;
+   retro_atomic_int_t  pipe_tail_seq;
+   retro_atomic_int_t  pipe_resume_seq;
+   retro_atomic_int_t  pipe_resume_topup;
+   retro_atomic_int_t  pipe_tail_seen;   /* stored by the consumer */
+   retro_atomic_int_t  pipe_resume_seen;
    retro_atomic_size_t pipe_fade_in_at;
    retro_atomic_int_t  pipe_fade_in_mark;
    unsigned            pipe_fade_in_seen;
