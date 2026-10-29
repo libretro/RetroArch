@@ -1894,6 +1894,238 @@ static void window_test_menu_touch(struct video_viewport *vp)
    settings->bools.input_overlay_enable = saved_overlay;
 }
 
+/* What menu_event() last returned in menu_test_window_touch() */
+static unsigned menu_test_action;
+
+/* Where menu_event() puts @count touches (0 or 1) at (x, y) of the
+ * Presentation, generation @gen, or of the main window */
+static uint32_t menu_test_window_touch(unsigned gen, bool presentation,
+      unsigned count, int x, int y, bool *pressed)
+{
+   static input_bits_t none;
+   input_pointer_frame_t frame;
+   input_video_window_t window;
+   menu_input_pointer_t pointer;
+   uint32_t touch = VIDEO_POS_PACK(x, y);
+   memset(&frame, 0, sizeof(frame));
+   window.window     = presentation ? VIDEO_WINDOWS_PRESENTATION : 0;
+   window.generation = presentation ? gen : 0;
+   input_driver_publish_window_pointers(&frame, NULL, 1,
+         INPUT_POINTERS_WINDOWS_SECOND);
+   input_driver_publish_window_touches(&touch, &window, count,
+         count ? 1 : 0, count ? 1 : 0);
+   input_driver_poll_devices();
+   menu_test_action = menu_event(config_get_ptr(), &none, &none, false);
+   menu_input_get_pointer_state(&pointer);
+   *pressed = (pointer.flags & MENU_INP_PTR_FLG_PRESSED) != 0;
+   return pointer.pos;
+}
+
+/* The menu in the Presentation (00 I3): its touches over that window at
+ * the menu layer's size, none of the main window's; RGUI through its
+ * framebuffer as it is fitted to the layer */
+static void test_window_menu_touch_window(void)
+{
+   static input_driver_t driver;
+   static menu_ctx_driver_t rgui_ctx;
+   static menu_handle_t rgui;
+   static menu_file_list_cbs_t resume_cbs;
+   static struct item_file resume_item;
+   static file_list_t resume_rows;
+   static file_list_t no_rows;
+   static file_list_t *resume_selection[1];
+   static file_list_t *resume_stack[1];
+   static menu_list_t resume_list;
+   video_views_layout_t ui_only;
+   video_views_map_t no_map;
+   input_pointer_frame_t frame;
+   uint32_t none_pos              = 0;
+   unsigned dims                  = 0;
+   unsigned gen;
+   unsigned i;
+   unsigned j;
+   bool pressed                   = false;
+   float saved_aspect;
+   video_window_ui_target_t saved_ui;
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   gfx_display_t *p_disp          = disp_get_ptr();
+   input_driver_t *saved_driver   = input_st->current_driver;
+   menu_handle_t *saved_menu      = menu_st->driver_data;
+   menu_list_t *saved_list        = menu_st->entries.list;
+   size_t saved_selection         = menu_st->selection_ptr;
+   unsigned saved_fb              = p_disp->framebuf_dims;
+   uint16_t saved_menu_flags      = menu_st->flags;
+   bool saved_pointer             = settings->bools.menu_pointer_enable;
+   bool saved_mouse               = settings->bools.menu_mouse_enable;
+   bool saved_overlay             = settings->bools.input_overlay_enable;
+
+   window_test_begin();
+   saved_aspect = VIDEO_DRIVER_ASPECT_RATIO(video_st);
+   saved_ui     = video_st->windows_ui[VIDEO_WINDOW_UI_MENU];
+   gen          = video_driver_window_generation();
+   memset(&driver, 0, sizeof(driver));
+   driver.input_state             = menu_test_input_state;
+   driver.ident                   = "menu_window_test";
+   input_st->current_driver       = &driver;
+   memset(&rgui, 0, sizeof(rgui));
+   menu_st->driver_data           = &rgui;
+   settings->bools.menu_pointer_enable  = true;
+   settings->bools.menu_mouse_enable    = false;
+   settings->bools.input_overlay_enable = false;
+
+   /* The Presentation has drawn at 640x360; the menu lays out there */
+   memset(&ui_only, 0, sizeof(ui_only));
+   memset(&no_map, 0, sizeof(no_map));
+   ui_only.canvas_dims = VIDEO_SCALE_PACK(640, 360);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, gen, 4,
+         &ui_only, &no_map, 0, VIDEO_SCALE_PACK(640, 360));
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, &dims) == 4);
+   CHECK(dims == VIDEO_SCALE_PACK(640, 360));
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].dims   =
+      VIDEO_SCALE_PACK(640, 360);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait   = false;
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(640, 360));
+
+   /* The menu there, then a touch there acts where it is */
+   menu_test_window_touch(gen, true, 0, 0, 0, &pressed);
+   CHECK(menu_test_near(menu_test_window_touch(gen, true, 1, 480, 90,
+               &pressed), 480, 90));
+   CHECK(pressed);
+   /* The main window's touches never reach it; it keeps its place */
+   CHECK(menu_test_near(menu_test_window_touch(gen, false, 1, 400, 240,
+               &pressed), 480, 90));
+   CHECK(!pressed);
+   CHECK(menu_test_near(menu_test_window_touch(gen, true, 0, 0, 0,
+               &pressed), 480, 90));
+   CHECK(!pressed);
+
+   /* A press held as the menu changes window is dropped, not a tap in
+    * the other window's layout. menu_input_post_iterate(), which this
+    * does not run, lifts the inhibit once select is let go. */
+   menu_test_window_touch(gen, true, 1, 480, 90, &pressed);
+   CHECK(pressed);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   menu_test_window_touch(gen, true, 1, 480, 90, &pressed);
+   CHECK(!pressed);
+   CHECK(menu_st->input_state.select_inhibit);
+   CHECK(!(menu_st->input_pointer_hw_state.flags
+            & MENU_INP_PTR_FLG_PRESS_SELECT));
+   menu_st->input_state.select_inhibit = false;
+   /* A finger already down where it goes is not the menu's until it
+    * lifts; the next one is */
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   menu_test_window_touch(gen, false, 1, 400, 240, &pressed);
+   CHECK(!pressed);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   menu_test_window_touch(gen, false, 1, 400, 240, &pressed);
+   CHECK(!pressed);
+   menu_test_window_touch(gen, false, 1, 420, 250, &pressed);
+   CHECK(!pressed);
+   CHECK(!(menu_st->input_state.pointer.flags
+            & (MENU_INP_PTR_FLG_ACTIVE | MENU_INP_PTR_FLG_DRAGGED)));
+   menu_test_window_touch(gen, false, 0, 0, 0, &pressed);
+   CHECK(!pressed);
+   CHECK(!(menu_st->input_pointer_hw_state.flags
+            & MENU_INP_PTR_FLG_PRESS_SELECT));
+   menu_st->input_state.select_inhibit = false;
+   menu_test_window_touch(gen, false, 1, 400, 240, &pressed);
+   CHECK(pressed);
+   menu_test_window_touch(gen, false, 0, 0, 0, &pressed);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   menu_test_window_touch(gen, true, 0, 0, 0, &pressed);
+   CHECK(!pressed);
+
+   /* Nor does such a press act on Resume, which acts on OK's release:
+    * held as the menu leaves the Presentation (90 frames, a long press
+    * at 60 Hz), or down where it goes. The next tap does. */
+   resume_cbs.enum_idx            = MENU_ENUM_LABEL_RESUME_CONTENT;
+   resume_item.actiondata         = &resume_cbs;
+   resume_rows.list               = &resume_item;
+   resume_rows.capacity           = 1;
+   resume_rows.size               = 1;
+   resume_selection[0]            = &resume_rows;
+   resume_stack[0]                = &no_rows;
+   resume_list.selection_buf      = resume_selection;
+   resume_list.selection_buf_size = 1;
+   resume_list.menu_stack         = resume_stack;
+   resume_list.menu_stack_size    = 1;
+   menu_st->entries.list          = &resume_list;
+   menu_st->selection_ptr         = 0;
+   menu_st->flags                |= MENU_ST_FLAG_ALIVE;
+   for (i = 0; i < 2; i++)
+   {
+      bool in_presentation  = (i == 0);
+      int x                 = in_presentation ? 480 : 400;
+      int y                 = in_presentation ?  90 : 240;
+      video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+         VIDEO_WINDOWS_PRESENTATION;
+      menu_test_window_touch(gen, true, 0, 0, 0, &pressed);
+      menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
+      menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
+      CHECK(menu_test_action == MENU_ACTION_NOOP);
+      video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+      for (j = 0; j < 90; j++)
+      {
+         menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
+         CHECK(menu_test_action == MENU_ACTION_NOOP);
+      }
+      for (j = 0; j < 3; j++)
+      {
+         menu_test_window_touch(gen, in_presentation, 0, 0, 0, &pressed);
+         CHECK(menu_test_action == MENU_ACTION_NOOP);
+         menu_st->input_state.select_inhibit = false;
+      }
+      menu_test_window_touch(gen, false, 1, 400, 240, &pressed);
+      CHECK(pressed);
+      menu_test_window_touch(gen, false, 0, 0, 0, &pressed);
+      CHECK(menu_test_action == MENU_ACTION_NOOP);
+      menu_test_window_touch(gen, false, 0, 0, 0, &pressed);
+      CHECK(menu_test_action == MENU_ACTION_OK);
+   }
+   menu_st->entries.list          = saved_list;
+   menu_st->selection_ptr         = saved_selection;
+   menu_st->flags                 = saved_menu_flags;
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   menu_test_window_touch(gen, true, 0, 0, 0, &pressed);
+
+   /* RGUI: its 320x240 framebuffer fitted 4:3 into 640x360, at x 80 */
+   memset(&rgui_ctx, 0, sizeof(rgui_ctx));
+   rgui_ctx.set_texture           = menu_test_set_texture;
+   rgui.driver_ctx                = &rgui_ctx;
+   p_disp->framebuf_dims          = VIDEO_SCALE_PACK(320, 240);
+   video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits, 4.0f / 3.0f);
+   video_driver_publish_vp_params();
+   CHECK(menu_test_near(menu_test_window_touch(gen, true, 1, 320, 180,
+               &pressed), 160, 120));
+
+   video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits, saved_aspect);
+   video_driver_publish_vp_params();
+   memset(&frame, 0, sizeof(frame));
+   input_driver_publish_window_pointers(&frame, NULL, 0, 0);
+   input_driver_publish_window_touches(&none_pos, NULL, 0, 0, 0);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, gen, 0,
+         NULL, NULL, 0, 0);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU] = saved_ui;
+   menu_st->driver_data           = saved_menu;
+   p_disp->framebuf_dims          = saved_fb;
+   input_st->current_driver       = saved_driver;
+   settings->bools.menu_pointer_enable  = saved_pointer;
+   settings->bools.menu_mouse_enable    = saved_mouse;
+   settings->bools.input_overlay_enable = saved_overlay;
+   window_test_end();
+}
+
 /* Screens by name, as on the Thor; a main window with no screen keeps
  * the menu's touches and shows the idle logo */
 static void test_window_display_names(void)
@@ -3863,6 +4095,7 @@ int main(int argc, char **argv)
    test_window_shown_reinit();
    test_window_ui_targets();
    test_window_pointer_mapping();
+   test_window_menu_touch_window();
    test_window_generation();
    test_window_ui_layer_dims();
 #ifdef HAVE_GFX_WIDGETS
