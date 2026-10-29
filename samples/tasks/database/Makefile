@@ -254,7 +254,8 @@ SCAN_TEST_WRAPS := -Wl,--wrap=libretrodb_open -Wl,--wrap=task_queue_park \
 	-Wl,--wrap=intfstream_crc_step -Wl,--wrap=rm3u_is_m3u \
 	-Wl,--wrap=task_nbio_slice_open -Wl,--wrap=task_nbio_slice_close \
 	-Wl,--wrap=task_queue_push \
-	-Wl,--wrap=file_archive_get_file_crc32_size_and_ext \
+	-Wl,--wrap=file_archive_get_file_crc32_and_size \
+	-Wl,--wrap=file_archive_parse_file_iterate \
 	-Wl,--wrap=bin_to_hex_alloc -Wl,--wrap=dir_list_new \
 	-Wl,--wrap=task_queue_is_threaded \
 	-Wl,--wrap=database_info_list_new_crc \

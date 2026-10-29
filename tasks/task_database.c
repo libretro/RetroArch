@@ -244,6 +244,28 @@ static size_t task_database_index_budget(void)
 #define SCAN_INDEX_ENTRIES 32768
 #endif
 
+/* An archive's directory, read once: each member's stored CRC (0:
+ * none stored), size and name, in directory order.  Directories are
+ * left out.  A first member with no stored CRC (a zstd stream, a
+ * BLAKE2 RAR 5 member) is decoded for one, as the member pass looks it
+ * up; a .bz2 is decoded to be listed at all. */
+typedef struct scan_member
+{
+   uint64_t size;
+   size_t   name;      /* in names */
+   uint32_t crc;
+} scan_member_t;
+
+typedef struct scan_members
+{
+   scan_member_t *list;
+   char          *names;
+   size_t         count;
+   uint64_t       first_size;
+   uint32_t       first_crc;  /* the first member's */
+   char           first_ext[16];
+} scan_members_t;
+
 typedef struct database_state_handle
 {
    database_info_list_t *info;
@@ -257,8 +279,6 @@ typedef struct database_state_handle
    uint64_t archive_size;
    char archive_name[512]; /* TODO/FIXME - check size */
    char serial[4096];      /* TODO/FIXME - check size */
-   /* The first member's extension, which gates the member pass. */
-   char member_ext[16];
    /* One entry per database in 'list', allocated to list->size:
     * list_index is bounded only by list->size - the number of .rdb
     * files in the database directory - so a fixed
@@ -303,9 +323,12 @@ typedef struct database_state_handle
     * own CRC or its read is under way. */
    uint8_t crc_pass;  /* enum db_crc_pass */
    bool whole_done;
-   /* The member pass hit where only member_ext is claimed; it expands
-    * unless one claimed for the archive's own name matches too. */
+   /* The member pass hit where only the first member's extension is
+    * claimed; it expands unless one claimed for the archive's own name
+    * matches too. */
    bool member_hit;
+   /* The archive's directory, for each of its passes. */
+   scan_members_t *members;
    bool index_ready;
 } database_state_handle_t;
 
@@ -374,27 +397,24 @@ enum scan_slot_state
    SCAN_SLOT_READY,       /* for a reader to claim */
    SCAN_SLOT_IN_FLIGHT,
    SCAN_SLOT_OK,
-   SCAN_SLOT_MEMBER_OK,   /* an archive's member CRC, not read whole */
+   SCAN_SLOT_MEMBER_OK,   /* an archive's directory, not read whole */
    SCAN_SLOT_BIG,
    SCAN_SLOT_FAIL
 };
 
 /* A file handed out.  The scan writes it while EMPTY, its reader while
  * IN_FLIGHT, and each publishes with the state.  For an archive the
- * reader takes member_crc and member_size first: its first member's
- * CRC and size. */
+ * reader reads the directory first, into members, which the scan
+ * takes with the file or frees. */
 typedef struct scan_slot
 {
    uint64_t           size;
-   uint64_t           member_size;
    size_t             index;   /* in the content list */
    char              *path;    /* PATH_MAX_LENGTH, its own copy */
+   scan_members_t    *members;
    uint32_t           crc;
-   uint32_t           member_crc;
    retro_atomic_int_t state;   /* enum scan_slot_state */
-   char               member_ext[16];
    bool               archive;
-   bool               multi;   /* an archive of several members */
 } scan_slot_t;
 
 /* Shared by the scan and its readers; the last reference frees it.
@@ -1094,6 +1114,126 @@ static enum msg_file_type extension_to_file_type(const char *ext)
    return FILE_TYPE_NONE;
 }
 
+static void task_database_members_free(scan_members_t *m)
+{
+   if (!m)
+      return;
+   free(m->list);
+   free(m->names);
+   free(m);
+}
+
+#ifdef HAVE_COMPRESSION
+/* The walk's transfer and userdata hold two paths each: too large for
+ * a reader's frame. */
+typedef struct scan_members_walk
+{
+   file_archive_transfer_t         state;
+   struct archive_extract_userdata userdata;
+} scan_members_walk_t;
+#endif
+
+/* @path's directory; NULL when it cannot be read through. */
+static scan_members_t *task_database_members_read(const char *path)
+{
+#ifdef HAVE_COMPRESSION
+   scan_members_walk_t *w         = (scan_members_walk_t*)calloc(1, sizeof(*w));
+   scan_members_t      *m         = (scan_members_t*)calloc(1, sizeof(*m));
+   size_t               cap       = 0;
+   size_t               used      = 0;
+   size_t               names_cap = 0;
+   bool                 first     = true;
+   bool                 ok        = w && m;
+   bool                 returnerr = false;
+
+   if (ok)
+   {
+      w->state.type = ARCHIVE_TRANSFER_INIT;
+      file_archive_parse_file_iterate(&w->state, &returnerr, path, NULL,
+            NULL, &w->userdata);
+      ok = (w->state.type == ARCHIVE_TRANSFER_ITERATE);
+   }
+   while (ok)
+   {
+      size_t      step = w->state.step_current;
+      const char *name = w->userdata.current_file_path;
+      size_t      len;
+
+      w->userdata.crc                  = 0;
+      w->userdata.size                 = 0;
+      w->userdata.current_file_path[0] = '\0';
+      /* A CRC the archive does not store is decoded for the first
+       * member alone. */
+      w->userdata.crc_wanted           = first;
+      file_archive_parse_file_iterate(&w->state, &returnerr, path, NULL,
+            NULL, &w->userdata);
+      if (w->state.step_current == step)
+      {
+         ok = (w->state.type != ARCHIVE_TRANSFER_DEINIT_ERROR);
+         break;
+      }
+      len = strlen(name);
+      /* rar and 7z leave a folder unnamed, and rar a member it cannot
+       * unpack. */
+      if (!len || name[len - 1] == '/' || name[len - 1] == '\\')
+         continue;
+      if (first)
+      {
+         m->first_crc  = w->userdata.crc;
+         m->first_size = w->userdata.size;
+         strlcpy(m->first_ext, path_get_extension(name),
+               sizeof(m->first_ext));
+         first         = false;
+      }
+      if (m->count == cap)
+      {
+         size_t         ncap = cap ? cap * 2 : 64;
+         scan_member_t *tmp  = (scan_member_t*)realloc(m->list,
+               ncap * sizeof(*tmp));
+         if (!tmp)
+         {
+            ok = false;
+            break;
+         }
+         m->list = tmp;
+         cap     = ncap;
+      }
+      if (used + len + 1 > names_cap)
+      {
+         size_t ncap = names_cap ? names_cap * 2 : 1024;
+         char  *tmp;
+         while (ncap < used + len + 1)
+            ncap *= 2;
+         if (!(tmp = (char*)realloc(m->names, ncap)))
+         {
+            ok = false;
+            break;
+         }
+         m->names  = tmp;
+         names_cap = ncap;
+      }
+      memcpy(m->names + used, name, len + 1);
+      m->list[m->count].size = w->userdata.size;
+      m->list[m->count].name = used;
+      m->list[m->count].crc  = w->userdata.crc;
+      m->count++;
+      used += len + 1;
+   }
+   if (w)
+      file_archive_parse_file_iterate_stop(&w->state);
+   free(w);
+   if (!ok)
+   {
+      task_database_members_free(m);
+      return NULL;
+   }
+   return m;
+#else
+   (void)path;
+   return NULL;
+#endif
+}
+
 static void task_database_crc_close(database_state_handle_t *db_state)
 {
    if (db_state->crc_fd)
@@ -1109,15 +1249,16 @@ static void task_database_crc_close(database_state_handle_t *db_state)
 static void task_database_crc_reset(database_state_handle_t *db_state)
 {
    task_database_crc_close(db_state);
-   db_state->serial[0]     = '\0';
-   db_state->crc           = 0;
-   db_state->archive_crc   = 0;
-   db_state->size          = 0;
-   db_state->archive_size  = 0;
-   db_state->crc_pass      = DB_CRC_PASS_FILE;
-   db_state->whole_done    = false;
-   db_state->member_hit    = false;
-   db_state->member_ext[0] = '\0';
+   db_state->serial[0]    = '\0';
+   db_state->crc          = 0;
+   db_state->archive_crc  = 0;
+   db_state->size         = 0;
+   db_state->archive_size = 0;
+   db_state->crc_pass     = DB_CRC_PASS_FILE;
+   db_state->whole_done   = false;
+   db_state->member_hit   = false;
+   task_database_members_free(db_state->members);
+   db_state->members      = NULL;
 }
 
 /* Opens @name's CRC span for task_database_crc_step() to hash over
@@ -1198,8 +1339,13 @@ static enum scan_verdict task_database_crc_step(
 #ifdef SCAN_HAVE_READERS
 static void scan_readers_unref(scan_readers_t *blk)
 {
+   size_t i;
+
    if (retro_atomic_fetch_sub_int(&blk->refs, 1) != 1)
       return;
+   if (blk->win)
+      for (i = 0; i < blk->window; i++)
+         task_database_members_free(blk->win[i].members);
    free(blk->idents);
    free(blk->paths);
    free(blk->win);
@@ -1254,9 +1400,10 @@ static bool scan_reader_credit(scan_readers_t *blk)
    return false;
 }
 
-/* While whole reads ahead are granted, a slot that holds only a member
- * CRC, taken back to read whole: the next from the scan's on, in
- * order, then this reader's last (it may have missed the grant). */
+/* While whole reads ahead are granted, a slot that holds only an
+ * archive's directory, taken back to read whole: the next from the
+ * scan's on, in order, then this reader's last (it may have missed the
+ * grant). */
 static bool scan_reader_rearm(scan_reader_t *rd)
 {
    scan_readers_t *blk = rd->blk;
@@ -1398,20 +1545,16 @@ static void scan_reader_handler(retro_task_t *task)
          rd->parked = false;
          retro_atomic_fetch_sub_int(&blk->idle, 1);
       }
-      /* One taken back has its member CRC. */
-      if (rd->slot->archive && !rd->slot->member_crc)
+      /* One taken back has its directory. */
+      if (rd->slot->archive && !rd->slot->members)
       {
-         unsigned entries = 0;
-
-         rd->slot->member_crc = file_archive_get_file_crc32_size_and_ext(
-               rd->slot->path, &rd->slot->member_size,
-               rd->slot->member_ext, sizeof(rd->slot->member_ext),
-               &entries);
-         rd->slot->multi      = entries > 1;
-         /* Only the member's CRC unless a whole read is granted; the
-          * scan needs the archive whole when it has several members
-          * or no member CRC. */
-         if (   rd->slot->member_crc && !rd->slot->multi
+         rd->slot->members = task_database_members_read(rd->slot->path);
+         /* Only the directory unless a whole read is granted; the scan
+          * needs the archive whole when it has several members or no
+          * first-member CRC. */
+         if (   rd->slot->members
+             && rd->slot->members->first_crc
+             && rd->slot->members->count <= 1
              && !scan_reader_credit(blk))
          {
             rd->own = rd->slot;
@@ -1578,13 +1721,10 @@ static void scan_readers_fill(manual_scan_handle_t *manual_scan)
       {
          scan_slot_t *slot = &blk->win[blk->seq % blk->window];
 
-         slot->index         = blk->fill;
-         slot->size          = 0;
-         slot->crc           = 0;
-         slot->member_crc    = 0;
-         slot->member_ext[0] = '\0';
-         slot->multi         = false;
-         slot->archive       = extension_to_file_type(path_get_extension(path))
+         slot->index      = blk->fill;
+         slot->size       = 0;
+         slot->crc        = 0;
+         slot->archive    = extension_to_file_type(path_get_extension(path))
                == FILE_TYPE_COMPRESSED;
          /* A copy: the list moves and is pruned under the readers. */
          strlcpy(slot->path, path, PATH_MAX_LENGTH);
@@ -1640,25 +1780,26 @@ static enum scan_take scan_readers_take(manual_scan_handle_t *manual_scan,
          return SCAN_TAKE_WAIT;
       blk->take++;
       if (   slot->index == i
-          && (   state == SCAN_SLOT_OK || state == SCAN_SLOT_MEMBER_OK
-              || (slot->archive && slot->member_crc)))
+          && (state == SCAN_SLOT_OK || state == SCAN_SLOT_MEMBER_OK))
       {
          if (slot->archive)
          {
-            db_state->crc      = slot->member_crc;
-            db_state->size     = slot->member_size;
-            db_state->crc_pass = slot->multi
+            scan_members_t *m = slot->members;
+
+            slot->members      = NULL;
+            task_database_members_free(db_state->members);
+            db_state->members  = m;
+            db_state->crc      = m ? m->first_crc  : 0;
+            db_state->size     = m ? m->first_size : 0;
+            db_state->crc_pass = (m && m->count > 1)
                ? DB_CRC_PASS_BOTH : DB_CRC_PASS_MEMBER;
-            strlcpy(db_state->member_ext, slot->member_ext,
-                  sizeof(db_state->member_ext));
-            /* BIG or FAIL: the scan reads it whole itself. */
             if (state == SCAN_SLOT_OK)
             {
                db_state->archive_crc  = slot->crc;
                db_state->archive_size = slot->size;
                db_state->whole_done   = true;
-               /* No member CRC: only its own can match. */
-               if (!slot->member_crc)
+               /* No first-member CRC: only its own can match. */
+               if (!m || !m->first_crc)
                   db_state->crc_pass  = DB_CRC_PASS_WHOLE;
             }
          }
@@ -1673,6 +1814,17 @@ static enum scan_take scan_readers_take(manual_scan_handle_t *manual_scan,
          retro_atomic_store_release_int(&slot->state, SCAN_SLOT_EMPTY);
          return SCAN_TAKE_DONE;
       }
+      /* The scan reads it itself: its directory is in. */
+      if (slot->index == i && slot->archive && slot->members)
+      {
+         task_database_members_free(db_state->members);
+         db_state->members = slot->members;
+         db_state->crc     = slot->members->first_crc;
+         db_state->size    = slot->members->first_size;
+         slot->members     = NULL;
+      }
+      task_database_members_free(slot->members);
+      slot->members = NULL;
       retro_atomic_store_release_int(&slot->state, SCAN_SLOT_EMPTY);
       if (slot->index == i)
          break;
@@ -2511,33 +2663,40 @@ static enum scan_verdict task_database_iterate_crc_lookup(
             path_contains_compressed_file);
    }
 
+   /* The directory, read here unless a reader has. */
+   if (db_state->crc_pass == DB_CRC_PASS_MEMBER)
+   {
+      if (!db_state->members)
+      {
+         if (!(db_state->members = task_database_members_read(name)))
+            return task_database_whole_pass(db_state, name);
+         db_state->crc  = db_state->members->first_crc;
+         db_state->size = db_state->members->first_size;
+      }
+      /* No member, or a first member with no CRC: only the archive's
+       * own CRC can match. */
+      if (!db_state->crc)
+         return task_database_whole_pass(db_state, name);
+      if (db_state->members->count > 1)
+         db_state->crc_pass = DB_CRC_PASS_BOTH;
+   }
+
    /* Archive did not contain a CRC for this entry,
     * or the file is empty. */
    if (!db_state->crc && db_state->crc_pass != DB_CRC_PASS_WHOLE)
    {
-      unsigned entries = 0;
 #ifdef DEBUG
       RARCH_DBG("[Scanner] Extra crc check 1: %x %d / %x %d %s\n",
             db_state->crc, db_state->size, db_state->archive_crc, db_state->archive_size,
             path_contains_compressed_file ? "compressed:true" : "compressed:false");
 #endif
-      db_state->crc = file_archive_get_file_crc32_size_and_ext(name,
-            &db_state->size, db_state->member_ext,
-            sizeof(db_state->member_ext), &entries);
+      db_state->crc = file_archive_get_file_crc32_and_size(name, &db_state->size);
 #ifdef DEBUG
       RARCH_DBG("[Scanner] Extra crc check 2: %x %d / %x %d.\n",
             db_state->crc, db_state->size, db_state->archive_crc, db_state->archive_size);
 #endif
       if (!db_state->crc)
-      {
-         /* No CRC for the first member (a directory, or a decode that
-          * failed): only the archive's own CRC can match. */
-         if (db_state->crc_pass == DB_CRC_PASS_MEMBER)
-            return task_database_whole_pass(db_state, name);
          return database_info_list_iterate_next(db_state);
-      }
-      if (entries > 1 && db_state->crc_pass == DB_CRC_PASS_MEMBER)
-         db_state->crc_pass = DB_CRC_PASS_BOTH;
    }
 
    /* Several members: read whole before the first lookup. */
@@ -2565,7 +2724,7 @@ static enum scan_verdict task_database_iterate_crc_lookup(
             (   db_state->crc_pass == DB_CRC_PASS_MEMBER
              && !db_state->member_hit
              && _db->task_config->search_archives)
-            ? db_state->member_ext : NULL,
+            ? db_state->members->first_ext : NULL,
             path_contains_compressed_file))
       return SCAN_VERDICT_CONTINUE;
 
@@ -3605,6 +3764,8 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
          size_t db_count = dbstate->list ? dbstate->list->size : 0;
 
          task_database_crc_close(dbstate);
+         task_database_members_free(dbstate->members);
+         dbstate->members = NULL;
          task_database_index_close(dbstate);
          if (dbstate->list)
          {

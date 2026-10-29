@@ -45,6 +45,7 @@
 #include <retro_atomic.h>
 #include <features/features_cpu.h>
 #include <streams/interface_stream.h>
+#include <file/archive_file.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
@@ -753,16 +754,16 @@ static void passes_detail(char *s)
          retro_atomic_load_acquire_int(&look_late) ? ", late" : "");
 }
 
-/* Linked with --wrap: stored-CRC reads (an archive's directory) of
- * paths holding stored_name, counted as each returns.  A read of
- * dir_hold's waits first, at most HOLD_USEC, until hold_dirs have.  A
- * read whose first member is gate_size bytes waits after, at most
- * HOLD_USEC, in the gate: until gate_n are in and gate_slow slow
- * reads have begun.  One on the thread that last ran the scan, which
- * gate_on_scan counts, waits only for the first: the scan cannot run.
- * While share_paths is set, readers' reads of smb:// paths and of any
- * other scheme's are counted in share_reads.  All set only between
- * scans. */
+/* Linked with --wrap: directory reads of paths holding stored_name,
+ * counted as each returns: a stored-CRC fetch, and a walk the scanner
+ * starts itself (its INIT step).  A read of dir_hold's waits first, at
+ * most HOLD_USEC, until hold_dirs have.  A walk whose first member is
+ * gate_size bytes waits after that member, at most HOLD_USEC, in the
+ * gate: until gate_n are in and gate_slow slow reads have begun.  One
+ * on the thread that last ran the scan, which gate_on_scan counts,
+ * waits only for the first: the scan cannot run.  While share_paths is
+ * set, readers' reads of smb:// paths and of any other scheme's are
+ * counted in share_reads.  All set only between scans. */
 static const char        *stored_name;
 static retro_atomic_int_t stored_reads;
 static retro_atomic_int_t share_reads[2];
@@ -772,13 +773,8 @@ static uint64_t           gate_size;
 static int                gate_slow;
 static retro_atomic_int_t gate_on_scan;
 
-uint32_t __real_file_archive_get_file_crc32_size_and_ext(const char *path,
-      uint64_t *size, char *ext, size_t len, unsigned *entries);
-uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
-      uint64_t *size, char *ext, size_t len, unsigned *entries)
+static void stored_read_hold(const char *path)
 {
-   uint32_t crc;
-
    if (dir_hold && path && strstr(path, dir_hold))
    {
       retro_time_t until = cpu_features_get_time_usec() + HOLD_USEC;
@@ -787,9 +783,11 @@ uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
              && cpu_features_get_time_usec() < until)
          retro_sleep(1);
    }
-   crc = __real_file_archive_get_file_crc32_size_and_ext(path, size,
-         ext, len, entries);
-   if (gate_n && size && *size == gate_size)
+}
+
+static void stored_read_gate(uint64_t size)
+{
+   if (gate_n && size == gate_size)
    {
       retro_time_t until   = cpu_features_get_time_usec() + HOLD_USEC;
       bool         on_scan = retro_atomic_load_acquire_size(&scan_thread_tid)
@@ -804,6 +802,10 @@ uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
              && cpu_features_get_time_usec() < until)
          retro_sleep(1);
    }
+}
+
+static void stored_read_count(const char *path)
+{
    if (stored_name && path && strstr(path, stored_name))
       retro_atomic_fetch_add_int(&stored_reads, 1);
    if (   share_paths && path
@@ -815,7 +817,44 @@ uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
       else if (strstr(path, "://"))
          retro_atomic_fetch_add_int(&share_reads[1], 1);
    }
+}
+
+uint32_t __real_file_archive_get_file_crc32_and_size(const char *path,
+      uint64_t *size);
+uint32_t __wrap_file_archive_get_file_crc32_and_size(const char *path,
+      uint64_t *size)
+{
+   uint32_t crc;
+
+   stored_read_hold(path);
+   crc = __real_file_archive_get_file_crc32_and_size(path, size);
+   stored_read_count(path);
    return crc;
+}
+
+int __real_file_archive_parse_file_iterate(file_archive_transfer_t *state,
+      bool *returnerr, const char *file, const char *valid_exts,
+      file_archive_file_cb file_cb,
+      struct archive_extract_userdata *userdata);
+int __wrap_file_archive_parse_file_iterate(file_archive_transfer_t *state,
+      bool *returnerr, const char *file, const char *valid_exts,
+      file_archive_file_cb file_cb,
+      struct archive_extract_userdata *userdata)
+{
+   bool init  = state && state->type == ARCHIVE_TRANSFER_INIT;
+   bool first = state && state->type == ARCHIVE_TRANSFER_ITERATE
+      && !state->step_current;
+   int  ret;
+
+   if (init)
+      stored_read_hold(file);
+   ret = __real_file_archive_parse_file_iterate(state, returnerr, file,
+         valid_exts, file_cb, userdata);
+   if (first && userdata)
+      stored_read_gate(userdata->size);
+   if (init)
+      stored_read_count(file);
+   return ret;
 }
 
 /* Linked with --wrap: the serial query fails, as on a failed
@@ -1395,7 +1434,8 @@ static int write_bytes(const char *path, const uint8_t *d, size_t n)
 }
 
 #ifdef HAVE_7ZIP
-/* A 7z NUMBER below 0x4000. */
+/* A 7z NUMBER: the high bits of the first byte count the bytes after
+ * it. */
 static unsigned put_7z_num(uint8_t *p, uint32_t v)
 {
    if (v < 0x80)
@@ -1403,9 +1443,148 @@ static unsigned put_7z_num(uint8_t *p, uint32_t v)
       p[0] = (uint8_t)v;
       return 1;
    }
-   p[0] = (uint8_t)(0x80 | (v >> 8));
-   p[1] = (uint8_t)v;
-   return 2;
+   if (v < 0x4000)
+   {
+      p[0] = (uint8_t)(0x80 | (v >> 8));
+      p[1] = (uint8_t)v;
+      return 2;
+   }
+   p[0] = 0xF0;
+   put_le32(p + 1, v);
+   return 5;
+}
+
+/* A 7z archive of up to 8 entries, written by hand as the zip is: the
+ * signature header, each entry's data as a Copy folder of its own (as
+ * 7-Zip stores Copy), then a plain header with their sizes, CRCs, names
+ * and attributes.  A name ending in '/' is a directory, stored as 7-Zip
+ * stores one: an empty stream that is not an empty file, attribute
+ * 0x10, the name without the '/'. */
+static int write_7z_entries(const char *path, const zip_entry_t *e,
+      unsigned n)
+{
+   static const uint8_t sig[8] = { '7', 'z', 0xBC, 0xAF, 0x27, 0x1C, 0, 4 };
+   FILE    *f;
+   uint8_t  s[32], h[1024];
+   uint8_t  dirs = 0, empty = 0, empty_file = 0;
+   uint32_t total = 0;
+   unsigned i, j, len, nlen, streams = 0, empties = 0;
+   unsigned names = 1;
+   int      ok;
+
+   if (n > 8)
+      return 0;
+   for (i = 0; i < n; i++)
+   {
+      nlen = (unsigned)strlen(e[i].name);
+      if (nlen > 32)
+         return 0;
+      if (nlen && e[i].name[nlen - 1] == '/')
+      {
+         dirs |= (uint8_t)(1 << i);
+         nlen--;
+      }
+      names += 2 * (nlen + 1);
+      if (e[i].len)
+      {
+         total += e[i].len;
+         streams++;
+         continue;
+      }
+      empty |= (uint8_t)(0x80 >> i);
+      if (!(dirs & (1 << i)))
+         empty_file |= (uint8_t)(0x80 >> empties);
+      empties++;
+   }
+   if (!streams)
+      return 0;
+
+   /* Header, MainStreamsInfo, PackInfo: the packed streams from 0. */
+   memcpy(h, "\x01\x04\x06\x00", 4);
+   len = 4;
+   h[len++] = (uint8_t)streams;
+   h[len++] = 0x09;
+   for (i = 0; i < n; i++)
+      if (e[i].len)
+         len += put_7z_num(h + len, e[i].len);
+   /* UnpackInfo: a folder of one Copy coder for each, and its size. */
+   memcpy(h + len, "\x00\x07\x0B", 3);
+   len += 3;
+   h[len++] = (uint8_t)streams;
+   h[len++] = 0;
+   for (i = 0; i < streams; i++)
+   {
+      memcpy(h + len, "\x01\x01\x00", 3);
+      len += 3;
+   }
+   h[len++] = 0x0C;
+   for (i = 0; i < n; i++)
+      if (e[i].len)
+         len += put_7z_num(h + len, e[i].len);
+   /* SubStreamsInfo: every CRC. */
+   memcpy(h + len, "\x00\x08\x0A\x01", 4);
+   len += 4;
+   for (i = 0; i < n; i++)
+      if (e[i].len)
+      {
+         put_le32(h + len, e[i].crc);
+         len += 4;
+      }
+   /* FilesInfo: EmptyStream, EmptyFile, Name, Attributes. */
+   memcpy(h + len, "\x00\x00\x05", 3);
+   len += 3;
+   h[len++] = (uint8_t)n;
+   if (empties)
+   {
+      h[len++] = 0x0E;
+      h[len++] = 1;
+      h[len++] = empty;
+      h[len++] = 0x0F;
+      h[len++] = 1;
+      h[len++] = empty_file;
+   }
+   h[len++] = 0x11;
+   len += put_7z_num(h + len, names);
+   h[len++] = 0;
+   for (i = 0; i < n; i++)
+   {
+      nlen = (unsigned)strlen(e[i].name) - ((dirs >> i) & 1);
+      for (j = 0; j < nlen; j++)
+      {
+         h[len++] = (uint8_t)e[i].name[j];
+         h[len++] = 0;
+      }
+      h[len++] = 0;
+      h[len++] = 0;
+   }
+   h[len++] = 0x15;
+   len += put_7z_num(h + len, 2 + 4 * n);
+   h[len++] = 1;
+   h[len++] = 0;
+   for (i = 0; i < n; i++)
+   {
+      put_le32(h + len, ((dirs >> i) & 1) ? 0x10 : 0x20);
+      len += 4;
+   }
+   h[len++] = 0;
+   h[len++] = 0;
+
+   /* The header follows the data. */
+   memset(s, 0, sizeof(s));
+   memcpy(s, sig, sizeof(sig));
+   put_le32(s + 12, total);
+   put_le32(s + 20, len);
+   put_le32(s + 28, crc_of(h, len));
+   put_le32(s + 8,  crc_of(s + 12, 20));
+
+   if (!(f = fopen(path, "wb")))
+      return 0;
+   ok = fwrite(s, 1, sizeof(s), f) == sizeof(s);
+   for (i = 0; ok && i < n; i++)
+      if (e[i].len)
+         ok = fwrite(e[i].data, 1, e[i].len, f) == e[i].len;
+   ok = ok && fwrite(h, 1, len, f) == len;
+   return (fclose(f) == 0) && ok;
 }
 
 /* A 7z of one member stored by the copy coder, its CRC in the header
@@ -1413,64 +1592,14 @@ static unsigned put_7z_num(uint8_t *p, uint32_t v)
 static int write_7z(const char *path, const char *member,
       const uint8_t *data, uint32_t len, uint32_t crc)
 {
-   static const uint8_t sig[8] = { '7', 'z', 0xBC, 0xAF, 0x27, 0x1C,
-      0, 4 };
-   uint8_t  s[32], h[128];
-   unsigned n = 0;
-   size_t   i;
-   FILE    *f;
-   int      ok;
+   zip_entry_t e;
 
-   h[n++] = 0x01;              /* header */
-   h[n++] = 0x04;              /* streams */
-   h[n++] = 0x06;              /* one packed stream, at 0 */
-   h[n++] = 0x00;
-   h[n++] = 0x01;
-   h[n++] = 0x09;
-   n     += put_7z_num(h + n, len);
-   h[n++] = 0x00;
-   h[n++] = 0x07;              /* one folder of one copy coder */
-   h[n++] = 0x0B;
-   h[n++] = 0x01;
-   h[n++] = 0x00;
-   h[n++] = 0x01;
-   h[n++] = 0x01;
-   h[n++] = 0x00;
-   h[n++] = 0x0C;
-   n     += put_7z_num(h + n, len);
-   h[n++] = 0x00;
-   h[n++] = 0x08;              /* its CRC */
-   h[n++] = 0x0A;
-   h[n++] = 0x01;
-   put_le32(h + n, crc);
-   n     += 4;
-   h[n++] = 0x00;
-   h[n++] = 0x00;
-   h[n++] = 0x05;              /* one file, its name UTF-16 */
-   h[n++] = 0x01;
-   h[n++] = 0x11;
-   n     += put_7z_num(h + n, (uint32_t)(1 + 2 * (strlen(member) + 1)));
-   h[n++] = 0x00;
-   for (i = 0; i <= strlen(member); i++)
-   {
-      h[n++] = (uint8_t)member[i];
-      h[n++] = 0;
-   }
-   h[n++] = 0x00;
-   h[n++] = 0x00;
-
-   memset(s, 0, sizeof(s));
-   memcpy(s, sig, sizeof(sig));
-   put_le32(s + 12, len);      /* next header: offset, size, CRC */
-   put_le32(s + 20, n);
-   put_le32(s + 28, crc_of(h, n));
-   put_le32(s + 8,  crc_of(s + 12, 20));
-   if (!(f = fopen(path, "wb")))
-      return 0;
-   ok =     fwrite(s, 1, 32, f) == 32
-         && fwrite(data, 1, len, f) == len
-         && fwrite(h, 1, n, f) == n;
-   return (fclose(f) == 0) && ok;
+   memset(&e, 0, sizeof(e));
+   e.name = member;
+   e.data = data;
+   e.len  = len;
+   e.crc  = crc;
+   return write_7z_entries(path, &e, 1);
 }
 #endif
 
@@ -2728,7 +2857,8 @@ fixture:
  * .zst), or as it is listed (.bz2). Each archive's own CRC matches
  * nothing. The core loads 7z, zip and RAR archives as they are, and
  * none of its extensions is test.bin's: that archive is matched by its
- * first member. */
+ * first member. Those it loads are written as themselves, not
+ * expanded. */
 static void archive_lane(const char *root, const char *pl_dir,
       bool threaded)
 {
@@ -2822,6 +2952,10 @@ static void archive_lane(const char *root, const char *pl_dir,
       check(started && scan_completed && file_contains(lpl, recs[k].name)
             && file_contains(lpl, crcs[k]), what, crcs[k]);
    }
+   sprintf(what, "archives the core loads not expanded %s", q);
+   check(   started && scan_completed && !file_contains(lpl, ".7z#")
+         && !file_contains(lpl, ".rar#") && !file_contains(lpl, ".zip#"),
+         what, "a1.7z, b2.rar, b3.rar, c6.zip");
    return;
 
 fixture:
@@ -2863,7 +2997,8 @@ static bool set_whole_rec(db_rec_t *rec, const char *name,
 static void member_first_lane(const char *root, const char *pl_dir,
       bool threaded)
 {
-   static uint8_t d[4][MF_MEMBER_LEN];
+   static uint8_t d[5][MF_MEMBER_LEN];
+   static char    folder_lpl[1024];
    char           db[512], dir[512], p[1024], cart_lpl[1024];
    char           arcade_lpl[1024], what[64], detail[64], crc[2][16];
    db_rec_t       cart[2], arcade[2];
@@ -2906,7 +3041,8 @@ static void member_first_lane(const char *root, const char *pl_dir,
        || !set_whole_rec(&arcade[0], "MF Arcade", p))
       goto fixture;
 
-   /* A directory first: no stored CRC, so only its own CRC can match. */
+   /* A directory, then a member that matches nothing: only its own CRC
+    * can match. */
    e[0].name = "d/";
    e[0].data = NULL;
    e[0].len  = 0;
@@ -2935,6 +3071,31 @@ static void member_first_lane(const char *root, const char *pl_dir,
       goto fixture;
    set_rec(&cart[1], "MF Multi B", 0x0BF10003u, MF_MEMBER_LEN);
 
+#ifdef HAVE_7ZIP
+   /* A folder is no member: this 7z of a folder and one member is named
+    * by that member's hit, in a database whose core opens 7z. */
+   {
+      db_rec_t folder;
+
+      fill_forced(d[4], MF_MEMBER_LEN, 59, 0x0BF10007u);
+      e[0].name = "d/";
+      e[0].data = NULL;
+      e[0].len  = 0;
+      e[0].crc  = 0;
+      e[1].name = "d/m.rd";
+      e[1].data = d[4];
+      e[1].len  = MF_MEMBER_LEN;
+      e[1].crc  = 0x0BF10007u;
+      sprintf(p, "%s/mf_folder.7z", dir);
+      set_rec(&folder, "MF Folder 7z", 0x0BF10007u, MF_MEMBER_LEN);
+      if (!write_7z_entries(p, e, 2))
+         goto fixture;
+      sprintf(p, "%s/Test Archives.rdb", db);
+      if (!write_db_set(p, &folder, 1))
+         goto fixture;
+   }
+#endif
+
    sprintf(p, "%s/Test MF Cart.rdb", db);
    if (!write_db_set(p, cart, 2))
       goto fixture;
@@ -2944,8 +3105,10 @@ static void member_first_lane(const char *root, const char *pl_dir,
 
    sprintf(cart_lpl,   "%s/Test MF Cart.lpl",   pl_dir);
    sprintf(arcade_lpl, "%s/Test MF Arcade.lpl", pl_dir);
+   sprintf(folder_lpl, "%s/Test Archives.lpl", pl_dir);
    filestream_delete(cart_lpl);
    filestream_delete(arcade_lpl);
+   filestream_delete(folder_lpl);
    use_queue(threaded);
    use_db(db);
    retro_atomic_store_release_int(&reads_begun, 0);
@@ -2974,16 +3137,23 @@ static void member_first_lane(const char *root, const char *pl_dir,
          && file_contains(arcade_lpl, crc[1])
          && !file_contains(cart_lpl, "mf_arcade.zip#"), what,
          "mf_arcade.zip, not expanded");
-   sprintf(what, "no stored CRC: matched by its own %s", q);
+   sprintf(what, "directory first: matched by its own %s", q);
    check(started && file_contains(arcade_lpl, "MF Dir First"), what,
          "mf_dirfirst.zip");
    sprintf(detail, "%d directory reads", stored);
-   sprintf(what, "no stored CRC: its directory read once %s", q);
+   sprintf(what, "directory first: its directory read once %s", q);
    check(started && stored == 1, what, detail);
    sprintf(what, "expanded after both CRCs miss %s", q);
    check(   started && file_contains(cart_lpl, "MF Multi B")
          && file_contains(cart_lpl, "mf_multi.zip#b.rd"), what,
          "mf_multi.zip#b.rd");
+#ifdef HAVE_7ZIP
+   sprintf(what, "7z, a folder first: named by its member %s", q);
+   check(   started && file_contains(folder_lpl, "MF Folder 7z")
+         && file_contains(folder_lpl, "mf_folder.7z")
+         && !file_contains(folder_lpl, "mf_folder.7z#"), what,
+         "mf_folder.7z");
+#endif
    return;
 
 fixture:
