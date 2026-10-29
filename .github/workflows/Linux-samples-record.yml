@@ -6,6 +6,12 @@ on:
       - master
     paths:
       - 'record/**'
+      - 'libretro-common/net/net_rtmp*'
+      - 'libretro-common/include/net/net_rtmp*'
+      - 'libretro-common/formats/flv/**'
+      - 'libretro-common/include/formats/rflv_mux.h'
+      - 'libretro-common/samples/net/rtmp/**'
+      - 'libretro-common/samples/formats/flv/**'
       - 'gfx/common/videotoolbox_encode*.h'
       - 'libretro-common/queues/**'
       - 'libretro-common/include/retro_spsc.h'
@@ -17,6 +23,12 @@ on:
       - master
     paths:
       - 'record/**'
+      - 'libretro-common/net/net_rtmp*'
+      - 'libretro-common/include/net/net_rtmp*'
+      - 'libretro-common/formats/flv/**'
+      - 'libretro-common/include/formats/rflv_mux.h'
+      - 'libretro-common/samples/net/rtmp/**'
+      - 'libretro-common/samples/formats/flv/**'
       - 'gfx/common/videotoolbox_encode*.h'
       - 'libretro-common/queues/**'
       - 'libretro-common/include/retro_spsc.h'
@@ -141,7 +153,7 @@ jobs:
 
       - name: Native FLV mux (ASan + UBSan, mingw-w64)
         shell: bash
-        working-directory: samples/record/flv_mux
+        working-directory: libretro-common/samples/formats/flv
         run: |
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
@@ -149,9 +161,9 @@ jobs:
           make clean && make check stream-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
-      - name: RTMP output chunks (ASan + UBSan, mingw-w64)
+      - name: RTMP protocol and sockets (ASan + UBSan, mingw-w64)
         shell: bash
-        working-directory: samples/record/rtmp_chunk
+        working-directory: libretro-common/samples/net/rtmp
         run: |
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"

@@ -102,6 +102,16 @@ jobs:
           # self-contained test and exits 0 on success / non-zero on
           # failure.  These are built AND executed.
           declare -a RUN_TARGETS=(
+            flv_mux_test
+            rtmp_chunk_test
+            rtmp_handshake_test
+            rtmp_receive_test
+            rtmp_command_test
+            rtmp_reply_test
+            rtmp_publish_test
+            rtmp_control_test
+            rtmp_session_test
+            rtmp_socket_test
             rslc_test
             s16_to_float_test
             float_to_s16_test
@@ -383,6 +393,9 @@ jobs:
           # self-contained regression tests came to be compiled every
           # run and never executed.
           declare -a NORUN_TARGETS=(
+            # Fixture-driven checks run in Linux-samples-record.yml.
+            flv_remux_test
+            rtmp_socket_native_test
             # CLI tools that print usage and exit non-zero without
             # arguments; they have no self-test mode.
             rzip

@@ -633,6 +633,10 @@ VIDEO IMAGE
 #include "../libretro-common/formats/h264/rh264.c"
 #include "../libretro-common/formats/h265/rh265.c"
 #endif
+#ifdef HAVE_RFLV
+#include "../libretro-common/formats/flv/rflv_mux.c"
+#endif
+
 #ifdef HAVE_RMP4
 #include "../libretro-common/formats/mp4/rmp4.c"
 #include "../libretro-common/formats/mp4/rmp4_video.c"
@@ -1773,6 +1777,17 @@ NETPLAY
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
+#ifdef HAVE_RTMP
+#include "../libretro-common/net/net_rtmp_chunk.c"
+#include "../libretro-common/net/net_rtmp_command.c"
+#include "../libretro-common/net/net_rtmp_control.c"
+#include "../libretro-common/net/net_rtmp_handshake.c"
+#include "../libretro-common/net/net_rtmp_publish.c"
+#include "../libretro-common/net/net_rtmp_receive.c"
+#include "../libretro-common/net/net_rtmp_reply.c"
+#include "../libretro-common/net/net_rtmp_session.c"
+#include "../libretro-common/net/net_rtmp_socket.c"
+#endif
 #ifdef HAVE_IFINFO
 #include "../libretro-common/net/net_ifinfo.c"
 #endif

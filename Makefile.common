@@ -2532,6 +2532,11 @@ ifneq ($(HAVE_RWEBP), 1)
 endif
 endif
 
+ifeq ($(HAVE_RFLV), 1)
+   DEFINES += -DHAVE_RFLV
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/flv/rflv_mux.o
+endif
+
 ifeq ($(HAVE_RMP4), 1)
    DEFINES += -DHAVE_RMP4
    OBJ += $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.o \
@@ -2704,6 +2709,18 @@ endif
 
 ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
+   ifeq ($(HAVE_RTMP), 1)
+      DEFINES += -DHAVE_RTMP
+      OBJ += $(LIBRETRO_COMM_DIR)/net/net_rtmp_chunk.o \
+             $(LIBRETRO_COMM_DIR)/net/net_rtmp_command.o \
+             $(LIBRETRO_COMM_DIR)/net/net_rtmp_control.o \
+             $(LIBRETRO_COMM_DIR)/net/net_rtmp_handshake.o \
+             $(LIBRETRO_COMM_DIR)/net/net_rtmp_publish.o \
+             $(LIBRETRO_COMM_DIR)/net/net_rtmp_receive.o \
+             $(LIBRETRO_COMM_DIR)/net/net_rtmp_reply.o \
+             $(LIBRETRO_COMM_DIR)/net/net_rtmp_session.o \
+             $(LIBRETRO_COMM_DIR)/net/net_rtmp_socket.o
+   endif
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_compat.o \
           $(LIBRETRO_COMM_DIR)/net/net_http.o \
           $(LIBRETRO_COMM_DIR)/net/net_http_parse.o \

@@ -1121,6 +1121,13 @@ endif
 
 ifeq ($(HAVE_NETWORKING), 1)
    CFLAGS      += -DHAVE_NETWORKING
+   ifeq ($(HAVE_RTMP), 1)
+      CFLAGS   += -DHAVE_RTMP
+   endif
+endif
+
+ifeq ($(HAVE_RFLV), 1)
+   CFLAGS      += -DHAVE_RFLV
 endif
 
 ifeq ($(HAVE_IFINFO), 1)
