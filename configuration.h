@@ -35,7 +35,7 @@
 #include "led/led_defines.h"
 
 #ifdef HAVE_LAKKA
-#include "lakka.h"
+#include "os/lakka/lakka.h"
 #endif
 
 #include "msg_hash.h"

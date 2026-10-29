@@ -300,7 +300,7 @@
 		92B9ECAA24E054B400E6CFB2 /* paths.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = paths.h; path = ../../paths.h; sourceTree = "<group>"; };
 		92B9ECAB24E054B400E6CFB2 /* manual_content_scan.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = manual_content_scan.c; path = ../../manual_content_scan.c; sourceTree = "<group>"; };
 		92B9ECAC24E054B400E6CFB2 /* verbosity.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = verbosity.c; path = ../../verbosity.c; sourceTree = "<group>"; };
-		92B9ECAD24E054B400E6CFB2 /* lakka.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = lakka.h; path = ../../lakka.h; sourceTree = "<group>"; };
+		92B9ECAD24E054B400E6CFB2 /* lakka.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = lakka.h; path = ../../os/lakka/lakka.h; sourceTree = "<group>"; };
 		92B9ECAE24E054B400E6CFB2 /* msg_hash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = msg_hash.h; path = ../../msg_hash.h; sourceTree = "<group>"; };
 		92B9ECAF24E054B400E6CFB2 /* runtime_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = runtime_file.h; path = ../../runtime_file.h; sourceTree = "<group>"; };
 		92B9ECB024E054B400E6CFB2 /* core_updater_list.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = core_updater_list.c; path = ../../core_updater_list.c; sourceTree = "<group>"; };
@@ -310,7 +310,7 @@
 		92B9ECB424E054B400E6CFB2 /* setting_list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = setting_list.h; path = ../../setting_list.h; sourceTree = "<group>"; };
 		92B9ECB524E054B400E6CFB2 /* disk_index_file.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = disk_index_file.c; path = ../../disk_index_file.c; sourceTree = "<group>"; };
 		92B9ECB624E054B500E6CFB2 /* core_updater_list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core_updater_list.h; path = ../../core_updater_list.h; sourceTree = "<group>"; };
-		92B9ECB724E054B500E6CFB2 /* switch_performance_profiles.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = switch_performance_profiles.h; path = ../../switch_performance_profiles.h; sourceTree = "<group>"; };
+		92B9ECB724E054B500E6CFB2 /* switch_performance_profiles.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = switch_performance_profiles.h; path = ../../os/libnx/switch_performance_profiles.h; sourceTree = "<group>"; };
 		92B9ECB824E054B500E6CFB2 /* driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = driver.h; path = ../../driver.h; sourceTree = "<group>"; };
 		92B9ECB924E054B500E6CFB2 /* version.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = version.h; path = ../../version.h; sourceTree = "<group>"; };
 		92B9ECBB24E054B500E6CFB2 /* disk_index_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = disk_index_file.h; path = ../../disk_index_file.h; sourceTree = "<group>"; };

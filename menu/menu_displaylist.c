@@ -57,7 +57,7 @@
 #endif
 
 #ifdef HAVE_LAKKA
-#include "../../lakka.h"
+#include "../os/lakka/lakka.h"
 #endif
 
 #ifdef HAVE_LIBNX
@@ -65,7 +65,7 @@
 #endif
 
 #if defined(HAVE_LIBNX)
-#include "../../switch_performance_profiles.h"
+#include "../os/libnx/switch_performance_profiles.h"
 #endif
 
 #if defined(__linux__) || (defined(BSD) && !defined(__MACH__))

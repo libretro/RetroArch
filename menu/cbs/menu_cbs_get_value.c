@@ -48,7 +48,7 @@
 #include "../../manual_content_scan.h"
 #include "../../os/lakka/cpufreq/cpufreq.h"
 #ifdef HAVE_LAKKA
-#include "../../lakka.h"
+#include "../../os/lakka/lakka.h"
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #include "../../os/lakka/reboot2payload/reboot2payload.h"

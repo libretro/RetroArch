@@ -105,7 +105,7 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
-#include "switch_performance_profiles.h"
+#include "os/libnx/switch_performance_profiles.h"
 #endif
 
 #if defined(ANDROID)
@@ -277,7 +277,7 @@
 
 #ifdef HAVE_LAKKA
 #include <retro_dirent.h>
-#include "lakka.h"
+#include "os/lakka/lakka.h"
 #ifdef HAVE_LAKKA_SWITCH
 #include "os/lakka/reboot2payload/reboot2payload.h"
 #endif

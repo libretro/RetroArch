@@ -26,7 +26,7 @@
 #include <formats/image.h>
 
 #include <switch.h>
-#include "../../switch_performance_profiles.h"
+#include "../../os/libnx/switch_performance_profiles.h"
 #include "../../configuration.h"
 #include <unistd.h>
 #include <malloc.h>

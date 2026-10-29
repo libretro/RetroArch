@@ -88,14 +88,14 @@ void android_app_set_window_settings(bool notch_write_over,
 #include "os/uwp/uwp_func.h"
 #endif
 
-#include "lakka.h"
+#include "os/lakka/lakka.h"
 
 #ifdef HAVE_LAKKA_SWITCH
-#include "lakka-switch.h"
+#include "os/lakka/lakka-switch.h"
 #endif
 
 #if defined(HAVE_LIBNX)
-#include "switch_performance_profiles.h"
+#include "os/libnx/switch_performance_profiles.h"
 #endif
 
 #if __APPLE__

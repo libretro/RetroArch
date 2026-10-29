@@ -87,7 +87,7 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
-#include "../../lakka.h"
+#include "../../os/lakka/lakka.h"
 #ifdef HAVE_BLUETOOTH
 #include "../../bluetooth/bluetooth_driver.h"
 #endif
@@ -117,7 +117,7 @@
 #endif
 
 #if defined(HAVE_LIBNX)
-#include "../../switch_performance_profiles.h"
+#include "../../os/libnx/switch_performance_profiles.h"
 #endif
 
 #ifdef HAVE_MIST

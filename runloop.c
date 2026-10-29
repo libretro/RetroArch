@@ -103,7 +103,7 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
-#include "switch_performance_profiles.h"
+#include "os/libnx/switch_performance_profiles.h"
 #endif
 
 #if defined(ANDROID)
@@ -264,7 +264,7 @@ bool android_get_vfs_authorized_locations(
 #endif
 
 #ifdef HAVE_LAKKA
-#include "lakka.h"
+#include "os/lakka/lakka.h"
 #endif
 
 #if TARGET_OS_IPHONE

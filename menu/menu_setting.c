@@ -126,9 +126,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #include "../ui/ui_companion_driver.h"
 #include "../performance_counters.h"
 #include "../setting_list.h"
-#include "../lakka.h"
+#include "../os/lakka/lakka.h"
 #ifdef HAVE_LAKKA_SWITCH
-#include "../lakka-switch.h"
+#include "../os/lakka/lakka-switch.h"
 #endif
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"

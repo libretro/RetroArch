@@ -87,7 +87,7 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
-#include "../switch_performance_profiles.h"
+#include "../os/libnx/switch_performance_profiles.h"
 #endif
 
 #ifdef HAVE_MIST
