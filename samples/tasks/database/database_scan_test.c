@@ -1691,6 +1691,102 @@ static uint32_t zip_bytes(const zip_entry_t *e, unsigned n)
 }
 
 #ifdef HAVE_RRAR
+/* The size write_rar_entries() gives @n entries. */
+static uint32_t rar_bytes(const zip_entry_t *e, unsigned n)
+{
+   uint32_t total = 7 + 13 + 7;
+   unsigned i;
+
+   for (i = 0; i < n; i++)
+   {
+      uint32_t nlen = (uint32_t)strlen(e[i].name);
+
+      if (nlen && e[i].name[nlen - 1] == '/')
+         nlen--;
+      total += 32 + nlen + e[i].len;
+   }
+   return total;
+}
+
+/* A RAR 4 archive of @n stored entries, written by hand as the zip is:
+ * the marker, a main header, a file header and the data for each
+ * entry, then the end block.  A header's CRC field is the low 16 bits
+ * of the CRC-32 of the rest of that header.  A name ending in '/' is
+ * a directory, stored without the '/'. */
+static int write_rar_entries(const char *path, const zip_entry_t *e,
+      unsigned n)
+{
+   static const uint8_t marker[7] = { 'R', 'a', 'r', '!', 0x1A, 0x07, 0x00 };
+   FILE    *f;
+   uint8_t  h[32 + 64];
+   uint32_t c;
+   unsigned i;
+
+   for (i = 0; i < n; i++)
+      if (strlen(e[i].name) > 64)
+         return 0;
+   if (!(f = fopen(path, "wb")))
+      return 0;
+
+#define PUT16(p, v) do { (p)[0] = (uint8_t)(v); (p)[1] = (uint8_t)((v) >> 8); } while (0)
+#define PUT32(p, v) do { (p)[0] = (uint8_t)(v);        (p)[1] = (uint8_t)((v) >> 8);                          (p)[2] = (uint8_t)((v) >> 16); (p)[3] = (uint8_t)((v) >> 24); } while (0)
+
+   fwrite(marker, 1, sizeof(marker), f);
+
+   memset(h, 0, 13);
+   h[2] = 0x73;                     /* main header */
+   PUT16(h + 5, 13);
+   c = crc_of(h + 2, 11);
+   PUT16(h, c);
+   fwrite(h, 1, 13, f);
+
+   for (i = 0; i < n; i++)
+   {
+      uint16_t nlen = (uint16_t)strlen(e[i].name);
+      bool     dir  = nlen && e[i].name[nlen - 1] == '/';
+      uint16_t size;
+
+      if (dir)
+         nlen--;
+      size = (uint16_t)(32 + nlen);
+      memset(h, 0, 32);
+      h[2] = 0x74;                  /* file header */
+      /* Data follows; all the dictionary bits mark a directory. */
+      PUT16(h + 3, dir ? 0x80E0 : 0x8000);
+      PUT16(h + 5, size);
+      PUT32(h + 7,  e[i].len);      /* packed */
+      PUT32(h + 11, e[i].len);      /* unpacked */
+      PUT32(h + 16, e[i].crc);
+      h[24] = 29;                   /* unpack version */
+      h[25] = 0x30;                 /* stored */
+      PUT16(h + 26, nlen);
+      PUT32(h + 28, dir ? 0x10 : 0x20); /* directory, archive */
+      memcpy(h + 32, e[i].name, nlen);
+      c = crc_of(h + 2, size - 2);
+      PUT16(h, c);
+      fwrite(h, 1, size, f);
+      if (e[i].len)
+         fwrite(e[i].data, 1, e[i].len, f);
+   }
+
+   memset(h, 0, 7);
+   h[2] = 0x7B;                     /* end of archive */
+   PUT16(h + 3, 0x4000);
+   PUT16(h + 5, 7);
+   c = crc_of(h + 2, 5);
+   PUT16(h, c);
+   fwrite(h, 1, 7, f);
+   if (fflush(f) != 0 || ferror(f))
+   {
+      fclose(f);
+      return 0;
+   }
+   fclose(f);
+#undef PUT16
+#undef PUT32
+   return 1;
+}
+
 /* A RAR 5 variable-length number, 7 bits a byte, low first. */
 static size_t rar5_vint(uint8_t *p, uint64_t v)
 {
@@ -4422,6 +4518,158 @@ static void loose_held_lane(const char *root, const char *pl_dir,
 fixture:
    check(0, "fixture", "could not write the loose held set");
 }
+
+#ifdef HAVE_RRAR
+/* Rar archives take the archive passes: a first member's hit, in a
+ * database whose core opens rar, names the archive; a later member's,
+ * in one whose core does not, is held; an archive of several members
+ * is read whole only while a database whose cores open rar holds a rar
+ * record of its size. */
+static void rar_lane(const char *root, const char *pl_dir, bool threaded)
+{
+   static uint8_t d[4][MF_MEMBER_LEN];
+   static const uint32_t crc[4] = {
+      0x0BF80001u, 0x0BF80011u, 0x0BF80012u, 0x0BF80002u };
+   char           db[512], noclaim[512], dir[512], p[1024];
+   static char    cart_lpl[1024], member_lpl[1024];
+   char           what[64], detail[64];
+   db_rec_t       cart[3], held, nc;
+   zip_entry_t    e[2];
+   uint32_t       cart_bytes, multi_bytes;
+   int            cart_reads, multi_reads;
+   bool           started;
+   unsigned       j;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,      "%s/rar_db",         root);
+   sprintf(noclaim, "%s/rar_noclaim_db", root);
+   sprintf(dir,     "%s/rar",            root);
+   path_mkdir(db);
+   path_mkdir(noclaim);
+   path_mkdir(dir);
+   for (j = 0; j < 4; j++)
+      fill_forced(d[j], MF_MEMBER_LEN, 101 + 2 * j, crc[j]);
+   memset(e, 0, sizeof(e));
+   e[0].len = MF_MEMBER_LEN;
+   e[1].len = MF_MEMBER_LEN;
+
+   e[0].name = "m.rd";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   sprintf(p, "%s/rar_cart.rar", dir);
+   if (!write_rar_entries(p, e, 1))
+      goto fixture;
+   cart_bytes = rar_bytes(e, 1);
+   set_rec(&cart[0], "RAR Cart", crc[0], MF_MEMBER_LEN);
+
+   e[0].name = "a.rd";
+   e[0].data = d[1];
+   e[0].crc  = crc[1];
+   e[1].name = "b.rd";
+   e[1].data = d[2];
+   e[1].crc  = crc[2];
+   sprintf(p, "%s/rar_multi.rar", dir);
+   if (!write_rar_entries(p, e, 2))
+      goto fixture;
+   multi_bytes = rar_bytes(e, 2);
+   /* A rar record of its size: the size gate lets it be read whole. */
+   set_rec(&cart[1], "RAR Multi Sized", 0x0BF8FFFEu, multi_bytes);
+   cart[1].rom_name = "set.rar";
+   set_rec(&held, "RAR Held", crc[2], MF_MEMBER_LEN);
+   /* A rar record of that size whose core does not open rar. */
+   set_rec(&nc, "RAR NoClaim Sized", 0x0BF8FFFCu, multi_bytes);
+   nc.rom_name = "set.rar";
+
+   /* A folder is no member: its one member's hit names it. */
+   e[0].name = "d/";
+   e[0].data = NULL;
+   e[0].len  = 0;
+   e[0].crc  = 0;
+   e[1].name = "d/m.rd";
+   e[1].data = d[3];
+   e[1].crc  = crc[3];
+   sprintf(p, "%s/rar_folder.rar", dir);
+   if (   !write_rar_entries(p, e, 2)
+       || path_get_size(p) != (int64_t)rar_bytes(e, 2))
+      goto fixture;
+   set_rec(&cart[2], "RAR Folder", crc[3], MF_MEMBER_LEN);
+
+   sprintf(p, "%s/Test RAR Cart.rdb", db);
+   if (!write_db_set(p, cart, 3))
+      goto fixture;
+   sprintf(p, "%s/Test EM Member.rdb", db);
+   if (!write_db_set(p, &held, 1))
+      goto fixture;
+   sprintf(p, "%s/Test EM Member.rdb", noclaim);
+   if (!write_db_set(p, &held, 1))
+      goto fixture;
+   sprintf(p, "%s/Test EM Cart.rdb", noclaim);
+   if (!write_db_set(p, &nc, 1))
+      goto fixture;
+
+   sprintf(cart_lpl,   "%s/Test RAR Cart.lpl",  pl_dir);
+   sprintf(member_lpl, "%s/Test EM Member.lpl", pl_dir);
+   filestream_delete(cart_lpl);
+   filestream_delete(member_lpl);
+   use_queue(threaded);
+
+   use_db(db);
+   retro_atomic_store_release_int(&reads_begun, 0);
+   retro_atomic_store_release_int(&watch_scan,   0);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   begun_size  = multi_bytes;
+   watch_size  = cart_bytes;
+   started     = run_scan(dir) && scan_completed;
+   begun_size  = 0;
+   watch_size  = 0;
+   cart_reads  = retro_atomic_load_acquire_int(&watch_scan)
+      + retro_atomic_load_acquire_int(&watch_reader);
+   multi_reads = retro_atomic_load_acquire_int(&reads_begun);
+   sprintf(what, "rar: a first member's hit names it %s", q);
+   check(   started && file_contains(cart_lpl, "RAR Cart")
+         && file_contains(cart_lpl, "rar_cart.rar")
+         && !file_contains(cart_lpl, "rar_cart.rar#"), what,
+         "rar_cart.rar");
+   sprintf(what, "rar, a folder first: named by its member %s", q);
+   check(   started && file_contains(cart_lpl, "RAR Folder")
+         && file_contains(cart_lpl, "rar_folder.rar")
+         && !file_contains(cart_lpl, "rar_folder.rar#"), what,
+         "rar_folder.rar");
+   sprintf(what, "rar: a later member's hit is held %s", q);
+   check(started && file_contains(member_lpl, "rar_multi.rar#b.rd"),
+         what, "rar_multi.rar#b.rd");
+   if (!threaded)
+   {
+      sprintf(detail, "%d read steps", cart_reads);
+      check(started && cart_reads == 0,
+            "rar: a first member's hit reads it not whole", detail);
+      sprintf(detail, "%d whole reads", multi_reads);
+      check(started && multi_reads == 1,
+            "rar: read whole while a rar record has its size", detail);
+   }
+
+   filestream_delete(member_lpl);
+   use_db(noclaim);
+   retro_atomic_store_release_int(&reads_begun, 0);
+   begun_size  = multi_bytes;
+   started     = run_scan(dir) && scan_completed;
+   begun_size  = 0;
+   multi_reads = retro_atomic_load_acquire_int(&reads_begun);
+   sprintf(what, "rar: no core opens rar: held %s", q);
+   check(started && file_contains(member_lpl, "rar_multi.rar#b.rd"),
+         what, "rar_multi.rar#b.rd");
+   if (!threaded)
+   {
+      sprintf(detail, "%d whole reads", multi_reads);
+      check(started && multi_reads == 0,
+            "rar: no core opens rar: not read whole", detail);
+   }
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the rar set");
+}
+#endif
 
 /* Archives whose first member misses, looked up member by member from
  * the directory.  One record whose rom_name is the archive's own name
@@ -7614,6 +7862,20 @@ int main(int argc, char **argv)
    }
    sprintf(p, "%s/member_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/rarcart_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"RAR Cart Test\"\n"
+            "corename = \"RarCartTest\"\n"
+            "supported_extensions = \"rd|rar\"\n"
+            "database = \"Test RAR Cart\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/rarcart_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
 
 #ifdef HAVE_THREADS
    task_queue_init(true, msgq_push);
@@ -8463,6 +8725,10 @@ int main(int argc, char **argv)
       folder_first_lane(root, pl_dir, false);
       loose_held_lane(root, pl_dir, true);
       loose_held_lane(root, pl_dir, false);
+#ifdef HAVE_RRAR
+      rar_lane(root, pl_dir, true);
+      rar_lane(root, pl_dir, false);
+#endif
       sibling_lane(root, pl_dir, true);
       sibling_lane(root, pl_dir, false);
       dual_match_lane(root, pl_dir, true);
