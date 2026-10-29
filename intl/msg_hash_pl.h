@@ -104,7 +104,6 @@ static const struct
    char s_7607974d[14];
    char s_bdf1165f[35];
    char s_6a15d029[21];
-   char s_3817de39[389];
    char s_16ae54ac[283];
    char s_b3e89428[271];
    char s_7af11c30[94];
@@ -2903,7 +2902,6 @@ static const struct
    char s_aa771128[426];
    char s_e531c55e[119];
    char s_deab66ee[136];
-   char s_5ce79fca[178];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[30];
    char s_328f4fd8[18];
@@ -4119,7 +4117,6 @@ static const struct
    char s_a363d07a[40];
    char s_9e5bd759[36];
    char s_8d7296ed[42];
-   char s_21580d7c[103];
    char s_fc5e1d2c[65];
    char s_51b22327[43];
    char s_2f6a6e51[29];
@@ -4616,12 +4613,6 @@ static const struct
    "Plik shadera.",
    "Plik ustawie\305\204 wst\304\231pnych shadera.",
    "Plik konfiguracyjny.",
-   "W\305\202\304\205czenie Linux GameMode mo\305\274e poprawi\304\207 op\303\263\305\272nienie, nap"
-   "rawi\304\207 problemy z d\305\272wi\304\231kiem i zwi\304\231kszy\304\207 og\303\263ln\304\205 w"
-   "ydajno\305\233\304\207 przez automatyczne ustawienie twojego procesora i karty graficznej na naj"
-   "lepsz\304\205 wydajno\305\233\304\207.\nOprogramowanie GameMode musi by\304\207 zainstalowane, a"
-   "by to dzia\305\202a\305\202o. Sprawd\305\272 https://github.com/FeralInteractive/gamemode po inf"
-   "ormacje o tym jak zainstalowa\304\207 GameMode.",
    "Przypisuje wybran\304\205 ga\305\202k\304\231 analogow\304\205 do wej\305\233\304\207 D-Pad-a.\n"
    "Je\305\233li rdze\305\204 ma natywn\304\205 obs\305\202ug\304\231 ga\305\202ek, przypisywanie D-"
    "Pad-a b\304\231dzie wy\305\202\304\205czone, chyba \305\274e zostanie wybrana opcja '(Wymuszone)"
@@ -7846,9 +7837,6 @@ static const struct
    "dy wideo wielow\304\205tkowe jest wy\305\202\304\205czone.",
    "Ustaw poziom dziennika dla front-endu. Je\305\233li poziom dziennika wydany przez frontend jest "
    "poni\305\274ej tej warto\305\233ci, zostanie zignorowany.",
-   "Mo\305\274e poprawi\304\207 wydajno\305\233\304\207, zmniejszy\304\207 op\303\263\305\272nienie "
-   "i naprawi\304\207 problemy z trzeszczeniem audio. Potrzebujesz https://github.com/FeralInteracti"
-   "ve/gamemode, aby to zadzia\305\202a\305\202o.",
 #ifdef HAVE_GAME_AI
    "Etykieta nadpisania gracza AI",
    "Zast\304\205p gracza 01",
@@ -9824,8 +9812,6 @@ static const struct
    "Nie uda\305\202o si\304\231 po\305\202\304\205czy\304\207 z serwerem.",
    "Nie uda\305\202o si\304\231 utworzy\304\207 katalogu.",
    "Nie uda\305\202o si\304\231 wej\305\233\304\207 do trybu GameMode",
-   "Nie uda\305\202o si\304\231 wej\305\233\304\207 do GameMode \342\200\224 sprawd\305\272, czy dae"
-   "mon GameMode jest zainstalowany i uruchomiony",
    "Nie uda\305\202o si\304\231 wyodr\304\231bni\304\207 zawarto\305\233ci z pliku skompresowanego",
    "Nie uda\305\202o si\304\231 uzyska\304\207 nicku od klienta.",
    "Nie uda\305\202o si\304\231 za\305\202adowa\304\207.",
@@ -10223,7 +10209,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (200342u
+      (sizeof(msg_hash_pl_blob) == (199672u
 #ifdef ANDROID
        + 385u
 #endif
@@ -10837,7 +10823,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -13626,7 +13611,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -14842,7 +14826,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

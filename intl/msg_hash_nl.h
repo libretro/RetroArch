@@ -103,7 +103,6 @@ static const struct
    char s_7607974d[16];
    char s_bdf1165f[23];
    char s_6a15d029[22];
-   char s_3817de39[385];
    char s_16ae54ac[293];
    char s_b3e89428[278];
    char s_7af11c30[92];
@@ -2566,7 +2565,6 @@ static const struct
    char s_5bdf892a[45];
    char s_aa39aae6[77];
    char s_deab66ee[123];
-   char s_5ce79fca[183];
 #ifdef HAVE_GAME_AI
    char s_328f4fd8[22];
    char s_328f4fd9[22];
@@ -3667,7 +3665,6 @@ static const struct
    char s_a363d07a[32];
    char s_9e5bd759[36];
    char s_8d7296ed[27];
-   char s_21580d7c[90];
    char s_fc5e1d2c[78];
    char s_51b22327[54];
    char s_2f6a6e51[18];
@@ -4128,11 +4125,6 @@ static const struct
    "Shader bestand.",
    "Shader preset-bestand.",
    "Configuratie bestand.",
-   "Het inschakelen van Linux GameMode kan de latentie verbeteren, kraken van geluid oplossen en de "
-   "algehele prestaties maximaliseren door uw CPU en GPU automatisch te configureren voor de beste p"
-   "restaties.\nDe GameMode software moet worden ge\303\257nstalleerd om dit te laten werken. Zie ht"
-   "tps://github.com/FeralInteractive/gamemode voor informatie over hoe GameMode kan worden ge\303"
-   "\257nstalleerd.",
    "Gebruik gespecificeerde analoge stick voor D-Pad invoer. Als de core native analoge ondersteunin"
    "g heeft, wordt D-Pad toewijzing uitgeschakeld, tenzij een \"'(Geforceerd)\"-optie is geselecteer"
    "d. Als D-Pad toewijzing wordt geforceerd, ontvangt de core geen analoge invoer van de opgegeven "
@@ -6823,8 +6815,6 @@ static const struct
    "Instellingen voor terugspoelen, snel vooruitspoelen en slow motion wijzigen.",
    "Stel het logniveau in voor de front-end. Als een logniveau van de front-end lager is dan deze wa"
    "arde, wordt het genegeerd.",
-   "Kan de prestaties verbeteren, latentie verminderen en problemen met het kraken van geluid oploss"
-   "en. Je hebt https://github.com/FeralInteractive/gamemode nodig om dit te laten werken.",
 #ifdef HAVE_GAME_AI
    "Overschrijf speler 01",
    "Overschrijf speler 02",
@@ -8292,7 +8282,6 @@ static const struct
    "Verbinding met de host mislukt.",
    "Het aanmaken van de map is mislukt.",
    "GameMode gebruiken mislukt",
-   "GameMode gebruiken mislukt - zorg ervoor dat GameMode daemon is ge\303\257nstalleerd/uitgevoerd",
    "Het is niet gelukt om de inhoud uit het gecomprimeerde bestand te extraheren.",
    "Het ophalen van de nickname van de client is mislukt.",
    "Laden is mislukt.",
@@ -8649,7 +8638,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (173080u
+      (sizeof(msg_hash_nl_blob) == (172422u
 #ifdef ANDROID
        + 375u
 #endif
@@ -9189,7 +9178,6 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -11648,7 +11636,6 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P2,
@@ -12749,7 +12736,6 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

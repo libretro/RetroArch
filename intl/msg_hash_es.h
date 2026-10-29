@@ -106,7 +106,6 @@ static const struct
    char s_7607974d[20];
    char s_bdf1165f[33];
    char s_6a15d029[27];
-   char s_3817de39[412];
    char s_16ae54ac[356];
    char s_b3e89428[274];
    char s_7af11c30[115];
@@ -3078,7 +3077,6 @@ static const struct
    char s_aa771128[455];
    char s_e531c55e[124];
    char s_deab66ee[109];
-   char s_5ce79fca[161];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[44];
    char s_328f4fd8[20];
@@ -4422,7 +4420,6 @@ static const struct
    char s_9e5bd759[30];
    char s_b880bab5[62];
    char s_8d7296ed[28];
-   char s_21580d7c[99];
    char s_fc5e1d2c[55];
    char s_51b22327[39];
    char s_2f6a6e51[17];
@@ -4963,11 +4960,6 @@ static const struct
    "Archivo de shaders.",
    "Archivo de preajuste de shaders.",
    "Archivo de configuraci\303\263n.",
-   "Activar el GameMode de Linux podr\303\255a mejorar la latencia, corregir chasquidos en el audio "
-   "y maximizar el rendimiento general configurando de forma autom\303\241tica tu CPU y GPU para sac"
-   "arles el m\303\241ximo partido.\nEs necesario tener instalado el software GameMode para que esta"
-   " opci\303\263n surta efecto. Para m\303\241s informaci\303\263n sobre c\303\263mo instalar GameM"
-   "ode, visita https://github.com/FeralInteractive/gamemode (en ingl\303\251s).",
    "Asigna el stick anal\303\263gico especificado como se\303\261al de entrada para la cruceta.\nSi "
    "el n\303\272cleo tiene soporte nativo para control anal\303\263gico, las asignaciones de la cruc"
    "eta se desactivar\303\241n a menos que se haya seleccionado una opci\303\263n forzada.\nAl forza"
@@ -8390,8 +8382,6 @@ static const struct
    "ecto al desactivar el v\303\255deo multihilo.",
    "Establece el nivel de registro del front-end. Si el valor de un registro es inferior a este, ser"
    "\303\241 ignorado.",
-   "Puede mejorar el rendimiento, reducir la latencia y corregir chasquidos en el audio. Es necesari"
-   "o tener instalado https://github.com/FeralInteractive/gamemode .",
 #ifdef HAVE_GAME_AI
    "Descripci\303\263n de anulaci\303\263n de jugador de IA",
    "Anula al jugador 01",
@@ -10675,8 +10665,6 @@ static const struct
    "Error al crear el directorio.",
    "Error al desactivar los estados de inactividad del procesador",
    "Error al acceder a GameMode",
-   "Error al acceder a GameMode: comprueba que el servicio de GameMode est\303\251 instalado y ejecu"
-   "t\303\241ndose",
    "Error al extraer los contenidos del archivo comprimido",
    "Error al obtener el apodo del cliente.",
    "Error al cargar.",
@@ -11136,7 +11124,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (259784u
+      (sizeof(msg_hash_es_blob) == (259112u
 #ifdef ANDROID
        + 329u
 #endif
@@ -11814,7 +11802,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -14769,7 +14756,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -16104,7 +16090,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_DISABLE_IDLE_STATES,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

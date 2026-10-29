@@ -106,7 +106,8 @@ static const struct
    char s_7607974d[37];
    char s_bdf1165f[42];
    char s_6a15d029[31];
-   char s_3817de39[396];
+   char s_3817de39_0[500];
+   char s_3817de39_1[349];
    char s_16ae54ac[334];
    char s_b3e89428[363];
    char s_7af11c30[151];
@@ -1442,6 +1443,7 @@ static const struct
    char s_62564465[26];
    char s_96e64a19[23];
    char s_af36f3b0[47];
+   char s_dafc36af[26];
    char s_73312855[18];
    char s_e4405788[38];
    char s_6c4b8962[39];
@@ -1463,6 +1465,7 @@ static const struct
    char s_d95b4346[20];
    char s_1adb7f60[98];
    char s_21e6be74[24];
+   char s_8a85a9a9[27];
    char s_4327ffcc[37];
    char s_737c9877[25];
    char s_30ba6e91[37];
@@ -3160,7 +3163,8 @@ static const struct
    char s_aa771128_1[50];
    char s_e531c55e[147];
    char s_deab66ee[131];
-   char s_5ce79fca[221];
+   char s_5ce79fca_0[498];
+   char s_5ce79fca_1[80];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[28];
    char s_328f4fd8[27];
@@ -3611,6 +3615,7 @@ static const struct
    char s_198c91d3[50];
    char s_59508007[70];
    char s_b51b23de[222];
+   char s_eaad2a5d[231];
    char s_4e8c7cc3[62];
    char s_f3f14b36[38];
    char s_721af2d0[38];
@@ -3624,6 +3629,7 @@ static const struct
    char s_7ef3d15a[259];
    char s_a166bef0[49];
    char s_20212574[67];
+   char s_a8acf2d7[431];
    char s_48f7693a[135];
    char s_91a3e1a5[105];
    char s_19a250ff[152];
@@ -4552,7 +4558,7 @@ static const struct
    char s_9e5bd759[31];
    char s_b880bab5[65];
    char s_8d7296ed[35];
-   char s_21580d7c[116];
+   char s_21580d7c[41];
    char s_fc5e1d2c[52];
    char s_51b22327[44];
    char s_2f6a6e51[20];
@@ -5198,15 +5204,28 @@ static const struct
    "T\341\273\207p g\303\263i hi\341\273\207u \341\273\251ng b\341\273\231 \304\221\341\273\225 b"
    "\303\263ng.",
    "T\341\273\207p c\341\272\245u h\303\254nh \304\221ang d\303\271ng.",
-   "B\341\272\255t Linux GameMode c\303\263 th\341\273\203 c\341\272\243i thi\341\273\207n \304\221"
-   "\341\273\231 tr\341\273\205, kh\341\272\257c ph\341\273\245c ti\341\272\277ng n\341\273\251t v"
-   "\341\273\241 v\303\240 t\341\273\221i \304\221a h\303\263a hi\341\273\207u n\304\203ng t\341\273"
-   "\225ng th\341\273\203 b\341\272\261ng c\303\241ch t\341\273\261 \304\221\341\273\231ng c\341\272"
-   "\245u h\303\254nh CPU v\303\240 GPU cho hi\341\273\207u su\341\272\245t t\341\273\221t nh\341"
-   "\272\245t.\nPh\341\272\247n m\341\273\201m GameMode c\341\272\247n \304\221\306\260\341\273\243c"
-   " c\303\240i \304\221\341\272\267t \304\221\341\273\203 t\303\255nh n\304\203ng n\303\240y ho\341"
-   "\272\241t \304\221\341\273\231ng. Xem https://github.com/FeralInteractive/gamemode \304\221\341"
-   "\273\203 bi\341\272\277t c\303\241ch c\303\240i \304\221\341\272\267t GameMode.",
+   "Ch\341\272\277 \304\221\341\273\231 tr\303\262 ch\306\241i t\304\203ng m\341\273\251c \306\260u "
+   "ti\303\252n truy c\341\272\255p \341\273\225 \304\221\304\251a v\303\240 y\303\252u c\341\272"
+   "\247u ch\341\272\277 \304\221\341\273\231 ngu\341\273\223n \306\260u ti\303\252n hi\341\273\207u"
+   " n\304\203ng th\303\264ng qua tr\303\254nh n\341\273\201n qu\341\272\243n l\303\275 c\341\272"
+   "\245u h\303\254nh ngu\341\273\223n ho\341\272\267c tr\303\254nh qu\341\272\243n l\303\275 c\341"
+   "\272\245u h\303\254nh ngu\341\273\223n \304\221\303\243 tinh ch\341\273\211nh. \304\220i\341\273"
+   "\201u n\303\240y c\303\263 th\341\273\203 gi\341\272\243m \304\221\341\273\231 tr\341\273\205, k"
+   "h\341\272\257c ph\341\273\245c hi\341\273\207n t\306\260\341\273\243ng \303\242m thanh b\341\273"
+   "\213 r\303\250, ng\341\272\257t qu\303\243ng v\303\240 c\341\272\243i thi\341\273\207n hi\341"
+   "\273\207u n\304\203ng. Ch\341\272\277 \304\221\341\273\231 ngu\341\273\223n ch\341\273\211 \304"
+   "\221\306\260\341\273\243c duy tr\303\254 khi c\341\272\257m \304\221i\341\273\207n: r\303\272t n"
+   "gu\341\273\223n s\341\272\275 gi\341\272\243i ph\303\263ng ch\341\272\277 \304\221\341\273\231 n"
+   "\303\240y, c\303\262n ",
+   "khi c\341\272\257m \304\221i\341\273\207n tr\341\273\237 l\341\272\241i, ch\341\272\277 \304\221"
+   "\341\273\231 s\341\272\275 \304\221\306\260\341\273\243c kh\303\264i ph\341\273\245c.\nKh\303"
+   "\264ng c\341\272\247n c\303\240i \304\221\341\272\267t th\303\252m ph\341\272\247n m\341\273\201"
+   "m tr\303\252n c\303\241c b\341\272\243n ph\303\242n ph\341\273\221i m\303\241y t\303\255nh \304"
+   "\221\341\273\203 b\303\240n. Ch\341\272\277 \304\221\341\273\231 ngu\341\273\223n s\341\272\275 "
+   "\304\221\306\260\341\273\243c gi\341\272\243i ph\303\263ng khi t\341\272\257t Ch\341\272\277 "
+   "\304\221\341\273\231 tr\303\262 ch\306\241i ho\341\272\267c khi RetroArch tho\303\241t, k\341"
+   "\273\203 c\341\272\243 sau khi ch\306\260\306\241ng tr\303\254nh b\341\273\213 l\341\273\227i v"
+   "\303\240 \304\221\341\273\231t ng\341\273\231t \304\221\303\263ng.",
    "G\303\241n Analog \304\221\306\260\341\273\243c ch\341\273\211 \304\221\341\273\213nh cho \304"
    "\221i\341\273\201u khi\341\273\203n D-Pad.\nN\341\272\277u tr\303\254nh gi\341\272\243 l\341\272"
    "\255p h\341\273\227 tr\341\273\243 analog g\341\273\221c, \303\241nh x\341\272\241 D-Pad s\341"
@@ -7241,6 +7260,7 @@ static const struct
    "Cho ph\303\251p t\341\272\241m d\341\273\253ng",
    "Cho ph\303\251p m\303\241y kh\303\241ch ch\341\272\277 \304\221\341\273\231 l\341\273\207 thu"
    "\341\273\231c",
+   "\304\220\341\273\223ng b\341\273\231 c\341\272\247n analog",
    "C\341\272\245m m\303\241y kh\303\241ch",
    "M\303\240u ch\341\273\257 tr\303\262 chuy\341\273\207n (Tin nh\341\272\257n)",
    "M\303\240u tr\303\262 chuy\341\273\207n (T\303\252n hi\341\273\203n th\341\273\213)",
@@ -7271,6 +7291,7 @@ static const struct
    "\267c t\341\273\207p n\341\273\231i dung ph\303\271 h\341\273\243p, h\303\243y t\341\272\243i th"
    "\341\273\247 c\303\264ng.",
    "B\341\273\231 l\341\273\215c ph\303\262ng ch\306\241i",
+   "\304\220\341\273\223ng b\341\273\231 kh\303\263a b\306\260\341\273\233c",
    "K\341\272\277t n\341\273\221i \304\221\341\273\223ng th\341\273\235i t\341\273\221i \304\221a",
    "Gi\341\273\233i h\341\272\241n \304\221\341\273\231 tr\341\273\205",
    "V\341\273\213 tr\303\255 m\303\241y ch\341\273\247 chuy\341\273\203n ti\341\272\277p",
@@ -9969,11 +9990,21 @@ static const struct
    "Thi\341\272\277t l\341\272\255p m\341\273\251c ghi log cho giao di\341\273\207n. N\341\272\277u "
    "m\341\273\251c log t\341\273\253 giao di\341\273\207n th\341\272\245p h\306\241n gi\303\241 tr"
    "\341\273\213 n\303\240y, n\303\263 s\341\272\275 b\341\273\213 b\341\273\217 qua.",
-   "C\303\263 th\341\273\203 c\341\272\243i thi\341\273\207n hi\341\273\207u n\304\203ng, gi\341\272"
-   "\243m \304\221\341\273\231 tr\341\273\205 v\303\240 kh\341\272\257c ph\341\273\245c t\303\254nh "
-   "tr\341\272\241ng ti\341\272\277ng n\341\273\251t v\341\273\241. B\341\272\241n c\341\272\247n tr"
-   "uy c\341\272\255p v\303\240o https://github.com/FeralInteractive/gamemode \304\221\341\273\203 t"
-   "\303\255nh n\304\203ng n\303\240y ho\341\272\241t \304\221\341\273\231ng.",
+   "T\304\203ng m\341\273\251c \306\260u ti\303\252n truy c\341\272\255p \341\273\225 \304\221\304"
+   "\251a c\341\273\247a RetroArch v\303\240 duy tr\303\254 ch\341\272\277 \304\221\341\273\231 ngu"
+   "\341\273\223n \306\260u ti\303\252n hi\341\273\207u n\304\203ng c\341\273\247a h\341\273\207 th"
+   "\341\273\221ng (th\303\264ng qua tr\303\254nh n\341\273\201n qu\341\272\243n l\303\275 c\341\272"
+   "\245u h\303\254nh ngu\341\273\223n ho\341\272\267c tr\303\254nh qu\341\272\243n l\303\275 c\341"
+   "\272\245u h\303\254nh ngu\341\273\223n \304\221\303\243 tinh ch\341\273\211nh), gi\303\272p c"
+   "\341\272\243i thi\341\273\207n hi\341\273\207u n\304\203ng, gi\341\272\243m \304\221\341\273\231"
+   " tr\341\273\205 v\303\240 kh\341\272\257c ph\341\273\245c hi\341\273\207n t\306\260\341\273\243n"
+   "g \303\242m thanh b\341\273\213 r\303\250, ng\341\272\257t qu\303\243ng. Ch\341\272\277 \304\221"
+   "\341\273\231 ngu\341\273\223n hi\341\273\207u n\304\203ng ch\341\273\211 \304\221\306\260\341"
+   "\273\243c \303\241p d\341\273\245ng khi c\341\272\257m \304\221i\341\273\207n. C\341\272\245u h"
+   "\303\254nh ngu\341\273\223n tr\306\260\341\273\233c \304\221\303\263 s\341\272\275 \304\221\306"
+   "\260",
+   "\341\273\243c kh\303\264i ph\341\273\245c khi t\341\272\257t Ch\341\272\277 \304\221\341\273\231"
+   " tr\303\262 ch\306\241i ho\341\272\267c khi RetroArch tho\303\241t.",
 #ifdef HAVE_GAME_AI
    "Ghi \304\221\303\250 AI player sublabel",
    "Ghi \304\221\303\250 ng\306\260\341\273\235i ch\306\241i 01",
@@ -11545,6 +11576,12 @@ static const struct
    "\341\272\241nh x\341\273\255 l\303\275 \341\273\237 c\341\272\243 hai ph\303\255a, nh\306\260ng "
    "s\341\272\275 b\341\273\213 \341\272\243nh h\306\260\341\273\237ng \304\221\303\241ng k\341\273"
    "\203 b\341\273\237i \304\221\341\273\231 tr\341\273\205 m\341\272\241ng.",
+   "G\341\273\255i d\341\273\257 li\341\273\207u c\341\272\247n analog c\341\273\247a c\303\241c c"
+   "\341\273\225ng tay c\341\272\247m c\303\271ng v\341\273\233i d\341\273\257 li\341\273\207u n\303"
+   "\272t b\341\272\245m. Ng\306\260\341\273\235i ch\306\241i s\341\273\255 d\341\273\245ng phi\303"
+   "\252n b\341\272\243n RetroArch c\305\251 h\306\241n phi\303\252n b\341\272\243n n\303\240y kh"
+   "\303\264ng th\341\273\203 tham gia khi t\303\271y ch\341\273\215n n\303\240y \304\221\306\260"
+   "\341\273\243c b\341\272\255t.",
    "C\341\272\245m m\341\273\231t m\303\241y kh\303\241ch kh\341\273\217i ph\303\262ng b\341\272\241"
    "n \304\221ang ch\341\273\247 tr\303\254.",
    "\304\220\341\273\213nh d\341\272\241ng: #RRGGBB ho\341\272\267c RRGGBB",
@@ -11585,6 +11622,17 @@ static const struct
    "\203 k\341\272\277t n\341\273\221i.",
    "\304\220u\341\273\225i m\341\273\231t m\303\241y kh\303\241ch ra kh\341\273\217i ph\303\262ng b"
    "\341\272\241n \304\221ang ch\341\273\247 tr\303\254.",
+   "Ch\341\273\211 ch\341\272\241y m\341\273\227i khung h\303\254nh m\341\273\231t l\341\272\247n sa"
+   "u khi \304\221\303\243 nh\341\272\255n \304\221\306\260\341\273\243c d\341\273\257 li\341\273"
+   "\207u \304\221i\341\273\201u khi\341\273\203n c\341\273\247a t\341\272\245t c\341\272\243 ng\306"
+   "\260\341\273\235i ch\306\241i cho khung h\303\254nh \304\221\303\263, thay v\303\254 d\341\273"
+   "\261 \304\221o\303\241n tr\306\260\341\273\233c r\341\273\223i tua ng\306\260\341\273\243c. Ch"
+   "\341\273\211 gi\341\273\257 m\341\273\231t tr\341\272\241ng th\303\241i l\306\260u thay v\303"
+   "\254 l\306\260u m\341\273\231t tr\341\272\241ng th\303\241i cho m\341\273\227i khung h\303\254nh"
+   ". C\303\241c l\303\265i gi\341\272\243 l\341\272\255p c\303\263 tr\341\272\241ng th\303\241i qu"
+   "\303\241 l\341\273\233n \304\221\341\273\203 tua ng\306\260\341\273\243c v\341\272\253n ho\341"
+   "\272\241t \304\221\341\273\231ng theo c\303\241ch n\303\240y b\341\272\245t k\341\273\203 thi"
+   "\341\272\277t l\341\272\255p.",
    "S\341\273\221 l\306\260\341\273\243ng k\341\272\277t n\341\273\221i \304\221ang ho\341\272\241t "
    "\304\221\341\273\231ng t\341\273\221i \304\221a m\303\240 m\303\241y ch\341\273\247 s\341\272"
    "\275 ch\341\272\245p nh\341\272\255n tr\306\260\341\273\233c khi t\341\273\253 ch\341\273\221i k"
@@ -14434,9 +14482,7 @@ static const struct
    "Kh\303\264ng th\341\273\203 t\341\272\257t c\303\241c tr\341\272\241ng th\303\241i ngh\341\273"
    "\211 c\341\273\247a b\341\273\231 x\341\273\255 l\303\275",
    "Kh\303\264ng th\341\273\203 v\303\240o Ch\341\272\277 \304\221\341\273\231 Game",
-   "Kh\303\264ng th\341\273\203 v\303\240o Ch\341\272\277 \304\221\341\273\231 Game \342\200\223 h"
-   "\303\243y \304\221\341\272\243m b\341\272\243o daemon GameMode \304\221\303\243 \304\221\306\260"
-   "\341\273\243c c\303\240i \304\221\341\272\267t v\303\240 \304\221ang ch\341\272\241y",
+   "Kh\303\264ng th\341\273\203 v\303\240o Ch\341\272\277 \304\221\341\273\231 ch\306\241i game",
    "Gi\341\272\243i n\303\251n n\341\273\231i dung t\341\273\253 t\341\273\207p n\303\251n th\341"
    "\272\245t b\341\272\241i",
    "L\341\272\245y bi\341\273\207t danh t\341\273\253 client th\341\272\245t b\341\272\241i.",
@@ -15126,7 +15172,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (299113u
+      (sizeof(msg_hash_vn_blob) == (300563u
 #ifdef ANDROID
        + 373u
 #endif
@@ -17131,6 +17177,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ANALOG_JOYPADS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
@@ -17152,6 +17199,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOCKSTEP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -19280,6 +19328,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_ANALOG_JOYPADS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_BAN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME,
@@ -19293,6 +19342,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_LOCKSTEP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,

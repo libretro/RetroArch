@@ -104,7 +104,6 @@ static const struct
    char s_7607974d[13];
    char s_bdf1165f[29];
    char s_6a15d029[24];
-   char s_3817de39[366];
    char s_16ae54ac[300];
    char s_b3e89428[298];
    char s_7af11c30[73];
@@ -2603,7 +2602,6 @@ static const struct
    char s_5bdf892a[54];
    char s_aa39aae6[97];
    char s_deab66ee[130];
-   char s_5ce79fca[168];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[40];
    char s_328f4fd8[25];
@@ -3704,7 +3702,6 @@ static const struct
    char s_a363d07a[34];
    char s_9e5bd759[32];
    char s_8d7296ed[40];
-   char s_21580d7c[97];
    char s_fc5e1d2c[53];
    char s_51b22327[48];
    char s_2f6a6e51[22];
@@ -4182,10 +4179,6 @@ static const struct
    "File shader.",
    "File preimpostazione shader.",
    "File di configurazione.",
-   "Abilitare Linux GameMode pu\303\262 migliorare la latenza, correggere i problemi di crackling au"
-   "dio e massimizzare le prestazioni complessive configurando automaticamente la CPU e la GPU per l"
-   "e migliori prestazioni.\nIl software GameMode deve essere installato per funzionare. Vedi https:"
-   "//github.com/FeralInteractive/gamemode per informazioni su come installare GameMode.",
    "Mappatura specificata stick analogico per l'input D-Pad.\nSe il core ha un supporto analogico na"
    "tivo, la mappatura D-Pad sar\303\240 disabilitata a meno che non sia selezionata un'opzione '(fo"
    "rzato)'.\nSe la mappatura D-Pad \303\250 forzata, il core non ricever\303\240 alcun ingresso ana"
@@ -6936,8 +6929,6 @@ static const struct
    "Modifica le impostazioni per il riavvolgimento (rewind), l'avanzamento rapido e il rallentatore.",
    "Imposta il livello di log per il frontend. Se un livello di log emesso dal frontend \303\250 inf"
    "eriore a questo valore, viene ignorato.",
-   "Puoi migliorare le prestazioni, ridurre la latenza e risolvere problemi di crackling audio. Hai "
-   "bisogno di https://github.com/FeralInteractive/gamemode per funzionare.",
 #ifdef HAVE_GAME_AI
    "Descrizione sovrascrittura Giocatore IA",
    "Sovrascrivi giocatore 01",
@@ -8460,7 +8451,6 @@ static const struct
    "Impossibile connettersi all'host.",
    "Impossibile creare la directory",
    "Impossibile inserire la modalit\303\240 gioco",
-   "Impossibile entrare in GameMode - assicurati che il demone GameMode sia installato/in esecuzione",
    "Impossibile estrarre il contenuto dal file compresso",
    "Impossibile ottenere il nome utente dal client.",
    "Impossibile caricare.",
@@ -8828,7 +8818,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (182893u
+      (sizeof(msg_hash_it_blob) == (182262u
 #ifdef ANDROID
        + 376u
 #endif
@@ -9369,7 +9359,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -11862,7 +11851,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -12963,7 +12951,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

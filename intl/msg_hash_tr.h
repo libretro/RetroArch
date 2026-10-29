@@ -102,7 +102,6 @@ static const struct
    char s_7607974d[26];
    char s_bdf1165f[35];
    char s_6a15d029[25];
-   char s_3817de39[417];
    char s_16ae54ac[251];
    char s_b3e89428[261];
    char s_7af11c30[89];
@@ -2535,7 +2534,6 @@ static const struct
    char s_5bdf892a[48];
    char s_aa39aae6[66];
    char s_deab66ee[136];
-   char s_5ce79fca[169];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[35];
    char s_328f4fd8[23];
@@ -3567,7 +3565,6 @@ static const struct
    char s_a363d07a[34];
    char s_9e5bd759[24];
    char s_8d7296ed[22];
-   char s_21580d7c[106];
    char s_fc5e1d2c[50];
    char s_51b22327[34];
    char s_2f6a6e51[23];
@@ -4063,13 +4060,6 @@ static const struct
    "G\303\266lgelendirici dosyas\304\261.",
    "G\303\266lgelendirici \303\266n ayar dosyas\304\261.",
    "Yap\304\261land\304\261rma dosyas\304\261.",
-   "Linux GameMode etkinle\305\237tirilmesi, en iyi performans i\303\247in CPU ve GPU'nuzu otomatik "
-   "olarak yap\304\261land\304\261rarak gecikmeyi iyile\305\237tirebilir, ses c\304\261z\304\261rt"
-   "\304\261 sorunlar\304\261n\304\261 d\303\274zeltebilir ve genel performans\304\261 en \303\274st"
-   " d\303\274zeye \303\247\304\261karabilir.\nBunun \303\247al\304\261\305\237mas\304\261 i\303\247"
-   "in GameMode yaz\304\261l\304\261m\304\261n\304\261n y\303\274klenmesi gerekir. GameMode nas\304"
-   "\261l kurulaca\304\237\304\261 hakk\304\261nda bilgi i\303\247in https://github.com/FeralInterac"
-   "tive/gamemode adresine bak\304\261n.",
    "D-Pad giri\305\237i i\303\247in harita belirtilen analog \303\247ubuk.\n\303\207ekirdek yerel an"
    "alog deste\304\237ine sahipse, '(Zorunlu)' se\303\247ene\304\237i se\303\247ilmedik\303\247e D-P"
    "ad e\305\237leme devre d\304\261\305\237\304\261 b\304\261rak\304\261l\304\261r.\nD-Pad e\305"
@@ -6981,9 +6971,6 @@ static const struct
    "\303\226n u\303\247 i\303\247in g\303\274nl\303\274k seviyesini ayarlar. \303\226n u\303\247 tar"
    "af\304\261ndan verilen bir g\303\274nl\303\274k seviyesi bu de\304\237erin alt\304\261ndaysa, di"
    "kkate al\304\261nmaz.",
-   "Performans\304\261 iyile\305\237tirebilir, gecikmeyi azaltabilir ve ses bozulma sorunlar\304\261"
-   "n\304\261 \303\247\303\266zebilir. \303\207al\304\261\305\237mas\304\261 i\303\247in https://git"
-   "hub.com/FeralInteractive/gamemode gerekir.",
 #ifdef HAVE_GAME_AI
    "YZ oyuncu alt etiketi \303\266zelle\305\237tir",
    "Oyuncu 01 \303\266zelle\305\237tir",
@@ -8787,8 +8774,6 @@ static const struct
    "Ana bilgisayara ba\304\237lan\304\261lamad\304\261.",
    "Dizin olu\305\237turulamad\304\261.",
    "OyunKipine girilemedi",
-   "OyunKipine girilemedi - OyunKipi arka plan program\304\261n\304\261n kurulu oldu\304\237undan/"
-   "\303\247al\304\261\305\237t\304\261\304\237\304\261ndan emin olun",
    "S\304\261k\304\261\305\237t\304\261r\304\261lm\304\261\305\237 dosyadan i\303\247erik al\304\261"
    "namad\304\261",
    "\304\260stemciden takma ad al\304\261namad\304\261.",
@@ -9192,7 +9177,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169988u
+      (sizeof(msg_hash_tr_blob) == (169296u
 #ifdef ANDROID
        + 340u
 #endif
@@ -9660,7 +9645,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -12087,7 +12071,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -13119,7 +13102,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

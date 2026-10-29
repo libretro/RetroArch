@@ -106,7 +106,6 @@ static const struct
    char s_7607974d[19];
    char s_bdf1165f[30];
    char s_6a15d029[25];
-   char s_3817de39[397];
    char s_16ae54ac[331];
    char s_b3e89428[325];
    char s_7af11c30[85];
@@ -3001,7 +3000,6 @@ static const struct
    char s_aa771128[476];
    char s_e531c55e[126];
    char s_deab66ee[135];
-   char s_5ce79fca[166];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[45];
    char s_328f4fd8[23];
@@ -4319,7 +4317,6 @@ static const struct
    char s_9e5bd759[36];
    char s_b880bab5[58];
    char s_8d7296ed[28];
-   char s_21580d7c[100];
    char s_fc5e1d2c[59];
    char s_51b22327[48];
    char s_2f6a6e51[19];
@@ -4857,11 +4854,6 @@ static const struct
    "Fitxer del shader.",
    "Fitxer predefinit del shader.",
    "Fitxer de configuraci\303\263.",
-   "Activar del mode de joc de Linux pot millorar la lat\303\250ncia, corregir errors en l'\303\240u"
-   "dio i maximitzar el rendiment general configurat autom\303\240ticament la teva CPU i la teva GPU"
-   " per optimitzar el seu rendiment.\nCal tenir instal\302\267lat el programari GameMode perqu\303"
-   "\250 aquesta opci\303\263 funcioni. Si necessites m\303\251s informaci\303\263 sobre GameMode, v"
-   "isita la p\303\240gina https://github.com/FeralInteractive/gamemode.",
    "Assigna el joystick anal\303\262gic especificat com a senyal d'entrada de la creueta.\nSi el nuc"
    "li suporta el control anal\303\262gic de forma nativa, les assignacions de la creueta s'anul\302"
    "\267laran a no ser que s'hagin for\303\247at.\nEn for\303\247ar les assingaciona de creuete, el "
@@ -8189,8 +8181,6 @@ static const struct
    "an estigui desactivat el v\303\255deo multifil.",
    "Estableix el nivell de registre pel front. Si un nivell de registre em\303\250s pel front es tro"
    "ba per sota d\342\200\231aquest valor, s\342\200\231ignorar\303\240.",
-   "Pot millorar el rendiment, reduir la lat\303\250ncia i arreglar problemes d\342\200\231\303\240u"
-   "dio crepitant. Necessitareu https://github.com/FeralInteractive/gamemode perqu\303\250 funcioni.",
 #ifdef HAVE_GAME_AI
    "Descripci\303\263 d'anul\302\267laci\303\263 del jugador de IA",
    "Anul\302\267la el jugador 01",
@@ -10372,8 +10362,6 @@ static const struct
    "No s\342\200\231ha pogut crear el directori.",
    "Error en desactivar l'estat d'inactivitat del processador",
    "Error en entrar al GameMode",
-   "Error en entrar a GameMode - comprova que el servei de GameMode est\303\240 instal\302\267lat i "
-   "en funcionament",
    "No s\342\200\231ha pogut extreure el contingut del fitxer comprimit",
    "No s\342\200\231ha pogut obtenir el sobrenom del client.",
    "Error en carregar.",
@@ -10826,7 +10814,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (243976u
+      (sizeof(msg_hash_ca_blob) == (243313u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11487,7 +11475,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -14370,7 +14357,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -15682,7 +15668,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_DISABLE_IDLE_STATES,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

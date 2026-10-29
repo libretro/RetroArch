@@ -102,7 +102,6 @@ static const struct
    char s_7607974d[16];
    char s_bdf1165f[30];
    char s_6a15d029[23];
-   char s_3817de39[362];
    char s_16ae54ac[286];
    char s_b3e89428[277];
    char s_7af11c30[74];
@@ -2418,7 +2417,6 @@ static const struct
    char s_5bdf892a[54];
    char s_aa39aae6[83];
    char s_deab66ee[137];
-   char s_5ce79fca[146];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[37];
    char s_328f4fd8[20];
@@ -3410,7 +3408,6 @@ static const struct
    char s_a363d07a[38];
    char s_9e5bd759[36];
    char s_8d7296ed[42];
-   char s_21580d7c[105];
    char s_fc5e1d2c[56];
    char s_51b22327[47];
    char s_88a97252[36];
@@ -3880,12 +3877,6 @@ static const struct
    "Soubor shaderu.",
    "Soubor s p\305\231edvolbou shaderu.",
    "Konfigura\304\215n\303\255 soubor.",
-   "Zapnut\303\255m re\305\276imu Linux GameMode lze zlep\305\241it latenci, odstranit probl\303\251"
-   "my s prask\303\241n\303\255m zvuku a maximalizovat celkov\303\275 v\303\275kon automatickou konf"
-   "igurac\303\255 CPU a GPU pro nejlep\305\241\303\255 v\303\275kon.\nPro fungov\303\241n\303\255 t"
-   "ohoto re\305\276imu je t\305\231eba nainstalovat software Hern\303\255 m\303\263d. Informace o i"
-   "nstalaci Hern\303\255 m\303\263d naleznete na adrese https://github.com/FeralInteractive/gamemod"
-   "e.",
    "Mapov\303\241n\303\255 zadan\303\251 analogov\303\251 p\303\241\304\215ky pro vstup D-Pad.\nPoku"
    "d m\303\241 j\303\241dro nativn\303\255 analogovou podporu, mapov\303\241n\303\255 D-Pad bude za"
    "k\303\241z\303\241no, pokud nen\303\255 vybr\303\241na mo\305\276nost '(Vynuceno)'.\nPokud je ma"
@@ -6680,9 +6671,6 @@ static const struct
    "Nastaven\303\255 \303\272rovn\304\233 protokolu pro frontend. Pokud je \303\272rove\305\210 prot"
    "okolu vydan\303\251ho frontendem ni\305\276\305\241\303\255 ne\305\276 tato hodnota, je ignorov"
    "\303\241na.",
-   "M\305\257\305\276e\305\241 zlep\305\241it v\303\275kon, sn\303\255\305\276it latenci a opravit z"
-   "vukov\303\251 chyby. Pot\305\231ebujete https://github.com/FeralInteractive/gamemode, aby to fun"
-   "govalo.",
 #ifdef HAVE_GAME_AI
    "P\305\231epis podn\303\241lepky p\305\231ehr\303\241va\304\215e AI",
    "P\305\231epsat hr\303\241\304\215e 01",
@@ -8432,8 +8420,6 @@ static const struct
    "Nepoda\305\231ilo se p\305\231ipojit k hostiteli.",
    "Nepoda\305\231ilo se vytvo\305\231it adres\303\241\305\231.",
    "Nepoda\305\231ilo se vstoupit do Hern\303\255ho M\303\263du",
-   "Nepoda\305\231ilo se vstoupit do Hern\303\255ho M\303\263du - ujist\304\233te se, \305\276e je G"
-   "ameMode daemon nainstalov\303\241n/spu\305\241t\304\233n",
    "Nepoda\305\231ilo se rozbalit obsah z komprimovan\303\251ho souboru",
    "Nepoda\305\231ilo se z\303\255skat p\305\231ezd\303\255vku od klienta.",
    "Nepoda\305\231ilo se na\304\215\303\255st p\305\231ekryt\303\255.",
@@ -8808,7 +8794,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162134u
+      (sizeof(msg_hash_cs_blob) == (161521u
 #ifdef ANDROID
        + 390u
 #endif
@@ -9268,7 +9254,6 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -11577,7 +11562,6 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -12569,7 +12553,6 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD_OVERLAY,

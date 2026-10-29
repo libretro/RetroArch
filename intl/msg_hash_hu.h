@@ -105,7 +105,6 @@ static const struct
    char s_7607974d[14];
    char s_bdf1165f[21];
    char s_6a15d029[23];
-   char s_3817de39[346];
    char s_16ae54ac[284];
    char s_b3e89428[300];
    char s_7af11c30[116];
@@ -2642,7 +2641,6 @@ static const struct
    char s_aa39aae6[65];
    char s_e531c55e[119];
    char s_deab66ee[94];
-   char s_5ce79fca[154];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[33];
    char s_328f4fd8[35];
@@ -3776,7 +3774,6 @@ static const struct
    char s_a363d07a[41];
    char s_9e5bd759[37];
    char s_8d7296ed[31];
-   char s_21580d7c[93];
    char s_fc5e1d2c[37];
    char s_51b22327[44];
    char s_2f6a6e51[23];
@@ -4275,12 +4272,6 @@ static const struct
    "Shader f\303\241jl.",
    "Shader preset f\303\241jl.",
    "Konfigur\303\241ci\303\263s f\303\241jl.",
-   "A Linux GameMode enged\303\251lyez\303\251se seg\303\255thet a k\303\251sleltet\303\251sen, megj"
-   "av\303\255thatja a hang recseg\303\251s\303\251t \303\251s az \303\241ltal\303\241nos teljes\303"
-   "\255tm\303\251nyt maximaliz\303\241lhatja, a CPU \303\251s a GPU konfigur\303\241l\303\241s\303"
-   "\241val a legjobb teljes\303\255tm\303\251nyhez.\nA GameMode programot ehhez telep\303\255teni k"
-   "ell. A GameMode telep\303\255t\303\251si inform\303\241ci\303\263i: https://github.com/FeralInte"
-   "ractive/gamemode.",
    "A kiv\303\241lasztott anal\303\263g kart haszn\303\241lja az ir\303\241nyv\303\241lt\303\263 (D-"
    "Pad) bemenet\303\251hez. Ha a mag t\303\241mogatja az anal\303\263g bemenetet, ez a lek\303\251p"
    "ez\303\251s csak akkor akt\303\255v, ha \"(mindenk\303\251ppen)\" jel\305\261 be\303\241ll\303"
@@ -7359,9 +7350,6 @@ static const struct
    " kapcsolva.",
    "A frontend napl\303\263 szintje. A be\303\241ll\303\255tott \303\251rt\303\251k alatti napl\303"
    "\263bejegyz\303\251sek nem jelennek meg.",
-   "Jav\303\255thatja a teljes\303\255tm\303\251nyt, cs\303\266kkentheti a k\303\251sleltet\303\251s"
-   "t \303\251s a recseg\305\221 hangot. Ez sz\303\274ks\303\251ges hozz\303\241: https://github.com"
-   "/FeralInteractive/gamemode.",
 #ifdef HAVE_GAME_AI
    "MI j\303\241t\303\251kos fel\303\274l\303\255r\303\241s alc\303\255m",
    "Az 1-es j\303\241t\303\251kos fel\303\274lb\303\255r\303\241lata",
@@ -9390,8 +9378,6 @@ static const struct
    "Kiszolg\303\241l\303\263hoz csatlakoz\303\241s sikertelen.",
    "K\303\266nyvt\303\241r l\303\251trehoz\303\241sa sikertelen.",
    "GameMode ind\303\255t\303\241sa sikertelen",
-   "GameMode ind\303\255t\303\241sa sikertelen - gy\305\221z\305\221dj\303\266n meg, hogy a GameMode"
-   " daemon fut/telep\303\255tve van",
    "Tartalom kit\303\266m\303\266r\303\255t\303\251se sikertelen",
    "Becen\303\251v fogad\303\241sa a klienst\305\221l sikertelen.",
    "Bet\303\266lt\303\251s sikertelen.",
@@ -9807,7 +9793,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (187753u
+      (sizeof(msg_hash_hu_blob) == (187160u
 #ifdef ANDROID
        + 316u
 #endif
@@ -10345,7 +10331,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -12877,7 +12862,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -14011,7 +13995,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

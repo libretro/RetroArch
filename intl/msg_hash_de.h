@@ -105,7 +105,6 @@ static const struct
    char s_7607974d[13];
    char s_bdf1165f[28];
    char s_6a15d029[21];
-   char s_3817de39[369];
    char s_16ae54ac[304];
    char s_b3e89428[282];
    char s_7af11c30[78];
@@ -2999,7 +2998,6 @@ static const struct
    char s_aa771128[486];
    char s_e531c55e[128];
    char s_deab66ee[145];
-   char s_5ce79fca[168];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[37];
    char s_328f4fd8[26];
@@ -4362,7 +4360,6 @@ static const struct
    char s_9e5bd759[42];
    char s_b880bab5[69];
    char s_8d7296ed[38];
-   char s_21580d7c[103];
    char s_fc5e1d2c[49];
    char s_51b22327[53];
    char s_2f6a6e51[22];
@@ -4897,10 +4894,6 @@ static const struct
    "Shaderdatei.",
    "Shadervoreinstellungsdatei.",
    "Konfigurationsdatei.",
-   "Das Aktivieren von Linux GameMode kann die Latenzzeit verbessern, Audioknackser beheben und die "
-   "Gesamtleistung maximieren, indem CPU und GPU automatisch f\303\274r die beste Leistung konfiguri"
-   "ert werden.\nDie GameMode-Software muss installiert sein, damit dies funktioniert. Siehe https:/"
-   "/github.com/FeralInteractive/gamemode f\303\274r Informationen zur Installation von GameMode.",
    "Angegebenen Analogstick f\303\274r Steuerkreuz-Eingabe verwenden.\nWenn der Core nativ Analogein"
    "gaben unterst\303\274tzt, wird das Steuerkreuz-Mapping deaktiviert, au\303\237er eine \342\200"
    "\236(Erzwungen)\342\200\234-Option wird gew\303\244hlt.\nWird das Steuerkreuz-Mapping erzwungen,"
@@ -8202,8 +8195,6 @@ static const struct
    "ideo in separatem Thread\342\200\234 ausgeschaltet ist.",
    "Die Protokollierungsstufe f\303\274rs Frontend festlegen. Wenn die Stufe, die vom Frontend gemel"
    "det wird, unter diesem Wert liegt, wird sie ignoriert.",
-   "Kann die Leistung verbessern, die Latenzzeit verringern und Audio-Crackling beheben. Die Kompone"
-   "nte https://github.com/FeralInteractive/gamemode wird hierzu ben\303\266tigt.",
 #ifdef HAVE_GAME_AI
    "KI-Spieler \303\274berschreiben Unterlabel",
    "Spieler 01 \303\274berschreiben",
@@ -10435,8 +10426,6 @@ static const struct
    "Fehler beim Erstellen des Verzeichnisses.",
    "Die Deaktivierung der Prozessor-Leerlaufzust\303\244nde ist fehlgeschlagen",
    "GameMode kann nicht aufgerufen werden",
-   "GameMode kann nicht aufgerufen werden - stelle sicher, dass der GameMode-Daemon installiert ist/"
-   "l\303\244uft",
    "Fehler beim Entpacken des Inhalts aus dem Archiv",
    "Benutzername konnte vom Client nicht gelesen werden.",
    "Laden fehlgeschlagen.",
@@ -10882,7 +10871,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (244974u
+      (sizeof(msg_hash_de_blob) == (244334u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11561,7 +11550,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -14441,7 +14429,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -15793,7 +15780,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_DISABLE_IDLE_STATES,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

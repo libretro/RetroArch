@@ -105,7 +105,6 @@ static const struct
    char s_7607974d[22];
    char s_bdf1165f[36];
    char s_6a15d029[28];
-   char s_3817de39[380];
    char s_16ae54ac[333];
    char s_b3e89428[277];
    char s_7af11c30[97];
@@ -2821,7 +2820,6 @@ static const struct
    char s_aa771128[441];
    char s_e531c55e[127];
    char s_deab66ee[137];
-   char s_5ce79fca[175];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[37];
    char s_328f4fd8[23];
@@ -4004,7 +4002,6 @@ static const struct
    char s_a363d07a[40];
    char s_9e5bd759[42];
    char s_8d7296ed[41];
-   char s_21580d7c[108];
    char s_fc5e1d2c[63];
    char s_51b22327[50];
    char s_2f6a6e51[21];
@@ -4491,11 +4488,6 @@ static const struct
    "Arquivo sombreadores.",
    "Ficheiro predefinido do sombreador.",
    "Ficheiro de configuraci\303\263n.",
-   "A activaci\303\263n de Linux GameMode pode mellorar a latencia, solucionar problemas de crepitac"
-   "i\303\263n de audio e maximizar o rendemento xeral configurando automaticamente a CPU e a GPU pa"
-   "ra obter o mellor rendemento.\nPara que funcione, \303\251 necesario instalar o software GameMod"
-   "e. Consulte https://github.com/FeralInteractive/gamemode para obter informaci\303\263n sobre com"
-   "o instalar GameMode.",
    "Mapear a panca anal\303\263xica especificada para a entrada da cruceta.\nSe o n\303\272cleo ten "
    "compatibilidade anal\303\263xica nativa, a asignaci\303\263n da cruceta desactivarase a menos qu"
    "e se seleccione unha opci\303\263n \"(Forzada)\".\nSe o mapeo da cruceta \303\251 forzada, o n"
@@ -7618,8 +7610,6 @@ static const struct
    "tivo cando o v\303\255deo con f\303\255os est\303\241 desactivado.",
    "Establece o nivel de rexistro para o frontend. Se un nivel de rexistro emitido pola interface es"
    "t\303\241 por debaixo deste valor, ignorarase.",
-   "Pode mellorar o rendemento, reducir a latencia e solucionar problemas de crepitaci\303\263n do a"
-   "udio. Necesitas https://github.com/FeralInteractive/gamemode para que isto funcione.",
 #ifdef HAVE_GAME_AI
    "O xogador de IA anula la subetiqueta",
    "Substitu\303\255r xogador p1",
@@ -9401,8 +9391,6 @@ static const struct
    "Produciuse un erro ao conectar co host.",
    "Produciuse un erro ao crear o directorio.",
    "Produciuse un erro ao entrar en GameMode",
-   "Produciuse un erro ao entrar en GameMode: aseg\303\272rate de que o daemon GameMode estea instal"
-   "ado/execut\303\241ndose",
    "Produciuse un erro ao extraer o contido do ficheiro comprimido",
    "Produciuse un erro ao obter o apelido do cliente.",
    "Non se puido cargar.",
@@ -9782,7 +9770,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (211534u
+      (sizeof(msg_hash_gl_blob) == (210871u
 #ifdef ANDROID
        + 365u
 #endif
@@ -10339,7 +10327,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -13043,7 +13030,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -14225,7 +14211,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

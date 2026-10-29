@@ -105,7 +105,6 @@ static const struct
    char s_7607974d[19];
    char s_bdf1165f[36];
    char s_6a15d029[26];
-   char s_3817de39[435];
    char s_16ae54ac[371];
    char s_b3e89428[297];
    char s_7af11c30[109];
@@ -3014,7 +3013,6 @@ static const struct
    char s_aa771128_1[9];
    char s_e531c55e[175];
    char s_deab66ee[181];
-   char s_5ce79fca[196];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[37];
    char s_328f4fd8[22];
@@ -4327,7 +4325,6 @@ static const struct
    char s_9e5bd759[35];
    char s_b880bab5[67];
    char s_8d7296ed[44];
-   char s_21580d7c[118];
    char s_fc5e1d2c[64];
    char s_51b22327[43];
    char s_2f6a6e51[22];
@@ -4852,11 +4849,6 @@ static const struct
    "Fichier de shader.",
    "Fichier de pr\303\251r\303\251glages de shader.",
    "Fichier de configuration.",
-   "Activer le GameMode de Linux peut am\303\251liorer la latence, corriger les probl\303\250mes de "
-   "cr\303\251pitements audio et maximiser les performances globales en configurant automatiquement "
-   "votre processeur et votre processeur graphique pour les meilleures performances.\nLe logiciel Ga"
-   "meMode doit \303\252tre install\303\251 pour que cela fonctionne. Consultez https://github.com/F"
-   "eralInteractive/gamemode pour plus d'informations sur l'installation de GameMode.",
    "Mappe le stick analogique sp\303\251cifi\303\251 pour les entr\303\251es de la croix directionne"
    "lle.\nSi le c\305\223ur prend en charge l'analogique nativement, le mappage de la croix directio"
    "nnelle sera d\303\251sactiv\303\251 sauf si une option '(Forc\303\251)' est s\303\251lectionn"
@@ -8284,9 +8276,6 @@ static const struct
    "Ajuster le niveau de journalisation pour l'interface graphique. Si un niveau de journalisation "
    "\303\251mis par l'interface graphique est inf\303\251rieur \303\240 cette valeur, il est alors i"
    "gnor\303\251.",
-   "Peut am\303\251liorer les performances, r\303\251duire la latence et corriger les probl\303\250m"
-   "es de cr\303\251pitements audio. Vous avez besoin de https://github.com/FeralInteractive/gamemod"
-   "e pour que cela fonctionne.",
 #ifdef HAVE_GAME_AI
    "Sous-label remplacement du joueur IA",
    "Remplace le joueur 01",
@@ -10592,8 +10581,6 @@ static const struct
    "\303\211chec \303\240 la cr\303\251ation du dossier.",
    "\303\211chec de la d\303\251sactivation des \303\251tats d'inactivit\303\251 du processeur",
    "Impossible de passer en mode jeu (GameMode)",
-   "Impossible de passer en mode jeu (GameMode) - assurez-vous que le daemon GameMode est install"
-   "\303\251/en cours d'ex\303\251cution",
    "\303\211chec \303\240 l'extraction de contenu depuis le fichier compress\303\251.",
    "\303\211chec \303\240 l'obtention du pseudo du client.",
    "\303\211chec de chargement.",
@@ -11030,7 +11017,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (258761u
+      (sizeof(msg_hash_fr_blob) == (258012u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11695,7 +11682,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -14582,7 +14568,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -15886,7 +15871,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_DISABLE_IDLE_STATES,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

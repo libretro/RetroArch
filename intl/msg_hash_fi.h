@@ -2348,7 +2348,6 @@ static const struct
    char s_5bdf892a[33];
    char s_aa39aae6[65];
    char s_deab66ee[126];
-   char s_5ce79fca[163];
    char s_6563cb1b[67];
    char s_877a8cd5[65];
    char s_6ff78e00[63];
@@ -3186,7 +3185,6 @@ static const struct
    char s_a363d07a[49];
    char s_9e5bd759[31];
    char s_8d7296ed[36];
-   char s_21580d7c[103];
    char s_fc5e1d2c[57];
    char s_51b22327[46];
    char s_2f6a6e51[25];
@@ -5982,9 +5980,6 @@ static const struct
    "Muuta takaisinkelauksen, pikakelauksen ja hidastuksen asetuksia.",
    "Aseta lokitustaso k\303\244ytt\303\266liittym\303\244lle. Jos k\303\244ytt\303\266liittym\303"
    "\244n antama lokitustaso on t\303\244m\303\244n arvon alapuolella, se ohitetaan.",
-   "Saattaa parantaa suorituskyky\303\244, v\303\244hent\303\244\303\244 viivett\303\244 ja korjata "
-   "\303\244\303\244nen s\303\244r\303\266ily\303\244. Tarvitset https://github.com/FeralInteractive"
-   "/gamemode jotta t\303\244m\303\244 toimii.",
    "Tallenna ydinasetukset, jotka koskevat vain nykyist\303\244 sis\303\244lt\303\266\303\244.",
    "Poista ydinasetukset, jotka koskevat vain nykyist\303\244 sis\303\244lt\303\266\303\244.",
    "Lataa mukautetut ydinasetukset oletuksena k\303\244ynnistett\303\244ess\303\244.",
@@ -7226,8 +7221,6 @@ static const struct
    "Yhteyden muodostaminen is\303\244nt\303\244\303\244n ep\303\244onnistui.",
    "Kansion luominen ep\303\244onnistui.",
    "GameModeen siirtyminen ep\303\244onnistui",
-   "Siirtyminen GameModeen ep\303\244onnistui - varmista, ett\303\244 GameMode taustaprosessi on ase"
-   "nnettu/k\303\244ynniss\303\244",
    "Sis\303\244ll\303\266n purkaminen pakatusta tiedostosta ep\303\244onnistui",
    "Nimimerkin saaminen asiakkaalta ep\303\244onnistui.",
    "Lataaminen ep\303\244onnistui.",
@@ -7565,7 +7558,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123647u
+      (sizeof(msg_hash_fi_blob) == (123381u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -10238,7 +10231,6 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
@@ -11076,7 +11068,6 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

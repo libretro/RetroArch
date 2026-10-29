@@ -105,7 +105,6 @@ static const struct
    char s_7607974d[22];
    char s_bdf1165f[39];
    char s_6a15d029[17];
-   char s_3817de39[387];
    char s_16ae54ac[279];
    char s_b3e89428[268];
    char s_7af11c30[74];
@@ -2729,7 +2728,6 @@ static const struct
    char s_aa771128[442];
    char s_e531c55e[116];
    char s_deab66ee[130];
-   char s_5ce79fca[180];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[39];
    char s_328f4fd8[20];
@@ -3862,7 +3860,6 @@ static const struct
    char s_a363d07a[35];
    char s_9e5bd759[32];
    char s_8d7296ed[27];
-   char s_21580d7c[93];
    char s_fc5e1d2c[48];
    char s_51b22327[40];
    char s_2f6a6e51[20];
@@ -4345,11 +4342,6 @@ static const struct
    "Dosiero de ombrigilo.",
    "Dosiero de anta\305\255agordoj de ombrigilo.",
    "Konfigurdosiero.",
-   "Ebligante la GameMode de Linukso povas plibonigi respondotempon, ripari sonkrevajn problemojn ka"
-   "j maksimumigi \304\235eneralan rendimenton a\305\255tomate konfigurante via \304\211efprocesoron"
-   " kaj grafikan procesoron por plej bona rendimento.\nLa programaro GameMode bezonas esti instalit"
-   "a, por ke \304\211i tio funkcios. Vidu https://github.com/FeralInteractive/gamemode por informoj"
-   " pri kiel instali GameMode.",
    "Asigni specifitan analogstangon por la direktokruca enigo.\nSe kerno subtenas indi\304\235enan a"
    "nalogstangon, direktokruca asigno estos malebligita krom opcio \"(devigi)\" estas elektita.\nSe "
    "direktokruca asigno estas devigita, kerno ricevos nenian analogan enigon de la specifita stango.",
@@ -7236,8 +7228,6 @@ static const struct
    "m fadenigita video estas malebligita.",
    "Agordi protokolan nivelon por la fasado. Se protokola nivelo postulita de la fasado estas sub "
    "\304\211i tiu valoro, \304\235i estas ignorata.",
-   "Povas plibonigi rendimenton, malpliigi respondotempon kaj ripari sonkrevajn problemojn. Por ke "
-   "\304\211i tio funkcios, oni bezonas instali https://github.com/FeralInteractive/gamemode .",
 #ifdef HAVE_GAME_AI
    "Priskribo de la nuligo de AI-a ludanto",
    "Nuligi ludanton 01.",
@@ -8787,8 +8777,6 @@ static const struct
    "Malsukcesis konekti al gastiganto.",
    "Malsukcesis krei la dosierujon.",
    "Malsukcesis eniri GameMode",
-   "Malsukcesis eniri en GameMode - certigu, ke la demono de GameMode estas instalita/ruli\304\235an"
-   "ta",
    "Malsukcesis eltiri enhavon el densigita dosiero",
    "Malsukcesis akiri kromnomon de kliento.",
    "Malsukcesis \305\235argi.",
@@ -9158,7 +9146,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171376u
+      (sizeof(msg_hash_eo_blob) == (170716u
 #ifdef ANDROID
        + 312u
 #endif
@@ -9699,7 +9687,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -12317,7 +12304,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -13450,7 +13436,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
-   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,

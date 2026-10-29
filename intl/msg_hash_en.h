@@ -18,7 +18,6 @@ static const struct
    char s_23b2ac5a[203];
    char s_550d5320[175];
    char s_a4d0f03f[268];
-   char s_3817de39[328];
    char s_16ae54ac[240];
    char s_ff583ef3[495];
    char s_60255deb[447];
@@ -516,10 +515,6 @@ static const struct
    "Some cores might have a shut down feature. If this option is left disabled, selecting the shut d"
    "own procedure would trigger RetroArch being shut down.\nEnabling this option will load a dummy c"
    "ore instead so that we remain inside the menu and RetroArch won't shut down.",
-   "Enabling Linux GameMode can improve latency, fix audio crackling issues and maximise overall per"
-   "formance by automatically configuring your CPU and GPU for best performance.\nThe GameMode softw"
-   "are needs to be installed for this to work. See https://github.com/FeralInteractive/gamemode for"
-   " information on how to install GameMode.",
    "Map specified analogue stick for D-Pad input.\nIf core has native analogue support, D-Pad mappin"
    "g will be disabled unless a '(Forced)' option is selected.\nIf D-Pad mapping is forced, core wil"
    "l receive no analogue input from specified stick.",
@@ -1146,7 +1141,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26550u
+      (sizeof(msg_hash_en_blob) == (26222u
 #ifdef HAVE_LAKKA
        + 176u
 #endif
@@ -1236,7 +1231,6 @@ static const msg_hash_id_t msg_hash_en_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
-   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
