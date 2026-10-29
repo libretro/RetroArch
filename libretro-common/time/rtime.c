@@ -27,8 +27,10 @@
 #include <time/rtime.h>
 
 /* MS CRTs keep localtime()'s result per thread. Elsewhere localtime_r(),
- * declared here because strict C89 headers hide it. */
-#if defined(HAVE_THREADS) && !defined(_WIN32) && !defined(_XBOX)
+ * declared here because strict C89 headers hide it. Orbis libc does not
+ * export localtime_r(). */
+#if defined(HAVE_THREADS) && !defined(_WIN32) && !defined(_XBOX) \
+   && !defined(ORBIS)
 #define RTIME_HAVE_LOCALTIME_R
 struct tm *localtime_r(const time_t *timep, struct tm *result);
 #endif
