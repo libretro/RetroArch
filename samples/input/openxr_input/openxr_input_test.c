@@ -769,7 +769,7 @@ XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)
 {
    return t_cursor ? (XrSwapchain)(uintptr_t)0x51 : XR_NULL_HANDLE;
 }
-/* Its width: with the tags, unless a case narrows it. */
+/* Its width: with the cut outlines, unless a case narrows it. */
 static unsigned t_cursor_w = VIDEO_XR_CURSOR_W;
 unsigned openxr_frame_cursor_w(const openxr_frame_t *f)
 {
@@ -5480,8 +5480,8 @@ static void t_follow(video_xr_quad_set_t *set)
 
 /* What an edit mode layer shows: 1 an outline, 2 the menu's handle, 3 a
  * hinge slot, 4 a beam, 5 the tag, 6 a dot; in *cut what a mark may
- * change, an outline's crop (its offset into its column and width) or
- * a slot's first row. */
+ * change, an outline's image (its cut's cell, below 0, or its offset
+ * from its column and width) or a slot's first row; never its light. */
 static unsigned t_kind(const XrCompositionLayerBaseHeader *l, int32_t *cut)
 {
    const XrCompositionLayerQuad *q = (const XrCompositionLayerQuad*)l;
@@ -5489,9 +5489,13 @@ static unsigned t_kind(const XrCompositionLayerBaseHeader *l, int32_t *cut)
    *cut                            = 0;
    if (q->subImage.imageRect.extent.height == VIDEO_XR_OUTLINE_DIM)
    {
-      *cut = (x - ((x >= VIDEO_XR_OUTLINE_X(1))
-               ? VIDEO_XR_OUTLINE_X(1) : VIDEO_XR_OUTLINE_X(0))) * 1024
-         + q->subImage.imageRect.extent.width;
+      if (x >= VIDEO_XR_CUT_X(0, 0))
+         *cut = -1 - (x - VIDEO_XR_CUT_X(0, 0))
+            / (VIDEO_XR_OUTLINE_DIM + 1) % VIDEO_XR_OUTLINE_CUTS;
+      else
+         *cut = (x - ((x >= VIDEO_XR_OUTLINE_X(1))
+                  ? VIDEO_XR_OUTLINE_X(1) : VIDEO_XR_OUTLINE_X(0))) * 1024
+            + q->subImage.imageRect.extent.width;
       return 1;
    }
    if (x == VIDEO_XR_HANDLE_X(0) || x == VIDEO_XR_HANDLE_X(1))
@@ -5525,13 +5529,52 @@ static bool t_slot_is(const XrCompositionLayerQuad *q, bool hidden,
       && t_near(q->pose.position.y, m.y) && t_near(q->pose.position.z, m.z);
 }
 
-/* A frame's edit mode layers: how many, each one's kind and cut. */
+/* A frame's edit mode layers: how many, each one's kind and cut; the
+ * frames with an outline not its item's whole one. */
 typedef struct
 {
    unsigned n;
    unsigned kind[OPENXR_MAX_EXTRA_LAYERS];
    int32_t cut[OPENXR_MAX_EXTRA_LAYERS];
+   unsigned bent;
 } t_layout_t;
+
+/* Whether every outline in layers' first n has the pose, lifted toward
+ * the head, and the size of an item's whole outline in shown. */
+static bool t_outlines_whole(const video_xr_quad_set_t *shown,
+      const XrCompositionLayerBaseHeader **layers, unsigned n)
+{
+   unsigned i, j;
+   for (i = 0; i < n; i++)
+   {
+      const XrCompositionLayerQuad *l = (const XrCompositionLayerQuad*)
+         layers[i];
+      bool whole                      = false;
+      if (l->subImage.imageRect.extent.height != VIDEO_XR_OUTLINE_DIM)
+         continue;
+      for (j = 0; j < shown->num_quads && !whole; j++)
+      {
+         video_xr_quad_t o;
+         double dx, dy, dz, dot;
+         video_xr_outline(&shown->quads[j], &o);
+         dx    = l->pose.position.x - o.pose.position.x;
+         dy    = l->pose.position.y - o.pose.position.y;
+         dz    = l->pose.position.z - o.pose.position.z;
+         dot   = l->pose.orientation.x * o.pose.orientation.x
+            + l->pose.orientation.y * o.pose.orientation.y
+            + l->pose.orientation.z * o.pose.orientation.z
+            + l->pose.orientation.w * o.pose.orientation.w;
+         whole = t_near(l->size.width, o.width)
+            && t_near(l->size.height, o.height)
+            && sqrt(dx * dx + dy * dy + dz * dz)
+               < VIDEO_XR_CURSOR_LIFT + 1e-3
+            && fabs(fabs(dot) - 1.0) < 1e-5;
+      }
+      if (!whole)
+         return false;
+   }
+   return true;
+}
 
 /* Three frames between two polls, from t_quads and t_grabs through
  * t_follow, the head tracked, against s, the first frame and the last
@@ -5557,6 +5600,7 @@ static unsigned t_frames(t_layout_t *s, unsigned *counts, unsigned *moved)
       unsigned n = t_hooks.frame_layers(t_hooks.user, t_time, &shown,
             t_xr_session.local_space, layers, OPENXR_MAX_EXTRA_LAYERS,
             &t_under);
+      s->bent += t_outlines_whole(&shown, layers, n) ? 0u : 1u;
       if (!s->n)
       {
          s->n = n;
@@ -6121,6 +6165,215 @@ static void test_edit_rest_corner(void)
    t_cursor       = false;
    t_head_tracked = false;
    t_edit_end();
+}
+
+/* Outlines of shown as t_xr_frame has them, each against the same
+ * frame with nothing hinged or resting on them: its pose and size the same, its
+ * image the whole square, or for want's (in the order the outlines
+ * come, a VIDEO_XR_CUT_X cut, -1 none) the cut's cell. Returns how many
+ * are not, or are not as many as want. */
+static unsigned t_cells_wrong(const video_xr_quad_set_t *shown,
+      XrSpace local, const int *want, unsigned outlines)
+{
+   static XrCompositionLayerQuad cut[OPENXR_MAX_EXTRA_LAYERS];
+   static openxr_grabs_t grabs;
+   unsigned i, n, m;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   unsigned o      = 0;
+   unsigned wrong  = 0;
+   unsigned hinged = t_xr_frame.hinged;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   for (i = 0; i < n; i++)
+      cut[i] = *(const XrCompositionLayerQuad*)layers[i];
+   /* Rests on the menu's slot hinge nothing but keep their slots. */
+   grabs             = t_xr_frame.grabs;
+   t_xr_frame.hinged = 0;
+   for (i = 0; i < grabs.num_rests; i++)
+      t_xr_frame.grabs.rests[i].target = VIDEO_XR_MENU_SLOT;
+   m = t_hooks.frame_layers(t_hooks.user, t_time, shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   t_xr_frame.hinged = hinged;
+   t_xr_frame.grabs  = grabs;
+   if (m != n)
+      return outlines + 1;
+   for (i = 0; i < n; i++)
+   {
+      const XrCompositionLayerQuad *w = (const XrCompositionLayerQuad*)
+         layers[i];
+      const XrCompositionLayerQuad *c = &cut[i];
+      int32_t lit, x;
+      if (w->subImage.imageRect.extent.height != VIDEO_XR_OUTLINE_DIM)
+         continue;
+      lit = w->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1);
+      x   = (o < outlines && want[o] >= 0)
+         ? VIDEO_XR_CUT_X(want[o], lit) : VIDEO_XR_OUTLINE_X(lit);
+      if (     memcmp(&c->pose, &w->pose, sizeof(c->pose))
+            || memcmp(&c->size, &w->size, sizeof(c->size))
+            || c->subImage.imageRect.offset.x != x
+            || c->subImage.imageRect.offset.y != 0
+            || c->subImage.imageRect.extent.width != VIDEO_XR_OUTLINE_DIM
+            || c->subImage.imageRect.extent.height != VIDEO_XR_OUTLINE_DIM
+            || w->subImage.imageRect.extent.width != VIDEO_XR_OUTLINE_DIM)
+         wrong++;
+      o++;
+   }
+   return wrong + (o != outlines ? 1u : 0u);
+}
+
+/* At full width, every cut a hinge or a rest makes, top, bottom, top
+ * and bottom, right, left, right and left, a side from behind, a
+ * corner's one rim: each
+ * outline keeps its whole pose and size, only its image changes. */
+static void test_edit_hinge_cells(void)
+{
+   /* Outlines: screens 1, 2 and 3, then the menu's. */
+   static const int under[]  = { 1, 0, -1 };
+   static const int both[]   = { 4, 0, 1, -1 };
+   static const int side[]   = { 2, -1, 3, -1 };
+   static const int behind[] = { 2, -1, 2, -1 };
+   static const int sides[]  = { 5, 2, 3, -1 };
+   static const int corner[] = { 2, 3, 0, -1 };
+   video_xr_quad_set_t shown;
+   video_xr_hinge_t *k;
+   unsigned wrong;
+   XrSpace local;
+   t_edit_start();
+   t_snap_under(0.0);
+   local            = t_xr_session.local_space;
+   t_aim_tracked[1] = false;
+   t_head_tracked   = true;
+   t_cursor         = true;
+   shown            = t_quads;
+   /* Screen 2 held under screen 1, hinged by the right hand. */
+   shown.quads[2].pose.position.y = -0.80f;
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_xr_frame.grabs.hand[1].slot  = 1;
+   t_xr_frame.grabs.hand[1].state = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.hinged              = 2u;
+   k                              = &t_xr_frame.hinges[1];
+   memset(k, 0, sizeof(*k));
+   k->point.y = -0.50f;
+   k->point.z = -1.8f;
+   k->dir.x   = 1.0f;
+   k->flat.y  = -1.0f;
+   k->gap     = 0.02f;
+   k->edge    = 0;
+   k->slot    = 0;
+   k->on      = 1;
+   wrong = t_cells_wrong(&shown, local, under, 3);
+   CHECK(!wrong, "under: %u outlines moved or not their cut's cell", wrong);
+   /* Screen 3 held on screen 1's top by the left hand. */
+   shown.quads[3]                 = shown.quads[2];
+   shown.quads[3].pose.position.y = 0.78f;
+   shown.quads[3].screen          = 2;
+   shown.quads[3].slot            = 2;
+   shown.num_quads                = 4;
+   t_xr_frame.grabs.hand[0].slot  = 2;
+   t_xr_frame.grabs.hand[0].state = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.hinged              = 3u;
+   k                              = &t_xr_frame.hinges[0];
+   memset(k, 0, sizeof(*k));
+   k->point.y = 0.48f;
+   k->point.z = -1.8f;
+   k->dir.x   = 1.0f;
+   k->flat.y  = 1.0f;
+   k->edge    = 1;
+   k->slot    = 0;
+   k->on      = 0;
+   wrong = t_cells_wrong(&shown, local, both, 4);
+   CHECK(!wrong, "top and bottom: %u outlines wrong", wrong);
+   /* Screen 3 on screen 1's right edge, the left hand's hinge alone;
+    * then screen 3 seen from behind. */
+   shown.quads[3].pose.position.x = 1.2f;
+   shown.quads[3].pose.position.y = 0.0f;
+   t_xr_frame.hinged              = 1u;
+   memset(k, 0, sizeof(*k));
+   k->point.x = 0.8f;
+   k->point.z = -1.8f;
+   k->dir.y   = 1.0f;
+   k->flat.x  = 1.0f;
+   k->edge    = 3;
+   k->slot    = 0;
+   k->on      = 2;
+   wrong = t_cells_wrong(&shown, local, side, 4);
+   CHECK(!wrong, "right and left: %u outlines wrong", wrong);
+   t_xr_frame.backs = 1u << 3;
+   wrong = t_cells_wrong(&shown, local, behind, 4);
+   CHECK(!wrong, "from behind: %u outlines wrong", wrong);
+   t_xr_frame.backs = 0;
+   /* Screen 2 on screen 1's left edge too: screen 1 loses both sides. */
+   shown.quads[2].pose.position.x = -1.2f;
+   shown.quads[2].pose.position.y = 0.0f;
+   t_xr_frame.hinged              = 3u;
+   k                              = &t_xr_frame.hinges[1];
+   memset(k, 0, sizeof(*k));
+   k->point.x = -0.8f;
+   k->point.z = -1.8f;
+   k->dir.y   = 1.0f;
+   k->flat.x  = -1.0f;
+   k->edge    = 2;
+   k->slot    = 0;
+   k->on      = 3;
+   wrong = t_cells_wrong(&shown, local, sides, 4);
+   CHECK(!wrong, "both sides: %u outlines wrong", wrong);
+   /* Let go, screen 2 rests under screen 1. */
+   shown.quads[2].pose.position.x   = 0.0f;
+   shown.quads[2].pose.position.y   = -0.80f;
+   shown.num_quads                  = 3;
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_xr_frame.hinged                = 0;
+   t_xr_frame.grabs.num_rests       = 1;
+   t_xr_frame.grabs.rests[0].slot   = 1;
+   t_xr_frame.grabs.rests[0].edge   = 0;
+   t_xr_frame.grabs.rests[0].target = 0;
+   t_xr_frame.grabs.rests[0].on     = 1;
+   wrong = t_cells_wrong(&shown, local, under, 3);
+   CHECK(!wrong, "resting under: %u outlines wrong", wrong);
+   /* Screen 1 resting on screen 2's left edge and screen 3's top, as
+    * test_edit_rest_corner: one rim kept, its right. */
+   shown.quads[2]                   = shown.quads[0];
+   shown.quads[2].pose.position.x   = 1.6f;
+   shown.quads[2].slot              = 1;
+   shown.quads[2].screen            = 1;
+   shown.quads[3]                   = shown.quads[0];
+   shown.quads[3].pose.position.y   = -0.96f;
+   shown.quads[3].slot              = 2;
+   shown.quads[3].screen            = 2;
+   shown.num_quads                  = 4;
+   t_xr_frame.grabs.num_rests       = 2;
+   t_xr_frame.grabs.rests[0].slot   = 0;
+   t_xr_frame.grabs.rests[0].edge   = 2;
+   t_xr_frame.grabs.rests[0].target = 1;
+   t_xr_frame.grabs.rests[0].on     = 3;
+   t_xr_frame.grabs.rests[1].slot   = 0;
+   t_xr_frame.grabs.rests[1].edge   = 1;
+   t_xr_frame.grabs.rests[1].target = 2;
+   t_xr_frame.grabs.rests[1].on     = 0;
+   wrong = t_cells_wrong(&shown, local, corner, 4);
+   CHECK(!wrong, "resting in a corner: %u outlines wrong", wrong);
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_xr_frame.hinged = 0;
+   t_head_tracked    = false;
+   t_cursor          = false;
+   t_edit_end();
+}
+
+/* Narrower than the cut outlines, with the tags or without: a cut
+ * outline as before, cut to its crop, turned for a top or bottom. */
+static void test_edit_hinge_crops(void)
+{
+   static const unsigned widths[2] = { VIDEO_XR_CURSOR_TAGGED_W,
+      VIDEO_XR_CURSOR_UNTAGGED_W };
+   unsigned i;
+   for (i = 0; i < 2; i++)
+   {
+      t_cursor_w = widths[i];
+      test_edit_hinge_layers();
+      test_edit_rest();
+      test_edit_rest_corner();
+   }
+   t_cursor_w = VIDEO_XR_CURSOR_W;
 }
 
 /* Taken where it rests hinged, screen 2 carries that hinge, its lid and
@@ -9305,7 +9558,8 @@ static void test_edit_mark_shaken(void)
       t_tilt_polls(2, 0.0f, false);
       was     = hold->buzzed;
       CHECK(was, "spot %u: not marked before the shake", i);
-      lay.n   = 0;
+      lay.n    = 0;
+      lay.bent = 0;
       t_frames(&lay, &counts, &moved);
       t_still = t_aim[2];
       y       = t_still.position.y;
@@ -9346,11 +9600,11 @@ static void test_edit_mark_shaken(void)
             "shaken at spot %u: %u flips, %u long buzzes, out %u polls, "
             "%u published off its mark", i, flips, t_longs[2] - l, fails,
             pubs);
-      CHECK(!counts && !moved && cuts == want && !stray,
+      CHECK(!counts && !moved && cuts == want && !stray && !lay.bent,
             "shaken at spot %u, its frames: %u with another layer count, "
             "%u with layers moved, %u cut otherwise, %u of them in polls "
-            "it did not flip; want %u", i, counts, moved, cuts, stray,
-            want);
+            "it did not flip, want %u; %u with an outline not whole", i,
+            counts, moved, cuts, stray, want, lay.bent);
       t_take_end();
    }
    memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
@@ -9945,9 +10199,8 @@ int main(void)
    test_edit_hinge_hold();
    test_edit_hinge_rearm();
    test_edit_hinge_drop();
-   test_edit_hinge_layers();
-   test_edit_rest();
-   test_edit_rest_corner();
+   test_edit_hinge_cells();
+   test_edit_hinge_crops();
    test_edit_hinge_slots();
    test_edit_rest_take();
    test_edit_rest_swing();

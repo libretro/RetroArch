@@ -385,13 +385,21 @@ struct gl_xr_dot
 static bool gl_xr_cursor_fill(void *user, uint32_t index,
       const char **step, int *code)
 {
-   static uint8_t px[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
    struct gl_xr_dot *dot = (struct gl_xr_dot*)user;
+   uint8_t *px           = (uint8_t*)malloc(
+         (size_t)VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4);
+   if (!px)
+   {
+      *step = "malloc";
+      *code = 0;
+      return false;
+   }
    openxr_frame_cursor_pixels(px, dot->w, true);
    glBindTexture(GL_TEXTURE_2D, (GLuint)dot->tex[index][0]);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dot->w, VIDEO_XR_CURSOR_H,
          GL_RGBA, GL_UNSIGNED_BYTE, px);
    glBindTexture(GL_TEXTURE_2D, 0);
+   free(px);
    /* The compositor reads the image on its own context. */
    glFlush();
    return true;
@@ -414,8 +422,15 @@ static void gl_xr_cursor_create(gl_android_openxr_t *xr)
          VIDEO_SCALE_PACK(dot.w, VIDEO_XR_CURSOR_H),
          openxr_binding_gles_images, &li, gl_xr_cursor_fill, &dot,
          &step, &code);
-   if (xr->frame.cursor)
-      RARCH_LOG("[XR] Laser cursor ready.\n");
+   if (xr->frame.cursor && xr->frame.rt->max_width)
+      RARCH_LOG("[XR] Laser cursor ready: %u wide, with %s (the "
+            "headset's widest %u).\n", dot.w,
+            openxr_frame_cursor_parts(&xr->frame),
+            xr->frame.rt->max_width);
+   else if (xr->frame.cursor)
+      RARCH_LOG("[XR] Laser cursor ready: %u wide, with %s (the "
+            "headset does not say its widest).\n", dot.w,
+            openxr_frame_cursor_parts(&xr->frame));
    else
       RARCH_WARN("[XR] No laser cursor (%s, %d).\n", step, code);
 }

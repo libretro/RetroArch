@@ -704,23 +704,10 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
       video_xr_quad_set_t *out,
       video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2]);
 
-/* The laser's image, its parts side by side with a clear column
- * between each, so filtering at one's edge takes in none of the next,
- * each centred on the image's middle row so GL's bottom-up rows find
- * the same texels: its dot, VIDEO_XR_CURSOR_DIM square at the left;
- * edit mode's faint and bright outlines (lit 0 and 1), each
- * VIDEO_XR_OUTLINE_DIM square with a rim of three VIDEO_XR_OUTLINE_BAND
- * texel bands, dark, light, dark, so a light band always has a dark
- * neighbour; the menu's faint and bright handle bars,
- * VIDEO_XR_HANDLE_COLS by VIDEO_XR_HANDLE_ROWS, light inside a dark
- * band; the beam's strips to the dot and into nothing (miss 0 and 1),
- * VIDEO_XR_BEAM_LEN long from the hand along x; a screen's back, a
- * solid VIDEO_XR_BACK_CELL square whose middle VIDEO_XR_BACK_DIM square
- * a back shows, so filtering takes in nothing else; a hinge's line, a
- * solid VIDEO_XR_HINGE_COLS by VIDEO_XR_HINGE_ROWS strip; edit mode's
- * tags, one for each item it can choose (0, the laser; a slot plus one,
- * a screen or the menu), VIDEO_XR_TAG_COLS by VIDEO_XR_TAG_ROWS,
- * written by video_xr_tag_pixels. */
+/* The laser's image: its parts side by side, a clear column between
+ * each and each centred on the middle row (GL's rows run bottom-up):
+ * dot, outlines, handle bars, beam strips, back, hinge strip, tags, cut
+ * outlines. */
 #define VIDEO_XR_CURSOR_DIM     32
 #define VIDEO_XR_OUTLINE_DIM    256
 #define VIDEO_XR_OUTLINE_BAND   2
@@ -751,10 +738,18 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
 #define VIDEO_XR_TAG_X(tag) \
    (VIDEO_XR_HINGE_X + VIDEO_XR_HINGE_COLS + 1 \
     + (tag) * (VIDEO_XR_TAG_COLS + 1))
-#define VIDEO_XR_CURSOR_W \
-   (VIDEO_XR_TAG_X(VIDEO_XR_TAGS - 1) + VIDEO_XR_TAG_COLS)
-/* The image without the tags, for a runtime whose swapchains are
- * narrower than VIDEO_XR_CURSOR_W. */
+/* An outline for each cut a hinge makes (top, bottom, right, left, top
+ * and bottom, right and left), faint ones then bright, each an outline's
+ * square without the rims of its cut edges, VIDEO_XR_OUTLINE_CROP
+ * texels deep, so a cut changes only the outline's image. */
+#define VIDEO_XR_OUTLINE_CUTS   6
+#define VIDEO_XR_CUT_X(cut, lit) \
+   (VIDEO_XR_TAG_X(VIDEO_XR_TAGS) \
+    + ((lit) * VIDEO_XR_OUTLINE_CUTS + (cut)) * (VIDEO_XR_OUTLINE_DIM + 1))
+#define VIDEO_XR_CURSOR_W       (VIDEO_XR_CUT_X(0, 2) - 1)
+/* The image without the cut outlines, then without the tags too, for
+ * runtimes whose swapchains are narrower. */
+#define VIDEO_XR_CURSOR_TAGGED_W   (VIDEO_XR_TAG_X(VIDEO_XR_TAGS) - 1)
 #define VIDEO_XR_CURSOR_UNTAGGED_W (VIDEO_XR_TAG_X(0) - 1)
 #define VIDEO_XR_CURSOR_H       VIDEO_XR_OUTLINE_DIM
 #define VIDEO_XR_CURSOR_Y       ((VIDEO_XR_CURSOR_H - VIDEO_XR_CURSOR_DIM) / 2)
@@ -801,6 +796,10 @@ void video_xr_cursor_pixels(uint8_t *px);
  * an image whose rows run bottom up, as GL's. */
 void video_xr_tag_pixels(uint8_t *px, unsigned tag, const uint8_t *cov,
       bool bottom_up);
+
+/* The cut outlines' cells of the laser's image; bottom_up swaps the
+ * top's and the bottom's, for an image whose rows run bottom up. */
+void video_xr_cut_pixels(uint8_t *px, bool bottom_up);
 
 /* The laser's dot: this wide per metre along the ray, never narrower
  * than VIDEO_XR_CURSOR_MIN, just in front of the quad it is on. */
@@ -891,6 +890,12 @@ void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out);
 #define VIDEO_XR_OUTLINE_CROP 8
 void video_xr_outline_crop(video_xr_quad_t *o, unsigned hide, bool back,
       unsigned *x, unsigned *w);
+
+/* Where in the laser's image at full width the outline without the
+ * rims in hide shows, as video_xr_outline_crop takes hide and back:
+ * VIDEO_XR_OUTLINE_X(lit) for none, else its VIDEO_XR_CUT_X cell, a top
+ * or bottom over a side. The outline keeps its pose and size. */
+unsigned video_xr_outline_cell(unsigned hide, bool back, unsigned lit);
 
 /* Headset pacing. The XR thread's filter over each frame's predicted
  * display period: a period is published once VIDEO_XR_PERIODS frames

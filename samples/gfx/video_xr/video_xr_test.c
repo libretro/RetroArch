@@ -2947,7 +2947,7 @@ static void test_tag_pixels(void)
    CHECK(VIDEO_XR_TAGS == VIDEO_XR_MENU_SLOT + 2);
    CHECK(VIDEO_XR_TAG_X(0) == VIDEO_XR_HINGE_X + VIDEO_XR_HINGE_COLS + 1);
    CHECK(VIDEO_XR_TAG_X(VIDEO_XR_TAGS - 1) + VIDEO_XR_TAG_COLS
-         == VIDEO_XR_CURSOR_W);
+         == VIDEO_XR_CURSOR_TAGGED_W);
    CHECK(2 * VIDEO_XR_TAG_Y + VIDEO_XR_TAG_ROWS == VIDEO_XR_CURSOR_H);
    video_xr_cursor_pixels(t_atlas);
    for (x = VIDEO_XR_TAG_X(0) - 1; x < VIDEO_XR_CURSOR_W; x++)
@@ -2973,6 +2973,52 @@ static void test_tag_pixels(void)
          && texel(x0 + 61, y0 + r - 7)[3] == f
          && texel(x0 + 61, y0 + r - 6)[3] == 0
          && texel(x0 + 61, y0 + 10)[3] == 0);
+}
+
+/* Edit mode's cut outlines after the tags, a clear column before each:
+ * for each cut, faint and bright, the whole outline's texels but those
+ * VIDEO_XR_OUTLINE_CROP in from each cut edge, which are clear, its
+ * corners included; bottom up, the top's and the bottom's rows swap. */
+static void test_cut_pixels(void)
+{
+   static const unsigned cuts[VIDEO_XR_OUTLINE_CUTS] = {
+      1u, 2u, 4u, 8u, 3u, 12u };
+   const unsigned d = VIDEO_XR_OUTLINE_DIM;
+   const unsigned e = VIDEO_XR_OUTLINE_CROP;
+   unsigned up, k, c, x, y;
+   CHECK(VIDEO_XR_CURSOR_W == 5582 && VIDEO_XR_CURSOR_TAGGED_W == 2498
+         && VIDEO_XR_CURSOR_UNTAGGED_W == 1208);
+   CHECK(VIDEO_XR_CUT_X(0, 0) == VIDEO_XR_CURSOR_TAGGED_W + 1);
+   CHECK(VIDEO_XR_CUT_X(VIDEO_XR_OUTLINE_CUTS - 1, 1) + d
+         == VIDEO_XR_CURSOR_W);
+   for (up = 0; up < 2; up++)
+   {
+      unsigned bad = 0;
+      memset(t_atlas, 0x7f, sizeof(t_atlas));
+      video_xr_cursor_pixels(t_atlas);
+      video_xr_cut_pixels(t_atlas, up != 0);
+      for (k = 0; k < 2; k++)
+         for (c = 0; c < VIDEO_XR_OUTLINE_CUTS; c++)
+         {
+            unsigned x0  = VIDEO_XR_CUT_X(c, k);
+            unsigned cut = cuts[c];
+            if (up)
+               cut = (cut & 12u) | ((cut & 1u) << 1) | ((cut >> 1) & 1u);
+            bad += !column_clear(x0 - 1);
+            for (y = 0; y < d; y++)
+               for (x = 0; x < d; x++)
+               {
+                  const uint8_t *t     = texel(x0 + x, y);
+                  const uint8_t *whole = texel(VIDEO_XR_OUTLINE_X(k) + x, y);
+                  int gone = ((cut & 1u) && y < e)
+                     || ((cut & 2u) && y >= d - e)
+                     || ((cut & 4u) && x >= d - e)
+                     || ((cut & 8u) && x < e);
+                  bad += gone ? (t[3] != 0) : (memcmp(t, whole, 4) != 0);
+               }
+         }
+      CHECK(!bad);
+   }
 }
 
 /* A screen's back: a solid cell after the beam strips, before the
@@ -7475,6 +7521,31 @@ static void test_outline_crop(void)
          && fabs(c.pose.position.x) < 1e-6);
 }
 
+/* At full width an outline cut keeps its pose and size and shows its
+ * cut's cell: none, the whole square; from behind, a side is the room's
+ * same side, the other cell; a top or bottom wins over a side. */
+static void test_outline_cell(void)
+{
+   unsigned k;
+   for (k = 0; k < 2; k++)
+   {
+      CHECK(video_xr_outline_cell(0, false, k) == VIDEO_XR_OUTLINE_X(k));
+      CHECK(video_xr_outline_cell(0, true, k) == VIDEO_XR_OUTLINE_X(k));
+      CHECK(video_xr_outline_cell(1u, false, k) == VIDEO_XR_CUT_X(0, k));
+      CHECK(video_xr_outline_cell(2u, false, k) == VIDEO_XR_CUT_X(1, k));
+      CHECK(video_xr_outline_cell(4u, false, k) == VIDEO_XR_CUT_X(2, k));
+      CHECK(video_xr_outline_cell(8u, false, k) == VIDEO_XR_CUT_X(3, k));
+      CHECK(video_xr_outline_cell(3u, false, k) == VIDEO_XR_CUT_X(4, k));
+      CHECK(video_xr_outline_cell(12u, false, k) == VIDEO_XR_CUT_X(5, k));
+      CHECK(video_xr_outline_cell(1u, true, k) == VIDEO_XR_CUT_X(0, k));
+      CHECK(video_xr_outline_cell(3u, true, k) == VIDEO_XR_CUT_X(4, k));
+      CHECK(video_xr_outline_cell(4u, true, k) == VIDEO_XR_CUT_X(3, k));
+      CHECK(video_xr_outline_cell(8u, true, k) == VIDEO_XR_CUT_X(2, k));
+      CHECK(video_xr_outline_cell(12u, true, k) == VIDEO_XR_CUT_X(5, k));
+      CHECK(video_xr_outline_cell(2u | 4u, false, k) == VIDEO_XR_CUT_X(1, k));
+   }
+}
+
 static void test_compose(void)
 {
    unsigned i;
@@ -7866,12 +7937,14 @@ int main(void)
    test_beam();
    test_cursor_pixels();
    test_tag_pixels();
+   test_cut_pixels();
    test_back_pixels();
    test_hinge_pixels();
    test_back_pick();
    test_tag_pose();
    test_outline();
    test_outline_crop();
+   test_outline_cell();
    test_compose();
    test_lazy_follow();
    test_lazy_edges();

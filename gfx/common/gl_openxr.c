@@ -445,8 +445,16 @@ static void gl_openxr_cursor_create(gl_openxr_t *xr)
             VIDEO_XR_CURSOR_H),
          openxr_binding_gl_images, &li, gl_openxr_cursor_fill, &dot,
          &step, &code);
-   if (xr->frame.cursor)
-      RARCH_LOG("[OpenXR] Laser cursor ready.\n");
+   if (xr->frame.cursor && xr->frame.rt->max_width)
+      RARCH_LOG("[OpenXR] Laser cursor ready: %u wide, with %s (the "
+            "headset's widest %u).\n", openxr_frame_cursor_w(&xr->frame),
+            openxr_frame_cursor_parts(&xr->frame),
+            xr->frame.rt->max_width);
+   else if (xr->frame.cursor)
+      RARCH_LOG("[OpenXR] Laser cursor ready: %u wide, with %s (the "
+            "headset does not say its widest).\n",
+            openxr_frame_cursor_w(&xr->frame),
+            openxr_frame_cursor_parts(&xr->frame));
    else
       RARCH_WARN("[OpenXR] No laser cursor (%s, %d).\n", step, code);
 }

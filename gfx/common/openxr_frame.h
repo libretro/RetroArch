@@ -390,16 +390,19 @@ void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks);
 void openxr_frame_input_attach(openxr_frame_t *f);
 void openxr_frame_input_detach(openxr_frame_t *f);
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *f);
-/* The width hosts make the laser's image: VIDEO_XR_CURSOR_W, or
- * VIDEO_XR_CURSOR_UNTAGGED_W, without edit mode's tags, where the
- * runtime's swapchains are narrower. */
+/* The width hosts make the laser's image: VIDEO_XR_CURSOR_W; where the
+ * runtime's swapchains are narrower (4096 if it does not say),
+ * VIDEO_XR_CURSOR_TAGGED_W, without the cut outlines, or
+ * VIDEO_XR_CURSOR_UNTAGGED_W, without the tags too. */
 unsigned openxr_frame_cursor_w(const openxr_frame_t *f);
-/* The laser's image (video_xr_cursor_pixels) w wide, as
- * openxr_frame_cursor_w says, in px's VIDEO_XR_CURSOR_W by
- * VIDEO_XR_CURSOR_H texels; at full width with edit mode's tags
- * written in the default font and the interface language as it is now;
- * bottom_up for an image whose rows run bottom up, as GL's. Without a
- * font, the tags stay clear. */
+/* What the image at that width has past the outlines, for the log. */
+const char *openxr_frame_cursor_parts(const openxr_frame_t *f);
+/* The laser's image (video_xr_cursor_pixels, video_xr_cut_pixels) w
+ * wide, as openxr_frame_cursor_w says, in px's VIDEO_XR_CURSOR_W by
+ * VIDEO_XR_CURSOR_H texels; from VIDEO_XR_CURSOR_TAGGED_W wide with
+ * edit mode's tags written in the default font and the interface
+ * language as it is now; bottom_up for an image whose rows run bottom
+ * up, as GL's. Without a font, the tags stay clear. */
 void openxr_frame_cursor_pixels(uint8_t *px, unsigned w, bool bottom_up);
 
 RETRO_END_DECLS

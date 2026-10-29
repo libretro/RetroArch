@@ -1088,8 +1088,20 @@ XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)
 
 unsigned openxr_frame_cursor_w(const openxr_frame_t *f)
 {
-   return (f->rt->max_width && f->rt->max_width < VIDEO_XR_CURSOR_W)
-      ? VIDEO_XR_CURSOR_UNTAGGED_W : VIDEO_XR_CURSOR_W;
+   /* Not said: 4096, as openxr_runtime's max_dim. */
+   unsigned max = f->rt->max_width ? f->rt->max_width : 4096;
+   if (max >= VIDEO_XR_CURSOR_W)
+      return VIDEO_XR_CURSOR_W;
+   return (max >= VIDEO_XR_CURSOR_TAGGED_W)
+      ? VIDEO_XR_CURSOR_TAGGED_W : VIDEO_XR_CURSOR_UNTAGGED_W;
+}
+
+const char *openxr_frame_cursor_parts(const openxr_frame_t *f)
+{
+   unsigned w = openxr_frame_cursor_w(f);
+   if (w == VIDEO_XR_CURSOR_W)
+      return "cut outlines and tags";
+   return (w == VIDEO_XR_CURSOR_TAGGED_W) ? "tags" : "no tags";
 }
 
 bool openxr_frame_start(openxr_frame_t *f)
@@ -1538,7 +1550,8 @@ static void openxr_frame_tag_text(unsigned tag, char *s, size_t len)
       snprintf(s, len, msg_hash_to_str(MSG_OPENXR_EDIT_TAG_SCREEN), tag);
 }
 
-void openxr_frame_cursor_pixels(uint8_t *px, unsigned w, bool bottom_up)
+/* Edit mode's tags into px, in the default font. */
+static void openxr_frame_cursor_tags(uint8_t *px, bool bottom_up)
 {
    unsigned i;
    int asc, desc;
@@ -1546,14 +1559,6 @@ void openxr_frame_cursor_pixels(uint8_t *px, unsigned w, bool bottom_up)
    void *font                        = NULL;
    const font_renderer_driver_t *drv = NULL;
    unsigned size                     = VIDEO_XR_TAG_FONT;
-   video_xr_cursor_pixels(px);
-   if (w < VIDEO_XR_CURSOR_W)
-   {
-      for (i = 1; i < VIDEO_XR_CURSOR_H; i++)
-         memmove(px + (size_t)i * w * 4,
-               px + (size_t)i * VIDEO_XR_CURSOR_W * 4, (size_t)w * 4);
-      return;
-   }
    if (!font_renderer_create_default(&drv, &font, NULL, size,
             FONT_ATLAS_FORMAT_A8))
       return;
@@ -1585,4 +1590,18 @@ void openxr_frame_cursor_pixels(uint8_t *px, unsigned w, bool bottom_up)
    }
    if (drv->free)
       drv->free(font);
+}
+
+void openxr_frame_cursor_pixels(uint8_t *px, unsigned w, bool bottom_up)
+{
+   unsigned i;
+   video_xr_cursor_pixels(px);
+   if (w == VIDEO_XR_CURSOR_W)
+      video_xr_cut_pixels(px, bottom_up);
+   if (w >= VIDEO_XR_CURSOR_TAGGED_W)
+      openxr_frame_cursor_tags(px, bottom_up);
+   if (w < VIDEO_XR_CURSOR_W)
+      for (i = 1; i < VIDEO_XR_CURSOR_H; i++)
+         memmove(px + (size_t)i * w * 4,
+               px + (size_t)i * VIDEO_XR_CURSOR_W * 4, (size_t)w * 4);
 }

@@ -1810,7 +1810,8 @@ static unsigned input_openxr_hinges(const openxr_frame_t *f,
  * slot none), each just outside its item without the rims of its edges
  * in hide (by slot), the menu's handle after its outline: bright for
  * the slots in lit, faint for the rest; up to cap in all; turned to the
- * head with an item the frame shows by its back. */
+ * head with an item the frame shows by its back. With the cut outlines
+ * in the image, a cut changes the outline's cell alone, never its quad. */
 static unsigned input_openxr_outlines(input_openxr_t *st,
       const video_xr_quad_set_t *set, XrSpace space, XrSwapchain cursor,
       unsigned lit, const unsigned *hide, bool menu,
@@ -1818,6 +1819,7 @@ static unsigned input_openxr_outlines(input_openxr_t *st,
 {
    unsigned i;
    unsigned done = 0;
+   bool cells    = openxr_frame_cursor_w(st->frame) == VIDEO_XR_CURSOR_W;
    for (i = 0; i < set->num_quads && n < cap; i++)
    {
       const video_xr_quad_t *q = &set->quads[i];
@@ -1834,10 +1836,18 @@ static unsigned input_openxr_outlines(input_openxr_t *st,
       video_xr_outline(q, &outline);
       if (back)
          video_xr_turn_back(&outline.pose);
-      video_xr_outline_crop(&outline, hide[q->slot], back, &x, &w);
+      if (cells)
+      {
+         x = video_xr_outline_cell(hide[q->slot], back, bright);
+         w = VIDEO_XR_OUTLINE_DIM;
+      }
+      else
+      {
+         video_xr_outline_crop(&outline, hide[q->slot], back, &x, &w);
+         x += VIDEO_XR_OUTLINE_X(bright);
+      }
       layers[n] = input_openxr_edit_layer(&st->outlines[n], &outline,
-            space, cursor, (int32_t)(VIDEO_XR_OUTLINE_X(bright) + x), 0,
-            (int32_t)w, VIDEO_XR_OUTLINE_DIM);
+            space, cursor, (int32_t)x, 0, (int32_t)w, VIDEO_XR_OUTLINE_DIM);
       n++;
       if (q->kind == VIDEO_XR_QUAD_MENU && n < cap)
       {
@@ -2154,7 +2164,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    tagged  = live && laser == VIDEO_XR_LIVE_EDIT
       && g->tag < INPUT_OPENXR_HANDS && ray_of[g->tag] >= 0
       && n + lines + OPENXR_KEPT_EXTRA_LAYERS < cap
-      && openxr_frame_cursor_w(st->frame) == VIDEO_XR_CURSOR_W;
+      && openxr_frame_cursor_w(st->frame) >= VIDEO_XR_CURSOR_TAGGED_W;
    beaming = live && rays
       && n + lines + (tagged ? 1u : 0u) + OPENXR_KEPT_EXTRA_LAYERS < cap
       && (beam == VIDEO_OPENXR_LASER_BEAM_ALWAYS

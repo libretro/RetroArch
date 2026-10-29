@@ -1196,6 +1196,22 @@ void video_xr_outline_crop(video_xr_quad_t *o, unsigned hide, bool back,
    o->width  = texel * (float)*w;
 }
 
+/* The hide bits of each VIDEO_XR_CUT_X cut. */
+static const uint8_t video_xr_cuts[VIDEO_XR_OUTLINE_CUTS] = {
+   1u, 2u, 4u, 8u, 3u, 12u };
+
+unsigned video_xr_outline_cell(unsigned hide, bool back, unsigned lit)
+{
+   unsigned c;
+   if (back)
+      hide = (hide & 3u) | ((hide & 4u) << 1) | ((hide & 8u) >> 1);
+   hide &= (hide & 3u) ? 3u : 12u;
+   for (c = 0; c < VIDEO_XR_OUTLINE_CUTS; c++)
+      if (video_xr_cuts[c] == hide)
+         return VIDEO_XR_CUT_X(c, lit);
+   return VIDEO_XR_OUTLINE_X(lit);
+}
+
 /* A pull's share: whole within r, none from 2r, falling between. */
 static double video_xr_snap_share(double d, double r)
 {
@@ -3651,6 +3667,29 @@ static unsigned video_xr_rim_depth(unsigned x, unsigned y, unsigned w,
    return d;
 }
 
+/* An outline's square at x0, at alpha, without the rims of the edges in
+ * cut (bit e for edge e as video_xr_outline_crop takes them, rows top
+ * down) VIDEO_XR_OUTLINE_CROP texels deep. */
+static void video_xr_outline_pixels(uint8_t *px, unsigned x0,
+      uint8_t alpha, unsigned cut)
+{
+   unsigned x, y;
+   const unsigned end = VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_CROP;
+   for (y = 0; y < VIDEO_XR_OUTLINE_DIM; y++)
+      for (x = 0; x < VIDEO_XR_OUTLINE_DIM; x++)
+      {
+         unsigned band = video_xr_rim_depth(x, y, VIDEO_XR_OUTLINE_DIM,
+               VIDEO_XR_OUTLINE_DIM) / VIDEO_XR_OUTLINE_BAND;
+         if (     band < 3
+               && !((cut & 1u) && y < VIDEO_XR_OUTLINE_CROP)
+               && !((cut & 2u) && y >= end)
+               && !((cut & 4u) && x >= end)
+               && !((cut & 8u) && x < VIDEO_XR_OUTLINE_CROP))
+            video_xr_cursor_texel(px, x0 + x, y, (band == 1) ? alpha : 0,
+                  alpha);
+      }
+}
+
 void video_xr_cursor_pixels(uint8_t *px)
 {
    unsigned x, y, k;
@@ -3675,15 +3714,7 @@ void video_xr_cursor_pixels(uint8_t *px)
    for (k = 0; k < 2; k++)
    {
       uint8_t alpha = k ? 255 : VIDEO_XR_OUTLINE_FAINT;
-      for (y = 0; y < VIDEO_XR_OUTLINE_DIM; y++)
-         for (x = 0; x < VIDEO_XR_OUTLINE_DIM; x++)
-         {
-            unsigned band = video_xr_rim_depth(x, y, VIDEO_XR_OUTLINE_DIM,
-                  VIDEO_XR_OUTLINE_DIM) / VIDEO_XR_OUTLINE_BAND;
-            if (band < 3)
-               video_xr_cursor_texel(px, VIDEO_XR_OUTLINE_X(k) + x, y,
-                     (band == 1) ? alpha : 0, alpha);
-         }
+      video_xr_outline_pixels(px, VIDEO_XR_OUTLINE_X(k), alpha, 0);
       for (y = 0; y < VIDEO_XR_HANDLE_ROWS; y++)
          for (x = 0; x < VIDEO_XR_HANDLE_COLS; x++)
             video_xr_cursor_texel(px, VIDEO_XR_HANDLE_X(k) + x,
@@ -3723,6 +3754,20 @@ void video_xr_cursor_pixels(uint8_t *px)
                / 255);
          p[2] = p[0];
          p[3] = VIDEO_XR_HINGE_LEVEL;
+      }
+}
+
+void video_xr_cut_pixels(uint8_t *px, bool bottom_up)
+{
+   unsigned k, c;
+   for (k = 0; k < 2; k++)
+      for (c = 0; c < VIDEO_XR_OUTLINE_CUTS; c++)
+      {
+         unsigned cut = video_xr_cuts[c];
+         if (bottom_up)
+            cut = (cut & 12u) | ((cut & 1u) << 1) | ((cut >> 1) & 1u);
+         video_xr_outline_pixels(px, VIDEO_XR_CUT_X(c, k),
+               k ? 255 : VIDEO_XR_OUTLINE_FAINT, cut);
       }
 }
 

@@ -252,6 +252,8 @@ void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)
 void video_xr_outline_crop(video_xr_quad_t *o, unsigned hide, bool back,
       unsigned *x, unsigned *w)
 { (void)o; (void)hide; (void)back; *x = 0; *w = VIDEO_XR_OUTLINE_DIM; }
+unsigned video_xr_outline_cell(unsigned hide, bool back, unsigned lit)
+{ (void)hide; (void)back; return VIDEO_XR_OUTLINE_X(lit); }
 bool video_xr_hinge_line(const video_xr_hinge_t *h, float width,
       float height, const video_xr_quad_t *target, video_xr_vec3_t *a,
       video_xr_vec3_t *b)

@@ -4160,7 +4160,7 @@ HINGE_HIDDEN_Y = 0
 # The hinge's line, VIDEO_XR_HINGE_WIDTH wide, each end
 # VIDEO_XR_HINGE_LIFT nearer the head; its strip's green,
 # VIDEO_XR_HINGE_RB/_G at VIDEO_XR_HINGE_LEVEL, premultiplied. An
-# outline hides an edge's rim by VIDEO_XR_OUTLINE_CROP texels of x.
+# outline hides an edge's rim VIDEO_XR_OUTLINE_CROP texels deep.
 HINGE_WIDTH, HINGE_LIFT = 0.006, 0.01
 HINGE_LEVEL, HINGE_RB, HINGE_G = 166, 60, 220
 OUTLINE_CROP = 8
@@ -4171,8 +4171,15 @@ TAG_COLS, TAG_ROWS, TAGS = 128, 30, 10
 TAG_X = tuple(HINGE_X + HINGE_COLS + 1 + k * (TAG_COLS + 1)
               for k in range(TAGS))
 TAG_Y = (OUTLINE_DIM - TAG_ROWS) // 2
-CURSOR_W = TAG_X[-1] + TAG_COLS
-# Its width without the tags, for runtimes too narrow for them.
+# Edit mode's cut outlines after the tags, faint ones then bright, one
+# for each cut: the outline's square without those edges' rims.
+CUTS = ('top', 'bottom', 'right', 'left', 'top-bottom', 'right-left')
+CUT_X = tuple(TAG_X[-1] + TAG_COLS + 1 + k * (OUTLINE_DIM + 1)
+              for k in range(2 * len(CUTS)))
+CURSOR_W = CUT_X[-1] + OUTLINE_DIM
+# Its width without the cut outlines, then without the tags too, for
+# runtimes too narrow for them.
+CURSOR_TAGGED_W = TAG_X[-1] + TAG_COLS
 CURSOR_PLAIN_W = HINGE_X + HINGE_COLS
 TAG_HEIGHT, TAG_LIFT, TAG_FAINT = 0.02, 0.05, 160
 CURSOR_H = OUTLINE_DIM
@@ -4320,12 +4327,50 @@ def menu_quad(frame):
 
 
 def outlines(frame, lit=None):
-    """Edit mode's outlines, whole or cut to hide an edge's rim; lit:
-    only the bright (1) or faint (0)."""
-    xs = OUTLINE_X if lit is None else (OUTLINE_X[lit],)
+    """Edit mode's outlines, whole, a cut's cell or cut to hide an edge's
+    rim; lit: only the bright (1) or faint (0)."""
+    lits = (0, 1) if lit is None else (lit,)
+    xs = [x for k in lits for x in (OUTLINE_X[k], OUTLINE_X[k] + OUTLINE_CROP)
+          + CUT_X[k * len(CUTS):(k + 1) * len(CUTS)]]
     return [q for q in quads(frame)
             if q['flags'] & BLEND and q['rect'][3] == OUTLINE_DIM
-            and any(q['rect'][0] in (x, x + OUTLINE_CROP) for x in xs)]
+            and q['rect'][0] in xs]
+
+
+def outline_cut(o):
+    """Whether outline o hides a rim: a cut's cell, or cut."""
+    return o['rect'][0] not in OUTLINE_X or o['rect'][2] != OUTLINE_DIM
+
+
+def outline_pose_errors(frame):
+    """Every outline in frame its item's whole outline, cut or not: the
+    item's middle, lifted toward the head, its axes and the size round
+    it. A cut changes the outline's image alone."""
+    items = [q for q in quads(frame) if not q['flags'] & BLEND] \
+        + menus(frame)
+    errors = []
+    for o in outlines(frame):
+        if not items:
+            return ['frame %d: no items under the outlines' % frame['n']]
+        q = min(items, key=lambda i: sum(
+            (a - b) ** 2 for a, b in zip(i['pose'][:3], o['pose'][:3])))
+        axes = [abs(sum(a * b for a, b in zip(
+            qrot(tuple(o['pose'][3:]), v), qrot(tuple(q['pose'][3:]), v))))
+                for v in ((1.0, 0.0, 0.0), (0.0, 0.0, 1.0))]
+        size = outline_size(*q['size'])
+        off = math.sqrt(sum((a - b) ** 2
+                            for a, b in zip(o['pose'][:3], q['pose'][:3])))
+        if (min(axes) < 0.9999 or off > 0.003
+                or any(abs(a - b) > 1e-4 for a, b in zip(o['size'], size))):
+            errors.append('frame %d: the outline %s at %s, %s, axes %s, not '
+                          'its item\'s whole outline at %s, %s' % (
+                              frame['n'], o['rect'],
+                              [round(v, 4) for v in o['pose'][:3]],
+                              [round(v, 4) for v in o['size']],
+                              [round(v, 5) for v in axes],
+                              [round(v, 4) for v in q['pose'][:3]],
+                              [round(v, 4) for v in size]))
+    return errors
 
 
 def hinge_lines(frame):
@@ -5775,9 +5820,32 @@ def hinge_line_errors(frames, want, axis):
 
 def cut_outline_errors(frame, want):
     """frame's outlines all whole but those want lists, (the middle of
-    the item it is round, the texels its square starts in, turned a
-    quarter for a top or bottom edge)."""
-    cut = [o for o in outlines(frame) if o['rect'][2] != OUTLINE_DIM]
+    the item it is round, its cut in CUTS): each the cut's whole cell,
+    faint or bright; every outline its item's whole outline in pose and
+    size."""
+    cut = [o for o in outlines(frame) if outline_cut(o)]
+    if len(cut) != len(want):
+        return ['frame %d: %d outlines cut, want %d'
+                % (frame['n'], len(cut), len(want))]
+    errors = outline_pose_errors(frame)
+    for mid, name in want:
+        o = min(cut, key=lambda c: sum((a - b) ** 2 for a, b in
+                                       zip(c['pose'][:3], mid)))
+        cells = [CUT_X[k * len(CUTS) + CUTS.index(name)] for k in (0, 1)]
+        if o['rect'][0] not in cells or tuple(o['rect'][1:]) != (
+                0, OUTLINE_DIM, OUTLINE_DIM):
+            errors.append('frame %d: the outline round %s shows %s; want '
+                          'the %s cut\'s cell at %s' % (
+                              frame['n'], [round(v, 3) for v in mid],
+                              o['rect'], name, cells))
+    return errors
+
+
+def crop_outline_errors(frame, want):
+    """Below the cut outlines' width: frame's outlines all whole but
+    those want lists, (the middle of the item it is round, the texels
+    its square starts in, turned a quarter for a top or bottom edge)."""
+    cut = [o for o in outlines(frame) if outline_cut(o)]
     if len(cut) != len(want):
         return ['frame %d: %d outlines cut, want %d'
                 % (frame['n'], len(cut), len(want))]
@@ -5887,8 +5955,8 @@ def check_edit_snap(snap):
             errors += hinge_line_errors(held, flush, 1)
             for f in held[-1:]:
                 errors += cut_outline_errors(f, [
-                    (S0, 0, False),
-                    (tuple(screen2(f)['pose'][:3]), OUTLINE_CROP, False)])
+                    (S0, 'right'),
+                    (tuple(screen2(f)['pose'][:3]), 'left')])
             # Let go flush, it rests hinged: the line and the cut rims
             # stay.
             rest = [f for f in between(res, 'released', 'resting',
@@ -5896,13 +5964,13 @@ def check_edit_snap(snap):
             errors += hinge_line_errors(rest, flush, 1)
             for f in rest[-1:]:
                 errors += cut_outline_errors(f, [
-                    (S0, 0, False),
-                    (tuple(screen2(f)['pose'][:3]), OUTLINE_CROP, False)])
+                    (S0, 'right'),
+                    (tuple(screen2(f)['pose'][:3]), 'left')])
             if not rest:
                 errors.append('no frame of screen 2 let go')
         else:
             for f in between(res, 'released', 'off', delay=0.5):
-                if hinge_lines(f) or any(o['rect'][2] != OUTLINE_DIM
+                if hinge_lines(f) or any(outline_cut(o)
                                          for o in outlines(f)):
                     errors.append('frame %d: a hinge line or cut outline '
                                   'with Snap to Screens off' % f['n'])
@@ -6146,7 +6214,7 @@ def screen2_at_pitch(deg):
     return pick
 
 
-def check_edit_hinge_3ds(res, gap=0.0):
+def check_edit_hinge_3ds(res, gap=0.0, narrow=False):
     """Screen 2, taken under screen 1 and carried 6 cm along its edge
     so its snaps are whole, hinges flat on screen 1's bottom edge; the
     left stick, held at an eighth of full speed until a frame shows it
@@ -6159,13 +6227,29 @@ def check_edit_hinge_3ds(res, gap=0.0):
     2's top rim gone; let go there, it rests hinged: both stay until
     edit mode ends. Taken again where it rests, it is hinged from its
     first frame: the line and the cut rims never go, it does not move,
-    nothing buzzes. Not a set time: stalled polls cut the swing
-    short."""
+    nothing buzzes. On every frame, as it hinges, each outline is its
+    item's whole one in pose and size. Not a set
+    time: stalled polls cut the swing short."""
     errors = edit_log_errors(res, ['on', 'off'])
+    # Below the cut outlines' width, a cut turns and crops its outline.
+    for f in [] if narrow else between(res, 'on', 'off'):
+        bent = outline_pose_errors(f)
+        if bent:
+            errors += bent[:1]
+            break
+
+    def cuts(f):
+        if narrow:
+            return crop_outline_errors(f, [
+                (S0, OUTLINE_CROP, True),
+                (tuple(screen2(f)['pose'][:3]), 0, True)])
+        return cut_outline_errors(f, [
+            (S0, 'bottom'),
+            (tuple(screen2(f)['pose'][:3]), 'top')])
     # Near the hinge but not held there (7 mm into Hinge Gap 0's click,
     # 1.6 cm against 2 cm), nothing shows until it is hinged.
     for f in between(res, 'on', 'grab', delay=0.5):
-        if hinge_lines(f) or any(o['rect'][2] != OUTLINE_DIM
+        if hinge_lines(f) or any(outline_cut(o)
                                  for o in outlines(f)):
             errors.append('frame %d: a hinge line or cut outline before '
                           'screen 2 was hinged' % f['n'])
@@ -6199,13 +6283,16 @@ def check_edit_hinge_3ds(res, gap=0.0):
         return (x, -0.48 - gap / 2.0, -1.8), length
     errors += hinge_line_errors(held, hinge, 0)
     for f in held[:1] + held[-1:]:
-        errors += cut_outline_errors(f, [
-            (S0, OUTLINE_CROP, True),
-            (tuple(screen2(f)['pose'][:3]), 0, True)])
+        errors += cuts(f)
     errors += outline_gap_errors(held[0]) if held else ['no hinged frame']
     snaps = [f for f in held if f['snap'] and hinge_lines(f)]
     if snaps:
         errors += hinge_texel_errors(res, snaps[-1])
+        if narrow:
+            w = read_png(image(res, snaps[-1], hinge_lines(snaps[-1])[0]))[0]
+            if w != CURSOR_TAGGED_W:
+                errors.append('the laser\'s image is %d wide, want %d'
+                              % (w, CURSOR_TAGGED_W))
     elif gap == 0.0:
         errors.append('no image of a hinged frame')
     # Let go there, it rests hinged: the line and the cut rims stay,
@@ -6215,18 +6302,14 @@ def check_edit_hinge_3ds(res, gap=0.0):
     errors += hinge_line_errors(
         [f for f in between(res, 'held', 'resting') if screen2(f)], hinge, 0)
     for f in rest[:1] + rest[-1:]:
-        errors += cut_outline_errors(f, [
-            (S0, OUTLINE_CROP, True),
-            (tuple(screen2(f)['pose'][:3]), 0, True)])
+        errors += cuts(f)
     errors += outline_gap_errors(rest[-1]) if rest else \
         ['no frame of screen 2 let go']
     # Taken again where it rests, it is hinged from its first frame.
     again = [f for f in between(res, 'resting', 'dropped') if screen2(f)]
     errors += hinge_line_errors(again, hinge, 0)
     for f in again[:1] + again[-1:]:
-        errors += cut_outline_errors(f, [
-            (S0, OUTLINE_CROP, True),
-            (tuple(screen2(f)['pose'][:3]), 0, True)])
+        errors += cuts(f)
     if rest and again:
         at = tuple(screen2(rest[-1])['pose'][:3])
         moved = [f['n'] for f in again
@@ -6261,8 +6344,15 @@ def check_edit_hinge_push(res):
     cm past touching overlaps it with no hinge line; pulled back to 2 cm
     past it hinges again touching, with one long buzz; let go there it
     rests hinged, the line shown, and taken again it stays hinged with
-    no buzz; saved touching."""
+    no buzz; saved touching. On every frame, as it comes off the hinge
+    and as it hinges again, each outline is its item's whole one in
+    pose and size."""
     errors = edit_log_errors(res, ['on', 'off'])
+    for f in between(res, 'on', 'off'):
+        bent = outline_pose_errors(f)
+        if bent:
+            errors += bent[:1]
+            break
     touching = -0.96
     for a, b, want in (('pushed', 'pull', 0), ('back', 'released', 1),
                        ('released', 'resting', 1), ('regrab', 'dropped', 1)):
@@ -6301,6 +6391,14 @@ def check_edit_hinge_gap(res):
     """Screen 2 at the default Hinge Gap: as check_edit_hinge_3ds, its
     top edge 2 cm under screen 1's bottom edge."""
     return check_edit_hinge_3ds(res, 0.02)
+
+
+def check_edit_hinge_3ds_narrow(res):
+    """A runtime whose swapchains are 4096 wide: the laser's image has
+    its tags but not the cut outlines. As check_edit_hinge_3ds, but each
+    cut outline is turned a quarter for a top or bottom and cut to its
+    crop."""
+    return check_edit_hinge_3ds(res, narrow=True)
 
 
 def check_edit_hinge_twitch(res, gap=0.02):
@@ -6356,7 +6454,9 @@ def check_edit_hinge_shaken(res):
     the last shake, and one long buzz in all, as it took hold. Every
     frame from the grab's first held frame has the same layers and
     hinge slots, the held screen's slot hidden until the hinge shows;
-    from the hinge on, the same outline rects too."""
+    from the hinge on, the same outline rects too. On every frame, the
+    hinge's first included, each outline is its item's whole one in
+    pose and size."""
     errors = edit_log_errors(res, ['on', 'off'])
     frames = between(res, 'still', 'shaken2')
     if not frames:
@@ -6380,6 +6480,11 @@ def check_edit_hinge_shaken(res):
     if not held:
         errors.append('no frame from the grab to the last shake with the '
                       'held screen\'s hinge slot hidden')
+    for f in between(res, 'grab', 'shaken2'):
+        bent = outline_pose_errors(f)
+        if bent:
+            errors += bent[:1]
+            break
     for what, fs, key in (('layers and hinge slots', held, counts),
                           ('outline rects', frames, rects)):
         moved = [f for f in fs if key(f) != key(fs[0])]
@@ -7321,6 +7426,11 @@ EDIT_CASES += [
      'env': {'RA_XR_LAYER_SNAP_EVERY': '10'}, 'steps': EDIT_BACK_STEPS,
      'check': check_edit_back},
 ]
+EDIT_CASES.append(dict(
+    next(c for c in EDIT_CASES if c['name'] == 'edit-hinge-3ds'),
+    name='edit-hinge-3ds-narrow',
+    env={'RA_XR_LAYER_SNAP_EVERY': '10', 'RA_XR_LAYER_MAX_WIDTH': '4096'},
+    check=check_edit_hinge_3ds_narrow))
 
 
 CASES = [
@@ -8606,7 +8716,8 @@ GL_EDIT = ['edit-grab', 'edit-grab-threaded', 'edit-command', 'edit-follow',
            'edit-outlines', 'edit-outlines-flush', 'edit-beam',
            'edit-fallback', 'edit-no-map', 'edit-lazy', 'edit-two-hands',
            'edit-choose', 'edit-snap', 'edit-tag', 'edit-tag-narrow',
-           'edit-back', 'edit-hinge-3ds', 'edit-hinge-shaken']
+           'edit-back', 'edit-hinge-3ds', 'edit-hinge-shaken',
+           'edit-hinge-3ds-narrow']
 GL_EDIT_MENU = ['edit-menu-front', 'edit-menu-size']
 for custom_driver in GL_BASE:
     GL_BASE[custom_driver] += [c['name'] for c in CUSTOM_CASES] + GL_EDIT

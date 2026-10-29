@@ -818,7 +818,8 @@ static void t_font_make(void)
 
 /* The laser's image with edit mode's tags: none without a font; with
  * one, each tag's words centred in its cell, light with a dark halo,
- * the rest of the image as video_xr_cursor_pixels makes it; bottom up,
+ * the rest of the image as video_xr_cursor_pixels and
+ * video_xr_cut_pixels make it; bottom up,
  * each cell's rows mirrored. Before a font is made the strings are not
  * even looked up. */
 static void test_cursor_tags(void)
@@ -828,6 +829,7 @@ static void test_cursor_tags(void)
    static uint8_t plain[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
    unsigned k, x, y, light = 0, dark = 0, mirrored = 1;
    video_xr_cursor_pixels(plain);
+   video_xr_cut_pixels(plain, false);
    t_font_drv = NULL;
    t_notified = 0;
    openxr_frame_cursor_pixels(px, VIDEO_XR_CURSOR_W, false);
@@ -854,9 +856,10 @@ static void test_cursor_tags(void)
    CHECK(light && dark && mirrored,
          "tags: %u light, %u dark texels, mirrored %u", light, dark,
          mirrored);
-   for (x = 0; x < VIDEO_XR_TAG_X(0); x++)
+   for (x = 0; x < VIDEO_XR_CURSOR_W; x++)
       for (y = 0; y < VIDEO_XR_CURSOR_H; y++)
-         if (memcmp(px + ((size_t)y * VIDEO_XR_CURSOR_W + x) * 4,
+         if (     (x < VIDEO_XR_TAG_X(0) || x > VIDEO_XR_CURSOR_TAGGED_W)
+               && memcmp(px + ((size_t)y * VIDEO_XR_CURSOR_W + x) * 4,
                   plain + ((size_t)y * VIDEO_XR_CURSOR_W + x) * 4, 4))
          {
             CHECK(0, "the tags touched %u,%u", x, y);
@@ -864,39 +867,56 @@ static void test_cursor_tags(void)
          }
 }
 
-/* A runtime whose swapchains are narrower than the image with its
- * tags: the image without them, VIDEO_XR_CURSOR_UNTAGGED_W wide, the
- * rest as at full width; no font is made. */
+/* A runtime whose swapchains are narrower than the whole image: from
+ * VIDEO_XR_CURSOR_W wide, the image with its cut outlines and tags; from
+ * VIDEO_XR_CURSOR_TAGGED_W, without the cut outlines; else the image
+ * without the tags too, VIDEO_XR_CURSOR_UNTAGGED_W wide, and no font is
+ * made. Each the full width's columns as far as it goes. */
 static void test_cursor_narrow(void)
 {
    static uint8_t px[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
    static uint8_t plain[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
-   const unsigned w = VIDEO_XR_CURSOR_UNTAGGED_W;
+   static const unsigned max[][2] = {
+      { 0,                              VIDEO_XR_CURSOR_TAGGED_W },
+      { 16384,                          VIDEO_XR_CURSOR_W },
+      { VIDEO_XR_CURSOR_W,              VIDEO_XR_CURSOR_W },
+      { VIDEO_XR_CURSOR_W - 1,          VIDEO_XR_CURSOR_TAGGED_W },
+      { VIDEO_XR_CURSOR_TAGGED_W,       VIDEO_XR_CURSOR_TAGGED_W },
+      { VIDEO_XR_CURSOR_TAGGED_W - 1,   VIDEO_XR_CURSOR_UNTAGGED_W },
+      { VIDEO_XR_CURSOR_UNTAGGED_W,     VIDEO_XR_CURSOR_UNTAGGED_W },
+      { VIDEO_XR_CURSOR_UNTAGGED_W - 1, VIDEO_XR_CURSOR_UNTAGGED_W } };
    openxr_runtime_t rt;
    openxr_frame_t f;
-   unsigned y, same = 1;
+   unsigned i, k, y;
    memset(&rt, 0, sizeof(rt));
    memset(&f, 0, sizeof(f));
    f.rt = &rt;
-   CHECK(openxr_frame_cursor_w(&f) == VIDEO_XR_CURSOR_W,
-         "no width said: %u wide", openxr_frame_cursor_w(&f));
-   rt.max_width = VIDEO_XR_CURSOR_W;
-   CHECK(openxr_frame_cursor_w(&f) == VIDEO_XR_CURSOR_W,
-         "wide enough: %u wide", openxr_frame_cursor_w(&f));
-   rt.max_width = VIDEO_XR_CURSOR_W - 1;
-   CHECK(openxr_frame_cursor_w(&f) == w && w == VIDEO_XR_HINGE_X
-         + VIDEO_XR_HINGE_COLS, "too narrow: %u wide, want %u",
-         openxr_frame_cursor_w(&f), w);
-   video_xr_cursor_pixels(plain);
+   for (i = 0; i < sizeof(max) / sizeof(max[0]); i++)
+   {
+      rt.max_width = max[i][0];
+      CHECK(openxr_frame_cursor_w(&f) == max[i][1],
+            "widest %u: %u wide, want %u", max[i][0],
+            openxr_frame_cursor_w(&f), max[i][1]);
+   }
+   CHECK(VIDEO_XR_CURSOR_UNTAGGED_W == VIDEO_XR_HINGE_X + VIDEO_XR_HINGE_COLS,
+         "untagged: %u wide", VIDEO_XR_CURSOR_UNTAGGED_W);
    t_font_make();
    t_font_drv = &t_font;
-   openxr_frame_cursor_pixels(px, w, false);
+   openxr_frame_cursor_pixels(plain, VIDEO_XR_CURSOR_W, false);
+   for (k = 0; k < 2; k++)
+   {
+      unsigned w    = k ? VIDEO_XR_CURSOR_UNTAGGED_W : VIDEO_XR_CURSOR_TAGGED_W;
+      unsigned same = 1;
+      t_font_made   = 0;
+      openxr_frame_cursor_pixels(px, w, false);
+      for (y = 0; y < VIDEO_XR_CURSOR_H; y++)
+         same &= !memcmp(px + (size_t)y * w * 4,
+               plain + (size_t)y * VIDEO_XR_CURSOR_W * 4, (size_t)w * 4);
+      CHECK(same && t_font_made == (k ? 0u : 1u),
+            "%u wide: rows differ (%u), %u fonts made", w, same,
+            t_font_made);
+   }
    t_font_drv = NULL;
-   for (y = 0; y < VIDEO_XR_CURSOR_H; y++)
-      same &= !memcmp(px + (size_t)y * w * 4,
-            plain + (size_t)y * VIDEO_XR_CURSOR_W * 4, (size_t)w * 4);
-   CHECK(same && !t_font_made, "narrow: rows differ (%u), %u fonts made",
-         same, t_font_made);
 }
 
 /* Light texels in tag k's cell. */
