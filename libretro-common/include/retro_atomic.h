@@ -129,7 +129,11 @@
  *   6. GCC __sync_*                 (very old GCC, GCC 4.1-4.6)
  *   7. PS2 EE interrupt mask        (R5900: no LL/SC, one core, ps2sdk
  *                                    DIntr/EIntr around the RMW)
- *   8. volatile fallback            (single-core, x86 TSO, or last resort)
+ *   8. Wii U coreinit OS*Atomic     (Espresso: the RMW in Cafe OS, which
+ *                                    carries the flush its lwarx/stwcx.
+ *                                    need across cores; chosen ahead of
+ *                                    1-3 on Wii U)
+ *   9. volatile fallback            (single-core, x86 TSO, or last resort)
  *
  * Capability macros (defined after backend selection):
  *
@@ -137,9 +141,9 @@
  *                                 successfully.  Use for compile-time gating
  *                                 of any code that uses the API at all.
  *   RETRO_ATOMIC_LOCK_FREE     -> 1 if a real lock-free backend was
- *                                 selected (1, 2, 3, 4, 5, or 6).  NOT
+ *                                 selected (1, 2, 3, 4, 5, 6 or 8).  NOT
  *                                 defined for the PS2 backend (7) or
- *                                 the volatile fallback (8).  SPSC
+ *                                 the volatile fallback (9).  SPSC
  *                                 fifos and other lock-free data
  *                                 structures should gate on this.
  *
@@ -267,7 +271,9 @@
  *     concerns moot anyway.
  *   - Wii (single-core Broadway)      -> GCC __atomic_* backend; SMP
  *     concerns moot anyway.
- *   - Wii U (3-core Espresso)         -> GCC __atomic_* backend.
+ *   - Wii U (3-core Espresso)         -> Wii U coreinit backend: loads,
+ *     stores and fences inline, read-modify-writes in Cafe OS, whose
+ *     lwarx/stwcx. carry the cache flush Espresso needs across cores.
  *   - PS3 (Cell PPU, plus SPEs the
  *     host code does not run on)      -> GCC __atomic_* backend.
  *   - Apple PPC G3/G4 (single-core)   -> Apple OSAtomic backend.
@@ -331,6 +337,7 @@
  *   RETRO_ATOMIC_FORCE_SYNC
  *   RETRO_ATOMIC_FORCE_PS2
  *   RETRO_ATOMIC_FORCE_VOLATILE
+ *   RETRO_ATOMIC_FORCE_WIIU
  * to bypass auto-detection.  Useful for porting and for testing.
  * RETRO_ATOMIC_FORCE_VOLATILE is also the escape hatch for a PS2 TU
  * built without ps2sdk's include path, since the PS2 backend needs
@@ -351,6 +358,8 @@
 #define RETRO_ATOMIC_BACKEND_PS2 1
 #elif defined(RETRO_ATOMIC_FORCE_VOLATILE)
 #define RETRO_ATOMIC_BACKEND_VOLATILE 1
+#elif defined(RETRO_ATOMIC_FORCE_WIIU)
+#define RETRO_ATOMIC_BACKEND_WIIU 1
 /* The R5900 has no LL/SC: GCC's ISA_HAS_LL_SC excludes TARGET_MIPS5900
  * outright, so the compiler lowers every builtin RMW to an __atomic_*
  * libcall and the ps2sdk toolchain does not ship libatomic to resolve
@@ -364,6 +373,15 @@
  * fetch_or precisely to have the last writer win. */
 #elif defined(PS2) || defined(_EE)
 #define RETRO_ATOMIC_BACKEND_PS2 1
+/* The Wii U's Espresso needs a cache flush inside a lwarx/stwcx. pair for
+ * the reservation to hold across its three cores, which no compiler
+ * emits; Cafe OS's own atomics carry it.  So every read-modify-write
+ * goes to coreinit's OS*Atomic, ahead of the C11, C++11 and GCC builtins
+ * that would otherwise be chosen, while loads, stores and fences, which
+ * take no reservation, stay inline. */
+#elif (defined(WIIU) || defined(__wiiu__)) && \
+      (defined(__powerpc__) || defined(__PPC__))
+#define RETRO_ATOMIC_BACKEND_WIIU 1
 /* Other targets ship a modern C11/GCC toolchain on hardware with no
  * usable atomic instruction, or with one the toolchain will not use.
  * GCC and Clang both publish __GCC_ATOMIC_INT_LOCK_FREE: 2 means
@@ -447,6 +465,9 @@
 #elif defined(RETRO_ATOMIC_BACKEND_SYNC)
 #define RETRO_ATOMIC_LOCK_FREE 1
 #define RETRO_ATOMIC_BACKEND_NAME "GCC __sync_*"
+#elif defined(RETRO_ATOMIC_BACKEND_WIIU)
+#define RETRO_ATOMIC_LOCK_FREE 1
+#define RETRO_ATOMIC_BACKEND_NAME "Wii U coreinit OS*Atomic"
 #elif defined(RETRO_ATOMIC_BACKEND_PS2)
 #define RETRO_ATOMIC_BACKEND_NAME "PS2 EE interrupt mask"
 /* Atomic against every other EE thread, and against the interrupt
@@ -466,9 +487,9 @@
 #endif
 #endif
 
-/* The header contains only macros and integer typedefs; there are no
- * function declarations and therefore no need for RETRO_BEGIN_DECLS
- * around the file.  The C++11 backend below #includes <atomic>, whose
+/* The header contains macros, integer typedefs and static inline
+ * helpers; the Wii U backend's coreinit declarations carry their own
+ * RETRO_BEGIN_DECLS, so the file as a whole needs none.  The C++11 backend below #includes <atomic>, whose
  * templates cannot be declared with C linkage; if a caller wraps its
  * #include of this header in extern "C" { ... } (e.g. ui_qt.cpp under
  * !CXX_BUILD), libstdc++ <atomic> emits dozens of "template with C
@@ -1041,6 +1062,137 @@ static INLINE size_t retro_atomic_ee_fetch_sub_size_(retro_atomic_size_t *p,
 #define retro_atomic_fetch_add_size(p, v) retro_atomic_ee_fetch_add_size_((p), (v))
 #define retro_atomic_fetch_sub_size(p, v) retro_atomic_ee_fetch_sub_size_((p), (v))
 
+/* ---- Wii U: coreinit OS*Atomic ----------------------------------------- */
+#elif defined(RETRO_ATOMIC_BACKEND_WIIU)
+
+#include <stddef.h>
+#include <stdint.h>
+
+#if !defined(__GNUC__)
+#error "retro_atomic.h: the Wii U backend is written for GCC"
+#endif
+
+typedef int    retro_atomic_int_t;
+typedef size_t retro_atomic_size_t;
+
+#define retro_atomic_int_init(p, v)    (*(p) = (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
+#define retro_atomic_size_init(p, v)   (*(p) = (v))
+
+/* coreinit's read-modify-writes, declared under names of this header's
+ * own and bound to the exports by asm label, so a file that includes the
+ * SDK's coreinit declarations as well sees no conflicting ones. */
+RETRO_BEGIN_DECLS
+int32_t  retro_atomic_wiiu_cas_(volatile uint32_t *p, uint32_t expected,
+      uint32_t desired) __asm__("OSCompareAndSwapAtomic");
+uint32_t retro_atomic_wiiu_swap_(volatile uint32_t *p, uint32_t v)
+      __asm__("OSSwapAtomic");
+int32_t  retro_atomic_wiiu_add_(volatile int32_t *p, int32_t v)
+      __asm__("OSAddAtomic");
+uint32_t retro_atomic_wiiu_and_(volatile uint32_t *p, uint32_t v)
+      __asm__("OSAndAtomic");
+uint32_t retro_atomic_wiiu_or_(volatile uint32_t *p, uint32_t v)
+      __asm__("OSOrAtomic");
+RETRO_END_DECLS
+
+/* Loads and stores need no reservation and stay inline; only the
+ * read-modify-writes go to coreinit, each between the fences its
+ * ordering asks for, so it is ordered whatever coreinit does inside. */
+#define retro_atomic_load_acquire_int(p) \
+   __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define retro_atomic_load_relaxed_int(p) \
+   __atomic_load_n((p), __ATOMIC_RELAXED)
+#define retro_atomic_store_release_int(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELEASE)
+#define retro_atomic_store_relaxed_int(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELAXED)
+#define retro_atomic_load_seq_cst_int(p) \
+   __atomic_load_n((p), __ATOMIC_SEQ_CST)
+#define retro_atomic_load_acquire_size(p) \
+   __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define retro_atomic_load_relaxed_size(p) \
+   __atomic_load_n((p), __ATOMIC_RELAXED)
+#define retro_atomic_store_release_size(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELEASE)
+#define retro_atomic_store_relaxed_size(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELAXED)
+
+static INLINE int retro_atomic_wiiu_fetch_add_int_(retro_atomic_int_t *p,
+      int v)
+{
+   int old;
+   __atomic_thread_fence(__ATOMIC_RELEASE);
+   old = (int)retro_atomic_wiiu_add_((volatile int32_t*)p, (int32_t)v);
+   __atomic_thread_fence(__ATOMIC_ACQUIRE);
+   return old;
+}
+
+static INLINE int retro_atomic_wiiu_fetch_add_seq_cst_int_(
+      retro_atomic_int_t *p, int v)
+{
+   int old;
+   __atomic_thread_fence(__ATOMIC_SEQ_CST);
+   old = (int)retro_atomic_wiiu_add_((volatile int32_t*)p, (int32_t)v);
+   __atomic_thread_fence(__ATOMIC_SEQ_CST);
+   return old;
+}
+
+static INLINE int retro_atomic_wiiu_fetch_or_int_(retro_atomic_int_t *p,
+      int v)
+{
+   int old;
+   __atomic_thread_fence(__ATOMIC_RELEASE);
+   old = (int)retro_atomic_wiiu_or_((volatile uint32_t*)p, (uint32_t)v);
+   __atomic_thread_fence(__ATOMIC_ACQUIRE);
+   return old;
+}
+
+static INLINE int retro_atomic_wiiu_fetch_and_int_(retro_atomic_int_t *p,
+      int v)
+{
+   int old;
+   __atomic_thread_fence(__ATOMIC_RELEASE);
+   old = (int)retro_atomic_wiiu_and_((volatile uint32_t*)p, (uint32_t)v);
+   __atomic_thread_fence(__ATOMIC_ACQUIRE);
+   return old;
+}
+
+#define retro_atomic_fetch_add_int(p, v) \
+   retro_atomic_wiiu_fetch_add_int_((p), (v))
+#define retro_atomic_fetch_sub_int(p, v) \
+   retro_atomic_wiiu_fetch_add_int_((p), (int)(0u - (unsigned)(v)))
+#define retro_atomic_fetch_add_seq_cst_int(p, v) \
+   retro_atomic_wiiu_fetch_add_seq_cst_int_((p), (v))
+#define retro_atomic_fetch_or_int(p, v) \
+   retro_atomic_wiiu_fetch_or_int_((p), (v))
+#define retro_atomic_fetch_and_int(p, v) \
+   retro_atomic_wiiu_fetch_and_int_((p), (v))
+
+/* size_t is a word on the console. Built for a host whose size_t is
+ * wider, as this backend's own test is, the word-wide calls cannot hold
+ * it and the size operations take the builtins instead. */
+#if defined(__SIZEOF_SIZE_T__) && __SIZEOF_SIZE_T__ == 4
+static INLINE size_t retro_atomic_wiiu_fetch_add_size_(retro_atomic_size_t *p,
+      size_t v)
+{
+   size_t old;
+   __atomic_thread_fence(__ATOMIC_RELEASE);
+   old = (size_t)(uint32_t)retro_atomic_wiiu_add_((volatile int32_t*)p,
+         (int32_t)v);
+   __atomic_thread_fence(__ATOMIC_ACQUIRE);
+   return old;
+}
+#define retro_atomic_fetch_add_size(p, v) \
+   retro_atomic_wiiu_fetch_add_size_((p), (v))
+#define retro_atomic_fetch_sub_size(p, v) \
+   retro_atomic_wiiu_fetch_add_size_((p), (size_t)0 - (size_t)(v))
+#else
+#define retro_atomic_fetch_add_size(p, v) \
+   __atomic_fetch_add((p), (v), __ATOMIC_ACQ_REL)
+#define retro_atomic_fetch_sub_size(p, v) \
+   __atomic_fetch_sub((p), (v), __ATOMIC_ACQ_REL)
+#endif
+
 /* ---- Volatile fallback ------------------------------------------------- */
 #else /* RETRO_ATOMIC_BACKEND_VOLATILE */
 
@@ -1488,6 +1640,97 @@ static INLINE int retro_atomic_ee_cas_ptr_(retro_atomic_ptr_t *p,
    __asm__ __volatile__("" ::: "memory")
 #define retro_atomic_thread_fence_seq_cst() \
    __asm__ __volatile__("" ::: "memory")
+#define RETRO_ATOMIC_HAS_CAS 1
+#define RETRO_ATOMIC_HAS_PTR 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_WIIU)
+
+typedef void* retro_atomic_ptr_t;
+#define retro_atomic_ptr_init(p, v)    (*(p) = (v))
+
+static INLINE int retro_atomic_wiiu_exchange_int_(retro_atomic_int_t *p, int v)
+{
+   int old;
+   __atomic_thread_fence(__ATOMIC_RELEASE);
+   old = (int)retro_atomic_wiiu_swap_((volatile uint32_t*)p, (uint32_t)v);
+   __atomic_thread_fence(__ATOMIC_ACQUIRE);
+   return old;
+}
+
+static INLINE int retro_atomic_wiiu_cas_int_(retro_atomic_int_t *p,
+      int expected, int desired)
+{
+   int ok;
+   __atomic_thread_fence(__ATOMIC_RELEASE);
+   ok = retro_atomic_wiiu_cas_((volatile uint32_t*)p, (uint32_t)expected,
+         (uint32_t)desired) != 0;
+   __atomic_thread_fence(__ATOMIC_ACQUIRE);
+   return ok;
+}
+
+#define retro_atomic_exchange_int(p, v) \
+   retro_atomic_wiiu_exchange_int_((p), (v))
+#define retro_atomic_cas_int(p, expected, desired) \
+   retro_atomic_wiiu_cas_int_((p), (expected), (desired))
+#define retro_atomic_load_acquire_ptr(p) \
+   __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define retro_atomic_load_relaxed_ptr(p) \
+   __atomic_load_n((p), __ATOMIC_RELAXED)
+#define retro_atomic_store_release_ptr(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELEASE)
+#define retro_atomic_store_relaxed_ptr(p, v) \
+   __atomic_store_n((p), (void*)(v), __ATOMIC_RELAXED)
+
+/* A pointer is a word on the console; off-target, as for size_t, a
+ * wider one takes the builtins. */
+#if defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 4
+static INLINE void *retro_atomic_wiiu_exchange_ptr_(retro_atomic_ptr_t *p,
+      void *v)
+{
+   void *old;
+   __atomic_thread_fence(__ATOMIC_RELEASE);
+   old = (void*)(uintptr_t)retro_atomic_wiiu_swap_((volatile uint32_t*)p,
+         (uint32_t)(uintptr_t)v);
+   __atomic_thread_fence(__ATOMIC_ACQUIRE);
+   return old;
+}
+
+static INLINE int retro_atomic_wiiu_cas_ptr_(retro_atomic_ptr_t *p,
+      void *expected, void *desired)
+{
+   int ok;
+   __atomic_thread_fence(__ATOMIC_RELEASE);
+   ok = retro_atomic_wiiu_cas_((volatile uint32_t*)p,
+         (uint32_t)(uintptr_t)expected, (uint32_t)(uintptr_t)desired) != 0;
+   __atomic_thread_fence(__ATOMIC_ACQUIRE);
+   return ok;
+}
+#else
+static INLINE void *retro_atomic_wiiu_exchange_ptr_(retro_atomic_ptr_t *p,
+      void *v)
+{
+   return __atomic_exchange_n(p, v, __ATOMIC_ACQ_REL);
+}
+
+static INLINE int retro_atomic_wiiu_cas_ptr_(retro_atomic_ptr_t *p,
+      void *expected, void *desired)
+{
+   void *e = expected;
+   return __atomic_compare_exchange_n(p, &e, desired, 0,
+         __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+}
+#endif
+
+#define retro_atomic_exchange_ptr(p, v) \
+   retro_atomic_wiiu_exchange_ptr_((p), (void*)(v))
+#define retro_atomic_cas_ptr(p, expected, desired) \
+   retro_atomic_wiiu_cas_ptr_((p), (void*)(expected), (void*)(desired))
+#define retro_atomic_thread_fence_acquire() \
+   __atomic_thread_fence(__ATOMIC_ACQUIRE)
+#define retro_atomic_thread_fence_release() \
+   __atomic_thread_fence(__ATOMIC_RELEASE)
+#define retro_atomic_thread_fence_seq_cst() \
+   __atomic_thread_fence(__ATOMIC_SEQ_CST)
 #define RETRO_ATOMIC_HAS_CAS 1
 #define RETRO_ATOMIC_HAS_PTR 1
 

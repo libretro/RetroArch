@@ -20,7 +20,9 @@
  * Its lock word (_LOCK_T, and _LOCK_RECURSIVE_T alike) is a plain int
  * that newlib's static locks start at 0, so a mutex is created on
  * first use and its address published into the word by compare-and-
- * swap. OSMutex is recursive, which serves both kinds of lock.
+ * swap - retro_atomic's, which on the Wii U is Cafe OS's own and so
+ * holds across the cores. OSMutex is recursive, which serves both kinds
+ * of lock.
  *
  * The hooks' shape changed in newlib 4.3; <stdlib.h> brings in
  * __NEWLIB__ and __NEWLIB_MINOR__, which pick the set below, as
@@ -29,6 +31,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <retro_atomic.h>
 #include <wiiu/os/mutex.h>
 
 typedef int wiiu_newlib_lock_t;
@@ -36,8 +39,7 @@ typedef int wiiu_newlib_lock_t;
 static OSMutex *wiiu_newlib_mutex(wiiu_newlib_lock_t *lock)
 {
    OSMutex *mutex  = (OSMutex*)(uintptr_t)
-      __atomic_load_n(lock, __ATOMIC_ACQUIRE);
-   int expected    = 0;
+      retro_atomic_load_acquire_int((retro_atomic_int_t*)lock);
 
    if (mutex)
       return mutex;
@@ -46,13 +48,13 @@ static OSMutex *wiiu_newlib_mutex(wiiu_newlib_lock_t *lock)
       return NULL;
    OSInitMutex(mutex);
 
-   if (!__atomic_compare_exchange_n(lock, &expected,
-            (int)(uintptr_t)mutex, 0,
-            __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+   if (!retro_atomic_cas_int((retro_atomic_int_t*)lock, 0,
+            (int)(uintptr_t)mutex))
    {
       /* Another thread published its mutex first. */
       free(mutex);
-      mutex = (OSMutex*)(uintptr_t)expected;
+      mutex = (OSMutex*)(uintptr_t)
+         retro_atomic_load_acquire_int((retro_atomic_int_t*)lock);
    }
    return mutex;
 }
@@ -60,7 +62,7 @@ static OSMutex *wiiu_newlib_mutex(wiiu_newlib_lock_t *lock)
 static void wiiu_newlib_lock_free(wiiu_newlib_lock_t *lock)
 {
    OSMutex *mutex = (OSMutex*)(uintptr_t)
-      __atomic_exchange_n(lock, 0, __ATOMIC_ACQ_REL);
+      retro_atomic_exchange_int((retro_atomic_int_t*)lock, 0);
    free(mutex);
 }
 
@@ -83,7 +85,7 @@ static int wiiu_newlib_lock_try_acquire(wiiu_newlib_lock_t *lock)
 static void wiiu_newlib_lock_release(wiiu_newlib_lock_t *lock)
 {
    OSMutex *mutex = (OSMutex*)(uintptr_t)
-      __atomic_load_n(lock, __ATOMIC_ACQUIRE);
+      retro_atomic_load_acquire_int((retro_atomic_int_t*)lock);
    if (mutex)
       OSUnlockMutex(mutex);
 }

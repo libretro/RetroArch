@@ -20,6 +20,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <wiiu/os.h>
+#include <retro_atomic.h>
 #include "wiiu_dbg.h"
 #include "exception_handler.h"
 #include "version.h"
@@ -87,13 +88,13 @@ size_t wiiu_exception_handler_pos = 0;
 char* exception_msgbuf;
 
 /* Set by the first core to fault; one shared buffer, one report. */
-static volatile int exception_entered = 0;
+static retro_atomic_int_t exception_entered = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 void __attribute__((__noreturn__)) exception_cb(OSContext* ctx, OSExceptionType type)
 {
    /* A second core faulting while the first one reports parks here,
     * so the buffer is written by one core only. */
-   if (__atomic_exchange_n(&exception_entered, 1, __ATOMIC_ACQ_REL))
+   if (retro_atomic_exchange_int(&exception_entered, 1))
       for (;;)
          OSSuspendThread(OSGetCurrentThread());
 

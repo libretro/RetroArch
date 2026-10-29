@@ -5,7 +5,8 @@
 TARGET   := wiiu_newlib_locks_test$(EXE)
 CORE_DIR := ../../..
 
-CFLAGS  += -std=gnu89 -Wall -g1 -O1 -I$(CORE_DIR)/os/wiiu/include
+CFLAGS  += -std=gnu89 -Wall -g1 -O1 -I$(CORE_DIR)/os/wiiu/include \
+           -I$(CORE_DIR)/libretro-common/include
 LDFLAGS += -lpthread
 
 # The lock word is an int holding a mutex address, as on the Wii U, so

@@ -286,6 +286,10 @@ jobs:
             # The PS2 EE backend, built off-target against a stub
             # <kernel.h>: the PS2 CI lane compiles it, this runs it.
             retro_atomic_ps2_backend_test
+            # The Wii U backend, built off-target against stand-in
+            # coreinit OS*Atomic: each read-modify-write is one coreinit
+            # call, loads, stores and fences none.
+            retro_atomic_wiiu_backend_test
             retro_spsc_test
             mpsc_stack_test
             # A frame handoff where neither side waits: no read sees a

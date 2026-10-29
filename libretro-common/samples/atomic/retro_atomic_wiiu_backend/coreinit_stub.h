@@ -1,0 +1,16 @@
+#ifndef COREINIT_STUB_H
+#define COREINIT_STUB_H
+
+enum
+{
+   COREINIT_STUB_CAS = 0,
+   COREINIT_STUB_SWAP,
+   COREINIT_STUB_ADD,
+   COREINIT_STUB_AND,
+   COREINIT_STUB_OR,
+   COREINIT_STUB_COUNT
+};
+
+extern volatile int coreinit_stub_calls[COREINIT_STUB_COUNT];
+
+#endif
