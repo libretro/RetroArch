@@ -89,10 +89,10 @@ run() { # label max_protocol encrypt expect_rc password
    # the real VFS backend on top, on the file the run above wrote,
    # then four threads on a two-slot pool through it
    [ $rc -eq 0 ] && { $RUN ./vfs_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=3; }
-   [ $rc -eq 0 ] && { $RUN ./vfs_threads_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=4; }
+   [ $rc -eq 0 ] && { $RUN ./vfs_threads_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO 'hidden$' >>$D/out 2>&1 || rc=4; }
    if [ $rc -eq 0 ] && [ -n "${WITH_LIBSMB2:-}" ] && [ $4 -eq 0 ]; then
       $RUN ./vfs_test_libsmb2$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=5
-      [ $rc -eq 0 ] && { $RUN ./vfs_threads_test_libsmb2$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=6; }
+      [ $rc -eq 0 ] && { $RUN ./vfs_threads_test_libsmb2$EXE 127.0.0.1 share rsmbtest "$5" RETRO 'hidden$' >>$D/out 2>&1 || rc=6; }
    fi
    set -e
    if [ $rc -eq $4 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $4): $(cat $D/out)"; exit 1; fi
