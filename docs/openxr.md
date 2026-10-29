@@ -256,7 +256,9 @@ swing past square and back, or a wobble where the hinge takes hold,
 does not repeat it. The menu neither snaps nor is
 snapped to. Let go, it stays where, turned and as large as it was a
 moment (0.08 s) before the grip opened, so the hand's twitch as it
-opens does not move it, and that is where it is saved.
+opens does not move it. With Edit Smoothing on, which damps that
+twitch, it stays where, turned and as large as it shows, unless it
+settles into a hinge. That is where it is saved.
 
 **Snap to Angles** (15 degrees by default) is the step the other hand's
 stick turns and tilts a held item in: 15, 30, 45 or 90 degrees. A

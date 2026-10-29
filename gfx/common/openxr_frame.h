@@ -68,10 +68,12 @@ typedef struct openxr_grabs
 
 /* Edit Smoothing's aims, the frame loop's for the main thread: each
  * hand's, in the frame's space, as the frame last built from it took
- * it; bit h of valid while hand h's is tracked. */
+ * it, and that frame's display time; bit h of valid while hand h's is
+ * tracked. */
 typedef struct openxr_aims
 {
    video_xr_pose_t pose[2];
+   XrTime time[2];
    unsigned valid;
 } openxr_aims_t;
 

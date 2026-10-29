@@ -724,7 +724,16 @@ bool openxr_session_ended(openxr_session_t *s)
 {
    return s == &t_xr_session && t_ended;
 }
-XrTime openxr_frame_predicted_time(openxr_frame_t *f) { return t_time; }
+/* The frame the main thread locates at: a new one as t_clock moves, as
+ * the frame loop runs alongside. */
+XrTime openxr_frame_predicted_time(openxr_frame_t *f)
+{
+   return t_time + (XrTime)t_clock * 1000;
+}
+/* The headset's display period as published: 90 Hz unless a case sets
+ * it. */
+static XrDuration t_period = 11111111;
+XrDuration openxr_frame_period(openxr_frame_t *f) { return t_period; }
 /* The quads as shown, and their space: LOCAL unless a case sets it. */
 static XrSpace t_space;
 void openxr_frame_get_shown_quads(openxr_frame_t *f,
@@ -2566,6 +2575,14 @@ static void t_edit_end(void)
 static void t_edit_poll(void)
 {
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+}
+
+/* With Edit Smoothing on, the frame at t_clock: the right hand's aim
+ * stepped for it and published as the frame loop does, into *a. */
+static bool t_frame_aim(video_xr_pose_t *a)
+{
+   return t_hooks.aim(t_hooks.user, 1, t_xr_session.local_space,
+         openxr_frame_predicted_time(&t_xr_frame), a);
 }
 
 /* A grip on a screen grabs it; it follows the hand, level; the trigger
@@ -5836,7 +5853,10 @@ static void t_tilt_polls(unsigned n, float y, bool tilt)
    t_hold("edit/stick", 1, 0.0f, y);
    for (i = 0; i < n; i++)
    {
+      video_xr_pose_t a;
       t_clock += 10000;
+      if (t_smooth)
+         t_frame_aim(&a);
       t_edit_poll();
    }
 }
@@ -8414,6 +8434,250 @@ static void test_edit_release_rewind(void)
    t_gap = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
 }
 
+/* Frames and polls 10 ms apart, then none for 85 or 340 ms while the
+ * hand moves 5 cm on, then again: let go 20 ms after, the rewind stops
+ * at the stall, never stepping back across it. */
+static void test_edit_release_stall(void)
+{
+   static const retro_time_t stall[] = { 85000, 340000 };
+   unsigned i, j;
+   for (j = 0; j < sizeof(stall) / sizeof(stall[0]); j++)
+   {
+      double x;
+      t_edit_start();
+      t_hold("edit/grab", 2, 1.0f, 0.0f);
+      t_clock += 10000;
+      t_edit_poll();
+      for (i = 1; i <= 20; i++)
+      {
+         t_aim[2].position.x = (float)(0.001 * i);
+         t_clock += 10000;
+         t_edit_poll();
+      }
+      t_aim[2].position.x = 0.07f;
+      t_clock += stall[j];
+      t_edit_poll();
+      t_aim[2].position.x = 0.071f;
+      t_clock += 10000;
+      t_edit_poll();
+      t_let_go();
+      t_aim[2].position.x = 0.072f;
+      t_clock += 10000;
+      t_edit_poll();
+      x = t_grabs.let_go[0].last.position.x;
+      CHECK(     t_grabs.let_go[0].state == VIDEO_XR_GRAB_RELEASED
+            && fabs(x - 0.07) < 1e-5 && fabs(t_xr[0].x - x) < 1e-5,
+            "stalled %u ms: let go at %.4f, saved %.4f, want 0.070, not "
+            "before the stall (0.020)", (unsigned)(stall[j] / 1000), x,
+            t_xr[0].x);
+      t_edit_end();
+   }
+}
+
+/* 120 Hz frames seen by 60 Hz polls, one a frame on and the next three,
+ * the hand twitching as the grip opens: no stall, so the let-go looks
+ * the whole 80 ms back, to where it showed before the twitch. */
+static void test_edit_release_fast_frames(void)
+{
+   unsigned i;
+   double x;
+   t_period = 8333333;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_clock += 16667;
+   t_edit_poll();
+   for (i = 1; i <= 20; i++)
+   {
+      t_aim[2].position.x = (float)(i <= 18 ? 0.001 * i
+            : (i == 19 ? 0.03 : 0.04));
+      t_clock += i == 18 ? 8333 : (i == 19 ? 25000 : 16667);
+      t_edit_poll();
+   }
+   t_let_go();
+   t_aim[2].position.x = 0.05f;
+   t_clock += 16667;
+   t_edit_poll();
+   x = t_grabs.let_go[0].last.position.x;
+   CHECK(     t_grabs.let_go[0].state == VIDEO_XR_GRAB_RELEASED
+         && fabs(x - 0.016) < 1e-5 && fabs(t_xr[0].x - x) < 1e-5,
+         "120 Hz frames, 60 Hz polls: let go at %.4f, saved %.4f, want "
+         "0.016, before the twitch (0.030 on)", x, t_xr[0].x);
+   t_edit_end();
+   t_period = 11111111;
+}
+
+/* Edit Smoothing on: each frame's aims add one trail entry, dated by
+ * the frame, however many polls see them. */
+static void test_edit_trail_frames(void)
+{
+   unsigned i, j;
+   video_xr_pose_t a;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   bool ok                         = true;
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM;
+   t_edit_start();
+   t_clock += 10000;
+   t_frame_aim(&a);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_clock += 8000;
+   for (i = 1; i <= 6 && ok; i++)
+   {
+      XrTime frame;
+      t_aim[2].position.x = (float)(0.002 * i);
+      t_clock += 3111;
+      t_frame_aim(&a);
+      frame = openxr_frame_predicted_time(&t_xr_frame);
+      for (j = 0; j < 4; j++)
+      {
+         t_clock += 2000;
+         t_edit_poll();
+      }
+      ok = hold->g.state == VIDEO_XR_GRAB_HELD && hold->trails == i + 1
+         && hold->trail[hold->trail_at].t == frame;
+      CHECK(ok, "frame %u seen by 4 polls: %u entries, the newest dated "
+            "%.0f, want %u, %.0f", i, hold->trails,
+            (double)hold->trail[hold->trail_at].t, i + 1, (double)frame);
+   }
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_OFF;
+}
+
+/* Edit Smoothing on: a hand's trail is dated by the frame its own aim
+ * is from, not by a newer one the other hand's was stepped for first. */
+static void test_edit_trail_hands(void)
+{
+   bool ok;
+   XrTime first, next;
+   video_xr_pose_t a;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM;
+   t_edit_start();
+   t_clock += 10000;
+   t_frame_aim(&a);
+   first = openxr_frame_predicted_time(&t_xr_frame);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_clock += 10000;
+   next = openxr_frame_predicted_time(&t_xr_frame);
+   t_hooks.aim(t_hooks.user, 0, t_xr_session.local_space, next, &a);
+   t_edit_poll();
+   ok = hold->trails == 1 && hold->trail[hold->trail_at].t == first;
+   CHECK(ok, "the left hand's aim stepped first: %u entries, the newest "
+         "dated %.0f, want 1, %.0f", hold->trails,
+         (double)hold->trail[hold->trail_at].t, (double)first);
+   t_frame_aim(&a);
+   t_edit_poll();
+   CHECK(hold->trails == 2 && hold->trail[hold->trail_at].t == next,
+         "then the right's: %u entries, the newest dated %.0f, want 2, "
+         "%.0f", hold->trails, (double)hold->trail[hold->trail_at].t,
+         (double)next);
+   t_let_go();
+   t_edit_poll();
+   t_edit_end();
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_OFF;
+}
+
+/* Edit Smoothing on: carried at 0.3 m/s, stopped 100 ms before the grip
+ * opens and grown on the stick meanwhile, screen 1 is let go where it
+ * shows as the grip opens, that large: smoothing has damped the
+ * twitch, and a rewind would step back by what it still lagged. */
+static void test_edit_release_smoothed(void)
+{
+   unsigned i;
+   video_xr_pose_t a, want;
+   video_xr_grab_t held;
+   video_screen_xr_t s;
+   float scale;
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM;
+   t_edit_start();
+   t_clock += 10000;
+   t_frame_aim(&a);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   for (i = 1; i <= 30; i++)
+   {
+      if (i <= 20)
+         t_aim[2].position.x = (float)(0.003 * i);
+      if (i == 26)
+         t_hold("edit/stick", 2, 1.0f, 0.0f);
+      t_clock += 10000;
+      t_frame_aim(&a);
+      t_edit_poll();
+   }
+   t_let_go();
+   t_clock += 10000;
+   t_frame_aim(&a);
+   held  = *g;
+   scale = input_openxr_edit.hand[1].scale;
+   video_xr_grab_pose(&held, &a, NULL, 0, NULL, &want, &s, NULL);
+   t_edit_poll();
+   CHECK(     t_grabs.let_go[0].state == VIDEO_XR_GRAB_RELEASED
+         && held.width > 1.62f
+         && t_pose_close(&t_grabs.let_go[0].last, &want)
+         && fabs(t_xr[0].x - s.x) < 1e-4
+         && fabs(t_grabs.let_go[0].width - held.width) < 1e-5
+         && fabs(t_xr[0].scale - scale) < 1e-5,
+         "smoothed let-go at %.4f, %.3f wide, saved x %.4f scale %.4f; "
+         "want where it shows, %.4f, %.3f wide, x %.4f scale %.4f",
+         t_grabs.let_go[0].last.position.x, t_grabs.let_go[0].width,
+         t_xr[0].x, t_xr[0].scale, want.position.x, held.width, s.x,
+         scale);
+   t_edit_end();
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_OFF;
+}
+
+/* As test_edit_release_twitch with Edit Smoothing on, the twitch over
+ * the grip's last four frames, as a hand opening one does: the hinge
+ * and the settle still look back past it. */
+static void test_edit_release_smoothed_twitch(void)
+{
+   /* Pitch and yaw in degrees. */
+   static const double twitch[][2] = {
+      { 0.6, 0.0 }, { -0.6, 0.0 }, { 0.0, 2.0 }, { 0.0, -2.0 } };
+   unsigned i, k;
+   const video_xr_pose_t *at = &t_grabs.let_go[1].last;
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM;
+   for (i = 0; i < sizeof(twitch) / sizeof(twitch[0]); i++)
+   {
+      bool hinged;
+      double gap, plane, along, x;
+      video_xr_pose_t a, saved;
+      t_hinged_at(VIDEO_OPENXR_EDIT_HINGE_GAP_2, 0.0, 0.02);
+      t_tilt_polls(40, 0.0f, false);
+      hinged = input_openxr_edit.hand[1].hinged;
+      x      = t_edge_along(true);
+      for (k = 0; k < 3; k++)
+      {
+         t_turn_aim(twitch[i][0] / 4.0, twitch[i][1] / 4.0, 0.0);
+         t_tilt_polls(1, 0.0f, false);
+      }
+      t_turn_aim(twitch[i][0] / 4.0, twitch[i][1] / 4.0, 0.0);
+      t_let_go();
+      t_clock += 10000;
+      t_frame_aim(&a);
+      t_edit_poll();
+      gap   = t_under_gap(&plane);
+      along = t_edge_along(true);
+      video_xr_item_pose(&t_quads.slots[1].base, &t_xr[1], &saved);
+      CHECK(     hinged && t_grabs.num_rests == 1
+            && fabs(gap - 0.02) < 1e-5 && fabs(along - x) < 1e-3
+            && t_pose_close(&saved, at),
+            "smoothed twitch, pitch %+.1f yaw %+.1f: hinged %d, %u at "
+            "rest, gap %.5f, along %.5f from %.5f, saved at "
+            "%.4f,%.4f,%.4f, let go at %.4f,%.4f,%.4f", twitch[i][0],
+            twitch[i][1], (int)hinged, t_grabs.num_rests, gap, along, x,
+            saved.position.x, saved.position.y, saved.position.z,
+            at->position.x, at->position.y, at->position.z);
+      t_take_end();
+   }
+   t_smooth = VIDEO_OPENXR_EDIT_SMOOTHING_OFF;
+   t_gap    = VIDEO_OPENXR_EDIT_HINGE_GAP_0;
+}
+
 /* n polls 10 ms apart, the right hand gripping, and the left on the
  * menu's handle too if menu. */
 static void t_menu_polls(unsigned n, bool menu)
@@ -9644,6 +9908,12 @@ int main(void)
    test_edit_release_moving();
    test_edit_release_rewind();
    test_edit_release_twitch();
+   test_edit_release_stall();
+   test_edit_release_fast_frames();
+   test_edit_trail_frames();
+   test_edit_trail_hands();
+   test_edit_release_smoothed();
+   test_edit_release_smoothed_twitch();
    test_edit_settle();
    test_edit_settle_target_held();
    test_edit_settle_twitch();

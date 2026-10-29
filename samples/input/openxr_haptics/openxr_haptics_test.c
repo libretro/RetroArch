@@ -51,6 +51,8 @@ void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
 { (void)hooks; }
 XrTime openxr_frame_predicted_time(openxr_frame_t *frame)
 { (void)frame; return 0; }
+XrDuration openxr_frame_period(openxr_frame_t *frame)
+{ (void)frame; return 0; }
 void openxr_frame_get_shown_quads(openxr_frame_t *frame,
       video_xr_quad_set_t *out, XrSpace *space)
 { (void)frame; memset(out, 0, sizeof(*out)); *space = XR_NULL_HANDLE; }

@@ -76,13 +76,14 @@
 /* Edit mode's longest stick step (s): a stalled poll does not fling the
  * item. */
 #define INPUT_OPENXR_EDIT_MAX_DT   0.1
-/* How far back a grip's let-go looks, past the twitch of the grip
- * opening; a hand's trail of where its item showed, entries at least
- * INPUT_OPENXR_EDIT_TRAIL_US apart but the newest: 24 span 0.23 s or
- * more, past the rewind. */
+/* A let-go puts the item where, turned and as large as, it showed this
+ * long ago (us), before the grip's twitch. The trail keeps an entry a
+ * frame, INPUT_OPENXR_EDIT_TRAIL_US apart at least; the rewind stops at
+ * a stall, entries more than INPUT_OPENXR_EDIT_GAP frames apart. */
 #define INPUT_OPENXR_EDIT_REWIND_US 80000
 #define INPUT_OPENXR_EDIT_TRAIL     24
 #define INPUT_OPENXR_EDIT_TRAIL_US  10000
+#define INPUT_OPENXR_EDIT_GAP       2.5
 
 enum input_openxr_set
 {
@@ -580,7 +581,7 @@ typedef struct input_openxr_trail
    float width;
    float height;
    float scale;
-   retro_time_t t;
+   XrTime t; /* its frame's display time */
    /* Where the hand put it, unsnapped, and the hinge a let-go there
     * settles in: its target's slot plus one (0, none) and both edges. */
    video_xr_pose_t hand;
@@ -1358,6 +1359,7 @@ static bool input_openxr_frame_pose(input_openxr_t *st, unsigned h,
       }
       else
          st->aims.valid  &= ~(1u << h);
+      st->aims.time[h] = time;
       s->time      = time;
       s->space     = space;
       s->recenters = recenters;
@@ -2721,11 +2723,12 @@ static const video_xr_hinge_t *input_openxr_edit_settles(
    return NULL;
 }
 
-/* hold's trail gains where its item shows now, where aim puts it
- * unsnapped, and whether a let-go there settles in its hinge, or else
- * its mark, on targets (NULL: none). */
+/* hold's trail gains, dated by the frame its aim is from, where its
+ * item shows now, where aim puts it unsnapped, and whether a let-go
+ * there settles in its hinge, or else its mark, on targets (NULL:
+ * none); its newest's frame again replaces it. */
 static void input_openxr_edit_trail(const input_openxr_edit_t *e,
-      input_openxr_hold_t *hold, retro_time_t now,
+      input_openxr_hold_t *hold, XrTime frame,
       const video_xr_pose_t *aim, const video_xr_quad_set_t *targets)
 {
    input_openxr_trail_t *at;
@@ -2734,15 +2737,16 @@ static void input_openxr_edit_trail(const input_openxr_edit_t *e,
    const input_openxr_trail_t *before = &hold->trail[(hold->trail_at
          + INPUT_OPENXR_EDIT_TRAIL - 1) % INPUT_OPENXR_EDIT_TRAIL];
    if (     !hold->trails
-         || (now > newest->t && (hold->trails < 2
-               || newest->t - before->t >= INPUT_OPENXR_EDIT_TRAIL_US)))
+         || (frame > newest->t && (hold->trails < 2
+               || newest->t - before->t
+                  >= (XrTime)INPUT_OPENXR_EDIT_TRAIL_US * 1000)))
    {
       hold->trail_at = (hold->trail_at + 1) % INPUT_OPENXR_EDIT_TRAIL;
       if (hold->trails < INPUT_OPENXR_EDIT_TRAIL)
          hold->trails++;
    }
    at              = &hold->trail[hold->trail_at];
-   at->t           = now;
+   at->t           = frame;
    at->shown       = hold->g.last;
    at->width       = hold->g.width;
    at->height      = hold->g.height;
@@ -2762,29 +2766,49 @@ static void input_openxr_edit_trail(const input_openxr_edit_t *e,
    }
 }
 
-/* hold's newest trail entry INPUT_OPENXR_EDIT_REWIND_US old at now,
- * else its oldest. */
+/* Whether hold's trail entry at follows a stall in st's frames. */
+static bool input_openxr_edit_stalled(input_openxr_t *st,
+      const input_openxr_hold_t *hold, unsigned at)
+{
+   unsigned before   = (at + INPUT_OPENXR_EDIT_TRAIL - 1)
+      % INPUT_OPENXR_EDIT_TRAIL;
+   XrDuration period = openxr_frame_period(st->frame);
+   if (period < (XrDuration)INPUT_OPENXR_EDIT_TRAIL_US * 2000)
+      period = (XrDuration)INPUT_OPENXR_EDIT_TRAIL_US * 2000;
+   return (double)(hold->trail[at].t - hold->trail[before].t)
+      > INPUT_OPENXR_EDIT_GAP * (double)period;
+}
+
+/* hold's newest trail entry INPUT_OPENXR_EDIT_REWIND_US before frame,
+ * else its oldest, but never past a stall in st's frames. */
 static const input_openxr_trail_t *input_openxr_edit_rewind(
-      const input_openxr_hold_t *hold, retro_time_t now)
+      input_openxr_t *st, const input_openxr_hold_t *hold, XrTime frame)
 {
    unsigned i;
    unsigned at = hold->trail_at;
-   for (i = 1; i < hold->trails
-         && now - hold->trail[at].t < INPUT_OPENXR_EDIT_REWIND_US; i++)
+   for (i = 1; i < hold->trails && frame - hold->trail[at].t
+         < (XrTime)INPUT_OPENXR_EDIT_REWIND_US * 1000; i++)
+   {
+      if (input_openxr_edit_stalled(st, hold, at))
+         break;
       at = (at + INPUT_OPENXR_EDIT_TRAIL - 1) % INPUT_OPENXR_EDIT_TRAIL;
+   }
    return &hold->trail[at];
 }
 
-/* hold's item put at pose as large as its trail's entry at shows it,
- * with no snap, from its last aim. */
+/* hold's item put at pose as large as its trail's entry at shows it
+ * (NULL: as large as now), with no snap, from its last aim. */
 static void input_openxr_edit_put(input_openxr_edit_t *e,
       input_openxr_hold_t *hold, const input_openxr_trail_t *at,
       const video_xr_pose_t *pose)
 {
    video_screen_xr_t values;
-   hold->g.width  = at->width;
-   hold->g.height = at->height;
-   hold->scale    = at->scale;
+   if (at)
+   {
+      hold->g.width  = at->width;
+      hold->g.height = at->height;
+      hold->scale    = at->scale;
+   }
    video_xr_grab_put(&hold->g, &hold->aim, pose);
    video_views_xr_reset(&values, 1);
    video_xr_grab_pose(&hold->g, &hold->aim, NULL, 0, NULL,
@@ -2834,12 +2858,14 @@ static void input_openxr_edit_show_mark(input_openxr_hold_t *hold)
    hold->g.mark_edge = hold->buzzed ? (unsigned char)hold->mark.edge : 0;
 }
 
-/* Hand h grabs st->quads' quad target: the item keeps its place in
- * the aim's frame, wherever the hand is, its yaw from the aim's heading,
- * and its pitch and roll. A second hand on an item does nothing. */
+/* Hand h grabs st->quads' quad target at when (us), aim from frame:
+ * the item keeps its place in the aim's frame, wherever the hand is,
+ * its yaw from the aim's heading, and its pitch and roll. A second hand
+ * on an item does nothing. */
 static void input_openxr_edit_grab(input_openxr_t *st,
       input_openxr_edit_t *e, unsigned h, int target,
-      const video_xr_pose_t *aim, bool tilt, retro_time_t when)
+      const video_xr_pose_t *aim, bool tilt, retro_time_t when,
+      XrTime frame)
 {
    unsigned was;
    video_xr_pose_t inv;
@@ -2914,7 +2940,7 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->height0 = q->height;
    hold->trails  = 0;
    hold->polled  = when;
-   input_openxr_edit_trail(e, hold, when, aim, NULL);
+   input_openxr_edit_trail(e, hold, frame, aim, NULL);
    /* Taken hinged, a let-go settles in that hinge from the start. */
    hold->trail[hold->trail_at].settle_slot = hold->g.rest_slot;
    hold->trail[hold->trail_at].settle_on   = hold->g.rest_on;
@@ -3346,6 +3372,8 @@ static void input_openxr_edit_poll(input_openxr_t *st,
          : input_openxr_aim(st, h, space, time, &aim);
       bool grabbed              = grip && !hold->grip;
       bool reset_pressed        = reset && !hold->reset;
+      /* The frame its aim is from, which dates its trail. */
+      XrTime frame              = e->smoothing ? aims.time[h] : time;
 
       if (e->smoothing && tracked)
          aim = aims.pose[h];
@@ -3388,18 +3416,35 @@ static void input_openxr_edit_poll(input_openxr_t *st,
             hold->lidded = false;
          if (!grip || !shown)
          {
-            /* As it showed before the grip began to open: the hand
-             * twitches as it does. */
             if (shown)
             {
                video_xr_pose_t pose;
-               const input_openxr_trail_t *at =
-                  input_openxr_edit_rewind(hold, now);
+               const input_openxr_trail_t *at;
+               /* A new frame's aims first, as that frame shows it. */
+               if (tracked && frame > hold->trail[hold->trail_at].t)
+               {
+                  video_xr_grab_hinge(&hold->g, &aim, targets,
+                        input_openxr_edit_holding(e), &hold->start, &pose,
+                        NULL);
+                  hold->g.last = pose;
+                  input_openxr_edit_trail(e, hold, frame, &aim, targets);
+               }
+               /* As it showed before the grip began to open: the hand
+                * twitches as it does. */
+               at = input_openxr_edit_rewind(st, hold, frame);
                /* Exactly into the hinge it showed, so it rests there
                 * green, among the screens held once it is let go. */
-               if (!input_openxr_edit_settle(e, hold, targets, &at, &pose))
-                  pose = at->shown;
-               input_openxr_edit_put(e, hold, at, &pose);
+               if (input_openxr_edit_settle(e, hold, targets, &at, &pose))
+                  input_openxr_edit_put(e, hold, at, &pose);
+               /* Smoothed, where it shows: smoothing damps the twitch,
+                * and a rewind would step back by what it lags. */
+               else if (e->smoothing)
+               {
+                  pose = hold->g.last;
+                  input_openxr_edit_put(e, hold, NULL, &pose);
+               }
+               else
+                  input_openxr_edit_put(e, hold, at, &at->shown);
             }
             input_openxr_edit_let_go(e, hold, shown);
             /* Where it rests now, for the hinges counted below. */
@@ -3447,13 +3492,13 @@ static void input_openxr_edit_poll(input_openxr_t *st,
                      INPUT_OPENXR_SNAP_TICK_AMP);
             hold->armed = input_openxr_edit_armed(hold->armed, snapped);
             hold->polled = now;
-            input_openxr_edit_trail(e, hold, now, &aim, targets);
+            input_openxr_edit_trail(e, hold, frame, &aim, targets);
          }
       }
       /* Taken from anywhere, the hand's aim is needed: untracked, it
        * takes nothing. */
       else if (grabbed && tracked && target >= 0)
-         input_openxr_edit_grab(st, e, h, target, &aim, tilt, now);
+         input_openxr_edit_grab(st, e, h, target, &aim, tilt, now, frame);
       else if (reset_pressed && target >= 0)
          input_openxr_edit_reset(e, st->quads.quads[target].slot);
    }
