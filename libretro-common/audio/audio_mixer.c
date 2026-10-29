@@ -54,9 +54,9 @@
  * byte count and, for Ogg-Opus, the injected end granule, with
  * multichannel sources folded to stereo by the downmix tables.
  *
- * Voices are claimed and released from mixer and caller threads;
- * under HAVE_THREADS each voice carries a lock, and stop callbacks
- * run outside it. */
+ * Voices are claimed and released from mixer and caller threads
+ * through a per-voice owner word (a lock only where the atomics are
+ * the volatile fallback), and stop callbacks run outside it. */
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -99,11 +99,12 @@
  * it, or a caller while it plays or stops it. Ownership is one word,
  * taken with a compare-and-swap. The mix never waits for it - a voice
  * a caller holds is being built or torn down and is passed over - and
- * a caller waits only for the pass in progress on that voice. Backends
- * whose compare-and-swap is not atomic keep a lock per voice. */
+ * a caller waits only for the pass in progress on that voice. Only a
+ * backend whose compare-and-swap is not atomic (the volatile one)
+ * keeps a lock per voice; the PS2's interrupt-masked one is atomic. */
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
-#ifdef RETRO_ATOMIC_LOCK_FREE
+#if defined(RETRO_ATOMIC_LOCK_FREE) || defined(RETRO_ATOMIC_BACKEND_PS2)
 #include <rthreads/retro_eventcount.h>
 #define AUDIO_MIXER_VOICE_OWNERSHIP
 #endif
@@ -278,7 +279,7 @@ struct audio_mixer_voice
    bool     avail_done_valid;
    bool     is_s16;
 #if defined(AUDIO_MIXER_VOICE_OWNERSHIP)
-   retro_atomic_int_t owner;
+   retro_atomic_int_t owner;    /* AUDIO_MIXER_VOICE_* */
 #elif defined(HAVE_THREADS)
    slock_t *lock;
 #endif
@@ -291,22 +292,34 @@ static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES];
 static retro_atomic_size_t s_clock_serial = { 0 };
 
 #if defined(AUDIO_MIXER_VOICE_OWNERSHIP)
-/* What a caller waiting for a voice parks on; the mix notifies as it
- * lets a voice go, which costs no lock and no syscall with nobody
- * parked. */
+#define AUDIO_MIXER_VOICE_FREE   0
+#define AUDIO_MIXER_VOICE_HELD   1
+#define AUDIO_MIXER_VOICE_WANTED 2   /* held, and a caller is parked */
+
+/* What a caller waiting for a voice parks on. Only a voice marked
+ * wanted is notified as it is let go, so the mix's passes reach no
+ * eventcount - nor, where its bookkeeping is locked, its lock. */
 static retro_eventcount_t s_voice_ec;
 static bool               s_voice_ec_ok;
 
 /* The mix's: false when a caller holds the voice. */
 static bool audio_mixer_voice_try_own(audio_mixer_voice_t *voice)
 {
-   return retro_atomic_cas_int(&voice->owner, 0, 1);
+   return retro_atomic_cas_int(&voice->owner,
+         AUDIO_MIXER_VOICE_FREE, AUDIO_MIXER_VOICE_HELD);
 }
 
-/* A caller's: waits out the pass, or the other caller, that has it. */
+/* A caller's: waits out the pass, or the other caller, that has it.
+ * A notify wakes every caller parked, and each marks the voice again
+ * before it parks; taken after a wait it is left marked, which costs
+ * at most one notify. */
 static void audio_mixer_voice_own(audio_mixer_voice_t *voice)
 {
-   while (!retro_atomic_cas_int(&voice->owner, 0, 1))
+   if (retro_atomic_cas_int(&voice->owner,
+            AUDIO_MIXER_VOICE_FREE, AUDIO_MIXER_VOICE_HELD))
+      return;
+   while (retro_atomic_exchange_int(&voice->owner, AUDIO_MIXER_VOICE_WANTED)
+         != AUDIO_MIXER_VOICE_FREE)
    {
       int key;
       if (!s_voice_ec_ok)
@@ -315,7 +328,8 @@ static void audio_mixer_voice_own(audio_mixer_voice_t *voice)
          continue;
       }
       key = retro_eventcount_prepare_wait(&s_voice_ec);
-      if (retro_atomic_load_acquire_int(&voice->owner))
+      if (retro_atomic_load_acquire_int(&voice->owner)
+            == AUDIO_MIXER_VOICE_WANTED)
          retro_eventcount_commit_wait(&s_voice_ec, key);
       else
          retro_eventcount_cancel_wait(&s_voice_ec);
@@ -324,8 +338,9 @@ static void audio_mixer_voice_own(audio_mixer_voice_t *voice)
 
 static void audio_mixer_voice_disown(audio_mixer_voice_t *voice)
 {
-   retro_atomic_store_release_int(&voice->owner, 0);
-   if (s_voice_ec_ok)
+   if (     retro_atomic_exchange_int(&voice->owner, AUDIO_MIXER_VOICE_FREE)
+         == AUDIO_MIXER_VOICE_WANTED
+         && s_voice_ec_ok)
       retro_eventcount_notify(&s_voice_ec);
 }
 #elif defined(HAVE_THREADS)

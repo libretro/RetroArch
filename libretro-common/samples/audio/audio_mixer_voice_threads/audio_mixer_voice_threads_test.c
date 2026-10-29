@@ -34,7 +34,10 @@
  * ThreadSanitizer: a field two threads touch without ordering is a
  * reported race. Every read must give back one of the values set, and
  * every mixed block must come out at one of the volumes set - silence
- * or the full triangle - never anything a torn value would give. */
+ * or the full triangle - never anything a torn value would give.
+ *
+ * Two callers waiting on one voice while a mix takes it between them:
+ * each holds it alone, and none is left parked when it is let go. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +46,7 @@
 #include <math.h>
 #include <pthread.h>
 #include <sched.h>
+#include <unistd.h>
 
 #include <audio/audio_mixer.h>
 #include <audio/audio_resampler.h>
@@ -176,6 +180,61 @@ static void *churn_thread(void *arg)
    return NULL;
 }
 
+/* What the holders of one contended voice share, unordered but for
+ * their hold on it. */
+#define CONTEND_ROUNDS 20000
+static audio_mixer_voice_t *contended;
+static int                  inside;
+static unsigned             overlaps;
+static retro_atomic_int_t   callers_done;
+
+static void contend_hold(void)
+{
+   if (++inside != 1)
+      overlaps++;
+   sched_yield();
+   inside--;
+}
+
+static void *contend_caller(void *arg)
+{
+   unsigned i;
+   (void)arg;
+   for (i = 0; i < CONTEND_ROUNDS; i++)
+   {
+      audio_mixer_voice_own(contended);
+      contend_hold();
+      audio_mixer_voice_disown(contended);
+   }
+   retro_atomic_fetch_add_int(&callers_done, 1);
+   return NULL;
+}
+
+static void *contend_mix(void *arg)
+{
+   (void)arg;
+   while (retro_atomic_load_acquire_int(&callers_done) < 2)
+      if (audio_mixer_voice_try_own(contended))
+      {
+         contend_hold();
+         audio_mixer_voice_disown(contended);
+      }
+   return NULL;
+}
+
+/* A caller left parked never finishes: the run fails rather than hangs. */
+static void *watchdog_thread(void *arg)
+{
+   unsigned s;
+   (void)arg;
+   for (s = 0; s < 300; s++)
+      sleep(1);
+   printf("FAIL  still running after 300 s: a caller waiting on a voice was never woken\n");
+   fflush(stdout);
+   _exit(1);
+   return NULL;
+}
+
 static float held_peak(void)
 {
    float    buf[BLOCK * 2];
@@ -212,12 +271,14 @@ static void *audio_thread(void *arg)
 
 int main(void)
 {
-   pthread_t      t, r, f, c;
+   pthread_t      t, r, f, c, w;
    size_t         wav_size, wav3_size;
    unsigned char *wav, *wav2, *wav3;
    audio_mixer_sound_t *snd, *snd2;
    unsigned       i, bad = 0;
 
+   pthread_create(&w, NULL, watchdog_thread, NULL);
+   pthread_detach(w);
    audio_mixer_init(MIX_RATE);
    if (!(wav = make_wav(MIX_RATE / 4, MIX_RATE, &wav_size))
          || !(snd = audio_mixer_load_wav(wav, wav_size, "nearest",
@@ -288,6 +349,18 @@ int main(void)
    pthread_join(f, NULL);
    pthread_join(c, NULL);
 
+   /* a slot none of the above plays */
+   {
+      pthread_t a, b, m;
+      contended = &s_voices[AUDIO_MIXER_MAX_VOICES - 1];
+      pthread_create(&m, NULL, contend_mix, NULL);
+      pthread_create(&a, NULL, contend_caller, NULL);
+      pthread_create(&b, NULL, contend_caller, NULL);
+      pthread_join(a, NULL);
+      pthread_join(b, NULL);
+      pthread_join(m, NULL);
+   }
+
    audio_mixer_stop(voice);
    audio_mixer_destroy(snd);
    audio_mixer_stop(stream_voice);
@@ -296,6 +369,11 @@ int main(void)
    audio_mixer_done();
    free(wav);
 
+   if (overlaps)
+   {
+      printf("FAIL  %u holds of a contended voice overlapped\n", overlaps);
+      return 1;
+   }
    if (odd_tells)
    {
       printf("FAIL  %u of %u positions read lay outside the stream\n",
@@ -309,7 +387,8 @@ int main(void)
       return 1;
    }
    printf("ok    %u volume and gain changes made while the voice mixed, "
-         "%u voices played and stopped under the mix\n", ROUNDS,
-         (unsigned)retro_atomic_load_acquire_int(&churned));
+         "%u voices played and stopped under the mix, "
+         "two callers x %u holds of one voice beside the mix\n", ROUNDS,
+         (unsigned)retro_atomic_load_acquire_int(&churned), CONTEND_ROUNDS);
    return 0;
 }
