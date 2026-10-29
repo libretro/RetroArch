@@ -21,7 +21,7 @@
 #include <malloc.h>
 
 #include "../audio_driver.h"
-#include "../../ctr/ctr_debug.h"
+#include "../../os/ctr/ctr_debug.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 

@@ -23,7 +23,7 @@
 #include <string.h>
 #include <retro_inline.h>
 
-#include "ctr/ctr_debug.h"
+#include "os/ctr/ctr_debug.h"
 
 #define VIRT_TO_PHYS(vaddr) \
    (((u32)(vaddr)) >= 0x14000000 && ((u32)(vaddr)) < 0x1c000000)?(void*)((u32)(vaddr) + 0x0c000000):\

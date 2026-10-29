@@ -47,9 +47,9 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-#include "ctr/ctr_debug.h"
-#include "ctr/exec-3dsx/exec_3dsx.h"
-#include "ctr/exec-3dsx/exec_cia.h"
+#include "os/ctr/ctr_debug.h"
+#include "os/ctr/exec-3dsx/exec_3dsx.h"
+#include "os/ctr/exec-3dsx/exec_cia.h"
 
 #ifndef IS_SALAMANDER
 #ifdef HAVE_MENU

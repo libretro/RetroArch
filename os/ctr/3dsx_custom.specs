@@ -4,4 +4,4 @@
 %(old_link) -T 3dsx.ld%s -d --emit-relocs --use-blx --gc-sections
 
 *startfile:
-ctr/3dsx_custom_crt0%O%s crti%O%s crtbegin%O%s
+os/ctr/3dsx_custom_crt0%O%s crti%O%s crtbegin%O%s

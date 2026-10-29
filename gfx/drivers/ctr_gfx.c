@@ -43,7 +43,7 @@
 #include "../font_driver.h"
 #include "../video_views.h"
 #define DEPRECATED
-#include "../../ctr/gpu_old.h"
+#include "../../os/ctr/gpu_old.h"
 #undef DEPRECATED
 #include "ctr_gu.h"
 
