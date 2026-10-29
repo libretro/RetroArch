@@ -3748,6 +3748,10 @@ void video_driver_free_internal(void)
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
+#if defined(HAVE_SLANG) && defined(HAVE_GLSLANG)
+   /* the driver and its thread are gone: no compile in flight */
+   glslang_process_deinit();
+#endif
    video_driver_set_hdr_output_mode(0);
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 0);
 
@@ -8064,6 +8068,10 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
 
    video_st->movie_refused = false;
+#if defined(HAVE_SLANG) && defined(HAVE_GLSLANG)
+   /* before the video thread exists: no compile in flight */
+   glslang_process_init();
+#endif
    /* Bound before any driver or wrapper exists: under threaded video
     * the OSD fonts live on the video thread, and the font driver
     * reaches ra-video state through this capture, not the getter. */

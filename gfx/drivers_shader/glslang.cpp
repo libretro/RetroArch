@@ -21,148 +21,149 @@
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
-#include <mutex>
+
+#include <retro_atomic.h>
 
 #include "../../verbosity.h"
 
-struct SlangProcess
+/* glslang's process state - its TLS key and the built-in symbol tables
+ * every compile shares - is set up once per video driver and kept
+ * while it lives, rather than per compile: finishing it frees the TLS
+ * key under any other thread inside glslang, and the tables are most
+ * of a compile's cost. Starting and finishing happen with no compile
+ * in flight (video_driver_init_internal() before the video thread
+ * exists, video_driver_free_internal() after it is gone); a compile
+ * reads the state word alone. */
+#define GLSLANG_PROCESS_DOWN     0
+#define GLSLANG_PROCESS_STARTING 1
+#define GLSLANG_PROCESS_UP       2
+
+static retro_atomic_int_t glslang_process_state;
+static TBuiltInResource   glslang_resources;   /* fixed while up */
+
+static void glslang_resources_fill(TBuiltInResource *r)
 {
-   public:
-      SlangProcess();
-      TBuiltInResource& GetResources() { return Resources; }
-
-   private:
-      TBuiltInResource Resources;
-};
-
-/* We don't use glslang from multiple threads, but to be sure.
- * Initializing TLS and freeing it for glslang works around
- * a really bizarre issue where the TLS key is suddenly
- * corrupted *somehow*.
- */
-static std::mutex glslang_global_lock;
-
-struct SlangProcessHolder
-{
-   SlangProcessHolder()
-   {
-      glslang_global_lock.lock();
-      glslang::InitializeProcess();
-   }
-
-   ~SlangProcessHolder()
-   {
-      glslang::FinalizeProcess();
-      glslang_global_lock.unlock();
-   }
-};
-
-SlangProcess::SlangProcess()
-{
-   std::memset(&Resources, 0, sizeof(Resources));
+   std::memset(r, 0, sizeof(*r));
 
    /* Integer resource limits */
-   Resources.maxLights                                 = 32;
-   Resources.maxClipPlanes                             = 6;
-   Resources.maxTextureUnits                           = 32;
-   Resources.maxTextureCoords                          = 32;
-   Resources.maxVertexAttribs                          = 64;
-   Resources.maxVertexUniformComponents                = 4096;
-   Resources.maxVaryingFloats                          = 64;
-   Resources.maxVertexTextureImageUnits                = 32;
-   Resources.maxCombinedTextureImageUnits              = 80;
-   Resources.maxTextureImageUnits                      = 32;
-   Resources.maxFragmentUniformComponents              = 4096;
-   Resources.maxDrawBuffers                            = 32;
-   Resources.maxVertexUniformVectors                   = 128;
-   Resources.maxVaryingVectors                         = 8;
-   Resources.maxFragmentUniformVectors                 = 16;
-   Resources.maxVertexOutputVectors                    = 16;
-   Resources.maxFragmentInputVectors                   = 15;
-   Resources.minProgramTexelOffset                     = -8;
-   Resources.maxProgramTexelOffset                     = 7;
-   Resources.maxClipDistances                          = 8;
-   Resources.maxComputeWorkGroupCountX                 = 65535;
-   Resources.maxComputeWorkGroupCountY                 = 65535;
-   Resources.maxComputeWorkGroupCountZ                 = 65535;
-   Resources.maxComputeWorkGroupSizeX                  = 1024;
-   Resources.maxComputeWorkGroupSizeY                  = 1024;
-   Resources.maxComputeWorkGroupSizeZ                  = 64;
-   Resources.maxComputeUniformComponents               = 1024;
-   Resources.maxComputeTextureImageUnits               = 16;
-   Resources.maxComputeImageUniforms                   = 8;
-   Resources.maxComputeAtomicCounters                  = 8;
-   Resources.maxComputeAtomicCounterBuffers            = 1;
-   Resources.maxVaryingComponents                      = 60;
-   Resources.maxVertexOutputComponents                 = 64;
-   Resources.maxGeometryInputComponents                = 64;
-   Resources.maxGeometryOutputComponents               = 128;
-   Resources.maxFragmentInputComponents                = 128;
-   Resources.maxImageUnits                             = 8;
-   Resources.maxCombinedImageUnitsAndFragmentOutputs   = 8;
-   Resources.maxCombinedShaderOutputResources          = 8;
-   Resources.maxImageSamples                           = 0;
-   Resources.maxVertexImageUniforms                    = 0;
-   Resources.maxTessControlImageUniforms               = 0;
-   Resources.maxTessEvaluationImageUniforms            = 0;
-   Resources.maxGeometryImageUniforms                  = 0;
-   Resources.maxFragmentImageUniforms                  = 8;
-   Resources.maxCombinedImageUniforms                  = 8;
-   Resources.maxGeometryTextureImageUnits              = 16;
-   Resources.maxGeometryOutputVertices                 = 256;
-   Resources.maxGeometryTotalOutputComponents          = 1024;
-   Resources.maxGeometryUniformComponents              = 1024;
-   Resources.maxGeometryVaryingComponents              = 64;
-   Resources.maxTessControlInputComponents             = 128;
-   Resources.maxTessControlOutputComponents            = 128;
-   Resources.maxTessControlTextureImageUnits           = 16;
-   Resources.maxTessControlUniformComponents           = 1024;
-   Resources.maxTessControlTotalOutputComponents       = 4096;
-   Resources.maxTessEvaluationInputComponents          = 128;
-   Resources.maxTessEvaluationOutputComponents         = 128;
-   Resources.maxTessEvaluationTextureImageUnits        = 16;
-   Resources.maxTessEvaluationUniformComponents        = 1024;
-   Resources.maxTessPatchComponents                    = 120;
-   Resources.maxPatchVertices                          = 32;
-   Resources.maxTessGenLevel                           = 64;
-   Resources.maxViewports                              = 16;
-   Resources.maxVertexAtomicCounters                   = 0;
-   Resources.maxTessControlAtomicCounters              = 0;
-   Resources.maxTessEvaluationAtomicCounters           = 0;
-   Resources.maxGeometryAtomicCounters                 = 0;
-   Resources.maxFragmentAtomicCounters                 = 8;
-   Resources.maxCombinedAtomicCounters                 = 8;
-   Resources.maxAtomicCounterBindings                  = 1;
-   Resources.maxVertexAtomicCounterBuffers             = 0;
-   Resources.maxTessControlAtomicCounterBuffers        = 0;
-   Resources.maxTessEvaluationAtomicCounterBuffers     = 0;
-   Resources.maxGeometryAtomicCounterBuffers           = 0;
-   Resources.maxFragmentAtomicCounterBuffers           = 1;
-   Resources.maxCombinedAtomicCounterBuffers           = 1;
-   Resources.maxAtomicCounterBufferSize                = 16384;
-   Resources.maxTransformFeedbackBuffers               = 4;
-   Resources.maxTransformFeedbackInterleavedComponents = 64;
-   Resources.maxCullDistances                          = 8;
-   Resources.maxCombinedClipAndCullDistances           = 8;
-   Resources.maxSamples                                = 4;
+   r->maxLights                                 = 32;
+   r->maxClipPlanes                             = 6;
+   r->maxTextureUnits                           = 32;
+   r->maxTextureCoords                          = 32;
+   r->maxVertexAttribs                          = 64;
+   r->maxVertexUniformComponents                = 4096;
+   r->maxVaryingFloats                          = 64;
+   r->maxVertexTextureImageUnits                = 32;
+   r->maxCombinedTextureImageUnits              = 80;
+   r->maxTextureImageUnits                      = 32;
+   r->maxFragmentUniformComponents              = 4096;
+   r->maxDrawBuffers                            = 32;
+   r->maxVertexUniformVectors                   = 128;
+   r->maxVaryingVectors                         = 8;
+   r->maxFragmentUniformVectors                 = 16;
+   r->maxVertexOutputVectors                    = 16;
+   r->maxFragmentInputVectors                   = 15;
+   r->minProgramTexelOffset                     = -8;
+   r->maxProgramTexelOffset                     = 7;
+   r->maxClipDistances                          = 8;
+   r->maxComputeWorkGroupCountX                 = 65535;
+   r->maxComputeWorkGroupCountY                 = 65535;
+   r->maxComputeWorkGroupCountZ                 = 65535;
+   r->maxComputeWorkGroupSizeX                  = 1024;
+   r->maxComputeWorkGroupSizeY                  = 1024;
+   r->maxComputeWorkGroupSizeZ                  = 64;
+   r->maxComputeUniformComponents               = 1024;
+   r->maxComputeTextureImageUnits               = 16;
+   r->maxComputeImageUniforms                   = 8;
+   r->maxComputeAtomicCounters                  = 8;
+   r->maxComputeAtomicCounterBuffers            = 1;
+   r->maxVaryingComponents                      = 60;
+   r->maxVertexOutputComponents                 = 64;
+   r->maxGeometryInputComponents                = 64;
+   r->maxGeometryOutputComponents               = 128;
+   r->maxFragmentInputComponents                = 128;
+   r->maxImageUnits                             = 8;
+   r->maxCombinedImageUnitsAndFragmentOutputs   = 8;
+   r->maxCombinedShaderOutputResources          = 8;
+   r->maxImageSamples                           = 0;
+   r->maxVertexImageUniforms                    = 0;
+   r->maxTessControlImageUniforms               = 0;
+   r->maxTessEvaluationImageUniforms            = 0;
+   r->maxGeometryImageUniforms                  = 0;
+   r->maxFragmentImageUniforms                  = 8;
+   r->maxCombinedImageUniforms                  = 8;
+   r->maxGeometryTextureImageUnits              = 16;
+   r->maxGeometryOutputVertices                 = 256;
+   r->maxGeometryTotalOutputComponents          = 1024;
+   r->maxGeometryUniformComponents              = 1024;
+   r->maxGeometryVaryingComponents              = 64;
+   r->maxTessControlInputComponents             = 128;
+   r->maxTessControlOutputComponents            = 128;
+   r->maxTessControlTextureImageUnits           = 16;
+   r->maxTessControlUniformComponents           = 1024;
+   r->maxTessControlTotalOutputComponents       = 4096;
+   r->maxTessEvaluationInputComponents          = 128;
+   r->maxTessEvaluationOutputComponents         = 128;
+   r->maxTessEvaluationTextureImageUnits        = 16;
+   r->maxTessEvaluationUniformComponents        = 1024;
+   r->maxTessPatchComponents                    = 120;
+   r->maxPatchVertices                          = 32;
+   r->maxTessGenLevel                           = 64;
+   r->maxViewports                              = 16;
+   r->maxVertexAtomicCounters                   = 0;
+   r->maxTessControlAtomicCounters              = 0;
+   r->maxTessEvaluationAtomicCounters           = 0;
+   r->maxGeometryAtomicCounters                 = 0;
+   r->maxFragmentAtomicCounters                 = 8;
+   r->maxCombinedAtomicCounters                 = 8;
+   r->maxAtomicCounterBindings                  = 1;
+   r->maxVertexAtomicCounterBuffers             = 0;
+   r->maxTessControlAtomicCounterBuffers        = 0;
+   r->maxTessEvaluationAtomicCounterBuffers     = 0;
+   r->maxGeometryAtomicCounterBuffers           = 0;
+   r->maxFragmentAtomicCounterBuffers           = 1;
+   r->maxCombinedAtomicCounterBuffers           = 1;
+   r->maxAtomicCounterBufferSize                = 16384;
+   r->maxTransformFeedbackBuffers               = 4;
+   r->maxTransformFeedbackInterleavedComponents = 64;
+   r->maxCullDistances                          = 8;
+   r->maxCombinedClipAndCullDistances           = 8;
+   r->maxSamples                                = 4;
 
    /* Boolean capability limits */
-   Resources.limits.nonInductiveForLoops                       = true;
-   Resources.limits.whileLoops                                 = true;
-   Resources.limits.doWhileLoops                               = true;
-   Resources.limits.generalUniformIndexing                     = true;
-   Resources.limits.generalAttributeMatrixVectorIndexing       = true;
-   Resources.limits.generalVaryingIndexing                     = true;
-   Resources.limits.generalSamplerIndexing                     = true;
-   Resources.limits.generalVariableIndexing                    = true;
-   Resources.limits.generalConstantMatrixVectorIndexing        = true;
+   r->limits.nonInductiveForLoops                       = true;
+   r->limits.whileLoops                                 = true;
+   r->limits.doWhileLoops                               = true;
+   r->limits.generalUniformIndexing                     = true;
+   r->limits.generalAttributeMatrixVectorIndexing       = true;
+   r->limits.generalVaryingIndexing                     = true;
+   r->limits.generalSamplerIndexing                     = true;
+   r->limits.generalVariableIndexing                    = true;
+   r->limits.generalConstantMatrixVectorIndexing        = true;
+}
+
+extern "C" void glslang_process_init(void)
+{
+   if (!retro_atomic_cas_int(&glslang_process_state,
+            GLSLANG_PROCESS_DOWN, GLSLANG_PROCESS_STARTING))
+      return;
+   glslang_resources_fill(&glslang_resources);
+   glslang::InitializeProcess();
+   retro_atomic_store_release_int(&glslang_process_state, GLSLANG_PROCESS_UP);
+}
+
+extern "C" void glslang_process_deinit(void)
+{
+   if (!retro_atomic_cas_int(&glslang_process_state,
+            GLSLANG_PROCESS_UP, GLSLANG_PROCESS_STARTING))
+      return;
+   glslang::FinalizeProcess();
+   retro_atomic_store_release_int(&glslang_process_state, GLSLANG_PROCESS_DOWN);
 }
 
 static bool glslang_compile_spirv_impl(const char *src, EShLanguage language,
       std::vector<uint32_t> *spirv)
 {
-   static SlangProcess process;
-   SlangProcessHolder process_holder;
    glslang::TProgram program;
 
    glslang::TShader shader(language);
@@ -175,7 +176,7 @@ static bool glslang_compile_spirv_impl(const char *src, EShLanguage language,
          EShMsgDefault | EShMsgVulkanRules | EShMsgSpvRules);
 
    std::string preprocessed_msg;
-   if (!shader.preprocess(&process.GetResources(),
+   if (!shader.preprocess(&glslang_resources,
             100, ENoProfile, false, false,
             messages, &preprocessed_msg,
             forbid_include))
@@ -184,7 +185,7 @@ static bool glslang_compile_spirv_impl(const char *src, EShLanguage language,
       return false;
    }
 
-   if (!shader.parse(&process.GetResources(), 100, false, messages))
+   if (!shader.parse(&glslang_resources, 100, false, messages))
    {
       RARCH_ERR("[Slang] %s\n", shader.getInfoLog());
       RARCH_ERR("[Slang] %s\n", shader.getInfoDebugLog());
@@ -216,6 +217,18 @@ extern "C" bool glslang_compile_spirv(const char *source,
 
    if (!source)
       return false;
+   /* a caller with no video driver around it: tools, harnesses */
+   if (retro_atomic_load_acquire_int(&glslang_process_state)
+         != GLSLANG_PROCESS_UP)
+   {
+      glslang_process_init();
+      if (retro_atomic_load_acquire_int(&glslang_process_state)
+            != GLSLANG_PROCESS_UP)
+      {
+         RARCH_ERR("[Slang] glslang is still starting on another thread.\n");
+         return false;
+      }
+   }
 
    switch (stage)
    {
