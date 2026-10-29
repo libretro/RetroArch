@@ -55,6 +55,7 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 
 check: $(TARGET)
 	./$(TARGET)
+	CC="$(CC)" python3 gles3_init_test.py
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)

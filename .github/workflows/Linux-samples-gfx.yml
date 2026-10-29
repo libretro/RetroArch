@@ -620,6 +620,7 @@ jobs:
           # pointers (gl11_fakes.h).
           make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
           WINEDEBUG=-all timeout 300 wine ./gl2_pbo_readback_test.exe
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 gles3_init_test.py
           make clean
 
       - name: Build and run d3d9 last_pass tests (mingw-w64, Wine)

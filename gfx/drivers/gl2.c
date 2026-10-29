@@ -7904,6 +7904,9 @@ static bool gl2_init_pbo_readback(gl2_t *gl)
    }
    gl2_renderchain_unbind_pbo();
 
+   gl->pbo_readback_scaler.in_width  = VIDEO_SCALE_W(gl->vp.dims);
+   gl->pbo_readback_scaler.in_height = VIDEO_SCALE_H(gl->vp.dims);
+
 #ifndef HAVE_OPENGLES3
    {
       struct scaler_ctx *scaler = &gl->pbo_readback_scaler;
