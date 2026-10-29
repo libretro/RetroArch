@@ -110,6 +110,9 @@ typedef struct file_archive_transfer
     * that parks a member and lets the scan continue is counted when it
     * is found; one that parks and stops is counted when it drains. */
    bool     pending_counted;
+   /* The zip's end record carries a TorrentZip comment.  Set by the zip
+    * reader when it opens the archive; the others leave it as it is. */
+   bool     torrentzip;
 } file_archive_transfer_t;
 
 typedef struct

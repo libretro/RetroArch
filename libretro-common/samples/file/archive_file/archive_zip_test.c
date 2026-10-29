@@ -1244,6 +1244,79 @@ static void test_entry_source_bounds(void)
    printf("[SUCCESS] entry sources open only for members inside the archive\n");
 }
 
+/* TorrentZip ends a zip with the comment TORRENTZIPPED- and a CRC; the
+ * reader says so whether the end record is read or mapped. */
+static void tz_check(const char *label, const char *comment, bool lend,
+      bool want)
+{
+   static const uint8_t payload[4] = { 1, 2, 3, 4 };
+   uint8_t      buf[256];
+   const char  *tmp_path  = "rarch_zip_tz_test.zip";
+   uint32_t     crc       = encoding_crc32(0, payload, sizeof(payload));
+   size_t       clen      = comment ? strlen(comment) : 0;
+   size_t       len, cd_start;
+   bool         returnerr = true;
+   file_archive_transfer_t         *state    = (file_archive_transfer_t*)
+      calloc(1, sizeof(*state));
+   struct archive_extract_userdata *userdata =
+      (struct archive_extract_userdata*)calloc(1, sizeof(*userdata));
+
+   if (!state || !userdata)
+      abort();
+
+   len       = write_stored_lfh(buf, "a.bin", payload, sizeof(payload), crc);
+   cd_start  = len;
+   len      += write_stored_cfh(buf + len, "a.bin", sizeof(payload), crc, 0);
+   len      += write_eocd(buf + len, 1, (uint32_t)(len - cd_start),
+         (uint32_t)cd_start);
+   put_u16(buf + len - 2, (uint16_t)clen);
+   if (clen)
+      memcpy(buf + len, comment, clen);
+   len      += clen;
+   write_file(tmp_path, buf, len);
+   if (lend)
+      lend_vfs(buf, (int64_t)len);
+
+   state->type = ARCHIVE_TRANSFER_INIT;
+   file_archive_parse_file_iterate(state, &returnerr, tmp_path, NULL,
+         NULL, userdata);
+   if (state->type != ARCHIVE_TRANSFER_ITERATE || state->torrentzip != want)
+   {
+      printf("[FAIL] %s: torrentzip %d, want %d\n", label,
+            (int)state->torrentzip, (int)want);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] %s\n", label);
+   file_archive_parse_file_iterate_stop(state);
+   if (lend)
+      lend_vfs(NULL, 0);
+   remove(tmp_path);
+   free(state);
+   free(userdata);
+}
+
+static void test_torrentzip_comment(void)
+{
+   tz_check("TorrentZip comment, read", "TORRENTZIPPED-5C56B2DD",
+         false, true);
+   tz_check("other comment, read", "RVZSTD-250F05A8", false, false);
+   tz_check("long TorrentZip comment, read", "TORRENTZIPPED-5C56B2DD0",
+         false, false);
+   tz_check("22-byte other comment, read", "TORRENTZIPPXD-5C56B2DD",
+         false, false);
+   tz_check("no comment, read", NULL, false, false);
+#ifdef VFS_HAVE_FILE_MAPPING
+   tz_check("TorrentZip comment, mapped", "TORRENTZIPPED-5C56B2DD",
+         true, true);
+   tz_check("other comment, mapped", "RVZSTD-250F05A8", true, false);
+   tz_check("long TorrentZip comment, mapped", "TORRENTZIPPED-5C56B2DD0",
+         true, false);
+   tz_check("22-byte other comment, mapped", "TORRENTZIPPXD-5C56B2DD",
+         true, false);
+#endif
+}
+
 int main(void)
 {
    test_truncated_entry();
@@ -1259,6 +1332,7 @@ int main(void)
    test_member_crc_mismatch();
    test_member_lent();
    test_entry_source_bounds();
+   test_torrentzip_comment();
 
    if (failures)
    {
