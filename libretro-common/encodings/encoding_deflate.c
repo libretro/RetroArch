@@ -1151,31 +1151,30 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
             break;
 
          case RINF_GZHEADER:
-            /* ID1 ID2 CM FLG MTIME[4] XFL OS */
-            if (!rinf_need(s, 16)) goto suspend;
+            /* ID1 ID2 CM FLG MTIME[4] XFL OS, in two steps so that
+             * input ending inside the header resumes where it was */
+            if (s->gz_step == 0)
             {
-               uint32_t id1 = rinf_getbits(s, 8);
-               uint32_t id2 = rinf_getbits(s, 8);
-               if (id1 != 0x1f || id2 != 0x8b) { s->error = 1; goto error; }
-            }
-            if (!rinf_need(s, 16)) goto suspend;
-            {
-               uint32_t cm = rinf_getbits(s, 8);
+               uint32_t id1, id2, cm;
+               if (!rinf_need(s, 32)) goto suspend;
+               id1         = rinf_getbits(s, 8);
+               id2         = rinf_getbits(s, 8);
+               cm          = rinf_getbits(s, 8);
                s->gz_flg   = rinf_getbits(s, 8);
+               if (id1 != 0x1f || id2 != 0x8b) { s->error = 1; goto error; }
                if (cm != 8)              { s->error = 1; goto error; }
                /* bits 5-7 are reserved and must be zero */
                if (s->gz_flg & 0xe0)     { s->error = 1; goto error; }
+               s->gz_step  = 1;
+               s->gz_count = 6;
             }
+            while (s->gz_count)   /* MTIME[4], XFL, OS */
             {
-               int i;
-               for (i = 0; i < 6; i++)   /* MTIME[4], XFL, OS */
-               {
-                  if (!rinf_need(s, 8)) goto suspend;
-                  rinf_getbits(s, 8);
-               }
+               if (!rinf_need(s, 8)) goto suspend;
+               rinf_getbits(s, 8);
+               s->gz_count--;
             }
             s->gz_step  = 0;
-            s->gz_count = 0;
             s->phase    = RINF_GZ_EXTRA;
             break;
 
