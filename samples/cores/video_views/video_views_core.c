@@ -28,6 +28,9 @@
  * set_texture (libretro_d3d11.h version 2), or into D3D12 textures
  * handed over with set_texture_fenced (libretro_d3d12.h version 2). With
  * video_views_test_max it declares a far larger maximum than it draws.
+ * With video_views_test_map_change it changes to another map, or with
+ * none clears its map, once video_views_test_map_change_frame frames
+ * have run, for checking where a game whose map changes is shown.
  * e2e/run.py checks the colours on screen and the status in the log;
  * e2e/d3d.sh checks the d3d11 and d3d12 drivers' frames, under Wine
  * or on Windows.
@@ -240,6 +243,10 @@ static retro_log_printf_t    log_cb;
 static uint32_t frame_buf[FRAME_MAX_PIXELS];
 static uint16_t frame_buf16[FRAME_MAX_PIXELS];
 static enum map_kind map_kind = MAP_3DS;
+static enum map_kind map_change;
+/* Frames until the change, or -1 for none. */
+static int map_change_left    = -1;
+static bool map_changed;
 static enum hw_kind hw_kind   = HW_OFF;
 /* HW_GL through a compatibility context. */
 static bool hw_gl_compat;
@@ -893,6 +900,23 @@ static unsigned build_map(struct retro_video_view *v, uint32_t *c,
    }
 }
 
+static enum map_kind map_named(const char *name)
+{
+   if (!strcmp(name, "3ds_force"))
+      return MAP_3DS_FORCE;
+   if (!strcmp(name, "ds"))
+      return MAP_DS;
+   if (!strcmp(name, "vb"))
+      return MAP_VB;
+   if (!strcmp(name, "invalid"))
+      return MAP_INVALID;
+   if (!strcmp(name, "none"))
+      return MAP_NONE;
+   if (!strcmp(name, "crop"))
+      return MAP_CROP;
+   return MAP_3DS;
+}
+
 static void read_options(void)
 {
    struct retro_variable var;
@@ -994,20 +1018,24 @@ static void read_options(void)
    var.key   = "video_views_test_map";
    var.value = NULL;
    map_kind  = MAP_3DS;
-   if (!environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) || !var.value)
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      map_kind = map_named(var.value);
+
+   var.key         = "video_views_test_map_change";
+   var.value       = NULL;
+   map_change_left = -1;
+   map_changed     = false;
+   if (     !environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) || !var.value
+         || !strcmp(var.value, "off"))
       return;
-   if (!strcmp(var.value, "3ds_force"))
-      map_kind = MAP_3DS_FORCE;
-   else if (!strcmp(var.value, "ds"))
-      map_kind = MAP_DS;
-   else if (!strcmp(var.value, "vb"))
-      map_kind = MAP_VB;
-   else if (!strcmp(var.value, "invalid"))
-      map_kind = MAP_INVALID;
-   else if (!strcmp(var.value, "none"))
-      map_kind = MAP_NONE;
-   else if (!strcmp(var.value, "crop"))
-      map_kind = MAP_CROP;
+   map_change      = map_named(var.value);
+   var.key         = "video_views_test_map_change_frame";
+   var.value       = NULL;
+   map_change_left = 60;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      map_change_left = atoi(var.value);
+   if (map_change_left < 0)
+      map_change_left = 60;
 }
 
 /* A core may show or hide options by the views status; this one only
@@ -1027,6 +1055,10 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_variable vars[] = {
       { "video_views_test_map",
         "View map; 3ds|3ds_force|ds|vb|invalid|none|crop" },
+      { "video_views_test_map_change",
+        "View map after a set frame; off|3ds|3ds_force|ds|vb|invalid|none|crop" },
+      { "video_views_test_map_change_frame",
+        "Frames before the map changes; 60|5|10|30|180|300|600" },
       { "video_views_test_hw",
         "Hardware rendering; off|gl|gl_topleft|gl_compat|vulkan|vulkan_keep|d3d11|d3d12|gles3" },
       { "video_views_test_max",
@@ -1822,6 +1854,27 @@ static bool vr_tracking(bool hmd)
    return false;
 }
 
+static void change_map(void)
+{
+   unsigned w, h, nw, nh;
+   enum map_kind first = map_kind;
+   frame_size(&w, &h);
+   map_kind = map_change;
+   frame_size(&nw, &nh);
+   /* A Vulkan slot's image keeps the size it was made at. */
+   if (HW_IS_VULKAN(hw_kind) && (nw != w || nh != h))
+   {
+      map_kind = first;
+      log_cb(RETRO_LOG_ERROR,
+            "[video_views] map not changed at frame %u: the Vulkan frame "
+            "would change size\n", frames_run);
+      return;
+   }
+   map_changed = true;
+   log_cb(RETRO_LOG_INFO, "[video_views] map changed at frame %u\n",
+         frames_run);
+}
+
 void retro_run(void)
 {
    struct retro_video_view v[RETRO_VIDEO_VIEWS_MAX];
@@ -1842,6 +1895,8 @@ void retro_run(void)
             frames_run,
             (long long)ts.tv_sec * 1000000LL + ts.tv_nsec / 1000);
    }
+   if (map_change_left >= 0 && !map_change_left--)
+      change_map();
    frames_run++;
 
    input_poll_cb();
@@ -1941,11 +1996,12 @@ void retro_run(void)
          frame_tag(&v[i], fw, fh);
    }
 
-   if (map_kind != MAP_NONE)
+   /* A map changed to none clears the one sent before. */
+   if (map_kind != MAP_NONE || map_changed)
    {
       memset(&views, 0, sizeof(views));
       views.views     = v;
-      views.num_views = n;
+      views.num_views = (map_kind == MAP_NONE) ? 0 : n;
       if (vr)
       {
          views.flags           = RETRO_VIDEO_VIEWS_FLAG_TRACKED;
