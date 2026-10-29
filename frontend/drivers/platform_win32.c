@@ -58,6 +58,9 @@
 #include "../../gfx/common/win32_common.h"
 
 #include "platform_win32.h"
+#ifdef HAVE_NVDA
+#include "nvda_controller_win32.h"
+#endif
 #ifdef HAVE_THREADS
 #include "../thread_elevation.h"
 #endif
@@ -110,14 +113,12 @@ static char win32_cpu_model_name[64] = {0};
  * it early seems to cause issues on some systems.
  */
 static dylib_t dwm_lib;
-static dylib_t nvda_lib;
 #endif
 
-/* Dynamic loading for Non-Visual Desktop Access support */
-unsigned long (__stdcall *nvdaController_testIfRunning_func)(void);
-unsigned long (__stdcall *nvdaController_cancelSpeech_func)(void);
-unsigned long (__stdcall *nvdaController_brailleMessage_func)(wchar_t*);
-unsigned long (__stdcall *nvdaController_speakText_func)(wchar_t*);
+#ifdef HAVE_NVDA
+/* Bound to NVDA's controller endpoint */
+static bool nvda_bound;
+#endif
 
 #if defined(HAVE_LANGEXTRA) && !defined(_XBOX)
 #if (defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500) || !defined(_MSC_VER)
@@ -1141,30 +1142,16 @@ static void frontend_win32_init(void *data)
 
 
 #ifdef HAVE_NVDA
+/* Runs on each accessibility speak event: binds once, and where there
+ * is no NVDA to bind to, PowerShell speaks instead */
 static void init_nvda(void)
 {
-#ifdef HAVE_DYLIB
-   if (     (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA)
-         && !nvda_lib)
-   {
-      if ((nvda_lib = dylib_load("nvdaControllerClient64.dll")))
-      {
-         nvdaController_testIfRunning_func  = (unsigned long (__stdcall*)(void))dylib_proc(nvda_lib, "nvdaController_testIfRunning");
-         nvdaController_cancelSpeech_func   = (unsigned long(__stdcall *)(void))dylib_proc(nvda_lib, "nvdaController_cancelSpeech");
-         nvdaController_brailleMessage_func = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvda_lib, "nvdaController_brailleMessage");
-         nvdaController_speakText_func      = (unsigned long(__stdcall *)(wchar_t*))dylib_proc(nvda_lib, "nvdaController_speakText");
-         return;
-      }
-   }
-#endif
-   /* The above code is executed on each accessibility speak event, so
-    * we should only revert to powershell if nvda_lib wasn't loaded previously,
-    * and we weren't able to load it on this call, or we don't HAVE_DYLIB */
-   if ((g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) && !nvda_lib)
-   {
-      g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
-      g_plat_win32_flags |=  PLAT_WIN32_FLAG_USE_POWERSHELL;
-   }
+   if (!(g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) || nvda_bound)
+      return;
+   if ((nvda_bound = nvda_controller_init()))
+      return;
+   g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
+   g_plat_win32_flags |=  PLAT_WIN32_FLAG_USE_POWERSHELL;
 }
 #endif
 
@@ -1727,9 +1714,7 @@ static bool is_narrator_running_windows(void)
 #ifdef HAVE_NVDA
    else if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA)
    {
-      long res = nvdaController_testIfRunning_func();
-
-      if (res != 0)
+      if (nvda_controller_test_if_running() != 0)
       {
          /* The running nvda service wasn't found, so revert
             back to the powershell method
@@ -1797,9 +1782,8 @@ static bool accessibility_speak_windows(int speed,
    else if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA)
    {
       wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
-      long res           = nvdaController_testIfRunning_func();
 
-      if (!wc || res != 0)
+      if (!wc || nvda_controller_test_if_running() != 0)
       {
          RARCH_ERR("Error communicating with NVDA.\n");
          /* Fallback on powershell immediately and retry */
@@ -1810,12 +1794,12 @@ static bool accessibility_speak_windows(int speed,
          return accessibility_speak_windows(speed, speak_text, priority);
       }
 
-      nvdaController_cancelSpeech_func();
+      nvda_controller_cancel_speech();
 
       if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA_BRAILLE)
-         nvdaController_brailleMessage_func(wc);
+         nvda_controller_braille_message(wc);
       else
-         nvdaController_speakText_func(wc);
+         nvda_controller_speak_text(wc);
       free(wc);
    }
 #endif

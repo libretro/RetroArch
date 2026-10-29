@@ -1561,6 +1561,9 @@ FRONTEND
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../frontend/drivers/platform_win32.c"
+#ifdef HAVE_NVDA
+#include "../frontend/drivers/nvda_controller_win32.c"
+#endif
 #endif
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
