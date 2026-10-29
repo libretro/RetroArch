@@ -1,0 +1,51 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11114.144
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch-msvc2026-UWP", "msvc-uwp\RetroArch-msvc2026-UWP.vcxproj", "{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		DebugANGLE|ARM64 = DebugANGLE|ARM64
+		DebugANGLE|x64 = DebugANGLE|x64
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+		ReleaseANGLE|ARM64 = ReleaseANGLE|ARM64
+		ReleaseANGLE|x64 = ReleaseANGLE|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Debug|ARM64.Build.0 = Debug|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Debug|ARM64.Deploy.0 = Debug|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Debug|x64.ActiveCfg = Debug|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Debug|x64.Build.0 = Debug|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Debug|x64.Deploy.0 = Debug|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.DebugANGLE|ARM64.ActiveCfg = DebugANGLE|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.DebugANGLE|ARM64.Build.0 = DebugANGLE|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.DebugANGLE|ARM64.Deploy.0 = DebugANGLE|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.DebugANGLE|x64.ActiveCfg = DebugANGLE|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.DebugANGLE|x64.Build.0 = DebugANGLE|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.DebugANGLE|x64.Deploy.0 = DebugANGLE|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Release|ARM64.ActiveCfg = Release|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Release|ARM64.Build.0 = Release|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Release|ARM64.Deploy.0 = Release|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Release|x64.ActiveCfg = Release|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Release|x64.Build.0 = Release|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.Release|x64.Deploy.0 = Release|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.ReleaseANGLE|ARM64.ActiveCfg = ReleaseANGLE|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.ReleaseANGLE|ARM64.Build.0 = ReleaseANGLE|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.ReleaseANGLE|ARM64.Deploy.0 = ReleaseANGLE|ARM64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.ReleaseANGLE|x64.ActiveCfg = ReleaseANGLE|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.ReleaseANGLE|x64.Build.0 = ReleaseANGLE|x64
+		{2E0EC9BD-C9EB-4C7E-943C-0C19BE77E3E1}.ReleaseANGLE|x64.Deploy.0 = ReleaseANGLE|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {30E4C57D-CEAF-4530-9EA4-44FE7BB4F435}
+	EndGlobalSection
+EndGlobal

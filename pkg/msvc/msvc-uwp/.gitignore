@@ -1,0 +1,12 @@
+/ARM64
+/DebugANGLE
+/ReleaseANGLE
+/x64
+/Generated Files
+
+# Prebuilt ANGLE/MESA libraries and core placeholders
+!/ANGLE/*/
+!/MESA/*/
+!/MESA/x64/*.dll
+!/MESA/x64/*.lib
+!/cores/*/

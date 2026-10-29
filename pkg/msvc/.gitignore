@@ -1,0 +1,9 @@
+AppPackages/
+*/BundleArtifacts/
+.vs/
+/DebugANGLE
+/ReleaseANGLE
+
+# Microsoft.Windows.CppWinRT
+!/packages/Microsoft.Windows.CppWinRT.3.0.260520.1/bin/*
+!/packages/Microsoft.Windows.CppWinRT.3.0.260520.1/build/*
