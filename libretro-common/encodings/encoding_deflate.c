@@ -2089,6 +2089,8 @@ struct rdeflate
    int      wrapped;   /* wrap != RINF_WRAP_RAW                         */
    int      use_crc_hash; /* settled once at construction; see rd_hash */
    int      good, lazy, nice, chain;  /* match-finder tuning per level     */
+   uint32_t max_dist;  /* the window window_bits asked for, <= RD_WINDOW */
+   uint8_t  cmf;       /* zlib header: CM=8 with CINFO for max_dist     */
 
    /* input history: a linear buffer holding the sliding window + lookahead.
     * We keep it simple: accumulate into `win`, slide when it fills. */
@@ -2524,7 +2526,7 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
        * Evaluated once here, never in the inner loop. */
       if (best_len >= (uint32_t)s->good)
          chain >>= 2;
-      limit = pos > RD_WINDOW ? pos - RD_WINDOW : 0;
+      limit = pos > s->max_dist ? pos - s->max_dist : 0;
       /* Load the two bytes bracketing the current best as a single 16-bit value
        * so the per-candidate quick reject is one 16-bit load + compare instead
        * of two byte loads + compares.  Endianness does not matter: we only test
@@ -3381,6 +3383,26 @@ void *rdeflate_new(int level, int window_bits)
    if (s->wrap == RINF_WRAP_AUTO)
       s->wrap = RINF_WRAP_GZIP;
    s->wrapped = (s->wrap != RINF_WRAP_RAW);
+   /* The window's size is in window_bits as zlib reads it: |bits| for
+    * raw and zlib, bits - 16 for gzip, 8..15; 0 and 32..47 mean the
+    * whole window. A match never reaches further back than that, so
+    * the stream decodes with a window that small (qcow2 clusters are
+    * written with 4K, -12). */
+   {
+      int bits = window_bits < 0 ? -window_bits : window_bits;
+      if (bits >= 32)
+         bits = 15;
+      else if (bits >= 16)
+         bits -= 16;
+      if (bits == 0)
+         bits = 15;
+      if (bits < 8)
+         bits = 8;
+      if (bits > 15)
+         bits = 15;
+      s->max_dist = 1u << bits;
+      s->cmf      = (uint8_t)(0x08 | ((bits - 8) << 4));
+   }
    s->crc     = encoding_crc32(0, NULL, 0);
    s->total_in = 0;
    s->adler   = 1;
@@ -3455,13 +3477,13 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
    }
    if (s->wrap == RINF_WRAP_ZLIB && !s->header_done)
    {
-      /* CM=8 (deflate), CINFO=7 (32K window) -> CMF=0x78; FLG chosen so that
-       * (CMF*256+FLG) % 31 == 0 and no preset dict. 0x78 0x9C is the common
-       * "default compression" pair. */
+      /* FLG: FLEVEL 2 (default compression), no preset dict, and the
+       * check bits making (CMF*256+FLG) % 31 == 0; 0x78 0x9C for a 32K
+       * window. */
       if (s->out_pos + 2 > s->out_size)
          goto suspend;
-      s->out[s->out_pos++] = 0x78;
-      s->out[s->out_pos++] = 0x9c;
+      s->out[s->out_pos++] = s->cmf;
+      s->out[s->out_pos++] = (uint8_t)(0x80 + 31 - (s->cmf * 256 + 0x80) % 31);
       s->header_done       = 1;
    }
 
