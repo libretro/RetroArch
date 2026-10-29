@@ -183,16 +183,29 @@ void rsxBindVertexArrayAttrib(gcmContextData *c, u8 attr, u16 frequency,
       u32 offset, u8 stride, u8 elems, u8 dtype, u8 location) { }
 void rsxClearSurface(gcmContextData *c, u32 clear_mask) { }
 static unsigned rsx_draw_calls;
+#define FAKE_DRAW_OSD UINT32_MAX
+#define FAKE_DRAW_WIDGET (UINT32_MAX - 1)
+static u32 fake_bound_texture;
+static u32 fake_draw_trace[16];
+static unsigned fake_draw_count;
+static bool fake_trace_draws;
+
+static void fake_record_draw(u32 source)
+{
+   if (fake_trace_draws && fake_draw_count < ARRAY_SIZE(fake_draw_trace))
+      fake_draw_trace[fake_draw_count++] = source;
+}
 static unsigned rsx_vertex_invalidations;
 void rsxInvalidateVertexCache(gcmContextData *context)
 { rsx_vertex_invalidations++; }
 void rsxDrawVertexArray(gcmContextData *c, u32 type, u32 start, u32 count)
-{ rsx_draw_calls++; }
+{ rsx_draw_calls++; fake_record_draw(fake_bound_texture); }
 void rsxFlushBuffer(gcmContextData *c) { }
 void rsxInvalidateTextureCache(gcmContextData *c, u32 type) { }
 void rsxLoadFragmentProgramLocation(gcmContextData *c,
       const rsxFragmentProgram *program, u32 offset, u32 location) { }
-void rsxLoadTexture(gcmContextData *c, u8 index, const gcmTexture *t) { }
+void rsxLoadTexture(gcmContextData *c, u8 index, const gcmTexture *t)
+{ fake_bound_texture = t->offset; }
 void rsxLoadVertexProgram(gcmContextData *c,
       const rsxVertexProgram *program, const void *ucode) { }
 void rsxSetAlphaFunc(gcmContextData *c, u32 alphaFunc, u32 ref) { }
@@ -283,7 +296,20 @@ void video_driver_update_viewport(struct video_viewport* vp,
 void input_driver_video_window(enum input_window_kind window,
       void *window_data) { }
 void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info) { }
-void gfx_widgets_frame(void *data) { }
+static bool fake_widgets_visible = true;
+static unsigned fake_widget_calls;
+bool gfx_widgets_visible(void *data)
+{
+   video_frame_info_t *info = (video_frame_info_t*)data;
+   return info->widgets_active && fake_widgets_visible
+      && !info->notifications_hidden && !info->msg_queue_delay;
+}
+void gfx_widgets_frame(void *data)
+{
+   fake_widget_calls++;
+   if (gfx_widgets_visible(data))
+      fake_record_draw(FAKE_DRAW_WIDGET);
+}
 int32_t sysUtilCheckCallback(void) { return 0; }
 uintptr_t video_thread_texture_handle(void *data,
       custom_command_method_t func) { return func(data); }
@@ -291,7 +317,8 @@ bool video_coord_array_append(video_coord_array_t *ca,
       const video_coords_t *coords, unsigned count) { return true; }
 uint32_t utf8_walk(const char **string) { return *(*string)++; }
 void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
-      const struct font_params *params, void *font_data) { }
+      const struct font_params *params, void *font_data)
+{ if (msg && msg_len) fake_record_draw(FAKE_DRAW_OSD); }
 /* Red of the next message drawn, to tell draws apart */
 static float fake_msg_red;
 void font_driver_resolve_params(const struct font_params *params,
@@ -351,6 +378,7 @@ static rsx_t *driver_up(void)
 {
    video_info_t video = fake_video_info();
    rsx_t *rsx;
+   fake_widgets_visible = true;
    rsx_fail_at        = 0;
    rsx                = (rsx_t*)rsx_init(&video);
    if (!rsx)
@@ -985,6 +1013,236 @@ static void test_menu_dupe_frame(void)
    printf("menu_dupe_frame: ok\n");
 }
 
+static void test_widget_dupe_frame(void)
+{
+   static u8 pixels[4 * 4 * 2];
+   struct retro_rsx_image image;
+   video_frame_info_t info;
+   rsx_t *rsx;
+   unsigned draws, flips, allocations, finishes;
+
+   memset(&info, 0, sizeof(info));
+   fake_hwr.context_type = RETRO_HW_CONTEXT_RSX;
+   rsx = driver_up();
+   image.offset = 0x10000;
+   image.pitch  = 512 * 4;
+   image.width  = 512;
+   image.height = 240;
+   rsx_set_hw_image(rsx, &image);
+   rsx_frame(rsx, RETRO_HW_FRAME_BUFFER_VALID, 0, 0, 0, NULL, &info);
+
+   info.widgets_active = true;
+   draws       = rsx_draw_calls;
+   flips       = rsx_flip_calls;
+   allocations = rsx_alloc_calls;
+   finishes    = rsx_finish_calls;
+   rsx_frame(rsx, NULL, 0, 1, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1 && rsx_flip_calls == flips + 1,
+         "widget_dupe_frame: hardware image and widgets not presented");
+   CHECK(rsx_alloc_calls == allocations && rsx_finish_calls == finishes,
+         "widget_dupe_frame: hardware replay allocates or waits");
+
+   info.menu_st_flags     = MENU_ST_FLAG_ALIVE;
+   rsx->menu_frame_enable = true;
+   draws = rsx_draw_calls;
+   rsx_frame(rsx, NULL, 0, 2, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1,
+         "widget_dupe_frame: image drawn twice behind menu and widgets");
+   info.menu_st_flags     = 0;
+   rsx->menu_frame_enable = false;
+
+   rsx_set_hw_image(rsx, NULL);
+   rsx_frame(rsx, pixels, VIDEO_SCALE_PACK(4, 4), 3, 8, NULL, &info);
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 4, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1 && rsx_flip_calls == flips + 1,
+         "widget_dupe_frame: CPU fallback and widgets not presented");
+
+   info.widgets_active = false;
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 5, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1 && rsx_flip_calls == flips + 1,
+         "widget_dupe_frame: disabling widgets leaves old pixels");
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 6, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws && rsx_flip_calls == flips,
+         "widget_dupe_frame: inactive widgets keep redrawing duplicates");
+   driver_down(rsx);
+
+   fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
+   rsx = driver_up();
+   info.widgets_active = true;
+   rsx_frame(rsx, pixels, VIDEO_SCALE_PACK(4, 4), 0, 8, NULL, &info);
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 1, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1 && rsx_flip_calls == flips + 1,
+         "widget_dupe_frame: software image and widgets not presented");
+   driver_down(rsx);
+   printf("widget_dupe_frame: ok\n");
+}
+
+static void test_widget_visibility(void)
+{
+   struct retro_rsx_image image;
+   video_frame_info_t info;
+   rsx_t *rsx;
+   unsigned draws, flips, restores, calls;
+
+   memset(&info, 0, sizeof(info));
+   fake_hwr.context_type = RETRO_HW_CONTEXT_RSX;
+   rsx = driver_up();
+   image.offset = 0x10000;
+   image.pitch  = 512 * 4;
+   image.width  = 512;
+   image.height = 240;
+   rsx_set_hw_image(rsx, &image);
+   rsx_frame(rsx, RETRO_HW_FRAME_BUFFER_VALID, 0, 0, 0, NULL, &info);
+
+   info.widgets_active  = true;
+   fake_widgets_visible = false;
+   draws    = rsx_draw_calls;
+   flips    = rsx_flip_calls;
+   restores = rsx_depth_test_calls;
+   calls    = fake_widget_calls;
+   rsx_frame(rsx, NULL, 0, 1, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws && rsx_flip_calls == flips
+         && rsx_depth_test_calls == restores,
+         "widget_visibility: empty widgets redraw or restore a duplicate");
+   CHECK(fake_widget_calls == calls + 1,
+         "widget_visibility: invisible widgets skip frame housekeeping");
+   rsx_frame(rsx, NULL, 0, 1, 0, "", &info);
+   CHECK(rsx_draw_calls == draws && rsx_flip_calls == flips
+         && rsx_depth_test_calls == restores,
+         "widget_visibility: empty OSD message redraws an idle duplicate");
+
+   fake_widgets_visible = true;
+   rsx_frame(rsx, NULL, 0, 2, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1 && rsx_flip_calls == flips + 1,
+         "widget_visibility: newly visible widgets not presented");
+   info.notifications_hidden = true;
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 3, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1 && rsx_flip_calls == flips + 1,
+         "widget_visibility: hidden notification leaves old pixels");
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   restores = rsx_depth_test_calls;
+   rsx_frame(rsx, NULL, 0, 4, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws && rsx_flip_calls == flips
+         && rsx_depth_test_calls == restores,
+         "widget_visibility: hidden widgets keep presenting duplicates");
+   rsx_frame(rsx, NULL, 0, 4, 0, "", &info);
+   CHECK(rsx_draw_calls == draws && rsx_flip_calls == flips
+         && rsx_depth_test_calls == restores,
+         "widget_visibility: empty OSD message redraws hidden widgets");
+
+   info.notifications_hidden = false;
+   rsx_frame(rsx, NULL, 0, 5, 0, NULL, &info);
+   fake_widgets_visible = false;
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 6, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1 && rsx_flip_calls == flips + 1,
+         "widget_visibility: expired notification leaves old pixels");
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 7, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws && rsx_flip_calls == flips,
+         "widget_visibility: expired notification needs repeated cleanup");
+
+   fake_widgets_visible = true;
+   rsx_frame(rsx, NULL, 0, 8, 0, NULL, &info);
+   fake_widgets_visible = false;
+   rsx_frame(rsx, RETRO_HW_FRAME_BUFFER_VALID, 0, 9, 0, NULL, &info);
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 10, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips,
+         "widget_visibility: real frame did not consume pending cleanup");
+   driver_down(rsx);
+   fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
+   printf("widget_visibility: ok\n");
+}
+
+static void test_widget_layer_order(void)
+{
+   uint32_t pixels[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff };
+   struct texture_image overlay;
+   struct retro_rsx_image image;
+   video_frame_info_t info;
+   rsx_t *rsx;
+   u32 overlay_offset, core_offset;
+   unsigned i, flips;
+
+   memset(&info, 0, sizeof(info));
+   memset(&overlay, 0, sizeof(overlay));
+   overlay.pixels = pixels;
+   overlay.width = overlay.height = 2;
+   fake_hwr.context_type = RETRO_HW_CONTEXT_RSX;
+   rsx = driver_up();
+   image.offset = 0x10000;
+   image.pitch  = 512 * 4;
+   image.width  = 512;
+   image.height = 240;
+   rsx_set_hw_image(rsx, &image);
+   rsx_frame(rsx, RETRO_HW_FRAME_BUFFER_VALID, 0, 0, 0, NULL, &info);
+   CHECK(rsx_overlay_load(rsx, &overlay, 1), "widget_layer_order: overlay load");
+   overlay_offset = rsx->overlay[0].texture.tex.offset;
+
+   for (i = 0; i < 2; i++)
+   {
+      if (i)
+      {
+         rsx_set_hw_image(rsx, NULL);
+         rsx_frame(rsx, pixels, VIDEO_SCALE_PACK(2, 2), 1, 4, NULL, &info);
+      }
+      core_offset = i ? rsx->texture[rsx->tex_index].tex.offset : image.offset;
+      rsx->overlay_enable  = true;
+      info.widgets_active = true;
+      info.statistics_show = true;
+      info.stat_text       = "statistics";
+      info.stat_text_len   = strlen(info.stat_text);
+      fake_trace_draws = true;
+      fake_draw_count = 0;
+      rsx_frame(rsx, NULL, 0, 2, 0, NULL, &info);
+      CHECK(fake_draw_count == 4 && fake_draw_trace[0] == core_offset
+            && fake_draw_trace[1] == FAKE_DRAW_OSD
+            && fake_draw_trace[2] == overlay_offset
+            && fake_draw_trace[3] == FAKE_DRAW_WIDGET,
+            "widget_layer_order: core/statistics/overlay/widgets order (%u)", i);
+      fake_trace_draws = false;
+      rsx->overlay_enable  = false;
+      info.widgets_active = false;
+      info.statistics_show = false;
+      rsx_frame(rsx, NULL, 0, 3, 0, NULL, &info);
+   }
+
+   for (i = 0; i < 3; i++)
+   {
+      const char *msg = i == 2 ? "message" : NULL;
+      rsx->overlay_enable  = i == 0;
+      info.statistics_show = i == 1;
+      fake_trace_draws = true;
+      fake_draw_count = 0;
+      flips = rsx_flip_calls;
+      rsx_frame(rsx, NULL, 0, 4, 0, msg, &info);
+      CHECK(fake_draw_count == 2 && fake_draw_trace[0] == core_offset
+            && fake_draw_trace[1] == (i == 0 ? overlay_offset : FAKE_DRAW_OSD)
+            && rsx_flip_calls == flips + 1,
+            "widget_layer_order: standalone frontend layer not composed (%u)", i);
+      fake_trace_draws = false;
+   }
+
+   rsx_free_overlay(rsx);
+   driver_down(rsx);
+   fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
+   printf("widget_layer_order: ok\n");
+}
+
 static void test_hw_interface(void)
 {
    const struct retro_hw_render_interface *base = NULL;
@@ -1161,6 +1419,9 @@ int main(int argc, char **argv)
       const char *name;
       void (*run)(void);
    } tests[] = {
+      { "widget_dupe_frame", test_widget_dupe_frame },
+      { "widget_visibility", test_widget_visibility },
+      { "widget_layer_order", test_widget_layer_order },
       { "hw_interface", test_hw_interface },
       { "hw_frame_state", test_hw_frame_state },
       { "hw_retirement", test_hw_retirement },

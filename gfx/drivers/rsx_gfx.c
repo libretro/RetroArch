@@ -215,6 +215,9 @@ typedef struct
    bool should_resize;
    bool msg_rendering_enabled;
    bool shared_context_use;
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_visible;
+#endif
    struct retro_hw_render_interface_rsx hw_interface;
    struct retro_rsx_image hw_image;
    bool hw_render;
@@ -2633,14 +2636,11 @@ static bool rsx_frame(void* data, const void* frame,
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active              = video_info->widgets_active;
+   bool widgets_visible             = widgets_active
+      && gfx_widgets_visible(video_info);
 #endif
    bool draw                        = false;
-   /* The core shares the FIFO and leaves its own state behind.
-    * Restore the frontend's state before anything of ours is drawn:
-    * a core frame (hardware or CPU fallback), or a duped frame that
-    * still gets the menu, overlay, OSD or widgets drawn on top.  A
-    * bare dupe draws nothing and skips it. */
-   bool restore                     = gcm->hw_render && (frame || msg
+   bool draw_ui                     = msg && *msg
 #ifdef HAVE_MENU
          || (gcm->menu_frame_enable && menu_is_alive) || statistics_show
 #endif
@@ -2648,9 +2648,15 @@ static bool rsx_frame(void* data, const void* frame,
          || gcm->overlay_enable
 #endif
 #ifdef HAVE_GFX_WIDGETS
-         || widgets_active
+         || widgets_visible || gcm->widgets_visible
 #endif
-         );
+         ;
+   /* The core shares the FIFO and leaves its own state behind.
+    * Restore the frontend's state before anything of ours is drawn:
+    * a core frame (hardware or CPU fallback), or a duped frame that
+    * still gets the menu, overlay, OSD or widgets drawn on top.  A
+    * bare dupe draws nothing and skips it. */
+   bool restore                     = gcm->hw_render && (frame || draw_ui);
 
    rsx_collect_retired_memory();
    rsx_fence_retired_memory(gcm->context);
@@ -2729,24 +2735,22 @@ static bool rsx_frame(void* data, const void* frame,
       }
    }
 
+   /* Rebuild the background before any frontend layers. */
+   if (!draw && draw_ui)
+   {
+      if (gcm->hw_render && gcm->hw_image_valid)
+         rsx_draw_hw_image(gcm);
+      else if (gcm->texture[gcm->tex_index].data)
+      {
+         rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
+         rsx_draw_vertices(gcm);
+      }
+      draw = true;
+   }
+
 #ifdef HAVE_MENU
    if (gcm->menu_frame_enable && menu_is_alive)
    {
-      /* A duped core frame stays behind the menu: the surface was
-       * cleared at the last flip */
-      if (!draw)
-      {
-         if (gcm->hw_render)
-         {
-            if (gcm->hw_image_valid)
-               rsx_draw_hw_image(gcm);
-         }
-         else if (gcm->texture[gcm->tex_index].data)
-         {
-            rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
-            rsx_draw_vertices(gcm);
-         }
-      }
       menu_driver_frame(menu_is_alive, video_info);
       draw = true;
       if (gcm->menu_texture.data)
@@ -2787,6 +2791,9 @@ static bool rsx_frame(void* data, const void* frame,
       /* Only update when we draw to prevent flickering when core frame duping is enabled */
       rsx_update_screen(gcm);
       rsx_clear_surface(gcm);
+#ifdef HAVE_GFX_WIDGETS
+      gcm->widgets_visible = widgets_visible;
+#endif
    }
    gcm->vert_idx         = 0;
 
