@@ -5,7 +5,7 @@ TARGET := gfx_widgets_msg_queue_race_test
 # The test includes gfx/gfx_widgets.c itself, so it drives the
 # production ring code rather than a copy.  LTO with section garbage
 # collection drops everything in that unit the test does not reach,
-# the way tests-other/Makefile.widget_snapshot builds the same unit.
+# the way samples/gfx/widget_snapshot_ownership builds the same unit.
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 

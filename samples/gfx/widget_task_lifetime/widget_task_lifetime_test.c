@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../gfx/gfx_widgets.c"
+#include "../../../gfx/gfx_widgets.c"
 
 static unsigned failures;
 

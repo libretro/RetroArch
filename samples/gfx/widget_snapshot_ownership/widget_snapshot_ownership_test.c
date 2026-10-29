@@ -69,7 +69,7 @@ static void *checked_calloc(size_t count, size_t size)
 #define calloc checked_calloc
 #define free checked_free
 #define strdup checked_strdup
-#include "../gfx/gfx_widgets.c"
+#include "../../../gfx/gfx_widgets.c"
 #undef malloc
 #undef calloc
 #undef free

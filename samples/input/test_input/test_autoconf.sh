@@ -3,7 +3,7 @@
 # driven end to end through the real binary with the test input
 # driver and the .ratst step scripts.
 #
-# Usage: tests-other/test_autoconf.sh [path-to-retroarch]
+# Usage: samples/input/test_input/test_autoconf.sh [path-to-retroarch]
 #
 # Requires a build with HAVE_TEST_DRIVERS (the default).  Runs
 # headless; each .ratst ends in a quit step, so a run lasts as long

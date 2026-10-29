@@ -113,9 +113,9 @@ jobs:
           if [ "${{ matrix.sanitizer }}" = thread ]; then
             # TSan cannot map its shadow under the runner's ASLR
             # entropy; setarch -R carries to every child the suite runs.
-            setarch "$(uname -m)" -R ./tests-other/test_autoconf.sh ./retroarch
+            setarch "$(uname -m)" -R ./samples/input/test_input/test_autoconf.sh ./retroarch
           else
-            ./tests-other/test_autoconf.sh ./retroarch
+            ./samples/input/test_input/test_autoconf.sh ./retroarch
           fi
 
       - name: ccache statistics

@@ -1304,13 +1304,13 @@ jobs:
           echo "[pass] gfx_widgets_sanitize_test (TSan)"
       - name: Build and run widget snapshot ownership test
         shell: bash
-        working-directory: tests-other
+        working-directory: samples/gfx/widget_snapshot_ownership
         run: |
           set -eu
-          make -f Makefile.widget_snapshot clean
-          make -f Makefile.widget_snapshot
+          make clean
+          make
           timeout 60 ./widget_snapshot_ownership_test
-          make -f Makefile.widget_snapshot clean
+          make clean
 
       - name: Build and run gfx_widgets_task_bar_stack_test (ASan + UBSan, TSan)
         shell: bash

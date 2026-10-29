@@ -1,10 +1,10 @@
 CC ?= cc
 TARGET := widget_task_lifetime_test
-ROOT := ..
+ROOT := ../../..
 SOURCES := widget_task_lifetime_test.c \
            $(ROOT)/samples/gfx/gfx_widgets_task_bar_stack/stubs_retroarch.c \
            $(ROOT)/libretro-common/compat/compat_strl.c
-CFLAGS += -std=gnu89 -Wall -g -O1 -flto -ffunction-sections -fdata-sections \
+CFLAGS += -std=gnu89 -Wall -DHAVE_THREADS -DHAVE_MENU -DHAVE_GFX_WIDGETS -g -O1 -flto -ffunction-sections -fdata-sections \
           -I$(ROOT) -I$(ROOT)/libretro-common/include
 LDFLAGS += -Wl,--gc-sections
 LDLIBS += -lm

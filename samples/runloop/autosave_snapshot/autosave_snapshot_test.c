@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <retro_timers.h>
-#include "../save.c"
+#include "../../../save.c"
 
 #define SRAM_SIZE 17
 

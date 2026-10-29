@@ -1,6 +1,6 @@
 CC ?= cc
 TARGET := widget_snapshot_ownership_test
-ROOT := ..
+ROOT := ../../..
 CFLAGS += -std=gnu89 -Wall -g -O1 -flto -ffunction-sections -fdata-sections \
           -I$(ROOT) -I$(ROOT)/libretro-common/include
 LDFLAGS += -Wl,--gc-sections

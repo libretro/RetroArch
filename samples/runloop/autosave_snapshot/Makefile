@@ -1,5 +1,5 @@
 CC ?= cc
-ROOT := ..
+ROOT := ../../..
 TARGET := autosave_snapshot_test
 SOURCES := autosave_snapshot_test.c $(ROOT)/libretro-common/rthreads/rthreads.c \
            $(ROOT)/libretro-common/rthreads/retro_eventcount.c \
