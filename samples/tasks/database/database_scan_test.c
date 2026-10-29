@@ -1398,6 +1398,13 @@ typedef struct
    uint32_t       clen;
 } zip_entry_t;
 
+/* Little-endian fixture fields. */
+#define PUT16(p, v) do { (p)[0] = (uint8_t)(v); \
+   (p)[1] = (uint8_t)((v) >> 8); } while (0)
+#define PUT32(p, v) do { (p)[0] = (uint8_t)(v); \
+   (p)[1] = (uint8_t)((v) >> 8); (p)[2] = (uint8_t)((v) >> 16); \
+   (p)[3] = (uint8_t)((v) >> 24); } while (0)
+
 /* The end record's comment of the zips write_zip_entries() writes, or
  * NULL.  Set only between scans. */
 static const char *zip_comment;
@@ -1415,9 +1422,6 @@ static int write_zip_entries(const char *path, const zip_entry_t *e,
 
    if (!f)
       return 0;
-
-#define PUT16(p, v) do { (p)[0] = (uint8_t)(v); (p)[1] = (uint8_t)((v) >> 8); } while (0)
-#define PUT32(p, v) do { (p)[0] = (uint8_t)(v);        (p)[1] = (uint8_t)((v) >> 8);                          (p)[2] = (uint8_t)((v) >> 16); (p)[3] = (uint8_t)((v) >> 24); } while (0)
 
    /* local file headers */
    for (i = 0; i < n; i++)
@@ -1470,8 +1474,6 @@ static int write_zip_entries(const char *path, const zip_entry_t *e,
    if (zip_comment)
       fwrite(zip_comment, 1, strlen(zip_comment), f);
    fclose(f);
-#undef PUT16
-#undef PUT32
    return 1;
 }
 
@@ -1728,9 +1730,6 @@ static int write_rar_entries(const char *path, const zip_entry_t *e,
    if (!(f = fopen(path, "wb")))
       return 0;
 
-#define PUT16(p, v) do { (p)[0] = (uint8_t)(v); (p)[1] = (uint8_t)((v) >> 8); } while (0)
-#define PUT32(p, v) do { (p)[0] = (uint8_t)(v);        (p)[1] = (uint8_t)((v) >> 8);                          (p)[2] = (uint8_t)((v) >> 16); (p)[3] = (uint8_t)((v) >> 24); } while (0)
-
    fwrite(marker, 1, sizeof(marker), f);
 
    memset(h, 0, 13);
@@ -1782,8 +1781,6 @@ static int write_rar_entries(const char *path, const zip_entry_t *e,
       return 0;
    }
    fclose(f);
-#undef PUT16
-#undef PUT32
    return 1;
 }
 
@@ -1811,11 +1808,8 @@ static void rar5_head(FILE *f, const uint8_t *body, size_t len)
    uint32_t c;
 
    memcpy(h + 4 + s, body, len);
-   c    = crc_of(h + 4, s + len);
-   h[0] = (uint8_t)c;
-   h[1] = (uint8_t)(c >> 8);
-   h[2] = (uint8_t)(c >> 16);
-   h[3] = (uint8_t)(c >> 24);
+   c = crc_of(h + 4, s + len);
+   PUT32(h, c);
    fwrite(h, 1, 4 + s + len, f);
 }
 
@@ -1855,10 +1849,8 @@ static int write_rar5_entries(const char *path, const zip_entry_t *e,
       q += rar5_vint(b + q, 0);                /* attributes */
       if (e[i].crc)
       {
-         b[q++] = (uint8_t)e[i].crc;
-         b[q++] = (uint8_t)(e[i].crc >> 8);
-         b[q++] = (uint8_t)(e[i].crc >> 16);
-         b[q++] = (uint8_t)(e[i].crc >> 24);
+         PUT32(b + q, e[i].crc);
+         q += 4;
       }
       q += rar5_vint(b + q, 0);                /* stored */
       q += rar5_vint(b + q, 0);                /* host */
