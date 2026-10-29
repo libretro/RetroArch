@@ -183,7 +183,7 @@ HAVE_CHEEVOS             := 1
 
 CFLAGS      += -DHAVE_SOCKET_LEGACY -DHAVE_CHEEVOS
 
-APP_BOOTER_DIR = wii/app_booter
+APP_BOOTER_DIR = os/gekko/rvl/app_booter
 PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
 else
 HAVE_WIIUSB_HID          := 0

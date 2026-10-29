@@ -51,10 +51,10 @@
 #define BOOTER_ADDR  ((uint8_t *) 0x93000000)
 #define ARGS_ADDR    ((uint8_t *) 0x93200000)
 
-extern uint8_t _binary_wii_app_booter_app_booter_bin_start[];
-extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
-#define booter_start _binary_wii_app_booter_app_booter_bin_start
-#define booter_end _binary_wii_app_booter_app_booter_bin_end
+extern uint8_t _binary_os_gekko_rvl_app_booter_app_booter_bin_start[];
+extern uint8_t _binary_os_gekko_rvl_app_booter_app_booter_bin_end[];
+#define booter_start _binary_os_gekko_rvl_app_booter_app_booter_bin_start
+#define booter_end _binary_os_gekko_rvl_app_booter_app_booter_bin_end
 
 #ifdef IS_SALAMANDER
 char gx_rom_path[PATH_MAX_LENGTH];

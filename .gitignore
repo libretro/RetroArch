@@ -45,8 +45,7 @@ Debug
 Release
 ipch
 *.user
-/bootstrap/gx/wii/app_booter/app_booter.bin
-/wii/app_booter/app_booter.bin
+/os/gekko/rvl/app_booter/app_booter.bin
 *.zip
 RetroArch-w32/
 RetroArch-w64/
