@@ -18,7 +18,7 @@
  *   a call the driver refuses without calling back fails, an upload's
  *   file going back to the handler to close;
  * - a sync whose BEGIN fails, and one that ends, let the worker go, and
- *   the next sync starts a new one;
+ *   the next sync starts a new one, even one begun as the worker leaves;
  * - a poll given a budget runs the oldest result whatever the budget,
  *   and then only as many as the budget allows, in order;
  * - on exit, cloud_sync_deinit() waits for the call under way, drops
@@ -38,6 +38,7 @@
 #include <unistd.h>
 
 #include <boolean.h>
+#include <retro_atomic.h>
 #include <retro_timers.h>
 #include <rthreads/rthreads.h>
 #include <features/features_cpu.h>
@@ -165,6 +166,16 @@ static cloud_sync_driver_t blocking = {
    drv_begin, drv_end, drv_read, drv_update, drv_free, "blocking",
    CLOUD_SYNC_DRIVER_FLG_BLOCKING, drv_capture
 };
+
+/* The worker's leaving hook: once armed, it begins the next sync right
+ * there, from the worker's own thread. */
+static retro_atomic_int_t leaving_arm;
+static void on_done(void *ud, const char *path, bool success, RFILE *file);
+void cloud_sync_test_worker_leaving(void)
+{
+   if (retro_atomic_exchange_int(&leaving_arm, 0))
+      cloud_sync_begin(on_done, (void*)3);
+}
 
 /* ---- results as the handlers see them ---- */
 
@@ -335,6 +346,18 @@ int main(void)
       cloud_sync_poll(NULL, NULL);
       CHECK(nresults == 4 && results[3].tag == 4, "no budget runs the rest");
    }
+
+   /* a sync begun just as the last one's worker decides to leave */
+   reset();
+   retro_atomic_store_release_int(&leaving_arm, 1);
+   gate_release(3);
+   cloud_sync_begin(on_done, (void*)1);
+   cloud_sync_end(on_done, (void*)2);
+   CHECK(wait_results(3) && results[2].tag == 3,
+         "a sync begun as the worker leaves gets a worker");
+   cloud_sync_end(on_done, (void*)4);
+   gate_release(1);
+   CHECK(wait_results(4), "and ends");
 
    /* exit: the call under way finishes, the rest are dropped */
    reset();

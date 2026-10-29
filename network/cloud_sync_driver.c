@@ -15,9 +15,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_THREADS
+#include <retro_atomic.h>
+
+/* The worker hands calls and results over on lock-free stacks. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#define CLOUD_SYNC_ASYNC
 #include <features/features_cpu.h>
+#include <queues/mpsc_stack.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #endif
 
 #include "cloud_sync_driver.h"
@@ -109,7 +115,7 @@ void cloud_sync_find_driver(const char *cloud_sync_driver,
    }
 }
 
-#ifdef HAVE_THREADS
+#ifdef CLOUD_SYNC_ASYNC
 /* A blocking driver's calls go to one worker thread per sync, which
  * runs them in the order they were made; the caller gets true at once
  * and its handler runs from cloud_sync_poll() on its own thread, so a
@@ -133,7 +139,7 @@ enum cloud_sync_op_type
 /* One allocation: the strings follow the struct. */
 typedef struct cloud_sync_op
 {
-   struct cloud_sync_op         *next;
+   mpsc_stack_node_t             node;  /* first: the stacks hold ops */
    const cloud_sync_driver_t    *driver;
    cloud_sync_complete_handler_t cb;
    void                         *user_data;
@@ -141,23 +147,23 @@ typedef struct cloud_sync_op
    char                         *path;  /* NULL for BEGIN and END */
    char                         *local; /* READ's local file */
    unsigned                      flags;
-   unsigned                      gen;   /* cloud_sync_async.gen when made */
+   int                           gen;   /* cloud_sync_async.gen when made */
    int                           type;
 } cloud_sync_op_t;
 
 static struct
 {
-   slock_t         *lock;
-   scond_t         *cond;
-   cloud_sync_op_t *queue;      /* for the worker, oldest first */
-   cloud_sync_op_t *queue_tail;
-   cloud_sync_op_t *done;       /* for cloud_sync_poll, oldest first */
-   cloud_sync_op_t *done_tail;
-   /* Moved on by cloud_sync_deinit(): a call from before it that is
-    * still running is the worker's to dispose of. */
-   unsigned         gen;
-   bool             worker;     /* a worker thread is running */
-   bool             ended;      /* the sync it serves is over */
+   retro_eventcount_t wake;    /* the worker parks here */
+   retro_eventcount_t idle;    /* cloud_sync_deinit() waits here */
+   mpsc_stack_t       queue;   /* calls, for the worker */
+   mpsc_stack_t       done;    /* results, for cloud_sync_poll */
+   cloud_sync_op_t   *ready;   /* the poller's, oldest first */
+   /* Moved on by cloud_sync_deinit(): a call from before it is dropped,
+    * and the result of one still running is the worker's to dispose
+    * of. */
+   retro_atomic_int_t gen;
+   retro_atomic_int_t worker;  /* a worker thread is running */
+   bool               inited;  /* made on the calling thread */
 } cloud_sync_async;
 
 static void cloud_sync_op_capture(void *user_data, const char *path,
@@ -205,51 +211,97 @@ static void cloud_sync_op_run(cloud_sync_op_t *op)
    }
 }
 
+static void cloud_sync_op_drop(cloud_sync_op_t *op)
+{
+   if (op->file)
+      filestream_close(op->file);
+   free(op);
+}
+
+static void cloud_sync_op_list_free(mpsc_stack_node_t *node)
+{
+   while (node)
+   {
+      mpsc_stack_node_t *next = node->next;
+      cloud_sync_op_drop((cloud_sync_op_t*)node);
+      node = next;
+   }
+}
+
+/* Where the worker decides to leave; the async test queues a call
+ * there. */
+#ifdef CLOUD_SYNC_TEST_HOOKS
+void cloud_sync_test_worker_leaving(void);
+#define CLOUD_SYNC_WORKER_LEAVING() cloud_sync_test_worker_leaving()
+#else
+#define CLOUD_SYNC_WORKER_LEAVING() do { } while (0)
+#endif
+
+static bool cloud_sync_worker_has_work(int gen)
+{
+   return !mpsc_stack_empty(&cloud_sync_async.queue)
+      || retro_atomic_load_acquire_int(&cloud_sync_async.gen) != gen;
+}
+
 static void cloud_sync_worker(void *data)
 {
+   mpsc_stack_node_t *calls = NULL; /* taken from the queue, oldest first */
+   int                gen   = retro_atomic_load_acquire_int(
+         &cloud_sync_async.gen);
+   bool               ended = false;
    (void)data;
+
    for (;;)
    {
       cloud_sync_op_t *op;
 
-      slock_lock(cloud_sync_async.lock);
-      while (!cloud_sync_async.queue && !cloud_sync_async.ended)
-         scond_wait(cloud_sync_async.cond, cloud_sync_async.lock);
-      if (!(op = cloud_sync_async.queue))
+      if (!calls)
+         calls = mpsc_stack_reverse(mpsc_stack_drain(&cloud_sync_async.queue));
+      if (!calls)
       {
-         cloud_sync_async.worker = false;
-         /* cloud_sync_deinit() may be waiting for this */
-         scond_broadcast(cloud_sync_async.cond);
-         slock_unlock(cloud_sync_async.lock);
-         return;
-      }
-      if (!(cloud_sync_async.queue = op->next))
-         cloud_sync_async.queue_tail = NULL;
-      slock_unlock(cloud_sync_async.lock);
-
-      op->next = NULL;
-      cloud_sync_op_run(op);
-
-      slock_lock(cloud_sync_async.lock);
-      if (op->gen != cloud_sync_async.gen)
-      {
-         /* Outlived the exit wait: nobody polls for it. */
-         slock_unlock(cloud_sync_async.lock);
-         if (op->file)
-            filestream_close(op->file);
-         free(op);
+         int key;
+         if (ended || retro_atomic_load_acquire_int(&cloud_sync_async.gen) != gen)
+         {
+            /* Leaving: a call queued since the check above either sees
+             * no worker and starts one, or is taken here. */
+            CLOUD_SYNC_WORKER_LEAVING();
+            retro_atomic_exchange_int(&cloud_sync_async.worker, 0);
+            retro_atomic_thread_fence_seq_cst();
+            if (     !mpsc_stack_empty(&cloud_sync_async.queue)
+                  && retro_atomic_cas_int(&cloud_sync_async.worker, 0, 1))
+               continue;
+            retro_eventcount_notify(&cloud_sync_async.idle);
+            return;
+         }
+         key = retro_eventcount_prepare_wait(&cloud_sync_async.wake);
+         if (cloud_sync_worker_has_work(gen))
+            retro_eventcount_cancel_wait(&cloud_sync_async.wake);
+         else
+            retro_eventcount_commit_wait(&cloud_sync_async.wake, key);
          continue;
       }
-      if (cloud_sync_async.done_tail)
-         cloud_sync_async.done_tail->next = op;
+
+      op    = (cloud_sync_op_t*)calls;
+      calls = calls->next;
+      /* Queued before cloud_sync_deinit(): dropped, not run. */
+      if (op->gen != retro_atomic_load_acquire_int(&cloud_sync_async.gen))
+      {
+         cloud_sync_op_drop(op);
+         continue;
+      }
+      gen = op->gen;
+      cloud_sync_op_run(op);
+      if (op->type == CLOUD_SYNC_OP_END)
+         ended = true;
+      else if (op->type == CLOUD_SYNC_OP_BEGIN)
+         ended = !(op->flags & CLOUD_SYNC_OP_FLG_SUCCESS);
+
+      /* Outlived the exit wait: nobody polls for it. One that slips
+       * past this check is dropped by the poll. */
+      if (op->gen != retro_atomic_load_acquire_int(&cloud_sync_async.gen))
+         cloud_sync_op_drop(op);
       else
-         cloud_sync_async.done = op;
-      cloud_sync_async.done_tail = op;
-      if (     op->type == CLOUD_SYNC_OP_END
-            || (     op->type == CLOUD_SYNC_OP_BEGIN
-                 && !(op->flags & CLOUD_SYNC_OP_FLG_SUCCESS)))
-         cloud_sync_async.ended = true;
-      slock_unlock(cloud_sync_async.lock);
+         mpsc_stack_push(&cloud_sync_async.done, &op->node);
    }
 }
 
@@ -263,22 +315,23 @@ static bool cloud_sync_op_push(const cloud_sync_driver_t *driver,
    size_t           plen  = path  ? strlen(path)  + 1 : 0;
    size_t           llen  = local ? strlen(local) + 1 : 0;
    cloud_sync_op_t *op;
-   bool             spawn = false;
+   sthread_t       *thread;
 
-   if (!cloud_sync_async.lock)
+   if (!cloud_sync_async.inited)
    {
-      if (!(cloud_sync_async.lock = slock_new()))
+      if (!retro_eventcount_init(&cloud_sync_async.wake))
          return false;
-      if (!(cloud_sync_async.cond = scond_new()))
+      if (!retro_eventcount_init(&cloud_sync_async.idle))
       {
-         slock_free(cloud_sync_async.lock);
-         cloud_sync_async.lock = NULL;
+         retro_eventcount_free(&cloud_sync_async.wake);
          return false;
       }
+      mpsc_stack_init(&cloud_sync_async.queue);
+      mpsc_stack_init(&cloud_sync_async.done);
+      cloud_sync_async.inited = true;
    }
    if (!(op = (cloud_sync_op_t*)malloc(sizeof(*op) + plen + llen)))
       return false;
-   op->next      = NULL;
    op->driver    = driver;
    op->cb        = cb;
    op->user_data = user_data;
@@ -286,50 +339,36 @@ static bool cloud_sync_op_push(const cloud_sync_driver_t *driver,
    op->path      = plen ? (char*)(op + 1)    : NULL;
    op->local     = llen ? (char*)(op + 1) + plen : NULL;
    op->flags     = 0;
+   op->gen       = retro_atomic_load_acquire_int(&cloud_sync_async.gen);
    op->type      = type;
    if (plen)
       memcpy(op->path, path, plen);
    if (llen)
       memcpy(op->local, local, llen);
 
-   slock_lock(cloud_sync_async.lock);
-   op->gen = cloud_sync_async.gen;
-   if (type == CLOUD_SYNC_OP_BEGIN)
-      cloud_sync_async.ended = false;
-   if (cloud_sync_async.queue_tail)
-      cloud_sync_async.queue_tail->next = op;
-   else
-      cloud_sync_async.queue = op;
-   cloud_sync_async.queue_tail = op;
-   if (!cloud_sync_async.worker)
-      spawn = cloud_sync_async.worker = true;
-   else
-      scond_signal(cloud_sync_async.cond);
-   slock_unlock(cloud_sync_async.lock);
-
-   if (spawn)
+   mpsc_stack_push(&cloud_sync_async.queue, &op->node);
+   /* Against the leaving worker's own: one of the two sees the other. */
+   retro_atomic_thread_fence_seq_cst();
+   if (!retro_atomic_cas_int(&cloud_sync_async.worker, 0, 1))
    {
-      /* no worker ran, so the queue held only this call */
-      sthread_t *thread = sthread_create(cloud_sync_worker, NULL);
-      if (!thread)
-      {
-         slock_lock(cloud_sync_async.lock);
-         cloud_sync_async.queue      = NULL;
-         cloud_sync_async.queue_tail = NULL;
-         cloud_sync_async.worker     = false;
-         slock_unlock(cloud_sync_async.lock);
-         free(op);
-         return false;
-      }
-      sthread_detach(thread);
+      retro_eventcount_notify(&cloud_sync_async.wake);
+      return true;
    }
-   return true;
+   if ((thread = sthread_create(cloud_sync_worker, NULL)))
+   {
+      sthread_detach(thread);
+      return true;
+   }
+   /* No worker ran, so the queue held only this call. */
+   mpsc_stack_drain(&cloud_sync_async.queue);
+   retro_atomic_exchange_int(&cloud_sync_async.worker, 0);
+   free(op);
+   return false;
 }
 
 void cloud_sync_poll(cloud_sync_poll_budget_t within, void *budget)
 {
-   /* the lock is made on this thread, before any worker exists */
-   if (!cloud_sync_async.lock)
+   if (!cloud_sync_async.inited)
       return;
 
    /* The oldest result always runs; more only while @within allows. */
@@ -337,16 +376,18 @@ void cloud_sync_poll(cloud_sync_poll_budget_t within, void *budget)
    {
       cloud_sync_op_t *op;
 
-      slock_lock(cloud_sync_async.lock);
-      if ((op = cloud_sync_async.done))
-      {
-         if (!(cloud_sync_async.done = op->next))
-            cloud_sync_async.done_tail = NULL;
-      }
-      slock_unlock(cloud_sync_async.lock);
-      if (!op)
+      if (!cloud_sync_async.ready)
+         cloud_sync_async.ready = (cloud_sync_op_t*)mpsc_stack_reverse(
+               mpsc_stack_drain(&cloud_sync_async.done));
+      if (!(op = cloud_sync_async.ready))
          return;
+      cloud_sync_async.ready = (cloud_sync_op_t*)op->node.next;
 
+      if (op->gen != retro_atomic_load_acquire_int(&cloud_sync_async.gen))
+      {
+         cloud_sync_op_drop(op);
+         continue;
+      }
       op->cb(op->user_data,
             (op->flags & CLOUD_SYNC_OP_FLG_PATH) ? op->path : NULL,
             (op->flags & CLOUD_SYNC_OP_FLG_SUCCESS) != 0, op->file);
@@ -357,54 +398,39 @@ void cloud_sync_poll(cloud_sync_poll_budget_t within, void *budget)
    }
 }
 
-static void cloud_sync_op_list_free(cloud_sync_op_t *op)
-{
-   while (op)
-   {
-      cloud_sync_op_t *next = op->next;
-      if (op->file)
-         filestream_close(op->file);
-      free(op);
-      op = next;
-   }
-}
-
 void cloud_sync_deinit(unsigned timeout_ms)
 {
-   cloud_sync_op_t *dropped;
-   retro_time_t     deadline;
+   retro_time_t deadline;
 
-   if (!cloud_sync_async.lock)
+   if (!cloud_sync_async.inited)
       return;
    deadline = cpu_features_get_time_usec() + (retro_time_t)timeout_ms * 1000;
 
-   slock_lock(cloud_sync_async.lock);
-   /* calls not started are dropped; the worker leaves after its own,
-    * which it disposes of itself if it finishes past the wait */
-   cloud_sync_async.gen++;
-   dropped                     = cloud_sync_async.queue;
-   cloud_sync_async.queue      = NULL;
-   cloud_sync_async.queue_tail = NULL;
-   cloud_sync_async.ended      = true;
-   scond_broadcast(cloud_sync_async.cond);
-   while (cloud_sync_async.worker)
+   /* Calls not started are dropped; the worker leaves after its own,
+    * which it disposes of itself if it finishes past the wait. */
+   retro_atomic_fetch_add_int(&cloud_sync_async.gen, 1);
+   cloud_sync_op_list_free(mpsc_stack_drain(&cloud_sync_async.queue));
+   retro_eventcount_notify(&cloud_sync_async.wake);
+   while (retro_atomic_load_acquire_int(&cloud_sync_async.worker))
    {
-      retro_time_t left = deadline - cpu_features_get_time_usec();
-      if (left <= 0)
+      retro_time_t left;
+      int          key = retro_eventcount_prepare_wait(&cloud_sync_async.idle);
+      if (!retro_atomic_load_acquire_int(&cloud_sync_async.worker))
+      {
+         retro_eventcount_cancel_wait(&cloud_sync_async.idle);
          break;
-      scond_wait_timeout(cloud_sync_async.cond, cloud_sync_async.lock,
+      }
+      if ((left = deadline - cpu_features_get_time_usec()) <= 0)
+      {
+         retro_eventcount_cancel_wait(&cloud_sync_async.idle);
+         break;
+      }
+      retro_eventcount_commit_wait_timeout(&cloud_sync_async.idle, key,
             (int64_t)left);
    }
-   if (cloud_sync_async.done_tail)
-   {
-      cloud_sync_async.done_tail->next = dropped;
-      dropped = cloud_sync_async.done;
-   }
-   cloud_sync_async.done      = NULL;
-   cloud_sync_async.done_tail = NULL;
-   slock_unlock(cloud_sync_async.lock);
-
-   cloud_sync_op_list_free(dropped);
+   cloud_sync_op_list_free((mpsc_stack_node_t*)cloud_sync_async.ready);
+   cloud_sync_async.ready = NULL;
+   cloud_sync_op_list_free(mpsc_stack_drain(&cloud_sync_async.done));
 }
 
 #define CLOUD_SYNC_BLOCKING(driver) \
@@ -430,7 +456,7 @@ bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (!driver || !driver->cloud_sync_begin)
       return false;
-#ifdef HAVE_THREADS
+#ifdef CLOUD_SYNC_ASYNC
    if (CLOUD_SYNC_BLOCKING(driver))
       return cloud_sync_op_push(driver, CLOUD_SYNC_OP_BEGIN,
             NULL, NULL, NULL, cb, user_data);
@@ -444,7 +470,7 @@ bool cloud_sync_end(cloud_sync_complete_handler_t cb,
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (!driver || !driver->cloud_sync_end)
       return false;
-#ifdef HAVE_THREADS
+#ifdef CLOUD_SYNC_ASYNC
    if (CLOUD_SYNC_BLOCKING(driver))
       return cloud_sync_op_push(driver, CLOUD_SYNC_OP_END,
             NULL, NULL, NULL, cb, user_data);
@@ -458,7 +484,7 @@ bool cloud_sync_read(const char *path, const char *file,
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (!driver || !driver->cloud_sync_read)
       return false;
-#ifdef HAVE_THREADS
+#ifdef CLOUD_SYNC_ASYNC
    if (CLOUD_SYNC_BLOCKING(driver))
       return cloud_sync_op_push(driver, CLOUD_SYNC_OP_READ,
             path, file, NULL, cb, user_data);
@@ -472,7 +498,7 @@ bool cloud_sync_update(const char *path, RFILE *file,
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (!driver || !driver->cloud_sync_update)
       return false;
-#ifdef HAVE_THREADS
+#ifdef CLOUD_SYNC_ASYNC
    if (CLOUD_SYNC_BLOCKING(driver))
       return cloud_sync_op_push(driver, CLOUD_SYNC_OP_UPDATE,
             path, NULL, file, cb, user_data);
@@ -486,7 +512,7 @@ bool cloud_sync_free(const char *path,
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (!driver || !driver->cloud_sync_free)
       return false;
-#ifdef HAVE_THREADS
+#ifdef CLOUD_SYNC_ASYNC
    if (CLOUD_SYNC_BLOCKING(driver))
       return cloud_sync_op_push(driver, CLOUD_SYNC_OP_FREE,
             path, NULL, NULL, cb, user_data);
