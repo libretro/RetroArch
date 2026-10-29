@@ -95,6 +95,8 @@ float gl_openxr_pixels_per_radian(gl_openxr_t *xr);
 float gl_openxr_refresh_rate(gl_openxr_t *xr);
 void gl_openxr_set_pacing(gl_openxr_t *xr, unsigned interval);
 void gl_openxr_pace_wait(gl_openxr_t *xr);
+/* Once a frame: the runtime's events while the XR thread is parked. */
+void gl_openxr_host_poll(gl_openxr_t *xr);
 void gl_openxr_pace_skip(gl_openxr_t *xr);
 unsigned gl_openxr_refresh_rates(const gl_openxr_t *xr, float *rates,
       unsigned cap);

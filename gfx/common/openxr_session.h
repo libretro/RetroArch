@@ -68,6 +68,25 @@ typedef struct openxr_track
    bool local;
 } openxr_track_t;
 
+/* A runtime event as the thread that acts on it needs it. */
+enum openxr_event_kind
+{
+   OPENXR_EVENT_INSTANCE_LOST = 0,   /* xrPollEvent's result: none follow */
+   OPENXR_EVENT_LOSS_PENDING,
+   OPENXR_EVENT_STATE,               /* value: the XrSessionState */
+   OPENXR_EVENT_SPACE_CHANGE,        /* value: the XrReferenceSpaceType */
+   OPENXR_EVENT_REFRESH_RATE
+};
+
+typedef struct openxr_event
+{
+   XrSession session;
+   float from_hz;
+   float to_hz;
+   int kind;                         /* enum openxr_event_kind */
+   int value;
+} openxr_event_t;
+
 typedef struct openxr_session
 {
    openxr_session_hooks_t hooks;
@@ -126,6 +145,11 @@ void openxr_session_unlock(openxr_session_t *s);
  * forget it, ready for a new one. */
 void openxr_session_reset(openxr_session_t *s);
 void openxr_session_poll(openxr_session_t *s);
+/* xrPollEvent alone, on any thread: the next event, false for none.
+ * After OPENXR_EVENT_INSTANCE_LOST there are none to ask for. */
+bool openxr_session_next_event(openxr_session_t *s, openxr_event_t *e);
+/* The polling thread: what the event changes. */
+void openxr_session_apply(openxr_session_t *s, const openxr_event_t *e);
 void openxr_session_end(openxr_session_t *s, bool instance_lost);
 void openxr_session_set_alive(openxr_session_t *s, bool alive);
 bool openxr_session_alive(openxr_session_t *s);

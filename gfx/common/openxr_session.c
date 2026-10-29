@@ -117,7 +117,7 @@ static void openxr_session_state(openxr_session_t *s, XrSessionState state)
    }
 }
 
-void openxr_session_poll(openxr_session_t *s)
+bool openxr_session_next_event(openxr_session_t *s, openxr_event_t *e)
 {
    XrResult res;
    XrEventDataBuffer ev;
@@ -126,41 +126,90 @@ void openxr_session_poll(openxr_session_t *s)
       ev.type = XR_TYPE_EVENT_DATA_BUFFER;
       ev.next = NULL;
       res     = s->PollEvent(s->rt->instance, &ev);
+      memset(e, 0, sizeof(*e));
       if (res == XR_ERROR_INSTANCE_LOST)
-         openxr_session_end(s, true);
+      {
+         e->kind = OPENXR_EVENT_INSTANCE_LOST;
+         return true;
+      }
       if (res != XR_SUCCESS)
-         break;
-      if (ev.type == XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING)
+         return false;
+      switch (ev.type)
       {
-         const XrEventDataReferenceSpaceChangePending *sc =
-            (const XrEventDataReferenceSpaceChangePending*)&ev;
-         if (sc->session == s->session)
-         {
-            if (     sc->referenceSpaceType == XR_REFERENCE_SPACE_TYPE_LOCAL
-                  && s->hooks.local_changed)
-               s->hooks.local_changed(s->hooks.user);
-            else if (sc->referenceSpaceType == XR_REFERENCE_SPACE_TYPE_STAGE
-                  && s->hooks.stage_changed)
-               s->hooks.stage_changed(s->hooks.user);
-         }
+         case XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING:
+            {
+               const XrEventDataReferenceSpaceChangePending *sc =
+                  (const XrEventDataReferenceSpaceChangePending*)&ev;
+               e->kind    = OPENXR_EVENT_SPACE_CHANGE;
+               e->session = sc->session;
+               e->value   = (int)sc->referenceSpaceType;
+            }
+            return true;
+         case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED:
+            {
+               const XrEventDataSessionStateChanged *sc =
+                  (const XrEventDataSessionStateChanged*)&ev;
+               e->kind    = OPENXR_EVENT_STATE;
+               e->session = sc->session;
+               e->value   = (int)sc->state;
+            }
+            return true;
+         case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING:
+            e->kind = OPENXR_EVENT_LOSS_PENDING;
+            return true;
+         case XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_FB:
+            {
+               const XrEventDataDisplayRefreshRateChangedFB *rc =
+                  (const XrEventDataDisplayRefreshRateChangedFB*)&ev;
+               e->kind    = OPENXR_EVENT_REFRESH_RATE;
+               e->from_hz = rc->fromDisplayRefreshRate;
+               e->to_hz   = rc->toDisplayRefreshRate;
+            }
+            return true;
+         default:
+            break;
       }
-      if (ev.type == XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED)
-      {
-         const XrEventDataSessionStateChanged *sc =
-            (const XrEventDataSessionStateChanged*)&ev;
-         /* A session destroyed for a new one may have some queued. */
-         if (sc->session == s->session)
-            openxr_session_state(s, sc->state);
-      }
-      else if (ev.type == XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING)
+   }
+}
+
+void openxr_session_apply(openxr_session_t *s, const openxr_event_t *e)
+{
+   switch (e->kind)
+   {
+      case OPENXR_EVENT_INSTANCE_LOST:
+      case OPENXR_EVENT_LOSS_PENDING:
          openxr_session_end(s, true);
-      else if (ev.type == XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_FB)
-      {
-         const XrEventDataDisplayRefreshRateChangedFB *rc =
-            (const XrEventDataDisplayRefreshRateChangedFB*)&ev;
+         break;
+      case OPENXR_EVENT_SPACE_CHANGE:
+         if (e->session != s->session)
+            break;
+         if (     e->value == (int)XR_REFERENCE_SPACE_TYPE_LOCAL
+               && s->hooks.local_changed)
+            s->hooks.local_changed(s->hooks.user);
+         else if (e->value == (int)XR_REFERENCE_SPACE_TYPE_STAGE
+               && s->hooks.stage_changed)
+            s->hooks.stage_changed(s->hooks.user);
+         break;
+      case OPENXR_EVENT_STATE:
+         /* A session destroyed for a new one may have some queued. */
+         if (e->session == s->session)
+            openxr_session_state(s, (XrSessionState)e->value);
+         break;
+      case OPENXR_EVENT_REFRESH_RATE:
          RARCH_LOG("[OpenXR] The headset changed from %.2f to %.2f Hz.\n",
-               rc->fromDisplayRefreshRate, rc->toDisplayRefreshRate);
-      }
+               e->from_hz, e->to_hz);
+         break;
+   }
+}
+
+void openxr_session_poll(openxr_session_t *s)
+{
+   openxr_event_t e;
+   while (openxr_session_next_event(s, &e))
+   {
+      openxr_session_apply(s, &e);
+      if (e.kind == OPENXR_EVENT_INSTANCE_LOST)
+         break;
    }
 }
 

@@ -7500,6 +7500,8 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_GL2_XR
+   if (gl->desktop_xr)
+      gl_openxr_host_poll(gl->desktop_xr->host);
    /* In place of the window's vsync: once a core frame, never under
     * fast-forward. */
    if (     gl->desktop_xr && gl->desktop_xr->paced

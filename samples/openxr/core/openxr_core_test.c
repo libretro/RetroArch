@@ -3,6 +3,7 @@
  * through the proc lookup it is given, so the stand-in answers them. */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -5456,6 +5457,39 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_thread_end_frame(XrSession s,
    return result;
 }
 
+/* A stop that never wakes a parked XR thread hangs: the run fails
+ * instead, naming the test. */
+static retro_atomic_int_t t_watch_done;
+static sthread_t         *t_watch_thread;
+static const char        *t_watch_name;
+static void t_watchdog(void *arg)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 60000000;
+   (void)arg;
+   while (   !retro_atomic_load_acquire_int(&t_watch_done)
+          && cpu_features_get_time_usec() < deadline)
+      retro_sleep(10);
+   if (retro_atomic_load_acquire_int(&t_watch_done))
+      return;
+   printf("FAIL %s: still running after 60 s - an XR thread was never woken\n",
+         t_watch_name);
+   fflush(stdout);
+   exit(1);
+}
+static void t_watch_arm(const char *name)
+{
+   t_watch_name = name;
+   retro_atomic_store_release_int(&t_watch_done, 0);
+   t_watch_thread = sthread_create(t_watchdog, NULL);
+}
+static void t_watch_disarm(void)
+{
+   retro_atomic_store_release_int(&t_watch_done, 1);
+   if (t_watch_thread)
+      sthread_join(t_watch_thread);
+   t_watch_thread = NULL;
+}
+
 static void test_frame_thread_hooks(void)
 {
    enum t_thread_hook_case which;
@@ -5543,6 +5577,128 @@ static void test_frame_thread_hooks(void)
       slock_free(t.lock);
       t_active_thread_hooks = NULL;
    }
+}
+
+static retro_atomic_int_t t_park_polls;
+static retro_atomic_int_t t_park_ends;
+static openxr_frame_t    *t_park_frame;
+
+static XRAPI_ATTR XrResult XRAPI_CALL t_park_poll_event(XrInstance i,
+      XrEventDataBuffer *ev)
+{
+   retro_atomic_fetch_add_int(&t_park_polls, 1);
+   return t_poll_event(i, ev);
+}
+
+static XRAPI_ATTR XrResult XRAPI_CALL t_park_end_frame(XrSession s,
+      const XrFrameEndInfo *ei)
+{
+   (void)s; (void)ei;
+   retro_atomic_fetch_add_int(&t_park_ends, 1);
+   return XR_SUCCESS;
+}
+
+/* Waits up to two seconds for cond. */
+#define T_PARK_UNTIL(cond) \
+   do { \
+      retro_time_t deadline_ = cpu_features_get_time_usec() + 2000000; \
+      while (!(cond) && cpu_features_get_time_usec() < deadline_) \
+         retro_sleep(1); \
+   } while (0)
+
+
+static retro_atomic_int_t t_park_polling;
+static void t_park_host_thread(void *arg)
+{
+   (void)arg;
+   while (retro_atomic_load_acquire_int(&t_park_polling))
+      openxr_frame_host_poll(t_park_frame);
+}
+
+/* The XR thread with the session down makes no calls of its own: it is
+ * parked until the drawing thread's poll finds an event, then runs the
+ * session; and a stop ends it parked, or beside a poll in progress. */
+static void test_frame_thread_parks(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   t_thread_hooks_t t;
+   int polls;
+   unsigned round;
+
+   t_frame_fresh(&rt, &s, &sc, &f);
+   openxr_session_destroy(&s);
+   t_num_events = t_next_event = 0;
+   memset(&t, 0, sizeof(t));
+   t.frame = &f;
+   t.which = T_THREAD_FRAME;
+   retro_atomic_int_init(&t.starts, 0);
+   retro_atomic_int_init(&t.stops, 0);
+   s.hooks.lock         = NULL;
+   s.hooks.unlock       = NULL;
+   s.PollEvent          = t_park_poll_event;
+   f.EndFrame           = t_park_end_frame;
+   f.thread_hooks.start = t_thread_start;
+   f.thread_hooks.stop  = t_thread_stop;
+   f.thread_hooks.user  = &t;
+   t_park_frame         = &f;
+
+   /* Parked with nothing queued: no polls of its own, and a poll that
+    * finds nothing leaves it so. */
+   CHECK(openxr_frame_start(&f), "start");
+   T_PARK_UNTIL(retro_atomic_load_acquire_int(&f.poller) == 1);
+   CHECK(retro_atomic_load_acquire_int(&f.poller) == 1,
+         "the XR thread did not park with the session down");
+   polls = retro_atomic_load_acquire_int(&t_park_polls);
+   retro_sleep(100);
+   CHECK(retro_atomic_load_acquire_int(&t_park_polls) == polls,
+         "a parked XR thread polled %d times in 100 ms",
+         retro_atomic_load_acquire_int(&t_park_polls) - polls);
+   openxr_frame_host_poll(&f);
+   CHECK(     retro_atomic_load_acquire_int(&t_park_polls) == polls + 1
+         && retro_atomic_load_acquire_int(&f.poller) == 1
+         && !openxr_session_running(&s),
+         "an empty poll woke the XR thread");
+
+   /* READY, found by the drawing thread's poll: the session runs. */
+   t_push_state(T_SESSION, XR_SESSION_STATE_READY);
+   openxr_frame_host_poll(&f);
+   T_PARK_UNTIL(retro_atomic_load_acquire_int(&t_park_ends) > 0);
+   CHECK(     openxr_session_running(&s)
+         && retro_atomic_load_acquire_int(&t_park_ends) > 0,
+         "READY from the drawing thread's poll did not start the session");
+   openxr_frame_stop(&f);
+   CHECK(retro_atomic_load_acquire_int(&t.stops) == 1, "stopped running");
+
+   /* Stopped parked, then stopped while the drawing thread polls. */
+   for (round = 0; round < 2; round++)
+   {
+      sthread_t *host = NULL;
+      retro_time_t at;
+      openxr_session_reset(&s);
+      CHECK(openxr_frame_start(&f), "start %u", round);
+      T_PARK_UNTIL(retro_atomic_load_acquire_int(&f.poller) != 0);
+      if (round)
+      {
+         retro_atomic_store_release_int(&t_park_polling, 1);
+         host = sthread_create(t_park_host_thread, NULL);
+      }
+      at = cpu_features_get_time_usec();
+      openxr_frame_stop(&f);
+      CHECK(cpu_features_get_time_usec() - at < 1000000 && !f.thread,
+            "%s: the parked thread was not stopped at once",
+            round ? "polled" : "parked");
+      if (host)
+      {
+         retro_atomic_store_release_int(&t_park_polling, 0);
+         sthread_join(host);
+      }
+      CHECK(retro_atomic_load_acquire_int(&t.stops) == 2 + (int)round,
+            "%u: stop count %d", round, retro_atomic_load_acquire_int(&t.stops));
+   }
+   t_frame_free(&rt, &s, &f);
 }
 
 static void t_carry_noted(void *user, int from, int to)
@@ -6879,7 +7035,12 @@ int main(void)
    test_swapchain();
    test_seq_latch();
    test_frame();
+   t_watch_arm("test_frame_thread_hooks");
    test_frame_thread_hooks();
+   t_watch_disarm();
+   t_watch_arm("test_frame_thread_parks");
+   test_frame_thread_parks();
+   t_watch_disarm();
    test_frame_carried_seq();
    test_track_swap_threads();
    test_frame_pacing();

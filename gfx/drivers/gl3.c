@@ -7975,6 +7975,8 @@ static bool gl3_frame(void *data, const void *frame,
       gl3_fence_iterate(gl, hard_sync_frames);
 
 #ifdef HAVE_GL3_XR
+   if (gl->xr.host)
+      gl_openxr_host_poll(gl->xr.host);
    /* In place of the window's vsync: once a core frame, never under
     * fast-forward. */
    if (gl->xr.paced && !(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))

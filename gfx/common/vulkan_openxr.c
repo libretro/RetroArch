@@ -907,6 +907,11 @@ void vulkan_openxr_pace_wait(vulkan_openxr_t *xr)
    openxr_frame_pace_wait(&xr->frame);
 }
 
+void vulkan_openxr_host_poll(vulkan_openxr_t *xr)
+{
+   openxr_frame_host_poll(&xr->frame);
+}
+
 unsigned vulkan_openxr_refresh_rates(const vulkan_openxr_t *xr,
       float *rates, unsigned cap)
 {

@@ -23,6 +23,7 @@
 #include <retro_common_api.h>
 #include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
+#include <retro_spsc.h>
 
 #include <openxr/openxr.h>
 #include <libretro.h>
@@ -151,6 +152,13 @@ typedef struct openxr_frame
    retro_eventcount_t tick;
    retro_atomic_int_t tick_seq;
    bool tick_ready;
+   /* While the session is down the XR thread parks on idle and the
+    * drawing thread fetches the runtime's events for it, into events
+    * (openxr_frame_host_poll); poller says whose xrPollEvent it is. */
+   retro_spsc_t events;            /* openxr_event_t */
+   retro_eventcount_t idle;
+   retro_atomic_int_t poller;      /* OPENXR_POLLER_* (openxr_frame.c) */
+   bool idle_ready;
    retro_atomic_int_t interval;
    unsigned tick_count;            /* XR thread */
    unsigned tick_interval;         /* XR thread */
@@ -244,6 +252,9 @@ float openxr_frame_pixels_per_radian(openxr_frame_t *f);
 float openxr_frame_refresh_rate(openxr_frame_t *f);
 void openxr_frame_set_pacing(openxr_frame_t *f, unsigned interval);
 void openxr_frame_pace_wait(openxr_frame_t *f);
+/* The drawing thread, once a frame: while the XR thread is parked with
+ * the session down, the runtime's events, handed to it to act on. */
+void openxr_frame_host_poll(openxr_frame_t *f);
 void openxr_frame_pace_skip(openxr_frame_t *f);
 unsigned openxr_frame_refresh_rates(const openxr_frame_t *f,
       float *rates, unsigned cap);

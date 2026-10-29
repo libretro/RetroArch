@@ -651,14 +651,80 @@ static void openxr_frame_submit(openxr_frame_t *f,
 }
 
 /* One headset frame on the XR thread. xrWaitFrame paces this thread at
- * the headset's rate, and the core too while the headset paces it. */
-static void openxr_frame_run(openxr_frame_t *f)
+ * the headset's rate, and the core too while the headset paces it.
+ * False when it could not wait for one. */
+static bool openxr_frame_run(openxr_frame_t *f)
 {
    openxr_frame_begun_t b;
    if (openxr_frame_wait_begin(f, &b, true))
       openxr_frame_submit(f, &b, true);
-   else if (!b.waited)
-      retro_sleep(1);
+   return b.waited;
+}
+
+/* Whose xrPollEvent it is: the XR thread's, or, while it is parked,
+ * the drawing thread's, which takes POLLING for each poll it makes. */
+#define OPENXR_POLLER_XR      0
+#define OPENXR_POLLER_HOST    1
+#define OPENXR_POLLER_POLLING 2
+#define OPENXR_EVENTS_HELD    8
+
+/* What the drawing thread fetched while this thread was parked. */
+static void openxr_frame_take_events(openxr_frame_t *f)
+{
+   openxr_event_t e;
+   while (retro_spsc_read(&f->events, &e, sizeof(e)) == sizeof(e))
+      openxr_session_apply(f->session, &e);
+}
+
+/* With nothing to do until the runtime has news, nor a way to wait on
+ * it: parked until the drawing thread fetches an event, or a stop, and
+ * the polling its own again. */
+static void openxr_frame_park(openxr_frame_t *f)
+{
+   retro_atomic_store_release_int(&f->poller, OPENXR_POLLER_HOST);
+   for (;;)
+   {
+      int key;
+      int who = retro_atomic_load_acquire_int(&f->poller);
+      if (who == OPENXR_POLLER_XR)
+         return;
+      if (     who == OPENXR_POLLER_HOST
+            && retro_atomic_load_acquire_int(&f->quit)
+            && retro_atomic_cas_int(&f->poller, OPENXR_POLLER_HOST,
+               OPENXR_POLLER_XR))
+         return;
+      key = retro_eventcount_prepare_wait(&f->idle);
+      who = retro_atomic_load_acquire_int(&f->poller);
+      if (     who == OPENXR_POLLER_XR
+            || (   who == OPENXR_POLLER_HOST
+                && retro_atomic_load_acquire_int(&f->quit)))
+         retro_eventcount_cancel_wait(&f->idle);
+      else
+         retro_eventcount_commit_wait(&f->idle, key);
+   }
+}
+
+void openxr_frame_host_poll(openxr_frame_t *f)
+{
+   openxr_event_t e;
+   bool fetched = false;
+   if (!retro_atomic_cas_int(&f->poller, OPENXR_POLLER_HOST,
+            OPENXR_POLLER_POLLING))
+      return;
+   while (   retro_spsc_write_avail(&f->events) >= sizeof(e)
+          && openxr_session_next_event(f->session, &e))
+   {
+      retro_spsc_write(&f->events, &e, sizeof(e));
+      fetched = true;
+      if (e.kind == OPENXR_EVENT_INSTANCE_LOST)
+         break;
+   }
+   retro_atomic_store_release_int(&f->poller,
+         fetched ? OPENXR_POLLER_XR : OPENXR_POLLER_HOST);
+   /* against a stop between the poll and this: see openxr_frame_stop */
+   retro_atomic_thread_fence_seq_cst();
+   if (fetched || retro_atomic_load_acquire_int(&f->quit))
+      retro_eventcount_notify(&f->idle);
 }
 
 static void openxr_frame_thread(void *data)
@@ -674,11 +740,10 @@ static void openxr_frame_thread(void *data)
    }
    while (!retro_atomic_load_acquire_int(&f->quit))
    {
+      openxr_frame_take_events(f);
       openxr_session_poll(f->session);
-      if (openxr_session_running(f->session))
-         openxr_frame_run(f);
-      else
-         retro_sleep(10);
+      if (!openxr_session_running(f->session) || !openxr_frame_run(f))
+         openxr_frame_park(f);
    }
 end:
    if (f->thread_hooks.stop)
@@ -741,6 +806,18 @@ bool openxr_frame_load(openxr_frame_t *f, const openxr_runtime_t *rt,
          return false;
       f->tick_ready = true;
    }
+   if (!f->idle_ready)
+   {
+      if (!retro_eventcount_init(&f->idle))
+         return false;
+      if (!retro_spsc_init(&f->events,
+               OPENXR_EVENTS_HELD * sizeof(openxr_event_t)))
+      {
+         retro_eventcount_free(&f->idle);
+         return false;
+      }
+      f->idle_ready = true;
+   }
    return OPENXR_FN(rt, f, WaitFrame)
        && OPENXR_FN(rt, f, BeginFrame)
        && OPENXR_FN(rt, f, EndFrame);
@@ -754,6 +831,12 @@ void openxr_frame_deinit(openxr_frame_t *f)
    if (f->tick_ready)
       retro_eventcount_free(&f->tick);
    f->tick_ready = false;
+   if (f->idle_ready)
+   {
+      retro_spsc_free(&f->events);
+      retro_eventcount_free(&f->idle);
+   }
+   f->idle_ready = false;
 }
 
 void openxr_frame_session_created(openxr_frame_t *f)
@@ -849,6 +932,8 @@ bool openxr_frame_start(openxr_frame_t *f)
    f->frame_failed  = false;
    retro_atomic_store_release_int(&f->thread_started, 0);
    retro_atomic_store_release_int(&f->quit, 0);
+   retro_atomic_store_release_int(&f->poller, OPENXR_POLLER_XR);
+   retro_spsc_clear(&f->events);
    openxr_session_set_alive(f->session, true);
    if (!(f->thread = sthread_create(openxr_frame_thread, f)))
    {
@@ -881,6 +966,10 @@ void openxr_frame_stop(openxr_frame_t *f)
    if (!f->thread)
       return;
    retro_atomic_store_release_int(&f->quit, 1);
+   /* A parked thread is woken; one the drawing thread's poll holds is
+    * woken by that poll (openxr_frame_host_poll). */
+   retro_atomic_thread_fence_seq_cst();
+   retro_eventcount_notify(&f->idle);
    sthread_join(f->thread);
    f->thread = NULL;
    /* Nothing shows the session's frames now: a driver that presents on

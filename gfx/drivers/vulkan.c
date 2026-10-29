@@ -13815,6 +13815,8 @@ static bool vulkan_frame(void *data, const void *frame,
    if (xr_inline)
       vulkan_openxr_end_frame(vk->context->xr,
             input_driver_nonblock_state ? 0 : video_info->headset_interval);
+   else if (vk->context->xr)
+      vulkan_openxr_host_poll(vk->context->xr);
    /* In place of the window's vsync: once a core frame, never under
     * fast-forward. */
    if (     vk->xr.paced

@@ -977,6 +977,11 @@ void gl_openxr_pace_wait(gl_openxr_t *xr)
    openxr_frame_pace_wait(&xr->frame);
 }
 
+void gl_openxr_host_poll(gl_openxr_t *xr)
+{
+   openxr_frame_host_poll(&xr->frame);
+}
+
 void gl_openxr_pace_skip(gl_openxr_t *xr)
 {
    openxr_frame_pace_skip(&xr->frame);

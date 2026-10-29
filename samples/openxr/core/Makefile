@@ -30,6 +30,7 @@ SRCS := openxr_core_test.c \
         $(ROOT)/gfx/video_views.c \
         $(ROOT)/libretro-common/rthreads/rthreads.c \
         $(ROOT)/libretro-common/rthreads/retro_eventcount.c \
+        $(ROOT)/libretro-common/queues/retro_spsc.c \
         $(ROOT)/libretro-common/time/rtime.c \
         $(ROOT)/libretro-common/features/features_cpu.c
 
