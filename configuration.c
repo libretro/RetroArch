@@ -85,7 +85,7 @@ void android_app_set_window_settings(bool notch_write_over,
 #include "list_special.h"
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-#include "uwp/uwp_func.h"
+#include "os/uwp/uwp_func.h"
 #endif
 
 #include "lakka.h"

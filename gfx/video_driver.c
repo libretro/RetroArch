@@ -155,7 +155,7 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #endif
 
 #ifdef __WINRT__
-#include "../uwp/uwp_func.h"
+#include "../os/uwp/uwp_func.h"
 #endif
 
 #include "../audio/audio_driver.h"

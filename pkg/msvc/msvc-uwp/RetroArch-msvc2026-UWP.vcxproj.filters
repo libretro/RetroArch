@@ -26,13 +26,13 @@
     <None Include="MESA\$(Platform)\*.dll" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\uwp\uwp_func.h">
+    <ClInclude Include="..\..\..\os\uwp\uwp_func.h">
       <Filter>uwp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\uwp\uwp_main.h">
+    <ClInclude Include="..\..\..\os\uwp\uwp_main.h">
       <Filter>uwp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\uwp\uwp_async.h">
+    <ClInclude Include="..\..\..\os\uwp\uwp_async.h">
       <Filter>uwp</Filter>
     </ClInclude>
   </ItemGroup>
@@ -43,7 +43,7 @@
     <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
       <Filter>griffin</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\uwp\uwp_main.cpp">
+    <ClCompile Include="..\..\..\os\uwp\uwp_main.cpp">
       <Filter>uwp</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\griffin\griffin_rslc.c">

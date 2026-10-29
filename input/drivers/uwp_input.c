@@ -23,7 +23,7 @@
 #include <boolean.h>
 #include <libretro.h>
 
-#include <uwp/uwp_func.h>
+#include "../../os/uwp/uwp_func.h"
 
 #include "../input_driver.h"
 

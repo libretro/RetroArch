@@ -41,7 +41,7 @@
 
 #ifdef __WINRT__
 #include <Fileapifromapp.h>
-#include <uwp/uwp_func.h>
+#include "../os/uwp/uwp_func.h"
 #endif
 
 #ifdef HAVE_CONFIG_H

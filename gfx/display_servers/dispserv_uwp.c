@@ -16,7 +16,7 @@
 #include <stddef.h>
 #include <boolean.h>
 #include "../video_display_server.h"
-#include "../../uwp/uwp_func.h"
+#include "../../os/uwp/uwp_func.h"
 
 static void *uwp_display_server_init(void) { return NULL; }
 static void  uwp_display_server_destroy(void *data) { }

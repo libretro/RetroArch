@@ -36,7 +36,7 @@
 #include "../../config.h"
 #endif
 
-#include "../../uwp/uwp_func.h"
+#include "../../os/uwp/uwp_func.h"
 #include "gfx/common/win32_common.h"
 
 #include "../../configuration.h"

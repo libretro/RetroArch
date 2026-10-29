@@ -44,7 +44,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-#include "../../uwp/uwp_func.h"
+#include "../../os/uwp/uwp_func.h"
 
 static size_t frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
 {

@@ -53,4 +53,4 @@ extern char uwp_device_family[128];
 }
 #endif
 
-#endif _UWP_FUNC_H
+#endif /* _UWP_FUNC_H */

@@ -41,7 +41,7 @@
 #include "file_path_special.h"
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-#include "uwp/uwp_func.h"
+#include "os/uwp/uwp_func.h"
 #endif
 
 #if defined(ANDROID)

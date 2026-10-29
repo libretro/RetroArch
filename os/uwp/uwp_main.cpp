@@ -47,11 +47,11 @@
 #include "paths.h"
 
 #include "uwp_main.h"
-#include "../retroarch.h"
-#include "../frontend/frontend.h"
-#include "../input/input_keymaps.h"
-#include "../verbosity.h"
-#include "../gfx/video_defines.h"
+#include "../../retroarch.h"
+#include "../../frontend/frontend.h"
+#include "../../input/input_keymaps.h"
+#include "../../verbosity.h"
+#include "../../gfx/video_defines.h"
 #include "uwp_func.h"
 #include "uwp_async.h"
 #include <compat/strl.h>

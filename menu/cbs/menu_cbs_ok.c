@@ -105,7 +105,7 @@
 #endif
 
 #ifdef __WINRT__
-#include "../../uwp/uwp_func.h"
+#include "../../os/uwp/uwp_func.h"
 #endif
 #if TARGET_OS_IPHONE
 #include "../../ui/drivers/cocoa/apple_platform.h"
