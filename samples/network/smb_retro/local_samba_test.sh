@@ -10,7 +10,7 @@ command -v smbd >/dev/null 2>&1 || { echo "skip: no smbd"; exit 0; }
 make -s smb_test vfs_test vfs_threads_test smb_idle_test
 # WITH_LIBSMB2=1: the VFS tests over a system libsmb2 as well (the
 # --enable-libsmb build), on every case the built-in client passes
-[ -n "${WITH_LIBSMB2:-}" ] && make -s vfs_test_libsmb2 vfs_threads_test_libsmb2 smb_idle_test_libsmb2
+[ -n "${WITH_LIBSMB2:-}" ] && make -s vfs_test_libsmb2 vfs_threads_test_libsmb2 smb_idle_test_libsmb2 cloud_sync_test_libsmb2
 RUN=${RUNNER:-}
 EXE=${EXE:-}
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
@@ -163,6 +163,15 @@ if SMB_KRB_REALM=NOWHERE.TEST SMB_KRB_KDC=127.0.0.1 SMB_KRB_PORT=1 \
    echo "ok:   Kerberos unavailable falls back to NTLMSSP"
 else
    echo "FAIL: Kerberos fallback: $(cat $D/out)"; exit 1
+fi
+# cloud sync connecting beside the VFS's private connections: both on
+# libsmb2's one list of contexts
+if [ -n "${WITH_LIBSMB2:-}" ]; then
+   if $RUN ./cloud_sync_test_libsmb2$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO >$D/out 2>&1; then
+      echo "ok:   libsmb2: cloud sync connects beside the VFS"
+   else
+      echo "FAIL: libsmb2: cloud sync beside the VFS: $(cat $D/out)"; exit 1
+   fi
 fi
 rm -f $D/share/rsmb_test.bin
 

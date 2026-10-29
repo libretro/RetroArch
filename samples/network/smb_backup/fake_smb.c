@@ -78,6 +78,9 @@ bool fake_smb_is(const char *path, const char *text)
 
 struct smb2_context *smb2_init_context(void) { return &the_ctx; }
 void smb2_destroy_context(struct smb2_context *smb2) { (void)smb2; }
+/* the SMB VFS's wrappers, which the test does not link */
+struct smb2_context *smb_ctx_new(void) { return smb2_init_context(); }
+void smb_ctx_free(struct smb2_context *ctx) { smb2_destroy_context(ctx); }
 int smb2_connect_share(struct smb2_context *smb2, const char *server,
       const char *share, const char *user)
 { (void)smb2; (void)server; (void)share; (void)user; return 0; }

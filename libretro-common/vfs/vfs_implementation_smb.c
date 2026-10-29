@@ -76,7 +76,7 @@ static slock_t *smb_list_lock(void)
    return l;
 }
 
-static struct smb2_context *smb_ctx_new(void)
+struct smb2_context *smb_ctx_new(void)
 {
    struct smb2_context *ctx;
    slock_t *l = smb_list_lock();
@@ -88,7 +88,7 @@ static struct smb2_context *smb_ctx_new(void)
    return ctx;
 }
 
-static void smb_ctx_free(struct smb2_context *ctx)
+void smb_ctx_free(struct smb2_context *ctx)
 {
    slock_t *l = smb_list_lock();
    if (!l)
@@ -110,8 +110,16 @@ static int smb_ctx_active(struct smb2_context *ctx)
    return r;
 }
 #else
-#define smb_ctx_new()        smb2_init_context()
-#define smb_ctx_free(ctx)    smb2_destroy_context(ctx)
+struct smb2_context *smb_ctx_new(void)
+{
+   return smb2_init_context();
+}
+
+void smb_ctx_free(struct smb2_context *ctx)
+{
+   smb2_destroy_context(ctx);
+}
+
 #define smb_ctx_active(ctx)  smb2_context_active(ctx)
 #endif
 
