@@ -126,6 +126,7 @@ shaders/shaders_slang
 *.rpx
 *.last
 os/wiiu/wut/elf2rpl/elf2rpl
+os/wiiu/wut/elf2rpl/elf2rpl.exe
 /pkg/wiiu/retroarch
 /pkg/wiiu/wiiu
 /pkg/wiiu/rpx

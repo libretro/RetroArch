@@ -1,28 +1,29 @@
 # os/wiiu/wut/elf2rpl, the host tool that turns the linked Wii U ELF
 # into an RPL, run on a linked ELF the test writes itself in the shape
-# a -pie link gives it. No PowerPC toolchain is needed. Builds for Linux
-# and, with CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++
-# EXE=.exe RUNNER=wine, for Windows.
+# a -pie link gives it, then on truncated copies of it. No PowerPC
+# toolchain is needed. Builds for Linux and, with
+# CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine, for Windows.
 TARGET   := wiiu_elf2rpl_test$(EXE)
 TOOL     := wiiu_elf2rpl_tool$(EXE)
 CORE_DIR := ../../..
 ELF2RPL  := $(CORE_DIR)/os/wiiu/wut/elf2rpl
+LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
-CXX     ?= g++
+# The tool and the libretro-common units it links, as its own Makefile
+# lists them
+TOOL_SOURCES := $(ELF2RPL)/main.c \
+                $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+                $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+                $(LIBRETRO_COMM_DIR)/time/rtime.c
+
 CFLAGS  += -std=c89 -Wall -g1 -O1 -DELF2RPL='"$(if $(EXE),,./)$(TOOL)"'
-TFLAGS  := -O2 -std=c++14 -I$(ELF2RPL) -Wno-class-memaccess
+TFLAGS  := -std=gnu89 -Wall -g1 -O2 -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
-   TFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(TFLAGS)
-   # The tool reads and writes ELF headers through packed big-endian
-   # fields, and keeps its section graph to exit, as a one-shot tool
-   # may; its other undefined behaviour and memory errors still show.
-   ifneq ($(findstring undefined,$(SANITIZER)),)
-      TFLAGS += -fno-sanitize=alignment
-   endif
-   CFLAGS  += -DELF2RPL_ENV='"ASAN_OPTIONS=detect_leaks=0 "'
+   TFLAGS  := -fsanitize=$(SANITIZER) -fno-sanitize-recover=all \
+              -fno-omit-frame-pointer $(TFLAGS)
 endif
 
 ifeq ($(EXE),.exe)
@@ -31,8 +32,8 @@ endif
 
 all: $(TARGET) $(TOOL)
 
-$(TOOL): $(ELF2RPL)/main.cpp
-	$(CXX) $(TFLAGS) -o $@ $<
+$(TOOL): $(TOOL_SOURCES)
+	$(CC) $(TFLAGS) -o $@ $(TOOL_SOURCES)
 
 $(TARGET): wiiu_elf2rpl_test.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
@@ -43,6 +44,7 @@ check: all
 clean:
 	rm -f wiiu_elf2rpl_test wiiu_elf2rpl_test.exe \
 	      wiiu_elf2rpl_tool wiiu_elf2rpl_tool.exe \
-	      wiiu_elf2rpl_in.tmp wiiu_elf2rpl_out.tmp
+	      wiiu_elf2rpl_in.tmp wiiu_elf2rpl_out.tmp \
+	      wiiu_elf2rpl_trunc.tmp
 
 .PHONY: all check clean

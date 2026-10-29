@@ -9,21 +9,26 @@
  * symbol - the Cafe OS loader cannot resolve one, and a 24-bit branch
  * to address zero is out of reach from the code area - while every
  * relocation against a resolved target survives, and the instruction
- * the link wrote at the weak branch is left as it was. */
+ * the link wrote at the weak branch is left as it was.
+ *
+ * Every section's entry in SHT_RPL_CRCS must be the zlib CRC-32 of its
+ * contents, which the loader checks; and a truncated ELF, or an option
+ * the tool does not know, must end in its error, not a crash. */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
+#include <sys/wait.h>
+#endif
 
 #ifndef ELF2RPL
 #define ELF2RPL "./wiiu_elf2rpl_tool"
 #endif
-#ifndef ELF2RPL_ENV
-#define ELF2RPL_ENV ""
-#endif
 
-#define IN_PATH  "wiiu_elf2rpl_in.tmp"
-#define OUT_PATH "wiiu_elf2rpl_out.tmp"
+#define IN_PATH    "wiiu_elf2rpl_in.tmp"
+#define OUT_PATH   "wiiu_elf2rpl_out.tmp"
+#define TRUNC_PATH "wiiu_elf2rpl_trunc.tmp"
 
 #define CODE 0x02000000u
 #define DATA 0x10000000u
@@ -233,13 +238,75 @@ static unsigned char *read_all(const char *path, long *len)
    return buf;
 }
 
+/* zlib's CRC-32, a bit at a time, to check the tool's against */
+static unsigned long crc32_ref(const unsigned char *p, unsigned long n)
+{
+   unsigned long crc = 0xFFFFFFFFul;
+   while (n--)
+   {
+      int k;
+      crc ^= *p++;
+      for (k = 0; k < 8; k++)
+         crc = (crc >> 1) ^ (0xEDB88320ul & (0ul - (crc & 1ul)));
+   }
+   return crc ^ 0xFFFFFFFFul;
+}
+
+/* The tool gave up with its own error (exit -1), rather than crashing
+ * or being stopped by a sanitizer. */
+static int failed_cleanly(int rc)
+{
+#ifdef _WIN32
+   return rc == -1 || rc == 255;
+#else
+   return rc != -1 && WIFEXITED(rc) && WEXITSTATUS(rc) == 255;
+#endif
+}
+
+static int bad_input_rejected(const unsigned char *elf, long elf_len)
+{
+   static const long cuts[] = { 0, 4, 20, 51, 52, 60, 200, 400, 1000, -1 };
+   char cmd[256];
+   int ok = 1, c;
+
+   for (c = 0; cuts[c] >= 0; c++)
+   {
+      long  cut = cuts[c] < elf_len ? cuts[c] : elf_len - 1;
+      FILE *f   = fopen(TRUNC_PATH, "wb");
+      int   rc;
+      if (!f)
+         return 0;
+      if (cut && fwrite(elf, 1, (size_t)cut, f) != (size_t)cut)
+         ok = 0;
+      fclose(f);
+      sprintf(cmd, "%s %s %s", ELF2RPL, TRUNC_PATH, OUT_PATH);
+      rc = system(cmd);
+      if (!failed_cleanly(rc))
+      {
+         fprintf(stderr, "ELF cut to %ld bytes: elf2rpl returned %d\n", cut, rc);
+         ok = 0;
+      }
+   }
+   remove(TRUNC_PATH);
+   remove(OUT_PATH);
+
+   sprintf(cmd, "%s -x %s %s", ELF2RPL, IN_PATH, OUT_PATH);
+   if (!failed_cleanly(system(cmd)))
+   {
+      fprintf(stderr, "elf2rpl took an unknown option\n");
+      ok = 0;
+   }
+   remove(OUT_PATH);
+   return ok;
+}
+
 int main(void)
 {
-   unsigned char *rpl;
-   long len = 0;
-   unsigned long shoff;
+   unsigned char *rpl, *elf;
+   long len = 0, elf_len = 0;
+   unsigned long shoff, crc_off = 0, crc_count = 0;
    unsigned shnum, i;
-   int kept = 0, undef = 0, rel24 = 0, branch_ok = 0;
+   int kept = 0, undef = 0, rel24 = 0, branch_ok = 0, crc_bad = 0;
    char cmd[256];
 
    if (!write_input())
@@ -247,7 +314,7 @@ int main(void)
       fprintf(stderr, "FAIL could not write %s\n", IN_PATH);
       return 1;
    }
-   sprintf(cmd, "%s%s %s %s", ELF2RPL_ENV, ELF2RPL, IN_PATH, OUT_PATH);
+   sprintf(cmd, "%s %s %s", ELF2RPL, IN_PATH, OUT_PATH);
    remove(OUT_PATH);
    CHECK(system(cmd) == 0);
    if (!(rpl = read_all(OUT_PATH, &len)))
@@ -267,6 +334,12 @@ int main(void)
       unsigned long sh_off  = get32(sh + 16);
       unsigned long sh_size = get32(sh + 20);
       unsigned long sh_link = get32(sh + 24);
+
+      if (type == 0x80000003ul)
+      {
+         crc_off   = sh_off;
+         crc_count = sh_size / 4;
+      }
 
       /* The weak branch the link wrote, still as it was. */
       if (type == 1 && sh_addr == CODE && sh_size >= 12)
@@ -301,7 +374,32 @@ int main(void)
    CHECK(kept == 3);        /* table@ha, table@l and &main survive */
    CHECK(branch_ok);
 
+   /* One CRC per section, its own and empty ones zero */
+   CHECK(crc_count == shnum);
+   for (i = 0; i < shnum && crc_count == shnum; i++)
+   {
+      const unsigned char *sh = rpl + shoff + (unsigned long)i * 40;
+      unsigned long type = get32(sh + 4);
+      unsigned long size = get32(sh + 20);
+      unsigned long want = (type == 0x80000003ul || type == 8 || !size)
+         ? 0 : crc32_ref(rpl + get32(sh + 16), size);
+      if (get32(rpl + crc_off + i * 4) != want)
+      {
+         fprintf(stderr, "section %u CRC %08lx, want %08lx\n", i,
+               get32(rpl + crc_off + i * 4), want);
+         crc_bad++;
+      }
+   }
+   CHECK(crc_bad == 0);
    free(rpl);
+
+   CHECK((elf = read_all(IN_PATH, &elf_len)) != NULL);
+   if (elf)
+   {
+      CHECK(bad_input_rejected(elf, elf_len));
+      free(elf);
+   }
+
    remove(IN_PATH);
    remove(OUT_PATH);
    if (failures)

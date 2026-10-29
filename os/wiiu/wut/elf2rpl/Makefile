@@ -1,12 +1,17 @@
+# elf2rpl runs on the build host, so it is built with the host's C
+# compiler (HOST_CC=... to pick another), never the devkitPPC one.
 TARGET   := elf2rpl
 
-CXX      := g++
-LD	 := g++
+LIBRETRO_COMM_DIR := ../../../../libretro-common
 
-OBJS   := main.o
-INCLUDES := -I.
+HOST_CC  ?= gcc
 
-CFLAGS   := -O3 -Wall -std=c++14 -DNDEBUG
+SOURCES  := main.c \
+            $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+            $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+            $(LIBRETRO_COMM_DIR)/time/rtime.c
+
+CFLAGS   := -O2 -Wall -std=gnu89 -DNDEBUG -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS  :=
 
 ifneq ($(findstring Linux,$(shell uname -a)),)
@@ -18,10 +23,9 @@ endif
 all: $(TARGET)
 
 clean:
-	@rm -rf $(TARGET) $(OBJS)
+	@rm -f $(TARGET)
 
-%.o: %.cpp
-	$(CXX) -c -o $@ $< $(CFLAGS) $(INCLUDES)
+$(TARGET): $(SOURCES)
+	$(HOST_CC) $(CFLAGS) -o $@ $(SOURCES) $(LDFLAGS)
 
-$(TARGET): $(OBJS)
-	$(LD) $(OBJS) $(CFLAGS) $(LDFLAGS) -o $@
+.PHONY: all clean
