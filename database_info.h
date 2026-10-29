@@ -146,6 +146,7 @@ typedef struct
 #define DB_EXTRACT_SIZE     (1 << 3)
 #define DB_EXTRACT_MD5      (1 << 4)
 #define DB_EXTRACT_SHA1     (1 << 5)
+#define DB_EXTRACT_ROM_NAME (1 << 6)
 
 /* Preset used by the ROM scanner */
 #define DB_EXTRACT_SCAN_FIELDS \
@@ -178,6 +179,14 @@ size_t database_info_crc_index_count(const database_info_crc_index_t *idx);
  * same walk that built it.  False when no record carried a size. */
 bool database_info_crc_index_size_range(
       const database_info_crc_index_t *idx, int64_t *min, int64_t *max);
+
+/* False only when every record whose rom_name ends in ".@ext" carries
+ * a size and none is @size.  True when the index was built without
+ * those sizes, so a caller reads such an archive as it would without
+ * an index; also for a type it keeps no sizes for, an unknown @size of
+ * 0 and a @size of 2^61 or more. */
+bool database_info_crc_index_may_hold_archive(
+      const database_info_crc_index_t *idx, const char *ext, uint64_t size);
 
 /* Records whose crc is @crc or @archive_crc, in file order, with
  * @fields extracted - the same list database_info_list_new_filtered()
@@ -213,7 +222,10 @@ enum database_info_index_want
    DATABASE_INFO_INDEX_CRC        = (1 << 0),
    DATABASE_INFO_INDEX_SERIAL     = (1 << 1),
    /* Whether any record carries a serial, without the serial index. */
-   DATABASE_INFO_INDEX_HAS_SERIAL = (1 << 2)
+   DATABASE_INFO_INDEX_HAS_SERIAL = (1 << 2),
+   /* With CRC: the sizes of the records named for an archive, for
+    * database_info_crc_index_may_hold_archive(). */
+   DATABASE_INFO_INDEX_ARCHIVE_SIZES = (1 << 3)
 };
 
 /* Builds the crc index of a database and its serial index in one
@@ -222,10 +234,12 @@ enum database_info_index_want
 typedef struct database_info_index_job database_info_index_job_t;
 
 /* NULL when @rdb_path cannot be opened or @want names no index.
- * @max_bytes caps the crc index's entry table and the serial index
- * gets what the crc index leaves; an index that cannot be built whole
- * comes back NULL, because a partial index would miss matches without
- * saying so.  Zero means no limit. */
+ * @max_bytes caps the crc index's entry table; its archive sizes, then
+ * the serial index, get what that leaves.  An index that cannot be
+ * built whole comes back NULL, because a partial index would miss
+ * matches without saying so; sizes that do not fit are dropped, and
+ * the archives they would have gated are read whole.  Zero means no
+ * limit. */
 database_info_index_job_t *database_info_index_job_new(
       const char *rdb_path, size_t max_bytes, unsigned want);
 

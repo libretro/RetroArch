@@ -58,10 +58,11 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
         const void *key, struct rmsgpack_dom_value *out);
 
 /* Reported once per record that carries the scanned field, the second
- * field or the companion one: the binary values of the two fields, the
- * offset of the record, and the companion numeric value when present
- * (NULL otherwise).  A field the record lacks comes as NULL with a
- * length of zero.
+ * field, the name field or the companion one: the binary values of the
+ * two fields, the name field's string (NUL-terminated), the offset of
+ * the record, and the companion numeric value when present (NULL
+ * otherwise).  A field the record lacks comes as NULL with a length of
+ * zero.
  *
  * A record that has only the companion is reported with @key NULL and
  * @key_len zero, so a caller accumulating over the companion sees
@@ -72,19 +73,22 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
  * Returning non-zero stops the scan. */
 typedef int (*libretrodb_scan2_cb)(void *ctx, const uint8_t *key,
       size_t key_len, const uint8_t *key2, size_t key2_len,
-      uint64_t offset, const uint64_t *aux);
+      const char *name, size_t name_len, uint64_t offset,
+      const uint64_t *aux);
 
 /* Walks a database a run of records at a time, reporting @field and
  * @field2, either of which may be NULL but not both, so a caller
  * indexing both walks it once.  @aux_field may be NULL; naming one
  * collects a numeric field in the same pass and reports the records
- * carrying only it.  The scan reads through a stream of its own, so
- * @db may be closed once it has begun.  The field names are not
- * copied and must outlive the scan. */
+ * carrying only it.  @name_field may be NULL; naming one reports a
+ * string field, one too long for a key as absent.  The scan reads
+ * through a stream of its own, so @db may be closed once it has begun.
+ * The field names are not copied and must outlive the scan. */
 typedef struct libretrodb_scan libretrodb_scan_t;
 
 libretrodb_scan_t *libretrodb_scan_begin(libretrodb_t *db,
-      const char *field, const char *field2, const char *aux_field);
+      const char *field, const char *field2, const char *aux_field,
+      const char *name_field);
 
 /* Reports up to @max_records records, which must be non-zero.
  * Returns 1 while records remain, 0 once the walk is complete or @cb
