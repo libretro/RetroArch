@@ -15,19 +15,33 @@
  */
 
 #include "../include/wiiu/hid.h"
-#include <wiiu/os/atomic.h>
 #include <wiiu/os/event.h>
 #include <wiiu/os/time.h>
 #include <string/stdstring.h>
 
-/* TODO/FIXME - static globals */
-static wiiu_event_list events;
-static wiiu_adapter_list adapters;
+/* The polling thread and the frontend share no list and take no lock.
+ * Each keeps its own list of adapters, and they pass adapters to each
+ * other, and the HID callbacks pass attach events to the polling
+ * thread, through lock-free stacks:
+ *
+ *   attach callback -> hid_events     -> polling thread
+ *   polling thread  -> hid_new        -> frontend: adapters to set up
+ *   frontend        -> hid_retired    -> polling thread: to free
+ *
+ * An adapter's state moves on from each value on one thread only - see
+ * ADAPTER_STATE_* - so no two threads ever write it from the same
+ * state. */
+static mpsc_stack_t hid_events;
+static mpsc_stack_t hid_new;
+static mpsc_stack_t hid_retired;
+/* The polling thread's adapters, linked by next */
+static wiiu_adapter_t *poll_adapters;
+/* The frontend's, linked by next_frontend */
+static wiiu_adapter_t *frontend_adapters;
 /* Wakes the polling thread: a read completed, a device attached or
- * detached, the frontend readied an adapter, or it is time to stop.
- * Auto-reset, so a signal that lands while the thread is busy is not
- * lost - its next wait returns at once. The thread used to spin on its
- * loop with no wait at all. */
+ * detached, the frontend readied or retired an adapter, or it is time
+ * to stop. Auto-reset, so a signal that lands while the thread is busy
+ * is not lost - its next wait returns at once. */
 static OSEvent hid_wake;
 
 /* How long shutdown waits for reads still in flight. */
@@ -97,8 +111,8 @@ static bool wiiu_hid_joypad_query(void *data, unsigned slot)
    return slot < joypad_state.max_slot;
 }
 
-/* The pad in @slot, held until wiiu_hid_put_pad(): the polling thread
- * tears pads down while these run on the frontend's. NULL, holding
+/* The pad in @slot, held until wiiu_hid_put_pad(): at shutdown the
+ * polling thread tears down the pads still plugged in. NULL, holding
  * nothing, for none. */
 static joypad_connection_t *wiiu_hid_get_pad(wiiu_hid_t *hid, unsigned slot)
 {
@@ -235,35 +249,31 @@ static void *wiiu_hid_alloc_zeroed(size_t alignment, size_t len)
 
 static void wiiu_hid_init_lists(void)
 {
-   memset(&events, 0, sizeof(events));
-   OSFastMutex_Init(&(events.lock), "attach_events");
-   memset(&adapters, 0, sizeof(adapters));
-   OSFastMutex_Init(&(adapters.lock), "adapters");
+   mpsc_stack_init(&hid_events);
+   mpsc_stack_init(&hid_new);
+   mpsc_stack_init(&hid_retired);
+   poll_adapters     = NULL;
+   frontend_adapters = NULL;
    OSInitEvent(&hid_wake, FALSE, OS_EVENT_MODE_AUTO);
+}
+
+/* The pad off the frontend's slots and its driver data gone */
+static void wiiu_hid_release_pad(wiiu_adapter_t *adapter)
+{
+   if (!adapter->pad_driver || !adapter->pad_driver_data)
+      return;
+   pad_connection_pad_deregister(joypad_state.pads, adapter->pad_driver,
+         adapter->pad_driver_data);
+   adapter->pad_driver->deinit(adapter->pad_driver_data);
+   adapter->pad_driver_data = NULL;
 }
 
 static void wiiu_hid_delete_adapter(wiiu_adapter_t *adapter)
 {
    if (!adapter)
       return;
-
-   if (adapter->rx_buffer)
-   {
-      free(adapter->rx_buffer);
-      adapter->rx_buffer = NULL;
-   }
-   if (adapter->tx_buffer)
-   {
-      free(adapter->tx_buffer);
-      adapter->tx_buffer = NULL;
-   }
-
-   if (adapter->pad_driver && adapter->pad_driver_data)
-   {
-      adapter->pad_driver->deinit(adapter->pad_driver_data);
-      adapter->pad_driver_data = NULL;
-   }
-
+   free(adapter->rx_buffer);
+   free(adapter->tx_buffer);
    free(adapter);
 }
 
@@ -279,27 +289,29 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
 
    RARCH_LOG("[HID] Waiting for in-flight reads to finish.\n");
 
-   /* We don't need to protect the adapter list here because nothing else
-      will access it during this method (the HID system is shut down, and
-      the only other access is the polling thread that just stopped */
+   /* The HID client is gone and the frontend is in wiiu_hid_free(),
+      waiting on this thread, so every adapter is this thread's now:
+      those the frontend retired too, which are still on this list. */
    for (;;)
    {
       incomplete = 0;
-      for (adapter = adapters.list; adapter != NULL; adapter = adapter->next)
+      for (adapter = poll_adapters; adapter != NULL; adapter = adapter->next)
       {
-         if (adapter->state == ADAPTER_STATE_READING)
+         if (retro_atomic_load_acquire_int(&adapter->state)
+               == ADAPTER_STATE_READING)
             incomplete++;
       }
 
       if (incomplete == 0)
       {
          RARCH_LOG("[HID] All in-flight reads complete.\n");
-         while (adapters.list)
+         mpsc_stack_drain(&hid_retired);
+         while (poll_adapters)
          {
             RARCH_LOG("[HID] Shutting down adapter...\n");
-            adapter = adapters.list;
-            adapters.list = adapter->next;
-            pad_connection_pad_deregister(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data);
+            adapter       = poll_adapters;
+            poll_adapters = adapter->next;
+            wiiu_hid_release_pad(adapter);
             wiiu_hid_delete_adapter(adapter);
          }
          return;
@@ -335,49 +347,58 @@ static OSThread *wiiu_hid_new_thread(void)
    return t;
 }
 
-static wiiu_adapter_t *wiiu_hid_synchronized_lookup_adapter(uint32_t handle)
-{
-   wiiu_adapter_t *iterator;
-
-   OSFastMutex_Lock(&(adapters.lock));
-
-   for (iterator = adapters.list; iterator != NULL; iterator = iterator->next)
-   {
-      if (iterator->handle == handle)
-         break;
-   }
-   OSFastMutex_Unlock(&(adapters.lock));
-
-   return iterator;
-}
-
+/* Polling thread */
 static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event)
 {
-   wiiu_adapter_t *adapter = wiiu_hid_synchronized_lookup_adapter(event->handle);
+   wiiu_adapter_t *adapter;
 
-   /* this will signal the read loop to stop for this adapter
-    * the read loop method will update this to ADAPTER_STATE_GC
-    * so the adapter poll method can clean it up. */
-   if (adapter)
-      adapter->connected = false;
+   for (adapter = poll_adapters; adapter != NULL; adapter = adapter->next)
+   {
+      /* Its reads stop; it is then wound down and handed back to the
+       * frontend to retire. */
+      if (adapter->handle == event->handle)
+      {
+         adapter->connected = false;
+         break;
+      }
+   }
 }
 
-static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list)
+/* Polling thread: the events since the last call, in the order they
+ * came */
+static void wiiu_handle_attach_events(wiiu_hid_t *hid)
 {
-   wiiu_attach_event *event, *event_next = NULL;
+   mpsc_stack_node_t *node = mpsc_stack_reverse(
+         mpsc_stack_drain(&hid_events));
 
-   if (!hid || !list)
-      return;
-
-   for (event = list; event != NULL; event = event_next)
+   while (node)
    {
-      event_next  = event->next;
+      wiiu_attach_event *event = (wiiu_attach_event *)node;
+      node                     = node->next;
       if (event->type == HID_DEVICE_ATTACH)
          wiiu_hid_attach(hid, event);
       else
          wiiu_hid_detach(hid, event);
-      if (event)
-         free(event);
+      free(event);
+   }
+}
+
+/* Polling thread: adapters the frontend has retired, off this thread's
+ * list and freed */
+static void wiiu_hid_free_retired(void)
+{
+   mpsc_stack_node_t *node = mpsc_stack_drain(&hid_retired);
+
+   while (node)
+   {
+      wiiu_adapter_t *retired = (wiiu_adapter_t *)node;
+      wiiu_adapter_t **link   = &poll_adapters;
+      node                    = node->next;
+      while (*link && *link != retired)
+         link = &(*link)->next;
+      if (*link)
+         *link = retired->next;
+      wiiu_hid_delete_adapter(retired);
    }
 }
 
@@ -394,12 +415,13 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t err,
    if (err < 0)
       wiiu_hid_report_hid_error("async read failed", adapter, err);
 
-   if (adapter->state == ADAPTER_STATE_READING)
+   /* The packet first: once the state says READY, the polling thread
+    * may wind the adapter down. */
+   if (retro_atomic_load_acquire_int(&adapter->state) == ADAPTER_STATE_READING)
    {
-      adapter->state = ADAPTER_STATE_READY;
-
       if (err == 0)
          adapter->pad_driver->packet_handler(adapter->pad_driver_data, buffer, buffer_size);
+      retro_atomic_store_release_int(&adapter->state, ADAPTER_STATE_READY);
    }
 
    /* The polling thread issues the next read; shutdown also waits on
@@ -408,39 +430,31 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t err,
 }
 
 
-static void wiiu_poll_adapter(wiiu_adapter_t *adapter)
-{
-   if (!adapter->connected)
-   {
-      adapter->state = ADAPTER_STATE_DONE;
-      return;
-   }
-
-   adapter->state = ADAPTER_STATE_READING;
-   HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size,
-      wiiu_hid_read_loop_callback, adapter);
-}
-
+/* Polling thread: the next read for each ready adapter, and those done
+ * reading handed back to the frontend */
 static void wiiu_poll_adapters(wiiu_hid_t *hid)
 {
    wiiu_adapter_t *it;
-   OSFastMutex_Lock(&(adapters.lock));
 
-   for (it = adapters.list; it != NULL; it = it->next)
+   for (it = poll_adapters; it != NULL; it = it->next)
    {
-      if (it->state == ADAPTER_STATE_READY)
-         wiiu_poll_adapter(it);
+      int state = retro_atomic_load_acquire_int(&it->state);
 
-      if (it->state == ADAPTER_STATE_DONE)
-         it->state = ADAPTER_STATE_GC;
+      if (state == ADAPTER_STATE_READY)
+      {
+         if (it->connected)
+         {
+            retro_atomic_store_release_int(&it->state, ADAPTER_STATE_READING);
+            HIDRead(it->handle, it->rx_buffer, it->rx_size,
+                  wiiu_hid_read_loop_callback, it);
+            continue;
+         }
+         state = ADAPTER_STATE_DONE;
+      }
+
+      if (state == ADAPTER_STATE_DONE)
+         retro_atomic_store_release_int(&it->state, ADAPTER_STATE_GC);
    }
-
-   OSFastMutex_Unlock(&(adapters.lock));
-}
-
-static wiiu_attach_event *wiiu_hid_synchronized_get_events_list(void)
-{
-   return (wiiu_attach_event *)SwapAtomic32((uint32_t *)&events.list, 0);
 }
 
 static int wiiu_hid_polling_thread(int argc, const char **argv)
@@ -449,7 +463,8 @@ static int wiiu_hid_polling_thread(int argc, const char **argv)
 
    while (!retro_atomic_load_acquire_int(&hid->polling_thread_quit))
    {
-      wiiu_handle_attach_events(hid, wiiu_hid_synchronized_get_events_list());
+      wiiu_handle_attach_events(hid);
+      wiiu_hid_free_retired();
       wiiu_poll_adapters(hid);
       /* Nothing to do until something signals: see hid_wake. */
       OSWaitEvent(&hid_wake);
@@ -523,22 +538,6 @@ static void wiiu_hid_stop_polling_thread(wiiu_hid_t *hid)
    free(hid->polling_thread_stack);
    hid->polling_thread = NULL;
    hid->polling_thread_stack = NULL;
-}
-
-static void wiiu_hid_synchronized_add_event(wiiu_attach_event *event)
-{
-   wiiu_attach_event *head = (wiiu_attach_event *)SwapAtomic32((uint32_t *)&events.list, 0);
-   event->next             = head;
-   head                    = event;
-   SwapAtomic32((uint32_t *)&events.list, (uint32_t)head);
-}
-
-static void wiiu_hid_synchronized_add_to_adapters_list(wiiu_adapter_t *adapter)
-{
-   OSFastMutex_Lock(&(adapters.lock));
-   adapter->next = adapters.list;
-   adapters.list = adapter;
-   OSFastMutex_Unlock(&(adapters.lock));
 }
 
 static void wiiu_hid_log_device(HIDDevice *device)
@@ -626,7 +625,7 @@ static int32_t wiiu_attach_callback(HIDClient *client,
    }
 
    event->type = attach;
-   wiiu_hid_synchronized_add_event(event);
+   mpsc_stack_push(&hid_events, &event->node);
    OSSignalEvent(&hid_wake);
 
    return DEVICE_USED;
@@ -671,17 +670,20 @@ static void wiiu_hid_free(const void *data)
       free(hid->client);
    free(hid);
 
-   if (events.list)
    {
-      wiiu_attach_event *event = NULL;
-      while ((event = events.list))
+      /* Attach events the polling thread did not get to */
+      mpsc_stack_node_t *node = mpsc_stack_drain(&hid_events);
+      while (node)
       {
-         events.list = event->next;
-         if (event)
-            free(event);
+         mpsc_stack_node_t *next = node->next;
+         free(node);
+         node = next;
       }
-      memset(&events, 0, sizeof(events));
    }
+   /* The polling thread freed every adapter on its way out, those
+    * still on the frontend's list or on their way to it among them. */
+   mpsc_stack_drain(&hid_new);
+   frontend_adapters = NULL;
 }
 
 static uint8_t wiiu_hid_try_init_driver_multi(wiiu_adapter_t *adapter, joypad_connection_entry_t *entry)
@@ -738,59 +740,56 @@ static uint8_t wiiu_hid_try_init_driver(wiiu_adapter_t *adapter)
 }
 
 
-static void synchronized_process_adapters(wiiu_hid_t *hid)
+/* Frontend: adapters the polling thread found set up, those it is done
+ * with retired, and multi-pad devices refreshed */
+static void wiiu_hid_process_adapters(wiiu_hid_t *hid)
 {
-   wiiu_adapter_t *adapter = NULL;
-   wiiu_adapter_t *prev    = NULL, *adapter_next = NULL;
-   bool keep_prev          = false;
+   mpsc_stack_node_t *node = mpsc_stack_reverse(mpsc_stack_drain(&hid_new));
+   wiiu_adapter_t **link   = &frontend_adapters;
+   bool wake               = false;
 
-   OSFastMutex_Lock(&(adapters.lock));
-
-   for (adapter = adapters.list; adapter != NULL; adapter = adapter_next)
+   while (node)
    {
-      adapter_next = adapter->next;
+      wiiu_adapter_t *adapter = (wiiu_adapter_t *)node;
+      node                    = node->next;
+      adapter->next_frontend  = frontend_adapters;
+      frontend_adapters       = adapter;
+   }
 
-      switch (adapter->state)
+   while (*link)
+   {
+      wiiu_adapter_t *adapter = *link;
+
+      switch (retro_atomic_load_acquire_int(&adapter->state))
       {
          case ADAPTER_STATE_NEW:
-            adapter->state = wiiu_hid_try_init_driver(adapter);
-            /* READY needs its first read, DONE its retirement; both
-             * are the polling thread's. */
-            OSSignalEvent(&hid_wake);
+            /* READY wants its first read, DONE its winding down: both
+             * the polling thread's to do. */
+            retro_atomic_store_release_int(&adapter->state,
+                  wiiu_hid_try_init_driver(adapter));
+            wake = true;
             break;
          case ADAPTER_STATE_READY:
          case ADAPTER_STATE_READING:
             if (adapter->pad_driver && adapter->pad_driver->multi_pad)
                pad_connection_pad_refresh(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data, adapter, &hidpad_driver);
             break;
-         case ADAPTER_STATE_DONE:
-            break;
          case ADAPTER_STATE_GC:
-            {
-               /* remove from the list */
-               if (!prev)
-                  adapters.list = adapter->next;
-               else
-                  prev->next = adapter->next;
-
-               if (adapter->pad_driver && adapter->pad_driver_data)
-                  pad_connection_pad_deregister(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data);
-               /* adapter is no longer valid after this point */
-               wiiu_hid_delete_adapter(adapter);
-               /* signal not to update prev ptr since adapter is now invalid */
-               keep_prev = true;
-            }
-            break;
-
+            /* No read in flight and none to come: off this list, and
+             * back to the polling thread to free. */
+            *link = adapter->next_frontend;
+            wiiu_hid_release_pad(adapter);
+            mpsc_stack_push(&hid_retired, &adapter->node);
+            wake = true;
+            continue;
          default:
-            RARCH_ERR("[HID] Invalid adapter state: %d.\n", adapter->state);
             break;
       }
-      if (!keep_prev)
-         prev   = adapter;
-      keep_prev = false;
+      link = &adapter->next_frontend;
    }
-   OSFastMutex_Unlock(&(adapters.lock));
+
+   if (wake)
+      OSSignalEvent(&hid_wake);
 }
 
 static void wiiu_hid_poll(void *data)
@@ -799,7 +798,7 @@ static void wiiu_hid_poll(void *data)
    if (!hid)
       return;
 
-   synchronized_process_adapters(hid);
+   wiiu_hid_process_adapters(hid);
 }
 
 static void wiiu_hid_send_control(void *data, uint8_t *s, size_t len)
@@ -955,9 +954,12 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event)
    adapter->hid        = hid;
    adapter->vendor_id  = event->vendor_id;
    adapter->product_id = event->product_id;
-   adapter->state      = ADAPTER_STATE_NEW;
+   retro_atomic_int_init(&adapter->state, ADAPTER_STATE_NEW);
 
-   wiiu_hid_synchronized_add_to_adapters_list(adapter);
+   /* On this thread's list, and to the frontend to set up */
+   adapter->next       = poll_adapters;
+   poll_adapters       = adapter;
+   mpsc_stack_push(&hid_new, &adapter->node);
 }
 
 hid_driver_t wiiu_hid = {

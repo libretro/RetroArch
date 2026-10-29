@@ -18,6 +18,7 @@
 #define __WIIU_HID__H
 
 #include <retro_atomic.h>
+#include <queues/mpsc_stack.h>
 
 #include "hid_types.h"
 #include "input.h"
@@ -25,15 +26,16 @@
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1
 
-/* Adapter has been detected and needs to be initialized */
+/* An adapter's state, and which thread moves it on from there:
+ * detected, for the frontend to initialise */
 #define ADAPTER_STATE_NEW     0
-/* Adapter has been initialized successfully */
+/* initialised, for the polling thread to read from or wind down */
 #define ADAPTER_STATE_READY   1
-/* The read loop has been started */
+/* a read in flight, for its completion to return to READY */
 #define ADAPTER_STATE_READING 2
-/* The read loop is shutting down */
+/* no more reads, for the polling thread to hand back */
 #define ADAPTER_STATE_DONE    3
-/* The read loop has fully stopped and the adapter can be freed */
+/* handed back, for the frontend to deregister and retire */
 #define ADAPTER_STATE_GC      4
 
 struct wiiu_hid
@@ -53,24 +55,30 @@ struct wiiu_hid
 /**
  * Each HID device attached to the WiiU gets its own adapter, which
  * connects the HID subsystem with the HID device driver.
+ *
+ * The polling thread and the frontend each keep their own list of
+ * adapters and pass them to each other through lock-free stacks; an
+ * adapter is in at most one of those at a time, by its node.
  */
 struct wiiu_adapter
 {
-   wiiu_adapter_t *next;
+   mpsc_stack_node_t node;          /* first: the stacks hand this out */
+   wiiu_adapter_t *next;            /* the polling thread's list */
+   wiiu_adapter_t *next_frontend;   /* the frontend's list */
    pad_connection_interface_t *pad_driver;
    void *pad_driver_data;
    wiiu_hid_t *hid;
-   uint16_t vendor_id;
-   uint16_t product_id;
-   uint8_t state;
    uint8_t *rx_buffer;
-   int32_t rx_size;
    uint8_t *tx_buffer;
+   retro_atomic_int_t state;        /* ADAPTER_STATE_* */
+   int32_t rx_size;
    int32_t tx_size;
    uint32_t handle;
-   uint8_t interface_index;
+   uint16_t vendor_id;
+   uint16_t product_id;
    char device_name[32];
-   bool connected;
+   uint8_t interface_index;
+   bool connected;                  /* the polling thread's alone */
 };
 
 /**
@@ -80,7 +88,7 @@ struct wiiu_adapter
  */
 struct wiiu_attach
 {
-   wiiu_attach_event *next;
+   mpsc_stack_node_t node;          /* first: the event stack hands this out */
    uint32_t type;
    uint32_t handle;
    uint16_t vendor_id;
@@ -91,18 +99,6 @@ struct wiiu_attach
    uint16_t max_packet_size_rx;
    uint16_t max_packet_size_tx;
    uint8_t device_name[32];
-};
-
-struct _wiiu_event_list
-{
-   OSFastMutex lock;
-   wiiu_attach_event *list;
-};
-
-struct _wiiu_adapter_list
-{
-   OSFastMutex lock;
-   wiiu_adapter_t *list;
 };
 
 #endif /* __WIIU_HID__H */
