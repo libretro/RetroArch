@@ -2293,6 +2293,12 @@ void input_driver_publish_window_touches(const uint32_t *pos,
 {
    input_pointer_touches_set(pos, windows, count, present, down);
 }
+
+bool input_driver_window_touch(unsigned window, unsigned idx,
+      uint32_t *screen_pos, bool *down)
+{
+   return input_pointer_window_touch(window, idx, screen_pos, down);
+}
 #endif
 
 /* The keys a port's binds name, compiled when the binds change, and
