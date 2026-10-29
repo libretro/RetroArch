@@ -27,7 +27,6 @@
 #include <faulthandler.h>
 #include <retro_atomic.h>
 #include <memmap.h>
-#include <rthreads/rthreads.h>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -53,8 +52,8 @@
 
 /* The state, and why each piece is shaped as it is:
  *
- * - callback: a single pointer, released by install (under the
- *   registration lock) and acquire-loaded by the filter. Remove runs
+ * - callback: a single pointer, released by install (holding the
+ *   registration claim) and acquire-loaded by the filter. Remove runs
  *   only with the faulting threads quiesced, which is the lifecycle
  *   guarantee that makes the plain pointer swap safe.
  * - thread slots: threads that run faulting code register an identity
@@ -91,34 +90,15 @@ static struct sigaction s_old_sigsegv;
 #endif
 #endif
 
-/* Registration and removal are cold and may block; the filter itself
- * takes no lock. A plain static slock, created once. */
-static slock_t *s_reg_lock;
-static retro_atomic_int_t s_reg_lock_init;
-
-static slock_t *fault_reg_lock(void)
+/* Who owns the registration: an install or remove claims it from the
+ * state it starts in, and one that finds it claimed gives up. */
+enum fault_reg_state
 {
-   /* Callers are cold-path and serialised by the VM lifecycle; the
-    * double-check is for the first two ever racing. */
-   if (!retro_atomic_load_acquire_int(&s_reg_lock_init))
-   {
-      slock_t *l = slock_new();
-      if (!l)
-         return NULL;
-      if (retro_atomic_cas_int(&s_reg_lock_init, 0, 1))
-      {
-         s_reg_lock = l;
-         retro_atomic_store_release_int(&s_reg_lock_init, 2);
-      }
-      else
-      {
-         slock_free(l);
-         while (retro_atomic_load_acquire_int(&s_reg_lock_init) != 2) { }
-      }
-   }
-   while (retro_atomic_load_acquire_int(&s_reg_lock_init) != 2) { }
-   return s_reg_lock;
-}
+   FAULT_REG_FREE = 0,
+   FAULT_REG_BUSY,
+   FAULT_REG_LIVE
+};
+static retro_atomic_int_t s_reg_state;
 
 static uintptr_t fault_thread_identity(void)
 {
@@ -287,18 +267,11 @@ static void fault_filter(int sig, siginfo_t *si, void *ctx)
 
 bool retro_faulthandler_install(retro_fault_handler_t handler)
 {
-   slock_t *lock = fault_reg_lock();
-   bool ok       = true;
+   bool ok = true;
    if (!handler)
       return false;
-   if (lock)
-      slock_lock(lock);
-   if (retro_atomic_load_acquire_int(&s_callback_live))
-   {
-      if (lock)
-         slock_unlock(lock);
+   if (!retro_atomic_cas_int(&s_reg_state, FAULT_REG_FREE, FAULT_REG_BUSY))
       return false;   /* one at a time */
-   }
 #if defined(_WIN32)
    if (!s_veh_handle)
    {
@@ -348,20 +321,18 @@ bool retro_faulthandler_install(retro_fault_handler_t handler)
       s_callback = handler;
       retro_atomic_store_release_int(&s_callback_live, 1);
    }
-   if (lock)
-      slock_unlock(lock);
+   retro_atomic_store_release_int(&s_reg_state,
+         ok ? FAULT_REG_LIVE : FAULT_REG_FREE);
    return ok;
 }
 
 void retro_faulthandler_remove(retro_fault_handler_t handler)
 {
-   slock_t *lock = fault_reg_lock();
-   if (lock)
-      slock_lock(lock);
-   if (!retro_atomic_load_acquire_int(&s_callback_live) || s_callback != handler)
+   if (!retro_atomic_cas_int(&s_reg_state, FAULT_REG_LIVE, FAULT_REG_BUSY))
+      return;
+   if (s_callback != handler)
    {
-      if (lock)
-         slock_unlock(lock);
+      retro_atomic_store_release_int(&s_reg_state, FAULT_REG_LIVE);
       return;
    }
    retro_atomic_store_release_int(&s_callback_live, 0);
@@ -383,6 +354,5 @@ void retro_faulthandler_remove(retro_fault_handler_t handler)
 #endif
    }
 #endif
-   if (lock)
-      slock_unlock(lock);
+   retro_atomic_store_release_int(&s_reg_state, FAULT_REG_FREE);
 }

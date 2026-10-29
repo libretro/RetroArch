@@ -33,6 +33,7 @@
 #include <faulthandler.h>
 #include <memmap.h>
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 
 static unsigned char *g_region;
 static size_t         g_len;
@@ -101,6 +102,31 @@ static void worker(void *data)
    a->completed = touch(a->p, 0x5A);
    if (a->registered)
       retro_faulthandler_unregister_thread();
+}
+
+/* Installs and removes racing from several threads: one owner at a
+ * time, and every owner's remove frees it for the next. */
+#define RACE_THREADS 4
+#define RACE_ROUNDS  2000
+static retro_atomic_int_t g_owners;
+static retro_atomic_int_t g_overlaps;
+static retro_atomic_int_t g_wins;
+
+static void racer(void *data)
+{
+   retro_fault_handler_t h = data ? commit_handler : decline_handler;
+   int i;
+   for (i = 0; i < RACE_ROUNDS; i++)
+   {
+      if (!retro_faulthandler_install(h))
+         continue;
+      if (retro_atomic_fetch_add_int(&g_owners, 1) != 0)
+         retro_atomic_fetch_add_int(&g_overlaps, 1);
+      sthread_yield();   /* holds ownership long enough to overlap */
+      retro_atomic_fetch_add_int(&g_owners, -1);
+      retro_atomic_fetch_add_int(&g_wins, 1);
+      retro_faulthandler_remove(h);
+   }
 }
 
 int main(void)
@@ -189,6 +215,38 @@ int main(void)
       int done   = touch(g_region + page * 13, 0x22);
       int good   = (done == 0) && g_declines == before;
       printf("  %s: after removal the filter is gone\n", good ? "ok" : "FAIL");
+      ok &= good;
+   }
+   /* 5: a remove with another handler leaves the active one */
+   if (!retro_faulthandler_install(commit_handler))
+   {
+      printf("  FAIL: install before the mismatched remove\n");
+      return 1;
+   }
+   retro_faulthandler_remove(decline_handler);
+   {
+      int good = !retro_faulthandler_install(decline_handler);
+      retro_faulthandler_remove(commit_handler);
+      good &= retro_faulthandler_install(decline_handler);
+      retro_faulthandler_remove(decline_handler);
+      printf("  %s: a remove with another handler leaves the active one\n", good ? "ok" : "FAIL");
+      ok &= good;
+   }
+   /* 6: racing installs and removes */
+   {
+      sthread_t *t[RACE_THREADS];
+      int i, good;
+      for (i = 0; i < RACE_THREADS; i++)
+         t[i] = sthread_create(racer, (i & 1) ? (void*)1 : NULL);
+      for (i = 0; i < RACE_THREADS; i++)
+         if (t[i])
+            sthread_join(t[i]);
+      good = retro_atomic_load_acquire_int(&g_overlaps) == 0
+          && retro_atomic_load_acquire_int(&g_wins) > 0
+          && retro_faulthandler_install(decline_handler);
+      retro_faulthandler_remove(decline_handler);
+      printf("  %s: racing installs (%d won), one owner at a time, left free\n",
+            good ? "ok" : "FAIL", retro_atomic_load_acquire_int(&g_wins));
       ok &= good;
    }
    retro_faulthandler_unregister_thread();

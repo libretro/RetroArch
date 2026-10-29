@@ -90,7 +90,8 @@ typedef bool (*retro_fault_handler_t)(const retro_fault_info_t *info);
  * @handler    : the callback, which must be async-signal-safe.
  *
  * Installs the filter, chaining whatever was installed before. One
- * handler at a time; installing a second while one is active fails.
+ * handler at a time; installing while one is active, or while another
+ * install or remove is under way, fails.
  *
  * Returns: true on success.
  */

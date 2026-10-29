@@ -29,9 +29,7 @@
 #include <compat/strl.h>
 #include <retro_atomic.h>
 #include <rthreads/rthreads.h>
-#ifdef RETRO_ATOMIC_HAS_PTR
 #include <rthreads/retro_eventcount.h>
-#endif
 
 #include "video_mode_select.h"
 
@@ -974,26 +972,17 @@ typedef struct mdc_request
    float              hz;
 } mdc_request_t;
 
-/* What the worker and its callers share. With pointer atomics nothing
- * here takes a lock: the worker publishes a snapshot by swapping the
- * pointer, a caller reading one counts itself in and out, and the
- * worker frees the snapshot it replaced once nobody is counted in.
- * Requests are pushed on a list the worker takes whole. Other backends
- * keep the snapshot and a fixed queue under a lock. */
+/* What the worker and its callers share, without a lock: the worker
+ * publishes a snapshot by swapping the pointer, a caller reading one
+ * counts itself in and out, and the worker frees the snapshot it
+ * replaced once nobody is counted in. Requests are pushed on a list
+ * the worker takes whole. */
 typedef struct mdc_ctl
 {
-#ifdef RETRO_ATOMIC_HAS_PTR
    retro_atomic_ptr_t state;   /* mdc_state_t, NULL until Mutter answers */
    retro_atomic_int_t users;   /* callers looking at a snapshot */
    retro_eventcount_t idle;    /* notified as the last one leaves */
    retro_atomic_ptr_t reqs;    /* mdc_request_t, newest first */
-#else
-   slock_t      *lock;
-   mdc_state_t  *state;
-   int           status;
-   unsigned      nreq;
-   mdc_request_t req[MDC_MAX_REQUESTS];
-#endif
    int           wake[2];
 } mdc_ctl_t;
 
@@ -1045,7 +1034,6 @@ static enum mutter_dc_result mdc_check(const mdc_state_t *st,
    return MUTTER_DC_OK;
 }
 
-#ifdef RETRO_ATOMIC_HAS_PTR
 /* The snapshot, for the caller to read until mdc_state_put(); NULL
  * until Mutter has answered. Counted in before the pointer is read, so
  * the worker either sees the count or has already swapped. */
@@ -1129,57 +1117,6 @@ static unsigned mdc_requests_take(mdc_ctl_t *ctl, mdc_request_t *out)
    }
    return n;
 }
-#else
-static const mdc_state_t *mdc_state_get(mdc_ctl_t *ctl)
-{
-   slock_lock(ctl->lock);
-   return ctl->status == MDC_STATUS_PRESENT ? ctl->state : NULL;
-}
-
-static void mdc_state_put(mdc_ctl_t *ctl)
-{
-   slock_unlock(ctl->lock);
-}
-
-static bool mdc_present(mdc_ctl_t *ctl)
-{
-   bool ret = mdc_state_get(ctl) != NULL;
-   mdc_state_put(ctl);
-   return ret;
-}
-
-static void mdc_publish(mdc_ctl_t *ctl, mdc_state_t *st, int status)
-{
-   mdc_state_t *old;
-   slock_lock(ctl->lock);
-   old         = ctl->state;
-   ctl->state  = st;
-   ctl->status = status;
-   slock_unlock(ctl->lock);
-   mdc_state_free(old);
-}
-
-static bool mdc_request_push(mdc_ctl_t *ctl, const mdc_request_t *r)
-{
-   slock_lock(ctl->lock);
-   /* A full queue keeps its newest slot for the newest request. */
-   ctl->req[ctl->nreq < MDC_MAX_REQUESTS
-      ? ctl->nreq++ : MDC_MAX_REQUESTS - 1] = *r;
-   slock_unlock(ctl->lock);
-   return true;
-}
-
-static unsigned mdc_requests_take(mdc_ctl_t *ctl, mdc_request_t *out)
-{
-   unsigned n;
-   slock_lock(ctl->lock);
-   n = ctl->nreq;
-   memcpy(out, ctl->req, n * sizeof(out[0]));
-   ctl->nreq = 0;
-   slock_unlock(ctl->lock);
-   return n;
-}
-#endif
 
 static void mdc_worker(void *data)
 {
@@ -1282,12 +1219,7 @@ static mdc_ctl_t *mdc_start(void)
    if (!(ctl = (mdc_ctl_t*)calloc(1, sizeof(*ctl))))
       return NULL;
    ctl->wake[0] = ctl->wake[1] = -1;
-   if (
-#ifdef RETRO_ATOMIC_HAS_PTR
-            !retro_eventcount_init(&ctl->idle)
-#else
-            !(ctl->lock = slock_new())
-#endif
+   if (     !retro_eventcount_init(&ctl->idle)
          || pipe(ctl->wake) != 0
          || fcntl(ctl->wake[0], F_SETFL, O_NONBLOCK) != 0
          || fcntl(ctl->wake[1], F_SETFL, O_NONBLOCK) != 0
@@ -1297,12 +1229,7 @@ static mdc_ctl_t *mdc_start(void)
          close(ctl->wake[0]);
       if (ctl->wake[1] >= 0)
          close(ctl->wake[1]);
-#ifdef RETRO_ATOMIC_HAS_PTR
       retro_eventcount_free(&ctl->idle);
-#else
-      if (ctl->lock)
-         slock_free(ctl->lock);
-#endif
       free(ctl);
       return NULL;
    }

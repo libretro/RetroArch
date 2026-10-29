@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stddef.h>
+
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <file/config_file.h>
@@ -29,6 +31,9 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <retro_atomic.h>
+#include <queues/mpsc_stack.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -105,21 +110,66 @@ static core_info_state_t core_info_st = {
    NULL
 };
 
-#ifdef HAVE_THREADS
-/* Guards publication and teardown of core_info_st.curr_list.
- *
- * The list is built, replaced and freed on the main thread, but it
- * is *read* from task threads - the content scanner calls
- * core_info_database_claim() once per database when a scan sizes
- * its per-database state. Closing content runs
- * driver_uninit() -> core_info_deinit_list() on the main thread with
- * no regard for a scan that is still in flight, so without this lock
- * a worker walks a list that has just been freed.
- *
- * Created once, before the first list is ever published, and
- * deliberately never destroyed: core_info_st is a process-lifetime
- * singleton and the lock has to outlive any task thread that could
- * still be sitting inside a reader. */
+/* A list and its link on the retired stack; freed as the list. */
+typedef struct
+{
+   core_info_list_t  list;
+   mpsc_stack_node_t retired;
+} core_info_list_box_t;
+
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#define CORE_INFO_LOCK_FREE
+/* curr_list is the main thread's. Task threads - the content scanner's
+ * core_info_database_claim() - read the list published in
+ * core_info_shared, counted in core_info_readers while they do. A list
+ * taken down goes on core_info_retired, freed by whoever finds the
+ * count at zero once it holds them: the main thread, or the last
+ * reader out. */
+static retro_atomic_ptr_t core_info_shared;
+static retro_atomic_int_t core_info_readers;
+static mpsc_stack_t       core_info_retired;
+
+static void core_info_list_free(core_info_list_t *core_info_list);
+
+static void core_info_retired_free(void)
+{
+   for (;;)
+   {
+      mpsc_stack_node_t *node;
+
+      /* Fenced against the reader's own: a reader counted after this
+       * load reads core_info_shared after every list here left it. */
+      retro_atomic_thread_fence_seq_cst();
+      if (retro_atomic_load_acquire_int(&core_info_readers))
+         return;
+      if (!(node = mpsc_stack_drain(&core_info_retired)))
+         return;
+      retro_atomic_thread_fence_seq_cst();
+      if (retro_atomic_load_acquire_int(&core_info_readers))
+      {
+         /* A reader came in: hand them back and look again, as it may
+          * have left before they were back. */
+         while (node)
+         {
+            mpsc_stack_node_t *next = node->next;
+            mpsc_stack_push(&core_info_retired, node);
+            node = next;
+         }
+         continue;
+      }
+      while (node)
+      {
+         mpsc_stack_node_t *next = node->next;
+         core_info_list_free(&((core_info_list_box_t*)((char*)node
+               - offsetof(core_info_list_box_t, retired)))->list);
+         node = next;
+      }
+   }
+}
+#elif defined(HAVE_THREADS)
+/* Guards publication and teardown of curr_list against
+ * core_info_database_claim() on a task thread. Never destroyed: it
+ * has to outlive any task thread still inside a reader. */
 static slock_t *core_info_list_mutex = NULL;
 
 #define CORE_INFO_LIST_LOCK() \
@@ -133,7 +183,9 @@ static slock_t *core_info_list_mutex = NULL;
       if (core_info_list_mutex) \
          slock_unlock(core_info_list_mutex); \
    } while (0)
-#else
+#endif
+
+#ifndef CORE_INFO_LIST_LOCK
 #define CORE_INFO_LIST_LOCK()   do { } while (0)
 #define CORE_INFO_LIST_UNLOCK() do { } while (0)
 #endif
@@ -2184,7 +2236,8 @@ static core_info_list_t *core_info_list_new(const char *path,
    if (!path_list)
       return NULL;
 
-   if (!(core_info_list = (core_info_list_t*)malloc(sizeof(*core_info_list))))
+   if (!(core_info_list = (core_info_list_t*)malloc(
+               sizeof(core_info_list_box_t))))
    {
       core_info_path_list_free(path_list);
       return NULL;
@@ -2512,12 +2565,17 @@ void core_info_deinit_list(void)
     * followed by core_info_free_current_core() (or a fresh
     * core_info_load() once a new list exists) before the entry can
     * be read again. */
-   /* Detach first, free afterwards. Once the NULL store has been
-    * published under the lock no reader can reach 'list' any more
-    * (they all re-read curr_list while holding the lock), so the
-    * free itself does not need to be inside the critical section -
-    * and keeping it out means a scan thread is never blocked for
-    * the length of a full list teardown. */
+#ifdef CORE_INFO_LOCK_FREE
+   if (!(list = p_coreinfo->curr_list))
+      return;
+   p_coreinfo->curr_list = NULL;
+   retro_atomic_store_release_ptr(&core_info_shared, NULL);
+   mpsc_stack_push(&core_info_retired,
+         &((core_info_list_box_t*)list)->retired);
+   core_info_retired_free();
+#else
+   /* Detached under the lock, freed outside it: no reader reaches
+    * the list once the NULL is published. */
    CORE_INFO_LIST_LOCK();
    list                  = p_coreinfo->curr_list;
    p_coreinfo->curr_list = NULL;
@@ -2525,6 +2583,7 @@ void core_info_deinit_list(void)
 
    if (list)
       core_info_list_free(list);
+#endif
 }
 
 bool core_info_init_list(
@@ -2535,7 +2594,7 @@ bool core_info_init_list(
    core_info_state_t *p_coreinfo          = &core_info_st;
    core_info_list_t  *list                = NULL;
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(CORE_INFO_LOCK_FREE)
    /* Main thread only, and always reached before the first list
     * becomes visible to a task thread. */
    if (!core_info_list_mutex)
@@ -2559,6 +2618,9 @@ bool core_info_init_list(
    CORE_INFO_LIST_LOCK();
    p_coreinfo->curr_list                  = list;
    CORE_INFO_LIST_UNLOCK();
+#ifdef CORE_INFO_LOCK_FREE
+   retro_atomic_store_release_ptr(&core_info_shared, list);
+#endif
 
    /* Remember the parameters of this scan so
     * core_info_list_is_current() can identify redundant rescans. */
@@ -2789,7 +2851,10 @@ struct string_list *core_info_database_claim(
    char *database                = NULL;
    const char *new_path          = path_basename_nocompression(
          database_path);
+   const core_info_list_t *list  = NULL;
+#ifndef CORE_INFO_LOCK_FREE
    core_info_state_t *p_coreinfo = &core_info_st;
+#endif
 
    *match_archive_member         = false;
    if (!new_path || !*new_path)
@@ -2799,19 +2864,24 @@ struct string_list *core_info_database_claim(
    path_remove_extension(database);
    attr.i                        = 0;
 
-   /* Called from the content scanner on a task thread. The whole
-    * walk has to be under the lock, not just the NULL check - the
-    * main thread can free the list out from under us at any point
-    * between the two. */
+   /* On a task thread, while the main thread may take the list down. */
+#ifdef CORE_INFO_LOCK_FREE
+   retro_atomic_fetch_add_int(&core_info_readers, 1);
+   retro_atomic_thread_fence_seq_cst();
+   list = (const core_info_list_t*)
+         retro_atomic_load_acquire_ptr(&core_info_shared);
+#else
    CORE_INFO_LIST_LOCK();
-   if (p_coreinfo->curr_list)
+   list = p_coreinfo->curr_list;
+#endif
+   if (list)
    {
       size_t i;
 
-      for (i = 0; i < p_coreinfo->curr_list->count; i++)
+      for (i = 0; i < list->count; i++)
       {
          size_t j;
-         const core_info_t *info = &p_coreinfo->curr_list->list[i];
+         const core_info_t *info = &list->list[i];
          const struct string_list *core_exts =
             info->supported_extensions_list;
 
@@ -2832,7 +2902,12 @@ struct string_list *core_info_database_claim(
                string_list_append(exts, core_exts->elems[j].data, attr);
       }
    }
+#ifdef CORE_INFO_LOCK_FREE
+   if (retro_atomic_fetch_add_int(&core_info_readers, -1) == 1)
+      core_info_retired_free();
+#else
    CORE_INFO_LIST_UNLOCK();
+#endif
 
    free(database);
    return exts;
