@@ -80,7 +80,7 @@ static enum frontend_fork gx_fork_mode = FRONTEND_FORK_NONE;
 #include <ogc/libversion.h>
 #if defined(BIG_STACK) && _V_MAJOR_ >= 3
 /* libogc 3 starts main on the stack __ppc_main_sp points to the top of;
- * this one is the 512 KiB the bootstrap/gx linker scripts give libogc 2. */
+ * this one is the 512 KiB the os/gekko/libogc linker scripts give libogc 2. */
 static u8 gx_main_stack[0x80000] ATTRIBUTE_ALIGN(32);
 u8 *__ppc_main_sp = gx_main_stack + sizeof(gx_main_stack);
 #endif

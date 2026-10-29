@@ -755,7 +755,7 @@ build-static-retroarch-psp:
     - build-static-retroarch-dummy-psp
   script:
     # We need to boostrap before compile
-    - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
+    - "(cd os/psp1/kernel_functions_prx/ && make && cd -)"
     # Allow failure since we don't have a core
     - "make -f Makefile.psp1 -j$NUMPROC ||:"
     - "mkdir .retroarch-precompiled"
@@ -777,9 +777,9 @@ build-static-retroarch-dummy-psp:
     expire_in: 10 min
   dependencies: []
   script:
-    - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
+    - "(cd os/psp1/kernel_functions_prx/ && make && cd -)"
     - "make -f Makefile.psp1.salamander -j$NUMPROC"
-    - "make -C bootstrap/psp1/kernel_functions_prx/"
+    - "make -C os/psp1/kernel_functions_prx/"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
     - "cp -f pkg/psp1/ICON0.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
     - "cp -f pkg/psp1/PIC1.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"

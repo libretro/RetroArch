@@ -29,7 +29,7 @@
 #include <psp2/appmgr.h>
 #include <psp2/apputil.h>
 
-#include "../../bootstrap/vita/sbrk.c"
+#include "../../os/vita/sbrk.c"
 
 #else
 #include <pspkernel.h>
@@ -64,7 +64,7 @@
 #endif
 
 #if defined(PSP) && defined(HAVE_KERNEL_PRX)
-#include "../../bootstrap/psp1/kernel_functions.h"
+#include "../../os/psp1/kernel_functions.h"
 #endif
 
 #if defined(HAVE_VITAGLES)

@@ -103,7 +103,7 @@ LIBDIRS += -L.
 MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float
 
 # libogc 3 links with devkitPPC's own scripts and sizes the main stack
-# in C (platform_gx_libogc.c); older libogc takes the bootstrap/gx ones.
+# in C (platform_gx_libogc.c); older libogc takes the os/gekko/libogc ones.
 LIBOGC_MAJOR := $(shell sed -n 's/^.define[[:space:]]*_V_MAJOR_[[:space:]]*\([0-9]*\).*/\1/p' $(DEVKITPRO)/libogc/include/ogc/libversion.h 2>/dev/null)
 ifneq ($(filter-out 0 1 2,$(LIBOGC_MAJOR)),)
 LIBOGC_OWN_LD := 1
@@ -113,7 +113,7 @@ ifeq ($(HAVE_LIBOGC), 1)
 LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
 
 ifeq ($(BIG_STACK)$(LIBOGC_OWN_LD), 1)
-   LDFLAGS += -T bootstrap/gx/rvl.ld
+   LDFLAGS += -T os/gekko/libogc/rvl.ld
 endif
 else
 # os/gekko's heap runs from MEM1 into MEM2 by itself.

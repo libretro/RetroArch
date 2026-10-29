@@ -33,8 +33,8 @@ EXT=a
 
 mkdir -p ../pkg/${platform}/cores/
 
-make -C ../bootstrap/${platform}/kernel_functions_prx/ clean || exit 1
-make -C ../bootstrap/${platform}/kernel_functions_prx/ || exit 1
+make -C ../os/${platform}/kernel_functions_prx/ clean || exit 1
+make -C ../os/${platform}/kernel_functions_prx/ || exit 1
 cp -f ../kernel_functions.prx ../pkg/${platform}/kernel_functions.prx
 
 # Vita

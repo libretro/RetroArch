@@ -60,7 +60,7 @@ RARCH_DEFINES += -DHAVE_THREADS
 endif
 
 ifeq ($(HAVE_KERNEL_PRX), 1)
-OBJS += bootstrap/psp1/kernel_functions.o
+OBJS += os/psp1/kernel_functions.o
 CFLAGS += -DHAVE_KERNEL_PRX
 endif
 

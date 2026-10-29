@@ -30,7 +30,7 @@ jobs:
 
     - name: Compile bootstrap
       run: |
-        cd bootstrap/psp1/kernel_functions_prx
+        cd os/psp1/kernel_functions_prx
         make -j$(getconf _NPROCESSORS_ONLN) clean
         make -j$(getconf _NPROCESSORS_ONLN)
 
