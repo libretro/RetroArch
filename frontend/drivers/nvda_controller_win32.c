@@ -19,9 +19,9 @@
  * interface DFF50B99-F7FD-4CA7-A82C-DAEB3E025295 v1.0, whose four
  * procedures - testIfRunning, speakText, cancelSpeech, brailleMessage -
  * NVDA publishes in nvdaHelper/interfaces/nvdaController.idl. The
- * calls go through NdrClientCall2 with the format strings MIDL makes
- * for that interface: the x64 ones as NVDA's own client carries them,
- * the x86 ones the same procedures for the x86 stack. Every procedure
+ * calls go through NdrClientCall2 with the format strings and stub
+ * descriptor NVDA's own controller client carries for each of x86,
+ * x64 and ARM64, byte for byte (its 2024.4 build). Every procedure
  * has comm and fault status, so a failed call - NVDA not running -
  * comes back as its return value, never as an exception.
  *
@@ -44,13 +44,16 @@
 
 #include "nvda_controller_win32.h"
 
-#if defined(_M_X64) || defined(__x86_64__)
+#if defined(_M_ARM64) || defined(__aarch64__)
+#define NVDA_CONTROLLER_ARM64
+#elif defined(_M_X64) || defined(__x86_64__)
 #define NVDA_CONTROLLER_X64
 #elif defined(_M_IX86) || defined(__i386__)
 #define NVDA_CONTROLLER_X86
 #endif
 
-#if defined(NVDA_CONTROLLER_X64) || defined(NVDA_CONTROLLER_X86)
+#if defined(NVDA_CONTROLLER_X64) || defined(NVDA_CONTROLLER_X86) \
+      || defined(NVDA_CONTROLLER_ARM64)
 
 typedef CLIENT_CALL_RETURN (RPC_VAR_ENTRY *nvda_ndr_client_call2_t)(
       PMIDL_STUB_DESC, PFORMAT_STRING, ...);
@@ -70,7 +73,36 @@ typedef BOOL (WINAPI *nvda_get_user_object_information_w_t)(HANDLE, int,
 #define NVDA_PROC_CANCEL_SPEECH   2
 #define NVDA_PROC_BRAILLE_MESSAGE 3
 
-#ifdef NVDA_CONTROLLER_X64
+#if defined(NVDA_CONTROLLER_ARM64)
+static const unsigned char nvda_proc_format[] = {
+   /* 0: testIfRunning - implicit handle, comm/fault status, method 0,
+    * stack 8, no arguments; the extension's 12 bytes, the last two the
+    * register each argument comes in */
+   0x32, 0x68, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00,
+   0x00, 0x00, 0x08, 0x00, 0x44, 0x01, 0x0c, 0x01, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x70, 0x00, 0x00, 0x00, 0x10, 0x00,
+   /* 34: speakText - method 1, stack 16, the string at 0, in x0 */
+   0x32, 0x68, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x10, 0x00,
+   0x00, 0x00, 0x08, 0x00, 0x46, 0x02, 0x0c, 0x01, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x80,
+   0x0b, 0x01, 0x00, 0x00, 0x04, 0x00,
+   0x70, 0x00, 0x08, 0x00, 0x10, 0x00,
+   /* 74: cancelSpeech - method 2 */
+   0x32, 0x68, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x08, 0x00,
+   0x00, 0x00, 0x08, 0x00, 0x44, 0x01, 0x0c, 0x01, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x70, 0x00, 0x00, 0x00, 0x10, 0x00,
+   /* 108: brailleMessage - method 3 */
+   0x32, 0x68, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x10, 0x00,
+   0x00, 0x00, 0x08, 0x00, 0x46, 0x02, 0x0c, 0x01, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x80,
+   0x0b, 0x01, 0x00, 0x00, 0x04, 0x00,
+   0x70, 0x00, 0x08, 0x00, 0x10, 0x00,
+   0x00
+};
+static const unsigned short nvda_proc_offset[4] = { 0, 34, 74, 108 };
+#elif defined(NVDA_CONTROLLER_X64)
 static const unsigned char nvda_proc_format[] = {
    /* 0: testIfRunning - implicit handle, comm/fault status, method 0,
     * stack 8, no arguments; the extension's 10 bytes */
@@ -184,7 +216,7 @@ static unsigned long nvda_call_string(unsigned proc, const wchar_t *text)
       return RPC_S_INVALID_BINDING;
    if (!text)
       return RPC_X_NULL_REF_POINTER;
-#ifdef NVDA_CONTROLLER_X64
+#if defined(NVDA_CONTROLLER_X64) || defined(NVDA_CONTROLLER_ARM64)
    ret = nvda_ndr_client_call2(&nvda_stub_desc,
          (PFORMAT_STRING)&nvda_proc_format[nvda_proc_offset[proc]], text);
 #else
@@ -295,8 +327,9 @@ bool nvda_controller_init(void)
    nvda_stub_desc.pFormatTypes            = nvda_type_format;
    nvda_stub_desc.fCheckBounds            = 1;
    nvda_stub_desc.Version                 = 0x50002;
-   nvda_stub_desc.MIDLVersion             = 0x700022b;
+   nvda_stub_desc.MIDLVersion             = 0x8010274;
    nvda_stub_desc.CommFaultOffsets        = nvda_comm_fault_offsets;
+   nvda_stub_desc.mFlags                  = 1;
 
    if (from_string((unsigned short*)binding, &nvda_binding) != RPC_S_OK)
    {

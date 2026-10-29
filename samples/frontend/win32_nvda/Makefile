@@ -5,12 +5,13 @@
 #       with the mingw-w64 cross compilers, run under wine (WINE64 and
 #       WINE32 name a wine for each, with its WINEPREFIX); skipped
 #       where those are missing
-#   make check CC=gcc
+#   make check CC=gcc [NVDA_DLL=...]
 #       from an MSYS2 MINGW64 or MINGW32 shell: that one architecture
 #
-#   make check NVDA_DLL=nvdaControllerClient64.dll
-#       the same calls first through NVDA's own controller client,
-#       for the x64 test, to hold the stand-in to it
+#   make check NVDA_DLL64=x64/nvdaControllerClient.dll \
+#              NVDA_DLL32=x86/nvdaControllerClient.dll
+#       the same calls first through NVDA's own controller client (from
+#       its controllerClient zip), to hold the stand-in to it
 TARGET64 := win32_nvda_test_x64.exe
 TARGET32 := win32_nvda_test_x86.exe
 
@@ -50,12 +51,12 @@ $(TARGET32): $(DEPS)
 
 check: all
 ifeq ($(HAVE64),yes)
-	WINEDEBUG=-all $(WINE64) ./$(TARGET64) $(NVDA_DLL)
+	WINEDEBUG=-all $(WINE64) ./$(TARGET64) $(NVDA_DLL64)
 else
 	@echo "win32_nvda: skipped x64 - no $(CC64) or $(WINE64)"
 endif
 ifeq ($(HAVE32),yes)
-	WINEDEBUG=-all $(WINE32) ./$(TARGET32)
+	WINEDEBUG=-all $(WINE32) ./$(TARGET32) $(NVDA_DLL32)
 else
 	@echo "win32_nvda: skipped x86 - no $(CC32) or $(WINE32)"
 endif
