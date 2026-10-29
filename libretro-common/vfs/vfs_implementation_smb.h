@@ -88,6 +88,11 @@ int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream);
 /* Context management */
 void smb_shutdown(void);
 
+/* For libsmb2 contexts made outside the VFS (cloud sync): libsmb2
+ * keeps every context on one list with no lock of its own. */
+struct smb2_context *smb_ctx_new(void);
+void smb_ctx_free(struct smb2_context *ctx);
+
 /* What read-ahead served from its windows and what it missed, in KiB,
  * over the files closed since the last call; the counts are then reset.
  * Both are 0 while read-ahead is off. */

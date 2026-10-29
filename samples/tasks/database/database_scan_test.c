@@ -57,6 +57,9 @@
 #include "../../../configuration.h"
 #include "../../../verbosity.h"
 #include "../../../libretro-db/libretrodb.h"
+#ifdef HAVE_SMBCLIENT
+#include "../../../libretro-common/vfs/vfs_implementation_smb.h"
+#endif
 #include "spend_window.h"
 
 #include <encodings/rzstd.h>
@@ -196,6 +199,86 @@ void task_window_progress_cb(retro_task_t *task)
    (void)task;
 }
 
+#ifdef HAVE_SMBCLIENT
+/* The VFS's SMB backend with no share behind it: every call fails. */
+bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
+      const char *path, unsigned mode, unsigned hints)
+{
+   (void)stream; (void)path; (void)mode; (void)hints;
+   return false;
+}
+
+int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
+      void *s, uint64_t len)
+{
+   (void)stream; (void)s; (void)len;
+   return -1;
+}
+
+int64_t retro_vfs_file_view_smb(libretro_vfs_implementation_file *stream,
+      uint64_t len, const uint8_t **ptr)
+{
+   (void)stream; (void)len; (void)ptr;
+   return -1;
+}
+
+int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
+      const void *s, uint64_t len)
+{
+   (void)stream; (void)s; (void)len;
+   return -1;
+}
+
+int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
+      int64_t offset, int whence)
+{
+   (void)stream; (void)offset; (void)whence;
+   return -1;
+}
+
+int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
+{
+   (void)stream;
+   return -1;
+}
+
+int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
+{
+   (void)stream;
+   return -1;
+}
+
+int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream)
+{
+   (void)stream;
+   return 1;
+}
+
+smb_dir_handle *retro_vfs_opendir_smb(const char *path, bool include_hidden)
+{
+   (void)path; (void)include_hidden;
+   return NULL;
+}
+
+struct smbc_dirent *retro_vfs_readdir_smb(smb_dir_handle *dh)
+{
+   (void)dh;
+   return NULL;
+}
+
+int retro_vfs_closedir_smb(smb_dir_handle *dh)
+{
+   (void)dh;
+   return -1;
+}
+
+int retro_vfs_stat_smb(const char *path, int64_t *size)
+{
+   (void)path; (void)size;
+   return 0;
+}
+#endif
+
 /* dir_list_new_special lives in retroarch.c, which we cannot link
  * without dragging in the world.
  *
@@ -246,16 +329,28 @@ struct string_list *__wrap_dir_list_new(const char *dir, const char *ext,
 }
 
 /* Linked with --wrap: the scan's content list in name order while
- * content_sorted is set, set only between scans. */
-static bool content_sorted;
+ * content_sorted is set, with share_paths added while that is.  Both
+ * set only between scans. */
+static bool               content_sorted;
+static const char *const *share_paths;
+static size_t             share_count;
 
 database_info_handle_t *__real_database_info_dir_init_from_list(
       enum database_type type, struct string_list *list);
 database_info_handle_t *__wrap_database_info_dir_init_from_list(
       enum database_type type, struct string_list *list)
 {
-   database_info_handle_t *db = __real_database_info_dir_init_from_list(
-         type, list);
+   database_info_handle_t *db;
+   size_t                  i;
+
+   for (i = 0; share_paths && list && i < share_count; i++)
+   {
+      union string_list_elem_attr attr;
+
+      attr.i = 0;
+      string_list_append(list, share_paths[i], attr);
+   }
+   db = __real_database_info_dir_init_from_list(type, list);
 
    if (db && content_sorted)
       dir_list_sort(list, false);
@@ -665,9 +760,12 @@ static void passes_detail(char *s)
  * HOLD_USEC, in the gate: until gate_n are in and gate_slow slow
  * reads have begun.  One on the thread that last ran the scan, which
  * gate_on_scan counts, waits only for the first: the scan cannot run.
- * All set only between scans. */
+ * While share_paths is set, readers' reads of smb:// paths and of any
+ * other scheme's are counted in share_reads.  All set only between
+ * scans. */
 static const char        *stored_name;
 static retro_atomic_int_t stored_reads;
+static retro_atomic_int_t share_reads[2];
 static const char        *dir_hold;
 static int                hold_dirs;
 static uint64_t           gate_size;
@@ -708,6 +806,15 @@ uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
    }
    if (stored_name && path && strstr(path, stored_name))
       retro_atomic_fetch_add_int(&stored_reads, 1);
+   if (   share_paths && path
+       && retro_atomic_load_acquire_size(&scan_tick_tid)
+          != (size_t)current_tid())
+   {
+      if (!strncmp(path, "smb://", 6))
+         retro_atomic_fetch_add_int(&share_reads[0], 1);
+      else if (strstr(path, "://"))
+         retro_atomic_fetch_add_int(&share_reads[1], 1);
+   }
    return crc;
 }
 
@@ -5170,6 +5277,47 @@ static void reader_list_end_lane(const char *root, const char *db_dir)
                                        : "still there at the END step");
 }
 
+/* Readers take smb:// paths when an SMB backend is built, no other
+ * scheme's, and none without one. */
+static void share_gate_lane(const char *root, const char *db_dir)
+{
+   static const char *const paths[] = {
+      "smb://host/share/s_0.zip",
+      "smb://host/share/s_1.zip",
+      "nfs://host/share/n_0.zip",
+      "ftp://host/share/f_0.zip"
+   };
+   char dir[512], detail[64];
+   int  smb, other;
+   bool started;
+
+   if (!readers_expected())
+   {
+      check(1, "readers' network paths", "no readers");
+      return;
+   }
+   if (!write_match_files(dir, root, "share_gate"))
+      return;
+   use_queue(true);
+   use_db(db_dir);
+   retro_atomic_store_release_int(&share_reads[0], 0);
+   retro_atomic_store_release_int(&share_reads[1], 0);
+   share_paths = paths;
+   share_count = ARRAY_SIZE(paths);
+   started     = run_scan(dir) && scan_completed;
+   share_paths = NULL;
+   smb         = retro_atomic_load_acquire_int(&share_reads[0]);
+   other       = retro_atomic_load_acquire_int(&share_reads[1]);
+   sprintf(detail, "%d smb://, %d other", smb, other);
+#ifdef HAVE_SMBCLIENT
+   check(started && smb > 0 && !other,
+         "readers take smb:// paths, no other scheme's", detail);
+#else
+   check(started && !smb && !other,
+         "readers take no network path without SMB", detail);
+#endif
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -6265,6 +6413,7 @@ int main(int argc, char **argv)
       switch_lane(root, pl_dir);
       switch_stuck_lane(root, pl_dir, reader_db);
       reader_list_end_lane(root, reader_db);
+      share_gate_lane(root, reader_db);
       strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
             sizeof(config_get_ptr()->paths.path_content_database));
       use_queue(false);

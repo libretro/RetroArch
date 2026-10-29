@@ -32,6 +32,7 @@
 
 #include "../cloud_sync_driver.h"
 #include "../../configuration.h"
+#include "../../libretro-common/vfs/vfs_implementation_smb.h"
 #include "../../verbosity.h"
 #include <compat/strl.h>
 
@@ -194,7 +195,7 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
       return true;
    }
 
-   ctx = smb2_init_context();
+   ctx = smb_ctx_new();
    if (!ctx)
    {
       RARCH_ERR(SMBPFX "Failed to create SMB context\n");
@@ -221,7 +222,7 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    if (rc < 0)
    {
       RARCH_ERR(SMBPFX "Connect failed: %s\n", smb2_get_error(ctx));
-      smb2_destroy_context(ctx);
+      smb_ctx_free(ctx);
       cb(user_data, NULL, false, NULL);
       return true;
    }
@@ -249,7 +250,7 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
       {
          RARCH_ERR(SMBPFX "Failed to create subdir '%s'\n", smb_st.subdir);
          smb2_disconnect_share(ctx);
-         smb2_destroy_context(ctx);
+         smb_ctx_free(ctx);
          smb_st.ctx = NULL;
          cb(user_data, NULL, false, NULL);
          return true;
@@ -266,7 +267,7 @@ static bool smb_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
    if (smb_st.ctx)
    {
       smb2_disconnect_share(smb_st.ctx);
-      smb2_destroy_context(smb_st.ctx);
+      smb_ctx_free(smb_st.ctx);
       smb_st.ctx = NULL;
    }
    smb_st.subdir[0] = '\0';

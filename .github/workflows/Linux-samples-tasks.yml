@@ -1127,10 +1127,12 @@ jobs:
         working-directory: samples/tasks/database
         run: |
           set -eu
-          # The scan's reader tasks under TSan; then the same checks
+          # The scan's reader tasks under TSan, with a stub SMB backend
+          # so they take smb:// paths; then the same checks
           # in a build without threads, with the budget test too, and in
           # one whose readers are compiled in but never start.
-          make clean SANITIZER=thread && make -j$(nproc) database_scan_test SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) database_scan_test SANITIZER=thread \
+             SCAN_DEFINES=-DHAVE_SMBCLIENT
           scan_root="$(mktemp -d)"
           TSAN_OPTIONS=halt_on_error=1 timeout 900 ./database_scan_test "$scan_root"
           rm -rf "${scan_root:?}"

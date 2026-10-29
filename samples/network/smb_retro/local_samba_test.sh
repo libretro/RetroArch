@@ -10,7 +10,7 @@ command -v smbd >/dev/null 2>&1 || { echo "skip: no smbd"; exit 0; }
 make -s smb_test vfs_test vfs_threads_test smb_idle_test
 # WITH_LIBSMB2=1: the VFS tests over a system libsmb2 as well (the
 # --enable-libsmb build), on every case the built-in client passes
-[ -n "${WITH_LIBSMB2:-}" ] && make -s vfs_test_libsmb2 vfs_threads_test_libsmb2 smb_idle_test_libsmb2
+[ -n "${WITH_LIBSMB2:-}" ] && make -s vfs_test_libsmb2 vfs_threads_test_libsmb2 smb_idle_test_libsmb2 cloud_sync_test_libsmb2
 RUN=${RUNNER:-}
 EXE=${EXE:-}
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
@@ -89,10 +89,10 @@ run() { # label max_protocol encrypt expect_rc password
    # the real VFS backend on top, on the file the run above wrote,
    # then four threads on a two-slot pool through it
    [ $rc -eq 0 ] && { $RUN ./vfs_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=3; }
-   [ $rc -eq 0 ] && { $RUN ./vfs_threads_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=4; }
+   [ $rc -eq 0 ] && { $RUN ./vfs_threads_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO 'hidden$' >>$D/out 2>&1 || rc=4; }
    if [ $rc -eq 0 ] && [ -n "${WITH_LIBSMB2:-}" ] && [ $4 -eq 0 ]; then
       $RUN ./vfs_test_libsmb2$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=5
-      [ $rc -eq 0 ] && { $RUN ./vfs_threads_test_libsmb2$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=6; }
+      [ $rc -eq 0 ] && { $RUN ./vfs_threads_test_libsmb2$EXE 127.0.0.1 share rsmbtest "$5" RETRO 'hidden$' >>$D/out 2>&1 || rc=6; }
    fi
    set -e
    if [ $rc -eq $4 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $4): $(cat $D/out)"; exit 1; fi
@@ -164,6 +164,15 @@ if SMB_KRB_REALM=NOWHERE.TEST SMB_KRB_KDC=127.0.0.1 SMB_KRB_PORT=1 \
 else
    echo "FAIL: Kerberos fallback: $(cat $D/out)"; exit 1
 fi
+# cloud sync connecting beside the VFS's private connections: both on
+# libsmb2's one list of contexts
+if [ -n "${WITH_LIBSMB2:-}" ]; then
+   if $RUN ./cloud_sync_test_libsmb2$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO >$D/out 2>&1; then
+      echo "ok:   libsmb2: cloud sync connects beside the VFS"
+   else
+      echo "FAIL: libsmb2: cloud sync beside the VFS: $(cat $D/out)"; exit 1
+   fi
+fi
 rm -f $D/share/rsmb_test.bin
 
 # smb:// files kept open across a server restart (a NAS rebooting):
@@ -184,10 +193,27 @@ restart_round() { # binary order label
       echo "FAIL: $3 across a server restart ($2 first): $(cat $D/out)"; exit 1
    fi
 }
+# A server that never comes back: the reads fail, and closing the
+# streams still lets their connections go (the sanitizer lane's LSan).
+gone_round() { # binary label
+   rm -f $D/share/idle.bin $D/share/idle_w.bin
+   stop; sleep 0.3; conf SMB3_11 default; smbd -s $D/smb.conf -D; sleep 1
+   $RUN ./$1$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO 10 g >$D/out 2>&1 &
+   idler=$!
+   sleep 3
+   stop
+   if wait $idler; then
+      echo "ok:   $2: streams closed after the server went for good"
+   else
+      echo "FAIL: $2 after the server went for good: $(cat $D/out)"; exit 1
+   fi
+}
 restart_round smb_idle_test r "built-in client"
 restart_round smb_idle_test w "built-in client"
+gone_round smb_idle_test "built-in client"
 if [ -n "${WITH_LIBSMB2:-}" ]; then
    restart_round smb_idle_test_libsmb2 r "libsmb2"
    restart_round smb_idle_test_libsmb2 w "libsmb2"
+   gone_round smb_idle_test_libsmb2 "libsmb2"
 fi
 echo "[pass] smb_retro local samba matrix"

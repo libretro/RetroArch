@@ -18,6 +18,8 @@
 #define ROUNDS   12
 
 static char url_file[600], url_dir[600];
+static char url_file_b[600], url_dir_b[600];
+static bool two_shares = false;
 static int  failures = 0;
 
 /* Each failure names its operation, thread and round, so a failure on
@@ -34,7 +36,10 @@ static void worker(void *arg)
    uint8_t buf[64];
    for (i = 0; i < ROUNDS; i++)
    {
-      RFILE *f = filestream_open(url_file, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      bool        b    = two_shares && ((id + i) & 1);
+      const char *file = b ? url_file_b : url_file;
+      const char *dir  = b ? url_dir_b  : url_dir;
+      RFILE *f = filestream_open(file, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
       struct RDIR *d;
       int64_t off = 8 * (i % 4);
       if (!f)
@@ -65,12 +70,12 @@ static void worker(void *arg)
       }
       if (f)
          filestream_close(f);
-      if (!path_is_valid(url_file))
+      if (!path_is_valid(file))
       {
          report(id, i, "stat");
          bad++;
       }
-      if ((d = retro_opendir(url_dir)))
+      if ((d = retro_opendir(dir)))
       {
          while (retro_readdir(d))
             (void)retro_dirent_get_name(d);
@@ -283,12 +288,30 @@ int main(int argc, char **argv)
       }
       smb_shutdown();
    }
+   /* a second share of the same directory (argv[6]) with no share
+    * configured: threads alternating between the two keep a pool each,
+    * so neither is taken down under the other's users */
+   if (argc > 6)
+   {
+      cfg.share     = "";
+      cfg.readahead = 1024;
+      snprintf(url_file_b, sizeof(url_file_b), "smb://%s/%s/rsmb_test.bin", argv[1], argv[6]);
+      snprintf(url_dir_b, sizeof(url_dir_b), "smb://%s/%s", argv[1], argv[6]);
+      two_shares = true;
+      smb_init_cfg(&cfg);
+      for (i = 0; i < NTHREADS; i++)
+         t[i] = sthread_create(worker, (void*)(intptr_t)i);
+      for (i = 0; i < NTHREADS; i++)
+         if (t[i])
+            sthread_join(t[i]);
+      smb_shutdown();
+   }
    if (failures)
    {
       fprintf(stderr, "FAIL: %d bad operations across %d threads\n", failures, NTHREADS);
       return 1;
    }
-   printf("ok: %d threads x %d rounds through the VFS, read-ahead off and on, reads past the windows\n",
-         NTHREADS, ROUNDS);
+   printf("ok: %d threads x %d rounds through the VFS, read-ahead off and on, reads past the windows%s\n",
+         NTHREADS, ROUNDS, argc > 6 ? ", two shares" : "");
    return 0;
 }

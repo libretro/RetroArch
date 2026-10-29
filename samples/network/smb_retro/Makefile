@@ -41,7 +41,9 @@ smb_idle_test_libsmb2: smb_idle_test.c $(L2_SRC)
 	$(CC) -I$(COMMON)/include -D_GNU_SOURCE -DHAVE_SMBCLIENT -DHAVE_STDINT_H -DHAVE_NETWORKING -DRARCH_INTERNAL -I$(ROOT) $(LIBSMB2_CFLAGS) $(CFLAGS) smb_idle_test.c $(L2_SRC) $(LIBSMB2_LIBS) $(LDLIBS) -o $@
 vfs_threads_test_libsmb2: vfs_threads_test.c $(L2_SRC)
 	$(CC) -I$(COMMON)/include -D_GNU_SOURCE -DHAVE_SMBCLIENT -DHAVE_STDINT_H -DHAVE_NETWORKING -DHAVE_THREADS $(MMAP_FLAGS) -DRARCH_INTERNAL -I$(ROOT) $(LIBSMB2_CFLAGS) $(CFLAGS) vfs_threads_test.c $(L2_SRC) $(COMMON)/rthreads/rthreads.c $(COMMON)/rthreads/retro_eventcount.c $(COMMON)/file/retro_dirent.c $(LIBSMB2_LIBS) $(LDLIBS) -lpthread -o $@
+cloud_sync_test_libsmb2: cloud_sync_test.c $(L2_SRC)
+	$(CC) -I$(COMMON)/include -D_GNU_SOURCE -DHAVE_SMBCLIENT -DHAVE_STDINT_H -DHAVE_NETWORKING -DHAVE_CLOUDSYNC -DHAVE_THREADS -DRARCH_INTERNAL -I$(ROOT) $(LIBSMB2_CFLAGS) $(CFLAGS) cloud_sync_test.c $(L2_SRC) $(COMMON)/rthreads/rthreads.c $(COMMON)/rthreads/retro_eventcount.c $(LIBSMB2_LIBS) $(LDLIBS) -lpthread -o $@
 
 clean:
-	rm -f smb_idle_test smb_idle_test.exe smb_idle_test_libsmb2 smb_test smb_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe vfs_test_libsmb2 vfs_threads_test_libsmb2
+	rm -f smb_idle_test smb_idle_test.exe smb_idle_test_libsmb2 smb_test smb_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe vfs_test_libsmb2 vfs_threads_test_libsmb2 cloud_sync_test_libsmb2
 .PHONY: all clean

@@ -5,9 +5,12 @@
  * runs by default, so every read goes to the server.
  *
  * Usage: smb_idle_test <server> <share> <user> <password> <workgroup>
- *        <idle seconds> [w]
+ *        <idle seconds> [w|g]
  * With w the write comes first after the pause, so it is the call
- * that finds the connection gone. Exit status is the failure count. */
+ * that finds the connection gone. With g the server is stopped for
+ * good during the pause: the reads after it must fail, and closing
+ * must still let go of each stream's connection, pooled and private.
+ * Exit status is the failure count. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,16 +31,17 @@ static int write_at(libretro_vfs_implementation_file *s, const uint8_t *p,
 int main(int argc, char **argv)
 {
    static uint8_t data[SIZE], back[SIZE];
-   libretro_vfs_implementation_file r, w;
+   libretro_vfs_implementation_file r, w, p;
    struct smb_settings cfg;
    char url_r[512], url_w[512];
    unsigned i, idle;
-   int fails = 0, write_first;
+   int fails = 0, write_first, gone;
 
    if (argc < 7)
       return 2;
    idle        = (unsigned)atoi(argv[6]);
    write_first = argc > 7 && argv[7][0] == 'w';
+   gone        = argc > 7 && argv[7][0] == 'g';
    network_init();
    for (i = 0; i < SIZE; i++)
       data[i] = (uint8_t)(i * 7 + (i >> 8));
@@ -83,10 +87,35 @@ int main(int argc, char **argv)
       fprintf(stderr, "FAIL: read before the pause\n");
       fails++;
    }
+   /* both pool slots are held: this one connects privately */
+   memset(&p, 0, sizeof(p));
+   if (gone && (!retro_vfs_file_open_smb(&p, url_r, RETRO_VFS_FILE_ACCESS_READ, 0)
+         || retro_vfs_file_read_smb(&p, back, 4096) != 4096))
+   {
+      fprintf(stderr, "FAIL: private read before the pause\n");
+      fails++;
+   }
    printf("idle for %u s with the files open\n", idle);
    fflush(stdout);
    for (i = 0; i < idle; i++)
       retro_sleep(1000);
+
+   if (gone)
+   {
+      if (retro_vfs_file_read_smb(&r, back, 4096) >= 0
+            || retro_vfs_file_read_smb(&p, back, 4096) >= 0)
+      {
+         fprintf(stderr, "FAIL: read with the server gone\n");
+         fails++;
+      }
+      else
+         printf("ok:   reads fail with the server gone\n");
+      retro_vfs_file_close_smb(&p);
+      retro_vfs_file_close_smb(&w);
+      retro_vfs_file_close_smb(&r);
+      smb_shutdown();
+      return fails;
+   }
 
    if (write_first)
    {
