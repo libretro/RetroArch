@@ -235,6 +235,7 @@ static read_req_t       *ios_head;
 static read_req_t      **ios_tail = &ios_head;
 static int               ios_quit;
 static int               ios_client_gone;
+static int               ios_hold_reads;
 static pthread_t         ios_thread;
 static HIDAttachCallback attach_cb;
 static HIDClient        *the_client;
@@ -254,9 +255,15 @@ int32_t HIDDelClient(HIDClient *client)
    (void)client;
    pthread_mutex_lock(&ios_lock);
    ios_client_gone = 1;
+   ios_hold_reads = 0;
 #ifdef WIIU_HID_THREADS_BROKEN_IOS
    /* The reads in flight are lost: never completed */
-   ios_head = NULL;
+   while (ios_head)
+   {
+      read_req_t *r = ios_head;
+      ios_head = r->next;
+      free(r);
+   }
    ios_tail = &ios_head;
 #endif
    pthread_cond_broadcast(&ios_cond);
@@ -296,7 +303,7 @@ static void *ios_main(void *arg)
       int i, spin;
 
       pthread_mutex_lock(&ios_lock);
-      while (!ios_head && !ios_quit)
+      while ((!ios_head || ios_hold_reads) && !ios_quit)
          pthread_cond_wait(&ios_cond, &ios_lock);
       if (!ios_head)
       {
@@ -592,7 +599,8 @@ int main(void)
             /* and each still plugged in reading */
             int reading = 0;
             for (i = 0; i < made; i++)
-               if (retro_atomic_load_acquire_int(&pad_pool[i].stage)
+               if (pad_pool[i].handle % (CYCLES * 2) == CYCLES * 2 - 1
+                     && retro_atomic_load_acquire_int(&pad_pool[i].stage)
                      == PAD_REGISTERED
                      && retro_atomic_load_acquire_int(
                         &pad_pool[i].packets) > 0)
@@ -614,6 +622,26 @@ int main(void)
    /* The supported devices that came and went: each made a pad */
    CHECK(retro_atomic_load_acquire_int(&pads_made) > ATTACH_THREADS);
    CHECK(retro_atomic_load_acquire_int(&slots_held) == ATTACH_THREADS);
+
+   /* Keep both live pads' next reads queued until the client is deleted. */
+   pthread_mutex_lock(&ios_lock);
+   ios_hold_reads = 1;
+   pthread_mutex_unlock(&ios_lock);
+   deadline = now_ms() + 20000;
+   live = 0;
+   while (now_ms() < deadline)
+   {
+      read_req_t *r;
+      live = 0;
+      pthread_mutex_lock(&ios_lock);
+      for (r = ios_head; r; r = r->next)
+         live++;
+      pthread_mutex_unlock(&ios_lock);
+      if (live == ATTACH_THREADS)
+         break;
+      sched_yield();
+   }
+   CHECK(live == ATTACH_THREADS);
 
    retro_atomic_store_release_int(&shutting_down, 1);
    wiiu_hid_free(hid);
