@@ -52,10 +52,6 @@
 #include "../../configuration.h"
 #include "../../input/input_osk.h"
 
-/* Forward declaration
-   TODO/FIXME - check if this custom memcpy is genuinely more efficient */
-extern void *memcpy_neon(void *dst, const void *src, size_t n);
-
 /* Defines */
 
 #define RGBA8(r,g,b,a) ((((a)&0xFF)<<24) | (((b)&0xFF)<<16) | (((g)&0xFF)<<8) | (((r)&0xFF)<<0))
@@ -1236,7 +1232,8 @@ static gxm_texture_t *gxm_create_empty_texture_format(unsigned int w,
 
    memset(texture, 0, sizeof(gxm_texture_t));
 
-   tex_size =  w * h * tex_format_to_bytespp(format);
+   /* Rows are gxm_texture_get_stride() apart: the width to 8 */
+   tex_size = ((w + 7) & ~7) * h * tex_format_to_bytespp(format);
 
    /* Allocate a GPU buffer for the texture */
    texture_data = gpu_alloc(
@@ -1296,6 +1293,26 @@ static unsigned int gxm_texture_get_stride(const gxm_texture_t *texture)
 {
    return ((sceGxmTextureGetWidth(&texture->gxm_tex) + 7) & ~7)
       * tex_format_to_bytespp(sceGxmTextureGetFormat(&texture->gxm_tex));
+}
+
+/* @height rows of @row_len bytes from @src, @pitch bytes apart, into a
+ * texture's rows @stride bytes apart; one copy when the two line up.
+ * @row_len is no more than either. */
+static void gxm_copy_rows(void *dst, unsigned stride, const void *src,
+      unsigned pitch, unsigned row_len, unsigned height)
+{
+   uint8_t       *out = (uint8_t*)dst;
+   const uint8_t *in  = (const uint8_t*)src;
+
+   if (!height)
+      return;
+   if (stride == pitch)
+   {
+      memcpy(out, in, (size_t)pitch * (height - 1) + row_len);
+      return;
+   }
+   for (; height; height--, out += stride, in += pitch)
+      memcpy(out, in, row_len);
 }
 
 static void gxm_texture_set_filters(gxm_texture_t *texture,
@@ -2074,13 +2091,42 @@ static void gxm_common_dialog_update(void)
    sceCommonDialogUpdate(&param);
 }
 
+/* The core's frame into the texture it is drawn from, made anew when
+ * its size changes. Only the frame's @dims of each row are copied: a
+ * row of the frame can be longer than the texture's. */
+static void gxm_upload_frame(vita_video_t *vita, const void *frame,
+      unsigned dims, unsigned pitch)
+{
+   if (vita->dims != dims && vita->texture)
+   {
+      if (gxm_initialized)
+         sceGxmFinish(gxm_context);
+      gxm_free_texture(vita->texture);
+      vita->texture = NULL;
+   }
+
+   if (!vita->texture)
+   {
+      vita->dims    = dims;
+      vita->texture = gxm_create_empty_texture_format(VIDEO_SCALE_W(dims),
+            VIDEO_SCALE_H(dims), vita->format);
+      if (!vita->texture)
+         return;
+      gxm_texture_set_filters(vita->texture, vita->tex_filter,
+            vita->tex_filter);
+   }
+
+   gxm_copy_rows(sceGxmTextureGetData(&vita->texture->gxm_tex),
+         gxm_texture_get_stride(vita->texture), frame, pitch,
+         VIDEO_SCALE_W(dims)
+         * ((vita->format == SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1RGB) ? 4 : 2),
+         VIDEO_SCALE_H(dims));
+}
+
 static bool gxm_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   unsigned width = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
-   void *tex_p;
    gxm_display_data_t displayData;
    vita_video_t *vita                     = (vita_video_t *)data;
    unsigned temp_width                    = PSP_FB_WIDTH;
@@ -2094,60 +2140,9 @@ static bool gxm_frame(void *data, const void *frame,
    bool statistics_show                   = video_info->statistics_show;
    struct font_params *osd_params         = (struct font_params*)&video_info->osd_stat_params;
 
-   if (frame)
-   {
-      if (!(vita->texture && sceGxmTextureGetData(&vita->texture->gxm_tex)==frame))
-      {
-         unsigned i;
-         unsigned int stride;
-
-         if (vita->dims != dims && vita->texture)
-         {
-            if (gxm_initialized)
-               sceGxmFinish(gxm_context);
-            gxm_free_texture(vita->texture);
-            vita->texture = NULL;
-         }
-
-         if (!vita->texture)
-         {
-            vita->dims    = dims;
-            vita->texture = gxm_create_empty_texture_format(width, height,
-                  vita->format);
-            gxm_texture_set_filters(vita->texture, vita->tex_filter,
-                  vita->tex_filter);
-         }
-         tex_p  = sceGxmTextureGetData(&vita->texture->gxm_tex);
-         stride = gxm_texture_get_stride(vita->texture);
-
-         if (vita->format == SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1RGB)
-         {
-            const uint32_t *frame32;
-            uint32_t *tex32;
-            stride                     /= 4;
-            pitch                      /= 4;
-            tex32 = tex_p;
-            frame32 = frame;
-
-            for (i = 0; i < height; i++)
-               memcpy_neon(&tex32[i*stride], &frame32[i*pitch],
-                     pitch*sizeof(uint32_t));
-         }
-         else
-         {
-            const uint16_t *frame16;
-            uint16_t *tex16;
-            stride                 /= 2;
-            pitch                  /= 2;
-            tex16 = tex_p;
-            frame16 = frame;
-
-            for (i = 0; i < height; i++)
-               memcpy_neon(&tex16[i*stride], &frame16[i*pitch],
-                     width*sizeof(uint16_t));
-         }
-      }
-   }
+   if (frame && !(vita->texture
+            && sceGxmTextureGetData(&vita->texture->gxm_tex) == frame))
+      gxm_upload_frame(vita, frame, dims, pitch);
 
    if (vita->should_resize)
       gxm_update_viewport(vita);
@@ -2478,7 +2473,6 @@ static void gxm_set_texture_frame(void *data,
       const void *frame, bool rgb32,
       unsigned dims, float alpha)
 {
-   unsigned i;
    void *tex_p;
    unsigned int stride;
    vita_video_t *vita = (vita_video_t*)data;
@@ -2518,31 +2512,10 @@ static void gxm_set_texture_frame(void *data,
    tex_p  = sceGxmTextureGetData(&vita->menu.texture->gxm_tex);
    stride = gxm_texture_get_stride(vita->menu.texture);
 
-   /* Copy row-by-row via memcpy rather than pixel-by-pixel.  The
-    * texture stride (destination) can differ from the source pitch
-    * (width * bpp) for alignment reasons, so a single memcpy of the
-    * whole buffer isn't safe when stride != width*bpp, but a per-row
-    * memcpy handles both cases and is materially faster than the
-    * previous nested loop with per-pixel indexing. */
-   if (rgb32)
    {
-      uint32_t       *tex32   = (uint32_t*)tex_p;
-      const uint32_t *frame32 = (const uint32_t*)frame;
-      size_t          rowlen  = (size_t)VIDEO_SCALE_W(dims) * 4;
-
-      stride /= 4;
-      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
-         memcpy(tex32 + i * stride, frame32 + i * VIDEO_SCALE_W(dims), rowlen);
-   }
-   else
-   {
-      uint16_t       *tex16   = (uint16_t*)tex_p;
-      const uint16_t *frame16 = (const uint16_t*)frame;
-      size_t          rowlen  = (size_t)VIDEO_SCALE_W(dims) * 2;
-
-      stride /= 2;
-      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
-         memcpy(tex16 + i * stride, frame16 + i * VIDEO_SCALE_W(dims), rowlen);
+      unsigned row_len = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
+      gxm_copy_rows(tex_p, stride, frame, row_len, row_len,
+            VIDEO_SCALE_H(dims));
    }
 }
 
@@ -2555,9 +2528,6 @@ static void gxm_set_texture_enable(void *data, bool state, bool full_screen)
 static uintptr_t gxm_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   unsigned int stride, pitch, j;
-   uint32_t             *tex32    = NULL;
-   const uint32_t *frame32        = NULL;
    struct texture_image *image    = (struct texture_image*)data;
    gxm_texture_t *texture = gxm_create_empty_texture_format(
          image->width, image->height,
@@ -2572,18 +2542,9 @@ static uintptr_t gxm_load_texture(void *video_data, void *data,
             SCE_GXM_TEXTURE_FILTER_LINEAR,
             SCE_GXM_TEXTURE_FILTER_LINEAR);
 
-   stride                      = gxm_texture_get_stride(texture);
-   stride                     /= 4;
-
-   tex32                       = sceGxmTextureGetData(&texture->gxm_tex);
-   frame32                     = image->pixels;
-   pitch                       = image->width;
-
-   for (j = 0; j < image->height; j++)
-         memcpy_neon(
-               &tex32[j*stride],
-               &frame32[j*pitch],
-               pitch * sizeof(uint32_t));
+   gxm_copy_rows(sceGxmTextureGetData(&texture->gxm_tex),
+         gxm_texture_get_stride(texture), image->pixels, image->width * 4,
+         image->width * 4, image->height);
 
    return (uintptr_t)texture;
 }
@@ -2593,8 +2554,6 @@ static uintptr_t gxm_load_texture(void *video_data, void *data,
 static enum video_texture_update gxm_update_texture(void *video_data,
       uintptr_t id, const struct texture_image *ti, bool threaded)
 {
-   unsigned int stride, j;
-   uint32_t       *tex32;
    gxm_texture_t *texture = (gxm_texture_t*)id;
 
    if (     !texture || !ti || !ti->pixels || ti->pix10 || ti->fp16
@@ -2604,11 +2563,9 @@ static enum video_texture_update gxm_update_texture(void *video_data,
          || sceGxmTextureGetHeight(&texture->gxm_tex) != ti->height)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
-   stride = gxm_texture_get_stride(texture) / 4;
-   tex32  = sceGxmTextureGetData(&texture->gxm_tex);
-   for (j = 0; j < ti->height; j++)
-      memcpy_neon(&tex32[j * stride], &ti->pixels[j * ti->width],
-            ti->width * sizeof(uint32_t));
+   gxm_copy_rows(sceGxmTextureGetData(&texture->gxm_tex),
+         gxm_texture_get_stride(texture), ti->pixels, ti->width * 4,
+         ti->width * 4, ti->height);
 
    return VIDEO_TEXTURE_UPDATE_DONE;
 }

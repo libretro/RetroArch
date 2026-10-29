@@ -64,8 +64,6 @@
 /* Set to '1' to enable debug perf code. */
 #define EXYNOS_GFX_DEBUG_PERF 0
 
-extern void *memcpy_neon(void *dst, const void *src, size_t n);
-
 /* GEM buffers for the 'data' from the frontend: the frame (main), the
  * menu (aux) and the messages (font), each its own, as the font buffer
  * keeps what it last drew */
@@ -1096,7 +1094,7 @@ static int exynos_copy_frame(
    exynos_perf_memcpy(&pdata->perf, true);
 #endif
 
-   memcpy_neon(pdata->buf[buf_type]->vaddr, frame, size);
+   memcpy(pdata->buf[buf_type]->vaddr, frame, size);
    src->stride = src_pitch;
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
@@ -1942,7 +1940,7 @@ static int exynos_overlay_blend(struct exynos_video *vid)
          unsigned x, y;
          uint32_t *to = (uint32_t*)o->bo->vaddr;
          if (m == 0xFF && !mirror)
-            memcpy_neon(to, o->px, (size_t)o->w * o->h * sizeof(uint32_t));
+            memcpy(to, o->px, (size_t)o->w * o->h * sizeof(uint32_t));
          else
             for (y = 0; y < o->h; y++)
             {
@@ -2506,7 +2504,7 @@ static void exynos_set_texture_frame(void *data, const void *frame, bool rgb32,
       }
    }
    else
-      memcpy_neon(pdata->buf[buf_type]->vaddr, frame, size);
+      memcpy(pdata->buf[buf_type]->vaddr, frame, size);
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
    exynos_perf_memcpy(&pdata->perf, false);

@@ -309,7 +309,6 @@ else ifeq ($(platform), vita)
    PLATOBJS += \
       libretro-common/audio/conversion/s16_to_float_neon.o \
       libretro-common/audio/conversion/float_to_s16_neon.o \
-      memory/neon/memcpy-neon.o \
       libretro-common/audio/resampler/drivers/sinc_resampler_neon.o
 
    LIBDIRS += -L.

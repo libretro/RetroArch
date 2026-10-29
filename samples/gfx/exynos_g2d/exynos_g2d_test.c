@@ -17,7 +17,12 @@
 #include <poll.h>
 #include <sys/stat.h>
 
+/* The driver's copies, counted: its only memcpy calls are the frame's
+ * and the overlays' */
+static void *count_memcpy(void *dst, const void *src, size_t n);
+#define memcpy(dst, src, n) count_memcpy(dst, src, n)
 #include "../../../gfx/drivers/exynos_gfx.c"
+#undef memcpy
 #include "../../../gfx/common/drm_common.c"
 
 /* ---- frontend pieces the driver reaches ------------------------------ */
@@ -41,7 +46,7 @@ static settings_t settings;
 settings_t *config_get_ptr(void) { return &settings; }
 
 static unsigned memcpys;
-void *memcpy_neon(void *dst, const void *src, size_t n)
+static void *count_memcpy(void *dst, const void *src, size_t n)
 {
    memcpys++;
    return memcpy(dst, src, n);

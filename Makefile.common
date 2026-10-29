@@ -888,8 +888,7 @@ OBJ += midi/drivers/fmsynth_midi.o
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
-          memory/neon/memcpy-neon.o
+   OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o
 
    DEFINES   += -DHAVE_NEON
    ASFLAGS   += $(NEON_ASFLAGS)
