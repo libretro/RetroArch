@@ -96,7 +96,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: retroarch-${{matrix.version}}-vs2026-${{matrix.configuration}}-${{matrix.platform}}-${{ steps.slug.outputs.sha8 }}
+          name: retroarch-${{matrix.version}}-${{matrix.configuration}}-${{matrix.platform}}-${{ steps.slug.outputs.sha8 }}
           path: |
             ${{ !endsWith(matrix.version, 'UWP') }}:
               pkg/msvc/${{matrix.platform}}/${{matrix.configuration}}/RetroArch-msvc${{matrix.version}}.exe
