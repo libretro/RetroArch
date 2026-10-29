@@ -139,6 +139,26 @@ jobs:
           make clean && make -j$(nproc) check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
+      - name: Native FLV mux (ASan + UBSan, mingw-w64)
+        shell: bash
+        working-directory: samples/record/flv_mux
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean && make check stream-check SANITIZER=address,undefined
+          make clean && make check stream-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
+      - name: RTMP output chunks (ASan + UBSan, mingw-w64)
+        shell: bash
+        working-directory: samples/record/rtmp_chunk
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean && make check peer-check SANITIZER=address,undefined
+          make clean && make check peer-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
       - name: GPU PCM output pipeline (ASan + UBSan, TSan, mingw-w64)
         working-directory: samples/record/gpu_av_output
         run: |
