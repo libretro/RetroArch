@@ -26,11 +26,14 @@
 #include <retro_atomic.h>
 #include <time/rtime.h>
 
-/* MS CRTs keep localtime()'s result per thread. Elsewhere localtime_r(),
- * declared here because strict C89 headers hide it. Orbis libc does not
- * export localtime_r(). */
-#if defined(HAVE_THREADS) && !defined(_WIN32) && !defined(_XBOX) \
-   && !defined(ORBIS)
+/* MS CRTs keep localtime()'s result per thread. Orbis libc exports
+ * localtime_s() in the C11 Annex K order, not localtime_r(), and fills
+ * only the nine int fields of a struct tm. Elsewhere localtime_r(),
+ * declared here because strict C89 headers hide it. */
+#if defined(HAVE_THREADS) && defined(ORBIS)
+#define RTIME_HAVE_LOCALTIME_S
+struct tm *localtime_s(const time_t *timep, struct tm *result);
+#elif defined(HAVE_THREADS) && !defined(_WIN32) && !defined(_XBOX)
 #define RTIME_HAVE_LOCALTIME_R
 struct tm *localtime_r(const time_t *timep, struct tm *result);
 #endif
@@ -434,10 +437,15 @@ void rtime_deinit(void)
 /* Thread-safe wrapper for localtime() */
 struct tm *rtime_localtime(const time_t *timep, struct tm *result)
 {
-#ifdef RTIME_HAVE_LOCALTIME_R
+#if defined(RTIME_HAVE_LOCALTIME_R)
    /* Through a copy: a failed conversion leaves result unwritten. */
    struct tm tm_buf;
    struct tm *time_info = localtime_r(timep, &tm_buf);
+#elif defined(RTIME_HAVE_LOCALTIME_S)
+   struct tm tm_buf;
+   struct tm *time_info;
+   memset(&tm_buf, 0, sizeof(tm_buf));
+   time_info = localtime_s(timep, &tm_buf);
 #else
    struct tm *time_info = localtime(timep);
 #endif
