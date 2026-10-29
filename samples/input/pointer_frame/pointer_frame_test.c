@@ -31,7 +31,14 @@
  *     the viewport's edges, sparse places, the lightgun;
  * 15. devices and touches in a screen's own window: placed through
  *     that window, nowhere on the main window's screen, off-screen
- *     once the window is gone; motion, buttons and ports as before. */
+ *     once the window is gone; motion, buttons and ports as on the
+ *     main window;
+ * 16. the flags that keep a driver's own answers (Android's), each off
+ *     and on: pressed only inside, the second list, the mouse and
+ *     the ids left to the driver, touch slots; and a touch read over
+ *     its own window's client area;
+ * 17. Android's publication against the driver's own answers before
+ *     it published (989ba0b1df), finger by finger. */
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -47,7 +54,8 @@ static unsigned failures, vp_asked, translations;
 
 /* A 200x100 viewport at 0,0 of a 200x100 screen. In it a position is
  * itself; outside, held to the edge or -0x8000 as asked. The screen
- * position is the position plus 1000, to tell the two apart. */
+ * position is the position plus 1000, to tell the two apart, and
+ * -0x8000 left of or above -100, off the screen. */
 bool video_driver_get_viewport_info(struct video_viewport *vp)
 {
    vp_asked++;
@@ -69,7 +77,8 @@ bool video_driver_translate_coord_viewport(struct video_viewport *vp,
    if (y < 0 || y >= 100)
       vy = report_oob ? -0x8000 : (y < 0 ? 0 : 99);
    *res_pos        = VIDEO_POS_PACK(vx, vy);
-   *res_screen_pos = VIDEO_POS_PACK(x + 1000, y + 1000);
+   *res_screen_pos = VIDEO_POS_PACK(x < -100 ? -0x8000 : x + 1000,
+         y < -100 ? -0x8000 : y + 1000);
    return true;
 }
 
@@ -95,6 +104,17 @@ bool video_driver_translate_window_point(unsigned window,
    return true;
 }
 
+/* Window shown_window has drawn, shown_dims big, on display 4 */
+static unsigned shown_window, shown_dims;
+unsigned video_driver_window_shown(unsigned window, unsigned *dims)
+{
+   if (!window || window != shown_window)
+      return 0;
+   if (dims)
+      *dims = shown_dims;
+   return 4;
+}
+
 bool input_driver_pointer_is_offscreen(int16_t x, int16_t y)
 { return x == -0x8000 || y == -0x8000; }
 
@@ -117,6 +137,182 @@ static int16_t rd(unsigned port, unsigned device, unsigned idx, unsigned id)
    if (!input_pointer_frame_read(port, device, idx, id, &v))
       return -2;   /* the driver is to be asked */
    return v;
+}
+
+/* 16 */
+static void test_flags(void)
+{
+   input_pointer_frame_t f;
+   input_video_window_t tw[3];
+   uint32_t touch[3];
+   uint32_t pos = 0;
+   bool down    = false;
+
+   input_pointer_frames_clear();
+   memset(&f, 0, sizeof(f));
+   memset(tw, 0, sizeof(tw));
+   f.pos     = VIDEO_POS_PACK(10, 10);
+   f.buttons = INPUT_POINTER_LEFT;
+
+   /* PRESSED_INSIDE: right of the viewport, left of the screen, in */
+   touch[0] = VIDEO_POS_PACK(250, 40);
+   touch[1] = VIDEO_POS_PACK(-150, 40);
+   touch[2] = VIDEO_POS_PACK(30, 20);
+   input_pointer_frames_set(&f, NULL, 1, 0);
+   touches_set(touch, 3, 7);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 1,
+         "without PRESSED_INSIDE a touch that is down is pressed anywhere");
+   input_pointer_frames_set(&f, NULL, 1, INPUT_POINTERS_PRESSED_INSIDE);
+   touches_set(touch, 3, 7);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 199
+      &&  rd(0, RETRO_DEVICE_POINTER, 2, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 3,
+         "with it, pressed only inside the viewport, or the screen read as SCREEN, and still counted");
+
+   /* POINTER_IDS_BY_DRIVER */
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RARCH_DEVICE_ID_POINTER_BACK) == 0
+      &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 0, RARCH_DEVICE_ID_POINTER_BACK) == 0,
+         "without POINTER_IDS_BY_DRIVER an id the frontend does not hold reads 0");
+   input_pointer_frames_set(&f, NULL, 1, INPUT_POINTERS_POINTER_IDS_BY_DRIVER);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RARCH_DEVICE_ID_POINTER_BACK) == -2
+      &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 0, RARCH_DEVICE_ID_POINTER_BACK) == -2
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 199,
+         "with it the driver answers that id, and the frontend the rest");
+
+   /* WINDOWS_SECOND: touches 0 and 2 in window 1, 1 in the main one */
+   tw[0].window     = 1;
+   tw[0].generation = 5;
+   tw[2]            = tw[0];
+   touch[0] = VIDEO_POS_PACK(10, 20);
+   touch[1] = VIDEO_POS_PACK(50, 60);
+   touch[2] = VIDEO_POS_PACK(30, 40);
+   input_pointer_frames_set(&f, NULL, 1, 0);
+   input_pointer_touches_set(touch, tw, 3, 7, 7);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 2010
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 3
+      &&  rd(0, RARCH_DEVICE_POINTER_SECOND, 0, RETRO_DEVICE_ID_POINTER_X) == -2,
+         "without WINDOWS_SECOND every touch is the pointer's, and there is no second list");
+   input_pointer_frames_set(&f, NULL, 1,
+         INPUT_POINTERS_WINDOWS_SECOND | INPUT_POINTERS_GUN_AT_TOUCH);
+   input_pointer_touches_set(touch, tw, 3, 7, 7);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 50
+      &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 0, RETRO_DEVICE_ID_POINTER_X) == 1050
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 50
+      &&  input_pointer_frame_pos(0, RETRO_DEVICE_POINTER, 0, &pos)
+      &&  pos == VIDEO_POS_PACK(50, 60),
+         "with it the pointer and the lightgun have the main window's touches");
+   CHECK( rd(0, RARCH_DEVICE_POINTER_SECOND, 0, RETRO_DEVICE_ID_POINTER_X) == 2010
+      &&  rd(0, RARCH_DEVICE_POINTER_SECOND, 1, RETRO_DEVICE_ID_POINTER_X) == 2030
+      &&  rd(0, RARCH_DEVICE_POINTER_SECOND, 1, RETRO_DEVICE_ID_POINTER_Y) == 2040
+      &&  rd(0, RARCH_DEVICE_POINTER_SECOND, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RARCH_DEVICE_POINTER_SECOND, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 2
+      &&  rd(0, RARCH_DEVICE_POINTER_SECOND, 2, RETRO_DEVICE_ID_POINTER_X) == 0
+      &&  rd(0, RARCH_DEVICE_POINTER_SECOND, 2, RETRO_DEVICE_ID_POINTER_PRESSED) == 0,
+         "and the others are a second list, in the order published");
+   input_pointer_touches_set(touch, tw, 0, 0, 0);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RARCH_DEVICE_POINTER_SECOND, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RARCH_DEVICE_POINTER_SECOND, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 0,
+         "no mouse stands for a touch of the second list");
+
+   /* MOUSE_BY_DRIVER */
+   f.rel     = VIDEO_POS_PACK(3, 4);
+   f.buttons = INPUT_POINTER_RIGHT | INPUT_POINTER_WHEEL_DOWN;
+   input_pointer_frames_set(&f, NULL, 1, 0);
+   CHECK( rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == 3
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_X) == 3,
+         "without MOUSE_BY_DRIVER the frontend answers the mouse");
+   input_pointer_frames_set(&f, NULL, 1, INPUT_POINTERS_MOUSE_BY_DRIVER);
+   CHECK( rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == -2
+      &&  rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) == -2
+      &&  rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN) == -2
+      &&  rd(0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_X) == -2
+      &&  rd(0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP) == -2
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_X) == -2
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_Y) == -2
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == -2
+      &&  !input_pointer_frame_pos(0, RETRO_DEVICE_MOUSE, 0, &pos)
+      &&  !input_pointer_frame_pos(0, RARCH_DEVICE_MOUSE_SCREEN, 0, &pos),
+         "with it the mouse, the lightgun's motion and its mouse aim are the driver's");
+   touch[0] = VIDEO_POS_PACK(60, 70);
+   input_pointer_frames_set(&f, NULL, 1,
+         INPUT_POINTERS_MOUSE_BY_DRIVER | INPUT_POINTERS_GUN_AT_TOUCH);
+   touches_set(touch, 1, 1);
+   CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 60
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) == 0
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_X) == -2
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60,
+         "a lightgun aimed at a touch is the frontend's, its motion still the driver's");
+
+   /* TOUCH_SLOTS: slot 0 never placed, 1 lifted off the viewport, 2 down */
+   touch[0]  = VIDEO_POS_PACK(60, 70);
+   touch[1]  = VIDEO_POS_PACK(250, 40);
+   touch[2]  = VIDEO_POS_PACK(30, 40);
+   f.buttons = INPUT_POINTER_LEFT;
+   input_pointer_frames_set(&f, NULL, 1, INPUT_POINTERS_GUN_AT_TOUCH);
+   input_pointer_touches_set(touch, NULL, 3, 6, 4);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 10
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 1, RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN) == 0
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 2, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 10,
+         "without TOUCH_SLOTS the mouse stands for an index with no touch");
+   input_pointer_frames_set(&f, NULL, 1,
+         INPUT_POINTERS_GUN_AT_TOUCH | INPUT_POINTERS_TOUCH_SLOTS);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_X) == 199
+      &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 1, RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 2, RETRO_DEVICE_ID_POINTER_X) == 30
+      &&  rd(0, RETRO_DEVICE_POINTER, 2, RETRO_DEVICE_ID_POINTER_PRESSED) == 1,
+         "with it an index is a slot: none reads 0, a lifted one keeps its place");
+   CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 0
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 1, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == -0x8000
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 1, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) == 1
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 2, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y) == 40
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 3, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 0,
+         "and the lightgun aims at the touch at its index, never the mouse");
+   input_pointer_frames_set(&f, NULL, 1, INPUT_POINTERS_TOUCH_SLOTS);
+   CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 1, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) == 1
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 2, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) == 0
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) == 0,
+         "its IS_OFFSCREEN is that touch's while the mouse aims it");
+
+   /* A touch over its own window's whole client area */
+   memset(tw, 0, sizeof(tw));
+   tw[0].window     = 1;
+   tw[0].generation = 5;
+   tw[2]            = tw[0];
+   touch[0]         = VIDEO_POS_PACK(0, 50);
+   touch[1]         = VIDEO_POS_PACK(5, 5);
+   touch[2]         = VIDEO_POS_PACK(100, 25);
+   shown_window     = 1;
+   shown_dims       = VIDEO_SCALE_PACK(101, 51);
+   input_pointer_touches_set(touch, tw, 3, 7, 5);
+   CHECK( input_pointer_window_touch(1, 0, &pos, &down)
+      &&  pos == VIDEO_POS_PACK(-0x7fff, 0x7fff) && down
+      &&  input_pointer_window_touch(1, 1, &pos, &down)
+      &&  pos == VIDEO_POS_PACK(0x7fff, -1) && down
+      &&  !input_pointer_window_touch(1, 2, &pos, &down)
+      &&  !input_pointer_window_touch(2, 0, &pos, &down),
+         "a window's touches over its whole client area, in order; none past them or elsewhere");
+   touch[2] = VIDEO_POS_PACK(150, -3);
+   input_pointer_touches_set(touch, tw, 3, 7, 1);
+   CHECK( input_pointer_window_touch(1, 1, &pos, &down)
+      &&  pos == VIDEO_POS_PACK(-0x8000, -0x8000) && !down,
+         "outside its window: -0x8000; a lifted touch is not down");
+   shown_window = 0;
+   CHECK(!input_pointer_window_touch(1, 0, &pos, &down),
+         "a window that has not shown has no touches");
+   input_pointer_frames_clear();
 }
 
 int main(void)
@@ -607,6 +803,7 @@ int main(void)
    CHECK(input_pointer_viewport() && vp_asked == 2,
          "and afresh after the next poll");
 
+   test_flags();
    if (failures)
    {
       printf("FAIL pointer_frame_test: %u failure(s)\n", failures);
