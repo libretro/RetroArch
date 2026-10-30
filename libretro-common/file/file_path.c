@@ -1147,7 +1147,9 @@ size_t fill_pathname_expand_special(char *s, const char *in_path, size_t len)
             len      -= _len;
          }
 
-         in_path += 2;
+         in_path++;
+         if (PATH_CHAR_IS_SLASH(*in_path))
+            in_path++;
       }
    }
 #endif
