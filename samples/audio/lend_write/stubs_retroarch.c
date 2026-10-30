@@ -1,22 +1,12 @@
 #define audio_init_thread unused_audio_init_thread
-#define audio_thread_apply_control unused_audio_thread_apply_control
 #define audio_thread_parked unused_audio_thread_parked
 #define command_event unused_command_event
 #include "../pipeline_clocked/stubs_retroarch.c"
 #undef audio_init_thread
-#undef audio_thread_apply_control
 #undef audio_thread_parked
 #undef command_event
 
-unsigned pipeline_control_calls;
-void audio_thread_apply_control(void *data,
-      void (*control)(void *userdata), void *userdata)
-{
-   (void)data;
-   pipeline_control_calls++;
-   control(userdata);
-}
-
+/* These fixtures have no wrapper worker: it is always parked. */
 bool audio_thread_parked(void *data)
 {
    (void)data;

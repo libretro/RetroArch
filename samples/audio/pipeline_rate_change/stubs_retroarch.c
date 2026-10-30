@@ -1,5 +1,5 @@
-/* The format harness's stubs: its audio_thread_apply_control() counts
- * the parks and runs the control in place. */
+/* The format harness's stubs: its audio_thread_parked() follows
+ * pipeline_consumer_running. */
 #define audio_mixer_init unused_audio_mixer_init
 #define audio_mixer_done unused_audio_mixer_done
 #include "../pipeline_format/stubs_retroarch.c"

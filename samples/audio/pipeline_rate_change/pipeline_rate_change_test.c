@@ -31,7 +31,6 @@ static int16_t feed_i[FEED_MAX * 2];
 static size_t  captured_frames, device_bytes;
 static unsigned device_opens, device_frees, device_stops, device_starts, failures;
 static unsigned start_refusals, open_refusals;
-extern unsigned pipeline_control_calls;
 extern bool pipeline_consumer_running;
 static unsigned handovers;
 static bool change_parked;
@@ -211,7 +210,6 @@ static void tone_case(bool floating, bool threaded, bool fastpath,
    bool ok;
 
    device_opens           = 0;
-   pipeline_control_calls = 0;
    captured_frames        = 0;
    setup(floating, threaded, fastpath, from_rate);
    old_resampler = fastpath ? st->resampler_data_int16 : st->resampler_data;
@@ -226,17 +224,16 @@ static void tone_case(bool floating, bool threaded, bool fastpath,
    before  = measure(quarter, split - quarter);
    after   = measure(split + quarter, captured_frames - quarter);
 
-   printf("%s %s%s %.0f -> %.0f Hz: %s, opens=%u parks=%u ratio=%.4f"
+   printf("%s %s%s %.0f -> %.0f Hz: %s, opens=%u ratio=%.4f"
          " ring=%u tone %.1f Hz then %.1f Hz\n",
          floating ? "float" : "int16", threaded ? "threaded" : "inline",
          fastpath ? " s16" : "", from_rate, to_rate,
-         ok ? "taken" : "refused", device_opens, pipeline_control_calls,
+         ok ? "taken" : "refused", device_opens,
          st->src_ratio_orig, threaded ? (unsigned)(st->pipe_ring.capacity
             / st->pipe_frame_bytes) : 0u, before, after);
 
    if (     !ok
          || device_opens != 1
-         || pipeline_control_calls
          || st->input != (float)to_rate
          || fabs(st->src_ratio_orig - OUT_RATE / to_rate) > 1e-9
          || (fastpath ? st->resampler_data_int16 : st->resampler_data)
@@ -289,7 +286,6 @@ static void fps_case(double rate, double from_fps, double to_fps)
    unsigned frame, i;
 
    device_opens           = 0;
-   pipeline_control_calls = 0;
    captured_frames        = 0;
    setup(true, true, false, rate);
    video_state_get_ptr()->av_info.timing.fps = from_fps;
@@ -337,13 +333,12 @@ static void fps_case(double rate, double from_fps, double to_fps)
    }
    after = measure(split + (captured_frames - split) / 4, captured_frames);
 
-   printf("%.0f Hz, %.0f -> %.0f fps: %s, opens=%u parks=%u pass=%u ring=%u"
+   printf("%.0f Hz, %.0f -> %.0f fps: %s, opens=%u pass=%u ring=%u"
          " tone %.1f Hz\n", rate, from_fps, to_fps, ok ? "taken" : "refused",
-         device_opens, pipeline_control_calls, (unsigned)st->pipe_pass_frames,
+         device_opens, (unsigned)st->pipe_pass_frames,
          (unsigned)(st->pipe_ring.capacity / st->pipe_frame_bytes), after);
    if (     !ok
          || device_opens != 1
-         || pipeline_control_calls
          || st->resampler_data != resampler
          || st->pipe_pass_frames != (per_frame < AUDIO_PIPE_SLICE_INT16S / 2
                ? per_frame : AUDIO_PIPE_SLICE_INT16S / 2)

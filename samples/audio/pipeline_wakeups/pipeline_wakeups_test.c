@@ -755,7 +755,20 @@ static void pipeline_down(void)
    dev_ring = NULL;
 }
 
-/* Called through the real wrapper's parked control transaction. */
+/* Runs @fn with the real wrapper's thread parked, as a stop parks it,
+ * and lets it run again if it was running. */
+static void parked_run(void (*fn)(void *), void *arg)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   bool running = !audio_thread_parked(st->context_audio_data);
+   if (running && !st->current_audio->stop(st->context_audio_data))
+      fixture_failures++;
+   fn(arg);
+   if (running && !st->current_audio->start(st->context_audio_data, false))
+      fixture_failures++;
+}
+
+/* Run with the real wrapper's thread parked. */
 static void discard_parked(void *userdata)
 {
    audio_driver_state_t *st = &audio_driver_st;
@@ -907,8 +920,7 @@ static bool fallback_drained(void *arg)
    bool drained             = false;
    (void)arg;
    if (!retro_spsc_read_avail(&st->pipe_ring))
-      audio_thread_apply_control(st->context_audio_data,
-            check_fallback_drained, &drained);
+      parked_run(check_fallback_drained, &drained);
    return drained;
 }
 
@@ -926,7 +938,7 @@ static void wrapper_live_controls(unsigned publishes)
    unsigned step;
    int stops;
    check.initial = true;
-   audio_thread_apply_control(st->context_audio_data, check_live_control, &check);
+   parked_run(check_live_control, &check);
    check.initial = false;
    for (step = 0; step < 8; step++)
    {
@@ -979,7 +991,7 @@ static void wrapper_live_controls(unsigned publishes)
          { fprintf(stderr, "control drain stalled at step %u\n", step); fixture_failures++; }
       }
       /* Observe consumer-owned metadata only while the real worker is parked. */
-      audio_thread_apply_control(st->context_audio_data, check_live_control, &check);
+      parked_run(check_live_control, &check);
    }
    if (runloop_policy)
    {
@@ -1031,7 +1043,7 @@ static void wrapper_restart(void)
    {
       size_t before;
       unsigned retry;
-      audio_thread_apply_control(st->context_audio_data, discard_parked, NULL);
+      parked_run(discard_parked, NULL);
       if (cycle & 1)
       {
          if (!audio_driver_stop() || st->last_flush_time || st->pipe_ff_frames
@@ -1040,7 +1052,7 @@ static void wrapper_restart(void)
       }
       else if (!st->current_audio->stop(st->context_audio_data)) fixture_failures++;
       before = retro_atomic_load_acquire_size(&cnt_wakes);
-      audio_thread_apply_control(st->context_audio_data, discard_parked, NULL);
+      parked_run(discard_parked, NULL);
       if (transport_mode)
       {
          audio_driver_pipeline_transport_release();
@@ -1141,7 +1153,7 @@ static void menu_source_run(void)
    {
       if (i == 1)
       {
-         audio_thread_apply_control(st->context_audio_data, menu_delivery, &delivery_before);
+         parked_run(menu_delivery, &delivery_before);
          retro_atomic_fetch_or_int(&st->runloop_snapshot,
                AUDIO_SNAP_FASTMOTION | AUDIO_SNAP_FF_SPEEDUP | AUDIO_SNAP_PAUSED);
          retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 8 * 65536);
@@ -1157,7 +1169,7 @@ static void menu_source_run(void)
       retro_sleep(100);
       if (i == 1)
       {
-         audio_thread_apply_control(st->context_audio_data, menu_delivery, &delivery_after);
+         parked_run(menu_delivery, &delivery_after);
          if (delivery_after != delivery_before)
          {
             fputs("paused core dropped the menu audio write tail\n", stderr);
@@ -1521,8 +1533,7 @@ static void pause_boundary_case(void)
    for (frame = 0; frame < 8; frame++)
       submit_frame(per_frame, 1);
 
-   audio_thread_apply_control(st->context_audio_data,
-         pause_boundary_pause_parked, NULL);
+   parked_run(pause_boundary_pause_parked, NULL);
 
    /* The consumer ends the stream on its tail; everything at the stale
     * level from there on is a protocol failure. */
@@ -1537,8 +1548,7 @@ static void pause_boundary_case(void)
    if (retro_atomic_load_acquire_int(&tap_stale))
       fixture_failures++;
 
-   audio_thread_apply_control(st->context_audio_data,
-         pause_boundary_resume_parked, NULL);
+   parked_run(pause_boundary_resume_parked, NULL);
 
    /* The core's first audio after the resume. */
    for (frame = 0; frame < 8 && retro_atomic_load_relaxed_size(&tap_head_n)

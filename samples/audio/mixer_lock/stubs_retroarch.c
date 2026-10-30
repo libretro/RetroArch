@@ -430,14 +430,7 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
  * in a harness reports one. */
 struct defaults g_defaults;
 
-/* These fixtures have no wrapper worker; control runs synchronously. */
-void audio_thread_apply_control(void *data,
-      void (*control)(void *userdata), void *userdata)
-{
-   (void)data;
-   if (control) control(userdata);
-}
-
+/* These fixtures have no wrapper worker: it is always parked. */
 bool audio_thread_parked(void *data)
 {
    (void)data;

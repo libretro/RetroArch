@@ -338,19 +338,13 @@ void runloop_msg_queue_push(const char *msg, size_t len, unsigned prio, unsigned
       bool flush, char *title, enum message_queue_icon icon, enum message_queue_category category)
 { (void)msg; (void)len; (void)prio; (void)duration; (void)flush; (void)title; (void)icon; (void)category; }
 
-/* These fixtures have no wrapper worker; control runs synchronously. */
+/* These fixtures have no wrapper worker: it is always parked. The
+ * count is of the wrapper's transactions, which ask. */
 unsigned transport_control_calls;
-void audio_thread_apply_control(void *data,
-      void (*control)(void *userdata), void *userdata)
-{
-   (void)data;
-   transport_control_calls++;
-   if (control) control(userdata);
-}
-
 bool audio_thread_parked(void *data)
 {
    (void)data;
+   transport_control_calls++;
    return true;
 }
 

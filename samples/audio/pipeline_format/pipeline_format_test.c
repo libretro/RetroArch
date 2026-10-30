@@ -10,7 +10,7 @@ static int16_t source_i[FRAMES * 2];
 static float captured[FRAMES * 2];
 static size_t captured_samples, device_bytes;
 static unsigned failures;
-extern unsigned pipeline_control_calls;
+extern bool pipeline_consumer_running;
 
 static void *test_init(const char *device, unsigned rate, unsigned latency,
       unsigned *new_rate)
@@ -147,14 +147,49 @@ static void wide_then_float_case(void)
       return;
    }
 
-   /* And the float entry lands afterwards, on an empty ring. */
+   /* And the float entry lands afterwards, on an empty ring, with the
+    * wrapper's consumer running: decided at once, and installed by the
+    * consumer before its next pass, the producer writing nothing until
+    * it has. A populated ring keeps its native format there too. */
    {
       audio_driver_t wrapper = *st->current_audio;
       const audio_driver_t *saved = st->current_audio;
+      float frame[AUDIO_PIPE_CANON_CHANNELS];
+      size_t head;
       wrapper.ident = "audio-thread";
       st->current_audio = &wrapper;
+      pipeline_consumer_running = true;
       audio_driver_set_core_float(true);
-      if (pipeline_control_calls != 1) failures++;
+      head = retro_atomic_load_relaxed_size(&st->pipe_ring.head);
+      memset(source_f, 0, sizeof(source_f));
+      audio_driver_sample_batch_float(source_f, 1);
+      if (     !audio_driver_format_pending(st) || st->pipe_float
+            || retro_atomic_load_relaxed_size(&st->pipe_ring.head) != head)
+      {
+         printf("wide+float: the format changed, or the producer wrote,"
+               " before the consumer's pass\n");
+         failures++;
+      }
+      audio_driver_pipeline_pause_apply(st, true);
+      if (audio_driver_format_pending(st) || !st->pipe_float)
+      {
+         printf("wide+float: the consumer's pass did not install the format\n");
+         failures++;
+      }
+      memset(frame, 0, sizeof(frame));
+      if (retro_spsc_write(&st->pipe_ring, frame, st->pipe_frame_bytes)
+            != st->pipe_frame_bytes) abort();
+      audio_driver_set_core_float(false);
+      audio_driver_pipeline_pause_apply(st, true);
+      if (!st->pipe_float)
+      {
+         printf("wide+float: the handed-over change reinterpreted queued samples\n");
+         failures++;
+      }
+      retro_spsc_skip(&st->pipe_ring, st->pipe_frame_bytes);
+      audio_driver_set_core_float(true);
+      audio_driver_pipeline_pause_apply(st, true);
+      pipeline_consumer_running = false;
       st->current_audio = saved;
    }
 

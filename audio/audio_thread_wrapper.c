@@ -399,20 +399,6 @@ static bool audio_thread_alive(void *data)
    return alive;
 }
 
-void audio_thread_apply_control(void *data,
-      void (*control)(void *userdata), void *userdata)
-{
-   audio_thread_t *thr = (audio_thread_t*)data;
-   bool running;
-   if (!thr || !control)
-      return;
-   running = !retro_atomic_load_acquire_int(&thr->stopped);
-   audio_thread_block(thr);
-   control(userdata);
-   if (running)
-      audio_thread_unblock(thr);
-}
-
 bool audio_thread_parked(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;

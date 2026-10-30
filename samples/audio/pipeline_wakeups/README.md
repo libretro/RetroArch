@@ -11,7 +11,7 @@ shipping frontend callback. It covers all four source/device format combinations
 transport modes, eight publication counts, and both device pacing regimes.
 Each setting performs eight lifecycle cycles after its source workload:
 
-- Apply a discard through a control transaction while running.
+- Apply a discard with the wrapper stopped for it, while running.
 - Stop and verify that control/release/rebuild cannot advance the callback.
 - Recreate the transport while parked and publish its processing request.
 - Restart, submit fresh source and require a new device write within one second.
@@ -52,7 +52,7 @@ each setting publishes eight live processing requests: 0.25x, bypass, 32x,
 0.5x, bypass, 16x, 2x and 4x, alternating dry and 1 kHz LPF targets. No request
 sets the reset bit. Source is published after each request; the test requires
 its boundary to retire, its source to drain and device writes to advance within
-two seconds. Consumer metadata is inspected only in a parked control transaction,
+two seconds. Consumer metadata is inspected only with the wrapper stopped,
 requiring the requested control/cutoff and an unchanged reset serial.
 
 The ring and processing budgets remain fixed, and conversion invariants still

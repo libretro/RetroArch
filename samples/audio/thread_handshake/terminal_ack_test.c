@@ -44,7 +44,6 @@ static void terminal_store(retro_atomic_int_t *target, int value)
 #undef retro_atomic_store_release_int
 #define retro_atomic_load_acquire_int terminal_load
 #define retro_atomic_store_release_int terminal_store
-#define audio_thread_apply_control terminal_apply_control
 #define audio_thread_parked terminal_parked
 #define audio_thread_wrapped_driver terminal_wrapped_driver
 #define audio_thread_wrapped_ident terminal_wrapped_ident
@@ -52,7 +51,6 @@ static void terminal_store(retro_atomic_int_t *target, int value)
 #include "../../../audio/audio_thread_wrapper.c"
 #undef retro_atomic_load_acquire_int
 #undef retro_atomic_store_release_int
-#undef audio_thread_apply_control
 #undef audio_thread_parked
 #undef audio_thread_wrapped_driver
 #undef audio_thread_wrapped_ident

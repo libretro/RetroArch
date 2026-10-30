@@ -104,8 +104,6 @@ static void *fake_init(const char *device, unsigned rate, unsigned latency,
 
 static retro_atomic_int_t in_write = RETRO_ATOMIC_INT_INITIALIZER(0);
 static retro_atomic_int_t writes = RETRO_ATOMIC_INT_INITIALIZER(0);
-static retro_atomic_int_t format_errors = RETRO_ATOMIC_INT_INITIALIZER(0);
-static unsigned format_generation, controls;
 
 /* While set the device refuses the write, as one that has been pulled
  * out does. The wrapper's own write() is what sees it. */
@@ -113,7 +111,6 @@ static retro_atomic_int_t fail_write = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 static ssize_t fake_write(void *data, const void *buf, size_t size)
 {
-   unsigned format = format_generation;
    (void)data; (void)buf;
    if (retro_atomic_load_acquire_int(&fail_write))
       return -1;
@@ -122,8 +119,6 @@ static ssize_t fake_write(void *data, const void *buf, size_t size)
     * thread is inside this call and cannot reach the loop to
     * acknowledge a stop. */
    sleep_us(retro_atomic_load_acquire_int(&stall_write_us));
-   if (format != format_generation)
-      retro_atomic_fetch_add_int(&format_errors, 1);
    retro_atomic_fetch_add_int(&writes, 1);
    retro_atomic_store_release_int(&in_write, 0);
    return (ssize_t)size;
@@ -219,14 +214,6 @@ bool audio_driver_callback(void)
    return true;
 }
 
-static void change_format(void *userdata)
-{
-   unsigned *value = (unsigned*)userdata;
-   CHECK(!retro_atomic_load_acquire_int(&in_write), "control overlapped native processing");
-   (*value)++;
-   controls++;
-}
-
 static double now_ms(void)
 {
    struct timespec ts;
@@ -255,44 +242,36 @@ int main(void)
          "init against a responsive device failed");
    wrapper_drv = drv;
    wrapper_ctx = data;
-   audio_thread_apply_control(NULL, change_format, &format_generation);
-   audio_thread_apply_control(data, NULL, &format_generation);
-   audio_thread_apply_control(data, change_format, &format_generation);
-   CHECK(controls == 1 && !retro_atomic_load_acquire_int(&writes),
-         "control started the initial stopped wrapper");
+   CHECK(audio_thread_parked(NULL), "no wrapper reported as running");
+   /* It parks, and says so, once out of init(). */
+   for (i = 0; i < 1000 && !audio_thread_parked(data); i++)
+      sleep_us(1000);
+   CHECK(audio_thread_parked(data) && !retro_atomic_load_acquire_int(&writes),
+         "the initial stopped wrapper reported as running");
    CHECK(drv && drv->use_float && drv->use_float(data), "the wrapper does not report the inner driver's float");
    CHECK(drv && drv->layout && drv->layout(data) == 0x60Fu,
          "the wrapper does not report the inner driver's layout (0x%03x)", drv && drv->layout ? drv->layout(data) : 0);
    CHECK(drv && drv->stop(data), "stop before first start failed");
    CHECK(drv && drv->start(data, false), "first start failed");
+   CHECK(!audio_thread_parked(data), "a started wrapper reported as parked");
    CHECK(retro_atomic_load_acquire_int(&warn_count) == 0,
          "a prompt init or stop was reported as running long");
 
-   /* Control preserves a stopped wrapper and waits for an active pass. */
-   CHECK(drv->stop(data), "control stop setup");
+   /* Parked once a stop returns, writing nothing; running once started. */
+   CHECK(drv->stop(data) && audio_thread_parked(data), "a stopped wrapper reported as running");
    {
       int before = retro_atomic_load_acquire_int(&writes);
-      audio_thread_apply_control(data, change_format, &format_generation);
       sleep_us(20000);
       CHECK(retro_atomic_load_acquire_int(&writes) == before,
-            "control resumed a stopped wrapper");
+            "a parked wrapper wrote");
    }
-   retro_atomic_store_release_int(&stall_write_us, 200000);
-   CHECK(drv->start(data, false), "control active setup");
-   for (i = 0; i < 1000 && !retro_atomic_load_acquire_int(&in_write); i++)
-      sleep_us(1000);
-   CHECK(retro_atomic_load_acquire_int(&in_write), "control did not meet an active pass");
-   t0 = now_ms();
-   audio_thread_apply_control(data, change_format, &format_generation);
-   t1 = now_ms();
-   CHECK(t1 - t0 >= 100.0, "control returned before active processing finished");
-   retro_atomic_store_release_int(&stall_write_us, 0);
+   CHECK(drv->start(data, false), "restart failed");
    {
       int before = retro_atomic_load_acquire_int(&writes);
       for (i = 0; i < 1000 && retro_atomic_load_acquire_int(&writes) == before; i++)
          sleep_us(1000);
       CHECK(retro_atomic_load_acquire_int(&writes) > before,
-            "control did not resume the running wrapper");
+            "the restarted wrapper did not write");
    }
 
    /* 2. start()/stop() back to back, many times: the stop lands in
@@ -301,12 +280,12 @@ int main(void)
    STAGE(2);
    for (i = 0; i < 2000; i++)
    {
-      if (!drv->stop(data) || !drv->start(data, false))
+      if (     !drv->stop(data) || !audio_thread_parked(data)
+            || !drv->start(data, false) || audio_thread_parked(data))
       {
          CHECK(false, "stop/start round-trip %u failed", i);
          break;
       }
-      audio_thread_apply_control(data, change_format, &format_generation);
       if ((i & 255) == 255)
          STAGE(2 + (int)(i >> 8));
    }
@@ -356,9 +335,7 @@ int main(void)
    CHECK(drv && drv->stop(data), "stop failed after space returned");
    CHECK(drv && drv->start(data, false), "start failed after space returned");
 
-   CHECK(controls == 2003, "control transactions lost: %u", controls);
-   CHECK(!retro_atomic_load_acquire_int(&format_errors), "format changed during native processing");
-   printf("audio control handoff: 2003 transactions, native passes protected\n");
+   printf("audio parked state: 2000 round trips, parked exactly while stopped\n");
 
    /* 5. An idle callback parks the thread instead of spinning it.
     * The loop asks once per idle interval, so the count over the

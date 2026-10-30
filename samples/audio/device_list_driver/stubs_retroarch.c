@@ -317,14 +317,7 @@ bool state_manager_frame_is_reversed(void) { return false; }
  * in a harness reports one. */
 struct defaults g_defaults;
 
-/* These fixtures have no wrapper worker; control runs synchronously. */
-void audio_thread_apply_control(void *data,
-      void (*control)(void *userdata), void *userdata)
-{
-   (void)data;
-   if (control) control(userdata);
-}
-
+/* These fixtures have no wrapper worker: it is always parked. */
 bool audio_thread_parked(void *data)
 {
    (void)data;

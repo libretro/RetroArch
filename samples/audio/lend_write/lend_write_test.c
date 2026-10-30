@@ -20,7 +20,6 @@ static uint8_t captured[CAPTURE * 2 * sizeof(float)];
 static size_t  captured_bytes, device_bytes;
 static bool    device_float;
 static unsigned failures;
-extern unsigned pipeline_control_calls;
 
 /* The scripted device: a flat capture area lent span by span. */
 static size_t  lent_at, lent_len;   /* outstanding lend */

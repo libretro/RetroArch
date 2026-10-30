@@ -1120,6 +1120,10 @@ typedef struct
    retro_atomic_int_t  pipe_transport_seq;
    retro_atomic_int_t  pipe_transport_seen;
    uint8_t             pipe_transport_mode;
+   /* A source format change for the consumer to install, likewise; the
+    * producer writes nothing into the ring until it has. */
+   retro_atomic_int_t  pipe_format_seq;
+   retro_atomic_int_t  pipe_format_seen;
    /* Without the threaded pipeline the same requests, and a format
     * change and a stop's reset besides, are carried out by the thread
     * that submits the core's audio (inline_owner), or by the main

@@ -45,13 +45,6 @@ const char *audio_thread_wrapped_ident(void *data);
 /* The driver the wrapper is running, or NULL if data is NULL. */
 const audio_driver_t *audio_thread_wrapped_driver(void *data);
 
-/* Main-thread control transaction. Wait for the current consumer pass, run
- * control while parked, then restore the previous running/stopped state.
- * Call with no locks needed by the worker held. The callback must not call
- * the wrapper. */
-void audio_thread_apply_control(void *data,
-      void (*control)(void *userdata), void *userdata);
-
 /* Main thread. True while the audio thread runs no pass and starts
  * none until the main thread lets it: parked by a stop, or gone. */
 bool audio_thread_parked(void *data);

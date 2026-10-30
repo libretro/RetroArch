@@ -23,7 +23,6 @@ static float   captured_f[CAPTURE * 2];
 static size_t  captured_samples, device_bytes;
 static bool    device_float;
 static unsigned failures;
-extern unsigned pipeline_control_calls;
 
 static unsigned s16_to_float_calls, float_to_s16_calls;
 void __real_convert_s16_to_float(float *out, const int16_t *in,
