@@ -16,11 +16,16 @@
 
 #define NTHREADS 4
 #define ROUNDS   12
+#define FLIP_ROUNDS 25
+#define FLIP_KEYS   5     /* more than the VFS has pools */
 
 static char url_file[600], url_dir[600];
 static char url_file_b[600], url_dir_b[600];
 static bool two_shares = false;
 static int  failures = 0;
+static int  rounds = ROUNDS;
+static bool flipping = false;
+static struct smb_settings flip_cfg[FLIP_KEYS];
 
 /* Each failure names its operation, thread and round, so a failure on
  * a CI runner says what went wrong rather than only how often. */
@@ -34,7 +39,7 @@ static void worker(void *arg)
    int i, bad = 0;
    int id = (int)(intptr_t)arg;
    uint8_t buf[64];
-   for (i = 0; i < ROUNDS; i++)
+   for (i = 0; i < rounds; i++)
    {
       bool        b    = two_shares && ((id + i) & 1);
       const char *file = b ? url_file_b : url_file;
@@ -86,6 +91,9 @@ static void worker(void *arg)
          report(id, i, "opendir");
          bad++;
       }
+      /* the next take may go to another pool than this give */
+      if (flipping)
+         smb_init_cfg(&flip_cfg[(id + i) % FLIP_KEYS]);
    }
    if (bad)
       __sync_fetch_and_add(&failures, bad);
@@ -94,6 +102,7 @@ static void worker(void *arg)
 int main(int argc, char **argv)
 {
    struct smb_settings cfg;
+   struct smb_settings cfg_off;
    sthread_t *t[NTHREADS];
    int i, phase;
 
@@ -288,6 +297,59 @@ int main(int argc, char **argv)
       }
       smb_shutdown();
    }
+   /* read-ahead turned off while a prefetcher holds a slot: the slot
+    * goes back with its own pool's window */
+   cfg.readahead     = 1024;
+   cfg_off           = cfg;
+   cfg_off.readahead = 0;
+   smb_init_cfg(&cfg);
+   {
+      RFILE *f = filestream_open(url_file, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      libretro_vfs_implementation_file *h = f ? filestream_get_vfs_handle(f) : NULL;
+      if (!h || !h->smb_prefetch)
+      {
+         fprintf(stderr, "FAIL: no prefetcher holding a slot\n");
+         failures++;
+      }
+      smb_init_cfg(&cfg_off);
+      if (f)
+         filestream_close(f);
+      if (!smb_pool_windows_ok())
+      {
+         fprintf(stderr, "FAIL: a slot went back with the window of a setting its pool was not built with\n");
+         failures++;
+      }
+      smb_init_cfg(&cfg);
+      smb_shutdown();
+   }
+   /* the key switched under the workers across more keys than there
+    * are pools, half with read-ahead off: every operation succeeds as
+    * idle pools are evicted beside busy ones, and every slot goes back
+    * with its pool's window */
+   for (i = 0; i < FLIP_KEYS; i++)
+   {
+      flip_cfg[i]           = cfg;
+      flip_cfg[i].timeout   = cfg.timeout + i;
+      flip_cfg[i].readahead = (i & 1) ? 0 : 1024;
+   }
+   rounds   = FLIP_ROUNDS;
+   flipping = true;
+   for (i = 0; i < NTHREADS; i++)
+      if (!(t[i] = sthread_create(worker, (void*)(intptr_t)i)))
+         failures++;
+   for (i = 0; i < NTHREADS; i++)
+      if (t[i])
+         sthread_join(t[i]);
+   flipping = false;
+   rounds   = ROUNDS;
+   if (!smb_pool_windows_ok())
+   {
+      fprintf(stderr, "FAIL: a slot went back with another pool's window after the key switches\n");
+      failures++;
+   }
+   smb_init_cfg(&cfg);
+   smb_shutdown();
    /* a second share of the same directory (argv[6]) with no share
     * configured: threads alternating between the two keep a pool each,
     * so neither is taken down under the other's users */
@@ -311,7 +373,7 @@ int main(int argc, char **argv)
       fprintf(stderr, "FAIL: %d bad operations across %d threads\n", failures, NTHREADS);
       return 1;
    }
-   printf("ok: %d threads x %d rounds through the VFS, read-ahead off and on, reads past the windows%s\n",
-         NTHREADS, ROUNDS, argc > 6 ? ", two shares" : "");
+   printf("ok: %d threads x %d rounds through the VFS, read-ahead off and on, reads past the windows; %d rounds with the settings switched under them%s\n",
+         NTHREADS, ROUNDS, FLIP_ROUNDS, argc > 6 ? "; two shares" : "");
    return 0;
 }

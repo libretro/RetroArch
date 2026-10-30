@@ -116,6 +116,7 @@ int64_t rsmb_read(struct rsmb_ctx *c, struct rsmb_file *f, void *buf, size_t len
  * first small read of each file and freed with it.
  **/
 void rsmb_set_readahead(struct rsmb_ctx *c, uint32_t bytes);
+uint32_t rsmb_get_readahead(const struct rsmb_ctx *c);
 int64_t rsmb_write(struct rsmb_ctx *c, struct rsmb_file *f, const void *buf, size_t len);
 /* whence: 0 set, 1 cur, 2 end. Returns the new position or -1. */
 int64_t rsmb_seek(struct rsmb_ctx *c, struct rsmb_file *f, int64_t off, int whence);

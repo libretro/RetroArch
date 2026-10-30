@@ -2133,6 +2133,8 @@ void rsmb_set_readahead(struct rsmb_ctx *c, uint32_t bytes)
    c->readahead     = bytes;
    c->readahead_set = 1;
 }
+
+uint32_t rsmb_get_readahead(const struct rsmb_ctx *c) { return c->readahead; }
 uint32_t rsmb_max_write(const struct rsmb_ctx *c) { return c->max_write; }
 
 int rsmb_stat(struct rsmb_ctx *c, const char *path, struct rsmb_stat *st)

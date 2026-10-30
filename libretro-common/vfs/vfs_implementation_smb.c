@@ -969,6 +969,34 @@ void smb_take_readahead_stats(unsigned *window_kib, unsigned *direct_kib)
    *direct_kib = (unsigned)retro_atomic_exchange_int(&smb_ra_direct_kib, 0);
 }
 
+bool smb_pool_windows_ok(void)
+{
+#ifdef HAVE_RETROSMB
+   unsigned i, j;
+   for (i = 0; i < SMB_MAX_POOLS; i++)
+   {
+      struct smb_pool *p = &smb_pools[i];
+      bool ok = true;
+      if (   SMB_POOL_STATE(retro_atomic_load_acquire_int(&p->word)) != SMB_POOL_LIVE
+          || !smb_pool_get(p))
+         continue;
+      for (j = 0; j < p->count; j++)
+      {
+         struct smb_slot *sl = &p->slots[j];
+         if (!retro_atomic_cas_int(&sl->busy, 0, 1))
+            continue;
+         if (sl->ctx && smb2_get_readahead(sl->ctx) != p->key.readahead * 1024)
+            ok = false;
+         retro_atomic_store_release_int(&sl->busy, 0);
+      }
+      smb_pool_put(p);
+      if (!ok)
+         return false;
+   }
+#endif
+   return true;
+}
+
 #ifdef HAVE_THREADS
 static int64_t smb_prefetch_fetch(void *user, uint64_t off, uint8_t *buf, size_t len)
 {
@@ -1009,20 +1037,24 @@ static void smb_prefetch_start(libretro_vfs_implementation_file *stream,
       free(sp);
       return;
    }
-#ifdef HAVE_RETROSMB
-   /* windows are fetched whole and pipelined; the client's own window
-    * would only copy them once more */
-   smb2_set_readahead(sp->ctx, 0);
-#endif
    if (!(sp->fh = smb2_open(sp->ctx, path, O_RDONLY)))
    {
       smb_give(sp->ctx, sp->slot);
       free(sp);
       return;
    }
+#ifdef HAVE_RETROSMB
+   /* windows are fetched whole and pipelined; the client's own window
+    * would only copy them once more */
+   smb2_set_readahead(sp->ctx, 0);
+#endif
    if (!(sp->p = vfs_prefetch_new(smb_prefetch_fetch, sp, window, 2, 0)))
    {
       smb2_close(sp->ctx, sp->fh);
+#ifdef HAVE_RETROSMB
+      if (sp->slot)
+         smb2_set_readahead(sp->ctx, sp->slot->pool->key.readahead * 1024);
+#endif
       smb_give(sp->ctx, sp->slot);
       free(sp);
       return;
@@ -1044,11 +1076,9 @@ static void smb_prefetch_stop(libretro_vfs_implementation_file *stream)
    if (smb_ctx_active(sp->ctx))
       smb2_close(sp->ctx, sp->fh);
 #ifdef HAVE_RETROSMB
-   {
-      /* the pooled connection goes back with its window as configured */
-      const struct smb_settings *cfg = smb_cfg_get();
-      smb2_set_readahead(sp->ctx, cfg ? cfg->readahead * 1024 : 0);
-   }
+   /* the pooled connection goes back with its pool's window */
+   if (sp->slot)
+      smb2_set_readahead(sp->ctx, sp->slot->pool->key.readahead * 1024);
 #endif
    smb_give(sp->ctx, sp->slot);
    free(sp);
