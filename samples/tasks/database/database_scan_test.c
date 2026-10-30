@@ -1891,6 +1891,7 @@ static bool scan_completed = false;
 static retro_time_t cb_usec;
 /* What the last run_scan() was handed: its user data is this. */
 static task_dbscan_result_t scan_result;
+static bool                 scan_err;
 
 static void scan_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *err)
@@ -1898,6 +1899,7 @@ static void scan_cb(retro_task_t *task, void *task_data,
    (void)task;
    if (err && *err)
       fprintf(stderr, "  scan reported an error: %s\n", err);
+   scan_err = (err != NULL);
    if (user_data && task_data)
       *(task_dbscan_result_t*)user_data =
             *(const task_dbscan_result_t*)task_data;
@@ -1937,6 +1939,7 @@ static bool run_scan(const char *dir)
    scan_result.duplicates = 9999;
    scan_result.unmatched  = 9999;
    scan_result.failed     = true;
+   scan_err               = false;
    if (!task_push_dbscan(dir, scan_cb, &scan_result))
       return false;
 
@@ -2639,6 +2642,87 @@ static void use_db(const char *db_dir)
 {
    strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
          sizeof(config_get_ptr()->paths.path_content_database));
+}
+
+/* A scan with no database to look in, or a DAT it cannot load, says
+ * it failed. */
+static void failed_lane(const char *root, const char *pl_dir,
+      const char *db_dir, uint32_t crc_a, uint32_t sz_a)
+{
+   char *dir    = (char*)malloc(512);
+   char *nodb   = (char*)malloc(512);
+   char *res_pl = (char*)malloc(512);
+   char *p      = (char*)malloc(1024);
+   FILE *f;
+   bool  refused;
+
+   if (!dir || !nodb || !res_pl || !p)
+   {
+      check(0, "failed lane", "out of memory");
+      goto end;
+   }
+
+   sprintf(dir,    "%s/scan_failed",      root);
+   sprintf(nodb,   "%s/scan_failed_nodb", root);
+   sprintf(res_pl, "%s/scan_failed_pl",   root);
+   path_mkdir(dir);
+   path_mkdir(res_pl);
+
+   sprintf(p, "%s/01_alpha.bin", dir);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/scan_failed.dat", root);
+   if (!(f = fopen(p, "w")))
+      goto fixture;
+   fputs("<?xml version=\"1.0\"?>\n"
+         "<notadat><game name=\"01_alpha\"/></notadat>\n", f);
+   fclose(f);
+
+   strlcpy(config_get_ptr()->paths.directory_playlist, res_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+
+   use_db(nodb);
+   run_scan(dir);
+   check_result("a missing database folder fails the scan", 0, 0, 1, true);
+   check(scan_err, "and reports it as an empty folder is",
+         scan_err ? "error" : "no error");
+   use_db("");
+   run_scan(dir);
+   check_result("as does no database folder set", 0, 0, 1, true);
+   use_db(db_dir);
+   check(scan_err, "and reports it too",
+         scan_err ? "error" : "no error");
+
+   /* Not a rescan of the folder the last scan set. */
+   refused = !run_scan("/");
+   check(refused, "a folder the scan settings reject is refused",
+         refused ? "refused" : "scanned");
+
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT);
+   strlcpy(manual_content_scan_get_dat_file_path_ptr(), p,
+         manual_content_scan_get_dat_file_path_size());
+   run_scan(dir);
+   check_result("a DAT that does not load fails the scan", 0, 0, 0, true);
+
+   manual_content_scan_get_dat_file_path_ptr()[0] = '\0';
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   goto end;
+
+fixture:
+   check(0, "fixture", "could not write the failed lane");
+end:
+   free(dir);
+   free(nodb);
+   free(res_pl);
+   free(p);
 }
 
 static bool write_reader_db(const char *db_dir)
@@ -8778,6 +8862,7 @@ int main(int argc, char **argv)
             "empty folder reported as invalid content",
             !scan_completed ? "timed out"
             : invalid_content_pushed ? "message pushed" : "no message");
+      check_result("and fails the scan", 0, 0, 0, true);
    }
 
    /* A sheet that names itself is still the entry being scanned, so
@@ -8943,6 +9028,7 @@ int main(int argc, char **argv)
    walk_lane(root, pl_dir, db_dir);
    single_lane(root, pl_dir, crc_a, sz_a);
    counts_lane(root, pl_dir, crc_a, sz_a, crc_d, sz_d);
+   failed_lane(root, pl_dir, db_dir, crc_a, sz_a);
    {
       char reader_db[512];
 

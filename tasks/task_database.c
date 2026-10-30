@@ -4431,8 +4431,12 @@ end:
     * documented as menu-only and the sample in samples/tasks/database
     * hangs on exactly this. */
    if (manual_scan && manual_scan->user_cb)
+   {
+      if (err)
+         manual_scan->result.failed = true;
       manual_scan->user_cb(task, &manual_scan->result,
             manual_scan->user_data, err);
+   }
 
 #if defined(HAVE_MENU)
    /* When creating playlists, the playlist tabs of
@@ -4617,6 +4621,11 @@ static bool manual_scan_begin_setup(retro_task_t *task,
                return true;
             }
          }
+
+         /* A missing or unset folder holds no database, as an empty
+          * one does: the end step reports it. */
+         if (!dbstate->list && !(dbstate->list = string_list_new()))
+            return true;
 
          RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->content_database_path);
          if (manual_scan->task_config->cli_scan_output)
@@ -5460,7 +5469,10 @@ static void task_manual_content_scan_handler(retro_task_t *task)
       case MANUAL_SCAN_BEGIN_DAT_LOAD:
       case MANUAL_SCAN_BEGIN_PLAYLIST:
          if (task_manual_scan_begin_tick(task, manual_scan))
+         {
+            manual_scan->result.failed = true;
             goto task_finished;
+         }
          break;
       case MANUAL_SCAN_ITERATE_M3U:
          {
