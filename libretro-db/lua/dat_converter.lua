@@ -210,6 +210,8 @@ function get_value()
             crc = binary(unhex(t.rom.crc)),
             md5 = binary(unhex(t.rom.md5)),
             sha1 = binary(unhex(t.rom.sha1)),
+            set_fp1 = binary(unhex(t.set_fp1)),
+            set_fpm1 = binary(unhex(t.set_fpm1)),
             serial = binary(t.serial or t.rom.serial),
         }
     end
