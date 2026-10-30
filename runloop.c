@@ -5554,7 +5554,12 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
       }
 
       if (!(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-         runloop_st->fastforward_after_frames = 1;
+      {
+         runloop_st->frame_limit_anchor_ns = 0;
+         runloop_st->pace_iter_last       = 0;
+         runloop_st->pace_period_usec     = 0;
+         runloop_st->frame_time_last      = 0;
+      }
 
       driver_set_nonblock_state();
 
@@ -5604,7 +5609,10 @@ static void runloop_apply_fastmotion(bool enabled)
    {
       input_st->flags   &= ~INP_FLAG_NONBLOCKING;
       runloop_st->flags &= ~RUNLOOP_FLAG_FASTMOTION;
-      runloop_st->fastforward_after_frames = 1;
+      runloop_st->frame_limit_anchor_ns = 0;
+      runloop_st->pace_iter_last       = 0;
+      runloop_st->pace_period_usec     = 0;
+      runloop_st->frame_time_last      = 0;
    }
 
    if (settings->bools.audio_fastforward_mute && enabled)
@@ -10087,6 +10095,43 @@ int runloop_iterate(void)
       video_driver_vr_sample_tracking();
 #endif
 
+   /* Exact-content-rate VRR uses the frame timer as its pacing clock.
+    * Only release audio backpressure when DRC is genuinely available:
+    * nonblocking writes may otherwise overflow as clocks drift.
+    * Leave menus, fast-forward and other modes to their existing policy. */
+   if (     vrr_runloop_enable
+         && settings->bools.audio_sync
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL)
+         && audio_st->rate_control_delta > 0.0f
+         && audio_st->context_audio_data
+         && !(runloop_st->flags & (RUNLOOP_FLAG_FASTMOTION | RUNLOOP_FLAG_PAUSED))
+         && !(input_st->flags & INP_FLAG_NONBLOCKING)
+#ifdef HAVE_MENU
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+#endif
+         )
+   {
+      if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
+         audio_driver_set_nonblock_state(true);
+   }
+   else if (     vrr_runloop_enable
+         && !(runloop_st->flags & (RUNLOOP_FLAG_FASTMOTION | RUNLOOP_FLAG_PAUSED))
+         && !(input_st->flags & INP_FLAG_NONBLOCKING)
+#ifdef HAVE_MENU
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+#endif
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         && audio_st->context_audio_data)
+   {
+      /* DRC may disappear after audio reinitialization.  Restore the
+       * ordinary sync policy instead of leaving VRR audio nonblocking. */
+      bool want_nonblock = !settings->bools.audio_sync;
+      bool have_nonblock = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK) != 0;
+      if (want_nonblock != have_nonblock)
+         audio_driver_set_nonblock_state(want_nonblock);
+   }
+
    /* Measure the time between core_run() and video_driver_frame() */
    runloop_st->core_run_time = cpu_features_get_time_usec();
    /* Whether this frame is presented, before the core makes it: a core
@@ -10202,30 +10247,6 @@ int runloop_iterate(void)
 end:
    if (vrr_runloop_enable)
    {
-      /* Sync on video only, block audio later. */
-      if (runloop_st->fastforward_after_frames && audio_sync)
-      {
-         if (runloop_st->fastforward_after_frames == 1)
-         {
-            /* Nonblocking audio */
-            if (    (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
-                 && (audio_st->context_audio_data))
-               audio_driver_set_nonblock_state(true);
-         }
-
-         runloop_st->fastforward_after_frames++;
-
-         if (runloop_st->fastforward_after_frames == 6)
-         {
-            /* Blocking audio */
-            if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
-                  && (audio_st->context_audio_data))
-               audio_driver_set_nonblock_state(audio_sync ? false : true);
-
-            runloop_st->fastforward_after_frames = 0;
-         }
-      }
-
       if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
          runloop_set_frame_limit(&video_st->av_info,
                runloop_get_fastforward_ratio(settings,
