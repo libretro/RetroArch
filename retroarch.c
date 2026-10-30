@@ -8260,6 +8260,166 @@ void handle_dbscan_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err);
 #endif
 
+#ifdef HAVE_LIBRETRODB
+/* @in with '~' expanded, made absolute if relative; NULL, with the
+ * reason on stderr, if nothing is there.  Free the result. */
+static char *retroarch_cli_scan_path(const char *in)
+{
+   char *s = (char*)malloc(PATH_MAX_LENGTH);
+
+   if (!s)
+      return NULL;
+   fill_pathname_expand_special(s, in, PATH_MAX_LENGTH);
+   /* "" would resolve to the working directory.  Consoles resolve
+    * nothing, so a relative path stays as it is there. */
+#ifndef RARCH_CONSOLE
+   if (   *s && !path_is_absolute(s)
+       && !path_resolve_realpath(s, PATH_MAX_LENGTH, false))
+      *s = '\0';
+#endif
+   if (!*s || !path_is_valid(s))
+   {
+      fprintf(stderr, "%s: not found\n", in);
+      free(s);
+      return NULL;
+   }
+   return s;
+}
+
+static void retroarch_cli_scan_done(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   *(task_dbscan_result_t*)user_data =
+         *(const task_dbscan_result_t*)task_data;
+}
+
+/* Scans @in to its end on this thread. */
+static void retroarch_cli_scan_one(const char *in,
+      task_dbscan_result_t *res)
+{
+   char *path = retroarch_cli_scan_path(in);
+
+   memset(res, 0, sizeof(*res));
+   res->failed = true;
+   if (!path)
+      return;
+   if (task_push_dbscan(path, retroarch_cli_scan_done, res))
+      task_queue_wait(NULL, NULL);
+   else
+      fprintf(stderr, "%s: the scan could not start\n", path);
+   free(path);
+}
+
+/* --scan with --menu: one scan at a time, as a second is refused
+ * while one runs; each pushes the next as it finishes. */
+typedef struct
+{
+   struct string_list *paths;
+   size_t              next;
+} retroarch_menu_scans_t;
+
+static void retroarch_menu_scan_next(retroarch_menu_scans_t *scans);
+
+static void retroarch_menu_scan_done(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   retroarch_menu_scans_t *scans = (retroarch_menu_scans_t*)user_data;
+
+#ifdef HAVE_MENU
+   handle_dbscan_finished(task, task_data, NULL, err);
+#endif
+   /* Cancelled, as on quit: start no more. */
+   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+      scans->next = scans->paths->size;
+   retroarch_menu_scan_next(scans);
+}
+
+/* Pushes the next path that starts; frees @scans after the last. */
+static void retroarch_menu_scan_next(retroarch_menu_scans_t *scans)
+{
+   while (scans->next < scans->paths->size)
+   {
+      bool pushed;
+      char *path = retroarch_cli_scan_path(
+            scans->paths->elems[scans->next++].data);
+
+      if (!path)
+         continue;
+      pushed = task_push_dbscan(path, retroarch_menu_scan_done, scans);
+      if (!pushed)
+         fprintf(stderr, "%s: the scan could not start\n", path);
+      free(path);
+      if (pushed)
+         return;
+   }
+   string_list_free(scans->paths);
+   free(scans);
+}
+
+/* Runs the --scan @paths, which it frees.  With --menu the first is
+ * pushed and the rest follow it.  Without, they are the whole run:
+ * each is scanned in turn, then the process exits 1 if any failed,
+ * else 0 if any added an entry, else 2. */
+static void retroarch_cli_scan(struct string_list *paths, bool menu,
+      const char *content)
+{
+   size_t i;
+   bool failed          = false;
+   bool added           = false;
+   settings_t *settings = config_get_ptr();
+   int reinit_flags     = DRIVERS_CMD_ALL &
+         ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_MICROPHONE_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
+
+   drivers_init(settings, reinit_flags, (enum driver_lifetime_flags)0, false);
+   retroarch_init_task_queue();
+
+   if (menu)
+   {
+      retroarch_menu_scans_t *scans = (retroarch_menu_scans_t*)
+            calloc(1, sizeof(*scans));
+
+      if (!scans)
+      {
+         string_list_free(paths);
+         return;
+      }
+      scans->paths = paths;
+      retroarch_menu_scan_next(scans);
+      return;
+   }
+
+#ifdef HAVE_THREADS
+   /* Threaded for this run whatever the setting: only there does the
+    * scan get its readers. */
+   if (!task_queue_is_threaded())
+   {
+      task_queue_set_threaded();
+      task_queue_check();
+   }
+#endif
+
+   if (content)
+      fprintf(stderr, "without --menu: ignoring \"%s\"\n",
+            content);
+
+   for (i = 0; i < paths->size; i++)
+   {
+      task_dbscan_result_t res;
+
+      retroarch_cli_scan_one(paths->elems[i].data, &res);
+      if (res.failed)
+         failed = true;
+      else if (res.added)
+         added  = true;
+   }
+   string_list_free(paths);
+
+   driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+   task_queue_deinit();
+   exit(failed ? 1 : added ? 0 : 2);
+}
+#endif
+
 #ifdef HAVE_CLOUDSYNC
 /* The sync's verdict, where the waiting caller reads it. */
 static void retroarch_cloud_sync_finished(retro_task_t *task,
@@ -8313,8 +8473,9 @@ static bool retroarch_parse_input_and_config(
    access_state_t *access_st       = access_state_get_ptr();
 #endif
 #ifdef HAVE_LIBRETRODB
-   retro_task_callback_t cb_task_dbscan
-                                   = NULL;
+   struct string_list   *scan_paths = NULL;
+   const char        *scan_conflict = NULL;
+   bool                    cli_scan = false;
 #endif
 
    const struct option opts[]      = {
@@ -8572,12 +8733,21 @@ static bool retroarch_parse_input_and_config(
                break;
             case RA_OPT_DATABASE_SCAN:
 #ifdef HAVE_LIBRETRODB
+               cli_scan = true;
                verbosity_enable();
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
 #endif
                break;
+#if defined(HAVE_LIBRETRODB) && defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
+            case RA_OPT_COMMAND:
+               scan_conflict = "--command";
+               break;
+#endif
             case RA_OPT_CLOUDSYNC:
 #ifdef HAVE_CLOUDSYNC
+#ifdef HAVE_LIBRETRODB
+               scan_conflict = "--cloudsync";
+#endif
                /* The sync's summary is the command's output. */
                verbosity_enable();
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
@@ -8604,6 +8774,14 @@ static bool retroarch_parse_input_and_config(
          }
       }
    }
+#ifdef HAVE_LIBRETRODB
+   /* Each of them is the whole run. */
+   if (cli_scan && scan_conflict)
+   {
+      fprintf(stderr, "--scan cannot be combined with %s\n", scan_conflict);
+      exit(1);
+   }
+#endif
    verbosity_enabled = verbosity_is_enabled();
    /* Enable logging to file if verbosity and log-file arguments were passed.
     * RARCH_OVERRIDE_SETTING_LOG_TO_FILE is set by the RA_OPT_LOG_FILE case above
@@ -9027,38 +9205,13 @@ static bool retroarch_parse_input_and_config(
             case RA_OPT_DATABASE_SCAN:
 #ifdef HAVE_LIBRETRODB
                {
-                  settings_t *settings           = config_get_ptr();
-                  int reinit_flags               = DRIVERS_CMD_ALL &
-                        ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_MICROPHONE_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
+                  union string_list_elem_attr attr;
 
-                  drivers_init(settings, reinit_flags, (enum driver_lifetime_flags)0, false);
-                  retroarch_init_task_queue();
-#ifdef HAVE_THREADS
-                  /* Threaded for this run whatever the setting: only
-                   * there does the scan get its readers. */
-                  if (!explicit_menu && !task_queue_is_threaded())
-                  {
-                     task_queue_set_threaded();
-                     task_queue_check();
-                  }
-#endif
-
-#ifdef HAVE_MENU
-                  if (explicit_menu)
-                     cb_task_dbscan = handle_dbscan_finished;
-#endif
-
-                  task_push_dbscan(optarg, cb_task_dbscan, NULL);
-
-                  if (!explicit_menu)
-                  {
-                     /* Command-line scan with no menu: the scan is
-                      * the whole run, so run the queue dry and exit.
-                      * Nothing is drawn meanwhile. */
-                     task_queue_wait(NULL, NULL);
-                     driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
-                     exit(0);
-                  }
+                  attr.i = 0;
+                  if (!scan_paths)
+                     scan_paths = string_list_new();
+                  if (scan_paths)
+                     string_list_append(scan_paths, optarg, attr);
                }
 #endif
                break;
@@ -9104,6 +9257,12 @@ static bool retroarch_parse_input_and_config(
          }
       }
    }
+
+#ifdef HAVE_LIBRETRODB
+   if (scan_paths)
+      retroarch_cli_scan(scan_paths, explicit_menu,
+            (optind < argc) ? argv[optind] : NULL);
+#endif
 
 #ifdef HAVE_GIT_VERSION
    RARCH_LOG("RetroArch %s (Git %s)\n",
