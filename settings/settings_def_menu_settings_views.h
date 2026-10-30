@@ -68,7 +68,7 @@ S_BOOL(settings_show_onscreen_display, SETTINGS_SHOW_ONSCREEN_DISPLAY,
       "settings_show_onscreen_display",
       DEFAULT_SETTINGS_SHOW_ONSCREEN_DISPLAY, SD_FLAG_NONE, 0, 0,
       "Show 'On-Screen Display'",
-      "Show 'On-Screen Display' settings.")
+      "Show 'On-Screen Display' settings. Affects both 'On-Screen Notifications & Overlay' under 'User Interface'.")
 S_BOOL(settings_show_user_interface, SETTINGS_SHOW_USER_INTERFACE,
       "settings_show_user_interface",
       DEFAULT_SETTINGS_SHOW_USER_INTERFACE, SD_FLAG_NONE, 0, 0,
