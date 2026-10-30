@@ -16,6 +16,14 @@
  *    session is poisoned and every audio call checks it);
  *  - a still of an animated file hands its session to the animation of
  *    that file: one open for both;
+ *  - with one worker held, urgent requests start newest first and
+ *    prefetch ones after them, oldest first;
+ *  - an entry a decode still in flight points at outlives an eviction
+ *    of its cached pixels (the duplicate decoded after a cancel);
+ *  - an animation asked for twice, or again after another one, still
+ *    plays on from its still's session;
+ *  - an urgent request left under a thousand newer ones, each taken
+ *    ahead of it, is still decoded;
  *  - free() with workers decoding and an animation playing returns.
  * Under ASan (leaks) and TSan; a watchdog fails a hang. */
 
@@ -86,11 +94,58 @@ void data_transfer_pool_flush(void)
    note_thread(flush_thread, &flush_threads);
 }
 
+/* "hold*": waits for hold_release.  "slow*": the first one waits for
+ * slow_release.  "ord*": noted in the order decodes start.  "stepN":
+ * waits for step_at to pass N.  "under*": counted. */
+static retro_atomic_int_t hold_release, hold_inside;
+static retro_atomic_int_t step_at, under_decodes;
+static retro_atomic_int_t slow_release, slow_entered;
+static char     ord_seen[32][16];
+static unsigned ord_n;
+
+static void wait_flag(retro_atomic_int_t *flag)
+{
+   retro_time_t end = cpu_features_get_time_usec() + 10000000;
+   while (!retro_atomic_load_acquire_int(flag)
+         && cpu_features_get_time_usec() < end)
+      usleep(200);
+}
+
 bool image_texture_load_ex(struct texture_image *img, const char *path,
       bool (*should_abort)(void *ud), void *ud)
 {
    unsigned i;
    uint32_t c = path_colour(path);
+   if (!strncmp(path, "hold", 4))
+   {
+      retro_atomic_fetch_add_int(&hold_inside, 1);
+      wait_flag(&hold_release);
+      should_abort = NULL;
+   }
+   else if (!strncmp(path, "slow", 4))
+   {
+      if (!retro_atomic_fetch_add_int(&slow_entered, 1))
+         wait_flag(&slow_release);
+      should_abort = NULL;
+   }
+   else if (!strncmp(path, "step", 4))
+   {
+      int n = atoi(path + 4);
+      retro_time_t end = cpu_features_get_time_usec() + 10000000;
+      while (retro_atomic_load_acquire_int(&step_at) <= n
+            && cpu_features_get_time_usec() < end)
+         usleep(20);
+      should_abort = NULL;
+   }
+   else if (!strncmp(path, "under", 5))
+      retro_atomic_fetch_add_int(&under_decodes, 1);
+   else if (!strncmp(path, "ord", 3))
+   {
+      slock_lock(thread_lock);
+      if (ord_n < 32)
+         strncpy(ord_seen[ord_n++], path, 15);
+      slock_unlock(thread_lock);
+   }
    for (i = 0; i < 3; i++)
    {
       if (should_abort && should_abort(ud))
@@ -561,6 +616,143 @@ int main(void)
             (unsigned)companion_thumbs_queued(t));
    }
    printf("ok    an overfull queue drains to nothing pending\n");
+
+   /* one worker, held: urgent newest first, then prefetch oldest first */
+   {
+      companion_thumbs_t *one = companion_thumbs_new(0, 1);
+      static const char *want[] = { "ord_u2", "ord_u1", "ord_u0",
+         "ord_p0", "ord_p1", "ord_p2", "ord_p3" };
+      unsigned bad = 7;
+      CHECK(one != NULL, "no single-worker instance");
+      retro_atomic_store_release_int(&hold_release, 0);
+      retro_atomic_store_release_int(&hold_inside, 0);
+      companion_thumbs_request(one, "hold0.png", DIMS, 1, true, 0);
+      wait_flag(&hold_inside);
+      for (i = 0; i < 4; i++)
+      {
+         snprintf(path, sizeof(path), "ord_p%u", i);
+         companion_thumbs_request(one, path, DIMS, 10 + i, false, 0);
+      }
+      for (i = 0; i < 3; i++)
+      {
+         snprintf(path, sizeof(path), "ord_u%u", i);
+         companion_thumbs_request(one, path, DIMS, 20 + i, true, 0);
+      }
+      retro_atomic_store_release_int(&hold_release, 1);
+      while (companion_thumbs_pending(one))
+         pump(one, &k, 5);
+      CHECK(ord_n == 7, "%u of 7 ordered decodes ran", ord_n);
+      for (i = 0; i < 7 && i < ord_n && bad == 7; i++)
+         if (strcmp(ord_seen[i], want[i]))
+            bad = i;
+      CHECK(bad == 7, "decode %u started was %s, not %s", bad,
+            bad < ord_n ? ord_seen[bad] : "-", bad < 7 ? want[bad] : "-");
+      companion_thumbs_free(one);
+   }
+   printf("ok    urgent newest first, then prefetch oldest first\n");
+
+   /* the cached copy of a key evicted while its first decode, from
+    * before a cancel, is still running: the entry stays for it */
+   {
+      companion_thumbs_t *ev = companion_thumbs_new(0, 2);
+      retro_time_t end;
+      CHECK(ev != NULL, "no eviction instance");
+      companion_thumbs_request(ev, "slow0.png", DIMS, 1, true, 0);
+      end = cpu_features_get_time_usec() + 5000000;
+      while (!retro_atomic_load_acquire_int(&slow_entered)
+            && cpu_features_get_time_usec() < end)
+         usleep(200);
+      companion_thumbs_cancel(ev);
+      companion_thumbs_request(ev, "slow0.png", DIMS, 2, true, 0);
+      end = cpu_features_get_time_usec() + 5000000;
+      while (!companion_thumbs_get(ev, "slow0.png", DIMS)
+            && cpu_features_get_time_usec() < end)
+         pump(ev, &k, 2);
+      CHECK(companion_thumbs_get(ev, "slow0.png", DIMS) != NULL,
+            "the second decode was never cached");
+      /* a budget of one byte evicts everything evictable */
+      companion_thumbs_set_budget(ev, 1);
+      retro_atomic_store_release_int(&slow_release, 1);
+      while (companion_thumbs_pending(ev))
+         pump(ev, &k, 2);
+      companion_thumbs_free(ev);
+   }
+   printf("ok    an entry outlives an eviction while a decode holds it\n");
+
+   /* an animation asked for twice, then again after another while it
+    * waits: each time it plays on from its still's session */
+   {
+      unsigned variant;
+      for (variant = 0; variant < 3; variant++)
+      {
+         companion_thumbs_t *an = companion_thumbs_new(0, 1);
+         int before = retro_atomic_load_acquire_int(&opens[5]);
+         unsigned frames = k.anim_frames[5];
+         CHECK(an != NULL, "no animation instance");
+         retro_atomic_store_release_int(&hold_release, 0);
+         retro_atomic_store_release_int(&hold_inside, 0);
+         companion_thumbs_request(an, "hold1.png", DIMS, 1, true, 0);
+         wait_flag(&hold_inside);
+         companion_thumbs_request(an, "anim5.webm", DIMS, 900, true, 0);
+         companion_thumbs_animate(an, "anim5.webm", DIMS, 100005, 0);
+         if (variant == 1)
+            companion_thumbs_animate(an, "anim5.webm", DIMS, 100005, 0);
+         else if (variant == 2)
+         {
+            usleep(20000);
+            companion_thumbs_animate(an, "anim6.webm", DIMS, 100006, 0);
+            companion_thumbs_animate(an, "anim5.webm", DIMS, 100005, 0);
+         }
+         retro_atomic_store_release_int(&hold_release, 1);
+         k.cur_anim = -1;
+         k.last_frame[5] = -1;
+         pump(an, &k, 300);
+         CHECK(k.anim_frames[5] > frames,
+               "animation asked for again (case %u) never played", variant);
+         CHECK(retro_atomic_load_acquire_int(&opens[5]) - before == 1,
+               "case %u: a still and its animation opened %d sessions",
+               variant, retro_atomic_load_acquire_int(&opens[5]) - before);
+         companion_thumbs_free(an);
+      }
+   }
+   printf("ok    an animation asked for again plays from its still\n");
+
+   /* one urgent request under a thousand newer ones, each taken ahead
+    * of it while the one worker is busy with the last */
+   {
+      companion_thumbs_t *lane = companion_thumbs_new(0, 1);
+      retro_time_t end;
+      CHECK(lane != NULL, "no lane instance");
+      retro_atomic_store_release_int(&step_at, 0);
+      companion_thumbs_request(lane, "step0.png", DIMS, 0, true, 0);
+      end = cpu_features_get_time_usec() + 5000000;
+      while (companion_thumbs_queued(lane)
+            && cpu_features_get_time_usec() < end)
+         usleep(20);
+      companion_thumbs_request(lane, "under.png", DIMS, 1, true, 0);
+      for (i = 1; i < 1100; i++)
+      {
+         snprintf(path, sizeof(path), "step%u.png", i);
+         companion_thumbs_request(lane, path, DIMS, i, true, 0);
+         retro_atomic_store_release_int(&step_at, (int)i);
+         /* until the worker has taken it: only the old one is queued */
+         end = cpu_features_get_time_usec() + 5000000;
+         while (companion_thumbs_queued(lane) > 1
+               && cpu_features_get_time_usec() < end)
+            usleep(20);
+         companion_thumbs_poll(lane, done_cb, &k, 0, 0);
+      }
+      retro_atomic_store_release_int(&step_at, 1 << 30);
+      end = cpu_features_get_time_usec() + 10000000;
+      while (companion_thumbs_pending(lane)
+            && cpu_features_get_time_usec() < end)
+         pump(lane, &k, 2);
+      CHECK(retro_atomic_load_acquire_int(&under_decodes) == 1,
+            "the request under the others was decoded %d times, not once",
+            retro_atomic_load_acquire_int(&under_decodes));
+      companion_thumbs_free(lane);
+   }
+   printf("ok    a request under a thousand newer ones is still decoded\n");
 
    /* free with work in flight */
    for (i = 0; i < 100; i++)
