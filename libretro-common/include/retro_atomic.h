@@ -33,17 +33,15 @@
  * in audio/drivers/{coreaudio,xaudio,opensl}.c, audio/common/
  * mmdevice_common.c and gfx/gfx_thumbnail.c.  The surface is intentionally
  * narrow: load, store, fetch_add, fetch_sub, fetch_or, fetch_and, plus
- * inc/dec convenience wrappers.  Everything is on plain machine words
- * (int and size_t).  Compare-exchange, double-word ops and standalone
+ * inc/dec convenience wrappers, on plain machine words (int and size_t),
+ * with halfword loads and stores.  Compare-exchange, double-word ops and standalone
  * thread-fences were added when real callers needed them; anything
  * further should follow the same rule.
  *
- * fetch_or / fetch_and are int-width only, deliberately.  They exist for
- * flag words, which are 32-bit everywhere in the tree, and the Apple
- * OSAtomic backend has no 64-bit bitwise primitive -- a _size variant
- * could not be implemented there without a compare-exchange loop, which
- * this header does not provide.  Rather than ship a size variant that is
- * unavailable on one backend, the operation is simply not offered.
+ * fetch_or / fetch_and are offered on int and on the 64-bit word (for
+ * libretro cores built on QEMU, whose 64-bit counters and flag words
+ * need them; a compare-and-swap loop where the backend has no 64-bit
+ * read-modify-write), not on size_t.
  *
  * Memory ordering is fixed per-operation rather than parameterised, to
  * keep the call sites readable and to avoid having to invent ordering
@@ -105,6 +103,10 @@
  *   retro_atomic_cas_int        - strong CAS, non-zero on success
  *   retro_atomic_cas_ptr        - strong CAS on a pointer, non-zero on success
  *   retro_atomic_*_ptr          - pointer-width load/store/exchange
+ *   retro_atomic_fetch_*_64     - acq_rel add/sub/or/and on the 64-bit
+ *                                 word, returning the old value
+ *   retro_atomic_*_u16          - halfword loads and stores, for a
+ *                                 field also read as part of a wider word
  *   retro_atomic_thread_fence_* - acquire / release / seq_cst fences.
  *                                 The seq_cst fence is the one that
  *                                 orders a store against a later load
@@ -2114,6 +2116,186 @@ static INLINE int retro_atomic_ee_cas_64_(retro_atomic_64_t *p,
 /* volatile fallback: RETRO_ATOMIC_HAS_64 stays undefined. */
 #endif
 
+
+/* ---- 64-bit read-modify-writes -----------------------------------------
+ * fetch_add / fetch_sub / fetch_or / fetch_and on retro_atomic_64_t:
+ * acq_rel, returning the old value, wherever RETRO_ATOMIC_HAS_64 is
+ * set.  A backend with no 64-bit read-modify-write of its own loops on
+ * retro_atomic_cas_64. */
+
+#if defined(RETRO_ATOMIC_HAS_64)
+#if defined(RETRO_ATOMIC_BACKEND_C11)
+#define retro_atomic_fetch_add_64(p, v) \
+   atomic_fetch_add_explicit((p), (int64_t)(v), memory_order_acq_rel)
+#define retro_atomic_fetch_sub_64(p, v) \
+   atomic_fetch_sub_explicit((p), (int64_t)(v), memory_order_acq_rel)
+#define retro_atomic_fetch_or_64(p, v) \
+   atomic_fetch_or_explicit((p), (int64_t)(v), memory_order_acq_rel)
+#define retro_atomic_fetch_and_64(p, v) \
+   atomic_fetch_and_explicit((p), (int64_t)(v), memory_order_acq_rel)
+#elif defined(RETRO_ATOMIC_BACKEND_CXX11)
+#define retro_atomic_fetch_add_64(p, v) \
+   ((p)->fetch_add((int64_t)(v), std::memory_order_acq_rel))
+#define retro_atomic_fetch_sub_64(p, v) \
+   ((p)->fetch_sub((int64_t)(v), std::memory_order_acq_rel))
+#define retro_atomic_fetch_or_64(p, v) \
+   ((p)->fetch_or((int64_t)(v), std::memory_order_acq_rel))
+#define retro_atomic_fetch_and_64(p, v) \
+   ((p)->fetch_and((int64_t)(v), std::memory_order_acq_rel))
+#elif defined(RETRO_ATOMIC_BACKEND_GCC_NEW)
+#define retro_atomic_fetch_add_64(p, v) \
+   __atomic_fetch_add((p), (int64_t)(v), __ATOMIC_ACQ_REL)
+#define retro_atomic_fetch_sub_64(p, v) \
+   __atomic_fetch_sub((p), (int64_t)(v), __ATOMIC_ACQ_REL)
+#define retro_atomic_fetch_or_64(p, v) \
+   __atomic_fetch_or((p), (int64_t)(v), __ATOMIC_ACQ_REL)
+#define retro_atomic_fetch_and_64(p, v) \
+   __atomic_fetch_and((p), (int64_t)(v), __ATOMIC_ACQ_REL)
+#elif defined(RETRO_ATOMIC_BACKEND_SYNC)
+#define retro_atomic_fetch_add_64(p, v) \
+   __sync_fetch_and_add((int64_t volatile*)(p), (int64_t)(v))
+#define retro_atomic_fetch_sub_64(p, v) \
+   __sync_fetch_and_sub((int64_t volatile*)(p), (int64_t)(v))
+#define retro_atomic_fetch_or_64(p, v) \
+   __sync_fetch_and_or((int64_t volatile*)(p), (int64_t)(v))
+#define retro_atomic_fetch_and_64(p, v) \
+   __sync_fetch_and_and((int64_t volatile*)(p), (int64_t)(v))
+#elif defined(RETRO_ATOMIC_BACKEND_MSVC) && defined(_WIN64)
+#define retro_atomic_fetch_add_64(p, v) (                                 \
+   RETRO_ATOMIC_MSVC_ARM_FENCE(),                                         \
+   InterlockedExchangeAdd64((LONGLONG volatile*)(p), (LONGLONG)(v)) )
+#define retro_atomic_fetch_sub_64(p, v) (                                 \
+   RETRO_ATOMIC_MSVC_ARM_FENCE(),                                         \
+   InterlockedExchangeAdd64((LONGLONG volatile*)(p), -(LONGLONG)(v)) )
+#define retro_atomic_fetch_or_64(p, v) (                                  \
+   RETRO_ATOMIC_MSVC_ARM_FENCE(),                                         \
+   InterlockedOr64((LONGLONG volatile*)(p), (LONGLONG)(v)) )
+#define retro_atomic_fetch_and_64(p, v) (                                 \
+   RETRO_ATOMIC_MSVC_ARM_FENCE(),                                         \
+   InterlockedAnd64((LONGLONG volatile*)(p), (LONGLONG)(v)) )
+#elif defined(RETRO_ATOMIC_BACKEND_PS2)
+static INLINE int64_t retro_atomic_ee_fetch_op_64_(retro_atomic_64_t *p,
+      int64_t v, int op)
+{
+   int64_t old;
+   int masked = retro_atomic_ee_mask_();
+   old        = *p;
+   if (op == 0)
+      *p      = old + v;
+   else if (op == 1)
+      *p      = old | v;
+   else
+      *p      = old & v;
+   retro_atomic_ee_unmask_(masked);
+   return old;
+}
+#define retro_atomic_fetch_add_64(p, v) \
+   retro_atomic_ee_fetch_op_64_((p), (int64_t)(v), 0)
+#define retro_atomic_fetch_sub_64(p, v) \
+   retro_atomic_ee_fetch_op_64_((p), -(int64_t)(v), 0)
+#define retro_atomic_fetch_or_64(p, v) \
+   retro_atomic_ee_fetch_op_64_((p), (int64_t)(v), 1)
+#define retro_atomic_fetch_and_64(p, v) \
+   retro_atomic_ee_fetch_op_64_((p), (int64_t)(v), 2)
+#else
+/* 32-bit MSVC and Apple OSAtomic: compare-and-swap loops. */
+static INLINE int64_t retro_atomic_fetch_op_64_cas_(retro_atomic_64_t *p,
+      int64_t v, int op)
+{
+   int64_t old;
+   int64_t nv;
+   do
+   {
+      old = (int64_t)retro_atomic_load_relaxed_64(p);
+      if (op == 0)
+         nv = old + v;
+      else if (op == 1)
+         nv = old | v;
+      else
+         nv = old & v;
+   } while (!retro_atomic_cas_64(p, old, nv));
+   return old;
+}
+#define retro_atomic_fetch_add_64(p, v) \
+   retro_atomic_fetch_op_64_cas_((p), (int64_t)(v), 0)
+#define retro_atomic_fetch_sub_64(p, v) \
+   retro_atomic_fetch_op_64_cas_((p), -(int64_t)(v), 0)
+#define retro_atomic_fetch_or_64(p, v) \
+   retro_atomic_fetch_op_64_cas_((p), (int64_t)(v), 1)
+#define retro_atomic_fetch_and_64(p, v) \
+   retro_atomic_fetch_op_64_cas_((p), (int64_t)(v), 2)
+#endif
+#endif /* RETRO_ATOMIC_HAS_64 */
+
+/* ---- 16-bit loads and stores --------------------------------------------
+ * For a halfword other code also reads as part of a wider word, so it
+ * cannot be widened.  Loads and stores only; every backend has them. */
+
+#if defined(RETRO_ATOMIC_BACKEND_C11)
+#include <stdint.h>
+typedef _Atomic(uint16_t) retro_atomic_u16_t;
+#define retro_atomic_u16_init(p, v)     atomic_init((p), (v))
+#define retro_atomic_load_relaxed_u16(p) \
+   atomic_load_explicit((p), memory_order_relaxed)
+#define retro_atomic_load_acquire_u16(p) \
+   atomic_load_explicit((p), memory_order_acquire)
+#define retro_atomic_store_relaxed_u16(p, v) \
+   atomic_store_explicit((p), (uint16_t)(v), memory_order_relaxed)
+#define retro_atomic_store_release_u16(p, v) \
+   atomic_store_explicit((p), (uint16_t)(v), memory_order_release)
+#elif defined(RETRO_ATOMIC_BACKEND_CXX11)
+#include <cstdint>
+typedef std::atomic<uint16_t> retro_atomic_u16_t;
+#define retro_atomic_u16_init(p, v) \
+   ((p)->store((uint16_t)(v), std::memory_order_relaxed))
+#define retro_atomic_load_relaxed_u16(p) \
+   ((p)->load(std::memory_order_relaxed))
+#define retro_atomic_load_acquire_u16(p) \
+   ((p)->load(std::memory_order_acquire))
+#define retro_atomic_store_relaxed_u16(p, v) \
+   ((p)->store((uint16_t)(v), std::memory_order_relaxed))
+#define retro_atomic_store_release_u16(p, v) \
+   ((p)->store((uint16_t)(v), std::memory_order_release))
+#elif defined(RETRO_ATOMIC_BACKEND_GCC_NEW) || defined(RETRO_ATOMIC_BACKEND_WIIU)
+#include <stdint.h>
+typedef uint16_t retro_atomic_u16_t;
+#define retro_atomic_u16_init(p, v)     (*(p) = (uint16_t)(v))
+#define retro_atomic_load_relaxed_u16(p) \
+   __atomic_load_n((p), __ATOMIC_RELAXED)
+#define retro_atomic_load_acquire_u16(p) \
+   __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define retro_atomic_store_relaxed_u16(p, v) \
+   __atomic_store_n((p), (uint16_t)(v), __ATOMIC_RELAXED)
+#define retro_atomic_store_release_u16(p, v) \
+   __atomic_store_n((p), (uint16_t)(v), __ATOMIC_RELEASE)
+#else
+/* An aligned volatile halfword access is indivisible on every target;
+ * the ordering comes from the backend's fences. */
+#if defined(_MSC_VER)
+typedef volatile unsigned short retro_atomic_u16_t;
+#define RETRO_ATOMIC_U16_T_ unsigned short
+#else
+#include <stdint.h>
+typedef volatile uint16_t retro_atomic_u16_t;
+#define RETRO_ATOMIC_U16_T_ uint16_t
+#endif
+static INLINE RETRO_ATOMIC_U16_T_ retro_atomic_load_acquire_u16_fb_(
+      retro_atomic_u16_t *p)
+{
+   RETRO_ATOMIC_U16_T_ v = *p;
+   retro_atomic_thread_fence_acquire();
+   return v;
+}
+#define retro_atomic_u16_init(p, v)     (*(p) = (RETRO_ATOMIC_U16_T_)(v))
+#define retro_atomic_load_relaxed_u16(p) (*(p))
+#define retro_atomic_load_acquire_u16(p) \
+   retro_atomic_load_acquire_u16_fb_((p))
+#define retro_atomic_store_relaxed_u16(p, v) \
+   do { *(p) = (RETRO_ATOMIC_U16_T_)(v); } while (0)
+#define retro_atomic_store_release_u16(p, v) \
+   do { retro_atomic_thread_fence_release(); \
+        *(p) = (RETRO_ATOMIC_U16_T_)(v); } while (0)
+#endif
 
 /* ---- Convenience wrappers (backend-agnostic) -------------------------- */
 

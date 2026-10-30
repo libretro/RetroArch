@@ -171,6 +171,16 @@ static void check_64_ops(void)
    check(retro_atomic_cas_64(&a, 1, 2) == 0,      "64-bit cas fails on mismatch");
    check(retro_atomic_load_acquire_64(&a) == big,
          "a failed 64-bit cas stores nothing");
+
+   check(retro_atomic_fetch_add_64(&a, big) == big, "64-bit fetch_add returns old");
+   check(retro_atomic_fetch_sub_64(&a, big) == 2 * big,
+         "64-bit fetch_sub returns old");
+   check(retro_atomic_fetch_or_64(&a, (int64_t)1 << 50) == big,
+         "64-bit fetch_or returns old");
+   check(retro_atomic_fetch_and_64(&a, (int64_t)1 << 50) == (big | ((int64_t)1 << 50)),
+         "64-bit fetch_and returns old");
+   check(retro_atomic_load_acquire_64(&a) == (int64_t)1 << 50,
+         "64-bit read-modify-writes store");
 }
 
 /* Every op above ran with the interrupts enabled on entry, so each one

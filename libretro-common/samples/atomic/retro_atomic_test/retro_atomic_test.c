@@ -274,8 +274,44 @@ static int check_relaxed_store_load(void)
          fprintf(stderr, "FAIL relaxed load of a released 64\n");
          return 1;
       }
+
+      /* the read-modify-writes return the old value; the operands
+       * reach past bit 31 so a 32-bit truncation shows */
+      retro_atomic_store_relaxed_64(&vq, (int64_t)0x100000000LL);
+      if (   (int64_t)retro_atomic_fetch_add_64(&vq, (int64_t)0x100000001LL)
+                != (int64_t)0x100000000LL
+          || (int64_t)retro_atomic_fetch_sub_64(&vq, 1)
+                != (int64_t)0x200000001LL
+          || (int64_t)retro_atomic_fetch_or_64(&vq, (int64_t)0x800000000000000FLL)
+                != (int64_t)0x200000000LL
+          || (int64_t)retro_atomic_fetch_and_64(&vq, (int64_t)0x00000002FFFFFFF0LL)
+                != (int64_t)0x800000020000000FLL
+          || (int64_t)retro_atomic_load_relaxed_64(&vq)
+                != (int64_t)0x200000000LL)
+      {
+         fprintf(stderr, "FAIL fetch_add/sub/or/and_64\n");
+         return 1;
+      }
    }
 #endif
+
+   {
+      retro_atomic_u16_t vh;
+      retro_atomic_u16_init(&vh, 0);
+
+      retro_atomic_store_relaxed_u16(&vh, 0xBEEF);
+      if (retro_atomic_load_relaxed_u16(&vh) != 0xBEEF)
+      {
+         fprintf(stderr, "FAIL relaxed_store_load_u16\n");
+         return 1;
+      }
+      retro_atomic_store_release_u16(&vh, 0xFFFF);
+      if (retro_atomic_load_acquire_u16(&vh) != 0xFFFF)
+      {
+         fprintf(stderr, "FAIL acquire load of a released u16\n");
+         return 1;
+      }
+   }
    return 0;
 }
 
