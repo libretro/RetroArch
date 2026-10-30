@@ -821,6 +821,175 @@ static void lane_shared_ports(void)
 #endif
 }
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+/* The Plays As entries a configuration's @text gives. */
+static void plays_as_entries(const char *text)
+{
+   char buf[256];
+   config_file_t *conf;
+   strlcpy(buf, text, sizeof(buf));
+   conf = config_file_new_from_string(buf, NULL);
+   input_plays_as_read(conf);
+   config_file_free(conf);
+}
+#endif
+
+/* Two pads of one model and a Plays As entry for one: Update Controller
+ * Profiles reports the connected pads again and none takes an entry,
+ * so the one on Auto does not take the unplugged one's. A driver's
+ * report during the update's scan gives one toast, not two. A joypad
+ * driver restart's own reports still take, a profile update queued
+ * among them or not. */
+static void lane_plays_as_reconnect(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   settings_t *settings = config_get_ptr();
+   unsigned had         = failures;
+   unsigned i;
+
+   fast_forward(true);
+   plays_as_entries(
+         "input_plays_as_device_1 = \"2222:0001 Twin pad\"\n"
+         "input_plays_as_player_1 = \"2\"\n");
+   input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 0, 0x2222, 0x0001);
+   input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 1, 0x2222, 0x0001);
+   run_loop_frames(20);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_entry(1) == -1,
+         "plays as: the first twin does not hold the entry, or the second does");
+
+   /* the first unplugged, profiles updated */
+   input_autoconfigure_disconnect(0, "Twin pad");
+   run_loop_frames(20);
+   input_autoconfigure_reconnect(1);
+   run_loop_frames(20);
+   CHECK(input_config_plays_as_entry(1) == -1
+         && input_config_plays_as_player(1) == 0,
+         "plays as: reported again by a profile update, the Auto twin took the unplugged one's entry");
+   input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 0, 0x2222, 0x0001);
+   run_loop_frames(20);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2,
+         "plays as: the unplugged twin, back, does not play its own Player 2");
+
+   /* the driver's report during a profile update's scan: one toast.
+    * Each check is a pass of the scans, and with no frame nothing pulls
+    * the toasts; the harness starts no message queue of its own. */
+   if (!task_queue_is_threaded())
+   {
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      msg_queue_t *queue          = &runloop_st->msg_queue;
+      bool started                = !queue->size
+            && msg_queue_initialize(queue, 8);
+      msg_queue_clear(queue);
+      input_autoconfigure_reconnect(1);
+      input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 1, 0x2222, 0x0001);
+      for (i = 0; i < 30; i++)
+         task_queue_check();
+      CHECK(msg_queue_size(queue) == 1,
+            "plays as: a profile update the driver's report superseded did not show one toast");
+      if (started)
+      {
+         msg_queue_deinitialize(queue);
+         runloop_st->msg_queue_size = 0;
+      }
+   }
+
+   /* a restart, a profile update queued before the driver's report */
+   input_driver_registry_restart();
+   input_autoconfigure_reconnect(0);
+   input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 0, 0x2222, 0x0001);
+   input_autoconfigure_reconnect(1);
+   input_autoconfigure_connect("Twin pad", NULL, NULL, "test", 1, 0x2222, 0x0001);
+   run_loop_frames(30);
+   CHECK(input_config_plays_as_entry(0) == 0
+         && input_config_plays_as_player(0) == 2
+         && input_config_plays_as_entry(1) == -1,
+         "plays as: after a restart with a profile update queued, the first reported does not take the entry");
+
+   /* back to the pads and the mapping the other lanes expect */
+   plays_as_entries("");
+   for (i = 0; i < MAX_USERS; i++)
+      settings->uints.input_joypad_index[i] = i;
+   input_driver_deadzones_refresh();
+   input_driver_registry_restart();
+   for (i = 0; i < 8; i++)
+      input_autoconfigure_connect("Harness pad", NULL, NULL,
+            "test", i, 0x045e, 0x028e);
+   run_loop_frames(30);
+   CHECK(pad_connected(0) && settings->uints.input_joypad_index[0] == 0
+         && settings->uints.input_joypad_index[1] == 1
+         && input_config_plays_as_entry(0) == -1,
+         "plays as: the lane did not leave the pads as it found them");
+
+   fast_forward(false);
+   if (failures == had)
+      printf("[pass] plays as: a profile update leaves an Auto twin on Auto"
+            " with the other unplugged, and one a driver's report supersedes"
+            " shows no toast; a restart's reports still take the entry\n");
+#else
+   printf("[skip] plays-as lane: need the test drivers\n");
+#endif
+}
+
+/* A connect a disconnect on its port supersedes still shows its
+ * "configured" toast: the disconnect shows only its own. */
+static void lane_superseded_connect_toast(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   unsigned had = failures;
+
+   /* as in lane_plays_as_reconnect: no frame pulls the toasts */
+   if (!task_queue_is_threaded())
+   {
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      msg_queue_t *queue          = &runloop_st->msg_queue;
+      bool started                = !queue->size
+            && msg_queue_initialize(queue, 8);
+      msg_queue_entry_t entry;
+      char want[128];
+      unsigned i;
+      unsigned seen               = 0;
+
+      input_autoconfigure_disconnect(7, "Harness pad");
+      for (i = 0; i < 30; i++)
+         task_queue_check();
+      msg_queue_clear(queue);
+      input_autoconfigure_connect("Harness pad", NULL, NULL,
+            "test", 7, 0x045e, 0x028e);
+      input_autoconfigure_disconnect(7, "Harness pad");
+      for (i = 0; i < 30; i++)
+         task_queue_check();
+      snprintf(want, sizeof(want),
+            msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT_NR),
+            "Harness pad", 8);
+      while (msg_queue_extract(queue, &entry))
+         if (strstr(entry.msg, want))
+            seen++;
+      CHECK(seen == 1,
+            "autoconfig: a connect a disconnect superseded did not show its \"configured\" toast");
+      if (started)
+      {
+         msg_queue_deinitialize(queue);
+         runloop_st->msg_queue_size = 0;
+      }
+   }
+
+   /* back to the pads the other lanes expect */
+   input_autoconfigure_connect("Harness pad", NULL, NULL,
+         "test", 7, 0x045e, 0x028e);
+   run_loop_frames(30);
+   CHECK(pad_connected(7),
+         "autoconfig: the lane did not leave the pads as it found them");
+
+   if (failures == had)
+      printf("[pass] autoconfig: a connect a disconnect superseded still"
+            " shows its \"configured\" toast\n");
+#else
+   printf("[skip] superseded-connect lane: need the test drivers\n");
+#endif
+}
+
 /* Where in a frame the frontend polls. The joypad driver's poll is
  * counted, and the count is read at four points of the core's
  * retro_run() and at both ends of the iterate. */
@@ -3445,6 +3614,139 @@ static void lane_enabler_tap(void)
    if (failures == had)
       fprintf(stderr, "[pass] enabler-tap lane (tap on release for as long as held,"
             " hold after the delay, never with a hotkey)\n");
+#endif
+}
+
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+/* A pad's poll comes after the hotkey pass, so a press reaches the core
+ * a frame before the pass sees it. Here the pad's poll takes the
+ * frame's buttons, as a driver's does. Under each poll mode, read by
+ * button and as a mask: a tap is kept from the core from its first
+ * frame and played on release, and a hold past the delay is the
+ * game's. */
+static uint32_t et_next;
+
+static void et_poll(void)
+{
+   syn_buttons = et_next;
+}
+
+/* the enabler held @held frames, then let go for six: the frames the
+ * core saw Select, as bits */
+static unsigned et_polled_run(void (*trace_last)(unsigned*, int*),
+      unsigned held)
+{
+   unsigned i;
+   unsigned frames = 0;
+   for (i = 0; i < held + 6; i++)
+   {
+      unsigned b;
+      int axes[4];
+      et_next = (i < held) ? (1u << 23) : 0;
+      run_loop_frames(1);
+      trace_last(&b, axes);
+      if (b & (1u << RETRO_DEVICE_ID_JOYPAD_SELECT))
+         frames |= 1u << i;
+   }
+   return frames;
+}
+#endif
+
+static void lane_enabler_tap_polled(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   static const char *mode_name[3] = { "early", "normal", "late" };
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_en  = input_config_binds[0][RARCH_ENABLE_HOTKEY];
+   struct retro_keybind saved_sel = input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_SELECT];
+   unsigned saved_delay           = settings->uints.input_hotkey_tap_delay;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   unsigned had = failures;
+   unsigned m, r;
+   void *core;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !joypad_real)
+   {
+      CHECK(false, "enabler tap, polled: the harness core's trace entry points or the joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   syn_joypad.poll          = et_poll;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat                  = 0;
+   syn_buttons              = 0;
+   et_next                  = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+
+   input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey           = 23;
+   input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = 23;
+   binds_written_by_a_lane();
+
+   for (m = POLL_TYPE_EARLY; m <= POLL_TYPE_LATE; m++)
+      for (r = 1; r <= 2; r++)
+      {
+         unsigned frames, n, b;
+         unsigned first, held;
+         int axes[4];
+         retro_time_t t0;
+
+         core_set_poll_type(m);
+         trace((int)r, 0);
+         settings->uints.input_hotkey_tap_delay = 1000;
+         run_loop_frames(3);
+         frames = et_polled_run(trace_last, 4);
+         for (n = 0, b = frames >> 4; b; b &= b - 1)
+            n++;
+         printf("[info] enabler tap, %s polling, read %s: Select on frames 0x%03x\n",
+               mode_name[m], r == 1 ? "by button" : "as a mask", frames);
+         CHECK(!(frames & 0xf),
+               "enabler tap, polled: the core saw a held enabler");
+         CHECK(n == 4,
+               "enabler tap, polled: a four-frame tap was not four frames of Select");
+
+         settings->uints.input_hotkey_tap_delay = 20;
+         et_next = 1u << 23;
+         run_loop_frames(1);
+         trace_last(&first, axes);
+         t0 = cpu_features_get_time_usec();
+         while (cpu_features_get_time_usec() - t0 < 30000)
+         {
+            run_loop_frames(1);
+            retro_sleep(2);
+         }
+         run_loop_frames(2);
+         trace_last(&held, axes);
+         et_next = 0;
+         run_loop_frames(4);
+         CHECK(!(first & (1u << RETRO_DEVICE_ID_JOYPAD_SELECT)),
+               "enabler tap, polled: the core saw a hold's first frame");
+         CHECK(held & (1u << RETRO_DEVICE_ID_JOYPAD_SELECT),
+               "enabler tap, polled: held past the delay, the core did not see it");
+      }
+
+   trace(0, 0);
+   core_set_poll_type(POLL_TYPE_LATE);
+   settings->uints.input_hotkey_tap_delay = saved_delay;
+   input_config_binds[0][RARCH_ENABLE_HOTKEY]           = saved_en;
+   input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_SELECT] = saved_sel;
+   binds_written_by_a_lane();
+   syn_buttons              = 0;
+   et_next                  = 0;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(3);
+   if (failures == had)
+      fprintf(stderr, "[pass] enabler-tap polled lane (kept from its first"
+            " frame under early, normal and late polling)\n");
 #endif
 }
 
@@ -6375,6 +6677,233 @@ static void lane_bind_settings(void)
       printf("[pass] bind settings: a bind's setting shows the bind as it is,"
             " clears that bind and no other user's, and a captured button"
             " lands in it\n");
+#endif
+}
+
+/* Bind All for a user whose Device Index is not their own number: user
+ * 1 on slot 3. Every button lands in user 1's binds, user 3's are left
+ * alone, and a key user 3 has bound keeps its mapping bit. */
+static void lane_bind_all_device_index(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_MENU)
+   enum { ORDER = ARRAY_SIZE(input_config_bind_order) };
+   struct retro_keybind saved1[ORDER], saved3[ORDER];
+   unsigned k;
+   bool landed                    = true;
+   bool kept                      = true;
+   unsigned had                   = failures;
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   rarch_setting_t *b1            = menu_setting_find("p1_b");
+   unsigned saved_index           = settings->uints.input_joypad_index[0];
+   unsigned saved_pad             = syn_pad_index;
+   retro_bits_512_t saved_bits    = input_st->keyboard_mapping_bits;
+
+   if (!b1 || !joypad_real)
+   {
+      CHECK(false, "bind all: no setting or joypad driver to bind with");
+      return;
+   }
+   for (k = 0; k < ORDER; k++)
+   {
+      saved1[k] = input_config_binds[0][input_config_bind_order[k]];
+      saved3[k] = input_config_binds[2][input_config_bind_order[k]];
+   }
+   RETRO_KEYBIND_SET_KEY(&input_config_binds[2][input_config_bind_order[0]],
+         RETROK_F13);
+   BIT512_SET(input_st->keyboard_mapping_bits, RETROK_F13);
+
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   settings->uints.input_joypad_index[0] = 2;
+   input_driver_deadzones_refresh();
+   syn_pad_index            = 2;
+   syn_buttons              = 0;
+   syn_hat                  = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(3);
+
+   if (menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL, b1))
+   {
+      run_loop_frames(8);
+      for (k = 0; k < ORDER; k++)
+      {
+         unsigned i;
+         unsigned id = input_config_bind_order[k];
+         syn_buttons = 1u << k;
+         for (i = 0; i < 30 && input_config_binds[0][id].joykey != k; i++)
+            run_loop_frames(1);
+         syn_buttons = 0;
+         run_loop_frames(8);
+         if (input_config_binds[0][id].joykey != k)
+            landed = false;
+         if (input_config_binds[2][id].joykey != saved3[k].joykey)
+            kept = false;
+      }
+      CHECK(landed, "bind all: with user 1 on slot 3, a button did not land"
+            " in user 1's binds");
+      CHECK(kept, "bind all: with user 1 on slot 3, user 3's binds were"
+            " written");
+      CHECK(BIT512_GET(input_st->keyboard_mapping_bits, RETROK_F13),
+            "bind all: with user 1 on slot 3, the key bound to user 3's Up"
+            " lost its mapping bit");
+   }
+   else
+      CHECK(false, "bind all: a capture could not be started");
+   run_loop_frames(5);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(3);
+
+   settings->uints.input_joypad_index[0] = saved_index;
+   input_driver_deadzones_refresh();
+   syn_pad_index            = saved_pad;
+   input_st->primary_joypad = joypad_real;
+   for (k = 0; k < ORDER; k++)
+   {
+      input_config_binds[0][input_config_bind_order[k]] = saved1[k];
+      input_config_binds[2][input_config_bind_order[k]] = saved3[k];
+   }
+   input_st->keyboard_mapping_bits = saved_bits;
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] bind all: with user 1 on slot 3, every button lands in"
+            " user 1's binds, user 3's are left alone and keep their key's"
+            " mapping bit\n");
+#else
+   printf("[skip] bind all: needs the test drivers and the menu\n");
+#endif
+}
+
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_MENU)
+/* a mouse per user: the button held on user 1's mouse and on user 3's,
+ * 0 for none */
+static unsigned bm_held[2];
+
+static int16_t bm_input_state(void *data,
+      const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info,
+      const retro_keybind_set *binds,
+      unsigned port, unsigned device, unsigned idx, unsigned id)
+{
+   unsigned held = 0;
+   (void)data; (void)joypad; (void)joypad_info; (void)binds; (void)idx;
+   if ((device & RETRO_DEVICE_MASK) != RETRO_DEVICE_MOUSE)
+      return 0;
+   if (port == 0)
+      held = bm_held[0];
+   else if (port == 2)
+      held = bm_held[1];
+   return (held && id == held) ? 1 : 0;
+}
+#endif
+
+/* A mouse bind for user 1 on slot 3 is heard from user 1's mouse: a
+ * click on user 3's is not taken for user 1's B, and one on user 1's
+ * is. */
+static void lane_bind_mouse_device_index(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_MENU)
+   static input_driver_t bm_input;
+   unsigned i;
+   unsigned had                   = failures;
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   input_driver_t *saved_input    = input_st->current_driver;
+   rarch_setting_t *b1            = menu_setting_find("p1_b");
+   struct retro_keybind saved1    = input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B];
+   unsigned saved_index           = settings->uints.input_joypad_index[0];
+   unsigned saved_pad             = syn_pad_index;
+
+   if (!b1 || !joypad_real || !saved_input)
+   {
+      CHECK(false, "bind mouse: no setting, joypad or input driver to bind with");
+      return;
+   }
+
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   bm_input                 = *saved_input;
+   bm_input.input_state     = bm_input_state;
+   bm_held[0]               = 0;
+   bm_held[1]               = 0;
+   input_st->current_driver = &bm_input;
+   settings->uints.input_joypad_index[0] = 2;
+   input_driver_deadzones_refresh();
+   syn_pad_index            = 2;
+   syn_buttons              = 0;
+   syn_hat                  = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(3);
+
+   if (menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_SINGLE, b1))
+   {
+      run_loop_frames(8);
+      bm_held[1] = RETRO_DEVICE_ID_MOUSE_RIGHT;
+      run_loop_frames(10);
+      bm_held[1] = 0;
+      run_loop_frames(8);
+      CHECK(RETRO_KEYBIND_MBUTTON(&input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B])
+               != RETRO_DEVICE_ID_MOUSE_RIGHT,
+            "bind mouse: with user 1 on slot 3, a click on user 3's mouse was"
+            " taken for user 1's B");
+      bm_held[0] = RETRO_DEVICE_ID_MOUSE_LEFT;
+      for (i = 0; i < 30
+            && RETRO_KEYBIND_MBUTTON(&input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B])
+               != RETRO_DEVICE_ID_MOUSE_LEFT; i++)
+         run_loop_frames(1);
+      bm_held[0] = 0;
+      run_loop_frames(8);
+      CHECK(RETRO_KEYBIND_MBUTTON(&input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B])
+               == RETRO_DEVICE_ID_MOUSE_LEFT,
+            "bind mouse: with user 1 on slot 3, a click on user 1's mouse was"
+            " not heard for user 1's B");
+      /* a capture still waiting is ended from the pad */
+      if (menu_state_get_ptr()->flags & MENU_ST_FLAG_IS_BINDING)
+      {
+         syn_buttons = 1u << 9;
+         run_loop_frames(10);
+         syn_buttons = 0;
+         run_loop_frames(8);
+      }
+   }
+   else
+      CHECK(false, "bind mouse: a capture could not be started");
+   run_loop_frames(5);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(3);
+
+   input_st->current_driver = saved_input;
+   input_st->primary_joypad = joypad_real;
+   settings->uints.input_joypad_index[0] = saved_index;
+   input_driver_deadzones_refresh();
+   syn_pad_index            = saved_pad;
+   input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B] = saved1;
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] bind mouse: with user 1 on slot 3, a click on user 1's"
+            " mouse is bound and one on user 3's is not\n");
+#else
+   printf("[skip] bind mouse: needs the test drivers and the menu\n");
 #endif
 }
 
@@ -9899,6 +10428,8 @@ int main(int argc, char *argv[])
       lane_input_poll_modes();
       lane_device_registry();
       lane_shared_ports();
+      lane_plays_as_reconnect();
+      lane_superseded_connect_toast();
       lane_input_poll_sites(load_poll_name[load_poll]);
       lane_output_store();
       /* before the core-view lane, whose netplay check leaves the
@@ -9917,6 +10448,7 @@ int main(int argc, char *argv[])
       lane_gun_buttons_kept_mice();
       lane_hotkey_facts();
       lane_enabler_tap();
+      lane_enabler_tap_polled();
       lane_ai_presses();
       lane_menu_repeat_rates();
       lane_pointer_store();
@@ -9946,6 +10478,8 @@ int main(int argc, char *argv[])
       lane_entry_capture();
       lane_entry_target_pick();
       lane_bind_settings();
+      lane_bind_all_device_index();
+      lane_bind_mouse_device_index();
       lane_aim_stick();
       lane_touchpad();
       lane_core_view();

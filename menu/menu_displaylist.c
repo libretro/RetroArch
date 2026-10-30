@@ -7219,6 +7219,52 @@ static int menu_displaylist_parse_input_device_type_list(
    return count;
 }
 
+/* A controller's Plays As: Auto, then 1 to Max Users; the row goes
+ * in each item's label, as for the input descriptions. */
+static unsigned menu_displaylist_parse_input_plays_as_list(
+      menu_displaylist_info_t *info, settings_t *settings)
+{
+   char entry_lbl[21];
+   char text[16];
+   unsigned p, current, row;
+   unsigned count             = 0;
+   unsigned max_users         = settings->uints.input_max_users;
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   if (     info->type < MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
+         || info->type > MENU_SETTINGS_INPUT_PLAYS_AS_END)
+      return 0;
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   row     = info->type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN;
+   current = (row < MAX_INPUT_DEVICES)
+      ? input_config_plays_as_player(row)
+      : input_config_plays_as_entry_player(row - MAX_INPUT_DEVICES);
+   snprintf(entry_lbl, sizeof(entry_lbl), "%u", info->type);
+
+   for (p = 0; p <= max_users; p++)
+   {
+      if (p)
+         snprintf(text, sizeof(text), "%u", p);
+      else
+         strlcpy(text, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO),
+               sizeof(text));
+      if (!menu_entries_append(info->list, text, entry_lbl, MSG_UNKNOWN,
+               MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS, 0, p, NULL))
+         continue;
+      if (p == current)
+      {
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            info->list->list[count].actiondata;
+         if (cbs)
+            cbs->checked           = true;
+         menu_st->selection_ptr    = count;
+      }
+      count++;
+   }
+   return count;
+}
+
 static int menu_displaylist_parse_input_select_reserved_device_list(
       file_list_t *info_list, const char *info_path,
       settings_t *settings)
@@ -7481,7 +7527,7 @@ static int menu_displaylist_parse_input_description_list(
        || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return 0;
 
-   mapped_port = settings->uints.input_remap_ports[user_idx];
+   mapped_port = input_remapping_user_port(user_idx);
 
    if (mapped_port >= MAX_USERS)
       return 0;
@@ -7842,6 +7888,104 @@ static bool menu_displaylist_refresh(struct menu_state *menu_st, file_list_t *li
       menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
    }
    return true;
+}
+
+/* plays_as_row for the OpenXR Controller Layout row */
+#define PLAYS_AS_ROW_LAYOUT (MAX_INPUT_DEVICES + MAX_USERS + 1)
+
+/* Put the cursor back on the Controllers or Port N Controls (@page) row
+ * in plays_as_row: the rows go in port order, so its index moves. Once
+ * the list is made it is forgotten, so a row that is gone leaves the
+ * cursor at its index, or on Port N Controls after the controller rows. */
+static void menu_displaylist_restore_plays_as_row(
+      struct menu_state *menu_st, file_list_t *list, unsigned page)
+{
+   size_t i;
+   size_t rows         = 0;
+   size_t links        = 0;
+   size_t to           = list->size;
+   menu_handle_t *menu = menu_st->driver_data;
+
+   if (!menu)
+      return;
+
+   if (page)
+   {
+      while (     rows < list->size
+            && list->list[rows].type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
+            && list->list[rows].type <  MENU_SETTINGS_INPUT_PLAYS_AS_END)
+         rows++;
+      /* Add Controller, then the links to sharers' pages */
+      while (     rows + 1 + links < list->size
+            && string_ends_with(list->list[rows + 1 + links].label,
+                  "_input_binds_list"))
+         links++;
+   }
+   for (i = 0; menu->plays_as_row && i < list->size; i++)
+   {
+      if (menu->plays_as_row == PLAYS_AS_ROW_LAYOUT)
+      {
+         if (!string_is_equal(list->list[i].label,
+                  MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR))
+            continue;
+      }
+      else if (list->list[i].type
+            != MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + menu->plays_as_row - 1)
+         continue;
+
+      to = i;
+      break;
+   }
+   if (page && to == list->size)
+   {
+      if (menu->plays_as_row)
+         to = rows;
+      /* a cursor below the controller rows stays on its row, one
+       * below the links too */
+      else if (   menu->plays_as_page == page
+               && menu_st->selection_ptr >= menu->plays_as_rows)
+      {
+         to = menu_st->selection_ptr + rows - menu->plays_as_rows;
+         if (menu_st->selection_ptr
+               > menu->plays_as_rows + menu->plays_as_links)
+            to = to + links - menu->plays_as_links;
+         /* on a link: within the links when its sharer left */
+         else if (   menu_st->selection_ptr > menu->plays_as_rows
+                  && to > rows + links)
+            to = rows + links;
+      }
+   }
+   if (to < list->size)
+   {
+      menu_st->selection_ptr = to;
+      if (menu_st->driver_ctx && menu_st->driver_ctx->navigation_set)
+         menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
+   }
+   menu->plays_as_row   = 0;
+   menu->plays_as_page  = page;
+   menu->plays_as_rows  = (unsigned)rows;
+   menu->plays_as_links = (unsigned)links;
+}
+
+/* A hotplug, or a layout change reconnecting the headset's controllers,
+ * makes the list again with the cursor at its index: note the row it is
+ * on, for the pass above to put it back. */
+static void menu_displaylist_keep_plays_as_row(
+      struct menu_state *menu_st, file_list_t *list)
+{
+   unsigned type;
+   menu_handle_t *menu = menu_st->driver_data;
+   size_t sel          = menu_st->selection_ptr;
+
+   if (!menu || sel >= list->size)
+      return;
+   type = list->list[sel].type;
+   if (     type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
+         && type <  MENU_SETTINGS_INPUT_PLAYS_AS_END)
+      menu->plays_as_row = type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 1;
+   else if (string_is_equal(list->list[sel].label,
+            MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR))
+      menu->plays_as_row = PLAYS_AS_ROW_LAYOUT;
 }
 
 #ifdef HAVE_NETWORKING
@@ -8826,6 +8970,8 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
             || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_INPUT_RETROPAD_BIND
             || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE
             || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_INPUT_SELECT_RESERVED_DEVICE
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_INPUT_PLAYS_AS
+            || t == (unsigned)DISPLAYLIST_DROPDOWN_LIST_INPUT_PLAYS_AS_ADD
             || t == (unsigned)DISPLAYLIST_CDROM_DETAIL_INFO
             || t == (unsigned)DISPLAYLIST_PLAYLIST
             || t == (unsigned)DISPLAYLIST_PLAYLIST_COLLECTION
@@ -8975,6 +9121,220 @@ static VIDEO_NOINLINE void menu_displaylist_monitor_index_range(void)
       setting->max          = range_max;
    else
       setting->max          = (float)(cur > (unsigned)n ? cur : (unsigned)n);
+}
+
+/* The name a controller row shows; NULL with none in @slot. */
+static const char *menu_displaylist_controller_name(unsigned slot)
+{
+   const char *name = input_config_get_device_name(slot);
+   if (name && input_config_get_device_display_name(slot))
+      return input_config_get_device_display_name(slot);
+   return name;
+}
+
+/* The connected controllers' slots into @slots (MAX_INPUT_DEVICES
+ * long), each once: in port order, then those past Max Users. Returns
+ * how many. */
+static unsigned menu_displaylist_controller_slots(settings_t *settings,
+      unsigned *slots)
+{
+   unsigned u;
+   unsigned n         = 0;
+   uint32_t listed    = 0;
+   unsigned max_users = settings->uints.input_max_users;
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   for (u = 0; u < max_users + MAX_INPUT_DEVICES; u++)
+   {
+      unsigned s = (u < max_users)
+         ? settings->uints.input_joypad_index[u] : u - max_users;
+      if (     s >= MAX_INPUT_DEVICES
+            || (listed & (1U << s))
+            || !menu_displaylist_controller_name(s))
+         continue;
+      listed    |= 1U << s;
+      slots[n++] = s;
+   }
+   return n;
+}
+
+/* A Plays As row for @row (a slot, or MAX_INPUT_DEVICES and an entry);
+ * @page is Port N Controls' N, 0 in Controllers. */
+static bool menu_displaylist_append_plays_as_row(file_list_t *list,
+      const char *name, unsigned row, size_t page)
+{
+   return menu_entries_append(list, name,
+         MENU_ENUM_LABEL_INPUT_PLAYS_AS_STR,
+         MENU_ENUM_LABEL_INPUT_PLAYS_AS,
+         MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + row, 0, page, NULL);
+}
+
+/* On Port N Controls (@user = N - 1), a link to Port M Controls for
+ * each controller playing as player N from port M, in port order: its
+ * binds and remaps are port M's. Settings' links (@remaps false) are
+ * RetroPad Binds' entries, the Quick Menu's are Controls' entries. */
+static unsigned menu_displaylist_parse_input_port_links(
+      file_list_t *list, settings_t *settings, unsigned user, bool remaps)
+{
+   unsigned u;
+   unsigned count     = 0;
+   unsigned max_users = settings->uints.input_max_users;
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   for (u = 0; u < max_users; u++)
+   {
+      char text[NAME_MAX_LENGTH];
+      bool added;
+      const char *name;
+      unsigned s = settings->uints.input_joypad_index[u];
+      if (     u == user
+            || s >= MAX_INPUT_DEVICES
+            || input_config_slot_user(s) != u
+            || !(name = menu_displaylist_controller_name(s))
+            || input_config_user_player(u) != user)
+         continue;
+      snprintf(text, sizeof(text),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_BINDS),
+            name, u + 1);
+      if (remaps)
+      {
+         char lbl[16];
+         snprintf(lbl, sizeof(lbl), "%u", u);
+         added = menu_entries_append(list, text, lbl, MSG_UNKNOWN,
+               MENU_SETTINGS_REMAPPING_PORT_BEGIN + u, u, 0, NULL);
+      }
+      else
+      {
+         enum msg_hash_enums enum_idx = (enum msg_hash_enums)
+            (MENU_ENUM_LABEL_INPUT_USER_1_BINDS + u);
+         added = menu_entries_append(list, text, msg_hash_to_str(enum_idx),
+               enum_idx, MENU_SETTING_ACTION, 0, 0, NULL);
+      }
+      if (added)
+         count++;
+   }
+   return count;
+}
+
+/* The type of the row the cursor (@selection) is on when @list is
+ * Quick Menu Port N Controls (@port = N - 1) as last made, as a hotplug
+ * makes it again; 0 for another list. Every row type on it is its own. */
+static unsigned menu_displaylist_remap_port_row(file_list_t *list,
+      unsigned port, size_t selection)
+{
+   size_t i;
+   char key[64];
+
+   if (selection >= list->size)
+      return 0;
+   snprintf(key, sizeof(key), MENU_ENUM_LABEL_INPUT_REMAP_PORT_STR, port + 1);
+   for (i = 0; i < list->size; i++)
+      if (string_is_equal(list->list[i].label, key))
+         return list->list[selection].type;
+   return 0;
+}
+
+/* RetroPad Binds > Port N Controls (@user = N - 1): a row for each
+ * connected controller playing as the player port N feeds, in port
+ * order, then Add Controller, carrying that player's user, then the
+ * links to the sharers' own pages. */
+static void menu_displaylist_parse_input_port_controllers(
+      file_list_t *list, settings_t *settings, unsigned user)
+{
+   unsigned u;
+   unsigned p_user    = input_config_user_player(user);
+   unsigned max_users = settings->uints.input_max_users;
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   for (u = 0; u < max_users; u++)
+   {
+      const char *name;
+      unsigned s = settings->uints.input_joypad_index[u];
+      if (     s >= MAX_INPUT_DEVICES
+            || input_config_slot_user(s) != u
+            || !(name = menu_displaylist_controller_name(s))
+            || input_config_user_player(u) != p_user)
+         continue;
+      menu_displaylist_append_plays_as_row(list, name, s, user + 1);
+   }
+   menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD),
+         MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR,
+         MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD,
+         MENU_SETTING_ACTION, 0, p_user, NULL);
+   menu_displaylist_parse_input_port_links(list, settings, user, false);
+}
+
+/* Add Controller: the controllers on a port that do not play as the
+ * player whose user is in @info->path, in Controllers' order, each
+ * with the player it plays as; that user goes in each item's label,
+ * the slot in its entry_idx. */
+static unsigned menu_displaylist_parse_input_plays_as_add_list(
+      menu_displaylist_info_t *info, settings_t *settings)
+{
+   char entry_lbl[12];
+   char text[NAME_MAX_LENGTH];
+   unsigned slots[MAX_INPUT_DEVICES];
+   unsigned i, n;
+   unsigned count  = 0;
+   unsigned p_user = string_to_unsigned(info->path);
+
+   if (p_user >= MAX_USERS)
+      return 0;
+   snprintf(entry_lbl, sizeof(entry_lbl), "%u", p_user);
+   n = menu_displaylist_controller_slots(settings, slots);
+   for (i = 0; i < n; i++)
+   {
+      unsigned player, port;
+      input_config_plays_as_where(slots[i], &player, &port);
+      /* past Max Users: a pick has no port to give it */
+      if (!port || player == p_user + 1)
+         continue;
+      snprintf(text, sizeof(text),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD_ITEM),
+            menu_displaylist_controller_name(slots[i]), player);
+      if (menu_entries_append(info->list, text, entry_lbl, MSG_UNKNOWN,
+               MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS_ADD, 0, slots[i],
+               NULL))
+         count++;
+   }
+   return count;
+}
+
+/* Settings > Input > Controllers: the connected controllers in port
+ * order, then those past Max Users, then the Plays As entries of the
+ * controllers that are gone. */
+static unsigned menu_displaylist_parse_input_controllers(
+      file_list_t *list, settings_t *settings)
+{
+   unsigned slots[MAX_INPUT_DEVICES];
+   unsigned i, e;
+   unsigned count = 0;
+   unsigned n     = menu_displaylist_controller_slots(settings, slots);
+
+   for (i = 0; i < n; i++)
+      if (menu_displaylist_append_plays_as_row(list,
+               menu_displaylist_controller_name(slots[i]), slots[i], 0))
+         count++;
+   for (e = 0; e < MAX_USERS; e++)
+   {
+      const char *name = input_config_plays_as_entry_name(e);
+      if (!name || input_config_plays_as_entry_taken(e))
+         continue;
+      if (menu_displaylist_append_plays_as_row(list, name,
+               MAX_INPUT_DEVICES + e, 0))
+         count++;
+   }
+#ifdef HAVE_OPENXR
+   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+            MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS,
+            PARSE_ONLY_UINT, false) == 0)
+      count++;
+#endif
+   return count;
 }
 
 unsigned menu_displaylist_build_list(
@@ -9354,6 +9714,9 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_FLOAT, false) == 0)
                count++;
          }
+         break;
+      case DISPLAYLIST_INPUT_CONTROLLERS_LIST:
+         count = menu_displaylist_parse_input_controllers(list, settings);
          break;
       case DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST:
          {
@@ -10221,6 +10584,7 @@ unsigned menu_displaylist_build_list(
          {
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,                  PARSE_ACTION,     true},
+               {MENU_ENUM_LABEL_INPUT_CONTROLLERS,                     PARSE_ACTION,     true},
                {MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,             PARSE_ACTION,     true},
                {MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,                    PARSE_ACTION,     true},
                {MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,                   PARSE_ACTION,     true},
@@ -12583,10 +12947,6 @@ unsigned menu_displaylist_build_list(
                count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -15050,6 +15410,13 @@ static bool menu_displaylist_ctl_internal(
          && menu_st->driver_ctx->list_push(menu_st->driver_data,
             menu_st->userdata, info, type) == 0);
 
+   /* any other list shown in the menu replaces Port N Controls */
+   if (     type != DISPLAYLIST_USER_BINDS_LIST
+         && menu_st->driver_data
+         && info->list == MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(
+               menu_st, 0))
+      menu_st->driver_data->plays_as_page = 0;
+
    if (!push_list)
    {
       menu_handle_t *menu         = menu_st->driver_data;
@@ -15057,6 +15424,9 @@ static bool menu_displaylist_ctl_internal(
       bool use_filebrowser        = false;
       unsigned count              = 0;
       int ret                     = 0;
+
+      if (type == DISPLAYLIST_INPUT_CONTROLLERS_LIST)
+         menu_displaylist_keep_plays_as_row(menu_st, info->list);
       switch (type)
       {
          case DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST:
@@ -15188,10 +15558,16 @@ static bool menu_displaylist_ctl_internal(
 #endif
                file_list_t *list           = info->list;
                unsigned port               = string_to_unsigned(info->path);
-               unsigned mapped_port        = settings->uints.input_remap_ports[port];
+               unsigned mapped_port        = input_remapping_user_port(port);
                size_t selection            = menu_st->selection_ptr;
+               unsigned kept               = menu_displaylist_remap_port_row(
+                     list, port, selection);
+               unsigned links;
 
                menu_entries_clear(info->list);
+               links  = menu_displaylist_parse_input_port_links(list,
+                     settings, port, true);
+               count += links;
 
                {
                   char key[64];
@@ -15306,6 +15682,29 @@ static bool menu_displaylist_ctl_internal(
 
                info->flags       |= MD_FLAG_NEED_REFRESH
                                   | MD_FLAG_NEED_PUSH;
+               /* links come and go above the rows */
+               if (kept)
+               {
+                  size_t i;
+                  for (i = 0; i < list->size; i++)
+                     if (list->list[i].type == kept)
+                        break;
+                  /* a link whose sharer left: the last one, if any */
+                  if (     i == list->size
+                        && kept >= MENU_SETTINGS_REMAPPING_PORT_BEGIN
+                        && kept <  MENU_SETTINGS_REMAPPING_PORT_END)
+                     i = (selection < links) ? selection
+                        : (links ? links - 1 : 0);
+                  if (i < list->size)
+                  {
+                     selection              = i;
+                     menu_st->selection_ptr = i;
+                     if (     menu_st->driver_ctx
+                           && menu_st->driver_ctx->navigation_set)
+                        menu_st->driver_ctx->navigation_set(
+                              menu_st->userdata, true);
+                  }
+               }
                if (selection >= count)
                {
                   /* 'None' shortens the list: stay on Mapped Port,
@@ -17142,6 +17541,24 @@ static bool menu_displaylist_ctl_internal(
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
+         case DISPLAYLIST_DROPDOWN_LIST_INPUT_PLAYS_AS:
+            menu_entries_clear(info->list);
+            count              = menu_displaylist_parse_input_plays_as_list(
+                  info, settings);
+
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
+            info->flags       |= MD_FLAG_NEED_REFRESH
+                               | MD_FLAG_NEED_PUSH;
+            break;
+         case DISPLAYLIST_DROPDOWN_LIST_INPUT_PLAYS_AS_ADD:
+            menu_entries_clear(info->list);
+            count              = menu_displaylist_parse_input_plays_as_add_list(
+                  info, settings);
+
+            count = menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
+            info->flags       |= MD_FLAG_NEED_REFRESH
+                               | MD_FLAG_NEED_PUSH;
+            break;
 #ifdef ANDROID
          case DISPLAYLIST_DROPDOWN_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD:
             menu_entries_clear(info->list);
@@ -17331,6 +17748,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_NETPLAY_ROOM_LIST:
          case DISPLAYLIST_SHADER_PRESET_MANAGER:
          case DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST:
+         case DISPLAYLIST_INPUT_CONTROLLERS_LIST:
          case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
          case DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST:
          case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
@@ -17389,6 +17807,7 @@ static bool menu_displaylist_ctl_internal(
                   case DISPLAYLIST_INFORMATION_LIST:
                   case DISPLAYLIST_SCAN_DIRECTORY_LIST:
                   case DISPLAYLIST_INPUT_INFO:
+                  case DISPLAYLIST_INPUT_CONTROLLERS_LIST:
                      menu_entries_append(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
@@ -17441,6 +17860,10 @@ static bool menu_displaylist_ctl_internal(
                case DISPLAYLIST_EJECT_DISC:
 #endif
                   info->flags       |= MD_FLAG_NEED_CLEAR;
+                  break;
+               case DISPLAYLIST_INPUT_CONTROLLERS_LIST:
+                  menu_displaylist_restore_plays_as_row(menu_st, info->list,
+                        0);
                   break;
                default:
                   break;
@@ -18063,13 +18486,21 @@ static bool menu_displaylist_ctl_internal(
             info->flags      |=  MD_FLAG_NEED_ENTRIES_REFRESH;
             break;
          case DISPLAYLIST_USER_BINDS_LIST:
-            menu_entries_clear(info->list);
             {
                unsigned val              = atoi(info->path);
                const char *temp_val      = msg_hash_to_str(
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));
+               /* the list still holds this page only if none was made since */
+               if (menu && val && menu->plays_as_page == val)
+                  menu_displaylist_keep_plays_as_row(menu_st, info->list);
+               menu_entries_clear(info->list);
+               if (val >= 1 && val <= MAX_USERS)
+                  menu_displaylist_parse_input_port_controllers(
+                        info->list, settings, val - 1);
                ret                = MENU_DISPLAYLIST_PARSE_SETTINGS(info->list,
                      temp_val, PARSE_NONE, true, MENU_SETTINGS_INPUT_BEGIN);
+               menu_displaylist_restore_plays_as_row(menu_st, info->list,
+                     val);
                info->flags       |=  MD_FLAG_NEED_REFRESH
                                   |  MD_FLAG_NEED_PUSH;
             }

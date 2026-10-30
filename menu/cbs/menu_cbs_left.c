@@ -41,6 +41,7 @@
 #include "../../driver.h"
 #include "../../retroarch.h"
 #include "../../audio/audio_driver.h"
+#include "../../input/input_remapping.h"
 #include "../../msg_hash_lbl_str.h"
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -146,6 +147,24 @@ static int action_left_cheat(unsigned type, const char *label,
 }
 #endif
 
+/* A controller's player, one down: Auto below 1, Max Users below Auto. */
+static int action_left_input_plays_as(unsigned type, const char *label,
+      bool wraparound)
+{
+   unsigned row       = type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN;
+   unsigned max_users = config_get_ptr()->uints.input_max_users;
+   unsigned player    = (row < MAX_INPUT_DEVICES)
+      ? input_config_plays_as_player(row)
+      : input_config_plays_as_entry_player(row - MAX_INPUT_DEVICES);
+
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   if (player > max_users)
+      player = max_users + 1;
+   menu_input_plays_as_change(row, player ? player - 1 : max_users);
+   return 0;
+}
+
 static int action_left_input_desc(unsigned type, const char *label,
       bool wraparound)
 {
@@ -157,7 +176,7 @@ static int action_left_input_desc(unsigned type, const char *label,
       unsigned bind_idx;
       unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
       unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
-      unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
+      unsigned mapped_port = input_remapping_user_port(user_idx);
       unsigned remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
 
       if (mapped_port >= MAX_USERS)
@@ -1386,6 +1405,11 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_LEFT(cbs, action_left_input_desc);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
+         && type <= MENU_SETTINGS_INPUT_PLAYS_AS_END)
+   {
+      BIND_ACTION_LEFT(cbs, action_left_input_plays_as);
    }
    else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)

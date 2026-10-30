@@ -2914,7 +2914,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
                   for (p = 0; p < input_driver_max_users; p++)
                   {
-                     unsigned mapped_port = settings->uints.input_remap_ports[p];
+                     unsigned mapped_port = input_remapping_user_port(p);
 
                      RARCH_DBG("%s %u:\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
 
@@ -10157,8 +10157,9 @@ int runloop_iterate(void)
     * nothing was set. */
    input_driver_flush_rumble();
    led_driver_flush();
-   /* a first press seen by this frame's poll: the user gets its core
-    * port now, with the core off the stack */
+   /* a first press, or a controller beginning or ending to share a
+    * player, seen by this frame's poll: the core is told now, with the
+    * core off the stack */
    if (input_st->first_press_pending)
       input_first_press_apply();
 #ifdef HAVE_PRESENCE

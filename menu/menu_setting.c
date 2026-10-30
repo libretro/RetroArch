@@ -1210,6 +1210,13 @@ static int setting_bind_action_start(rarch_setting_t *setting)
 
    keybind->joykey  = NO_BTN;
    keybind->joyaxis = AXIS_NONE;
+   /* a hotkey's: the controllers' own go with it */
+   if (bind_type - MENU_SETTINGS_BIND_BEGIN >= RARCH_FIRST_META_KEY)
+   {
+      input_config_plays_as_clear_hotkey(
+            bind_type - MENU_SETTINGS_BIND_BEGIN);
+      config_get_ptr()->flags |= SETTINGS_FLG_MODIFIED;
+   }
 
    /* Clear old mapping bit */
    input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(keybind));
@@ -1774,6 +1781,7 @@ static size_t setting_get_string_representation_st_string(rarch_setting_t *setti
 static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting,
       char *s, size_t len)
 {
+   size_t _len;
    unsigned index_offset                 = 0;
    unsigned id                           = 0;
    const struct retro_keybind* keybind   = NULL;
@@ -1787,9 +1795,14 @@ static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting
    keybind      = input_config_bind(index_offset, id);
    auto_bind    = (const struct retro_keybind*)
       input_config_get_bind_auto(index_offset, id);
-   return input_config_get_bind_string(settings, s, keybind, auto_bind,
-         input_config_bind_names(index_offset, id),
+   _len         = input_config_get_bind_string(settings, s, keybind,
+         auto_bind, input_config_bind_names(index_offset, id),
          input_autoconf_bind_names(index_offset, id), len);
+   /* a hotkey's, then the controllers' own */
+   if (id >= RARCH_FIRST_META_KEY && _len < len)
+      _len     += input_config_plays_as_hotkey_string(id, s + _len,
+            len - _len);
+   return _len;
 }
 
 static int setting_action_action_ok(
@@ -6808,7 +6821,7 @@ static int setting_action_left_input_remap_port(
       return -1;
 
    port = setting->index_offset;
-   was  = settings->uints.input_remap_ports[port];
+   was  = input_remapping_user_port(port);
 
    /* MAX_USERS is 'None', between the last port and the first */
    if (settings->uints.input_remap_ports[port] > 0)
@@ -6816,7 +6829,7 @@ static int setting_action_left_input_remap_port(
    else
       settings->uints.input_remap_ports[port] = MAX_USERS;
    setting_input_remap_port_follow(menu_st, was,
-         settings->uints.input_remap_ports[port]);
+         input_remapping_user_port(port));
    input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
@@ -6900,6 +6913,9 @@ static int setting_action_left_input_device_index(
    *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
+   /* Port N Controls' controller rows follow it */
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -9608,6 +9624,9 @@ static int setting_action_start_input_device_index(rarch_setting_t *setting)
          settings->uints.input_joypad_index[setting->index_offset],
          setting->index_offset);
    input_driver_deadzones_refresh();
+   /* Port N Controls' controller rows follow it */
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -9738,7 +9757,7 @@ static int setting_action_start_libretro_device_type(rarch_setting_t *setting)
 
 static int setting_action_start_input_remap_port(rarch_setting_t *setting)
 {
-   unsigned port;
+   unsigned port, was;
    settings_t *settings                    = config_get_ptr();
    struct menu_state *menu_st              = menu_state_get_ptr();
 
@@ -9746,9 +9765,10 @@ static int setting_action_start_input_remap_port(rarch_setting_t *setting)
       return -1;
 
    port                                    = setting->index_offset;
-   setting_input_remap_port_follow(menu_st,
-         settings->uints.input_remap_ports[port], port);
+   was                                     = input_remapping_user_port(port);
    settings->uints.input_remap_ports[port] = port;
+   setting_input_remap_port_follow(menu_st, was,
+         input_remapping_user_port(port));
    input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
@@ -9881,14 +9901,14 @@ static int setting_action_right_input_remap_port(
       return -1;
 
    port = setting->index_offset;
-   was  = settings->uints.input_remap_ports[port];
+   was  = input_remapping_user_port(port);
 
    if (settings->uints.input_remap_ports[port] < MAX_USERS)
       settings->uints.input_remap_ports[port]++;
    else
       settings->uints.input_remap_ports[port] = 0;
    setting_input_remap_port_follow(menu_st, was,
-         settings->uints.input_remap_ports[port]);
+         input_remapping_user_port(port));
    input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
@@ -9928,6 +9948,9 @@ static int setting_action_right_input_device_index(
    *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
+   /* Port N Controls' controller rows follow it */
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -10839,6 +10862,9 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+         /* a player past Max Users plays Auto: placed again */
+         if (input_config_plays_as_active())
+            input_autoconfigure_reallocate_ports(MAX_USERS);
          break;
 #ifdef ANDROID
       case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:

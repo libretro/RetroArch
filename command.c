@@ -54,6 +54,7 @@
 #endif
 
 #include "audio/audio_driver.h"
+#include "input/input_remapping.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "gfx/video_shader_parse.h"
 #endif
@@ -6313,7 +6314,7 @@ void command_event_init_controllers(rarch_system_info_t *sys_info,
          if (i >= MAX_USERS)
             break;
 
-         if (port == settings->uints.input_remap_ports[i])
+         if (port == input_remapping_user_port((unsigned)i))
          {
             device = input_config_get_device(port);
             break;

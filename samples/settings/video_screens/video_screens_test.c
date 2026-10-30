@@ -27,6 +27,7 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/video_thread_wrapper.h"
 #include "../../../input/input_driver.h"
+#include "../../../tasks/tasks_internal.h"
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
@@ -1254,6 +1255,261 @@ static void test_window_redraw(void)
 #endif
 }
 
+/* A controller's Plays As player saved into a game override: gone with
+ * the override unloaded and back with it loaded, placed at once each
+ * time as the menu's Unload and Load Override place it; set back to
+ * Auto, a controller the main config gives a player is saved as Auto. */
+static void test_plays_as_override(void)
+{
+   static rarch_system_info_t system_info;
+   settings_t *settings = config_get_ptr();
+   uint8_t before[MAX_USERS];
+   char device[64];
+   char text[192];
+   config_file_t *conf;
+   unsigned minimal, player, u;
+
+   memset(&system_info, 0, sizeof(system_info));
+   system_info.info.library_name = "video_screens_test";
+   for (minimal = 0; minimal < 2; minimal++)
+   {
+      snprintf(text, sizeof(text), "%sinput_max_users = \"4\"\n"
+            "input_plays_as_device_1 = \"0002:0002 B\"\n"
+            "input_plays_as_player_1 = \"3\"\n",
+            minimal ? "config_save_minimal = \"true\"\n" : "");
+      load_fixture(text);
+      CHECK(settings->bools.config_save_minimal == (minimal != 0));
+      for (u = 0; u < MAX_USERS; u++)
+         settings->uints.input_joypad_index[u] = u;
+      input_config_set_device_name(0, "A");
+      input_config_set_device_display_name(0, "A");
+      input_config_set_device_vid(0, 1);
+      input_config_set_device_pid(0, 1);
+      input_config_set_device_name(1, "B");
+      input_config_set_device_display_name(1, "B");
+      input_config_set_device_vid(1, 2);
+      input_config_set_device_pid(1, 2);
+      /* connected: only a connect takes an entry */
+      input_config_plays_as_place(0, true);
+      input_config_plays_as_place(1, true);
+      CHECK(input_config_plays_as_player(1) == 3);
+      CHECK(settings->uints.input_joypad_index[2] == 1);
+      CHECK(input_config_plays_as_set(0, 2));
+      input_autoconfigure_reallocate_ports(0);
+      CHECK(settings->uints.input_joypad_index[1] == 0);
+
+      path_set(RARCH_PATH_BASENAME, "plays_as_game.rom");
+      CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+      strlcpy(generated_path, path_get(RARCH_PATH_CONFIG_OVERRIDE),
+            sizeof(generated_path));
+      conf = config_file_new_from_path_to_string(generated_path);
+      CHECK(conf != NULL);
+      if (conf)
+      {
+         CHECK(config_get_array(conf, "input_plays_as_device_1", device, sizeof(device))
+               && string_is_equal(device, "0001:0001 A"));
+         CHECK(config_get_uint(conf, "input_plays_as_player_1", &player) && player == 2);
+         CHECK(config_get_entry(conf, "input_plays_as_device_2") == NULL);
+         config_file_free(conf);
+      }
+
+      /* Unload Override */
+      input_config_plays_as_players(before);
+      CHECK(config_unload_override());
+      input_autoconfigure_plays_as_reread(before);
+      CHECK(input_config_plays_as_player(0) == 0);
+      CHECK(input_config_plays_as_player(1) == 3);
+      CHECK(settings->uints.input_joypad_index[0] == 0);
+      CHECK(settings->uints.input_joypad_index[2] == 1);
+
+      /* Load Override */
+      input_config_plays_as_players(before);
+      config_unload_override();
+      CHECK(config_load_override_file(generated_path));
+      input_autoconfigure_plays_as_reread(before);
+      CHECK(input_config_plays_as_player(0) == 2);
+      CHECK(input_config_plays_as_player(1) == 3);
+      CHECK(settings->uints.input_joypad_index[1] == 0);
+      CHECK(settings->uints.input_joypad_index[2] == 1);
+
+      /* Unload Override, then Start on the override info row */
+      input_config_plays_as_players(before);
+      CHECK(config_unload_override());
+      input_autoconfigure_plays_as_reread(before);
+      input_config_plays_as_players(before);
+      CHECK(config_load_override(&system_info));
+      input_autoconfigure_plays_as_reread(before);
+      CHECK(input_config_plays_as_player(0) == 2);
+      CHECK(input_config_plays_as_player(1) == 3);
+      CHECK(settings->uints.input_joypad_index[1] == 0);
+      CHECK(settings->uints.input_joypad_index[2] == 1);
+
+      CHECK(input_config_plays_as_set(0, 0));
+      CHECK(input_config_plays_as_set(1, 0));
+      CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+      conf = config_file_new_from_path_to_string(generated_path);
+      CHECK(conf != NULL);
+      if (conf)
+      {
+         CHECK(config_get_array(conf, "input_plays_as_device_1", device, sizeof(device))
+               && string_is_equal(device, "0002:0002 B"));
+         CHECK(config_get_uint(conf, "input_plays_as_player_1", &player) && player == 0);
+         CHECK(config_get_entry(conf, "input_plays_as_device_2") == NULL);
+         config_file_free(conf);
+      }
+      CHECK(config_unload_override());
+      CHECK(input_config_plays_as_player(1) == 3);
+      CHECK(config_load_override_file(generated_path));
+      CHECK(input_config_plays_as_player(1) == 0);
+      CHECK(config_unload_override());
+      path_clear(RARCH_PATH_BASENAME);
+      for (u = 0; u < 2; u++)
+      {
+         input_config_clear_device_name(u);
+         input_config_clear_device_display_name(u);
+         input_config_set_device_vid(u, 0);
+         input_config_set_device_pid(u, 0);
+         input_config_plays_as_release(u);
+      }
+   }
+   load_fixture("");
+}
+
+/* A pad of one model connected in @slot, or unplugged from it. */
+static void plays_as_pad(unsigned slot, bool connected)
+{
+   input_config_set_device_vid(slot, connected ? 1 : 0);
+   input_config_set_device_pid(slot, connected ? 1 : 0);
+   if (connected)
+   {
+      input_config_set_device_name(slot, "Pad");
+      input_config_set_device_display_name(slot, "Pad");
+      input_config_plays_as_place(slot, true);
+      return;
+   }
+   input_config_clear_device_name(slot);
+   input_config_clear_device_display_name(slot);
+   input_config_plays_as_release(slot);
+}
+
+/* Two of a model, a game override giving the first Player 5: with it
+ * unplugged, Unload Override, Load Override and Start on the override
+ * row leave the other on Auto, and the first plays its own back. */
+static void test_plays_as_override_twin(void)
+{
+   static rarch_system_info_t system_info;
+   settings_t *settings = config_get_ptr();
+   uint8_t before[MAX_USERS];
+   char path[2048];
+   unsigned step, u;
+
+   memset(&system_info, 0, sizeof(system_info));
+   system_info.info.library_name = "video_screens_test";
+   for (step = 0; step < 3; step++)
+   {
+      load_fixture("input_max_users = \"4\"\n"
+            "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+            "input_plays_as_player_1 = \"2\"\n");
+      for (u = 0; u < MAX_USERS; u++)
+         settings->uints.input_joypad_index[u] = u;
+      plays_as_pad(0, true);
+      plays_as_pad(1, true);
+      CHECK(input_config_plays_as_player(0) == 2);
+      CHECK(input_config_plays_as_entry(1) == -1);
+      CHECK(input_config_plays_as_set(0, 5));
+      input_autoconfigure_reallocate_ports(0);
+      path_set(RARCH_PATH_BASENAME, "plays_as_twin.rom");
+      CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+      strlcpy(path, path_get(RARCH_PATH_CONFIG_OVERRIDE), sizeof(path));
+
+      plays_as_pad(0, false);
+      input_config_plays_as_players(before);
+      if (step == 0)
+         CHECK(config_unload_override());
+      else if (step == 1)
+      {
+         config_unload_override();
+         CHECK(config_load_override_file(path));
+      }
+      else
+         CHECK(config_load_override(&system_info));
+      input_autoconfigure_plays_as_reread(before);
+      CHECK(input_config_plays_as_entry(1) == -1);
+      CHECK(input_config_plays_as_player(1) == 0);
+      plays_as_pad(0, true);
+      CHECK(input_config_plays_as_player(0) == (step ? 5u : 2u));
+
+      config_unload_override();
+      path_clear(RARCH_PATH_BASENAME);
+      for (u = 0; u < 2; u++)
+         plays_as_pad(u, false);
+   }
+   load_fixture("");
+}
+
+/* Two of a model, the second given Player 4 by a game override: with
+ * the first unplugged, loading it the first time, Start on its row and
+ * Load Override give the second its Player 4, and the first, back,
+ * plays its own. */
+static void test_plays_as_override_unplugged(void)
+{
+   static rarch_system_info_t system_info;
+   settings_t *settings = config_get_ptr();
+   uint8_t before[MAX_USERS];
+   char path[2048];
+   unsigned step, u;
+
+   memset(&system_info, 0, sizeof(system_info));
+   system_info.info.library_name = "video_screens_test";
+   for (step = 0; step < 3; step++)
+   {
+      load_fixture("input_max_users = \"4\"\n"
+            "input_plays_as_device_1 = \"0001:0001 Pad\"\n"
+            "input_plays_as_player_1 = \"2\"\n");
+      for (u = 0; u < MAX_USERS; u++)
+         settings->uints.input_joypad_index[u] = u;
+      plays_as_pad(0, true);
+      plays_as_pad(1, true);
+      CHECK(input_config_plays_as_set(1, 4));
+      input_autoconfigure_reallocate_ports(1);
+      path_set(RARCH_PATH_BASENAME, "plays_as_unplugged.rom");
+      CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+      strlcpy(path, path_get(RARCH_PATH_CONFIG_OVERRIDE), sizeof(path));
+      /* the first time: from the main config, the second on Auto */
+      if (step == 0)
+      {
+         input_config_plays_as_players(before);
+         CHECK(config_unload_override());
+         input_autoconfigure_plays_as_reread(before);
+         CHECK(input_config_plays_as_entry(1) == -1);
+      }
+
+      plays_as_pad(0, false);
+      input_config_plays_as_players(before);
+      if (step == 0)
+         CHECK(config_load_override_file(path));
+      else if (step == 1)
+         CHECK(config_load_override(&system_info));
+      else
+      {
+         config_unload_override();
+         CHECK(config_load_override_file(path));
+      }
+      input_autoconfigure_plays_as_reread(before);
+      CHECK(input_config_plays_as_entry(1) == 1);
+      CHECK(input_config_plays_as_player(1) == 4);
+      plays_as_pad(0, true);
+      CHECK(input_config_plays_as_entry(0) == 0);
+      CHECK(input_config_plays_as_player(0) == 2);
+
+      config_unload_override();
+      path_clear(RARCH_PATH_BASENAME);
+      for (u = 0; u < 2; u++)
+         plays_as_pad(u, false);
+   }
+   load_fixture("");
+}
+
 int main(int argc, char **argv)
 {
    if (argc != 2)
@@ -1278,6 +1534,9 @@ int main(int argc, char **argv)
    test_window_menu_settings();
    test_window_menu_list();
    test_window_redraw();
+   test_plays_as_override();
+   test_plays_as_override_twin();
+   test_plays_as_override_unplugged();
    menu_setting_free(menu_state_get_ptr()->entries.list_settings);
    free(menu_state_get_ptr()->entries.list_settings);
    menu_state_get_ptr()->entries.list_settings = NULL;

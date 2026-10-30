@@ -32,6 +32,7 @@
 #include "../../configuration.h"
 #include "../../file_path_special.h"
 #include "../../tasks/task_content.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../core_option_manager.h"
@@ -103,9 +104,12 @@ static int action_start_override_file_info(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
+   uint8_t before[MAX_USERS];
    struct menu_state *menu_st      = menu_state_get_ptr();
    rarch_system_info_t *sys_info   = &runloop_state_get_ptr()->system;
+   input_config_plays_as_players(before);
    config_load_override(sys_info);
+   input_autoconfigure_plays_as_reread(before);
 
    /* Refresh menu */
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
@@ -232,7 +236,7 @@ static int action_start_input_desc(
    {
       unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
       unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
-      unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
+      unsigned mapped_port = input_remapping_user_port(user_idx);
 
       if (     (user_idx    >= MAX_USERS)
             || (mapped_port >= MAX_USERS)

@@ -74,6 +74,14 @@ void input_remapping_restore_global_config(bool clear_cache, bool restore_analog
  */
 void input_remapping_update_port_map(void);
 
+/* The core port @user feeds, MAX_USERS for none: its Mapped Port, or
+ * for a controller playing as another user's player, that user's. */
+unsigned input_remapping_user_port(unsigned user);
+
+/* The user whose player @user's controller plays as, when that is
+ * another user's; MAX_USERS otherwise. */
+unsigned input_remapping_join_user(unsigned user);
+
 /* First-press port assignment ("Assign Ports on First Button Press").
  * Whether the policy applies now: the setting, and not in netplay. */
 bool input_first_press_enabled(void);

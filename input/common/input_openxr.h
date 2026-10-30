@@ -45,8 +45,8 @@ struct rarch_joypad_driver;
 void input_openxr_register(void);
 
 /* Syncs the controllers, and connects or disconnects their devices;
- * once per input poll, with Max Users, the Headset Controllers and
- * Laser Pointer settings and the axis threshold. */
+ * once per input poll, with Max Users, the OpenXR Controller Layout
+ * and Laser Pointer settings and the axis threshold. */
 void input_openxr_poll(unsigned max_users, unsigned controllers,
       unsigned laser, float threshold);
 
@@ -73,10 +73,14 @@ bool input_openxr_autoconfigure(unsigned slot);
  * or RARCH_HEADSET_VIEW_TOGGLE, from the headset's own actions. */
 bool input_openxr_hotkey(unsigned id);
 
-/* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on port 0,
- * while it can point (the headset focused, a screen live for the
- * laser): true, with *res set. A miss reads as offscreen. */
-bool input_openxr_pointer(unsigned port, unsigned device, unsigned idx,
+/* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on a core
+ * port whose users read @slots (a bit per slot), while it can point
+ * (the headset focused, a screen live for the laser) and a controller
+ * of the headset's is in one of those slots: true, with *res set. The
+ * pointing hand's port aims and fires; another hand's reads offscreen,
+ * as a miss does. A controller no user reads drives no core's
+ * pointer. */
+bool input_openxr_pointer(uint32_t slots, unsigned device, unsigned idx,
       unsigned id, int16_t *res);
 
 /* The laser on the menu quad: where, from 0 to 1 across and down, and

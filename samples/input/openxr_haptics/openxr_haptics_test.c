@@ -81,6 +81,9 @@ bool input_config_get_device_autoconfigured(unsigned port)
 { return test_device_auto[port]; }
 void input_driver_exchange_ports(unsigned a, unsigned b)
 { (void)a; (void)b; }
+unsigned input_config_plays_as_named(const char *name)
+{ (void)name; return 0; }
+unsigned input_config_plays_as_generation(void) { return 0; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void video_xr_rotate(const video_xr_quat_t *q, const video_xr_vec3_t *v,

@@ -468,7 +468,14 @@ enum autoconfig_handle_flags
     *
     * This is used in the SDL3 driver, for instance, where mappings are provided directly.
     */
-   AUTOCONF_FLAG_HAS_STANDARD_MAPPING = (1 << 3)
+   AUTOCONF_FLAG_HAS_STANDARD_MAPPING = (1 << 3),
+   /**
+    * Device reported again while it stays connected: it keeps the Plays As
+    * entry it holds, or none, and takes no other.
+    *
+    * @see input_autoconfigure_reconnect()
+    */
+   AUTOCONF_FLAG_RECONNECT = (1 << 4)
 };
 
 void input_autoconfigure_blissbox_override_handler(
@@ -496,6 +503,14 @@ bool input_autoconfigure_connect_ex(
 bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
 bool input_autoconfigure_reconnect(unsigned port);
+/* The controller in @slot placed again as its connect placed it, with
+ * any it pushes off a port; @slot MAX_USERS: those a change of Max
+ * Users moves. No driver restarted. Main thread. */
+void input_autoconfigure_reallocate_ports(unsigned slot);
+/* An override was loaded or unloaded from the menu: the controllers
+ * the reload moved are placed again at once, @before from
+ * input_config_plays_as_players() taken before it. Main thread. */
+void input_autoconfigure_plays_as_reread(const uint8_t *before);
 #if defined(HAVE_TEST_DRIVERS) || defined(HAVE_OPENXR)
 bool input_autoconfigure_pending(void);
 #endif
