@@ -74,6 +74,15 @@ name: CI Vulkan/GL/D3D11 [idle waits + driver harness]
 # 8. SDL3 views: the views e2e cases on the SDL3 driver, against an SDL3
 #    built from a pinned release with its renderer, the tree configured
 #    with SDL3 in place of SDL2.
+#
+# 9. HDR10 frame: the shipping frontend from the validation build, on
+#    lavapipe under an Xvfb of depth 30, through a layer that pairs the
+#    surface's 10-bit format with the HDR10 colour space
+#    (samples/gfx/vulkan_hdr_ui_pass), so the driver takes its HDR path
+#    with no HDR display: a shader preset with the menu, the statistics
+#    and an OSD message over it, and the controls without. The UI
+#    layer's render pass was left open under the composite whenever a
+#    preset and any UI met; no lane here ran HDR, so nothing saw it.
 
 on:
   push:
@@ -311,6 +320,17 @@ jobs:
           RA_E2E_XVFB=1 RA_E2E_ONLY='^(3ds-sbs-full|3ds-sbs-half|3ds-top-bottom|3ds-anaglyph|3ds-interlaced|ds-horizontal|exact-3ds|crop-threaded-menu|pointer-sbs-full)$' \
             python3 samples/cores/video_views/e2e/run.py ./retroarch \
             "$RUNNER_TEMP/views-e2e" gl glcore vulkan sdl2
+
+      - name: HDR10 frame paths under the validation layer (lavapipe, fake HDR10 surface)
+        shell: bash
+        run: |
+          set -eu
+          # Each case selects an HDR10 swapchain or fails, and must take
+          # the HDR game pass and composite it names; any validation
+          # error fails it. Logs stay in the temp dir named below.
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
+          python3 samples/gfx/vulkan_hdr_ui_pass/run.py --retroarch ./retroarch \
+            --log-dir "$RUNNER_TEMP/vulkan-hdr-ui-pass"
 
       - name: ccache statistics
         if: ${{ !cancelled() }}
