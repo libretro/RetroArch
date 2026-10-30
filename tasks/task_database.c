@@ -139,6 +139,16 @@ static bool scan_results_add(scan_results_t *sr,
    return true;
 }
 
+static scan_result_t *scan_results_find(scan_results_t *sr,
+      const char *entry_path)
+{
+   size_t i;
+   for (i = 0; i < sr->count; i++)
+      if (string_is_equal(sr->results[i].entry_path, entry_path))
+         return &sr->results[i];
+   return NULL;
+}
+
 static void scan_results_free(scan_results_t *sr)
 {
    size_t i;
@@ -592,6 +602,9 @@ typedef struct manual_scan_handle
     * this is how a task_push_dbscan caller learns the scan finished;
     * see cb_task_manual_content_scan. */
    retro_task_callback_t user_cb;
+   void *user_data;
+   /* The callback's task_data. */
+   task_dbscan_result_t result;
 } manual_scan_handle_t;
 
 enum scan_verdict
@@ -916,6 +929,7 @@ static void task_database_iterate_m3u(
    char first_matched_crc[128];
    char collapsed_title[NAME_MAX_LENGTH];
    rm3u_t *m3u = NULL;
+   scan_result_t *own;
 
    first_matched_db[0] = '\0';
    first_matched_crc[0] = '\0';
@@ -925,6 +939,8 @@ static void task_database_iterate_m3u(
    if (!(m3u = rm3u_load_filestream(m3u_path)))
    {
       RARCH_ERR("[Scanner] Failed to open M3U file: \"%s\".\n", m3u_path);
+      if (!scan_results_find(&_db->scan_results, m3u_path))
+         _db->result.unmatched++;
       return;
    }
 
@@ -1013,9 +1029,19 @@ static void task_database_iterate_m3u(
 
    rm3u_free(m3u);
 
+   own = scan_results_find(&_db->scan_results, m3u_path);
+
    /* If we found at least one match, add M3U entry */
    if (found_match)
    {
+      /* The content pass's entry for the m3u itself would only be
+       * replaced by this one in the same playlist. */
+      if (own && (   *_db->task_config->playlist_file
+                  || string_is_equal(own->db_name, first_matched_db)))
+      {
+         free(own->entry_path);
+         own->entry_path = NULL;
+      }
       if (!scan_results_add(&_db->scan_results, m3u_path, collapsed_title,
                             first_matched_crc, first_matched_db, NULL))
       {
@@ -1027,6 +1053,8 @@ static void task_database_iterate_m3u(
                   collapsed_title, first_matched_db);
       }
    }
+   else if (!own)
+      _db->result.unmatched++;
 
    /* Compact scan_results to remove NULL entries */
    {
@@ -4084,6 +4112,11 @@ static bool manual_scan_end_flush_tick(
           * playlist for the same answer. */
          playlist_push_unchecked(manual_scan->flush_playlist, &entry);
          manual_scan->flush_added++;
+         /* A present m3u is replaced, not added. */
+         if (entry_present)
+            manual_scan->result.duplicates++;
+         else
+            manual_scan->result.added++;
 
          RARCH_LOG("[Scanner] Add \"%s / %s\".\n", db_name_noext, result->entry_label);
 
@@ -4092,9 +4125,13 @@ static bool manual_scan_end_flush_tick(
                   db_name_noext, true);
       }
       /* Entry already exists - output duplicate indicator for CLI scans */
-      else if (manual_scan->flush_playlist && manual_scan->task_config->cli_scan_output)
-         task_database_scan_console_output(result->entry_label,
-               db_name_noext, false);
+      else if (manual_scan->flush_playlist)
+      {
+         manual_scan->result.duplicates++;
+         if (manual_scan->task_config->cli_scan_output)
+            task_database_scan_console_output(result->entry_label,
+                  db_name_noext, false);
+      }
 
       manual_scan->flush_pos++;
    }
@@ -4128,10 +4165,11 @@ static bool manual_scan_end_flush_tick(
 }
 
 #ifdef HAVE_LIBRETRODB
-bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb)
+bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb,
+      void *user_data)
 {
    manual_content_scan_set_menu_content_dir(fullpath);
-   return task_push_manual_content_scan(false, cb);
+   return task_push_manual_content_scan(false, cb, user_data);
 }
 
 #endif
@@ -4393,7 +4431,8 @@ end:
     * documented as menu-only and the sample in samples/tasks/database
     * hangs on exactly this. */
    if (manual_scan && manual_scan->user_cb)
-      manual_scan->user_cb(task, task_data, user_data, err);
+      manual_scan->user_cb(task, &manual_scan->result,
+            manual_scan->user_data, err);
 
 #if defined(HAVE_MENU)
    /* When creating playlists, the playlist tabs of
@@ -5142,6 +5181,9 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                      manual_scan->status = MANUAL_SCAN_ITERATE_CONTENT;
                   else
                   {
+                     /* An m3u is counted in the m3u pass. */
+                     if (!rm3u_is_m3u_filestream(content_path))
+                        manual_scan->result.unmatched++;
                      manual_scan->status = DATABASE_SCAN_ITERATE_NEXT;
                   }
                   break;
@@ -5256,6 +5298,8 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                            label, sizeof(label)))
                      {
                         label[0] = '\0';
+                        if (!rm3u_is_m3u_filestream(content_path))
+                           manual_scan->result.unmatched++;
 #ifdef DEBUG
                         RARCH_DBG("[Scanner] Rejecting item: %s\n",content_path);
 #endif
@@ -5551,7 +5595,7 @@ static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
 
 bool task_push_manual_content_scan(
       bool do_menu_refresh,
-      retro_task_callback_t user_cb)
+      retro_task_callback_t user_cb, void *user_data)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -5675,6 +5719,7 @@ bool task_push_manual_content_scan(
 #endif
 
    manual_scan->user_cb          = user_cb;
+   manual_scan->user_data        = user_data;
    task->callback                = cb_task_manual_content_scan;
    task->cleanup                 = task_manual_content_scan_free;
    task->flags                  |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;

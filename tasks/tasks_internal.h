@@ -336,16 +336,28 @@ bool task_push_image_load_set(const char *const *paths,
  * task. Safe from a task_queue_find predicate. */
 bool task_image_set_tag(retro_task_t *task, uint64_t *tag);
 
+/* A content scan's outcome, handed to its callback as task_data and
+ * valid only during the call.  Counts cover every playlist the scan
+ * writes. */
+typedef struct
+{
+   unsigned added;
+   unsigned duplicates;
+   unsigned unmatched;
+   bool     failed;
+} task_dbscan_result_t;
+
 #ifdef HAVE_LIBRETRODB
 /* Scans @fullpath, a directory or a single file, against the content
  * databases; the database and playlist directories come from the
- * settings. */
-bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb);
+ * settings.  @cb gets @user_data. */
+bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb,
+      void *user_data);
 #endif
 
 bool task_push_manual_content_scan(
       bool do_menu_refresh,
-      retro_task_callback_t user_cb);
+      retro_task_callback_t user_cb, void *user_data);
 
 #ifdef HAVE_OVERLAY
 bool task_push_overlay_load_default(

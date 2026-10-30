@@ -9048,7 +9048,7 @@ static bool retroarch_parse_input_and_config(
                      cb_task_dbscan = handle_dbscan_finished;
 #endif
 
-                  task_push_dbscan(optarg, cb_task_dbscan);
+                  task_push_dbscan(optarg, cb_task_dbscan, NULL);
 
                   if (!explicit_menu)
                   {

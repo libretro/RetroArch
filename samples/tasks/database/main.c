@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
 
    /* The return value matters: false means no task exists, so nothing
     * will ever call main_db_cb and the loop below would never end. */
-   if (!task_push_dbscan(input_dir, main_db_cb))
+   if (!task_push_dbscan(input_dir, main_db_cb, NULL))
    {
       fprintf(stderr, "task_push_dbscan refused to start a scan\n");
       goto done;

@@ -9133,7 +9133,7 @@ static int action_ok_manual_content_scan_start(const char *path,
          settings->bools.playlist_portable_paths ?
                settings->paths.directory_menu_content : NULL);
 
-   task_push_manual_content_scan(true, NULL);
+   task_push_manual_content_scan(true, NULL, NULL);
    return 0;
 }
 
@@ -9683,7 +9683,7 @@ static int action_ok_playlist_refresh(const char *path,
             settings->bools.playlist_portable_paths ?
             settings->paths.directory_menu_content : NULL);
 
-      task_push_manual_content_scan(false, NULL);
+      task_push_manual_content_scan(false, NULL, NULL);
    }
    return 0;
 }

@@ -209,9 +209,11 @@ bool task_push_load_content_with_current_core_from_companion_ui(
 
 bool task_push_start_current_core(content_ctx_info_t *ci) { (void)ci; stub_calls_start_core++; return true; }
 
-bool task_push_dbscan(const char *path, retro_task_callback_t cb)
+bool task_push_dbscan(const char *path, retro_task_callback_t cb,
+      void *user_data)
 {
    (void)cb;
+   (void)user_data;
    stub_calls_dbscan++;
    strlcpy(stub_last_scan_dir, path ? path : "", sizeof(stub_last_scan_dir));
    return true;
