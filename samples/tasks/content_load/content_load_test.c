@@ -41,8 +41,8 @@
  *    before a playlist Run or the one after it, nothing in between;
  *  - menu sound close: a menu sound playing when Close Content is
  *    confirmed plays on through the staged close and past it - the
- *    device never handed audio while stopped, the sound not reloaded
- *    under itself - and the tone handed over whole;
+ *    device carried through the driver stage, never stopped, the
+ *    sound not reloaded under itself - and the tone handed over whole;
  *  - quit waits for a save: a quit from the frame loop while a state
  *    is being written returns to the loop at once, which presents
  *    frames - the core not run - until the state is written, and only
@@ -466,6 +466,7 @@ static void lane_audio_kept(void)
    struct load_frame log[LOAD_FRAMES];
    audio_driver_t saved = audio_null;
    unsigned had         = failures;
+   bool time_stretch    = config_get_ptr()->bools.audio_time_stretch;
    unsigned n;
 
    audio_null.init               = kept_init;
@@ -492,6 +493,25 @@ static void lane_audio_kept(void)
          && audio_state_get_ptr()->context_audio_data == &kept_token,
          "across the load the audio device was closed %u and opened %u time(s)",
          kept_frees, kept_opens);
+
+   /* Time stretch keeps the rate from changing in place: the device
+    * is set aside through the driver stage and taken back instead. */
+   kept_opens = kept_frees = 0;
+   configuration_set_bool(config_get_ptr(),
+         config_get_ptr()->bools.audio_time_stretch, true);
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the time-stretch load was not started");
+   n = run_load(log, LOAD_FRAMES);
+   configuration_set_bool(config_get_ptr(),
+         config_get_ptr()->bools.audio_time_stretch, time_stretch);
+   CHECK(n < LOAD_FRAMES && core_is_up(),
+         "the time-stretch load did not bring the core up within %u frames",
+         LOAD_FRAMES);
+   CHECK(kept_opens == 0 && kept_frees == 0
+         && audio_state_get_ptr()->context_audio_data == &kept_token,
+         "with time stretch, across the load the audio device was closed"
+         " %u and opened %u time(s)", kept_frees, kept_opens);
 
    kept_opens = kept_frees = 0;
    putenv((char*)"RETROARCH_AUDIO_KEEP=0");
@@ -698,7 +718,7 @@ static void lane_menu_sound_close(void)
          && runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY,
          "the close did not finish");
 
-   CHECK(tap_stops <= 1 && tap_writes_stopped == 0,
+   CHECK(tap_stops == 0 && tap_writes_stopped == 0,
          "the device was stopped %u time(s) across the close, and handed"
          " %u write(s) while stopped", tap_stops, tap_writes_stopped);
    worst = tap_worst_step(0);

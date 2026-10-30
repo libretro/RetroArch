@@ -1694,6 +1694,19 @@ void audio_driver_keep_device(bool keep);
 /* Frees a kept device that was not taken back. */
 void audio_driver_drop_kept(void);
 
+/* Asked before a content switch's driver stage: whether the running
+ * audio can be carried into the next session as it is - device,
+ * pipeline and mixer left up, so menu sounds play through the stage -
+ * because its init would open the same device the same way for the
+ * next core. Off with RETROARCH_AUDIO_KEEP=0, as keeping is. */
+bool audio_driver_session_carry_ok(void);
+
+/* Carries the running audio into the next session at @input Hz: the
+ * rate in place, and the stream reset that a core swap asks for.
+ * Returns false when the rate cannot be taken in place; the caller
+ * then reinits the audio driver. */
+bool audio_driver_session_carry(double input);
+
 const char *audio_driver_get_ident(void);
 
 /* The speaker path in effect, in a few words, for the statistics

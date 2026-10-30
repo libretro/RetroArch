@@ -1144,6 +1144,26 @@ static struct
  * through the threaded wrapper. */
 static unsigned audio_driver_open_latency;
 static bool     audio_driver_open_wrapper;
+/* The rest of what the open device and pipeline were set up with that
+ * a content switch can change - a core's override, its float or
+ * multi-channel entries, its own audio callback - for
+ * audio_driver_session_carry_ok() to compare against. */
+static struct
+{
+   unsigned out_rate;
+   unsigned resampler_quality;
+   bool     hq_oversampling;
+   bool     virtual_surround;
+   bool     threaded_pipeline;
+   bool     priority;
+   bool     fast_cores;
+   bool     core_float;
+   bool     core_multi;
+   bool     callback;
+   char     ident[sizeof(((settings_t*)0)->arrays.audio_driver)];
+   char     device[sizeof(((settings_t*)0)->arrays.audio_device)];
+   char     resampler[sizeof(((settings_t*)0)->arrays.audio_resampler)];
+} audio_driver_opened;
 
 void audio_driver_keep_device(bool keep)
 {
@@ -1245,6 +1265,96 @@ static bool audio_driver_take_kept(audio_driver_state_t *audio_st,
    return true;
 }
 
+/* The pause tail continues the waveform, and across a core swap or a
+ * driver change there is no waveform to continue. */
+static void audio_driver_core_stream_reset(audio_driver_state_t *audio_st)
+{
+   audio_st->last_out[0]              = 0.0f;
+   audio_st->last_out[1]              = 0.0f;
+   audio_st->fade_in_frames           = 0;
+   audio_st->fade_in_pending          = false;
+   audio_st->pause_mute_frames        = 0;
+   audio_st->pause_hist_pos           = 0;
+   audio_st->pause_hist_fill          = 0;
+   audio_st->resume_topup_pending     = false;
+   retro_atomic_store_release_int(&audio_st->core_silenced, 0);
+}
+
+bool audio_driver_session_carry_ok(void)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   const audio_driver_t *audio    = audio_st->current_audio;
+   settings_t *settings           = config_get_ptr();
+   const char *env                = getenv("RETROARCH_AUDIO_KEEP");
+   unsigned setting_latency       = settings->uints.audio_latency;
+   unsigned core_latency          = runloop_state_get_ptr()->audio_latency;
+   unsigned latency               = (core_latency > setting_latency)
+         ? core_latency : setting_latency;
+
+   if (     (env && env[0] == '0')
+         || !audio
+         || !audio_st->context_audio_data
+         || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         || !settings->bools.audio_enable
+#ifdef HAVE_THREADS
+         || (     audio_st->pipe_threaded
+               && retro_atomic_load_acquire_int(
+                     &audio_st->pipe_consumer_gone))
+#endif
+         /* What the next core brings that the open stream was not
+          * set up for */
+         || audio_st->callback.callback
+         || audio_driver_opened.callback
+         || audio_st->core_float != audio_driver_opened.core_float
+         || audio_st->core_multi != audio_driver_opened.core_multi
+#ifdef HAVE_DSP_FILTER
+         || *settings->paths.path_audio_dsp_plugin
+         || retro_atomic_load_acquire_int(&audio_st->dsp_caps)
+#endif
+         || settings->bools.audio_time_stretch
+         || settings->bools.audio_time_stretch_lowpass
+         /* What its override may have changed */
+         || latency != audio_driver_open_latency
+         || settings->uints.audio_output_sample_rate
+               != audio_driver_opened.out_rate
+         || settings->uints.audio_resampler_quality
+               != audio_driver_opened.resampler_quality
+         || settings->bools.audio_resampler_hq_oversampling
+               != audio_driver_opened.hq_oversampling
+         || settings->bools.audio_headphone_virtual_surround
+               != audio_driver_opened.virtual_surround
+         || settings->bools.audio_threaded_pipeline
+               != audio_driver_opened.threaded_pipeline
+         || settings->bools.audio_thread_priority
+               != audio_driver_opened.priority
+         || settings->bools.thread_prefer_fast_cores
+               != audio_driver_opened.fast_cores
+         || !string_is_equal(settings->arrays.audio_driver,
+               audio_driver_opened.ident)
+         || !string_is_equal(settings->arrays.audio_device,
+               audio_driver_opened.device)
+         || !string_is_equal(settings->arrays.audio_resampler,
+               audio_driver_opened.resampler))
+      return false;
+   return true;
+}
+
+bool audio_driver_session_carry(double input)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+
+   if (!audio_driver_set_input_rate(input))
+      return false;
+   audio_driver_core_stream_reset(audio_st);
+   audio_st->core_layout = AUDIO_LAYOUT_STEREO;
+#ifdef HAVE_REWIND
+   audio_st->rewind_ptr  = audio_st->rewind_size;
+#endif
+   RARCH_LOG("[Audio] Driver \"%s\" carried across the content switch; the device keeps running.\n",
+         audio_driver_get_ident());
+   return true;
+}
+
 static bool audio_driver_deinit_internal(bool audio_enable)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
@@ -1308,17 +1418,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
 #endif
    audio_st->transport_lpf_only = false;
 
-   /* The pause tail continues the waveform, and across a core swap or a
-    * driver change there is no waveform to continue. */
-   audio_st->last_out[0]              = 0.0f;
-   audio_st->last_out[1]              = 0.0f;
-   audio_st->fade_in_frames           = 0;
-   audio_st->fade_in_pending          = false;
-   audio_st->pause_mute_frames        = 0;
-   audio_st->pause_hist_pos           = 0;
-   audio_st->pause_hist_fill          = 0;
-   audio_st->resume_topup_pending     = false;
-   retro_atomic_store_release_int(&audio_st->core_silenced, 0);
+   audio_driver_core_stream_reset(audio_st);
 
 #ifdef HAVE_THREADS
    audio_pipeline_stretch_free(audio_st->pipe_transport);
@@ -4849,6 +4949,22 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_open_latency = audio_latency;
    audio_driver_open_wrapper = audio_cb_inited
       || (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_PIPELINE_THREADED);
+   audio_driver_opened.out_rate          = settings->uints.audio_output_sample_rate;
+   audio_driver_opened.resampler_quality = settings->uints.audio_resampler_quality;
+   audio_driver_opened.hq_oversampling   = settings->bools.audio_resampler_hq_oversampling;
+   audio_driver_opened.virtual_surround  = settings->bools.audio_headphone_virtual_surround;
+   audio_driver_opened.threaded_pipeline = settings->bools.audio_threaded_pipeline;
+   audio_driver_opened.priority          = settings->bools.audio_thread_priority;
+   audio_driver_opened.fast_cores        = settings->bools.thread_prefer_fast_cores;
+   audio_driver_opened.core_float        = audio_driver_st.core_float;
+   audio_driver_opened.core_multi        = audio_driver_st.core_multi;
+   audio_driver_opened.callback          = audio_cb_inited;
+   strlcpy(audio_driver_opened.ident, settings->arrays.audio_driver,
+         sizeof(audio_driver_opened.ident));
+   strlcpy(audio_driver_opened.device, settings->arrays.audio_device,
+         sizeof(audio_driver_opened.device));
+   strlcpy(audio_driver_opened.resampler, settings->arrays.audio_resampler,
+         sizeof(audio_driver_opened.resampler));
    if (audio_driver_take_kept(&audio_driver_st, settings, audio_latency,
             audio_driver_open_wrapper))
       ;

@@ -1758,6 +1758,7 @@ void drivers_init(
       *location_st                = location_state_get_ptr();
    bool video_is_threaded         = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
    gfx_display_t *p_disp          = disp_get_ptr();
+   double carried_input           = 0.0;
 #if defined(HAVE_GFX_WIDGETS)
    bool video_font_enable         = settings->bools.video_font_enable;
    bool menu_enable_widgets       = settings->bools.menu_enable_widgets;
@@ -1870,9 +1871,29 @@ void drivers_init(
       }
    }
 
-   /* Adjust rates */
+   /* Adjust rates. Running audio carried across a content switch takes
+    * its new rate in place, below, instead of having it set under it. */
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
-      driver_adjust_system_rates(runloop_st, video_st, settings, NULL);
+      driver_adjust_system_rates(runloop_st, video_st, settings,
+            (lifetime_flags & DRIVER_LIFETIME_AUDIO_CARRIED)
+            ? &carried_input : NULL);
+
+   if (     (lifetime_flags & DRIVER_LIFETIME_AUDIO_CARRIED)
+         && !audio_driver_session_carry(carried_input))
+   {
+      /* Not in place after all: open it again for the new session,
+       * the device kept across when it can be */
+      audio_driver_keep_device(true);
+      audio_driver_deinit_for_reinit();
+      audio_st->context_audio_data = NULL;
+      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_ACTIVE);
+      if (!audio_driver_find_driver(settings->arrays.audio_driver,
+               "audio driver", verbosity_enabled))
+         retroarch_fail(1, "audio_driver_find()");
+      if (carried_input > 0.0)
+         audio_st->input = (float)carried_input;
+      flags |= DRIVER_AUDIO_MASK;
+   }
 
    /* Initialize audio driver */
    if (flags & DRIVER_AUDIO_MASK)
@@ -9234,14 +9255,18 @@ static bool retroarch_main_init_fail(void)
 /* Picks the driver of every kind from the configuration; the video,
  * input and menu ones are required.  Reports through retroarch_fail(),
  * so it runs under a live error_sjlj_context. */
+/* @audio: false when the running audio driver is carried across, so
+ * the table it runs on - the threaded wrapper's, say - is not swapped
+ * from under it. */
 static void retroarch_find_drivers(settings_t *settings,
-      bool verbosity_enabled)
+      bool verbosity_enabled, bool audio)
 {
 #ifdef HAVE_MENU
    struct menu_state *menu_st    = menu_state_get_ptr();
 #endif
-   if (!(audio_driver_find_driver(settings->arrays.audio_driver,
-         "audio driver", verbosity_enabled)))
+   if (     audio
+         && !(audio_driver_find_driver(settings->arrays.audio_driver,
+               "audio driver", verbosity_enabled)))
       retroarch_fail(1, "audio_driver_find()");
    if (!video_driver_find_driver(settings,
          "video driver", verbosity_enabled))
@@ -9616,7 +9641,7 @@ bool retroarch_main_init_core(int argc, char *argv[],
     * staged load has the previous session's drivers up at this point
     * and finds after freeing them, in retroarch_main_init_drivers(). */
    if (find_drivers)
-      retroarch_find_drivers(settings, verbosity_enabled);
+      retroarch_find_drivers(settings, verbosity_enabled, true);
 
 #ifdef HAVE_CLOUDSYNC
    /* Content from the command line loads its save RAM below, before
@@ -9728,6 +9753,8 @@ bool retroarch_main_init_drivers(bool staged,
       *input_st                  = input_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    recording_state_t *rec_st     = recording_state_get_ptr();
+   int init_flags                = DRIVERS_CMD_ALL;
+   int init_lifetime             = 0;
 
    if (setjmp(rarch_st.error_sjlj_context) > 0)
    {
@@ -9747,17 +9774,27 @@ bool retroarch_main_init_drivers(bool staged,
        * once it is back. */
       struct video_hw_request hw_request;
       video_driver_hw_request_take(&hw_request);
+      /* Audio the next session would open the same way stays up
+       * through the stage, so what plays over the switch - the menu's
+       * sounds - is not paused for the rebuild of the rest. */
+      if (audio_driver_session_carry_ok())
+      {
+         init_flags     &= ~DRIVER_AUDIO_MASK;
+         init_lifetime   = DRIVER_LIFETIME_AUDIO_CARRIED;
+      }
       /* drivers_init() is a few lines down: an input driver that can
        * outlive the video driver is left running across the two */
-      driver_uninit(DRIVERS_CMD_ALL, DRIVER_LIFETIME_SESSION_SWITCH);
+      driver_uninit(init_flags, DRIVER_LIFETIME_SESSION_SWITCH);
       video_driver_hw_request_restore(&hw_request);
 
       video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
       AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
-      retroarch_find_drivers(settings, verbosity_enabled);
+      retroarch_find_drivers(settings, verbosity_enabled,
+            (init_flags & DRIVER_AUDIO_MASK) != 0);
    }
 
-   drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, verbosity_enabled);
+   drivers_init(settings, init_flags,
+         (enum driver_lifetime_flags)init_lifetime, verbosity_enabled);
 #ifdef HAVE_COMMAND
    input_driver_refresh_command(input_st, settings);
 #endif

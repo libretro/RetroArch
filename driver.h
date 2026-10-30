@@ -118,7 +118,15 @@ enum driver_lifetime_flags
     * unloading ends still ends - but a driver that can outlive the
     * video driver may be left running across it, as across a reset.
     */
-   DRIVER_LIFETIME_SESSION_SWITCH = 1 << 1
+   DRIVER_LIFETIME_SESSION_SWITCH = 1 << 1,
+
+   /**
+    * Passed to \c drivers_init along a content switch that left the
+    * audio driver out of the teardown: the running audio is carried
+    * into the new session - its rate set in place once the video
+    * driver has settled the rates - instead of opened again.
+    */
+   DRIVER_LIFETIME_AUDIO_CARRIED = 1 << 2
 };
 
 enum driver_ctl_state
