@@ -120,6 +120,9 @@ jobs:
             snprintf
             unbase64_test
             crc32_test
+            # encoding_crc32.c through an assembler without VPCLMULQDQ,
+            # and beside encoding_rzstd.c under an unguarded <cpuid.h>.
+            crc32_gas_test
             xxhash_test
             rzstd_raw_block_test
             rbzip2_test

@@ -201,6 +201,16 @@ static uint32_t crc32_slice_by_8(uint32_t crc, const uint8_t *data, size_t len)
 #define CRC32_TARGET_PCLMUL __attribute__((target("pclmul")))
 #endif
 
+/* The 128-bit tails stay out of the AVX-512 functions: inlined there,
+ * GCC may give their PCLMULQDQ an XMM16-31 register, an EVEX form an
+ * assembler older than binutils 2.30 cannot encode */
+#if defined(CRC32_HAVE_VPCLMUL_PATH) && defined(__GNUC__) \
+ && !defined(__clang__)
+#define CRC32_TAIL_NOINLINE __attribute__((noinline))
+#else
+#define CRC32_TAIL_NOINLINE
+#endif
+
 /* Folding constants, all of the form
  *    K(n) = bit_reflect_32(x^n mod P(x)) << 1
  * with P(x) = 0x104C11DB7:
@@ -237,7 +247,7 @@ static INLINE __m128i crc32_fold16(__m128i x, __m128i k)
                         _mm_clmulepi64_si128(x, k, 0x11));
 }
 
-CRC32_TARGET_PCLMUL
+CRC32_TARGET_PCLMUL CRC32_TAIL_NOINLINE
 static uint32_t crc32_pclmul_tail(__m128i x0, const uint8_t *data, size_t len);
 
 CRC32_TARGET_PCLMUL
@@ -285,7 +295,7 @@ static uint32_t crc32_pclmul(uint32_t crc, const uint8_t *data, size_t len)
 
 /* One 128-bit accumulator and what is left, under 64 octets more than
  * its 16: folded on 16 at a time, then reduced to the remainder */
-CRC32_TARGET_PCLMUL
+CRC32_TARGET_PCLMUL CRC32_TAIL_NOINLINE
 static uint32_t crc32_pclmul_tail(__m128i x0, const uint8_t *data, size_t len)
 {
    const __m128i k3k4   = _mm_set_epi32((int)CRC32_K4_HI, (int)CRC32_K4_LO,
@@ -332,7 +342,12 @@ static uint32_t crc32_pclmul_tail(__m128i x0, const uint8_t *data, size_t len)
 #if defined(_MSC_VER)
 #include <intrin.h>
 #else
+/* Unity builds bring <cpuid.h> in more than once, and the one in
+ * clang 12 and older has no include guard */
+#ifndef RETRO_CPUID_H_INCLUDED
+#define RETRO_CPUID_H_INCLUDED
 #include <cpuid.h>
+#endif
 #endif
 
 /* AVX-512 with VPCLMULQDQ: four 128-bit lanes to a register, four
@@ -348,9 +363,56 @@ static uint32_t crc32_pclmul_tail(__m128i x0, const uint8_t *data, size_t len)
 #define CRC32_K128  0x00000000, 0xCCAA009E, 0x00000001, 0x751997D0
 
 #define CRC32_LANE(k) _mm512_broadcast_i32x4(_mm_set_epi32(k))
+
+#if defined(__GNUC__) && !defined(__clang__)
+/* GCC hands VPCLMULQDQ to the system assembler, and binutils before
+ * 2.30 cannot encode it on ZMM. So the instruction is spelled out in
+ * EVEX bytes by a gas macro that reads the register numbers off the
+ * names the compiler chose: same instruction, same registers, any gas
+ * that has AVX-512F. Defined once per assembly file, on first use. */
+#define CRC32_VPCLMUL_GAS \
+   ".ifndef .Lcrc32_vpclmul_gas\n\t" \
+   ".Lcrc32_vpclmul_gas = 1\n\t" \
+   ".macro crc32_zmm_num sym, reg\n\t" \
+   ".irp i,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15," \
+   "16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31\n\t" \
+   ".ifc \\reg,%%zmm\\i\n\t\\sym = \\i\n\t.endif\n\t" \
+   ".ifc \\reg,zmm\\i\n\t\\sym = \\i\n\t.endif\n\t" \
+   ".endr\n\t" \
+   ".endm\n\t" \
+   /* vpclmulqdq $imm, src2, src1, dst: EVEX.512.66.0F3A.W0 44 /r ib */ \
+   ".macro crc32_vpclmulqdq imm, src2, src1, dst\n\t" \
+   "crc32_zmm_num .Lcrc32_vd, \\dst\n\t" \
+   "crc32_zmm_num .Lcrc32_v1, \\src1\n\t" \
+   "crc32_zmm_num .Lcrc32_v2, \\src2\n\t" \
+   ".byte 0x62\n\t" \
+   ".byte ((~.Lcrc32_vd & 8) << 4) | ((~.Lcrc32_v2 & 16) << 2)" \
+   " | ((~.Lcrc32_v2 & 8) << 2) | (~.Lcrc32_vd & 16) | 3\n\t" \
+   ".byte ((~.Lcrc32_v1 & 15) << 3) | 5\n\t" \
+   ".byte 0x40 | ((~.Lcrc32_v1 & 16) >> 1)\n\t" \
+   ".byte 0x44\n\t" \
+   ".byte 0xC0 | ((.Lcrc32_vd & 7) << 3) | (.Lcrc32_v2 & 7)\n\t" \
+   ".byte \\imm\n\t" \
+   ".endm\n\t" \
+   ".endif\n\t"
+
+CRC32_TARGET_VPCLMUL __attribute__((always_inline))
+static INLINE __m512i crc32_fold64(__m512i x, __m512i k, __m512i d)
+{
+   __m512i lo, hi;
+   __asm__(CRC32_VPCLMUL_GAS
+         "crc32_vpclmulqdq 0x11, %[k], %[x], %[hi]\n\t"
+         "crc32_vpclmulqdq 0x00, %[k], %[x], %[lo]"
+         : [hi] "=&v" (hi), [lo] "=v" (lo)
+         : [x] "v" (x), [k] "v" (k));
+   return _mm512_ternarylogic_epi64(lo, hi, d, 0x96);
+}
+#define CRC32_FOLD64(x, k, d) crc32_fold64((x), (k), (d))
+#else
 #define CRC32_FOLD64(x, k, d) _mm512_ternarylogic_epi64( \
       _mm512_clmulepi64_epi128((x), (k), 0x00), \
       _mm512_clmulepi64_epi128((x), (k), 0x11), (d), 0x96)
+#endif
 
 CRC32_TARGET_VPCLMUL
 static uint32_t crc32_vpclmul(uint32_t crc, const uint8_t *data, size_t len)
@@ -400,7 +462,6 @@ static uint32_t crc32_vpclmul(uint32_t crc, const uint8_t *data, size_t len)
    return crc32_pclmul_tail(_mm_xor_si128(_mm256_castsi256_si128(y),
          _mm256_extracti128_si256(y, 1)), data, len);
 }
-#undef CRC32_FOLD64
 #undef CRC32_LANE
 
 /* AVX-512, which says the OS keeps ZMM state, and leaf 7's VPCLMULQDQ
@@ -524,7 +585,7 @@ static INLINE __m128i crc_msb_fold(__m128i x, __m128i k, __m128i d)
 
 /* One accumulator, the octets after it 16 at a time, then it and the
  * rest through the table */
-CRC32_TARGET_MSB
+CRC32_TARGET_MSB CRC32_TAIL_NOINLINE
 static uint32_t crc_msb_tail(const crc_msb_t *m, __m128i x0,
       const uint8_t *data, size_t len)
 {
@@ -575,9 +636,6 @@ static uint32_t crc_msb_pclmul(const crc_msb_t *m, uint32_t crc,
 
 #if defined(CRC32_HAVE_VPCLMUL_PATH)
 #define CRC_MSB_K4(hi, lo) _mm512_broadcast_i32x4(CRC_MSB_K(hi, lo))
-#define CRC_MSB_FOLD64(x, k, d) _mm512_ternarylogic_epi64( \
-      _mm512_clmulepi64_epi128((x), (k), 0x00), \
-      _mm512_clmulepi64_epi128((x), (k), 0x11), (d), 0x96)
 #define CRC_MSB_LOAD64(p) _mm512_shuffle_epi8( \
       _mm512_loadu_si512((const void*)(p)), rev4)
 
@@ -606,23 +664,23 @@ static uint32_t crc_msb_vpclmul(const crc_msb_t *m, uint32_t crc,
    len  -= 256;
    while (len >= 256)
    {
-      z0    = CRC_MSB_FOLD64(z0, k2048, CRC_MSB_LOAD64(data));
-      z1    = CRC_MSB_FOLD64(z1, k2048, CRC_MSB_LOAD64(data +  64));
-      z2    = CRC_MSB_FOLD64(z2, k2048, CRC_MSB_LOAD64(data + 128));
-      z3    = CRC_MSB_FOLD64(z3, k2048, CRC_MSB_LOAD64(data + 192));
+      z0    = CRC32_FOLD64(z0, k2048, CRC_MSB_LOAD64(data));
+      z1    = CRC32_FOLD64(z1, k2048, CRC_MSB_LOAD64(data +  64));
+      z2    = CRC32_FOLD64(z2, k2048, CRC_MSB_LOAD64(data + 128));
+      z3    = CRC32_FOLD64(z3, k2048, CRC_MSB_LOAD64(data + 192));
       data += 256;
       len  -= 256;
    }
-   z1 = CRC_MSB_FOLD64(z0, k512, z1);
-   z2 = CRC_MSB_FOLD64(z1, k512, z2);
-   z0 = CRC_MSB_FOLD64(z2, k512, z3);
+   z1 = CRC32_FOLD64(z0, k512, z1);
+   z2 = CRC32_FOLD64(z1, k512, z2);
+   z0 = CRC32_FOLD64(z2, k512, z3);
    while (len >= 64)
    {
-      z0    = CRC_MSB_FOLD64(z0, k512, CRC_MSB_LOAD64(data));
+      z0    = CRC32_FOLD64(z0, k512, CRC_MSB_LOAD64(data));
       data += 64;
       len  -= 64;
    }
-   z0 = _mm512_mask_mov_epi64(CRC_MSB_FOLD64(z0, kl, _mm512_setzero_si512()),
+   z0 = _mm512_mask_mov_epi64(CRC32_FOLD64(z0, kl, _mm512_setzero_si512()),
          0xC0, z0);
    y  = _mm256_xor_si256(_mm512_castsi512_si256(z0),
          _mm512_extracti64x4_epi64(z0, 1));
@@ -630,7 +688,7 @@ static uint32_t crc_msb_vpclmul(const crc_msb_t *m, uint32_t crc,
          _mm256_extracti128_si256(y, 1)), data, len);
 }
 #undef CRC_MSB_LOAD64
-#undef CRC_MSB_FOLD64
+#undef CRC32_FOLD64
 #undef CRC_MSB_K4
 #endif
 

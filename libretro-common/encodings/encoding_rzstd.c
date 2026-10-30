@@ -168,7 +168,12 @@
  && (defined(__clang__) || __GNUC__ > 4 \
      || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))
 #define RZSTD_DYNAMIC_BMI2 1
+/* Unity builds bring <cpuid.h> in more than once, and the one in
+ * clang 12 and older has no include guard */
+#ifndef RETRO_CPUID_H_INCLUDED
+#define RETRO_CPUID_H_INCLUDED
 #include <cpuid.h>
+#endif
 #define RZSTD_TARGET_BMI2 __attribute__((target("bmi2")))
 #define RZSTD_BODY_INLINE __attribute__((always_inline)) static INLINE
 
