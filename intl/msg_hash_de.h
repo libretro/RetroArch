@@ -860,6 +860,7 @@ static const struct
    char s_0b32f489[34];
    char s_1c82054d[25];
    char s_d458f013[30];
+   char s_5aa6602e[69];
    char s_6e1d0b9d[21];
    char s_56e1b31e[17];
    char s_56e1b31f[16];
@@ -981,11 +982,14 @@ static const struct
 #endif
    char s_267cef24[50];
    char s_727b11f4[34];
+   char s_b6670eec[32];
    char s_21ec213c[28];
    char s_030a629f[27];
    char s_8bc5b398[30];
    char s_0c353c96[34];
+   char s_7997964b[27];
    char s_629528b9[32];
+   char s_a67c80f1[36];
    char s_b662d01f[17];
    char s_f6cc615c[32];
    char s_46d040e3[53];
@@ -1046,13 +1050,17 @@ static const struct
    char s_da16c634[15];
 #ifdef ANDROID
    char s_4c636851[20];
+   char s_8871e585[45];
    char s_10996997[43];
    char s_a8f7398d[32];
    char s_16430f5d[34];
 #endif
    char s_a310fe56[112];
    char s_873828af[20];
+   char s_400f0351[28];
+   char s_b7a9e199[22];
    char s_acfde8f7[5];
+   char s_ad54dc4c[23];
    char s_d042d680[25];
    char s_16cacb01[23];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1080,6 +1088,7 @@ static const struct
    char s_19f5e3bc[52];
 #endif
 #endif
+   char s_3f0087c2[38];
    char s_bd07998f[15];
    char s_4e2f19db[19];
    char s_9e66791a[18];
@@ -1534,7 +1543,9 @@ static const struct
    char s_e6e43c7d[48];
    char s_c1ddd207[48];
    char s_ded83500[38];
+   char s_69bfecad[15];
    char s_69c06e41[6];
+   char s_097e2527[9];
    char s_7895cc5b[17];
    char s_e46faa42[13];
    char s_d654f042[18];
@@ -1655,6 +1666,7 @@ static const struct
    char s_57110ba8[30];
    char s_973fff7c[40];
    char s_54463db9[35];
+   char s_364fa4f0[31];
    char s_56e21ee1[18];
    char s_b152eb42[27];
    char s_f70406ce[21];
@@ -2370,6 +2382,7 @@ static const struct
    char s_b85928b7[13];
    char s_207186e9[24];
    char s_dcf8a6a3[5];
+   char s_f09399af[12];
    char s_f66c7b67[9];
    char s_efe678d9[11];
    char s_cc973e8a[13];
@@ -3143,11 +3156,14 @@ static const struct
 #endif
    char s_13ed6d52[122];
    char s_ad9b9762[106];
+   char s_6db68bda[309];
    char s_623a09ea[115];
    char s_ba59df8d[162];
    char s_4b824ac6[167];
    char s_c384b984[46];
+   char s_42ba06b9[194];
    char s_9db5ae27[84];
+   char s_5dcbfddf[319];
    char s_bc47004d[70];
    char s_980b7c0a[80];
    char s_cc27d9d1[136];
@@ -3199,10 +3215,15 @@ static const struct
    char s_493a2167[355];
 #ifdef ANDROID
    char s_354b4abf[127];
+   char s_3fc16273[401];
    char s_21594ec5[204];
    char s_d1b3c47b[248];
    char s_27919f0b[244];
 #endif
+   char s_96ff4e5d_0[500];
+   char s_96ff4e5d_1[202];
+   char s_a091c407[146];
+   char s_b3390c7a[147];
    char s_f9db39ef[103];
 #ifdef UDEV_TOUCH_SUPPORT
    char s_d46604e4[92];
@@ -4437,7 +4458,9 @@ static const struct
    char s_94d1736a[11];
    char s_b969706a[248];
    char s_a3f6ebc3[16];
+   char s_98adf951[68];
    char s_11b4cc97[26];
+   char s_d3e49974[45];
    char s_a8fa00e0[64];
    char s_4c1e527b[92];
    char s_efc0708e[88];
@@ -4463,6 +4486,11 @@ static const struct
    char s_f482576f[34];
    char s_d2b9475b[96];
    char s_0408afc3[17];
+   char s_1d50105b[76];
+   char s_2e362cb6[112];
+   char s_eed86f69[89];
+   char s_4579c9ec[152];
+   char s_ea0b7738[75];
    char s_654f5308[19];
    char s_c4a8e97c[15];
    char s_5317d41c[18];
@@ -5839,6 +5867,7 @@ static const struct
    "Hotkey-Ger\303\244tetyp zusammenf\303\274hren",
    "Hotkeys folgen Spieler 1",
    "Tastatur-Controller-Zuordnung",
+   "Ignorierter Controller %04X:%04X (zum erneuten Verwenden ausw\303\244hlen)",
    "Eingabeinformationen",
    "A-Knopf (rechts)",
    "B-Knopf (unten)",
@@ -5960,11 +5989,14 @@ static const struct
 #endif
    "Gr\303\266\303\237e von Tastatur-Overlay automatisch anpassen",
    "ABXY \303\234berlappungsempfindlichkeit",
+   "Eingabemethode f\303\274r ABXY-Tasten",
    "Analoge Neuzentrierungszone",
    "Overlay automatisch drehen",
    "Overlay automatisch skalieren",
    "Overlay hinter dem Men\303\274 anzeigen",
+   "Gr\303\266\303\237e der Kontaktfl\303\244che",
    "D-Pad Diagonale Empfindlichkeit",
+   "Eingabemethode f\303\274r das Steuerkreuz",
    "Overlay anzeigen",
    "Overlay im Men\303\274 nicht anzeigen",
    "Overlay ausblenden wenn ein Controller verbunden ist",
@@ -6025,6 +6057,7 @@ static const struct
    "Joy-Con teilen",
 #ifdef ANDROID
    "Stiftunterst\303\274tzung",
+   "Overlay bei Verwendung des Stifts ausblenden",
    "Das Schweben des Stiftes bewegt den Cursor",
    "Druckempfindlichkeit des Stifts",
    "Stift erfordert Bildschirmkontakt",
@@ -6032,7 +6065,10 @@ static const struct
    "Der Eingabetreiber \342\200\236%s\342\200\234 erkennt diese als ein einziges Ger\303\244t und ka"
    "nn sie nicht voneinander unterscheiden.",
    "Controller-Touchpad",
+   "Touchpadh\303\244lften als Tasten",
+   "Linke Touchpadh\303\244lfte",
    "Maus",
+   "Rechte Touchpadh\303\244lfte",
    "Touch-Eingabe aktivieren",
    "Touchscreen-Skalierung",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -6060,6 +6096,7 @@ static const struct
    "XInput f\303\274r Xbox-Controller (Neustart erforderlich)",
 #endif
 #endif
+   "Originalen Xbox-Controller aktivieren",
    "JIT verf\303\274gbar",
    "Controller-Profile",
    "Controllertreiber",
@@ -6514,7 +6551,9 @@ static const struct
    "(Querformat) Overlay-Seitenverh\303\244ltnisanpassung",
    "(Hochformat) Overlay-Seitenverh\303\244ltnisanpassung",
    "Bevorzugtes Overlay automatisch laden",
+   "Kontaktfl\303\244che",
    "Beide",
+   "Richtung",
    "Overlay-Lightgun",
    "Overlay-Maus",
    "Overlay-Deckkraft",
@@ -6636,6 +6675,7 @@ static const struct
    "Kein Autokonfigurationsprofil",
    "- DualShock-3-Unterst\303\274tzung aktivieren",
    "- Windows-Treiber wiederherstellen",
+   "- Diesen Controller ignorieren",
    "Energieverwaltung",
    "Anzahl pr\303\244emptiver Frames",
    "Vorhanden, optional:",
@@ -7358,6 +7398,7 @@ static const struct
    "Hautstruktur",
    "Lokaler Struktur folgen",
    "Stil",
+   "Kinematisch",
    "Standard",
    "Nat\303\274rlich",
    "Videotreiber",
@@ -8441,6 +8482,11 @@ static const struct
    "n, um auf den Bildschirm zu strecken.",
    "Gr\303\266\303\237e der \303\234berlappungszonen f\303\274r ABXY-Tastenbereich anpassen. F\303"
    "\274r 8-Wege-Symmetrie auf 100\302\240% setzen.",
+   "Legt fest, wie die Aktionstasten eine Ber\303\274hrung auswerten. \342\200\236Richtung\342\200"
+   "\234: Die Taste, der die Mitte des Fingers am n\303\244chsten liegt. \342\200\236Kontaktfl\303"
+   "\244che\342\200\234: Alle Tasten, die von der Kontaktfl\303\244che des Fingers ber\303\274hrt we"
+   "rden. Ein Daumen zwischen zwei Tasten bet\303\244tigt somit beide. \342\200\236Beides\342\200"
+   "\234: Beide Methoden.",
    "Die Eingabe des analogen Sticks bezieht sich auf das erste Dr\303\274cken, wenn er innerhalb die"
    "ser Zone gedr\303\274ckt wird.",
    "Wenn dies durch das aktuelle Overlay unterst\303\274tzt wird, wird das Layout automatisch gedreh"
@@ -8448,8 +8494,16 @@ static const struct
    "Overlay-Ma\303\237stab und den Abstand der UI-Elemente automatisch an das Seitenverh\303\244ltni"
    "s des Bildschirms anpassen. Erzielt die besten Ergebnisse mit Controller-Overlays.",
    "Overlays hinter statt vor dem Men\303\274 anzeigen.",
+   "Legt fest, wie gro\303\237 die Kontaktfl\303\244che eines Fingers im Verh\303\244ltnis zur vom T"
+   "ouchscreen gemeldeten Gr\303\266\303\237e gewertet wird. Den Wert erh\303\266hen, wenn der Touch"
+   "screen kleine Kontaktfl\303\244chen meldet.",
    "Gr\303\266\303\237e der diagonalen Zonen anpassen. F\303\274r 8-Wege-Symmetrie auf 100\302\240% "
    "einstellen.",
+   "Legt fest, wie das Steuerkreuz eine Ber\303\274hrung auswertet. \342\200\236Richtung\342\200\234"
+   ": Die Richtung, in der die Mitte des Fingers liegt. \342\200\236Kontaktfl\303\244che\342\200\234"
+   ": Alle Richtungen, die von der Kontaktfl\303\244che des Fingers ber\303\274hrt werden. Ein quer "
+   "\303\274ber zwei Richtungen gelegter Daumen bet\303\244tigt somit beide. \342\200\236Beides\342"
+   "\200\234: Beide Methoden.",
    "Overlays f\303\274r Rahmen und Steuerelemente auf dem Bildschirm verwenden.",
    "Overlay im Men\303\274 ausblenden und wieder anzeigen, wenn das Men\303\274 verlassen wird.",
    "Overlay ausblenden, wenn ein physischer Controller an Port 1 angeschlossen ist, und wieder anzei"
@@ -8550,6 +8604,11 @@ static const struct
 #ifdef ANDROID
    "Stiftger\303\244te aktivieren. Erm\303\266glicht pr\303\244zise Eingaben beim Zeichnen und bei Z"
    "eigespielen. Bei Eingabekonflikten deaktivieren.",
+   "Das Bildschirmlayout w\303\244hrend der Stiftverwendung ausblenden und wieder anzeigen, sobald d"
+   "er Stift zwei Sekunden lang nicht benutzt wurde. Ein \303\274ber dem Bildschirm schwebender Stif"
+   "t wird nur ber\303\274cksichtigt, wenn \342\200\236Stiftbewegungen beim Schweben steuern den Cur"
+   "sor\342\200\234 aktiviert ist. Deaktivieren, um das Overlay weiterhin auf dem Bildschirm anzuzei"
+   "gen und es w\303\244hrend der Stiftverwendung zu bedienen.",
    "Dem Stift beim Schweben (ohne den Bildschirm zu ber\303\274hren) den Cursor bewegen. Wichtig f"
    "\303\274r Zeichen- und Malspiele sowie Lightgun-Spiele. Diese Option ausschalten, wenn sich der "
    "Cursor unerwartet bewegt.",
@@ -8560,6 +8619,22 @@ static const struct
    "US: Der Stift kann einen Klick ausl\303\266sen, indem er den Bildschirm ber\303\274hrt ODER inde"
    "m er \303\274ber dem Bildschirm schwebt und die Seitentaste gedr\303\274ckt wird.",
 #endif
+   "Legt fest, wie das Touchpad des Controllers an diesem Port an den Core weitergegeben wird, bei e"
+   "inem DualShock 4 oder DualSense. \342\200\236Touchscreen\342\200\234: Ein Finger auf dem Touchpa"
+   "d ber\303\274hrt die entsprechende Stelle auf dem Bildschirm, zwei Finger ber\303\274hren zwei S"
+   "tellen. \342\200\236Maus\342\200\234: Durch Bewegen eines Fingers wird die Maus bewegt; durch Dr"
+   "\303\274cken des Touchpads wird geklickt. Liegen zwei Finger auf dem Touchpad, wird ein Rechtskl"
+   "ick ausgef\303\274hrt. \342\200\236Touchpadh\303\244lften als Tasten\342\200\234: Durch Dr\303"
+   "\274cken der lin",
+   "ken oder rechten Touchpadh\303\244lfte wird die f\303\274r diese H\303\244lfte festgelegte Taste"
+   " gedr\303\274ckt. Beide H\303\244lften k\303\266nnen gleichzeitig mit je einem Finger bedient we"
+   "rden. Erfordert \342\200\236Steuerung neu zuordnen\342\200\234.",
+   "Bei \342\200\236Controller-Touchpad\342\200\234 auf \342\200\236Touchpadh\303\244lften als Taste"
+   "n\342\200\234: RetroPad-Taste, die beim Dr\303\274cken der linken Touchpadh\303\244lfte bet\303"
+   "\244tigt wird.",
+   "Bei \342\200\236Controller-Touchpad\342\200\234 auf \342\200\236Touchpadh\303\244lften als Taste"
+   "n\342\200\234: RetroPad-Taste, die beim Dr\303\274cken der rechten Touchpadh\303\244lfte bet\303"
+   "\244tigt wird.",
    "Die x/y-Skalierung der Touchscreen-Koordinaten an die Anzeigenskalierung des Betriebssystems anp"
    "assen.",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -10507,7 +10582,9 @@ static const struct
    " die Funktion ausw\303\244hlen. Links: Funktion ausw\303\244hlen. OK: eingeben. Start: entfernen"
    ".",
    "Tasten zuweisen",
+   "Controller %u (%04X:%04X) wird ignoriert und nicht mehr ausgelesen.",
    "freigegeben \303\274ber Port %u",
+   "Controller %04X:%04X wird erneut ausgelesen.",
    "DualShock-3-Treiber wird ge\303\244ndert: Im Windows-Dialog zulassen.",
    "Der DualShock-3-Treiber wurde nicht ge\303\244ndert: Es wurden keine Administratorrechte erteilt"
    ".",
@@ -10542,6 +10619,13 @@ static const struct
    "Eine Taste dr\303\274cken oder einen Stick am Controller von Port %u bewegen\n(Zeitlimit: %u Sek"
    "unden)",
    "Titel umbenennen",
+   "reiber des originalen Xbox-Controllers \303\244ndern: Im Windows-Dialog zulassen.",
+   "Der Treiber des originalen Xbox-Controllers wurde nicht ge\303\244ndert: Es wurden keine Adminis"
+   "tratorrechte erteilt.",
+   "Originaler Xbox-Controller aktiviert. Die Verbindung wird automatisch wiederhergestellt.",
+   "Originaler Xbox-Controller gefunden, f\303\274r den Windows keinen Treiber hat: Informationen > "
+   "Eingabeinformationen > Originalen Xbox-Controller aktivieren.",
+   "Der Treiber des originalen Xbox-Controllers konnte nicht ge\303\244ndert werden.",
    "Installiere Core: ",
    "Netzwerk-Karte",
    "Interner Speicher",
@@ -10871,7 +10955,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (244334u
+      (sizeof(msg_hash_de_blob) == (247110u
 #ifdef ANDROID
        + 358u
 #endif
@@ -10939,6 +11023,7 @@ typedef char msg_hash_de_blob_check[
 #ifdef ANDROID
        + 30u
        + 20u
+       + 45u
        + 43u
        + 32u
        + 34u
@@ -11221,6 +11306,7 @@ typedef char msg_hash_de_blob_check[
 #ifdef ANDROID
        + 70u
        + 127u
+       + 401u
        + 204u
        + 248u
        + 244u
@@ -12301,6 +12387,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_IGNORED_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
@@ -12422,11 +12509,14 @@ static const msg_hash_id_t msg_hash_de_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_METHOD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_CONTACT_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_METHOD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -12487,13 +12577,17 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
 #ifdef ANDROID
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HIDE_OVERLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HOVER_MOVES_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_HALVES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_LEFT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_MOUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCHPAD_RIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -12521,6 +12615,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_XINPUT_ENABLE,
 #endif
 #endif
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_XID_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -12975,7 +13070,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_AREA,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_VECTOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -13096,6 +13193,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PORT_DS3_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PORT_DS3_RESTORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PORT_IGNORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
@@ -13810,6 +13908,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE_FOLLOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_CINEMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_NATURAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
@@ -14574,11 +14673,14 @@ static const msg_hash_id_t msg_hash_de_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_CONTACT_SCALE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -14630,10 +14732,14 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_SOCD_VERTICAL,
 #ifdef ANDROID
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_HIDE_OVERLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD_LEFT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCHPAD_RIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
@@ -15857,7 +15963,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_INPUT_COMBO_PRESS_DEPTH,
    (msg_hash_id_t)MSG_INPUT_COMBO_ROW_SUBLABEL,
    (msg_hash_id_t)MSG_INPUT_COMBO_SET_BUTTONS,
+   (msg_hash_id_t)MSG_INPUT_DEVICE_IGNORED,
    (msg_hash_id_t)MSG_INPUT_DEVICE_INDEX_SHARED,
+   (msg_hash_id_t)MSG_INPUT_DEVICE_UNIGNORED,
    (msg_hash_id_t)MSG_INPUT_DS3_ASKING,
    (msg_hash_id_t)MSG_INPUT_DS3_DECLINED,
    (msg_hash_id_t)MSG_INPUT_DS3_ENABLED,
@@ -15883,6 +15991,11 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_INPUT_REMAP_FILENAME,
    (msg_hash_id_t)MSG_INPUT_REMAP_FIND_PRESS,
    (msg_hash_id_t)MSG_INPUT_RENAME_ENTRY,
+   (msg_hash_id_t)MSG_INPUT_XID_ASKING,
+   (msg_hash_id_t)MSG_INPUT_XID_DECLINED,
+   (msg_hash_id_t)MSG_INPUT_XID_ENABLED,
+   (msg_hash_id_t)MSG_INPUT_XID_NEEDS_ENABLING,
+   (msg_hash_id_t)MSG_INPUT_XID_NOT_CHANGED,
    (msg_hash_id_t)MSG_INSTALLING_CORE,
    (msg_hash_id_t)MSG_INTERFACE,
    (msg_hash_id_t)MSG_INTERNAL_STORAGE,

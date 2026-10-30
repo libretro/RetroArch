@@ -104,6 +104,8 @@ static const struct
    char s_7607974d[11];
    char s_bdf1165f[25];
    char s_6a15d029[19];
+   char s_3817de39_0[500];
+   char s_3817de39_1[30];
    char s_16ae54ac[272];
    char s_b3e89428[271];
    char s_7af11c30[89];
@@ -870,6 +872,7 @@ static const struct
    char s_1c82054d[36];
    char s_cb11ce3d[58];
    char s_d458f013[37];
+   char s_5aa6602e[68];
    char s_6e1d0b9d[25];
    char s_56e1b31e[17];
    char s_56e1b31f[16];
@@ -992,10 +995,12 @@ static const struct
 #endif
    char s_267cef24[34];
    char s_727b11f4[36];
+   char s_b6670eec[21];
    char s_21ec213c[27];
    char s_030a629f[22];
    char s_8bc5b398[21];
    char s_0c353c96[27];
+   char s_7997964b[25];
    char s_629528b9[43];
    char s_a67c80f1[30];
    char s_b662d01f[16];
@@ -1058,6 +1063,7 @@ static const struct
    char s_da16c634[15];
 #ifdef ANDROID
    char s_4c636851[14];
+   char s_8871e585[47];
    char s_10996997[35];
    char s_a8f7398d[28];
    char s_16430f5d[31];
@@ -1544,6 +1550,7 @@ static const struct
    char s_e6e43c7d[44];
    char s_c1ddd207[44];
    char s_ded83500[43];
+   char s_69bfecad[15];
    char s_69c06e41[6];
    char s_097e2527[9];
    char s_690802fe[11];
@@ -1735,6 +1742,7 @@ static const struct
    char s_1cad7751[9];
    char s_753c8d3b[6];
    char s_0029bb07[16];
+   char s_cf419bec[35];
    char s_82847606[19];
    char s_036acd54[49];
    char s_a0a191ca[45];
@@ -2349,11 +2357,16 @@ static const struct
    char s_a40142d6[19];
    char s_b9942e59[11];
    char s_d173c82d[15];
+   char s_84a2ce72[10];
+   char s_74def6a5[23];
    char s_28774055[19];
    char s_28774056[19];
    char s_28774057[19];
    char s_e09bad69[9];
+   char s_27993823[22];
+   char s_b85928b7[12];
    char s_207186e9[21];
+   char s_dcf8a6a3[5];
    char s_f09399af[8];
    char s_f66c7b67[9];
    char s_efe678d9[9];
@@ -3130,7 +3143,9 @@ static const struct
    char s_ba59df8d[130];
    char s_4b824ac6[182];
    char s_c384b984[42];
+   char s_42ba06b9[165];
    char s_9db5ae27[85];
+   char s_5dcbfddf[236];
    char s_bc47004d[68];
    char s_980b7c0a[58];
    char s_cc27d9d1[118];
@@ -3182,6 +3197,7 @@ static const struct
    char s_493a2167[307];
 #ifdef ANDROID
    char s_354b4abf[100];
+   char s_3fc16273[335];
    char s_21594ec5[189];
    char s_d1b3c47b[189];
    char s_27919f0b[179];
@@ -3934,12 +3950,14 @@ static const struct
    char s_ab839b13[131];
    char s_9c3126f6[96];
    char s_a9d0ac44[83];
+   char s_60cf8ce7[245];
    char s_bf6397c7[11];
    char s_6cf40c1b[15];
    char s_445f65a0[71];
    char s_7ac326d3[163];
    char s_374a2bd1[139];
    char s_a5c9a6e5[117];
+   char s_c5e08911[266];
    char s_135d20b8[47];
    char s_62e196a9_0[500];
    char s_62e196a9_1[71];
@@ -4421,6 +4439,7 @@ static const struct
    char s_a3f6ebc3[18];
    char s_98adf951[63];
    char s_11b4cc97[18];
+   char s_d3e49974[39];
    char s_a8fa00e0[72];
    char s_4c1e527b[93];
    char s_efc0708e[80];
@@ -4448,6 +4467,7 @@ static const struct
    char s_0408afc3[14];
    char s_1d50105b[96];
    char s_2e362cb6[110];
+   char s_eed86f69[73];
    char s_4579c9ec[144];
    char s_ea0b7738[68];
    char s_654f5308[21];
@@ -4887,6 +4907,14 @@ static const struct
    "Shaderfil.",
    "F\303\266rinst\303\244lld Shaderfil.",
    "Konfigurationsfil.",
+   "Spell\303\244ge h\303\266jer prioriteten f\303\266r disk\303\245tkomst och beg\303\244r energipr"
+   "ofilen f\303\266r h\303\266g prestanda via power-profiles-daemon eller tuned-ppd. Det kan minska"
+   " f\303\266rdr\303\266jningen, \303\245tg\303\244rda sprakande ljud och f\303\266rb\303\244ttra p"
+   "restandan. Profilen h\303\245lls bara aktiv n\303\244r datorn \303\244r ansluten till str\303"
+   "\266m: den sl\303\244pps n\303\244r du kopplar ur str\303\266mmen och \303\245terst\303\244lls n"
+   "\303\244r du kopplar in den igen.Ingen ytterligare programvara beh\303\266vs i skrivbordsdistrib"
+   "utioner. Profilen sl\303\244pps n\303\244r Spell\303\244ge st\303\244ngs av eller RetroArch avs",
+   "lutas, \303\244ven efter en krasch.",
    "Mappa angiven analog spak f\303\266r D-Pad-inmatning.\nOm k\303\244rnan har inbyggt analogt st"
    "\303\266d, kommer D-Pad-mappning att inaktiveras om inte alternativet '(Tvingad)' \303\244r valt"
    ".\nOm D-Pad-mappning \303\244r p\303\245tvingad kommer k\303\244rnan inte att f\303\245 n\303"
@@ -5849,6 +5877,7 @@ static const struct
    "Snabbtangenter f\303\266r F\303\266lj spelare 1",
    "F\303\266rdr\303\266jning f\303\266r tryck p\303\245 aktiveringssnabbtangent (ms)",
    "Mappning f\303\266r tangentbordskontroller",
+   "Ignorerad handkontroll %04X:%04X (v\303\244lj f\303\266r att anv\303\244nda den igen)",
    "Information om inmatning",
    "A-knapp (H\303\266gra)",
    "B-knapp (Nedre)",
@@ -5971,10 +6000,12 @@ static const struct
 #endif
    "Auto-skala tangentbords\303\266verl\303\244gg",
    "\303\226verlappningsk\303\244nslighet f\303\266r ABXY",
+   "ABXY-inmatningsmetod",
    "Analog \303\245terst\303\244llningszon",
    "Autorotera \303\266verl\303\244gg",
    "Autoskala \303\266verl\303\244gg",
    "Visa \303\266verl\303\244gg bakom meny",
+   "Kontaktomr\303\245dets storlek",
    "Diagonal k\303\244nslighet f\303\266r riktningsknappar",
    "Inmatningsmetod f\303\266r styrkors",
    "Visa \303\266verl\303\244gg",
@@ -6037,6 +6068,7 @@ static const struct
    "Delade Joy-Con",
 #ifdef ANDROID
    "Pekpennest\303\266d",
+   "D\303\266lj \303\266verlagringen vid anv\303\244ndning av stylus",
    "Pekpennans hovring flyttar pekaren",
    "Pekpennans tryckk\303\244nslighet",
    "Pekpenna kr\303\244ver sk\303\244rmkontakt",
@@ -6526,6 +6558,7 @@ static const struct
    "(Liggande) Justera \303\266verl\303\244ggsf\303\266rh\303\245llande",
    "(St\303\245ende) Justera \303\266verl\303\244ggsf\303\266rh\303\245llande",
    "L\303\244s automatiskt in f\303\266redraget \303\266verl\303\244gg",
+   "Kontaktomr\303\245de",
    "B\303\245da",
    "Riktning",
    "\303\226verl\303\244gg",
@@ -6717,6 +6750,7 @@ static const struct
    "&Verktyg",
    "&Visa",
    "St\303\244ngda dockor",
+   "Handkontroll och &kortkommandon\342\200\246",
    "&Inst\303\244llningar...",
    "Max antal rutn\303\244tsposter f\303\266r \"Alla spellistor\":",
    "Max antal listposter f\303\266r \"Alla spellistor\":",
@@ -7338,11 +7372,16 @@ static const struct
    "Automatisk hudmask",
    "Intensitet",
    "Lokal struktur",
+   "Lokal ton",
+   "Modellf\303\266rinst\303\244llning",
    "F\303\266rinst\303\244llning 1",
    "F\303\266rinst\303\244llning 2",
    "F\303\266rinst\303\244llning 3",
    "Standard",
+   "DLSS neural rendering",
+   "Hudstruktur",
    "F\303\266lj lokal struktur",
+   "Stil",
    "Filmisk",
    "Standard",
    "Naturlig",
@@ -8498,8 +8537,15 @@ static const struct
    "dargr\303\244nssnittet f\303\266r att matcha sk\303\244rmens bildf\303\266rh\303\245llande. Ger "
    "b\303\244sta resultat med \303\266verkontroll\303\266r.",
    "Visa \303\266verl\303\244gg bakom inte framf\303\266r meny.",
+   "Hur stort fingerkontaktomr\303\245de som r\303\244knas i f\303\266rh\303\245llande till storleke"
+   "n som peksk\303\244rmen rapporterar. \303\226ka v\303\244rdet om peksk\303\244rmen rapporterar s"
+   "m\303\245 kontaktomr\303\245den.",
    "Justera storleken p\303\245 de diagonala zonerna. St\303\244ll in p\303\245 100% f\303\266r 8-v"
    "\303\244gssymmetri.",
+   "S\303\245 h\303\244r tolkar styrkorset en ber\303\266ring. \342\200\235Riktning\342\200\235: var"
+   " fingrets mittpunkt ligger. \342\200\235Kontaktomr\303\245de\342\200\235: alla riktningar som fi"
+   "ngerkontakten t\303\244cker, s\303\245 att en tumme \303\266ver tv\303\245 riktningar trycker ne"
+   "d b\303\245da. \342\200\235B\303\245da\342\200\235: antingen.",
    "\303\226verl\303\244gg anv\303\244nds f\303\266r kantramar och spelkontroller p\303\245 sk\303"
    "\244rmen.",
    "D\303\266lj \303\266verl\303\244gg  i meny och visa igen n\303\244r meny st\303\244ngs.",
@@ -8601,6 +8647,12 @@ static const struct
 #ifdef ANDROID
    "Aktivera pekpennor. Ger exakt inmatning f\303\266r rit- och pekspel. Inaktivera vid inmatningsko"
    "nflikter.",
+   "D\303\266lj \303\266verlagringen p\303\245 sk\303\244rmen medan stylusen anv\303\244nds och visa"
+   " den igen n\303\244r den inte har anv\303\244nts p\303\245 tv\303\245 sekunder. En stylus som ho"
+   "vrar r\303\244knas bara n\303\244r \342\200\235Stylus Hover Moves Cursor\342\200\235 \303\244r a"
+   "ktiverat. St\303\244ng AV f\303\266r att beh\303\245lla \303\266verlagringen p\303\245 sk\303"
+   "\244rmen s\303\245 att du kan spela med den medan du anv\303\244nder stylusen p\303\245 sk\303"
+   "\244rmen.",
    "Till\303\245t att pekpennan hovrar (utan att vidr\303\266ra sk\303\244rmen) f\303\266r att flytt"
    "a pekaren. Avg\303\266rande f\303\266r rit- och m\303\245larspel eller spel med ljuspistol. St"
    "\303\244ng AV om pekaren flyttar sig ov\303\244ntat.",
@@ -9842,6 +9894,10 @@ static const struct
    "lers/dlss\342\200\235 i RetroArch-mappen.",
    "L\303\245t modellen sj\303\244lv hitta hud och behandla den separat fr\303\245n resten av bildru"
    "tan.",
+   "K\303\266r DLSS 5:s modell f\303\266r neural rendering p\303\245 den uppskalade bildrutan. Den o"
+   "marbetar belysning och material med det djup och den r\303\266relse som k\303\244rnan exporterar"
+   " och kostar n\303\245gra millisekunder per bildruta. B\303\266rjar g\303\244lla vid n\303\244sta"
+   " bildruta.",
    "Intensitet",
    "Lokal struktur",
    "Anger hur starkt modellen bearbetar lokalt ljus och skugga, i procent.",
@@ -9852,6 +9908,10 @@ static const struct
    "nr.dll i DLSS-katalogen och en NVIDIA-drivrutin som har den.",
    "Strukturstyrkan f\303\266r hud, i procent. F\303\266lj lokal struktur, modellens standard, anv"
    "\303\244nder ocks\303\245 lokal struktur d\303\244r.",
+   "Modellens bearbetningsprofil. Standard \303\244r den kraftfullaste: mer lokal kontrast och djupa"
+   "re belysning, men ibland \303\266verm\303\244ttad. Naturlig g\303\266r samma arbete varsammare o"
+   "ch beh\303\245ller tonerna n\303\244rmare k\303\244rnans. Filmisk tonar ned glansen f\303\266r e"
+   "tt filmliknande utseende.",
    "Videodrivrutin att anv\303\244nda. (Kr\303\244ver omstart)",
    "L\303\245t grafikdrivrutinen synkronisera bildrutor med sen inmatning och en kort k\303\266. Anv"
    "\303\244nder NVIDIA Reflex (Vulkan VK_NV_low_latency2, D3D11/12 NVAPI eller Vulkan via DXGI) ell"
@@ -10628,6 +10688,7 @@ static const struct
    "St\303\244ll in knappar",
    "Handkontroll %u (%04X:%04X) ignoreras och l\303\244ses inte l\303\244ngre.",
    "Delas med port %u",
+   "Handkontroll %04X:%04X l\303\244ses in igen.",
    "\303\204ndrar DualShock 3-drivrutinen. Till\303\245t \303\244ndringen i Windows-prompten.",
    "DualShock 3-drivrutinen \303\244ndrades inte eftersom administrat\303\266rsr\303\244ttigheter in"
    "te beviljades.",
@@ -10664,6 +10725,7 @@ static const struct
    "gen i Windows-prompten.",
    "Handkontrollens drivrutin f\303\266r ursprunglig Xbox \303\244ndrades inte eftersom administrat"
    "\303\266rsbeh\303\266righet inte gavs.",
+   "Originalhandkontroll f\303\266r Xbox aktiverad. Den ansluter igen automatiskt.",
    "En ursprunglig Xbox-handkontroll utan Windows-drivrutin hittades: Information > Inmatningsinform"
    "ation > Aktivera ursprunglig Xbox-handkontroll.",
    "Handkontrollens drivrutin f\303\266r ursprunglig Xbox kunde inte \303\244ndras.",
@@ -10997,7 +11059,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (225499u
+      (sizeof(msg_hash_sv_blob) == (227289u
 #ifdef ANDROID
        + 361u
 #endif
@@ -11065,6 +11127,7 @@ typedef char msg_hash_sv_blob_check[
 #ifdef ANDROID
        + 26u
        + 14u
+       + 47u
        + 35u
        + 28u
        + 31u
@@ -11342,6 +11405,7 @@ typedef char msg_hash_sv_blob_check[
 #ifdef ANDROID
        + 78u
        + 100u
+       + 335u
        + 189u
        + 189u
        + 179u
@@ -11670,6 +11734,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -12431,6 +12496,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_TAP_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_IGNORED_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
@@ -12553,10 +12619,12 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_METHOD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_CONTACT_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_METHOD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
@@ -12619,6 +12687,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
 #ifdef ANDROID
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HIDE_OVERLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HOVER_MOVES_POINTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
@@ -13105,6 +13174,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_AREA,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_VECTOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
@@ -13296,6 +13366,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
@@ -13909,11 +13980,16 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_AUTO_MASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_INTENSITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_LOCAL_TONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_1,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_2,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_3,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE_FOLLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_CINEMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_NATURAL,
@@ -14683,7 +14759,9 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_CONTACT_SCALE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_METHOD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -14735,6 +14813,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_SOCD_VERTICAL,
 #ifdef ANDROID
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_HIDE_OVERLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
@@ -15486,12 +15565,14 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_AUTO_MASK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_INTENSITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_TONE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_PRESET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_SKIN_STRUCTURE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_STYLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DXGI_PRESENT,
@@ -15967,6 +16048,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_INPUT_COMBO_SET_BUTTONS,
    (msg_hash_id_t)MSG_INPUT_DEVICE_IGNORED,
    (msg_hash_id_t)MSG_INPUT_DEVICE_INDEX_SHARED,
+   (msg_hash_id_t)MSG_INPUT_DEVICE_UNIGNORED,
    (msg_hash_id_t)MSG_INPUT_DS3_ASKING,
    (msg_hash_id_t)MSG_INPUT_DS3_DECLINED,
    (msg_hash_id_t)MSG_INPUT_DS3_ENABLED,
@@ -15994,6 +16076,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_INPUT_RENAME_ENTRY,
    (msg_hash_id_t)MSG_INPUT_XID_ASKING,
    (msg_hash_id_t)MSG_INPUT_XID_DECLINED,
+   (msg_hash_id_t)MSG_INPUT_XID_ENABLED,
    (msg_hash_id_t)MSG_INPUT_XID_NEEDS_ENABLING,
    (msg_hash_id_t)MSG_INPUT_XID_NOT_CHANGED,
    (msg_hash_id_t)MSG_INSTALLING_CORE,
