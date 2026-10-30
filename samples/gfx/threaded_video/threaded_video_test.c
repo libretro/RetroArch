@@ -3176,6 +3176,7 @@ typedef struct
    unsigned current;
    bool returned[2];
 #ifdef HAVE_GFX_WIDGETS
+   bool replay_widgets_visible[2];
    bool inactive_widgets_visible, retired_widgets_visible;
    bool retired_widgets_checked;
 #endif
@@ -3194,6 +3195,10 @@ static bool replay_swap_frame(void *data, const void *frame,
    (void)pitch;
    (void)msg;
    replay_swap->seen[replay_swap->current] = info->swap_count;
+#ifdef HAVE_GFX_WIDGETS
+   replay_swap->replay_widgets_visible[replay_swap->current] =
+         info->widgets_visible;
+#endif
    return true;
 }
 
@@ -3214,16 +3219,28 @@ static uintptr_t replay_swap_run(void *data)
    driver.frame = replay_swap_frame;
    thr->driver = &driver;
    thr->video_st->swap_count = t->expected;
+#ifdef HAVE_GFX_WIDGETS
+   widgets = dispwidget_get_ptr();
+   saved_worker = retro_atomic_load_acquire_int(&widgets->worker);
+   retro_atomic_store_release_int(&widgets->worker, 1);
+   t->info->widgets_userdata = widgets;
+   t->info->fps_show = true;
+#endif
    for (i = 0; i < 2; i++)
    {
       t->current = i;
       t->seen[i] = 0;
       t->info->swap_count = i ? UINT64_MAX : 0;
+#ifdef HAVE_GFX_WIDGETS
+      t->info->widgets_active = i == 0;
+      t->info->widgets_visible = i != 0;
+#endif
       t->returned[i] = thr->video_st->current_video->frame(thr, NULL,
             VIDEO_SCALE_PACK(1, 1), 0, 0, NULL, t->info);
       t->after[i] = thr->video_st->swap_count;
    }
 #ifdef HAVE_GFX_WIDGETS
+   retro_atomic_store_release_int(&widgets->worker, saved_worker);
    widgets = dispwidget_get_ptr();
    t->info->widgets_userdata = widgets;
    t->info->widgets_active = false;
@@ -3272,6 +3289,10 @@ static void lane_replay_swap_count(void)
             "inline replay counted an extra present");
    }
 #ifdef HAVE_GFX_WIDGETS
+   CHECK(t.replay_widgets_visible[0],
+         "inline replay did not detect visible widgets");
+   CHECK(!t.replay_widgets_visible[1],
+         "inline replay retained stale widget visibility");
    CHECK(!t.inactive_widgets_visible,
          "inline replay treated inactive widgets as visible");
    CHECK(!t.retired_widgets_visible,

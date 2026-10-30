@@ -3876,7 +3876,13 @@ static VIDEO_NOINLINE bool video_thread_frame_replay(thread_video_t *thr,
 
    thread_update_driver_state(thr);
    if (video_info)
+   {
       video_info->swap_count = thr->video_st->swap_count;
+#ifdef HAVE_GFX_WIDGETS
+      video_info->widgets_visible = video_info->widgets_active
+         && gfx_widgets_visible(video_info);
+#endif
+   }
 
    if (thr->driver_data && thr->driver && thr->driver->frame)
    {
