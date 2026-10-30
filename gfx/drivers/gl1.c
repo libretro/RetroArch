@@ -134,7 +134,10 @@ enum gl1_flags
     * BGRA8888 on the CPU. */
    GL1_FLAG_SUPPORTS_RGB565         = (1 << 14),
    /* overlay_tex holds the overlay pack's names (load_textures) */
-   GL1_FLAG_OVERLAY_BORROWED        = (1 << 15)
+   GL1_FLAG_OVERLAY_BORROWED        = (1 << 15),
+   /* The last presented image carries frontend layers: a duped frame
+    * without any is presented once more to take them off */
+   GL1_FLAG_UI_PRESENTED            = (1 << 16)
 };
 
 /* Layout of the pixels handed to gl1_draw_tex. */
@@ -280,7 +283,7 @@ typedef struct gl1
    GLuint menu_tex;
    GLuint texture[GFX_MAX_TEXTURES];
 
-   uint16_t flags;
+   uint32_t flags;
 
    /* scRGB (FP16) default framebuffer support (Windows/WGL HDR).
     * The gl1 driver rides the same context-level pixel-format and
@@ -1839,7 +1842,7 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height,
     * path; the 16bpp paths' layouts are taken by the GL as they are.
     * It writes the frame tightly packed, except on Vita, which uploads
     * whole pot-sized buffers. */
-   if (!fb_4444 && !fb_565 && !supports_native && !src_10bit)
+   if (frame && !fb_4444 && !fb_565 && !supports_native && !src_10bit)
    {
 #ifdef VITA
       int    rows = pot_height;
@@ -1894,9 +1897,12 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height,
       format         = GL_BGRA_EXT;
       type           = GL_UNSIGNED_INT_2_10_10_10_REV;
    }
+   /* No source draws the texture again as it stands */
 #ifdef VITA
-   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame);
+   if (frame)
+      glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame);
 #else
+   if (frame)
    {
       unsigned dims        = VIDEO_SCALE_PACK(pot_width, pot_height);
       unsigned *store_dims;
@@ -2809,6 +2815,11 @@ static bool gl1_frame(void *data, const void *frame,
    bool widgets_active              = video_info->widgets_active;
 #endif
    bool hard_sync                   = video_info->hard_sync;
+   bool ui_now                      = (msg && *msg)
+         || video_info->statistics_show
+         || (gl1->flags & (GL1_FLAG_MENU_TEXTURE_ENABLE
+                         | GL1_FLAG_OVERLAY_ENABLE))
+         || video_info->widgets_visible;
    struct font_params *osd_params   = (struct font_params*)
       &video_info->osd_stat_params;
    bool overlay_behind_menu         = video_info->overlay_behind_menu;
@@ -2997,6 +3008,27 @@ static bool gl1_frame(void *data, const void *frame,
          gl1_draw_tex(gl1, pot_width, pot_height,
                width, height, gl1->tex, frame_to_copy, src_row, src_fmt,
                true, true);
+   }
+   /* A duped frame that carries frontend layers, or takes them off, is
+    * drawn whole again over the core image the texture still holds;
+    * one that does neither stays unpresented */
+   else if (!frame
+         && (ui_now || (gl1->flags & GL1_FLAG_UI_PRESENTED))
+#ifdef GL1_VIEWS
+         && !views
+#endif
+         )
+   {
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+      if (gl1->video_buf)
+      {
+         glEnable(GL_BLEND);
+         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+         gl1_draw_tex(gl1, pot_width, pot_height,
+               width, height, gl1->tex, NULL, 0, src_fmt, true, true);
+      }
+      do_swap = true;
    }
 
    /* Record Game Only: a recording's readback takes the core's image
@@ -3302,8 +3334,15 @@ static bool gl1_frame(void *data, const void *frame,
       gl1_screenshot_readback(gl1, video_width, video_height);
 
 
-   if (do_swap && gl1->ctx_driver->swap_buffers)
-      gl1->ctx_driver->swap_buffers(gl1->ctx_data);
+   if (do_swap)
+   {
+      if (gl1->ctx_driver->swap_buffers)
+         gl1->ctx_driver->swap_buffers(gl1->ctx_data);
+      if (ui_now)
+         gl1->flags |=  GL1_FLAG_UI_PRESENTED;
+      else
+         gl1->flags &= ~GL1_FLAG_UI_PRESENTED;
+   }
 
  /* Emscripten has to do black frame insertion in its main loop */
 #ifndef __EMSCRIPTEN__
