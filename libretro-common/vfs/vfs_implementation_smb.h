@@ -98,6 +98,10 @@ void smb_ctx_free(struct smb2_context *ctx);
  * Both are 0 while read-ahead is off. */
 void smb_take_readahead_stats(unsigned *window_kib, unsigned *direct_kib);
 
+/* Whether every idle pooled connection has its pool's read-ahead
+ * window. For the tests. */
+bool smb_pool_windows_ok(void);
+
 #ifdef __cplusplus
 }
 #endif

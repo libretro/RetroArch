@@ -969,6 +969,34 @@ void smb_take_readahead_stats(unsigned *window_kib, unsigned *direct_kib)
    *direct_kib = (unsigned)retro_atomic_exchange_int(&smb_ra_direct_kib, 0);
 }
 
+bool smb_pool_windows_ok(void)
+{
+#ifdef HAVE_RETROSMB
+   unsigned i, j;
+   for (i = 0; i < SMB_MAX_POOLS; i++)
+   {
+      struct smb_pool *p = &smb_pools[i];
+      bool ok = true;
+      if (   SMB_POOL_STATE(retro_atomic_load_acquire_int(&p->word)) != SMB_POOL_LIVE
+          || !smb_pool_get(p))
+         continue;
+      for (j = 0; j < p->count; j++)
+      {
+         struct smb_slot *sl = &p->slots[j];
+         if (!retro_atomic_cas_int(&sl->busy, 0, 1))
+            continue;
+         if (sl->ctx && smb2_get_readahead(sl->ctx) != p->key.readahead * 1024)
+            ok = false;
+         retro_atomic_store_release_int(&sl->busy, 0);
+      }
+      smb_pool_put(p);
+      if (!ok)
+         return false;
+   }
+#endif
+   return true;
+}
+
 #ifdef HAVE_THREADS
 static int64_t smb_prefetch_fetch(void *user, uint64_t off, uint8_t *buf, size_t len)
 {
