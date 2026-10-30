@@ -111,7 +111,7 @@ typedef struct file_archive_transfer
     * is found; one that parks and stops is counted when it drains. */
    bool     pending_counted;
    /* The zip's end record carries a TorrentZip comment.  Set by the zip
-    * reader when it opens the archive; the others leave it as it is. */
+    * reader when it opens the archive, false for any other. */
    bool     torrentzip;
 } file_archive_transfer_t;
 

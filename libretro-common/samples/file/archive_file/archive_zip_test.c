@@ -1317,6 +1317,36 @@ static void test_torrentzip_comment(void)
 #endif
 }
 
+/* A transfer the zip reader last opened a TorrentZip with says no such
+ * thing of the next archive, whichever backend opens it. */
+static void test_torrentzip_not_carried(void)
+{
+   bool returnerr = false;
+   file_archive_transfer_t *state =
+      (file_archive_transfer_t*)calloc(1, sizeof(*state));
+   struct archive_extract_userdata *userdata =
+      (struct archive_extract_userdata*)calloc(1, sizeof(*userdata));
+
+   if (!state || !userdata)
+      abort();
+   write_file("tz_carried.7z", (const uint8_t*)"7z", 2);
+   state->torrentzip = true;
+   state->type       = ARCHIVE_TRANSFER_INIT;
+   file_archive_parse_file_iterate(state, &returnerr, "tz_carried.7z",
+         NULL, NULL, userdata);
+   if (state->torrentzip)
+   {
+      printf("[FAIL] TorrentZip flag carried over to the next archive\n");
+      failures++;
+   }
+   else
+      printf("[SUCCESS] TorrentZip flag not carried over\n");
+   file_archive_parse_file_iterate_stop(state);
+   remove("tz_carried.7z");
+   free(state);
+   free(userdata);
+}
+
 int main(void)
 {
    test_truncated_entry();
@@ -1333,6 +1363,7 @@ int main(void)
    test_member_lent();
    test_entry_source_bounds();
    test_torrentzip_comment();
+   test_torrentzip_not_carried();
 
    if (failures)
    {

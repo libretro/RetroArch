@@ -182,6 +182,7 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    char path[PATH_MAX_LENGTH];
    char *last                 = NULL;
 
+   state->torrentzip = false;
    strlcpy(path, file, sizeof(path));
 
    if ((last = (char*)path_get_archive_delim(path)))
