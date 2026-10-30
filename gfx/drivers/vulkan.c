@@ -13095,6 +13095,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
          /* Begin render pass and set up viewport */
          vkCmdBeginRenderPass(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+         end_main_pass = true;
 
          /* Signal draw functions to use SDR pipeline variants
           * while rendering into the B8G8R8A8 offscreen buffer. */
