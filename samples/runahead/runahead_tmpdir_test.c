@@ -13,6 +13,15 @@
 
 #include "runahead_tmpdir_fragment.c"
 
+#if defined(_WIN32) || defined(ANDROID)
+int main(void)
+{
+   if (!runahead_tmp_dir_private("native-profile"))
+      return 1;
+   puts("PASS native temp-directory policy (POSIX permissions not applicable)");
+   return 0;
+}
+#else
 static unsigned failures;
 #define CHECK(c, ...) do { if (!(c)) { failures++; printf("   FAIL "); \
    printf(__VA_ARGS__); printf("\n"); } } while (0)
@@ -101,3 +110,4 @@ int main(void)
    printf("PASS runahead_tmpdir_test\n");
    return 0;
 }
+#endif

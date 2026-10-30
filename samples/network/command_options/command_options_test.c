@@ -20,6 +20,8 @@ static settings_t settings;
 static input_driver_state_t input_st;
 static audio_driver_state_t audio_st;
 static video_driver_state_t video_st;
+static struct retro_hw_render_callback hardware;
+struct retro_hw_render_callback *video_driver_get_hw_context(void) { return &hardware; }
 static recording_state_t rec_st;
 static bool hardcore;
 static bool allow_timeskip = true;
@@ -73,6 +75,8 @@ audio_driver_state_t *audio_state_get_ptr(void) { return &audio_st; }
 video_driver_state_t *video_state_get_ptr(void) { return &video_st; }
 recording_state_t *recording_state_get_ptr(void) { return &rec_st; }
 bool rcheevos_hardcore_active(void) { return hardcore; }
+void rcheevos_pause_hardcore(void) { hardcore = false; }
+void RARCH_LOG(const char *format, ...) { (void)format; }
 bool input_driver_mouse_grabbed(void) { return false; }
 unsigned input_driver_command_generation(void) { return 0; }
 bool input_driver_game_focus_enabled(void) { return false; }
@@ -351,6 +355,21 @@ int main(void)
       CHECK(command_get_memory_map(&cmd, ""));
       CHECK(!strcmp(reply, "7e0000\t10\t0\t0\tsystem\trw\tlittle\tWRAM\n"
                "8000\t400000\tff8000\t7f0000\tother\tnone\tbig\t\n"));
+      wram[0] = 0xa5;
+      CHECK(command_read_memory(&cmd, "7e0000 1"));
+      CHECK(strstr(reply, " A5\n"));
+      hardware.context_type = RETRO_HW_CONTEXT_OPENGLES3;
+      retro_atomic_store_release_int(&video_st.flags, VIDEO_FLAG_GPU_DEVICE_LOST);
+      CHECK(!command_read_memory(&cmd, "7e0000 1"));
+      CHECK(cmd.error && strstr(reply, "core state is unavailable"));
+      cmd.error = false;
+      CHECK(!command_write_memory(&cmd, "7e0000 5a"));
+      CHECK(cmd.error && wram[0] == 0xa5);
+      cmd.error = false;
+      retro_atomic_store_release_int(&video_st.flags, 0);
+      CHECK(command_write_memory(&cmd, "7e0000 5a"));
+      CHECK(wram[0] == 0x5a);
+      hardware.context_type = RETRO_HW_CONTEXT_NONE;
       runloop_st->system.mmaps.num_descriptors = 0;
    }
 

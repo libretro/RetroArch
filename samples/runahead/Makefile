@@ -46,7 +46,7 @@ endif
 
 OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
-all: $(TARGET) runahead_tmpdir_test
+all: $(TARGET) runahead_tmpdir_test rollback_storage_test rollback_storage_threaded_test runloop_quit_test
 
 runahead_copy_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN runahead core-copy fragment =====/,/===== END runahead core-copy fragment =====/p' $< > $@
@@ -69,6 +69,39 @@ runahead_tmpdir_test: runahead_tmpdir_test.c runahead_tmpdir_fragment.c
 preempt_slab_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN preempt slab =====/,/===== END preempt slab =====/p' $< > $@
 
+rollback_storage_fragment.c: $(CORE_DIR)/runahead.c
+	sed -n '/===== BEGIN rollback storage =====/,/===== END rollback storage =====/p' $< > $@
+
+preempt_run_fragment.c: $(CORE_DIR)/runahead.c
+	sed -n '/^bool preempt_run(/,/^}/p' $< > $@
+
+snapshot_context_fragment.c: $(CORE_DIR)/runloop.c
+	sed -n '/^static enum retro_snapshot_execution_context RETRO_CALLCONV runloop_snapshot_context(/,/^}/p' $< > $@
+
+snapshot_registration_fragment.c: $(CORE_DIR)/runloop.c
+	sed -n '/^      case RETRO_ENVIRONMENT_SET_SNAPSHOT_INTERFACE:/,/^\#endif/p' $< | sed '$$d' > $@
+
+autosave_check_fragment.c: $(CORE_DIR)/save.c
+	sed -n '/^void autosave_check(/,/^}/p' $< > $@
+
+core_state_fragment.c: $(CORE_DIR)/runloop.c
+	sed -n '/^bool core_state_is_available(/,/^}/p; /^bool core_get_memory(/,/^}/p; /^void core_reset(/,/^}/p' $< > $@
+
+runloop_quit_fragment.c: $(CORE_DIR)/runloop.c
+	sed -n '/===== BEGIN runloop quit check =====/,/===== END runloop quit check =====/p' $< > $@
+
+runloop_exit_macro.h: $(CORE_DIR)/runloop.h
+	sed -n '/^#define RUNLOOP_TIME_TO_EXIT(/p' $< > $@
+
+runloop_quit_test: runloop_quit_test.c runloop_quit_fragment.c runloop_exit_macro.h
+	$(CC) $(CFLAGS) -std=gnu89 -Werror=declaration-after-statement -o $@ $< $(LDFLAGS)
+
+rollback_storage_test: rollback_storage_test.c rollback_storage_fragment.c preempt_run_fragment.c preempt_slab_fragment.c snapshot_context_fragment.c snapshot_registration_fragment.c core_state_fragment.c
+	$(CC) $(CFLAGS) -std=gnu89 -Werror=declaration-after-statement -DHAVE_RUNAHEAD -o $@ $< $(LDFLAGS)
+
+rollback_storage_threaded_test: rollback_storage_test.c autosave_check_fragment.c rollback_storage_fragment.c preempt_run_fragment.c preempt_slab_fragment.c snapshot_context_fragment.c snapshot_registration_fragment.c core_state_fragment.c
+	$(CC) $(CFLAGS) -std=gnu89 -Werror=declaration-after-statement -DHAVE_RUNAHEAD -DHAVE_THREADS -o $@ $< $(LDFLAGS)
+
 runahead_copy_test.o: runahead_copy_fragment.c preempt_mask_fragment.c dense_cache_fragment.c preempt_slab_fragment.c input_list_fragment.c
 
 %.o: %.c
@@ -81,13 +114,20 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET): $(OBJS)
 	$(CC) -o$@ $(OBJS) $(LDFLAGS)
 
-check: $(TARGET) runahead_tmpdir_test
+check: $(TARGET) runahead_tmpdir_test rollback_storage_test rollback_storage_threaded_test runloop_quit_test
 	./$(TARGET)
 	./runahead_tmpdir_test
+	./rollback_storage_test
+	./rollback_storage_threaded_test
+	./runloop_quit_test
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) runahead_copy_fragment.c preempt_mask_fragment.c dense_cache_fragment.c preempt_slab_fragment.c input_list_fragment.c runahead_tmpdir_fragment.c
 	rm -f $(TARGET) runahead_tmpdir_test
+	rm -f rollback_storage_fragment.c preempt_run_fragment.c rollback_storage_test rollback_storage_threaded_test
+	rm -f snapshot_context_fragment.c snapshot_registration_fragment.c autosave_check_fragment.c
+	rm -f core_state_fragment.c
+	rm -f runloop_quit_fragment.c runloop_exit_macro.h runloop_quit_test
 
 .PHONY: clean all check

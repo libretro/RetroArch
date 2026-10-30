@@ -17,6 +17,8 @@
 
 /* What cheat_manager.c calls outside itself */
 static runloop_state_t test_runloop;
+static bool memory_available = true;
+bool core_state_is_available(void) { return memory_available; }
 runloop_state_t *runloop_state_get_ptr(void) { return &test_runloop; }
 void runloop_msg_queue_push(const char *msg, size_t len, unsigned prio,
       unsigned duration, bool flush, char *title,
@@ -198,11 +200,38 @@ static void test_search(void)
    CHECK(curr == 0xABCD && prev == 0xABCD);
 }
 
+static void test_blocked_consumers(void)
+{
+   rarch_setting_t setting;
+   unsigned char *saved[3];
+   unsigned i, matches = cheat_manager_state.num_matches;
+   unsigned address = 0, mask = 0, prev = 0xabcd, curr = 0xabcd;
+   memset(&setting, 0, sizeof(setting));
+   cheats(1);
+   for (i = 0; i < 3; i++)
+   {
+      saved[i] = cheat_manager_state.memory_buf_list[i];
+      cheat_manager_state.memory_buf_list[i] = (unsigned char*)(uintptr_t)1;
+   }
+   memory_available = false;
+   CHECK(cheat_manager_initialize_memory(&setting,0,false) == -1);
+   CHECK(cheat_manager_search_eq(&setting,0,false) == -1);
+   CHECK(cheat_manager_add_matches(NULL,NULL,0,0,0) == -1);
+   cheat_manager_apply_retro_cheats();
+   cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_VIEW,0,&address,&mask,&prev,&curr);
+   CHECK(prev == 0xabcd && curr == 0xabcd);
+   CHECK(cheat_manager_state.num_matches == matches);
+   for (i = 0; i < 3; i++) cheat_manager_state.memory_buf_list[i] = saved[i];
+   memory_available = true;
+   CHECK(cheat_manager_search_eq(&setting,0,false) == 0);
+}
+
 int main(void)
 {
    map_memory();
    test_apply();
    test_search();
+   test_blocked_consumers();
    printf("cheat_regions: %s (%d failures)\n",
          failures ? "FAIL" : "PASS", failures);
    return failures ? 1 : 0;
