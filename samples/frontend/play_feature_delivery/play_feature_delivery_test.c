@@ -3,7 +3,10 @@
  *
  * The stub Java answers a download inside the call, on the calling
  * thread; a watchdog turns a download that never returns into a
- * failure rather than a hang. Status updates for another core, or
+ * failure rather than a hang. Play Store builds deliver cores through
+ * Play, every other build (the Meta Quest one included) through the
+ * core downloader, and the answer is not settled before the frontend
+ * has read the build flags. Status updates for another core, or
  * for a transaction that has ended, are dropped; and the status a
  * poller reads is always one whole update, with Java's thread, the
  * downloads and the poller all running at once. */
@@ -73,6 +76,46 @@ void task_queue_wake(uint32_t ident)
 static ANativeActivity    test_activity;
 static struct android_app test_app;
 struct android_app       *g_android = &test_app;
+
+/* ---- which builds deliver cores through Play ---------------------- */
+
+static void check_build(bool play_store, bool quest, bool want)
+{
+   bool got;
+   retro_atomic_store_release_int(
+         &play_feature_delivery_state.enabled_cached, -1);
+   test_app.is_play_store_build = play_store;
+   test_app.is_meta_quest_build = quest;
+   got = play_feature_delivery_enabled();
+   CHECK(got == want, "play_store %d quest %d: delivery %s, want %s",
+         play_store, quest, got ? "on" : "off", want ? "on" : "off");
+   /* Asked again, from the cache. */
+   CHECK(play_feature_delivery_enabled() == want,
+         "play_store %d quest %d: the cached answer changed",
+         play_store, quest);
+}
+
+static void check_builds(void)
+{
+   /* Before the frontend has read the flags: off, and not remembered. */
+   test_app.is_play_store_build = true;
+   CHECK(!play_feature_delivery_enabled(),
+         "delivery was on before the build flags were read");
+   CHECK(retro_atomic_load_acquire_int(
+            &play_feature_delivery_state.enabled_cached) == -1,
+         "an answer given before the build flags were read was cached");
+
+   /* Both Java methods resolve on every build, as on a device. */
+   test_app.isPlayStoreBuild = (jmethodID)&test_activity;
+   test_app.isMetaQuestBuild = (jmethodID)&test_app;
+
+   check_build(true,  false, true);   /* Play Store */
+   check_build(true,  true,  false);  /* Meta Quest */
+   check_build(false, false, false);  /* everything else */
+
+   retro_atomic_store_release_int(
+         &play_feature_delivery_state.enabled_cached, -1);
+}
 
 /* ---- the test ------------------------------------------------------ */
 
@@ -144,6 +187,8 @@ int main(void)
    test_activity.clazz            = (jobject)&test_activity;
    test_app.activity              = &test_activity;
    test_app.downloadCore          = (jmethodID)&test_app;
+
+   check_builds();
 
    t = sthread_create(do_download, NULL);
    for (i = 0; i < 2000 && !retro_atomic_load_acquire_int(&returned); i++)

@@ -56,11 +56,10 @@ typedef struct
    retro_atomic_int_t name_hash;
    retro_atomic_int_t waiter;
    /* Cached result of play_feature_delivery_enabled_internal():
-    * -1 = not yet queried, 0 = disabled, 1 = enabled.  Queried
+    * -1 = not yet known, 0 = disabled, 1 = enabled.  Queried
     * frequently, often in loops, so the fast path is a single
-    * acquire load with no lock.  A cold race can at worst issue
-    * the (idempotent) Java query twice; both stores write the
-    * same value. */
+    * acquire load with no lock.  A cold race can at worst work
+    * the answer out twice; both stores write the same value. */
    retro_atomic_int_t enabled_cached;
 } play_feature_delivery_state_t;
 
@@ -247,26 +246,19 @@ static bool play_feature_delivery_get_core_name(
    return true;
 }
 
-/* Returns true if current build utilises
- * play feature delivery
- * > Relies on a Java function call, and is
- *   therefore slow */
-static bool play_feature_delivery_enabled_internal(void)
+/* 1 if the current build utilises play feature
+ * delivery, 0 if not, -1 while the frontend has
+ * not yet read the build flags from Java.
+ * > Play Store builds do, except the Meta Quest
+ *   build, which uses the core downloader */
+static int play_feature_delivery_enabled_internal(void)
 {
-   JNIEnv *env             = jni_thread_getenv();
-   struct android_app *app = (struct android_app*)g_android;
-   bool enabled            = false;
+   const struct android_app *app = (const struct android_app*)g_android;
 
-   if (!env ||
-       !app ||
-       !app->isPlayStoreBuild ||
-        app->isMetaQuestBuild)
-      return false;
+   if (!app || !app->isPlayStoreBuild)
+      return -1;
 
-   CALL_BOOLEAN_METHOD(env, enabled, app->activity->clazz,
-         app->isPlayStoreBuild);
-
-   return enabled;
+   return (app->is_play_store_build && !app->is_meta_quest_build) ? 1 : 0;
 }
 
 /* Returns true if current build utilises
@@ -274,17 +266,12 @@ static bool play_feature_delivery_enabled_internal(void)
 bool play_feature_delivery_enabled(void)
 {
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
-
-   /* Calling Java functions is slow. We need to
-    * check Play Store build status frequently,
-    * often in loops, so rely on a cached global
-    * status flag instead dealing with Java
-    * interfaces */
    int cached = retro_atomic_load_acquire_int(&state->enabled_cached);
 
    if (cached < 0)
    {
-      cached = play_feature_delivery_enabled_internal() ? 1 : 0;
+      if ((cached = play_feature_delivery_enabled_internal()) < 0)
+         return false;
       retro_atomic_store_release_int(&state->enabled_cached, cached);
    }
 
