@@ -347,6 +347,8 @@ typedef struct database_state_handle
     * claimed: every member is looked up next, unless one claimed for
     * the archive's own name matches too. */
    bool member_hit;
+   /* The archive's own CRC was asked for, so a whole read is used. */
+   bool whole_asked;
    bool index_ready;
 } database_state_handle_t;
 
@@ -469,6 +471,9 @@ typedef struct scan_readers
    /* Fixed before the readers start: some database opens zip, so a
     * TorrentZip set's own CRC may be asked. */
    bool               tz_free;
+   /* While tz_free: the scan asked the last TorrentZip set's own CRC,
+    * so the readers read the next ones whole. */
+   retro_atomic_int_t tz_whole;
 } scan_readers_t;
 
 /* A reader task's own. */
@@ -1296,6 +1301,7 @@ static void task_database_crc_reset(database_state_handle_t *db_state)
    db_state->crc_pass     = DB_CRC_PASS_FILE;
    db_state->whole_done   = false;
    db_state->member_hit   = false;
+   db_state->whole_asked  = false;
    task_database_members_free(db_state->members);
    db_state->members      = NULL;
    db_state->member_next  = 0;
@@ -1615,7 +1621,8 @@ static void scan_reader_handler(retro_task_t *task)
           * a TorrentZip set of several members while a database opens
           * zip: the scan reads it whole if its passes ask for that. */
          if (   m
-             && !(m->torrentzip && m->count > 1 && blk->tz_free)
+             && !(   m->torrentzip && m->count > 1
+                  && retro_atomic_load_acquire_int(&blk->tz_whole))
              && !scan_reader_credit(blk))
          {
             rd->own = rd->slot;
@@ -1697,6 +1704,7 @@ static void scan_readers_start(retro_task_t *task,
    blk->ident = task->ident;
    blk->fill  = manual_scan->content_list_index;
    blk->tz_free = scan_readers_tz_free(manual_scan);
+   retro_atomic_int_init(&blk->tz_whole, blk->tz_free);
    retro_atomic_int_init(&blk->filled, 0);
    retro_atomic_int_init(&blk->claim,  0);
    retro_atomic_int_init(&blk->idle,   0);
@@ -1938,10 +1946,16 @@ static void scan_readers_grant(scan_readers_t *blk, int add)
 static void scan_readers_whole_ahead(manual_scan_handle_t *manual_scan,
       int whole)
 {
-   scan_readers_t *blk = manual_scan->readers;
+   scan_readers_t       *blk = manual_scan->readers;
+   const scan_members_t *m   = manual_scan->state.members;
 
    if (!blk)
       return;
+   /* A TorrentZip set its sizes kept from a whole read: the readers'
+    * whole reads of the next ones would be dropped. */
+   if (m && m->torrentzip && m->count > 1 && blk->tz_free)
+      retro_atomic_store_release_int(&blk->tz_whole,
+            manual_scan->state.whole_asked);
    if (!whole)
    {
       blk->grant = 0;
@@ -2986,6 +3000,7 @@ static enum scan_verdict task_database_whole_pass(
    db_state->list_index  = 0;
    db_state->entry_index = 0;
    db_state->crc_pass    = DB_CRC_PASS_WHOLE;
+   db_state->whole_asked = true;
    if (   !db_state->whole_done
        && !task_database_crc_begin(db_state, name, TASK_DATABASE_CRC_FILE,
             DB_CRC_DEST_ARCHIVE, DB_CRC_FAIL_ERROR))
@@ -3007,6 +3022,7 @@ static enum scan_verdict task_database_both_pass(
       db_state->archive_crc = 0;
       return SCAN_VERDICT_CONTINUE;
    }
+   db_state->whole_asked = true;
    if (   !db_state->whole_done
        && !task_database_crc_begin(db_state, name, TASK_DATABASE_CRC_FILE,
             DB_CRC_DEST_ARCHIVE, DB_CRC_FAIL_ERROR))

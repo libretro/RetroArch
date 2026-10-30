@@ -4224,6 +4224,83 @@ fixture:
    check(0, "fixture", "could not write the TorrentZip sets");
 }
 
+#define TZU_ZIPS    24
+#define TZU_SLOW_MS 150
+
+/* TorrentZip sets a zip database cannot hold by their size: once the
+ * scan has kept one from a whole read, the readers stop reading the
+ * next ones whole, whose CRCs the scan would drop.  Their whole reads
+ * are slowed, so each reader has one under way when the scan rules on
+ * the first set and may begin one more before it does: two rounds,
+ * three allowed, of TZU_ZIPS without the stop. */
+static void tz_unsized_lane(const char *root)
+{
+   static uint8_t d[2][MF_MEMBER_LEN];
+   char           db[512], dir[512], p[1024], detail[64];
+   db_rec_t       arc;
+   zip_entry_t    e[2];
+   unsigned       k, n = readers_expected();
+   int            scan, rdr;
+   bool           started;
+
+   if (!n)
+   {
+      check(1, "unsized TorrentZip sets: readers stop reading whole",
+            "no readers");
+      return;
+   }
+   sprintf(db,  "%s/tz_unsized_db", root);
+   sprintf(dir, "%s/tz_unsized",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   memset(e, 0, sizeof(e));
+   e[0].name   = "a.ar";
+   e[1].name   = "b.ar";
+   zip_comment = TZ_COMMENT;
+   for (k = 0; k < TZU_ZIPS; k++)
+   {
+      fill_forced(d[0], MF_MEMBER_LEN, 161 + k, 0x0CA70200u + 2 * k);
+      fill_forced(d[1], MF_MEMBER_LEN, 163 + k, 0x0CA70201u + 2 * k);
+      e[0].data = d[0];
+      e[0].len  = MF_MEMBER_LEN;
+      e[0].crc  = 0x0CA70200u + 2 * k;
+      e[1].data = d[1];
+      e[1].len  = MF_MEMBER_LEN;
+      e[1].crc  = 0x0CA70201u + 2 * k;
+      sprintf(p, "%s/tzu%02u.zip", dir, k);
+      if (!write_zip_entries(p, e, 2))
+         goto fixture;
+   }
+   zip_comment = NULL;
+   /* A zip record of another size, whose CRC matches nothing. */
+   set_rec(&arc, "TZU Other Size", 0x0CA702F0u, TZ_ZIP_LEN + 1);
+   arc.rom_name = "set.zip";
+   sprintf(p, "%s/Test Arc Gate.rdb", db);
+   if (!write_db_set(p, &arc, 1))
+      goto fixture;
+
+   use_queue(true);
+   use_db(db);
+   retro_atomic_store_release_int(&reads_begun,  0);
+   retro_atomic_store_release_int(&reader_begun, 0);
+   begun_size = TZ_ZIP_LEN;
+   slow_reset(TZ_ZIP_LEN, TZU_SLOW_MS);
+   started    = run_scan(dir) && scan_completed;
+   slow_size  = 0;
+   begun_size = 0;
+   rdr        = retro_atomic_load_acquire_int(&reader_begun);
+   scan       = retro_atomic_load_acquire_int(&reads_begun) - rdr;
+   sprintf(detail, "scan %d, readers %d of %u (%u readers)", scan, rdr,
+         TZU_ZIPS, n);
+   check(started && scan == 0 && rdr <= (int)(3 * n),
+         "unsized TorrentZip sets: readers stop reading whole", detail);
+   return;
+
+fixture:
+   zip_comment = NULL;
+   check(0, "fixture", "could not write the unsized TorrentZip sets");
+}
+
 /* Several members, no database holds the archive by its size, and its
  * first member's CRC is in one whose cores open zips only: the archive
  * is that record's entry, with no whole read. */
@@ -8707,6 +8784,7 @@ int main(int argc, char **argv)
       multi_nosize_lane(root, pl_dir, true);
       multi_nosize_lane(root, pl_dir, false);
       tz_reader_lane(root);
+      tz_unsized_lane(root);
       q1a_lane(root, pl_dir, true);
       q1a_lane(root, pl_dir, false);
 #ifdef HAVE_RRAR
