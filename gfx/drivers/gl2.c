@@ -8650,6 +8650,10 @@ static void *gl2_init(const video_info_t *video)
    if (gl->desktop_xr)
       gl->desktop_xr->window_interval = interval;
 #endif
+#ifdef GL2_VIEWS
+   /* get_flags reads it before the first frame too */
+   gl2_views_publish(gl);
+#endif
 
    /* Init leaves the core's context current for context_reset on this
     * thread; when the wrapper's ring will drive the core, the main

@@ -6704,6 +6704,35 @@ static void lane_pacing_flag_follows_wrapper(void)
       fprintf(stderr, "[pass] pacing-flag lane\n");
 }
 
+#if defined(HAVE_OPENGL) && defined(HAVE_GLSL)
+/* gl2 reports views from its init as its frames do: a frame laid out
+ * before its first draw took views and windows for gone */
+static void lane_gl2_views_from_init(void)
+{
+   unsigned had = failures;
+   gfx_ctx_flags_t flags;
+   bool at_init;
+
+   set_threaded_via_setting(false);
+   run_frames(2);
+   expect_wrapper(false, "gl2 views lane");
+   video_driver_reinit(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK);
+   flags.flags = 0;
+   video_context_driver_get_flags(&flags);
+   at_init     = BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS) != 0;
+   run_frames(2);
+   flags.flags = 0;
+   video_context_driver_get_flags(&flags);
+   CHECK(at_init == (BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS) != 0),
+         "gl2 views lane: views %d from init, %d after a frame",
+         at_init ? 1 : 0,
+         (int)BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS));
+
+   if (failures == had)
+      fprintf(stderr, "[pass] gl2 views-from-init lane\n");
+}
+#endif
+
 /* ------------------------------------------------------------------ */
 /* Lane: zero-copy with the ring full                                  */
 /*   A driver whose present blocks for longer than a display period -  */
@@ -12134,6 +12163,10 @@ int main(int argc, char *argv[])
 #if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
    if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl"))
       lane_gl2_linear();
+#endif
+#if defined(HAVE_OPENGL) && defined(HAVE_GLSL)
+   if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl"))
+      lane_gl2_views_from_init();
 #endif
    if (real_driver())
       lane_surface_4k();
