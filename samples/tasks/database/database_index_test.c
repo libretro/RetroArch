@@ -911,6 +911,84 @@ static void check_archive_sizes(const char *dir)
    }
 }
 
+/* Three records: both fingerprints, set_fp1 alone, neither. */
+static int write_db_setfp(const char *path)
+{
+   static const uint32_t fp1[2] = { 0x5E7F0001u, 0x5E7F0003u };
+   buf_t body;
+   int   i;
+
+   memset(&body, 0, sizeof(body));
+   for (i = 0; i < 3; i++)
+   {
+      char    name[32];
+      uint8_t crc[4], key[4];
+
+      crc[0] = 0xA2; crc[1] = 0; crc[2] = 0; crc[3] = (uint8_t)i;
+      sprintf(name, "FP %d", i);
+      bfixmap(&body, 3 + (i < 2 ? 1 : 0) + (i == 0 ? 1 : 0));
+      bfixstr(&body, "name"); bfixstr(&body, name);
+      bfixstr(&body, "crc");  bbin(&body, crc, 4);
+      bfixstr(&body, "size"); buint16(&body, (uint16_t)(100 + i));
+      if (i < 2)
+      {
+         key[0] = (uint8_t)(fp1[i] >> 24);
+         key[1] = (uint8_t)(fp1[i] >> 16);
+         key[2] = (uint8_t)(fp1[i] >>  8);
+         key[3] = (uint8_t)(fp1[i]);
+         bfixstr(&body, "set_fp1"); bbin(&body, key, 4);
+      }
+      if (i == 0)
+      {
+         key[0] = 0x5E; key[1] = 0x7F; key[2] = 0x00; key[3] = 0x02;
+         bfixstr(&body, "set_fpm1"); bbin(&body, key, 4);
+      }
+   }
+   return write_rdb(path, &body);
+}
+
+static void check_setfp_index(const char *dir)
+{
+   char path[512], path_n[512], name[64];
+   database_info_crc_index_t *idx;
+
+   sprintf(path,   "%s/index_setfp.rdb",      dir);
+   sprintf(path_n, "%s/index_setfp_none.rdb", dir);
+   if (!write_db_setfp(path) || !write_db_archives(path_n, false))
+   {
+      check(0, "set fingerprint databases", "could not be written");
+      return;
+   }
+
+   if (!(idx = crc_index_want(path, 0, DATABASE_INFO_INDEX_SETFP)))
+      check(0, "set fingerprint index built", "no index");
+   else
+   {
+      check(database_info_crc_index_count(idx) == 3,
+            "set fingerprints: both keys indexed", "3 entries");
+      crc_lookup(idx, path, 0x5E7F0001u, name, sizeof(name));
+      check(!strcmp(name, "FP 0"),
+            "set fingerprints: set_fp1 finds its record", name);
+      crc_lookup(idx, path, 0x5E7F0002u, name, sizeof(name));
+      check(!strcmp(name, "FP 0"),
+            "set fingerprints: set_fpm1 finds its record", name);
+      crc_lookup(idx, path, 0x5E7F0003u, name, sizeof(name));
+      check(!strcmp(name, "FP 1"),
+            "set fingerprints: a second record", name);
+      crc_lookup(idx, path, 0xA2000000u, name, sizeof(name));
+      check(!*name, "set fingerprints: not keyed on crc", name);
+      database_info_crc_index_free(idx);
+   }
+
+   idx = crc_index_want(path_n, 0, DATABASE_INFO_INDEX_SETFP);
+   check(idx && !database_info_crc_index_count(idx),
+         "set fingerprints: none in the database, an empty index", path_n);
+   database_info_crc_index_free(idx);
+   idx = crc_index_want(path, 1, DATABASE_INFO_INDEX_SETFP);
+   check(!idx, "set fingerprints: refused over the budget", "1 byte");
+   database_info_crc_index_free(idx);
+}
+
 int main(int argc, char **argv)
 {
    const char *dir = (argc > 1) ? argv[1] : "/tmp";
@@ -1062,6 +1140,7 @@ int main(int argc, char **argv)
    check_index_job(dir);
    check_index_job_edges(dir);
    check_archive_sizes(dir);
+   check_setfp_index(dir);
 
    printf("\n%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;

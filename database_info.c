@@ -1586,6 +1586,7 @@ struct db_index_build
    struct db_arc_build    arc;
    bool                   want_crc;
    bool                   want_serial;
+   bool                   want_setfp;
    bool                   want_arc;
    bool                   has_serial;
 };
@@ -1596,6 +1597,16 @@ static int db_index_collect(void *ctx, const uint8_t *key, size_t key_len,
 {
    struct db_index_build *b = (struct db_index_build*)ctx;
 
+   /* The walk reads set_fpm1 where it reads the serial.  A record can
+    * carry both fingerprints; each indexes it. */
+   if (b->want_setfp)
+   {
+      if (!b->crc.failed)
+         db_crc_collect(&b->crc, key, key_len, offset, NULL);
+      if (!b->crc.failed)
+         db_crc_collect(&b->crc, serial, serial_len, offset, NULL);
+      return b->crc.failed;
+   }
    if (serial_len)
       b->has_serial = true;
    if (b->want_crc && !b->crc.failed)
@@ -1725,7 +1736,11 @@ database_info_index_job_t *database_info_index_job_new(
 
    job->b.want_crc         = (want & DATABASE_INFO_INDEX_CRC)    != 0;
    job->b.want_serial      = (want & DATABASE_INFO_INDEX_SERIAL) != 0;
-   job->b.want_arc         = job->b.want_crc
+   job->b.want_setfp       = job->b.want_crc
+      && (want & DATABASE_INFO_INDEX_SETFP) != 0;
+   if (job->b.want_setfp)
+      job->b.want_serial   = false;
+   job->b.want_arc         = job->b.want_crc && !job->b.want_setfp
       && (want & DATABASE_INFO_INDEX_ARCHIVE_SIZES) != 0;
    job->b.arc.max_bytes    = max_bytes;
    job->b.crc.max_bytes    = max_bytes;
@@ -1740,12 +1755,16 @@ database_info_index_job_t *database_info_index_job_new(
    }
    if (libretrodb_open(rdb_path, db, false) == 0)
    {
-      job->scan = libretrodb_scan_begin(db,
-            job->b.want_crc ? "crc" : NULL,
-            (want & (DATABASE_INFO_INDEX_SERIAL
-                   | DATABASE_INFO_INDEX_HAS_SERIAL)) ? "serial" : NULL,
-            job->b.want_crc ? "size" : NULL,
-            job->b.want_arc ? "rom_name" : NULL);
+      if (job->b.want_setfp)
+         job->scan = libretrodb_scan_begin(db,
+               "set_fp1", "set_fpm1", NULL, NULL);
+      else
+         job->scan = libretrodb_scan_begin(db,
+               job->b.want_crc ? "crc" : NULL,
+               (want & (DATABASE_INFO_INDEX_SERIAL
+                      | DATABASE_INFO_INDEX_HAS_SERIAL)) ? "serial" : NULL,
+               job->b.want_crc ? "size" : NULL,
+               job->b.want_arc ? "rom_name" : NULL);
       libretrodb_close(db);
    }
    libretrodb_free(db);
