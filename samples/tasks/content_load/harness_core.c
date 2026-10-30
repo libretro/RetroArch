@@ -184,6 +184,14 @@ void retro_run(void)
  * checks (task_save writes one chunk per tick at least, and a chunk
  * is 16 MiB on desktop), so a close can find the save in flight. */
 #define STATE_SIZE (64u * 1024 * 1024)
+/* The first byte of a state: what a save writes there, and what the
+ * last accepted load found there, so the harness can tell which file
+ * a load came from. */
+static unsigned char state_mark     = 0x5a;
+static unsigned char state_loaded   = 0;
+RETRO_API void harness_core_set_state_mark(unsigned mark)
+{ state_mark = (unsigned char)mark; state_loaded = 0; }
+RETRO_API unsigned harness_core_state_loaded(void) { return state_loaded; }
 size_t retro_serialize_size(void) { state_calls++; return STATE_SIZE; }
 bool retro_serialize(void *data, size_t size)
 {
@@ -191,13 +199,16 @@ bool retro_serialize(void *data, size_t size)
    if (size < STATE_SIZE)
       return false;
    memset(data, 0x5a, STATE_SIZE);
+   ((unsigned char*)data)[0] = state_mark;
    return true;
 }
 bool retro_unserialize(const void *data, size_t size)
 {
-   (void)data;
    state_calls++;
-   return size >= STATE_SIZE;
+   if (size < STATE_SIZE)
+      return false;
+   state_loaded = ((const unsigned char*)data)[0];
+   return true;
 }
 void retro_cheat_reset(void) { }
 void retro_cheat_set(unsigned index, bool enabled, const char *code) { (void)index; (void)enabled; (void)code; }

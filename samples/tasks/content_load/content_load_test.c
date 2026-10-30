@@ -33,6 +33,9 @@
  *    held - nothing is made or read under the playlist directory,
  *    the playlists tab lists nothing - and the release makes the
  *    builtin folder, loads favorites and history, and lists the tab;
+ *  - playlist state slot: an entry run from its Load State list loads
+ *    the slot picked there, over an auto state and with none, though
+ *    the menu has moved on by the time the load reaches the content;
  *  - quit waits for a save: a quit from the frame loop while a state
  *    is being written returns to the loop at once, which presents
  *    frames - the core not run - until the state is written, and only
@@ -1977,7 +1980,7 @@ static bool rr_ask(command_t *cmd,
    rr_replies  = rr_in_command_replies = 0;
    rr_reply[0] = '\0';
    ok          = rr_run(cmd, handler, arg);
-   for (n = 0; n < 300 && !rr_replies; n++)
+   for (n = 0; n < 5000 && !rr_replies; n++)
       pump(1);
    return ok;
 }
@@ -2162,6 +2165,190 @@ static void lane_state_slot_reply(void)
    if (failures == had)
       fprintf(stderr, "[pass] state-slot-reply lane\n");
 }
+
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+/* ------------------------------------------------------------------ */
+/* Lane: playlist Load State slot                                      */
+/* ------------------------------------------------------------------ */
+
+static void core_set_state_mark(unsigned mark)
+{
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   void (*fn)(unsigned) = lib
+      ? (void (*)(unsigned))dylib_proc(lib, "harness_core_set_state_mark")
+      : NULL;
+   if (fn)
+      fn(mark);
+}
+
+/* Runs frames until no content load - read ahead or staged - and no
+ * state task is in flight: a load waits out a save still inside the
+ * core, which under a sanitizer takes many frames. */
+static bool load_in_flight(void)
+{
+   return runloop_is_content_switching()
+      || (content_state_get_ptr()->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)
+      || state_task_in_flight();
+}
+
+static bool settle(void)
+{
+   unsigned i;
+   for (i = 0; i < 5000 && load_in_flight(); i++)
+      pump(1);
+   pump(2);
+   return !load_in_flight();
+}
+
+/* Saves the running core to @slot, its state marked @mark: retried
+ * across frames while another blocking task (the previous save's
+ * thumbnail) holds the queue. */
+static bool save_marked_slot(unsigned slot, unsigned mark, const char *path)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned i;
+
+   remove(path);
+   core_set_state_mark(mark);
+   configuration_set_int(settings, settings->ints.state_slot, (int)slot);
+   for (i = 0; i < 200 && !path_is_valid(path); i++)
+   {
+      if (!state_task_in_flight() && !runloop_is_content_switching())
+         command_event(CMD_EVENT_SAVE_STATE, NULL);
+      pump(1);
+   }
+   for (i = 0; i < 1000 && state_task_in_flight(); i++)
+      pump(1);
+   return path_is_valid(path) && !state_task_in_flight();
+}
+
+/* Runs the playlist's first entry from its Load State list, OK on
+ * slot @slot as the menu does, and runs the frames of the load. */
+static void playlist_run_from_slot(const char *slot)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   menu_st->driver_data->rpl_entry_selection_ptr = 0;
+   CHECK(accept_open_screen(DISPLAYLIST_STATE_SLOT_RUN,
+            MENU_ENUM_LABEL_STATE_SLOT_RUN_STR,
+            MENU_ENUM_LABEL_STATE_SLOT_RUN, "Load State") > 1,
+         "the entry's Load State list is empty");
+   CHECK(accept_press_ok(slot), "no slot %s in the Load State list", slot);
+   CHECK(runloop_is_content_switching(),
+         "OK on a Load State slot did not start a staged load");
+   CHECK(settle() && core_is_up(),
+         "the load from the playlist did not go through");
+}
+
+/* A playlist entry run from its Load State list starts at the slot
+ * picked there - over an auto state, and with no auto state - though
+ * the menu has rebuilt its lists by the time the load reaches the
+ * content. */
+static void lane_playlist_state_slot(void)
+{
+   playlist_config_t cfg;
+   struct playlist_entry entry;
+   content_ctx_info_t info;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   bool auto_load              = settings->bools.savestate_auto_load;
+   char game[600], lpl[600], slot_path[PATH_MAX_LENGTH];
+   char spare_path[PATH_MAX_LENGTH], auto_path[PATH_MAX_LENGTH + 8];
+   FILE *f;
+   unsigned had = failures;
+
+   snprintf(game, sizeof(game), "%s/slots.bin", harness_dir);
+   if ((f = fopen(game, "wb")))
+   {
+      fputs("harness content", f);
+      fclose(f);
+   }
+   memset(&info, 0, sizeof(info));
+   CHECK(settle(), "a load or state task from before is still in flight");
+   open_menu();
+
+   /* Slot 4 holds one state, the auto state another. */
+   CHECK(task_push_load_content_with_new_core_from_menu(core_path, game,
+            &info, CORE_TYPE_PLAIN, NULL, NULL),
+         "the content load was not started");
+   CHECK(settle() && core_is_up()
+         && strstr(path_get(RARCH_PATH_BASENAME), "slots"),
+         "the content load did not go through");
+
+   runloop_get_savestate_path(slot_path,  sizeof(slot_path),  4);
+   runloop_get_savestate_path(spare_path, sizeof(spare_path), 7);
+   snprintf(auto_path, sizeof(auto_path), "%s.auto",
+         runloop_st->name.savestate);
+
+   CHECK(save_marked_slot(4, 0x11, slot_path),
+         "slot 4 was not written to %s", slot_path);
+   CHECK(save_marked_slot(7, 0x22, spare_path),
+         "slot 7 was not written to %s", spare_path);
+   remove(auto_path);
+   CHECK(rename(spare_path, auto_path) == 0, "no auto state at %s", auto_path);
+   configuration_set_int(settings, settings->ints.state_slot, 0);
+   configuration_set_bool(settings, settings->bools.savestate_auto_load, true);
+
+   /* The playlist holds the content, with no slot of its own. */
+   memset(&cfg, 0, sizeof(cfg));
+   snprintf(lpl, sizeof(lpl), "%s/playlists/slots.lpl", harness_dir);
+   playlist_config_set_path(&cfg, lpl);
+   cfg.capacity = 16;
+   CHECK(playlist_init_cached(&cfg), "the playlist was not cached");
+   memset(&entry, 0, sizeof(entry));
+   entry.path      = game;
+   entry.label     = (char*)"slots";
+   entry.core_path = core_path;
+   entry.core_name = (char*)"content_load_harness";
+   CHECK(playlist_get_cached()
+         && playlist_push(playlist_get_cached(), &entry),
+         "the entry was not added to the playlist");
+
+   /* Leave the content, so the entry's run is a new load. */
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the contentless load was not started");
+   CHECK(settle() && core_is_up(), "the contentless load did not go through");
+
+   playlist_run_from_slot("4");
+   CHECK(core_export("harness_core_state_loaded") == 0x11,
+         "with an auto state, the load started from %s, not slot 4",
+         core_export("harness_core_state_loaded") == 0x22
+         ? "the auto state" : "no state");
+   CHECK(settings->ints.state_slot == 4,
+         "the active slot is %d after starting from slot 4",
+         settings->ints.state_slot);
+
+   /* Again with no auto state to fall back on. */
+   remove(auto_path);
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the second contentless load was not started");
+   CHECK(settle() && core_is_up(),
+         "the second contentless load did not go through");
+   playlist_run_from_slot("4");
+   CHECK(core_export("harness_core_state_loaded") == 0x11,
+         "without an auto state, the load started from %s, not slot 4",
+         core_export("harness_core_state_loaded") ? "a state" : "no state");
+   CHECK(!menu_state_get_ptr()->driver_data->state_slot_run_pending,
+         "the Load State pick outlived the load it was made for");
+
+   configuration_set_bool(settings, settings->bools.savestate_auto_load,
+         auto_load);
+   playlist_free_cached();
+   remove(lpl);
+   remove(slot_path);
+   remove(auto_path);
+   {
+      char png[PATH_MAX_LENGTH + 8];
+      snprintf(png, sizeof(png), "%s.png", slot_path);
+      remove(png);
+      snprintf(png, sizeof(png), "%s.png", spare_path);
+      remove(png);
+   }
+   remove(game);
+   if (failures == had)
+      fprintf(stderr, "[pass] playlist-state-slot lane\n");
+}
+#endif
 
 /* LOAD_CONTENT and CLOSE_CONTENT, asked by a structured interface,
  * answer once the load is through. The command interfaces outlive the
@@ -3042,6 +3229,9 @@ int main(int argc, char *argv[])
    lane_replay_reply(dir);
 #endif
    lane_state_slot_reply();
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+   lane_playlist_state_slot();
+#endif
    lane_content_reply(dir);
 #if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)
    lane_screenshot_steps(dir);

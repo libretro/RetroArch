@@ -8724,7 +8724,8 @@ static int action_ok_state_slot_run(const char *path,
    menu_entries_pop_stack(&new_selection_ptr, 0, 0);
    menu_st->selection_ptr     = 0;
 
-   menu_st->driver_data->state_slot_run = idx - 1;
+   menu_st->driver_data->state_slot_run         = idx - 1;
+   menu_st->driver_data->state_slot_run_pending = true;
 
    menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;

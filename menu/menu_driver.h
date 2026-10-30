@@ -490,6 +490,11 @@ typedef struct
 
    /* The Content Downloader directory the user last stepped into. */
    char core_content_dir[NAME_MAX_LENGTH];
+
+   /* A playlist entry was run from its Load State list: the content
+    * load starts at state_slot_run (-1 for Auto). Consumed by the
+    * load it was pushed with, which may run frames later. */
+   bool state_slot_run_pending;
 } menu_handle_t;
 
 struct menu_state

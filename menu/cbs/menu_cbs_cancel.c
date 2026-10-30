@@ -103,7 +103,8 @@ static int action_cancel_state_slot_run(const char *path,
    if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
       command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
-   menu_st->driver_data->state_slot_run = 0;
+   menu_st->driver_data->state_slot_run         = 0;
+   menu_st->driver_data->state_slot_run_pending = false;
 
    menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;

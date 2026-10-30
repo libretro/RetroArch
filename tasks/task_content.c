@@ -2271,6 +2271,15 @@ static void content_load_finish(struct content_load_job *job,
    runloop_st->content_switching = false;
    /* A library opened for a core stage that never took it */
    runloop_core_preload_cancel();
+#ifdef HAVE_MENU
+   /* A Load State slot asked for with this load, left over when the
+    * load failed before the content came up */
+   {
+      menu_handle_t *menu = menu_state_get_ptr()->driver_data;
+      if (menu)
+         menu->state_slot_run_pending = false;
+   }
+#endif
 
    if (ok)
       content_load_tail(job, p_content);
