@@ -69,6 +69,17 @@ ifneq ($(SEMPOOL),)
    CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SEM_POOL
    TARGET := retro_eventcount_test_sempool
 endif
+# Built for Linux, both take the semaphore past ThreadSanitizer's
+# interceptors, through sem_hidden_shim.c, so it sees no more order
+# than Darwin's Mach semaphore gives it.
+ifneq ($(SEM)$(SEMPOOL),)
+   ifneq ($(findstring linux,$(shell $(CC) -dumpmachine)),)
+      SOURCES += sem_hidden_shim.c
+      CFLAGS  += -Dsem_wait=hidden_sem_wait -Dsem_post=hidden_sem_post \
+                 -Dsem_timedwait=hidden_sem_timedwait
+      LDFLAGS += -ldl
+   endif
+endif
 # CTR=1 builds the 3DS address-arbiter backend on this host, against
 # hostctr/3ds - the slice of libctru it uses - with the two arbiter
 # wrappers stood in for over futex in ctr_arbiter_shim.c.
@@ -135,7 +146,8 @@ check: all deadline_test
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(OBJS) switch_arbiter_shim.o ctr_arbiter_shim.o retro_eventcount_test \
+	rm -f $(OBJS) switch_arbiter_shim.o ctr_arbiter_shim.o sem_hidden_shim.o \
+	      retro_eventcount_test \
 	      retro_eventcount_test_scond retro_eventcount_test_sem \
 	      retro_eventcount_test_sempool retro_eventcount_test_switch \
 	      retro_eventcount_test_ctr

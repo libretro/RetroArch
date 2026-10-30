@@ -1385,6 +1385,13 @@ static bool ec_sem_park(retro_eventcount_t *ec, int key, bool bounded,
          ec_sem_sleep(w.sem, false, 0);
    }
 
+   /* The waker set WOKEN before its signal, after its last read of this
+    * block.  The semaphore already orders that read before the frame
+    * goes, but a Mach one does so where ThreadSanitizer cannot see:
+    * the acquire of the flag is what it sees. */
+   if (woken)
+      (void)retro_atomic_load_acquire_int(&w.flags);
+
    ec_sem_put(w.sem);
    return woken;
 }
