@@ -873,6 +873,16 @@ static bool ring_emptied(void *arg)
    return false;
 }
 
+/* A transport change the producer decided, installed by the consumer. */
+static bool transport_installed(void *arg)
+{
+   (void)arg;
+   if (!audio_driver_transport_pending(&audio_driver_st))
+      return true;
+   audio_driver_pipeline_signal(&audio_driver_st);
+   return false;
+}
+
 static bool tap_head_full(void *arg)
 {
    (void)arg;
@@ -914,6 +924,7 @@ static void wrapper_live_controls(unsigned publishes)
    audio_pipeline_stretch_t *retained = st->pipe_transport;
    void *retained_output = st->pipe_transport_output;
    unsigned step;
+   int stops;
    check.initial = true;
    audio_thread_apply_control(st->context_audio_data, check_live_control, &check);
    check.initial = false;
@@ -977,9 +988,16 @@ static void wrapper_live_controls(unsigned publishes)
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
          config_get_ptr()->floats.slowmotion_ratio = 8;
          audio_driver_publish_runloop();
+         /* Suspended and resumed on the consumer, with the device left
+          * running: nothing parks it. */
+         stops = retro_atomic_load_acquire_int(&dev_stops);
          submit_frame((size_t)(CORE_RATE / FPS), publishes);
-         if (st->pipe_transport || !st->pipe_transport_follow
-               || st->pipe_transport_suspended != retained) fixture_failures++;
+         if (     st->pipe_transport_mode != AUDIO_TRANSPORT_SUSPENDED
+               || !wait_progress(transport_installed, NULL)
+               || st->pipe_transport || !st->pipe_transport_follow
+               || st->pipe_transport_suspended != retained
+               || retro_atomic_load_acquire_int(&dev_stops) != stops)
+         { fprintf(stderr, "automatic suspension parked or did not land\n"); fixture_failures++; }
       }
       runloop_state_get_ptr()->flags = 0;
       config_get_ptr()->floats.slowmotion_ratio = 1;
@@ -991,8 +1009,12 @@ static void wrapper_live_controls(unsigned publishes)
          if (!wait_progress(fallback_drained, NULL))
          { fprintf(stderr, "legacy fallback did not drain source/device output\n"); fixture_failures++; }
          audio_driver_frame_end();
+         stops = retro_atomic_load_acquire_int(&dev_stops);
          submit_frame((size_t)(CORE_RATE / FPS), publishes);
-         if (st->pipe_transport != retained || st->pipe_transport_suspended
+         if (     st->pipe_transport_mode != AUDIO_TRANSPORT_RUNNING
+               || !wait_progress(transport_installed, NULL)
+               || retro_atomic_load_acquire_int(&dev_stops) != stops
+               || st->pipe_transport != retained || st->pipe_transport_suspended
                || st->pipe_transport_output != retained_output
                || st->pipe_layouts.published_control != 65536
                || st->pipe_layouts.published_cutoff != 0)

@@ -1114,6 +1114,12 @@ typedef struct
     * has (audio_driver_set_input_rate()). */
    retro_atomic_int_t  pipe_rate_seq;
    retro_atomic_int_t  pipe_rate_seen;   /* stored by the consumer */
+   /* A transport change for the consumer to install, numbered likewise.
+    * pipe_transport_mode is the transport as the producer has decided
+    * it, which the consumer's pointers follow once it has. */
+   retro_atomic_int_t  pipe_transport_seq;
+   retro_atomic_int_t  pipe_transport_seen;
+   uint8_t             pipe_transport_mode;
    /* Without the threaded pipeline the same requests, and a format
     * change and a stop's reset besides, are carried out by the thread
     * that submits the core's audio (inline_owner), or by the main

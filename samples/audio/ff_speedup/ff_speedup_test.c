@@ -707,6 +707,7 @@ static void test_producer_holds_at_a_full_ring(void)
    st->pipe_transport = audio_pipeline_stretch_new(48000, 2, false, 3,
          &st->pipe_ring, &st->pipe_layouts, stage_out, FRAMES * 4);
    if (!st->pipe_transport) abort();
+   st->pipe_transport_mode = AUDIO_TRANSPORT_RUNNING;
    retro_spsc_skip(&st->pipe_ring, retro_spsc_read_avail(&st->pipe_ring));
    retro_spsc_write(&st->pipe_ring, block, FRAMES * st->pipe_frame_bytes);
    CHECK(audio_driver_pipeline_transport_request(3 * 65536, true, false, 0)
@@ -726,6 +727,7 @@ static void test_producer_holds_at_a_full_ring(void)
          "and lands behind the source the hold produced");
    audio_pipeline_stretch_free(st->pipe_transport);
    st->pipe_transport = NULL;
+   st->pipe_transport_mode = AUDIO_TRANSPORT_NONE;
 
    settings->floats.fastforward_ratio = 0.0f;
    runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_FASTMOTION;

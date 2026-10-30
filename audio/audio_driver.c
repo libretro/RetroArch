@@ -82,12 +82,18 @@ static void audio_driver_dsp_reap(audio_driver_state_t *audio_st);
 #define AUDIO_TRANSPORT_FOLLOW 1
 #define AUDIO_TRANSPORT_LOWPASS 2
 #define AUDIO_TRANSPORT_UPDATE 4
+/* pipe_transport_mode */
+#define AUDIO_TRANSPORT_NONE      0
+#define AUDIO_TRANSPORT_RUNNING   1
+#define AUDIO_TRANSPORT_SUSPENDED 2
 static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st);
 static bool audio_driver_transport_recover(bool resume, uint32_t tempo);
 static bool audio_driver_pipe_ff_waits(audio_driver_state_t *audio_st);
 static bool audio_driver_pipeline_transport_publish(uint32_t tempo_q16,
       bool active, bool reset, uint32_t cutoff, bool engage_ahead);
 static void audio_driver_rate_install(void);
+static bool audio_driver_transport_install(audio_driver_state_t *audio_st);
+static void audio_driver_transport_drop(audio_driver_state_t *audio_st);
 static void audio_driver_rate_drop(audio_driver_state_t *audio_st);
 #ifdef HAVE_DSP_FILTER
 static float audio_driver_input_rate(const audio_driver_state_t *audio_st);
@@ -1323,6 +1329,8 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_transport_serial = audio_st->pipe_transport_search = 0;
    audio_st->pipe_transport_rate = 0;
    audio_st->pipe_transport_follow = 0;
+   audio_st->pipe_transport_mode = AUDIO_TRANSPORT_NONE;
+   audio_driver_transport_drop(audio_st);
 #endif
 
    /* All scratch buffers live in the two arenas; the named pointers are
@@ -2517,7 +2525,8 @@ static INLINE bool audio_driver_ff_follows(const audio_driver_state_t *audio_st,
       return true;
 #ifdef HAVE_THREADS
    if (audio_st->pipe_threaded)
-      return audio_st->pipe_transport && !audio_st->transport_lpf_only;
+      return audio_st->pipe_transport_mode == AUDIO_TRANSPORT_RUNNING
+         && !audio_st->transport_lpf_only;
 #endif
    return audio_st->inline_transport && !audio_st->transport_lpf_only;
 }
@@ -5369,7 +5378,9 @@ static bool audio_driver_pipeline_pause_pending(audio_driver_state_t *audio_st)
       || retro_atomic_load_acquire_int(&audio_st->pipe_resume_seq)
          != retro_atomic_load_relaxed_int(&audio_st->pipe_resume_seen)
       || retro_atomic_load_acquire_int(&audio_st->pipe_rate_seq)
-         != retro_atomic_load_relaxed_int(&audio_st->pipe_rate_seen);
+         != retro_atomic_load_relaxed_int(&audio_st->pipe_rate_seen)
+      || retro_atomic_load_acquire_int(&audio_st->pipe_transport_seq)
+         != retro_atomic_load_relaxed_int(&audio_st->pipe_transport_seen);
 }
 #endif
 
@@ -5769,15 +5780,17 @@ static void audio_driver_inline_format_apply(audio_driver_state_t *audio_st,
 static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
       bool write_tail)
 {
-   int seq[5], kind[5];
+   int seq[6], kind[6];
    int n    = 0;
    int done;
+   bool deferred = false;
    int i, k;
    int tail   = retro_atomic_load_acquire_int(&audio_st->pipe_tail_seq);
    int resume = retro_atomic_load_acquire_int(&audio_st->pipe_resume_seq);
    int format = retro_atomic_load_acquire_int(&audio_st->inline_format_seq);
    int reset  = retro_atomic_load_acquire_int(&audio_st->inline_reset_seq);
    int rate   = retro_atomic_load_acquire_int(&audio_st->pipe_rate_seq);
+   int trans  = retro_atomic_load_acquire_int(&audio_st->pipe_transport_seq);
    if (tail != retro_atomic_load_relaxed_int(&audio_st->pipe_tail_seen))
    {  seq[n] = tail;   kind[n++] = 0; }
    if (resume != retro_atomic_load_relaxed_int(&audio_st->pipe_resume_seen))
@@ -5788,6 +5801,8 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
    {  seq[n] = reset;  kind[n++] = 3; }
    if (rate != retro_atomic_load_relaxed_int(&audio_st->pipe_rate_seen))
    {  seq[n] = rate;   kind[n++] = 4; }
+   if (trans != retro_atomic_load_relaxed_int(&audio_st->pipe_transport_seen))
+   {  seq[n] = trans;  kind[n++] = 5; }
    /* Oldest first; the sequence wraps, so compared by difference. */
    for (i = 1; i < n; i++)
       for (k = i; k > 0 && seq[k] - seq[k - 1] < 0; k--)
@@ -5827,8 +5842,11 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
             audio_driver_inline_reset(audio_st);
             audio_driver_reset_resamplers(audio_st);
             break;
-         default:
+         case 4:
             audio_driver_rate_install();
+            break;
+         default:
+            deferred = !audio_driver_transport_install(audio_st);
             break;
       }
    }
@@ -5839,6 +5857,12 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
    if (format - done > 0) done = format;
    if (reset  - done > 0) done = reset;
    if (rate   - done > 0) done = rate;
+   if (trans  - done > 0) done = trans;
+   /* A transport change left for the next pass keeps the check open. */
+   if (deferred)
+      done = trans - 1;
+   else
+      retro_atomic_store_release_int(&audio_st->pipe_transport_seen, trans);
    retro_atomic_store_release_int(&audio_st->pipe_tail_seen,     tail);
    retro_atomic_store_release_int(&audio_st->pipe_resume_seen,   resume);
    retro_atomic_store_release_int(&audio_st->inline_format_seen, format);
@@ -6996,12 +7020,13 @@ static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st
    uint32_t tempo;
    if (!audio_driver_transport_snapshot_tempo(&tempo))
    {
-      if (audio_st->pipe_transport && !audio_driver_transport_recover(false, 65536))
+      if (     audio_st->pipe_transport_mode == AUDIO_TRANSPORT_RUNNING
+            && !audio_driver_transport_recover(false, 65536))
          return false;
       audio_st->pipe_transport_follow &= ~AUDIO_TRANSPORT_UPDATE;
       return true;
    }
-   if (audio_st->pipe_transport_suspended)
+   if (audio_st->pipe_transport_mode == AUDIO_TRANSPORT_SUSPENDED)
    {
       /* Keep publishing legacy source until both queues can hand over. */
       if (retro_spsc_read_avail(&audio_st->pipe_ring)
@@ -7028,7 +7053,8 @@ static bool audio_driver_pipeline_transport_publish(uint32_t tempo_q16,
    audio_pipeline_layout_t *metadata = &audio_st->pipe_layouts;
    size_t head, position;
    bool result;
-   if (!audio_st->pipe_threaded || !audio_st->pipe_transport)
+   if (     !audio_st->pipe_threaded
+         || audio_st->pipe_transport_mode != AUDIO_TRANSPORT_RUNNING)
       return false;
    head     = retro_atomic_load_relaxed_size(&metadata->head);
    position = retro_atomic_load_relaxed_size(&audio_st->pipe_ring.head);
@@ -10083,6 +10109,31 @@ static void audio_driver_transport_clear(audio_driver_state_t *audio_st)
    audio_st->pipe_transport_output = NULL;
    audio_st->pipe_transport_serial = audio_st->pipe_transport_search = 0;
    audio_st->pipe_transport_rate = 0;
+   audio_st->pipe_transport_mode = AUDIO_TRANSPORT_NONE;
+}
+
+/* A stage and its output for the pipeline as it is, touching nothing. */
+static bool audio_driver_transport_stage_new(audio_driver_state_t *audio_st,
+      unsigned rate, uint32_t search_channels, bool floating,
+      audio_pipeline_stretch_t **stage, void **output)
+{
+   size_t frame = audio_st->pipe_channels * (floating ? sizeof(float) : sizeof(int16_t));
+   size_t frames = audio_st->pipe_pass_frames;
+   if (rate < 8000 || rate > 192000 || !audio_st->pipe_channels
+         || audio_st->pipe_channels > AUDIO_PIPE_CANON_CHANNELS || !frames
+         || frames > SIZE_MAX / frame) return false;
+   *output = memalign_alloc(64, frames * frame);
+   if (!*output) return false;
+   *stage = audio_pipeline_stretch_new(rate, audio_st->pipe_channels,
+         floating, search_channels, &audio_st->pipe_ring,
+         &audio_st->pipe_layouts, *output, frames);
+   if (!*stage)
+   {
+      memalign_free(*output);
+      *output = NULL;
+      return false;
+   }
+   return true;
 }
 
 static bool audio_driver_transport_bind(audio_driver_state_t *audio_st,
@@ -10091,21 +10142,9 @@ static bool audio_driver_transport_bind(audio_driver_state_t *audio_st,
    audio_pipeline_stretch_t *stage;
    void *output;
    uint8_t follow = audio_st->pipe_transport_follow;
-   size_t frame = audio_st->pipe_channels * (floating ? sizeof(float) : sizeof(int16_t));
-   size_t frames = audio_st->pipe_pass_frames;
-   if (rate < 8000 || rate > 192000 || !audio_st->pipe_channels
-         || audio_st->pipe_channels > AUDIO_PIPE_CANON_CHANNELS || !frames
-         || frames > SIZE_MAX / frame) return false;
-   output = memalign_alloc(64, frames * frame);
-   if (!output) return false;
-   stage = audio_pipeline_stretch_new(rate, audio_st->pipe_channels,
-         floating, search_channels, &audio_st->pipe_ring,
-         &audio_st->pipe_layouts, output, frames);
-   if (!stage)
-   {
-      memalign_free(output);
+   if (!audio_driver_transport_stage_new(audio_st, rate, search_channels,
+            floating, &stage, &output))
       return false;
-   }
    audio_driver_transport_clear(audio_st);
    /* Both owners are parked and the source is empty. Start at an aligned
     * physical frame, retaining the latest published processing request. */
@@ -10125,6 +10164,7 @@ static bool audio_driver_transport_bind(audio_driver_state_t *audio_st,
    audio_st->pipe_transport_output = output;
    audio_st->pipe_transport_rate = rate;
    audio_st->pipe_transport_search = search_channels;
+   audio_st->pipe_transport_mode = AUDIO_TRANSPORT_RUNNING;
    return true;
 }
 
@@ -10144,6 +10184,7 @@ struct audio_transport_prepare
    bool result;
 };
 
+/* With the consumer parked, or no wrapper: carried out in place. */
 static void audio_driver_transport_control(void *userdata)
 {
    struct audio_transport_prepare *request = (struct audio_transport_prepare*)userdata;
@@ -10161,6 +10202,7 @@ static void audio_driver_transport_control(void *userdata)
       {
          audio_st->pipe_transport_suspended = audio_st->pipe_transport;
          audio_st->pipe_transport = NULL;
+         audio_st->pipe_transport_mode = AUDIO_TRANSPORT_SUSPENDED;
       }
    }
    else if (audio_st->pipe_threaded
@@ -10180,6 +10222,7 @@ static void audio_driver_transport_control(void *userdata)
             audio_pipeline_layout_init(q, q->published_layout);
             audio_st->pipe_transport = audio_st->pipe_transport_suspended;
             audio_st->pipe_transport_suspended = NULL;
+            audio_st->pipe_transport_mode = AUDIO_TRANSPORT_RUNNING;
             audio_pipeline_stretch_discard(audio_st->pipe_transport, 0);
          }
       }
@@ -10198,15 +10241,198 @@ static void audio_driver_transport_control(void *userdata)
    }
 }
 
+/* A change handed to the running consumer, and what it hands back. */
+struct audio_transport_handover
+{
+   audio_pipeline_stretch_t *stage;        /* a prepare's, until installed */
+   void *output;
+   audio_pipeline_stretch_t *old_stage;    /* replaced or released */
+   audio_pipeline_stretch_t *old_suspended;
+   void *old_output;
+   uint32_t control, cutoff;
+   enum audio_transport_action action;
+};
+
+static struct audio_transport_handover audio_driver_transport_req;
+
+static bool audio_driver_transport_pending(const audio_driver_state_t *audio_st)
+{
+   return retro_atomic_load_relaxed_int(&audio_st->pipe_transport_seq)
+      != retro_atomic_load_acquire_int(&audio_st->pipe_transport_seen);
+}
+
+static void audio_driver_transport_handover_free(
+      struct audio_transport_handover *h)
+{
+   audio_pipeline_stretch_free(h->stage);
+   audio_pipeline_stretch_free(h->old_stage);
+   audio_pipeline_stretch_free(h->old_suspended);
+   if (h->output)
+      memalign_free(h->output);
+   if (h->old_output)
+      memalign_free(h->old_output);
+   memset(h, 0, sizeof(*h));
+}
+
+static void audio_driver_transport_drop(audio_driver_state_t *audio_st)
+{
+   audio_driver_transport_handover_free(&audio_driver_transport_req);
+   retro_atomic_store_release_int(&audio_st->pipe_transport_seen,
+         retro_atomic_load_relaxed_int(&audio_st->pipe_transport_seq));
+}
+
+/* The consumer's, before a pass, inside its bracket. False leaves it for
+ * a later pass: a short device write is still to finish first. */
+static bool audio_driver_transport_install(audio_driver_state_t *audio_st)
+{
+   struct audio_transport_handover *h = &audio_driver_transport_req;
+   audio_pipeline_layout_t *q         = &audio_st->pipe_layouts;
+   switch (h->action)
+   {
+      case AUDIO_TRANSPORT_SUSPEND:
+         if (audio_st->pipe_transport)
+            audio_pipeline_stretch_discard(audio_st->pipe_transport, 0);
+         audio_st->pipe_transport_suspended = audio_st->pipe_transport;
+         audio_st->pipe_transport           = NULL;
+         break;
+      case AUDIO_TRANSPORT_RESUME:
+         if (audio_st->pipe_pending_bytes)
+            return false;
+         if (audio_st->pipe_transport_suspended)
+            audio_pipeline_stretch_discard(audio_st->pipe_transport_suspended, 0);
+         audio_st->pipe_transport           = audio_st->pipe_transport_suspended;
+         audio_st->pipe_transport_suspended = NULL;
+         break;
+      case AUDIO_TRANSPORT_PREPARE:
+         if (audio_st->pipe_pending_bytes)
+            return false;
+         /* fall through */
+      default:
+         h->old_stage                       = audio_st->pipe_transport;
+         h->old_suspended                   = audio_st->pipe_transport_suspended;
+         h->old_output                      = audio_st->pipe_transport_output;
+         audio_st->pipe_transport           = h->stage;
+         audio_st->pipe_transport_output    = h->output;
+         audio_st->pipe_transport_suspended = NULL;
+         audio_st->pipe_transport_serial    = 0;
+         h->stage                           = NULL;
+         h->output                          = NULL;
+         break;
+   }
+   if (h->action != AUDIO_TRANSPORT_RESUME)
+   {
+      audio_st->pipe_pending       = NULL;
+      audio_st->pipe_pending_bytes = 0;
+      audio_driver_reset_resamplers(audio_st);
+   }
+   if (h->control)
+   {
+      q->current_control = h->control;
+      q->current_cutoff  = h->cutoff;
+   }
+   return true;
+}
+
+/* The producer's, at once: what the change does is decided here from the
+ * transport as decided so far, and the running consumer installs it
+ * before its next pass, so neither waits for the other. A resume and a
+ * prepare want the source drained, as they did; the processing request
+ * goes into the metadata queue behind what is already there. */
+static void audio_driver_transport_handover(audio_driver_state_t *audio_st,
+      struct audio_transport_prepare *request)
+{
+   struct audio_transport_handover *h = &audio_driver_transport_req;
+   audio_pipeline_layout_t *q         = &audio_st->pipe_layouts;
+   bool drained                       = audio_st->pipe_threaded
+      && audio_st->current_audio && audio_st->current_audio->wait_writable
+      && audio_st->context_audio_data
+      && !retro_spsc_read_avail(&audio_st->pipe_ring);
+   uint8_t mode                       = audio_st->pipe_transport_mode;
+
+   request->result = false;
+   if (audio_driver_transport_pending(audio_st))
+      return;
+   audio_driver_transport_handover_free(h);
+   h->action = request->action;
+   switch (request->action)
+   {
+      case AUDIO_TRANSPORT_RELEASE:
+         request->result = true;
+         if (mode == AUDIO_TRANSPORT_NONE)
+            return;
+         audio_st->pipe_transport_follow = 0;
+         audio_st->pipe_transport_search = 0;
+         audio_st->pipe_transport_rate   = 0;
+         mode                            = AUDIO_TRANSPORT_NONE;
+         break;
+      case AUDIO_TRANSPORT_SUSPEND:
+         if (mode != AUDIO_TRANSPORT_RUNNING)
+            return;
+         mode = AUDIO_TRANSPORT_SUSPENDED;
+         break;
+      case AUDIO_TRANSPORT_RESUME:
+         if (mode != AUDIO_TRANSPORT_SUSPENDED || !drained)
+            return;
+         mode = AUDIO_TRANSPORT_RUNNING;
+         break;
+      default:
+         if (!drained || !audio_driver_transport_stage_new(audio_st,
+                  request->rate, request->search, audio_st->pipe_float,
+                  &h->stage, &h->output))
+            return;
+         audio_st->pipe_transport_follow = 0;
+         audio_st->pipe_transport_rate   = request->rate;
+         audio_st->pipe_transport_search = request->search;
+         mode                            = AUDIO_TRANSPORT_RUNNING;
+         break;
+   }
+   if (     request->control
+         && (request->action == AUDIO_TRANSPORT_RESUME
+            || request->action == AUDIO_TRANSPORT_PREPARE))
+   {
+      uint32_t cutoff = q->published_cutoff;
+      q->published_cutoff = request->cutoff;
+      if (!audio_pipeline_layout_event(q,
+               retro_atomic_load_relaxed_size(&audio_st->pipe_ring.head),
+               q->published_layout, request->control))
+      {
+         q->published_cutoff = cutoff;
+         audio_driver_transport_handover_free(h);
+         return;
+      }
+      h->control = request->control;
+      h->cutoff  = request->cutoff;
+   }
+   audio_st->pipe_transport_mode = mode;
+   request->result               = true;
+   audio_driver_request_post(audio_st, &audio_st->pipe_transport_seq);
+   audio_driver_pipeline_signal(audio_st);
+}
+
 static void audio_driver_transport_transaction(struct audio_transport_prepare *request)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
-   if (audio_st->current_audio &&
-         string_is_equal(audio_st->current_audio->ident, "audio-thread"))
-      audio_thread_apply_control(audio_st->context_audio_data,
-            audio_driver_transport_control, request);
-   else
-      audio_driver_transport_control(request);
+   if (     audio_st->current_audio
+         && string_is_equal(audio_st->current_audio->ident, "audio-thread"))
+   {
+      if (!audio_thread_parked(audio_st->context_audio_data))
+      {
+         audio_driver_transport_handover(audio_st, request);
+         return;
+      }
+      /* Parked: what it has yet to install is installed here first, a
+       * short write it was finishing given up as a stop gives it up. */
+      if (audio_driver_transport_pending(audio_st))
+      {
+         audio_st->pipe_pending       = NULL;
+         audio_st->pipe_pending_bytes = 0;
+         audio_driver_state_lock();
+         audio_driver_requests_apply(audio_st, false);
+         audio_driver_state_unlock();
+      }
+      audio_driver_transport_handover_free(&audio_driver_transport_req);
+   }
+   audio_driver_transport_control(request);
 }
 
 static bool audio_driver_transport_recover(bool resume, uint32_t tempo)
@@ -10271,6 +10497,16 @@ void audio_driver_pipeline_transport_release(void)
 static void audio_driver_pipe_set_format(void *userdata)
 {
    audio_driver_state_t *audio_st = (audio_driver_state_t*)userdata;
+   /* A transport change the consumer had yet to install, installed. */
+   if (audio_driver_transport_pending(audio_st))
+   {
+      audio_st->pipe_pending       = NULL;
+      audio_st->pipe_pending_bytes = 0;
+      audio_driver_state_lock();
+      audio_driver_requests_apply(audio_st, false);
+      audio_driver_state_unlock();
+   }
+   audio_driver_transport_handover_free(&audio_driver_transport_req);
    /* Empty source alone is not quiescence: the wrapper must also be parked. */
    if (!retro_spsc_read_avail(&audio_st->pipe_ring))
    {
@@ -10289,6 +10525,9 @@ static void audio_driver_pipe_set_format(void *userdata)
       audio_st->pipe_frame_bytes = (size_t)audio_st->pipe_channels
             * (audio_st->pipe_float ? sizeof(float) : sizeof(int16_t));
    }
+   audio_st->pipe_transport_mode = audio_st->pipe_transport
+      ? AUDIO_TRANSPORT_RUNNING : audio_st->pipe_transport_suspended
+      ? AUDIO_TRANSPORT_SUSPENDED : AUDIO_TRANSPORT_NONE;
 }
 #endif
 
@@ -10455,7 +10694,7 @@ bool audio_driver_set_input_rate(double input)
          || settings->bools.audio_time_stretch_lowpass)
       return false;
 #ifdef HAVE_THREADS
-   if (audio_st->pipe_transport || audio_st->pipe_transport_suspended)
+   if (audio_st->pipe_transport_mode != AUDIO_TRANSPORT_NONE)
       return false;
    if (     audio_st->pipe_threaded
          && audio_st->current_audio
