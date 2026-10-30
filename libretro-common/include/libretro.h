@@ -3253,6 +3253,73 @@ struct retro_video_decode_interface
 
 
 
+
+/**
+ * Registers process-local snapshots during retro_init. The experimental
+ * command number is proposed for API review. Declining preserves ordinary
+ * emulation and savestates, but does not certify serialized rollback support.
+ */
+#define RETRO_ENVIRONMENT_SET_SNAPSHOT_INTERFACE (104 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_SNAPSHOT_INTERFACE_VERSION 2
+
+enum retro_snapshot_result
+{
+   RETRO_SNAPSHOT_SUCCESS = 0,
+   RETRO_SNAPSHOT_UNAVAILABLE = 1,
+   RETRO_SNAPSHOT_FATAL = 2,
+   RETRO_SNAPSHOT_RESULT_DUMMY = INT_MAX
+};
+
+enum retro_snapshot_execution_context
+{
+   RETRO_SNAPSHOT_ORDINARY = 0,
+   RETRO_SNAPSHOT_CANONICAL = 1,
+   RETRO_SNAPSHOT_SPECULATIVE = 2,
+   RETRO_SNAPSHOT_CONTEXT_DUMMY = INT_MAX
+};
+
+/**
+ * Set version and size before registration. The frontend accepts a larger
+ * structure, copies its known fields, and supplies get_execution_context.
+ * Registration alone does not activate prediction.
+ *
+ * create returns one owned, empty handle through an initially NULL output.
+ * Failure leaves that output NULL. Copying an address only borrows the handle.
+ * Release each handle once before unloading the core. Handles are never
+ * serialized or transferred to another core instance.
+ *
+ * save captures complete continuation state, including enhanced rendering and
+ * ownership of CPU/GPU mirrors. It replaces a previous capture only on success.
+ * load does not consume a capture and may be repeated. UNAVAILABLE preserves
+ * live behavior; it also preserves the previous capture on a failed save.
+ * SUCCESS may enqueue GPU work if its dependencies and lifetime are retained.
+ * FATAL means the live state or device is uncertain. Keep recovery ownership
+ * and suspend execution, persistence and memory consumers until recovery
+ * succeeds. Queries, recovery, release, reset and shutdown remain allowed.
+ *
+ * Calls must not overlap other core calls. create/save/load/release use the
+ * core execution thread and hardware context. supported/valid inspect metadata
+ * only. supported receives the maximum retained count, excluding core-owned
+ * staging; it is advisory and does not reserve memory. Invalidated captures
+ * remain releasable. Released handles must never be used again.
+ *
+ * get_execution_context distinguishes inactive use, frontend-owned canonical
+ * advancement and discardable prediction/replay, independently of presentation.
+ * Hidden frames must preserve every rendering dependency of future frames.
+ */
+struct retro_snapshot_interface
+{
+   uint32_t version;
+   uint32_t size;
+   bool (RETRO_CALLCONV *supported)(uint32_t max_live_states);
+   enum retro_snapshot_result (RETRO_CALLCONV *create)(void **snapshot);
+   enum retro_snapshot_result (RETRO_CALLCONV *save)(void *snapshot);
+   enum retro_snapshot_result (RETRO_CALLCONV *load)(const void *snapshot);
+   void (RETRO_CALLCONV *release)(void *snapshot);
+   bool (RETRO_CALLCONV *valid)(const void *snapshot);
+   enum retro_snapshot_execution_context (RETRO_CALLCONV *get_execution_context)(void);
+};
+
 #define RETRO_VR_HEAD_POSE_POSITION_VALID    (1u << 0)
 #define RETRO_VR_HEAD_POSE_ORIENTATION_VALID (1u << 1)
 #define RETRO_VR_HEAD_POSE_VELOCITY_VALID    (1u << 2)
