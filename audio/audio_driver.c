@@ -4349,16 +4349,22 @@ static void audio_driver_inline_render(audio_driver_state_t *audio_st,
    const void *front = data;
    if (t->channels > 2)
    {
-      unsigned positions = layout & ~AUDIO_LAYOUT_STEREO;
-      unsigned ex = audio_layout_channels(positions), bit, c = 0;
+      unsigned positions = 0, ex = 0, bit, c;
       unsigned slots[AUDIO_PIPE_CANON_CHANNELS];
       size_t f;
-      bool discrete = ex && audio_driver_multi_discrete(audio_st, layout)
+      bool discrete;
+      /* The extras are the positions past the fronts that the wide
+       * frame carries, each at its own slot */
+      for (bit = 2; bit < t->channels; bit++)
+         if (layout & (1u << bit))
+         {
+            slots[ex++] = bit;
+            positions  |= 1u << bit;
+         }
+      discrete = ex && audio_driver_multi_discrete(audio_st, layout)
          && audio_driver_extra_prepare(audio_st, ex, positions, AUDIO_CHUNK_SIZE_NONBLOCKING >> 1,
                t->floating, audio_driver_mixer_use_s16(t->floating));
       if (discrete) audio_st->extra.in_frames = frames;
-      for (bit = 2; bit < t->channels; bit++)
-         if (positions & (1u << bit)) slots[c++] = bit;
       if (discrete || layout == AUDIO_LAYOUT_STEREO)
       {
          if (t->floating)
@@ -6893,14 +6899,19 @@ static INLINE void audio_driver_pipeline_render(audio_driver_state_t *audio_st,
    if (audio_st->pipe_channels > 2)
    {
       const unsigned pc = audio_st->pipe_channels ? audio_st->pipe_channels : 2;
-      uint32_t pos      = layout & ~AUDIO_LAYOUT_STEREO;
-      unsigned ex       = audio_layout_channels(pos);
+      uint32_t pos      = 0;
+      unsigned ex       = 0;
       unsigned slot[AUDIO_PIPE_CANON_CHANNELS];
-      unsigned bit, n = 0;
+      unsigned bit;
       size_t f; unsigned c;
+      /* The extras are the positions past the fronts that the wide
+       * frame carries, each at its own slot */
       for (bit = 2; bit < pc; bit++)
-         if (pos & (1u << bit))
-            slot[n++] = bit;
+         if (layout & (1u << bit))
+         {
+            slot[ex++] = bit;
+            pos       |= 1u << bit;
+         }
       if (ex && audio_driver_extra_prepare(audio_st, ex, pos,
                have, audio_st->pipe_float, audio_driver_mixer_use_s16(audio_st->pipe_float)))
       {
