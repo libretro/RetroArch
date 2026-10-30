@@ -4896,6 +4896,7 @@ static bool gl3_read_viewport_internal(gl3_t *gl, uint8_t *buffer,
       bool is_idle, bool bgrx)
 {
    size_t num_pixels   = 0;
+   (void)is_idle;
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
@@ -4964,6 +4965,7 @@ static bool gl3_read_viewport_internal(gl3_t *gl, uint8_t *buffer,
    }
    else
    {
+      void *readback;
       /* Use slow synchronous readbacks. Use this with plain screenshots
          as we don't really care about performance in this case. */
 
@@ -4976,13 +4978,22 @@ static bool gl3_read_viewport_internal(gl3_t *gl, uint8_t *buffer,
        *
        * Keep codepath similar for GLES and desktop GL.
        */
-      gl->readback_buffer_screenshot = (uint32_t*)malloc(num_pixels * sizeof(uint32_t));
+      readback = malloc(num_pixels * sizeof(uint32_t));
 
-      if (!gl->readback_buffer_screenshot)
+      if (!readback)
          goto error;
+      gl->readback_buffer_screenshot = readback;
 
-      if (!is_idle)
-         video_driver_cached_frame();
+      /* frame() fills this buffer before swapping. An idle runloop has no
+       * following core frame to do it, so it needs the cached draw too. */
+      video_driver_cached_frame();
+      if (gl->readback_buffer_screenshot)
+      {
+         /* No frame reached the readback. Do not return unwritten pixels. */
+         gl->readback_buffer_screenshot = NULL;
+         free(readback);
+         goto error;
+      }
 
       {
          /* Clamp to the region glReadPixels actually wrote. */
@@ -4993,11 +5004,11 @@ static bool gl3_read_viewport_internal(gl3_t *gl, uint8_t *buffer,
          if (bgrx)
             video_frame_copy_to_bgrx(buffer, VIDEO_SCALE_W(gl->vp.dims),
                   VIDEO_SCALE_H(gl->vp.dims),
-                  (const uint8_t*)gl->readback_buffer_screenshot,
+                  (const uint8_t*)readback,
                   rb_w * 4, rb_w, rb_h, true);
          else
             video_frame_convert_rgba_to_bgr(
-                  (const void*)gl->readback_buffer_screenshot,
+                  (const void*)readback,
                   buffer,
                   rb_w * sizeof(uint32_t),
                   rb_w * 3,
@@ -5005,8 +5016,7 @@ static bool gl3_read_viewport_internal(gl3_t *gl, uint8_t *buffer,
                   rb_h);
       }
 
-      free(gl->readback_buffer_screenshot);
-      gl->readback_buffer_screenshot = NULL;
+      free(readback);
    }
 
    /* Init leaves the core's context current for context_reset on this
@@ -7877,6 +7887,7 @@ static bool gl3_frame(void *data, const void *frame,
             MIN(VIDEO_SCALE_H(gl->vp.dims), VIDEO_SCALE_H(gl->video_dims)),
             GL_RGBA, GL_UNSIGNED_BYTE,
             gl->readback_buffer_screenshot);
+      gl->readback_buffer_screenshot = NULL;
       if (gl->scrgb.active && gl->scrgb.fbo
             && !gl->video_info.source_hdr10)
          glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
