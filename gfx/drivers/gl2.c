@@ -7172,18 +7172,10 @@ static bool gl2_frame(void *data, const void *frame,
    /* A real frame without it frees the UI layer. */
    if (frame && !views_per_eye)
       gl2_vv_target_drop(gl, &gl->views.ui_target, &gl->views.ui);
-   /* Drawn and composited only when there is UI; overlays are hidden.
-    * No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
+   /* Drawn and composited only when there is UI; overlays are hidden. */
    views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
          (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE), msg, statistics_show,
-         widgets_active && gfx_widgets_visible(video_info))
-#else
-   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
-         (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE), msg, statistics_show,
-         false)
-#endif
+         video_info->widgets_visible)
       && gl2_vv_target_ensure(gl, &gl->views.ui_target, &gl->views.ui,
             video_info->views_layout.ui_dims);
 #endif
@@ -7274,10 +7266,8 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
       if ((msg && *msg) || statistics_show)
          ui_visible = true;
-#ifdef HAVE_GFX_WIDGETS
-      if (widgets_active)
+      if (video_info->widgets_visible)
          ui_visible = true;
-#endif
 
       /* SDR content keeps the existing behaviour, including scaling
        * the whole frame by Menu HDR Brightness when any UI is up. PQ

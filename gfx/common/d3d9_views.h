@@ -308,16 +308,9 @@ static bool D3D9V_FN(views_setup)(d3d9_video_t *d3d,
             &d3d->views.canvas);
    per_eye = video_views_ui_per_eye(&video_info->views, layout,
          D3D9V_FN(views_allowed)(d3d));
-   /* No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
    ui = VIDEO_VIEWS_UI_WANTED(per_eye, menu, msg,
          video_info->statistics_show,
-         video_info->widgets_active && gfx_widgets_visible(video_info));
-#else
-   ui = VIDEO_VIEWS_UI_WANTED(per_eye, menu, msg,
-         video_info->statistics_show, false);
-#endif
+         video_info->widgets_visible);
    views = video_info->views.num_views
       && D3D9V_FN(views_allowed)(d3d)
       && (!offscreen || *blend)

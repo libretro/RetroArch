@@ -4452,18 +4452,10 @@ static bool d3d10_gfx_frame(
    if (frame && !views_per_eye)
       d3d10_vv_target_drop(d3d10, &d3d10->views.ui_target,
             &d3d10->views.ui);
-   /* Drawn and composited only when there is UI; overlays are hidden.
-    * No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
+   /* Drawn and composited only when there is UI; overlays are hidden. */
    views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
          (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE), msg, statistics_show,
-         widgets_active && gfx_widgets_visible(video_info))
-#else
-   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
-         (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE), msg, statistics_show,
-         false)
-#endif
+         video_info->widgets_visible)
       && d3d10_vv_target_ensure(d3d10, &d3d10->views.ui_target,
             &d3d10->views.ui, video_info->views_layout.ui_dims);
    if (views_ui)

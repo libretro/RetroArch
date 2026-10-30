@@ -11962,7 +11962,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
    bool message_visible;
 #ifdef HAVE_GFX_WIDGETS
-   bool widgets_visible;
+   bool widgets_visible           = video_info->widgets_visible;
 #endif
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool end_pass;
@@ -12950,14 +12950,9 @@ static bool vulkan_frame(void *data, const void *frame,
    if (xr_draw && video_info->headset_editing)
       views_ui_menu = true;
 #endif
-#ifdef HAVE_GFX_WIDGETS
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
          views_ui_menu, msg, statistics_show,
-         widgets_active && gfx_widgets_visible(video_info))
-#else
-   views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         views_ui_menu, msg, statistics_show, false)
-#endif
+         video_info->widgets_visible)
       && vk->pipelines.alpha_premult
       && vulkan_vv_target_ensure(vk, &vk->views.ui_target, &vk->views.ui,
             ui_layer_dims);
@@ -13107,10 +13102,6 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 
       message_visible = msg && *msg;
-
-#ifdef HAVE_GFX_WIDGETS
-      widgets_visible = gfx_widgets_visible(video_info);
-#endif
 
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
           ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)

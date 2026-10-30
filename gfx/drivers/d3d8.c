@@ -3092,16 +3092,9 @@ static bool d3d8_views_ui_wanted(d3d8_video_t *d3d,
    bool ui;
    bool per_eye = video_views_ui_per_eye(&video_info->views,
          &video_info->views_layout, true);
-   /* No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
    ui = VIDEO_VIEWS_UI_WANTED(per_eye, d3d->menu && d3d->menu->enabled,
          msg, video_info->statistics_show,
-         video_info->widgets_active && gfx_widgets_visible(video_info));
-#else
-   ui = VIDEO_VIEWS_UI_WANTED(per_eye, d3d->menu && d3d->menu->enabled,
-         msg, video_info->statistics_show, false);
-#endif
+         video_info->widgets_visible);
 #ifdef HAVE_MENU
    ui = ui || (per_eye
          && (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE));

@@ -681,16 +681,9 @@ static bool sdl3_views_ui_wanted(sdl3_video_t *vid,
 #ifdef HAVE_MENU
    menu = menu || (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE);
 #endif
-   /* No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
    return VIDEO_VIEWS_UI_WANTED(per_eye, menu, msg,
          video_info->statistics_show,
-         video_info->widgets_active && gfx_widgets_visible(video_info));
-#else
-   return VIDEO_VIEWS_UI_WANTED(per_eye, menu, msg,
-         video_info->statistics_show, false);
-#endif
+         video_info->widgets_visible);
 }
 
 /* Whether this frame draws its views, with each drawn view's chain

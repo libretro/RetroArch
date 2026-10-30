@@ -219,6 +219,9 @@ typedef struct
    struct retro_rsx_image hw_image;
    bool hw_render;
    bool hw_image_valid;
+   /* The last presented image carries frontend layers: a duped frame
+    * without any is presented once more to take them off */
+   bool ui_presented;
 } rsx_t;
 
 #include "../font_driver.h"
@@ -2635,22 +2638,21 @@ static bool rsx_frame(void* data, const void* frame,
    bool widgets_active              = video_info->widgets_active;
 #endif
    bool draw                        = false;
-   /* The core shares the FIFO and leaves its own state behind.
-    * Restore the frontend's state before anything of ours is drawn:
-    * a core frame (hardware or CPU fallback), or a duped frame that
-    * still gets the menu, overlay, OSD or widgets drawn on top.  A
-    * bare dupe draws nothing and skips it. */
-   bool restore                     = gcm->hw_render && (frame || msg
+   bool ui_now                      = (msg && *msg)
 #ifdef HAVE_MENU
          || (gcm->menu_frame_enable && menu_is_alive) || statistics_show
 #endif
 #ifdef HAVE_OVERLAY
          || gcm->overlay_enable
 #endif
-#ifdef HAVE_GFX_WIDGETS
-         || widgets_active
-#endif
-         );
+         || video_info->widgets_visible;
+   bool draw_ui                     = ui_now || gcm->ui_presented;
+   /* The core shares the FIFO and leaves its own state behind.
+    * Restore the frontend's state before anything of ours is drawn:
+    * a core frame (hardware or CPU fallback), or a duped frame that
+    * still gets the menu, overlay, OSD or widgets drawn on top.  A
+    * bare dupe draws nothing and skips it. */
+   bool restore                     = gcm->hw_render && (frame || draw_ui);
 
    rsx_collect_retired_memory();
    rsx_fence_retired_memory(gcm->context);
@@ -2729,24 +2731,22 @@ static bool rsx_frame(void* data, const void* frame,
       }
    }
 
+   /* Rebuild the background before any frontend layers. */
+   if (!draw && draw_ui)
+   {
+      if (gcm->hw_render && gcm->hw_image_valid)
+         rsx_draw_hw_image(gcm);
+      else if (gcm->texture[gcm->tex_index].data)
+      {
+         rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
+         rsx_draw_vertices(gcm);
+      }
+      draw = true;
+   }
+
 #ifdef HAVE_MENU
    if (gcm->menu_frame_enable && menu_is_alive)
    {
-      /* A duped core frame stays behind the menu: the surface was
-       * cleared at the last flip */
-      if (!draw)
-      {
-         if (gcm->hw_render)
-         {
-            if (gcm->hw_image_valid)
-               rsx_draw_hw_image(gcm);
-         }
-         else if (gcm->texture[gcm->tex_index].data)
-         {
-            rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
-            rsx_draw_vertices(gcm);
-         }
-      }
       menu_driver_frame(menu_is_alive, video_info);
       draw = true;
       if (gcm->menu_texture.data)
@@ -2772,11 +2772,15 @@ static bool rsx_frame(void* data, const void* frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
+   /* Called on bare dupes too, for the widgets' own per-frame work.
+    * Those go out without the state restore and are not presented,
+    * so this relies on gfx_widgets_frame drawing nothing whenever
+    * the frame's widgets_visible is false. */
    if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
-   if (msg)
+   if (msg && *msg)
       font_driver_render_msg(gcm, msg, strlen(msg), NULL, NULL);
 
 #if 0
@@ -2787,6 +2791,7 @@ static bool rsx_frame(void* data, const void* frame,
       /* Only update when we draw to prevent flickering when core frame duping is enabled */
       rsx_update_screen(gcm);
       rsx_clear_surface(gcm);
+      gcm->ui_presented = ui_now;
    }
    gcm->vert_idx         = 0;
 

@@ -2681,16 +2681,9 @@ static bool gdi_views_ui_wanted(gdi_t *gdi, video_frame_info_t *video_info,
    bool ui;
    bool per_eye = video_views_ui_per_eye(&video_info->views,
          &video_info->views_layout, true);
-   /* No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
    ui = VIDEO_VIEWS_UI_WANTED(per_eye, gdi->menu_enable, msg,
          video_info->statistics_show,
-         video_info->widgets_active && gfx_widgets_visible(video_info));
-#else
-   ui = VIDEO_VIEWS_UI_WANTED(per_eye, gdi->menu_enable, msg,
-         video_info->statistics_show, false);
-#endif
+         video_info->widgets_visible);
 #ifdef HAVE_MENU
    ui = ui || (per_eye
          && (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE));

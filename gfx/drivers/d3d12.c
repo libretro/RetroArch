@@ -9358,7 +9358,7 @@ static bool d3d12_gfx_frame_body(
    bool message_visible;
    bool draw_direct               = false;
 #ifdef HAVE_GFX_WIDGETS
-   bool widgets_visible;
+   bool widgets_visible           = video_info->widgets_visible;
 #endif
    unsigned black_frame_insertion = video_info->black_frame_insertion;
    int bfi_light_frames;
@@ -10303,16 +10303,9 @@ recording_resize_deferred:;
       d3d12_vv_target_drop(d3d12, &d3d12->views.ui_target,
             &d3d12->views.ui);
    /* Drawn and composited only when there is UI; overlays are hidden. */
-   /* No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
    views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
          (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE), msg, statistics_show,
-         widgets_active && gfx_widgets_visible(video_info))
-#else
-   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
-         (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE), msg, statistics_show, false)
-#endif
+         video_info->widgets_visible)
       && d3d12->views.rect
       && d3d12_vv_target_ensure(d3d12, &d3d12->views.ui_target,
             &d3d12->views.ui, video_info->views_layout.ui_dims);
@@ -10336,10 +10329,6 @@ recording_resize_deferred:;
 #ifdef HAVE_DXGI_HDR
    cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_PC,
          d3d12_cb_slot(&d3d12->hdr.ubo_sprites_view, d3d12->queue.slot));
-#endif
-
-#ifdef HAVE_GFX_WIDGETS
-   widgets_visible                   = gfx_widgets_visible(video_info);
 #endif
 
    message_visible                    = ((statistics_show) && (osd_params)) || (msg && *msg);
