@@ -547,8 +547,8 @@ static bool run_scan(const char *content_dir, const char *dat_path,
          if (task_queue_find(&finder) && found_task)
          {
             /* Through the accessors: both fields are written by the
-             * worker under property_lock, and this runs on the main
-             * thread while that worker is live.  Reading them raw is
+             * worker, and this runs on the main thread while that
+             * worker is live.  Reading them raw is
              * a data race even when it happens to hold. */
             const char *title = task_get_title(found_task);
             if ((title && *title) || task_get_progress(found_task) > 0)

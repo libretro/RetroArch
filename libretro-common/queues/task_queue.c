@@ -122,8 +122,8 @@ static retro_atomic_int_t task_threaded_enable =
 
 #ifdef HAVE_THREADS
 static uintptr_t main_thread_id             = 0;
-static slock_t *property_lock               = NULL;
 #ifndef TASK_QUEUE_LF
+static slock_t *property_lock               = NULL;
 static slock_t *running_lock                = NULL;
 static slock_t *finished_lock               = NULL;
 static scond_t *worker_cond                 = NULL;
@@ -226,11 +226,13 @@ static retro_atomic_int_t  parallel_wanted  = RETRO_ATOMIC_INT_INITIALIZER(0);
  * in a detachable task's handler behind. */
 #define TASK_QUEUE_DETACH_AFTER_US 1000000
 
+#ifndef TASK_QUEUE_LF
 /* Once a worker has been left behind, its handler may still be
  * setting task properties, which takes property_lock. The lock is
  * then kept for the life of the process and reused by every later
  * init instead of being freed. */
 static bool property_lock_pinned            = false;
+#endif
 #ifdef RETRO_ATOMIC_LOCK_FREE
 #define TASK_WAKE_GATE
 /* Wakers on other threads against a switch of runner: a switch that
@@ -267,6 +269,16 @@ static void task_wake_gate_open(void);
 
 #ifdef HAVE_GCD
 static unsigned gcd_queue_count             = 0;
+#endif
+
+#ifdef TASK_QUEUE_LF
+/* A task's title and error, as published for other threads to read:
+ * read inside a read epoch, and a string replaced under a reader is
+ * freed once it is out. */
+static int  task_ep_enter(void);
+static void task_ep_leave(int e);
+static void task_str_retire(char *s);
+#define TASK_SHOWN(t, f) ((const char*)retro_atomic_load_acquire_ptr(&(t)->f))
 #endif
 
 /* task->flags and task->progress are atomics and take no lock. Only
@@ -306,45 +318,54 @@ static void task_queue_msg_format(char *s, size_t len, const char *fmt, ...)
 /* Builds this frame's message from the task's properties and hands it to
  * the frontend.  The flags are read first, so a finished task is seen
  * with the error it set before finishing.  The message is formatted
- * under property_lock, because a
- * worker replacing the title frees the old buffer as it goes
- * (task_free_title() then task_set_title()), and then pushed with the
- * lock released: msg_push() reaches the frontend's
+ * inside a read epoch (under property_lock without the lock-free
+ * runner), because a worker replacing the title frees the old buffer
+ * as it goes (task_free_title() then task_set_title()), and then
+ * pushed outside it: msg_push() reaches the frontend's
  * message path, which inserts into the widget queue and, on a build with
  * accessibility enabled, forks to speak - none of which a worker's
  * task_set_progress() should be parked behind.  The push therefore
- * carries the formatted string and nothing the lock guards, so
+ * carries the formatted string and nothing the epoch guards, so
  * msg_push() must not read the task's title or error; see
  * runloop_task_msg_queue_push(). */
 static void task_queue_push_progress(retro_task_t *task)
 {
    char buf[1024];
+   const char *title;
+   const char *error;
    bool have_msg = false;
    bool flush    = false;
    int flg       = retro_atomic_load_acquire_int(&task->flags);
    bool finished = (flg & RETRO_TASK_FLG_FINISHED) != 0;
    bool mute     = (flg & RETRO_TASK_FLG_MUTE) != 0;
-
-   buf[0] = '\0';
-
+#ifdef TASK_QUEUE_LF
+   int e         = task_ep_enter();
+   title         = TASK_SHOWN(task, title_shown);
+   error         = TASK_SHOWN(task, error_shown);
+#else
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
+   title         = task->title;
+   error         = task->error;
+#endif
 
-   if (task->title && !mute)
+   buf[0] = '\0';
+
+   if (title && !mute)
    {
       have_msg = true;
 
       if (finished)
       {
-         if (task->error)
+         if (error)
          {
             flush = true;
             task_queue_msg_format(buf, sizeof(buf), "%s: %s",
-                  "Task failed", task->title);
+                  "Task failed", title);
          }
          else
-            task_queue_msg_format(buf, sizeof(buf), "100%%: %s", task->title);
+            task_queue_msg_format(buf, sizeof(buf), "100%%: %s", title);
       }
       else
       {
@@ -353,21 +374,25 @@ static void task_queue_push_progress(retro_task_t *task)
          {
             flush = true;
             task_queue_msg_format(buf, sizeof(buf), "%i%%: %s",
-                  progress, task->title);
+                  progress, title);
          }
          else
-            task_queue_msg_format(buf, sizeof(buf), "%s...", task->title);
+            task_queue_msg_format(buf, sizeof(buf), "%s...", title);
       }
    }
 
+#ifdef TASK_QUEUE_LF
+   task_ep_leave(e);
+#endif
+
    /* Messages are gated on the title above; the callback is for
-    * code, so it needs only the mute opt-out. It stays under the lock,
-    * so it may read the title, and it pokes the display server rather
-    * than going through the message path. */
+    * code, so it needs only the mute opt-out. It reads the task's
+    * atomic properties, not its strings, and it pokes the display
+    * server rather than going through the message path. */
    if (task->progress_cb && !mute)
       task->progress_cb(task);
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(TASK_QUEUE_LF)
    slock_unlock(property_lock);
 #endif
 
@@ -446,12 +471,14 @@ static void retro_task_internal_retire_callback(retro_task_t *task)
       task->callback(task, task->task_data, task->user_data, task->error);
 }
 
+/* By then nothing else can read the task: with the lock-free runner,
+ * not even a finder. */
 static void retro_task_internal_retire_cleanup(retro_task_t *task)
 {
    if (task->cleanup)
        task->cleanup(task);
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(TASK_QUEUE_LF)
    slock_lock(property_lock);
 #endif
    if (task->error)
@@ -465,7 +492,11 @@ static void retro_task_internal_retire_cleanup(retro_task_t *task)
       free(task->title);
       task->title = NULL;
    }
-#ifdef HAVE_THREADS
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_store_release_ptr(&task->title_shown, NULL);
+   retro_atomic_store_release_ptr(&task->error_shown, NULL);
+#endif
+#if defined(HAVE_THREADS) && !defined(TASK_QUEUE_LF)
    slock_unlock(property_lock);
 #endif
 }
@@ -1951,6 +1982,52 @@ static void task_ep_leave(int e)
    retro_atomic_fetch_sub_int(&task_ep_readers[e & 1], 1);
 }
 
+/* A title or error replaced while a reader may hold it, on its way
+ * from whichever thread replaced it to the checking thread's limbo. */
+struct task_str_node
+{
+   struct task_str_node *next;
+   char                 *s;
+};
+static retro_atomic_ptr_t    task_str_retired;
+static struct task_str_node *task_str_limbo[2] = { NULL, NULL };
+
+/* After unpublishing: with no reader inside it goes now. */
+static void task_str_retire(char *s)
+{
+   struct task_str_node *node;
+   void                 *head;
+   if (!s)
+      return;
+   retro_atomic_thread_fence_seq_cst();
+   if (     !retro_atomic_load_seq_cst_int(&task_ep_readers[0])
+         && !retro_atomic_load_seq_cst_int(&task_ep_readers[1]))
+   {
+      free(s);
+      return;
+   }
+   /* Out of memory, the string is leaked rather than waited on. */
+   if (!(node = (struct task_str_node*)malloc(sizeof(*node))))
+      return;
+   node->s = s;
+   do
+   {
+      head       = retro_atomic_load_acquire_ptr(&task_str_retired);
+      node->next = (struct task_str_node*)head;
+   } while (!retro_atomic_cas_ptr(&task_str_retired, head, node));
+}
+
+static void task_str_free_list(struct task_str_node *node)
+{
+   while (node)
+   {
+      struct task_str_node *next = node->next;
+      free(node->s);
+      free(node);
+      node = next;
+   }
+}
+
 static void task_retired_free(retro_task_t *task)
 {
    retro_task_internal_retire_cleanup(task);
@@ -1982,7 +2059,20 @@ static void task_ep_reclaim(void)
    int e   = retro_atomic_load_relaxed_int(&task_ep_epoch);
    int old = (e + 1) & 1;
    retro_task_t *task;
-   if (!task_ep_limbo[0] && !task_ep_limbo[1])
+   if (retro_atomic_load_acquire_ptr(&task_str_retired))
+   {
+      struct task_str_node *node = (struct task_str_node*)
+            retro_atomic_exchange_ptr(&task_str_retired, NULL);
+      while (node)
+      {
+         struct task_str_node *next = node->next;
+         node->next          = task_str_limbo[e & 1];
+         task_str_limbo[e & 1] = node;
+         node                = next;
+      }
+   }
+   if (     !task_ep_limbo[0]    && !task_ep_limbo[1]
+         && !task_str_limbo[0]   && !task_str_limbo[1])
       return;
    if (retro_atomic_load_seq_cst_int(&task_ep_readers[old]))
       return;
@@ -1994,6 +2084,8 @@ static void task_ep_reclaim(void)
       task_retired_free(task);
       task = next;
    }
+   task_str_free_list(task_str_limbo[old]);
+   task_str_limbo[old] = NULL;
    retro_atomic_fetch_add_seq_cst_int(&task_ep_epoch, 1);
 }
 
@@ -2883,9 +2975,7 @@ static bool task_lf_structures_new(void)
 {
    task_ring_plain    = task_ring_new();
    task_ring_parallel = task_ring_new();
-   if (!property_lock_pinned && !property_lock)
-      property_lock = slock_new();
-   if (     task_ring_plain && task_ring_parallel && property_lock
+   if (     task_ring_plain && task_ring_parallel
          && retro_eventcount_init(&task_work_ec))
    {
       if (retro_eventcount_init(&task_done_ec))
@@ -2903,11 +2993,6 @@ static bool task_lf_structures_new(void)
    free(task_ring_parallel);
    task_ring_plain    = NULL;
    task_ring_parallel = NULL;
-   if (!property_lock_pinned)
-   {
-      slock_free(property_lock);
-      property_lock = NULL;
-   }
    return false;
 }
 
@@ -3185,16 +3270,13 @@ static bool retro_task_threaded_stop_worker(struct task_worker *w,
 }
 
 /* Stops every worker, the extra ones first, against one bound.  A
- * worker left behind keeps its generation until it lets go, and
- * property_lock is then kept for the life of the process: its handler
- * or cleanup may still be setting task properties through it. */
+ * worker left behind keeps its generation until it lets go. */
 static void retro_task_threaded_deinit(void)
 {
    struct task_generation *gen = task_gen;
    retro_time_t            deadline;
    unsigned                i;
    bool                    left_behind;
-   bool                    any_left = false;
 
    retro_atomic_store_release_int(&worker_continue, 0);
    retro_eventcount_notify(&task_work_ec);
@@ -3208,14 +3290,10 @@ static void retro_task_threaded_deinit(void)
          sthread_detach(parallel_thread[i]);
          parallel_self[i]   = NULL;
          parallel_thread[i] = NULL;
-         any_left           = true;
       }
    }
    if ((left_behind = retro_task_threaded_stop_worker(worker_self, deadline)))
-   {
       sthread_detach(worker_thread);
-      any_left = true;
-   }
 
    retro_task_threaded_join_parallel();
    if (!left_behind)
@@ -3230,8 +3308,6 @@ static void retro_task_threaded_deinit(void)
    /* Both epochs' worth, with no finder left inside. */
    task_ep_reclaim();
    task_ep_reclaim();
-   if (any_left)
-      property_lock_pinned = true;
    task_lf_structures_free();
    if (retro_atomic_fetch_sub_int(&gen->refs, 1) == 1)
       free(gen);
@@ -3810,6 +3886,11 @@ void task_queue_check(void)
 
 static bool task_queue_push_now(retro_task_t *task)
 {
+#ifdef TASK_QUEUE_LF
+   /* for a title or error assigned to the field before the push */
+   retro_atomic_store_release_ptr(&task->title_shown, task->title);
+   retro_atomic_store_release_ptr(&task->error_shown, task->error);
+#endif
    /* Ignore this task if a related one is already running.
     *
     * The scan walks tasks_running, so it takes the lock that guards
@@ -4175,6 +4256,11 @@ bool task_get_progress_snapshot(const retro_task_t *task,
 {
    bool success = true;
    size_t len;
+   const char *title;
+   const char *error;
+#ifdef TASK_QUEUE_LF
+   int e;
+#endif
 
    retro_task_t *t = (retro_task_t*)task;
 
@@ -4183,26 +4269,36 @@ bool task_get_progress_snapshot(const retro_task_t *task,
    /* before the strings: see the header */
    snapshot->flags    = (uint8_t)retro_atomic_load_acquire_int(&t->flags);
    snapshot->progress = (int8_t)retro_atomic_load_acquire_int(&t->progress);
+#ifdef TASK_QUEUE_LF
+   e     = task_ep_enter();
+   title = TASK_SHOWN(t, title_shown);
+   error = TASK_SHOWN(t, error_shown);
+#else
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
-   if (task->title)
+   title = task->title;
+   error = task->error;
+#endif
+   if (title)
    {
-      len = strlen(task->title) + 1;
+      len = strlen(title) + 1;
       if ((snapshot->title = (char*)malloc(len)))
-         memcpy(snapshot->title, task->title, len);
+         memcpy(snapshot->title, title, len);
       else
          success = false;
    }
-   if (success && task->error)
+   if (success && error)
    {
-      len = strlen(task->error) + 1;
+      len = strlen(error) + 1;
       if ((snapshot->error = (char*)malloc(len)))
-         memcpy(snapshot->error, task->error, len);
+         memcpy(snapshot->error, error, len);
       else
          success = false;
    }
-#ifdef HAVE_THREADS
+#ifdef TASK_QUEUE_LF
+   task_ep_leave(e);
+#elif defined(HAVE_THREADS)
    slock_unlock(property_lock);
 #endif
    if (!success)
@@ -4217,12 +4313,17 @@ bool task_get_progress_snapshot(const retro_task_t *task,
 
 void task_set_error(retro_task_t *task, char *err)
 {
+#ifdef TASK_QUEUE_LF
+   task->error = err;
+   retro_atomic_store_release_ptr(&task->error_shown, err);
+#else
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
    task->error = err;
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
+#endif
 #endif
 }
 
@@ -4233,12 +4334,17 @@ void task_set_progress(retro_task_t *task, int8_t progress)
 
 void task_set_title(retro_task_t *task, char *title)
 {
+#ifdef TASK_QUEUE_LF
+   task->title = title;
+   retro_atomic_store_release_ptr(&task->title_shown, title);
+#else
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
    task->title = title;
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
+#endif
 #endif
 }
 
@@ -4257,6 +4363,12 @@ void task_set_data(retro_task_t *task, void *data)
 
 void task_free_title(retro_task_t *task)
 {
+#ifdef TASK_QUEUE_LF
+   char *old   = task->title;
+   task->title = NULL;
+   retro_atomic_store_release_ptr(&task->title_shown, NULL);
+   task_str_retire(old);
+#else
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
@@ -4266,10 +4378,17 @@ void task_free_title(retro_task_t *task)
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
 #endif
+#endif
 }
 
 void task_free_error(retro_task_t *task)
 {
+#ifdef TASK_QUEUE_LF
+   char *old   = task->error;
+   task->error = NULL;
+   retro_atomic_store_release_ptr(&task->error_shown, NULL);
+   task_str_retire(old);
+#else
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
@@ -4278,6 +4397,7 @@ void task_free_error(retro_task_t *task)
    task->error = NULL;
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
+#endif
 #endif
 }
 
@@ -4312,12 +4432,16 @@ uint8_t task_get_flags(retro_task_t *task)
 char* task_get_error(retro_task_t *task)
 {
    char *s = NULL;
+#ifdef TASK_QUEUE_LF
+   s = (char*)retro_atomic_load_acquire_ptr(&task->error_shown);
+#else
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
    s = task->error;
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
+#endif
 #endif
    return s;
 }
@@ -4331,12 +4455,16 @@ char* task_get_title(retro_task_t *task)
 {
    char *title = NULL;
 
+#ifdef TASK_QUEUE_LF
+   title = (char*)retro_atomic_load_acquire_ptr(&task->title_shown);
+#else
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
    title = task->title;
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
+#endif
 #endif
 
    return title;
@@ -4384,8 +4512,12 @@ retro_task_t *task_init(void)
    task->sched             = NULL;
 #ifdef RETRO_ATOMIC_HAS_PTR
    retro_atomic_ptr_init(&task->live_next, NULL);
+   retro_atomic_ptr_init(&task->title_shown, NULL);
+   retro_atomic_ptr_init(&task->error_shown, NULL);
 #else
    task->live_next         = NULL;
+   task->title_shown       = NULL;
+   task->error_shown       = NULL;
 #endif
    retro_atomic_int_init(&task->qstate, 0);
    retro_atomic_int_init(&task->wake, 0);

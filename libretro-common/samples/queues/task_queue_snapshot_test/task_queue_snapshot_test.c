@@ -297,6 +297,66 @@ static void test_report_many(void)
    task_queue_deinit();
 }
 
+/* A handler replacing its title over and over while the checking
+ * thread formats its progress from it: the report never reads a title
+ * the handler has freed, and never a torn one. */
+#define RETITLE_REPORTS 300
+static retro_atomic_int_t retitle_reports;
+static unsigned retitle_bad;
+
+static void retitle_handler(retro_task_t *task)
+{
+   unsigned i;
+   for (i = 0; i < 64; i++)
+   {
+      task_free_title(task);
+      task_set_title(task, copy_string("retitled"));
+   }
+   if (retro_atomic_load_acquire_int(&retitle_reports) >= RETITLE_REPORTS)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void retitle_push(retro_task_t *task, const char *msg,
+      unsigned prio, unsigned duration, bool flush)
+{
+   (void)task;
+   (void)prio;
+   (void)duration;
+   (void)flush;
+   if (!msg || !strstr(msg, "retitled"))
+      retitle_bad++;
+   retro_atomic_fetch_add_int(&retitle_reports, 1);
+}
+
+static void test_report_while_retitled(void)
+{
+   retro_task_t *task;
+   unsigned i;
+   task_queue_init(true, retitle_push);
+   retro_atomic_int_init(&retitle_reports, 0);
+   retitle_bad = 0;
+   task = task_init();
+   assert(task);
+   task->title   = strdup("retitled");
+   task->handler = retitle_handler;
+   task->flags  |= RETRO_TASK_FLG_PARALLEL;
+   task_queue_push(task);
+   for (i = 0; i < 1000000
+         && retro_atomic_load_acquire_int(&retitle_reports)
+            < RETITLE_REPORTS; i++)
+      task_queue_check();
+   task_queue_wait(NULL, NULL);
+   task_queue_deinit();
+   if (retitle_bad
+         || retro_atomic_load_acquire_int(&retitle_reports)
+            < RETITLE_REPORTS)
+   {
+      printf("FAIL: %u of %d reports lost the title being replaced\n",
+            retitle_bad, retro_atomic_load_acquire_int(&retitle_reports));
+      exit(1);
+   }
+}
+
 /* Flags and progress take no lock: threads flipping their own bit
  * must not lose each other's update, and a snapshot that shows a task
  * finished must show the error it set first. */
@@ -457,6 +517,7 @@ int main(void)
    test_report_outside_running_lock();
    test_report_many();
    test_scalar_publication();
+   test_report_while_retitled();
    puts("task progress snapshot tests passed");
    return 0;
 }

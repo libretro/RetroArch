@@ -113,11 +113,12 @@ static void harness_task_init(retro_task_t *task, uint32_t ident,
 {
    memset(task, 0, sizeof(*task));
    task->ident    = ident;
-   task->title    = title;
    task->progress = progress;
    task->style    = TASK_STYLE_NEGATIVE;
    if (alternative)
       task->flags |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   /* never pushed, so through the setter, which publishes it */
+   task_set_title(task, title);
 }
 
 /* Find the y a given string was drawn at.  Returns -1.0f if it was
@@ -305,7 +306,7 @@ static void test_suppressed_completion(void)
       CHECK(task != NULL, "could not allocate completion task");
       if (!task)
          break;
-      task->title = strdup("finishing task");
+      task_set_title(task, strdup("finishing task"));
       task->progress = 37;
       task->handler = finish_silent_task;
       task_push(task);
@@ -341,7 +342,7 @@ static void test_delayed_handoff(void)
             return;
          harness_task_init(&download, 100, "download", 100, true);
          download.flags |= RETRO_TASK_FLG_FINISHED | RETRO_TASK_FLG_CANCELLED;
-         download.error = "old download error";
+         task_set_error(&download, (char*)"old download error");
          task_push(&download);
          widget = NULL;
          if (displayed)

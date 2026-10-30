@@ -342,11 +342,17 @@ struct retro_task
    void *sched;
 
    /** @private The threaded runner's list of every task from its push
-    * until it is retired, which find() walks from any thread. */
+    * until it is retired, which find() walks from any thread; and the
+    * title and error as other threads are to read them, published by
+    * the setters while the handler owns the fields themselves. */
 #ifdef RETRO_ATOMIC_HAS_PTR
    retro_atomic_ptr_t live_next;
+   retro_atomic_ptr_t title_shown;
+   retro_atomic_ptr_t error_shown;
 #else
    void *live_next;
+   void *title_shown;
+   void *error_shown;
 #endif
 
    /**

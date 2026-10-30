@@ -168,9 +168,8 @@ static bool queue_busy(void)
  * rather than intercepting the setter. */
 static bool sample_progress_finder(retro_task_t *task, void *userdata)
 {
-   /* Through the accessor, not the field: task_set_progress() writes
-    * it under property_lock and the worker may be doing exactly that
-    * while this runs.  Reading it raw is a data race - one TSan
+   /* Through the accessor, not the field: the worker's
+    * task_set_progress() may be writing it while this runs.  Reading it raw is a data race - one TSan
     * catches, as it did here. */
    int8_t p = task_get_progress(task);
 
