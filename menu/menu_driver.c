@@ -5772,6 +5772,10 @@ static unsigned input_combo_type_onkeyup_lut[INPUT_COMBO_LAST] =
  * shuts it again. A dropped press would otherwise act as it lifts. */
 static bool menu_event_starts_afresh;
 
+/* Set as the menu opens, if it was not up: a press held then is dropped
+ * as one held across a window change is */
+static bool menu_event_opens;
+
 /* A held direction, once Menu Scroll Delay (the user's) has passed:
  * the list moves 20 entries a second to start with - what the menu gave
  * at 60 Hz - and faster as the hold goes on, by real time and not by
@@ -5993,10 +5997,10 @@ unsigned menu_event(
       else if (menu_input->pointer.type == MENU_POINTER_TOUCHSCREEN)
          memcpy(pointer_hw_state, &touchscreen_hw_state, sizeof(menu_input_pointer_hw_state_t));
 
-      /* A press held as the menu changes window, or a finger already
-       * down where it goes, is no tap in that window's layout: dropped
-       * until it lifts */
-      if (window != last_window)
+      /* A press held as the menu changes window, down where it goes,
+       * down as it opens, or let go while it was closed, is no tap or
+       * cancel there: dropped until it lifts */
+      if (window != last_window || menu_event_opens)
       {
          if (     was_pressed
                || (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT))
@@ -6010,7 +6014,10 @@ unsigned menu_event(
             menu_input->pointer.y_accel         = 0.0f;
             menu_event_starts_afresh            = true;
          }
-         last_window = window;
+         if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL)
+            menu_input->cancel_inhibit = true;
+         last_window      = window;
+         menu_event_opens = false;
       }
 
       if (pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE)
@@ -7460,6 +7467,8 @@ void retroarch_menu_running(void)
       if (menu->driver_ctx && menu->driver_ctx->toggle)
          menu->driver_ctx->toggle(menu->userdata, true);
 
+      if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
+         menu_event_opens = true;
       menu_st->flags |= MENU_ST_FLAG_ALIVE;
       menu_driver_drop_accept(true);
       menu_driver_toggle(

@@ -1802,6 +1802,8 @@ static void test_window_displays(void)
 
 /* The touch's screen position, as a touch driver reports it */
 static uint32_t menu_test_screen_pos;
+/* A pointer's back, held */
+static bool menu_test_back;
 
 static int16_t menu_test_input_state(void *data,
       const input_device_driver_t *joypad,
@@ -1820,6 +1822,8 @@ static int16_t menu_test_input_state(void *data,
       return VIDEO_POS_X(menu_test_screen_pos);
    if (id == RETRO_DEVICE_ID_POINTER_Y)
       return VIDEO_POS_Y(menu_test_screen_pos);
+   if (id == RARCH_DEVICE_ID_POINTER_BACK)
+      return menu_test_back;
    return 0;
 }
 
@@ -1921,6 +1925,26 @@ static uint32_t menu_test_window_touch(unsigned gen, bool presentation,
    return pointer.pos;
 }
 
+/* menu_event() with no touch, the mouse's @buttons and a pointer's back
+ * held or not (the driver's to answer); whether the menu's cancel is
+ * inhibited */
+static bool menu_test_cancel(uint16_t buttons, bool back)
+{
+   static input_bits_t none;
+   input_pointer_frame_t frame;
+   uint32_t none_pos = 0;
+   memset(&frame, 0, sizeof(frame));
+   frame.buttons  = buttons;
+   menu_test_back = back;
+   input_driver_publish_window_pointers(&frame, NULL, 1,
+         INPUT_POINTERS_WINDOWS_SECOND
+         | INPUT_POINTERS_POINTER_IDS_BY_DRIVER);
+   input_driver_publish_window_touches(&none_pos, NULL, 0, 0, 0);
+   input_driver_poll_devices();
+   menu_event(config_get_ptr(), &none, &none, false);
+   return menu_state_get_ptr()->input_state.cancel_inhibit;
+}
+
 /* The menu in the Presentation (00 I3): its touches over that window at
  * the menu layer's size, none of the main window's; RGUI through its
  * framebuffer as it is fitted to the layer */
@@ -1950,6 +1974,7 @@ static void test_window_menu_touch_window(void)
    settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    input_driver_state_t *input_st = input_state_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
    struct menu_state *menu_st     = menu_state_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
    input_driver_t *saved_driver   = input_st->current_driver;
@@ -1958,6 +1983,9 @@ static void test_window_menu_touch_window(void)
    size_t saved_selection         = menu_st->selection_ptr;
    unsigned saved_fb              = p_disp->framebuf_dims;
    uint16_t saved_menu_flags      = menu_st->flags;
+   retro_keyboard_event_t saved_key_event = runloop_st->key_event;
+   retro_keyboard_event_t saved_frontend_key_event =
+      runloop_st->frontend_key_event;
    bool saved_pointer             = settings->bools.menu_pointer_enable;
    bool saved_mouse               = settings->bools.menu_mouse_enable;
    bool saved_overlay             = settings->bools.input_overlay_enable;
@@ -2045,9 +2073,94 @@ static void test_window_menu_touch_window(void)
    menu_test_window_touch(gen, true, 0, 0, 0, &pressed);
    CHECK(!pressed);
 
+   /* A press already down as the menu opens is dropped until it lifts,
+    * in the Presentation and in the main window, and the release of one
+    * held as it closed is no tap. Opening it again while it is up (a
+    * load that failed) leaves a press be. */
+   for (i = 0; i < 2; i++)
+   {
+      bool presentation = (i == 0);
+      int x             = presentation ? 480 : 400;
+      int y             = presentation ?  90 : 240;
+      video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+         presentation ? VIDEO_WINDOWS_PRESENTATION : 0;
+      menu_test_window_touch(gen, presentation, 0, 0, 0, &pressed);
+      menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+      retroarch_menu_running();
+      menu_test_window_touch(gen, presentation, 1, x, y, &pressed);
+      CHECK(!pressed);
+      CHECK(menu_st->input_state.select_inhibit);
+      menu_test_window_touch(gen, presentation, 1, x + 20, y + 10, &pressed);
+      CHECK(!pressed);
+      CHECK(!(menu_st->input_state.pointer.flags
+               & (MENU_INP_PTR_FLG_ACTIVE | MENU_INP_PTR_FLG_DRAGGED)));
+      menu_test_window_touch(gen, presentation, 0, 0, 0, &pressed);
+      CHECK(!pressed);
+      CHECK(!(menu_st->input_pointer_hw_state.flags
+               & MENU_INP_PTR_FLG_PRESS_SELECT));
+      menu_st->input_state.select_inhibit = false;
+      menu_test_window_touch(gen, presentation, 1, x, y, &pressed);
+      CHECK(pressed);
+      retroarch_menu_running();
+      menu_test_window_touch(gen, presentation, 1, x, y, &pressed);
+      CHECK(pressed);
+      CHECK(!menu_st->input_state.select_inhibit);
+      menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+      retroarch_menu_running();
+      menu_test_window_touch(gen, presentation, 0, 0, 0, &pressed);
+      CHECK(!pressed);
+      CHECK(menu_st->input_state.select_inhibit);
+      CHECK(!(menu_st->input_pointer_hw_state.flags
+               & MENU_INP_PTR_FLG_PRESS_SELECT));
+      menu_st->input_state.select_inhibit = false;
+   }
+
+   /* So is a cancel down as the menu opens, or down already where it
+    * goes: a pointer's back in either window, the mouse's right button
+    * in the main one. menu_input_post_iterate() would cancel on its
+    * press, unless inhibited, and lift the inhibit once it is up. */
+   for (i = 0; i < 2; i++)
+   {
+      video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+         i ? 0 : VIDEO_WINDOWS_PRESENTATION;
+      menu_test_cancel(0, false);
+      menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+      retroarch_menu_running();
+      CHECK(menu_test_cancel(0, true));
+      CHECK((menu_st->input_pointer_hw_state.flags
+               & MENU_INP_PTR_FLG_PRESS_CANCEL) != 0);
+      menu_test_cancel(0, false);
+      CHECK(!(menu_st->input_pointer_hw_state.flags
+               & MENU_INP_PTR_FLG_PRESS_CANCEL));
+      menu_st->input_state.cancel_inhibit = false;
+   }
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   menu_test_cancel(0, false);
+   CHECK(!menu_test_cancel(0, true));
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   CHECK(menu_test_cancel(0, true));
+   menu_test_cancel(0, false);
+   menu_st->input_state.cancel_inhibit = false;
+   settings->bools.menu_mouse_enable = true;
+   menu_test_cancel(0, false);
+   menu_test_cancel(0, false);
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   retroarch_menu_running();
+   CHECK(menu_test_cancel(INPUT_POINTER_RIGHT, false));
+   CHECK(menu_st->input_state.pointer.type == MENU_POINTER_MOUSE);
+   CHECK((menu_st->input_pointer_hw_state.flags
+            & MENU_INP_PTR_FLG_PRESS_CANCEL) != 0);
+   menu_test_cancel(0, false);
+   CHECK(!(menu_st->input_pointer_hw_state.flags
+            & MENU_INP_PTR_FLG_PRESS_CANCEL));
+   menu_st->input_state.cancel_inhibit = false;
+   settings->bools.menu_mouse_enable = false;
+
    /* Nor does such a press act on Resume, which acts on OK's release:
-    * held as the menu leaves the Presentation (90 frames, a long press
-    * at 60 Hz), or down where it goes. The next tap does. */
+    * held through an open in either window (90 frames, a long press at
+    * 60 Hz), held as the menu leaves the Presentation, or down where it
+    * goes. The next tap does. */
    resume_cbs.enum_idx            = MENU_ENUM_LABEL_RESUME_CONTENT;
    resume_item.actiondata         = &resume_cbs;
    resume_rows.list               = &resume_item;
@@ -2061,19 +2174,27 @@ static void test_window_menu_touch_window(void)
    resume_list.menu_stack_size    = 1;
    menu_st->entries.list          = &resume_list;
    menu_st->selection_ptr         = 0;
-   menu_st->flags                |= MENU_ST_FLAG_ALIVE;
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < 4; i++)
    {
-      bool in_presentation  = (i == 0);
+      bool in_presentation  = (i == 0 || i == 2);
+      bool tap_presentation = (i == 0);
       int x                 = in_presentation ? 480 : 400;
       int y                 = in_presentation ?  90 : 240;
       video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
-         VIDEO_WINDOWS_PRESENTATION;
-      menu_test_window_touch(gen, true, 0, 0, 0, &pressed);
-      menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
-      menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
-      CHECK(menu_test_action == MENU_ACTION_NOOP);
-      video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+         (i == 1) ? 0 : VIDEO_WINDOWS_PRESENTATION;
+      menu_test_window_touch(gen, i != 1, 0, 0, 0, &pressed);
+      if (i < 2)
+      {
+         menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+         retroarch_menu_running();
+      }
+      else
+      {
+         menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
+         menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
+         CHECK(menu_test_action == MENU_ACTION_NOOP);
+         video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+      }
       for (j = 0; j < 90; j++)
       {
          menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
@@ -2085,16 +2206,21 @@ static void test_window_menu_touch_window(void)
          CHECK(menu_test_action == MENU_ACTION_NOOP);
          menu_st->input_state.select_inhibit = false;
       }
-      menu_test_window_touch(gen, false, 1, 400, 240, &pressed);
+      x = tap_presentation ? 480 : 400;
+      y = tap_presentation ?  90 : 240;
+      menu_test_window_touch(gen, tap_presentation, 1, x, y, &pressed);
       CHECK(pressed);
-      menu_test_window_touch(gen, false, 0, 0, 0, &pressed);
+      menu_test_window_touch(gen, tap_presentation, 0, 0, 0, &pressed);
       CHECK(menu_test_action == MENU_ACTION_NOOP);
-      menu_test_window_touch(gen, false, 0, 0, 0, &pressed);
+      menu_test_window_touch(gen, tap_presentation, 0, 0, 0, &pressed);
       CHECK(menu_test_action == MENU_ACTION_OK);
    }
    menu_st->entries.list          = saved_list;
    menu_st->selection_ptr         = saved_selection;
+
    menu_st->flags                 = saved_menu_flags;
+   runloop_st->key_event          = saved_key_event;
+   runloop_st->frontend_key_event = saved_frontend_key_event;
    video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
       VIDEO_WINDOWS_PRESENTATION;
    menu_test_window_touch(gen, true, 0, 0, 0, &pressed);
