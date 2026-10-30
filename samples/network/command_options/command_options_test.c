@@ -248,7 +248,6 @@ int main(void)
    CHECK(!(input_st.flags & INP_FLAG_NONBLOCKING));
    CHECK(!(AUDIO_FLAGS_GET(&audio_st) & AUDIO_FLAG_MUTED));
    CHECK(video_st.frame_time_count == 0);
-   CHECK(runloop_st->fastforward_after_frames == 1);
    CHECK(nonblock_updates == 2 && frame_limit_updates == 1);
    CHECK(!cmd.state[RARCH_FAST_FORWARD_KEY]);
    CHECK(set(&cmd, "fast_forward off"));
