@@ -2205,6 +2205,11 @@ endif
 
 ifeq ($(WANT_WGL), 1)
    OBJ += gfx/drivers_context/wgl_ctx.o
+else ifeq ($(HAVE_EGL)$(HAVE_OPENGLES), 11)
+   ifneq ($(findstring Win32,$(OS)),)
+      OBJ += gfx/drivers_context/wgl_ctx.o
+      LIBS += -lgdi32 -lcomdlg32
+   endif
 endif
 
 # Compression/Archive

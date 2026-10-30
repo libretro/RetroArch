@@ -74,6 +74,7 @@ typedef struct
 
    /* egl "private" */
    bool use_hw_ctx;
+   bool single_context;
 } egl_ctx_data_t;
 
 extern bool g_egl_inited;

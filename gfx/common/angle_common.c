@@ -136,6 +136,10 @@ bool angle_init_context(egl_ctx_data_t *egl,
    if (!success)
       return false;
 
+   /* D3D11 shares backend state between contexts, including across threads.
+    * Use the existing single-context handoff for threaded hardware cores. */
+   egl->single_context = backendList[j][1] == EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE;
+
    RARCH_LOG("[ANGLE] EGL version: %d.%d\n", *major, *minor);
 
    return egl_init_context_common(egl, count, attrib_ptr, cb, display_data);

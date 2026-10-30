@@ -15,6 +15,7 @@
  */
 
 #include <math.h>
+#include <limits.h>
 
 /* Win32/WGL context. */
 
@@ -447,7 +448,8 @@ void create_gles_context(HWND hwnd, bool *quit)
    EGLint n, major, minor;
    EGLint format;
    EGLint attribs[]            = {
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_RENDERABLE_TYPE, win32_major >= 3
+         ? EGL_OPENGL_ES3_BIT_KHR : EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
       EGL_BLUE_SIZE, 8,
       EGL_GREEN_SIZE, 8,
@@ -457,9 +459,16 @@ void create_gles_context(HWND hwnd, bool *quit)
       EGL_NONE
    };
    EGLint context_attributes[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2,
+      EGL_CONTEXT_CLIENT_VERSION, win32_major ? win32_major : 2,
+      EGL_NONE, 0,
       EGL_NONE
    };
+
+   if (win32_minor)
+   {
+      context_attributes[2] = 0x30fb; /* EGL_CONTEXT_MINOR_VERSION_KHR */
+      context_attributes[3] = win32_minor;
+   }
 
 #ifdef HAVE_ANGLE
    if (!angle_init_context(&win32_egl, EGL_DEFAULT_DISPLAY,
@@ -531,6 +540,7 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
+#if !defined(HAVE_OPENGLES)
 #ifndef __WINRT__
          {
             gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t *)data;
@@ -580,6 +590,7 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
          /* gdi32's SwapBuffers only locates and forwards to this, and
           * re-resolves it on every call. See the commit message. */
          wglSwapBuffers(win32_hdc);
+#endif
          break;
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_EGL)
@@ -705,13 +716,14 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    if (!wgl)
       return NULL;
 
-   wgl->dxgi_requested = settings->bools.video_dxgi_present;
+   wgl->dxgi_requested = win32_api == GFX_CTX_OPENGL_API
+      && settings->bools.video_dxgi_present;
 
    if (win32_flags & WIN32_CMN_FLAG_INITED)
       gfx_ctx_wgl_destroy(NULL);
 
 #ifdef HAVE_DYLIB
-#ifdef HAVE_OPENGL
+#ifndef HAVE_OPENGLES
    dll_handle = dylib_load("OpenGL32.dll");
 #else
    dll_handle = dylib_load("libGLESv2.dll");
@@ -785,6 +797,8 @@ static enum gfx_ctx_api gfx_ctx_wgl_get_api(void *data) { return win32_api; }
 static bool gfx_ctx_wgl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   if (major > INT_MAX || minor > INT_MAX)
+      return false;
    win32_major = major;
    win32_minor = minor;
    win32_api   = api;
@@ -809,6 +823,11 @@ static void gfx_ctx_wgl_release_current(void *data)
       case GFX_CTX_OPENGL_API:
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
          wglMakeCurrent(NULL, NULL);
+#endif
+         break;
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_EGL
+         egl_release_current(&win32_egl);
 #endif
          break;
       default:
@@ -898,6 +917,10 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
          break;
 
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_EGL
+         if (egl_no_shared_context(&win32_egl))
+            BIT32_SET(flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT);
+#endif
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
          BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
@@ -998,6 +1021,9 @@ static bool gfx_ctx_wgl_presentable(void *data)
 #ifdef __WINRT__
    (void)data;
    return true;
+#elif defined(HAVE_OPENGLES)
+   (void)data;
+   return !IsIconic(win32_get_window());
 #else
    gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t *)data;
    return !IsIconic(win32_get_window())

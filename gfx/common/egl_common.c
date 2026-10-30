@@ -79,6 +79,8 @@ typedef EGLBoolean(*PFN_EGL_TERMINATE)(EGLDisplay dpy);
 typedef EGLBoolean(*PFN_EGL_INITIALIZE)(EGLDisplay dpy, EGLint * major,
 				   EGLint * minor);
 typedef EGLBoolean(*PFN_EGL_BIND_API) (EGLenum api);
+typedef EGLenum(*PFN_EGL_QUERY_API)(void);
+typedef EGLBoolean(*PFN_EGL_RELEASE_THREAD)(void);
 typedef EGLBoolean(*PFN_EGL_MAKE_CURRENT) (EGLDisplay dpy, EGLSurface draw,
 				    EGLSurface read, EGLContext ctx);
 typedef EGLBoolean(*PFN_EGL_DESTROY_SURFACE) (EGLDisplay dpy, EGLSurface surface);
@@ -106,6 +108,8 @@ static PFN_EGL_CHOOSE_CONFIG             _egl_choose_config;
 static PFN_EGL_TERMINATE                 _egl_terminate;
 static PFN_EGL_INITIALIZE                _egl_initialize;
 static PFN_EGL_BIND_API                  _egl_bind_api;
+static PFN_EGL_QUERY_API                 _egl_query_api;
+static PFN_EGL_RELEASE_THREAD            _egl_release_thread;
 static PFN_EGL_MAKE_CURRENT              _egl_make_current;
 static PFN_EGL_DESTROY_SURFACE           _egl_destroy_surface;
 static PFN_EGL_DESTROY_CONTEXT           _egl_destroy_context;
@@ -133,6 +137,8 @@ static PFN_EGL_CREATE_PBUFFER_SURFACE    _egl_create_pbuffer_surface;
 #define _egl_get_error() eglGetError()
 #define _egl_terminate(dpy) eglTerminate(dpy)
 #define _egl_bind_api(a) eglBindAPI(a)
+#define _egl_query_api() eglQueryAPI()
+#define _egl_release_thread() eglReleaseThread()
 #define _egl_query_string(a, b) eglQueryString(a, b)
 #define _egl_get_config_attrib(a, b, c, d) eglGetConfigAttrib(a, b, c, d)
 #define _egl_swap_buffers(a, b) eglSwapBuffers(a, b)
@@ -172,6 +178,10 @@ bool egl_init_dll(void)
                egl_dll, "eglInitialize");
          _egl_bind_api              = (PFN_EGL_BIND_API)dylib_proc(
                egl_dll, "eglBindAPI");
+         _egl_query_api             = (PFN_EGL_QUERY_API)dylib_proc(
+               egl_dll, "eglQueryAPI");
+         _egl_release_thread        = (PFN_EGL_RELEASE_THREAD)dylib_proc(
+               egl_dll, "eglReleaseThread");
          _egl_make_current          = (PFN_EGL_MAKE_CURRENT)dylib_proc(
                egl_dll, "eglMakeCurrent");
          _egl_destroy_surface       = (PFN_EGL_DESTROY_SURFACE)dylib_proc(
@@ -195,15 +205,14 @@ bool egl_init_dll(void)
       }
    }
 
-   if (egl_dll)
+   if (egl_dll && _egl_query_api && _egl_release_thread)
       return true;
 #endif
    return false;
 }
 
-void egl_report_error(void)
+static void egl_report_error_code(EGLint err)
 {
-   EGLint      err = _egl_get_error();
    const char *str = NULL;
    switch (err)
    {
@@ -259,12 +268,22 @@ void egl_report_error(void)
          str = "EGL_BAD_SURFACE";
          break;
 
+      case EGL_CONTEXT_LOST:
+         str = "EGL_CONTEXT_LOST";
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+         break;
+
       default:
          str = "Unknown";
          break;
    }
 
    RARCH_ERR("[EGL] #0x%x, %s.\n", (unsigned)err, str);
+}
+
+void egl_report_error(void)
+{
+   egl_report_error_code(_egl_get_error());
 }
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
@@ -346,8 +365,7 @@ void egl_destroy(egl_ctx_data_t *egl)
 #endif
 #endif
 
-      _egl_make_current(egl->dpy,
-            EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      egl_release_current(egl);
       if (egl->ctx != EGL_NO_CONTEXT)
          _egl_destroy_context(egl->dpy, egl->ctx);
 
@@ -374,6 +392,7 @@ void egl_destroy(egl_ctx_data_t *egl)
    egl->surf     = EGL_NO_SURFACE;
    egl->dpy      = EGL_NO_DISPLAY;
    egl->config   = 0;
+   egl->single_context = false;
    g_egl_inited  = false;
 
    frontend_driver_destroy_signal_handler_state();
@@ -382,7 +401,13 @@ void egl_destroy(egl_ctx_data_t *egl)
 static bool egl_display_has_extension(EGLDisplay dpy, const char *ext)
 {
    const char *exts = _egl_query_string(dpy, EGL_EXTENSIONS);
-   return exts && strstr(exts, ext);
+   const char *match;
+   size_t length = strlen(ext);
+   for (match = exts; match && (match = strstr(match, ext)); match += length)
+      if ((match == exts || match[-1] == ' ') &&
+            (match[length] == ' ' || match[length] == '\0'))
+         return true;
+   return false;
 }
 
 #ifndef __EMSCRIPTEN__
@@ -499,9 +524,10 @@ void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable)
       return;
    }
 
-   _egl_make_current(egl->dpy, egl->surf,
+   if (!_egl_make_current(egl->dpy, egl->surf,
          egl->surf,
-         (enable && egl->hw_ctx != EGL_NO_CONTEXT) ? egl->hw_ctx : egl->ctx);
+         (enable && egl->hw_ctx != EGL_NO_CONTEXT) ? egl->hw_ctx : egl->ctx))
+      egl_report_error();
 }
 
 /* True when a shared context was asked for and could not be made: the
@@ -517,7 +543,20 @@ void egl_release_current(egl_ctx_data_t *egl)
 {
    if (!egl || egl->dpy == EGL_NO_DISPLAY)
       return;
-   _egl_make_current(egl->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   if (!_egl_make_current(egl->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT))
+   {
+      EGLenum api;
+      egl_report_error();
+#if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
+      if (!_egl_query_api || !_egl_release_thread)
+         return;
+#endif
+      /* A lost display can reject unbinding. Clear its thread state before
+       * the contexts are destroyed, preserving the selected client API. */
+      api = _egl_query_api();
+      if (!_egl_release_thread() || !_egl_bind_api(api))
+         egl_report_error();
+   }
 }
 
 bool egl_shared_context_new(egl_ctx_data_t *egl, EGLenum api,
@@ -529,6 +568,7 @@ bool egl_shared_context_new(egl_ctx_data_t *egl, EGLenum api,
    memset(out, 0, sizeof(*out));
    if (     egl->dpy == EGL_NO_DISPLAY
          || egl->ctx == EGL_NO_CONTEXT
+         || egl->single_context
          || !egl->ctx_attribs_ok)
       return false;
    /* A context is of the thread's bound client API. */
@@ -597,7 +637,8 @@ void egl_swap_buffers(void *data)
          && (egl->dpy  != EGL_NO_DISPLAY)
          && (egl->surf != EGL_NO_SURFACE)
          )
-      _egl_swap_buffers(egl->dpy, egl->surf);
+      if (!_egl_swap_buffers(egl->dpy, egl->surf))
+         egl_report_error();
 }
 
 void egl_set_swap_interval(egl_ctx_data_t *egl, int interval)
@@ -931,25 +972,74 @@ static void egl_keep_context_attribs(egl_ctx_data_t *egl,
 
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
 {
-   EGLContext ctx = _egl_create_context(egl->dpy, egl->config, EGL_NO_CONTEXT,
-         egl_attribs);
+   EGLint reset_attribs[32];
+   const EGLint *attribs = egl_attribs;
+   EGLContext ctx;
+   size_t i;
+   bool explicit_reset = false;
+   EGLint reset_key = 0;
 
+   if (egl_display_has_extension(egl->dpy, "EGL_EXT_create_context_robustness"))
+      reset_key = 0x3138; /* EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT */
+   else if (egl_display_has_extension(egl->dpy, "EGL_KHR_create_context"))
+      reset_key = 0x31bd; /* EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR */
+
+   for (i = 0; egl_attribs && egl_attribs[i] != EGL_NONE &&
+         i + 4 < ARRAY_SIZE(reset_attribs); i += 2)
+   {
+      if (egl_attribs[i] == 0x3138 || egl_attribs[i] == 0x31bd)
+         explicit_reset = true;
+      reset_attribs[i] = egl_attribs[i];
+      reset_attribs[i + 1] = egl_attribs[i + 1];
+   }
+   if (reset_key && !explicit_reset && (!egl_attribs || egl_attribs[i] == EGL_NONE))
+   {
+      reset_attribs[i++] = reset_key;
+      reset_attribs[i++] = 0x31bf; /* EGL_LOSE_CONTEXT_ON_RESET */
+      reset_attribs[i] = EGL_NONE;
+      attribs = reset_attribs;
+   }
+   ctx = _egl_create_context(egl->dpy, egl->config, EGL_NO_CONTEXT, attribs);
    if (ctx == EGL_NO_CONTEXT)
-      return false;
+   {
+      EGLint error = _egl_get_error();
+      if (attribs == reset_attribs &&
+            (error == EGL_BAD_ATTRIBUTE || error == EGL_BAD_MATCH))
+      {
+         RARCH_WARN("[EGL] Reset notification was rejected; using the original context attributes.\n");
+         attribs = egl_attribs;
+         ctx = _egl_create_context(egl->dpy, egl->config, EGL_NO_CONTEXT, attribs);
+         if (ctx == EGL_NO_CONTEXT)
+            error = _egl_get_error();
+      }
+      if (ctx == EGL_NO_CONTEXT)
+      {
+         egl_report_error_code(error);
+         return false;
+      }
+   }
 
-   egl_keep_context_attribs(egl, egl_attribs);
+   if (attribs == reset_attribs)
+      RARCH_LOG("[EGL] Graphics reset notification enabled.\n");
+   egl_keep_context_attribs(egl, attribs);
    egl->ctx     = ctx;
    egl->hw_ctx  = NULL;
    egl->hw_surf = EGL_NO_SURFACE;
 
-   if (egl->use_hw_ctx)
+   if (egl->use_hw_ctx && !egl->single_context)
    {
       egl->hw_ctx = _egl_create_context(egl->dpy, egl->config, egl->ctx,
-            egl_attribs);
+            attribs);
       /* Without one the driver still comes up: it reports that it
        * cannot share, and a hardware core is handed this context. */
       if (egl->hw_ctx == EGL_NO_CONTEXT)
+      {
+         EGLint error = _egl_get_error();
+         egl_report_error_code(error);
+         if (error == EGL_CONTEXT_LOST)
+            return false;
          RARCH_WARN("[EGL] No shared context: the core will be handed the driver's.\n");
+      }
       else
          RARCH_LOG("[EGL] Created shared context: %p.\n", (void*)egl->hw_ctx);
    }

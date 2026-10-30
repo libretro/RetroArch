@@ -299,7 +299,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(HAVE_SDL3) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES))
    &gfx_ctx_sdl3_gl,
 #endif
-#if defined(_WIN32) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_ANGLE)
+#if defined(_WIN32) && !defined(__WINRT__) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES))
    &gfx_ctx_wgl,
 #endif
 #if defined(__WINRT__) && defined(HAVE_OPENGLES)
