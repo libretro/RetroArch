@@ -18,6 +18,13 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
+# GCD=standin builds it against the stand-in in ../gcd_standin, a
+# libdispatch on rthreads, where there is none.
+ifeq ($(GCD),standin)
+   SOURCES += ../gcd_standin/dispatch_standin.c
+   CFLAGS  += -DHAVE_GCD -I../gcd_standin
+endif
+
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O1 -fno-omit-frame-pointer \

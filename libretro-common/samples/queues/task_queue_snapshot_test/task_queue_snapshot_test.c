@@ -4,6 +4,11 @@
 #include <string.h>
 #include <rthreads/rthreads.h>
 #include <queues/task_queue.h>
+#ifdef HAVE_GCD
+/* before malloc is renamed below */
+#include <dispatch/dispatch.h>
+#include <pthread.h>
+#endif
 
 static unsigned fail_allocation;
 static void *snapshot_malloc(size_t size)

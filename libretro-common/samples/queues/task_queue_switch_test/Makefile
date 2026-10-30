@@ -10,6 +10,7 @@ LIBRETRO_COMM_DIR := ../../..
 # slock_lock() and retro_eventcount_notify() so that a waker can be held
 # inside the queue, the one on the runner that locks and the other on
 # the one that does not, and
+# on GCD dispatch_async_f() too, where that runner hands work on, and
 # slock_unlock() and sthread_create() so that the main thread can be
 # held where a new runner first runs a task, and sthread_join() and
 # sthread_get_current_thread_id() so that a thread can take the
@@ -22,6 +23,13 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
+
+# GCD=standin builds it against the stand-in in ../gcd_standin, a
+# libdispatch on rthreads, where there is none.
+ifeq ($(GCD),standin)
+   SOURCES += ../gcd_standin/dispatch_standin.c
+   CFLAGS  += -DHAVE_GCD -I../gcd_standin
+endif
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
@@ -37,6 +45,9 @@ ifneq ($(shell uname -s),Darwin)
               -Wl,--wrap=sthread_join \
               -Wl,--wrap=sthread_get_current_thread_id \
               -Wl,--wrap=retro_eventcount_notify
+   ifneq ($(filter 1 standin,$(GCD)),)
+      LDFLAGS += -Wl,--wrap=dispatch_async_f
+   endif
 else
    TASK_QUEUE_O := $(call sample_objs,$(LIBRETRO_COMM_DIR)/queues/task_queue.o)
    $(TASK_QUEUE_O): CFLAGS += -Drealloc=__wrap_realloc -Dslock_lock=__wrap_slock_lock \
@@ -51,6 +62,10 @@ else
                           -D__real_sthread_join=sthread_join \
                           -D__real_sthread_get_current_thread_id=sthread_get_current_thread_id \
                           -D__real_retro_eventcount_notify=retro_eventcount_notify
+   ifneq ($(filter 1 standin,$(GCD)),)
+      $(TASK_QUEUE_O): CFLAGS += -Ddispatch_async_f=__wrap_dispatch_async_f
+      $(TARGET).o: CFLAGS += -D__real_dispatch_async_f=dispatch_async_f
+   endif
 endif
 
 # GCD=1 builds the GCD runner as the threaded one: against libSystem on

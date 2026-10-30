@@ -276,6 +276,9 @@ jobs:
             # Parallel tasks on the extra workers, beside the one
             # worker plain tasks keep to.
             task_queue_parallel_test
+            # Which tasks run at once, and pushes from several
+            # threads with some stopped half way into the ring.
+            task_queue_overlap_test
             # The worker below the main thread as Horizon schedules
             # them; the lanes need SCHED_FIFO and skip without root.
             task_queue_fifo_prio_test

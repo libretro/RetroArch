@@ -59,6 +59,9 @@
 #include <queues/task_queue.h>
 #include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
+#ifdef HAVE_GCD
+#include <dispatch/dispatch.h>
+#endif
 
 /* More than the gather's margin of eight, so an undercount wraps. */
 #define TASKS 16
@@ -248,16 +251,19 @@ static bool sleeper_runs_past(int passes)
 }
 
 /* While armed, the holder's next queue lock, or on the runner without
- * one its next wake of a waiter, waits for the release.  It is then
- * inside task_queue_wake(), past the gate. */
+ * one its next wake of a waiter or, on GCD, its next hand-off to GCD,
+ * waits for the release.  It is then inside task_queue_wake(), past the
+ * gate. */
 static retro_atomic_int_t hold_armed;
 static retro_atomic_int_t hold_inside;
 static retro_atomic_int_t hold_release;
-static uintptr_t          holder_tid;
+/* Atomic: threads that run queue code read it while a lane sets it. */
+static retro_atomic_ptr_t holder_tid;
 
-/* The runner without a lock is held at the waiters' wake, after the
- * task's own wake has landed; the one that locks before it. */
-#if !defined(HAVE_GCD) && defined(RETRO_ATOMIC_LOCK_FREE) \
+/* The runner without a lock is held at the waiters' wake, or on GCD
+ * the keeper's, after the task's own wake has landed; the one that
+ * locks before it. */
+#if defined(RETRO_ATOMIC_LOCK_FREE) \
       && defined(RETRO_ATOMIC_HAS_CAS) && defined(RETRO_ATOMIC_HAS_PTR)
 #define WAKE_LANDS_BEFORE_HOLD 1
 #endif
@@ -265,7 +271,8 @@ static uintptr_t          holder_tid;
 static void hold_here(void)
 {
    if (     retro_atomic_load_acquire_int(&hold_armed)
-         && sthread_get_current_thread_id() == holder_tid)
+         && (void*)sthread_get_current_thread_id()
+            == retro_atomic_load_acquire_ptr(&holder_tid))
    {
       retro_atomic_store_release_int(&hold_armed, 0);
       retro_atomic_store_release_int(&hold_inside, 1);
@@ -290,10 +297,23 @@ void __wrap_retro_eventcount_notify(retro_eventcount_t *ec)
    __real_retro_eventcount_notify(ec);
 }
 
+#ifdef HAVE_GCD
+void __real_dispatch_async_f(dispatch_queue_t queue, void *context,
+      dispatch_function_t work);
+
+void __wrap_dispatch_async_f(dispatch_queue_t queue, void *context,
+      dispatch_function_t work)
+{
+   hold_here();
+   __real_dispatch_async_f(queue, context, work);
+}
+#endif
+
 static void held_waker(void *data)
 {
    (void)data;
-   holder_tid = sthread_get_current_thread_id();
+   retro_atomic_store_release_ptr(&holder_tid,
+         (void*)sthread_get_current_thread_id());
    retro_atomic_store_release_int(&hold_armed, 1);
    task_queue_wake(sleeper_ident);
 }
@@ -884,7 +904,8 @@ static void lane_push_order(void)
     * first queue lock until the pusher has pushed again. */
    if (th)
    {
-      holder_tid = sthread_get_current_thread_id();
+      retro_atomic_store_release_ptr(&holder_tid,
+            (void*)sthread_get_current_thread_id());
       retro_atomic_store_release_int(&hold_armed, 1);
    }
    task_queue_set_threaded();
@@ -1224,7 +1245,8 @@ static void lane_cancel_order(void)
     * first queue lock until the pusher has cancelled. */
    if (th)
    {
-      holder_tid = sthread_get_current_thread_id();
+      retro_atomic_store_release_ptr(&holder_tid,
+            (void*)sthread_get_current_thread_id());
       retro_atomic_store_release_int(&hold_armed, 1);
    }
    task_queue_set_threaded();
