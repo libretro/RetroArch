@@ -3241,10 +3241,7 @@ static uintptr_t replay_swap_run(void *data)
    }
 #ifdef HAVE_GFX_WIDGETS
    retro_atomic_store_release_int(&widgets->worker, saved_worker);
-   widgets = dispwidget_get_ptr();
-   t->info->widgets_userdata = widgets;
    t->info->widgets_active = false;
-   t->info->fps_show = true;
    t->inactive_widgets_visible = gfx_widgets_visible(t->info);
    t->retired_widgets_checked = widgets->video_st != NULL;
    t->retired_widgets_visible = false;

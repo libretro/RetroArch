@@ -3879,8 +3879,7 @@ static VIDEO_NOINLINE bool video_thread_frame_replay(thread_video_t *thr,
    {
       video_info->swap_count = thr->video_st->swap_count;
 #ifdef HAVE_GFX_WIDGETS
-      video_info->widgets_visible = video_info->widgets_active
-         && gfx_widgets_visible(video_info);
+      video_info->widgets_visible = gfx_widgets_visible(video_info);
 #endif
    }
 
