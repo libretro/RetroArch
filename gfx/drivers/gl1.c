@@ -3265,10 +3265,8 @@ static bool gl1_frame(void *data, const void *frame,
 #endif
       if ((msg && *msg) || video_info->statistics_show)
          ui_visible = true;
-#ifdef HAVE_GFX_WIDGETS
-      if (widgets_active)
+      if (video_info->widgets_visible)
          ui_visible = true;
-#endif
 
       /* PQ content carries its own absolute luminance - paper white
        * does not apply to it - and its UI is composited separately at

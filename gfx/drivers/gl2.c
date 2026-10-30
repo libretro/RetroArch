@@ -7266,10 +7266,8 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
       if ((msg && *msg) || statistics_show)
          ui_visible = true;
-#ifdef HAVE_GFX_WIDGETS
-      if (widgets_active)
+      if (video_info->widgets_visible)
          ui_visible = true;
-#endif
 
       /* SDR content keeps the existing behaviour, including scaling
        * the whole frame by Menu HDR Brightness when any UI is up. PQ

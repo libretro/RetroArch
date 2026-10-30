@@ -7762,10 +7762,8 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
       if ((msg && *msg) || statistics_show)
          ui_visible = true;
-#ifdef HAVE_GFX_WIDGETS
-      if (widgets_active)
+      if (video_info->widgets_visible)
          ui_visible = true;
-#endif
 
       {
          bool  pq         = (gl->scrgb.content_hdr_mode != 0)
