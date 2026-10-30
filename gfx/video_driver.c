@@ -6916,6 +6916,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #else
    video_info->widgets_active              = false;
 #endif
+   /* Answered at the frame call, by whichever thread draws it */
+   video_info->widgets_visible             = false;
 #ifdef HAVE_MENU
    video_info->notifications_hidden        = settings->bools.notification_show_when_menu_is_alive
          && !(menu_st->flags & MENU_ST_FLAG_ALIVE);
@@ -9776,6 +9778,16 @@ void video_driver_frame(const void *data, unsigned width,
       else if (widgets_active
             && retro_atomic_load_relaxed_int(&p_dispwidget->worker))
          gfx_widgets_status_text_to_frame(&video_info, status_text);
+#endif
+#ifdef HAVE_GFX_WIDGETS
+      /* Under the wrapper the video thread answers this once it has
+       * laid the widgets out */
+      if (widgets_active
+#ifdef HAVE_THREADS
+            && !video_st->thread_wrapper_active
+#endif
+         )
+         video_info.widgets_visible = gfx_widgets_visible(&video_info);
 #endif
 /* The text this frame draws is drawn inside the driver's frame -
  * on the video thread when it is threaded, which marks the frame

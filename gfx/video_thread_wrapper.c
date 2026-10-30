@@ -2943,13 +2943,16 @@ static void video_thread_loop(void *data)
 #endif
 #ifdef HAVE_GFX_WIDGETS
                /* This thread draws the widgets, so it advances and lays
-                * them out too, before the driver's frame asks whether
-                * any are visible - where the runloop does it without
-                * the wrapper */
+                * them out too, then answers whether any are visible -
+                * where the runloop does both without the wrapper */
                if (video_info->widgets_active)
+               {
                   gfx_widgets_worker_step(video_info,
                         thr->frame.slot[slot].status_text,
                         thr->frame.slot[slot].status_text_len);
+                  video_info->widgets_visible =
+                        gfx_widgets_visible(video_info);
+               }
 #endif
                if (thr->frame.slot[slot].hw_slot >= 0)
                {

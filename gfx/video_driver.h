@@ -681,6 +681,9 @@ typedef struct video_frame_info
    bool video_wiiu_prefer_drc;
 #endif
    bool widgets_active;
+   /* gfx_widgets_visible() for this frame, answered once on the thread
+    * that draws the widgets: whether the frame carries any of them */
+   bool widgets_visible;
    bool notifications_hidden;
    bool menu_mouse_enable;
    bool input_menu_swap_ok_cancel_buttons;

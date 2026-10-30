@@ -7655,14 +7655,9 @@ static bool gl3_frame(void *data, const void *frame,
    if (xr_draw && video_info->headset_editing)
       views_ui_menu = true;
 #endif
-#ifdef HAVE_GFX_WIDGETS
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
          views_ui_menu, msg, statistics_show,
-         widgets_active && gfx_widgets_visible(video_info))
-#else
-   views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         views_ui_menu, msg, statistics_show, false)
-#endif
+         video_info->widgets_visible)
       && gl3_vv_target_ensure(gl, &gl->views.ui_target, &gl->views.ui,
             ui_layer_dims);
 #endif

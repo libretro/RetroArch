@@ -6834,17 +6834,10 @@ static void metal_views_render(metal_views_t *vs,
       /* A real frame without it frees the UI layer. */
       if (frame && !views_per_eye)
          metal_vv_target_drop(&_views, &_views.ui_target, &_views.ui);
-      /* Drawn and composited only when there is UI; overlays are hidden.
-       * No directive inside the macro's arguments: MSVC's preprocessor
-       * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
+      /* Drawn and composited only when there is UI; overlays are hidden. */
       views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye, _menu.enabled, msg,
             statistics,
-            video_info->widgets_active && gfx_widgets_visible(video_info))
-#else
-      views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye, _menu.enabled, msg,
-            statistics, false)
-#endif
+            video_info->widgets_visible)
          && metal_vv_target_ensure(&_views, &_views.ui_target, &_views.ui,
                video_info->views_layout.ui_dims);
       if (views_ui)

@@ -2636,8 +2636,6 @@ static bool rsx_frame(void* data, const void* frame,
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active              = video_info->widgets_active;
-   bool widgets_visible             = widgets_active
-      && gfx_widgets_visible(video_info);
 #endif
    bool draw                        = false;
    bool ui_now                      = (msg && *msg)
@@ -2647,10 +2645,7 @@ static bool rsx_frame(void* data, const void* frame,
 #ifdef HAVE_OVERLAY
          || gcm->overlay_enable
 #endif
-#ifdef HAVE_GFX_WIDGETS
-         || widgets_visible
-#endif
-         ;
+         || video_info->widgets_visible;
    bool draw_ui                     = ui_now || gcm->ui_presented;
    /* The core shares the FIFO and leaves its own state behind.
     * Restore the frontend's state before anything of ours is drawn:
@@ -2780,7 +2775,7 @@ static bool rsx_frame(void* data, const void* frame,
    /* Called on bare dupes too, for the widgets' own per-frame work.
     * Those go out without the state restore and are not presented,
     * so this relies on gfx_widgets_frame drawing nothing whenever
-    * gfx_widgets_visible is false. */
+    * the frame's widgets_visible is false. */
    if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif

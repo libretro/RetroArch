@@ -2622,18 +2622,10 @@ static bool gl1_views_setup(gl1_t *gl1, video_frame_info_t *video_info,
             &gl1->views.canvas);
    per_eye = video_views_ui_per_eye(&video_info->views, layout,
          gl1_views_allowed(gl1));
-   /* No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
    ui = VIDEO_VIEWS_UI_WANTED(per_eye,
          (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE), msg,
          video_info->statistics_show,
-         video_info->widgets_active && gfx_widgets_visible(video_info));
-#else
-   ui = VIDEO_VIEWS_UI_WANTED(per_eye,
-         (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE), msg,
-         video_info->statistics_show, false);
-#endif
+         video_info->widgets_visible);
    views = video_info->views.num_views
       && gl1_views_allowed(gl1)
       && (!offscreen || *blend)
@@ -3047,19 +3039,11 @@ static bool gl1_frame(void *data, const void *frame,
    /* A real frame without it frees the UI layer. */
    if (frame && !views_per_eye && gl1->views.fbo)
       gl1_vv_target_drop(gl1, &gl1->views.ui_target, &gl1->views.ui);
-   /* Drawn and composited only when there is UI; overlays are hidden.
-    * No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
+   /* Drawn and composited only when there is UI; overlays are hidden. */
    views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
          (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE), msg,
          video_info->statistics_show,
-         widgets_active && gfx_widgets_visible(video_info))
-#else
-   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
-         (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE), msg,
-         video_info->statistics_show, false)
-#endif
+         video_info->widgets_visible)
       && gl1_vv_target_ensure(gl1, &gl1->views.ui_target,
             &gl1->views.ui, video_info->views_layout.ui_dims);
    if (views_ui)

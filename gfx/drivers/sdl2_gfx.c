@@ -818,16 +818,9 @@ static bool sdl2_views_setup(sdl2_video_t *vid,
       sdl2_vv_target_drop(vid, &vid->views.canvas_target,
             &vid->views.canvas);
    per_eye = video_views_ui_per_eye(&video_info->views, layout, true);
-   /* No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
    ui = VIDEO_VIEWS_UI_WANTED(per_eye, vid->menu.active, msg,
          video_info->statistics_show,
-         video_info->widgets_active && gfx_widgets_visible(video_info));
-#else
-   ui = VIDEO_VIEWS_UI_WANTED(per_eye, vid->menu.active, msg,
-         video_info->statistics_show, false);
-#endif
+         video_info->widgets_visible);
 #ifdef HAVE_MENU
    ui = ui || (per_eye
          && (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE));
@@ -1085,17 +1078,10 @@ static bool sdl2_gfx_frame(void *data, const void *frame,
          &video_info->views_layout, true);
    if (!views_per_eye)
       sdl2_vv_target_drop(vid, &vid->views.ui_target, &vid->views.ui);
-   /* Drawn and composited only when there is UI; overlays are hidden.
-    * No directive inside the macro's arguments: MSVC's preprocessor
-    * takes it as tokens. */
-#ifdef HAVE_GFX_WIDGETS
+   /* Drawn and composited only when there is UI; overlays are hidden. */
    views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye, vid->menu.active, msg,
          video_info->statistics_show,
-         video_info->widgets_active && gfx_widgets_visible(video_info));
-#else
-   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye, vid->menu.active, msg,
-         video_info->statistics_show, false);
-#endif
+         video_info->widgets_visible);
 #ifdef HAVE_MENU
    views_ui = views_ui || (views_per_eye && menu_is_alive);
 #endif
