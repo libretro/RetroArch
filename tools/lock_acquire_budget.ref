@@ -29,10 +29,11 @@ audio_thread_loop                0
 retro_task_threaded_gather       0
 # A job is handed over through a ring of slots and takes no lock, and
 # a worker takes none at its exit either: tpool_destroy() joins it.
-# Jobs posted past the ring's size wait on a list under the lock
-# (tpool_take, a call of its own). Finishing an item retires it on the
-# outstanding count and wakes tpool_wait() through an eventcount,
-# without the lock.
+# Jobs posted past the ring's size go on a lock-free stack that the
+# worker holding the drain token moves on. Finishing an item retires
+# it on the outstanding count and wakes tpool_wait() through an
+# eventcount.
+tpool_add_work                   0
 tpool_worker                     0
 tpool_help                       0
 tpool_wait                       0

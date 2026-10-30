@@ -18,9 +18,22 @@
  *      through the ring filling up and emptying again.
  *   4  A pool destroyed with jobs waiting frees them.
  *   5  Every worker stalled while a backlog four times the ring builds
- *      up, several rounds: each job runs exactly once, and a round the
- *      size of one before it allocates no overflow node - it reuses
- *      the ones the earlier round left.
+ *      up, several rounds: each job runs exactly once, and no round
+ *      allocates an overflow node - the pool's spares cover it.
+ *   6  Bursts past the ring from several producers at once, into a
+ *      pool that sleeps between them, many rounds: the overflow is
+ *      pushed onto while a worker drains it, and every burst runs
+ *      out before the next.
+ *   7  A job pushed onto the overflow while a helper drains it, the one
+ *      worker turned away from the drain and gone to sleep: the helper
+ *      looks again before it lets the overflow go, and the job runs.
+ *   8  A worker that drains from its last look before sleeping, and
+ *      wakes itself for a job it moved into the ring: the wake goes on
+ *      to the other, sleeping worker, which runs that job while the
+ *      first runs one that waits for it.
+ *   9  One producer's posts while another's overflow job is in and not
+ *      yet counted: they run in the order posted, and before the other
+ *      producer is let go.
  */
 
 #include <stdio.h>
@@ -30,6 +43,16 @@
 #include <features/features_cpu.h>
 
 #define TPOOL_FUZZ_SCHEDULE
+#include <retro_atomic.h>
+/* The lane whose hooks are on, read by the pool's threads. */
+static retro_atomic_int_t hook_lane;
+struct tpool_thread;
+static void lane_drain(void);
+static void lane_post(void);
+static void lane_park(struct tpool_thread *self);
+#define TPOOL_DRAIN_HOOK()     lane_drain()
+#define TPOOL_POST_HOOK()      lane_post()
+#define TPOOL_PARK_HOOK(self)  lane_park(self)
 #include "../../../rthreads/tpool.c"
 
 #define WAKE_ROUNDS   5000
@@ -225,31 +248,9 @@ static void sat_job(void *arg)
    retro_atomic_fetch_add_int((retro_atomic_int_t*)arg, 1);
 }
 
-/* The spare nodes, as a set to compare between rounds. */
-static size_t sat_spares(tpool_t *tp, tpool_work_t **out, size_t max)
-{
-   size_t        n = 0;
-   tpool_work_t *w;
-   slock_lock(tp->work_mutex);
-   for (w = tp->over_free; w && n < max; w = w->next)
-      out[n++] = w;
-   slock_unlock(tp->work_mutex);
-   return n;
-}
-
-static int sat_cmp(const void *a, const void *b)
-{
-   uintptr_t x = (uintptr_t)*(tpool_work_t* const*)a;
-   uintptr_t y = (uintptr_t)*(tpool_work_t* const*)b;
-   return (x > y) - (x < y);
-}
-
 static void test_saturation(void)
 {
-   static tpool_work_t *before[TPOOL_OVER_SPARE];
-   static tpool_work_t *after[TPOOL_OVER_SPARE];
-   size_t   nb = 0, na, k;
-   unsigned r, i, wrong = 0, overflowed = 1, reused = 1;
+   unsigned r, i, wrong = 0, overflowed = 1;
    tpool_t *tp = tpool_create(SAT_WORKERS);
    if (!tp)
    {
@@ -279,25 +280,419 @@ static void test_saturation(void)
       for (i = 0; i < SAT_JOBS; i++)
          if (retro_atomic_load_acquire_int(&sat_ran[i]) != 1)
             wrong++;
-      na = sat_spares(tp, after, TPOOL_OVER_SPARE);
-      qsort(after, na, sizeof(after[0]), sat_cmp);
-      if (r > 0)
-      {
-         /* nothing new: every spare now was a spare before */
-         if (na != nb)
-            reused = 0;
-         for (k = 0; k < na && reused; k++)
-            if (after[k] != before[k])
-               reused = 0;
-      }
-      memcpy(before, after, na * sizeof(after[0]));
-      nb = na;
    }
    check("a backlog past the ring builds with every worker stalled",
          overflowed);
    check("every job of a stalled backlog ran exactly once", !wrong);
-   check("a repeat backlog reuses the overflow nodes it left", reused && nb);
+   check("a backlog the spares cover allocates no overflow node",
+         !retro_atomic_load_acquire_int(&tp->over_allocs));
    tpool_destroy(tp);
+}
+
+/* 6 */
+#define BURST_ROUNDS 400
+#define BURST_EACH   (TPOOL_QUEUE_SIZE * 2 / 3)
+static tpool_t           *burst_pool;
+static retro_atomic_int_t burst_go, burst_ran;
+
+static void burst_job(void *arg)
+{
+   (void)arg;
+   retro_atomic_fetch_add_int(&burst_ran, 1);
+}
+
+static void burst_producer(void *arg)
+{
+   unsigned i;
+   int      round = (int)(size_t)arg;
+   while (retro_atomic_load_acquire_int(&burst_go) != round)
+      sthread_yield();
+   for (i = 0; i < BURST_EACH; i++)
+      if (!tpool_add_work(burst_pool, burst_job, NULL))
+         burst_job(NULL);
+}
+
+static void test_bursts(void)
+{
+   unsigned r, i, lost = 0;
+   if (!(burst_pool = tpool_create(4)))
+   {
+      check("burst pool created", 0);
+      return;
+   }
+   for (r = 1; r <= BURST_ROUNDS && !lost; r++)
+   {
+      sthread_t   *threads[PRODUCERS];
+      retro_time_t t0;
+      int          want = (int)(r * PRODUCERS * BURST_EACH);
+      for (i = 0; i < PRODUCERS; i++)
+         threads[i] = sthread_create(burst_producer, (void*)(size_t)r);
+      retro_atomic_store_release_int(&burst_go, (int)r);
+      for (i = 0; i < PRODUCERS; i++)
+         if (threads[i])
+            sthread_join(threads[i]);
+      t0 = cpu_features_get_time_usec();
+      while (retro_atomic_load_acquire_int(&burst_ran) < want)
+      {
+         if (cpu_features_get_time_usec() - t0 > DEADLINE_US)
+         {
+            lost = r;
+            break;
+         }
+         sthread_yield();
+      }
+   }
+   check("every burst past the ring ran out before the next", !lost);
+   if (lost)
+   {
+      printf("tpool_handoff_test: FAIL (burst %u left jobs unrun)\n", lost);
+      exit(1);
+   }
+   tpool_wait(burst_pool);
+   tpool_destroy(burst_pool);
+}
+
+/* 7 */
+static retro_atomic_int_t hook_armed, hook_inside, hook_release;
+static retro_atomic_int_t late_gate, late_entered, late_ran;
+static tpool_t           *late_pool;
+
+static void wait_set(retro_atomic_int_t *flag)
+{
+   retro_time_t t0 = cpu_features_get_time_usec();
+   while (     !retro_atomic_load_acquire_int(flag)
+         && cpu_features_get_time_usec() - t0 < DEADLINE_US)
+      sthread_yield();
+}
+
+static void drain_hook(void)
+{
+   if (!retro_atomic_load_acquire_int(&hook_armed))
+      return;
+   retro_atomic_store_release_int(&hook_armed, 0);
+   retro_atomic_store_release_int(&hook_inside, 1);
+   wait_set(&hook_release);
+}
+
+static void late_stall(void *arg)
+{
+   (void)arg;
+   retro_atomic_store_release_int(&late_entered, 1);
+   wait_set(&late_gate);
+}
+
+static void late_quick(void *arg)
+{
+   (void)arg;
+}
+
+static void late_job(void *arg)
+{
+   (void)arg;
+   retro_atomic_store_release_int(&late_ran, 1);
+}
+
+static void late_helper(void *arg)
+{
+   unsigned i;
+   (void)arg;
+   /* the ring's jobs, then the drain that takes the overflow */
+   for (i = 0; i <= TPOOL_QUEUE_SIZE; i++)
+      tpool_help(late_pool);
+}
+
+static void test_late_overflow(void)
+{
+   sthread_t   *helper;
+   retro_time_t t0;
+   unsigned     i;
+   if (!(late_pool = tpool_create(1)))
+   {
+      check("late pool created", 0);
+      return;
+   }
+   tpool_add_work(late_pool, late_stall, NULL);
+   wait_set(&late_entered);
+   for (i = 0; i < TPOOL_QUEUE_SIZE; i++)
+      tpool_add_work(late_pool, late_quick, NULL);
+   tpool_add_work(late_pool, late_quick, NULL);   /* the overflow */
+   retro_atomic_store_release_int(&hook_armed, 1);
+   retro_atomic_store_release_int(&hook_lane, 7);
+   helper = sthread_create(late_helper, NULL);
+   wait_set(&hook_inside);
+   /* onto the overflow, behind the drain's back */
+   tpool_add_work(late_pool, late_job, NULL);
+   /* the worker finds the ring empty and the drain taken, and sleeps */
+   retro_atomic_store_release_int(&late_gate, 1);
+   t0 = cpu_features_get_time_usec();
+   while (     !retro_atomic_load_acquire_int(&late_pool->threads[0].parked)
+         && cpu_features_get_time_usec() - t0 < DEADLINE_US)
+      sthread_yield();
+   retro_atomic_store_release_int(&hook_release, 1);
+   if (helper)
+      sthread_join(helper);
+   t0 = cpu_features_get_time_usec();
+   while (     !retro_atomic_load_acquire_int(&late_ran)
+         && cpu_features_get_time_usec() - t0 < 2000000)
+      sthread_yield();
+   check("a job pushed behind a drain's back runs",
+         retro_atomic_load_acquire_int(&late_ran));
+   if (!retro_atomic_load_acquire_int(&late_ran))
+   {
+      /* still on the overflow: a wait or a destroy would hang */
+      printf("tpool_handoff_test: FAIL\n");
+      exit(1);
+   }
+   tpool_wait(late_pool);
+   tpool_destroy(late_pool);
+   retro_atomic_store_release_int(&hook_lane, 0);
+}
+
+/* 8 */
+static tpool_t           *self_pool;
+static uintptr_t          self_helper_id, self_w0_id;
+static retro_atomic_int_t self_gate_a, self_gate_b;
+static retro_atomic_int_t self_m_arm, self_m_in, self_m_go;
+static retro_atomic_int_t self_p_arm, self_p_in, self_p_go;
+static retro_atomic_int_t self_d_arm, self_d_in, self_d_go;
+static retro_atomic_int_t self_k_ran, self_l_saw_k, self_l_done;
+
+static void self_park(struct tpool_thread *t)
+{
+   if (     t == &self_pool->threads[0]
+         && retro_atomic_load_acquire_int(&self_p_arm))
+   {
+      retro_atomic_store_release_int(&self_p_arm, 0);
+      retro_atomic_store_release_int(&self_p_in, 1);
+      wait_set(&self_p_go);
+   }
+}
+
+static void self_drain(void)
+{
+   uintptr_t me = sthread_get_current_thread_id();
+   if (me == self_helper_id && retro_atomic_load_acquire_int(&self_m_arm))
+   {
+      retro_atomic_store_release_int(&self_m_arm, 0);
+      retro_atomic_store_release_int(&self_m_in, 1);
+      wait_set(&self_m_go);
+   }
+   if (me == self_w0_id && retro_atomic_load_acquire_int(&self_d_arm))
+   {
+      retro_atomic_store_release_int(&self_d_arm, 0);
+      retro_atomic_store_release_int(&self_d_in, 1);
+      wait_set(&self_d_go);
+   }
+}
+
+static void self_stall(void *arg)
+{
+   wait_set((retro_atomic_int_t*)arg);
+}
+
+static void self_k(void *arg)
+{
+   (void)arg;
+   retro_atomic_store_release_int(&self_k_ran, 1);
+}
+
+/* waits, a while, for K to run on the other worker */
+static void self_l(void *arg)
+{
+   retro_time_t t0 = cpu_features_get_time_usec();
+   (void)arg;
+   while (     !retro_atomic_load_acquire_int(&self_k_ran)
+         && cpu_features_get_time_usec() - t0 < 2000000)
+      sthread_yield();
+   retro_atomic_store_release_int(&self_l_saw_k,
+         retro_atomic_load_acquire_int(&self_k_ran));
+   retro_atomic_store_release_int(&self_l_done, 1);
+}
+
+static void self_helper(void *arg)
+{
+   unsigned i, n = (unsigned)(size_t)arg;
+   self_helper_id = sthread_get_current_thread_id();
+   for (i = 0; i < n; i++)
+      tpool_help(self_pool);
+}
+
+static void self_wait_parked(unsigned i)
+{
+   retro_time_t t0 = cpu_features_get_time_usec();
+   while (     !retro_atomic_load_acquire_int(&self_pool->threads[i].parked)
+         && cpu_features_get_time_usec() - t0 < DEADLINE_US)
+      sthread_yield();
+}
+
+static void self_wait_taken(void)
+{
+   retro_time_t t0 = cpu_features_get_time_usec();
+   while (     retro_atomic_load_acquire_int(&self_pool->count.n.queued)
+         && cpu_features_get_time_usec() - t0 < DEADLINE_US)
+      sthread_yield();
+}
+
+static void test_self_wake(void)
+{
+   sthread_t *m;
+   unsigned   i;
+   if (!(self_pool = tpool_create(2)))
+   {
+      check("self-wake pool created", 0);
+      return;
+   }
+   self_w0_id = sthread_get_thread_id(self_pool->threads[0].thread);
+   retro_atomic_store_release_int(&hook_lane, 8);
+   self_wait_parked(0);
+   self_wait_parked(1);
+   /* each worker stalled: the first post wakes the first worker */
+   tpool_add_work(self_pool, self_stall, &self_gate_a);
+   self_wait_taken();
+   self_wait_parked(1);
+   tpool_add_work(self_pool, self_stall, &self_gate_b);
+   self_wait_taken();
+   /* the ring full and one on the overflow; a helper empties the ring
+    * and holds the drain */
+   for (i = 0; i < TPOOL_QUEUE_SIZE + 1; i++)
+      tpool_add_work(self_pool, late_quick, NULL);
+   retro_atomic_store_release_int(&self_m_arm, 1);
+   m = sthread_create(self_helper, (void*)(size_t)(TPOOL_QUEUE_SIZE + 1));
+   wait_set(&self_m_in);
+   /* the first worker is turned away from the drain and stops short of
+    * parking; the helper finishes */
+   retro_atomic_store_release_int(&self_p_arm, 1);
+   retro_atomic_store_release_int(&self_gate_a, 1);
+   wait_set(&self_p_in);
+   retro_atomic_store_release_int(&self_m_go, 1);
+   if (m)
+      sthread_join(m);
+   /* the ring full again with L and K behind it, and nobody parked to
+    * wake for them; the helper empties the ring */
+   for (i = 0; i < TPOOL_QUEUE_SIZE; i++)
+      tpool_add_work(self_pool, late_quick, NULL);
+   tpool_add_work(self_pool, self_l, NULL);
+   tpool_add_work(self_pool, self_k, NULL);
+   m = sthread_create(self_helper, (void*)(size_t)TPOOL_QUEUE_SIZE);
+   if (m)
+      sthread_join(m);
+   /* the first worker parks, looks once more and drains; the second
+    * is turned away and sleeps */
+   retro_atomic_store_release_int(&self_d_arm, 1);
+   retro_atomic_store_release_int(&self_p_go, 1);
+   wait_set(&self_d_in);
+   retro_atomic_store_release_int(&self_gate_b, 1);
+   self_wait_parked(1);
+   retro_atomic_store_release_int(&self_d_go, 1);
+   wait_set(&self_l_done);
+   check("a job a worker moved for another runs while it is busy",
+         retro_atomic_load_acquire_int(&self_l_saw_k));
+   tpool_wait(self_pool);
+   tpool_destroy(self_pool);
+   retro_atomic_store_release_int(&hook_lane, 0);
+}
+
+/* 9 */
+static tpool_t           *order_pool;
+static uintptr_t          order_p2_id;
+static retro_atomic_int_t order_gate, order_p2_in, order_p2_go;
+static retro_atomic_int_t order_seq, order_at[5];
+
+static void order_posted(void)
+{
+   if (     order_p2_id
+         && sthread_get_current_thread_id() == order_p2_id)
+   {
+      retro_atomic_store_release_int(&order_p2_in, 1);
+      wait_set(&order_p2_go);
+   }
+}
+
+static void order_tag(void *arg)
+{
+   retro_atomic_store_release_int(&order_at[(size_t)arg],
+         retro_atomic_fetch_add_int(&order_seq, 1) + 1);
+}
+
+static void order_p2(void *arg)
+{
+   (void)arg;
+   order_p2_id = sthread_get_current_thread_id();
+   tpool_add_work(order_pool, order_tag, (void*)2);
+}
+
+static void order_helper(void *arg)
+{
+   unsigned i;
+   for (i = 0; i < (unsigned)(size_t)arg; i++)
+      tpool_help(order_pool);
+}
+
+static void lane_drain(void)
+{
+   switch (retro_atomic_load_acquire_int(&hook_lane))
+   {
+      case 7: drain_hook(); break;
+      case 8: self_drain(); break;
+      default: break;
+   }
+}
+
+static void lane_post(void)
+{
+   if (retro_atomic_load_acquire_int(&hook_lane) == 9)
+      order_posted();
+}
+
+static void lane_park(struct tpool_thread *self)
+{
+   if (retro_atomic_load_acquire_int(&hook_lane) == 8)
+      self_park(self);
+}
+
+static void test_counted_order(void)
+{
+   sthread_t   *p2, *m;
+   retro_time_t t0;
+   unsigned     i;
+   if (!(order_pool = tpool_create(1)))
+   {
+      check("order pool created", 0);
+      return;
+   }
+   retro_atomic_store_release_int(&hook_lane, 9);
+   while (!retro_atomic_load_acquire_int(&order_pool->threads[0].parked))
+      sthread_yield();
+   tpool_add_work(order_pool, self_stall, &order_gate);
+   while (retro_atomic_load_acquire_int(&order_pool->count.n.queued))
+      sthread_yield();
+   for (i = 0; i < TPOOL_QUEUE_SIZE; i++)
+      tpool_add_work(order_pool, late_quick, NULL);
+   tpool_add_work(order_pool, order_tag, (void*)1); /* the overflow */
+   /* another producer's job in, held before it returns */
+   p2 = sthread_create(order_p2, NULL);
+   wait_set(&order_p2_in);
+   m  = sthread_create(order_helper, (void*)(size_t)(TPOOL_QUEUE_SIZE + 1));
+   if (m)
+      sthread_join(m);
+   tpool_add_work(order_pool, order_tag, (void*)3);
+   tpool_add_work(order_pool, order_tag, (void*)4);
+   retro_atomic_store_release_int(&order_gate, 1);
+   t0 = cpu_features_get_time_usec();
+   while (     !retro_atomic_load_acquire_int(&order_at[4])
+         && cpu_features_get_time_usec() - t0 < 2000000)
+      sthread_yield();
+   check("one producer's jobs run in order beside another's held one",
+            retro_atomic_load_acquire_int(&order_at[3])
+         && retro_atomic_load_acquire_int(&order_at[4])
+         &&    retro_atomic_load_acquire_int(&order_at[3])
+             < retro_atomic_load_acquire_int(&order_at[4]));
+   retro_atomic_store_release_int(&order_p2_go, 1);
+   if (p2)
+      sthread_join(p2);
+   retro_atomic_store_release_int(&hook_lane, 0);
+   tpool_wait(order_pool);
+   tpool_destroy(order_pool);
 }
 
 #ifdef RETRO_ATOMIC_LOCK_FREE
@@ -393,7 +788,11 @@ int main(void)
    test_in_order();
    test_destroy_pending();
    test_saturation();
+   test_bursts();
 #ifdef RETRO_ATOMIC_LOCK_FREE
+   test_late_overflow();
+   test_self_wake();
+   test_counted_order();
    test_try_post();
    test_try_contention();
 #endif

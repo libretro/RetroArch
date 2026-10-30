@@ -111,6 +111,7 @@ measure audio/audio_thread_wrapper.o  audio_thread_loop
 # nothing in flight.
 measure libretro-common/queues/task_queue.o  retro_task_threaded_gather
 
+measure libretro-common/rthreads/tpool.o  tpool_add_work
 measure libretro-common/rthreads/tpool.o  tpool_worker
 measure libretro-common/rthreads/tpool.o  tpool_help
 measure libretro-common/rthreads/tpool.o  tpool_wait
