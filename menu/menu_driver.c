@@ -5070,6 +5070,11 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
  * (shown at the top of the UI). */
 void menu_entries_get_core_title(char *s, size_t len)
 {
+   /* A content load in flight swaps the core under the menu over
+    * several frames - the next core's library opened, the old one
+    * closed, the next one brought up: the title stays what it was
+    * until the load is through, and changes once. */
+   static char held[NAME_MAX_LENGTH + 64];
    struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
    const char *core_name             =
        (sysinfo && (sysinfo->library_name && *sysinfo->library_name))
@@ -5079,7 +5084,15 @@ void menu_entries_get_core_title(char *s, size_t len)
       (sysinfo && sysinfo->library_version)
       ? sysinfo->library_version
       : "";
-   size_t _len = strlcpy(s, PACKAGE_VERSION, len);
+   size_t _len;
+
+   if (runloop_is_content_switching() && *held)
+   {
+      strlcpy(s, held, len);
+      return;
+   }
+
+   _len  = strlcpy(s, PACKAGE_VERSION, len);
 #if defined(_MSC_VER)
    _len += strlcpy(s + _len, msvc_vercode_to_str(_MSC_VER), len - _len);
 #endif
@@ -5091,6 +5104,7 @@ void menu_entries_get_core_title(char *s, size_t len)
       _len += strlcpy(s + _len, core_version, len - _len);
       strlcpy_lit(s + _len, ")", len - _len);
    }
+   strlcpy(held, s, sizeof(held));
 }
 
 static bool menu_driver_init_internal(

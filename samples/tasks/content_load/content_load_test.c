@@ -37,6 +37,8 @@
  *    the slot picked there, over an auto state and with none, and Auto
  *    loads the auto state with Auto Load State off, though the menu has
  *    moved on by the time the load reaches the content;
+ *  - core title held: the menu's core title shows the title from
+ *    before a playlist Run or the one after it, nothing in between;
  *  - menu sound close: a menu sound playing when Close Content is
  *    confirmed plays on through the staged close, the device never
  *    stopped while the menu feeds it and the tone handed over whole;
@@ -2584,6 +2586,72 @@ static void lane_playlist_state_slot(void)
 }
 #endif
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+/* ------------------------------------------------------------------ */
+/* Lane: core title held through a load                                */
+/* ------------------------------------------------------------------ */
+
+/* The menu's core title, read every frame of a playlist Run, shows
+ * the title from before the load or the one after it - nothing in
+ * between - and changes at most once. */
+static void lane_core_title_held(void)
+{
+   content_ctx_info_t info;
+   char game[600];
+   char first[256], last[256], cur[256];
+   char other[256] = "";
+   unsigned n, changes = 0;
+   FILE *f;
+   unsigned had = failures;
+
+   snprintf(game, sizeof(game), "%s/title.bin", harness_dir);
+   if ((f = fopen(game, "wb")))
+   {
+      fputs("harness content", f);
+      fclose(f);
+   }
+   memset(&info, 0, sizeof(info));
+   CHECK(settle(), "a load or state task from before is still in flight");
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the contentless load was not started");
+   CHECK(settle() && core_is_up(), "the contentless load did not go through");
+
+   menu_entries_get_core_title(first, sizeof(first));
+   strlcpy(last, first, sizeof(last));
+   CHECK(task_push_load_content_from_playlist_from_menu(core_path, game,
+            "title", &info, NULL, NULL),
+         "the playlist Run was not started");
+   for (n = 0; n < 5000; n++)
+   {
+      bool going = load_in_flight();
+      menu_entries_get_core_title(cur, sizeof(cur));
+      if (!string_is_equal(cur, last))
+      {
+         changes++;
+         strlcpy(last, cur, sizeof(last));
+         if (!string_is_equal(cur, first) && !*other)
+            strlcpy(other, cur, sizeof(other));
+      }
+      if (!going)
+         break;
+      pump(1);
+   }
+   CHECK(!load_in_flight() && core_is_up()
+         && strstr(path_get(RARCH_PATH_BASENAME), "title"),
+         "the playlist Run did not go through");
+   /* The one change allowed is to the title the load ends on */
+   CHECK(changes <= 1 && (!*other || string_is_equal(other, last)),
+         "the core title changed %u time(s) during the load"
+         " (\"%s\" -> \"%s\" -> \"%s\")",
+         changes, first, other, last);
+
+   remove(game);
+   if (failures == had)
+      fprintf(stderr, "[pass] core-title-held lane\n");
+}
+#endif
+
 /* LOAD_CONTENT and CLOSE_CONTENT, asked by a structured interface,
  * answer once the load is through. The command interfaces outlive the
  * load, and are not polled while it runs: what reaches them waits. */
@@ -3468,6 +3536,7 @@ int main(int argc, char *argv[])
    lane_state_slot_reply();
 #if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
    lane_playlist_state_slot();
+   lane_core_title_held();
 #endif
    lane_content_reply(dir);
 #if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)

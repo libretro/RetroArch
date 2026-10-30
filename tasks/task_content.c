@@ -2528,6 +2528,14 @@ static bool content_load(content_ctx_info_t *info,
          content_load_job_free(job);
          return false;
       }
+#ifdef HAVE_MENU
+      /* The core title the menu holds while the load runs: the one
+       * this load is for, when its library is already open. */
+      {
+         char title[NAME_MAX_LENGTH + 64];
+         menu_entries_get_core_title(title, sizeof(title));
+      }
+#endif
       runloop_state_get_ptr()->content_switching = true;
       return true;
    }
