@@ -1757,10 +1757,12 @@ static uint32_t rar_bytes(const zip_entry_t *e, unsigned n)
 /* A RAR 4 archive of @n stored entries, written by hand as the zip is:
  * the marker, a main header, a file header and the data for each
  * entry, then the end block.  A header's CRC field is the low 16 bits
- * of the CRC-32 of the rest of that header.  A name ending in '/' is
- * a directory, stored without the '/'. */
+ * of the CRC-32 of the rest of that header.  @solid marks the archive
+ * solid and its entries past the first packed, which the reader then
+ * cannot unpack.  A name ending in '/' is a directory, stored without
+ * the '/'. */
 static int write_rar_entries(const char *path, const zip_entry_t *e,
-      unsigned n)
+      unsigned n, bool solid)
 {
    static const uint8_t marker[7] = { 'R', 'a', 'r', '!', 0x1A, 0x07, 0x00 };
    FILE    *f;
@@ -1778,6 +1780,8 @@ static int write_rar_entries(const char *path, const zip_entry_t *e,
 
    memset(h, 0, 13);
    h[2] = 0x73;                     /* main header */
+   if (solid)
+      PUT16(h + 3, 0x0008);         /* solid */
    PUT16(h + 5, 13);
    c = crc_of(h + 2, 11);
    PUT16(h, c);
@@ -1801,7 +1805,7 @@ static int write_rar_entries(const char *path, const zip_entry_t *e,
       PUT32(h + 11, e[i].len);      /* unpacked */
       PUT32(h + 16, e[i].crc);
       h[24] = 29;                   /* unpack version */
-      h[25] = 0x30;                 /* stored */
+      h[25] = (solid && i) ? 0x31 : 0x30; /* packed, or stored */
       PUT16(h + 26, nlen);
       PUT32(h + 28, dir ? 0x10 : 0x20); /* directory, archive */
       memcpy(h + 32, e[i].name, nlen);
@@ -4764,19 +4768,22 @@ fixture:
  * database whose core opens rar, names the archive; a later member's,
  * in one whose core does not, is held; an archive of several members
  * is read whole only while a database whose cores open rar holds a rar
- * record of its size. */
+ * record of its size.  A fingerprint in rar writes nothing where no
+ * core opens rar.  A solid archive whose members the reader
+ * cannot unpack has no fingerprint, not that of the one it can; a
+ * folder leaves it as it is. */
 static void rar_lane(const char *root, const char *pl_dir, bool threaded)
 {
-   static uint8_t d[6][MF_MEMBER_LEN];
-   static const uint32_t crc[6] = {
+   static uint8_t d[8][MF_MEMBER_LEN];
+   static const uint32_t crc[8] = {
       0x0BF80001u, 0x0BF80011u, 0x0BF80012u, 0x0BF80002u, 0x0BF80021u,
-      0x0BF80022u };
+      0x0BF80022u, 0x0BF80031u, 0x0BF80032u };
    char           db[512], noclaim[512], dir[512], p[1024];
    static char    cart_lpl[1024], member_lpl[1024], nc_lpl[1024];
    char           what[64], detail[64];
    uint8_t        be[8];
-   db_rec_t       cart[4], held, nc[2];
-   zip_entry_t    e[2];
+   db_rec_t       cart[6], held, nc[2];
+   zip_entry_t    e[3];
    uint32_t       cart_bytes, multi_bytes;
    int            cart_reads, multi_reads;
    bool           started;
@@ -4789,7 +4796,7 @@ static void rar_lane(const char *root, const char *pl_dir, bool threaded)
    path_mkdir(db);
    path_mkdir(noclaim);
    path_mkdir(dir);
-   for (j = 0; j < 6; j++)
+   for (j = 0; j < 8; j++)
       fill_forced(d[j], MF_MEMBER_LEN, 101 + 2 * j, crc[j]);
    memset(e, 0, sizeof(e));
    e[0].len = MF_MEMBER_LEN;
@@ -4799,7 +4806,7 @@ static void rar_lane(const char *root, const char *pl_dir, bool threaded)
    e[0].data = d[0];
    e[0].crc  = crc[0];
    sprintf(p, "%s/rar_cart.rar", dir);
-   if (!write_rar_entries(p, e, 1))
+   if (!write_rar_entries(p, e, 1, false))
       goto fixture;
    cart_bytes = rar_bytes(e, 1);
    set_rec(&cart[0], "RAR Cart", crc[0], MF_MEMBER_LEN);
@@ -4811,7 +4818,7 @@ static void rar_lane(const char *root, const char *pl_dir, bool threaded)
    e[1].data = d[2];
    e[1].crc  = crc[2];
    sprintf(p, "%s/rar_multi.rar", dir);
-   if (!write_rar_entries(p, e, 2))
+   if (!write_rar_entries(p, e, 2, false))
       goto fixture;
    multi_bytes = rar_bytes(e, 2);
    /* A rar record of its size: the size gate lets it be read whole. */
@@ -4831,7 +4838,7 @@ static void rar_lane(const char *root, const char *pl_dir, bool threaded)
    e[1].data = d[3];
    e[1].crc  = crc[3];
    sprintf(p, "%s/rar_folder.rar", dir);
-   if (   !write_rar_entries(p, e, 2)
+   if (   !write_rar_entries(p, e, 2, false)
        || path_get_size(p) != (int64_t)rar_bytes(e, 2))
       goto fixture;
    set_rec(&cart[2], "RAR Folder", crc[3], MF_MEMBER_LEN);
@@ -4845,7 +4852,7 @@ static void rar_lane(const char *root, const char *pl_dir, bool threaded)
    e[1].data = d[5];
    e[1].crc  = crc[5];
    sprintf(p, "%s/rar_fp.rar", dir);
-   if (!write_rar_entries(p, e, 2))
+   if (!write_rar_entries(p, e, 2, false))
       goto fixture;
    set_rec(&cart[3], "RAR FP Set", 0x0BF8FFFFu, 2 * MF_MEMBER_LEN);
    for (j = 0; j < 4; j++)
@@ -4856,8 +4863,39 @@ static void rar_lane(const char *root, const char *pl_dir, bool threaded)
    cart[3].set_fp = crc_of(be, sizeof(be));
    nc[0]          = cart[3];
 
+   /* Solid, its second member packed: the record holds the
+    * fingerprint of the first alone. */
+   sprintf(p, "%s/rar_solid.rar", dir);
+   if (!write_rar_entries(p, e, 2, true))
+      goto fixture;
+   set_rec(&cart[4], "RAR Solid Set", 0x0BF8FFFDu, MF_MEMBER_LEN);
+   cart[4].set_fp = crc_of(be, 4);
+
+   /* A folder among the members. */
+   e[0].name = "sub/";
+   e[0].data = NULL;
+   e[0].len  = 0;
+   e[0].crc  = 0;
+   e[1].name = "sub/C.ROM";
+   e[1].data = d[6];
+   e[1].crc  = crc[6];
+   e[2].name = "D.ROM";
+   e[2].data = d[7];
+   e[2].len  = MF_MEMBER_LEN;
+   e[2].crc  = crc[7];
+   sprintf(p, "%s/rar_fpdir.rar", dir);
+   if (!write_rar_entries(p, e, 3, false))
+      goto fixture;
+   set_rec(&cart[5], "RAR FP Dir Set", 0x0BF8FFFBu, 2 * MF_MEMBER_LEN);
+   for (j = 0; j < 4; j++)
+   {
+      be[j]     = (uint8_t)(crc[6] >> (24 - 8 * j));
+      be[4 + j] = (uint8_t)(crc[7] >> (24 - 8 * j));
+   }
+   cart[5].set_fp = crc_of(be, sizeof(be));
+
    sprintf(p, "%s/Test RAR Cart.rdb", db);
-   if (!write_db_set(p, cart, 4))
+   if (!write_db_set(p, cart, 6))
       goto fixture;
    sprintf(p, "%s/Test EM Member.rdb", db);
    if (!write_db_set(p, &held, 1))
@@ -4906,6 +4944,13 @@ static void rar_lane(const char *root, const char *pl_dir, bool threaded)
    check(   started && file_contains(cart_lpl, "RAR FP Set")
          && file_contains(cart_lpl, "rar_fp.rar")
          && !file_contains(cart_lpl, "rar_fp.rar#"), what, "rar_fp.rar");
+   sprintf(what, "rar: solid, no fingerprint of one member %s", q);
+   check(started && !file_contains(cart_lpl, "RAR Solid Set"), what,
+         "rar_solid.rar");
+   sprintf(what, "rar: a directory entry keeps the fingerprint %s", q);
+   check(   started && file_contains(cart_lpl, "RAR FP Dir Set")
+         && file_contains(cart_lpl, "rar_fpdir.rar"), what,
+         "rar_fpdir.rar");
    if (!threaded)
    {
       sprintf(detail, "%d read steps", cart_reads);

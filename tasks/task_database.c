@@ -1246,12 +1246,14 @@ static scan_members_t *task_database_members_read(const char *path)
    size_t               used      = 0;
    size_t               names_cap = 0;
    bool                 first     = true;
+   bool                 blank     = false;
    bool                 ok        = w && m;
    bool                 returnerr = false;
 
    if (ok)
    {
-      w->state.type = ARCHIVE_TRANSFER_INIT;
+      w->state.type      = ARCHIVE_TRANSFER_INIT;
+      w->state.name_dirs = true;
       file_archive_parse_file_iterate(&w->state, &returnerr, path, NULL,
             NULL, &w->userdata);
       ok = (w->state.type == ARCHIVE_TRANSFER_ITERATE);
@@ -1280,8 +1282,10 @@ static scan_members_t *task_database_members_read(const char *path)
          break;
       }
       len = strlen(name);
-      /* rar and 7z leave a folder unnamed, and rar a member it cannot
-       * unpack. */
+      /* With name_dirs a folder ends in '/'; rar leaves a member it
+       * cannot unpack unnamed: the set may not be all here. */
+      if (!len)
+         blank = true;
       if (!len || name[len - 1] == '/' || name[len - 1] == '\\')
          continue;
       if (first)
@@ -1339,7 +1343,7 @@ static scan_members_t *task_database_members_read(const char *path)
       task_database_members_free(m);
       return NULL;
    }
-   m->set_fp = task_database_members_fp(m);
+   m->set_fp = blank ? 0 : task_database_members_fp(m);
    return m;
 #else
    (void)path;
