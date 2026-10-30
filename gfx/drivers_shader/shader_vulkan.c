@@ -982,10 +982,18 @@ struct vulkan_filter_chain
    vulkan_filter_chain_swapchain_info swapchain_info;
    unsigned current_sync_index;
 
+   /* The count the last frame's final pass was drawn with. */
+   uint64_t drawn_frame_count;
+   /* num_history slots; one more than the shaders read for a replaying
+    * chain, so the frame's input goes where the last frame did not. */
    struct slang_framebuffer **original_history;
    size_t num_history;
    unsigned history_ring_index;
    bool require_clear;
+   /* A frame's final pass was drawn since the passes were built. */
+   bool drawn;
+   /* See vulkan_filter_chain_create_info. */
+   bool replay;
    bool alias_initialized;
    bool emits_hdr_colorspace;
    bool emits_hdr16_output;
@@ -1620,6 +1628,7 @@ static struct vulkan_filter_chain *slang_chain_new(
    chain->max_input_size_dims   = info->max_input_dims;
    chain->deferred_source_dims  = chain->max_input_size_dims;
    chain->common.frame_rect     = info->frame_rect;
+   chain->replay                = info->replay;
    if (     !slang_chain_set_swapchain_info(chain, info->swapchain)
          || !slang_chain_set_num_passes(chain, info->num_passes))
    {
@@ -1813,7 +1822,7 @@ static void slang_chain_update_history_info(struct vulkan_filter_chain *chain)
    unsigned i;
    unsigned hist_size = (unsigned)chain->num_history;
 
-   for (i = 0; i < hist_size; i++)
+   for (i = 0; i < chain->common.num_original_history; i++)
    {
       /* Map logical index i (0 = most recent) to the ring buffer slot. */
       unsigned ring_slot = (chain->history_ring_index + i) % hist_size;
@@ -2036,8 +2045,46 @@ static void slang_chain_build_viewport_pass(struct vulkan_filter_chain *chain,
 
    /* For feedback FBOs, swap current and previous. */
    if (!again)
+   {
       for (i = 0; i < chain->pass_count; i++)
          slang_pass_end_frame(chain->passes[i]);
+      chain->drawn_frame_count =
+         chain->passes[chain->pass_count - 1]->frame_count;
+      chain->drawn             = true;
+   }
+}
+
+/* The last frame's final pass in a later frame, at vp: what it read
+ * then - the passes' outputs and feedback, the history it saw - and its
+ * count. Nothing else runs; feedback does not swap, history stays. */
+static void slang_chain_replay_viewport_pass(
+      struct vulkan_filter_chain *chain, VkCommandBuffer cmd,
+      const VkViewport vp, const float *mvp)
+{
+   Texture source;
+   Texture original;
+   uint64_t count;
+   struct slang_pass *pass            = chain->passes[chain->pass_count - 1];
+   struct deferred_disposes *disposer = &chain->deferred_calls[chain->current_sync_index];
+
+   original.texture    = chain->input_texture;
+   original.filter     = chain->passes[0]->pass_info.source_filter;
+   original.mip_filter = chain->passes[0]->pass_info.mip_filter;
+   original.address    = chain->passes[0]->pass_info.address;
+   if (chain->pass_count == 1)
+   {
+      source            = original;
+      source.filter     = pass->pass_info.source_filter;
+      source.mip_filter = pass->pass_info.mip_filter;
+      source.address    = pass->pass_info.address;
+   }
+   else
+      source = chain->common.pass_outputs[chain->pass_count - 2];
+   count             = pass->frame_count;
+   pass->frame_count = chain->drawn_frame_count;
+   slang_pass_build_commands(pass, disposer, cmd, &original, &source,
+         &vp, mvp, false);
+   pass->frame_count = count;
 }
 
 static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
@@ -2063,7 +2110,8 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
     * swapchain. The num_history test is load-bearing, not redundant:
     * without it a fresh chain with required_images == 1 would take this
     * return and skip the common.original_history reset below. */
-   if (chain->num_history && chain->num_history + 1 == required_images)
+   if (     chain->num_history
+         && chain->num_history + (chain->replay ? 0 : 1) == required_images)
       return true;
 
    for (i = 0; i < chain->num_history; i++)
@@ -2086,11 +2134,14 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    /* We don't need to store array element #0,
     * since it's aliased with the actual original. */
    required_images--;
-   if (!(chain->original_history = (struct slang_framebuffer**)
-            calloc(required_images, sizeof(*chain->original_history))))
-      return false;
    if (!texture_array_resize(&chain->common.original_history,
             &chain->common.num_original_history, required_images))
+      return false;
+   /* And one more to replay: the last frame's history stays. */
+   if (chain->replay)
+      required_images++;
+   if (!(chain->original_history = (struct slang_framebuffer**)
+            calloc(required_images, sizeof(*chain->original_history))))
       return false;
 
    for (i = 0; i < required_images; i++)
@@ -2106,7 +2157,8 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    }
 
 #ifdef VULKAN_DEBUG
-   RARCH_LOG("[Vulkan] Using history of %u frames.\n", (unsigned)(required_images));
+   RARCH_LOG("[Vulkan] Using history of %u frames.\n",
+         (unsigned)chain->common.num_original_history);
 #endif
 
    /* On first frame, we need to clear the textures to
@@ -2436,6 +2488,8 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain)
    RARCH_DBG("[Vulkan] Chain feedback ready.\n");
    texture_array_resize(&chain->common.pass_outputs,
          &chain->common.num_pass_outputs, chain->pass_count);
+   /* A rebuild remakes what a replay reads. */
+   chain->drawn = false;
    slang_chain_init_frame_in_place(chain);
    return true;
 }
@@ -2776,6 +2830,8 @@ static bool slang_chain_finalize(struct vulkan_filter_chain *chain)
       return false;
    texture_array_resize(&chain->common.pass_outputs,
          &chain->common.num_pass_outputs, chain->pass_count);
+   /* A rebuild remakes what a replay reads. */
+   chain->drawn = false;
    slang_chain_init_frame_in_place(chain);
    return true;
 }
@@ -5754,6 +5810,18 @@ void vulkan_filter_chain_build_viewport_pass_again(
       VkCommandBuffer cmd, const VkViewport *vp, const float *mvp)
 {
    slang_chain_build_viewport_pass(chain, cmd, *vp, mvp, true);
+}
+
+bool vulkan_filter_chain_replay_ready(const vulkan_filter_chain_t *chain)
+{
+   return chain->drawn;
+}
+
+void vulkan_filter_chain_build_viewport_pass_replay(
+      vulkan_filter_chain_t *chain,
+      VkCommandBuffer cmd, const VkViewport *vp, const float *mvp)
+{
+   slang_chain_replay_viewport_pass(chain, cmd, *vp, mvp);
 }
 
 void vulkan_filter_chain_end_frame(

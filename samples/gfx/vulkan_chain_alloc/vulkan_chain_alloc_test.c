@@ -288,6 +288,212 @@ static void test_discard_clears(void)
          "any other pass's target is not");
 }
 
+/* ---- Replay ---- */
+MOCK_CREATE(mock_create_image, VkImageCreateInfo, VkImage)
+MOCK_DESTROY(mock_destroy_image, VkImage)
+MOCK_CREATE(mock_create_image_view, VkImageViewCreateInfo, VkImageView)
+MOCK_DESTROY(mock_destroy_image_view, VkImageView)
+MOCK_CREATE(mock_create_framebuffer, VkFramebufferCreateInfo, VkFramebuffer)
+MOCK_DESTROY(mock_destroy_framebuffer, VkFramebuffer)
+MOCK_DESTROY(mock_destroy_render_pass, VkRenderPass)
+
+static void VKAPI_CALL mock_image_requirements(VkDevice d, VkImage i,
+      VkMemoryRequirements *r)
+{
+   (void)d; (void)i;
+   r->size           = 4096;
+   r->alignment      = 256;
+   r->memoryTypeBits = 1;
+}
+
+static VkResult VKAPI_CALL mock_bind_image_memory(VkDevice d, VkImage i,
+      VkDeviceMemory m, VkDeviceSize off)
+{ (void)d; (void)i; (void)m; (void)off; return VK_SUCCESS; }
+
+/* The view each binding of the final pass's set was last written. */
+static VkImageView written_view[4];
+static void VKAPI_CALL mock_update_sets(VkDevice d, uint32_t n,
+      const VkWriteDescriptorSet *w, uint32_t cn, const VkCopyDescriptorSet *c)
+{
+   uint32_t i;
+   (void)d; (void)cn; (void)c;
+   for (i = 0; i < n; i++)
+      if (w[i].dstBinding < 4 && w[i].pImageInfo)
+         written_view[w[i].dstBinding] = w[i].pImageInfo[0].imageView;
+}
+
+/* A replay of the last frame's final pass, in a later frame and at
+ * another size, reads what that pass read: the second pass's output as
+ * the frame left it - not the framebuffer the feedback swap gave it -
+ * that pass's feedback, the history the frame saw, and that frame's
+ * count; and swaps no feedback. */
+static void test_replay(struct vulkan_filter_chain *chain)
+{
+   struct slang_pass *last = chain->passes[PASSES - 1];
+   struct slang_pass *prev = chain->passes[PASSES - 2];
+   slang_texture_semantic_meta source_meta[1], feedback_meta[PASSES - 1];
+   slang_texture_semantic_meta history_meta[2];
+   slang_texture_semantic_meta unread[SLANG_NUM_TEXTURE_SEMANTICS];
+   struct slang_framebuffer swapped, feedback;
+   unsigned i;
+   VkDescriptorSet sets[INDICES];
+   uint32_t push[4];
+   VkViewport vp;
+   float mvp[16];
+
+   vkUpdateDescriptorSets = mock_update_sets;
+   vkCmdPipelineBarrier   = mock_barrier;
+   vkCmdBindPipeline      = (PFN_vkCmdBindPipeline)mock_cmd_nop;
+   vkCmdBindDescriptorSets= (PFN_vkCmdBindDescriptorSets)mock_cmd_nop;
+   vkCmdBindVertexBuffers = (PFN_vkCmdBindVertexBuffers)mock_cmd_nop;
+   vkCmdSetViewport       = (PFN_vkCmdSetViewport)mock_cmd_nop;
+   vkCmdSetScissor        = (PFN_vkCmdSetScissor)mock_cmd_nop;
+   vkCmdDraw              = (PFN_vkCmdDraw)mock_cmd_nop;
+
+   CHECK(!vulkan_filter_chain_replay_ready(chain),
+         "a chain with no frame drawn is ready to replay");
+
+   memset(unread, 0, sizeof(unread));
+   for (i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
+   {
+      last->reflection.semantic_textures[i].data = &unread[i];
+      last->reflection.semantic_textures[i].size = 1;
+   }
+   memset(source_meta, 0, sizeof(source_meta));
+   memset(feedback_meta, 0, sizeof(feedback_meta));
+   memset(history_meta, 0, sizeof(history_meta));
+   source_meta[0].texture              = true;
+   source_meta[0].binding              = 0;
+   feedback_meta[PASSES - 2].texture   = true;
+   feedback_meta[PASSES - 2].binding   = 1;
+   history_meta[1].texture             = true;
+   history_meta[1].binding             = 2;
+   last->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE].data = source_meta;
+   last->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE].size = 1;
+   last->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK].data = feedback_meta;
+   last->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK].size = PASSES - 1;
+   last->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].data = history_meta;
+   last->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size = 2;
+   last->reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT].push_constant = true;
+   last->reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT].push_constant_offset = 0;
+   memset(push, 0, sizeof(push));
+   memset(sets, 0, sizeof(sets));
+   last->push.buffer = push;
+   last->push.stages = 0;
+   last->sets        = sets;
+   last->final_pass  = true;
+   last->framebuffer = NULL;
+
+   /* As the last frame left the chain: the second pass's output was
+    * frame A, the feedback swap gave it the other framebuffer. */
+   memset(&swapped, 0, sizeof(swapped));
+   memset(&feedback, 0, sizeof(feedback));
+   swapped.view       = (VkImageView)(uintptr_t)0xB1;
+   swapped.size_dims  = VIDEO_SCALE_PACK(64, 32);
+   feedback.view      = (VkImageView)(uintptr_t)0xA1;
+   feedback.size_dims = VIDEO_SCALE_PACK(64, 32);
+   prev->framebuffer  = &swapped;
+   prev->fb_feedback  = &feedback;
+   texture_array_resize(&chain->common.pass_outputs,
+         &chain->common.num_pass_outputs, PASSES);
+   texture_array_resize(&chain->common.fb_feedback,
+         &chain->common.num_fb_feedback, PASSES - 1);
+   texture_array_resize(&chain->common.original_history,
+         &chain->common.num_original_history, 1);
+   chain->common.pass_outputs[PASSES - 2].texture.view = (VkImageView)(uintptr_t)0xA1;
+   chain->common.pass_outputs[PASSES - 2].texture.dims = VIDEO_SCALE_PACK(64, 32);
+   chain->common.fb_feedback[PASSES - 2].texture.view  = (VkImageView)(uintptr_t)0xF1;
+   chain->common.fb_feedback[PASSES - 2].texture.dims  = VIDEO_SCALE_PACK(64, 32);
+   chain->common.original_history[0].texture.view      = (VkImageView)(uintptr_t)0xC1;
+   chain->common.original_history[0].texture.dims      = VIDEO_SCALE_PACK(64, 32);
+   chain->input_texture.view  = (VkImageView)(uintptr_t)0xD1;
+   chain->input_texture.dims  = VIDEO_SCALE_PACK(64, 32);
+   chain->drawn             = true;
+   chain->drawn_frame_count = 7;
+   last->frame_count        = 9;
+
+   CHECK(vulkan_filter_chain_replay_ready(chain), "no replay after a frame");
+   memset(&vp, 0, sizeof(vp));
+   vp.width  = 80.0f;
+   vp.height = 40.0f;
+   build_identity_matrix(mvp);
+   memset(written_view, 0, sizeof(written_view));
+   vulkan_filter_chain_build_viewport_pass_replay(chain, VK_NULL_HANDLE,
+         &vp, mvp);
+   CHECK(written_view[0] == (VkImageView)(uintptr_t)0xA1,
+         "replay Source: view %p, want the frame's output",
+         (void*)(uintptr_t)written_view[0]);
+   CHECK(written_view[1] == (VkImageView)(uintptr_t)0xF1,
+         "replay PassFeedback: view %p", (void*)(uintptr_t)written_view[1]);
+   CHECK(written_view[2] == (VkImageView)(uintptr_t)0xC1,
+         "replay OriginalHistory1: view %p", (void*)(uintptr_t)written_view[2]);
+   CHECK(push[0] == 7, "replay drew with count %u, want 7", push[0]);
+   CHECK(last->frame_count == 9, "replay left the count at %u",
+         (unsigned)last->frame_count);
+   CHECK(prev->framebuffer == &swapped && prev->fb_feedback == &feedback,
+         "replay swapped the feedback buffers");
+
+   prev->framebuffer = NULL;
+   prev->fb_feedback = NULL;
+   memset(&last->reflection, 0, sizeof(last->reflection));
+   last->push.buffer = NULL;
+   last->sets        = NULL;
+}
+
+/* A chain made to replay keeps one history framebuffer more than its
+ * passes read, so the frame's input goes where the last frame did not
+ * read: a replay still finds that frame's history. */
+static void test_history_spare(struct vulkan_filter_chain *chain)
+{
+   slang_texture_semantic_meta history_meta[3];
+   struct slang_pass *last = chain->passes[PASSES - 1];
+   unsigned before;
+
+   vkCreateImage                = mock_create_image;
+   vkDestroyImage               = mock_destroy_image;
+   vkCreateImageView            = mock_create_image_view;
+   vkDestroyImageView           = mock_destroy_image_view;
+   vkCreateFramebuffer          = mock_create_framebuffer;
+   vkDestroyFramebuffer         = mock_destroy_framebuffer;
+   vkCreateRenderPass           = mock_create_render_pass;
+   vkDestroyRenderPass          = mock_destroy_render_pass;
+   vkGetImageMemoryRequirements = mock_image_requirements;
+   vkBindImageMemory            = mock_bind_image_memory;
+
+   memset(history_meta, 0, sizeof(history_meta));
+   last->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].data = history_meta;
+   last->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size = 3;
+   /* Any other chain keeps only what its passes read. */
+   chain->replay = false;
+   CHECK(slang_chain_init_history(chain), "history not made");
+   CHECK(chain->num_history == 2 && chain->common.num_original_history == 2,
+         "without replay: %u framebuffers for %u read",
+         (unsigned)chain->num_history,
+         (unsigned)chain->common.num_original_history);
+   chain->replay = true;
+   CHECK(slang_chain_init_history(chain), "history not made");
+   CHECK(chain->num_history == 3 && chain->common.num_original_history == 2,
+         "history: %u framebuffers for %u read",
+         (unsigned)chain->num_history,
+         (unsigned)chain->common.num_original_history);
+   if (chain->num_history == 3)
+   {
+      chain->history_ring_index = 0;
+      slang_chain_update_history_info(chain);
+      before = chain->history_ring_index;
+      /* What the frame's end writes: the slot before the newest. */
+      CHECK((before + chain->num_history - 1) % chain->num_history
+            != (before + 0) % chain->num_history
+            && (before + chain->num_history - 1) % chain->num_history
+            != (before + 1) % chain->num_history,
+            "the frame's end writes a slot the frame read");
+      CHECK(chain->common.original_history[1].texture.image
+            == chain->original_history[1]->image,
+            "history 2 is not the ring's second slot");
+   }
+   memset(&last->reflection, 0, sizeof(last->reflection));
+}
+
 static bool chain_whole(const struct vulkan_filter_chain *chain)
 {
    return chain->pass_count == PASSES && chain->num_deferred == INDICES;
@@ -350,6 +556,8 @@ int main(void)
    if (chain)
    {
       test_scanline_band(chain);
+      test_replay(chain);
+      test_history_spare(chain);
       slang_chain_free(chain);
    }
 

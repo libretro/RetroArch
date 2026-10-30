@@ -42,7 +42,13 @@ void input_driver_set_shader_uses_sensors(int on) { (void)on; }
 int  input_driver_read_sensor_snapshot(void *s) { (void)s; return 0; }
 int  video_shader_load_preset_into_shader(const char *p, void *s)
 { (void)p; (void)s; return 0; }
-void gl3_framebuffer_copy(void) { }
+/* A test that follows what is drawn into framebuffers hooks this. */
+void (*test_framebuffer_copied)(unsigned fb_id);
+void gl3_framebuffer_copy(unsigned fb_id)
+{
+   if (test_framebuffer_copied)
+      test_framebuffer_copied(fb_id);
+}
 void gl3_framebuffer_copy_partial(void) { }
 uint32_t gl3_get_cross_compiler_target_version(void) { return 430; }
 int  gl3_spirv_binary_supported(void) { return 0; }

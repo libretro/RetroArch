@@ -1,7 +1,8 @@
 /* Vulkan retained-target failures use the real allocator, retirement and
  * shared ensure policy. Only device allocation and logging are replaced.
- * The XR draw, its retained cache and its slots run with the runtime's
- * swapchains and the pass steps stubbed. */
+ * The XR draw and its slots run with the runtime's swapchains and the
+ * pass steps stubbed: what reaches the runtime's images, when a chain
+ * ends a frame, and when a repeat replays the last frame's final pass. */
 #include <stdio.h>
 #include <string.h>
 #include <vulkan/vulkan.h>
@@ -10,6 +11,9 @@
 #include "gfx/video_xr.h"
 
 #define VULKAN_OPENXR_MAX_IMAGES 4
+#define VULKAN_DIRTY_DYNAMIC_BIT 0x0001
+#define VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, img, a, b, c, d, e, f) \
+   do { (void)(cmd); (void)(img); } while (0)
 
 struct vk_image
 {
@@ -40,6 +44,8 @@ typedef struct
    {
       VkImageView view;
       VkSampler sampler;
+      VkPipeline pipeline;
+      unsigned dirty;
       struct { float data[16]; } mvp;
    } tracker;
    struct
@@ -67,18 +73,8 @@ typedef struct
          bool drawn;
          bool released;
       } slots[VIDEO_XR_MAX_SLOTS];
-      struct
-      {
-         struct vk_image images[2];
-         video_views_target_t targets[2];
-         bool valid;
-      } cached[RETRO_VIDEO_VIEWS_MAX];
       video_xr_quad_set_t set;
-      video_views_map_t cached_map;
-      unsigned cached_dims;
-      unsigned cached_rotation;
       unsigned ui_dims;
-      bool cached_views;
       struct { float data[16]; } mvp;
       VkFormat format;
       bool mutable_format;
@@ -156,12 +152,41 @@ static void vulkan_openxr_slot_forget(vulkan_openxr_t *xr, unsigned slot)
    (void)slot;
 }
 
+
+/* What reached the runtime's images: offscreen runs, final passes,
+ * replays of the last frame's, the size of the last, the render passes
+ * into a swapchain framebuffer, and frames the chains ended. */
+static unsigned offscreen_passes, viewport_passes, replays;
+static unsigned last_pass_w, last_pass_h;
+static unsigned render_passes, frames_ended;
+static bool chain_drawn = true;
+
 static void vulkan_filter_chain_build_offscreen_passes(
       vulkan_filter_chain_t *chain, VkCommandBuffer cmd, const VkViewport *vp)
 {
    (void)chain;
    (void)cmd;
    (void)vp;
+   offscreen_passes++;
+}
+
+static bool vulkan_filter_chain_replay_ready(
+      const vulkan_filter_chain_t *chain)
+{
+   (void)chain;
+   return chain_drawn;
+}
+
+static void vulkan_filter_chain_build_viewport_pass_replay(
+      vulkan_filter_chain_t *chain, VkCommandBuffer cmd,
+      const VkViewport *vp, const float *mvp)
+{
+   (void)chain;
+   (void)cmd;
+   (void)mvp;
+   replays++;
+   last_pass_w = (unsigned)vp->width;
+   last_pass_h = (unsigned)vp->height;
 }
 
 static void vulkan_filter_chain_build_viewport_pass(
@@ -170,8 +195,10 @@ static void vulkan_filter_chain_build_viewport_pass(
 {
    (void)chain;
    (void)cmd;
-   (void)vp;
    (void)mvp;
+   viewport_passes++;
+   last_pass_w = (unsigned)vp->width;
+   last_pass_h = (unsigned)vp->height;
 }
 
 static void vulkan_filter_chain_end_frame(vulkan_filter_chain_t *chain,
@@ -179,22 +206,25 @@ static void vulkan_filter_chain_end_frame(vulkan_filter_chain_t *chain,
 {
    (void)chain;
    (void)cmd;
+   frames_ended++;
 }
 
-static void vulkan_views_begin(vk_t *vk, const struct vk_image *img,
-      unsigned dims, VkRenderPass render_pass)
+static void test_begin_render_pass(VkCommandBuffer cmd,
+      const VkRenderPassBeginInfo *rp, VkSubpassContents contents)
 {
-   (void)vk;
-   (void)img;
-   (void)dims;
-   (void)render_pass;
+   (void)cmd;
+   (void)contents;
+   if (rp->framebuffer)
+      render_passes++;
 }
 
-static void vulkan_views_end(vk_t *vk, const struct vk_image *img)
+static void test_end_render_pass(VkCommandBuffer cmd)
 {
-   (void)vk;
-   (void)img;
+   (void)cmd;
 }
+
+#define vkCmdBeginRenderPass test_begin_render_pass
+#define vkCmdEndRenderPass test_end_render_pass
 
 static unsigned slot_creates[VIDEO_XR_MAX_SLOTS];
 static unsigned slot_refuses;
@@ -275,12 +305,6 @@ static void vulkan_xr_copy_ui(vk_t *vk, unsigned s, unsigned ui_dims)
    (void)ui_dims;
 }
 
-static void vulkan_xr_copy_cached(vk_t *vk, unsigned s)
-{
-   (void)vk;
-   (void)s;
-}
-
 static void vulkan_xr_draw_projection(vk_t *vk,
       const video_frame_info_t *video_info)
 {
@@ -305,38 +329,12 @@ static void init(vk_t *vk, test_context_t *context, test_chain_t *chain)
    vk->context = context;
    vk->chain = chain;
    allocations = destructions = warnings = fail_allocation = 0;
+   offscreen_passes = viewport_passes = replays = 0;
+   last_pass_w = last_pass_h = 0;
+   render_passes = frames_ended = 0;
+   chain_drawn = true;
    memset(slot_creates, 0, sizeof(slot_creates));
    slot_refuses = 0;
-}
-
-static void test_xr_failure(unsigned mode)
-{
-   vk_t vk;
-   test_context_t context;
-   test_chain_t chain;
-   video_views_target_t target;
-   unsigned dims = VIDEO_SCALE_PACK(64, 32);
-   unsigned changed = VIDEO_SCALE_PACK(80, 32);
-   init(&vk, &context, &chain);
-   memset(&target, 0, sizeof(target));
-   fail_allocation = mode;
-   if (!mode)
-      context.gpu_properties.limits.maxImageDimension2D = 16;
-   CHECK(!vulkan_vv_target_ensure(&vk, &target, &vk.cached[0], dims));
-   CHECK(target.dims == dims && !target.made);
-   CHECK(!vk.cached[0].image);
-   CHECK(warnings == 0);
-   CHECK(allocations == (mode ? 1U : 0U));
-   CHECK(destructions == allocations);
-   /* Recovery at the device alone must not retry the same dimensions. */
-   fail_allocation = 0;
-   context.gpu_properties.limits.maxImageDimension2D = 1024;
-   CHECK(!vulkan_vv_target_ensure(&vk, &target, &vk.cached[0], dims));
-   CHECK(allocations == (mode ? 1U : 0U));
-   CHECK(vulkan_vv_target_ensure(&vk, &target, &vk.cached[0], changed));
-   CHECK(target.dims == changed && target.made);
-   CHECK(allocations == (mode ? 2U : 1U));
-   CHECK(warnings == 0);
 }
 
 static void test_desktop_failure(bool ui)
@@ -401,24 +399,43 @@ static void xr_plan(unsigned dims, unsigned screens)
    planned.num_quads                        = screens + 1;
 }
 
-static void xr_draw(vk_t *vk, unsigned src_dims)
+/* Any chain: the pass steps are stubbed. */
+#define XR_FRAME_CHAIN ((vulkan_filter_chain_t*)(uintptr_t)1)
+
+static void xr_draw_frame(vk_t *vk, unsigned src_dims, bool new_frame)
 {
    video_frame_info_t info;
    memset(&info, 0, sizeof(info));
-   vulkan_xr_draw(vk, &info, true, true, false, NULL, NULL, NULL,
-         src_dims, src_dims, src_dims, true);
+   vulkan_xr_draw(vk, &info, new_frame, true, false, NULL, XR_FRAME_CHAIN,
+         NULL, src_dims, src_dims, src_dims, true);
+}
+
+static void xr_draw(vk_t *vk, unsigned src_dims)
+{
+   xr_draw_frame(vk, src_dims, true);
+}
+
+/* After the frame's submit, as vulkan_xr_release. */
+static void xr_release(vk_t *vk)
+{
+   unsigned s;
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      if (vk->xr.slots[s].drawn)
+      {
+         vk->xr.slots[s].drawn    = false;
+         vk->xr.slots[s].released = true;
+      }
 }
 
 /* A slot whose image isn't ready keeps its quads: the headset shows its
  * last image, or the swapchains a resize keeps until the new ones have
- * one. So does a screen whose resize waits for the retire ring. */
+ * one. */
 static void test_xr_draw_unready(void)
 {
    vk_t vk;
    test_context_t context;
    test_chain_t chain;
-   unsigned dims    = VIDEO_SCALE_PACK(64, 32);
-   unsigned changed = VIDEO_SCALE_PACK(80, 32);
+   unsigned dims = VIDEO_SCALE_PACK(64, 32);
    init(&vk, &context, &chain);
    xr_plan(dims, 3);
    acquire_fails = (1u << 0) | (1u << VIDEO_XR_MENU_SLOT);
@@ -427,40 +444,100 @@ static void test_xr_draw_unready(void)
    CHECK(!vk.xr.slots[0].drawn && vk.xr.slots[1].drawn);
    CHECK(!vk.xr.slots[VIDEO_XR_MENU_SLOT].drawn);
    acquire_fails = 0;
-   xr_plan(changed, 3);
-   xr_draw(&vk, changed);
+   xr_draw(&vk, dims);
    CHECK(vk.xr.set.num_quads == 4);
    CHECK(vk.xr.slots[0].drawn && vk.xr.slots[1].drawn);
-   CHECK(!vk.xr.slots[2].drawn);
-   CHECK(vk.xr.cached[2].targets[0].made);
-   CHECK(vk.xr.cached[2].targets[0].dims == dims);
-   /* Model a completed frame slot freeing a retired image. */
-   vulkan_destroy_hdr_buffer(context.device, &chain.view_retired[0]);
-   xr_draw(&vk, changed);
-   CHECK(vk.xr.set.num_quads == 4 && vk.xr.slots[2].drawn);
-   CHECK(vk.xr.cached[2].targets[0].dims == changed);
 }
 
-/* A screen whose target was never made is left out, and is not tried
- * again every frame. */
-static void test_xr_draw_unmade(void)
+/* A screen is drawn straight into the runtime's image: one final pass
+ * per layer, no image of the driver's own between, and no allocation.
+ * A new frame ends the chain's frame; a repeat whose image the runtime
+ * has draws nothing. */
+static void test_xr_draw_direct(void)
 {
    vk_t vk;
    test_context_t context;
    test_chain_t chain;
    unsigned dims = VIDEO_SCALE_PACK(64, 32);
    init(&vk, &context, &chain);
+   acquire_fails = 0;
+   xr_plan(dims, 2);
+   xr_draw(&vk, dims);
+   CHECK(vk.xr.slots[0].drawn && vk.xr.slots[1].drawn);
+   CHECK(offscreen_passes == 2 && viewport_passes == 2);
+   CHECK(render_passes == 2 && frames_ended == 2 && replays == 0);
+   CHECK(allocations == 0);
+   xr_release(&vk);
+   xr_draw_frame(&vk, dims, false);
+   CHECK(!vk.xr.slots[0].drawn && !vk.xr.slots[1].drawn);
+   CHECK(viewport_passes == 2 && frames_ended == 2);
+}
+
+/* A new frame with no frame data - a movie frame the driver imported -
+ * reaches the headset, as a core frame does. */
+static void test_xr_draw_movie_frame(void)
+{
+   vk_t vk;
+   test_context_t context;
+   test_chain_t chain;
+   unsigned dims = VIDEO_SCALE_PACK(64, 32);
+   init(&vk, &context, &chain);
+   acquire_fails = 0;
    xr_plan(dims, 1);
-   acquire_fails   = 0;
-   fail_allocation = 1;
    xr_draw(&vk, dims);
-   CHECK(vk.xr.set.num_quads == 1);
-   CHECK(vk.xr.set.quads[0].slot == VIDEO_XR_MENU_SLOT);
-   CHECK(!vk.xr.slots[0].drawn && allocations == 1);
-   fail_allocation = 0;
+   xr_release(&vk);
+   viewport_passes = frames_ended = 0;
+   xr_draw_frame(&vk, dims, true);
+   CHECK(vk.xr.slots[0].drawn);
+   CHECK(viewport_passes == 1 && frames_ended == 1 && replays == 0);
+}
+
+/* Resized while paused: the last frame's final pass is replayed at the
+ * new size straight into the new image. No other pass runs and no frame
+ * ends, so shader feedback and history stay where that frame left them. */
+static void test_xr_draw_resize_repeat(void)
+{
+   vk_t vk;
+   test_context_t context;
+   test_chain_t chain;
+   unsigned dims    = VIDEO_SCALE_PACK(64, 32);
+   unsigned changed = VIDEO_SCALE_PACK(80, 40);
+   init(&vk, &context, &chain);
+   acquire_fails = 0;
+   xr_plan(dims, 1);
    xr_draw(&vk, dims);
-   CHECK(vk.xr.set.num_quads == 1 && allocations == 1);
-   CHECK(warnings == 0);
+   xr_release(&vk);
+   offscreen_passes = viewport_passes = render_passes = frames_ended = 0;
+   xr_plan(changed, 1);
+   xr_draw_frame(&vk, dims, false);
+   CHECK(vk.xr.slots[0].drawn && vk.xr.slots[0].dims == changed);
+   CHECK(replays == 1 && render_passes == 1);
+   CHECK(offscreen_passes == 0 && viewport_passes == 0);
+   CHECK(frames_ended == 0 && allocations == 0);
+   CHECK(last_pass_w == 80 && last_pass_h == 40);
+   CHECK(slot_creates[0] == 2);
+}
+
+/* A chain with no frame drawn since it was built - a preset loaded while
+ * paused - has nothing to replay: its passes run, and no frame ends. */
+static void test_xr_draw_repeat_unready(void)
+{
+   vk_t vk;
+   test_context_t context;
+   test_chain_t chain;
+   unsigned dims    = VIDEO_SCALE_PACK(64, 32);
+   unsigned changed = VIDEO_SCALE_PACK(80, 40);
+   init(&vk, &context, &chain);
+   acquire_fails = 0;
+   xr_plan(dims, 1);
+   xr_draw(&vk, dims);
+   xr_release(&vk);
+   offscreen_passes = viewport_passes = frames_ended = 0;
+   chain_drawn = false;
+   xr_plan(changed, 1);
+   xr_draw_frame(&vk, dims, false);
+   CHECK(offscreen_passes == 1 && viewport_passes == 1);
+   CHECK(replays == 0 && frames_ended == 0);
 }
 
 /* Model completed frame slots freeing the retire ring. */
@@ -528,14 +605,14 @@ static void test_xr_draw_slot_unmade(void)
 
 int main(void)
 {
-   test_xr_failure(0);
-   test_xr_failure(1);
-   test_xr_failure(2);
    test_desktop_failure(false);
    test_desktop_failure(true);
    test_retirement_saturation();
    test_xr_draw_unready();
-   test_xr_draw_unmade();
+   test_xr_draw_direct();
+   test_xr_draw_movie_frame();
+   test_xr_draw_resize_repeat();
+   test_xr_draw_repeat_unready();
    test_xr_draw_slot_refused();
    test_xr_draw_slot_unmade();
    printf("%u failed (10 Vulkan target cases)\n", failures);

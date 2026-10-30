@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise Vulkan's shipping target allocation, shared retry policy
-and the XR planner's slots it cannot draw."""
+and the XR draw: what it draws straight into the runtime's images, and
+the slots it cannot draw."""
 from pathlib import Path
 import re
 import sys
@@ -34,7 +35,7 @@ for name in ('VV_FN', 'VV_DRV', 'VV_TARGET', 'VV_TARGET_MAKE',
         raise RuntimeError('binding missing: ' + name)
     parts.append(match[0])
 parts.append(function(shared, 'VV_FN(target_ensure)'))
-parts.append(function(driver, 'vulkan_xr_cache'))
+parts.append(function(driver, 'vulkan_xr_draw_screen'))
 parts.append(function(driver, 'vulkan_xr_slot_ensure'))
 parts.append(function(driver, 'vulkan_xr_draw'))
 Path(sys.argv[1]).write_text('\n\n'.join(parts) + '\n')
