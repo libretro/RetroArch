@@ -12427,6 +12427,9 @@ static void input_hotkeys_maybe_held(input_driver_state_t *input_st,
    if (input_openxr_hotkey(RARCH_HEADSET_VIEW_TOGGLE))
       maybe[RARCH_HEADSET_VIEW_TOGGLE >> 5]  |=
          (1u << (RARCH_HEADSET_VIEW_TOGGLE & 31));
+   if (input_openxr_hotkey(RARCH_HEADSET_EDIT_SCREENS))
+      maybe[RARCH_HEADSET_EDIT_SCREENS >> 5] |=
+         (1u << (RARCH_HEADSET_EDIT_SCREENS & 31));
 #endif
 }
 
@@ -15342,6 +15345,19 @@ static void input_driver_platform_do(enum input_platform_request req)
          if (input_driver_mouse_grabbed())
             command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
          break;
+      case INPUT_PLATFORM_PAUSE:
+#ifdef HAVE_CHEEVOS
+         /* As the Pause hotkey: hardcore allows a pause only so often. */
+         if (     rcheevos_hardcore_active()
+               && !(runloop_get_flags() & RUNLOOP_FLAG_PAUSED)
+               && !rcheevos_is_pause_allowed())
+            break;
+#endif
+         command_event(CMD_EVENT_PAUSE, NULL);
+         break;
+      case INPUT_PLATFORM_UNPAUSE:
+         command_event(CMD_EVENT_UNPAUSE, NULL);
+         break;
       default:
          break;
    }
@@ -15963,7 +15979,8 @@ void input_driver_poll(void)
       input->poll(input_st->current_data);
 #ifdef HAVE_OPENXR
    input_openxr_poll(max_users, settings->uints.video_openxr_controllers,
-         settings->uints.video_openxr_laser, input_axis_threshold);
+         settings->uints.video_openxr_laser,
+         settings->uints.video_openxr_laser_beam, input_axis_threshold);
 #endif
    input_poll_generation++;
    input_port_keys_at_poll(input_st->current_driver,

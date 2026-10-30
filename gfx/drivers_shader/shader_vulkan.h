@@ -112,6 +112,10 @@ struct vulkan_filter_chain_create_info
    /* Frames may come inside a larger image (padded_dims, origin): the
     * passes are built to read them there where the preset allows. */
    bool frame_rect;
+   /* The chain may draw its last frame's final pass again in a later
+    * frame (build_viewport_pass_replay): its history keeps one more
+    * image for that. */
+   bool replay;
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool hdr_enabled;
 #endif /* VULKAN_HDR_SWAPCHAIN */ 
@@ -230,6 +234,16 @@ void vulkan_filter_chain_build_viewport_pass(vulkan_filter_chain_t *chain,
  * view shown in both eyes. It keeps the first draw's uniforms, and the
  * feedback buffers swap once per frame. */
 void vulkan_filter_chain_build_viewport_pass_again(
+      vulkan_filter_chain_t *chain,
+      VkCommandBuffer cmd, const VkViewport *vp, const float *mvp);
+/* Whether a frame's final pass was drawn since the passes were built,
+ * for build_viewport_pass_replay to draw again. */
+bool vulkan_filter_chain_replay_ready(const vulkan_filter_chain_t *chain);
+/* The last frame's final pass, in a later frame and at vp, from what it
+ * read then, in place of the offscreen and viewport passes: no other
+ * pass runs, the feedback buffers do not swap and the history stays.
+ * For a frame shown again, resized or redrawn. */
+void vulkan_filter_chain_build_viewport_pass_replay(
       vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp, const float *mvp);
 void vulkan_filter_chain_end_frame(vulkan_filter_chain_t *chain,

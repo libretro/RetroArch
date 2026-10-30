@@ -6613,6 +6613,7 @@ static void vulkan_filter_chain_info_init(vk_t *vk,
    info->swapchain.render_pass = vk->render_pass;
    info->swapchain.num_indices = vk->context->num_swapchain_images;
    info->frame_rect            = false;
+   info->replay                = false;
 }
 
 static bool vulkan_chain_emits_hdr10(vk_t *vk, vulkan_filter_chain_t *chain)
@@ -11262,6 +11263,7 @@ static void vulkan_xr_plan(vk_t *vk, const video_frame_info_t *video_info,
       bool views, bool eyes, unsigned frame_dims, unsigned src_dims,
       unsigned ui_dims)
 {
+   unsigned s;
    video_xr_params_t p;
    vulkan_openxr_t *xr = vk->context->xr;
 
@@ -11272,6 +11274,13 @@ static void vulkan_xr_plan(vk_t *vk, const video_frame_info_t *video_info,
          / (float)VIDEO_SCALE_H(frame_dims);
    p.frame_dims    = src_dims;
    video_xr_pose_identity(&p.anchor);
+   /* A frame shown whole despite a map is not screen 1. */
+   p.screens       = (views || !video_info->views.num_views)
+      ? video_info->headset_screens : NULL;
+   p.edit_seq      = video_info->headset_edit_seq;
+   p.menu          = video_info->headset_menu_placed
+      ? &video_info->headset_menu : NULL;
+   p.menu_follow   = video_info->headset_menu_follow;
    p.distance      = video_info->headset_distance;
    p.width         = video_info->headset_width;
    p.px_per_rad    = vulkan_openxr_pixels_per_radian(xr);
@@ -11284,6 +11293,11 @@ static void vulkan_xr_plan(vk_t *vk, const video_frame_info_t *video_info,
    if (views && eyes)
       p.skip_screens = vulkan_xr_eye_screens(video_info);
    video_xr_place(&p, &vk->xr.set);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      vk->xr.set.slots[s].dims = video_xr_keep_dims(
+            vk->xr.set.slots[s].dims,
+            vk->xr.slots[s].num_images ? vk->xr.slots[s].dims : 0,
+            video_info->headset_editing);
 }
 
 /* The headset's chain for a view, or for the whole frame when view is
@@ -11317,10 +11331,14 @@ static vulkan_filter_chain_t *vulkan_xr_chain(vk_t *vk,
    return *chain;
 }
 
-/* Each layer of slot s's acquired image, drawn whole by its view's
- * headset chain or the whole frame's: its passes at the image's size. */
+/* Slot s's layers, each through its view's headset chain or the whole
+ * frame's, straight into the runtime's acquired images. A repeat - a
+ * screen resized, made again or not yet shown while no new frame came -
+ * replays the last frame's final pass at the image's size, so feedback
+ * and history stay where that frame left them. */
 static void vulkan_xr_draw_screen(vk_t *vk, unsigned s,
-      vulkan_filter_chain_t **xr_chains, vulkan_filter_chain_t *xr_frame)
+      vulkan_filter_chain_t **xr_chains, vulkan_filter_chain_t *xr_frame,
+      bool new_frame)
 {
    unsigned l;
    VkViewport vp;
@@ -11356,7 +11374,11 @@ static void vulkan_xr_draw_screen(vk_t *vk, unsigned s,
       vulkan_filter_chain_t *chain = (plan->view[l] >= 0)
          ? xr_chains[plan->view[l]] : xr_frame;
 
-      if (chain)
+      bool replay                  = false;
+
+      if (chain && !new_frame)
+         replay = vulkan_filter_chain_replay_ready(chain);
+      if (chain && !replay)
          vulkan_filter_chain_build_offscreen_passes(chain, vk->cmd, &vp);
       rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
       rp.pNext                    = NULL;
@@ -11371,11 +11393,14 @@ static void vulkan_xr_draw_screen(vk_t *vk, unsigned s,
       vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
       vk->tracker.pipeline = VK_NULL_HANDLE;
-      if (chain)
+      if (replay)
+         vulkan_filter_chain_build_viewport_pass_replay(chain, vk->cmd,
+               &vp, vk->xr.mvp.data);
+      else if (chain)
          vulkan_filter_chain_build_viewport_pass(chain, vk->cmd,
                &vp, vk->xr.mvp.data);
       vkCmdEndRenderPass(vk->cmd);
-      if (chain)
+      if (chain && new_frame)
          vulkan_filter_chain_end_frame(chain, vk->cmd);
    }
 
@@ -11610,7 +11635,8 @@ static void vulkan_xr_draw(vk_t *vk, const video_frame_info_t *video_info,
       unsigned frame_dims, unsigned src_dims, unsigned ui_dims,
       bool window_drawn)
 {
-   unsigned s;
+   unsigned s, q;
+   unsigned omit = 0;
    vulkan_openxr_t *xr = vk->context->xr;
 
    if (window_drawn)
@@ -11632,10 +11658,18 @@ static void vulkan_xr_draw(vk_t *vk, const video_frame_info_t *video_info,
          vulkan_openxr_slot_forget(xr, s);
          vk->xr.slots[s].released = false;
       }
-      if (     !vk->xr.set.slots[s].dims
-            || !vulkan_xr_slot_ensure(vk, s, vk->xr.set.slots[s].dims,
-               vk->xr.set.slots[s].layers))
+      if (!vk->xr.set.slots[s].dims)
          continue;
+      if (!vulkan_xr_slot_ensure(vk, s, vk->xr.set.slots[s].dims,
+               vk->xr.set.slots[s].layers))
+      {
+         /* A slot the runtime left with no swapchain has nothing to
+          * show; one still holding its last size keeps the quad. */
+         if (!vk->xr.slots[s].num_images)
+            omit |= 1u << s;
+         continue;
+      }
+      /* A swapchain made again for a new size is not released. */
       if (     s != VIDEO_XR_MENU_SLOT && !new_frame
             && vk->xr.slots[s].released)
          continue;
@@ -11648,15 +11682,21 @@ static void vulkan_xr_draw(vk_t *vk, const video_frame_info_t *video_info,
 #ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
 #endif
+      /* The quad stays: the headset shows the slot's last image, or
+       * the swapchains a resize keeps until these have one. */
       if (!ok)
          continue;
       /* The menu slot has no view: -1 would draw the whole frame. */
       if (s == VIDEO_XR_MENU_SLOT)
          vulkan_xr_copy_ui(vk, s, ui_dims);
       else
-         vulkan_xr_draw_screen(vk, s, xr_chains, xr_frame);
+         vulkan_xr_draw_screen(vk, s, xr_chains, xr_frame, new_frame);
       vk->xr.slots[s].drawn = true;
    }
+   for (s = 0, q = 0; q < vk->xr.set.num_quads; q++)
+      if (!(omit & (1u << vk->xr.set.quads[q].slot)))
+         vk->xr.set.quads[s++] = vk->xr.set.quads[q];
+   vk->xr.set.num_quads = s;
    /* A repeat draws the eyes only for a projection not shown yet. */
    if (eyes && (new_frame || !vk->xr.proj_shown))
       vulkan_xr_draw_projection(vk, video_info);
@@ -11958,6 +11998,7 @@ static bool vulkan_frame(void *data, const void *frame,
    bool views_blend                              = false;
    bool views_per_eye                            = false;
    bool views_ui                                 = false;
+   bool views_ui_menu                            = false;
    unsigned ui_layer_dims                        = 0;
 #ifdef HAVE_OPENXR
    vulkan_filter_chain_t *xr_chains[RETRO_VIDEO_VIEWS_MAX];
@@ -12903,13 +12944,19 @@ static bool vulkan_frame(void *data, const void *frame,
    /* The UI layer is drawn and composited only when there is UI, by
     * the same test the HDR composite makes. Overlays are hidden per
     * eye, and drawn around the layer when it is for a headset. */
+   views_ui_menu = (vk->flags & VK_FLAG_MENU_ENABLE) ? true : false;
+#ifdef HAVE_OPENXR
+   /* Edit mode moves the menu's quad: it stays up, empty. */
+   if (xr_draw && video_info->headset_editing)
+      views_ui_menu = true;
+#endif
 #ifdef HAVE_GFX_WIDGETS
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         (vk->flags & VK_FLAG_MENU_ENABLE), msg, statistics_show,
+         views_ui_menu, msg, statistics_show,
          widgets_active && gfx_widgets_visible(video_info))
 #else
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         (vk->flags & VK_FLAG_MENU_ENABLE), msg, statistics_show, false)
+         views_ui_menu, msg, statistics_show, false)
 #endif
       && vk->pipelines.alpha_premult
       && vulkan_vv_target_ensure(vk, &vk->views.ui_target, &vk->views.ui,

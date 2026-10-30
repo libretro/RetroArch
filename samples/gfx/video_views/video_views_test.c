@@ -32,6 +32,75 @@ static int failures = 0;
    printf("  FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); \
    failures++; } } while (0)
 
+static void test_screen_defaults(void)
+{
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX + 1];
+   unsigned i;
+   memset(screens, 0, sizeof(screens));
+   screens[RETRO_VIDEO_VIEWS_MAX].scale = 7.0f;
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX + 1);
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      CHECK(screens[i].x == 0.0f && screens[i].y == 0.0f
+            && screens[i].z == 0.0f);
+      CHECK(screens[i].yaw == 0.0f && screens[i].pitch == 0.0f
+            && screens[i].roll == 0.0f);
+      CHECK(screens[i].scale == 1.0f && screens[i].visible);
+   }
+   CHECK(screens[RETRO_VIDEO_VIEWS_MAX].scale == 7.0f);
+   screens[1].scale = 3.0f;
+   video_views_xr_reset(screens, 1);
+   CHECK(screens[1].scale == 3.0f);
+   video_views_xr_reset(NULL, RETRO_VIDEO_VIEWS_MAX);
+   video_views_xr_normalize(NULL);
+}
+
+static void test_screen_normalize(void)
+{
+   video_screen_xr_t s;
+   float invalid[3];
+   unsigned i;
+   video_views_xr_reset(&s, 1);
+   s.x = -10.0f;
+   s.y = 10.0f;
+   s.z = 2.5f;
+   s.yaw = -180.0f;
+   s.pitch = 180.0f;
+   s.roll = 45.0f;
+   s.scale = 0.1f;
+   s.visible = false;
+   video_views_xr_normalize(&s);
+   CHECK(s.x == -10.0f && s.y == 10.0f && s.z == 2.5f);
+   CHECK(s.yaw == -180.0f && s.pitch == 180.0f && s.roll == 45.0f);
+   CHECK(s.scale == 0.1f && !s.visible);
+   s.x = -11.0f;
+   s.y = 11.0f;
+   s.z = -11.0f;
+   s.yaw = -181.0f;
+   s.pitch = 181.0f;
+   s.roll = -181.0f;
+   s.scale = 11.0f;
+   video_views_xr_normalize(&s);
+   CHECK(s.x == -10.0f && s.y == 10.0f && s.z == -10.0f);
+   CHECK(s.yaw == -180.0f && s.pitch == 180.0f && s.roll == -180.0f);
+   CHECK(s.scale == 10.0f);
+   s.scale = 0.0f;
+   video_views_xr_normalize(&s);
+   CHECK(s.scale == 0.1f);
+   invalid[0] = (float)HUGE_VAL;
+   invalid[1] = -(float)HUGE_VAL;
+   invalid[2] = (float)sqrt(-1.0);
+   for (i = 0; i < 3; i++)
+   {
+      s.x = s.y = s.z = invalid[i];
+      s.yaw = s.pitch = s.roll = s.scale = invalid[i];
+      video_views_xr_normalize(&s);
+      CHECK(s.x == 0.0f && s.y == 0.0f && s.z == 0.0f);
+      CHECK(s.yaw == 0.0f && s.pitch == 0.0f && s.roll == 0.0f);
+      CHECK(s.scale == 1.0f && !s.visible);
+   }
+}
+
 static struct retro_video_view mkview(unsigned x, unsigned y,
       unsigned w, unsigned h, unsigned screen, unsigned eye)
 {
@@ -1315,6 +1384,8 @@ static void test_ui_helpers(void)
 
 int main(void)
 {
+   test_screen_defaults();
+   test_screen_normalize();
    test_validate();
    test_frame_helpers();
    test_eye_pair();

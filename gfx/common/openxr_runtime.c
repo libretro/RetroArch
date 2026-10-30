@@ -250,6 +250,7 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
    }
 
    rt->max_dim    = 4096;
+   rt->max_width  = 0;
    rt->max_layers = XR_MIN_COMPOSITION_LAYERS_SUPPORTED;
    props.type      = XR_TYPE_SYSTEM_PROPERTIES;
    props.next      = NULL;
@@ -261,6 +262,7 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
    {
       uint32_t mw = props.graphicsProperties.maxSwapchainImageWidth;
       uint32_t mh = props.graphicsProperties.maxSwapchainImageHeight;
+      rt->max_width = mw;
       if (mw && mw < rt->max_dim)
          rt->max_dim = mw;
       if (mh && mh < rt->max_dim)

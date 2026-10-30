@@ -134,6 +134,7 @@
 #include "../settings/settings_def_video_upscaler.h"
 #include "../settings/settings_def_video_stereo.h"
 #include "../settings/settings_def_video_headset.h"
+#include "../settings/settings_def_video_screens.h"
 #include "../settings/settings_def_rewind.h"
 #include "../settings/settings_def_playlist_history.h"
 #include "../settings/settings_def_menu_scroll.h"

@@ -913,12 +913,30 @@ jobs:
           # Vulkan through the symbol wrapper pointed at mocks, with
           # each allocation it makes failed in turn: a chain comes back
           # with every pass and every deferred-disposal queue, or not
-          # at all, and nothing is left behind.
+          # at all, and nothing is left behind. A replay of the last
+          # frame's final pass reads what that pass read, and a chain
+          # made to replay keeps one history image more.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./vulkan_chain_alloc_test
           make clean
           echo "[pass] vulkan_chain_alloc_test"
+
+      - name: Build and run gl3_shader_status_test and gl3_chain_alloc_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gl3_shader_status
+        run: |
+          set -eu
+          # gfx/drivers_shader/shader_gl3.c with GL through the glsym
+          # table pointed at mocks: shader status checks, the chain's
+          # allocations failed in turn, and a replay of the last frame's
+          # final pass reading the textures, at the generations, that
+          # pass read, the history keeping a spare.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 make check SANITIZER=address,undefined
+          make clean
+          echo "[pass] gl3_shader_status_test, gl3_chain_alloc_test"
 
       - name: Build and run vulkan_texture_size_test (ASan)
         shell: bash
@@ -946,6 +964,32 @@ jobs:
           test -x vulkan_texture_size_test
           timeout 60 ./vulkan_texture_size_test
           echo "[pass] vulkan_texture_size_test"
+
+      - name: Build and run vulkan_views_target_test
+        shell: bash
+        working-directory: samples/gfx/vulkan_views_target
+        run: |
+          set -eu
+          # gfx/drivers/vulkan.c's retained view targets and headset
+          # draw, copied out of the driver, against a mocked device: a
+          # failed allocation is not retried at the same size, a resize
+          # waits while both retired slots are full, and each headset
+          # screen is drawn straight into the runtime's image, a repeat
+          # ending no chain frame.
+          make clean && timeout 60 make check
+          echo "[pass] vulkan_views_target_test"
+
+      - name: Build and run gl3_xr_draw_test
+        shell: bash
+        working-directory: samples/gfx/gl3_xr_draw
+        run: |
+          set -eu
+          # gfx/drivers/gl3.c's headset draw, copied out of the driver,
+          # with GL stubbed: each screen straight into the runtime's
+          # texture, and a screen moved or resized while paused drawn
+          # again without ending a chain frame.
+          make clean && timeout 60 make check
+          echo "[pass] gl3_xr_draw_test"
 
       - name: GLES persistent loan pixel oracle (Mesa EGL)
         shell: bash

@@ -45,9 +45,13 @@ bool openxr_session_ended(openxr_session_t *session)
 { (void)session; return false; }
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *frame)
 { (void)frame; return test_frame ? (XrSwapchain)(uintptr_t)1 : XR_NULL_HANDLE; }
+unsigned openxr_frame_cursor_w(const openxr_frame_t *frame)
+{ (void)frame; return VIDEO_XR_CURSOR_W; }
 void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
 { (void)hooks; }
 XrTime openxr_frame_predicted_time(openxr_frame_t *frame)
+{ (void)frame; return 0; }
+XrDuration openxr_frame_period(openxr_frame_t *frame)
 { (void)frame; return 0; }
 void openxr_frame_get_shown_quads(openxr_frame_t *frame,
       video_xr_quad_set_t *out, XrSpace *space)
@@ -57,6 +61,17 @@ bool video_driver_get_views_core(const video_views_map_t **map, unsigned *dims)
 { (void)map; (void)dims; return false; }
 bool video_driver_get_viewport_info(struct video_viewport *vp)
 { (void)vp; return false; }
+void input_driver_platform_request(enum input_platform_request req)
+{ (void)req; }
+void runloop_msg_queue_push(const char *msg, size_t len, unsigned prio,
+      unsigned duration, bool flush, char *title,
+      enum message_queue_icon icon, enum message_queue_category category)
+{ (void)msg; (void)len; (void)prio; (void)duration; (void)flush;
+  (void)title; (void)icon; (void)category; }
+const char *msg_hash_to_str(enum msg_hash_enums msg)
+{ (void)msg; return ""; }
+void video_driver_headset_edit(bool editing, unsigned seq)
+{ (void)editing; (void)seq; }
 bool input_autoconfigure_connect_ex(const char *name,
       const char *display_name, const char *phys, const char *driver,
       unsigned port, unsigned vid, unsigned pid, uint8_t flags)
@@ -100,9 +115,208 @@ int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser, bool menu,
    picked_laser = laser; picked_menu = menu; picks++;
    return -1;
 }
+int video_xr_pick_edit(const video_xr_quad_set_t *set, bool stuck,
+      const video_xr_vec3_t *o, const video_xr_vec3_t *d,
+      float *u, float *v, float *t, bool *stick)
+{
+   (void)set; (void)stuck; (void)o; (void)d; (void)u; (void)v; (void)t;
+   if (stick)
+      *stick = false;
+   picked_laser = VIDEO_XR_LIVE_EDIT; picked_menu = false; picks++;
+   return -1;
+}
 float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
       float t, video_xr_pose_t *pose)
 { (void)q; (void)u; (void)v; (void)t; (void)pose; return 0.01f; }
+void video_xr_beam(const video_xr_vec3_t *o, const video_xr_vec3_t *d,
+      float len, const video_xr_vec3_t *eye, video_xr_pose_t *pose)
+{ (void)o; (void)d; (void)len; (void)eye; memset(pose, 0, sizeof(*pose)); }
+void video_xr_tag(const video_xr_vec3_t *hand, const video_xr_vec3_t *eye,
+      video_xr_pose_t *pose)
+{ (void)hand; (void)eye; memset(pose, 0, sizeof(*pose)); }
+/* What edit mode reaches, never run here. */
+void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out)
+{ (void)f; memset(out, 0, sizeof(*out)); }
+void openxr_frame_get_screens(openxr_frame_t *f, video_xr_pose_t *pose,
+      XrSpace *space)
+{ (void)f; memset(pose, 0, sizeof(*pose)); *space = XR_NULL_HANDLE; }
+void config_get_video_screen_xr(unsigned screen, video_screen_xr_t *out)
+{ (void)screen; memset(out, 0, sizeof(*out)); }
+bool config_get_video_menu_xr(video_screen_xr_t *out)
+{ memset(out, 0, sizeof(*out)); return false; }
+void config_set_video_screen_xr(unsigned screen,
+      const video_screen_xr_t *values)
+{ (void)screen; (void)values; }
+void config_set_video_menu_xr(const video_screen_xr_t *values)
+{ (void)values; }
+void video_views_xr_reset(video_screen_xr_t *screens, unsigned count)
+{ memset(screens, 0, count * sizeof(*screens)); }
+void video_views_xr_normalize(video_screen_xr_t *screen) { (void)screen; }
+void video_xr_compose(const video_xr_pose_t *a, const video_xr_pose_t *b,
+      video_xr_pose_t *out)
+{ (void)a; *out = *b; }
+void video_xr_pose_invert(const video_xr_pose_t *a, video_xr_pose_t *out)
+{ *out = *a; }
+void video_xr_grab_hold(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_quat_t *q)
+{ (void)aim; g->turn = *q; }
+bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_quad_set_t *targets, unsigned skip,
+      const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_screen_xr_t *out, unsigned *snapped)
+{
+   (void)g; (void)targets; (void)skip; (void)start; (void)out;
+   if (snapped)
+      *snapped = 0;
+   *pose = *aim;
+   return false;
+}
+void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
+      float *scale)
+{ (void)g; (void)x; (void)y; (void)dt; (void)scale; }
+unsigned video_xr_grab_off_step(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_vec3_t *head, float step,
+      const float *rest)
+{ (void)g; (void)aim; (void)head; (void)step; (void)rest; return 0; }
+unsigned video_xr_grab_step(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_vec3_t *head, float step, unsigned axes, float *rest,
+      const video_xr_quad_set_t *targets, unsigned skip,
+      const video_xr_pose_t *start, const video_xr_hinge_t *lid)
+{
+   (void)g; (void)aim; (void)head; (void)step; (void)axes; (void)rest;
+   (void)targets; (void)skip; (void)start; (void)lid;
+   return 0;
+}
+unsigned video_xr_grab_turn_lid(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *lid, float x,
+      float y, double dt)
+{ (void)g; (void)aim; (void)lid; (void)x; (void)y; (void)dt; return 0; }
+bool video_xr_grab_near_hinge(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      const video_xr_hinge_t *h, float reach)
+{
+   (void)g; (void)aim; (void)targets; (void)h; (void)reach;
+   return false;
+}
+void video_xr_rest_take(const video_xr_quad_set_t *set, unsigned slot,
+      float width, float height, float gap, const video_xr_hinge_t *h,
+      video_xr_pose_t *pose)
+{
+   (void)set; (void)slot; (void)width; (void)height; (void)gap; (void)h;
+   (void)pose;
+}
+bool video_xr_grab_through(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      const video_xr_hinge_t *h)
+{ (void)g; (void)aim; (void)targets; (void)h; return false; }
+unsigned video_xr_grab_hinge(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_xr_hinge_t *hinge)
+{
+   (void)g; (void)targets; (void)skip; (void)start; (void)hinge;
+   *pose = *aim;
+   return 0;
+}
+void video_xr_grab_put(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_pose_t *pose)
+{ (void)g; (void)aim; (void)pose; }
+void video_xr_grab_put_hinge(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_hinge_t *h, const video_xr_pose_t *pose, bool turned)
+{ (void)g; (void)aim; (void)h; (void)pose; (void)turned; }
+void video_xr_grab_put_line(video_xr_grab_t *g, const video_xr_pose_t *aim,
+      const video_xr_hinge_t *h)
+{ (void)g; (void)aim; (void)h; }
+unsigned video_xr_grab_turn_hinge(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float x,
+      float y, double dt)
+{ (void)g; (void)aim; (void)h; (void)x; (void)y; (void)dt; return 0; }
+unsigned video_xr_grab_step_hinge(video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float size,
+      unsigned axes, float *rest, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_pose_t *start)
+{
+   (void)g; (void)aim; (void)h; (void)size; (void)axes; (void)rest;
+   (void)targets; (void)skip; (void)start;
+   return 0;
+}
+unsigned video_xr_grab_off_hinge(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_hinge_t *h, float size,
+      const float *rest)
+{ (void)g; (void)aim; (void)h; (void)size; (void)rest; return 0; }
+void video_xr_turn_back(video_xr_pose_t *pose) { (void)pose; }
+void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
+{ *out = *menu; }
+void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)
+{ *out = *q; }
+void video_xr_outline_crop(video_xr_quad_t *o, unsigned hide, bool back,
+      unsigned *x, unsigned *w)
+{ (void)o; (void)hide; (void)back; *x = 0; *w = VIDEO_XR_OUTLINE_DIM; }
+unsigned video_xr_outline_cell(unsigned hide, bool back, unsigned lit)
+{ (void)hide; (void)back; return VIDEO_XR_OUTLINE_X(lit); }
+bool video_xr_hinge_line(const video_xr_hinge_t *h, float width,
+      float height, const video_xr_quad_t *target, video_xr_vec3_t *a,
+      video_xr_vec3_t *b)
+{
+   (void)h; (void)width; (void)height; (void)target; (void)a; (void)b;
+   return false;
+}
+void video_xr_hinge_place(video_xr_hinge_t *h, const video_xr_pose_t *pose,
+      float width, float height, const video_xr_quad_t *target, bool over)
+{
+   (void)h; (void)pose; (void)width; (void)height; (void)target;
+   (void)over;
+}
+unsigned video_xr_rest_hinges(const video_xr_quad_set_t *set,
+      unsigned skip, float gap, video_xr_rest_t *rest, unsigned max)
+{
+   (void)set; (void)skip; (void)gap; (void)rest; (void)max;
+   return 0;
+}
+bool video_xr_rest_hinge(const video_xr_quad_set_t *set, unsigned slot,
+      unsigned skip, float width, float height, float gap,
+      const video_xr_pose_t *pose, video_xr_hinge_t *hinge)
+{
+   (void)set; (void)slot; (void)skip; (void)width; (void)height;
+   (void)gap; (void)pose; (void)hinge;
+   return false;
+}
+bool video_xr_hinge_settle(const video_xr_quad_set_t *set, unsigned slot,
+      unsigned skip, float width, float height, float gap,
+      const video_xr_hinge_t *h, const video_xr_pose_t *hand,
+      video_xr_pose_t *pose)
+{
+   (void)set; (void)slot; (void)skip; (void)width; (void)height;
+   (void)gap; (void)h; (void)hand; (void)pose;
+   return false;
+}
+bool video_xr_grab_settle(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      unsigned skip, const video_xr_hinge_t *h, video_xr_pose_t *pose)
+{
+   (void)g; (void)aim; (void)targets; (void)skip; (void)h; (void)pose;
+   return false;
+}
+bool video_xr_grab_kept(const video_xr_grab_t *g,
+      const video_xr_pose_t *aim, const video_xr_quad_set_t *targets,
+      const video_xr_pose_t *start, video_xr_hinge_t *kept)
+{
+   (void)g; (void)aim; (void)targets; (void)start; (void)kept;
+   return false;
+}
+void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
+{ (void)f; (void)g; }
+void video_xr_smooth_step(video_xr_smooth_t *s, unsigned level,
+      const video_xr_pose_t *raw, double dt, video_xr_pose_t *out)
+{ (void)s; (void)level; (void)dt; *out = *raw; }
+void openxr_frame_publish_aims(openxr_frame_t *f, const openxr_aims_t *a)
+{ (void)f; (void)a; }
+void openxr_frame_get_aims(openxr_frame_t *f, openxr_aims_t *out)
+{ (void)f; memset(out, 0, sizeof(*out)); }
+int openxr_frame_recenters(openxr_frame_t *f)
+{ (void)f; return 0; }
+static video_xr_quad_set_t test_shown;
+static unsigned test_under;
 
 static XrResult XRAPI_CALL locate(XrSpace space, XrSpace base,
       XrTime time, XrSpaceLocation *out)
@@ -205,7 +419,8 @@ static void publish_pointer(unsigned laser, bool menu)
    openxr_frame_t *frame = input_openxr_st.frame;
    test_menu_open = menu;
    input_openxr_st.frame = NULL;
-   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, laser, 0.5f);
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, laser,
+         VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
    input_openxr_st.frame = frame;
 }
 static void replace_pointer(void)
@@ -224,29 +439,40 @@ static void pointer_tests(void)
       {
          publish_pointer(laser, menu != 0);
          picks = 0;
-         input_openxr_frame_layers(NULL, 1, layers, 2);
+         input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+               layers, 2, &test_under);
          if (laser == VIDEO_OPENXR_LASER_OFF)
             CHECK(picks == 0, "disabled pointer picked a quad");
          else
             CHECK(picks == 2 && picked_laser == laser
                   && picked_menu == (menu != 0), "pointer pair changed");
       }
+   publish_pointer(VIDEO_OPENXR_LASER_LAST, false);
+   picks = 0;
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2, &test_under);
+   CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_AUTO
+         && !picked_menu, "a laser past the choices was not Auto");
    publish_pointer(VIDEO_OPENXR_LASER_AUTO, false);
    after_load = replace_pointer;
    picks = 0;
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2, &test_under);
    CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_AUTO
          && !picked_menu, "frame mixed two published pointer configurations");
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2, &test_under);
    CHECK(picked_laser == VIDEO_OPENXR_LASER_ALWAYS && picked_menu,
          "next frame did not observe replacement pointer pair");
    input_openxr_st.yield = true;
    publish_pointer(VIDEO_OPENXR_LASER_ALWAYS, true);
    picks = 0;
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2, &test_under);
    CHECK(picks == 0, "yielding pointer remained visible");
    publish_pointer(VIDEO_OPENXR_LASER_ALWAYS, false);
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2, &test_under);
    CHECK(picks == 2 && !picked_menu, "closed menu did not end pointer yield");
    input_openxr_st.SyncActions = sync_actions;
    input_openxr_st.GetActionStateBoolean = read_bool;
@@ -254,14 +480,16 @@ static void pointer_tests(void)
    input_openxr_st.GetActionStateVector2f = read_vector;
    test_navigation = test_menu_open = true;
    input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
-         VIDEO_OPENXR_LASER_ALWAYS, 0.5f);
+         VIDEO_OPENXR_LASER_ALWAYS, VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
    picks = 0;
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2, &test_under);
    CHECK(picks == 0, "post-navigation publication did not hide pointer");
    test_navigation = test_menu_open = false;
    input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
-         VIDEO_OPENXR_LASER_ALWAYS, 0.5f);
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+         VIDEO_OPENXR_LASER_ALWAYS, VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2, &test_under);
    CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_ALWAYS
          && !picked_menu, "completed poll published the wrong pointer pair");
 }
@@ -340,7 +568,8 @@ int main(void)
    service(false, false);
    CHECK(input_openxr_st.haptic[0] == 0.0f, "unfocused result cached as applied");
    test_focused = false;
-   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF, 0.5f);
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF,
+         VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
    test_focused = true;
    apply_result[0] = XR_SUCCESS;
    service(false, false);

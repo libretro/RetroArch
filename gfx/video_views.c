@@ -15,10 +15,51 @@
 
 #include <string.h>
 #include <limits.h>
+#include <float.h>
 #include <math.h>
 
 #include "video_views.h"
 #include "video_defines.h"
+
+void video_views_xr_reset(video_screen_xr_t *screens, unsigned count)
+{
+   unsigned i;
+   if (!screens)
+      return;
+   if (count > RETRO_VIDEO_VIEWS_MAX)
+      count = RETRO_VIDEO_VIEWS_MAX;
+   for (i = 0; i < count; i++)
+   {
+      memset(&screens[i], 0, sizeof(screens[i]));
+      screens[i].scale   = 1.0f;
+      screens[i].visible = true;
+   }
+}
+
+static float video_views_xr_value(float value, float low, float high,
+      float fallback)
+{
+   if (!(value >= -FLT_MAX && value <= FLT_MAX))
+      return fallback;
+   if (value < low)
+      return low;
+   if (value > high)
+      return high;
+   return value;
+}
+
+void video_views_xr_normalize(video_screen_xr_t *screen)
+{
+   if (!screen)
+      return;
+   screen->x = video_views_xr_value(screen->x, -10.0f, 10.0f, 0.0f);
+   screen->y = video_views_xr_value(screen->y, -10.0f, 10.0f, 0.0f);
+   screen->z = video_views_xr_value(screen->z, -10.0f, 10.0f, 0.0f);
+   screen->yaw = video_views_xr_value(screen->yaw, -180.0f, 180.0f, 0.0f);
+   screen->pitch = video_views_xr_value(screen->pitch, -180.0f, 180.0f, 0.0f);
+   screen->roll = video_views_xr_value(screen->roll, -180.0f, 180.0f, 0.0f);
+   screen->scale = video_views_xr_value(screen->scale, 0.1f, 10.0f, 1.0f);
+}
 
 bool video_views_validate(const struct retro_video_view *views,
       unsigned num_views, video_views_map_t *out)

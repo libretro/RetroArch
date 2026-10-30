@@ -316,6 +316,10 @@ typedef struct settings
       unsigned video_openxr_refresh_rate;
       unsigned video_openxr_controllers;
       unsigned video_openxr_laser;
+      unsigned video_openxr_laser_beam;
+      unsigned video_openxr_edit_snap_angles;
+      unsigned video_openxr_edit_hinge_gap;
+      unsigned video_openxr_edit_smoothing;
       unsigned video_openxr_placement;
       unsigned video_fse_negotiation;
       unsigned video_hw_decode;
@@ -582,6 +586,21 @@ typedef struct settings
    struct
    {
       float placeholder;
+      float video_screen_xr_x[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_y[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_z[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_yaw[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_pitch[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_roll[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_scale[RETRO_VIDEO_VIEWS_MAX];
+      float video_openxr_menu_xr_x;
+      float video_openxr_menu_xr_y;
+      float video_openxr_menu_xr_z;
+      float video_openxr_menu_xr_yaw;
+      float video_openxr_menu_xr_pitch;
+      float video_openxr_menu_xr_roll;
+      float video_openxr_menu_xr_scale;
+
       float video_aspect_ratio;
       float video_vp_bias_x;
       float video_vp_bias_y;
@@ -677,6 +696,8 @@ typedef struct settings
    struct
    {
       bool placeholder;
+      bool video_screen_xr_visible[RETRO_VIDEO_VIEWS_MAX];
+      bool video_openxr_menu_placed;
 #ifdef HAVE_VIDEO_WINDOWS
       bool video_windows_enable;
       bool video_screen_window_fullscreen[RETRO_VIDEO_VIEWS_MAX];
@@ -698,7 +719,10 @@ typedef struct settings
       bool video_smooth;
       bool video_stereo_swap_eyes;
       bool video_openxr_enable;
+      bool video_openxr_menu_follow;
       bool video_openxr_perf_boost;
+      bool video_openxr_edit_pause;
+      bool video_openxr_edit_snap;
       bool video_ctx_scaling;
       bool video_force_aspect;
       bool video_frame_delay_auto;
@@ -1727,6 +1751,23 @@ bool config_overlay_enable_default(void);
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
 bool config_metal_arg_buffers_default(void);
 #endif
+
+void config_reset_video_screen_xr(settings_t *settings, unsigned first, unsigned count);
+
+/* The headset's menu back in front of screen 1. */
+void config_reset_video_menu_xr(settings_t *settings);
+
+struct video_screen_xr;
+/* Edit Screens' reads and writes of a screen's place, or the menu's,
+ * as the Stereo 3D & Screens rows keep them. A write normalises, marks
+ * the settings modified and leaves Visible alone; NULL resets a screen
+ * as Reset Screen does, or puts the menu back in front of screen 1. The
+ * menu's read is false while it follows screen 1. */
+void config_get_video_screen_xr(unsigned screen, struct video_screen_xr *out);
+bool config_get_video_menu_xr(struct video_screen_xr *out);
+void config_set_video_screen_xr(unsigned screen,
+      const struct video_screen_xr *values);
+void config_set_video_menu_xr(const struct video_screen_xr *values);
 
 void config_set_defaults(settings_t *target);
 

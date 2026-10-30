@@ -206,11 +206,13 @@ gl3_filter_chain_t *gl3_filter_chain_create_shrink(void);
 
 /* @frame_rect: frames may come inside a larger texture (padded_dims);
  * the passes are built to read them there where the preset allows,
- * rather than have each copied out. */
+ * rather than have each copied out. @replay: the chain may draw its last
+ * frame's final pass again in a later frame (build_viewport_pass_replay),
+ * and its history keeps one more texture for that. */
 gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path,
       enum glslang_filter_chain_filter filter,
-      bool frame_rect);
+      bool frame_rect, bool replay);
 
 /**
  * Deferred (per-frame) filter chain creation API.
@@ -259,6 +261,17 @@ bool gl3_filter_chain_compile_pass(
  **/
 bool gl3_filter_chain_finalize(gl3_filter_chain_t *chain);
 
+/* Whether a frame's final pass was drawn since the passes were built,
+ * for build_viewport_pass_replay to draw again. */
+bool gl3_filter_chain_replay_ready(const gl3_filter_chain_t *chain);
+/* The last frame's final pass, in a later frame and at vp, from what it
+ * read then, in place of the offscreen and viewport passes: no other
+ * pass runs, the feedback buffers do not swap and the history stays.
+ * For a frame shown again, resized or redrawn. */
+void gl3_filter_chain_build_viewport_pass_replay(
+      gl3_filter_chain_t *chain,
+      const struct gl3_viewport *vp,
+      const float *mvp);
 void gl3_filter_chain_end_frame(gl3_filter_chain_t *chain);
 
 GLuint gl3_cross_compile_program(

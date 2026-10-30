@@ -4165,6 +4165,12 @@ unsigned video_driver_headset_view_toggle(void)
    return VIDEO_HEADSET_VIEW_LAST;
 }
 
+void video_driver_headset_edit(bool editing, unsigned seq)
+{
+   video_driver_st.headset_editing  = editing;
+   video_driver_st.headset_edit_seq = seq;
+}
+
 void video_driver_headset_exit_request(void)
 {
    retro_atomic_store_release_int(&video_driver_st.headset_exit, 1);
@@ -6839,6 +6845,39 @@ void video_driver_ff_frameskip_decide(retro_time_t now)
    video_st->ff_last_time = now;
 }
 
+static void video_driver_headset_screens(const settings_t *settings,
+      video_screen_xr_t *screens)
+{
+   unsigned i;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      video_screen_xr_t *screen = &screens[i];
+      screen->x       = settings->floats.video_screen_xr_x[i];
+      screen->y       = settings->floats.video_screen_xr_y[i];
+      screen->z       = settings->floats.video_screen_xr_z[i];
+      screen->yaw     = settings->floats.video_screen_xr_yaw[i];
+      screen->pitch   = settings->floats.video_screen_xr_pitch[i];
+      screen->roll    = settings->floats.video_screen_xr_roll[i];
+      screen->scale   = settings->floats.video_screen_xr_scale[i];
+      screen->visible = settings->bools.video_screen_xr_visible[i];
+      video_views_xr_normalize(screen);
+   }
+}
+
+static void video_driver_headset_menu(const settings_t *settings,
+      video_screen_xr_t *menu)
+{
+   menu->x       = settings->floats.video_openxr_menu_xr_x;
+   menu->y       = settings->floats.video_openxr_menu_xr_y;
+   menu->z       = settings->floats.video_openxr_menu_xr_z;
+   menu->yaw     = settings->floats.video_openxr_menu_xr_yaw;
+   menu->pitch   = settings->floats.video_openxr_menu_xr_pitch;
+   menu->roll    = settings->floats.video_openxr_menu_xr_roll;
+   menu->scale   = settings->floats.video_openxr_menu_xr_scale;
+   menu->visible = true;
+   video_views_xr_normalize(menu);
+}
+
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    video_viewport_settings_t *custom_vp             = NULL;
@@ -6895,10 +6934,16 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
    video_info->shader_subframes            = video_st->headset_interval
       ? 1 : settings->uints.video_shader_subframes;
+   video_driver_headset_screens(settings, video_info->headset_screens);
+   video_driver_headset_menu(settings, &video_info->headset_menu);
+   video_info->headset_menu_placed         = settings->bools.video_openxr_menu_placed;
+   video_info->headset_menu_follow         = settings->bools.video_openxr_menu_follow;
    video_info->headset_distance            = settings->floats.video_openxr_distance;
    video_info->headset_width               = settings->floats.video_openxr_width;
    video_info->headset_placement           = settings->uints.video_openxr_placement;
    video_info->headset_recenter            = video_st->headset_recenter;
+   video_info->headset_edit_seq            = video_st->headset_edit_seq;
+   video_info->headset_editing             = video_st->headset_editing;
    video_info->headset_interval            = video_st->headset_interval;
    video_info->headset_request_hz          = video_st->headset_request_hz;
    video_info->screen_layout               = settings->uints.video_screen_layout;

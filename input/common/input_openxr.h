@@ -45,10 +45,10 @@ struct rarch_joypad_driver;
 void input_openxr_register(void);
 
 /* Syncs the controllers, and connects or disconnects their devices;
- * once per input poll, with Max Users, the Headset Controllers and
- * Laser Pointer settings and the axis threshold. */
+ * once per input poll, with Max Users, the Headset Controllers, Laser
+ * Pointer and Laser Beam settings and the axis threshold. */
 void input_openxr_poll(unsigned max_users, unsigned controllers,
-      unsigned laser, float threshold);
+      unsigned laser, unsigned beam, float threshold);
 
 /* @joypad, or while the devices have slots a joypad driver that
  * answers theirs and passes every other to @joypad. */
@@ -69,9 +69,28 @@ void input_openxr_reannounce(void);
  * headset's. */
 bool input_openxr_autoconfigure(unsigned slot);
 
-/* RARCH_MENU_TOGGLE, RARCH_HEADSET_RECENTER, RARCH_LASER_POINTER_TOGGLE
- * or RARCH_HEADSET_VIEW_TOGGLE, from the headset's own actions. */
+/* RARCH_MENU_TOGGLE, RARCH_HEADSET_RECENTER, RARCH_LASER_POINTER_TOGGLE,
+ * RARCH_HEADSET_VIEW_TOGGLE or RARCH_HEADSET_EDIT_SCREENS, from the
+ * headset's own actions. */
 bool input_openxr_hotkey(unsigned id);
+
+/* Edit Screens, main thread, between frames: a pause draws a frame.
+ * Toggle: stops edit mode, false; otherwise whether it can start, the
+ * desktop told when not. Begin, once the menu was asked to close: on at
+ * once, pausing running content when @pause (While Editing Screens)
+ * asks, held screens snapping when @snap (Snap to Screens) does;
+ * Snap to Angles' step, @snap_angles, Hinge Gap, @hinge_gap, and Edit
+ * Smoothing's level, @smoothing, hold until edit mode ends; a menu that
+ * stayed open (no content) is told instead. End: off at once, as a
+ * video reinit wants. */
+bool input_openxr_edit_toggle(void);
+void input_openxr_edit_begin(bool pause, bool snap, unsigned snap_angles,
+      unsigned hinge_gap, unsigned smoothing);
+void input_openxr_edit_end(void);
+
+/* Main thread: what each hand holds is let go where it is, as before a
+ * recenter. Edit mode stays on. */
+void input_openxr_edit_release(void);
 
 /* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on port 0,
  * while it can point (the headset focused, a screen live for the

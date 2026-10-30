@@ -37,6 +37,8 @@
  *   RA_XR_LAYER_QUAD_INDEX0 1: quads show array layer 0 whatever their
  *                           imageArrayIndex, as SteamVR on the Steam
  *                           Frame does
+ *   RA_XR_LAYER_MAX_WIDTH   the runtime's maxSwapchainImageWidth, at most
+ *                           this; 0 or unset leaves it
  *
  * Script lines:
  *   head <x> <y> <z> <yaw>  the VIEW space's pose in LOCAL, yaw in degrees
@@ -76,9 +78,11 @@
  *   action <set>/<name>[@left|@right] <x> [<y>]
  *                           an action's state while its set is synced:
  *                           boolean x != 0, float x, vector2f x y
- *   aim <left|right> <px> <py> <pz> <tx> <ty> <tz>
+ *   aim <left|right> <px> <py> <pz> <tx> <ty> <tz> [<roll>]
  *                           that hand's pose spaces at p, -Z towards t,
- *                           in LOCAL; in VIEW through the scripted head
+ *                           rolled roll degrees about the aim's own Z (+X
+ *                           towards +Y), in LOCAL; in VIEW through the
+ *                           scripted head
  *   aim <left|right> off    that hand untracked
  *
  * A session on an OpenGL binding (XR_MNDX_egl_enable's EGL or
@@ -93,7 +97,9 @@
  * a later line of the same kind replaces them (head off, fail off). state
  * and space fire once per change of the file. Every read starts from no
  * actions, no aims and valid views: a script is the whole controller
- * state. Action states and hand poses never come from the runtime.
+ * state. Action states and hand poses never come from the runtime. A
+ * synced set's actions all read bound; those the script leaves out, at
+ * rest.
  */
 
 #include <math.h>
@@ -177,6 +183,7 @@ static struct
    char dir[1024];
    unsigned snap_every;
    bool quad_index0;
+   uint32_t max_width;
    char script[1024];
    struct timespec script_mtime;
    ino_t script_ino;
@@ -258,6 +265,7 @@ static struct
    PFN_xrBeginFrame BeginFrame;
    PFN_xrEndFrame EndFrame;
    PFN_xrEnumerateViewConfigurationViews EnumerateViewConfigurationViews;
+   PFN_xrGetSystemProperties GetSystemProperties;
 
    XrInstance instance;
    bool frame;               /* the application enabled FRAME_EXT */
@@ -315,6 +323,7 @@ static void layer_open(void)
    const char *snap  = getenv("RA_XR_LAYER_SNAP_EVERY");
    const char *scr   = getenv("RA_XR_LAYER_SCRIPT");
    const char *idx0  = getenv("RA_XR_LAYER_QUAD_INDEX0");
+   const char *maxw  = getenv("RA_XR_LAYER_MAX_WIDTH");
    char path[1100];
    if (dir && *dir && !L.out)
    {
@@ -324,6 +333,7 @@ static void layer_open(void)
    }
    L.snap_every  = snap ? (unsigned)strtoul(snap, NULL, 10) : 0;
    L.quad_index0 = idx0 && atoi(idx0) != 0;
+   L.max_width   = maxw ? (uint32_t)strtoul(maxw, NULL, 10) : 0;
    if (scr)
       snprintf(L.script, sizeof(L.script), "%s", scr);
 }
@@ -395,8 +405,16 @@ static bool set_synced(XrActionSet s)
    return false;
 }
 
+/* Every action of a synced set is bound, as a runtime binds what each
+ * profile was suggested. Caller holds L.lock. */
+static bool action_bound(XrAction action)
+{
+   const struct action_rec *a = find_action(action);
+   return a && set_synced(a->set);
+}
+
 /* The script's value for an action asked for a hand, while its set is
- * synced; NULL reads inactive. Caller holds L.lock. */
+ * synced; NULL reads at rest. Caller holds L.lock. */
 static const struct scripted *scripted_value(XrAction action, XrPath sub)
 {
    unsigned i;
@@ -563,7 +581,9 @@ static void script_aim(const char *args)
 {
    char side[16];
    float p[3], t[3], fx, fy, fz, len, yaw, pitch;
-   int hand;
+   float cy, sy, cp, sp, cr, sr;
+   float roll = 0.0f;
+   int hand, n;
    if (sscanf(args, "%15s", side) != 1 || !(hand = parse_hand(side)))
       return;
    if (strstr(args, "off"))
@@ -571,8 +591,9 @@ static void script_aim(const char *args)
       L.aim_set[hand] = false;
       return;
    }
-   if (sscanf(args, "%15s %f %f %f %f %f %f", side, &p[0], &p[1], &p[2],
-            &t[0], &t[1], &t[2]) != 7)
+   n = sscanf(args, "%15s %f %f %f %f %f %f %f", side, &p[0], &p[1], &p[2],
+         &t[0], &t[1], &t[2], &roll);
+   if (n != 7 && n != 8)
       return;
    fx  = t[0] - p[0];
    fy  = t[1] - p[1];
@@ -582,11 +603,19 @@ static void script_aim(const char *args)
       return;
    yaw   = atan2f(-fx / len, -fz / len);
    pitch = asinf(fy / len);
-   /* Pitch about +X, then yaw about +Y: -Z points along (f). */
-   L.aim[hand].orientation.x = cosf(yaw / 2.0f) * sinf(pitch / 2.0f);
-   L.aim[hand].orientation.y = sinf(yaw / 2.0f) * cosf(pitch / 2.0f);
-   L.aim[hand].orientation.z = -sinf(yaw / 2.0f) * sinf(pitch / 2.0f);
-   L.aim[hand].orientation.w = cosf(yaw / 2.0f) * cosf(pitch / 2.0f);
+   roll  = roll * 3.14159265f / 180.0f;
+   /* Yaw about +Y, pitch about +X, roll about the aim's own Z: -Z
+    * points along (f). */
+   cy = cosf(yaw / 2.0f);
+   sy = sinf(yaw / 2.0f);
+   cp = cosf(pitch / 2.0f);
+   sp = sinf(pitch / 2.0f);
+   cr = cosf(roll / 2.0f);
+   sr = sinf(roll / 2.0f);
+   L.aim[hand].orientation.x = cy * sp * cr + sy * cp * sr;
+   L.aim[hand].orientation.y = sy * cp * cr - cy * sp * sr;
+   L.aim[hand].orientation.z = cy * cp * sr - sy * sp * cr;
+   L.aim[hand].orientation.w = cy * cp * cr + sy * sp * sr;
    L.aim[hand].position.x    = p[0];
    L.aim[hand].position.y    = p[1];
    L.aim[hand].position.z    = p[2];
@@ -1527,6 +1556,18 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_WaitFrame(XrSession session,
    return res;
 }
 
+/* RA_XR_LAYER_MAX_WIDTH: the widest swapchain the runtime says it
+ * makes, at most this. */
+static XRAPI_ATTR XrResult XRAPI_CALL layer_GetSystemProperties(
+      XrInstance instance, XrSystemId system, XrSystemProperties *props)
+{
+   XrResult res = L.GetSystemProperties(instance, system, props);
+   if (     XR_SUCCEEDED(res) && L.max_width
+         && props->graphicsProperties.maxSwapchainImageWidth > L.max_width)
+      props->graphicsProperties.maxSwapchainImageWidth = L.max_width;
+   return res;
+}
+
 static XRAPI_ATTR XrResult XRAPI_CALL layer_EnumerateDisplayRefreshRatesFB(
       XrSession session, uint32_t cap, uint32_t *count, float *rates)
 {
@@ -1899,7 +1940,8 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetActionStateBoolean(XrSession sess
    state->currentState         = (s && s->v[0] != 0.0f) ? XR_TRUE : XR_FALSE;
    state->changedSinceLastSync = XR_FALSE;
    state->lastChangeTime       = 0;
-   state->isActive             = s ? XR_TRUE : XR_FALSE;
+   state->isActive             = action_bound(gi->action) ? XR_TRUE
+      : XR_FALSE;
    pthread_mutex_unlock(&L.lock);
    return XR_SUCCESS;
 }
@@ -1915,7 +1957,8 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetActionStateFloat(XrSession sessio
    state->currentState         = s ? s->v[0] : 0.0f;
    state->changedSinceLastSync = XR_FALSE;
    state->lastChangeTime       = 0;
-   state->isActive             = s ? XR_TRUE : XR_FALSE;
+   state->isActive             = action_bound(gi->action) ? XR_TRUE
+      : XR_FALSE;
    pthread_mutex_unlock(&L.lock);
    return XR_SUCCESS;
 }
@@ -1932,7 +1975,8 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetActionStateVector2f(XrSession ses
    state->currentState.y       = s ? s->v[1] : 0.0f;
    state->changedSinceLastSync = XR_FALSE;
    state->lastChangeTime       = 0;
-   state->isActive             = s ? XR_TRUE : XR_FALSE;
+   state->isActive             = action_bound(gi->action) ? XR_TRUE
+      : XR_FALSE;
    pthread_mutex_unlock(&L.lock);
    return XR_SUCCESS;
 }
@@ -2050,6 +2094,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetInstanceProcAddr(XrInstance insta
    HOOK(WaitFrame)
    HOOK(EndFrame)
    HOOK(EnumerateViewConfigurationViews)
+   HOOK(GetSystemProperties)
    HOOK(CreateActionSet)
    HOOK(DestroyActionSet)
    HOOK(CreateAction)
@@ -2117,6 +2162,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateApiLayerInstance(
    NEXT(BeginFrame);
    NEXT(EndFrame);
    NEXT(EnumerateViewConfigurationViews);
+   NEXT(GetSystemProperties);
    NEXT(PathToString);
    NEXT(CreateActionSet);
    NEXT(DestroyActionSet);

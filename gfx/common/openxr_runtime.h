@@ -53,6 +53,7 @@ typedef struct openxr_runtime
    XrSystemId system;
    XrEnvironmentBlendMode blend_mode;
    unsigned max_dim;          /* the largest swapchain side */
+   unsigned max_width;        /* the widest swapchain, 0 if not said */
    uint32_t rec_width;        /* one eye's recommended image width */
    uint32_t rec_height;       /* and its height */
    uint32_t max_layers;       /* the most layers a frame may end with */

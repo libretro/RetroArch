@@ -9,6 +9,12 @@ Monado, and a RetroArch built with HAVE_OPENXR.
 
 Usage: run.py <retroarch> <out dir> <monado.env> [--validate|--gl] [case ...]
 
+The custom-repeat case needs the opt-in shipping harness. Build it with
+python3 samples/settings/video_screens/build.py --runtime --output-dir <build>
+and pass <build>/video_screens_test as <retroarch>. The runner supplies
+RA_SCREEN_TEST_SCRIPT and RA_SCREEN_TEST_ACK for bounded, acknowledged
+main-thread edits; the ordinary frontend and its objects are unchanged.
+
 Build the test core and layer first (make -C samples/cores/video_views,
 make -C samples/openxr/test_layer). monado.env.example here runs
 Monado's null compositor and simulated headset; RetroArch reaches Monado
@@ -145,8 +151,11 @@ class Result(object):
         self.releases = []
         self.chains = {}
         self.marks = {}
+        self.screen_frames = {}
         self.shot = None
         self.events = []
+        # What each 'until' step that timed out waited for.
+        self.missed = []
         # A pixel of the window inside the 2D map's top screen.
         self.top_px = (800, 240)
         # Seconds after a video reinit's hotkey that its new session's
@@ -199,6 +208,33 @@ def wait_shot(d):
             time.sleep(1)
             return os.path.join(d, 'shots', sorted(pngs)[0])
     return None
+
+
+def wait_frame(d, pick, timeout):
+    """Whether a frame recorded from now on, within timeout seconds, has
+    something pick finds."""
+    path = os.path.join(d, 'xr', 'frames.jsonl')
+    deadline = time.monotonic() + timeout
+    pos = os.path.getsize(path) if os.path.exists(path) else 0
+    part = b''
+    while time.monotonic() < deadline:
+        data = b''
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                f.seek(pos)
+                data = f.read()
+        pos += len(data)
+        lines = (part + data).split(b'\n')
+        part = lines.pop()
+        for line in lines:
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue  # the rest of a line begun before the wait
+            if isinstance(e, dict) and e.get('ev') == 'frame' and pick(e):
+                return True
+        time.sleep(0.01)
+    return False
 
 
 def write_overlay(d):
@@ -254,9 +290,17 @@ def run_case(retroarch, root, monado, case, validate):
         os.makedirs(os.path.join(d, sub))
     os.chmod(os.path.join(d, RUNTIME_DIR), 0o700)
 
+    # A screen carried 5 cm or more snaps: in the 3DS layout the other
+    # screen's edge, 3.2 cm off, would pull it 2.8 cm. The snap cases
+    # turn it on. Edit Smoothing too: a smoothed screen lags the scripted
+    # hand; the smoothing cases turn it on. The menu in front of screen
+    # 1, as the edit cases expect; custom-menu-spot checks it off.
     settings = {'video_openxr_enable': 'true',
                 'video_openxr_distance': '1.8',
-                'video_openxr_width': '1.6'}
+                'video_openxr_width': '1.6',
+                'video_openxr_edit_snap': 'false',
+                'video_openxr_edit_smoothing': '0',
+                'video_openxr_menu_follow': 'true'}
     if case.get('overlay'):
         settings.update(write_overlay(d))
     settings.update(case.get('settings', {}))
@@ -273,6 +317,9 @@ def run_case(retroarch, root, monado, case, validate):
                          'video_window_save_positions': 'true',
                          'video_windowed_position_width': str(size[0]),
                          'video_windowed_position_height': str(size[1])})
+    screen_script = os.path.join(d, 'screens.txt')
+    screen_ack = os.path.join(d, 'screens.ack')
+    open(screen_script, 'w').close()
     port = free_port()
     cfg = os.path.join(d, 'retroarch.cfg')
     write_cfg(cfg, d, case.get('driver', 'vulkan'), settings, port)
@@ -307,6 +354,8 @@ def run_case(retroarch, root, monado, case, validate):
         'XDG_RUNTIME_DIR': RUNTIME_DIR,
         'WAYLAND_DISPLAY': 'openxr-e2e-no-socket',
     }
+    child.update(RA_SCREEN_TEST_SCRIPT=screen_script,
+                 RA_SCREEN_TEST_ACK=screen_ack)
     child.update(case.get('env', {}))
     child.update(pairs(monado.get('CLIENT_ENV', '')))
     if validate:
@@ -386,6 +435,24 @@ def run_case(retroarch, root, monado, case, validate):
                 with open(tmp, 'w') as f:
                     f.write(arg + '\n')
                 os.replace(tmp, script)
+            elif kind == 'screen':
+                serial = str(arg[0])
+                tmp = screen_script + '.tmp'
+                with open(tmp, 'w') as f:
+                    f.write(' '.join(map(str, arg)))
+                os.replace(tmp, screen_script)
+                deadline = time.monotonic() + 5
+                while time.monotonic() < deadline:
+                    if os.path.exists(screen_ack):
+                        with open(screen_ack) as f:
+                            ack = f.read().split()
+                            if len(ack) == 2 and ack[0] == serial:
+                                res.screen_frames[int(serial)] = int(ack[1])
+                                break
+                    time.sleep(0.01)
+                else:
+                    raise RuntimeError('screen edit not acknowledged; use the '
+                                       'video_screens --runtime test binary')
             elif kind == 'unfocus':
                 open(os.path.join(d, 'unfocus'), 'w').close()
             elif kind == 'touch':
@@ -399,11 +466,18 @@ def run_case(retroarch, root, monado, case, validate):
             elif kind == 'shot':
                 send('SCREENSHOT', port)
                 res.shot = wait_shot(d)
-        send('QUIT', port)
-        try:
-            p.wait(10)
-        except subprocess.TimeoutExpired:
-            res.marks['hung'] = time.monotonic()
+            elif kind == 'until':
+                what, pick, timeout = arg
+                if not wait_frame(d, pick, timeout):
+                    res.missed.append('%s within %g s' % (what, timeout))
+        # Without its command interface it cannot be told to quit: stop()
+        # ends it.
+        if settings.get('network_cmd_enable') != 'false':
+            send('QUIT', port)
+            try:
+                p.wait(10)
+            except subprocess.TimeoutExpired:
+                res.marks['hung'] = time.monotonic()
     finally:
         stop(p)
         stop(svc)
@@ -415,6 +489,8 @@ def run_case(retroarch, root, monado, case, validate):
         if os.path.basename(runtime_dir).startswith('ra-e2e-'):
             shutil.rmtree(runtime_dir, ignore_errors=True)
     load(res)
+    with open(os.path.join(d, 'marks.json'), 'w') as f:
+        json.dump({'marks': res.marks, 'screen_frames': res.screen_frames}, f)
     return res
 
 
@@ -1556,7 +1632,7 @@ def check_menu_closed(res):
 
 # RGUI, OK and Cancel unswapped, from the Quick Menu: back to the Main
 # Menu, Settings (row 5), Video (1), Stereo 3D & Screens (5), and down
-# to Screen Distance (row 5).
+# to Screen Distance (row 15).
 DISTANCE_NAV = ([('send', 'MENU_B'), ('wait', 0.8)]
                 + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5
                 + [('send', 'MENU_A'), ('wait', 0.8)]
@@ -1564,7 +1640,7 @@ DISTANCE_NAV = ([('send', 'MENU_B'), ('wait', 0.8)]
                 + [('send', 'MENU_A'), ('wait', 0.8)]
                 + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5
                 + [('send', 'MENU_A'), ('wait', 0.8)]
-                + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5)
+                + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 15)
 STEP_RIGHT = [('send', 'MENU_RIGHT'), ('wait', 2)]
 STEP_LEFT = [('send', 'MENU_LEFT'), ('wait', 2)]
 # Screen Distance out and in, Screen Width out and back, and Width once
@@ -2021,14 +2097,17 @@ def sync_errors(res, want):
 
 
 def cursors(frame):
-    """The laser's dots: small blended quads."""
+    """The laser's dots: small blended quads from the image's dot."""
     return [q for q in quads(frame)
-            if q['flags'] & BLEND and q['size'][0] < 0.1]
+            if q['flags'] & BLEND and q['size'][0] < 0.1
+            and q['rect'][0] == 0]
 
 
 def menus(frame):
+    """The menu: large blended quads, not edit mode's outlines."""
     return [q for q in quads(frame)
-            if q['flags'] & BLEND and q['size'][0] >= 0.1]
+            if q['flags'] & BLEND and q['size'][0] >= 0.1
+            and q['rect'][0] == 0]
 
 
 ALL_BUTTONS = script(*['action combined/%s 1' % n for n in (
@@ -2053,7 +2132,7 @@ _FL = '/user/hand/left/input/'
 _FR = '/user/hand/right/input/'
 # The Frame's right controller has A, B, X and Y, the left a D-pad; the
 # right stick's click opens the RetroArch menu in place of R3, and the
-# grips stay unbound.
+# grips are left to edit mode, whose Reset is the left D-pad's down.
 FRAME_BINDS = set([
     ('combined/b', _FR + 'a/click'), ('combined/a', _FR + 'b/click'),
     ('combined/y', _FR + 'x/click'), ('combined/x', _FR + 'y/click'),
@@ -2080,6 +2159,13 @@ FRAME_BINDS = set([
     ('separate/stick', _FL + 'thumbstick'),
     ('separate/stick', _FR + 'thumbstick'),
     ('separate/menu', _FL + 'view/click'),
+    ('edit/grab', _FL + 'squeeze/value'), ('edit/grab', _FR + 'squeeze/value'),
+    ('edit/tilt', _FL + 'trigger/value'), ('edit/tilt', _FR + 'trigger/value'),
+    ('edit/stick', _FL + 'thumbstick'), ('edit/stick', _FR + 'thumbstick'),
+    ('edit/reset', _FL + 'dpad_down/click'), ('edit/reset', _FR + 'a/click'),
+    ('edit/menu', _FR + 'thumbstick/click'),
+    ('edit/select_next', _FL + 'dpad_right/click'),
+    ('edit/select_previous', _FL + 'dpad_left/click'),
     ('pointer/aim', _FL + 'aim/pose'), ('pointer/aim', _FR + 'aim/pose'),
     ('pointer/rumble', '/user/hand/left/output/haptic'),
     ('pointer/rumble', '/user/hand/right/output/haptic')])
@@ -2473,6 +2559,16 @@ def trigger_errors(res):
     return []
 
 
+def rect_colour(res, fr, q, fx, fy):
+    """colour() at a fraction of the part of its image a quad shows."""
+    w, h, bpp, rows = read_png(image(res, fr, q))
+    x0, y0, rw, rh = q['rect']
+    x = min(w - 1, x0 + int(fx * rw))
+    y = min(h - 1, y0 + int(fy * rh))
+    px = rows[y][x * bpp:x * bpp + bpp]
+    return tuple(px[:3]), (px[3] if bpp == 4 else 255)
+
+
 def cursor_errors(res, want):
     shown = [f for f in res.frames if cursors(f)]
     if not shown:
@@ -2487,10 +2583,10 @@ def cursor_errors(res, want):
     else:
         fr = snaps[-1]
         dot = cursors(fr)[0]
-        rgb, alpha = colour(image(res, fr, dot), 0.5, 0.5)
+        rgb, alpha = rect_colour(res, fr, dot, 0.5, 0.5)
         if not near(rgb, WHITE) or alpha < 250:
             errors.append('the dot\'s centre is %s alpha %d' % (rgb, alpha))
-        _, alpha = colour(image(res, fr, dot), 0.02, 0.02)
+        _, alpha = rect_colour(res, fr, dot, 0.02, 0.02)
         if alpha:
             errors.append('the dot\'s corner is not transparent')
     if cursors(res.frames[-1]):
@@ -3459,10 +3555,11 @@ def check_kept_retry(res):
     if seq != ['live', 'released', 'live']:
         errors.append('controllers went %s, want live, released when the '
                       'session ended, live in the new one' % seq)
-    # The laser's dot is VIDEO_XR_CURSOR_DIM square; each start makes
-    # one, and each start here made a session.
+    # The laser's image is VIDEO_XR_CURSOR_W by VIDEO_XR_CURSOR_H (its
+    # dot, edit mode's outlines, the menu's handle bars and the beam's
+    # strips); each start makes one, and each start here made a session.
     dots = [e for e in events(res, 'swapchain')
-            if (e['w'], e['h']) == (32, 32)]
+            if (e['w'], e['h']) == (CURSOR_W, CURSOR_H)]
     if len(dots) != 2:
         errors.append('%d laser dot swapchains, want 2 (one per start)'
                       % len(dots))
@@ -3835,6 +3932,3526 @@ THREADED_HW = [
     ('VUID-vkQueueSubmit-fence-00063', 'submitted in SIGNALED state'),
     ('VUID-vkQueueSubmit-pSignalSemaphores-00067',
      'pSubmits[0].pSignalSemaphores[0]')]
+
+def check_custom(kind, legacy=False):
+    def check(res):
+        if kind == 'tracked':
+            return check_tracked(beside=not legacy)(res)
+        fr = last_snap(res)
+        if not fr:
+            return no_quads(res)
+        qs = [q for q in quads(fr) if not q['flags'] & BLEND]
+        if kind == 'menu':
+            if legacy:
+                errors = window_quad(res, fr)
+                if not errors and near(colour(image(res, fr, quads(fr)[0]), .25, .25)[0], RED):
+                    errors.append('combined fallback is missing its menu')
+                return errors
+            ms = menus(fr)
+            return ([] if not qs and len(ms) == 1 and
+                    at(ms[0], (0, 0, -1.7)) else
+                    ['hidden screens must leave the centered menu available'])
+        if kind == 'hidden':
+            return ([] if len(qs) == 1 and qs[0]['eye'] == 'both' else
+                    ['hidden stereo screen still submitted'])
+        eyes = {q['eye']: q for q in qs}
+        if not all(e in eyes for e in ('left', 'right')):
+            return ['custom stereo pair missing']
+        errors = []
+        if kind == 'offset':
+            presses = [f for f in kinds(core_events(res), 'pointer') if f['pressed']]
+            if not presses or not close((presses[0]['cx'], presses[0]['cy']), (320, 420), 3):
+                errors.append('custom screen did not map the touch to 320,420')
+        position = (0.25, 0.1, -1.5)
+        rotation = (0, 0, 0, 1)
+        size = (1.6, 0.96)
+        if kind == 'rotation':
+            rotation = (0, math.sin(math.pi / 8), 0, math.cos(math.pi / 8))
+            size = (2.4, 1.44)
+        if kind == 'repeat':
+            position = (0.75, 0.1, -1.5)
+            size = (6.4, 3.84)
+        if kind == 'recenter':
+            position = (-1.0, 0.3, 0.05)
+            rotation = (0, math.sin(math.pi / 4), 0, math.cos(math.pi / 4))
+        for eye in ('left', 'right'):
+            q = eyes[eye]
+            if not at(q, position) or not facing(q, rotation) or not sized(q, size):
+                errors.append('%s custom pose/size: %s %s' %
+                              (eye, q['pose'], q['size']))
+        if kind == 'repeat':
+            held = {sc for sc, c in res.chains.items() if (c['w'], c['h']) == (400, 240)}
+            if not held or any(r['sc'] in held and
+                               res.marks['busy'] * 1e6 < r['t_us'] < res.marks['free'] * 1e6
+                               for r in res.releases):
+                errors.append('screen images were not held during the repeat')
+            if not legacy:
+                for eye in ('left', 'right'):
+                    errors += image_size(res, eyes[eye], (400, 240),
+                                         distance=math.sqrt(sum(v * v for v in position)))
+            resized = [f for f in res.frames if f['snap'] and
+                       res.marks['resized'] * 1e6 < f['t_us'] <
+                       res.marks['restored'] * 1e6 and len(quads(f)) == 3]
+            if not resized:
+                errors.append('three resized layers did not become available')
+            elif not legacy:
+                for q in quads(resized[-1]):
+                    native = (320, 240) if q['eye'] == 'both' else (400, 240)
+                    errors += image_size(res, q, native,
+                                         distance=math.sqrt(sum(v * v for v in q['pose'][:3])))
+            hidden = [f for f in res.frames if
+                      (res.marks['hidden'] + .3) * 1e6 < f['t_us'] <
+                      res.marks['shown'] * 1e6]
+            first_hidden = next((i for i, f in enumerate(hidden)
+                                 if quads(f) and all(q['eye'] == 'both' for q in quads(f))), None)
+            if first_hidden is None or any(q['eye'] != 'both' for f in hidden[first_hidden:] for q in quads(f)):
+                errors.append('paused screen did not stay hidden')
+            before = [f for f in res.frames if f['snap'] and
+                      res.marks['paused'] * 1e6 < f['t_us'] <
+                      res.marks['moved'] * 1e6 and quads(f)]
+            if not before:
+                errors.append('no paused image before moving')
+            else:
+                old = next(q for q in quads(before[-1]) if q['eye'] == 'left')
+                feedback_before = colour(image(res, before[-1], old), .5, .5)
+                feedback_after = colour(image(res, fr, eyes['left']), .5, .5)
+                if feedback_after != feedback_before:
+                    errors.append('paused feedback image advanced')
+                if not legacy:
+                    expected = round((res.screen_frames[4] % 251) * 255 / 250)
+                    if abs(feedback_before[0][1] - expected) > 3:
+                        errors.append('re-shown frame tag %d, want %d from latest source'
+                                      % (feedback_before[0][1], expected))
+                if at(old, eyes['left']['pose'][:3]):
+                    errors.append('paused quad did not move')
+        return errors
+    return check
+
+
+def check_menu_spot(res):
+    """Menu in Front of Screen 1 off: with screen 1 moved, the menu
+    opens at its own spot straight ahead, as before screens moved."""
+    fr = last_snap(res)
+    if not fr:
+        return no_quads(res)
+    ms = menus(fr)
+    if len(ms) != 1 or not at(ms[0], (0, 0, -1.7)):
+        return ['menu at %s, want its spot' %
+                ([m['pose'][:3] for m in ms],)]
+    return []
+
+
+def check_frame_custom(window=False):
+    """Without a map the whole frame, or gl's window, is screen 1: moved
+    by its offsets and sized for where it is."""
+    def check(res):
+        fr = last_snap(res)
+        if not fr:
+            return no_quads(res)
+        q = [x for x in quads(fr) if not x['flags'] & BLEND]
+        if len(q) != 1 or q[0]['eye'] != 'both':
+            return ['want one quad for both eyes, got %s' % [x['eye'] for x in q]]
+        errors = []
+        position = (0.25, 0.1, -1.5)
+        if not at(q[0], position) or not sized(q[0], (1.6, 0.96)):
+            errors.append('frame at %s size %s' % (q[0]['pose'][:3], q[0]['size']))
+        return errors + image_size(res, q[0], (W, H) if window else None,
+                                   distance=math.sqrt(sum(v * v for v in position)))
+    return check
+
+
+CUSTOM_OFFSET = {'video_screen1_xr_x': '0.25',
+                 'video_screen1_xr_y': '0.1', 'video_screen1_xr_z': '0.3',
+                 'video_screen2_xr_x': '-0.2', 'video_screen2_xr_y': '0.1',
+                 'video_screen2_xr_z': '0.2'}
+CUSTOM_AIM = 'aim right 0.2 -0.4 -0.3 -0.52 -1.132 -1.6'
+CUSTOM_CASES = [
+    {'name': 'custom-offset', 'settings': CUSTOM_OFFSET,
+     'steps': [('wait', 6), ('script', CUSTOM_AIM), ('wait', 1),
+               ('script', script(CUSTOM_AIM, R2)), ('wait', 1),
+               ('script', ''), ('wait', 2)], 'check': check_custom('offset')},
+    {'name': 'custom-rotation',
+     'settings': dict(CUSTOM_OFFSET, video_screen1_xr_yaw='45',
+                      video_screen1_xr_scale='1.5'),
+     'steps': SETTLE, 'check': check_custom('rotation')},
+    {'name': 'custom-hidden', 'settings': {'video_screen1_xr_visible': 'false'},
+     'steps': SETTLE, 'check': check_custom('hidden')},
+    {'name': 'custom-recenter', 'settings': CUSTOM_OFFSET,
+     'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
+               ('send', 'HEADSET_RECENTER'), ('wait', 3)],
+     'check': check_custom('recenter')},
+    {'name': 'custom-menu',
+     'settings': {'video_screen1_xr_visible': 'false',
+                  'video_screen2_xr_visible': 'false', 'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 4)],
+     'check': check_custom('menu')},
+    {'name': 'custom-menu-spot',
+     'settings': dict(CUSTOM_OFFSET, video_openxr_menu_follow='false',
+                      menu_driver='ozone'),
+     'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 4)],
+     'check': check_menu_spot},
+    {'name': 'custom-tracked',
+     'settings': {'video_screen1_xr_x': '10', 'video_screen1_xr_yaw': '180',
+                  'video_screen1_xr_scale': '10', 'video_screen1_xr_visible': 'false'},
+     'options': {'video_views_test_vr': 'local'},
+     'steps': SETTLE, 'check': check_custom('tracked')},
+    {'name': 'custom-repeat', 'settings': CUSTOM_OFFSET,
+     'script': 'eyes 400 240',
+     'args': ['--set-shader=' + os.path.join(HERE, 'feedback.slangp')],
+     'steps': [('wait', 6), ('screen', (1, 8, 0.25, 4.0, 1)),
+               ('mark', 'resized'), ('wait', 2), ('mark', 'restored'),
+               ('screen', (2, 8, 0.25, 1.0, 1)), ('wait', 2),
+               ('mark', 'running_hidden'),
+               ('script', 'state 3\neyes 400 240\nbusy eyes'),
+               ('screen', (3, 0, 0.25, 1.0, 0)), ('wait', 2),
+               ('send', 'PAUSE_TOGGLE'), ('wait', 1),
+               ('script', 'state 5'), ('screen', (4, 0, 0.25, 1.0, 1)),
+               ('mark', 'busy'), ('wait', 0.5), ('mark', 'free'),
+               ('script', 'state 5\nbusy off'), ('wait', 2),
+               ('mark', 'paused'), ('wait', 2),
+               ('mark', 'moved'), ('screen', (5, 0, 0.75, 1.0, 1)), ('wait', 2),
+               ('screen', (6, 0, 0.75, 1.0, 0)), ('mark', 'hidden'), ('wait', 2),
+               ('mark', 'shown'), ('screen', (7, 0, 0.75, 4.0, 1)), ('wait', 3)],
+     'check': check_custom('repeat')},
+    {'name': 'no-map-custom', 'map': 'none', 'settings': CUSTOM_OFFSET,
+     'steps': SETTLE, 'check': check_frame_custom()},
+    # A views core's frame shown whole is as laid out, not screen 1.
+    {'name': 'crop-threaded-custom', 'map': 'crop',
+     'settings': dict(CUSTOM_OFFSET, video_threaded='true'), 'steps': SETTLE,
+     'check': threaded(check_crop)},
+]
+
+
+# ---- Edit Screens ----
+# The 3DS quads as in the laser cases. While editing, the menu's quad is
+# up 10 cm in front of screen 1 and as large: it is taken only by its
+# handle bar, centred under it, so aims through its middle reach the
+# screen behind. A right hand at x,y,0 aiming straight ahead moves what
+# it holds by its own moves.
+EDIT = 'HEADSET_EDIT_SCREENS'
+EDIT_ON = '[OpenXR] Edit Screens on.'
+EDIT_OFF = '[OpenXR] Edit Screens off.'
+EDIT_GRIP = 'action edit/grab@right 1'
+EDIT_GRIP_LEFT = 'action edit/grab@left 1'
+EDIT_TILT = 'action edit/tilt@right 1'
+EDIT_RESET = 'action edit/reset@right 1'
+EDIT_NEXT = 'action edit/select_next 1'
+EDIT_SETS = ['edit', 'pointer']
+GAME_SETS = ['combined', 'pointer']
+SAVE = {'config_save_on_exit': 'true'}
+ID = (0.0, 0.0, 0.0, 1.0)
+ROLL30 = (0.0, 0.0, math.sin(math.pi / 12.0), math.cos(math.pi / 12.0))
+S0 = (0.0, 0.0, -1.8)
+S1 = (0.0, -0.992, -1.8)
+MENU_SPOT = (0.0, 0.0, -1.7)
+MENU_W, MENU_H = 1.6, 0.96
+# The laser's image, laid out as gfx/video_xr.h lays it out: its dot,
+# edit mode's faint and bright outlines, the menu's faint and bright
+# handle bars, the beam's strips to the dot and into nothing.
+CURSOR_DIM = 32
+OUTLINE_DIM = 256
+OUTLINE_BAND = 2
+OUTLINE_EDGE = 3 * OUTLINE_BAND
+HANDLE_COLS, HANDLE_ROWS = 128, 8
+# VIDEO_XR_OUTLINE_GAP, and the rim's fraction of an outline with the
+# half texel filtering adds.
+OUTLINE_GAP = 0.005
+OUTLINE_F = (OUTLINE_EDGE + 0.5) / OUTLINE_DIM
+BEAM_LEN, BEAM_ROWS = 128, 4
+OUTLINE_X = tuple(CURSOR_DIM + 1 + k * (OUTLINE_DIM + 1) for k in (0, 1))
+HANDLE_X = tuple(OUTLINE_X[0] + 2 * (OUTLINE_DIM + 1) + k * (HANDLE_COLS + 1)
+                 for k in (0, 1))
+BEAM_X = tuple(HANDLE_X[0] + 2 * (HANDLE_COLS + 1) + k * (BEAM_LEN + 1)
+               for k in (0, 1))
+# A back's solid cell after the beam strips; a back shows the square
+# BACK_MARGIN inside it, centred on the middle row.
+BACK_DIM, BACK_MARGIN, BACK_LEVEL = 8, 4, 40
+BACK_CELL = BACK_DIM + 2 * BACK_MARGIN
+BACK_X = BEAM_X[1] + BEAM_LEN + 1
+BACK_Y = (OUTLINE_DIM - BACK_CELL) // 2
+BACK_RECT = (BACK_X + BACK_MARGIN, BACK_Y + BACK_MARGIN, BACK_DIM, BACK_DIM)
+# A hinge's green strip after the back's cell, centred on the middle
+# row.
+HINGE_COLS, HINGE_ROWS = 128, 4
+HINGE_X = BACK_X + BACK_CELL + 1
+HINGE_Y = (OUTLINE_DIM - HINGE_ROWS) // 2
+# A hidden hinge slot's rows, empty either way up.
+HINGE_HIDDEN_Y = 0
+# The hinge's line, VIDEO_XR_HINGE_WIDTH wide, each end
+# VIDEO_XR_HINGE_LIFT nearer the head; its strip's green,
+# VIDEO_XR_HINGE_RB/_G at VIDEO_XR_HINGE_LEVEL, premultiplied. An
+# outline hides an edge's rim VIDEO_XR_OUTLINE_CROP texels deep.
+HINGE_WIDTH, HINGE_LIFT = 0.006, 0.01
+HINGE_LEVEL, HINGE_RB, HINGE_G = 166, 60, 220
+OUTLINE_CROP = 8
+# Edit mode's tags, one cell for each item it can choose (0, the laser;
+# a slot plus one), after the hinge's strip, each centred on the middle
+# row.
+TAG_COLS, TAG_ROWS, TAGS = 128, 30, 10
+TAG_X = tuple(HINGE_X + HINGE_COLS + 1 + k * (TAG_COLS + 1)
+              for k in range(TAGS))
+TAG_Y = (OUTLINE_DIM - TAG_ROWS) // 2
+# Edit mode's cut outlines after the tags, faint ones then bright, one
+# for each cut: the outline's square without those edges' rims.
+CUTS = ('top', 'bottom', 'right', 'left', 'top-bottom', 'right-left')
+CUT_X = tuple(TAG_X[-1] + TAG_COLS + 1 + k * (OUTLINE_DIM + 1)
+              for k in range(2 * len(CUTS)))
+CURSOR_W = CUT_X[-1] + OUTLINE_DIM
+# Its width without the cut outlines, then without the tags too, for
+# runtimes too narrow for them.
+CURSOR_TAGGED_W = TAG_X[-1] + TAG_COLS
+CURSOR_PLAIN_W = HINGE_X + HINGE_COLS
+TAG_HEIGHT, TAG_LIFT, TAG_FAINT = 0.02, 0.05, 160
+CURSOR_H = OUTLINE_DIM
+# The beam: VIDEO_XR_BEAM_WIDTH, _REACH and _LEVEL; AIM_GUN's and
+# AIM_MISS's rays; the head where the beams' cases put it.
+BEAM_WIDTH = 0.004
+BEAM_REACH = 1.5
+BEAM_LEVEL = 160
+GUN_FROM = (0.2, -0.4, -0.3)
+GUN_AT = (-0.4, 0.24, -1.8)
+MISS_AT = (3.0, 0.0, -1.8)
+HEAD_AT_ORIGIN = 'head 0 0 0 0'
+EDIT_POS = 0.012
+
+
+def qrot(q, v):
+    return qmul(qmul(q, tuple(v) + (0.0,)), (-q[0], -q[1], -q[2], q[3]))[:3]
+
+
+def compose(a, b):
+    """Pose b, in a's frame, in a's space; a pose is (position, quat)."""
+    return (tuple(x + y for x, y in zip(a[0], qrot(a[1], b[0]))),
+            qmul(a[1], b[1]))
+
+
+def inverse(a):
+    q = (-a[1][0], -a[1][1], -a[1][2], a[1][3])
+    return (tuple(-v for v in qrot(q, a[0])), q)
+
+
+def euler(q):
+    """Yaw, pitch and roll in degrees, as video_xr_euler has them."""
+    x, y, z, w = q
+    sp = max(-1.0, min(1.0, -2.0 * (y * z - w * x)))
+    if abs(sp) > 0.99999:
+        return (math.degrees(math.atan2(-2.0 * (x * z - w * y),
+                                        1.0 - 2.0 * (y * y + z * z))),
+                math.degrees(math.asin(sp)), 0.0)
+    return (math.degrees(math.atan2(2.0 * (x * z + w * y),
+                                    1.0 - 2.0 * (x * x + y * y))),
+            math.degrees(math.asin(sp)),
+            math.degrees(math.atan2(2.0 * (x * y + w * z),
+                                    1.0 - 2.0 * (x * x + z * z))))
+
+
+def from_euler(yaw, pitch, roll):
+    """The turn yaw, pitch and roll settings give an item."""
+    cy, sy = math.cos(math.radians(yaw) / 2), math.sin(math.radians(yaw) / 2)
+    cp, sp = (math.cos(math.radians(pitch) / 2),
+              math.sin(math.radians(pitch) / 2))
+    cr, sr = (math.cos(math.radians(roll) / 2),
+              math.sin(math.radians(roll) / 2))
+    return (cy * sp * cr + sy * cp * sr, sy * cp * cr - cy * sp * sr,
+            cy * cp * sr - sy * sp * cr, cy * cp * cr + sy * sp * sr)
+
+
+def aim_pose(p, t, roll=0.0):
+    """The test layer's aim at p towards t."""
+    f = [b - a for a, b in zip(p, t)]
+    n = math.sqrt(sum(v * v for v in f))
+    return (tuple(p), from_euler(math.degrees(math.atan2(-f[0], -f[2])),
+                                 math.degrees(math.asin(f[1] / n)), roll))
+
+
+def held(item, aim0, aim1, tilt):
+    """Where a hand that took item at aim0 puts it at aim1: turned as
+    the aim's heading turned, its pitch and roll kept, unless the
+    trigger tilts it. Neither aim points near straight up or down."""
+    pose = compose(aim1, compose(inverse(aim0), item))
+    if tilt:
+        return pose
+    turn = euler(aim1[1])[0] - euler(aim0[1])[0]
+    return (pose[0], qmul(from_euler(turn, 0.0, 0.0), item[1]))
+
+
+def aim_line(p, t, hand='right', roll=None):
+    line = 'aim %s %g %g %g %g %g %g' % ((hand,) + tuple(p) + tuple(t))
+    return line if roll is None else '%s %g' % (line, roll)
+
+
+def edit_aim(x=0.0, y=0.0, roll=None, z=-1.8):
+    """The right hand at x,y,0 aiming straight ahead, rolled."""
+    return aim_line((x, y, 0.0), (x, y, z), roll=roll)
+
+
+def edit_aim_turned(x=0.0, y=0.0, pitch=0.0, yaw=0.0, z=-1.8):
+    """edit_aim()'s hand, its aim turned pitch degrees up and yaw degrees
+    left, as the unit test's t_turn_aim turns them."""
+    return aim_line((x, y, 0.0),
+                    (x - 1.8 * math.tan(math.radians(yaw)),
+                     y + 1.8 * math.tan(math.radians(pitch)), z))
+
+
+def edit_shake(x, y, deg, secs):
+    """Steps gripping with edit_aim_turned()'s hand at x, y for secs
+    seconds, its aim turned every 0.02 s as the unit tests' t_shake
+    turns it: deg degrees in pitch and yaw at 8 Hz and a fifth of that
+    at 2.3 Hz, the yaw a quarter period behind."""
+    steps = []
+    for k in range(int(round(secs / 0.02))):
+        t = k * 0.02
+        a = 2.0 * math.pi * 8.0 * t
+        b = 2.0 * math.pi * 2.3 * t + 1.0
+        p = deg * (math.sin(a) + 0.2 * math.sin(b))
+        w = deg * (math.sin(a - math.pi / 2.0)
+                   + 0.2 * math.sin(b - math.pi / 2.0))
+        steps += [('script', script(edit_aim_turned(x, y, pitch=p, yaw=w),
+                                    EDIT_GRIP)),
+                  ('wait', 0.02)]
+    return steps
+
+
+def outline_size(w, h):
+    """An outline's quad round an item w by h."""
+    return tuple((s + 2.0 * OUTLINE_GAP) / (1.0 - 2.0 * OUTLINE_F)
+                 for s in (w, h))
+
+
+def handle_y(menu_y, h):
+    """The height of the handle under a menu at menu_y, h high: 5 mm
+    below its outline."""
+    return menu_y - (outline_size(0.0, h)[1] + 0.03) / 2.0 - 0.005
+
+
+def edit_screen0(frame):
+    """Screen 1's two eyes."""
+    return [q for q in quads(frame) if not q['flags'] & BLEND
+            and q['eye'] in ('left', 'right')]
+
+
+def screen2(frame):
+    q = [x for x in quads(frame) if x['eye'] == 'both' and not x['flags']]
+    return q[0] if q else None
+
+
+def frame_quad(frame):
+    """A whole frame: the one quad that is not blended."""
+    qs = [q for q in quads(frame) if not q['flags'] & BLEND]
+    return qs[0] if len(qs) == 1 else None
+
+
+def menu_quad(frame):
+    ms = menus(frame)
+    return ms[0] if ms else None
+
+
+def outlines(frame, lit=None):
+    """Edit mode's outlines, whole, a cut's cell or cut to hide an edge's
+    rim; lit: only the bright (1) or faint (0)."""
+    lits = (0, 1) if lit is None else (lit,)
+    xs = [x for k in lits for x in (OUTLINE_X[k], OUTLINE_X[k] + OUTLINE_CROP)
+          + CUT_X[k * len(CUTS):(k + 1) * len(CUTS)]]
+    return [q for q in quads(frame)
+            if q['flags'] & BLEND and q['rect'][3] == OUTLINE_DIM
+            and q['rect'][0] in xs]
+
+
+def outline_cut(o):
+    """Whether outline o hides a rim: a cut's cell, or cut."""
+    return o['rect'][0] not in OUTLINE_X or o['rect'][2] != OUTLINE_DIM
+
+
+def outline_pose_errors(frame):
+    """Every outline in frame its item's whole outline, cut or not: the
+    item's middle, lifted toward the head, its axes and the size round
+    it. A cut changes the outline's image alone."""
+    items = [q for q in quads(frame) if not q['flags'] & BLEND] \
+        + menus(frame)
+    errors = []
+    for o in outlines(frame):
+        if not items:
+            return ['frame %d: no items under the outlines' % frame['n']]
+        q = min(items, key=lambda i: sum(
+            (a - b) ** 2 for a, b in zip(i['pose'][:3], o['pose'][:3])))
+        axes = [abs(sum(a * b for a, b in zip(
+            qrot(tuple(o['pose'][3:]), v), qrot(tuple(q['pose'][3:]), v))))
+                for v in ((1.0, 0.0, 0.0), (0.0, 0.0, 1.0))]
+        size = outline_size(*q['size'])
+        off = math.sqrt(sum((a - b) ** 2
+                            for a, b in zip(o['pose'][:3], q['pose'][:3])))
+        if (min(axes) < 0.9999 or off > 0.003
+                or any(abs(a - b) > 1e-4 for a, b in zip(o['size'], size))):
+            errors.append('frame %d: the outline %s at %s, %s, axes %s, not '
+                          'its item\'s whole outline at %s, %s' % (
+                              frame['n'], o['rect'],
+                              [round(v, 4) for v in o['pose'][:3]],
+                              [round(v, 4) for v in o['size']],
+                              [round(v, 5) for v in axes],
+                              [round(v, 4) for v in q['pose'][:3]],
+                              [round(v, 4) for v in size]))
+    return errors
+
+
+def hinge_lines(frame):
+    """Edit mode's green hinge lines, the slots shown."""
+    return [q for q in hinge_slots(frame) if q['rect'][1] == HINGE_Y]
+
+
+def hinge_slots(frame):
+    """Edit mode's hinge slots, shown or hidden."""
+    return [q for q in quads(frame)
+            if q['flags'] & BLEND and q['rect'][0] == HINGE_X + 1]
+
+
+def handles(frame, lit=None):
+    """The menu's handle bar; lit as for outlines()."""
+    xs = HANDLE_X if lit is None else (HANDLE_X[lit],)
+    return [q for q in quads(frame)
+            if q['flags'] & BLEND and q['rect'][0] in xs]
+
+
+def beams(frame, miss=None):
+    """The laser's beams; miss: only those to a dot (0) or into nothing
+    (1)."""
+    xs = BEAM_X if miss is None else (BEAM_X[miss],)
+    return [q for q in quads(frame)
+            if q['flags'] & BLEND and q['rect'][0] in xs]
+
+
+def tags(frame):
+    """Edit mode's tag naming the chosen item."""
+    return [q for q in quads(frame) if q['flags'] & BLEND
+            and tuple(q['rect'][2:]) == (TAG_COLS, TAG_ROWS)]
+
+
+def unit(v):
+    n = math.sqrt(sum(x * x for x in v))
+    return tuple(x / n for x in v)
+
+
+def rect_texel(res, fr, q, tx, ty):
+    """Texel tx, ty of the part of its image a quad shows."""
+    w, h, bpp, rows = read_png(image(res, fr, q))
+    x, y = q['rect'][0] + tx, q['rect'][1] + ty
+    px = rows[y][x * bpp:x * bpp + bpp]
+    return tuple(px[:3]), (px[3] if bpp == 4 else 255)
+
+
+def beam_errors(what, b, p, t, miss, head=(0.0, 0.0, 0.0)):
+    """Beam b on the ray from p towards t: its strip, its middle and
+    length (to t, or BEAM_REACH into nothing), its x down the ray and
+    its face towards head."""
+    d = unit(tuple(y - x for x, y in zip(p, t)))
+    length = (BEAM_REACH if miss
+              else math.sqrt(sum((y - x) ** 2 for x, y in zip(p, t))))
+    mid = tuple(x + y * length / 2.0 for x, y in zip(p, d))
+    to = tuple(a - m for a, m in zip(head, mid))
+    k = sum(a * c for a, c in zip(to, d))
+    face = unit(tuple(a - k * c for a, c in zip(to, d)))
+    q = tuple(b['pose'][3:])
+    errors = []
+    if b['rect'][0] != BEAM_X[miss] or tuple(b['rect'][2:]) != (BEAM_LEN,
+                                                                  BEAM_ROWS):
+        errors.append('%s shows %s of the image' % (what, b['rect']))
+    if not near3(b['pose'][:3], mid) \
+            or not near3(b['size'], (length, BEAM_WIDTH), 0.002):
+        errors.append('%s at %s, %s, want %s, %s' % (
+            what, [round(v, 3) for v in b['pose'][:3]], b['size'],
+            [round(v, 3) for v in mid], (round(length, 3), BEAM_WIDTH)))
+    if sum(a * c for a, c in zip(qrot(q, (1.0, 0.0, 0.0)), d)) < 0.999:
+        errors.append('%s does not run down the ray' % what)
+    if sum(a * c for a, c in zip(qrot(q, (0.0, 0.0, 1.0)), face)) < 0.999:
+        errors.append('%s does not face the head' % what)
+    return errors
+
+
+def strip_errors(res, f, b, miss, what):
+    """The beam's strip: white at BEAM_LEVEL in the middle, faded in at
+    the hand, and on a miss faded out at the far end."""
+    errors = []
+    rgb, alpha = rect_texel(res, f, b, BEAM_LEN // 2, BEAM_ROWS // 2)
+    if abs(alpha - BEAM_LEVEL) > 2 or abs(rgb[0] - BEAM_LEVEL) > 2:
+        errors.append('%s shows %s alpha %d mid-way, want %d' % (
+            what, rgb, alpha, BEAM_LEVEL))
+    if rect_texel(res, f, b, 0, BEAM_ROWS // 2)[1] >= BEAM_LEVEL // 8:
+        errors.append('%s does not fade in at the hand' % what)
+    if miss and rect_texel(res, f, b, BEAM_LEN - 1,
+                           BEAM_ROWS // 2)[1] >= BEAM_LEVEL // 32:
+        errors.append('%s does not fade out at its end' % what)
+    return errors
+
+
+def between(res, start, end=None, pick=quads, delay=0.0):
+    """Frames from delay seconds after mark start until mark end that pick
+    finds something in."""
+    t0 = (res.marks[start] + delay) * 1e6
+    t1 = res.marks[end] * 1e6 if end else float('inf')
+    return [f for f in res.frames if t0 < f['t_us'] < t1 and pick(f)]
+
+
+def last_before(res, mark, pick):
+    fs = [f for f in res.frames
+          if f['t_us'] < res.marks[mark] * 1e6 and pick(f)]
+    return pick(fs[-1]) if fs else None
+
+
+def near3(a, b, tol=EDIT_POS):
+    return all(abs(x - y) <= tol for x, y in zip(a, b))
+
+
+def pose_errors(what, qs, pos, turn=None, size=None):
+    """Every quad in qs at pos, turned as turn (yaw, pitch and roll each
+    within 0.6 degrees) and size if given."""
+    if not qs:
+        return ['%s: no frames' % what]
+    for q in qs:
+        if q is None:
+            return ['%s: the quad is missing' % what]
+        if not near3(q['pose'][:3], pos):
+            return ['%s at %s, want %s' % (
+                what, [round(v, 3) for v in q['pose'][:3]],
+                [round(v, 3) for v in pos])]
+        if turn is not None:
+            got, want = euler(q['pose'][3:]), euler(turn)
+            if not all(abs((a - b + 180.0) % 360.0 - 180.0) <= 0.6
+                       for a, b in zip(got, want)):
+                return ['%s turned %s, want %s' % (
+                    what, [round(v, 2) for v in got],
+                    [round(v, 2) for v in want])]
+        if size is not None and not near3(q['size'], size):
+            return ['%s sized %s, want %s' % (
+                what, [round(v, 4) for v in q['size']],
+                [round(v, 4) for v in size])]
+    return []
+
+
+def stereo_errors(frames):
+    """Screen 1's eyes together, one item: the same pose and size."""
+    for f in frames:
+        eyes = edit_screen0(f)
+        if len(eyes) != 2 or not (near3(eyes[0]['pose'], eyes[1]['pose'],
+                                        1e-4)
+                                  and near3(eyes[0]['size'],
+                                            eyes[1]['size'], 1e-4)):
+            return ['frame %d: screen 1\'s eyes apart: %s'
+                    % (f['n'], [(q['pose'][:3], q['size']) for q in eyes])]
+    return []
+
+
+def saved(res):
+    """The configuration RetroArch saved at exit."""
+    cfg = {}
+    path = os.path.join(res.dir, 'retroarch.cfg')
+    if os.path.exists(path):
+        with open(path) as f:
+            for line in f:
+                m = re.match(r'(\w+) = "(.*)"', line.strip())
+                if m:
+                    cfg[m.group(1)] = m.group(2)
+    return cfg
+
+
+def saved_errors(res, what, prefix, base, want, size, last=None,
+                 anchor=None):
+    """The saved settings put the item where want is, its width and
+    height at scale 1 size, from anchor (the identity unless given),
+    and where the headset last showed it."""
+    cfg = saved(res)
+    v = [float(cfg.get(prefix + k, '0'))
+         for k in ('x', 'y', 'z', 'yaw', 'pitch', 'roll')]
+    scale = float(cfg.get(prefix + 'scale', '1'))
+    pose = (tuple(b + o for b, o in zip(base, v[:3])), from_euler(*v[3:]))
+    if anchor is not None:
+        pose = compose(anchor, pose)
+    q = {'pose': list(pose[0]) + list(pose[1]),
+         'size': [size[0] * scale, size[1] * scale]}
+    errors = pose_errors('%s from its saved settings' % what, [q], want[0],
+                         want[1])
+    if last is not None:
+        errors += pose_errors('%s last shown' % what, [last], pose[0],
+                              pose[1], q['size'])
+    return errors
+
+
+def edit_log_errors(res, want, exact=True):
+    """Edit mode's on and off lines in order; not exact, a last off may
+    follow (quitting ends it)."""
+    got = ['on' if EDIT_ON in line else 'off'
+           for line in res.log.splitlines()
+           if EDIT_ON in line or EDIT_OFF in line]
+    if got == want or (not exact and got == want + ['off']):
+        return []
+    return ['edit mode %s, want %s' % (got, want)]
+
+
+def edit_sync_errors(res, on, off, game=GAME_SETS):
+    """The game's sets before mark on, edit mode's alone until mark off,
+    the game's again after."""
+    syncs = [(e['t_us'], e['sets']) for e in events(res, 'sync')
+             if e['sets']]
+    t_on, t_off = res.marks[on] * 1e6, res.marks[off] * 1e6
+    before = [s for t, s in syncs if t < t_on]
+    during = [s for t, s in syncs if t_on <= t < t_off]
+    after = [s for t, s in syncs if t >= t_off]
+    errors = []
+    if not before or before[-1] != game:
+        errors.append('synced %s before %s, want %s' % (before[-1:], on, game))
+    if during != [EDIT_SETS]:
+        errors.append('synced %s between %s and %s, want only %s'
+                      % (during, on, off, EDIT_SETS))
+    if not after or after[-1] != game:
+        errors.append('synced %s after %s, want %s' % (after, off, game))
+    return errors
+
+
+def core_frames(res, t0, t1):
+    """The core's logged frame numbers from t0 to t1 us."""
+    return [int(n) for n, t in CORE_FRAME.findall(res.log)
+            if t0 <= int(t) <= t1]
+
+
+def check_edit_grab(menu=True):
+    def check(res):
+        """A grip on screen 1 through the menu's middle takes both its
+        eyes along with the hand, level; they stay where it let go,
+        through the release and after edit mode ends, and are saved
+        there, the menu following them unplaced. While editing every
+        item is outlined, the pointed-at one brightly, and the menu has
+        its handle."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        errors += pose_errors('screen 1 before the grab',
+                              [screen1_left(f) for f in
+                               between(res, 'on', 'grab', edit_screen0,
+                                       0.5)], S0, ID, (1.6, 0.96))
+        late = between(res, 'moved', None, edit_screen0)
+        if not late:
+            return errors + no_quads(res)
+        want = (0.3, 0.0, -1.8)
+        errors += pose_errors('screen 1 moved',
+                              [q for f in late for q in edit_screen0(f)],
+                              want, ID, (1.6, 0.96))
+        errors += stereo_errors(between(res, 'aimed', None, edit_screen0))
+        if not any(f['t_us'] > res.marks['off'] * 1e6 for f in late):
+            errors.append('no frame after edit mode ended')
+        items = 2
+        if menu:
+            items = 3
+            d = math.sqrt(0.3 * 0.3 + 1.7 * 1.7) / 1.7
+            errors += pose_errors(
+                'the menu following it',
+                [menu_quad(f) for f in between(res, 'moved', 'stop',
+                                               delay=0.5)],
+                (0.3, 0.0, -1.7), ID, (MENU_W * d, MENU_H * d))
+        lit = [f for f in between(res, 'aimed', 'released', outlines)
+               if len(outlines(f)) == items and len(outlines(f, 1)) == 1
+               and len(handles(f)) == int(menu)]
+        if not lit:
+            errors.append('no frame outlined all %d items, one brightly%s'
+                          % (items, ', with a handle' if menu else ''))
+        if any(outlines(f) or handles(f)
+               for f in between(res, 'off', delay=0.5)):
+            errors.append('outlines after edit mode ended')
+        errors += saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                               (want, ID), (1.6, 0.96),
+                               edit_screen0(late[-1])[0])
+        if saved(res).get('video_openxr_menu_placed') != 'false':
+            errors.append('grabbing through the menu placed it')
+        return errors
+    return check
+
+
+def slot_made(res, slot=0):
+    """How often the slot's swapchains were made while editing."""
+    made, on = 0, False
+    for line in res.log.splitlines():
+        if EDIT_ON in line:
+            on = True
+        elif EDIT_OFF in line:
+            on = False
+        elif on and '[OpenXR] Slot %d:' % slot in line:
+            made += 1
+    return made
+
+
+def check_edit_follow(res):
+    """Held, screen 1 moves on nearly every headset frame whose aim moved
+    (the laser's dot, placed from the frame's own aim, shows it) while
+    the core draws one frame in two: each frame places it from its own
+    aim, not from the last video frame. Brought nearer, it keeps its
+    image: in every headset frame, not made again for each distance."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    held = between(res, 'grab', 'released', lambda f: True)
+    gaps = [f['n'] for f in held if len(edit_screen0(f)) != 2]
+    if not held or gaps:
+        errors.append('screen 1 missing from %d of the %d headset frames '
+                      'it was held in: %s' % (len(gaps), len(held),
+                                              gaps[:10]))
+    made = slot_made(res)
+    if made > 2:
+        errors.append('screen 1\'s swapchains made %d times while editing'
+                      % made)
+    sweep = [f for f in between(res, 'sweep', 'swept', edit_screen0)
+             if cursors(f)]
+    xs = [(screen1_left(f)['pose'][0], cursors(f)[0]['pose'][0])
+          for f in sweep]
+    pairs = [(a, b) for a, b in zip(xs, xs[1:]) if abs(b[1] - a[1]) > 0.001]
+    if len(pairs) < 8:
+        return errors + ['only %d headset frames saw the aim move'
+                         % len(pairs)]
+    moved = sum(1 for a, b in pairs if abs(b[0] - a[0]) > 0.001)
+    if moved < 0.9 * len(pairs):
+        errors.append('screen 1 moved in %d of the %d headset frames whose '
+                      'aim moved' % (moved, len(pairs)))
+    t0, t1 = res.marks['sweep'] * 1e6, res.marks['swept'] * 1e6
+    fps = core_fps(res, t0 - 2e6, t1 + 2e6)
+    hz = len(xs) * 1e6 / (t1 - t0)
+    if not fps or fps * 1.5 > hz:
+        errors.append('the core at %.1f fps, the headset at %.1f Hz: the '
+                      'core was not the slower' % (fps, hz))
+    errors += stereo_errors(between(res, 'grab', None, edit_screen0))
+    want = (0.3, 0.0, -1.5)
+    errors += pose_errors('screen 1 let go',
+                          [edit_screen0(f)[0] for f in
+                           between(res, 'released', None, edit_screen0,
+                                   1.0)], want, ID)
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (want, ID), (1.6, 0.96))
+
+
+def no_step_back(frames, pick, want, what):
+    """Once at want (moving there along +x), never short of it again."""
+    reached = False
+    for f in frames:
+        q = pick(f)
+        if not q:
+            continue
+        if near3(q['pose'], want):
+            reached = True
+        elif reached or q['pose'][0] > want[0] + EDIT_POS:
+            return ['%s stepped to %s at frame %d, want %s'
+                    % (what, [round(v, 3) for v in q['pose'][:3]], f['n'],
+                       want)]
+    return [] if reached else ['%s never reached %s' % (what, want)]
+
+
+def screen1_left(frame):
+    eyes = edit_screen0(frame)
+    return eyes[0] if eyes else None
+
+
+def screen1_at_yaw(yaw):
+    """A pick: screen 1's left eye where it shows exactly yaw."""
+    def pick(frame):
+        q = screen1_left(frame)
+        if q and abs(euler(tuple(q['pose'][3:]))[0] - yaw) <= 0.05:
+            return q
+        return None
+    return pick
+
+
+def screen2_at_yaw(yaw, past=False):
+    """A pick: screen 2 where it shows exactly yaw, or once it has
+    turned past it (yaw rising) if past."""
+    def pick(frame):
+        q = screen2(frame)
+        if not q:
+            return None
+        y = euler(tuple(q['pose'][3:]))[0]
+        return q if (y >= yaw if past else abs(y - yaw) <= 0.05) else None
+    return pick
+
+
+def check_edit_release(res):
+    """Let go after a sweep under threaded video: screen 1 never steps
+    back from where the hand left it, and is saved there."""
+    want = (0.15, 0.0, -1.8)
+    return (edit_log_errors(res, ['on'], exact=False)
+            + no_step_back(between(res, 'swept'), screen1_left, want,
+                           'screen 1')
+            + stereo_errors(between(res, 'grab', None, edit_screen0))
+            + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                           (want, ID), (1.6, 0.96)))
+
+
+def check_edit_release_moving(res):
+    """Let go mid-sweep: screen 1 is let go and saved where a frame at
+    most a poll (100 ms at FPS10) before the release showed it, not
+    where the release poll's aim puts it, and no frame after the release
+    shows it further back."""
+    errors = edit_log_errors(res, ['on'], exact=False)
+    xs = [(f['t_us'], screen1_left(f)['pose'][0])
+          for f in between(res, 'sweep', None, edit_screen0)]
+    t_rel = res.marks['released'] * 1e6
+    poll, slack = 100000, 20000
+    back = [x for t, x in xs if t_rel - poll - slack <= t <= t_rel + slack]
+    late = [x for t, x in xs if t > t_rel]
+    rest = [screen1_left(f) for f in
+            between(res, 'released', None, edit_screen0, 1.0)]
+    if not back or not late or not rest:
+        return errors + ['no frames around the release']
+    want = (rest[-1]['pose'][0], 0.0, -1.8)
+    if not any(abs(want[0] - x) <= 0.002 for x in back):
+        errors.append('screen 1 let go at %.3f, want where a frame showed '
+                      'it a poll before the release: %s'
+                      % (want[0], [round(x, 3) for x in back]))
+    for x in late:
+        if x < want[0] - 0.002:
+            errors.append('after the release screen 1 stepped back to '
+                          '%.3f, past where it was let go' % x)
+            break
+    errors += pose_errors('screen 1 let go', rest, want, ID)
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (want, ID), (1.6, 0.96))
+
+
+def check_edit_regrab(res):
+    """Let go and grip again at once: the regrab takes screen 1 where it
+    was let go, while quads planned at the release are still coming,
+    and nudges it on from there."""
+    errors = edit_log_errors(res, ['on'], exact=False)
+    want = (0.15, 0.0, -1.8)
+    errors += pose_errors('screen 1 let go and taken again',
+                          [screen1_left(f) for f in
+                           between(res, 'released', 'moved_again',
+                                   edit_screen0)], want, ID)
+    again = (0.25, 0.0, -1.8)
+    errors += pose_errors('screen 1 nudged',
+                          [screen1_left(f) for f in
+                           between(res, 'moved_again', None, edit_screen0,
+                                   1.0)], again, ID)
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (again, ID), (1.6, 0.96))
+
+
+def check_edit_handover(res):
+    """One hand lets go of screen 1 and takes screen 2 at the next poll:
+    screen 1 never steps back, screen 2 moves, both are saved."""
+    errors = edit_log_errors(res, ['on'], exact=False)
+    want = (0.15, 0.0, -1.8)
+    errors += no_step_back(between(res, 'swept'), screen1_left, want,
+                           'screen 1')
+    b_want = (0.3, -0.992, -1.8)
+    errors += pose_errors('screen 2 moved',
+                          [screen2(f) for f in
+                           between(res, 'b_moved', 'end', delay=1.0)],
+                          b_want, ID, (1.28, 0.96))
+    errors += saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                           (want, ID), (1.6, 0.96))
+    return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                                 (b_want, ID), (1.28, 0.96))
+
+
+def check_edit_tilt(res):
+    """Level by default: the wrist's roll leaves screen 1 upright; with
+    the trigger held the roll follows from where it was, and stays when
+    the trigger is let go."""
+    errors = []
+    for mark, want, what in (
+            ('rolled', ID, 'rolled 30 without the trigger'),
+            ('tilted', ID, 'the trigger pressed'),
+            ('turned', ROLL30, 'rolled 30 more with the trigger'),
+            ('kept', ROLL30, 'the trigger let go, the wrist back')):
+        q = last_before(res, mark, edit_screen0)
+        if not q:
+            errors.append('no frame before %s' % what)
+        elif not all(facing(e, want) for e in q):
+            errors.append('%s: screen 1 turned %s, want %s'
+                          % (what, q[0]['pose'][3:], want))
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (S0, ROLL30), (1.6, 0.96))
+
+
+T_HAND = (0.8, 0.0, -0.3)
+T0 = (T_HAND, (0.0, 0.0, -1.8))
+T1 = (T_HAND, (0.0, 0.8, -1.8))
+
+
+def check_edit_turn(tilt):
+    want = held((S0, ID), aim_pose(*T0), aim_pose(*T1), tilt)
+
+    def check(res):
+        """A hand beside screen 1 turned up carries it up, as video_xr's
+        grab does: keeping its yaw, pitch and roll, or with the trigger
+        held letting it follow the hand; saved as shown."""
+        errors = edit_log_errors(res, ['on'], exact=False)
+        if tilt != (abs(euler(want[1])[2]) > 5.0):
+            errors.append('the case does not tell level from tilt')
+        if tilt != (abs(euler(want[1])[1]) > 5.0):
+            errors.append('the case does not tell a held pitch from one '
+                          'that follows')
+        shown = [screen1_left(f) for f in
+                 between(res, 'moved', None, edit_screen0, 1.5)]
+        errors += pose_errors('screen 1 turned by the hand', shown, want[0],
+                              want[1], (1.6, 0.96))
+        return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_',
+                                     S0, want, (1.6, 0.96),
+                                     shown[-1] if shown else None)
+    return check
+
+
+def check_edit_stick(res):
+    """The stick held up pushes screen 1 away along the laser, from a
+    hand below and beside it, inside its deadzone does nothing, and
+    held right grows it."""
+    held_q = last_before(res, 'held', screen1_left)
+    pushed = last_before(res, 'pushed', screen1_left)
+    dead = last_before(res, 'deaded', screen1_left)
+    grown = last_before(res, 'grown', screen1_left)
+    if not (held_q and pushed and dead and grown):
+        return no_quads(res)
+    errors = edit_log_errors(res, ['on', 'off'])
+    errors += pose_errors('screen 1 held', [held_q], S0, ID)
+    ray = [b - a for a, b in zip(*A0)]
+    ray = [v / math.sqrt(sum(r * r for r in ray)) for v in ray]
+    disp = [b - a for a, b in zip(S0, pushed['pose'][:3])]
+    along = sum(a * b for a, b in zip(disp, ray))
+    off = math.sqrt(sum((d - along * r) ** 2 for d, r in zip(disp, ray)))
+    if not 0.3 <= along <= 1.3 or off > 0.02:
+        errors.append('half a second of push moved screen 1 %.3f along the '
+                      'laser and %.3f off it, want 0.3 to 1.3 along'
+                      % (along, off))
+    errors += pose_errors('screen 1 after the deadzone', [dead],
+                          pushed['pose'][:3], ID, pushed['size'])
+    k = grown['size'][0] / pushed['size'][0]
+    if not 1.2 <= k <= 1.9:
+        errors.append('half a second right scaled it by %.3f, want 1.2 to '
+                      '1.9' % k)
+    errors += pose_errors('screen 1 grown', [grown], pushed['pose'][:3], ID)
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (grown['pose'][:3], ID), (1.6, 0.96),
+                                 last_before(res, 'off', screen1_left))
+
+
+def check_edit_reset(menu=True):
+    def check(res):
+        """Screen 1 from its offsets, grabbed and moved, then reset as
+        Reset Screen does, and the menu with it; the menu taken by its
+        handle and moved, screen 1 staying, then back in front of screen
+        1 on its own reset, unplaced."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        errors += pose_errors('screen 1 at its offsets',
+                              [last_before(res, 'offset', screen1_left)],
+                              (0.25, 0.1, -1.5), ID)
+        errors += pose_errors('screen 1 moved',
+                              [screen1_left(f) for f in
+                               between(res, 'moved', 'reset', edit_screen0,
+                                       1.0)], (0.55, 0.1, -1.5), ID)
+        late = between(res, 'reset', 'off', edit_screen0, 1.0)
+        errors += pose_errors('screen 1 reset',
+                              [screen1_left(f) for f in late], S0, ID,
+                              (1.6, 0.96))
+        if menu:
+            errors += pose_errors(
+                'the menu after the screen\'s reset',
+                [menu_quad(f) for f in between(res, 'reset', 'handle',
+                                               delay=1.0)],
+                MENU_SPOT, ID, (MENU_W, MENU_H))
+            errors += pose_errors(
+                'the menu taken by its handle',
+                [menu_quad(f) for f in between(res, 'placed', 'back',
+                                               delay=1.0)],
+                (0.5, 0.0, -1.7), ID, (MENU_W, MENU_H))
+            errors += pose_errors(
+                'its reset',
+                [menu_quad(f) for f in between(res, 'back', 'off',
+                                               delay=1.0)],
+                MENU_SPOT, ID, (MENU_W, MENU_H))
+            if saved(res).get('video_openxr_menu_placed') != 'false':
+                errors.append('the menu\'s reset left it placed')
+        return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_',
+                                     S0, (S0, ID), (1.6, 0.96),
+                                     screen1_left(late[-1]) if late
+                                     else None)
+    return check
+
+
+def check_edit_menu_front(res):
+    """Screen 1 moved 60 cm closer takes the menu with it, 10 cm in front,
+    as large to the eye as at its spot and submitted after the
+    screens."""
+    fr = last_snap(res)
+    if not fr:
+        return no_quads(res)
+    ms = menus(fr)
+    errors = []
+    d = 1.1 / 1.7
+    if len(ms) != 1 or not at(ms[0], (0.0, 0.0, -1.1)) \
+            or not sized(ms[0], (MENU_W * d, MENU_H * d)):
+        errors.append('the menu at %s, want 0,0,-1.1 and %.3f wide'
+                      % ([(m['pose'][:3], m['size']) for m in ms],
+                         MENU_W * d))
+    order = quads(fr)
+    if ms and any(order.index(q) > order.index(ms[0])
+                  for q in edit_screen0(fr)):
+        errors.append('a screen was submitted after the menu')
+    return errors
+
+
+F_D = 0.8 / 1.7
+F_HANDLE = handle_y(0.0, MENU_H * F_D)
+
+
+def check_edit_menu_size(res):
+    """Screen 1 0.9 m nearer: the menu follows 0.8 m away as large to the
+    eye as at its spot, and taken by its handle it is placed as large
+    as it showed."""
+    errors = edit_log_errors(res, ['on'], exact=False)
+    size = (MENU_W * F_D, MENU_H * F_D)
+    errors += pose_errors('the menu following the nearer screen 1',
+                          [menu_quad(f) for f in between(res, 'on', 'grab',
+                                                         delay=1.0)],
+                          (0.0, 0.0, -0.8), ID, size)
+    shown = [menu_quad(f) for f in between(res, 'moved', None, menus, 1.5)]
+    errors += pose_errors('the menu placed', shown, (0.3, 0.0, -0.8), ID,
+                          size)
+    if saved(res).get('video_openxr_menu_placed') != 'true':
+        errors.append('the menu was not placed')
+    return errors + saved_errors(res, 'the menu', 'video_openxr_menu_xr_',
+                                 MENU_SPOT, ((0.3, 0.0, -0.8), ID),
+                                 (MENU_W, MENU_H),
+                                 shown[-1] if shown else None)
+
+
+# Screen 1 at EDIT_OFFSET's 0.25,0.1,-1.5: the menu following 10 cm in
+# front, as large to the eye as at its spot.
+M_D = math.sqrt(0.25 * 0.25 + 0.1 * 0.1 + 1.4 * 1.4) / 1.7
+M_HANDLE = handle_y(0.1, MENU_H * M_D)
+
+
+def check_edit_menu_reset(res):
+    """The menu following a moved screen 1, taken by its handle and moved,
+    screen 1 staying; reset on its handle, it follows screen 1 again,
+    unplaced."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    size = (MENU_W * M_D, MENU_H * M_D)
+    errors += pose_errors('the menu following screen 1',
+                          [menu_quad(f) for f in between(res, 'on', 'grab',
+                                                         delay=1.0)],
+                          (0.25, 0.1, -1.4), ID, size)
+    errors += pose_errors('the menu taken by its handle',
+                          [menu_quad(f) for f in between(res, 'placed',
+                                                         'back', delay=1.0)],
+                          (0.55, 0.1, -1.4), ID, size)
+    errors += pose_errors('screen 1 while the menu moved',
+                          [screen1_left(f) for f in between(
+                              res, 'grab', 'off', edit_screen0)],
+                          (0.25, 0.1, -1.5), ID)
+    errors += pose_errors('the menu reset',
+                          [menu_quad(f) for f in between(res, 'back', 'off',
+                                                         delay=1.0)],
+                          (0.25, 0.1, -1.4), ID, size)
+    if saved(res).get('video_openxr_menu_placed') != 'false':
+        errors.append('the menu\'s reset left it placed')
+    return errors
+
+
+def band_errors(res, f, q, level, what):
+    """The three bands across the part of the image q shows, from its
+    top edge in, dark, light, dark, at level: through an outline's rim,
+    or across the handle bar."""
+    if q['rect'][3] == OUTLINE_DIM:
+        rows = (0, OUTLINE_BAND, 2 * OUTLINE_BAND)
+    else:
+        rows = (0, HANDLE_ROWS // 2, HANDLE_ROWS - 1)
+    errors = []
+    for row, light in zip(rows, (False, True, False)):
+        rgb, alpha = rect_texel(res, f, q, q['rect'][2] // 2, row)
+        want = level if light else 0
+        if abs(alpha - level) > 2 or abs(rgb[0] - want) > 2:
+            errors.append('%s row %d shows %s alpha %d, want %d alpha %d'
+                          % (what, row, rgb, alpha, want, level))
+    return errors
+
+
+def outline_whole(o, q):
+    """Outline o's size uncut, along item q's own x and y."""
+    w = o['size'][0] * OUTLINE_DIM / o['rect'][2]
+    ox = qrot(tuple(o['pose'][3:]), (1.0, 0.0, 0.0))
+    qx = qrot(tuple(q['pose'][3:]), (1.0, 0.0, 0.0))
+    if abs(sum(a * b for a, b in zip(ox, qx))) < 0.5:
+        return (o['size'][1], w)
+    return (w, o['size'][1])
+
+
+def outline_gap_errors(frame):
+    """Every outline's clear middle, where filtering leaves its rim,
+    OUTLINE_GAP wider each side than the item it is round: the rim never
+    covers the picture. An outline cut to hide an edge's rim counts at
+    its whole size, turned back for a top or bottom edge."""
+    items = [q for q in quads(frame) if not q['flags'] & BLEND] \
+        + menus(frame)
+    if not items:
+        return ['no items under the outlines']
+    errors = []
+    for o in outlines(frame):
+        q = min(items, key=lambda i: sum(
+            (a - b) ** 2 for a, b in zip(i['pose'][:3], o['pose'][:3])))
+        gaps = [(s * (1.0 - 2.0 * OUTLINE_F) - w) / 2.0
+                for s, w in zip(outline_whole(o, q), q['size'])]
+        if any(abs(g - OUTLINE_GAP) > 0.001 for g in gaps):
+            errors.append('the outline at %s is %s clear of its item, '
+                          'want %.3f' % (
+                              [round(v, 3) for v in o['pose'][:3]],
+                              [round(g, 4) for g in gaps], OUTLINE_GAP))
+    return errors
+
+
+EDIT_HANDLE = handle_y(0.0, MENU_H)
+# Screen 2 flush against screen 1's right edge, the menu out of the way.
+FLUSH = {'video_screen2_xr_x': '1.44', 'video_screen2_xr_y': '0.992',
+         'video_openxr_menu_placed': 'true', 'video_openxr_menu_xr_x': '-2'}
+
+
+def texel_at(res, fr, q, x, y):
+    """The texel quad q, facing +Z, shows at x, y; None off it."""
+    o = tuple(q['pose'][3:])
+    lx, ly, _ = qrot((-o[0], -o[1], -o[2], o[3]),
+                     (x - q['pose'][0], y - q['pose'][1], 0.0))
+    u, v = lx / q['size'][0] + 0.5, 0.5 - ly / q['size'][1]
+    if not (0.0 <= u < 1.0 and 0.0 <= v < 1.0):
+        return None
+    return rect_texel(res, fr, q, int(u * q['rect'][2]),
+                      int(v * q['rect'][3]))
+
+
+def seen_at(res, fr, x, y):
+    """What frame fr shows at x, y looking down -Z: its layers that face
+    +Z, each in its turn over those before, from black."""
+    out = (0, 0, 0)
+    for q in quads(fr):
+        if qrot(tuple(q['pose'][3:]), (0.0, 0.0, 1.0))[2] < 0.999:
+            continue
+        t = texel_at(res, fr, q, x, y)
+        if t is None:
+            continue
+        rgb, alpha = t
+        out = (tuple(min(255, c + (255 - alpha) * b // 255)
+                     for c, b in zip(rgb, out))
+               if q['flags'] & BLEND else rgb)
+    return out
+
+
+def check_edit_outlines_flush(res):
+    """Screen 2 flush against screen 1's right edge, screen 1 lit: its
+    outline goes under the screens, so screen 2's picture covers that
+    side of its rim; the other three sides still show."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    snaps = [f for f in between(res, 'lit', 'off', delay=0.5)
+             if f['snap'] and len(outlines(f, 1)) == 1 and screen2(f)]
+    if not snaps:
+        return errors + ['no snapshot of screen 1 outlined beside screen 2']
+    f = snaps[-1]
+    o, s2 = outlines(f, 1)[0], screen2(f)
+    if not near3(o['pose'], (0.0, 0.0, -1.798)) \
+            or not near3(s2['pose'], (1.44, 0.0, -1.8)):
+        return errors + ['screen 1\'s outline at %s, screen 2 at %s: not '
+                         'flush' % (o['pose'][:3], s2['pose'][:3])]
+    tw, th = (s / OUTLINE_DIM for s in o['size'])
+    right = o['pose'][0] + o['size'][0] / 2.0
+    covered = []
+    for k in range(OUTLINE_EDGE):
+        for y in (-0.3, 0.0, 0.3):
+            x = right - (k + 0.5) * tw
+            want = texel_at(res, f, s2, x, y)
+            seen = seen_at(res, f, x, y)
+            if want is None or any(abs(a - b) > 2
+                                   for a, b in zip(seen, want[0])):
+                covered.append((round(x, 3), y, seen))
+    if covered:
+        errors.append('screen 1\'s rim over screen 2\'s picture: %s'
+                      % covered[:4])
+    light = OUTLINE_BAND + 0.5
+    for what, x, y in (
+            ('left', o['pose'][0] - o['size'][0] / 2.0 + light * tw, 0.0),
+            ('top', 0.0, o['pose'][1] + o['size'][1] / 2.0 - light * th),
+            ('bottom', 0.0, o['pose'][1] - o['size'][1] / 2.0 + light * th)):
+        seen = seen_at(res, f, x, y)
+        if any(c < 253 for c in seen):
+            errors.append('screen 1\'s rim shows %s on its %s side, want '
+                          'its light band' % (seen, what))
+    return errors
+
+
+def check_edit_outlines(menu=True):
+    def check(res):
+        """Faint outlines round every item, a bright one round the item
+        under a laser, the menu's faint handle bar under it and bright
+        with the menu's outline under a laser; none after edit mode."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        lit = between(res, 'lit', 'handle', delay=0.5)
+        items = 3 if menu else 2
+        good = [f for f in lit if len(outlines(f)) == items
+                and len(outlines(f, 1)) == 1
+                and len(handles(f)) == int(menu)]
+        if not good:
+            return errors + ['no frame with %d outlines, one bright: %s' % (
+                items, [[q['rect'][0] for q in outlines(f) + handles(f)]
+                        for f in lit[-1:]])]
+        b = outlines(good[-1], 1)[0]
+        if not near3(b['pose'], (0.0, 0.0, -1.798)) \
+                or not near3(b['size'], outline_size(1.6, 0.96), 0.002):
+            errors.append('the bright outline at %s, %s, want screen 1\'s'
+                          % (b['pose'][:3], b['size']))
+        errors += outline_gap_errors(good[-1])
+        snaps = [f for f in good if f['snap']]
+        if snaps:
+            s = snaps[-1]
+            errors += band_errors(res, s, outlines(s, 1)[0], 255,
+                                 'the bright outline')
+            errors += band_errors(res, s, outlines(s, 0)[0], 64,
+                                 'a faint outline')
+            if menu and handles(s, 0):
+                errors += band_errors(res, s, handles(s, 0)[0], 64,
+                                     'the faint handle')
+        else:
+            errors.append('no snapshot of the outlines')
+        if menu:
+            h = handles(good[-1], 0)
+            if len(h) != 1 or not near3(h[0]['pose'],
+                                        (0.0, EDIT_HANDLE, -1.698)) \
+                    or not near3(h[0]['size'], (MENU_W * 0.4, 0.03)):
+                errors.append('the faint handle: %s'
+                              % [(q['pose'][:3], q['size']) for q in h])
+            on = [f for f in between(res, 'handle', 'off', delay=0.5)
+                  if len(handles(f, 1)) == 1 and len(outlines(f, 1)) == 1
+                  and near3(outlines(f, 1)[0]['pose'], (0.0, 0.0, -1.698))]
+            if not on:
+                errors.append('the laser on the handle lit no handle and '
+                              'menu outline')
+            elif [f for f in on if f['snap']]:
+                s = [f for f in on if f['snap']][-1]
+                errors += band_errors(res, s, handles(s, 1)[0], 255,
+                                     'the bright handle')
+        elif any(handles(f) for f in lit):
+            errors.append('a handle without a menu quad')
+        if any(outlines(f) or handles(f)
+               for f in between(res, 'off', delay=1.0)):
+            errors.append('outlines after edit mode ended')
+        return errors
+    return check
+
+
+def check_edit_beam(res):
+    """Edit Mode Only: the dot alone before edit mode; in it a beam from
+    the hand to the dot facing the head, then 1.5 m into nothing; the dot
+    alone again after."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    before = between(res, 'before', 'on', delay=0.5)
+    if not [f for f in before if cursors(f)]:
+        errors.append('no dot before edit mode')
+    if any(beams(f) for f in before):
+        errors.append('a beam before edit mode')
+    hits = [f for f in between(res, 'aimed', 'miss', delay=0.5)
+            if len(beams(f)) == 1 and cursors(f)]
+    if not hits:
+        return errors + ['no frame with one beam and its dot']
+    errors += beam_errors('the beam', beams(hits[-1])[0], GUN_FROM, GUN_AT, 0)
+    snaps = [f for f in hits if f['snap']]
+    if snaps:
+        errors += strip_errors(res, snaps[-1], beams(snaps[-1])[0], 0,
+                               'the beam')
+    else:
+        errors.append('no snapshot of the beam')
+    misses = [f for f in between(res, 'miss', 'off', delay=0.5)
+              if len(beams(f, 1)) == 1]
+    if not misses:
+        return errors + ['no frame with a beam into nothing']
+    errors += beam_errors('the beam into nothing', beams(misses[-1])[0],
+                          GUN_FROM, MISS_AT, 1)
+    snaps = [f for f in misses if f['snap']]
+    if snaps:
+        errors += strip_errors(res, snaps[-1], beams(snaps[-1])[0], 1,
+                               'the beam into nothing')
+    after = between(res, 'off', delay=1.0)
+    if any(beams(f) for f in after):
+        errors.append('a beam after edit mode')
+    return errors
+
+
+def check_edit_beam_off(res):
+    """Laser Beam Off: edit mode's dot and outlines, never a beam."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    if not [f for f in between(res, 'aimed', 'off', delay=0.5)
+            if cursors(f) and outlines(f)]:
+        errors.append('no frame with the dot and the outlines')
+    if any(beams(f) for f in res.frames):
+        errors.append('a beam with Laser Beam Off')
+    return errors
+
+
+def check_laser_beam_always(res):
+    """Laser Beam Always, out of edit mode: a beam to the light gun's
+    dot, one into nothing beside the screens, none while the laser's
+    hotkey hides it, and back after."""
+    errors = []
+    hits = [f for f in between(res, 'aimed', 'miss', delay=0.5)
+            if len(beams(f)) == 1 and cursors(f)]
+    if hits:
+        errors += beam_errors('the beam', beams(hits[-1])[0], GUN_FROM,
+                              GUN_AT, 0)
+    else:
+        errors.append('no frame with the beam and its dot')
+    misses = [f for f in between(res, 'miss', 'off', delay=0.5)
+              if len(beams(f, 1)) == 1]
+    if misses:
+        errors += beam_errors('the beam into nothing', beams(misses[-1])[0],
+                              GUN_FROM, MISS_AT, 1)
+    else:
+        errors.append('no frame with a beam into nothing')
+    if any(beams(f) or cursors(f)
+           for f in between(res, 'off', 'on', delay=0.5)):
+        errors.append('a beam or dot with the laser hidden')
+    if not [f for f in between(res, 'on', delay=0.5) if beams(f)]:
+        errors.append('no beam once the laser is back')
+    return errors
+
+
+def check_edit_fallback(menu=True):
+    def check(res):
+        """A views core's frame shown whole (threaded video crops the map
+        away) is no item: grip, move and reset leave it, no dot or
+        outline shows on it, and screen 1's settings stay."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        if 'cropping to 655 rows' not in res.log:
+            errors.append('threaded video did not crop the frame')
+        late = between(res, 'on', 'off', delay=1.0)
+        errors += pose_errors('the fallback frame through grip, move and '
+                              'reset', [screen2(f) for f in late], S0, ID,
+                              (1.6, 0.96))
+        dots = [f for f in late if cursors(f)]
+        if dots:
+            errors.append('a dot on the fallback frame in %d of %d frames'
+                          % (len(dots), len(late)))
+        for f in late:
+            frame = screen2(f)
+            if frame and any(near3(q['pose'], frame['pose'][:2]
+                                   + [frame['pose'][2] + 0.002])
+                             for q in outlines(f)):
+                errors.append('frame %d: an outline round the fallback '
+                              'frame' % f['n'])
+                break
+            n = len(outlines(f)) + len(handles(f))
+            if n != (2 if menu else 0):
+                errors.append('frame %d: %d layers, want %s' % (
+                    f['n'], n, 'the menu\'s outline and handle alone'
+                    if menu else 'none'))
+                break
+        cfg = saved(res)
+        got = [cfg.get('video_screen1_xr_' + k)
+               for k in ('x', 'y', 'z', 'scale')]
+        if [float(v or 'nan') for v in got] != [0.5, 0.0, 0.0, 1.0]:
+            errors.append('screen 1 saved as x y z scale %s, want 0.5 0 0 1'
+                          % got)
+        return errors
+    return check
+
+
+def check_edit_no_map(res):
+    """A core without a view map is screen 1: its whole frame is grabbed,
+    stays where it was put, and is saved there."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    before = last_before(res, 'grab', frame_quad)
+    late = between(res, 'moved', None, frame_quad)
+    if not before or not late:
+        return errors + no_quads(res)
+    want = ((0.3, 0.0, -1.8), ID)
+    errors += pose_errors('the frame before the grab', [before], S0, ID)
+    errors += pose_errors('the frame moved', [frame_quad(f) for f in late],
+                          want[0], ID, before['size'])
+    return errors + saved_errors(res, 'the frame', 'video_screen1_xr_', S0,
+                                 want, before['size'],
+                                 frame_quad(late[-1]))
+
+
+# Follow Head: the hand's aims in VIEW, through a head turned 30
+# degrees, as LOCAL points.
+V_HEAD = 'head 0 0 0 30'
+V_ANCHOR = ((0.0, 0.0, 0.0), from_euler(30.0, 0.0, 0.0))
+A0 = ((0.2, -0.4, -0.3), (0.0, 0.0, -1.8))
+A1 = ((0.5, -0.3, -0.3), (0.3, 0.1, -1.8))
+A2 = ((0.9, -0.3, -0.3), (0.7, 0.1, -1.8))
+MOVED = ((0.3, 0.1, -1.8), ID)
+
+
+def turned(anchor, a, shift=(0.0, 0.0, 0.0)):
+    """Aim a, given in anchor's frame, in LOCAL and moved by shift."""
+    return tuple(tuple(x + s for x, s in zip(compose(anchor, (p, ID))[0],
+                                             shift)) for p in a)
+
+
+def check_edit_follow_head(res):
+    """Follow Head: screen 1 grabbed and moved in VIEW space keeps that
+    spot in view as the head turns, and is saved there."""
+    errors = edit_log_errors(res, ['on'], exact=False)
+    shown = [screen1_left(f) for f in
+             between(res, 'moved', 'turned', edit_screen0, 1.5)]
+    late = [screen1_left(f) for f in
+            between(res, 'turned', None, edit_screen0, 1.0)]
+    if any(q['space'] != 'view' for q in shown + late):
+        errors.append('screen 1 out of view space')
+    errors += pose_errors('screen 1 moved in VIEW', shown, MOVED[0], ID)
+    errors += pose_errors('screen 1 with the head turned', late, MOVED[0],
+                          ID)
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 MOVED, (1.6, 0.96),
+                                 shown[-1] if shown else None)
+
+
+def yaw_of(q):
+    return euler(q['pose'][3:])[0]
+
+
+def check_edit_lazy(res):
+    """Lazy Follow holds its glide while screen 1 is held, so screen 2,
+    which nothing holds, stays; once it is let go they glide."""
+    errors = edit_log_errors(res, ['on'], exact=False)
+    held_frames = between(res, 'turned', 'released', screen2, 0.3)
+    if not held_frames:
+        return errors + ['no frames while held']
+    errors += pose_errors('screen 1 held still',
+                          [screen1_left(f) for f in held_frames], S0, ID)
+    yaws = [yaw_of(screen2(f)) for f in held_frames]
+    if any(abs(y) > 0.5 for y in yaws):
+        errors.append('the screens glided to %.1f degrees while held'
+                      % max(yaws, key=abs))
+    late = between(res, 'released', None, screen2, 2.0)
+    if not late or abs(yaw_of(screen2(late[-1]))) < 45.0:
+        errors.append('no glide after the release: %s' % (
+            late and round(yaw_of(screen2(late[-1])), 1)))
+    return errors
+
+
+L0 = ((-0.2, -0.4, -0.3), (0.0, 0.0, -1.8))
+L1 = ((0.0, -0.4, -0.3), (0.2, 0.0, -1.8))
+R1 = ((0.6, -0.4, -0.3), (0.4, 0.0, -1.8))
+B0 = ((0.2, -0.6, -0.3), (0.0, -0.992, -1.8))
+B1 = ((0.5, -0.6, -0.3), (0.3, -0.992, -1.8))
+LEFT_AT = (0.2, 0.0, -1.8)
+BOTTOM_AT = (0.3, -0.992, -1.8)
+
+
+def check_edit_two_hands(res):
+    """One item a hand: the right on the left's screen 1 does nothing,
+    then takes screen 2 while the left still holds screen 1."""
+    errors = edit_log_errors(res, ['on'], exact=False)
+    errors += pose_errors('screen 1 held by the left hand alone',
+                          [screen1_left(f) for f in
+                           between(res, 'right_moved', 'bottom',
+                                   edit_screen0, 1.5)], LEFT_AT, ID)
+    errors += pose_errors('screen 2 before the right hand took it',
+                          [screen2(f) for f in
+                           between(res, 'right_moved', 'bottom',
+                                   delay=1.5)], S1, ID)
+    errors += pose_errors('screen 2 moved by the right hand',
+                          [screen2(f) for f in
+                           between(res, 'bottom_moved', delay=1.5)],
+                          BOTTOM_AT, ID, (1.28, 0.96))
+    errors += pose_errors('screen 1 while the right moved screen 2',
+                          [screen1_left(f) for f in
+                           between(res, 'bottom_moved', None, edit_screen0,
+                                   1.5)], LEFT_AT, ID)
+    errors += saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                           (LEFT_AT, ID), (1.6, 0.96))
+    return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                                 (BOTTOM_AT, ID), (1.28, 0.96))
+
+
+def check_edit_recenter(res):
+    """A recenter during a grab lets go first, then recenters; edit mode
+    stays on, and the hand moving on leaves screen 1."""
+    errors = edit_log_errors(res, ['on'], exact=False)
+    asked = res.log.find('Headset recenter requested')
+    if asked < 0:
+        errors.append('the recenter did not reach the hotkey')
+    elif EDIT_OFF in res.log[:asked]:
+        errors.append('edit mode stopped before the recenter')
+    syncs = [(e['t_us'], e['sets']) for e in events(res, 'sync')]
+    t = res.marks['recenter'] * 1e6
+    then = [s for u, s in syncs if u <= t]
+    if not then or then[-1] != EDIT_SETS \
+            or any(s != EDIT_SETS for u, s in syncs if u > t):
+        errors.append('edit mode\'s set not synced through the recenter')
+    want = compose(V_ANCHOR, MOVED)
+    errors += pose_errors('screen 1 recentered, let go',
+                          [screen1_left(f) for f in
+                           between(res, 'recenter', 'pulled', edit_screen0,
+                                   1.5)], want[0], want[1])
+    errors += pose_errors('screen 1 after the hand moved on',
+                          [screen1_left(f) for f in
+                           between(res, 'pulled', None, edit_screen0,
+                                   1.5)], want[0], want[1])
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 MOVED, (1.6, 0.96))
+
+
+RC0 = turned(V_ANCHOR, A0)
+RC1 = turned(V_ANCHOR, A0, (0.3, 0.0, 0.0))
+
+
+def check_edit_recentered(res):
+    """Grabbed from a turned anchor, screen 1 moves along the room's X,
+    and its settings are saved in the anchor's frame."""
+    errors = edit_log_errors(res, ['on'], exact=False)
+    spot = compose(V_ANCHOR, (S0, ID))
+    errors += pose_errors('screen 1 at the turned anchor',
+                          [screen1_left(f) for f in
+                           between(res, 'on', 'grab', edit_screen0, 1.0)],
+                          spot[0], spot[1])
+    want = (tuple(a + b for a, b in zip(spot[0], (0.3, 0.0, 0.0))),
+            spot[1])
+    shown = [screen1_left(f) for f in
+             between(res, 'moved', None, edit_screen0, 1.5)]
+    errors += pose_errors('screen 1 moved along the room\'s X', shown,
+                          want[0], want[1], (1.6, 0.96))
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 want, (1.6, 0.96),
+                                 shown[-1] if shown else None, V_ANCHOR)
+
+
+def check_edit_pause(res):
+    """While Editing Screens: Pause stops the core while edit mode runs,
+    started by the command and then by the headset's action, and lets
+    it run again after each."""
+    errors = edit_log_errors(res, ['on', 'off', 'on', 'off'])
+    for on, off, end in (('on', 'off', 'on2'), ('on2', 'off2', None)):
+        t_on, t_off = res.marks[on] * 1e6, res.marks[off] * 1e6
+        t_end = res.marks[end] * 1e6 if end else float('inf')
+        if not core_frames(res, t_on - 3e6, t_on):
+            errors.append('the core did not run before %s' % on)
+        mid = core_frames(res, t_on + 1e6, t_off)
+        if mid:
+            errors.append('the core ran while edit mode paused it (%s): %s'
+                          % (on, mid))
+        if not core_frames(res, t_off + 1e6, t_end):
+            errors.append('the core did not run again after %s' % off)
+    return errors
+
+
+AIM_SCREEN0_RIGHT = 'aim right 0.2 -0.4 -0.3 0.4 0.24 -1.8'
+AIM_SCREEN0_LEFT = 'aim left -0.2 -0.4 -0.3 -0.4 0.24 -1.8'
+DOT_RIGHT, DOT_LEFT = (0.4, 0.24, -1.8), (-0.4, 0.24, -1.8)
+
+
+def check_edit_command(menu=True):
+    def check(res):
+        """The command starts and stops edit mode: only its set synced
+        between, a dot from each hand on screen 1, which Auto leaves
+        alone, only while editing, the menu's quad kept up (gl has none)
+        and the core kept running."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        errors += edit_sync_errors(res, 'on', 'off')
+        t_on, t_off = res.marks['on'] * 1e6, res.marks['off'] * 1e6
+        pre = [f for f in res.frames
+               if res.marks['aim'] * 1e6 + 3e5 < f['t_us'] < t_on]
+        mid = [f for f in res.frames if t_on + 5e5 < f['t_us'] < t_off]
+        post = [f for f in res.frames if f['t_us'] > t_off + 5e5]
+        if not pre or not mid or not post:
+            return errors + ['no headset frames around the marks']
+        if any(cursors(f) for f in pre + post):
+            errors.append('a dot showed on screen 1 outside edit mode')
+        for want in (DOT_RIGHT, DOT_LEFT):
+            if not any(at(c, want) for f in mid for c in cursors(f)):
+                errors.append('no dot at %s while editing' % (want,))
+        if any(menus(f) for f in res.frames
+               if f['t_us'] < t_on or f['t_us'] > t_off + 1e6):
+            errors.append('a menu quad outside edit mode')
+        up = [f for f in mid if menus(f)]
+        if menu and len(up) != len(mid):
+            errors.append('the menu quad was up in %d of %d frames while '
+                          'editing' % (len(up), len(mid)))
+        elif not menu and up:
+            errors.append('gl showed a menu quad while editing')
+        if len(core_frames(res, t_on + 1e6, t_off)) < 2:
+            errors.append('the core stopped while editing kept it running')
+        return errors
+    return check
+
+
+def check_edit_action(game):
+    def check(res):
+        """The headset's Edit Screens action starts edit mode from the
+        game's set and stops it from edit mode's own."""
+        return (edit_log_errors(res, ['on', 'off'])
+                + edit_sync_errors(res, 'on', 'off', game))
+    return check
+
+
+def check_edit_hotkeys(res):
+    """With no command interface the hotkeys are read by their bits: the
+    headset's Laser Pointer, Recenter and Edit Screens actions each set
+    their own."""
+    errors = check_laser_toggle('Auto', DOT_BOTTOM)(res)
+    if res.log.count('Headset recenter requested') != 1:
+        errors.append('Recenter reached the hotkey %d times, want once'
+                      % res.log.count('Headset recenter requested'))
+    return (errors + edit_log_errors(res, ['on', 'off'])
+            + edit_sync_errors(res, 'edit_on', 'edit_off'))
+
+
+def check_edit_menu_open(res):
+    """Edit mode syncs only its own set with the pointer's, every profile
+    takes its bindings, and opening the menu ends it and syncs the game's
+    set again."""
+    errors = bindings_errors(res) + edit_log_errors(res, ['on', 'off'])
+    if 'Edit Screens bindings refused' in res.log:
+        errors.append('a profile refused edit mode\'s bindings')
+    return errors + edit_sync_errors(res, 'on', 'menu')
+
+
+def check_edit_menu_ends(res):
+    """Edit mode ends with what opened the menu or restarted video, and
+    the game's set comes back."""
+    return edit_log_errors(res, ['on', 'off']) + edit_sync_errors(
+        res, 'on', 'menu')
+
+
+def check_edit_no_content(res):
+    """Without content the menu cannot close, so edit mode does not
+    start, and it is not called unavailable."""
+    errors = edit_log_errors(res, [])
+    syncs = [e['sets'] for e in events(res, 'sync')]
+    if EDIT_SETS in syncs:
+        errors.append('the edit set was synced without content')
+    if GAME_SETS not in syncs:
+        errors.append('no session read the controllers')
+    if 'Edit Screens unavailable' in res.log:
+        errors.append('told unavailable, not that content is needed')
+    return errors
+
+
+# Screen 2 straight behind screen 1, hidden by it from the hand.
+BURIED = {'video_screen2_xr_y': '0.992', 'video_screen2_xr_z': '-0.3'}
+BURIED_MOVED = (0.6, 0.0, -2.1)
+# Screen 2 pulled 30 cm nearer, its top edge 7 mm over the middle of
+# the menu's handle bar, in front of it.
+FRONT2 = (0.0, EDIT_HANDLE + 0.007 - 0.48, -1.5)
+
+
+def edit_tap(action, aim):
+    """action pressed once, the hand kept at aim."""
+    return [('script', script(aim, action)), ('wait', 0.5),
+            ('script', aim), ('wait', 0.5)]
+
+
+def on_handle(dx=0.0, dy=0.0):
+    """The right hand aiming straight ahead at the middle of the
+    menu's bar, moved dx right and dy up."""
+    return aim_line((dx, EDIT_HANDLE + dy, 0.0),
+                    (dx, EDIT_HANDLE + dy, -1.8))
+
+
+def check_edit_choose(menu=True):
+    def check(res):
+        """Select Next twice chooses screen 2, behind screen 1: its
+        outline alone is bright while the laser is on screen 1; the grip
+        takes it from there, it moves with the hand and is saved where
+        the headset last showed it; screen 1 stays."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        lit = between(res, 'chosen', 'grab', delay=0.5)
+        items = 3 if menu else 2
+        good = [f for f in lit if len(outlines(f)) == items
+                and len(outlines(f, 1)) == 1
+                and near3(outlines(f, 1)[0]['pose'], (0.0, 0.0, -2.098))]
+        if not good:
+            errors.append('screen 2 not lit alone while chosen: %s' % [
+                [(q['rect'][0], [round(v, 3) for v in q['pose'][:3]])
+                 for q in outlines(f)] for f in lit[-1:]])
+        errors += pose_errors('screen 2 taken from behind screen 1',
+                              [screen2(f) for f in
+                               between(res, 'moved', 'released')],
+                              BURIED_MOVED, ID, (1.28, 0.96))
+        errors += pose_errors('screen 1 while screen 2 moved',
+                              [screen1_left(f) for f in
+                               between(res, 'grab', 'off', edit_screen0)],
+                              S0, ID, (1.6, 0.96))
+        errors += saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                               (BURIED_MOVED, ID), (1.28, 0.96),
+                               last_before(res, 'off', screen2))
+        return errors
+    return check
+
+
+def check_edit_handle_first(res):
+    """A grip aimed at the menu's bar, through screen 2 which is
+    nearer, takes the menu: it moves with the hand and is saved placed;
+    screen 2 stays."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    errors += pose_errors('the menu taken by its handle',
+                          [menu_quad(f) for f in
+                           between(res, 'moved', 'released', delay=0.5)],
+                          (0.3, 0.0, -1.7), ID, (MENU_W, MENU_H))
+    errors += pose_errors('screen 2 in front of the bar',
+                          [screen2(f) for f in
+                           between(res, 'on', 'off', delay=0.5)],
+                          FRONT2, ID, (1.28, 0.96))
+    cfg = saved(res)
+    if cfg.get('video_openxr_menu_placed') != 'true' \
+            or abs(float(cfg.get('video_openxr_menu_xr_x', '0')) - 0.3) \
+            > EDIT_POS:
+        errors.append('the menu saved placed %s at x %s, want true at 0.3'
+                      % (cfg.get('video_openxr_menu_placed'),
+                         cfg.get('video_openxr_menu_xr_x')))
+    return errors
+
+
+# Screen 2 20 cm nearer than the menu, under its handle bar.
+UNDER_BAR = dict(SAVE, video_screen2_xr_y='%g' % (FRONT2[1] - S1[1]),
+                 video_screen2_xr_z='0.3')
+
+
+def sticky_steps(first):
+    """From first, the laser 3 cm under the bar's middle, in its margin
+    over screen 2; the grip there carries what it takes 30 cm right."""
+    return edit_start(first) + [
+        ('script', on_handle(0.0, -0.03)), ('wait', 1), ('mark', 'grab'),
+        ('script', script(on_handle(0.0, -0.03), EDIT_GRIP)), ('wait', 1),
+        ('script', script(on_handle(0.3, -0.03), EDIT_GRIP)), ('wait', 1),
+        ('mark', 'moved'), ('wait', 1), ('script', on_handle(0.3, -0.03)),
+        ('mark', 'released'), ('wait', 1), ('send', EDIT), ('wait', 2),
+        ('mark', 'off'), ('wait', 1)]
+
+
+def check_edit_handle_sticky(stuck):
+    def check(res):
+        """The laser in the bar's margin over screen 2: come from the
+        bar (stuck), the menu is the one lit and the grip takes it;
+        come from screen 2, screen 2 is lit and taken and the menu
+        stays."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        want = outline_size(MENU_W, MENU_H) if stuck \
+            else outline_size(1.28, 0.96)
+        frames = between(res, 'on', 'grab', delay=2.5)
+        if not frames:
+            errors.append('no frame with the laser in the margin')
+        for f in frames:
+            got = [q['size'] for q in outlines(f, 1)]
+            if len(got) != 1 or any(abs(a - b) > 0.002
+                                    for a, b in zip(got[0], want)):
+                errors.append('in the margin %s lit, want only %s'
+                              % (got, want))
+                break
+        if stuck:
+            errors += pose_errors('the menu taken by its stuck bar',
+                                  [menu_quad(f) for f in
+                                   between(res, 'moved', 'released',
+                                           delay=0.5)],
+                                  (0.3, 0.0, -1.7), ID, (MENU_W, MENU_H))
+            errors += pose_errors('screen 2 under the margin',
+                                  [screen2(f) for f in
+                                   between(res, 'on', 'off', delay=0.5)],
+                                  FRONT2, ID, (1.28, 0.96))
+        else:
+            errors += pose_errors('screen 2 taken through the margin',
+                                  [screen2(f) for f in
+                                   between(res, 'moved', 'released',
+                                           delay=0.5)],
+                                  (0.3, FRONT2[1], FRONT2[2]), ID,
+                                  (1.28, 0.96))
+            errors += pose_errors('the menu left in place',
+                                  [menu_quad(f) for f in
+                                   between(res, 'on', 'released', delay=0.5)],
+                                  MENU_SPOT, ID, (MENU_W, MENU_H))
+        return errors
+    return check
+
+
+# Screen 2 grabbed at its spot and held 0.7-2 cm off standing flush
+# right of screen 1, level and in its plane. The buzz is
+# INPUT_OPENXR_SNAP_TICK_AMP for INPUT_OPENXR_SNAP_TICK_NS; a hinge's,
+# INPUT_OPENXR_HINGE_BUZZ_AMP for INPUT_OPENXR_HINGE_BUZZ_NS.
+SNAP_GRAB = (0.0, -0.992, 0.0)
+SNAP_HAND = (1.447, 0.02, 0.02)
+SNAPPED = (1.44, 0.0, -1.8)
+SNAP_TICK = (0.5, 20000000)
+HINGE_BUZZ = (0.8, 150000000)
+
+
+def buzzes(res, kind, start=None, end=None):
+    """The right hand's buzzes of kind (SNAP_TICK or HINGE_BUZZ), after
+    mark start and before mark end."""
+    lo = res.marks[start] * 1e6 if start else float('-inf')
+    hi = res.marks[end] * 1e6 if end else float('inf')
+    return [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
+            and lo < e['t_us'] < hi
+            and abs(e['amplitude'] - kind[0]) < 1e-3
+            and e['duration_ns'] == kind[1]]
+
+
+def straight(p):
+    """The right hand at p aiming straight ahead."""
+    return aim_line(p, (p[0], p[1], p[2] - 1.8))
+
+
+def span(a0, a1, b0, b1):
+    """The middle and length of where [a0, a1] and [b0, b1] overlap."""
+    lo, hi = max(a0, b0), min(a1, b1)
+    return (lo + hi) / 2.0, hi - lo
+
+
+def hinge_line_errors(frames, want, axis):
+    """frames each show one hinge line: the green strip a texel in from
+    each end, HINGE_WIDTH wide, along world axis axis, each end
+    HINGE_LIFT from where want(frame) puts the line (its middle and
+    length, on the edges midway across the gap) toward the head the
+    ribbon faces. The head, both ends and the ribbon's normal share a
+    plane, so neither end moves out of it."""
+    if not frames:
+        return ['no frames to check for a hinge line']
+    for f in frames:
+        ls = hinge_lines(f)
+        if len(ls) != 1:
+            return ['frame %d: %d hinge lines, want 1' % (f['n'], len(ls))]
+        line = ls[0]
+        mid, length = want(f)
+        turn = tuple(line['pose'][3:])
+        along = qrot(turn, (1.0, 0.0, 0.0))
+        side = qrot(turn, (0.0, 1.0, 0.0))
+        facing = qrot(turn, (0.0, 0.0, 1.0))
+        way = [0.0, 0.0, 0.0]
+        way[axis] = 1.0 if along[axis] > 0.0 else -1.0
+        lifts = []
+        for s in (-1.0, 1.0):
+            shown = [c + s * line['size'][0] / 2.0 * a
+                     for c, a in zip(line['pose'][:3], along)]
+            seam = [m + s * length / 2.0 * w for m, w in zip(mid, way)]
+            lifts.append([a - b for a, b in zip(shown, seam)])
+        if (tuple(line['rect']) != (HINGE_X + 1, HINGE_Y, HINGE_COLS - 2,
+                                    HINGE_ROWS)
+                or abs(line['size'][1] - HINGE_WIDTH) > 1e-4
+                or abs(abs(along[axis]) - 1.0) > 1e-3
+                or any(abs(math.sqrt(sum(v * v for v in d)) - HINGE_LIFT)
+                       > HINGE_GAP_POS
+                       or sum(v * w for v, w in zip(d, facing))
+                       < 0.8 * HINGE_LIFT
+                       or abs(sum(v * w for v, w in zip(d, side)))
+                       > HINGE_GAP_POS for d in lifts)):
+            return ['frame %d: the hinge line shows %s at %s, %s, along %s, '
+                    'its ends moved %s; want %s, %.3f long, %.3f wide, '
+                    'each end %.3f toward the head' % (
+                        f['n'], line['rect'],
+                        [round(v, 4) for v in line['pose'][:3]],
+                        line['size'], [round(v, 3) for v in along],
+                        [[round(v, 4) for v in d] for d in lifts],
+                        [round(v, 4) for v in mid], length, HINGE_WIDTH,
+                        HINGE_LIFT)]
+    return []
+
+
+def cut_outline_errors(frame, want):
+    """frame's outlines all whole but those want lists, (the middle of
+    the item it is round, its cut in CUTS): each the cut's whole cell,
+    faint or bright; every outline its item's whole outline in pose and
+    size."""
+    cut = [o for o in outlines(frame) if outline_cut(o)]
+    if len(cut) != len(want):
+        return ['frame %d: %d outlines cut, want %d'
+                % (frame['n'], len(cut), len(want))]
+    errors = outline_pose_errors(frame)
+    for mid, name in want:
+        o = min(cut, key=lambda c: sum((a - b) ** 2 for a, b in
+                                       zip(c['pose'][:3], mid)))
+        cells = [CUT_X[k * len(CUTS) + CUTS.index(name)] for k in (0, 1)]
+        if o['rect'][0] not in cells or tuple(o['rect'][1:]) != (
+                0, OUTLINE_DIM, OUTLINE_DIM):
+            errors.append('frame %d: the outline round %s shows %s; want '
+                          'the %s cut\'s cell at %s' % (
+                              frame['n'], [round(v, 3) for v in mid],
+                              o['rect'], name, cells))
+    return errors
+
+
+def crop_outline_errors(frame, want):
+    """Below the cut outlines' width: frame's outlines all whole but
+    those want lists, (the middle of the item it is round, the texels
+    its square starts in, turned a quarter for a top or bottom edge)."""
+    cut = [o for o in outlines(frame) if outline_cut(o)]
+    if len(cut) != len(want):
+        return ['frame %d: %d outlines cut, want %d'
+                % (frame['n'], len(cut), len(want))]
+    errors = []
+    for mid, off, turned in want:
+        o = min(cut, key=lambda c: sum((a - b) ** 2 for a, b in
+                                       zip(c['pose'][:3], mid)))
+        base = OUTLINE_X[1] if o['rect'][0] >= OUTLINE_X[1] else OUTLINE_X[0]
+        x = qrot(tuple(o['pose'][3:]), (1.0, 0.0, 0.0))
+        if (o['rect'][0] - base != off
+                or o['rect'][2] != OUTLINE_DIM - OUTLINE_CROP
+                or (abs(x[0]) < 1e-3) != turned):
+            errors.append('frame %d: the outline round %s shows %s, x %s; '
+                          'want %d in, turned %s' % (
+                              frame['n'], [round(v, 3) for v in mid],
+                              o['rect'], [round(v, 3) for v in x], off,
+                              turned))
+    return errors
+
+
+def hinge_texel_errors(res, f):
+    """The hinge line's strip in f's image: green, red equal to blue,
+    premultiplied at HINGE_LEVEL."""
+    line = hinge_lines(f)[0]
+    rgb, alpha = rect_texel(res, f, line, line['rect'][2] // 2,
+                            HINGE_ROWS // 2)
+    rb = (HINGE_RB * HINGE_LEVEL + 127) // 255
+    g = (HINGE_G * HINGE_LEVEL + 127) // 255
+    if (abs(alpha - HINGE_LEVEL) > 2 or abs(rgb[0] - rb) > 2
+            or abs(rgb[1] - g) > 2 or rgb[0] != rgb[2]):
+        return ['the hinge line shows %s alpha %d, want (%d, %d, %d) '
+                'alpha %d' % (rgb, alpha, rb, g, rb, HINGE_LEVEL)]
+    return []
+
+
+def check_edit_snap(snap):
+    def check(res):
+        """Screen 2, taken at its spot 3.2 cm under screen 1, stays
+        there until carried; held just off flush right of screen 1: with
+        Snap to Screens it shows and is saved touching it, level, in
+        its plane, the hinge marked by a green line and its rims gone
+        while held and once let go there, and the hand gets the snap's
+        buzz, the hinge's long buzz once; without, it stays where the
+        hand put it, with no buzz."""
+        want = SNAPPED if snap else (SNAP_HAND[0], SNAP_HAND[1],
+                                     SNAP_HAND[2] - 1.8)
+        errors = edit_log_errors(res, ['on', 'off'])
+        errors += pose_errors('screen 2 just taken',
+                              [screen2(f) for f in
+                               between(res, 'grab', 'carry', delay=0.5)],
+                              S1, ID, (1.28, 0.96))
+        errors += pose_errors('screen 2 held',
+                              [screen2(f) for f in
+                               between(res, 'held', 'released', delay=0.5)],
+                              want, ID, (1.28, 0.96))
+        errors += pose_errors('screen 2 let go',
+                              [screen2(f) for f in
+                               between(res, 'released', 'off', delay=0.5)],
+                              want, ID, (1.28, 0.96))
+        errors += saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                               (want, ID), (1.28, 0.96),
+                               last_before(res, 'off', screen2))
+        ticks = buzzes(res, SNAP_TICK, 'grab') + buzzes(res, HINGE_BUZZ,
+                                                        'grab')
+        if snap and not ticks:
+            errors.append('no snap buzz on the right hand: %s'
+                          % haptics(res, 'right'))
+        if not snap and ticks:
+            errors.append('a snap buzz with snapping off: %s' % ticks)
+        hinged = buzzes(res, HINGE_BUZZ, 'grab')
+        if snap and len(hinged) != 1:
+            errors.append('%d hinge buzzes on the right hand, want 1 as it '
+                          'hinged flush: %s' % (len(hinged), hinged))
+        if snap:
+            # At Hinge Gap 0 its spot, 3.2 cm under screen 1 and
+            # centred, is a free gap the hinge holds exactly: shown from
+            # edit mode's start.
+            def spot(f):
+                return (0.0, -0.496, -1.8), 1.28
+            errors += hinge_line_errors(
+                [f for f in between(res, 'on', 'grab', delay=0.5)
+                 if screen2(f)], spot, 0)
+            # The hand is 0.7 cm off, inside EDIT_POS.
+            xs = [(what, q['pose'][0])
+                  for a, b, what in (('held', 'released', 'held'),
+                                     ('released', 'off', 'let go'))
+                  for q in (screen2(f) for f in between(res, a, b,
+                                                        delay=0.5))
+                  if q]
+            xs.append(('saved', S1[0] + float(
+                saved(res).get('video_screen2_xr_x', '0'))))
+            for what, x in xs:
+                if abs(x - SNAPPED[0]) > HINGE_GAP_POS:
+                    errors.append('screen 2 %s at x %.4f, want %.3f'
+                                  % (what, x, SNAPPED[0]))
+                    break
+            # Flush right of screen 1 it hinges on that edge: the line
+            # up the gap's middle where the edges overlap, both rims gone.
+            held = [f for f in between(res, 'held', 'released', delay=0.5)
+                    if screen2(f)]
+
+            def flush(f):
+                s = screen2(f)['pose']
+                y, length = span(s[1] - 0.48, s[1] + 0.48, -0.48, 0.48)
+                gap = s[0] - 0.64 - 0.8
+                return (0.8 + gap / 2.0, y, -1.8), length
+            errors += hinge_line_errors(held, flush, 1)
+            for f in held[-1:]:
+                errors += cut_outline_errors(f, [
+                    (S0, 'right'),
+                    (tuple(screen2(f)['pose'][:3]), 'left')])
+            # Let go flush, it rests hinged: the line and the cut rims
+            # stay.
+            rest = [f for f in between(res, 'released', 'resting',
+                                       delay=0.5) if screen2(f)]
+            errors += hinge_line_errors(rest, flush, 1)
+            for f in rest[-1:]:
+                errors += cut_outline_errors(f, [
+                    (S0, 'right'),
+                    (tuple(screen2(f)['pose'][:3]), 'left')])
+            if not rest:
+                errors.append('no frame of screen 2 let go')
+        else:
+            for f in between(res, 'released', 'off', delay=0.5):
+                if hinge_lines(f) or any(outline_cut(o)
+                                         for o in outlines(f)):
+                    errors.append('frame %d: a hinge line or cut outline '
+                                  'with Snap to Screens off' % f['n'])
+                    break
+        return errors
+    return check
+
+
+def check_edit_snap_edge(res):
+    """Screen 2 brought through the fade of its pull to screen 1's
+    edge and rested at the end of its whole pull, swaying across it: one
+    buzz as it takes hold and none while it sways; 7 cm off and back,
+    one more; the hinge's long buzz once, on the way, the hinge holding
+    from 7 cm off."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    for a, b, what in (('edge', 'away', 'resting at the edge'),
+                       ('away', 'back', 'back from 7 cm off')):
+        ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
+                 and res.marks[a] * 1e6 < e['t_us'] < res.marks[b] * 1e6
+                 and abs(e['amplitude'] - SNAP_TICK[0]) < 1e-3
+                 and e['duration_ns'] == SNAP_TICK[1]]
+        if len(ticks) != 1:
+            errors.append('%d snap buzzes %s, want 1: %s'
+                          % (len(ticks), what, ticks))
+    hinged = buzzes(res, HINGE_BUZZ, 'grab', 'edge')
+    later = buzzes(res, HINGE_BUZZ, 'edge', 'back')
+    if len(hinged) != 1 or later:
+        errors.append('%d hinge buzzes on the way to the edge and %d from '
+                      'there, want 1 and 0' % (len(hinged), len(later)))
+    return errors
+
+
+def edit_start(first, wait=2):
+    """Settle with the hand at first, then start edit mode."""
+    return [('wait', 6), ('script', first), ('wait', 1), ('mark', 'on'),
+            ('send', EDIT), ('wait', wait)]
+
+
+def edit_press(action):
+    return [('script', action), ('wait', 1), ('script', ''), ('wait', 2)]
+
+
+def sweep(steps, dx, base=edit_aim):
+    """The grip held while the hand moves dx more each 50 ms."""
+    return [step for i in range(1, steps + 1) for step in (
+        ('script', script(base(dx * i), EDIT_GRIP)), ('wait', 0.05))]
+
+
+def edit_aim_near(d):
+    """The right hand d right of and d nearer than edit_aim()'s, aiming
+    straight ahead: what it holds comes nearer, its image larger."""
+    return aim_line((d, 0.0, d), (d, 0.0, d - 1.8))
+
+
+# Screen 2 taken at its spot and carried round to screen 1's right.
+EDIT_SNAP_STEPS = edit_start(straight(SNAP_GRAB), 1) + [
+    ('mark', 'grab'), ('script', script(straight(SNAP_GRAB), EDIT_GRIP)),
+    ('wait', 1.5), ('mark', 'carry')] + [
+    step for p in ((0.5, -0.6, 0.0), (1.0, -0.2, 0.0), SNAP_HAND)
+    for step in (('script', script(straight(p), EDIT_GRIP)), ('wait', 0.3))
+] + [('mark', 'held'), ('wait', 1.5), ('script', straight(SNAP_HAND)),
+     ('mark', 'released'), ('wait', 1.5), ('mark', 'resting'),
+     ('send', EDIT), ('wait', 2),
+     ('mark', 'off'), ('wait', 1)]
+# Screen 2 carried 7 cm off flush right of screen 1, then 1.5 cm off,
+# in the edge's fade, then 0.9 cm off, inside its whole pull, swaying
+# 2 mm across its end four times; then 7 cm off again and back.
+EDGE_IN, EDGE_OUT, EDGE_AWAY = (1.449, 0.0, 0.0), (1.451, 0.0, 0.0), \
+    (1.51, 0.0, 0.0)
+EDGE_NEAR = (1.455, 0.0, 0.0)
+EDIT_SNAP_EDGE_STEPS = edit_start(straight(SNAP_GRAB), 1) + [
+    ('mark', 'grab'), ('script', script(straight(SNAP_GRAB), EDIT_GRIP)),
+    ('wait', 1.5)] + [
+    step for p in ((0.5, -0.6, 0.0), (1.0, -0.2, 0.0), EDGE_AWAY)
+    for step in (('script', script(straight(p), EDIT_GRIP)), ('wait', 0.3))
+] + [('wait', 0.5), ('mark', 'edge')] + [
+    step for p in (EDGE_NEAR,) + (EDGE_IN, EDGE_OUT) * 4
+    for step in (('script', script(straight(p), EDIT_GRIP)), ('wait', 0.25))
+] + [('script', script(straight(EDGE_IN), EDIT_GRIP)), ('wait', 0.5),
+     ('mark', 'away'), ('script', script(straight(EDGE_AWAY), EDIT_GRIP)),
+     ('wait', 0.5), ('script', script(straight(EDGE_IN), EDIT_GRIP)),
+     ('wait', 0.5), ('mark', 'back'), ('script', straight(EDGE_IN)),
+     ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)]
+
+
+def check_edit_turn_stick(res):
+    """The left stick held right for half a second turns screen 1,
+    which the right hand holds, anticlockwise seen from above about its
+    own middle, about 45 degrees at 90 a second; saved as shown."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    q = last_before(res, 'turned', screen1_left)
+    if not q:
+        return errors + ['no frame of screen 1 before the stick let go']
+    yaw, pitch, roll = euler(tuple(q['pose'][3:]))
+    if not 20.0 <= yaw <= 70.0 or abs(pitch) > 0.6 or abs(roll) > 0.6:
+        errors.append('screen 1 turned to yaw %.1f pitch %.1f roll %.1f, '
+                      'want 20 to 70, 0, 0' % (yaw, pitch, roll))
+    if any(abs(a - b) > EDIT_POS for a, b in zip(q['pose'][:3], S0)):
+        errors.append('screen 1 moved to %s as it turned, want %s'
+                      % (q['pose'][:3], S0))
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (tuple(q['pose'][:3]),
+                                  tuple(q['pose'][3:])), (1.6, 0.96),
+                                 last_before(res, 'off', screen1_left))
+
+
+def check_edit_tilt_stick(res):
+    """The left stick held up for half a second tips screen 1, which the
+    right hand holds, back about its own left-right line through its
+    middle, about 45 degrees at 90 a second: its top edge goes away from
+    the user and its bottom edge comes nearer; saved as shown."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    q = last_before(res, 'tilted', screen1_left)
+    if not q:
+        return errors + ['no frame of screen 1 before the stick let go']
+    rot = tuple(q['pose'][3:])
+    yaw, pitch, roll = euler(rot)
+    if not -70.0 <= pitch <= -20.0 or abs(yaw) > 0.6 or abs(roll) > 0.6:
+        errors.append('screen 1 tilted to yaw %.1f pitch %.1f roll %.1f, '
+                      'want 0, -20 to -70, 0' % (yaw, pitch, roll))
+    if any(abs(a - b) > EDIT_POS for a, b in zip(q['pose'][:3], S0)):
+        errors.append('screen 1 moved to %s as it tilted, want %s'
+                      % (q['pose'][:3], S0))
+    edge = math.sqrt(sum(v * v for v in S0) + 0.48 ** 2)
+    top, bottom = (math.sqrt(sum((p + e) ** 2 for p, e in
+                                 zip(q['pose'][:3], qrot(rot, (0.0, h, 0.0)))))
+                   for h in (0.48, -0.48))
+    if not top > edge + 0.1 or not bottom < edge - 0.1:
+        errors.append('screen 1 top edge %.3f m and bottom edge %.3f m from '
+                      'the user, want the top past %.3f and the bottom '
+                      'inside it' % (top, bottom, edge))
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (tuple(q['pose'][:3]),
+                                  tuple(q['pose'][3:])), (1.6, 0.96),
+                                 last_before(res, 'off', screen1_left))
+
+
+def check_edit_step_stick(res, step=15.0):
+    """The left stick, held right at an eighth of full speed (11.25
+    degrees a second) until a frame shows the step, turns screen 1,
+    which the right hand holds and which faces the user, the head held
+    still at the anchor, into the 15 degree step's hold, so it shows and
+    is saved at exactly 15, and the right hand buzzes once, as it takes
+    hold of the step. Taken at the 0 step, it does not buzz there. The
+    step the stick ends in is step. Not a set time: stalled polls cut
+    the stick's turn short."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    q = last_before(res, 'turned', screen1_left)
+    if not q:
+        return errors + ['no frame of screen 1 before the stick let go']
+    yaw, pitch, roll = euler(tuple(q['pose'][3:]))
+    if abs(yaw - step) > 0.05 or abs(pitch) > 0.05 or abs(roll) > 0.05:
+        errors.append('screen 1 turned to yaw %.3f pitch %.3f roll %.3f, '
+                      'want %g, 0, 0' % (yaw, pitch, roll, step))
+    if any(abs(a - b) > EDIT_POS for a, b in zip(q['pose'][:3], S0)):
+        errors.append('screen 1 moved to %s as it turned, want %s'
+                      % (q['pose'][:3], S0))
+    ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
+             and res.marks['held'] * 1e6 < e['t_us']
+             < res.marks['turned'] * 1e6
+             and abs(e['amplitude'] - SNAP_TICK[0]) < 1e-3
+             and e['duration_ns'] == SNAP_TICK[1]]
+    if len(ticks) != 1:
+        errors.append('%d step buzzes on the right hand, want 1: %s'
+                      % (len(ticks), ticks))
+    return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_', S0,
+                                 (tuple(q['pose'][:3]),
+                                  tuple(q['pose'][3:])), (1.6, 0.96),
+                                 last_before(res, 'off', screen1_left))
+
+
+def check_edit_step_45(res):
+    """With Snap to Angles at 45 degrees, the stick as in edit-step-stick
+    turns screen 1 on past 15 and 30 with no hold there, then into the
+    45 step's hold, so it shows and is saved at exactly 45, with one
+    buzz."""
+    errors = check_edit_step_stick(res, 45.0)
+    yaws = [euler(tuple(q['pose'][3:]))[0] for q in
+            map(screen1_left, between(res, 'held', 'turned', screen1_left))]
+    for s in (15.0, 30.0):
+        near = [y for y in yaws if abs(y - s) < 2.0]
+        if not near or all(abs(y - s) < 0.05 for y in near):
+            errors.append('screen 1 held at %g on its way to 45: %s'
+                          % (s, ['%.3f' % y for y in near[:8]]))
+    return errors
+
+
+# Screen 2 at screen 1's right corner, 18 degrees short of square
+# (yaw -72, facing left): chosen, gripped, and turned by the left stick
+# at an eighth of full speed (11.25 degrees a second) until a frame
+# shows it square, it reaches the 5 degree window and clicks square at
+# the corner.
+SQUARE = dict(SAVE, video_openxr_edit_snap='true',
+              video_openxr_edit_hinge_gap='0',
+              video_screen2_xr_x='0.8', video_screen2_xr_y='0.992',
+              video_screen2_xr_z='0.64', video_screen2_xr_yaw='-72')
+SQUARED = (0.8, 0.0, -1.16)
+YAW_M90 = (0.0, -math.sqrt(0.5), 0.0, math.sqrt(0.5))
+
+# Screen 2 swung back 16 degrees from square about screen 1's right
+# edge, the corner's shared edge: its middle on the circle round it.
+SWUNG_74 = (0.8 + 0.64 * math.cos(math.radians(74.0)), 0.0,
+            -1.8 + 0.64 * math.sin(math.radians(74.0)))
+
+# A hinge holds its gap exactly: 1 mm tells the Hinge Gaps apart.
+HINGE_GAP_POS = 0.001
+
+# Screen 2 raised 2.5 cm, its top edge 0.7 cm under screen 1's bottom
+# edge, inside Hinge Gap 0's click, Snap to Angles at 30 degrees.
+HINGE_3DS = dict(SAVE, video_openxr_edit_snap='true',
+                 video_openxr_edit_hinge_gap='0',
+                 video_openxr_edit_snap_angles='2',
+                 video_screen2_xr_y='0.025')
+
+# The default Hinge Gap, 2 cm: screen 2 raised 1.6 cm, its top edge
+# 1.6 cm under screen 1's bottom edge, Snap to Angles at 30 degrees.
+HINGE_GAP = dict(SAVE, video_openxr_edit_snap='true',
+                 video_openxr_edit_snap_angles='2',
+                 video_screen2_xr_y='0.016')
+
+
+def quad_point(q, x, y):
+    """Where the point x, y of quad q's own plane is."""
+    qx, qy, qz, qw = q['pose'][3:]
+    tx = 2.0 * (qy * 0.0 - qz * y)
+    ty = 2.0 * (qz * x - qx * 0.0)
+    tz = 2.0 * (qx * y - qy * x)
+    return (q['pose'][0] + x + qw * tx + (qy * tz - qz * ty),
+            q['pose'][1] + y + qw * ty + (qz * tx - qx * tz),
+            q['pose'][2] + qw * tz + (qx * ty - qy * tx))
+
+
+def screen2_at_pitch(deg):
+    """A pick: screen 2 where it shows exactly deg from flat, either
+    way."""
+    def pick(frame):
+        q = screen2(frame)
+        if q and abs(abs(euler(tuple(q['pose'][3:]))[1]) - deg) <= 0.05:
+            return q
+        return None
+    return pick
+
+
+def check_edit_hinge_3ds(res, gap=0.0, narrow=False):
+    """Screen 2, taken under screen 1 and carried 6 cm along its edge
+    so its snaps are whole, hinges flat on screen 1's bottom edge; the
+    left stick, held at an eighth of full speed until a frame shows it
+    30 degrees from flat, swings it about that edge into the 30 step's
+    hold: it shows and is saved there, its top edge Hinge Gap (gap)
+    under screen 1's bottom edge, in its plane, and the right hand
+    gets the hinge's long buzz once as it hinges and one tick for the
+    step. While hinged a green line runs along the hinge midway across
+    the gap where the edges overlap, screen 1's bottom rim and screen
+    2's top rim gone; let go there, it rests hinged: both stay until
+    edit mode ends. Taken again where it rests, it is hinged from its
+    first frame: the line and the cut rims never go, it does not move,
+    nothing buzzes. On every frame, as it hinges, each outline is its
+    item's whole one in pose and size. Not a set
+    time: stalled polls cut the swing short."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    # Below the cut outlines' width, a cut turns and crops its outline.
+    for f in [] if narrow else between(res, 'on', 'off'):
+        bent = outline_pose_errors(f)
+        if bent:
+            errors += bent[:1]
+            break
+
+    def cuts(f):
+        if narrow:
+            return crop_outline_errors(f, [
+                (S0, OUTLINE_CROP, True),
+                (tuple(screen2(f)['pose'][:3]), 0, True)])
+        return cut_outline_errors(f, [
+            (S0, 'bottom'),
+            (tuple(screen2(f)['pose'][:3]), 'top')])
+    # Near the hinge but not held there (7 mm into Hinge Gap 0's click,
+    # 1.6 cm against 2 cm), nothing shows until it is hinged.
+    for f in between(res, 'on', 'grab', delay=0.5):
+        if hinge_lines(f) or any(outline_cut(o)
+                                 for o in outlines(f)):
+            errors.append('frame %d: a hinge line or cut outline before '
+                          'screen 2 was hinged' % f['n'])
+            break
+    q = last_before(res, 'swung', screen2)
+    if not q:
+        return errors + ['no frame of screen 2 before the stick let go']
+    yaw, pitch, roll = euler(tuple(q['pose'][3:]))
+    if abs(abs(pitch) - 30.0) > 0.05 or abs(yaw) > 0.05 or abs(roll) > 0.05:
+        errors.append('screen 2 swung to yaw %.3f pitch %.3f roll %.3f, '
+                      'want 0, +-30, 0' % (yaw, pitch, roll))
+    edge = quad_point(q, 0.0, 0.48)
+    if (     abs(edge[1] + 0.48 + gap) > HINGE_GAP_POS
+            or abs(edge[2] + 1.8) > HINGE_GAP_POS):
+        errors.append('screen 2 top edge at %s, want on y %.3f, z -1.8'
+                      % ([round(v, 4) for v in edge], -0.48 - gap))
+    ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
+             and res.marks['held'] * 1e6 < e['t_us']
+             < res.marks['swung'] * 1e6
+             and abs(e['amplitude'] - SNAP_TICK[0]) < 1e-3
+             and e['duration_ns'] == SNAP_TICK[1]]
+    if len(ticks) != 1:
+        errors.append('%d buzzes on the right hand in the swing, want 1: %s'
+                      % (len(ticks), ticks))
+    held = [f for f in between(res, 'held', 'swung', delay=0.2)
+            if screen2(f)]
+
+    def hinge(f):
+        x, length = span(screen2(f)['pose'][0] - 0.64,
+                         screen2(f)['pose'][0] + 0.64, -0.8, 0.8)
+        return (x, -0.48 - gap / 2.0, -1.8), length
+    errors += hinge_line_errors(held, hinge, 0)
+    for f in held[:1] + held[-1:]:
+        errors += cuts(f)
+    errors += outline_gap_errors(held[0]) if held else ['no hinged frame']
+    snaps = [f for f in held if f['snap'] and hinge_lines(f)]
+    if snaps:
+        errors += hinge_texel_errors(res, snaps[-1])
+        if narrow:
+            w = read_png(image(res, snaps[-1], hinge_lines(snaps[-1])[0]))[0]
+            if w != CURSOR_TAGGED_W:
+                errors.append('the laser\'s image is %d wide, want %d'
+                              % (w, CURSOR_TAGGED_W))
+    elif gap == 0.0:
+        errors.append('no image of a hinged frame')
+    # Let go there, it rests hinged: the line and the cut rims stay,
+    # with no frame between carried and resting.
+    rest = [f for f in between(res, 'released', 'resting', delay=0.2)
+            if screen2(f)]
+    errors += hinge_line_errors(
+        [f for f in between(res, 'held', 'resting') if screen2(f)], hinge, 0)
+    for f in rest[:1] + rest[-1:]:
+        errors += cuts(f)
+    errors += outline_gap_errors(rest[-1]) if rest else \
+        ['no frame of screen 2 let go']
+    # Taken again where it rests, it is hinged from its first frame.
+    again = [f for f in between(res, 'resting', 'dropped') if screen2(f)]
+    errors += hinge_line_errors(again, hinge, 0)
+    for f in again[:1] + again[-1:]:
+        errors += cuts(f)
+    if rest and again:
+        at = tuple(screen2(rest[-1])['pose'][:3])
+        moved = [f['n'] for f in again
+                 if not near3(screen2(f)['pose'][:3], at, HINGE_GAP_POS)]
+        if moved:
+            errors.append('screen 2 moved taken again, frames %s' % moved)
+    elif not again:
+        errors.append('no frame of screen 2 taken again')
+    taken = (buzzes(res, HINGE_BUZZ, 'resting', 'dropped')
+             + buzzes(res, SNAP_TICK, 'resting', 'dropped'))
+    if taken:
+        errors.append('%d buzzes taking screen 2 again where it rests '
+                      'hinged, want 0: %s' % (len(taken), taken))
+    for f in between(res, 'off', delay=0.5):
+        if hinge_lines(f):
+            errors.append('frame %d: a hinge line after edit mode ended'
+                          % f['n'])
+            break
+    hinged = buzzes(res, HINGE_BUZZ, 'on', 'held')
+    swing = buzzes(res, HINGE_BUZZ, 'held', 'swung')
+    if len(hinged) != 1 or swing:
+        errors.append('%d hinge buzzes taking screen 2 to the hinge and %d '
+                      'in the swing, want 1 and 0' % (len(hinged), len(swing)))
+    return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                                 (tuple(q['pose'][:3]),
+                                  tuple(q['pose'][3:])), (1.28, 0.96),
+                                 last_before(res, 'off', screen2))
+
+
+def check_edit_hinge_push(res):
+    """Screen 2 hinged under screen 1 at Hinge Gap 0 and pushed on 4.5
+    cm past touching overlaps it with no hinge line; pulled back to 2 cm
+    past it hinges again touching, with one long buzz; let go there it
+    rests hinged, the line shown, and taken again it stays hinged with
+    no buzz; saved touching. On every frame, as it comes off the hinge
+    and as it hinges again, each outline is its item's whole one in
+    pose and size."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    for f in between(res, 'on', 'off'):
+        bent = outline_pose_errors(f)
+        if bent:
+            errors += bent[:1]
+            break
+    touching = -0.96
+    for a, b, want in (('pushed', 'pull', 0), ('back', 'released', 1),
+                       ('released', 'resting', 1), ('regrab', 'dropped', 1)):
+        frames = [f for f in between(res, a, b, delay=0.2) if screen2(f)]
+        if not frames:
+            errors.append('%s to %s: no frames of screen 2' % (a, b))
+            continue
+        for f in frames:
+            n = len(hinge_lines(f))
+            if n != want:
+                errors.append('%s to %s, frame %d: %d hinge lines, want %d'
+                              % (a, b, f['n'], n, want))
+                break
+        y = screen2(frames[-1])['pose'][1]
+        if want and abs(y - touching) > 1e-4:
+            errors.append('%s to %s: screen 2 at y %.4f, want %.4f '
+                          'touching' % (a, b, y, touching))
+        if not want and y < touching + 0.01:
+            errors.append('%s to %s: screen 2 at y %.4f, want it 1 cm or '
+                          'more into screen 1' % (a, b, y))
+    back = buzzes(res, HINGE_BUZZ, 'pull', 'released')
+    if len(back) != 1:
+        errors.append('%d hinge buzzes pulled back, want 1: %s'
+                      % (len(back), back))
+    taken = buzzes(res, HINGE_BUZZ, 'resting', 'dropped')
+    if taken:
+        errors.append('hinge buzzes taken again, want none: %s' % taken)
+    q = last_before(res, 'off', screen2)
+    if not q or abs(q['pose'][1] - touching) > 1e-4:
+        errors.append('screen 2 saved at %s, want y %.4f touching'
+                      % (q and q['pose'][:3], touching))
+    return errors
+
+
+def check_edit_hinge_gap(res):
+    """Screen 2 at the default Hinge Gap: as check_edit_hinge_3ds, its
+    top edge 2 cm under screen 1's bottom edge."""
+    return check_edit_hinge_3ds(res, 0.02)
+
+
+def check_edit_hinge_3ds_narrow(res):
+    """A runtime whose swapchains are 4096 wide: the laser's image has
+    its tags but not the cut outlines. As check_edit_hinge_3ds, but each
+    cut outline is turned a quarter for a top or bottom and cut to its
+    crop."""
+    return check_edit_hinge_3ds(res, narrow=True)
+
+
+def check_edit_hinge_twitch(res, gap=0.02):
+    """Screen 2 hinged flat at the default Hinge Gap and held still, let
+    go as the aim turns half a degree up, and again half a degree down
+    once taken where it rests: each time it rests at the gap where it
+    showed before the grip opened, its hinge line on every frame after
+    the release, and is saved there."""
+    errors = edit_log_errors(res, ['on', 'off'])
+
+    def hinge(f):
+        x, length = span(screen2(f)['pose'][0] - 0.64,
+                         screen2(f)['pose'][0] + 0.64, -0.8, 0.8)
+        return (x, -0.48 - gap / 2.0, -1.8), length
+
+    def at_gap(what, q):
+        if not q:
+            return ['%s: no frame of screen 2' % what]
+        turn = euler(tuple(q['pose'][3:]))
+        edge = quad_point(q, 0.0, 0.48)
+        if (     any(abs(a) > 0.05 for a in turn)
+                or abs(edge[1] + 0.48 + gap) > HINGE_GAP_POS
+                or abs(edge[2] + 1.8) > HINGE_GAP_POS):
+            return ['%s turned %s, top edge at %s, want flat on y %.3f, '
+                    'z -1.8' % (what, [round(a, 3) for a in turn],
+                                [round(v, 4) for v in edge], -0.48 - gap)]
+        return []
+    for rel, rest in (('released', 'resting'), ('released2', 'resting2')):
+        frames = [f for f in between(res, rel, rest, delay=0.2)
+                  if screen2(f)]
+        errors += hinge_line_errors(frames, hinge, 0)
+        for f in frames:
+            e = at_gap('frame %d after %s' % (f['n'], rel), screen2(f))
+            if e:
+                errors += e
+                break
+    cfg = saved(res)
+    v = [float(cfg.get('video_screen2_xr_' + k, '0'))
+         for k in ('x', 'y', 'z', 'yaw', 'pitch', 'roll')]
+    pose = (tuple(b + o for b, o in zip(S1, v[:3])), from_euler(*v[3:]))
+    errors += at_gap('screen 2 saved',
+                     {'pose': list(pose[0]) + list(pose[1])})
+    return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                                 pose, (1.28, 0.96),
+                                 last_before(res, 'off', screen2))
+
+
+def check_edit_hinge_shaken(res):
+    """Screen 2 hinged at the default Hinge Gap, its aim shaken half a
+    degree as the unit tests' t_shake shakes a hand, 2.8 cm past
+    touching, where the stop's hold ends, and 9.8 cm apart, where the
+    free gap's does: one hinge line on every frame from the hinge to
+    the last shake, and one long buzz in all, as it took hold. Every
+    frame from the grab's first held frame has the same layers and
+    hinge slots, the held screen's slot hidden until the hinge shows;
+    from the hinge on, the same outline rects too. On every frame, the
+    hinge's first included, each outline is its item's whole one in
+    pose and size."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    frames = between(res, 'still', 'shaken2')
+    if not frames:
+        errors.append('no frames from the hinge to the last shake')
+    off = [f['n'] for f in frames if len(hinge_lines(f)) != 1]
+    if off:
+        errors.append('%d of %d frames without one hinge line, from frame '
+                      '%d' % (len(off), len(frames), off[0]))
+
+    def counts(f):
+        return len(quads(f)), len(hinge_slots(f))
+
+    def rects(f):
+        return [tuple(o['rect']) for o in outlines(f)]
+    # The first held frame is the first with the held screen's slot,
+    # hidden as the hinge has not shown yet.
+    held = between(res, 'grab', 'shaken2')
+    held = held[next((i for i, f in enumerate(held)
+                      if len(hinge_slots(f)) > len(hinge_lines(f))),
+                     len(held)):]
+    if not held:
+        errors.append('no frame from the grab to the last shake with the '
+                      'held screen\'s hinge slot hidden')
+    for f in between(res, 'grab', 'shaken2'):
+        bent = outline_pose_errors(f)
+        if bent:
+            errors += bent[:1]
+            break
+    for what, fs, key in (('layers and hinge slots', held, counts),
+                          ('outline rects', frames, rects)):
+        moved = [f for f in fs if key(f) != key(fs[0])]
+        if moved:
+            errors.append('%d of %d frames with other %s than frame %d %s, '
+                          'from frame %d %s'
+                          % (len(moved), len(fs), what, fs[0]['n'],
+                             key(fs[0]), moved[0]['n'], key(moved[0])))
+    taken = buzzes(res, HINGE_BUZZ)
+    if len(taken) != 1:
+        errors.append('%d hinge buzzes, want 1' % len(taken))
+    return errors
+
+
+def check_edit_hinge_settle(res):
+    """Screen 2 hinged flat at the default Hinge Gap and carried 4.9 cm
+    under screen 1, where it shows hinged past the click's reach: let go
+    there, it settles at the gap, its hinge line on every frame from
+    the hold to the rest, and is saved there; taken again, nothing
+    buzzes."""
+    errors = edit_log_errors(res, ['on', 'off'])
+
+    def line(gap):
+        def hinge(f):
+            x, length = span(screen2(f)['pose'][0] - 0.64,
+                             screen2(f)['pose'][0] + 0.64, -0.8, 0.8)
+            return (x, -0.48 - gap / 2.0, -1.8), length
+        return hinge
+
+    def at_gap(what, q, gap):
+        if not q:
+            return ['%s: no frame of screen 2' % what]
+        turn = euler(tuple(q['pose'][3:]))
+        edge = quad_point(q, 0.0, 0.48)
+        if (     any(abs(a) > 0.05 for a in turn)
+                or abs(edge[1] + 0.48 + gap) > HINGE_GAP_POS
+                or abs(edge[2] + 1.8) > HINGE_GAP_POS):
+            return ['%s turned %s, top edge at %s, want flat on y %.3f, '
+                    'z -1.8' % (what, [round(a, 3) for a in turn],
+                                [round(v, 4) for v in edge], -0.48 - gap)]
+        return []
+    for a, b, gap in (('held4', 'released', 0.049),
+                      ('released', 'resting', 0.02)):
+        frames = [f for f in between(res, a, b, delay=0.2) if screen2(f)]
+        errors += hinge_line_errors(frames, line(gap), 0)
+        for f in frames:
+            e = at_gap('frame %d from %s' % (f['n'], a), screen2(f), gap)
+            if e:
+                errors += e
+                break
+    cfg = saved(res)
+    v = [float(cfg.get('video_screen2_xr_' + k, '0'))
+         for k in ('x', 'y', 'z', 'yaw', 'pitch', 'roll')]
+    pose = (tuple(b + o for b, o in zip(S1, v[:3])), from_euler(*v[3:]))
+    errors += at_gap('screen 2 saved',
+                     {'pose': list(pose[0]) + list(pose[1])}, 0.02)
+    taken = buzzes(res, HINGE_BUZZ, 'resting', 'dropped')
+    if taken:
+        errors.append('%d hinge buzzes taking screen 2 again where it '
+                      'settled, want 0: %s' % (len(taken), taken))
+    return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                                 pose, (1.28, 0.96),
+                                 last_before(res, 'off', screen2))
+
+
+def check_edit_snap_square(res):
+    """Screen 2, turned by the left stick from 18 degrees short of
+    square at screen 1's right corner, shows and is saved exactly
+    square there, and the right hand buzzes."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    errors += pose_errors('screen 2 turned square',
+                          [screen2(f) for f in
+                           between(res, 'held', 'released', delay=0.2)],
+                          SQUARED, YAW_M90, (1.28, 0.96))
+    errors += saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                           (SQUARED, YAW_M90), (1.28, 0.96),
+                           last_before(res, 'off', screen2))
+    ticks = buzzes(res, SNAP_TICK, 'grab') + buzzes(res, HINGE_BUZZ, 'grab')
+    if not ticks:
+        errors.append('no snap buzz on the right hand: %s'
+                      % haptics(res, 'right'))
+    hinged = buzzes(res, HINGE_BUZZ, 'grab')
+    if len(hinged) != 1:
+        errors.append('%d hinge buzzes on the right hand, want 1 as the '
+                      'corner hinged: %s' % (len(hinged), hinged))
+    return errors
+
+
+def check_edit_snap_sticks(res):
+    """Screen 2, turned by the left stick from 18 degrees short of
+    square at screen 1's right corner until it shows square, stays
+    square once the stick is let go; pushed back the other way at the
+    same speed until it shows -74, it swings on from square about the
+    corner's shared edge, not from where the stick stopped (Snap to
+    Angles Off, so no step at 75 holds it), and is saved there. The
+    head is held at the anchor. Not a set time: stalled polls cut the
+    stick's turn short."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    errors += pose_errors('screen 2 square, the stick let go',
+                          [screen2(f) for f in
+                           between(res, 'square', 'push', delay=0.2)],
+                          SQUARED, YAW_M90, (1.28, 0.96))
+    q = last_before(res, 'released', screen2)
+    if not q:
+        return errors + ['no frame of screen 2 before the grip let go']
+    yaw = euler(tuple(q['pose'][3:]))[0]
+    if abs(yaw + 74.0) > 1.5:
+        errors.append('screen 2 pushed back to yaw %.2f, want -74, 16 on '
+                      'from square' % yaw)
+    errors += pose_errors('screen 2 swung back', [q], SWUNG_74)
+    return errors + saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                                 (tuple(q['pose'][:3]),
+                                  tuple(q['pose'][3:])), (1.28, 0.96),
+                                 last_before(res, 'off', screen2))
+
+
+# The right hand holding screen 1 sways half a degree either side every
+# 50 ms, a 10 Hz shake 1.6 cm either side at the screen, then stops for
+# a tenth of a second and lets go, before a smoothed screen catches up.
+SWAY = math.tan(math.radians(0.5)) * 1.8
+
+
+def sway_aim(k):
+    return aim_line((0.0, 0.0, 0.0), (SWAY if k % 2 else -SWAY, 0.0, -1.8))
+
+
+EDIT_SWAY_STEPS = edit_start(edit_aim()) + [
+    ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+    ('mark', 'sway')] + [
+    step for k in range(24)
+    for step in (('script', script(sway_aim(k), EDIT_GRIP)), ('wait', 0.05))
+] + [('wait', 0.1), ('mark', 'still'), ('script', sway_aim(23)),
+     ('mark', 'released'),
+     ('wait', 1.5), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+     ('wait', 1)]
+
+
+def check_edit_sway(smooth):
+    def check(res):
+        """Screen 1 held by a hand swaying half a degree either side at
+        10 Hz: with Edit Smoothing at Medium it moves less than 60% of
+        the sway's 3.1 cm, Off the whole sway. Let go before it catches
+        up with the hand, it shows no step from where it was last shown,
+        and is saved there. Frames further apart than two of the sway's
+        are not compared: after a stall the smoothing catches up in one
+        frame."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        sway = between(res, 'sway', 'still', screen1_left, delay=0.3)
+        xs = [screen1_left(f)['pose'][0] for f in sway]
+        if len(xs) < 10:
+            return errors + ['%d frames of the sway' % len(xs)]
+        span = max(xs) - min(xs)
+        if smooth and span > 0.6 * 2 * SWAY:
+            errors.append('smoothed, screen 1 swayed %.4f m, want under '
+                          '%.4f' % (span, 0.6 * 2 * SWAY))
+        if not smooth and span < 0.9 * 2 * SWAY:
+            errors.append('off, screen 1 swayed %.4f m of %.4f'
+                          % (span, 2 * SWAY))
+        gaps = sorted(b['t_us'] - a['t_us'] for a, b in zip(sway, sway[1:]))
+        period = gaps[len(gaps) // 2]
+        after = sway[-1:] + between(res, 'still', 'off', screen1_left)
+        steps = [abs(screen1_left(b)['pose'][0] - screen1_left(a)['pose'][0])
+                 for a, b in zip(after, after[1:])
+                 if b['t_us'] - a['t_us'] <= 2 * period]
+        if len(steps) < 20:
+            errors.append('%d of %d pairs of frames from the let-go to the '
+                          'end without a stall between them, want 20'
+                          % (len(steps), len(after) - 1))
+        elif max(steps) > 0.004:
+            errors.append('screen 1 stepped %.4f m between frames as it '
+                          'was let go' % max(steps))
+        last = last_before(res, 'off', screen1_left)
+        if not last:
+            return errors + ['no frame of screen 1 before the end']
+        return errors + saved_errors(res, 'screen 1', 'video_screen1_xr_',
+                                     S0, (tuple(last['pose'][:3]),
+                                          tuple(last['pose'][3:])),
+                                     (1.6, 0.96), last)
+    return check
+
+
+TAG_LEFT, TAG_RIGHT = (-0.2, -0.3, -0.3), (0.2, -0.3, -0.3)
+
+
+def both_aims():
+    """The head at the origin; each hand below the eyes and to its side,
+    aiming straight ahead at screen 1."""
+    return script(HEAD_AT_ORIGIN,
+                  aim_line(TAG_LEFT, (TAG_LEFT[0], TAG_LEFT[1], -1.8),
+                           hand='left'),
+                  aim_line(TAG_RIGHT, (TAG_RIGHT[0], TAG_RIGHT[1], -1.8)))
+
+
+EDIT_TAG_STEPS = edit_start(both_aims()) + [
+    ('wait', 1.5), ('mark', 'next'),
+    ('script', script(both_aims(), 'action edit/select_next@right 1')),
+    ('wait', 0.5), ('script', both_aims()), ('wait', 1),
+    ('mark', 'previous'),
+    ('script', script(both_aims(), 'action edit/select_previous@left 1')),
+    ('wait', 0.5), ('script', both_aims()), ('wait', 1),
+    ('mark', 'end'), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+    ('wait', 1)]
+EDIT_TAG_NARROW_STEPS = edit_start(both_aims()) + [
+    ('wait', 1.5), ('mark', 'end'), ('send', EDIT), ('wait', 2),
+    ('mark', 'off'), ('wait', 1)]
+
+
+def tag_errors(res, what, frames, k, hand):
+    """Each frame's one tag shows cell k 5 cm over hand, facing the head
+    at the origin; its cell has light texels and dark ones."""
+    if not frames:
+        return ['no frames %s' % what]
+    want = (hand[0], hand[1] + TAG_LIFT, hand[2])
+    face = unit(tuple(-a for a in want))
+    for f in frames:
+        t = tags(f)
+        if len(t) != 1:
+            return ['%s: %d tags' % (what, len(t))]
+        q = t[0]
+        z = qrot(tuple(q['pose'][3:]), (0.0, 0.0, 1.0))
+        if q['rect'][0] != TAG_X[k] or q['rect'][1] != TAG_Y \
+                or not near3(q['pose'], want, 0.002) \
+                or abs(q['size'][1] - TAG_HEIGHT) > 1e-4 \
+                or sum(a * b for a, b in zip(z, face)) < 0.999:
+            return ['%s: tag at %s rect %s facing %s, want cell %d at %s '
+                    'facing %s' % (what, q['pose'][:3], q['rect'], z, k,
+                                   want, face)]
+    snaps = [f for f in frames if f['snap']]
+    if not snaps:
+        return ['%s: no snapshot of the tag' % what]
+    q = tags(snaps[-1])[0]
+    w, h, bpp, rows = read_png(image(res, snaps[-1], q))
+    light = dark = 0
+    for y in range(q['rect'][1], q['rect'][1] + TAG_ROWS):
+        for x in range(q['rect'][0], q['rect'][0] + TAG_COLS):
+            px = rows[y][x * bpp:x * bpp + bpp]
+            a = px[3] if bpp == 4 else 255
+            if a >= TAG_FAINT - 8 and px[0] >= TAG_FAINT - 8:
+                light += 1
+            elif a >= TAG_FAINT - 8 and px[0] <= 8:
+                dark += 1
+    if not light or not dark:
+        return ['%s: the tag\'s cell has %d light and %d dark texels'
+                % (what, light, dark)]
+    return []
+
+
+def check_edit_tag_narrow(res):
+    """A runtime whose swapchains are narrower than the laser's image
+    with its tags: the image without them, as wide as before them; no
+    tag, and each hand's beam and dot."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    frames = between(res, 'on', 'end', delay=2.5)
+    if not frames:
+        return errors + ['no frames in edit mode']
+    for f in frames:
+        dots = cursors(f)
+        late = [q for q in quads(f) if dots and q['sc'] == dots[0]['sc']
+                and q['rect'][0] >= CURSOR_PLAIN_W]
+        if late or len(beams(f)) != 2 or len(dots) != 2:
+            return errors + ['%d tags, %d beams, %d dots'
+                             % (len(late), len(beams(f)), len(dots))]
+    snaps = [f for f in frames if f['snap']]
+    if not snaps:
+        return errors + ['no snapshot of the laser\'s image']
+    w = read_png(image(res, snaps[-1], cursors(snaps[-1])[0]))[0]
+    if w != CURSOR_PLAIN_W:
+        errors.append('the laser\'s image is %d wide, want %d'
+                      % (w, CURSOR_PLAIN_W))
+    return errors
+
+
+def check_edit_tag(res):
+    """The tag starts over the left hand reading Laser; the right hand's
+    Select Next moves it over the right reading Screen 1; the left's
+    Select Previous moves it back. Light text with a dark halo."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    errors += tag_errors(res, 'from the start',
+                         between(res, 'on', 'next', delay=2.5),
+                         0, TAG_LEFT)
+    errors += tag_errors(res, 'after the right\'s Select Next',
+                         between(res, 'next', 'previous', delay=0.5),
+                         1, TAG_RIGHT)
+    errors += tag_errors(res, 'after the left\'s Select Previous',
+                         between(res, 'previous', 'end', delay=0.5),
+                         0, TAG_LEFT)
+    return errors
+
+
+def check_edit_back(res):
+    """From behind, each of screen 1's quads shows its back in its place:
+    the laser's image's dark square, opaque, at its size, facing the
+    head; every other item too, in no more layers. Its outline faces
+    the head too, lit by the hand that points at the back."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    front = between(res, 'front', 'turn', pick=edit_screen0, delay=0.5)
+    behind = between(res, 'behind', 'end', pick=edit_screen0, delay=0.5)
+    if not front or not behind:
+        return errors + ['%d frames in front, %d behind'
+                         % (len(front), len(behind))]
+    want = edit_screen0(front[-1])
+    dots = cursors(front[-1])
+    items = [q for q in quads(front[-1]) if dots and q['sc'] != dots[0]['sc']]
+    if len(want) != 2 or len(items) < 3 \
+            or any(tuple(q['rect']) == BACK_RECT for q in items):
+        return errors + ['in front: %s' % [q['rect'] for q in items]]
+    for f in behind:
+        qs = edit_screen0(f)
+        backs = [q for q in quads(f) if tuple(q['rect']) == BACK_RECT
+                 and not q['flags'] & BLEND]
+        if len(quads(f)) != len(quads(front[-1])) or len(qs) != 2 \
+                or len(backs) != len(items):
+            return errors + ['from behind %d layers, %d backs; in front %d '
+                             'layers, %d items'
+                             % (len(quads(f)), len(backs),
+                                len(quads(front[-1])), len(items))]
+        for q, w in zip(qs, want):
+            z = qrot(tuple(q['pose'][3:]), (0.0, 0.0, 1.0))
+            if tuple(q['rect']) != BACK_RECT \
+                    or not near3(q['pose'][:3], w['pose'][:3]) \
+                    or not near(q['size'], w['size'], 1e-4) or z[2] > -0.999:
+                return errors + ['screen 1 from behind: rect %s at %s, %s, '
+                                 'facing %s; in front at %s, %s'
+                                 % (q['rect'], q['pose'][:3], q['size'], z,
+                                    w['pose'][:3], w['size'])]
+        rims = [q for q in outlines(f) if near3(q['pose'], S0)]
+        z = qrot(tuple(rims[0]['pose'][3:]), (0.0, 0.0, 1.0)) if rims \
+            else (0.0, 0.0, 1.0)
+        if len(rims) != 1 or rims[0]['rect'][0] != OUTLINE_X[1] \
+                or z[2] > -0.999 or rims[0]['pose'][2] > S0[2]:
+            return errors + ['screen 1\'s outline from behind: %s facing %s'
+                             % ([(q['rect'][0], q['pose'][:3]) for q in rims],
+                                z)]
+    snaps = [f for f in behind if f['snap']]
+    if not snaps:
+        return errors + ['no snapshot from behind']
+    w, h, bpp, rows = read_png(image(res, snaps[-1],
+                                     edit_screen0(snaps[-1])[0]))
+    x0, y0, bw, bh = BACK_RECT
+    bad = 0
+    for y in range(y0, y0 + bh):
+        for x in range(x0, x0 + bw):
+            px = rows[y][x * bpp:x * bpp + bpp]
+            if any(abs(c - BACK_LEVEL) > 2 for c in px[:3]) \
+                    or (bpp == 4 and px[3] != 255):
+                bad += 1
+    if bad:
+        errors.append('%d texels of the back are not its dark grey: %s'
+                      % (bad, list(rows[y0][x0 * bpp:x0 * bpp + bpp])))
+    return errors
+
+
+EDIT_BACK_HAND = (0.3, 0.0, -3.3)
+EDIT_BACK_STEPS = edit_start(script(HEAD_AT_ORIGIN, edit_aim(0.3))) + [
+    ('mark', 'front'), ('wait', 1.5), ('mark', 'turn'),
+    ('script', script('head 0 0 -3.6 180',
+                      aim_line(EDIT_BACK_HAND, (0.3, 0.0, -1.8)))),
+    ('wait', 0.5), ('mark', 'behind'), ('wait', 1.5), ('mark', 'end'),
+    ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)]
+
+
+EDIT_GRAB_STEPS = edit_start(edit_aim(), 1) + [
+    ('mark', 'aimed'), ('wait', 1), ('mark', 'grab'),
+    ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+    ('script', script(edit_aim(0.3), EDIT_GRIP)), ('wait', 1),
+    ('mark', 'moved'), ('wait', 1),
+    ('script', edit_aim(0.3)), ('mark', 'released'), ('wait', 1),
+    ('script', edit_aim(0.6)), ('wait', 1), ('mark', 'stop'),
+    ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)]
+EDIT_HOLD = edit_start(edit_aim()) + [
+    ('mark', 'grab'), ('script', script(edit_aim(), EDIT_GRIP)),
+    ('wait', 1), ('mark', 'sweep')]
+EDIT_OFFSET = dict((k, v) for k, v in CUSTOM_OFFSET.items()
+                   if k.startswith('video_screen1_'))
+EDIT_CASES = [
+    {'name': 'edit-grab', 'map': '3ds', 'settings': SAVE,
+     'steps': EDIT_GRAB_STEPS, 'check': check_edit_grab()},
+    {'name': 'edit-grab-threaded', 'map': '3ds',
+     'settings': dict(SAVE, video_threaded='true'), 'steps': EDIT_GRAB_STEPS,
+     'check': threaded(check_edit_grab())},
+    {'name': 'edit-follow', 'map': '3ds', 'options': FPS10, 'settings': SAVE,
+     'steps': EDIT_HOLD + sweep(20, 0.015, edit_aim_near)
+     + [('mark', 'swept'), ('wait', 0.5), ('script', edit_aim_near(0.3)),
+        ('mark', 'released'), ('wait', 2), ('send', EDIT), ('wait', 1)],
+     'check': check_edit_follow},
+    {'name': 'edit-release-threaded', 'map': '3ds',
+     'settings': dict(SAVE, video_threaded='true'),
+     'steps': EDIT_HOLD + sweep(10, 0.015)
+     + [('mark', 'swept'), ('wait', 0.15), ('script', edit_aim(0.15)),
+        ('mark', 'released'), ('wait', 1), ('script', edit_aim(0.6)),
+        ('wait', 1.5)],
+     'check': threaded(check_edit_release)},
+    # The grip opens on a step that also moves the hand.
+    {'name': 'edit-release-moving', 'map': '3ds', 'options': FPS10,
+     'settings': SAVE,
+     'steps': EDIT_HOLD + sweep(9, 0.03)
+     + [('script', edit_aim(0.3)), ('mark', 'released'), ('wait', 2)],
+     'check': check_edit_release_moving},
+    {'name': 'edit-regrab-threaded', 'map': '3ds', 'options': FPS10,
+     'settings': dict(SAVE, video_threaded='true'),
+     'steps': EDIT_HOLD + sweep(10, 0.015)
+     + [('wait', 0.25), ('script', edit_aim(0.15)), ('mark', 'released'),
+        ('wait', 0.1), ('script', script(edit_aim(0.15), EDIT_GRIP)),
+        ('wait', 1), ('script', script(edit_aim(0.25), EDIT_GRIP)),
+        ('mark', 'moved_again'), ('wait', 1.5), ('script', edit_aim(0.25)),
+        ('wait', 1.5)],
+     'check': threaded(check_edit_regrab)},
+    {'name': 'edit-handover-threaded', 'map': '3ds',
+     'settings': dict(SAVE, video_threaded='true'),
+     'steps': EDIT_HOLD + sweep(10, 0.015)
+     + [('mark', 'swept'), ('wait', 0.15), ('script', edit_aim(0.15)),
+        ('mark', 'released'), ('wait', 0.15),
+        ('script', script(edit_aim(0.0, -0.992), EDIT_GRIP)), ('wait', 1),
+        ('script', script(edit_aim(0.3, -0.992), EDIT_GRIP)),
+        ('mark', 'b_moved'), ('wait', 1.5),
+        ('script', edit_aim(0.3, -0.992)), ('wait', 1.5),
+        ('mark', 'end')],
+     'check': threaded(check_edit_handover)},
+    {'name': 'edit-tilt', 'map': '3ds', 'settings': SAVE,
+     'steps': edit_start(edit_aim(), 1) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(roll=30), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'rolled'),
+         ('script', script(edit_aim(roll=30), EDIT_GRIP, EDIT_TILT)),
+         ('wait', 1), ('mark', 'tilted'),
+         ('script', script(edit_aim(roll=60), EDIT_GRIP, EDIT_TILT)),
+         ('wait', 1), ('mark', 'turned'),
+         ('script', script(edit_aim(roll=0), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'kept'), ('script', edit_aim()), ('wait', 1),
+         ('send', EDIT), ('wait', 1)],
+     'check': check_edit_tilt},
+]
+for _tilt in (False, True):
+    _keys = [EDIT_TILT] if _tilt else []
+    EDIT_CASES.append(
+        {'name': 'edit-turn-tilt' if _tilt else 'edit-turn', 'map': '3ds',
+         'settings': SAVE,
+         'steps': edit_start(aim_line(*T0)) + [
+             ('script', script(aim_line(*T0), EDIT_GRIP, *_keys)),
+             ('wait', 1.5), ('mark', 'moved'),
+             ('script', script(aim_line(*T1), EDIT_GRIP, *_keys)),
+             ('wait', 2), ('script', aim_line(*T1)), ('wait', 1.5)],
+         'check': check_edit_turn(_tilt)})
+EDIT_STICK = script(aim_line(*A0), EDIT_GRIP)
+EDIT_CASES += [
+    {'name': 'edit-stick', 'map': '3ds', 'settings': SAVE,
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '0'},
+     'steps': edit_start(aim_line(*A0), 1) + [
+         ('script', EDIT_STICK), ('wait', 1), ('mark', 'held'),
+         ('script', script(EDIT_STICK, 'action edit/stick@right 0 1')),
+         ('wait', 0.5), ('script', EDIT_STICK), ('wait', 1),
+         ('mark', 'pushed'),
+         ('script', script(EDIT_STICK, 'action edit/stick@right 0.15 0.15')),
+         ('wait', 1), ('script', EDIT_STICK), ('wait', 1),
+         ('mark', 'deaded'),
+         ('script', script(EDIT_STICK, 'action edit/stick@right 1 0')),
+         ('wait', 0.5), ('script', EDIT_STICK), ('wait', 1),
+         ('mark', 'grown'), ('script', aim_line(*A0)), ('wait', 1),
+         ('mark', 'off'), ('send', EDIT), ('wait', 1)],
+     'check': check_edit_stick},
+    # Screen 1 from 0.25,0.1,-1.5, the menu following it until the reset.
+    {'name': 'edit-reset', 'map': '3ds', 'settings': dict(SAVE,
+                                                          **EDIT_OFFSET),
+     'steps': edit_start(edit_aim(0.25, 0.1), 1) + [
+         ('mark', 'offset'),
+         ('script', script(edit_aim(0.25, 0.1), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(0.55, 0.1), EDIT_GRIP)), ('wait', 1),
+         ('script', edit_aim(0.55, 0.1)), ('wait', 0.5), ('mark', 'moved'),
+         ('wait', 1.5), ('mark', 'reset'),
+         ('script', script(edit_aim(0.55, 0.1), EDIT_RESET)),
+         ('wait', 0.5), ('script', edit_aim(0.55, 0.1)), ('wait', 1.5),
+         ('script', edit_aim(0.0, EDIT_HANDLE, z=-1.7)), ('wait', 1),
+         ('mark', 'handle'),
+         ('script', script(edit_aim(0.0, EDIT_HANDLE, z=-1.7), EDIT_GRIP)),
+         ('wait', 1),
+         ('script', script(edit_aim(0.5, EDIT_HANDLE, z=-1.7), EDIT_GRIP)),
+         ('wait', 1), ('script', edit_aim(0.5, EDIT_HANDLE, z=-1.7)),
+         ('mark', 'placed'), ('wait', 1.5), ('mark', 'back'),
+         ('script', script(edit_aim(0.5, EDIT_HANDLE, z=-1.7), EDIT_RESET)),
+         ('wait', 0.5), ('script', ''), ('wait', 1.5), ('mark', 'off'),
+         ('send', EDIT), ('wait', 1)],
+     'check': check_edit_reset()},
+    {'name': 'edit-menu-front', 'map': '3ds',
+     'settings': {'video_screen1_xr_z': '0.6', 'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 4)],
+     'check': check_edit_menu_front},
+    {'name': 'edit-menu-size', 'map': '3ds',
+     'settings': dict(SAVE, video_screen1_xr_z='0.9'),
+     'steps': edit_start(edit_aim(0.0, F_HANDLE, z=-0.8)) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(0.0, F_HANDLE, z=-0.8), EDIT_GRIP)),
+         ('wait', 1.5), ('mark', 'moved'),
+         ('script', script(edit_aim(0.3, F_HANDLE, z=-0.8), EDIT_GRIP)),
+         ('wait', 2), ('script', edit_aim(0.3, F_HANDLE, z=-0.8)),
+         ('wait', 1.5)],
+     'check': check_edit_menu_size},
+    {'name': 'edit-menu-reset', 'map': '3ds',
+     'settings': dict(SAVE, **EDIT_OFFSET),
+     'steps': edit_start(edit_aim(0.25, M_HANDLE, z=-1.4)) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(0.25, M_HANDLE, z=-1.4), EDIT_GRIP)),
+         ('wait', 1),
+         ('script', script(edit_aim(0.55, M_HANDLE, z=-1.4), EDIT_GRIP)),
+         ('wait', 1), ('script', edit_aim(0.55, M_HANDLE, z=-1.4)),
+         ('mark', 'placed'), ('wait', 1.5), ('mark', 'back'),
+         ('script', script(edit_aim(0.55, M_HANDLE, z=-1.4), EDIT_RESET)),
+         ('wait', 0.5), ('script', ''), ('wait', 1.5), ('mark', 'off'),
+         ('send', EDIT), ('wait', 1)],
+     'check': check_edit_menu_reset},
+    {'name': 'edit-outlines', 'map': '3ds',
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'},
+     'steps': edit_start(edit_aim(), 1) + [
+         ('mark', 'lit'), ('wait', 3),
+         ('script', edit_aim(0.0, EDIT_HANDLE, z=-1.7)), ('mark', 'handle'),
+         ('wait', 2), ('send', EDIT), ('mark', 'off'), ('wait', 2)],
+     'check': check_edit_outlines()},
+    {'name': 'edit-outlines-flush', 'map': '3ds', 'settings': FLUSH,
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'},
+     'steps': edit_start(edit_aim(), 1) + [
+         ('mark', 'lit'), ('wait', 3), ('send', EDIT), ('mark', 'off'),
+         ('wait', 2)],
+     'check': check_edit_outlines_flush},
+    {'name': 'edit-beam', 'map': '3ds',
+     'settings': {'video_openxr_laser': '1'},
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'},
+     'steps': [('wait', 6), ('script', script(HEAD_AT_ORIGIN, AIM_GUN)),
+               ('wait', 1), ('mark', 'before'), ('wait', 2), ('mark', 'on'),
+               ('send', EDIT), ('wait', 1), ('mark', 'aimed'), ('wait', 2),
+               ('mark', 'miss'), ('script', script(HEAD_AT_ORIGIN, AIM_MISS)),
+               ('wait', 2), ('mark', 'off'), ('send', EDIT), ('wait', 2)],
+     'check': check_edit_beam},
+    {'name': 'edit-beam-off', 'map': '3ds',
+     'settings': {'video_openxr_laser_beam': '0'},
+     'steps': [('wait', 6), ('script', script(HEAD_AT_ORIGIN, AIM_GUN)),
+               ('wait', 1), ('mark', 'on'), ('send', EDIT), ('wait', 1),
+               ('mark', 'aimed'), ('wait', 2), ('mark', 'off'),
+               ('send', EDIT), ('wait', 1)],
+     'check': check_edit_beam_off},
+    {'name': 'laser-beam-always', 'map': '3ds',
+     'settings': {'video_openxr_laser': '1', 'video_openxr_laser_beam': '2'},
+     'steps': [('wait', 6), ('script', script(HEAD_AT_ORIGIN, AIM_GUN)),
+               ('wait', 1), ('mark', 'aimed'), ('wait', 2), ('mark', 'miss'),
+               ('script', script(HEAD_AT_ORIGIN, AIM_MISS)), ('wait', 2),
+               ('mark', 'off'), ('send', 'LASER_POINTER_TOGGLE'),
+               ('wait', 2), ('mark', 'on'),
+               ('send', 'LASER_POINTER_TOGGLE'), ('wait', 2)],
+     'check': check_laser_beam_always},
+    {'name': 'edit-fallback', 'map': 'crop',
+     'settings': dict(SAVE, video_threaded='true', video_screen1_xr_x='0.5'),
+     'steps': edit_start(edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1.5),
+         ('script', script(edit_aim(0.3), EDIT_GRIP)), ('wait', 2),
+         ('script', edit_aim()), ('wait', 1),
+         ('script', script(edit_aim(), EDIT_RESET)), ('wait', 0.5),
+         ('script', edit_aim()), ('wait', 1.5), ('mark', 'off'),
+         ('send', EDIT), ('wait', 1)],
+     'check': threaded(check_edit_fallback())},
+    {'name': 'edit-no-map', 'map': 'none', 'settings': SAVE,
+     'steps': edit_start(edit_aim(), 1) + [
+         ('mark', 'grab'), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('script', script(edit_aim(0.3), EDIT_GRIP)),
+         ('wait', 1), ('script', edit_aim(0.3)), ('wait', 1),
+         ('mark', 'moved'), ('send', EDIT), ('wait', 2)],
+     'check': check_edit_no_map},
+    {'name': 'edit-follow-head', 'map': '3ds',
+     'settings': dict(SAVE, video_openxr_placement='1'), 'script': V_HEAD,
+     'steps': edit_start(script(V_HEAD, aim_line(*turned(V_ANCHOR, A0))))
+     + [('script', script(V_HEAD, aim_line(*turned(V_ANCHOR, A0)),
+                          EDIT_GRIP)), ('wait', 1.5), ('mark', 'moved'),
+        ('script', script(V_HEAD, aim_line(*turned(V_ANCHOR, A1)),
+                          EDIT_GRIP)), ('wait', 2),
+        ('script', script(V_HEAD, aim_line(*turned(V_ANCHOR, A1)))),
+        ('wait', 1.5), ('mark', 'turned'), ('script', HEAD_TURNED),
+        ('wait', 2)],
+     'check': check_edit_follow_head},
+    {'name': 'edit-lazy', 'map': '3ds',
+     'settings': {'video_openxr_placement': '2'}, 'script': 'head 0 0 0 0',
+     'steps': edit_start(edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script('head 0 0 0 90', edit_aim(), EDIT_GRIP)),
+         ('mark', 'turned'), ('wait', 2.5), ('script', 'head 0 0 0 90'),
+         ('mark', 'released'), ('wait', 3)],
+     'check': check_edit_lazy},
+    {'name': 'edit-two-hands', 'map': '3ds', 'settings': SAVE,
+     'steps': edit_start(script(aim_line(*L0, hand='left'),
+                                aim_line(*A0))) + [
+         ('script', script(aim_line(*L0, hand='left'), aim_line(*A0),
+                           EDIT_GRIP_LEFT)), ('wait', 1.5),
+         ('script', script(aim_line(*L0, hand='left'), aim_line(*A0),
+                           EDIT_GRIP_LEFT, EDIT_GRIP)), ('wait', 1.5),
+         ('script', script(aim_line(*L1, hand='left'), aim_line(*A0),
+                           EDIT_GRIP_LEFT, EDIT_GRIP)), ('wait', 1.5),
+         ('mark', 'right_moved'),
+         ('script', script(aim_line(*L1, hand='left'), aim_line(*R1),
+                           EDIT_GRIP_LEFT, EDIT_GRIP)), ('wait', 2),
+         ('mark', 'bottom'),
+         ('script', script(aim_line(*L1, hand='left'), aim_line(*B0),
+                           EDIT_GRIP_LEFT)), ('wait', 1),
+         ('script', script(aim_line(*L1, hand='left'), aim_line(*B0),
+                           EDIT_GRIP_LEFT, EDIT_GRIP)), ('wait', 1.5),
+         ('mark', 'bottom_moved'),
+         ('script', script(aim_line(*L1, hand='left'), aim_line(*B1),
+                           EDIT_GRIP_LEFT, EDIT_GRIP)), ('wait', 2),
+         ('script', script(aim_line(*L1, hand='left'), aim_line(*B1))),
+         ('wait', 1.5)],
+     'check': check_edit_two_hands},
+    {'name': 'edit-recenter', 'map': '3ds', 'settings': SAVE,
+     'steps': edit_start(aim_line(*A0)) + [
+         ('script', script(aim_line(*A0), EDIT_GRIP)), ('wait', 1.5),
+         ('script', script(aim_line(*A1), EDIT_GRIP)), ('wait', 2),
+         ('script', script(V_HEAD, aim_line(*A1), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'recenter'), ('send', 'HEADSET_RECENTER'), ('wait', 2),
+         ('mark', 'pulled'),
+         ('script', script(V_HEAD, aim_line(*A2), EDIT_GRIP)), ('wait', 2)],
+     'check': check_edit_recenter},
+    {'name': 'edit-recentered', 'map': '3ds', 'settings': SAVE,
+     'steps': [('wait', 6), ('script', V_HEAD), ('wait', 1),
+               ('send', 'HEADSET_RECENTER'), ('wait', 2),
+               ('script', script(V_HEAD, aim_line(*RC0))), ('wait', 1),
+               ('mark', 'on'), ('send', EDIT), ('wait', 2), ('mark', 'grab'),
+               ('script', script(V_HEAD, aim_line(*RC0), EDIT_GRIP)),
+               ('wait', 1.5), ('mark', 'moved'),
+               ('script', script(V_HEAD, aim_line(*RC1), EDIT_GRIP)),
+               ('wait', 2), ('script', script(V_HEAD, aim_line(*RC1))),
+               ('wait', 1.5)],
+     'check': check_edit_recentered},
+    # Started by the command, then by the headset's action, which raises
+    # it: each pause lands between frames.
+    {'name': 'edit-pause', 'map': '3ds', 'options': FPS16,
+     'settings': {'video_openxr_edit_pause': 'true'},
+     'steps': [('wait', 6), ('mark', 'on'), ('send', EDIT), ('wait', 4),
+               ('mark', 'off'), ('send', EDIT), ('wait', 4), ('mark', 'on2'),
+               ('script', 'action combined/edit_screens 1'), ('wait', 1),
+               ('script', ''), ('wait', 3), ('mark', 'off2'),
+               ('script', 'action edit/edit_screens 1'), ('wait', 1),
+               ('script', ''), ('wait', 4)],
+     'check': check_edit_pause},
+    {'name': 'edit-command', 'map': '3ds', 'options': FPS16,
+     'steps': [('wait', 6), ('mark', 'aim'),
+               ('script', script(AIM_SCREEN0_RIGHT, AIM_SCREEN0_LEFT)),
+               ('wait', 2), ('mark', 'on'), ('send', EDIT), ('wait', 4),
+               ('mark', 'off'), ('send', EDIT), ('wait', 3)],
+     'check': check_edit_command()},
+    {'name': 'edit-action', 'map': '3ds',
+     'steps': [('wait', 6), ('mark', 'on')]
+     + edit_press('action combined/edit_screens 1') + [('mark', 'off')]
+     + edit_press('action edit/edit_screens 1'),
+     'check': check_edit_action(GAME_SETS)},
+    {'name': 'edit-action-separate', 'map': '3ds',
+     'settings': {'video_openxr_controllers': '1'},
+     'steps': [('wait', 6), ('mark', 'on')]
+     + edit_press('action separate/edit_screens 1') + [('mark', 'off')]
+     + edit_press('action edit/edit_screens 1'),
+     'check': check_edit_action(['separate', 'pointer'])},
+    # No command interface, so the hotkeys are read by their bits, and
+    # RetroArch is stopped, not told to quit.
+    {'name': 'edit-hotkeys-nocmd', 'map': '3ds',
+     'settings': {'network_cmd_enable': 'false'},
+     'steps': laser_action_steps('action combined/laser 1') + [
+         ('script', 'action combined/recenter 1'), ('wait', 1),
+         ('script', ''), ('wait', 1), ('mark', 'edit_on')]
+     + edit_press('action combined/edit_screens 1') + [('mark', 'edit_off')]
+     + edit_press('action edit/edit_screens 1'),
+     'check': check_edit_hotkeys},
+    {'name': 'edit-menu-open', 'map': '3ds',
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('mark', 'on'), ('send', EDIT), ('wait', 3),
+               ('mark', 'menu'), ('send', 'MENU_TOGGLE'), ('wait', 3)],
+     'check': check_edit_menu_open},
+    {'name': 'edit-menu-action', 'map': '3ds',
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('mark', 'on'), ('send', EDIT), ('wait', 3),
+               ('mark', 'menu')] + edit_press('action edit/menu 1'),
+     'check': check_edit_menu_ends},
+    # The fullscreen hotkey restarts the driver: edit mode ends with it.
+    {'name': 'edit-reinit', 'map': '3ds',
+     'steps': [('wait', 6), ('mark', 'on'), ('send', EDIT), ('wait', 3),
+               ('mark', 'menu'), ('send', 'FULLSCREEN_TOGGLE'), ('wait', 6)],
+     'check': check_edit_menu_ends},
+    # From the open menu: it closes, and edit mode starts.
+    {'name': 'edit-from-menu', 'map': '3ds',
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 3),
+               ('mark', 'on'), ('send', EDIT), ('wait', 3), ('mark', 'off'),
+               ('send', EDIT), ('wait', 3)],
+     'check': check_edit_action(GAME_SETS)},
+    {'name': 'edit-no-content', 'map': '3ds',
+     'core': '/nonexistent/no_core_libretro.so',
+     'steps': [('wait', 8), ('send', EDIT), ('wait', 3)],
+     'check': check_edit_no_content},
+    # Two presses of Select Next choose screen 2, buried behind screen 1.
+    {'name': 'edit-choose', 'map': '3ds', 'settings': dict(SAVE, **BURIED),
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'chosen'), ('wait', 1.5), ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(0.6), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'moved'), ('wait', 1), ('script', edit_aim(0.6)),
+         ('mark', 'released'), ('wait', 1), ('send', EDIT), ('wait', 2),
+         ('mark', 'off'), ('wait', 1)],
+     'check': check_edit_choose()},
+    {'name': 'edit-handle-first', 'map': '3ds', 'settings': UNDER_BAR,
+     'steps': edit_start(on_handle()) + [
+         ('mark', 'grab'), ('script', script(on_handle(), EDIT_GRIP)),
+         ('wait', 1), ('script', script(on_handle(0.3), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'moved'), ('wait', 1),
+         ('script', on_handle(0.3)), ('mark', 'released'), ('wait', 1),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)],
+     'check': check_edit_handle_first},
+    {'name': 'edit-handle-sticky', 'map': '3ds', 'settings': UNDER_BAR,
+     'steps': sticky_steps(on_handle()),
+     'check': check_edit_handle_sticky(True)},
+    {'name': 'edit-handle-margin', 'map': '3ds', 'settings': UNDER_BAR,
+     'steps': sticky_steps(on_handle(0.0, -0.07)),
+     'check': check_edit_handle_sticky(False)},
+    {'name': 'edit-snap', 'map': '3ds',
+     'settings': dict(SAVE, video_openxr_edit_snap='true',
+                      video_openxr_edit_hinge_gap='0'),
+     'steps': EDIT_SNAP_STEPS, 'check': check_edit_snap(True)},
+    {'name': 'edit-snap-off', 'map': '3ds', 'settings': SAVE,
+     'steps': EDIT_SNAP_STEPS, 'check': check_edit_snap(False)},
+    {'name': 'edit-snap-edge', 'map': '3ds',
+     'settings': dict(SAVE, video_openxr_edit_snap='true',
+                      video_openxr_edit_hinge_gap='0'),
+     'steps': EDIT_SNAP_EDGE_STEPS, 'check': check_edit_snap_edge},
+    {'name': 'edit-turn-stick', 'map': '3ds', 'settings': SAVE,
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '0'},
+     'steps': edit_start(edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left 1 0')),
+         ('wait', 0.5), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'turned'), ('script', edit_aim()),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_turn_stick},
+    {'name': 'edit-tilt-stick', 'map': '3ds', 'settings': SAVE,
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '0'},
+     'steps': edit_start(edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left 0 1')),
+         ('wait', 0.5), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'tilted'), ('script', edit_aim()),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_tilt_stick},
+    {'name': 'edit-step-stick', 'map': '3ds', 'settings': SAVE,
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left 0.3 0')),
+         ('until', ('screen 1 at 15', screen1_at_yaw(15.0), 10)),
+         ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'turned'), ('script', edit_aim()),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_step_stick},
+    {'name': 'edit-step-45', 'map': '3ds',
+     'settings': dict(SAVE, video_openxr_edit_snap_angles='3'),
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left 0.3 0')),
+         ('until', ('screen 1 at 45', screen1_at_yaw(45.0), 10)),
+         ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'turned'), ('script', edit_aim()),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_step_45},
+    {'name': 'edit-snap-square', 'map': '3ds', 'settings': SQUARE,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'), ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left -0.3 0')),
+         ('until', ('screen 2 square', screen2_at_yaw(-90.0), 10)),
+         ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'held'), ('wait', 1),
+         ('script', edit_aim()), ('mark', 'released'), ('wait', 1),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)],
+     'check': check_edit_snap_square},
+    {'name': 'edit-snap-sticks', 'map': '3ds',
+     'settings': dict(SQUARE, video_openxr_edit_snap_angles='0'),
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left -0.3 0')),
+         ('until', ('screen 2 square', screen2_at_yaw(-90.0), 10)),
+         ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'square'), ('wait', 0.5), ('mark', 'push'),
+         ('script', script(edit_aim(), EDIT_GRIP,
+                           'action edit/stick@left 0.3 0')),
+         ('until', ('screen 2 back at -74', screen2_at_yaw(-74.0, True),
+                    10)),
+         ('script', script(edit_aim(), EDIT_GRIP)),
+         ('wait', 1), ('script', edit_aim()), ('mark', 'released'),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_snap_sticks},
+    {'name': 'edit-hinge-3ds', 'map': '3ds', 'settings': HINGE_3DS,
+     'script': HEAD_AT_ORIGIN,
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'},
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP,
+                           'action edit/stick@left 0 -0.3')),
+         ('until', ('screen 2 at 30', screen2_at_pitch(30.0), 10)),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'swung'), ('script', edit_aim(x=0.06)),
+         ('mark', 'released'),
+         ('wait', 1), ('mark', 'resting'),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('script', edit_aim(x=0.06)), ('mark', 'dropped'), ('wait', 1),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_3ds},
+    {'name': 'edit-hinge-push', 'map': '3ds', 'settings': HINGE_3DS,
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(x=0.06, y=0.052), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'pushed'), ('wait', 0.5), ('mark', 'pull'),
+         ('script', script(edit_aim(x=0.06, y=0.027), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'back'), ('wait', 0.5),
+         ('script', edit_aim(x=0.06, y=0.027)),
+         ('mark', 'released'), ('wait', 1), ('mark', 'resting'),
+         ('script', script(edit_aim(x=0.06, y=0.027), EDIT_GRIP)),
+         ('mark', 'regrab'), ('wait', 1),
+         ('script', edit_aim(x=0.06, y=0.027)), ('mark', 'dropped'),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_push},
+    {'name': 'edit-hinge-gap', 'map': '3ds', 'settings': HINGE_GAP,
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP,
+                           'action edit/stick@left 0 -0.3')),
+         ('until', ('screen 2 at 30', screen2_at_pitch(30.0), 10)),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'swung'), ('script', edit_aim(x=0.06)),
+         ('mark', 'released'),
+         ('wait', 1), ('mark', 'resting'),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('script', edit_aim(x=0.06)), ('mark', 'dropped'), ('wait', 1),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_gap},
+    {'name': 'edit-hinge-twitch', 'map': '3ds',
+     'settings': dict(HINGE_GAP, video_openxr_edit_smoothing='0'),
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'held'), ('wait', 1),
+         ('script', edit_aim_turned(x=0.06, pitch=0.5)),
+         ('mark', 'released'), ('wait', 1), ('mark', 'resting'),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('script', edit_aim_turned(x=0.06, pitch=-0.5)),
+         ('mark', 'released2'), ('wait', 1), ('mark', 'resting2'),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_twitch},
+    {'name': 'edit-hinge-settle', 'map': '3ds',
+     'settings': dict(HINGE_GAP, video_openxr_edit_smoothing='0'),
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06, y=-0.033), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'held4'), ('wait', 1),
+         ('script', edit_aim(x=0.06, y=-0.033)),
+         ('mark', 'released'), ('wait', 1), ('mark', 'resting'),
+         ('script', script(edit_aim(x=0.06, y=-0.033), EDIT_GRIP)),
+         ('wait', 1), ('script', edit_aim(x=0.06, y=-0.033)),
+         ('mark', 'dropped'), ('wait', 1),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_settle},
+    {'name': 'edit-hinge-shaken', 'map': '3ds',
+     'settings': dict(HINGE_GAP, video_openxr_edit_smoothing='0'),
+     'script': HEAD_AT_ORIGIN,
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(x=0.06), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'still'),
+         ('script', script(edit_aim(x=0.06, y=0.044), EDIT_GRIP)),
+         ('wait', 0.5)] + edit_shake(0.06, 0.044, 0.5, 2) + [
+         ('mark', 'shaken1'),
+         ('script', script(edit_aim(x=0.06, y=-0.082), EDIT_GRIP)),
+         ('wait', 0.5)] + edit_shake(0.06, -0.082, 0.5, 2) + [
+         ('mark', 'shaken2'),
+         ('script', edit_aim(x=0.06, y=-0.082)), ('mark', 'released'),
+         ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'),
+         ('wait', 1)],
+     'check': check_edit_hinge_shaken},
+    {'name': 'edit-smooth', 'map': '3ds',
+     'settings': dict(SAVE, video_openxr_edit_smoothing='2'),
+     'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(True)},
+    {'name': 'edit-smooth-off', 'map': '3ds', 'settings': SAVE,
+     'steps': EDIT_SWAY_STEPS, 'check': check_edit_sway(False)},
+    {'name': 'edit-tag', 'map': '3ds',
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'}, 'steps': EDIT_TAG_STEPS,
+     'check': check_edit_tag},
+    {'name': 'edit-tag-narrow', 'map': '3ds',
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10',
+             'RA_XR_LAYER_MAX_WIDTH': '2048'},
+     'steps': EDIT_TAG_NARROW_STEPS, 'check': check_edit_tag_narrow},
+    {'name': 'edit-back', 'map': '3ds',
+     'settings': {'video_openxr_placement': '0'},
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'}, 'steps': EDIT_BACK_STEPS,
+     'check': check_edit_back},
+]
+EDIT_CASES.append(dict(
+    next(c for c in EDIT_CASES if c['name'] == 'edit-hinge-3ds'),
+    name='edit-hinge-3ds-narrow',
+    env={'RA_XR_LAYER_SNAP_EVERY': '10', 'RA_XR_LAYER_MAX_WIDTH': '4096'},
+    check=check_edit_hinge_3ds_narrow))
+
 
 CASES = [
     {'name': '3ds-stereo', 'map': '3ds', 'steps': SETTLE,
@@ -5046,6 +8663,9 @@ GL_EXTRA = [
                ('mark', 'free'), ('script', 'busy off'), ('wait', 3)],
      'check': check_tracked_busy},
 ]
+CASES += CUSTOM_CASES
+CASES += EDIT_CASES
+
 # The cases each GL driver's lanes run, by name in CASES or GL_EXTRA.
 GL_BASE = {
     'glcore': ['3ds-stereo', '3ds-swap', '3ds-stereo-index0',
@@ -5106,12 +8726,34 @@ GL_BASE = {
            'tracked-reinit-local', 'tracked-reinit-local-hw',
            'tracked-reinit-poses', 'tracked-reinit-paused-hw'],
 }
+# The edit cases whose work is a host's or a driver's own: the plan and
+# its edit count, the hold and hand-over, the outlines, the handle and
+# the beam, fixed slots, the menu's quad. gl draws the menu in its
+# window: no menu quad to place, outline or take.
+GL_EDIT = ['edit-grab', 'edit-grab-threaded', 'edit-command', 'edit-follow',
+           'edit-release-threaded', 'edit-release-moving',
+           'edit-regrab-threaded', 'edit-handover-threaded', 'edit-reset',
+           'edit-outlines', 'edit-outlines-flush', 'edit-beam',
+           'edit-fallback', 'edit-no-map', 'edit-lazy', 'edit-two-hands',
+           'edit-choose', 'edit-snap', 'edit-tag', 'edit-tag-narrow',
+           'edit-back', 'edit-hinge-3ds', 'edit-hinge-shaken',
+           'edit-hinge-3ds-narrow']
+GL_EDIT_MENU = ['edit-menu-front', 'edit-menu-size']
+for custom_driver in GL_BASE:
+    GL_BASE[custom_driver] += [c['name'] for c in CUSTOM_CASES] + GL_EDIT
+GL_BASE['glcore'] += GL_EDIT_MENU
+
 # Where a GL host's answer is its own, by driver.
 GL_CHECKS = {
     'glcore': {'session-fails': check_session_fails_gl,
                'hw-teardown': check_hw_teardown_gl,
                'hw-teardown-threaded': threaded(check_hw_teardown_gl)},
-    'gl': {'session-fails': check_session_fails_gl,
+    'gl': {'custom-repeat': check_custom('repeat', legacy=True),
+           'custom-menu': check_custom('menu', legacy=True),
+           'custom-tracked': check_custom('tracked', legacy=True),
+           'no-map-custom': check_frame_custom(window=True),
+           'crop-threaded-custom': threaded(check_window_crop),
+           'session-fails': check_session_fails_gl,
            'hw-teardown': check_hw_teardown_gl,
            'hw-teardown-threaded': threaded(check_hw_teardown_gl),
            '3ds-stereo': check_screens(native=True),
@@ -5140,16 +8782,28 @@ GL_CHECKS = {
            'tracked-fallback': check_tracked_window_fallback,
            'tracked-recenter': check_tracked_recenter_eyes,
            'tracked-recenter-paused':
-               check_tracked_recenter_paused('local', screens=False)},
+               check_tracked_recenter_paused('local', screens=False),
+           'edit-grab': check_edit_grab(menu=False),
+           'edit-grab-threaded': threaded(check_edit_grab(menu=False)),
+           'edit-command': check_edit_command(menu=False),
+           'edit-reset': check_edit_reset(menu=False),
+           'edit-outlines': check_edit_outlines(menu=False),
+           'edit-fallback': threaded(check_edit_fallback(menu=False)),
+           'edit-choose': check_edit_choose(menu=False)},
 }
 # What a lane cannot run: the unfocus helper sends an X event, and the
-# Wayland lane's window is not an X one.
-GL_SKIP = {'glcore-egl': ('focus',)}
+# Wayland lane's window is not an X one. glcore's GLX lane runs only a
+# smoke test of edit mode, whose work differs from EGL's in nothing but
+# the binding.
+GL_SKIP = {'glcore-egl': ('focus',),
+           'glcore-glx': tuple(n for n in GL_EDIT + GL_EDIT_MENU
+                               if n not in ('edit-grab', 'edit-command'))}
 # A lane that runs only these of its driver's cases: gl's other binding.
 GL_ONLY = {'gl-glx': ('3ds-stereo', 'no-map', 'menu', 'menu-closes',
                       'tracked', 'tracked-menu', 'tracked-recenter',
                       'tracked-reinit', 'pace-2', 'session-lost',
-                      'hw-teardown')}
+                      'hw-teardown') + tuple(c['name'] for c in CUSTOM_CASES)
+            + ('edit-grab',)}
 
 
 def gl_cases():
@@ -5182,6 +8836,8 @@ def gl_cases():
             # gl's window shows the packed frame whole: the top screen is
             # its top-left quarter.
             if driver == 'gl':
+                if name == 'custom-repeat':
+                    c['args'] = []
                 c['top_px'] = (400, 240)
             # gamescope gives a Wayland client its window back over half
             # a second after a reinit, where an X one takes some 40 ms:
@@ -5274,6 +8930,7 @@ def main():
         errors = case['check'](res) + capture_errors(res, case)
         if 'hung' in res.marks:
             errors.append('RetroArch did not quit')
+        errors += ['no frame showed ' + m for m in res.missed]
         if validate:
             extra, known = unexpected(res.log,
                                       baseline + case.get('baseline', []))

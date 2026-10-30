@@ -28,6 +28,8 @@ on:
       - 'gfx/video_views_draw.h'
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
+      - 'configuration.*'
+      - 'samples/settings/video_screens/**'
       - 'samples/cores/video_views/**'
       - '.github/workflows/Windows-wine-views.yml'
   pull_request:
@@ -45,6 +47,8 @@ on:
       - 'gfx/video_views_draw.h'
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
+      - 'configuration.*'
+      - 'samples/settings/video_screens/**'
       - 'samples/cores/video_views/**'
       - '.github/workflows/Windows-wine-views.yml'
   workflow_dispatch:
@@ -136,10 +140,11 @@ jobs:
           set -eu
           export CCACHE_DIR="$HOME/.ccache"
           ccache -M 250M
+          # The screens' windows too, which video_screens_test runs.
           ./configure --host=x86_64-w64-mingw32 \
                       --disable-qt --disable-vulkan --disable-ffmpeg \
                       --disable-cheevos --disable-discord --enable-d3d8 \
-                      --disable-sdl --disable-sdl2
+                      --disable-sdl --disable-sdl2 --enable-video_windows
           make -j$(nproc) CC="ccache x86_64-w64-mingw32-gcc" \
                           CXX="ccache x86_64-w64-mingw32-g++"
           ccache -s
@@ -148,6 +153,13 @@ jobs:
             cp "$(ls /usr/lib/gcc/x86_64-w64-mingw32/*-win32/$f | head -n 1)" .
           done
           make -C samples/cores/video_views DLL=1 CC=x86_64-w64-mingw32-gcc
+
+      - name: Build and run video_screens_test under Wine
+        shell: bash
+        run: |
+          set -eu
+          WINEDEBUG=-all xvfb-run -a python3 samples/settings/video_screens/build.py \
+            --output-dir "$RUNNER_TEMP/video-screens" --runner wine
 
       - name: Views on GDI, D3D8, D3D9, D3D10, D3D11 and D3D12, end to end (Wine, Xvfb, llvmpipe, lavapipe)
         shell: bash

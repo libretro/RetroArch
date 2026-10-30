@@ -543,6 +543,7 @@ struct menu_state
 
    /* unsigned alignment */
    unsigned input_dialog_kb_idx;
+   unsigned video_screen_selected;
    menu_dialog_t dialog_st;
    enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
 #ifdef HAVE_RUNAHEAD

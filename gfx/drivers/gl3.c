@@ -3165,7 +3165,7 @@ static void gl3_views_build_chains(gl3_t *gl)
       set->preset[i] = gl3_filter_chain_create_from_preset(
             gl->views.preset, gl->video_info.smooth
             ? GLSLANG_FILTER_CHAIN_LINEAR
-            : GLSLANG_FILTER_CHAIN_NEAREST, true);
+            : GLSLANG_FILTER_CHAIN_NEAREST, true, false);
       if (!set->preset[i])
          RARCH_ERR("[GLCore] Failed to create view %u's preset: \"%s\".\n",
                i, gl->views.preset);
@@ -3184,7 +3184,7 @@ static void gl3_views_build_chains(gl3_t *gl)
       *chain = gl3_filter_chain_create_from_preset(gl->views.preset,
             gl->video_info.smooth
             ? GLSLANG_FILTER_CHAIN_LINEAR
-            : GLSLANG_FILTER_CHAIN_NEAREST, false);
+            : GLSLANG_FILTER_CHAIN_NEAREST, false, true);
       if (!*chain)
          RARCH_ERR("[OpenXR] Failed to create the headset's preset: \"%s\".\n",
                gl->views.preset);
@@ -3211,7 +3211,7 @@ static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
          gl->video_info.smooth
          ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST,
-         (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0);
+         (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0, false);
 
    if (!gl->filter_chain)
    {
@@ -6520,6 +6520,7 @@ static void gl3_xr_plan(gl3_t *gl, const video_frame_info_t *video_info,
       bool views, bool eyes, unsigned frame_dims, unsigned src_dims,
       unsigned ui_dims)
 {
+   unsigned s;
    video_xr_params_t p;
    gl_openxr_t *xr = gl->xr.host;
 
@@ -6530,6 +6531,13 @@ static void gl3_xr_plan(gl3_t *gl, const video_frame_info_t *video_info,
          / (float)VIDEO_SCALE_H(frame_dims);
    p.frame_dims    = src_dims;
    video_xr_pose_identity(&p.anchor);
+   /* A frame shown whole despite a map is not screen 1. */
+   p.screens       = (views || !video_info->views.num_views)
+      ? video_info->headset_screens : NULL;
+   p.edit_seq      = video_info->headset_edit_seq;
+   p.menu          = video_info->headset_menu_placed
+      ? &video_info->headset_menu : NULL;
+   p.menu_follow   = video_info->headset_menu_follow;
    p.distance      = video_info->headset_distance;
    p.width         = video_info->headset_width;
    p.px_per_rad    = gl_openxr_pixels_per_radian(xr);
@@ -6542,6 +6550,11 @@ static void gl3_xr_plan(gl3_t *gl, const video_frame_info_t *video_info,
    if (views && eyes)
       p.skip_screens = gl3_xr_eye_screens(video_info);
    video_xr_place(&p, &gl->xr.set);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      gl->xr.set.slots[s].dims = video_xr_keep_dims(
+            gl->xr.set.slots[s].dims,
+            gl->xr.shown[s].published ? gl->xr.shown[s].info.dims : 0,
+            video_info->headset_editing);
 }
 
 /* Whether slot s's plan this frame is what it last published. */
@@ -6592,10 +6605,13 @@ static void gl3_xr_forget(gl3_t *gl, unsigned s, bool yield)
 }
 
 /* Each layer of a screen slot drawn whole into tex by its view's
- * headset chain or the whole frame's: its passes at the image's size. */
+ * headset chain or the whole frame's: its passes at the image's size. A
+ * repeat - a screen moved, resized or not yet shown while no new frame
+ * came - replays the last frame's final pass, so feedback and history
+ * stay where that frame left them. */
 static void gl3_xr_draw_screen(gl3_t *gl, unsigned s, const uint32_t *tex,
       gl3_filter_chain_t **chains, gl3_filter_chain_t *frame_chain,
-      const struct gl3_filter_chain_texture *frame_tex)
+      const struct gl3_filter_chain_texture *frame_tex, bool new_frame)
 {
    unsigned l;
    struct gl3_viewport vp;
@@ -6608,6 +6624,8 @@ static void gl3_xr_draw_screen(gl3_t *gl, unsigned s, const uint32_t *tex,
       struct gl3_filter_chain_texture in;
       int v                    = plan->view[l];
       gl3_filter_chain_t *chain = (v >= 0) ? chains[v] : frame_chain;
+      bool replay              = chain && !new_frame
+         && gl3_filter_chain_replay_ready(chain);
 
       if (v >= 0)
       {
@@ -6619,7 +6637,7 @@ static void gl3_xr_draw_screen(gl3_t *gl, unsigned s, const uint32_t *tex,
       }
       else
          in = *frame_tex;
-      if (chain)
+      if (chain && !replay)
       {
          gl3_filter_chain_set_input_texture(chain, &in);
          gl3_filter_chain_build_offscreen_passes(chain, &vp);
@@ -6631,10 +6649,13 @@ static void gl3_xr_draw_screen(gl3_t *gl, unsigned s, const uint32_t *tex,
       glViewport(0, 0, VIDEO_SCALE_W(plan->dims), VIDEO_SCALE_H(plan->dims));
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       glClear(GL_COLOR_BUFFER_BIT);
-      if (chain)
+      if (replay)
+         gl3_filter_chain_build_viewport_pass_replay(chain, &vp, gl->xr.mvp);
+      else if (chain)
       {
          gl3_filter_chain_build_viewport_pass(chain, &vp, gl->xr.mvp);
-         gl3_filter_chain_end_frame(chain);
+         if (new_frame)
+            gl3_filter_chain_end_frame(chain);
       }
    }
 }
@@ -6794,7 +6815,8 @@ static void gl3_xr_draw(gl3_t *gl, const video_frame_info_t *video_info,
       if (s == VIDEO_XR_MENU_SLOT)
          gl3_xr_copy_ui(gl, s, tex[0], ui_dims);
       else
-         gl3_xr_draw_screen(gl, s, tex, chains, frame_chain, frame_tex);
+         gl3_xr_draw_screen(gl, s, tex, chains, frame_chain, frame_tex,
+               new_frame);
       gl_openxr_slot_publish(xr, s, &gl->xr.set, NULL);
       gl3_xr_keep(gl, s);
    }
@@ -6947,6 +6969,7 @@ static bool gl3_frame(void *data, const void *frame,
    bool views_direct                       = false;
    bool views_in_place                     = false;
    bool views_ui                           = false;
+   bool views_ui_menu                      = false;
    unsigned ui_layer_dims                  = 0;
    /* A software frame a preset may draw as views, written once they are
     * known: straight into each view's texture if they need copies */
@@ -7626,13 +7649,19 @@ static bool gl3_frame(void *data, const void *frame,
    /* A failed size stays latched until the layer changes size. */
    if (frame && !ui_layer_dims)
       gl3_vv_target_drop(gl, &gl->views.ui_target, &gl->views.ui);
+   views_ui_menu = (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE) ? true : false;
+#ifdef HAVE_GL3_XR
+   /* Edit mode moves the menu's quad: it stays up, empty. */
+   if (xr_draw && video_info->headset_editing)
+      views_ui_menu = true;
+#endif
 #ifdef HAVE_GFX_WIDGETS
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE), msg, statistics_show,
+         views_ui_menu, msg, statistics_show,
          widgets_active && gfx_widgets_visible(video_info))
 #else
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE), msg, statistics_show, false)
+         views_ui_menu, msg, statistics_show, false)
 #endif
       && gl3_vv_target_ensure(gl, &gl->views.ui_target, &gl->views.ui,
             ui_layer_dims);

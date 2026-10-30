@@ -1,0 +1,5 @@
+shaders = 2
+shader0 = feedback.slang
+feedback_pass = 0
+float_framebuffer0 = true
+shader1 = feedback.slang

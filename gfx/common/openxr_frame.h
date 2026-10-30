@@ -36,7 +36,59 @@
 
 RETRO_BEGIN_DECLS
 
-#define OPENXR_MAX_EXTRA_LAYERS 4
+/* Layers the input may add to the screens: the laser's dots, kept
+ * where the screens must make room, then edit mode's outlines and the
+ * menu's handle, then its hinges' lines, each hand's, then up to
+ * OPENXR_REST_HINGES between screens at rest, then its tag, then the
+ * beams, only in room they leave. */
+#define OPENXR_KEPT_EXTRA_LAYERS 2
+/* The most edge to edge pairs eight equal screens make in a plane. */
+#define OPENXR_REST_HINGES       10
+#define OPENXR_HINGE_LAYERS      (2 + OPENXR_REST_HINGES)
+#define OPENXR_BEAM_LAYERS       2
+#define OPENXR_TAG_LAYERS        1
+#define OPENXR_MAX_EXTRA_LAYERS  \
+   (OPENXR_KEPT_EXTRA_LAYERS + OPENXR_HINGE_LAYERS + OPENXR_BEAM_LAYERS \
+    + OPENXR_TAG_LAYERS + VIDEO_XR_MAX_SLOTS + 1)
+
+/* Edit mode's hands, published by the main thread for the frame loop. */
+typedef struct openxr_grabs
+{
+   video_xr_grab_t hand[2];
+   video_xr_pose_t start[2]; /* items as taken; snaps fade in */
+   /* Each slot's last let-go, until quads planned at it show it. */
+   video_xr_grab_t let_go[VIDEO_XR_MAX_SLOTS];
+   unsigned chosen;    /* its slot plus one, 0 the laser's */
+   unsigned stuck;     /* hands with the menu's handle stuck, bits */
+   unsigned tag;       /* the hand that chose last (0, the left) */
+   unsigned num_rests; /* screens no hand holds resting in a hinge */
+   video_xr_rest_t rests[OPENXR_REST_HINGES];
+   bool snap;          /* Snap to Screens */
+   bool editing;       /* Edit Screens is on */
+} openxr_grabs_t;
+
+/* Edit Smoothing's aims, the frame loop's for the main thread: each
+ * hand's, in the frame's space, as the frame last built from it took
+ * it, and that frame's display time; bit h of valid while hand h's is
+ * tracked. */
+typedef struct openxr_aims
+{
+   video_xr_pose_t pose[2];
+   XrTime time[2];
+   unsigned valid;
+} openxr_aims_t;
+
+/* Where a hand's held item was last shown, for the hold (slot and
+ * state) it was shown for, and the hinge the main thread marks, if
+ * hinged, in the screens' frame. */
+typedef struct openxr_held
+{
+   video_xr_pose_t pose;
+   video_xr_hinge_t hinge;
+   unsigned slot;
+   unsigned state;
+   bool hinged;
+} openxr_held_t;
 
 /* What the XR thread publishes for the drawing thread. */
 typedef struct openxr_tracked
@@ -92,9 +144,17 @@ typedef struct openxr_frame
    const openxr_runtime_t *rt;
    openxr_session_t *session;
    openxr_swapchains_t *sc;
-   /* Layers after the screens (the laser, its cursor); may be NULL. */
+   /* Layers after the screens (the laser, its cursor), the first *under
+    * of them under the screens instead, shown holding this frame's quads
+    * where it shows them, in space; may be NULL. */
    unsigned (*extra_layers)(void *user, XrTime display_time,
-         const XrCompositionLayerBaseHeader **layers, unsigned cap);
+         const video_xr_quad_set_t *shown, XrSpace space,
+         const XrCompositionLayerBaseHeader **layers, unsigned cap,
+         unsigned *under);
+   /* The input's: a hand's aim pose at a frame's time in space, for what
+    * it holds; may be NULL. */
+   bool (*aim)(void *user, unsigned hand, XrSpace space, XrTime time,
+         video_xr_pose_t *pose);
    void *extra_user;
    /* The hands; may be NULL. */
    bool (*locate_hands)(void *user, XrSpace base, XrTime time,
@@ -122,6 +182,26 @@ typedef struct openxr_frame
    openxr_screens_t screens;       /* the frame loop's thread */
    retro_atomic_int_t screens_seq;
    retro_atomic_int_t screens_words[2 * OPENXR_WORDS(openxr_screens_t)];
+   /* Edit mode's hands as the main thread publishes them, the same way,
+    * and the frame loop's copy, read again only once the stamp it was
+    * read at moves. The main thread is the one writer. */
+   retro_atomic_int_t grabs_seq;
+   retro_atomic_int_t grabs_words[2 * OPENXR_WORDS(openxr_grabs_t)];
+   openxr_grabs_t grabs;           /* the frame loop's */
+   int grabs_read;                 /* the frame loop's */
+   openxr_held_t held[2];          /* the frame loop's */
+   /* Each held hinge where this frame draws, bit h for hand h's. */
+   video_xr_hinge_t hinges[2];     /* the frame loop's */
+   unsigned hinged;                /* the frame loop's */
+   /* Edit Smoothing's aims as the frame loop publishes them. */
+   retro_atomic_int_t aims_seq;
+   retro_atomic_int_t aims_words[2 * OPENXR_WORDS(openxr_aims_t)];
+   /* This frame's quads where it shows them, for the input's layers,
+    * and those it shows by their backs, a bit each. */
+   video_xr_quad_set_t shown;      /* the frame loop's */
+   uint32_t backs;                 /* the frame loop's */
+   /* The menu's index among this frame's quad layers, or -1. */
+   int menu_layer;                 /* the frame loop's */
    /* The drawing thread's quads for the XR thread and the pointer, the
     * same way. */
    retro_atomic_int_t quads_seq;
@@ -208,21 +288,31 @@ typedef struct openxr_input_hooks
    void (*session_created)(void *user, const openxr_input_handles_t *h);
    /* The frame loop has stopped; the session is destroyed next. */
    void (*session_destroying)(void *user);
-   /* The frame loop's thread, each headset frame: up to cap layers over
-    * the screens. Returns how many were written. */
+   /* The frame loop's thread, each headset frame: up to cap layers with
+    * the screens, which shown holds where this frame shows them, in
+    * space; the first OPENXR_KEPT_EXTRA_LAYERS for the dots, the rest
+    * for what only fits in room the screens leave. Returns how many were
+    * written: the first *under go under the screens, the rest over. */
    unsigned (*frame_layers)(void *user, XrTime display_time,
-         const XrCompositionLayerBaseHeader **layers, unsigned cap);
+         const video_xr_quad_set_t *shown, XrSpace space,
+         const XrCompositionLayerBaseHeader **layers, unsigned cap,
+         unsigned *under);
    /* The two hands' poses and joints in base at time.
     * False when none could be located. */
    bool (*locate_hands)(void *user, XrSpace base, XrTime time,
          struct retro_vr_controller_poses *out);
+   /* The frame loop's thread: a hand's aim pose at a frame's time in
+    * space; false while it is not tracked. */
+   bool (*aim)(void *user, unsigned hand, XrSpace space, XrTime time,
+         video_xr_pose_t *pose);
    void *user;
 } openxr_input_hooks_t;
 
 bool openxr_frame_load(openxr_frame_t *f, const openxr_runtime_t *rt,
       openxr_session_t *session, openxr_swapchains_t *sc);
 void openxr_frame_deinit(openxr_frame_t *f);
-/* A new session: the anchor straight ahead, the rates it offers. */
+/* A new session: the anchor straight ahead, nothing held, the rates it
+ * offers. */
 void openxr_frame_session_created(openxr_frame_t *f);
 /* The desktop host: the XR thread. */
 bool openxr_frame_start(openxr_frame_t *f);
@@ -262,6 +352,13 @@ void openxr_frame_request_rate(openxr_frame_t *f, float hz);
 /* The drawing thread's quads, placed from an identity anchor: each
  * headset frame puts them where the screens are. */
 void openxr_frame_publish(openxr_frame_t *f, const video_xr_quad_set_t *set);
+/* Main thread: edit mode's hands, for each frame to place what they
+ * hold at its own aim. */
+void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g);
+/* The frame loop's thread: the hands' smoothed aims. */
+void openxr_frame_publish_aims(openxr_frame_t *f, const openxr_aims_t *a);
+/* The main thread: the aims last published. */
+void openxr_frame_get_aims(openxr_frame_t *f, openxr_aims_t *out);
 /* The projection the XR thread submits from now on, behind the
  * screens; left out until its slot releases an image, and once the
  * track space it was drawn in is replaced without a carry. Published
@@ -279,6 +376,10 @@ void openxr_frame_set_placement(openxr_frame_t *f, unsigned placement);
  * showed them, and the space they are in: what the laser points at. */
 void openxr_frame_get_shown_quads(openxr_frame_t *f,
       video_xr_quad_set_t *out, XrSpace *space);
+/* Any thread: where the last frame showed the screens (the anchor,
+ * VIEW's identity, or Lazy Follow's), and their space. */
+void openxr_frame_get_screens(openxr_frame_t *f, video_xr_pose_t *pose,
+      XrSpace *space);
 void openxr_frame_request_recenter(openxr_frame_t *f);
 /* Any thread: how often the anchor has moved, and the display period
  * the frames publish, 0 until measured. */
@@ -292,6 +393,20 @@ void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks);
 void openxr_frame_input_attach(openxr_frame_t *f);
 void openxr_frame_input_detach(openxr_frame_t *f);
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *f);
+/* The width hosts make the laser's image: VIDEO_XR_CURSOR_W; where the
+ * runtime's swapchains are narrower (4096 if it does not say),
+ * VIDEO_XR_CURSOR_TAGGED_W, without the cut outlines, or
+ * VIDEO_XR_CURSOR_UNTAGGED_W, without the tags too. */
+unsigned openxr_frame_cursor_w(const openxr_frame_t *f);
+/* What the image at that width has past the outlines, for the log. */
+const char *openxr_frame_cursor_parts(const openxr_frame_t *f);
+/* The laser's image (video_xr_cursor_pixels, video_xr_cut_pixels) w
+ * wide, as openxr_frame_cursor_w says, in px's VIDEO_XR_CURSOR_W by
+ * VIDEO_XR_CURSOR_H texels; from VIDEO_XR_CURSOR_TAGGED_W wide with
+ * edit mode's tags written in the default font and the interface
+ * language as it is now; bottom_up for an image whose rows run bottom
+ * up, as GL's. Without a font, the tags stay clear. */
+void openxr_frame_cursor_pixels(uint8_t *px, unsigned w, bool bottom_up);
 
 RETRO_END_DECLS
 

@@ -3037,9 +3037,18 @@ struct gl3_filter_chain
    struct gl3_framebuffer *copy_framebuffer;
    gl3_common_resources common;
    gl3_filter_chain_texture input_texture;
+   /* The count the last frame's final pass was drawn with. */
+   uint64_t drawn_frame_count;
+   /* num_original_history framebuffers; one more than the shaders read
+    * for a replaying chain, so the frame's input goes where the last
+    * frame did not. */
    struct gl3_framebuffer **original_history;
    size_t num_original_history;
    bool require_clear;
+   /* A frame's final pass was drawn since the passes were built. */
+   bool drawn;
+   /* See gl3_filter_chain_create_from_preset. */
+   bool replay;
    bool alias_initialized;
    /* Every pass reads a frame where it lies: none is copied out. */
    bool frame_in_place;
@@ -3165,7 +3174,7 @@ static void gl3_chain_update_history_info(struct gl3_filter_chain *chain)
 {
    unsigned i;
 
-   for (i = 0; i < chain->num_original_history; i++)
+   for (i = 0; i < chain->common.num_original_history; i++)
    {
       gl3_texture_t *source = (gl3_texture_t*)
          &chain->common.original_history[i];
@@ -3331,12 +3340,32 @@ static void gl3_chain_build_viewport_pass(struct gl3_filter_chain *chain, const 
 
    /* For feedback FBOs, swap current and previous. */
    if (!again)
+   {
       for (i = 0; i < chain->num_passes; i++)
       {
          struct gl3_framebuffer *fb = gl3_pass_get_feedback_framebuffer(chain->passes[i]);
          if (fb)
             gl3_pass_end_frame(chain->passes[i]);
       }
+      chain->drawn_frame_count =
+         chain->passes[chain->num_passes - 1]->frame_count;
+      chain->drawn             = true;
+   }
+}
+
+/* The last frame's final pass in a later frame, at vp: what it read
+ * then - the passes' outputs and feedback, the history it saw - and its
+ * count. Nothing else runs; feedback does not swap, history stays. */
+static void gl3_chain_replay_viewport_pass(struct gl3_filter_chain *chain,
+      const gl3_viewport vp, const float *mvp)
+{
+   uint64_t count;
+   struct gl3_pass *pass = chain->passes[chain->num_passes - 1];
+
+   count             = pass->frame_count;
+   pass->frame_count = chain->drawn_frame_count;
+   gl3_chain_build_viewport_pass(chain, vp, mvp, true);
+   pass->frame_count = count;
 }
 
 static bool gl3_chain_init_history(struct gl3_filter_chain *chain)
@@ -3371,14 +3400,17 @@ static bool gl3_chain_init_history(struct gl3_filter_chain *chain)
    /* We don't need to store array element #0,
     * since it's aliased with the actual original. */
    required_images--;
+   if (!gl3_texture_array_resize(&chain->common.original_history,
+            &chain->common.num_original_history, required_images))
+      return false;
+   /* And one more to replay: the last frame's history stays. */
+   if (chain->replay)
+      required_images++;
    chain->original_history = (struct gl3_framebuffer**)
       calloc(required_images, sizeof(*chain->original_history));
    if (!chain->original_history)
       return false;
    chain->num_original_history = required_images;
-   if (!gl3_texture_array_resize(&chain->common.original_history,
-            &chain->common.num_original_history, required_images))
-      return false;
 
    for (i = 0; i < required_images; i++)
    {
@@ -3387,7 +3419,8 @@ static bool gl3_chain_init_history(struct gl3_filter_chain *chain)
          return false;
    }
 
-   RARCH_LOG("[GLCore] Using history of %u frames.\n", (unsigned)(required_images));
+   RARCH_LOG("[GLCore] Using history of %u frames.\n",
+         (unsigned)chain->common.num_original_history);
 
    /* On first frame, we need to clear the textures to
     * a known state, but we need
@@ -3699,6 +3732,8 @@ static bool gl3_chain_init(struct gl3_filter_chain *chain)
    if (!gl3_texture_array_resize(&chain->common.pass_outputs,
             &chain->common.num_pass_outputs, chain->num_passes))
       return false;
+   /* A rebuild remakes what a replay reads. */
+   chain->drawn = false;
    gl3_chain_init_frame_in_place(chain);
    return true;
 }
@@ -4010,6 +4045,8 @@ static bool gl3_chain_finalize(struct gl3_filter_chain *chain)
    if (!gl3_texture_array_resize(&chain->common.pass_outputs,
             &chain->common.num_pass_outputs, chain->num_passes))
       return false;
+   /* A rebuild remakes what a replay reads. */
+   chain->drawn = false;
    gl3_chain_init_frame_in_place(chain);
    return true;
 }
@@ -4372,7 +4409,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_shrink(void)
 }
 
 gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
-      const char *path, glslang_filter_chain_filter filter, bool frame_rect)
+      const char *path, glslang_filter_chain_filter filter, bool frame_rect,
+      bool replay)
 {
    size_t j;
    unsigned i;
@@ -4412,6 +4450,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       }
    chain->common.sim_source_dims = shader->sim_source_dims;
    chain->common.frame_rect = frame_rect;
+   chain->replay            = replay;
    chain->last_pass = last_pass;
 
    if (      shader->luts
@@ -5039,6 +5078,18 @@ void gl3_filter_chain_build_viewport_pass_again(
       const gl3_viewport *vp, const float *mvp)
 {
    gl3_chain_build_viewport_pass(chain, *vp, mvp, true);
+}
+
+bool gl3_filter_chain_replay_ready(const gl3_filter_chain_t *chain)
+{
+   return chain->drawn;
+}
+
+void gl3_filter_chain_build_viewport_pass_replay(
+      gl3_filter_chain_t *chain,
+      const gl3_viewport *vp, const float *mvp)
+{
+   gl3_chain_replay_viewport_pass(chain, *vp, mvp);
 }
 
 void gl3_filter_chain_end_frame(gl3_filter_chain_t *chain)

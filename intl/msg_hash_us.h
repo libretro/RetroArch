@@ -7742,6 +7742,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_video_upscaler.h"
 #include "../settings/settings_def_video_stereo.h"
 #include "../settings/settings_def_video_headset.h"
+#include "../settings/settings_def_video_screens.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_BOOL_H
@@ -7922,6 +7923,86 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    "Off"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
+   "Off"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_EDIT,
+   "Edit Mode Only"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   "Always"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
+   "Off"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_15,
+   "15°"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_30,
+   "30°"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_45,
+   "45°"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_90,
+   "90°"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_0,
+   "0 cm"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_1,
+   "1 cm"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_2,
+   "2 cm"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_3,
+   "3 cm"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_5,
+   "5 cm"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_10,
+   "10 cm"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   "Off"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   "Low"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
+   "Medium"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   "High"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_OFF,
+   "Keep Running"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   "Pause"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
@@ -12543,6 +12624,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_VIEW_TOGGLE,
    "Cycles what the core is told the headset currently displays: Immersive (head-tracked), Stereoscopic (a 3D screen) or Flat. Returns to core's default on core closure."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_EDIT_SCREENS,
+   "Edit Headset Screens"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_EDIT_SCREENS,
+   "Starts or stops moving the headset's screens and menu with its controllers."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -34434,6 +34523,38 @@ MSG_HASH(
 MSG_HASH(
    MSG_OPENXR_HEADSET_VIEW_FLAT,
    "Flat"
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_ON,
+   "Editing headset screens: grip grabs, the stick moves and resizes, the trigger tilts it with your hand, the other hand's stick turns and tilts it, the main button resets."
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_OFF,
+   "Stopped editing headset screens."
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_UNSAVED,
+   "Stopped editing headset screens. Changes are not saved yet."
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_UNAVAILABLE,
+   "Edit Screens is unavailable: the headset's controllers cannot be used for it."
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_NO_CONTENT,
+   "Edit Screens needs content running: load content first."
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_TAG_LASER,
+   "Laser"
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_TAG_SCREEN,
+   "Screen %u"
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_TAG_MENU,
+   "Menu"
    )
 
 

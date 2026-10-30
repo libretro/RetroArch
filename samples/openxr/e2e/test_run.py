@@ -22,6 +22,18 @@ class GlLanes(unittest.TestCase):
             [{k: v for k, v in c.items() if k != 'check'} for c in run.CASES])
         self.gl_cases = run.gl_cases()
 
+    def test_custom_selection(self):
+        names = ['custom-' + k for k in ('offset', 'rotation', 'hidden',
+                 'recenter', 'menu', 'tracked', 'repeat')]
+        selected, error = run.select(names, False, False)
+        self.assertIsNone(error)
+        self.assertEqual([c['name'] for c in selected], names)
+        for lane, driver, context in run.GL_LANES:
+            wanted = [lane + '-' + n for n in names]
+            selected, error = run.select(wanted, True, False)
+            self.assertIsNone(error)
+            self.assertEqual([c['name'] for c in selected], wanted)
+
     def test_names(self):
         names = [c['name'] for c in self.gl_cases]
         self.assertEqual(len(set(names)), len(names))
@@ -107,7 +119,43 @@ class GlLanes(unittest.TestCase):
     def test_extra_cases_gl_only(self):
         names = {c['name'] for c in run.CASES}
         self.assertTrue(all(c['name'] not in names for c in run.GL_EXTRA))
-        self.assertEqual(len(run.CASES), 141)
+        self.assertEqual(len(run.CASES), 213)
+
+    def test_edit_lanes(self):
+        names = [c['name'] for c in self.gl_cases]
+        for n in ('edit-grab', 'edit-reset', 'edit-menu-front',
+                  'edit-follow', 'edit-no-map', 'edit-fallback'):
+            self.assertIn('glcore-egl-' + n, names)
+        for n in ('edit-grab', 'edit-reset', 'edit-outlines'):
+            self.assertIn('gl-egl-' + n, names)
+        self.assertIn('glcore-egl-edit-beam', names)
+        self.assertIn('gl-egl-edit-beam', names)
+        self.assertNotIn('glcore-glx-edit-beam', names)
+        self.assertIn('laser-beam-always', [c['name'] for c in run.CASES])
+        self.assertIn('gl-glx-edit-grab', names)
+        self.assertIn('glcore-glx-edit-command', names)
+        self.assertNotIn('glcore-glx-edit-reset', names)
+        self.assertNotIn('gl-egl-edit-menu-front', names)
+        self.assertNotIn('gl-egl-edit-menu-size', names)
+        self.assertNotIn('glcore-egl-edit-tilt', names)
+        self.assertIn('glcore-egl-edit-choose', names)
+        self.assertIn('gl-egl-edit-choose', names)
+        self.assertNotIn('glcore-glx-edit-choose', names)
+        self.assertNotIn('glcore-egl-edit-handle-first', names)
+        self.assertIn('glcore-egl-edit-snap', names)
+        self.assertIn('gl-egl-edit-snap', names)
+        self.assertIn('glcore-egl-edit-tag', names)
+        self.assertIn('gl-egl-edit-tag', names)
+        self.assertNotIn('glcore-glx-edit-tag', names)
+        self.assertIn('glcore-egl-edit-tag-narrow', names)
+        self.assertIn('gl-egl-edit-tag-narrow', names)
+        self.assertIn('glcore-egl-edit-back', names)
+        self.assertIn('gl-egl-edit-back', names)
+        selected, error = run.select(['edit-grab', 'edit-pause'], False,
+                                     False)
+        self.assertIsNone(error)
+        self.assertEqual([c['name'] for c in selected],
+                         ['edit-grab', 'edit-pause'])
 
 
 class Select(unittest.TestCase):

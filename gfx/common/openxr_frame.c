@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,19 +22,27 @@
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
+#include <compat/strl.h>
+#include <encodings/utf.h>
 
 #include "openxr_frame.h"
 
 #include "../video_defines.h"
+#include "../font_driver.h"
+#include "../../msg_hash.h"
 
 #include "../../runloop.h"
 #include "../../verbosity.h"
 
 /* The seqlock's copy holds the largest thing it publishes. */
+#define OPENXR_SEQ_WORDS \
+   ((OPENXR_WORDS(openxr_grabs_t) > OPENXR_WORDS(video_xr_quad_set_t)) \
+    ? OPENXR_WORDS(openxr_grabs_t) : OPENXR_WORDS(video_xr_quad_set_t))
 typedef char openxr_seq_fits[
-      (   OPENXR_WORDS(openxr_tracked_t)    <= OPENXR_WORDS(video_xr_quad_set_t)
-       && OPENXR_WORDS(openxr_screens_t)    <= OPENXR_WORDS(video_xr_quad_set_t)
-       && OPENXR_WORDS(openxr_projection_t) <= OPENXR_WORDS(video_xr_quad_set_t))
+      (   OPENXR_WORDS(openxr_tracked_t)    <= OPENXR_SEQ_WORDS
+       && OPENXR_WORDS(openxr_screens_t)    <= OPENXR_SEQ_WORDS
+       && OPENXR_WORDS(openxr_projection_t) <= OPENXR_SEQ_WORDS
+       && OPENXR_WORDS(openxr_aims_t)       <= OPENXR_SEQ_WORDS)
       ? 1 : -1];
 
 /* A latched seqlock: two copies of the words, one writer, any number
@@ -54,7 +63,7 @@ static void openxr_seq_store(retro_atomic_int_t *words,
 static void openxr_seq_publish(retro_atomic_int_t *seq,
       retro_atomic_int_t *words, const void *src, size_t len)
 {
-   int tmp[OPENXR_WORDS(video_xr_quad_set_t)];
+   int tmp[OPENXR_SEQ_WORDS];
    size_t n = (len + sizeof(int) - 1) / sizeof(int);
    int s    = retro_atomic_load_relaxed_int(seq);
 
@@ -71,7 +80,7 @@ static void openxr_seq_publish(retro_atomic_int_t *seq,
 static void openxr_seq_read(retro_atomic_int_t *seq,
       retro_atomic_int_t *words, void *dst, size_t len)
 {
-   int tmp[OPENXR_WORDS(video_xr_quad_set_t)];
+   int tmp[OPENXR_SEQ_WORDS];
    size_t n = (len + sizeof(int) - 1) / sizeof(int);
    for (;;)
    {
@@ -169,37 +178,150 @@ static const XrSwapchain *openxr_frame_chains(openxr_slot_t *slot,
    return (*layers && slot->old[0]) ? slot->old : NULL;
 }
 
-/* The published quads whose slot shows an image. No slot changes
- * under it: slots change under the graphics lock, or on this thread
- * where the host has none. */
-static unsigned openxr_frame_layers(openxr_frame_t *f,
+/* Every quad of slot's item at pose and g's size, both eyes of a stereo
+ * screen; a fixed slot is no item. */
+static void openxr_frame_hold_slot(video_xr_quad_set_t *set, unsigned slot,
+      const video_xr_pose_t *pose, const video_xr_grab_t *g)
+{
+   unsigned i;
+   if (set->slots[slot].fixed)
+      return;
+   for (i = 0; i < set->num_quads; i++)
+      if (set->quads[i].slot == slot)
+      {
+         set->quads[i].pose   = *pose;
+         set->quads[i].width  = g->width;
+         set->quads[i].height = g->height;
+      }
+}
+
+/* Edit mode, in the screens' frame: a held item goes where the hand's
+ * aim at time puts it, kept while untracked, snapped and hinged as the
+ * main thread does; a let-go one stays until quads planned at it show
+ * it. */
+static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
+      video_xr_quad_set_t *set)
+{
+   unsigned h, s;
+   video_xr_pose_t inv;
+   unsigned holding = 0;
+   XrSpace space = f->screens.view
+      ? f->session->view_space : f->session->local_space;
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+   {
+      const video_xr_grab_t *g = &f->grabs.let_go[s];
+      if (     g->state == VIDEO_XR_GRAB_RELEASED
+            && (int)(set->slots[s].edit_seq - g->release_seq) < 0)
+         openxr_frame_hold_slot(set, s, &g->last, g);
+   }
+   for (h = 0; h < 2; h++)
+      if (     f->grabs.hand[h].state == VIDEO_XR_GRAB_HELD
+            && f->grabs.hand[h].slot < VIDEO_XR_MAX_SLOTS)
+         holding |= 1u << f->grabs.hand[h].slot;
+   video_xr_pose_invert(&f->screens.pose, &inv);
+   f->hinged = 0;
+   for (h = 0; h < 2; h++)
+   {
+      video_xr_pose_t aim;
+      const video_xr_grab_t *g = &f->grabs.hand[h];
+      openxr_held_t *held      = &f->held[h];
+      if (held->state != g->state || held->slot != g->slot)
+      {
+         held->pose   = g->last;
+         held->slot   = g->slot;
+         held->state  = g->state;
+         held->hinged = false;
+      }
+      if (g->state != VIDEO_XR_GRAB_HELD || g->slot >= VIDEO_XR_MAX_SLOTS)
+         continue;
+      if (f->aim && time && f->aim(f->extra_user, h, space, time, &aim))
+      {
+         const video_xr_quad_set_t *targets = f->grabs.snap ? set : NULL;
+         video_xr_compose(&inv, &aim, &aim);
+         video_xr_grab_hinge(g, &aim, targets, holding,
+               &f->grabs.start[h], &held->pose, NULL);
+      }
+      openxr_frame_hold_slot(set, g->slot, &held->pose, g);
+      /* The hinge the main thread marks, nothing of the frame's own:
+       * a wobble between its polls never flips the line. */
+      held->hinged = video_xr_grab_marked(g, &held->pose, set, holding,
+            &held->hinge);
+      if (held->hinged)
+      {
+         video_xr_pose_t at;
+         video_xr_vec3_t dir, flat;
+         video_xr_hinge_t *k = &f->hinges[h];
+         *k                  = held->hinge;
+         video_xr_pose_identity(&at);
+         at.position = k->point;
+         video_xr_compose(&f->screens.pose, &at, &at);
+         k->point = at.position;
+         dir      = k->dir;
+         flat     = k->flat;
+         video_xr_rotate(&f->screens.pose.orientation, &dir, &k->dir);
+         video_xr_rotate(&f->screens.pose.orientation, &flat, &k->flat);
+         f->hinged |= 1u << h;
+      }
+   }
+}
+
+static bool openxr_frame_head(openxr_frame_t *f, XrTime time,
+      video_xr_pose_t *head);
+
+/* This frame's quads, holds applied, where the screens are, into
+ * f->shown; layers of those whose slot shows an image. Runtimes draw
+ * only a quad's front, so with the head behind one its back, the laser
+ * image's grey square, takes its layer, turned to the head. No slot
+ * changes under it: slots change under the graphics lock, or on this
+ * thread where the host has none. */
+static unsigned openxr_frame_layers(openxr_frame_t *f, XrTime time,
       XrCompositionLayerQuad *layers,
       const XrCompositionLayerBaseHeader **ptrs)
 {
    unsigned i;
-   unsigned n = 0;
-   video_xr_quad_set_t quads;
+   video_xr_pose_t head;
+   unsigned n                 = 0;
+   bool seen                  = false;
+   video_xr_quad_set_t *quads = &f->shown;
    openxr_seq_read(&f->quads_seq, f->quads_words,
-         &quads, sizeof(quads));
-   for (i = 0; i < quads.num_quads; i++)
+         quads, sizeof(*quads));
+   openxr_frame_hold(f, time, quads);
+   f->backs      = 0;
+   f->menu_layer = -1;
+   /* Follow Head's space is the head's own. Backs are for edit mode,
+    * where screens are turned around; outside it nothing changes. */
+   if (f->cursor && f->grabs.editing)
    {
-      video_xr_pose_t pose;
+      if (f->screens.view)
+      {
+         video_xr_pose_identity(&head);
+         seen = true;
+      }
+      else
+         seen = openxr_frame_head(f, time, &head);
+   }
+   for (i = 0; i < quads->num_quads; i++)
+   {
       unsigned dims, count;
       const XrSwapchain *chains;
-      const video_xr_quad_t *q        = &quads.quads[i];
-      openxr_slot_t *slot             = &f->sc->slots[q->slot];
-      XrCompositionLayerQuad *l       = &layers[n];
+      video_xr_pose_t pose;
+      bool back;
+      video_xr_quad_t *q        = &quads->quads[i];
+      openxr_slot_t *slot       = &f->sc->slots[q->slot];
+      XrCompositionLayerQuad *l = &layers[n];
+      video_xr_compose(&f->screens.pose, &q->pose, &q->pose);
       if (     !(chains = openxr_frame_chains(slot, &dims, &count))
             || q->layer >= count)
          continue;
-      video_xr_compose(&f->screens.pose, &q->pose, &pose);
+      back = seen && video_xr_quad_behind(q, &head.position);
+      pose = q->pose;
       l->type                        = XR_TYPE_COMPOSITION_LAYER_QUAD;
       l->next                        = NULL;
       l->subImage.imageRect.offset.x = 0;
       l->subImage.imageRect.offset.y = 0;
       l->subImage.imageArrayIndex    = 0;
       /* The UI is drawn over transparent black: premultiplied. */
-      l->layerFlags    = (q->kind == VIDEO_XR_QUAD_MENU)
+      l->layerFlags    = (q->kind == VIDEO_XR_QUAD_MENU && !back)
          ? XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT : 0;
       l->space         = f->screens.view
          ? f->session->view_space : f->session->local_space;
@@ -207,9 +329,24 @@ static unsigned openxr_frame_layers(openxr_frame_t *f,
          ? XR_EYE_VISIBILITY_LEFT
          : ((q->eye == VIDEO_XR_EYE_RIGHT)
                ? XR_EYE_VISIBILITY_RIGHT : XR_EYE_VISIBILITY_BOTH);
-      l->subImage.swapchain               = chains[q->layer];
-      l->subImage.imageRect.extent.width  = (int32_t)VIDEO_SCALE_W(dims);
-      l->subImage.imageRect.extent.height = (int32_t)VIDEO_SCALE_H(dims);
+      if (back)
+      {
+         video_xr_turn_back(&pose);
+         f->backs                           |= 1u << i;
+         l->subImage.swapchain               = f->cursor;
+         l->subImage.imageRect.offset.x      =
+            VIDEO_XR_BACK_X + VIDEO_XR_BACK_MARGIN;
+         l->subImage.imageRect.offset.y      =
+            VIDEO_XR_BACK_Y + VIDEO_XR_BACK_MARGIN;
+         l->subImage.imageRect.extent.width  = VIDEO_XR_BACK_DIM;
+         l->subImage.imageRect.extent.height = VIDEO_XR_BACK_DIM;
+      }
+      else
+      {
+         l->subImage.swapchain               = chains[q->layer];
+         l->subImage.imageRect.extent.width  = (int32_t)VIDEO_SCALE_W(dims);
+         l->subImage.imageRect.extent.height = (int32_t)VIDEO_SCALE_H(dims);
+      }
       l->pose.orientation.x = pose.orientation.x;
       l->pose.orientation.y = pose.orientation.y;
       l->pose.orientation.z = pose.orientation.z;
@@ -219,6 +356,8 @@ static unsigned openxr_frame_layers(openxr_frame_t *f,
       l->pose.position.z    = pose.position.z;
       l->size.width         = q->width;
       l->size.height        = q->height;
+      if (q->kind == VIDEO_XR_QUAD_MENU)
+         f->menu_layer = (int)n;
       ptrs[n++]             = (const XrCompositionLayerBaseHeader*)l;
    }
    return n;
@@ -353,8 +492,19 @@ static void openxr_frame_screens_anchor(openxr_frame_t *f,
 static void openxr_frame_place_screens(openxr_frame_t *f, XrTime time)
 {
    video_xr_pose_t at;
+   bool held;
    int recenters = retro_atomic_load_acquire_int(&f->recenters);
    int placement = retro_atomic_load_acquire_int(&f->placement);
+   int grabs     = retro_atomic_load_acquire_int(&f->grabs_seq);
+   /* Outside edit mode nothing is published: no copy. */
+   if (grabs != f->grabs_read)
+   {
+      openxr_seq_read(&f->grabs_seq, f->grabs_words, &f->grabs,
+            sizeof(f->grabs));
+      f->grabs_read = grabs;
+   }
+   held = f->grabs.hand[0].state == VIDEO_XR_GRAB_HELD
+      || f->grabs.hand[1].state == VIDEO_XR_GRAB_HELD;
    openxr_frame_screens_anchor(f, &at);
    f->screens.view = (placement == VIDEO_OPENXR_PLACEMENT_FOLLOW);
    if (placement != VIDEO_OPENXR_PLACEMENT_LAZY)
@@ -386,7 +536,9 @@ static void openxr_frame_place_screens(openxr_frame_t *f, XrTime time)
             f->lazy_recenters = recenters;
          }
       }
-      else if (   openxr_frame_head(f, time, &head)
+      /* Edit mode holds the glide while anything is held. */
+      else if (   !held
+               && openxr_frame_head(f, time, &head)
                && video_xr_anchor_from_head(&head, &target))
          f->lazy_gliding = video_xr_lazy_follow(&f->lazy, &target,
                (f->lazy_time > 0 && time > f->lazy_time)
@@ -582,19 +734,15 @@ static bool openxr_frame_wait_begin(openxr_frame_t *f,
 
 /* At most the runtime's layer count: the last screens go first, so the
  * menu and the host's layers over it stay. The quads are ptrs[first]
- * up to ptrs[end]; returns the count kept. */
+ * up to ptrs[end], as openxr_frame_layers made them; returns the count
+ * kept. */
 static uint32_t openxr_frame_fit(const openxr_frame_t *f,
       const XrCompositionLayerBaseHeader **ptrs, uint32_t count,
       uint32_t first, uint32_t end)
 {
-   XrSwapchain menu     = f->sc->slots[VIDEO_XR_MENU_SLOT].swapchains[0];
-   XrSwapchain menu_old = f->sc->slots[VIDEO_XR_MENU_SLOT].old[0];
    while (count > f->rt->max_layers && end > first)
    {
-      const XrCompositionLayerQuad *q =
-         (const XrCompositionLayerQuad*)ptrs[--end];
-      if (     q->subImage.swapchain == menu
-            || q->subImage.swapchain == menu_old)
+      if ((int)(--end - first) == f->menu_layer)
          continue;
       memmove(&ptrs[end], &ptrs[end + 1],
             (count - end - 1) * sizeof(*ptrs));
@@ -630,13 +778,33 @@ static void openxr_frame_submit(openxr_frame_t *f,
          ptrs[end_info.layerCount++] =
             (const XrCompositionLayerBaseHeader*)&proj;
       first               = end_info.layerCount;
-      end                 = first + openxr_frame_layers(f, layers,
-            ptrs + first);
+      end                 = first + openxr_frame_layers(f, b->display_time,
+            layers, ptrs + first);
       end_info.layerCount = end;
       if (f->extra_layers)
-         end_info.layerCount += f->extra_layers(f->extra_user,
-               b->display_time, ptrs + end_info.layerCount,
-               OPENXR_MAX_EXTRA_LAYERS);
+      {
+         unsigned i, n;
+         unsigned under = 0;
+         unsigned cap   = (f->rt->max_layers > end)
+            ? (unsigned)(f->rt->max_layers - end) : 0;
+         if (cap < OPENXR_KEPT_EXTRA_LAYERS)
+            cap = OPENXR_KEPT_EXTRA_LAYERS;
+         if (cap > OPENXR_MAX_EXTRA_LAYERS)
+            cap = OPENXR_MAX_EXTRA_LAYERS;
+         n = f->extra_layers(f->extra_user, b->display_time, &f->shown,
+               f->screens.view
+               ? f->session->view_space : f->session->local_space,
+               ptrs + end, cap, &under);
+         end_info.layerCount += n;
+         /* The first under go before the quads. */
+         for (i = 0; i < under && i < n; i++, first++, end++)
+         {
+            const XrCompositionLayerBaseHeader *l = ptrs[end];
+            memmove(&ptrs[first + 1], &ptrs[first],
+                  (end - first) * sizeof(*ptrs));
+            ptrs[first] = l;
+         }
+      }
       end_info.layerCount = openxr_frame_fit(f, ptrs,
             end_info.layerCount, first, end);
    }
@@ -839,6 +1007,12 @@ void openxr_frame_deinit(openxr_frame_t *f)
    f->idle_ready = false;
 }
 
+/* A new session's frame loop holds nothing, whatever the input does:
+ * its own copy is cleared and what is published now is passed over,
+ * the main thread staying the one writer of the grabs. */
+static const openxr_grabs_t openxr_frame_no_grabs;
+static const openxr_aims_t openxr_frame_no_aims;
+
 void openxr_frame_session_created(openxr_frame_t *f)
 {
    video_xr_pose_identity(&f->tracked.anchor);
@@ -849,6 +1023,10 @@ void openxr_frame_session_created(openxr_frame_t *f)
    openxr_frame_publish_tracked(f);
    openxr_seq_publish(&f->screens_seq, f->screens_words,
          &f->screens, sizeof(f->screens));
+   f->grabs      = openxr_frame_no_grabs;
+   f->grabs_read = retro_atomic_load_acquire_int(&f->grabs_seq);
+   openxr_seq_publish(&f->aims_seq, f->aims_words,
+         &openxr_frame_no_aims, sizeof(openxr_frame_no_aims));
    retro_atomic_store_release_int(&f->recenter, 0);
    openxr_frame_list_rates(f);
 }
@@ -881,6 +1059,7 @@ void openxr_frame_input_attach(openxr_frame_t *f)
    h.hand_data_source = f->rt->hand_data_source;
    f->extra_layers    = in->frame_layers;
    f->locate_hands    = in->locate_hands;
+   f->aim             = in->aim;
    f->extra_user      = in->user;
    f->input_attached  = true;
    in->session_created(in->user, &h);
@@ -894,6 +1073,7 @@ void openxr_frame_input_detach(openxr_frame_t *f)
    f->input_attached = false;
    f->extra_layers   = NULL;
    f->locate_hands   = NULL;
+   f->aim            = NULL;
    f->extra_user     = NULL;
    if (in->session_destroying)
       in->session_destroying(in->user);
@@ -913,6 +1093,24 @@ bool openxr_frame_locate_hands(openxr_frame_t *f, XrSpace base, XrTime time,
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)
 {
    return f->cursor;
+}
+
+unsigned openxr_frame_cursor_w(const openxr_frame_t *f)
+{
+   /* Not said: 4096, as openxr_runtime's max_dim. */
+   unsigned max = f->rt->max_width ? f->rt->max_width : 4096;
+   if (max >= VIDEO_XR_CURSOR_W)
+      return VIDEO_XR_CURSOR_W;
+   return (max >= VIDEO_XR_CURSOR_TAGGED_W)
+      ? VIDEO_XR_CURSOR_TAGGED_W : VIDEO_XR_CURSOR_UNTAGGED_W;
+}
+
+const char *openxr_frame_cursor_parts(const openxr_frame_t *f)
+{
+   unsigned w = openxr_frame_cursor_w(f);
+   if (w == VIDEO_XR_CURSOR_W)
+      return "cut outlines and tags";
+   return (w == VIDEO_XR_CURSOR_TAGGED_W) ? "tags" : "no tags";
 }
 
 bool openxr_frame_start(openxr_frame_t *f)
@@ -1195,6 +1393,16 @@ void openxr_frame_publish(openxr_frame_t *f, const video_xr_quad_set_t *set)
    openxr_seq_publish(&f->quads_seq, f->quads_words, set, sizeof(*set));
 }
 
+void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
+{
+   openxr_seq_publish(&f->grabs_seq, f->grabs_words, g, sizeof(*g));
+}
+
+void openxr_frame_publish_aims(openxr_frame_t *f, const openxr_aims_t *a)
+{
+   openxr_seq_publish(&f->aims_seq, f->aims_words, a, sizeof(*a));
+}
+
 void openxr_frame_publish_projection(openxr_frame_t *f,
       const openxr_projection_t *p)
 {
@@ -1238,6 +1446,20 @@ void openxr_frame_get_shown_quads(openxr_frame_t *f,
    *space = at.view ? f->session->view_space : f->session->local_space;
 }
 
+void openxr_frame_get_screens(openxr_frame_t *f, video_xr_pose_t *pose,
+      XrSpace *space)
+{
+   openxr_screens_t at;
+   openxr_seq_read(&f->screens_seq, f->screens_words, &at, sizeof(at));
+   *pose  = at.pose;
+   *space = at.view ? f->session->view_space : f->session->local_space;
+}
+
+void openxr_frame_get_aims(openxr_frame_t *f, openxr_aims_t *out)
+{
+   openxr_seq_read(&f->aims_seq, f->aims_words, out, sizeof(*out));
+}
+
 void openxr_frame_request_recenter(openxr_frame_t *f)
 {
    retro_atomic_store_release_int(&f->recenter, 1);
@@ -1251,4 +1473,144 @@ int openxr_frame_recenters(openxr_frame_t *f)
 XrDuration openxr_frame_period(openxr_frame_t *f)
 {
    return (XrDuration)retro_atomic_load_acquire_int(&f->period_ns);
+}
+
+/* A glyph's coverage from the font's atlas into a tag cell's cov at x,
+ * y, kept VIDEO_XR_TAG_INSET inside the cell. */
+static void openxr_frame_tag_glyph(const struct font_atlas *atlas,
+      const struct font_glyph *g, int x, int y, uint8_t *cov)
+{
+   unsigned gx, gy;
+   unsigned w  = VIDEO_SCALE_W(g->dims);
+   unsigned h  = VIDEO_SCALE_H(g->dims);
+   unsigned ax = VIDEO_SCALE_W(g->atlas_pos);
+   unsigned ay = VIDEO_SCALE_H(g->atlas_pos);
+   if (!atlas || !atlas->buffer || atlas->format != FONT_ATLAS_FORMAT_A8)
+      return;
+   for (gy = 0; gy < h && ay + gy < atlas->height; gy++)
+      for (gx = 0; gx < w && ax + gx < atlas->width; gx++)
+      {
+         uint8_t a;
+         int cx = x + (int)gx;
+         int cy = y + (int)gy;
+         if (     cx < VIDEO_XR_TAG_INSET || cy < VIDEO_XR_TAG_INSET
+               || cx >= VIDEO_XR_TAG_COLS - VIDEO_XR_TAG_INSET
+               || cy >= VIDEO_XR_TAG_ROWS - VIDEO_XR_TAG_INSET)
+            continue;
+         a = atlas->buffer[(ay + gy) * atlas->width + ax + gx];
+         if (a > cov[cy * VIDEO_XR_TAG_COLS + cx])
+            cov[cy * VIDEO_XR_TAG_COLS + cx] = a;
+      }
+}
+
+/* A line of font's, size high, in whole rows above and below its
+ * baseline: the font's own, or, where it gives none, a 1.25 em line
+ * as a common font's. */
+static void openxr_frame_tag_metrics(const font_renderer_driver_t *drv,
+      void *font, unsigned size, int *asc, int *desc)
+{
+   struct font_line_metrics *m = NULL;
+   *asc                        = (int)size;
+   *desc                       = (int)size / 4;
+   if (drv->get_line_metrics)
+      drv->get_line_metrics(font, &m);
+   if (m)
+   {
+      *asc  = (int)ceil(m->ascender);
+      *desc = (int)ceil(m->descender);
+   }
+}
+
+/* text in one line, centred in a tag cell's coverage cov, the line
+ * (asc rows over its baseline, desc under) in the cell's text rows; a
+ * line too tall loses the top of its ascender, never a descender. */
+static void openxr_frame_tag_line(const font_renderer_driver_t *drv,
+      void *font, int asc, int desc, const char *text, uint8_t *cov)
+{
+   const char *msg                   = text;
+   size_t msg_len                    = strlen(text);
+   void *font_data                   = font;
+   const struct font_glyph *(*get_glyph)(void*, uint32_t) =
+      drv->get_glyph;
+   const struct font_glyph *glyph_q  = drv->get_glyph(font, '?');
+   int line_x                        = 0;
+   int spare                         = VIDEO_XR_TAG_TEXT_ROWS - asc - desc;
+   int base                          = VIDEO_XR_TAG_ROWS
+      - VIDEO_XR_TAG_INSET - desc - (spare > 0 ? spare / 2 : 0);
+#define FONT_LAYOUT_ALIGNED 1
+#define FONT_LAYOUT_LINE(line, width, count, bytes) \
+   (void)(line); \
+   line_x = ((int)VIDEO_XR_TAG_COLS - (int)(width)) / 2;
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   openxr_frame_tag_glyph(drv->get_atlas(font), (glyph), \
+         line_x + (pen_x) + (glyph)->draw_offset_x, \
+         base - (pen_y) + (glyph)->draw_offset_y, cov);
+#include "../font_layout.h"
+}
+
+/* Tag tag's words: the laser's, a screen's by number, the menu's. */
+static void openxr_frame_tag_text(unsigned tag, char *s, size_t len)
+{
+   if (!tag)
+      strlcpy(s, msg_hash_to_str(MSG_OPENXR_EDIT_TAG_LASER), len);
+   else if (tag == VIDEO_XR_MENU_SLOT + 1)
+      strlcpy(s, msg_hash_to_str(MSG_OPENXR_EDIT_TAG_MENU), len);
+   else
+      snprintf(s, len, msg_hash_to_str(MSG_OPENXR_EDIT_TAG_SCREEN), tag);
+}
+
+/* Edit mode's tags into px, in the default font. */
+static void openxr_frame_cursor_tags(uint8_t *px, bool bottom_up)
+{
+   unsigned i;
+   int asc, desc;
+   uint8_t *cov                      = NULL;
+   void *font                        = NULL;
+   const font_renderer_driver_t *drv = NULL;
+   unsigned size                     = VIDEO_XR_TAG_FONT;
+   if (!font_renderer_create_default(&drv, &font, NULL, size,
+            FONT_ATLAS_FORMAT_A8))
+      return;
+   openxr_frame_tag_metrics(drv, font, size, &asc, &desc);
+   /* A font whose line is taller than the rows is drawn smaller, so no
+    * descender is cut. */
+   if (asc + desc > VIDEO_XR_TAG_TEXT_ROWS)
+   {
+      if (drv->free)
+         drv->free(font);
+      font = NULL;
+      size = VIDEO_XR_TAG_FONT * VIDEO_XR_TAG_TEXT_ROWS / (asc + desc);
+      if (!size || !font_renderer_create_default(&drv, &font, NULL, size,
+               FONT_ATLAS_FORMAT_A8))
+         return;
+      openxr_frame_tag_metrics(drv, font, size, &asc, &desc);
+   }
+   if ((cov = (uint8_t*)malloc(VIDEO_XR_TAG_COLS * VIDEO_XR_TAG_ROWS)))
+   {
+      for (i = 0; i < VIDEO_XR_TAGS; i++)
+      {
+         char text[64];
+         openxr_frame_tag_text(i, text, sizeof(text));
+         memset(cov, 0, VIDEO_XR_TAG_COLS * VIDEO_XR_TAG_ROWS);
+         openxr_frame_tag_line(drv, font, asc, desc, text, cov);
+         video_xr_tag_pixels(px, i, cov, bottom_up);
+      }
+      free(cov);
+   }
+   if (drv->free)
+      drv->free(font);
+}
+
+void openxr_frame_cursor_pixels(uint8_t *px, unsigned w, bool bottom_up)
+{
+   unsigned i;
+   video_xr_cursor_pixels(px);
+   if (w == VIDEO_XR_CURSOR_W)
+      video_xr_cut_pixels(px, bottom_up);
+   if (w >= VIDEO_XR_CURSOR_TAGGED_W)
+      openxr_frame_cursor_tags(px, bottom_up);
+   if (w < VIDEO_XR_CURSOR_W)
+      for (i = 1; i < VIDEO_XR_CURSOR_H; i++)
+         memmove(px + (size_t)i * w * 4,
+               px + (size_t)i * VIDEO_XR_CURSOR_W * 4, (size_t)w * 4);
 }
