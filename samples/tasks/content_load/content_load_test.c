@@ -40,8 +40,9 @@
  *  - core title held: the menu's core title shows the title from
  *    before a playlist Run or the one after it, nothing in between;
  *  - menu sound close: a menu sound playing when Close Content is
- *    confirmed plays on through the staged close, the device never
- *    stopped while the menu feeds it and the tone handed over whole;
+ *    confirmed plays on through the staged close and past it - the
+ *    device never handed audio while stopped, the sound not reloaded
+ *    under itself - and the tone handed over whole;
  *  - quit waits for a save: a quit from the frame loop while a state
  *    is being written returns to the loop at once, which presents
  *    frames - the core not run - until the state is written, and only
@@ -87,9 +88,6 @@
 #include "../../../menu/menu_driver.h"
 #include "../../../tasks/task_content.h"
 #include "../../../tasks/tasks_internal.h"
-#ifdef HAVE_AUDIOMIXER
-#include "../../../tasks/task_audio_mixer.h"
-#endif
 #include "../../../menu/menu_entries.h"
 #include "../../../menu/menu_displaylist.h"
 #include "../../../msg_hash_lbl_str.h"
@@ -526,7 +524,6 @@ static void lane_audio_kept(void)
 #define TAP_MAX (48000 * 2 * 4)
 static int16_t  tap_buf[TAP_MAX];
 static size_t   tap_len;
-static size_t   tap_restart_at;
 static unsigned tap_stops, tap_writes_stopped;
 static bool     tap_running;
 static int      tap_token;
@@ -560,8 +557,7 @@ static bool tap_stop(void *data)
 static bool tap_start(void *data, bool shutdown)
 {
    (void)data; (void)shutdown;
-   tap_running    = true;
-   tap_restart_at = tap_len;
+   tap_running = true;
    return true;
 }
 static bool tap_alive(void *data) { (void)data; return tap_running; }
@@ -640,8 +636,9 @@ static void lane_menu_sound_close(void)
    struct menu_state *menu_st = menu_state_get_ptr();
    bool menu_audio            = settings->bools.audio_enable_menu;
    bool menu_audio_ok         = settings->bools.audio_enable_menu_ok;
-   char tone[600];
-   size_t i, last_heard = 0;
+   char assets[sizeof(settings->paths.directory_assets)];
+   char sounds[600], tone[640];
+   size_t i, last_heard = 0, switch_end = 0;
    unsigned n;
    unsigned had = failures;
    int worst;
@@ -659,11 +656,18 @@ static void lane_menu_sound_close(void)
    command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    pump(5);
 
-   snprintf(tone, sizeof(tone), "%s/ok.wav", harness_dir);
+   /* The tone is the menu's OK sound, found where an install keeps its
+    * sounds and loaded the way the frontend loads them - and loads
+    * them again after every driver stage. */
+   strlcpy(assets, settings->paths.directory_assets, sizeof(assets));
+   strlcpy(settings->paths.directory_assets, harness_dir,
+         sizeof(settings->paths.directory_assets));
+   snprintf(sounds, sizeof(sounds), "%s/sounds", harness_dir);
+   path_mkdir(sounds);
+   snprintf(tone, sizeof(tone), "%s/ok.wav", sounds);
    CHECK(write_tone(tone), "the tone was not written");
-   CHECK(task_push_audio_mixer_load(tone, NULL, NULL, true,
-            AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_OK),
-         "the tone was not loaded");
+   audio_driver_load_system_sounds();
+   pump(10);
 
    open_menu();
    CHECK(task_push_load_contentless_core_from_menu(core_path),
@@ -676,37 +680,37 @@ static void lane_menu_sound_close(void)
    /* The OK of the confirmation plays; the confirmed command runs on
     * the next iteration, as from the dialog. Each frame takes a
     * display period, so the menu's feed is the device's. */
-   tap_len        = 0;
-   tap_restart_at = 0;
-   tap_stops      = tap_writes_stopped = 0;
+   tap_len   = 0;
+   tap_stops = tap_writes_stopped = 0;
    audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
    pump(1);
    retro_sleep(16);
    menu_st->dialog_st.pending_cmd = CMD_EVENT_CLOSE_CONTENT;
    for (n = 0; n < 30; n++)
    {
+      bool was_switching = runloop_is_content_switching();
       pump(1);
+      if (was_switching && !runloop_is_content_switching())
+         switch_end = tap_len;
       retro_sleep(16);
    }
-   CHECK(!runloop_is_content_switching()
+   CHECK(!runloop_is_content_switching() && switch_end
          && runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY,
          "the close did not finish");
 
-   CHECK(tap_writes_stopped == 0,
-         "the menu handed a stopped device %u write(s) during the close"
-         " (%u stop(s))", tap_writes_stopped, tap_stops);
-   CHECK(tap_stops <= 1,
-         "the device was stopped %u times across the close", tap_stops);
+   CHECK(tap_stops <= 1 && tap_writes_stopped == 0,
+         "the device was stopped %u time(s) across the close, and handed"
+         " %u write(s) while stopped", tap_stops, tap_writes_stopped);
    worst = tap_worst_step(0);
    CHECK(worst < 1000,
          "the sound handed to the device jumps by %d in one sample", worst);
    for (i = 0; i < tap_len; i += 2)
       if (tap_buf[i] > 1000 || tap_buf[i] < -1000)
          last_heard = i;
-   CHECK(tap_restart_at && last_heard > tap_restart_at,
-         "the sound did not play on past the driver stage"
-         " (last heard at %lu, device taken back at %lu)",
-         (unsigned long)last_heard, (unsigned long)tap_restart_at);
+   CHECK(last_heard > switch_end,
+         "the sound did not play on past the close"
+         " (last heard at %lu, the close done at %lu)",
+         (unsigned long)last_heard, (unsigned long)switch_end);
 
    /* Start Core, as the menu would, to leave a core running. */
    {
@@ -719,10 +723,13 @@ static void lane_menu_sound_close(void)
          menu_audio);
    configuration_set_bool(settings, settings->bools.audio_enable_menu_ok,
          menu_audio_ok);
+   strlcpy(settings->paths.directory_assets, assets,
+         sizeof(settings->paths.directory_assets));
    audio_null = saved;
    command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    pump(5);
    remove(tone);
+   rmdir(sounds);
    if (failures == had)
       fprintf(stderr, "[pass] menu-sound-close lane\n");
 }

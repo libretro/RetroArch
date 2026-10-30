@@ -9590,6 +9590,36 @@ static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
 }
 #endif
 
+/* The file each system slot was last asked to load. A slot that holds
+ * a sound from the same file keeps it: a reload after a driver reinit
+ * or a content load neither cuts a sound that is playing nor restarts
+ * the menu music. A slot the mixer lost loads again. Main thread, as
+ * the table's other writers are. */
+static char audio_driver_system_sound_path
+   [AUDIO_MIXER_MAX_SYSTEM_STREAMS - AUDIO_MIXER_MAX_STREAMS][PATH_MAX_LENGTH];
+
+static void audio_driver_load_system_sound(const char *path,
+      retro_task_callback_t cb, unsigned slot)
+{
+   char *loaded = audio_driver_system_sound_path[slot - AUDIO_MIXER_MAX_STREAMS];
+   bool held;
+
+   audio_driver_mixer_hold();
+   held = audio_driver_st.mixer_streams[slot].handle != NULL;
+   audio_driver_mixer_release();
+   if (held && string_is_equal(loaded, path))
+   {
+      /* What the load would have gone on to do - the menu music's
+       * play, which leaves a playing sound alone */
+      if (cb)
+         cb(NULL, NULL, NULL, NULL);
+      return;
+   }
+   strlcpy(loaded, path, PATH_MAX_LENGTH);
+   task_push_audio_mixer_load(path, cb, NULL, true,
+         AUDIO_MIXER_SLOT_SELECTION_MANUAL, slot);
+}
+
 void audio_driver_load_system_sounds(void)
 {
    char basename_noext[NAME_MAX_LENGTH];
@@ -9694,31 +9724,31 @@ void audio_driver_load_system_sounds(void)
    }
 
    if (path_ok && audio_enable_menu_ok)
-      task_push_audio_mixer_load(path_ok, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_OK);
+      audio_driver_load_system_sound(path_ok, NULL, AUDIO_MIXER_SYSTEM_SLOT_OK);
    if (path_cancel && audio_enable_menu_cancel)
-      task_push_audio_mixer_load(path_cancel, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
+      audio_driver_load_system_sound(path_cancel, NULL, AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
    if (audio_enable_menu_notice)
    {
       if (path_notice)
-         task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
+         audio_driver_load_system_sound(path_notice, NULL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
       if (path_notice_back)
-          task_push_audio_mixer_load(path_notice_back, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
+          audio_driver_load_system_sound(path_notice_back, NULL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
    }
 
 #if defined(HAVE_MENU)
    if (path_bgm && audio_enable_menu_bgm)
-      task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
+      audio_driver_load_system_sound(path_bgm, audio_driver_load_menu_bgm_callback, AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
 
    if (path_cheevo_unlock && audio_enable_cheevo_unlock)
-      task_push_audio_mixer_load(path_cheevo_unlock, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_ACHIEVEMENT_UNLOCK);
+      audio_driver_load_system_sound(path_cheevo_unlock, NULL, AUDIO_MIXER_SYSTEM_SLOT_ACHIEVEMENT_UNLOCK);
 
    if (audio_enable_menu_scroll)
    {
       if (path_up)
-         task_push_audio_mixer_load(path_up, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_UP);
+         audio_driver_load_system_sound(path_up, NULL, AUDIO_MIXER_SYSTEM_SLOT_UP);
       if (path_down)
-         task_push_audio_mixer_load(path_down, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_DOWN);
+         audio_driver_load_system_sound(path_down, NULL, AUDIO_MIXER_SYSTEM_SLOT_DOWN);
    }
 
 end:
