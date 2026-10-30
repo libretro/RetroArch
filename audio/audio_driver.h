@@ -625,11 +625,9 @@ typedef struct
     * pass ends and nowhere else, so the count of notifies is the count
     * of passes however finely the producer publishes. */
    /**
-    * Held across a pipeline pass, and by the main thread whenever it
-    * changes something a pass reads: the resampler and the device.
-    * Uncontended on the frame-synchronous path, where both are the
-    * same thread.
-    * Never held across a device write.
+    * Made only where the atomics have no pointer operations, which
+    * holds the DSP filter, the record tap and the mixer's table under
+    * it; see audio_driver_state_lock().
     */
    slock_t *state_lock;
    retro_eventcount_t pipe_space;
@@ -821,6 +819,8 @@ typedef struct
    retro_atomic_int_t reinit_request;
    /* Odd while a holder of the state lock - a pass - runs. */
    retro_atomic_int_t pass_seq;
+   /* The last flush's core format, for the mixer off the flush's thread. */
+   retro_atomic_int_t core_float_seen;
 #ifdef HAVE_DSP_FILTER
    /* What the filter allows, for readers outside a pass: 0 none, 1 a
     * float-only filter, 2 one with an int16 path. */
@@ -1109,6 +1109,23 @@ typedef struct
    retro_atomic_int_t  pipe_resume_topup;
    retro_atomic_int_t  pipe_tail_seen;   /* stored by the consumer */
    retro_atomic_int_t  pipe_resume_seen;
+   /* Without the threaded pipeline the same requests, and a format
+    * change and a stop's reset besides, are carried out by the thread
+    * that submits the core's audio (inline_owner), or by the main
+    * thread at once when that is the one. Whoever carries them out
+    * holds inline_busy, which a submit takes too; a submit that finds
+    * the main thread holding it drops its batch rather than wait.
+    * inline_req_done is the last pipe_pause_seq carried out. */
+   retro_atomic_int_t  inline_format_seq;
+   retro_atomic_int_t  inline_format_seen;
+   retro_atomic_int_t  inline_format;     /* (multi << 1) | floating */
+   retro_atomic_int_t  inline_reset_seq;
+   retro_atomic_int_t  inline_reset_seen;
+   retro_atomic_int_t  inline_req_done;
+   retro_atomic_int_t  inline_busy;
+   retro_atomic_size_t inline_owner;      /* thread id */
+   retro_atomic_size_t inline_holder;     /* thread id, 0 when free */
+   unsigned            inline_depth;      /* the holder's */
    retro_atomic_size_t pipe_fade_in_at;
    retro_atomic_int_t  pipe_fade_in_mark;
    unsigned            pipe_fade_in_seen;
@@ -1298,10 +1315,9 @@ void audio_driver_pipeline_wake(void);
  * audio_driver_state_lock:
  * audio_driver_state_unlock:
  *
- * Guards the resampler and the device against a pipeline pass on the
- * audio thread. Cheap and safe to call before the audio driver is up:
- * the lock exists for the driver's lifetime and both are no-ops
- * without it.
+ * Brackets a pass over the DSP filter, the record tap and the device;
+ * a mutex only where the atomics have no pointer operations. Cheap and
+ * safe to call before the audio driver is up.
  **/
 void audio_driver_state_lock(void);
 void audio_driver_state_unlock(void);

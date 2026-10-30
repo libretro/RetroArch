@@ -1,6 +1,7 @@
 # function                  size  stack-frame   (release build, x86-64 GCC)
 # Driver Pacing release/marker dispatch adds code; the stack guard stays put.
+# sample_batch settles pending pause and reset requests on the submitting thread.
 runloop_iterate             6527  88
 video_driver_frame          9447  4008
 video_thread_frame          3873  152
-audio_driver_sample_batch    394  24
+audio_driver_sample_batch    410  24

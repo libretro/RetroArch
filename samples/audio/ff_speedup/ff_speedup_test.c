@@ -31,6 +31,7 @@
 
 #include <boolean.h>
 #include <retro_atomic.h>
+#include <rthreads/rthreads.h>
 #include <features/features_cpu.h>
 
 static retro_time_t fake_now;
@@ -196,10 +197,13 @@ static float  pause_cap[PAUSE_CAP_MAX * 2];
 static size_t pause_cap_frames;
 static size_t pause_dev_room = PAUSE_CAP_MAX;
 
+static uintptr_t pause_writer; /* the thread the capture came from */
+
 static ssize_t pause_dev_write(void *data, const void *buf, size_t len)
 {
    size_t frames = len / (2 * sizeof(float));
    (void)data;
+   pause_writer = sthread_get_current_thread_id();
    if (frames > PAUSE_CAP_MAX - pause_cap_frames)
       frames = PAUSE_CAP_MAX - pause_cap_frames;
    memcpy(pause_cap + pause_cap_frames * 2, buf,
@@ -308,6 +312,46 @@ static void test_pause_tail_fits_the_room_left(void)
          "a full non-blocking device gets a tail cut to the room left");
    CHECK(fabs((double)pause_cap[(pause_cap_frames - 1) * 2]) < 0.05,
          "which still reaches silence");
+}
+
+/* A core delivering from a thread of its own, without the threaded
+ * pipeline: the pause is that thread's to carry out, at its next
+ * submit, silenced as it is - the main thread writes nothing. */
+static uintptr_t core_thread_id;
+static void core_thread_owns(void *data)
+{
+   (void)data;
+   core_thread_id = sthread_get_current_thread_id();
+   retro_atomic_store_release_size(&audio_driver_st.inline_owner,
+         (size_t)core_thread_id);
+}
+
+static void core_thread_submits(void *data)
+{
+   float buf[64 * 2];
+   (void)data;
+   memset(buf, 0, sizeof(buf));
+   core_thread_id = sthread_get_current_thread_id();
+   audio_driver_sample_batch_float(buf, 64);
+}
+
+static void test_pause_tail_on_the_core_thread(void)
+{
+   sthread_t *t;
+   pause_up();
+   if ((t = sthread_create(core_thread_owns, NULL)))
+      sthread_join(t);
+   audio_driver_pause_fade(true);
+   CHECK(pause_cap_frames == 0,
+         "the main thread writes no tail for a core that submits elsewhere");
+   CHECK(audio_driver_core_silenced(),
+         "the core's audio is gated at once all the same");
+   if ((t = sthread_create(core_thread_submits, NULL)))
+      sthread_join(t);
+   CHECK(pause_cap_frames > 0 && pause_writer == core_thread_id,
+         "the core's thread writes the tail at its next submit");
+   CHECK(audio_driver_st.pause_mute_frames == AUDIO_PAUSE_MUTE_FRAMES,
+         "with the leftovers behind it marked for dropping");
 }
 
 static void test_resume_ramp_waits_for_core_audio(void)
@@ -1024,6 +1068,7 @@ int main(void)
    test_threaded_seed_publishes_ratio();
    test_pause_tail_continues_the_waveform();
    test_pause_tail_fits_the_room_left();
+   test_pause_tail_on_the_core_thread();
    test_resume_ramp_waits_for_core_audio();
    test_jump_bracket_leaves_a_down_stream_down();
    test_reentry_ignores_idle_gap();

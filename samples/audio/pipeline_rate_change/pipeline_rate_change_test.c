@@ -502,7 +502,12 @@ static void mixer_session_case(bool threaded, bool playing)
    lock  = st->state_lock;
    inits = pipeline_mixer_inits;
    dones = pipeline_mixer_dones;
+   /* Only atomics without pointer operations make the state lock. */
+#ifdef AUDIO_DRIVER_PASS_EPOCH
+   ok    = sound != NULL && lock == NULL && (playing == (voice != NULL));
+#else
    ok    = sound != NULL && lock != NULL && (playing == (voice != NULL));
+#endif
 
    for (cycle = 0; cycle < 3; cycle++)
    {
