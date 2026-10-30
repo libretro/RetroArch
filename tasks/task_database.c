@@ -921,7 +921,7 @@ static void remove_disc_indicators(char *title, size_t len)
 
 static void task_database_iterate_m3u(
       manual_scan_handle_t *_db,
-      const char *m3u_path)
+      const char *m3u_path, bool counted)
 {
    size_t i, j;
    bool found_match = false;
@@ -939,7 +939,7 @@ static void task_database_iterate_m3u(
    if (!(m3u = rm3u_load_filestream(m3u_path)))
    {
       RARCH_ERR("[Scanner] Failed to open M3U file: \"%s\".\n", m3u_path);
-      if (!scan_results_find(&_db->scan_results, m3u_path))
+      if (!counted && !scan_results_find(&_db->scan_results, m3u_path))
          _db->result.unmatched++;
       return;
    }
@@ -1053,7 +1053,7 @@ static void task_database_iterate_m3u(
                   collapsed_title, first_matched_db);
       }
    }
-   else if (!own)
+   else if (!own && !counted)
       _db->result.unmatched++;
 
    /* Compact scan_results to remove NULL entries */
@@ -5205,6 +5205,15 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                    * same failing step every tick.  Give up on this
                    * file and go to the next one. */
                   RARCH_ERR("[Scanner] Scanning of content unexpectedly failed for \"%s\"\n", content_path);
+                  /* Counted here, so not again in the m3u pass. */
+                  if (   manual_scan->m3u_list
+                      && manual_scan->m3u_list->size
+                      && string_is_equal(manual_scan->m3u_list->elems[
+                            manual_scan->m3u_list->size - 1].data,
+                            content_path))
+                     manual_scan->m3u_list->elems[
+                           manual_scan->m3u_list->size - 1].attr.i = 1;
+                  manual_scan->result.errors++;
 #ifdef SCAN_HAVE_READERS
                   if (dbstate->crc_pass != DB_CRC_PASS_FILE)
                      scan_readers_whole_ahead(manual_scan, 0);
@@ -5501,7 +5510,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                task_set_progress(task, (manual_scan->m3u_index * 100) /
                      manual_scan->m3u_list->size);
 
-               task_database_iterate_m3u(manual_scan, m3u_path);
+               task_database_iterate_m3u(manual_scan, m3u_path,
+                     manual_scan->m3u_list->elems[
+                        manual_scan->m3u_index].attr.i != 0);
             }
 
             /* Increment M3U file index */

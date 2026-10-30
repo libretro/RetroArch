@@ -338,12 +338,13 @@ bool task_image_set_tag(retro_task_t *task, uint64_t *tag);
 
 /* A content scan's outcome, handed to its callback as task_data and
  * valid only during the call.  Counts cover every playlist the scan
- * writes. */
+ * writes; errors are files it could not read. */
 typedef struct
 {
    unsigned added;
    unsigned duplicates;
    unsigned unmatched;
+   unsigned errors;
    bool     failed;
 } task_dbscan_result_t;
 

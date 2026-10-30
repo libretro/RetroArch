@@ -493,7 +493,8 @@ bool __wrap_task_queue_is_threaded(void)
  * counted by who makes them, a reader's on the main thread apart, and
  * those of begun_size bytes as each begins (reader_begun those a
  * reader begins); so are reads begun once cb_fired is set.  A reader's
- * read of a stream of fail_size bytes fails, counted in reader_fails.
+ * read of a stream of fail_size bytes fails, counted in reader_fails;
+ * every read of a stream of err_size bytes fails, the scan's own too.
  * The scan's first quantum of a stream of hold_size bytes waits, at
  * most HOLD_USEC, until hold_want reads of begun_size bytes have begun,
  * a slow one if slow_size is set and gate_n readers are in the gate
@@ -518,6 +519,7 @@ static retro_atomic_int_t cb_fired;
 static retro_atomic_int_t reads_after_cb;
 static uint32_t           fail_size;
 static retro_atomic_int_t reader_fails;
+static uint32_t           err_size;
 static uint32_t           hold_size;
 static int                hold_want;
 static int                gate_n;
@@ -604,6 +606,8 @@ int64_t __wrap_intfstream_crc_step(intfstream_internal_t *intf,
 #endif
       }
    }
+   if (err_size && size == (int64_t)err_size)
+      return -1;
    if (fail_size && size == (int64_t)fail_size && !scan)
    {
       retro_atomic_fetch_add_int(&reader_fails, 1);
@@ -1938,6 +1942,7 @@ static bool run_scan(const char *dir)
    scan_result.added      = 9999;
    scan_result.duplicates = 9999;
    scan_result.unmatched  = 9999;
+   scan_result.errors     = 9999;
    scan_result.failed     = true;
    scan_err               = false;
    if (!task_push_dbscan(dir, scan_cb, &scan_result))
@@ -2321,17 +2326,18 @@ end:
 
 /* Checks the result the last run_scan() was handed. */
 static void check_result(const char *what, unsigned added,
-      unsigned duplicates, unsigned unmatched, bool failed)
+      unsigned duplicates, unsigned unmatched, unsigned errors, bool failed)
 {
    char detail[128];
 
-   sprintf(detail, "%u added, %u duplicates, %u unmatched%s",
+   sprintf(detail, "%u added, %u duplicates, %u unmatched, %u errors%s",
          scan_result.added, scan_result.duplicates, scan_result.unmatched,
-         scan_result.failed ? ", failed" : "");
+         scan_result.errors, scan_result.failed ? ", failed" : "");
    check(   scan_completed
          && scan_result.added      == added
          && scan_result.duplicates == duplicates
          && scan_result.unmatched  == unmatched
+         && scan_result.errors     == errors
          && scan_result.failed     == failed,
          what, scan_completed ? detail : "refused or timed out");
 }
@@ -2435,9 +2441,9 @@ static void counts_lane(const char *root, const char *pl_dir,
 
    run_scan(dir);
    check_result("a scan counts what it adds and what matches nothing",
-         2, 0, 2, false);
+         2, 0, 2, 0, false);
    run_scan(dir);
-   check_result("a rescan counts what it already has", 0, 2, 2, false);
+   check_result("a rescan counts what it already has", 0, 2, 2, 0, false);
 
    delete_playlists(res_pl);
    manual_content_scan_set_menu_scan_method(
@@ -2445,7 +2451,7 @@ static void counts_lane(const char *root, const char *pl_dir,
    manual_content_scan_set_menu_scan_use_db(
          MANUAL_CONTENT_SCAN_USE_DB_LOOSE);
    run_scan(dir);
-   check_result("a loose scan adds what matches nothing", 4, 0, 0, false);
+   check_result("a loose scan adds what matches nothing", 4, 0, 0, 0, false);
 
    delete_playlists(res_pl);
    manual_content_scan_set_menu_scan_use_db(
@@ -2453,7 +2459,7 @@ static void counts_lane(const char *root, const char *pl_dir,
    strlcpy(manual_content_scan_get_dat_file_path_ptr(), p,
          manual_content_scan_get_dat_file_path_size());
    run_scan(dat_dir);
-   check_result("a DAT scan counts what the DAT leaves out", 1, 0, 1, false);
+   check_result("a DAT scan counts what the DAT leaves out", 1, 0, 1, 0, false);
 
    manual_content_scan_get_dat_file_path_ptr()[0] = '\0';
    manual_content_scan_set_menu_scan_use_db(
@@ -2464,9 +2470,9 @@ static void counts_lane(const char *root, const char *pl_dir,
    /* An m3u counts once, as the one entry its discs fold into. */
    delete_playlists(res_pl);
    run_scan(m3u_dir);
-   check_result("an m3u is added, not also unmatched", 1, 0, 0, false);
+   check_result("an m3u is added, not also unmatched", 1, 0, 0, 0, false);
    run_scan(m3u_dir);
-   check_result("an m3u rescan is one duplicate", 0, 1, 0, false);
+   check_result("an m3u rescan is one duplicate", 0, 1, 0, 0, false);
 
    /* One playlist, so the loose scan's own entry for the m3u and the
     * one its discs fold into meet there. */
@@ -2479,9 +2485,9 @@ static void counts_lane(const char *root, const char *pl_dir,
          MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL);
    run_scan(m3u_dir);
    check_result("a loose m3u is added, not also a duplicate",
-         1, 0, 0, false);
+         1, 0, 0, 0, false);
    run_scan(m3u_dir);
-   check_result("a loose m3u rescan is one duplicate", 0, 1, 0, false);
+   check_result("a loose m3u rescan is one duplicate", 0, 1, 0, 0, false);
    manual_content_scan_set_menu_system_name(
          MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO, NULL);
    manual_content_scan_set_menu_scan_use_db(
@@ -2502,6 +2508,57 @@ end:
    free(res_pl);
    free(p);
    free(d);
+}
+
+#define ERR_SIZE 1536
+
+/* A file the scan cannot read is counted as an error; the scan goes
+ * on and does not fail. */
+static void errors_lane(const char *root, const char *pl_dir,
+      uint32_t crc_a, uint32_t sz_a)
+{
+   static const char m3u[] = "Missing (Disc 1).bin\n";
+   char dir[512], m3u_dir[512], res_pl[512], p[1024];
+   FILE *f;
+
+   sprintf(dir,     "%s/scan_errors",     root);
+   sprintf(m3u_dir, "%s/scan_errors_m3u", root);
+   sprintf(res_pl,  "%s/scan_errors_pl",  root);
+   path_mkdir(dir);
+   path_mkdir(m3u_dir);
+   path_mkdir(res_pl);
+   sprintf(p, "%s/01_alpha.bin", dir);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/02_unread.bin", dir);
+   if (!write_content(p, 0x0E770001u, ERR_SIZE))
+      goto fixture;
+
+   delete_playlists(res_pl);
+   strlcpy(config_get_ptr()->paths.directory_playlist, res_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   err_size = ERR_SIZE;
+   run_scan(dir);
+   err_size = 0;
+   check_result("a file the scan cannot read is an error", 1, 0, 0, 1,
+         false);
+
+   sprintf(p, "%s/Game.m3u", m3u_dir);
+   if (!(f = fopen(p, "wb")))
+      goto fixture;
+   fputs(m3u, f);
+   fclose(f);
+   err_size = sizeof(m3u) - 1;
+   run_scan(m3u_dir);
+   err_size = 0;
+   check_result("an m3u the scan cannot read is an error, not also "
+         "unmatched", 0, 0, 0, 1, false);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the errors lane");
 }
 
 /* The queue the next scans run on: threaded where threads are built,
@@ -2683,12 +2740,12 @@ static void failed_lane(const char *root, const char *pl_dir,
 
    use_db(nodb);
    run_scan(dir);
-   check_result("a missing database folder fails the scan", 0, 0, 1, true);
+   check_result("a missing database folder fails the scan", 0, 0, 1, 0, true);
    check(scan_err, "and reports it as an empty folder is",
          scan_err ? "error" : "no error");
    use_db("");
    run_scan(dir);
-   check_result("as does no database folder set", 0, 0, 1, true);
+   check_result("as does no database folder set", 0, 0, 1, 0, true);
    use_db(db_dir);
    check(scan_err, "and reports it too",
          scan_err ? "error" : "no error");
@@ -2705,7 +2762,7 @@ static void failed_lane(const char *root, const char *pl_dir,
    strlcpy(manual_content_scan_get_dat_file_path_ptr(), p,
          manual_content_scan_get_dat_file_path_size());
    run_scan(dir);
-   check_result("a DAT that does not load fails the scan", 0, 0, 0, true);
+   check_result("a DAT that does not load fails the scan", 0, 0, 0, 0, true);
 
    manual_content_scan_get_dat_file_path_ptr()[0] = '\0';
    manual_content_scan_set_menu_scan_use_db(
@@ -8862,7 +8919,7 @@ int main(int argc, char **argv)
             "empty folder reported as invalid content",
             !scan_completed ? "timed out"
             : invalid_content_pushed ? "message pushed" : "no message");
-      check_result("and fails the scan", 0, 0, 0, true);
+      check_result("and fails the scan", 0, 0, 0, 0, true);
    }
 
    /* A sheet that names itself is still the entry being scanned, so
@@ -9029,6 +9086,7 @@ int main(int argc, char **argv)
    single_lane(root, pl_dir, crc_a, sz_a);
    counts_lane(root, pl_dir, crc_a, sz_a, crc_d, sz_d);
    failed_lane(root, pl_dir, db_dir, crc_a, sz_a);
+   errors_lane(root, pl_dir, crc_a, sz_a);
    {
       char reader_db[512];
 
