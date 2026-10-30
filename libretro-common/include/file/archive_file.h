@@ -110,6 +110,10 @@ typedef struct file_archive_transfer
     * that parks a member and lets the scan continue is counted when it
     * is found; one that parks and stops is counted when it drains. */
    bool     pending_counted;
+   /* Set before INIT: 7z and rar then leave a directory entry's name,
+    * ending in '/', in current_file_path, as zip does.  7z passes it
+    * to file_cb too; rar calls no file_cb for a directory. */
+   bool     name_dirs;
    /* The zip's end record carries a TorrentZip comment.  Set by the zip
     * reader when it opens the archive, false for any other. */
    bool     torrentzip;
