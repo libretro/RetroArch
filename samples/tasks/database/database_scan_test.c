@@ -35,6 +35,19 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
+#ifdef _WIN32
+#include <io.h>
+#define cap_dup    _dup
+#define cap_dup2   _dup2
+#define cap_close  _close
+#define cap_fileno _fileno
+#else
+#include <unistd.h>
+#define cap_dup    dup
+#define cap_dup2   dup2
+#define cap_close  close
+#define cap_fileno fileno
+#endif
 
 #include <queues/task_queue.h>
 #include <file/file_path.h>
@@ -58,6 +71,7 @@
 #include "../../../list_special.h"
 #include "../../../configuration.h"
 #include "../../../verbosity.h"
+#include "../../../retroarch_types.h"
 #include "../../../libretro-db/libretrodb.h"
 #ifdef HAVE_SMBCLIENT
 #include "../../../libretro-common/vfs/vfs_implementation_smb.h"
@@ -131,6 +145,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       end_step_hold();
    if (msg == MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT)
       return "invalid content";
+   if (msg == MSG_SCANNING_NO_DATABASE)
+      return "no database";
    return "";
 }
 
@@ -174,10 +190,13 @@ void runloop_msg_queue_push(const char *msg, size_t len,
       invalid_content_pushed = true;
 }
 
+/* Whether the scan prints what --scan prints. */
+static bool cli_output;
+
 bool retroarch_override_setting_is_set(unsigned enum_idx, void *data)
 {
-   (void)enum_idx; (void)data;
-   return false;
+   (void)data;
+   return cli_output && enum_idx == RARCH_OVERRIDE_SETTING_DATABASE_SCAN;
 }
 
 void ui_companion_driver_notify_refresh(void)
@@ -2780,6 +2799,154 @@ end:
    free(nodb);
    free(res_pl);
    free(p);
+}
+
+/* stdout and stderr while capture_begin() has them in files. */
+static int cap_out = -1;
+static int cap_err = -1;
+
+static void capture_end(void)
+{
+   fflush(stdout);
+   fflush(stderr);
+   if (cap_out >= 0)
+   {
+      cap_dup2(cap_out, cap_fileno(stdout));
+      cap_close(cap_out);
+      cap_out = -1;
+   }
+   if (cap_err >= 0)
+   {
+      cap_dup2(cap_err, cap_fileno(stderr));
+      cap_close(cap_err);
+      cap_err = -1;
+   }
+}
+
+/* Sends stdout to @out and stderr to @err until capture_end().  The
+ * scan prints to the streams themselves, so their descriptors move. */
+static bool capture_begin(const char *out, const char *err)
+{
+   FILE *o  = fopen(out, "w");
+   FILE *e  = fopen(err, "w");
+   bool  ok = false;
+
+   fflush(stdout);
+   fflush(stderr);
+   if (o && e)
+   {
+      cap_out = cap_dup(cap_fileno(stdout));
+      cap_err = cap_dup(cap_fileno(stderr));
+      ok      =    cap_out >= 0 && cap_err >= 0
+               && cap_dup2(cap_fileno(o), cap_fileno(stdout)) >= 0
+               && cap_dup2(cap_fileno(e), cap_fileno(stderr)) >= 0;
+   }
+   if (o)
+      fclose(o);
+   if (e)
+      fclose(e);
+   if (!ok)
+      capture_end();
+   return ok;
+}
+
+/* Scans @dir with stdout in @out and stderr in @err; false if the
+ * streams could not be moved or the scan did not finish. */
+static bool capture_scan(const char *dir, const char *out, const char *err,
+      bool cli)
+{
+   bool captured;
+
+   cli_output = cli;
+   if ((captured = capture_begin(out, err)))
+   {
+      run_scan(dir);
+      capture_end();
+   }
+   cli_output = false;
+   check(captured && scan_completed, "--scan output to files",
+         !captured ? out : scan_completed ? "" : "timed out");
+   return captured && scan_completed;
+}
+
+/* What --scan prints, to files: the marks plain, the totals line on
+ * stdout, and on stderr a file the scan could not read and a scan
+ * that failed, which prints no totals.  Without --scan, nothing.
+ * Rescans errors_lane()'s folder. */
+static void output_lane(const char *root, const char *pl_dir,
+      const char *db_dir)
+{
+   char *dir    = (char*)malloc(512);
+   char *nodb   = (char*)malloc(512);
+   char *empty  = (char*)malloc(512);
+   char *res_pl = (char*)malloc(512);
+   char *out    = (char*)malloc(512);
+   char *err    = (char*)malloc(512);
+   char *want   = (char*)malloc(1024);
+
+   if (!dir || !nodb || !empty || !res_pl || !out || !err || !want)
+   {
+      check(0, "output lane", "out of memory");
+      goto end;
+   }
+
+   sprintf(dir,    "%s/scan_errors",       root);
+   sprintf(nodb,   "%s/scan_output_nodb",  root);
+   sprintf(empty,  "%s/scan_output_empty", root);
+   sprintf(res_pl, "%s/scan_errors_pl",    root);
+   sprintf(out,    "%s/scan_output.out",   root);
+   sprintf(err,    "%s/scan_output.err",   root);
+   path_mkdir(empty);
+   strlcpy(config_get_ptr()->paths.directory_playlist, res_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+
+   err_size = ERR_SIZE;
+   if (capture_scan(dir, out, err, true))
+   {
+      /* No "\n" in the needles: Windows ends these lines "\r\n". */
+      sprintf(want, "%s: 0 added, 1 duplicates, 0 unmatched, 1 errors",
+            dir);
+      check(file_contains(out, want), "--scan prints its totals on stdout",
+            want);
+      sprintf(want, " !! \"%s/02_unread.bin\"", dir);
+      check(file_contains(err, want),
+            "and a file it could not read on stderr", want);
+      check(   file_contains(out, " == \"")
+            && !file_contains(out, "\x1B[") && !file_contains(err, "\x1B["),
+            "with no colour codes in a file", out);
+   }
+
+   if (capture_scan(dir, out, err, false))
+      check(path_get_size(out) == 0 && path_get_size(err) == 0,
+            "a scan without --scan prints nothing", out);
+   err_size = 0;
+
+   use_db(nodb);
+   if (capture_scan(dir, out, err, true))
+   {
+      sprintf(want, "%s: no database", dir);
+      check(file_contains(err, want) && !file_contains(out, " added, "),
+            "a failed scan says so on stderr, no totals", want);
+   }
+   use_db(db_dir);
+
+   if (capture_scan(empty, out, err, true))
+   {
+      sprintf(want, "%s: invalid content", empty);
+      check(file_contains(err, want) && !file_contains(out, " added, "),
+            "as does a scan that cannot start", want);
+   }
+
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+end:
+   free(dir);
+   free(nodb);
+   free(empty);
+   free(res_pl);
+   free(out);
+   free(err);
+   free(want);
 }
 
 static bool write_reader_db(const char *db_dir)
@@ -9087,6 +9254,7 @@ int main(int argc, char **argv)
    counts_lane(root, pl_dir, crc_a, sz_a, crc_d, sz_d);
    failed_lane(root, pl_dir, db_dir, crc_a, sz_a);
    errors_lane(root, pl_dir, crc_a, sz_a);
+   output_lane(root, pl_dir, db_dir);
    {
       char reader_db[512];
 
