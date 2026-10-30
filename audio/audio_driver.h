@@ -1109,6 +1109,11 @@ typedef struct
    retro_atomic_int_t  pipe_resume_topup;
    retro_atomic_int_t  pipe_tail_seen;   /* stored by the consumer */
    retro_atomic_int_t  pipe_resume_seen;
+   /* A rate change for the consumer to install, numbered as the pause
+    * requests are; the producer writes nothing into the ring until it
+    * has (audio_driver_set_input_rate()). */
+   retro_atomic_int_t  pipe_rate_seq;
+   retro_atomic_int_t  pipe_rate_seen;   /* stored by the consumer */
    /* Without the threaded pipeline the same requests, and a format
     * change and a stop's reset besides, are carried out by the thread
     * that submits the core's audio (inline_owner), or by the main

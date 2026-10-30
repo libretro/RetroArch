@@ -413,6 +413,15 @@ void audio_thread_apply_control(void *data,
       audio_thread_unblock(thr);
 }
 
+bool audio_thread_parked(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !retro_atomic_load_acquire_int(&thr->alive))
+      return true;
+   return retro_atomic_load_acquire_int(&thr->stopped)
+      && retro_atomic_load_acquire_int(&thr->stopped_ack) == 1;
+}
+
 static bool audio_thread_stop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;

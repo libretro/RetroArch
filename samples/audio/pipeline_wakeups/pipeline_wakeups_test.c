@@ -481,7 +481,8 @@ static size_t cdev_wait_writable(void *data, size_t len)
    return 0;
 }
 
-static bool   cdev_stop(void *d)                { (void)d; return true; }
+static retro_atomic_int_t dev_stops = RETRO_ATOMIC_INT_INITIALIZER(0);
+static bool   cdev_stop(void *d)                { (void)d; retro_atomic_fetch_add_int(&dev_stops, 1); return true; }
 static bool   cdev_start(void *d, bool s)       { (void)d; (void)s; return true; }
 static bool   cdev_alive(void *d)               { (void)d; return true; }
 static void   cdev_set_nonblock(void *d, bool s){ (void)d; (void)s; }
@@ -732,6 +733,7 @@ static void pipeline_down(void)
    audio_driver_state_t *st = &audio_driver_st;
    /* Both worker threads have joined. */
    audio_driver_pipeline_transport_release();
+   audio_driver_rate_drop(st);
    audio_driver_extra_free(st);
    if (st->resampler && st->resampler_data)
       st->resampler->free(st->resampler_data);
@@ -1657,11 +1659,62 @@ static void kept_device_case(void)
       fixture_failures++;
 }
 
+static bool rate_installed(void *arg)
+{
+   (void)arg;
+   if (!audio_driver_rate_pending(&audio_driver_st))
+      return true;
+   audio_driver_pipeline_signal(&audio_driver_st);
+   return false;
+}
+
+/* A new core rate with the wrapper running: decided on this thread at
+ * once, installed by the consumer between two passes, and the device
+ * never stopped for it, as the park that used to carry it stopped it. */
+static void live_rate_case(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   size_t per_frame         = (size_t)(CORE_RATE / FPS);
+   int stops                = retro_atomic_load_acquire_int(&dev_stops);
+   size_t writes;
+   unsigned frame;
+
+   if (!audio_driver_set_input_rate(44100.0))
+   {
+      fprintf(stderr, "live rate change refused\n");
+      fixture_failures++;
+      return;
+   }
+   if (!wait_progress(rate_installed, NULL))
+   {
+      fprintf(stderr, "live rate change never installed\n");
+      fixture_failures++;
+      return;
+   }
+   if (     st->input != 44100.0f
+         || fabs(st->src_ratio_orig - (double)OUT_RATE / 44100.0) > 1e-9
+         || retro_atomic_load_acquire_int(&dev_stops) != stops)
+   {
+      fprintf(stderr, "live rate change: input %.0f, ratio %.6f, %d stops\n",
+            st->input, st->src_ratio_orig,
+            retro_atomic_load_acquire_int(&dev_stops) - stops);
+      fixture_failures++;
+   }
+   writes = retro_atomic_load_acquire_size(&cnt_writes);
+   for (frame = 0; frame < 8; frame++)
+      submit_frame((size_t)(44100.0 / FPS), 1);
+   if (!wait_progress(wrote_since, &writes))
+      fixture_failures++;
+   (void)per_frame;
+}
+
 static void kept_device_run(void)
 {
    unsigned f0 = fixture_failures;
    kept_device_case();
-   printf("kept device: stopped across a rebuild, writing again once started, %u failures\n",
+   live_rate_case();
+   printf("kept device: stopped across a rebuild, writing again once started,"
+         " a rate change taken live, %u failures\n",
          fixture_failures - f0);
 }
 

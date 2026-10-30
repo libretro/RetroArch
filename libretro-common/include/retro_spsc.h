@@ -264,6 +264,24 @@ void retro_spsc_clear(retro_spsc_t *q);
 bool retro_spsc_grow(retro_spsc_t *q, size_t min_capacity);
 
 /**
+ * retro_spsc_grow_into:
+ * @q : The queue.
+ * @n : A queue from retro_spsc_init or retro_spsc_init_mirrored, empty,
+ *      at least as large as @q.
+ *
+ * retro_spsc_grow with the buffer allocated by the caller, so the move
+ * itself allocates and frees nothing: @q takes @n's buffer with its
+ * unread data and cursors, and @n is left holding @q's old buffer for
+ * the caller to retro_spsc_free.  The allocation and the free can then
+ * be on a thread other than the one that moves.
+ *
+ * SAFETY: as retro_spsc_grow.
+ *
+ * Returns: false, with neither queue touched, if @n is the smaller.
+ */
+bool retro_spsc_grow_into(retro_spsc_t *q, retro_spsc_t *n);
+
+/**
  * retro_spsc_write_avail:
  * @q : The queue.
  *

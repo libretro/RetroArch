@@ -1,9 +1,11 @@
 #define audio_init_thread unused_audio_init_thread
 #define audio_thread_apply_control unused_audio_thread_apply_control
+#define audio_thread_parked unused_audio_thread_parked
 #define command_event unused_command_event
 #include "../pipeline_clocked/stubs_retroarch.c"
 #undef audio_init_thread
 #undef audio_thread_apply_control
+#undef audio_thread_parked
 #undef command_event
 
 unsigned pipeline_control_calls;
@@ -13,6 +15,15 @@ void audio_thread_apply_control(void *data,
    (void)data;
    pipeline_control_calls++;
    control(userdata);
+}
+
+/* Set while a test plays the consumer's passes itself: the wrapper is
+ * then running, and a change waits for that pass. */
+bool pipeline_consumer_running;
+bool audio_thread_parked(void *data)
+{
+   (void)data;
+   return !pipeline_consumer_running;
 }
 
 /* Run the real initialization and pipeline, scheduling passes explicitly. */

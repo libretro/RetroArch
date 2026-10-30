@@ -52,6 +52,10 @@ const audio_driver_t *audio_thread_wrapped_driver(void *data);
 void audio_thread_apply_control(void *data,
       void (*control)(void *userdata), void *userdata);
 
+/* Main thread. True while the audio thread runs no pass and starts
+ * none until the main thread lets it: parked by a stop, or gone. */
+bool audio_thread_parked(void *data);
+
 bool audio_init_thread(const audio_driver_t **out_driver, void **out_data,
       const char *device, unsigned out_rate, unsigned *new_rate, unsigned latency,
       bool raise_priority,

@@ -87,6 +87,11 @@ static bool audio_driver_transport_recover(bool resume, uint32_t tempo);
 static bool audio_driver_pipe_ff_waits(audio_driver_state_t *audio_st);
 static bool audio_driver_pipeline_transport_publish(uint32_t tempo_q16,
       bool active, bool reset, uint32_t cutoff, bool engage_ahead);
+static void audio_driver_rate_install(void);
+static void audio_driver_rate_drop(audio_driver_state_t *audio_st);
+#ifdef HAVE_DSP_FILTER
+static float audio_driver_input_rate(const audio_driver_state_t *audio_st);
+#endif
 #endif
 
 #ifdef HAVE_MENU
@@ -1344,6 +1349,9 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    /* The wrapper thread was joined by audio->free() above, so nothing
     * reads the ring any more. */
    retro_spsc_free(&audio_st->pipe_ring);
+#ifdef HAVE_THREADS
+   audio_driver_rate_drop(audio_st);
+#endif
    AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_PIPELINE_THREADED
                              | AUDIO_FLAG_STARTED);
 #ifdef HAVE_THREADS
@@ -5359,7 +5367,9 @@ static bool audio_driver_pipeline_pause_pending(audio_driver_state_t *audio_st)
    return retro_atomic_load_acquire_int(&audio_st->pipe_tail_seq)
          != retro_atomic_load_relaxed_int(&audio_st->pipe_tail_seen)
       || retro_atomic_load_acquire_int(&audio_st->pipe_resume_seq)
-         != retro_atomic_load_relaxed_int(&audio_st->pipe_resume_seen);
+         != retro_atomic_load_relaxed_int(&audio_st->pipe_resume_seen)
+      || retro_atomic_load_acquire_int(&audio_st->pipe_rate_seq)
+         != retro_atomic_load_relaxed_int(&audio_st->pipe_rate_seen);
 }
 #endif
 
@@ -5759,7 +5769,7 @@ static void audio_driver_inline_format_apply(audio_driver_state_t *audio_st,
 static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
       bool write_tail)
 {
-   int seq[4], kind[4];
+   int seq[5], kind[5];
    int n    = 0;
    int done;
    int i, k;
@@ -5767,6 +5777,7 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
    int resume = retro_atomic_load_acquire_int(&audio_st->pipe_resume_seq);
    int format = retro_atomic_load_acquire_int(&audio_st->inline_format_seq);
    int reset  = retro_atomic_load_acquire_int(&audio_st->inline_reset_seq);
+   int rate   = retro_atomic_load_acquire_int(&audio_st->pipe_rate_seq);
    if (tail != retro_atomic_load_relaxed_int(&audio_st->pipe_tail_seen))
    {  seq[n] = tail;   kind[n++] = 0; }
    if (resume != retro_atomic_load_relaxed_int(&audio_st->pipe_resume_seen))
@@ -5775,6 +5786,8 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
    {  seq[n] = format; kind[n++] = 2; }
    if (reset != retro_atomic_load_relaxed_int(&audio_st->inline_reset_seen))
    {  seq[n] = reset;  kind[n++] = 3; }
+   if (rate != retro_atomic_load_relaxed_int(&audio_st->pipe_rate_seen))
+   {  seq[n] = rate;   kind[n++] = 4; }
    /* Oldest first; the sequence wraps, so compared by difference. */
    for (i = 1; i < n; i++)
       for (k = i; k > 0 && seq[k] - seq[k - 1] < 0; k--)
@@ -5810,9 +5823,12 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
                      (f & 2) != 0);
             }
             break;
-         default:
+         case 3:
             audio_driver_inline_reset(audio_st);
             audio_driver_reset_resamplers(audio_st);
+            break;
+         default:
+            audio_driver_rate_install();
             break;
       }
    }
@@ -5822,10 +5838,12 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
    if (resume - done > 0) done = resume;
    if (format - done > 0) done = format;
    if (reset  - done > 0) done = reset;
+   if (rate   - done > 0) done = rate;
    retro_atomic_store_release_int(&audio_st->pipe_tail_seen,     tail);
    retro_atomic_store_release_int(&audio_st->pipe_resume_seen,   resume);
    retro_atomic_store_release_int(&audio_st->inline_format_seen, format);
    retro_atomic_store_release_int(&audio_st->inline_reset_seen,  reset);
+   retro_atomic_store_release_int(&audio_st->pipe_rate_seen,     rate);
    retro_atomic_store_release_int(&audio_st->inline_req_done,    done);
 }
 
@@ -6473,6 +6491,11 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
       unsigned source_layout = canon_width != pc && pc > 2 ? audio_st->pipe_layout : 0;
       size_t cap_bytes = 0;
       bool mapped;
+      /* The consumer has a rate change to install: the ring, the slice
+       * and the ratio are its until it has. */
+      if (     retro_atomic_load_relaxed_int(&audio_st->pipe_rate_seq)
+            != retro_atomic_load_acquire_int(&audio_st->pipe_rate_seen))
+         return;
       if (source_layout)
       {
          for (bit = 0; bit < pc; bit++)
@@ -8702,7 +8725,13 @@ bool audio_driver_dsp_filter_init(const char *device)
       return false;
 #endif
    audio_driver_dsp = retro_dsp_filter_new(
-         device, plugs, audio_driver_st.input);
+         device, plugs,
+#ifdef HAVE_THREADS
+         audio_driver_input_rate(&audio_driver_st)
+#else
+         audio_driver_st.input
+#endif
+         );
    if (!audio_driver_dsp)
       return false;
 
@@ -10264,21 +10293,25 @@ static void audio_driver_pipe_set_format(void *userdata)
 #endif
 
 /* The resamplers for the new ratio go in; the old ones come back out
- * to be freed once the consumer no longer runs them. */
+ * to be freed once the consumer no longer runs them. So does a larger
+ * ring: the new one is made by the caller, and the old one handed back. */
 struct audio_driver_rate_change
 {
    double ratio;
    const retro_resampler_t *resampler;
    void *resampler_data;
    retro_resampler_int16_t res16;
+#ifdef HAVE_THREADS
+   retro_spsc_t ring;
+#endif
    size_t pass_frames;
-   size_t ring_bytes;
    float input;
    bool hq;
    bool swap;    /* false: the rate holds, only the ring and slice follow */
-   bool applied;
 };
 
+/* Installs @userdata where the consumer runs no pass: by the consumer
+ * itself, between two, or by the caller while it is parked. */
 static void audio_driver_rate_apply(void *userdata)
 {
    struct audio_driver_rate_change *change =
@@ -10288,23 +10321,19 @@ static void audio_driver_rate_apply(void *userdata)
    void *resampler_data                   = audio_st->resampler_data;
    retro_resampler_int16_t res16;
 
-   /* Consumer state: read only while it is parked. */
-   change->applied = !audio_st->extra.nres
-#ifdef HAVE_THREADS
-      && !audio_st->pipe_transport
-      && !audio_st->pipe_transport_suspended
-      && (!audio_st->pipe_threaded
-         || retro_spsc_grow(&audio_st->pipe_ring, change->ring_bytes))
-#endif
-      ;
-   if (!change->applied)
-      return;
 #ifdef HAVE_THREADS
    if (audio_st->pipe_threaded)
+   {
+      if (change->ring.buffer)
+         retro_spsc_grow_into(&audio_st->pipe_ring, &change->ring);
       audio_st->pipe_pass_frames     = change->pass_frames;
+   }
 #endif
    if (!change->swap)
       return;
+
+   /* Siblings of the front pair's instances; remade at the new ratio. */
+   audio_driver_extra_free(audio_st);
 
    res16.data    = audio_st->resampler_data_int16;
    res16.process = audio_st->resampler_int16_process;
@@ -10344,11 +10373,73 @@ static void audio_driver_rate_apply(void *userdata)
    change->res16          = res16;
 }
 
+/* What a change holds that is not installed: the new resamplers and ring
+ * before it is, the old ones after. */
+static void audio_driver_rate_change_free(struct audio_driver_rate_change *change)
+{
+   if (change->resampler && change->resampler_data)
+      change->resampler->free(change->resampler_data);
+   if (change->res16.data && change->res16.free)
+      change->res16.free(change->res16.data);
+#ifdef HAVE_THREADS
+   retro_spsc_free(&change->ring);
+#endif
+   change->resampler      = NULL;
+   change->resampler_data = NULL;
+   memset(&change->res16, 0, sizeof(change->res16));
+}
+
+#ifdef HAVE_THREADS
+/* The change handed to the consumer; the caller's again once
+ * pipe_rate_seen has caught up with pipe_rate_seq. */
+static struct audio_driver_rate_change audio_driver_rate_req;
+
+static bool audio_driver_rate_pending(const audio_driver_state_t *audio_st)
+{
+   return retro_atomic_load_relaxed_int(&audio_st->pipe_rate_seq)
+      != retro_atomic_load_acquire_int(&audio_st->pipe_rate_seen);
+}
+
+static void audio_driver_rate_install(void)
+{
+   audio_driver_rate_apply(&audio_driver_rate_req);
+}
+
+/* With nothing left to run it: what the last change holds is freed, and
+ * one never installed is dropped. */
+static void audio_driver_rate_drop(audio_driver_state_t *audio_st)
+{
+   audio_driver_rate_change_free(&audio_driver_rate_req);
+   retro_atomic_store_release_int(&audio_st->pipe_rate_seen,
+         retro_atomic_load_relaxed_int(&audio_st->pipe_rate_seq));
+}
+
+#ifdef HAVE_DSP_FILTER
+/* The input rate as the main thread is to see it: the one a change on
+ * its way to the consumer carries. */
+static float audio_driver_input_rate(const audio_driver_state_t *audio_st)
+{
+   if (audio_driver_rate_pending(audio_st))
+      return audio_driver_rate_req.input;
+   return audio_st->input;
+}
+#endif
+#endif
+
+/* Decided here, at once: the threaded pipeline's consumer installs the
+ * change before its next pass, and the producer writes nothing until it
+ * has, so neither waits on the other. Only a consumer parked, or none,
+ * has it installed here. */
 bool audio_driver_set_input_rate(double input)
 {
-   struct audio_driver_rate_change change;
+   struct audio_driver_rate_change local;
+   struct audio_driver_rate_change *change = &local;
    audio_driver_state_t *audio_st = &audio_driver_st;
    settings_t *settings           = config_get_ptr();
+   bool swap;
+#ifdef HAVE_THREADS
+   bool handover                  = false;
+#endif
 
    if (!(input > 0.0))
       return false;
@@ -10363,72 +10454,95 @@ bool audio_driver_set_input_rate(double input)
          || settings->bools.audio_time_stretch
          || settings->bools.audio_time_stretch_lowpass)
       return false;
-   change.input       = (float)input;
-   change.ratio       = (double)audio_st->out_rate / change.input;
-   change.swap        = change.input != audio_st->input;
-   change.hq          = false;
-   change.pass_frames = 0;
-   change.ring_bytes  = 0;
-   change.resampler      = NULL;
-   change.resampler_data = NULL;
-   memset(&change.res16, 0, sizeof(change.res16));
 #ifdef HAVE_THREADS
-   /* Sized in video frames, so a new frame rate moves them too. */
-   if (audio_st->pipe_threaded)
-      change.ring_bytes = audio_driver_pipe_ring_frames(change.input,
-            settings->bools.audio_sync, audio_st->pipe_latency,
-            &change.pass_frames) * audio_st->pipe_frame_bytes;
-   if (     !change.swap
-         && (     !audio_st->pipe_threaded
-               || (     change.pass_frames == audio_st->pipe_pass_frames
-                     && change.ring_bytes  <= audio_st->pipe_ring.capacity)))
-      return true;
-#else
-   if (!change.swap)
-      return true;
-#endif
-   if (!change.swap)
-      goto apply;
-
-   if (!retro_resampler_realloc_hq(&change.resampler_data, &change.resampler,
-            audio_st->resampler_ident, audio_st->resampler_quality,
-            change.ratio, settings->bools.audio_resampler_hq_oversampling))
+   if (audio_st->pipe_transport || audio_st->pipe_transport_suspended)
       return false;
-   change.hq = settings->bools.audio_resampler_hq_oversampling
-      && change.ratio >= 2.0
-      && change.resampler
-      && (change.resampler->caps & RESAMPLER_CAP_HQ_OVERSAMPLE);
-
-   if (audio_st->resampler_data_int16)
-   {
-      retro_resampler_int16_new(&change.res16, change.resampler->short_ident,
-            audio_st->resampler_quality, change.ratio, change.hq);
-      if (!change.res16.data)
-      {
-         change.resampler->free(change.resampler_data);
-         return false;
-      }
-   }
-
-apply:
-#ifdef HAVE_THREADS
    if (     audio_st->pipe_threaded
          && audio_st->current_audio
          && string_is_equal(audio_st->current_audio->ident, "audio-thread"))
-      audio_thread_apply_control(audio_st->context_audio_data,
-            audio_driver_rate_apply, &change);
+   {
+      handover = !audio_thread_parked(audio_st->context_audio_data);
+      /* One change at a time; a parked consumer's is installed here. */
+      if (audio_driver_rate_pending(audio_st))
+      {
+         if (handover)
+            return false;
+         audio_driver_state_lock();
+         audio_driver_requests_apply(audio_st, false);
+         audio_driver_state_unlock();
+      }
+      audio_driver_rate_change_free(&audio_driver_rate_req);
+   }
+   if (handover)
+      change = &audio_driver_rate_req;
+#endif
+   memset(change, 0, sizeof(*change));
+   change->input       = (float)input;
+   change->ratio       = (double)audio_st->out_rate / change->input;
+   change->swap        = change->input != audio_st->input;
+#ifdef HAVE_THREADS
+   /* Sized in video frames, so a new frame rate moves them too. */
+   if (audio_st->pipe_threaded)
+   {
+      size_t ring_bytes = audio_driver_pipe_ring_frames(change->input,
+            settings->bools.audio_sync, audio_st->pipe_latency,
+            &change->pass_frames) * audio_st->pipe_frame_bytes;
+      if (     !change->swap
+            && change->pass_frames == audio_st->pipe_pass_frames
+            && ring_bytes  <= audio_st->pipe_ring.capacity)
+         return true;
+      if (     ring_bytes > audio_st->pipe_ring.capacity
+            && !(audio_st->pipe_ring.mirror
+               ? retro_spsc_init_mirrored(&change->ring, ring_bytes)
+               : retro_spsc_init(&change->ring, ring_bytes)))
+         return false;
+   }
    else
 #endif
-      audio_driver_rate_apply(&change);
+   if (!change->swap)
+      return true;
 
-   if (change.resampler && change.resampler_data)
-      change.resampler->free(change.resampler_data);
-   if (change.res16.data && change.res16.free)
-      change.res16.free(change.res16.data);
-   if (!change.applied)
-      return false;
+   if (change->swap)
+   {
+      if (!retro_resampler_realloc_hq(&change->resampler_data, &change->resampler,
+               audio_st->resampler_ident, audio_st->resampler_quality,
+               change->ratio, settings->bools.audio_resampler_hq_oversampling))
+      {
+         audio_driver_rate_change_free(change);
+         return false;
+      }
+      change->hq = settings->bools.audio_resampler_hq_oversampling
+         && change->ratio >= 2.0
+         && change->resampler
+         && (change->resampler->caps & RESAMPLER_CAP_HQ_OVERSAMPLE);
 
-   if (change.swap)
+      if (audio_st->resampler_data_int16)
+      {
+         retro_resampler_int16_new(&change->res16, change->resampler->short_ident,
+               audio_st->resampler_quality, change->ratio, change->hq);
+         if (!change->res16.data)
+         {
+            audio_driver_rate_change_free(change);
+            return false;
+         }
+      }
+   }
+
+   swap = change->swap;
+#ifdef HAVE_THREADS
+   if (handover)
+   {
+      audio_driver_request_post(audio_st, &audio_st->pipe_rate_seq);
+      audio_driver_pipeline_signal(audio_st);
+   }
+   else
+#endif
+   {
+      audio_driver_rate_apply(change);
+      audio_driver_rate_change_free(change);
+   }
+
+   if (swap)
       RARCH_LOG("[Audio] Input rate changed to %.2f Hz; the driver keeps running.\n",
             input);
    return true;

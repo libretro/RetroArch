@@ -1491,6 +1491,38 @@ static void canonical_prefix_case(void)
    for (i = 0; i < sizeof(output); i++) CHECK(output[i] == 0xa5, "rejected prefix changed output");
 }
 
+/* A new core rate with the extra lanes up is taken: the lanes, siblings
+ * of the front pair the change replaces, go with it and are remade at
+ * the new ratio by the next pass. */
+static void rate_change_extras_case(bool floating)
+{
+   union { float f[128 * 6]; int16_t i[128 * 6]; } input;
+   audio_driver_state_t *st = &audio_driver_st;
+   void *front;
+   size_t f;
+   bool ready = pipe_up(floating, floating);
+   CHECK(ready, "rate stand-up");
+   if (!ready) return;
+   for (f = 0; f < 128 * 6; f++)
+      if (floating) input.f[f] = (float)(f % 6 + 1) / 16.0f;
+      else input.i[f] = (int16_t)((f % 6 + 1) * 2048);
+   CHECK(audio_driver_multi_pipe(st, &input, 128, 6, AUDIO_LAYOUT_5POINT1, floating),
+         "rate warm publish");
+   audio_driver_pipeline_consume(st);
+   CHECK(st->extra.nres == 2, "rate: no extra lanes to begin with");
+   front = st->resampler_data;
+   CHECK(audio_driver_set_input_rate(32000.0), "a rate change with extra lanes refused");
+   CHECK(     st->extra.nres == 0
+           && st->resampler_data != front
+           && fabs(st->src_ratio_orig - 48000.0 / 32000.0) < 1e-9,
+         "the rate change left the old lanes or ratio: %u lanes, ratio %.4f",
+         st->extra.nres, st->src_ratio_orig);
+   CHECK(audio_driver_multi_pipe(st, &input, 128, 6, AUDIO_LAYOUT_5POINT1, floating),
+         "rate publish");
+   audio_driver_pipeline_consume(st);
+   CHECK(st->extra.nres == 2, "the extra lanes were not remade at the new rate");
+}
+
 static void resampler_discontinuity_case(unsigned backend, bool floating,
       unsigned scenario, bool hq)
 {
@@ -2662,6 +2694,8 @@ int main(void)
    RUN("transportscheduler", transport_scheduler_cases());
    RUN("nativerender", native_render_cases());
    RUN("srcreset", resampler_discontinuity_cases());
+   RUN("ratechange", rate_change_extras_case(true));
+   RUN("ratechange", rate_change_extras_case(false));
    RUN("suspended", suspended_multichannel_case(true, true));
    RUN("suspended", suspended_multichannel_case(false, true));
    RUN("suspended", suspended_multichannel_case(true, false));

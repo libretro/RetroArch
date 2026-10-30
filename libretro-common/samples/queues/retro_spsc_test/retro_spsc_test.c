@@ -760,11 +760,73 @@ static int run_grow_case(int mirrored)
    return 0;
 }
 
+/* retro_spsc_grow_into(): the same move into a buffer the caller made,
+ * which comes back holding the old one; a smaller one is refused. */
+static int run_grow_into_case(int mirrored)
+{
+   retro_spsc_t q, n, small;
+   uint8_t      in[700], out[700];
+   size_t       head, tail, i;
+   const char  *kind = mirrored ? "mirrored" : "plain";
+
+   if (   !(mirrored ? retro_spsc_init_mirrored(&q, 1024)
+                     : retro_spsc_init(&q, 1024))
+       || !(mirrored ? retro_spsc_init_mirrored(&n, 4096)
+                     : retro_spsc_init(&n, 4096))
+       || !retro_spsc_init(&small, 512))
+   {
+      fprintf(stderr, "FAIL: grow_into %s: init\n", kind);
+      return 1;
+   }
+   for (i = 0; i < sizeof(in); i++)
+      in[i] = (uint8_t)(i * 5 + 1);
+   if (     retro_spsc_write(&q, in, 700) != 700
+         || retro_spsc_read(&q, out, 700) != 700
+         || retro_spsc_write(&q, in, 600) != 600)
+   {
+      fprintf(stderr, "FAIL: grow_into %s: fill\n", kind);
+      return 1;
+   }
+   head = retro_atomic_load_relaxed_size(&q.head);
+   tail = retro_atomic_load_relaxed_size(&q.tail);
+   if (retro_spsc_grow_into(&q, &small) || q.capacity != 1024
+         || small.capacity != 512)
+   {
+      fprintf(stderr, "FAIL: grow_into %s: a smaller buffer taken\n", kind);
+      return 1;
+   }
+   if (     !retro_spsc_grow_into(&q, &n)
+         || q.capacity != 4096
+         || n.capacity != 1024
+         || retro_spsc_read_avail(&n) != 0
+         || retro_atomic_load_relaxed_size(&q.head) != head
+         || retro_atomic_load_relaxed_size(&q.tail) != tail
+         || retro_spsc_read(&q, out, 600) != 600
+         || memcmp(out, in, 600))
+   {
+      fprintf(stderr, "FAIL: grow_into %s: move\n", kind);
+      return 1;
+   }
+   retro_spsc_free(&n);
+   retro_spsc_free(&small);
+   if (     retro_spsc_write(&q, in, 700) != 700
+         || retro_spsc_read(&q, out, 700) != 700
+         || memcmp(out, in, 700))
+   {
+      fprintf(stderr, "FAIL: grow_into %s: after the move\n", kind);
+      return 1;
+   }
+   retro_spsc_free(&q);
+   printf("[pass] grow_into %s: moved into the caller's buffer\n", kind);
+   return 0;
+}
+
 int main(void)
 {
    if (run_layout_checks() != 0)
       return 1;
-   if (run_grow_case(0) != 0 || run_grow_case(1) != 0)
+   if (run_grow_case(0) != 0 || run_grow_case(1) != 0
+         || run_grow_into_case(0) != 0 || run_grow_into_case(1) != 0)
       return 1;
    if (     run_mirror_case(1024) != 0 || run_mirror_case(65536) != 0
          || run_mirror_stress(1024) != 0 || run_mirror_stress(4096) != 0)

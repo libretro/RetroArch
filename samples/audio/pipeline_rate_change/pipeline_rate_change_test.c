@@ -32,6 +32,9 @@ static size_t  captured_frames, device_bytes;
 static unsigned device_opens, device_frees, device_stops, device_starts, failures;
 static unsigned start_refusals, open_refusals;
 extern unsigned pipeline_control_calls;
+extern bool pipeline_consumer_running;
+static unsigned handovers;
+static bool change_parked;
 extern unsigned pipeline_mixer_inits, pipeline_mixer_dones;
 
 static void *test_init(const char *device, unsigned rate, unsigned latency,
@@ -105,12 +108,17 @@ static void setup(bool floating, bool threaded, bool fastpath, double rate)
    audio_driver_publish_runloop();
 }
 
-/* As the threaded pipeline's wrapper, so the change parks the consumer. */
-static bool change_rate(double rate, bool threaded)
+/* Under the threaded pipeline's wrapper with its consumer running: the
+ * change is decided at once and installed by the consumer before its
+ * next pass, parking nothing. Until then the old rate stays in force and
+ * the producer writes nothing into the ring; @parked has it installed at
+ * once instead, as for a stopped driver. */
+static bool change_rate_as(double rate, bool threaded, bool parked)
 {
    audio_driver_state_t *st    = &audio_driver_st;
    audio_driver_t wrapper      = *st->current_audio;
    const audio_driver_t *saved = st->current_audio;
+   float before                = st->input;
    bool ok;
    video_state_get_ptr()->av_info.timing.sample_rate = rate;
    if (threaded)
@@ -118,9 +126,37 @@ static bool change_rate(double rate, bool threaded)
       wrapper.ident     = "audio-thread";
       st->current_audio = &wrapper;
    }
+   pipeline_consumer_running = threaded && !parked;
    ok = audio_driver_set_input_rate(rate);
+   pipeline_consumer_running = false;
+   if (ok && threaded && !parked && audio_driver_rate_pending(st))
+   {
+      size_t head = retro_atomic_load_relaxed_size(&st->pipe_ring.head);
+      handovers++;
+      feed_f[0] = feed_f[1] = 0.25f;
+      feed_i[0] = feed_i[1] = 8192;
+      audio_driver_sample_batch_float(feed_f, 1);
+      audio_driver_sample_batch(feed_i, 1);
+      if (     st->input != before
+            || retro_atomic_load_relaxed_size(&st->pipe_ring.head) != head)
+      {
+         printf("FAIL: the change took effect before the consumer's pass\n");
+         failures++;
+      }
+      audio_driver_pipeline_pause_apply(st, true);
+      if (audio_driver_rate_pending(st))
+      {
+         printf("FAIL: the consumer's pass left the change pending\n");
+         failures++;
+      }
+   }
    st->current_audio = saved;
    return ok;
+}
+
+static bool change_rate(double rate, bool threaded)
+{
+   return change_rate_as(rate, threaded, change_parked);
 }
 
 /* One second of the tone at @rate, a video frame at a time. */
@@ -200,7 +236,7 @@ static void tone_case(bool floating, bool threaded, bool fastpath,
 
    if (     !ok
          || device_opens != 1
-         || pipeline_control_calls != (threaded ? 1u : 0u)
+         || pipeline_control_calls
          || st->input != (float)to_rate
          || fabs(st->src_ratio_orig - OUT_RATE / to_rate) > 1e-9
          || (fastpath ? st->resampler_data_int16 : st->resampler_data)
@@ -270,7 +306,14 @@ static void fps_case(double rate, double from_fps, double to_fps)
    saved         = st->current_audio;
    wrapper.ident = "audio-thread";
    st->current_audio = &wrapper;
+   pipeline_consumer_running = true;
    ok = audio_driver_set_input_rate(rate);
+   pipeline_consumer_running = false;
+   if (ok && audio_driver_rate_pending(st))
+   {
+      handovers++;
+      audio_driver_pipeline_pause_apply(st, true);
+   }
    st->current_audio = saved;
 
    /* A frame's worth of audio per video frame at the new rate. */
@@ -300,7 +343,7 @@ static void fps_case(double rate, double from_fps, double to_fps)
          (unsigned)(st->pipe_ring.capacity / st->pipe_frame_bytes), after);
    if (     !ok
          || device_opens != 1
-         || pipeline_control_calls != 1
+         || pipeline_control_calls
          || st->resampler_data != resampler
          || st->pipe_pass_frames != (per_frame < AUDIO_PIPE_SLICE_INT16S / 2
                ? per_frame : AUDIO_PIPE_SLICE_INT16S / 2)
@@ -569,12 +612,17 @@ int main(void)
          tone_case(format != 0, threaded != 0, false, 22050.0, 11025.0);
       }
    /* The ring at 11025 Hz holds 1024 frames, short of three video
-    * frames at either of these: it grows under the park. */
+    * frames at either of these: the consumer moves it to a larger one
+    * the caller made. */
    tone_case(true, true, false, 11025.0, 22050.0);
    tone_case(false, true, false, 11025.0, 48000.0);
    tone_case(true, false, false, 11025.0, 22050.0);
    tone_case(false, false, true, 11025.0, 32000.0);
    tone_case(false, true,  true, 32000.0, 22050.0);
+   /* A stopped driver's consumer runs no pass: installed by the caller. */
+   change_parked = true;
+   tone_case(true, true, false, 11025.0, 22050.0);
+   change_parked = false;
 
    refused_case("inline time stretch", false, true, 22050.0, 32000.0);
    refused_case("threaded time stretch", true, true, 22050.0, 32000.0);
@@ -592,6 +640,11 @@ int main(void)
    second_init_case(false);
    second_init_case(true);
 
+   if (handovers != 9)
+   {
+      printf("FAIL: %u changes handed to the consumer, not 9\n", handovers);
+      failures++;
+   }
    printf("%u failures\n", failures);
    return failures ? 1 : 0;
 }
