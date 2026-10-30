@@ -215,13 +215,13 @@ typedef struct
    bool should_resize;
    bool msg_rendering_enabled;
    bool shared_context_use;
-#ifdef HAVE_GFX_WIDGETS
-   bool widgets_visible;
-#endif
    struct retro_hw_render_interface_rsx hw_interface;
    struct retro_rsx_image hw_image;
    bool hw_render;
    bool hw_image_valid;
+   /* The last presented image carries frontend layers: a duped frame
+    * without any is presented once more to take them off */
+   bool ui_presented;
 } rsx_t;
 
 #include "../font_driver.h"
@@ -2640,7 +2640,7 @@ static bool rsx_frame(void* data, const void* frame,
       && gfx_widgets_visible(video_info);
 #endif
    bool draw                        = false;
-   bool draw_ui                     = msg && *msg
+   bool ui_now                      = (msg && *msg)
 #ifdef HAVE_MENU
          || (gcm->menu_frame_enable && menu_is_alive) || statistics_show
 #endif
@@ -2648,9 +2648,10 @@ static bool rsx_frame(void* data, const void* frame,
          || gcm->overlay_enable
 #endif
 #ifdef HAVE_GFX_WIDGETS
-         || widgets_visible || gcm->widgets_visible
+         || widgets_visible
 #endif
          ;
+   bool draw_ui                     = ui_now || gcm->ui_presented;
    /* The core shares the FIFO and leaves its own state behind.
     * Restore the frontend's state before anything of ours is drawn:
     * a core frame (hardware or CPU fallback), or a duped frame that
@@ -2776,11 +2777,15 @@ static bool rsx_frame(void* data, const void* frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
+   /* Called on bare dupes too, for the widgets' own per-frame work.
+    * Those go out without the state restore and are not presented,
+    * so this relies on gfx_widgets_frame drawing nothing whenever
+    * gfx_widgets_visible is false. */
    if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
 
-   if (msg)
+   if (msg && *msg)
       font_driver_render_msg(gcm, msg, strlen(msg), NULL, NULL);
 
 #if 0
@@ -2791,9 +2796,7 @@ static bool rsx_frame(void* data, const void* frame,
       /* Only update when we draw to prevent flickering when core frame duping is enabled */
       rsx_update_screen(gcm);
       rsx_clear_surface(gcm);
-#ifdef HAVE_GFX_WIDGETS
-      gcm->widgets_visible = widgets_visible;
-#endif
+      gcm->ui_presented = ui_now;
    }
    gcm->vert_idx         = 0;
 

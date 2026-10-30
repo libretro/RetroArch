@@ -668,6 +668,10 @@ static void test_native_menu_frame(void)
    rsx->menu_frame_enable = false;
    flips = rsx_flip_calls;
    rsx_frame(rsx, NULL, 0, 1, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips + 1,
+         "native_menu_frame: disabled menu left on screen");
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 1, 0, NULL, &info);
    CHECK(rsx_flip_calls == flips,
          "native_menu_frame: disabled menu was presented");
    rsx->menu_frame_enable = true;
@@ -1006,6 +1010,11 @@ static void test_menu_dupe_frame(void)
    draws = rsx_draw_calls;
    flips = rsx_flip_calls;
    rsx_frame(rsx, NULL, 0, 3, 0, NULL, &info);
+   CHECK(rsx_draw_calls == draws + 1 && rsx_flip_calls == flips + 1,
+         "menu_dupe_frame: closed menu left on screen over a dupe");
+   draws = rsx_draw_calls;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 4, 0, NULL, &info);
    CHECK(rsx_draw_calls == draws && rsx_flip_calls == flips,
          "menu_dupe_frame: a dupe without the menu was redrawn");
 
@@ -1243,6 +1252,52 @@ static void test_widget_layer_order(void)
    printf("widget_layer_order: ok\n");
 }
 
+/* Any frontend layer that goes away over duped frames is taken off by
+ * one more present of the bare core image, then dupes skip again. */
+static void test_ui_cleanup(void)
+{
+   static u8 pixels[4 * 4 * 2];
+   video_frame_info_t info;
+   rsx_t *rsx;
+   unsigned i, draws, flips;
+
+   memset(&info, 0, sizeof(info));
+   rsx = driver_up();
+   rsx_frame(rsx, pixels, VIDEO_SCALE_PACK(4, 4), 0, 8, NULL, &info);
+
+   for (i = 0; i < 3; i++)
+   {
+      const char *msg = i == 0 ? "message" : NULL;
+      rsx->overlay_enable  = i == 1;
+      info.statistics_show = i == 2;
+      rsx_frame(rsx, NULL, 0, 1, 0, msg, &info);
+      rsx->overlay_enable  = false;
+      info.statistics_show = false;
+
+      draws = rsx_draw_calls;
+      flips = rsx_flip_calls;
+      rsx_frame(rsx, NULL, 0, 2, 0, NULL, &info);
+      CHECK(rsx_draw_calls == draws + 1 && rsx_flip_calls == flips + 1,
+            "ui_cleanup: removed layer left on screen (%u)", i);
+      draws = rsx_draw_calls;
+      flips = rsx_flip_calls;
+      rsx_frame(rsx, NULL, 0, 3, 0, "", &info);
+      CHECK(rsx_draw_calls == draws && rsx_flip_calls == flips,
+            "ui_cleanup: cleanup presented more than once (%u)", i);
+   }
+
+   /* A real frame without layers clears the pending cleanup */
+   rsx_frame(rsx, NULL, 0, 4, 0, "message", &info);
+   rsx_frame(rsx, pixels, VIDEO_SCALE_PACK(4, 4), 5, 8, NULL, &info);
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 6, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips,
+         "ui_cleanup: real frame did not consume pending cleanup");
+
+   driver_down(rsx);
+   printf("ui_cleanup: ok\n");
+}
+
 static void test_hw_interface(void)
 {
    const struct retro_hw_render_interface *base = NULL;
@@ -1422,6 +1477,7 @@ int main(int argc, char **argv)
       { "widget_dupe_frame", test_widget_dupe_frame },
       { "widget_visibility", test_widget_visibility },
       { "widget_layer_order", test_widget_layer_order },
+      { "ui_cleanup", test_ui_cleanup },
       { "hw_interface", test_hw_interface },
       { "hw_frame_state", test_hw_frame_state },
       { "hw_retirement", test_hw_retirement },
