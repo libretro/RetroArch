@@ -867,7 +867,7 @@ static void task_save_handler(retro_task_t *task)
        * the user a 'state saved' notification and an empty slot. */
       if (!state->data || state->size <= 0)
       {
-         RARCH_ERR("[State] save task could not serialize core state "
+         RARCH_ERR("[State] Save task could not serialize core state "
                "for slot %d, path \"%s\".\n",
                state->state_slot, state->path);
          task_set_error(task, strdup(
@@ -904,7 +904,7 @@ static void task_save_handler(retro_task_t *task)
           * blocking task for the rest of the session.  An open that
           * failed once (read-only medium, bad path, no space) is not
           * going to succeed on retry; fail it. */
-         RARCH_ERR("[State] save task could not open \"%s\" for writing "
+         RARCH_ERR("[State] Save task could not open \"%s\" for writing "
                "(slot %d). The auto-index slot was already advanced, so "
                "this leaves an advanced slot with no save file.\n",
                state->path, state->state_slot);
@@ -960,7 +960,7 @@ static void task_save_handler(retro_task_t *task)
       }
 
       task_set_error(task, strdup(msg));
-      RARCH_ERR("[State] save task FAILED for slot %d, path \"%s\" "
+      RARCH_ERR("[State] Save task FAILED for slot %d, path \"%s\" "
             "(wrote %d of %d bytes%s).\n",
             state->state_slot, state->path,
             (int)state->written, (int)state->size,
@@ -971,7 +971,7 @@ static void task_save_handler(retro_task_t *task)
    {
       char       *msg      = NULL;
 
-      RARCH_LOG("[State] save task COMPLETED for slot %d, path \"%s\" "
+      RARCH_LOG("[State] Save task COMPLETED for slot %d, path \"%s\" "
             "(%d bytes).\n",
             state->state_slot, state->path, (int)state->size);
 

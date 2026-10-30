@@ -7406,7 +7406,7 @@ bool command_event_main_state(unsigned cmd)
                if (cmd == CMD_EVENT_SAVE_STATE)
                {
                   bool queued = content_save_state(state_path, true);
-                  RARCH_LOG("[State] save dispatch for slot %d, path "
+                  RARCH_LOG("[State] Save dispatch for slot %d, path "
                         "\"%s\": content_save_state queued=%s "
                         "(auto_index=%s, max_keep=%u). NOTE: actual disk "
                         "write is asynchronous; success is only known when "
