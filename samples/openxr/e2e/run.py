@@ -293,12 +293,14 @@ def run_case(retroarch, root, monado, case, validate):
     # A screen carried 5 cm or more snaps: in the 3DS layout the other
     # screen's edge, 3.2 cm off, would pull it 2.8 cm. The snap cases
     # turn it on. Edit Smoothing too: a smoothed screen lags the scripted
-    # hand; the smoothing cases turn it on.
+    # hand; the smoothing cases turn it on. The menu in front of screen
+    # 1, as the edit cases expect; custom-menu-spot checks it off.
     settings = {'video_openxr_enable': 'true',
                 'video_openxr_distance': '1.8',
                 'video_openxr_width': '1.6',
                 'video_openxr_edit_snap': 'false',
-                'video_openxr_edit_smoothing': '0'}
+                'video_openxr_edit_smoothing': '0',
+                'video_openxr_menu_follow': 'true'}
     if case.get('overlay'):
         settings.update(write_overlay(d))
     settings.update(case.get('settings', {}))
@@ -4026,6 +4028,19 @@ def check_custom(kind, legacy=False):
     return check
 
 
+def check_menu_spot(res):
+    """Menu in Front of Screen 1 off: with screen 1 moved, the menu
+    opens at its own spot straight ahead, as before screens moved."""
+    fr = last_snap(res)
+    if not fr:
+        return no_quads(res)
+    ms = menus(fr)
+    if len(ms) != 1 or not at(ms[0], (0, 0, -1.7)):
+        return ['menu at %s, want its spot' %
+                ([m['pose'][:3] for m in ms],)]
+    return []
+
+
 def check_frame_custom(window=False):
     """Without a map the whole frame, or gl's window, is screen 1: moved
     by its offsets and sized for where it is."""
@@ -4070,6 +4085,11 @@ CUSTOM_CASES = [
                   'video_screen2_xr_visible': 'false', 'menu_driver': 'ozone'},
      'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 4)],
      'check': check_custom('menu')},
+    {'name': 'custom-menu-spot',
+     'settings': dict(CUSTOM_OFFSET, video_openxr_menu_follow='false',
+                      menu_driver='ozone'),
+     'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 4)],
+     'check': check_menu_spot},
     {'name': 'custom-tracked',
      'settings': {'video_screen1_xr_x': '10', 'video_screen1_xr_yaw': '180',
                   'video_screen1_xr_scale': '10', 'video_screen1_xr_visible': 'false'},

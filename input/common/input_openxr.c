@@ -529,8 +529,10 @@ typedef struct input_openxr
    bool edit_toggle;
    bool edit_ok;         /* a profile took edit mode's bindings */
    bool edit_warned;     /* its unavailability logged */
-   /* Touch's menu button: held since start_menu_since. */
+   /* Touch's menu button: held since start_menu_since; spent by edit
+    * mode's menu press until let go. */
    bool start_menu_held;
+   bool start_menu_spent;
    retro_time_t start_menu_since;
    float haptic[INPUT_OPENXR_HANDS];      /* the amplitude last accepted */
    float haptic_attempt[INPUT_OPENXR_HANDS];
@@ -1140,16 +1142,20 @@ static void input_openxr_stick(input_openxr_t *st, unsigned a, XrPath hand,
 }
 
 /* Touch's one menu button: Start while it is held, and the RetroArch
- * menu too when let go after a second. */
+ * menu too when let go after a second. A press that opened the menu
+ * from edit mode is neither until let go. */
 static void input_openxr_start_menu(input_openxr_t *st, bool down,
       input_openxr_pad_t *pad)
 {
    retro_time_t now;
    if (!down)
    {
-      st->start_menu_held = false;
+      st->start_menu_held  = false;
+      st->start_menu_spent = false;
       return;
    }
+   if (st->start_menu_spent)
+      return;
    now = cpu_features_get_time_usec();
    if (!st->start_menu_held)
    {
@@ -2934,8 +2940,8 @@ static void input_openxr_edit_grab(input_openxr_t *st,
       config_get_video_screen_xr(q->slot, &now);
    else if (!config_get_video_menu_xr(&now))
    {
-      /* Following screen 1, it is sized by its distance against its
-       * spot's: placed, that scale keeps it as large. */
+      /* Unplaced, it is sized by its distance against its spot's:
+       * placed, that scale keeps it as large. */
       const video_xr_vec3_t *p = &q->pose.position;
       double spot              = sqrt((double)base->x * base->x
             + (double)base->y * base->y + (double)base->z * base->z);
@@ -3179,6 +3185,7 @@ static void input_openxr_edit_publish(input_openxr_t *st,
    e->grabs.stuck    = e->stuck;
    e->grabs.tag      = e->tag;
    e->grabs.snap     = e->snap;
+   e->grabs.editing  = e->on;
    openxr_frame_publish_grabs(st->frame, &e->grabs);
 }
 
@@ -3207,7 +3214,7 @@ static void input_openxr_edit_let_go_all(input_openxr_edit_t *e)
 }
 
 /* The main button on an item no hand holds: a screen as Reset Screen
- * leaves it, the menu back in front of screen 1. */
+ * leaves it, the menu back where it opens unplaced. */
 static void input_openxr_edit_reset(input_openxr_edit_t *e, unsigned slot)
 {
    unsigned h;
@@ -3319,6 +3326,8 @@ static void input_openxr_edit_poll(input_openxr_t *st,
    st->start_menu_held = false;
    input_openxr_triggers_lost(st);
    st->menu_toggle     = input_openxr_bool(st, IXA_E_MENU, XR_NULL_PATH);
+   if (st->menu_toggle)
+      st->start_menu_spent = true;
    st->edit_toggle     = input_openxr_bool(st, IXA_E_EDIT, XR_NULL_PATH);
    next                = input_openxr_bool(st, IXA_E_NEXT, XR_NULL_PATH);
    prev                = input_openxr_bool(st, IXA_E_PREV, XR_NULL_PATH);

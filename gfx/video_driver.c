@@ -6937,6 +6937,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_driver_headset_screens(settings, video_info->headset_screens);
    video_driver_headset_menu(settings, &video_info->headset_menu);
    video_info->headset_menu_placed         = settings->bools.video_openxr_menu_placed;
+   video_info->headset_menu_follow         = settings->bools.video_openxr_menu_follow;
    video_info->headset_distance            = settings->floats.video_openxr_distance;
    video_info->headset_width               = settings->floats.video_openxr_width;
    video_info->headset_placement           = settings->uints.video_openxr_placement;

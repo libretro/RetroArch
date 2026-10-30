@@ -72,13 +72,14 @@ settings still determine the base placement. **Recenter Headset Screens**
 updates the shared anchor for all screens while preserving their relative
 offsets, rotations, scales and visibility; it does not reset them.
 
-The menu floats 10 cm in front of Screen 1 and faces the way it does,
-so moving Screen 1 moves the menu with it. It looks as large as it does
-at its own spot, and comes no nearer to you than 40 cm. While Screen 1 is
-hidden, is a tracked core's projection or faces away from you, the menu
-stays at its own spot in front of the anchor. A menu placed in edit mode
-(below) stays where it was put until it is reset there, or by Reset All
-Screens.
+The menu opens at its own spot, straight ahead of the anchor. With
+**Menu in Front of Screen 1** on, it floats 10 cm in front of Screen 1
+and faces the way it does, so moving Screen 1 moves the menu with it. It
+looks as large as it does at its own spot, and comes no nearer to you
+than 40 cm. While Screen 1 is hidden, is a tracked core's projection or
+faces away from you, the menu stays at its own spot. A menu placed in
+edit mode (below) stays where it was put until it is reset there, or by
+Reset All Screens.
 
 Screen adjustments are configuration settings. Save the configuration to
 keep them as defaults, or use **Quick Menu > Overrides** to save core,

@@ -808,6 +808,8 @@ typedef struct video_frame_info
    unsigned screen_layout;
    bool stereo_swap_eyes;
    bool headset_menu_placed;
+   /* An unplaced menu opens in front of screen 1, not at its spot. */
+   bool headset_menu_follow;
    /* The last frame sent again (paused, menu), not a new core frame. */
    bool frame_repeat;
    /* Edit mode moves the headset's items: the menu's quad stays up. */

@@ -64,6 +64,7 @@ typedef struct openxr_grabs
    unsigned num_rests; /* screens no hand holds resting in a hinge */
    video_xr_rest_t rests[OPENXR_REST_HINGES];
    bool snap;          /* Snap to Screens */
+   bool editing;       /* Edit Screens is on */
 } openxr_grabs_t;
 
 /* Edit Smoothing's aims, the frame loop's for the main thread: each
@@ -182,10 +183,12 @@ typedef struct openxr_frame
    retro_atomic_int_t screens_seq;
    retro_atomic_int_t screens_words[2 * OPENXR_WORDS(openxr_screens_t)];
    /* Edit mode's hands as the main thread publishes them, the same way,
-    * and the frame loop's copy for this frame. */
+    * and the frame loop's copy, read again only once the stamp it was
+    * read at moves. The main thread is the one writer. */
    retro_atomic_int_t grabs_seq;
    retro_atomic_int_t grabs_words[2 * OPENXR_WORDS(openxr_grabs_t)];
    openxr_grabs_t grabs;           /* the frame loop's */
+   int grabs_read;                 /* the frame loop's */
    openxr_held_t held[2];          /* the frame loop's */
    /* Each held hinge where this frame draws, bit h for hand h's. */
    video_xr_hinge_t hinges[2];     /* the frame loop's */

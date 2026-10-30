@@ -12594,6 +12594,7 @@ unsigned menu_displaylist_build_list(
                   { MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT, PARSE_ONLY_UINT, false },
                   { MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE, PARSE_ONLY_FLOAT, false },
                   { MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH, PARSE_ONLY_FLOAT, false },
+                  { MENU_ENUM_LABEL_VIDEO_OPENXR_MENU_FOLLOW, PARSE_ONLY_BOOL, false },
                };
                rarch_setting_t *screen = menu_setting_find_enum(
                      MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED);

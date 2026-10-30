@@ -1247,6 +1247,43 @@ static void test_start_menu(void)
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
 }
 
+/* Touch's left menu button, which opens the menu from edit mode, held
+ * on as edit mode ends: spent, it is no Start and toggles no menu again
+ * until let go; held anew it opens the menu as before. */
+static void test_start_menu_after_edit(void)
+{
+   t_menu_open = false;
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   input_openxr_edit_begin(false, false, 0, 0, 0);
+   t_hold("edit/menu", 0, 1.0f, 0.0f);
+   t_hold("combined/start_menu", 0, 1.0f, 0.0f);
+   t_clock = 70000000;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_btn(3, RARCH_MENU_TOGGLE), "edit mode's menu press opens no menu");
+   t_menu_open = true;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(!t_editing, "edit mode went on with the menu open");
+   t_clock += 1500000;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(     !t_btn(0, RARCH_MENU_TOGGLE)
+         && !t_btn(0, RETRO_DEVICE_ID_JOYPAD_START),
+         "the press held from edit mode: menu %d, Start %d",
+         t_btn(0, RARCH_MENU_TOGGLE),
+         t_btn(0, RETRO_DEVICE_ID_JOYPAD_START));
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_hold("combined/start_menu", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_btn(0, RETRO_DEVICE_ID_JOYPAD_START), "a new press is no Start");
+   t_clock += 1000000;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_btn(0, RARCH_MENU_TOGGLE), "a new second's hold opens no menu");
+   t_let_go();
+   t_menu_open = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+}
+
 static void test_laser(void)
 {
    int16_t x       = 0;
@@ -10119,6 +10156,7 @@ int main(void)
    test_hotkeys();
    test_nothing_held();
    test_start_menu();
+   test_start_menu_after_edit();
    test_laser();
    test_hands();
    test_rumble();

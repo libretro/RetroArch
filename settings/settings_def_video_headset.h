@@ -29,6 +29,11 @@ S_UINT_EX(video_openxr_placement, VIDEO_OPENXR_PLACEMENT,
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_placement, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Screen Placement",
       "Where the headset keeps the screens. Fixed in Room: where Recenter puts them. Follow Head: always in front of you; on a large screen the edges sit where the lenses blur. Lazy Follow: they stay until you turn well away, then glide back in front of you.")
+S_BOOL(video_openxr_menu_follow, VIDEO_OPENXR_MENU_FOLLOW,
+      "video_openxr_menu_follow",
+      false, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Menu in Front of Screen 1",
+      "Opens the menu just in front of Screen 1, turned as it is, so moving Screen 1 moves the menu with it. Off: the menu opens straight ahead of the screens' anchor. A menu placed with Edit Screens stays where it was put.")
 S_BOOL(video_openxr_perf_boost, VIDEO_OPENXR_PERF_BOOST,
       "video_openxr_perf_boost",
       false, SD_FLAG_NONE, 0, CMD_EVENT_NONE,

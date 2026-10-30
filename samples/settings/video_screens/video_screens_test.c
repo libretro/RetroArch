@@ -995,8 +995,18 @@ static void test_xr_edit_rows(void)
          "video_openxr_laser_beam"));
    CHECK(menu_setting_follows("video_openxr_width",
          "video_openxr_distance"));
-   CHECK(menu_setting_follows("video_screen_selected",
+   CHECK(menu_setting_follows("video_openxr_menu_follow",
          "video_openxr_width"));
+   CHECK(menu_setting_follows("video_screen_selected",
+         "video_openxr_menu_follow"));
+   /* Off unless asked for: the menu opens where it always did. */
+   CHECK(!settings->bools.video_openxr_menu_follow);
+   menu_value("video_openxr_menu_follow", "OFF");
+   menu_action("video_openxr_menu_follow", MENU_ACTION_RIGHT);
+   CHECK(settings->bools.video_openxr_menu_follow);
+   menu_value("video_openxr_menu_follow", "ON");
+   menu_action("video_openxr_menu_follow", MENU_ACTION_LEFT);
+   CHECK(!settings->bools.video_openxr_menu_follow);
    CHECK(menu_setting_follows("video_screen_xr_visible",
          "video_screen_selected"));
    CHECK(menu_setting_follows("video_screen_xr_x",
@@ -2171,6 +2181,11 @@ static void test_screen_frame_snapshot(void)
    settings->bools.video_openxr_menu_placed    = true;
    memset(&frame, 0, sizeof(frame));
    video_driver_build_info(&frame);
+   CHECK(!frame.headset_menu_follow);
+   settings->bools.video_openxr_menu_follow    = true;
+   video_driver_build_info(&frame);
+   CHECK(frame.headset_menu_follow);
+   settings->bools.video_openxr_menu_follow    = false;
    CHECK(frame.headset_menu.y == 0.5f);
    CHECK(frame.headset_menu.scale == 10.0f);
    CHECK(frame.headset_menu.visible);

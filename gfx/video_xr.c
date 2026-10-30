@@ -484,8 +484,8 @@ static unsigned video_xr_menu_dims(const video_xr_params_t *p,
          VIDEO_SCALE_PACK(w, h), p->max_dim);
 }
 
-/* The menu VIDEO_XR_MENU_LIFT in front of screen 0, facing as it does,
- * while screen 0 floats and shows, else at its own spot. Following, it
+/* At its own spot; or with menu_follow VIDEO_XR_MENU_LIFT in front of
+ * screen 0, facing as it does, while screen 0 floats and shows. Following, it
  * comes no nearer than VIDEO_XR_MENU_NEAREST, and w and h scale with
  * its distance so it looks as large as at its spot; facing away from
  * the anchor, where no laser reaches it, it stays at its spot. */
@@ -495,7 +495,7 @@ static void video_xr_menu_spot(const video_xr_params_t *p,
 {
    video_xr_pose_t local, lift;
    video_screen_xr_t screen;
-   bool follow = lay->count && !(p->skip_screens & 1u);
+   bool follow = p->menu_follow && lay->count && !(p->skip_screens & 1u);
    if (follow && p->screens)
    {
       screen = p->screens[0];

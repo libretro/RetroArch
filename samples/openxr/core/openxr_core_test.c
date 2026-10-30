@@ -9372,6 +9372,77 @@ static bool t_back_of(const XrCompositionLayerQuad *l,
       && t_near(y.y, 1.0f) && t_near(z.z, -1.0f);
 }
 
+/* Outside edit mode a screen seen from behind keeps its front, and no
+ * head is located for it. The frame loop copies the main thread's
+ * grabs only once their stamp moves, and a new session passes over
+ * what was published before it without publishing itself: the main
+ * thread stays the grabs' one writer. */
+static void test_frame_grabs_owner(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t g;
+   unsigned i, n, locates;
+   int stamp;
+   bool fronts = true;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+   const XrSwapchain cursor = (XrSwapchain)(uintptr_t)0x900;
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   f.cursor       = cursor;
+   t_head_tracked = true;
+   memset(&t_head, 0, sizeof(t_head));
+   t_head.orientation.w = 1.0f;
+   t_head.position.z    = -3.0f;
+   locates = t_head_locates;
+   openxr_frame_place_screens(&f, 1000);
+   n = openxr_frame_layers(&f, 1000, layers, ptrs);
+   for (i = 0; i < n; i++)
+      fronts &= layers[i].subImage.swapchain != cursor;
+   CHECK(n == 3 && fronts && !f.backs && t_head_locates == locates,
+         "not editing, behind: %u layers, fronts %d, backs %x, %u locates",
+         n, (int)fronts, (unsigned)f.backs, t_head_locates - locates);
+
+   /* Nothing published: the frame loop's copy is not read again. */
+   memset(&g, 0, sizeof(g));
+   g.chosen = 3;
+   openxr_frame_publish_grabs(&f, &g);
+   openxr_frame_place_screens(&f, 2000);
+   CHECK(f.grabs.chosen == 3, "published grabs not read: %u",
+         f.grabs.chosen);
+   f.grabs.chosen = 7;
+   openxr_frame_place_screens(&f, 3000);
+   CHECK(f.grabs.chosen == 7, "unchanged grabs copied again");
+   g.chosen = 4;
+   openxr_frame_publish_grabs(&f, &g);
+   openxr_frame_place_screens(&f, 4000);
+   CHECK(f.grabs.chosen == 4, "republished grabs not read: %u",
+         f.grabs.chosen);
+
+   /* A new session: the stale grabs are passed over, not rewritten. */
+   g.editing = true;
+   g.hand[0].state = VIDEO_XR_GRAB_HELD;
+   openxr_frame_publish_grabs(&f, &g);
+   stamp = retro_atomic_load_acquire_int(&f.grabs_seq);
+   openxr_frame_session_created(&f);
+   CHECK(retro_atomic_load_acquire_int(&f.grabs_seq) == stamp,
+         "a new session published the grabs");
+   openxr_frame_place_screens(&f, 5000);
+   CHECK(     !f.grabs.editing
+         && f.grabs.hand[0].state != VIDEO_XR_GRAB_HELD,
+         "a new session holds the last one's grabs");
+   g.chosen = 5;
+   openxr_frame_publish_grabs(&f, &g);
+   openxr_frame_place_screens(&f, 6000);
+   CHECK(f.grabs.chosen == 5 && f.grabs.editing,
+         "the new session's first grabs not read");
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
 /* A head behind a quad's plane, where runtimes draw nothing of it: the
  * back in the quad's place, in no more layers, the menu's too, and kept
  * as the menu by a runtime short of layers; the front from in front,
@@ -9395,6 +9466,7 @@ static void test_frame_backs(void)
    const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
    const XrCompositionLayerBaseHeader *kept[5];
    const XrSwapchain cursor = (XrSwapchain)(uintptr_t)0x900;
+   openxr_grabs_t editing;
 
    t_grab_frame(&rt, &s, &sc, &f, &set);
    max_layers = rt.max_layers;
@@ -9416,6 +9488,10 @@ static void test_frame_backs(void)
    t_head_tracked = true;
    memset(&t_head, 0, sizeof(t_head));
    t_head.orientation.w = 1.0f;
+   /* Backs are edit mode's. */
+   memset(&editing, 0, sizeof(editing));
+   editing.editing = true;
+   openxr_frame_publish_grabs(&f, &editing);
 
    openxr_frame_place_screens(&f, 1000);
    n = openxr_frame_layers(&f, 1000, layers, ptrs);
@@ -9626,6 +9702,7 @@ int main(void)
    test_frame_grabs_rest_kept();
    test_frame_grabs_rest_out();
    test_frame_backs();
+   test_frame_grabs_owner();
    test_cursor_backs();
    test_cursor_tags();
    test_cursor_tag_lines();

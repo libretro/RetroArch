@@ -50,7 +50,7 @@ S_ACTION(VIDEO_SCREEN_XR_RESET,
 S_ACTION(VIDEO_SCREEN_XR_RESET_ALL,
       "video_screen_xr_reset_all",
       "Reset All Screens",
-      "Restore every screen's position, rotation, scale and visibility, including screens outside the current map, and return the menu to following Screen 1.")
+      "Restore every screen's position, rotation, scale and visibility, including screens outside the current map, and return the menu to where it opens unplaced.")
 S_ACTION(VIDEO_SCREEN_XR_EDIT,
       "video_screen_xr_edit",
       "Edit Screens",

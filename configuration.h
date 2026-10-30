@@ -719,6 +719,7 @@ typedef struct settings
       bool video_smooth;
       bool video_stereo_swap_eyes;
       bool video_openxr_enable;
+      bool video_openxr_menu_follow;
       bool video_openxr_perf_boost;
       bool video_openxr_edit_pause;
       bool video_openxr_edit_snap;

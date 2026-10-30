@@ -6537,6 +6537,7 @@ static void gl3_xr_plan(gl3_t *gl, const video_frame_info_t *video_info,
    p.edit_seq      = video_info->headset_edit_seq;
    p.menu          = video_info->headset_menu_placed
       ? &video_info->headset_menu : NULL;
+   p.menu_follow   = video_info->headset_menu_follow;
    p.distance      = video_info->headset_distance;
    p.width         = video_info->headset_width;
    p.px_per_rad    = gl_openxr_pixels_per_radian(xr);

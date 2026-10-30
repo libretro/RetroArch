@@ -122,7 +122,8 @@ typedef struct video_xr_params
    const video_views_map_t *map;
    /* Floating-screen adjustments by screen ID; NULL uses defaults. */
    const video_screen_xr_t *screens;
-   /* The menu's own place from its spot; NULL: in front of screen 0. */
+   /* The menu's own place from its spot; NULL: at its spot, or with
+    * menu_follow in front of screen 0. */
    const video_screen_xr_t *menu;
    float frame_aspect;
    unsigned frame_dims;
@@ -144,6 +145,8 @@ typedef struct video_xr_params
     * the others keep their places. */
    unsigned skip_screens;
    bool swap_eyes;
+   /* An unplaced menu opens in front of screen 0 and moves with it. */
+   bool menu_follow;
    /* The whole frame is the window, with the menu drawn in it. */
    bool window;
    /* The screens are drawn by the stock chain, which shrinks smoothly:

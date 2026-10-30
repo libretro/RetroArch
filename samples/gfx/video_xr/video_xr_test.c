@@ -1740,10 +1740,12 @@ static void test_frame_as_screen(void)
    CHECK(set.num_quads == 0);
 }
 
-/* The menu 10 cm in front of screen 1 and facing as it does, after the
- * screens, as large to the eye as at its spot and no nearer than 0.4 m;
- * at its own place once placed; at its spot when screen 1 does not
- * float or show, or would leave it facing away. */
+/* By default the menu at its spot, wherever screen 1 is, as before
+ * screens moved. With menu_follow: 10 cm in front of screen 1 and
+ * facing as it does, after the screens, as large to the eye as at its
+ * spot and no nearer than 0.4 m; at its own place once placed; at its
+ * spot when screen 1 does not float or show, or would leave it facing
+ * away. */
 static void test_menu_spot(void)
 {
    video_views_map_t map;
@@ -1760,6 +1762,14 @@ static void test_menu_spot(void)
    p.screens = screens;
    screens[0].z   = 0.6f;
    screens[0].yaw = 30.0f;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 4);
+   m = &set.quads[set.num_quads - 1];
+   CHECK(m->kind == VIDEO_XR_QUAD_MENU && pos_is(m, 0.0, 0.0, -1.7));
+   CHECK(NEAR(m->pose.orientation.w, 1.0));
+   CHECK(NEAR(m->width, 1.6) && NEAR(m->height, 0.96));
+
+   p.menu_follow = true;
    video_xr_place(&p, &set);
    CHECK(set.num_quads == 4);
    m = &set.quads[set.num_quads - 1];
@@ -1855,6 +1865,7 @@ static void test_menu_spot(void)
 
    /* A whole frame is screen 1: the menu goes with it. */
    params_init(&p, NULL);
+   p.menu_follow = true;
    p.frame_dims = VIDEO_SCALE_PACK(800, 480);
    p.ui_dims    = VIDEO_SCALE_PACK(1600, 960);
    video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);

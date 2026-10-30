@@ -288,8 +288,9 @@ static unsigned openxr_frame_layers(openxr_frame_t *f, XrTime time,
    openxr_frame_hold(f, time, quads);
    f->backs      = 0;
    f->menu_layer = -1;
-   /* Follow Head's space is the head's own. */
-   if (f->cursor)
+   /* Follow Head's space is the head's own. Backs are for edit mode,
+    * where screens are turned around; outside it nothing changes. */
+   if (f->cursor && f->grabs.editing)
    {
       if (f->screens.view)
       {
@@ -494,8 +495,14 @@ static void openxr_frame_place_screens(openxr_frame_t *f, XrTime time)
    bool held;
    int recenters = retro_atomic_load_acquire_int(&f->recenters);
    int placement = retro_atomic_load_acquire_int(&f->placement);
-   openxr_seq_read(&f->grabs_seq, f->grabs_words, &f->grabs,
-         sizeof(f->grabs));
+   int grabs     = retro_atomic_load_acquire_int(&f->grabs_seq);
+   /* Outside edit mode nothing is published: no copy. */
+   if (grabs != f->grabs_read)
+   {
+      openxr_seq_read(&f->grabs_seq, f->grabs_words, &f->grabs,
+            sizeof(f->grabs));
+      f->grabs_read = grabs;
+   }
    held = f->grabs.hand[0].state == VIDEO_XR_GRAB_HELD
       || f->grabs.hand[1].state == VIDEO_XR_GRAB_HELD;
    openxr_frame_screens_anchor(f, &at);
@@ -1000,7 +1007,9 @@ void openxr_frame_deinit(openxr_frame_t *f)
    f->idle_ready = false;
 }
 
-/* A new session's frame loop holds nothing, whatever the input does. */
+/* A new session's frame loop holds nothing, whatever the input does:
+ * its own copy is cleared and what is published now is passed over,
+ * the main thread staying the one writer of the grabs. */
 static const openxr_grabs_t openxr_frame_no_grabs;
 static const openxr_aims_t openxr_frame_no_aims;
 
@@ -1014,8 +1023,8 @@ void openxr_frame_session_created(openxr_frame_t *f)
    openxr_frame_publish_tracked(f);
    openxr_seq_publish(&f->screens_seq, f->screens_words,
          &f->screens, sizeof(f->screens));
-   openxr_seq_publish(&f->grabs_seq, f->grabs_words,
-         &openxr_frame_no_grabs, sizeof(openxr_frame_no_grabs));
+   f->grabs      = openxr_frame_no_grabs;
+   f->grabs_read = retro_atomic_load_acquire_int(&f->grabs_seq);
    openxr_seq_publish(&f->aims_seq, f->aims_words,
          &openxr_frame_no_aims, sizeof(openxr_frame_no_aims));
    retro_atomic_store_release_int(&f->recenter, 0);
