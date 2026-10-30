@@ -16,11 +16,26 @@
 
 #define NTHREADS 4
 #define ROUNDS   12
+#define FLIP_ROUNDS 25
 
 static char url_file[600], url_dir[600];
 static char url_file_b[600], url_dir_b[600];
 static bool two_shares = false;
 static int  failures = 0;
+static int  rounds = ROUNDS;
+static int  flip_stop = 0;
+static const struct smb_settings *flip_cfg[2];
+
+/* Switches the settings between two connection keys while the workers
+ * run, as a settings edit does: a worker may give a slot back to one
+ * key's pool while its next take goes to the other's. */
+static void flipper(void *arg)
+{
+   unsigned n = 0;
+   (void)arg;
+   while (!__sync_fetch_and_add(&flip_stop, 0))
+      smb_init_cfg(flip_cfg[++n & 1]);
+}
 
 /* Each failure names its operation, thread and round, so a failure on
  * a CI runner says what went wrong rather than only how often. */
@@ -34,7 +49,7 @@ static void worker(void *arg)
    int i, bad = 0;
    int id = (int)(intptr_t)arg;
    uint8_t buf[64];
-   for (i = 0; i < ROUNDS; i++)
+   for (i = 0; i < rounds; i++)
    {
       bool        b    = two_shares && ((id + i) & 1);
       const char *file = b ? url_file_b : url_file;
@@ -94,7 +109,9 @@ static void worker(void *arg)
 int main(int argc, char **argv)
 {
    struct smb_settings cfg;
+   struct smb_settings cfg2;
    sthread_t *t[NTHREADS];
+   sthread_t *ft;
    int i, phase;
 
    if (argc < 3)
@@ -288,6 +305,27 @@ int main(int argc, char **argv)
       }
       smb_shutdown();
    }
+   /* the key changing under the workers: every operation still
+    * succeeds, whichever pool its slot came from */
+   cfg.readahead = 1024;
+   cfg2          = cfg;
+   cfg2.timeout  = cfg.timeout + 1;
+   flip_cfg[0]   = &cfg;
+   flip_cfg[1]   = &cfg2;
+   rounds        = FLIP_ROUNDS;
+   smb_init_cfg(&cfg);
+   ft = sthread_create(flipper, NULL);
+   for (i = 0; i < NTHREADS; i++)
+      t[i] = sthread_create(worker, (void*)(intptr_t)i);
+   for (i = 0; i < NTHREADS; i++)
+      if (t[i])
+         sthread_join(t[i]);
+   __sync_fetch_and_add(&flip_stop, 1);
+   if (ft)
+      sthread_join(ft);
+   smb_init_cfg(&cfg);
+   smb_shutdown();
+   rounds = ROUNDS;
    /* a second share of the same directory (argv[6]) with no share
     * configured: threads alternating between the two keep a pool each,
     * so neither is taken down under the other's users */
@@ -311,7 +349,7 @@ int main(int argc, char **argv)
       fprintf(stderr, "FAIL: %d bad operations across %d threads\n", failures, NTHREADS);
       return 1;
    }
-   printf("ok: %d threads x %d rounds through the VFS, read-ahead off and on, reads past the windows%s\n",
-         NTHREADS, ROUNDS, argc > 6 ? ", two shares" : "");
+   printf("ok: %d threads x %d rounds through the VFS, read-ahead off and on, reads past the windows; %d rounds with the settings switched under them%s\n",
+         NTHREADS, ROUNDS, FLIP_ROUNDS, argc > 6 ? "; two shares" : "");
    return 0;
 }
