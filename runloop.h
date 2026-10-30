@@ -378,6 +378,9 @@ struct runloop
    bool auto_state_load_attempted;
    bool auto_state_load_ready;
    bool auto_state_load_core_ran;
+   /* The auto state was asked for by name (Load State > Auto), so it
+    * loads whatever Auto Load State says. */
+   bool auto_state_load_asked;
 
    bool perfcnt_enable;
    bool paused_hotkey;

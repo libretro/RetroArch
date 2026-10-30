@@ -34,8 +34,9 @@
  *    the playlists tab lists nothing - and the release makes the
  *    builtin folder, loads favorites and history, and lists the tab;
  *  - playlist state slot: an entry run from its Load State list loads
- *    the slot picked there, over an auto state and with none, though
- *    the menu has moved on by the time the load reaches the content;
+ *    the slot picked there, over an auto state and with none, and Auto
+ *    loads the auto state with Auto Load State off, though the menu has
+ *    moved on by the time the load reaches the content;
  *  - menu sound close: a menu sound playing when Close Content is
  *    confirmed plays on through the staged close, the device never
  *    stopped while the menu feeds it and the tone handed over whole;
@@ -2536,6 +2537,20 @@ static void lane_playlist_state_slot(void)
    CHECK(settings->ints.state_slot == 4,
          "the active slot is %d after starting from slot 4",
          settings->ints.state_slot);
+
+   /* Auto, picked by name, loads the auto state with Auto Load State
+    * off. */
+   configuration_set_bool(settings, settings->bools.savestate_auto_load, false);
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the contentless load before Auto was not started");
+   CHECK(settle() && core_is_up(),
+         "the contentless load before Auto did not go through");
+   playlist_run_from_slot("Auto");
+   CHECK(core_export("harness_core_state_loaded") == 0x22,
+         "Auto picked with Auto Load State off started from %s",
+         core_export("harness_core_state_loaded") == 0x11
+         ? "slot 4" : "no state");
+   configuration_set_bool(settings, settings->bools.savestate_auto_load, true);
 
    /* Again with no auto state to fall back on. */
    remove(auto_path);

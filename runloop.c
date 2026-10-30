@@ -5515,6 +5515,7 @@ static void runloop_reset_auto_state_load(runloop_state_t *runloop_st)
    runloop_st->auto_state_load_attempted = false;
    runloop_st->auto_state_load_ready     = false;
    runloop_st->auto_state_load_core_ran  = false;
+   runloop_st->auto_state_load_asked     = false;
 }
 
 static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
@@ -5997,9 +5998,10 @@ static bool event_init_content(
        * when the load was asked for: the menu has moved on since. */
       if (menu && menu->state_slot_run_pending)
       {
-         runloop_st->entry_state_slot = menu->state_slot_run;
-         entry_state_load             = menu->state_slot_run > -1;
-         menu->state_slot_run_pending = false;
+         runloop_st->entry_state_slot      = menu->state_slot_run;
+         entry_state_load                  = menu->state_slot_run > -1;
+         runloop_st->auto_state_load_asked = menu->state_slot_run < 0;
+         menu->state_slot_run_pending      = false;
       }
 #endif
 
@@ -6040,7 +6042,8 @@ static bool event_init_content(
 #endif
       {
          if (     runloop_st->entry_state_slot < 0
-               && settings->bools.savestate_auto_load)
+               && (     settings->bools.savestate_auto_load
+                     || runloop_st->auto_state_load_asked))
             command_event_load_auto_state();
       }
    }
@@ -11056,7 +11059,8 @@ static void runloop_load_deferred_auto_state(void)
 
    settings = config_get_ptr();
 
-   if (!settings->bools.savestate_auto_load)
+   if (     !settings->bools.savestate_auto_load
+         && !runloop_st->auto_state_load_asked)
    {
       runloop_st->auto_state_load_pending   = false;
       runloop_st->auto_state_load_ready     = false;
