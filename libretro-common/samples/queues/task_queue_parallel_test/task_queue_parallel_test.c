@@ -358,6 +358,39 @@ static void push_stuck(retro_task_handler_t handler, struct stuck *s,
    task_queue_push(task);
 }
 
+/* ---- a flood past what the run rings hold ---- */
+#define FLOOD 3000
+static unsigned           flood_next;     /* the plain ones' turn */
+static retro_atomic_int_t flood_misorder;
+static retro_atomic_int_t flood_ran;
+static retro_atomic_int_t flood_hold;     /* the extras wait while set */
+
+static void flood_plain_handler(retro_task_t *task)
+{
+   if ((unsigned)(uintptr_t)task->user_data != flood_next++)
+      retro_atomic_fetch_add_int(&flood_misorder, 1);
+   retro_atomic_fetch_add_int(&flood_ran, 1);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void flood_parallel_handler(retro_task_t *task)
+{
+   while (retro_atomic_load_acquire_int(&flood_hold))
+      retro_sleep(1);
+   retro_atomic_fetch_add_int(&flood_ran, 1);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void flood_push(retro_task_handler_t handler, unsigned seq, int flags)
+{
+   retro_task_t *task = task_init();
+   task->handler   = handler;
+   task->callback  = count_retired;
+   task->user_data = (void*)(uintptr_t)seq;
+   task->flags    |= flags | RETRO_TASK_FLG_MUTE;
+   task_queue_push(task);
+}
+
 static int64_t ms_since(retro_time_t start)
 {
    return (int64_t)((cpu_features_get_time_usec() - start) / 1000);
@@ -438,6 +471,34 @@ int main(void)
    CHECK(retro_atomic_load_acquire_int(&off_worker0) == 0,
          "plain tasks never leave the one worker (%d did)",
          retro_atomic_load_acquire_int(&off_worker0));
+
+   /* more of each than a ring holds, pushed with every worker held so
+    * that both overflow: every one runs, and the plain ones in the order
+    * they were pushed */
+   reset_counts();
+   flood_next = 0;
+   retro_atomic_store_release_int(&flood_misorder, 0);
+   retro_atomic_store_release_int(&flood_ran, 0);
+   retro_atomic_store_release_int(&flood_hold, 1);
+   hog_start();
+   for (i = 0; i < FLOOD; i++)
+   {
+      flood_push(flood_plain_handler, i, 0);
+      flood_push(flood_parallel_handler, i, RETRO_TASK_FLG_PARALLEL);
+   }
+   retro_atomic_store_release_int(&flood_hold, 0);
+   hog_stop();
+   {
+      int n = 2 * FLOOD;
+      task_queue_wait_timeout(not_all_retired, &n, 20000000);
+      task_queue_check();
+   }
+   CHECK(retro_atomic_load_acquire_int(&flood_ran) == 2 * FLOOD,
+         "a flood of %d tasks all ran (%d did)", 2 * FLOOD,
+         retro_atomic_load_acquire_int(&flood_ran));
+   CHECK(!retro_atomic_load_acquire_int(&flood_misorder),
+         "the plain ones ran in the order pushed (%d out of turn)",
+         retro_atomic_load_acquire_int(&flood_misorder));
 
    /* one parallel task called eight times, with others to tempt the
     * idle workers: never in two handlers at once */

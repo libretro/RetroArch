@@ -341,6 +341,14 @@ struct retro_task
     * task queue. */
    void *sched;
 
+   /** @private The threaded runner's list of every task from its push
+    * until it is retired, which find() walks from any thread. */
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_ptr_t live_next;
+#else
+   void *live_next;
+#endif
+
    /**
     * Indicates the current progress of the task.
     *
@@ -372,6 +380,11 @@ struct retro_task
     * task_set_flags / task_get_flags.
     */
    retro_atomic_int_t flags;
+
+   /** @private Owned by the threaded runner: whether the task is done
+    * and waits to be retired, and a wake it has yet to act on. */
+   retro_atomic_int_t qstate;
+   retro_atomic_int_t wake;
 
    /**
     * With \c RETRO_TASK_FLG_PARALLEL: how many extra workers the task

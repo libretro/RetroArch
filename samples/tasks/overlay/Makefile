@@ -24,6 +24,7 @@ SOURCES := overlay_budget_test.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
            $(LIBRETRO_COMM_DIR)/file/config_file.c \
            $(LIBRETRO_COMM_DIR)/file/config_file_io.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \

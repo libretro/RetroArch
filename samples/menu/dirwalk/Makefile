@@ -74,7 +74,8 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
-	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 
 CFLAGS += -Wall $(INCDIRS)
 CFLAGS += -DHAVE_THREADS -D_GNU_SOURCE

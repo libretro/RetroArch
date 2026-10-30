@@ -7,7 +7,9 @@ LIBRETRO_COMM_DIR := ../../..
 # Built with HAVE_THREADS, since the switch under test is from the
 # regular implementation to the threaded one. realloc() is wrapped so
 # an absurd request is seen, and refused, rather than attempted,
-# slock_lock() so that a waker can be held inside the queue, and
+# slock_lock() and retro_eventcount_notify() so that a waker can be held
+# inside the queue, the one on the runner that locks and the other on
+# the one that does not, and
 # slock_unlock() and sthread_create() so that the main thread can be
 # held where a new runner first runs a task, and sthread_join() and
 # sthread_get_current_thread_id() so that a thread can take the
@@ -16,6 +18,7 @@ SOURCES := \
 	task_queue_switch_test.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
@@ -32,19 +35,22 @@ ifneq ($(shell uname -s),Darwin)
    LDFLAGS += -Wl,--wrap=realloc -Wl,--wrap=slock_lock \
               -Wl,--wrap=slock_unlock -Wl,--wrap=sthread_create \
               -Wl,--wrap=sthread_join \
-              -Wl,--wrap=sthread_get_current_thread_id
+              -Wl,--wrap=sthread_get_current_thread_id \
+              -Wl,--wrap=retro_eventcount_notify
 else
    TASK_QUEUE_O := $(call sample_objs,$(LIBRETRO_COMM_DIR)/queues/task_queue.o)
    $(TASK_QUEUE_O): CFLAGS += -Drealloc=__wrap_realloc -Dslock_lock=__wrap_slock_lock \
                               -Dslock_unlock=__wrap_slock_unlock \
                               -Dsthread_create=__wrap_sthread_create \
                               -Dsthread_join=__wrap_sthread_join \
-                              -Dsthread_get_current_thread_id=__wrap_sthread_get_current_thread_id
+                              -Dsthread_get_current_thread_id=__wrap_sthread_get_current_thread_id \
+                              -Dretro_eventcount_notify=__wrap_retro_eventcount_notify
    $(TARGET).o: CFLAGS += -D__real_realloc=realloc -D__real_slock_lock=slock_lock \
                           -D__real_slock_unlock=slock_unlock \
                           -D__real_sthread_create=sthread_create \
                           -D__real_sthread_join=sthread_join \
-                          -D__real_sthread_get_current_thread_id=sthread_get_current_thread_id
+                          -D__real_sthread_get_current_thread_id=sthread_get_current_thread_id \
+                          -D__real_retro_eventcount_notify=retro_eventcount_notify
 endif
 
 # GCD=1 builds the GCD runner as the threaded one: against libSystem on

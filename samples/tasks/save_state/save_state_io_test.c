@@ -990,9 +990,9 @@ static void test_threaded_load_waits_for_frames(void)
        "threaded queue: nothing is loaded before the second frame");
 
    /* With the clock stopped a parked task cannot come due, so once a
-    * pass in flight has settled the handler is not looking; the
-    * gather's running lock orders its last look before the write and
-    * the write before its next one. */
+    * pass in flight has settled the handler is not looking; a gather
+    * orders its last look before the write and the write before its
+    * next one. */
    __atomic_store_n(&clock_step, 0, __ATOMIC_RELAXED);
    for (i = 0; i < 20; i++)
    {

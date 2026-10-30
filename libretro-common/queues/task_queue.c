@@ -37,6 +37,14 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
+/* The threaded runner without a lock wherever the atomics have
+ * compare-and-swap and pointer operations; GCD keeps its own. */
+#if defined(HAVE_THREADS) && !defined(HAVE_GCD) \
+      && defined(RETRO_ATOMIC_LOCK_FREE) \
+      && defined(RETRO_ATOMIC_HAS_CAS) && defined(RETRO_ATOMIC_HAS_PTR)
+#define TASK_QUEUE_LF 1
+#include <rthreads/retro_eventcount.h>
+#endif
 #ifdef __EMSCRIPTEN__
 #include <retro_timers.h>
 #endif
@@ -88,13 +96,15 @@ struct retro_task_impl
 static retro_task_queue_msg_t msg_push_bak  = NULL;
 static task_queue_t tasks_running           = {NULL, NULL};
 static task_queue_t tasks_finished          = {NULL, NULL};
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(TASK_QUEUE_LF)
 /* Tasks whose callbacks are currently being run by
  * retro_task_threaded_gather(); guarded by finished_lock. Keeps
  * such tasks visible to retro_task_threaded_find() from any thread
  * until they are fully retired, without holding finished_lock
  * across the callbacks themselves. */
 static task_queue_t tasks_retiring          = {NULL, NULL};
+#endif
+#ifdef HAVE_THREADS
 /* The sizes of tasks_running and tasks_finished, for
  * retro_task_threaded_gather(), which runs every frame and returns
  * without a lock while both are zero. Changed only where a task enters
@@ -112,18 +122,20 @@ static retro_atomic_int_t task_threaded_enable =
 
 #ifdef HAVE_THREADS
 static uintptr_t main_thread_id             = 0;
+static slock_t *property_lock               = NULL;
+#ifndef TASK_QUEUE_LF
 static slock_t *running_lock                = NULL;
 static slock_t *finished_lock               = NULL;
-static slock_t *property_lock               = NULL;
 static scond_t *worker_cond                 = NULL;
 /* Signalled by a worker each time it moves a task onto the finished
  * queue.  The blocking waiters sleep on it instead of spinning. */
 static scond_t *finished_cond               = NULL;
+static bool worker_continue                 = true;
+/* use running_lock when touching it */
+#endif
 #ifndef HAVE_GCD
 static sthread_t *worker_thread             = NULL;
 #endif
-static bool worker_continue                 = true;
-/* use running_lock when touching it */
 
 /* Where a worker is, for deinit. Per worker rather than global: a
  * worker deinit gave up on still owns its record after the next init
@@ -136,6 +148,14 @@ enum task_worker_state
    TASK_WORKER_EXITED      /* left the loop; joinable */
 };
 
+#ifdef TASK_QUEUE_LF
+/* One threaded init.  Deinit holds a reference, and so does each
+ * worker; the last to let go frees it. */
+struct task_generation
+{
+   retro_atomic_int_t refs;
+};
+#else
 /* The primitives of one threaded init.  Deinit holds a reference, and
  * so does each worker it leaves behind in a detachable handler; the
  * last of them to let go frees them.  refs is under running_lock. */
@@ -147,12 +167,15 @@ struct task_generation
    scond_t           *finished_cond;
    unsigned           refs;
 };
+#endif
 
 struct task_worker
 {
    retro_atomic_int_t state;
    /* Takes only RETRO_TASK_FLG_PARALLEL tasks; set at start. */
    bool               parallel_only;
+   /* Which ring the one worker tries first this time. */
+   bool               turn;
    /* Its entry in task_worker_tid: 0 for the one worker, 1 + i for
     * extra worker i. */
    unsigned           slot;
@@ -189,7 +212,12 @@ static struct task_generation *task_gen     = NULL;
 #ifndef HAVE_GCD
 static struct task_worker *parallel_self[TASK_PARALLEL_MAX];
 static sthread_t          *parallel_thread[TASK_PARALLEL_MAX];
+#ifdef TASK_QUEUE_LF
+static retro_atomic_int_t  parallel_created = RETRO_ATOMIC_INT_INITIALIZER(0);
+#define parallel_count ((unsigned)retro_atomic_load_acquire_int(&parallel_created))
+#else
 static unsigned            parallel_count   = 0;
+#endif
 static retro_atomic_int_t  parallel_started = RETRO_ATOMIC_INT_INITIALIZER(0);
 #endif
 static retro_atomic_int_t  parallel_wanted  = RETRO_ATOMIC_INT_INITIALIZER(0);
@@ -736,6 +764,59 @@ static struct retro_task_impl impl_regular = {
 };
 
 #ifdef HAVE_THREADS
+/* Set on the main thread, read by the worker as it starts */
+static retro_atomic_int_t task_worker_prefer_fast_cores =
+   RETRO_ATOMIC_INT_INITIALIZER(0);
+
+void task_queue_set_parallel_workers(unsigned count)
+{
+   retro_atomic_store_release_int(&parallel_wanted,
+         count > TASK_PARALLEL_MAX ? TASK_PARALLEL_MAX : (int)count);
+}
+
+void task_queue_set_prefer_fast_cores(bool prefer)
+{
+   retro_atomic_store_release_int(&task_worker_prefer_fast_cores,
+         prefer ? 1 : 0);
+}
+
+/* Main-thread tasks are run by retro_task_threaded_gather(), never by
+ * the worker.  The bit is set before the push and never changes. */
+static bool task_is_main_thread_task(retro_task_t *task)
+{
+   return (retro_atomic_load_acquire_int(&task->flags)
+         & RETRO_TASK_FLG_MAIN_THREAD) != 0;
+}
+
+#ifndef HAVE_GCD
+/* A task an extra worker may take.  Set before the push and never
+ * changed. */
+static bool task_is_parallel(retro_task_t *task)
+{
+   int flags = retro_atomic_load_acquire_int(&task->flags);
+   return (flags & RETRO_TASK_FLG_PARALLEL)
+      && !(flags & RETRO_TASK_FLG_MAIN_THREAD);
+}
+#endif
+
+#ifndef HAVE_GCD
+/* For task_is_queue_thread(): each worker sets its own id before it
+ * runs a handler and clears it before it reports that it left, and
+ * deinit clears the id of one it leaves behind, so a thread that
+ * reuses an id is not taken for a worker. */
+static void task_worker_tid_set(unsigned slot, void *tid)
+{
+#ifdef TASK_PUSH_DEFER
+   retro_atomic_store_release_ptr(&task_worker_tid[slot], tid);
+#else
+   (void)slot;
+   (void)tid;
+#endif
+}
+#endif
+#endif
+
+#if defined(HAVE_THREADS) && !defined(TASK_QUEUE_LF)
 
 /* 'running_lock' must be held for the duration of this function */
 static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
@@ -1241,41 +1322,6 @@ static void retro_task_threaded_retrieve(task_retriever_data_t *data)
    slock_unlock(running_lock);
 }
 
-/* Set on the main thread, read by the worker as it starts */
-static retro_atomic_int_t task_worker_prefer_fast_cores =
-   RETRO_ATOMIC_INT_INITIALIZER(0);
-
-void task_queue_set_parallel_workers(unsigned count)
-{
-   retro_atomic_store_release_int(&parallel_wanted,
-         count > TASK_PARALLEL_MAX ? TASK_PARALLEL_MAX : (int)count);
-}
-
-void task_queue_set_prefer_fast_cores(bool prefer)
-{
-   retro_atomic_store_release_int(&task_worker_prefer_fast_cores,
-         prefer ? 1 : 0);
-}
-
-/* Main-thread tasks are run by retro_task_threaded_gather(), never by
- * the worker.  The bit is set before the push and never changes. */
-static bool task_is_main_thread_task(retro_task_t *task)
-{
-   return (retro_atomic_load_acquire_int(&task->flags)
-         & RETRO_TASK_FLG_MAIN_THREAD) != 0;
-}
-
-#ifndef HAVE_GCD
-/* A task an extra worker may take.  Set before the push and never
- * changed. */
-static bool task_is_parallel(retro_task_t *task)
-{
-   int flags = retro_atomic_load_acquire_int(&task->flags);
-   return (flags & RETRO_TASK_FLG_PARALLEL)
-      && !(flags & RETRO_TASK_FLG_MAIN_THREAD);
-}
-#endif
-
 /* After a handler returned: a finished task moves to the finished
  * list, an unfinished one to the back of the running list.  Called
  * without running_lock held, by the worker for its tasks and by the
@@ -1424,19 +1470,6 @@ static void retro_task_generation_free(struct task_generation *gen)
    free(gen);
 }
 
-/* For task_is_queue_thread(): each worker sets its own id before it
- * runs a handler and clears it before it reports that it left, and
- * deinit clears the id of one it leaves behind, so a thread that
- * reuses an id is not taken for a worker. */
-static void task_worker_tid_set(unsigned slot, void *tid)
-{
-#ifdef TASK_PUSH_DEFER
-   retro_atomic_store_release_ptr(&task_worker_tid[slot], tid);
-#else
-   (void)slot;
-   (void)tid;
-#endif
-}
 
 static void threaded_worker(void *userdata)
 {
@@ -1862,6 +1895,1367 @@ static struct retro_task_impl impl_threaded = {
    retro_task_threaded_deinit
 };
 #endif
+#endif
+
+#ifdef TASK_QUEUE_LF
+/* The threaded runner, without a lock.
+ *
+ * Every task is on the live list from its push until it is retired:
+ * pushes link it at the head from any thread, and only the checking
+ * thread unlinks one.  find(), retrieve() and the lookups behind wake
+ * and cancel walk it from any thread inside a read epoch, so a task
+ * they may still be looking at is freed - and cleaned up, since
+ * finders read task->state - only once they are out; the checking
+ * thread, the one unlinker, walks it without one.
+ *
+ * Where a task waits to run is a hand-off between threads, each with
+ * one owner at a time: a worker's ready tasks are in one of two
+ * bounded MPMC rings, the plain ring that only the one worker takes
+ * from and the parallel ring every worker takes from; a worker's task
+ * with a 'when' to wait for is with the timer keeper, whichever idle
+ * worker holds task_timer_token; a main-thread task is the checking
+ * thread's; a finished one goes to the checking thread to retire.
+ * Each hand-off is a lock-free stack or ring, and nobody waits on
+ * another thread except for work: workers on task_work_ec, the
+ * checking thread's task_queue_wait() on task_done_ec. */
+
+#define TASK_Q_LIVE 0
+#define TASK_Q_DONE 1
+
+static void retro_task_threaded_start_parallel(unsigned needed);
+static void task_orphans_reclaim(void);
+
+/* --- read epochs over the live list --- */
+static retro_atomic_int_t task_ep_epoch      = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t task_ep_readers[2] = {
+   RETRO_ATOMIC_INT_INITIALIZER(0), RETRO_ATOMIC_INT_INITIALIZER(0) };
+/* Unlinked while a reader may still hold them; the checking thread's. */
+static retro_task_t *task_ep_limbo[2]        = { NULL, NULL };
+
+static int task_ep_enter(void)
+{
+   for (;;)
+   {
+      int e = retro_atomic_load_acquire_int(&task_ep_epoch);
+      retro_atomic_fetch_add_seq_cst_int(&task_ep_readers[e & 1], 1);
+      /* Counted against the epoch the reclaimer will check, or it has
+       * moved on and this tries again. */
+      if (retro_atomic_load_seq_cst_int(&task_ep_epoch) == e)
+         return e;
+      retro_atomic_fetch_sub_int(&task_ep_readers[e & 1], 1);
+   }
+}
+
+static void task_ep_leave(int e)
+{
+   retro_atomic_fetch_sub_int(&task_ep_readers[e & 1], 1);
+}
+
+static void task_retired_free(retro_task_t *task)
+{
+   retro_task_internal_retire_cleanup(task);
+   free(task);
+}
+
+/* After an unlink: with no reader inside, none can reach the task
+ * any more and it goes now; otherwise it waits for them. */
+static void task_ep_retire(retro_task_t *task)
+{
+   retro_atomic_thread_fence_seq_cst();
+   if (     !retro_atomic_load_seq_cst_int(&task_ep_readers[0])
+         && !retro_atomic_load_seq_cst_int(&task_ep_readers[1]))
+   {
+      task_retired_free(task);
+      return;
+   }
+   {
+      int e                = retro_atomic_load_relaxed_int(&task_ep_epoch);
+      task->next           = task_ep_limbo[e & 1];
+      task_ep_limbo[e & 1] = task;
+   }
+}
+
+/* Frees what the readers of the last epoch have let go of, and opens
+ * the next one.  Checking thread only. */
+static void task_ep_reclaim(void)
+{
+   int e   = retro_atomic_load_relaxed_int(&task_ep_epoch);
+   int old = (e + 1) & 1;
+   retro_task_t *task;
+   if (!task_ep_limbo[0] && !task_ep_limbo[1])
+      return;
+   if (retro_atomic_load_seq_cst_int(&task_ep_readers[old]))
+      return;
+   task               = task_ep_limbo[old];
+   task_ep_limbo[old] = NULL;
+   while (task)
+   {
+      retro_task_t *next = task->next;
+      task_retired_free(task);
+      task = next;
+   }
+   retro_atomic_fetch_add_seq_cst_int(&task_ep_epoch, 1);
+}
+
+/* --- the live list --- */
+static retro_atomic_ptr_t task_live;
+
+#define TASK_LIVE_NEXT(t) \
+   ((retro_task_t*)retro_atomic_load_acquire_ptr(&(t)->live_next))
+
+static void task_live_insert(retro_task_t *task)
+{
+   void *head;
+   retro_atomic_store_relaxed_int(&task->qstate, TASK_Q_LIVE);
+   do
+   {
+      head = retro_atomic_load_acquire_ptr(&task_live);
+      retro_atomic_store_relaxed_ptr(&task->live_next, head);
+   } while (!retro_atomic_cas_ptr(&task_live, head, task));
+}
+
+/* Checking thread only: pushes only ever change the head. */
+static void task_live_unlink(retro_task_t *task)
+{
+   retro_task_t *prev;
+   if (retro_atomic_cas_ptr(&task_live, task, TASK_LIVE_NEXT(task)))
+      return;
+   prev = (retro_task_t*)retro_atomic_load_acquire_ptr(&task_live);
+   while (prev && TASK_LIVE_NEXT(prev) != task)
+      prev = TASK_LIVE_NEXT(prev);
+   if (prev)
+      retro_atomic_store_release_ptr(&prev->live_next, TASK_LIVE_NEXT(task));
+}
+
+/* --- lock-free stacks, linked through task->next --- */
+static void task_stack_push(retro_atomic_ptr_t *stack, retro_task_t *task)
+{
+   void *head;
+   do
+   {
+      head       = retro_atomic_load_acquire_ptr(stack);
+      task->next = (retro_task_t*)head;
+   } while (!retro_atomic_cas_ptr(stack, head, task));
+}
+
+/* The whole stack, oldest first. */
+static retro_task_t *task_stack_take(retro_atomic_ptr_t *stack)
+{
+   retro_task_t *task;
+   retro_task_t *fifo = NULL;
+   if (!retro_atomic_load_acquire_ptr(stack))
+      return NULL;
+   task = (retro_task_t*)retro_atomic_exchange_ptr(stack, NULL);
+   while (task)
+   {
+      retro_task_t *next = task->next;
+      task->next         = fifo;
+      fifo               = task;
+      task               = next;
+   }
+   return fifo;
+}
+
+/* --- the run rings: bounded MPMC, positions as wrapping ints --- */
+#define TASK_RING_SIZE 1024
+
+struct task_ring_cell
+{
+   retro_atomic_int_t seq;
+   retro_task_t      *task;
+};
+
+struct task_ring
+{
+   retro_atomic_int_t    head;
+   uint8_t               pad0[60];
+   retro_atomic_int_t    tail;
+   uint8_t               pad1[60];
+   /* What did not fit, for a taker that finds the ring empty. */
+   retro_atomic_ptr_t    overflow;
+   struct task_ring_cell cell[TASK_RING_SIZE];
+};
+
+#define TASK_RING_DIFF(a, b) ((int)((unsigned)(a) - (unsigned)(b)))
+#define TASK_RING_ADD(a, n)  ((int)((unsigned)(a) + (unsigned)(n)))
+
+static struct task_ring *task_ring_plain    = NULL;
+static struct task_ring *task_ring_parallel = NULL;
+
+static struct task_ring *task_ring_new(void)
+{
+   unsigned i;
+   struct task_ring *r = (struct task_ring*)calloc(1, sizeof(*r));
+   if (!r)
+      return NULL;
+   retro_atomic_int_init(&r->head, 0);
+   retro_atomic_int_init(&r->tail, 0);
+   retro_atomic_ptr_init(&r->overflow, NULL);
+   for (i = 0; i < TASK_RING_SIZE; i++)
+      retro_atomic_int_init(&r->cell[i].seq, (int)i);
+   return r;
+}
+
+static bool task_ring_put(struct task_ring *r, retro_task_t *task)
+{
+   int pos = retro_atomic_load_relaxed_int(&r->head);
+   struct task_ring_cell *c;
+   for (;;)
+   {
+      int dif;
+      c   = &r->cell[(unsigned)pos & (TASK_RING_SIZE - 1)];
+      dif = TASK_RING_DIFF(retro_atomic_load_acquire_int(&c->seq), pos);
+      if (!dif)
+      {
+         if (retro_atomic_cas_int(&r->head, pos, TASK_RING_ADD(pos, 1)))
+            break;
+      }
+      else if (dif < 0)
+         return false;
+      pos = retro_atomic_load_relaxed_int(&r->head);
+   }
+   c->task = task;
+   retro_atomic_store_release_int(&c->seq, TASK_RING_ADD(pos, 1));
+   return true;
+}
+
+static retro_task_t *task_ring_get(struct task_ring *r)
+{
+   int pos = retro_atomic_load_relaxed_int(&r->tail);
+   struct task_ring_cell *c;
+   retro_task_t *task;
+   for (;;)
+   {
+      int dif;
+      c   = &r->cell[(unsigned)pos & (TASK_RING_SIZE - 1)];
+      dif = TASK_RING_DIFF(retro_atomic_load_acquire_int(&c->seq),
+            TASK_RING_ADD(pos, 1));
+      if (!dif)
+      {
+         if (retro_atomic_cas_int(&r->tail, pos, TASK_RING_ADD(pos, 1)))
+            break;
+      }
+      else if (dif < 0)
+         return NULL;
+      pos = retro_atomic_load_relaxed_int(&r->tail);
+   }
+   task = c->task;
+   retro_atomic_store_release_int(&c->seq, TASK_RING_ADD(pos, TASK_RING_SIZE));
+   return task;
+}
+
+/* Behind whatever has overflowed already, so the order holds. */
+static void task_ring_push(struct task_ring *r, retro_task_t *task)
+{
+   if (     retro_atomic_load_acquire_ptr(&r->overflow)
+         || !task_ring_put(r, task))
+      task_stack_push(&r->overflow, task);
+}
+
+/* The ring's next task; the overflow is moved in, oldest first, when
+ * the ring runs empty. */
+static retro_task_t *task_ring_pop(struct task_ring *r)
+{
+   retro_task_t *task = task_ring_get(r);
+   if (!task && retro_atomic_load_acquire_ptr(&r->overflow))
+   {
+      retro_task_t *over = task_stack_take(&r->overflow);
+      while (over)
+      {
+         retro_task_t *next = over->next;
+         if (!task)
+            task = over;
+         else if (!task_ring_put(r, over))
+            task_stack_push(&r->overflow, over);
+         over = next;
+      }
+   }
+   return task;
+}
+
+static bool task_ring_empty(struct task_ring *r)
+{
+   return     retro_atomic_load_acquire_int(&r->head)
+           == retro_atomic_load_acquire_int(&r->tail)
+      && !retro_atomic_load_acquire_ptr(&r->overflow);
+}
+
+/* --- the rest of the runner's state --- */
+/* Workers waiting for work; the checking thread waiting in
+ * task_queue_wait(); deinit waiting for workers to leave. */
+static retro_eventcount_t task_work_ec;
+static retro_eventcount_t task_done_ec;
+static retro_eventcount_t task_exit_ec;
+static bool               task_ec_ready = false;
+
+/* Tasks to wait for: a worker's go to the keeper, a main-thread
+ * task's to the checking thread. */
+static retro_atomic_ptr_t task_timed_inbox;
+static retro_atomic_ptr_t task_main_inbox;
+/* Finished tasks for the checking thread. */
+static retro_atomic_ptr_t task_finished_stack;
+/* Detachable tasks deinit left behind, given back by their workers. */
+static retro_atomic_ptr_t task_orphans;
+
+/* The keeper's: worker tasks waiting for their 'when', in order. */
+static retro_task_t      *task_timed     = NULL;
+static retro_atomic_int_t task_timer_token = RETRO_ATOMIC_INT_INITIALIZER(0);
+/* Bumped by every wake; a keeper or the checking thread that sees it
+ * move looks for woken tasks among those it holds. */
+static retro_atomic_int_t task_timer_wakes = RETRO_ATOMIC_INT_INITIALIZER(0);
+static int                task_keeper_wakes_seen = 0;
+
+/* The checking thread's: main-thread tasks due, main-thread tasks
+ * waiting, and finished tasks to retire, each in order. */
+static task_queue_t       task_main_ready = {NULL, NULL};
+static retro_task_t      *task_main_timed = NULL;
+static int                task_main_wakes_seen = 0;
+static task_queue_t       task_retire     = {NULL, NULL};
+
+/* Tasks waiting on a 'when' their pusher set rather than a park:
+ * task_queue_wait() does not wait for them. */
+static retro_atomic_int_t tasks_scheduled_count = RETRO_ATOMIC_INT_INITIALIZER(0);
+
+static retro_atomic_int_t worker_continue = RETRO_ATOMIC_INT_INITIALIZER(0);
+/* Advanced by each gather with work in flight and by each pass as it
+ * ends, and read before each pass: whatever the checking thread wrote
+ * before a check, a pass that starts after it sees, and what a pass
+ * read is behind whatever the checking thread writes after its next
+ * check, as when both took the running lock. Handlers read state the
+ * frame loop writes - the frame count a load waits on. */
+static retro_atomic_int_t task_gather_seq = RETRO_ATOMIC_INT_INITIALIZER(0);
+/* Set once init has opened the wake gate: a worker runs nothing before,
+ * so a wake from its first pass is not turned away. */
+static retro_atomic_int_t worker_go       = RETRO_ATOMIC_INT_INITIALIZER(0);
+
+/* --- placing a task --- */
+static void task_timed_insert(retro_task_t **list, retro_task_t *task)
+{
+   while (*list && (*list)->when <= task->when)
+      list = &(*list)->next;
+   task->next = *list;
+   *list      = task;
+}
+
+static void task_ready_push(retro_task_t *task)
+{
+   task_ring_push(task_is_parallel(task)
+         ? task_ring_parallel : task_ring_plain, task);
+}
+
+/* A task coming off a wait: due now, a park or a start time over. */
+static void task_release(retro_task_t *task)
+{
+   if (task->when && !task->parked)
+      retro_atomic_fetch_sub_int(&tasks_scheduled_count, 1);
+   task->when   = 0;
+   task->parked = false;
+   if (task_is_main_thread_task(task))
+      task_queue_put(&task_main_ready, task);
+   else
+      task_ready_push(task);
+}
+
+/* Where a task goes when it is pushed or comes back from a pass. */
+static void task_place(retro_task_t *task)
+{
+   if (task_is_main_thread_task(task))
+   {
+      task_stack_push(&task_main_inbox, task);
+      retro_eventcount_notify(&task_done_ec);
+      return;
+   }
+   if (task->when)
+      task_stack_push(&task_timed_inbox, task);
+   else
+      task_ready_push(task);
+   retro_eventcount_notify(&task_work_ec);
+}
+
+/* Moves what has come in into @list, and from it whatever is due or
+ * woken, counting those in @released; returns the earliest 'when'
+ * left, or 0. */
+static retro_time_t task_timers_run(retro_atomic_ptr_t *inbox,
+      retro_task_t **list, int *wakes_seen, unsigned *released)
+{
+   retro_time_t  now  = 0;
+   retro_task_t *task = task_stack_take(inbox);
+   int wakes          = retro_atomic_load_acquire_int(&task_timer_wakes);
+
+   while (task)
+   {
+      retro_task_t *next = task->next;
+      if (retro_atomic_load_acquire_int(&task->wake))
+      {
+         task_release(task);
+         (*released)++;
+      }
+      else
+         task_timed_insert(list, task);
+      task = next;
+   }
+
+   if (wakes != *wakes_seen)
+   {
+      retro_task_t **link = list;
+      *wakes_seen = wakes;
+      while (*link)
+      {
+         task = *link;
+         if (retro_atomic_load_acquire_int(&task->wake))
+         {
+            *link = task->next;
+            task_release(task);
+            (*released)++;
+         }
+         else
+            link = &task->next;
+      }
+   }
+
+   while (*list)
+   {
+      task = *list;
+      if (!now)
+         now = cpu_features_get_time_usec();
+      /* Half a millisecond early, for the context switch. */
+      if (task->when - 500 > now)
+         return task->when;
+      *list = task->next;
+      task_release(task);
+      (*released)++;
+   }
+   return 0;
+}
+
+/* Makes @task due now, whether it is parked, waiting for its start or
+ * in its handler, from any thread. */
+static void task_wake_task(retro_task_t *task)
+{
+   retro_atomic_store_release_int(&task->wake, 1);
+   retro_atomic_fetch_add_seq_cst_int(&task_timer_wakes, 1);
+   retro_eventcount_notify(&task_work_ec);
+   retro_eventcount_notify(&task_done_ec);
+}
+
+/* --- push, wake, cancel, reset, find, retrieve --- */
+static void retro_task_threaded_push_running(retro_task_t *task)
+{
+   if (task_is_parallel(task))
+      retro_task_threaded_start_parallel(task->parallel_workers);
+   retro_atomic_store_relaxed_int(&task->wake, 0);
+   task->parked = false;
+   if (task->when)
+      retro_atomic_fetch_add_int(&tasks_scheduled_count, 1);
+   retro_atomic_fetch_add_int(&tasks_running_count, 1);
+   task_live_insert(task);
+   task_place(task);
+}
+
+/* Calls @fn on each task still to be retired that @match accepts,
+ * until it returns true. */
+static bool task_live_each(bool done_too,
+      bool (*match)(retro_task_t *task, void *data), void *data)
+{
+   int  e     = task_ep_enter();
+   bool found = false;
+   retro_task_t *task = (retro_task_t*)
+      retro_atomic_load_acquire_ptr(&task_live);
+   for (; task; task = TASK_LIVE_NEXT(task))
+   {
+      if (     !done_too
+            && retro_atomic_load_acquire_int(&task->qstate) != TASK_Q_LIVE)
+         continue;
+      if (match(task, data))
+      {
+         found = true;
+         break;
+      }
+   }
+   task_ep_leave(e);
+   return found;
+}
+
+static bool task_match_wake(retro_task_t *task, void *data)
+{
+   if (task->ident != *(uint32_t*)data)
+      return false;
+   task_wake_task(task);
+   return true;
+}
+
+static void retro_task_threaded_wake(uint32_t ident)
+{
+   task_live_each(false, task_match_wake, &ident);
+}
+
+static bool task_match_cancel(retro_task_t *task, void *data)
+{
+   if (task != (retro_task_t*)data)
+      return false;
+   task_flags_set(task, RETRO_TASK_FLG_CANCELLED);
+   task_wake_task(task);
+   return true;
+}
+
+/* A cancelled task is woken, so a parked one sees the flag now rather
+ * than at its horizon. */
+static void retro_task_threaded_cancel(void *task)
+{
+   task_live_each(false, task_match_cancel, task);
+}
+
+static bool task_match_cancel_ident(retro_task_t *task, void *data)
+{
+   if (task->ident != *(uint32_t*)data)
+      return false;
+   task_flags_set(task, RETRO_TASK_FLG_CANCELLED);
+   task_wake_task(task);
+   return true;
+}
+
+static bool retro_task_threaded_cancel_ident(uint32_t ident)
+{
+   return task_live_each(false, task_match_cancel_ident, &ident);
+}
+
+static bool task_match_reset(retro_task_t *task, void *data)
+{
+   (void)data;
+   task_flags_set(task, RETRO_TASK_FLG_CANCELLED);
+   task_wake_task(task);
+   return false;
+}
+
+/* Every task is cancelled and due now. */
+static void retro_task_threaded_reset(void)
+{
+   task_live_each(false, task_match_reset, NULL);
+}
+
+struct task_find_args
+{
+   retro_task_finder_t func;
+   void               *user_data;
+};
+
+static bool task_match_find(retro_task_t *task, void *data)
+{
+   struct task_find_args *a = (struct task_find_args*)data;
+   return a->func(task, a->user_data);
+}
+
+/* Findable until fully retired: until its callback has run. */
+static bool retro_task_threaded_find(
+      retro_task_finder_t func, void *user_data)
+{
+   struct task_find_args a;
+   a.func      = func;
+   a.user_data = user_data;
+   return task_live_each(true, task_match_find, &a);
+}
+
+static bool task_match_blocking(retro_task_t *task, void *data)
+{
+   (void)data;
+   return task->type == TASK_TYPE_BLOCKING;
+}
+
+static bool task_threaded_has_blocking(void)
+{
+   return task_live_each(false, task_match_blocking, NULL);
+}
+
+struct task_retrieve_args
+{
+   task_retriever_data_t *data;
+   task_retriever_info_t *tail;
+};
+
+static bool task_match_retrieve(retro_task_t *task, void *user)
+{
+   struct task_retrieve_args *a = (struct task_retrieve_args*)user;
+   task_retriever_data_t *data  = a->data;
+   task_retriever_info_t *info;
+   if (task->handler != data->handler)
+      return false;
+   if (!(info = (task_retriever_info_t*)malloc(sizeof(*info))))
+      return false;
+   if (!(info->data = malloc(data->element_size)))
+   {
+      free(info);
+      return false;
+   }
+   info->next = NULL;
+   if (!data->func(task, info->data))
+   {
+      free(info->data);
+      free(info);
+      return false;
+   }
+   if (a->tail)
+      a->tail->next = info;
+   else
+      data->list    = info;
+   a->tail = info;
+   return false;
+}
+
+static void retro_task_threaded_retrieve(task_retriever_data_t *data)
+{
+   struct task_retrieve_args a;
+   a.data = data;
+   a.tail = NULL;
+   for (a.tail = data->list; a.tail && a.tail->next; a.tail = a.tail->next) { }
+   task_live_each(false, task_match_retrieve, &a);
+}
+
+/* --- after a pass --- */
+/* A finished task goes to the checking thread; an unfinished one parks
+ * unless a wake came in while it ran, or goes to the back of the tasks
+ * due now.  By whichever thread ran the pass. */
+static void retro_task_threaded_settle(retro_task_t *task)
+{
+   if (retro_atomic_load_acquire_int(&task->flags) & RETRO_TASK_FLG_FINISHED)
+   {
+      retro_atomic_store_release_int(&task->qstate, TASK_Q_DONE);
+      retro_atomic_fetch_add_int(&tasks_finished_count, 1);
+      retro_atomic_fetch_sub_int(&tasks_running_count, 1);
+      task_stack_push(&task_finished_stack, task);
+      retro_eventcount_notify(&task_done_ec);
+      return;
+   }
+   if (task->park && !retro_atomic_load_seq_cst_int(&task->wake))
+   {
+      task->when   = cpu_features_get_time_usec() + task->park;
+      task->parked = true;
+   }
+   task->park = 0;
+   task_place(task);
+}
+
+/* --- the checking thread's main-thread tasks --- */
+/* Runs each main-thread task due at the start of the pass once,
+ * within the handler budget; unfinished ones go back behind it. */
+static void retro_task_threaded_run_main(void)
+{
+   /* A main-thread handler that waits on the queue gathers again from
+    * inside this pass; the pass further up the stack runs the tasks
+    * it took. */
+   static bool in_run_main = false;
+   retro_time_t started = 0;
+   unsigned     n_ran   = 0;
+   retro_task_t *pass;
+
+   if (in_run_main || !task_main_ready.front)
+      return;
+   in_run_main = true;
+
+   pass                  = task_main_ready.front;
+   task_main_ready.front = NULL;
+   task_main_ready.back  = NULL;
+
+   if (task_handler_budget_usec)
+      started = cpu_features_get_time_usec();
+
+   while (pass)
+   {
+      retro_task_t *task = pass;
+
+      if (   n_ran && task_handler_budget_usec
+          && cpu_features_get_time_usec() - started >= task_handler_budget_usec)
+      {
+         /* The rest go first next time. */
+         retro_task_t *rest = pass;
+         while (rest)
+         {
+            retro_task_t *next = rest->next;
+            task_queue_put(&task_main_ready, rest);
+            rest = next;
+         }
+         break;
+      }
+      pass = task->next;
+      task->next = NULL;
+
+      retro_atomic_store_release_int(&task->wake, 0);
+      if (task_slow_handler_cb)
+      {
+         retro_time_t h_started = cpu_features_get_time_usec();
+         retro_time_t took;
+         task->handler(task);
+         took = cpu_features_get_time_usec() - h_started;
+         if (took > task_slow_handler_budget)
+            task_slow_handler_cb(task, took);
+      }
+      else
+         task->handler(task);
+      n_ran++;
+
+      if (retro_atomic_load_acquire_int(&task->flags) & RETRO_TASK_FLG_FINISHED)
+         retro_task_threaded_settle(task);
+      else
+      {
+         if (task->park && !retro_atomic_load_seq_cst_int(&task->wake))
+         {
+            task->when   = cpu_features_get_time_usec() + task->park;
+            task->parked = true;
+            task->park   = 0;
+            task_timed_insert(&task_main_timed, task);
+         }
+         else
+         {
+            task->park = 0;
+            task_queue_put(&task_main_ready, task);
+         }
+      }
+   }
+
+   in_run_main = false;
+}
+
+/* --- the gather --- */
+static void retro_task_threaded_gather(void)
+{
+   task_queue_push_deferred();
+   task_queue_cancel_deferred();
+   if (retro_atomic_load_acquire_ptr(&task_orphans))
+      task_orphans_reclaim();
+   task_ep_reclaim();
+
+   /* Nothing running and nothing finished, as on nearly every frame. */
+   if (   !retro_atomic_load_acquire_int(&tasks_running_count)
+       && !retro_atomic_load_acquire_int(&tasks_finished_count)
+       && !task_retire.front)
+      return;
+
+   retro_atomic_fetch_add_int(&task_gather_seq, 1);
+
+   {
+      retro_task_t *task = (retro_task_t*)
+         retro_atomic_load_acquire_ptr(&task_live);
+      for (; task; task = TASK_LIVE_NEXT(task))
+         if (retro_atomic_load_acquire_int(&task->qstate) == TASK_Q_LIVE)
+            task_queue_push_progress(task);
+   }
+
+   {
+      unsigned released = 0;
+      task_timers_run(&task_main_inbox, &task_main_timed,
+            &task_main_wakes_seen, &released);
+   }
+   retro_task_threaded_run_main();
+
+   {
+      /* Task callbacks can re-enter this function; the nested call
+       * leaves the retiring to the outer one. */
+      static bool in_gather = false;
+      unsigned     done    = 0;
+      retro_time_t started = (task_retire_budget_usec)
+         ? cpu_features_get_time_usec() : 0;
+      retro_task_t *task;
+
+      if (in_gather)
+         return;
+      in_gather = true;
+
+      task = task_stack_take(&task_finished_stack);
+      while (task)
+      {
+         retro_task_t *next = task->next;
+         task_queue_put(&task_retire, task);
+         retro_atomic_fetch_sub_int(&tasks_finished_count, 1);
+         task = next;
+      }
+
+      while (task_retire.front)
+      {
+         if (!task_retire_budget_allows(done, started))
+            break;
+         task = task_queue_get(&task_retire);
+         if (!task_retire.front)
+            task_retire.back = NULL;
+         /* Still findable while its callback runs. */
+         retro_task_internal_retire_callback(task);
+         task_live_unlink(task);
+         task_ep_retire(task);
+         done++;
+      }
+
+      in_gather = false;
+   }
+}
+
+/* Whether a task_queue_wait() has something to wait for: a task due,
+ * running or parked, or one finished and not yet retired. */
+static bool task_threaded_busy(void)
+{
+   return retro_atomic_load_acquire_int(&tasks_running_count)
+         > retro_atomic_load_acquire_int(&tasks_scheduled_count)
+      || retro_atomic_load_acquire_ptr(&task_finished_stack)
+      || task_retire.front;
+}
+
+static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
+{
+   bool wait = false;
+
+   do
+   {
+      retro_task_threaded_gather();
+
+      if ((wait = task_threaded_busy()))
+      {
+         /* Woken by a finish or a wake; the bound covers the caller's
+          * own condition flipping, and a task that keeps yielding. */
+         int key = retro_eventcount_prepare_wait(&task_done_ec);
+         if (retro_atomic_load_acquire_ptr(&task_finished_stack))
+            retro_eventcount_cancel_wait(&task_done_ec);
+         else
+            retro_eventcount_commit_wait_timeout(&task_done_ec, key, 1000);
+      }
+   } while (wait && (!cond || cond(data)));
+}
+
+/* --- workers --- */
+static bool task_worker_has_work(const struct task_worker *self)
+{
+   return !task_ring_empty(task_ring_parallel)
+      || (!self->parallel_only && !task_ring_empty(task_ring_plain));
+}
+
+static retro_task_t *task_worker_take(struct task_worker *self)
+{
+   retro_task_t *task = NULL;
+   if (self->parallel_only)
+      return task_ring_pop(task_ring_parallel);
+   /* The one worker takes from both, starting with the other one each
+    * time, so neither ring waits behind the other. */
+   self->turn = !self->turn;
+   if (self->turn)
+   {
+      if (!(task = task_ring_pop(task_ring_plain)))
+         task = task_ring_pop(task_ring_parallel);
+   }
+   else if (!(task = task_ring_pop(task_ring_parallel)))
+      task = task_ring_pop(task_ring_plain);
+   return task;
+}
+
+static void threaded_worker(void *userdata)
+{
+   struct task_worker *self = (struct task_worker*)userdata;
+   bool keeper              = false;
+
+   sthread_setname("ra-task");
+   task_worker_tid_set(self->slot, (void*)sthread_get_current_thread_id());
+#ifdef TASK_WORKER_BELOW_CREATOR
+   /* Refused outside the process's priority range, which leaves the
+    * worker level with its creator. */
+   svcSetThreadPriority(CUR_THREAD_HANDLE, self->prio);
+#endif
+   if (retro_atomic_load_acquire_int(&task_worker_prefer_fast_cores))
+      sthread_prefer_fast_cores();
+
+   for (;;)
+   {
+      retro_task_t *task = NULL;
+      retro_time_t  next = 0;
+
+      if (!retro_atomic_load_acquire_int(&worker_continue))
+         break;
+      if (!retro_atomic_load_acquire_int(&worker_go))
+      {
+         int key = retro_eventcount_prepare_wait(&task_work_ec);
+         if (     retro_atomic_load_acquire_int(&worker_go)
+               || !retro_atomic_load_acquire_int(&worker_continue))
+            retro_eventcount_cancel_wait(&task_work_ec);
+         else
+            retro_eventcount_commit_wait(&task_work_ec, key);
+         continue;
+      }
+
+      /* Whoever holds the token keeps the timers, including while it
+       * waits for work, and hands it on before it runs a task. */
+      if (!keeper)
+         keeper = retro_atomic_cas_int(&task_timer_token, 0, 1);
+      if (keeper)
+      {
+         unsigned released = 0;
+         next = task_timers_run(&task_timed_inbox, &task_timed,
+               &task_keeper_wakes_seen, &released);
+         /* The one worker may be waiting for a plain task. */
+         if (released)
+            retro_eventcount_notify(&task_work_ec);
+      }
+
+      if (!(task = task_worker_take(self)))
+      {
+         int key = retro_eventcount_prepare_wait(&task_work_ec);
+         if (     !retro_atomic_load_acquire_int(&worker_continue)
+               || task_worker_has_work(self)
+               || (keeper
+                  && (retro_atomic_load_acquire_ptr(&task_timed_inbox)
+                     ||    retro_atomic_load_acquire_int(&task_timer_wakes)
+                        != task_keeper_wakes_seen))
+               || (!keeper
+                  && !retro_atomic_load_acquire_int(&task_timer_token)))
+            retro_eventcount_cancel_wait(&task_work_ec);
+         else if (keeper && next)
+            retro_eventcount_commit_wait_timeout(&task_work_ec, key,
+                  next - 500 - cpu_features_get_time_usec());
+         else
+            retro_eventcount_commit_wait(&task_work_ec, key);
+         continue;
+      }
+
+      if (keeper)
+      {
+         keeper = false;
+         retro_atomic_store_release_int(&task_timer_token, 0);
+         /* Another idle worker keeps the timers meanwhile. */
+         retro_eventcount_notify(&task_work_ec);
+      }
+
+      self->task = task;
+      retro_atomic_store_release_int(&task->wake, 0);
+      (void)retro_atomic_load_acquire_int(&task_gather_seq);
+      retro_atomic_store_release_int(&self->state, TASK_WORKER_IN_HANDLER);
+      task->handler(task);
+      retro_atomic_fetch_add_int(&task_gather_seq, 1);
+
+      /* Deinit gave up on this handler and took the task off the
+       * queue; the globals may belong to a new init by now.  Clean up,
+       * give the task back to be freed once no finder holds it, and let
+       * go of the generation.  No callback runs. */
+      if (!retro_atomic_cas_int(&self->state,
+               TASK_WORKER_IN_HANDLER, TASK_WORKER_IDLE))
+      {
+         struct task_generation *gen = self->gen;
+         if (task->cleanup)
+            task->cleanup(task);
+         task->cleanup = NULL;
+         task_stack_push(&task_orphans, task);
+         if (retro_atomic_fetch_sub_int(&gen->refs, 1) == 1)
+            free(gen);
+         free(self);
+         return;
+      }
+#ifdef __EMSCRIPTEN__
+      /* Workaround emscripten pthread bug where not parking the
+         thread will prevent other important stuff from
+         happening. Maybe due to lack of signals implementation in
+         emscripten's pthreads?  The extras' passes are short. */
+      if (!self->parallel_only)
+         retro_sleep(1);
+#endif
+
+      retro_task_threaded_settle(task);
+   }
+
+   if (keeper)
+   {
+      retro_atomic_store_release_int(&task_timer_token, 0);
+      retro_eventcount_notify(&task_work_ec);
+   }
+   task_worker_tid_set(self->slot, NULL);
+   retro_atomic_store_release_int(&self->state, TASK_WORKER_EXITED);
+   retro_eventcount_notify(&task_exit_ec);
+}
+
+/* --- init and deinit --- */
+static void task_lf_structures_free(void)
+{
+   free(task_ring_plain);
+   free(task_ring_parallel);
+   task_ring_plain    = NULL;
+   task_ring_parallel = NULL;
+   if (task_ec_ready)
+   {
+      retro_eventcount_free(&task_work_ec);
+      retro_eventcount_free(&task_done_ec);
+      retro_eventcount_free(&task_exit_ec);
+      task_ec_ready = false;
+   }
+}
+
+static bool task_lf_structures_new(void)
+{
+   task_ring_plain    = task_ring_new();
+   task_ring_parallel = task_ring_new();
+   if (!property_lock_pinned && !property_lock)
+      property_lock = slock_new();
+   if (     task_ring_plain && task_ring_parallel && property_lock
+         && retro_eventcount_init(&task_work_ec))
+   {
+      if (retro_eventcount_init(&task_done_ec))
+      {
+         if (retro_eventcount_init(&task_exit_ec))
+         {
+            task_ec_ready = true;
+            return true;
+         }
+         retro_eventcount_free(&task_done_ec);
+      }
+      retro_eventcount_free(&task_work_ec);
+   }
+   free(task_ring_plain);
+   free(task_ring_parallel);
+   task_ring_plain    = NULL;
+   task_ring_parallel = NULL;
+   if (!property_lock_pinned)
+   {
+      slock_free(property_lock);
+      property_lock = NULL;
+   }
+   return false;
+}
+
+/* Takes over the regular queue's lists: every task onto the live list
+ * and where it waits.  Before any worker runs. */
+static void retro_task_threaded_take_lists(void)
+{
+   retro_task_t *task;
+   int running  = 0;
+   int finished = 0;
+
+   while ((task = task_queue_get(&tasks_finished)))
+   {
+      task_live_insert(task);
+      retro_atomic_store_relaxed_int(&task->qstate, TASK_Q_DONE);
+      task_queue_put(&task_retire, task);
+      finished++;
+   }
+   while ((task = task_queue_get(&tasks_running)))
+   {
+      retro_atomic_store_relaxed_int(&task->wake, 0);
+      task->parked = false;
+      if (task->when)
+         retro_atomic_fetch_add_int(&tasks_scheduled_count, 1);
+      task_live_insert(task);
+      task_place(task);
+      running++;
+   }
+   retro_atomic_store_release_int(&tasks_running_count,  running);
+   retro_atomic_store_release_int(&tasks_finished_count, 0);
+   (void)finished;
+}
+
+/* Hands every task back to the regular queue's lists, once no worker
+ * runs.  A park ends with the runner that set it. */
+static void retro_task_threaded_give_lists(void)
+{
+   retro_task_t *task;
+   retro_task_t *list;
+
+   while ((task = task_queue_get(&task_retire)))
+      task_queue_put(&tasks_finished, task);
+   for (task = task_stack_take(&task_finished_stack); task; task = list)
+   {
+      list = task->next;
+      task_queue_put(&tasks_finished, task);
+   }
+
+#define TASK_GIVE(t) \
+   do { \
+      if ((t)->parked) \
+      { \
+         (t)->when   = 0; \
+         (t)->parked = false; \
+      } \
+      task_queue_put(&tasks_running, (t)); \
+   } while (0)
+
+   while ((task = task_queue_get(&task_main_ready)))
+      TASK_GIVE(task);
+   for (task = task_main_timed; task; task = list)
+   {
+      list = task->next;
+      TASK_GIVE(task);
+   }
+   task_main_timed = NULL;
+   for (task = task_stack_take(&task_main_inbox); task; task = list)
+   {
+      list = task->next;
+      TASK_GIVE(task);
+   }
+   for (task = task_timed; task; task = list)
+   {
+      list = task->next;
+      TASK_GIVE(task);
+   }
+   task_timed = NULL;
+   for (task = task_stack_take(&task_timed_inbox); task; task = list)
+   {
+      list = task->next;
+      TASK_GIVE(task);
+   }
+   while ((task = task_ring_pop(task_ring_plain)))
+      TASK_GIVE(task);
+   while ((task = task_ring_pop(task_ring_parallel)))
+      TASK_GIVE(task);
+#undef TASK_GIVE
+
+   retro_atomic_store_release_ptr(&task_live, NULL);
+   retro_atomic_store_release_int(&tasks_scheduled_count, 0);
+   retro_atomic_store_release_int(&task_timer_token, 0);
+}
+
+/* The tasks the workers deinit left behind gave back, freed as any
+ * retired one is. */
+static void task_orphans_reclaim(void)
+{
+   retro_task_t *task = task_stack_take(&task_orphans);
+   while (task)
+   {
+      retro_task_t *next = task->next;
+      task_ep_retire(task);
+      task = next;
+   }
+}
+
+#ifndef HAVE_GCD
+/* Starts on the pushing thread whatever extra workers are missing; the
+ * compare-and-swap decides which push starts which. */
+static void retro_task_threaded_start_parallel(unsigned needed)
+{
+   unsigned want = (unsigned)retro_atomic_load_acquire_int(&parallel_wanted);
+   unsigned from, i;
+
+   if (needed > want)
+      want = needed;
+   if (want > TASK_PARALLEL_MAX)
+      want = TASK_PARALLEL_MAX;
+
+   for (;;)
+   {
+      from = (unsigned)retro_atomic_load_acquire_int(&parallel_started);
+      if (from >= want)
+         return;
+      if (retro_atomic_cas_int(&parallel_started, (int)from, (int)want))
+         break;
+   }
+
+   for (i = from; i < want; i++)
+   {
+      struct task_worker *w = (struct task_worker*)calloc(1, sizeof(*w));
+      sthread_t          *t;
+      if (!w)
+         break;
+      retro_atomic_store_release_int(&w->state, TASK_WORKER_IDLE);
+      w->parallel_only = true;
+      w->slot          = 1 + i;
+      w->gen           = task_gen;
+      retro_atomic_fetch_add_int(&task_gen->refs, 1);
+#ifdef TASK_WORKER_BELOW_CREATOR
+      w->prio          = worker_self->prio;
+#endif
+      parallel_self[i] = w;
+      if (!(t = sthread_create(threaded_worker, w)))
+      {
+         parallel_self[i] = NULL;
+         retro_atomic_fetch_sub_int(&task_gen->refs, 1);
+         free(w);
+         break;
+      }
+      parallel_thread[i] = t;
+      retro_atomic_fetch_add_int(&parallel_created, 1);
+   }
+}
+
+static void retro_task_threaded_join_parallel(void)
+{
+   unsigned i;
+   for (i = 0; i < TASK_PARALLEL_MAX; i++)
+   {
+      if (!parallel_thread[i])
+         continue;
+      sthread_join(parallel_thread[i]);
+      free(parallel_self[i]);
+      retro_atomic_fetch_sub_int(&task_gen->refs, 1);
+      parallel_thread[i] = NULL;
+      parallel_self[i]   = NULL;
+   }
+   retro_atomic_store_release_int(&parallel_created, 0);
+   retro_atomic_store_release_int(&parallel_started, 0);
+}
+
+static bool retro_task_threaded_init(void)
+{
+   if (!task_lf_structures_new())
+      return false;
+
+   worker_self = (struct task_worker*)calloc(1, sizeof(*worker_self));
+   task_gen    = (struct task_generation*)calloc(1, sizeof(*task_gen));
+   if (!worker_self || !task_gen)
+   {
+      free(worker_self);
+      free(task_gen);
+      worker_self = NULL;
+      task_gen    = NULL;
+      task_lf_structures_free();
+      return false;
+   }
+   retro_atomic_int_init(&task_gen->refs, 1);
+   retro_atomic_store_release_int(&worker_self->state, TASK_WORKER_IDLE);
+   worker_self->gen = task_gen;
+#ifdef TASK_WORKER_BELOW_CREATOR
+   worker_self->prio          = 0x2C;
+   svcGetThreadPriority(&worker_self->prio, CUR_THREAD_HANDLE);
+   /* 0x3F is the lowest priority either kernel has. */
+   if (worker_self->prio < 0x3F)
+      worker_self->prio++;
+#endif
+
+   retro_task_threaded_take_lists();
+   retro_atomic_store_release_int(&worker_go, 0);
+   retro_atomic_store_release_int(&worker_continue, 1);
+
+   /* Without a worker there is nobody to run what gets queued, which
+    * is why this reports failure rather than leaving the queue pointed
+    * at an implementation that cannot service it. */
+   if ((worker_thread = sthread_create(threaded_worker, worker_self)))
+   {
+      retro_atomic_fetch_add_int(&task_gen->refs, 1);
+      task_wake_gate_open();
+      retro_atomic_store_release_int(&worker_go, 1);
+      retro_eventcount_notify(&task_work_ec);
+      return true;
+   }
+
+   retro_atomic_store_release_int(&worker_continue, 0);
+   retro_task_threaded_give_lists();
+   free(worker_self);
+   free(task_gen);
+   worker_self = NULL;
+   task_gen    = NULL;
+   task_lf_structures_free();
+   return false;
+}
+
+/* Waits, until @deadline, for @w to leave its loop; only a worker stuck
+ * in a handler can outlast the bound.  If that task is detachable, its
+ * handler touches nothing but the task: the task is taken off the
+ * queue and the worker left to finish alone, and this returns true.
+ * Any other handler may hold state teardown is about to free, so the
+ * wait goes on. */
+static bool retro_task_threaded_stop_worker(struct task_worker *w,
+      retro_time_t deadline)
+{
+   for (;;)
+   {
+      int          key   = retro_eventcount_prepare_wait(&task_exit_ec);
+      int          state = retro_atomic_load_acquire_int(&w->state);
+      retro_time_t left;
+
+      if (state == TASK_WORKER_EXITED)
+      {
+         retro_eventcount_cancel_wait(&task_exit_ec);
+         return false;
+      }
+
+      left = deadline - cpu_features_get_time_usec();
+      if (left > 0)
+      {
+         retro_eventcount_commit_wait_timeout(&task_exit_ec, key, left);
+         continue;
+      }
+
+      if (state == TASK_WORKER_IN_HANDLER)
+      {
+         retro_task_t *task = w->task;
+         bool detachable    = (retro_atomic_load_acquire_int(&task->flags)
+               & RETRO_TASK_FLG_DETACHABLE) != 0;
+
+         if (detachable && retro_atomic_cas_int(&w->state,
+                  TASK_WORKER_IN_HANDLER, TASK_WORKER_ORPHANED))
+         {
+            retro_eventcount_cancel_wait(&task_exit_ec);
+            task_worker_tid_set(w->slot, NULL);
+            task_live_unlink(task);
+            retro_atomic_fetch_sub_int(&tasks_running_count, 1);
+            return true;
+         }
+      }
+
+      /* Not in a detachable handler: it is either leaving or can only
+       * leave by returning. */
+      retro_eventcount_commit_wait(&task_exit_ec, key);
+   }
+}
+
+/* Stops every worker, the extra ones first, against one bound.  A
+ * worker left behind keeps its generation until it lets go, and
+ * property_lock is then kept for the life of the process: its handler
+ * or cleanup may still be setting task properties through it. */
+static void retro_task_threaded_deinit(void)
+{
+   struct task_generation *gen = task_gen;
+   retro_time_t            deadline;
+   unsigned                i;
+   bool                    left_behind;
+   bool                    any_left = false;
+
+   retro_atomic_store_release_int(&worker_continue, 0);
+   retro_eventcount_notify(&task_work_ec);
+
+   deadline = cpu_features_get_time_usec() + TASK_QUEUE_DETACH_AFTER_US;
+   for (i = 0; i < TASK_PARALLEL_MAX; i++)
+   {
+      if (     parallel_self[i]
+            && retro_task_threaded_stop_worker(parallel_self[i], deadline))
+      {
+         sthread_detach(parallel_thread[i]);
+         parallel_self[i]   = NULL;
+         parallel_thread[i] = NULL;
+         any_left           = true;
+      }
+   }
+   if ((left_behind = retro_task_threaded_stop_worker(worker_self, deadline)))
+   {
+      sthread_detach(worker_thread);
+      any_left = true;
+   }
+
+   retro_task_threaded_join_parallel();
+   if (!left_behind)
+   {
+      sthread_join(worker_thread);
+      retro_atomic_fetch_sub_int(&gen->refs, 1);
+      free(worker_self);
+   }
+
+   retro_task_threaded_give_lists();
+   task_orphans_reclaim();
+   /* Both epochs' worth, with no finder left inside. */
+   task_ep_reclaim();
+   task_ep_reclaim();
+   if (any_left)
+      property_lock_pinned = true;
+   task_lf_structures_free();
+   if (retro_atomic_fetch_sub_int(&gen->refs, 1) == 1)
+      free(gen);
+
+   task_gen        = NULL;
+   worker_thread   = NULL;
+   worker_self     = NULL;
+}
+#endif
+
+static struct retro_task_impl impl_threaded = {
+   NULL,
+   retro_task_threaded_push_running,
+   retro_task_threaded_cancel,
+   retro_task_threaded_cancel_ident,
+   retro_task_threaded_wake,
+   retro_task_threaded_reset,
+   retro_task_threaded_wait,
+   retro_task_threaded_gather,
+   retro_task_threaded_find,
+   retro_task_threaded_retrieve,
+   retro_task_threaded_init,
+   retro_task_threaded_deinit
+};
 #endif
 
 #ifdef HAVE_GCD
@@ -2427,12 +3821,14 @@ static bool task_queue_push_now(retro_task_t *task)
       retro_task_t *running = NULL;
       bool            found = false;
 
-#ifdef HAVE_THREADS
+#ifdef TASK_QUEUE_LF
+      if (impl_current == &impl_threaded)
+         found = task_threaded_has_blocking();
+      else
+#elif defined(HAVE_THREADS)
       slock_lock(running_lock);
 #endif
-      running = tasks_running.front;
-
-      for (; running; running = running->next)
+      for (running = tasks_running.front; running; running = running->next)
       {
          if (running->type == TASK_TYPE_BLOCKING)
          {
@@ -2441,7 +3837,7 @@ static bool task_queue_push_now(retro_task_t *task)
          }
       }
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(TASK_QUEUE_LF)
       slock_unlock(running_lock);
 #endif
 
@@ -2846,13 +4242,15 @@ void task_set_title(retro_task_t *task, char *title)
 #endif
 }
 
+/* With the lock-free runner the task's hand-off to the thread that
+ * retires it is what orders the store. */
 void task_set_data(retro_task_t *task, void *data)
 {
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(TASK_QUEUE_LF)
    slock_lock(running_lock);
 #endif
    task->task_data = data;
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(TASK_QUEUE_LF)
    slock_unlock(running_lock);
 #endif
 }
@@ -2887,11 +4285,11 @@ void* task_get_data(retro_task_t *task)
 {
    void *data = NULL;
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(TASK_QUEUE_LF)
    slock_lock(running_lock);
 #endif
    data = task->task_data;
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(TASK_QUEUE_LF)
    slock_unlock(running_lock);
 #endif
 
@@ -2984,6 +4382,13 @@ retro_task_t *task_init(void)
    task->frontend_userdata = NULL;
    task->next              = NULL;
    task->sched             = NULL;
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_ptr_init(&task->live_next, NULL);
+#else
+   task->live_next         = NULL;
+#endif
+   retro_atomic_int_init(&task->qstate, 0);
+   retro_atomic_int_init(&task->wake, 0);
    task->when              = 0;
    task->park              = 0;
    task->parked            = false;
