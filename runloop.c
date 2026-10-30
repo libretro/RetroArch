@@ -5492,7 +5492,15 @@ static bool core_unload_game(void)
       runloop_st->current_core.flags      &= ~RETRO_CORE_FLAG_GAME_LOADED;
    }
 
-   audio_driver_stop();
+   /* A staged switch keeps the device running until its driver stage
+    * sets it aside or closes it, so the menu's audio and its sounds
+    * keep playing between the stages: only the core's audio is ended,
+    * with the pause tail, and stays gated until the drivers are
+    * rebuilt. */
+   if (runloop_st->content_switching)
+      audio_driver_jump_fade_begin();
+   else
+      audio_driver_stop();
 
 #ifdef HAVE_MICROPHONE
    microphone_driver_stop();
