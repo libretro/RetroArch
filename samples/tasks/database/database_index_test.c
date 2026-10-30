@@ -311,6 +311,66 @@ static int write_db_sizes(const char *path, int count, int zero_at,
    return write_rdb(path, &body);
 }
 
+/* Records named for archives: set.zip of 300 bytes, set.7z of 400 and
+ * a ROM's name of 500; with @unsized, an arc.zip with no size too. */
+static int write_db_archives(const char *path, bool unsized)
+{
+   static const char *const roms[3] = { "set.zip", "set.7z", "game.bin" };
+   buf_t body;
+   int   i;
+
+   memset(&body, 0, sizeof(body));
+   for (i = 0; i < 3; i++)
+   {
+      char    name[32];
+      uint8_t crc[4];
+
+      crc[0] = 0xA0; crc[1] = 0; crc[2] = 0; crc[3] = (uint8_t)i;
+      sprintf(name, "Archive %d", i);
+      bfixmap(&body, 4);
+      bfixstr(&body, "name");     bfixstr(&body, name);
+      bfixstr(&body, "rom_name"); bfixstr(&body, roms[i]);
+      bfixstr(&body, "crc");      bbin(&body, crc, 4);
+      bfixstr(&body, "size");     buint16(&body, (uint16_t)(300 + 100 * i));
+   }
+   if (unsized)
+   {
+      uint8_t crc[4];
+
+      crc[0] = 0xA0; crc[1] = 0; crc[2] = 0; crc[3] = 9;
+      bfixmap(&body, 3);
+      bfixstr(&body, "name");     bfixstr(&body, "Unsized");
+      bfixstr(&body, "rom_name"); bfixstr(&body, "arc.zip");
+      bfixstr(&body, "crc");      bbin(&body, crc, 4);
+   }
+   return write_rdb(path, &body);
+}
+
+/* @count records, each named for a zip of its own, sizes from 1000 up. */
+static int write_db_zips(const char *path, int count)
+{
+   buf_t body;
+   int   i;
+
+   memset(&body, 0, sizeof(body));
+   for (i = 0; i < count; i++)
+   {
+      char    name[16], rom[16];
+      uint8_t crc[4];
+
+      crc[0] = 0xB0; crc[1] = 0;
+      crc[2] = (uint8_t)(i >> 8); crc[3] = (uint8_t)i;
+      sprintf(name, "Zip %04d", i);
+      sprintf(rom,  "z%04d.zip", i);
+      bfixmap(&body, 4);
+      bfixstr(&body, "name");     bfixstr(&body, name);
+      bfixstr(&body, "rom_name"); bfixstr(&body, rom);
+      bfixstr(&body, "crc");      bbin(&body, crc, 4);
+      bfixstr(&body, "size");     buint16(&body, (uint16_t)(1000 + i));
+   }
+   return write_rdb(path, &body);
+}
+
 /* The crc of record @i of write_db_many(): scattered, so that the
  * index has to sort them, and every hundredth repeats the one before
  * it. */
@@ -425,6 +485,19 @@ static database_info_serial_index_t *serial_index_new(const char *path,
 {
    database_info_serial_index_t *idx;
    index_new(path, max_bytes, NULL, &idx, NULL);
+   return idx;
+}
+
+static database_info_crc_index_t *crc_index_want(const char *path,
+      size_t max_bytes, unsigned want)
+{
+   database_info_crc_index_t *idx = NULL;
+   database_info_index_job_t *job = database_info_index_job_new(path,
+         max_bytes, DATABASE_INFO_INDEX_CRC | want);
+
+   while (job && !database_info_index_job_step(job, 4096, 65536))
+      ;
+   database_info_index_job_finish(job, &idx, NULL, NULL);
    return idx;
 }
 
@@ -747,6 +820,97 @@ static void check_index_job_edges(const char *dir)
    free(path);
 }
 
+/* The sizes of the records named for an archive, beside the crc index:
+ * an archive of a type and size no such record has is not held. */
+static void check_archive_sizes(const char *dir)
+{
+   char path[512], path_u[512], detail[64];
+   database_info_crc_index_t *idx;
+   int  i;
+
+   sprintf(path,   "%s/index_archives.rdb",         dir);
+   sprintf(path_u, "%s/index_archives_unsized.rdb", dir);
+   if (!write_db_archives(path, false) || !write_db_archives(path_u, true))
+   {
+      check(0, "archive size databases", "could not be written");
+      return;
+   }
+
+   if (!(idx = crc_index_want(path, 0, DATABASE_INFO_INDEX_ARCHIVE_SIZES)))
+      check(0, "archive size index built", "no index");
+   else
+   {
+      check(database_info_crc_index_may_hold_archive(idx, "zip", 300),
+            "archive sizes: a zip record's size is held", "set.zip 300");
+      check(database_info_crc_index_may_hold_archive(idx, "ZIP", 300),
+            "archive sizes: the type in any case", "ZIP 300");
+      check(!database_info_crc_index_may_hold_archive(idx, "zip", 301),
+            "archive sizes: another size is not", "zip 301");
+      check(!database_info_crc_index_may_hold_archive(idx, "zip", 400),
+            "archive sizes: another type's size is not", "zip 400");
+      check(database_info_crc_index_may_hold_archive(idx, "7z", 400),
+            "archive sizes: 7z kept apart", "set.7z 400");
+      check(!database_info_crc_index_may_hold_archive(idx, "zip", 500),
+            "archive sizes: a ROM's name is no archive", "game.bin 500");
+      check(database_info_crc_index_may_hold_archive(idx, "chd", 12345),
+            "archive sizes: a type not kept may be held", "chd");
+      check(database_info_crc_index_may_hold_archive(idx, "zip", 0),
+            "archive sizes: an unknown size may be held", "zip 0");
+      database_info_crc_index_free(idx);
+   }
+
+   if (!(idx = crc_index_want(path, 0, 0)))
+      check(0, "index without archive sizes built", "no index");
+   else
+   {
+      check(database_info_crc_index_may_hold_archive(idx, "zip", 301),
+            "archive sizes: an index without them may hold any",
+            "zip 301");
+      database_info_crc_index_free(idx);
+   }
+
+   if (!(idx = crc_index_want(path_u, 0, DATABASE_INFO_INDEX_ARCHIVE_SIZES)))
+      check(0, "unsized archive index built", "no index");
+   else
+   {
+      check(database_info_crc_index_may_hold_archive(idx, "zip", 999),
+            "archive sizes: an unsized zip record may hold any zip",
+            "arc.zip");
+      check(!database_info_crc_index_may_hold_archive(idx, "7z", 999),
+            "archive sizes: only for its own type", "7z 999");
+      database_info_crc_index_free(idx);
+   }
+
+   check(database_info_crc_index_may_hold_archive(NULL, "zip", 1),
+         "archive sizes: no index may hold any", "NULL");
+
+   /* 1024 records fill the crc table, so a budget of the index without
+    * sizes holds the table and the sizes' build, but not both kept. */
+   sprintf(path_u, "%s/index_archives_many.rdb", dir);
+   if (!write_db_zips(path_u, 1024))
+   {
+      check(0, "archive size budget database", "could not be written");
+      return;
+   }
+   for (i = 0; i < 2; i++)
+   {
+      database_info_crc_index_t *full = crc_index_want(path_u, 0,
+            i ? DATABASE_INFO_INDEX_ARCHIVE_SIZES : 0);
+      size_t max = database_info_crc_index_bytes(full);
+
+      database_info_crc_index_free(full);
+      idx = crc_index_want(path_u, max, DATABASE_INFO_INDEX_ARCHIVE_SIZES);
+      sprintf(detail, "zip 999 under %u bytes", (unsigned)max);
+      if (i)
+         check(idx && !database_info_crc_index_may_hold_archive(idx, "zip",
+                  999), "archive sizes: kept within the budget", detail);
+      else
+         check(idx && database_info_crc_index_may_hold_archive(idx, "zip",
+                  999), "archive sizes: dropped over the budget", detail);
+      database_info_crc_index_free(idx);
+   }
+}
+
 int main(int argc, char **argv)
 {
    const char *dir = (argc > 1) ? argv[1] : "/tmp";
@@ -897,6 +1061,7 @@ int main(int argc, char **argv)
    check_one_walk(dir, path_a);
    check_index_job(dir);
    check_index_job_edges(dir);
+   check_archive_sizes(dir);
 
    printf("\n%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;

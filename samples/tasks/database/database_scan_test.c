@@ -42,9 +42,11 @@
 #include <retro_timers.h>
 #include <streams/file_stream.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 #include <retro_atomic.h>
 #include <features/features_cpu.h>
 #include <streams/interface_stream.h>
+#include <file/archive_file.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
@@ -370,16 +372,22 @@ static void check(int ok, const char *what, const char *detail)
 }
 
 /* Linked with --wrap=libretrodb_open.  An index build opens its
- * database once and walks it once, so this counts the walks. */
-static unsigned rdb_opens = 0;
+ * database once and walks it once, so this counts the walks; those of
+ * a path ending in open_watch also in watch_opens, set only between
+ * scans. */
+static unsigned           rdb_opens = 0;
+static const char        *open_watch;
+static retro_atomic_int_t watch_opens;
 /* Opens of databases whose path holds open_name. */
-static const char *open_name;
-static unsigned    named_opens;
+static const char        *open_name;
+static unsigned           named_opens;
 
 int __real_libretrodb_open(const char *path, libretrodb_t *db, bool write);
 int __wrap_libretrodb_open(const char *path, libretrodb_t *db, bool write)
 {
    rdb_opens++;
+   if (open_watch && path && string_ends_with(path, open_watch))
+      retro_atomic_fetch_add_int(&watch_opens, 1);
    if (open_name && path && strstr(path, open_name))
       named_opens++;
    return __real_libretrodb_open(path, db, write);
@@ -446,7 +454,7 @@ void __wrap_task_nbio_slice_close(nbio_budget_t *b)
 
 /* Linked with --wrap: outside the scan's tick only a reader's handler
  * asks, once a call.  Those calls are counted from the scan's first
- * whole read on (its first miss grants just before), and the count
+ * whole read on (its match grants just after), and the count
  * kept as the scan first reads a stream of watch_size bytes itself
  * (-1: it read none), with the microseconds since the last call then
  * (-1: no call yet).
@@ -514,6 +522,7 @@ static uint32_t           hold_size;
 static int                hold_want;
 static int                gate_n;
 static retro_atomic_int_t gate_in;
+static retro_atomic_int_t hold_late;
 #ifdef HAVE_THREADS
 static uintptr_t          main_tid;
 #endif
@@ -573,6 +582,8 @@ int64_t __wrap_intfstream_crc_step(intfstream_internal_t *intf,
                  || retro_atomic_load_acquire_int(&gate_in) < gate_n)
              && cpu_features_get_time_usec() < until)
          retro_sleep(1);
+      if (cpu_features_get_time_usec() >= until)
+         retro_atomic_fetch_add_int(&hold_late, 1);
    }
    if (begun_size && size == (int64_t)begun_size && first)
    {
@@ -601,6 +612,35 @@ int64_t __wrap_intfstream_crc_step(intfstream_internal_t *intf,
    return __real_intfstream_crc_step(intf, accumulator, max_bytes);
 }
 
+/* Linked with --wrap: of the databases and archives whose paths hold
+ * step_watch, the index lookups that read records and the
+ * archive#member paths built, in all and the most one check of
+ * run_scan_counted() made.  step_watch is set only between scans. */
+typedef struct
+{
+   unsigned seq;
+   unsigned now;
+   unsigned total;
+   unsigned most;
+} step_count_t;
+
+static const char  *step_watch;
+static unsigned     check_seq;
+static step_count_t step_reads;
+static step_count_t step_joins;
+
+static void step_count(step_count_t *c)
+{
+   if (c->seq != check_seq)
+   {
+      c->seq = check_seq;
+      c->now = 0;
+   }
+   c->total++;
+   if (++c->now > c->most)
+      c->most = c->now;
+}
+
 /* Linked with --wrap: the scan's lookups in a CRC index.  On the
  * threaded queue, one of look_crc[k] (k < look_n) waits, at most
  * HOLD_USEC, until look_want[k] whole reads by readers have begun, of
@@ -627,7 +667,8 @@ database_info_list_t *__wrap_database_info_list_new_crc(
       database_info_crc_index_t *idx, const char *rdb_path,
       uint32_t crc, uint32_t archive_crc, unsigned fields)
 {
-   unsigned k;
+   database_info_list_t *list;
+   unsigned              k;
 
    for (k = 0; k < look_n; k++)
       if (   crc == look_crc[k]
@@ -653,8 +694,12 @@ database_info_list_t *__wrap_database_info_list_new_crc(
          look_end[k] = retro_atomic_load_acquire_int(n);
          break;
       }
-   return __real_database_info_list_new_crc(idx, rdb_path, crc,
+   list = __real_database_info_list_new_crc(idx, rdb_path, crc,
          archive_crc, fields);
+   if (   step_watch && rdb_path && strstr(rdb_path, step_watch)
+       && list && list->count)
+      step_count(&step_reads);
+   return list;
 }
 
 /* Linked with --wrap: index builds.  On the threaded queue, the build
@@ -753,16 +798,16 @@ static void passes_detail(char *s)
          retro_atomic_load_acquire_int(&look_late) ? ", late" : "");
 }
 
-/* Linked with --wrap: stored-CRC reads (an archive's directory) of
- * paths holding stored_name, counted as each returns.  A read of
- * dir_hold's waits first, at most HOLD_USEC, until hold_dirs have.  A
- * read whose first member is gate_size bytes waits after, at most
- * HOLD_USEC, in the gate: until gate_n are in and gate_slow slow
- * reads have begun.  One on the thread that last ran the scan, which
- * gate_on_scan counts, waits only for the first: the scan cannot run.
- * While share_paths is set, readers' reads of smb:// paths and of any
- * other scheme's are counted in share_reads.  All set only between
- * scans. */
+/* Linked with --wrap: directory reads of paths holding stored_name,
+ * counted as each returns: a stored-CRC fetch, and a walk the scanner
+ * starts itself (its INIT step).  A read of dir_hold's waits first, at
+ * most HOLD_USEC, until hold_dirs have.  A walk whose first member is
+ * gate_size bytes waits after that member, at most HOLD_USEC, in the
+ * gate: until gate_n are in and gate_slow slow reads have begun.  One
+ * on the thread that last ran the scan, which gate_on_scan counts,
+ * waits only for the first: the scan cannot run.  While share_paths is
+ * set, readers' reads of smb:// paths and of any other scheme's are
+ * counted in share_reads.  All set only between scans. */
 static const char        *stored_name;
 static retro_atomic_int_t stored_reads;
 static retro_atomic_int_t share_reads[2];
@@ -772,13 +817,8 @@ static uint64_t           gate_size;
 static int                gate_slow;
 static retro_atomic_int_t gate_on_scan;
 
-uint32_t __real_file_archive_get_file_crc32_size_and_ext(const char *path,
-      uint64_t *size, char *ext, size_t len, unsigned *entries);
-uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
-      uint64_t *size, char *ext, size_t len, unsigned *entries)
+static void stored_read_hold(const char *path)
 {
-   uint32_t crc;
-
    if (dir_hold && path && strstr(path, dir_hold))
    {
       retro_time_t until = cpu_features_get_time_usec() + HOLD_USEC;
@@ -787,9 +827,11 @@ uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
              && cpu_features_get_time_usec() < until)
          retro_sleep(1);
    }
-   crc = __real_file_archive_get_file_crc32_size_and_ext(path, size,
-         ext, len, entries);
-   if (gate_n && size && *size == gate_size)
+}
+
+static void stored_read_gate(uint64_t size)
+{
+   if (gate_n && size == gate_size)
    {
       retro_time_t until   = cpu_features_get_time_usec() + HOLD_USEC;
       bool         on_scan = retro_atomic_load_acquire_size(&scan_thread_tid)
@@ -804,6 +846,10 @@ uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
              && cpu_features_get_time_usec() < until)
          retro_sleep(1);
    }
+}
+
+static void stored_read_count(const char *path)
+{
    if (stored_name && path && strstr(path, stored_name))
       retro_atomic_fetch_add_int(&stored_reads, 1);
    if (   share_paths && path
@@ -815,7 +861,44 @@ uint32_t __wrap_file_archive_get_file_crc32_size_and_ext(const char *path,
       else if (strstr(path, "://"))
          retro_atomic_fetch_add_int(&share_reads[1], 1);
    }
+}
+
+uint32_t __real_file_archive_get_file_crc32_and_size(const char *path,
+      uint64_t *size);
+uint32_t __wrap_file_archive_get_file_crc32_and_size(const char *path,
+      uint64_t *size)
+{
+   uint32_t crc;
+
+   stored_read_hold(path);
+   crc = __real_file_archive_get_file_crc32_and_size(path, size);
+   stored_read_count(path);
    return crc;
+}
+
+int __real_file_archive_parse_file_iterate(file_archive_transfer_t *state,
+      bool *returnerr, const char *file, const char *valid_exts,
+      file_archive_file_cb file_cb,
+      struct archive_extract_userdata *userdata);
+int __wrap_file_archive_parse_file_iterate(file_archive_transfer_t *state,
+      bool *returnerr, const char *file, const char *valid_exts,
+      file_archive_file_cb file_cb,
+      struct archive_extract_userdata *userdata)
+{
+   bool init  = state && state->type == ARCHIVE_TRANSFER_INIT;
+   bool first = state && state->type == ARCHIVE_TRANSFER_ITERATE
+      && !state->step_current;
+   int  ret;
+
+   if (init)
+      stored_read_hold(file);
+   ret = __real_file_archive_parse_file_iterate(state, returnerr, file,
+         valid_exts, file_cb, userdata);
+   if (first && userdata)
+      stored_read_gate(userdata->size);
+   if (init)
+      stored_read_count(file);
+   return ret;
 }
 
 /* Linked with --wrap: the serial query fails, as on a failed
@@ -833,6 +916,16 @@ char *__wrap_bin_to_hex_alloc(const uint8_t *data, size_t len)
       return NULL;
    }
    return __real_bin_to_hex_alloc(data, len);
+}
+
+size_t __real_fill_pathname_join_delim(char *s, const char *dir,
+      const char *path, const char delim, size_t len);
+size_t __wrap_fill_pathname_join_delim(char *s, const char *dir,
+      const char *path, const char delim, size_t len)
+{
+   if (step_watch && delim == '#' && dir && strstr(dir, step_watch))
+      step_count(&step_joins);
+   return __real_fill_pathname_join_delim(s, dir, path, delim, len);
 }
 
 /* The last time the scanner asked rm3u_is_m3u() about each order file.
@@ -1028,9 +1121,12 @@ typedef struct
    const char *serial;
    uint32_t    crc;
    uint32_t    size;
+   const char *rom_name;
+   bool        unsized;
 } db_rec_t;
 
-/* One database holding @n records; a NULL serial leaves the key out. */
+/* One database holding @n records; a NULL serial or rom_name, or
+ * unsized, leaves the key out. */
 static int write_db_set(const char *path, const db_rec_t *recs,
       unsigned n)
 {
@@ -1046,15 +1142,25 @@ static int write_db_set(const char *path, const db_rec_t *recs,
 
    for (r = 0; r < n; r++)
    {
-      bfixmap(&body, recs[r].serial ? 4 : 3);
+      bfixmap(&body, 2 + (recs[r].serial ? 1 : 0)
+            + (recs[r].rom_name ? 1 : 0) + (recs[r].unsized ? 0 : 1));
       bfixstr(&body, "name"); bfixstr(&body, recs[r].name);
+      if (recs[r].rom_name)
+      {
+         bfixstr(&body, "rom_name");
+         bfixstr(&body, recs[r].rom_name);
+      }
       if (recs[r].serial)
       {
          bfixstr(&body, "serial");
          bbin(&body, recs[r].serial);
       }
       bfixstr(&body, "crc");  bbin4(&body, recs[r].crc);
-      bfixstr(&body, "size"); buint32(&body, recs[r].size);
+      if (!recs[r].unsized)
+      {
+         bfixstr(&body, "size");
+         buint32(&body, recs[r].size);
+      }
    }
    bbyte(&body, 0xc0);
 
@@ -1091,6 +1197,7 @@ static int write_db(const char *path, const char *game, uint32_t crc,
       uint32_t size)
 {
    db_rec_t rec;
+   memset(&rec, 0, sizeof(rec));
    rec.name   = game;
    rec.serial = NULL;
    rec.crc    = crc;
@@ -1291,6 +1398,17 @@ typedef struct
    uint32_t       clen;
 } zip_entry_t;
 
+/* Little-endian fixture fields. */
+#define PUT16(p, v) do { (p)[0] = (uint8_t)(v); \
+   (p)[1] = (uint8_t)((v) >> 8); } while (0)
+#define PUT32(p, v) do { (p)[0] = (uint8_t)(v); \
+   (p)[1] = (uint8_t)((v) >> 8); (p)[2] = (uint8_t)((v) >> 16); \
+   (p)[3] = (uint8_t)((v) >> 24); } while (0)
+
+/* The end record's comment of the zips write_zip_entries() writes, or
+ * NULL.  Set only between scans. */
+static const char *zip_comment;
+
 /* A zip of @n entries.  Written by hand because the point is to
  * exercise the scanner's archive handling, not to depend on a fixture
  * checked into the tree. */
@@ -1304,9 +1422,6 @@ static int write_zip_entries(const char *path, const zip_entry_t *e,
 
    if (!f)
       return 0;
-
-#define PUT16(p, v) do { (p)[0] = (uint8_t)(v); (p)[1] = (uint8_t)((v) >> 8); } while (0)
-#define PUT32(p, v) do { (p)[0] = (uint8_t)(v);        (p)[1] = (uint8_t)((v) >> 8);                          (p)[2] = (uint8_t)((v) >> 16); (p)[3] = (uint8_t)((v) >> 24); } while (0)
 
    /* local file headers */
    for (i = 0; i < n; i++)
@@ -1353,10 +1468,12 @@ static int write_zip_entries(const char *path, const zip_entry_t *e,
    PUT16(h + 8,  n); PUT16(h + 10, n);
    PUT32(h + 12, dir_size);
    PUT32(h + 16, local_off);
+   if (zip_comment)
+      PUT16(h + 20, strlen(zip_comment));
    fwrite(h, 1, 22, f);
+   if (zip_comment)
+      fwrite(zip_comment, 1, strlen(zip_comment), f);
    fclose(f);
-#undef PUT16
-#undef PUT32
    return 1;
 }
 
@@ -1395,7 +1512,8 @@ static int write_bytes(const char *path, const uint8_t *d, size_t n)
 }
 
 #ifdef HAVE_7ZIP
-/* A 7z NUMBER below 0x4000. */
+/* A 7z NUMBER: the high bits of the first byte count the bytes after
+ * it. */
 static unsigned put_7z_num(uint8_t *p, uint32_t v)
 {
    if (v < 0x80)
@@ -1403,9 +1521,148 @@ static unsigned put_7z_num(uint8_t *p, uint32_t v)
       p[0] = (uint8_t)v;
       return 1;
    }
-   p[0] = (uint8_t)(0x80 | (v >> 8));
-   p[1] = (uint8_t)v;
-   return 2;
+   if (v < 0x4000)
+   {
+      p[0] = (uint8_t)(0x80 | (v >> 8));
+      p[1] = (uint8_t)v;
+      return 2;
+   }
+   p[0] = 0xF0;
+   put_le32(p + 1, v);
+   return 5;
+}
+
+/* A 7z archive of up to 8 entries, written by hand as the zip is: the
+ * signature header, each entry's data as a Copy folder of its own (as
+ * 7-Zip stores Copy), then a plain header with their sizes, CRCs, names
+ * and attributes.  A name ending in '/' is a directory, stored as 7-Zip
+ * stores one: an empty stream that is not an empty file, attribute
+ * 0x10, the name without the '/'. */
+static int write_7z_entries(const char *path, const zip_entry_t *e,
+      unsigned n)
+{
+   static const uint8_t sig[8] = { '7', 'z', 0xBC, 0xAF, 0x27, 0x1C, 0, 4 };
+   FILE    *f;
+   uint8_t  s[32], h[1024];
+   uint8_t  dirs = 0, empty = 0, empty_file = 0;
+   uint32_t total = 0;
+   unsigned i, j, len, nlen, streams = 0, empties = 0;
+   unsigned names = 1;
+   int      ok;
+
+   if (n > 8)
+      return 0;
+   for (i = 0; i < n; i++)
+   {
+      nlen = (unsigned)strlen(e[i].name);
+      if (nlen > 32)
+         return 0;
+      if (nlen && e[i].name[nlen - 1] == '/')
+      {
+         dirs |= (uint8_t)(1 << i);
+         nlen--;
+      }
+      names += 2 * (nlen + 1);
+      if (e[i].len)
+      {
+         total += e[i].len;
+         streams++;
+         continue;
+      }
+      empty |= (uint8_t)(0x80 >> i);
+      if (!(dirs & (1 << i)))
+         empty_file |= (uint8_t)(0x80 >> empties);
+      empties++;
+   }
+   if (!streams)
+      return 0;
+
+   /* Header, MainStreamsInfo, PackInfo: the packed streams from 0. */
+   memcpy(h, "\x01\x04\x06\x00", 4);
+   len = 4;
+   h[len++] = (uint8_t)streams;
+   h[len++] = 0x09;
+   for (i = 0; i < n; i++)
+      if (e[i].len)
+         len += put_7z_num(h + len, e[i].len);
+   /* UnpackInfo: a folder of one Copy coder for each, and its size. */
+   memcpy(h + len, "\x00\x07\x0B", 3);
+   len += 3;
+   h[len++] = (uint8_t)streams;
+   h[len++] = 0;
+   for (i = 0; i < streams; i++)
+   {
+      memcpy(h + len, "\x01\x01\x00", 3);
+      len += 3;
+   }
+   h[len++] = 0x0C;
+   for (i = 0; i < n; i++)
+      if (e[i].len)
+         len += put_7z_num(h + len, e[i].len);
+   /* SubStreamsInfo: every CRC. */
+   memcpy(h + len, "\x00\x08\x0A\x01", 4);
+   len += 4;
+   for (i = 0; i < n; i++)
+      if (e[i].len)
+      {
+         put_le32(h + len, e[i].crc);
+         len += 4;
+      }
+   /* FilesInfo: EmptyStream, EmptyFile, Name, Attributes. */
+   memcpy(h + len, "\x00\x00\x05", 3);
+   len += 3;
+   h[len++] = (uint8_t)n;
+   if (empties)
+   {
+      h[len++] = 0x0E;
+      h[len++] = 1;
+      h[len++] = empty;
+      h[len++] = 0x0F;
+      h[len++] = 1;
+      h[len++] = empty_file;
+   }
+   h[len++] = 0x11;
+   len += put_7z_num(h + len, names);
+   h[len++] = 0;
+   for (i = 0; i < n; i++)
+   {
+      nlen = (unsigned)strlen(e[i].name) - ((dirs >> i) & 1);
+      for (j = 0; j < nlen; j++)
+      {
+         h[len++] = (uint8_t)e[i].name[j];
+         h[len++] = 0;
+      }
+      h[len++] = 0;
+      h[len++] = 0;
+   }
+   h[len++] = 0x15;
+   len += put_7z_num(h + len, 2 + 4 * n);
+   h[len++] = 1;
+   h[len++] = 0;
+   for (i = 0; i < n; i++)
+   {
+      put_le32(h + len, ((dirs >> i) & 1) ? 0x10 : 0x20);
+      len += 4;
+   }
+   h[len++] = 0;
+   h[len++] = 0;
+
+   /* The header follows the data. */
+   memset(s, 0, sizeof(s));
+   memcpy(s, sig, sizeof(sig));
+   put_le32(s + 12, total);
+   put_le32(s + 20, len);
+   put_le32(s + 28, crc_of(h, len));
+   put_le32(s + 8,  crc_of(s + 12, 20));
+
+   if (!(f = fopen(path, "wb")))
+      return 0;
+   ok = fwrite(s, 1, sizeof(s), f) == sizeof(s);
+   for (i = 0; ok && i < n; i++)
+      if (e[i].len)
+         ok = fwrite(e[i].data, 1, e[i].len, f) == e[i].len;
+   ok = ok && fwrite(h, 1, len, f) == len;
+   return (fclose(f) == 0) && ok;
 }
 
 /* A 7z of one member stored by the copy coder, its CRC in the header
@@ -1413,64 +1670,204 @@ static unsigned put_7z_num(uint8_t *p, uint32_t v)
 static int write_7z(const char *path, const char *member,
       const uint8_t *data, uint32_t len, uint32_t crc)
 {
-   static const uint8_t sig[8] = { '7', 'z', 0xBC, 0xAF, 0x27, 0x1C,
-      0, 4 };
-   uint8_t  s[32], h[128];
-   unsigned n = 0;
-   size_t   i;
-   FILE    *f;
-   int      ok;
+   zip_entry_t e;
 
-   h[n++] = 0x01;              /* header */
-   h[n++] = 0x04;              /* streams */
-   h[n++] = 0x06;              /* one packed stream, at 0 */
-   h[n++] = 0x00;
-   h[n++] = 0x01;
-   h[n++] = 0x09;
-   n     += put_7z_num(h + n, len);
-   h[n++] = 0x00;
-   h[n++] = 0x07;              /* one folder of one copy coder */
-   h[n++] = 0x0B;
-   h[n++] = 0x01;
-   h[n++] = 0x00;
-   h[n++] = 0x01;
-   h[n++] = 0x01;
-   h[n++] = 0x00;
-   h[n++] = 0x0C;
-   n     += put_7z_num(h + n, len);
-   h[n++] = 0x00;
-   h[n++] = 0x08;              /* its CRC */
-   h[n++] = 0x0A;
-   h[n++] = 0x01;
-   put_le32(h + n, crc);
-   n     += 4;
-   h[n++] = 0x00;
-   h[n++] = 0x00;
-   h[n++] = 0x05;              /* one file, its name UTF-16 */
-   h[n++] = 0x01;
-   h[n++] = 0x11;
-   n     += put_7z_num(h + n, (uint32_t)(1 + 2 * (strlen(member) + 1)));
-   h[n++] = 0x00;
-   for (i = 0; i <= strlen(member); i++)
+   memset(&e, 0, sizeof(e));
+   e.name = member;
+   e.data = data;
+   e.len  = len;
+   e.crc  = crc;
+   return write_7z_entries(path, &e, 1);
+}
+#endif
+
+/* The size write_zip_entries() gives @n entries. */
+static uint32_t zip_bytes(const zip_entry_t *e, unsigned n)
+{
+   uint32_t total = 22 + (zip_comment ? (uint32_t)strlen(zip_comment) : 0);
+   unsigned i;
+
+   for (i = 0; i < n; i++)
+      total += 30 + 46 + 2 * (uint32_t)strlen(e[i].name) + e[i].len;
+   return total;
+}
+
+#ifdef HAVE_RRAR
+/* The size write_rar_entries() gives @n entries. */
+static uint32_t rar_bytes(const zip_entry_t *e, unsigned n)
+{
+   uint32_t total = 7 + 13 + 7;
+   unsigned i;
+
+   for (i = 0; i < n; i++)
    {
-      h[n++] = (uint8_t)member[i];
-      h[n++] = 0;
-   }
-   h[n++] = 0x00;
-   h[n++] = 0x00;
+      uint32_t nlen = (uint32_t)strlen(e[i].name);
 
-   memset(s, 0, sizeof(s));
-   memcpy(s, sig, sizeof(sig));
-   put_le32(s + 12, len);      /* next header: offset, size, CRC */
-   put_le32(s + 20, n);
-   put_le32(s + 28, crc_of(h, n));
-   put_le32(s + 8,  crc_of(s + 12, 20));
+      if (nlen && e[i].name[nlen - 1] == '/')
+         nlen--;
+      total += 32 + nlen + e[i].len;
+   }
+   return total;
+}
+
+/* A RAR 4 archive of @n stored entries, written by hand as the zip is:
+ * the marker, a main header, a file header and the data for each
+ * entry, then the end block.  A header's CRC field is the low 16 bits
+ * of the CRC-32 of the rest of that header.  A name ending in '/' is
+ * a directory, stored without the '/'. */
+static int write_rar_entries(const char *path, const zip_entry_t *e,
+      unsigned n)
+{
+   static const uint8_t marker[7] = { 'R', 'a', 'r', '!', 0x1A, 0x07, 0x00 };
+   FILE    *f;
+   uint8_t  h[32 + 64];
+   uint32_t c;
+   unsigned i;
+
+   for (i = 0; i < n; i++)
+      if (strlen(e[i].name) > 64)
+         return 0;
    if (!(f = fopen(path, "wb")))
       return 0;
-   ok =     fwrite(s, 1, 32, f) == 32
-         && fwrite(data, 1, len, f) == len
-         && fwrite(h, 1, n, f) == n;
-   return (fclose(f) == 0) && ok;
+
+   fwrite(marker, 1, sizeof(marker), f);
+
+   memset(h, 0, 13);
+   h[2] = 0x73;                     /* main header */
+   PUT16(h + 5, 13);
+   c = crc_of(h + 2, 11);
+   PUT16(h, c);
+   fwrite(h, 1, 13, f);
+
+   for (i = 0; i < n; i++)
+   {
+      uint16_t nlen = (uint16_t)strlen(e[i].name);
+      bool     dir  = nlen && e[i].name[nlen - 1] == '/';
+      uint16_t size;
+
+      if (dir)
+         nlen--;
+      size = (uint16_t)(32 + nlen);
+      memset(h, 0, 32);
+      h[2] = 0x74;                  /* file header */
+      /* Data follows; all the dictionary bits mark a directory. */
+      PUT16(h + 3, dir ? 0x80E0 : 0x8000);
+      PUT16(h + 5, size);
+      PUT32(h + 7,  e[i].len);      /* packed */
+      PUT32(h + 11, e[i].len);      /* unpacked */
+      PUT32(h + 16, e[i].crc);
+      h[24] = 29;                   /* unpack version */
+      h[25] = 0x30;                 /* stored */
+      PUT16(h + 26, nlen);
+      PUT32(h + 28, dir ? 0x10 : 0x20); /* directory, archive */
+      memcpy(h + 32, e[i].name, nlen);
+      c = crc_of(h + 2, size - 2);
+      PUT16(h, c);
+      fwrite(h, 1, size, f);
+      if (e[i].len)
+         fwrite(e[i].data, 1, e[i].len, f);
+   }
+
+   memset(h, 0, 7);
+   h[2] = 0x7B;                     /* end of archive */
+   PUT16(h + 3, 0x4000);
+   PUT16(h + 5, 7);
+   c = crc_of(h + 2, 5);
+   PUT16(h, c);
+   fwrite(h, 1, 7, f);
+   if (fflush(f) != 0 || ferror(f))
+   {
+      fclose(f);
+      return 0;
+   }
+   fclose(f);
+   return 1;
+}
+
+/* A RAR 5 variable-length number, 7 bits a byte, low first. */
+static size_t rar5_vint(uint8_t *p, uint64_t v)
+{
+   size_t n = 0;
+
+   do
+   {
+      p[n] = (uint8_t)(v & 0x7f);
+      v  >>= 7;
+      if (v)
+         p[n] |= 0x80;
+      n++;
+   } while (v);
+   return n;
+}
+
+/* A RAR 5 header: the CRC-32 of the rest of it, its size, then @body. */
+static void rar5_head(FILE *f, const uint8_t *body, size_t len)
+{
+   uint8_t  h[300];
+   size_t   s = rar5_vint(h + 4, len);
+   uint32_t c;
+
+   memcpy(h + 4 + s, body, len);
+   c = crc_of(h + 4, s + len);
+   PUT32(h, c);
+   fwrite(h, 1, 4 + s + len, f);
+}
+
+/* A RAR 5 archive of @n stored entries, written by hand as the zip is.
+ * An entry whose crc is 0 has no CRC field, as a BLAKE2 member has
+ * none: the reader unpacks it for one. */
+static int write_rar5_entries(const char *path, const zip_entry_t *e,
+      unsigned n)
+{
+   static const uint8_t sig[8]       = {
+      'R', 'a', 'r', '!', 0x1A, 0x07, 0x01, 0x00 };
+   static const uint8_t main_head[3] = { 1, 0, 0 };
+   static const uint8_t end_head[3]  = { 5, 0, 0 };
+   FILE    *f;
+   unsigned i;
+
+   if (!(f = fopen(path, "wb")))
+      return 0;
+   fwrite(sig, 1, sizeof(sig), f);
+   rar5_head(f, main_head, sizeof(main_head));
+   for (i = 0; i < n; i++)
+   {
+      uint8_t b[256];
+      size_t  q    = 0;
+      size_t  nlen = strlen(e[i].name);
+
+      if (nlen > 200)
+      {
+         fclose(f);
+         return 0;
+      }
+      q += rar5_vint(b + q, 2);                /* a file */
+      q += rar5_vint(b + q, 2);                /* data follows */
+      q += rar5_vint(b + q, e[i].len);
+      q += rar5_vint(b + q, e[i].crc ? 4 : 0); /* a CRC field */
+      q += rar5_vint(b + q, e[i].len);         /* unpacked */
+      q += rar5_vint(b + q, 0);                /* attributes */
+      if (e[i].crc)
+      {
+         PUT32(b + q, e[i].crc);
+         q += 4;
+      }
+      q += rar5_vint(b + q, 0);                /* stored */
+      q += rar5_vint(b + q, 0);                /* host */
+      q += rar5_vint(b + q, nlen);
+      memcpy(b + q, e[i].name, nlen);
+      q += nlen;
+      rar5_head(f, b, q);
+      fwrite(e[i].data, 1, e[i].len, f);
+   }
+   rar5_head(f, end_head, sizeof(end_head));
+   if (fflush(f) != 0 || ferror(f))
+   {
+      fclose(f);
+      return 0;
+   }
+   fclose(f);
+   return 1;
 }
 #endif
 
@@ -1564,6 +1961,7 @@ static unsigned run_scan_counted(const char *dir)
    while (loop_active)
    {
       spend_window();
+      check_seq++;
       task_queue_check();
       gathers++;
       if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
@@ -2546,6 +2944,7 @@ static void order_lane(const char *root, const char *pl_dir,
    }
    second = strstr(dbs->elems[1].data, db_names[1]) ? 1 : 0;
    string_list_free(dbs);
+   memset(recs, 0, sizeof(recs));
    recs[0].name   = "First In Second";
    recs[0].serial = NULL;
    recs[0].crc    = ORDER_FIRST_CRC;
@@ -2606,6 +3005,8 @@ static void set_rec(db_rec_t *rec, const char *name, uint32_t crc,
    rec->serial = NULL;
    rec->crc    = crc;
    rec->size   = size;
+   rec->rom_name = NULL;
+   rec->unsized  = false;
 }
 
 #define MIX_BIG_ONE 70000
@@ -2662,6 +3063,7 @@ static void mix_lane(const char *root, const char *pl_dir, bool threaded)
    if (!filestream_read_file(p, (void**)&d, &len) || !d)
       goto fixture;
    set_rec(&recs[2], "Mix Archive", crc_of(d, (size_t)len), (uint32_t)len);
+   recs[2].rom_name = "m3_whole.zip";
    free(d);
    d = NULL;
 
@@ -2728,7 +3130,8 @@ fixture:
  * .zst), or as it is listed (.bz2). Each archive's own CRC matches
  * nothing. The core loads 7z, zip and RAR archives as they are, and
  * none of its extensions is test.bin's: that archive is matched by its
- * first member. */
+ * first member. Those it loads are written as themselves, not
+ * expanded. */
 static void archive_lane(const char *root, const char *pl_dir,
       bool threaded)
 {
@@ -2822,6 +3225,10 @@ static void archive_lane(const char *root, const char *pl_dir,
       check(started && scan_completed && file_contains(lpl, recs[k].name)
             && file_contains(lpl, crcs[k]), what, crcs[k]);
    }
+   sprintf(what, "archives the core loads not expanded %s", q);
+   check(   started && scan_completed && !file_contains(lpl, ".7z#")
+         && !file_contains(lpl, ".rar#") && !file_contains(lpl, ".zip#"),
+         what, "a1.7z, b2.rar, b3.rar, c6.zip");
    return;
 
 fixture:
@@ -2852,18 +3259,21 @@ static bool set_whole_rec(db_rec_t *rec, const char *name,
    if (!filestream_read_file(path, (void**)&d, &len) || !d)
       return false;
    set_rec(rec, name, crc_of(d, (size_t)len), (uint32_t)len);
+   /* A rom_name ending in .zip is enough for the size gate. */
+   rec->rom_name = "set.zip";
    free(d);
    return true;
 }
 
 /* An archive is looked up by its first member's stored CRC, then by
- * its own, and expanded only when both miss; a stored CRC of 0 (a
- * directory first) goes straight to its own.  On the regular queue
- * nothing reads ahead, so a member match reads no archive whole. */
+ * its own, then by every member's; a folder is no member.  On the
+ * regular queue nothing reads ahead, so a member match reads no
+ * archive whole. */
 static void member_first_lane(const char *root, const char *pl_dir,
       bool threaded)
 {
-   static uint8_t d[4][MF_MEMBER_LEN];
+   static uint8_t d[5][MF_MEMBER_LEN];
+   static char    folder_lpl[1024];
    char           db[512], dir[512], p[1024], cart_lpl[1024];
    char           arcade_lpl[1024], what[64], detail[64], crc[2][16];
    db_rec_t       cart[2], arcade[2];
@@ -2906,7 +3316,8 @@ static void member_first_lane(const char *root, const char *pl_dir,
        || !set_whole_rec(&arcade[0], "MF Arcade", p))
       goto fixture;
 
-   /* A directory first: no stored CRC, so only its own CRC can match. */
+   /* A directory, then a member that matches nothing: only its own CRC
+    * can match. */
    e[0].name = "d/";
    e[0].data = NULL;
    e[0].len  = 0;
@@ -2919,8 +3330,9 @@ static void member_first_lane(const char *root, const char *pl_dir,
        || !set_whole_rec(&arcade[1], "MF Dir First", p))
       goto fixture;
 
-   /* Neither its first member nor its own CRC matches: expanded, its
-    * second member does. */
+   /* Its first member misses and its second is a record named for no
+    * archive; no database may hold it by its size: held, and written
+    * as archive#member. */
    fill_forced(d[2], MF_MEMBER_LEN, 47, 0x0BF100A2u);
    fill_forced(d[3], MF_MEMBER_LEN, 53, 0x0BF10003u);
    e[0].name = "a.rd";
@@ -2935,6 +3347,31 @@ static void member_first_lane(const char *root, const char *pl_dir,
       goto fixture;
    set_rec(&cart[1], "MF Multi B", 0x0BF10003u, MF_MEMBER_LEN);
 
+#ifdef HAVE_7ZIP
+   /* A folder is no member: this 7z of a folder and one member is named
+    * by that member's hit, in a database whose core opens 7z. */
+   {
+      db_rec_t folder;
+
+      fill_forced(d[4], MF_MEMBER_LEN, 59, 0x0BF10007u);
+      e[0].name = "d/";
+      e[0].data = NULL;
+      e[0].len  = 0;
+      e[0].crc  = 0;
+      e[1].name = "d/m.rd";
+      e[1].data = d[4];
+      e[1].len  = MF_MEMBER_LEN;
+      e[1].crc  = 0x0BF10007u;
+      sprintf(p, "%s/mf_folder.7z", dir);
+      set_rec(&folder, "MF Folder 7z", 0x0BF10007u, MF_MEMBER_LEN);
+      if (!write_7z_entries(p, e, 2))
+         goto fixture;
+      sprintf(p, "%s/Test Archives.rdb", db);
+      if (!write_db_set(p, &folder, 1))
+         goto fixture;
+   }
+#endif
+
    sprintf(p, "%s/Test MF Cart.rdb", db);
    if (!write_db_set(p, cart, 2))
       goto fixture;
@@ -2944,8 +3381,10 @@ static void member_first_lane(const char *root, const char *pl_dir,
 
    sprintf(cart_lpl,   "%s/Test MF Cart.lpl",   pl_dir);
    sprintf(arcade_lpl, "%s/Test MF Arcade.lpl", pl_dir);
+   sprintf(folder_lpl, "%s/Test Archives.lpl", pl_dir);
    filestream_delete(cart_lpl);
    filestream_delete(arcade_lpl);
+   filestream_delete(folder_lpl);
    use_queue(threaded);
    use_db(db);
    retro_atomic_store_release_int(&reads_begun, 0);
@@ -2974,16 +3413,23 @@ static void member_first_lane(const char *root, const char *pl_dir,
          && file_contains(arcade_lpl, crc[1])
          && !file_contains(cart_lpl, "mf_arcade.zip#"), what,
          "mf_arcade.zip, not expanded");
-   sprintf(what, "no stored CRC: matched by its own %s", q);
+   sprintf(what, "directory first: matched by its own %s", q);
    check(started && file_contains(arcade_lpl, "MF Dir First"), what,
          "mf_dirfirst.zip");
    sprintf(detail, "%d directory reads", stored);
-   sprintf(what, "no stored CRC: its directory read once %s", q);
+   sprintf(what, "directory first: its directory read once %s", q);
    check(started && stored == 1, what, detail);
-   sprintf(what, "expanded after both CRCs miss %s", q);
+   sprintf(what, "held after its first member misses %s", q);
    check(   started && file_contains(cart_lpl, "MF Multi B")
          && file_contains(cart_lpl, "mf_multi.zip#b.rd"), what,
          "mf_multi.zip#b.rd");
+#ifdef HAVE_7ZIP
+   sprintf(what, "7z, a folder first: named by its member %s", q);
+   check(   started && file_contains(folder_lpl, "MF Folder 7z")
+         && file_contains(folder_lpl, "mf_folder.7z")
+         && !file_contains(folder_lpl, "mf_folder.7z#"), what,
+         "mf_folder.7z");
+#endif
    return;
 
 fixture:
@@ -2994,6 +3440,9 @@ fixture:
 /* One member named rom.<2 letters>; two named <letter>.ar. */
 #define GATE_ZIP_LEN (30 + 6 + MF_MEMBER_LEN + 46 + 6 + 22)
 #define ARC_ZIP_LEN  (2 * (30 + 4 + MF_MEMBER_LEN + 46 + 4) + 22)
+/* A TorrentZip end comment; ARC_ZIP_LEN's zips with it. */
+#define TZ_COMMENT   "TORRENTZIPPED-5C56B2DD"
+#define TZ_ZIP_LEN   (ARC_ZIP_LEN + 22)
 
 /* @dir/@file of one member, @member, forced to @crc, and its record
  * @rec, named @name. */
@@ -3288,9 +3737,9 @@ fixture:
    check(0, "fixture", "could not write the arcade set");
 }
 
-/* Arcade sets whose readers' whole reads fail: the scan reads them
- * whole itself and keeps each reader's member CRC, so every archive's
- * directory is read once. */
+/* TorrentZip arcade sets whose readers' whole reads fail: the scan reads
+ * them whole itself and keeps each reader's directory, so every
+ * archive's directory is read once. */
 static void reader_fail_arcade_lane(const char *root, const char *pl_dir)
 {
    static uint8_t d[2][MF_MEMBER_LEN];
@@ -3315,6 +3764,7 @@ static void reader_fail_arcade_lane(const char *root, const char *pl_dir)
    memset(e, 0, sizeof(e));
    e[0].name = "a.ar";
    e[1].name = "b.ar";
+   zip_comment = TZ_COMMENT;
    for (k = 0; k < GATE_ZIPS; k++)
    {
       fill_forced(d[0], MF_MEMBER_LEN, 89 + k, 0x0CA70060u + 2 * k);
@@ -3331,6 +3781,7 @@ static void reader_fail_arcade_lane(const char *root, const char *pl_dir)
           || !set_whole_rec(&arc[k], names[k], p))
          goto fixture;
    }
+   zip_comment = NULL;
    sprintf(p, "%s/Test Arc Gate.rdb", db);
    if (!write_db_set(p, arc, GATE_ZIPS))
       goto fixture;
@@ -3341,7 +3792,7 @@ static void reader_fail_arcade_lane(const char *root, const char *pl_dir)
    use_db(db);
    retro_atomic_store_release_int(&reader_fails, 0);
    retro_atomic_store_release_int(&stored_reads, 0);
-   fail_size   = ARC_ZIP_LEN;
+   fail_size   = TZ_ZIP_LEN;
    stored_name = "/arc_fail/";
    started     = run_scan(dir) && scan_completed;
    fail_size   = 0;
@@ -3363,6 +3814,7 @@ static void reader_fail_arcade_lane(const char *root, const char *pl_dir)
    return;
 
 fixture:
+   zip_comment = NULL;
    check(0, "fixture", "could not write the failed arcade set");
 }
 
@@ -3580,6 +4032,1399 @@ fixture:
    check(0, "fixture", "could not write the unindexed set");
 }
 
+/* An archive of several members that no database holds by its size, a
+ * disc zip as a rule: no whole read on either side, and a later
+ * member's hit held as archive#member. */
+static void multi_nosize_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static uint8_t d[2][MF_MEMBER_LEN];
+   static char    lpl[2][1024];
+   char           db[512], dir[512], p[1024];
+   char           what[80], detail[64];
+   db_rec_t       arc[2], cart;
+   zip_entry_t    e[2];
+   uint32_t       bytes;
+   int            reads;
+   bool           started;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/multi_nosize_db", root);
+   sprintf(dir, "%s/multi_nosize",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   fill_forced(d[0], MF_MEMBER_LEN, 131, 0x0CA70100u);
+   fill_forced(d[1], MF_MEMBER_LEN, 137, 0x0CA70101u);
+   memset(e, 0, sizeof(e));
+   e[0].name = "Game.cue";
+   e[0].data = d[0];
+   e[0].len  = MF_MEMBER_LEN;
+   e[0].crc  = 0x0CA70100u;
+   e[1].name = "Game (Track 1).ct";
+   e[1].data = d[1];
+   e[1].len  = MF_MEMBER_LEN;
+   e[1].crc  = 0x0CA70101u;
+   sprintf(p, "%s/mn_disc.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   bytes = zip_bytes(e, 2);
+   /* Zip records on both sides of its size: inside the size range, and
+    * no record of its size. */
+   set_rec(&arc[0], "MN Small", 0x0CA701F8u, bytes - 1);
+   set_rec(&arc[1], "MN Big",   0x0CA701F9u, bytes + 1);
+   arc[0].rom_name = "small.zip";
+   arc[1].rom_name = "big.zip";
+   set_rec(&cart, "MN Track", 0x0CA70101u, MF_MEMBER_LEN);
+   sprintf(p, "%s/Test Arc Gate.rdb", db);
+   if (!write_db_set(p, arc, 2))
+      goto fixture;
+   sprintf(p, "%s/Test Cart Gate.rdb", db);
+   if (!write_db_set(p, &cart, 1))
+      goto fixture;
+
+   sprintf(lpl[0], "%s/Test Arc Gate.lpl",  pl_dir);
+   sprintf(lpl[1], "%s/Test Cart Gate.lpl", pl_dir);
+   filestream_delete(lpl[0]);
+   filestream_delete(lpl[1]);
+   use_queue(threaded);
+   use_db(db);
+   retro_atomic_store_release_int(&watch_scan,   0);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   watch_size = bytes;
+   started    = run_scan(dir) && scan_completed;
+   watch_size = 0;
+   reads      = retro_atomic_load_acquire_int(&watch_scan)
+      + retro_atomic_load_acquire_int(&watch_reader);
+
+   sprintf(what, "several members, no size: a later hit held %s", q);
+   check(   started
+         && file_contains(lpl[1], "mn_disc.zip#Game (Track 1).ct")
+         && !file_contains(lpl[0], "mn_disc.zip"), what,
+         "mn_disc.zip#Game (Track 1).ct");
+   sprintf(what, "several members, no size: not read whole %s", q);
+   sprintf(detail, "%d read steps", reads);
+   check(started && reads == 0, what, detail);
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the no-size set");
+}
+
+/* TorrentZip sets of several members are read whole by the readers
+ * with no grant while a database opens zip; a TorrentZip zip of one
+ * member is not; plain ones only by the scan, once the size lets it;
+ * neither while no database opens zip.  No record matches, so no
+ * whole match grants a read ahead. */
+static void tz_reader_lane(const char *root)
+{
+   static uint8_t d[2][MF_MEMBER_LEN];
+   char           db[2][512], dir[2][512], p[1024], detail[64];
+   db_rec_t       arc[2], cart;
+   zip_entry_t    e[2];
+   uint32_t       one_bytes;
+   unsigned       k, j;
+   int            scan, rdr, one;
+   bool           started;
+
+   if (!readers_expected())
+   {
+      check(1, "TorrentZip sets: readers read them whole", "no readers");
+      return;
+   }
+   sprintf(db[0],  "%s/tz_reader_db",    root);
+   sprintf(db[1],  "%s/tz_reader_nozip", root);
+   sprintf(dir[0], "%s/tz_reader_tz",    root);
+   sprintf(dir[1], "%s/tz_reader_plain", root);
+   for (j = 0; j < 2; j++)
+   {
+      path_mkdir(db[j]);
+      path_mkdir(dir[j]);
+   }
+   memset(e, 0, sizeof(e));
+   e[0].name = "a.ar";
+   e[1].name = "b.ar";
+   for (k = 0; k < GATE_ZIPS; k++)
+   {
+      fill_forced(d[0], MF_MEMBER_LEN, 141 + k, 0x0CA70110u + 2 * k);
+      fill_forced(d[1], MF_MEMBER_LEN, 149 + k, 0x0CA70111u + 2 * k);
+      e[0].data = d[0];
+      e[0].len  = MF_MEMBER_LEN;
+      e[0].crc  = 0x0CA70110u + 2 * k;
+      e[1].data = d[1];
+      e[1].len  = MF_MEMBER_LEN;
+      e[1].crc  = 0x0CA70111u + 2 * k;
+      for (j = 0; j < 2; j++)
+      {
+         zip_comment = j ? NULL : TZ_COMMENT;
+         sprintf(p, "%s/tzr%u.zip", dir[j], k);
+         if (!write_zip_entries(p, e, 2))
+            goto fixture;
+      }
+   }
+   fill_forced(d[0], MF_MEMBER_LEN, 157, 0x0CA7011Fu);
+   e[0].crc   = 0x0CA7011Fu;
+   zip_comment = TZ_COMMENT;
+   one_bytes   = zip_bytes(e, 1);
+   sprintf(p, "%s/tzr_one.zip", dir[0]);
+   if (!write_zip_entries(p, e, 1))
+      goto fixture;
+   zip_comment = NULL;
+   /* Zip records of both sizes whose CRCs match nothing. */
+   set_rec(&arc[0], "TZR TZ Size",    0x0CA701F0u, TZ_ZIP_LEN);
+   set_rec(&arc[1], "TZR Plain Size", 0x0CA701F1u, ARC_ZIP_LEN);
+   arc[0].rom_name = "set.zip";
+   arc[1].rom_name = "set.zip";
+   sprintf(p, "%s/Test Arc Gate.rdb", db[0]);
+   if (!write_db_set(p, arc, 2))
+      goto fixture;
+   set_rec(&cart, "TZR Cart", 0x0CA701F2u, MF_MEMBER_LEN);
+   sprintf(p, "%s/Test Cart Gate.rdb", db[1]);
+   if (!write_db_set(p, &cart, 1))
+      goto fixture;
+
+   use_queue(true);
+   for (j = 0; j < 3; j++)
+   {
+      bool tz = (j != 1);
+
+      use_db(db[j == 2]);
+      retro_atomic_store_release_int(&reads_begun,  0);
+      retro_atomic_store_release_int(&reader_begun, 0);
+      retro_atomic_store_release_int(&watch_scan,   0);
+      retro_atomic_store_release_int(&watch_reader, 0);
+      begun_size = tz ? TZ_ZIP_LEN : ARC_ZIP_LEN;
+      watch_size = one_bytes;
+      started    = run_scan(dir[tz ? 0 : 1]) && scan_completed;
+      begun_size = 0;
+      watch_size = 0;
+      rdr        = retro_atomic_load_acquire_int(&reader_begun);
+      scan       = retro_atomic_load_acquire_int(&reads_begun) - rdr;
+      one        = retro_atomic_load_acquire_int(&watch_scan)
+         + retro_atomic_load_acquire_int(&watch_reader);
+      sprintf(detail, "scan %d, readers %d", scan, rdr);
+      if (j == 0)
+      {
+         check(started && scan == 0 && rdr == GATE_ZIPS,
+               "TorrentZip sets: readers read them whole", detail);
+         sprintf(detail, "%d read steps", one);
+         check(started && one == 0,
+               "a TorrentZip zip of one member: not read whole", detail);
+      }
+      else if (j == 1)
+         check(started && scan == GATE_ZIPS && rdr == 0,
+               "plain sets: the scan reads them once sized", detail);
+      else
+         check(started && scan == 0 && rdr == 0,
+               "TorrentZip sets: no zip database, no read", detail);
+   }
+   return;
+
+fixture:
+   zip_comment = NULL;
+   check(0, "fixture", "could not write the TorrentZip sets");
+}
+
+#define TZU_ZIPS    24
+#define TZU_SLOW_MS 150
+
+/* TorrentZip sets a zip database cannot hold by their size: once the
+ * scan has kept one from a whole read, the readers stop reading the
+ * next ones whole, whose CRCs the scan would drop.  Their whole reads
+ * are slowed, so each reader has one under way when the scan rules on
+ * the first set and may begin one more before it does: two rounds,
+ * three allowed, of TZU_ZIPS without the stop. */
+static void tz_unsized_lane(const char *root)
+{
+   static uint8_t d[2][MF_MEMBER_LEN];
+   char           db[512], dir[512], p[1024], detail[64];
+   db_rec_t       arc;
+   zip_entry_t    e[2];
+   unsigned       k, n = readers_expected();
+   int            scan, rdr;
+   bool           started;
+
+   if (!n)
+   {
+      check(1, "unsized TorrentZip sets: readers stop reading whole",
+            "no readers");
+      return;
+   }
+   sprintf(db,  "%s/tz_unsized_db", root);
+   sprintf(dir, "%s/tz_unsized",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   memset(e, 0, sizeof(e));
+   e[0].name   = "a.ar";
+   e[1].name   = "b.ar";
+   zip_comment = TZ_COMMENT;
+   for (k = 0; k < TZU_ZIPS; k++)
+   {
+      fill_forced(d[0], MF_MEMBER_LEN, 161 + k, 0x0CA70200u + 2 * k);
+      fill_forced(d[1], MF_MEMBER_LEN, 163 + k, 0x0CA70201u + 2 * k);
+      e[0].data = d[0];
+      e[0].len  = MF_MEMBER_LEN;
+      e[0].crc  = 0x0CA70200u + 2 * k;
+      e[1].data = d[1];
+      e[1].len  = MF_MEMBER_LEN;
+      e[1].crc  = 0x0CA70201u + 2 * k;
+      sprintf(p, "%s/tzu%02u.zip", dir, k);
+      if (!write_zip_entries(p, e, 2))
+         goto fixture;
+   }
+   zip_comment = NULL;
+   /* A zip record of another size, whose CRC matches nothing. */
+   set_rec(&arc, "TZU Other Size", 0x0CA702F0u, TZ_ZIP_LEN + 1);
+   arc.rom_name = "set.zip";
+   sprintf(p, "%s/Test Arc Gate.rdb", db);
+   if (!write_db_set(p, &arc, 1))
+      goto fixture;
+
+   use_queue(true);
+   use_db(db);
+   retro_atomic_store_release_int(&reads_begun,  0);
+   retro_atomic_store_release_int(&reader_begun, 0);
+   begun_size = TZ_ZIP_LEN;
+   slow_reset(TZ_ZIP_LEN, TZU_SLOW_MS);
+   started    = run_scan(dir) && scan_completed;
+   slow_size  = 0;
+   begun_size = 0;
+   rdr        = retro_atomic_load_acquire_int(&reader_begun);
+   scan       = retro_atomic_load_acquire_int(&reads_begun) - rdr;
+   sprintf(detail, "scan %d, readers %d of %u (%u readers)", scan, rdr,
+         TZU_ZIPS, n);
+   check(started && scan == 0 && rdr <= (int)(3 * n),
+         "unsized TorrentZip sets: readers stop reading whole", detail);
+   return;
+
+fixture:
+   zip_comment = NULL;
+   check(0, "fixture", "could not write the unsized TorrentZip sets");
+}
+
+/* Several members, no database holds the archive by its size, and its
+ * first member's CRC is in one whose cores open zips only: the archive
+ * is that record's entry, with no whole read. */
+static void q1a_lane(const char *root, const char *pl_dir, bool threaded)
+{
+   static uint8_t d[2][MF_MEMBER_LEN];
+   char           db[512], dir[512], p[1024], lpl[1024];
+   char           what[80], detail[64];
+   db_rec_t       rec;
+   zip_entry_t    e[2];
+   int            reads;
+   bool           started;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/q1a_db", root);
+   sprintf(dir, "%s/q1a",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   fill_forced(d[0], MF_MEMBER_LEN, 151, 0x0CA70120u);
+   fill_forced(d[1], MF_MEMBER_LEN, 157, 0x0CA70121u);
+   memset(e, 0, sizeof(e));
+   e[0].name = "disk1.ct";
+   e[0].data = d[0];
+   e[0].len  = MF_MEMBER_LEN;
+   e[0].crc  = 0x0CA70120u;
+   e[1].name = "disk2.ct";
+   e[1].data = d[1];
+   e[1].len  = MF_MEMBER_LEN;
+   e[1].crc  = 0x0CA70121u;
+   sprintf(p, "%s/q1a.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   set_rec(&rec, "Q1A Disk 1", 0x0CA70120u, MF_MEMBER_LEN);
+   sprintf(p, "%s/Test Arc Gate.rdb", db);
+   if (!write_db_set(p, &rec, 1))
+      goto fixture;
+
+   sprintf(lpl, "%s/Test Arc Gate.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(threaded);
+   use_db(db);
+   retro_atomic_store_release_int(&watch_scan,   0);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   watch_size = zip_bytes(e, 2);
+   started    = run_scan(dir) && scan_completed;
+   watch_size = 0;
+   reads      = retro_atomic_load_acquire_int(&watch_scan)
+      + retro_atomic_load_acquire_int(&watch_reader);
+
+   sprintf(what, "first member's CRC where zips open: x.zip %s", q);
+   check(   started && file_contains(lpl, "Q1A Disk 1")
+         && file_contains(lpl, "q1a.zip\"")
+         && !file_contains(lpl, "q1a.zip#"), what, "q1a.zip");
+   sprintf(what, "first member's CRC where zips open: no read %s", q);
+   sprintf(detail, "%d read steps", reads);
+   check(started && reads == 0, what, detail);
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the first-member set");
+}
+
+#ifdef HAVE_RRAR
+/* Nothing hits in an archive of several members and a later member
+ * stores no CRC: the expansion, which unpacks it for one, still looks
+ * it up.  With every CRC stored and nothing hit, nothing expands. */
+static void crc0_lane(const char *root, const char *pl_dir, bool threaded)
+{
+   static uint8_t d[4][MF_MEMBER_LEN];
+   static const uint32_t crc[4] = {
+      0x0CA70130u, 0x0CA70131u, 0x0CA70132u, 0x0CA70133u };
+   char           db[512], dir[512], p[1024], lpl[1024];
+   char           what[80], detail[64];
+   db_rec_t       rec;
+   zip_entry_t    e[2];
+   int            stored;
+   bool           started;
+   unsigned       j;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/crc0_db", root);
+   sprintf(dir, "%s/crc0",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   for (j = 0; j < 4; j++)
+      fill_forced(d[j], MF_MEMBER_LEN, 161 + 2 * j, crc[j]);
+   memset(e, 0, sizeof(e));
+   e[0].name = "a.ct";
+   e[0].len  = MF_MEMBER_LEN;
+   e[1].name = "b.ct";
+   e[1].len  = MF_MEMBER_LEN;
+
+   /* b.ct stores no CRC; its bytes' CRC is the record's. */
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   e[1].data = d[1];
+   e[1].crc  = 0;
+   sprintf(p, "%s/c0_nocrc.rar", dir);
+   if (!write_rar5_entries(p, e, 2))
+      goto fixture;
+   /* Every CRC stored, none a record's. */
+   e[0].data = d[2];
+   e[0].crc  = crc[2];
+   e[1].data = d[3];
+   e[1].crc  = crc[3];
+   sprintf(p, "%s/c0_stored.rar", dir);
+   if (!write_rar5_entries(p, e, 2))
+      goto fixture;
+   set_rec(&rec, "C0 Unpacked", crc[1], MF_MEMBER_LEN);
+   sprintf(p, "%s/Test Cart Gate.rdb", db);
+   if (!write_db_set(p, &rec, 1))
+      goto fixture;
+
+   sprintf(lpl, "%s/Test Cart Gate.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(threaded);
+   use_db(db);
+   retro_atomic_store_release_int(&stored_reads, 0);
+   stored_name = "c0_stored.rar#";
+   started     = run_scan(dir) && scan_completed;
+   stored_name = NULL;
+   stored      = retro_atomic_load_acquire_int(&stored_reads);
+
+   sprintf(what, "a later member stores no CRC: expanded %s", q);
+   check(   started && file_contains(lpl, "C0 Unpacked")
+         && file_contains(lpl, "c0_nocrc.rar#b.ct"), what,
+         "c0_nocrc.rar#b.ct");
+   sprintf(what, "every CRC stored, nothing hit: not expanded %s", q);
+   sprintf(detail, "%d member lookups", stored);
+   check(started && stored == 0, what, detail);
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the CRC-0 set");
+}
+#endif
+
+/* A zip of a folder and one ROM has one member, the ROM, which is looked
+ * up first: its held hit is the entry and the zip is not read whole,
+ * even where a database that opens zips holds a zip of its size. */
+static void folder_first_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static uint8_t d[MF_MEMBER_LEN];
+   char           db[2][512], dir[512], p[1024], lpl[1024];
+   char           what[80], detail[64];
+   db_rec_t       arc[2], cart;
+   zip_entry_t    e[2];
+   uint32_t       bytes;
+   unsigned       j;
+   int            reads;
+   bool           started;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db[0], "%s/folder_first_db",   root);
+   sprintf(db[1], "%s/folder_first_size", root);
+   sprintf(dir,   "%s/folder_first",      root);
+   path_mkdir(db[0]);
+   path_mkdir(db[1]);
+   path_mkdir(dir);
+   fill_forced(d, MF_MEMBER_LEN, 171, 0x0CA70140u);
+   memset(e, 0, sizeof(e));
+   e[0].name = "dir/";
+   e[1].name = "dir/a.ct";
+   e[1].data = d;
+   e[1].len  = MF_MEMBER_LEN;
+   e[1].crc  = 0x0CA70140u;
+   sprintf(p, "%s/ff.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   bytes = zip_bytes(e, 2);
+   set_rec(&cart, "FF ROM", 0x0CA70140u, MF_MEMBER_LEN);
+   /* Zip records on both sides of its size, then one of its size; no
+    * CRC of theirs matches. */
+   set_rec(&arc[0], "FF Small", 0x0CA701E0u, bytes - 1);
+   set_rec(&arc[1], "FF Big",   0x0CA701E1u, bytes + 1);
+   arc[0].rom_name = "small.zip";
+   arc[1].rom_name = "big.zip";
+   sprintf(p, "%s/Test Arc Gate.rdb", db[0]);
+   if (!write_db_set(p, arc, 2))
+      goto fixture;
+   set_rec(&arc[0], "FF Sized", 0x0CA701E2u, bytes);
+   arc[0].rom_name = "ff.zip";
+   sprintf(p, "%s/Test Arc Gate.rdb", db[1]);
+   if (!write_db_set(p, arc, 1))
+      goto fixture;
+   for (j = 0; j < 2; j++)
+   {
+      sprintf(p, "%s/Test Cart Gate.rdb", db[j]);
+      if (!write_db_set(p, &cart, 1))
+         goto fixture;
+   }
+
+   sprintf(lpl, "%s/Test Cart Gate.lpl", pl_dir);
+   use_queue(threaded);
+   for (j = 0; j < 2; j++)
+   {
+      const char *s = j ? "sized" : "no size";
+
+      filestream_delete(lpl);
+      use_db(db[j]);
+      retro_atomic_store_release_int(&watch_scan,   0);
+      retro_atomic_store_release_int(&watch_reader, 0);
+      watch_size = bytes;
+      started    = run_scan(dir) && scan_completed;
+      watch_size = 0;
+      reads      = retro_atomic_load_acquire_int(&watch_scan)
+         + retro_atomic_load_acquire_int(&watch_reader);
+
+      sprintf(what, "folder first, %s: its ROM is its entry %s", s, q);
+      check(started && file_contains(lpl, "ff.zip#dir/a.ct"), what,
+            "ff.zip#dir/a.ct");
+      sprintf(what, "folder first, %s: not read whole %s", s, q);
+      sprintf(detail, "%d read steps", reads);
+      check(started && reads == 0, what, detail);
+   }
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the folder-first zip");
+}
+
+/* A loose scan with a held first-member hit: the expansion writes it as
+ * archive#member in its database's playlist, and the archive is no
+ * entry itself. */
+static void loose_held_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static uint8_t d[MF_MEMBER_LEN];
+   static char    cart_lpl[1024], loose_lpl[1024];
+   char           db[512], dir[512], pl[512], p[1024], what[80];
+   db_rec_t       cart;
+   zip_entry_t    e;
+   bool           started;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/loose_held_db", root);
+   sprintf(dir, "%s/loose_held",    root);
+   sprintf(pl,  "%s/loose_held_pl", root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   path_mkdir(pl);
+   fill_forced(d, MF_MEMBER_LEN, 181, 0x0CA70150u);
+   memset(&e, 0, sizeof(e));
+   e.name = "a.ct";
+   e.data = d;
+   e.len  = MF_MEMBER_LEN;
+   e.crc  = 0x0CA70150u;
+   sprintf(p, "%s/lh.zip", dir);
+   if (!write_zip_entries(p, &e, 1))
+      goto fixture;
+   set_rec(&cart, "LH Cart", 0x0CA70150u, MF_MEMBER_LEN);
+   sprintf(p, "%s/Test Cart Gate.rdb", db);
+   if (!write_db_set(p, &cart, 1))
+      goto fixture;
+
+   sprintf(cart_lpl,  "%s/Test Cart Gate.lpl", pl);
+   sprintf(loose_lpl, "%s/loose_held.lpl",     pl);
+   filestream_delete(cart_lpl);
+   filestream_delete(loose_lpl);
+   use_queue(threaded);
+   use_db(db);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   /* Automatic would make it strict. */
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_LOOSE);
+   started = run_scan(dir) && scan_completed;
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+
+   sprintf(what, "loose, a held hit: archive#member %s", q);
+   check(   started && file_contains(cart_lpl, "lh.zip#a.ct")
+         && !file_contains(cart_lpl, "lh.zip\"")
+         && !file_contains(loose_lpl, "lh.zip\""), what, "lh.zip#a.ct");
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the loose held set");
+}
+
+#ifdef HAVE_RRAR
+/* Rar archives take the archive passes: a first member's hit, in a
+ * database whose core opens rar, names the archive; a later member's,
+ * in one whose core does not, is held; an archive of several members
+ * is read whole only while a database whose cores open rar holds a rar
+ * record of its size. */
+static void rar_lane(const char *root, const char *pl_dir, bool threaded)
+{
+   static uint8_t d[4][MF_MEMBER_LEN];
+   static const uint32_t crc[4] = {
+      0x0BF80001u, 0x0BF80011u, 0x0BF80012u, 0x0BF80002u };
+   char           db[512], noclaim[512], dir[512], p[1024];
+   static char    cart_lpl[1024], member_lpl[1024];
+   char           what[64], detail[64];
+   db_rec_t       cart[3], held, nc;
+   zip_entry_t    e[2];
+   uint32_t       cart_bytes, multi_bytes;
+   int            cart_reads, multi_reads;
+   bool           started;
+   unsigned       j;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,      "%s/rar_db",         root);
+   sprintf(noclaim, "%s/rar_noclaim_db", root);
+   sprintf(dir,     "%s/rar",            root);
+   path_mkdir(db);
+   path_mkdir(noclaim);
+   path_mkdir(dir);
+   for (j = 0; j < 4; j++)
+      fill_forced(d[j], MF_MEMBER_LEN, 101 + 2 * j, crc[j]);
+   memset(e, 0, sizeof(e));
+   e[0].len = MF_MEMBER_LEN;
+   e[1].len = MF_MEMBER_LEN;
+
+   e[0].name = "m.rd";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   sprintf(p, "%s/rar_cart.rar", dir);
+   if (!write_rar_entries(p, e, 1))
+      goto fixture;
+   cart_bytes = rar_bytes(e, 1);
+   set_rec(&cart[0], "RAR Cart", crc[0], MF_MEMBER_LEN);
+
+   e[0].name = "a.rd";
+   e[0].data = d[1];
+   e[0].crc  = crc[1];
+   e[1].name = "b.rd";
+   e[1].data = d[2];
+   e[1].crc  = crc[2];
+   sprintf(p, "%s/rar_multi.rar", dir);
+   if (!write_rar_entries(p, e, 2))
+      goto fixture;
+   multi_bytes = rar_bytes(e, 2);
+   /* A rar record of its size: the size gate lets it be read whole. */
+   set_rec(&cart[1], "RAR Multi Sized", 0x0BF8FFFEu, multi_bytes);
+   cart[1].rom_name = "set.rar";
+   set_rec(&held, "RAR Held", crc[2], MF_MEMBER_LEN);
+   /* A rar record of that size whose core does not open rar. */
+   set_rec(&nc, "RAR NoClaim Sized", 0x0BF8FFFCu, multi_bytes);
+   nc.rom_name = "set.rar";
+
+   /* A folder is no member: its one member's hit names it. */
+   e[0].name = "d/";
+   e[0].data = NULL;
+   e[0].len  = 0;
+   e[0].crc  = 0;
+   e[1].name = "d/m.rd";
+   e[1].data = d[3];
+   e[1].crc  = crc[3];
+   sprintf(p, "%s/rar_folder.rar", dir);
+   if (   !write_rar_entries(p, e, 2)
+       || path_get_size(p) != (int64_t)rar_bytes(e, 2))
+      goto fixture;
+   set_rec(&cart[2], "RAR Folder", crc[3], MF_MEMBER_LEN);
+
+   sprintf(p, "%s/Test RAR Cart.rdb", db);
+   if (!write_db_set(p, cart, 3))
+      goto fixture;
+   sprintf(p, "%s/Test EM Member.rdb", db);
+   if (!write_db_set(p, &held, 1))
+      goto fixture;
+   sprintf(p, "%s/Test EM Member.rdb", noclaim);
+   if (!write_db_set(p, &held, 1))
+      goto fixture;
+   sprintf(p, "%s/Test EM Cart.rdb", noclaim);
+   if (!write_db_set(p, &nc, 1))
+      goto fixture;
+
+   sprintf(cart_lpl,   "%s/Test RAR Cart.lpl",  pl_dir);
+   sprintf(member_lpl, "%s/Test EM Member.lpl", pl_dir);
+   filestream_delete(cart_lpl);
+   filestream_delete(member_lpl);
+   use_queue(threaded);
+
+   use_db(db);
+   retro_atomic_store_release_int(&reads_begun, 0);
+   retro_atomic_store_release_int(&watch_scan,   0);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   begun_size  = multi_bytes;
+   watch_size  = cart_bytes;
+   started     = run_scan(dir) && scan_completed;
+   begun_size  = 0;
+   watch_size  = 0;
+   cart_reads  = retro_atomic_load_acquire_int(&watch_scan)
+      + retro_atomic_load_acquire_int(&watch_reader);
+   multi_reads = retro_atomic_load_acquire_int(&reads_begun);
+   sprintf(what, "rar: a first member's hit names it %s", q);
+   check(   started && file_contains(cart_lpl, "RAR Cart")
+         && file_contains(cart_lpl, "rar_cart.rar")
+         && !file_contains(cart_lpl, "rar_cart.rar#"), what,
+         "rar_cart.rar");
+   sprintf(what, "rar, a folder first: named by its member %s", q);
+   check(   started && file_contains(cart_lpl, "RAR Folder")
+         && file_contains(cart_lpl, "rar_folder.rar")
+         && !file_contains(cart_lpl, "rar_folder.rar#"), what,
+         "rar_folder.rar");
+   sprintf(what, "rar: a later member's hit is held %s", q);
+   check(started && file_contains(member_lpl, "rar_multi.rar#b.rd"),
+         what, "rar_multi.rar#b.rd");
+   if (!threaded)
+   {
+      sprintf(detail, "%d read steps", cart_reads);
+      check(started && cart_reads == 0,
+            "rar: a first member's hit reads it not whole", detail);
+      sprintf(detail, "%d whole reads", multi_reads);
+      check(started && multi_reads == 1,
+            "rar: read whole while a rar record has its size", detail);
+   }
+
+   filestream_delete(member_lpl);
+   use_db(noclaim);
+   retro_atomic_store_release_int(&reads_begun, 0);
+   begun_size  = multi_bytes;
+   started     = run_scan(dir) && scan_completed;
+   begun_size  = 0;
+   multi_reads = retro_atomic_load_acquire_int(&reads_begun);
+   sprintf(what, "rar: no core opens rar: held %s", q);
+   check(started && file_contains(member_lpl, "rar_multi.rar#b.rd"),
+         what, "rar_multi.rar#b.rd");
+   if (!threaded)
+   {
+      sprintf(detail, "%d whole reads", multi_reads);
+      check(started && multi_reads == 0,
+            "rar: no core opens rar: not read whole", detail);
+   }
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the rar set");
+}
+#endif
+
+/* Archives whose first member misses, looked up member by member from
+ * the directory.  One record whose rom_name is the archive's own name
+ * with an archive extension, of a database whose cores open zips,
+ * names the archive; other hits, a disc track's and a set inside
+ * another archive among them, are held, written as archive#member
+ * once the archive's own CRC has missed, and lose to a match on it.
+ * A member that stores no CRC, here the first, is not looked up. */
+static void every_member_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static uint8_t d[14][MF_MEMBER_LEN];
+   static const uint32_t crc[14] = {
+      0x0BF50001u, 0x0BF50002u, 0x0BF50011u, 0x0BF50012u, 0x0BF50021u,
+      0x0BF50022u, 0x0BF50031u, 0x0BF50032u, 0x0BF50042u, 0x0BF50052u,
+      0x0BF50062u, 0x0BF50072u, 0x0BF50082u, 0x0BF50092u };
+   char           db[512], dir[512];
+   static char    p[1024];
+   static char    cart_lpl[1024], member_lpl[1024], arcade_lpl[1024];
+   char           what[64], detail[64];
+   db_rec_t       cart[7], member[5], arcade;
+   zip_entry_t    e[3];
+   uint32_t       set_bytes, held_bytes;
+   int            set_reads, held_reads;
+   bool           started;
+   unsigned       j;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/every_member_db", root);
+   sprintf(dir, "%s/every_member",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   for (j = 0; j < 14; j++)
+      fill_forced(d[j], MF_MEMBER_LEN, 83 + 2 * j, crc[j]);
+   memset(e, 0, sizeof(e));
+   e[0].len = MF_MEMBER_LEN;
+   e[1].len = MF_MEMBER_LEN;
+
+   /* The second member is a record of a core that opens zips, named
+    * for no archive. */
+   e[0].name = "a.rd";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   e[1].name = "b.rd";
+   e[1].data = d[1];
+   e[1].crc  = crc[1];
+   sprintf(p, "%s/em_late.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   set_rec(&cart[0], "EM Late", crc[1], MF_MEMBER_LEN);
+
+   /* A disc's track, in a database whose core lists zip. */
+   e[0].name = "Game.cue";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   e[1].name = "Game (Track 3).bin";
+   e[1].data = d[9];
+   e[1].crc  = crc[9];
+   sprintf(p, "%s/em_game.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   set_rec(&cart[3], "EM Disc", crc[9], MF_MEMBER_LEN);
+   cart[3].rom_name = "Game (Track 3).bin";
+
+   /* The second member is a record named for this archive, in another
+    * case and type. */
+   e[0].name = "sa.rd";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   e[1].name = "sb1.rd";
+   e[1].data = d[10];
+   e[1].crc  = crc[10];
+   sprintf(p, "%s/em_set.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   set_bytes = zip_bytes(e, 2);
+   set_rec(&cart[4], "EM Set", crc[10], MF_MEMBER_LEN);
+   cart[4].rom_name = "EM_Set.7z";
+
+   /* A set inside another archive: the record names the member. */
+   e[0].name = "outer.rd";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   e[1].name = "set.zip";
+   e[1].data = d[11];
+   e[1].crc  = crc[11];
+   sprintf(p, "%s/em_outer.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   set_rec(&cart[5], "EM Nested", crc[11], MF_MEMBER_LEN);
+   cart[5].rom_name = "set.zip";
+
+   /* A record named set.zip is not for settle.zip. */
+   e[0].name = "sl.rd";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   e[1].name = "st.rd";
+   e[1].data = d[12];
+   e[1].crc  = crc[12];
+   sprintf(p, "%s/settle.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   set_rec(&cart[6], "EM Settle", crc[12], MF_MEMBER_LEN);
+   cart[6].rom_name = "set.zip";
+
+   /* A record named for this archive, of a core that does not open
+    * zips. */
+   e[0].name = "nz0.rd";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   e[1].name = "nz1.rd";
+   e[1].data = d[13];
+   e[1].crc  = crc[13];
+   sprintf(p, "%s/em_nozip.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   set_rec(&member[4], "EM NoZip", crc[13], MF_MEMBER_LEN);
+   member[4].rom_name = "em_nozip.zip";
+
+   /* Two records of a core that does not open zips. */
+   e[0].name = "x1.rd";
+   e[0].data = d[2];
+   e[0].crc  = crc[2];
+   e[1].name = "x2.rd";
+   e[1].data = d[3];
+   e[1].crc  = crc[3];
+   sprintf(p, "%s/em_held.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   held_bytes = zip_bytes(e, 2);
+   set_rec(&member[0], "EM Held One", crc[2], MF_MEMBER_LEN);
+   set_rec(&member[1], "EM Held Two", crc[3], MF_MEMBER_LEN);
+
+   /* Two records named for this archive, though their core opens
+    * zips; its first member misses. */
+   e[0].name = "two0.rd";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   e[1].name = "two1.rd";
+   e[1].data = d[4];
+   e[1].crc  = crc[4];
+   e[2].name = "two2.rd";
+   e[2].data = d[5];
+   e[2].len  = MF_MEMBER_LEN;
+   e[2].crc  = crc[5];
+   sprintf(p, "%s/em_two.zip", dir);
+   if (!write_zip_entries(p, e, 3))
+      goto fixture;
+   set_rec(&cart[1], "EM Two A", crc[4], MF_MEMBER_LEN);
+   set_rec(&cart[2], "EM Two B", crc[5], MF_MEMBER_LEN);
+   cart[1].rom_name = "em_two.zip";
+   cart[2].rom_name = "em_two.zip";
+
+   /* A member hit to hold, and the archive's own CRC matches. */
+   e[0].name = "whole1.rd";
+   e[0].data = d[6];
+   e[0].crc  = crc[6];
+   e[1].name = "whole2.rd";
+   e[1].data = d[7];
+   e[1].crc  = crc[7];
+   sprintf(p, "%s/em_whole.zip", dir);
+   if (   !write_zip_entries(p, e, 2)
+       || !set_whole_rec(&arcade, "EM Whole", p))
+      goto fixture;
+   set_rec(&member[2], "EM Whole Member", crc[7], MF_MEMBER_LEN);
+
+   /* The first member stores no CRC. */
+   e[0].name = "zero0.rd";
+   e[0].data = d[0];
+   e[0].crc  = 0;
+   e[1].name = "zero2.rd";
+   e[1].data = d[8];
+   e[1].crc  = crc[8];
+   sprintf(p, "%s/em_zero.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   set_rec(&member[3], "EM Zero", crc[8], MF_MEMBER_LEN);
+
+   sprintf(p, "%s/Test EM Cart.rdb", db);
+   if (!write_db_set(p, cart, 7))
+      goto fixture;
+   sprintf(p, "%s/Test EM Member.rdb", db);
+   if (!write_db_set(p, member, 5))
+      goto fixture;
+   sprintf(p, "%s/Test EM Arcade.rdb", db);
+   if (!write_db_set(p, &arcade, 1))
+      goto fixture;
+
+   sprintf(cart_lpl,   "%s/Test EM Cart.lpl",   pl_dir);
+   sprintf(member_lpl, "%s/Test EM Member.lpl", pl_dir);
+   sprintf(arcade_lpl, "%s/Test EM Arcade.lpl", pl_dir);
+   filestream_delete(cart_lpl);
+   filestream_delete(member_lpl);
+   filestream_delete(arcade_lpl);
+   use_queue(threaded);
+   use_db(db);
+   retro_atomic_store_release_int(&reads_begun, 0);
+   retro_atomic_store_release_int(&watch_scan, 0);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   begun_size = set_bytes;
+   watch_size = held_bytes;
+   started    = run_scan(dir) && scan_completed;
+   begun_size = 0;
+   watch_size = 0;
+   set_reads  = retro_atomic_load_acquire_int(&reads_begun);
+   held_reads = retro_atomic_load_acquire_int(&watch_scan)
+      + retro_atomic_load_acquire_int(&watch_reader);
+
+   sprintf(what, "a later member's archive-named record names it %s", q);
+   check(   started && file_contains(cart_lpl, "EM Set")
+         && file_contains(cart_lpl, "em_set.zip")
+         && !file_contains(cart_lpl, "em_set.zip#"), what,
+         "em_set.zip");
+   sprintf(what, "a later member's record, no archive name: held %s", q);
+   check(   started && file_contains(cart_lpl, "EM Late")
+         && file_contains(cart_lpl, "em_late.zip#b.rd"), what,
+         "em_late.zip#b.rd");
+   sprintf(what, "a disc track's record, though zip opens: held %s", q);
+   check(   started && file_contains(cart_lpl, "EM Disc")
+         && file_contains(cart_lpl, "em_game.zip#Game (Track 3).bin"),
+         what, "em_game.zip#Game (Track 3).bin");
+   sprintf(what, "set.zip's record, settle.zip: held %s", q);
+   check(   started && file_contains(cart_lpl, "EM Settle")
+         && file_contains(cart_lpl, "settle.zip#st.rd"), what,
+         "settle.zip#st.rd");
+   sprintf(what, "an archive-named record, no core opens zip: held %s", q);
+   check(   started && file_contains(member_lpl, "EM NoZip")
+         && file_contains(member_lpl, "em_nozip.zip#nz1.rd"), what,
+         "em_nozip.zip#nz1.rd");
+   sprintf(what, "a set inside an archive: held %s", q);
+   check(   started && file_contains(cart_lpl, "EM Nested")
+         && file_contains(cart_lpl, "em_outer.zip#set.zip"), what,
+         "em_outer.zip#set.zip");
+   sprintf(what, "held hits are archive#member entries %s", q);
+   check(   started && file_contains(member_lpl, "em_held.zip#x1.rd")
+         && file_contains(member_lpl, "em_held.zip#x2.rd"), what,
+         "em_held.zip#x1.rd, #x2.rd");
+   sprintf(what, "two records: held, not the archive %s", q);
+   check(   started && file_contains(cart_lpl, "em_two.zip#two1.rd")
+         && file_contains(cart_lpl, "em_two.zip#two2.rd"), what,
+         "em_two.zip#two1.rd, #two2.rd");
+   sprintf(what, "its own CRC beats held hits %s", q);
+   check(   started && file_contains(arcade_lpl, "EM Whole")
+         && !file_contains(member_lpl, "EM Whole Member"), what,
+         "em_whole.zip");
+   sprintf(what, "a member with no stored CRC is passed %s", q);
+   check(   started && file_contains(member_lpl, "em_zero.zip#zero2.rd")
+         && !file_contains(member_lpl, "zero0.rd"), what,
+         "em_zero.zip#zero2.rd");
+   if (!threaded)
+   {
+      sprintf(detail, "%d whole reads", set_reads);
+      check(started && set_reads == 0,
+            "a later member's hit reads no archive whole", detail);
+      sprintf(detail, "%d read steps", held_reads);
+      check(started && held_reads == 0,
+            "held hits: no zip record of its size, not read whole",
+            detail);
+   }
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the every-member set");
+}
+
+/* A loose scan expands an archive whose first member misses: each
+ * member is an archive#member entry, a matched one in its database's
+ * playlist and the rest under the folder's name.  A record named for
+ * the archive does not make it one entry. */
+static void loose_member_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static uint8_t d[4][MF_MEMBER_LEN];
+   static const uint32_t crc[4] = {
+      0x0BF90001u, 0x0BF90002u, 0x0BF90011u, 0x0BF90012u };
+   static char    db[512], dir[512], pl[512], p[1024];
+   static char    cart_lpl[1024], member_lpl[1024], loose_lpl[1024];
+   char           what[64];
+   db_rec_t       cart, member;
+   zip_entry_t    e[2];
+   bool           started;
+   unsigned       j;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/loose_member_db", root);
+   sprintf(dir, "%s/loose_member",    root);
+   sprintf(pl,  "%s/loose_member_pl", root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   path_mkdir(pl);
+   for (j = 0; j < 4; j++)
+      fill_forced(d[j], MF_MEMBER_LEN, 131 + 2 * j, crc[j]);
+   memset(e, 0, sizeof(e));
+   for (j = 0; j < 2; j++)
+      e[j].len = MF_MEMBER_LEN;
+
+   e[0].name = "a.rd";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   e[1].name = "b.rd";
+   e[1].data = d[1];
+   e[1].crc  = crc[1];
+   sprintf(p, "%s/lz_set.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   set_rec(&cart, "LZ Set", crc[1], MF_MEMBER_LEN);
+   cart.rom_name = "lz_set.zip";
+
+   e[0].name = "x.rd";
+   e[0].data = d[2];
+   e[0].crc  = crc[2];
+   e[1].name = "y.rd";
+   e[1].data = d[3];
+   e[1].crc  = crc[3];
+   sprintf(p, "%s/lz_held.zip", dir);
+   if (!write_zip_entries(p, e, 2))
+      goto fixture;
+   set_rec(&member, "LZ Held", crc[3], MF_MEMBER_LEN);
+
+   sprintf(p, "%s/Test EM Cart.rdb", db);
+   if (!write_db_set(p, &cart, 1))
+      goto fixture;
+   sprintf(p, "%s/Test EM Member.rdb", db);
+   if (!write_db_set(p, &member, 1))
+      goto fixture;
+
+   sprintf(cart_lpl,   "%s/Test EM Cart.lpl",   pl);
+   sprintf(member_lpl, "%s/Test EM Member.lpl", pl);
+   sprintf(loose_lpl,  "%s/loose_member.lpl",   pl);
+   filestream_delete(cart_lpl);
+   filestream_delete(member_lpl);
+   filestream_delete(loose_lpl);
+   use_queue(threaded);
+   use_db(db);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   /* Automatic would make it strict. */
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_LOOSE);
+   started = run_scan(dir) && scan_completed;
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+
+   sprintf(what, "loose: matched members are archive#member %s", q);
+   check(   started && file_contains(cart_lpl, "lz_set.zip#b.rd")
+         && file_contains(member_lpl, "lz_held.zip#y.rd"), what,
+         "lz_set.zip#b.rd, lz_held.zip#y.rd");
+   sprintf(what, "loose: the others are loose entries %s", q);
+   check(   started && file_contains(loose_lpl, "lz_set.zip#a.rd")
+         && file_contains(loose_lpl, "lz_held.zip#x.rd"), what,
+         "lz_set.zip#a.rd, lz_held.zip#x.rd");
+   sprintf(what, "loose: no archive is an entry %s", q);
+   check(   started && !file_contains(cart_lpl, "lz_set.zip\"")
+         && !file_contains(loose_lpl, "lz_set.zip\"")
+         && !file_contains(loose_lpl, "lz_held.zip\""), what,
+         "lz_set.zip, lz_held.zip");
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the loose member set");
+}
+
+#ifndef SCAN_MEMBER_HITS
+#define SCAN_MEMBER_HITS 64
+#endif
+#define ES_HITS 100
+
+/* As run_scan_counted(), but cancels the scan after the check in which
+ * @c reaches @at. */
+static void run_scan_cancel_at(const char *dir, const step_count_t *c,
+      unsigned at)
+{
+   task_finder_data_t finder;
+   bool               cancelled = false;
+   time_t             started;
+
+   loop_active    = true;
+   scan_completed = false;
+   if (!task_push_dbscan(dir, scan_cb))
+      return;
+   finder.func     = find_scan;
+   finder.userdata = NULL;
+   started         = time(NULL);
+   while (loop_active)
+   {
+      spend_window();
+      check_seq++;
+      task_queue_check();
+      if (!cancelled && c->total >= at && task_queue_find(&finder))
+      {
+         task_queue_cancel_ident(lane_ident);
+         cancelled = true;
+      }
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         break;
+   }
+}
+
+/* An archive with more member hits than a step takes: on the regular
+ * queue with a spent window each check is one step, and none looks up
+ * or writes more than SCAN_MEMBER_HITS of them, yet each is an entry.
+ * A hit whose archive#member path would not fit is none, unless its
+ * entry is the archive alone: a disc set's, a member database's.  A
+ * cancel between those steps writes nothing. */
+static void every_step_lane(const char *root, const char *pl_dir)
+{
+   static uint8_t     d[ES_HITS + 5][16];
+   static char        names[ES_HITS + 1][16];
+   static char        labels[ES_HITS + 1][16];
+   static char        long_name[4][PATH_MAX_LENGTH];
+   static const char *long_labels[4] = {
+      "ES Long", "ES Fits", "ES Disk", "ES Arcade" };
+   static char        db[512], dir[512], p[1024], lpl[1024];
+   static char        disc_lpl[1024], arc_lpl[1024];
+   static zip_entry_t e[ES_HITS + 5];
+   static db_rec_t    recs[ES_HITS + 2], solo[2];
+   char               what[64], detail[64];
+   bool               started;
+   size_t             len;
+   unsigned           j, found = 0;
+
+   sprintf(db,  "%s/every_step_db", root);
+   sprintf(dir, "%s/every_step",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   sprintf(p, "%s/es.zip", dir);
+
+   /* m000 has no record: the first member misses. */
+   for (j = 0; j < ES_HITS + 1; j++)
+   {
+      sprintf(names[j], "m%03u.rd", j);
+      fill_forced(d[j], sizeof(d[j]), 151 + j, 0x0BFA0000u + j);
+      e[j].name = names[j];
+      e[j].data = d[j];
+      e[j].len  = sizeof(d[j]);
+      e[j].crc  = 0x0BFA0000u + j;
+      if (j)
+      {
+         sprintf(labels[j], "ES Hit %03u", j);
+         set_rec(&recs[j - 1], labels[j], e[j].crc, sizeof(d[j]));
+      }
+   }
+   /* With the archive's path and '#', PATH_MAX_LENGTH: one byte over.
+    * "ES Fits" is one shorter. */
+   len = PATH_MAX_LENGTH - strlen(p);
+   for (j = 0; j < 4; j++)
+   {
+      size_t   n   = len - (j == 1 ? 2 : 1);
+      uint32_t crc = 0x0BFAFFFFu - j;
+
+      memset(long_name[j], 'l', n - 3);
+      if (j == 2)
+         memcpy(long_name[j], "Set (Disk 1) ", 13);
+      strcpy(long_name[j] + n - 3, ".rd");
+      fill_forced(d[ES_HITS + 1 + j], sizeof(d[0]), 149 - j, crc);
+      e[ES_HITS + 1 + j].name = long_name[j];
+      e[ES_HITS + 1 + j].data = d[ES_HITS + 1 + j];
+      e[ES_HITS + 1 + j].len  = sizeof(d[0]);
+      e[ES_HITS + 1 + j].crc  = crc;
+      set_rec(j < 2 ? &recs[ES_HITS + j] : &solo[j - 2], long_labels[j],
+            crc, sizeof(d[0]));
+   }
+   if (!write_zip_entries(p, e, ES_HITS + 5))
+      goto fixture;
+   sprintf(p, "%s/Test EM Member.rdb", db);
+   if (!write_db_set(p, recs, ES_HITS + 2))
+      goto fixture;
+   sprintf(p, "%s/Test ES Disc.rdb", db);
+   if (!write_db_set(p, &solo[0], 1))
+      goto fixture;
+   sprintf(p, "%s/Test ES Arcade.rdb", db);
+   if (!write_db_set(p, &solo[1], 1))
+      goto fixture;
+
+   sprintf(lpl,      "%s/Test EM Member.lpl", pl_dir);
+   sprintf(disc_lpl, "%s/Test ES Disc.lpl",   pl_dir);
+   sprintf(arc_lpl,  "%s/Test ES Arcade.lpl", pl_dir);
+   filestream_delete(lpl);
+   filestream_delete(disc_lpl);
+   filestream_delete(arc_lpl);
+   use_queue(false);
+   use_db(db);
+   memset(&step_reads, 0, sizeof(step_reads));
+   memset(&step_joins, 0, sizeof(step_joins));
+   step_watch = "every_step";
+   started    = run_scan_counted(dir) && scan_completed;
+   step_watch = NULL;
+
+   for (j = 1; j < ES_HITS + 1; j++)
+   {
+      sprintf(what, "es.zip#%s", names[j]);
+      if (file_contains(lpl, what))
+         found++;
+   }
+   sprintf(detail, "%u of %u", found, ES_HITS);
+   check(started && found == ES_HITS, "member hits over steps: all entries",
+         detail);
+   sprintf(detail, "%u lookups, at most %u a step", step_reads.total,
+         step_reads.most);
+   check(   started && step_reads.total == ES_HITS + 4
+         && step_reads.most <= SCAN_MEMBER_HITS,
+         "member hits: looked up over steps", detail);
+   sprintf(detail, "%u entries, at most %u a step", step_joins.total,
+         step_joins.most);
+   check(   started && step_joins.total == ES_HITS + 1
+         && step_joins.most <= SCAN_MEMBER_HITS,
+         "member hits: written over steps", detail);
+   check(started && !file_contains(lpl, "ES Long"),
+         "a hit too long for archive#member: none", "ES Long");
+   check(started && file_contains(lpl, "ES Fits"),
+         "a hit that just fits archive#member: an entry", "ES Fits");
+   check(   started && file_contains(disc_lpl, "ES Disk")
+         && !file_contains(disc_lpl, "es.zip#"),
+         "a disc set's hit too long for archive#member: the archive",
+         "ES Disk");
+   check(   started && file_contains(arc_lpl, "ES Arcade")
+         && !file_contains(arc_lpl, "es.zip#"),
+         "a member database's hit too long for it: the archive",
+         "ES Arcade");
+
+   for (j = 0; j < 2; j++)
+   {
+      filestream_delete(lpl);
+      filestream_delete(disc_lpl);
+      filestream_delete(arc_lpl);
+      memset(&step_reads, 0, sizeof(step_reads));
+      memset(&step_joins, 0, sizeof(step_joins));
+      step_watch = "every_step";
+      run_scan_cancel_at(dir, j ? &step_joins : &step_reads, 1);
+      step_watch = NULL;
+      sprintf(detail, "%u lookups, %u entries", step_reads.total,
+            step_joins.total);
+      check(   scan_completed
+            && (j ? step_reads.total == ES_HITS + 4
+                  : step_reads.total > 0 && step_reads.total < ES_HITS + 4)
+            && step_joins.total == (j ? SCAN_MEMBER_HITS : 0)
+            && !file_contains(lpl, "ES Hit")
+            && !file_contains(arc_lpl, "ES Arcade"),
+            j ? "member hits: a cancel between entry steps writes none"
+              : "member hits: a cancel between lookup steps writes none",
+            detail);
+   }
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the every-step set");
+}
+
+/* Archives a database whose cores open zips holds by their size and
+ * own CRC: one whose later member is a record named for it in another
+ * such database, and a TorrentZip set whose members only a core that
+ * does not open zips claims.  Each is its whole record's entry, read
+ * whole once, and no database claimed only for its members' type is
+ * opened. */
+static void whole_first_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static uint8_t d[4][MF_MEMBER_LEN];
+   static const uint32_t crc[4] = {
+      0x0BFC0001u, 0x0BFC0002u, 0x0BFC0011u, 0x0BFC0012u };
+   static char    cart_lpl[1024], member_lpl[1024], arcade_lpl[1024];
+   char           db[512], bare[512], tz[512], p[1024];
+   char           what[96], detail[64], whole_crc[16];
+   db_rec_t       cart, member[2], arcade[2];
+   zip_entry_t    e[2];
+   int            opens, reads;
+   bool           started;
+   unsigned       j;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,   "%s/whole_first_db",   root);
+   sprintf(bare, "%s/whole_first_bare", root);
+   sprintf(tz,   "%s/whole_first_tz",   root);
+   path_mkdir(db);
+   path_mkdir(bare);
+   path_mkdir(tz);
+   for (j = 0; j < 4; j++)
+      fill_forced(d[j], MF_MEMBER_LEN, 121 + 2 * j, crc[j]);
+   memset(e, 0, sizeof(e));
+   e[0].len = MF_MEMBER_LEN;
+   e[1].len = MF_MEMBER_LEN;
+
+   /* Its first member misses; its second is a record named for it. */
+   e[0].name = "a.rd";
+   e[0].data = d[0];
+   e[0].crc  = crc[0];
+   e[1].name = "b.rd";
+   e[1].data = d[1];
+   e[1].crc  = crc[1];
+   sprintf(p, "%s/wf_bare.zip", bare);
+   if (   !write_zip_entries(p, e, 2)
+       || !set_whole_rec(&arcade[0], "WF Whole", p))
+      goto fixture;
+   set_rec(&cart, "WF Bare", crc[1], MF_MEMBER_LEN);
+   cart.rom_name = "wf_bare.zip";
+   sprintf(whole_crc, "%08X|crc", (unsigned)arcade[0].crc);
+
+   /* Its members are records of a core that does not open zips. */
+   e[0].name = "c.rd";
+   e[0].data = d[2];
+   e[0].crc  = crc[2];
+   e[1].name = "d.rd";
+   e[1].data = d[3];
+   e[1].crc  = crc[3];
+   sprintf(p, "%s/wf_tz.zip", tz);
+   zip_comment = TZ_COMMENT;
+   if (!write_zip_entries(p, e, 2))
+   {
+      zip_comment = NULL;
+      goto fixture;
+   }
+   zip_comment = NULL;
+   if (!set_whole_rec(&arcade[1], "WF TZ", p))
+      goto fixture;
+   set_rec(&member[0], "WF TZ C", crc[2], MF_MEMBER_LEN);
+   set_rec(&member[1], "WF TZ D", crc[3], MF_MEMBER_LEN);
+
+   sprintf(p, "%s/Test EM Cart.rdb", db);
+   if (!write_db_set(p, &cart, 1))
+      goto fixture;
+   sprintf(p, "%s/Test EM Member.rdb", db);
+   if (!write_db_set(p, member, 2))
+      goto fixture;
+   sprintf(p, "%s/Test EM Arcade.rdb", db);
+   if (!write_db_set(p, arcade, 2))
+      goto fixture;
+
+   sprintf(cart_lpl,   "%s/Test EM Cart.lpl",   pl_dir);
+   sprintf(member_lpl, "%s/Test EM Member.lpl", pl_dir);
+   sprintf(arcade_lpl, "%s/Test EM Arcade.lpl", pl_dir);
+   use_queue(threaded);
+   use_db(db);
+   open_watch = "Test EM Member.rdb";
+   for (j = 0; j < 2; j++)
+   {
+      filestream_delete(cart_lpl);
+      filestream_delete(member_lpl);
+      filestream_delete(arcade_lpl);
+      retro_atomic_store_release_int(&watch_opens, 0);
+      retro_atomic_store_release_int(&reads_begun, 0);
+      begun_size = arcade[1].size;
+      started    = run_scan(j ? tz : bare) && scan_completed;
+      begun_size = 0;
+      opens      = retro_atomic_load_acquire_int(&watch_opens);
+      reads      = retro_atomic_load_acquire_int(&reads_begun);
+      if (!j)
+      {
+         sprintf(what, "its own CRC beats a later member's named "
+               "record %s", q);
+         check(   started && file_contains(arcade_lpl, "WF Whole")
+               && file_contains(arcade_lpl, whole_crc)
+               && !file_contains(arcade_lpl, "wf_bare.zip#")
+               && !file_contains(cart_lpl, "WF Bare"), what,
+               "wf_bare.zip");
+      }
+      else
+      {
+         sprintf(what, "a TorrentZip set of several members: its set "
+               "record %s", q);
+         check(   started && file_contains(arcade_lpl, "WF TZ")
+               && file_contains(arcade_lpl, "wf_tz.zip\"")
+               && !file_contains(member_lpl, "wf_tz.zip#"), what,
+               "wf_tz.zip");
+         sprintf(what, "a TorrentZip set of several members: read "
+               "whole once %s", q);
+         sprintf(detail, "%d whole reads", reads);
+         check(started && reads == 1, what, detail);
+      }
+      sprintf(what, "a set of several members opens no member "
+            "database %s", q);
+      sprintf(detail, "%d opens of the members' database", opens);
+      check(started && opens == 0, what, detail);
+   }
+   open_watch = NULL;
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the whole-first set");
+}
+
 /* Scans @dir with @db's two databases in name order, then in reverse:
  * @want with @crc in @pl[0]'s playlist, nothing of @file in @pl[1]'s,
  * and @file read whole @whole times. */
@@ -3655,7 +5500,8 @@ fixture:
 }
 
 /* The first member in a database claimed only for it, the archive's
- * own CRC in one a core listing zip claims: expanded either way. */
+ * own CRC in one a core listing zip claims: held as archive#member
+ * either way. */
 static void dual_match_lane(const char *root, const char *pl_dir,
       bool threaded)
 {
@@ -3690,7 +5536,7 @@ fixture:
 /* With "Scan Inside Archives" off nothing expands, so the member pass
  * looks only where zip is claimed: the dual match is x.zip there, and
  * a cartridge zip whose core lists only its member is added nowhere
- * and read whole. */
+ * and, with no core that opens zip, not read whole. */
 static void archives_off_lane(const char *root, const char *pl_dir,
       bool threaded)
 {
@@ -3752,9 +5598,9 @@ static void archives_off_lane(const char *root, const char *pl_dir,
 
    sprintf(what, "archives off: cart zip added nowhere %s", q);
    check(started && !file_contains(lpl, "ao1.zip"), what, "ao1.zip");
-   sprintf(what, "archives off: cart zip read whole %s", q);
+   sprintf(what, "archives off: cart zip not read whole %s", q);
    sprintf(detail, "%d whole reads", reads);
-   check(started && reads == 1, what, detail);
+   check(started && reads == 0, what, detail);
    return;
 
 fixture:
@@ -3817,11 +5663,11 @@ static bool write_wa_zip(const char *dir, unsigned k, unsigned pos,
 
 /* Cartridge zips, arcade zips, then cartridge zips, on the threaded
  * queue.  Readers read only archive directories until an archive
- * misses by its member CRC, then archives whole until one matches by
- * it.  A file the window reaches after a switch is claimed after it:
- * the last two arcade zips are read whole by readers alone, the last
- * two cartridge zips by no one, nor are the first ones.  The playlists
- * equal a run without readers. */
+ * matches by its own CRC, then archives whole until one matches
+ * otherwise or misses.  A file the window reaches after a switch is
+ * claimed after it: the last two arcade zips are read whole by readers
+ * alone, the last two cartridge zips by no one, nor are the first
+ * ones.  The playlists equal a run without readers. */
 static void whole_ahead_lane(const char *root, const char *pl_dir)
 {
    static const char *const pl[2] = { "Test MF Cart", "Test MF Arcade" };
@@ -3993,7 +5839,7 @@ static bool write_hc_zip(const char *dir, unsigned k, unsigned pos,
 
 /* Arcade zips by their own CRC, then cartridge zips by their first
  * member in a database claimed only for it, on the threaded queue.
- * The first arcade zip's member miss turns read whole ahead on, the
+ * The first arcade zip's whole match turns read whole ahead on, the
  * first cartridge zip's member hit turns it off.  The last two of
  * each run are past the window from the switch: the arcade ones are
  * read whole by readers, the cartridge ones by no one. */
@@ -4110,41 +5956,57 @@ fixture:
    check(0, "fixture", "could not write or scan the member hit set");
 }
 
-#define RA_FILES 8
+#define RA_FILES 9
+#define RA_JUNK  66000
+#define RA_SLOW  1306
 
 /* Writes wa_<k>.zip for the file at @pos in content-list order, and
  * its record, by its own CRC: the first a 1206-byte zip, the second
- * 1306 bytes with no stored CRC, the rest 1130. */
+ * RA_JUNK bytes with no directory, which no record matches, the third
+ * RA_SLOW bytes with no directory, the rest 1130. */
 static bool write_ra_zip(const char *dir, unsigned k, unsigned pos,
       db_rec_t *rec)
 {
-   static uint8_t d[1200];
+   static uint8_t d[RA_JUNK];
    static char    names[RA_FILES][16];
    char           p[1024];
    zip_entry_t    e;
-   uint32_t       len = (pos == 0) ? 1100 : (pos == 1) ? 1200 : 1024;
+   uint32_t       len = (pos == 0) ? 1100 : 1024;
 
+   sprintf(p, "%s/wa_%03u.zip", dir, k);
+   sprintf(names[k], "RA %03u", pos);
+   if (pos == 1)
+   {
+      fill_forced(d, RA_JUNK, 71 + pos, 0x0BF40000u + pos);
+      set_rec(rec, names[k], 0x0BF4FFFFu, RA_JUNK);
+      return filestream_write_file(p, d, RA_JUNK);
+   }
+   if (pos == 2)
+   {
+      fill_forced(d, RA_SLOW, 71 + pos, 0x0BF40000u + pos);
+      return    filestream_write_file(p, d, RA_SLOW)
+             && set_whole_rec(rec, names[k], p);
+   }
    fill_forced(d, len, 71 + pos, 0x0BF40000u + pos);
    memset(&e, 0, sizeof(e));
    e.name = "m.rd";
    e.data = d;
    e.len  = len;
-   e.crc  = (pos == 1) ? 0 : 0x0BF40000u + pos;
-   sprintf(p, "%s/wa_%03u.zip", dir, k);
-   sprintf(names[k], "RA %03u", pos);
+   e.crc  = 0x0BF40000u + pos;
    return write_zip_entries(p, &e, 1) && set_whole_rec(rec, names[k], p);
 }
 
 /* An arcade folder smaller than the window, on the threaded queue.
- * Readers read every directory before the first archive misses by
- * its member CRC; then they take back as many archives as the misses
- * grant them and read them whole.  An archive read whole already (the
- * second: no stored CRC) is not read again, nor by the scan while a
- * reader holds it (read slowly), on whichever worker.  Test only: the
- * first's directory read waits for the others', and the scan's read
- * of it whole waits for the read its miss grants to begin.  Which
- * archive that is is the readers' to pick.  The playlist equals a run
- * without readers. */
+ * Readers read every directory before the first archive matches by
+ * its own CRC; then they take back as many archives as the matches
+ * grant them and read them whole.  The two with no directory they
+ * read whole at once: the second is over the cutoff, so the scan
+ * reads it itself; the third, read slowly, the scan does not read
+ * again, on whichever worker.  Test only: the first's directory read
+ * waits for the others', and the scan's read of the second for the
+ * slow read and one the first match grants to begin.  Which archive
+ * that is is the readers' to pick.  The playlist equals a run without
+ * readers. */
 static void rearm_lane(const char *root, const char *pl_dir)
 {
    static db_rec_t rec[RA_FILES];
@@ -4154,12 +6016,12 @@ static void rearm_lane(const char *root, const char *pl_dir)
    char            detail[64];
    unsigned        pos[RA_FILES];
    unsigned        i, j, k;
-   int             begun, slow, by_scan, by_reader;
+   int             begun, slow, by_scan, by_reader, late;
    bool            started, same;
 
    if (!readers_expected())
    {
-      check(1, "rearm: read whole after the first miss", "no readers");
+      check(1, "rearm: read whole after the first match", "no readers");
       return;
    }
    sprintf(db,  "%s/whole_ahead_rearm_db", root);
@@ -4213,15 +6075,16 @@ static void rearm_lane(const char *root, const char *pl_dir)
    retro_atomic_store_release_int(&slow_in,      0);
    retro_atomic_store_release_int(&slow_back,    0);
    retro_atomic_store_release_int(&slow_by_scan, 0);
+   retro_atomic_store_release_int(&hold_late,    0);
    retro_atomic_store_release_int(&stored_reads, 0);
    stored_name = "whole_ahead_rearm";
    dir_hold    = first;
    hold_dirs   = RA_FILES - 1;
    begun_size  = 30 + 4 + 1024 + 46 + 4 + 22;
    watch_size  = begun_size;
-   slow_size   = 30 + 4 + 1200 + 46 + 4 + 22;
+   slow_size   = RA_SLOW;
    slow_ms     = 1000;
-   hold_size   = 30 + 4 + 1100 + 46 + 4 + 22;
+   hold_size   = RA_JUNK;
    hold_want   = 1;
    started     = run_scan(dir) && scan_completed;
    begun_size  = 0;
@@ -4242,10 +6105,13 @@ static void rearm_lane(const char *root, const char *pl_dir)
          && !retro_atomic_load_acquire_int(&slow_by_scan),
          "rearm: readers read the zips after the first", detail);
    sprintf(detail, "%d + %d whole reads", begun, slow);
-   check(started && begun == RA_FILES - 2 && slow == 1,
+   check(started && begun == RA_FILES - 3 && slow == 1,
          "rearm: each zip read whole once", detail);
+   late = retro_atomic_load_acquire_int(&hold_late);
+   sprintf(detail, "%d holds ran out", late);
+   check(started && late == 0, "rearm: the hold ended on its event", detail);
    check(   started && same && file_contains(lpl, "RA 000")
-         && file_contains(lpl, "RA 007"),
+         && file_contains(lpl, "RA 008"),
          "rearm: the playlist of a run without readers",
          same ? "equal" : "differ");
    return;
@@ -4257,11 +6123,13 @@ fixture:
 
 /* The read ahead lanes' zips, by role: K a cartridge zip its member's
  * stored CRC matches, F the same 50 bytes longer, U one nothing
- * matches, N an unknown zip with no stored CRC over the readers'
- * cutoff, which the scan reads whole itself, M the same 200 bytes
- * shorter, A an arcade zip by its own CRC, B the same 100 bytes
- * longer, G an A whose member is a cart gate ROM, H a zip whose member
- * the gate database holds and S a 7z of a gate ROM nothing matches. */
+ * matches, N a .zip with no directory over the readers' cutoff, which
+ * the scan reads whole itself and nothing matches, M the same 200
+ * bytes shorter, W an N an arcade record holds by its own CRC, A an
+ * arcade zip by its own CRC, B the same 100 bytes longer, G an A whose
+ * member is a cart gate ROM, H a zip whose member the gate database
+ * holds and S a 7z of a gate ROM, by its own CRC in a database whose
+ * core opens 7z. */
 #define AH_GATE_CRC 0x0CBFFFFFu
 #define AH_FILES   40
 #define AH_BIG     66000
@@ -4271,7 +6139,8 @@ static uint32_t ah_member_len(char role)
 {
    switch (role)
    {
-      case 'N': return AH_BIG;
+      case 'N':
+      case 'W': return AH_BIG;
       case 'M': return AH_BIG - 200;
       case 'F': return 1050;
       case 'A':
@@ -4295,17 +6164,25 @@ static uint32_t ah_len(char role)
 static bool write_ah_zip(const char *dir, unsigned k, unsigned pos,
       char role)
 {
-   static uint8_t d[AH_BIG];
+   static uint8_t d[AH_BIG + 128];
    char           p[1024];
    zip_entry_t    e;
    uint32_t       crc = (role == 'H') ? AH_GATE_CRC : 0x0CB00000u + pos;
 
+   if (role == 'N' || role == 'M' || role == 'W')
+   {
+      sprintf(p, "%s/wa_%03u.7z", dir, k);
+      filestream_delete(p);
+      sprintf(p, "%s/wa_%03u.zip", dir, k);
+      fill_forced(d, ah_len(role), 83 + pos, crc);
+      return filestream_write_file(p, d, ah_len(role));
+   }
    fill_forced(d, ah_member_len(role), 83 + pos, crc);
    memset(&e, 0, sizeof(e));
    e.name = (role == 'G' || role == 'H' || role == 'S') ? "m.ct" : "m.rd";
    e.data = d;
    e.len  = ah_member_len(role);
-   e.crc  = (role == 'N' || role == 'M') ? 0 : crc;
+   e.crc  = crc;
    sprintf(p, "%s/wa_%03u.%s", dir, k, (role == 'S') ? "zip" : "7z");
    filestream_delete(p);
    sprintf(p, "%s/wa_%03u.%s", dir, k, (role == 'S') ? "7z" : "zip");
@@ -4317,14 +6194,14 @@ static bool write_ah_zip(const char *dir, unsigned k, unsigned pos,
 }
 
 /* Scans zips of @roles, in content-list order, on the threaded queue;
- * true when every K, F, A, B and G is in its playlist.  The first
+ * true when every K, F, A, B, G and W is in its playlist.  The first
  * zip's directory read waits for the others', so a reader has read
- * each directory by the scan's first miss.  With @gate, the readers
+ * each directory by the scan's first verdict.  With @gate, the readers
  * instead wait in the F zips' (one each: the last), until all are in
  * and @gate slow reads have begun, and the scan's read of the first N
  * waits for them to be in.  A stream of @slow bytes sleeps AH_SLOW_MS
  * before its first quantum, time for the readers to take what they
- * may: an N after each miss.  Reads of @begun-byte zips are counted as
+ * may: an N after each match.  Reads of @begun-byte zips are counted as
  * each begins, those of @watch-byte ones by who makes them. */
 static bool ah_scan(const char *root, const char *pl_dir, const char *tag,
       const char *roles, uint32_t slow, uint32_t begun, uint32_t watch,
@@ -4333,11 +6210,11 @@ static bool ah_scan(const char *root, const char *pl_dir, const char *tag,
    static unsigned last[AH_FILES];
    static char     names[AH_FILES][16];
    static char     first[32];
-   static db_rec_t cart[AH_FILES], arc[AH_FILES];
+   static db_rec_t cart[AH_FILES], arc[AH_FILES], set7[AH_FILES];
    char            db[512], dir[512], p[1024], lpl[2][1024];
    unsigned        pos[AH_FILES];
    unsigned        n = (unsigned)strlen(roles);
-   unsigned        i, j, k, nc = 0, na = 0;
+   unsigned        i, j, k, nc = 0, na = 0, ns = 0;
    bool            ok;
 
    if (n > AH_FILES)
@@ -4358,7 +6235,7 @@ static bool ah_scan(const char *root, const char *pl_dir, const char *tag,
    /* Twice: in name order, to learn the list's, then in that. */
    for (j = 0; j < 2; j++)
    {
-      nc = na = 0;
+      nc = na = ns = 0;
       for (i = 0; i < n; i++)
       {
          char role = roles[pos[i]];
@@ -4369,11 +6246,19 @@ static bool ah_scan(const char *root, const char *pl_dir, const char *tag,
          if (role == 'K' || role == 'F')
             set_rec(&cart[nc++], names[pos[i]], 0x0CB00000u + pos[i],
                   ah_member_len(role));
-         else if (role == 'A' || role == 'B' || role == 'G')
+         else if (   role == 'A' || role == 'B' || role == 'G'
+                  || role == 'W')
          {
             sprintf(p, "%s/wa_%03u.zip", dir, i);
             if (!set_whole_rec(&arc[na++], names[pos[i]], p))
                goto fail;
+         }
+         else if (role == 'S')
+         {
+            sprintf(p, "%s/wa_%03u.7z", dir, i);
+            if (!set_whole_rec(&set7[ns], names[pos[i]], p))
+               goto fail;
+            set7[ns++].rom_name = "set.7z";
          }
       }
       sprintf(p, "%s/Test MF Cart.rdb", db);
@@ -4381,6 +6266,9 @@ static bool ah_scan(const char *root, const char *pl_dir, const char *tag,
          goto fail;
       sprintf(p, "%s/Test MF Arcade.rdb", db);
       if (!write_db_set(p, arc, na))
+         goto fail;
+      sprintf(p, "%s/Test Archives.rdb", db);
+      if (ns && !write_db_set(p, set7, ns))
          goto fail;
       if (strpbrk(roles, "GHS"))
       {
@@ -4453,9 +6341,9 @@ fail:
    return false;
 }
 
-/* One cartridge zip nothing matches among known ones: its member miss
- * lets the readers read one zip whole ahead, the next zip's member hit
- * no more.  Which one is theirs to pick. */
+/* One arcade zip among cartridge zips: its whole match lets the
+ * readers read one zip whole ahead while the scan reads the N, whose
+ * miss takes back the rest.  Which one is theirs to pick. */
 static void ahead_lone_lane(const char *root, const char *pl_dir)
 {
    char detail[64];
@@ -4464,47 +6352,58 @@ static void ahead_lone_lane(const char *root, const char *pl_dir)
 
    if (!readers_expected())
    {
-      check(1, "read ahead: one after a lone miss", "no readers");
+      check(1, "read ahead: one after a lone match", "no readers");
       return;
    }
-   ok    = ah_scan(root, pl_dir, "lone", "KUNKKKKKKKK",
+   ok    = ah_scan(root, pl_dir, "lone", "KANKKKKKKKK",
          ah_len('N'), ah_len('K'), 0, 0);
    begun = retro_atomic_load_acquire_int(&reader_begun);
    sprintf(detail, "%d reader reads", begun);
-   check(ok && begun == 1, "read ahead: one after a lone miss", detail);
+   check(ok && begun == 1, "read ahead: one after a lone match", detail);
 }
 
-/* Misses in a row let the readers read 1, 2, then 4 zips whole ahead,
- * up to SCAN_READER_AHEAD_MAX each.  After each miss the scan reads
- * an N whole, slowly, so the readers take all they may first. */
+/* Whole matches in a row let the readers read 1, 2, then 4 zips whole
+ * ahead, up to SCAN_READER_AHEAD_MAX each; the N's miss takes back the
+ * rest.  The W and the N the scan reads itself, so the readers read
+ * only K whole.  Test only: the lookup of each after the first waits
+ * for the readers to begin every read granted before it. */
 static void ahead_double_lane(const char *root, const char *pl_dir)
 {
-   char detail[64];
+   char detail[96];
    bool ok;
    int  want[3];
    int  i, g, sum, begun;
 
    if (!readers_expected())
    {
-      check(1, "read ahead: misses in a row double it", "no readers");
+      check(1, "read ahead: matches in a row double it", "no readers");
       return;
    }
    for (i = 0, g = 1, sum = 0; i < 3; i++, g *= 2)
-      want[i] = sum += (g < SCAN_READER_AHEAD_MAX)
+   {
+      want[i]      = sum += (g < SCAN_READER_AHEAD_MAX)
             ? g : SCAN_READER_AHEAD_MAX;
-   ok    = ah_scan(root, pl_dir, "double", "KUNUNUNKKKKKKKKKK",
-         ah_len('N'), ah_len('K'), 0, 0);
-   begun = retro_atomic_load_acquire_int(&reader_begun);
+      look_crc[i]  = 0x0CB00001u + (uint32_t)i;
+      look_want[i] = want[i];
+      look_end[i]  = 0;
+   }
+   look_n = 3;
+   ok     = ah_scan(root, pl_dir, "double", "WWWNKKKKKKKKKKKK", 0, 0, 0,
+         0);
+   look_n = 0;
+   begun  = retro_atomic_load_acquire_int(&rd_wholes);
    sprintf(detail, "%d, %d, %d, %d reader reads (want %d, %d, %d)",
-         slow_begun[0], slow_begun[1], slow_begun[2], begun,
+         look_end[0], look_end[1], look_end[2], begun,
          want[0], want[1], want[2]);
-   check(   ok && slow_begun[0] == want[0] && slow_begun[1] == want[1]
-         && slow_begun[2] == want[2] && begun == want[2],
-         "read ahead: misses in a row double it", detail);
+   check(   ok && !retro_atomic_load_acquire_int(&look_late)
+         && look_end[0] == want[0] && look_end[1] == want[1]
+         && look_end[2] == want[2] && begun == want[2],
+         "read ahead: matches in a row double it", detail);
 }
 
-/* Miss, hit, miss: a member hit ends the run, so the second miss lets
- * the readers read one zip whole ahead again, not two. */
+/* Match, hit, match: a member hit ends the run, so the second match
+ * lets the readers read one zip whole ahead again, not two.  Test
+ * only: each K's lookup waits for the reads granted before it. */
 static void ahead_streak_lane(const char *root, const char *pl_dir)
 {
    char detail[64];
@@ -4516,12 +6415,18 @@ static void ahead_streak_lane(const char *root, const char *pl_dir)
       check(1, "read ahead: a member hit ends the run", "no readers");
       return;
    }
-   ok    = ah_scan(root, pl_dir, "streak", "KUNKUNKKKKKK",
-         ah_len('N'), ah_len('K'), 0, 0);
-   begun = retro_atomic_load_acquire_int(&reader_begun);
+   look_crc[0]  = 0x0CB00002u;
+   look_want[0] = 1;
+   look_crc[1]  = 0x0CB00004u;
+   look_want[1] = 2;
+   look_n       = 2;
+   ok           = ah_scan(root, pl_dir, "streak", "KAKAKKKKKKKK", 0, 0, 0,
+         0);
+   look_n       = 0;
+   begun        = retro_atomic_load_acquire_int(&rd_wholes);
    sprintf(detail, "%d reader reads", begun);
-   check(ok && begun == 2, "read ahead: a member hit ends the run",
-         detail);
+   check(   ok && !retro_atomic_load_acquire_int(&look_late)
+         && begun == 2, "read ahead: a member hit ends the run", detail);
 }
 
 /* @head, then an F for each reader: the last zips, which the readers
@@ -4539,9 +6444,10 @@ static void ah_gate_roles(char *roles, size_t len, const char *head)
 }
 
 /* Each reader's last zip, an F far ahead, holds only its stored CRC
- * when the first miss grants one read whole: it goes to the scan's
- * next zip (a K), not to an F.  The M between them are not read
- * ahead. */
+ * when the first match grants one read whole: it goes to a K by the
+ * scan, not to an F.  The K outnumber the readers, so readers racing
+ * for the one credit cannot all pass them.  Test only: the first K's
+ * lookup waits for the read to begin. */
 static void ahead_next_lane(const char *root, const char *pl_dir)
 {
    char roles[64], detail[64];
@@ -4553,19 +6459,24 @@ static void ahead_next_lane(const char *root, const char *pl_dir)
       check(1, "read ahead: the scan's next first", "no readers");
       return;
    }
-   ah_gate_roles(roles, sizeof(roles), "NNUNKMMMMMMMMMMMMMMMMMMMMMMMM");
-   ok         = ah_scan(root, pl_dir, "next", roles, ah_len('N'),
+   ah_gate_roles(roles, sizeof(roles), "NNAKKKKKKKKK");
+   look_crc[0]  = 0x0CB00003u;
+   look_want[0] = 1;
+   look_n       = 1;
+   ok           = ah_scan(root, pl_dir, "next", roles, ah_len('N'),
          ah_len('K'), ah_len('F'), 1);
-   next_reads = retro_atomic_load_acquire_int(&reader_begun);
-   far_reads  = retro_atomic_load_acquire_int(&watch_reader);
+   look_n       = 0;
+   next_reads   = retro_atomic_load_acquire_int(&reader_begun);
+   far_reads    = retro_atomic_load_acquire_int(&watch_reader);
    sprintf(detail, "next %d, far %d reader reads", next_reads,
          far_reads);
-   check(ok && next_reads == 1 && !far_reads,
+   check(   ok && !retro_atomic_load_acquire_int(&look_late)
+         && next_reads == 1 && !far_reads,
          "read ahead: the scan's next first", detail);
 }
 
-/* Three misses grant seven reads whole while the readers wait in their
- * F, and a member hit follows: once out, they read no F.  A reader on
+/* Three whole matches grant seven reads whole while the readers wait
+ * in their F, and a member hit follows: once out, they read no F.  A reader on
  * the scan's worker cannot wait there (the scan would not run): it
  * may read its own F, while the others' are held. */
 static void ahead_hit_count_lane(const char *root, const char *pl_dir)
@@ -4580,7 +6491,7 @@ static void ahead_hit_count_lane(const char *root, const char *pl_dir)
             "no readers");
       return;
    }
-   ah_gate_roles(roles, sizeof(roles), "NUUUKN");
+   ah_gate_roles(roles, sizeof(roles), "NAAAKN");
    ok        = ah_scan(root, pl_dir, "hitcount", roles, ah_len('N'),
          ah_len('F'), 0, 2);
    far_reads = retro_atomic_load_acquire_int(&reader_begun);
@@ -4591,10 +6502,10 @@ static void ahead_hit_count_lane(const char *root, const char *pl_dir)
          "read ahead: a member hit takes back what is left", detail);
 }
 
-/* Arcade zips, each a member miss: the readers read whole ahead as the
- * misses add up, so past the first 16 the scan reads none itself.
+/* Arcade zips, each a whole match: the readers read whole ahead as the
+ * matches add up, so past the first 16 the scan reads none itself.
  * Test only: each zip's lookup waits for the readers to begin every
- * read the misses before it granted. */
+ * read the matches before it granted. */
 static void ahead_arcade_lane(const char *root, const char *pl_dir)
 {
    char     detail[128];
@@ -4634,10 +6545,10 @@ static void ahead_arcade_lane(const char *root, const char *pl_dir)
          "read ahead: arcade zips by readers", detail);
 }
 
-/* Two arcade zips miss by their members, then a G, whose member lets
- * in a database not walked yet: while the scan walks it, the readers
- * read whole ahead as far as they may, and the G's miss after grants
- * what it would have.  Test only: the second zip's lookup waits for
+/* Two arcade zips match whole, then a G, whose member lets in a
+ * database not walked yet: while the scan walks it, the readers read
+ * whole ahead as far as they may, and the G's match after grants what
+ * it would have.  Test only: the second zip's lookup waits for
  * the first's grant to be taken, the walk for the readers to begin
  * every read granted before it, then as many more as they may, and the
  * lookup of the A after the N for them to begin the G's. */
@@ -4689,13 +6600,13 @@ static void ahead_walk_lane(const char *root, const char *pl_dir)
          "read ahead: a walk grants nothing after", detail);
 }
 
-/* Two 7z miss by their gate ROMs, which let in only the gate database,
- * then a zip walks the arcade one: H after its member hit there, N in
- * the whole pass, its own CRC read at once.  Neither walk lets the
- * readers read ahead.  Test only: files and databases go in name
- * order, the second 7z's lookup waits for the first's grant to be
- * taken, and each walk for the readers to begin every read granted
- * before it, then gives them time to begin more. */
+/* Two 7z match whole, by their own CRC; their gate ROMs let in only
+ * the gate database.  Then a zip walks the arcade one: H after its
+ * member hit there, N in the whole pass, its own CRC read at once.
+ * Neither walk lets the readers read ahead.  Test only: files and
+ * databases go in name order, the second 7z's lookup waits for the
+ * first's grant to be taken, and each walk for the readers to begin
+ * every read granted before it, then gives them time to begin more. */
 static void ahead_walk_none_lane(const char *root, const char *pl_dir)
 {
    static const char *const what[2] = {
@@ -4749,6 +6660,449 @@ static void ahead_walk_none_lane(const char *root, const char *pl_dir)
    check(1, what[0], "no 7z");
    check(1, what[1], "no 7z");
 #endif
+}
+
+#define AM_FILES 12
+#define AM_SLOW_MS 50
+
+/* Writes wa_<k>.zip for the file at @pos in content-list order: one
+ * zip read whole that matches (into @lead), @fill read whole that
+ * miss, then AM_FILES cartridge zips (into @cart), every third (from
+ * the second) a slow miss instead. */
+static bool write_am_zip(const char *dir, unsigned k, unsigned pos,
+      unsigned fill, db_rec_t *lead, db_rec_t *cart, unsigned *nc)
+{
+   static uint8_t d[MF_MEMBER_LEN];
+   static char    names[AM_FILES][16];
+   char           p[1024];
+   zip_entry_t    e;
+   unsigned       at = pos - fill - 1;
+
+   memset(&e, 0, sizeof(e));
+   e.name = (pos == 0) ? "ld.rd" : (pos <= fill) ? "fil.rd"
+          : (at % 3 == 1) ? "miss.rd" : "m.rd";
+   e.data = d;
+   e.len  = MF_MEMBER_LEN;
+   e.crc  = 0x0BFD0000u + pos;
+   fill_forced(d, MF_MEMBER_LEN, 131 + pos, e.crc);
+   sprintf(p, "%s/wa_%03u.zip", dir, k);
+   if (!write_zip_entries(p, &e, 1))
+      return false;
+   if (pos == 0)
+      return set_whole_rec(lead, "AM Lead", p);
+   if (pos > fill && at % 3 != 1)
+   {
+      sprintf(names[at], "AM %03u", at);
+      set_rec(&cart[(*nc)++], names[at], e.crc, MF_MEMBER_LEN);
+   }
+   return true;
+}
+
+/* Zips on the threaded queue: one that matches by its own CRC, then a
+ * window and a few more that miss by theirs, then cartridge zips,
+ * every third of them a miss read slowly, which gives readers time to
+ * read ahead were it on.  Every miss is read whole once.  Read-ahead
+ * turns on at the match and off at the first miss, before the window
+ * reaches a cartridge zip, so no reader reads one whole, nor does the
+ * scan.  Positions are in content-list order, learned from a first
+ * scan. */
+static void ahead_miss_lane(const char *root, const char *pl_dir)
+{
+   static uint8_t  d[MF_MEMBER_LEN];
+   static db_rec_t cart[AM_FILES];
+   static db_rec_t arcade[3];
+   static char     lpl[2][1024];
+   char            db[512], dir[512], p[1024], detail[64];
+   zip_entry_t     e;
+   uint32_t        cart_bytes, fill_bytes, miss_bytes;
+   unsigned        fill = reader_window() + WA_EXTRA;
+   unsigned        n    = 1 + fill + AM_FILES;
+   unsigned        i, j, k, nc = 0, misses = 0;
+   unsigned       *pos  = NULL;
+   int             by_scan, by_reader, slow, begun;
+   bool            started, all = true;
+
+   if (!readers_expected())
+   {
+      check(1, "ahead miss: no read-ahead after a whole miss",
+            "no readers");
+      return;
+   }
+   sprintf(db,  "%s/ahead_miss_db", root);
+   sprintf(dir, "%s/whole_ahead_miss", root);
+   sprintf(lpl[0], "%s/Test EM Cart.lpl", pl_dir);
+   sprintf(lpl[1], "%s/Test EM Arcade.lpl", pl_dir);
+   path_mkdir(db);
+   path_mkdir(dir);
+   memset(&e, 0, sizeof(e));
+   e.data     = d;
+   e.len      = MF_MEMBER_LEN;
+   e.name     = "m.rd";
+   cart_bytes = zip_bytes(&e, 1);
+   e.name     = "fil.rd";
+   fill_bytes = zip_bytes(&e, 1);
+   e.name     = "miss.rd";
+   miss_bytes = zip_bytes(&e, 1);
+   pos        = (unsigned*)calloc(n, sizeof(*pos));
+   wa_last    = (unsigned*)calloc(n, sizeof(*wa_last));
+   wa_count   = n;
+   if (!pos || !wa_last)
+      goto fixture;
+   for (k = 0; k < AM_FILES; k++)
+      if (k % 3 == 1)
+         misses++;
+   set_rec(&arcade[1], "AM Gate", 0x0BFDFFFFu, miss_bytes);
+   set_rec(&arcade[2], "AM Fill", 0x0BFDFFFEu, fill_bytes);
+   arcade[1].rom_name = "set.zip";
+   arcade[2].rom_name = "set.zip";
+   use_queue(false);
+   use_db(db);
+
+   /* Twice: all misses, to learn the list's order (an entry's file is
+    * looked at again), then in that. */
+   for (j = 0; j < 2; j++)
+   {
+      nc = 0;
+      for (i = 0; i < n; i++)
+         if (!write_am_zip(dir, i, j ? pos[i] : 1, fill, &arcade[0], cart,
+               &nc))
+            goto fixture;
+      sprintf(p, "%s/Test EM Cart.rdb", db);
+      if (!write_db_set(p, cart, nc))
+         goto fixture;
+      sprintf(p, "%s/Test EM Arcade.rdb", db);
+      if (!write_db_set(p, j ? arcade : arcade + 1, j ? 3 : 2))
+         goto fixture;
+      filestream_delete(lpl[0]);
+      filestream_delete(lpl[1]);
+      if (j)
+         break;
+      if (!run_scan(dir) || !scan_completed)
+         goto fixture;
+      for (i = 0; i < n; i++)
+      {
+         if (!wa_last[i])
+            goto fixture;
+         for (k = 0; k < n; k++)
+            if (wa_last[k] < wa_last[i])
+               pos[i]++;
+      }
+   }
+   free(wa_last);
+   wa_last = NULL;
+
+   use_queue(true);
+   retro_atomic_store_release_int(&watch_scan,   0);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   retro_atomic_store_release_int(&reads_begun,  0);
+   retro_atomic_store_release_int(&slow_in,      0);
+   retro_atomic_store_release_int(&slow_back,    0);
+   watch_size = cart_bytes;
+   begun_size = fill_bytes;
+   slow_size  = miss_bytes;
+   slow_ms    = AM_SLOW_MS;
+   started    = run_scan(dir) && scan_completed;
+   watch_size = 0;
+   begun_size = 0;
+   slow_size  = 0;
+   slow_ms    = 0;
+   by_scan    = retro_atomic_load_acquire_int(&watch_scan);
+   by_reader  = retro_atomic_load_acquire_int(&watch_reader);
+   begun      = retro_atomic_load_acquire_int(&reads_begun);
+   slow       = retro_atomic_load_acquire_int(&slow_in);
+   for (k = 0; k < AM_FILES; k++)
+   {
+      if (k % 3 != 1)
+      {
+         sprintf(p, "AM %03u", k);
+         all = all && file_contains(lpl[0], p);
+      }
+   }
+
+   sprintf(detail, "scan %d, readers %d", by_scan, by_reader);
+   check(started && by_scan == 0 && by_reader == 0,
+         "ahead miss: no cartridge zip read whole after a miss", detail);
+   sprintf(detail, "%d of %u, %d of %u", begun, fill, slow, misses);
+   check(started && begun == (int)fill && slow == (int)misses,
+         "ahead miss: each miss read whole once", detail);
+   check(started && all && file_contains(lpl[1], "AM Lead"),
+         "ahead miss: each cartridge zip and the lead are their entries",
+         "Test EM Cart, Test EM Arcade");
+   free(pos);
+   return;
+
+fixture:
+   free(wa_last);
+   wa_last = NULL;
+   free(pos);
+   check(0, "fixture", "could not write the ahead-miss set");
+}
+
+/* Archives whose first member misses and whose second is a record
+ * named for that archive, on the threaded queue: none needs its whole
+ * read, so the readers read only their directories. */
+static void late_member_lane(const char *root, const char *pl_dir)
+{
+   static uint8_t d[2][MF_MEMBER_LEN];
+   char           db[512], dir[512], p[1024], lpl[1024];
+   char           first[32], last[32], detail[64];
+   char         (*names)[16] = NULL;
+   char         (*roms)[16]  = NULL;
+   db_rec_t      *rec        = NULL;
+   zip_entry_t    e[2];
+   unsigned       n          = reader_window() + WA_EXTRA;
+   unsigned       k;
+   int            by_scan, by_reader;
+   bool           started;
+
+   if (!readers_expected())
+   {
+      check(1, "late members: readers read no archive whole", "no readers");
+      return;
+   }
+   sprintf(db,  "%s/late_member_db", root);
+   sprintf(dir, "%s/late_member",    root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   names = (char(*)[16])calloc(n, sizeof(*names));
+   roms  = (char(*)[16])calloc(n, sizeof(*roms));
+   rec   = (db_rec_t*)calloc(n, sizeof(*rec));
+   if (!names || !roms || !rec)
+      goto fixture;
+   memset(e, 0, sizeof(e));
+   e[0].name = "a.rd";
+   e[0].data = d[0];
+   e[0].len  = MF_MEMBER_LEN;
+   e[1].name = "b.rd";
+   e[1].data = d[1];
+   e[1].len  = MF_MEMBER_LEN;
+   for (k = 0; k < n; k++)
+   {
+      e[0].crc = 0x0BF60000u + 2 * k;
+      e[1].crc = 0x0BF60001u + 2 * k;
+      fill_forced(d[0], MF_MEMBER_LEN, 91 + k, e[0].crc);
+      fill_forced(d[1], MF_MEMBER_LEN, 93 + k, e[1].crc);
+      sprintf(p, "%s/lm_%03u.zip", dir, k);
+      if (!write_zip_entries(p, e, 2))
+         goto fixture;
+      sprintf(names[k], "LM %03u", k);
+      set_rec(&rec[k], names[k], e[1].crc, MF_MEMBER_LEN);
+      sprintf(roms[k], "lm_%03u.zip", k);
+      rec[k].rom_name = roms[k];
+   }
+   sprintf(p, "%s/Test EM Cart.rdb", db);
+   if (!write_db_set(p, rec, n))
+      goto fixture;
+
+   sprintf(lpl, "%s/Test EM Cart.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(true);
+   use_db(db);
+   retro_atomic_store_release_int(&watch_scan, 0);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   watch_size = zip_bytes(e, 2);
+   started    = run_scan(dir) && scan_completed;
+   watch_size = 0;
+   by_scan    = retro_atomic_load_acquire_int(&watch_scan);
+   by_reader  = retro_atomic_load_acquire_int(&watch_reader);
+
+   sprintf(first, "lm_%03u.zip", 0u);
+   sprintf(last,  "lm_%03u.zip", n - 1);
+   check(   started && file_contains(lpl, first) && file_contains(lpl, last)
+         && !file_contains(lpl, ".zip#"),
+         "late members: each archive is its entry", last);
+   sprintf(detail, "scan %d, readers %d", by_scan, by_reader);
+   check(started && by_scan == 0 && by_reader == 0,
+         "late members: readers read no archive whole", detail);
+   free(names);
+   free(roms);
+   free(rec);
+   return;
+
+fixture:
+   free(names);
+   free(roms);
+   free(rec);
+   check(0, "fixture", "could not write the late-member set");
+}
+
+/* No core claiming the database opens zips, and one claims the
+ * members: the hits are archive#member entries and no archive is read
+ * whole, on either queue, the threaded one with a window and more of
+ * them. */
+static void no_claim_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static uint8_t d[2][MF_MEMBER_LEN];
+   char           db[512], dir[512], p[1024], lpl[1024];
+   char           first[48], last[48], what[64], detail[64];
+   char         (*names)[16] = NULL;
+   db_rec_t      *rec        = NULL;
+   zip_entry_t    e[2];
+   unsigned       n          = (threaded && readers_expected())
+      ? reader_window() + WA_EXTRA : 3;
+   unsigned       k;
+   int            reads;
+   bool           started;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/no_claim_db_%d", root, threaded ? 1 : 0);
+   sprintf(dir, "%s/no_claim_%d",    root, threaded ? 1 : 0);
+   path_mkdir(db);
+   path_mkdir(dir);
+   names = (char(*)[16])calloc(n, sizeof(*names));
+   rec   = (db_rec_t*)calloc(n, sizeof(*rec));
+   if (!names || !rec)
+      goto fixture;
+   memset(e, 0, sizeof(e));
+   e[0].name = "a.rd";
+   e[0].data = d[0];
+   e[0].len  = MF_MEMBER_LEN;
+   e[1].name = "b.rd";
+   e[1].data = d[1];
+   e[1].len  = MF_MEMBER_LEN;
+   for (k = 0; k < n; k++)
+   {
+      e[0].crc = 0x0BF70000u + 2 * k;
+      e[1].crc = 0x0BF70001u + 2 * k;
+      fill_forced(d[0], MF_MEMBER_LEN, 95 + k, e[0].crc);
+      fill_forced(d[1], MF_MEMBER_LEN, 97 + k, e[1].crc);
+      sprintf(p, "%s/nc_%03u.zip", dir, k);
+      if (!write_zip_entries(p, e, 2))
+         goto fixture;
+      sprintf(names[k], "NC %03u", k);
+      set_rec(&rec[k], names[k], e[1].crc, MF_MEMBER_LEN);
+   }
+   sprintf(p, "%s/Test EM Member.rdb", db);
+   if (!write_db_set(p, rec, n))
+      goto fixture;
+
+   sprintf(lpl, "%s/Test EM Member.lpl", pl_dir);
+   filestream_delete(lpl);
+   use_queue(threaded);
+   use_db(db);
+   retro_atomic_store_release_int(&watch_scan, 0);
+   retro_atomic_store_release_int(&watch_reader, 0);
+   watch_size = zip_bytes(e, 2);
+   started    = run_scan(dir) && scan_completed;
+   watch_size = 0;
+   reads      = retro_atomic_load_acquire_int(&watch_scan)
+      + retro_atomic_load_acquire_int(&watch_reader);
+
+   sprintf(first, "nc_%03u.zip#b.rd", 0u);
+   sprintf(last,  "nc_%03u.zip#b.rd", n - 1);
+   sprintf(what, "no core opens zips: archive#member %s", q);
+   check(   started && file_contains(lpl, first)
+         && file_contains(lpl, last), what, last);
+   sprintf(what, "no core opens zips: none read whole %s", q);
+   sprintf(detail, "%d read steps", reads);
+   check(started && reads == 0, what, detail);
+   free(names);
+   free(rec);
+   return;
+
+fixture:
+   free(names);
+   free(rec);
+   check(0, "fixture", "could not write the no-claim set");
+}
+
+#define SG_VARIANTS 4
+
+/* An archive is read whole only when a database whose cores open zips
+ * holds a zip record of its size, or one with no size while the
+ * archive's size is inside the database's size range.  The third
+ * record carries the archive's own CRC, so a whole read would name
+ * it: when it is not asked the member hits are held entries.  The
+ * fourth, in the last variant only, stretches the range over the
+ * archive. */
+static void size_gate_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static uint8_t d[3][MF_MEMBER_LEN];
+   static const char *const how[SG_VARIANTS] = {
+      "another size", "its size", "no size, out of range",
+      "no size, in range" };
+   char           db[512], dir[512], p[1024], lpl[1024];
+   char           what[96], detail[64];
+   db_rec_t       rec[4];
+   zip_entry_t    e[3];
+   uint32_t       bytes;
+   int            reads;
+   bool           started, whole;
+   unsigned       v;
+   const char    *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(dir, "%s/size_gate_%d", root, threaded ? 1 : 0);
+   path_mkdir(dir);
+   memset(e, 0, sizeof(e));
+   e[0].name = "a.rd";
+   e[1].name = "b.rd";
+   e[2].name = "c.rd";
+   for (v = 0; v < 3; v++)
+   {
+      e[v].data = d[v];
+      e[v].len  = MF_MEMBER_LEN;
+      e[v].crc  = 0x0BFA0001u + v;
+      fill_forced(d[v], MF_MEMBER_LEN, 111 + 2 * v, e[v].crc);
+   }
+   sprintf(p, "%s/sg.zip", dir);
+   if (   !write_zip_entries(p, e, 3)
+       || !set_whole_rec(&rec[2], "SG Whole", p))
+      goto fixture;
+   bytes = rec[2].size;
+   set_rec(&rec[0], "SG B", e[1].crc, MF_MEMBER_LEN);
+   set_rec(&rec[1], "SG C", e[2].crc, MF_MEMBER_LEN);
+   /* No member stores its CRC. */
+   set_rec(&rec[3], "SG Big", 0x0BFA00F0u, bytes + 1);
+
+   sprintf(lpl, "%s/Test EM Arcade.lpl", pl_dir);
+   use_queue(threaded);
+   for (v = 0; v < SG_VARIANTS; v++)
+   {
+      whole          = (v == 1 || v == 3);
+      rec[2].size    = (v == 0) ? bytes + 1 : bytes;
+      rec[2].unsized = (v >= 2);
+      sprintf(db, "%s/size_gate_db%u_%d", root, v, threaded ? 1 : 0);
+      path_mkdir(db);
+      sprintf(p, "%s/Test EM Arcade.rdb", db);
+      if (!write_db_set(p, rec, (v == 3) ? 4 : 3))
+         goto fixture;
+      filestream_delete(lpl);
+      use_db(db);
+      retro_atomic_store_release_int(&watch_scan, 0);
+      retro_atomic_store_release_int(&watch_reader, 0);
+      watch_size = bytes;
+      started    = run_scan(dir) && scan_completed;
+      watch_size = 0;
+      reads      = retro_atomic_load_acquire_int(&watch_scan)
+         + retro_atomic_load_acquire_int(&watch_reader);
+
+      sprintf(detail, "%d read steps", reads);
+      sprintf(what, "size gate, a zip record of %s: %s %s", how[v],
+            whole ? "read whole" : "not read whole", q);
+      check(started && (whole ? reads > 0 : reads == 0), what, detail);
+      if (whole)
+      {
+         sprintf(what, "size gate, a zip record of %s: its CRC wins %s",
+               how[v], q);
+         check(   started && file_contains(lpl, "SG Whole")
+               && !file_contains(lpl, "sg.zip#"), what, "sg.zip");
+      }
+      else
+      {
+         sprintf(what, "size gate, a zip record of %s: held entries %s",
+               how[v], q);
+         check(   started && file_contains(lpl, "sg.zip#b.rd")
+               && file_contains(lpl, "sg.zip#c.rd")
+               && !file_contains(lpl, "SG Whole"), what,
+               "sg.zip#b.rd, #c.rd");
+      }
+   }
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the size-gate set");
 }
 
 #define SE_SHARED 33
@@ -5501,7 +7855,8 @@ int main(int argc, char **argv)
             "corename = \"ReaderTest\"\n"
             "supported_extensions = \"rd|zip|cue|bin\"\n"
             "database = \"Test Reader|Test Order One|Test Order Two|Test Mix|Test Switch|"
-            "Test MF Cart|Test MF Arcade|Test FM One|Test FM Two\"\n");
+            "Test MF Cart|Test MF Arcade|Test FM One|Test FM Two|"
+            "Test EM Cart|Test EM Arcade\"\n");
       fclose(f);
    }
    sprintf(p, "%s/reader_libretro.so", core_dir);
@@ -5547,6 +7902,49 @@ int main(int argc, char **argv)
          if ((f = fopen(p, "wb"))) { fputs("\177ELF", f); fclose(f); }
       }
    }
+   sprintf(p, "%s/esarcade_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"ES Arcade Test\"\n"
+            "corename = \"EsArcadeTest\"\n"
+            "supported_extensions = \"rd|zip\"\n"
+            "database = \"Test ES Arcade\"\n"
+            "database_match_archive_member = \"true\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/esarcade_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/member_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"Member Test\"\n"
+            "corename = \"MemberTest\"\n"
+            "supported_extensions = \"rd\"\n"
+            "database = \"Test EM Member|Test ES Disc\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/member_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/rarcart_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"RAR Cart Test\"\n"
+            "corename = \"RarCartTest\"\n"
+            "supported_extensions = \"rd|rar\"\n"
+            "database = \"Test RAR Cart\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/rarcart_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
 
 #ifdef HAVE_THREADS
    task_queue_init(true, msgq_push);
@@ -6383,12 +8781,42 @@ int main(int argc, char **argv)
       unindexed_plain_lane(root, pl_dir);
       reader_fail_arcade_lane(root, pl_dir);
       unindexed_member_lane(root, pl_dir);
+      multi_nosize_lane(root, pl_dir, true);
+      multi_nosize_lane(root, pl_dir, false);
+      tz_reader_lane(root);
+      tz_unsized_lane(root);
+      q1a_lane(root, pl_dir, true);
+      q1a_lane(root, pl_dir, false);
+#ifdef HAVE_RRAR
+      crc0_lane(root, pl_dir, true);
+      crc0_lane(root, pl_dir, false);
+#endif
+      folder_first_lane(root, pl_dir, true);
+      folder_first_lane(root, pl_dir, false);
+      loose_held_lane(root, pl_dir, true);
+      loose_held_lane(root, pl_dir, false);
+#ifdef HAVE_RRAR
+      rar_lane(root, pl_dir, true);
+      rar_lane(root, pl_dir, false);
+#endif
       sibling_lane(root, pl_dir, true);
       sibling_lane(root, pl_dir, false);
       dual_match_lane(root, pl_dir, true);
       dual_match_lane(root, pl_dir, false);
       archives_off_lane(root, pl_dir, true);
       archives_off_lane(root, pl_dir, false);
+      every_member_lane(root, pl_dir, true);
+      every_member_lane(root, pl_dir, false);
+      loose_member_lane(root, pl_dir, true);
+      loose_member_lane(root, pl_dir, false);
+      every_step_lane(root, pl_dir);
+      whole_first_lane(root, pl_dir, true);
+      whole_first_lane(root, pl_dir, false);
+      late_member_lane(root, pl_dir);
+      no_claim_lane(root, pl_dir, true);
+      no_claim_lane(root, pl_dir, false);
+      size_gate_lane(root, pl_dir, true);
+      size_gate_lane(root, pl_dir, false);
       first_match_whole_lane(root, pl_dir, true);
       first_match_whole_lane(root, pl_dir, false);
       serial_error_lane(root, pl_dir, true);
@@ -6404,6 +8832,7 @@ int main(int argc, char **argv)
       ahead_arcade_lane(root, pl_dir);
       ahead_walk_lane(root, pl_dir);
       ahead_walk_none_lane(root, pl_dir);
+      ahead_miss_lane(root, pl_dir);
       cue_lane(root, reader_db, false);
       cue_lane(root, reader_db, true);
       strlcpy(config_get_ptr()->paths.path_content_database, reader_db,

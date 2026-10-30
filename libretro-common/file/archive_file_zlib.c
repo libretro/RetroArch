@@ -1366,6 +1366,13 @@ static int64_t zip_file_read(
    return (int64_t)decomp.size;
 }
 
+/* TorrentZip names itself in the end record's comment: TORRENTZIPPED-
+ * and eight hex digits. */
+static bool zip_comment_torrentzip(const uint8_t *comment, unsigned len)
+{
+   return len == 22 && !memcmp(comment, "TORRENTZIPPED-", 14);
+}
+
 static int zip_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
@@ -1386,6 +1393,8 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    uint64_t entries;
    zip_context_t *zip_context = NULL;
 
+   state->torrentzip = false;
+
    /* Minimal ZIP file size is 22 bytes */
    if (read_block < 22)
       return -1;
@@ -1402,7 +1411,11 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
             unsigned comment_len = read_le(footer + 20, 2);
             if ((int64_t)(footer - map) + 22 + comment_len
                   == state->archive_size)
+            {
+               state->torrentzip = zip_comment_torrentzip(footer + 22,
+                     comment_len);
                break;
+            }
          }
          if (footer == map)
             return -1;
@@ -1437,6 +1450,11 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
             if (read_pos + (footer - footer_buf) + 22 + comment_len == state->archive_size)
             {
                eocd_at = read_pos + (footer - footer_buf);
+               /* Only a comment inside this block is looked at. */
+               state->torrentzip =
+                     (int64_t)(footer - footer_buf) + 22 + comment_len
+                        <= read_block
+                  && zip_comment_torrentzip(footer + 22, comment_len);
                break; /* found it! */
             }
          }

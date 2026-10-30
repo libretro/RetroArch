@@ -842,12 +842,14 @@ static scan_ent_t scan_ents[64];
 static size_t     scan_n;
 
 static int scan_collect(void *ctx, const uint8_t *key, size_t key_len,
-      const uint8_t *key2, size_t key2_len, uint64_t offset,
-      const uint64_t *aux)
+      const uint8_t *key2, size_t key2_len, const char *name,
+      size_t name_len, uint64_t offset, const uint64_t *aux)
 {
    (void)ctx;
    (void)key2;
    (void)key2_len;
+   (void)name;
+   (void)name_len;
    if (key_len != 4 || scan_n >= sizeof(scan_ents) / sizeof(scan_ents[0]))
       return 0;
    scan_ents[scan_n].have_aux = (aux != NULL);
@@ -863,7 +865,7 @@ static int scan_collect(void *ctx, const uint8_t *key, size_t key_len,
 static int scan_all(libretrodb_t *db)
 {
    int                rv   = -1;
-   libretrodb_scan_t *scan = libretrodb_scan_begin(db, "crc", NULL, "size");
+   libretrodb_scan_t *scan = libretrodb_scan_begin(db, "crc", NULL, "size", NULL);
 
    if (scan)
       do
@@ -1021,7 +1023,7 @@ static void case_scan_steps(const char *dir)
       if (scan_all(db) == 0)
          n_whole = scan_n;
       memcpy(whole, scan_ents, n_whole * sizeof(*whole));
-      scan = libretrodb_scan_begin(db, "crc", NULL, "size");
+      scan = libretrodb_scan_begin(db, "crc", NULL, "size", NULL);
       libretrodb_close(db);
    }
    libretrodb_free(db);
@@ -1052,7 +1054,7 @@ static void case_scan_steps(const char *dir)
    scan = NULL;
    if ((db = libretrodb_new()) && libretrodb_open(path, db, false) == 0)
    {
-      scan = libretrodb_scan_begin(db, "crc", NULL, "size");
+      scan = libretrodb_scan_begin(db, "crc", NULL, "size", NULL);
       libretrodb_close(db);
    }
    libretrodb_free(db);
@@ -1060,6 +1062,88 @@ static void case_scan_steps(const char *dir)
       rv = libretrodb_scan_step(scan, 1, scan_collect, NULL);
    libretrodb_scan_end(scan);
    check(rv == 1, "stepped scan ended part way", "one record of five");
+}
+
+static char   name_got[8][16];
+static int    name_have[8];
+static size_t name_n;
+
+static int name_collect(void *ctx, const uint8_t *key, size_t key_len,
+      const uint8_t *key2, size_t key2_len, const char *name,
+      size_t name_len, uint64_t offset, const uint64_t *aux)
+{
+   (void)ctx;
+   (void)key;
+   (void)key2;
+   (void)key2_len;
+   (void)offset;
+   (void)aux;
+   if (key_len != 4 || name_n >= 8)
+      return 0;
+   name_have[name_n] = (name != NULL);
+   name_got[name_n][0] = '\0';
+   if (name && name_len < sizeof(name_got[0]))
+      strcpy(name_got[name_n], name);
+   name_n++;
+   return 0;
+}
+
+/* A name field that is no string, or too long for a key, is absent,
+ * and the scan carries on to the key after it. */
+static void case_name_field(const char *dir)
+{
+   char               path[512];
+   static char        longstr[300];
+   buf_t              body, meta;
+   uint8_t            crc[4] = { 1, 2, 3, 4 };
+   unsigned           i;
+   int                rv = -1, ok;
+   libretrodb_t      *db = libretrodb_new();
+   libretrodb_scan_t *scan = NULL;
+
+   memset(&body, 0, sizeof(body));
+   memset(&meta, 0, sizeof(meta));
+   memset(longstr, 'x', sizeof(longstr));
+   for (i = 0; i < 4; i++)
+   {
+      bfixmap(&body, 2);
+      bfixstr(&body, "rom_name");
+      if (i == 0)
+         bfixstr(&body, "set.zip");
+      else if (i == 1)
+         buint8(&body, 7);
+      else if (i == 2)
+         bstr32(&body, longstr, sizeof(longstr));
+      else
+         bfixstr(&body, "x");
+      bfixstr(&body, "crc");
+      bbin(&body, crc, 4);
+   }
+   bnil(&body);
+   meta_count(&meta, 1);
+   sprintf(path, "%s/name_field.rdb", dir);
+   write_rdb(path, &body, &meta);
+   bfree(&body);
+   bfree(&meta);
+
+   begin("name field: string, else absent");
+   name_n = 0;
+   if (db && libretrodb_open(path, db, false) == 0)
+   {
+      scan = libretrodb_scan_begin(db, "crc", NULL, NULL, "rom_name");
+      libretrodb_close(db);
+   }
+   libretrodb_free(db);
+   while (scan && (rv = libretrodb_scan_step(scan, 4, name_collect,
+               NULL)) == 1)
+      ;
+   libretrodb_scan_end(scan);
+   ok =    rv == 0 && name_n == 4
+        && name_have[0] && !strcmp(name_got[0], "set.zip")
+        && !name_have[1] && !name_have[2]
+        && name_have[3] && !strcmp(name_got[3], "x");
+   check(ok, "name field: string, else absent",
+         ok ? "non-string and too long: absent, key kept" : "wrong");
 }
 
 int main(int argc, char **argv)
@@ -1084,6 +1168,7 @@ int main(int argc, char **argv)
    case_index_round_trip(dir);
    case_field_scan(dir);
    case_scan_steps(dir);
+   case_name_field(dir);
 
    printf("\n%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;
