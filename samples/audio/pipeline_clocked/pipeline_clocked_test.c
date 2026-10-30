@@ -25,7 +25,8 @@
  * Then display-paced against the frame-synchronous path's setpoint;
  * rate control with audio the only clock, inline and threaded, and
  * with a present that blocks behind the runloop's back; and Audio
- * Sync off, display-paced, the pipe deep and shallow.
+ * Sync off, display-paced, the pipe deep and shallow; and the second
+ * after fast-forward, which FF_EXIT_ONLY runs alone.
  * PACED_ONLY runs those lanes alone; JITTER_US makes the display-paced
  * core up to that late on each frame, its schedule kept.
  *
@@ -917,6 +918,143 @@ static void sync_off_case(double seconds)
    }
 }
 
+/* --- fast-forward, then back to speed -------------------------------- */
+/* Fast-forward runs the writer non-blocking at five times the content's
+ * rate, which leaves the ring and the device full. Back at speed the
+ * writer blocks again, and everything fast-forward queued would hold
+ * the core, a frame at a time, until it had played out: a hitch of a
+ * hundred milliseconds and a second or more of frames held, which a
+ * VRR display shows as judder. audio_driver_fastforward_end() has to
+ * clear it, threaded and inline, under a schedule of either kind. */
+static unsigned ff_exit_failures;
+
+static bool ff_exit_once(bool inline_path, unsigned pace, unsigned *held,
+      double *worst)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   runloop_state_t      *rs = runloop_state_get_ptr();
+   pthread_t cons, dev;
+   size_t    per_frame = (size_t)(CORE_RATE / FPS);
+   long      step_ns   = (long)(1e9 / FPS);
+   struct timespec next;
+   int       phase, i;
+
+   *held  = 0;
+   *worst = 0.0;
+   if (!pipeline_up(64))
+      return false;
+   config_get_ptr()->bools.audio_pipeline_fill_cap = true;
+   rs->pace = pace;
+   if (inline_path)
+   {
+      AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_PIPELINE_THREADED);
+      st->pipe_threaded = false;
+   }
+   audio_driver_publish_runloop();
+   retro_atomic_store_release_int(&dev_running, 1);
+   retro_atomic_store_release_int(&consumer_run, 1);
+   pthread_create(&dev, NULL, dev_thread, NULL);
+   if (!inline_path)
+      pthread_create(&cons, NULL, consumer, NULL);
+
+   clock_gettime(CLOCK_MONOTONIC, &next);
+   /* A second and a half at speed, one fast-forwarding, one back */
+   for (phase = 0; phase < 3; phase++)
+   {
+      int  n      = phase == 0 ? 90 : phase == 1 ? 300 : 60;
+      long period = phase == 1 ? step_ns / 5 : step_ns;
+      if (phase == 1)
+      {
+         rs->flags |= RUNLOOP_FLAG_FASTMOTION;
+         rs->pace   = RUNLOOP_PACE_TIMER;
+         AUDIO_FLAGS_SET(st, AUDIO_FLAG_NONBLOCK);
+      }
+      else if (phase == 2)
+      {
+         /* As the runloop leaves it: before the writer blocks again */
+         rs->flags &= ~RUNLOOP_FLAG_FASTMOTION;
+         rs->pace   = pace;
+         audio_driver_fastforward_end();
+         AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_NONBLOCK);
+      }
+      for (i = 0; i < n; i++)
+      {
+         struct timespec now, t0, t1;
+         double ms;
+         clock_gettime(CLOCK_MONOTONIC, &now);
+         if ((now.tv_sec - next.tv_sec) * 1000000000L
+               + (now.tv_nsec - next.tv_nsec) > period)
+            next = now;
+         next.tv_nsec += period;
+         next.tv_sec  += next.tv_nsec / 1000000000L;
+         next.tv_nsec %= 1000000000L;
+         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+         clock_gettime(CLOCK_MONOTONIC, &t0);
+         audio_driver_publish_runloop();
+         audio_driver_submit(st, 1.0f, frame_audio, per_frame * 2,
+               false, false, phase == 1, true);
+         clock_gettime(CLOCK_MONOTONIC, &t1);
+         audio_driver_pipeline_signal(st);
+         ms = (t1.tv_sec - t0.tv_sec) * 1000.0
+            + (t1.tv_nsec - t0.tv_nsec) / 1e6;
+         if (phase == 2)
+         {
+            if (ms > 1.0)
+               (*held)++;
+            if (ms > *worst)
+               *worst = ms;
+         }
+      }
+   }
+
+   retro_atomic_store_release_int(&consumer_run, 0);
+   retro_atomic_store_release_int(&dev_running, 0);
+   audio_driver_pipeline_wake();
+   dev_signal();
+   if (!inline_path)
+      pthread_join(cons, NULL);
+   pthread_join(dev, NULL);
+   pipeline_down();
+   rs->flags = 0;
+   rs->pace  = 0;
+   config_get_ptr()->bools.audio_pipeline_fill_cap = false;
+   return true;
+}
+
+static void ff_exit_case(void)
+{
+   static const struct { bool inl; unsigned pace; const char *name; } lane[] = {
+      { false, RUNLOOP_PACE_TIMER, "threaded, frame limiter" },
+      { false, RUNLOOP_PACE_VSYNC, "threaded, vsync" },
+      { true,  RUNLOOP_PACE_TIMER, "inline, frame limiter" }
+   };
+   size_t i;
+   printf("the second after fast-forward, 64 ms:\n");
+   for (i = 0; i < sizeof(lane) / sizeof(lane[0]); i++)
+   {
+      unsigned held = 0;
+      double   worst = 0.0;
+      int      attempt;
+      /* Held: over a millisecond; the longest under a frame. A host
+       * that takes the core off its CPU holds a publish too, so only
+       * a lane that never runs clean fails. */
+      for (attempt = 0; attempt < 3; attempt++)
+      {
+         if (!ff_exit_once(lane[i].inl, lane[i].pace, &held, &worst))
+            break;
+         if (held <= 6 && worst < 16.0)
+            break;
+      }
+      printf("  %-24s | %2u frames held, longest %6.1f ms\n",
+            lane[i].name, held, worst);
+      if (held > 6 || !(worst < 16.0))
+      {
+         printf("FAIL: %s held the core after fast-forward\n", lane[i].name);
+         ff_exit_failures++;
+      }
+   }
+}
+
 /* --- a stall, then jitter -------------------------------------------- */
 /* Audio Sync and rate control off: the pipe's fill is regulated by
  * nothing, so the cushion it holds ahead of the device is what priming
@@ -1152,7 +1290,13 @@ int main(int argc, char **argv)
       setpoint_case(seconds);
       rate_control_case(seconds);
       sync_off_case(seconds);
-      return paced_failures ? 1 : 0;
+      ff_exit_case();
+      return (paced_failures || ff_exit_failures) ? 1 : 0;
+   }
+   if (getenv("FF_EXIT_ONLY"))
+   {
+      ff_exit_case();
+      return ff_exit_failures ? 1 : 0;
    }
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds);
@@ -1160,6 +1304,7 @@ int main(int argc, char **argv)
    setpoint_case(seconds);
    rate_control_case(seconds);
    sync_off_case(seconds);
+   ff_exit_case();
    stall_case();
-   return (stall_failures || paced_failures) ? 1 : 0;
+   return (stall_failures || paced_failures || ff_exit_failures) ? 1 : 0;
 }

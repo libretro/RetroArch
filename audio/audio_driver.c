@@ -1278,6 +1278,7 @@ static void audio_driver_core_stream_reset(audio_driver_state_t *audio_st)
    audio_st->pause_hist_fill          = 0;
    audio_st->resume_topup_pending     = false;
    retro_atomic_store_release_int(&audio_st->core_silenced, 0);
+   retro_atomic_store_release_int(&audio_st->ff_drain_frames, 0);
 }
 
 bool audio_driver_session_carry_ok(void)
@@ -6127,6 +6128,9 @@ void audio_driver_pause_fade(bool paused)
    /* Published first, so a core delivering on a thread of its own stops
     * handing audio over at once. See audio_driver_core_silenced(). */
    retro_atomic_store_release_int(&audio_st->core_silenced, paused ? 1 : 0);
+   /* A pause drains the device itself; its resume refills it */
+   if (paused)
+      retro_atomic_store_release_int(&audio_st->ff_drain_frames, 0);
 
 #ifdef HAVE_THREADS
    if (paused)
@@ -6192,6 +6196,50 @@ void audio_driver_jump_fade_end(bool ramped)
 {
    if (ramped)
       audio_driver_pause_fade(false);
+}
+
+void audio_driver_fastforward_end(void)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   bool ramped                    = audio_driver_jump_fade_begin();
+   /* The ring's share goes with the fade; the device's can only be
+    * played down. At most one buffer of it. */
+   if (     ramped
+         && audio_st->buffer_size
+         && audio_st->src_ratio_orig > 0.0)
+      retro_atomic_store_release_int(&audio_st->ff_drain_frames,
+            (int)((double)audio_st->buffer_size
+               / audio_driver_dev_frame_bytes(audio_st)
+               / audio_st->src_ratio_orig));
+   audio_driver_jump_fade_end(ramped);
+}
+
+/* On the thread that writes the device - the consumer, or inline under
+ * the claim: whether to drop this batch because the device still holds
+ * fast-forward's queue. Dropped until the device is down to rate
+ * control's setpoint, in the silence the fade left, which the resume
+ * must not then refill. */
+static bool audio_driver_ff_drain(audio_driver_state_t *audio_st,
+      size_t frames)
+{
+   const audio_driver_t *audio = audio_st->current_audio;
+   int budget = retro_atomic_load_acquire_int(&audio_st->ff_drain_frames);
+   if (!budget)
+      return false;
+   audio_st->resume_topup_pending = false;
+   if (     (size_t)budget > frames
+         && audio
+         && audio->write_avail
+         && audio_st->context_audio_data
+         && audio->write_avail(audio_st->context_audio_data)
+            < audio_st->buffer_size / 2)
+   {
+      retro_atomic_store_release_int(&audio_st->ff_drain_frames,
+            budget - (int)frames);
+      return true;
+   }
+   retro_atomic_store_release_int(&audio_st->ff_drain_frames, 0);
+   return false;
 }
 
 /* Arms the resume ramp owed since the last resume. Under the state lock,
@@ -6900,6 +6948,11 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
    /* Dropped while the main thread carries out a request itself. */
    if (!audio_driver_inline_claim(audio_st))
       return;
+   if (audio_driver_ff_drain(audio_st, samples / canon_width))
+   {
+      audio_driver_inline_release(audio_st);
+      return;
+   }
    if (from_core)
       audio_driver_arm_resume(audio_st);
    if (!audio_st->inline_transport
@@ -7903,6 +7956,13 @@ menu_device_bound:
             }
          }
       }
+   }
+
+   if (audio_driver_ff_drain(audio_st, have))
+   {
+      retro_spsc_skip(&audio_st->pipe_ring, have * audio_st->pipe_frame_bytes);
+      audio_driver_pipeline_pass_done(audio_st, false);
+      return;
    }
 
    if (    (snap & AUDIO_SNAP_PAUSED)

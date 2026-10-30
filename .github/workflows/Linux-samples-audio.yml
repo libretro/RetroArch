@@ -1289,6 +1289,8 @@ jobs:
           # holds it. With audio the only clock, rate control has to
           # leave the ratio alone, inline and threaded, and still hold
           # the fill when a present blocks behind the runloop's back.
+          # And leaving fast-forward must not hold the core while what
+          # it queued plays out, threaded or inline (#19940).
           # Plain, not sanitized: it is the clock that is measured,
           # and a sanitizer's slowdown is a host that starves the
           # consumer whatever the cap does. Underruns with the cap are

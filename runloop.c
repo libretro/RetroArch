@@ -5562,8 +5562,9 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
             input_st->flags &= ~INP_FLAG_NONBLOCKING;
       }
 
+      /* Before audio blocks again, so the tail fits the room */
       if (!(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-         runloop_st->fastforward_after_frames = 1;
+         audio_driver_fastforward_end();
 
       driver_set_nonblock_state();
 
@@ -5613,13 +5614,15 @@ static void runloop_apply_fastmotion(bool enabled)
    {
       input_st->flags   &= ~INP_FLAG_NONBLOCKING;
       runloop_st->flags &= ~RUNLOOP_FLAG_FASTMOTION;
-      runloop_st->fastforward_after_frames = 1;
    }
 
    if (settings->bools.audio_fastforward_mute && enabled)
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
    else
       AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
+
+   if (!enabled)
+      audio_driver_fastforward_end();
 
    driver_set_nonblock_state();
 
@@ -9741,7 +9744,6 @@ int runloop_iterate(void)
    bool core_paused                       = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
 #endif
    float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
-   bool audio_sync                        = settings->bools.audio_sync;
    bool frame_advanced                    = false;
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
 
@@ -10019,7 +10021,7 @@ int runloop_iterate(void)
              * 'Display Rate': there the core runs on its own clock, its
              * audio does not block, and the menu takes the display's pace
              * below. */
-            else if (   audio_sync
+            else if (   settings->bools.audio_sync
                      && !(menu_rate & PACE_FACT_MENU_DISPLAY_RATE)
                      && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
             {
@@ -10208,30 +10210,6 @@ int runloop_iterate(void)
 end:
    if (vrr_runloop_enable)
    {
-      /* Sync on video only, block audio later. */
-      if (runloop_st->fastforward_after_frames && audio_sync)
-      {
-         if (runloop_st->fastforward_after_frames == 1)
-         {
-            /* Nonblocking audio */
-            if (    (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
-                 && (audio_st->context_audio_data))
-               audio_driver_set_nonblock_state(true);
-         }
-
-         runloop_st->fastforward_after_frames++;
-
-         if (runloop_st->fastforward_after_frames == 6)
-         {
-            /* Blocking audio */
-            if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
-                  && (audio_st->context_audio_data))
-               audio_driver_set_nonblock_state(audio_sync ? false : true);
-
-            runloop_st->fastforward_after_frames = 0;
-         }
-      }
-
       if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
          runloop_set_frame_limit(&video_st->av_info,
                runloop_get_fastforward_ratio(settings,

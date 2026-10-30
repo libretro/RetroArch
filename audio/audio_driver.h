@@ -992,6 +992,10 @@ typedef struct
     * fills the device with silence before writing. See
     * audio_driver_resume_topup(). */
    bool                  resume_topup_pending;
+   /* Core frames the device's writer may still drop after fast-forward,
+    * while the device plays down what it queued. See
+    * audio_driver_fastforward_end(). */
+   retro_atomic_int_t    ff_drain_frames;
 
    /* The layout the device was opened with - AUDIO_LAYOUT_STEREO
     * unless the driver reports a wider one - its channel count, and
@@ -1237,6 +1241,14 @@ bool audio_driver_core_silenced(void);
 bool audio_driver_jump_fade_begin(void);
 
 void audio_driver_jump_fade_end(bool ramped);
+
+/**
+ * audio_driver_fastforward_end:
+ *
+ * Fast-forward has ended. What it queued would hold a blocking writer
+ * for as long as it takes to play out; it is dropped, faded as a jump.
+ **/
+void audio_driver_fastforward_end(void);
 
 /**
  * audio_driver_pipeline_consumer_exit:

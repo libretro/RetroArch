@@ -26,6 +26,7 @@ static bool allow_timeskip = true;
 static unsigned starts;
 static unsigned stops;
 static unsigned nonblock_updates;
+static unsigned ff_ends;
 static unsigned frame_limit_updates;
 static unsigned failures;
 static char reply[1024];
@@ -83,6 +84,8 @@ char *dir_get_ptr(enum rarch_dir_type type)
 const char *path_get(enum rarch_path_type type)
 { (void)type; return ""; }
 void driver_set_nonblock_state(void) { nonblock_updates++; }
+void audio_driver_fastforward_end(void)
+{ CHECK(nonblock_updates == 1); ff_ends++; }
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 { (void)data; CHECK(state == RARCH_NETPLAY_CTL_ALLOW_TIMESKIP); return allow_timeskip; }
 
@@ -242,17 +245,18 @@ int main(void)
    CHECK(AUDIO_FLAGS_GET(&audio_st) & AUDIO_FLAG_MUTED);
    CHECK(set(&cmd, "fast_forward on"));
    CHECK(nonblock_updates == 1 && frame_limit_updates == 1);
+   CHECK(ff_ends == 0);
    video_st.frame_time_count = 10;
    CHECK(set(&cmd, "fast_forward off"));
    CHECK(!(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION));
    CHECK(!(input_st.flags & INP_FLAG_NONBLOCKING));
    CHECK(!(AUDIO_FLAGS_GET(&audio_st) & AUDIO_FLAG_MUTED));
    CHECK(video_st.frame_time_count == 0);
-   CHECK(runloop_st->fastforward_after_frames == 1);
+   CHECK(ff_ends == 1);
    CHECK(nonblock_updates == 2 && frame_limit_updates == 1);
    CHECK(!cmd.state[RARCH_FAST_FORWARD_KEY]);
    CHECK(set(&cmd, "fast_forward off"));
-   CHECK(nonblock_updates == 2);
+   CHECK(nonblock_updates == 2 && ff_ends == 1);
 
    hardcore = true;
    CHECK(!set(&cmd, "slow_motion on"));
