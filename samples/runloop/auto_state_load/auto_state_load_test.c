@@ -4,6 +4,7 @@
 
 static settings_t test_settings;
 static video_driver_state_t test_video;
+static struct retro_hw_render_callback test_hardware;
 static unsigned runs, size_checks, loads, settings_checks, path_checks;
 static unsigned initialize_after;
 #ifdef HAVE_NETWORKING
@@ -26,6 +27,16 @@ settings_t *config_get_ptr(void)
 }
 
 video_driver_state_t *video_state_get_ptr(void) { return &test_video; }
+struct retro_hw_render_callback *video_driver_get_hw_context(void)
+{
+   return &test_hardware;
+}
+bool command_event(enum event_command action, void *data)
+{
+   (void)action;
+   (void)data;
+   return true;
+}
 void input_driver_poll(void) {}
 void input_driver_poll_between_frames(void (*poll)(void)) { poll(); }
 void video_driver_cached_frame(void) {}

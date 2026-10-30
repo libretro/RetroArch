@@ -257,14 +257,13 @@ struct runloop
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char    *secondary_library_path;
 #endif
-   /* Embedded directly: was previously a my_list wrapper holding a
-    * single retro_ctx_serialize_info_t* in data[0].  The list machinery
-    * was overkill for one pointer — two extra mallocs at init (the
-    * my_list struct + its 16-slot data array), one extra indirection
-    * per access, and a constructor/destructor function-pointer pair
-    * for what amounts to alloc/free of a data buffer. */
    retro_ctx_serialize_info_t runahead_savestate_info;
    preempt_t *preempt_data;
+   struct retro_snapshot_interface snapshot_iface;
+   rollback_storage_t runahead_storage;
+   enum retro_snapshot_execution_context snapshot_context;
+   enum prediction_recovery prediction_recovery;
+   bool snapshot_iface_declined;
 #endif
 
 #ifdef HAVE_REWIND

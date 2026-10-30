@@ -14,10 +14,16 @@ static unsigned writes;
 static unsigned compressed_opens;
 static bool hold_write;
 static unsigned fail_stage;
+static bool core_available = true;
 static unsigned char disk_image[SRAM_SIZE];
 static autosave_t *current;
 static unsigned char ram_storage[SRAM_SIZE + 1];
 static unsigned char *ram = ram_storage + 1;
+
+bool core_state_is_available(void)
+{
+   return core_available;
+}
 
 void RARCH_ERR(const char *fmt, ...)
 {
@@ -143,6 +149,11 @@ int main(void)
 
    /* Paused/menu iterations service requests without a core frame. */
    memset(ram, 8, SRAM_SIZE);
+   core_available = false;
+   autosave_check();
+   assert(retro_atomic_load_acquire_int(&current->snapshot_requested));
+   assert(opens == 0);
+   core_available = true;
    autosave_check();
    wait_requested();
    assert(memcmp(disk_image, ram, SRAM_SIZE) == 0);

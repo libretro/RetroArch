@@ -26,11 +26,25 @@
 
 #define MAX_RUNAHEAD_FRAMES 12
 
+enum prediction_recovery
+{
+   PREDICTION_RECOVERY_NONE = 0,
+   PREDICTION_RECOVERY_RUNAHEAD,
+   PREDICTION_RECOVERY_PREEMPT,
+   PREDICTION_RECOVERY_FATAL
+};
+
+typedef struct rollback_storage
+{
+   void **states;
+   size_t state_size;
+   unsigned count;
+   bool core_owned;
+} rollback_storage_t;
+
 typedef struct preemptive_frames_data
 {
-   /* Savestate buffer */
-   void* buffer[MAX_RUNAHEAD_FRAMES];
-   size_t state_size;
+   rollback_storage_t storage;
 
    /* Frame count since buffer init/reset */
    uint64_t frame_count;
@@ -52,6 +66,8 @@ typedef struct preemptive_frames_data
    uint8_t replay_ptr;
    /* Number of latency frames to remove */
    uint8_t frames;
+   /* Retry an unavailable initial snapshot after one canonical frame. */
+   bool initial_capture_attempted;
 } preempt_t;
 
 RETRO_BEGIN_DECLS
@@ -66,6 +82,8 @@ bool runahead_run(
       bool use_secondary);
 
 void runahead_clear_variables(void *data);
+void runahead_snapshot_uninit(void *data);
+void runahead_snapshot_release(void *data);
 
 void runahead_remember_controller_port_device(void *data,
       long port, long device);

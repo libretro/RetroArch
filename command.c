@@ -2491,6 +2491,12 @@ bool command_read_ram(command_t *cmd, const char *arg)
    unsigned int addr          = 0;
    char *end                  = NULL;
 
+   if (!core_state_is_available())
+   {
+      command_reply_error(cmd, "READ_CORE_RAM", "core state is unavailable");
+      return false;
+   }
+
    if (command_parse_address(arg, &addr, &end) && *end == ' ')
       num             = strtoul(end + 1, NULL, 10);
    nbytes             = num <= COMMAND_READ_NBYTES_MAX ? (unsigned)num : 0;
@@ -2556,6 +2562,12 @@ bool command_write_ram(command_t *cmd, const char *arg)
    uint8_t *data        = NULL;
    uint8_t more;
    const uint8_t *start;
+
+   if (!core_state_is_available())
+   {
+      command_reply_error(cmd, "WRITE_CORE_RAM", "core state is unavailable");
+      return false;
+   }
 
    if (!command_parse_address(arg, &addr, &end) || !command_bytes_valid(end))
    {
@@ -5873,7 +5885,9 @@ static uint8_t *command_memory_get_pointer(
       unsigned address, unsigned int* max_bytes,
       int for_write, char *s, size_t len)
 {
-   if (!sys_info || sys_info->mmaps.num_descriptors == 0)
+   if (!core_state_is_available())
+      strlcpy_lit(s, " -1 core state is unavailable\n", len);
+   else if (!sys_info || sys_info->mmaps.num_descriptors == 0)
    {
       struct command_ram_block blocks[2];
       unsigned                 n;

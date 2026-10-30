@@ -43,6 +43,7 @@
 #include <compat/strl.h>
 
 #include "tasks/tasks_internal.h"
+#include "command.h"
 #include "configuration.h"
 #include "content.h"
 #include "core.h"
@@ -50,6 +51,9 @@
 #include "driver.h"
 #include "audio/audio_driver.h"
 #include "gfx/video_driver.h"
+#ifdef HAVE_THREADS
+#include "gfx/video_thread_wrapper.h"
+#endif
 #include "paths.h"
 #include "runloop.h"
 #include "verbosity.h"
@@ -240,21 +244,9 @@ static struct retro_game_info* clone_retro_game_info(const
    if (!dest)
       return NULL;
 
-   /* The copy task in flight copies the core binary, never this; the
-    * data is read only at retro_load_game on the secondary, on the
-    * main thread, after the task has reported ready. Unloading
-    * destroys the secondary - which invalidates any in-flight result
-    * through the copy generation - before retro_unload_game and
-    * before the content is freed, and a new secondary needs a new
-    * core_load_game, which replaces this clone. So the alias holds
-    * for as long as it is read.
-    *
-    * content_file_init() guarantees that all
-    * elements of the source retro_game_info
-    * struct will persist for the lifetime of
-    * the core. This means we do not have to
-    * copy any data; pointer assignment is
-    * sufficient */
+   /* Content outlives the core. Only the main thread reads this clone;
+    * the background task copies the binary. Unload destroys the secondary
+    * and invalidates pending copies before freeing content. */
    dest->path = src->path;
    dest->data = src->data;
    dest->size = src->size;
@@ -1363,42 +1355,174 @@ static void runahead_remove_input_state_hook(runloop_state_t *runloop_st)
    }
 }
 
-static bool runahead_savestate_info_init(
-      runloop_state_t *runloop_st,
-      size_t save_state_size)
+static bool preempt_slab_alloc(void **buffer, unsigned frames, size_t state_size);
+
+/* ===== BEGIN rollback storage ===== */
+static void rollback_storage_release(runloop_state_t *runloop_st,
+      rollback_storage_t *storage)
 {
+   unsigned i;
+   if (!storage->states)
+      return;
+   if (storage->core_owned)
+   {
+#ifdef HAVE_THREADS
+      video_thread_core_context_take();
+#endif
+      for (i = 0; i < storage->count; i++)
+         if (storage->states[i])
+            runloop_st->snapshot_iface.release(storage->states[i]);
+#ifdef HAVE_THREADS
+      video_thread_core_context_release();
+#endif
+   }
+   else
+      free(storage->states[0]);
+   free(storage->states);
+   memset(storage, 0, sizeof(*storage));
+}
+
+static enum retro_snapshot_result rollback_storage_init(
+      runloop_state_t *runloop_st, rollback_storage_t *storage, unsigned count)
+{
+   rollback_storage_t next;
+   enum retro_snapshot_result result = RETRO_SNAPSHOT_UNAVAILABLE;
+   unsigned i;
+   memset(&next, 0, sizeof(next));
+   if (!count || count > MAX_RUNAHEAD_FRAMES || storage->states ||
+       runloop_st->snapshot_iface_declined)
+      return RETRO_SNAPSHOT_UNAVAILABLE;
+   next.core_owned = runloop_st->snapshot_iface.version != 0;
+   next.count = count;
+   if (next.core_owned)
+   {
+      if (!runloop_st->snapshot_iface.supported(count))
+         return RETRO_SNAPSHOT_UNAVAILABLE;
+   }
+   else if (!(next.state_size = core_serialize_size_special()))
+      return RETRO_SNAPSHOT_UNAVAILABLE;
+   next.states = (void **)calloc(count, sizeof(*next.states));
+   if (!next.states)
+      return RETRO_SNAPSHOT_UNAVAILABLE;
+   if (next.core_owned)
+   {
+#ifdef HAVE_THREADS
+      video_thread_core_context_take();
+#endif
+      for (i = 0; i < count; i++)
+      {
+         result = runloop_st->snapshot_iface.create(&next.states[i]);
+         if (result != RETRO_SNAPSHOT_SUCCESS || !next.states[i])
+         {
+            if (result != RETRO_SNAPSHOT_UNAVAILABLE)
+               result = RETRO_SNAPSHOT_FATAL;
+            break;
+         }
+      }
+#ifdef HAVE_THREADS
+      video_thread_core_context_release();
+#endif
+   }
+   else if (preempt_slab_alloc(next.states, count, next.state_size))
+      result = RETRO_SNAPSHOT_SUCCESS;
+   if (result != RETRO_SNAPSHOT_SUCCESS)
+   {
+      rollback_storage_release(runloop_st, &next);
+      return result;
+   }
+   *storage = next;
+   return RETRO_SNAPSHOT_SUCCESS;
+}
+
+static enum retro_snapshot_result rollback_storage_transfer(
+      runloop_state_t *runloop_st, rollback_storage_t *storage,
+      unsigned index, bool load)
+{
+   enum retro_snapshot_result result;
+   bool special;
+   if (!storage->states || index >= storage->count)
+      return RETRO_SNAPSHOT_UNAVAILABLE;
+   if (load && storage->core_owned &&
+       !runloop_st->snapshot_iface.valid(storage->states[index]))
+      return RETRO_SNAPSHOT_UNAVAILABLE;
+   special = (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE) != 0;
+   runloop_st->flags |= RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
+#ifdef HAVE_THREADS
+   video_thread_core_context_take();
+#endif
+   if (storage->core_owned)
+      result = load ? runloop_st->snapshot_iface.load(storage->states[index]) :
+            runloop_st->snapshot_iface.save(storage->states[index]);
+   else if (load)
+      result = runloop_st->current_core.retro_unserialize(storage->states[index],
+            storage->state_size) ? RETRO_SNAPSHOT_SUCCESS : RETRO_SNAPSHOT_FATAL;
+   else
+      result = runloop_st->current_core.retro_serialize(storage->states[index],
+            storage->state_size) ? RETRO_SNAPSHOT_SUCCESS : RETRO_SNAPSHOT_UNAVAILABLE;
+#ifdef HAVE_THREADS
+   video_thread_core_context_release();
+#endif
+   if (!special)
+      runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
+   if (result != RETRO_SNAPSHOT_SUCCESS && result != RETRO_SNAPSHOT_UNAVAILABLE)
+      return RETRO_SNAPSHOT_FATAL;
+   return result;
+}
+/* ===== END rollback storage ===== */
+
+void runahead_snapshot_release(void *data)
+{
+   runloop_state_t *runloop_st = (runloop_state_t *)data;
+   if (runloop_st->prediction_recovery != PREDICTION_RECOVERY_NONE)
+      return;
+   rollback_storage_release(runloop_st, &runloop_st->runahead_storage);
+   memset(&runloop_st->runahead_savestate_info, 0,
+         sizeof(runloop_st->runahead_savestate_info));
+   if (!runloop_st->preempt_data)
+      runloop_st->snapshot_context = RETRO_SNAPSHOT_ORDINARY;
+}
+
+void runahead_snapshot_uninit(void *data)
+{
+   runloop_state_t *runloop_st = (runloop_state_t *)data;
+   runloop_st->prediction_recovery = PREDICTION_RECOVERY_NONE;
+   runahead_snapshot_release(runloop_st);
+   if (runloop_st->preempt_data)
+      rollback_storage_release(runloop_st, &runloop_st->preempt_data->storage);
+   runloop_st->snapshot_context = RETRO_SNAPSHOT_ORDINARY;
+   runloop_st->snapshot_iface_declined = false;
+   memset(&runloop_st->snapshot_iface, 0, sizeof(runloop_st->snapshot_iface));
+}
+
+static bool runahead_savestate_info_init(runloop_state_t *runloop_st)
+{
+   enum retro_snapshot_result result;
    retro_ctx_serialize_info_t *info       = &runloop_st->runahead_savestate_info;
-
    runloop_st->flags                     |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
-
-   /* Free any previous buffer so callers can safely re-init.  The
-    * matching invariant (data NULL when nothing allocated) lets the
-    * per-frame save_state/load_state path use the buffer pointer as
-    * its readiness check. */
-   free(info->data);
-   info->data       = NULL;
-   info->data_const = NULL;
-   info->size       = 0;
-
-   if (save_state_size == 0)
+   runahead_snapshot_release(runloop_st);
+   result = rollback_storage_init(runloop_st, &runloop_st->runahead_storage, 1);
+   if (result != RETRO_SNAPSHOT_SUCCESS)
+   {
+      if (result == RETRO_SNAPSHOT_FATAL)
+      {
+         runloop_st->prediction_recovery = PREDICTION_RECOVERY_FATAL;
+         command_event(CMD_EVENT_PAUSE, NULL);
+      }
       return false;
-
-   info->data       = malloc(save_state_size);
-   if (!info->data)
-      return false;
-
-   info->data_const = info->data;
-   info->size       = save_state_size;
+   }
+   if (!runloop_st->runahead_storage.core_owned)
+   {
+      info->data = runloop_st->runahead_storage.states[0];
+      info->data_const = info->data;
+      info->size = runloop_st->runahead_storage.state_size;
+   }
+   runloop_st->snapshot_context = RETRO_SNAPSHOT_CANONICAL;
    return true;
 }
 
 static void runahead_savestate_info_free(runloop_state_t *runloop_st)
 {
-   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
-   free(info->data);
-   info->data       = NULL;
-   info->data_const = NULL;
-   info->size       = 0;
+   runahead_snapshot_release(runloop_st);
 }
 
 /* Hooks - Hooks to cleanup, and add dirty input hooks */
@@ -1471,6 +1595,7 @@ static void runahead_add_hooks(runloop_state_t *runloop_st)
 
 static void runahead_err(runloop_state_t *runloop_st)
 {
+   runloop_st->snapshot_context = RETRO_SNAPSHOT_CANONICAL;
    runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_AVAILABLE;
    runahead_savestate_info_free(runloop_st);
    runahead_remove_hooks(runloop_st);
@@ -1481,9 +1606,8 @@ static bool runahead_create(runloop_state_t *runloop_st)
 {
    /* get savestate size and allocate buffer */
    video_driver_state_t *video_st = video_state_get_ptr();
-   size_t info_size               = core_serialize_size_special();
 
-   if (!runahead_savestate_info_init(runloop_st, info_size))
+   if (!runahead_savestate_info_init(runloop_st))
    {
       runahead_err(runloop_st);
       return false;
@@ -1501,30 +1625,38 @@ static bool runahead_create(runloop_state_t *runloop_st)
 
 static bool runahead_save_state(runloop_state_t *runloop_st)
 {
-   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
-   if (info->data)
+   enum retro_snapshot_result result;
+   result = rollback_storage_transfer(runloop_st, &runloop_st->runahead_storage, 0, false);
+   if (result == RETRO_SNAPSHOT_SUCCESS)
+      return true;
+   if (result == RETRO_SNAPSHOT_FATAL)
    {
-      if (core_serialize_special(info))
-         return true;
-      runahead_err(runloop_st);
+      runloop_st->prediction_recovery = PREDICTION_RECOVERY_FATAL;
+      command_event(CMD_EVENT_PAUSE, NULL);
    }
+   runahead_err(runloop_st);
    return false;
 }
 
 static bool runahead_load_state(runloop_state_t *runloop_st)
 {
-   retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
+   enum retro_snapshot_result result;
    bool last_dirty                  = (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY) ? true : false;
-   bool ret                         = core_unserialize_special(info);
+   result = rollback_storage_transfer(runloop_st, &runloop_st->runahead_storage, 0, true);
    if (last_dirty)
       runloop_st->flags             |=  RUNLOOP_FLAG_INPUT_IS_DIRTY;
    else
       runloop_st->flags             &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
-
-   if (!ret)
-      runahead_err(runloop_st);
-
-   return ret;
+   if (result != RETRO_SNAPSHOT_SUCCESS)
+   {
+      runloop_st->snapshot_context = RETRO_SNAPSHOT_CANONICAL;
+      runloop_st->prediction_recovery = PREDICTION_RECOVERY_RUNAHEAD;
+      runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_AVAILABLE;
+      command_event(CMD_EVENT_PAUSE, NULL);
+      return false;
+   }
+   runloop_st->prediction_recovery = PREDICTION_RECOVERY_NONE;
+   return true;
 }
 
 #if defined(HAVE_DYNAMIC)
@@ -1544,6 +1676,21 @@ static bool runahead_load_state_secondary(runloop_state_t *runloop_st, settings_
 }
 #endif
 
+static void runahead_core_run(runloop_state_t *runloop_st)
+{
+   if (runloop_st->prediction_recovery != PREDICTION_RECOVERY_NONE)
+      return;
+#ifdef HAVE_THREADS
+   video_thread_core_context_take();
+#endif
+   runloop_st->current_core.retro_run();
+#ifdef HAVE_THREADS
+   video_thread_core_context_release();
+#endif
+   if (runloop_st->auto_state_load_pending)
+      runloop_st->auto_state_load_core_ran = true;
+}
+
 static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
 {
    struct retro_callbacks *cbs            = &runloop_st->retro_ctx;
@@ -1556,9 +1703,7 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
    runloop_st->current_core.retro_set_input_poll(cbs->poll_cb);
    runloop_st->current_core.retro_set_input_state(cbs->state_cb);
 
-   runloop_st->current_core.retro_run();
-   if (runloop_st->auto_state_load_pending)
-      runloop_st->auto_state_load_core_ran = true;
+   runahead_core_run(runloop_st);
    audio_driver_frame_end();
 
    cbs->poll_cb                           = old_poll_function;
@@ -1604,6 +1749,25 @@ bool runahead_run(void *data,
    uint64_t frame_count    = video_st->frame_count;
    audio_driver_state_t
       *audio_st            = audio_state_get_ptr();
+
+   if (runloop_st->prediction_recovery == PREDICTION_RECOVERY_FATAL)
+      return false;
+   if (runloop_st->prediction_recovery == PREDICTION_RECOVERY_RUNAHEAD)
+   {
+      if (!runahead_load_state(runloop_st))
+         return false;
+      runahead_err(runloop_st);
+      goto force_input_dirty;
+   }
+
+   /* Snapshots cannot cross core instances. */
+   if (use_secondary && runloop_st->snapshot_iface.version)
+   {
+      if (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
+         RARCH_LOG("[Run-Ahead] Using same-instance snapshots for this core.\n");
+      runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
+      use_secondary = false;
+   }
 
    if (      runahead_count <= 0
          || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE))
@@ -1697,7 +1861,10 @@ bool runahead_run(void *data,
          if (frame_number == 0)
             advanced = core_run();
          else
+         {
+            runloop_st->snapshot_context = RETRO_SNAPSHOT_SPECULATIVE;
             runahead_core_run_use_last_input(runloop_st);
+         }
 
          if (suspended_frame)
          {
@@ -1727,7 +1894,9 @@ bool runahead_run(void *data,
 
          if (last_frame)
          {
-            if (!runahead_load_state(runloop_st))
+            bool restored = runahead_load_state(runloop_st);
+            runloop_st->snapshot_context = RETRO_SNAPSHOT_CANONICAL;
+            if (!restored)
             {
                const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
                runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
@@ -1804,6 +1973,7 @@ bool runahead_run(void *data,
    return advanced;
 
 force_input_dirty:
+   runahead_snapshot_release(runloop_st);
    advanced = core_run();
    runloop_st->flags |=  RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
    return advanced;
@@ -1876,6 +2046,7 @@ static int16_t preempt_input_state(unsigned port,
    return input_driver_state_wrapper(port, device, index, id);
 }
 
+
 /* ===== BEGIN preempt slab =====
  * The frame buffers are one allocation, frames * state_size bytes,
  * with buffer[i] at i * state_size from the base; buffer[0] is the
@@ -1898,22 +2069,23 @@ static bool preempt_slab_alloc(void **buffer, unsigned frames, size_t state_size
 static const char* preempt_allocate(runloop_state_t *runloop_st,
       const uint8_t frames)
 {
-   size_t info_size;
+   enum retro_snapshot_result result;
    preempt_t *preempt = (preempt_t*)calloc(1, sizeof(preempt_t));
-
    if (!(runloop_st->preempt_data = preempt))
       return msg_hash_to_str(MSG_PREEMPT_FAILED_TO_ALLOCATE);
-
-   info_size = core_serialize_size_special();
-   if (!info_size)
-      return msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES);
-
-   preempt->state_size = info_size;
    preempt->frames     = frames;
-
-   if (!preempt_slab_alloc(preempt->buffer, frames, info_size))
+   runahead_snapshot_release(runloop_st);
+   result = rollback_storage_init(runloop_st, &preempt->storage, frames);
+   if (result != RETRO_SNAPSHOT_SUCCESS)
+   {
+      if (result == RETRO_SNAPSHOT_FATAL)
+      {
+         runloop_st->prediction_recovery = PREDICTION_RECOVERY_FATAL;
+         command_event(CMD_EVENT_PAUSE, NULL);
+      }
       return msg_hash_to_str(MSG_PREEMPT_FAILED_TO_ALLOCATE);
-
+   }
+   runloop_st->snapshot_context = RETRO_SNAPSHOT_CANONICAL;
    return NULL;
 }
 
@@ -1928,11 +2100,11 @@ void preempt_deinit(void *data)
    preempt_t *preempt                = runloop_st->preempt_data;
    struct retro_core_t *current_core = &runloop_st->current_core;
 
-   if (!preempt)
+   if (!preempt || runloop_st->prediction_recovery != PREDICTION_RECOVERY_NONE)
       return;
 
-   /* One slab; buffer[0] is its base. */
-   free(preempt->buffer[0]);
+   rollback_storage_release(runloop_st, &preempt->storage);
+   runloop_st->snapshot_context = RETRO_SNAPSHOT_ORDINARY;
 
    free(preempt);
    runloop_st->preempt_data = NULL;
@@ -1964,8 +2136,10 @@ bool preempt_init(void *data)
    bool run_ahead_hide_warnings  = settings->bools.run_ahead_hide_warnings;
 
    if (     runloop_st->preempt_data
+         || runloop_st->prediction_recovery != PREDICTION_RECOVERY_NONE
          || !preemptive_frames_enable
          || !run_ahead_frames
+         || run_ahead_frames > MAX_RUNAHEAD_FRAMES
          || !(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
       return false;
 
@@ -1984,9 +2158,7 @@ bool preempt_init(void *data)
     * retro_serialize_size or retro_serialize */
    if (video_state_get_ptr()->frame_count == 0)
    {
-      runloop_st->current_core.retro_run();
-      if (runloop_st->auto_state_load_pending)
-         runloop_st->auto_state_load_core_ran = true;
+      runahead_core_run(runloop_st);
       audio_driver_frame_end();
    }
 
@@ -2136,95 +2308,156 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
 
 /**
  * preempt_run:
- * @preempt : pointer to preemptive frames object
- *
- * Call in place of core_run() for preemptive frames.
+ * Runs replay, then one retained frame.
  **/
 bool preempt_run(preempt_t *preempt, void *data)
 {
    runloop_state_t     *runloop_st   = (runloop_state_t*)data;
-   struct retro_core_t *current_core = &runloop_st->current_core;
    const char *_msg                  = NULL;
    audio_driver_state_t *audio_st    = audio_state_get_ptr();
    settings_t *settings              = config_get_ptr();
+   enum retro_snapshot_result result;
    unsigned input_max_users          = settings->uints.input_max_users;
    bool run_ahead_hide_warnings      = settings->bools.run_ahead_hide_warnings;
+   bool recovering = runloop_st->prediction_recovery == PREDICTION_RECOVERY_PREEMPT;
+   bool replay_save_failed = false;
+   bool first_capture;
 
-   /* Poll and check for dirty input */
-   preempt_input_poll(preempt, runloop_st, input_max_users);
+   if (runloop_st->prediction_recovery == PREDICTION_RECOVERY_FATAL)
+      return false;
+   /* Recovery must replay the input that belonged to its retained anchor. */
+   if (!recovering)
+      preempt_input_poll(preempt, runloop_st, input_max_users);
 
-   runloop_st->flags                |= RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
-
-   if ((runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY)
-         && preempt->frame_count >= preempt->frames)
+   if (!recovering && preempt->storage.core_owned &&
+       preempt->frame_count >= preempt->frames &&
+       !runloop_st->snapshot_iface.valid(preempt->storage.states[preempt->start_ptr]))
+      preempt->frame_count = 0;
+   if (preempt->storage.core_owned &&
+       !runloop_st->snapshot_iface.supported(preempt->frames))
    {
-      /* Suspend A/V and run preemptive frames */
-      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
-      video_state_get_ptr()->main_flags &= ~VIDEO_FLAG_ACTIVE;
-
-      if (!current_core->retro_unserialize(
-            preempt->buffer[preempt->start_ptr], preempt->state_size))
-      {
-         _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_LOAD_STATE);
-         goto error;
-      }
-
-      current_core->retro_run();
-      if (runloop_st->auto_state_load_pending)
-         runloop_st->auto_state_load_core_ran = true;
-      preempt->replay_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
-
-      while (preempt->replay_ptr != preempt->start_ptr)
-      {
-         if (!current_core->retro_serialize(
-               preempt->buffer[preempt->replay_ptr], preempt->state_size))
-         {
-            _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
-            goto error;
-         }
-
-         current_core->retro_run();
-         if (runloop_st->auto_state_load_pending)
-            runloop_st->auto_state_load_core_ran = true;
-         preempt->replay_ptr = PREEMPT_NEXT_PTR(preempt->replay_ptr);
-      }
-
-      AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
-      video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
-   }
-
-   /* Save current state and set start_ptr to oldest state */
-   if (!current_core->retro_serialize(
-         preempt->buffer[preempt->start_ptr], preempt->state_size))
-   {
-      _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+      if (recovering)
+         return false;
+      _msg = msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT);
       goto error;
    }
 
-   preempt->start_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
-   runloop_st->flags &= ~(RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE
-         | RUNLOOP_FLAG_INPUT_IS_DIRTY);
+   runloop_st->flags |= RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
+   runloop_st->snapshot_context = RETRO_SNAPSHOT_CANONICAL;
+   if (recovering || ((runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY) &&
+       preempt->frame_count >= preempt->frames))
+   {
+      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
+      video_state_get_ptr()->main_flags &= ~VIDEO_FLAG_ACTIVE;
+      result = rollback_storage_transfer(runloop_st, &preempt->storage,
+            preempt->start_ptr, true);
+      if (result != RETRO_SNAPSHOT_SUCCESS)
+      {
+         if (result == RETRO_SNAPSHOT_UNAVAILABLE && !recovering)
+         {
+            preempt->frame_count = 0;
+            AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
+            video_state_get_ptr()->main_flags |= VIDEO_FLAG_ACTIVE;
+            goto save_current;
+         }
+         _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_LOAD_STATE);
+         runloop_st->prediction_recovery = PREDICTION_RECOVERY_PREEMPT;
+         goto blocked;
+      }
+      runloop_st->prediction_recovery = PREDICTION_RECOVERY_NONE;
+      if (recovering)
+      {
+         _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_LOAD_STATE);
+         replay_save_failed = true;
+      }
+      runloop_st->snapshot_context = RETRO_SNAPSHOT_SPECULATIVE;
+      runahead_core_run(runloop_st);
+      preempt->replay_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
+      while (preempt->replay_ptr != preempt->start_ptr)
+      {
+         if (!replay_save_failed)
+         {
+            result = rollback_storage_transfer(runloop_st, &preempt->storage,
+                  preempt->replay_ptr, false);
+            if (result != RETRO_SNAPSHOT_SUCCESS)
+            {
+               _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+               if (result == RETRO_SNAPSHOT_FATAL)
+               {
+                  runloop_st->prediction_recovery = PREDICTION_RECOVERY_PREEMPT;
+                  goto blocked;
+               }
+               /* Reach the retained position before retiring this history. */
+               replay_save_failed = true;
+            }
+         }
+         runahead_core_run(runloop_st);
+         preempt->replay_ptr = PREEMPT_NEXT_PTR(preempt->replay_ptr);
+      }
+      AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
+      video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
+   }
+   runloop_st->snapshot_context = RETRO_SNAPSHOT_CANONICAL;
+   if (replay_save_failed)
+      goto error;
 
-   /* Run normal frame */
-   current_core->retro_run();
-   if (runloop_st->auto_state_load_pending)
-      runloop_st->auto_state_load_core_ran = true;
+save_current:
+   first_capture = !preempt->initial_capture_attempted;
+   preempt->initial_capture_attempted = true;
+   result = rollback_storage_transfer(runloop_st, &preempt->storage,
+         preempt->start_ptr, false);
+   if (result != RETRO_SNAPSHOT_SUCCESS)
+   {
+      _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+      if (result == RETRO_SNAPSHOT_FATAL)
+      {
+         runloop_st->prediction_recovery = PREDICTION_RECOVERY_FATAL;
+         goto blocked;
+      }
+      /* A core may need its next canonical run to finish pending work after
+       * handles are allocated. Give only the first snapshot one frame to
+       * become available; repeated failure still retires prediction. */
+      if (!(result == RETRO_SNAPSHOT_UNAVAILABLE && first_capture &&
+            !recovering && preempt->storage.core_owned &&
+            preempt->frame_count == 0))
+         goto error;
+   }
+   else
+      preempt->start_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
+   runloop_st->flags &= ~(RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE |
+         RUNLOOP_FLAG_INPUT_IS_DIRTY);
+   runahead_core_run(runloop_st);
    audio_driver_frame_end();
-   preempt->frame_count++;
+   if (result == RETRO_SNAPSHOT_SUCCESS)
+      preempt->frame_count++;
    return true;
 
-error:
-   runloop_st->flags &= ~(RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE
-         | RUNLOOP_FLAG_INPUT_IS_DIRTY);
+blocked:
+   runloop_st->snapshot_context = RETRO_SNAPSHOT_CANONICAL;
+   runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
    video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
-   preempt_deinit(runloop_st);
+   if (!recovering)
+   {
+      command_event(CMD_EVENT_PAUSE, NULL);
+      RARCH_ERR("[Run-Ahead Preemptive] %s\n", _msg);
+   }
+   return false;
 
+error:
+   runloop_st->snapshot_context = RETRO_SNAPSHOT_CANONICAL;
+   runloop_st->flags &= ~(RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE |
+         RUNLOOP_FLAG_INPUT_IS_DIRTY);
+   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
+   video_state_get_ptr()->main_flags |= VIDEO_FLAG_ACTIVE;
+   runahead_core_run(runloop_st);
+   audio_driver_frame_end();
+   preempt_deinit(runloop_st);
    if (!run_ahead_hide_warnings)
       runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_ERR("[Run-Ahead Preemptive] %s\n", _msg);
-   return false;
+   return true;
 }
 
 void runahead_clear_variables(void *data)

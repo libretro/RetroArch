@@ -57,6 +57,9 @@ bool core_reset_cheat(void);
 
 bool core_get_memory(retro_ctx_memory_info_t *info);
 
+/* Ordinary consumers must not read speculative state or a lost GPU. */
+bool core_state_is_available(void);
+
 /* Get system A/V information. */
 bool core_get_system_info(struct retro_system_info *system);
 

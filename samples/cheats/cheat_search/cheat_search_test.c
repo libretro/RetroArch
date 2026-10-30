@@ -31,6 +31,7 @@ void runloop_msg_queue_push(const char *msg, size_t len, unsigned prio,
   (void)title; (void)icon; (void)category; }
 void runloop_frame_work_set(unsigned work, bool on) { (void)work; (void)on; }
 const char *msg_hash_to_str(enum msg_hash_enums msg) { (void)msg; return ""; }
+bool core_state_is_available(void) { return true; }
 bool core_get_memory(retro_ctx_memory_info_t *info) { (void)info; return false; }
 bool core_get_system_info(struct retro_system_info *info) { (void)info; return false; }
 bool core_set_cheat(retro_ctx_cheat_info_t *info) { (void)info; return true; }

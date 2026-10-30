@@ -23,11 +23,11 @@
 static unsigned failures;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "FAIL %u: %s\n", (unsigned)__LINE__, #c); failures++; } } while (0)
 static bool blocked;
-static unsigned calls, gates;
+static unsigned calls, gates, failed_saves;
 static void (*loaded_run)(void);
 static char reply[1024];
 static void counted_run(void) { calls++; loaded_run(); }
-static bool fail_save(void *data, size_t size) { (void)data; (void)size; return false; }
+static bool fail_save(void *data, size_t size) { (void)data; (void)size; failed_saves++; return false; }
 bool __real_netplay_driver_ctl(enum rarch_netplay_ctl_state, void*);
 bool __wrap_netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
@@ -164,14 +164,20 @@ int main(int argc, char **argv)
       CHECK(calls-before > 3 && *state-base == 3 && !strcmp(reply,"RUN_FRAMES 3\n"));
       {
          bool (*save)(void*,size_t)=loop->current_core.retro_serialize;
+         CHECK(loop->preempt_data);
+         failed_saves=0;
          loop->current_core.retro_serialize=fail_save;
-         before=calls; reply[0]=0;
+         before=calls; base=*state; reply[0]=0;
          CHECK(command_run_frames(&cmd,"1"));
          runloop_iterate();
-         CHECK(calls == before && !reply[0] && (loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+         CHECK(failed_saves == 1);
+         CHECK(calls-before == 1 && *state-base == 1 && !strcmp(reply,"RUN_FRAMES 1\n"));
+         CHECK(!(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES) && !loop->preempt_data);
          loop->current_core.retro_serialize=save;
+         reply[0]=0;
+         CHECK(command_run_frames(&cmd,"1"));
          runloop_iterate();
-         CHECK(calls-before == 1 && !strcmp(reply,"RUN_FRAMES 1\n"));
+         CHECK(calls-before == 2 && *state-base == 2 && !strcmp(reply,"RUN_FRAMES 1\n"));
       }
       CHECK(command_release_input(&cmd,""));
       preempt_deinit(loop);

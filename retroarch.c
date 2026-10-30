@@ -4352,6 +4352,8 @@ bool command_event(enum event_command cmd, void *data)
                core_reset();
                audio_driver_jump_fade_end(ramped);
             }
+            if (!core_state_is_available())
+               return false;
 #ifdef HAVE_CHEEVOS
 #ifdef HAVE_GFX_WIDGETS
             rcheevos_reset_game(dispwidget_get_ptr()->active);

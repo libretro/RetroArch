@@ -936,6 +936,9 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
    struct menu_state *menu_st             = menu_state_get_ptr();
 #endif
 
+   if (!core_state_is_available())
+      return -1;
+
    cheat_st->num_memory_buffers           = 0;
    cheat_st->total_memory_size            = 0;
    cheat_st->curr_memory_buf              = NULL;
@@ -1447,6 +1450,9 @@ static int cheat_manager_search(enum cheat_search_type search_type)
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
 
+   if (!core_state_is_available())
+      return -1;
+
    if (cheat_st->num_memory_buffers == 0 || !prev || !cheat_st->matches)
    {
       _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED), sizeof(msg));
@@ -1847,6 +1853,9 @@ int cheat_manager_add_matches(const char *path,
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
 
+   if (!core_state_is_available())
+      return -1;
+
    if (cheat_st->num_matches + cheat_st->size > 100)
    {
       _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY), sizeof(msg));
@@ -2029,7 +2038,7 @@ void cheat_manager_apply_retro_cheats(void)
    cheat_manager_t   *cheat_st = &cheat_manager_state;
    retro_time_t current_time;
 
-   if ((!cheat_st->cheats))
+   if (!core_state_is_available() || !cheat_st->cheats)
       return;
 
    /* One reading for the whole pass: every cheat in it is applied at
@@ -2249,6 +2258,9 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    unsigned char         *curr = NULL;
    unsigned char         *prev = cheat_st->prev_memory_buf;
    unsigned int curr_match_idx = 0;
+
+   if (!core_state_is_available())
+      return;
 
    if (target_match_idx > cheat_st->num_matches - 1)
       return;

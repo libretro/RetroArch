@@ -360,6 +360,8 @@ void autosave_check(void)
 {
    unsigned i;
 
+   if (!core_state_is_available())
+      return;
    if (autosave_state.depth)
       return;
 
