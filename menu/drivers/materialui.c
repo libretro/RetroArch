@@ -2484,7 +2484,7 @@ static void materialui_update_fullscreen_thumbnail_label(
    size_t selection            = menu_st->selection_ptr;
    menu_entry_t selected_entry;
 
-   if ((mui->flags & MUI_FLAG_IS_FILE_LIST) && *mui->browser_path)
+   if (*mui->browser_path)
    {
       strlcpy(mui->fullscreen_thumbnail_label, mui->browser_name,
             sizeof(mui->fullscreen_thumbnail_label));
@@ -4356,13 +4356,15 @@ static void materialui_media_settings_hide(void *user)
    mui->flags |= MUI_FLAG_NEED_COMPUTE;
 }
 
-static void materialui_browser_update(materialui_handle_t *mui, struct menu_state *menu_st)
+static void materialui_browser_update(materialui_handle_t *mui,
+      struct menu_state *menu_st, bool open_history)
 {
    file_list_t *list = menu_st->entries.list
       ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0) : NULL;
    file_list_t *stack = menu_st->entries.list
       ? MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
    const char *directory = NULL, *name = NULL;
+   char history_dir[DIR_MAX_LENGTH];
    gfx_media_playback_state_t state;
    if (menu_media_controls_settings_active(&mui->media))
    {
@@ -4380,6 +4382,15 @@ static void materialui_browser_update(materialui_handle_t *mui, struct menu_stat
          directory = stack->list[stack->size - 1].path;
          name = item->path;
       }
+   }
+   /* An image history entry is viewed while the viewer is open */
+   else if ((mui->flags & MUI_FLAG_IS_PLAYLIST)
+         && (open_history || (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS))
+         && (name = menu_media_selected_history_image(menu_st)))
+   {
+      fill_pathname_basedir(history_dir, name, sizeof(history_dir));
+      directory = history_dir;
+      name = path_basename(name);
    }
    if (!directory || !*directory || !name || !*name)
    {
@@ -4580,7 +4591,7 @@ static void materialui_render(void *data,
 
    /* Read pointer state */
    menu_input_get_pointer_state(&mui->pointer);
-   materialui_browser_update(mui, menu_st);
+   materialui_browser_update(mui, menu_st, false);
    {
       gfx_thumbnail_t *primary = NULL, *secondary = NULL;
       bool shown = (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
@@ -7793,7 +7804,7 @@ static bool materialui_get_selected_thumbnails(
    struct menu_state   *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list       = menu_st->entries.list;
 
-   if ((mui->flags & MUI_FLAG_IS_FILE_LIST) && *mui->browser_path)
+   if (*mui->browser_path)
    {
       *primary_thumbnail = *secondary_thumbnail = &mui->browser_thumbnail;
       return true;
@@ -7883,7 +7894,7 @@ static void materialui_show_fullscreen_thumbnails(
 
    /* Sanity check: Return immediately if this is a view
     * mode without thumbnails */
-   if (!((mui->flags & MUI_FLAG_IS_FILE_LIST) && *mui->browser_path)
+   if (!*mui->browser_path
          && ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT)
             || (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST)))
       return;
@@ -8025,7 +8036,7 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
        * mode without thumbnails
        * > Note: Baring inexplicable internal errors, this
        *   can never happen... */
-      if (!((mui->flags & MUI_FLAG_IS_FILE_LIST) && *mui->browser_path)
+      if (!*mui->browser_path
          && ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT)
             || (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST)))
          goto error;
@@ -8040,6 +8051,7 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
             (primary_thumbnail->status != GFX_THUMBNAIL_STATUS_MISSING);
       show_secondary_thumbnail =
                !(mui->flags & MUI_FLAG_IS_FILE_LIST)
+            && !*mui->browser_path
             && !(mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_BLOCKED)
             && (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
             && (secondary_thumbnail->status != GFX_THUMBNAIL_STATUS_MISSING);
@@ -11076,12 +11088,15 @@ static enum menu_action materialui_parse_menu_entry_action(
    enum menu_action new_action = action;
    struct menu_state *menu_st  = menu_state_get_ptr();
 
-   if ((mui->flags & MUI_FLAG_IS_FILE_LIST)
-         && !(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
-         && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
-         && menu_media_selected_is_viewable(menu_st))
+   if (!(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+         && (((mui->flags & MUI_FLAG_IS_FILE_LIST)
+               && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
+               && menu_media_selected_is_viewable(menu_st))
+            || ((mui->flags & MUI_FLAG_IS_PLAYLIST)
+               && action == MENU_ACTION_OK
+               && menu_media_selected_in_history(menu_st))))
    {
-      materialui_browser_update(mui, menu_st);
+      materialui_browser_update(mui, menu_st, true);
       if (*mui->browser_path)
       {
          materialui_show_fullscreen_thumbnails(mui, menu_st, menu_st->selection_ptr);
@@ -11093,10 +11108,11 @@ static enum menu_action materialui_parse_menu_entry_action(
          && menu_media_controls_action(&mui->media, action,
             menu_driver_get_current_time()))
       return MENU_ACTION_NOOP;
-   if ((mui->flags & MUI_FLAG_IS_FILE_LIST)
-         && (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+   if ((mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
          && action == MENU_ACTION_OK
-         && menu_media_selected_is_viewable(menu_st))
+         && (((mui->flags & MUI_FLAG_IS_FILE_LIST)
+               && menu_media_selected_is_viewable(menu_st))
+            || ((mui->flags & MUI_FLAG_IS_PLAYLIST) && *mui->browser_path)))
       return MENU_ACTION_NOOP;
 
    /* Scan user inputs */

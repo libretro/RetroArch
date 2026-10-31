@@ -15,6 +15,13 @@ bool menu_media_queue_step(menu_media_queue_t *queue,
  * background browser's, and keeps its own OK action. */
 bool menu_media_selected_is_viewable(struct menu_state *menu_st);
 
+/* The image of the selected image history row, or NULL */
+const char *menu_media_selected_history_image(struct menu_state *menu_st);
+
+/* Whether the selected row is an image history entry, its file present,
+ * that OK opens in the viewer rather than through its Run action. */
+bool menu_media_selected_in_history(struct menu_state *menu_st);
+
 /* Main-thread image/movie activation, independent of playlist thumbnail settings.
  * Retains a matching preview and removes a duplicate/obsolete second one. */
 bool menu_media_open_selected_file(struct menu_state *menu_st,

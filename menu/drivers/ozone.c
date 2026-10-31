@@ -9170,7 +9170,10 @@ static enum menu_action ozone_parse_menu_entry_action(
    file_list_t *selection_buf     = NULL;
    unsigned horizontal_list_size  = 0;
 
-   if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+   if (((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+            || ((ozone->flags & OZONE_FLAG_IS_PLAYLIST)
+               && action == MENU_ACTION_OK
+               && menu_media_selected_in_history(menu_st)))
          && !(ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
          && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
          && menu_media_open_selected_file(menu_st, &ozone->thumbnails.left, &ozone->thumbnails.right))
@@ -9185,10 +9188,12 @@ static enum menu_action ozone_parse_menu_entry_action(
          && menu_media_controls_action(&ozone->media, action,
             menu_driver_get_current_time()))
       return MENU_ACTION_NOOP;
-   if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
-         && (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+   if ((ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
          && action == MENU_ACTION_OK
-         && menu_media_selected_is_viewable(menu_st))
+         && (((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+               && menu_media_selected_is_viewable(menu_st))
+            || ((ozone->flags & OZONE_FLAG_IS_PLAYLIST)
+               && menu_media_selected_in_history(menu_st))))
       return MENU_ACTION_NOOP;
 
    /* We have to override the thumbnail stream
@@ -9729,7 +9734,9 @@ static enum menu_action ozone_parse_menu_entry_action(
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
          }
-         else if (ozone->depth == 1)
+         else if (ozone->depth == 1
+               && !(ozone->flags2 & (OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS
+                     | OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS)))
          {
             /* Reset sidebar selection to Main Menu if stuck */
             if (!ozone->show_sidebar && ozone->categories_selection_ptr > 0)
@@ -10824,8 +10831,10 @@ static void ozone_context_reset(void *data, bool is_threaded)
          ozone_update_thumbnail_image(ozone);
       else
          ozone_thumbnails_reload(ozone);
-      if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+      if ((ozone->flags & (OZONE_FLAG_IS_FILE_LIST | OZONE_FLAG_IS_PLAYLIST))
             && (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+            && ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+               || menu_media_selected_in_history(menu_state_get_ptr()))
             && menu_media_open_selected_file(menu_state_get_ptr(),
                   &ozone->thumbnails.left, &ozone->thumbnails.right))
          ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
@@ -12978,8 +12987,10 @@ static void ozone_navigation_set(void *data, bool scroll)
 {
    ozone_handle_t *ozone = (ozone_handle_t*)data;
    ozone_selection_changed(ozone, true);
-   if ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+   if ((ozone->flags & (OZONE_FLAG_IS_FILE_LIST | OZONE_FLAG_IS_PLAYLIST))
          && (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         && ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+            || menu_media_selected_in_history(menu_state_get_ptr()))
          && menu_media_open_selected_file(menu_state_get_ptr(),
                &ozone->thumbnails.left, &ozone->thumbnails.right))
       ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;

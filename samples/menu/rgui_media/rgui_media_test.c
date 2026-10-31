@@ -169,6 +169,7 @@ static bool media_capture_settled(struct menu_state *menu_st, int ordinal)
 
 #include "../texture_media/folder_playback_test.h"
 #include "../texture_media/media_cadence_test.h"
+#include "../texture_media/history_image_test.h"
 #ifdef _WIN32
 static bool media_current_visible(struct menu_state *menu_st)
 {
@@ -200,6 +201,15 @@ static int media_folder_stage(void *data)
 static bool media_folder_shown(void *data)
 {
    return (((rgui_t*)data)->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0;
+}
+static bool media_history_ready(void *data)
+{
+   return ((rgui_t*)data)->fs_thumbnail.is_valid;
+}
+static const char *media_history_image(void *data)
+{
+   (void)data;
+   return menu_state_get_ptr()->thumbnail_path_data->content_path;
 }
 
 int main(int argc, char **argv)
@@ -265,6 +275,15 @@ int main(int argc, char **argv)
    settings = config_get_ptr();
    settings->bools.menu_rgui_inline_thumbnails = false;
    settings->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL;
+   if (getenv("MEDIA_TEST_HISTORY_IMAGE"))
+   {
+      fill_pathname_basedir(directory, argv[2], sizeof(directory));
+      MEDIA_CHECK("Images entry opens in the viewer and Back returns to the list",
+            media_history_image_check(menu_st, argv[1], directory,
+               media_folder_shown, media_history_ready, media_history_image,
+               NULL, media_render));
+      goto cleanup;
+   }
    if (getenv("MEDIA_TEST_EXTERNAL") || getenv("MEDIA_TEST_BROWSER_IMAGE"))
    {
       bool image = image_texture_get_type(argv[1]) != IMAGE_TYPE_MP4

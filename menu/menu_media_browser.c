@@ -16,9 +16,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <string/stdstring.h>
+#include <file/file_path.h>
 #include <formats/image.h>
 #include "menu_media_browser.h"
 #include "../configuration.h"
+#include "../defaults.h"
+#include "../playlist.h"
 
 struct menu_media_queue
 {
@@ -212,20 +215,79 @@ bool menu_media_selected_is_viewable(struct menu_state *menu_st)
    return type != FILE_TYPE_DIRECTORY && type != FILE_TYPE_IMAGE;
 }
 
+const char *menu_media_selected_history_image(struct menu_state *menu_st)
+{
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
+   const struct playlist_entry *entry = NULL;
+   playlist_t *playlist = playlist_get_cached();
+   const struct item_file *item;
+   file_list_t *list;
+   enum image_type_enum type;
+   if (!menu_st || !menu_st->entries.list || !playlist
+         || !g_defaults.image_history
+         || !config_get_ptr()->bools.multimedia_builtin_imageviewer_enable)
+      return NULL;
+   list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   if (!list || menu_st->selection_ptr >= list->size)
+      return NULL;
+   item = &list->list[menu_st->selection_ptr];
+   if (item->type != FILE_TYPE_RPL_ENTRY
+         || !string_is_equal(playlist_get_conf_path(playlist),
+            playlist_get_conf_path(g_defaults.image_history)))
+      return NULL;
+   playlist_get_index(playlist, item->entry_idx, &entry);
+   if (!entry || !entry->path || !*entry->path)
+      return NULL;
+   type = image_texture_get_type(entry->path);
+   if (type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS
+         || type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM
+         || strstr(entry->path, "://")
+         || path_contains_compressed_file(entry->path))
+      return NULL;
+   return entry->path;
+#else
+   return NULL;
+#endif
+}
+
+bool menu_media_selected_in_history(struct menu_state *menu_st)
+{
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
+   const char *path = menu_media_selected_history_image(menu_st);
+   return path && path_is_valid(path);
+#else
+   return false;
+#endif
+}
+
 bool menu_media_open_selected_file(struct menu_state *menu_st,
       gfx_thumbnail_t *primary, gfx_thumbnail_t *secondary)
 {
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
+   char history_dir[DIR_MAX_LENGTH];
+#endif
    file_list_t *list, *stack;
    const char *name, *directory;
    enum image_type_enum type;
    gfx_thumbnail_path_data_t *paths = menu_st ? menu_st->thumbnail_path_data : NULL;
    if (!menu_st || !menu_st->entries.list || !paths || !primary || !secondary) return false;
-   list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
-   stack = MENU_LIST_GET(menu_st->entries.list, 0);
-   if (!list || menu_st->selection_ptr >= list->size || !stack || !stack->size) return false;
-   if (!menu_media_selected_is_viewable(menu_st)) return false;
-   name = list->list[menu_st->selection_ptr].path;
-   directory = stack->list[stack->size - 1].path;
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
+   if ((name = menu_media_selected_history_image(menu_st)))
+   {
+      fill_pathname_basedir(history_dir, name, sizeof(history_dir));
+      directory = history_dir;
+      name = path_basename(name);
+   }
+   else
+#endif
+   {
+      list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+      stack = MENU_LIST_GET(menu_st->entries.list, 0);
+      if (!list || menu_st->selection_ptr >= list->size || !stack || !stack->size) return false;
+      if (!menu_media_selected_is_viewable(menu_st)) return false;
+      name = list->list[menu_st->selection_ptr].path;
+      directory = stack->list[stack->size - 1].path;
+   }
    type = image_texture_get_type(name);
    if (type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS) return false;
    if (!gfx_thumbnail_set_content_image(paths, directory, name)) return false;

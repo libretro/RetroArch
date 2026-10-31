@@ -6216,7 +6216,10 @@ static enum menu_action xmb_parse_menu_entry_action(
    struct menu_state   *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list       = menu_st->entries.list;
 
-   if (xmb->is_file_list && !xmb->show_fullscreen_thumbnails
+   if ((xmb->is_file_list
+            || (xmb->is_playlist && action == MENU_ACTION_OK
+               && menu_media_selected_in_history(menu_st)))
+         && !xmb->show_fullscreen_thumbnails
          && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
          && menu_media_open_selected_file(menu_st, &xmb->thumbnails.left, &xmb->thumbnails.right))
    {
@@ -6230,9 +6233,9 @@ static enum menu_action xmb_parse_menu_entry_action(
          && menu_media_controls_action(&xmb->media, action,
             menu_driver_get_current_time()))
       return MENU_ACTION_NOOP;
-   if (xmb->is_file_list && xmb->show_fullscreen_thumbnails
-         && action == MENU_ACTION_OK
-         && menu_media_selected_is_viewable(menu_st))
+   if (xmb->show_fullscreen_thumbnails && action == MENU_ACTION_OK
+         && ((xmb->is_file_list && menu_media_selected_is_viewable(menu_st))
+            || (xmb->is_playlist && menu_media_selected_in_history(menu_st))))
       return MENU_ACTION_NOOP;
 
    /* Scan user inputs */
@@ -7361,7 +7364,9 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       }
    }
 
-   if (xmb->is_file_list && xmb->show_fullscreen_thumbnails
+   if (xmb->show_fullscreen_thumbnails
+         && (xmb->is_file_list
+            || (xmb->is_playlist && menu_media_selected_in_history(menu_st)))
          && menu_media_open_selected_file(menu_st,
                &xmb->thumbnails.left, &xmb->thumbnails.right))
       xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
@@ -10060,7 +10065,9 @@ static void xmb_navigation_set(void *data, bool scroll)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    xmb_selection_pointer_changed(xmb, scroll);
-   if (xmb->is_file_list && xmb->show_fullscreen_thumbnails
+   if (xmb->show_fullscreen_thumbnails
+         && (xmb->is_file_list || (xmb->is_playlist
+               && menu_media_selected_in_history(menu_state_get_ptr())))
          && menu_media_open_selected_file(menu_state_get_ptr(),
                &xmb->thumbnails.left, &xmb->thumbnails.right))
       xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;

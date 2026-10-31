@@ -44,6 +44,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_media_controls.h"
+#include "../menu_media_browser.h"
 #include "../../gfx/gfx_media_cpu.h"
 #include "../../gfx/gfx_surface.h"
 #include "../../gfx/gfx_animation.h"
@@ -8479,6 +8480,26 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
          has_thumbnail = true;
       }
    }
+   /* The open viewer shows an image history entry itself, whatever
+    * the playlist thumbnail settings */
+   if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+         && (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
+   {
+      char history_dir[DIR_MAX_LENGTH];
+      const char *image = menu_media_selected_history_image(menu_st);
+      if (image)
+      {
+         fill_pathname_basedir(history_dir, image, sizeof(history_dir));
+         if (gfx_thumbnail_set_content_image(menu_st->thumbnail_path_data,
+                  history_dir, path_basename(image)))
+         {
+            strlcpy(menu_st->thumbnail_path_data->right_path,
+                  menu_st->thumbnail_path_data->content_path,
+                  sizeof(menu_st->thumbnail_path_data->right_path));
+            has_thumbnail = true;
+         }
+      }
+   }
    if (has_thumbnail)
    {
       enum image_type_enum type = image_texture_get_type(menu_st->thumbnail_path_data->right_path);
@@ -9638,6 +9659,19 @@ static enum menu_action rgui_parse_menu_entry_action(
          if (fullscreen && action == MENU_ACTION_OK && viewable)
             return MENU_ACTION_NOOP;
       }
+   }
+
+   if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
+         && action == MENU_ACTION_OK
+         && menu_media_selected_in_history(menu_st))
+   {
+      if (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
+      {
+         rgui_toggle_fs_thumbnail(rgui, config_get_ptr()->bools.menu_rgui_inline_thumbnails);
+         rgui_scan_selected_entry_thumbnail(rgui, true);
+         rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+      }
+      return MENU_ACTION_NOOP;
    }
 
    if (*rgui->media_requested_path)
