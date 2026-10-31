@@ -20,6 +20,7 @@
  */
 
 #include <stdint.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,16 +45,40 @@ static bool upscale_image(
    if (!image_src->pixels || (image_src->width < 1) || (image_src->height < 1))
       return false;
 
+   if (image_src->width > UINT_MAX / scale_factor
+         || image_src->height > UINT_MAX / scale_factor)
+      return false;
+
    /* Get output dimensions */
    image_dst->width  = image_src->width  * scale_factor;
    image_dst->height = image_src->height * scale_factor;
 
-   total_pixels = (size_t)image_dst->width * (size_t)image_dst->height;
-   if (total_pixels == 0 || total_pixels > UPSCALE_MAX_PIXELS)
+   if (image_dst->width > UPSCALE_MAX_PIXELS / image_dst->height)
       return false;
+   total_pixels = (size_t)image_dst->width * (size_t)image_dst->height;
 
    if (!(image_dst->pixels = (uint32_t*)malloc(total_pixels * sizeof(uint32_t))))
       return false;
+
+   /* These factors are exact in the point scaler's 16.16 mapping. */
+   if ((scale_factor & (scale_factor - 1)) == 0)
+   {
+      unsigned x, y, i;
+      size_t row_bytes = (size_t)image_dst->width * sizeof(uint32_t);
+      for (y = 0; y < image_src->height; y++)
+      {
+         const uint32_t *src = image_src->pixels + (size_t)y * image_src->width;
+         uint32_t *row = image_dst->pixels
+            + (size_t)y * scale_factor * image_dst->width;
+         uint32_t *dst = row;
+         for (x = 0; x < image_src->width; x++)
+            for (i = 0; i < scale_factor; i++)
+               *dst++ = src[x];
+         for (i = 1; i < scale_factor; i++)
+            memcpy(row + (size_t)i * image_dst->width, row, row_bytes);
+      }
+      return true;
+   }
 
    /* Duplicate rather than interpolate.
     *
@@ -122,6 +147,7 @@ static uint32_t *downscale_box(const uint32_t *src,
 
    if (!(d = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t))))
       return NULL;
+
 
    for (y = 0; y < dh; y++)
    {

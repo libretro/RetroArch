@@ -1,16 +1,21 @@
-/* Exact box decimation transfers its image; no second destination is needed. */
+/* Image scaling preserves pixels, ownership and allocation bounds. */
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <limits.h>
 #include <formats/image.h>
+#include <gfx/scaler/scaler.h>
 
 static struct { void *ptr; size_t bytes; } buffers[8];
 static unsigned calls, source_frees;
 static size_t live, peak;
 static int budget = -1;
 static void *source_pixels;
+static unsigned filter_calls;
+
+static bool observed_filter(struct scaler_ctx *ctx);
 
 static void *image_malloc(size_t bytes)
 {
@@ -53,9 +58,17 @@ static void image_free(void *p)
 
 #define malloc image_malloc
 #define free image_free
+#define scaler_ctx_gen_filter observed_filter
 #include SCALING_SOURCE
 #undef malloc
 #undef free
+#undef scaler_ctx_gen_filter
+
+static bool observed_filter(struct scaler_ctx *ctx)
+{
+   filter_calls++;
+   return scaler_ctx_gen_filter(ctx);
+}
 
 static void init(struct texture_image *img, unsigned w, unsigned h, int pix10)
 {
@@ -69,6 +82,7 @@ static void init(struct texture_image *img, unsigned w, unsigned h, int pix10)
    assert(img->pixels);
    source_pixels = img->pixels;
    source_frees = calls = 0;
+   filter_calls = 0;
    assert(!live);
    peak = 0;
    for (i = 0; i < (size_t)w * h; i++)
@@ -159,12 +173,94 @@ static void benchmark(int pix10)
          pix10, (unsigned long)maximum, elapsed / 12);
 }
 
+static void upscale(unsigned factor, int pix10)
+{
+   struct texture_image img;
+   uint32_t *expected;
+   unsigned x, y, dw = 7 * factor, dh = 3 * factor;
+   unsigned step = 65536 / factor;
+   init(&img, 7, 3, pix10);
+   expected = (uint32_t*)malloc((size_t)dw * dh * 4);
+   assert(expected);
+   for (y = 0; y < dh; y++)
+      for (x = 0; x < dw; x++)
+         expected[(size_t)y * dw + x] = img.pixels[
+            (size_t)((y * step) >> 16) * 7 + ((x * step) >> 16)];
+   assert(image_texture_scale(&img, 3 * factor, 0));
+   assert(img.width == dw && img.height == dh);
+   assert(img.pix10 == (pix10 != 0) && img.supports_rgba);
+   assert(calls == 1 && source_frees == 1);
+   assert(filter_calls == ((factor & (factor - 1)) != 0));
+   assert(!memcmp(img.pixels, expected, (size_t)dw * dh * 4));
+   image_free(img.pixels);
+   free(expected);
+   assert(!live);
+}
+
+static void upscale_failures(void)
+{
+   struct texture_image img, dst;
+   uint32_t pixel = 0;
+   init(&img, 7, 3, 0);
+   budget = 0;
+   assert(!image_texture_scale(&img, 6, 0));
+   assert(img.width == 7 && img.height == 3 && !source_frees);
+   assert(!filter_calls && !live);
+   budget = 1;
+   calls = 0;
+   assert(image_texture_scale(&img, 6, 0));
+   assert(source_frees == 1 && !filter_calls);
+   image_free(img.pixels);
+   assert(!live);
+   budget = -1;
+   memset(&img, 0, sizeof(img));
+   memset(&dst, 0, sizeof(dst));
+   img.pixels = &pixel;
+   img.width = UINT_MAX / 2 + 2;
+   img.height = 1;
+   calls = filter_calls = 0;
+   assert(!upscale_image(2, &img, &dst));
+   assert(!calls && !filter_calls && !dst.pixels);
+   img.width = img.height = 65537;
+   assert(!upscale_image(2, &img, &dst));
+   assert(!calls && !dst.pixels);
+}
+
+static void benchmark_upscale(unsigned factor, int pix10)
+{
+   struct texture_image img;
+   unsigned repeat, generated = 0;
+   double elapsed = 0.0;
+   for (repeat = 0; repeat < 40; repeat++)
+   {
+      clock_t start;
+      init(&img, 320, 240, pix10);
+      start = clock();
+      assert(image_texture_scale(&img, 240 * factor, 0));
+      elapsed += 1000.0 * (clock() - start) / CLOCKS_PER_SEC;
+      generated += filter_calls;
+      image_free(img.pixels);
+      assert(!live);
+   }
+   printf("320x240 upscale %ux pix10=%d: %.3f ms, %u filter setups / 40 calls\n",
+         factor, pix10, elapsed / 40, generated);
+}
+
 int main(int argc, char **argv)
 {
    int pix10;
-   (void)argv;
    if (argc > 1)
    {
+      if (!strcmp(argv[1], "--bench-upscale"))
+      {
+         for (pix10 = 0; pix10 < 2; pix10++)
+         {
+            benchmark_upscale(2, pix10);
+            benchmark_upscale(4, pix10);
+            benchmark_upscale(8, pix10);
+         }
+         return 0;
+      }
       benchmark(0);
       benchmark(1);
       return 0;
@@ -173,8 +269,15 @@ int main(int argc, char **argv)
    {
       exact(16, 8, 8, pix10);
       exact(32, 16, 8, pix10);
+      upscale(2, pix10);
+      upscale(3, pix10);
+      upscale(4, pix10);
+      upscale(5, pix10);
+      upscale(8, pix10);
+      upscale(16, pix10);
    }
    failures();
-   puts("PASS: 8/10-bit exact box pixels, one-allocation ownership transfer, failure/retry, sinc fallback");
+   upscale_failures();
+   puts("PASS: 8/10-bit box and upscale pixels, ownership, bounds, failure/retry");
    return 0;
 }
