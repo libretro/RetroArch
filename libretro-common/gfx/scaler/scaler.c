@@ -75,10 +75,13 @@ static bool point_can_convert_direct(const struct scaler_ctx *ctx)
       && (uint64_t)ctx->out_width * ctx->out_height
          <= (uint64_t)ctx->in_width * ctx->in_height / 4
       && ((ctx->in_fmt == SCALER_FMT_RGB565
-               && ctx->out_fmt == SCALER_FMT_ARGB8888)
-            || ((ctx->in_fmt == SCALER_FMT_RGB565
-                  || ctx->in_fmt == SCALER_FMT_ARGB8888)
-               && ctx->out_fmt == SCALER_FMT_BGR24));
+               && (ctx->out_fmt == SCALER_FMT_ARGB8888
+                  || ctx->out_fmt == SCALER_FMT_BGR24))
+            || (ctx->in_fmt == SCALER_FMT_ARGB8888
+               && ctx->out_fmt == SCALER_FMT_BGR24)
+            || (ctx->in_fmt == SCALER_FMT_BGR24
+               && (ctx->out_fmt == SCALER_FMT_ARGB8888
+                  || ctx->out_fmt == SCALER_FMT_RGB565)));
 }
 
 static void scaler_point_convert(const struct scaler_ctx *ctx,
@@ -90,16 +93,41 @@ static void scaler_point_convert(const struct scaler_ctx *ctx,
    int y, x;
    uint8_t *output = (uint8_t*)output_;
    const uint8_t *input = (const uint8_t*)input_;
-   int input_step = ctx->in_fmt == SCALER_FMT_RGB565
-      ? (in_stride >> 1) * 2 : (in_stride >> 2) * 4;
-   int output_step = ctx->out_fmt == SCALER_FMT_ARGB8888
-      ? (out_stride >> 2) * 4 : out_stride;
+   int input_step = ctx->in_fmt == SCALER_FMT_BGR24 ? in_stride
+      : (ctx->in_fmt == SCALER_FMT_RGB565
+         ? (in_stride >> 1) * 2 : (in_stride >> 2) * 4);
+   int output_step = ctx->out_fmt == SCALER_FMT_BGR24 ? out_stride
+      : (ctx->out_fmt == SCALER_FMT_RGB565
+         ? (out_stride >> 1) * 2 : (out_stride >> 2) * 4);
 
    for (y = 0; y < out_height; y++, output += output_step)
    {
       const uint8_t *row = input
          + (ptrdiff_t)ctx->vert.filter_pos[y] * input_step;
-      if (ctx->out_fmt == SCALER_FMT_ARGB8888)
+      if (ctx->in_fmt == SCALER_FMT_BGR24)
+      {
+         if (ctx->out_fmt == SCALER_FMT_ARGB8888)
+         {
+            uint32_t *dst = (uint32_t*)output;
+            for (x = 0; x < out_width; x++)
+            {
+               const uint8_t *p = row + (size_t)ctx->horiz.filter_pos[x] * 3;
+               dst[x] = 0xff000000u | ((uint32_t)p[2] << 16)
+                  | ((uint32_t)p[1] << 8) | p[0];
+            }
+         }
+         else
+         {
+            uint16_t *dst = (uint16_t*)output;
+            for (x = 0; x < out_width; x++)
+            {
+               const uint8_t *p = row + (size_t)ctx->horiz.filter_pos[x] * 3;
+               dst[x] = (uint16_t)(((p[2] & 0xf8) << 8)
+                     | ((p[1] & 0xfc) << 3) | (p[0] >> 3));
+            }
+         }
+      }
+      else if (ctx->out_fmt == SCALER_FMT_ARGB8888)
       {
          uint32_t *dst = (uint32_t*)output;
          const uint16_t *src = (const uint16_t*)row;

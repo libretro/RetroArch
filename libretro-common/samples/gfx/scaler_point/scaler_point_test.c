@@ -57,8 +57,10 @@ static void pixels(int iw, int ih, int ow, int oh, unsigned flip,
       enum scaler_pix_fmt in_fmt, enum scaler_pix_fmt out_fmt, int benchmark)
 {
    struct scaler_ctx ctx;
-   unsigned bpp_in = in_fmt == SCALER_FMT_RGB565 ? 2 : 4;
-   unsigned bpp_out = out_fmt == SCALER_FMT_BGR24 ? 3 : 4;
+   unsigned bpp_in = in_fmt == SCALER_FMT_BGR24 ? 3
+      : (in_fmt == SCALER_FMT_RGB565 ? 2 : 4);
+   unsigned bpp_out = out_fmt == SCALER_FMT_BGR24 ? 3
+      : (out_fmt == SCALER_FMT_RGB565 ? 2 : 4);
    int ip = (iw * bpp_in + 15) & ~15;
    int op = (ow * bpp_out + 15) & ~15;
    size_t in_size = (size_t)ip * ih;
@@ -98,10 +100,22 @@ static void pixels(int iw, int ih, int ow, int oh, unsigned flip,
             + (size_t)((xp + x * xs) >> 16) * bpp_in;
          if (in_fmt == SCALER_FMT_RGB565)
             conv_rgb565_argb8888(&pixel, p, 1, 1, 4, 2);
+         else if (in_fmt == SCALER_FMT_BGR24)
+         {
+            const uint8_t *bgr = (const uint8_t*)p;
+            pixel = 0xff000000u | ((uint32_t)bgr[2] << 16)
+               | ((uint32_t)bgr[1] << 8) | bgr[0];
+         }
          else
             memcpy(&pixel, p, 4);
          if (out_fmt == SCALER_FMT_BGR24)
             conv_argb8888_bgr24(q, &pixel, 1, 1, 3, 4);
+         else if (out_fmt == SCALER_FMT_RGB565)
+         {
+            uint16_t rgb = (uint16_t)((((pixel >> 19) & 0x1f) << 11)
+                  | (((pixel >> 10) & 0x3f) << 5) | ((pixel >> 3) & 0x1f));
+            memcpy(q, &rgb, 2);
+         }
          else
             memcpy(q, &pixel, 4);
       }
@@ -117,7 +131,8 @@ static void pixels(int iw, int ih, int ow, int oh, unsigned flip,
       if (!benchmark)
       {
          assert(!ctx.scaled.frame && !ctx.scaled.stride);
-         if ((in_fmt != SCALER_FMT_RGB565 && out_fmt != SCALER_FMT_BGR24)
+         if (((in_fmt == SCALER_FMT_ARGB8888 || in_fmt == SCALER_FMT_XRGB2101010)
+                  && (out_fmt == SCALER_FMT_ARGB8888 || out_fmt == SCALER_FMT_XRGB2101010))
                || (ow <= iw && oh <= ih
                   && (uint64_t)ow * oh <= (uint64_t)iw * ih / 4))
             assert(!frame_calls && !ctx.frame_arena);
@@ -228,6 +243,15 @@ static void all_rgb565_values(enum scaler_pix_fmt out_fmt)
 
 int main(int argc, char **argv)
 {
+   static const enum scaler_pix_fmt fmts[][2] = {
+      {SCALER_FMT_ARGB8888, SCALER_FMT_ARGB8888},
+      {SCALER_FMT_RGB565, SCALER_FMT_BGR24},
+      {SCALER_FMT_XRGB2101010, SCALER_FMT_XRGB2101010},
+      {SCALER_FMT_RGB565, SCALER_FMT_ARGB8888},
+      {SCALER_FMT_ARGB8888, SCALER_FMT_BGR24},
+      {SCALER_FMT_BGR24, SCALER_FMT_ARGB8888},
+      {SCALER_FMT_BGR24, SCALER_FMT_RGB565}
+   };
    static const int sizes[][4] = {
       {32, 24, 8, 6}, {7, 5, 13, 9}, {17, 9, 3, 2},
       {8, 8, 8, 4}, {8, 8, 4, 8}, {2, 2, 1, 1},
@@ -244,14 +268,16 @@ int main(int argc, char **argv)
       pixels(3840, 2160, 640, 480, 0, SCALER_FMT_RGB565, SCALER_FMT_ARGB8888, 1);
       pixels(3840, 2160, 640, 480, 0, SCALER_FMT_ARGB8888, SCALER_FMT_BGR24, 1);
       pixels(1920, 1080, 1920, 1079, 0, SCALER_FMT_RGB565, SCALER_FMT_ARGB8888, 1);
+      pixels(3840, 2160, 640, 480, 0, SCALER_FMT_BGR24, SCALER_FMT_ARGB8888, 1);
+      pixels(3840, 2160, 640, 480, 0, SCALER_FMT_BGR24, SCALER_FMT_RGB565, 1);
+      pixels(1920, 1080, 1920, 1079, 0, SCALER_FMT_BGR24, SCALER_FMT_RGB565, 1);
       return 0;
    }
    for (size = 0; size < sizeof(sizes) / sizeof(sizes[0]); size++)
       for (flip = 0; flip < 4; flip++)
-         for (fmt = 0; fmt < 5; fmt++)
+         for (fmt = 0; fmt < sizeof(fmts) / sizeof(fmts[0]); fmt++)
             pixels(sizes[size][0], sizes[size][1], sizes[size][2], sizes[size][3], flip,
-                  (fmt == 1 || fmt == 3) ? SCALER_FMT_RGB565 : (fmt == 2 ? SCALER_FMT_XRGB2101010 : SCALER_FMT_ARGB8888),
-                  (fmt == 1 || fmt == 4) ? SCALER_FMT_BGR24 : (fmt == 2 ? SCALER_FMT_XRGB2101010 : SCALER_FMT_ARGB8888), 0);
+                  fmts[fmt][0], fmts[fmt][1], 0);
    modes_and_failures();
    all_rgb565_values(SCALER_FMT_ARGB8888);
    all_rgb565_values(SCALER_FMT_BGR24);
