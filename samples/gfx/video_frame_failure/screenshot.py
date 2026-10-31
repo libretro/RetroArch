@@ -9,7 +9,9 @@ import tempfile
 
 root = Path(__file__).resolve().parents[3]
 source = Path(os.environ.get('SCREENSHOT_SOURCE', root / 'tasks/task_screenshot.c')).read_text()
-start = source.index('static void screenshot_rotate(')
+start = source.find('static INLINE void screenshot_copy_pixel(')
+if start < 0:
+    start = source.index('static void screenshot_rotate(')
 rotate = source[start:source.index('\n/* Take frame bottom-up. */', start)]
 start = source.index('struct ss_raw_copy\n')
 snapshot = source[start:source.index('\nstatic bool take_screenshot_choice(', start)]
@@ -21,6 +23,7 @@ program = r'''
 #include <string.h>
 #include <time.h>
 #include <boolean.h>
+#include <retro_inline.h>
 #include <libretro.h>
 #include "gfx/video_defines.h"
 typedef struct { int unused; } video_driver_state_t;
@@ -203,6 +206,13 @@ static void invalid(void)
       input_pitch = i == 1 ? 0 : (i == 2 ? 7 : (size_t)-1);
       CHECK(!capture(4) && !calls && !dump_calls, "invalid snapshot layout accepted");
    }
+   if (sizeof(size_t) == 4)
+   {
+      input_dims = VIDEO_SCALE_PACK(65535, 65535);
+      input_pitch = 65535 * 4;
+      CHECK(!capture(4) && !calls && !dump_calls, "snapshot allocation size overflow");
+   }
+   input_dims = VIDEO_SCALE_PACK(2, 2);
    input = NULL;
    input_pitch = 8;
    CHECK(!capture(4) && !calls && !dump_calls, "missing snapshot accepted");
@@ -246,7 +256,10 @@ static void bench(void)
 }
 int main(int argc, char **argv)
 {
-   static const unsigned sizes[][2] = {{1,1},{1,5},{5,1},{3,2},{17,9},{33,19},{64,48}};
+   static const unsigned sizes[][2] = {
+      {1,1},{1,5},{5,1},{3,2},{17,9},{33,19},{64,48},
+      {31,32},{32,33},{63,65},{129,67}
+   };
    unsigned s, bpp, r, p;
    if (argc > 1 && !strcmp(argv[1], "--bench")) { bench(); return 0; }
    if (argc > 1) { lane(3, 2, 2, 16, 1, 0, 0, 1); return failures ? 1 : 0; }

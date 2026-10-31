@@ -522,6 +522,14 @@ static void task_screenshot_callback(retro_task_t *task,
  * Copies rotated @source image to @target
  * according to @rotate_type 'enum video_rotation_type'.
  **/
+static INLINE void screenshot_copy_pixel(void *dst, const void *src, unsigned bpp)
+{
+   if (bpp == sizeof(uint32_t))
+      memcpy(dst, src, sizeof(uint32_t));
+   else
+      memcpy(dst, src, sizeof(uint16_t));
+}
+
 static void screenshot_rotate(
       void *target,
       const void *source,
@@ -530,7 +538,7 @@ static void screenshot_rotate(
       unsigned bpp,
       uint8_t rotate_type)
 {
-   unsigned x, y;
+   unsigned x, y, bx, by;
    size_t source_pitch = *pitch;
    unsigned source_width  = VIDEO_SCALE_W(*dims);
    unsigned source_height = VIDEO_SCALE_H(*dims);
@@ -562,37 +570,39 @@ static void screenshot_rotate(
       return;
    }
 
-   for (y = 0; y < target_height; y++)
-   {
-      for (x = 0; x < target_width; x++)
+   if (rotate_type == VIDEO_ROTATION_180_DEG)
+      for (y = 0; y < target_height; y++)
       {
-         unsigned sx, sy;
-         const uint8_t *src;
-         uint8_t *dst = target_px + (size_t)y * target_pitch + x * bpp;
-
-         switch (rotate_type)
-         {
-            case VIDEO_ROTATION_90_DEG:
-               sx = source_width - 1 - y;
-               sy = x;
-               break;
-            case VIDEO_ROTATION_180_DEG:
-               sx = source_width - 1 - x;
-               sy = source_height - 1 - y;
-               break;
-            default:
-            case VIDEO_ROTATION_270_DEG:
-               sx = y;
-               sy = source_height - 1 - x;
-               break;
-         }
-         src = source_px + (size_t)sy * source_pitch + sx * bpp;
-         if (bpp == sizeof(uint32_t))
-            memcpy(dst, src, sizeof(uint32_t));
-         else
-            memcpy(dst, src, sizeof(uint16_t));
+         const uint8_t *src_row = source_px
+            + (size_t)(source_height - 1 - y) * source_pitch;
+         uint8_t *dst_row = target_px + (size_t)y * target_pitch;
+         for (x = 0; x < target_width; x++)
+            screenshot_copy_pixel(dst_row + x * bpp,
+                  src_row + (source_width - 1 - x) * bpp, bpp);
       }
-   }
+   else
+      /* Keep source columns and destination rows in cache together. */
+      for (by = 0; by < target_height; by += 32)
+         for (bx = 0; bx < target_width; bx += 32)
+         {
+            unsigned y_end = by + 32 < target_height ? by + 32 : target_height;
+            unsigned x_end = bx + 32 < target_width ? bx + 32 : target_width;
+            for (y = by; y < y_end; y++)
+            {
+               unsigned sx = rotate_type == VIDEO_ROTATION_90_DEG
+                  ? source_width - 1 - y : y;
+               const uint8_t *src_col = source_px + sx * bpp;
+               uint8_t *dst_row = target_px + (size_t)y * target_pitch;
+               if (rotate_type == VIDEO_ROTATION_90_DEG)
+                  for (x = bx; x < x_end; x++)
+                     screenshot_copy_pixel(dst_row + x * bpp,
+                           src_col + (size_t)x * source_pitch, bpp);
+               else
+                  for (x = bx; x < x_end; x++)
+                     screenshot_copy_pixel(dst_row + x * bpp,
+                           src_col + (size_t)(source_height - 1 - x) * source_pitch, bpp);
+            }
+         }
 
    /* Replace source values with target values */
    *dims   = VIDEO_SCALE_PACK(target_width, target_height);
