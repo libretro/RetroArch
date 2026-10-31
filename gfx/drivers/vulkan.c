@@ -7430,10 +7430,10 @@ static void vulkan_free(void *data)
       vulkan_retained_free(vk);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
+      vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo);
+      vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo_menu);
       if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
       {
-         vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo);
-         vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo_menu);
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->offscreen_buffer);
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
          vulkan_deinit_hdr_readback_render_pass(vk);
@@ -16305,10 +16305,13 @@ static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
 {
    VkFormat format;
    unsigned readback_slot;
+   unsigned caller_dims;
    struct vk_texture *staging       = NULL;
 
    if (!vk)
       return false;
+
+   caller_dims = vk->vp.dims;
 
    /* Lazy init / reinit: (re)initialize streamed readback when recording
     * starts after driver init, or when viewport dimensions change. */
@@ -16410,6 +16413,10 @@ static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
 
       if (!is_idle)
          video_driver_cached_frame();
+
+      /* The caller's buffer still has the pre-render dimensions. */
+      if (vk->vp.dims != caller_dims)
+         return false;
 
       {
          /* Wait specifically on the frame submission that recorded
@@ -16669,6 +16676,7 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
    vk_t *vk                   = (vk_t*)data;
    bool is_scrgb;
    unsigned readback_slot;
+   unsigned caller_dims;
 
    if (!vk)
       return false;
@@ -16682,6 +16690,8 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
 
    if (!is_scrgb && !vulkan_is_hdr10_format(vk->context->swapchain_format))
       return false;
+
+   caller_dims = vk->vp.dims;
 
    /* Request a synchronous read-back that skips the tone-map. Reuse the
     * same PENDING machinery; VK_FLAG_READBACK_HDR tells the frame path to
@@ -16712,6 +16722,9 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
    }
 
    vk->flags &= ~VK_FLAG_READBACK_HDR;
+
+   if (vk->vp.dims != caller_dims)
+      return false;
 
    if (!staging->memory)
    {
