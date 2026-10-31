@@ -2185,6 +2185,7 @@ bool vulkan_context_create_android_surface(gfx_ctx_vulkan_data_t *vk,
 #endif
 
 static const char *vulkan_optional_instance_extensions[] = {
+   "VK_KHR_get_physical_device_properties2",
 #ifdef __APPLE__
    VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
 #endif
@@ -2195,7 +2196,6 @@ static const char *vulkan_optional_instance_extensions[] = {
    VULKAN_COLORSPACE_EXTENSION_NAME
 #endif
 #if defined(_WIN32) && !defined(__WINRT__)
-   , "VK_KHR_get_physical_device_properties2"
    , "VK_KHR_external_memory_capabilities"
    , "VK_KHR_external_semaphore_capabilities"
 #endif
