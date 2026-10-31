@@ -283,7 +283,7 @@ static bool screenshot_encode_begin(screenshot_task_state_t *state)
    else
       scaler->in_fmt             = SCALER_FMT_RGB565;
 
-   video_frame_convert_to_bgr24(
+   if (!video_frame_convert_to_bgr24(
          scaler,
          state->out_buffer,
          input,
@@ -292,8 +292,11 @@ static bool screenshot_encode_begin(screenshot_task_state_t *state)
          -state->pitch,
          VIDEO_SCALE_W(state->out_dims),
          VIDEO_SCALE_H(state->out_dims),
-         VIDEO_SCALE_W(state->out_dims) * 3
-         );
+         VIDEO_SCALE_W(state->out_dims) * 3))
+   {
+      scaler_ctx_gen_reset(&state->scaler);
+      return false;
+   }
 
    scaler_ctx_gen_reset(&state->scaler);
 
@@ -942,6 +945,11 @@ static bool take_screenshot_viewport(
          }
          free(hdr_buffer);
       }
+
+      /* A failed HDR render may have changed the viewport. */
+      video_driver_get_viewport_info(&vp);
+      if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
+         return false;
    }
 
    if (!(buffer = (uint8_t*)malloc(VIDEO_SCALE_AREA(vp.dims) * 3)))

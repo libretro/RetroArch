@@ -24,6 +24,8 @@
 #define _LIBRETRO_SDK_VIDEO_FRAME_H
 
 #include <stdint.h>
+#include <stddef.h>
+#include <limits.h>
 #include <string.h>
 #include <boolean.h>
 #include <retro_common_api.h>
@@ -162,12 +164,67 @@ static INLINE void video_frame_convert_argb8888_to_abgr8888(
    scaler_ctx_scale_direct(scaler, output, input);
 }
 
-static INLINE void video_frame_convert_to_bgr24(
+static INLINE bool video_frame_convert_to_bgr24(
       struct scaler_ctx *scaler,
       void *output, const void *input,
       int in_width, int in_height, int in_pitch,
       int out_width, int out_height, int out_pitch)
 {
+   if (in_width <= 0 || in_height <= 0 || out_width <= 0
+         || out_height <= 0 || out_width > INT_MAX / 3)
+      return false;
+
+   /* Sample and convert in one pass; thumbnails need no full-size ARGB copy. */
+   if (in_width >= out_width && in_height >= out_height
+         && (in_width != out_width || in_height != out_height)
+         && (scaler->in_fmt == SCALER_FMT_ARGB8888
+            || scaler->in_fmt == SCALER_FMT_RGB565
+            || scaler->in_fmt == SCALER_FMT_BGR24))
+   {
+      int y, x;
+      int64_t x_step = ((int64_t)in_width << 16) / out_width;
+      int64_t y_step = ((int64_t)in_height << 16) / out_height;
+      int64_t x_start = ((int64_t)in_width << 15) / out_width - (1 << 15);
+      int64_t y_pos = ((int64_t)in_height << 15) / out_height - (1 << 15);
+      unsigned bpp = scaler->in_fmt == SCALER_FMT_RGB565 ? 2
+         : (scaler->in_fmt == SCALER_FMT_BGR24 ? 3 : 4);
+      if (x_start < 0)
+         x_start = 0;
+      if (y_pos < 0)
+         y_pos = 0;
+      for (y = 0; y < out_height; y++, y_pos += y_step)
+      {
+         uint8_t *dst = (uint8_t*)output + (ptrdiff_t)y * out_pitch;
+         const uint8_t *row = (const uint8_t*)input
+            + (ptrdiff_t)(y_pos >> 16) * in_pitch;
+         int64_t x_pos = x_start;
+         for (x = 0; x < out_width; x++, x_pos += x_step)
+         {
+            const uint8_t *src = row + (size_t)(x_pos >> 16) * bpp;
+            if (scaler->in_fmt == SCALER_FMT_RGB565)
+            {
+               uint16_t pixel;
+               memcpy(&pixel, src, sizeof(pixel));
+               dst[3 * x + 0] = (uint8_t)((pixel & 31) << 3) | (pixel & 31) >> 2;
+               dst[3 * x + 1] = (uint8_t)(((pixel >> 5) & 63) << 2)
+                  | ((pixel >> 5) & 63) >> 4;
+               dst[3 * x + 2] = (uint8_t)((pixel >> 11) << 3) | (pixel >> 11) >> 2;
+            }
+            else if (scaler->in_fmt == SCALER_FMT_ARGB8888)
+            {
+               uint32_t pixel;
+               memcpy(&pixel, src, sizeof(pixel));
+               dst[3 * x + 0] = (uint8_t)pixel;
+               dst[3 * x + 1] = (uint8_t)(pixel >> 8);
+               dst[3 * x + 2] = (uint8_t)(pixel >> 16);
+            }
+            else
+               memcpy(dst + 3 * x, src, 3);
+         }
+      }
+      return true;
+   }
+
    scaler->in_width    = in_width;
    scaler->in_height   = in_height;
    scaler->out_width   = out_width;
@@ -176,12 +233,14 @@ static INLINE void video_frame_convert_to_bgr24(
    scaler->out_fmt     = SCALER_FMT_BGR24;
    scaler->scaler_type = SCALER_TYPE_POINT;
 
-   scaler_ctx_gen_filter(scaler);
+   if (!scaler_ctx_gen_filter(scaler))
+      return false;
 
    scaler->in_stride   = in_pitch;
    scaler->out_stride  = out_pitch;
 
    scaler_ctx_scale_direct(scaler, output, input);
+   return true;
 }
 
 static INLINE void video_frame_convert_rgba_to_bgr(

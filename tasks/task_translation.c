@@ -954,7 +954,8 @@ struct translation_sw_ctx
 {
    struct scaler_ctx *scaler;
    uint8_t           *dst;
-   size_t             pitch;
+   unsigned           dims;
+   bool               success;
 };
 
 static void translation_sw_convert_cb(void *userdata,
@@ -966,11 +967,10 @@ static void translation_sw_convert_cb(void *userdata,
    struct translation_sw_ctx *ctx = (struct translation_sw_ctx*)userdata;
    if (!data || !ctx || !ctx->dst)
       return;
-   /* If the dimensions shifted between cached_frame_info and
-    * here (shouldn't with same-thread access but cheap to defend),
-    * trust the cached_frame_read parameters which describe the
-    * actual buffer we were given. */
-   video_frame_convert_to_bgr24(
+   /* The destination was allocated for the earlier snapshot. */
+   if (dims != ctx->dims)
+      return;
+   ctx->success = video_frame_convert_to_bgr24(
          ctx->scaler,
          ctx->dst,
          (const uint8_t*)data + ((int)height - 1) * pitch,
@@ -1076,9 +1076,8 @@ bool run_translation_service_notify(settings_t *settings, bool paused,
             goto finish;
 
          bit24_image_prev = (uint8_t*)malloc(VIDEO_SCALE_AREA(vp.dims) * 3);
-         bit24_image      = (uint8_t*)malloc(VIDEO_SCALE_AREA(dims) * 3);
 
-         if (!bit24_image_prev || !bit24_image)
+         if (!bit24_image_prev)
             goto finish;
 
          if (!(      video_st->current_video->read_viewport
@@ -1089,19 +1088,25 @@ bool run_translation_service_notify(settings_t *settings, bool paused,
             goto finish;
          }
 
-         /* TODO: Rescale down to regular resolution */
-         scaler->in_fmt      = SCALER_FMT_BGR24;
-         scaler->out_fmt     = SCALER_FMT_BGR24;
-         scaler->scaler_type = SCALER_TYPE_POINT;
-         scaler->in_width    = VIDEO_SCALE_W(vp.dims);
-         scaler->in_height   = VIDEO_SCALE_H(vp.dims);
-         scaler->out_width   = VIDEO_SCALE_W(dims);
-         scaler->out_height  = VIDEO_SCALE_H(dims);
-         scaler_ctx_gen_filter(scaler);
-
-         scaler->in_stride   = VIDEO_SCALE_W(vp.dims)*3;
-         scaler->out_stride  = VIDEO_SCALE_W(dims)*3;
-         scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev);
+         if (vp.dims == dims)
+         {
+            bit24_image      = bit24_image_prev;
+            bit24_image_prev = NULL;
+         }
+         else
+         {
+            bit24_image = (uint8_t*)malloc(VIDEO_SCALE_AREA(dims) * 3);
+            if (!bit24_image)
+               goto finish;
+            scaler->in_fmt = SCALER_FMT_BGR24;
+            if (!video_frame_convert_to_bgr24(scaler, bit24_image,
+                     bit24_image_prev,
+                     VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims),
+                     VIDEO_SCALE_W(vp.dims) * 3,
+                     VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+                     VIDEO_SCALE_W(dims) * 3))
+               goto finish;
+         }
       }
       else
       {
@@ -1131,9 +1136,12 @@ bool run_translation_service_notify(settings_t *settings, bool paused,
             struct translation_sw_ctx ctx;
             ctx.scaler = scaler;
             ctx.dst    = bit24_image;
-            ctx.pitch  = pitch;
+            ctx.dims   = dims;
+            ctx.success = false;
             video_driver_cached_frame_read(&ctx,
                   translation_sw_convert_cb);
+            if (!ctx.success)
+               goto finish;
          }
       }
    }
