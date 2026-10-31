@@ -544,13 +544,20 @@ static void handle_translation_response(
          }
 
          if (image_fmt == SCALER_FMT_ARGB8888
-               && video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
+               && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
+                  || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_RGB565)
                && image_width == VIDEO_SCALE_W(dims)
                && image_height == VIDEO_SCALE_H(dims))
          {
             raw_output_data      = (uint8_t*)raw_image_data_alpha;
             raw_image_data_alpha = NULL;
             pitch                = image_row;
+            if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_RGB565)
+            {
+               pitch = (size_t)image_width * sizeof(uint16_t);
+               conv_argb8888_rgb565(raw_output_data, raw_output_data,
+                     image_width, image_height, (int)pitch, (int)image_row);
+            }
             goto draw_image;
          }
 

@@ -417,7 +417,7 @@ static void lane_png(unsigned fw, unsigned fh, enum retro_pixel_format fmt)
    check(g_frames == 1, "PNG %ux%u: no frame", fw, fh);
    if (g_frames != 1)
       return;
-   if (fw == 7 && fh == 5 && fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+   if (fw == 7 && fh == 5)
       check(g_alloc_calls == 0 && g_total == 0 && g_reused_decode,
             "native PNG frame was not reused without allocations");
    else
@@ -470,20 +470,20 @@ static void lane_allocation_failures(void)
    uint8_t *bmp = make_bmp(7, 5, &len);
    int png, budget, formats = 1;
 #ifdef HAVE_RPNG
-   formats = 4;
+   formats = 5;
 #endif
    for (png = 0; png < formats; png++)
       for (budget = 0; budget <= 2; budget++)
       {
-         start(png == 2 ? 3 : 7, png == 2 ? 2 : 5,
-               png == 3 ? RETRO_PIXEL_FORMAT_RGB565 : RETRO_PIXEL_FORMAT_XRGB8888);
+         start(png == 2 || png == 4 ? 3 : 7, png == 2 || png == 4 ? 2 : 5,
+               png >= 3 ? RETRO_PIXEL_FORMAT_RGB565 : RETRO_PIXEL_FORMAT_XRGB8888);
          g_png_ok = 1;
          g_png_width = 7;
          g_png_height = 5;
          g_alloc_budget = budget;
          reply(png ? png_reply : bmp, png ? sizeof(png_reply) : len);
          g_alloc_budget = -1;
-         check(g_frames == (png == 1 || budget == 2 ? 1u : 0u),
+         check(g_frames == (png == 1 || png == 3 || budget == 2 ? 1u : 0u),
                "image case %d allocation budget %d: %u frames", png,
                budget, g_frames);
       }
@@ -537,15 +537,16 @@ static void benchmark(void)
             (unsigned long)g_peak, g_alloc_calls);
    }
 #ifdef HAVE_RPNG
+   for (png = 0; png < 2; png++)
    {
       clock_t begin = clock();
       for (i = 0; i < 20; i++)
       {
-         start(1920, 1080, RETRO_PIXEL_FORMAT_XRGB8888);
+         start(1920, 1080, png ? RETRO_PIXEL_FORMAT_RGB565 : RETRO_PIXEL_FORMAT_XRGB8888);
          reply(png_reply, sizeof(png_reply));
       }
-      printf("PNG native 1920x1080: %.3f ms, callback peak %lu bytes, %u allocations, reused=%d\n",
-            1000.0 * (clock() - begin) / CLOCKS_PER_SEC / 20,
+      printf("PNG native 1920x1080 %s: %.3f ms, callback peak %lu bytes, %u allocations, reused=%d\n",
+            png ? "RGB565" : "XRGB8888", 1000.0 * (clock() - begin) / CLOCKS_PER_SEC / 20,
             (unsigned long)g_peak, g_alloc_calls, g_reused_decode);
    }
 #endif
