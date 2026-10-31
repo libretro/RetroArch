@@ -307,7 +307,7 @@ static void handle_translation_response(
 {
    uint8_t* raw_output_data          = NULL;
    struct scaler_ctx* scaler         = NULL;
-   void* raw_image_data              = NULL;
+   const void* raw_image_data        = NULL;
    void* raw_image_data_alpha        = NULL;
    settings_t* settings              = config_get_ptr();
    uint32_t runloop_flags            = runloop_get_flags();
@@ -370,6 +370,7 @@ static void handle_translation_response(
        * the first row in memory is the top of the image. */
       size_t   image_row        = 0;
       bool     image_top_down   = false;
+      enum scaler_pix_fmt image_fmt = SCALER_FMT_BGR24;
       /* Get the video frame dimensions reference */
       unsigned dims   = 0;
       bool     is_hw_fb;
@@ -462,10 +463,7 @@ static void handle_translation_response(
                goto finish;
             }
 
-            if (!(raw_image_data = malloc(image_row * image_height)))
-               goto finish;
-            memcpy(raw_image_data, raw_image_file_data + offset,
-                  image_row * image_height);
+            raw_image_data = raw_image_file_data + offset;
          }
          else if (   new_image_size >= 24
                   && raw_image_file_data[1] == 'P'
@@ -513,40 +511,10 @@ static void handle_translation_response(
                rpng_free(rpng);
                goto finish;
             }
-            /* Written below as tight rows, bottom-up. */
-            image_row = (size_t)image_width * 3;
-
-            /* Returned output from the png processor is an upside down RGBA
-             * image, so we have to change that to RGB first.  This should
-             * probably be replaced with a scaler call.*/
-            {
-               unsigned ui;
-               int tw, th, tc;
-               int d          = 0;
-               raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
-               /* NULL-check: the indexed write at the bottom of
-                * this loop body dereferences raw_image_data.  On
-                * OOM jump to finish which NULL-tolerantly frees
-                * raw_image_data_alpha + rpng state; the
-                * translation request fails cleanly. */
-               if (!raw_image_data)
-               {
-                  rpng_free(rpng);
-                  goto finish;
-               }
-               for (ui = 0; ui < image_width * image_height * 4; ui++)
-               {
-                  if (ui % 4 != 3)
-                  {
-                     tc = d % 3;
-                     th = image_height-d / (image_width * 3) - 1;
-                     tw = (d % (image_width * 3)) / 3;
-                     ((uint8_t*) raw_image_data)[tw * 3 + th * 3 * image_width + tc] =
-                        ((uint8_t *)raw_image_data_alpha)[ui];
-                     d += 1;
-                  }
-               }
-            }
+            raw_image_data = raw_image_data_alpha;
+            image_row      = (size_t)image_width * sizeof(uint32_t);
+            image_top_down = true;
+            image_fmt      = SCALER_FMT_ARGB8888;
             rpng_free(rpng);
 #else
             /* PNG decoding requires RPNG; without it we cannot handle this
@@ -600,7 +568,7 @@ static void handle_translation_response(
          if (!raw_output_data)
             goto finish;
 
-         scaler->in_fmt        = SCALER_FMT_BGR24;
+         scaler->in_fmt        = image_fmt;
          scaler->in_width      = image_width;
          scaler->in_height     = image_height;
          scaler->out_width     = VIDEO_SCALE_W(dims);
@@ -622,8 +590,17 @@ static void handle_translation_response(
          {
             scaler->in_stride  = -(int)image_row;
             scaler_ctx_scale_direct(scaler, raw_output_data,
-                  (uint8_t*)raw_image_data
+                  (const uint8_t*)raw_image_data
                   + (image_height - 1) * image_row);
+         }
+         if (image_fmt == SCALER_FMT_ARGB8888
+               && scaler->out_fmt == SCALER_FMT_ARGB8888)
+         {
+            uint32_t *pixels = (uint32_t*)raw_output_data;
+            size_t i;
+            /* The software frame has always discarded the PNG alpha. */
+            for (i = 0; i < VIDEO_SCALE_AREA(dims); i++)
+               pixels[i] |= 0xff000000u;
          }
          video_driver_frame(raw_output_data,
                VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch);
@@ -760,8 +737,6 @@ static void handle_translation_response(
 finish:
    if (raw_image_data_alpha)
        free(raw_image_data_alpha);
-   if (raw_image_data)
-      free(raw_image_data);
    if (scaler)
    {
       scaler_ctx_gen_reset(scaler);

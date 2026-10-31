@@ -1,9 +1,12 @@
 include ../../sample_objdir.mk
 
-TARGET := translation_reply_test
+EXE ?=
+TARGET := translation_reply_test$(EXE)
 
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
+TRANSLATION_SOURCE ?= $(REPO_ROOT)/tasks/task_translation.c
+RPNG ?= 1
 
 # tasks/task_translation.c is #included by the test, which stands in
 # for the frontend and for rpng; the scaler that draws the reply into
@@ -20,9 +23,13 @@ SOURCES := translation_reply_test.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
 
-CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DRARCH_INTERNAL -DHAVE_RPNG \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DRARCH_INTERNAL \
            -DHAVE_TRANSLATE -DHAVE_NETWORKING -DHAVE_ACCESSIBILITY -DHAVE_AUDIOMIXER \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)/deps
+
+ifeq ($(RPNG),1)
+   CFLAGS += -DHAVE_RPNG
+endif
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
@@ -38,8 +45,8 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-translation_reply_test.o: translation_reply_test.c $(REPO_ROOT)/tasks/task_translation.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+translation_reply_test.o: translation_reply_test.c $(TRANSLATION_SOURCE)
+	$(CC) $(CFLAGS) -DTRANSLATION_SOURCE='"$(abspath $(TRANSLATION_SOURCE))"' -c -o $@ $<
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -49,10 +56,10 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 check: $(TARGET)
-	./$(TARGET)
+	$(RUNNER) ./$(TARGET)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(OBJS) $(TARGET) $(TARGET).exe
+	rm -f $(OBJS) translation_reply_test translation_reply_test.exe
 
 .PHONY: all check clean

@@ -2705,13 +2705,17 @@ jobs:
         shell: bash
         run: |
           set -eu
-          for sample in samples/gfx/video_frame_failure libretro-common/samples/lists/file_list_oom libretro-common/samples/gfx/scaler_point libretro-common/samples/gfx/image_scale_transfer; do
+          for sample in samples/gfx/video_frame_failure libretro-common/samples/lists/file_list_oom libretro-common/samples/gfx/scaler_point libretro-common/samples/gfx/image_scale_transfer samples/tasks/translation_reply; do
             make -C "$sample" clean
             make -C "$sample" check SANITIZER=address,undefined
             make -C "$sample" clean
             make -C "$sample" check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
             make -C "$sample" clean
           done
+          make -C samples/tasks/translation_reply check RPNG=0 SANITIZER=address,undefined
+          make -C samples/tasks/translation_reply clean
+          make -C samples/tasks/translation_reply check RPNG=0 CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/tasks/translation_reply clean
           python3 samples/gfx/vulkan_capture_guard/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/vulkan_capture_guard/run.py
           python3 samples/gfx/video_frame_failure/translation.py
