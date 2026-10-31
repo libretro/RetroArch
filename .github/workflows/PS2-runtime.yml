@@ -50,8 +50,12 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      APT_PKGS: cmake ninja-build zlib1g-dev libbz2-dev libssl-dev
 
     steps:
+    - uses: actions/checkout@v5
+
     - uses: actions/checkout@v5
       with:
         repository: jpd002/Play-
@@ -59,10 +63,27 @@ jobs:
         submodules: recursive
         path: Play
 
+    - name: Apt cache key
+      id: apt
+      run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+    - name: Restore apt cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.apt-cache
+        key: ${{ steps.apt.outputs.key }}
+        restore-keys: ${{ steps.apt.outputs.prefix }}
+
     - name: Install build dependencies
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq cmake ninja-build zlib1g-dev libbz2-dev libssl-dev
+      timeout-minutes: 10
+      run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+    - name: Save apt cache
+      if: env.APT_CACHE_SAVE == '1'
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.apt-cache
+        key: ${{ steps.apt.outputs.key }}
 
     - uses: actions/cache@v4
       with:
