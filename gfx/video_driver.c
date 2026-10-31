@@ -2136,6 +2136,19 @@ static char *video_driver_gpu_name_setting(enum gfx_ctx_api api)
    return NULL;
 }
 
+void video_driver_gpu_index_select(enum gfx_ctx_api api, int index)
+{
+   char *saved = video_driver_gpu_name_setting(api);
+   struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+   /* Past the list names no device; the saved one is still followed */
+   if (!saved || (index > 0 && (!list || (size_t)index >= list->size)))
+      return;
+   strlcpy(saved, index > 0 ? list->elems[index].data : "",
+         NAME_MAX_LENGTH);
+   config_get_ptr()->flags |= SETTINGS_FLG_MODIFIED;
+}
+
 int video_driver_gpu_index_resolve(enum gfx_ctx_api api, int index,
       struct string_list *list)
 {

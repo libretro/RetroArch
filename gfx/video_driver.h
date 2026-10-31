@@ -2949,6 +2949,9 @@ float video_driver_hdr_metadata_peak(float driver_value);
 int video_driver_gpu_index_resolve(enum gfx_ctx_api api, int index,
       struct string_list *list);
 
+/* Remember an explicit choice from this API's current device list. */
+void video_driver_gpu_index_select(enum gfx_ctx_api api, int index);
+
 struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api);
 
 const char *hw_render_context_name(
