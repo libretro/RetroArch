@@ -46,14 +46,8 @@
 #include <rthreads/rthreads.h>
 #endif
 
-/* libsmb2 keeps every context on one global list, which
- * smb2_init_context() pushes to, smb2_destroy_context() unlinks from
- * and smb2_context_active() walks, all without a lock; contexts made or
- * dropped on two threads at once can lose an entry (the connection then
- * reads as dead) or break the list. Every call that touches the list
- * goes through here, under a lock of our own for the list operation
- * alone: none of the three does network I/O. The cleanroom client has
- * no such list, and single-threaded builds none to guard. */
+/* Older libsmb2 releases keep client contexts on a global list without
+ * a lock. Serialise creation and destruction for those releases. */
 #if defined(HAVE_THREADS) && !defined(HAVE_RETROSMB)
 static retro_atomic_ptr_t smb_list_lock_ptr;   /* slock_t * */
 
@@ -98,17 +92,6 @@ void smb_ctx_free(struct smb2_context *ctx)
    slock_unlock(l);
 }
 
-static int smb_ctx_active(struct smb2_context *ctx)
-{
-   int r;
-   slock_t *l = smb_list_lock();
-   if (!l)
-      return 0;
-   slock_lock(l);
-   r = smb2_context_active(ctx);
-   slock_unlock(l);
-   return r;
-}
 #else
 struct smb2_context *smb_ctx_new(void)
 {
@@ -120,7 +103,13 @@ void smb_ctx_free(struct smb2_context *ctx)
    smb2_destroy_context(ctx);
 }
 
+#endif
+
+#ifdef HAVE_RETROSMB
 #define smb_ctx_active(ctx)  smb2_context_active(ctx)
+#else
+/* Recent libsmb2 only lists server contexts as active. */
+#define smb_ctx_active(ctx)  ((intptr_t)smb2_get_fd(ctx) != -1)
 #endif
 
 /* The connection pools, without a lock. A pool serves one connection
