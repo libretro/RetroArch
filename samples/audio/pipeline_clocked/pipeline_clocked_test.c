@@ -26,7 +26,7 @@
  * rate control with audio the only clock, inline and threaded, and
  * with a present that blocks behind the runloop's back; and Audio
  * Sync off, display-paced, the pipe deep and shallow; and the second
- * after fast-forward, which FF_EXIT_ONLY runs alone.
+ * after fast-forward or a pause, which FF_EXIT_ONLY runs alone.
  * PACED_ONLY runs those lanes alone; JITTER_US makes the display-paced
  * core up to that late on each frame, its schedule kept.
  *
@@ -925,11 +925,15 @@ static void sync_off_case(double seconds)
  * the core, a frame at a time, until it had played out: a hitch of a
  * hundred milliseconds and a second or more of frames held, which a
  * VRR display shows as judder. audio_driver_fastforward_end() has to
- * clear it, threaded and inline, under a schedule of either kind. */
+ * clear it, threaded and inline, under a schedule of either kind.
+ *
+ * A pause - the menu - drains the device instead, and the resume tops it
+ * up with silence; past rate control's setpoint, that top-up held the
+ * first frames back the same way. */
 static unsigned ff_exit_failures;
 
-static bool ff_exit_once(bool inline_path, unsigned pace, unsigned *held,
-      double *worst)
+static bool ff_exit_once(bool inline_path, unsigned pace, bool paused,
+      unsigned *held, double *worst)
 {
    audio_driver_state_t *st = &audio_driver_st;
    runloop_state_t      *rs = runloop_state_get_ptr();
@@ -958,12 +962,18 @@ static bool ff_exit_once(bool inline_path, unsigned pace, unsigned *held,
       pthread_create(&cons, NULL, consumer, NULL);
 
    clock_gettime(CLOCK_MONOTONIC, &next);
-   /* A second and a half at speed, one fast-forwarding, one back */
+   /* A second and a half at speed, one fast-forwarding or paused, one
+    * back */
    for (phase = 0; phase < 3; phase++)
    {
-      int  n      = phase == 0 ? 90 : phase == 1 ? 300 : 60;
-      long period = phase == 1 ? step_ns / 5 : step_ns;
-      if (phase == 1)
+      int  n      = phase == 0 ? 90 : phase == 1 ? (paused ? 60 : 300) : 60;
+      long period = (phase == 1 && !paused) ? step_ns / 5 : step_ns;
+      if (paused)
+      {
+         if (phase)
+            audio_driver_pause_fade(phase == 1);
+      }
+      else if (phase == 1)
       {
          rs->flags |= RUNLOOP_FLAG_FASTMOTION;
          rs->pace   = RUNLOOP_PACE_TIMER;
@@ -991,8 +1001,9 @@ static bool ff_exit_once(bool inline_path, unsigned pace, unsigned *held,
          clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
          clock_gettime(CLOCK_MONOTONIC, &t0);
          audio_driver_publish_runloop();
-         audio_driver_submit(st, 1.0f, frame_audio, per_frame * 2,
-               false, false, phase == 1, true);
+         if (!(paused && phase == 1))
+            audio_driver_submit(st, 1.0f, frame_audio, per_frame * 2,
+                  false, false, phase == 1, true);
          clock_gettime(CLOCK_MONOTONIC, &t1);
          audio_driver_pipeline_signal(st);
          ms = (t1.tv_sec - t0.tv_sec) * 1000.0
@@ -1023,13 +1034,15 @@ static bool ff_exit_once(bool inline_path, unsigned pace, unsigned *held,
 
 static void ff_exit_case(void)
 {
-   static const struct { bool inl; unsigned pace; const char *name; } lane[] = {
-      { false, RUNLOOP_PACE_TIMER, "threaded, frame limiter" },
-      { false, RUNLOOP_PACE_VSYNC, "threaded, vsync" },
-      { true,  RUNLOOP_PACE_TIMER, "inline, frame limiter" }
+   static const struct { bool inl; unsigned pace; bool paused; const char *name; } lane[] = {
+      { false, RUNLOOP_PACE_TIMER, false, "fast-forward, threaded, frame limiter" },
+      { false, RUNLOOP_PACE_VSYNC, false, "fast-forward, threaded, vsync" },
+      { true,  RUNLOOP_PACE_TIMER, false, "fast-forward, inline, frame limiter" },
+      { false, RUNLOOP_PACE_TIMER, true,  "pause, threaded, frame limiter" },
+      { true,  RUNLOOP_PACE_TIMER, true,  "pause, inline, frame limiter" }
    };
    size_t i;
-   printf("the second after fast-forward, 64 ms:\n");
+   printf("the second after fast-forward or a pause, 64 ms:\n");
    for (i = 0; i < sizeof(lane) / sizeof(lane[0]); i++)
    {
       unsigned held = 0;
@@ -1040,16 +1053,17 @@ static void ff_exit_case(void)
        * a lane that never runs clean fails. */
       for (attempt = 0; attempt < 3; attempt++)
       {
-         if (!ff_exit_once(lane[i].inl, lane[i].pace, &held, &worst))
+         if (!ff_exit_once(lane[i].inl, lane[i].pace, lane[i].paused,
+                  &held, &worst))
             break;
          if (held <= 6 && worst < 16.0)
             break;
       }
-      printf("  %-24s | %2u frames held, longest %6.1f ms\n",
+      printf("  %-38s | %2u frames held, longest %6.1f ms\n",
             lane[i].name, held, worst);
       if (held > 6 || !(worst < 16.0))
       {
-         printf("FAIL: %s held the core after fast-forward\n", lane[i].name);
+         printf("FAIL: %s held the core on its way back\n", lane[i].name);
          ff_exit_failures++;
       }
    }

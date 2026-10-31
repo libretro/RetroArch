@@ -3339,9 +3339,11 @@ static void audio_driver_pause_track(audio_driver_state_t *audio_st,
  * refills it too slowly to keep the driver's pulls whole.
  *
  * On the first flush rather than at the resume, so it lands after that hole
- * whatever its length; the surplus is what rate control already takes out.
- * Chunked against a driver's per-write limit and bounded by write_avail(),
- * so a blocking write cannot wait on it.
+ * whatever its length. A blocking writer's fill stops at rate control's
+ * setpoint, half the buffer: filled past it, the writes that follow wait
+ * for the surplus to play out, a hitch on every resume. Chunked against a
+ * driver's per-write limit and bounded by write_avail(), so a blocking
+ * write cannot wait on it.
  **/
 static void audio_driver_resume_topup(audio_driver_state_t *audio_st)
 {
@@ -3355,6 +3357,14 @@ static void audio_driver_resume_topup(audio_driver_state_t *audio_st)
          || audio_st->buffer_size == 0)
       return;
    room = audio->write_avail(audio_st->context_audio_data);
+   if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
+   {
+      size_t fb   = audio_driver_dev_frame_bytes(audio_st);
+      size_t keep = audio_st->buffer_size / 2;
+      room = (room > keep) ? room - keep : 0;
+      if (fb)
+         room -= room % fb;
+   }
    while (room > 0)
    {
       size_t n = (room < sizeof(zeros)) ? room : sizeof(zeros);
