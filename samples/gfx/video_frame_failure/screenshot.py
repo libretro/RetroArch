@@ -226,6 +226,7 @@ static void invalid(void)
 static void bench(void)
 {
    unsigned bpp, r, i;
+   size_t j;
    poison = 0;
    for (bpp = 2; bpp <= 4; bpp += 2)
    {
@@ -234,6 +235,8 @@ static void bench(void)
       input_size = input_pitch * 2160;
       input = (uint8_t*)calloc(1, input_size);
       assert(input);
+      for (j = 0; j < input_size; j++)
+         input[j] = (uint8_t)(j * 37 + j / 257);
       for (r = 0; r < 4; r++)
       {
          clock_t begin = clock();
