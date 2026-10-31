@@ -6,6 +6,8 @@ CFLAGS += -g -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
+all: file_list_oom_test$(EXE)
+
 file_list_oom_test$(EXE): file_list_oom_test.c $(ROOT)/lists/file_list.c
 	$(CC) $(CFLAGS) $< $(ROOT)/compat/compat_strcasestr.c $(LDFLAGS) -o $@
 
@@ -15,4 +17,4 @@ check: file_list_oom_test$(EXE)
 clean:
 	rm -f file_list_oom_test file_list_oom_test.exe
 
-.PHONY: check clean
+.PHONY: all check clean
