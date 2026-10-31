@@ -62,19 +62,28 @@ typedef struct gekko_hid_pad
    uint8_t            ep_in;
    uint8_t            ep_out;
    uint8_t            iface;
-   volatile uint32_t  done;      /* the reader has stopped */
+   retro_atomic_int_t stop;      /* the reader is to stop */
+   retro_atomic_int_t state;     /* PAD_RUNNING, PAD_DONE or PAD_ORPHAN */
    volatile uint32_t  ctl_type;  /* a queued control message, or SC_NONE */
    uint32_t           ctl_len;
    uint8_t            ctl[CTL_MAX];
    uint8_t            report[REPORT_MAX];
 } gekko_hid_pad_t;
 
+/* A pad's reader either finishes first and leaves the pad to the
+ * worker, or finds the driver gone and frees the pad itself. */
+#define PAD_RUNNING 0
+#define PAD_DONE    1
+#define PAD_ORPHAN  2
+
+/* Freed by the last of the driver and the readers still running. */
 struct gekko_hid
 {
    joypad_connection_t *connections;
    gekko_hid_pad_t     *pads[MAX_USERS];
    gk_thread_t         *worker;
    retro_atomic_int_t   quit;
+   retro_atomic_int_t   refs;
    volatile uint32_t    wake;
    uint32_t             ignored[GK_USB_MAX_DEVICES];
    int                  num_ignored;
@@ -88,13 +97,21 @@ static void hid_wake(gekko_hid_t *hid)
    gk_futex_wake(&hid->wake, 1);
 }
 
+static void hid_unref(gekko_hid_t *hid)
+{
+   if (retro_atomic_fetch_add_int(&hid->refs, -1) != 1)
+      return;
+   pad_connection_destroy(hid->connections);
+   free(hid);
+}
+
 /* ---- the reader ---- */
 
 static void *reader(void *arg)
 {
    gekko_hid_pad_t *pad = (gekko_hid_pad_t*)arg;
    gekko_hid_t     *hid = pad->hid;
-   while (!retro_atomic_load_acquire_int(&hid->quit))
+   while (!retro_atomic_load_acquire_int(&pad->stop))
    {
       int n = gk_usb_intr(pad->id, pad->ep_in, pad->report, pad->in_size);
       if (n < 0)
@@ -103,8 +120,11 @@ static void *reader(void *arg)
          pad_connection_packet(&hid->connections[pad->slot], pad->slot,
                pad->report, (uint32_t)n);
    }
-   pad->done = 1;
-   hid_wake(hid);
+   if (retro_atomic_cas_int(&pad->state, PAD_RUNNING, PAD_DONE))
+      hid_wake(hid);
+   else
+      free(pad);
+   hid_unref(hid);
    return NULL;
 }
 
@@ -198,29 +218,26 @@ static void send_queued(gekko_hid_pad_t *pad)
 
 /* ---- pads coming and going ---- */
 
-/* @gone: the pad left, and is said to have; not when the driver is
- * only stopping, as every joypad driver does at a restart. */
-static void pad_remove(gekko_hid_t *hid, gekko_hid_pad_t *pad, bool gone)
+/* Worker: asks the reader to stop. A cancel only returns a transfer
+ * already waiting, so it is asked again on every pass until it has. */
+static void pad_stop(gekko_hid_pad_t *pad)
 {
-   unsigned tries;
-   /* The reader may be waiting on the pad: cancel until it stops. */
-   for (tries = 0; !pad->done && tries < 50; tries++)
-   {
-      gk_usb_cancel(pad->id, pad->ep_in);
-      gk_sleep_us(10000);
-   }
-   if (pad->done)
-      gk_thread_join(pad->reader);
-   else
-      gk_thread_detach(pad->reader);
+   retro_atomic_store_release_int(&pad->stop, 1);
+   gk_usb_cancel(pad->id, pad->ep_in);
+}
+
+/* Worker, once the reader is done; @gone: the pad left, and is said to
+ * have, which it is not when the driver is only stopping. */
+static void pad_reap(gekko_hid_t *hid, gekko_hid_pad_t *pad, bool gone)
+{
+   gk_thread_join(pad->reader);
    if (gone)
       input_autoconfigure_disconnect(pad->slot,
             pad_connection_get_name(&hid->connections[pad->slot], pad->slot));
    pad_connection_pad_deinit(&hid->connections[pad->slot], pad->slot);
    gk_usb_close(pad->id);
    hid->pads[pad->slot] = NULL;
-   if (pad->done)
-      free(pad);
+   free(pad);
 }
 
 static int known(gekko_hid_t *hid, uint32_t id)
@@ -295,9 +312,13 @@ static void pad_add(gekko_hid_t *hid, const gk_usb_dev_t *dev)
       return;
    }
    pad->slot = slot;
+   retro_atomic_int_init(&pad->stop, 0);
+   retro_atomic_int_init(&pad->state, PAD_RUNNING);
+   retro_atomic_fetch_add_int(&hid->refs, 1);
    if (!(pad->reader = gk_thread_create(reader, pad, NULL, 16384,
                GK_PRIO_DEFAULT + 4)))
    {
+      retro_atomic_fetch_add_int(&hid->refs, -1);
       pad_connection_pad_deinit(&hid->connections[slot], slot);
       gk_usb_close(dev->id);
       free(pad);
@@ -323,11 +344,16 @@ static void scan(gekko_hid_t *hid)
       int present = 0;
       if (!pad)
          continue;
+      if (retro_atomic_load_acquire_int(&pad->state) == PAD_DONE)
+      {
+         pad_reap(hid, pad, true);
+         continue;
+      }
       for (k = 0; k < n; k++)
          if (devs[k].id == pad->id)
             present = 1;
-      if (!present || pad->done)
-         pad_remove(hid, pad, true);
+      if (!present || retro_atomic_load_acquire_int(&pad->stop))
+         pad_stop(pad);
    }
    /* Forget ignored devices that left, so they are looked at again. */
    for (i = 0; i < hid->num_ignored; )
@@ -377,11 +403,27 @@ static void gekko_hid_free(const void *data)
       hid_wake(hid);
       gk_thread_join(hid->worker);
    }
+   /* A reader still waiting on its pad is left to free the pad itself
+    * when the transfer returns: nothing here waits for it. */
    for (i = 0; i < MAX_USERS; i++)
-      if (hid->pads[i])
-         pad_remove(hid, hid->pads[i], false);
-   pad_connection_destroy(hid->connections);
-   free(hid);
+   {
+      gekko_hid_pad_t *pad = hid->pads[i];
+      if (!pad)
+         continue;
+      retro_atomic_store_release_int(&pad->stop, 1);
+      gk_usb_cancel(pad->id, pad->ep_in);
+      pad_connection_pad_deinit(&hid->connections[i], i);
+      gk_usb_close(pad->id);
+      hid->pads[i] = NULL;
+      if (retro_atomic_cas_int(&pad->state, PAD_RUNNING, PAD_ORPHAN))
+         gk_thread_detach(pad->reader);
+      else
+      {
+         gk_thread_join(pad->reader);
+         free(pad);
+      }
+   }
+   hid_unref(hid);
 }
 
 static void *gekko_hid_init(void)
@@ -390,6 +432,7 @@ static void *gekko_hid_init(void)
    if (!hid)
       return NULL;
    retro_atomic_int_init(&hid->quit, 0);
+   retro_atomic_int_init(&hid->refs, 1);
    if (     !(hid->connections = pad_connection_init(MAX_USERS))
          || !(hid->worker = gk_thread_create(worker, hid, NULL, 16384,
                GK_PRIO_DEFAULT + 2)))
