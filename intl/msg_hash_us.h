@@ -34229,6 +34229,30 @@ MSG_HASH(
    "On + Boost"
    )
 MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_FAILED,
+   "Custom Vulkan driver failed to start. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
+   "Custom Vulkan driver crashed before and is off for this core. Pick it again to retry."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_INVALID,
+   "Custom Vulkan driver package is not usable. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
+   "Custom Vulkan drivers need an Adreno GPU and Android 9. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_RESTART,
+   "Restart RetroArch to change the Vulkan driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
+   "Started with the system Vulkan driver."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Lowest"
    )

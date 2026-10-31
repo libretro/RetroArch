@@ -35,6 +35,9 @@
 #include "vulkan_android_device.h"
 #include "vulkan_android_cache.h"
 #endif
+#ifdef HAVE_ADRENOTOOLS
+#include "vulkan_custom_driver.h"
+#endif
 #ifdef HAVE_TEMPORAL_UPSCALER
 #include "vulkan_upscaler.h"
 #include "../video_upscaler.h"
@@ -99,6 +102,10 @@
  * Vulkan contexts (multi-window, etc.). The cached_device_vk
  * mechanism assumes single-context ownership. */
 static dylib_t                       vulkan_library;
+#ifdef HAVE_ADRENOTOOLS
+/* From vulkan_custom_driver_open(), which keeps it: never closed here. */
+static bool                          vulkan_library_custom;
+#endif
 static VkInstance                    cached_instance_vk;
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "win_vulkan_dxgi.h"
@@ -5276,6 +5283,76 @@ static void vulkan_context_openxr_init(gfx_ctx_vulkan_data_t *vk,
 }
 #endif
 
+#ifdef HAVE_ADRENOTOOLS
+/* A custom driver has to see a GPU. A Mesa one must also not report the
+ * system driver's ID: the hook loads that driver when the custom library
+ * fails to. Other vendors' builds may report that ID themselves. */
+static bool vulkan_context_custom_driver_ok(gfx_ctx_vulkan_data_t *vk,
+      uint32_t api_version)
+{
+   VkPhysicalDeviceDriverProperties driver;
+   VkPhysicalDeviceProperties2 props;
+   PFN_vkGetPhysicalDeviceProperties2 get_props2 = NULL;
+   VkPhysicalDevice gpu                          = VK_NULL_HANDLE;
+   uint32_t count                                = 1;
+   VkResult res                                  = vkEnumeratePhysicalDevices(
+         vk->context.instance, &count, &gpu);
+
+   if ((res != VK_SUCCESS && res != VK_INCOMPLETE) || !count || !gpu)
+   {
+      RARCH_WARN("[Vulkan] Custom driver found no GPU.\n");
+      return false;
+   }
+   if (!vulkan_custom_driver_mesa())
+   {
+      RARCH_WARN("[Vulkan] Custom driver is not Mesa: its load cannot be confirmed.\n");
+      return true;
+   }
+   if (api_version >= VK_API_VERSION_1_1)
+      get_props2 = (PFN_vkGetPhysicalDeviceProperties2)
+         vulkan_symbol_wrapper_instance_proc_addr()(vk->context.instance,
+               "vkGetPhysicalDeviceProperties2");
+   if (!get_props2)
+      return true;
+   memset(&driver, 0, sizeof(driver));
+   memset(&props, 0, sizeof(props));
+   driver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+   props.sType  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+   props.pNext  = &driver;
+   get_props2(gpu, &props);
+   if (driver.driverID == VK_DRIVER_ID_QUALCOMM_PROPRIETARY)
+   {
+      RARCH_WARN("[Vulkan] Custom driver did not load; the system one did.\n");
+      return false;
+   }
+   return true;
+}
+
+/* The custom driver failed before its surface: init once more. Its path
+ * is now off for the session, so this one gets the system driver. */
+static bool vulkan_context_init_system(gfx_ctx_vulkan_data_t *vk,
+      enum vulkan_wsi_type type)
+{
+   if (vk->context.instance)
+   {
+      PFN_vkDestroyInstance destroy = (PFN_vkDestroyInstance)
+         vulkan_symbol_wrapper_instance_proc_addr()(vk->context.instance,
+               "vkDestroyInstance");
+#ifdef VULKAN_DEBUG
+      if (vk->context.debug_callback)
+         vkDestroyDebugUtilsMessengerEXT(vk->context.instance,
+               vk->context.debug_callback, NULL);
+      vk->context.debug_callback = VK_NULL_HANDLE;
+#endif
+      if (destroy)
+         destroy(vk->context.instance, NULL);
+      vk->context.instance = VK_NULL_HANDLE;
+   }
+   vulkan_custom_driver_failed();
+   return vulkan_context_init(vk, type);
+}
+#endif
+
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type)
 {
@@ -5285,6 +5362,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    video_driver_state_t *video_st = video_state_get_ptr();
    struct retro_hw_render_context_negotiation_interface_vulkan
                            *iface = (struct retro_hw_render_context_negotiation_interface_vulkan*)video_st->hw_render_context_negotiation;
+#ifdef HAVE_ADRENOTOOLS
+   bool custom_driver             = false;
+#endif
 
    if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
    {
@@ -5300,6 +5380,25 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    vk->wsi_type = type;
    vulkan_swapchain_settings_init(&vk->context.swapchain_settings);
+
+#ifdef HAVE_ADRENOTOOLS
+   /* A kept instance keeps the loader it was made with. */
+   if (!cached_instance_vk)
+   {
+      dylib_t custom = vulkan_custom_driver_open();
+      if (     vulkan_library != custom
+            && (custom || vulkan_library_custom))
+      {
+         if (vulkan_library && !vulkan_library_custom)
+            dylib_close(vulkan_library);
+         vulkan_library = custom;
+      }
+      vulkan_library_custom = (custom != NULL);
+      custom_driver         = vulkan_library_custom;
+   }
+   else
+      vulkan_custom_driver_kept();
+#endif
 
    if (!vulkan_library)
    {
@@ -5345,6 +5444,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    if (!GetInstanceProcAddr)
    {
       RARCH_ERR("[Vulkan] Failed to load vkGetInstanceProcAddr symbol, broken loader?\n");
+#ifdef HAVE_ADRENOTOOLS
+      if (custom_driver)
+         return vulkan_context_init_system(vk, type);
+#endif
       return false;
    }
 
@@ -5353,6 +5456,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    if (!vulkan_symbol_wrapper_load_global_symbols())
    {
       RARCH_ERR("[Vulkan] Failed to load global Vulkan symbols, broken loader?\n");
+#ifdef HAVE_ADRENOTOOLS
+      if (custom_driver)
+         return vulkan_context_init_system(vk, type);
+#endif
       return false;
    }
 
@@ -5458,6 +5565,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       if (vk->context.instance == VK_NULL_HANDLE)
       {
          RARCH_ERR("[Vulkan] Failed to create Vulkan instance.\n");
+#ifdef HAVE_ADRENOTOOLS
+         if (custom_driver)
+            return vulkan_context_init_system(vk, type);
+#endif
          return false;
       }
    }
@@ -5492,8 +5603,17 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    if (!vulkan_load_instance_symbols(vk))
    {
       RARCH_ERR("[Vulkan] Failed to load instance symbols.\n");
+#ifdef HAVE_ADRENOTOOLS
+      if (custom_driver)
+         return vulkan_context_init_system(vk, type);
+#endif
       return false;
    }
+
+#ifdef HAVE_ADRENOTOOLS
+   if (custom_driver && !vulkan_context_custom_driver_ok(vk, app.apiVersion))
+      return vulkan_context_init_system(vk, type);
+#endif
 
    return true;
 }
@@ -5581,6 +5701,8 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    if (record_android_capture_device_pending(vk->context.device))
       video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
 #endif
+   if (vk->flags & VK_DATA_FLAG_DROP_CONTEXT)
+      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
       cached_device_vk         = vk->context.device;
@@ -5653,7 +5775,14 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
          if (vulkan_library)
          {
+#ifdef HAVE_ADRENOTOOLS
+            /* A linker namespace cannot be unloaded. */
+            if (!vulkan_library_custom)
+               dylib_close(vulkan_library);
+            vulkan_library_custom = false;
+#else
             dylib_close(vulkan_library);
+#endif
             vulkan_library = NULL;
          }
       }

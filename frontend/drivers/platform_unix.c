@@ -105,6 +105,10 @@
 #include <formats/rjson.h>
 #endif
 
+#ifdef HAVE_ADRENOTOOLS
+#include "../../gfx/common/vulkan_custom_driver.h"
+#endif
+
 #ifdef ANDROID
 static void frontend_unix_set_sustained_performance_mode(bool on);
 
@@ -3038,6 +3042,26 @@ static void frontend_unix_get_env(int *argc,
          args->config_path = android_config_path;
    }
 
+#ifdef HAVE_ADRENOTOOLS
+   /* Safe mode, from the "Safe start" launcher shortcut. */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "VULKAN_DRIVER"));
+
+   {
+      bool safe_mode = false;
+      if (android_app->getStringExtra && jstr)
+      {
+         const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+         safe_mode = string_is_equal(argv, "system");
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV] Vulkan driver: \"%s\".\n", argv);
+         (*env)->ReleaseStringUTFChars(env, jstr, argv);
+      }
+      vulkan_custom_driver_set_safe_mode(safe_mode);
+   }
+#endif
+
    /* Current IME. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "IME"));
@@ -3976,6 +4000,10 @@ static void frontend_unix_init(void *data)
          "hideKeyboard", "()V");
    GET_METHOD_ID(env, android_app->setSecondDisplay, class,
          "setSecondDisplay", "(II)V");
+#ifdef HAVE_ADRENOTOOLS
+   GET_METHOD_ID(env, android_app->addSafeStartShortcut, class,
+         "addSafeStartShortcut", "()V");
+#endif
 
    CALL_BOOLEAN_METHOD(env, android_app->is_play_store_build,
          android_app->activity->clazz, android_app->isPlayStoreBuild);

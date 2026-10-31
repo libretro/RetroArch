@@ -35,7 +35,7 @@ android {
     minSdkVersion 16
     externalNativeBuild {
       ndkBuild {
-        arguments "-j${Runtime.runtime.availableProcessors()}"
+        arguments "-j${Runtime.runtime.availableProcessors()}", "HAVE_ADRENOTOOLS=0"
       }
     }
     targetSdkVersion 28
