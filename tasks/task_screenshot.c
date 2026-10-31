@@ -523,67 +523,74 @@ static void task_screenshot_callback(retro_task_t *task,
  * according to @rotate_type 'enum video_rotation_type'.
  **/
 static void screenshot_rotate(
-      uint32_t *target,
-      uint32_t *source,
-      size_t size,
+      void *target,
+      const void *source,
       unsigned *dims,
       size_t *pitch,
+      unsigned bpp,
       uint8_t rotate_type)
 {
-   int y;
-   size_t x;
-   size_t bpp          = *pitch / VIDEO_SCALE_W(*dims);
+   unsigned x, y;
    size_t source_pitch = *pitch;
-   int source_width    = VIDEO_SCALE_W(*dims);
-   int source_height   = VIDEO_SCALE_H(*dims);
-   int target_width    = source_width;
-   int target_height   = source_height;
-   size_t target_pitch = source_pitch;
-   /* Copy by byte: a pixel is bpp bytes, which is 2 for RGB565 */
+   unsigned source_width  = VIDEO_SCALE_W(*dims);
+   unsigned source_height = VIDEO_SCALE_H(*dims);
+   unsigned target_width  = source_width;
+   unsigned target_height = source_height;
+   size_t target_pitch;
    uint8_t *target_px  = (uint8_t*)target;
    const uint8_t *source_px = (const uint8_t*)source;
 
-   if (!bpp)
-      return;
-
-   /* 90 deg dimension flip */
    if (     rotate_type == VIDEO_ROTATION_90_DEG
          || rotate_type == VIDEO_ROTATION_270_DEG)
    {
       target_width     = source_height;
       target_height    = source_width;
-      target_pitch     = target_width * bpp;
+   }
+   target_pitch = (size_t)target_width * bpp;
+
+   if (     rotate_type != VIDEO_ROTATION_90_DEG
+         && rotate_type != VIDEO_ROTATION_180_DEG
+         && rotate_type != VIDEO_ROTATION_270_DEG)
+   {
+      if (source_pitch == target_pitch)
+         memcpy(target, source, target_pitch * target_height);
+      else
+         for (y = 0; y < target_height; y++)
+            memcpy(target_px + (size_t)y * target_pitch,
+                  source_px + (size_t)y * source_pitch, target_pitch);
+      *pitch = target_pitch;
+      return;
    }
 
    for (y = 0; y < target_height; y++)
    {
-      for (x = 0; x < (size_t)target_width; x++)
+      for (x = 0; x < target_width; x++)
       {
-         size_t pixel_source = (y * source_width) + x;
-         size_t pixel_target = (y * target_width) + x;
+         unsigned sx, sy;
+         const uint8_t *src;
+         uint8_t *dst = target_px + (size_t)y * target_pitch + x * bpp;
 
          switch (rotate_type)
          {
-            default:
-            case VIDEO_ROTATION_NORMAL:
-               break;
             case VIDEO_ROTATION_90_DEG:
-               pixel_source = ((target_height - 1 - y) + (x * source_width));
+               sx = source_width - 1 - y;
+               sy = x;
                break;
             case VIDEO_ROTATION_180_DEG:
-               pixel_source = ((target_height - 1 - y) * target_width) + (target_width - 1 - x);
+               sx = source_width - 1 - x;
+               sy = source_height - 1 - y;
                break;
+            default:
             case VIDEO_ROTATION_270_DEG:
-               pixel_source = y + ((target_width - 1 - x) * source_width);
+               sx = y;
+               sy = source_height - 1 - x;
                break;
          }
-
-         if (     pixel_source >= size / bpp
-               || pixel_target >= size / bpp)
-            continue;
-
-         memcpy(target_px + pixel_target * bpp,
-               source_px + pixel_source * bpp, bpp);
+         src = source_px + (size_t)sy * source_pitch + sx * bpp;
+         if (bpp == sizeof(uint32_t))
+            memcpy(dst, src, sizeof(uint32_t));
+         else
+            memcpy(dst, src, sizeof(uint16_t));
       }
    }
 
@@ -992,6 +999,8 @@ struct ss_raw_copy
    void    *buffer;
    unsigned dims;
    size_t   pitch;
+   unsigned bpp;
+   uint8_t  rotation;
 };
 
 static void ss_raw_copy_cb(void *userdata,
@@ -999,18 +1008,27 @@ static void ss_raw_copy_cb(void *userdata,
       unsigned dims, size_t pitch)
 {
    struct ss_raw_copy *out = (struct ss_raw_copy*)userdata;
-   size_t             size;
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
+   size_t row_bytes, size;
 
-   if (!data || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
+   if (!data || !width || !height || !pitch
+         || (out->bpp != 2 && out->bpp != 4))
       return;
 
-   size = (size_t)VIDEO_SCALE_H(dims) * pitch;
+   row_bytes = (size_t)width * out->bpp;
+   if (     pitch < row_bytes
+         || height > (size_t)-1 / row_bytes
+         || (height > 1 && pitch > ((size_t)-1 - row_bytes) / (height - 1)))
+      return;
+   size = (size_t)height * row_bytes;
    if (!(out->buffer = malloc(size)))
       return;
 
-   memcpy(out->buffer, data, size);
    out->dims   = dims;
    out->pitch  = pitch;
+   screenshot_rotate(out->buffer, data, &out->dims, &out->pitch,
+         out->bpp, out->rotation);
 }
 
 static bool take_screenshot_raw(
@@ -1028,7 +1046,23 @@ static bool take_screenshot_raw(
     * onto a worker thread; without copying we'd risk a UAF if the
     * core closes or the driver reinit's between this enqueue and the
     * worker dequeuing it. */
-   struct ss_raw_copy copy = { NULL, 0, 0 };
+   struct ss_raw_copy copy = { NULL, 0, 0, 0, 0 };
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   switch (pixel_format_type)
+   {
+      case RETRO_PIXEL_FORMAT_0RGB1555:
+      case RETRO_PIXEL_FORMAT_RGB565:
+         copy.bpp = 2;
+         break;
+      case RETRO_PIXEL_FORMAT_XRGB8888:
+      case RETRO_PIXEL_FORMAT_XRGB2101010:
+      case RETRO_PIXEL_FORMAT_HDR10_2101010:
+         copy.bpp = 4;
+         break;
+      default:
+         return false;
+   }
+   copy.rotation = (uint8_t)runloop_st->system.rotation;
    video_driver_cached_frame_read(&copy, ss_raw_copy_cb);
 
    if (     !copy.buffer || !VIDEO_SCALE_W(copy.dims)
@@ -1036,30 +1070,6 @@ static bool take_screenshot_raw(
    {
       free(copy.buffer);
       return false;
-   }
-
-   /* Rotate the buffer according to core SET_ROTATION */
-   {
-      runloop_state_t *runloop_st   = runloop_state_get_ptr();
-      rarch_system_info_t *sys_info = &runloop_st->system;
-
-      if (sys_info && sys_info->rotation)
-      {
-         uint32_t *buf = NULL;
-         uint8_t bpp   = copy.pitch / VIDEO_SCALE_W(copy.dims);
-         size_t size   = VIDEO_SCALE_AREA(copy.dims) * bpp;
-
-         if ((buf = (uint32_t*)calloc(1, size)))
-         {
-            screenshot_rotate(buf, (uint32_t*)copy.buffer, size,
-                  &copy.dims, &copy.pitch,
-                  sys_info->rotation);
-            memcpy(copy.buffer, buf, size);
-
-            free(buf);
-            buf = NULL;
-         }
-      }
    }
 
    /* Negative pitch is needed as screenshot takes bottom-up, but

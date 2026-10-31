@@ -2735,6 +2735,8 @@ jobs:
           CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/vulkan_capture_guard/run.py
           python3 samples/gfx/video_frame_failure/translation.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/video_frame_failure/translation.py
+          SANITIZER=address,undefined python3 samples/gfx/video_frame_failure/screenshot.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/video_frame_failure/screenshot.py
           python3 samples/menu/entry_alloc/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/menu/entry_alloc/run.py
 
