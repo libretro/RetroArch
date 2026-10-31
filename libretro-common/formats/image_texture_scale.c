@@ -75,7 +75,7 @@ static bool upscale_image(
             for (i = 0; i < scale_factor; i++)
                *dst++ = src[x];
          for (i = 1; i < scale_factor; i++)
-            memcpy(row + (size_t)i * image_dst->width, row, row_bytes);
+            memmove(row + (size_t)i * image_dst->width, row, row_bytes);
       }
       return true;
    }
