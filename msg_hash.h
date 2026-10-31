@@ -188,6 +188,7 @@ enum msg_file_type
    FILE_TYPE_MD5,
    FILE_TYPE_CRC,
    FILE_TYPE_RGUI_THEME_PRESET,
+   FILE_TYPE_VULKAN_DRIVER,
    FILE_TYPE_VIDEO_LAYOUT,
    FILE_TYPE_WEBM,
    FILE_TYPE_F4F,
@@ -9352,6 +9353,10 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_NATURAL,
    MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_CINEMATIC,
    MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE_FOLLOW,
+   MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
+   MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    /* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group enum rows (see settings/settings_def_video_hdr_toggles.h, settings/settings_def_video_stereo.h and settings/settings_def_video_headset.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS
@@ -9417,6 +9422,7 @@ enum msg_hash_enums
 #define S_ACTION_EX_NS_H(T, n, sd, ok, rp, c, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_upscaler.h"
+#include "settings/settings_def_vulkan_driver_path.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_video_screens.h"

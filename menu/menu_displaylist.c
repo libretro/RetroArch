@@ -505,7 +505,8 @@ static int filebrowser_parse(
       if (   type_default == FILE_TYPE_SHADER_PRESET
           || type_default == FILE_TYPE_SHADER
           || type_default == FILE_TYPE_OVERLAY
-          || type_default == FILE_TYPE_OSK_OVERLAY)
+          || type_default == FILE_TYPE_OSK_OVERLAY
+          || type_default == FILE_TYPE_VULKAN_DRIVER)
          filter_ext = true;
 
       if (string_is_equal(label, MENU_ENUM_LABEL_SCAN_FILE_STR))
@@ -12160,6 +12161,9 @@ unsigned menu_displaylist_build_list(
                   { MENU_ENUM_LABEL_VIDEO_THREADED, PARSE_ONLY_BOOL, false },
                   { MENU_ENUM_LABEL_VIDEO_GPU_INDEX, PARSE_ONLY_INT, false },
                   { MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX, PARSE_ONLY_UINT, false },
+#ifdef HAVE_ADRENOTOOLS
+                  { MENU_ENUM_LABEL_VIDEO_VULKAN_DRIVER_PATH, PARSE_ONLY_PATH, false },
+#endif
                   { MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH, PARSE_ONLY_UINT, false },
                   { MENU_ENUM_LABEL_VIDEO_HW_DECODE, PARSE_ONLY_UINT, false },
                };
@@ -18337,6 +18341,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_CONFIG_FILES:
          case DISPLAYLIST_REMAP_FILES:
          case DISPLAYLIST_RGUI_THEME_PRESETS:
+         case DISPLAYLIST_VULKAN_DRIVERS:
          case DISPLAYLIST_STREAM_CONFIG_FILES:
          case DISPLAYLIST_RECORD_CONFIG_FILES:
          case DISPLAYLIST_OVERLAYS:
@@ -18368,6 +18373,10 @@ static bool menu_displaylist_ctl_internal(
                case DISPLAYLIST_RGUI_THEME_PRESETS:
                   info->type_default = FILE_TYPE_RGUI_THEME_PRESET;
                   info->exts         = strldup("cfg", sizeof("cfg"));
+                  break;
+               case DISPLAYLIST_VULKAN_DRIVERS:
+                  info->type_default = FILE_TYPE_VULKAN_DRIVER;
+                  info->exts         = strldup("zip", sizeof("zip"));
                   break;
                case DISPLAYLIST_STREAM_CONFIG_FILES:
                   info->type_default = FILE_TYPE_STREAM_CONFIG;

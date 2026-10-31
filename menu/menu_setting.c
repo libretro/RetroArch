@@ -135,6 +135,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #ifdef HAVE_TEMPORAL_UPSCALER
 #include "../gfx/video_upscaler.h"
 #endif
+#ifdef HAVE_ADRENOTOOLS
+#include "../gfx/common/vulkan_custom_driver.h"
+#endif
 #include "../gfx/video_views.h"
 #include "../gfx/video_windows.h"
 #ifdef HAVE_MODELINE
@@ -3670,6 +3673,23 @@ static size_t setting_get_string_representation_video_font_path(
    return fill_pathname(s, path_basename(setting->value.target.string),
          "", len);
 }
+
+#ifdef HAVE_ADRENOTOOLS
+static size_t setting_get_string_representation_vulkan_driver(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   if (vulkan_custom_driver_safe_mode())
+      return strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE), len);
+   if (!setting->value.target.string || !*setting->value.target.string)
+      return strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM), len);
+   return fill_pathname(s, path_basename(setting->value.target.string),
+         "", len);
+}
+#endif
 
 static size_t setting_get_string_representation_video_hdr_expand_gamut(
       rarch_setting_t *setting, char *s, size_t len)
@@ -13592,6 +13612,13 @@ static const setting_desc_t vid_desc_3[] = {
 };
 #endif
 
+#ifdef HAVE_ADRENOTOOLS
+static const setting_desc_t vulkan_driver_desc[] = {
+/* GENERATED: rows come from settings_def_vulkan_driver_path.h in order. */
+#include "../settings/settings_def_vulkan_driver_path.h"
+};
+#endif
+
 #ifdef HAVE_D3D10
 static const setting_desc_t vid_desc_4[] = {
 /* GENERATED: rows come from settings_def_gpu_index_d3d10.h in order. */
@@ -16577,6 +16604,11 @@ static void settings_build_video(
 
             ADD_DESC(vid_desc_3);
          }
+#endif
+#ifdef HAVE_ADRENOTOOLS
+         /* Any video driver: HW cores force Vulkan under gl too */
+         if (vulkan_custom_driver_supported())
+            ADD_DESC(vulkan_driver_desc);
 #endif
 
 #ifdef HAVE_D3D10
@@ -20363,6 +20395,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
 #ifdef HAVE_VULKAN
    { vid_desc_3, (uint16_t)ARRAY_SIZE(vid_desc_3) },
+#endif
+#ifdef HAVE_ADRENOTOOLS
+   { vulkan_driver_desc, (uint16_t)ARRAY_SIZE(vulkan_driver_desc) },
 #endif
 #ifdef HAVE_D3D10
    { vid_desc_4, (uint16_t)ARRAY_SIZE(vid_desc_4) },

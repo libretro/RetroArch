@@ -63,6 +63,9 @@
 #include "../../msg_hash_lbl_str.h"
 #include "../../playlist.h"
 #include "../../runtime_file.h"
+#ifdef HAVE_ADRENOTOOLS
+#include "../../gfx/common/vulkan_custom_driver.h"
+#endif
 
 #ifndef BIND_ACTION_SUBLABEL
 #define BIND_ACTION_SUBLABEL(cbs, name) (cbs)->action_sublabel = (name)
@@ -1508,6 +1511,47 @@ static int action_bind_sublabel_core_backup_entry(
       strlcpy_append(s, len, &_len, crc);
    return 1;
 }
+
+#ifdef HAVE_ADRENOTOOLS
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vulkan_driver_path, MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH)
+
+static int action_bind_sublabel_video_vulkan_driver_path_crashed(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   size_t _len = 0;
+   strlcpy_append(s, len, &_len, msg_hash_to_str(
+            MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED));
+   strlcpy_append(s, len, &_len, "\n");
+   strlcpy_append(s, len, &_len, msg_hash_to_str(
+            MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH));
+   return 1;
+}
+
+static int action_bind_sublabel_video_vulkan_driver_path_safe_mode(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   size_t _len       = 0;
+   const char *saved = config_get_ptr()->paths.path_vulkan_driver;
+   if (!string_is_empty(saved))
+   {
+      char name[NAME_MAX_LENGTH];
+      fill_pathname(name, path_basename(saved), "", sizeof(name));
+      snprintf(s, len, msg_hash_to_str(
+               MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE), name);
+      _len = strlen(s);
+      strlcpy_append(s, len, &_len, "\n");
+   }
+   strlcpy_append(s, len, &_len, msg_hash_to_str(
+            MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH));
+   return 1;
+}
+#endif
 
 static int action_bind_sublabel_generic(
       file_list_t *list,
@@ -2971,6 +3015,22 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_MICROPHONE
          case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_resampler_quality);
+            break;
+#endif
+#ifdef HAVE_ADRENOTOOLS
+         /* Chosen here, on the main thread: Ozone draws sublabels
+          * from its frame callback, the video thread when threaded */
+         case MENU_ENUM_LABEL_VIDEO_VULKAN_DRIVER_PATH:
+            if (vulkan_custom_driver_crashed(
+                     config_get_ptr()->paths.path_vulkan_driver))
+               BIND_ACTION_SUBLABEL(cbs,
+                     action_bind_sublabel_video_vulkan_driver_path_crashed);
+            else if (vulkan_custom_driver_safe_mode())
+               BIND_ACTION_SUBLABEL(cbs,
+                     action_bind_sublabel_video_vulkan_driver_path_safe_mode);
+            else
+               BIND_ACTION_SUBLABEL(cbs,
+                     action_bind_sublabel_video_vulkan_driver_path);
             break;
 #endif
          case MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE:
