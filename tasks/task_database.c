@@ -5684,6 +5684,10 @@ static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
       return false;
    if (task->handler != task_manual_content_scan_handler)
       return false;
+   /* Still findable while its callback runs, which may push the
+    * next scan. */
+   if (task_get_flags(task) & RETRO_TASK_FLG_FINISHED)
+      return false;
    if (!(manual_scan = (manual_scan_handle_t*)task->state))
       return false;
    return string_is_equal(
