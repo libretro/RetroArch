@@ -479,6 +479,126 @@ static void test_32_to_16(uint32_t *in, uint16_t *out)
             | ((c >> 3) & 0x1f);
       check("conv_argb8888_0rgb1555", i, out[i], want);
    }
+
+   conv_argb8888_rgb565(out, in, ROW_W, ROWS, ROW_W * 2, ROW_W * 4);
+   for (i = 0; i < NPIX; i++)
+   {
+      uint32_t c = in[i];
+      check("conv_argb8888_rgb565", i, out[i],
+            (((c >> 19) & 0x1f) << 11) | (((c >> 10) & 0x3f) << 5)
+            | ((c >> 3) & 0x1f));
+   }
+   for (i = 0; i < NPIX; i++)
+      in[i] = ref_565_rgb(i & 0xffff) | ((i & 0xff) << 24);
+   conv_argb8888_rgb565(out, in, ROW_W, ROWS, ROW_W * 2, ROW_W * 4);
+   for (i = 0; i < NPIX; i++)
+      check("conv_argb8888_rgb565 roundtrip", i, out[i], i & 0xffff);
+}
+
+static void test_rgb565_widths(void)
+{
+   uint32_t in[3 * 40];
+   uint16_t out[3 * 40];
+   unsigned width, flip, y, x;
+   for (x = 0; x < 3 * 40; x++)
+      in[x] = x * 2654435761u;
+   for (width = 0; width <= 33; width++)
+      for (flip = 0; flip < 4; flip++)
+      {
+         unsigned stride = width + 3;
+         memset(out, 0x5a, sizeof(out));
+         conv_argb8888_rgb565(out + ((flip & 2) ? 2 * stride : 0),
+               in + ((flip & 1) ? 2 * stride : 0), width, 3,
+               (flip & 2) ? -(int)stride * 2 : (int)stride * 2,
+               (flip & 1) ? -(int)stride * 4 : (int)stride * 4);
+         for (y = 0; y < 3; y++)
+            for (x = 0; x < stride; x++)
+            {
+               uint32_t c = in[((flip & 1) ? 2 - y : y) * stride + x];
+               uint16_t want = x < width
+                  ? (uint16_t)((((c >> 19) & 0x1f) << 11)
+                        | (((c >> 10) & 0x3f) << 5) | ((c >> 3) & 0x1f))
+                  : 0x5a5a;
+               check("conv_argb8888_rgb565 widths/strides", y * stride + x,
+                     out[((flip & 2) ? 2 - y : y) * stride + x], want);
+            }
+      }
+}
+
+static void test_rgb565_scaling(enum scaler_pix_fmt fmt,
+      enum scaler_type type, unsigned ow, unsigned oh, unsigned flip)
+{
+   struct scaler_ctx ctx, ref_ctx;
+   unsigned bpp = fmt == SCALER_FMT_BGR24 ? 3
+      : (fmt == SCALER_FMT_RGB565 ? 2 : 4);
+   unsigned ip = 67 * bpp;
+   unsigned op = (ow + 5) * 2;
+   unsigned rp = (ow + 5) * 4;
+   unsigned x, y;
+   uint8_t *src = (uint8_t*)malloc((size_t)ip * 48);
+   uint32_t *canonical = (uint32_t*)malloc(64 * 48 * 4);
+   uint16_t *out = (uint16_t*)malloc((size_t)op * oh);
+   uint32_t *ref = (uint32_t*)malloc((size_t)rp * oh);
+   if (!src || !canonical || !out || !ref)
+   {
+      failures++;
+      goto free_buffers;
+   }
+   fill_random(src, (size_t)ip * 48, 0x5eed1234u);
+   if (fmt == SCALER_FMT_BGR24)
+      conv_bgr24_argb8888(canonical, src, 64, 48, 64 * 4, ip);
+   else if (fmt == SCALER_FMT_RGB565)
+      conv_rgb565_argb8888(canonical, src, 64, 48, 64 * 4, ip);
+   else
+      for (y = 0; y < 48; y++)
+         memcpy(canonical + y * 64, src + y * ip, 64 * 4);
+   memset(out, 0x5a, (size_t)op * oh);
+   memset(ref, 0x5a, (size_t)rp * oh);
+   memset(&ctx, 0, sizeof(ctx));
+   ctx.in_width = 64;
+   ctx.in_height = 48;
+   ctx.out_width = ow;
+   ctx.out_height = oh;
+   ctx.in_fmt = fmt;
+   ctx.out_fmt = SCALER_FMT_RGB565;
+   ctx.scaler_type = type;
+   ctx.in_stride = (flip & 1) ? -(int)ip : (int)ip;
+   ctx.out_stride = (flip & 2) ? -(int)op : (int)op;
+   ref_ctx = ctx;
+   ref_ctx.in_fmt = ref_ctx.out_fmt = SCALER_FMT_ARGB8888;
+   ref_ctx.in_stride = (flip & 1) ? -64 * 4 : 64 * 4;
+   ref_ctx.out_stride = (flip & 2) ? -(int)rp : (int)rp;
+   if (!scaler_ctx_gen_filter(&ctx) || !scaler_ctx_gen_filter(&ref_ctx))
+   {
+      printf("FAIL: RGB565 scaler fmt=%d mode=%d %ux%u\n",
+            (int)fmt, (int)type, ow, oh);
+      failures++;
+   }
+   else
+   {
+      scaler_ctx_scale(&ctx, (uint8_t*)out + ((flip & 2) ? (oh - 1) * op : 0),
+            src + ((flip & 1) ? 47 * ip : 0));
+      scaler_ctx_scale(&ref_ctx, (uint8_t*)ref + ((flip & 2) ? (oh - 1) * rp : 0),
+            canonical + ((flip & 1) ? 47 * 64 : 0));
+      for (y = 0; y < oh; y++)
+         for (x = 0; x < ow + 5; x++)
+         {
+            uint32_t c = ref[y * (ow + 5) + x];
+            uint16_t want = x < ow
+               ? (uint16_t)((((c >> 19) & 0x1f) << 11)
+                     | (((c >> 10) & 0x3f) << 5) | ((c >> 3) & 0x1f))
+               : 0x5a5a;
+            check("RGB565 scaler pixels/padding", y * (ow + 5) + x,
+                  out[y * (ow + 5) + x], want);
+         }
+   }
+   scaler_ctx_gen_reset(&ctx);
+   scaler_ctx_gen_reset(&ref_ctx);
+free_buffers:
+   free(src);
+   free(canonical);
+   free(out);
+   free(ref);
 }
 
 #ifdef PIXCONV_TEST_HOOKS
@@ -593,6 +713,20 @@ int main(void)
          in16, out16, ref_1555_565);
 
    test_32_to_16(in32, out16);
+   test_rgb565_widths();
+   {
+      static const enum scaler_pix_fmt fmts[] = {
+         SCALER_FMT_ARGB8888, SCALER_FMT_BGR24, SCALER_FMT_RGB565
+      };
+      static const unsigned sizes[][2] = { {64, 48}, {24, 16}, {80, 64} };
+      unsigned f, t, s, flip;
+      for (f = 0; f < 3; f++)
+         for (t = SCALER_TYPE_POINT; t <= SCALER_TYPE_SINC; t++)
+            for (s = 0; s < 3; s++)
+               for (flip = 0; flip < 4; flip++)
+                  test_rgb565_scaling(fmts[f], (enum scaler_type)t,
+                        sizes[s][0], sizes[s][1], flip);
+   }
    test_32_sources(in32, out24, out32);
    test_bgr24_sources(out24_src, out32, out16);
    test_yuyv(out24_src, out32);

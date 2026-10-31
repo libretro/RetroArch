@@ -1243,6 +1243,58 @@ void conv_bgr24_rgb565(void *output_, const void *input_,
    }
 }
 
+void conv_argb8888_rgb565(void *output_, const void *input_,
+      int width, int height,
+      int out_stride, int in_stride)
+{
+   int h, w;
+   const uint32_t *input = (const uint32_t*)input_;
+   uint16_t *output      = (uint16_t*)output_;
+
+   for (h = 0; h < height;
+         h++, output += out_stride >> 1, input += in_stride >> 2)
+   {
+      w = 0;
+#if defined(__SSE2__)
+      for (; w + 8 <= width; w += 8)
+      {
+         const __m128i rm   = _mm_set1_epi32(0xf800);
+         const __m128i gm   = _mm_set1_epi32(0x07e0);
+         const __m128i bm   = _mm_set1_epi32(0x001f);
+         const __m128i bias = _mm_set1_epi32(0x8000);
+         __m128i x0 = _mm_loadu_si128((const __m128i*)(input + w));
+         __m128i x1 = _mm_loadu_si128((const __m128i*)(input + w + 4));
+         x0 = _mm_or_si128(_mm_and_si128(_mm_srli_epi32(x0, 8), rm),
+               _mm_or_si128(_mm_and_si128(_mm_srli_epi32(x0, 5), gm),
+                            _mm_and_si128(_mm_srli_epi32(x0, 3), bm)));
+         x1 = _mm_or_si128(_mm_and_si128(_mm_srli_epi32(x1, 8), rm),
+               _mm_or_si128(_mm_and_si128(_mm_srli_epi32(x1, 5), gm),
+                            _mm_and_si128(_mm_srli_epi32(x1, 3), bm)));
+         /* Bias for SSE2's signed 32-to-16 pack. */
+         _mm_storeu_si128((__m128i*)(output + w), _mm_xor_si128(
+               _mm_packs_epi32(_mm_sub_epi32(x0, bias),
+                              _mm_sub_epi32(x1, bias)),
+               _mm_set1_epi16(-32768)));
+      }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w + 4 <= width; w += 4)
+      {
+         uint32x4_t c = vld1q_u32(input + w);
+         uint32x4_t r = vandq_u32(vshrq_n_u32(c, 8), vdupq_n_u32(0xf800));
+         uint32x4_t g = vandq_u32(vshrq_n_u32(c, 5), vdupq_n_u32(0x07e0));
+         uint32x4_t b = vandq_u32(vshrq_n_u32(c, 3), vdupq_n_u32(0x001f));
+         vst1_u16(output + w, vmovn_u32(vorrq_u32(r, vorrq_u32(g, b))));
+      }
+#endif
+      for (; w < width; w++)
+      {
+         uint32_t c = input[w];
+         output[w] = (uint16_t)(((c >> 8) & 0xf800)
+               | ((c >> 5) & 0x07e0) | ((c >> 3) & 0x001f));
+      }
+   }
+}
+
 void conv_argb8888_0rgb1555(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
