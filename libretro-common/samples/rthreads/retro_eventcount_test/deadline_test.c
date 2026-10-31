@@ -17,10 +17,17 @@ static uint64_t now_ns, step_ns;
 static unsigned clocks, parks;
 static int64_t parked_ns;
 static retro_eventcount_t *wake_target;
+static int reenter_calibration;
+static unsigned nested_spin;
 
 static int deadline_clock(clockid_t clock, struct timespec *now)
 {
    (void)clock;
+   if (reenter_calibration)
+   {
+      reenter_calibration = 0;
+      nested_spin = retro_eventcount_spin_iters();
+   }
    clocks++;
    now->tv_sec = (time_t)(now_ns / 1000000000);
    now->tv_nsec = (long)(now_ns % 1000000000);
@@ -65,6 +72,15 @@ int main(void)
    int failed = 0, key;
    bool result;
    if (!retro_eventcount_init(&ec)) return 1;
+   /* A second calibrator must finish while the first is suspended. */
+   setenv("RETRO_EVENTCOUNT_SPIN_US", "1", 1);
+   setenv("RETRO_EVENTCOUNT_SPIN", "64", 1);
+   step_ns = 1000;
+   reenter_calibration = 1;
+   alarm(5);
+   if (retro_eventcount_spin_iters() != 64 || nested_spin != 64)
+      failed++;
+   alarm(0);
    setenv("RETRO_EVENTCOUNT_SPIN_US", "0", 1);
    for (i = 0; i < sizeof(expected) / sizeof(expected[0]); i++)
    {
@@ -79,8 +95,7 @@ int main(void)
    unsetenv("RETRO_EVENTCOUNT_SPIN");
    unsetenv("RETRO_EVENTCOUNT_SPIN_US");
    /* Never execute an unvalidated override in the baseline probe. */
-   ec_linux_spin = 8;
-   retro_atomic_store_release_int(&ec_linux_spin_state, 2);
+   retro_atomic_store_release_int(&ec_linux_spin_state, 8 + 1);
    for (i = 0; i < 6; i++)
    {
       clocks = parks = 0;

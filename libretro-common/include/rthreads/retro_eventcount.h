@@ -103,7 +103,10 @@
  * Backends
  * --------
  *   Linux / Android      futex(FUTEX_WAIT_PRIVATE), no lock at all
- *   Windows              a waiter list of stack blocks, slept on with the
+ *   Windows 8 and newer  WaitOnAddress / WakeByAddressAll on the epoch;
+ *                        no caller-side waiter list or lock. Timeouts
+ *                        round up to milliseconds and clamp below INFINITE.
+ *   older Windows        a waiter list of stack blocks, slept on with the
  *                        best primitive ntdll offers, resolved at runtime:
  *                        NtWaitForAlertByThreadId on 8 and newer,
  *                        NtWaitForKeyedEvent back to XP, and a per-thread
@@ -142,6 +145,12 @@
  * lets notify skip the lock cannot be relied on, so that build takes the
  * lock on every notify instead.  retro_eventcount_backend_name() reports
  * which of these is live.
+ *
+ * Define RETRO_EVENTCOUNT_REQUIRE_LOCK_FREE when compiling the primitive
+ * to make init fail instead of selecting a mutex or waiter-list spinlock.
+ * This accepts native address waits only; callers must check init's result.
+ * RETRO_EVENTCOUNT_WIN32=address selects the Windows address-wait backend
+ * for tests; alert/keyed/event/none retain their legacy test meanings.
  */
 
 #include <retro_common_api.h>
@@ -151,15 +160,22 @@
 
 RETRO_BEGIN_DECLS
 
+#if defined(_WIN32)
+struct retro_eventcount_address_api;
+#endif
+
 /* Spelled as bare struct pointers rather than slock_t / scond_t so this
  * header needs no include of rthreads.h and repeats no typedef: a
  * translation unit that includes both is then legal C89. */
 typedef struct retro_eventcount
 {
+#if defined(_WIN32)
+   const struct retro_eventcount_address_api *address_api;
+#endif
    struct slock       *lock;    /* NULL unless the backend needs a condvar   */
    struct scond       *cond;    /* NULL unless the backend needs a condvar   */
 #if defined(RETRO_ATOMIC_HAS_PTR)
-   /* Win32, Darwin and the BSDs keep their own waiter list: the blocks
+   /* Legacy Win32, Darwin and BSD backends keep a waiter list: the blocks
     * live on the waiters' stacks and the low bit of the head is the
     * list's spin bit, held for the instructions of one link.  No
     * caller mutex is involved, which is the whole point of it -- a
@@ -197,8 +213,8 @@ typedef struct retro_eventcount
  * retro_eventcount_init:
  * @ec : object to initialise.
  *
- * Brings @ec up in the unsignalled state with no waiters.  Allocates
- * only on the backends that need a mutex and a condition variable.
+ * Brings @ec up in the unsignalled state with no waiters. May allocate
+ * backend initialization data. Strict mode fails on a lock-based backend.
  *
  * @return true on success.  On failure @ec is left safe to pass to
  * retro_eventcount_free().

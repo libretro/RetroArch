@@ -36,7 +36,7 @@ LDFLAGS += -lrt
 #       ../../../rthreads/rthreads.c \
 #       ../../../features/features_cpu.c ../../../time/rtime.c \
 #       -Wall -W -std=gnu99 -O1 -DHAVE_THREADS -I../../../include
-#   for h in 1 0; do for t in alert keyed event none; do \
+#   for h in 1 0; do for t in address alert keyed event none; do \
 #       RETRO_EVENTCOUNT_HIRES=$$h RETRO_EVENTCOUNT_WIN32=$$t \
 #       wine64 ./ec.exe; done; done
 #
@@ -124,8 +124,16 @@ $(TARGET): $(OBJS)
 deadline_test: deadline_test.c $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 	$(CC) $(CFLAGS) -o $@ deadline_test.c $(filter-out retro_eventcount_test.c $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c,$(SOURCES)) $(LDFLAGS)
 
-check: all deadline_test
+strict_test: strict_test.c $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
+	$(CC) $(CFLAGS) -DRETRO_EVENTCOUNT_REQUIRE_LOCK_FREE -o $@ strict_test.c $(filter-out retro_eventcount_test.c,$(SOURCES)) $(LDFLAGS)
+
+strict_reject_test: strict_test.c $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
+	$(CC) $(CFLAGS) -DRETRO_EVENTCOUNT_REQUIRE_LOCK_FREE -DRETRO_EVENTCOUNT_FORCE_SCOND -o $@ strict_test.c $(filter-out retro_eventcount_test.c,$(SOURCES)) $(LDFLAGS)
+
+check: all deadline_test strict_test strict_reject_test
 	./deadline_test
+	./strict_test
+	./strict_reject_test
 	./$(TARGET)
 	@$(MAKE) -s clean
 	@$(MAKE) -s SCOND=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
@@ -152,5 +160,6 @@ clean:
 	      retro_eventcount_test_sempool retro_eventcount_test_switch \
 	      retro_eventcount_test_ctr
 	rm -f deadline_test deadline_test.exe
+	rm -f strict_test strict_test.exe strict_reject_test strict_reject_test.exe
 
 .PHONY: all check clean

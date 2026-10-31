@@ -661,7 +661,7 @@ win32-waits-check:
 	   rthreads/tpool.c rthreads/retro_eventcount.c $(WIN32_WAITS_SRC) \
 	   -o /tmp/lrc_tpool_win32.exe || exit 1; \
 	for h in 1 0; do \
-	   for t in alert keyed event none; do \
+	   for t in address alert keyed event none; do \
 	      RETRO_EVENTCOUNT_HIRES=$$h RETRO_EVENTCOUNT_WIN32=$$t \
 	         $(WINE) /tmp/lrc_ec_win32.exe >/tmp/lrc_waits.log 2>&1 \
 	         || { echo "FAIL: eventcount, tier $$t, hires $$h"; cat /tmp/lrc_waits.log; exit 1; }; \

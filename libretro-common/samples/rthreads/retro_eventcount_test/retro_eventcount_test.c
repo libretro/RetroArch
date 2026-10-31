@@ -742,16 +742,61 @@ static int lane_poll(void)
    return 0;
 }
 
+static retro_atomic_int_t init_start, init_failures;
+
+static void init_worker(void *unused)
+{
+   retro_eventcount_t local;
+   int key;
+   (void)unused;
+   while (!retro_atomic_load_acquire_int(&init_start))
+      retro_cpu_relax();
+   if (!retro_eventcount_init(&local))
+   {
+      retro_atomic_fetch_add_int(&init_failures, 1);
+      return;
+   }
+   (void)retro_eventcount_spin_iters();
+   key = retro_eventcount_prepare_wait(&local);
+   retro_eventcount_notify(&local);
+   if (!retro_eventcount_commit_wait_timeout(&local, key, 100000)
+         || retro_atomic_load_acquire_int(&local.waiters) != 0)
+      retro_atomic_fetch_add_int(&init_failures, 1);
+#if defined(_WIN32) && defined(RETRO_ATOMIC_HAS_PTR)
+   if (local.address_api && (local.lock || local.cond
+         || retro_atomic_load_acquire_ptr(&local.waitlist)))
+      retro_atomic_fetch_add_int(&init_failures, 1);
+#endif
+   retro_eventcount_free(&local);
+}
+
+static int lane_init(void)
+{
+   sthread_t *threads[16];
+   unsigned i;
+   retro_atomic_int_init(&init_start, 0);
+   retro_atomic_int_init(&init_failures, 0);
+   for (i = 0; i < 16; i++)
+      if (!(threads[i] = sthread_create(init_worker, NULL)))
+         exit(1);
+   retro_atomic_store_release_int(&init_start, 1);
+   for (i = 0; i < 16; i++)
+      sthread_join(threads[i]);
+   puts("  init       16 concurrent initializers");
+   return retro_atomic_load_acquire_int(&init_failures) != 0;
+}
+
 int main(void)
 {
    sthread_t *wd;
    int rc = 0;
 
-   printf("retro_eventcount backend: %s (atomics: %s)\n",
-         retro_eventcount_backend_name(), RETRO_ATOMIC_BACKEND_NAME);
-
    retro_atomic_int_init(&watchdog_stop, 0);
    wd = sthread_create(watchdog_thread, NULL);
+
+   rc |= lane_init();
+   printf("retro_eventcount backend: %s (atomics: %s)\n",
+         retro_eventcount_backend_name(), RETRO_ATOMIC_BACKEND_NAME);
 
    rc |= lane_handoff();
    rc |= lane_poll();
