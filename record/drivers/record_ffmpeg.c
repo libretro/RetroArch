@@ -1588,13 +1588,6 @@ static void ffmpeg_free(void *data)
  * there (libx264's frame= ... QP= lines), from the encoder threads. */
 /* FFmpeg often builds one line out of several av_log() calls, so
  * pieces are collected until a newline. Calls come from any thread. */
-static slock_t *ffmpeg_av_log_lock;
-static char     ffmpeg_av_log_line[1024];
-static size_t   ffmpeg_av_log_len;
-static int      ffmpeg_av_log_level;
-static int      ffmpeg_av_log_prefix = 1;
-static void    *ffmpeg_av_log_ctx;
-
 static void ffmpeg_av_log_emit(int level, const char *line)
 {
    if (level <= AV_LOG_ERROR)
@@ -1607,54 +1600,126 @@ static void ffmpeg_av_log_emit(int level, const char *line)
       RARCH_DBG("[FFmpeg/lav] %s\n", line);
 }
 
+/* A line being built.  With pointer atomics each thread building one
+ * holds a slot of its own, claimed with a compare-and-swap and let go
+ * once the line is out, so no line has another thread's pieces in it
+ * and no call waits on another; without them, one line under a lock. */
+typedef struct
+{
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_ptr_t owner;  /* the thread building it, or NULL */
+#endif
+   void  *ctx;
+   size_t len;
+   int    level;
+   int    prefix;
+   char   line[1024];
+} ffmpeg_av_log_line_t;
+
+#ifdef RETRO_ATOMIC_HAS_PTR
+#define FFMPEG_AV_LOG_SLOTS 8
+static ffmpeg_av_log_line_t ffmpeg_av_log_slots[FFMPEG_AV_LOG_SLOTS];
+
+/* The calling thread's slot, claimed if it has none; NULL when every
+ * slot is another thread's, and the piece is then a line of its own. */
+static ffmpeg_av_log_line_t *ffmpeg_av_log_slot(void)
+{
+   void    *me = (void*)(sthread_get_current_thread_id() | 1);
+   unsigned i;
+   for (i = 0; i < FFMPEG_AV_LOG_SLOTS; i++)
+      if (retro_atomic_load_acquire_ptr(&ffmpeg_av_log_slots[i].owner) == me)
+         return &ffmpeg_av_log_slots[i];
+   for (i = 0; i < FFMPEG_AV_LOG_SLOTS; i++)
+   {
+      ffmpeg_av_log_line_t *l = &ffmpeg_av_log_slots[i];
+      if (     !retro_atomic_load_acquire_ptr(&l->owner)
+            && retro_atomic_cas_ptr(&l->owner, NULL, me))
+      {
+         l->ctx    = NULL;
+         l->len    = 0;
+         l->prefix = 1;
+         return l;
+      }
+   }
+   return NULL;
+}
+#else
+static slock_t             *ffmpeg_av_log_lock;
+static ffmpeg_av_log_line_t ffmpeg_av_log_one = { NULL, 0, 0, 1, {0} };
+#endif
+
+/* Adds @piece to @l; true once the line is out. */
+static bool ffmpeg_av_log_add(ffmpeg_av_log_line_t *l, int level,
+      const char *piece)
+{
+   size_t _len;
+   if (!l->len || level < l->level)
+      l->level = level;
+   l->len += strlcpy(l->line + l->len, piece, sizeof(l->line) - l->len);
+   if (l->len >= sizeof(l->line))
+      l->len = sizeof(l->line) - 1;
+
+   _len = l->len;
+   if (     (!_len || l->line[_len - 1] != '\n')
+         && _len != sizeof(l->line) - 1)
+      return false;
+   while (_len && (l->line[_len - 1] == '\n' || l->line[_len - 1] == '\r'))
+      l->line[--_len] = '\0';
+   if (_len)
+      ffmpeg_av_log_emit(l->level, l->line);
+   l->len     = 0;
+   l->line[0] = '\0';
+   return true;
+}
+
 static void ffmpeg_av_log_cb(void *avcl, int level, const char *fmt,
       va_list vl)
 {
    char piece[1024];
-   size_t _len;
+   ffmpeg_av_log_line_t *l;
 
    if (level > av_log_get_level())
       return;
 
+#ifdef RETRO_ATOMIC_HAS_PTR
+   if (!(l = ffmpeg_av_log_slot()))
+   {
+      int prefix = 1;
+      av_log_format_line2(avcl, level, fmt, vl, piece, sizeof(piece),
+            &prefix);
+      string_trim_whitespace_right(piece);
+      if (*piece)
+         ffmpeg_av_log_emit(level, piece);
+      return;
+   }
+#else
    if (ffmpeg_av_log_lock)
       slock_lock(ffmpeg_av_log_lock);
+   l = &ffmpeg_av_log_one;
+#endif
 
-   /* A partial line from another context (another thread or codec)
-    * is finished on its own rather than spliced with this one. */
-   if (ffmpeg_av_log_len && avcl != ffmpeg_av_log_ctx)
+   /* A partial line from another context (another codec) is finished
+    * on its own rather than spliced with this one. */
+   if (l->len && avcl != l->ctx)
    {
-      ffmpeg_av_log_emit(ffmpeg_av_log_level, ffmpeg_av_log_line);
-      ffmpeg_av_log_len     = 0;
-      ffmpeg_av_log_line[0] = '\0';
-      ffmpeg_av_log_prefix  = 1;
+      ffmpeg_av_log_emit(l->level, l->line);
+      l->len     = 0;
+      l->line[0] = '\0';
+      l->prefix  = 1;
    }
-   ffmpeg_av_log_ctx = avcl;
+   l->ctx = avcl;
 
    av_log_format_line2(avcl, level, fmt, vl, piece, sizeof(piece),
-         &ffmpeg_av_log_prefix);
+         &l->prefix);
 
-   if (!ffmpeg_av_log_len || level < ffmpeg_av_log_level)
-      ffmpeg_av_log_level = level;
-   ffmpeg_av_log_len += strlcpy(ffmpeg_av_log_line + ffmpeg_av_log_len,
-         piece, sizeof(ffmpeg_av_log_line) - ffmpeg_av_log_len);
-   if (ffmpeg_av_log_len >= sizeof(ffmpeg_av_log_line))
-      ffmpeg_av_log_len = sizeof(ffmpeg_av_log_line) - 1;
-
-   _len = ffmpeg_av_log_len;
-   if (     (_len && ffmpeg_av_log_line[_len - 1] == '\n')
-         || _len == sizeof(ffmpeg_av_log_line) - 1)
-   {
-      while (_len && (ffmpeg_av_log_line[_len - 1] == '\n'
-               || ffmpeg_av_log_line[_len - 1] == '\r'))
-         ffmpeg_av_log_line[--_len] = '\0';
-      if (_len)
-         ffmpeg_av_log_emit(ffmpeg_av_log_level, ffmpeg_av_log_line);
-      ffmpeg_av_log_len     = 0;
-      ffmpeg_av_log_line[0] = '\0';
-   }
-
+#ifdef RETRO_ATOMIC_HAS_PTR
+   if (ffmpeg_av_log_add(l, level, piece))
+      retro_atomic_store_release_ptr(&l->owner, NULL);
+#else
+   ffmpeg_av_log_add(l, level, piece);
    if (ffmpeg_av_log_lock)
       slock_unlock(ffmpeg_av_log_lock);
+#endif
 }
 
 static void ffmpeg_av_log_init(void)
@@ -1674,10 +1739,12 @@ static void ffmpeg_av_log_init(void)
       }
    }
 
+#ifndef RETRO_ATOMIC_HAS_PTR
    /* Created once and kept: the callback may still be in use by
     * another libav* user when a recording ends. */
    if (!ffmpeg_av_log_lock)
       ffmpeg_av_log_lock = slock_new();
+#endif
 
    av_log_set_level(av_level);
    av_log_set_callback(ffmpeg_av_log_cb);

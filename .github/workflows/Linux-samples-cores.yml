@@ -163,6 +163,18 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
             make check SANITIZER=address,undefined
 
+      - name: FFmpeg subtitle hand-off to the renderer (plain, ASan + UBSan, TSan)
+        working-directory: samples/cores/ffmpeg_ass_events
+        run: |
+          set -eu
+          make clean
+          make check
+          make clean
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+            make check SANITIZER=address,undefined
+          make clean
+          TSAN_OPTIONS=halt_on_error=1 make check SANITIZER=thread
+
       - name: Build and run ffmpeg_sweep_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/cores/ffmpeg_sweep

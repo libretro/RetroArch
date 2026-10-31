@@ -39,6 +39,7 @@
 #include <boolean.h>
 #include <retro_spsc.h>
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 
 #include "../../../record/record_driver.h"
 #include "../../../record/drivers/record_ffmpeg.h"
@@ -634,6 +635,105 @@ static int open_only(void)
    return 0;
 }
 
+/* The log lane: libav* lines built from several av_log() calls on
+ * several threads at once come out whole, each from one thread. */
+#define LOG_THREADS 6
+#define LOG_LINES   400
+#define LOG_PIECES  8
+extern void (*stub_log_line)(const char *line);
+static retro_atomic_int_t log_lines, log_bad;
+
+static void log_capture(const char *line)
+{
+   const char *p = strstr(line, "] ");
+   unsigned    k = 0, j, kk, jj;
+   int         n;
+   bool        ok = p != NULL;
+   if (ok)
+      p += 2;
+   for (j = 0; ok && j < LOG_PIECES; j++)
+   {
+      if (sscanf(p, "%u.%u %n", &kk, &jj, &n) != 2 || jj != j
+            || (j && kk != k))
+         ok = false;
+      else
+      {
+         k  = kk;
+         p += n;
+      }
+   }
+   if (!ok || *p)
+      retro_atomic_fetch_add_int(&log_bad, 1);
+   retro_atomic_fetch_add_int(&log_lines, 1);
+}
+
+static void log_thread(void *arg)
+{
+   unsigned k = (unsigned)(size_t)arg, i, j;
+   for (i = 0; i < LOG_LINES; i++)
+   {
+      for (j = 0; j < LOG_PIECES; j++)
+         av_log(NULL, AV_LOG_INFO, "%u.%u ", k, j);
+      av_log(NULL, AV_LOG_INFO, "\n");
+   }
+}
+
+static int log_lines_whole(void)
+{
+   struct record_params params;
+   sthread_t *th[LOG_THREADS];
+   void      *rec;
+   unsigned   i;
+
+   memset(&params, 0, sizeof(params));
+   params.fps                        = FPS;
+   params.samplerate                 = RATE;
+   params.filename                   = OUT;
+   params.audio_resampler            = "sinc";
+   params.out_dims                   = VIDEO_SCALE_PACK(W, H);
+   params.fb_dims                    = VIDEO_SCALE_PACK(W, H);
+   params.channels                   = 2;
+   params.video_record_scale_factor  = 1;
+   params.video_stream_scale_factor  = 1;
+   params.video_record_threads       = 1;
+   params.aspect_ratio               = (float)W / H;
+   params.preset                     = RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY;
+   params.pix_fmt                    = FFEMU_PIX_ARGB8888;
+
+   stub_verbose   = true;
+   stub_log_level = 1;
+   remove(OUT);
+   if (!(rec = record_ffmpeg.init(&params)))
+   {
+      fprintf(stderr, "log lines: init failed\n");
+      return 1;
+   }
+   retro_atomic_store_release_int(&log_lines, 0);
+   retro_atomic_store_release_int(&log_bad, 0);
+   stub_log_line = log_capture;
+   for (i = 0; i < LOG_THREADS; i++)
+      th[i] = sthread_create(log_thread, (void*)(size_t)i);
+   for (i = 0; i < LOG_THREADS; i++)
+      if (th[i])
+         sthread_join(th[i]);
+   stub_log_line = NULL;
+   record_ffmpeg.free(rec);
+   stub_verbose   = false;
+   remove(OUT);
+   if (     retro_atomic_load_acquire_int(&log_bad)
+         || retro_atomic_load_acquire_int(&log_lines)
+            != LOG_THREADS * LOG_LINES)
+   {
+      fprintf(stderr, "log lines: %d of %d lines spliced or cut, %d out\n",
+            retro_atomic_load_acquire_int(&log_bad), LOG_THREADS * LOG_LINES,
+            retro_atomic_load_acquire_int(&log_lines));
+      return 1;
+   }
+   printf("[pass] log lines: %u threads' av_log() pieces come out as"
+         " whole lines, each from one thread\n", LOG_THREADS);
+   return 0;
+}
+
 #ifdef PLAIN_RING
 /* The plain-ring lane: the driver asks for a mirrored video ring and
  * gets the plain one, as on a platform without a double mapping. */
@@ -706,7 +806,8 @@ int main(void)
    if (record_video_stride_test_run() || record_audio_growth_test_run()
          || record_finalize_test_run())
       return 1;
-   if (geometry() || open_only() || run(false) || run(true))
+   if (     geometry() || open_only() || log_lines_whole()
+         || run(false) || run(true))
       return 1;
    for (fault_mode = 1; fault_mode <= 15; fault_mode++)
    {

@@ -8,10 +8,21 @@
 
 /* The last line logged, for checks on what the driver chose */
 char stub_last_log[512];
+/* Set, every line goes to it instead, from whichever thread logs. */
+void (*stub_log_line)(const char *line) = NULL;
 
 void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
+   if (stub_log_line)
+   {
+      char line[1100];
+      va_start(ap, fmt);
+      vsnprintf(line, sizeof(line), fmt, ap);
+      va_end(ap);
+      stub_log_line(line);
+      return;
+   }
    va_start(ap, fmt);
    vsnprintf(stub_last_log, sizeof(stub_last_log), fmt, ap);
    va_end(ap);

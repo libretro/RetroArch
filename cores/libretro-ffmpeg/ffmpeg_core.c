@@ -802,7 +802,15 @@ typedef struct ffmpeg_core_ctx
    ASS_Track *ass_track[MAX_STREAMS];
    uint8_t *ass_extra_data[MAX_STREAMS];
    size_t ass_extra_data_size[MAX_STREAMS];
+   /* Each track's newest change from the decode thread, for the thread
+    * that renders, which alone calls into libass once the tracks are
+    * made. */
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_ptr_t ass_changes[MAX_STREAMS];
+#else
+   struct ass_change *ass_changes[MAX_STREAMS];
    slock_t *ass_lock;
+#endif
 #endif
 
    /* Attachments (e.g. embedded fonts) */
@@ -931,7 +939,6 @@ static ffmpeg_core_ctx_t g_ctx;
 #define ASS_TRACK_STR              (g_ctx.ass_track)
 #define ASS_EXTRA_DATA_STR         (g_ctx.ass_extra_data)
 #define ASS_EXTRA_DATA_SIZE_STR    (g_ctx.ass_extra_data_size)
-#define ASS_LOCK_STR               (g_ctx.ass_lock)
 #endif
 #define ATTACHMENTS_STR            (g_ctx.attachments)
 #define ATTACHMENTS_SIZE_STR       (g_ctx.attachments_size)
@@ -1893,6 +1900,80 @@ static const AVCodec *retro_find_decoder(enum AVCodecID codec_id)
 
 #ifdef HAVE_SSA
 static void render_ass_img(AVFrame *conv_frame, ASS_Image *img);
+
+/* A track's events dropped, then @line added if any. Each one
+ * replaces the last, so a track only needs its newest. */
+struct ass_change
+{
+   long long start;
+   long long duration;
+   size_t    len;
+   char      line[1];
+};
+
+static struct ass_change *ass_change_swap(unsigned i, struct ass_change *ev)
+{
+#ifdef RETRO_ATOMIC_HAS_PTR
+   return (struct ass_change*)retro_atomic_exchange_ptr(&g_ctx.ass_changes[i], ev);
+#else
+   struct ass_change *old;
+   slock_lock(g_ctx.ass_lock);
+   old                 = g_ctx.ass_changes[i];
+   g_ctx.ass_changes[i] = ev;
+   slock_unlock(g_ctx.ass_lock);
+   return old;
+#endif
+}
+
+/* Decode thread. */
+static void ass_change_push(ASS_Track *track, const char *line,
+      long long start, long long duration)
+{
+   unsigned          i;
+   size_t            len = line ? strlen(line) : 0;
+   struct ass_change *ev;
+   for (i = 0; i < MAX_STREAMS; i++)
+      if (ASS_TRACK_STR[i] == track)
+         break;
+   if (i == MAX_STREAMS || !track)
+      return;
+   if (!(ev = (struct ass_change*)malloc(sizeof(*ev) + len)))
+      return;
+   ev->start    = start;
+   ev->duration = duration;
+   ev->len      = len;
+   if (line)
+      memcpy(ev->line, line, len + 1);
+   free(ass_change_swap(i, ev));
+}
+
+/* The renderer's thread: the tracks brought up to date. With @apply
+ * false, only freed. */
+static void ass_changes_run(bool apply)
+{
+   unsigned i;
+   for (i = 0; i < MAX_STREAMS; i++)
+   {
+      struct ass_change *ev;
+#ifdef RETRO_ATOMIC_HAS_PTR
+      if (!retro_atomic_load_acquire_ptr(&g_ctx.ass_changes[i]))
+         continue;
+#else
+      if (!g_ctx.ass_lock)
+         return;
+#endif
+      if (!(ev = ass_change_swap(i, NULL)))
+         continue;
+      if (apply && ASS_TRACK_STR[i])
+      {
+         ass_flush_events(ASS_TRACK_STR[i]);
+         if (ev->len)
+            ass_process_chunk(ASS_TRACK_STR[i], ev->line, (int)ev->len,
+                  ev->start, ev->duration);
+      }
+      free(ev);
+   }
+}
 #endif
 
 #ifdef HAVE_SSA
@@ -2844,7 +2925,7 @@ void CORE_PREFIX(retro_run)(void)
 #ifdef HAVE_SSA
                {
                   double video_time = ctx->pts * av_q2d(FCTX_STR->streams[VIDEO_STREAM_INDEX_STR]->time_base);
-                  slock_lock(ASS_LOCK_STR);
+                  ass_changes_run(true);
                   if (ASS_RENDER_STR && ctx->ass_track_active)
                   {
                      int change     = 0;
@@ -2852,7 +2933,6 @@ void CORE_PREFIX(retro_run)(void)
                         1000 * video_time, &change);
                      render_ass_img(ctx->target, img);
                   }
-                  slock_unlock(ASS_LOCK_STR);
                }
 #endif
 
@@ -4100,7 +4180,7 @@ static void decode_thread_seek(double time)
       avcodec_flush_buffers(SCTX_STR[subtitle_stream - 1]);
 #ifdef HAVE_SSA
    if (subtitle_stream && ASS_TRACK_STR[subtitle_stream - 1])
-      ass_flush_events(ASS_TRACK_STR[subtitle_stream - 1]);
+      ass_change_push(ASS_TRACK_STR[subtitle_stream - 1], NULL, 0, 0);
 #endif
 }
 
@@ -4319,9 +4399,9 @@ static void decode_thread(void *data)
 #ifdef HAVE_SSA
          for (i = 0; i < sub.num_rects; i++)
          {
-            slock_lock(ASS_LOCK_STR);
-            ass_flush_events(ass_track_active);
-            if (sub.rects[i]->ass && ass_track_active)
+            if (!ass_track_active)
+               continue;
+            if (sub.rects[i]->ass)
             {
                char dialogue_line[4096];
                
@@ -4332,9 +4412,10 @@ static void decode_thread(void *data)
                
                snprintf(dialogue_line, sizeof(dialogue_line), "Dialogue: %s", sub.rects[i]->ass);
                
-               ass_process_chunk(ass_track_active, dialogue_line, strlen(dialogue_line), start_time, duration);
+               ass_change_push(ass_track_active, dialogue_line, start_time, duration);
             }
-            slock_unlock(ASS_LOCK_STR);
+            else
+               ass_change_push(ass_track_active, NULL, 0, 0);
          }
 #endif
          avsubtitle_free(&sub);
@@ -4511,8 +4592,12 @@ void CORE_PREFIX(retro_unload_game)(void)
       g_ctx.ecs_inited = false;
    }
 #ifdef HAVE_SSA
-   if (ASS_LOCK_STR)
-      slock_free(ASS_LOCK_STR);
+   /* the decode thread is joined: what it left is dropped */
+   ass_changes_run(false);
+#ifndef RETRO_ATOMIC_HAS_PTR
+   if (g_ctx.ass_lock)
+      slock_free(g_ctx.ass_lock);
+#endif
 #endif
 
    if (g_ctx.audio_decode_fifo_init)
@@ -4521,8 +4606,8 @@ void CORE_PREFIX(retro_unload_game)(void)
    free(g_ctx.run_audio_buffer);
    g_ctx.run_audio_buffer = NULL;
 
-#ifdef HAVE_SSA
-   ASS_LOCK_STR = NULL;
+#if defined(HAVE_SSA) && !defined(RETRO_ATOMIC_HAS_PTR)
+   g_ctx.ass_lock = NULL;
 #endif
 
    decode_audio_time_set(0.0);
@@ -4699,8 +4784,8 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       }
       g_ctx.ecs_inited = true;
    }
-#ifdef HAVE_SSA
-   ASS_LOCK_STR         = slock_new();
+#if defined(HAVE_SSA) && !defined(RETRO_ATOMIC_HAS_PTR)
+   g_ctx.ass_lock       = slock_new();
 #endif
 
    DECODE_THREAD_DEAD_SET(0);
