@@ -11538,7 +11538,11 @@ void input_driver_init_command(input_driver_state_t *input_st,
          {
             for (i = 0; i < sizeof(raw); i++)
                snprintf(token + 2 * i, 3, "%02x", raw[i]);
-            settings->flags |= SETTINGS_FLG_MODIFIED;
+#ifdef HAVE_CONFIGFILE
+            /* now, or a later launch makes another */
+            if (!path_is_empty(RARCH_PATH_CONFIG))
+               config_save_file(path_get(RARCH_PATH_CONFIG));
+#endif
          }
          crypto_memzero(raw, sizeof(raw));
       }
