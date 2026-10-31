@@ -29,6 +29,7 @@
  * handshake runs to completion inside ssl_socket_connect() as the
  * other backends' do. */
 
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -36,6 +37,8 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <retro_atomic.h>
+#include <boolean.h>
+#include <queues/retro_retire.h>
 #include <net/net_socket_ssl.h>
 #include <crypto/crypto.h>
 #include <crypto/kdf.h>
@@ -109,6 +112,7 @@ static retro_atomic_int_t tls_verify_mode_setting;
 
 struct tls_session
 {
+   mpsc_stack_node_t node;   /* lock-free: on the retire list */
    uint8_t *ticket;
    size_t   ticket_len;
    time_t   when;
@@ -124,13 +128,95 @@ struct tls_session
    char     host[256];
 };
 
-static struct tls_session tls_cache[TLS_CACHE_SLOTS];
+/* What a handshake learns for a host: a ticket (TLS 1.2), a master
+ * secret and suite (a full TLS 1.2 handshake), or a TLS 1.3 ticket and
+ * its PSK. */
+#define TLS_PUT_TICKET 1
+#define TLS_PUT_MASTER 2
+#define TLS_PUT_PSK    4
+
+struct tls_session_put
+{
+   const uint8_t *ticket;
+   size_t         ticket_len;
+   const uint8_t *master;
+   const uint8_t *sid;
+   size_t         sid_len;
+   const uint8_t *psk;
+   unsigned       suite;
+   uint32_t       age_add;
+   unsigned       what;
+};
+
+/* @put into @e, whose ticket it takes over when it carries one: false
+ * with @e untouched when the ticket cannot be copied. */
+static bool tls_session_apply(struct tls_session *e,
+      const struct tls_session_put *put)
+{
+   if (put->what & (TLS_PUT_TICKET | TLS_PUT_PSK))
+   {
+      uint8_t *t = (uint8_t*)malloc(put->ticket_len);
+      if (!t)
+         return false;
+      memcpy(t, put->ticket, put->ticket_len);
+      free(e->ticket);
+      e->ticket     = t;
+      e->ticket_len = put->ticket_len;
+   }
+   if (put->what & TLS_PUT_MASTER)
+   {
+      memcpy(e->master, put->master, 48);
+      e->is13    = 0;
+      e->suite   = put->suite;
+      e->sid_len = put->sid_len;
+      if (put->sid_len)
+         memcpy(e->sid, put->sid, put->sid_len);
+   }
+   if (put->what & TLS_PUT_PSK)
+   {
+      e->is13    = 1;
+      e->suite   = put->suite;
+      e->sid_len = 0;
+      e->age_add = put->age_add;
+      memcpy(e->psk, put->psk, 48);
+   }
+   e->when = time(NULL);
+   return true;
+}
 
 /* Connections are made from several threads (updater, achievements,
  * cloud sync); the cache is the one thing they share. */
+#if defined(HAVE_THREADS) && defined(RETRO_RETIRE_LOCK_FREE) \
+      && !defined(TLS_CACHE_TEST_FLAG)
+/* Without a lock. Each slot points at an entry that is never changed
+ * once published: a handshake that learns something builds the host's
+ * entry anew and swaps it in, and a replaced entry goes once no reader
+ * is in (retro_retire.h). */
+#define TLS_CACHE_LOCK_FREE 1
+static retro_atomic_ptr_t tls_cache[TLS_CACHE_SLOTS];
+static retro_retire_t     tls_cache_retire;
+
+static void tls_session_free(mpsc_stack_node_t *node)
+{
+   struct tls_session *e = (struct tls_session*)node;
+   free(e->ticket);
+   crypto_memzero(e, sizeof(*e));
+   free(e);
+}
+
+static struct tls_session *tls_cache_at(unsigned i)
+{
+   return (struct tls_session*)retro_atomic_load_acquire_ptr(&tls_cache[i]);
+}
+
+#define TLS_CACHE_READ_BEGIN() retro_retire_enter(&tls_cache_retire)
+#define TLS_CACHE_READ_END()   retro_retire_leave(&tls_cache_retire, tls_session_free)
+#else
+static struct tls_session tls_cache_store_[TLS_CACHE_SLOTS];
+#define tls_cache_at(i) (&tls_cache_store_[(i)])
+
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
-#include <retro_atomic.h>
 /* A flag, not an slock: every section it guards is a lookup, a few
  * copies and at most one allocation, nothing that waits on another
  * thread, and with no lock object to make there is none that can fail
@@ -141,49 +227,120 @@ static void tls_cache_lock(void)
    while (!retro_atomic_cas_int(&tls_cache_busy, 0, 1))
       sthread_yield();
 }
-#define TLS_CACHE_LOCK()   tls_cache_lock()
-#define TLS_CACHE_UNLOCK() retro_atomic_store_release_int(&tls_cache_busy, 0)
+#define TLS_CACHE_READ_BEGIN() tls_cache_lock()
+#define TLS_CACHE_READ_END()   retro_atomic_store_release_int(&tls_cache_busy, 0)
 #else
-#define TLS_CACHE_LOCK()   do { } while (0)
-#define TLS_CACHE_UNLOCK() do { } while (0)
+#define TLS_CACHE_READ_BEGIN() do { } while (0)
+#define TLS_CACHE_READ_END()   do { } while (0)
+#endif
 #endif
 
+/* Between TLS_CACHE_READ_BEGIN() and _END(): the host's live entry. */
 static struct tls_session *tls_cache_find(const char *host)
 {
    unsigned i;
    if (!host || !*host)
       return NULL;
    for (i = 0; i < TLS_CACHE_SLOTS; i++)
-      if (tls_cache[i].when && strcmp(tls_cache[i].host, host) == 0)
+   {
+      struct tls_session *e = tls_cache_at(i);
+      if (e && e->when && strcmp(e->host, host) == 0)
       {
-         if (time(NULL) - tls_cache[i].when > TLS_CACHE_MAX_AGE)
+#ifdef TLS_CACHE_TEST_HOLD
+         TLS_CACHE_TEST_HOLD();
+#endif
+         if (time(NULL) - e->when > TLS_CACHE_MAX_AGE)
             return NULL;
-         return &tls_cache[i];
+         return e;
       }
+   }
    return NULL;
 }
 
-static struct tls_session *tls_cache_slot(const char *host)
+/* The slot for @host: its own, else an empty one, else the oldest. */
+static unsigned tls_cache_slot_for(const char *host)
 {
-   struct tls_session *e = tls_cache_find(host);
    unsigned i, oldest = 0;
-   if (e)
-      return e;
    for (i = 0; i < TLS_CACHE_SLOTS; i++)
    {
-      if (!tls_cache[i].when)
-      {
-         oldest = i;
-         break;
-      }
-      if (tls_cache[i].when < tls_cache[oldest].when)
+      struct tls_session *e = tls_cache_at(i);
+      if (e && e->when && strcmp(e->host, host) == 0)
+         return i;
+   }
+   for (i = 0; i < TLS_CACHE_SLOTS; i++)
+   {
+      struct tls_session *e = tls_cache_at(i);
+      struct tls_session *o = tls_cache_at(oldest);
+      if (!e || !e->when)
+         return i;
+      if (o && e->when < o->when)
          oldest = i;
    }
-   e = &tls_cache[oldest];
-   free(e->ticket);
-   crypto_memzero(e, sizeof(*e));
-   strlcpy(e->host, host, sizeof(e->host));
-   return e;
+   return oldest;
+}
+
+/* @put into @host's entry, made if it has none. */
+static void tls_cache_put(const char *host, const struct tls_session_put *put)
+{
+#ifdef TLS_CACHE_LOCK_FREE
+   if (!host || !*host)
+      return;
+   for (;;)
+   {
+      struct tls_session *old, *e;
+      unsigned slot;
+      retro_retire_enter(&tls_cache_retire);
+      slot = tls_cache_slot_for(host);
+      old  = tls_cache_at(slot);
+      if (!(e = (struct tls_session*)calloc(1, sizeof(*e))))
+      {
+         retro_retire_leave(&tls_cache_retire, tls_session_free);
+         return;
+      }
+      if (old && old->when && strcmp(old->host, host) == 0)
+      {
+         /* all but the link, which retiring @old may be writing */
+         memcpy(&e->ticket, &old->ticket,
+               sizeof(*e) - offsetof(struct tls_session, ticket));
+         e->ticket = NULL;
+         if (     old->ticket && !(put->what & (TLS_PUT_TICKET | TLS_PUT_PSK))
+               && (e->ticket = (uint8_t*)malloc(old->ticket_len)))
+            memcpy(e->ticket, old->ticket, old->ticket_len);
+         else
+            e->ticket_len = 0;
+      }
+      else
+         strlcpy(e->host, host, sizeof(e->host));
+      retro_retire_leave(&tls_cache_retire, tls_session_free);
+      if (!tls_session_apply(e, put))
+      {
+         tls_session_free(&e->node);
+         return;
+      }
+      /* the entry we built on, if still the slot's, is ours to replace */
+      if (retro_atomic_cas_ptr(&tls_cache[slot], old, e))
+      {
+         retro_retire(&tls_cache_retire, old ? &old->node : NULL,
+               tls_session_free);
+         return;
+      }
+      tls_session_free(&e->node);
+   }
+#else
+   struct tls_session *e;
+   if (!host || !*host)
+      return;
+   TLS_CACHE_READ_BEGIN();
+   e = tls_cache_at(tls_cache_slot_for(host));
+   if (!e->when || strcmp(e->host, host))
+   {
+      free(e->ticket);
+      crypto_memzero(e, sizeof(*e));
+      strlcpy(e->host, host, sizeof(e->host));
+   }
+   tls_session_apply(e, put);
+   TLS_CACHE_READ_END();
+#endif
 }
 
 /* The trust bundle is net/cacert.h's DER parts unless a test swapped
@@ -911,7 +1068,7 @@ static int tls_send_client_hello(struct ssl_state *s)
 
    /* the cache entry is copied out here, so nothing below reads it
     * once another thread may be rewriting the slot */
-   TLS_CACHE_LOCK();
+   TLS_CACHE_READ_BEGIN();
    cached     = tls_cache_find(s->domain);
    ticket_len = (cached && cached->ticket) ? cached->ticket_len : 0;
    if (ticket_len && (ticket = (uint8_t*)malloc(ticket_len)))
@@ -930,7 +1087,7 @@ static int tls_send_client_hello(struct ssl_state *s)
       memcpy(s->psk, cached->psk, 48);
       obf_age = (uint32_t)((time(NULL) - cached->when) * 1000) + cached->age_add;
    }
-   TLS_CACHE_UNLOCK();
+   TLS_CACHE_READ_END();
    s->psk_offered  = 0;
    s->psk_accepted = 0;
 
@@ -1184,14 +1341,14 @@ static int tls_recv_server_hello(struct ssl_state *s)
    if (sid && sid == s->offered_sid_len && memcmp(b + 35, s->offered_sid, sid) == 0)
    {
       const struct tls_session *cached;
-      TLS_CACHE_LOCK();
+      TLS_CACHE_READ_BEGIN();
       cached = tls_cache_find(s->domain);
       if (cached && cached->suite == suite)
       {
          memcpy(s->master, cached->master, 48);
          s->resumed = 1;
       }
-      TLS_CACHE_UNLOCK();
+      TLS_CACHE_READ_END();
       if (!s->resumed)
          goto bad;
    }
@@ -1460,7 +1617,7 @@ static int tls_recv_new_session_ticket(struct ssl_state *s)
    uint8_t type;
    const uint8_t *b;
    size_t len, tlen;
-   struct tls_session *e;
+   struct tls_session_put put;
 
    if (tls_read_handshake(s, &type, &b, &len) != 0)
       return -1;
@@ -1475,21 +1632,11 @@ static int tls_recv_new_session_ticket(struct ssl_state *s)
       s->last_err = TLS_ERR_HANDSHAKE;
       return -1;
    }
-   TLS_CACHE_LOCK();
-   e = tls_cache_slot(s->domain);
-   if (e)
-   {
-      uint8_t *t = (uint8_t*)malloc(tlen);
-      if (t)
-      {
-         memcpy(t, b + 6, tlen);
-         free(e->ticket);
-         e->ticket     = t;
-         e->ticket_len = tlen;
-         e->when       = time(NULL);
-      }
-   }
-   TLS_CACHE_UNLOCK();
+   memset(&put, 0, sizeof(put));
+   put.what       = TLS_PUT_TICKET;
+   put.ticket     = b + 6;
+   put.ticket_len = tlen;
+   tls_cache_put(s->domain, &put);
    return 0;
 }
 
@@ -1497,19 +1644,14 @@ static int tls_recv_new_session_ticket(struct ssl_state *s)
  * finished; the server's session id too, when it gave one. */
 static void tls_cache_store(struct ssl_state *s)
 {
-   struct tls_session *e;
-   TLS_CACHE_LOCK();
-   e = tls_cache_slot(s->domain);
-   if (e)
-   {
-      memcpy(e->master, s->master, 48);
-      e->is13    = 0;
-      e->suite   = s->suite;
-      e->sid_len = s->offered_sid_len;
-      memcpy(e->sid, s->offered_sid, s->offered_sid_len);
-      e->when    = time(NULL);
-   }
-   TLS_CACHE_UNLOCK();
+   struct tls_session_put put;
+   memset(&put, 0, sizeof(put));
+   put.what    = TLS_PUT_MASTER;
+   put.master  = s->master;
+   put.suite   = s->suite;
+   put.sid     = s->offered_sid;
+   put.sid_len = s->offered_sid_len;
+   tls_cache_put(s->domain, &put);
 }
 
 /* Key block from a master secret already in s->master. */
@@ -1994,7 +2136,7 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
          size_t bl = len - 4, nl, tl;
          uint32_t age_add;
          uint8_t psk[48];
-         struct tls_session *e;
+         struct tls_session_put put;
          if (bl < 9)
             return -1;
          age_add = ((uint32_t)b[4] << 24) | ((uint32_t)b[5] << 16) | ((uint32_t)b[6] << 8) | b[7];
@@ -2007,26 +2149,14 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
          /* PSK = Expand-Label(res_master, "resumption", nonce, 32) */
          if (tls13_expand_label(s, s->res_master, "resumption", b + 9, nl, psk, tls13_hlen(s)) != 0)
             return -1;
-         TLS_CACHE_LOCK();
-         e = tls_cache_slot(s->domain);
-         if (e)
-         {
-            uint8_t *t = (uint8_t*)malloc(tl);
-            if (t)
-            {
-               memcpy(t, b + 9 + nl + 2, tl);
-               free(e->ticket);
-               e->ticket     = t;
-               e->ticket_len = tl;
-               e->is13       = 1;
-               e->suite      = s->suite;
-               e->sid_len    = 0;
-               e->age_add    = age_add;
-               memcpy(e->psk, psk, 48);
-               e->when       = time(NULL);
-            }
-         }
-         TLS_CACHE_UNLOCK();
+         memset(&put, 0, sizeof(put));
+         put.what       = TLS_PUT_PSK;
+         put.ticket     = b + 9 + nl + 2;
+         put.ticket_len = tl;
+         put.suite      = s->suite;
+         put.age_add    = age_add;
+         put.psk        = psk;
+         tls_cache_put(s->domain, &put);
          crypto_memzero(psk, sizeof(psk));
          return 0;
       }

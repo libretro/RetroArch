@@ -564,7 +564,8 @@ QEMU_MIPSEL ?= qemu-mipsel
 # TSan: a table built on first use or a cached CPU-feature check is a
 # reported race here on any runner, where a network test sees it only
 # when two connections happen to start together on two cores. Then the
-# x509 trust store, walked while it is replaced, under TSan and ASan.
+# x509 trust store, walked while it is replaced, and the TLS session
+# cache, read while it is rewritten, under TSan and ASan.
 crypto-tsan-check:
 	$(CC) -O1 -g -fsanitize=thread -Iinclude test/crypto/crypto_threads_test.c \
 	   $(filter-out test/crypto/test_crypto.c,$(TEST_CRYPTO_SRC)) -lpthread -lm \
@@ -591,6 +592,25 @@ crypto-tsan-check:
 	   -lpthread -lm -o test/crypto/x509_store_threads_test
 	test/crypto/x509_store_threads_test
 	rm -f test/crypto/x509_store_threads_test
+	$(CC) -O1 -g -D_GNU_SOURCE -fsanitize=thread -DHAVE_THREADS -Iinclude test/net/tls_cache_threads_test.c \
+	   $(filter-out test/crypto/test_crypto.c,$(TEST_CRYPTO_SRC)) rthreads/rthreads.c -lpthread -lm \
+	   -o test/net/tls_cache_threads_test
+	TSAN_OPTIONS="halt_on_error=1 exitcode=66" test/net/tls_cache_threads_test
+	$(CC) -O1 -g -D_GNU_SOURCE -fsanitize=address,undefined -fno-sanitize-recover=all -DHAVE_THREADS \
+	   -Iinclude test/net/tls_cache_threads_test.c \
+	   $(filter-out test/crypto/test_crypto.c,$(TEST_CRYPTO_SRC)) rthreads/rthreads.c -lpthread -lm \
+	   -o test/net/tls_cache_threads_test
+	test/net/tls_cache_threads_test
+	$(CC) -O1 -g -D_GNU_SOURCE -DHAVE_THREADS -DTLS_TEST_HOLD_LANE -Iinclude test/net/tls_cache_threads_test.c \
+	   $(filter-out test/crypto/test_crypto.c,$(TEST_CRYPTO_SRC)) rthreads/rthreads.c -lpthread -lm \
+	   -o test/net/tls_cache_threads_test
+	test/net/tls_cache_threads_test
+	$(CC) -O1 -g -D_GNU_SOURCE -DHAVE_THREADS -DTLS_TEST_HOLD_LANE -DTLS_CACHE_TEST_FLAG -Iinclude \
+	   test/net/tls_cache_threads_test.c \
+	   $(filter-out test/crypto/test_crypto.c,$(TEST_CRYPTO_SRC)) rthreads/rthreads.c -lpthread -lm \
+	   -o test/net/tls_cache_threads_test
+	test/net/tls_cache_threads_test
+	rm -f test/net/tls_cache_threads_test
 
 crypto-mips-check:
 	@if ! command -v $(MIPSEL_CC) >/dev/null 2>&1; then echo "skip: $(MIPSEL_CC) not installed"; exit 0; fi; \

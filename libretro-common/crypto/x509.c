@@ -860,12 +860,16 @@ struct x509_anchor
    struct x509_cert cert;
 };
 
+#include <retro_atomic.h>
+#include <queues/retro_retire.h>
+
 /* The anchors loaded from one source. A store is never changed once
  * published: a reload builds a new one and swaps it in, and the old one
  * is freed by whoever drops the last reference to it, so a chain walk
  * runs over its own reference with no lock held. */
 struct x509_store
 {
+   mpsc_stack_node_t node;   /* lock-free: on the retire list */
    struct x509_anchor *anchors;
    unsigned count;
    unsigned cap;
@@ -873,69 +877,32 @@ struct x509_store
    size_t src_len;
    unsigned refs;         /* under the lock: the published slot's + walks' */
    unsigned owns_der;     /* PEM: decoded copies; DER: read in place */
-   struct x509_store *next;  /* replaced, waiting for the walks on it */
 };
 
 /* The store is process-wide and TLS handshakes run on several threads
  * (updater, achievements, cloud sync), the first of them building it.
  * A store is built with nothing held. */
-#include <retro_atomic.h>
-#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR) \
-      && defined(RETRO_ATOMIC_LOCK_FREE) && !defined(X509_STORE_TEST_FLAG)
-/* Without a lock. A reader counts itself in, then reads the epoch a
- * replacement bumps once it is swapped in: so it reads the new store,
- * or the drain that would free the old one sees it counted. A replaced
- * store waits on a list and is freed by whoever is last out. */
+#if defined(HAVE_THREADS) && defined(RETRO_RETIRE_LOCK_FREE) \
+      && !defined(X509_STORE_TEST_FLAG)
+/* Without a lock: a walk reads the published store between entering
+ * and leaving, and a replaced store is freed once no walk is in
+ * (retro_retire.h). */
 #define X509_STORE_LOCK_FREE 1
 static retro_atomic_ptr_t x509_store_slot;
-static retro_atomic_ptr_t x509_store_retired;
-static retro_atomic_int_t x509_store_readers;
-static retro_atomic_int_t x509_store_epoch;
+static retro_retire_t     x509_store_retired;
 
 static void x509_store_free(struct x509_store *st);
 
-static void x509_store_push_retired(struct x509_store *first,
-      struct x509_store *last)
+static void x509_store_free_node(mpsc_stack_node_t *node)
 {
-   void *head;
-   do
-   {
-      head       = retro_atomic_load_acquire_ptr(&x509_store_retired);
-      last->next = (struct x509_store*)head;
-   } while (!retro_atomic_cas_ptr(&x509_store_retired, head, first));
-}
-
-static void x509_store_drain(void)
-{
-   for (;;)
-   {
-      struct x509_store *list, *last;
-      if (retro_atomic_load_seq_cst_int(&x509_store_readers))
-         return;
-      if (!(list = (struct x509_store*)
-               retro_atomic_exchange_ptr(&x509_store_retired, NULL)))
-         return;
-      if (retro_atomic_load_seq_cst_int(&x509_store_readers))
-      {
-         for (last = list; last->next; last = last->next) { }
-         x509_store_push_retired(list, last);
-         continue;
-      }
-      while (list)
-      {
-         last = list->next;
-         x509_store_free(list);
-         list = last;
-      }
-   }
+   x509_store_free((struct x509_store*)node);
 }
 
 /* The published store, valid until x509_store_leave(). */
 static struct x509_store *x509_store_enter(void)
 {
    struct x509_store *st;
-   retro_atomic_fetch_add_seq_cst_int(&x509_store_readers, 1);
-   (void)retro_atomic_load_seq_cst_int(&x509_store_epoch);
+   retro_retire_enter(&x509_store_retired);
    st = (struct x509_store*)retro_atomic_load_acquire_ptr(&x509_store_slot);
 #ifdef X509_STORE_TEST_HOLD
    X509_STORE_TEST_HOLD();
@@ -945,18 +912,14 @@ static struct x509_store *x509_store_enter(void)
 
 static void x509_store_leave(void)
 {
-   if (retro_atomic_fetch_add_seq_cst_int(&x509_store_readers, -1) == 1)
-      x509_store_drain();
+   retro_retire_leave(&x509_store_retired, x509_store_free_node);
 }
 
-/* @old was replaced: it goes once no reader is in. */
+/* @old was replaced: it goes once no walk is in. */
 static void x509_store_retire(struct x509_store *old)
 {
-   retro_atomic_fetch_add_seq_cst_int(&x509_store_epoch, 1);
-   if (!old)
-      return;
-   x509_store_push_retired(old, old);
-   x509_store_drain();
+   retro_retire(&x509_store_retired, old ? &old->node : NULL,
+         x509_store_free_node);
 }
 #else
 static struct x509_store *x509_store_cur = NULL;
