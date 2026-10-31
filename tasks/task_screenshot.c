@@ -392,7 +392,7 @@ static void task_screenshot_handler(retro_task_t *task)
 #endif
 
    /* Push screenshot to image history playlist */
-#ifdef HAVE_IMAGEVIEWER
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    if (       ret
          && !(state->flags & SS_TASK_FLAG_SILENCE)
          &&  (state->flags & SS_TASK_FLAG_HISTORY_LIST_ENABLE)

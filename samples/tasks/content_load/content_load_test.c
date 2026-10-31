@@ -43,6 +43,8 @@
  *    confirmed plays on through the staged close and past it - the
  *    device carried through the driver stage, never stopped, the
  *    sound not reloaded under itself - and the tone handed over whole;
+ *  - screenshot history: a screenshot is added to the image history,
+ *    with or without the imageviewer core;
  *  - quit waits for a save: a quit from the frame loop while a state
  *    is being written returns to the loop at once, which presents
  *    frames - the core not run - until the state is written, and only
@@ -2906,6 +2908,52 @@ static void lane_screenshot_steps(const char *dir)
       fprintf(stderr, "[pass] screenshot-steps lane (%u checks for %u rows)\n",
             checks, rows);
 }
+
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
+/* A screenshot lands on the image history, the Images tab's list, in
+ * a build without the imageviewer core too: the list is the menu's */
+static void lane_screenshot_history(const char *dir)
+{
+   const struct playlist_entry *entry = NULL;
+   playlist_t *hist = g_defaults.image_history;
+   char path[600];
+   size_t before;
+   unsigned had = failures, n;
+
+   CHECK(hist, "history: no image history playlist");
+   if (!hist)
+      return;
+   CHECK(config_get_ptr()->bools.history_list_enable,
+         "history: history lists are off");
+   before = playlist_size(hist);
+
+   snprintf(path, sizeof(path), "%s/harness_history_shot.png", dir);
+   remove(path);
+   CHECK(take_screenshot(dir, path, false, false, true, true),
+         "history: the screenshot was not started");
+   for (n = 0; n < 2000 && ss_in_flight(); n++)
+      task_queue_check();
+   CHECK(!ss_in_flight(), "history: the screenshot did not finish");
+   CHECK(ss_png_complete(path), "history: the screenshot file is not a whole PNG");
+
+   CHECK(playlist_size(hist) == before + 1,
+         "history: %u entries after the screenshot, %u before",
+         (unsigned)playlist_size(hist), (unsigned)before);
+   if (playlist_size(hist))
+      playlist_get_index(hist, 0, &entry);
+   CHECK(entry && entry->path && string_is_equal(
+            path_basename(entry->path), "harness_history_shot.png"),
+         "history: the newest entry is \"%s\", not the screenshot",
+         (entry && entry->path) ? entry->path : "");
+   CHECK(entry && string_is_equal(entry->core_name, "imageviewer"),
+         "history: the entry's core is \"%s\"",
+         (entry && entry->core_name) ? entry->core_name : "");
+
+   remove(path);
+   if (failures == had)
+      fprintf(stderr, "[pass] screenshot-history lane\n");
+}
+#endif
 #endif
 
 /* ------------------------------------------------------------------ */
@@ -3568,6 +3616,9 @@ int main(int argc, char *argv[])
    lane_content_reply(dir);
 #if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)
    lane_screenshot_steps(dir);
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
+   lane_screenshot_history(dir);
+#endif
 #endif
 #if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
    /* Last: a content load leaves its save state name behind for the
