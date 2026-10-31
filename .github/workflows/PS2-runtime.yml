@@ -1,0 +1,94 @@
+name: CI PS2 runtime
+
+# Runs PS2 builds of samples/frontend/ps2_whole_file under Play!'s
+# headless AutoTest (null GS), so file I/O is exercised on the console's
+# own runtime - ps2sdk's libcglue and fileXio over the host: device -
+# rather than a host libc standing in for it.  The ELF is built in the
+# same image as the PS2 release build; AutoTest is built from a pinned
+# Play! commit and cached on it.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  # Play! commit AutoTest is built from; move deliberately.
+  PLAY_REF: 1f27232772e484bfb79364b751b84f41f4c87481
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: reallibretroretroarch/libretro-build-ps2:latest
+      options: --user root
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build ps2_whole_file
+      working-directory: samples/frontend/ps2_whole_file
+      run: make PS2=1
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ps2-runtime-elfs
+        path: samples/frontend/ps2_whole_file/ps2_whole_file_test.elf
+
+  run:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        repository: jpd002/Play-
+        ref: ${{ env.PLAY_REF }}
+        submodules: recursive
+        path: Play
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq cmake ninja-build zlib1g-dev libbz2-dev libssl-dev
+
+    - uses: actions/cache@v4
+      with:
+        path: Play/build
+        key: play-autotest-${{ runner.os }}-${{ env.PLAY_REF }}
+
+    - name: Build AutoTest
+      run: |
+        cmake -S Play -B Play/build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_PLAY=OFF -DBUILD_TESTS=ON
+        cmake --build Play/build --target autotest
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: ps2-runtime-elfs
+        path: run
+
+    - name: Run under AutoTest
+      shell: bash
+      run: |
+        set -euo pipefail
+        # AutoTest runs every .elf in the directory and writes its EE
+        # stdout to <name>.result; it reports a pass only against a
+        # .reference file, so the verdict is the harness's own lines.
+        # host: maps to ~/.local/share/Play Data Files/vfs/host.
+        timeout 600 Play/build/tools/AutoTest/autotest run
+        cat run/ps2_whole_file_test.result
+        if grep -q '^FAIL' run/ps2_whole_file_test.result; then exit 1; fi
+        grep -qx 'ps2_whole_file_test: PASS' run/ps2_whole_file_test.result
