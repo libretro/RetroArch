@@ -249,6 +249,7 @@ jobs:
             pixconv_test_scalar
             pixconv_test_wide
             scaler_point_test
+            image_scale_transfer_test
             file_list_oom_test
             rpng_chunk_overflow_test
             rpng_roundtrip_test

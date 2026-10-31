@@ -233,6 +233,15 @@ static bool downscale_image(unsigned cap, struct texture_image *img)
       }
    }
 
+   if (mid && sw == dw && sh == dh)
+   {
+      free(img->pixels);
+      img->pixels = mid;
+      img->width  = dw;
+      img->height = dh;
+      return true;
+   }
+
    /* Stage 2: sinc to the exact target. */
    if (!(out = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t))))
    {
