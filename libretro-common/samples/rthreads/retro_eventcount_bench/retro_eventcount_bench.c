@@ -1,21 +1,18 @@
 /* retro_eventcount_bench.c - what the parking backend actually costs.
  *
- * A benchmark, not a test.  It exists to answer one question on
- * Windows: is going straight to rthreads' scond faster than going
- * through WaitOnAddress, given that scond already resolves
- * NtWaitForAlertByThreadId itself and skips the address hash?
+ * Compare the platform eventcount backend with rthreads' scond.
+ * Windows eventcount tiers are selected with RETRO_EVENTCOUNT_WIN32;
+ * scond tiers are selected with RTHREADS_SCOND.
  *
  * Build it twice and compare:
  *
- *   make                                   the platform's address-wait
- *                                          backend (WaitOnAddress on
- *                                          Windows, futex on Linux)
+ *   make                                   the platform backend
  *   make clean && make SCOND=1             rthreads scond
  *
  * and on Windows, scond's own tier is selectable at runtime, so the
  * interesting sweep is:
  *
- *   retro_eventcount_bench                          (WaitOnAddress)
+ *   retro_eventcount_bench                          (platform default)
  *   RTHREADS_SCOND=alert retro_eventcount_bench_scond
  *   RTHREADS_SCOND=keyed retro_eventcount_bench_scond
  *
@@ -31,14 +28,10 @@
  *                 do not, something other than the backend is being
  *                 measured.
  *
- *   pingpong      Round trip with the consumer genuinely parked every
- *                 round: producer notifies, consumer wakes, replies,
- *                 producer waits.  Divided by two this is wake-to-run
- *                 latency, which is where the backends can actually
- *                 differ -- WakeByAddressAll hashes the address and
- *                 takes a bucket lock shared with every other waited
- *                 address in the process, scond walks a list private
- *                 to the object.
+ *   pingpong      Total handoff round trip: producer notifies, consumer
+ *                 replies, producer waits. Calibrated spinning can avoid
+ *                 parking, so this measures handoff throughput. A wake
+ *                 latency test must arrange and observe settled waits.
  *
  *   broadcast     N consumers parked, one notify, all of them out.
  *                 Scales the per-waiter wake cost, and is the shape a
@@ -76,10 +69,19 @@
 #endif
 #define BROADCAST_WAITERS 4
 
-static retro_eventcount_t ec;
-static retro_atomic_int_t turn;
-static retro_atomic_int_t stop;
-static retro_atomic_int_t arrived;
+#if defined(_MSC_VER) && _MSC_VER >= 1300
+#define BENCH_ALIGN __declspec(align(64))
+#elif defined(__GNUC__)
+#define BENCH_ALIGN __attribute__((aligned(64)))
+#else
+#define BENCH_ALIGN
+#endif
+
+/* Keep benchmark control traffic off the eventcount's cache line. */
+static BENCH_ALIGN retro_eventcount_t ec;
+static BENCH_ALIGN retro_atomic_int_t turn;
+static BENCH_ALIGN retro_atomic_int_t stop;
+static BENCH_ALIGN retro_atomic_int_t arrived;
 
 /* ---- idle notify -------------------------------------------------- */
 
@@ -191,16 +193,14 @@ static void bench_pingpong(void)
    sthread_join(t);
    retro_eventcount_free(&ec);
 
-   printf("  pingpong      %8.2f us/round   %8.2f us wake-to-run"
-          "  (%d rounds)\n",
+   printf("  pingpong      %8.2f us/round  (%d rounds)\n",
          (double)(t1 - t0) / (double)PINGPONG_ROUNDS,
-         (double)(t1 - t0) / (double)PINGPONG_ROUNDS / 2.0,
          PINGPONG_ROUNDS);
 }
 
 /* ---- broadcast ---------------------------------------------------- */
 
-static retro_atomic_int_t gen;
+static BENCH_ALIGN retro_atomic_int_t gen;
 
 static void bcast_thread(void *unused)
 {

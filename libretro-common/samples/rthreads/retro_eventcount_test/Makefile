@@ -124,8 +124,12 @@ $(TARGET): $(OBJS)
 deadline_test: deadline_test.c $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 	$(CC) $(CFLAGS) -o $@ deadline_test.c $(filter-out retro_eventcount_test.c $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c,$(SOURCES)) $(LDFLAGS)
 
-check: all deadline_test
+win32_spin_test: win32_spin_test.c $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
+	$(CC) $(CFLAGS) -o $@ win32_spin_test.c $(filter-out retro_eventcount_test.c $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c,$(SOURCES)) $(LDFLAGS)
+
+check: all deadline_test win32_spin_test
 	./deadline_test
+	./win32_spin_test
 	./$(TARGET)
 	@$(MAKE) -s clean
 	@$(MAKE) -s SCOND=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
@@ -152,5 +156,6 @@ clean:
 	      retro_eventcount_test_sempool retro_eventcount_test_switch \
 	      retro_eventcount_test_ctr
 	rm -f deadline_test deadline_test.exe
+	rm -f win32_spin_test win32_spin_test.exe
 
 .PHONY: all check clean

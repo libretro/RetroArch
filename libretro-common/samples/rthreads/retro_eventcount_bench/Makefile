@@ -15,7 +15,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 # SCOND=1 builds against rthreads' scond instead of the platform's
-# address-wait primitive, which is the comparison this bench exists
+# eventcount backend, which is the comparison this bench exists
 # for.  On Windows, scond's own tier is picked at runtime with
 # RTHREADS_SCOND=alert|keyed, so one SCOND=1 binary covers both.
 ifneq ($(SCOND),)

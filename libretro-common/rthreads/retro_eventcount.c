@@ -791,7 +791,7 @@ static void ec_wake_one(struct ec_waiter *w)
    int    prev  = retro_atomic_fetch_or_int(&w->flags, EC_W_WOKEN);
 
    if (!(prev & EC_W_ASLEEP))
-      return;   /* still spinning: it sees the flag, no syscall */
+      return;   /* not committed: it sees the flag, no syscall */
 
    /* A waiter that sleeps on its event - every waiter on the event
     * tier, and bounded ones on the others - is woken through it */
@@ -1117,9 +1117,8 @@ static INLINE uintptr_t ec_head(retro_eventcount_t *ec)
    return (uintptr_t)retro_atomic_load_acquire_ptr(&ec->waitlist);
 }
 
-/* The bit is held across a few instructions - a swap of the head, an
- * unlink - so a spin is right, but a bounded one: with more runnable
- * threads than cores the holder may not be running, and a spin then
+/* Unlinkers hold the bit while inspecting or changing links. With more
+ * runnable threads than cores the holder may not be running, and a spin then
  * only keeps it from getting back on. */
 static void ec_list_lock(retro_eventcount_t *ec)
 {
@@ -1193,21 +1192,28 @@ static void ec_wake_all(retro_eventcount_t *ec)
 {
    struct ec_waiter *w;
    uintptr_t         old;
+   unsigned          spins = 0;
 
-   if (!(ec_head(ec) & EC_HEAD_MASK))
-      return;
-
-   ec_list_lock(ec);
-   /* Take the whole list, dropping the lock in the same swap.  A push
-    * does not take the list lock -- it only preserves the bit -- so
-    * reading the head and then storing over it would drop any block
-    * that landed in between, and that block would never be woken. */
-   do
+   /* Own the whole list in one CAS, but never overtake an unlinker.
+    * A concurrent push makes the CAS retry with the new head. */
+   for (;;)
    {
       old = ec_head(ec);
-   } while (!retro_atomic_cas_ptr(&ec->waitlist, (void*)old, NULL));
+      if (!(old & EC_HEAD_MASK))
+         return;
+      if (!(old & EC_HEAD_LOCK)
+            && retro_atomic_cas_ptr(&ec->waitlist, (void*)old, NULL))
+         break;
+      if (++spins < 64)
+         retro_cpu_relax();
+      else
+      {
+         sthread_yield();
+         spins = 0;
+      }
+   }
 
-   w = (struct ec_waiter*)(old & EC_HEAD_MASK);
+   w = (struct ec_waiter*)old;
    while (w)
    {
       struct ec_waiter *next = w->next;
@@ -1228,6 +1234,15 @@ static bool ec_win32_park(retro_eventcount_t *ec, int key, bool bounded,
    HANDLE           timer = NULL;
    bool             woken = true;
    unsigned         i;
+
+   /* Short handoffs need no waiter publication or per-thread handles.
+    * Once listed, the epoch re-check below closes the park race. */
+   for (i = 0; i < ec_g.spin; i++)
+   {
+      if (retro_atomic_load_acquire_int(&ec->epoch) != key)
+         return true;
+      retro_cpu_relax();
+   }
 
    w.event = NULL;
    w.next  = NULL;
@@ -1281,13 +1296,6 @@ static bool ec_win32_park(retro_eventcount_t *ec, int key, bool bounded,
             retro_cpu_relax();
       }
       return true;
-   }
-
-   for (i = 0; i < ec_g.spin; i++)
-   {
-      if (retro_atomic_load_acquire_int(&w.flags) & EC_W_WOKEN)
-         return true;
-      retro_cpu_relax();
    }
 
    /* commit: past this a waker that takes the block must wake us */

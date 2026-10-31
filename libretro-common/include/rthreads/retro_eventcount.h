@@ -281,7 +281,7 @@ bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
 /**
  * retro_eventcount_spin_iters:
  *
- * @return how many times a waiter spins on its flag word before it
+ * @return how many times a waiter polls eventcount state before it
  * commits to the kernel, as this build resolved it.  Zero on a
  * uniprocessor, where the spin is skipped.  For logs and benchmarks;
  * on Windows it is only meaningful after the first
