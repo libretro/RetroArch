@@ -693,19 +693,20 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
        * x-amz-date
        */
       size_t canonical_len = 512 + (copy_source ? strlen(copy_source) : 0);
-      canonical_headers = malloc(canonical_len);
-      if (canonical_headers)
-      {
-         if (copy_source)
-            snprintf(canonical_headers, canonical_len,
-                  "host:%s\nx-amz-content-sha256:%s\nx-amz-copy-source:%s\nx-amz-date:%s\n",
-                  host, payload_hash, copy_source, datetime);
-         else
-            snprintf(canonical_headers, canonical_len,
-                  "host:%s\nx-amz-content-sha256:%s\nx-amz-date:%s\n",
-                  host, payload_hash, datetime);
-      }
+      /* Out of memory, the request is not signed at all: a signature
+       * made without the headers or the query only shows up later, as
+       * a 403. */
+      if (!(canonical_headers = malloc(canonical_len)))
+         goto cleanup;
 
+      if (copy_source)
+         snprintf(canonical_headers, canonical_len,
+               "host:%s\nx-amz-content-sha256:%s\nx-amz-copy-source:%s\nx-amz-date:%s\n",
+               host, payload_hash, copy_source, datetime);
+      else
+         snprintf(canonical_headers, canonical_len,
+               "host:%s\nx-amz-content-sha256:%s\nx-amz-date:%s\n",
+               host, payload_hash, datetime);
    }
 
    /* Build signed headers list */
@@ -714,8 +715,10 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
          : "host;x-amz-content-sha256;x-amz-date", sizeof(signed_headers));
 
    /* Build canonical query string */
-   if (query_string)
-      canonical_query_string = s3_canonicalize_query_string(query_string);
+   if (query_string
+         && !(canonical_query_string =
+            s3_canonicalize_query_string(query_string)))
+      goto cleanup;
 
    /* Build canonical request */
    snprintf(canonical_request, sizeof(canonical_request),

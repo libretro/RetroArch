@@ -20,6 +20,9 @@
  *   CopyObject can answer - stops the delete or upload, reported once;
  * - destructive sync and the server manifest skip the copy.
  *
+ * It also calls the signer directly: out of memory, the signer returns
+ * no signature rather than a wrong one.
+ *
  * The signature itself was cross-checked against botocore's SigV4 for
  * the same request when this was written; here the test checks the
  * header set that goes into it.
@@ -28,12 +31,35 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
 
 #include <boolean.h>
 #include <streams/file_stream.h>
+
+/* Set to N to fail the driver's Nth allocation from here on, counting
+ * malloc and strdup together.  Zero fails none. */
+static unsigned fail_alloc = 0;
+
+static bool alloc_fails(void)
+{
+   return fail_alloc && --fail_alloc == 0;
+}
+
+static void *test_malloc(size_t size)
+{
+   return alloc_fails() ? NULL : malloc(size);
+}
+
+static char *test_strdup(const char *s)
+{
+   return alloc_fails() ? NULL : strdup(s);
+}
+
+#define malloc test_malloc
+#define strdup test_strdup
 
 #include "../../../network/cloud_sync/s3.c"
 
@@ -313,6 +339,37 @@ static void test_no_backup_wanted(const char *tmp)
          "the server manifest must upload without a copy");
 }
 
+static char *sign_failing_alloc(unsigned nth)
+{
+   char *sig;
+
+   fail_alloc = nth;
+   sig        = s3_calculate_signature_v4_with_time("PUT", "/key", "uploadId=x",
+         "host;x-amz-content-sha256;x-amz-date", S3_EMPTY_PAYLOAD_SHA256,
+         "us-east-1", S3_SERVICE, "access", "secret", "example.com",
+         NULL, 0);
+   fail_alloc = 0;
+   return sig;
+}
+
+/* The signer allocates the canonical headers first, then the canonical
+ * query.  Losing either must give no signature: one made without them
+ * only shows up later, as a 403 from S3. */
+static void test_signer_out_of_memory(void)
+{
+   char *sig = sign_failing_alloc(0);
+   CHECK(sig, "the signer must sign when memory is available");
+   free(sig);
+
+   sig = sign_failing_alloc(1);
+   CHECK(!sig, "no memory for the headers, but it signed: %s", sig);
+   free(sig);
+
+   sig = sign_failing_alloc(2);
+   CHECK(!sig, "no memory for the query, but it signed: %s", sig);
+   free(sig);
+}
+
 int main(void)
 {
    char  tmp[64];
@@ -331,6 +388,7 @@ int main(void)
    test_nothing_to_keep(tmp);
    test_copy_fails(tmp);
    test_no_backup_wanted(tmp);
+   test_signer_out_of_memory();
 
    remove(tmp);
 
