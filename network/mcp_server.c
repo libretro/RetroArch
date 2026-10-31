@@ -41,6 +41,7 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <net/net_compat.h>
@@ -172,7 +173,7 @@ typedef struct
    int      current;     /* connection whose request is running, or -1 */
    bool     answered;    /* reply_to answered it before command_run returned */
    unsigned serials;
-   char     token[128];
+   char     token[NAME_MAX_LENGTH];
    bool     stdio;       /* serving stdin and stdout, not a port */
 } mcp_server_t;
 
@@ -230,23 +231,6 @@ static bool mcp_equal_ct(const char *a, const char *b, size_t len)
    for (i = 0; i < len; i++)
       diff |= (unsigned char)(a[i] ^ b[i]);
    return diff == 0;
-}
-
-/* The first @n characters of @a and @b match, ignoring ASCII case. */
-static bool mcp_prefix_nocase(const char *a, const char *b, size_t n)
-{
-   size_t i;
-   for (i = 0; i < n; i++)
-   {
-      char x = a[i], y = b[i];
-      if (x >= 'A' && x <= 'Z')
-         x = (char)(x - 'A' + 'a');
-      if (y >= 'A' && y <= 'Z')
-         y = (char)(y - 'A' + 'a');
-      if (x != y || !x)
-         return false;
-   }
-   return true;
 }
 
 static void mcp_wipe(void *p, size_t len)
@@ -425,13 +409,6 @@ static void mcp_schema_enum(rjsonwriter_t *w, const char *values)
    MCP_RAW(w, "]");
 }
 
-/* What a reply that is rows holds, as a JSON Schema: the rows and their
- * columns, the word that says the reply was cut short, and the cursor
- * the next page is asked with where there is one. All the columns are
- * strings: each is the text's own field, which the server never reads
- * as anything else. @describe is false where an earlier tool in the
- * list described the same columns: every byte of the list is context a
- * client pays for, and five tools answer with what WATCH watches. */
 /* The columns' properties, as a row's or a record's schema takes
  * them, and then the ones every row has: "required":[...]. */
 static void mcp_schema_columns(rjsonwriter_t *w, const struct cmd_rows *rows,
@@ -473,6 +450,13 @@ static void mcp_schema_required(rjsonwriter_t *w,
    MCP_RAW(w, "]");
 }
 
+/* What a reply that is rows holds, as a JSON Schema: the rows and their
+ * columns, the word that says the reply was cut short, and the cursor
+ * the next page is asked with where there is one. All the columns are
+ * strings: each is the text's own field, which the server never reads
+ * as anything else. @describe is false where an earlier tool in the
+ * list described the same columns: every byte of the list is context a
+ * client pays for, and five tools answer with what WATCH watches. */
 static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
       bool describe)
 {
@@ -1157,8 +1141,8 @@ static void mcp_structured_record(rjsonwriter_t *w,
       const char *stop = end;
       if (col[1].name)
       {
-         char sep = rows->seps[i] ? rows->seps[i]
-            : rows->seps[strlen(rows->seps) - 1];
+         size_t n = strlen(rows->seps);
+         char sep = rows->seps[i < n ? i : n - 1];
          const char *q = (const char*)memchr(p, sep, (size_t)(end - p));
          if (q)
             stop = q;
@@ -1342,10 +1326,6 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
    MCP_RAW(w, "}");
 }
 
-/* {"content":[{"type":"text","text":<text>}],"isError":<b>}, and the
- * same reply as structuredContent where the command answers rows and
- * the client's revision takes it. The text is what every interface
- * sends, byte for byte: a client that reads it alone sees no change. */
 /* How long the UTF-8 sequence at @p is, or 0 where it is not one. */
 static size_t mcp_utf8_len(const unsigned char *p, size_t left)
 {
@@ -1410,6 +1390,10 @@ static char *mcp_utf8_repair(const char *s, size_t len, size_t *out_len)
    return out;
 }
 
+/* {"content":[{"type":"text","text":<text>}],"isError":<b>}, and the
+ * same reply as structuredContent where the command answers rows and
+ * the client's revision takes it. The text is what every interface
+ * sends, byte for byte: a client that reads it alone sees no change. */
 static void mcp_tool_result(struct mcp_conn *c, const char *id, bool modern,
       const struct cmd_action_map *act, const char *text, size_t text_len,
       bool is_error)
@@ -1559,7 +1543,6 @@ static void mcp_take(rjson_t *j, char *dst, size_t size)
 static int mcp_parse(const char *body, size_t len, struct mcp_request *r)
 {
    char key[4][48];
-   int  expect_key[5] = { 0, 1, 0, 0, 0 };
    unsigned depth     = 0;
    rjson_t *j         = rjson_open_buffer(body, len);
    int      err       = 0;
@@ -1591,7 +1574,6 @@ static int mcp_parse(const char *body, size_t len, struct mcp_request *r)
             break;
          }
          depth = 1;
-         expect_key[1] = 1;
          continue;
       }
       if (t == RJSON_OBJECT_END || t == RJSON_ARRAY_END)
@@ -1703,7 +1685,6 @@ static int mcp_parse(const char *body, size_t len, struct mcp_request *r)
             key[depth - 1][0] = '\0';
       }
    }
-   (void)expect_key;
    rjson_free(j);
    return err;
 }
@@ -1717,8 +1698,8 @@ static bool mcp_version_known(const char *v)
    return false;
 }
 
-/* The value of header @name in the header block @head, or NULL; the
- * block is edited to terminate it. Names match without case. */
+/* The value of header @name in the header block @head, or NULL; it
+ * runs to the next "\r\n". Names match without case. */
 static char *mcp_header(char *head, const char *name)
 {
    size_t nl = strlen(name);
@@ -1730,13 +1711,11 @@ static char *mcp_header(char *head, const char *name)
       if (!eol)
          return NULL;
       if ((size_t)(eol - line) > nl && line[nl] == ':'
-            && mcp_prefix_nocase(line, name, nl))
+            && string_starts_with_case_insensitive(line, name))
       {
          char *v = line + nl + 1;
          while (*v == ' ' || *v == '\t')
             v++;
-         /* terminate a copy-free view: the caller reads before the
-          * next lookup, and every lookup scans for "\r\n" afresh */
          return v;
       }
       p = eol;
@@ -1809,7 +1788,7 @@ static bool mcp_token_ok(const mcp_server_t *mcp, const char *v)
    if (!v || !tl)
       return false;
    l = mcp_header_len(v);
-   if (l != 7 + tl || !mcp_prefix_nocase(v, "Bearer ", 7))
+   if (l != 7 + tl || !string_starts_with_case_insensitive(v, "Bearer "))
       return false;
    return mcp_equal_ct(v + 7, mcp->token, tl);
 }
@@ -1866,8 +1845,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
    if (modern)
    {
       /* the stateless era: the version travels with every request */
-      if (!mcp_version_known(r.version)
-            || !string_is_equal(r.version, MCP_MODERN_VERSION))
+      if (!string_is_equal(r.version, MCP_MODERN_VERSION))
       {
          mcp_error(c, r.id, MCP_ERR_VERSION,
                "Unsupported protocol version.", true);
@@ -2303,6 +2281,13 @@ static void mcp_stdio_poll(mcp_server_t *mcp, command_t *cmd,
    {
       char  *nl = (char*)memchr(mcp_stdio.in, '\n', mcp_stdio.in_len);
       size_t line;
+      /* the last request may end at EOF with no newline */
+      if (     !nl && mcp_stdio.eof && mcp_stdio.in_len
+            && mcp_stdio.in_len < MCP_MAX_REQUEST)
+      {
+         nl  = mcp_stdio.in + mcp_stdio.in_len++;
+         *nl = '\n';
+      }
       if (!nl)
       {
          if (mcp_stdio.in_len >= MCP_MAX_REQUEST)
@@ -2375,6 +2360,8 @@ bool command_mcp_stdio_claim(void)
       fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
    }
 #endif
+   /* for its SIGPIPE ignore: a client gone must not kill us mid-write */
+   network_init();
    mcp_stdio.log_level = -1;
    mcp_stdio.claimed   = true;
    return true;
