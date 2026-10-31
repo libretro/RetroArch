@@ -76,6 +76,10 @@ typedef char retro_eventcount_epoch_is_a_word_
  * while it still reads key, except at the one key whose successor does
  * not exist, which is answered as a spurious wake instead.
  *
+ * RETRO_EC_ADDR_GEKKO parks on os/gekko's futex, the GameCube and
+ * Wii's own system layer (GEKKO_NATIVE): the futex shape again, timed
+ * in time base ticks.  The libogc builds keep the condition variable.
+ *
  * RETRO_EC_SEM names the builds that park on a semaphore of the
  * waiting thread's own, listed on the object the way the Windows
  * backend lists its blocks: Darwin, where the semaphore is a Mach one
@@ -103,7 +107,8 @@ typedef char retro_eventcount_epoch_is_a_word_
  * exist for the same reason.  RETRO_EVENTCOUNT_FORCE_SWITCH likewise
  * builds the arbiter protocol on a host that supplies the two system
  * calls and the version query (the sample stands them in over futex),
- * and RETRO_EVENTCOUNT_FORCE_3DS the arbiter's less-than form.
+ * and RETRO_EVENTCOUNT_FORCE_3DS the arbiter's less-than form;
+ * RETRO_EVENTCOUNT_FORCE_GEKKO builds os/gekko's futex one.
  */
 #if defined(RETRO_ATOMIC_LOCK_FREE) && !defined(RETRO_EVENTCOUNT_FORCE_SCOND)
 #if defined(RETRO_EVENTCOUNT_FORCE_SEM) && defined(RETRO_ATOMIC_HAS_PTR)
@@ -115,6 +120,9 @@ typedef char retro_eventcount_epoch_is_a_word_
 #define RETRO_EC_ADDR_SWITCH 1
 #elif defined(RETRO_EVENTCOUNT_FORCE_3DS)
 #define RETRO_EC_ADDR_3DS 1
+#elif defined(RETRO_EVENTCOUNT_FORCE_GEKKO) \
+      || (defined(GEKKO) && defined(GEKKO_NATIVE))
+#define RETRO_EC_ADDR_GEKKO 1
 #elif defined(__linux__) && !defined(ANDROID_NO_FUTEX)
 #define RETRO_EC_ADDR_LINUX 1
 #elif defined(__SWITCH__)
@@ -249,6 +257,36 @@ static void ec_3ds_wake_all(retro_eventcount_t *ec)
 {
    ec_3ds_arbitrate((s32*)&ec->epoch, ARBITRATION_SIGNAL,
          ARBITRATION_SIGNAL_ALL, 0);
+}
+#endif
+
+#if defined(RETRO_EC_ADDR_GEKKO)
+#include <limits.h>
+#include <gekko/gekko.h>
+#include <gekko/thread.h>
+
+/* The epoch is the futex word: an int, as the array bound above says. */
+#define EC_GEKKO_WORD(ec) ((volatile uint32_t*)(void*)&(ec)->epoch)
+
+/* Waits while the epoch still reads @key, for @ticks (GK_WAIT_FOREVER:
+ * no bound).  GK_EAGAIN is the word having moved first, a wake. */
+static bool ec_gekko_park(retro_eventcount_t *ec, int key, uint64_t ticks)
+{
+   return gk_futex_wait(EC_GEKKO_WORD(ec), (uint32_t)key, ticks)
+      != GK_ETIMEDOUT;
+}
+
+static void ec_gekko_wake_all(retro_eventcount_t *ec)
+{
+   gk_futex_wake(EC_GEKKO_WORD(ec), INT_MAX);
+}
+
+/* A bound too long for the ticks is clamped, not wrapped. */
+static uint64_t ec_gekko_ticks(int64_t timeout_us)
+{
+   if ((uint64_t)timeout_us > (GK_WAIT_FOREVER - 1) / gk_tb_hz)
+      return GK_WAIT_FOREVER - 1;
+   return GK_US_TO_TICKS(timeout_us);
 }
 #endif
 
@@ -1425,6 +1463,8 @@ bool retro_eventcount_init(retro_eventcount_t *ec)
       lockless = 1;
 #elif defined(RETRO_EC_ADDR_3DS)
    lockless = 1;
+#elif defined(RETRO_EC_ADDR_GEKKO)
+   lockless = 1;
 #elif defined(RETRO_EC_SEM)
    ec_sem_init();
    /* As for Win32 below: only with a key to keep the semaphores in,
@@ -1527,6 +1567,10 @@ void retro_eventcount_notify(retro_eventcount_t *ec)
 #endif
 #if defined(RETRO_EC_ADDR_3DS)
    ec_3ds_wake_all(ec);
+   return;
+#endif
+#if defined(RETRO_EC_ADDR_GEKKO)
+   ec_gekko_wake_all(ec);
    return;
 #endif
 #if defined(RETRO_EC_WAITLIST)
@@ -1756,6 +1800,12 @@ void retro_eventcount_commit_wait(retro_eventcount_t *ec, int key)
    retro_atomic_fetch_sub_int(&ec->waiters, 1);
    return;
 #endif
+#if defined(RETRO_EC_ADDR_GEKKO)
+   if (retro_atomic_load_acquire_int(&ec->epoch) == key)
+      ec_gekko_park(ec, key, GK_WAIT_FOREVER);
+   retro_atomic_fetch_sub_int(&ec->waiters, 1);
+   return;
+#endif
 #if defined(RETRO_EC_ADDR_WIN32)
    if (!ec->cond)
    {
@@ -1859,6 +1909,12 @@ bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
    retro_atomic_fetch_sub_int(&ec->waiters, 1);
    return signalled;
 #endif
+#if defined(RETRO_EC_ADDR_GEKKO)
+   if (retro_atomic_load_acquire_int(&ec->epoch) == key)
+      signalled = ec_gekko_park(ec, key, ec_gekko_ticks(timeout_us));
+   retro_atomic_fetch_sub_int(&ec->waiters, 1);
+   return signalled;
+#endif
 #if defined(RETRO_EC_ADDR_WIN32)
    if (!ec->cond)
    {
@@ -1911,6 +1967,8 @@ const char *retro_eventcount_backend_name(void)
       ? "horizon address arbiter" : "scond (firmware before 4.0.0)";
 #elif defined(RETRO_EC_ADDR_3DS)
    return "3ds address arbiter";
+#elif defined(RETRO_EC_ADDR_GEKKO)
+   return "gekko futex";
 #elif defined(RETRO_EC_SEM)
    ec_sem_init();
 #if defined(VITA)
