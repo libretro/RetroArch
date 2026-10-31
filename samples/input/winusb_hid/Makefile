@@ -15,6 +15,7 @@ SOURCES   := winusb_hid_test.c \
 	$(LRC)/compat/compat_strcasestr.c \
 	$(LRC)/string/stdstring.c \
 	$(LRC)/rthreads/rthreads.c \
+	$(LRC)/rthreads/retro_eventcount.c \
 	$(LRC)/features/features_cpu.c \
 	$(LRC)/time/rtime.c \
 	$(LRC)/encodings/encoding_utf.c \

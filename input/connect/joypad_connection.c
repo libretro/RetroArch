@@ -28,23 +28,52 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #endif
 
 #define CONNECTION_LIVE 1
 #define CONNECTION_USER 2
+
+#ifdef HAVE_THREADS
+/* Where a slot being retired waits for its last reader, who wakes it.
+ * One for every list: retiring is rare and the wait short. Made once,
+ * by the first list, and kept. */
+static retro_eventcount_t slot_left;
+static retro_atomic_int_t slot_left_state;   /* 0 none, 1 making, 2 made */
+
+static void slot_left_init(void)
+{
+   if (!retro_atomic_cas_int(&slot_left_state, 0, 1))
+      return;
+   retro_atomic_store_release_int(&slot_left_state,
+         retro_eventcount_init(&slot_left) ? 2 : 0);
+}
+
+/* A reader leaving: the last one out of a retired slot says so. */
+static void slot_leave(joypad_connection_t *joyconn)
+{
+   if (     retro_atomic_fetch_sub_int(&joyconn->gate, CONNECTION_USER)
+            == CONNECTION_USER
+         && retro_atomic_load_acquire_int(&slot_left_state) == 2)
+      retro_eventcount_notify(&slot_left);
+}
+#else
+#define slot_leave(joyconn) \
+   ((void)retro_atomic_fetch_sub_int(&(joyconn)->gate, CONNECTION_USER))
+#endif
 
 bool pad_connection_acquire(joypad_connection_t *joyconn)
 {
    int state = retro_atomic_fetch_add_int(&joyconn->gate, CONNECTION_USER);
    if (state & CONNECTION_LIVE)
       return true;
-   (void)retro_atomic_fetch_sub_int(&joyconn->gate, CONNECTION_USER);
+   slot_leave(joyconn);
    return false;
 }
 
 void pad_connection_release(joypad_connection_t *joyconn)
 {
-   (void)retro_atomic_fetch_sub_int(&joyconn->gate, CONNECTION_USER);
+   slot_leave(joyconn);
 }
 
 /* Preserve rejected readers still leaving a closed slot. */
@@ -57,12 +86,22 @@ static void slot_publish(joypad_connection_t *joyconn)
 static void slot_retire(joypad_connection_t *joyconn)
 {
    (void)retro_atomic_fetch_and_int(&joyconn->gate, ~CONNECTION_LIVE);
+#ifdef HAVE_THREADS
    while (retro_atomic_load_acquire_int(&joyconn->gate))
    {
-#ifdef HAVE_THREADS
-      sthread_yield();
-#endif
+      int key;
+      if (retro_atomic_load_acquire_int(&slot_left_state) != 2)
+      {
+         sthread_yield();
+         continue;
+      }
+      key = retro_eventcount_prepare_wait(&slot_left);
+      if (retro_atomic_load_acquire_int(&joyconn->gate))
+         retro_eventcount_commit_wait(&slot_left, key);
+      else
+         retro_eventcount_cancel_wait(&slot_left);
    }
+#endif
 }
 
 /* Clears a retired slot for reuse, keeping its counters. */
@@ -727,6 +766,9 @@ joypad_connection_t *pad_connection_init(unsigned pads)
 
    if (!(joyconn = (joypad_connection_t*)calloc(pads+1, sizeof(joypad_connection_t))))
       return NULL;
+#ifdef HAVE_THREADS
+   slot_left_init();
+#endif
 
    for (i = 0; i < (int)pads; i++)
    {

@@ -1,9 +1,13 @@
 /* Shipping connection admission, retirement and reuse with a reader
- * paused immediately after its atomic claim. */
+ * paused immediately after its atomic claim. A retirement waiting on
+ * that reader must park, not spin: CONNECTION_GATE_TEST_NO_PARK takes
+ * the eventcount away, and the test must fail. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <rthreads/rthreads.h>
+#include <retro_timers.h>
+#include <rthreads/retro_eventcount.h>
 #include "input/input_driver.h"
 #include "input/connect/joypad_connection.h"
 
@@ -21,9 +25,21 @@ static int claim_add(retro_atomic_int_t *p, int value)
    }
    return state;
 }
+/* The yields the connection code makes while it waits. */
+static retro_atomic_int_t gate_yields;
+static void gate_yield(void)
+{
+   retro_atomic_fetch_add_int(&gate_yields, 1);
+   sthread_yield();
+}
 #undef retro_atomic_fetch_add_int
 #define retro_atomic_fetch_add_int(p, value) claim_add(p, value)
+#define sthread_yield() gate_yield()
+#ifdef CONNECTION_GATE_TEST_NO_PARK
+#define retro_eventcount_init(ec) ((void)(ec), false)
+#endif
 #include "../../../input/connect/joypad_connection.c"
+#undef sthread_yield
 
 /* the frontend's; the user's list is the settings', here none */
 bool input_device_ignored(uint16_t vid, uint16_t pid)
@@ -139,6 +155,12 @@ int main(void)
    CHECK(owner, "owner creation failed");
    while (retro_atomic_load_acquire_int(&slot->gate) & CONNECTION_LIVE)
       sthread_yield();
+   /* the owner waits on the reader for a while: parked, not spinning */
+   retro_sleep(50);
+   printf("retirement waiting on a reader: %d yields in 50 ms\n",
+         retro_atomic_load_acquire_int(&gate_yields));
+   CHECK(retro_atomic_load_acquire_int(&gate_yields) < 8,
+         "retirement spun waiting for its reader");
    CHECK(!retro_atomic_load_acquire_int(&destroyed),
          "retirement destroyed an admitted reader's payload");
    retro_atomic_store_release_int(&claim_resume, 1);

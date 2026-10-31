@@ -17,6 +17,7 @@ SOURCES := \
 	$(LRC)/compat/compat_strl.c \
 	$(LRC)/string/stdstring.c \
 	$(LRC)/rthreads/rthreads.c \
+	$(LRC)/rthreads/retro_eventcount.c \
 	$(LRC)/features/features_cpu.c \
 	$(LRC)/encodings/encoding_utf.c \
 	$(LRC)/encodings/encoding_crc32.c
