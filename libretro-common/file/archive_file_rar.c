@@ -57,6 +57,7 @@ struct rar_context_t
    uint32_t        parse_index;
    uint32_t        decompress_index;
    bool            to_sink;   /* the member goes to the file as it comes */
+   bool            name_dirs;
 };
 
 /* A member bound for a file, bigger than this, goes to it as it is
@@ -295,6 +296,7 @@ static int rar_parse_file_init(file_archive_transfer_t *state,
 
    state->context = ctx;
    ctx->state     = state;
+   ctx->name_dirs = state->name_dirs;
 
    if (!rar_open_archive(ctx, state))
       goto error;
@@ -353,6 +355,13 @@ static int rar_parse_file_iterate_step(void *context,
                (const uint8_t*)(size_t)ctx->parse_index, 0,
                entry->packed_size, entry->size, userdata->crc, userdata))
          return 0;
+   }
+   else if (entry && entry->is_dir && ctx->name_dirs)
+   {
+      strlcpy(userdata->current_file_path, entry->name,
+            sizeof(userdata->current_file_path) - 1);
+      strlcat(userdata->current_file_path, "/",
+            sizeof(userdata->current_file_path));
    }
 
    ctx->parse_index++;

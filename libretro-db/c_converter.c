@@ -702,6 +702,8 @@ dat_converter_rdb_mappings_t rdb_mappings[] =
    {"rom.crc",        "crc",            DAT_CONVERTER_RDB_TYPE_HEX},
    {"rom.md5",        "md5",            DAT_CONVERTER_RDB_TYPE_HEX},
    {"rom.sha1",       "sha1",           DAT_CONVERTER_RDB_TYPE_HEX},
+   {"set_fp1",        "set_fp1",        DAT_CONVERTER_RDB_TYPE_HEX},
+   {"set_fpm1",       "set_fpm1",       DAT_CONVERTER_RDB_TYPE_HEX},
    {"serial",         "serial",         DAT_CONVERTER_RDB_TYPE_BINARY},
    {"rom.serial",     "serial",         DAT_CONVERTER_RDB_TYPE_BINARY}
 };
