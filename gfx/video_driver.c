@@ -3882,9 +3882,12 @@ bool video_driver_set_rotation(unsigned rotation)
     * blocking command, so the video thread observes the new snapshot
     * before it can act on the new rotation. */
    video_driver_publish_vp_params();
-   if (!vid || !vid->set_rotation || !video_st->data)
+   if (!vid || !vid->set_rotation)
       return false;
-   vid->set_rotation(video_st->data, rotation);
+   /* No instance yet (a core's SET_ROTATION from retro_load_game):
+    * video_driver_init_internal() applies retroarch_get_rotation(). */
+   if (video_st->data)
+      vid->set_rotation(video_st->data, rotation);
    return true;
 }
 
