@@ -81,10 +81,17 @@ RETRO_BEGIN_DECLS
 #define MODELINE_CAPS_ADD              0x002
 #define MODELINE_CAPS_DESKTOP_EDITABLE 0x004
 #define MODELINE_CAPS_SCAN_EDITABLE    0x008
+#define MODELINE_CAPS_CSYNC            0x010
 
 /* Request flags for modeline_get() */
 #define MODELINE_REQ_INTERLACED   (1 << 0)
 #define MODELINE_REQ_ROTATED      (1 << 1)
+
+/* CSync is opt-in. UNKNOWN prevents reuse of ambiguous XRandR modes. */
+#define MODELINE_CSYNC_OFF       0
+#define MODELINE_CSYNC_NEGATIVE  1
+#define MODELINE_CSYNC_POSITIVE  2
+#define MODELINE_CSYNC_UNKNOWN   3
 
 #define MODELINE_DUMMY_WIDTH      1234
 #define MODELINE_MAX_MODES        256
@@ -131,6 +138,7 @@ typedef struct video_modeline
    int      doublescan;
    int      hsync;
    int      vsync;
+   int      csync;
    unsigned dims;
    int      refresh;
    int      refresh_label;
@@ -197,6 +205,7 @@ typedef struct video_modeline_gen
    video_modeline_disp_t disp;
    int      interlace;
    int      doublescan;
+   int      csync;
    int      super_width;
    int      h_shift;
    int      v_shift;
@@ -219,6 +228,7 @@ typedef struct video_modeline_gen
    size_t   edid_len;
    bool     modeline_generation;
    bool     lock_system_modes;
+   bool     csync_invalid;
    bool     refresh_dont_care;
    bool     desktop_is_rotated;
    bool     switching_required;

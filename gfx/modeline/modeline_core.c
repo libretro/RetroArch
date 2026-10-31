@@ -801,7 +801,8 @@ int modeline_is_different(const video_modeline_t *n,
       ||  n->interlace  != p->interlace
       ||  n->doublescan != p->doublescan
       ||  n->hsync      != p->hsync
-      ||  n->vsync      != p->vsync;
+      ||  n->vsync      != p->vsync
+      ||  n->csync      != p->csync;
 }
 
 void modeline_copy_timings(video_modeline_t *n, const video_modeline_t *p)
@@ -819,6 +820,7 @@ void modeline_copy_timings(video_modeline_t *n, const video_modeline_t *p)
    n->doublescan = p->doublescan;
    n->hsync      = p->hsync;
    n->vsync      = p->vsync;
+   n->csync      = p->csync;
    n->vfreq      = p->vfreq;
    n->hfreq      = p->hfreq;
 }
@@ -840,14 +842,16 @@ char *modeline_print(const video_modeline_t *mode, char *s, size_t len,
 
    if ((flags & MODELINE_PRINT_PARAMS) && _len < len)
       snprintf(s + _len, len - _len,
-            " %.6f %d %d %d %d %d %d %d %d %s %s %s %s",
+            " %.6f %d %d %d %d %d %d %d %d %s %s %s %s%s",
             (double)mode->pclock / 1000000.0,
             mode->hactive, mode->hbegin, mode->hend, mode->htotal,
             mode->vactive, mode->vbegin, mode->vend, mode->vtotal,
             mode->interlace ? "interlace" : "",
             mode->doublescan ? "doublescan" : "",
             mode->hsync ? "+hsync" : "-hsync",
-            mode->vsync ? "+vsync" : "-vsync");
+            mode->vsync ? "+vsync" : "-vsync",
+            mode->csync == MODELINE_CSYNC_NEGATIVE ? " CSync -CSync" :
+            mode->csync == MODELINE_CSYNC_POSITIVE ? " CSync +CSync" : "");
 
    return s;
 }

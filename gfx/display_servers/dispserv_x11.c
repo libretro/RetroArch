@@ -1028,7 +1028,7 @@ static void x11_display_server_modeline_close(void *data)
 
 static unsigned x11_display_server_modeline_caps(void *data)
 {
-   return MODELINE_CAPS_ADD;
+   return MODELINE_CAPS_ADD | MODELINE_CAPS_CSYNC;
 }
 
 static int x11_display_server_modeline_enum(void *data,
@@ -1078,6 +1078,17 @@ static int x11_display_server_modeline_enum(void *data,
          mode->doublescan = (pxmode->modeFlags & RR_DoubleScan) ? 1 : 0;
          mode->hsync      = (pxmode->modeFlags & RR_HSyncPositive) ? 1 : 0;
          mode->vsync      = (pxmode->modeFlags & RR_VSyncPositive) ? 1 : 0;
+         if (pxmode->modeFlags & RR_CSync)
+         {
+            if ((pxmode->modeFlags & RR_CSyncNegative)
+                  && !(pxmode->modeFlags & RR_CSyncPositive))
+               mode->csync = MODELINE_CSYNC_NEGATIVE;
+            else if ((pxmode->modeFlags & RR_CSyncPositive)
+                  && !(pxmode->modeFlags & RR_CSyncNegative))
+               mode->csync = MODELINE_CSYNC_POSITIVE;
+            else
+               mode->csync = MODELINE_CSYNC_UNKNOWN;
+         }
          /* Whole hertz for the line rate, the label the list uses. A
           * virtual or headless server lists its mode with the timing
           * left at zero; the mode is real, its rate is unknown, and
@@ -1185,10 +1196,36 @@ static bool x11_display_server_modeline_delete(void *data,
    return total_xerrors == 0;
 }
 
+static bool x11_ml_mode_matches(const XRRModeInfo *existing,
+      const video_modeline_t *mode)
+{
+   unsigned long flags = (mode->interlace ? RR_Interlace : 0)
+      | (mode->doublescan ? RR_DoubleScan : 0)
+      | (mode->hsync ? RR_HSyncPositive : RR_HSyncNegative)
+      | (mode->vsync ? RR_VSyncPositive : RR_VSyncNegative)
+      | (mode->csync == MODELINE_CSYNC_NEGATIVE
+         ? RR_CSync | RR_CSyncNegative : 0)
+      | (mode->csync == MODELINE_CSYNC_POSITIVE
+         ? RR_CSync | RR_CSyncPositive : 0);
+
+   return existing->dotClock == mode->pclock
+      && existing->width      == (unsigned int)mode->hactive
+      && existing->hSyncStart == (unsigned int)mode->hbegin
+      && existing->hSyncEnd   == (unsigned int)mode->hend
+      && existing->hTotal     == (unsigned int)mode->htotal
+      && existing->height     == (unsigned int)mode->vactive
+      && existing->vSyncStart == (unsigned int)mode->vbegin
+      && existing->vSyncEnd   == (unsigned int)mode->vend
+      && existing->vTotal     == (unsigned int)mode->vtotal
+      && existing->modeFlags  == flags;
+}
+
 static bool x11_display_server_modeline_add(void *data,
       video_modeline_t *mode)
 {
-   char name[48];
+   char name[64];
+   char base_name[48];
+   int suffix;
    XRRModeInfo xmode;
    XRRModeInfo found;
    RRMode gmid;
@@ -1204,20 +1241,35 @@ static bool x11_display_server_modeline_add(void *data,
       return false;
    }
 
-   if (x11_ml_find_mode(ml, mode->platform_data, &found))
+   if (mode->platform_data
+         && x11_ml_find_mode(ml, mode->platform_data, &found)
+         && x11_ml_mode_matches(&found, mode))
    {
       RARCH_DBG("[XRandR] Mode already exists\n");
       return true;
    }
 
-   snprintf(name, sizeof(name), "RA-%dx%d@%.02f%s", mode->hactive,
-         mode->vactive, mode->vfreq, mode->interlace ? "i" : "");
+   snprintf(base_name, sizeof(base_name), "RA-%dx%d@%.02f%s%s",
+         mode->hactive, mode->vactive, mode->vfreq,
+         mode->interlace ? "i" : "",
+         mode->csync == MODELINE_CSYNC_NEGATIVE ? "-cn" :
+         mode->csync == MODELINE_CSYNC_POSITIVE ? "-cp" : "");
 
-   if (x11_ml_find_mode_by_name(ml, name, &found))
+   /* A global mode with the same name need not belong to this output.
+    * Use a new name instead of adopting (and later destroying) it. */
+   for (suffix = 0; suffix < 1000; suffix++)
    {
-      RARCH_DBG("[XRandR] Mode already exists (duplicate request)\n");
-      mode->platform_data = found.id;
-      return true;
+      if (!suffix)
+         strlcpy(name, base_name, sizeof(name));
+      else
+         snprintf(name, sizeof(name), "%s-%d", base_name, suffix);
+      if (!x11_ml_find_mode_by_name(ml, name, &found))
+         break;
+   }
+   if (suffix == 1000)
+   {
+      RARCH_ERR("[XRandR] No unused mode name for %s\n", base_name);
+      return false;
    }
 
    RARCH_DBG("[XRandR] Create mode %s\n", name);
@@ -1237,7 +1289,11 @@ static bool x11_display_server_modeline_add(void *data,
    xmode.modeFlags  = (mode->interlace ? RR_Interlace : 0)
       | (mode->doublescan ? RR_DoubleScan : 0)
       | (mode->hsync ? RR_HSyncPositive : RR_HSyncNegative)
-      | (mode->vsync ? RR_VSyncPositive : RR_VSyncNegative);
+      | (mode->vsync ? RR_VSyncPositive : RR_VSyncNegative)
+      | (mode->csync == MODELINE_CSYNC_NEGATIVE
+         ? RR_CSync | RR_CSyncNegative : 0)
+      | (mode->csync == MODELINE_CSYNC_POSITIVE
+         ? RR_CSync | RR_CSyncPositive : 0);
    xmode.hSkew      = 0;
    mode->type      |= MODELINE_TIMING_XRANDR;
 

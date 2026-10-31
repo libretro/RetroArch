@@ -202,6 +202,7 @@ video_modeline_gen_t *modeline_gen_new(void)
       strlcpy(gen->crt_range[i], "auto", sizeof(gen->crt_range[i]));
    strlcpy(gen->disp.screen, "auto", sizeof(gen->disp.screen));
    strlcpy(gen->disp.custom_timing, "auto", sizeof(gen->disp.custom_timing));
+   gen->csync                      = MODELINE_CSYNC_OFF;
    gen->modeline_generation         = true;
    gen->disp.lock_unsupported_modes = true;
    gen->lock_system_modes           = true;
@@ -264,6 +265,22 @@ void modeline_set_option(video_modeline_gen_t *gen, const char *key,
          user_mode.dims = VIDEO_SCALE_PACK(w, h);
       }
       modeline_apply_user_mode(gen, &user_mode);
+   }
+   else if (!strcmp(key, "csync"))
+   {
+      if (!strcmp(value, "off"))
+         gen->csync = MODELINE_CSYNC_OFF;
+      else if (!strcmp(value, "negative"))
+         gen->csync = MODELINE_CSYNC_NEGATIVE;
+      else if (!strcmp(value, "positive"))
+         gen->csync = MODELINE_CSYNC_POSITIVE;
+      else
+      {
+         gen->csync_invalid = true;
+         RARCH_ERR("[Modeline] Invalid csync '%s' (off|negative|positive)\n", value);
+         return;
+      }
+      gen->csync_invalid = false;
    }
    /* Display options */
    else if (!strcmp(key, "display"))
@@ -500,6 +517,22 @@ video_modeline_t *modeline_get(video_modeline_gen_t *gen,
    memset(&t_mode, 0, sizeof(t_mode));
    memset(&best_mode, 0, sizeof(best_mode));
 
+   /* Never emit a new mode for invalid or unsupported CSync settings. */
+   if (gen->csync_invalid)
+   {
+      RARCH_ERR("[Modeline] CSync configuration is invalid; mode switch aborted\n");
+      gen->selected = NULL;
+      return NULL;
+   }
+   if (gen->csync != MODELINE_CSYNC_OFF
+         && (!(caps & MODELINE_CAPS_CSYNC) || !ops || !ops->caps
+            || !(ops->caps(ops->data) & MODELINE_CAPS_CSYNC)))
+   {
+      RARCH_ERR("[Modeline] CSync requires the XRandR backend; mode switch aborted\n");
+      gen->selected = NULL;
+      return NULL;
+   }
+
    RARCH_LOG("[Modeline] Calculating best video mode for %dx%d@%.6f%s orientation: %s\n",
          width, height, refresh, interlaced ? "i" : "",
          rotated ? "rotated" : "normal");
@@ -568,6 +601,10 @@ video_modeline_t *modeline_get(video_modeline_gen_t *gen,
       if (mode->type & MODELINE_DISABLED)
          continue;
 
+      /* An RGBHV entry must never be reused for CSync, or vice versa. */
+      if (!(mode->type & MODELINE_ADD) && mode->csync != gen->csync)
+         continue;
+
       for (r = 0; r < MODELINE_MAX_RANGES; r++)
       {
          if (gen->range[r].hfreq_min == 0)
@@ -601,6 +638,7 @@ video_modeline_t *modeline_get(video_modeline_gen_t *gen,
             t_mode.type &= ~MODELINE_V_FREQ_EDITABLE;
 
          modeline_create(&s_mode, &t_mode, &gen->range[r], gen);
+         t_mode.csync = gen->csync;
          t_mode.range = r;
 
          RARCH_DBG("[Modeline]   %s\n",

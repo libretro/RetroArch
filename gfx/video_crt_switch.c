@@ -587,7 +587,12 @@ static void switch_res_crt(
                0, 1.0f, 1.0f, false);
          return;
       }
-      modeline_flush(gen, &p_switch->ops);
+      if (!modeline_flush(gen, &p_switch->ops)
+            && gen->csync != MODELINE_CSYNC_OFF)
+      {
+         RARCH_ERR("[CRT] CSync mode creation failed; switch aborted.\n");
+         return;
+      }
 
       if (p_switch->ops_valid && !modeline_set(gen, &p_switch->ops, mode))
          RARCH_ERR("[CRT] Engine failed to switch mode.\n");
@@ -698,6 +703,7 @@ void crt_destroy_modes(videocrt_switch_t *p_switch)
    memset(&p_switch->ops, 0, sizeof(p_switch->ops));
    p_switch->ops_valid = false;
    p_switch->ops_lost  = false;
+   ini_overrides_loaded = false;
 }
 
 void crt_switch_res_core(
@@ -833,6 +839,10 @@ static void crt_adjust_ini(videocrt_switch_t *p_switch)
    {
       settings_t *settings = config_get_ptr();
       RARCH_LOG("[CRT] Loading default switchres.ini...\n");
+      /* A missing csync line in the base config means off, even if
+       * the previous game's overlay selected another polarity. */
+      p_switch->gen->csync         = MODELINE_CSYNC_OFF;
+      p_switch->gen->csync_invalid = false;
       modeline_ini_load(p_switch->gen, "switchres.ini");
       crt_apply_menu_preset(p_switch, settings->uints.crt_switch_resolution,
             settings->uints.crt_switch_resolution_super);
