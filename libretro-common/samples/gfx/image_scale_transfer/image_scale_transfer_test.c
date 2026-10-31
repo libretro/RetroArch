@@ -246,6 +246,21 @@ static void benchmark_upscale(unsigned factor, int pix10)
          factor, pix10, elapsed / 40, generated);
 }
 
+static void large_box(unsigned factor, int pix10, uint32_t pixel)
+{
+   struct texture_image img;
+   size_t i, count = (size_t)factor * factor;
+   uint32_t expected = pix10 ? 0xc0000000u | (pixel & 0x3fffffffu) : pixel;
+   init(&img, factor, factor, pix10);
+   for (i = 0; i < count; i++) img.pixels[i] = pixel;
+   assert(image_texture_scale(&img, 0, 1));
+   assert(img.width == 1 && img.height == 1);
+   assert(img.pixels[0] == expected);
+   assert(source_frees == 1 && calls == 1);
+   image_free(img.pixels);
+   assert(!live);
+}
+
 int main(int argc, char **argv)
 {
    int pix10;
@@ -278,6 +293,10 @@ int main(int argc, char **argv)
    }
    failures();
    upscale_failures();
-   puts("PASS: 8/10-bit box and upscale pixels, ownership, bounds, failure/retry");
+   large_box(2048, 1, 0xffffffffu);
+   large_box(4096, 1, 0xc0000000u | (1000u << 20) | (511u << 10) | 777u);
+   large_box(4096, 0, 0xffffffffu);
+   large_box(8192, 0, 0xf1e2d3c4u);
+   puts("PASS: 8/10-bit box and upscale pixels, ownership, bounds, failure/retry, large-factor sums");
    return 0;
 }
