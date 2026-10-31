@@ -83,9 +83,15 @@ static bool allocate_frames(struct scaler_ctx *ctx)
                           * sizeof(uint64_t);
    if (!(scaled_bytes = frame_bytes(stride, (size_t)ctx->in_height)))
       return false;
-   ctx->scaled.stride     = (int)stride;
-   ctx->scaled.width      = ctx->out_width;
-   ctx->scaled.height     = ctx->in_height;
+   /* Point sampling reads the input directly, not the horizontal pass. */
+   if (ctx->scaler_type == SCALER_TYPE_POINT)
+      scaled_bytes = 0;
+   else
+   {
+      ctx->scaled.stride  = (int)stride;
+      ctx->scaled.width   = ctx->out_width;
+      ctx->scaled.height  = ctx->in_height;
+   }
 
    if (       ctx->in_fmt != SCALER_FMT_ARGB8888
            && ctx->in_fmt != SCALER_FMT_XRGB2101010)
@@ -107,6 +113,9 @@ static bool allocate_frames(struct scaler_ctx *ctx)
       ctx->output.stride  = (int)stride;
    }
 
+   if (!scaled_bytes && !input_bytes && !output_bytes)
+      return true;
+
    /* One block for all three, laid out scaled | input | output with the
     * regions that are not needed given zero size. Each frame_bytes()
     * result is at most INT_MAX, so the running total cannot wrap a
@@ -123,7 +132,8 @@ static bool allocate_frames(struct scaler_ctx *ctx)
    memset(base, 0, total);
 
    ctx->frame_arena       = raw;
-   ctx->scaled.frame      = (uint64_t*)(base + off_scaled);
+   if (scaled_bytes)
+      ctx->scaled.frame   = (uint64_t*)(base + off_scaled);
    if (input_bytes)
       ctx->input.frame    = (uint32_t*)(base + off_input);
    if (output_bytes)
