@@ -1288,9 +1288,13 @@ void conv_argb8888_rgb565(void *output_, const void *input_,
 #endif
       for (; w < width; w++)
       {
-         uint32_t c = input[w];
-         output[w] = (uint16_t)(((c >> 8) & 0xf800)
+         uint32_t c;
+         uint16_t packed;
+         /* Byte accesses keep in-place narrowing alias-safe. */
+         memcpy(&c, input + w, sizeof(c));
+         packed = (uint16_t)(((c >> 8) & 0xf800)
                | ((c >> 5) & 0x07e0) | ((c >> 3) & 0x001f));
+         memcpy(output + w, &packed, sizeof(packed));
       }
    }
 }

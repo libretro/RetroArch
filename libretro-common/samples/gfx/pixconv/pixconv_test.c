@@ -495,6 +495,58 @@ static void test_32_to_16(uint32_t *in, uint16_t *out)
       check("conv_argb8888_rgb565 roundtrip", i, out[i], i & 0xffff);
 }
 
+static void test_rgb565_inplace(const uint32_t *input)
+{
+   static uint32_t src[3 * 72], arena[3 * 72], expected[3 * 72];
+   uint8_t *buf = (uint8_t*)malloc(NPIX * 4 + 16);
+   unsigned i, width, padded, x, y;
+   if (!buf)
+   {
+      failures++;
+      return;
+   }
+   memcpy(buf, input, NPIX * 4);
+   memset(buf + NPIX * 4, 0x5a, 16);
+   conv_argb8888_rgb565(buf, buf, ROW_W, ROWS, ROW_W * 2, ROW_W * 4);
+   for (i = 0; i < NPIX; i++)
+   {
+      uint16_t got;
+      uint32_t c = input[i];
+      memcpy(&got, buf + i * 2, 2);
+      check("RGB565 in-place pixels", i, got,
+            (((c >> 19) & 31) << 11) | (((c >> 10) & 63) << 5) | ((c >> 3) & 31));
+   }
+   for (i = NPIX * 2; i < NPIX * 4 + 16; i++)
+      check("RGB565 in-place write bounds", i, buf[i],
+            i < NPIX * 4 ? ((const uint8_t*)input)[i] : 0x5a);
+   free(buf);
+
+   for (i = 0; i < 3 * 72; i++)
+      src[i] = i * 2654435761u;
+   for (width = 0; width <= 65; width++)
+      for (padded = 0; padded < 2; padded++)
+      {
+         unsigned ip = (width + 3) * 4;
+         unsigned op = padded ? ip : ip / 2;
+         memcpy(arena, src, sizeof(arena));
+         memcpy(expected, src, sizeof(expected));
+         for (y = 0; y < 3; y++)
+            for (x = 0; x < width; x++)
+            {
+               uint32_t c = src[y * (width + 3) + x];
+               uint16_t p = (uint16_t)((((c >> 19) & 31) << 11)
+                     | (((c >> 10) & 63) << 5) | ((c >> 3) & 31));
+               memcpy((uint8_t*)expected + y * op + x * 2, &p, 2);
+            }
+         conv_argb8888_rgb565(arena, arena, width, 3, op, ip);
+         if (memcmp(arena, expected, sizeof(arena)))
+         {
+            printf("FAIL RGB565 in-place width=%u padded=%u\n", width, padded);
+            failures++;
+         }
+      }
+}
+
 static void test_rgb565_widths(void)
 {
    uint32_t in[3 * 40];
@@ -713,6 +765,7 @@ int main(void)
          in16, out16, ref_1555_565);
 
    test_32_to_16(in32, out16);
+   test_rgb565_inplace(in32);
    test_rgb565_widths();
    {
       static const enum scaler_pix_fmt fmts[] = {
