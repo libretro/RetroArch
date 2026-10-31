@@ -180,6 +180,7 @@ typedef char retro_eventcount_epoch_is_a_word_
  * the futex waiter has no flag of its own. Resolved once, on the first
  * wait. */
 static retro_atomic_int_t ec_linux_spin_state;
+static unsigned           ec_linux_spin;
 #endif
 
 #if defined(RETRO_EC_ADDR_SWITCH)
@@ -437,67 +438,6 @@ struct ec_waiter
 #endif /* RETRO_EC_WAITLIST */
 
 #if defined(RETRO_EC_ADDR_WIN32)
-
-typedef BOOL (WINAPI *ec_wait_address_t)(volatile void*, void*, SIZE_T, DWORD);
-typedef void (WINAPI *ec_wake_address_t)(void*);
-
-struct retro_eventcount_address_api
-{
-   ec_wait_address_t wait;
-   ec_wake_address_t wake_all;
-};
-
-static retro_atomic_ptr_t ec_address_api;
-
-/* Resolve independently, then publish an immutable result. No thread
- * waits for another initializer to finish. */
-static const struct retro_eventcount_address_api *ec_win32_address_api(void)
-{
-   struct retro_eventcount_address_api api, *candidate;
-   const struct retro_eventcount_address_api *published;
-   const char *force = getenv("RETRO_EVENTCOUNT_WIN32");
-   HMODULE module;
-
-   if (force && strcmp(force, "address"))
-      return NULL;
-   published = (const struct retro_eventcount_address_api*)
-      retro_atomic_load_acquire_ptr(&ec_address_api);
-   if (published)
-      return published;
-   module = GetModuleHandleA("kernelbase.dll");
-   if (!module)
-      module = GetModuleHandleA("kernel32.dll");
-   if (!module)
-      return NULL;
-   api.wait = (ec_wait_address_t)(void (*)(void))
-      GetProcAddress(module, "WaitOnAddress");
-   api.wake_all = (ec_wake_address_t)(void (*)(void))
-      GetProcAddress(module, "WakeByAddressAll");
-   if (!api.wait || !api.wake_all)
-      return NULL;
-   candidate = (struct retro_eventcount_address_api*)malloc(sizeof(api));
-   if (!candidate)
-      return NULL;
-   *candidate = api;
-   if (retro_atomic_cas_ptr(&ec_address_api, NULL, candidate))
-      return candidate;
-   free(candidate);
-   return (const struct retro_eventcount_address_api*)
-      retro_atomic_load_acquire_ptr(&ec_address_api);
-}
-
-static bool ec_win32_address_park(retro_eventcount_t *ec, int key,
-      bool bounded, int64_t timeout_us)
-{
-   DWORD timeout = INFINITE;
-   if (bounded)
-   {
-      int64_t ms = timeout_us / 1000 + (timeout_us % 1000 != 0);
-      timeout = ms >= (int64_t)INFINITE ? INFINITE - 1 : (DWORD)ms;
-   }
-   return ec->address_api->wait((volatile void*)&ec->epoch, &key,
-         sizeof(key), timeout) || GetLastError() != ERROR_TIMEOUT;
-}
 
 typedef LONG (WINAPI *ec_nt_wait_alert_t)(volatile void*, LARGE_INTEGER*);
 typedef LONG (WINAPI *ec_nt_alert_tid_t)(HANDLE);
@@ -1468,13 +1408,6 @@ bool retro_eventcount_init(retro_eventcount_t *ec)
    retro_atomic_int_init(&ec->epoch, 0);
    retro_atomic_int_init(&ec->waiters, 0);
 
-#if defined(RETRO_EVENTCOUNT_REQUIRE_LOCK_FREE) \
-   && (!defined(RETRO_ATOMIC_LOCK_FREE) \
-      || !(defined(RETRO_EC_ADDR_LINUX) || defined(RETRO_EC_ADDR_WIN32) \
-         || defined(RETRO_EC_ADDR_SWITCH) || defined(RETRO_EC_ADDR_3DS)))
-   return false;
-#endif
-
 #if defined(RETRO_EC_ADDR_LINUX)
    lockless = 1;
 #elif defined(RETRO_EC_ADDR_SWITCH)
@@ -1495,12 +1428,6 @@ bool retro_eventcount_init(retro_eventcount_t *ec)
       lockless = 1;
    }
 #elif defined(RETRO_EC_ADDR_WIN32)
-   ec->address_api = ec_win32_address_api();
-   if (ec->address_api)
-      return true;
-#if defined(RETRO_EVENTCOUNT_REQUIRE_LOCK_FREE)
-   return false;
-#endif
    ec_win32_init();
    /* Only if a sleep tier resolved. With none - no ntdll entry points
     * and no TLS index for the per-thread event - the waiter list has
@@ -1517,10 +1444,6 @@ bool retro_eventcount_init(retro_eventcount_t *ec)
 
    if (lockless)
       return true;
-
-#if defined(RETRO_EVENTCOUNT_REQUIRE_LOCK_FREE)
-   return false;
-#endif
 
    if (!(ec->lock = slock_new()))
       return false;
@@ -1587,13 +1510,6 @@ void retro_eventcount_notify(retro_eventcount_t *ec)
    syscall(SYS_futex, (void*)&ec->epoch, FUTEX_WAKE_PRIVATE,
          INT_MAX, NULL, NULL, 0);
 #else
-#if defined(RETRO_EC_ADDR_WIN32)
-   if (ec->address_api)
-   {
-      ec->address_api->wake_all((void*)&ec->epoch);
-      return;
-   }
-#endif
 #if defined(RETRO_EC_ADDR_SWITCH)
    if (!ec->cond)
    {
@@ -1713,15 +1629,14 @@ static unsigned ec_linux_spin_for_budget(unsigned budget_us)
    }
 }
 
-static unsigned ec_linux_spin_init(void)
+static void ec_linux_spin_init(void)
 {
-   int state = retro_atomic_load_acquire_int(&ec_linux_spin_state);
-   if (state)
-      return (unsigned)(state - 1);
+   if (retro_atomic_load_acquire_int(&ec_linux_spin_state) == 2)
+      return;
+   if (retro_atomic_cas_int(&ec_linux_spin_state, 0, 1))
    {
       const char *env;
       unsigned    budget = EC_SPIN_US;
-      unsigned    spin;
       long        cpus   = sysconf(_SC_NPROCESSORS_ONLN);
 
       /* An asked-for budget is honoured whatever the processor count;
@@ -1731,14 +1646,16 @@ static unsigned ec_linux_spin_init(void)
       else if (cpus <= 1)
          budget = 0;
 
-      spin = ec_linux_spin_for_budget(budget);
+      ec_linux_spin = ec_linux_spin_for_budget(budget);
 
       if ((env = getenv("RETRO_EVENTCOUNT_SPIN")))
-         spin = ec_spin_override(env, spin);
+         ec_linux_spin = ec_spin_override(env, ec_linux_spin);
 
-      retro_atomic_cas_int(&ec_linux_spin_state, 0, (int)spin + 1);
+      retro_atomic_store_release_int(&ec_linux_spin_state, 2);
+      return;
    }
-   return (unsigned)(retro_atomic_load_acquire_int(&ec_linux_spin_state) - 1);
+   while (retro_atomic_load_acquire_int(&ec_linux_spin_state) != 2)
+      retro_cpu_relax();
 }
 
 /* 1: time remains, 0: expired, -1: clock unavailable (a spurious wake). */
@@ -1791,8 +1708,8 @@ static bool ec_linux_spun(retro_eventcount_t *ec, int key,
       const struct timespec *start, int64_t budget)
 {
    unsigned i;
-   unsigned spin = ec_linux_spin_init();
-   for (i = 0; i < spin; i++)
+   ec_linux_spin_init();
+   for (i = 0; i < ec_linux_spin; i++)
    {
       if (retro_atomic_load_acquire_int(&ec->epoch) != key)
          return true;
@@ -1832,12 +1749,6 @@ void retro_eventcount_commit_wait(retro_eventcount_t *ec, int key)
    return;
 #endif
 #if defined(RETRO_EC_ADDR_WIN32)
-   if (ec->address_api)
-   {
-      ec_win32_address_park(ec, key, false, 0);
-      retro_atomic_fetch_sub_int(&ec->waiters, 1);
-      return;
-   }
    if (!ec->cond)
    {
       if (retro_atomic_load_acquire_int(&ec->epoch) == key)
@@ -1941,12 +1852,6 @@ bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
    return signalled;
 #endif
 #if defined(RETRO_EC_ADDR_WIN32)
-   if (ec->address_api)
-   {
-      signalled = ec_win32_address_park(ec, key, true, timeout_us);
-      retro_atomic_fetch_sub_int(&ec->waiters, 1);
-      return signalled;
-   }
    if (!ec->cond)
    {
       if (retro_atomic_load_acquire_int(&ec->epoch) == key)
@@ -1977,17 +1882,13 @@ bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
 unsigned retro_eventcount_spin_iters(void)
 {
 #if defined(RETRO_EC_ADDR_WIN32)
-   if (ec_win32_address_api())
-      return 0;
-#if defined(RETRO_EVENTCOUNT_REQUIRE_LOCK_FREE)
-   return 0;
-#endif
    ec_win32_init();
    /* The fallback parks on a condition variable, which has no flag word
     * to spin on. */
    return ec_g.sleep ? ec_g.spin : 0;
 #elif defined(RETRO_EC_ADDR_LINUX)
-   return ec_linux_spin_init();
+   ec_linux_spin_init();
+   return ec_linux_spin;
 #else
    return 0;
 #endif
@@ -2018,11 +1919,6 @@ const char *retro_eventcount_backend_name(void)
    return ec_g.ready ? "posix semaphore" : "scond (no thread key)";
 #endif
 #elif defined(RETRO_EC_ADDR_WIN32)
-   if (ec_win32_address_api())
-      return "win32 address wait";
-#if defined(RETRO_EVENTCOUNT_REQUIRE_LOCK_FREE)
-   return "unavailable (lock-free required)";
-#endif
    ec_win32_init();
    switch (ec_g.sleep)
    {
