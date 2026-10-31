@@ -75,6 +75,7 @@
 #include <retro_atomic.h>
 #include "../common/d3d11_deferred_proxy.h"
 #include "../common/d3d11_hw_interface.h"
+#include "../common/d3d11_turns.h"
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
  * sites remain guarded with HAVE_SLANG and a compiler that prints
@@ -473,20 +474,10 @@ typedef struct
     * named with set_texture when the driver runs on the core's thread. */
    struct
    {
-      CRITICAL_SECTION lock;
+      d3d11_turns_t    lock;
       bool             lock_ready;
       bool             active;
       bool             frontend_used;
-      /* Turns. A Windows critical section is not fair: a thread that
-       * releases it and asks again at once usually gets it, over one
-       * that has been waiting. A core locks and unlocks around every
-       * piece of GS work, thousands of times a frame, and would keep
-       * the frontend's thread out for the whole of it. So the frontend
-       * says when it is waiting, and the core's lock_context lets it go
-       * first. core_depth is the core thread's own count, so a nested
-       * lock_context never waits for a frontend it is itself blocking. */
-      volatile LONG    frontend_waiting;
-      unsigned         core_depth;
       /* The runtime's own multithread protection is on for the
        * context, so Present may run while the core has the lock. */
       bool             present_unlocked;
@@ -4998,7 +4989,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
       {
          if (!d3d11->hw_v2.lock_ready)
          {
-            InitializeCriticalSection(&d3d11->hw_v2.lock);
+            d3d11_turns_init(&d3d11->hw_v2.lock);
             d3d11->hw_v2.lock_ready = true;
          }
          /* A fresh context is nobody's: the core's first lock_context
@@ -5378,16 +5369,14 @@ static void d3d11_hw_v2_enter(d3d11_video_t *d3d11)
 {
    if (!d3d11->hw_v2.active)
       return;
-   InterlockedIncrement(&d3d11->hw_v2.frontend_waiting);
-   EnterCriticalSection(&d3d11->hw_v2.lock);
-   InterlockedDecrement(&d3d11->hw_v2.frontend_waiting);
+   d3d11_turns_frontend_enter(&d3d11->hw_v2.lock);
    d3d11->hw_v2.frontend_used = true;
 }
 
 static void d3d11_hw_v2_leave(d3d11_video_t *d3d11)
 {
    if (d3d11->hw_v2.active)
-      LeaveCriticalSection(&d3d11->hw_v2.lock);
+      d3d11_turns_frontend_leave(&d3d11->hw_v2.lock);
 }
 
 /* The frame blocks in places that do not touch the context at all -
@@ -5404,16 +5393,14 @@ static void d3d11_hw_v2_leave(d3d11_video_t *d3d11)
 static void d3d11_hw_v2_yield_begin(d3d11_video_t *d3d11)
 {
    if (d3d11->hw_v2.active)
-      LeaveCriticalSection(&d3d11->hw_v2.lock);
+      d3d11_turns_frontend_leave(&d3d11->hw_v2.lock);
 }
 
 static void d3d11_hw_v2_yield_end(d3d11_video_t *d3d11)
 {
    if (!d3d11->hw_v2.active)
       return;
-   InterlockedIncrement(&d3d11->hw_v2.frontend_waiting);
-   EnterCriticalSection(&d3d11->hw_v2.lock);
-   InterlockedDecrement(&d3d11->hw_v2.frontend_waiting);
+   d3d11_turns_frontend_enter(&d3d11->hw_v2.lock);
    d3d11->hw_v2.frontend_used = true;
 }
 
@@ -5456,16 +5443,9 @@ static bool d3d11_hw_v2_lock_context(void *data)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
    bool used;
-   /* The frontend first, if it is waiting and this is not a nested
-    * lock: see frontend_waiting. With no wrapper in front the frontend
-    * is this thread and never waits. */
-   if (!d3d11->hw_v2.core_depth)
-   {
-      while (d3d11->hw_v2.frontend_waiting > 0)
-         SwitchToThread();
-   }
-   EnterCriticalSection(&d3d11->hw_v2.lock);
-   d3d11->hw_v2.core_depth++;
+   /* With no wrapper in front the frontend is this thread and never
+    * waits. */
+   d3d11_turns_core_enter(&d3d11->hw_v2.lock);
    used                       = d3d11->hw_v2.frontend_used;
    d3d11->hw_v2.frontend_used = false;
    return used;
@@ -5474,9 +5454,7 @@ static bool d3d11_hw_v2_lock_context(void *data)
 static void d3d11_hw_v2_unlock_context(void *data)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
-   if (d3d11->hw_v2.core_depth)
-      d3d11->hw_v2.core_depth--;
-   LeaveCriticalSection(&d3d11->hw_v2.lock);
+   d3d11_turns_core_leave(&d3d11->hw_v2.lock);
 }
 
 /* No threaded wrapper in front: the frame that follows, inside
@@ -9673,13 +9651,13 @@ static bool d3d11_hw_ring_present_slot(void *data, unsigned slot)
       /* Version 2: the reference is taken here, under the lock the
        * capture replaces the slot's texture under, and becomes the
        * frame's. One left over from a frame that never came is dropped. */
-      EnterCriticalSection(&d3d11->hw_v2.lock);
+      d3d11_turns_frontend_enter(&d3d11->hw_v2.lock);
       Release(d3d11->hw_ring.present);
       d3d11->hw_ring.present        = d3d11->hw_ring.slot[slot].texture;
       d3d11->hw_ring.present_format = d3d11->hw_ring.slot[slot].format;
       if (d3d11->hw_ring.present)
          d3d11->hw_ring.present->lpVtbl->AddRef(d3d11->hw_ring.present);
-      LeaveCriticalSection(&d3d11->hw_v2.lock);
+      d3d11_turns_frontend_leave(&d3d11->hw_v2.lock);
       return d3d11->hw_ring.present != NULL;
    }
    d3d11->hw_ring.present        = d3d11->hw_ring.slot[slot].texture;
@@ -9707,13 +9685,13 @@ static bool d3d11_hw_ring_install(void *data, const void *image,
    if (!d3d11 || !texture || !d3d11->hw_v2.active)
       return false;
    texture->lpVtbl->GetDesc(texture, &desc);
-   EnterCriticalSection(&d3d11->hw_v2.lock);
+   d3d11_turns_frontend_enter(&d3d11->hw_v2.lock);
    Release(d3d11->hw_ring.present);
    texture->lpVtbl->AddRef(texture);
    d3d11->hw_ring.present        = texture;
    d3d11->hw_ring.present_format = desc.Format;
    d3d11->hw_direct.eligible     = true;
-   LeaveCriticalSection(&d3d11->hw_v2.lock);
+   d3d11_turns_frontend_leave(&d3d11->hw_v2.lock);
    return true;
 }
 
@@ -9774,7 +9752,7 @@ static void d3d11_hw_ring_free(d3d11_video_t *d3d11)
    d3d11->hw_v2.active  = false;
    if (d3d11->hw_v2.lock_ready)
    {
-      DeleteCriticalSection(&d3d11->hw_v2.lock);
+      d3d11_turns_deinit(&d3d11->hw_v2.lock);
       d3d11->hw_v2.lock_ready = false;
    }
 }
