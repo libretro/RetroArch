@@ -444,21 +444,91 @@ static char* s3_url_encode(const char *input)
    return output;
 }
 
-/* Canonicalize query string parameters */
+/* qsort comparator: SigV4 sorts query parameters by URL-encoded name,
+ * then by URL-encoded value, in byte order.  The names are compared on
+ * their own: on the whole "name=value" string, a name that extends
+ * another ("a1" after "a") would meet the '=' and sort first, since
+ * digits, '-', '.' and '%' all sort below '='. */
+static int s3_query_param_cmp(const void *a, const void *b)
+{
+   const char *x  = *(const char* const*)a;
+   const char *y  = *(const char* const*)b;
+   size_t      xn = strcspn(x, "=");
+   size_t      yn = strcspn(y, "=");
+   int         r  = strncmp(x, y, xn < yn ? xn : yn);
+
+   if (r)
+      return r;
+   if (xn != yn)
+      return xn < yn ? -1 : 1;
+   return strcmp(x + xn, y + yn);
+}
+
+/* Canonicalize query string parameters per SigV4: split on '&', sort
+ * with s3_query_param_cmp, re-join.  The caller encodes each name and
+ * value with s3_url_encode_query_value, and writes every parameter as
+ * name=value, even with an empty value ("uploads=").  Returns NULL only
+ * when out of memory; an empty query gives "". */
 static char* s3_canonicalize_query_string(const char *query_string)
 {
+   size_t i;
+   size_t query_len;
+   size_t count = 1;
+   size_t pos   = 0;
+   char  *copy;
+   char  *out;
+   char **params;
+
    if (!query_string || !*query_string)
       return strdup("");
 
-   /* For now, return the query string as-is since most S3 operations don't use
-    * query parameters
-    * A full implementation would:
-    * 1. Split parameters by '&'
-    * 2. URL encode each parameter name and value
-    * 3. Sort parameters alphabetically by name
-    * 4. Join with '&'
-    */
-   return strdup(query_string);
+   if (!(copy = strdup(query_string)))
+      return NULL;
+
+   query_len = strlen(copy);
+   for (i = 0; i < query_len; i++)
+      if (copy[i] == '&')
+         count++;
+
+   params = (char**)malloc(count * sizeof(char*));
+   /* Sorting moves the parameters but adds nothing, so the result is
+    * the input's length. */
+   out    = (char*)malloc(query_len + 1);
+
+   if (!params || !out)
+   {
+      free(params);
+      free(out);
+      free(copy);
+      return NULL;
+   }
+
+   /* Cut the copy into one string per parameter. */
+   params[0] = copy;
+   for (i = 0, count = 1; i < query_len; i++)
+   {
+      if (copy[i] == '&')
+      {
+         copy[i]         = '\0';
+         params[count++] = copy + i + 1;
+      }
+   }
+
+   qsort(params, count, sizeof(char*), s3_query_param_cmp);
+
+   for (i = 0; i < count; i++)
+   {
+      size_t len = strlen(params[i]);
+      if (i > 0)
+         out[pos++] = '&';
+      memcpy(out + pos, params[i], len);
+      pos += len;
+   }
+   out[pos] = '\0';
+
+   free(params);
+   free(copy);
+   return out;
 }
 
 /* Calculate HMAC-SHA256 and return binary result */

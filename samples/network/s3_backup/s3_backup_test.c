@@ -20,8 +20,9 @@
  *   CopyObject can answer - stops the delete or upload, reported once;
  * - destructive sync and the server manifest skip the copy.
  *
- * It also calls the signer directly: out of memory, the signer returns
- * no signature rather than a wrong one.
+ * It also calls the signer directly: query parameters sort as SigV4
+ * requires, and out of memory the signer returns no signature rather
+ * than a wrong one.
  *
  * The signature itself was cross-checked against botocore's SigV4 for
  * the same request when this was written; here the test checks the
@@ -370,6 +371,42 @@ static void test_signer_out_of_memory(void)
    free(sig);
 }
 
+/* SigV4 sorts query parameters by name, then by value.  Sorting the
+ * whole "name=value" string would put "a1=2" before "a=1", because '1'
+ * sorts below '='. */
+static void test_query_order(void)
+{
+   static const char *cases[][2] = {
+      { "a1=2&a=1",                  "a=1&a1=2" },
+      { "a-b=1&a=2",                 "a=2&a-b=1" },
+      { "uploadId=x&partNumber=3",   "partNumber=3&uploadId=x" },
+      { "k=2&k=1",                   "k=1&k=2" },
+      { "",                          "" }
+   };
+   size_t i;
+
+   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+   {
+      char *got = s3_canonicalize_query_string(cases[i][0]);
+      CHECK(got && !strcmp(got, cases[i][1]),
+            "query \"%s\": sorted to \"%s\", SigV4 wants \"%s\"",
+            cases[i][0], got ? got : "(null)", cases[i][1]);
+      free(got);
+   }
+
+   /* Each of its three allocations can fail, and none may leak. */
+   for (i = 1; i <= 3; i++)
+   {
+      char *got;
+
+      fail_alloc = (unsigned)i;
+      got        = s3_canonicalize_query_string("b=2&a=1");
+      fail_alloc = 0;
+      CHECK(!got, "allocation %u failed, but it returned: %s", (unsigned)i, got);
+      free(got);
+   }
+}
+
 int main(void)
 {
    char  tmp[64];
@@ -389,6 +426,7 @@ int main(void)
    test_copy_fails(tmp);
    test_no_backup_wanted(tmp);
    test_signer_out_of_memory();
+   test_query_order();
 
    remove(tmp);
 
