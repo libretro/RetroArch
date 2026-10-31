@@ -873,19 +873,101 @@ struct x509_store
    size_t src_len;
    unsigned refs;         /* under the lock: the published slot's + walks' */
    unsigned owns_der;     /* PEM: decoded copies; DER: read in place */
+   struct x509_store *next;  /* replaced, waiting for the walks on it */
 };
-
-static struct x509_store *x509_store_cur = NULL;
 
 /* The store is process-wide and TLS handshakes run on several threads
  * (updater, achievements, cloud sync), the first of them building it.
- * A store is built with no lock held; a flag guards only swapping one
- * in and taking or dropping a reference, a few loads and stores, so a
- * reload never frees a store a walk is still reading and there is no
- * lock object to create on first use. */
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
+ * A store is built with nothing held. */
 #include <retro_atomic.h>
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR) \
+      && defined(RETRO_ATOMIC_LOCK_FREE) && !defined(X509_STORE_TEST_FLAG)
+/* Without a lock. A reader counts itself in, then reads the epoch a
+ * replacement bumps once it is swapped in: so it reads the new store,
+ * or the drain that would free the old one sees it counted. A replaced
+ * store waits on a list and is freed by whoever is last out. */
+#define X509_STORE_LOCK_FREE 1
+static retro_atomic_ptr_t x509_store_slot;
+static retro_atomic_ptr_t x509_store_retired;
+static retro_atomic_int_t x509_store_readers;
+static retro_atomic_int_t x509_store_epoch;
+
+static void x509_store_free(struct x509_store *st);
+
+static void x509_store_push_retired(struct x509_store *first,
+      struct x509_store *last)
+{
+   void *head;
+   do
+   {
+      head       = retro_atomic_load_acquire_ptr(&x509_store_retired);
+      last->next = (struct x509_store*)head;
+   } while (!retro_atomic_cas_ptr(&x509_store_retired, head, first));
+}
+
+static void x509_store_drain(void)
+{
+   for (;;)
+   {
+      struct x509_store *list, *last;
+      if (retro_atomic_load_seq_cst_int(&x509_store_readers))
+         return;
+      if (!(list = (struct x509_store*)
+               retro_atomic_exchange_ptr(&x509_store_retired, NULL)))
+         return;
+      if (retro_atomic_load_seq_cst_int(&x509_store_readers))
+      {
+         for (last = list; last->next; last = last->next) { }
+         x509_store_push_retired(list, last);
+         continue;
+      }
+      while (list)
+      {
+         last = list->next;
+         x509_store_free(list);
+         list = last;
+      }
+   }
+}
+
+/* The published store, valid until x509_store_leave(). */
+static struct x509_store *x509_store_enter(void)
+{
+   struct x509_store *st;
+   retro_atomic_fetch_add_seq_cst_int(&x509_store_readers, 1);
+   (void)retro_atomic_load_seq_cst_int(&x509_store_epoch);
+   st = (struct x509_store*)retro_atomic_load_acquire_ptr(&x509_store_slot);
+#ifdef X509_STORE_TEST_HOLD
+   X509_STORE_TEST_HOLD();
+#endif
+   return st;
+}
+
+static void x509_store_leave(void)
+{
+   if (retro_atomic_fetch_add_seq_cst_int(&x509_store_readers, -1) == 1)
+      x509_store_drain();
+}
+
+/* @old was replaced: it goes once no reader is in. */
+static void x509_store_retire(struct x509_store *old)
+{
+   retro_atomic_fetch_add_seq_cst_int(&x509_store_epoch, 1);
+   if (!old)
+      return;
+   x509_store_push_retired(old, old);
+   x509_store_drain();
+}
+#else
+static struct x509_store *x509_store_cur = NULL;
+#endif
+
+/* Elsewhere a flag guards only swapping a store in and taking or
+ * dropping a reference, a few loads and stores, so a reload never
+ * frees a store a walk is still reading and there is no lock object to
+ * create on first use. */
+#if defined(HAVE_THREADS) && !defined(X509_STORE_LOCK_FREE)
+#include <rthreads/rthreads.h>
 static retro_atomic_int_t x509_store_busy;
 static void x509_store_lock(void)
 {
@@ -894,7 +976,7 @@ static void x509_store_lock(void)
 }
 #define X509_LOCK()   x509_store_lock()
 #define X509_UNLOCK() retro_atomic_store_release_int(&x509_store_busy, 0)
-#else
+#elif !defined(X509_STORE_LOCK_FREE)
 #define X509_LOCK()   do { } while (0)
 #define X509_UNLOCK() do { } while (0)
 #endif
@@ -911,6 +993,7 @@ static void x509_store_free(struct x509_store *st)
    free(st);
 }
 
+#ifndef X509_STORE_LOCK_FREE
 /* Under the lock. Nonzero when that was the last reference. */
 static int x509_store_unref_locked(struct x509_store *st)
 {
@@ -928,14 +1011,20 @@ static struct x509_store *x509_store_publish_locked(struct x509_store *st)
    x509_store_cur = st;
    return x509_store_unref_locked(old) ? old : NULL;
 }
+#endif
 
 void x509_trust_free(void)
 {
+#ifdef X509_STORE_LOCK_FREE
+   x509_store_retire((struct x509_store*)
+         retro_atomic_exchange_ptr(&x509_store_slot, NULL));
+#else
    struct x509_store *old;
    X509_LOCK();
    old = x509_store_publish_locked(NULL);
    X509_UNLOCK();
    x509_store_free(old);
+#endif
 }
 
 /* @der appended as an anchor: 1 when taken, 0 when it is unparseable
@@ -1065,10 +1154,17 @@ static int x509_trust_load(const char *const *parts, const size_t *lens,
    unsigned i;
    int      n = 0;
 
+#ifdef X509_STORE_LOCK_FREE
+   old = x509_store_enter();
+   if (x509_store_is(old, src, src_len))
+      n = (int)old->count;
+   x509_store_leave();
+#else
    X509_LOCK();
    if (x509_store_is(x509_store_cur, src, src_len))
       n = (int)x509_store_cur->count;
    X509_UNLOCK();
+#endif
    if (n)
       return n;
 
@@ -1080,6 +1176,32 @@ static int x509_trust_load(const char *const *parts, const size_t *lens,
       n = pem ? x509_store_append_pem(st, parts[i], lens[i])
               : x509_store_append_der(st, (const uint8_t*)parts[i], lens[i]);
 
+#ifdef X509_STORE_LOCK_FREE
+   if (n >= 0)
+   {
+      st->src     = src;
+      st->src_len = src_len;
+   }
+   for (;;)
+   {
+      struct x509_store *cur = x509_store_enter();
+      if (n >= 0 && x509_store_is(cur, src, src_len))
+      {
+         n = (int)cur->count;   /* another caller's build won; ours goes */
+         x509_store_leave();
+         break;
+      }
+      x509_store_leave();
+      /* the store we looked at, if still published, is ours to replace */
+      if (retro_atomic_cas_ptr(&x509_store_slot, cur, n >= 0 ? st : NULL))
+      {
+         if (n >= 0)
+            st = NULL;
+         x509_store_retire(cur);
+         break;
+      }
+   }
+#else
    X509_LOCK();
    if (n >= 0 && x509_store_is(x509_store_cur, src, src_len))
    {
@@ -1097,6 +1219,7 @@ static int x509_trust_load(const char *const *parts, const size_t *lens,
       old         = x509_store_publish_locked(NULL);
    X509_UNLOCK();
    x509_store_free(old);
+#endif
    x509_store_free(st);
    return n;
 }
@@ -1142,6 +1265,9 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
    struct x509_cert *certs;
    const struct x509_cert *cur;
    struct x509_store *st = NULL;
+#ifdef X509_STORE_LOCK_FREE
+   int entered = 0;
+#endif
    unsigned i, depth;
    unsigned used = 0;   /* bitmask of chain certs already on the path */
    int ret = -1;
@@ -1189,10 +1315,18 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
 
    /* The walk reads the store through its own reference: a reload
     * meanwhile swaps in a new one and leaves this one to the walk. */
+#ifdef X509_STORE_LOCK_FREE
+   st      = x509_store_enter();
+   entered = 1;
+#else
    X509_LOCK();
+#ifdef X509_STORE_TEST_HOLD
+   X509_STORE_TEST_HOLD();
+#endif
    if ((st = x509_store_cur))
       st->refs++;
    X509_UNLOCK();
+#endif
 
    cur  = &certs[0];
    used = 1;
@@ -1261,6 +1395,10 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
    x509_info(info, info_len, "chain too long");
 
 done:
+#ifdef X509_STORE_LOCK_FREE
+   if (entered)
+      x509_store_leave();
+#else
    if (st)
    {
       int last;
@@ -1270,6 +1408,7 @@ done:
       if (last)
          x509_store_free(st);
    }
+#endif
    free(certs);
    return ret;
 }

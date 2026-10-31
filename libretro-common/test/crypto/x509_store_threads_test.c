@@ -25,13 +25,33 @@
  * each verify against it; then they keep verifying while a fifth
  * swaps between two stores and none, so a walk is always running over
  * a store that is being replaced. A walk must see one whole store or
- * none, and a replaced store must outlive every walk still on it. */
+ * none, and a replaced store must outlive every walk still on it.
+ *
+ * Built with X509_STORE_TEST_HOLD, a walk is held just as it takes the
+ * store, and a load of another store meanwhile must still finish: no
+ * thread waits on another. X509_STORE_TEST_FLAG builds the store on its
+ * flag instead, where the held walk holds the flag, and that must fail.
+ */
 
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <sched.h>
+#include <time.h>
 
+#ifdef X509_TEST_HOLD_LANE
+/* The held walk: in until main lets it go. */
+static volatile int hold_on, held, let_go;
+#define X509_STORE_TEST_HOLD() do { if (hold_on && !held) { held = 1; \
+   while (!let_go) sched_yield(); } } while (0)
+#endif
+#ifdef X509_TEST_HOLD_LANE
+/* The library's own source, for the hook between taking and using the
+ * store. */
+#include "../../crypto/x509.c"
+#else
 #include <crypto/x509.h>
+#endif
 #include "test_x509_vectors.h"
 
 #define NTHREADS 4
@@ -42,6 +62,8 @@ static pthread_barrier_t go;
 static volatile int swapping;
 static int bad_first, bad_walk;
 static pthread_mutex_t bad_lock = PTHREAD_MUTEX_INITIALIZER;
+
+
 
 static int verify(char *info, size_t info_len)
 {
@@ -90,6 +112,23 @@ static void *walker(void *arg)
    }
    return NULL;
 }
+
+#ifdef X509_TEST_HOLD_LANE
+static void *held_walk(void *arg)
+{
+   char info[128];
+   (void)arg;
+   verify(info, sizeof(info));
+   return NULL;
+}
+
+static void *other_load(void *arg)
+{
+   (void)arg;
+   x509_trust_load_pem(x509_policy_ca_pem, sizeof(x509_policy_ca_pem) - 1);
+   return NULL;
+}
+#endif
 
 static void *swapper(void *arg)
 {
@@ -150,6 +189,43 @@ int main(void)
    else
       printf("ok:   %d threads x %d walks while the store is swapped %d times\n",
             NTHREADS, ROUNDS, SWAPS);
+#ifdef X509_TEST_HOLD_LANE
+   {
+      pthread_t walk, load;
+      struct timespec ts;
+      int done;
+      hold_on = 1;
+      pthread_create(&walk, NULL, held_walk, NULL);
+      while (!held)
+         sched_yield();
+      pthread_create(&load, NULL, other_load, NULL);
+      clock_gettime(CLOCK_REALTIME, &ts);
+      ts.tv_sec += 2;
+      done = pthread_timedjoin_np(load, NULL, &ts) == 0;
+      let_go = 1;
+      pthread_join(walk, NULL);
+      if (!done)
+         pthread_join(load, NULL);
+      hold_on = 0;
+#ifdef X509_STORE_TEST_FLAG
+      if (done)
+      {
+         printf("FAIL: a load finished while a walk held the flag\n");
+         fails++;
+      }
+      else
+         printf("ok:   the flag-guarded store kept a load waiting on a held walk\n");
+#else
+      if (!done)
+      {
+         printf("FAIL: a load waited on a walk held as it took the store\n");
+         fails++;
+      }
+      else
+         printf("ok:   a load finished while a walk was held taking the store\n");
+#endif
+   }
+#endif
 
    x509_trust_load_pem(x509_root_pem, sizeof(x509_root_pem) - 1);
    if (verify(info, sizeof(info)) != 0)

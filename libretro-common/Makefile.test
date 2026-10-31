@@ -580,6 +580,16 @@ crypto-tsan-check:
 	   $(filter-out test/crypto/test_crypto.c,$(TEST_CRYPTO_SRC)) rthreads/rthreads.c -lpthread -lm \
 	   -o test/crypto/x509_store_threads_test
 	test/crypto/x509_store_threads_test
+	$(CC) -O1 -g -D_GNU_SOURCE -DHAVE_THREADS -DX509_TEST_HOLD_LANE -Iinclude \
+	   test/crypto/x509_store_threads_test.c \
+	   $(filter-out test/crypto/test_crypto.c crypto/x509.c,$(TEST_CRYPTO_SRC)) rthreads/rthreads.c \
+	   -lpthread -lm -o test/crypto/x509_store_threads_test
+	test/crypto/x509_store_threads_test
+	$(CC) -O1 -g -D_GNU_SOURCE -DHAVE_THREADS -DX509_TEST_HOLD_LANE -DX509_STORE_TEST_FLAG -Iinclude \
+	   test/crypto/x509_store_threads_test.c \
+	   $(filter-out test/crypto/test_crypto.c crypto/x509.c,$(TEST_CRYPTO_SRC)) rthreads/rthreads.c \
+	   -lpthread -lm -o test/crypto/x509_store_threads_test
+	test/crypto/x509_store_threads_test
 	rm -f test/crypto/x509_store_threads_test
 
 crypto-mips-check:
