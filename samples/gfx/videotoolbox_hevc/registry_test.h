@@ -71,13 +71,11 @@ static void test_registry_lifetime(void)
    rh265_hw_backend_t foreign;
    registry_race_t work;
    owner_queue_t queue;
-   slock_t *lock = slock_new();
    sthread_t *writer, *reader;
    void *snapshot;
-   assert(lock);
    memset(&queue, 0, sizeof(queue)); memset(&foreign, 0, sizeof(foreign));
    retro_atomic_int_init(&first.refs, 1); retro_atomic_int_init(&second.refs, 1);
-   assert(videotoolbox_hevc_registry_init(&registry, lock, registry_retain,
+   assert(videotoolbox_hevc_registry_init(&registry, registry_retain,
             registry_release, NULL, NULL, owner_enqueue, &queue, true));
    assert(!videotoolbox_hevc_registry_publish(&registry, NULL, &first));
    assert(!registry.backend.hdr_enabled(&registry));
@@ -109,7 +107,6 @@ static void test_registry_lifetime(void)
    assert(!videotoolbox_hevc_registry_is_owner(&registry, &work));
    assert(retro_atomic_load_acquire_int(&first.refs) == 1);
    assert(retro_atomic_load_acquire_int(&second.refs) == 1 && !queue.submitted);
-   slock_free(lock);
    puts("VideoToolbox registry: device replacement, stale withdrawal and 1000 concurrent snapshots passed");
 #endif
 }

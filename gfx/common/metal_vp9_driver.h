@@ -26,16 +26,15 @@ static void metal_vp9_driver_withdraw(void *opaque)
    rvp9_unset_hw_backend(&driver->backend.offer);
 }
 
-/* The renderer supplies its existing setup lock. */
 static INLINE bool metal_vp9_driver_init(metal_vp9_driver_t *driver,
-      slock_t *lock, void *(*retain)(void *), void (*release)(void *),
+      void *(*retain)(void *), void (*release)(void *),
       bool (*enabled)(void *), videotoolbox_vp9_register_t registration,
       const retro_atomic_ptr_t *current_owner)
 {
    if (!driver)
       return false;
    memset(driver, 0, sizeof(*driver));
-   if (!metal_decoder_snapshot_init(&driver->snapshot, lock, retain, release)
+   if (!metal_decoder_snapshot_init(&driver->snapshot, retain, release)
          || !videotoolbox_vp9_backend_init(&driver->backend, &driver->snapshot,
                metal_decoder_snapshot_acquire, release,
                metal_decoder_snapshot_current, enabled, registration,

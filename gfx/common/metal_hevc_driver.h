@@ -46,19 +46,17 @@ static void metal_hevc_enqueue(void *user, void (*run)(void*), void *work)
 }
 static VIDEOTOOLBOX_HEVC_AVAILABLE void metal_hevc_initialize(void *unused)
 {
-   slock_t *lock = slock_new();
    (void)unused;
-   if (!lock) return;
    metal_hevc_retirement_queue = dispatch_queue_create(
          "org.libretro.metal.hevc.retirement", DISPATCH_QUEUE_SERIAL);
    if (!metal_hevc_retirement_queue)
-   { slock_free(lock); return; }
-   if (!videotoolbox_hevc_registry_init(&metal_hevc_registry, lock,
+      return;
+   if (!videotoolbox_hevc_registry_init(&metal_hevc_registry,
             metal_hevc_retain, metal_hevc_release, metal_hevc_decode_enabled,
             NULL, metal_hevc_enqueue, NULL, true))
-   { slock_free(lock); return; }
+      return;
 #ifdef METAL_VP9_DRIVER
-   metal_vp9_driver_init(&metal_hevc_vp9, lock, metal_hevc_retain,
+   metal_vp9_driver_init(&metal_hevc_vp9, metal_hevc_retain,
          metal_hevc_release, metal_hevc_decode_enabled,
          metal_hevc_vp9_registration(), &metal_hevc_registry.owner);
 #endif

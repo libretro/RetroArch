@@ -78,6 +78,14 @@ with tempfile.TemporaryDirectory(prefix="vt-vp9-setup-") as directory:
     subprocess.run(command, check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
                    check=True, timeout=90)
+    # negative: releasing a replaced device at once must be caught
+    command = compiler + flags + ["-DDECODER_DEVICE_SLOT_TEST_RELEASE_EARLY",
+        str(here / "snapshot_test.c"), str(thread_object),
+        "-o", str(binary)] + libraries
+    print("+", shlex.join(command), flush=True)
+    subprocess.run(command, check=True)
+    subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(binary)],
+                   check=True, timeout=90)
 
     if not args.native:
         for name in ("owner_test.c", "decoder_test.c", "dispatch_test.c", "backend_test.c", "driver_test.c"):

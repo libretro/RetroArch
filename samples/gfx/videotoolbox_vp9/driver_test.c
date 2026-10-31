@@ -40,11 +40,10 @@ int main(void)
    rvp9_hw_backend_t foreign;
    retro_atomic_ptr_t current_owner;
    int first, second;
-   slock_t *lock = slock_new();
-   assert(!backend_contract_main() && lock);
+   assert(!backend_contract_main());
    memset(&foreign, 0, sizeof(foreign));
    retro_atomic_ptr_init(&current_owner, &first);
-   assert(metal_vp9_driver_init(&driver, lock, driver_retain, driver_release,
+   assert(metal_vp9_driver_init(&driver, driver_retain, driver_release,
          NULL, NULL, &current_owner));
    assert(metal_vp9_driver_start(&driver, &first, &native_device, false));
    assert(published == &driver.backend.offer && driver_refs == 2);
@@ -64,8 +63,7 @@ int main(void)
    assert(published == &foreign && driver_refs == 2);
    driver_release(held.device);
    assert(driver_refs == 1 && rvp9_unset_hw_backend(&foreign));
-   slock_free(lock);
-   puts("PASS: VP9 Metal lifecycle, borrowed setup lock, late renderer refusal, "
+   puts("PASS: VP9 Metal lifecycle, late renderer refusal, "
         "retained snapshot and foreign offer; host model only");
    return 0;
 }
