@@ -101,6 +101,7 @@ jobs:
             ./vfs_mapped_ptr_test
             ./vfs_v5_metadata_test
             ./vfs_readahead_test
+            ./vfs_close_result_test
           }
           # Mapping on (what the platform actually ships), mapping off
           # with the descriptor path forced (what the consoles have),
@@ -203,6 +204,8 @@ jobs:
           RETRO_VFS_PREFETCH=none ./vfs_readahead_test.exe
           # ... and never on, or stalling, the reader's thread.
           ./vfs_prefetch_offthread_test.exe
+          # The descriptor path's close() result, with PS2's semantics.
+          ./vfs_close_result_test.exe
 
       # The Win64 fastjmp_set stores xmm6-xmm15 with movaps and faults
       # on a misaligned buffer. Linux has no such stores, so the Linux

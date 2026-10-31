@@ -12,6 +12,7 @@ TARGET_TEST8 := vfs_prefetch_test
 TARGET_TEST9 := vfs_readahead_test
 TARGET_TEST10 := vfs_view_test
 TARGET_TEST11 := vfs_prefetch_offthread_test
+TARGET_TEST12 := vfs_close_result_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -33,7 +34,7 @@ OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 	vfs_bulk_read_test.o filestream_rbuf_fault_test.o \
 	vfs_v5_metadata_test.o vfs_rename_replace_test.o \
 	vfs_prefetch_test.o vfs_readahead_test.o vfs_view_test.o \
-	vfs_prefetch_offthread_test.o $(COMMON_OBJS)
+	vfs_prefetch_offthread_test.o vfs_close_result_test.o $(COMMON_OBJS)
 
 # vfs_view_test also hashes through sha1_calculate(), whose dispatch
 # asks features_cpu.c what the CPU has.
@@ -79,6 +80,15 @@ HOOK_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
 RENAME_VFS_OBJ := vfs_implementation_gekko.o
 RENAME_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
 	$(RENAME_VFS_OBJ)
+
+# vfs_close_result_test runs the descriptor path PS2 takes for whole-file
+# reads and writes, so that one target links its own
+# vfs_implementation.o built with -DPS2 (no mmap there either), with
+# every close() in it routed through the test's stand-in for ps2sdk's,
+# which reports the descriptor number on success.
+CLOSE_VFS_OBJ := vfs_implementation_close_hook.o
+CLOSE_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
+	$(CLOSE_VFS_OBJ)
 
 # -DHAVE_MMAP is required for vfs_read_overflow_test to exercise the
 # patched code path; without it the implementation falls back to
@@ -146,7 +156,7 @@ endif
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(TARGET_TEST9) \
-	$(TARGET_TEST10) $(TARGET_TEST11) $(RENAME_TARGET)
+	$(TARGET_TEST10) $(TARGET_TEST11) $(TARGET_TEST12) $(RENAME_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -230,12 +240,19 @@ $(RENAME_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 $(TARGET_TEST7): vfs_rename_replace_test.o $(RENAME_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=rename,--wrap=remove,--wrap=stat
 
+$(CLOSE_VFS_OBJ): $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c close_hook.h
+	$(CC) -c -o $@ $< $(filter-out -DHAVE_MMAP,$(CFLAGS)) -DPS2 \
+		-I. -include close_hook.h
+
+$(TARGET_TEST12): vfs_close_result_test.o $(CLOSE_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
 		$(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9) $(TARGET_TEST10) \
-		$(TARGET_TEST11) \
+		$(TARGET_TEST11) $(TARGET_TEST12) $(CLOSE_VFS_OBJ) \
 		$(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
 		$(RA_VFS_OBJ) $(HOOK_VFS_OBJ) rthreads_ra.o retro_eventcount_ra.o
 	rm -rf v5_meta_dir
@@ -243,6 +260,7 @@ clean:
 	rm -f rbuf_fault.txt vfs_readahead_fixture.bin vfs_prefetch_offthread.bin
 	rm -f vfs_view_fixture.bin vfs_view_update.bin vfs_view_empty.bin
 	rm -f rename_replace.bin rename_replace.bin.old rename_replace.bin.tmp
+	rm -f close_result.bin close_result_w.bin
 	rm -f bulk_select.bin bulk_select_w.bin bulk_roundtrip.bin \
 		bulk_short.bin bulk_shrank.bin bulk_error.bin \
 		bulk_binary.bin bulk_threads.bin

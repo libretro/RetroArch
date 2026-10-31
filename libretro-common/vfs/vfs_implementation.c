@@ -1286,7 +1286,10 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
       if (sceIoClose((SceUID)stream->fd) < 0)
          result = -1;
 #else
-      if (close(stream->fd) != 0)
+      /* Only a negative return is a failure: on PS2, ps2sdk's close()
+       * passes iomanX's result through, which is the closed descriptor
+       * number on success. */
+      if (close(stream->fd) < 0)
          result = -1;
 #endif
    }
