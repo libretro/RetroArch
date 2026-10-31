@@ -2478,9 +2478,17 @@ static const struct
    char s_0cfd4fd0[9];
    char s_d64659c4[9];
    char s_0861dea4[21];
+   char s_fa462638[16];
+   char s_29f97e35[9];
+   char s_569b0627[6];
+   char s_99b1b2f6[8];
+   char s_569b11b0[12];
+   char s_328ddae3[12];
    char s_d7deafe0[26];
    char s_83217fd0[15];
    char s_60258de0[9];
+   char s_5410e874[9];
+   char s_9eb59c3e[12];
    char s_34b2592a[12];
    char s_be406532[24];
    char s_13ce50e1[21];
@@ -2534,6 +2542,7 @@ static const struct
    char s_f387bafb[21];
    char s_2c868ae4[12];
    char s_9c535394[10];
+   char s_3253994e[9];
    char s_c992346c[35];
    char s_580e244f[7];
    char s_a9c8430e[15];
@@ -3772,7 +3781,6 @@ static const struct
    char s_a55bf936[39];
    char s_c519f84d[46];
    char s_48aefa30[39];
-   char s_5d383a58[53];
    char s_dcf8bd8b[49];
    char s_bce9b94f[57];
    char s_d32f5a63[46];
@@ -4527,6 +4535,7 @@ static const struct
    char s_8ab54d62[117];
    char s_aa554847[19];
    char s_ac2c797c[22];
+   char s_c52621db[6];
    char s_c5fee1cb[73];
    char s_3fe94404[5];
    char s_272dccbd[20];
@@ -7470,9 +7479,17 @@ static const struct
    "Combin\303\251",
    "S\303\251par\303\251",
    "Distance de l'\303\251cran",
+   "Mettre en pause",
+   "\303\211lev\303\251e",
+   "Basse",
+   "Moyenne",
+   "D\303\251sactiv\303\251",
+   "D\303\251sactiv\303\251",
    "Sortie du casque (OpenXR)",
    "Pointeur laser",
    "Toujours",
+   "Toujours",
+   "D\303\251sactiv\303\251",
    "D\303\251sactiv\303\251",
    "Emplacement de l'\303\251cran",
    "Fix\303\251 dans la pi\303\250ce",
@@ -7526,6 +7543,7 @@ static const struct
    "Disposition d'\303\251cran",
    "Horizontale",
    "Verticale",
+   "\303\211chelle",
    "Changement de mode d'affichage SDL",
    "Vid\303\251o",
    "Shaders vid\303\251o",
@@ -9678,7 +9696,6 @@ static const struct
    "Afficher les r\303\251glages pour 'Latence'.",
    "Afficher les r\303\251glages pour 'Journalisation'.",
    "Afficher les r\303\251glages pour 'R\303\251seau'.",
-   "Afficher les r\303\251glages pour 'Affichage \303\240 l'\303\251cran'.",
    "Afficher les r\303\251glages pour 'Listes de lecture'.",
    "Afficher les r\303\251glages pour 'Gestion de l'alimentation'.",
    "Afficher les r\303\251glages pour 'Enregistrement'.",
@@ -10799,6 +10816,7 @@ static const struct
    "\303\251 essay\303\251s pour cette entr\303\251e de liste de lecture.",
    "C\305\223urs ignor\303\251s : ",
    "C\305\223urs mis \303\240 jour : ",
+   "Menu ",
    "La sortie du casque n'a pas pu d\303\251marrer. La fen\303\252tre affiche la sortie.",
    "Plat",
    "Pointeur laser : %s",
@@ -11017,7 +11035,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (258012u
+      (sizeof(msg_hash_fr_blob) == (258058u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14046,9 +14064,17 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
@@ -14102,6 +14128,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -15325,7 +15352,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
@@ -16073,6 +16099,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (msg_hash_id_t)MSG_NUM_CORES_LOCKED,
    (msg_hash_id_t)MSG_NUM_CORES_UPDATED,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
    (msg_hash_id_t)MSG_OPENXR_FAILED,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (msg_hash_id_t)MSG_OPENXR_LASER_POINTER,

@@ -342,6 +342,7 @@ static const struct
    char s_f7e279a6[29];
    char s_46f6a65d[9];
    char s_543fcabd[29];
+   char s_c52621db[22];
 } msg_hash_he_blob =
 {
    "\327\242\327\231\327\225\327\237 \327\220\327\227\327\250 \327\234\327\231\327\221\327\224 \327"
@@ -770,13 +771,14 @@ static const struct
    "\327\224\327\227\327\226\327\247",
    "\327\226\327\236\327\237 \327\247\327\246\327\225\327\221 \327\234\327\252\327\244\327\225\327"
    "\222\327\224",
+   "\327\252\327\246\327\225\327\250\327\252 \327\252\327\244\327\250\327\231\327\230",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_he_blob_check[
-      (sizeof(msg_hash_he_blob) == (6516u
+      (sizeof(msg_hash_he_blob) == (6538u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 20u
@@ -1142,4 +1144,5 @@ static const msg_hash_id_t msg_hash_he_ids[] =
    (msg_hash_id_t)MSG_COMPILER,
    (msg_hash_id_t)MSG_INPUT_BIND_HOLD,
    (msg_hash_id_t)MSG_INPUT_BIND_TIMEOUT,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
 };

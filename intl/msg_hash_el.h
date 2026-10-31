@@ -980,6 +980,7 @@ static const struct
    char s_61213f1d[28];
    char s_60258de0[11];
    char s_caf61308[17];
+   char s_5410e874[11];
    char s_c7a27b20[17];
    char s_de16b5d2[23];
    char s_57665cff[13];
@@ -993,6 +994,7 @@ static const struct
    char s_4d7e9b13[30];
    char s_78585119[13];
    char s_69b801ef[38];
+   char s_3253994e[15];
    char s_580e244f[13];
    char s_f5911f43[53];
    char s_552163d9[31];
@@ -1349,6 +1351,7 @@ static const struct
    char s_3f47f1dd[70];
    char s_12552dca[58];
    char s_2dc9eea7[69];
+   char s_c52621db[24];
    char s_07b7b10d[12];
    char s_bd039188[57];
    char s_e43d27b3[60];
@@ -3352,6 +3355,7 @@ static const struct
    "\267\317\202",
    "\316\240\316\254\316\275\317\204\316\261",
    "\316\221\317\205\317\204\317\214\316\274\316\261\317\204\316\277",
+   "\316\240\316\254\316\275\317\204\316\261",
    "\316\221\317\205\317\204\317\214\316\274\316\261\317\204\316\277",
    "\316\246\317\205\317\203\316\271\316\277\316\273\316\277\316\263\316\271\316\272\316\254",
    "\316\210\316\276\316\277\316\264\316\277\317\202",
@@ -3374,6 +3378,7 @@ static const struct
    "\316\210\316\276\317\205\317\200\316\275\316\277",
    "\316\240\317\201\316\277\317\203\316\261\317\201\316\274\316\277\316\263\316\256 \316\274\316"
    "\265\316\263\316\255\316\270\316\277\317\205\317\202",
+   "\316\232\316\273\316\257\316\274\316\261\316\272\316\261",
    "\316\222\316\257\316\275\317\204\316\265\316\277",
    "\316\232\316\261\316\270\317\205\317\203\317\204\316\255\317\201\316\267\317\203\316\267 \316"
    "\261\317\205\317\204\317\214\316\274\316\261\317\204\317\211\316\275 \317\203\316\272\316\271"
@@ -4681,6 +4686,7 @@ static const struct
    "\316\224\316\265\316\275 \317\205\317\200\316\254\317\201\317\207\316\265\316\271 \316\264\316"
    "\257\317\203\316\272\316\277\317\202 \317\203\317\204\316\267 \316\274\316\277\316\275\316\254"
    "\316\264\316\261 \316\264\316\257\317\203\316\272\316\277\317\205.",
+   "\316\237\316\264\316\267\316\263\317\214\317\202 \316\234\316\265\316\275\316\277\317\215",
    "\316\240\316\261\317\215\317\203\316\267.",
    "\316\232\316\261\316\270\316\261\317\201\316\271\317\203\316\274\317\214\317\202 \316\233\316"
    "\257\317\203\317\204\316\261\317\202 \316\240\316\261\316\271\317\207\316\275\316\271\316\264"
@@ -4752,7 +4758,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (68465u
+      (sizeof(msg_hash_el_blob) == (68515u
 #ifdef HAVE_LAKKA
        + 35u
 #endif
@@ -5819,6 +5825,7 @@ static const msg_hash_id_t msg_hash_el_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
@@ -5832,6 +5839,7 @@ static const msg_hash_id_t msg_hash_el_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
@@ -6188,6 +6196,7 @@ static const msg_hash_id_t msg_hash_el_ids[] =
    (msg_hash_id_t)MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
    (msg_hash_id_t)MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    (msg_hash_id_t)MSG_NO_DISC_INSERTED,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
    (msg_hash_id_t)MSG_PAUSED,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,

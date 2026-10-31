@@ -826,6 +826,7 @@ static const struct
    char s_6c1369c6[17];
    char s_4d7e9b13[28];
    char s_69b801ef[16];
+   char s_3253994e[7];
    char s_580e244f[7];
    char s_f5911f43[22];
    char s_55f488d2[31];
@@ -2288,6 +2289,7 @@ static const struct
    "Escala em janela",
    "Escala em n\303\272meros inteiros",
    "Dimensionamento",
+   "Escala",
    "V\303\255deo",
    "Atraso de Auto-Shader",
    "N\303\272mero de passagens de shader",
@@ -3018,7 +3020,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (55113u
+      (sizeof(msg_hash_pt_pt_blob) == (55120u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3935,6 +3937,7 @@ static const msg_hash_id_t msg_hash_pt_pt_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,

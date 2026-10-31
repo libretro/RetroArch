@@ -462,6 +462,7 @@ static const struct
    char s_74e69f4b[80];
    char s_75325963[24];
    char s_f7e279a6[11];
+   char s_c52621db[5];
 } msg_hash_sr_blob =
 {
    "Overrajduj podrazumevani audio ure\304\221aj koji \304\207e koristiti audio drajver. Ovo je neza"
@@ -954,13 +955,14 @@ static const struct
    ".",
    "Podesi \305\241irinu prozora.",
    "Kompilator",
+   "Meni",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12105u
+      (sizeof(msg_hash_sr_blob) == (12110u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -1477,4 +1479,5 @@ static const msg_hash_id_t msg_hash_sr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (msg_hash_id_t)MSG_COMPILER,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
 };

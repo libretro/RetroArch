@@ -97,6 +97,7 @@ static const struct
    char s_d0f27355[9];
    char s_440540f4[17];
    char s_e9fb0749[15];
+   char s_c52621db[9];
 #ifdef HAVE_LAKKA
    char s_6f6d5b5a[12];
 #endif
@@ -186,6 +187,7 @@ static const struct
    "\320\245\320\260\321\202\320\260",
    "\320\230\320\275\321\202\320\265\321\200\320\275\320\265\321\202",
    "\320\231\323\251\320\272\320\273\323\231\320\275\323\231",
+   "\320\234\320\265\320\275\321\216",
 #ifdef HAVE_LAKKA
    "[SSID \320\256\320\272]",
 #endif
@@ -195,7 +197,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tt_blob_check[
-      (sizeof(msg_hash_tt_blob) == (881u
+      (sizeof(msg_hash_tt_blob) == (890u
 #ifdef HAVE_MICROPHONE
        + 17u
 #endif
@@ -303,6 +305,7 @@ static const msg_hash_id_t msg_hash_tt_ids[] =
    (msg_hash_id_t)MSG_ERROR,
    (msg_hash_id_t)MSG_INTERNET,
    (msg_hash_id_t)MSG_LOADING,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MSG_WIFI_EMPTY_SSID,
 #endif

@@ -736,6 +736,7 @@ static const struct
    char s_4b582a0b[37];
    char s_4b582a0c[35];
    char s_60258de0[8];
+   char s_5410e874[8];
    char s_317b17ed[6];
    char s_94c8d15f[6];
    char s_1f66aac3[5];
@@ -1010,6 +1011,7 @@ static const struct
    char s_6933100b[28];
    char s_12552dca[22];
    char s_a181214b[37];
+   char s_c52621db[6];
    char s_bc890b1b[25];
    char s_49a2e6d9[36];
    char s_d6c12228[51];
@@ -1749,6 +1751,7 @@ static const struct
    "Posici\303\263n de los avisos (horizontal)",
    "Posici\303\263n de los avisos (vertical)",
    "Siempre",
+   "Siempre",
    "180\302\272",
    "270\302\272",
    "90\302\272",
@@ -2064,6 +2067,7 @@ static const struct
    "Xuni\303\251stite como xugador %u",
    "Colesti de la partida",
    "Nun hai nenguna miniatura disponible",
+   "Men\303\272",
    "Volvi primir pa colar\342\200\246",
    "Lleendo la primer pista de datos\342\200\246",
    "Est\303\241u del almacenamientu internu: nam\303\241s llectura",
@@ -2080,7 +2084,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24549u
+      (sizeof(msg_hash_ast_blob) == (24563u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2890,6 +2894,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
@@ -3164,6 +3169,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
    (msg_hash_id_t)MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    (msg_hash_id_t)MSG_NO_THUMBNAIL_AVAILABLE,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
    (msg_hash_id_t)MSG_PRESS_AGAIN_TO_QUIT,
    (msg_hash_id_t)MSG_READING_FIRST_DATA_TRACK,
    (msg_hash_id_t)MSG_READ_ONLY,

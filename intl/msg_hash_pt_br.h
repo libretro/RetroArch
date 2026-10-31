@@ -2297,8 +2297,16 @@ static const struct
    char s_4b582a0c[37];
    char s_61213f1d[19];
    char s_95e4b29f[75];
+   char s_fa462638[7];
+   char s_29f97e35[5];
+   char s_569b0627[6];
+   char s_99b1b2f6[7];
+   char s_569b11b0[10];
+   char s_328ddae3[10];
    char s_60258de0[7];
    char s_caf61308[12];
+   char s_5410e874[7];
+   char s_9eb59c3e[10];
    char s_34b2592a[10];
    char s_c7a27b20[12];
    char s_317b17ed[6];
@@ -2341,6 +2349,7 @@ static const struct
    char s_69b801ef[7];
    char s_a40653a7[28];
    char s_52e3d6ea[47];
+   char s_3253994e[7];
    char s_580e244f[7];
    char s_a9c8430e[23];
    char s_f5911f43[36];
@@ -3421,7 +3430,6 @@ static const struct
    char s_a55bf936[42];
    char s_c519f84d[52];
    char s_48aefa30[37];
-   char s_5d383a58[51];
    char s_dcf8bd8b[55];
    char s_bce9b94f[57];
    char s_d32f5a63[43];
@@ -6790,8 +6798,16 @@ static const struct
    "Posi\303\247\303\243o Y da notifica\303\247\303\243o na tela",
    "\303\215ndice de monitor",
    "Habilitar tela cheia sobre o entalhe (\342\200\234notch\342\200\235) em dispositivos Android",
+   "Pausar",
+   "Alta",
+   "Baixa",
+   "M\303\251dia",
+   "Desligado",
+   "Desligado",
    "Sempre",
    "Autom\303\241tico",
+   "Sempre",
+   "Desligado",
    "Desligado",
    "Autom\303\241tico",
    "180\302\272",
@@ -6834,6 +6850,7 @@ static const struct
    "Escala",
    "Sincroniza\303\247\303\243o de Scanline",
    "Simula\303\247\303\243o do rolamento da linha de varredura",
+   "Escala",
    "V\303\255deo",
    "Sombreadores de v\303\255deo",
    "Atraso de sombreadores autom\303\241ticos",
@@ -8444,7 +8461,6 @@ static const struct
    "Mostre as configura\303\247\303\265es da \"Lat\303\252ncia\".",
    "Mostre as configura\303\247\303\265es do \"Registro de eventos\".",
    "Mostre as configura\303\247\303\265es da \"Rede\".",
-   "Mostre as configura\303\247\303\265es da \"Exibi\303\247\303\243o na tela\".",
    "Mostre as configura\303\247\303\265es da \"Listas de reprodu\303\247\303\243o\".",
    "Mostre as configura\303\247\303\265es do \"Gerenciamento de energia\".",
    "Mostre as configura\303\247\303\265es da \"Grava\303\247\303\243o\".",
@@ -9506,7 +9522,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193595u
+      (sizeof(msg_hash_pt_br_blob) == (193613u
 #ifdef ANDROID
        + 352u
 #endif
@@ -12262,8 +12278,16 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
@@ -12306,6 +12330,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -13385,7 +13410,6 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,

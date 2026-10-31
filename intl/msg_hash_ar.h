@@ -1462,6 +1462,7 @@ static const struct
    char s_95e4b29f[82];
    char s_60258de0[11];
    char s_caf61308[13];
+   char s_5410e874[11];
    char s_c7a27b20[13];
    char s_de16b5d2[9];
    char s_57665cff[13];
@@ -1483,6 +1484,7 @@ static const struct
    char s_6c1369c6[26];
    char s_4d7e9b13[16];
    char s_69b801ef[13];
+   char s_3253994e[11];
    char s_580e244f[15];
    char s_a9c8430e[26];
    char s_f5911f43[43];
@@ -2288,6 +2290,7 @@ static const struct
    char s_992592e3[55];
    char s_52d42c75[31];
    char s_a181214b[45];
+   char s_c52621db[15];
    char s_3fe94404[9];
    char s_7b63412e[39];
    char s_e6ffd274[39];
@@ -4838,6 +4841,7 @@ static const struct
    "\331\201\331\212 \330\243\330\254\331\207\330\262\330\251 Android \331\210 iOS",
    "\330\257\330\247\330\246\331\205\330\247",
    "\330\252\331\204\331\202\330\247\330\246\331\212",
+   "\330\257\330\247\330\246\331\205\330\247",
    "\330\252\331\204\331\202\330\247\330\246\331\212",
    "\330\271\330\247\330\257\331\212",
    "\330\247\331\204\331\205\330\256\330\261\330\254",
@@ -4866,6 +4870,7 @@ static const struct
    "\251",
    "\330\271\330\257\330\257 \330\265\330\255\331\212\330\255",
    "\330\247\331\204\331\202\331\212\330\247\330\263",
+   "\331\205\331\202\331\212\330\247\330\263",
    "\330\247\331\204\331\201\331\212\330\257\331\212\331\210",
    "\330\264\330\261\330\247\330\246\330\255 \330\247\331\204\331\201\331\212\330\257\331\212\331"
    "\210",
@@ -7700,6 +7705,7 @@ static const struct
    "\271\330\257.",
    "\331\204\330\247 \330\252\331\210\330\254\330\257 \330\265\331\210\330\261\330\251 \331\205\330"
    "\265\330\272\330\261\330\251 \331\205\330\252\330\247\330\255\330\251",
+   "\330\247\331\204\331\202\330\247\330\246\331\205\330\251",
    "\331\205\330\263\330\267\330\255",
    "\330\256\330\267\330\243 \331\201\331\212 \330\255\331\201\330\270 \330\247\331\204\330\252\330"
    "\254\330\247\331\210\330\262\330\247\330\252.",
@@ -7890,7 +7896,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (106214u
+      (sizeof(msg_hash_ar_blob) == (106251u
 #ifdef HAVE_LAKKA
        + 287u
 #endif
@@ -9551,6 +9557,7 @@ static const msg_hash_id_t msg_hash_ar_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
@@ -9572,6 +9579,7 @@ static const msg_hash_id_t msg_hash_ar_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -10375,6 +10383,7 @@ static const msg_hash_id_t msg_hash_ar_ids[] =
    (msg_hash_id_t)MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
    (msg_hash_id_t)MSG_NO_STATE_HAS_BEEN_LOADED_YET,
    (msg_hash_id_t)MSG_NO_THUMBNAIL_AVAILABLE,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (msg_hash_id_t)MSG_OVERRIDES_ERROR_SAVING,
    (msg_hash_id_t)MSG_OVERRIDES_SAVED_SUCCESSFULLY,

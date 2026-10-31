@@ -2137,8 +2137,13 @@ static const struct
    char s_4b582a0b[27];
    char s_4b582a0c[27];
    char s_95e4b29f[71];
+   char s_fa462638[9];
+   char s_569b11b0[4];
+   char s_328ddae3[4];
    char s_60258de0[7];
    char s_caf61308[12];
+   char s_5410e874[7];
+   char s_9eb59c3e[4];
    char s_34b2592a[4];
    char s_c7a27b20[12];
    char s_317b17ed[6];
@@ -2181,6 +2186,7 @@ static const struct
    char s_69b801ef[8];
    char s_a40653a7[24];
    char s_52e3d6ea[28];
+   char s_3253994e[7];
    char s_f5911f43[23];
    char s_55f488d2[14];
    char s_d5901b68[36];
@@ -3201,7 +3207,6 @@ static const struct
    char s_a55bf936[32];
    char s_c519f84d[31];
    char s_48aefa30[32];
-   char s_5d383a58[42];
    char s_dcf8bd8b[39];
    char s_bce9b94f[38];
    char s_d32f5a63[30];
@@ -6308,8 +6313,13 @@ static const struct
    "OSD Berichten X-as positie",
    "OSD Berichten Y-as positie",
    "Volledig scherm inschakelen over de notch op Android- en iOS-apparaten",
+   "Pauzeren",
+   "UIT",
+   "UIT",
    "Altijd",
    "Automatisch",
+   "Altijd",
+   "UIT",
    "UIT",
    "Automatisch",
    "180\302\272",
@@ -6352,6 +6362,7 @@ static const struct
    "Schalen",
    "Scanlijn Synchronisatie",
    "Rollende scanlijn simulatie",
+   "Schaal",
    "Auto-Shader Vertraging",
    "Shader passes",
    "Voorbeeldweergave Shader Parameters",
@@ -7712,7 +7723,6 @@ static const struct
    "Toon de \"Latentie\" instellingen",
    "Toon de \"Loggen\" instellingen.",
    "Toon de \"Netwerk\" instellingen.",
-   "Toon de \"Onscreen Weergave\" instellingen.",
    "Toon de \"Afspeellijsten\" instellingen.",
    "Toon de \"Energiebeheer\" instellingen.",
    "Toon de \"Opname\" instellingen",
@@ -8638,7 +8648,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (172422u
+      (sizeof(msg_hash_nl_blob) == (172415u
 #ifdef ANDROID
        + 375u
 #endif
@@ -11208,8 +11218,13 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
@@ -11252,6 +11267,7 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -12272,7 +12288,6 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,

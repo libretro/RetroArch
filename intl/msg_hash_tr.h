@@ -2117,8 +2117,13 @@ static const struct
    char s_4b582a0c[24];
    char s_61213f1d[18];
    char s_95e4b29f[69];
+   char s_fa462638[9];
+   char s_29f97e35[8];
+   char s_569b0627[9];
+   char s_99b1b2f6[5];
    char s_60258de0[6];
    char s_caf61308[9];
+   char s_5410e874[6];
    char s_c7a27b20[9];
    char s_317b17ed[11];
    char s_94c8d15f[11];
@@ -2161,6 +2166,7 @@ static const struct
    char s_52e3d6ea[31];
    char s_2c868ae4[6];
    char s_9c535394[6];
+   char s_3253994e[8];
    char s_a9c8430e[22];
    char s_f5911f43[35];
    char s_9017e0d3[26];
@@ -3139,7 +3145,6 @@ static const struct
    char s_a55bf936[34];
    char s_c519f84d[42];
    char s_48aefa30[30];
-   char s_5d383a58[45];
    char s_dcf8bd8b[44];
    char s_bce9b94f[42];
    char s_d32f5a63[33];
@@ -3747,6 +3752,7 @@ static const struct
    char s_8ab54d62[87];
    char s_aa554847[23];
    char s_ac2c797c[28];
+   char s_c52621db[6];
    char s_3fe94404[5];
    char s_80528b14[34];
    char s_eae21890[40];
@@ -6378,8 +6384,13 @@ static const struct
    "Bildirim Konumu (Dikey)",
    "Monit\303\266r \304\260ndeksi",
    "Android ve iOS cihazlarda \303\247entik \303\274zerinde tam ekran\304\261 etkinle\305\237tir",
+   "Duraklat",
+   "Y\303\274ksek",
+   "D\303\274\305\237\303\274k",
+   "Orta",
    "Daima",
    "Otomatik",
+   "Daima",
    "Otomatik",
    "180 derece",
    "270 derece",
@@ -6422,6 +6433,7 @@ static const struct
    "D\303\266nen tarama \303\247izgisi taklidi",
    "Yatay",
    "Dikey",
+   "\303\226l\303\247ek",
    "Video G\303\266lgelendirici",
    "Otomatik G\303\266lgelendirici Gecikmesi",
    "Video G\303\266lgelendiricileri",
@@ -8119,7 +8131,6 @@ static const struct
    "'Gecikme' ayarlar\304\261n\304\261 g\303\266sterin.",
    "'G\303\274nl\303\274k Kayd\304\261' ayarlar\304\261n\304\261 g\303\266sterin.",
    "'A\304\237' ayarlar\304\261n\304\261 g\303\266sterin.",
-   "'Ekran G\303\266r\303\274n\303\274m\303\274' ayarlar\304\261n\304\261 g\303\266sterin.",
    "'Oynatma Listeleri' ayarlar\304\261n\304\261 g\303\266sterin.",
    "'G\303\274\303\247 Y\303\266netimi' ayarlar\304\261n\304\261 g\303\266sterin.",
    "'Kay\304\261t' ayarlar\304\261n\304\261 g\303\266sterin.",
@@ -8979,6 +8990,7 @@ static const struct
    "resim indirmeleri zaten denendi.",
    "Atlanan \303\247ekirdekler: ",
    "\303\207ekirdekler g\303\274ncellendi: ",
+   "Men\303\274",
    "D\303\274z",
    "Klavye kaplamas\304\261 ayarlanmam\304\261\305\237.",
    "Kaydedilemedi. \303\226zelle\305\237tirmeler etkin.",
@@ -9177,7 +9189,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169296u
+      (sizeof(msg_hash_tr_blob) == (169302u
 #ifdef ANDROID
        + 340u
 #endif
@@ -11654,8 +11666,13 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
@@ -11698,6 +11715,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
@@ -12676,7 +12694,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
@@ -13284,6 +13301,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (msg_hash_id_t)MSG_NUM_CORES_LOCKED,
    (msg_hash_id_t)MSG_NUM_CORES_UPDATED,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (msg_hash_id_t)MSG_OSK_OVERLAY_NOT_SET,
    (msg_hash_id_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,

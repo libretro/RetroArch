@@ -2036,7 +2036,12 @@ static const struct
    char s_4b582a0c[28];
    char s_61213f1d[15];
    char s_95e4b29f[100];
+   char s_fa462638[11];
+   char s_29f97e35[8];
+   char s_569b0627[8];
+   char s_99b1b2f6[10];
    char s_60258de0[6];
+   char s_5410e874[6];
    char s_317b17ed[6];
    char s_94c8d15f[6];
    char s_de16b5d2[11];
@@ -2075,6 +2080,7 @@ static const struct
    char s_52e3d6ea[34];
    char s_2c868ae4[15];
    char s_9c535394[13];
+   char s_3253994e[8];
    char s_a9c8430e[14];
    char s_f5911f43[22];
    char s_9017e0d3[14];
@@ -2995,7 +3001,6 @@ static const struct
    char s_a55bf936[31];
    char s_c519f84d[40];
    char s_48aefa30[31];
-   char s_5d383a58[45];
    char s_dcf8bd8b[46];
    char s_bce9b94f[42];
    char s_d32f5a63[31];
@@ -6111,6 +6116,11 @@ static const struct
    "Index monitoru",
    "Povolen\303\255 zobrazen\303\255 na celou obrazovku p\305\231es notifikaci v za\305\231\303\255z"
    "en\303\255ch se syst\303\251mem Android a iOS",
+   "Pozastavit",
+   "Vysok\303\241",
+   "N\303\255zk\303\241",
+   "St\305\231edn\303\255",
+   "V\305\276dy",
    "V\305\276dy",
    "180\302\272",
    "270\302\272",
@@ -6150,6 +6160,7 @@ static const struct
    "Simulace valiv\303\251 skenovac\303\255 linie",
    "Horizont\303\241ln\303\255",
    "Vertik\303\241ln\303\255",
+   "\305\240k\303\241la",
    "Shadery videa",
    "Prodleva auto-shaderu",
    "Shadery videa",
@@ -7791,7 +7802,6 @@ static const struct
    "Zobrazit nastaven\303\255 'Latence'.",
    "Zobrazit nastaven\303\255 'P\305\231ihla\305\241ov\303\241n\303\255'.",
    "Zobrazit nastaven\303\255 'S\303\255\305\245\304\233'.",
-   "Zobrazit nastaven\303\255 'Displeje na obrazovce'.",
    "Zobrazit nastaven\303\255 'Seznamu p\305\231ehr\303\241v\303\241n\303\255'.",
    "Zobrazit nastaven\303\255 'Spr\303\241va nap\303\241jen\303\255'.",
    "Zobrazit nastaven\303\255 'Z\303\241znam'.",
@@ -8794,7 +8804,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (161521u
+      (sizeof(msg_hash_cs_blob) == (161527u
 #ifdef ANDROID
        + 390u
 #endif
@@ -11181,7 +11191,12 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
@@ -11220,6 +11235,7 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
@@ -12140,7 +12156,6 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,

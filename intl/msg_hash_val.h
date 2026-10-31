@@ -704,6 +704,7 @@ static const struct
    char s_c0cae103[28];
    char s_71d52dde[61];
    char s_c6615fcf[34];
+   char s_c52621db[6];
    char s_a7ae1b42[22];
 } msg_hash_val_blob =
 {
@@ -1511,6 +1512,7 @@ static const struct
    "Desconnectat %s del port %u",
    "No ha sigut configurat %s (%u/%u) usant l'opci\303\263 secund\303\240ria",
    "No ha sigut configurat %s (%u/%u)",
+   "Men\303\272",
    "Esperant al client...",
 };
 
@@ -1518,7 +1520,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25414u
+      (sizeof(msg_hash_val_blob) == (25420u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2305,5 +2307,6 @@ static const msg_hash_id_t msg_hash_val_ids[] =
    (msg_hash_id_t)MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
    (msg_hash_id_t)MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
    (msg_hash_id_t)MSG_DEVICE_NOT_CONFIGURED_NR,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 };

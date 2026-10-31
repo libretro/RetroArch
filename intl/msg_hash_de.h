@@ -105,6 +105,8 @@ static const struct
    char s_7607974d[13];
    char s_bdf1165f[28];
    char s_6a15d029[21];
+   char s_3817de39_0[500];
+   char s_3817de39_1[85];
    char s_16ae54ac[304];
    char s_b3e89428[282];
    char s_7af11c30[78];
@@ -859,6 +861,7 @@ static const struct
    char s_aded1e43[41];
    char s_0b32f489[34];
    char s_1c82054d[25];
+   char s_cb11ce3d[42];
    char s_d458f013[30];
    char s_5aa6602e[69];
    char s_6e1d0b9d[21];
@@ -1381,6 +1384,7 @@ static const struct
    char s_62564465[14];
    char s_96e64a19[19];
    char s_af36f3b0[34];
+   char s_dafc36af[29];
    char s_73312855[15];
    char s_e4405788[22];
    char s_6c4b8962[21];
@@ -1482,7 +1486,7 @@ static const struct
    char s_17e361a4[30];
    char s_883e5f82[66];
    char s_e738b2b9[32];
-   char s_1dd231f0[36];
+   char s_1dd231f0[44];
    char s_686b74ae[46];
    char s_92e516dc[25];
    char s_3bc50248[37];
@@ -2003,7 +2007,7 @@ static const struct
    char s_827ceb62[42];
    char s_b191aa47[45];
    char s_71fe510f[38];
-   char s_7201eede[33];
+   char s_7201eede[40];
    char s_091f50ec[11];
    char s_fe3e1d48[33];
    char s_6f16fab3[11];
@@ -2451,9 +2455,16 @@ static const struct
    char s_0cfd4fd0[11];
    char s_d64659c4[9];
    char s_0861dea4[18];
+   char s_29f97e35[5];
+   char s_569b0627[8];
+   char s_99b1b2f6[7];
+   char s_569b11b0[4];
+   char s_328ddae3[4];
    char s_d7deafe0[25];
    char s_83217fd0[13];
    char s_60258de0[6];
+   char s_5410e874[6];
+   char s_9eb59c3e[4];
    char s_34b2592a[4];
    char s_2a1860ac[34];
    char s_be406532[19];
@@ -2512,6 +2523,7 @@ static const struct
    char s_9c535394[9];
    char s_5c12d979[14];
    char s_32cb293c[22];
+   char s_3253994e[11];
    char s_c992346c[32];
    char s_a9c8430e[13];
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
@@ -3011,6 +3023,7 @@ static const struct
    char s_aa771128[486];
    char s_e531c55e[128];
    char s_deab66ee[145];
+   char s_5ce79fca[434];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[37];
    char s_328f4fd8[26];
@@ -3075,6 +3088,8 @@ static const struct
    char s_6da9b571[277];
    char s_c2827177[133];
    char s_09f2837b[244];
+   char s_dac2c1eb_0[500];
+   char s_dac2c1eb_1[43];
    char s_512d7a8b[77];
    char s_2c4c27eb[238];
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
@@ -3455,6 +3470,7 @@ static const struct
    char s_198c91d3[47];
    char s_59508007[61];
    char s_b51b23de[168];
+   char s_eaad2a5d[199];
    char s_4e8c7cc3[56];
    char s_f3f14b36[40];
    char s_721af2d0[39];
@@ -3468,6 +3484,7 @@ static const struct
    char s_7ef3d15a[220];
    char s_a166bef0[72];
    char s_20212574[57];
+   char s_a8acf2d7[345];
    char s_48f7693a[103];
    char s_91a3e1a5[87];
    char s_19a250ff[103];
@@ -3788,7 +3805,6 @@ static const struct
    char s_a55bf936[37];
    char s_c519f84d[46];
    char s_48aefa30[39];
-   char s_5d383a58[48];
    char s_dcf8bd8b[47];
    char s_bce9b94f[48];
    char s_d32f5a63[39];
@@ -4381,6 +4397,7 @@ static const struct
    char s_9e5bd759[42];
    char s_b880bab5[69];
    char s_8d7296ed[38];
+   char s_21580d7c[41];
    char s_fc5e1d2c[49];
    char s_51b22327[53];
    char s_2f6a6e51[22];
@@ -4607,6 +4624,8 @@ static const struct
    char s_8ab54d62[90];
    char s_aa554847[22];
    char s_ac2c797c[21];
+   char s_c52621db[13];
+   char s_b512be06[14];
    char s_c5fee1cb[84];
    char s_7ce002de[20];
    char s_3fe94404[6];
@@ -4922,6 +4941,13 @@ static const struct
    "Shaderdatei.",
    "Shadervoreinstellungsdatei.",
    "Konfigurationsdatei.",
+   "Der Spielmodus erh\303\266ht die Datentr\303\244gerzugriffspriorit\303\244t und fordert \303\274"
+   "ber power-profiles-daemon oder tuned-ppd das Leistungsprofil an. Dadurch k\303\266nnen die Laten"
+   "z verringert, Audioaussetzer behoben und die Leistung verbessert werden. Das Profil wird nur bei"
+   " angeschlossenem Netzteil beibehalten: Beim Trennen des Netzteils wird es freigegeben und beim e"
+   "rneuten Anschlie\303\237en wieder aktiviert.\nAuf Desktop-Distributionen ist keine zus\303\244tz"
+   "liche Software erforderlich. Die Anforderung wird aufgehoben, w",
+   "enn der Spielmodus deaktiviert oder RetroArch beendet wird, auch nach einem Absturz.",
    "Angegebenen Analogstick f\303\274r Steuerkreuz-Eingabe verwenden.\nWenn der Core nativ Analogein"
    "gaben unterst\303\274tzt, wird das Steuerkreuz-Mapping deaktiviert, au\303\237er eine \342\200"
    "\236(Erzwungen)\342\200\234-Option wird gew\303\244hlt.\nWird das Steuerkreuz-Mapping erzwungen,"
@@ -5866,6 +5892,7 @@ static const struct
    "Hotkey-Aktivierungsverz\303\266gerung (Frames)",
    "Hotkey-Ger\303\244tetyp zusammenf\303\274hren",
    "Hotkeys folgen Spieler 1",
+   "Verz\303\266gerung f\303\274r Hotkey-Aktivierung (ms)",
    "Tastatur-Controller-Zuordnung",
    "Ignorierter Controller %04X:%04X (zum erneuten Verwenden ausw\303\244hlen)",
    "Eingabeinformationen",
@@ -6389,6 +6416,7 @@ static const struct
    "Netzwerkspiel",
    "Pausieren zulassen",
    "Slave-Modus f\303\274r Clients zulassen",
+   "Analogsticks synchronisieren",
    "Client sperren",
    "Chatfarbe (Nachricht)",
    "Chatfarbe (Nickname)",
@@ -6490,7 +6518,7 @@ static const struct
    "Cheat-Code-Benachrichtigungen",
    "Benachrichtigungen beim Laden von Konfigurations\303\274berschreibungen",
    "Disc-Steuerungsbenachrichtigung",
-   "Frame-Drosselungsbenachrichtigungen",
+   "Benachrichtigungen f\303\274r Bildratenbegrenzung",
    "Zus\303\244tzliche Netzwerkspiel-Benachrichtigungen",
    "Patch-Benachrichtigungen",
    "Wiederholfrequenz-Benachrichtigungen",
@@ -7019,7 +7047,7 @@ static const struct
    "Status speichern: Automatisches Intervall",
    "Status speichern: Index automatisch erh\303\266hen",
    "Status speichern: Automatisches Laden",
-   "Status speichern: Auto speichern",
+   "Status speichern: Automatisch speichern",
    "Savestates",
    "Zustand speichern: Komprimierung",
    "Savestates",
@@ -7469,9 +7497,16 @@ static const struct
    "Kombiniert",
    "Getrennt",
    "Bildschirmabstand",
+   "Hoch",
+   "Niedrig",
+   "Mittel",
+   "Aus",
+   "Aus",
    "Headset-Ausgabe (OpenXR)",
    "Laserpointer",
    "Immer",
+   "Immer",
+   "Aus",
    "Aus",
    "Leistungssteigerung f\303\274r Headsets",
    "Bildschirmposition",
@@ -7530,6 +7565,7 @@ static const struct
    "Vertikal",
    "Bildschirm %u",
    "Bildschirm %u Display",
+   "Skalierung",
    "Umschalten des SDL-Anzeigemodus",
    "Video-Shader",
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
@@ -8236,6 +8272,11 @@ static const struct
    "ideo in separatem Thread\342\200\234 ausgeschaltet ist.",
    "Die Protokollierungsstufe f\303\274rs Frontend festlegen. Wenn die Stufe, die vom Frontend gemel"
    "det wird, unter diesem Wert liegt, wird sie ignoriert.",
+   "Die Datentr\303\244gerzugriffspriorit\303\244t von RetroArch wird erh\303\266ht und das Leistung"
+   "sprofil des Systems (\303\274ber power-profiles-daemon oder tuned-ppd) wird beibehalten. Dadurch"
+   " k\303\266nnen die Leistung verbessert, die Latenz verringert und Audioaussetzer behoben werden."
+   " Das Leistungsprofil wird nur bei angeschlossenem Netzteil angewendet. Beim Deaktivieren des Spi"
+   "elmodus oder Beenden von RetroArch wird das vorherige Profil wiederhergestellt.",
 #ifdef HAVE_GAME_AI
    "KI-Spieler \303\274berschreiben Unterlabel",
    "Spieler 01 \303\274berschreiben",
@@ -8357,6 +8398,13 @@ static const struct
    "Hotkeys sind an Core-Port 1 gebunden, auch wenn Core-Port 1 einem anderen Benutzer zugewiesen wu"
    "rde. Hinweis: Tastatur-Hotkeys funktionieren nicht, wenn Core-Port 1 einem Benutzer > 1 zugewies"
    "en wurde (Tastatureingaben stammen von Benutzer 1).",
+   "Wenn \342\200\236Hotkey-Aktivierung\342\200\234 zugleich eine Spieltaste ist (z. B. \342\200\236"
+   "Select\342\200\234), wird sie dem Spiel erst \303\274bergeben, wenn feststeht, dass sie nicht f"
+   "\303\274r einen Hotkey verwendet wird: Ein Antippen ohne Hotkey wird beim Loslassen an das Spiel"
+   " weitergegeben und zwar so lange, wie die Taste gedr\303\274ckt gehalten wurde. Bei l\303\244nge"
+   "rem Dr\303\274cken wird sie nach Ablauf dieser Millisekundenanzahl an das Spiel weitergegeben, s"
+   "ofern kein Hotkey verwendet wurde. Bei Verwendung mit einem Hotkey erh\303\244lt das Spiel di",
+   "e Taste nie. 0 deaktiviert diese Funktion.",
    "Den Controller in jedem Port und die dort verwendete Konfiguration anzeigen.",
    "Controller-Eingaben akzeptieren, auch wenn RetroArch nicht das aktive Fenster ist. Wenn deaktivi"
    "ert, werden Controller ignoriert, solange sie nicht im Fokus sind: Men\303\274, Tastenkombinatio"
@@ -9015,6 +9063,9 @@ static const struct
    "Spielern erlauben, w\303\244hrend des Netzwerkspiels zu pausieren.",
    "Verbindungen im Slave-Modus zulassen. Slave-Modus-Clients ben\303\266tigen auf beiden Seiten nur"
    " sehr wenig Rechenleistung, leiden jedoch erheblich unter der Netzwerklatenz.",
+   "Sendet die Analogsticks der Joypad-Ports zusammen mit deren Tasten. Spieler mit \303\244lteren R"
+   "etroArch-Versionen k\303\266nnen nicht an der Netwerkspiel-Sitzung teilnehmen, solange diese Opt"
+   "ion aktiviert ist.",
    "Einen Client aus dem aktuell gehosteten Raum verbannen.",
    "Format (Nachricht): #RRGGBB oder RRGGBB",
    "Format (Nickname): #RRGGBB oder RRGGBB",
@@ -9032,6 +9083,11 @@ static const struct
    "hersehbare Eingabeverz\303\266gerungen.",
    "Die Adresse des Hosts, mit dem eine Verbindung hergestellt werden soll.",
    "Einen Client aus dem aktuell gehosteten Raum schmei\303\237en.",
+   "Jeden Frame erst ausf\303\274hren, wenn die Eingaben aller Spieler daf\303\274r eingetroffen sin"
+   "d, anstatt Eingaben vorauszuberechnen und anschlie\303\237end zur\303\274ckzusetzen. Es wird nur"
+   " ein einziger Speicherzustand gespeichert, nicht f\303\274r jeden Frame ein eigener. Bei Cores, "
+   "deren Zust\303\244nde zu gro\303\237 zum Zur\303\274cksetzen sind, wird diese Methode ohnehin ve"
+   "rwendet.",
    "Die maximale Anzahl aktiver Verbindungen, die der Host akzeptiert, bevor er neue Verbindungen ab"
    "lehnt.",
    "Die maximale Verbindungslatenz (Ping), die der Host akzeptiert. 0 bedeutet kein Limit.",
@@ -9559,7 +9615,6 @@ static const struct
    "Die \"Latenz\"-Einstellungen anzeigen.",
    "Die \"Protokollierung\"-Einstellungen anzeigen.",
    "Die \"Netzwerk\"-Einstellungen anzeigen.",
-   "Die \"Bildschirmanzeige\"-Einstellungen anzeigen.",
    "Die \"Wiedergabelisten\"-Einstellungen anzeigen.",
    "Die \"Energieverwaltung\"-Einstellungen anzeigen.",
    "Die \"Aufnahme\"-Einstellungen anzeigen.",
@@ -10501,6 +10556,7 @@ static const struct
    "Fehler beim Erstellen des Verzeichnisses.",
    "Die Deaktivierung der Prozessor-Leerlaufzust\303\244nde ist fehlgeschlagen",
    "GameMode kann nicht aufgerufen werden",
+   "Spielmodus konnte nicht aktiviert werden",
    "Fehler beim Entpacken des Inhalts aus dem Archiv",
    "Benutzername konnte vom Client nicht gelesen werden.",
    "Laden fehlgeschlagen.",
@@ -10747,6 +10803,8 @@ static const struct
    "ucht.",
    "Cores \303\274bersprungen: ",
    "Cores aktualisiert: ",
+   "Men\303\274treiber",
+   "Bildschirm %u",
    "Die Headsetausgabe konnte nicht gestartet werden. Das Fenster zeigt die Ausgabe an.",
    "Headset-Ansicht: %s",
    "Flach",
@@ -10955,7 +11013,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (247110u
+      (sizeof(msg_hash_de_blob) == (249371u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11636,6 +11694,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -12386,6 +12445,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_TAP_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_IGNORED_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION,
@@ -12908,6 +12968,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ANALOG_JOYPADS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
@@ -13977,9 +14038,16 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PERF_BOOST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT,
@@ -14038,6 +14106,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
@@ -14528,6 +14597,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
@@ -14592,6 +14662,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_TAP_DELAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
@@ -14971,6 +15042,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_ANALOG_JOYPADS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_BAN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME,
@@ -14984,6 +15056,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_LOCKSTEP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
@@ -15304,7 +15377,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
@@ -15886,6 +15958,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (msg_hash_id_t)MSG_FAILED_TO_DISABLE_IDLE_STATES,
    (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE,
+   (msg_hash_id_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (msg_hash_id_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (msg_hash_id_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    (msg_hash_id_t)MSG_FAILED_TO_LOAD,
@@ -16112,6 +16185,8 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (msg_hash_id_t)MSG_NUM_CORES_LOCKED,
    (msg_hash_id_t)MSG_NUM_CORES_UPDATED,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_SCREEN,
    (msg_hash_id_t)MSG_OPENXR_FAILED,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,

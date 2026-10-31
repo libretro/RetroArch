@@ -570,6 +570,7 @@ static const struct
    char s_59f183c9[33];
    char s_b45e4c28[36];
    char s_61213f1d[26];
+   char s_99b1b2f6[11];
    char s_caf61308[13];
    char s_c7a27b20[13];
    char s_57665cff[11];
@@ -806,6 +807,7 @@ static const struct
    char s_46f6a65d[11];
    char s_543fcabd[20];
    char s_03c57bc8[20];
+   char s_c52621db[11];
    char s_1a5c880d[20];
 } msg_hash_fa_blob =
 {
@@ -1661,6 +1663,7 @@ static const struct
    "\267 \330\250\330\247 GPU",
    "\330\247\331\206\330\257\333\214\330\263 \331\206\331\205\330\247\333\214\330\264\332\257\330"
    "\261",
+   "\331\205\330\252\331\210\330\263\330\267",
    "\330\256\331\210\330\257\332\251\330\247\330\261",
    "\330\256\331\210\330\257\332\251\330\247\330\261",
    "\330\256\330\261\331\210\330\254\333\214",
@@ -2356,6 +2359,7 @@ static const struct
    "\330\252\330\271\331\204\333\214\331\202",
    "\330\247\330\252\331\205\330\247\331\205 \331\205\331\207\331\204\330\252",
    "\330\257\330\263\330\252\332\257\330\247\331\207\342\200\214\331\207\330\247",
+   "\331\201\331\207\330\261\330\263\330\252",
    "\330\264\333\214\330\247\330\261 \331\210\330\266\330\271\333\214\330\252",
 };
 
@@ -2363,7 +2367,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fa_blob_check[
-      (sizeof(msg_hash_fa_blob) == (27978u
+      (sizeof(msg_hash_fa_blob) == (28000u
 #ifdef HAVE_LAKKA
        + 13u
 #endif
@@ -3010,6 +3014,7 @@ static const msg_hash_id_t msg_hash_fa_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
@@ -3246,5 +3251,6 @@ static const msg_hash_id_t msg_hash_fa_ids[] =
    (msg_hash_id_t)MSG_INPUT_BIND_HOLD,
    (msg_hash_id_t)MSG_INPUT_BIND_TIMEOUT,
    (msg_hash_id_t)MSG_NETPLAY_CLIENT_DEVICES,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
    (msg_hash_id_t)MSG_STATE_SLOT,
 };

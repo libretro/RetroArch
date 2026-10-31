@@ -2408,8 +2408,16 @@ static const struct
    char s_4b582a0c[24];
    char s_61213f1d[16];
    char s_95e4b29f[71];
+   char s_fa462638[6];
+   char s_29f97e35[7];
+   char s_569b0627[6];
+   char s_99b1b2f6[8];
+   char s_569b11b0[12];
+   char s_328ddae3[12];
    char s_60258de0[7];
    char s_caf61308[13];
+   char s_5410e874[7];
+   char s_9eb59c3e[12];
    char s_34b2592a[12];
    char s_c7a27b20[13];
    char s_317b17ed[11];
@@ -2456,6 +2464,7 @@ static const struct
    char s_52e3d6ea[26];
    char s_2c868ae4[8];
    char s_9c535394[8];
+   char s_3253994e[6];
    char s_c992346c[39];
    char s_580e244f[6];
    char s_a9c8430e[14];
@@ -3612,7 +3621,6 @@ static const struct
    char s_a55bf936[34];
    char s_c519f84d[28];
    char s_48aefa30[27];
-   char s_5d383a58[42];
    char s_dcf8bd8b[30];
    char s_bce9b94f[45];
    char s_d32f5a63[32];
@@ -7146,8 +7154,16 @@ static const struct
    "Indeks monitora",
    "W\305\202\304\205cz pe\305\202ny ekran nad wyci\304\231ciem na urz\304\205dzeniach z Androidem i"
    " iOS",
+   "Pauza",
+   "Wysoki",
+   "Niski",
+   "\305\232redni",
+   "Wy\305\202\304\205czony",
+   "Wy\305\202\304\205czony",
    "Zawsze",
    "Automatyczny",
+   "Zawsze",
+   "Wy\305\202\304\205czony",
    "Wy\305\202\304\205czony",
    "Automatyczny",
    "180 stopni",
@@ -7195,6 +7211,7 @@ static const struct
    "Symulacja prze\305\233wietlania",
    "Poziomo",
    "Pionowo",
+   "Skala",
    "Prze\305\202\304\205czanie trybu wy\305\233wietlania SDL",
    "Wideo",
    "Shadery Video",
@@ -9049,7 +9066,6 @@ static const struct
    "Poka\305\274 ustawienia \"op\303\263\305\272nienia\".",
    "Poka\305\274 ustawienia \"Log\303\263w\".",
    "Poka\305\274 ustawienia \"Sie\304\207\".",
-   "Poka\305\274 ustawienia 'Nak\305\202adka na ekranie'.",
    "Poka\305\274 ustawienia 'Playlist'.",
    "Poka\305\274 ustawienia 'Zarz\304\205dzanie zasilaniem'.",
    "Poka\305\274 ustawienia 'Nagrywanie'.",
@@ -10209,7 +10225,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (199672u
+      (sizeof(msg_hash_pl_blob) == (199706u
 #ifdef ANDROID
        + 385u
 #endif
@@ -13120,8 +13136,16 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
@@ -13168,6 +13192,7 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -14321,7 +14346,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,

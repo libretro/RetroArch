@@ -233,6 +233,7 @@ static const struct
    char s_aa9bc75d[23];
    char s_601c8e22[49];
    char s_3ddc67cc[49];
+   char s_fa462638[11];
    char s_57665cff[11];
    char s_78585119[25];
    char s_580e244f[11];
@@ -291,6 +292,7 @@ static const struct
    char s_f7e279a6[21];
    char s_46f6a65d[13];
    char s_543fcabd[15];
+   char s_c52621db[9];
 } msg_hash_bg_blob =
 {
    "\320\237\321\200\320\265\320\263\320\273\320\265\320\264\320\260\320\271 \320\262 Libretro \320"
@@ -656,6 +658,7 @@ static const struct
    "\207\320\265\320\275 \320\276\320\261\321\205\320\262\320\260\321\202 (HDR)",
    "\320\222\320\270\321\201\320\276\320\272 \320\264\320\270\320\275\320\260\320\274\320\270\321"
    "\207\320\265\320\275 \320\276\320\261\321\205\320\262\320\260\321\202 (HDR)",
+   "\320\237\320\260\321\203\320\267\320\260",
    "\320\230\320\267\321\205\320\276\320\264",
    "\320\230\320\275\321\202\320\265\320\273\320\270\320\263\320\265\320\275\321\202\320\265\320\275",
    "\320\222\320\270\320\264\320\265\320\276",
@@ -855,13 +858,14 @@ static const struct
    "\320\232\320\276\320\274\320\277\320\270\320\273\320\260\321\202\320\276\321\200",
    "\320\227\320\260\320\264\321\200\321\212\320\266",
    "\320\242\320\260\320\271\320\274\320\260\321\203\321\202",
+   "\320\234\320\265\320\275\321\216",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_bg_blob_check[
-      (sizeof(msg_hash_bg_blob) == (10708u
+      (sizeof(msg_hash_bg_blob) == (10728u
 #ifdef HAVE_MIST
        + 34u
        + 38u
@@ -1112,6 +1116,7 @@ static const msg_hash_id_t msg_hash_bg_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -1170,4 +1175,5 @@ static const msg_hash_id_t msg_hash_bg_ids[] =
    (msg_hash_id_t)MSG_COMPILER,
    (msg_hash_id_t)MSG_INPUT_BIND_HOLD,
    (msg_hash_id_t)MSG_INPUT_BIND_TIMEOUT,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
 };

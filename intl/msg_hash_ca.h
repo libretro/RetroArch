@@ -2465,10 +2465,19 @@ static const struct
    char s_0cfd4fd0[9];
    char s_d64659c4[8];
    char s_0861dea4[26];
+   char s_fa462638[10];
+   char s_29f97e35[4];
+   char s_569b0627[5];
+   char s_99b1b2f6[4];
+   char s_569b11b0[7];
+   char s_dabe7811[5];
+   char s_328ddae3[7];
    char s_d7deafe0[26];
    char s_83217fd0[14];
    char s_60258de0[7];
    char s_caf61308[11];
+   char s_5410e874[7];
+   char s_9eb59c3e[7];
    char s_34b2592a[7];
    char s_2a1860ac[39];
    char s_be406532[24];
@@ -2527,6 +2536,7 @@ static const struct
    char s_52e3d6ea[47];
    char s_f387bafb[27];
    char s_2c868ae4[12];
+   char s_3253994e[7];
    char s_c992346c[30];
    char s_580e244f[7];
    char s_a9c8430e[18];
@@ -3762,7 +3772,6 @@ static const struct
    char s_a55bf936[37];
    char s_c519f84d[36];
    char s_48aefa30[34];
-   char s_5d383a58[46];
    char s_dcf8bd8b[56];
    char s_bce9b94f[46];
    char s_d32f5a63[42];
@@ -4531,6 +4540,7 @@ static const struct
    char s_8ab54d62[111];
    char s_aa554847[16];
    char s_ac2c797c[22];
+   char s_c52621db[6];
    char s_c5fee1cb[69];
    char s_7ce002de[25];
    char s_3fe94404[4];
@@ -7422,10 +7432,19 @@ static const struct
    "Combinat",
    "Separat",
    "Dist\303\240ncia de la pantalla",
+   "Fer pausa",
+   "Alt",
+   "Baix",
+   "Mig",
+   "Apagat",
+   "90\302\272",
+   "Apagat",
    "Sortida del casc (OpenXR)",
    "Punter L\303\240ser",
    "Sempre",
    "Autom\303\240tic",
+   "Sempre",
+   "Apagat",
    "Apagat",
    "Potenciar el rendiment per les ulleres",
    "Posici\303\263 de la pantalla",
@@ -7484,6 +7503,7 @@ static const struct
    "Simulaci\303\263 de la l\303\255nia d'escaneig en moviment",
    "Disposici\303\263 de la pantalla",
    "Horitzontal",
+   "Escala",
    "Mostra el mode d'alternar SDL",
    "V\303\255deo",
    "Shaders de V\303\255deo",
@@ -9495,7 +9515,6 @@ static const struct
    "Mostra les opcions de \302\253Lat\303\250ncia\302\273.",
    "Mostra les opcions de \302\253Registre\302\273.",
    "Mostra la configuraci\303\263 de xarxa.",
-   "Mostra l'opci\303\263 'Visualitzaci\303\263 en pantalla'.",
    "Mostra la configuraci\303\263 de les llistes de reproducci\303\263.",
    "Mostra la configuraci\303\263 de 'Gesti\303\263 energia'.",
    "Mostra la configuraci\303\263 d'enregistrament.",
@@ -10595,6 +10614,7 @@ static const struct
    "sta de reproducci\303\263.",
    "Nuclis omesos: ",
    "Nuclis actualitzats: ",
+   "Men\303\272",
    "La sortida al casc no es pot iniciar. La finestra mostra la sortida.",
    "Vista de les ulleres: %s",
    "Pla",
@@ -10814,7 +10834,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (243313u
+      (sizeof(msg_hash_ca_blob) == (243336u
 #ifdef ANDROID
        + 281u
 #endif
@@ -13829,10 +13849,19 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_90,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PERF_BOOST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT,
@@ -13891,6 +13920,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -15118,7 +15148,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
@@ -15882,6 +15911,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (msg_hash_id_t)MSG_NUM_CORES_LOCKED,
    (msg_hash_id_t)MSG_NUM_CORES_UPDATED,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
    (msg_hash_id_t)MSG_OPENXR_FAILED,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,

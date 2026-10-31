@@ -245,6 +245,8 @@ static const struct
    char s_ce997004[11];
 #endif
    char s_aa9bc75d[11];
+   char s_29f97e35[7];
+   char s_569b0627[6];
    char s_57665cff[6];
    char s_50eb4c56[7];
    char s_c2280f28[6];
@@ -299,6 +301,7 @@ static const struct
    char s_46c57dde[55];
    char s_6e9f0493[55];
    char s_f7e279a6[11];
+   char s_c52621db[9];
    char s_3fe94404[13];
 } msg_hash_hr_blob =
 {
@@ -533,6 +536,8 @@ static const struct
    "Bilinearno",
 #endif
    "Automatski",
+   "Visoka",
+   "Niska",
    "Izlaz",
    "Visoka",
    "Niska",
@@ -590,6 +595,7 @@ static const struct
    "Instaliraj ili vrati jezgru iz mape \342\200\236Preuzimanja\342\200\235.",
    "A\305\276uriraj sve instalirane jezgre na najnoviju verziju.",
    "Prevodilac",
+   "Izbornik",
    "Ravno (Flat)",
 };
 
@@ -597,7 +603,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
-      (sizeof(msg_hash_hr_blob) == (4255u
+      (sizeof(msg_hash_hr_blob) == (4277u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -872,6 +878,8 @@ static const msg_hash_id_t msg_hash_hr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
@@ -926,5 +934,6 @@ static const msg_hash_id_t msg_hash_hr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
    (msg_hash_id_t)MSG_COMPILER,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
 };

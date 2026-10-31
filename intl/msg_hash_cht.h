@@ -2063,8 +2063,13 @@ static const struct
    char s_4b582a0c[22];
    char s_61213f1d[16];
    char s_95e4b29f[54];
+   char s_fa462638[7];
+   char s_29f97e35[4];
+   char s_569b0627[4];
+   char s_99b1b2f6[7];
    char s_60258de0[13];
    char s_caf61308[7];
+   char s_5410e874[13];
    char s_c7a27b20[7];
    char s_317b17ed[7];
    char s_94c8d15f[7];
@@ -2108,6 +2113,7 @@ static const struct
    char s_78585119[10];
    char s_f57f6158[10];
    char s_69b801ef[7];
+   char s_3253994e[7];
    char s_580e244f[7];
    char s_a9c8430e[16];
    char s_f5911f43[22];
@@ -2996,7 +3002,6 @@ static const struct
    char s_a55bf936[28];
    char s_c519f84d[34];
    char s_48aefa30[28];
-   char s_5d383a58[85];
    char s_dcf8bd8b[28];
    char s_bce9b94f[34];
    char s_d32f5a63[28];
@@ -3534,6 +3539,7 @@ static const struct
    char s_52d42c75[28];
    char s_a181214b[19];
    char s_8ab54d62[58];
+   char s_c52621db[13];
    char s_3fe94404[7];
    char s_80528b14[25];
    char s_eae21890[39];
@@ -6585,8 +6591,13 @@ static const struct
    "\351\241\257\347\244\272\345\231\250\351\205\215\347\275\256",
    "\347\200\217\346\265\267\350\236\242\345\271\225\351\226\213\345\225\237\345\205\250\350\236\242"
    "\345\271\225 (Android \350\210\207 iOS \350\243\235\347\275\256 )",
+   "\346\232\253\345\201\234",
+   "\351\253\230",
+   "\344\275\216",
+   "\344\270\255\351\200\237",
    "\345\205\250\351\203\250\345\210\227\350\241\250",
    "\350\207\252\345\213\225",
+   "\345\205\250\351\203\250\345\210\227\350\241\250",
    "\350\207\252\345\213\225",
    "180\345\272\246",
    "270\345\272\246",
@@ -6637,6 +6648,7 @@ static const struct
    "\346\234\200\345\244\247\345\214\226",
    "\346\231\272\350\203\275\345\236\213",
    "\346\234\200\345\260\217\345\214\226",
+   "\347\270\256\346\224\276",
    "\347\270\256\346\224\276",
    "\351\241\257\347\244\272",
    "\351\226\213\345\225\237\350\221\227\350\211\262\345\231\250",
@@ -9041,10 +9053,6 @@ static const struct
    "\351\201\270\351\240\205\343\200\202",
    "\351\241\257\347\244\272\343\200\214\347\266\262\350\267\257\343\200\215\351\201\270\351\240\205"
    "\343\200\202",
-   "\345\234\250\343\200\214\350\250\255\345\256\232/\351\201\270\345\226\256\343\200\215\351\201"
-   "\270\351\240\205\344\270\255, \351\241\257\347\244\272\343\200\214\350\236\242\345\271\225\351"
-   "\200\232\347\237\245\343\200\215\343\200\214\350\236\242\345\271\225\350\246\206\350\223\213\343"
-   "\200\215\351\201\270\351\240\205\343\200\202",
    "\351\241\257\347\244\272\343\200\214\345\210\227\350\241\250\343\200\215\351\201\270\351\240\205"
    "\343\200\202",
    "\351\241\257\347\244\272\343\200\214\351\233\273\346\272\220\347\256\241\347\220\206\343\200\215"
@@ -10200,6 +10208,7 @@ static const struct
    "\345\267\262\347\202\272\346\255\244\345\210\227\350\241\250\345\230\227\350\251\246\346\211\200"
    "\346\234\211\345\217\257\350\203\275\347\232\204\351\240\220\350\246\275\347\270\256\345\234\226"
    "\344\270\213\350\274\211\343\200\202",
+   "\351\201\270\345\226\256\344\270\273\351\241\214",
    "\345\226\256\350\252\277",
    "\346\234\252\350\250\255\345\256\232\350\231\233\346\223\254\351\215\265\347\233\244\343\200\202",
    "\346\234\252\345\204\262\345\255\230\345\260\210\347\224\250\344\270\273\351\241\214, \345\224"
@@ -10462,7 +10471,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cht_blob_check[
-      (sizeof(msg_hash_cht_blob) == (120279u
+      (sizeof(msg_hash_cht_blob) == (120249u
 #ifdef ANDROID
        + 157u
 #endif
@@ -12830,8 +12839,13 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
@@ -12875,6 +12889,7 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -13763,7 +13778,6 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
@@ -14301,6 +14315,7 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MSG_NO_STATE_HAS_BEEN_LOADED_YET,
    (msg_hash_id_t)MSG_NO_THUMBNAIL_AVAILABLE,
    (msg_hash_id_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (msg_hash_id_t)MSG_OSK_OVERLAY_NOT_SET,
    (msg_hash_id_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,

@@ -2461,8 +2461,16 @@ static const struct
    char s_95e4b29f[69];
    char s_0cfd4fd0[7];
    char s_d64659c4[7];
+   char s_fa462638[13];
+   char s_29f97e35[7];
+   char s_569b0627[7];
+   char s_99b1b2f6[7];
+   char s_569b11b0[4];
+   char s_328ddae3[4];
    char s_60258de0[7];
    char s_caf61308[7];
+   char s_5410e874[7];
+   char s_9eb59c3e[4];
    char s_34b2592a[4];
    char s_13ce50e1[14];
    char s_8dfe8b04[14];
@@ -2515,6 +2523,7 @@ static const struct
    char s_9c535394[7];
    char s_5c12d979[10];
    char s_32cb293c[26];
+   char s_3253994e[7];
    char s_c992346c[37];
    char s_580e244f[10];
    char s_a9c8430e[20];
@@ -3720,7 +3729,6 @@ static const struct
    char s_a55bf936[42];
    char s_c519f84d[36];
    char s_48aefa30[42];
-   char s_5d383a58[58];
    char s_dcf8bd8b[42];
    char s_bce9b94f[43];
    char s_d32f5a63[36];
@@ -4458,6 +4466,8 @@ static const struct
    char s_8ab54d62[94];
    char s_aa554847[19];
    char s_ac2c797c[25];
+   char s_c52621db[20];
+   char s_b512be06[10];
    char s_3fe94404[7];
    char s_80528b14[56];
    char s_eae21890[52];
@@ -8777,8 +8787,16 @@ static const struct
    "\231\234\354\204\261\355\231\224",
    "\355\206\265\355\225\251",
    "\353\266\204\353\246\254",
+   "\354\235\274\354\213\234\354\240\225\354\247\200",
+   "\353\206\222\354\235\214",
+   "\353\202\256\354\235\214",
+   "\354\244\221\352\260\204",
+   "\353\201\224",
+   "\353\201\224",
    "\355\225\255\354\203\201",
    "\354\236\220\353\217\231",
+   "\355\225\255\354\203\201",
+   "\353\201\224",
    "\353\201\224",
    "\352\263\265\352\260\204 \352\263\240\354\240\225",
    "\353\250\270\353\246\254 \354\266\224\354\240\201",
@@ -8840,6 +8858,7 @@ static const struct
    "\354\204\270\353\241\234",
    "\355\231\224\353\251\264 %u",
    "\355\231\224\353\251\264 %u \353\224\224\354\212\244\355\224\214\353\240\210\354\235\264",
+   "\355\201\254\352\270\260",
    "SDL \353\224\224\354\212\244\355\224\214\353\240\210\354\235\264 \353\252\250\353\223\234 \354"
    "\212\244\354\234\204\354\271\255",
    "\353\271\204\353\224\224\354\230\244",
@@ -13537,9 +13556,6 @@ static const struct
    "\251\353\213\210\353\213\244.",
    "'\353\204\244\355\212\270\354\233\214\355\201\254' \354\204\244\354\240\225\354\235\204 \355\221"
    "\234\354\213\234\355\225\251\353\213\210\353\213\244.",
-   "'\354\230\250\354\212\244\355\201\254\353\246\260 \353\224\224\354\212\244\355\224\214\353\240"
-   "\210\354\235\264' \354\204\244\354\240\225\354\235\204 \355\221\234\354\213\234\355\225\251\353"
-   "\213\210\353\213\244.",
    "'\354\213\244\355\226\211\353\252\251\353\241\235' \354\204\244\354\240\225\354\235\204 \355\221"
    "\234\354\213\234\355\225\251\353\213\210\353\213\244.",
    "'\354\240\204\353\240\245 \352\264\200\353\246\254' \354\204\244\354\240\225\354\235\204 \355"
@@ -15847,6 +15863,8 @@ static const struct
    "\354\235\264 \354\227\206\354\212\265\353\213\210\353\213\244.",
    "\352\261\264\353\204\210\353\233\264 \354\275\224\354\226\264: ",
    "\354\227\205\353\215\260\354\235\264\355\212\270\353\220\234 \354\275\224\354\226\264: ",
+   "\353\251\224\353\211\264 \353\223\234\353\235\274\354\235\264\353\262\204",
+   "\355\231\224\353\251\264 %u",
    "\355\224\214\353\236\253",
    "\355\202\244\353\263\264\353\223\234 \354\230\244\353\262\204\353\240\210\354\235\264\352\260"
    "\200 \354\204\244\354\240\225\353\220\230\354\247\200 \354\225\212\354\225\230\354\212\265\353"
@@ -16217,7 +16235,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ko_blob_check[
-      (sizeof(msg_hash_ko_blob) == (229264u
+      (sizeof(msg_hash_ko_blob) == (229296u
 #ifdef ANDROID
        + 436u
 #endif
@@ -19148,8 +19166,16 @@ static const msg_hash_id_t msg_hash_ko_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FOLLOW,
@@ -19202,6 +19228,7 @@ static const msg_hash_id_t msg_hash_ko_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -20395,7 +20422,6 @@ static const msg_hash_id_t msg_hash_ko_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
@@ -21125,6 +21151,8 @@ static const msg_hash_id_t msg_hash_ko_ids[] =
    (msg_hash_id_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (msg_hash_id_t)MSG_NUM_CORES_LOCKED,
    (msg_hash_id_t)MSG_NUM_CORES_UPDATED,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_SCREEN,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
    (msg_hash_id_t)MSG_OSK_OVERLAY_NOT_SET,
    (msg_hash_id_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,

@@ -931,6 +931,7 @@ static const struct
    char s_b3a9ff57[19];
    char s_f4eaed02[27];
    char s_a9f5617a[25];
+   char s_9dffef92[32];
    char s_7b2598f2[30];
    char s_01686cd6[19];
    char s_182194b5[21];
@@ -2435,10 +2436,26 @@ static const struct
    char s_0cfd4fd0[11];
    char s_d64659c4[8];
    char s_0861dea4[15];
+   char s_ca605800[17];
+   char s_717c4d1c[27];
+   char s_430aec76[16];
+   char s_fa462638[6];
+   char s_dd66e556[26];
+   char s_29f97e35[5];
+   char s_569b0627[5];
+   char s_569b11b0[3];
+   char s_ec2c67d0[19];
+   char s_a2f70d09[18];
+   char s_328ddae3[3];
    char s_d7deafe0[24];
    char s_83217fd0[12];
    char s_60258de0[7];
+   char s_caf658e4[13];
+   char s_5410e874[7];
+   char s_7563a069[24];
+   char s_9eb59c3e[3];
    char s_34b2592a[3];
+   char s_ec4aeae0[23];
    char s_2a1860ac[37];
    char s_be406532[16];
    char s_13ce50e1[14];
@@ -2493,8 +2510,20 @@ static const struct
    char s_f387bafb[13];
    char s_2c868ae4[12];
    char s_9c535394[9];
+   char s_7f065006[7];
    char s_5c12d979[10];
    char s_32cb293c[26];
+   char s_284873ec[18];
+   char s_3220e9be[9];
+   char s_3242e549[19];
+   char s_b88b9861[26];
+   char s_284fc3ff[9];
+   char s_3253994e[6];
+   char s_0bd0e014[7];
+   char s_1e1af8de[26];
+   char s_1e1af8df[23];
+   char s_10bcb557[8];
+   char s_1e1af8e0[18];
    char s_c992346c[33];
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
    char s_81f725af[17];
@@ -3083,6 +3112,7 @@ static const struct
    char s_a11a7d85[174];
    char s_e25b6b30[161];
    char s_4b347c28[50];
+   char s_1aa0e700[88];
    char s_44480960[66];
    char s_0cf12e84[188];
    char s_94c28c23[65];
@@ -3772,7 +3802,6 @@ static const struct
    char s_a55bf936[34];
    char s_c519f84d[36];
    char s_48aefa30[37];
-   char s_5d383a58[40];
    char s_dcf8bd8b[39];
    char s_bce9b94f[44];
    char s_d32f5a63[38];
@@ -4014,8 +4043,15 @@ static const struct
    char s_4a09218b[39];
    char s_dea334de[176];
    char s_cacc1492[52];
+   char s_9382c86e[280];
+   char s_774bb68a[196];
+   char s_a68955c4[231];
+   char s_fbdd5b7e[289];
+   char s_3e7750f7[360];
    char s_c0c6924e[220];
    char s_c83fcc7e[239];
+   char s_d0c5c252[195];
+   char s_ac07820e[241];
    char s_2fe7ca1a[226];
    char s_cdf158e0[305];
    char s_7efaf561[212];
@@ -4044,8 +4080,20 @@ static const struct
    char s_87ba81db[147];
    char s_58c80718[291];
    char s_dc6f9d69[55];
+   char s_417085f4[44];
    char s_1bcf70a7[142];
    char s_fbed99aa[156];
+   char s_2e2ca41a[296];
+   char s_f48b1fac[55];
+   char s_f4ad1b37[84];
+   char s_6fdb154f[169];
+   char s_2e33f42d[35];
+   char s_f4bdcf3c[49];
+   char s_11a04982[89];
+   char s_012b67cc[60];
+   char s_012b67cd[54];
+   char s_f9a497c5[59];
+   char s_012b67ce[72];
    char s_894ecb9a[375];
    char s_67d549fd[43];
    char s_afac733c[37];
@@ -4586,6 +4634,13 @@ static const struct
    char s_8ab54d62[93];
    char s_aa554847[23];
    char s_ac2c797c[22];
+   char s_ade25a42[73];
+   char s_3c8a9fe6[51];
+   char s_3fe52ba8[216];
+   char s_c52621db[5];
+   char s_b512be06[10];
+   char s_ac0d4daf[100];
+   char s_a09b2ea1[88];
    char s_c5fee1cb[60];
    char s_7ce002de[14];
    char s_3fe94404[6];
@@ -5936,6 +5991,7 @@ static const struct
    "Spelfokus (v\303\244xla)",
    "F\303\245nga muspekaren (v\303\244xla)",
    "Stoppa Inspelning/Repris",
+   "Redigera VR-headsetets sk\303\244rmar",
    "Centrera headsetsk\303\244rmar igen",
    "Headsetvy (v\303\244xla)",
    "Laserpekare (v\303\244xla)",
@@ -7452,10 +7508,26 @@ static const struct
    "Kombinerat",
    "Separat",
    "Sk\303\244rmavst\303\245nd",
+   "G\303\245ngj\303\244rnsspalt",
+   "Vid redigering av sk\303\244rmar",
+   "Forts\303\244tt k\303\266ra",
+   "Pausa",
+   "Utj\303\244mning vid redigering",
+   "H\303\266g",
+   "L\303\245g",
+   "Av",
+   "F\303\244st mot sk\303\244rmar",
+   "F\303\244st mot vinklar",
+   "Av",
    "Headsetutg\303\245ng (OpenXR)",
    "Laserpekare",
    "Alltid",
+   "Laserstr\303\245le",
+   "Alltid",
+   "Endast redigeringsl\303\244ge",
    "Av",
+   "Av",
+   "Meny framf\303\266r sk\303\244rm 1",
    "Prestandaf\303\266rst\303\244rkning f\303\266r headset",
    "Sk\303\244rmplacering",
    "Fast i rummet",
@@ -7510,8 +7582,20 @@ static const struct
    "Sk\303\244rmlayout",
    "Horisontell",
    "Vertikal",
+   "Sk\303\244rm",
    "Sk\303\244rm %u",
    "Bildsk\303\244rm f\303\266r sk\303\244rm %u",
+   "Redigera sk\303\244rmar",
+   "Stigning",
+   "\303\205terst\303\244ll sk\303\244rm",
+   "\303\205terst\303\244ll alla sk\303\244rmar",
+   "Rollning",
+   "Skala",
+   "Synlig",
+   "Horisontell f\303\266rskjutning",
+   "Vertikal f\303\266rskjutning",
+   "Girning",
+   "Djupf\303\266rskjutning",
    "Byte av bildsk\303\244rmsl\303\244ge med SDL",
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
    "Shaderkompilator",
@@ -8445,6 +8529,7 @@ static const struct
    "\303\266ren och begr\303\244nsas till RetroArch-visningsf\303\266nstret, vilket f\303\266rb\303"
    "\244ttrar relativ musinmatning.",
    "Stoppar inspelning/uppspelning av aktuell repris.",
+   "Startar eller stoppar flytt av VR-headsetets sk\303\244rmar och meny med dess handkontroller.",
    "Placerar headsetets sk\303\244rmar framf\303\266r den plats du tittar p\303\245 nu.",
    "V\303\244xlar vilken vy k\303\244rnan f\303\245r veta att headsetet visar: uppslukande (huvudsp"
    "\303\245rad), stereoskopisk (en 3D-sk\303\244rm) eller platt. \303\205terg\303\245r till k\303"
@@ -9646,7 +9731,6 @@ static const struct
    "Visar inst\303\244llningar f\303\266r latens.",
    "Visar inst\303\244llningar f\303\266r loggning.",
    "Visa inst\303\244llningar f\303\266r 'N\303\244tverk'.",
-   "Visa inst\303\244llningar f\303\266r sk\303\244rmvisning.",
    "Visa inst\303\244llningar f\303\266r 'Spellistor'.",
    "Visa inst\303\244llningar f\303\266r 'Energihantering'.",
    "Visar inst\303\244llningar f\303\266r inspelning.",
@@ -10055,6 +10139,25 @@ static const struct
    "roll f\303\266r spelare 1. Separat g\303\266r v\303\244nster handkontroll till spelare 1 och h"
    "\303\266ger till spelare 2.",
    "Hur l\303\245ngt framf\303\266r dig headsetet visar sk\303\244rmarna.",
+   "L\303\244mnar detta mellanrum mellan sk\303\244rmar som m\303\266ts kant mot kant, sida vid sida"
+   ", i ett h\303\266rn eller g\303\245ngj\303\244rnsf\303\244st i en vinkel. En sk\303\244rm f\303"
+   "\244sts vid mellanrummet inom 1 cm; p\303\245 andra st\303\244llen upp till 10 cm stannar mellan"
+   "rummet d\303\244r du placerade det. 0: kanterna ber\303\266r varandra.",
+   "Vad inneh\303\245llet g\303\266r medan Redigera sk\303\244rmar flyttar VR-headsetets sk\303\244r"
+   "mar: forts\303\244tter k\303\266ra eller pausas tills redigeringen avslutas. Redigeringsl\303"
+   "\244get \303\245terupptar bara det som det har pausat.",
+   "Stabiliserar handkontrollernas sikte medan Redigera sk\303\244rmar flyttar sk\303\244rmarna, s"
+   "\303\245 att en sk\303\244rm som h\303\245lls l\303\245ngt bort inte skakar med handen. En l\303"
+   "\245ngsam hand utj\303\244mnas mycket, en snabb hand lite. Av: sikte enligt sp\303\245rningen.",
+   "Riktar in en h\303\245llen sk\303\244rm mot n\303\244rliggande sk\303\244rmar: parallellt med el"
+   "ler vinkelr\303\244tt mot en sk\303\244rm, sedan i samma plan och niv\303\245 eller kant mot kan"
+   "t. Den kan ocks\303\245 g\303\245ngj\303\244rnsf\303\244stas l\303\244ngs en gemensam kant i val"
+   "fri vinkel. Handen som h\303\245ller sk\303\244rmen vibrerar n\303\244r f\303\244stet aktiveras.",
+   "Stannar en sk\303\244rm som den andra handens styrspak vrider eller vinklar vid varje steg av de"
+   "nna vinkel, med en vibration. Vridning r\303\244knas fr\303\245n riktningen mot dig, vinkling fr"
+   "\303\245n uppr\303\244tt l\303\244ge och en g\303\245ngj\303\244rnsf\303\244st sk\303\244rm fr"
+   "\303\245n plant l\303\244ge med grannsk\303\244rmen. F\303\244st mot sk\303\244rmar har f\303"
+   "\266retr\303\244de n\303\244ra en annan sk\303\244rm. Av: styrspaken vrider och vinklar mjukt.",
    "Visa \303\244ven inneh\303\245llet i ett OpenXR-headset: varje sk\303\244rm som en egen flytande"
    " sk\303\244rm, stereo 3D med b\303\245da \303\266gonen och menyn framf\303\266r sk\303\244rmarna"
    ". Vulkan eller OpenGL p\303\245 Linux. F\303\266nstret beh\303\245ller sin vanliga utmatning.",
@@ -10062,6 +10165,13 @@ static const struct
    "\303\245 L2 eller R2. Automatisk: i menyn n\303\244r den \303\244r \303\266ppen och p\303\245 se"
    "kund\303\244ra sk\303\244rmar som peksk\303\244rm. Alltid: p\303\245 alla sk\303\244rmar, f\303"
    "\266r ljuspistoler. Av: ingenstans.",
+   "En tunn linje fr\303\245n varje handkontroll till punkten d\303\244r lasern pekar. Endast redige"
+   "ringsl\303\244ge: medan Redigera sk\303\244rmar flyttar sk\303\244rmarna. Alltid: \303\244ven f"
+   "\303\266r menyn och ljuspistoler. Av: aldrig.",
+   "\303\226ppnar menyn precis framf\303\266r sk\303\244rm 1, med samma orientering, s\303\245 att m"
+   "enyn flyttas med n\303\244r sk\303\244rm 1 flyttas. Av: menyn \303\266ppnas rakt framf\303\266r "
+   "sk\303\244rmarnas f\303\244stpunkt. En meny som placerats med Redigera sk\303\244rmar stannar d"
+   "\303\244r den placerades.",
    "Be headsetet om dess h\303\266gsta CPU-klockfrekvens, \303\266ver vad den kan uppr\303\244tth"
    "\303\245lla, s\303\245 att kr\303\244vande inneh\303\245ll h\303\244nger med. Det drar mer batte"
    "ri och ger h\303\266gre v\303\244rme. Ett varmt headset kan \303\244nd\303\245 sakta ned. Till"
@@ -10129,11 +10239,31 @@ static const struct
    "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
    "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
    "Hur sk\303\244rmarna i system med flera sk\303\244rmar ska ordnas.",
+   "V\303\244lj den flytande sk\303\244rm som ska justeras.",
    "Kopplad beh\303\245ller sk\303\244rmen tillsammans med de andra. Separat visar den i ett eget f"
    "\303\266nster eller p\303\245 en egen bildsk\303\244rm. Dold utel\303\244mnar den.",
    "Var den h\303\244r sk\303\244rmen visas n\303\244r den \303\244r separat. Automatiskt v\303\244l"
    "jer en andra bildsk\303\244rm. P\303\245 bildsk\303\244rmen d\303\244r RetroArch k\303\266rs beh"
    "\303\245lls sk\303\244rmen kopplad.",
+   "St\303\244ng menyn och flytta VR-headsetets sk\303\244rmar och meny med handkontrollerna: greppk"
+   "nappen tar tag, avtryckaren vinklar, styrspaken \303\244ndrar avst\303\245nd och storlek, den fr"
+   "ia handens styrspak vrider och vinklar, huvudknappen \303\245terst\303\244ller och V\303\244lj n"
+   "\303\244sta samt V\303\244lj f\303\266reg\303\245ende v\303\244ljer ett objekt.",
+   "Vinkla den h\303\244r sk\303\244rmen upp\303\245t eller ned\303\245t i grader.",
+   "\303\205terst\303\244ll den valda flytande sk\303\244rmens position, rotation, storlek och synli"
+   "ghet.",
+   "\303\205terst\303\244ll alla sk\303\244rmars position, rotation, storlek och synlighet, \303\244"
+   "ven sk\303\244rmar utanf\303\266r den aktuella kartan och \303\245terst\303\244ll menyn till des"
+   "s oplacerade startplats.",
+   "Rotera den h\303\244r sk\303\244rmen i grader.",
+   "\303\204ndra storleken p\303\245 den h\303\244r flytande sk\303\244rmen.",
+   "Visa den h\303\244r flytande sk\303\244rmen. Menyn \303\244r tillg\303\244nglig \303\244ven n"
+   "\303\244r sk\303\244rmarna \303\244r dolda.",
+   "Flytta den h\303\244r sk\303\244rmen \303\245t v\303\244nster eller h\303\266ger i meter.",
+   "Flytta den h\303\244r sk\303\244rmen upp\303\245t eller ned\303\245t i meter.",
+   "Vrid den h\303\244r sk\303\244rmen \303\245t v\303\244nster eller h\303\266ger i grader.",
+   "Flytta den h\303\244r sk\303\244rmen n\303\244rmare eller l\303\244ngre bort fr\303\245n dig i m"
+   "eter.",
    "L\303\245t SDL-f\303\266nstret v\303\244xla mellan bildsk\303\244rmsl\303\244gena som det listar"
    ". \342\200\235Automatiskt\342\200\235 anv\303\244nder detta endast n\303\244r den inbyggda bilds"
    "k\303\244rmsservern inte kan v\303\244xla l\303\244ge. \342\200\235Alltid\342\200\235 \303\245si"
@@ -10851,6 +10981,18 @@ static const struct
    "\244r spellisteposten.",
    "K\303\244rnor \303\266verhoppade: ",
    "K\303\244rnor uppdaterade: ",
+   "Redigera sk\303\244rmar kr\303\244ver att inneh\303\245ll k\303\266rs: l\303\244s in inneh\303"
+   "\245ll f\303\266rst.",
+   "Redigering av VR-headsetets sk\303\244rmar har stoppats.",
+   "Redigerar VR-headsetets sk\303\244rmar: greppknappen tar tag, styrspaken flyttar och \303\244ndr"
+   "ar storlek, avtryckaren vinklar sk\303\244rmen med handen, den andra handens styrspak vrider och"
+   " vinklar den, huvudknappen \303\245terst\303\244ller.",
+   "Meny",
+   "Sk\303\244rm %u",
+   "Redigera sk\303\244rmar \303\244r inte tillg\303\244ngligt: VR-headsetets handkontroller kan int"
+   "e anv\303\244ndas f\303\266r det.",
+   "Redigering av VR-headsetets sk\303\244rmar har stoppats. \303\204ndringarna \303\244r inte spara"
+   "de \303\244nnu.",
    "Headsetutg\303\245ngen kunde inte starta. F\303\266nstret visar utdata.",
    "Headsetvy: %s",
    "Platt",
@@ -11059,7 +11201,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (227289u
+      (sizeof(msg_hash_sv_blob) == (231161u
 #ifdef ANDROID
        + 361u
 #endif
@@ -12555,6 +12697,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_EDIT_SCREENS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_RECENTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_VIEW_TOGGLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LASER_POINTER_TOGGLE,
@@ -14058,10 +14201,26 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_EDIT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_MENU_FOLLOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PERF_BOOST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
@@ -14116,8 +14275,20 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET_ALL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_ROLL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_VISIBLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_X,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_Y,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_YAW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_Z,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_COMPILER,
@@ -14699,6 +14870,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_EDIT_SCREENS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_RECENTER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_VIEW_TOGGLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_META_LASER_POINTER_TOGGLE,
@@ -15387,7 +15559,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
@@ -15628,8 +15799,15 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_HINGE_GAP,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_PAUSE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_SMOOTHING,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_SNAP,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_SNAP_ANGLES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER_BEAM,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_MENU_FOLLOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PERF_BOOST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PLACEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
@@ -15658,8 +15836,20 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_PITCH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET_ALL,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_ROLL,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_SCALE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_VISIBLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_X,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_Y,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_YAW,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_Z,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -16195,6 +16385,13 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (msg_hash_id_t)MSG_NUM_CORES_LOCKED,
    (msg_hash_id_t)MSG_NUM_CORES_UPDATED,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_NO_CONTENT,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_OFF,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_ON,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_SCREEN,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_UNAVAILABLE,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_UNSAVED,
    (msg_hash_id_t)MSG_OPENXR_FAILED,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,

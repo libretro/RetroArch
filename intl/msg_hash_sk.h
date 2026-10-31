@@ -2464,9 +2464,17 @@ static const struct
    char s_0cfd4fd0[9];
    char s_d64659c4[10];
    char s_0861dea4[24];
+   char s_fa462638[6];
+   char s_29f97e35[8];
+   char s_569b0627[7];
+   char s_99b1b2f6[9];
+   char s_569b11b0[9];
+   char s_328ddae3[9];
    char s_d7deafe0[29];
    char s_83217fd0[21];
    char s_60258de0[6];
+   char s_5410e874[6];
+   char s_9eb59c3e[9];
    char s_34b2592a[9];
    char s_2a1860ac[28];
    char s_be406532[23];
@@ -2527,6 +2535,7 @@ static const struct
    char s_9c535394[7];
    char s_5c12d979[13];
    char s_32cb293c[21];
+   char s_3253994e[12];
    char s_c992346c[36];
    char s_a9c8430e[14];
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
@@ -3807,7 +3816,6 @@ static const struct
    char s_a55bf936[33];
    char s_c519f84d[32];
    char s_48aefa30[30];
-   char s_5d383a58[45];
    char s_dcf8bd8b[39];
    char s_bce9b94f[39];
    char s_d32f5a63[32];
@@ -4619,6 +4627,7 @@ static const struct
    char s_8ab54d62[88];
    char s_aa554847[22];
    char s_ac2c797c[24];
+   char s_b512be06[13];
    char s_c5fee1cb[66];
    char s_7ce002de[24];
    char s_3fe94404[8];
@@ -7560,9 +7569,17 @@ static const struct
    "Spojen\303\251",
    "Oddelen\303\251",
    "Vzdialenos\305\245 obrazoviek",
+   "Pauza",
+   "Vysok\303\251",
+   "N\303\255zke",
+   "Stredn\303\251",
+   "Vypn\303\272\305\245",
+   "Vypn\303\272\305\245",
    "V\303\275stup do headsetu (OpenXR)",
    "Laserov\303\251 ukazovadlo",
    "V\305\276dy",
+   "V\305\276dy",
+   "Vypn\303\272\305\245",
    "Vypn\303\272\305\245",
    "Zv\303\275\305\241enie v\303\275konu headsetu",
    "Umiestnenie obrazoviek",
@@ -7623,6 +7640,7 @@ static const struct
    "Zvislo",
    "Obrazovka %u",
    "Displej obrazovky %u",
+   "\305\240k\303\241lova\305\245",
    "Prep\303\255nanie re\305\276imov zobrazenia SDL",
    "Video shadery",
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
@@ -9936,7 +9954,6 @@ static const struct
    "Zobrazi\305\245 nastavenia 'Latencia'.",
    "Zobrazi\305\245 nastavenia 'Z\303\241znam'.",
    "Zobrazi\305\245 nastavenia 'Sie\305\245'.",
-   "Zobrazi\305\245 nastavenia 'On-Screen zobrazenie'.",
    "Zobrazi\305\245 nastavenia 'Hracie zoznamy'.",
    "Zmeni\305\245 nastavenia spr\303\241vy nap\303\241jania.",
    "Zobrazi\305\245 nastavenia 'Z\303\241znam'.",
@@ -11240,6 +11257,7 @@ static const struct
    "\305\241an\303\251 pre t\303\272to polo\305\276ku zoznamu.",
    "Presko\304\215en\303\251 jadr\303\241: ",
    "Aktualizovan\303\251 jadr\303\241: ",
+   "Obrazovka %u",
    "V\303\275stup do headsetu sa nepodarilo spusti\305\245. V\303\275stup ukazuje okno.",
    "Zobrazenie headsetu: %s",
    "Ploch\303\251",
@@ -11454,7 +11472,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (227816u
+      (sizeof(msg_hash_sk_blob) == (227859u
 #ifdef ANDROID
        + 389u
 #endif
@@ -14484,9 +14502,17 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PERF_BOOST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT,
@@ -14547,6 +14573,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
 #if defined(HAVE_RSLC) && defined(HAVE_GLSLANG)
@@ -15820,7 +15847,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
@@ -16627,6 +16653,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (msg_hash_id_t)MSG_NUM_CORES_LOCKED,
    (msg_hash_id_t)MSG_NUM_CORES_UPDATED,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_SCREEN,
    (msg_hash_id_t)MSG_OPENXR_FAILED,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
