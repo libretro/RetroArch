@@ -2701,6 +2701,24 @@ jobs:
       - name: Vulkan synchronous readback slot
         run: python3 samples/gfx/vulkan_readback_slot/run.py
 
+      - name: Capture bounds, conversion failures and list allocation rollback
+        shell: bash
+        run: |
+          set -eu
+          for sample in samples/gfx/video_frame_failure libretro-common/samples/lists/file_list_oom; do
+            make -C "$sample" clean
+            make -C "$sample" check SANITIZER=address,undefined
+            make -C "$sample" clean
+            make -C "$sample" check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+            make -C "$sample" clean
+          done
+          python3 samples/gfx/vulkan_capture_guard/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/vulkan_capture_guard/run.py
+          python3 samples/gfx/video_frame_failure/translation.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/video_frame_failure/translation.py
+          python3 samples/menu/entry_alloc/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/menu/entry_alloc/run.py
+
       - name: D3D11 resized readback destination guard
         run: python3 samples/gfx/d3d11_readback_resize/run.py
 
