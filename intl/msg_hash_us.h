@@ -7661,6 +7661,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE_FOLLOW,
    "Follow Local Structure"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
+   "System"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
+   "Crashed last run, using System"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
+   "System (Safe start)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
+   "%s is used again at the next normal start"
+   )
 /* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group (see settings_def_video_hdr_toggles.h, settings_def_video_stereo.h and settings_def_video_headset.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
@@ -7740,6 +7756,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_video_hdr_toggles.h"
 #include "../settings/settings_def_video_upscaler.h"
+#include "../settings/settings_def_vulkan_driver_path.h"
 #include "../settings/settings_def_video_stereo.h"
 #include "../settings/settings_def_video_headset.h"
 #include "../settings/settings_def_video_screens.h"
@@ -34227,6 +34244,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIDEO_DRIVER_PACING_BOOST,
    "On + Boost"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_FAILED,
+   "Custom Vulkan driver failed to start. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
+   "Custom Vulkan driver crashed before and is off for this core. Pick it again to retry."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_INVALID,
+   "Custom Vulkan driver package is not usable. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
+   "Custom Vulkan drivers need an Adreno GPU and Android 9. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_RESTART,
+   "Restart RetroArch to change the Vulkan driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
+   "Started with the system Vulkan driver."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

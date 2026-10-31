@@ -241,6 +241,23 @@ ifeq ($(HAVE_OPENXR),1)
 DEFINES += -DHAVE_OPENXR -DXR_OS_ANDROID -DXR_USE_PLATFORM_ANDROID
 endif
 
+# Custom Vulkan driver packages (libadrenotools): sideloaded arm64 builds
+# only. Play builds pass PLAY_STORE_BUILD=1, Quest passes HAVE_OPENXR=1.
+HAVE_ADRENOTOOLS := 0
+ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+   ifeq ($(HAVE_VULKAN),1)
+      ifneq ($(PLAY_STORE_BUILD),1)
+         ifneq ($(HAVE_OPENXR),1)
+            HAVE_ADRENOTOOLS := 1
+         endif
+      endif
+   endif
+endif
+
+ifeq ($(HAVE_ADRENOTOOLS),1)
+DEFINES += -DHAVE_ADRENOTOOLS
+endif
+
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
 LOCAL_CPPFLAGS := -fexceptions -fpermissive -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
 
@@ -270,6 +287,10 @@ endif
 
 ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
+endif
+
+ifeq ($(HAVE_ADRENOTOOLS),1)
+INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/libadrenotools/include
 endif
 
 
@@ -305,3 +326,43 @@ ifeq ($(TARGET_ARCH_ABI),x86_64)
 endif
 
 include $(BUILD_SHARED_LIBRARY)
+
+ifeq ($(HAVE_ADRENOTOOLS),1)
+ADRENOTOOLS_DIR     := $(DEPS_DIR)/libadrenotools
+ADRENOTOOLS_INCLUDE := $(LOCAL_PATH)/$(ADRENOTOOLS_DIR)/include \
+                       $(LOCAL_PATH)/$(ADRENOTOOLS_DIR)/lib/linkernsbypass
+ADRENOTOOLS_LDFLAGS := -Wl,-z,max-page-size=16384,-z,common-page-size=16384
+
+# A library of its own, loaded only when a custom driver is opened:
+# the linkernsbypass constructor remaps dlopen's code page RWX and calls
+# the linker's internal dlopen.
+include $(CLEAR_VARS)
+LOCAL_MODULE     := adrenotools
+LOCAL_CPPFLAGS   := -std=gnu++17
+LOCAL_C_INCLUDES := $(ADRENOTOOLS_INCLUDE)
+LOCAL_SRC_FILES  := $(ADRENOTOOLS_DIR)/src/driver.cpp \
+                    $(ADRENOTOOLS_DIR)/lib/linkernsbypass/android_linker_ns.cpp \
+                    $(ADRENOTOOLS_DIR)/lib/linkernsbypass/elf_soname_patcher.cpp
+LOCAL_LDFLAGS    := $(ADRENOTOOLS_LDFLAGS)
+LOCAL_LDLIBS     := -landroid -ldl -llog
+include $(BUILD_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE     := hook_impl
+LOCAL_CPPFLAGS   := -std=gnu++17 -fvisibility=hidden
+LOCAL_C_INCLUDES := $(ADRENOTOOLS_INCLUDE)
+LOCAL_SRC_FILES  := $(ADRENOTOOLS_DIR)/src/hook/hook_impl.cpp \
+                    $(ADRENOTOOLS_DIR)/lib/linkernsbypass/android_linker_ns.cpp \
+                    $(ADRENOTOOLS_DIR)/lib/linkernsbypass/elf_soname_patcher.cpp
+LOCAL_LDFLAGS    := $(ADRENOTOOLS_LDFLAGS)
+LOCAL_LDLIBS     := -landroid -ldl -llog
+include $(BUILD_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE           := main_hook
+LOCAL_CFLAGS           := -fvisibility=hidden
+LOCAL_SRC_FILES        := $(ADRENOTOOLS_DIR)/src/hook/main_hook.c
+LOCAL_SHARED_LIBRARIES := hook_impl
+LOCAL_LDFLAGS          := -Wl,-z,global $(ADRENOTOOLS_LDFLAGS)
+include $(BUILD_SHARED_LIBRARY)
+endif

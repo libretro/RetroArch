@@ -2208,6 +2208,9 @@ static struct config_path_setting *populate_settings_path(
 #endif
    SETTING_PATH("video_filter",                  settings->paths.path_softfilter_plugin, false, NULL, true);
    SETTING_PATH("video_font_path",               settings->paths.path_font, false, NULL, true);
+#ifdef HAVE_ADRENOTOOLS
+   SETTING_PATH("video_vulkan_driver_path",      settings->paths.path_vulkan_driver, false, NULL, true);
+#endif
    SETTING_PATH("video_record_config",           settings->paths.path_record_config, false, NULL, true);
    SETTING_PATH("video_stream_config",           settings->paths.path_stream_config, false, NULL, true);
    SETTING_PATH("video_stream_url",              settings->paths.path_stream_url, false, NULL, true);
@@ -2506,6 +2509,7 @@ static const struct config_bool_row config_bool_rows[] = {
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_upscaler.h"
+#include "settings/settings_def_vulkan_driver_path.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
@@ -3344,6 +3348,7 @@ static const struct config_float_row config_float_rows[] = {
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_upscaler.h"
+#include "settings/settings_def_vulkan_driver_path.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
@@ -3988,6 +3993,7 @@ static const struct config_uint_row config_uint_rows[] = {
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_upscaler.h"
+#include "settings/settings_def_vulkan_driver_path.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
@@ -4787,6 +4793,7 @@ static const struct config_int_row config_int_rows[] = {
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_upscaler.h"
+#include "settings/settings_def_vulkan_driver_path.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
@@ -5430,6 +5437,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_upscaler.h"
+#include "settings/settings_def_vulkan_driver_path.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
@@ -6452,6 +6460,9 @@ void config_set_defaults(settings_t *target)
    *settings->paths.path_softfilter_plugin = '\0';
 
    *settings->paths.path_audio_dsp_plugin = '\0';
+#ifdef HAVE_ADRENOTOOLS
+   *settings->paths.path_vulkan_driver    = '\0';
+#endif
 
    *settings->paths.log_dir = '\0';
 

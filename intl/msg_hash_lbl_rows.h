@@ -132,6 +132,7 @@
 #include "../settings/settings_def_input_bind_timeouts.h"
 #include "../settings/settings_def_video_hdr_toggles.h"
 #include "../settings/settings_def_video_upscaler.h"
+#include "../settings/settings_def_vulkan_driver_path.h"
 #include "../settings/settings_def_video_stereo.h"
 #include "../settings/settings_def_video_headset.h"
 #include "../settings/settings_def_video_screens.h"

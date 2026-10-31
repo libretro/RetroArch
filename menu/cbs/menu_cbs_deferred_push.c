@@ -264,6 +264,9 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_list_deferred,             DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_core_collection_list_deferred,  DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
 GENERIC_DEFERRED_PUSH(deferred_push_menu_sounds_list,               DISPLAYLIST_MENU_SOUNDS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_rgui_theme_preset,              DISPLAYLIST_RGUI_THEME_PRESETS)
+#ifdef HAVE_ADRENOTOOLS
+GENERIC_DEFERRED_PUSH(deferred_push_vulkan_driver,                  DISPLAYLIST_VULKAN_DRIVERS)
+#endif
 
 #ifdef HAVE_NETWORKING
 GENERIC_DEFERRED_PUSH(deferred_push_pl_thumbnails_updater_list,     DISPLAYLIST_PL_THUMBNAILS_UPDATER)
@@ -857,6 +860,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_RECORD_CONFIG, deferred_push_record_configfile},
       {MENU_ENUM_LABEL_STREAM_CONFIG, deferred_push_stream_configfile},
       {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET, deferred_push_rgui_theme_preset},
+#ifdef HAVE_ADRENOTOOLS
+      {MENU_ENUM_LABEL_VIDEO_VULKAN_DRIVER_PATH, deferred_push_vulkan_driver},
+#endif
       {MENU_ENUM_LABEL_NETPLAY, deferred_push_netplay},
       {MENU_ENUM_LABEL_CONTENT_SETTINGS, deferred_push_content_settings},
       {MENU_ENUM_LABEL_ADD_CONTENT_LIST, deferred_push_add_content_list},
@@ -940,6 +946,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          { MENU_ENUM_LABEL_RECORD_CONFIG, deferred_push_record_configfile },
          { MENU_ENUM_LABEL_STREAM_CONFIG, deferred_push_stream_configfile },
          { MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET, deferred_push_rgui_theme_preset },
+#ifdef HAVE_ADRENOTOOLS
+         { MENU_ENUM_LABEL_VIDEO_VULKAN_DRIVER_PATH, deferred_push_vulkan_driver },
+#endif
          { MENU_ENUM_LABEL_SHADER_OPTIONS, deferred_push_shader_options },
          { MENU_ENUM_LABEL_ONLINE_UPDATER, deferred_push_options },
          { MENU_ENUM_LABEL_NETPLAY, deferred_push_netplay },

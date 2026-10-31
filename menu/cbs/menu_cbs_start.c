@@ -190,6 +190,30 @@ static int action_start_audio_dsp_plugin_file_load(
    return 0;
 }
 
+#ifdef HAVE_ADRENOTOOLS
+static int action_start_vulkan_driver_path(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return -1;
+
+   if (*settings->paths.path_vulkan_driver)
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      configuration_set_string(settings,
+            settings->paths.path_vulkan_driver, "");
+      /* Rebinds the sublabel too */
+      menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                 |  MENU_ST_FLAG_PREVENT_POPULATE;
+   }
+
+   return 0;
+}
+#endif
+
 static int generic_action_start_performance_counters(struct retro_perf_counter **counters,
       unsigned offset, unsigned type, const char *label)
 {
@@ -905,6 +929,11 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
          case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_START(cbs, action_start_audio_dsp_plugin_file_load);
             break;
+#ifdef HAVE_ADRENOTOOLS
+         case MENU_ENUM_LABEL_VIDEO_VULKAN_DRIVER_PATH:
+            BIND_ACTION_START(cbs, action_start_vulkan_driver_path);
+            break;
+#endif
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_pass);

@@ -2,6 +2,7 @@ package com.retroarch.browser.retroactivity;
 
 import android.content.res.Configuration;
 import android.graphics.Rect;
+import android.graphics.drawable.Icon;
 import android.util.Log;
 import android.view.Display;
 import android.view.DisplayCutout;
@@ -14,6 +15,8 @@ import android.view.WindowManager;
 import android.view.WindowMetrics;
 import android.content.Intent;
 import android.content.Context;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
 import android.hardware.input.InputManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,6 +26,7 @@ import android.os.Message;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
@@ -65,6 +69,13 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
+    // Safe start is one-shot. A restore or a Recents relaunch brings the
+    // old intent back; drop it before super.onCreate starts the native thread.
+    // A recreate in this process stays safe: native code latches it.
+    if (savedInstanceState != null
+        || (getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0)
+      getIntent().removeExtra("VULKAN_DRIVER");
+
     super.onCreate(savedInstanceState);
     
     isRunning = true;
@@ -94,16 +105,20 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     // Extract game parameters from new intent
     String newRom = intent.getStringExtra("ROM");
     String newCore = intent.getStringExtra("LIBRETRO");
+    String newVulkanDriver = intent.getStringExtra("VULKAN_DRIVER");
     
     // Get current intent parameters for comparison
     Intent currentIntent = getIntent();
     String currentRom = currentIntent != null ? currentIntent.getStringExtra("ROM") : null;
     String currentCore = currentIntent != null ? currentIntent.getStringExtra("LIBRETRO") : null;
+    String currentVulkanDriver = currentIntent != null ? currentIntent.getStringExtra("VULKAN_DRIVER") : null;
     
     
     // Check if we're trying to launch different content
     if ((newRom != null && !newRom.equals(currentRom)) ||
-        (newCore != null && !newCore.equals(currentCore))) {
+        (newCore != null && !newCore.equals(currentCore)) ||
+        // Safe start: the Vulkan driver is chosen when the process starts
+        (newVulkanDriver != null && !newVulkanDriver.equals(currentVulkanDriver))) {
       // Different game content - start fresh instance then exit
       Intent restartIntent = new Intent(intent);
       restartIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -281,6 +296,29 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     mHandlerSendUiMessage(HANDLER_WHAT_TOGGLE_POINTER_CAPTURE, state);
     mHandlerSendUiMessage(HANDLER_WHAT_TOGGLE_POINTER_NVIDIA, state);
     mHandlerSendUiMessage(HANDLER_WHAT_TOGGLE_POINTER_ICON, state);
+  }
+
+  // Called from native code before the first custom Vulkan driver load,
+  // so a driver that leaves a black screen still has a way back.
+  public void addSafeStartShortcut() {
+    // Dynamic shortcuts need Android 7.1 (25) and up
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+      try {
+        Intent intent = new Intent(this, RetroActivityFuture.class);
+        intent.setAction(Intent.ACTION_MAIN);
+        intent.putExtra("VULKAN_DRIVER", "system");
+        ShortcutInfo shortcut = new ShortcutInfo.Builder(this, "safe_start")
+          .setShortLabel("Safe start")
+          .setLongLabel("Start with system Vulkan")
+          .setIcon(Icon.createWithResource(this, getApplicationInfo().icon))
+          .setIntent(intent)
+          .build();
+        getSystemService(ShortcutManager.class)
+          .addDynamicShortcuts(Collections.singletonList(shortcut));
+      } catch (Exception e) {
+        Log.w("RetroActivityFuture", "[addSafeStartShortcut] exception thrown: " + e.getMessage());
+      }
+    }
   }
 
   private void attemptToggleImmersiveMode(boolean state) {
