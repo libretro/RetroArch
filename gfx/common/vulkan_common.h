@@ -227,7 +227,9 @@ enum gfx_ctx_vulkan_data_flags
    VK_DATA_FLAG_EMULATING_MAILBOX       = (1 << 4),
    /* Used to check if we need to use mailbox emulation or not.
     * Only relevant on Windows for now. */
-   VK_DATA_FLAG_FULLSCREEN              = (1 << 5)
+   VK_DATA_FLAG_FULLSCREEN              = (1 << 5),
+   /* Destroy drops the context even under VIDEO_FLAG_CACHE_CONTEXT. */
+   VK_DATA_FLAG_DROP_CONTEXT            = (1 << 6)
 };
 
 enum vk_texture_flags

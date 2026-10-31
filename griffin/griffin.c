@@ -360,6 +360,11 @@ VIDEO CONTEXT
 #endif
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/android_vk_ctx.c"
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER)
+#include "../gfx/common/vulkan_custom_driver.c"
+#include "../gfx/common/vulkan_custom_driver_android.c"
+#include "../gfx/common/vulkan_custom_driver_linker.c"
+#endif
 #if defined(HAVE_OPENXR)
 #include "../gfx/drivers_context/android_vk_openxr_ctx.c"
 #endif

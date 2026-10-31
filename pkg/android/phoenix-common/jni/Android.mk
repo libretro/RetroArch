@@ -241,6 +241,23 @@ ifeq ($(HAVE_OPENXR),1)
 DEFINES += -DHAVE_OPENXR -DXR_OS_ANDROID -DXR_USE_PLATFORM_ANDROID
 endif
 
+# Custom Vulkan driver packages: sideloaded arm64 builds only.
+# Play builds pass PLAY_STORE_BUILD=1, Quest passes HAVE_OPENXR=1.
+HAVE_VULKAN_CUSTOM_DRIVER := 0
+ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+   ifeq ($(HAVE_VULKAN),1)
+      ifneq ($(PLAY_STORE_BUILD),1)
+         ifneq ($(HAVE_OPENXR),1)
+            HAVE_VULKAN_CUSTOM_DRIVER := 1
+         endif
+      endif
+   endif
+endif
+
+ifeq ($(HAVE_VULKAN_CUSTOM_DRIVER),1)
+DEFINES += -DHAVE_VULKAN_CUSTOM_DRIVER
+endif
+
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
 LOCAL_CPPFLAGS := -fexceptions -fpermissive -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
 
@@ -305,3 +322,16 @@ ifeq ($(TARGET_ARCH_ABI),x86_64)
 endif
 
 include $(BUILD_SHARED_LIBRARY)
+
+ifeq ($(HAVE_VULKAN_CUSTOM_DRIVER),1)
+# Loaded into a private linker namespace in front of a copy of the system
+# Vulkan loader, which opens its HAL through it.
+include $(CLEAR_VARS)
+LOCAL_MODULE    := vulkan_driver_hook
+LOCAL_CFLAGS    := -DVULKAN_CUSTOM_DRIVER_HOOK -fvisibility=hidden -Wall
+LOCAL_SRC_FILES := $(RARCH_DIR)/gfx/common/vulkan_custom_driver_linker.c
+LOCAL_LDFLAGS   := -Wl,-z,global \
+                   -Wl,-z,max-page-size=16384,-z,common-page-size=16384
+LOCAL_LDLIBS    := -ldl -llog
+include $(BUILD_SHARED_LIBRARY)
+endif
