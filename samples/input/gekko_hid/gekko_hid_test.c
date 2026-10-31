@@ -123,7 +123,7 @@ int gk_futex_wait(volatile uint32_t *addr, uint32_t expected,
       ts.tv_nsec -= 1000000000L;
    }
    pthread_mutex_lock(&futex_lock);
-   if (*addr != expected)
+   if (__atomic_load_n(addr, __ATOMIC_ACQUIRE) != expected)
       ret = GK_EAGAIN;
    else if (pthread_cond_timedwait(&futex_cond, &futex_lock, &ts))
       ret = GK_ETIMEDOUT;

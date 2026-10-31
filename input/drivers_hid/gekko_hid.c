@@ -84,17 +84,20 @@ struct gekko_hid
    gk_thread_t         *worker;
    retro_atomic_int_t   quit;
    retro_atomic_int_t   refs;
-   volatile uint32_t    wake;
+   retro_atomic_int_t   wake;     /* bumped from any thread */
    uint32_t             ignored[GK_USB_MAX_DEVICES];
    int                  num_ignored;
 };
 
 hid_driver_t gekko_hid;
 
+/* The futex word is the atomic's own: a plain int on os/gekko. */
+#define HID_WAKE_WORD(hid) ((volatile uint32_t*)(void*)&(hid)->wake)
+
 static void hid_wake(gekko_hid_t *hid)
 {
-   hid->wake++;
-   gk_futex_wake(&hid->wake, 1);
+   retro_atomic_fetch_add_int(&hid->wake, 1);
+   gk_futex_wake(HID_WAKE_WORD(hid), 1);
 }
 
 static void hid_unref(gekko_hid_t *hid)
@@ -377,14 +380,14 @@ static void *worker(void *arg)
    gekko_hid_t *hid = (gekko_hid_t*)arg;
    while (!retro_atomic_load_acquire_int(&hid->quit))
    {
-      uint32_t seq = hid->wake;
+      uint32_t seq = (uint32_t)retro_atomic_load_acquire_int(&hid->wake);
       int i;
       scan(hid);
       for (i = 0; i < MAX_USERS; i++)
          if (hid->pads[i] && hid->pads[i]->ctl_type != SC_NONE)
             send_queued(hid->pads[i]);
-      if (hid->wake == seq)
-         gk_futex_wait(&hid->wake, seq, GK_US_TO_TICKS(SCAN_US));
+      if ((uint32_t)retro_atomic_load_acquire_int(&hid->wake) == seq)
+         gk_futex_wait(HID_WAKE_WORD(hid), seq, GK_US_TO_TICKS(SCAN_US));
    }
    return NULL;
 }
@@ -433,6 +436,7 @@ static void *gekko_hid_init(void)
       return NULL;
    retro_atomic_int_init(&hid->quit, 0);
    retro_atomic_int_init(&hid->refs, 1);
+   retro_atomic_int_init(&hid->wake, 0);
    if (     !(hid->connections = pad_connection_init(MAX_USERS))
          || !(hid->worker = gk_thread_create(worker, hid, NULL, 16384,
                GK_PRIO_DEFAULT + 2)))
