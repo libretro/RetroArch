@@ -133,6 +133,7 @@ static retro_task_t *g_pushed      = NULL;
 static unsigned      g_parks       = 0;
 static unsigned      g_calls       = 0;
 static int           g_speech      = 0;
+static int           g_hw_frame;
 bool audio_driver_is_ai_service_speech_running(void) { return g_speech != 0; }
 bool command_event(enum event_command cmd, void *data)
 { (void)data; if (cmd == CMD_EVENT_AI_SERVICE_CALL) g_calls++; return true; }
@@ -143,7 +144,7 @@ void task_set_flags(retro_task_t *task, uint8_t flags, bool set)
 { if (set) task->flags |= flags; else task->flags &= ~flags; }
 void task_queue_park(retro_task_t *task, retro_time_t horizon_usec)
 { (void)task; (void)horizon_usec; g_parks++; }
-bool video_driver_cached_frame_is_hw_render(void) { return false; }
+bool video_driver_cached_frame_is_hw_render(void) { return g_hw_frame != 0; }
 bool video_driver_cached_frame_info(unsigned *dims, size_t *pitch,
       bool *has_cpu_pixels)
 {
@@ -162,12 +163,14 @@ static unsigned  g_frames;
 static unsigned  g_frame_w, g_frame_h;
 static size_t    g_frame_pitch;
 static uint8_t  *g_frame;
+static int       g_reused_decode;
 
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    size_t n = pitch * height;
    g_frames++;
+   g_reused_decode = data == g_decoded_pixels;
    g_frame_w     = width;
    g_frame_h     = height;
    g_frame_pitch = pitch;
@@ -288,6 +291,7 @@ static void start(unsigned fw, unsigned fh, enum retro_pixel_format fmt)
    g_dims          = VIDEO_SCALE_PACK(fw, fh);
    g_video.pix_fmt = fmt;
    g_frames        = 0;
+   g_reused_decode = 0;
 }
 
 /* Same size as the frame, so the point scaler maps pixel to pixel:
@@ -413,9 +417,13 @@ static void lane_png(unsigned fw, unsigned fh, enum retro_pixel_format fmt)
    check(g_frames == 1, "PNG %ux%u: no frame", fw, fh);
    if (g_frames != 1)
       return;
-   check(g_alloc_calls == 2 && g_total == sizeof(struct scaler_ctx)
-         + (size_t)fw * fh * (fmt == RETRO_PIXEL_FORMAT_XRGB8888 ? 4 : 2),
-         "PNG allocated an intermediate image");
+   if (fw == 7 && fh == 5 && fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+      check(g_alloc_calls == 0 && g_total == 0 && g_reused_decode,
+            "native PNG frame was not reused without allocations");
+   else
+      check(g_alloc_calls == 2 && g_total == sizeof(struct scaler_ctx)
+            + (size_t)fw * fh * (fmt == RETRO_PIXEL_FORMAT_XRGB8888 ? 4 : 2)
+            && !g_reused_decode, "PNG conversion did not use its own output");
    for (y = 0; y < fh; y++)
       for (x = 0; x < fw; x++)
       {
@@ -436,6 +444,24 @@ static void lane_png(unsigned fw, unsigned fh, enum retro_pixel_format fmt)
          }
       }
 }
+
+static void lane_png_guards(void)
+{
+   g_png_ok = 1;
+   g_png_width = 7;
+   g_png_height = 5;
+   start(7, 5, RETRO_PIXEL_FORMAT_XRGB8888);
+   g_hw_frame = 1;
+   reply(png_reply, sizeof(png_reply));
+   check(g_frames == 0, "native PNG bypassed the hardware-frame guard");
+   g_hw_frame = 0;
+   start(0, 5, RETRO_PIXEL_FORMAT_XRGB8888);
+   reply(png_reply, sizeof(png_reply));
+   check(g_frames == 0, "native PNG accepted a zero-width frame");
+   start(7, 5, RETRO_PIXEL_FORMAT_SCRGB_RGBA16F);
+   reply(png_reply, sizeof(png_reply));
+   check(g_frames == 0, "native PNG accepted an HDR software frame");
+}
 #endif
 
 static void lane_allocation_failures(void)
@@ -444,20 +470,21 @@ static void lane_allocation_failures(void)
    uint8_t *bmp = make_bmp(7, 5, &len);
    int png, budget, formats = 1;
 #ifdef HAVE_RPNG
-   formats = 2;
+   formats = 4;
 #endif
    for (png = 0; png < formats; png++)
       for (budget = 0; budget <= 2; budget++)
       {
-         start(7, 5, RETRO_PIXEL_FORMAT_XRGB8888);
+         start(png == 2 ? 3 : 7, png == 2 ? 2 : 5,
+               png == 3 ? RETRO_PIXEL_FORMAT_RGB565 : RETRO_PIXEL_FORMAT_XRGB8888);
          g_png_ok = 1;
          g_png_width = 7;
          g_png_height = 5;
          g_alloc_budget = budget;
          reply(png ? png_reply : bmp, png ? sizeof(png_reply) : len);
          g_alloc_budget = -1;
-         check(g_frames == (budget == 2 ? 1u : 0u),
-               "%s allocation budget %d: %u frames", png ? "PNG" : "BMP",
+         check(g_frames == (png == 1 || budget == 2 ? 1u : 0u),
+               "image case %d allocation budget %d: %u frames", png,
                budget, g_frames);
       }
    free(bmp);
@@ -509,6 +536,19 @@ static void benchmark(void)
             png ? "PNG" : "BMP", 1000.0 * (clock() - begin) / CLOCKS_PER_SEC / 20,
             (unsigned long)g_peak, g_alloc_calls);
    }
+#ifdef HAVE_RPNG
+   {
+      clock_t begin = clock();
+      for (i = 0; i < 20; i++)
+      {
+         start(1920, 1080, RETRO_PIXEL_FORMAT_XRGB8888);
+         reply(png_reply, sizeof(png_reply));
+      }
+      printf("PNG native 1920x1080: %.3f ms, callback peak %lu bytes, %u allocations, reused=%d\n",
+            1000.0 * (clock() - begin) / CLOCKS_PER_SEC / 20,
+            (unsigned long)g_peak, g_alloc_calls, g_reused_decode);
+   }
+#endif
    free(bmp);
    free(g_frame);
    g_frame = NULL;
@@ -543,6 +583,7 @@ int main(int argc, char **argv)
    lane_png(7, 5, RETRO_PIXEL_FORMAT_RGB565);
    lane_png(3, 2, RETRO_PIXEL_FORMAT_RGB565);
    lane_png(13, 9, RETRO_PIXEL_FORMAT_RGB565);
+   lane_png_guards();
 #endif
    lane_allocation_failures();
    lane_odd_offset();

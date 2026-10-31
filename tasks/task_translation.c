@@ -529,8 +529,7 @@ static void handle_translation_response(
          }
 
          if (    !VIDEO_SCALE_W(dims)
-              || !VIDEO_SCALE_H(dims)
-              || !(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
+              || !VIDEO_SCALE_H(dims))
             goto finish;
 
          if (is_hw_fb)
@@ -543,6 +542,20 @@ static void handle_translation_response(
             RARCH_LOG("[Translation] Hardware frame buffer core, but selected video driver isn't supported.\n");
             goto finish;
          }
+
+         if (image_fmt == SCALER_FMT_ARGB8888
+               && video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
+               && image_width == VIDEO_SCALE_W(dims)
+               && image_height == VIDEO_SCALE_H(dims))
+         {
+            raw_output_data      = (uint8_t*)raw_image_data_alpha;
+            raw_image_data_alpha = NULL;
+            pitch                = image_row;
+            goto draw_image;
+         }
+
+         if (!(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
+            goto finish;
 
          /* The assigned pitch may not be reliable.  The width of
             the video frame can change during run-time, but the
@@ -593,8 +606,9 @@ static void handle_translation_response(
                   (const uint8_t*)raw_image_data
                   + (image_height - 1) * image_row);
          }
+draw_image:
          if (image_fmt == SCALER_FMT_ARGB8888
-               && scaler->out_fmt == SCALER_FMT_ARGB8888)
+               && video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
          {
             uint32_t *pixels = (uint32_t*)raw_output_data;
             size_t i;
