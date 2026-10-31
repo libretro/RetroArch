@@ -66,6 +66,75 @@ static size_t frame_bytes(size_t stride, size_t rows)
    return stride * rows;
 }
 
+static bool point_can_convert_direct(const struct scaler_ctx *ctx)
+{
+   return ctx->scaler_type == SCALER_TYPE_POINT
+      && ctx->out_width <= ctx->in_width
+      && ctx->out_height <= ctx->in_height
+      /* Near unity, full-frame SIMD conversion is cheaper. */
+      && (uint64_t)ctx->out_width * ctx->out_height
+         <= (uint64_t)ctx->in_width * ctx->in_height / 4
+      && ((ctx->in_fmt == SCALER_FMT_RGB565
+               && ctx->out_fmt == SCALER_FMT_ARGB8888)
+            || ((ctx->in_fmt == SCALER_FMT_RGB565
+                  || ctx->in_fmt == SCALER_FMT_ARGB8888)
+               && ctx->out_fmt == SCALER_FMT_BGR24));
+}
+
+static void scaler_point_convert(const struct scaler_ctx *ctx,
+      void *output_, const void *input_,
+      int out_width, int out_height,
+      int in_width, int in_height,
+      int out_stride, int in_stride)
+{
+   int y, x;
+   uint8_t *output = (uint8_t*)output_;
+   const uint8_t *input = (const uint8_t*)input_;
+   int input_step = ctx->in_fmt == SCALER_FMT_RGB565
+      ? (in_stride >> 1) * 2 : (in_stride >> 2) * 4;
+   int output_step = ctx->out_fmt == SCALER_FMT_ARGB8888
+      ? (out_stride >> 2) * 4 : out_stride;
+
+   for (y = 0; y < out_height; y++, output += output_step)
+   {
+      const uint8_t *row = input
+         + (ptrdiff_t)ctx->vert.filter_pos[y] * input_step;
+      if (ctx->out_fmt == SCALER_FMT_ARGB8888)
+      {
+         uint32_t *dst = (uint32_t*)output;
+         const uint16_t *src = (const uint16_t*)row;
+         for (x = 0; x < out_width; x++)
+            dst[x] = 0xff000000u | pixconv_rgb565_to_xrgb8888(
+                  src[ctx->horiz.filter_pos[x]]);
+      }
+      else if (ctx->in_fmt == SCALER_FMT_RGB565)
+      {
+         uint8_t *dst = output;
+         const uint16_t *src = (const uint16_t*)row;
+         for (x = 0; x < out_width; x++, dst += 3)
+         {
+            uint32_t p = pixconv_rgb565_to_xrgb8888(
+                  src[ctx->horiz.filter_pos[x]]);
+            dst[0] = (uint8_t)p;
+            dst[1] = (uint8_t)(p >> 8);
+            dst[2] = (uint8_t)(p >> 16);
+         }
+      }
+      else
+      {
+         uint8_t *dst = output;
+         const uint32_t *src = (const uint32_t*)row;
+         for (x = 0; x < out_width; x++, dst += 3)
+         {
+            uint32_t p = src[ctx->horiz.filter_pos[x]];
+            dst[0] = (uint8_t)p;
+            dst[1] = (uint8_t)(p >> 8);
+            dst[2] = (uint8_t)(p >> 16);
+         }
+      }
+   }
+}
+
 static bool allocate_frames(struct scaler_ctx *ctx)
 {
    size_t stride;
@@ -114,6 +183,10 @@ static bool allocate_frames(struct scaler_ctx *ctx)
    }
 
    if (!scaled_bytes && !input_bytes && !output_bytes)
+      return true;
+
+   /* Convert only the selected pixels, straight into the destination. */
+   if (point_can_convert_direct(ctx))
       return true;
 
    /* One block for all three, laid out scaled | input | output with the
@@ -386,6 +459,9 @@ static bool scaler_ctx_gen_filter_internal(struct scaler_ctx *ctx)
          return false;
    }
 
+   if (!ctx->unscaled && point_can_convert_direct(ctx))
+      ctx->scaler_special = scaler_point_convert;
+
    return true;
 }
 
@@ -510,6 +586,15 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
          && !ctx->scaler_horiz
          && !ctx->scaler_vert)
       return;
+
+   if (ctx->scaler_special == scaler_point_convert)
+   {
+      ctx->scaler_special(ctx, output, input,
+            ctx->out_width, ctx->out_height,
+            ctx->in_width, ctx->in_height,
+            ctx->out_stride, ctx->in_stride);
+      return;
+   }
 
    if (       ctx->in_fmt != SCALER_FMT_ARGB8888
            && ctx->in_fmt != SCALER_FMT_XRGB2101010)

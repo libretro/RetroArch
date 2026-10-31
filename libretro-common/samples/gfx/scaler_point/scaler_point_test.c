@@ -1,4 +1,4 @@
-/* Point sampling must not allocate the unused horizontal-pass frame. */
+/* Point sampling pixels, conversion workspaces and failure handling. */
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,7 +117,9 @@ static void pixels(int iw, int ih, int ow, int oh, unsigned flip,
       if (!benchmark)
       {
          assert(!ctx.scaled.frame && !ctx.scaled.stride);
-         if (in_fmt != SCALER_FMT_RGB565 && out_fmt != SCALER_FMT_BGR24)
+         if ((in_fmt != SCALER_FMT_RGB565 && out_fmt != SCALER_FMT_BGR24)
+               || (ow <= iw && oh <= ih
+                  && (uint64_t)ow * oh <= (uint64_t)iw * ih / 4))
             assert(!frame_calls && !ctx.frame_arena);
          else
             assert(frame_calls == 1 && ctx.frame_arena);
@@ -173,6 +175,9 @@ static void modes_and_failures(void)
    assert(scaler_ctx_gen_filter(&ctx) && !frame_calls);
    scaler_ctx_gen_reset(&ctx);
    ctx.in_fmt = SCALER_FMT_RGB565;
+   assert(scaler_ctx_gen_filter(&ctx) && !frame_calls);
+   scaler_ctx_gen_reset(&ctx);
+   ctx.scaler_type = SCALER_TYPE_BILINEAR;
    assert(!scaler_ctx_gen_filter(&ctx));
    assert(!ctx.frame_arena && !ctx.filter_arena && !ctx.scaler_special);
    memset(input, 0, sizeof(input));
@@ -188,11 +193,46 @@ static void modes_and_failures(void)
    assert(!ctx.frame_arena && !ctx.filter_arena);
 }
 
+static void all_rgb565_values(enum scaler_pix_fmt out_fmt)
+{
+   struct scaler_ctx ctx;
+   unsigned x, y;
+   size_t out_size = (size_t)256 * 256
+      * (out_fmt == SCALER_FMT_BGR24 ? 3 : 4);
+   uint16_t *input = (uint16_t*)malloc((size_t)256 * 1024 * 2);
+   uint32_t *argb = (uint32_t*)malloc((size_t)256 * 256 * 4);
+   uint8_t *output = (uint8_t*)malloc(out_size);
+   uint8_t *expected = (uint8_t*)malloc(out_size);
+   assert(input && argb && output && expected);
+   for (y = 0; y < 1024; y++)
+      for (x = 0; x < 256; x++)
+         input[y * 256 + x] = (uint16_t)((y / 4) * 256 + x);
+   conv_rgb565_argb8888(argb, input, 256, 256, 256 * 4, 256 * 8);
+   if (out_fmt == SCALER_FMT_BGR24)
+      conv_argb8888_bgr24(expected, argb, 256, 256, 256 * 3, 256 * 4);
+   else
+      memcpy(expected, argb, out_size);
+   init(&ctx, SCALER_TYPE_POINT, SCALER_FMT_RGB565, out_fmt,
+         256, 1024, 256, 256, 256 * 2,
+         out_fmt == SCALER_FMT_BGR24 ? 256 * 3 : 256 * 4);
+   assert(scaler_ctx_gen_filter(&ctx));
+   assert(!ctx.frame_arena);
+   scaler_ctx_scale(&ctx, output, input);
+   assert(!memcmp(output, expected, out_size));
+   scaler_ctx_gen_reset(&ctx);
+   free(input);
+   free(argb);
+   free(output);
+   free(expected);
+}
+
 int main(int argc, char **argv)
 {
    static const int sizes[][4] = {
       {32, 24, 8, 6}, {7, 5, 13, 9}, {17, 9, 3, 2},
-      {8, 8, 8, 4}, {8, 8, 4, 8}, {2, 2, 1, 1}
+      {8, 8, 8, 4}, {8, 8, 4, 8}, {2, 2, 1, 1},
+      {9, 9, 4, 4}, {9, 9, 5, 5}, {16, 8, 8, 4},
+      {16, 9, 16, 8}, {33, 1, 8, 1}
    };
    unsigned size, flip, fmt;
    (void)argv;
@@ -201,6 +241,9 @@ int main(int argc, char **argv)
       pixels(3840, 2160, 640, 480, 0, SCALER_FMT_ARGB8888, SCALER_FMT_ARGB8888, 1);
       pixels(1920, 1080, 3840, 2160, 0, SCALER_FMT_ARGB8888, SCALER_FMT_ARGB8888, 1);
       pixels(3840, 2160, 640, 480, 0, SCALER_FMT_RGB565, SCALER_FMT_BGR24, 1);
+      pixels(3840, 2160, 640, 480, 0, SCALER_FMT_RGB565, SCALER_FMT_ARGB8888, 1);
+      pixels(3840, 2160, 640, 480, 0, SCALER_FMT_ARGB8888, SCALER_FMT_BGR24, 1);
+      pixels(1920, 1080, 1920, 1079, 0, SCALER_FMT_RGB565, SCALER_FMT_ARGB8888, 1);
       return 0;
    }
    for (size = 0; size < sizeof(sizes) / sizeof(sizes[0]); size++)
@@ -210,6 +253,8 @@ int main(int argc, char **argv)
                   (fmt == 1 || fmt == 3) ? SCALER_FMT_RGB565 : (fmt == 2 ? SCALER_FMT_XRGB2101010 : SCALER_FMT_ARGB8888),
                   (fmt == 1 || fmt == 4) ? SCALER_FMT_BGR24 : (fmt == 2 ? SCALER_FMT_XRGB2101010 : SCALER_FMT_ARGB8888), 0);
    modes_and_failures();
+   all_rgb565_values(SCALER_FMT_ARGB8888);
+   all_rgb565_values(SCALER_FMT_BGR24);
    puts("PASS: point pixels/strides, native and converted formats, mode changes, allocation failure and bounds");
    return 0;
 }
