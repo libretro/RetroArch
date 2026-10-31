@@ -4641,11 +4641,17 @@ bool menu_entries_append(
    if (!list || !label)
       return false;
 
+   if (!(cbs = menu_cbs_alloc()))
+      return false;
+
    /* Bail out on a failed append rather than carrying on with
     * idx = list->size - 1, which underflows to SIZE_MAX when the
     * list is still empty. */
    if (!file_list_append(list, path, label, type, directory_ptr, entry_idx))
+   {
+      mempool_free(&menu_cbs_pool, cbs);
       return false;
+   }
 
    if (mlist && mlist->size)
       menu_path          = mlist->list[mlist->size - 1].path;
@@ -4691,9 +4697,6 @@ bool menu_entries_append(
     * stack-local file_list_t that menu_displaylist_build_list() is
     * handed directly. */
    list->actiondata_free           = menu_entries_cbs_free;
-
-   if (!(cbs = menu_cbs_alloc()))
-      return false;
 
    cbs->enum_idx                   = enum_idx;
    cbs->checked                    = false;
@@ -4753,7 +4756,13 @@ void menu_entries_prepend(file_list_t *list,
    if (!list || !label)
       return;
 
-   file_list_insert(list, path, label, type, directory_ptr, entry_idx, 0);
+   if (!(cbs = menu_cbs_alloc()))
+      return;
+   if (!file_list_insert(list, path, label, type, directory_ptr, entry_idx, 0))
+   {
+      mempool_free(&menu_cbs_pool, cbs);
+      return;
+   }
    if (mlist && mlist->size)
       menu_path          = mlist->list[mlist->size - 1].path;
 
@@ -4780,11 +4789,6 @@ void menu_entries_prepend(file_list_t *list,
 
    /* See the matching comment in menu_entries_append(). */
    list->actiondata_free           = menu_entries_cbs_free;
-   cbs                             = menu_cbs_alloc();
-
-   if (!cbs)
-      return;
-
    cbs->enum_idx                   = enum_idx;
    cbs->checked                    = false;
    cbs->setting                    = menu_setting_find_enum(cbs->enum_idx);

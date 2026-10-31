@@ -92,6 +92,8 @@ bool file_list_reserve(file_list_t *list, size_t nitems)
 
    if (nitems < list->capacity || nitems > (size_t)-1/item_size)
       return false;
+   if (nitems == list->capacity)
+      return true;
 
    if (!(new_data = (struct item_file*)realloc(list->list, nitems * item_size)))
       return false;
@@ -105,7 +107,7 @@ bool file_list_reserve(file_list_t *list, size_t nitems)
 }
 
 /* Helper function to initialize item_file structure */
-static INLINE void init_item_file(struct item_file *item,
+static INLINE bool init_item_file(struct item_file *item,
     const char *path, const char *label, unsigned type,
     size_t directory_ptr, size_t entry_idx)
 {
@@ -117,12 +119,19 @@ static INLINE void init_item_file(struct item_file *item,
      * language handler recognises. */
     item->path          = file_list_strdup(path);
     item->label         = file_list_strdup(label);
+    if ((path && !item->path) || (label && !item->label))
+    {
+       file_list_strfree(item->path);
+       file_list_strfree(item->label);
+       return false;
+    }
     item->alt           = NULL;
     item->type          = type;
     item->directory_ptr = (uint32_t)directory_ptr;
     item->entry_idx     = entry_idx;
     item->userdata      = NULL;
     item->actiondata    = NULL;
+    return true;
 }
 
 bool file_list_insert(file_list_t *list,
@@ -131,20 +140,31 @@ bool file_list_insert(file_list_t *list,
       size_t entry_idx,
       size_t idx)
 {
+   struct item_file item;
+
+   if (idx > list->size)
+      return false;
+
    /* Expand file list if needed */
    if (list->size >= list->capacity)
    {
-      size_t new_capacity = list->capacity > 0 ? list->capacity * 2 : 1;
+      size_t new_capacity;
+      if (list->capacity > ((size_t)-1 - 1) / 2)
+         return false;
+      new_capacity = list->capacity * 2 + 1;
       if (!file_list_reserve(list, new_capacity))
          return false;
    }
+
+   if (!init_item_file(&item, path, label, type, directory_ptr, entry_idx))
+      return false;
 
    /* Shift elements to the right using memmove */
    if (idx < list->size)
       memmove(&list->list[idx + 1], &list->list[idx],
             (list->size - idx) * sizeof(struct item_file));
 
-   init_item_file(&list->list[idx], path, label, type, directory_ptr, entry_idx);
+   list->list[idx] = item;
    list->size++;
 
    return true;
@@ -155,23 +175,19 @@ bool file_list_append(file_list_t *list,
       unsigned type, size_t directory_ptr,
       size_t entry_idx)
 {
-   unsigned idx = (unsigned)list->size;
+   size_t idx = list->size;
    /* Expand file list if needed */
    if (idx >= list->capacity)
+   {
+      if (list->capacity > ((size_t)-1 - 1) / 2)
+         return false;
       if (!file_list_reserve(list, list->capacity * 2 + 1))
          return false;
+   }
 
-   list->list[idx].path          = NULL;
-   list->list[idx].label         = NULL;
-   list->list[idx].alt           = NULL;
-   list->list[idx].type          = type;
-   list->list[idx].directory_ptr = (uint32_t)directory_ptr;
-   list->list[idx].entry_idx     = entry_idx;
-   list->list[idx].userdata      = NULL;
-   list->list[idx].actiondata    = NULL;
-
-   list->list[idx].label         = file_list_strdup(label);
-   list->list[idx].path          = file_list_strdup(path);
+   if (!init_item_file(&list->list[idx], path, label,
+            type, directory_ptr, entry_idx))
+      return false;
 
    list->size++;
 
