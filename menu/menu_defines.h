@@ -601,6 +601,7 @@ struct menu_dialog
    unsigned              confirm_msg;
    unsigned              confirm_cmd;
    unsigned              pending_cmd;
+   char                  confirm_text[512];
    bool                  confirm_hover_ok;
    bool                  confirm_hover_back;
    bool                  pending_push;

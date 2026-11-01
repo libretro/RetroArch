@@ -5637,6 +5637,11 @@ bool command_event(enum event_command cmd, void *data)
          input_config_forget_controllers();
          input_driver_restart_with_next_video_restart();
          break;
+      case CMD_EVENT_MENU_FIRST_RUN_DOWNLOAD:
+#if defined(HAVE_MENU) && defined(HAVE_ONLINE_UPDATER) && defined(HAVE_NETWORKING) && defined(HAVE_COMPRESSION)
+         menu_first_run_download_start();
+#endif
+         break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          /* Same as at quit: the companion's live layout first. */
          ui_companion_event_command(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
