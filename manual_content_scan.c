@@ -1703,6 +1703,32 @@ error:
 /* Task Helpers */
 /****************/
 
+/* The system name type a scan of the current settings takes: an
+ * automatic name is filled when the settings predict it. */
+static enum manual_content_scan_system_name_type
+      manual_content_scan_task_name_type(void)
+{
+   if (scan_settings.system_name_type == MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO)
+   {
+      if (scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT ||
+          scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
+          scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_NONE)
+         return MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
+      if (scan_settings.db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
+         return MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
+   }
+   return scan_settings.system_name_type;
+}
+
+/* True if a scan of the current settings writes one playlist
+ * (target_is_single_determined_playlist). */
+bool manual_content_scan_is_single_playlist(void)
+{
+   return    scan_settings.scan_method != MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC
+          && manual_content_scan_task_name_type()
+                != MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO;
+}
+
 /* Parses current manual content scan settings,
  * and extracts all information required to configure
  * a manual content scan task.
@@ -1749,15 +1775,7 @@ bool manual_content_scan_get_task_config(
          sizeof(task_config->content_dir));
 
    /* If name is set as automatic, but is predictable, fill it now. */
-   if (scan_settings.system_name_type == MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO)
-   {
-      if (scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT ||
-          scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
-          scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_NONE)
-         scan_settings.system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
-      else if (scan_settings.db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
-         scan_settings.system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
-   }
+   scan_settings.system_name_type = manual_content_scan_task_name_type();
    /* Get target playlist ("system name")
     *
     * The system name is not a leaf value: the scan pipeline appends a

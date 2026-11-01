@@ -503,7 +503,8 @@ bool __wrap_task_queue_is_threaded(void)
    return __real_task_queue_is_threaded();
 }
 
-/* A stream of slow_size bytes sleeps slow_ms before its first quantum;
+/* A stream of slow_size bytes sleeps slow_ms before its first quantum,
+ * then waits while slow_hold is set, at most HOLD_USEC (below);
  * slow_in counts those sleeps begun, slow_back those ended (slow_begun
  * holds reader_begun as each of the first four ends), slow_by_scan
  * those in the scan's tick and slow_on_scan those on the thread that
@@ -523,6 +524,7 @@ bool __wrap_task_queue_is_threaded(void)
 static uint32_t           slow_size;
 static unsigned           slow_ms;
 static retro_atomic_int_t slow_in;
+static retro_atomic_int_t slow_hold;
 static retro_atomic_int_t slow_back;
 static int                slow_begun[4];
 static retro_atomic_int_t slow_on_scan;
@@ -583,6 +585,7 @@ int64_t __wrap_intfstream_crc_step(intfstream_internal_t *intf,
    if (slow_size && size == (int64_t)slow_size && first)
    {
       int k;
+      retro_time_t until = cpu_features_get_time_usec() + HOLD_USEC;
 
       if (retro_atomic_load_acquire_size(&scan_thread_tid)
             == (size_t)current_tid())
@@ -591,6 +594,9 @@ int64_t __wrap_intfstream_crc_step(intfstream_internal_t *intf,
          retro_atomic_fetch_add_int(&slow_by_scan, 1);
       retro_atomic_fetch_add_int(&slow_in, 1);
       retro_sleep(slow_ms);
+      while (   retro_atomic_load_acquire_int(&slow_hold)
+             && cpu_features_get_time_usec() < until)
+         retro_sleep(1);
       if ((k = retro_atomic_fetch_add_int(&slow_back, 1)) < 4)
          slow_begun[k] = retro_atomic_load_acquire_int(&reader_begun);
    }
@@ -9072,6 +9078,285 @@ static void core_lookup_lane(const char *root)
    ovr_cfg = NULL;
 }
 
+/* What chain_lane()'s callbacks were handed; chain_in_push, what they
+ * were before task_push_dbscan_chain() returned. */
+#define CHAIN_SEEN_MAX 8
+static unsigned                   chain_seen;
+static unsigned                   chain_dones;
+static unsigned                   chain_in_push;
+static bool                       chain_ud_ok;
+static char                       chain_names[CHAIN_SEEN_MAX][512];
+static enum task_dbscan_outcome   chain_outcomes[CHAIN_SEEN_MAX];
+static int                        chain_added[CHAIN_SEEN_MAX];
+static task_dbscan_chain_result_t chain_totals;
+
+static void chain_item_cb(const char *name,
+      enum task_dbscan_outcome outcome,
+      const task_dbscan_result_t *res, void *user_data)
+{
+   if (user_data != &chain_seen)
+      chain_ud_ok = false;
+   if (chain_seen < CHAIN_SEEN_MAX)
+   {
+      strlcpy(chain_names[chain_seen], name ? name : "(null)",
+            sizeof(chain_names[0]));
+      chain_outcomes[chain_seen] = outcome;
+      chain_added[chain_seen]    = res ? (int)res->added : -1;
+   }
+   chain_seen++;
+}
+
+static void chain_done_cb(const task_dbscan_chain_result_t *res,
+      void *user_data)
+{
+   if (user_data != &chain_seen)
+      chain_ud_ok = false;
+   chain_totals = *res;
+   chain_dones++;
+}
+
+/* A --scan item for @arg; with @core, an override naming it. */
+static void chain_item(task_dbscan_item_t *it, const char *arg,
+      const char *core)
+{
+   it->kind      = TASK_DBSCAN_ITEM_PATH;
+   it->arg       = ovr_str(arg);
+   it->overrides = NULL;
+   if (core && (it->overrides = manual_content_scan_overrides_new()))
+      it->overrides->core = ovr_str(core);
+}
+
+/* @n items, the first for @first, the rest for @rest. */
+static task_dbscan_item_t *chain_items(size_t n, const char *first,
+      const char *rest)
+{
+   size_t              i;
+   task_dbscan_item_t *items = (task_dbscan_item_t*)calloc(n,
+         sizeof(*items));
+
+   if (items)
+      for (i = 0; i < n; i++)
+         chain_item(&items[i], i ? rest : first, NULL);
+   return items;
+}
+
+static bool chain_push(task_dbscan_item_t *items, size_t n)
+{
+   bool pushed;
+
+   chain_seen   = 0;
+   chain_dones  = 0;
+   chain_ud_ok  = true;
+   memset(&chain_totals, 0, sizeof(chain_totals));
+   pushed        = task_push_dbscan_chain(items, n, chain_item_cb,
+         chain_done_cb, &chain_seen);
+   chain_in_push = chain_seen + chain_dones;
+   return pushed;
+}
+
+/* Runs the queue until done_cb, then a while longer to see it is not
+ * called again.  With @cancel_slow, cancels the scan once a slow read
+ * has begun, then lets a held one go. */
+static void chain_wait(bool cancel_slow)
+{
+   task_finder_data_t finder;
+   unsigned           i;
+   bool               cancelled = false;
+   time_t             started   = time(NULL);
+
+   finder.func     = find_scan;
+   finder.userdata = NULL;
+   while (!chain_dones)
+   {
+      if (   cancel_slow && !cancelled
+          && retro_atomic_load_acquire_int(&slow_in) > 0
+          && task_queue_find(&finder))
+      {
+         task_queue_cancel_ident(lane_ident);
+         retro_atomic_store_release_int(&slow_hold, 0);
+         cancelled = true;
+      }
+      task_queue_check();
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         return;
+      retro_sleep(1);
+   }
+   for (i = 0; i < 20; i++)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+}
+
+static bool chain_saw(unsigned i, const char *name,
+      enum task_dbscan_outcome outcome, int added)
+{
+   return    i < chain_seen && i < CHAIN_SEEN_MAX
+          && !strcmp(chain_names[i], name)
+          && chain_outcomes[i] == outcome
+          && chain_added[i]    == added;
+}
+
+/* The chain runs --scan items in order, one task at a time: a missing
+ * path and an unknown core fail their item, not the run, and the two
+ * scans of one playlist follow each other, the second pushed from the
+ * first's callback.  A cancelled scan stops the rest.  A chain is
+ * refused while another runs, or a manual scan. */
+static void chain_lane(const char *root, const char *pl_dir,
+      uint32_t crc_a, uint32_t sz_a, bool threaded)
+{
+   char                a[512], b[512], slow[512], missing[512], pl[512];
+   char                out[1024], err[1024], p[1024], what[96];
+   char                detail[160];
+   const char         *q = threaded ? "(threaded)" : "(regular)";
+   task_dbscan_item_t *items;
+   bool                pushed, refused, captured, back;
+
+   sprintf(a,       "%s/chain_a",       root);
+   sprintf(b,       "%s/chain_b",       root);
+   sprintf(slow,    "%s/chain_slow",    root);
+   sprintf(missing, "%s/chain_missing", root);
+   sprintf(pl,      "%s/chain_pl",      root);
+   path_mkdir(a);
+   path_mkdir(b);
+   path_mkdir(slow);
+   path_mkdir(pl);
+   sprintf(p, "%s/01_alpha.bin", a);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/01_alpha.bin", b);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/00_slow.bin", slow);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/01_more.bin", slow);
+   if (!write_content(p, 0x3C0FFEE0u, 1024))
+      goto fixture;
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   delete_playlists(pl);
+   use_queue(threaded);
+
+   pushed = chain_push(chain_items(1, missing, NULL), 1);
+   chain_wait(false);
+   sprintf(what, "chain %s: nothing inside the push", q);
+   sprintf(detail, "%u calls in the push, done %u", chain_in_push,
+         chain_dones);
+   check(pushed && !chain_in_push && chain_dones == 1, what, detail);
+   sprintf(what, "chain %s: a missing path fails", q);
+   check(   chain_seen == 1
+         && chain_saw(0, missing, TASK_DBSCAN_FAILED, -1)
+         && chain_totals.failed == 1 && !chain_totals.ran
+         && !chain_totals.added, what, chain_names[0]);
+
+   sprintf(out, "%s/chain_out.txt", root);
+   sprintf(err, "%s/chain_err.txt", root);
+   items = (task_dbscan_item_t*)calloc(4, sizeof(*items));
+   if (!items)
+      goto fixture;
+   chain_item(&items[0], a,       NULL);
+   chain_item(&items[1], missing, NULL);
+   chain_item(&items[2], b,       "nope");
+   chain_item(&items[3], b,       NULL);
+   cli_output = true;
+   captured   = capture_begin(out, err);
+   pushed     = chain_push(items, 4);
+   chain_wait(false);
+   if (captured)
+      capture_end();
+   cli_output = false;
+   sprintf(what, "chain %s: items in order", q);
+   sprintf(detail, "%u items, done %u", chain_seen, chain_dones);
+   check(   captured && pushed && chain_seen == 4
+         && chain_saw(0, a,       TASK_DBSCAN_RAN,    1)
+         && chain_saw(1, missing, TASK_DBSCAN_FAILED, -1)
+         && chain_saw(2, b,       TASK_DBSCAN_FAILED, -1)
+         && chain_saw(3, b,       TASK_DBSCAN_RAN,    1), what, detail);
+   sprintf(what, "chain %s: the totals", q);
+   sprintf(detail, "ran %u, added %u, failed %u, skipped %u%s",
+         chain_totals.ran, chain_totals.added, chain_totals.failed,
+         chain_totals.skipped, chain_totals.cancelled ? ", cancelled" : "");
+   check(   chain_totals.ran == 2 && chain_totals.added == 2
+         && chain_totals.failed == 2 && !chain_totals.skipped
+         && !chain_totals.cancelled, what, detail);
+   sprintf(what, "chain %s: done_cb once, with the user data", q);
+   check(chain_dones == 1 && chain_ud_ok && !chain_in_push, what, "");
+   sprintf(what, "chain %s: one playlist twice in a row", q);
+   sprintf(p, "%s/Test Alpha.lpl", pl);
+   {
+      char ea[1024], eb[1024];
+
+      sprintf(ea, "%s/01_alpha.bin", a);
+      sprintf(eb, "%s/01_alpha.bin", b);
+      check(file_contains(p, ea) && file_contains(p, eb), what, p);
+   }
+   sprintf(what, "chain %s: the item lines", q);
+   sprintf(p, "%s: not found", missing);
+   check(   file_contains(err, p)
+         && file_contains(err, "nope: no such core"), what, err);
+
+   /* Held on the threaded queue, so the scan cannot end before the
+    * cancel; the regular one reads on this thread */
+   slow_reset(sz_a, 300);
+   if (threaded)
+      retro_atomic_store_release_int(&slow_hold, 1);
+   pushed = chain_push(chain_items(2, slow, a), 2);
+   chain_wait(true);
+   retro_atomic_store_release_int(&slow_hold, 0);
+   slow_size = 0;
+   back      = slow_reads_back() && readers_gone();
+   sprintf(what, "chain %s: a cancelled scan stops the rest", q);
+   sprintf(detail, "%u items, ran %u%s, done %u", chain_seen,
+         chain_totals.ran, chain_totals.cancelled ? ", cancelled" : "",
+         chain_dones);
+   check(   pushed && back && chain_seen == 1 && chain_dones == 1
+         && chain_saw(0, slow, TASK_DBSCAN_RAN, chain_added[0])
+         && chain_totals.ran == 1 && chain_totals.cancelled, what, detail);
+
+   pushed  = chain_push(chain_items(1, a, NULL), 1);
+   refused = !task_push_dbscan_chain(chain_items(1, b, NULL), 1,
+         chain_item_cb, chain_done_cb, &chain_seen);
+   chain_wait(false);
+   sprintf(what, "chain %s: a second chain refused", q);
+   sprintf(detail, "%u items, done %u", chain_seen, chain_dones);
+   check(   pushed && refused && chain_seen == 1 && chain_dones == 1
+         && chain_saw(0, a, TASK_DBSCAN_RAN, 0), what, detail);
+
+   /* Held, so the scan cannot end before the chain is pushed */
+   slow_reset(sz_a, 0);
+   retro_atomic_store_release_int(&slow_hold, 1);
+   loop_active    = true;
+   scan_completed = false;
+   pushed         = task_push_dbscan(a, scan_cb, NULL);
+   refused        = !chain_push(chain_items(1, b, NULL), 1);
+   retro_atomic_store_release_int(&slow_hold, 0);
+   {
+      time_t started = time(NULL);
+
+      while (loop_active && difftime(time(NULL), started)
+            <= SCAN_TIMEOUT_SECONDS)
+      {
+         task_queue_check();
+         retro_sleep(1);
+      }
+   }
+   slow_size = 0;
+   sprintf(what, "chain %s: refused while a manual scan runs", q);
+   check(   pushed && refused && scan_completed && !chain_seen
+         && !chain_dones, what, refused ? "refused" : "pushed");
+
+   manual_content_scan_reset_settings();
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the chain lane");
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -10157,6 +10442,8 @@ int main(int argc, char **argv)
    reset_lane(root, pl_dir);
    overrides_lane(root, pl_dir);
    core_lookup_lane(root);
+   chain_lane(root, pl_dir, crc_a, sz_a, false);
+   chain_lane(root, pl_dir, crc_a, sz_a, true);
    {
       char reader_db[512];
 

@@ -5847,3 +5847,384 @@ error:
 
    return false;
 }
+
+/* --- The scan chain ----------------------------------------------- */
+
+/* A prep task's state: the handler fills it, and the callback takes
+ * what it needs on the main thread once the task finished. */
+typedef struct
+{
+   char *dir;
+   dir_list_iter_t *iter;
+   struct string_list *list;
+   bool include_hidden;
+   bool begun;
+} dbscan_prep_t;
+
+typedef struct
+{
+   task_dbscan_item_t *items;
+   struct string_list *rdb_list;
+   char *name;   /* the running scan's */
+   task_dbscan_item_cb_t item_cb;
+   task_dbscan_chain_cb_t done_cb;
+   void *user_data;
+   size_t count;
+   size_t next;
+   task_dbscan_chain_result_t totals;
+   bool cli_output;
+} dbscan_chain_t;
+
+/* Main thread only, as every step of the chain. */
+static dbscan_chain_t *dbscan_chain_running = NULL;
+
+static void dbscan_chain_free_items(task_dbscan_item_t *items,
+      size_t count)
+{
+   size_t i;
+
+   if (!items)
+      return;
+   for (i = 0; i < count; i++)
+   {
+      free(items[i].arg);
+      manual_content_scan_overrides_free(items[i].overrides);
+   }
+   free(items);
+}
+
+static void dbscan_chain_finish(dbscan_chain_t *chain)
+{
+   if (chain->done_cb)
+      chain->done_cb(&chain->totals, chain->user_data);
+   dbscan_chain_free_items(chain->items, chain->count);
+   if (chain->rdb_list)
+      string_list_free(chain->rdb_list);
+   free(chain->name);
+   free(chain);
+   dbscan_chain_running = NULL;
+}
+
+static void dbscan_chain_fold(dbscan_chain_t *chain, const char *name,
+      enum task_dbscan_outcome outcome, const task_dbscan_result_t *res)
+{
+   switch (outcome)
+   {
+      case TASK_DBSCAN_RAN:
+         chain->totals.ran++;
+         if (res && res->added)
+            chain->totals.added++;
+         break;
+      case TASK_DBSCAN_FAILED:
+         chain->totals.failed++;
+         break;
+      case TASK_DBSCAN_SKIPPED:
+         chain->totals.skipped++;
+         break;
+   }
+   if (chain->item_cb)
+      chain->item_cb(name, outcome, res, chain->user_data);
+}
+
+/* @in with '~' expanded, made absolute if relative; NULL, with the
+ * reason on stderr, if nothing is there.  Free the result. */
+static char *dbscan_chain_resolve(const char *in)
+{
+   char *s = (char*)malloc(PATH_MAX_LENGTH);
+
+   if (!s)
+   {
+      fprintf(stderr, "out of memory\n");
+      return NULL;
+   }
+   fill_pathname_expand_special(s, in, PATH_MAX_LENGTH);
+   /* "" would resolve to the working directory.  Consoles resolve
+    * nothing, so a relative path stays as it is there. */
+#ifndef RARCH_CONSOLE
+   if (   *s && !path_is_absolute(s)
+       && !path_resolve_realpath(s, PATH_MAX_LENGTH, false))
+      *s = '\0';
+#endif
+   if (!*s || !path_is_valid(s))
+   {
+      fprintf(stderr, "%s: not found\n", in);
+      free(s);
+      return NULL;
+   }
+   return s;
+}
+
+/* @name: the item, for the one error the overrides cannot name. */
+static void dbscan_chain_override_error(const dbscan_chain_t *chain,
+      const char *name, const manual_content_scan_overrides_t *ov,
+      enum manual_content_scan_override_status st, unsigned count)
+{
+   if (!chain->cli_output)
+      return;
+   switch (st)
+   {
+      case MANUAL_CONTENT_SCAN_OVR_NO_SUCH_CORE:
+         fprintf(stderr, "%s: no such core\n", ov->core);
+         break;
+      case MANUAL_CONTENT_SCAN_OVR_AMBIGUOUS_CORE:
+         fprintf(stderr, "%s: %u cores with this name, give the path\n",
+               ov->core, count);
+         break;
+      case MANUAL_CONTENT_SCAN_OVR_NO_SUCH_DATABASE:
+         fprintf(stderr, "%s: no such database\n", ov->database);
+         break;
+      case MANUAL_CONTENT_SCAN_OVR_NOT_A_DAT:
+         fprintf(stderr, "%s: not a DAT file\n", ov->dat);
+         break;
+      case MANUAL_CONTENT_SCAN_OVR_DAT_TOO_LARGE:
+         fprintf(stderr, "%s: DAT file too large\n", ov->dat);
+         break;
+      case MANUAL_CONTENT_SCAN_OVR_DAT_WITHOUT_MATCH:
+         fprintf(stderr,
+               "%s: --scan-dat cannot be used with --scan-match=none\n",
+               name);
+         break;
+      case MANUAL_CONTENT_SCAN_OVR_OK:
+         break;
+   }
+}
+
+static void dbscan_chain_next(dbscan_chain_t *chain);
+
+static void dbscan_chain_scan_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   dbscan_chain_t *chain           = (dbscan_chain_t*)user_data;
+   const task_dbscan_result_t *res = (const task_dbscan_result_t*)task_data;
+   char *name                      = chain->name;
+
+   chain->name = NULL;
+   dbscan_chain_fold(chain, name,
+         res->failed ? TASK_DBSCAN_FAILED : TASK_DBSCAN_RAN, res);
+   free(name);
+   /* Cancelled, as on quit: start no more. */
+   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+   {
+      chain->totals.cancelled = true;
+      dbscan_chain_finish(chain);
+   }
+   else
+      dbscan_chain_next(chain);
+}
+
+/* --scan-overwrite, --scan-validate and --scan-omit-db-ref act on one
+ * playlist only: warns of those in @flags when the applied settings
+ * give none. */
+static void dbscan_chain_single_warn(const dbscan_chain_t *chain,
+      const char *name, unsigned flags)
+{
+   if (!chain->cli_output || manual_content_scan_is_single_playlist())
+      return;
+   if (flags & MANUAL_CONTENT_SCAN_OVR_OVERWRITE)
+      fprintf(stderr, "%s: --scan-overwrite needs one playlist, ignored\n",
+            name);
+   if (flags & MANUAL_CONTENT_SCAN_OVR_VALIDATE)
+      fprintf(stderr, "%s: --scan-validate needs one playlist, ignored\n",
+            name);
+   if (flags & MANUAL_CONTENT_SCAN_OVR_OMIT_DB_REF)
+      fprintf(stderr, "%s: --scan-omit-db-ref needs one playlist, ignored\n",
+            name);
+}
+
+/* True once the item's scan is pushed; otherwise it is folded as
+ * failed. */
+static bool dbscan_chain_push_path(dbscan_chain_t *chain,
+      const task_dbscan_item_t *item)
+{
+   enum manual_content_scan_override_status st;
+   unsigned count = 0;
+   char *path     = dbscan_chain_resolve(item->arg);
+
+   if (!path)
+   {
+      dbscan_chain_fold(chain, item->arg, TASK_DBSCAN_FAILED, NULL);
+      return false;
+   }
+   manual_content_scan_reset_settings();
+   manual_content_scan_set_menu_content_dir(path);
+   if ((st = manual_content_scan_apply_overrides(item->overrides,
+         chain->rdb_list, &count)) != MANUAL_CONTENT_SCAN_OVR_OK)
+      dbscan_chain_override_error(chain, item->arg, item->overrides, st,
+            count);
+   else
+   {
+      unsigned flags = item->overrides ? item->overrides->flags : 0;
+
+      if (   chain->cli_output
+          && (flags & MANUAL_CONTENT_SCAN_OVR_OVERWRITE)
+          && !path_is_directory(path))
+      {
+         fprintf(stderr, "%s: --scan-overwrite ignored for a single file\n",
+               path);
+         flags &= ~(unsigned)MANUAL_CONTENT_SCAN_OVR_OVERWRITE;
+      }
+      dbscan_chain_single_warn(chain, path, flags);
+      if (task_push_manual_content_scan(false, dbscan_chain_scan_cb, chain))
+      {
+         chain->name = path;
+         return true;
+      }
+      if (chain->cli_output)
+         fprintf(stderr, "%s: the scan could not start\n", path);
+   }
+   dbscan_chain_fold(chain, path, TASK_DBSCAN_FAILED, NULL);
+   free(path);
+   return false;
+}
+
+/* Runs items until one pushes a task; after the last, finishes. */
+static void dbscan_chain_next(dbscan_chain_t *chain)
+{
+   while (chain->next < chain->count)
+   {
+      const task_dbscan_item_t *item = &chain->items[chain->next++];
+
+      switch (item->kind)
+      {
+         case TASK_DBSCAN_ITEM_PATH:
+            if (dbscan_chain_push_path(chain, item))
+               return;
+            break;
+         default:
+            dbscan_chain_fold(chain, item->arg, TASK_DBSCAN_FAILED, NULL);
+            break;
+      }
+   }
+   dbscan_chain_finish(chain);
+}
+
+/* Lists the database folder: to the end on a threaded queue's worker,
+ * else under the shared window. */
+static void dbscan_prep_handler(retro_task_t *task)
+{
+   dbscan_prep_t *prep = (dbscan_prep_t*)task->state;
+   int r               = 1;
+
+   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+   {
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+   if (!prep->begun)
+   {
+      prep->begun = true;
+      if (prep->dir && (prep->list = string_list_new()))
+         prep->iter = dir_list_iter_new(prep->dir, "rdb", false,
+               prep->include_hidden, false, false, prep->list);
+   }
+   if (prep->iter)
+   {
+      if (task_queue_is_threaded())
+         r = dir_list_iter_step(prep->iter, NULL, NULL);
+      else
+      {
+         nbio_budget_t b;
+         task_nbio_slice_open(&b);
+         r = dir_list_iter_step(prep->iter,
+               manual_scan_walk_within_budget, &b);
+         task_nbio_slice_close(&b);
+         if (!r)
+            return;
+      }
+   }
+   /* No listing, as dir_list_new() gives none. */
+   if ((!prep->iter || r < 0) && prep->list)
+   {
+      string_list_free(prep->list);
+      prep->list = NULL;
+   }
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void dbscan_prep_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   dbscan_chain_t *chain = (dbscan_chain_t*)user_data;
+   dbscan_prep_t *prep   = (dbscan_prep_t*)task->state;
+
+   chain->rdb_list = prep->list;
+   prep->list      = NULL;
+   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+   {
+      chain->totals.cancelled = true;
+      dbscan_chain_finish(chain);
+   }
+   else
+      dbscan_chain_next(chain);
+}
+
+static void dbscan_prep_free(retro_task_t *task)
+{
+   dbscan_prep_t *prep = (dbscan_prep_t*)task->state;
+
+   if (!prep)
+      return;
+   dir_list_iter_free(prep->iter);
+   if (prep->list)
+      string_list_free(prep->list);
+   free(prep->dir);
+   free(prep);
+}
+
+/* Any unfinished scan, whatever its playlist. */
+static bool dbscan_chain_scan_finder(retro_task_t *task, void *user_data)
+{
+   return    task->handler == task_manual_content_scan_handler
+          && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
+}
+
+bool task_push_dbscan_chain(task_dbscan_item_t *items, size_t count,
+      task_dbscan_item_cb_t item_cb, task_dbscan_chain_cb_t done_cb,
+      void *user_data)
+{
+   task_finder_data_t find_data;
+   retro_task_t *task    = NULL;
+   dbscan_chain_t *chain = NULL;
+   dbscan_prep_t *prep   = NULL;
+   settings_t *settings  = config_get_ptr();
+
+   find_data.func     = dbscan_chain_scan_finder;
+   find_data.userdata = NULL;
+   if (dbscan_chain_running || task_queue_find(&find_data))
+      goto error;
+   if (   !(chain = (dbscan_chain_t*)calloc(1, sizeof(*chain)))
+       || !(prep  = (dbscan_prep_t*)calloc(1, sizeof(*prep)))
+       || !(task  = task_init()))
+      goto error;
+#ifdef HAVE_LIBRETRODB
+   if (   *settings->paths.path_content_database
+       && !(prep->dir = strdup(settings->paths.path_content_database)))
+      goto error;
+#endif
+   prep->include_hidden = settings->bools.show_hidden_files;
+
+   chain->items      = items;
+   chain->count      = count;
+   chain->item_cb    = item_cb;
+   chain->done_cb    = done_cb;
+   chain->user_data  = user_data;
+   chain->cli_output = retroarch_override_setting_is_set(
+         RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
+
+   /* Silent: no title, no notifications. */
+   task->handler        = dbscan_prep_handler;
+   task->state          = prep;
+   task->user_data      = chain;
+   task->callback       = dbscan_prep_cb;
+   task->cleanup        = dbscan_prep_free;
+   dbscan_chain_running = chain;
+   task_queue_push(task);
+   return true;
+
+error:
+   free(task);
+   free(prep);
+   free(chain);
+   dbscan_chain_free_items(items, count);
+   return false;
+}

@@ -371,6 +371,10 @@ struct string_list *manual_content_scan_get_menu_core_name_list(void);
 /* Task Helpers */
 /****************/
 
+/* True if a scan of the current settings writes one playlist
+ * (target_is_single_determined_playlist). */
+bool manual_content_scan_is_single_playlist(void);
+
 /* Parses current manual content scan settings,
  * and extracts all information required to configure
  * a manual content scan task.

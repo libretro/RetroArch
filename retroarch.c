@@ -8261,111 +8261,73 @@ void handle_dbscan_finished(retro_task_t *task,
 #endif
 
 #ifdef HAVE_LIBRETRODB
-/* @in with '~' expanded, made absolute if relative; NULL, with the
- * reason on stderr, if nothing is there.  Free the result. */
-static char *retroarch_cli_scan_path(const char *in)
+/* Appends a @kind item for @arg; false if out of memory. */
+static bool retroarch_cli_scan_add(task_dbscan_item_t **items,
+      size_t *count, size_t *cap, enum task_dbscan_item_kind kind,
+      const char *arg)
 {
-   char *s = (char*)malloc(PATH_MAX_LENGTH);
+   task_dbscan_item_t *item;
 
-   if (!s)
-      return NULL;
-   fill_pathname_expand_special(s, in, PATH_MAX_LENGTH);
-   /* "" would resolve to the working directory.  Consoles resolve
-    * nothing, so a relative path stays as it is there. */
-#ifndef RARCH_CONSOLE
-   if (   *s && !path_is_absolute(s)
-       && !path_resolve_realpath(s, PATH_MAX_LENGTH, false))
-      *s = '\0';
-#endif
-   if (!*s || !path_is_valid(s))
+   if (*count == *cap)
    {
-      fprintf(stderr, "%s: not found\n", in);
-      free(s);
-      return NULL;
+      size_t n                  = *cap ? *cap * 2 : 4;
+      task_dbscan_item_t *grown = (task_dbscan_item_t*)realloc(*items,
+            n * sizeof(*grown));
+
+      if (!grown)
+         return false;
+      *items = grown;
+      *cap   = n;
    }
-   return s;
+   item            = &(*items)[*count];
+   item->kind      = kind;
+   item->overrides = NULL;
+   item->arg       = NULL;
+   if (arg && !(item->arg = strdup(arg)))
+      return false;
+   (*count)++;
+   return true;
 }
 
-static void retroarch_cli_scan_done(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   *(task_dbscan_result_t*)user_data =
-         *(const task_dbscan_result_t*)task_data;
-}
-
-/* Scans @in to its end on this thread. */
-static void retroarch_cli_scan_one(const char *in,
-      task_dbscan_result_t *res)
-{
-   char *path = retroarch_cli_scan_path(in);
-
-   memset(res, 0, sizeof(*res));
-   res->failed = true;
-   if (!path)
-      return;
-   if (task_push_dbscan(path, retroarch_cli_scan_done, res))
-      task_queue_wait(NULL, NULL);
-   else
-      fprintf(stderr, "%s: the scan could not start\n", path);
-   free(path);
-}
-
-/* --scan with --menu: one scan at a time, as a second is refused
- * while one runs; each pushes the next as it finishes. */
+/* What the chain told a run without --menu. */
 typedef struct
 {
-   struct string_list *paths;
-   size_t              next;
-} retroarch_menu_scans_t;
+   task_dbscan_chain_result_t totals;
+   bool done;
+} retroarch_cli_scan_state_t;
 
-static void retroarch_menu_scan_next(retroarch_menu_scans_t *scans);
-
-static void retroarch_menu_scan_done(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
+static void retroarch_cli_scan_done(
+      const task_dbscan_chain_result_t *res, void *user_data)
 {
-   retroarch_menu_scans_t *scans = (retroarch_menu_scans_t*)user_data;
+   retroarch_cli_scan_state_t *st = (retroarch_cli_scan_state_t*)user_data;
 
+   st->totals = *res;
+   st->done   = true;
+}
+
+static bool retroarch_cli_scan_running(void *data)
+{
+   return !((retroarch_cli_scan_state_t*)data)->done;
+}
+
+static void retroarch_cli_scan_menu_item(const char *name,
+      enum task_dbscan_outcome outcome,
+      const task_dbscan_result_t *res, void *user_data)
+{
 #ifdef HAVE_MENU
-   handle_dbscan_finished(task, task_data, NULL, err);
+   if (res)
+      handle_dbscan_finished(NULL, NULL, NULL, NULL);
 #endif
-   /* Cancelled, as on quit: start no more. */
-   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
-      scans->next = scans->paths->size;
-   retroarch_menu_scan_next(scans);
 }
 
-/* Pushes the next path that starts; frees @scans after the last. */
-static void retroarch_menu_scan_next(retroarch_menu_scans_t *scans)
+/* Runs the --scan @items through the scan chain, which owns them.
+ * With --menu the chain is pushed and the menu goes on.  Without, it
+ * is the whole run: the process exits 1 if any scan failed, else 0 if
+ * any added an entry, else 2. */
+static void retroarch_cli_scan(task_dbscan_item_t *items, size_t count,
+      bool menu, const char *content)
 {
-   while (scans->next < scans->paths->size)
-   {
-      bool pushed;
-      char *path = retroarch_cli_scan_path(
-            scans->paths->elems[scans->next++].data);
-
-      if (!path)
-         continue;
-      pushed = task_push_dbscan(path, retroarch_menu_scan_done, scans);
-      if (!pushed)
-         fprintf(stderr, "%s: the scan could not start\n", path);
-      free(path);
-      if (pushed)
-         return;
-   }
-   string_list_free(scans->paths);
-   free(scans);
-}
-
-/* Runs the --scan @paths, which it frees.  With --menu the first is
- * pushed and the rest follow it.  Without, they are the whole run:
- * each is scanned in turn, then the process exits 1 if any failed,
- * else 0 if any added an entry, else 2. */
-static void retroarch_cli_scan(struct string_list *paths, bool menu,
-      const char *content)
-{
-   size_t i;
-   bool failed          = false;
-   bool added           = false;
+   retroarch_cli_scan_state_t st;
    settings_t *settings = config_get_ptr();
    int reinit_flags     = DRIVERS_CMD_ALL &
          ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_MICROPHONE_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
@@ -8375,16 +8337,9 @@ static void retroarch_cli_scan(struct string_list *paths, bool menu,
 
    if (menu)
    {
-      retroarch_menu_scans_t *scans = (retroarch_menu_scans_t*)
-            calloc(1, sizeof(*scans));
-
-      if (!scans)
-      {
-         string_list_free(paths);
-         return;
-      }
-      scans->paths = paths;
-      retroarch_menu_scan_next(scans);
+      if (!task_push_dbscan_chain(items, count,
+            retroarch_cli_scan_menu_item, NULL, NULL))
+         fprintf(stderr, "out of memory\n");
       return;
    }
 
@@ -8402,21 +8357,16 @@ static void retroarch_cli_scan(struct string_list *paths, bool menu,
       fprintf(stderr, "without --menu: ignoring \"%s\"\n",
             content);
 
-   for (i = 0; i < paths->size; i++)
-   {
-      task_dbscan_result_t res;
-
-      retroarch_cli_scan_one(paths->elems[i].data, &res);
-      if (res.failed)
-         failed = true;
-      else if (res.added)
-         added  = true;
-   }
-   string_list_free(paths);
+   memset(&st, 0, sizeof(st));
+   if (task_push_dbscan_chain(items, count, NULL,
+         retroarch_cli_scan_done, &st))
+      task_queue_wait(retroarch_cli_scan_running, &st);
+   else
+      fprintf(stderr, "out of memory\n");
 
    driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
    task_queue_deinit();
-   exit(failed ? 1 : added ? 0 : 2);
+   exit((!st.done || st.totals.failed) ? 1 : st.totals.added ? 0 : 2);
 }
 #endif
 
@@ -8473,7 +8423,9 @@ static bool retroarch_parse_input_and_config(
    access_state_t *access_st       = access_state_get_ptr();
 #endif
 #ifdef HAVE_LIBRETRODB
-   struct string_list   *scan_paths = NULL;
+   task_dbscan_item_t   *scan_items = NULL;
+   size_t                scan_count = 0;
+   size_t                  scan_cap = 0;
    const char        *scan_conflict = NULL;
    bool                    cli_scan = false;
 #endif
@@ -8736,6 +8688,12 @@ static bool retroarch_parse_input_and_config(
                cli_scan = true;
                verbosity_enable();
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
+               if (!retroarch_cli_scan_add(&scan_items, &scan_count,
+                     &scan_cap, TASK_DBSCAN_ITEM_PATH, optarg))
+               {
+                  fprintf(stderr, "out of memory\n");
+                  exit(1);
+               }
 #endif
                break;
 #if defined(HAVE_LIBRETRODB) && defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
@@ -9203,17 +9161,7 @@ static bool retroarch_parse_input_and_config(
                }
                break;
             case RA_OPT_DATABASE_SCAN:
-#ifdef HAVE_LIBRETRODB
-               {
-                  union string_list_elem_attr attr;
-
-                  attr.i = 0;
-                  if (!scan_paths)
-                     scan_paths = string_list_new();
-                  if (scan_paths)
-                     string_list_append(scan_paths, optarg, attr);
-               }
-#endif
+               /* Taken in the first pass. */
                break;
             case RA_OPT_CLOUDSYNC:
 #ifdef HAVE_CLOUDSYNC
@@ -9259,8 +9207,8 @@ static bool retroarch_parse_input_and_config(
    }
 
 #ifdef HAVE_LIBRETRODB
-   if (scan_paths)
-      retroarch_cli_scan(scan_paths, explicit_menu,
+   if (scan_items)
+      retroarch_cli_scan(scan_items, scan_count, explicit_menu,
             (optind < argc) ? argv[optind] : NULL);
 #endif
 

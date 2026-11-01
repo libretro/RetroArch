@@ -356,6 +356,55 @@ bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb,
       void *user_data);
 #endif
 
+struct manual_content_scan_overrides;
+
+enum task_dbscan_item_kind
+{
+   TASK_DBSCAN_ITEM_PATH = 0,     /* --scan */
+   TASK_DBSCAN_ITEM_REFRESH,      /* --scan-refresh */
+   TASK_DBSCAN_ITEM_REFRESH_ALL   /* --scan-refresh-all, Refresh All */
+};
+
+typedef struct
+{
+   char *arg;  /* as typed; NULL for REFRESH_ALL */
+   struct manual_content_scan_overrides *overrides; /* NULL: none */
+   enum task_dbscan_item_kind kind;
+} task_dbscan_item_t;
+
+enum task_dbscan_outcome
+{
+   TASK_DBSCAN_RAN = 0,   /* res holds the counts */
+   TASK_DBSCAN_FAILED,
+   TASK_DBSCAN_SKIPPED
+};
+
+typedef struct
+{
+   unsigned ran;     /* scans that ran and did not fail */
+   unsigned added;   /* of those, the ones that added an entry */
+   unsigned failed;
+   unsigned skipped;
+   bool     cancelled;
+} task_dbscan_chain_result_t;
+
+typedef void (*task_dbscan_item_cb_t)(const char *name,
+      enum task_dbscan_outcome outcome,
+      const task_dbscan_result_t *res, void *user_data);
+typedef void (*task_dbscan_chain_cb_t)(
+      const task_dbscan_chain_result_t *res, void *user_data);
+
+/* Runs @items in order, one task at a time: each step is pushed from
+ * the last one's callback, and a cancelled task ends the run.  The
+ * chain owns @items from the call, whatever it returns.  @item_cb: once
+ * per scan, failed item or skipped playlist; @done_cb: once at the end,
+ * from a task callback.  @res is valid during the call only.  False,
+ * calling neither, if out of memory or while a chain or a manual scan
+ * runs.  Main thread only. */
+bool task_push_dbscan_chain(task_dbscan_item_t *items, size_t count,
+      task_dbscan_item_cb_t item_cb, task_dbscan_chain_cb_t done_cb,
+      void *user_data);
+
 bool task_push_manual_content_scan(
       bool do_menu_refresh,
       retro_task_callback_t user_cb, void *user_data);
