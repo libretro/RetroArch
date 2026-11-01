@@ -9,6 +9,8 @@ TARGET_TEST := rh264_lossless_test_nothreads
 TARGET_VOLATILE := rh264_lossless_test_volatile
 # The hardware path's sequencing, against a backend that checks it.
 TARGET_HW := rh264_hw_test
+# Savestates: a decoder saved mid-stream and loaded into a new one.
+TARGET_TEST2 := rh264_state_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -23,6 +25,8 @@ SOURCES := \
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 HW_SOURCES := rh264_hw_test.c $(filter-out rh264_lossless_test.c,$(SOURCES))
 HW_OBJS    := $(call sample_objs,$(HW_SOURCES:.c=.o))
+STATE_SOURCES := rh264_state_test.c $(filter-out rh264_lossless_test.c,$(SOURCES))
+STATE_OBJS    := $(call sample_objs,$(STATE_SOURCES:.c=.o))
 NOTHREADS_SOURCES := $(filter-out %/rthreads.c %/retro_eventcount.c %/tpool.c,$(SOURCES))
 NOTHREADS_OBJS    := $(call sample_objs,$(NOTHREADS_SOURCES:.c=.nt.o))
 VOLATILE_OBJS     := $(call sample_objs,$(SOURCES:.c=.vo.o))
@@ -41,7 +45,7 @@ endif
 
 LDLIBS += -lm -lpthread
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_VOLATILE) $(TARGET_HW)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_VOLATILE) $(TARGET_HW) $(TARGET_TEST2)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -54,6 +58,9 @@ $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 $(TARGET_HW): $(HW_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+$(TARGET_TEST2): $(STATE_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 %.nt.o: %.c
@@ -81,6 +88,7 @@ $(TARGET_VOLATILE): $(VOLATILE_OBJS)
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(TARGET_TEST) $(NOTHREADS_OBJS) \
-	   $(TARGET_VOLATILE) $(VOLATILE_OBJS) $(TARGET_HW) $(HW_OBJS)
+	   $(TARGET_VOLATILE) $(VOLATILE_OBJS) $(TARGET_HW) $(HW_OBJS) \
+	   $(TARGET_TEST2) $(STATE_OBJS)
 
 .PHONY: clean

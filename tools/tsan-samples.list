@@ -11,6 +11,7 @@
 # jumps out of a signal handler by design - TSan reports what runs after
 # it as still inside the handler.
 libretro-common/samples/formats/h264 rh264_lossless_test
+libretro-common/samples/formats/h264 rh264_state_test
 libretro-common/samples/formats/h265 rh265_lossless_test
 libretro-common/samples/formats/image_blit_bands_test image_blit_bands_test
 libretro-common/samples/queues/retro_waitable_spsc_test retro_waitable_spsc_test

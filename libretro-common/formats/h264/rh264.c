@@ -5365,6 +5365,10 @@ struct rh264_video
    int deferred_readback;
    int output_ready;
    int output_exported;
+   /* A threaded decoder's picture closed by a savestate rather than by
+    * the next picture opening: what that opening would have shown it
+    * shows still, so the output keeps its timing. */
+   int pend_shown;
    /* Slice-decode workspace for rh264_video_decode_inter.  As locals
     * these were a 7.5 KiB frame -- the slice header, the B-list
     * context with its implicit-weight table, and the reference-list
@@ -9357,6 +9361,9 @@ static int rh264_video_next_ctx(rh264_video *v, int *got_pic)
        * the sequence is settled now, with its rows still counting up. */
       rh264_video_post_picture(v);
       rh264_video_finish_picture(v, got_pic);
+      if (v->pend_shown)
+         *got_pic = 1;
+      v->pend_shown = 0;
    }
    if (v->nctx > 1)
    {
@@ -11522,14 +11529,15 @@ static int rh264_video_drain_internal(rh264_video *v)
       /* The last picture never saw a next one open: it goes to the
        * pool now and takes its place, and every picture in flight
        * lands before the queue is read. */
-      int got = 0;
+      int got = v->pend_shown;
+      v->pend_shown = 0;
       if (v->cur->pic_open)
       {
          rh264_video_post_picture(v);
          rh264_video_finish_picture(v, &got);
-         if (got)
-            return 0;
       }
+      if (got)
+         return 0;
 #ifdef HAVE_THREADS
       for (i = 0; i < v->nctx; i++)
          rh264_ctx_join(v, &v->ctx[i]);
@@ -11636,4 +11644,445 @@ int rh264_video_drain(rh264_video *v)
       result = -2;
    v->output_ready = result == 0;
    return result;
+}
+
+/* ==================== savestates ==================== */
+
+/* The state is the sequence's side of the decoder - parameter sets,
+ * picture order, reference marking, the DPB and the output queue - with
+ * the samples and motion of every picture held there. Pictures are
+ * stored whole, each block on its own: a block shared between a DPB slot
+ * and an output slot comes back as two, which decodes the same since
+ * neither is written while shared. */
+
+#define RH264_STATE_MAGIC   0x53343652u   /* "R64S" */
+#define RH264_STATE_VERSION 1u
+
+typedef struct
+{
+   uint8_t       *dst;      /* save: where to write, NULL to measure */
+   const uint8_t *src;      /* load: what to read */
+   size_t         pos, len;
+   int            fail;
+} rh264_state_io;
+
+static void rh264_state_bytes(rh264_state_io *io, void *p, size_t n)
+{
+   if (io->fail)
+      return;
+   if (io->src)
+   {
+      if (n > io->len - io->pos)
+      {
+         io->fail = 1;
+         return;
+      }
+      memcpy(p, io->src + io->pos, n);
+   }
+   else if (io->dst)
+   {
+      if (n > io->len - io->pos)
+      {
+         io->fail = 1;
+         return;
+      }
+      memcpy(io->dst + io->pos, p, n);
+   }
+   io->pos += n;
+}
+
+#define RH264_ST(io, x) rh264_state_bytes((io), &(x), sizeof(x))
+
+/* Where a frame's blocks live, from @src: the pointers in rh264_frame,
+ * which a state neither carries nor takes. */
+static void rh264_frame_ptrs(rh264_frame *f, const rh264_frame *src)
+{
+   f->Y = src->Y; f->U = src->U; f->V = src->V;
+   f->planes      = src->planes;
+   f->meta        = src->meta;
+   f->scr_row     = src->scr_row;
+   f->scr_toprow  = src->scr_toprow;
+   f->scr_skiprow = src->scr_skiprow;
+   f->scr_topskip = src->scr_topskip;
+   f->scr_typerow = src->scr_typerow;
+   f->scr_toptype = src->scr_toptype;
+   f->scr_am0     = src->scr_am0;
+   f->scr_am1     = src->scr_am1;
+   f->scr_bipred  = src->scr_bipred;
+   f->scr_mc      = src->scr_mc;
+   f->scr_tbsave  = src->scr_tbsave;
+   f->Yb = src->Yb; f->Ub = src->Ub; f->Vb = src->Vb;
+   f->plane_len   = src->plane_len;
+   f->mvg_meta    = src->mvg_meta;
+   f->mvg2_meta   = src->mvg2_meta;
+   f->mvg_shared  = src->mvg_shared;
+   f->mvg_cells   = src->mvg_cells;
+   f->i4mode      = src->i4mode;
+   f->nzL         = src->nzL;
+   f->nzC[0]      = src->nzC[0];
+   f->nzC[1]      = src->nzC[1];
+   f->mbqp        = src->mbqp;
+   f->mbt8        = src->mbt8;
+   f->mbslice     = src->mbslice;
+   f->mvg         = src->mvg;
+   f->mvg2        = src->mvg2;
+   f->row_done    = src->row_done;
+   f->row_user    = src->row_user;
+}
+
+static const rh264_frame rh264_frame_none;   /* no blocks anywhere */
+
+/* A frame's own description: everything in rh264_frame but where its
+ * blocks live, which the frame the state lands in keeps. Its geometry
+ * must be that frame's, and where its samples start follows from its
+ * parity; -1 for a description that does not fit. */
+static int rh264_frame_take_desc(rh264_frame *f, const rh264_frame *s,
+      const uint32_t *offs)
+{
+   rh264_frame live = *f;
+   if (s->w != f->w || s->h != f->h || s->mbw != f->mbw
+         || s->ysb != f->ysb || s->csb != f->csb
+         || s->mbh_frame != f->mbh_frame || s->cmbh != f->cmbh
+         || s->c444 != f->c444 || s->bd != f->bd || s->bsh != f->bsh
+         || s->qpbd != f->qpbd || s->cropx != f->cropx
+         || s->cropy != f->cropy || s->field < 0 || s->field > 2)
+      return -1;
+   *f = *s;
+   rh264_frame_ptrs(f, &live);
+   f->ystride = f->field ? f->ysb * 2 : f->ysb;
+   f->cstride = f->field ? f->csb * 2 : f->csb;
+   f->mbh     = f->field ? f->mbh_frame / 2 : f->mbh_frame;
+   f->Y = f->U = f->V = NULL;
+   if (f->Yb)
+   {
+      size_t yo = RH264_OFF(f, f->field == 2 ? f->ysb : 0);
+      size_t co = RH264_OFF(f, f->field == 2 ? f->csb : 0);
+      if (offs[0] != yo || offs[1] != co || offs[2] != co)
+         return -1;
+      f->Y = f->Yb + yo;
+      f->U = f->Ub + co;
+      f->V = f->Vb + co;
+   }
+   return 0;
+}
+
+/* One stored picture: what it is, its samples, and for a reference its
+ * motion. @ref is the DPB's (motion kept), otherwise an output slot's. */
+static void rh264_state_frame(rh264_state_io *io, rh264_video *v,
+      rh264_frame *f, int ref)
+{
+   rh264_frame desc;
+   uint32_t    offs[3]  = { 0, 0, 0 };
+   /* frame, planes, mvg, mvg2 (1: mvg's block, 2: its own) */
+   uint8_t     have[4]  = { 0, 0, 0, 0 };
+   uint32_t    plane_len = 0, cells = 0;
+   if (!io->src)
+   {
+      desc    = *f;
+      rh264_frame_ptrs(&desc, &rh264_frame_none);
+      have[0] = f->meta != NULL;
+      have[1] = f->planes != NULL;
+      if (ref)
+      {
+         have[2] = f->mvg != NULL;
+         have[3] = !f->mvg2 ? 0 : f->mvg2 == f->mvg ? 1 : 2;
+      }
+      if (f->planes)
+      {
+         offs[0]   = (uint32_t)(f->Y - f->Yb);
+         offs[1]   = (uint32_t)(f->U - f->Ub);
+         offs[2]   = (uint32_t)(f->V - f->Vb);
+         plane_len = (uint32_t)f->plane_len;
+      }
+      cells = (uint32_t)f->mvg_cells;
+   }
+   rh264_state_bytes(io, have, sizeof(have));
+   if (!have[0])
+      return;
+   RH264_ST(io, desc);
+   rh264_state_bytes(io, offs, sizeof(offs));
+   RH264_ST(io, plane_len);
+   RH264_ST(io, cells);
+   if (io->fail)
+      return;
+   if (io->src)
+   {
+      if (ref)
+      {
+         if (!f->meta || !have[1] || desc.mbw != f->mbw
+               || desc.mbh_frame != f->mbh_frame || plane_len != f->plane_len
+               || (have[3] && !have[2])
+               || cells != f->mvg_cells)
+         {
+            io->fail = 1;
+            return;
+         }
+      }
+      else if (rh264_frame_alloc(f, &v->sps, have[1]
+               ? RH264_FRAME_ALLOC_PLAIN : RH264_FRAME_ALLOC_SHELL) != 0
+            || (have[1] && plane_len != f->plane_len))
+      {
+         io->fail = 1;
+         return;
+      }
+      if (have[1] && rh264_frame_own_planes(f, f->plane_len) != 0)
+      {
+         io->fail = 1;
+         return;
+      }
+      if (have[2])
+         rh264_frame_own_mvg(f);
+      else if (ref)
+      {
+         if (f->mvg_shared)
+            rh264_mvg_release(f->mvg);
+         f->mvg        = NULL;
+         f->mvg2       = NULL;
+         f->mvg_shared = 0;
+      }
+      if ((have[2] && !f->mvg) || (!have[1] && f->planes)
+            || rh264_frame_take_desc(f, &desc, offs) != 0)
+      {
+         io->fail = 1;
+         return;
+      }
+      if (have[3] == 1)
+         f->mvg2 = f->mvg;
+      else if (!have[3])
+         f->mvg2 = NULL;
+   }
+   if (have[1])
+      rh264_state_bytes(io, f->planes, plane_len);
+   if (have[2])
+      rh264_state_bytes(io, f->mvg, (size_t)cells * sizeof(rh264_mv));
+   if (have[3] == 2)
+      rh264_state_bytes(io, f->mvg2, (size_t)cells * sizeof(rh264_mv));
+   if (io->src && have[1] && !io->fail)
+      rh264_block_publish_rows(f->planes, f->mbh_frame);
+}
+
+static void rh264_state_run(rh264_state_io *io, rh264_video *v)
+{
+   uint32_t hdr[6];
+   int geo[3];   /* alloc_w, alloc_h, dpb_size */
+   int i;
+   hdr[0] = RH264_STATE_MAGIC;
+   hdr[1] = RH264_STATE_VERSION;
+   hdr[2] = (uint32_t)sizeof(rh264_frame);
+   hdr[3] = (uint32_t)sizeof(rh264_sps);
+   hdr[4] = (uint32_t)sizeof(rh264_pps);
+   hdr[5] = (uint32_t)sizeof(rh264_mv);
+   if (io->src)
+   {
+      uint32_t want[6];
+      memcpy(want, hdr, sizeof(want));
+      rh264_state_bytes(io, hdr, sizeof(hdr));
+      if (io->fail || memcmp(hdr, want, sizeof(hdr)))
+      {
+         io->fail = 1;
+         return;
+      }
+   }
+   else
+      rh264_state_bytes(io, hdr, sizeof(hdr));
+
+   RH264_ST(io, v->sps);
+   RH264_ST(io, v->pps);
+   RH264_ST(io, v->have_sps);
+   RH264_ST(io, v->have_pps);
+   RH264_ST(io, v->nal_length_size);
+   geo[0] = v->alloc_w;
+   geo[1] = v->alloc_h;
+   geo[2] = v->dpb_size;
+   rh264_state_bytes(io, geo, sizeof(geo));
+   if (io->fail)
+      return;
+   if (io->src)
+   {
+      int k;
+      if (geo[2] < 0 || geo[2] > RH264_MAX_REFS || (geo[0] > 0 && !v->have_sps))
+      {
+         io->fail = 1;
+         return;
+      }
+      /* The DPB and output queue for the saved geometry, made the way
+       * the decoder makes them, to take the pictures below. */
+      for (k = 0; k < RH264_OUT_SLOTS; k++)
+         rh264_frame_free(&v->out[k]);
+      if (geo[0] > 0)
+      {
+         v->alloc_w = -1;
+         if (rh264_frame_alloc_if_needed(v) != 0 || v->dpb_size != geo[2]
+               || v->alloc_w != geo[0] || v->alloc_h != geo[1])
+         {
+            io->fail = 1;
+            return;
+         }
+      }
+      else
+      {
+         for (k = 0; k < v->dpb_size; k++)
+            rh264_frame_free(&v->dpb[k]);
+         v->dpb_size = 0;
+         v->alloc_w  = geo[0];
+         v->alloc_h  = geo[1];
+         if (geo[2])
+            io->fail = 1;
+      }
+   }
+
+   RH264_ST(io, v->cur_field);
+   RH264_ST(io, v->pair_open);
+   RH264_ST(io, v->pair_frame_num);
+   RH264_ST(io, v->pair_poc);
+   RH264_ST(io, v->pair_slot);
+   RH264_ST(io, v->skip_pic);
+   RH264_ST(io, v->broken);
+   RH264_ST(io, v->dpb_slot);
+   RH264_ST(io, v->dpb_pn);
+   RH264_ST(io, v->dpb_len);
+   RH264_ST(io, v->dpb_poc);
+   RH264_ST(io, v->have_ref);
+   RH264_ST(io, v->last_picnum);
+   RH264_ST(io, v->last_poc);
+   RH264_ST(io, v->prev_poc_msb);
+   RH264_ST(io, v->prev_poc_lsb);
+   RH264_ST(io, v->prev_frame_num);
+   RH264_ST(io, v->fn_offset);
+   RH264_ST(io, v->poc_top);
+   RH264_ST(io, v->poc_bot);
+   RH264_ST(io, v->out_poc);
+   RH264_ST(io, v->out_gen);
+   RH264_ST(io, v->out_used);
+   RH264_ST(io, v->out_len);
+   RH264_ST(io, v->out_show);
+   RH264_ST(io, v->idr_gen);
+   RH264_ST(io, v->reorder_delay);
+   RH264_ST(io, v->pend_n_mmco);
+   RH264_ST(io, v->pend_mmco_op);
+   RH264_ST(io, v->pend_mmco_a);
+   RH264_ST(io, v->pend_mmco_b);
+   RH264_ST(io, v->pend_idr_ltr);
+   RH264_ST(io, v->dpb_lt);
+   RH264_ST(io, v->dpb_fields);
+   RH264_ST(io, v->dpb_poc_fld);
+   RH264_ST(io, v->max_lt_idx);
+   RH264_ST(io, v->pend_shown);
+   if (io->src && !io->fail && v->pend_shown && !v->threaded)
+      io->fail = 1;   /* only a threaded decoder shows it on time */
+   if (io->src && !io->fail
+         && (v->dpb_len < 0 || v->dpb_len > v->dpb_size
+            || v->out_len < 0 || v->out_len > RH264_OUT_SLOTS
+            || v->out_show < -1 || v->out_show >= RH264_OUT_SLOTS))
+      io->fail = 1;
+
+   for (i = 0; i < v->dpb_size && !io->fail; i++)
+      rh264_state_frame(io, v, &v->dpb[i], 1);
+   for (i = 0; i < RH264_OUT_SLOTS && !io->fail; i++)
+      rh264_state_frame(io, v, &v->out[i], 0);
+}
+
+/* Pictures still decoding finish first; there is no state to give
+ * while a picture is open (half a field pair) or on a backend. */
+static int rh264_state_ready(rh264_video *v)
+{
+   int k;
+   if (!v || v->hw || v->pair_open)
+      return 0;
+   /* A threaded decoder holds its last picture open until the next one
+    * opens. Between access units it is whole: it is closed here, and
+    * shown when the next one opens, as it would have been. */
+   if (v->threaded && v->cur->pic_open)
+   {
+      int got = 0;
+      rh264_video_post_picture(v);
+      rh264_video_finish_picture(v, &got);
+      if (got)
+         v->pend_shown = 1;
+   }
+   for (k = 0; k < RH264_MAX_CTX; k++)
+   {
+#ifdef HAVE_THREADS
+      rh264_ctx_join(v, &v->ctx[k]);
+#endif
+      if (v->ctx[k].pic_open)
+         return 0;
+   }
+   return 1;
+}
+
+size_t rh264_video_state_size(rh264_video *v)
+{
+   rh264_state_io io;
+   if (!rh264_state_ready(v))
+      return 0;
+   memset(&io, 0, sizeof(io));
+   rh264_state_run(&io, v);
+   return io.fail ? 0 : io.pos;
+}
+
+size_t rh264_video_save_state(rh264_video *v, void *data, size_t size)
+{
+   rh264_state_io io;
+   if (!data || !rh264_state_ready(v))
+      return 0;
+   memset(&io, 0, sizeof(io));
+   io.dst = (uint8_t*)data;
+   io.len = size;
+   rh264_state_run(&io, v);
+   return io.fail ? 0 : io.pos;
+}
+
+int rh264_video_load_state(rh264_video *v, const void *data, size_t size)
+{
+   rh264_state_io io;
+   struct { rh264_sps sps; rh264_pps pps; } *ps;   /* too big for a frame */
+   int k, have_sps, have_pps, nls;
+   if (!v || !data || v->hw
+         || !(ps = malloc(sizeof(*ps))))
+      return -1;
+   /* what was decoding here is dropped, not finished */
+   for (k = 0; k < RH264_MAX_CTX; k++)
+   {
+#ifdef HAVE_THREADS
+      rh264_ctx_join(v, &v->ctx[k]);
+#endif
+      v->ctx[k].pic_open = 0;
+   }
+   v->pair_open = 0;
+   ps->sps  = v->sps;
+   ps->pps  = v->pps;
+   have_sps = v->have_sps;
+   have_pps = v->have_pps;
+   nls      = v->nal_length_size;
+   memset(&io, 0, sizeof(io));
+   io.src = (const uint8_t*)data;
+   io.len = size;
+   rh264_state_run(&io, v);
+   v->output_ready = 0;
+   if (!io.fail && io.pos == size)
+   {
+      free(ps);
+      return 0;
+   }
+   /* Nothing half-loaded decodes on: the parameter sets as they were,
+    * no pictures, the next IDR starts over as after a seek. */
+   for (k = 0; k < RH264_MAX_REFS; k++) rh264_frame_free(&v->dpb[k]);
+   for (k = 0; k < RH264_OUT_SLOTS; k++) rh264_frame_free(&v->out[k]);
+   v->sps             = ps->sps;
+   v->pps             = ps->pps;
+   free(ps);
+   v->have_sps        = have_sps;
+   v->have_pps        = have_pps;
+   v->nal_length_size = nls;
+   v->dpb_size = v->dpb_len = 0;
+   memset(v->out_used, 0, sizeof(v->out_used));
+   v->out_len    = 0;
+   v->out_show   = -1;
+   v->have_ref   = 0;
+   v->alloc_w    = v->alloc_h = 0;
+   v->pair_open  = 0;
+   v->pend_shown = 0;
+   v->pend_n_mmco = 0;
+   return -1;
 }

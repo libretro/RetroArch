@@ -111,6 +111,18 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len);
 /* -2 on terminal hardware failure; -1 means no pending output. */
 int rh264_video_drain(rh264_video *v);
 
+/* The decoder's state between access units, for savestates: what the
+ * pictures after it predict from and how they are ordered for output.
+ * Pictures still decoding on a pool are finished first, so call these
+ * between access units only. Size is 0 when
+ * there is none to give: half a field pair, or a hardware session.
+ * Save writes it and returns the bytes written, 0 if @size is short.
+ * Load takes it into a software decoder, which then decodes on exactly
+ * as the saved one would; on -1 the decoder starts over, as at a seek. */
+size_t rh264_video_state_size(rh264_video *v);
+size_t rh264_video_save_state(rh264_video *v, void *data, size_t size);
+int rh264_video_load_state(rh264_video *v, const void *data, size_t size);
+
 /* Bits per sample of the decoded pictures (8..14).  Above 8 the planes
  * hold uint16_t samples: rh264_video_plane still returns a byte
  * pointer (cast it; the stride counts samples). */
