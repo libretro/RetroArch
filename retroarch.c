@@ -231,6 +231,7 @@
 #include "core.h"
 #include "configuration.h"
 #include "list_special.h"
+#include "manual_content_scan.h"
 #ifdef HAVE_CHEATS
 #include "cheat_manager.h"
 #endif
@@ -390,6 +391,17 @@ enum
    RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
    RA_OPT_SET_SHADER,
    RA_OPT_DATABASE_SCAN,
+   RA_OPT_SCAN_PLAYLIST,
+   RA_OPT_SCAN_DATABASE,
+   RA_OPT_SCAN_MATCH,
+   RA_OPT_SCAN_DAT,
+   RA_OPT_SCAN_CORE,
+   RA_OPT_SCAN_EXTS,
+   RA_OPT_SCAN_NO_RECURSIVE,
+   RA_OPT_SCAN_NO_ARCHIVES,
+   RA_OPT_SCAN_OVERWRITE,
+   RA_OPT_SCAN_VALIDATE,
+   RA_OPT_SCAN_OMIT_DB_REF,
    RA_OPT_ACCESSIBILITY,
    RA_OPT_LOAD_MENU_ON_ERROR,
    RA_OPT_CLOUDSYNC,
@@ -7927,9 +7939,52 @@ static void retroarch_print_help(const char *arg0)
          "  how a particular subsystem wants content to be loaded.\n");
 
 #ifdef HAVE_LIBRETRODB
+   fputs(buf, stdout);
+   buf[0] = '\0';
+   _len   = 0;
+
    strlcpy_append(buf, sizeof(buf), &_len,
          "      --scan=PATH|FILE           "
-         "Import content from path.\n");
+         "Import content from path. Repeatable.\n"
+         "                                 "
+         "  The options from --scan-playlist on apply\n"
+         "                                 "
+         "  to the --scan before them. Without any,\n"
+         "                                 "
+         "  the scan is Fully Automatic.\n");
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --scan-playlist=NAME       "
+         "Playlist to add to.\n"
+         "      --scan-database=NAME|first "
+         "Database to match: one by name, or the first\n"
+         "                                 "
+         "  that matches.\n"
+         "      --scan-match=MODE          "
+         "Database check: strict, loose or none.\n"
+         "      --scan-dat=FILE            "
+         "Arcade DAT file to match instead, strict unless\n"
+         "                                 "
+         "  --scan-match=loose.\n");
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --scan-core=CORE           "
+         "Core: a path, a file name or a display name.\n"
+         "      --scan-exts=EXTS           "
+         "File extensions, separated by commas or spaces.\n"
+         "      --scan-no-recursive        "
+         "Do not scan subfolders.\n"
+         "      --scan-no-archives         "
+         "Do not look inside archives.\n");
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --scan-overwrite           "
+         "Replace the playlist instead of adding to it.\n"
+         "      --scan-validate            "
+         "Drop entries for missing or unsupported files.\n"
+         "      --scan-omit-db-ref         "
+         "Look up thumbnails by the playlist name.\n");
+
+   fputs(buf, stdout);
+   buf[0] = '\0';
+   _len   = 0;
 #endif
 #ifdef HAVE_CLOUDSYNC
    strlcpy_append(buf, sizeof(buf), &_len,
@@ -8289,6 +8344,135 @@ static bool retroarch_cli_scan_add(task_dbscan_item_t **items,
    return true;
 }
 
+/* Sets scan option @c, one of @opts, on the latest of the @count
+ * items; a bad one ends the run before the config loads. */
+static void retroarch_cli_scan_option(task_dbscan_item_t *items,
+      size_t count, const struct option *opts, int c, const char *value)
+{
+   manual_content_scan_overrides_t *ov = NULL;
+   const char *err                     = NULL;
+   char **field                        = NULL;
+   char *copy                          = NULL;
+   size_t max_len                      = PATH_MAX_LENGTH - 1;
+
+   while (opts->val != c)
+      opts++;
+
+   if (!count)
+      err = "must follow a --scan";
+   else
+   {
+      if (!(ov = items[count - 1].overrides))
+         ov = items[count - 1].overrides =
+               manual_content_scan_overrides_new();
+      if (opts->has_arg)
+         copy = strdup(value);
+      if (!ov || (opts->has_arg && !copy))
+      {
+         fprintf(stderr, "out of memory\n");
+         exit(1);
+      }
+
+      switch (c)
+      {
+         case RA_OPT_SCAN_PLAYLIST:
+            field   = &ov->playlist;
+            /* <name>.lpl.tmp fits a file name */
+            max_len = NAME_MAX_LENGTH - 9;
+            break;
+         case RA_OPT_SCAN_DATABASE:
+            if (string_is_equal(copy, "first"))
+            {
+               free(ov->database);
+               ov->database  = NULL;
+               ov->flags    |= MANUAL_CONTENT_SCAN_OVR_FIRST_DB;
+            }
+            else
+            {
+               ov->flags    &= ~MANUAL_CONTENT_SCAN_OVR_FIRST_DB;
+               field         = &ov->database;
+               max_len       = NAME_MAX_LENGTH - 1;
+            }
+            break;
+         case RA_OPT_SCAN_MATCH:
+            if (!*copy)
+               err       = "needs a value";
+            else if (string_is_equal(copy, "strict"))
+               ov->match = MANUAL_CONTENT_SCAN_USE_DB_STRICT;
+            else if (string_is_equal(copy, "loose"))
+               ov->match = MANUAL_CONTENT_SCAN_USE_DB_LOOSE;
+            else if (string_is_equal(copy, "none"))
+               ov->match = MANUAL_CONTENT_SCAN_USE_DB_NONE;
+            else
+               err       = "must be strict, loose or none";
+            ov->flags   |= MANUAL_CONTENT_SCAN_OVR_MATCH;
+            break;
+         case RA_OPT_SCAN_DAT:
+            field = &ov->dat;
+            break;
+         case RA_OPT_SCAN_CORE:
+            field = &ov->core;
+            break;
+         case RA_OPT_SCAN_EXTS:
+            {
+               /* Commas become spaces, runs of spaces one, ends trimmed */
+               char *out = copy;
+               const char *in;
+
+               for (in = copy; *in; in++)
+               {
+                  char ch = (*in == ',') ? ' ' : *in;
+                  if (ch != ' ' || (out > copy && out[-1] != ' '))
+                     *out++ = ch;
+               }
+               if (out > copy && out[-1] == ' ')
+                  out--;
+               *out  = '\0';
+               field = &ov->exts;
+            }
+            break;
+         case RA_OPT_SCAN_NO_RECURSIVE:
+            ov->flags |= MANUAL_CONTENT_SCAN_OVR_NO_RECURSIVE;
+            break;
+         case RA_OPT_SCAN_NO_ARCHIVES:
+            ov->flags |= MANUAL_CONTENT_SCAN_OVR_NO_ARCHIVES;
+            break;
+         case RA_OPT_SCAN_OVERWRITE:
+            ov->flags |= MANUAL_CONTENT_SCAN_OVR_OVERWRITE;
+            break;
+         case RA_OPT_SCAN_VALIDATE:
+            ov->flags |= MANUAL_CONTENT_SCAN_OVR_VALIDATE;
+            break;
+         case RA_OPT_SCAN_OMIT_DB_REF:
+            ov->flags |= MANUAL_CONTENT_SCAN_OVR_OMIT_DB_REF;
+            break;
+      }
+
+      if (field)
+      {
+         if (!*copy)
+            err = "needs a value";
+         else if (strlen(copy) > max_len)
+            err = "is too long";
+         else
+         {
+            free(*field);
+            *field = copy;
+            copy   = NULL;
+         }
+      }
+   }
+
+   free(copy);
+   if (err)
+   {
+      /* Before any --scan, no console yet on Windows. */
+      frontend_driver_attach_console();
+      fprintf(stderr, "--%s %s\n", opts->name, err);
+      exit(1);
+   }
+}
+
 /* What the chain told a run without --menu. */
 typedef struct
 {
@@ -8490,6 +8674,17 @@ static bool retroarch_parse_input_and_config(
       { "entryslot",          1, NULL, 'e' },
 #ifdef HAVE_LIBRETRODB
       { "scan",               1, NULL, RA_OPT_DATABASE_SCAN },
+      { "scan-playlist",      1, NULL, RA_OPT_SCAN_PLAYLIST },
+      { "scan-database",      1, NULL, RA_OPT_SCAN_DATABASE },
+      { "scan-match",         1, NULL, RA_OPT_SCAN_MATCH },
+      { "scan-dat",           1, NULL, RA_OPT_SCAN_DAT },
+      { "scan-core",          1, NULL, RA_OPT_SCAN_CORE },
+      { "scan-exts",          1, NULL, RA_OPT_SCAN_EXTS },
+      { "scan-no-recursive",  0, NULL, RA_OPT_SCAN_NO_RECURSIVE },
+      { "scan-no-archives",   0, NULL, RA_OPT_SCAN_NO_ARCHIVES },
+      { "scan-overwrite",     0, NULL, RA_OPT_SCAN_OVERWRITE },
+      { "scan-validate",      0, NULL, RA_OPT_SCAN_VALIDATE },
+      { "scan-omit-db-ref",   0, NULL, RA_OPT_SCAN_OMIT_DB_REF },
 #endif
 #ifdef HAVE_CLOUDSYNC
       { "cloudsync",          0, NULL, RA_OPT_CLOUDSYNC },
@@ -8694,6 +8889,22 @@ static bool retroarch_parse_input_and_config(
                   fprintf(stderr, "out of memory\n");
                   exit(1);
                }
+#endif
+               break;
+            case RA_OPT_SCAN_PLAYLIST:
+            case RA_OPT_SCAN_DATABASE:
+            case RA_OPT_SCAN_MATCH:
+            case RA_OPT_SCAN_DAT:
+            case RA_OPT_SCAN_CORE:
+            case RA_OPT_SCAN_EXTS:
+            case RA_OPT_SCAN_NO_RECURSIVE:
+            case RA_OPT_SCAN_NO_ARCHIVES:
+            case RA_OPT_SCAN_OVERWRITE:
+            case RA_OPT_SCAN_VALIDATE:
+            case RA_OPT_SCAN_OMIT_DB_REF:
+#ifdef HAVE_LIBRETRODB
+               retroarch_cli_scan_option(scan_items, scan_count, opts, c,
+                     optarg);
 #endif
                break;
 #if defined(HAVE_LIBRETRODB) && defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
@@ -9161,6 +9372,17 @@ static bool retroarch_parse_input_and_config(
                }
                break;
             case RA_OPT_DATABASE_SCAN:
+            case RA_OPT_SCAN_PLAYLIST:
+            case RA_OPT_SCAN_DATABASE:
+            case RA_OPT_SCAN_MATCH:
+            case RA_OPT_SCAN_DAT:
+            case RA_OPT_SCAN_CORE:
+            case RA_OPT_SCAN_EXTS:
+            case RA_OPT_SCAN_NO_RECURSIVE:
+            case RA_OPT_SCAN_NO_ARCHIVES:
+            case RA_OPT_SCAN_OVERWRITE:
+            case RA_OPT_SCAN_VALIDATE:
+            case RA_OPT_SCAN_OMIT_DB_REF:
                /* Taken in the first pass. */
                break;
             case RA_OPT_CLOUDSYNC:
