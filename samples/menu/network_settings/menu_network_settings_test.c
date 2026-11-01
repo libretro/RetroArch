@@ -38,6 +38,7 @@
 #include "../../../menu/menu_setting.h"
 #include "../../../menu/menu_entries.h"
 #include "../../../frontend/frontend_driver.h"
+#include "../../../input/input_driver.h"
 
 static unsigned failures;
 #define CHECK(cond, what) do { if (cond) fprintf(stderr, "ok:   %s\n", what); \
@@ -150,7 +151,7 @@ static long pick_uint(enum msg_hash_enums e, const char *want)
       if (!cbs || !cbs->action_ok)
          return -1;
       cbs->action_ok(buf->list[i].path, buf->list[i].label,
-            buf->list[i].type, i, i);
+            buf->list[i].type, i, buf->list[i].entry_idx);
       return (long)*setting->value.target.unsigned_integer;
    }
    return -1;
@@ -429,6 +430,30 @@ int main(int argc, char *argv[])
          "Minimum Audio Latency: picking 16 sets 16");
    CHECK(pick_uint(MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR, "0") == -1,
          "Minimum Audio Latency: 0 is not offered");
+
+   /* Mouse Index lists only the mice there are; the one after an index
+    * left out is still picked by its own index */
+   input_config_set_mouse_display_name(0, "First Mouse");
+   input_config_set_mouse_display_name(2, "Third Mouse");
+   CHECK(pick_uint(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX, "#2: N/A") == -1,
+         "Mouse Index: #2, with no mouse, is not offered");
+   CHECK(pick_uint(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX, "#3: Third Mouse") == 2,
+         "Mouse Index: picking #3 sets #3");
+   CHECK(pick_uint(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX, "#1: First Mouse") == 0,
+         "Mouse Index: picking #1 sets #1");
+   input_config_clear_mouse_info();
+
+   /* Keyboard Index lists All and the keyboards there are, the same */
+   input_config_set_keyboard_display_name(0, "First Keyboard");
+   input_config_set_keyboard_display_name(2, "Third Keyboard");
+   CHECK(pick_uint(MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX, "#2: N/A") == -1,
+         "Keyboard Index: #2, with no keyboard, is not offered");
+   CHECK(pick_uint(MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX,
+            "#3: Third Keyboard") == 3,
+         "Keyboard Index: picking #3 sets #3");
+   CHECK(pick_uint(MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX, "All") == 0,
+         "Keyboard Index: picking All sets All");
+   input_config_clear_keyboard_display_names();
 
    /* and neither sits in the Quick Menu */
    n = open_list(DISPLAYLIST_CONTENT_SETTINGS,

@@ -7905,7 +7905,7 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
 
    switch (setting->type)
    {
-      /* Integer lists are built from the minimum (0 unless the range
+      /* Int lists are built from the minimum (0 unless the range
        * enforces one) in whole steps, so entry @idx is that value;
        * the value is taken back the same way, not from offset_by,
        * which only some settings set to their minimum. */
@@ -7925,19 +7925,8 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
          }
          break;
       case ST_UINT:
-         {
-            int32_t i_min  = (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
-               ? (int32_t)setting->min : 0;
-            int32_t i_step = (int32_t)setting->step;
-            int32_t value;
-            if (i_step < 1)
-               i_step = 1;
-            value = i_min + (int32_t)idx * i_step;
-            if (     (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
-                  && value > (int32_t)setting->max)
-               value = (int32_t)setting->max;
-            setting_uint_set(setting, (unsigned)value);
-         }
+         /* Each entry carries its value: a list may leave values out */
+         setting_uint_set(setting, (unsigned)entry_idx);
          break;
       case ST_FLOAT:
          {

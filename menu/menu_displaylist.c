@@ -19017,7 +19017,7 @@ static bool menu_displaylist_ctl_internal(
                                              val_s,
                                              val_d,
                                              MENU_ENUM_LABEL_NO_ITEMS,
-                                             setting_type, val, 0, NULL))
+                                             setting_type, val, val, NULL))
                                        count++;
 
                                     if (!checked_found && val == (int)orig_value)
@@ -19042,7 +19042,7 @@ static bool menu_displaylist_ctl_internal(
                                              val_s,
                                              val_d,
                                              MENU_ENUM_LABEL_NO_ITEMS,
-                                             setting_type, val, 0, NULL))
+                                             setting_type, val, val, NULL))
                                        count++;
 
                                     if (!checked_found && val == (int)orig_value)
