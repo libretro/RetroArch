@@ -14,6 +14,7 @@
  */
 
 #include <stdint.h>
+#include <math.h>
 #include "../../apple_runtime.h"
 #include <stddef.h>
 #include <stdlib.h>
@@ -256,14 +257,15 @@ static void handle_touch_event(NSArray* touches)
 {
 #if !TARGET_OS_TV
    unsigned i;
-   float scale               = cocoa_screen_get_native_scale();
+   UIView *renderView        = [apple_platform renderView];
+   float scale               = [renderView contentScaleFactor];
 
    cocoa_input_touches_begin();
 
    for (i = 0; i < touches.count; i++)
    {
       UITouch      *touch = [touches objectAtIndex:i];
-      CGPoint       coord = [touch locationInView:[touch view]];
+      CGPoint       coord = [touch locationInView:renderView];
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
          if (!cocoa_input_touch_add((int16_t)(coord.x * scale),
                   (int16_t)(coord.y * scale)))
@@ -641,8 +643,8 @@ API_AVAILABLE(ios(13.0), tvos(13.0))
 
 - (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions {
    RetroArch_iOS *app = [RetroArch_iOS get];
-   app.window = [[UIWindow alloc] initWithWindowScene:(UIWindowScene *)scene];
-
+   app.window.windowScene = (UIWindowScene *)scene;
+   app.window.frame = ((UIWindowScene *)scene).coordinateSpace.bounds;
    [app.window makeKeyAndVisible];
 
    /* A URL that launched the app comes here, not to
@@ -787,6 +789,10 @@ API_AVAILABLE(ios(13.0), tvos(13.0))
       _renderView.userInteractionEnabled = YES;
    }
 #endif
+#if TARGET_OS_IOS
+   _renderView.autoresizingMask = UIViewAutoresizingNone;
+   [self layoutRenderView];
+#else
    /* Layout anchors are iOS 9; the view is asked whether it has them
     * and pinned to the container's edges either way. The anchors, the
     * constraint between them and its activation (iOS 8) go by selector,
@@ -812,8 +818,40 @@ API_AVAILABLE(ios(13.0), tvos(13.0))
       _renderView.frame            = rootView.bounds;
       _renderView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
    }
+#endif
    [_renderView layoutIfNeeded];
 }
+
+#if TARGET_OS_IOS
+- (void)setScreenLayout:(NSData *)layout
+{
+   float values[4];
+   if ([layout length] != sizeof(values))
+      return;
+   [layout getBytes:values length:sizeof(values)];
+   memcpy(_screenMargins, values, sizeof(_screenMargins));
+   [[CocoaView get].view setNeedsLayout];
+}
+
+- (void)layoutRenderView
+{
+   CGRect bounds;
+   CGFloat left, right, top, bottom;
+   if (!_renderView)
+      return;
+   bounds = [CocoaView get].view.bounds;
+   if (bounds.size.width <= 0 || bounds.size.height <= 0)
+      return;
+   left   = bounds.size.width  * fminf(fmaxf(_screenMargins[0], 0), 25) / 100;
+   right  = bounds.size.width  * fminf(fmaxf(_screenMargins[1], 0), 25) / 100;
+   top    = bounds.size.height * fminf(fmaxf(_screenMargins[2], 0), 25) / 100;
+   bottom = bounds.size.height * fminf(fmaxf(_screenMargins[3], 0), 25) / 100;
+   _renderView.frame = CGRectMake(bounds.origin.x + left,
+         bounds.origin.y + top, bounds.size.width - left - right,
+         bounds.size.height - top - bottom);
+}
+
+#endif
 
 - (apple_view_type_t)viewType { return _vt; }
 
@@ -1606,10 +1644,10 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
    CGPoint location;
    if (cocoa_input_mouse_grabbed())
       return nil;
-   location = [apple_platform.renderView convertPoint:[request location] fromView:nil];
+   location = [request location];
    cocoa_input_pointer_at(
-         (int16_t)(location.x * [[UIScreen mainScreen] scale]),
-         (int16_t)(location.y * [[UIScreen mainScreen] scale]));
+         (int16_t)(location.x * [apple_platform.renderView contentScaleFactor]),
+         (int16_t)(location.y * [apple_platform.renderView contentScaleFactor]));
    return [UIPointerRegion regionWithRect:[apple_platform.renderView bounds] identifier:@"game view"];
 }
 #endif
