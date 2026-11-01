@@ -391,6 +391,8 @@ enum
    RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
    RA_OPT_SET_SHADER,
    RA_OPT_DATABASE_SCAN,
+   RA_OPT_SCAN_REFRESH,
+   RA_OPT_SCAN_REFRESH_ALL,
    RA_OPT_SCAN_PLAYLIST,
    RA_OPT_SCAN_DATABASE,
    RA_OPT_SCAN_MATCH,
@@ -7949,9 +7951,16 @@ static void retroarch_print_help(const char *arg0)
          "                                 "
          "  The options from --scan-playlist on apply\n"
          "                                 "
-         "  to the --scan before them. Without any,\n"
+         "  to the --scan, --scan-refresh or\n"
          "                                 "
-         "  the scan is Fully Automatic.\n");
+         "  --scan-refresh-all before them. Without\n"
+         "                                 "
+         "  any, the scan is Fully Automatic.\n");
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --scan-refresh=NAME|PATH   "
+         "Refresh a playlist by its saved scan settings.\n"
+         "      --scan-refresh-all         "
+         "Refresh each playlist that has saved settings.\n");
    strlcpy_append(buf, sizeof(buf), &_len,
          "      --scan-playlist=NAME       "
          "Playlist to add to.\n"
@@ -8376,9 +8385,17 @@ static void retroarch_cli_scan_option(task_dbscan_item_t *items,
       switch (c)
       {
          case RA_OPT_SCAN_PLAYLIST:
-            field   = &ov->playlist;
-            /* <name>.lpl.tmp fits a file name */
-            max_len = NAME_MAX_LENGTH - 9;
+            /* A refresh writes its own playlist. */
+            if (items[count - 1].kind == TASK_DBSCAN_ITEM_REFRESH)
+               err     = "cannot follow --scan-refresh";
+            else if (items[count - 1].kind == TASK_DBSCAN_ITEM_REFRESH_ALL)
+               err     = "cannot follow --scan-refresh-all";
+            else
+            {
+               field   = &ov->playlist;
+               /* <name>.lpl.tmp fits a file name */
+               max_len = NAME_MAX_LENGTH - 9;
+            }
             break;
          case RA_OPT_SCAN_DATABASE:
             if (string_is_equal(copy, "first"))
@@ -8674,6 +8691,8 @@ static bool retroarch_parse_input_and_config(
       { "entryslot",          1, NULL, 'e' },
 #ifdef HAVE_LIBRETRODB
       { "scan",               1, NULL, RA_OPT_DATABASE_SCAN },
+      { "scan-refresh",       1, NULL, RA_OPT_SCAN_REFRESH },
+      { "scan-refresh-all",   0, NULL, RA_OPT_SCAN_REFRESH_ALL },
       { "scan-playlist",      1, NULL, RA_OPT_SCAN_PLAYLIST },
       { "scan-database",      1, NULL, RA_OPT_SCAN_DATABASE },
       { "scan-match",         1, NULL, RA_OPT_SCAN_MATCH },
@@ -8879,15 +8898,37 @@ static bool retroarch_parse_input_and_config(
                explicit_menu = true;
                break;
             case RA_OPT_DATABASE_SCAN:
+            case RA_OPT_SCAN_REFRESH:
+            case RA_OPT_SCAN_REFRESH_ALL:
 #ifdef HAVE_LIBRETRODB
-               cli_scan = true;
-               verbosity_enable();
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
-               if (!retroarch_cli_scan_add(&scan_items, &scan_count,
-                     &scan_cap, TASK_DBSCAN_ITEM_PATH, optarg))
                {
-                  fprintf(stderr, "out of memory\n");
-                  exit(1);
+                  enum task_dbscan_item_kind kind = TASK_DBSCAN_ITEM_PATH;
+                  const char *arg                 = optarg;
+
+                  if (c == RA_OPT_SCAN_REFRESH)
+                  {
+                     if (!*arg)
+                     {
+                        frontend_driver_attach_console();
+                        fprintf(stderr, "--scan-refresh needs a value\n");
+                        exit(1);
+                     }
+                     kind = TASK_DBSCAN_ITEM_REFRESH;
+                  }
+                  else if (c == RA_OPT_SCAN_REFRESH_ALL)
+                  {
+                     kind = TASK_DBSCAN_ITEM_REFRESH_ALL;
+                     arg  = NULL;
+                  }
+                  cli_scan = true;
+                  verbosity_enable();
+                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
+                  if (!retroarch_cli_scan_add(&scan_items, &scan_count,
+                        &scan_cap, kind, arg))
+                  {
+                     fprintf(stderr, "out of memory\n");
+                     exit(1);
+                  }
                }
 #endif
                break;
@@ -8947,7 +8988,14 @@ static bool retroarch_parse_input_and_config(
    /* Each of them is the whole run. */
    if (cli_scan && scan_conflict)
    {
-      fprintf(stderr, "--scan cannot be combined with %s\n", scan_conflict);
+      const char *first = "--scan";
+
+      if (scan_items[0].kind == TASK_DBSCAN_ITEM_REFRESH)
+         first = "--scan-refresh";
+      else if (scan_items[0].kind == TASK_DBSCAN_ITEM_REFRESH_ALL)
+         first = "--scan-refresh-all";
+      fprintf(stderr, "%s cannot be combined with %s\n", first,
+            scan_conflict);
       exit(1);
    }
 #endif
@@ -9372,6 +9420,8 @@ static bool retroarch_parse_input_and_config(
                }
                break;
             case RA_OPT_DATABASE_SCAN:
+            case RA_OPT_SCAN_REFRESH:
+            case RA_OPT_SCAN_REFRESH_ALL:
             case RA_OPT_SCAN_PLAYLIST:
             case RA_OPT_SCAN_DATABASE:
             case RA_OPT_SCAN_MATCH:
