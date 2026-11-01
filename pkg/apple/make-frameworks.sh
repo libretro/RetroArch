@@ -14,11 +14,21 @@ if [ "$PLATFORM_FAMILY_NAME" = "tvOS" ] ; then
     BASE_DIR="tvOS"
     SUFFIX="_tvos"
     PLATFORM="tvos"
+    if [ "$PLATFORM_NAME" = "appletvsimulator" ] ; then
+        VTOOL_PLATFORM="tvossim"
+    else
+        VTOOL_PLATFORM="tvos"
+    fi
     DEPLOYMENT_TARGET="${TVOS_DEPLOYMENT_TARGET}"
 elif [ "$PLATFORM_FAMILY_NAME" = "iOS" ] ; then
     BASE_DIR="iOS"
     SUFFIX="_ios"
     PLATFORM="ios"
+    if [ "$PLATFORM_NAME" = "iphonesimulator" ] ; then
+        VTOOL_PLATFORM="iossim"
+    else
+        VTOOL_PLATFORM="ios"
+    fi
     DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET}"
 elif [ "$PLATFORM_FAMILY_NAME" = "macOS" ] ; then
     BASE_DIR="OSX"
@@ -71,7 +81,7 @@ process_one() {
     mkdir -p "$fwDir"
     if [ "$PLATFORM_FAMILY_NAME" = "iOS" -o "$PLATFORM_FAMILY_NAME" = "tvOS" ] ; then
         build_sdk=$(vtool -show-build "$dylib" | grep sdk | awk '{print $2}')
-        vtool -set-build-version "${PLATFORM}" "${DEPLOYMENT_TARGET}" "${build_sdk}" -set-build-tool "$PLATFORM" ld 1115.7.3 -set-source-version 0.0 -replace -output "$dylib" "$dylib"
+        vtool -set-build-version "${VTOOL_PLATFORM}" "${DEPLOYMENT_TARGET}" "${build_sdk}" -set-build-tool "$VTOOL_PLATFORM" ld 1115.7.3 -set-source-version 0.0 -replace -output "$dylib" "$dylib"
     fi
     lipo -create "$dylib" -output "$fwDir/$fwName"
     sed -e "s,%CORE%,$fwName," -e "s,%BUNDLE%,$fwName," -e "s,%IDENTIFIER%,$fwName," -e "s,%OSVER%,$DEPLOYMENT_TARGET," iOS/fw.tmpl > "$fwDir/Info.plist"
@@ -110,7 +120,7 @@ process_one() {
     fi
 }
 export -f process_one
-export OUTDIR DSYM_OUTDIR SUFFIX PLATFORM_FAMILY_NAME PLATFORM \
+export OUTDIR DSYM_OUTDIR SUFFIX PLATFORM_FAMILY_NAME PLATFORM VTOOL_PLATFORM \
        DEPLOYMENT_TARGET CODE_SIGN_IDENTITY_FOR_ITEMS APPSTORE_BUILD
 
 JOBS=$(sysctl -n hw.ncpu)
