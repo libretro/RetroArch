@@ -729,6 +729,8 @@ enum manual_content_scan_playlist_refresh_status
 
    if (database_name_lpl && *database_name_lpl)
       fill_pathname(database_name,database_name_lpl,"",sizeof(database_name));
+   else
+      database_name[0] = '\0';
    /* Cannot happen, but would constitute a
     * 'system name' error */
    if (!*system_name)

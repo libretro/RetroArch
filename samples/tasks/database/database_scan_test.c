@@ -5091,6 +5091,99 @@ fixture:
    check(0, "fixture", "could not write the loose held set");
 }
 
+/* A refresh of a playlist that saved no database name leaves the
+ * database to the scan, whatever the refresh before it read. */
+static void refresh_db_name_lane(const char *root)
+{
+   static const char lpl[] =
+      "{\n"
+      "  \"version\": \"1.5\",\n"
+      "  \"scan_content_dir\": \"%s\",\n"
+      "  \"scan_database_name\": \"%s\",\n"
+      "  \"scan_search_recursively\": true,\n"
+      "  \"scan_search_archives\": true,\n"
+      "  \"scan_db_usage\": 0,\n"
+      "  \"items\": []\n"
+      "}\n";
+   static char        text[2048];
+   manual_content_scan_task_config_t *cfg =
+      (manual_content_scan_task_config_t*)calloc(1, sizeof(*cfg));
+   playlist_config_t *pl_cfg =
+      (playlist_config_t*)calloc(1, sizeof(*pl_cfg));
+   playlist_t        *named = NULL;
+   playlist_t        *plain = NULL;
+   char               db[512], dir[512], pl[512], p[1024];
+   db_rec_t           rec;
+   bool               ran;
+
+   if (!cfg || !pl_cfg)
+   {
+      check(0, "refresh database name lane", "out of memory");
+      goto end;
+   }
+   sprintf(db,  "%s/refresh_name_db", root);
+   sprintf(dir, "%s/refresh_name",    root);
+   sprintf(pl,  "%s/refresh_name_pl", root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   path_mkdir(pl);
+   set_rec(&rec, "Named Cart", 0x4E414D45u, 1024);
+   sprintf(p, "%s/Test Named.rdb", db);
+   if (!write_db_set(p, &rec, 1))
+      goto fixture;
+   pl_cfg->capacity = COLLECTION_SIZE;
+   sprintf(p, "%s/Named.lpl", pl);
+   sprintf(text, lpl, dir, "Test Named.lpl");
+   playlist_config_set_path(pl_cfg, p);
+   if (   !filestream_write_file(p, text, strlen(text))
+       || !(named = playlist_init(pl_cfg)))
+      goto fixture;
+   sprintf(p, "%s/Plain.lpl", pl);
+   sprintf(text, lpl, dir, "");
+   playlist_config_set_path(pl_cfg, p);
+   if (   !filestream_write_file(p, text, strlen(text))
+       || !(plain = playlist_init(pl_cfg)))
+      goto fixture;
+
+   /* Back to back: the second call's frame is where the first left
+    * its database name. */
+   ran =    manual_content_scan_set_menu_from_playlist(named, db, false)
+               == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK
+         && manual_content_scan_set_menu_from_playlist(plain, db, false)
+               == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK
+         && manual_content_scan_get_task_config(cfg, pl);
+   check(ran && !*cfg->database_name,
+         "refresh, no saved database: the scan picks",
+         !ran ? "refused" : *cfg->database_name ? cfg->database_name
+         : "automatic");
+   ran =    manual_content_scan_set_menu_from_playlist(named, db, false)
+               == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK
+         && manual_content_scan_get_task_config(cfg, pl);
+   check(ran && !strcmp(cfg->database_name, "Test Named.lpl"),
+         "refresh, a saved database: that one",
+         ran ? cfg->database_name : "refused");
+   goto restore;
+
+fixture:
+   check(0, "fixture", "could not write the refresh playlists");
+restore:
+   *manual_content_scan_get_validate_entries_ptr() = false;
+   manual_content_scan_set_menu_scan_db_select(
+         MANUAL_CONTENT_SCAN_SELECT_DB_AUTO, NULL);
+   manual_content_scan_get_system_name_custom_ptr()[0] = '\0';
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO, NULL);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+end:
+   if (named)
+      playlist_free(named);
+   if (plain)
+      playlist_free(plain);
+   free(pl_cfg);
+   free(cfg);
+}
+
 #ifdef HAVE_RRAR
 /* Rar archives take the archive passes: a first member's hit, in a
  * database whose core opens rar, names the archive; a later member's,
@@ -9303,6 +9396,7 @@ int main(int argc, char **argv)
       folder_first_lane(root, pl_dir, false);
       loose_held_lane(root, pl_dir, true);
       loose_held_lane(root, pl_dir, false);
+      refresh_db_name_lane(root);
 #ifdef HAVE_RRAR
       rar_lane(root, pl_dir, true);
       rar_lane(root, pl_dir, false);
