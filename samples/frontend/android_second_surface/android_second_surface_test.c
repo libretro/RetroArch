@@ -14,7 +14,12 @@
  *  - a new surface after one went is taken and shown, and the next
  *    poll does not drop it for the old one's sake;
  *  - each going surface asks the main thread to give the windows
- *    another try.
+ *    another try;
+ *  - the same surface at a new size, as a turn gives it, is one
+ *    GEOMETRY at that size: the same generation, no CLOSE, still
+ *    shown; a window kept across a driver reinit meanwhile is taken
+ *    at the size last drawn, and the next driver's first poll brings
+ *    the new size.
  *
  * The functions are taken out of platform_unix.c and android_windows.c
  * at build time by extract.awk; the test supplies the types they touch,
@@ -274,6 +279,97 @@ static void test_handover(void)
    CHECK(requests == 1, "a second release asks nothing");
 }
 
+/* @who's poll: how many GEOMETRY and CLOSE events, and the size the
+ * last GEOMETRY gave */
+static unsigned poll_events(void *who, unsigned *closes, unsigned *dims)
+{
+   video_window_event_t events[4];
+   unsigned n = android_windows_poll(who, events, 4);
+   unsigned geometry = 0;
+   unsigned i;
+   *closes = 0;
+   for (i = 0; i < n; i++)
+   {
+      if (events[i].kind == VIDEO_WINDOW_EVENT_GEOMETRY)
+      {
+         geometry++;
+         *dims = events[i].dims;
+      }
+      else if (events[i].kind == VIDEO_WINDOW_EVENT_CLOSE)
+         (*closes)++;
+   }
+   return geometry;
+}
+
+/* A turn: Java's surfaceChanged with the same surface at the swapped
+ * size */
+static void test_resize(void)
+{
+   ANativeWindow a;
+   unsigned closes, dims = 0;
+   jint gen;
+   window_reset();
+   memset(&a, 0, sizeof(a));
+   gen = SURFACE_CHANGED(&a, 1240, 1080);
+   poll_once();
+   changed_cmds = 0;
+   CHECK(SURFACE_CHANGED(&a, 1080, 1240) == gen,
+         "a new size keeps the generation");
+   CHECK(!waited && changed_cmds == 1,
+         "the renderer is told once, not waited for");
+   CHECK(poll_events(&owner, &closes, &dims) == 1 && !closes
+         && dims == VIDEO_SCALE_PACK(1080, 1240),
+         "one GEOMETRY at the new size, no CLOSE");
+   CHECK(native.surface == &a && native.presentable && native.configured
+         && native.dims == VIDEO_SCALE_PACK(1080, 1240),
+         "still shown, at the new size");
+   CHECK(retro_atomic_load_acquire_int(&app.second_display.bound_surface)
+         == gen, "input maps into it as before");
+   CHECK(a.refs == 1, "the old size's reference released");
+   CHECK(!poll_events(&owner, &closes, &dims) && !closes,
+         "the next poll has nothing more");
+   SURFACE_DESTROYED();
+   poll_once();
+   CHECK(a.refs == 0, "and every reference goes with it");
+}
+
+/* A turn landing between one driver keeping the window and the next
+ * taking it */
+static void test_resize_kept(void)
+{
+   static int next_owner;
+   ANativeWindow a;
+   video_window_native_t taken;
+   unsigned closes, dims = 0;
+   unsigned display = 0;
+   jint gen;
+   window_kept(&a);
+   gen = retro_atomic_load_acquire_int(
+         &app.second_display.surface_generation);
+   CHECK(SURFACE_CHANGED(&a, 1080, 1240) == gen,
+         "a turn while kept keeps the generation");
+   poll_once();
+   CHECK(retro_atomic_load_acquire_ptr(&app.second_display.surface) != NULL,
+         "the new size waits for the next owner");
+   memset(&taken, 0, sizeof(taken));
+   CHECK(android_windows_take(&next_owner, 1, &taken, &display)
+         && display == 2, "the next owner takes it");
+   CHECK(taken.surface == &a && taken.presentable
+         && taken.dims == VIDEO_SCALE_PACK(1240, 1080),
+         "as it was last drawn");
+   CHECK(poll_events(&next_owner, &closes, &dims) == 1 && !closes
+         && dims == VIDEO_SCALE_PACK(1080, 1240),
+         "its first poll brings the new size");
+   CHECK(taken.surface == &a && taken.presentable && taken.configured
+         && taken.dims == VIDEO_SCALE_PACK(1080, 1240),
+         "shown at the new size");
+   CHECK(retro_atomic_load_acquire_int(&app.second_display.bound_surface)
+         == gen, "input maps into it as before");
+   CHECK(a.refs == 1, "one reference, the new size's");
+   android_windows_destroy(&next_owner, &taken);
+   CHECK(a.refs == 0 && !android_windows[1], "then it goes");
+}
+
 int main(void)
 {
    ANativeWindow a, b;
@@ -356,6 +452,8 @@ int main(void)
 
    android_windows[1] = NULL;
    test_handover();
+   test_resize();
+   test_resize_kept();
 
    if (failures)
    {

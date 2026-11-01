@@ -3049,6 +3049,241 @@ static void test_window_pointer_mapping(void)
    CHECK(!video_driver_translate_window_point(1, gen, 400, 240, true, &pos));
 }
 
+/* Game Screen 2's window turned: drawn again at the swapped size, the menu
+ * lays out at that size */
+static void test_window_turned(void)
+{
+   video_window_display_t displays[2];
+   video_views_layout_t layout;
+   unsigned dims;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   /* The menu open in Game Screen 2's window, drawn at 1240x1080 */
+   video_driver_clear_views();
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   video_driver_window_layout_screens(&window_test_seen, 0,
+         VIDEO_SCALE_PACK(1240, 1080), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 7, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1240, 1080));
+   window_test_run();
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1240, 1080));
+   /* Turned: the same window drawn at 1080x1240 */
+   video_driver_window_layout_screens(&window_test_seen, 0,
+         VIDEO_SCALE_PACK(1080, 1240), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 7, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1080, 1240));
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, &dims)
+         == 2);
+   CHECK(dims == VIDEO_SCALE_PACK(1080, 1240));
+   window_test_run();
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1080, 1240));
+   CHECK(!video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   /* The next frame is laid out at it */
+   window_test_run();
+   CHECK(window_test_seen.ui[VIDEO_WINDOW_UI_MENU].dims
+         == VIDEO_SCALE_PACK(1080, 1240));
+   settings->uints.video_menu_follows = 0;
+   menu_st->flags                     = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+}
+
+/* A touch on a turned window maps through the layout drawn at the new
+ * size, from the first read after it was published */
+static void test_window_turned_touch(void)
+{
+   const uint32_t oob = VIDEO_POS_PACK(-0x8000, -0x8000);
+   video_windows_frame_t snap;
+   struct retro_video_view v[3];
+   video_views_layout_t wide;
+   video_views_layout_t tall;
+   const video_views_rect_t *dst = &tall.placements[0].dst;
+   uint32_t pos;
+   unsigned gen;
+   int x, y;
+   memset(&snap, 0, sizeof(snap));
+   memset(v, 0, sizeof(v));
+   /* The 3DS map of test_window_pointer_mapping(): the lower screen,
+    * 320x240 at (240, 240) of an 800x480 frame */
+   v[0].width = v[1].width = 400;
+   v[0].height = v[1].height = 240;
+   v[1].x      = 400;
+   v[0].eye    = RETRO_VIDEO_VIEW_EYE_LEFT;
+   v[1].eye    = RETRO_VIDEO_VIEW_EYE_RIGHT;
+   v[2].x      = 240;
+   v[2].y      = 240;
+   v[2].width  = 320;
+   v[2].height = 240;
+   v[2].screen = 1;
+   CHECK(video_views_validate(v, 3, &snap.core));
+   snap.core_dims = VIDEO_SCALE_PACK(800, 480);
+   video_driver_window_layout(&snap, 1, VIDEO_SCALE_PACK(1240, 1080),
+         &wide);
+   video_driver_window_layout(&snap, 1, VIDEO_SCALE_PACK(1080, 1240),
+         &tall);
+   CHECK(wide.num_placements == 1 && tall.num_placements == 1);
+   /* Above the tall layout's screen, on the wide one's */
+   x = (int)VIDEO_SCALE_W(dst->dims) / 2;
+   y = VIDEO_POS_Y(dst->pos) / 2;
+   CHECK(y > VIDEO_POS_Y(wide.placements[0].dst.pos));
+   gen = video_driver_window_generation();
+   video_driver_publish_window_layout(1, gen, 2, &wide, &snap.core,
+         snap.core_dims, VIDEO_SCALE_PACK(1240, 1080));
+   /* Drawn there, and seen by a frame */
+   CHECK(video_driver_window_shown(1, NULL) == 2);
+   CHECK(video_driver_translate_window_point(1, gen, x, y, true, &pos));
+   CHECK(pos != oob);
+   /* Turned, and read before any frame looks */
+   video_driver_publish_window_layout(1, gen, 2, &tall, &snap.core,
+         snap.core_dims, VIDEO_SCALE_PACK(1080, 1240));
+   CHECK(video_driver_translate_window_point(1, gen, x, y, true, &pos));
+   CHECK(pos == oob);
+   x = VIDEO_POS_X(dst->pos) + (int)VIDEO_SCALE_W(dst->dims) / 2;
+   y = VIDEO_POS_Y(dst->pos) + (int)VIDEO_SCALE_H(dst->dims) / 2;
+   CHECK(video_driver_translate_window_point(1, gen, x, y, true, &pos));
+   CHECK(window_test_pixel(VIDEO_POS_X(pos), 800) == 400);
+   CHECK(window_test_pixel(VIDEO_POS_Y(pos), 480) == 360);
+   video_driver_publish_window_layout(1, gen, 0, NULL, NULL, 0, 0);
+   CHECK(!video_driver_translate_window_point(1, gen, x, y, true, &pos));
+}
+
+/* A display turned: the list again with its size swapped, the names
+ * the same. Placement goes by name, so nothing moves, and a move
+ * RetroArch gave up is not asked again. Cocoon's start on the bottom
+ * panel, as in test_window_moves(). */
+static void test_window_turned_display(void)
+{
+   video_window_display_t displays[2];
+   video_views_layout_t layout;
+   unsigned display, separate, main_mask, host;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Screen-2");
+   displays[0].dims = VIDEO_SCALE_PACK(1920, 1080);
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   settings->uints.video_menu_follows = 1;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   video_driver_window_layout_screens(&window_test_seen, 2u,
+         VIDEO_SCALE_PACK(1240, 1080), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 1, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1240, 1080));
+   window_test_run();
+   CHECK(video_st->windows_host.moving == 1);
+   /* The move never lands and is given up */
+   video_st->windows_host.asked -= VIDEO_WINDOWS_MOVE_USEC;
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   display   = window_test_seen.display;
+   separate  = window_test_seen.plan.separate_mask;
+   main_mask = window_test_seen.plan.main_mask;
+   host      = video_st->windows_host.host;
+   /* The top panel turns */
+   displays[0].dims = VIDEO_SCALE_PACK(1080, 1920);
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   CHECK(video_st->windows_host.host == host);
+   CHECK(window_test_seen.display == display);
+   CHECK(window_test_seen.plan.separate_mask == separate);
+   CHECK(window_test_seen.plan.main_mask == main_mask);
+   settings->uints.video_menu_follows = 0;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+   /* The list the later tests expect */
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   video_driver_publish_window_displays(displays, 2);
+}
+
+/* Game Screen 2's display turned while the menu waits for its window: the
+ * menu lays out at the size listed now */
+static void test_window_turned_waiting(void)
+{
+   video_window_display_t displays[2];
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   /* The menu opens for Game Screen 2, whose window has not drawn */
+   video_driver_clear_views();
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(!video_st->windows_ui_asked);
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1240, 1080));
+   /* Game Screen 2 turns while the menu waits; the test restamps the wait,
+    * so the clock cannot run it out */
+   displays[1].dims = VIDEO_SCALE_PACK(1080, 1240);
+   video_driver_publish_window_displays(displays, 2);
+   video_st->windows_ui_asked = 0;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1080, 1240));
+   /* The next frame is laid out at it */
+   window_test_run();
+   CHECK(window_test_seen.ui[VIDEO_WINDOW_UI_MENU].dims
+         == VIDEO_SCALE_PACK(1080, 1240));
+   /* The list the later tests expect, taken while windows are on */
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!retro_atomic_load_acquire_int(
+         &video_st->window_displays.published));
+   /* Windows off, so the tests after start afresh */
+   settings->bools.video_windows_enable = false;
+   window_test_run();
+   CHECK(!video_st->windows_ui_asked);
+   settings->uints.video_menu_follows = 0;
+   menu_st->flags                     = saved_menu;
+   window_test_end();
+}
+
 #ifdef HAVE_THREADS
 #define WINDOW_TEST_GENERATIONS 50000
 static unsigned window_test_gens[2 * WINDOW_TEST_GENERATIONS];
@@ -4220,6 +4455,10 @@ int main(int argc, char **argv)
    test_window_shown_moved();
    test_window_shown_reinit();
    test_window_ui_targets();
+   test_window_turned();
+   test_window_turned_touch();
+   test_window_turned_display();
+   test_window_turned_waiting();
    test_window_pointer_mapping();
    test_window_menu_touch_window();
    test_window_generation();
