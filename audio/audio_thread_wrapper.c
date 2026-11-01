@@ -139,8 +139,9 @@ static void audio_thread_park_stopped(audio_thread_t *thr)
  */
 static void audio_thread_loop(void *data)
 {
-   bool is_shutdown;
    thread_elevation_token_t elevation;
+   bool is_shutdown;
+   bool consuming      = false;
    audio_thread_t *thr = (audio_thread_t*)data;
 
    if (!thr)
@@ -230,8 +231,13 @@ static void audio_thread_loop(void *data)
 
    /* The loop below only calls the driver's start() when it comes out
     * of a stop; the initial start has to be made here, on this thread,
-    * for drivers whose init() leaves the device paused (SDL). */
-   thr->driver->start(thr->driver_data, is_shutdown);
+    * for drivers whose init() leaves the device paused (SDL). A thread
+    * freed while parked leaves from the loop's first test instead. */
+   if (retro_atomic_load_acquire_int(&thr->alive))
+   {
+      thr->driver->start(thr->driver_data, is_shutdown);
+      consuming = true;
+   }
 
    for (;;)
    {
@@ -250,8 +256,14 @@ static void audio_thread_loop(void *data)
       if (retro_atomic_load_acquire_int(&thr->stopped))
       {
          thr->driver->stop(thr->driver_data);
+         consuming = false;
          audio_thread_park_stopped(thr);
+         /* Freed while parked: everything the consumer reads may have
+          * been rebuilt for another device since the stop. */
+         if (!retro_atomic_load_acquire_int(&thr->alive))
+            continue;
          thr->driver->start(thr->driver_data, thr->is_shutdown);
+         consuming = true;
       }
 
       if (!audio_driver_callback())
@@ -269,7 +281,10 @@ static void audio_thread_loop(void *data)
       }
    }
 
-   audio_driver_pipeline_consumer_exit();
+   /* Only a consumer that was running says it has gone; a parked one
+    * would say so to a pipeline that is no longer its own. */
+   if (consuming)
+      audio_driver_pipeline_consumer_exit();
    thr->driver->free(thr->driver_data);
    thread_elevation_lower_current(&elevation);
    thread_elevation_note(THREAD_ELEVATION_SLOT_AUDIO,
@@ -359,15 +374,21 @@ static void audio_thread_free(void *data)
 
    if (thr->thread)
    {
+      /* A parked thread leaves from the park without consuming again:
+       * the pipeline may already belong to the next device. */
+      bool parked = audio_thread_parked(thr);
       /* Let the thread out of whichever wait it is in; it leaves its
-       * loop on seeing alive false. */
-      retro_atomic_store_release_int(&thr->stopped, 0);
+       * loop on seeing alive false, which is published before the
+       * release from the park so that it is seen on the way out. */
       retro_atomic_store_release_int(&thr->alive,    0);
+      retro_atomic_store_release_int(&thr->stopped, 0);
       retro_eventcount_notify(&thr->ec);
 
-      /* It may be asleep in the pipeline waiting for data; wake it so
-       * it sees alive == false now rather than after its timeout. */
-      audio_driver_pipeline_wake();
+      /* A running one may be asleep in the pipeline waiting for data;
+       * wake it so it sees alive == false now rather than after its
+       * timeout. */
+      if (!parked)
+         audio_driver_pipeline_wake();
       sthread_join(thr->thread);
       /* Wait for the audio thread to exit, ensure that it's really dead.
        * (It will call the wrapped driver's free() function.) */

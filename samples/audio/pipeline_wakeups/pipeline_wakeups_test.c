@@ -786,6 +786,8 @@ static void consumer_exit_run(void);
 static bool consumer_exit_mode;
 static void kept_device_run(void);
 static bool kept_device_mode;
+static void kept_drop_run(void);
+static bool kept_drop_mode;
 /* The pause boundary and consumer exit lanes run their one scenario in
  * place of the load sweep's phases. */
 static bool single_lane;
@@ -1360,6 +1362,11 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
       kept_device_run();
       frames = 0;
    }
+   if (kept_drop_mode)
+   {
+      kept_drop_run();
+      frames = 0;
+   }
    clock_gettime(CLOCK_MONOTONIC, &next);
    for (i = 0; i < frames; i++)
    {
@@ -1691,6 +1698,92 @@ static void kept_device_case(void)
       fixture_failures++;
 }
 
+/* The kept device not taken back: set aside through the shipping path,
+ * the pipeline rebuilt for the next device, then dropped. Its thread
+ * leaves from the park, so it must not consume the new pipeline nor
+ * report a departed consumer to it, and the next wrapper must find the
+ * producer waiting on it as on any other. */
+static void kept_drop_case(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   size_t per_frame         = (size_t)(CORE_RATE / FPS);
+   size_t ring_bytes        = st->pipe_ring.capacity;
+   size_t writes, wakes;
+   unsigned frame;
+
+   for (frame = 0; frame < 8; frame++)
+      submit_frame(per_frame, 1);
+   writes = 0;
+   if (!wait_progress(wrote_since, &writes))
+      fixture_failures++;
+
+   audio_driver_keep_device(true);
+   if (!audio_driver_set_aside(st, st->current_audio))
+   {
+      fprintf(stderr, "the wrapper was not set aside\n");
+      fixture_failures++;
+      return;
+   }
+   AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_STARTED);
+   st->context_audio_data = NULL;
+
+   retro_spsc_free(&st->pipe_ring);
+   retro_eventcount_free(&st->pipe_space);
+   retro_eventcount_free(&st->pipe_data);
+   if (     !retro_spsc_init(&st->pipe_ring, ring_bytes)
+         || !retro_eventcount_init(&st->pipe_space)
+         || !retro_eventcount_init(&st->pipe_data))
+   {
+      fixture_failures++;
+      return;
+   }
+   retro_atomic_int_init(&st->pipe_consumer_gone, 0);
+   retro_atomic_int_init(&st->pipe_wake, 0);
+   st->pipe_priming = true;
+
+   wakes = retro_atomic_load_acquire_size(&cnt_wakes);
+   audio_driver_drop_kept();
+   if (retro_atomic_load_acquire_size(&cnt_wakes) != wakes)
+   {
+      fprintf(stderr, "the dropped wrapper consumed the rebuilt pipeline\n");
+      fixture_failures++;
+   }
+   if (retro_atomic_load_acquire_int(&st->pipe_consumer_gone))
+   {
+      fprintf(stderr, "the dropped wrapper reported a departed consumer\n");
+      fixture_failures++;
+   }
+   if (retro_atomic_load_acquire_int(&st->pipe_wake))
+   {
+      fprintf(stderr, "the dropped wrapper woke the rebuilt pipeline\n");
+      fixture_failures++;
+   }
+
+   if (!audio_init_thread(&st->current_audio, &st->context_audio_data,
+            NULL, OUT_RATE, NULL, 64, false, false, &clocked_driver))
+   {
+      fixture_failures++;
+      return;
+   }
+   audio_driver_publish_runloop();
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_STARTED);
+   if (!st->current_audio->start(st->context_audio_data, false))
+      fixture_failures++;
+   writes = retro_atomic_load_acquire_size(&cnt_writes);
+   for (frame = 0; frame < 8; frame++)
+      submit_frame(per_frame, 1);
+   if (!wait_progress(wrote_since, &writes))
+      fixture_failures++;
+}
+
+static void kept_drop_run(void)
+{
+   unsigned f0 = fixture_failures;
+   kept_drop_case();
+   printf("kept drop: a wrapper dropped from the park leaves the next pipeline alone, %u failures\n",
+         fixture_failures - f0);
+}
+
 static bool rate_installed(void *arg)
 {
    (void)arg;
@@ -1791,9 +1884,11 @@ int main(int argc, char **argv)
    pause_boundary_mode = getenv("PAUSE_BOUNDARY") != NULL;
    consumer_exit_mode  = getenv("CONSUMER_EXIT") != NULL;
    kept_device_mode    = getenv("KEPT_DEVICE") != NULL;
+   kept_drop_mode      = getenv("KEPT_DROP") != NULL;
    menu_source_mode    = getenv("MENU_SOURCE") != NULL;
    single_lane         = pause_boundary_mode || consumer_exit_mode
-                      || kept_device_mode || menu_source_mode;
+                      || kept_device_mode || kept_drop_mode
+                      || menu_source_mode;
    if (menu_source_mode && !use_wrapper)
    {
       fputs("MENU_SOURCE requires WRAPPER\n", stderr);

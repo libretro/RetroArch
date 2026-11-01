@@ -1220,27 +1220,37 @@ static bool audio_driver_set_aside(audio_driver_state_t *audio_st,
    return true;
 }
 
-/* At init, in place of opening one: the kept device, if it is what
- * would be opened. A synchronous device comes back running, as from
- * its init; the wrapper parked, as from its own, for init's start. */
+/* At init, before anything the kept device was opened with is rebuilt:
+ * one that will not be taken back is closed now. It may hold the very
+ * device the next one opens, and a wrapper's thread is joined while the
+ * pipeline it consumed is still down. */
+static void audio_driver_drop_kept_unless(const settings_t *settings,
+      unsigned latency, bool wrapper)
+{
+   if (!audio_driver_kept.driver)
+      return;
+   if (     wrapper == audio_driver_kept.wrapper
+         && latency == audio_driver_kept.latency
+         && settings->uints.audio_output_sample_rate == audio_driver_kept.rate
+         && string_is_equal(settings->arrays.audio_driver, audio_driver_kept.ident)
+         && string_is_equal(settings->arrays.audio_device, audio_driver_kept.device)
+         && (!wrapper
+            || (     settings->bools.audio_thread_priority    == audio_driver_kept.priority
+                  && settings->bools.thread_prefer_fast_cores == audio_driver_kept.fast_cores)))
+      return;
+   RARCH_LOG("[Audio] The kept driver does not match the new settings; opening another.\n");
+   audio_driver_drop_kept();
+}
+
+/* In place of opening one: the kept device, which init has already
+ * dropped unless it is what would be opened. A synchronous device comes
+ * back running, as from its init; the wrapper parked, as from its own,
+ * for init's start. */
 static bool audio_driver_take_kept(audio_driver_state_t *audio_st,
-      const settings_t *settings, unsigned latency, bool wrapper)
+      bool wrapper)
 {
    if (!audio_driver_kept.driver)
       return false;
-   if (     wrapper != audio_driver_kept.wrapper
-         || latency != audio_driver_kept.latency
-         || settings->uints.audio_output_sample_rate != audio_driver_kept.rate
-         || !string_is_equal(settings->arrays.audio_driver, audio_driver_kept.ident)
-         || !string_is_equal(settings->arrays.audio_device, audio_driver_kept.device)
-         || (wrapper
-            && (     settings->bools.audio_thread_priority    != audio_driver_kept.priority
-                  || settings->bools.thread_prefer_fast_cores != audio_driver_kept.fast_cores)))
-   {
-      RARCH_LOG("[Audio] The kept driver does not match the new settings; opening another.\n");
-      audio_driver_drop_kept();
-      return false;
-   }
 
    audio_st->current_audio         = audio_driver_kept.driver;
    audio_st->context_audio_data    = audio_driver_kept.data;
@@ -4718,6 +4728,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          ? runloop_audio_latency : setting_audio_latency;
    size_t max_buffer_samples      = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    bool latency_floored           = false;
+   bool open_wrapper              = audio_cb_inited;
    /* Accommodate rewind since at some point we might have two full buffers. */
    size_t outsamples_max          = max_buffer_samples * AUDIO_MAX_RATIO * slowmotion_ratio;
    size_t audio_buf_length        = max_buffer_samples * sizeof(float);
@@ -4856,6 +4867,13 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    }
 
 #ifdef HAVE_THREADS
+   open_wrapper = audio_cb_inited
+      || (     settings->bools.audio_threaded_pipeline
+            && audio_driver_st.current_audio->wait_writable);
+#endif
+   audio_driver_drop_kept_unless(settings, audio_latency, open_wrapper);
+
+#ifdef HAVE_THREADS
    /* A core with its own audio callback already renders on the audio
     * thread and would be a second producer for the ring; it keeps the
     * inline pipeline. So does a driver without wait_writable(): the
@@ -4976,8 +4994,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          sizeof(audio_driver_opened.device));
    strlcpy(audio_driver_opened.resampler, settings->arrays.audio_resampler,
          sizeof(audio_driver_opened.resampler));
-   if (audio_driver_take_kept(&audio_driver_st, settings, audio_latency,
-            audio_driver_open_wrapper))
+   if (audio_driver_take_kept(&audio_driver_st, audio_driver_open_wrapper))
       ;
 #ifdef HAVE_THREADS
    else if (audio_cb_inited || (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_PIPELINE_THREADED))
