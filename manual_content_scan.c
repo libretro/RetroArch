@@ -704,8 +704,8 @@ error:
  * Returns MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK
  * if playlist contains a valid scan record. */
 enum manual_content_scan_playlist_refresh_status
-      manual_content_scan_set_menu_from_playlist(playlist_t *playlist,
-            const char *path_content_database, bool show_hidden_files)
+      manual_content_scan_set_menu_from_playlist_list(playlist_t *playlist,
+            const struct string_list *rdb_list)
 {
    const char *playlist_path    = NULL;
    const char *content_dir      = NULL;
@@ -719,9 +719,6 @@ enum manual_content_scan_playlist_refresh_status
    bool overwrite_playlist      = false;
    bool omit_db_ref             = false;
    int db_usage                 = MANUAL_CONTENT_SCAN_USE_DB_NONE;
-#ifdef HAVE_LIBRETRODB
-   struct string_list *rdb_list = NULL;
-#endif
    enum manual_content_scan_system_name_type
          system_name_type       = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
    enum manual_content_scan_core_type
@@ -776,13 +773,6 @@ enum manual_content_scan_playlist_refresh_status
    scan_settings.db_selection = MANUAL_CONTENT_SCAN_SELECT_DB_AUTO;
 
    /* Set system name */
-#ifdef HAVE_LIBRETRODB
-   /* > If platform has database support, get names
-    *   of all installed database files */
-   rdb_list = dir_list_new_special(
-         path_content_database,
-         DIR_LIST_DATABASES, NULL, show_hidden_files);
-
    if (rdb_list && rdb_list->size)
    {
       size_t i;
@@ -817,9 +807,6 @@ enum manual_content_scan_playlist_refresh_status
          }
       }
    }
-
-   string_list_free(rdb_list);
-#endif
 
    /* > If system name does not match a database
     *   file, then check whether it matches the
@@ -910,6 +897,25 @@ enum manual_content_scan_playlist_refresh_status
    scan_settings.validate_entries   = true;
 
    return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK;
+}
+
+enum manual_content_scan_playlist_refresh_status
+      manual_content_scan_set_menu_from_playlist(playlist_t *playlist,
+            const char *path_content_database, bool show_hidden_files)
+{
+   enum manual_content_scan_playlist_refresh_status status;
+   struct string_list *rdb_list = NULL;
+#ifdef HAVE_LIBRETRODB
+   /* > If platform has database support, get names
+    *   of all installed database files */
+   rdb_list = dir_list_new_special(
+         path_content_database,
+         DIR_LIST_DATABASES, NULL, show_hidden_files);
+#endif
+   status   = manual_content_scan_set_menu_from_playlist_list(playlist,
+         rdb_list);
+   string_list_free(rdb_list);
+   return status;
 }
 
 /* Whether @name is an installed database: the basename,

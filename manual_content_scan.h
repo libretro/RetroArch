@@ -309,6 +309,12 @@ enum manual_content_scan_playlist_refresh_status
       manual_content_scan_set_menu_from_playlist(playlist_t *playlist,
             const char *path_content_database, bool show_hidden_files);
 
+/* As manual_content_scan_set_menu_from_playlist(), with the
+ * paths of the installed databases in @rdb_list (NULL: none). */
+enum manual_content_scan_playlist_refresh_status
+      manual_content_scan_set_menu_from_playlist_list(playlist_t *playlist,
+            const struct string_list *rdb_list);
+
 manual_content_scan_overrides_t *manual_content_scan_overrides_new(void);
 void manual_content_scan_overrides_free(manual_content_scan_overrides_t *ov);
 

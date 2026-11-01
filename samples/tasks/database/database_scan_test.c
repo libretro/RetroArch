@@ -994,13 +994,36 @@ static retro_time_t       push_cancel_usec;
 static retro_atomic_int_t pushes_tried;
 static retro_atomic_int_t pushes_ok;
 
+/* The chain's untitled steps: the prep_cancel_at'th pushed (from 1) is
+ * cancelled once its playlist-folder walk or playlist load begins.
+ * Set only between runs. */
+static unsigned      prep_cancel_at;
+static unsigned      prep_pushes;
+static retro_task_t *prep_cancel_task;
+
+static void prep_cancel_begun(void)
+{
+   retro_task_t *task = prep_cancel_task;
+
+   if (task)
+   {
+      prep_cancel_task = NULL;
+      task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
+   }
+}
+
 bool __real_task_queue_push(retro_task_t *task);
 bool __wrap_task_queue_push(retro_task_t *task)
 {
    int n;
 
    if (!(task_get_flags(task) & RETRO_TASK_FLG_PARALLEL))
+   {
+      if (   prep_cancel_at && !task->title
+          && ++prep_pushes == prep_cancel_at)
+         prep_cancel_task = task;
       return __real_task_queue_push(task);
+   }
    n = retro_atomic_fetch_add_int(&pushes_tried, 1) + 1;
    if (push_fail_from && (unsigned)n >= push_fail_from)
       return false;
@@ -9357,6 +9380,575 @@ fixture:
          sizeof(config_get_ptr()->paths.directory_playlist));
 }
 
+/* Linked with --wrap: how many database listings, playlist-folder
+ * walks and playlist loads began, and how many of them on the main
+ * thread. */
+enum { REFRESH_RDB = 0, REFRESH_LPL, REFRESH_LOAD, REFRESH_KINDS };
+static retro_atomic_int_t refresh_began[REFRESH_KINDS];
+static retro_atomic_int_t refresh_began_main[REFRESH_KINDS];
+
+static void refresh_began_reset(void)
+{
+   int k;
+
+   for (k = 0; k < REFRESH_KINDS; k++)
+   {
+      retro_atomic_store_release_int(&refresh_began[k],      0);
+      retro_atomic_store_release_int(&refresh_began_main[k], 0);
+   }
+}
+
+static void refresh_began_one(int k)
+{
+   retro_atomic_fetch_add_int(&refresh_began[k], 1);
+   if (task_is_on_main_thread())
+      retro_atomic_fetch_add_int(&refresh_began_main[k], 1);
+}
+
+/* Set by the walk's own thread, which is the one that steps it. */
+static retro_atomic_int_t lpl_walk_fail;
+static dir_list_iter_t   *lpl_fail_iter;
+
+dir_list_iter_t *__real_dir_list_iter_new(const char *dir, const char *ext,
+      bool include_dirs, bool include_hidden, bool include_compressed,
+      bool recursive, struct string_list *list);
+dir_list_iter_t *__wrap_dir_list_iter_new(const char *dir, const char *ext,
+      bool include_dirs, bool include_hidden, bool include_compressed,
+      bool recursive, struct string_list *list)
+{
+   dir_list_iter_t *iter;
+   if (ext && !strcmp(ext, "rdb"))
+      refresh_began_one(REFRESH_RDB);
+   else if (ext && !strcmp(ext, "lpl"))
+   {
+      refresh_began_one(REFRESH_LPL);
+      prep_cancel_begun();
+   }
+   iter = __real_dir_list_iter_new(dir, ext, include_dirs, include_hidden,
+         include_compressed, recursive, list);
+   if (   ext && !strcmp(ext, "lpl")
+       && retro_atomic_load_acquire_int(&lpl_walk_fail))
+      lpl_fail_iter = iter;
+   return iter;
+}
+
+/* Linked with --wrap: the playlist folder walk fails as out of
+ * memory does. */
+int __real_dir_list_iter_step(dir_list_iter_t *iter,
+      bool (*within_budget)(void *ud), void *ud);
+int __wrap_dir_list_iter_step(dir_list_iter_t *iter,
+      bool (*within_budget)(void *ud), void *ud)
+{
+   if (iter && iter == lpl_fail_iter)
+      return -1;
+   return __real_dir_list_iter_step(iter, within_budget, ud);
+}
+
+playlist_parse_t *__real_playlist_parse_begin(const playlist_config_t *config);
+playlist_parse_t *__wrap_playlist_parse_begin(const playlist_config_t *config)
+{
+   refresh_began_one(REFRESH_LOAD);
+   prep_cancel_begun();
+   return __real_playlist_parse_begin(config);
+}
+
+/* Linked with --wrap: the task_init() this counts down to fails, as
+ * out of memory. */
+static retro_atomic_int_t task_init_fail_in;
+
+retro_task_t *__real_task_init(void);
+retro_task_t *__wrap_task_init(void)
+{
+   if (   retro_atomic_load_acquire_int(&task_init_fail_in) > 0
+       && retro_atomic_fetch_add_int(&task_init_fail_in, -1) == 1)
+      return NULL;
+   return __real_task_init();
+}
+
+/* Writes @lpl with one entry, @entry, and unless @dir is NULL a scan
+ * record for @dir with the saved core @core (NULL: detect). */
+static bool refresh_write(const char *lpl, const char *dir,
+      const char *core, const char *entry)
+{
+   playlist_config_t    *cfg = (playlist_config_t*)calloc(1, sizeof(*cfg));
+   playlist_t           *pl  = NULL;
+   struct playlist_entry e;
+   bool                  ok  = false;
+
+   if (!cfg)
+      return false;
+   playlist_config_set_path(cfg, lpl);
+   cfg->capacity = COLLECTION_SIZE;
+   if ((pl = playlist_init(cfg)))
+   {
+      memset(&e, 0, sizeof(e));
+      e.path      = (char*)entry;
+      e.label     = (char*)"Stale";
+      e.core_path = (char*)"DETECT";
+      e.core_name = (char*)"DETECT";
+      ok = playlist_push(pl, &e);
+      if (dir)
+      {
+         playlist_set_scan_content_dir(pl, dir);
+         playlist_set_scan_search_recursively(pl, true);
+         if (core)
+            playlist_set_default_core_name(pl, core);
+      }
+      playlist_write_file(pl);
+      playlist_free(pl);
+      ok = ok && path_is_valid(lpl);
+   }
+   free(cfg);
+   return ok;
+}
+
+static void refresh_item(task_dbscan_item_t *it,
+      enum task_dbscan_item_kind kind, const char *arg)
+{
+   it->kind      = kind;
+   it->arg       = arg ? ovr_str(arg) : NULL;
+   it->overrides = NULL;
+}
+
+/* Runs @items with stdout in @out and stderr in @err; @cli as for a
+ * --scan run. */
+static bool refresh_run(task_dbscan_item_t *items, size_t n,
+      const char *out, const char *err, bool cli)
+{
+   bool captured, pushed;
+
+   cli_output = cli;
+   captured   = capture_begin(out, err);
+   pushed     = chain_push(items, n);
+   chain_wait(false);
+   if (captured)
+      capture_end();
+   cli_output = false;
+   return captured && pushed && chain_dones == 1;
+}
+
+/* True if @dir lists @name in that case; @detail gets what it lists. */
+static bool listed_as(const char *dir, const char *name, char *detail,
+      size_t size)
+{
+   size_t              i;
+   bool                found = false;
+   struct string_list *l     = dir_list_new(dir, "lpl", false, false,
+         false, false);
+
+   *detail = '\0';
+   for (i = 0; l && i < l->size; i++)
+   {
+      const char *base = path_basename(l->elems[i].data);
+
+      if (i)
+         strlcat(detail, " ", size);
+      strlcat(detail, base, size);
+      if (string_is_equal(base, name))
+         found = true;
+   }
+   string_list_free(l);
+   return found;
+}
+
+/* Refresh items over a playlist folder: a refresh-all takes every
+ * playlist with saved settings in name order, history and favorites
+ * never, skips one whose folder is gone and fails one whose core is;
+ * it refreshes a playlist an earlier item wrote.  A refresh names its
+ * playlist by name or by a path in the playlist folder.  The walks and
+ * loads run on the worker when the queue has one. */
+static void refresh_lane(const char *root, const char *pl_dir,
+      uint32_t crc_a, uint32_t sz_a, bool threaded)
+{
+   char                pl[512], none_pl[512], a[512], gone[512];
+   char                fresh[512], other[512], case_pl[512];
+   char                dup_pl[512];
+   char                out[1024], err[1024];
+   char                p[1024], stale[1024], want[1536], what[128];
+   char                detail[160];
+   const char         *q = threaded ? "(threaded)" : "(regular)";
+   task_dbscan_item_t *items;
+   bool                ran, off_main = false;
+
+#ifdef HAVE_THREADS
+   off_main = threaded;
+#endif
+   sprintf(pl,      "%s/refresh_pl",    root);
+   sprintf(none_pl, "%s/refresh_none",  root);
+   sprintf(a,       "%s/refresh_a",     root);
+   sprintf(gone,    "%s/refresh_gone",  root);
+   sprintf(fresh,   "%s/refresh_new",   root);
+   sprintf(other,   "%s/refresh_other", root);
+   sprintf(case_pl, "%s/refresh_case",  root);
+   sprintf(dup_pl,  "%s/refresh_dup",   root);
+   sprintf(out,     "%s/refresh_out.txt", root);
+   sprintf(err,     "%s/refresh_err.txt", root);
+   sprintf(stale,   "%s/00_gone.bin",   a);
+   path_mkdir(pl);
+   path_mkdir(none_pl);
+   path_mkdir(a);
+   path_mkdir(fresh);
+   path_mkdir(other);
+   path_mkdir(case_pl);
+   path_mkdir(dup_pl);
+   delete_playlists(pl);
+   delete_playlists(none_pl);
+   delete_playlists(other);
+   delete_playlists(case_pl);
+   delete_playlists(dup_pl);
+   sprintf(p, "%s/01_alpha.bin", a);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/01_alpha.bin", fresh);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/a_ok.lpl", pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/b_gone.lpl", pl);
+   if (!refresh_write(p, gone, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/c_none.lpl", pl);
+   if (!refresh_write(p, NULL, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/e_core.lpl", pl);
+   if (!refresh_write(p, a, "No Such Core", stale))
+      goto fixture;
+   sprintf(p, "%s/x_history.lpl", pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/content_favorites.lpl", pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/c_none.lpl", none_pl);
+   if (!refresh_write(p, NULL, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/x_history.lpl", none_pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/a_ok.lpl", other);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+
+   /* A --scan writing n_new, then the refresh-all. */
+   if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+      goto fixture;
+   chain_item(&items[0], fresh, NULL);
+   if ((items[0].overrides = manual_content_scan_overrides_new()))
+      items[0].overrides->playlist = ovr_str("n_new");
+   refresh_item(&items[1], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   refresh_began_reset();
+   ran = refresh_run(items, 2, out, err, true);
+   sprintf(what, "refresh %s: refresh-all in name order", q);
+   snprintf(detail, sizeof(detail), "%u items: %s, %s, %s, %s", chain_seen,
+         chain_names[1], chain_names[2], chain_names[3], chain_names[4]);
+   check(   ran && chain_seen == 5
+         && chain_saw(0, fresh,    TASK_DBSCAN_RAN,     1)
+         && chain_saw(1, "a_ok",   TASK_DBSCAN_RAN,     1)
+         && chain_saw(2, "b_gone", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(3, "e_core", TASK_DBSCAN_FAILED,  -1)
+         && chain_saw(4, "n_new",  TASK_DBSCAN_RAN,     0), what, detail);
+   sprintf(what, "refresh %s: the totals", q);
+   sprintf(detail, "ran %u, added %u, failed %u, skipped %u%s",
+         chain_totals.ran, chain_totals.added, chain_totals.failed,
+         chain_totals.skipped, chain_totals.cancelled ? ", cancelled" : "");
+   check(   chain_totals.ran == 3 && chain_totals.added == 2
+         && chain_totals.failed == 1 && chain_totals.skipped == 1
+         && !chain_totals.cancelled, what, detail);
+   sprintf(what, "refresh %s: a stale entry removed", q);
+   sprintf(p, "%s/a_ok.lpl", pl);
+   sprintf(want, "%s/01_alpha.bin", a);
+   check(file_contains(p, want) && !file_contains(p, stale), what, p);
+   sprintf(what, "refresh %s: history and favorites never loaded", q);
+   sprintf(p, "%s/x_history.lpl", pl);
+   sprintf(detail, "%d loads",
+         retro_atomic_load_acquire_int(&refresh_began[REFRESH_LOAD]));
+   check(   file_contains(p, stale) && !file_contains(p, want)
+         && retro_atomic_load_acquire_int(&refresh_began[REFRESH_LOAD]) == 5,
+         what, detail);
+   sprintf(what, "refresh %s: the refresh lines", q);
+   sprintf(want, "%s: skipped: content folder not found (%s)", "b_gone",
+         gone);
+   check(   file_contains(out,
+               "a_ok: 1 added, 0 duplicates, 0 unmatched, 0 errors")
+         && file_contains(err, want)
+         && file_contains(err, "e_core: saved core not found (No Such Core)")
+         && !file_contains(out, "b_gone")
+         && !file_contains(err, "no playlists"), what, err);
+   sprintf(what, "refresh %s: walks and loads %s", q,
+         off_main ? "off the main thread" : "ran");
+   sprintf(detail, "rdb %d (%d main), lpl %d (%d main), loads %d (%d main)",
+         retro_atomic_load_acquire_int(&refresh_began[REFRESH_RDB]),
+         retro_atomic_load_acquire_int(&refresh_began_main[REFRESH_RDB]),
+         retro_atomic_load_acquire_int(&refresh_began[REFRESH_LPL]),
+         retro_atomic_load_acquire_int(&refresh_began_main[REFRESH_LPL]),
+         retro_atomic_load_acquire_int(&refresh_began[REFRESH_LOAD]),
+         retro_atomic_load_acquire_int(&refresh_began_main[REFRESH_LOAD]));
+   check(   retro_atomic_load_acquire_int(&refresh_began[REFRESH_RDB]) >= 1
+         && retro_atomic_load_acquire_int(&refresh_began[REFRESH_LPL]) == 1
+         && (!off_main || (
+               !retro_atomic_load_acquire_int(&refresh_began_main[REFRESH_RDB])
+            && !retro_atomic_load_acquire_int(&refresh_began_main[REFRESH_LPL])
+            && !retro_atomic_load_acquire_int(
+                  &refresh_began_main[REFRESH_LOAD]))), what, detail);
+
+   /* By name with an override, by path, and the naming failures. */
+   if (!(items = (task_dbscan_item_t*)calloc(5, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH, "a_ok");
+   if ((items[0].overrides = manual_content_scan_overrides_new()))
+      items[0].overrides->exts = ovr_str("bin");
+   sprintf(p, "%s/a_ok.lpl", pl);
+   refresh_item(&items[1], TASK_DBSCAN_ITEM_REFRESH, p);
+   sprintf(p, "%s/a_ok.lpl", other);
+   refresh_item(&items[2], TASK_DBSCAN_ITEM_REFRESH, p);
+   refresh_item(&items[3], TASK_DBSCAN_ITEM_REFRESH, "nope");
+   refresh_item(&items[4], TASK_DBSCAN_ITEM_REFRESH, "c_none");
+   ran = refresh_run(items, 5, out, err, true);
+   sprintf(what, "refresh %s: by name, by path, and what fails", q);
+   sprintf(detail, "%u items, ran %u, failed %u", chain_seen,
+         chain_totals.ran, chain_totals.failed);
+   check(   ran && chain_seen == 5
+         && chain_saw(0, "a_ok",   TASK_DBSCAN_RAN,    0)
+         && chain_saw(1, "a_ok",   TASK_DBSCAN_RAN,    0)
+         && chain_saw(2, p,        TASK_DBSCAN_FAILED, -1)
+         && chain_saw(3, "nope",   TASK_DBSCAN_FAILED, -1)
+         && chain_saw(4, "c_none", TASK_DBSCAN_FAILED, -1)
+         && chain_totals.ran == 2 && chain_totals.failed == 3
+         && !chain_totals.added, what, detail);
+   sprintf(what, "refresh %s: an override written back", q);
+   sprintf(want, "%s/a_ok.lpl", pl);
+   check(file_contains(want, "\"scan_file_exts\": \"bin\""), what, want);
+   sprintf(what, "refresh %s: the naming lines", q);
+   sprintf(want, "%s: not in the playlist folder (%s)", p, pl);
+   check(   file_contains(err, want)
+         && file_contains(err, "nope: no such playlist")
+         && file_contains(err, "c_none: no saved scan settings"), what, err);
+
+   /* A file name without a folder is the playlist folder's. */
+   if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH, "a_ok.lpl");
+   refresh_item(&items[1], TASK_DBSCAN_ITEM_REFRESH, "A_OK.LPL");
+   ran = refresh_run(items, 2, out, err, true);
+   sprintf(what, "refresh %s: a file name, not a path", q);
+   check(   ran && chain_saw(0, "a_ok", TASK_DBSCAN_RAN, 0)
+         && chain_saw(1, "a_ok", TASK_DBSCAN_RAN, 0)
+         && path_get_size(err) == 0, what, err);
+
+#ifdef _WIN32
+   /* All '\' and '\' before the file name only. */
+   if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+      goto fixture;
+   sprintf(p, "%s/a_ok.lpl", pl);
+   pathname_conform_slashes_to_os(p);
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH, p);
+   sprintf(p, "%s\\a_ok.lpl", pl);
+   refresh_item(&items[1], TASK_DBSCAN_ITEM_REFRESH, p);
+   ran = refresh_run(items, 2, out, err, true);
+   sprintf(what, "refresh %s: a path with either slash", q);
+   sprintf(detail, "%u items, ran %u, failed %u", chain_seen,
+         chain_totals.ran, chain_totals.failed);
+   check(   ran && chain_seen == 2
+         && chain_saw(0, "a_ok", TASK_DBSCAN_RAN, 0)
+         && chain_saw(1, "a_ok", TASK_DBSCAN_RAN, 0)
+         && chain_totals.ran == 2 && !chain_totals.failed, what, detail);
+
+   /* A playlist folder with '\', a path with '/'. */
+   strlcpy(p, pl, sizeof(p));
+   pathname_conform_slashes_to_os(p);
+   strlcpy(config_get_ptr()->paths.directory_playlist, p,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH, "a_ok");
+   sprintf(p, "%s/a_ok.lpl", pl);
+   refresh_item(&items[1], TASK_DBSCAN_ITEM_REFRESH, p);
+   ran = refresh_run(items, 2, out, err, true);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   sprintf(what, "refresh %s: a playlist folder with '\\'", q);
+   sprintf(detail, "%u items, ran %u, failed %u", chain_seen,
+         chain_totals.ran, chain_totals.failed);
+   check(   ran && chain_seen == 2
+         && chain_saw(0, "a_ok", TASK_DBSCAN_RAN, 0)
+         && chain_saw(1, "a_ok", TASK_DBSCAN_RAN, 0)
+         && chain_totals.ran == 2 && !chain_totals.failed, what, detail);
+#endif
+
+   /* Another case: the lines, the system name and the save take the
+    * file's own name, so a database's playlist stays one. */
+   sprintf(p, "%s/Test Beta.lpl", case_pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   strlcpy(config_get_ptr()->paths.directory_playlist, case_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH, "test beta");
+   sprintf(p, "%s/TEST BETA.LPL", case_pl);
+   refresh_item(&items[1], TASK_DBSCAN_ITEM_REFRESH, p);
+   ran = refresh_run(items, 2, out, err, true);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   sprintf(what, "refresh %s: another case, named as the file", q);
+   snprintf(detail, sizeof(detail), "%u items: %s, %s", chain_seen,
+         chain_names[0], chain_names[1]);
+   check(   ran && chain_seen == 2
+         && !strcmp(chain_names[0], "Test Beta")
+         && !strcmp(chain_names[1], "Test Beta")
+         && chain_outcomes[0] == TASK_DBSCAN_RAN
+         && chain_outcomes[1] == TASK_DBSCAN_RAN
+         && file_contains(out, "Test Beta: ")
+         && !file_contains(out, "test beta")
+         && !file_contains(out, "TEST BETA"), what, detail);
+   sprintf(what, "refresh %s: another case, a database's playlist", q);
+   check(   manual_content_scan_get_menu_system_name_type()
+         == MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE, what, "");
+   sprintf(what, "refresh %s: another case keeps the file's name", q);
+   check(   listed_as(case_pl, "Test Beta.lpl", detail, sizeof(detail))
+         && !strcmp(detail, "Test Beta.lpl"), what, detail);
+
+   /* Two files in other cases: neither is the name; the exact one is. */
+   sprintf(p, "%s/Test Beta.lpl", dup_pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/TEST BETA.lpl", dup_pl);
+   /* Where case is ignored this is the same file, already written. */
+   refresh_write(p, a, NULL, stale);
+   if (   listed_as(dup_pl, "Test Beta.lpl", detail, sizeof(detail))
+       && listed_as(dup_pl, "TEST BETA.lpl", detail, sizeof(detail)))
+   {
+      strlcpy(config_get_ptr()->paths.directory_playlist, dup_pl,
+            sizeof(config_get_ptr()->paths.directory_playlist));
+      if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+         goto fixture;
+      refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH, "test beta");
+      refresh_item(&items[1], TASK_DBSCAN_ITEM_REFRESH, "Test Beta");
+      ran = refresh_run(items, 2, out, err, true);
+      strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+            sizeof(config_get_ptr()->paths.directory_playlist));
+      sprintf(what, "refresh %s: two in other cases, ambiguous", q);
+      check(   ran && chain_saw(0, "test beta", TASK_DBSCAN_FAILED, -1)
+            && file_contains(err,
+                  "test beta: 2 playlists with this name in other cases, "
+                  "give the exact name\n"),
+            what, err);
+      sprintf(what, "refresh %s: two in other cases, the exact one", q);
+      snprintf(detail, sizeof(detail), "%u items, ran %u, failed %u",
+            chain_seen, chain_totals.ran, chain_totals.failed);
+      check(   ran && chain_seen == 2
+            && !strcmp(chain_names[1], "Test Beta")
+            && chain_outcomes[1] == TASK_DBSCAN_RAN
+            && chain_totals.ran == 1 && chain_totals.failed == 1,
+            what, detail);
+   }
+   else
+      printf("  skip  refresh %s: two in other cases (the file system "
+            "ignores case: %s)\n", q, detail);
+
+   /* Nothing to refresh. */
+   strlcpy(config_get_ptr()->paths.directory_playlist, none_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   ran = refresh_run(items, 1, out, err, true);
+   sprintf(what, "refresh %s: a refresh-all with nothing to refresh", q);
+   check(   ran && !chain_seen && !chain_totals.ran && !chain_totals.failed
+         && !chain_totals.skipped
+         && file_contains(err, "no playlists with saved scan settings"),
+         what, err);
+
+   /* The second task_init is the refresh-all's listing. */
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   retro_atomic_store_release_int(&task_init_fail_in, 2);
+   ran = refresh_run(items, 1, out, err, true);
+   retro_atomic_store_release_int(&task_init_fail_in, 0);
+   sprintf(what, "refresh %s: a refresh-all out of memory", q);
+   check(   ran && chain_saw(0, none_pl, TASK_DBSCAN_FAILED, -1)
+         && chain_totals.failed == 1 && !chain_totals.ran
+         && file_contains(err, "out of memory"), what, err);
+
+   /* The listing fails part way. */
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   retro_atomic_store_release_int(&lpl_walk_fail, 1);
+   ran = refresh_run(items, 1, out, err, true);
+   retro_atomic_store_release_int(&lpl_walk_fail, 0);
+   lpl_fail_iter = NULL;
+   sprintf(what, "refresh %s: a refresh-all whose listing fails", q);
+   check(   ran && chain_saw(0, none_pl, TASK_DBSCAN_FAILED, -1)
+         && chain_totals.failed == 1 && !chain_totals.ran
+         && file_contains(err, "out of memory")
+         && !file_contains(err, "no playlists with saved scan settings"),
+         what, err);
+
+   /* Cancelled while the folder is walked, then while its second
+    * playlist loads: nothing after runs. */
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   chain_item(&items[1], fresh, NULL);
+   prep_pushes    = 0;
+   prep_cancel_at = 2;
+   ran            = refresh_run(items, 2, out, err, true);
+   prep_cancel_at = 0;
+   sprintf(what, "refresh %s: cancelled while walking the folder", q);
+   sprintf(detail, "%u items, ran %u, done %u%s", chain_seen,
+         chain_totals.ran, chain_dones,
+         chain_totals.cancelled ? ", cancelled" : "");
+   check(   ran && !prep_cancel_task && !chain_seen
+         && chain_totals.cancelled && !chain_totals.ran
+         && !chain_totals.failed, what, detail);
+   if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   chain_item(&items[1], fresh, NULL);
+   prep_pushes    = 0;
+   prep_cancel_at = 4; /* the databases, the walk, a_ok, b_gone */
+   ran            = refresh_run(items, 2, out, err, true);
+   prep_cancel_at = 0;
+   sprintf(what, "refresh %s: cancelled while loading a playlist", q);
+   sprintf(detail, "%u items: %s, ran %u, done %u%s", chain_seen,
+         chain_names[0], chain_totals.ran, chain_dones,
+         chain_totals.cancelled ? ", cancelled" : "");
+   check(   ran && !prep_cancel_task && chain_seen == 1
+         && !strcmp(chain_names[0], "a_ok")
+         && chain_outcomes[0] == TASK_DBSCAN_RAN
+         && chain_totals.cancelled && chain_totals.ran == 1
+         && !chain_totals.skipped && !chain_totals.failed, what, detail);
+
+   /* Without --scan: the outcome, no lines. */
+   if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH, "b_gone");
+   refresh_item(&items[1], TASK_DBSCAN_ITEM_REFRESH, "a_ok");
+   ran = refresh_run(items, 2, out, err, false);
+   sprintf(what, "refresh %s: nothing prints without --scan", q);
+   check(   ran && chain_saw(0, "b_gone", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(1, "a_ok", TASK_DBSCAN_RAN, 0)
+         && path_get_size(out) == 0 && path_get_size(err) == 0, what, err);
+
+   manual_content_scan_reset_settings();
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the refresh lane");
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -10444,6 +11036,8 @@ int main(int argc, char **argv)
    core_lookup_lane(root);
    chain_lane(root, pl_dir, crc_a, sz_a, false);
    chain_lane(root, pl_dir, crc_a, sz_a, true);
+   refresh_lane(root, pl_dir, crc_a, sz_a, false);
+   refresh_lane(root, pl_dir, crc_a, sz_a, true);
    {
       char reader_db[512];
 
