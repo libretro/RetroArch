@@ -1648,7 +1648,7 @@ static bool core_info_path_is_standalone_exempt(
    return false;
 }
 
-static size_t core_info_get_file_id(const char *core_filename,
+size_t core_info_get_file_id(const char *core_filename,
       char *s, size_t len)
 {
    size_t _len;

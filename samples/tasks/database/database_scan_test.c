@@ -8396,6 +8396,682 @@ static void share_gate_lane(const char *root, const char *db_dir)
 #endif
 }
 
+/* Cores for core_lookup_lane(): two files with one file id, two cores
+ * with one display name, a display name with a slash, a file id
+ * with an underscore and two file names that differ only in case. */
+static bool write_lookup_cores(const char *info_dir, const char *core_dir)
+{
+   static const char *const info[][3] = {
+      { "dup",   "Dup Test",              "dupx"   },
+      { "same1", "Same Name Test",        "samex"  },
+      { "same2", "Same Name Test",        "samex"  },
+      { "slash", "Slash / Test (Lookup)", "slashx" },
+      { "two_part", "Two Part Test",      "twox"   }
+   };
+   static const char *const so[] = {
+      "dup_libretro.so",   "dup_libretro_android.so",
+      "same1_libretro.so", "same2_libretro.so", "slash_libretro.so",
+      "two_part_libretro.so", "twin_libretro.so", "Twin_libretro.so"
+   };
+   char   p[1024];
+   size_t i;
+   FILE  *f;
+
+   for (i = 0; i < sizeof(info) / sizeof(info[0]); i++)
+   {
+      sprintf(p, "%s/%s_libretro.info", info_dir, info[i][0]);
+      if (!(f = fopen(p, "w")))
+         return false;
+      fprintf(f, "display_name = \"%s\"\nsupported_extensions = \"%s\"\n",
+            info[i][1], info[i][2]);
+      fclose(f);
+   }
+   for (i = 0; i < sizeof(so) / sizeof(so[0]); i++)
+   {
+      sprintf(p, "%s/%s", core_dir, so[i]);
+      if (!(f = fopen(p, "wb")))
+         return false;
+      fputs("\177ELF", f);
+      fclose(f);
+   }
+   return true;
+}
+
+/* The core list's path for the core whose file is @file. */
+static const char *lookup_core_path(const char *file)
+{
+   core_info_list_t *list = NULL;
+   size_t            i;
+
+   core_info_get_list(&list);
+   for (i = 0; list && i < list->count; i++)
+   {
+      core_info_t *info = core_info_get(list, i);
+      if (info && info->path && !strcmp(path_basename(info->path), file))
+         return info->path;
+   }
+   return "";
+}
+
+static char *ovr_str(const char *s)
+{
+   char *d = (char*)malloc(strlen(s) + 1);
+   if (d)
+      strcpy(d, s);
+   return d;
+}
+
+/* A fresh record in place of @ov, which is freed. */
+static manual_content_scan_overrides_t *ovr_fresh(
+      manual_content_scan_overrides_t *ov)
+{
+   manual_content_scan_overrides_free(ov);
+   return manual_content_scan_overrides_new();
+}
+
+static manual_content_scan_task_config_t *ovr_cfg;
+static bool        ovr_cfg_ok;
+static const char *ovr_dir;
+static const char *ovr_pl;
+
+/* A --scan item's settings: a reset, the folder, @ov.  The task config
+ * lands in ovr_cfg, and ovr_cfg_ok says whether it could be built. */
+static enum manual_content_scan_override_status ovr_run(
+      const manual_content_scan_overrides_t *ov,
+      const struct string_list *rdb, unsigned *count)
+{
+   enum manual_content_scan_override_status st;
+
+   manual_content_scan_reset_settings();
+   manual_content_scan_set_menu_content_dir(ovr_dir);
+   st         = manual_content_scan_apply_overrides(ov, rdb, count);
+   ovr_cfg_ok =    st == MANUAL_CONTENT_SCAN_OVR_OK
+                && manual_content_scan_get_task_config(ovr_cfg, ovr_pl);
+   return st;
+}
+
+/* After a Custom setup, every setting is back to its default, and
+ * Custom over a reset builds the task Fully Automatic does. */
+static void reset_lane(const char *root, const char *pl_dir)
+{
+   manual_content_scan_task_config_t *cfg =
+         (manual_content_scan_task_config_t*)malloc(sizeof(*cfg));
+   char dir[512];
+   bool set_up;
+
+   if (!cfg)
+   {
+      check(0, "reset lane", "out of memory");
+      return;
+   }
+   sprintf(dir, "%s/scan_reset", root);
+   path_mkdir(dir);
+
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_content_dir(dir);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE);
+   strlcpy(manual_content_scan_get_dat_file_path_ptr(), "/x/reset.dat",
+         manual_content_scan_get_dat_file_path_size());
+   manual_content_scan_set_menu_scan_db_select(
+         MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC, "Test Alpha");
+   strlcpy(manual_content_scan_get_system_name_custom_ptr(), "Reset Custom",
+         manual_content_scan_get_system_name_custom_size());
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, NULL);
+   set_up = manual_content_scan_set_menu_core_name(
+         MANUAL_CONTENT_SCAN_CORE_SET, "Scan Test")
+         && !strcmp(manual_content_scan_get_file_exts(), "bin cue gdi m3u zip");
+   strlcpy(manual_content_scan_get_file_exts_custom_ptr(), "rst",
+         manual_content_scan_get_file_exts_custom_size());
+   *manual_content_scan_get_search_recursively_ptr() = false;
+   *manual_content_scan_get_search_archives_ptr()    = false;
+   *manual_content_scan_get_omit_db_ref_ptr()        = true;
+   *manual_content_scan_get_filter_dat_content_ptr() = true;
+   *manual_content_scan_get_overwrite_playlist_ptr() = true;
+   *manual_content_scan_get_validate_entries_ptr()   = true;
+   check(set_up, "reset: the Custom setup took", "core Scan Test");
+
+   manual_content_scan_reset_settings();
+   check(   manual_content_scan_get_scan_method_enum()
+               == MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC
+         && manual_content_scan_get_scan_use_db_enum()
+               == MANUAL_CONTENT_SCAN_USE_DB_STRICT
+         && manual_content_scan_get_scan_db_select_enum()
+               == MANUAL_CONTENT_SCAN_SELECT_DB_AUTO
+         && manual_content_scan_get_menu_system_name_type()
+               == MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO,
+         "reset: method, database, playlist", "Automatic defaults");
+   check(   !*manual_content_scan_get_content_dir_ptr()
+         && !*manual_content_scan_get_dat_file_path_ptr()
+         && !*manual_content_scan_get_system_name_custom_ptr()
+         && !*manual_content_scan_get_file_exts_custom_ptr()
+         && !*manual_content_scan_get_file_exts(),
+         "reset: every path and name emptied", "");
+   check(   *manual_content_scan_get_search_recursively_ptr()
+         && *manual_content_scan_get_search_archives_ptr()
+         && !*manual_content_scan_get_omit_db_ref_ptr()
+         && !*manual_content_scan_get_filter_dat_content_ptr()
+         && !*manual_content_scan_get_overwrite_playlist_ptr()
+         && !*manual_content_scan_get_validate_entries_ptr(),
+         "reset: the switches", "recursive, archives on, rest off");
+
+   manual_content_scan_set_menu_content_dir(dir);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   check(   manual_content_scan_get_task_config(cfg, pl_dir)
+         && !cfg->core_set && !*cfg->core_name && !*cfg->core_path
+         && !*cfg->file_exts && !cfg->file_exts_custom_set
+         && !*cfg->system_name && !*cfg->playlist_file
+         && !*cfg->database_name
+         && cfg->search_recursively && cfg->search_archives
+         && !cfg->filter_dat_content && !cfg->overwrite_playlist
+         && !cfg->validate_entries && !cfg->omit_db_reference
+         && cfg->db_usage     == MANUAL_CONTENT_SCAN_USE_DB_STRICT
+         && cfg->db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_AUTO,
+         "reset: Custom builds the automatic task", "");
+
+   manual_content_scan_reset_settings();
+   free(cfg);
+}
+
+/* Each override lands in the task config. */
+static void overrides_lane(const char *root, const char *pl_dir)
+{
+   manual_content_scan_overrides_t *ov  = NULL;
+   struct string_list              *rdb = string_list_new();
+   union string_list_elem_attr      attr;
+   char     dir[512], dat[1024], txt[1024], empty[1024], missing[1024];
+   char     p[1024];
+   unsigned count = 0;
+   enum manual_content_scan_override_status st;
+   FILE    *f;
+
+   ovr_cfg = (manual_content_scan_task_config_t*)malloc(sizeof(*ovr_cfg));
+   if (!rdb || !ovr_cfg)
+   {
+      check(0, "overrides lane", "out of memory");
+      goto end;
+   }
+   attr.i = 0;
+   string_list_append(rdb, "/db/Test Alpha.rdb", attr);
+   string_list_append(rdb, "/db/Test Beta.rdb",  attr);
+
+   sprintf(dir,     "%s/scan_ovr",             root);
+   sprintf(dat,     "%s/scan_ovr/ovr.dat",     root);
+   sprintf(txt,     "%s/scan_ovr/ovr.txt",     root);
+   sprintf(empty,   "%s/scan_ovr/empty.dat",   root);
+   sprintf(missing, "%s/scan_ovr/missing.dat", root);
+   path_mkdir(dir);
+   if (!(f = fopen(dat, "w")))
+      goto fixture;
+   fputs("<?xml version=\"1.0\"?>\n<datafile></datafile>\n", f);
+   fclose(f);
+   if (!(f = fopen(txt, "w")))
+      goto fixture;
+   fputs("not a dat\n", f);
+   fclose(f);
+   if (!(f = fopen(empty, "w")))
+      goto fixture;
+   fclose(f);
+   remove(missing);
+   ovr_dir = dir;
+   ovr_pl  = pl_dir;
+
+   check(   ovr_run(NULL, rdb, &count) == MANUAL_CONTENT_SCAN_OVR_OK
+         && manual_content_scan_get_scan_method_enum()
+               == MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC,
+         "overrides: none leave Fully Automatic", "");
+
+   /* Core: path, name and extensions */
+   ov       = ovr_fresh(ov);
+   ov->core = ovr_str("Scan Test");
+   strlcpy(p, lookup_core_path("test_libretro.so"), sizeof(p));
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && manual_content_scan_get_scan_method_enum()
+               == MANUAL_CONTENT_SCAN_METHOD_CUSTOM
+         && ovr_cfg->core_set && count == 1
+         && !strcmp(ovr_cfg->core_name, "Scan Test")
+         && !strcmp(ovr_cfg->core_path, p)
+         && !strcmp(ovr_cfg->file_exts, "bin|cue|gdi|m3u|zip")
+         && !ovr_cfg->file_exts_custom_set,
+         "overrides: core, its path and extensions", ovr_cfg->core_path);
+
+   /* Custom extensions win over the core's, scrubbed */
+   ov->exts = ovr_str(".BIN gam");
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && ovr_cfg->file_exts_custom_set
+         && !strcmp(ovr_cfg->file_exts, "bin|gam"),
+         "overrides: extensions", ovr_cfg->file_exts);
+
+   /* Database Check without a DAT */
+   ov        = ovr_fresh(ov);
+   ov->flags = MANUAL_CONTENT_SCAN_OVR_MATCH;
+   ov->match = MANUAL_CONTENT_SCAN_USE_DB_LOOSE;
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && ovr_cfg->db_usage == MANUAL_CONTENT_SCAN_USE_DB_LOOSE,
+         "overrides: match loose", "");
+   ov->match = MANUAL_CONTENT_SCAN_USE_DB_STRICT;
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && ovr_cfg->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT,
+         "overrides: match strict", "");
+   ov->match = MANUAL_CONTENT_SCAN_USE_DB_NONE;
+   sprintf(p, "%s/scan_ovr.lpl", pl_dir);
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && ovr_cfg->db_usage == MANUAL_CONTENT_SCAN_USE_DB_NONE
+         && !strcmp(ovr_cfg->system_name, "scan_ovr")
+         && !strcmp(ovr_cfg->playlist_file, p),
+         "overrides: match none, named after the folder",
+         ovr_cfg->system_name);
+
+   /* A DAT: strict unless loose, never with none */
+   ov        = ovr_fresh(ov);
+   ov->dat   = ovr_str(dat);
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && ovr_cfg->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT
+         && ovr_cfg->filter_dat_content
+         && !strcmp(ovr_cfg->dat_file_path, dat),
+         "overrides: DAT alone is strict", ovr_cfg->dat_file_path);
+   ov->flags = MANUAL_CONTENT_SCAN_OVR_MATCH;
+   ov->match = MANUAL_CONTENT_SCAN_USE_DB_LOOSE;
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && ovr_cfg->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE
+         && !ovr_cfg->filter_dat_content
+         && !strcmp(ovr_cfg->dat_file_path, dat),
+         "overrides: DAT with loose", "");
+   ov->match = MANUAL_CONTENT_SCAN_USE_DB_STRICT;
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && ovr_cfg->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT,
+         "overrides: DAT with strict", "");
+   ov->match = MANUAL_CONTENT_SCAN_USE_DB_NONE;
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_DAT_WITHOUT_MATCH
+         && !*manual_content_scan_get_dat_file_path_ptr(),
+         "overrides: DAT with none fails untouched", "");
+
+   /* DAT errors */
+   ov = ovr_fresh(ov);
+   ov->dat = ovr_str(txt);
+   check(ovr_run(ov, rdb, &count) == MANUAL_CONTENT_SCAN_OVR_NOT_A_DAT,
+         "overrides: DAT with another extension", "not a DAT");
+   ov = ovr_fresh(ov);
+   ov->dat = ovr_str(missing);
+   check(ovr_run(ov, rdb, &count) == MANUAL_CONTENT_SCAN_OVR_NOT_A_DAT,
+         "overrides: DAT missing", "not a DAT");
+   ov = ovr_fresh(ov);
+   ov->dat = ovr_str(empty);
+   check(ovr_run(ov, rdb, &count) == MANUAL_CONTENT_SCAN_OVR_NOT_A_DAT,
+         "overrides: DAT empty", "not a DAT");
+
+   /* A refresh's saved DAT: the match picks its mode, none drops it */
+   ov        = ovr_fresh(ov);
+   ov->flags = MANUAL_CONTENT_SCAN_OVR_MATCH;
+   {
+      static const enum manual_content_scan_db_usage
+            match[3] = { MANUAL_CONTENT_SCAN_USE_DB_LOOSE,
+                         MANUAL_CONTENT_SCAN_USE_DB_STRICT,
+                         MANUAL_CONTENT_SCAN_USE_DB_NONE };
+      static const enum manual_content_scan_db_usage
+            want[3]  = { MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE,
+                         MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT,
+                         MANUAL_CONTENT_SCAN_USE_DB_NONE };
+      static const char *const what[3] = {
+         "overrides: saved DAT with loose",
+         "overrides: saved DAT with strict",
+         "overrides: saved DAT with none drops it" };
+      int i;
+
+      for (i = 0; i < 3; i++)
+      {
+         manual_content_scan_reset_settings();
+         manual_content_scan_set_menu_content_dir(dir);
+         manual_content_scan_set_menu_scan_use_db(
+               MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT);
+         strlcpy(manual_content_scan_get_dat_file_path_ptr(), dat,
+               manual_content_scan_get_dat_file_path_size());
+         ov->match = match[i];
+         st = manual_content_scan_apply_overrides(ov, rdb, &count);
+         check(   st == MANUAL_CONTENT_SCAN_OVR_OK
+               && manual_content_scan_get_task_config(ovr_cfg, pl_dir)
+               && ovr_cfg->db_usage == want[i]
+               && (i == 2
+                     ? !*manual_content_scan_get_dat_file_path_ptr()
+                     : !strcmp(ovr_cfg->dat_file_path, dat)),
+               what[i], "");
+      }
+   }
+
+   /* Database To Match */
+   ov           = ovr_fresh(ov);
+   ov->database = ovr_str("Test Alpha");
+   sprintf(p, "%s/Test Alpha.lpl", pl_dir);
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && ovr_cfg->db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC
+         && !strcmp(ovr_cfg->database_name, "Test Alpha.lpl")
+         && !strcmp(ovr_cfg->system_name, "Test Alpha")
+         && !strcmp(ovr_cfg->playlist_file, p),
+         "overrides: database by name", ovr_cfg->database_name);
+   check(ovr_run(ov, NULL, &count) == MANUAL_CONTENT_SCAN_OVR_NO_SUCH_DATABASE,
+         "overrides: no database installed", "no such database");
+   ov           = ovr_fresh(ov);
+   ov->database = ovr_str("Test Nope");
+   check(ovr_run(ov, rdb, &count) == MANUAL_CONTENT_SCAN_OVR_NO_SUCH_DATABASE,
+         "overrides: an unknown database", "no such database");
+   ov        = ovr_fresh(ov);
+   ov->flags = MANUAL_CONTENT_SCAN_OVR_FIRST_DB;
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && ovr_cfg->db_selection
+               == MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH,
+         "overrides: first matching database", "");
+
+   /* Target Playlist */
+   ov           = ovr_fresh(ov);
+   ov->playlist = ovr_str("Test Beta");
+   sprintf(p, "%s/Test Beta.lpl", pl_dir);
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && manual_content_scan_get_menu_system_name_type()
+               == MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE
+         && !strcmp(ovr_cfg->system_name, "Test Beta")
+         && !strcmp(ovr_cfg->playlist_file, p),
+         "overrides: playlist named after a database", ovr_cfg->system_name);
+   ov->database = ovr_str("Test Alpha");
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && manual_content_scan_get_menu_system_name_type()
+               == MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM
+         && !strcmp(ovr_cfg->system_name, "Test Beta")
+         && !strcmp(ovr_cfg->playlist_file, p)
+         && !strcmp(ovr_cfg->database_name, "Test Alpha.lpl"),
+         "overrides: and another database: Custom", ovr_cfg->database_name);
+   free(ov->playlist);
+   ov->playlist = ovr_str("Test Alpha");
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && manual_content_scan_get_menu_system_name_type()
+               == MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE
+         && !strcmp(ovr_cfg->system_name, "Test Alpha"),
+         "overrides: and the same database", ovr_cfg->system_name);
+   /* As a refresh of a database playlist leaves them */
+   ov           = ovr_fresh(ov);
+   ov->database = ovr_str("Test Alpha");
+   sprintf(p, "%s/Test Beta.lpl", pl_dir);
+   manual_content_scan_reset_settings();
+   manual_content_scan_set_menu_content_dir(ovr_dir);
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE, "Test Beta");
+   manual_content_scan_set_menu_scan_db_select(
+         MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC, "Test Beta");
+   st         = manual_content_scan_apply_overrides(ov, rdb, &count);
+   ovr_cfg_ok =    st == MANUAL_CONTENT_SCAN_OVR_OK
+                && manual_content_scan_get_task_config(ovr_cfg, pl_dir);
+   check(   ovr_cfg_ok
+         && !strcmp(ovr_cfg->playlist_file, p)
+         && !strcmp(ovr_cfg->database_name, "Test Alpha.lpl"),
+         "overrides: a refresh's database playlist keeps its name",
+         ovr_cfg_ok ? ovr_cfg->playlist_file : "no task config");
+   ov           = ovr_fresh(ov);
+   ov->playlist = ovr_str("My: List?");
+   sprintf(p, "%s/My_ List_.lpl", pl_dir);
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && manual_content_scan_get_menu_system_name_type()
+               == MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM
+         && !strcmp(ovr_cfg->system_name, "My_ List_")
+         && !strcmp(ovr_cfg->playlist_file, p),
+         "overrides: custom playlist, scrubbed", ovr_cfg->system_name);
+
+   /* The switches */
+   ov        = ovr_fresh(ov);
+   ov->flags =   MANUAL_CONTENT_SCAN_OVR_NO_RECURSIVE
+               | MANUAL_CONTENT_SCAN_OVR_NO_ARCHIVES
+               | MANUAL_CONTENT_SCAN_OVR_OVERWRITE
+               | MANUAL_CONTENT_SCAN_OVR_VALIDATE
+               | MANUAL_CONTENT_SCAN_OVR_OMIT_DB_REF;
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && !ovr_cfg->search_recursively && !ovr_cfg->search_archives
+         && ovr_cfg->overwrite_playlist && ovr_cfg->validate_entries
+         && ovr_cfg->omit_db_reference,
+         "overrides: recursive, archives, overwrite, validate, omit", "");
+
+   /* A step that fails stops the ones after it */
+   ov           = ovr_fresh(ov);
+   ov->core     = ovr_str("No Such Core");
+   ov->database = ovr_str("Test Alpha");
+   st = ovr_run(ov, rdb, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_NO_SUCH_CORE && count == 0
+         && manual_content_scan_get_scan_db_select_enum()
+               == MANUAL_CONTENT_SCAN_SELECT_DB_AUTO
+         && manual_content_scan_get_scan_method_enum()
+               == MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC,
+         "overrides: an error stops the rest", "");
+   goto end;
+
+fixture:
+   check(0, "fixture", "could not write the DAT files");
+end:
+   manual_content_scan_overrides_free(ov);
+   manual_content_scan_reset_settings();
+   string_list_free(rdb);
+   free(ovr_cfg);
+   ovr_cfg = NULL;
+}
+
+/* --scan-core: a path, then a file name, then a display name; more
+ * than one match in the step that decides is ambiguous. */
+static void core_lookup_lane(const char *root)
+{
+   manual_content_scan_overrides_t *ov = NULL;
+   char     elsewhere[512], p[1024];
+   char     dup_path[1024];
+   unsigned count;
+   size_t   i;
+   enum manual_content_scan_override_status st;
+   const char *core_name = NULL;
+   static const char *const by_name[] = {
+      "gamma", "gamma_libretro", "gamma_libretro.so", "gamma_libretro.dll",
+      "gamma_libretro_android.so", "Gamma Test" };
+   static const char *const two_part[] = {
+      "two_part", "two_part_libretro_ios.dylib" };
+   static const char *const other_case[] = {
+      "GAMMA", "Gamma_libretro.so", "Gamma_Libretro.dll",
+      "GAMMA_LIBRETRO_ANDROID.SO" };
+   /* What each name finds; "" for both */
+   static const char *const twin[][2] = {
+      { "twin", "twin_libretro.so" },
+      { "Twin_libretro.so", "Twin_libretro.so" },
+      { "TWIN", "" } };
+   bool     twins;
+   FILE    *f;
+
+   ovr_cfg = (manual_content_scan_task_config_t*)malloc(sizeof(*ovr_cfg));
+   if (!ovr_cfg)
+   {
+      check(0, "core lookup lane", "out of memory");
+      return;
+   }
+   sprintf(elsewhere, "%s/scan_lookup_elsewhere", root);
+   path_mkdir(elsewhere);
+   sprintf(p, "%s/gamma_libretro.so", elsewhere);
+   if ((f = fopen(p, "wb")))
+   {
+      fputs("\177ELF", f);
+      fclose(f);
+   }
+   ovr_dir = elsewhere;
+   ovr_pl  = elsewhere;
+
+   ov       = ovr_fresh(ov);
+   ov->core = ovr_str(lookup_core_path("gamma_libretro.so"));
+   count    = 9;
+   st = ovr_run(ov, NULL, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok && count == 1
+         && !strcmp(ovr_cfg->core_name, "Gamma Test")
+         && !strcmp(ovr_cfg->core_path, ov->core),
+         "core lookup: by path", ovr_cfg->core_path);
+
+   free(ov->core);
+   ov->core = ovr_str(p);
+   count    = 9;
+   check(   ovr_run(ov, NULL, &count) == MANUAL_CONTENT_SCAN_OVR_NO_SUCH_CORE
+         && count == 0,
+         "core lookup: a path outside the core folder", "no such core");
+
+   for (i = 0; i < sizeof(by_name) / sizeof(by_name[0]); i++)
+   {
+      free(ov->core);
+      ov->core = ovr_str(by_name[i]);
+      st = ovr_run(ov, NULL, &count);
+      check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok && count == 1
+            && !strcmp(ovr_cfg->core_name, "Gamma Test"),
+            "core lookup: by file or display name", by_name[i]);
+   }
+
+   for (i = 0; i < sizeof(two_part) / sizeof(two_part[0]); i++)
+   {
+      free(ov->core);
+      ov->core = ovr_str(two_part[i]);
+      st = ovr_run(ov, NULL, &count);
+      check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok && count == 1
+            && !strcmp(ovr_cfg->core_name, "Two Part Test"),
+            "core lookup: a file id with an underscore", two_part[i]);
+   }
+
+   /* File names ignore case, display names do not */
+   for (i = 0; i < sizeof(other_case) / sizeof(other_case[0]); i++)
+   {
+      free(ov->core);
+      ov->core = ovr_str(other_case[i]);
+      count    = 9;
+      st = ovr_run(ov, NULL, &count);
+      check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok && count == 1
+            && !strcmp(ovr_cfg->core_name, "Gamma Test"),
+            "core lookup: a file name in another case", other_case[i]);
+   }
+   free(ov->core);
+   ov->core = ovr_str("gamma test");
+   count    = 9;
+   check(   ovr_run(ov, NULL, &count) == MANUAL_CONTENT_SCAN_OVR_NO_SUCH_CORE
+         && count == 0,
+         "core lookup: a display name in another case", "no such core");
+
+   free(ov->core);
+   ov->core = ovr_str("Slash / Test (Lookup)");
+   st = ovr_run(ov, NULL, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok
+         && !strcmp(ovr_cfg->core_name, "Slash / Test (Lookup)"),
+         "core lookup: a display name with a slash", ovr_cfg->core_name);
+
+   free(ov->core);
+   ov->core = ovr_str("nope");
+   count    = 9;
+   check(   ovr_run(ov, NULL, &count) == MANUAL_CONTENT_SCAN_OVR_NO_SUCH_CORE
+         && count == 0
+         && manual_content_scan_get_menu_core_name(&core_name)
+         && manual_content_scan_get_scan_method_enum()
+               == MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC,
+         "core lookup: unknown", "no such core");
+
+   /* dup_libretro.so and dup_libretro_android.so share a file id */
+   free(ov->core);
+   ov->core = ovr_str("dup");
+   check(   ovr_run(ov, NULL, &count) == MANUAL_CONTENT_SCAN_OVR_AMBIGUOUS_CORE
+         && count == 2,
+         "core lookup: two files with one file id", "2 cores");
+   free(ov->core);
+   ov->core = ovr_str("dup_libretro.so");
+   check(   ovr_run(ov, NULL, &count) == MANUAL_CONTENT_SCAN_OVR_AMBIGUOUS_CORE
+         && count == 2,
+         "core lookup: and by its file name", "2 cores");
+   free(ov->core);
+   ov->core = ovr_str("dup_libretro_android.so");
+   check(   ovr_run(ov, NULL, &count) == MANUAL_CONTENT_SCAN_OVR_AMBIGUOUS_CORE
+         && count == 2,
+         "core lookup: and by its platform file name", "2 cores");
+   strlcpy(dup_path, lookup_core_path("dup_libretro_android.so"),
+         sizeof(dup_path));
+   free(ov->core);
+   ov->core = ovr_str(dup_path);
+   st = ovr_run(ov, NULL, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok && count == 1
+         && !strcmp(ovr_cfg->core_path, dup_path),
+         "core lookup: the path tells them apart", path_basename(dup_path));
+#ifdef _WIN32
+   /* All '\', '\' before the file name only, and all '\' in capitals */
+   for (i = 0; i < 3; i++)
+   {
+      char *slash;
+
+      strlcpy(p, dup_path, sizeof(p));
+      if (i != 1)
+         pathname_conform_slashes_to_os(p);
+      else if ((slash = strrchr(p, '/')))
+         *slash = '\\';
+      if (i == 2)
+         string_to_upper(p);
+      free(ov->core);
+      ov->core = ovr_str(p);
+      count    = 9;
+      st = ovr_run(ov, NULL, &count);
+      check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok && count == 1
+            && !strcmp(ovr_cfg->core_path, dup_path),
+            "core lookup: the path with either slash", p);
+   }
+#endif
+
+   /* The exact case first, else both are ambiguous; a file system
+    * that ignores case keeps one of the two */
+   twins = *lookup_core_path("twin_libretro.so")
+         && *lookup_core_path("Twin_libretro.so");
+   for (i = 0; i < sizeof(twin) / sizeof(twin[0]); i++)
+   {
+      free(ov->core);
+      ov->core = ovr_str(twin[i][0]);
+      count    = 9;
+      st = ovr_run(ov, NULL, &count);
+      if (!twins)
+         check(st == MANUAL_CONTENT_SCAN_OVR_OK && count == 1,
+               "core lookup: two file names in another case", "one file");
+      else if (*twin[i][1])
+         check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok && count == 1
+               && !strcmp(ovr_cfg->core_path, lookup_core_path(twin[i][1])),
+               "core lookup: the file name in the case typed", twin[i][0]);
+      else
+         check(st == MANUAL_CONTENT_SCAN_OVR_AMBIGUOUS_CORE && count == 2,
+               "core lookup: two file names in another case", twin[i][0]);
+   }
+
+   free(ov->core);
+   ov->core = ovr_str("Same Name Test");
+   check(   ovr_run(ov, NULL, &count) == MANUAL_CONTENT_SCAN_OVR_AMBIGUOUS_CORE
+         && count == 2,
+         "core lookup: two cores with one display name", "2 cores");
+   free(ov->core);
+   ov->core = ovr_str("same2");
+   st = ovr_run(ov, NULL, &count);
+   check(   st == MANUAL_CONTENT_SCAN_OVR_OK && ovr_cfg_ok && count == 1
+         && !strcmp(path_basename(ovr_cfg->core_path), "same2_libretro.so"),
+         "core lookup: the file name tells them apart",
+         path_basename(ovr_cfg->core_path));
+
+   manual_content_scan_overrides_free(ov);
+   manual_content_scan_reset_settings();
+   free(ovr_cfg);
+   ovr_cfg = NULL;
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -8669,6 +9345,8 @@ int main(int argc, char **argv)
    }
    sprintf(p, "%s/rarcart_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   if (!write_lookup_cores(info_dir, core_dir))
+   { check(0, "fixture", "could not write core info"); return 1; }
 
 #ifdef HAVE_THREADS
    task_queue_init(true, msgq_push);
@@ -9476,6 +10154,9 @@ int main(int argc, char **argv)
    failed_lane(root, pl_dir, db_dir, crc_a, sz_a);
    errors_lane(root, pl_dir, crc_a, sz_a);
    output_lane(root, pl_dir, db_dir);
+   reset_lane(root, pl_dir);
+   overrides_lane(root, pl_dir);
+   core_lookup_lane(root);
    {
       char reader_db[512];
 

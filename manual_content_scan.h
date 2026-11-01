@@ -104,6 +104,43 @@ enum manual_content_scan_playlist_refresh_status
    MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_DAT_FILE_TOO_LARGE
 };
 
+/* Defines all possible return values for
+ * manual_content_scan_apply_overrides() */
+enum manual_content_scan_override_status
+{
+   MANUAL_CONTENT_SCAN_OVR_OK = 0,
+   MANUAL_CONTENT_SCAN_OVR_NO_SUCH_CORE,
+   MANUAL_CONTENT_SCAN_OVR_AMBIGUOUS_CORE,
+   MANUAL_CONTENT_SCAN_OVR_NO_SUCH_DATABASE,
+   MANUAL_CONTENT_SCAN_OVR_NOT_A_DAT,
+   MANUAL_CONTENT_SCAN_OVR_DAT_TOO_LARGE,
+   MANUAL_CONTENT_SCAN_OVR_DAT_WITHOUT_MATCH
+};
+
+enum manual_content_scan_override_flags
+{
+   MANUAL_CONTENT_SCAN_OVR_MATCH        = (1 << 0), /* 'match' is set */
+   MANUAL_CONTENT_SCAN_OVR_FIRST_DB     = (1 << 1),
+   MANUAL_CONTENT_SCAN_OVR_NO_RECURSIVE = (1 << 2),
+   MANUAL_CONTENT_SCAN_OVR_NO_ARCHIVES  = (1 << 3),
+   MANUAL_CONTENT_SCAN_OVR_OVERWRITE    = (1 << 4),
+   MANUAL_CONTENT_SCAN_OVR_VALIDATE     = (1 << 5),
+   MANUAL_CONTENT_SCAN_OVR_OMIT_DB_REF  = (1 << 6)
+};
+
+/* Settings laid over a scan's own; a NULL string or a clear
+ * flag leaves its setting as it is */
+typedef struct manual_content_scan_overrides
+{
+   char *playlist;  /* --scan-playlist */
+   char *database;  /* --scan-database=NAME */
+   char *dat;       /* --scan-dat, as typed */
+   char *core;      /* --scan-core, as typed */
+   char *exts;      /* --scan-exts, space separated */
+   enum manual_content_scan_db_usage match; /* STRICT, LOOSE or NONE */
+   uint16_t flags;  /* MANUAL_CONTENT_SCAN_OVR_* */
+} manual_content_scan_overrides_t;
+
 /* Holds all configuration parameters required
  * for a manual content scan task */
 typedef struct
@@ -223,6 +260,9 @@ enum manual_content_scan_dat_file_path_status
 
 /* Menu setters */
 
+/* Sets every setting back to its default */
+void manual_content_scan_reset_settings(void);
+
 /* Sets content directory for next manual scan
  * operation.
  * Returns true if content directory is valid. */
@@ -268,6 +308,19 @@ bool manual_content_scan_set_menu_core_name(
 enum manual_content_scan_playlist_refresh_status
       manual_content_scan_set_menu_from_playlist(playlist_t *playlist,
             const char *path_content_database, bool show_hidden_files);
+
+manual_content_scan_overrides_t *manual_content_scan_overrides_new(void);
+void manual_content_scan_overrides_free(manual_content_scan_overrides_t *ov);
+
+/* Lays @ov over the current settings and sets the Custom
+ * method, stopping at the first override that does not
+ * resolve; NULL @ov changes nothing.
+ * > @rdb_list: paths of the installed databases, or NULL
+ * > @count: the cores @ov->core matched, when not NULL */
+enum manual_content_scan_override_status
+      manual_content_scan_apply_overrides(
+            const manual_content_scan_overrides_t *ov,
+            const struct string_list *rdb_list, unsigned *count);
 
 /* Menu getters */
 
