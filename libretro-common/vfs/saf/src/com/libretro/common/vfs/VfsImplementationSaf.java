@@ -41,6 +41,10 @@ public final class VfsImplementationSaf
       Document.COLUMN_MIME_TYPE,
    };
 
+   private static final String[] QUERY_ARGS_DISPLAY_NAME = {
+      Document.COLUMN_DISPLAY_NAME,
+   };
+
    private static String normalizePath(String path) {
       try
       {
@@ -180,6 +184,142 @@ public final class VfsImplementationSaf
          return false;
       }
       return true;
+   }
+
+   private static Uri getDocumentUri(Uri treeUri, String path) {
+      return DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
+   }
+
+   private static String getDisplayName(ContentResolver content, Uri fileUri) {
+      final Cursor cursor;
+      try
+      {
+         cursor = content.query(fileUri, QUERY_ARGS_DISPLAY_NAME, null, null, null);
+      }
+      catch (RuntimeException e)
+      {
+         return null;
+      }
+
+      if (cursor == null)
+         return null;
+      
+      try
+      {
+         return cursor.moveToNext() ? cursor.getString(0) : null;
+      }
+      finally
+      {
+         cursor.close();
+      }
+   }
+
+   /**
+    * Rename a document, returning whether or not it ended up named exactly name.
+    * Some providers pick a different name (such as "name (1)") instead of failing when the name is taken,
+    * so on a mismatch the document is renamed back to originalName.
+    */
+   private static boolean renameDocumentExact(ContentResolver content, Uri fileUri, String name, String originalName) {
+      Uri renamedUri;
+      try
+      {
+         renamedUri = DocumentsContract.renameDocument(content, fileUri, name);
+      }
+      catch (FileNotFoundException | RuntimeException e)
+      {
+         return false;
+      }
+
+      // null means the document was renamed without its ID changing
+      if (renamedUri == null)
+         renamedUri = fileUri;
+
+      if (name.equals(getDisplayName(content, renamedUri)))
+         return true;
+
+      try
+      {
+         DocumentsContract.renameDocument(content, renamedUri, originalName);
+      }
+      catch (FileNotFoundException | RuntimeException e)
+      {}
+      
+      return false;
+   }
+
+   /**
+    * Rename a Storage Access Framework file, replacing the destination if it exists, returning whether or not the operation succeeded.
+    * Both paths must be in the same directory.
+    * Storage Access Framework has no atomic replace, so an existing destination is first renamed to the destination path with ".old" appended,
+    * and is only deleted once the file has been renamed into its place; if that fails, the destination is restored.
+    * @param content the content resolver returned by getContentResolver()
+    * @param tree the URI returned by the ACTION_OPEN_DOCUMENT_TREE intent action
+    * @param oldPath path of the file to rename, relative to the root directory of the tree
+    * @param newPath path to rename the file to, relative to the root directory of the tree
+    */
+   public static boolean renameSafFile(ContentResolver content, String tree, String oldPath, String newPath)
+   {
+      if (Build.VERSION.SDK_INT < 21)
+         return false;
+      
+      final Uri treeUri = Uri.parse(tree);
+
+      if (isDocument(treeUri))
+         return false;
+      
+      oldPath = normalizePath(oldPath);
+      newPath = normalizePath(newPath);
+      
+      if (oldPath.equals(newPath))
+         return new SafStat(content, tree, oldPath, false).getIsOpen();
+
+      final String parentPath = getPathParent(oldPath);
+      final String oldName = getPathFileName(oldPath);
+      final String newName = getPathFileName(newPath);
+
+      if (parentPath == null || oldName == null || newName == null || !parentPath.equals(getPathParent(newPath)))
+         return false;
+
+      final String asidePath = newPath + ".old";
+      final String asideName = newName + ".old";
+      final Uri newUri = getDocumentUri(treeUri, newPath);
+      final Uri asideUri = getDocumentUri(treeUri, asidePath);
+      boolean movedAside = false;
+
+      final SafStat newStat = new SafStat(content, tree, newPath, false);
+      if (newStat.getIsOpen())
+      {
+         if (newStat.getIsDirectory())
+            return false;
+         // A leftover from an earlier rename that could not clean up
+         if (new SafStat(content, tree, asidePath, false).getIsOpen())
+            removeSafFile(content, tree, asidePath);
+
+         if (!renameDocumentExact(content, newUri, asideName, newName))
+            return false;
+         
+         movedAside = true;
+      }
+
+      if (renameDocumentExact(content, getDocumentUri(treeUri, oldPath), newName, oldName))
+      {
+         if (movedAside)
+         {
+            // The file is in place; a failed cleanup only leaves a stale ".old" for the next rename to remove
+            try
+            {
+               removeSafFile(content, tree, asidePath);
+            }
+            catch (RuntimeException e)
+            {}
+         }
+         return true;
+      }
+
+      if (movedAside)
+         renameDocumentExact(content, asideUri, newName, asideName);
+
+      return false;
    }
 
    public static class SafStat
