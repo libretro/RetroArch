@@ -866,7 +866,13 @@ size_t menu_playlists_tab_random_selection(size_t selection);
 
 void menu_dialog_confirm_set(struct menu_state *menu_st,
       unsigned msg, unsigned cmd);
+void menu_dialog_confirm_set_text(struct menu_state *menu_st,
+      const char *text, unsigned cmd);
 void menu_dialog_confirm_clear(struct menu_state *menu_st);
+
+#if defined(HAVE_ONLINE_UPDATER) && defined(HAVE_NETWORKING) && defined(HAVE_COMPRESSION)
+void menu_first_run_download_start(void);
+#endif
 void menu_dialog_confirm(struct menu_state *menu_st);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
