@@ -2882,9 +2882,11 @@ static void output_lane(const char *root, const char *pl_dir,
    char *res_pl = (char*)malloc(512);
    char *out    = (char*)malloc(512);
    char *err    = (char*)malloc(512);
+   char *log    = (char*)malloc(512);
    char *want   = (char*)malloc(1024);
+   bool  logged;
 
-   if (!dir || !nodb || !empty || !res_pl || !out || !err || !want)
+   if (!dir || !nodb || !empty || !res_pl || !out || !err || !log || !want)
    {
       check(0, "output lane", "out of memory");
       goto end;
@@ -2896,6 +2898,7 @@ static void output_lane(const char *root, const char *pl_dir,
    sprintf(res_pl, "%s/scan_errors_pl",    root);
    sprintf(out,    "%s/scan_output.out",   root);
    sprintf(err,    "%s/scan_output.err",   root);
+   sprintf(log,    "%s/scan_output.log",   root);
    path_mkdir(empty);
    strlcpy(config_get_ptr()->paths.directory_playlist, res_pl,
          sizeof(config_get_ptr()->paths.directory_playlist));
@@ -2914,11 +2917,23 @@ static void output_lane(const char *root, const char *pl_dir,
       check(   file_contains(out, " == \"")
             && !file_contains(out, "\x1B[") && !file_contains(err, "\x1B["),
             "with no colour codes in a file", out);
+      sprintf(want, "\"%s\"...", dir);
+      check(file_contains(out, want),
+            "and starts with the folder it scans", want);
    }
 
-   if (capture_scan(dir, out, err, false))
+   retro_main_log_file_init(log, false);
+   verbosity_enable();
+   logged = capture_scan(dir, out, err, false);
+   verbosity_disable();
+   retro_main_log_file_deinit();
+   if (logged)
+   {
       check(path_get_size(out) == 0 && path_get_size(err) == 0,
             "a scan without --scan prints nothing", out);
+      sprintf(want, "\"%s\"...", dir);
+      check(file_contains(log, want), "but logs the folder it scans", want);
+   }
    err_size = 0;
 
    use_db(nodb);
@@ -2946,6 +2961,7 @@ end:
    free(res_pl);
    free(out);
    free(err);
+   free(log);
    free(want);
 }
 

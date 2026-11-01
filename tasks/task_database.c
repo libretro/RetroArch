@@ -4670,9 +4670,9 @@ static bool manual_scan_begin_setup(retro_task_t *task,
          if (!dbstate->list && !(dbstate->list = string_list_new()))
             return true;
 
-         RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->content_database_path);
+         RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->task_config->content_dir);
          if (manual_scan->task_config->cli_scan_output)
-            printf("%s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->content_database_path);
+            printf("%s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->task_config->content_dir);
       }
    }
    else
