@@ -1544,6 +1544,43 @@ void ratrac3_reset(ratrac3_t *d)
    d->js_weight[0] = d->js_weight[1] = 0xFF;
 }
 
+size_t ratrac3_state_size(const ratrac3_t *d)
+{
+   if (!d)
+      return 0;
+   return sizeof(d->chan) + sizeof(d->qmf) + sizeof(d->js_weight)
+        + sizeof(d->js_sel);
+}
+
+void ratrac3_save_state(const ratrac3_t *d, void *data)
+{
+   uint8_t *p = (uint8_t*)data;
+   if (!d || !p)
+      return;
+   memcpy(p, d->chan, sizeof(d->chan));
+   p += sizeof(d->chan);
+   memcpy(p, d->qmf, sizeof(d->qmf));
+   p += sizeof(d->qmf);
+   memcpy(p, d->js_weight, sizeof(d->js_weight));
+   p += sizeof(d->js_weight);
+   memcpy(p, d->js_sel, sizeof(d->js_sel));
+}
+
+bool ratrac3_load_state(ratrac3_t *d, const void *data, size_t size)
+{
+   const uint8_t *p = (const uint8_t*)data;
+   if (!d || !p || size != ratrac3_state_size(d))
+      return false;
+   memcpy(d->chan, p, sizeof(d->chan));
+   p += sizeof(d->chan);
+   memcpy(d->qmf, p, sizeof(d->qmf));
+   p += sizeof(d->qmf);
+   memcpy(d->js_weight, p, sizeof(d->js_weight));
+   p += sizeof(d->js_weight);
+   memcpy(d->js_sel, p, sizeof(d->js_sel));
+   return true;
+}
+
 ratrac3_t *ratrac3_new(unsigned channels, unsigned block_align,
       bool joint_stereo)
 {

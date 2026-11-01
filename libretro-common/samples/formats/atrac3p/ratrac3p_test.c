@@ -269,6 +269,70 @@ static void lane_reset(void)
    ratrac3p_free(d2);
 }
 
+/* A decoder that loads another's state at frame @at goes on exactly
+ * as that one would; without it the next frame differs */
+static void state_split(unsigned ch, const uint8_t *s, unsigned ba,
+      unsigned n, unsigned at, const char *name)
+{
+   static float ref[GHA_N * RATRAC3P_SAMPLES * 2];
+   static float out[RATRAC3P_SAMPLES * 2];
+   ratrac3p_t  *a     = ratrac3p_new(ch, ba);
+   ratrac3p_t  *b     = ratrac3p_new(ch, ba);
+   ratrac3p_t  *fresh = ratrac3p_new(ch, ba);
+   size_t       size  = ratrac3p_state_size(a);
+   void        *state = malloc(size);
+   size_t       one   = (size_t)RATRAC3P_SAMPLES * ch;
+   unsigned     f;
+
+   CHECK(a && b && fresh && state && size > 0, "%s: state setup", name);
+   if (!a || !b || !fresh || !state)
+      goto done;
+   for (f = 0; f < n; f++)
+      ratrac3p_decode_float(a, s + f * ba, ba, ref + f * one);
+   for (f = 0; f < at; f++)
+      ratrac3p_decode_float(b, s + f * ba, ba, out);
+   ratrac3p_save_state(b, state);
+   CHECK(!ratrac3p_load_state(fresh, state, size - 1), "%s: short state", name);
+   ratrac3p_decode_float(fresh, s + at * ba, ba, out);
+   CHECK(memcmp(out, ref + at * one, one * sizeof(float)) != 0,
+         "%s: frame %u needs no history", name, at);
+   ratrac3p_free(fresh);
+   fresh = ratrac3p_new(ch, ba);
+   CHECK(fresh && ratrac3p_load_state(fresh, state, size), "%s: load", name);
+   if (!fresh)
+      goto done;
+   for (f = at; f < n; f++)
+   {
+      ratrac3p_decode_float(fresh, s + f * ba, ba, out);
+      CHECK(!memcmp(out, ref + f * one, one * sizeof(float)),
+            "%s: frame %u differs after a load", name, f);
+   }
+done:
+   ratrac3p_free(a);
+   ratrac3p_free(b);
+   ratrac3p_free(fresh);
+   free(state);
+}
+
+static void lane_state(void)
+{
+   ratrac3p_t *mono   = ratrac3p_new(1, MONO_BA);
+   ratrac3p_t *stereo = ratrac3p_new(2, STEREO_BA);
+   void       *state  = malloc(ratrac3p_state_size(mono));
+   state_split(2, stream_st, STEREO_BA, STEREO_N, STEREO_N / 2, "state stereo");
+   state_split(1, stream_mo, MONO_BA, MONO_N, 1, "state mono");
+   state_split(2, stream_gha, GHA_BA, GHA_N, GHA_N / 2, "state tonal");
+   if (mono && stereo && state)
+   {
+      ratrac3p_save_state(mono, state);
+      CHECK(!ratrac3p_load_state(stereo, state, ratrac3p_state_size(mono)),
+            "state: mono into stereo");
+   }
+   ratrac3p_free(mono);
+   ratrac3p_free(stereo);
+   free(state);
+}
+
 /* Garbage and mutations must not read or write out of bounds (run
  * under a sanitizer) and must keep the output finite */
 static unsigned long rng_state = 12345;
@@ -391,6 +455,7 @@ int main(void)
    lane_fmt();
    lane_bad_frame();
    lane_reset();
+   lane_state();
    lane_garbage();
    if (failures)
    {

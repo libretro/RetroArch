@@ -81,6 +81,13 @@ void ratrac3_free(ratrac3_t *d);
 /* Forgets the signal history, as at a seek. */
 void ratrac3_reset(ratrac3_t *d);
 
+/* The signal history as bytes, for a savestate: ratrac3_state_size
+ * bytes out, and back into a decoder made with the same parameters.
+ * Load refuses any other size. */
+size_t ratrac3_state_size(const ratrac3_t *d);
+void ratrac3_save_state(const ratrac3_t *d, void *data);
+bool ratrac3_load_state(ratrac3_t *d, const void *data, size_t size);
+
 /* Decodes one frame of len (at least block_align) bytes into
  * RATRAC3_SAMPLES samples a channel, interleaved. Returns
  * RATRAC3_SAMPLES, or -1 on a frame that does not parse: the output

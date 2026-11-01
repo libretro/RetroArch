@@ -2283,6 +2283,25 @@ void ratrac3p_reset(ratrac3p_t *d)
       }
 }
 
+size_t ratrac3p_state_size(const ratrac3p_t *d)
+{
+   return d ? d->channels * sizeof(*d->chan) : 0;
+}
+
+void ratrac3p_save_state(const ratrac3p_t *d, void *data)
+{
+   if (d && data)
+      memcpy(data, d->chan, d->channels * sizeof(*d->chan));
+}
+
+bool ratrac3p_load_state(ratrac3p_t *d, const void *data, size_t size)
+{
+   if (!d || !data || size != ratrac3p_state_size(d))
+      return false;
+   memcpy(d->chan, data, size);
+   return true;
+}
+
 ratrac3p_t *ratrac3p_new(unsigned channels, unsigned block_align)
 {
    ratrac3p_t *d;

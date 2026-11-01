@@ -276,6 +276,57 @@ static void lane_reset(void)
    ratrac3_free(d2);
 }
 
+/* A decoder that loads another's state at frame @at goes on exactly
+ * as that one would; without it the next frame differs */
+static void state_split(const uint8_t *s, unsigned ba, bool joint,
+      unsigned at, const char *name)
+{
+   static float ref[FRAMES * RATRAC3_SAMPLES * 2];
+   static float out[RATRAC3_SAMPLES * 2];
+   ratrac3_t   *a     = ratrac3_new(2, ba, joint);
+   ratrac3_t   *b     = ratrac3_new(2, ba, joint);
+   ratrac3_t   *fresh = ratrac3_new(2, ba, joint);
+   size_t       size  = ratrac3_state_size(a);
+   void        *state = malloc(size);
+   size_t       one   = (size_t)RATRAC3_SAMPLES * 2;
+   unsigned     f;
+
+   CHECK(a && b && fresh && state && size > 0, "%s: state setup", name);
+   if (!a || !b || !fresh || !state)
+      goto done;
+   for (f = 0; f < FRAMES; f++)
+      ratrac3_decode_float(a, s + f * ba, ba, ref + f * one);
+   for (f = 0; f < at; f++)
+      ratrac3_decode_float(b, s + f * ba, ba, out);
+   ratrac3_save_state(b, state);
+   CHECK(!ratrac3_load_state(fresh, state, size + 1), "%s: long state", name);
+   ratrac3_decode_float(fresh, s + at * ba, ba, out);
+   CHECK(memcmp(out, ref + at * one, one * sizeof(float)) != 0,
+         "%s: frame %u needs no history", name, at);
+   ratrac3_free(fresh);
+   fresh = ratrac3_new(2, ba, joint);
+   CHECK(fresh && ratrac3_load_state(fresh, state, size), "%s: load", name);
+   if (!fresh)
+      goto done;
+   for (f = at; f < FRAMES; f++)
+   {
+      ratrac3_decode_float(fresh, s + f * ba, ba, out);
+      CHECK(!memcmp(out, ref + f * one, one * sizeof(float)),
+            "%s: frame %u differs after a load", name, f);
+   }
+done:
+   ratrac3_free(a);
+   ratrac3_free(b);
+   ratrac3_free(fresh);
+   free(state);
+}
+
+static void lane_state(void)
+{
+   state_split(stream_a, 384, false, FRAMES / 2, "state stereo");
+   state_split(stream_b, 192, true, FRAMES / 2, "state joint stereo");
+}
+
 /* Garbage and mutations must not read or write out of bounds (run
  * under a sanitizer) and must keep the output finite */
 static unsigned long rng_state = 12345;
@@ -330,6 +381,7 @@ int main(void)
    lane_fmt();
    lane_bad_frame();
    lane_reset();
+   lane_state();
    lane_garbage();
    if (failures)
    {
