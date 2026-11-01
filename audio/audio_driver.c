@@ -11470,7 +11470,8 @@ void audio_driver_menu_sample(bool by_clock)
    struct retro_system_av_info *av_info   = &video_st->av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
-   unsigned sample_count;
+   unsigned sample_count, device_count;
+   bool capped                            = false;
    double frames;
    uint64_t rate_bits, fps_bits;
    audio_driver_state_t *audio_st         = &audio_driver_st;
@@ -11546,8 +11547,38 @@ void audio_driver_menu_sample(bool by_clock)
    if (settings->bools.video_record_game_only)
       recording_st                        = NULL;
 
+   device_count = check_flush ? sample_count : 0;
+   /* A callback core's driver is the threaded wrapper, which keeps the
+    * device blocking whatever the menu asks, so at 'Display Rate' a
+    * write here would wait on the device - and the wait would come back
+    * as time owed on the next feed, holding the menu to the device
+    * from then on. Only what the device takes now is written, keeping
+    * half its buffer as the blocking path does; time it could not take
+    * is not made up. The recording still gets all of it. */
+   if (by_clock && device_count && audio_st->callback.callback)
+   {
+      const audio_driver_t *audio = audio_st->current_audio;
+      size_t room = 0;
+      size_t fb   = audio_driver_dev_frame_bytes(audio_st);
+      size_t keep = audio_st->buffer_size / 2;
+      double fit;
+      if (     audio && audio->write_avail && fb
+            && audio_st->buffer_size
+            && audio_st->src_ratio_curr > 0.0)
+         room = audio->write_avail(audio_st->context_audio_data);
+      room = (room > keep) ? (room - keep) / fb : 0;
+      fit  = floor((double)room / audio_st->src_ratio_curr);
+      if (fit * 2.0 < (double)device_count)
+      {
+         device_count             = (unsigned)fit * 2;
+         audio_st->menu_feed_frac = 0.0;
+         capped                   = true;
+      }
+   }
+
    while (sample_count > 1024)
    {
+      unsigned dev = (device_count > 1024) ? 1024 : device_count;
       if (  recording_st         &&
             recording_st->data   &&
             recording_st->driver &&
@@ -11561,15 +11592,16 @@ void audio_driver_menu_sample(bool by_clock)
          recording_st->driver->push_audio(
                recording_st->data, &ffemu_data);
       }
-      if (check_flush)
+      if (dev)
          audio_driver_submit(audio_st,
                slowmotion_ratio,
                samples_buf,
-               1024, false,
+               dev, false,
                (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
                (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false,
                false);
       sample_count -= 1024;
+      device_count -= dev;
    }
 
    if (     recording_st
@@ -11586,8 +11618,8 @@ void audio_driver_menu_sample(bool by_clock)
             recording_st->data, &ffemu_data);
    }
 
-   if (check_flush)
-      audio_driver_submit(audio_st, slowmotion_ratio, samples_buf, sample_count, false,
+   if (device_count || (check_flush && !capped))
+      audio_driver_submit(audio_st, slowmotion_ratio, samples_buf, device_count, false,
             (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
             (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false,
             false);
