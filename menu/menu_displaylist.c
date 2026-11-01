@@ -6236,6 +6236,17 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
          count++;
 #endif
 
+   /* None keeps the "No entries" fallback */
+   if (count)
+   {
+      menu_entries_prepend(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS),
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS_STR,
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
+            MENU_SETTING_ACTION, 0, 0);
+      count++;
+   }
+
    return count;
 }
 

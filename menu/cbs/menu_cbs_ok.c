@@ -9123,6 +9123,14 @@ static int action_ok_manual_content_scan_start(const char *path,
 {
    playlist_config_t playlist_config;
    settings_t *settings                = config_get_ptr();
+   if (task_dbscan_chain_is_running())
+   {
+      const char *_msg = msg_hash_to_str(
+            MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 150, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      return 0;
+   }
    /* Note: playlist_config.path will set by the
     * task itself */
    playlist_config.capacity            = COLLECTION_SIZE;
@@ -9599,6 +9607,14 @@ static int action_ok_playlist_refresh(const char *path,
    playlist_config = playlist_get_config(playlist);
    if (!playlist_config || !*playlist_config->path)
       return -1;
+   if (task_dbscan_chain_is_running())
+   {
+      const char *_msg = msg_hash_to_str(
+            MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 150, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      return 0;
+   }
    stat = manual_content_scan_set_menu_from_playlist(playlist,
          settings->paths.path_content_database,
          settings->bools.show_hidden_files);
@@ -9684,6 +9700,38 @@ static int action_ok_playlist_refresh(const char *path,
             settings->paths.directory_menu_content : NULL);
 
       task_push_manual_content_scan(false, NULL, NULL);
+   }
+   return 0;
+}
+
+static void action_ok_playlist_refresh_all_cb(
+      const task_dbscan_chain_result_t *res, void *user_data)
+{
+   char msg[128];
+   size_t _len = snprintf(msg, sizeof(msg),
+         msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_ALL_DONE),
+         res->ran, res->skipped, res->failed);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+static int action_ok_playlist_refresh_all(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   task_dbscan_item_t *item = NULL;
+   if (!task_dbscan_chain_can_start())
+   {
+      const char *_msg = msg_hash_to_str(
+            MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 150, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      return 0;
+   }
+   if ((item = (task_dbscan_item_t*)calloc(1, sizeof(*item))))
+   {
+      item->kind = TASK_DBSCAN_ITEM_REFRESH_ALL;
+      task_push_dbscan_chain(item, 1, NULL,
+            action_ok_playlist_refresh_all_cb, NULL);
    }
    return 0;
 }
@@ -10031,6 +10079,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,        action_ok_playlist_reset_cores},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,     action_ok_playlist_clean},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,   action_ok_playlist_refresh},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS, action_ok_playlist_refresh_all},
          {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},
 #ifdef HAVE_LAKKA
          {MENU_ENUM_LABEL_EJECT_DISC,                          action_ok_push_eject_disc},

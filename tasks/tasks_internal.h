@@ -351,7 +351,7 @@ typedef struct
 #ifdef HAVE_LIBRETRODB
 /* Scans @fullpath, a directory or a single file, against the content
  * databases; the database and playlist directories come from the
- * settings.  @cb gets @user_data. */
+ * settings.  @cb gets @user_data.  False while a chain runs. */
 bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb,
       void *user_data);
 #endif
@@ -404,6 +404,13 @@ typedef void (*task_dbscan_chain_cb_t)(
 bool task_push_dbscan_chain(task_dbscan_item_t *items, size_t count,
       task_dbscan_item_cb_t item_cb, task_dbscan_chain_cb_t done_cb,
       void *user_data);
+
+/* Main thread only. */
+bool task_dbscan_chain_is_running(void);
+
+/* False while task_push_dbscan_chain() would refuse: a chain or a
+ * manual scan runs.  Main thread only. */
+bool task_dbscan_chain_can_start(void);
 
 bool task_push_manual_content_scan(
       bool do_menu_refresh,

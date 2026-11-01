@@ -4214,6 +4214,9 @@ static bool manual_scan_end_flush_tick(
 bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb,
       void *user_data)
 {
+   /* It would run with the settings the chain last loaded. */
+   if (task_dbscan_chain_is_running())
+      return false;
    manual_content_scan_set_menu_content_dir(fullpath);
    return task_push_manual_content_scan(false, cb, user_data);
 }
@@ -6783,18 +6786,24 @@ static bool dbscan_chain_scan_finder(retro_task_t *task, void *user_data)
           && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
 }
 
+bool task_dbscan_chain_can_start(void)
+{
+   task_finder_data_t find_data;
+
+   find_data.func     = dbscan_chain_scan_finder;
+   find_data.userdata = NULL;
+   return !dbscan_chain_running && !task_queue_find(&find_data);
+}
+
 bool task_push_dbscan_chain(task_dbscan_item_t *items, size_t count,
       task_dbscan_item_cb_t item_cb, task_dbscan_chain_cb_t done_cb,
       void *user_data)
 {
-   task_finder_data_t find_data;
    dbscan_chain_t *chain = NULL;
    dbscan_prep_t *prep   = NULL;
    settings_t *settings  = config_get_ptr();
 
-   find_data.func     = dbscan_chain_scan_finder;
-   find_data.userdata = NULL;
-   if (dbscan_chain_running || task_queue_find(&find_data))
+   if (!task_dbscan_chain_can_start())
       goto error;
    if (   !(chain = (dbscan_chain_t*)calloc(1, sizeof(*chain)))
        || !(prep  = (dbscan_prep_t*)calloc(1, sizeof(*prep))))
@@ -6829,4 +6838,9 @@ error:
    free(chain);
    dbscan_chain_free_items(items, count);
    return false;
+}
+
+bool task_dbscan_chain_is_running(void)
+{
+   return dbscan_chain_running != NULL;
 }

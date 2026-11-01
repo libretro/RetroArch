@@ -23217,6 +23217,14 @@ MSG_HASH(
    "Add new content and remove invalid entries by repeating the content scan operation last used to create or edit the playlist."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
+   "Refresh All Playlists"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
+   "Rescan every playlist that has saved scan settings, with those settings."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Delete Playlist"
    )
@@ -32549,6 +32557,10 @@ MSG_HASH(
    "Refresh failed - arcade DAT file too large (insufficient memory): "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_ALL_DONE,
+   "Playlists refreshed: %u, skipped: %u, failed: %u"
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "Added to favorites"
    )
@@ -34343,6 +34355,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_END,
    "Scan complete: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING,
+   "A content scan is already running."
    )
 MSG_HASH(
    MSG_CORE_BACKUP_SCANNING_CORE,

@@ -139,10 +139,36 @@ static void end_step_hold(void)
    retro_atomic_store_release_int(&end_readers_out, n ? 0 : 1);
 }
 
+/* The English rows, for the messages a check compares whole. */
+static const struct
+{
+   enum msg_hash_enums id;
+   const char *str;
+} msg_hash_us_rows[] = {
+#undef MSG_HASH
+#define MSG_HASH(Id, str) { Id, str },
+#include "../../../intl/msg_hash_us.h"
+#undef MSG_HASH
+};
+
+static const char *msg_hash_us_row(enum msg_hash_enums msg)
+{
+   size_t i;
+
+   for (i = 0; i < sizeof(msg_hash_us_rows) / sizeof(msg_hash_us_rows[0]);
+         i++)
+      if (msg_hash_us_rows[i].id == msg)
+         return msg_hash_us_rows[i].str;
+   return "";
+}
+
 const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 {
    if (msg == MSG_SCANNING_OF_DIRECTORY_FINISHED && end_hold)
       end_step_hold();
+   if (   msg == MSG_PLAYLIST_MANAGER_REFRESH_ALL_DONE
+       || msg == MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING)
+      return msg_hash_us_row(msg);
    if (msg == MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT)
       return "invalid content";
    if (msg == MSG_SCANNING_NO_DATABASE)
@@ -9233,7 +9259,8 @@ static void chain_lane(const char *root, const char *pl_dir,
    char                detail[160];
    const char         *q = threaded ? "(threaded)" : "(regular)";
    task_dbscan_item_t *items;
-   bool                pushed, refused, captured, back;
+   bool                pushed, refused, captured, back, running;
+   bool                scan_refused;
 
    sprintf(a,       "%s/chain_a",       root);
    sprintf(b,       "%s/chain_b",       root);
@@ -9338,13 +9365,17 @@ static void chain_lane(const char *root, const char *pl_dir,
          && chain_totals.ran == 1 && chain_totals.cancelled, what, detail);
 
    pushed  = chain_push(chain_items(1, a, NULL), 1);
+   running = task_dbscan_chain_is_running();
    refused = !task_push_dbscan_chain(chain_items(1, b, NULL), 1,
          chain_item_cb, chain_done_cb, &chain_seen);
+   scan_refused = !task_push_dbscan(b, scan_cb, NULL);
    chain_wait(false);
    sprintf(what, "chain %s: a second chain refused", q);
    sprintf(detail, "%u items, done %u", chain_seen, chain_dones);
    check(   pushed && refused && chain_seen == 1 && chain_dones == 1
          && chain_saw(0, a, TASK_DBSCAN_RAN, 0), what, detail);
+   sprintf(what, "chain %s: running from the push to the end", q);
+   check(running && !task_dbscan_chain_is_running(), what, "");
 
    /* Held, so the scan cannot end before the chain is pushed */
    slow_reset(sz_a, 0);
@@ -9368,6 +9399,8 @@ static void chain_lane(const char *root, const char *pl_dir,
    sprintf(what, "chain %s: refused while a manual scan runs", q);
    check(   pushed && refused && scan_completed && !chain_seen
          && !chain_dones, what, refused ? "refused" : "pushed");
+   sprintf(what, "chain %s: no task_push_dbscan while it runs", q);
+   check(scan_refused && pushed, what, scan_refused ? "refused" : "pushed");
 
    manual_content_scan_reset_settings();
    strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
@@ -9945,6 +9978,111 @@ static void refresh_lane(const char *root, const char *pl_dir,
 
 fixture:
    check(0, "fixture", "could not write the refresh lane");
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+
+/* The summary the menu's Refresh All Playlists shows. */
+static char menu_all_msg[128];
+
+static void menu_all_done_cb(const task_dbscan_chain_result_t *res,
+      void *user_data)
+{
+   if (user_data)
+      chain_ud_ok = false;
+   snprintf(menu_all_msg, sizeof(menu_all_msg),
+         msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_ALL_DONE),
+         res->ran, res->skipped, res->failed);
+   chain_totals = *res;
+   chain_dones++;
+}
+
+/* The one item the menu pushes. */
+static task_dbscan_item_t *menu_all_item(void)
+{
+   task_dbscan_item_t *item = (task_dbscan_item_t*)calloc(1,
+         sizeof(*item));
+
+   if (item)
+      item->kind = TASK_DBSCAN_ITEM_REFRESH_ALL;
+   return item;
+}
+
+/* Refresh All Playlists as the menu pushes it, over A refreshable, B
+ * with its folder gone, C without settings and E with a missing core:
+ * the English summary, nothing printed, and a second press while it
+ * runs refused with the English message. */
+static void menu_refresh_all_lane(const char *root, const char *pl_dir,
+      uint32_t crc_a, uint32_t sz_a, bool threaded)
+{
+   char        pl[512], a[512], gone[512], out[1024], err[1024];
+   char        p[1024], stale[1024], what[128];
+   const char *q = threaded ? "(threaded)" : "(regular)";
+   const char *busy;
+   bool        captured, pushed, refused;
+
+   sprintf(pl,    "%s/menu_all_pl",      root);
+   sprintf(a,     "%s/menu_all_a",       root);
+   sprintf(gone,  "%s/menu_all_gone",    root);
+   sprintf(out,   "%s/menu_all_out.txt", root);
+   sprintf(err,   "%s/menu_all_err.txt", root);
+   sprintf(stale, "%s/00_gone.bin",      a);
+   path_mkdir(pl);
+   path_mkdir(a);
+   delete_playlists(pl);
+   sprintf(p, "%s/01_alpha.bin", a);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/a_ok.lpl", pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/b_gone.lpl", pl);
+   if (!refresh_write(p, gone, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/c_none.lpl", pl);
+   if (!refresh_write(p, NULL, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/e_core.lpl", pl);
+   if (!refresh_write(p, a, "No Such Core", stale))
+      goto fixture;
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+
+   chain_seen      = 0;
+   chain_dones     = 0;
+   chain_ud_ok     = true;
+   menu_all_msg[0] = '\0';
+   cli_output      = false;
+   captured        = capture_begin(out, err);
+   pushed          = task_push_dbscan_chain(menu_all_item(), 1, NULL,
+         menu_all_done_cb, NULL);
+   refused         = !task_push_dbscan_chain(menu_all_item(), 1, NULL,
+         menu_all_done_cb, NULL);
+   chain_wait(false);
+   if (captured)
+      capture_end();
+   sprintf(what, "menu refresh all %s: the summary", q);
+   check(   pushed && chain_dones == 1 && chain_ud_ok
+         && !strcmp(menu_all_msg,
+               "Playlists refreshed: 1, skipped: 1, failed: 1"),
+         what, menu_all_msg);
+   busy = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING);
+   sprintf(what, "menu refresh all %s: a second press refused", q);
+   check(   refused && chain_dones == 1
+         && !strcmp(busy, "A content scan is already running."),
+         what, busy);
+   sprintf(what, "menu refresh all %s: nothing printed", q);
+   check(   captured && path_get_size(out) == 0
+         && path_get_size(err) == 0, what, err);
+
+   manual_content_scan_reset_settings();
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the menu refresh-all lane");
    strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
          sizeof(config_get_ptr()->paths.directory_playlist));
 }
@@ -11038,6 +11176,8 @@ int main(int argc, char **argv)
    chain_lane(root, pl_dir, crc_a, sz_a, true);
    refresh_lane(root, pl_dir, crc_a, sz_a, false);
    refresh_lane(root, pl_dir, crc_a, sz_a, true);
+   menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, false);
+   menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, true);
    {
       char reader_db[512];
 

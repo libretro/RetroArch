@@ -50,6 +50,19 @@ void handle_dbscan_finished(retro_task_t *task,
             NULL, menu_st->userdata);
 }
 
+/* A Scan Directory or Scan File would run with the playlist settings
+ * a running chain last loaded. */
+static bool action_scan_refused(void)
+{
+   const char *_msg;
+   if (!task_dbscan_chain_is_running())
+      return false;
+   _msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING);
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 150, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   return true;
+}
+
 #ifdef HAVE_LIBRETRODB
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -59,6 +72,9 @@ int action_scan_file(const char *path,
 #endif
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path          = NULL;
+
+   if (action_scan_refused())
+      return 0;
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
@@ -83,6 +99,9 @@ int action_scan_directory(const char *path,
 #endif
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path          = NULL;
+
+   if (action_scan_refused())
+      return 0;
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 

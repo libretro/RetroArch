@@ -12746,6 +12746,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS_STR)
                   )
                   {
                      node->icon_texture_index = MUI_TEXTURE_UPDATER;
