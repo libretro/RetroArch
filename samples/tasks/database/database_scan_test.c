@@ -5184,6 +5184,118 @@ end:
    free(cfg);
 }
 
+static unsigned file_count(const char *path, const char *needle);
+
+/* Skip Database References names a match after the playlist it is
+ * written to, and only when the scan has one playlist: left to the
+ * scan, a match goes to its database's playlist. */
+static void omit_ref_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   static char cart_lpl[1024], folder_lpl[1024], custom_lpl[1024];
+   char        db[512], dir[512], pl[512], p[1024], what[80];
+   db_rec_t    cart;
+   bool        started;
+   const char *q = threaded ? "(threaded)" : "(regular)";
+
+   sprintf(db,  "%s/omit_ref_db", root);
+   sprintf(dir, "%s/omit_ref",    root);
+   sprintf(pl,  "%s/omit_ref_pl", root);
+   path_mkdir(db);
+   path_mkdir(dir);
+   path_mkdir(pl);
+   sprintf(p, "%s/om.ct", dir);
+   if (!write_content(p, 0x0A1E0F01u, 1024))
+      goto fixture;
+   set_rec(&cart, "Omit Cart", 0x0A1E0F01u, 1024);
+   sprintf(p, "%s/Test Cart Gate.rdb", db);
+   if (!write_db_set(p, &cart, 1))
+      goto fixture;
+
+   sprintf(cart_lpl,   "%s/Test Cart Gate.lpl", pl);
+   sprintf(folder_lpl, "%s/omit_ref.lpl",       pl);
+   sprintf(custom_lpl, "%s/Omit Custom.lpl",    pl);
+   filestream_delete(cart_lpl);
+   filestream_delete(folder_lpl);
+   use_queue(threaded);
+   use_db(db);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   *manual_content_scan_get_omit_db_ref_ptr() = true;
+
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   started = run_scan(dir) && scan_completed;
+   sprintf(what, "omit ref, Automatic target %s", q);
+   check(   started && file_contains(cart_lpl, "om.ct")
+         && file_contains(cart_lpl, "\"db_name\": \"Test Cart Gate.lpl\"")
+         && !path_is_valid(folder_lpl), what, "Test Cart Gate.lpl");
+
+   /* Fully Automatic keeps the value Custom set. */
+   filestream_delete(cart_lpl);
+   filestream_delete(folder_lpl);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   started = run_scan(dir) && scan_completed;
+   sprintf(what, "omit ref, Fully Automatic %s", q);
+   check(   started && file_contains(cart_lpl, "om.ct")
+         && file_contains(cart_lpl, "\"db_name\": \"Test Cart Gate.lpl\"")
+         && !path_is_valid(folder_lpl), what, "Test Cart Gate.lpl");
+
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   strlcpy(manual_content_scan_get_system_name_custom_ptr(),
+         "Omit Custom",
+         manual_content_scan_get_system_name_custom_size());
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, NULL);
+   filestream_delete(custom_lpl);
+   started = run_scan(dir) && scan_completed;
+   sprintf(what, "omit ref, Custom target: its name %s", q);
+   check(   started
+         && file_contains(custom_lpl, "\"db_name\": \"Omit Custom.lpl\""),
+         what, "Omit Custom.lpl");
+
+   /* A loose scan's non-match too, not the folder's name. */
+   sprintf(p, "%s/om_none.ct", dir);
+   if (!write_content(p, 0x0A1E0F02u, 1024))
+      goto fixture;
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_LOOSE);
+   filestream_delete(custom_lpl);
+   started = run_scan(dir) && scan_completed;
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+   filestream_delete(p);
+   sprintf(what, "omit ref, Custom target, loose: a non-match %s", q);
+   check(   started && file_contains(custom_lpl, "om_none.ct")
+         && file_contains(custom_lpl, "om.ct")
+         && file_count(custom_lpl, "\"db_name\": \"Omit Custom.lpl\"") == 2
+         && !file_contains(custom_lpl, "\"db_name\": \"omit_ref.lpl\"")
+         && !file_contains(custom_lpl, "\"db_name\": \"Test Cart Gate"),
+         what, custom_lpl);
+
+   *manual_content_scan_get_omit_db_ref_ptr() = false;
+   filestream_delete(custom_lpl);
+   started = run_scan(dir) && scan_completed;
+   sprintf(what, "omit ref off: the database's name %s", q);
+   check(   started
+         && file_contains(custom_lpl, "\"db_name\": \"Test Cart Gate.lpl\""),
+         what, "Test Cart Gate.lpl");
+
+   manual_content_scan_get_system_name_custom_ptr()[0] = '\0';
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO, NULL);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the omit ref set");
+}
+
 #ifdef HAVE_RRAR
 /* Rar archives take the archive passes: a first member's hit, in a
  * database whose core opens rar, names the archive; a later member's,
@@ -9397,6 +9509,8 @@ int main(int argc, char **argv)
       loose_held_lane(root, pl_dir, true);
       loose_held_lane(root, pl_dir, false);
       refresh_db_name_lane(root);
+      omit_ref_lane(root, pl_dir, true);
+      omit_ref_lane(root, pl_dir, false);
 #ifdef HAVE_RRAR
       rar_lane(root, pl_dir, true);
       rar_lane(root, pl_dir, false);

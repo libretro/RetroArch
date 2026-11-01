@@ -2351,6 +2351,7 @@ static bool task_database_result_add(manual_scan_handle_t *_db,
       : (char*)malloc(db_crc_len);
    char* entry_path_str           = (char*)malloc(str_len);
    char *hash                     = NULL;
+   const char *db_ref             = db_playlist_base_str;
    const char         *db_path    =
       database_info_get_current_name(db_state);
    const char         *entry_path =
@@ -2434,11 +2435,14 @@ static bool task_database_result_add(manual_scan_handle_t *_db,
        && (hash = strchr(entry_path_str, '#')))
        *hash = '\0';
 
+   /* Without a fixed playlist, db_name picks the playlist. */
+   if (_db->task_config->omit_db_reference && *_db->task_config->playlist_file)
+      db_ref = path_basename_nocompression(_db->task_config->playlist_file);
+
    /* Accumulate result instead of immediately updating playlist */
 
-   if (!scan_results_add(&_db->scan_results, entry_path_str, entry_lbl, db_crc, 
-                         _db->task_config->omit_db_reference ? _db->task_config->dat_file_path : db_playlist_base_str, 
-                         archive_name))
+   if (!scan_results_add(&_db->scan_results, entry_path_str, entry_lbl, db_crc,
+            db_ref, archive_name))
       RARCH_ERR("[Scanner] Failed to add result for: \"%s\".\n", entry_lbl);
 
    if (db_crc != db_crc_buf)
@@ -5356,6 +5360,11 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                         *manual_scan->task_config->database_name
                         ? manual_scan->task_config->database_name
                         : manual_scan->task_config->dat_file_path;
+                     /* Skip Database References, as for a match */
+                     if (   manual_scan->task_config->omit_db_reference
+                         && *manual_scan->task_config->playlist_file)
+                        db_name = path_basename_nocompression(
+                              manual_scan->task_config->playlist_file);
                      label[0] = '\0';
                      if (!manual_content_scan_get_playlist_content_label(
                            content_path, manual_scan->dat_file,
