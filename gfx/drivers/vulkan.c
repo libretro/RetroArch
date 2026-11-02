@@ -452,6 +452,9 @@ typedef struct vk
        * when the image goes there */
       unsigned ui_direct;
       const char *ui_msg;
+      /* This frame: views an up window with no free image shows,
+       * copied all the same for a later repeat */
+      unsigned copy;
    } windows;
 #endif
 #ifdef HAVE_OPENXR
@@ -11322,6 +11325,7 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
    const gfx_ctx_window_driver_t *ctx = vk->ctx_driver
       ? vk->ctx_driver->windows : NULL;
 
+   vk->windows.copy = 0;
    if (!ctx)
       return;
    if (vk->windows.held.live)
@@ -11422,7 +11426,14 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       /* No free image is no failure: its last image stays */
       win->flags |= VK_WINDOW_FLAG_UP;
       if (!state)
+      {
+         if (screens && new_frame)
+            for (i = 0; i < video_info->views.num_views; i++)
+               if (f->window_screens[w]
+                     & (1u << video_info->views.views[i].screen))
+                  vk->windows.copy |= 1u << i;
          continue;
+      }
 
       if (screens)
       {
@@ -13192,6 +13203,9 @@ static bool vulkan_frame(void *data, const void *frame,
       for (i = 0; i < video_info->views.num_views; i++)
          if (view_chains[i])
             copy_views |= 1u << i;
+#ifdef HAVE_VIDEO_WINDOWS
+      copy_views |= vk->windows.copy;
+#endif
    }
 #ifdef HAVE_OPENXR
    /* The headset's views and its tracked eyes come from the same
