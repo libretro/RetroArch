@@ -30,18 +30,11 @@
       retro_task_t   *task = task_init(); \
       if (!task) \
          return false; \
-      if (task_wifi_busy()) \
-      { \
-         free(task); \
-         return false; \
-      } \
       task->type           = TASK_TYPE_NONE; \
-      task->state          = NULL; \
       task->handler        = handlerfunc; \
-      task->callback       = cb; \
       task->title          = strdup(msg_hash_to_str( \
                               message)); \
-      if (task_queue_push(task)) \
+      if (task_wifi_push(task, cb)) \
          return true; \
       task_free_title(task); \
       free(task); \
@@ -108,26 +101,83 @@ static void task_wifi_connect_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
-static bool task_wifi_finder(retro_task_t *task, void *user_data)
+/* One Wi-Fi task at a time, the driver being used by one at a time,
+ * and among themselves only. The rest are held, in order, and pushed
+ * as the one ahead of them finishes. Turned away, Connect, Disconnect
+ * and the Wi-Fi Enabled toggle did nothing while the networks list's
+ * periodic scan ran - the toggle leaving the setting and the driver
+ * apart. A scan behind a scan is refused: it would find the same.
+ * Frame thread only: the menu pushes them and their callbacks run
+ * there. Bounded: past it a task is refused, as all were. */
+#define WIFI_TASKS_HELD_MAX 4
+static retro_task_t *wifi_tasks_held[WIFI_TASKS_HELD_MAX];
+static unsigned      wifi_tasks_held_count = 0;
+/* the handler of the Wi-Fi task in flight, or NULL */
+static retro_task_handler_t wifi_task_live = NULL;
+
+/* the caller's callback, run from task_wifi_done() */
+typedef struct
 {
-   (void)user_data;
-   return     (   task->handler == task_wifi_scan_handler
-               || task->handler == task_wifi_enable_handler
-               || task->handler == task_wifi_disable_handler
-               || task->handler == task_wifi_disconnect_handler
-               || task->handler == task_wifi_connect_handler)
-          && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
+   retro_task_callback_t cb;
+} task_wifi_state_t;
+
+static void task_wifi_done(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   task_wifi_state_t *st = (task_wifi_state_t*)task->state;
+   task->state           = NULL;
+   wifi_task_live        = NULL;
+   if (st)
+   {
+      if (st->cb)
+         st->cb(task, task_data, user_data, error);
+      free(st);
+   }
+   if (wifi_tasks_held_count)
+   {
+      unsigned i;
+      retro_task_t *next = wifi_tasks_held[0];
+      for (i = 1; i < wifi_tasks_held_count; i++)
+         wifi_tasks_held[i - 1] = wifi_tasks_held[i];
+      wifi_tasks_held[--wifi_tasks_held_count] = NULL;
+      wifi_task_live = next->handler;
+      task_queue_push(next);
+   }
 }
 
-/* One Wi-Fi task at a time, among themselves only: as a blocking task
- * a scan also turned away every state save and load pushed while it
- * ran, which the user saw as Load State doing nothing. */
-static bool task_wifi_busy(void)
+/* Pushes @task, or holds it behind the Wi-Fi task in flight; false
+ * when the hold is full, or for a scan already running or held, with
+ * @task left for the caller to free. */
+static bool task_wifi_push(retro_task_t *task, retro_task_callback_t cb)
 {
-   task_finder_data_t find;
-   find.func     = task_wifi_finder;
-   find.userdata = NULL;
-   return task_queue_find(&find);
+   task_wifi_state_t *st;
+   unsigned i;
+
+   if (task->handler == task_wifi_scan_handler)
+   {
+      if (wifi_task_live == task_wifi_scan_handler)
+         return false;
+      for (i = 0; i < wifi_tasks_held_count; i++)
+         if (wifi_tasks_held[i]->handler == task_wifi_scan_handler)
+            return false;
+   }
+   if (     (wifi_task_live || wifi_tasks_held_count)
+         && wifi_tasks_held_count >= WIFI_TASKS_HELD_MAX)
+      return false;
+   if (!(st = (task_wifi_state_t*)malloc(sizeof(*st))))
+      return false;
+   st->cb         = cb;
+   task->state    = st;
+   task->callback = task_wifi_done;
+
+   if (wifi_task_live || wifi_tasks_held_count)
+   {
+      wifi_tasks_held[wifi_tasks_held_count++] = task;
+      return true;
+   }
+   wifi_task_live = task->handler;
+   task_queue_push(task);
+   return true;
 }
 
 bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr)
@@ -137,18 +187,11 @@ bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr)
    wifi_network_info_t *netinfo = (wifi_network_info_t*)netptr;
    if (!task)
       return false;
-   if (task_wifi_busy())
-   {
-      free(task);
-      return false;
-   }
 
    snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_WIFI_CONNECTING_TO), netinfo->ssid);
 
    task->type           = TASK_TYPE_NONE;
-   task->state          = NULL;
    task->handler        = task_wifi_connect_handler;
-   task->callback       = cb;
    task->title          = strdup(msg);
    task->user_data      = malloc(sizeof(*netinfo));
    /* NULL-check: the memcpy on the next line NULL-derefs on OOM.
@@ -163,7 +206,7 @@ bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr)
       return false;
    }
    memcpy(task->user_data, netinfo, sizeof(*netinfo));
-   if (task_queue_push(task))
+   if (task_wifi_push(task, cb))
       return true;
 
    free(task->user_data);

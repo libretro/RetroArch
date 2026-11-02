@@ -1293,6 +1293,24 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 60 ./bluetooth_scan_test
           echo "[pass] bluetooth_scan_test"
 
+      - name: Build and run wifi_tasks_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/wifi_tasks
+        run: |
+          set -eu
+          # The Wi-Fi tasks on the real threaded task queue, with a
+          # driver whose scan takes a while. Connect, Disconnect and the
+          # Wi-Fi Enabled toggle pushed during the networks list's
+          # periodic scan were turned away; pins that they are held and
+          # run after it in order, one on the driver at a time, and that
+          # only a scan behind a scan is refused.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wifi_tasks_test
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 ./wifi_tasks_test
+          echo "[pass] wifi_tasks_test"
+
       - name: Build and run wait_timeout_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/wait_timeout
