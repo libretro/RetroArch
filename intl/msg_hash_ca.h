@@ -1222,6 +1222,8 @@ static const struct
    char s_337429c4[13];
    char s_4c78a5a2[22];
    char s_dbd59c7e[23];
+   char s_02688604[24];
+   char s_aa01ad12[11];
    char s_e22edcd8[12];
    char s_d86adca1[30];
    char s_a17f6a67[63];
@@ -1415,6 +1417,7 @@ static const struct
    char s_d95b4346[16];
    char s_1adb7f60[91];
    char s_21e6be74[21];
+   char s_8a85a9a9[16];
    char s_4327ffcc[28];
    char s_737c9877[20];
    char s_30ba6e91[36];
@@ -1555,7 +1558,9 @@ static const struct
    char s_e6e43c7d[58];
    char s_c1ddd207[52];
    char s_ded83500[51];
+   char s_69bfecad[18];
    char s_69c06e41[8];
+   char s_097e2527[10];
    char s_690802fe[15];
    char s_7895cc5b[29];
    char s_e46faa42[21];
@@ -2396,7 +2401,18 @@ static const struct
 #endif
 #endif
    char s_f4341e25[40];
+   char s_964cf6c8[13];
+   char s_a40142d6[36];
+   char s_b9942e59[11];
+   char s_84a2ce72[9];
+   char s_74def6a5[18];
+   char s_28774055[15];
+   char s_28774056[15];
+   char s_28774057[15];
    char s_e09bad69[12];
+   char s_b85928b7[26];
+   char s_dcf8a6a3[6];
+   char s_f09399af[11];
    char s_f66c7b67[12];
    char s_cc973e8a[7];
    char s_b9d37039[198];
@@ -2422,6 +2438,7 @@ static const struct
    char s_2e6ad26e[8];
    char s_43e9897c[43];
    char s_7fbf0860[8];
+   char s_594f79fd[12];
    char s_f417f6f1[36];
    char s_020e2bc5[26];
    char s_59f183c8[32];
@@ -2465,18 +2482,25 @@ static const struct
    char s_0cfd4fd0[9];
    char s_d64659c4[8];
    char s_0861dea4[26];
+   char s_ca605800[27];
+   char s_430aec76[20];
    char s_fa462638[10];
    char s_29f97e35[4];
    char s_569b0627[5];
    char s_99b1b2f6[4];
    char s_569b11b0[7];
+   char s_dabe770e[5];
+   char s_dabe774b[5];
+   char s_dabe7771[5];
    char s_dabe7811[5];
    char s_328ddae3[7];
    char s_d7deafe0[26];
    char s_83217fd0[14];
    char s_60258de0[7];
    char s_caf61308[11];
+   char s_caf658e4[12];
    char s_5410e874[7];
+   char s_7563a069[25];
    char s_9eb59c3e[7];
    char s_34b2592a[7];
    char s_2a1860ac[39];
@@ -2536,7 +2560,14 @@ static const struct
    char s_52e3d6ea[47];
    char s_f387bafb[27];
    char s_2c868ae4[12];
+   char s_7f065006[9];
+   char s_5c12d979[12];
+   char s_284873ec[20];
+   char s_3220e9be[7];
+   char s_3242e549[21];
+   char s_284fc3ff[9];
    char s_3253994e[7];
+   char s_1e1af8e0[29];
    char s_c992346c[30];
    char s_580e244f[7];
    char s_a9c8430e[18];
@@ -2583,9 +2614,16 @@ static const struct
    char s_730df420[16];
    char s_bcddf275[8];
    char s_bddbac76[12];
+   char s_9e5c39b9[15];
+   char s_9e5c39ba[15];
+   char s_9e5c39bd[15];
+   char s_9e5c39be[15];
+   char s_9e5c39bf[15];
+   char s_9e5c39c0[15];
    char s_a72a3c80[11];
    char s_482ee1f1[11];
    char s_214b7699[10];
+   char s_3e628390[9];
    char s_258060bf[33];
    char s_3bbc8b05[47];
    char s_e595f6df[47];
@@ -2612,10 +2650,12 @@ static const struct
 #endif
    char s_84c46931[37];
    char s_ebf10493[14];
+   char s_539d5393[7];
    char s_a64b3a0b[31];
    char s_83e8dc72[31];
    char s_7cf985f0[45];
    char s_0f5266ce[23];
+   char s_0f97fdc1[6];
    char s_ea2674d3[41];
    char s_ea2674d4[38];
    char s_2d8cb7ce[24];
@@ -2623,6 +2663,7 @@ static const struct
    char s_6448376a[8];
    char s_b9e24170[35];
    char s_30140cb5[23];
+   char s_0bb834d5[13];
    char s_25a21976[85];
    char s_95a59dc0[19];
    char s_24244577[24];
@@ -4160,6 +4201,7 @@ static const struct
    char s_a7a47ea6[32];
    char s_09a5996c[45];
    char s_d80c36a8[227];
+   char s_0d8a28d5[22];
    char s_73c9507b[109];
    char s_825152dd[40];
    char s_19e809ad[54];
@@ -4540,7 +4582,9 @@ static const struct
    char s_8ab54d62[111];
    char s_aa554847[16];
    char s_ac2c797c[22];
+   char s_69d626bd[7];
    char s_c52621db[6];
+   char s_b512be06[12];
    char s_c5fee1cb[69];
    char s_7ce002de[25];
    char s_3fe94404[4];
@@ -6175,6 +6219,8 @@ static const struct
    "Servidor MCP",
    "Port del servidor MCP",
    "Token del servidor MCP",
+   "Reproductor multim\303\250dia",
+   "Subt\303\255tols",
    "Multim\303\250dia",
    "Mostrar l'\303\272s de la mem\303\262ria ",
    "Interval d'actualitzaci\303\263 de l'\303\272s de mem\303\262ria (en fotogrames)",
@@ -6369,6 +6415,7 @@ static const struct
    "No s\342\200\231ha pogut trobar cap nucli o fitxer de contingut adequats, carregueu-los manualme"
    "nt.",
    "Filtres de vest\303\255bul",
+   "Pas de bloqueig",
    "Nombre m\303\240xim de connexions",
    "Limitaci\303\263 del ping",
    "Ubicaci\303\263 del servidor intermediari",
@@ -6509,7 +6556,9 @@ static const struct
    "Relaci\303\263 d'aspecte de la superposici\303\263 (mode horitzontal)",
    "Relaci\303\263 d'aspecte de superposici\303\263 (Mode vertical)",
    "Carrega Autom\303\240ticament la Superposici\303\263 Preferida",
+   "\303\200rea de contacte",
    "Ambdues",
+   "Direcci\303\263",
    "Superposicions",
    "Superposa la pistola de llum",
    "Superposa el ratol\303\255",
@@ -7361,7 +7410,18 @@ static const struct
 #endif
 #endif
    "Desactiva la composici\303\263 d\342\200\231escriptori",
+   "Carpeta DLSS",
+   "M\303\240scara autom\303\240tica de l'aparen\303\247a",
+   "Intensitat",
+   "To local",
+   "Model per defecte",
+   "Preselecci\303\263 1",
+   "Preselecci\303\263 2",
+   "Preselecci\303\263 3",
    "Per defecte",
+   "Estructura de l'aparen\303\247a",
+   "Estil",
+   "Cinem\303\240tic",
    "Per defecte",
    "V\303\255deo",
    "El vostre controlador de gr\303\240fics no \303\251s compatible amb el controlador de v\303\255d"
@@ -7389,6 +7449,7 @@ static const struct
    "For\303\247ar",
    "Negociaci\303\263 de pantalla completa exclusiva",
    "Relaxat",
+   "Carpeta FSR",
    "Visualitzaci\303\263 en pantalla completa",
    "Mode de pantalla completa",
    "Amplada de la pantalla completa",
@@ -7432,18 +7493,25 @@ static const struct
    "Combinat",
    "Separat",
    "Dist\303\240ncia de la pantalla",
+   "Separaci\303\263 de la frontissa",
+   "Mant\303\251 en execuci\303\263",
    "Fer pausa",
    "Alt",
    "Baix",
    "Mig",
    "Apagat",
+   "15\302\272",
+   "30\302\272",
+   "45\302\272",
    "90\302\272",
    "Apagat",
    "Sortida del casc (OpenXR)",
    "Punter L\303\240ser",
    "Sempre",
    "Autom\303\240tic",
+   "Feix l\303\240ser",
    "Sempre",
+   "Nom\303\251s el mode d'edici\303\263",
    "Apagat",
    "Apagat",
    "Potenciar el rendiment per les ulleres",
@@ -7503,7 +7571,14 @@ static const struct
    "Simulaci\303\263 de la l\303\255nia d'escaneig en moviment",
    "Disposici\303\263 de la pantalla",
    "Horitzontal",
+   "Pantalla",
+   "Pantalla %u",
+   "Edita les pantalles",
+   "Timbre",
+   "Reinicia la pantalla",
+   "Llen\303\247ar",
    "Escala",
+   "Despla\303\247ament de profunditat",
    "Mostra el mode d'alternar SDL",
    "V\303\255deo",
    "Shaders de V\303\255deo",
@@ -7550,9 +7625,16 @@ static const struct
    "Sincronitzaci\303\263",
    "V\303\255deos",
    "Per defecte",
+   "Preselecci\303\263 H",
+   "Preselecci\303\263 I",
+   "Preselecci\303\263 L",
+   "Preselecci\303\263 M",
+   "Preselecci\303\263 N",
+   "Preselecci\303\263 O",
    "Autom\303\240tic",
    "Equilibrat",
    "Rendiment",
+   "Qualitat",
    "Canalitzaci\303\263 multifil de v\303\255deo",
    "Ritme de visualitzaci\303\263 amb el v\303\255deo multifil",
    "Repetici\303\263 de fotogrames en el v\303\255deo multifil",
@@ -7581,10 +7663,12 @@ static const struct
 #endif
    "Mode de finestra a pantalla completa",
    "Mode finestra",
+   "Adjunt",
    "Al\303\247ada m\303\240xima de la finestra",
    "Amplada m\303\240xima de la finestra",
    "Utilitza una mida de finestra personalitzada",
    "Al\303\247ada de la finestra",
+   "Ocult",
    "Despla\303\247ament horitzontal de la pantalla",
    "Despla\303\247ament vertical de la pantalla",
    "Opacitat de la finestra",
@@ -7592,6 +7676,7 @@ static const struct
    "Separat",
    "Mostra les decoracions de finestra",
    "Amplada de la finestra",
+   "Carpeta XeSS",
    "Sincronitzaci\303\263 a la velocitat de fotogrames del contingut exacta (S-Sync, FreeSync)",
    "Lat\303\250ncia d'\303\240udio",
    "Mem\303\262ria cau del client",
@@ -10197,6 +10282,7 @@ static const struct
    "L'adaptador Bluetooth d'aquest ordinador utilitza el controlador gen\303\250ric de Windows, el q"
    "ual sovint no detecta cap dispositiu. Instal\302\267leu el controlador Bluetooth proporcionat pe"
    "l fabricant de l'ordinador o de la placa base.",
+   "S'ha emparellat \"%s\".",
    "S\342\200\231ha eliminat l\342\200\231emparellament. Reinicieu el RetroArch per tornar a connect"
    "ar o emparellar un dispositiu.",
    "S\342\200\231ha completat la cerca de Bluetooth.",
@@ -10614,7 +10700,9 @@ static const struct
    "sta de reproducci\303\263.",
    "Nuclis omesos: ",
    "Nuclis actualitzats: ",
+   "L\303\240ser",
    "Men\303\272",
+   "Pantalla %u",
    "La sortida al casc no es pot iniciar. La finestra mostra la sortida.",
    "Vista de les ulleres: %s",
    "Pla",
@@ -10834,7 +10922,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (243336u
+      (sizeof(msg_hash_ca_blob) == (243974u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12607,6 +12695,8 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_PORT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_TOKEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEDIA_PLAYER_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEDIA_PLAYER_SUBTITLES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
@@ -12800,6 +12890,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOCKSTEP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -12940,7 +13031,9 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_AREA,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_BOTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_CONTACT_METHOD_VECTOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -13780,7 +13873,18 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_DIRECTORY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_AUTO_MASK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_INTENSITY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_LOCAL_TONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_1,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_2,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_3,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_CINEMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
@@ -13806,6 +13910,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSR_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -13849,18 +13954,25 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_15,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_30,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_45,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_90,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PERF_BOOST,
@@ -13920,7 +14032,14 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_ROLL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_Z,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -13967,9 +14086,16 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_H,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_I,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_L,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_M,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_N,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_O,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
@@ -13996,10 +14122,12 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -14007,6 +14135,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_XESS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER,
@@ -15531,6 +15660,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MSG_BACKING_UP_CORE,
    (msg_hash_id_t)MSG_BLOCKING_SRAM_OVERWRITE,
    (msg_hash_id_t)MSG_BLUETOOTH_ADAPTER_GENERIC_DRIVER,
+   (msg_hash_id_t)MSG_BLUETOOTH_PAIRED,
    (msg_hash_id_t)MSG_BLUETOOTH_PAIRING_REMOVED,
    (msg_hash_id_t)MSG_BLUETOOTH_SCAN_COMPLETE,
    (msg_hash_id_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -15911,7 +16041,9 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (msg_hash_id_t)MSG_NUM_CORES_LOCKED,
    (msg_hash_id_t)MSG_NUM_CORES_UPDATED,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_LASER,
    (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_MENU,
+   (msg_hash_id_t)MSG_OPENXR_EDIT_TAG_SCREEN,
    (msg_hash_id_t)MSG_OPENXR_FAILED,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW,
    (msg_hash_id_t)MSG_OPENXR_HEADSET_VIEW_FLAT,
