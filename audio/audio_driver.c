@@ -2429,12 +2429,15 @@ static INLINE double audio_driver_effective_ratio(
    return ratio * ff_mult;
 }
 
-/* Used by the threaded pipe, and by a harness's AUDIO_OUTPUT_BOUND_CHECK */
-#if defined(HAVE_THREADS) || defined(AUDIO_OUTPUT_BOUND_CHECK)
+/* The most a flush of @input_frames can produce: what the inline
+ * pipeline borrows from the driver, and the threaded pipe's room */
 static INLINE size_t audio_driver_output_bound(double ratio, size_t input_frames)
 {
    return (size_t)((double)(input_frames + 16) * ratio) + 1;
 }
+
+/* Used by the threaded pipe, and by a harness's AUDIO_OUTPUT_BOUND_CHECK */
+#if defined(HAVE_THREADS) || defined(AUDIO_OUTPUT_BOUND_CHECK)
 
 /* The inverse: the largest input frame count whose bound still fits in
  * output_frames. Not output_frames/ratio - the bound adds a resampler
