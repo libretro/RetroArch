@@ -579,10 +579,15 @@ static void task_http_transfer_cleanup(retro_task_t *task)
    }
 }
 
+/* A finished transfer is no longer in flight, though it stays in the
+ * queue until its callback has run: a GET retried from that callback
+ * (the achievement badge downloader's, after a network error) was
+ * refused as its own duplicate, and the retry never happened. */
 static bool task_http_finder(retro_task_t *task, void *user_data)
 {
    http_handle_t *http = NULL;
-   if (task && (task->handler == task_http_transfer_handler) && user_data)
+   if (     task && (task->handler == task_http_transfer_handler) && user_data
+         && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED))
       if ((http = (http_handle_t*)task->state))
          return http->connection_url
              && string_is_equal(http->connection_url, (const char*)user_data);

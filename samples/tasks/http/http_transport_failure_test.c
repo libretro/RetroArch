@@ -672,6 +672,49 @@ static void test_task_http_status(void)
    server_stop();
 }
 
+/* A failed GET retried from its own callback, as the achievement
+ * badge downloader does. The failed task is still in the queue while
+ * its callback runs, and the duplicate-download guard found it: every
+ * retry was refused, the caller's data leaked and the badge queue
+ * stalled after any network error. A finished task is no longer in
+ * flight, and the retry must be taken. */
+static int  g_retry_calls;
+static bool g_retry_pushed;
+
+static void retry_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   (void)task; (void)task_data; (void)err;
+   if (g_retry_calls++ == 0)
+      g_retry_pushed = task_push_http_transfer((const char*)user_data,
+            true, NULL, retry_cb, user_data) != NULL;
+}
+
+static void test_task_retry_from_callback(void)
+{
+   static char url[256];
+   int spins = 0;
+
+   printf("  task layer, retried from its callback\n");
+   snprintf(url, sizeof(url), "http://%s/badge.png", NX_HOST);
+   g_retry_calls  = 0;
+   g_retry_pushed = false;
+   CHECK(task_push_http_transfer(url, true, NULL, retry_cb, url) != NULL,
+         "retry: the first push was refused");
+   while (g_retry_calls < 2 && spins++ < 40000)
+   {
+      task_queue_check();
+      usleep(200);
+   }
+   task_queue_wait(NULL, NULL);
+   task_queue_check();
+   CHECK(g_retry_pushed,
+         "retry: the same URL pushed from the failed task's callback was "
+         "refused as a duplicate");
+   CHECK(g_retry_calls == 2, "retry: %d callbacks, expected 2",
+         g_retry_calls);
+}
+
 /* ================================================================= */
 
 int main(void)
@@ -696,6 +739,7 @@ int main(void)
    test_task_muted();
    test_task_unmuted();
    test_task_http_status();
+   test_task_retry_from_callback();
    task_queue_deinit();
 
    net_http_deinit();

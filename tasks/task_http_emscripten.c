@@ -300,10 +300,12 @@ task_finished:
     * note in tasks/task_http.c. */
 }
 
+/* A finished transfer is no longer in flight; see task_http.c. */
 static bool task_http_finder(retro_task_t *task, void *user_data)
 {
    http_handle_t *http = NULL;
-   if (task && (task->handler == task_http_transfer_handler) && user_data)
+   if (     task && (task->handler == task_http_transfer_handler) && user_data
+         && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED))
       if ((http = (http_handle_t*)task->state))
          return http->connection_url
              && string_is_equal(http->connection_url, (const char*)user_data);
