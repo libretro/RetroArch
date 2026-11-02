@@ -2236,6 +2236,32 @@ static bool rr_ask(command_t *cmd,
    return ok;
 }
 
+/* Frames a reply has to turn up in once the load it answers is
+ * through: it is sent from the same frame. */
+#define RR_REPLY_GRACE_FRAMES 30
+
+/* As rr_ask(), for a command that must not be answered: waits for the
+ * load the command started to be through, then a grace period for a
+ * reply that should not come. rr_ask() waited out its whole bound -
+ * 5000 frames, 83 s at 60 Hz - for the reply that never comes. */
+static bool rr_ask_unanswered(command_t *cmd,
+      bool (*handler)(command_t *cmd, const char *arg), const char *arg)
+{
+   unsigned n;
+   bool ok;
+   rr_replies  = rr_in_command_replies = 0;
+   rr_reply[0] = '\0';
+   ok          = rr_run(cmd, handler, arg);
+   for (n = 0; n < 5000
+         && (   runloop_is_content_switching()
+             || (content_state_get_ptr()->flags
+                & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)); n++)
+      pump(1);
+   for (n = 0; n < RR_REPLY_GRACE_FRAMES && !rr_replies; n++)
+      pump(1);
+   return ok;
+}
+
 /* The harness core running, the menu closed. */
 static void run_harness_core(void)
 {
@@ -3014,7 +3040,7 @@ static void lane_content_reply(const char *dir)
    /* a line-based interface has never been told, and is not */
    cmd.structured = false;
    snprintf(arg, sizeof(arg), "%s|%s", core_path, content);
-   rr_ask(&cmd, command_load_content, arg);
+   rr_ask_unanswered(&cmd, command_load_content, arg);
    CHECK(rr_replies == 0, "a line-based interface was answered \"%s\"",
          rr_reply);
    cmd.structured = true;
