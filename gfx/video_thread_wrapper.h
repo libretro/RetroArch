@@ -526,6 +526,11 @@ typedef struct thread_video
    /* The last frame presented had queued behind another: the next
     * hold runs a period longer to drain it. Video thread only. */
    unsigned drain_cooldown;
+   /* The view count the driver has, and a smaller one it takes once
+    * views_shrink_left more frames have drawn. Video thread only. */
+   unsigned views_count;
+   unsigned views_shrink_to;
+   unsigned views_shrink_left;
    /* Video thread sets it, the hold takes it with a fetch_and */
    retro_atomic_int_t drain_pending;
    retro_atomic_int_t movie_capable;

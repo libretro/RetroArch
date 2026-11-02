@@ -5814,6 +5814,366 @@ static void lane_dupe_under_wrapper(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: a view count shrink behind queued frames                     */
+/*   A frame queued before the count shrinks draws with the views its */
+/*   map names, as it would have without the wrapper: the driver      */
+/*   takes the smaller count after that frame, and set_view_count     */
+/*   answers without waiting for it. A grow reaches the driver at     */
+/*   once.                                                            */
+/* ------------------------------------------------------------------ */
+
+#define VSHRINK_FRAME 7000
+#define VSHRINK_LOG   16
+/* A pass never takes this long, even under a sanitizer on a busy host */
+#define VSHRINK_HOLD_USEC 10000000
+
+typedef struct
+{
+   char     kind;  /* 'F' a frame drawn, 'S' a count set */
+   unsigned value; /* the frame's count, or the count set */
+   unsigned views; /* the frame's map */
+   unsigned count; /* the driver's count as the frame drew */
+} vshrink_event_t;
+
+static video_driver_t                vshrink_driver;
+static const video_driver_t         *vshrink_inner;
+static video_poke_interface_t        vshrink_poke;
+static const video_poke_interface_t *vshrink_inner_poke;
+static thread_video_t               *vshrink_thr;
+static vshrink_event_t               vshrink_log[VSHRINK_LOG];
+static retro_atomic_int_t            vshrink_logged;
+static unsigned                      vshrink_count; /* the video thread's */
+/* The frame that holds until a count is in the mailbox, and the one
+ * that holds until vshrink_release; the count plus one whose set holds
+ * once until a count is in the mailbox. VSHRINK_HOLD_USEC at most. */
+static retro_atomic_int_t            vshrink_hold_cmd;
+static retro_atomic_int_t            vshrink_hold_release;
+static retro_atomic_int_t            vshrink_release;
+static retro_atomic_int_t            vshrink_held;
+static retro_atomic_int_t            vshrink_hold_set;
+static retro_atomic_int_t            vshrink_set_held;
+
+static void vshrink_note(char kind, unsigned value, unsigned views)
+{
+   int n = retro_atomic_load_acquire_int(&vshrink_logged);
+   if (n >= VSHRINK_LOG)
+      return;
+   vshrink_log[n].kind  = kind;
+   vshrink_log[n].value = value;
+   vshrink_log[n].views = views;
+   vshrink_log[n].count = vshrink_count;
+   retro_atomic_store_release_int(&vshrink_logged, n + 1);
+}
+
+static void vshrink_wait_cmd(void)
+{
+   retro_time_t until = cpu_features_get_time_usec() + VSHRINK_HOLD_USEC;
+   while (     retro_atomic_load_acquire_int(&vshrink_thr->send_cmd)
+               != CMD_POKE_SET_VIEW_COUNT
+         && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+}
+
+/* Main thread: whether the flag went up within VSHRINK_HOLD_USEC */
+static bool vshrink_wait_flag(retro_atomic_int_t *flag)
+{
+   retro_time_t until = cpu_features_get_time_usec() + VSHRINK_HOLD_USEC;
+   while (     !retro_atomic_load_acquire_int(flag)
+         && cpu_features_get_time_usec() < until)
+      retro_sleep(1);
+   return retro_atomic_load_acquire_int(flag) != 0;
+}
+
+static void vshrink_set_view_count(void *data, unsigned count)
+{
+   (void)data;
+   if ((int)count + 1 == retro_atomic_load_acquire_int(&vshrink_hold_set))
+   {
+      retro_atomic_store_release_int(&vshrink_hold_set, 0);
+      retro_atomic_store_release_int(&vshrink_set_held, 1);
+      vshrink_wait_cmd();
+   }
+   vshrink_count = count;
+   vshrink_note('S', count, 0);
+}
+
+static void vshrink_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   vshrink_inner->poke_interface(data, &vshrink_inner_poke);
+   vshrink_poke                = *vshrink_inner_poke;
+   vshrink_poke.set_view_count = vshrink_set_view_count;
+   *iface                      = &vshrink_poke;
+}
+
+static bool vshrink_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   if ((int)frame_count == retro_atomic_load_acquire_int(&vshrink_hold_cmd))
+   {
+      retro_atomic_store_release_int(&vshrink_held, 1);
+      vshrink_wait_cmd();
+   }
+   else if ((int)frame_count
+         == retro_atomic_load_acquire_int(&vshrink_hold_release))
+   {
+      retro_time_t until = cpu_features_get_time_usec() + VSHRINK_HOLD_USEC;
+      while (     !retro_atomic_load_acquire_int(&vshrink_release)
+            && cpu_features_get_time_usec() < until)
+         retro_sleep(1);
+   }
+   vshrink_note('F', (unsigned)frame_count,
+         video_info ? video_info->views.num_views : 0);
+   return vshrink_inner->frame(data, NULL, dims, frame_count, pitch, msg,
+         video_info);
+}
+
+static uintptr_t vshrink_noop(void *data) { (void)data; return 0; }
+
+/* The log's index of an event, or -1 */
+static int vshrink_find(char kind, unsigned value)
+{
+   int i;
+   int n = retro_atomic_load_acquire_int(&vshrink_logged);
+   for (i = 0; i < n; i++)
+      if (vshrink_log[i].kind == kind && vshrink_log[i].value == value)
+         return i;
+   return -1;
+}
+
+static void vshrink_push(video_frame_info_t *info, uint32_t *pixels,
+      unsigned frame, unsigned views)
+{
+   video_driver_state_t *video = video_state_get_ptr();
+   info->views.num_views = views;
+   video->current_video->frame(video->data, pixels,
+         VIDEO_SCALE_PACK(8, 8), frame, 32, NULL, info);
+}
+
+/* Frame 'first' draws and holds, 'queued' frames are pushed behind it
+ * (a third push takes back the second), then the count goes 'from' to
+ * 'to', and one frame follows. A grow reaches the driver before the
+ * queued frame, which then draws at the larger count. */
+static void vshrink_case(const char *name, video_frame_info_t *info,
+      uint32_t *pixels, unsigned first, unsigned queued,
+      unsigned from, unsigned to)
+{
+   video_driver_state_t *video = video_state_get_ptr();
+   unsigned last = first + queued;
+   unsigned want = to > from ? to : from;
+   unsigned i;
+   int s, f;
+
+   video->poke->set_view_count(video->data, from);
+   video_thread_run_blocking(vshrink_noop, NULL);
+   CHECK(vshrink_count == from,
+         "%s: a grow to %u with nothing queued reached the driver as %u",
+         name, from, vshrink_count);
+
+   retro_atomic_store_release_int(&vshrink_logged, 0);
+   retro_atomic_store_release_int(&vshrink_held, 0);
+   retro_atomic_store_release_int(&vshrink_release, 0);
+   retro_atomic_store_release_int(&vshrink_hold_cmd, (int)first);
+   retro_atomic_store_release_int(&vshrink_hold_release, (int)last);
+   vshrink_push(info, pixels, first, from);
+   CHECK(vshrink_wait_flag(&vshrink_held),
+         "%s: the first frame never drew", name);
+   for (i = 1; i <= queued; i++)
+      vshrink_push(info, pixels, first + i, from);
+
+   video->poke->set_view_count(video->data, to);
+   CHECK(vshrink_find('F', last) < 0,
+         "%s: set_view_count waited for the frame queued before it", name);
+   if (to > from)
+      CHECK(vshrink_find('S', to) >= 0,
+            "%s: set_view_count returned before the grow to %u reached "
+            "the driver", name, to);
+   retro_atomic_store_release_int(&vshrink_release, 1);
+   video_thread_wait_idle();
+   vshrink_push(info, pixels, last + 1, to);
+   video_thread_wait_idle();
+   video_thread_run_blocking(vshrink_noop, NULL);
+   retro_atomic_store_release_int(&vshrink_hold_cmd, 0);
+   retro_atomic_store_release_int(&vshrink_hold_release, 0);
+
+   s = vshrink_find('S', to);
+   f = vshrink_find('F', last);
+   CHECK(f >= 0 && vshrink_log[f].views == from
+         && vshrink_log[f].count == want,
+         "%s: the frame queued before the count changed drew %u views "
+         "at count %u, wanted %u at %u", name,
+         f >= 0 ? vshrink_log[f].views : 0,
+         f >= 0 ? vshrink_log[f].count : 0, from, want);
+   if (to > from)
+      CHECK(s >= 0 && s < f, "%s: the grow to %u reached the driver at "
+            "%d, after the frame queued ahead of it (%d)", name, to, s, f);
+   else
+      CHECK(s > f, "%s: the shrink to %u reached the driver at %d, "
+            "before the frame queued ahead of it (%d)", name, to, s, f);
+   f = vshrink_find('F', last + 1);
+   CHECK(f >= 0 && vshrink_log[f].count == to,
+         "%s: the frame after the count change drew at count %u, wanted %u",
+         name, f >= 0 ? vshrink_log[f].count : 0, to);
+   if (queued > 1)
+      CHECK(vshrink_find('F', first + 1) < 0,
+            "%s: the frame taken back was drawn", name);
+}
+
+/* A shrink 3 -> 1 handled with one frame claimed and one pending:
+ * the shrink 3 -> 2 that waits for 'first + 1' holds in the driver
+ * until 'first + 2' and 'first + 3' fill the ring and the count is in
+ * the mailbox. With 'grow', 'first + 2' holds until a grow to 3 is in
+ * the mailbox, which cancels the shrink still waiting for 'first + 3'. */
+static void vshrink_older_case(const char *name, video_frame_info_t *info,
+      uint32_t *pixels, unsigned first, bool grow)
+{
+   video_driver_state_t *video = video_state_get_ptr();
+   unsigned p1   = first + 2;
+   unsigned p2   = first + 3;
+   unsigned next = first + 4;
+   unsigned end  = grow ? 3 : 1;
+   int s, f;
+
+   video->poke->set_view_count(video->data, 3);
+   video_thread_run_blocking(vshrink_noop, NULL);
+   CHECK(vshrink_count == 3,
+         "%s: a grow to 3 with nothing queued reached the driver as %u",
+         name, vshrink_count);
+
+   retro_atomic_store_release_int(&vshrink_logged, 0);
+   retro_atomic_store_release_int(&vshrink_held, 0);
+   retro_atomic_store_release_int(&vshrink_set_held, 0);
+   retro_atomic_store_release_int(&vshrink_release, 0);
+   retro_atomic_store_release_int(&vshrink_hold_cmd, (int)first);
+   retro_atomic_store_release_int(&vshrink_hold_release,
+         grow ? 0 : (int)p2);
+   retro_atomic_store_release_int(&vshrink_hold_set, 2 + 1);
+   vshrink_push(info, pixels, first, 3);
+   CHECK(vshrink_wait_flag(&vshrink_held),
+         "%s: the first frame never drew", name);
+   if (grow)
+      retro_atomic_store_release_int(&vshrink_hold_cmd, (int)p1);
+   vshrink_push(info, pixels, first + 1, 3);
+   video->poke->set_view_count(video->data, 2);
+   CHECK(vshrink_wait_flag(&vshrink_set_held),
+         "%s: the shrink to 2 never reached the driver", name);
+   vshrink_push(info, pixels, p1, 2);
+   vshrink_push(info, pixels, p2, 2);
+   video->poke->set_view_count(video->data, 1);
+   if (grow)
+   {
+      video->poke->set_view_count(video->data, 3);
+      CHECK(vshrink_find('S', 3) >= 0,
+            "%s: set_view_count returned before the grow to 3 reached "
+            "the driver", name);
+   }
+   else
+      CHECK(vshrink_find('F', p2) < 0,
+            "%s: set_view_count waited for the frames queued before it",
+            name);
+   retro_atomic_store_release_int(&vshrink_release, 1);
+   video_thread_wait_idle();
+   vshrink_push(info, pixels, next, end);
+   video_thread_wait_idle();
+   video_thread_run_blocking(vshrink_noop, NULL);
+   retro_atomic_store_release_int(&vshrink_hold_cmd, 0);
+   retro_atomic_store_release_int(&vshrink_hold_release, 0);
+   retro_atomic_store_release_int(&vshrink_hold_set, 0);
+
+   f = vshrink_find('F', p1);
+   CHECK(f >= 0 && vshrink_log[f].views == 2 && vshrink_log[f].count == 2,
+         "%s: the first frame queued before the shrink drew %u views at "
+         "count %u, wanted 2 at 2", name,
+         f >= 0 ? vshrink_log[f].views : 0,
+         f >= 0 ? vshrink_log[f].count : 0);
+   f = vshrink_find('F', p2);
+   CHECK(f >= 0 && vshrink_log[f].views == 2
+         && vshrink_log[f].count == (grow ? 3u : 2u),
+         "%s: the second frame queued before the shrink drew %u views at "
+         "count %u, wanted 2 at %u", name,
+         f >= 0 ? vshrink_log[f].views : 0,
+         f >= 0 ? vshrink_log[f].count : 0, grow ? 3 : 2);
+   s = vshrink_find('S', 1);
+   if (grow)
+      CHECK(s < 0, "%s: the shrink to 1 reached the driver after the "
+            "grow cancelled it (%d)", name, s);
+   else
+      CHECK(s > f, "%s: the shrink to 1 reached the driver at %d, before "
+            "the second frame queued ahead of it (%d)", name, s, f);
+   f = vshrink_find('F', next);
+   CHECK(f >= 0 && vshrink_log[f].count == end,
+         "%s: the frame after the count changed drew at count %u, wanted "
+         "%u", name, f >= 0 ? vshrink_log[f].count : 0, end);
+   CHECK(vshrink_count == end, "%s: the driver ended at count %u, wanted "
+         "%u", name, vshrink_count, end);
+}
+
+static void lane_view_count_shrink(void)
+{
+   video_driver_state_t *video = video_state_get_ptr();
+   thread_video_t *thr;
+   video_frame_info_t info;
+   uint32_t pixels[64];
+   unsigned had = failures;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "view count lane");
+   if (!(thr = (thread_video_t*)video->data))
+      return;
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   video_thread_wait_idle();
+
+   vshrink_thr                   = thr;
+   vshrink_inner                 = thr->driver;
+   vshrink_driver                = *thr->driver;
+   vshrink_driver.frame          = vshrink_frame;
+   vshrink_driver.poke_interface = vshrink_get_poke;
+   vshrink_count                 = 0;
+   set_driver(thr, &vshrink_driver);
+   set_poke_from(thr, &vshrink_driver);
+
+   memset(pixels, 0, sizeof(pixels));
+   memset(&info, 0, sizeof(info));
+   video_driver_build_info(&info);
+   info.threaded_display_pacing     = false;
+   info.input_driver_nonblock_state = true;
+   info.views.views[0].width        = 8;
+   info.views.views[0].height       = 4;
+   info.views.views[1]              = info.views.views[0];
+   info.views.views[1].y            = 4;
+   info.views.views[1].screen       = 1;
+
+   /* A core closing: two screens to none */
+   vshrink_case("view count lane, close", &info, pixels,
+         VSHRINK_FRAME, 1, 2, 0);
+   /* A core's map shrinking, with a frame taken back from the ring */
+   vshrink_case("view count lane, take-back", &info, pixels,
+         VSHRINK_FRAME + 10, 2, 2, 1);
+   /* A grow behind a queued frame: at once, while main waits */
+   vshrink_case("view count lane, grow", &info, pixels,
+         VSHRINK_FRAME + 20, 1, 1, 2);
+   /* A shrink behind a claimed frame and a pending one */
+   vshrink_older_case("view count lane, two queued", &info, pixels,
+         VSHRINK_FRAME + 30, false);
+   /* A grow while a shrink still waits for a frame cancels it */
+   vshrink_older_case("view count lane, shrink then grow", &info, pixels,
+         VSHRINK_FRAME + 40, true);
+
+   video->poke->set_view_count(video->data, 0);
+   video_thread_wait_idle();
+   set_driver(thr, vshrink_inner);
+   set_poke_from(thr, vshrink_inner);
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] view count lane (a shrink waits for the frames queued before it)\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: a size pair survives its packed word                         */
 /*   Several width/height pairs travel as one machine word in         */
 /*   VIDEO_SCALE_PACK's layout. A store and a load that disagree on   */
@@ -12231,6 +12591,7 @@ int main(int argc, char *argv[])
       lane_frame_path_heap();
       lane_resize_under_wrapper();
       lane_dupe_under_wrapper();
+      lane_view_count_shrink();
       lane_movie_ring();
       lane_suppress_screensaver();
       lane_window_answers();
