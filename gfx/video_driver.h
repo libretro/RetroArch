@@ -2138,6 +2138,8 @@ typedef struct
    /* When a UI layer's window was first wanted and had not shown; 0
     * for none */
    retro_time_t windows_ui_asked;
+   /* The Presentation's display windows_ui_asked counts for */
+   unsigned windows_ui_display;
    /* The last video_driver_window_generation(); never reset, so a
     * replacement window never reuses one. */
    retro_atomic_int_t window_generation;

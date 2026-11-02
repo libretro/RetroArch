@@ -2778,6 +2778,56 @@ static void test_window_ui_targets(void)
    window_test_end();
 }
 
+/* A Presentation made on another display waits for itself: the menu
+ * stays laid out for it instead of falling back at once */
+static void test_window_ui_wait_moved(void)
+{
+   video_window_display_t displays[3];
+   video_views_layout_t layout;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   window_test_display(&displays[2], 3, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-3");
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 3);
+   video_driver_clear_views();
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   video_driver_window_layout_screens(&window_test_seen, 0,
+         VIDEO_SCALE_PACK(1000, 900), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 7, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1000, 900));
+   window_test_run();
+   CHECK(!video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   strlcpy(settings->arrays.video_screen_display[1], "Screen-3",
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.display == 3);
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   settings->arrays.video_screen_display[1][0] = '\0';
+   settings->uints.video_menu_follows          = 0;
+   menu_st->flags                              = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   /* The list test_window_ui_targets() left for the later tests */
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   window_test_end();
+}
+
 static video_views_layout_t window_test_layouts[2];
 static video_views_map_t window_test_map;
 static unsigned window_test_generation;
@@ -4455,6 +4505,7 @@ int main(int argc, char **argv)
    test_window_shown_moved();
    test_window_shown_reinit();
    test_window_ui_targets();
+   test_window_ui_wait_moved();
    test_window_turned();
    test_window_turned_touch();
    test_window_turned_display();

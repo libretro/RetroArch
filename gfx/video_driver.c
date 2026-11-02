@@ -4565,6 +4565,12 @@ static void video_driver_windows_ui(video_driver_state_t *video_st,
             & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS);
    }
    out->window_ui[VIDEO_WINDOWS_PRESENTATION] = use;
+   /* A Presentation on another display gets its own wait */
+   if (route->display != video_st->windows_ui_display)
+   {
+      video_st->windows_ui_display = route->display;
+      video_st->windows_ui_asked   = 0;
+   }
    /* 1 once shown, so a later loss falls back at once */
    if (!use)
       video_st->windows_ui_asked = 0;
