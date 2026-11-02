@@ -7415,6 +7415,13 @@ bool command_event_main_state(unsigned cmd)
                         queued ? "yes" : "NO",
                         savestate_auto_index ? "on" : "off",
                         savestate_max_keep);
+                  /* Turned away - the saves and loads held behind the
+                   * one in flight are already at their bound: said,
+                   * rather than the hotkey doing nothing */
+                  if (!queued)
+                     _len = snprintf(msg, sizeof(msg), "%s \"%s\".",
+                           msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
+                           path_basename(state_path));
                }
                else
                   content_save_state_to_ram();
@@ -7443,6 +7450,12 @@ bool command_event_main_state(unsigned cmd)
                   command_post_state_loaded();
                   ret = true;
                }
+               /* Turned away (the hold behind the state task in flight
+                * is full) or not begun: said, rather than nothing */
+               else if (cmd == CMD_EVENT_LOAD_STATE)
+                  _len = strlcpy(msg,
+                        msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
+                        sizeof(msg));
             }
             break;
         case CMD_EVENT_UNDO_LOAD_STATE:

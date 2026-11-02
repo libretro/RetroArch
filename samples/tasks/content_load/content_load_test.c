@@ -2649,6 +2649,58 @@ static void lane_screenshots_held(const char *dir)
 }
 #endif
 
+#ifdef HAVE_DYNAMIC
+/* ------------------------------------------------------------------ */
+/* Lane: state hold full                                               */
+/* ------------------------------------------------------------------ */
+
+static bool queued_message(const char *want);
+
+/* Saves and loads behind the one in flight are held up to a bound;
+ * one past it is turned away, and says so rather than the hotkey
+ * doing nothing. The held ones still run. */
+static void lane_state_hold_full(void)
+{
+   settings_t *settings = config_get_ptr();
+   bool thumbnail       = settings->bools.savestate_thumbnail_enable;
+   char path[PATH_MAX_LENGTH];
+   unsigned had = failures, i, taken = 0;
+
+   run_harness_core();
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   configuration_set_bool(settings,
+         settings->bools.savestate_thumbnail_enable, false);
+   runloop_get_current_savestate_path(path, sizeof(path));
+   remove(path);
+   pump(4);
+   CHECK(state_save_marked(0x40), "the first save did not finish");
+
+   queued_message("");
+   /* a save in flight, and six loads in the same frame behind it */
+   CHECK(command_event(CMD_EVENT_SAVE_STATE, NULL), "the save was not taken");
+   for (i = 0; i < 6; i++)
+      if (command_event(CMD_EVENT_LOAD_STATE, NULL))
+         taken++;
+   CHECK(taken > 0 && taken < 6,
+         "%u of 6 loads behind a save were taken, not some", taken);
+   CHECK(queued_message(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE)),
+         "a load turned away said nothing on screen");
+   CHECK(state_tasks_settle(), "the held loads did not finish");
+
+   remove(path);
+   configuration_set_bool(settings,
+         settings->bools.savestate_thumbnail_enable, thumbnail);
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   pump(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] state-hold-full lane (%u of 6 taken)\n", taken);
+}
+#endif
+
 #if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
 /* ------------------------------------------------------------------ */
 /* Lane: playlist Load State slot                                      */
@@ -3847,6 +3899,9 @@ int main(int argc, char *argv[])
 #endif
 #if defined(HAVE_DYNAMIC) && defined(HAVE_SCREENSHOTS)
    lane_screenshots_held(dir);
+#endif
+#ifdef HAVE_DYNAMIC
+   lane_state_hold_full();
 #endif
 #if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
    lane_playlist_state_slot();
