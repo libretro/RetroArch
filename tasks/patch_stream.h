@@ -94,9 +94,9 @@ patch_stream_t *patch_stream_xdelta_open(const uint8_t *patch,
  * will be fed, at @base, and stays there until patch_stream_finish() or
  * patch_stream_free(): the stream reads what it has been fed in place
  * rather than keeping a copy of it - BPS keeps the whole source for
- * SourceCopy, UPS the part not yet consumed. A chunk fed from anywhere
- * else is taken as before, with a copy of what came before it. Call
- * before the first feed. */
+ * SourceCopy, UPS the part not yet consumed, and IPS copies it through
+ * to the target. A chunk fed from anywhere else is taken as before,
+ * with a copy of what came before it. Call before the first feed. */
 void patch_stream_set_source(patch_stream_t *ps, const uint8_t *base);
 
 /* Feed the next consecutive span of source bytes.  Chunks must arrive in
@@ -110,6 +110,16 @@ size_t patch_stream_feed(patch_stream_t *ps, const uint8_t *chunk, size_t len);
  * way only detectable during application, in which case @out is
  * untouched and the caller should fall back to the unpatched content. */
 bool patch_stream_finish(patch_stream_t *ps, uint8_t **out, size_t *out_len);
+
+/* As patch_stream_finish(), for a caller that owns the source: *buf, of
+ * *len bytes, allocated with malloc() and given to
+ * patch_stream_set_source(). On success *buf and *len are the target -
+ * an IPS patch is applied to the source where it lies, resized if the
+ * target is longer, any other the finished target, the source freed.
+ * On failure, and for an empty target, which is not handed back, *buf
+ * is still the unpatched source. */
+bool patch_stream_finish_into(patch_stream_t *ps, uint8_t **buf,
+      size_t *len);
 
 /* True once the stream can no longer produce a result - a malformed
  * patch, or an allocation that failed.  A caller feeding a long source

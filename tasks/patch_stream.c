@@ -330,12 +330,8 @@ patch_stream_t *patch_stream_ips_open(const uint8_t *patch, size_t patch_len,
    ps->recs     = recs;
    ps->recs_len = n;
 
-   if (!patch_stream_reserve(ps, ps->tgt_len))
-   {
-      patch_stream_free(ps);
-      return NULL;
-   }
-
+   /* The target is taken by the first copy-through, not here: a source
+    * patched in place (patch_stream_finish_into()) never needs one */
    return ps;
 }
 
@@ -365,11 +361,82 @@ static void patch_stream_ips_overlay(patch_stream_t *ps, size_t lo, size_t hi)
    }
 }
 
+/* The records over [lo, hi) of a target at @dst that holds it all */
+static void patch_stream_ips_overlay_into(const patch_stream_t *ps,
+      uint8_t *dst, size_t lo, size_t hi)
+{
+   size_t i;
+
+   for (i = 0; i < ps->recs_len; i++)
+   {
+      const struct patch_stream_rec *r = &ps->recs[i];
+      size_t                         a = r->addr;
+      size_t                         b = (size_t)r->addr + r->len;
+      size_t                         x = (a < lo) ? lo : a;
+      size_t                         y = (b < hi) ? b  : hi;
+
+      if (x >= y)
+         continue;
+      if (r->rle)
+         memset(dst + x, r->rle_val, y - x);
+      else
+         memcpy(dst + x, ps->patch + r->off + (x - a), y - x);
+   }
+}
+
+/* A source read in place so far is copied through to the target after
+ * all, with the records over it: from here the target is built as the
+ * source arrives */
+static bool patch_stream_ips_catch_up(patch_stream_t *ps)
+{
+   const uint8_t *base = ps->src_base;
+   size_t         upto = ps->src_seen < ps->src_len
+         ? ps->src_seen : ps->src_len;
+
+   ps->src_base = NULL;
+   if (!patch_stream_reserve(ps, ps->tgt_len))
+   {
+      ps->failed = 1;
+      return false;
+   }
+   if (upto)
+   {
+      if (!patch_stream_put(ps, 0, base, upto))
+      {
+         ps->failed = 1;
+         return false;
+      }
+      patch_stream_ips_overlay(ps, 0, upto);
+   }
+   return true;
+}
+
 static size_t patch_stream_ips_feed(patch_stream_t *ps,
       const uint8_t *chunk, size_t len)
 {
-   size_t at   = ps->src_seen;
+   size_t at;
    size_t copy = len;
+
+   if (ps->src_base)
+   {
+      /* Where the source lies whole, nothing is copied yet: the
+       * records go on it in place when it is finished */
+      if (chunk == ps->src_base + ps->src_seen)
+      {
+         ps->src_seen += len;
+         return len;
+      }
+      if (!patch_stream_ips_catch_up(ps))
+         return 0;
+   }
+   else if (!ps->out_cap && !patch_stream_reserve(ps, ps->tgt_len))
+   {
+      /* the whole target at once, as the first copy-through */
+      ps->failed = 1;
+      return 0;
+   }
+
+   at = ps->src_seen;
 
    if (at >= ps->src_len)
       copy = 0;
@@ -393,6 +460,9 @@ static size_t patch_stream_ips_feed(patch_stream_t *ps,
 static bool patch_stream_ips_finish(patch_stream_t *ps,
       uint8_t **out, size_t *out_len)
 {
+   if (ps->src_base && !patch_stream_ips_catch_up(ps))
+      return false;
+
    /* A source that delivered fewer bytes than declared - or none at
     * all, for a patch that is pure insertion - leaves a gap the
     * copy-through never covered.  Zero it and overlay the records that
@@ -1202,9 +1272,51 @@ void patch_stream_set_source(patch_stream_t *ps, const uint8_t *base)
       return;
    }
 #endif
-   /* IPS keeps no source: it writes the target as the source arrives */
-   if (ps->fmt != PATCH_STREAM_IPS)
-      ps->src_base = base;
+   ps->src_base = base;
+}
+
+bool patch_stream_finish_into(patch_stream_t *ps, uint8_t **buf,
+      size_t *len)
+{
+   uint8_t *out     = NULL;
+   size_t   out_len = 0;
+
+   if (!ps || !buf || !*buf || !len)
+      return false;
+
+   if (     ps->fmt == PATCH_STREAM_IPS
+         && ps->src_base == *buf
+         && !ps->failed
+         && ps->src_seen >= ps->src_len
+         && ps->src_len  <= *len)
+   {
+      /* The target is the source with the records on it: put them there */
+      uint8_t *dst = *buf;
+      size_t   tgt = ps->tgt_len;
+
+      /* nothing to hand back, as the copying finish has none */
+      if (!tgt)
+         return false;
+      if (tgt > *len)
+      {
+         if (!(dst = (uint8_t*)realloc(dst, tgt)))
+            return false;
+         *buf         = dst;
+         ps->src_base = dst;
+      }
+      if (tgt > ps->src_len)
+         memset(dst + ps->src_len, 0, tgt - ps->src_len);
+      patch_stream_ips_overlay_into(ps, dst, 0, tgt);
+      *len = tgt;
+      return true;
+   }
+
+   if (!patch_stream_finish(ps, &out, &out_len) || !out)
+      return false;
+   free(*buf);
+   *buf = out;
+   *len = out_len;
+   return true;
 }
 
 void patch_stream_free(patch_stream_t *ps)

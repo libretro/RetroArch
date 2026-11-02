@@ -297,7 +297,8 @@ static void enc(uint8_t*b,size_t*o,uint64_t v){for(;;){uint8_t x=v&0x7f;v>>=7;if
 static uint32_t crc(const uint8_t*p,size_t n){static uint32_t T[256];static int I=0;uint32_t c;if(!I){uint32_t i,j;for(i=0;i<256;i++){c=i;for(j=0;j<8;j++)c=(c&1)?0xEDB88320u^(c>>1):c>>1;T[i]=c;}I=1;}c=~0u;while(n--)c=T[(c^*p++)&0xFF]^(c>>8);return ~c;}
 static size_t make_ups(uint8_t*pat,const uint8_t*src,size_t sl,uint8_t*tgt,size_t tl){size_t o=0,i=0;memcpy(pat,"UPS1",4);o=4;enc(pat,&o,sl);enc(pat,&o,tl);while(i<tl||i<sl){size_t run=0;while(i<tl){uint8_t s=i<sl?src[i]:0;if(s!=tgt[i])break;i++;run++;}enc(pat,&o,run);for(;;){uint8_t s=i<sl?src[i]:0,t=i<tl?tgt[i]:0,x=s^t;pat[o++]=x;i++;if(x==0)break;if(i>tl&&i>sl)break;}}{uint32_t sc=crc(src,sl),tc=crc(tgt,tl),pc;int k;for(k=0;k<4;k++)pat[o++]=sc>>(k*8);for(k=0;k<4;k++)pat[o++]=tc>>(k*8);pc=crc(pat,o);for(k=0;k<4;k++)pat[o++]=pc>>(k*8);}return o;}
 /* How a comparison feeds the source: 0 as a copy the stream keeps, 1 in
- * place (patch_stream_set_source() on the buffer fed from), 2 in place
+ * place (patch_stream_set_source() on a buffer of its own, which
+ * patch_stream_finish_into() then turns into the target), 2 in place
  * for the first half and then from another buffer, which must fall back
  * to the copy with what came before. The other buffer is freed as soon
  * as it is fed, so a stream still reading it is caught under ASan. */
@@ -308,6 +309,16 @@ static void feed_src(patch_stream_t*ps,const uint8_t*src,size_t sl,size_t chunk,
    while(p<sl){size_t n=chunk<sl-p?chunk:sl-p;
       patch_stream_feed(ps,(mode==2&&p>=half?alt:src)+p,n);p+=n;}
    free(alt);}
+/* Feed @src and finish into *out: false, and *out NULL, if refused */
+static int run_stream(patch_stream_t*ps,const uint8_t*src,size_t sl,size_t chunk,int mode,uint8_t**out,size_t*ol){
+   uint8_t*own;
+   *out=NULL;*ol=0;
+   if(!mode){feed_src(ps,src,sl,chunk,0);
+      if(!patch_stream_finish(ps,out,ol)){*out=NULL;return 0;}return 1;}
+   own=malloc(sl?sl:1);if(sl)memcpy(own,src,sl);
+   feed_src(ps,own,sl,chunk,mode);*ol=sl;
+   if(!patch_stream_finish_into(ps,&own,ol)){free(own);*out=NULL;*ol=0;return 0;}
+   *out=own;return 1;}
 
 static int cmp1(int fmt,const uint8_t*pat,size_t pl,const uint8_t*src,size_t sl,size_t chunk,int mode){
    uint8_t *os,*ss;uint64_t ol;size_t sl2;patch_stream_t*ps;
@@ -315,8 +326,10 @@ static int cmp1(int fmt,const uint8_t*pat,size_t pl,const uint8_t*src,size_t sl,
    if(fmt==0){oracle_ips(priv,pl,src,sl,&os,&ol);ps=patch_stream_ips_open(priv,pl,sl);}
    else{oracle_ups(priv,pl,src,sl,&os,&ol);ps=patch_stream_ups_open(priv,pl,sl);}
    if(!ps){free(os);free(priv);return 0;}
-   feed_src(ps,src,sl,chunk,mode);
-   if(!patch_stream_finish(ps,&ss,&sl2)){pstream_fail_note();free(os);patch_stream_free(ps);free(priv);return 1;}
+   if(!run_stream(ps,src,sl,chunk,mode,&ss,&sl2)){
+      /* finish_into() has no empty target to hand back */
+      if(mode&&!ol){free(os);patch_stream_free(ps);free(priv);return 0;}
+      pstream_fail_note();free(os);patch_stream_free(ps);free(priv);return 1;}
    {int bad=(sl2!=ol)||(ol&&memcmp(os,ss,ol));
     free(os);free(ss);patch_stream_free(ps);free(priv);return bad;}}
 /* A feed of one, two or three bytes at a time is for a source up to
@@ -429,9 +442,8 @@ static int run_bps(void)
          if(oracle_bps(priv,pl,src,sl,&os,&ol)!=PATCH_SUCCESS){ skipped++; free(priv); continue; }
          ps=patch_stream_bps_open(priv,pl,sl);
          if(!ps){ skipped++; free(os); free(priv); continue; }
-         feed_src(ps,src,sl,chunks[ci],(trial+ci)%3);
          total++;
-         if(!patch_stream_finish(ps,&ss,&sl2)){ fails++; printf("finish failed t=%d chunk=%zu\n",trial,chunks[ci]); patch_stream_free(ps); free(os); free(priv); continue; }
+         if(!run_stream(ps,src,sl,chunks[ci],(trial+ci)%3,&ss,&sl2)){ fails++; printf("finish failed t=%d chunk=%zu\n",trial,chunks[ci]); patch_stream_free(ps); free(os); free(priv); continue; }
          if(sl2!=ol||(ol&&memcmp(os,ss,ol))){ fails++;
             printf("MISMATCH t=%d chunk=%zu sl=%zu tl=%zu\n",trial,chunks[ci],sl,tl);
             for(k=0;k<ol&&k<8;k++) if(os[k]!=ss[k]){printf("  first diff@%zu %02x vs %02x\n",k,os[k],ss[k]);break;} }
@@ -1493,8 +1505,8 @@ static int run_xdelta(void)
       if (!ps)
       { printf("[FAIL] xdelta: open refused (chunk %lu)\n",
                (unsigned long)chunk); bad = 1; continue; }
-      feed_src(ps, xd_src, sizeof(xd_src), chunk, (int)(c / NCHUNK));
-      if (!patch_stream_finish(ps, &got, &got_len))
+      if (!run_stream(ps, xd_src, sizeof(xd_src), chunk, (int)(c / NCHUNK),
+               &got, &got_len))
       { printf("[FAIL] xdelta: finish refused (chunk %lu)\n",
                (unsigned long)chunk); bad = 1; }
       else if (got_len != whole_len || memcmp(got, whole, whole_len))
@@ -1658,6 +1670,33 @@ static int run_in_place(void)
    if (heap[2] < heap[1] + sl)
    { printf("[FAIL] BPS fallback took %lu bytes, a copy is %lu\n",
          (unsigned long)heap[2], (unsigned long)heap[0]); bad = 1; }
+   /* IPS: no target either, the records go on the source itself */
+   {
+      uint8_t *want = NULL;
+      uint64_t want_len = 0;
+      size_t   wtl;
+      pl = make_ips(pat, src, sl, &wtl);
+      oracle_ips(pat, pl, src, sl, &want, &want_len);
+      for (mode = 0; mode < 2; mode++)
+      {
+         uint8_t *own = malloc(sl), *was = own;
+         size_t   len = sl;
+         patch_stream_t *ps = patch_stream_ips_open(pat, pl, sl);
+         memcpy(own, src, sl);
+         heap[mode] = fed_heap(ps, own, sl, mode);
+         if (     !patch_stream_finish_into(ps, &own, &len)
+               || len != want_len || memcmp(own, want, len))
+         { printf("[FAIL] IPS fed in mode %d is wrong\n", mode); bad = 1; }
+         if (mode && wtl <= sl && own != was)
+         { printf("[FAIL] IPS in place moved the source\n"); bad = 1; }
+         free(own);
+         patch_stream_free(ps);
+      }
+      free(want);
+      if (heap[0] < heap[1] + sl)
+      { printf("[FAIL] IPS in place still took %lu bytes, copying %lu\n",
+            (unsigned long)heap[1], (unsigned long)heap[0]); bad = 1; }
+   }
 #ifdef HAVE_XDELTA
    for (mode = 0; mode < 2; mode++)
    {
@@ -1671,8 +1710,8 @@ static int run_in_place(void)
          (unsigned long)heap[1], (unsigned long)heap[0]); bad = 1; }
 #endif
    if (!bad)
-      printf("PASS: a 4 MiB BPS source and the xdelta source read in place,"
-            " no copy kept\n");
+      printf("PASS: a 4 MiB BPS and IPS source and the xdelta source read in"
+            " place, no copy kept, IPS patched where it lies\n");
    free(src); free(tgt); free(pat);
    return bad;
 }
