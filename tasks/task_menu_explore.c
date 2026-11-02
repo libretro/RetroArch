@@ -218,9 +218,15 @@ static void task_menu_explore_init_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
+/* A build the menu's teardown abandoned is winding down and installs
+ * nothing: it is not one in progress. Taken for one, Explore opened
+ * again meanwhile started no build and stayed on "Initialising list".
+ * The flag, not the handle, tells: the handle may already be gone. */
 static bool task_menu_explore_init_finder(retro_task_t *task, void *user_data)
 {
-   return (task && task->handler == task_menu_explore_init_handler);
+   return (    task
+            && task->handler == task_menu_explore_init_handler
+            && !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED));
 }
 
 bool task_push_menu_explore_init(const char *directory_playlist,

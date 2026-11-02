@@ -403,6 +403,62 @@ static void lane_labels(void)
       fprintf(stderr, "[pass] labels lane (%u rows)\n", rows);
 }
 
+/* Explore opened again while the build the menu's teardown abandoned
+ * is still winding down. That build installs nothing, and it was taken
+ * for one in progress, so no new build was started: Explore stayed on
+ * "Initialising list" until it was left and opened again. */
+static void lane_reopen(void)
+{
+   settings_t *settings       = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *menu_stack    = menu_list ? MENU_LIST_GET(menu_list, 0) : NULL;
+   file_list_t *buf           = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   char playlists[sizeof(settings->paths.directory_playlist)];
+   char database[sizeof(settings->paths.path_content_database)];
+   unsigned had               = failures;
+   unsigned i;
+
+   CHECK(menu_stack && buf, "no menu to build the Explore screen in");
+   if (!menu_stack || !buf)
+      return;
+   strlcpy(playlists, settings->paths.directory_playlist, sizeof(playlists));
+   strlcpy(database, settings->paths.path_content_database, sizeof(database));
+   strlcpy(settings->paths.directory_playlist, dir_playlists,
+         sizeof(settings->paths.directory_playlist));
+   strlcpy(settings->paths.path_content_database, dir_database,
+         sizeof(settings->paths.path_content_database));
+
+   menu_explore_free();
+   CHECK(task_push_menu_explore_init(dir_playlists, dir_database),
+         "the explore task was not pushed");
+   /* the menu goes, abandoning the build, and comes straight back */
+   menu_explore_cancel_init_task();
+   menu_entries_append(menu_stack, MENU_ENUM_LABEL_GOTO_EXPLORE_STR,
+         MENU_ENUM_LABEL_GOTO_EXPLORE_STR, MENU_ENUM_LABEL_GOTO_EXPLORE,
+         MENU_EXPLORE_TAB, 0, 0, NULL);
+   menu_entries_clear(buf);
+   menu_displaylist_explore(buf, settings);
+   for (i = 0; i < 2000 && menu_explore_init_in_progress(NULL); i++)
+   {
+      runloop_iterate();
+      task_queue_check();
+   }
+   CHECK(!menu_explore_init_in_progress(NULL), "the explore task did not finish");
+   CHECK(menu_explore_state_hash(NULL) != 0,
+         "Explore opened again during an abandoned build was left without "
+         "an index");
+
+   menu_entries_clear(buf);
+   menu_explore_free();
+   strlcpy(settings->paths.directory_playlist, playlists,
+         sizeof(settings->paths.directory_playlist));
+   strlcpy(settings->paths.path_content_database, database,
+         sizeof(settings->paths.path_content_database));
+   if (failures == had)
+      fprintf(stderr, "[pass] reopen lane\n");
+}
+
 /* ------------------------------------------------------------------ */
 
 int main(int argc, char *argv[])
@@ -478,6 +534,7 @@ int main(int argc, char *argv[])
    lane_oracle();
    lane_task();
    lane_labels();
+   lane_reopen();
 
    main_exit(NULL);
 
