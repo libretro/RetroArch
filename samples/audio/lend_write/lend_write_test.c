@@ -1,5 +1,6 @@
 /* The driver lend pair end to end: with write_begin/write_end on the
- * driver, the threaded pipeline produces the resampler's output and
+ * driver, the pipeline - threaded, or inline on the core's thread -
+ * produces the resampler's output and
  * the format conversion inside the driver's own buffer and publishes
  * it, and write() is never called; the published stream is compared
  * bit for bit against the same input through the same driver with the
@@ -91,6 +92,8 @@ static bool test_start(void *data, bool shutdown)
 { (void)data; (void)shutdown; return true; }
 static void test_free(void *data) { (void)data; }
 
+static bool threaded = true;
+
 static void run_stream(bool dev_float, bool with_lend, unsigned in_rate,
       size_t cap, uint8_t *out, size_t *out_bytes)
 {
@@ -106,7 +109,7 @@ static void run_stream(bool dev_float, bool with_lend, unsigned in_rate,
    memset(settings, 0, sizeof(*settings));
    settings->bools.audio_enable             = true;
    settings->bools.audio_sync               = true;
-   settings->bools.audio_threaded_pipeline  = true;
+   settings->bools.audio_threaded_pipeline  = threaded;
    settings->uints.audio_output_sample_rate = 48000;
    settings->uints.audio_latency            = 64;
    settings->floats.slowmotion_ratio        = 1.0f;
@@ -127,7 +130,15 @@ static void run_stream(bool dev_float, bool with_lend, unsigned in_rate,
    begin_calls = end_calls = write_calls = 0;
    memset(captured, 0, sizeof(captured));
    audio_driver_sample_batch(source_i, FRAMES);
-   while (retro_spsc_read_avail(&st->pipe_ring))
+   if (threaded != st->pipe_threaded)
+   {
+      printf("FAIL: the pipeline is %s, %s asked for\n",
+            st->pipe_threaded ? "threaded" : "inline",
+            threaded ? "threaded" : "inline");
+      failures++;
+   }
+   /* Inline, the batch above was flushed as it came */
+   while (st->pipe_threaded && retro_spsc_read_avail(&st->pipe_ring))
    {
       if (++passes > FRAMES)
          abort();
@@ -193,6 +204,15 @@ int main(void)
    compare_case("s16 device, unity",        false, 48000, 0, true);
    /* A driver that cuts every span short: the staged write covers it. */
    compare_case("short spans",              true,  32000, 64, true);
+
+   /* The same, inline: the flush on the core's thread borrows the
+    * driver's buffer too, after waiting for the room write() would
+    * have waited for. */
+   threaded = false;
+   compare_case("inline, float device, 32k -> 48k", true,  32000, 0, false);
+   compare_case("inline, s16 device, 32k -> 48k",   false, 32000, 0, false);
+   compare_case("inline, s16 device, unity",        false, 48000, 0, true);
+   compare_case("inline, short spans",              true,  32000, 64, true);
 
    if (failures)
    {

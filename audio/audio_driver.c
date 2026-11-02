@@ -4135,21 +4135,27 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             src_data.input_frames, (cap_f < cap_i) ? cap_f : cap_i);
    }
 
-   /* Threaded stereo path: borrow the driver's own buffer for the
-    * output stage, so what the write would copy into it is produced
-    * there. Taken after the pipe's room wait, which asked for this
-    * same bound; a span cut short by the driver's wrap falls back to
-    * the staged write, which splits the copy. */
-#ifdef HAVE_THREADS
-   if (     audio_st->pipe_threaded
-         && audio->write_begin && audio->write_end
+   /* Stereo output: borrow the driver's own buffer for the output
+    * stage, so what the write would copy into it is produced there.
+    * The threaded consumer takes it after the pipe's room wait, which
+    * asked for this same bound. Inline, a blocking device is waited on
+    * here for the whole chunk, as write() would have waited for it
+    * piece by piece. A span cut short by the driver's wrap, or no room
+    * after a bounded wait, falls back to the staged write, which
+    * splits the copy and blocks as it always has. */
+   if (     audio->write_begin && audio->write_end
          && audio_st->out_channels <= 2
          && !(audio_st->virtualize && audio_st->virt_buf))
    {
       size_t fb   = audio_driver_dev_frame_bytes(audio_st);
       size_t need = audio_driver_output_bound(src_data.ratio,
             src_data.input_frames) * fb;
-      size_t got  = audio->write_begin(audio_st->context_audio_data,
+      size_t got;
+      if (     !audio_st->pipe_threaded
+            && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
+            && audio->wait_writable)
+         audio->wait_writable(audio_st->context_audio_data, need);
+      got         = audio->write_begin(audio_st->context_audio_data,
             need, &lend);
       if (!lend || got < need)
       {
@@ -4160,7 +4166,6 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       else
          lend_bytes = got;
    }
-#endif
    out_f = (lend && (aflags & AUDIO_FLAG_USE_FLOAT))
          ? (float*)lend : audio_st->output_samples_buf;
    out_i = (lend && !(aflags & AUDIO_FLAG_USE_FLOAT))
