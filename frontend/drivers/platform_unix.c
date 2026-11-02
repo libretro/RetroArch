@@ -4553,13 +4553,16 @@ static bool android_has_vulkan_1_1(JNIEnv *env, jobject activity)
 }
 #endif
 
-/* First start: no config file exists yet.  The built-in defaults stay
- * what they always were (OpenGL ES, OpenSL ES, 128 ms), since a config
- * saved with "save minimal" leaves out every key that matches them and
- * changing them would change those installs on update.  A fresh
- * install instead gets the modern drivers set as its own values when
- * the device has them, and they are saved with the rest of its
- * config.  Nothing here runs again once a config exists.
+/* The drivers and audio latency this device is best served by, set as
+ * the settings' own values.  Applied on a fresh install's first start,
+ * when no config file exists yet, and on "Reset to Default
+ * Configuration"; never to a config that is only being loaded.
+ *
+ * The built-in defaults stay what they always were (OpenGL ES, OpenSL
+ * ES, 128 ms): a config saved with "save minimal" leaves out every key
+ * that matches them, so changing them would move those installs to new
+ * drivers on update.  Set as values, these are saved with the rest of
+ * the config whatever the save mode.
  *
  * - Vulkan when the device declares Vulkan 1.1.  Devices with only a
  *   1.0 driver, or none, keep OpenGL ES, as before.
@@ -4567,7 +4570,7 @@ static bool android_has_vulkan_1_1(JNIEnv *env, jobject activity)
  *   bugs that make Oboe use OpenSL ES there; older releases keep
  *   OpenSL ES, as before.  With AAudio the latency drops to 64 ms,
  *   unless a device quirk above chose one. */
-void android_apply_first_run_defaults(settings_t *settings)
+void android_apply_device_defaults(settings_t *settings)
 {
    int32_t sdk = 0;
 
@@ -4587,7 +4590,7 @@ void android_apply_first_run_defaults(settings_t *settings)
       {
          configuration_set_string(settings,
                settings->arrays.video_driver, "vulkan");
-         RARCH_LOG("[Config] First start: device has Vulkan 1.1, "
+         RARCH_LOG("[Config] Device defaults: Vulkan 1.1, "
                "video driver \"vulkan\".\n");
       }
    }
@@ -4602,7 +4605,7 @@ void android_apply_first_run_defaults(settings_t *settings)
       if (!(g_platform_android_flags & PLAT_ANDROID_FLAG_LATENCY_QUIRK))
          configuration_set_uint(settings,
                settings->uints.audio_latency, 64);
-      RARCH_LOG("[Config] First start: Android API %d, audio driver "
+      RARCH_LOG("[Config] Device defaults: Android API %d, audio driver "
             "\"aaudio\", latency %u ms.\n",
             (int)sdk, settings->uints.audio_latency);
    }

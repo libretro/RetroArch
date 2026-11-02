@@ -5641,6 +5641,11 @@ bool command_event(enum event_command cmd, void *data)
 #endif
       case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
          config_set_defaults(config_get_ptr());
+#ifdef ANDROID
+         /* The same drivers a fresh install on this device gets, not
+          * the built-in ones the oldest devices need. */
+         android_apply_device_defaults(config_get_ptr());
+#endif
          /* a reset forgets the controllers too, which they get back
           * when the joypad driver next starts */
          input_config_forget_controllers();
