@@ -56,9 +56,6 @@
  *   compression speed */
 #define RZIP_COMPRESSION_LEVEL 6
 
-/* Default chunk size: 128kb */
-#define RZIP_DEFAULT_CHUNK_SIZE 131072
-
 /* Upper bound on the per-chunk buffer size a crafted RZIP file is
  * allowed to request.  The default is 128 KiB; 64 MiB gives plenty
  * of headroom for legitimate archives while preventing a malformed
@@ -618,7 +615,10 @@ rzipstream_t* rzipstream_open(const char *path, unsigned mode)
 
 /* Reads and decompresses the next chunk of data
  * in the RZIP file */
-static bool rzipstream_read_chunk(rzipstream_t *stream)
+/* Inflates the next chunk into @dst, at most @dst_size bytes of it,
+ * and says how many in @written. */
+static bool rzipstream_inflate_chunk(rzipstream_t *stream,
+      uint8_t *dst, uint32_t dst_size, uint32_t *written)
 {
    unsigned i;
    uint8_t chunk_header_bytes[RZIP_CHUNK_HEADER_SIZE];
@@ -685,8 +685,7 @@ static bool rzipstream_read_chunk(rzipstream_t *stream)
          stream->in_buf, compressed_chunk_size);
 
    stream->inflate_backend->set_out(
-         stream->inflate_stream,
-         stream->out_buf, stream->out_buf_size);
+         stream->inflate_stream, dst, dst_size);
 
    /* Note: We have to set 'flush == true' here, otherwise we
     * can't guarantee that the entire chunk will be written
@@ -713,14 +712,24 @@ static bool rzipstream_read_chunk(rzipstream_t *stream)
       return false;
 
    if (   (inflate_written == 0)
-       || (inflate_written > stream->out_buf_size))
+       || (inflate_written > dst_size))
       return false;
 
+   *written = inflate_written;
+   return true;
+}
+
+/* The next chunk into the output buffer, to be read out of it */
+static bool rzipstream_read_chunk(rzipstream_t *stream)
+{
+   uint32_t written = 0;
+   if (!rzipstream_inflate_chunk(stream,
+            stream->out_buf, stream->out_buf_size, &written))
+      return false;
    /* Record current output buffer occupancy
     * and reset pointer */
-   stream->out_buf_occupancy = inflate_written;
+   stream->out_buf_occupancy = written;
    stream->out_buf_ptr       = 0;
-
    return true;
 }
 
@@ -750,6 +759,26 @@ int64_t rzipstream_read(rzipstream_t *stream, void *data, int64_t len)
        * of the file */
       if (stream->virtual_ptr >= stream->size)
          return data_read;
+
+      /* Fast path, the read-side mirror of the write's: nothing left
+       * in the output buffer and a whole chunk still wanted - the
+       * chunk is inflated straight into the caller's buffer instead of
+       * into the output buffer and copied out of it. A written chunk
+       * is never longer than chunk_size; one that would be is corrupt
+       * and fails here as it would below. */
+      if (   (stream->out_buf_ptr >= stream->out_buf_occupancy)
+          && (_len >= (int64_t)stream->chunk_size))
+      {
+         uint32_t written = 0;
+         if (!rzipstream_inflate_chunk(stream, data_ptr,
+                  stream->chunk_size, &written))
+            return -1;
+         data_ptr            += written;
+         _len                -= written;
+         stream->virtual_ptr += written;
+         data_read           += written;
+         continue;
+      }
 
       /* If everything in the output buffer has already
        * been read, grab and extract the next chunk

@@ -81,6 +81,73 @@ static bool read_back(const char *path, const uint8_t *data, size_t len, double 
    return ok;
 }
 
+/* Written through the stream in writes of @quantum bytes, as the save
+ * task writes */
+static bool write_in(const char *path, const uint8_t *data, size_t len,
+      size_t quantum)
+{
+   size_t done = 0;
+   rzipstream_t *st = rzipstream_open(path, RETRO_VFS_FILE_ACCESS_WRITE);
+   if (!st)
+      return false;
+   while (done < len)
+   {
+      size_t q = len - done < quantum ? len - done : quantum;
+      if (rzipstream_write(st, data + done, (int64_t)q) != (int64_t)q)
+      {
+         rzipstream_close(st);
+         return false;
+      }
+      done += q;
+   }
+   return rzipstream_close(st) == 0;
+}
+
+/* Read back through the stream in reads of @quantum bytes - whole
+ * chunks go straight into the caller's buffer, the rest through the
+ * stream's own - rewound once a third of the way in */
+static bool read_in(const char *path, const uint8_t *data, size_t len,
+      size_t quantum)
+{
+   size_t done = 0;
+   bool ok = true, rewound = false;
+   uint8_t *buf = (uint8_t*)malloc(len + 1);
+   rzipstream_t *st = rzipstream_open(path, RETRO_VFS_FILE_ACCESS_READ);
+   if (!st || !buf)
+      ok = false;
+   while (ok && done < len)
+   {
+      size_t q = len - done < quantum ? len - done : quantum;
+      ok = rzipstream_read(st, buf + done, (int64_t)q) == (int64_t)q;
+      done += q;
+      if (ok && !rewound && done > len / 3)
+      {
+         rewound = true;
+         rzipstream_rewind(st);
+         done = 0;
+      }
+   }
+   /* and nothing past the end */
+   ok = ok && rzipstream_read(st, buf, 1) == 0
+           && memcmp(buf, data, len) == 0;
+   if (st)
+      rzipstream_close(st);
+   free(buf);
+   return ok;
+}
+
+static bool same_file(const char *a, const char *b)
+{
+   void *x = NULL, *y = NULL;
+   int64_t nx = 0, ny = 0;
+   bool same = filestream_read_file(a, &x, &nx)
+            && filestream_read_file(b, &y, &ny)
+            && nx == ny && memcmp(x, y, (size_t)nx) == 0;
+   free(x);
+   free(y);
+   return same;
+}
+
 static uint8_t header_version(const char *path)
 {
    uint8_t h[8] = {0};
@@ -122,6 +189,35 @@ int main(void)
    CHECK(read_back(p2, data, n, &r2), "a zstd file did not read with deflate set for writing");
    rzipstream_set_write_codec(RZIP_CODEC_ZSTD);
    CHECK(read_back(p1, data, n, &r1), "a deflate file did not read with zstd set for writing");
+
+   printf("   read through the stream in any quantum, whole chunks or not\n");
+   {
+      static const size_t quanta[] = { 1, 4095, 100 * 1024,
+         RZIP_DEFAULT_CHUNK_SIZE, RZIP_DEFAULT_CHUNK_SIZE + 1,
+         2 * RZIP_DEFAULT_CHUNK_SIZE, 5 * RZIP_DEFAULT_CHUNK_SIZE / 2,
+         1u << 20 };
+      size_t q, odd = n - 777; /* a short last chunk */
+      for (q = 0; q < sizeof(quanta) / sizeof(quanta[0]); q++)
+      {
+         size_t len = quanta[q] == 1 ? 200000 : odd;
+         CHECK(write_in(p1, data, len, 1u << 20)
+               && read_in(p1, data, len, quanta[q]),
+               "deflate read in %u-byte reads", (unsigned)quanta[q]);
+      }
+      rzipstream_set_write_codec(RZIP_CODEC_ZSTD);
+      CHECK(write_in(p2, data, odd, 1u << 20)
+            && read_in(p2, data, odd, 2 * RZIP_DEFAULT_CHUNK_SIZE)
+            && read_in(p2, data, odd, 100 * 1024),
+            "zstd read in whole and partial chunks");
+
+      printf("   any write quantum makes the same file\n");
+      rzipstream_set_write_codec(RZIP_CODEC_DEFLATE);
+      CHECK(write_in(p1, data, odd, 100 * 1024)
+            && write_in(pr, data, odd, 2 * RZIP_DEFAULT_CHUNK_SIZE)
+            && same_file(p1, pr),
+            "100 KiB and two-chunk writes made different files");
+      filestream_delete(pr);
+   }
 
    printf("   the stream reports compression, the raw file does not\n");
    st = rzipstream_open(p2, RETRO_VFS_FILE_ACCESS_READ);

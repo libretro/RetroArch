@@ -131,6 +131,14 @@ char* rzipstream_gets(rzipstream_t *stream, char *s, size_t len);
  * Returns false in the event of an error */
 bool rzipstream_read_file(const char *path, void **buf, int64_t *len);
 
+/* The uncompressed size of each chunk a written stream is cut into.
+ *
+ * Exposed for writers: a write of whole chunks is compressed straight
+ * from the caller's buffer, and one of two or more across the worker
+ * pool, where anything else is copied into the stream's buffer first
+ * and compressed one chunk at a time. */
+#define RZIP_DEFAULT_CHUNK_SIZE 131072
+
 /* Size of the buffer rzipstream_matches_buf() decompresses through.
  *
  * Exposed so a test can aim at the real chunk boundary rather than a

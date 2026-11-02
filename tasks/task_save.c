@@ -74,6 +74,19 @@
 #define SAVE_STATE_CHUNK 100 * 1024
 #endif
 
+/* The quantum for a compressed save: two whole rzip chunks, so each
+ * write is compressed straight from the state, the two chunks across
+ * the worker pool, instead of being copied into the stream's buffer
+ * and compressed one chunk at a time. What it writes to the device is
+ * the compressed size, which for a savestate is well under the
+ * uncompressed quantum above. */
+#ifdef __EMSCRIPTEN__
+/* Already a multiple of the chunk there */
+#define SAVE_STATE_RZIP_CHUNK SAVE_STATE_CHUNK
+#else
+#define SAVE_STATE_RZIP_CHUNK (2 * RZIP_DEFAULT_CHUNK_SIZE)
+#endif
+
 /* Wall-clock budget for one save/load tick, in microseconds.
    The handler keeps transferring SAVE_STATE_CHUNK quanta until this
    is exhausted, then yields.  ~12% of a 60Hz frame.
@@ -975,7 +988,9 @@ static void task_save_handler(retro_task_t *task)
          + SAVE_STATE_TICK_BUDGET_US;
       do
       {
-         remaining = MIN(state->size - state->written, SAVE_STATE_CHUNK);
+         remaining = MIN(state->size - state->written,
+               (state->flags & SAVE_TASK_FLAG_COMPRESS_FILES)
+               ? SAVE_STATE_RZIP_CHUNK : SAVE_STATE_CHUNK);
          written   = (int)intfstream_write(state->file,
                (uint8_t*)state->data + state->written, remaining);
          if (written != remaining)
@@ -1228,7 +1243,12 @@ static void task_load_handler(retro_task_t *task)
          + SAVE_STATE_TICK_BUDGET_US;
       do
       {
-         remaining  = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
+         /* A compressed file in whole chunks, inflated straight
+          * into the state; what is read from the device is the
+          * compressed size */
+         remaining  = MIN(state->size - state->bytes_read,
+               intfstream_is_compressed(state->file)
+               ? SAVE_STATE_RZIP_CHUNK : SAVE_STATE_CHUNK);
          bytes_read = intfstream_read(state->file,
                (uint8_t*)state->data + state->bytes_read, remaining);
          if (bytes_read != remaining)
