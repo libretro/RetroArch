@@ -2299,8 +2299,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_RESET, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET },
       { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_RESET_ALL, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET_ALL },
       { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_EDIT, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT },
-      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR },
       { MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_X },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_Y },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_WIDTH },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_HEIGHT },
       { MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY, MENU_ENUM_SUBLABEL_VIDEO_MENU_DISPLAY },
       { MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS, MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS },
       { MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER, MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER },
@@ -3047,12 +3051,33 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       unsigned hi  = (unsigned)ARRAY_SIZE(sublabel_map);
       unsigned m;
       /* A row a screen, each with an enum of its own */
-      if (     cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR
-            && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR_LAST)
-         key = MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR;
-      else if (cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
+      if (     cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
             && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY_LAST)
+      {
+#ifdef ANDROID
          key = MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY;
+#else
+         cbs->sublabel_enum = MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY_DESKTOP;
+         BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_from_enum);
+         return 0;
+#endif
+      }
+      else if (cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN
+            && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT_LAST)
+      {
+         static const enum msg_hash_enums windows[] = {
+            MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+            MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X,
+            MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y,
+            MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH,
+            MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT
+         };
+         unsigned i;
+         for (i = 0; i < ARRAY_SIZE(windows); i++)
+            if (     cbs->enum_idx >= windows[i]
+                  && cbs->enum_idx <= windows[i] + RETRO_VIDEO_VIEWS_MAX)
+               key = windows[i];
+      }
       while (lo < hi)
       {
          unsigned mid = lo + ((hi - lo) >> 1);

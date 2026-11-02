@@ -1184,16 +1184,28 @@ MSG_HASH(
    "deferred_video_dlss_nr_settings_list"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE,
-   "video_screen%u_window_mode"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR,
-   "video_screen%u_window_monitor"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY,
    "video_screen%u_display"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+   "video_screen%u_window_fullscreen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X,
+   "video_screen%u_window_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y,
+   "video_screen%u_window_y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH,
+   "video_screen%u_window_width"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT,
+   "video_screen%u_window_height"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY,

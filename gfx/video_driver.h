@@ -1773,6 +1773,17 @@ typedef struct video_window_displays
    unsigned held;                 /* the app thread's: slot + 1 */
 } video_window_displays_t;
 
+/* The app thread's route for a redraw, which may run on the video
+ * thread: video_window_displays_t's three slots */
+typedef struct video_windows_routes
+{
+   video_windows_route_t slot[3];
+   retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
+   unsigned next;                 /* the app thread's: slot to fill */
+   unsigned last;                 /* the app thread's: slot + 1 */
+   unsigned held;                 /* the redraw's: slot + 1 */
+} video_windows_routes_t;
+
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving
  * anything after it; the count is what the publish and the read walk.
@@ -2138,9 +2149,10 @@ typedef struct
    /* The video thread's redraw of the cached frame fills its own. */
    video_windows_frame_t windows_redraw;
 #endif
-   /* The main thread's last route, which a redraw keeps; written only
-    * when it changes, as Win32's redraws run beside the main thread */
+   /* The main thread's last route, and the redraw's copy of it,
+    * handed over when it changes */
    video_windows_route_t windows_route;
+   video_windows_routes_t windows_routes;
    /* RetroArch's moves between displays; app thread */
    video_windows_host_t windows_host;
    /* Each UI layer's target as this frame laid it out, and the next */

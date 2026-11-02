@@ -9287,6 +9287,41 @@ static unsigned menu_displaylist_parse_settings_rows(
    return count;
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+/* Game Screen @screen's own window: fullscreen and size, and where it
+ * goes once it has a size */
+static unsigned menu_displaylist_video_screen_window_rows(
+      file_list_t *list, settings_t *settings, unsigned screen)
+{
+   static const struct
+   {
+      enum msg_hash_enums first;
+      enum menu_displaylist_parse_type type;
+      bool sized;
+   } rows[] = {
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN, PARSE_ONLY_BOOL, false },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH,      PARSE_ONLY_UINT, false },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT,     PARSE_ONLY_UINT, false },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X,          PARSE_ONLY_INT,  true  },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y,          PARSE_ONLY_INT,  true  },
+   };
+   unsigned i;
+   unsigned count = 0;
+   if (!menu_setting_video_screen_window_own(screen))
+      return 0;
+   for (i = 0; i < ARRAY_SIZE(rows); i++)
+   {
+      if (rows[i].sized && !settings->uints.video_screen_window_dims[screen])
+         continue;
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+               (enum msg_hash_enums)(rows[i].first + screen),
+               rows[i].type, false) == 0)
+         count++;
+   }
+   return count;
+}
+#endif
+
 /* Monitor Index offers Auto and the monitors the display server
  * lists, plus the index chosen now whatever it is; a server without
  * a list keeps the setting's full range. The output table lives in
@@ -13125,8 +13160,6 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
-#ifdef ANDROID
-            /* Only Android places screens and the menu */
             if (settings->bools.video_windows_enable)
             {
                unsigned screens = menu_setting_video_screens();
@@ -13139,7 +13172,13 @@ unsigned menu_displaylist_build_list(
                            (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + screen),
                            PARSE_ONLY_STRING_OPTIONS, false) == 0)
                      count++;
+#ifndef ANDROID
+                  count += menu_displaylist_video_screen_window_rows(list,
+                        settings, screen);
+#endif
                }
+#ifdef ANDROID
+               /* Only Android places the menu and notifications */
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_MENU_FOLLOWS,
                         PARSE_ONLY_UINT, false) == 0)
@@ -13154,8 +13193,8 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_NOTIFICATIONS_WINDOW,
                         PARSE_ONLY_UINT, false) == 0)
                   count++;
-            }
 #endif
+            }
          }
 #endif
 #ifdef HAVE_OPENXR

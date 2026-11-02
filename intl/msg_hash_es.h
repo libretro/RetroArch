@@ -2636,8 +2636,6 @@ static const struct
    char s_52e3d6ea[52];
    char s_f387bafb[26];
    char s_7f065006[9];
-   char s_5c12d979[12];
-   char s_32cb293c[22];
    char s_284873ec[17];
    char s_3220e9be[8];
    char s_3242e549[21];
@@ -2755,12 +2753,10 @@ static const struct
    char s_84c46931[29];
    char s_ebf10493[8];
    char s_d15bd14f[37];
-   char s_539d5393[9];
    char s_a64b3a0b[24];
    char s_83e8dc72[25];
    char s_7cf985f0[41];
    char s_0f5266ce[19];
-   char s_0f97fdc1[7];
    char s_ea2674d3[41];
    char s_ea2674d4[39];
    char s_2d8cb7ce[23];
@@ -4221,7 +4217,6 @@ static const struct
    char s_58c80718[409];
    char s_dc6f9d69[71];
    char s_417085f4[52];
-   char s_1bcf70a7[139];
    char s_2e2ca41a[330];
    char s_f48b1fac[59];
    char s_f4ad1b37[95];
@@ -7853,8 +7848,6 @@ static const struct
    "Simulaci\303\263n de escalonamiento de l\303\255neas de barrido",
    "Disposici\303\263n de pantallas",
    "Pantalla",
-   "Pantalla %u",
-   "Imagen de pantalla %u",
    "Editar pantallas",
    "Cabeceo",
    "Restablecer pantalla",
@@ -7974,12 +7967,10 @@ static const struct
    "Pantalla completa en ventana",
    "Ventana",
    "Ventanas de pantallas independientes",
-   "Acoplada",
    "Alto m\303\241ximo de ventana",
    "Ancho m\303\241ximo de ventana",
    "Usar un tama\303\261o de ventana personalizado",
    "Alto de la ventana",
-   "Oculta",
    "Desplazamiento horizontal de la pantalla",
    "Desplazamiento vertical de la pantalla",
    "Opacidad de la ventana",
@@ -10555,8 +10546,6 @@ static const struct
    "de las mismas en funci\303\263n de los subfotogramas que existan.",
    "Establece la forma de colocar las pantallas en sistemas multipantalla.",
    "Selecciona la pantalla flotante que se modificar\303\241.",
-   "Acoplada mantiene esta pantalla con el resto. Independiente la muestra en una ventana o pantalla"
-   " aparte. Oculta no mostrar\303\241 esa pantalla.",
    "Cierra el men\303\272 y permite reubicar las pantallas y el men\303\272 de las gafas con los man"
    "dos: usa el agarre para agarrar elementos, el gatillo para inclinar, el stick para cambiar la di"
    "stancia y el tama\303\261o, el stick de la mano libre para girar e inclinar, el bot\303\263n pri"
@@ -11518,7 +11507,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (272604u
+      (sizeof(msg_hash_es_blob) == (272415u
 #ifdef ANDROID
        + 329u
 #endif
@@ -14717,8 +14706,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_RESET,
@@ -14836,12 +14823,10 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -16286,7 +16271,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_EDIT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_PITCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_RESET,

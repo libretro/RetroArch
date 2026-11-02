@@ -128,6 +128,12 @@ void menu_setting_video_screen_display_values(void);
  * the core has */
 unsigned menu_setting_video_screens(void);
 
+#ifndef ANDROID
+/* Game Screen @screen has a window of its own by its Display setting
+ * and the displays listed now. App thread. */
+bool menu_setting_video_screen_window_own(unsigned screen);
+#endif
+
 /* Whether Menu Follows offers this value: a screen the menu lists, or
  * Separate */
 bool menu_setting_video_menu_follows_offered(unsigned follows);

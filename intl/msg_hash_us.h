@@ -7890,16 +7890,8 @@ MSG_HASH(
    "Horizontal"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
-   "Attached"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SEPARATE,
    "Separate"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
-   "Hidden"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE_ANDROID,
@@ -7910,28 +7902,56 @@ MSG_HASH(
    "Let game screens and the menu use other displays. Off keeps everything in one window."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
-   "Screen %u"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE,
-   "Attached keeps this screen with the others. Separate puts it on a window or display of its own. Hidden leaves it out."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MONITOR,
-   "Screen %u Display"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR,
-   "Where this screen goes when it has a window of its own. Auto picks a second display. The display RetroArch is on keeps the screen attached."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_DISPLAY,
    "Game Screen %u Display"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY,
    "The display this game screen appears on. Auto picks one; Off leaves it out."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY_DESKTOP,
+   "Where this game screen appears: in the main window, in a window of its own on a monitor, or nowhere. Auto keeps Game Screen 1 in the main window and gives the others a window on another monitor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+   "Game Screen %u Fullscreen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+   "Fill the monitor with this game screen's window."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_X,
+   "Game Screen %u Window X"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_X,
+   "Where this game screen's window starts from the left of the desktop, in pixels."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_Y,
+   "Game Screen %u Window Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_Y,
+   "Where this game screen's window starts from the top of the desktop, in pixels."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_WIDTH,
+   "Game Screen %u Window Width"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_WIDTH,
+   "The width of this game screen's window. Auto sizes it."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_HEIGHT,
+   "Game Screen %u Window Height"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_HEIGHT,
+   "The height of this game screen's window. Auto sizes it."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MENU_DISPLAY,
@@ -7948,6 +7968,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_DISPLAY,
    "Display: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_MAIN,
+   "Main Window"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTIFICATIONS_WITH_GAME,

@@ -310,7 +310,6 @@ typedef struct settings
 #ifdef HAVE_VIDEO_WINDOWS
       unsigned video_screen_window_pos[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_screen_window_dims[RETRO_VIDEO_VIEWS_MAX];
-      unsigned video_screen_window_monitor[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_menu_follows;
       unsigned video_notifications_window;
 #endif
@@ -710,6 +709,7 @@ typedef struct settings
 #ifdef HAVE_VIDEO_WINDOWS
       bool video_windows_enable;
       bool video_screen_window_fullscreen[RETRO_VIDEO_VIEWS_MAX];
+      bool video_screen_window_pos_set[RETRO_VIDEO_VIEWS_MAX];
 #endif
 
       /* Video */

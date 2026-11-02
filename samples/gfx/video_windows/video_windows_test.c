@@ -123,6 +123,156 @@ static void test_windows_attached(void)
    CHECK(plan.main_mask == 7u && plan.separate_mask == 0u && plan.hidden_mask == 0u);
 }
 
+static void monitor_display(video_window_display_t *d, unsigned ordinal,
+      const char *name, bool own)
+{
+   memset(d, 0, sizeof(*d));
+   d->ordinal  = ordinal;
+   d->valid    = true;
+   d->on       = true;
+   d->physical = true;
+   d->monitor  = true;
+   d->own      = own;
+   strcpy(d->name, name);
+}
+
+static void test_resolve(void)
+{
+   video_window_display_t d[3];
+   video_window_settings_t s[RETRO_VIDEO_VIEWS_MAX];
+   static char keys[RETRO_VIDEO_VIEWS_MAX][VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+   video_windows_route_t r;
+   video_views_map_t map;
+   video_windows_plan_t plan;
+   /* ISO C will not add const under a pointer to array by itself */
+#define KEYS ((const char (*)[VIDEO_WINDOW_DISPLAY_NAME_SIZE])keys)
+   memset(s, 0, sizeof(s));
+   memset(keys, 0, sizeof(keys));
+   /* RetroArch on DP-1; HDMI-A-1; a second DP-1 */
+   monitor_display(&d[0], 1, "DP-1", true);
+   monitor_display(&d[1], 2, "HDMI-A-1", false);
+   monitor_display(&d[2], 3, "DP-1", false);
+
+   /* All Auto: Game Screen 1 in the main window, the others on the
+    * first monitor RetroArch is not on */
+   video_windows_resolve(d, 3, KEYS, s, &r);
+   CHECK(r.monitors && !r.own && !r.display && !r.ui && !r.move);
+   CHECK(r.main_screens == 1u && r.screens == 0xfeu);
+   CHECK(r.target[1] == 2 && r.target[7] == 2);
+   /* A size without a position set, as the menu sets it from Auto,
+    * keeps Auto's monitor */
+   s[1].dims = VIDEO_SCALE_PACK(320, 240);
+   video_windows_resolve(d, 3, KEYS, s, &r);
+   CHECK(r.target[1] == 2);
+   s[1].pos = VIDEO_POS_PACK(-100, 50);
+   video_windows_resolve(d, 3, KEYS, s, &r);
+   CHECK(r.target[1] == 2);
+   /* Saved bounds say where an Auto window goes, the origin too */
+   s[1].pos_set = true;
+   video_windows_resolve(d, 3, KEYS, s, &r);
+   CHECK(r.target[1] == 0 && r.target[2] == 2);
+   s[1].pos = 0;
+   video_windows_resolve(d, 3, KEYS, s, &r);
+   CHECK(r.target[1] == 0);
+   /* A position without a size is not bounds */
+   s[1].dims = 0;
+   video_windows_resolve(d, 3, KEYS, s, &r);
+   CHECK(r.target[1] == 2);
+   s[1].pos_set = false;
+
+   /* By name: a duplicate by its key, RetroArch's own monitor too */
+   strcpy(keys[1], "DP-1 2");
+   strcpy(keys[2], "DP-1");
+   video_windows_resolve(d, 3, KEYS, s, &r);
+   CHECK(r.target[1] == 3 && r.target[2] == 1);
+   CHECK(r.screens & 6u);
+
+   /* Game Screen 1 on a monitor, 2 in the main window, 3 Off */
+   strcpy(keys[0], "HDMI-A-1");
+   strcpy(keys[1], VIDEO_WINDOW_DISPLAY_MAIN);
+   strcpy(keys[2], VIDEO_WINDOW_DISPLAY_OFF);
+   video_windows_resolve(d, 3, KEYS, s, &r);
+   CHECK((r.screens & 1u) && r.target[0] == 2);
+   CHECK(r.main_screens == 2u);
+   CHECK(!(r.screens & 4u) && !(r.main_screens & 4u) && !r.target[2]);
+   /* The plan, from modes as the frame derives them */
+   mono_map(&map, 3);
+   s[0].mode = VIDEO_WINDOW_ATTACHED;
+   s[1].mode = VIDEO_WINDOW_ATTACHED;
+   s[2].mode = VIDEO_WINDOW_HIDDEN;
+   video_windows_plan(&map, s, true, true, 0, &r, &plan);
+   CHECK(plan.separate_mask == 1u && plan.main_mask == 2u
+         && plan.hidden_mask == 4u);
+   /* A close puts Game Screen 1 back in the main window */
+   video_windows_plan(&map, s, true, true, 1u, &r, &plan);
+   CHECK(plan.separate_mask == 0u && plan.main_mask == 3u);
+
+   /* A name not listed is Auto */
+   strcpy(keys[0], "DP-9");
+   strcpy(keys[1], "DP-9");
+   video_windows_resolve(d, 3, KEYS, s, &r);
+   CHECK((r.main_screens & 1u) && !(r.screens & 1u));
+   CHECK((r.screens & 2u) && r.target[1] == 2);
+   /* Only RetroArch's monitor: Auto there; none listed: the platform's */
+   video_windows_resolve(d, 1, KEYS, s, &r);
+   CHECK(r.target[1] == 1);
+   video_windows_resolve(NULL, 0, KEYS, s, &r);
+   CHECK((r.screens & 2u) && r.target[1] == 0 && (r.main_screens & 1u));
+   /* No settings at all: Auto everywhere */
+   video_windows_resolve(d, 3, NULL, NULL, &r);
+   CHECK(r.main_screens == 1u && r.target[1] == 2);
+#undef KEYS
+}
+
+static void test_spare_window(void)
+{
+   /* Past the content's screens */
+   CHECK(video_windows_spare_window(1u, 2) == 2);
+   CHECK(video_windows_spare_window(3u, 2) == 2);
+   CHECK(video_windows_spare_window(1u, 1) == 1);
+   CHECK(video_windows_spare_window(1u, 0) == 1);
+   /* Eight screens: one whose screen has no window */
+   CHECK(video_windows_spare_window(0xfbu, 8) == 2);
+   CHECK(video_windows_spare_window(0xffu, 8) == 0);
+}
+
+static void test_display_own(void)
+{
+   char keys[RETRO_VIDEO_VIEWS_MAX][VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+   video_windows_route_t r;
+   video_window_display_t d;
+   memset(keys, 0, sizeof(keys));
+   memset(&d, 0, sizeof(d));
+   d.ordinal = 1;
+   d.valid   = true;
+   d.monitor = true;
+   strcpy(d.name, "DP-1");
+   CHECK(!video_windows_display_own(&d, 1, "", 0));
+   CHECK(video_windows_display_own(&d, 1, "", 1));
+   CHECK(video_windows_display_own(&d, 1, "DP-1", 0));
+   CHECK(!video_windows_display_own(&d, 1, VIDEO_WINDOW_DISPLAY_MAIN, 1));
+   CHECK(!video_windows_display_own(&d, 1, VIDEO_WINDOW_DISPLAY_OFF, 0));
+   /* Game Screen 1 on a monitor not listed is in the main window, as
+    * video_windows_resolve() has it; the others get their own */
+   CHECK(!video_windows_display_own(&d, 1, "DP-2", 0));
+   CHECK(!video_windows_display_own(NULL, 0, "DP-1", 0));
+   CHECK(video_windows_display_own(&d, 1, "DP-2", 1));
+   strcpy(keys[0], "DP-2");
+   video_windows_resolve(&d, 1,
+         (const char (*)[VIDEO_WINDOW_DISPLAY_NAME_SIZE])keys, NULL, &r);
+   CHECK((r.main_screens & 1u) && !(r.screens & 1u));
+   strcpy(keys[0], "DP-1");
+   video_windows_resolve(&d, 1,
+         (const char (*)[VIDEO_WINDOW_DISPLAY_NAME_SIZE])keys, NULL, &r);
+   CHECK(r.screens & 1u);
+   memset(&d, 0, sizeof(d));
+   CHECK(video_windows_offer_main(NULL, 0));
+   d.monitor = true;
+   CHECK(video_windows_offer_main(&d, 1));
+   d.monitor = false;
+   CHECK(!video_windows_offer_main(&d, 1));
+}
+
 static void test_display(video_window_display_t *d, unsigned ordinal,
       unsigned connection, bool own)
 {
@@ -195,12 +345,6 @@ static void test_display_key(void)
          CHECK(!strncmp(small, "HDMI", i - 1));
       }
    }
-   /* Two unnamed displays: the second keys by its count alone */
-   d[0].name[0] = d[1].name[0] = '\0';
-   video_windows_display_key(d, 0, key, sizeof(key));
-   CHECK(!strcmp(key, ""));
-   video_windows_display_key(d, 1, key, sizeof(key));
-   CHECK(!strcmp(key, " 2"));
    /* A 63-character name, the longest a key holds, keys whole */
    for (i = 0; i < VIDEO_WINDOW_DISPLAY_NAME_SIZE - 1; i++)
       d[0].name[i] = 'b';
@@ -211,11 +355,30 @@ static void test_display_key(void)
    CHECK(!strcmp(key, d[0].name));
 }
 
+static void test_display_key_unnamed(void)
+{
+   video_window_display_t d[3];
+   char key[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+   memset(d, 0, sizeof(d));
+   d[0].ordinal = 1;
+   d[1].ordinal = 2;
+   d[2].ordinal = 3;
+   strcpy(d[2].name, "Monitor 2");
+   /* No name: one by its ordinal, never "" (Auto) or " 2" */
+   video_windows_display_key(d, 0, key, sizeof(key));
+   CHECK(!strcmp(key, "Monitor 1"));
+   video_windows_display_key(d, 1, key, sizeof(key));
+   CHECK(!strcmp(key, "Monitor 2"));
+   /* A name that is another's fallback is a duplicate of it */
+   video_windows_display_key(d, 2, key, sizeof(key));
+   CHECK(!strcmp(key, "Monitor 2 2"));
+}
+
 /* Eight records sit on the display list's JNI frame: a field that
  * grows them is a choice, not an accident */
 static void test_display_record(void)
 {
-   CHECK(sizeof(video_window_display_t) == 120);
+   CHECK(sizeof(video_window_display_t) == 124);
 }
 
 /* Auto falls back on the display marked default */
@@ -1660,6 +1823,74 @@ static void test_windows_steps(void)
    CHECK(retire == 0 && create == 4u);
 }
 
+/* Desktop: a live window whose monitor, size or screens changed is made
+ * again, the others are left */
+static void test_windows_steps_follow(void)
+{
+   static video_windows_frame_t frame;
+   video_windows_held_t held;
+   unsigned retire;
+   unsigned create;
+   memset(&held, 0, sizeof(held));
+   memset(&frame, 0, sizeof(frame));
+   frame.monitors            = true;
+   frame.window_screens[1]   = 2u;
+   frame.window_screens[2]   = 4u;
+   frame.settings[1].mode    = VIDEO_WINDOW_SEPARATE;
+   frame.settings[2].mode    = VIDEO_WINDOW_SEPARATE;
+   frame.settings[1].monitor = 2;
+   frame.settings[2].monitor = 2;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 6u);
+   held.live = create;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   /* Game Screen 2 to another monitor: its window alone */
+   frame.settings[1].monitor = 1;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u && create == 2u);
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   /* A size, fullscreen, a position, a position set */
+   frame.settings[2].dims = VIDEO_SCALE_PACK(640, 480);
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   frame.settings[2].fullscreen = true;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   frame.settings[2].pos = VIDEO_POS_PACK(10, 20);
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   frame.settings[2].pos_set = true;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   /* An id that now shows another screen, as Game Screen 1's spare id
+    * can */
+   frame.window_screens[2] = 1u;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   /* A kept window is left */
+   frame.window_keep         = 4u;
+   frame.settings[2].monitor = 1;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u);
+   frame.window_keep         = 0u;
+   /* Android (no monitors): a changed window is left as it is */
+   frame.monitors            = false;
+   frame.window_screens[2]   = 4u;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   /* One taken over from another driver is kept as it is first seen */
+   memset(&held, 0, sizeof(held));
+   held.live      = 6u;
+   frame.monitors = true;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   frame.settings[1].monitor = 2;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u && create == 2u);
+}
+
 /* A window lives while it shows screens or a UI layer, or is kept */
 static void test_windows_steps_ui(void)
 {
@@ -1766,7 +1997,11 @@ int main(void)
 {
    test_windows_policy();
    test_windows_attached();
+   test_resolve();
+   test_spare_window();
+   test_display_own();
    test_display_key();
+   test_display_key_unnamed();
    test_display_record();
    test_display_default();
    test_place_where();
@@ -1778,6 +2013,7 @@ int main(void)
    test_window_events();
    test_window_place();
    test_windows_steps();
+   test_windows_steps_follow();
    test_windows_steps_ui();
    test_window_ui_drawn();
    if (failures)

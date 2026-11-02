@@ -660,9 +660,7 @@ static int action_get_title_dropdown_item(
                      (enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
                   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT;
                else if (
-                        (   enum_idx - 2 >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR
-                         && enum_idx - 2 <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR_LAST)
-                     || (   enum_idx - 2 >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
+                        (   enum_idx - 2 >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
                          && enum_idx - 2 <= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY_LAST)
                      || enum_idx - 2 == MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY)
                {
