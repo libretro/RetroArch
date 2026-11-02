@@ -287,6 +287,11 @@ struct bsv_movie
    uint8_t *last_save, *cur_save;
    size_t last_save_size, cur_save_size;
 
+   /* A checkpoint's encoding [0] and compression [1] buffers, kept from
+    * one checkpoint to the next: see bsv_movie_scratch() */
+   uint8_t *ckpt_scratch[2];
+   size_t ckpt_scratch_cap[2];
+
    bool cur_save_valid;
 };
 

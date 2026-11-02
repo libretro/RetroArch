@@ -35,8 +35,8 @@
  *
  * The function below is a verbatim copy, built against the stand-ins
  * that follow; only the uncompressed path is compiled (no zlib, no
- * zstd, no statestream).  If bsv_movie_load_checkpoint changes, the
- * copy must follow. */
+ * zstd, no statestream).  If bsv_movie_load_checkpoint or
+ * bsv_movie_scratch changes, the copy must follow. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -98,6 +98,8 @@ typedef struct
    intfstream_t *file;
    uint8_t *cur_save;
    size_t cur_save_size;
+   uint8_t *ckpt_scratch[2];
+   size_t ckpt_scratch_cap[2];
    bool cur_save_valid;
    bool checkpoint_ready;
    size_t last_save_size;
@@ -110,13 +112,35 @@ typedef struct
 
 static input_driver_state_t g_input_st;
 static input_driver_state_t *input_state_get_ptr(void) { return &g_input_st; }
+static void bsv_movie_set_end(void)
+{
+   input_state_get_ptr()->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+}
 
 /* === verbatim copy: input/bsv/bsvmovie.c === */
+/* A checkpoint's scratch buffer @i of at least @need bytes, kept for
+ * the next one. A replay records or plays back a checkpoint every few
+ * seconds, and a fresh state-sized allocation each time - zeroed, for
+ * the compressors' calloc - is a stall in the middle of the game. Its
+ * contents are not kept: grown, it is replaced rather than copied. */
+static uint8_t *bsv_movie_scratch(bsv_movie_t *handle, unsigned i,
+      size_t need)
+{
+   if (need > handle->ckpt_scratch_cap[i])
+   {
+      free(handle->ckpt_scratch[i]);
+      handle->ckpt_scratch_cap[i] = 0;
+      if (!(handle->ckpt_scratch[i] = (uint8_t*)malloc(need)))
+         return NULL;
+      handle->ckpt_scratch_cap[i] = need;
+   }
+   return handle->ckpt_scratch[i];
+}
+
 bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       uint8_t encoding,replay_checkpoint_behavior checkpoint_behavior)
 {
    uint32_t compressed_encoded_size, encoded_size, size;
-   input_driver_state_t *input_st = input_state_get_ptr();
    uint8_t *compressed_data = NULL, *encoded_data = NULL;
    bool ret = true;
    if (intfstream_read(handle->file, &(size),
@@ -153,7 +177,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          && encoded_size != size))
    {
       RARCH_ERR("[Replay] Checkpoint sizes do not agree, terminating movie\n");
-      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      bsv_movie_set_end();
       ret = false;
       goto exit;
    }
@@ -181,11 +205,12 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          && encoding == REPLAY_CHECKPOINT2_ENCODING_RAW)
       compressed_data = handle->cur_save;
    else
-      compressed_data = (uint8_t*)malloc(compressed_encoded_size);
+      compressed_data = bsv_movie_scratch(handle, 1,
+            compressed_encoded_size ? compressed_encoded_size : 1);
    if (!handle->cur_save || !compressed_data)
    {
       RARCH_ERR("[Replay] Out of memory for checkpoint, terminating movie\n");
-      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      bsv_movie_set_end();
       ret = false;
       goto exit;
    }
@@ -193,7 +218,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
        compressed_encoded_size) != (int64_t)compressed_encoded_size)
    {
       RARCH_ERR("[Replay] Truncated checkpoint, terminating movie\n");
-      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      bsv_movie_set_end();
       ret = false;
       goto exit;
    }
@@ -207,9 +232,15 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       case REPLAY_CHECKPOINT2_COMPRESSION_ZLIB:
          {
             uLongf uncompressed_size_zlib = encoded_size;
-            encoded_data = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
+            /* A raw state decodes straight into cur_save */
+            encoded_data = (encoding == REPLAY_CHECKPOINT2_ENCODING_RAW)
+                  ? handle->cur_save
+                  : bsv_movie_scratch(handle, 0, encoded_size ? encoded_size : 1);
+            /* Decoded short of its header's size, the rest of the
+             * state would be whatever the buffer held */
             if (!encoded_data || uncompress(encoded_data, &uncompressed_size_zlib,
-                compressed_data, compressed_encoded_size) != Z_OK)
+                compressed_data, compressed_encoded_size) != Z_OK
+                || uncompressed_size_zlib != encoded_size)
             {
                ret = false;
                goto exit;
@@ -227,10 +258,14 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
                margin.  but, how could the margin be known without
                calling the function that takes the compressed frames as
                an input?  */
-            encoded_data          = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
+            /* A raw state decodes straight into cur_save */
+            encoded_data = (encoding == REPLAY_CHECKPOINT2_ENCODING_RAW)
+                  ? handle->cur_save
+                  : bsv_movie_scratch(handle, 0, encoded_size ? encoded_size : 1);
             if (!encoded_data || rzstd_decode(encoded_data, encoded_size,
                      compressed_data, compressed_encoded_size,
-                     &uncompressed_size_big) != RZSTD_PROCESS_END)
+                     &uncompressed_size_big) != RZSTD_PROCESS_END
+                  || uncompressed_size_big != encoded_size)
                {
                   ret = false;
                   goto exit;
@@ -280,12 +315,11 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       goto exit;
    handle->checkpoint_ready = true;
  exit:
-   /* Uncompressed raw data is read into cur_save itself, which the
-    * handle keeps. */
-   if (compressed_data && compressed_data != handle->cur_save)
-      free(compressed_data);
-   if (encoded_data && encoded_data != handle->cur_save)
-      free(encoded_data);
+   /* Every buffer here is cur_save or a scratch buffer, which the
+    * handle keeps. A checkpoint that failed part way may have been
+    * decoding into cur_save: it no longer holds a state. */
+   if (!ret)
+      handle->cur_save_valid = false;
    return ret;
 }
 /* === end verbatim copy === */
@@ -322,6 +356,8 @@ static bool load(bsv_movie_t *h, intfstream_t *f, uint8_t *data, size_t len,
 static void reset(bsv_movie_t *h)
 {
    free(h->cur_save);
+   free(h->ckpt_scratch[0]);
+   free(h->ckpt_scratch[1]);
    memset(h, 0, sizeof(*h));
    g_input_st.bsv_movie_state.flags = 0;
 }

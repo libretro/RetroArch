@@ -46,6 +46,9 @@
  *                checkpoint cleanly or writes one that decodes.
  *  oom load      decoding a recorded checkpoint with the Nth allocation
  *                failing, likewise, refuses it or decodes it whole.
+ *  steady        after the first checkpoints, recording and decoding
+ *                one allocates nothing state-sized, raw or statestream,
+ *                plain or zstd, and each decodes to the bytes written.
  *
  * The block and superblock sizes are small so a state spans many
  * superblocks.  Run under ASan + UBSan, an out-of-bounds access, a
@@ -69,6 +72,7 @@
 #include "../../../input/bsv/bsvmovie.h"
 #include "../../../input/bsv/uint32s_index.h"
 #include "../../../libretro-db/rmsgpack.h"
+#include <encodings/rzstd.h>
 
 /* Production values from input/bsv/bsvmovie.c. */
 #define BSV_IFRAME_START_TOKEN          0x00
@@ -146,6 +150,12 @@ void *__real_malloc(size_t size);
 void *__real_calloc(size_t n, size_t size);
 void *__real_realloc(void *ptr, size_t size);
 
+/* While non-zero, allocations of at least this many bytes are counted */
+static size_t   big_alloc = 0;
+static unsigned n_big_allocs = 0;
+/* statestream encoding buffers: half again the state */
+static unsigned n_encode_bufs = 0;
+
 static bool alloc_fails(void)
 {
    if (fail_countdown < 0)
@@ -160,14 +170,22 @@ static bool alloc_fails(void)
 
 void *__wrap_malloc(size_t size)
 {
+   if (big_alloc && size >= big_alloc)
+      n_big_allocs++;
+   if (big_alloc && size == STATE_SIZE + STATE_SIZE / 2)
+      n_encode_bufs++;
    return alloc_fails() ? NULL : __real_malloc(size);
 }
 void *__wrap_calloc(size_t n, size_t size)
 {
+   if (big_alloc && n * size >= big_alloc)
+      n_big_allocs++;
    return alloc_fails() ? NULL : __real_calloc(n, size);
 }
 void *__wrap_realloc(void *ptr, size_t size)
 {
+   if (big_alloc && size >= big_alloc)
+      n_big_allocs++;
    return alloc_fails() ? NULL : __real_realloc(ptr, size);
 }
 
@@ -193,6 +211,8 @@ static void movie_free(bsv_movie_t *m)
    free(m->superblock_seq);
    free(m->cur_save);
    free(m->last_save);
+   free(m->ckpt_scratch[0]);
+   free(m->ckpt_scratch[1]);
    free(m);
 }
 
@@ -493,6 +513,80 @@ static void lane_oom_load(void)
    printf("[ok] oom load (%ld allocations, %u refused)\n", nth, refused);
 }
 
+/* Checkpoints keep their buffers: a replay records or plays one every
+ * few seconds, mid-game, so after the first ones the replay allocates
+ * nothing state-sized of its own - not the statestream encoding, not
+ * the compressed copy, not the decode (a raw state inflates straight
+ * into cur_save). What zstd allocates inside a call is its own: it is
+ * measured on the same state through rzstd directly and allowed for.
+ * Each encoding with and without zstd, and each state decodes to the
+ * bytes written. */
+static unsigned codec_big_allocs(void)
+{
+   static uint8_t z[STATE_SIZE * 2], back[STATE_SIZE];
+   size_t zn = 0, bn = 0;
+   n_big_allocs = 0;
+   big_alloc    = STATE_SIZE / 2;
+   rzstd_encode(z, sizeof(z), core_state, STATE_SIZE, 3, &zn);
+   rzstd_decode(back, sizeof(back), z, zn, &bn);
+   big_alloc    = 0;
+   return n_big_allocs;
+}
+
+static void lane_steady(void)
+{
+   static const uint8_t comps[2] = { REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+                                     REPLAY_CHECKPOINT2_COMPRESSION_ZSTD };
+   static const uint8_t encs[2]  = { REPLAY_CHECKPOINT2_ENCODING_RAW,
+                                     REPLAY_CHECKPOINT2_ENCODING_STATESTREAM };
+   unsigned c, e;
+   for (c = 0; c < 2; c++)
+      for (e = 0; e < 2; e++)
+      {
+         bsv_movie_t *w = movie_new(BLOCK_BYTES, SUPERBLOCK_LEN);
+         bsv_movie_t *r = movie_new(BLOCK_BYTES, SUPERBLOCK_LEN);
+         unsigned seed, extra = 0;
+         for (seed = 1; seed <= 8; seed++)
+         {
+            int64_t  n;
+            bool     ok;
+            unsigned codec = 0, sizable = 0;
+            fill_state(seed);
+            if (comps[c] == REPLAY_CHECKPOINT2_COMPRESSION_ZSTD
+                  && encs[e] == REPLAY_CHECKPOINT2_ENCODING_RAW)
+               codec = codec_big_allocs();
+            n_big_allocs = 0;
+            n_encode_bufs = 0;
+            big_alloc    = STATE_SIZE / 2;
+            movie_set_stream(w, stream_buf, STREAM_CAP);
+            n = bsv_movie_write_checkpoint(w, comps[c], encs[e]);
+            movie_set_stream(r, stream_buf, n > 0 ? (size_t)n : 0);
+            ok = n > 12 && bsv_movie_load_checkpoint(r, comps[c], encs[e],
+                  REPLAY_CPBEHAVIOR_DESERIALIZE);
+            big_alloc    = 0;
+            CHECK(ok && r->cur_save
+                  && !memcmp(r->cur_save, core_state, STATE_SIZE),
+                  "steady %u/%u: checkpoint %u decodes", c, e, seed);
+            /* A raw state: whatever is state-sized beyond the codec's
+             * own is the replay's. A statestream one: its encoding
+             * buffer, half again the state, is the replay's (the
+             * statestream reader allocates as it goes, its own). */
+            sizable = (encs[e] == REPLAY_CHECKPOINT2_ENCODING_RAW)
+                  ? (n_big_allocs > codec ? n_big_allocs - codec : 0)
+                  : n_encode_bufs;
+            /* the first two take the buffers, last_save among them */
+            if (seed > 2)
+               extra += sizable;
+         }
+         CHECK(!extra, "steady %u/%u: %u state-sized allocations of the "
+               "replay's own after the first checkpoints", c, e, extra);
+         movie_free(w);
+         movie_free(r);
+      }
+   printf("[ok] steady (raw and statestream, plain and zstd: nothing "
+         "state-sized allocated after the first checkpoints)\n");
+}
+
 /* With an argument, runs only the lane of that name. */
 int main(int argc, char **argv)
 {
@@ -514,6 +608,8 @@ int main(int argc, char **argv)
       lane_oom();
    if (!only || !strcmp(only, "oomload"))
       lane_oom_load();
+   if (!only || !strcmp(only, "steady"))
+      lane_steady();
    if (n_fail)
    {
       fprintf(stderr, "bsv_statestream_test: %u check(s) failed\n", n_fail);

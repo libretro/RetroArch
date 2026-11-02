@@ -594,6 +594,25 @@ bool bsv_movie_handle_read_input_event(bsv_movie_t *movie,
    return false;
 }
 
+/* A checkpoint's scratch buffer @i of at least @need bytes, kept for
+ * the next one. A replay records or plays back a checkpoint every few
+ * seconds, and a fresh state-sized allocation each time - zeroed, for
+ * the compressors' calloc - is a stall in the middle of the game. Its
+ * contents are not kept: grown, it is replaced rather than copied. */
+static uint8_t *bsv_movie_scratch(bsv_movie_t *handle, unsigned i,
+      size_t need)
+{
+   if (need > handle->ckpt_scratch_cap[i])
+   {
+      free(handle->ckpt_scratch[i]);
+      handle->ckpt_scratch_cap[i] = 0;
+      if (!(handle->ckpt_scratch[i] = (uint8_t*)malloc(need)))
+         return NULL;
+      handle->ckpt_scratch_cap[i] = need;
+   }
+   return handle->ckpt_scratch[i];
+}
+
 bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       uint8_t encoding,replay_checkpoint_behavior checkpoint_behavior)
 {
@@ -662,7 +681,8 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          && encoding == REPLAY_CHECKPOINT2_ENCODING_RAW)
       compressed_data = handle->cur_save;
    else
-      compressed_data = (uint8_t*)malloc(compressed_encoded_size);
+      compressed_data = bsv_movie_scratch(handle, 1,
+            compressed_encoded_size ? compressed_encoded_size : 1);
    if (!handle->cur_save || !compressed_data)
    {
       RARCH_ERR("[Replay] Out of memory for checkpoint, terminating movie\n");
@@ -688,7 +708,10 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       case REPLAY_CHECKPOINT2_COMPRESSION_ZLIB:
          {
             uLongf uncompressed_size_zlib = encoded_size;
-            encoded_data = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
+            /* A raw state decodes straight into cur_save */
+            encoded_data = (encoding == REPLAY_CHECKPOINT2_ENCODING_RAW)
+                  ? handle->cur_save
+                  : bsv_movie_scratch(handle, 0, encoded_size ? encoded_size : 1);
             /* Decoded short of its header's size, the rest of the
              * state would be whatever the buffer held */
             if (!encoded_data || uncompress(encoded_data, &uncompressed_size_zlib,
@@ -711,7 +734,10 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
                margin.  but, how could the margin be known without
                calling the function that takes the compressed frames as
                an input?  */
-            encoded_data          = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
+            /* A raw state decodes straight into cur_save */
+            encoded_data = (encoding == REPLAY_CHECKPOINT2_ENCODING_RAW)
+                  ? handle->cur_save
+                  : bsv_movie_scratch(handle, 0, encoded_size ? encoded_size : 1);
             if (!encoded_data || rzstd_decode(encoded_data, encoded_size,
                      compressed_data, compressed_encoded_size,
                      &uncompressed_size_big) != RZSTD_PROCESS_END
@@ -765,12 +791,11 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       goto exit;
    handle->checkpoint_ready = true;
  exit:
-   /* Uncompressed raw data is read into cur_save itself, which the
-    * handle keeps. */
-   if (compressed_data && compressed_data != handle->cur_save)
-      free(compressed_data);
-   if (encoded_data && encoded_data != handle->cur_save)
-      free(encoded_data);
+   /* Every buffer here is cur_save or a scratch buffer, which the
+    * handle keeps. A checkpoint that failed part way may have been
+    * decoding into cur_save: it no longer holds a state. */
+   if (!ret)
+      handle->cur_save_valid = false;
    return ret;
 }
 
@@ -782,7 +807,6 @@ static int64_t bsv_movie_write_checkpoint_from_state(bsv_movie_t *handle,
    int64_t ret = -1;
    uint32_t encoded_size = 0, compressed_encoded_size, size_ = 0;
    uint8_t *encoded_data = NULL, *compressed_encoded_data = NULL;
-   bool owns_encoded = false, owns_compressed_encoded = false;
    retro_ctx_serialize_info_t serial_info;
    serial_info.size = state ? size : core_serialize_size();
    if (handle->cur_save_size < serial_info.size)
@@ -818,12 +842,12 @@ static int64_t bsv_movie_write_checkpoint_from_state(bsv_movie_t *handle,
          {
             int64_t deduped_size;
             encoded_size = (uint32_t)(serial_info.size + serial_info.size / 2);
-            if (!(encoded_data = (uint8_t*)malloc(encoded_size)))
+            if (!(encoded_data = bsv_movie_scratch(handle, 0,
+                        encoded_size ? encoded_size : 1)))
             {
                ret = -1;
                goto exit;
             }
-            owns_encoded = true;
             deduped_size = bsv_movie_write_deduped_state(handle,
                   (uint8_t*)serial_info.data, serial_info.size,
                   encoded_data, encoded_size);
@@ -851,8 +875,12 @@ static int64_t bsv_movie_write_checkpoint_from_state(bsv_movie_t *handle,
       case REPLAY_CHECKPOINT2_COMPRESSION_ZLIB:
       {
          uLongf zlib_compressed_encoded_size = compressBound(encoded_size);
-         compressed_encoded_data = (uint8_t*)calloc(zlib_compressed_encoded_size, sizeof(uint8_t));
-         owns_compressed_encoded = true;
+         if (!(compressed_encoded_data = bsv_movie_scratch(handle, 1,
+                     zlib_compressed_encoded_size)))
+         {
+            ret = -1;
+            goto exit;
+         }
          if (compress2(compressed_encoded_data, &zlib_compressed_encoded_size, encoded_data, encoded_size, 6) != Z_OK)
          {
             ret = -1;
@@ -866,8 +894,12 @@ static int64_t bsv_movie_write_checkpoint_from_state(bsv_movie_t *handle,
       case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
       {
          size_t compressed_encoded_size_zstd = rzstd_compress_bound(encoded_size);
-         compressed_encoded_data = (uint8_t*)calloc(compressed_encoded_size_zstd, sizeof(uint8_t));
-         owns_compressed_encoded = true;
+         if (!(compressed_encoded_data = bsv_movie_scratch(handle, 1,
+                     compressed_encoded_size_zstd)))
+         {
+            ret = -1;
+            goto exit;
+         }
          if (rzstd_encode(compressed_encoded_data, compressed_encoded_size_zstd,
                   encoded_data, encoded_size, 3,
                   &compressed_encoded_size_zstd) != RZSTD_PROCESS_END)
@@ -921,10 +953,6 @@ exit:
    handle->cur_save       = handle->last_save;
    handle->last_save      = swap;
    handle->cur_save_valid = handle->cur_save != NULL;
-   if (encoded_data && owns_encoded)
-      free(encoded_data);
-   if (compressed_encoded_data && owns_compressed_encoded)
-      free(compressed_encoded_data);
    return ret;
 }
 

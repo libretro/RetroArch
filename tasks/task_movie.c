@@ -231,6 +231,8 @@ void bsv_movie_free(bsv_movie_t *handle)
       free(handle->last_save);
    if (handle->cur_save)
       free(handle->cur_save);
+   free(handle->ckpt_scratch[0]);
+   free(handle->ckpt_scratch[1]);
 
    free(handle);
 }
