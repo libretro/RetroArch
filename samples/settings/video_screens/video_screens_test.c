@@ -2252,6 +2252,48 @@ static void test_window_menu_touch_window(void)
    window_test_end();
 }
 
+/* The menu going into another window is no mouse move: the view keeps
+ * the mouse where it last was */
+static void test_window_menu_mouse_kept(void)
+{
+   static input_driver_t driver;
+   input_pointer_frame_t frame;
+   uint32_t none_pos              = 0;
+   uint32_t at;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   input_driver_t *saved_driver   = input_st->current_driver;
+   video_window_ui_target_t saved = video_st->windows_ui[VIDEO_WINDOW_UI_MENU];
+   memset(&driver, 0, sizeof(driver));
+   driver.input_state       = menu_test_input_state;
+   driver.ident             = "menu_mouse_test";
+   input_st->current_driver = &driver;
+   memset(&frame, 0, sizeof(frame));
+   frame.pos = VIDEO_POS_PACK(200, 100);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   input_driver_publish_window_pointers(&frame, NULL, 1,
+         INPUT_POINTERS_WINDOWS_SECOND
+         | INPUT_POINTERS_POINTER_IDS_BY_DRIVER);
+   input_driver_publish_window_touches(&none_pos, NULL, 0, 0, 0);
+   input_driver_poll_devices();
+   at = input_driver_pointer_view()->mouse_pos;
+   CHECK(at == VIDEO_POS_PACK(200, 100));
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   frame.pos = VIDEO_POS_PACK(300, 150);
+   input_driver_publish_window_pointers(&frame, NULL, 1,
+         INPUT_POINTERS_WINDOWS_SECOND
+         | INPUT_POINTERS_POINTER_IDS_BY_DRIVER);
+   input_driver_publish_window_touches(&none_pos, NULL, 0, 0, 0);
+   input_driver_poll_devices();
+   CHECK(input_driver_pointer_view()->mouse_pos == at);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU] = saved;
+   input_st->current_driver = saved_driver;
+   input_driver_publish_window_pointers(&frame, NULL, 0, 0);
+   input_driver_publish_window_touches(&none_pos, NULL, 0, 0, 0);
+   input_driver_poll_devices();
+}
+
 /* Screens by name, as on the Thor; a main window with no screen keeps
  * the menu's touches and shows the idle logo */
 static void test_window_display_names(void)
@@ -4512,6 +4554,7 @@ int main(int argc, char **argv)
    test_window_turned_waiting();
    test_window_pointer_mapping();
    test_window_menu_touch_window();
+   test_window_menu_mouse_kept();
    test_window_generation();
    test_window_ui_layer_dims();
 #ifdef HAVE_GFX_WIDGETS
