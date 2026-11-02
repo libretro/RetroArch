@@ -82,10 +82,11 @@
  *
  * What this test does NOT assert
  * ------------------------------
- * Nothing about compressed (rzip) states: HAVE_COMPRESSION is off for
- * this binary, so the uncompressed intfstream path is the one under
- * test.  Nothing about cheevos or replay blocks, which are compiled
- * out.
+ * Little about compressed (rzip) states: HAVE_COMPRESSION is off for
+ * the default binary, so the uncompressed intfstream path is the one
+ * under test.  The RZIP=1 build turns it on, runs every lane through
+ * rzip with compression off, and adds the one that needs it (13).
+ * Nothing about cheevos or replay blocks, which are compiled out.
  *
  * The clock
  * ---------
@@ -169,6 +170,12 @@ retro_time_t cpu_features_get_time_usec(void)
    return (retro_time_t)__atomic_fetch_add(&clock_now,
          __atomic_load_n(&clock_step, __ATOMIC_RELAXED), __ATOMIC_RELAXED);
 }
+
+#ifdef HAVE_COMPRESSION
+/* rzip sizes its chunk compressor's pool from this; the rest of
+ * features_cpu.c is not linked, the clock above being the test's */
+unsigned cpu_features_get_core_amount(void) { return 2; }
+#endif
 
 /* task_save.c's parks, counted on the way into the real queue. */
 static unsigned park_calls = 0;
@@ -1363,6 +1370,65 @@ static void test_load_held_behind_save(void)
    filestream_delete(path);
 }
 
+#ifdef HAVE_COMPRESSION
+/* -----------------------------------------------------------------
+ * 13. Undo puts back the file a save replaced, as it was.
+ *
+ *     A save over a slot first keeps the file there, for undo. That
+ *     backup used to be read through rzip - the old state inflated -
+ *     and an undo wrote it back through rzip again, deflated afresh
+ *     under whatever the compression setting had since become. It is
+ *     now the file's own bytes, read and written back as they are:
+ *     nothing inflated on every save over a slot, nothing deflated on
+ *     undo, and the slot comes back as it was. The setting is turned
+ *     between the save and the one over it, both ways, so a backup
+ *     that went through rzip would come back in the other form.
+ * ----------------------------------------------------------------- */
+static void test_undo_save_restores_file(void)
+{
+   const char *path = "sst_undo_file.state";
+   int z;
+
+   for (z = 0; z < 2; z++)
+   {
+      void   *was = NULL, *over = NULL, *back = NULL;
+      int64_t n_was = -1, n_over = -2, n_back = -3;
+
+      frontend_reset();
+      filestream_delete(path);
+      core_fill(3 * TEST_SAVE_STATE_CHUNK + 123);
+      stub_settings.bools.savestate_file_compression = z;
+      content_save_state(path, true);
+      pump(1000);
+      if (!filestream_read_file(path, &was, &n_was))
+         n_was = -1;
+
+      stub_settings.bools.savestate_file_compression = !z;
+      memset(core_mem, 0x5A, core_len);
+      content_save_state(path, true);
+      pump(1000);
+      if (!filestream_read_file(path, &over, &n_over))
+         n_over = -2;
+      okf(n_over > 0 && (n_over != n_was || memcmp(was, over, (size_t)n_was)),
+          z ? "a plain save over a compressed slot replaces it"
+            : "a compressed save over a plain slot replaces it");
+
+      okf(content_undo_save_state(), "the undo of that save is pushed");
+      pump(1000);
+      if (!filestream_read_file(path, &back, &n_back))
+         n_back = -3;
+      okf(n_was > 0 && n_back == n_was && !memcmp(was, back, (size_t)n_was),
+          z ? "undo puts the compressed slot back byte for byte"
+            : "undo puts the plain slot back byte for byte");
+
+      free(was);
+      free(over);
+      free(back);
+   }
+   filestream_delete(path);
+}
+#endif
+
 static int run_default_lane(void)
 {
    printf("== task_save.c I/O regression oracle ==\n");
@@ -1390,6 +1456,9 @@ static int run_default_lane(void)
    test_undo_allocates_nothing();
    test_notify_without_allocation();
    test_load_held_behind_save();
+#ifdef HAVE_COMPRESSION
+   test_undo_save_restores_file();
+#endif
 
    content_reset_savestate_backups();
    task_queue_deinit();

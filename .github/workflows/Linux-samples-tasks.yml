@@ -1778,6 +1778,20 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 300 \
              ./save_state_io_test conc
           echo "[pass] save_state_io_test (TSan)"
+          # The same oracle with HAVE_COMPRESSION, as the frontend
+          # ships it, states going through rzip.  The lane that needs
+          # it runs only here: a save over a slot keeps the file that
+          # was there for undo, and an undo puts that file back byte
+          # for byte - compressed or not, whatever the setting has
+          # become - rather than inflating it on every save and
+          # deflating it afresh on undo.
+          make clean RZIP=1 && make -j$(nproc) all RZIP=1 SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
+             ./save_state_io_test_rzip
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 300 ./save_state_io_test_rzip conc
+          echo "[pass] save_state_io_test_rzip (ASan)"
 
       - name: ccache statistics
         if: ${{ !cancelled() }}

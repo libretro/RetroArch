@@ -1095,10 +1095,8 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t len)
       state->state_slot     = settings->ints.state_slot;
       if (video_driver_cached_frame_is_hw_render())
          state->flags      |= SAVE_TASK_FLAG_HAS_VALID_FB;
-#if defined(HAVE_COMPRESSION)
-      if (settings->bools.savestate_file_compression)
-         state->flags      |= SAVE_TASK_FLAG_COMPRESS_FILES;
-#endif
+      /* The data is the file the save replaced, byte for byte -
+       * compressed or not, as it was: written back as it is */
       if (!settings->bools.notification_show_save_state)
          state->flags      |= SAVE_TASK_FLAG_MUTE;
 
@@ -1211,11 +1209,20 @@ static void task_load_handler(retro_task_t *task)
    if (!state->file)
    {
 #if defined(HAVE_COMPRESSION)
-      /* Always use RZIP interface when reading state
+      /* The backup a save takes for undo is the file as it is, and an
+       * undo puts it back as it was: nothing to inflate now, nor to
+       * deflate again then */
+      if (state->flags & SAVE_TASK_FLAG_LOAD_TO_BACKUP_BUFF)
+         state->file = intfstream_open_file(state->path,
+               RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      /* Otherwise always use RZIP interface when reading state
        * files - this will automatically handle uncompressed
        * data */
-      if (!(state->file = intfstream_open_rzip_file(state->path,
-                  RETRO_VFS_FILE_ACCESS_READ)))
+      else
+         state->file = intfstream_open_rzip_file(state->path,
+               RETRO_VFS_FILE_ACCESS_READ);
+      if (!state->file)
          goto not_found;
 #else
       if (!(state->file = intfstream_open_file(state->path,

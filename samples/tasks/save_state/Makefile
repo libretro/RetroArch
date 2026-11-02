@@ -22,7 +22,8 @@ TARGET := save_state_io_test
 # protocol is identical either way and the locks only serialise it.
 #
 # HAVE_COMPRESSION stays undefined, so the plain intfstream path is
-# the one under test; the rzip path wraps the same handler loop.
+# the one under test; the rzip path wraps the same handler loop.  RZIP=1
+# below is the build with it.
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
@@ -46,6 +47,20 @@ SOURCES := save_state_io_test.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+
+# RZIP=1 builds the same oracle with HAVE_COMPRESSION, as the frontend
+# ships: states go through rzip, and the lanes that need it (a backup
+# of a compressed slot) run. Its objects go under their own directory.
+ifeq ($(RZIP),1)
+TARGET        := save_state_io_test_rzip
+SAMPLE_OBJDIR := obj_rzip
+SOURCES += $(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
+           $(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
+           $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+           $(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+           $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c
+CFLAGS  += -DHAVE_COMPRESSION
+endif
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_THREADS \
