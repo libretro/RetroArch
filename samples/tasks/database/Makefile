@@ -204,6 +204,17 @@ CXXFLAGS  += $(DEFINES)
 
 OBJECTS    = $(call sample_objs,$(SOURCES_C:.c=.o))
 
+# As RetroArch builds it: without RARCH_INTERNAL, path_resolve_realpath()
+# and the ~ expansion do nothing. Not on Windows, where it turns the
+# slashes the checks look for into backslashes. On macOS it then needs
+# CoreFoundation.
+ifneq ($(platform),win)
+$(call sample_objs,$(LIBRETRO_COMM_DIR)/file/file_path.o): CFLAGS += -DRARCH_INTERNAL
+endif
+ifeq ($(platform),osx)
+LIBS += -framework CoreFoundation
+endif
+
 # The index pairing test links the same objects but its own entry
 # point, so the scanner's main() is swapped out for it.
 SCAN_TEST         := database_scan_test
