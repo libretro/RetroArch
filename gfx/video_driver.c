@@ -8083,6 +8083,33 @@ void video_driver_vr_driver_changed(void)
 }
 #endif
 
+#if defined(ANDROID) && defined(HAVE_VULKAN) && defined(HAVE_OPENGL)
+/* Android: when the Vulkan driver will not start, switch to OpenGL ES
+ * in the same launch rather than exit.  A fresh install picks Vulkan
+ * from what the device declares, and a declared driver can still fail
+ * here; without this the app would close on every start, and a config
+ * that names Vulkan would keep it closing until the app's data is
+ * cleared.  Not for a core that renders with Vulkan itself: OpenGL ES
+ * cannot stand in for it.  The choice is saved at once, so the next
+ * start does not try Vulkan again. */
+static bool video_driver_android_gl_fallback(
+      video_driver_state_t *video_st, settings_t *settings)
+{
+   if (     video_st->current_video != &video_vulkan
+         || video_driver_is_hw_context())
+      return false;
+
+   RARCH_WARN("[Video] Vulkan driver failed to start, "
+         "falling back to \"gl\".\n");
+   configuration_set_string(settings, settings->arrays.video_driver, "gl");
+   video_st->current_video = &video_gl2;
+   /* As before the first attempt: whatever the Vulkan context said
+    * about the window does not carry over. */
+   input_driver_video_init_begin();
+   return true;
+}
+#endif
+
 bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 {
    video_info_t video;
@@ -8352,6 +8379,18 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
             &video_st->data,
             video_st->current_video,
             video);
+#if defined(ANDROID) && defined(HAVE_VULKAN) && defined(HAVE_OPENGL)
+      /* A failed start puts back the driver and leaves no thread. */
+      if (!ret && video_driver_android_gl_fallback(video_st, settings))
+      {
+         if ((ret = video_init_thread(
+               (const video_driver_t**)&video_st->current_video,
+               &video_st->data,
+               video_st->current_video,
+               video)))
+            command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+      }
+#endif
       if (!ret)
       {
 #ifdef HAVE_WAYLAND
@@ -8377,6 +8416,13 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    /* Activation must not wait on the retained window's sleeping thread. */
    if (defer_unthreaded_init)
       video_st->data = video_st->current_video->init(&video);
+
+#if defined(ANDROID) && defined(HAVE_VULKAN) && defined(HAVE_OPENGL)
+   if (     !video_st->data
+         && video_driver_android_gl_fallback(video_st, settings)
+         && (video_st->data = video_st->current_video->init(&video)))
+      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+#endif
 
    if (!video_st->data)
    {
