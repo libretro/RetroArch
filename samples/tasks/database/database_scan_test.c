@@ -340,15 +340,30 @@ int retro_vfs_closedir_smb(smb_dir_handle *dh)
 static bool               smb_stub_live;
 static retro_atomic_int_t smb_stub_stats_main;
 static retro_atomic_int_t smb_stats_at_push;
+/* Stats are counted and, while smb_stat_log is set, listed there; the
+ * folders in smb_stat_valid, when set, answer as well. */
+static retro_atomic_int_t smb_stat_count;
+static char              *smb_stat_log;
+static const char *const *smb_stat_valid;
 
 int retro_vfs_stat_smb(const char *path, int64_t *size)
 {
+   const char *const *v;
    size_t n = strlen(path);
 
    if (size)
       *size = 0;
+   retro_atomic_fetch_add_int(&smb_stat_count, 1);
+   if (smb_stat_log)
+   {
+      strlcat(smb_stat_log, path, 512);
+      strlcat(smb_stat_log, " ", 512);
+   }
    if (task_is_on_main_thread())
       retro_atomic_fetch_add_int(&smb_stub_stats_main, 1);
+   for (v = smb_stat_valid; v && *v; v++)
+      if (string_is_equal(path, *v))
+         return RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY;
    if (!smb_stub_live)
       return 0;
    if (n > 4 && !strcmp(path + n - 4, ".bin"))
@@ -14167,6 +14182,271 @@ static void unmatched_lines_lane(const char *root, const char *pl_dir,
          sizeof(config_get_ptr()->paths.directory_playlist));
 }
 
+#ifdef HAVE_SMBCLIENT
+/* The number of times @s is in @log. */
+static unsigned smb_log_count(const char *log, const char *s)
+{
+   unsigned n = 0;
+
+   while ((log = strstr(log, s)))
+   {
+      n++;
+      log += strlen(s);
+   }
+   return n;
+}
+
+/* A refresh-all whose first smb:// folder fails stats the share root:
+ * when that fails too, later smb:// folders, --scan paths and refreshes
+ * in the run fail without a stat, and local playlists still run.  When
+ * the root answers, the run goes on as before.  With no share set, the
+ * URL names it, so a dead one leaves the others to run and each is
+ * checked once, until a root answers; with one set, all are down. */
+static void smb_down_lane(const char *root, const char *pl_dir,
+      uint32_t crc_a, uint32_t sz_a, bool threaded)
+{
+   static const char *smb_names[] = { "b_one", "d_two", "e_three" };
+   static const char *smb_dirs[]  = { "smb://host/share/one",
+      "smb://host/share/two", "smb://host/share/three" };
+   static const char *share_names[] = { "a_games", "a_old", "b_dead" };
+   static const char *share_dirs[]  = { "smb://host/games/nes",
+      "smb://host/old/early", "smb://host/old/md" };
+   static const char *const up_root[] = { "smb://host/share/", NULL };
+   static const char *const shares_up[] = { "smb://host/games/",
+      "smb://host/games/nes", "smb://host/old/early", NULL };
+   static const char *mix_dirs[] = { "smb://host/aa/1", "smb://host/bb/2",
+      "smb://host/aa/3", "smb://host/bb/4", "smb://host/aa/5",
+      "smb://host/bb/6" };
+   static const char *const bb_root[] = { "smb://host/bb/",
+      "smb://host/aa/3", NULL };
+   static char         pl[512], live_pl[512], two_pl[512], mix_pl[512];
+   static char         a[512], log[512];
+   static char         out[1024], err[1024], p[1024], stale[1024];
+   static char         want[1536], detail[640];
+   char                what[128];
+   const char         *q = threaded ? "(threaded)" : "(regular)";
+   task_dbscan_item_t *items;
+   unsigned            i;
+   bool                ran;
+
+   sprintf(pl,      "%s/smb_pl",      root);
+   sprintf(live_pl, "%s/smb_live_pl", root);
+   sprintf(two_pl,  "%s/smb_two_pl",  root);
+   sprintf(mix_pl,  "%s/smb_mix_pl",  root);
+   sprintf(a,       "%s/smb_a",       root);
+   sprintf(out,     "%s/smb_out.txt", root);
+   sprintf(err,     "%s/smb_err.txt", root);
+   sprintf(stale,   "%s/00_gone.bin", a);
+   path_mkdir(pl);
+   path_mkdir(live_pl);
+   path_mkdir(two_pl);
+   path_mkdir(mix_pl);
+   path_mkdir(a);
+   delete_playlists(pl);
+   delete_playlists(live_pl);
+   delete_playlists(two_pl);
+   delete_playlists(mix_pl);
+   sprintf(p, "%s/01_alpha.bin", a);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/a_local.lpl", pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/c_local.lpl", pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   for (i = 0; i < 3; i++)
+   {
+      sprintf(p, "%s/%s.lpl", pl, smb_names[i]);
+      if (!refresh_write(p, smb_dirs[i], NULL, stale))
+         goto fixture;
+      sprintf(p, "%s/%s.lpl", live_pl, smb_names[i]);
+      if (i < 2 && !refresh_write(p, smb_dirs[i], NULL, stale))
+         goto fixture;
+      sprintf(p, "%s/%s.lpl", two_pl, share_names[i]);
+      if (!refresh_write(p, share_dirs[i], NULL, stale))
+         goto fixture;
+   }
+   for (i = 0; i < 6; i++)
+   {
+      sprintf(p, "%s/m_%u.lpl", mix_pl, i + 1);
+      if (!refresh_write(p, mix_dirs[i], NULL, stale))
+         goto fixture;
+   }
+   use_queue(threaded);
+   smb_stat_log = log;
+
+   /* A dead server: a refresh-all, then a --scan and a refresh on it. */
+   if (!(items = (task_dbscan_item_t*)calloc(3, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   chain_item(&items[1], "smb://host/share/x", NULL);
+   refresh_item(&items[2], TASK_DBSCAN_ITEM_REFRESH, "b_one");
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   *log = '\0';
+   retro_atomic_store_release_int(&smb_stat_count, 0);
+   ran = refresh_run(items, 3, out, err, true);
+   sprintf(what, "smb down %s: a dead server, two stats", q);
+   snprintf(detail, sizeof(detail), "%d stats: %s",
+         retro_atomic_load_acquire_int(&smb_stat_count), log);
+   check(   ran && retro_atomic_load_acquire_int(&smb_stat_count) == 2
+         && string_is_equal(log, "smb://host/share/one smb://host/share/ "),
+         what, detail);
+   sprintf(what, "smb down %s: the items", q);
+   snprintf(detail, sizeof(detail),
+         "%u items: ran %u, added %u, failed %u, skipped %u", chain_seen,
+         chain_totals.ran, chain_totals.added, chain_totals.failed,
+         chain_totals.skipped);
+   check(   chain_seen == 7
+         && chain_saw(0, "a_local", TASK_DBSCAN_RAN,     1)
+         && chain_saw(1, "b_one",   TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(2, "c_local", TASK_DBSCAN_RAN,     1)
+         && chain_saw(3, "d_two",   TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(4, "e_three", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(5, "smb://host/share/x", TASK_DBSCAN_FAILED, -1)
+         && chain_saw(6, "b_one",   TASK_DBSCAN_SKIPPED, -1)
+         && chain_totals.ran == 2 && chain_totals.added == 2
+         && chain_totals.failed == 1 && chain_totals.skipped == 4,
+         what, detail);
+   sprintf(what, "smb down %s: the lines", q);
+   check(   file_contains(err,
+               "b_one: skipped: content folder not found "
+               "(smb://host/share/one)")
+         && file_contains(err,
+               "d_two: skipped: content folder not found "
+               "(smb://host/share/two)")
+         && file_contains(err,
+               "e_three: skipped: content folder not found "
+               "(smb://host/share/three)")
+         && file_contains(err, "smb://host/share/x: not found")
+         && file_contains(out, "a_local: 1 added")
+         && file_contains(out, "c_local: 1 added"), what, err);
+   sprintf(what, "smb down %s: local playlists refreshed", q);
+   sprintf(want, "%s/01_alpha.bin", a);
+   sprintf(p, "%s/a_local.lpl", pl);
+   ran = file_contains(p, want) && !file_contains(p, stale);
+   sprintf(p, "%s/c_local.lpl", pl);
+   check(ran && file_contains(p, want) && !file_contains(p, stale),
+         what, p);
+
+   /* The root answers: the folders are missing, the server is not. */
+   if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   chain_item(&items[1], "smb://host/share/x", NULL);
+   strlcpy(config_get_ptr()->paths.directory_playlist, live_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   *log           = '\0';
+   smb_stat_valid = up_root;
+   ran            = refresh_run(items, 2, out, err, true);
+   sprintf(what, "smb up %s: the root stat once, the rest as before", q);
+   snprintf(detail, sizeof(detail), "%u items: %s", chain_seen, log);
+   check(   ran && chain_seen == 3
+         && chain_saw(0, "b_one", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(1, "d_two", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(2, "smb://host/share/x", TASK_DBSCAN_FAILED, -1)
+         && string_is_equal(log,
+               "smb://host/share/one smb://host/share/ "
+               "smb://host/share/two smb://host/share/x "), what, detail);
+
+   /* Two shares, no share set: "old" dies after a_games and a_old
+    * loaded. */
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   strlcpy(config_get_ptr()->paths.directory_playlist, two_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   *log           = '\0';
+   smb_stat_valid = shares_up;
+   ran            = refresh_run(items, 1, out, err, true);
+   sprintf(what, "smb shares %s: a dead share, the other runs", q);
+   snprintf(detail, sizeof(detail), "%u items: %s %d | %s %d | %s %d: %s",
+         chain_seen, chain_names[0], chain_outcomes[0], chain_names[1],
+         chain_outcomes[1], chain_names[2], chain_outcomes[2], log);
+   /* Its scan starts, then fails: the stub lists no folder. */
+   check(   ran && chain_seen == 3
+         && chain_saw(0, "a_games", TASK_DBSCAN_FAILED, 0)
+         && smb_log_count(log, "smb://host/games/nes ") > 1
+         && !file_contains(err, "a_games: skipped"), what, detail);
+   sprintf(what, "smb shares %s: loaded before, skipped at its run", q);
+   check(   ran
+         && chain_saw(1, "a_old",  TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(2, "b_dead", TASK_DBSCAN_SKIPPED, -1)
+         && smb_log_count(log, "smb://host/old/early ") == 1
+         && smb_log_count(log, "smb://host/old/ ") == 1
+         && file_contains(err,
+               "a_old: skipped: content folder not found "
+               "(smb://host/old/early)"), what, detail);
+
+   /* The same with a share set: it is every path's. */
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   strlcpy(config_get_ptr()->arrays.smb_client_share, "games",
+         sizeof(config_get_ptr()->arrays.smb_client_share));
+   *log = '\0';
+   ran  = refresh_run(items, 1, out, err, true);
+   config_get_ptr()->arrays.smb_client_share[0] = '\0';
+   sprintf(what, "smb shares %s: a share set, all down", q);
+   snprintf(detail, sizeof(detail), "%u items: %s", chain_seen, log);
+   check(   ran && chain_seen == 3
+         && chain_saw(0, "a_games", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(1, "a_old",   TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(2, "b_dead",  TASK_DBSCAN_SKIPPED, -1)
+         && smb_log_count(log, "smb://host/games/nes ") == 1, what,
+         detail);
+
+   /* Two dead shares in turn, no share set: two stats each. */
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   strlcpy(config_get_ptr()->paths.directory_playlist, mix_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   *log           = '\0';
+   smb_stat_valid = NULL;
+   ran            = refresh_run(items, 1, out, err, true);
+   sprintf(what, "smb shares %s: two dead, two stats each", q);
+   snprintf(detail, sizeof(detail), "%u items, skipped %u: %s",
+         chain_seen, chain_totals.skipped, log);
+   check(   ran && chain_seen == 6 && chain_totals.skipped == 6
+         && string_is_equal(log, "smb://host/aa/1 smb://host/aa/ "
+               "smb://host/bb/2 smb://host/bb/ "), what, detail);
+
+   /* bb's root answers after aa's failed, as a waking NAS does: aa is
+    * checked again, and aa/3 now answers. */
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   *log           = '\0';
+   smb_stat_valid = bb_root;
+   ran            = refresh_run(items, 1, out, err, true);
+   sprintf(what, "smb shares %s: one answers, the dead one is checked again",
+         q);
+   snprintf(detail, sizeof(detail), "%u items: %s", chain_seen, log);
+   check(   ran && chain_seen == 6
+         && chain_saw(2, "m_3", TASK_DBSCAN_FAILED,  0)
+         && chain_saw(4, "m_5", TASK_DBSCAN_SKIPPED, -1)
+         && smb_log_count(log, "smb://host/aa/ ") == 1
+         && smb_log_count(log, "smb://host/bb/ ") == 1
+         && smb_log_count(log, "smb://host/aa/3 ") > 1
+         && smb_log_count(log, "smb://host/aa/5 ") == 1
+         && smb_log_count(log, "smb://host/bb/4 ") == 1
+         && smb_log_count(log, "smb://host/bb/6 ") == 1, what, detail);
+   goto restore;
+
+fixture:
+   check(0, "fixture", "could not write the smb lane");
+restore:
+   smb_stat_log   = NULL;
+   smb_stat_valid = NULL;
+   config_get_ptr()->arrays.smb_client_share[0] = '\0';
+   manual_content_scan_reset_settings();
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+#endif
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -15390,6 +15670,10 @@ int main(int argc, char **argv)
    refresh_group_lane(root, pl_dir, db_dir, false);
    refresh_group_lane(root, pl_dir, db_dir, true);
    unmatched_lines_lane(root, pl_dir, db_dir);
+#ifdef HAVE_SMBCLIENT
+   smb_down_lane(root, pl_dir, crc_a, sz_a, false);
+   smb_down_lane(root, pl_dir, crc_a, sz_a, true);
+#endif
    {
       char reader_db[512];
 
