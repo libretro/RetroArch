@@ -9229,6 +9229,49 @@ static void vulkan_init_render_target(struct vk_image* image,
       VkRenderPass render_pass, vulkan_context_t* ctx);
 static void vulkan_destroy_hdr_buffer(VkDevice device, struct vk_image *img);
 
+/* Two whole-image layout transitions recorded with one barrier call.
+ * The stage masks are the union of what the two transitions would use
+ * apart; callers pair only transitions that sit back to back with no
+ * work between them, where execution dependencies already cover every
+ * earlier command in those stages, so the union waits on nothing the
+ * two separate calls did not. */
+static void vulkan_image_layout_transition_pair(VkCommandBuffer cmd,
+      VkImage img0, VkImageLayout old0, VkImageLayout new0,
+      VkAccessFlags src_access0, VkAccessFlags dst_access0,
+      VkImage img1, VkImageLayout old1, VkImageLayout new1,
+      VkAccessFlags src_access1, VkAccessFlags dst_access1,
+      VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages)
+{
+   VkImageMemoryBarrier barriers[2];
+   int i;
+
+   for (i = 0; i < 2; i++)
+   {
+      barriers[i].sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      barriers[i].pNext                           = NULL;
+      barriers[i].srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+      barriers[i].dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+      barriers[i].subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+      barriers[i].subresourceRange.baseMipLevel   = 0;
+      barriers[i].subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS;
+      barriers[i].subresourceRange.baseArrayLayer = 0;
+      barriers[i].subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
+   }
+   barriers[0].image         = img0;
+   barriers[0].oldLayout     = old0;
+   barriers[0].newLayout     = new0;
+   barriers[0].srcAccessMask = src_access0;
+   barriers[0].dstAccessMask = dst_access0;
+   barriers[1].image         = img1;
+   barriers[1].oldLayout     = old1;
+   barriers[1].newLayout     = new1;
+   barriers[1].srcAccessMask = src_access1;
+   barriers[1].dstAccessMask = dst_access1;
+
+   vkCmdPipelineBarrier(cmd, src_stages, dst_stages,
+         0, 0, NULL, 0, NULL, 2, barriers);
+}
+
 static void vulkan_retained_free(vk_t *vk)
 {
    if (vk->retained.image != VK_NULL_HANDLE)
@@ -9260,14 +9303,15 @@ static void vulkan_retain_backbuffer(vk_t *vk, struct vk_image *backbuffer)
       old_layout          = VK_IMAGE_LAYOUT_UNDEFINED;
    }
 
-   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, backbuffer->image,
+   vulkan_image_layout_transition_pair(vk->cmd,
+         backbuffer->image,
          vulkan_swapchain_layout(vk->context), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
          VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->retained.image,
+         vk->retained.image,
          old_layout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
 
    region.srcSubresource.mipLevel       = 0;
    region.srcSubresource.baseArrayLayer = 0;
@@ -9291,14 +9335,15 @@ static void vulkan_retain_backbuffer(vk_t *vk, struct vk_image *backbuffer)
          vk->retained.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
 
-   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->retained.image,
+   vulkan_image_layout_transition_pair(vk->cmd,
+         vk->retained.image,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, backbuffer->image,
+         backbuffer->image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vulkan_swapchain_layout(vk->context),
          VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 }
 
 /* One swap of the retained image: copy it into the swapchain image
@@ -11599,17 +11644,18 @@ static void vulkan_xr_copy_ui(vk_t *vk, unsigned s, unsigned ui_dims)
       return;
    }
 
-   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->views.ui.image,
+   /* dst after the runtime's acquire barrier, as in
+    * vulkan_xr_draw_screen. */
+   vulkan_image_layout_transition_pair(vk->cmd,
+         vk->views.ui.image,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
          VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
-   /* After the runtime's acquire barrier, as in vulkan_xr_draw_screen. */
-   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, dst,
+         dst,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+       | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT);
    region.srcSubresource.mipLevel       = 0;
    region.srcSubresource.baseArrayLayer = 0;
@@ -11628,19 +11674,19 @@ static void vulkan_xr_copy_ui(vk_t *vk, unsigned s, unsigned ui_dims)
    vkCmdCopyImage(vk->cmd, vk->views.ui.image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-   /* The layout the runtime takes it back in. */
-   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, dst,
+   /* dst into the layout the runtime takes it back in. */
+   vulkan_image_layout_transition_pair(vk->cmd,
+         dst,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->views.ui.image,
+         vk->views.ui.image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+       | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 }
 
 /* The tracked eyes into the projection slot, one image each, with no
