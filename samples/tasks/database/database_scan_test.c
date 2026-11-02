@@ -1043,6 +1043,9 @@ static void prep_cancel_begun(void)
    }
 }
 
+/* The title of the last task pushed with one, a reader's aside. */
+static char pushed_title[256];
+
 bool __real_task_queue_push(retro_task_t *task);
 bool __wrap_task_queue_push(retro_task_t *task)
 {
@@ -1050,6 +1053,8 @@ bool __wrap_task_queue_push(retro_task_t *task)
 
    if (!(task_get_flags(task) & RETRO_TASK_FLG_PARALLEL))
    {
+      if (task->title)
+         strlcpy(pushed_title, task->title, sizeof(pushed_title));
       if (   prep_cancel_at && !task->title
           && ++prep_pushes == prep_cancel_at)
          prep_cancel_task = task;
@@ -1998,6 +2003,11 @@ static void msgq_push(retro_task_t *task, const char *msg,
    (void)task; (void)msg; (void)prio; (void)duration; (void)flush;
 }
 
+/* While set, run_scan() pushes a group scan of these playlists, its
+ * --scan lines labelled group_label, in place of a scan of its dir. */
+static const struct string_list *group_names;
+static const char               *group_label;
+
 /* Returns false if the scan could not be started; otherwise waits for
  * it, and scan_completed says whether it finished in time. */
 static bool run_scan(const char *dir)
@@ -2024,7 +2034,10 @@ static bool run_scan(const char *dir)
    scan_result.errors     = 9999;
    scan_result.failed     = true;
    scan_err               = false;
-   if (!task_push_dbscan(dir, scan_cb, &scan_result))
+   if (!(group_names
+         ? task_push_manual_content_scan_group(group_names, group_label,
+               scan_cb, &scan_result)
+         : task_push_dbscan(dir, scan_cb, &scan_result)))
       return false;
 
    started = time(NULL);
@@ -10413,6 +10426,398 @@ fixture:
          sizeof(config_get_ptr()->paths.directory_playlist));
 }
 
+/* Runs the queue until no scan is left on it. */
+static void group_drain(void)
+{
+   task_finder_data_t finder;
+   time_t             started = time(NULL);
+
+   finder.func     = find_scan;
+   finder.userdata = NULL;
+   while (task_queue_find(&finder))
+   {
+      task_queue_check();
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         break;
+      retro_sleep(1);
+   }
+}
+
+/* Linked with --wrap: the playlist sorts. */
+static retro_atomic_int_t pl_sorts;
+
+void __real_playlist_qsort(playlist_t *playlist);
+void __wrap_playlist_qsort(playlist_t *playlist)
+{
+   retro_atomic_fetch_add_int(&pl_sorts, 1);
+   __real_playlist_qsort(playlist);
+}
+
+/* The most of these playlists written, and opened, between two window
+ * opens. */
+static const char *spent_lpl[2];
+static unsigned    spent_had;
+static unsigned    spent_most;
+static unsigned    spent_opens;
+static unsigned    spent_opens_most;
+
+/* Linked with --wrap: counts the opens of spent_lpl. */
+playlist_t *__real_playlist_init(const playlist_config_t *config);
+playlist_t *__wrap_playlist_init(const playlist_config_t *config)
+{
+   if (   spent_lpl[0] && config
+       && (   string_is_equal(config->path, spent_lpl[0])
+           || string_is_equal(config->path, spent_lpl[1])))
+      spent_opens++;
+   return __real_playlist_init(config);
+}
+
+static void spent_count(void)
+{
+   unsigned now = (unsigned)path_is_valid(spent_lpl[0])
+         + (unsigned)path_is_valid(spent_lpl[1]);
+
+   if (now - spent_had > spent_most)
+      spent_most = now - spent_had;
+   spent_had = now;
+   if (spent_opens > spent_opens_most)
+      spent_opens_most = spent_opens;
+   spent_opens = 0;
+}
+
+static void spent_open(void)
+{
+   scan_tick_open();
+   spent_count();
+   spend_window();
+}
+
+/* Loads @lpl's saved settings as a refresh does, lays strict matching
+ * (refresh_write() saves none), @archives and @overwrite over them as
+ * overrides would, and runs the group scan of group_names; with @out,
+ * its --scan lines go to @out and @err. */
+static bool group_load(const char *lpl, const char *db)
+{
+   playlist_config_t *cfg = (playlist_config_t*)calloc(1, sizeof(*cfg));
+   playlist_t        *pl  = NULL;
+   bool               set = false;
+
+   if (!cfg)
+      return false;
+   cfg->capacity = COLLECTION_SIZE;
+   playlist_config_set_path(cfg, lpl);
+   manual_content_scan_reset_settings();
+   if ((pl = playlist_init(cfg)))
+   {
+      set = manual_content_scan_set_menu_from_playlist(pl, db, false)
+            == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK;
+      playlist_free(pl);
+   }
+   free(cfg);
+   if (set)
+      manual_content_scan_set_menu_scan_use_db(
+            MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+   return set;
+}
+
+static bool group_run(const char *lpl, const char *db, const char *dir,
+      bool archives, bool overwrite, const char *out, const char *err)
+{
+   if (!group_load(lpl, db))
+      return false;
+   *manual_content_scan_get_search_archives_ptr()    = archives;
+   *manual_content_scan_get_overwrite_playlist_ptr() = overwrite;
+   if (out)
+      return capture_scan(dir, out, err, true);
+   return run_scan(dir) && scan_completed;
+}
+
+/* A group scan: one scan of a folder for two playlists named after
+ * their databases.  Each gets only its own match and a third database
+ * is never opened; each drops its stale entry and gets the settings,
+ * new entries or not; overwrite clears both. */
+static void group_scan_lane(const char *root, const char *pl_dir,
+      const char *db_dir, bool threaded)
+{
+   static const char *const names[3] =
+         { "Test Alpha", "Test Beta", "Test Disc" };
+   static const char *const games[3] =
+         { "Group Alpha", "Group Beta", "Group Disc" };
+   static const uint32_t    crcs[3]  =
+         { 0x6E0A0001u, 0x6E0A0002u, 0x6E0A0003u };
+   char               *db    = (char*)malloc(512);
+   char               *pl    = (char*)malloc(512);
+   char               *dir   = (char*)malloc(512);
+   char               *label = (char*)malloc(640);
+   char               *out   = (char*)malloc(1024);
+   char               *err   = (char*)malloc(1024);
+   char               *keep  = (char*)malloc(1024);
+   char               *p     = (char*)malloc(1024);
+   char              (*lpl)[1024] = (char(*)[1024])malloc(3 * sizeof(*lpl));
+   char                what[128], detail[128];
+   db_rec_t            rec;
+   union string_list_elem_attr attr;
+   struct string_list *group = string_list_new();
+   const char         *q     = threaded ? "(threaded)" : "(regular)";
+   unsigned            k, qq, opens;
+   int                 sorts;
+   bool                ran;
+
+   if (   !db || !pl || !dir || !label || !out || !err || !keep || !p
+       || !lpl)
+   {
+      check(0, "group lane", "out of memory");
+      goto end;
+   }
+   sprintf(db,   "%s/group_db",       root);
+   sprintf(pl,   "%s/group_pl",       root);
+   sprintf(dir,  "%s/group",          root);
+   sprintf(out,  "%s/group_out.txt",  root);
+   sprintf(err,  "%s/group_err.txt",  root);
+   sprintf(keep, "%s/group_keep.bin", root);
+   path_mkdir(db);
+   path_mkdir(pl);
+   path_mkdir(dir);
+   delete_playlists(pl);
+   for (k = 0; k < 2; k++)
+   {
+      sprintf(p, "%s/%c.bin", dir, 'd' + k);
+      filestream_delete(p);
+   }
+   for (k = 0; k < 3; k++)
+   {
+      set_rec(&rec, games[k], crcs[k], 1024);
+      sprintf(p, "%s/%s.rdb", db, names[k]);
+      if (!write_db_set(p, &rec, 1))
+         goto fixture;
+      sprintf(p, "%s/%c.bin", dir, 'a' + k);
+      if (!write_content(p, crcs[k], 1024))
+         goto fixture;
+      sprintf(lpl[k], "%s/%s.lpl", pl, names[k]);
+   }
+   for (k = 0; k < 2; k++)
+   {
+      sprintf(p, "%s/00_gone_%c.bin", dir, 'a' + k);
+      if (!refresh_write(lpl[k], dir, NULL, p))
+         goto fixture;
+   }
+   attr.i = 0;
+   if (   !write_content(keep, 0x6E0A00FFu, 1024)
+       || !group
+       || !string_list_append(group, names[0], attr)
+       || !string_list_append(group, names[1], attr))
+      goto fixture;
+   sprintf(label, "%s (%s, %s)", dir, names[0], names[1]);
+   use_db(db);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+   group_names = group;
+   group_label = label;
+
+   open_name   = names[2];
+   named_opens = 0;
+   ran         = group_run(lpl[0], db, dir, false, false, out, err);
+   opens       = named_opens;
+   open_name   = NULL;
+   sprintf(what, "group %s: one scan for both", q);
+   check_result(what, 2, 0, 1, 0, false);
+   /* Cut to the task's 128 bytes, as a long label is. */
+   strlcpy(p, msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), 128);
+   strlcat(p, label, 128);
+   sprintf(what, "group %s: its title names the group", q);
+   check(ran && !strcmp(pushed_title, p), what, pushed_title);
+   sprintf(what, "group %s: each playlist gets its own", q);
+   check(   ran
+         && file_contains(lpl[0], "/a.bin\"")
+         && file_contains(lpl[0], games[0])
+         && !file_contains(lpl[0], "/b.bin\"")
+         && file_contains(lpl[1], "/b.bin\"")
+         && file_contains(lpl[1], games[1])
+         && !file_contains(lpl[1], "/a.bin\""), what, "a.bin, b.bin");
+   sprintf(what, "group %s: a third database never opened", q);
+   sprintf(detail, "%u opens of %s", opens, names[2]);
+   check(   ran && opens == 0 && !path_is_valid(lpl[2])
+         && !file_contains(lpl[0], "/c.bin\"")
+         && !file_contains(lpl[1], "/c.bin\""), what, detail);
+   qq = file_count(out, " ?? ");
+   sprintf(p, " ?? \"%s/c.bin\"", dir);
+   sprintf(what, "group %s: one ?? for the file neither has", q);
+   check(ran && qq == 1 && file_contains(out, p), what, p);
+   sprintf(p, "%s: 2 added, 0 duplicates, 1 unmatched, 0 errors", label);
+   sprintf(what, "group %s: its totals line", q);
+   check(ran && file_contains(out, p), what, p);
+   sprintf(what, "group %s: each drops its stale entry", q);
+   check(   ran && !file_contains(lpl[0], "00_gone_a")
+         && !file_contains(lpl[1], "00_gone_b"), what,
+         "00_gone_a.bin, 00_gone_b.bin");
+   sprintf(what, "group %s: each saves its own database name", q);
+   check(   ran
+         && file_contains(lpl[0],
+               "\"scan_database_name\": \"Test Alpha.lpl\"")
+         && file_contains(lpl[1],
+               "\"scan_database_name\": \"Test Beta.lpl\""),
+         what, "Test Alpha.lpl, Test Beta.lpl");
+
+   /* Beta's file gone: Beta gets no result, Alpha a duplicate. */
+   sprintf(p, "%s/b.bin", dir);
+   filestream_delete(p);
+   ran = group_run(lpl[0], db, dir, true, false, NULL, NULL);
+   sprintf(what, "group %s: settings saved without a new entry", q);
+   sprintf(detail, "%u added, %u duplicates, %u unmatched",
+         scan_result.added, scan_result.duplicates, scan_result.unmatched);
+   check(   ran && scan_result.added == 0 && scan_result.duplicates == 1
+         && scan_result.unmatched == 1
+         && !file_contains(lpl[1], "/b.bin\"")
+         && file_contains(lpl[1], "\"scan_search_archives\": true")
+         && file_contains(lpl[0], "\"scan_search_archives\": true"),
+         what, detail);
+
+   /* An entry a refresh keeps, in both. */
+   if (   !write_content(p, crcs[1], 1024)
+       || !refresh_write(lpl[0], dir, NULL, keep)
+       || !refresh_write(lpl[1], dir, NULL, keep))
+      goto fixture;
+   ran = group_run(lpl[0], db, dir, false, true, NULL, NULL);
+   sprintf(what, "group %s: overwrite clears both", q);
+   sprintf(detail, "%u added, %u duplicates, %u unmatched",
+         scan_result.added, scan_result.duplicates, scan_result.unmatched);
+   check(   ran && scan_result.added == 2
+         && !file_contains(lpl[0], "group_keep")
+         && !file_contains(lpl[1], "group_keep")
+         && file_contains(lpl[0], "/a.bin\"")
+         && file_contains(lpl[1], "/b.bin\"")
+         && file_contains(lpl[0], "\"scan_overwrite_playlist\": true")
+         && file_contains(lpl[1], "\"scan_overwrite_playlist\": true"),
+         what, detail);
+
+   /* Members interleaved in content order: a, b, (c,) d, e. */
+   sprintf(p, "%s/d.bin", dir);
+   if (!write_content(p, crcs[0], 1024))
+      goto fixture;
+   sprintf(p, "%s/e.bin", dir);
+   if (!write_content(p, crcs[1], 1024))
+      goto fixture;
+   sorts = retro_atomic_load_acquire_int(&pl_sorts);
+   ran   = group_run(lpl[0], db, dir, false, false, NULL, NULL);
+   sorts = retro_atomic_load_acquire_int(&pl_sorts) - sorts;
+   sprintf(what, "group %s: interleaved, each sorted once", q);
+   sprintf(detail, "%d sorts; %u added, %u duplicates, %u unmatched",
+         sorts, scan_result.added, scan_result.duplicates,
+         scan_result.unmatched);
+   check(   ran && sorts == 2 && scan_result.added == 2
+         && scan_result.duplicates == 2 && scan_result.unmatched == 1,
+         what, detail);
+   sprintf(what, "group %s: interleaved, each gets only its own", q);
+   check(   ran
+         && file_contains(lpl[0], "/a.bin\"")
+         && file_contains(lpl[0], "/d.bin\"")
+         && !file_contains(lpl[0], "/b.bin\"")
+         && !file_contains(lpl[0], "/e.bin\"")
+         && file_contains(lpl[1], "/b.bin\"")
+         && file_contains(lpl[1], "/e.bin\"")
+         && !file_contains(lpl[1], "/a.bin\"")
+         && !file_contains(lpl[1], "/d.bin\""), what, "a, d / b, e");
+
+   /* The first member empty: the second is still validated. */
+   filestream_delete(lpl[0]);
+   sprintf(p, "%s/00_gone_b.bin", dir);
+   if (!refresh_write(lpl[1], dir, NULL, p))
+      goto fixture;
+   ran = group_run(lpl[1], db, dir, false, false, NULL, NULL);
+   sprintf(what, "group %s: first member empty, second validated", q);
+   check(   ran && file_contains(lpl[0], "/a.bin\"")
+         && !file_contains(lpl[1], "00_gone_b"), what, "00_gone_b.bin");
+
+   /* Each window held to its floor: one member written in each. */
+   if (!threaded)
+   {
+      sprintf(p, "%s/group_src", root);
+      path_mkdir(p);
+      strlcat(p, "/Test Alpha.lpl", 1024);
+      filestream_delete(p);
+      filestream_delete(lpl[0]);
+      filestream_delete(lpl[1]);
+      if (!refresh_write(p, dir, NULL, keep))
+         goto fixture;
+      spent_lpl[0]     = lpl[0];
+      spent_lpl[1]     = lpl[1];
+      spent_had        = 0;
+      spent_most       = 0;
+      spent_opens      = 0;
+      spent_opens_most = 0;
+      window_open_hook = spent_open;
+      ran              = group_run(p, db, dir, false, false, NULL, NULL);
+      window_open_hook = scan_tick_open;
+      spent_count();
+      spent_lpl[0]     = NULL;
+      sprintf(what, "group %s: one member written a window", q);
+      sprintf(detail, "%u written at most, %u in all", spent_most,
+            spent_had);
+      check(ran && spent_had == 2 && spent_most == 1, what, detail);
+      sprintf(what, "group %s: one member opened a window", q);
+      sprintf(detail, "%u opened at most", spent_opens_most);
+      check(ran && spent_opens_most == 1, what, detail);
+   }
+
+   /* A member's own refresh and the group never run at once, either
+    * started first. */
+   if (!threaded)
+   {
+      bool grouped, lone;
+
+      grouped = group_load(lpl[0], db)
+            && task_push_manual_content_scan_group(group, label,
+                  NULL, NULL);
+      lone    = group_load(lpl[1], db)
+            && task_push_manual_content_scan(false, NULL, NULL);
+      group_drain();
+      sprintf(what, "group %s: no member refresh while it runs", q);
+      check(grouped && !lone, what, lone ? "both pushed" : "group");
+      lone    = group_load(lpl[1], db)
+            && task_push_manual_content_scan(false, NULL, NULL);
+      grouped = group_load(lpl[0], db)
+            && task_push_manual_content_scan_group(group, label,
+                  NULL, NULL);
+      group_drain();
+      sprintf(what, "group %s: not while a member's refresh runs", q);
+      check(lone && !grouped, what, grouped ? "both pushed" : "lone");
+   }
+
+   /* Only a strict database scan sends each match to a member. */
+   ran = group_load(lpl[0], db);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_LOOSE);
+   ran = ran && !task_push_manual_content_scan_group(group, label,
+         NULL, NULL);
+   group_drain();
+   sprintf(what, "group %s: a loose scan refused", q);
+   check(ran, what, "pushed");
+   goto restore;
+
+fixture:
+   check(0, "fixture", "could not write the group scan set");
+restore:
+   group_names = NULL;
+   group_label = NULL;
+   open_name   = NULL;
+   manual_content_scan_reset_settings();
+   use_db(db_dir);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+end:
+   string_list_free(group);
+   free(db);
+   free(pl);
+   free(dir);
+   free(label);
+   free(out);
+   free(err);
+   free(keep);
+   free(p);
+   free(lpl);
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -11506,6 +11911,8 @@ int main(int argc, char **argv)
    fs_main_lane(root, pl_dir);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, false);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, true);
+   group_scan_lane(root, pl_dir, db_dir, false);
+   group_scan_lane(root, pl_dir, db_dir, true);
    {
       char reader_db[512];
 
