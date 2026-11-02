@@ -80,9 +80,15 @@ struct patch_stream
    size_t         carry_cap;
    size_t         carry_base;
 
-   /* BPS: retained source (SourceCopy seeks arbitrarily) */
+   /* BPS: retained source (SourceCopy seeks arbitrarily); `src` is
+    * where it is read, src_buf or the caller's src_base */
+   const uint8_t *src;
    uint8_t       *src_buf;
    size_t         src_cap;
+
+   /* The fed source where the caller keeps it, read in place; NULL
+    * once a chunk arrives from elsewhere. See patch_stream_set_source(). */
+   const uint8_t *src_base;
    size_t         bt_off;     /* BPS target_offset cursor              */
 
    uint8_t        fmt;
@@ -484,6 +490,8 @@ patch_stream_t *patch_stream_ups_open(const uint8_t *patch, size_t patch_len,
 
 static bool patch_stream_ups_src_ready(patch_stream_t *ps)
 {
+   if (ps->src_base)
+      return ps->s_off < ps->src_seen;
    return ps->s_off < ps->carry_base + ps->carry_len;
 }
 
@@ -492,7 +500,8 @@ static uint8_t patch_stream_ups_src(patch_stream_t *ps)
    uint8_t n = 0;
 
    if (ps->s_off < ps->src_len)
-      n = ps->carry[ps->s_off - ps->carry_base];
+      n = ps->src_base ? ps->src_base[ps->s_off]
+                       : ps->carry[ps->s_off - ps->carry_base];
    ps->s_off++;
    return n;
 }
@@ -579,8 +588,9 @@ static void patch_stream_ups_run(patch_stream_t *ps)
             break;
       }
 
-      /* Release source the machine has passed. */
-      if (ps->s_off > ps->carry_base)
+      /* Release source the machine has passed: nothing to do where
+       * the caller keeps it. */
+      if (!ps->src_base && ps->s_off > ps->carry_base)
       {
          size_t drop = ps->s_off - ps->carry_base;
 
@@ -593,7 +603,45 @@ static void patch_stream_ups_run(patch_stream_t *ps)
    }
 }
 
+static bool patch_stream_ups_feed_copy(patch_stream_t *ps,
+      const uint8_t *chunk, size_t len);
+
 static size_t patch_stream_ups_feed(patch_stream_t *ps,
+      const uint8_t *chunk, size_t len)
+{
+   if (ps->src_base)
+   {
+      if (chunk == ps->src_base + ps->src_seen)
+      {
+         ps->src_crc   = encoding_crc32(ps->src_crc, chunk, len);
+         ps->src_seen += len;
+         patch_stream_ups_run(ps);
+         return len;
+      }
+      /* Fed from elsewhere after all: the machine is suspended at a
+       * command boundary, so what it can still read starts at s_off,
+       * copied into the carry before this chunk joins it. */
+      {
+         size_t from = ps->s_off < ps->src_seen ? ps->s_off : ps->src_seen;
+         size_t keep = ps->src_seen - from;
+         const uint8_t *base = ps->src_base;
+         ps->src_base   = NULL;
+         ps->carry_len  = 0;
+         ps->carry_base = from;
+         if (keep && !patch_stream_ups_feed_copy(ps, base + from, keep))
+            return 0;
+      }
+   }
+   if (!patch_stream_ups_feed_copy(ps, chunk, len))
+      return 0;
+   ps->src_crc = encoding_crc32(ps->src_crc, chunk, len);
+   ps->src_seen  += len;
+   patch_stream_ups_run(ps);
+   return len;
+}
+
+/* @len bytes onto the carry's end */
+static bool patch_stream_ups_feed_copy(patch_stream_t *ps,
       const uint8_t *chunk, size_t len)
 {
    if (ps->carry_len + len > ps->carry_cap)
@@ -606,14 +654,14 @@ static size_t patch_stream_ups_feed(patch_stream_t *ps,
          if (cap > (size_t)-1 / 2)
          {
             ps->failed = 1;
-            return 0;
+            return false;
          }
          cap <<= 1;
       }
       if (!(tmp = (uint8_t*)realloc(ps->carry, cap)))
       {
          ps->failed = 1;
-         return 0;
+         return false;
       }
       ps->carry     = tmp;
       ps->carry_cap = cap;
@@ -621,10 +669,7 @@ static size_t patch_stream_ups_feed(patch_stream_t *ps,
 
    memcpy(ps->carry + ps->carry_len, chunk, len);
    ps->carry_len += len;
-   ps->src_crc = encoding_crc32(ps->src_crc, chunk, len);
-   ps->src_seen  += len;
-   patch_stream_ups_run(ps);
-   return len;
+   return true;
 }
 
 static bool patch_stream_ups_finish(patch_stream_t *ps,
@@ -802,7 +847,7 @@ static void patch_stream_bps_run(patch_stream_t *ps)
             }
             for (k = 0; k < len; k++)
             {
-               uint8_t v = ps->src_buf[ps->t_off];
+               uint8_t v = ps->src[ps->t_off];
                if (!patch_stream_put(ps, ps->t_off, &v, 1))
                   ps->failed = 1;
                ps->t_off++;
@@ -890,7 +935,7 @@ static void patch_stream_bps_run(patch_stream_t *ps)
                ps->s_off = so;
                for (k = 0; k < len; k++)
                {
-                  uint8_t v = ps->src_buf[ps->s_off++];
+                  uint8_t v = ps->src[ps->s_off++];
                   if (!patch_stream_put(ps, ps->t_off, &v, 1))
                      ps->failed = 1;
                   ps->t_off++;
@@ -939,33 +984,63 @@ static void patch_stream_bps_run(patch_stream_t *ps)
    }
 }
 
-static size_t patch_stream_bps_feed(patch_stream_t *ps,
-      const uint8_t *chunk, size_t len)
+/* Room in src_buf for @need bytes */
+static bool patch_stream_bps_src_reserve(patch_stream_t *ps, size_t need)
 {
-   if (ps->src_seen + len > ps->src_cap)
+   if (need > ps->src_cap)
    {
       size_t   cap = ps->src_cap ? ps->src_cap : 65536;
       uint8_t *tmp;
 
-      while (ps->src_seen + len > cap)
+      while (need > cap)
       {
          if (cap > (size_t)-1 / 2)
          {
             ps->failed = 1;
-            return 0;
+            return false;
          }
          cap <<= 1;
       }
       if (!(tmp = (uint8_t*)realloc(ps->src_buf, cap)))
       {
          ps->failed = 1;
-         return 0;
+         return false;
       }
       ps->src_buf = tmp;
       ps->src_cap = cap;
    }
+   return true;
+}
 
-   memcpy(ps->src_buf + ps->src_seen, chunk, len);
+static size_t patch_stream_bps_feed(patch_stream_t *ps,
+      const uint8_t *chunk, size_t len)
+{
+   if (ps->src_base && chunk == ps->src_base + ps->src_seen)
+      /* The whole source is where the caller keeps it: read there */
+      ps->src = ps->src_base;
+   else
+   {
+      if (ps->src_base)
+      {
+         /* Fed from elsewhere after all: what came before is copied
+          * out of the caller's buffer, and the source kept from here */
+         const uint8_t *base = ps->src_base;
+         ps->src_base = NULL;
+         if (!patch_stream_bps_src_reserve(ps, ps->src_seen))
+            return 0;
+         if (ps->src_seen)
+            memcpy(ps->src_buf, base, ps->src_seen);
+      }
+      if (     ps->src_seen > (size_t)-1 - len
+            || !patch_stream_bps_src_reserve(ps, ps->src_seen + len))
+      {
+         ps->failed = 1;
+         return 0;
+      }
+      memcpy(ps->src_buf + ps->src_seen, chunk, len);
+      ps->src = ps->src_buf;
+   }
+
    ps->src_crc   = encoding_crc32(ps->src_crc, chunk, len);
    ps->src_seen += len;
    patch_stream_bps_run(ps);
@@ -1114,6 +1189,22 @@ bool patch_stream_finish(patch_stream_t *ps, uint8_t **out, size_t *out_len)
 bool patch_stream_failed(patch_stream_t *ps)
 {
    return !ps || ps->failed;
+}
+
+void patch_stream_set_source(patch_stream_t *ps, const uint8_t *base)
+{
+   if (!ps || ps->src_seen)
+      return;
+#ifdef HAVE_XDELTA
+   if (ps->fmt == PATCH_STREAM_XDELTA)
+   {
+      vcdiff_stream_set_source(ps->vcd, base);
+      return;
+   }
+#endif
+   /* IPS keeps no source: it writes the target as the source arrives */
+   if (ps->fmt != PATCH_STREAM_IPS)
+      ps->src_base = base;
 }
 
 void patch_stream_free(patch_stream_t *ps)

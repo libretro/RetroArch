@@ -140,6 +140,9 @@ struct vcdiff_stream
    uint8_t       *own_src;    /* retained copy, streaming only        */
    size_t         own_cap;
    uint8_t        owns_src;   /* 1 when own_src is in use             */
+   /* the fed source where the caller keeps it, read in place; NULL
+    * once a chunk arrives from elsewhere */
+   const uint8_t *src_base;
    uint8_t        failed;
 
    uint8_t       *out;        /* target being built                   */
@@ -648,7 +651,39 @@ size_t vcdiff_stream_feed(vcdiff_stream_t *s, const uint8_t *chunk,
    if (!s || !chunk || !len || s->failed)
       return 0;
 
+   /* Where the caller keeps the whole source, read it there */
+   if (s->src_base && chunk == s->src_base + s->src_seen)
+   {
+      s->src       = s->src_base;
+      s->src_seen += len;
+      if (!vcd_drain(s))
+         return 0;
+      return len;
+   }
+
    /* Retain the source: a later window may name any part of it. */
+   if (s->src_base)
+   {
+      /* Fed from elsewhere after all: what came before is copied out
+       * of the caller's buffer first */
+      const uint8_t *base = s->src_base;
+      s->src_base = NULL;
+      if (s->src_seen)
+      {
+         if (!(s->own_src = (uint8_t*)malloc(s->src_seen)))
+         {
+            s->failed = 1;
+            return 0;
+         }
+         memcpy(s->own_src, base, s->src_seen);
+         s->own_cap = s->src_seen;
+      }
+   }
+   if (s->src_seen > ((size_t)-1) - len)
+   {
+      s->failed = 1;
+      return 0;
+   }
    if (s->src_seen + len > s->own_cap)
    {
       size_t   cap = s->own_cap ? s->own_cap : 65536;
@@ -699,6 +734,12 @@ bool vcdiff_stream_finish(vcdiff_stream_t *s, uint8_t **out,
    *out_len = s->out_len;
    s->out   = NULL;
    return true;
+}
+
+void vcdiff_stream_set_source(vcdiff_stream_t *s, const uint8_t *base)
+{
+   if (s && !s->src_seen)
+      s->src_base = base;
 }
 
 void vcdiff_stream_free(vcdiff_stream_t *s)

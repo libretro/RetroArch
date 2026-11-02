@@ -90,6 +90,15 @@ patch_stream_t *patch_stream_bps_open(const uint8_t *patch, size_t patch_len,
 patch_stream_t *patch_stream_xdelta_open(const uint8_t *patch,
       size_t patch_len, size_t src_len);
 
+/* The source this stream is about to be fed lies whole, in the order it
+ * will be fed, at @base, and stays there until patch_stream_finish() or
+ * patch_stream_free(): the stream reads what it has been fed in place
+ * rather than keeping a copy of it - BPS keeps the whole source for
+ * SourceCopy, UPS the part not yet consumed. A chunk fed from anywhere
+ * else is taken as before, with a copy of what came before it. Call
+ * before the first feed. */
+void patch_stream_set_source(patch_stream_t *ps, const uint8_t *base);
+
 /* Feed the next consecutive span of source bytes.  Chunks must arrive in
  * order and must not overlap; any sizes are accepted.  Returns the bytes
  * taken from this chunk. */

@@ -296,13 +296,26 @@ static size_t make_ips(uint8_t*pat,const uint8_t*src,size_t sl,size_t*want){size
 static void enc(uint8_t*b,size_t*o,uint64_t v){for(;;){uint8_t x=v&0x7f;v>>=7;if(!v){b[(*o)++]=x|0x80;break;}b[(*o)++]=x;v--;}}
 static uint32_t crc(const uint8_t*p,size_t n){static uint32_t T[256];static int I=0;uint32_t c;if(!I){uint32_t i,j;for(i=0;i<256;i++){c=i;for(j=0;j<8;j++)c=(c&1)?0xEDB88320u^(c>>1):c>>1;T[i]=c;}I=1;}c=~0u;while(n--)c=T[(c^*p++)&0xFF]^(c>>8);return ~c;}
 static size_t make_ups(uint8_t*pat,const uint8_t*src,size_t sl,uint8_t*tgt,size_t tl){size_t o=0,i=0;memcpy(pat,"UPS1",4);o=4;enc(pat,&o,sl);enc(pat,&o,tl);while(i<tl||i<sl){size_t run=0;while(i<tl){uint8_t s=i<sl?src[i]:0;if(s!=tgt[i])break;i++;run++;}enc(pat,&o,run);for(;;){uint8_t s=i<sl?src[i]:0,t=i<tl?tgt[i]:0,x=s^t;pat[o++]=x;i++;if(x==0)break;if(i>tl&&i>sl)break;}}{uint32_t sc=crc(src,sl),tc=crc(tgt,tl),pc;int k;for(k=0;k<4;k++)pat[o++]=sc>>(k*8);for(k=0;k<4;k++)pat[o++]=tc>>(k*8);pc=crc(pat,o);for(k=0;k<4;k++)pat[o++]=pc>>(k*8);}return o;}
-static int cmp1(int fmt,const uint8_t*pat,size_t pl,const uint8_t*src,size_t sl,size_t chunk){
-   uint8_t *os,*ss;uint64_t ol;size_t sl2,p=0;patch_stream_t*ps;
+/* How a comparison feeds the source: 0 as a copy the stream keeps, 1 in
+ * place (patch_stream_set_source() on the buffer fed from), 2 in place
+ * for the first half and then from another buffer, which must fall back
+ * to the copy with what came before. The other buffer is freed as soon
+ * as it is fed, so a stream still reading it is caught under ASan. */
+static void feed_src(patch_stream_t*ps,const uint8_t*src,size_t sl,size_t chunk,int mode){
+   size_t p=0,half=sl/2;uint8_t*alt=NULL;
+   if(mode){patch_stream_set_source(ps,src);}
+   if(mode==2&&sl){alt=malloc(sl);memcpy(alt,src,sl);}
+   while(p<sl){size_t n=chunk<sl-p?chunk:sl-p;
+      patch_stream_feed(ps,(mode==2&&p>=half?alt:src)+p,n);p+=n;}
+   free(alt);}
+
+static int cmp1(int fmt,const uint8_t*pat,size_t pl,const uint8_t*src,size_t sl,size_t chunk,int mode){
+   uint8_t *os,*ss;uint64_t ol;size_t sl2;patch_stream_t*ps;
    uint8_t *priv=malloc(pl?pl:1); if(pl) memcpy(priv,pat,pl); /* private copy */
    if(fmt==0){oracle_ips(priv,pl,src,sl,&os,&ol);ps=patch_stream_ips_open(priv,pl,sl);}
    else{oracle_ups(priv,pl,src,sl,&os,&ol);ps=patch_stream_ups_open(priv,pl,sl);}
    if(!ps){free(os);free(priv);return 0;}
-   while(p<sl){size_t n=chunk<sl-p?chunk:sl-p;patch_stream_feed(ps,src+p,n);p+=n;}
+   feed_src(ps,src,sl,chunk,mode);
    if(!patch_stream_finish(ps,&ss,&sl2)){pstream_fail_note();free(os);patch_stream_free(ps);free(priv);return 1;}
    {int bad=(sl2!=ol)||(ol&&memcmp(os,ss,ol));
     free(os);free(ss);patch_stream_free(ps);free(priv);return bad;}}
@@ -319,11 +332,11 @@ static int run_ips_ups(void){
       size_t sl; {unsigned m=xr()%10; sl = m==0?0 : m==1?1 : m==2?2 : m==3?(xr()%4) : m==4?1024 : m==5?1025 : xr()%8192;}uint8_t*src=malloc(sl?sl:1);size_t k;size_t pl,wtl;
       for(k=0;k<sl;k++)src[k]=(uint8_t)xr();
       pl=make_ips(pat,src,sl,&wtl);
-      for(ci=0;ci<7;ci++){if(TINY_ONLY_SMALL(ci,sl))continue;total++;fails+=cmp1(0,pat,pl,src,sl,chunks[ci]);}
+      for(ci=0;ci<7;ci++){if(TINY_ONLY_SMALL(ci,sl))continue;total++;fails+=cmp1(0,pat,pl,src,sl,chunks[ci],(trial+ci)%3);}
       {long tld=(long)sl+((long)(xr()%256)-128);size_t tl=tld<0?0:(size_t)tld;uint8_t*tgt=malloc(tl?tl:1);
        for(k=0;k<tl;k++)tgt[k]=(uint8_t)((k<sl?src[k]:0)^((xr()&3)?0:xr()));
        pl=make_ups(pat,src,sl,tgt,tl);
-       for(ci=0;ci<7;ci++){if(TINY_ONLY_SMALL(ci,sl))continue;total++;fails+=cmp1(1,pat,pl,src,sl,chunks[ci]);}
+       for(ci=0;ci<7;ci++){if(TINY_ONLY_SMALL(ci,sl))continue;total++;fails+=cmp1(1,pat,pl,src,sl,chunks[ci],(trial+ci)%3);}
        free(tgt);}
       free(src);}
    free(pat);
@@ -411,12 +424,12 @@ static int run_bps(void)
       for(k=0;k<sl;k++)src[k]=(uint8_t)xr2();
       pl=make_bps(pat,src,sl,tgt,tl);
       for(ci=0;ci<5;ci++){
-         uint8_t *os,*ss; uint64_t ol; size_t sl2,p=0; patch_stream_t*ps;
+         uint8_t *os,*ss; uint64_t ol; size_t sl2; patch_stream_t*ps;
          uint8_t *priv=malloc(pl); memcpy(priv,pat,pl);
          if(oracle_bps(priv,pl,src,sl,&os,&ol)!=PATCH_SUCCESS){ skipped++; free(priv); continue; }
          ps=patch_stream_bps_open(priv,pl,sl);
          if(!ps){ skipped++; free(os); free(priv); continue; }
-         while(p<sl){ size_t n=chunks[ci]<sl-p?chunks[ci]:sl-p; patch_stream_feed(ps,src+p,n); p+=n; }
+         feed_src(ps,src,sl,chunks[ci],(trial+ci)%3);
          total++;
          if(!patch_stream_finish(ps,&ss,&sl2)){ fails++; printf("finish failed t=%d chunk=%zu\n",trial,chunks[ci]); patch_stream_free(ps); free(os); free(priv); continue; }
          if(sl2!=ol||(ol&&memcmp(os,ss,ol))){ fails++;
@@ -1455,6 +1468,7 @@ static const unsigned char xd_tgt[6000] = {
 static int run_xdelta(void)
 {
    static const size_t chunks[] = { 1, 3, 64, 1024, 65536 };
+#define NCHUNK (sizeof(chunks) / sizeof(chunks[0]))
    unsigned char *whole = NULL;
    size_t whole_len = 0;
    size_t c;
@@ -1467,30 +1481,25 @@ static int run_xdelta(void)
    { printf("[FAIL] xdelta: whole-buffer decode is wrong\n");
      free(whole); return 1; }
 
-   for (c = 0; c < sizeof(chunks) / sizeof(chunks[0]); c++)
+   /* every chunk size in each feed mode */
+   for (c = 0; c < 3 * NCHUNK; c++)
    {
+      size_t chunk = chunks[c % NCHUNK];
       patch_stream_t *ps = patch_stream_xdelta_open(xd_pat, sizeof(xd_pat),
             sizeof(xd_src));
       unsigned char *got = NULL;
-      size_t got_len = 0, p = 0;
+      size_t got_len = 0;
 
       if (!ps)
       { printf("[FAIL] xdelta: open refused (chunk %lu)\n",
-               (unsigned long)chunks[c]); bad = 1; continue; }
-      while (p < sizeof(xd_src))
-      {
-         size_t n = sizeof(xd_src) - p;
-         if (n > chunks[c])
-            n = chunks[c];
-         patch_stream_feed(ps, xd_src + p, n);
-         p += n;
-      }
+               (unsigned long)chunk); bad = 1; continue; }
+      feed_src(ps, xd_src, sizeof(xd_src), chunk, (int)(c / NCHUNK));
       if (!patch_stream_finish(ps, &got, &got_len))
       { printf("[FAIL] xdelta: finish refused (chunk %lu)\n",
-               (unsigned long)chunks[c]); bad = 1; }
+               (unsigned long)chunk); bad = 1; }
       else if (got_len != whole_len || memcmp(got, whole, whole_len))
       { printf("[FAIL] xdelta: chunk %lu differs from whole-buffer\n",
-               (unsigned long)chunks[c]); bad = 1; }
+               (unsigned long)chunk); bad = 1; }
       free(got);
       patch_stream_free(ps);
    }
@@ -1508,7 +1517,8 @@ static int run_xdelta(void)
    }
 
    if (!bad)
-      printf("PASS: xdelta streamed at 5 chunk sizes, matches whole-buffer,"
+      printf("PASS: xdelta streamed at 5 chunk sizes, copied, in place and"
+             " falling back, matches whole-buffer,"
              " short feed refused\n");
    free(whole);
    return bad;
@@ -1597,9 +1607,86 @@ static int run_refusal_parity(void)
    return bad_count != 0;
 }
 
+/* --------------------------------------------------------------------
+ * in place: a source fed where it lies is not copied
+ * -------------------------------------------------------------------- */
+
+#if defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 33))
+#include <malloc.h>
+/* heap the stream takes while it is fed the whole source */
+static size_t fed_heap(patch_stream_t *ps, const uint8_t *src, size_t sl, int mode)
+{
+   struct mallinfo2 a = mallinfo2(), b;
+   feed_src(ps, src, sl, 65536, mode);
+   b = mallinfo2();
+   return (b.uordblks + b.hblkhd) - (a.uordblks + a.hblkhd);
+}
+
+static int run_in_place(void)
+{
+   const size_t sl = 4u << 20;
+   uint8_t *src = malloc(sl), *tgt = malloc(sl), *pat = malloc(4 * sl + 64);
+   size_t pl, k, heap[3];
+   int mode, bad = 0;
+   for (k = 0; k < sl; k++)
+      src[k] = (uint8_t)xr2();
+   pl = make_bps(pat, src, sl, tgt, sl);
+   for (mode = 0; mode < 3; mode++)
+   {
+      uint8_t *got = NULL;
+      size_t got_len = 0;
+      patch_stream_t *ps = patch_stream_bps_open(pat, pl, sl);
+      heap[mode] = fed_heap(ps, src, sl, mode);
+      if (     !patch_stream_finish(ps, &got, &got_len)
+            || got_len != sl || memcmp(got, tgt, sl))
+      { printf("[FAIL] BPS fed in mode %d is wrong\n", mode); bad = 1; }
+      free(got);
+      patch_stream_free(ps);
+   }
+   /* the copy is the whole source; in place there is none, and the
+    * fallback copies only once it has to. A sanitizer's allocator
+    * leaves glibc's counters at nothing: only the results count there */
+   if (!heap[0])
+   {
+      printf("[skip] in place: the heap counters see no allocator\n");
+      free(src); free(tgt); free(pat);
+      return bad;
+   }
+   if (heap[0] < heap[1] + sl)
+   { printf("[FAIL] BPS in place still took %lu bytes, copying %lu\n",
+         (unsigned long)heap[1], (unsigned long)heap[0]); bad = 1; }
+   if (heap[2] < heap[1] + sl)
+   { printf("[FAIL] BPS fallback took %lu bytes, a copy is %lu\n",
+         (unsigned long)heap[2], (unsigned long)heap[0]); bad = 1; }
+#ifdef HAVE_XDELTA
+   for (mode = 0; mode < 2; mode++)
+   {
+      patch_stream_t *ps = patch_stream_xdelta_open(xd_pat, sizeof(xd_pat),
+            sizeof(xd_src));
+      heap[mode] = fed_heap(ps, xd_src, sizeof(xd_src), mode);
+      patch_stream_free(ps);
+   }
+   if (heap[0] < heap[1] + sizeof(xd_src))
+   { printf("[FAIL] xdelta in place still took %lu bytes, copying %lu\n",
+         (unsigned long)heap[1], (unsigned long)heap[0]); bad = 1; }
+#endif
+   if (!bad)
+      printf("PASS: a 4 MiB BPS source and the xdelta source read in place,"
+            " no copy kept\n");
+   free(src); free(tgt); free(pat);
+   return bad;
+}
+#else
+static int run_in_place(void)
+{
+   printf("[skip] in place: no glibc heap counters\n");
+   return 0;
+}
+#endif
+
 int main(void)
 {
-   int a, b, x, r;
+   int a, b, x, r, i;
    printf("--- IPS / UPS ---\n");
    a = run_ips_ups();
    printf("--- BPS ---\n");
@@ -1608,6 +1695,9 @@ int main(void)
    x = run_xdelta();
    printf("--- refusal parity ---\n");
    r = run_refusal_parity();
+   printf("--- in place ---\n");
+   i = run_in_place();
+   r |= i;
    printf("%s\n", (a || b || x || r) ? "FAILED" : "OK");
    return (a || b || x || r) ? 1 : 0;
 }

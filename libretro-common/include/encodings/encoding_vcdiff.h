@@ -71,6 +71,12 @@ typedef struct vcdiff_stream vcdiff_stream_t;
 
 vcdiff_stream_t *vcdiff_stream_open(const uint8_t *patch, size_t patch_len,
       size_t src_len);
+/* The source the stream is about to be fed lies whole, in the order it
+ * will be fed, at @base, and stays there until finish() or free(): the
+ * windows read it in place instead of from a retained copy. A chunk fed
+ * from anywhere else is retained as before, with a copy of what came
+ * before it. Call before the first feed. */
+void vcdiff_stream_set_source(vcdiff_stream_t *s, const uint8_t *base);
 size_t vcdiff_stream_feed(vcdiff_stream_t *s, const uint8_t *chunk,
       size_t len);
 bool vcdiff_stream_finish(vcdiff_stream_t *s, uint8_t **out,

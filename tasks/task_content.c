@@ -910,7 +910,13 @@ static uint8_t *content_file_pump_source(data_transfer_t *dt,
    size_t          total  = 0;
 
    if (ps)
+   {
+      /* The transfer's buffer is one allocation that never moves, and
+       * stays alive, detached as the content, until the patch is
+       * finished: the patch reads the source there, not from a copy */
       base = data_transfer_ptr(dt, &total);
+      patch_stream_set_source(ps, base);
+   }
 #else
    (void)patch_stream;
 #endif
