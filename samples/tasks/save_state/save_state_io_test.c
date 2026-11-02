@@ -806,12 +806,13 @@ static void test_short_file(void)
  * 8. Mutual exclusion between save/load tasks.
  *
  *    Every task this file pushes is TASK_TYPE_BLOCKING, so the queue
- *    admits at most one of them at a time and refuses the rest.  Two
- *    of the fixes above rest on that rule and one of them is only
- *    severe because of it - a save task that retried a failed open
- *    forever did not merely fail to save, it held the single blocking
- *    slot for the rest of the session, so no state could be saved or
- *    loaded again without a restart.
+ *    admits at most one of them at a time.  The rest are held behind
+ *    it, in order, up to a bound, and refused past it.  Two of the
+ *    fixes above rest on that rule and one of them is only severe
+ *    because of it - a save task that retried a failed open forever
+ *    did not merely fail to save, it held the single blocking slot for
+ *    the rest of the session, so no state could be saved or loaded
+ *    again without a restart.
  *
  *    The refusal path is also where task_push_save_state has to undo
  *    everything it built - the task, its title, the state struct, and
@@ -823,7 +824,7 @@ static void test_blocking_exclusion(void)
 {
    const char *first  = "sst_excl_a.state";
    const char *second = "sst_excl_b.state";
-   int         i;
+   int         i, accepted;
 
    frontend_reset();
    core_fill(40 * TEST_SAVE_STATE_CHUNK);
@@ -839,16 +840,20 @@ static void test_blocking_exclusion(void)
 
    okf(queue_busy(), "the first blocking task is running");
 
-   /* Push several more while it runs.  Each must be refused, and each
-    * refusal must free everything it allocated. */
-   for (i = 0; i < 8; i++)
+   /* Push several more while it runs.  The first few are held behind
+    * it, the rest refused, and each refusal must free everything it
+    * allocated. */
+   for (i = 0, accepted = 0; i < 8; i++)
    {
-      content_save_state(second, true);
+      if (content_save_state(second, true))
+         accepted++;
       task_queue_check();
    }
 
+   okf(accepted > 0 && accepted < 8,
+       "saves behind one in flight are held up to a bound, then refused");
    okf(file_size(second) == -1,
-       "a second save is refused while one is in flight");
+       "a held save waits for the one in flight");
 
    /* A load refused the same way leaves no load pending: left set, the
     * flag held a content close and a movie recording waiting forever on
@@ -863,7 +868,7 @@ static void test_blocking_exclusion(void)
          fclose(f);
       }
       ok = content_load_state(third, false, false);
-      okf(!ok, "a load is refused while a save is in flight");
+      okf(!ok, "a load is refused while the hold is full");
       okf(!content_load_state_in_progress(NULL),
           "the refused load is not left pending");
       filestream_delete(third);
@@ -874,6 +879,8 @@ static void test_blocking_exclusion(void)
    okf(!queue_busy(), "the queue drains after the refusals");
    okf(file_size(first) == (long)content_get_serialized_size(),
        "the admitted save completes intact despite the refusals");
+   okf(file_size(second) == (long)content_get_serialized_size(),
+       "the held saves run once the first is through");
 
    filestream_delete(first);
    filestream_delete(second);
@@ -1305,6 +1312,57 @@ static void test_notify_without_allocation(void)
    filestream_delete(path);
 }
 
+/* -----------------------------------------------------------------
+ * Load State pressed while a save is still writing.
+ *
+ *    It was turned away by the queue and dropped without a word: the
+ *    hotkey did nothing. It is held behind the save now and runs when
+ *    the save is through - after it, so it loads what the save wrote,
+ *    not the file the save replaced.
+ * ----------------------------------------------------------------- */
+static void test_load_held_behind_save(void)
+{
+   const char *path = "sst_held.state";
+   size_t      n    = 40 * TEST_SAVE_STATE_CHUNK;
+
+   frontend_reset();
+   core_fill(n);
+   filestream_delete(path);
+   clock_step = 0;
+
+   /* an older state in the file, so the next save backs it up first */
+   content_save_state(path, true);
+   pump(1000);
+   okf(file_size(path) > 0, "held: the first save is written");
+
+   /* the save in flight for a while: one observation spends the budget */
+   clock_step = TEST_TICK_BUDGET_US;
+   memset(core_mem, 0x11, n);
+   okf(content_save_state(path, true), "held: the second save is pushed");
+   task_queue_check();
+   /* its backup read of the older state first, then the write */
+   okf(queue_busy(), "held: the second save is in flight");
+
+   memset(core_mem, 0x22, n);
+   told_calls = 0;
+   okf(content_load_state_notify(path, false, false, told_cb, NULL),
+       "held: Load State during the save is taken, not refused");
+   okf(content_load_state_in_progress(NULL),
+       "held: and counts as pending, for a close to wait on");
+
+   pump(20000);
+   okf(!queue_busy() && !content_load_state_in_progress(NULL)
+         && !content_save_state_in_progress(NULL),
+       "held: the save and the load both finish");
+   okf(told_calls == 1 && !told_error,
+       "held: the load is told it was applied");
+   okf(core_mem[0] == 0x11 && core_mem[n - 1] == 0x11,
+       "held: the load runs after the save and loads what it wrote");
+
+   clock_step = 0;
+   filestream_delete(path);
+}
+
 static int run_default_lane(void)
 {
    printf("== task_save.c I/O regression oracle ==\n");
@@ -1331,6 +1389,7 @@ static int run_default_lane(void)
    test_undo_snapshot_failure_keeps_previous();
    test_undo_allocates_nothing();
    test_notify_without_allocation();
+   test_load_held_behind_save();
 
    content_reset_savestate_backups();
    task_queue_deinit();

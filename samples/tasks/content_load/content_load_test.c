@@ -2426,7 +2426,8 @@ static void lane_state_slot_reply(void)
  * task. Screenshots, Bluetooth and Wi-Fi tasks were TASK_TYPE_BLOCKING,
  * which made the queue refuse every save and load pushed while one ran:
  * the hotkey did nothing, silently, for as long as a save's thumbnail
- * or a 4K capture took to encode, or a ten-second Bluetooth scan. Each
+ * or a 4K capture took to encode, or a ten-second Bluetooth scan; and
+ * one pressed while a save was still writing was dropped as well. Each
  * case fires Load State as the hotkey does and runs frames until the
  * core has unserialized the state; a load is a few frames' work. */
 #define STATE_LOAD_MAX_FRAMES 30
@@ -2496,7 +2497,8 @@ static void lane_state_load_latency(void)
    unsigned had = failures, worst = 0, frames, round;
    static const char *const cases[] = {
       "after the save", "beside the save's thumbnail",
-      "beside a screenshot", "after a video reinit" };
+      "beside a screenshot", "after a video reinit",
+      "straight after Save State" };
 
    run_harness_core();
    /* threaded tasks and compressed states, as most users run */
@@ -2512,13 +2514,22 @@ static void lane_state_load_latency(void)
    for (round = 0; round < 3; round++)
    {
       unsigned c;
-      for (c = 0; c < 4; c++)
+      for (c = 0; c < 5; c++)
       {
-         unsigned mark = 0x10 + round * 4 + c;
+         unsigned mark = 0x10 + round * 5 + c;
          configuration_set_bool(settings,
                settings->bools.savestate_thumbnail_enable, c == 1);
-         CHECK(state_save_marked(mark), "the save did not finish (%s)",
-               cases[c]);
+         /* the last: Load State in the same frame as Save State, the
+          * save still writing - held behind it, it loads what it wrote */
+         if (c == 4)
+         {
+            core_mark_state(mark);
+            CHECK(command_event(CMD_EVENT_SAVE_STATE, NULL),
+                  "the save was not taken (%s)", cases[c]);
+         }
+         else
+            CHECK(state_save_marked(mark), "the save did not finish (%s)",
+                  cases[c]);
 #ifdef HAVE_SCREENSHOTS
          if (c == 2)
          {
