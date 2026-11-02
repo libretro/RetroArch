@@ -6690,6 +6690,7 @@ enum dbscan_load_status
    DBSCAN_LOAD_AMBIGUOUS,
    DBSCAN_LOAD_NO_SETTINGS,
    DBSCAN_LOAD_FOLDER_MISSING,
+   DBSCAN_LOAD_FOLDER_EMPTY,
    DBSCAN_LOAD_OUTSIDE,     /* a --scan-refresh path not in the folder */
    DBSCAN_LOAD_NO_MEMORY
 };
@@ -7416,6 +7417,7 @@ static void dbscan_load_handler(retro_task_t *task)
    if (prep->load == DBSCAN_LOAD_OK)
    {
       const char *dir = playlist_get_scan_content_dir(prep->playlist);
+      char *expanded  = NULL;
 
       /* A playlist that does not parse has no settings to read. */
       if (!playlist_scan_refresh_enabled(prep->playlist))
@@ -7442,6 +7444,14 @@ static void dbscan_load_handler(retro_task_t *task)
          if (string_starts_with_size(dir, "smb://", STRLEN_CONST("smb://")))
             prep->smb_reason = scan_smb_failure_reason(dir);
 #endif
+      }
+      else if ((expanded = (char*)malloc(PATH_MAX_LENGTH)))
+      {
+         fill_pathname_expand_special(expanded, dir, PATH_MAX_LENGTH);
+         /* A mount point left behind with its drive unplugged */
+         if (manual_scan_probe_dir(expanded) == MANUAL_SCAN_DIR_EMPTY)
+            prep->load = DBSCAN_LOAD_FOLDER_EMPTY;
+         free(expanded);
       }
    }
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
@@ -7523,6 +7533,12 @@ static void dbscan_load_cb(retro_task_t *task, void *task_data,
             dbscan_chain_refresh_error(chain, prep->name,
                   "skipped: content folder not found",
                   playlist_get_scan_content_dir(prep->playlist));
+         dbscan_chain_fold(chain, prep->name, TASK_DBSCAN_SKIPPED, NULL);
+         break;
+      case DBSCAN_LOAD_FOLDER_EMPTY:
+         dbscan_chain_refresh_error(chain, prep->name,
+               "skipped: content folder empty",
+               playlist_get_scan_content_dir(prep->playlist));
          dbscan_chain_fold(chain, prep->name, TASK_DBSCAN_SKIPPED, NULL);
          break;
       case DBSCAN_LOAD_OK:

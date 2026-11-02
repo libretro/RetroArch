@@ -12937,6 +12937,136 @@ fixture:
          sizeof(config_get_ptr()->paths.directory_playlist));
 }
 
+/* A refresh-all skips a playlist whose saved folder is empty, as it
+ * skips one whose folder is gone: an unplugged drive's mount point.
+ * The menu's single refresh is not a chain item; it stops at the
+ * empty listing and leaves the playlist as it was. */
+static void empty_folder_lane(const char *root, const char *pl_dir,
+      uint32_t crc_a, uint32_t sz_a, bool threaded)
+{
+   char                pl[512], one_pl[512], a[512], gone[512];
+   char                mount[512], out[1024], err[1024], p[1024];
+   char                stale[1024], want[1536], what[128], detail[160];
+   const char         *q = threaded ? "(threaded)" : "(regular)";
+   task_dbscan_item_t *items;
+   playlist_config_t  *cfg    = NULL;
+   playlist_t         *one    = NULL;
+   void               *before = NULL, *after = NULL;
+   int64_t             before_len, after_len;
+   bool                ran, captured, pushed, same;
+
+   sprintf(pl,     "%s/empty_pl",      root);
+   sprintf(one_pl, "%s/empty_one_pl",  root);
+   sprintf(a,      "%s/empty_a",       root);
+   sprintf(gone,   "%s/empty_gone",    root);
+   sprintf(mount,  "%s/empty_mount",   root);
+   sprintf(out,    "%s/empty_out.txt", root);
+   sprintf(err,    "%s/empty_err.txt", root);
+   path_mkdir(pl);
+   path_mkdir(one_pl);
+   path_mkdir(a);
+   path_mkdir(mount);
+   delete_playlists(pl);
+   sprintf(p, "%s/01_alpha.bin", a);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/a_ok.lpl", pl);
+   sprintf(stale, "%s/00_gone.bin", a);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/b_gone.lpl", pl);
+   sprintf(stale, "%s/00_gone.bin", gone);
+   if (!refresh_write(p, gone, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/d_mount.lpl", pl);
+   sprintf(stale, "%s/00_gone.bin", mount);
+   if (!refresh_write(p, mount, NULL, stale))
+      goto fixture;
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   ran = refresh_run(items, 1, out, err, true);
+   sprintf(what, "empty mount %s: skipped like a gone folder", q);
+   snprintf(detail, sizeof(detail), "%u items, ran %u, skipped %u, "
+         "failed %u", chain_seen, chain_totals.ran, chain_totals.skipped,
+         chain_totals.failed);
+   check(   ran && chain_seen == 3
+         && chain_saw(0, "a_ok",    TASK_DBSCAN_RAN,     1)
+         && chain_saw(1, "b_gone",  TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(2, "d_mount", TASK_DBSCAN_SKIPPED, -1)
+         && chain_totals.ran == 1 && chain_totals.skipped == 2
+         && !chain_totals.failed, what, detail);
+   sprintf(what, "empty mount %s: its line", q);
+   sprintf(want, "%s: skipped: content folder empty (%s)", "d_mount",
+         mount);
+   check(file_contains(err, want), what, err);
+   sprintf(what, "empty mount %s: its entry kept", q);
+   sprintf(p, "%s/d_mount.lpl", pl);
+   check(file_contains(p, stale), what, p);
+
+   chain_seen      = 0;
+   chain_dones     = 0;
+   chain_ud_ok     = true;
+   menu_all_msg[0] = '\0';
+   cli_output      = false;
+   captured        = capture_begin(out, err);
+   pushed          = task_push_dbscan_chain(menu_all_item(), 1, NULL,
+         menu_all_done_cb, NULL);
+   chain_wait(false);
+   if (captured)
+      capture_end();
+   sprintf(what, "empty mount %s: the menu's summary", q);
+   check(   pushed && chain_dones == 1 && chain_ud_ok
+         && !strcmp(menu_all_msg,
+               "Playlists refreshed: 1, skipped: 2, failed: 0")
+         && captured && path_get_size(err) == 0, what, menu_all_msg);
+
+   if (!threaded)
+   {
+      sprintf(p, "%s/Empty.lpl", one_pl);
+      strlcpy(config_get_ptr()->paths.directory_playlist, one_pl,
+            sizeof(config_get_ptr()->paths.directory_playlist));
+      filestream_delete(p);
+      if (   !refresh_write(p, mount, NULL, stale)
+          || !filestream_read_file(p, &before, &before_len)
+          || !(cfg = (playlist_config_t*)calloc(1, sizeof(*cfg))))
+         goto fixture;
+      playlist_config_set_path(cfg, p);
+      cfg->capacity          = COLLECTION_SIZE;
+      invalid_content_pushed = false;
+      one = playlist_init(cfg);
+      ran =    one
+            && manual_content_scan_set_menu_from_playlist(one,
+                  config_get_ptr()->paths.path_content_database, false)
+                  == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK
+            && run_scan(mount) && scan_completed;
+      same =    filestream_read_file(p, &after, &after_len)
+             && after_len == before_len
+             && !memcmp(after, before, (size_t)before_len);
+      check(   ran && invalid_content_pushed && same
+            && scan_result.failed && scan_result.added == 0
+            && scan_result.errors == 0,
+            "empty mount: a menu refresh fails, the playlist as it was", p);
+   }
+   goto end;
+
+fixture:
+   check(0, "fixture", "could not write the empty folder lane");
+end:
+   if (one)
+      playlist_free(one);
+   free(cfg);
+   free(before);
+   free(after);
+   manual_content_scan_reset_settings();
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -14136,6 +14266,8 @@ int main(int argc, char **argv)
    smb_kind_lane(root, false);
    smb_kind_lane(root, true);
 #endif
+   empty_folder_lane(root, pl_dir, crc_a, sz_a, false);
+   empty_folder_lane(root, pl_dir, crc_a, sz_a, true);
    {
       char reader_db[512];
 
