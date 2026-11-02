@@ -180,18 +180,67 @@ static void test_display_key(void)
    CHECK(!strcmp(small, "aaaaa"));
    video_windows_display_key(d, 1, small, sizeof(small));
    CHECK(!strcmp(small, "aaa 2"));
+   /* Sizes 0 to 3: nothing past the size, ended inside it, no room for
+    * a count */
+   strcpy(d[0].name, "HDMI");
+   strcpy(d[1].name, "HDMI");
+   for (i = 0; i < 4; i++)
+   {
+      memset(small, '#', sizeof(small));
+      video_windows_display_key(d, 1, small, i);
+      CHECK(small[i] == '#');
+      if (i)
+      {
+         CHECK(strlen(small) == i - 1);
+         CHECK(!strncmp(small, "HDMI", i - 1));
+      }
+   }
+   /* Two unnamed displays: the second keys by its count alone */
+   d[0].name[0] = d[1].name[0] = '\0';
+   video_windows_display_key(d, 0, key, sizeof(key));
+   CHECK(!strcmp(key, ""));
+   video_windows_display_key(d, 1, key, sizeof(key));
+   CHECK(!strcmp(key, " 2"));
+   /* A 63-character name, the longest a key holds, keys whole */
+   for (i = 0; i < VIDEO_WINDOW_DISPLAY_NAME_SIZE - 1; i++)
+      d[0].name[i] = 'b';
+   d[0].name[i] = '\0';
+   strcpy(d[1].name, "Screen-2");
+   video_windows_display_key(d, 0, key, sizeof(key));
+   CHECK(strlen(key) == VIDEO_WINDOW_DISPLAY_NAME_SIZE - 1);
+   CHECK(!strcmp(key, d[0].name));
 }
 
-/* The record the display list's JNI frame holds eight of */
+/* Eight records sit on the display list's JNI frame: a field that
+ * grows them is a choice, not an accident */
 static void test_display_record(void)
 {
-   video_window_display_t d;
-   memset(&d, 0, sizeof(d));
-   d.is_default = true;
-   CHECK(d.is_default);
-   /* Eight records sit on the JNI frame: a field that grows them is
-    * a choice, not an accident */
    CHECK(sizeof(video_window_display_t) == 120);
+}
+
+/* Auto falls back on the display marked default */
+static void test_display_default(void)
+{
+   video_window_display_t d[2];
+   video_windows_place_in_t in;
+   video_windows_host_t host;
+   video_windows_route_t r;
+   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
+   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN, false);
+   d[1].physical   = false;
+   d[1].is_default = true;
+   memset(&in, 0, sizeof(in));
+   memset(&host, 0, sizeof(host));
+   in.displays  = d;
+   in.count     = 2;
+   in.menu_open = true;
+   video_windows_host_reset(&host);
+   video_windows_place(&host, &in, &r);
+   CHECK(r.menu == 2);
+   d[1].is_default = false;
+   video_windows_host_reset(&host);
+   video_windows_place(&host, &in, &r);
+   CHECK(r.menu == 1);
 }
 
 #define PLACE_MENU VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU)
@@ -1223,6 +1272,18 @@ static void test_place_moves(void)
    CHECK(place_host.make == 1);
 }
 
+/* A display listed without an ordinal is never Auto's, even listed
+ * after the panel it would replace */
+static void test_place_no_ordinal(void)
+{
+   place_reset(1, 3);
+   test_display(&place_d[2], 0, VIDEO_WINDOW_CONNECTION_UNKNOWN, false);
+   strcpy(place_d[2].name, "No Ordinal");
+   place_in.menu_follows = 1;
+   place_at(0);
+   CHECK(place_r.menu == 2);
+}
+
 static void test_selected_layout(void)
 {
    video_views_map_t map;
@@ -1707,9 +1768,11 @@ int main(void)
    test_windows_attached();
    test_display_key();
    test_display_record();
+   test_display_default();
    test_place_where();
    test_place_external();
    test_place_moves();
+   test_place_no_ordinal();
    test_selected_layout();
    test_second_output_touch();
    test_window_events();

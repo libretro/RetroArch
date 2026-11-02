@@ -1,5 +1,5 @@
 /* android_focus_test: RetroArch's focus on Android from its Activity's
- * window (input/drivers/android_focus.h). Times in ms. */
+ * window (input/drivers/android_focus.h). */
 
 #include <stdio.h>
 #include <string.h>
