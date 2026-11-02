@@ -4446,6 +4446,7 @@ static void frontend_unix_destroy_signal_handler_state(void)
    retro_atomic_store_release_int(&unix_sighandler_quit, 0);
 }
 
+#ifdef ANDROID
 #ifdef HAVE_VULKAN
 /* Whether the device declares Vulkan 1.1 or later, from
  * PackageManager.hasSystemFeature("android.hardware.vulkan.version",
@@ -4554,6 +4555,7 @@ void android_apply_device_defaults(settings_t *settings)
 #endif
    (void)sdk;
 }
+#endif /* ANDROID */
 
 /* To free change_data, call the function again with a NULL 
  * string_list while providing change_data again */
