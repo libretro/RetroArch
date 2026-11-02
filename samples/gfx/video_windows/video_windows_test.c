@@ -189,9 +189,9 @@ static void test_display_record(void)
    memset(&d, 0, sizeof(d));
    d.is_default = true;
    CHECK(d.is_default);
-   /* is_default fits in padding: the eight records the JNI frame
-    * holds keep their size */
-   CHECK(sizeof(video_window_display_t) == 116);
+   /* Eight records sit on the JNI frame: a field that grows them is
+    * a choice, not an accident */
+   CHECK(sizeof(video_window_display_t) == 120);
 }
 
 #define PLACE_MENU VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU)
@@ -574,6 +574,7 @@ static void test_place_where(void)
 /* When RetroArch moves, and the order its windows come and go in */
 static void test_place_moves(void)
 {
+   unsigned seq;
    /* place: main window's display */
    /* Cocoon starts RetroArch on the bottom panel: it moves to the menu's
     * display, the top one, and the bottom one is free */
@@ -842,9 +843,9 @@ static void test_place_moves(void)
    CHECK(place_r.keep == 2 && place_host.moving == 2);
    place_in.menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
    strcpy(place_menu, "DP Screen");
-   place_in.move_failed = true;
+   place_in.failed_move = place_host.move_seq;
    place_at(200000);
-   place_in.move_failed = false;
+   place_in.failed_move = 0;
    CHECK(place_r.move == 3 && !place_r.keep);
 
    /* place: menu open and close never move */
@@ -890,10 +891,53 @@ static void test_place_moves(void)
    place_at(VIDEO_WINDOWS_MOVE_USEC + 200000);
    CHECK(placed(0, 0u, 0u, 0u, 1) && !place_host.unable);
    /* One the platform could not start: given up at once */
-   place_in.move_failed = true;
+   place_in.failed_move = place_r.move_seq;
    place_at(VIDEO_WINDOWS_MOVE_USEC + 300000);
    CHECK(placed(0, 0u, 0u, 0u, 0) && place_host.unable == 1u);
-   place_in.move_failed = false;
+   place_in.failed_move = 0;
+   /* A display unplugged and back that a stalled app thread hears as
+    * one list: its new id makes it a new list */
+   place_reset(2, 3);
+   place_at(0);
+   place_at(VIDEO_WINDOWS_MOVE_USEC);
+   CHECK(place_host.unable == 1u);
+   place_d[0].id = 5;
+   place_at(VIDEO_WINDOWS_MOVE_USEC + 100000);
+   CHECK(placed(0, 0u, 0u, 0u, 1) && !place_host.unable);
+   /* A failure names its move: a late one for a move given up on ends
+    * no later move */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 2));
+   seq = place_r.move_seq;
+   CHECK(seq && seq == place_host.move_seq);
+   place_in.count = 2;
+   place_at(100000);
+   CHECK(placed(0, 0u, 0u, 0u, 2) && place_r.move_seq != seq);
+   place_in.failed_move = seq;
+   place_at(200000);
+   place_in.failed_move = 0;
+   CHECK(place_host.moving == 2 && !place_host.unable);
+   place_in.failed_move = place_host.move_seq;
+   place_at(300000);
+   place_in.failed_move = 0;
+   CHECK(!place_host.moving && place_host.unable == 2u);
+   /* Numbers wrap inside a Java int and outlast a reset, so a failure
+    * from before the reset ends no move after it */
+   place_reset(1, 3);
+   place_in.menu_follows = 1;
+   place_host.move_seq   = 0x7fffffffu;
+   place_at(0);
+   CHECK(placed(0, 0u, 0u, 0u, 2) && place_r.move_seq == 1);
+   video_windows_host_reset(&place_host);
+   CHECK(place_host.move_seq == 1);
+   place_at(100000);
+   CHECK(placed(0, 0u, 0u, 0u, 2) && place_r.move_seq == 2);
+   place_in.failed_move = 1;
+   place_at(200000);
+   place_in.failed_move = 0;
+   CHECK(place_host.moving == 2 && !place_host.unable);
    /* A Presentation that never shows: the move after the time */
    place_reset(2, 3);
    place_in.menu_follows = 1;

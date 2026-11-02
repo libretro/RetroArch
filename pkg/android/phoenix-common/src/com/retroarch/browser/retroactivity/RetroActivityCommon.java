@@ -1945,15 +1945,15 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   /**
-   * Moves this Activity onto display ordinal of the last published
-   * list. Called from native code on any thread; posts to the UI
-   * thread and returns.
+   * Moves this Activity onto the display whose id is displayId; move
+   * numbers the move. Called from native code on any thread; posts to
+   * the UI thread and returns.
    */
-  public void moveToDisplay(final int ordinal) {
+  public void moveToDisplay(final int displayId, final int move) {
     runOnUiThread(new Runnable() {
       @Override public void run() {
         if (secondDisplay != null)
-          secondDisplay.moveTo(ordinal);
+          secondDisplay.moveTo(displayId, move);
       }
     });
   }

@@ -206,30 +206,28 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       showOn(wantedId);
   }
 
-  /** Moves the Activity onto display @ordinal of the last published
-   * list. Native code hears back only when the move cannot start; one
-   * that starts but never shows is its timeout's to find. */
-  void moveTo(int ordinal)
+  /** Moves the Activity onto display @displayId. Native code hears back,
+   * by @move, only when the move cannot start; one that starts but
+   * never shows is its timeout's to find. */
+  void moveTo(int displayId, int move)
   {
-    int id = ordinal > 0 && ordinal <= published.ids.length
-        ? published.ids[ordinal - 1] : -1;
-    if (Build.VERSION.SDK_INT < 26 || id < 0
-        || displayManager.getDisplay(id) == null)
+    if (Build.VERSION.SDK_INT < 26
+        || displayManager.getDisplay(displayId) == null)
     {
-      moveFailed(id, null);
+      moveFailed(displayId, move, null);
       return;
     }
     if (refocusing)
       endRefocus();
     try
     {
-      startOn(id);
-      movedId = id;
+      startOn(displayId);
+      movedId = displayId;
       moves++;
     }
     catch (RuntimeException e)
     {
-      moveFailed(id, e);
+      moveFailed(displayId, move, e);
     }
   }
 
@@ -318,10 +316,10 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
   }
 
-  private void moveFailed(int displayId, RuntimeException e)
+  private void moveFailed(int displayId, int move, RuntimeException e)
   {
     Log.w(TAG, "[SecondDisplay] Cannot move to display " + displayId, e);
-    nativeMoveFailed();
+    nativeMoveFailed(move);
   }
 
   @Override public void onDisplayAdded(int displayId)
@@ -440,7 +438,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       if (failedIds.get(list.ids[i]))
         flags[i] |= FLAG_REFUSED;
     published = list;
-    nativeDisplaysChanged(list.connections, flags, list.widths,
+    nativeDisplaysChanged(list.ids, list.connections, flags, list.widths,
         list.heights, list.names, list.models);
   }
 
@@ -686,12 +684,13 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     }
   }
 
-  static native void nativeDisplaysChanged(int[] connections, int[] flags,
-      int[] widths, int[] heights, String[] names, String[] models);
+  static native void nativeDisplaysChanged(int[] ids, int[] connections,
+      int[] flags, int[] widths, int[] heights, String[] names,
+      String[] models);
   static native int nativeSurfaceChanged(Surface surface, int width,
       int height, int request);
   static native void nativeSurfaceDestroyed();
   static native void nativeTouch(int pointerId, int x, int y,
       boolean down, int generation);
-  static native void nativeMoveFailed();
+  static native void nativeMoveFailed(int move);
 }

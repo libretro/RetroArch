@@ -106,8 +106,8 @@ static bool video_windows_refused(const video_window_display_t *displays,
    return false;
 }
 
-/* Count, names and on/valid flags, so a list that only moved RetroArch
- * or marked a refusal is the same list */
+/* Count, ids, names and on/valid flags, so a list that only moved
+ * RetroArch or marked a refusal is the same list */
 static unsigned video_windows_names_hash(
       const video_window_display_t *displays, unsigned count)
 {
@@ -118,6 +118,7 @@ static unsigned video_windows_names_hash(
       const unsigned char *c = (const unsigned char*)displays[i].name;
       for (; *c; c++)
          h = (h ^ *c) * 16777619u;
+      h = (h ^ (unsigned)displays[i].id) * 16777619u;
       /* Above any byte, so it ends the name too */
       h = (h ^ (0x100u | (displays[i].on ? 1u : 0u)
             | (displays[i].valid ? 2u : 0u))) * 16777619u;
@@ -128,7 +129,10 @@ static unsigned video_windows_names_hash(
 
 void video_windows_host_reset(video_windows_host_t *host)
 {
+   unsigned move_seq = host->move_seq;
    memset(host, 0, sizeof(*host));
+   /* A failure still on its way names a move from before */
+   host->move_seq    = move_seq;
 }
 
 /* A display Auto may pick */
@@ -372,7 +376,6 @@ void video_windows_place(video_windows_host_t *host,
       host->unable      = 0;
       host->refused     = 0;
       host->moving      = 0;
-      host->make        = 0;
       host->keep        = 0;
       event             = true;
    }
@@ -417,12 +420,11 @@ void video_windows_place(video_windows_host_t *host,
          host->moving   = 0;
          event          = true;
       }
-      else if (in->move_failed
-            || in->now - host->asked >= VIDEO_WINDOWS_MOVE_USEC)
+      else if (   in->failed_move == host->move_seq
+               || in->now - host->asked >= VIDEO_WINDOWS_MOVE_USEC)
       {
          host->unable  |= VIDEO_WINDOWS_ORDINAL_BIT(host->moving);
          host->moving   = 0;
-         host->host     = out->own;
          host->keep     = 0;
          event          = true;
       }
@@ -475,8 +477,9 @@ void video_windows_place(video_windows_host_t *host,
    }
    if (move)
    {
-      host->moving = move;
-      host->asked  = in->now;
+      host->moving   = move;
+      host->asked    = in->now;
+      host->move_seq = host->move_seq % 0x7fffffffu + 1;
    }
    if (host->keep && !host->moving)
    {
@@ -499,7 +502,8 @@ void video_windows_place(video_windows_host_t *host,
       out->logo          = in->num_screens && !in->mapless
          && !out->main_screens && !in->menu_open;
    }
-   out->move = move;
+   out->move     = move;
+   out->move_seq = move ? host->move_seq : 0;
 }
 
 void video_window_mark_closed(video_window_common_t *window)

@@ -216,7 +216,7 @@ struct android_second_display
     * surfaces made for earlier requests are given up, 0 none */
    retro_atomic_int_t released;
    /* UI thread in, or the app thread when it could not ask; app thread
-    * out: Java could not start the last move */
+    * out: the number of the last move Java could not start, 0 none */
    retro_atomic_int_t move_failed;
 };
 
@@ -563,12 +563,14 @@ extern struct android_app *g_android;
  * they arrive. */
 void android_second_display_request(unsigned ordinal, bool given_up);
 
-/* App thread: asks Java to move RetroArch's Activity onto display
- * @ordinal of the last published list. One-way: posts and returns. */
-void android_activity_move_request(unsigned ordinal);
+/* App thread: asks Java to move RetroArch's Activity onto the display
+ * whose id is @display_id; @move numbers the move. One-way: posts and
+ * returns. */
+void android_activity_move_request(int display_id, unsigned move);
 
-/* App thread: true once after Java could not start a move. */
-bool android_activity_move_failed(void);
+/* App thread: once, the number of the last move Java could not start;
+ * 0 for none. */
+unsigned android_activity_move_failed(void);
 
 /* Releases a surface's window and frees it. Any thread that owns it. */
 void android_second_surface_free(struct android_second_surface *node);

@@ -210,6 +210,8 @@ typedef struct video_window_display
 {
    /* 1-based place in the platform's list */
    unsigned ordinal;
+   /* The platform's own id for it: Android's display id */
+   int id;
    unsigned connection;
    /* The main window is on it */
    bool own;
@@ -278,10 +280,12 @@ typedef struct video_windows_place_in
    /* The display the Presentation's window has drawn on since it was
     * made, 0 for none (video_driver_window_shown()) */
    unsigned shown;
+   /* The number of a move the platform could not start (a route's
+    * move_seq), 0 for none */
+   unsigned failed_move;
    retro_time_t now;
    bool mapless;
    bool menu_open;
-   bool move_failed;
    /* A staged content load is under way (content_switching) */
    bool switching;
 } video_windows_place_in_t;
@@ -311,6 +315,8 @@ typedef struct video_windows_route
    /* The display RetroArch is to move onto, this frame only; 0 for
     * none */
    unsigned move;
+   /* That move's number, which a failure of it names */
+   unsigned move_seq;
    /* The main window has nothing to show: the idle logo */
    bool logo;
 } video_windows_route_t;
@@ -339,6 +345,9 @@ typedef struct video_windows_host
    unsigned host;
    /* The display a move was asked onto, 0 for none */
    unsigned moving;
+   /* The last move's number, 1 to INT_MAX: Android carries it as an
+    * int */
+   unsigned move_seq;
    /* RetroArch's display, whose Presentation must show before the
     * move to host is asked; 0 for none */
    unsigned make;

@@ -4507,7 +4507,7 @@ static void video_driver_windows_place(video_driver_state_t *video_st,
       : video_st->views.num_views ? video_st->views.num_screens : 1;
    in->mapless        = running && !video_st->views.num_views;
    in->switching      = runloop_st->content_switching;
-   in->move_failed    = false;
+   in->failed_move    = 0;
 #ifdef ANDROID
    {
       unsigned i;
@@ -4516,16 +4516,24 @@ static void video_driver_windows_place(video_driver_state_t *video_st,
          routed = list[i].own;
       /* Reading clears it; placement hears it only with an own display */
       if (routed)
-         in->move_failed = android_activity_move_failed();
+         in->failed_move = android_activity_move_failed();
    }
 #endif
    video_windows_place(&video_st->windows_host, in, route);
 #ifdef ANDROID
    if (route->move)
-      android_activity_move_request(route->move);
+   {
+      unsigned i;
+      int id = -1;
+      for (i = 0; i < count; i++)
+         if (list[i].ordinal == route->move)
+            id = list[i].id;
+      android_activity_move_request(id, route->move_seq);
+   }
 #endif
    /* A redraw reuses the stored route; it must not ask again */
-   route->move = 0;
+   route->move     = 0;
+   route->move_seq = 0;
 }
 
 /* App thread: the snapshot's UI targets are those this frame was laid
