@@ -14030,6 +14030,143 @@ restore:
          sizeof(config_get_ptr()->paths.directory_playlist));
 }
 
+/* As many "??" lines in @out as the totals count unmatched, @want. */
+static void qq_check(const char *what, const char *q, const char *out,
+      unsigned want)
+{
+   char     name[128], detail[64];
+   unsigned qq = file_count(out, " ?? \"");
+
+   snprintf(name, sizeof(name), "?? lines %s: %s", q, what);
+   snprintf(detail, sizeof(detail), "%u ??, %u unmatched, want %u", qq,
+         scan_result.unmatched, want);
+   check(qq == scan_result.unmatched && qq == want, name, detail);
+}
+
+/* Every scan kind prints a "??" for each file its totals count
+ * unmatched and for no other.  Rescans counts_lane()'s folders; then a
+ * .lutro, which matches by extension alone, in a refresh and in a
+ * group without a Lutro playlist. */
+static void unmatched_lines_run(const char *root, const char *db_dir,
+      bool threaded)
+{
+   static const char *const names[2] = { "Test Alpha", "Test Beta" };
+   static char         dir[512], dat_dir[512], m3u_dir[512], res_pl[512];
+   static char         dat[512], db[512], gdir[512], pl[512], label[640];
+   static char         out[1024], err[1024], lpl[2][1024], p[1024];
+   db_rec_t            rec;
+   union string_list_elem_attr attr;
+   struct string_list *group = string_list_new();
+   const char         *q     = threaded ? "(threaded)" : "(regular)";
+   unsigned            k;
+
+   sprintf(dir,     "%s/scan_result",     root);
+   sprintf(dat_dir, "%s/scan_result_dat", root);
+   sprintf(m3u_dir, "%s/scan_result_m3u", root);
+   sprintf(res_pl,  "%s/scan_result_pl",  root);
+   sprintf(dat,     "%s/scan_result.dat", root);
+   sprintf(out,     "%s/qq_lines.out",    root);
+   sprintf(err,     "%s/qq_lines.err",    root);
+   strlcpy(config_get_ptr()->paths.directory_playlist, res_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+
+   /* One archive's member stores no CRC, so it is expanded. */
+   delete_playlists(res_pl);
+   if (capture_scan(dir, out, err, true))
+      qq_check("strict, an archive expanded", q, out, 2);
+   delete_playlists(res_pl);
+   if (capture_scan(m3u_dir, out, err, true))
+      qq_check("an m3u its discs match", q, out, 0);
+
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_LOOSE);
+   delete_playlists(res_pl);
+   if (capture_scan(dir, out, err, true))
+      qq_check("loose, all added", q, out, 0);
+
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT);
+   strlcpy(manual_content_scan_get_dat_file_path_ptr(), dat,
+         manual_content_scan_get_dat_file_path_size());
+   delete_playlists(res_pl);
+   if (capture_scan(dat_dir, out, err, true))
+      qq_check("DAT", q, out, 1);
+
+   manual_content_scan_get_dat_file_path_ptr()[0] = '\0';
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_NONE);
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL);
+   delete_playlists(res_pl);
+   if (capture_scan(dir, out, err, true))
+      qq_check("match none", q, out, 0);
+   manual_content_scan_reset_settings();
+   delete_playlists(res_pl);
+
+   sprintf(db,   "%s/qq_db",    root);
+   sprintf(gdir, "%s/qq_group", root);
+   sprintf(pl,   "%s/qq_pl",    root);
+   path_mkdir(db);
+   path_mkdir(gdir);
+   path_mkdir(pl);
+   delete_playlists(pl);
+   for (k = 0; k < 2; k++)
+   {
+      set_rec(&rec, names[k], 0x6E0C0001u + k, 1024);
+      sprintf(p, "%s/%s.rdb", db, names[k]);
+      if (!write_db_set(p, &rec, 1))
+         goto fixture;
+      sprintf(lpl[k], "%s/%s.lpl", pl, names[k]);
+      sprintf(p, "%s/00_gone.bin", gdir);
+      if (!refresh_write(lpl[k], gdir, NULL, p))
+         goto fixture;
+   }
+   sprintf(p, "%s/a.bin", gdir);
+   if (!write_content(p, 0x6E0C0001u, 1024))
+      goto fixture;
+   sprintf(p, "%s/x.lutro", gdir);
+   if (!write_content(p, 0x6E0C00FFu, 1024))
+      goto fixture;
+   attr.i = 0;
+   if (   !group
+       || !string_list_append(group, names[0], attr)
+       || !string_list_append(group, names[1], attr))
+      goto fixture;
+   sprintf(label, "%s (%s, %s)", gdir, names[0], names[1]);
+   use_db(db);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+
+   if (group_run(lpl[0], db, gdir, false, false, out, err))
+      qq_check("a refresh, a .lutro", q, out, 1);
+   group_names = group;
+   group_label = label;
+   if (group_run(lpl[0], db, gdir, false, false, out, err))
+      qq_check("a group, a .lutro", q, out, 1);
+   goto restore;
+
+fixture:
+   check(0, "fixture", "could not write the ?? lines set");
+restore:
+   group_names = NULL;
+   group_label = NULL;
+   string_list_free(group);
+   manual_content_scan_reset_settings();
+   use_db(db_dir);
+}
+
+static void unmatched_lines_lane(const char *root, const char *pl_dir,
+      const char *db_dir)
+{
+   unmatched_lines_run(root, db_dir, false);
+   unmatched_lines_run(root, db_dir, true);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -14327,6 +14464,21 @@ int main(int argc, char **argv)
       fclose(f);
    }
    sprintf(p, "%s/sevenzip_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   /* Lutro content matches by its extension, with no database. */
+   sprintf(p, "%s/lutro_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"Lutro Test\"\n"
+            "corename = \"LutroTest\"\n"
+            "supported_extensions = \"lutro\"\n"
+            "database = \"Lutro\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/lutro_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
    /* Cartridge cores list their ROMs' extensions, most without zip;
     * arcade cores list zip. */
@@ -15237,6 +15389,7 @@ int main(int argc, char **argv)
    group_scan_lane(root, pl_dir, db_dir, true);
    refresh_group_lane(root, pl_dir, db_dir, false);
    refresh_group_lane(root, pl_dir, db_dir, true);
+   unmatched_lines_lane(root, pl_dir, db_dir);
    {
       char reader_db[512];
 
