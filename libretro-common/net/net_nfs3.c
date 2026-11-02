@@ -794,7 +794,7 @@ static int nfs4_get_fattr(struct xdr *r, struct rnfs_stat *st)
    struct xdr a;
    if (n >= 1) w0 = xdr_get_u32(r);
    if (n >= 2) w1 = xdr_get_u32(r);
-   while (n > 2) { xdr_get_u32(r); n--; }
+   while (n > 2 && !r->fail) { xdr_get_u32(r); n--; }
    v = xdr_get_opaque(r, &vl);
    if (!v)
       return -1;
@@ -1296,13 +1296,11 @@ static int nfs4_open_create(struct rnfs_ctx *c, const struct rnfs_fh *dir,
    rflags = xdr_get_u32(&r);
    {
       uint32_t nb = xdr_get_u32(&r);
-      while (nb--) xdr_get_u32(&r);
+      while (nb-- && !r.fail)
+         xdr_get_u32(&r);
    }
-   {
-      uint32_t dt = xdr_get_u32(&r);   /* delegation: none expected */
-      if (dt != 0)
-         return -1;
-   }
+   if (r.fail || xdr_get_u32(&r) != 0) /* delegation: none expected */
+      return -1;
    memcpy(f->stateid, sid, 16);
    if (nfs4_res(&r) != NFS3_OK || xdr_get_fh(&r, &f->fh) != 0)
       return -1;
