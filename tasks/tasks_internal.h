@@ -381,7 +381,8 @@ enum task_dbscan_outcome
 
 typedef struct
 {
-   unsigned ran;     /* scans that ran and did not fail */
+   /* Each --scan and each playlist; a group counts all its members. */
+   unsigned ran;     /* ran and did not fail */
    unsigned added;   /* of those, the ones that added an entry */
    unsigned failed;
    unsigned skipped;
