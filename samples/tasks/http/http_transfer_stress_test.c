@@ -57,9 +57,11 @@
  *    threaded and ~6.2s unthreaded, against ~0.09s for a plain drain
  *    loop.  Nothing is slow here except the number of round trips.
  *
- *    ASSERT_BYTES_PER_UPDATE below is the floor.  It fails today, on
- *    purpose: this test is written to hold once net_http_update()
- *    drains the socket rather than taking a single bite from it.
+ *    The guard: every body update must read until the socket is empty
+ *    or one of net_http.c's drain bounds is reached, rather than
+ *    taking a single bite and returning.  It was a bytes-per-update
+ *    average once, which also measured how far the server thread got
+ *    between calls and failed now and then on a loaded runner.
  *
  * 3. Receive window.  For chunked and EOF-delimited bodies the buffer
  *    grows by doubling and the window handed to recv() is
@@ -134,11 +136,6 @@
 
 /* Pinned so per-update yield does not track host tuning. */
 #define TEST_RCVBUF              (64 * 1024)
-
-/* Throughput floor.  A transfer must move at least this many bytes per
- * net_http_update() call, averaged over the body.  One recv() per
- * update against a TEST_RCVBUF socket yields well under this. */
-#define ASSERT_BYTES_PER_UPDATE  (256 * 1024)
 
 /* Receive-window floor, applied only while at least this much body is
  * still outstanding -- the genuinely final read is allowed to be
@@ -235,6 +232,13 @@ static void record_stop(void)
    g_record = 0;
 }
 
+/* How the current net_http_update() call's reads went: what they
+ * took, how many there were, and whether the last found the socket
+ * empty. */
+static size_t g_update_bytes;
+static long   g_update_recvs;
+static int    g_update_drained;
+
 ssize_t recv(int fd, void *buf, size_t len, int flags)
 {
    ssize_t r;
@@ -257,6 +261,15 @@ ssize_t recv(int fd, void *buf, size_t len, int flags)
    r = real_recv(fd, buf, len, flags);
    if (g_record && r > 0)
       g_outstanding = (g_outstanding > (size_t)r) ? g_outstanding - (size_t)r : 0;
+   if (g_record)
+   {
+      int e = errno;
+      g_update_recvs++;
+      g_update_drained = r < 0 && (e == EAGAIN || e == EWOULDBLOCK);
+      if (r > 0)
+         g_update_bytes += (size_t)r;
+      errno = e;
+   }
    return r;
 }
 
@@ -481,10 +494,27 @@ static bool window_within_budget(void *budget, size_t avail, size_t len)
    return true;
 }
 
+/* net_http.c's per-call drain bounds: a call may stop reading at
+ * either before the socket is empty - at the byte budget once less
+ * than a minimum read window of it is left, which it does not spend
+ * on a tiny read. */
+#define DRAIN_BUDGET    ((size_t)256 * 1024)
+#define DRAIN_MAX_ITERS 256
+#define MIN_RECV_WINDOW ((size_t)32 * 1024)
+
+/* Body updates that stopped reading with the socket not empty and
+ * neither bound reached: one bite and back. */
+static long g_early_stops;
+static long g_judged_updates;
+
 static bool window_update(struct http_t *h, size_t *pos, size_t *tot)
 {
    long before = g_recv_calls;
+   bool body   = *pos > 0;
    bool done;
+   g_update_bytes   = 0;
+   g_update_recvs   = 0;
+   g_update_drained = 0;
    if (!g_window_items)
       done = net_http_update(h, pos, tot);
    else
@@ -495,6 +525,15 @@ static bool window_update(struct http_t *h, size_t *pos, size_t *tot)
    }
    if (g_recv_calls - before > g_max_recv_per_update)
       g_max_recv_per_update = g_recv_calls - before;
+   if (body && !done && !g_window_items && g_update_recvs)
+   {
+      g_judged_updates++;
+      if (     !g_update_drained
+            && g_update_bytes < DRAIN_BUDGET
+            && DRAIN_BUDGET - g_update_bytes >= MIN_RECV_WINDOW
+            && g_update_recvs < DRAIN_MAX_ITERS)
+         g_early_stops++;
+   }
    return done;
 }
 
@@ -731,6 +770,8 @@ static void test_tick_cost(enum framing f, size_t chunk)
    }
 
    record_reset(sp.body);
+   g_early_stops    = 0;
+   g_judged_updates = 0;
    if (!run_transfer(sp.port, &r, TEST_TICK_US))
    {
       printf("    SKIP: client setup failed\n");
@@ -759,14 +800,16 @@ static void test_tick_cost(enum framing f, size_t chunk)
    CHECK(r.len == sp.body, "short body: got %lu of %lu",
          (unsigned long)r.len, (unsigned long)sp.body);
 
-   /* At 60Hz a tick is a frame.  Below this floor a core download is
-    * measured in seconds of wall clock spent waiting for ticks. */
-   CHECK(per_update >= (double)ASSERT_BYTES_PER_UPDATE,
-         "only %.0f bytes per net_http_update() (floor %d) -- "
-         "%ld body ticks needed; at 16.7ms/tick unthreaded that is "
-         "%.1fs for %luMiB",
-         per_update, ASSERT_BYTES_PER_UPDATE, body_ticks,
-         body_ticks * 0.0167, (unsigned long)(sp.body >> 20));
+   /* At 60Hz a tick is a frame: a call that takes one bite and returns
+    * makes a core download seconds of waiting for ticks. Every body
+    * update must read until the socket is empty or a drain bound is
+    * reached. Judged per call rather than as bytes per tick, which
+    * depends on how far the server thread got between calls and
+    * failed now and then on a loaded runner with the drain intact. */
+   CHECK(g_judged_updates > 0 && g_early_stops == 0,
+         "%ld of %ld body updates stopped reading with data waiting "
+         "and no drain bound reached (%.0f B/tick, floor-free)",
+         g_early_stops, g_judged_updates, per_update);
 
    /* DNS resolution runs on its own thread but is only ever observed
     * from net_http_update(), so its latency is quantised to the tick
