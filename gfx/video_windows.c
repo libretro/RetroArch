@@ -141,11 +141,19 @@ static bool video_windows_place_eligible(const video_window_display_t *d)
    return d->ordinal && d->valid && d->on && !d->is_private;
 }
 
+/* A monitor: as the platform's type says; untyped, a direct or
+ * transitive connection, or an unknown one with a product name off the
+ * default display (handhelds list their panels with no name) */
 static bool video_windows_place_external(const video_window_display_t *d)
 {
-   return d->physical
-      && (   d->connection == VIDEO_WINDOW_CONNECTION_DIRECT
-          || d->connection == VIDEO_WINDOW_CONNECTION_TRANSITIVE);
+   if (!d->physical || d->type == VIDEO_WINDOW_TYPE_INTERNAL)
+      return false;
+   if (d->type == VIDEO_WINDOW_TYPE_EXTERNAL)
+      return true;
+   return d->connection == VIDEO_WINDOW_CONNECTION_DIRECT
+      || d->connection == VIDEO_WINDOW_CONNECTION_TRANSITIVE
+      || (   d->connection == VIDEO_WINDOW_CONNECTION_UNKNOWN
+          && !d->is_default && d->model[0]);
 }
 
 /* Screen @s's Auto display, whatever RetroArch's own: for the first an

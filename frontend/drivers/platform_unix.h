@@ -79,6 +79,8 @@ struct android_app;
 #define ANDROID_DISPLAY_PHYSICAL (1 << 4)
 #define ANDROID_DISPLAY_REFUSED  (1 << 5)
 #define ANDROID_DISPLAY_DEFAULT  (1 << 6)
+#define ANDROID_DISPLAY_EXTERNAL (1 << 7)
+#define ANDROID_DISPLAY_INTERNAL (1 << 8)
 
 /* Fingers tracked on each display */
 #define MAX_TOUCH 16

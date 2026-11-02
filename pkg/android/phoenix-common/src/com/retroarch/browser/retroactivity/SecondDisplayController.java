@@ -42,6 +42,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -60,9 +61,18 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static final int FLAG_PHYSICAL = 16;
   static final int FLAG_REFUSED  = 32;
   static final int FLAG_DEFAULT  = 64;
+  static final int FLAG_EXTERNAL = 128;
+  static final int FLAG_INTERNAL = 256;
 
   private static final String TAG = "RetroArch";
   private static final int REFOCUS_TIMEOUT_MS = 1000;
+  /* Display.TYPE_INTERNAL and TYPE_EXTERNAL, hidden */
+  private static final int DISPLAY_TYPE_INTERNAL = 1;
+  private static final int DISPLAY_TYPE_EXTERNAL = 2;
+  /* The hidden Display.getType(), looked up once; null if it is missing */
+  private static Method getType;
+  private static boolean getTypeLooked;
+  private static boolean getTypeLogged;
 
   private final RetroActivityCommon activity;
   private final DisplayManager displayManager;
@@ -387,7 +397,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
         int connection = ProductInfo.connection(d);
         if (connection >= 0)
         {
-          f |= FLAG_PHYSICAL;
+          f |= FLAG_PHYSICAL | typeFlags(d);
           list.connections[i] = connection;
         }
         list.models[i] = ProductInfo.model(d);
@@ -665,6 +675,33 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
         v.setSystemGestureExclusionRects(Collections.singletonList(
             new Rect(0, 0, right - left, bottom - top)));
     }
+  }
+
+  /* FLAG_EXTERNAL or FLAG_INTERNAL as the hidden Display.getType() says,
+   * 0 where it cannot be read */
+  private static int typeFlags(Display display)
+  {
+    int type;
+    try
+    {
+      if (!getTypeLooked)
+      {
+        getTypeLooked = true;
+        getType = Display.class.getMethod("getType");
+      }
+      if (getType == null)
+        return 0;
+      type = ((Integer)getType.invoke(display)).intValue();
+    }
+    catch (Throwable t)
+    {
+      if (!getTypeLogged)
+        Log.i(TAG, "[SecondDisplay] Display.getType() not readable", t);
+      getTypeLogged = true;
+      return 0;
+    }
+    return type == DISPLAY_TYPE_EXTERNAL ? FLAG_EXTERNAL
+        : type == DISPLAY_TYPE_INTERNAL ? FLAG_INTERNAL : 0;
   }
 
   /** API 31: a real panel or monitor has product info; casts and

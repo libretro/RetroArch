@@ -435,6 +435,10 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
       d->physical   = (bits[i] & ANDROID_DISPLAY_PHYSICAL) != 0;
       d->refused    = (bits[i] & ANDROID_DISPLAY_REFUSED)  != 0;
       d->is_default = (bits[i] & ANDROID_DISPLAY_DEFAULT)  != 0;
+      d->type       = (bits[i] & ANDROID_DISPLAY_EXTERNAL)
+         ? VIDEO_WINDOW_TYPE_EXTERNAL
+         : (bits[i] & ANDROID_DISPLAY_INTERNAL)
+         ? VIDEO_WINDOW_TYPE_INTERNAL : VIDEO_WINDOW_TYPE_UNKNOWN;
       d->dims       = (w[i] > 0 && h[i] > 0)
          ? VIDEO_SCALE_PACK(w[i], h[i]) : 0;
       android_jni_string_at(env, names, i, d->name, sizeof(d->name));

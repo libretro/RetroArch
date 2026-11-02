@@ -571,6 +571,60 @@ static void test_place_where(void)
    CHECK(place_r.menu == 2 && placed(3, 1u, 2u, 0u, 0));
 }
 
+/* Auto's monitor: the platform's type where it gives one, else the
+ * connection, else a product name off the default display. */
+static void test_place_external(void)
+{
+   /* Typed external: Game Screen 1 and the menu on the monitor, Game
+    * Screen 2 on the default display */
+   place_reset(1, 3);
+   place_d[0].type = VIDEO_WINDOW_TYPE_INTERNAL;
+   place_d[1].type = VIDEO_WINDOW_TYPE_INTERNAL;
+   place_d[2].type = VIDEO_WINDOW_TYPE_EXTERNAL;
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 3 && place_r.target[1] == 1);
+   CHECK(place_r.menu == 3);
+   /* Typed internal: never, whatever its connection and name */
+   place_reset(1, 3);
+   place_d[2].type       = VIDEO_WINDOW_TYPE_INTERNAL;
+   place_d[2].connection = VIDEO_WINDOW_CONNECTION_DIRECT;
+   strcpy(place_d[2].model, "LG HDR 4K");
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 1 && place_r.target[1] == 2);
+   /* Untyped on an unknown connection: the named display is the
+    * monitor, the unnamed panel below it is not */
+   place_reset(1, 3);
+   strcpy(place_d[2].model, "LG HDR 4K");
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 3 && place_r.target[1] == 1);
+   /* A one-screen phone and a named monitor: Game Screen 2 stays off
+    * the monitor */
+   place_reset(1, 2);
+   strcpy(place_d[1].model, "LG HDR 4K");
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 2 && place_r.target[1] == 1);
+   /* A named default display is never the monitor */
+   place_reset(1, 2);
+   strcpy(place_d[0].model, "AMOLED");
+   strcpy(place_d[1].model, "LG HDR 4K");
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 2 && place_r.target[1] == 1);
+   /* Nor one without product info, typed and named or not */
+   place_reset(1, 3);
+   place_d[1].physical = false;
+   place_d[1].type     = VIDEO_WINDOW_TYPE_EXTERNAL;
+   strcpy(place_d[1].model, "Cast");
+   place_d[2].type     = VIDEO_WINDOW_TYPE_EXTERNAL;
+   place_game(2, false);
+   place_at(0);
+   CHECK(place_r.target[0] == 3 && place_r.target[1] == 1);
+}
+
 /* When RetroArch moves, and the order its windows come and go in */
 static void test_place_moves(void)
 {
@@ -1654,6 +1708,7 @@ int main(void)
    test_display_key();
    test_display_record();
    test_place_where();
+   test_place_external();
    test_place_moves();
    test_selected_layout();
    test_second_output_touch();

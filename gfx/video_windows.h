@@ -202,6 +202,14 @@ enum video_window_connection
    VIDEO_WINDOW_CONNECTION_TRANSITIVE
 };
 
+/* What a platform says a display is, where it can tell */
+enum video_window_display_type
+{
+   VIDEO_WINDOW_TYPE_UNKNOWN = 0,
+   VIDEO_WINDOW_TYPE_INTERNAL,
+   VIDEO_WINDOW_TYPE_EXTERNAL
+};
+
 #define VIDEO_WINDOW_DISPLAYS_MAX      8
 #define VIDEO_WINDOW_DISPLAY_NAME_SIZE 64
 #define VIDEO_WINDOW_DISPLAY_MODEL_SIZE 32
@@ -224,8 +232,10 @@ typedef struct video_window_display
    bool refused;
    /* The platform's default display: Android's DEFAULT_DISPLAY */
    bool is_default;
+   /* A video_window_display_type; a byte, so it fits in padding */
+   unsigned char type;
    char name[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
-   /* The product's name, for the menu only; empty where unknown */
+   /* The product's name; empty where unknown */
    char model[VIDEO_WINDOW_DISPLAY_MODEL_SIZE];
    /* VIDEO_SCALE_PACK of its size in the platform's logical pixels,
     * 0 where unknown */
