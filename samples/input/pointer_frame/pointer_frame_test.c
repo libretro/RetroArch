@@ -311,6 +311,9 @@ static void test_flags(void)
    CHECK( input_pointer_window_touch(1, 1, &pos, &down)
       &&  pos == VIDEO_POS_PACK(-0x8000, -0x8000) && !down,
          "outside its window: -0x8000; a lifted touch is not down");
+   input_pointer_touches_set(touch, NULL, 3, 7, 1);
+   CHECK(!input_pointer_window_touch(1, 0, &pos, &down),
+         "a publication without windows has no window touches");
    shown_window = 0;
    CHECK(!input_pointer_window_touch(1, 0, &pos, &down),
          "a window that has not shown has no touches");

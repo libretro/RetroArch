@@ -722,6 +722,7 @@ static bool input_pointer_window_touch(unsigned window, unsigned idx,
    for (t = 0; t < input_pointers.touch_count; t++)
    {
       if (     !(input_pointers.touch_present & ((uint32_t)1 << t))
+            || !(input_pointers.touch_in_window & ((uint32_t)1 << t))
             || input_pointers.touch_window[t].window != window)
          continue;
       if (idx)
