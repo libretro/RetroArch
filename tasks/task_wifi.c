@@ -30,7 +30,12 @@
       retro_task_t   *task = task_init(); \
       if (!task) \
          return false; \
-      task->type           = TASK_TYPE_BLOCKING; \
+      if (task_wifi_busy()) \
+      { \
+         free(task); \
+         return false; \
+      } \
+      task->type           = TASK_TYPE_NONE; \
       task->state          = NULL; \
       task->handler        = handlerfunc; \
       task->callback       = cb; \
@@ -38,7 +43,6 @@
                               message)); \
       if (task_queue_push(task)) \
          return true; \
-      /* Another blocking task is already active */ \
       task_free_title(task); \
       free(task); \
       return false; \
@@ -104,6 +108,28 @@ static void task_wifi_connect_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
+static bool task_wifi_finder(retro_task_t *task, void *user_data)
+{
+   (void)user_data;
+   return     (   task->handler == task_wifi_scan_handler
+               || task->handler == task_wifi_enable_handler
+               || task->handler == task_wifi_disable_handler
+               || task->handler == task_wifi_disconnect_handler
+               || task->handler == task_wifi_connect_handler)
+          && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
+}
+
+/* One Wi-Fi task at a time, among themselves only: as a blocking task
+ * a scan also turned away every state save and load pushed while it
+ * ran, which the user saw as Load State doing nothing. */
+static bool task_wifi_busy(void)
+{
+   task_finder_data_t find;
+   find.func     = task_wifi_finder;
+   find.userdata = NULL;
+   return task_queue_find(&find);
+}
+
 bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr)
 {
    char msg[128];
@@ -111,10 +137,15 @@ bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr)
    wifi_network_info_t *netinfo = (wifi_network_info_t*)netptr;
    if (!task)
       return false;
+   if (task_wifi_busy())
+   {
+      free(task);
+      return false;
+   }
 
    snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_WIFI_CONNECTING_TO), netinfo->ssid);
 
-   task->type           = TASK_TYPE_BLOCKING;
+   task->type           = TASK_TYPE_NONE;
    task->state          = NULL;
    task->handler        = task_wifi_connect_handler;
    task->callback       = cb;
@@ -135,7 +166,6 @@ bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr)
    if (task_queue_push(task))
       return true;
 
-   /* Another blocking task is already active */
    free(task->user_data);
    task_free_title(task);
    free(task);

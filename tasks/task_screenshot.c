@@ -33,6 +33,7 @@
 #include <encodings/base64.h>
 #include <string/stdstring.h>
 #include <streams/interface_stream.h>
+#include <retro_atomic.h>
 
 #ifdef HAVE_RBMP
 #include <formats/rbmp.h>
@@ -73,8 +74,17 @@ enum screenshot_task_flags
    /* the written PNG is read back for the callback */
    SS_TASK_FLAG_WANT_IMAGE          = (1 << 8),
    /* encoded into memory for the callback; no file is written */
-   SS_TASK_FLAG_MEMORY              = (1 << 9)
+   SS_TASK_FLAG_MEMORY              = (1 << 9),
+   /* holds screenshot_file_claim until the task finishes */
+   SS_TASK_FLAG_CLAIM               = (1 << 10)
 };
+
+/* One screenshot that writes a file at a time, among screenshots
+ * only. As a blocking task it also turned away every state save and
+ * load pushed while it encoded - a save's thumbnail, or a full-size
+ * capture of a 4K output, held off Load State until it was through. */
+static retro_atomic_int_t screenshot_file_claim =
+   RETRO_ATOMIC_INT_INITIALIZER(0);
 
 typedef struct screenshot_task_state screenshot_task_state_t;
 
@@ -452,6 +462,12 @@ static void task_screenshot_handler(retro_task_t *task)
 task_finished:
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+
+   if (state && (state->flags & SS_TASK_FLAG_CLAIM))
+   {
+      state->flags &= ~SS_TASK_FLAG_CLAIM;
+      retro_atomic_store_release_int(&screenshot_file_claim, 0);
+   }
 
 #if defined(HAVE_RPNG)
    /* Cancelled mid-encode: the partial file goes */
@@ -837,7 +853,19 @@ static bool screenshot_dump(
       }
 
       /* a frame writes no file, so it waits on no screenshot */
-      task->type         = frame_max ? TASK_TYPE_NONE : TASK_TYPE_BLOCKING;
+      if (!frame_max)
+      {
+         if (!retro_atomic_cas_int(&screenshot_file_claim, 0, 1))
+         {
+            free(task);
+            if (state->out_buffer)
+               free(state->out_buffer);
+            free(state);
+            return false;
+         }
+         state->flags   |= SS_TASK_FLAG_CLAIM;
+      }
+      task->type         = TASK_TYPE_NONE;
       task->state        = state;
       task->handler      = task_screenshot_handler;
       if (savestate || frame_max)
@@ -866,7 +894,8 @@ static bool screenshot_dump(
       if (task_queue_push(task))
          return true;
 
-      /* There is already a blocking task going on */
+      if (state->flags & SS_TASK_FLAG_CLAIM)
+         retro_atomic_store_release_int(&screenshot_file_claim, 0);
       if (task->title)
          task_free_title(task);
 

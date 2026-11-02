@@ -88,6 +88,11 @@ static void other_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
+static void finish_handler(retro_task_t *task)
+{
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
 static void scan_cb(retro_task_t *task, void *td, void *ud, const char *err)
 {
    retro_atomic_store_release_int(&scan_done, 1);
@@ -137,6 +142,20 @@ int main(void)
          "another task runs during the scan window");
    check(!retro_atomic_load_acquire_int(&ends),
          "while discovery is still running");
+
+   /* A scan holds off only another scan. As a blocking task it turned
+    * away every blocking task pushed in its window - a state save or
+    * load, which the user saw as Load State doing nothing. */
+   {
+      retro_task_t *state = task_init();
+      state->type         = TASK_TYPE_BLOCKING;
+      state->handler      = finish_handler;
+      state->flags       |= RETRO_TASK_FLG_MUTE;
+      check(task_queue_push(state),
+            "a blocking task (a state load) is taken during the scan");
+   }
+   check(!task_push_bluetooth_scan(scan_cb),
+         "a second scan is turned away while one runs");
 
    for (i = 0; i < 3000 && !retro_atomic_load_acquire_int(&scan_done); i++)
    {

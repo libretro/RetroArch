@@ -32,13 +32,10 @@
  * window inside one call, holding the task thread - and every
  * download, thumbnail and sync queued behind it - for ten seconds. A
  * cancel ends the window early. */
-/* the window's end: the task is blocking, so there is one scan at
- * a time */
-static retro_time_t task_bluetooth_scan_deadline;
-
 typedef struct
 {
    struct bluetooth_hold *hold;
+   retro_time_t deadline;   /* the window's end */
    bool begun;
 } task_bluetooth_scan_t;
 
@@ -50,7 +47,7 @@ static void task_bluetooth_scan_handler(retro_task_t *task)
    {
       driver_bluetooth_scan_begin(scan->hold);
       scan->begun = true;
-      task_bluetooth_scan_deadline = cpu_features_get_time_usec()
+      scan->deadline = cpu_features_get_time_usec()
          + BLUETOOTH_SCAN_WINDOW_US;
       task_queue_park(task, BLUETOOTH_SCAN_POLL_US);
       return;
@@ -65,9 +62,9 @@ static void task_bluetooth_scan_handler(retro_task_t *task)
       retro_time_t now = cpu_features_get_time_usec();
       /* the queue runs a parked task up to half a millisecond early:
        * what is left within a millisecond of the end is not waited */
-      if (now + 1000 < task_bluetooth_scan_deadline)
+      if (now + 1000 < scan->deadline)
       {
-         retro_time_t wait = task_bluetooth_scan_deadline - now;
+         retro_time_t wait = scan->deadline - now;
          if (wait > BLUETOOTH_SCAN_POLL_US)
             wait = BLUETOOTH_SCAN_POLL_US;
          task_queue_park(task, wait);
@@ -86,22 +83,38 @@ static void task_bluetooth_scan_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
+static bool task_bluetooth_scan_finder(retro_task_t *task, void *user_data)
+{
+   (void)user_data;
+   return     task->handler == task_bluetooth_scan_handler
+          && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
+}
+
 bool task_push_bluetooth_scan(retro_task_callback_t cb)
 {
    retro_task_t   *task = task_init();
    task_bluetooth_scan_t *scan;
+   task_finder_data_t find;
 
    if (!task)
       return false;
+   /* One scan at a time, among scans only: as a blocking task a scan,
+    * up to BLUETOOTH_SCAN_WINDOW_US long, turned away every state save
+    * and load pushed while it ran - Load State did nothing. */
+   find.func     = task_bluetooth_scan_finder;
+   find.userdata = NULL;
+   if (task_queue_find(&find))
+   {
+      free(task);
+      return false;
+   }
    if (!(scan = (task_bluetooth_scan_t*)calloc(1, sizeof(*scan))))
    {
       free(task);
       return false;
    }
 
-   /* blocking means no other task can run while this one is running,
-    * which is the default */
-   task->type           = TASK_TYPE_BLOCKING;
+   task->type           = TASK_TYPE_NONE;
    task->state          = scan;
    task->handler        = task_bluetooth_scan_handler;
    task->callback       = cb;
@@ -114,7 +127,6 @@ bool task_push_bluetooth_scan(retro_task_callback_t cb)
    if (task_queue_push(task))
       return true;
 
-   /* Another blocking task is already active */
    driver_bluetooth_scan_release(scan->hold);
    free(scan);
    task_free_title(task);
