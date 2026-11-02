@@ -4450,9 +4450,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SAVE_STATE:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
          {
+            int  prev_slot = settings->ints.state_slot;
+            bool advanced  = false;
             if (settings->bools.savestate_auto_index)
             {
-               int prev_slot = settings->ints.state_slot;
                int next_slot = command_event_get_next_savestate_auto_index(
                      settings);
                RARCH_LOG("[State] auto-index advance: slot %d -> %d "
@@ -4461,10 +4462,18 @@ bool command_event(enum event_command cmd, void *data)
                      settings->uints.savestate_max_keep);
                configuration_set_int(settings, settings->ints.state_slot,
                   next_slot);
+               advanced = true;
+            }
+            if (!command_event_main_state(cmd))
+            {
+               /* Turned away, the save wrote nothing to the slot moved
+                * to: the next load would have found it empty */
+               if (advanced && cmd == CMD_EVENT_SAVE_STATE)
+                  configuration_set_int(settings, settings->ints.state_slot,
+                     prev_slot);
+               return false;
             }
          }
-         if (!command_event_main_state(cmd))
-            return false;
          break;
       case CMD_EVENT_SAVE_STATE_DECREMENT:
          {

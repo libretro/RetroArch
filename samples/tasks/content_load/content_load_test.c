@@ -2713,6 +2713,23 @@ static void lane_state_hold_full(void)
          "%u of 6 loads behind a save were taken, not some", taken);
    CHECK(queued_message(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE)),
          "a load turned away said nothing on screen");
+
+   /* With Increment Save State Index on, the slot moves up before the
+    * save is pushed; a save turned away wrote nothing there, and left
+    * advanced the slot named one the next load found empty. */
+   {
+      bool auto_index = settings->bools.savestate_auto_index;
+      int  slot       = settings->ints.state_slot;
+      configuration_set_bool(settings,
+            settings->bools.savestate_auto_index, true);
+      CHECK(!command_event(CMD_EVENT_SAVE_STATE, NULL),
+            "a save past the hold was taken");
+      CHECK(settings->ints.state_slot == slot,
+            "a save turned away moved the slot from %d to %d",
+            slot, settings->ints.state_slot);
+      configuration_set_bool(settings,
+            settings->bools.savestate_auto_index, auto_index);
+   }
    CHECK(state_tasks_settle(), "the held loads did not finish");
 
    remove(path);
