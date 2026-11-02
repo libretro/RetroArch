@@ -145,6 +145,7 @@
 - SCAN: Interpret M3U files during scanning
 - SCAN: Merge manual and automatic scan into a more flexible setup
 - SCAN: Improve GDI content recognition
+- SCAN: --scan runs every path and exits with what the scans did; Manual Scan options, --scan-refresh and --scan-refresh-all on the command line; Refresh All Playlists in Manage Playlists
 - SHADER: Display on-screen error when preset load fails
 - SHADER: Add gyroscope / accelerometer uniforms for shaders
 - SHADER: Add aggressive shader caching to slang shader backend
