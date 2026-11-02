@@ -122,7 +122,10 @@ enum platform_android_flags
 {
    PLAT_ANDROID_FLAG_GAME_CONSOLE_DEVICE = (1 << 0),
    PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE   = (1 << 1),
-   PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE  = (1 << 2)
+   PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE  = (1 << 2),
+   /* A device quirk above picked the audio latency; the first-run
+    * defaults leave it alone. */
+   PLAT_ANDROID_FLAG_LATENCY_QUIRK       = (1 << 3)
 };
 
 static char app_dir[DIR_MAX_LENGTH];
@@ -3464,9 +3467,15 @@ static void frontend_unix_get_env(int *argc,
 
    /* Set automatic default values per device */
    if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
+   {
       g_defaults.settings_out_latency = 128;
+      g_platform_android_flags       |= PLAT_ANDROID_FLAG_LATENCY_QUIRK;
+   }
    else if (strstr(device_model, "GAMEMID_BT"))
+   {
       g_defaults.settings_out_latency = 160;
+      g_platform_android_flags       |= PLAT_ANDROID_FLAG_LATENCY_QUIRK;
+   }
    else if (strstr(device_model, "SHIELD"))
    {
       g_defaults.settings_video_refresh_rate = 60.0;
@@ -4493,6 +4502,112 @@ static void frontend_unix_set_signal_handler_state(int value)
 static void frontend_unix_destroy_signal_handler_state(void)
 {
    retro_atomic_store_release_int(&unix_sighandler_quit, 0);
+}
+
+#ifdef HAVE_VULKAN
+/* Whether the device declares Vulkan 1.1 or later, from
+ * PackageManager.hasSystemFeature("android.hardware.vulkan.version",
+ * 0x00401000).  The feature is what the device's Vulkan driver passed
+ * conformance at, so it is read from the system rather than by loading
+ * the driver and creating an instance.  The (String, int) overload is
+ * API 24; nothing older declares a Vulkan version at all. */
+static bool android_has_vulkan_1_1(JNIEnv *env, jobject activity)
+{
+   jclass activity_class;
+   jclass pm_class;
+   jmethodID get_package_manager;
+   jmethodID has_feature;
+   jobject pm;
+   jstring name;
+   jboolean ret = JNI_FALSE;
+
+   activity_class      = (*env)->GetObjectClass(env, activity);
+   get_package_manager = (*env)->GetMethodID(env, activity_class,
+         "getPackageManager", "()Landroid/content/pm/PackageManager;");
+   (*env)->DeleteLocalRef(env, activity_class);
+   if (android_env_exception(env, "getPackageManager lookup"))
+      return false;
+
+   pm = (*env)->CallObjectMethod(env, activity, get_package_manager);
+   if (android_env_exception(env, "getPackageManager") || !pm)
+      return false;
+
+   pm_class    = (*env)->GetObjectClass(env, pm);
+   has_feature = (*env)->GetMethodID(env, pm_class,
+         "hasSystemFeature", "(Ljava/lang/String;I)Z");
+   (*env)->DeleteLocalRef(env, pm_class);
+   if (!android_env_exception(env, "hasSystemFeature lookup"))
+   {
+      if ((name = (*env)->NewStringUTF(env,
+                  "android.hardware.vulkan.version")))
+      {
+         ret = (*env)->CallBooleanMethod(env, pm, has_feature, name,
+               (jint)0x00401000);
+         if (android_env_exception(env, "hasSystemFeature"))
+            ret = JNI_FALSE;
+         (*env)->DeleteLocalRef(env, name);
+      }
+   }
+   (*env)->DeleteLocalRef(env, pm);
+   return ret != JNI_FALSE;
+}
+#endif
+
+/* First start: no config file exists yet.  The built-in defaults stay
+ * what they always were (OpenGL ES, OpenSL ES, 128 ms), since a config
+ * saved with "save minimal" leaves out every key that matches them and
+ * changing them would change those installs on update.  A fresh
+ * install instead gets the modern drivers set as its own values when
+ * the device has them, and they are saved with the rest of its
+ * config.  Nothing here runs again once a config exists.
+ *
+ * - Vulkan when the device declares Vulkan 1.1.  Devices with only a
+ *   1.0 driver, or none, keep OpenGL ES, as before.
+ * - AAudio from Android 8.1 (API 27).  8.0 has AAudio but with the
+ *   bugs that make Oboe use OpenSL ES there; older releases keep
+ *   OpenSL ES, as before.  With AAudio the latency drops to 64 ms,
+ *   unless a device quirk above chose one. */
+void android_apply_first_run_defaults(settings_t *settings)
+{
+   int32_t sdk = 0;
+
+   if (!settings)
+      return;
+
+   frontend_android_get_version_sdk(&sdk);
+
+#ifdef HAVE_VULKAN
+   if (     sdk >= 24
+         && g_android && g_android->activity
+         && driver_find_index("video_driver", "vulkan") >= 0)
+   {
+      JNIEnv *env = jni_thread_getenv();
+
+      if (env && android_has_vulkan_1_1(env, g_android->activity->clazz))
+      {
+         configuration_set_string(settings,
+               settings->arrays.video_driver, "vulkan");
+         RARCH_LOG("[Config] First start: device has Vulkan 1.1, "
+               "video driver \"vulkan\".\n");
+      }
+   }
+#endif
+
+#ifdef HAVE_AAUDIO
+   if (     sdk >= 27
+         && driver_find_index("audio_driver", "aaudio") >= 0)
+   {
+      configuration_set_string(settings,
+            settings->arrays.audio_driver, "aaudio");
+      if (!(g_platform_android_flags & PLAT_ANDROID_FLAG_LATENCY_QUIRK))
+         configuration_set_uint(settings,
+               settings->uints.audio_latency, 64);
+      RARCH_LOG("[Config] First start: Android API %d, audio driver "
+            "\"aaudio\", latency %u ms.\n",
+            (int)sdk, settings->uints.audio_latency);
+   }
+#endif
+   (void)sdk;
 }
 
 /* To free change_data, call the function again with a NULL 

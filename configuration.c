@@ -81,6 +81,7 @@
  * cannot preprocess. */
 void android_app_set_window_settings(bool notch_write_over,
       bool auto_mouse_grab);
+void android_apply_first_run_defaults(settings_t *settings);
 #endif
 
 #include "list_special.h"
@@ -8706,6 +8707,13 @@ static void config_parse_file(void)
    {
       RARCH_ERR("[Config] Config not found at: \"%s\".\n",
             config_path);
+#ifdef ANDROID
+      /* No config at all: a fresh install's first start.  A config
+       * that exists but would not open is not one, and keeps the
+       * built-in defaults. */
+      if (config_path && *config_path && !path_is_valid(config_path))
+         android_apply_first_run_defaults(config_st);
+#endif
    }
 }
 
