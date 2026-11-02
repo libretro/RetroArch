@@ -428,7 +428,9 @@ int main(void)
    CHECK(retro_atomic_load_acquire_int(&packets) == 1);
    set_plugged(0);
    hid_wake(hid);
-   WAIT_FOR(reaped(1));
+   /* The reap closes the device after the pad is deinitialised: wait
+    * for its last step, not its first */
+   WAIT_FOR(reaped(1) && usb_count(&closes) == 1);
    CHECK(reaped(1) && retro_atomic_load_acquire_int(&disconnects) == 1
          && usb_count(&closes) == 1);
    gekko_hid_free(hid);
