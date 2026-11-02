@@ -2576,6 +2576,79 @@ static void lane_state_load_latency(void)
 }
 #endif
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_SCREENSHOTS)
+/* ------------------------------------------------------------------ */
+/* Lane: screenshots held                                              */
+/* ------------------------------------------------------------------ */
+
+/* A screenshot asked for while another is encoding is held and taken
+ * after it. Turned away, the Screenshot hotkey did nothing while a
+ * save's thumbnail encoded, and a second screenshot straight after the
+ * first was lost. */
+static void lane_screenshots_held(const char *dir)
+{
+   settings_t *settings = config_get_ptr();
+   bool thumbnail       = settings->bools.savestate_thumbnail_enable;
+   char a[600], b[600], c[600], state[PATH_MAX_LENGTH], thumb[PATH_MAX_LENGTH + 8];
+   unsigned had = failures, i;
+   task_finder_data_t find;
+
+   run_harness_core();
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   pump(4);
+   snprintf(a, sizeof(a), "%s/held_shot_a.png", dir);
+   snprintf(b, sizeof(b), "%s/held_shot_b.png", dir);
+   snprintf(c, sizeof(c), "%s/held_shot_c.png", dir);
+   remove(a);
+   remove(b);
+   remove(c);
+   find.func     = state_any_task;
+   find.userdata = NULL;
+
+   /* the second while the first is still encoding */
+   CHECK(take_screenshot(dir, a, false, false, true, true),
+         "the first screenshot was not taken");
+   CHECK(take_screenshot(dir, b, false, false, true, true),
+         "a screenshot asked for while one encodes was turned away");
+   for (i = 0; i < 600 && task_queue_find(&find); i++)
+      pump(1);
+   CHECK(path_is_valid(a) && path_is_valid(b),
+         "both screenshots were not written (%d, %d)",
+         path_is_valid(a), path_is_valid(b));
+
+   /* the hotkey's screenshot behind a save's thumbnail */
+   configuration_set_bool(settings,
+         settings->bools.savestate_thumbnail_enable, true);
+   runloop_get_current_savestate_path(state, sizeof(state));
+   snprintf(thumb, sizeof(thumb), "%s.png", state);
+   remove(thumb);
+   CHECK(command_event(CMD_EVENT_SAVE_STATE, NULL), "the save was not taken");
+   CHECK(state_tasks_settle(), "the save did not finish");
+   CHECK(take_screenshot(dir, c, false, false, true, true),
+         "a screenshot behind a save's thumbnail was turned away");
+   for (i = 0; i < 600 && task_queue_find(&find); i++)
+      pump(1);
+   CHECK(path_is_valid(c), "the screenshot behind the thumbnail was not written");
+   CHECK(path_is_valid(thumb), "the save's thumbnail was not written");
+
+   remove(a);
+   remove(b);
+   remove(c);
+   remove(thumb);
+   remove(state);
+   configuration_set_bool(settings,
+         settings->bools.savestate_thumbnail_enable, thumbnail);
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   pump(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] screenshots-held lane\n");
+}
+#endif
+
 #if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
 /* ------------------------------------------------------------------ */
 /* Lane: playlist Load State slot                                      */
@@ -3771,6 +3844,9 @@ int main(int argc, char *argv[])
    lane_state_slot_reply();
 #ifdef HAVE_DYNAMIC
    lane_state_load_latency();
+#endif
+#if defined(HAVE_DYNAMIC) && defined(HAVE_SCREENSHOTS)
+   lane_screenshots_held(dir);
 #endif
 #if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
    lane_playlist_state_slot();

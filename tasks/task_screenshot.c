@@ -492,11 +492,41 @@ task_finished:
    }
 }
 
+/* Screenshots taken while one is encoding: held, in order, and pushed
+ * as each one ahead of them finishes. Turned away, the Screenshot
+ * hotkey did nothing while a save's thumbnail or an achievement's
+ * capture encoded, and a thumbnail was skipped behind a screenshot.
+ * Each holds its own copy of the frame, taken when it was asked for.
+ * Frame thread only: take_screenshot() and the task's callback run
+ * there. Bounded: past it a screenshot is refused, as all were. */
+#define SCREENSHOTS_HELD_MAX 4
+static retro_task_t *screenshots_held[SCREENSHOTS_HELD_MAX];
+static unsigned      screenshots_held_count = 0;
+
+/* From a screenshot's callback: the next held one takes the claim. */
+static void screenshots_release_held(void)
+{
+   unsigned i;
+   retro_task_t *task;
+   if (     !screenshots_held_count
+         || !retro_atomic_cas_int(&screenshot_file_claim, 0, 1))
+      return;
+   task = screenshots_held[0];
+   for (i = 1; i < screenshots_held_count; i++)
+      screenshots_held[i - 1] = screenshots_held[i];
+   screenshots_held[--screenshots_held_count] = NULL;
+   ((screenshot_task_state_t*)task->state)->flags |= SS_TASK_FLAG_CLAIM;
+   task_queue_push(task);
+}
+
 static void task_screenshot_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
    screenshot_task_state_t *state = NULL;
+
+   /* this one's claim went as it finished */
+   screenshots_release_held();
 
    if (!task)
       return;
@@ -852,19 +882,6 @@ static bool screenshot_dump(
          return false;
       }
 
-      /* a frame writes no file, so it waits on no screenshot */
-      if (!frame_max)
-      {
-         if (!retro_atomic_cas_int(&screenshot_file_claim, 0, 1))
-         {
-            free(task);
-            if (state->out_buffer)
-               free(state->out_buffer);
-            free(state);
-            return false;
-         }
-         state->flags   |= SS_TASK_FLAG_CLAIM;
-      }
       task->type         = TASK_TYPE_NONE;
       task->state        = state;
       task->handler      = task_screenshot_handler;
@@ -891,7 +908,27 @@ static bool screenshot_dump(
             task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
       }
 
-      if (task_queue_push(task))
+      /* A frame writes no file, so it waits on no screenshot. One that
+       * does goes in with the claim, or is held behind the screenshot
+       * that has it; its callback hands the claim on. */
+      if (!frame_max)
+      {
+         task->callback  = task_screenshot_callback;
+         if (     screenshots_held_count
+               || !retro_atomic_cas_int(&screenshot_file_claim, 0, 1))
+         {
+            if (screenshots_held_count < SCREENSHOTS_HELD_MAX)
+            {
+               screenshots_held[screenshots_held_count++] = task;
+               return true;
+            }
+         }
+         else
+            state->flags |= SS_TASK_FLAG_CLAIM;
+      }
+
+      if (     (frame_max || (state->flags & SS_TASK_FLAG_CLAIM))
+            && task_queue_push(task))
          return true;
 
       if (state->flags & SS_TASK_FLAG_CLAIM)
