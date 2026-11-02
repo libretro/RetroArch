@@ -1851,6 +1851,57 @@ static void pause_boundary_run(void)
          fixture_failures - f0);
 }
 
+/* The fields the pipe's producer and consumer write every frame or
+ * pass sit on lines of their own (AUDIO_PIPE_LINE padding in
+ * audio_driver_state_t). Nothing else notices a field added above a
+ * pad moving one back onto the other side's line - the run still
+ * passes, and the lines bounce between cores - so it is asserted by
+ * offset, on the struct this build has. */
+#define PIPE_LINE_OF(f) (offsetof(audio_driver_state_t, f) / AUDIO_PIPE_LINE)
+static unsigned pipe_line_separation(void)
+{
+   static const size_t cons[] = {
+      offsetof(audio_driver_state_t, pipe_gen),
+      offsetof(audio_driver_state_t, pipe_space),
+      offsetof(audio_driver_state_t, pipe_stalled),
+      offsetof(audio_driver_state_t, pipe_underruns_seen),
+      offsetof(audio_driver_state_t, pipe_priming),
+      offsetof(audio_driver_state_t, pipe_menu_active),
+      offsetof(audio_driver_state_t, pipe_source_waits),
+      offsetof(audio_driver_state_t, pipe_held_min1) };
+   static const size_t prod[] = {
+      offsetof(audio_driver_state_t, pipe_data_gen),
+      offsetof(audio_driver_state_t, pipe_data),
+      offsetof(audio_driver_state_t, runloop_snapshot),
+      offsetof(audio_driver_state_t, runloop_ffratio_bits),
+      offsetof(audio_driver_state_t, pipe_ctrl_avail),
+      offsetof(audio_driver_state_t, writer_held),
+      offsetof(audio_driver_state_t, pipe_ff_mult_q16) };
+   unsigned bad = 0;
+   size_t i, j;
+   for (i = 0; i < sizeof(cons) / sizeof(cons[0]); i++)
+      for (j = 0; j < sizeof(prod) / sizeof(prod[0]); j++)
+         if (cons[i] / AUDIO_PIPE_LINE == prod[j] / AUDIO_PIPE_LINE)
+         {
+            fprintf(stderr, "FAIL: consumer field at %u and producer "
+                  "field at %u share line %u\n", (unsigned)cons[i],
+                  (unsigned)prod[j], (unsigned)(cons[i] / AUDIO_PIPE_LINE));
+            bad++;
+         }
+   /* and neither group shares a line with what lies outside it */
+   if (     PIPE_LINE_OF(pipe_space) == PIPE_LINE_OF(state_lock)
+         || PIPE_LINE_OF(pipe_ff_mult_q16) == PIPE_LINE_OF(pipe_wake))
+   {
+      fputs("FAIL: a pipe group shares a line with its neighbours\n",
+            stderr);
+      bad++;
+   }
+   if (!bad)
+      fprintf(stderr, "[pass] producer and consumer fields on lines of "
+            "their own\n");
+   return bad;
+}
+
 int main(int argc, char **argv)
 {
    /* 1 is a core that hands over a frame at a time. 262 is a scanline
@@ -1863,6 +1914,8 @@ int main(int argc, char **argv)
    const char *tempo = getenv("TEMPO");
    const char *layout = getenv("LAYOUT");
    size_t i;
+   if (pipe_line_separation())
+      return 1;
    main_thread_id = sthread_get_current_thread_id();
    if (!retro_eventcount_init(&progress_ev))
       return 2;
