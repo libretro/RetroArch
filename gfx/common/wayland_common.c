@@ -26,6 +26,10 @@
 #include <unistd.h>
 
 #include <retro_atomic.h>
+#ifdef HAVE_VIDEO_WINDOWS
+#include <compat/strl.h>
+#include <encodings/utf.h>
+#endif
 #ifdef HAVE_THREADS
 #include <retro_spsc.h>
 #include <rthreads/rthreads.h>
@@ -570,6 +574,9 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       wl_list_remove(&od->link);
       free(oi->make);
       free(oi->model);
+#ifdef HAVE_VIDEO_WINDOWS
+      free(oi->name);
+#endif
       free(oi);
       free(od);
    }
@@ -923,6 +930,53 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 }
 #endif
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* The outputs last published, on the context's thread */
+static video_window_display_t wl_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+static unsigned wl_video_monitors_count;
+
+/* The outputs for the screens' Display setting, in the order the
+ * fullscreen setting counts them (wl_output_at()). Published only when
+ * they changed, or @always: another platform's list may be up. */
+static void wl_video_monitors_publish(gfx_ctx_wayland_data_t *wl,
+      bool always)
+{
+   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   display_output_t *od;
+   unsigned count               = 0;
+   wl->video_monitors_dirty     = false;
+   wl->video_monitors_own_dirty = false;
+   wl_list_for_each(od, &wl->all_outputs, link)
+   {
+      video_window_display_t *display;
+      output_info_t *oi = od->output;
+      if (count >= VIDEO_WINDOW_DISPLAYS_MAX)
+         break;
+      display           = &list[count];
+      memset(display, 0, sizeof(*display));
+      display->ordinal  = ++count;
+      display->own      = oi == wl->current_output;
+      display->valid    = true;
+      display->on       = true;
+      display->physical = true;
+      display->monitor  = true;
+      if (oi->name)
+         strlcpy(display->name, oi->name, sizeof(display->name));
+      if (oi->model)
+         utf8cpy(display->model, sizeof(display->model), oi->model,
+               sizeof(display->model));
+      display->dims     = oi->dims;
+   }
+   if (     !always
+         && count == wl_video_monitors_count
+         && !memcmp(list, wl_video_monitors, count * sizeof(*list)))
+      return;
+   memcpy(wl_video_monitors, list, count * sizeof(*list));
+   wl_video_monitors_count = count;
+   video_driver_publish_window_displays(list, count);
+}
+#endif
+
 /* A window kept across a video reinit. The whole context is kept, so
  * every proxy still hands its listener a live context. */
 static gfx_ctx_wayland_data_t *wl_kept = NULL;
@@ -969,6 +1023,13 @@ void gfx_ctx_wl_free_common(gfx_ctx_wayland_data_t *wl, bool may_keep)
       return;
    }
 
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Its outputs go with it, from its own thread. A kept window let go
+    * by gfx_ctx_wl_release_kept() publishes nothing: the next driver
+    * may have published by then. */
+   wl_video_monitors_count = 0;
+   video_driver_publish_window_displays(NULL, 0);
+#endif
    gfx_ctx_wl_destroy(wl);
 }
 
@@ -1400,6 +1461,9 @@ bool gfx_ctx_wl_init_common(
    }
 
    flush_wayland_fd(&wl->input);
+#ifdef HAVE_VIDEO_WINDOWS
+   wl_video_monitors_publish(wl, true);
+#endif
 
    return true;
 }
@@ -1681,6 +1745,10 @@ void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
    /* this function works with SCALED sizes, it's used from the renderer */
    unsigned new_dims;
    flush_wayland_fd(&wl->input);
+#ifdef HAVE_VIDEO_WINDOWS
+   if (wl->video_monitors_dirty || wl->video_monitors_own_dirty)
+      wl_video_monitors_publish(wl, false);
+#endif
 
    get_video_size(wl, &new_dims);
 

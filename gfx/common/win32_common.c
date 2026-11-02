@@ -403,6 +403,19 @@ uint8_t g_win32_flags               = 0;
 static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+/* The monitors last published for the screens' Display setting and
+ * their handles, on the main window's thread. dirty: enumerate again;
+ * own_dirty: the main window may be on another one; published: the
+ * list up is this one, not another driver's. */
+static video_window_display_t win32_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+static HMONITOR win32_video_monitor_handles[VIDEO_WINDOW_DISPLAYS_MAX];
+static unsigned win32_video_monitor_count;
+static bool win32_video_monitors_dirty;
+static bool win32_video_monitors_own_dirty;
+static bool win32_video_monitors_published;
+#endif
+
 static win32_common_state_t win32_st =
 {
    0,                   /* pos */
@@ -1008,6 +1021,9 @@ static LRESULT CALLBACK wnd_proc_common(
          win32_save_position();
          /* It may be on another monitor now */
          video_driver_window_output_changed();
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+         win32_video_monitors_own_dirty = true;
+#endif
          break;
 #if !defined(_XBOX)
       case WM_ENTERSIZEMOVE:
@@ -1451,6 +1467,10 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
       if (mon)
          win32_resize_after_display_change(hwnd, mon);
       video_driver_window_output_changed();
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+      win32_video_monitors_dirty     = true;
+      win32_video_monitors_own_dirty = true;
+#endif
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -2318,6 +2338,69 @@ static BOOL CALLBACK win32_video_window_monitor(HMONITOR hm,
    return TRUE;
 }
 
+/* The monitors for the screens' Display setting, in the order the
+ * windows' monitor setting counts them (win32_video_window_place()).
+ * Enumerated only when dirty; else only the main window's is found
+ * again. Published only when changed, or another list is up. */
+static void win32_video_monitors_publish(void)
+{
+   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned i;
+   unsigned count = win32_video_monitor_count;
+   HMONITOR own   = main_window.hwnd
+      ? MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST)
+      : NULL;
+
+   if (win32_video_monitors_dirty)
+   {
+      win32_video_monitors_t monitors;
+      monitors.count = 0;
+      EnumDisplayMonitors(NULL, NULL, win32_video_window_monitor,
+            (LPARAM)&monitors);
+      count = monitors.count < VIDEO_WINDOW_DISPLAYS_MAX
+         ? monitors.count : VIDEO_WINDOW_DISPLAYS_MAX;
+      for (i = 0; i < count; i++)
+      {
+         MONITORINFOEX info;
+         video_window_display_t *display = &list[i];
+         unsigned w                      = 0;
+         unsigned h                      = 0;
+         memset(display, 0, sizeof(*display));
+         memset(&info, 0, sizeof(info));
+         info.cbSize                     = sizeof(info);
+         win32_video_monitor_handles[i]  = monitors.all[i];
+         display->ordinal                = i + 1;
+         display->valid                  = true;
+         display->on                     = true;
+         display->physical               = true;
+         display->monitor                = true;
+         if (GetMonitorInfo(monitors.all[i], (LPMONITORINFO)&info))
+         {
+            w = info.rcMonitor.right  - info.rcMonitor.left;
+            h = info.rcMonitor.bottom - info.rcMonitor.top;
+            strlcpy(display->name, info.szDevice, sizeof(display->name));
+         }
+         if (VIDEO_SCALE_FITS(w, h))
+            display->dims = VIDEO_SCALE_PACK(w, h);
+      }
+      win32_display_config_connectors(list, count);
+   }
+   else
+      memcpy(list, win32_video_monitors, count * sizeof(*list));
+   for (i = 0; i < count; i++)
+      list[i].own = win32_video_monitor_handles[i] == own;
+   win32_video_monitors_dirty     = false;
+   win32_video_monitors_own_dirty = false;
+   if (     win32_video_monitors_published
+         && count == win32_video_monitor_count
+         && !memcmp(list, win32_video_monitors, count * sizeof(*list)))
+      return;
+   memcpy(win32_video_monitors, list, count * sizeof(*list));
+   win32_video_monitor_count      = count;
+   win32_video_monitors_published = true;
+   video_driver_publish_window_displays(list, count);
+}
+
 /* The window rect for 'settings' on the monitors there are now: on
  * 'monitor' if given, else the preferred one (counted as for the main
  * window), else with an automatic monitor the one the saved bounds are
@@ -2618,6 +2701,12 @@ void win32_monitor_init(void)
    g_win32->monitor_count = 0;
    EnumDisplayMonitors(NULL, NULL,
          win32_monitor_enum_proc, 0);
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   /* Nothing kept from the last driver: another driver's list may be up */
+   if (!win32_kept_hwnd)
+      win32_video_monitors_published = false;
+   win32_video_monitors_dirty     = true;
+#endif
 #endif
    g_win32_flags         &= ~WIN32_CMN_FLAG_QUIT;
 }
@@ -2638,6 +2727,10 @@ void win32_check_window(void *data,
    bool video_is_threaded = video_driver_is_threaded();
    if (video_is_threaded)
       ui_companion_win32.application->process_events();
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   if (win32_video_monitors_dirty || win32_video_monitors_own_dirty)
+      win32_video_monitors_publish();
+#endif
    *quit                  = (g_win32_flags & WIN32_CMN_FLAG_QUIT) ? true : false;
 
    if (g_win32_flags & WIN32_CMN_FLAG_RESIZED)
@@ -3146,6 +3239,12 @@ bool win32_set_video_mode(void *data,
     * clear until the first key event reaches the window procedure. */
    win32_update_keyboard_mods();
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   /* Before the first frame lays the screens out */
+   if (win32_video_monitors_dirty || win32_video_monitors_own_dirty)
+      win32_video_monitors_publish();
+#endif
+
    return true;
 }
 
@@ -3324,6 +3423,12 @@ void win32_destroy_window(void)
 #endif
 #endif
    main_window.hwnd = NULL;
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__) && !defined(_XBOX)
+   /* Its monitors go with it, from its own thread. A kept window's
+    * stay up for the next driver. */
+   win32_video_monitor_count = 0;
+   video_driver_publish_window_displays(NULL, 0);
+#endif
    /* video_st->window is a copy of this handle taken by
     * win32_window_create(). Nothing else clears it - video_driver.c
     * only resets it at the top of the next

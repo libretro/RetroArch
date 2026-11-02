@@ -1771,6 +1771,7 @@ typedef struct video_window_displays
    unsigned next;                 /* the publisher's: slot to fill */
    unsigned last;                 /* the publisher's: slot + 1 */
    unsigned held;                 /* the app thread's: slot + 1 */
+   bool pending[3];               /* no list yet, one is coming */
 } video_window_displays_t;
 
 /* The app thread's route for a redraw, which may run on the video

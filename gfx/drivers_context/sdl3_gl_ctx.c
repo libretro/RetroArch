@@ -247,6 +247,10 @@ static bool sdl3_ctx_set_video_mode(void *data,
    if (!sdl3_window_set_video_mode(&sdl->win, dims, fullscreen,
             SDL_WINDOW_OPENGL))
       goto error;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Before the first frame lays the screens out */
+   sdl3_video_monitors_publish(sdl->win, !had_window);
+#endif
 
    /* Restyled in place (GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE): the
     * window and its context are the ones already current, the vsync

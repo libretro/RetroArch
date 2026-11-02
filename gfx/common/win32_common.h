@@ -220,6 +220,13 @@ void win32_video_windows_free(void *owner,
  * win32_video_windows_free(owner, win32_video_window_driver.destroy)
  * before win32_window_keep() or win32_destroy_window(). */
 extern const gfx_ctx_window_driver_t win32_video_window_driver;
+
+/* Renames the monitors in @list, named by their GDI devices
+ * (MONITORINFOEX's szDevice), by their connectors, Linux-style: "DP-1",
+ * "HDMI-1", with their friendly names as models. Where Windows cannot
+ * say (before 7, or no active path) they are left as they are. */
+void win32_display_config_connectors(video_window_display_t *list,
+      unsigned count);
 #endif
 
 void win32_check_window(void *data,

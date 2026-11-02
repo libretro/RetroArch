@@ -200,6 +200,11 @@ typedef struct output_info
    unsigned scale;
    char *make;
    char *model;
+#ifdef HAVE_VIDEO_WINDOWS
+   struct gfx_ctx_wayland_data *wl;
+   /* wl_output v4's, e.g. "DP-2"; NULL below it */
+   char *name;
+#endif
 } output_info_t;
 
 typedef struct display_output
@@ -430,6 +435,12 @@ typedef struct gfx_ctx_wayland_data
    } cfg_pending;
    bool activated;
    bool reported_display_size;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The outputs to publish again: one changed, or the main window
+    * went to another */
+   bool video_monitors_dirty;
+   bool video_monitors_own_dirty;
+#endif
 } gfx_ctx_wayland_data_t;
 
 #ifdef HAVE_XKBCOMMON

@@ -280,6 +280,11 @@ void sdl3_video_window_destroy(void *owner, video_window_native_t *window);
 /* Hands each window 'owner' still has to 'destroy'. */
 void sdl3_video_windows_free(void *owner,
       void (*destroy)(void *owner, video_window_native_t *window));
+/* Publishes the displays for the screens' Display setting, on the
+ * context's thread: once its main window is made (@init), then from
+ * sdl3_ctx_check_window() after a display or the main window moved,
+ * and only when the list changed. */
+void sdl3_video_monitors_publish(SDL_Window *primary, bool init);
 #endif
 
 #endif

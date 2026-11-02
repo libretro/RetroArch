@@ -497,6 +497,7 @@ VIDEO CONTEXT
 
 #if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
+#include "../gfx/common/x11_monitors.c"
 #include "../gfx/common/xinerama_common.c"
 #include "../gfx/display_servers/dispserv_x11.c"
 

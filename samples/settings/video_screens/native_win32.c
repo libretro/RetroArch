@@ -154,6 +154,177 @@ static const native_w32_monitor_t *native_w32_monitor_of(
    return &monitors[0];
 }
 
+/* The main window of the lifetime last checked */
+static HWND native_w32_main_last;
+
+/* What the screens' Display setting keys @handle by: its connector
+ * where Windows says, else its GDI device */
+static void native_w32_monitor_name(HMONITOR handle, char *name,
+      size_t name_len, char *model, size_t model_len)
+{
+   MONITORINFOEX info;
+   video_window_display_t display;
+   memset(&info, 0, sizeof(info));
+   memset(&display, 0, sizeof(display));
+   info.cbSize = sizeof(info);
+   CHECK(GetMonitorInfo(handle, (LPMONITORINFO)&info));
+   strlcpy(display.name, info.szDevice, sizeof(display.name));
+   win32_display_config_connectors(&display, 1);
+   strlcpy(name, display.name, name_len);
+   strlcpy(model, display.model, model_len);
+}
+
+/* "DP-1", or a GDI device "\\.\DISPLAY1" */
+static bool native_w32_name_ok(const char *name)
+{
+   const char *s = name;
+   if (strncmp(name, "\\\\.\\DISPLAY", 11) == 0)
+      return name[11] >= '1' && name[11] <= '9';
+   while ((*s >= 'A' && *s <= 'Z') || (*s >= 'a' && *s <= 'z'))
+      s++;
+   if (s == name || *s++ != '-' || *s < '1' || *s > '9')
+      return false;
+   while (*s >= '0' && *s <= '9')
+      s++;
+   return *s == '\0';
+}
+
+/* The published list is EnumDisplayMonitors' monitors in order, the
+ * main window's the one it is on now */
+static bool native_w32_monitors_match(const native_w32_monitor_t *monitors,
+      unsigned want, const video_window_display_t *got, unsigned n)
+{
+   unsigned i;
+   unsigned owned = 0;
+   HMONITOR own   = MonitorFromWindow(main_window.hwnd,
+         MONITOR_DEFAULTTONEAREST);
+   if (n != want)
+      return false;
+   for (i = 0; i < n; i++)
+   {
+      char name[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+      char model[VIDEO_WINDOW_DISPLAY_MODEL_SIZE];
+      const RECT *rect = &monitors[i].rect;
+      native_w32_monitor_name(monitors[i].handle, name, sizeof(name),
+            model, sizeof(model));
+      if (     got[i].ordinal != i + 1
+            || got[i].dims != VIDEO_SCALE_PACK(rect->right - rect->left,
+               rect->bottom - rect->top)
+            || got[i].own != (monitors[i].handle == own)
+            || !string_is_equal(got[i].name, name)
+            || !string_is_equal(got[i].model, model))
+         return false;
+      if (got[i].own)
+         owned++;
+   }
+   return owned == 1;
+}
+
+/* Reads the list as the app thread does, pumping until it matches */
+static unsigned native_w32_monitors_wait(const gfx_ctx_driver_t *ctx,
+      void *data, const video_window_request_t *request,
+      const native_w32_monitor_t *monitors, unsigned want,
+      video_window_display_t *got)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   unsigned n;
+   for (;;)
+   {
+      n = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+      if (native_w32_monitors_match(monitors, want, got, n))
+         return n;
+      if (cpu_features_get_time_usec() > deadline)
+         break;
+      if (request)
+         native_window_drain(ctx, data, request);
+      else
+      {
+         unsigned dims = VIDEO_SCALE_PACK(640, 480);
+         bool quit     = false;
+         bool resize   = false;
+         native_w32_pump(data);
+         ctx->check_window(data, &quit, &resize, &dims);
+      }
+      retro_sleep(2);
+   }
+   fprintf(stderr, "native win32: %u monitor(s) published for %u\n",
+         n, want);
+   CHECK(!"published monitors");
+   return n;
+}
+
+/* The monitors as the screens' Display setting lists them, republished
+ * when one changes or the main window goes to another, and only then */
+static void native_w32_monitors_check(const gfx_ctx_driver_t *ctx,
+      void *data, const video_window_request_t *request)
+{
+   native_w32_monitor_t monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   video_window_display_t nosuch;
+   RECT was;
+   unsigned i, n, restore;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned want = native_w32_monitors(monitors, VIDEO_WINDOW_DISPLAYS_MAX);
+   int from      = -1;
+   n = native_w32_monitors_wait(ctx, data, request, monitors, want, got);
+   for (i = 0; i < n; i++)
+   {
+      char key[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+      CHECK(got[i].valid && got[i].on && got[i].physical && got[i].monitor);
+      CHECK(native_w32_name_ok(got[i].name));
+      if (got[i].own)
+         from = (int)i;
+      video_windows_display_key(got, i, key, sizeof(key));
+      fprintf(stderr, "native win32: monitor %u \"%s\" model \"%s\","
+            " %s%s\n", got[i].ordinal, key, got[i].model,
+            strncmp(got[i].name, "\\\\.\\", 4) == 0
+            ? "GDI device name" : "DisplayConfig connector",
+            got[i].own ? ", main window" : "");
+      CHECK(key[0] != '\0');
+   }
+   memset(&nosuch, 0, sizeof(nosuch));
+   strlcpy(nosuch.name, "\\\\.\\NOSUCH", sizeof(nosuch.name));
+   win32_display_config_connectors(&nosuch, 1);
+   CHECK(string_is_equal(nosuch.name, "\\\\.\\NOSUCH") && !*nosuch.model);
+
+   /* Moved within its monitor, and a display change that changes
+    * nothing: nothing is republished */
+   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   restore = video_st->windows_restore;
+   GetWindowRect(main_window.hwnd, &was);
+   SetWindowPos(main_window.hwnd, NULL, was.left + 8, was.top + 8, 0, 0,
+         SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+   native_window_settle(ctx, data, request, 50000);
+   SendMessage(main_window.hwnd, WM_DISPLAYCHANGE, 32,
+         MAKELPARAM(monitors[0].rect.right - monitors[0].rect.left,
+            monitors[0].rect.bottom - monitors[0].rect.top));
+   SetWindowPos(main_window.hwnd, NULL, was.left, was.top,
+         was.right - was.left, was.bottom - was.top,
+         SWP_NOZORDER | SWP_NOACTIVATE);
+   native_window_settle(ctx, data, request, 50000);
+   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   CHECK(video_st->windows_restore == restore);
+
+   /* The main window's monitor follows it */
+   if (n >= 2 && from >= 0)
+   {
+      unsigned to = from ? 0 : 1;
+      SetWindowPos(main_window.hwnd, NULL, monitors[to].work.left + 40,
+            monitors[to].work.top + 40, 0, 0,
+            SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+      native_w32_monitors_wait(ctx, data, request, monitors, want, got);
+      CHECK(got[to].own);
+      CHECK(video_st->windows_restore != restore);
+      SetWindowPos(main_window.hwnd, NULL, was.left, was.top, 0, 0,
+            SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+      native_w32_monitors_wait(ctx, data, request, monitors, want, got);
+      CHECK(got[from].own);
+   }
+   else
+      fprintf(stderr, "native win32: the main window going to another"
+            " monitor not checked\n");
+}
+
 /* The client area in screen coordinates */
 static RECT native_w32_client(HWND hwnd)
 {
@@ -279,14 +450,32 @@ static void native_w32_titles(HWND primary, HWND win, unsigned screen)
 /* The secondaries' class, as the first window had it */
 static char native_w32_class[64];
 
-/* Once the context is gone: no window left, and no class either */
+/* The restore count when a main window was kept: taking it back must
+ * publish nothing */
+static bool native_w32_kept;
+static unsigned native_w32_kept_restore;
+
+/* Once the context is gone: no window left, and no class either. A
+ * main window kept for the next driver keeps its monitors up. */
 static void native_w32_torn_down(unsigned screen)
 {
    WNDCLASSEX has;
+   native_w32_monitor_t monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned n = video_driver_get_window_displays(got,
+         VIDEO_WINDOW_DISPLAYS_MAX);
    has.cbSize = sizeof(has);
    CHECK(native_w32_titled(screen) == 0);
    CHECK(*native_w32_class);
    CHECK(!GetClassInfoEx(GetModuleHandle(NULL), native_w32_class, &has));
+   if (native_w32_main_last && IsWindow(native_w32_main_last))
+   {
+      CHECK(n == native_w32_monitors(monitors, VIDEO_WINDOW_DISPLAYS_MAX));
+      native_w32_kept         = true;
+      native_w32_kept_restore = video_state_get_ptr()->windows_restore;
+   }
+   else
+      CHECK(n == 0);
 }
 
 #ifdef HAVE_THREADS
@@ -549,6 +738,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    unsigned i, seen, last;
    HWND secondary = (HWND)window->surface;
    unsigned count = native_w32_monitors(monitors, 8);
+   native_w32_main_last = main_window.hwnd;
 
    fprintf(stderr, "native win32: %u monitor(s)\n", count);
    CHECK(count > 0);
@@ -574,6 +764,19 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
          NATIVE_EVENT(RESUME), 0);
    seen |= native_window_settle(ctx, data, request, 100000);
    CHECK(!(seen & NATIVE_EVENT(CLOSE)));
+   /* The main window taken back: its list is still the one up */
+   if (native_w32_kept && win32_window_was_taken())
+   {
+      video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+      unsigned restore;
+      video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+      restore = video_state_get_ptr()->windows_restore;
+      fprintf(stderr, "native win32: main window taken back,"
+            " %u restore(s) since it was kept\n",
+            restore - native_w32_kept_restore);
+      CHECK(restore == native_w32_kept_restore);
+   }
+   native_w32_kept = false;
    CHECK(window->dims == request->settings.dims);
    CHECK(window->configured && window->presentable);
    CHECK(native_w32_main_intact(&main_state));
@@ -907,5 +1110,63 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       CHECK(native_w32_main_intact(&main_state));
    }
 #endif
+   native_w32_monitors_check(ctx, data, request);
+}
+
+/* The main window left up by the last lifetime goes without taking the
+ * list another driver put up since; a cold start replaces it, and a
+ * main window not kept takes its own down */
+static void native_w32_teardown(const char *ident, enum gfx_ctx_api api,
+      bool core)
+{
+   static video_window_display_t foreign[1];
+   native_w32_monitor_t monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   const gfx_ctx_driver_t *ctx;
+   unsigned n, want;
+   void *data = NULL;
+   native_w32_kept = false;
+   memset(foreign, 0, sizeof(foreign));
+   foreign[0].ordinal = 1;
+   foreign[0].valid   = foreign[0].on = foreign[0].physical = true;
+   foreign[0].monitor = true;
+   strlcpy(foreign[0].name, "foreign", sizeof(foreign[0].name));
+   video_driver_publish_window_displays(foreign, 1);
+   win32_window_release_kept();
+   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+         == 1 && string_is_equal(got[0].name, "foreign"));
+#ifdef HAVE_VULKAN
+   if (strcmp(ident, "vk_w") == 0)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_w_vk, ident, api, 1, 0, false, &data);
+   else
+#endif
+   if (strcmp(ident, "d3d") == 0)
+      ctx = native_w32_d3d_init(&data);
+   else
+      ctx = video_context_driver_init_first(NULL, ident, api,
+            core ? 3 : 0, core ? 2 : 0, false, &data);
+   CHECK(ctx != NULL);
+   if (!ctx)
+      return;
+   if (!ctx->set_video_mode(data, VIDEO_SCALE_PACK(640, 480), false))
+   {
+      CHECK(!"set_video_mode");
+      return;
+   }
+   /* Before anything pumped */
+   want = native_w32_monitors(monitors, VIDEO_WINDOW_DISPLAYS_MAX);
+   n    = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   fprintf(stderr, "native win32: %u monitor(s) published at init%s\n",
+         n, n && string_is_equal(got[0].name, "foreign")
+         ? ", the foreign list" : "");
+   CHECK(native_w32_monitors_match(monitors, want, got, n));
+   native_w32_monitors_wait(ctx, data, NULL, monitors, want, got);
+   /* Quitting: not kept */
+   runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
+   ctx->destroy(data);
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SHUTDOWN_INITIATED;
+   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+         == 0);
 }
 #endif

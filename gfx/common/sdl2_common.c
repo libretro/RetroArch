@@ -23,6 +23,9 @@
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#ifdef HAVE_VIDEO_WINDOWS
+#include <encodings/utf.h>
+#endif
 
 #include "sdl2_common.h"
 #include "../../retroarch.h"
@@ -83,6 +86,14 @@ void sdl2_set_handles(void *data, enum rarch_display_type display_type)
 /* Secondary screens' windows, by screen */
 static sdl2_video_window_t *sdl2_video_windows[RETRO_VIDEO_VIEWS_MAX];
 static unsigned sdl2_video_window_count;
+
+/* The displays last published for the screens' Display setting, on the
+ * context's thread. dirty: enumerate again; own_dirty: the main window
+ * may be on another one. */
+static video_window_display_t sdl2_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+static unsigned sdl2_video_monitor_count;
+static bool sdl2_video_monitors_dirty;
+static bool sdl2_video_monitors_own_dirty;
 
 static video_window_common_t *sdl2_video_window_at(unsigned screen)
 {
@@ -184,6 +195,73 @@ bool sdl2_video_window_event(const SDL_Event *event, bool *quit)
    }
    sdl2_video_window_check(state);
    return true;
+}
+
+void sdl2_video_monitors_changed(void)
+{
+   sdl2_video_monitors_dirty = true;
+}
+
+void sdl2_video_monitors_moved(void)
+{
+   sdl2_video_monitors_own_dirty = true;
+}
+
+/* In SDL's display order, which a window's monitor setting counts in
+ * (sdl2_video_window_place()). Enumerated only when dirty; else only
+ * the main window's is found again. An @init list always goes out:
+ * another driver's may be up. */
+void sdl2_video_monitors_publish(SDL_Window *primary, bool init)
+{
+   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned i;
+   int own;
+   unsigned count = sdl2_video_monitor_count;
+
+   if (init)
+      sdl2_video_monitors_dirty = true;
+   else if (!sdl2_video_monitors_dirty && !sdl2_video_monitors_own_dirty)
+      return;
+   own = primary ? SDL_GetWindowDisplayIndex(primary) : -1;
+
+   if (sdl2_video_monitors_dirty)
+   {
+      int n = SDL_GetNumVideoDisplays();
+      count = n > 0 ? (unsigned)n : 0;
+      if (count > VIDEO_WINDOW_DISPLAYS_MAX)
+         count = VIDEO_WINDOW_DISPLAYS_MAX;
+      for (i = 0; i < count; i++)
+      {
+         SDL_Rect bounds;
+         video_window_display_t *display = &list[i];
+         const char *name                = SDL_GetDisplayName((int)i);
+         memset(display, 0, sizeof(*display));
+         display->ordinal                = i + 1;
+         display->valid                  = true;
+         display->on                     = true;
+         display->physical               = true;
+         display->monitor                = true;
+         if (name)
+            utf8cpy(display->name, sizeof(display->name), name,
+                  sizeof(display->name));
+         if (     SDL_GetDisplayBounds((int)i, &bounds) == 0
+               && VIDEO_SCALE_FITS(bounds.w, bounds.h))
+            display->dims = VIDEO_SCALE_PACK(bounds.w, bounds.h);
+      }
+   }
+   else
+      memcpy(list, sdl2_video_monitors, count * sizeof(*list));
+   for (i = 0; i < count; i++)
+      list[i].own = (int)i == own;
+   sdl2_video_monitors_dirty     = false;
+   sdl2_video_monitors_own_dirty = false;
+   if (     !init
+         && count == sdl2_video_monitor_count
+         && !memcmp(list, sdl2_video_monitors, count * sizeof(*list)))
+      return;
+   memcpy(sdl2_video_monitors, list, count * sizeof(*list));
+   sdl2_video_monitor_count = count;
+   video_driver_publish_window_displays(list, count);
 }
 
 /* Where 'settings' put a window, in SDL's window coordinates: on
@@ -503,5 +581,8 @@ void sdl2_video_windows_free(void *owner,
       void (*destroy)(void *owner, video_window_native_t *window))
 {
    video_windows_sweep(owner, sdl2_video_window_at, destroy);
+   /* The context is going, and its displays with it */
+   sdl2_video_monitor_count = 0;
+   video_driver_publish_window_displays(NULL, 0);
 }
 #endif

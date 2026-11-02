@@ -213,13 +213,23 @@ static bool sdl3_vk_ctx_set_video_mode(void *data,
 {
    gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
    unsigned win_dims           = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+   bool had_window;
+#endif
 
    if (!sdl)
       return false;
+#ifdef HAVE_VIDEO_WINDOWS
+   had_window = sdl->win != NULL;
+#endif
 
    if (!sdl3_window_set_video_mode(&sdl->win, dims, fullscreen,
             SDL_WINDOW_VULKAN))
       goto error;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Before the first frame lays the screens out */
+   sdl3_video_monitors_publish(sdl->win, !had_window);
+#endif
 
    /* The window was restyled in place; its surface stays valid. */
    if (sdl->vk.vk_surface != VK_NULL_HANDLE)

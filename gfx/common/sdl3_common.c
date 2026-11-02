@@ -23,6 +23,9 @@
 
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#ifdef HAVE_VIDEO_WINDOWS
+#include <encodings/utf.h>
+#endif
 
 #include <SDL3/SDL.h>
 
@@ -98,6 +101,15 @@ static void sdl3_window_save_position(SDL_Window *win)
 /* Secondary screens' windows, by screen */
 static sdl3_video_window_t *sdl3_video_windows[RETRO_VIDEO_VIEWS_MAX];
 static unsigned sdl3_video_window_count;
+
+/* The displays last published for the screens' Display setting and
+ * their ids, on the context's thread. dirty: enumerate again;
+ * own_dirty: the main window may be on another one. */
+static video_window_display_t sdl3_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+static SDL_DisplayID sdl3_video_monitor_ids[VIDEO_WINDOW_DISPLAYS_MAX];
+static unsigned sdl3_video_monitor_count;
+static bool sdl3_video_monitors_dirty;
+static bool sdl3_video_monitors_own_dirty;
 
 static video_window_common_t *sdl3_video_window_at(unsigned screen)
 {
@@ -265,13 +277,25 @@ void sdl3_pump_window_events(bool *quit, bool *resize)
       /* It may be on another display now */
       if (     event.type == SDL_EVENT_WINDOW_MOVED
             || event.type == SDL_EVENT_WINDOW_DISPLAY_CHANGED)
+      {
          video_driver_window_output_changed();
+#ifdef HAVE_VIDEO_WINDOWS
+         sdl3_video_monitors_own_dirty = true;
+#endif
+      }
    }
 
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_DISPLAY_FIRST, SDL_EVENT_DISPLAY_LAST) > 0)
    {
       if (event.type == SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED)
          *resize = true;
+#ifdef HAVE_VIDEO_WINDOWS
+      else if (   event.type == SDL_EVENT_DISPLAY_ADDED
+               || event.type == SDL_EVENT_DISPLAY_REMOVED
+               || event.type == SDL_EVENT_DISPLAY_MOVED
+               || event.type == SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED)
+         sdl3_video_monitors_dirty = true;
+#endif
    }
 
     /* Clear out the input queue if we're not using the
@@ -378,6 +402,67 @@ static SDL_DisplayID sdl3_monitor_display(unsigned monitor_index)
 
    return display;
 }
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* In SDL_GetDisplays() order, which a window's monitor setting counts
+ * in (sdl3_video_window_place()). Enumerated only when dirty; else
+ * only the main window's is found again. An @init list always goes
+ * out: another driver's may be up. */
+void sdl3_video_monitors_publish(SDL_Window *primary, bool init)
+{
+   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned i;
+   SDL_DisplayID own;
+   unsigned count = sdl3_video_monitor_count;
+
+   if (init)
+      sdl3_video_monitors_dirty = true;
+   else if (!sdl3_video_monitors_dirty && !sdl3_video_monitors_own_dirty)
+      return;
+   own = primary ? SDL_GetDisplayForWindow(primary) : 0;
+
+   if (sdl3_video_monitors_dirty)
+   {
+      int n              = 0;
+      SDL_DisplayID *ids = SDL_GetDisplays(&n);
+      count              = 0;
+      for (i = 0; ids && (int)i < n && count < VIDEO_WINDOW_DISPLAYS_MAX;
+            i++)
+      {
+         SDL_Rect bounds;
+         video_window_display_t *display = &list[count];
+         const char *name                = SDL_GetDisplayName(ids[i]);
+         memset(display, 0, sizeof(*display));
+         sdl3_video_monitor_ids[count]   = ids[i];
+         display->ordinal                = ++count;
+         display->valid                  = true;
+         display->on                     = true;
+         display->physical               = true;
+         display->monitor                = true;
+         if (name)
+            utf8cpy(display->name, sizeof(display->name), name,
+                  sizeof(display->name));
+         if (     SDL_GetDisplayBounds(ids[i], &bounds)
+               && VIDEO_SCALE_FITS(bounds.w, bounds.h))
+            display->dims = VIDEO_SCALE_PACK(bounds.w, bounds.h);
+      }
+      SDL_free(ids);
+   }
+   else
+      memcpy(list, sdl3_video_monitors, count * sizeof(*list));
+   for (i = 0; i < count; i++)
+      list[i].own = own && sdl3_video_monitor_ids[i] == own;
+   sdl3_video_monitors_dirty     = false;
+   sdl3_video_monitors_own_dirty = false;
+   if (     !init
+         && count == sdl3_video_monitor_count
+         && !memcmp(list, sdl3_video_monitors, count * sizeof(*list)))
+      return;
+   memcpy(sdl3_video_monitors, list, count * sizeof(*list));
+   sdl3_video_monitor_count = count;
+   video_driver_publish_window_displays(list, count);
+}
+#endif
 
 /* Moves the window to the provided 1-based monitor. If 0
  * is provided, leave as is. */
@@ -687,6 +772,9 @@ void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
    SDL_Window *win = sdl3_ctx_window(data);
 
    sdl3_pump_window_events(quit, resize);
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl3_video_monitors_publish(win, false);
+#endif
 
    if (*resize && win)
       sdl3_window_get_video_size(win, dims);
@@ -1097,5 +1185,8 @@ void sdl3_video_windows_free(void *owner,
       void (*destroy)(void *owner, video_window_native_t *window))
 {
    video_windows_sweep(owner, sdl3_video_window_at, destroy);
+   /* The context is going, and its displays with it */
+   sdl3_video_monitor_count = 0;
+   video_driver_publish_window_displays(NULL, 0);
 }
 #endif

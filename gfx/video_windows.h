@@ -514,6 +514,12 @@ void video_driver_restore_windows(void);
 void video_driver_publish_window_displays(
       const video_window_display_t *displays, unsigned count);
 
+/* As above, but the list to place them by is still coming: until it
+ * or another publish, the frame keeps the screens in the main window,
+ * so their windows are made once, where that list puts them. */
+void video_driver_publish_window_displays_pending(
+      const video_window_display_t *displays, unsigned count);
+
 /* App thread: the newest published list, at most @capacity entries;
  * returns how many. For the menu's picker. */
 unsigned video_driver_get_window_displays(video_window_display_t *out,

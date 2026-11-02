@@ -1020,7 +1020,22 @@ void video_driver_publish_window_displays(
       count = displays ? VIDEO_WINDOW_DISPLAYS_MAX : 0;
    if (count)
       memcpy(box->slot[pub], displays, count * sizeof(*displays));
-   box->count[pub] = count;
+   box->count[pub]   = count;
+   box->pending[pub] = false;
+   video_window_slot_publish(&box->published, &box->next, &box->last);
+}
+
+void video_driver_publish_window_displays_pending(
+      const video_window_display_t *displays, unsigned count)
+{
+   video_window_displays_t *box = &video_driver_st.window_displays;
+   unsigned pub                 = box->next;
+   if (!displays || count > VIDEO_WINDOW_DISPLAYS_MAX)
+      count = displays ? VIDEO_WINDOW_DISPLAYS_MAX : 0;
+   if (count)
+      memcpy(box->slot[pub], displays, count * sizeof(*displays));
+   box->count[pub]   = count;
+   box->pending[pub] = true;
    video_window_slot_publish(&box->published, &box->next, &box->last);
 }
 
@@ -1034,6 +1049,16 @@ static const video_window_display_t *video_driver_take_window_displays(
       video_driver_restore_windows();
    *count = box->held ? box->count[box->held - 1] : 0;
    return *count ? box->slot[box->held - 1] : NULL;
+}
+
+/* App thread: whether the newest list is still to come */
+static bool video_driver_window_displays_pending(
+      video_driver_state_t *video_st)
+{
+   unsigned count;
+   video_window_displays_t *box = &video_st->window_displays;
+   video_driver_take_window_displays(video_st, &count);
+   return box->held && box->pending[box->held - 1];
 }
 
 unsigned video_driver_get_window_displays(video_window_display_t *out,
@@ -4667,9 +4692,10 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    unsigned display_was       = 0;
    video_windows_frame_t *out = &video_st->windows;
    if (     !settings->bools.video_windows_enable
-         || !BIT32_GET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS))
+         || !BIT32_GET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS)
+         || (!redraw && video_driver_window_displays_pending(video_st)))
    {
-      /* Off: the driver lets every window go */
+      /* Off, or waiting for the list: the driver lets every window go */
       if (!redraw)
          video_st->windows_wanted = 0;
       /* The UI in the main window; placement starts afresh when they

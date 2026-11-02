@@ -780,6 +780,9 @@ static bool wl_update_scale(gfx_ctx_wayland_data_t *wl)
    if (new_output && wl->current_output != new_output)
    {
       wl->current_output       = new_output;
+#ifdef HAVE_VIDEO_WINDOWS
+      wl->video_monitors_own_dirty = true;
+#endif
       /* The compositor's own choice wins once it has made one. */
       wl->pending_buffer_scale = wl->preferred_buffer_scale
             ? wl->preferred_buffer_scale : new_output->scale;
@@ -933,6 +936,9 @@ static void wl_output_handle_mode(void *data,
 static void wl_output_handle_done(void *data, struct wl_output *output)
 {
 #ifdef HAVE_VIDEO_WINDOWS
+   output_info_t *oi = (output_info_t*)data;
+   if (oi->wl)
+      oi->wl->video_monitors_dirty = true;
    /* Its scale may have changed under a secondary screen's window */
    wl_video_windows_rescale();
 #endif
@@ -940,7 +946,14 @@ static void wl_output_handle_done(void *data, struct wl_output *output)
 
 #ifdef WL_OUTPUT_NAME_SINCE_VERSION
 static void wl_output_handle_name(void *data,
-      struct wl_output *output, const char *name) { }
+      struct wl_output *output, const char *name)
+{
+#ifdef HAVE_VIDEO_WINDOWS
+   output_info_t *oi = (output_info_t*)data;
+   free(oi->name);
+   oi->name          = strdup(name);
+#endif
+}
 
 static void wl_output_handle_description(void *data,
       struct wl_output *output, const char *description) { }
@@ -1015,6 +1028,9 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       {
          od->output    = oi;
          oi->global_id = id;
+#ifdef HAVE_VIDEO_WINDOWS
+         oi->wl        = wl;
+#endif
          oi->output    = (struct wl_output*)wl_registry_bind(reg,
                id, &wl_output_interface, MIN(version, MIN(
                   WL_OUTPUT_VERSION_MAX,
@@ -1133,6 +1149,10 @@ static void wl_registry_handle_global_remove(void *data,
             wayland_output_release(od->output->output);
          free(od->output->make);
          free(od->output->model);
+#ifdef HAVE_VIDEO_WINDOWS
+         free(od->output->name);
+         wl->video_monitors_dirty = true;
+#endif
          free(od->output);
          free(od);
          break;

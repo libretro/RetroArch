@@ -1,15 +1,18 @@
 /* The SDL contexts' native-window lifecycle for video_screens_test.c,
  * #included there. A build has SDL 2 or SDL 3, never both. */
 #ifdef NATIVE_SDL
+#include <encodings/utf.h>
 #ifdef HAVE_SDL3
 #define NATIVE_SDL_KIND    VIDEO_WINDOW_NATIVE_SDL3
 #define NATIVE_SDL_CLOSE   SDL_EVENT_WINDOW_CLOSE_REQUESTED
+#define NATIVE_SDL_MOVED   SDL_EVENT_WINDOW_MOVED
 #define NATIVE_SDL_UNFOCUS SDL_EVENT_WINDOW_FOCUS_LOST
 #define NATIVE_SDL_RESIZE  SDL_EVENT_WINDOW_RESIZED
 typedef sdl3_video_window_t native_sdl_state_t;
 #else
 #define NATIVE_SDL_KIND    VIDEO_WINDOW_NATIVE_SDL2
 #define NATIVE_SDL_CLOSE   SDL_WINDOWEVENT_CLOSE
+#define NATIVE_SDL_MOVED   SDL_WINDOWEVENT_MOVED
 #define NATIVE_SDL_UNFOCUS SDL_WINDOWEVENT_FOCUS_LOST
 #define NATIVE_SDL_RESIZE  SDL_WINDOWEVENT_RESIZED
 typedef sdl2_video_window_t native_sdl_state_t;
@@ -817,6 +820,294 @@ static void native_sdl_gl_failures(const gfx_ctx_driver_t *ctx,
       SDL_DestroyWindow(plain);
 }
 
+typedef struct native_sdl_monitor
+{
+   char name[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+   unsigned dims;
+   bool own;
+} native_sdl_monitor_t;
+
+/* SDL's displays in its order, as many as the list keeps, with the one
+ * SDL has @primary on */
+static unsigned native_sdl_monitors(SDL_Window *primary,
+      native_sdl_monitor_t *out)
+{
+   SDL_Rect r;
+   const char *name;
+   unsigned n = 0;
+#ifdef HAVE_SDL3
+   int i, count       = 0;
+   SDL_DisplayID own  = SDL_GetDisplayForWindow(primary);
+   SDL_DisplayID *ids = SDL_GetDisplays(&count);
+   for (i = 0; ids && i < count && n < VIDEO_WINDOW_DISPLAYS_MAX; i++, n++)
+   {
+      memset(&out[n], 0, sizeof(out[n]));
+      if ((name = SDL_GetDisplayName(ids[i])))
+         utf8cpy(out[n].name, sizeof(out[n].name), name,
+               sizeof(out[n].name));
+      if (SDL_GetDisplayBounds(ids[i], &r) && VIDEO_SCALE_FITS(r.w, r.h))
+         out[n].dims = VIDEO_SCALE_PACK(r.w, r.h);
+      out[n].own = ids[i] == own;
+   }
+   SDL_free(ids);
+#else
+   int i;
+   int count = SDL_GetNumVideoDisplays();
+   int own   = SDL_GetWindowDisplayIndex(primary);
+   for (i = 0; i < count && n < VIDEO_WINDOW_DISPLAYS_MAX; i++, n++)
+   {
+      memset(&out[n], 0, sizeof(out[n]));
+      if ((name = SDL_GetDisplayName(i)))
+         utf8cpy(out[n].name, sizeof(out[n].name), name,
+               sizeof(out[n].name));
+      if (SDL_GetDisplayBounds(i, &r) == 0 && VIDEO_SCALE_FITS(r.w, r.h))
+         out[n].dims = VIDEO_SCALE_PACK(r.w, r.h);
+      out[n].own = i == own;
+   }
+#endif
+   return n;
+}
+
+/* The screens' Display setting lists SDL's displays by their names,
+ * with no model, and with @own the main window's as SDL has it now */
+static bool native_sdl_monitors_match(SDL_Window *primary,
+      const video_window_display_t *got, unsigned n, bool own)
+{
+   native_sdl_monitor_t want[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned i;
+   unsigned owned = 0;
+   if (n != native_sdl_monitors(primary, want))
+      return false;
+   for (i = 0; i < n; i++)
+   {
+      if (     got[i].ordinal != i + 1
+            || got[i].dims != want[i].dims
+            || !string_is_equal(got[i].name, want[i].name)
+            || got[i].model[0]
+            || (own && got[i].own != want[i].own))
+         return false;
+      if (got[i].own)
+         owned++;
+   }
+   return owned <= 1;
+}
+
+/* Reads the list as the app thread does, pumping until it matches */
+static unsigned native_sdl_monitors_wait(const gfx_ctx_driver_t *ctx,
+      void *data, const video_window_request_t *request,
+      video_window_display_t *got)
+{
+   native_sdl_monitor_t want[VIDEO_WINDOW_DISPLAYS_MAX];
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   SDL_Window *primary   = native_sdl_main(data);
+   unsigned n;
+   for (;;)
+   {
+      n = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+      if (native_sdl_monitors_match(primary, got, n, true))
+         return n;
+      if (cpu_features_get_time_usec() > deadline)
+         break;
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   fprintf(stderr, "native sdl: %u monitor(s) published for %u\n", n,
+         native_sdl_monitors(primary, want));
+   CHECK(!"published monitors");
+   return n;
+}
+
+/* KWin sends the main window to SDL's display @to, and this pumps until
+ * SDL has it there; false without KWin, or when the window never had a
+ * frame to be mapped with */
+static bool native_sdl_kwin_send(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, unsigned to)
+{
+   char script[256];
+   SDL_Rect r;
+   retro_time_t deadline;
+   SDL_Window *primary = native_sdl_main(data);
+#ifdef HAVE_SDL3
+   int count           = 0;
+   SDL_DisplayID *ids  = SDL_GetDisplays(&count);
+   bool known          = ids && (int)to < count
+         && SDL_GetDisplayBounds(ids[to], &r);
+   SDL_free(ids);
+#else
+   bool known          = SDL_GetDisplayBounds((int)to, &r) == 0;
+#endif
+   if (!known)
+      return false;
+   snprintf(script, sizeof(script),
+         "var o = workspace.screens;"
+         " for (var i = 0; m && i < o.length; i++)"
+         " if (o[i].geometry.x == %d && o[i].geometry.y == %d)"
+         " workspace.sendClientToScreen(m, o[i]);", r.x, r.y);
+   if (!native_sdl_kwin(request->screen, script))
+      return false;
+   deadline = cpu_features_get_time_usec() + 3000000;
+   while (native_sdl_display_of(primary) != to)
+   {
+      if (cpu_features_get_time_usec() > deadline)
+      {
+         fprintf(stderr, "native sdl: KWin did not move the main window\n");
+         return false;
+      }
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   return true;
+}
+
+/* SDL x11 takes a move when the server answers it */
+static void native_sdl_on_display(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, unsigned to)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   SDL_Window *primary   = native_sdl_main(data);
+   while (     native_sdl_display_of(primary) != to
+         && cpu_features_get_time_usec() < deadline)
+   {
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   CHECK(native_sdl_display_of(primary) == to);
+}
+
+/* The displays as the screens' Display setting lists them, republished
+ * when one changes or the main window goes to another, and only then */
+static void native_sdl_monitors_check(const gfx_ctx_driver_t *ctx,
+      void *data, const video_window_request_t *request)
+{
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   SDL_Event event;
+   unsigned i, n, restore;
+   int x, y;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   SDL_Window *primary            = native_sdl_main(data);
+   int from                       = -1;
+   n = native_sdl_monitors_wait(ctx, data, request, got);
+   for (i = 0; i < n; i++)
+   {
+      char key[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+      CHECK(got[i].valid && got[i].on && got[i].physical && got[i].monitor);
+      if (got[i].own)
+         from = (int)i;
+      video_windows_display_key(got, i, key, sizeof(key));
+      fprintf(stderr, "native sdl: monitor %u \"%s\"%s\n", got[i].ordinal,
+            key, got[i].own ? ", main window" : "");
+      CHECK(key[0] != '\0');
+   }
+
+   /* A display event and a main window move that change nothing:
+    * nothing is republished */
+   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   restore = video_st->windows_restore;
+   memset(&event, 0, sizeof(event));
+#ifdef HAVE_SDL3
+   event.type              = SDL_EVENT_DISPLAY_ADDED;
+   event.display.displayID = SDL_GetDisplayForWindow(primary);
+   CHECK(SDL_PushEvent(&event) > 0);
+#elif SDL_VERSION_ATLEAST(2, 0, 14)
+   event.type              = SDL_DISPLAYEVENT;
+   event.display.event     = SDL_DISPLAYEVENT_CONNECTED;
+   CHECK(SDL_PushEvent(&event) > 0);
+#endif
+   SDL_GetWindowPosition(primary, &x, &y);
+   native_sdl_push(primary, NATIVE_SDL_MOVED, x, y);
+   native_window_settle(ctx, data, request, 50000);
+   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   CHECK(video_st->windows_restore == restore);
+   CHECK(native_sdl_monitors_match(primary, got, n, true));
+
+   /* The main window's display follows it */
+   if (n >= 2 && from >= 0 && native_sdl_driver("x11"))
+   {
+      SDL_Rect r;
+      unsigned to = from ? 0 : 1;
+#ifdef HAVE_SDL3
+      int count          = 0;
+      SDL_DisplayID *ids = SDL_GetDisplays(&count);
+      CHECK(ids && SDL_GetDisplayBounds(ids[to], &r));
+      SDL_free(ids);
+#else
+      CHECK(SDL_GetDisplayBounds((int)to, &r) == 0);
+#endif
+      SDL_SetWindowPosition(primary, r.x + 40, r.y + 40);
+      native_sdl_on_display(ctx, data, request, to);
+      native_sdl_monitors_wait(ctx, data, request, got);
+      CHECK(got[to].own);
+      CHECK(video_st->windows_restore != restore);
+      SDL_SetWindowPosition(primary, x, y);
+      native_sdl_on_display(ctx, data, request, (unsigned)from);
+      native_sdl_monitors_wait(ctx, data, request, got);
+      CHECK(got[from].own);
+   }
+   else if (n >= 2 && from >= 0 && native_sdl_driver("wayland")
+         && native_sdl_kwin_send(ctx, data, request, from ? 0 : 1))
+   {
+      native_sdl_monitors_wait(ctx, data, request, got);
+      CHECK(got[from ? 0 : 1].own);
+      CHECK(video_st->windows_restore != restore);
+      CHECK(native_sdl_kwin_send(ctx, data, request, (unsigned)from));
+      native_sdl_monitors_wait(ctx, data, request, got);
+      CHECK(got[from].own);
+   }
+   else
+      fprintf(stderr, "native sdl: the main window going to another"
+            " monitor not checked\n");
+}
+
+/* Where SDL's driver cannot make screen windows (cocoa, offscreen),
+ * the context's table is not usable, so the frame keeps the screens in
+ * the main window. False on the drivers that can. */
+static bool native_sdl_no_windows(const gfx_ctx_driver_t *ctx, void *data)
+{
+   bool usable;
+   if (     native_sdl_driver("x11") || native_sdl_driver("wayland")
+         || native_sdl_driver("windows"))
+      return false;
+   fprintf(stderr, "native sdl: %s, no screen windows\n",
+         SDL_GetCurrentVideoDriver());
+   usable = video_windows_usable(ctx->windows);
+   CHECK(ctx->windows != NULL && !usable);
+   ctx->destroy(data);
+   /* As gl2 and vulkan advertise screen windows */
+   window_test_begin();
+   window_test_flags = 1u << GFX_CTX_FLAGS_VIDEO_VIEWS;
+   if (usable)
+      window_test_flags |= 1u << GFX_CTX_FLAGS_VIDEO_WINDOWS;
+   window_test_run();
+   CHECK(window_test_placements() == 2);
+   CHECK(window_test_handed == NULL);
+   window_test_end();
+   return true;
+}
+
+/* Once the context is gone, its list is too. Then another driver's
+ * goes up, which the next context's must replace. */
+static void native_sdl_torn_down(const gfx_ctx_driver_t *ctx, bool again)
+{
+   static video_window_display_t foreign[1];
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+         == 0);
+   /* usable() answers from init, with no SDL call: SDL video is down */
+   if (!SDL_WasInit(SDL_INIT_VIDEO))
+      CHECK(video_windows_usable(ctx->windows));
+   else
+      fprintf(stderr, "native sdl: video still up, the stored answer"
+            " not checked\n");
+   if (!again)
+      return;
+   memset(foreign, 0, sizeof(foreign));
+   foreign[0].ordinal = 1;
+   foreign[0].valid   = foreign[0].on = foreign[0].physical = true;
+   foreign[0].monitor = true;
+   strlcpy(foreign[0].name, "foreign", sizeof(foreign[0].name));
+   video_driver_publish_window_displays(foreign, 1);
+}
+
 static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       video_window_request_t *request, video_window_native_t *window)
 {
@@ -851,6 +1142,16 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(count > 0);
    if (!count)
       return;
+   /* Published by set_video_mode, before anything pumped */
+   {
+      video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+      unsigned n = video_driver_get_window_displays(got,
+            VIDEO_WINDOW_DISPLAYS_MAX);
+      fprintf(stderr, "native sdl: %u monitor(s) published at init%s\n", n,
+            n && string_is_equal(got[0].name, "foreign")
+            ? ", the foreign list" : "");
+      CHECK(native_sdl_monitors_match(primary, got, n, false));
+   }
    native_sdl_intervals = false;
    if (ctx->windows->bind_gl)
    {
@@ -1271,5 +1572,6 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       native_sdl_gl_failures(ctx, data, request, window);
       CHECK(native_sdl_main_intact(data, &main_state));
    }
+   native_sdl_monitors_check(ctx, data, request);
 }
 #endif

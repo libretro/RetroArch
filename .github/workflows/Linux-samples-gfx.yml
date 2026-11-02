@@ -1975,6 +1975,29 @@ jobs:
                 setarch "$(uname -m)" -R timeout 120 ./run.sh)
           echo "[pass] mutter_displayconfig_test"
 
+      - name: X11 monitors on a worker thread (Xvfb, ASan + UBSan, TSan)
+        shell: bash
+        run: |
+          set -eu
+          # The screens' Display setting lists the X11 monitors and the
+          # one the main window is on. A worker thread on its own X
+          # connection asks the server, so the context thread makes no
+          # round trip for them; it publishes each snapshot by swapping
+          # a pointer and frees the one it replaced once no reader is
+          # inside it. run.sh starts a fresh Xvfb per case; the threads
+          # case reads from four threads while the RandR monitors flip,
+          # and freeing a snapshot a reader is in is a TSan data race.
+          (cd samples/gfx/x11_monitors \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 \
+                UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+                timeout 300 ./run.sh)
+          (cd samples/gfx/x11_monitors \
+             && make clean all SANITIZER=thread \
+             && TSAN_OPTIONS=halt_on_error=1 THREADS_ONLY=1 \
+                setarch "$(uname -m)" -R timeout 120 ./run.sh)
+          echo "[pass] x11_monitors_test"
+
       - name: Build and run dbus_screensaver_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/dbus_screensaver

@@ -35,6 +35,7 @@
 #endif
 
 #include "x11_common.h"
+#include "x11_monitors.h"
 
 #ifdef HAVE_XRANDR
 #include <X11/extensions/randr.h>
@@ -1318,15 +1319,17 @@ static bool x11_video_window_event(const XEvent *event)
 /* Bounds on the monitors there are now: on the preferred monitor, or
  * the one the saved bounds are mostly on, or else the main window's.
  * Saved bounds partly off that monitor are moved onto it; bounds that
- * are not on it at all, or automatic ones, are centred on it. */
+ * are not on it at all, automatic ones and ones with no position set
+ * are centred on it. */
 static void x11_video_window_place(const video_window_settings_t *settings,
       int *x, int *y, unsigned *width, unsigned *height)
 {
    video_window_rect_t rect, monitor;
-#ifdef HAVE_XINERAMA
-   int i, count             = 0;
-   int chosen               = -1;
-   XineramaScreenInfo *info = NULL;
+   bool automatic             = !settings->dims || !settings->pos_set;
+#ifdef RARCH_HAVE_X11_MONITORS
+   unsigned i;
+   int chosen                 = -1;
+   const x11_monitors_t *snap = x11_monitors_get();
 #endif
 
    rect.x    = VIDEO_POS_X(settings->pos);
@@ -1344,47 +1347,53 @@ static void x11_video_window_place(const video_window_settings_t *settings,
       rect.h        = VIDEO_SCALE_H(size) ? VIDEO_SCALE_H(size) : 480;
    }
 
-#ifdef HAVE_XINERAMA
-   if ((info = XineramaQueryScreens(g_x11_dpy, &count)))
+   /* The worker's monitors, never a round trip here; with none yet a
+    * saved position cannot be checked, so it goes unused */
+#ifdef RARCH_HAVE_X11_MONITORS
+   if (snap)
    {
       unsigned best = 0;
-      for (i = 0; i < count && settings->monitor; i++)
-         if (info[i].screen_number == (int)settings->monitor - 1)
-            chosen = i;
-      for (i = 0; i < count && !settings->monitor && settings->dims; i++)
+      for (i = 0; i < snap->count && settings->monitor; i++)
+         if (snap->mon[i].ordinal == settings->monitor)
+            chosen = (int)i;
+      for (i = 0; i < snap->count && !settings->monitor && !automatic; i++)
       {
          unsigned area;
          video_window_rect_t screen;
-         screen.x = info[i].x_org;
-         screen.y = info[i].y_org;
-         screen.w = info[i].width;
-         screen.h = info[i].height;
+         screen.x = snap->mon[i].x;
+         screen.y = snap->mon[i].y;
+         screen.w = snap->mon[i].w;
+         screen.h = snap->mon[i].h;
          if ((area = video_window_rect_overlap(&rect, &screen)) > best)
          {
             best   = area;
-            chosen = i;
+            chosen = (int)i;
          }
       }
-      for (i = 0; i < count && chosen < 0; i++)
-         if (info[i].screen_number == (int)g_x11_screen)
-            chosen = i;
-      if (chosen < 0 && count > 0)
+      for (i = 0; i < snap->count && chosen < 0; i++)
+         if (snap->mon[i].ordinal == g_x11_screen + 1)
+            chosen = (int)i;
+      if (chosen < 0 && snap->count > 0)
          chosen = 0;
       if (chosen >= 0)
       {
-         monitor.x = info[chosen].x_org;
-         monitor.y = info[chosen].y_org;
-         monitor.w = info[chosen].width;
-         monitor.h = info[chosen].height;
+         monitor.x = snap->mon[chosen].x;
+         monitor.y = snap->mon[chosen].y;
+         monitor.w = snap->mon[chosen].w;
+         monitor.h = snap->mon[chosen].h;
       }
-      XFree(info);
    }
+   else
+      automatic = true;
+   x11_monitors_put();
+#else
+   automatic = true;
 #endif
 
    if (settings->fullscreen)
       rect = monitor;
    else
-      video_window_place_rect(&rect, &monitor, !settings->dims);
+      video_window_place_rect(&rect, &monitor, automatic);
    *x      = rect.x;
    *y      = rect.y;
    *width  = (unsigned)rect.w;
@@ -1541,6 +1550,7 @@ void x11_video_window_update(void *owner, video_window_native_t *window,
    if (     (now->dims && (!VIDEO_SCALE_W(now->dims) || !VIDEO_SCALE_H(now->dims)))
          || (     now->pos        == was->pos
                && now->dims       == was->dims
+               && now->pos_set    == was->pos_set
                && now->monitor    == was->monitor
                && now->fullscreen == was->fullscreen))
       return;
@@ -1549,8 +1559,9 @@ void x11_video_window_update(void *owner, video_window_native_t *window,
    place = *now;
    if (now->fullscreen && !now->monitor)
    {
-      place.pos  = state->common.pos;
-      place.dims = window->dims;
+      place.pos     = state->common.pos;
+      place.dims    = window->dims;
+      place.pos_set = true;
    }
    x11_video_window_place(&place, &x, &y, &width, &height);
    if (!(      was->fullscreen && now->fullscreen
@@ -1623,9 +1634,116 @@ void x11_video_window_destroy(void *owner, video_window_native_t *window)
    memset(window, 0, sizeof(*window));
 }
 
+#ifdef RARCH_HAVE_X11_MONITORS
+/* What the context thread last published from the worker */
+static video_window_display_t x11_video_monitors[VIDEO_WINDOW_DISPLAYS_MAX];
+static unsigned x11_video_monitors_count;
+static unsigned x11_video_monitors_serial;
+/* From the worker's start to the context's teardown */
+static bool x11_video_monitors_on;
+static bool x11_video_monitors_published;
+/* A context is up that starts the worker once the windows are on */
+static bool x11_video_monitors_lazy;
+/* The frame waits until the worker has looked for g_x11_win */
+static bool x11_video_monitors_pending;
+
+/* The worker's monitors as the screens' Display setting lists them.
+ * Published when they changed, and once per context whatever is up:
+ * another platform's list may be. Costs one load until the worker's
+ * serial moves. */
+static void x11_video_monitors_publish(void)
+{
+   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   const x11_monitors_t *snap;
+   unsigned count  = 0;
+   bool located    = false;
+   unsigned serial = x11_monitors_serial();
+   if (!x11_video_monitors_on || !serial)
+   {
+      /* None is coming: placed without one */
+      if (     x11_video_monitors_pending && !x11_video_monitors_lazy
+            && (!x11_video_monitors_on || x11_monitors_state() < 0))
+      {
+         x11_video_monitors_pending = false;
+         video_driver_publish_window_displays(NULL, 0);
+      }
+      return;
+   }
+   if (     x11_video_monitors_published
+         && serial == x11_video_monitors_serial)
+      return;
+   if ((snap = x11_monitors_get()))
+   {
+      unsigned i;
+      for (i = 0; i < snap->count && count < VIDEO_WINDOW_DISPLAYS_MAX; i++)
+      {
+         const x11_monitor_t *mon        = &snap->mon[i];
+         video_window_display_t *display = &list[count++];
+         memset(display, 0, sizeof(*display));
+         display->ordinal  = mon->ordinal;
+         /* On none, or not looked for yet: the one it was made on */
+         display->own      = snap->own >= 0
+            ? (int)i == snap->own
+            : mon->ordinal == g_x11_screen + 1;
+         display->valid    = true;
+         display->on       = true;
+         display->physical = true;
+         display->monitor  = true;
+         strlcpy(display->name, mon->name, sizeof(display->name));
+         if (VIDEO_SCALE_FITS(mon->w, mon->h))
+            display->dims  = VIDEO_SCALE_PACK(mon->w, mon->h);
+      }
+      serial  = snap->serial;
+      located = g_x11_win && snap->win == (unsigned long)g_x11_win;
+   }
+   x11_monitors_put();
+   x11_video_monitors_serial = serial;
+   if (     x11_video_monitors_published
+         && !(x11_video_monitors_pending && located)
+         && count == x11_video_monitors_count
+         && !memcmp(list, x11_video_monitors, count * sizeof(*list)))
+      return;
+   memcpy(x11_video_monitors, list, count * sizeof(*list));
+   x11_video_monitors_count     = count;
+   x11_video_monitors_published = true;
+   /* The menu lists them meanwhile; the screens wait for the monitor
+    * the window is on, which decides where Auto puts them */
+   if (x11_video_monitors_pending && !located)
+   {
+      video_driver_publish_window_displays_pending(list, count);
+      return;
+   }
+   x11_video_monitors_pending   = false;
+   video_driver_publish_window_displays(list, count);
+}
+
+/* A thread and an X connection, so only for the screens' windows.
+ * From the context's thread; kept once started, as a detached thread
+ * cannot be stopped. */
+static void x11_video_monitors_start(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (!settings->bools.video_windows_enable)
+      return;
+   x11_video_monitors_lazy      = false;
+   x11_video_monitors_on        = x11_monitors_start(
+         DisplayString(g_x11_dpy));
+   x11_video_monitors_published = false;
+}
+#endif
+
 void x11_video_windows_free(void *owner,
       void (*destroy)(void *owner, video_window_native_t *window))
 {
+#ifdef RARCH_HAVE_X11_MONITORS
+   /* The context's monitors go with it, from its own thread */
+   x11_video_monitors_on        = false;
+   x11_video_monitors_published = false;
+   x11_video_monitors_lazy      = false;
+   x11_video_monitors_pending   = false;
+   x11_video_monitors_count     = 0;
+   video_driver_publish_window_displays(NULL, 0);
+#endif
    video_windows_sweep(owner, x11_video_window_at, destroy);
 }
 #endif
@@ -1661,6 +1779,9 @@ bool x11_alive(void *data)
             && event.type <= rr_base + RRNotify)
       {
          x11_refresh_invalidate();
+#ifdef RARCH_HAVE_X11_MONITORS
+         x11_monitors_wake(X11_MONITORS_ENUMERATE);
+#endif
          continue;
       }
 #endif
@@ -1703,7 +1824,12 @@ bool x11_alive(void *data)
 
          case MapNotify:
             if (event.xmap.window == g_x11_win)
+            {
                g_x11_mapped = true;
+#ifdef RARCH_HAVE_X11_MONITORS
+               x11_monitors_window(g_x11_win);
+#endif
+            }
             break;
 
          case UnmapNotify:
@@ -1719,6 +1845,10 @@ bool x11_alive(void *data)
                         event.xconfigure.height));
 #ifdef HAVE_XRANDR
                x11_refresh_invalidate();
+#endif
+#ifdef RARCH_HAVE_X11_MONITORS
+               /* Perhaps onto another monitor */
+               x11_monitors_window(g_x11_win);
 #endif
             }
             break;
@@ -1809,6 +1939,11 @@ bool x11_alive(void *data)
    if (x11_video_window_count)
       x11_video_windows_translated();
 #endif
+#endif
+#ifdef RARCH_HAVE_X11_MONITORS
+   if (x11_video_monitors_lazy)
+      x11_video_monitors_start();
+   x11_video_monitors_publish();
 #endif
 
    return !((bool)frontend_driver_get_signal_handler_state());
@@ -1911,6 +2046,15 @@ bool x11_connect(void)
 #endif
    }
 
+#ifdef RARCH_HAVE_X11_MONITORS
+   x11_video_monitors_on      = false;
+   x11_video_monitors_lazy    = true;
+   x11_video_monitors_start();
+   /* Before any frame: one without the list would place them blind */
+   x11_video_monitors_pending = true;
+   video_driver_publish_window_displays_pending(NULL, 0);
+#endif
+
 #ifdef RARCH_HAVE_DBUS_SCREENSAVER
    dbus_ensure_connection();
 #endif
@@ -1985,6 +2129,9 @@ void x11_input_ctx_destroy(void)
 
 void x11_window_destroy(bool fullscreen)
 {
+#ifdef RARCH_HAVE_X11_MONITORS
+   x11_monitors_window(0);
+#endif
    if (g_x11_win)
       XUnmapWindow(g_x11_dpy, g_x11_win);
    if (!fullscreen)
@@ -2041,9 +2188,16 @@ void x11_event_queue_check(XEvent *event)
 {
    XWindowAttributes target;
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
+#ifdef RARCH_HAVE_X11_MONITORS
+   x11_monitors_window(g_x11_win);
+#endif
    if (XGetWindowAttributes(g_x11_dpy, g_x11_win, &target))
       retro_atomic_store_relaxed_int(&g_x11_size,
             (int)VIDEO_SCALE_PACK(target.width, target.height));
+#ifdef RARCH_HAVE_X11_MONITORS
+   /* Before the first frame lays the screens out */
+   x11_video_monitors_publish();
+#endif
 }
 
 static bool x11_check_atom_supported(Display *dpy, Atom atom)

@@ -567,6 +567,152 @@ static void native_wl_close_focused(const gfx_ctx_driver_t *ctx,
             & NATIVE_EVENT(GEOMETRY)));
 }
 
+static unsigned native_wl_outputs(gfx_ctx_wayland_data_t *wl)
+{
+   unsigned count = (unsigned)wl_list_length(&wl->all_outputs);
+   return count < VIDEO_WINDOW_DISPLAYS_MAX
+      ? count : VIDEO_WINDOW_DISPLAYS_MAX;
+}
+
+/* The published list is the outputs in the fullscreen setting's order,
+ * the main window's marked */
+static bool native_wl_monitors_match(gfx_ctx_wayland_data_t *wl,
+      const video_window_display_t *got, unsigned n)
+{
+   unsigned i;
+   if (n != native_wl_outputs(wl))
+      return false;
+   for (i = 0; i < n; i++)
+   {
+      output_info_t *oi = native_wl_output(wl, i + 1);
+      if (     !oi || got[i].ordinal != i + 1 || got[i].dims != oi->dims
+            || got[i].own != (oi == wl->current_output))
+         return false;
+   }
+   return true;
+}
+
+/* Reads the list as the app thread does, pumping until it matches */
+static unsigned native_wl_monitors_wait(const gfx_ctx_driver_t *ctx,
+      void *data, const video_window_request_t *request,
+      video_window_display_t *got)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   retro_time_t deadline      = cpu_features_get_time_usec() + 3000000;
+   unsigned n;
+   for (;;)
+   {
+      n = video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+      if (native_wl_monitors_match(wl, got, n))
+         return n;
+      if (cpu_features_get_time_usec() > deadline)
+         break;
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   fprintf(stderr, "native wayland: %u monitor(s) published for %u"
+         " output(s)\n", n, native_wl_outputs(wl));
+   CHECK(!"published monitors");
+   return n;
+}
+
+/* The outputs as the screens' Display setting lists them, republished
+ * when one changes or the main window goes to another, and only then */
+static void native_wl_monitors(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request)
+{
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   char make[64], model[64], cut[VIDEO_WINDOW_DISPLAY_MODEL_SIZE + 1];
+   char published[VIDEO_WINDOW_DISPLAY_MODEL_SIZE];
+   unsigned i, restore, dims;
+   gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   output_info_t *first           = native_wl_output(wl, 1);
+   output_info_t *was             = wl->current_output;
+   unsigned own                   = 0;
+   unsigned n                     = native_wl_monitors_wait(ctx, data,
+         request, got);
+   CHECK(n >= 1 && first);
+   if (!n || !first)
+      return;
+   for (i = 0; i < n; i++)
+   {
+      char key[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+      output_info_t *oi = native_wl_output(wl, i + 1);
+      CHECK(got[i].valid && got[i].on && got[i].physical && got[i].monitor);
+      /* wl_output v4 names it; below that it keys by its ordinal */
+      CHECK(oi && (wl_output_get_version(oi->output) < 4 || got[i].name[0]));
+      if (got[i].own)
+         own++;
+      video_windows_display_key(got, i, key, sizeof(key));
+      fprintf(stderr, "native wayland: monitor %u \"%s\"%s\n",
+            got[i].ordinal, key, got[i].own ? ", main window" : "");
+      CHECK(key[0] != '\0');
+   }
+   /* Enter comes after the main window's first commit */
+   fprintf(stderr, "native wayland: main window %s an output\n",
+         was ? "on" : "not yet on");
+   CHECK(own == (was ? 1u : 0u));
+
+   /* An output sent again unchanged publishes nothing */
+   restore = video_st->windows_restore;
+   output_listener.done(first, first->output);
+   native_window_settle(ctx, data, request, 50000);
+   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   CHECK(video_st->windows_restore == restore);
+
+   /* A new mode does, and so does going back */
+   dims = first->dims;
+   output_listener.mode(first, first->output, WL_OUTPUT_MODE_CURRENT,
+         VIDEO_SCALE_W(dims) + 16, VIDEO_SCALE_H(dims), first->refresh_rate);
+   output_listener.done(first, first->output);
+   native_wl_monitors_wait(ctx, data, request, got);
+   CHECK(got[0].dims == VIDEO_SCALE_PACK(VIDEO_SCALE_W(dims) + 16,
+            VIDEO_SCALE_H(dims)));
+   CHECK(video_st->windows_restore != restore);
+   output_listener.mode(first, first->output, WL_OUTPUT_MODE_CURRENT,
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), first->refresh_rate);
+   output_listener.done(first, first->output);
+   native_wl_monitors_wait(ctx, data, request, got);
+
+   /* A model too long for the menu is cut between characters: an e
+    * acute across the end is dropped, not split */
+   strlcpy(published, got[0].model, sizeof(published));
+   strlcpy(make, first->make ? first->make : "", sizeof(make));
+   strlcpy(model, first->model ? first->model : "", sizeof(model));
+   memset(cut, 'M', sizeof(cut) - 3);
+   memcpy(cut + sizeof(cut) - 3, "\xc3\xa9", 3);
+   output_listener.geometry(first, first->output, 0, 0, 0, 0, 0, make, cut,
+         0);
+   output_listener.done(first, first->output);
+   native_window_settle(ctx, data, request, 50000);
+   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   fprintf(stderr, "native wayland: a %u-byte model published as %u\n",
+         (unsigned)strlen(cut), (unsigned)strlen(got[0].model));
+   CHECK(strlen(got[0].model) == sizeof(cut) - 3);
+   output_listener.geometry(first, first->output, 0, 0, 0, 0, 0, make,
+         model, 0);
+   output_listener.done(first, first->output);
+   native_window_settle(ctx, data, request, 50000);
+   video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
+   CHECK(string_is_equal(got[0].model, published));
+
+   /* The main window's own output follows it */
+   if (was && n >= 2)
+   {
+      output_info_t *other = native_wl_output(wl, was == first ? 2 : 1);
+      wl_surface_listener.enter(wl, wl->surface, other->output);
+      CHECK(wl->current_output == other);
+      native_wl_monitors_wait(ctx, data, request, got);
+      wl_surface_listener.leave(wl, wl->surface, other->output);
+      CHECK(wl->current_output == was);
+      native_wl_monitors_wait(ctx, data, request, got);
+   }
+   else
+      fprintf(stderr, "native wayland: the main window's output going"
+            " to another not checked\n");
+}
+
 static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       video_window_request_t *request, video_window_native_t *window)
 {
@@ -592,6 +738,12 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
          kwin ? "KWin scripted" : "no compositor scripting");
    /* The harness's nested KWin has two, so the output choice shows */
    CHECK(!kwin || count >= 2);
+   /* Published at init, before anything pumped */
+   {
+      video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+      CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+            == native_wl_outputs(wl));
+   }
    native_wl_main_get(wl, &main_window);
    CHECK(window->kind == VIDEO_WINDOW_NATIVE_WAYLAND);
    CHECK(window->display == wl->input.dpy);
@@ -720,6 +872,8 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    /* Its own first frames (GL) put the main window on an output */
    native_window_settle(ctx, data, request, 200000);
    native_wl_main_get(wl, &main_window);
+   native_wl_monitors(ctx, data, request);
+   CHECK(native_wl_main_intact(wl, &main_window));
 
    /* The seat's focus, on the frontend's thread; focus going between
     * the main window and a secondary keeps RetroArch focused. The main
@@ -866,5 +1020,45 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_wl_map(ctx, data, window);
    native_window_settle(ctx, data, request, 100000);
    CHECK(native_wl_main_intact(wl, &main_window));
+}
+
+/* A context destroyed for good takes its list down, on its own thread.
+ * A kept one let go later stays quiet: by then the next driver may
+ * have published, from another thread. */
+static void native_wl_teardown(const char *ident, enum gfx_ctx_api api,
+      bool core)
+{
+   static video_window_display_t foreign[1];
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   const gfx_ctx_driver_t *ctx;
+   void *data = NULL;
+   memset(foreign, 0, sizeof(foreign));
+   foreign[0].ordinal = 1;
+   foreign[0].valid   = foreign[0].on = foreign[0].physical = true;
+   foreign[0].monitor = true;
+   strlcpy(foreign[0].name, "foreign", sizeof(foreign[0].name));
+   video_driver_publish_window_displays(foreign, 1);
+   gfx_ctx_wl_release_kept();
+   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+         == 1 && string_is_equal(got[0].name, "foreign"));
+#ifdef HAVE_VULKAN
+   if (api == GFX_CTX_VULKAN_API)
+      ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+            &gfx_ctx_vk_wayland, ident, api, 1, 0, false, &data);
+   else
+#endif
+   ctx = video_context_driver_init_first(NULL, ident, api,
+         core ? 3 : 0, core ? 2 : 0, false, &data);
+   CHECK(ctx != NULL);
+   if (!ctx)
+      return;
+   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+         == native_wl_outputs((gfx_ctx_wayland_data_t*)data));
+   /* Quitting: not kept */
+   runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
+   ctx->destroy(data);
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SHUTDOWN_INITIATED;
+   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+         == 0);
 }
 #endif

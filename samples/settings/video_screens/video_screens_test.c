@@ -42,11 +42,19 @@
 #endif
 
 #ifdef HAVE_X11
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/resource.h>
 #include <X11/Xatom.h>
 #ifdef HAVE_XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
 #include "../../../gfx/common/x11_common.h"
+#include "../../../gfx/common/x11_monitors.h"
+#include "../../../gfx/common/dbus_common.h"
+#ifdef HAVE_XRANDR
+#include <X11/extensions/Xrandr.h>
+#endif
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 #define NATIVE_GLX
 #include <GL/glx.h>
@@ -5103,6 +5111,11 @@ static void test_window_native_lifecycle(const char *ident, bool core)
    if (native_w32_ident(ident))
       task_queue_init(false, NULL);
 #endif
+#ifdef HAVE_X11
+   /* Off at the first connect, so the monitor worker starts lazily */
+   if (native_x11_ident(ident))
+      config_get_ptr()->bools.video_windows_enable = false;
+#endif
    for (restart = 0; restart < 2; restart++)
    {
       const gfx_ctx_driver_t *ctx;
@@ -5168,8 +5181,26 @@ static void test_window_native_lifecycle(const char *ident, bool core)
          CHECK(!"set_video_mode");
          return;
       }
+#if defined(HAVE_X11) && defined(RARCH_HAVE_X11_MONITORS)
+      /* First a context whose monitor worker cannot start */
+      if (     !restart && native_x11_ident(ident)
+            && !(ctx = native_x11_unlisted(ctx, &ctx_data, api,
+                  api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+                  api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0))))
+         return;
+      /* Then, on two monitors, the toggle on from the start */
+      if (     restart && native_x11_ident(ident)
+            && !(ctx = native_x11_located(ctx, &ctx_data, api,
+                  api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+                  api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0))))
+         return;
+#endif
       if (api == GFX_CTX_OPENGL_API)
          ctx->swap_interval(ctx_data, 1);
+#ifdef NATIVE_SDL
+      if (native_sdl_ident(ident) && native_sdl_no_windows(ctx, ctx_data))
+         return;
+#endif
       CHECK(ctx->windows != NULL);
       if (     ctx->windows
             && !(     ctx->windows->create && ctx->windows->update
@@ -5267,7 +5298,10 @@ static void test_window_native_lifecycle(const char *ident, bool core)
       CHECK(window.state == NULL && window.surface == NULL);
 #ifdef HAVE_X11
       if (native_x11_ident(ident))
+      {
          CHECK(native_x11_titled(g_x11_dpy, request.screen) == 0);
+         native_x11_torn_down(!restart);
+      }
 #endif
 #ifdef NATIVE_WIN32
       if (native_w32_ident(ident))
@@ -5276,11 +5310,18 @@ static void test_window_native_lifecycle(const char *ident, bool core)
          native_window_input = NULL;
       }
 #endif
+#ifdef NATIVE_SDL
+      if (native_sdl_ident(ident))
+         native_sdl_torn_down(ctx, !restart);
+#endif
    }
 #ifdef NATIVE_WIN32
-   /* The main window left up by the last lifetime */
    if (native_w32_ident(ident))
-      win32_window_release_kept();
+      native_w32_teardown(ident, api, core);
+#endif
+#ifdef HAVE_WAYLAND
+   if (native_wl_ident(ident))
+      native_wl_teardown(ident, api, core);
 #endif
 }
 

@@ -188,6 +188,9 @@ static bool sdl2_ctx_set_video_mode(void *data,
    settings_t *settings         = config_get_ptr();
    bool windowed_fullscreen     = settings->bools.video_windowed_fullscreen;
    unsigned video_monitor_index = settings->uints.video_monitor_index;
+#ifdef HAVE_VIDEO_WINDOWS
+   bool had_window              = sdl->win != NULL;
+#endif
 
    sdl->new_width               = width;
    sdl->new_height              = height;
@@ -242,6 +245,11 @@ static bool sdl2_ctx_set_video_mode(void *data,
    sdl->full                    = fullscreen;
    sdl->width                   = width;
    sdl->height                  = height;
+
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Before the first frame lays the screens out */
+   sdl2_video_monitors_publish(sdl->win, !had_window);
+#endif
 
    return true;
 
@@ -302,6 +310,11 @@ static void sdl2_ctx_check_window(void *data, bool *quit,
          case SDL_APP_TERMINATING:
             *quit = true;
             break;
+#if defined(HAVE_VIDEO_WINDOWS) && SDL_VERSION_ATLEAST(2, 0, 14)
+         case SDL_DISPLAYEVENT:
+            sdl2_video_monitors_changed();
+            break;
+#endif
          case SDL_WINDOWEVENT:
 #ifdef HAVE_VIDEO_WINDOWS
             if (sdl2_video_window_event(&event, quit))
@@ -315,12 +328,24 @@ static void sdl2_ctx_check_window(void *data, bool *quit,
             }
             /* It may be on another display now */
             else if (event.window.event == SDL_WINDOWEVENT_MOVED)
+            {
                video_driver_window_output_changed();
+#ifdef HAVE_VIDEO_WINDOWS
+               sdl2_video_monitors_moved();
+#endif
+            }
+#if defined(HAVE_VIDEO_WINDOWS) && SDL_VERSION_ATLEAST(2, 0, 18)
+            else if (event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED)
+               sdl2_video_monitors_moved();
+#endif
             break;
          default:
             break;
       }
    }
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl2_video_monitors_publish(sdl->win, false);
+#endif
 
    if (sdl->resized)
    {
