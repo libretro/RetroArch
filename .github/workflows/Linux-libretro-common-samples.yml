@@ -165,6 +165,8 @@ jobs:
             rmp3_frame_test
             # raac_last_size over units followed by more.
             raac_size_test
+            # raac's savestates: saved between units, loaded into a new decoder.
+            raac_state_test
             rh265_lossless_test
             rh265_lossless_test_nothreads
             rh265_lossless_test_volatile

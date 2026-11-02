@@ -112,6 +112,15 @@ int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
  * again from its first packet, e.g. for looping. */
 void raac_reset(raac_t *a);
 
+/* What the frames decoded so far leave the next ones, as bytes, for
+ * a savestate: raac_state_size bytes out, and back into a decoder
+ * opened with the same configuration, which then decodes on exactly
+ * as the saved one. Load returns -1, changing nothing, for any other
+ * size or configuration. */
+size_t raac_state_size(const raac_t *a);
+void raac_save_state(const raac_t *a, void *data);
+int raac_load_state(raac_t *a, const void *data, size_t size);
+
 /* Bytes the last decoded access unit took, through its END element:
  * less than the size given when more follows it. 0 after a failure. */
 size_t raac_last_size(const raac_t *a);

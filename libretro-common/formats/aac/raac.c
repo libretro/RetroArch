@@ -5763,6 +5763,85 @@ void raac_reset(raac_t *a)
    a->noise_state = 0x1f2e3d4cu;
 }
 
+/* What the frames before leave the next: per output channel the stream
+ * state with its overlap, the coupling channels, the SBR elements and,
+ * at the doubled rate, the QMF histories; then the PNS generator. */
+#define RAAC_STATE_HDR 6
+
+static size_t raac_state_body(const raac_t *a)
+{
+   return sizeof(raac_ch) * a->channels + sizeof(a->cce) + sizeof(a->sbr)
+        + (a->qmf ? sizeof(raac_qmf_ch) * a->channels : 0)
+        + sizeof(a->noise_state);
+}
+
+/* The layout and the configuration it was made under: a state is only
+ * taken by a decoder opened the same way. */
+static void raac_state_hdr(const raac_t *a, uint32_t *h)
+{
+   h[0] = 0x53414152u;   /* "RAAS" */
+   h[1] = (uint32_t)raac_state_body(a);
+   h[2] = a->channels;
+   h[3] = a->sample_rate;
+   h[4] = a->frame_len | ((uint32_t)a->sbr_mode << 16);
+   h[5] = (uint32_t)(sizeof(raac_ch) ^ (sizeof(raac_sbr) << 16));
+}
+
+size_t raac_state_size(const raac_t *a)
+{
+   if (!a)
+      return 0;
+   return RAAC_STATE_HDR * sizeof(uint32_t) + raac_state_body(a);
+}
+
+void raac_save_state(const raac_t *a, void *data)
+{
+   uint32_t h[RAAC_STATE_HDR];
+   uint8_t *p = (uint8_t*)data;
+   if (!a || !p)
+      return;
+   raac_state_hdr(a, h);
+   memcpy(p, h, sizeof(h));
+   p += sizeof(h);
+   memcpy(p, a->ch, sizeof(raac_ch) * a->channels);
+   p += sizeof(raac_ch) * a->channels;
+   memcpy(p, a->cce, sizeof(a->cce));
+   p += sizeof(a->cce);
+   memcpy(p, a->sbr, sizeof(a->sbr));
+   p += sizeof(a->sbr);
+   if (a->qmf)
+   {
+      memcpy(p, a->qmf, sizeof(raac_qmf_ch) * a->channels);
+      p += sizeof(raac_qmf_ch) * a->channels;
+   }
+   memcpy(p, &a->noise_state, sizeof(a->noise_state));
+}
+
+int raac_load_state(raac_t *a, const void *data, size_t size)
+{
+   uint32_t h[RAAC_STATE_HDR];
+   const uint8_t *p = (const uint8_t*)data;
+   if (!a || !p || size != raac_state_size(a))
+      return -1;
+   raac_state_hdr(a, h);
+   if (memcmp(p, h, sizeof(h)))
+      return -1;
+   p += sizeof(h);
+   memcpy(a->ch, p, sizeof(raac_ch) * a->channels);
+   p += sizeof(raac_ch) * a->channels;
+   memcpy(a->cce, p, sizeof(a->cce));
+   p += sizeof(a->cce);
+   memcpy(a->sbr, p, sizeof(a->sbr));
+   p += sizeof(a->sbr);
+   if (a->qmf)
+   {
+      memcpy(a->qmf, p, sizeof(raac_qmf_ch) * a->channels);
+      p += sizeof(raac_qmf_ch) * a->channels;
+   }
+   memcpy(&a->noise_state, p, sizeof(a->noise_state));
+   return 0;
+}
+
 void raac_close(raac_t *a)
 {
    free(a->qmf);
