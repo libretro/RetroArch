@@ -1138,7 +1138,13 @@ void frontend_android_get_manufacturer_model(char *s, size_t len)
 
 void frontend_android_get_name(char *s, size_t len)
 {
-   system_property_get("getprop", "ro.product.model", s, len);
+   char model[PROP_VALUE_MAX] = {0};
+
+   if (!s || len == 0)
+      return;
+
+   __system_property_get("ro.product.model", model);
+   strlcpy(s, model, len);
 }
 
 void frontend_android_get_version(int32_t *major,
@@ -1173,8 +1179,11 @@ void frontend_android_get_version(int32_t *major,
 
 void frontend_android_get_version_sdk(int32_t *sdk)
 {
+   /* Read the property in-process: system_property_get() runs the
+    * getprop binary through popen(), a fork and exec of a shell for
+    * one number, and this is asked on the startup path. */
    char os_version_str[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.build.version.sdk", os_version_str, sizeof(os_version_str));
+   __system_property_get("ro.build.version.sdk", os_version_str);
    *sdk = 0;
    if (os_version_str[0])
       *sdk = (int32_t)strtol(os_version_str, NULL, 10);
@@ -3451,7 +3460,7 @@ static void frontend_unix_get_env(int *argc,
       }
    }
 
-   system_property_get("getprop", "ro.product.model", device_model, sizeof(device_model));
+   __system_property_get("ro.product.model", device_model);
 
    /* Set automatic default values per device */
    if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
@@ -4008,7 +4017,7 @@ static void frontend_unix_init(void *data)
          g_platform_android_flags |= PLAT_ANDROID_FLAG_ANDROID_TV_DEVICE;
    }
 
-   system_property_get("getprop", "ro.product.model", device_model, sizeof(device_model));
+   __system_property_get("ro.product.model", device_model);
 
    /* Check if we are a game console device */
    if (device_is_game_console(device_model))

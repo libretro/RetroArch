@@ -490,7 +490,8 @@ static void android_display_dpi_get_density(char *s, size_t len)
    static char string2[PROP_VALUE_MAX] = {0};
    if (!inited_once)
    {
-      system_property_get("getprop", "ro.sf.lcd_density", string, sizeof(string));
+      /* A property: read in-process, not through a getprop child. */
+      __system_property_get("ro.sf.lcd_density", string);
       inited_once = true;
    }
 
