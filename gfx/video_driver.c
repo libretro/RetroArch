@@ -3755,19 +3755,29 @@ void video_driver_hw_request_restore(const struct video_hw_request *req)
 /* The idle logo, loaded the first frame it is wanted; app thread */
 static gfx_surface_t *video_driver_windows_logo = NULL;
 
-/* The logo from the widgets' icon set, once the widgets know where it
- * is. Its own frame keeps the path off the frame function's stack. */
+/* The logo from the widgets' icon set: their path, or with the widgets
+ * off the same path built from the assets directory. Its own frame
+ * keeps the path off the frame function's stack. */
 static VIDEO_NOINLINE void video_driver_windows_logo_load(void)
 {
    char path[PATH_MAX_LENGTH];
-   const char *dir = dispwidget_get_ptr()->monochrome_png_path;
-   if (!*dir)
+   const char *dir    = dispwidget_get_ptr()->monochrome_png_path;
+   const char *assets = config_get_ptr()->paths.directory_assets;
+   if (!*dir && !*assets)
       return;
    video_driver_windows_logo = gfx_surface_new_still(
          gfx_display_texture_filter());
    if (!video_driver_windows_logo)
       return;
-   fill_pathname_join_special(path, dir, "retroarch.png", sizeof(path));
+   if (*dir)
+      fill_pathname_join_special(path, dir, "retroarch.png", sizeof(path));
+   else
+   {
+      fill_pathname_join_special(path, assets, "xmb", sizeof(path));
+      fill_pathname_join_special(path, path, "monochrome", sizeof(path));
+      fill_pathname_join_special(path, path, "png", sizeof(path));
+      fill_pathname_join_special(path, path, "retroarch.png", sizeof(path));
+   }
    gfx_surface_submit_path(video_driver_windows_logo, path,
          gfx_surface_wants_rgba());
 }
