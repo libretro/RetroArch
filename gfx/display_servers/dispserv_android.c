@@ -30,10 +30,6 @@
 #include "../../frontend/drivers/platform_unix.h"
 #include "edid_sysfs.h"
 
-/* FORWARD DECLARATIONS */
-int system_property_get(const char *cmd, const char *args,
-      char *value, size_t value_size);
-
 /* The display's peak luminance, as Android reports it (API 24's
  * HdrCapabilities); 0 where it reports none. */
 static void* android_display_server_init(void)
@@ -482,32 +478,77 @@ static void android_display_server_get_video_output_prev(void *data)
    android_display_server_step_video_output(data, -1);
 }
 
-static void android_display_dpi_get_density(char *s, size_t len)
+/* getResources().getDisplayMetrics().densityDpi; 0 when it cannot be
+ * read.  What Android itself scales by, including the user's display
+ * size setting. */
+static int android_display_density_dpi(void)
 {
-   static bool inited_once             = false;
-   static bool inited2_once            = false;
-   static char string[PROP_VALUE_MAX]  = {0};
-   static char string2[PROP_VALUE_MAX] = {0};
-   if (!inited_once)
-   {
-      /* A property: read in-process, not through a getprop child. */
-      __system_property_get("ro.sf.lcd_density", string);
-      inited_once = true;
-   }
+   JNIEnv *env = jni_thread_getenv();
+   jclass cls;
+   jmethodID mid;
+   jfieldID fid;
+   jobject res;
+   jobject dm;
+   jint dpi    = 0;
 
-   if (*string)
-   {
-      strlcpy(s, string, len);
-      return;
-   }
+   if (!env || !g_android || !g_android->activity)
+      return 0;
 
-   if (!inited2_once)
-   {
-      system_property_get("wm", "density", string2, sizeof(string2));
-      inited2_once = true;
-   }
+   cls = (*env)->GetObjectClass(env, g_android->activity->clazz);
+   mid = (*env)->GetMethodID(env, cls, "getResources",
+         "()Landroid/content/res/Resources;");
+   (*env)->DeleteLocalRef(env, cls);
+   if ((*env)->ExceptionCheck(env) || !mid)
+      goto fail;
+   res = (*env)->CallObjectMethod(env, g_android->activity->clazz, mid);
+   if ((*env)->ExceptionCheck(env) || !res)
+      goto fail;
 
-   strlcpy(s, string2, len);
+   cls = (*env)->GetObjectClass(env, res);
+   mid = (*env)->GetMethodID(env, cls, "getDisplayMetrics",
+         "()Landroid/util/DisplayMetrics;");
+   (*env)->DeleteLocalRef(env, cls);
+   if ((*env)->ExceptionCheck(env) || !mid)
+   {
+      (*env)->DeleteLocalRef(env, res);
+      goto fail;
+   }
+   dm = (*env)->CallObjectMethod(env, res, mid);
+   (*env)->DeleteLocalRef(env, res);
+   if ((*env)->ExceptionCheck(env) || !dm)
+      goto fail;
+
+   cls = (*env)->GetObjectClass(env, dm);
+   fid = (*env)->GetFieldID(env, cls, "densityDpi", "I");
+   (*env)->DeleteLocalRef(env, cls);
+   if (!(*env)->ExceptionCheck(env) && fid)
+      dpi = (*env)->GetIntField(env, dm, fid);
+   (*env)->DeleteLocalRef(env, dm);
+   if ((*env)->ExceptionCheck(env))
+      goto fail;
+   return dpi > 0 ? (int)dpi : 0;
+
+fail:
+   (*env)->ExceptionClear(env);
+   return 0;
+}
+
+/* ro.sf.lcd_density first, as before; then the density Android reports
+ * to apps.  This used to run "wm density" through a shell, which
+ * prints "Physical density: <n>": atoi() read that as 0, so the
+ * fallback never gave a density, and from an app it is often refused
+ * anyway. */
+static int android_display_dpi_get_density(void)
+{
+   char prop[PROP_VALUE_MAX] = {0};
+   int dpi;
+
+   /* A property: read in-process, not through a getprop child. */
+   __system_property_get("ro.sf.lcd_density", prop);
+   if ((dpi = atoi(prop)) > 0)
+      return dpi;
+
+   return android_display_density_dpi();
 }
 
 bool android_display_get_metrics(void *data,
@@ -523,11 +564,7 @@ bool android_display_get_metrics(void *data,
       case DISPLAY_METRIC_DPI:
          if (dpi == -1)
          {
-            char density[PROP_VALUE_MAX];
-            android_display_dpi_get_density(density, sizeof(density));
-            if (!*density)
-               goto dpi_fallback;
-            if ((dpi = atoi(density)) <= 0)
+            if ((dpi = android_display_dpi_get_density()) <= 0)
                goto dpi_fallback;
          }
          *value = (float)dpi;

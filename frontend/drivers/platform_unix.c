@@ -173,64 +173,6 @@ static retro_atomic_int_t unix_sighandler_quit = RETRO_ATOMIC_INT_INITIALIZER(0)
 static enum frontend_fork unix_fork_mode = FRONTEND_FORK_NONE;
 #endif
 
-int system_property_get(const char *command,
-      const char *args, char *value, size_t value_size)
-{
-   FILE *pipe;
-   char buffer[BUFSIZ];
-   char cmd[NAME_MAX_LENGTH];
-   char *pos                  = NULL;
-   size_t __len               = 0;
-   size_t _len                = strlcpy(cmd, command, sizeof(cmd));
-
-   if (value_size == 0)
-      return 0;
-
-   cmd[  _len]                = ' ';
-   cmd[++_len]                = '\0';
-
-   strlcpy(cmd + _len, args, sizeof(cmd) - _len);
-
-   if (!(pipe = popen(cmd, "r")))
-   {
-      RARCH_ERR("Could not create pipe.\n");
-      return 0;
-   }
-
-   pos = value;
-
-   while (!feof(pipe))
-   {
-      if (fgets(buffer, sizeof(buffer), pipe))
-      {
-         size_t _len = strlen(buffer);
-         
-         /* Prevent buffer overflow by checking available space */
-         if (__len + _len >= value_size - 1)
-         {
-            /* Copy only what fits, leaving space for null terminator */
-            size_t remaining = value_size - __len - 1;
-            if (remaining > 0)
-            {
-               memcpy(pos, buffer, remaining);
-               pos += remaining;
-               __len += remaining;
-            }
-            break;
-         }
-
-         memcpy(pos, buffer, _len);
-
-         pos   += _len;
-         __len += _len;
-      }
-   }
-
-   *pos = '\0';
-   pclose(pipe);
-   return __len;
-}
-
 bool test_permissions(const char *path)
 {
    char buf[PATH_MAX_LENGTH];
@@ -1182,9 +1124,9 @@ void frontend_android_get_version(int32_t *major,
 
 void frontend_android_get_version_sdk(int32_t *sdk)
 {
-   /* Read the property in-process: system_property_get() runs the
-    * getprop binary through popen(), a fork and exec of a shell for
-    * one number, and this is asked on the startup path. */
+   /* Read the property in-process, not by running getprop through
+    * popen(), a fork and exec of a shell for one number: this is asked
+    * on the startup path. */
    char os_version_str[PROP_VALUE_MAX] = {0};
    __system_property_get("ro.build.version.sdk", os_version_str);
    *sdk = 0;
