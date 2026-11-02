@@ -9607,6 +9607,8 @@ static void rgui_context_reset(void *data, bool is_threaded)
    if (!disp_get_ptr()->dispctx)
       gfx_display_init_first_driver(disp_get_ptr(), is_threaded);
    video_driver_monitor_reset();
+   /* A new video driver holds no menu texture until the next upload */
+   disp_get_ptr()->flags |= GFX_DISP_FLAG_FB_DIRTY;
 }
 
 static void rgui_thumbnail_cycle_dupe(rgui_t *rgui)

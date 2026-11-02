@@ -237,6 +237,7 @@ jobs:
           # threaded video. MaterialUI's playlist icon array could be
           # rebuilt under a decode still in flight. The contentless
           # cores list's icons, fallback and per core, go at deinit.
+          # RGUI's framebuffer must reach the video driver a reinit made.
           # Shares the non-Qt build made above; one binary, one run per
           # lane.
           samples/menu/menu_icon_ownership/build.sh
@@ -244,6 +245,7 @@ jobs:
           ./samples/menu/menu_icon_ownership/menu_icon_ownership_test xmb
           ./samples/menu/menu_icon_ownership/menu_icon_ownership_test materialui
           ./samples/menu/menu_icon_ownership/menu_icon_ownership_test contentless
+          ./samples/menu/menu_icon_ownership/menu_icon_ownership_test rgui
           make -C samples/menu/menu_icon_ownership clean
 
       - name: Build and run ozone_sublabel_scroll_test
