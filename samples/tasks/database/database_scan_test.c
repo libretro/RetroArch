@@ -3875,6 +3875,117 @@ end:
    free(want);
 }
 
+static unsigned file_count(const char *path, const char *needle);
+
+/* A DAT scan and one that matches nothing print a database scan's
+ * lines: the folder, a line per file and a "??" for each file the
+ * totals count unmatched.  Rescans counts_lane()'s folders. */
+static void cli_lines_lane(const char *root, const char *pl_dir)
+{
+   char    *dat_dir = (char*)malloc(512);
+   char    *m3u_dir = (char*)malloc(512);
+   char    *res_pl  = (char*)malloc(512);
+   char    *dat     = (char*)malloc(512);
+   char    *out     = (char*)malloc(512);
+   char    *err     = (char*)malloc(512);
+   char    *want    = (char*)malloc(1024);
+   char     detail[64];
+   unsigned qq;
+
+   if (!dat_dir || !m3u_dir || !res_pl || !dat || !out || !err || !want)
+   {
+      check(0, "lines lane", "out of memory");
+      goto end;
+   }
+
+   sprintf(dat_dir, "%s/scan_result_dat", root);
+   sprintf(m3u_dir, "%s/scan_result_m3u", root);
+   sprintf(res_pl,  "%s/scan_result_pl",  root);
+   sprintf(dat,     "%s/scan_result.dat", root);
+   sprintf(out,     "%s/scan_lines.out",  root);
+   sprintf(err,     "%s/scan_lines.err",  root);
+   strlcpy(config_get_ptr()->paths.directory_playlist, res_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT);
+   strlcpy(manual_content_scan_get_dat_file_path_ptr(), dat,
+         manual_content_scan_get_dat_file_path_size());
+
+   delete_playlists(res_pl);
+   if (capture_scan(dat_dir, out, err, true))
+   {
+      sprintf(want, "\"%s\"...", dat_dir);
+      check(file_contains(out, want),
+            "lines: a DAT scan starts with its folder", want);
+      check(   file_contains(out, "1/2: \"01_alpha.bin\"...")
+            && file_contains(out, "2/2: \"02_none.bin\"..."),
+            "lines: and prints a line per file", out);
+      sprintf(want, " ?? \"%s/02_none.bin\"", dat_dir);
+      check(file_contains(out, want),
+            "lines: and ?? for the file it leaves out", want);
+      qq = file_count(out, " ?? \"");
+      sprintf(detail, "%u ??, %u unmatched", qq, scan_result.unmatched);
+      check(qq == 1 && scan_result.unmatched == 1,
+            "lines: one ?? per unmatched file", detail);
+   }
+
+   /* Nothing the DAT lists: two discs, then the m3u in its own pass. */
+   delete_playlists(res_pl);
+   if (capture_scan(m3u_dir, out, err, true))
+   {
+      sprintf(want, " ?? \"%s/Game.m3u\"", m3u_dir);
+      qq = file_count(out, " ?? \"");
+      sprintf(detail, "%u ??, %u unmatched", qq, scan_result.unmatched);
+      check(   file_contains(out, want)
+            && qq == 3 && scan_result.unmatched == 3,
+            "lines: an unmatched m3u gets its ??", detail);
+   }
+
+   delete_playlists(res_pl);
+   if (capture_scan(dat_dir, out, err, false))
+      check(path_get_size(out) == 0 && path_get_size(err) == 0,
+            "lines: none without --scan", out);
+
+   manual_content_scan_get_dat_file_path_ptr()[0] = '\0';
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_NONE);
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL);
+   delete_playlists(res_pl);
+   if (capture_scan(dat_dir, out, err, true))
+   {
+      sprintf(want, "\"%s\"...", dat_dir);
+      check(   file_contains(out, want)
+            && file_contains(out, "1/2: \"01_alpha.bin\"...")
+            && file_contains(out, "2/2: \"02_none.bin\"..."),
+            "lines: match none prints them too", want);
+      qq = file_count(out, " ?? \"");
+      sprintf(detail, "%u ??, %u unmatched", qq, scan_result.unmatched);
+      check(qq == 0 && scan_result.unmatched == 0,
+            "lines: and no ?? with nothing unmatched", detail);
+   }
+
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO, NULL);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   delete_playlists(res_pl);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+end:
+   free(dat_dir);
+   free(m3u_dir);
+   free(res_pl);
+   free(dat);
+   free(out);
+   free(err);
+   free(want);
+}
+
 static bool write_reader_db(const char *db_dir)
 {
    char p[1024];
@@ -6206,8 +6317,6 @@ end:
    free(pl_cfg);
    free(cfg);
 }
-
-static unsigned file_count(const char *path, const char *needle);
 
 /* Skip Database References names a match after the playlist it is
  * written to, and only when the scan has one playlist: left to the
@@ -14247,6 +14356,7 @@ int main(int argc, char **argv)
    failed_lane(root, pl_dir, db_dir, crc_a, sz_a);
    errors_lane(root, pl_dir, crc_a, sz_a);
    output_lane(root, pl_dir, db_dir);
+   cli_lines_lane(root, pl_dir);
    reset_lane(root, pl_dir);
    overrides_lane(root, pl_dir);
    anchor_lane(root, pl_dir);

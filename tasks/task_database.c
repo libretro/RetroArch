@@ -795,6 +795,27 @@ static void task_database_scan_console_output(FILE *stream,
    else
       fprintf(stream, "%s\"%s / %s\"\n", string, db_name, label);
 }
+
+/* Whether --scan's per-file lines are printed outside the database
+ * lookup, which prints its own. */
+static bool manual_scan_cli_lines(const manual_scan_handle_t *manual_scan)
+{
+#ifdef HAVE_LIBRETRODB
+   if (   manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT
+       || manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_LOOSE)
+      return false;
+#endif
+   return manual_scan->task_config->cli_scan_output;
+}
+
+static void manual_scan_unmatched(manual_scan_handle_t *manual_scan,
+      const char *path)
+{
+   manual_scan->result.unmatched++;
+   if (manual_scan_cli_lines(manual_scan))
+      task_database_scan_console_output(stdout, path, NULL,
+            SCAN_CONSOLE_UNMATCHED);
+}
 #ifdef HAVE_LIBRETRODB
 static enum scan_verdict task_database_iterate_start(retro_task_t *task,
       database_info_handle_t *db,
@@ -1029,7 +1050,7 @@ static void task_database_iterate_m3u(
    {
       RARCH_ERR("[Scanner] Failed to open M3U file: \"%s\".\n", m3u_path);
       if (!counted && !scan_results_find(&_db->scan_results, m3u_path))
-         _db->result.unmatched++;
+         manual_scan_unmatched(_db, m3u_path);
       return;
    }
 
@@ -1143,7 +1164,7 @@ static void task_database_iterate_m3u(
       }
    }
    else if (!own && !counted)
-      _db->result.unmatched++;
+      manual_scan_unmatched(_db, m3u_path);
 
    /* Compact scan_results to remove NULL entries */
    {
@@ -5380,6 +5401,9 @@ static bool manual_scan_begin_setup(retro_task_t *task,
          manual_scan->fail_msg = _msg;
          return true;
       }
+      RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->task_config->content_dir);
+      if (manual_scan->task_config->cli_scan_output)
+         printf("%s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->task_config->content_dir);
    }
 
    /* Log the folder being scanned on every path; plain (non-database)
@@ -6123,6 +6147,11 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                task_set_progress(task,
                      (manual_scan->content_list_index * 100) /
                      manual_scan->content_list->size);
+               if (manual_scan_cli_lines(manual_scan))
+                  printf(STRING_REP_USIZE "/" STRING_REP_USIZE ": \"%s\"...\n",
+                        manual_scan->content_list_index + 1,
+                        (size_t)manual_scan->content_list->size,
+                        path_basename_nocompression(content_path));
 
                /* If "search archives" is enabled, but compressed files are not in the list,    *
                 * do not add the compressed file itself, just add the contents to the end.      *
@@ -6169,7 +6198,7 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                      {
                         label[0] = '\0';
                         if (!rm3u_is_m3u_filestream(content_path))
-                           manual_scan->result.unmatched++;
+                           manual_scan_unmatched(manual_scan, content_path);
 #ifdef DEBUG
                         RARCH_DBG("[Scanner] Rejecting item: %s\n",content_path);
 #endif
