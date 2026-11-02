@@ -19,6 +19,7 @@
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
+#include <retro_dirent.h>
 #include <string/stdstring.h>
 #include <lists/dir_list.h>
 #include <memory/mem_stats.h>
@@ -545,6 +546,14 @@ enum manual_scan_status
    MANUAL_SCAN_END
 };
 
+enum manual_scan_dir_state
+{
+   MANUAL_SCAN_DIR_UNKNOWN = 0,
+   MANUAL_SCAN_DIR_MISSING,
+   MANUAL_SCAN_DIR_EMPTY,
+   MANUAL_SCAN_DIR_FILLED
+};
+
 typedef struct manual_scan_handle
 {
    manual_content_scan_task_config_t *task_config;
@@ -582,12 +591,21 @@ typedef struct manual_scan_handle
    playlist_dedup_t *flush_dedup;
    logiqx_dat_t *dat_file;
    struct string_list *m3u_list;
+   /* The CLEAN pass's path scratch, the content folder with its
+    * symlinks resolved ("" if that fails or changes nothing) and the
+    * last folder outside it looked in. */
+   char *clean_path;
+   char *clean_root;
+   char *clean_dir;
    playlist_config_t playlist_config; /* size_t alignment */
    size_t playlist_size;
    size_t playlist_index;
    size_t content_list_index;
    size_t m3u_index;
    enum manual_scan_status status; /* merged, the other status is in dbinfo */
+   /* What the CLEAN pass found in clean_dir and the content folder */
+   enum manual_scan_dir_state clean_dir_state;
+   enum manual_scan_dir_state clean_content_state;
    scan_results_t scan_results;
    char *playlist_directory;
 #ifdef HAVE_LIBRETRODB
@@ -4271,6 +4289,24 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
       manual_scan->file_exts_list = NULL;
    }
 
+   if (manual_scan->clean_path)
+   {
+      free(manual_scan->clean_path);
+      manual_scan->clean_path = NULL;
+   }
+
+   if (manual_scan->clean_root)
+   {
+      free(manual_scan->clean_root);
+      manual_scan->clean_root = NULL;
+   }
+
+   if (manual_scan->clean_dir)
+   {
+      free(manual_scan->clean_dir);
+      manual_scan->clean_dir = NULL;
+   }
+
    /* A cancelled task can die mid-walk or mid-DAT-read; the
     * iterator closes any directory handles still open, and the
     * read buffer is only non-NULL while its ownership is still
@@ -5070,6 +5106,113 @@ static bool task_manual_scan_begin_tick(retro_task_t *task,
    return error;
 }
 
+/* Whether @path lies under @dir. */
+static bool manual_scan_path_in_dir(const char *path, const char *dir)
+{
+   const char *d = dir;
+
+   for (; *d; path++, d++)
+   {
+      if (PATH_CHAR_IS_SLASH(*path) && PATH_CHAR_IS_SLASH(*d))
+         continue;
+#ifdef _WIN32
+      if (tolower((unsigned char)*path) != tolower((unsigned char)*d))
+#else
+      if (*path != *d)
+#endif
+         return false;
+   }
+   return d > dir && (PATH_CHAR_IS_SLASH(d[-1]) || PATH_CHAR_IS_SLASH(*path));
+}
+
+static enum manual_scan_dir_state manual_scan_probe_dir(const char *dir)
+{
+   enum manual_scan_dir_state state = MANUAL_SCAN_DIR_EMPTY;
+   struct RDIR *rdir = retro_opendir_include_hidden(dir, true);
+
+   if (!rdir)
+      return MANUAL_SCAN_DIR_MISSING;
+   while (retro_readdir(rdir))
+   {
+      const char *name = retro_dirent_get_name(rdir);
+
+      if (   name && *name
+          && !string_is_equal(name, ".")
+          && !string_is_equal(name, ".."))
+      {
+         state = MANUAL_SCAN_DIR_FILLED;
+         break;
+      }
+   }
+   retro_closedir(rdir);
+   return state;
+}
+
+/* Whether the CLEAN pass drops the entry at @path.  A missing file
+ * goes only when its folder - the content folder for an entry inside
+ * it - holds something, so entries on a drive that is not there stay;
+ * the extension filter applies inside the content folder only. */
+static bool manual_scan_clean_drop(manual_scan_handle_t *manual_scan,
+      const char *path)
+{
+   const char *dir = manual_scan->task_config->content_dir;
+   const char *ext = NULL;
+   char *s         = NULL;
+   char *delim     = NULL;
+   bool inside     = false;
+
+   if (!path || !*path)
+      return true;
+   if (!manual_scan->clean_root)
+   {
+      /* Entries are saved with their symlinks resolved */
+      if (!(manual_scan->clean_root = (char*)malloc(PATH_MAX_LENGTH)))
+         return false;
+      strlcpy(manual_scan->clean_root, dir, PATH_MAX_LENGTH);
+      if (   !path_resolve_realpath(manual_scan->clean_root,
+               PATH_MAX_LENGTH, true)
+          ||  string_is_equal(manual_scan->clean_root, dir))
+         *manual_scan->clean_root = '\0';
+   }
+   if (   !manual_scan->clean_path
+       && !(manual_scan->clean_path = (char*)malloc(PATH_MAX_LENGTH)))
+      return false;
+   s = manual_scan->clean_path;
+   fill_pathname_expand_special(s, path, PATH_MAX_LENGTH);
+   if ((delim = (char*)path_get_archive_delim(s)))
+      *delim = '\0';
+   inside =    manual_scan_path_in_dir(s, dir)
+            || manual_scan_path_in_dir(s, manual_scan->clean_root);
+
+   if (!playlist_content_path_is_valid(path))
+   {
+      /* Inside entries interleave with outside ones in a sorted
+       * playlist, so the content folder keeps its own state. */
+      if (inside)
+      {
+         if (manual_scan->clean_content_state == MANUAL_SCAN_DIR_UNKNOWN)
+            manual_scan->clean_content_state = manual_scan_probe_dir(dir);
+         return manual_scan->clean_content_state == MANUAL_SCAN_DIR_FILLED;
+      }
+      if (   !manual_scan->clean_dir
+          && !(manual_scan->clean_dir = (char*)calloc(1, PATH_MAX_LENGTH)))
+         return false;
+      path_basedir(s);
+      if (!string_is_equal(s, manual_scan->clean_dir))
+      {
+         strlcpy(manual_scan->clean_dir, s, PATH_MAX_LENGTH);
+         manual_scan->clean_dir_state = manual_scan_probe_dir(s);
+      }
+      return manual_scan->clean_dir_state == MANUAL_SCAN_DIR_FILLED;
+   }
+
+   return     inside
+          &&  manual_scan->file_exts_list
+          &&  (ext = path_get_extension(path))
+          && !string_list_find_elem_prefix(manual_scan->file_exts_list,
+                ".", ext);
+}
+
 /* What an ITERATE step leaves for the tick to do. */
 enum scan_step
 {
@@ -5118,7 +5261,6 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
             {
                size_t _len;
                const char *entry_file     = NULL;
-               const char *entry_file_ext = NULL;
                char task_title[128];
 
                /* Update progress display */
@@ -5139,18 +5281,8 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                task_set_progress(task, (manual_scan->playlist_index * 100) /
                      manual_scan->playlist_size);
 
-               /* Check whether playlist content exists on
-                * the filesystem */
-               if (!playlist_content_path_is_valid(entry->path))
-                  delete_entry = true;
-               /* If file exists, check whether it has a
-                * permitted file extension */
-               else if (    manual_scan->file_exts_list
-                        && (entry_file_ext = path_get_extension(entry->path))
-                        && !string_list_find_elem_prefix(
-                              manual_scan->file_exts_list,
-                              ".", entry_file_ext))
-                  delete_entry = true;
+               delete_entry = manual_scan_clean_drop(manual_scan,
+                     entry->path);
 
                if (delete_entry)
                {
