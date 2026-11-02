@@ -286,6 +286,11 @@ typedef struct d3d11_vertex_t
    float color[4];
 } d3d11_vertex_t;
 
+/* Staging textures lent to a software core for its frames: one the GPU
+ * may still be copying from, one the cached frame may point into, and
+ * one to lend. */
+#define D3D11_SW_LEND_SLOTS 3
+
 typedef struct
 {
    D3D11DeviceContext context;
@@ -551,6 +556,25 @@ typedef struct
       d3d11_texture_t texture;
       DXGI_FORMAT     format;
    } sw_direct;
+   /* Software frames the core renders straight into, without a copy on
+    * the CPU: staging textures lent through
+    * get_current_software_framebuffer, mapped READ_WRITE (host cached)
+    * without waiting, and copied on the GPU into chain.history[0] when
+    * the frame is pushed from one. A slot stays mapped until then - its
+    * memory is the core's - and only that copy unmaps it, retiring the
+    * cached frame that points into it. `last` is the slot the last
+    * pushed frame came from, which is not lent again while it may be
+    * the cached frame; `dims` and `format` are what the slots were made
+    * at. */
+   struct
+   {
+      D3D11Texture2D           staging[D3D11_SW_LEND_SLOTS];
+      D3D11_MAPPED_SUBRESOURCE mapped[D3D11_SW_LEND_SLOTS];
+      unsigned                 mapped_bits;
+      unsigned                 last;
+      unsigned                 dims;
+      DXGI_FORMAT              format;
+   } sw_lend;
    /* The back buffer size the copy was made at, packed. */
    unsigned              retained_dims;
    unsigned              retained_light;
@@ -749,6 +773,7 @@ static void d3d11_gfx_unload_texture_internal(d3d11_video_t *d3d11, uintptr_t ha
 
 static void d3d11_record_free(d3d11_video_t *d3d11);
 static void d3d11_views_release(d3d11_video_t *d3d11);
+static void d3d11_sw_lend_release(d3d11_video_t *d3d11);
 static void d3d11_views_publish(d3d11_video_t *d3d11);
 
 /* Sprite/font shader selection: HDR output uses the encoding
@@ -3943,6 +3968,7 @@ static void d3d11_gfx_free(void* data)
 
    d3d11_release_texture(&d3d11->chain.history[0]);
    d3d11_release_texture(&d3d11->sw_direct.texture);
+   d3d11_sw_lend_release(d3d11);
    d3d11_views_release(d3d11);
    Release(d3d11->frame.ubo);
    Release(d3d11->frame.vbo);
@@ -5694,6 +5720,158 @@ static bool d3d11_sw_direct_upload(d3d11_video_t *d3d11,
    return true;
 }
 
+/* The lent slots go, unmapped first. A cached frame may point into a
+ * mapped one, so it is retired before the memory goes. */
+static void d3d11_sw_lend_release(d3d11_video_t *d3d11)
+{
+   unsigned i;
+   if (d3d11->sw_lend.mapped_bits)
+      video_driver_cached_frame_retire();
+   for (i = 0; i < D3D11_SW_LEND_SLOTS; i++)
+   {
+      if (d3d11->sw_lend.mapped_bits & (1u << i))
+         d3d11->context->lpVtbl->Unmap(d3d11->context,
+               (D3D11Resource)d3d11->sw_lend.staging[i], 0);
+      Release(d3d11->sw_lend.staging[i]);
+      d3d11->sw_lend.staging[i] = NULL;
+   }
+   d3d11->sw_lend.mapped_bits = 0;
+   d3d11->sw_lend.dims        = 0;
+   d3d11->sw_lend.last        = 0;
+}
+
+/* Lends the core a staging slot to render its frame into. Only where
+ * the frame can go into chain.history[0] by a copy on the GPU - the
+ * texture at the frame's size and in the frame's format - and only for
+ * a slot the GPU is done copying from: one still busy is passed over
+ * and none is ever waited for; the core then renders into its own
+ * buffer this once. Declined too when the slot's row pitch is not the
+ * frame's tight pitch, as cores tend to ignore fb->pitch. */
+static bool d3d11_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   d3d11_video_t   *d3d11 = (d3d11_video_t*)data;
+   d3d11_texture_t *hist;
+   unsigned bpp, dims, k;
+
+   if (     !d3d11 || !fb || !d3d11->context
+         || (d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE)
+         || (     d3d11->format != DXGI_FORMAT_B8G8R8X8_UNORM
+               && d3d11->format != DXGI_FORMAT_B5G6R5_UNORM))
+      return false;
+   hist = &d3d11->chain.history[0];
+   bpp  = d3d11_format_bytes(d3d11->format);
+   dims = VIDEO_SCALE_PACK(fb->width, fb->height);
+   if (     !hist->handle
+         || hist->desc.Format != d3d11->format
+         || hist->desc.Width  != fb->width
+         || hist->desc.Height != fb->height)
+      return false;
+
+   if (     d3d11->sw_lend.dims   != dims
+         || d3d11->sw_lend.format != d3d11->format)
+   {
+      D3D11_TEXTURE2D_DESC desc = hist->desc;
+      d3d11_sw_lend_release(d3d11);
+      desc.MipLevels          = 1;
+      desc.ArraySize          = 1;
+      desc.SampleDesc.Count   = 1;
+      desc.SampleDesc.Quality = 0;
+      desc.BindFlags          = 0;
+      desc.MiscFlags          = 0;
+      desc.Usage              = D3D11_USAGE_STAGING;
+      /* Read as well: a core may read back what it rendered */
+      desc.CPUAccessFlags     = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+      for (k = 0; k < D3D11_SW_LEND_SLOTS; k++)
+      {
+         d3d11->device->lpVtbl->CreateTexture2D(d3d11->device, &desc,
+               NULL, &d3d11->sw_lend.staging[k]);
+         if (!d3d11->sw_lend.staging[k])
+         {
+            d3d11_sw_lend_release(d3d11);
+            return false;
+         }
+      }
+      d3d11->sw_lend.dims   = dims;
+      d3d11->sw_lend.format = d3d11->format;
+   }
+
+   for (k = 1; k < D3D11_SW_LEND_SLOTS; k++)
+   {
+      unsigned slot = (d3d11->sw_lend.last + k) % D3D11_SW_LEND_SLOTS;
+      unsigned bit  = 1u << slot;
+      if (!(d3d11->sw_lend.mapped_bits & bit))
+      {
+         if (FAILED(d3d11->context->lpVtbl->Map(d3d11->context,
+                     (D3D11Resource)d3d11->sw_lend.staging[slot], 0,
+                     D3D11_MAP_READ_WRITE, D3D11_MAP_FLAG_DO_NOT_WAIT,
+                     &d3d11->sw_lend.mapped[slot])))
+            continue;
+         d3d11->sw_lend.mapped_bits |= bit;
+      }
+      if (d3d11->sw_lend.mapped[slot].RowPitch != fb->width * bpp)
+         return false;
+      fb->data         = d3d11->sw_lend.mapped[slot].pData;
+      fb->pitch        = d3d11->sw_lend.mapped[slot].RowPitch;
+      fb->format       = (d3d11->format == DXGI_FORMAT_B8G8R8X8_UNORM)
+         ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+      fb->memory_flags = RETRO_MEMORY_TYPE_CACHED;
+      return true;
+   }
+   return false;
+}
+
+/* The lent slot @frame was pushed from, or -1 for a frame from
+ * anywhere else; the slot is remembered as the one the cached frame
+ * may now point into. */
+static int d3d11_sw_lend_find(d3d11_video_t *d3d11, const void *frame,
+      unsigned width, unsigned height, unsigned pitch)
+{
+   unsigned k;
+   if (     !d3d11->sw_lend.mapped_bits
+         || d3d11->sw_lend.dims != VIDEO_SCALE_PACK(width, height))
+      return -1;
+   for (k = 0; k < D3D11_SW_LEND_SLOTS; k++)
+      if (     (d3d11->sw_lend.mapped_bits & (1u << k))
+            && d3d11->sw_lend.mapped[k].pData    == frame
+            && d3d11->sw_lend.mapped[k].RowPitch == pitch)
+      {
+         d3d11->sw_lend.last = k;
+         return (int)k;
+      }
+   return -1;
+}
+
+/* A frame pushed from lent slot @slot into chain.history[0], copied
+ * there on the GPU. Unmapped for the copy, so the cached frame, which
+ * points into the slot, is retired: a redraw draws history[0] as it
+ * stands. False when history[0] no longer takes it. */
+static bool d3d11_sw_lend_push(d3d11_video_t *d3d11,
+      D3D11DeviceContext ctx, int slot, unsigned width, unsigned height)
+{
+   D3D11_BOX box;
+   d3d11_texture_t *hist = &d3d11->chain.history[0];
+   if (     slot < 0
+         || !hist->handle
+         || hist->desc.Format != d3d11->sw_lend.format
+         || hist->desc.Width  != width
+         || hist->desc.Height != height)
+      return false;
+   box.left   = 0;
+   box.top    = 0;
+   box.front  = 0;
+   box.right  = width;
+   box.bottom = height;
+   box.back   = 1;
+   ctx->lpVtbl->Unmap(ctx,
+         (D3D11Resource)d3d11->sw_lend.staging[slot], 0);
+   d3d11->sw_lend.mapped_bits &= ~(1u << slot);
+   video_driver_cached_frame_retire();
+   ctx->lpVtbl->CopySubresourceRegion(ctx, (D3D11Resource)hist->handle,
+         0, 0, 0, 0, (D3D11Resource)d3d11->sw_lend.staging[slot], 0, &box);
+   return true;
+}
+
 /* Whether a preset's passes may read the frame where it is, through
  * hw_direct.view, as Original and as the first pass's Source: when it
  * keeps no history, which is copied out of chain.history[0], and the
@@ -6961,6 +7139,8 @@ static bool d3d11_gfx_frame_body(
    /* A software frame a preset may draw as views: written once the
     * views are decided, straight into each view's texture if they are */
    bool sw_pending                = false;
+   /* The lent slot it was rendered into, or -1 */
+   int sw_lend_slot               = -1;
    unsigned black_frame_insertion = video_info->black_frame_insertion;
    int bfi_light_frames;
    unsigned n;
@@ -7354,7 +7534,11 @@ static bool d3d11_gfx_frame_body(
       }
       else if (d3d11->chain.history[0].staging
             && frame != RETRO_HW_FRAME_BUFFER_VALID)
-         sw_pending = true;
+      {
+         sw_pending   = true;
+         sw_lend_slot = d3d11_sw_lend_find(d3d11, frame,
+               width, height, pitch);
+      }
    }
 
    views = d3d11_views_setup(d3d11, video_info, frame, &views_blend,
@@ -7376,7 +7560,11 @@ static bool d3d11_gfx_frame_body(
    else if (sw_pending)
    {
       sw_pending = false;
-      if (     (   !(d3d11->chain.shader_preset && video_info->shader_active)
+      /* Rendered into a lent slot: copied on the GPU, drawn from
+       * history[0] like any staged frame */
+      if (d3d11_sw_lend_push(d3d11, context, sw_lend_slot, width, height))
+         ;
+      else if ((   !(d3d11->chain.shader_preset && video_info->shader_active)
                 || d3d11_preset_reads_in_place(d3d11, NULL,
                    width, height))
             && d3d11_sw_direct_upload(d3d11, context,
@@ -9964,7 +10152,7 @@ static const video_poke_interface_t d3d11_poke_interface = {
    win32_show_cursor,
    NULL, /* grab_mouse_toggle */
    d3d11_gfx_get_current_shader,
-   NULL, /* get_current_software_framebuffer */
+   d3d11_get_current_software_framebuffer,
    d3d11_get_hw_render_interface,
 #ifdef HAVE_DXGI_HDR
    d3d11_set_hdr_menu_nits,
