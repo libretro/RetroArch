@@ -6147,7 +6147,7 @@ bool command_event(enum event_command cmd, void *data)
              * grabs; leaving it lets go of that and of nothing else */
             input_pointer_capture_set_fullscreen(video_fullscreen,
                   exclusive_fullscreen);
-            input_pointer_capture_apply(false);
+            input_pointer_capture_apply(true);
 #ifdef HAVE_OVERLAY
             input_overlay_check_mouse_cursor();
 #endif
