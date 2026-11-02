@@ -1979,6 +1979,14 @@ public class RetroActivityCommon extends NativeActivity
     });
   }
 
+  @TargetApi(29)
+  @Override
+  public void onTopResumedActivityChanged(boolean top) {
+    super.onTopResumedActivityChanged(top);
+    if (secondDisplay != null)
+      secondDisplay.onTopResumedChanged(top);
+  }
+
   /* On a one-focus system the IME refuses the field while another
    * window holds the focus; it serves the field again only after this
    * returns */

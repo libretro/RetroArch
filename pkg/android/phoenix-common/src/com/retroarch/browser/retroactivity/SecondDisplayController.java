@@ -29,6 +29,7 @@ import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.SparseBooleanArray;
@@ -65,7 +66,12 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static final int FLAG_INTERNAL = 256;
 
   private static final String TAG = "RetroArch";
+  private static final int REFOCUS_FIRST_MS   = 250;
+  private static final int REFOCUS_RETRY_MS   = 250;
   private static final int REFOCUS_TIMEOUT_MS = 1000;
+  private static final int TOP_PAIR_MS        = 1000;
+  private static final int TOP_GAIN_WAIT_MS   = 250;
+  private static final int QUIET_MARK_MS      = 1000;
   /* Display.TYPE_INTERNAL and TYPE_EXTERNAL, hidden */
   private static final int DISPLAY_TYPE_INTERNAL = 1;
   private static final int DISPLAY_TYPE_EXTERNAL = 2;
@@ -100,10 +106,29 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   /* The display a move went to, -1 for none, until the Activity has
    * held the focus since */
   private int movedId = -1;
+  /* RetroArch's display went away during this mark, so Android may
+   * have put it on the default display rather than movedId */
+  private boolean fellBack;
   /* Moves started, so a gain's check never ends a later move */
   private int moves;
   /* refocusAfterMove() has made the window unfocusable */
   private boolean refocusing;
+  /* The last focus event was a loss no hold asked for. Only then may a
+   * publication arm the hold: armed before a gain, it holds that gain
+   * back */
+  private boolean lost;
+  /* The first hold ran out and its flag is clear: a loss now is its
+   * late answer */
+  private boolean retrying;
+  /* refocusAfterMove() or topGainWait waits for a gain already on its
+   * way */
+  private boolean armPending;
+  /* Focus events, so a wait from before the latest one never arms */
+  private int arms;
+  /* The Activity stopped being the top resumed one while focused */
+  private boolean topLostFocused;
+  /* uptimeMillis() of the last top-resumed loss, -1 since onStop */
+  private long topLostAt = -1;
 
   private final Choreographer.FrameCallback publishFrame =
       new Choreographer.FrameCallback() {
@@ -116,11 +141,14 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
           /* A Presentation coming or going may report a change that
            * is none; failed displays must stay refused through it */
           if (list.sameAs(published))
+          {
+            if (lost)
+              refocusAfterMove();
             return;
+          }
           if (!list.sameAsBut(published, FLAG_OWN))
             failedIds.clear();
-          publish(list);
-          refocusAfterMove();
+          publishMarked(list);
         }
       };
 
@@ -128,7 +156,34 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   private final Runnable refocusTimeout = new Runnable() {
     @Override public void run() {
       endRefocus();
-      movedId = -1;
+      movedId  = -1;
+      fellBack = false;
+    }
+  };
+
+  /* Android may be waiting to focus the window rather than taking it */
+  private final Runnable refocusFirstTimeout = new Runnable() {
+    @Override public void run() {
+      endRefocus();
+      retrying = true;
+      handler.postDelayed(refocusRetry, REFOCUS_RETRY_MS);
+    }
+  };
+
+  private final Runnable refocusRetry = new Runnable() {
+    @Override public void run() {
+      retrying = false;
+      if (lost && mayRefocus())
+        refocus(REFOCUS_TIMEOUT_MS, refocusTimeout);
+    }
+  };
+
+  /* A top regain read unfocused whose focus gain is late */
+  private final Runnable topGainWait = new Runnable() {
+    @Override public void run() {
+      armPending = false;
+      if (lost && mayRefocus())
+        refocus(REFOCUS_FIRST_MS, refocusFirstTimeout);
     }
   };
 
@@ -171,6 +226,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   void onStart()
   {
     started = true;
+    /* A loss heard after onStop went with the stop */
+    lost    = false;
     failedIds.clear();
     displayManager.registerDisplayListener(this, null);
     publish(listDisplays());
@@ -180,10 +237,14 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
 
   void onStop()
   {
-    started = false;
+    started        = false;
+    lost           = false;
+    topLostFocused = false;
+    topLostAt      = -1;
     displayManager.unregisterDisplayListener(this);
-    if (refocusing)
+    if (refocusing || retrying)
       endRefocus();
+    endTopGainWait();
     dismiss();
   }
 
@@ -239,9 +300,11 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       return;
     }
     /* Only a move that started replaces an earlier one's hold */
-    if (refocusing)
+    if (refocusing || retrying)
       endRefocus();
-    movedId = displayId;
+    endTopGainWait();
+    movedId  = displayId;
+    fellBack = false;
     moves++;
   }
 
@@ -266,10 +329,17 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     final int move     = moves;
     /* Android answers the flag with a loss, the focus it took, which
      * clearing the flag gives back; a gain queued before it is no
-     * answer */
-    final boolean held = refocusing && !focused;
-    if (held)
+     * answer. Once the first hold has run out, either one ends it */
+    final boolean held = (refocusing || retrying) && !focused;
+    arms++;
+    armPending = false;
+    handler.removeCallbacks(topGainWait);
+    if (held || retrying)
       endRefocus();
+    lost = !focused && !held;
+    /* Its top regain would be a return, not a move */
+    if (lost)
+      topLostFocused = false;
     if (!focused)
     {
       if (!held)
@@ -280,6 +350,23 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       return;
     /* The old display's loss can still follow: the move ends only
      * once the gain has outlasted a traversal */
+    afterTraversals(new Runnable() {
+      @Override public void run() {
+        Display own = activity.getWindowManager().getDefaultDisplay();
+        /* On a removed display its loss is still to come */
+        if (started && move == moves && own != null && own.isValid()
+            && own.getDisplayId() == movedId
+            && activity.hasWindowFocus())
+        {
+          movedId  = -1;
+          fellBack = false;
+        }
+      }
+    });
+  }
+
+  private void afterTraversals(final Runnable r)
+  {
     Choreographer.getInstance().postFrameCallback(
         new Choreographer.FrameCallback() {
           private boolean traversed;
@@ -291,44 +378,137 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
               return;
             }
             /* Behind a focus message already read */
-            handler.post(new Runnable() {
-              @Override public void run() {
-                Display own = activity.getWindowManager().getDefaultDisplay();
-                if (started && move == moves && own != null
-                    && own.getDisplayId() == movedId
-                    && activity.hasWindowFocus())
-                  movedId = -1;
-              }
-            });
+            handler.post(r);
           }
         });
   }
 
-  /* A focused window moved to another display can hear the old
-   * display's focus loss after the new display's gain: unfocused
-   * while it is the focused window, RetroArch would pause for good.
+  /* A focused window moved to another display, by RetroArch or by its
+   * display's removal, can hear the old display's focus loss after the
+   * new display's gain: unfocused while it is the focused window,
+   * RetroArch would pause for good.
    * Unfocusable until Android has taken the focus, the window is then
-   * sent the gain again; a loaded system can miss a shorter toggle. */
+   * sent the gain again. The first hold is short, as Android may be
+   * waiting to focus the window instead; a loaded system can miss a
+   * short toggle, so a longer one follows while still unfocused. */
   private void refocusAfterMove()
   {
-    Window window = activity.getWindow();
-    Display own   = activity.getWindowManager().getDefaultDisplay();
-    if (movedId < 0 || refocusing || !started || window == null
-        || own == null || own.getDisplayId() != movedId
-        || activity.hasWindowFocus())
+    final int arm;
+    if (armPending || !mayRefocus())
       return;
+    armPending = true;
+    arm        = arms;
+    /* Waits as the gain's check does: a gain on its way needs no hold */
+    afterTraversals(new Runnable() {
+      @Override public void run() {
+        if (arm != arms)
+          return;
+        armPending = false;
+        if (lost && mayRefocus())
+          refocus(REFOCUS_FIRST_MS, refocusFirstTimeout);
+      }
+    });
+  }
+
+  private boolean mayRefocus()
+  {
+    int ownId = ownDisplayId();
+    return movedId >= 0 && !refocusing && !retrying && started
+        && activity.getWindow() != null
+        && (ownId == movedId
+            || (ownId == Display.DEFAULT_DISPLAY && fellBack))
+        && !activity.hasWindowFocus();
+  }
+
+  private void refocus(int ms, Runnable timeout)
+  {
     refocusing = true;
-    window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
-    handler.postDelayed(refocusTimeout, REFOCUS_TIMEOUT_MS);
+    activity.getWindow().addFlags(
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+    handler.postDelayed(timeout, ms);
   }
 
   private void endRefocus()
   {
     Window window = activity.getWindow();
-    refocusing    = false;
-    handler.removeCallbacks(refocusTimeout);
-    if (window != null)
+    if (refocusing && window != null)
       window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+    refocusing = false;
+    retrying   = false;
+    handler.removeCallbacks(refocusFirstTimeout);
+    handler.removeCallbacks(refocusRetry);
+    handler.removeCallbacks(refocusTimeout);
+  }
+
+  /** The Activity became, or stopped being, the top resumed one; from
+   * API 29. */
+  void onTopResumedChanged(boolean top)
+  {
+    int own         = ownDisplayId();
+    boolean focused = activity.hasWindowFocus();
+    long now        = SystemClock.uptimeMillis();
+    /* Android moved the focused task, maybe there and back with no
+     * configuration change: the old display's loss can come last, even
+     * before the regain when both moves give one pair of top-resumed
+     * calls */
+    if (top && started && !refocusing && own >= 0 && own != movedId
+        && published.ids.length > 1
+        && (focused ? topLostFocused
+            : lost && topLostAt >= 0 && now - topLostAt <= TOP_PAIR_MS))
+    {
+      movedId = own;
+      moves++;
+      if (focused)
+        endMarkIfQuiet();
+      else
+      {
+        armPending = true;
+        handler.postDelayed(topGainWait, TOP_GAIN_WAIT_MS);
+      }
+    }
+    topLostFocused = !top && focused;
+    if (!top)
+      topLostAt = now;
+  }
+
+  private void endTopGainWait()
+  {
+    handler.removeCallbacks(topGainWait);
+    armPending = false;
+  }
+
+  /* A mark set while focused gets no gain to end it, and the move's
+   * focus events can still follow: it ends once none has come */
+  private void endMarkIfQuiet()
+  {
+    final int move = moves;
+    final int arm  = arms;
+    handler.postDelayed(new Runnable() {
+      private boolean waited;
+      @Override public void run() {
+        if (move != moves || arm != arms || !activity.hasWindowFocus())
+          return;
+        /* After a stall, a focus event can be queued behind this */
+        if (!waited)
+        {
+          waited = true;
+          afterTraversals(this);
+          return;
+        }
+        movedId  = -1;
+        fellBack = false;
+      }
+    }, QUIET_MARK_MS);
+  }
+
+  /* The Activity's display, -1 for none; a removed display's Activity
+   * is on the default display */
+  private int ownDisplayId()
+  {
+    Display own = activity.getWindowManager().getDefaultDisplay();
+    if (own == null)
+      return -1;
+    return own.isValid() ? own.getDisplayId() : Display.DEFAULT_DISPLAY;
   }
 
   private void moveFailed(int displayId, int move, RuntimeException e)
@@ -446,6 +626,33 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     return d;
   }
 
+  /* Android moved RetroArch off a removed display, or where it did not
+   * ask; a move under way keeps its target */
+  private void publishMarked(DisplayList list)
+  {
+    int own = published.ownId();
+    int to  = -1;
+    if (!list.has(own))
+      fellBack = true;
+    if (movedId >= 0 ? !list.has(movedId) : !list.has(own))
+      to = Display.DEFAULT_DISPLAY;
+    else if (list.has(own) && list.ownId() != own && list.ownId() != movedId)
+      to = list.ownId();
+    if (to >= 0)
+    {
+      if (refocusing || retrying)
+        endRefocus();
+      endTopGainWait();
+      movedId = to;
+      moves++;
+      if (activity.hasWindowFocus())
+        endMarkIfQuiet();
+    }
+    publish(list);
+    if (lost)
+      refocusAfterMove();
+  }
+
   private void publish(DisplayList list)
   {
     int[] flags = list.flags.clone();
@@ -542,7 +749,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   {
     Log.w(TAG, "[SecondDisplay] Cannot show on display " + displayId, e);
     failedIds.put(displayId, true);
-    publish(listDisplays());
+    publishMarked(listDisplays());
   }
 
   private void dismiss()
@@ -583,6 +790,23 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       heights     = new int[count];
       names       = new String[count];
       models      = new String[count];
+    }
+
+    /* The display flagged FLAG_OWN, the default display if none */
+    int ownId()
+    {
+      for (int i = 0; i < ids.length; i++)
+        if ((flags[i] & FLAG_OWN) != 0)
+          return ids[i];
+      return Display.DEFAULT_DISPLAY;
+    }
+
+    boolean has(int id)
+    {
+      for (int i = 0; i < ids.length; i++)
+        if (ids[i] == id)
+          return true;
+      return false;
     }
 
     boolean sameAs(DisplayList o)
