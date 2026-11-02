@@ -754,7 +754,7 @@ static void task_database_scan_console_output(FILE *stream,
       fprintf(stream, "%s\"%s / %s\"\n", string, db_name, label);
 }
 
-/* Whether --scan's per-file lines are printed outside the database
+/* Whether --scan's numbered lines are printed outside the database
  * lookup, which prints its own. */
 static bool manual_scan_cli_lines(const manual_scan_handle_t *manual_scan)
 {
@@ -766,11 +766,13 @@ static bool manual_scan_cli_lines(const manual_scan_handle_t *manual_scan)
    return manual_scan->task_config->cli_scan_output;
 }
 
+/* Every scan counts a file unmatched here, so each "??" is one the
+ * totals count. */
 static void manual_scan_unmatched(manual_scan_handle_t *manual_scan,
       const char *path)
 {
    manual_scan->result.unmatched++;
-   if (manual_scan_cli_lines(manual_scan))
+   if (manual_scan->task_config->cli_scan_output)
       task_database_scan_console_output(stdout, path, NULL,
             SCAN_CONSOLE_UNMATCHED);
 }
@@ -2375,11 +2377,6 @@ static enum scan_verdict database_info_list_iterate_end_no_match(
       bool path_contains_compressed_file)
 {
    bool archive_added = false;
-   /* Reached end of database list,
-    * CRC match probably didn't succeed. */
-   if (_db->task_config->cli_scan_output)
-      task_database_scan_console_output(stdout, path, NULL,
-            SCAN_CONSOLE_UNMATCHED);
 
    /* With its directory read, an archive's held hits were its
     * expansion.  It still expands where a member stores no CRC, and
@@ -3588,6 +3585,9 @@ static int task_database_iterate_playlist_lutro(
    if ((_db->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT)
        && *_db->task_config->database_name
        && memcmp(_db->task_config->database_name, "Lutro",  6) != 0 )
+      return SCAN_VERDICT_NO_DB_MATCH;
+   /* Or a group scan without a Lutro playlist. */
+   if (_db->group && !manual_scan_group_find(_db, "Lutro"))
       return SCAN_VERDICT_NO_DB_MATCH;
 
    scan_results_add(&_db->scan_results,
@@ -5491,7 +5491,7 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                   {
                      /* An m3u is counted in the m3u pass. */
                      if (!rm3u_is_m3u_filestream(content_path))
-                        manual_scan->result.unmatched++;
+                        manual_scan_unmatched(manual_scan, content_path);
                      manual_scan->status = DATABASE_SCAN_ITERATE_NEXT;
                   }
                   break;
