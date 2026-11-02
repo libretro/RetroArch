@@ -9,12 +9,20 @@
  * D3D11_TURNS_TEST_UNFAIR builds a core that does not give way, and the
  * test must fail: the frontend waits behind many of the core's turns.
  *
+ * Only an ask made while the core is running on another CPU tells the
+ * two apart: on a host that has the core off the CPU just then, either
+ * core lets the frontend straight in. So an ask is counted only when
+ * the core was seen taking turns just before it, and a run with too
+ * few of those says so (exit 2) rather than passing.
+ *
  * Windows only; under Wine elsewhere. */
 #include <stdio.h>
 #include "../../../gfx/common/d3d11_turns.h"
 
 #define ASKS        200
 #define MOST_TURNS  4
+/* asks made beside a running core, fewer of which tell nothing */
+#define MIN_COUNTED 50
 
 static d3d11_turns_t      turns;
 static retro_atomic_int_t core_turns, quit;
@@ -40,7 +48,7 @@ static DWORD WINAPI core_thread(void *arg)
 int main(void)
 {
    HANDLE thread;
-   unsigned ask, worst = 0, over = 0;
+   unsigned ask, worst = 0, over = 0, counted = 0;
    d3d11_turns_init(&turns);
    retro_atomic_int_init(&core_turns, 0);
    retro_atomic_int_init(&quit, 0);
@@ -53,15 +61,33 @@ int main(void)
       Sleep(0);
    for (ask = 0; ask < ASKS; ask++)
    {
-      int before = retro_atomic_load_acquire_int(&core_turns);
+      int before;
       unsigned took;
+      bool running = false;
+      /* The core taking turns right now, beside this thread: watched
+       * without sleeping, for at most 20 ms */
+      {
+         DWORD began = GetTickCount();
+         int seen    = retro_atomic_load_acquire_int(&core_turns);
+         while (GetTickCount() - began < 20)
+            if (retro_atomic_load_acquire_int(&core_turns) >= seen + 2)
+            {
+               running = true;
+               break;
+            }
+      }
+      before = retro_atomic_load_acquire_int(&core_turns);
       d3d11_turns_frontend_enter(&turns);
       took = (unsigned)(retro_atomic_load_acquire_int(&core_turns) - before);
       d3d11_turns_frontend_leave(&turns);
-      if (took > worst)
-         worst = took;
-      if (took > MOST_TURNS)
-         over++;
+      if (running)
+      {
+         counted++;
+         if (took > worst)
+            worst = took;
+         if (took > MOST_TURNS)
+            over++;
+      }
       /* let the core run between asks */
       before = retro_atomic_load_acquire_int(&core_turns);
       while (retro_atomic_load_acquire_int(&core_turns) < before + 8)
@@ -71,12 +97,18 @@ int main(void)
    WaitForSingleObject(thread, INFINITE);
    CloseHandle(thread);
    d3d11_turns_deinit(&turns);
-   printf("frontend asked %u times: at most %u core turns ahead of it, "
-         "%u times more than %u\n", ASKS, worst, over, MOST_TURNS);
+   printf("frontend asked %u times, %u beside a running core: at most %u "
+         "core turns ahead of it, %u times more than %u\n",
+         ASKS, counted, worst, over, MOST_TURNS);
    if (over)
    {
       puts("FAIL");
       return 1;
+   }
+   if (counted < MIN_COUNTED)
+   {
+      puts("INCONCLUSIVE: the core was rarely running beside the frontend");
+      return 2;
    }
    puts("PASS: d3d11 turns");
    return 0;

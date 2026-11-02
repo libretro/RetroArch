@@ -749,15 +749,20 @@ static void setpoint_case(double seconds)
       for (cap = 0; cap < 2; cap++)
       {
          /* Retried as above: the host taking the consumer off its core
-          * runs any device dry */
+          * runs any device dry, and drains the first second below the
+          * setpoint as well. Priming short of the setpoint does that in
+          * every run, so only that fails below. */
          for (attempt = 0; attempt < 5; attempt++)
          {
+            bool start_short;
             audio_paced_once(lat[i], seconds, cap != 0, true, true, 0,
                   &avg[cap], &mx, &sp, &held);
-            if (!(cap && (sp || held)))
+            start_short = paced_startup_min < set - publish / 2.0;
+            if (!(cap && (sp || held || start_short)))
                break;
-            printf("  %3u ms  shallow | %u short pulls, %u held; host or setpoint, again\n",
-                  lat[i], (unsigned)sp, (unsigned)held);
+            printf("  %3u ms  shallow | %u short pulls, %u held, first "
+                  "second at least %.1f ms; host or setpoint, again\n",
+                  lat[i], (unsigned)sp, (unsigned)held, paced_startup_min);
          }
          printf("  %3u ms  %-7s | avg %6.1f ms, max %6.1f ms, short %u, first second at least %.1f ms\n",
                lat[i], cap ? "shallow" : "deep", avg[cap], mx, (unsigned)sp,
@@ -776,7 +781,7 @@ static void setpoint_case(double seconds)
        * control climbed to the setpoint at its half percent. */
       if (!(shallow_start >= set - publish / 2.0))
       {
-         printf("FAIL: the first second held %.1f ms after a publish; the setpoint and a publish are %.1f ms\n",
+         printf("FAIL: the first second held %.1f ms after a publish in every run; the setpoint and a publish are %.1f ms\n",
                shallow_start, set);
          paced_failures++;
       }

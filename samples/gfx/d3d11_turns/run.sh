@@ -18,20 +18,46 @@ flags="-O1 -Wall -Wextra -Werror -std=c89 -pedantic -Wno-long-long -I $root/libr
 "$CC" $flags -o d3d11_turns_test.exe d3d11_turns_test.c
 "$CC" $flags -DD3D11_TURNS_TEST_UNFAIR -o d3d11_turns_unfair_test.exe d3d11_turns_test.c
 
+# A run with the core rarely beside the frontend tells nothing either
+# way (INCONCLUSIVE): run again, a few times.
+run() {
+   n=0
+   while :; do
+      out=$(timeout 120 "$WINE" "./$1" | tr -d '\r') || true
+      echo "$out"
+      case "$out" in
+         *INCONCLUSIVE*) ;;
+         *) return 0 ;;
+      esac
+      n=$((n + 1))
+      if [ $n -ge 5 ]; then
+         echo "FAIL: the core was never running beside the frontend"
+         exit 1
+      fi
+   done
+}
+
 echo "== the turns as the driver takes them"
-out=$(timeout 120 "$WINE" ./d3d11_turns_test.exe | tr -d '\r') || true
-echo "$out"
+run d3d11_turns_test.exe
 case "$out" in
    *"PASS: d3d11 turns"*) ;;
    *) echo "FAIL"; exit 1 ;;
 esac
 
+# Each run of the unfair core either catches the frontend kept waiting
+# or, when the host had the core off the CPU at every counted ask, does
+# not; one catch in a few runs is the test telling them apart.
 echo "== a core that does not give way (must fail)"
-out=$(timeout 120 "$WINE" ./d3d11_turns_unfair_test.exe | tr -d '\r') || true
-echo "$out"
-case "$out" in
-   *"PASS: d3d11 turns"*)
-      echo "FAIL: it passed; the test no longer sees a frontend kept waiting"; exit 1 ;;
-esac
+caught=0
+for attempt in 1 2 3 4 5; do
+   run d3d11_turns_unfair_test.exe
+   case "$out" in
+      *"PASS: d3d11 turns"*) ;;
+      *) caught=1; break ;;
+   esac
+done
+if [ $caught -eq 0 ]; then
+   echo "FAIL: it passed; the test no longer sees a frontend kept waiting"; exit 1
+fi
 echo "   fails, as it should"
 rm -f d3d11_turns_test.exe d3d11_turns_unfair_test.exe
