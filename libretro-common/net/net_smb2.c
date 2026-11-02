@@ -2275,6 +2275,7 @@ const struct rsmb_dirent *rsmb_readdir(struct rsmb_ctx *c, struct rsmb_dir *d)
    for (;;)
    {
       const uint8_t *e;
+      size_t remaining, entry_len;
       uint32_t next, name_len;
 
       if (d->buf_off >= d->buf_len)
@@ -2285,11 +2286,15 @@ const struct rsmb_dirent *rsmb_readdir(struct rsmb_ctx *c, struct rsmb_dir *d)
             return NULL;
       }
       e = d->buf + d->buf_off;
-      if (d->buf_len - d->buf_off < 64)
+      remaining = d->buf_len - d->buf_off;
+      if (remaining < 64)
          return NULL;
       next     = smb_get32(e);
       name_len = smb_get32(e + 60);
-      if (64 + name_len > d->buf_len - d->buf_off)
+      if ((size_t)name_len > remaining - 64)
+         return NULL;
+      entry_len = 64 + (size_t)name_len;
+      if (next && ((size_t)next < entry_len || (size_t)next > remaining))
          return NULL;
       d->ent.st.size   = smb_get64(e + 40);
       d->ent.st.mtime  = rsmb_filetime(smb_get64(e + 24));
