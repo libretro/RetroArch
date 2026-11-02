@@ -333,6 +333,18 @@ struct retro_task
    void *frontend_userdata;
 
    /**
+    * What the frontend last showed of the task, kept by whoever owns
+    * \c frontend_userdata so an unchanged task costs it nothing: the
+    * key it showed it under, task_get_text_gen() at the time, a
+    * generation of its own, and progress and flags packed into one
+    * word.  The task system only zeroes them.
+    */
+   uintptr_t frontend_shown_key;
+   unsigned frontend_shown_text_gen;
+   unsigned frontend_shown_epoch;
+   unsigned frontend_shown_state;
+
+   /**
     * @private Pointer to the next task in the queue.
     * Do not touch this; it is managed by the task system.
     */
@@ -351,6 +363,10 @@ struct retro_task
    void *title_shown;
    void *error_shown;
 #endif
+
+   /** @private Bumped after each publication of title_shown or
+    * error_shown; see task_get_text_gen(). */
+   retro_atomic_int_t text_gen;
 
    /**
     * Indicates the current progress of the task.
@@ -617,6 +633,15 @@ typedef struct task_progress_snapshot
  * flags and progress remain valid. */
 bool task_get_progress_snapshot(const retro_task_t *task,
       task_progress_snapshot_t *snapshot);
+
+/* A value that differs from the last one read whenever the task's
+ * title or error may have changed since, so a frontend can skip
+ * copying text it already has.  Read it before the snapshot: a change
+ * that lands in between is then seen again on the next read, at worst
+ * copying the same text twice.  Where the strings are not published
+ * through the setters (the runner without lock-free atomics) every
+ * read differs, and every snapshot copies as before. */
+unsigned task_get_text_gen(const retro_task_t *task);
 
 void task_set_flags(retro_task_t *task, uint8_t flags, bool set);
 

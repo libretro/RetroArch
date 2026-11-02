@@ -318,9 +318,24 @@ static void gfx_widgets_task_cmd_free(dispgfx_widget_t *p_dispwidget,
    free(cmd);
 }
 
+/* Bumped by the widgets' owner whenever it loses what a task last
+ * sent it - a task widget freed, an update dropped or discarded - so
+ * the main thread sends the task's title again (see
+ * gfx_widgets_msg_queue_push()). Static, not in dispgfx_widget_t: it
+ * must not return to a value a task recorded when the widgets are
+ * cleared for a reinit. */
+static retro_atomic_int_t gfx_widgets_task_text_epoch;
+
+static void gfx_widgets_task_text_lost(void)
+{
+   retro_atomic_fetch_add_int(&gfx_widgets_task_text_epoch, 1);
+}
+
 static void gfx_widgets_task_cmds_discard(dispgfx_widget_t *p_dispwidget)
 {
    gfx_widgets_task_cmd_t *cmd = gfx_widgets_task_cmds_take(p_dispwidget);
+   if (cmd)
+      gfx_widgets_task_text_lost();
    while (cmd)
    {
       gfx_widgets_task_cmd_t *next = TASK_CMD_NEXT(cmd);
@@ -336,6 +351,8 @@ static void gfx_widgets_task_cmds_discard(dispgfx_widget_t *p_dispwidget)
 static void gfx_widgets_task_pending_discard(dispgfx_widget_t *p_dispwidget)
 {
    unsigned i;
+   if (p_dispwidget->task_pending_size)
+      gfx_widgets_task_text_lost();
    for (i = 0; i < p_dispwidget->task_pending_size; i++)
    {
       disp_widget_msg_t *msg_widget = p_dispwidget->task_pending[i];
@@ -536,15 +553,21 @@ static void gfx_widgets_task_cmd_apply(dispgfx_widget_t *p_dispwidget,
        * its retirement, for a widget it may have had - spawns nothing,
        * and with no room to wait in the next update tries again */
       if (     !cmd->title
-            || (cmd->task_flags & RETRO_TASK_FLG_MUTE)
-            || p_dispwidget->task_pending_size
+            || (cmd->task_flags & RETRO_TASK_FLG_MUTE))
+         return;
+      /* The title is spent unused: the next update carries it again */
+      if (     p_dispwidget->task_pending_size
                >= ARRAY_SIZE(p_dispwidget->task_pending)
             || !(msg_widget = (disp_widget_msg_t*)calloc(1, sizeof(*msg_widget))))
+      {
+         gfx_widgets_task_text_lost();
          return;
+      }
 
       if (!(msg_widget->msg_new = strdup(*text)))
       {
          free(msg_widget);
+         gfx_widgets_task_text_lost();
          return;
       }
       msg_widget->msg              = *text;
@@ -740,10 +763,46 @@ void gfx_widgets_msg_queue_push(
    {
       task_progress_snapshot_t snapshot;
       gfx_widgets_task_cmd_t *cmd;
-      uintptr_t key = (uintptr_t)task->frontend_userdata;
+      uintptr_t key       = (uintptr_t)task->frontend_userdata;
+      /* Read before the snapshot: see task_get_text_gen() */
+      unsigned text_gen   = task_get_text_gen(task);
+      unsigned epoch      = (unsigned)retro_atomic_load_acquire_int(
+            &gfx_widgets_task_text_epoch);
+      /* The owner still has the text this key last carried: nothing
+       * of it was lost since, the task changed none of it, and the key
+       * is the one it went under, not a widget handed on to this task */
+      bool text_shown     = key
+            && task->frontend_shown_key      == key
+            && task->frontend_shown_text_gen == text_gen
+            && task->frontend_shown_epoch    == epoch;
+      bool text_copied    = false;
+      unsigned state;
 
-      /* Terminal flags are published even if copying a string fails. */
-      task_get_progress_snapshot(task, &snapshot);
+      if (text_shown)
+      {
+         /* Progress only, as most frames of a running task are: the
+          * strings are not copied, and an update that changes nothing
+          * is not sent. A finished task is always sent whole. */
+         snapshot.title    = NULL;
+         snapshot.error    = NULL;
+         snapshot.flags    = task_get_flags(task);
+         snapshot.progress = task_get_progress(task);
+         if (snapshot.flags & RETRO_TASK_FLG_FINISHED)
+            text_shown     = false;
+      }
+      /* Terminal flags are published even if copying a string fails;
+       * the text then counts as not sent */
+      if (!text_shown)
+         text_copied = task_get_progress_snapshot(task, &snapshot);
+
+      /* progress, flags, style and category: all a cmd carries besides
+       * the text, packed */
+      state = (unsigned)(uint8_t)snapshot.progress
+            | ((unsigned)snapshot.flags        <<  8)
+            | ((unsigned)(uint8_t)task->style  << 16)
+            | ((unsigned)(uint8_t)category     << 24);
+      if (text_shown && task->frontend_shown_state == state)
+         return;
 
       /* No widget to update and none to spawn; and progress, which is
        * sent again next frame, gives way when the owner is behind */
@@ -779,6 +838,15 @@ void gfx_widgets_msg_queue_push(
       cmd->style      = (uint8_t)task->style;
       cmd->progress   = snapshot.progress;
       gfx_widgets_task_cmd_push(p_dispwidget, cmd);
+
+      /* What the owner now has of the task */
+      task->frontend_shown_state = state;
+      if (!text_shown)
+      {
+         task->frontend_shown_key      = text_copied ? key : 0;
+         task->frontend_shown_text_gen = text_gen;
+         task->frontend_shown_epoch    = epoch;
+      }
    }
 }
 
@@ -854,6 +922,8 @@ static void gfx_widgets_msg_queue_free(
    {
       if (p_dispwidget->msg_queue_tasks_count > 0)
          p_dispwidget->msg_queue_tasks_count--;
+      if (msg->task_key)
+         gfx_widgets_task_text_lost();
    }
 
    /* Kill all animations */
@@ -2810,6 +2880,7 @@ static void gfx_widgets_detach_tasks(dispgfx_widget_t *p_dispwidget)
          msg->flags |= DISPWIDG_FLAG_EXPIRED;
 
       msg->task_key = 0;
+      gfx_widgets_task_text_lost();
    }
 }
 

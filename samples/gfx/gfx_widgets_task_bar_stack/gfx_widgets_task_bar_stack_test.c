@@ -219,6 +219,9 @@ static void test_title_churn(bool alternative)
    {
       snprintf(title, sizeof(title),
             (i & 1) ? "Downloading: item-%d.zip" : "Extracting item-%d.zip", i);
+      /* A title rewritten in place is published again, as a task
+       * changing its title does through the setters */
+      task_set_title(&task, title);
       task.progress = (int8_t)(i % 101);
       task_push(&task);
       pump(2);
@@ -228,13 +231,78 @@ static void test_title_churn(bool alternative)
    strlcpy_lit(title,
          "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e\xe3\x81\xae\xe3\x83\xa1"
          "\xe3\x83\x83\xe3\x82\xbb\xe3\x83\xbc\xe3\x82\xb8", sizeof(title));
+   task_set_title(&task, title);
    task_push(&task);
    pump(4);
 
    memset(title, 'a', sizeof(title) - 1);
    title[sizeof(title) - 1] = '\0';
+   task_set_title(&task, title);
    task_push(&task);
    pump(4);
+
+   task.flags |= RETRO_TASK_FLG_FINISHED;
+   task_push(&task);
+   pump(60);
+
+   gfx_widgets_deinit(false);
+}
+
+/* A running task pushes every frame. What it has not changed is not
+ * sent again: no copy of its title, no update at all when nothing
+ * moved; a progress step or a new title still reaches its widget. */
+static void test_unchanged_not_resent(void)
+{
+   char title[64];
+   char title2[64];
+   retro_task_t task;
+   dispgfx_widget_t *p;
+   disp_widget_msg_t *w;
+   int before, i;
+   bool stable;
+
+   if (!widgets_up())
+   {
+      fputs("FAIL: gfx_widgets_init() refused\n", stderr);
+      failures++;
+      return;
+   }
+   p = dispwidget_get_ptr();
+
+   strlcpy_lit(title,  "Scanning directory", sizeof(title));
+   strlcpy_lit(title2, "Scanning directory: disc 2", sizeof(title2));
+   harness_task_init(&task, 9, title, 10, false);
+
+   task_push(&task);
+   pump(2);
+   CHECK(task_widget(&task) != NULL, "unchanged: no widget for the task");
+
+   /* Without the lock-free runner every read differs and every push
+    * copies, as before */
+   stable = task_get_text_gen(&task) == task_get_text_gen(&task);
+   before = retro_atomic_load_acquire_int(&p->task_cmds_count);
+   for (i = 0; i < 8; i++)
+      task_push(&task);
+   if (stable)
+      CHECK(retro_atomic_load_acquire_int(&p->task_cmds_count) == before,
+            "unchanged: a task that changed nothing was sent again");
+
+   task_set_progress(&task, 11);
+   task_push(&task);
+   if (stable)
+      CHECK(retro_atomic_load_acquire_int(&p->task_cmds_count) == before + 1,
+            "unchanged: a progress step was not sent once");
+   pump(1);
+   w = task_widget(&task);
+   CHECK(w && w->task_progress == 11,
+         "unchanged: the widget did not take the progress step");
+
+   task_set_title(&task, title2);
+   task_push(&task);
+   pump(2);
+   w = task_widget(&task);
+   CHECK(w && string_is_equal(w->msg_new ? w->msg_new : w->msg, title2),
+         "unchanged: a new title did not reach the widget");
 
    task.flags |= RETRO_TASK_FLG_FINISHED;
    task_push(&task);
@@ -423,6 +491,7 @@ int main(void)
    test_deinit_with_live_tasks();
    test_suppressed_completion();
    test_delayed_handoff();
+   test_unchanged_not_resent();
 
    printf("pushes=%d frames=%d\n", pushes, iterations);
 

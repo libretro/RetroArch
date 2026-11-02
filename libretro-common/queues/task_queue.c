@@ -287,6 +287,13 @@ static int  task_ep_enter(void);
 static void task_ep_leave(int e);
 static void task_str_retire(char *s);
 #define TASK_SHOWN(t, f) ((const char*)retro_atomic_load_acquire_ptr(&(t)->f))
+
+/* After the store that published a new title or error: a reader that
+ * sees the new generation sees the new string. */
+static void task_text_published(retro_task_t *task)
+{
+   retro_atomic_fetch_add_int(&task->text_gen, 1);
+}
 #endif
 
 /* task->flags and task->progress are atomics and take no lock. Only
@@ -3970,6 +3977,7 @@ static bool task_queue_push_now(retro_task_t *task)
    /* for a title or error assigned to the field before the push */
    retro_atomic_store_release_ptr(&task->title_shown, task->title);
    retro_atomic_store_release_ptr(&task->error_shown, task->error);
+   task_text_published(task);
 #endif
    /* Ignore this task if a related one is already running.
     *
@@ -4331,6 +4339,20 @@ bool task_is_on_main_thread(void)
 #endif
 }
 
+unsigned task_get_text_gen(const retro_task_t *task)
+{
+#ifdef TASK_QUEUE_LF
+   return (unsigned)retro_atomic_load_acquire_int(
+         &((retro_task_t*)task)->text_gen);
+#else
+   /* The strings are read straight from the fields here, which a
+    * handler may assign without a setter: never report them unchanged */
+   static retro_atomic_int_t never_same;
+   (void)task;
+   return (unsigned)retro_atomic_fetch_add_int(&never_same, 1);
+#endif
+}
+
 bool task_get_progress_snapshot(const retro_task_t *task,
       task_progress_snapshot_t *snapshot)
 {
@@ -4396,6 +4418,7 @@ void task_set_error(retro_task_t *task, char *err)
 #ifdef TASK_QUEUE_LF
    task->error = err;
    retro_atomic_store_release_ptr(&task->error_shown, err);
+   task_text_published(task);
 #else
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
@@ -4417,6 +4440,7 @@ void task_set_title(retro_task_t *task, char *title)
 #ifdef TASK_QUEUE_LF
    task->title = title;
    retro_atomic_store_release_ptr(&task->title_shown, title);
+   task_text_published(task);
 #else
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
@@ -4447,6 +4471,7 @@ void task_free_title(retro_task_t *task)
    char *old   = task->title;
    task->title = NULL;
    retro_atomic_store_release_ptr(&task->title_shown, NULL);
+   task_text_published(task);
    task_str_retire(old);
 #else
 #ifdef HAVE_THREADS
@@ -4467,6 +4492,7 @@ void task_free_error(retro_task_t *task)
    char *old   = task->error;
    task->error = NULL;
    retro_atomic_store_release_ptr(&task->error_shown, NULL);
+   task_text_published(task);
    task_str_retire(old);
 #else
 #ifdef HAVE_THREADS
@@ -4588,7 +4614,12 @@ retro_task_t *task_init(void)
    task->ident             = (uint32_t)
       retro_atomic_fetch_add_int(&task_count, 1);
    task->frontend_userdata = NULL;
+   task->frontend_shown_key      = 0;
+   task->frontend_shown_text_gen = 0;
+   task->frontend_shown_epoch    = 0;
+   task->frontend_shown_state    = 0;
    task->next              = NULL;
+   retro_atomic_int_init(&task->text_gen, 0);
 #ifdef RETRO_ATOMIC_HAS_PTR
    retro_atomic_ptr_init(&task->live_next, NULL);
    retro_atomic_ptr_init(&task->title_shown, NULL);
