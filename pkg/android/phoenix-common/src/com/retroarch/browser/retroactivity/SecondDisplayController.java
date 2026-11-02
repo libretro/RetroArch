@@ -172,6 +172,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   {
     started = false;
     displayManager.unregisterDisplayListener(this);
+    if (refocusing)
+      endRefocus();
     dismiss();
   }
 
@@ -211,24 +213,26 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
    * never shows is its timeout's to find. */
   void moveTo(int displayId, int move)
   {
-    if (Build.VERSION.SDK_INT < 26
-        || displayManager.getDisplay(displayId) == null)
+    Display display = displayManager.getDisplay(displayId);
+    if (Build.VERSION.SDK_INT < 26 || display == null || !display.isValid())
     {
       moveFailed(displayId, move, null);
       return;
     }
-    if (refocusing)
-      endRefocus();
     try
     {
       startOn(displayId);
-      movedId = displayId;
-      moves++;
     }
     catch (RuntimeException e)
     {
       moveFailed(displayId, move, e);
+      return;
     }
+    /* Only a move that started replaces an earlier one's hold */
+    if (refocusing)
+      endRefocus();
+    movedId = displayId;
+    moves++;
   }
 
   /* The running Activity, as a copy of its own intent so onNewIntent()
@@ -250,9 +254,10 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   void onFocusChanged(boolean focused)
   {
     final int move     = moves;
-    final boolean held = refocusing;
-    /* Android has answered the flag; a loss is the focus it took, and
-     * clearing the flag gives it back */
+    /* Android answers the flag with a loss, the focus it took, which
+     * clearing the flag gives back; a gain queued before it is no
+     * answer */
+    final boolean held = refocusing && !focused;
     if (held)
       endRefocus();
     if (!focused)
