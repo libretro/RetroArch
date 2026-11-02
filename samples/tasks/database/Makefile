@@ -297,6 +297,10 @@ SCAN_TEST_WRAPS := -Wl,--wrap=libretrodb_open -Wl,--wrap=task_queue_park \
 ifeq ($(HAVE_THREADS), 1)
 SCAN_TEST_WRAPS += -Wl,--wrap=sthread_create
 endif
+# Counts the playlist sorts.
+SCAN_TEST_WRAPS += -Wl,--wrap=playlist_qsort
+# Counts a group's member opens.
+SCAN_TEST_WRAPS += -Wl,--wrap=playlist_init
 $(SCAN_TEST)$(EXE_EXT): $(SCAN_TEST_OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(SCAN_TEST_OBJECTS) $(LDFLAGS) $(SCAN_TEST_WRAPS) $(LIBS)
 
