@@ -450,6 +450,68 @@ static void lane_recovery(bool threaded, enum recovery_outcome outcome)
    lane_end();
 }
 
+/* A second core picked from the Core Downloader while one installs.
+ * It was turned away without a word - the pick did nothing. Held now,
+ * it installs once the first is through; the same core picked twice
+ * waits once. */
+static void lane_menu_picks_held(bool threaded)
+{
+   struct string_list *cores = NULL;
+   core_updater_list_t *list = NULL;
+   char name[3][64];
+   int i;
+
+   lane_begin(threaded, "cores picked during an install are held");
+   for (i = 0; i < 3; i++)
+      snprintf(name[i], sizeof(name[i]), "pfd%02d_libretro_android.so", i);
+
+   cores = play_feature_delivery_available_cores();
+   if (     !cores
+         || !(list = core_updater_list_init())
+         || !core_updater_list_parse_pfd_data(list, g_dir, g_dir, cores))
+   {
+      printf("  SKIP: could not create fixture\n");
+      string_list_free(cores);
+      core_updater_list_free(list);
+      lane_end();
+      return;
+   }
+   string_list_free(cores);
+
+   /* the first stays downloading until let go */
+   retro_atomic_store_release_int(&pfd_hold, 1);
+   CHECK(task_push_play_feature_delivery_core_install(list, name[0], true)
+         != NULL, "picks: the first install is pushed");
+   for (i = 0; i < 500 && !retro_atomic_load_acquire_int(&pfd_downloads); i++)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   CHECK(task_push_play_feature_delivery_core_install(list, name[1], true)
+         != NULL, "picks: a second core during it is taken, not refused");
+   CHECK(task_push_play_feature_delivery_core_install(list, name[1], true)
+         == NULL, "picks: the same core picked again waits once");
+   CHECK(task_push_play_feature_delivery_core_install(list, name[2], true)
+         != NULL, "picks: a third core is taken too");
+   for (i = 0; i < 50; i++)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   CHECK(retro_atomic_load_acquire_int(&pfd_downloads) == 1,
+         "picks: one install at a time");
+
+   retro_atomic_store_release_int(&pfd_hold, 0);
+   if (retro_atomic_load_acquire_int(&pfd_waiter))
+      task_queue_wake((uint32_t)retro_atomic_load_acquire_int(&pfd_waiter));
+   CHECK(pump_until_idle(5000), "picks: every install completes");
+   CHECK(retro_atomic_load_acquire_int(&pfd_downloads) == 3,
+         "picks: the held cores install once the first is through");
+
+   core_updater_list_free(list);
+   lane_end();
+}
+
 int main(void)
 {
    char cmd[128];
@@ -472,6 +534,7 @@ int main(void)
       lane_recovery(threaded != 0, INSTALL_FAILS);
       lane_recovery(threaded != 0, INSTALL_SUCCEEDS);
       lane_recovery(threaded != 0, ALREADY_INSTALLED);
+      lane_menu_picks_held(threaded != 0);
    }
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", g_dir);
