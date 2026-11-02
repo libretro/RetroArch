@@ -297,6 +297,13 @@ static bool task_core_backup_finder(retro_task_t *task, void *user_data)
        && (task->handler != task_core_restore_handler))
       return false;
 
+   /* A finished backup or restore has done its file work, though it
+    * stays in the queue until its callback has run: a second one of
+    * the same core pushed meanwhile was refused without a word. Passed
+    * over before its handle is read, which may already be gone. */
+   if (task_get_flags(task) & RETRO_TASK_FLG_FINISHED)
+      return false;
+
    backup_handle = (core_backup_handle_t*)task->state;
    if (!backup_handle)
       return false;
@@ -312,6 +319,29 @@ static bool task_core_backup_finder(retro_task_t *task, void *user_data)
       return false;
 
    return string_is_equal(core_filename_a, core_filename_b);
+}
+
+/* Concurrent backup/restore tasks for the same core are not allowed:
+ * true when one is running, and the user is told rather than the
+ * Backup or Restore entry doing nothing. */
+static bool task_core_backup_busy(const char *core_path)
+{
+   task_finder_data_t find_data;
+   find_data.func     = task_core_backup_finder;
+   find_data.userdata = (void*)core_path;
+
+   if (task_queue_find(&find_data))
+   {
+      char msg[128];
+      size_t _len = strlcpy(msg,
+            msg_hash_to_str(MSG_CORE_BACKUP_IN_PROGRESS), sizeof(msg));
+      strlcpy(msg + _len, path_basename(core_path), sizeof(msg) - _len);
+      RARCH_LOG("[Core Backup] %s\n", msg);
+      runloop_msg_queue_push(msg, strlen(msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      return true;
+   }
+   return false;
 }
 
 /***************/
@@ -843,7 +873,6 @@ static void *task_push_core_backup_internal(
       retro_task_callback_t cb, void *user_data)
 {
    size_t _len;
-   task_finder_data_t find_data;
    const char *core_name               = NULL;
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
@@ -856,10 +885,7 @@ static void *task_push_core_backup_internal(
 
    /* Concurrent backup/restore tasks for the same core
     * are not allowed */
-   find_data.func     = task_core_backup_finder;
-   find_data.userdata = (void*)core_path;
-
-   if (task_queue_find(&find_data))
+   if (task_core_backup_busy(core_path))
       goto error;
 
    /* Get core name */
@@ -1481,7 +1507,6 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
       bool *core_loaded)
 {
    size_t _len;
-   task_finder_data_t find_data;
    enum core_backup_type backup_type;
    core_info_t *core_info              = NULL;
    const char *core_name               = NULL;
@@ -1567,10 +1592,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
 
    /* Concurrent backup/restore tasks for the same core
     * are not allowed */
-   find_data.func     = task_core_backup_finder;
-   find_data.userdata = (void*)core_path;
-
-   if (task_queue_find(&find_data))
+   if (task_core_backup_busy(core_path))
       goto error;
 
    /* Configure handle */

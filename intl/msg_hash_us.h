@@ -34409,6 +34409,10 @@ MSG_HASH(
    "Core restoration disabled - core is locked: "
    )
 MSG_HASH(
+   MSG_CORE_BACKUP_IN_PROGRESS,
+   "A backup or restore of this core is already running: "
+   )
+MSG_HASH(
    MSG_CORE_INSTALLATION_DISABLED,
    "Core installation disabled - core is locked: "
    )

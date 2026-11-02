@@ -244,13 +244,18 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
    return false;
 }
 
+/* What was last put on screen */
+static int  g_osd_calls;
+static char g_osd_last[256];
 void runloop_msg_queue_push(const char *msg, size_t len,
       unsigned prio, unsigned duration, bool flush,
       char *title, enum message_queue_icon icon,
       enum message_queue_category category)
 {
-   (void)msg; (void)len; (void)prio; (void)duration; (void)flush;
+   (void)len; (void)prio; (void)duration; (void)flush;
    (void)title; (void)icon; (void)category;
+   g_osd_calls++;
+   strlcpy(g_osd_last, msg ? msg : "", sizeof(g_osd_last));
 }
 
 core_info_t *core_info_find_stub(void) { return NULL; }
@@ -1151,9 +1156,10 @@ static void test_restore_through_symlink(void)
  * finder reading freed memory for the whole stretch between the
  * worker finishing the task and the main thread retiring it.  The
  * lane opens that stretch deliberately - threaded queue, no
- * task_queue_check() - and pushes the duplicate into it; ASan is the
- * assertion for the read, and the push must be refused while the
- * first backup is still findable and accepted once it is retired. */
+ * task_queue_check() - and pushes a second backup into it; ASan is
+ * the assertion for the read.  A finished backup has done its work,
+ * and the second must be taken: it was refused without a word, so
+ * Backup pressed again just after one completed did nothing. */
 static bool finished_task_finder(retro_task_t *task, void *user_data)
 {
    (void)user_data;
@@ -1221,10 +1227,10 @@ static void test_finished_task_stays_findable(void)
       retro_sleep(1);
    CHECK(i < 10000, "backup task did not finish");
 
-   CHECK(!task_push_core_backup(g_core_path, "Test Core", 0,
+   CHECK(task_push_core_backup(g_core_path, "Test Core", 0,
             CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
-            NULL, NULL),
-         "duplicate backup accepted while the first is still findable");
+            NULL, NULL) != NULL,
+         "a backup refused because the finished one was not yet retired");
 
    CHECK(g_done_calls == 0, "completion callback ran before retirement");
 
@@ -1243,6 +1249,41 @@ static void test_finished_task_stays_findable(void)
 
    task_queue_deinit();
    task_queue_unset_threaded();
+}
+
+/* A backup of a core whose backup has not run yet: refused, as two at
+ * once are not allowed, and the user is told why instead of the entry
+ * doing nothing. */
+static void test_running_backup_refused_and_told(void)
+{
+   uint8_t *payload;
+   size_t core_size = 64 * 1024;
+
+   printf("  a backup of a core being backed up is refused, and said\n");
+   if (!(payload = make_payload(core_size)))
+      return;
+   if (!write_file_bytes(g_core_path, payload, core_size))
+   {
+      free(payload);
+      return;
+   }
+   free(payload);
+
+   g_clock_now  = 1000000;
+   g_clock_step = 0;
+   task_queue_init(false, NULL);
+   CHECK(task_push_core_backup(g_core_path, "Test Core", 0,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL) != NULL, "the first backup was not pushed");
+   g_osd_calls   = 0;
+   g_osd_last[0] = '\0';
+   CHECK(!task_push_core_backup(g_core_path, "Test Core", 0,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL), "a second backup of the same core was taken");
+   CHECK(g_osd_calls == 1 && *g_osd_last,
+         "the refused backup said nothing on screen");
+   task_queue_wait(NULL, NULL);
+   task_queue_deinit();
 }
 
 int main(int argc, char **argv)
@@ -1296,6 +1337,7 @@ int main(int argc, char **argv)
 
    printf("\n[task lifetime]\n");
    test_finished_task_stays_findable();
+   test_running_backup_refused_and_told();
 
    printf("\n%s (%d check%s, %d failure%s)\n",
          failures ? "FAILED" : "PASSED",

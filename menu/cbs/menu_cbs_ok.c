@@ -6340,6 +6340,7 @@ static int action_ok_sideload_core(const char *path,
 {
    const char *menu_path    = NULL;
    bool core_loaded         = false;
+   bool pushed;
    menu_handle_t *menu      = menu_state_get_ptr()->driver_data;
    settings_t *settings     = config_get_ptr();
    const char *dir_libretro = settings->paths.directory_libretro;
@@ -6356,16 +6357,19 @@ static int action_ok_sideload_core(const char *path,
       char backup_path[PATH_MAX_LENGTH];
       fill_pathname_join_special(
             backup_path, menu_path, path, sizeof(backup_path));
-      task_push_core_restore(backup_path, dir_libretro, &core_loaded);
+      pushed = task_push_core_restore(backup_path, dir_libretro, &core_loaded);
    }
    else
-      task_push_core_restore(path, dir_libretro, &core_loaded);
+      pushed = task_push_core_restore(path, dir_libretro, &core_loaded);
 
    /* Flush stack
     * > Since the 'sideload core' option is present
     *   in several locations, can't flush to a predefined
-    *   level - just go to the top */
-   menu_entries_flush_stack(NULL, 0);
+    *   level - just go to the top
+    * > Only for a sideload that started: one refused leaves the
+    *   user where they were, with the reason on screen */
+   if (pushed)
+      menu_entries_flush_stack(NULL, 0);
 
    return 0;
 }
