@@ -1113,13 +1113,23 @@ static bool video_shader_cache_path(enum video_shader_cache_kind kind,
    switch (kind)
    {
       case VIDEO_SHADER_CACHE_SPIRV:
+      case VIDEO_SHADER_CACHE_VULKAN_PIPELINE:
          {
             settings_t *settings = config_get_ptr();
             if (!settings || !*settings->paths.directory_cache)
                return false;
-            fill_pathname_join_special(dir,
-                  settings->paths.directory_cache, "spirv", dir_len);
-            suffix = ".spirv";
+            if (kind == VIDEO_SHADER_CACHE_SPIRV)
+            {
+               fill_pathname_join_special(dir,
+                     settings->paths.directory_cache, "spirv", dir_len);
+               suffix = ".spirv";
+            }
+            else
+            {
+               fill_pathname_join_special(dir,
+                     settings->paths.directory_cache, "vkpipeline", dir_len);
+               suffix = ".bin";
+            }
          }
          break;
       case VIDEO_SHADER_CACHE_ORBIS_BINARY:

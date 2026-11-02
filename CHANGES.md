@@ -1,4 +1,5 @@
 # Future
+- VULKAN: Keep the pipeline cache on disk between runs, one file per GPU, so stock and slang shader pipelines are not recompiled by the driver on every launch, preset load or driver reinit
 - LINUX: Game Mode implemented natively (I/O priority plus a power-profiles-daemon performance hold); Feral libgamemode is no longer loaded and deps/feralgamemode is removed
 - NETPLAY/REPLAY: Record all players' resolved inputs in BSV replays, committing each frame and its checkpoints only after rollback confirmation
 - 3DS: Remove bottom screen fade out animation

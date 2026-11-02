@@ -610,6 +610,9 @@ typedef struct vk
       VkDescriptorSetLayout set_layout;
       VkPipelineLayout layout;
       VkPipelineCache cache;
+      /* Bytes of cache data last read from or written to disk, so an
+       * unchanged cache is not written again on deinit */
+      size_t cache_disk_size;
    } pipelines;
 
    struct
@@ -7220,22 +7223,140 @@ static void vulkan_deinit_quad_ibo(vk_t *vk)
    vk->quad_ibo.num_quads  = 0;
 }
 
-static void vulkan_init_static_resources(vk_t *vk)
+/* The pipeline cache is kept on disk between runs, one file per GPU, so
+ * the stock and slang shader pipelines are not compiled from scratch by
+ * the driver on every launch, preset load and driver reinit. The file
+ * is keyed by vendor and device ID; a driver update changes the cache
+ * UUID, which the header check below rejects, and the next deinit
+ * writes a fresh one over it. */
+static void vulkan_pipeline_cache_key(const VkPhysicalDeviceProperties *p,
+      char *s, size_t len)
 {
-   int i;
-   uint32_t blank[4 * 4];
-   VkCommandPoolCreateInfo pool_info;
-   VkPipelineCacheCreateInfo cache;
+   snprintf(s, len, "vk%08x%08x",
+         (unsigned)p->vendorID, (unsigned)p->deviceID);
+}
 
-   /* Create the pipeline cache. */
+static uint32_t vulkan_pipeline_cache_read_le32(const uint8_t *d)
+{
+   return  (uint32_t)d[0]
+        | ((uint32_t)d[1] <<  8)
+        | ((uint32_t)d[2] << 16)
+        | ((uint32_t)d[3] << 24);
+}
+
+/* VkPipelineCacheHeaderVersionOne, which the spec stores little-endian
+ * whatever the host byte order. The driver should reject data it cannot
+ * use by itself, but some have crashed on foreign data instead, so a
+ * blob from another GPU or driver never reaches it. */
+static bool vulkan_pipeline_cache_header_ok(const uint8_t *d, int64_t len,
+      const VkPhysicalDeviceProperties *p)
+{
+   uint32_t header_size;
+   if (len < 16 + VK_UUID_SIZE)
+      return false;
+   header_size = vulkan_pipeline_cache_read_le32(d);
+   if (     header_size < 16 + VK_UUID_SIZE
+         || (int64_t)header_size > len)
+      return false;
+   if (     vulkan_pipeline_cache_read_le32(d + 4)
+         != VK_PIPELINE_CACHE_HEADER_VERSION_ONE)
+      return false;
+   if (     vulkan_pipeline_cache_read_le32(d + 8)  != p->vendorID
+         || vulkan_pipeline_cache_read_le32(d + 12) != p->deviceID)
+      return false;
+   return memcmp(d + 16, p->pipelineCacheUUID, VK_UUID_SIZE) == 0;
+}
+
+static void vulkan_pipeline_cache_create(vk_t *vk)
+{
+   VkPipelineCacheCreateInfo cache;
+   video_shader_cache_view_t view;
+   char key[24];
+   bool mapped                = false;
+   const VkPhysicalDeviceProperties *props =
+      &vk->context->gpu_properties;
+
    cache.sType                = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
    cache.pNext                = NULL;
    cache.flags                = 0;
    cache.initialDataSize      = 0;
    cache.pInitialData         = NULL;
+   vk->pipelines.cache        = VK_NULL_HANDLE;
+   vk->pipelines.cache_disk_size = 0;
 
-   vkCreatePipelineCache(vk->context->device,
-         &cache, NULL, &vk->pipelines.cache);
+   vulkan_pipeline_cache_key(props, key, sizeof(key));
+   /* Mapped where the platform maps files: the driver parses the blob
+    * where it lies, and copies what it keeps itself. */
+   if (video_shader_cache_map(VIDEO_SHADER_CACHE_VULKAN_PIPELINE,
+            key, &view))
+   {
+      mapped = true;
+      if (vulkan_pipeline_cache_header_ok(view.data, view.len, props))
+      {
+         cache.initialDataSize = (size_t)view.len;
+         cache.pInitialData    = view.data;
+      }
+   }
+
+   if (vkCreatePipelineCache(vk->context->device,
+            &cache, NULL, &vk->pipelines.cache) == VK_SUCCESS)
+      vk->pipelines.cache_disk_size = cache.initialDataSize;
+   else if (cache.initialDataSize)
+   {
+      /* Rejected anyway: start empty, the next deinit replaces it */
+      vk->pipelines.cache   = VK_NULL_HANDLE;
+      cache.initialDataSize = 0;
+      cache.pInitialData    = NULL;
+      if (vkCreatePipelineCache(vk->context->device,
+               &cache, NULL, &vk->pipelines.cache) != VK_SUCCESS)
+         vk->pipelines.cache = VK_NULL_HANDLE;
+   }
+   else
+      vk->pipelines.cache = VK_NULL_HANDLE;
+
+   if (mapped)
+      video_shader_cache_unmap(&view);
+}
+
+/* Cold path, on deinit only: nothing is written while content runs.
+ * Pipelines are only ever added to the cache, so data of the size last
+ * read or written is taken to be unchanged and left alone; that keeps a
+ * fullscreen toggle or driver reinit from rewriting the file. */
+static void vulkan_pipeline_cache_save(vk_t *vk)
+{
+   char key[24];
+   void  *data = NULL;
+   size_t size = 0;
+
+   if (vk->pipelines.cache == VK_NULL_HANDLE)
+      return;
+   if (     vkGetPipelineCacheData(vk->context->device,
+               vk->pipelines.cache, &size, NULL) != VK_SUCCESS
+         || !size
+         || size == vk->pipelines.cache_disk_size)
+      return;
+   if (!(data = malloc(size)))
+      return;
+   if (     vkGetPipelineCacheData(vk->context->device,
+               vk->pipelines.cache, &size, data) == VK_SUCCESS
+         && size)
+   {
+      vulkan_pipeline_cache_key(&vk->context->gpu_properties,
+            key, sizeof(key));
+      if (video_shader_cache_write(VIDEO_SHADER_CACHE_VULKAN_PIPELINE,
+               key, data, size))
+         vk->pipelines.cache_disk_size = size;
+   }
+   free(data);
+}
+
+static void vulkan_init_static_resources(vk_t *vk)
+{
+   int i;
+   uint32_t blank[4 * 4];
+   VkCommandPoolCreateInfo pool_info;
+
+   vulkan_pipeline_cache_create(vk);
 
    pool_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
    pool_info.pNext            = NULL;
@@ -7268,8 +7389,10 @@ static void vulkan_init_static_resources(vk_t *vk)
 static void vulkan_deinit_static_resources(vk_t *vk)
 {
    int i;
+   vulkan_pipeline_cache_save(vk);
    vkDestroyPipelineCache(vk->context->device,
          vk->pipelines.cache, NULL);
+   vk->pipelines.cache = VK_NULL_HANDLE;
    vulkan_destroy_texture(
          vk->context->device,
          &vk->display.blank_texture);
