@@ -2364,16 +2364,36 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
 /* Runs on the main thread before the state is released. A sync that
  * failed, or finished with failures or conflicts, reports its title -
  * the sync's own summary - as the error. */
+/* A sync asked for while one ran, without a pusher waiting on it -
+ * Sync Now, Resolve: Keep Local, Resolve: Keep Server, or a content
+ * load's or close's sync: run once that one is through, with the
+ * conflict resolution asked for last, a resolution winning over a
+ * plain sync. -1: none. Turned away, the menu's choices did nothing
+ * while an automatic sync ran. Frame thread only: every push and this
+ * task's callback run there. */
+static int tcs_followup_mode = -1;
+
+static bool task_push_cloud_sync_with_mode(int conflict_resolution,
+      retro_task_callback_t cb, void *cb_data);
+
 static void task_cloud_sync_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *error)
 {
    task_cloud_sync_state_t *sync_state = (task_cloud_sync_state_t *)task->state;
 
-   if (!sync_state || !sync_state->cb)
-      return;
-   if (!error && (sync_state->failures || sync_state->conflicts))
-      error = task->title ? task->title : "Cloud Sync failed";
-   sync_state->cb(task, NULL, sync_state->cb_data, error);
+   if (sync_state && sync_state->cb)
+   {
+      if (!error && (sync_state->failures || sync_state->conflicts))
+         error = task->title ? task->title : "Cloud Sync failed";
+      sync_state->cb(task, NULL, sync_state->cb_data, error);
+   }
+
+   if (tcs_followup_mode >= 0)
+   {
+      int mode          = tcs_followup_mode;
+      tcs_followup_mode = -1;
+      task_push_cloud_sync_with_mode(mode, NULL, NULL);
+   }
 }
 
 /* Releases the sync's state when the task retires. Every manifest owns
@@ -2442,8 +2462,10 @@ static bool task_cloud_sync_task_finder(retro_task_t *task, void *user_data)
    if (!task)
       return false;
 
-   /* there can be only one */
-   return task->handler == task_cloud_sync_task_handler;
+   /* there can be only one; a finished one, waiting for its callback,
+    * is no longer running and starts the follow-up from there */
+   return     task->handler == task_cloud_sync_task_handler
+          && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
 }
 
 static bool task_push_cloud_sync_with_mode(int conflict_resolution,
@@ -2466,8 +2488,16 @@ static bool task_push_cloud_sync_with_mode(int conflict_resolution,
    find_data.func = task_cloud_sync_task_finder;
    if (task_queue_find(&find_data))
    {
-      RARCH_LOG(CSPFX "Already in progress.\n");
-      return false;
+      /* A pusher waiting on its own sync is told it was not run */
+      if (cb)
+      {
+         RARCH_LOG(CSPFX "Already in progress.\n");
+         return false;
+      }
+      if (conflict_resolution || tcs_followup_mode < 0)
+         tcs_followup_mode = conflict_resolution;
+      RARCH_LOG(CSPFX "In progress: another sync follows it.\n");
+      return true;
    }
 
    sync_state = (task_cloud_sync_state_t *)calloc(1, sizeof(task_cloud_sync_state_t));

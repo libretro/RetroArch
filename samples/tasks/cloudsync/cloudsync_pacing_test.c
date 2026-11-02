@@ -66,7 +66,9 @@ void RARCH_LOG(const char *fmt, ...)  { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...)  { (void)fmt; }
 bool verbosity_is_enabled(void)       { return false; }
-settings_t *config_get_ptr(void)      { return NULL; }
+/* NULL but for the follow-up lane, which pushes real syncs */
+static settings_t *test_settings;
+settings_t *config_get_ptr(void)      { return test_settings; }
 char *dir_get_ptr(enum rarch_dir_type type) { (void)type; return NULL; }
 /* The file a running core owns, if any. */
 static char live_path[256];
@@ -82,8 +84,9 @@ void cloud_sync_find_driver(const char *drv, const char *prefix,
       bool verbosity_enabled)
 { (void)drv; (void)prefix; (void)verbosity_enabled; }
 void cloud_sync_capture(void) { }
+static unsigned begins;
 bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
-{ (void)cb; (void)user_data; return false; }
+{ (void)cb; (void)user_data; begins++; return false; }
 /* Nonzero: the driver ends the sync, and reports it at once. */
 static int end_ok;
 bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
@@ -734,6 +737,40 @@ static void begin_lane(void)
          done_calls == 1 && done_failed);
 }
 
+/* Resolve: Keep Local chosen while an automatic sync runs. It was
+ * turned away with a log line and nothing on screen; it runs once that
+ * sync is through now, keeping its resolution over a plain Sync Now
+ * asked for after it. */
+static void followup_lane(void)
+{
+   static settings_t s;
+   unsigned i;
+
+   memset(&s, 0, sizeof(s));
+   s.bools.cloud_sync_enable = true;
+   strlcpy(s.paths.directory_core_assets, dir,
+         sizeof(s.paths.directory_core_assets));
+   test_settings     = &s;
+   begins            = 0;
+   tcs_followup_mode = -1;
+
+   task_queue_init(false, NULL);
+   check("follow-up: the automatic sync is pushed",
+         task_push_cloud_sync(NULL, NULL));
+   task_push_cloud_sync_resolve_keep_local();
+   check("follow-up: Sync Now during it is taken, not refused",
+         task_push_cloud_sync(NULL, NULL));
+   check("follow-up: and keeps the resolution asked for before it",
+         tcs_followup_mode == 1);
+   for (i = 0; i < 1000; i++)
+      task_queue_check();
+   check("follow-up: one more sync runs once the first is through",
+         begins == 2);
+   check("follow-up: and none is left owed", tcs_followup_mode == -1);
+   task_queue_deinit();
+   test_settings = NULL;
+}
+
 int main(void)
 {
    unsigned r;
@@ -774,6 +811,7 @@ int main(void)
    walk_lane();
    queue_lane();
    begin_lane();
+   followup_lane();
 
    rmdir(dir);
    printf("cloudsync_pacing_test: %s\n", fails ? "FAIL" : "PASS");
