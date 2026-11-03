@@ -20,7 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef CHECK_SHIM
+#include "../check_shim.h"
+#else
 #include <check.h>
+#endif
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,6 +33,20 @@
 #include <lrc_hash.h>
 
 #define SUITE_NAME "hash"
+
+#ifdef CHECK_SHIM
+static void ck_assert_msg(int condition, const char *format, ...)
+{
+   va_list args;
+   if (condition)
+      return;
+   va_start(args, format);
+   vfprintf(stderr, format, args);
+   va_end(args);
+   fputc('\n', stderr);
+   exit(EXIT_FAILURE);
+}
+#endif
 
 START_TEST (test_sha256)
 {
@@ -43,13 +61,22 @@ START_TEST (test_sha1)
 {
    char output[41];
    char tmpfile[512];
+   char name[L_tmpnam];
+   const char *base;
+   const char *at;
    FILE *fd;
-   tmpnam(tmpfile);
+   ck_assert(tmpnam(name) != NULL);
+   base = name;
+   for (at = name; *at; ++at)
+      if (*at == '/' || *at == '\\')
+         base = at + 1;
+   ck_assert(snprintf(tmpfile, sizeof(tmpfile), "./%s", base) > 0);
    fd = fopen(tmpfile, "wb");
    ck_assert(fd != NULL);
    fwrite("abc", 1, 3, fd);
    fclose(fd);
    sha1_calculate(tmpfile, output);
+   remove(tmpfile);
 
    ck_assert(!strcmp(output,
       "A9993E364706816ABA3E25717850C26C9CD0D89D"));
@@ -155,6 +182,75 @@ START_TEST (test_sha1_many)
 }
 END_TEST
 
+START_TEST (test_sha256_streaming)
+{
+   static uint8_t data[1025];
+   static const char digits[] = "0123456789abcdef";
+   struct sha256_state a, b;
+   uint8_t one[32], got[32];
+   char text[65];
+   size_t length, chunk, at, n;
+   unsigned i;
+
+   for (at = 0; at < sizeof(data); ++at)
+      data[at] = (uint8_t)(at * 37 + 9);
+   for (length = 0; length < sizeof(data); ++length)
+   {
+      sha256_stream_init(&a, 0);
+      sha256_stream_update(&a, data + 1, length);
+      sha256_stream_final(&a, one);
+      for (chunk = 1; chunk <= 129; chunk += 16)
+      {
+         sha256_stream_init(&b, 0);
+         for (at = 0; at < length; at += n)
+         {
+            n = length - at;
+            if (n > chunk)
+               n = chunk;
+            sha256_stream_update(&b, data + 1 + at, n);
+         }
+         sha256_stream_update(&b, NULL, 0);
+         sha256_stream_final(&b, got);
+         ck_assert(!memcmp(one, got, sizeof(one)));
+      }
+   }
+
+   memset(data, 'a', 1000);
+   sha256_stream_init(&a, 0);
+   for (at = 0; at < 1000; ++at)
+      sha256_stream_update(&a, data, 1000);
+   sha256_stream_final(&a, one);
+   for (i = 0; i < 32; ++i)
+   {
+      text[i * 2] = digits[one[i] >> 4];
+      text[i * 2 + 1] = digits[one[i] & 15];
+   }
+   text[64] = 0;
+   ck_assert(!strcmp(text,
+         "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"));
+
+   sha256_stream_init(&a, 1);
+   sha256_stream_update(&a, (const uint8_t*)"abc", 3);
+   sha256_stream_final(&a, one);
+   for (i = 0; i < 28; ++i)
+   {
+      text[i * 2] = digits[one[i] >> 4];
+      text[i * 2 + 1] = digits[one[i] & 15];
+   }
+   text[56] = 0;
+   ck_assert(!strcmp(text,
+         "23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7"));
+
+   memset(data, 0, 64);
+   memcpy(data, "abc\200", 4);
+   data[63] = 24;
+   sha256_stream_init(&a, 0);
+   sha256_stream_block(&a, data);
+   ck_assert(!a.len && !a.inlen);
+   ck_assert(a.h[0] == 0xba7816bfU && a.h[7] == 0xf20015adU);
+}
+END_TEST
+
 START_TEST (test_djb2)
 {
    ck_assert_uint_eq(djb2_calculate("retroarch"), 0xFADF3BCF);
@@ -167,6 +263,7 @@ Suite *create_suite(void)
 
    TCase *tc_core = tcase_create("Core");
    tcase_add_test(tc_core, test_sha256);
+   tcase_add_test(tc_core, test_sha256_streaming);
    tcase_add_test(tc_core, test_sha1);
    tcase_add_test(tc_core, test_sha_padding_boundary);
    tcase_add_test(tc_core, test_sha1_many);

@@ -76,6 +76,12 @@
 #define SHA_ARM_NEEDS_TARGET 1
 #define SHA_ARM_DISPATCH     1
 #endif
+#elif defined(_MSC_VER) && _MSC_VER >= 1940 && \
+      (defined(_M_X64) || defined(_M_IX86))
+/* Modern MSVC exposes the SHA intrinsics without a translation-unit ISA
+ * switch. Keep calls behind the same runtime probe as the GNU path. */
+#define SHA_HAVE_X86_PATH 1
+#define SHA_X86_DISPATCH  1
 #elif (defined(__x86_64__) || defined(__i386__)) && !defined(_MSC_VER)
 #if defined(__has_attribute) && defined(__has_include)
 #if __has_attribute(target) && __has_include(<immintrin.h>) \
@@ -117,7 +123,11 @@
 #endif
 #elif defined(SHA_HAVE_X86_PATH)
 #include <immintrin.h>
+#ifdef _MSC_VER
+#define SHA_TARGET_X86 __declspec(noinline)
+#else
 #define SHA_TARGET_X86 __attribute__((target("sha,sse4.1")))
+#endif
 #endif
 
 #define LSL32(x, n) ((uint32_t)(x) << (n))
@@ -250,66 +260,78 @@ static void sha256_block_hw(uint32_t *h, const uint8_t *in)
 #endif
 
 #ifdef SHA_NEED_SCALAR
-static void sha256_block_scalar(struct sha256_state *p)
+static void sha256_block_scalar(struct sha256_state *p, const uint8_t *in)
 {
-   unsigned i;
-   uint32_t s0, s1;
-   uint32_t a, b, c, d, e, f, g, h;
-
-   for (i = 0; i < 16; i++)
-      p->w[i] = load32be(p->in.u32 + i);
-
-   for (i = 16; i < 64; i++)
+   unsigned i, j;
+   uint32_t w[16], s0, s1;
+   uint32_t a = p->h[0], b = p->h[1], c = p->h[2], d = p->h[3];
+   uint32_t e = p->h[4], f = p->h[5], g = p->h[6], h = p->h[7];
+#define SHA256_SCALAR_ROUND(W,K) do { \
+   uint32_t t1, t2; \
+   s0 = ROR32(a, 2) ^ ROR32(a, 13) ^ ROR32(a, 22); \
+   s1 = ROR32(e, 6) ^ ROR32(e, 11) ^ ROR32(e, 25); \
+   t1 = h + s1 + ((e & f) ^ (~e & g)) + K + W; \
+   t2 = s0 + ((a & b) ^ (a & c) ^ (b & c)); \
+   h = g; g = f; f = e; e = d + t1; \
+   d = c; c = b; b = a; a = t1 + t2; \
+} while (0)
+   for (j = 0; j < 16; ++j)
    {
-      s0 = ROR32(p->w[i - 15],  7) ^ ROR32(p->w[i - 15], 18) ^ LSR32(p->w[i - 15],  3);
-      s1 = ROR32(p->w[i -  2], 17) ^ ROR32(p->w[i -  2], 19) ^ LSR32(p->w[i -  2], 10);
-      p->w[i] = p->w[i - 16] + s0 + p->w[i - 7] + s1;
+      uint32_t word;
+      memcpy(&word, in + j * 4, sizeof(word));
+      w[j] = swap_if_little32(word);
+      SHA256_SCALAR_ROUND(w[j], T_K[j]);
    }
-
-   a = p->h[0]; b = p->h[1]; c = p->h[2]; d = p->h[3];
-   e = p->h[4]; f = p->h[5]; g = p->h[6]; h = p->h[7];
-
-   for (i = 0; i < 64; i++)
-   {
-      uint32_t t1, t2, maj, ch;
-
-      s0 = ROR32(a, 2) ^ ROR32(a, 13) ^ ROR32(a, 22);
-      maj = (a & b) ^ (a & c) ^ (b & c);
-      t2  = s0 + maj;
-      s1  = ROR32(e, 6) ^ ROR32(e, 11) ^ ROR32(e, 25);
-      ch  = (e & f) ^ (~e & g);
-      t1  = h + s1 + ch + T_K[i] + p->w[i];
-
-      h   = g;
-      g   = f;
-      f   = e;
-      e   = d + t1;
-      d   = c;
-      c   = b;
-      b   = a;
-      a   = t1 + t2;
-   }
-
+   for (i = 1; i < 4; ++i)
+      for (j = 0; j < 16; ++j)
+      {
+         uint32_t x = w[(j + 1) & 15], y = w[(j + 14) & 15];
+         s0 = ROR32(x, 7) ^ ROR32(x, 18) ^ LSR32(x, 3);
+         s1 = ROR32(y, 17) ^ ROR32(y, 19) ^ LSR32(y, 10);
+         w[j] += s0 + w[(j + 9) & 15] + s1;
+         SHA256_SCALAR_ROUND(w[j], T_K[i * 16 + j]);
+      }
+#undef SHA256_SCALAR_ROUND
    p->h[0] += a; p->h[1] += b; p->h[2] += c; p->h[3] += d;
    p->h[4] += e; p->h[5] += f; p->h[6] += g; p->h[7] += h;
 }
+
 #endif
 
-static void sha256_block(struct sha256_state *p)
+static void sha256_blocks(struct sha256_state *p, const uint8_t *in, size_t count)
 {
 #if defined(SHA_ARM_DISPATCH) || defined(SHA_X86_DISPATCH)
    if (cpu_features_get() & RETRO_SIMD_SHA256)
-      sha256_block_hw(p->h, p->in.u8);
+      while (count--)
+      {
+         sha256_block_hw(p->h, in);
+         in += 64;
+      }
    else
-      sha256_block_scalar(p);
+      while (count--)
+      {
+         sha256_block_scalar(p, in);
+         in += 64;
+      }
 #elif defined(SHA_HAVE_ARM_PATH) || defined(SHA_HAVE_X86_PATH)
-   sha256_block_hw(p->h, p->in.u8);
+   while (count--)
+   {
+      sha256_block_hw(p->h, in);
+      in += 64;
+   }
 #else
-   sha256_block_scalar(p);
+   while (count--)
+   {
+      sha256_block_scalar(p, in);
+      in += 64;
+   }
 #endif
-
-   /* Next block */
    p->inlen = 0;
+}
+
+static void sha256_block(struct sha256_state *p)
+{
+   sha256_blocks(p, p->in.u8, 1);
 }
 
 static void sha256_chunk(struct sha256_state *p,
@@ -320,6 +342,15 @@ static void sha256_chunk(struct sha256_state *p,
    while (len)
    {
       size_t l   = 64 - p->inlen;
+
+      if (!p->inlen && len >= 64)
+      {
+         size_t count = len / 64;
+         sha256_blocks(p, s, count);
+         s += count * 64;
+         len -= count * 64;
+         continue;
+      }
 
       if (len < l)
          l       = len;
@@ -402,9 +433,7 @@ void sha256_stream_final(struct sha256_state *p, uint8_t *digest)
 
 void sha256_stream_block(struct sha256_state *p, const uint8_t *data)
 {
-   memcpy(p->in.u8, data, 64);
-   p->inlen = 64;
-   sha256_block(p);
+   sha256_blocks(p, data, 1);
 }
 
 void sha256_hash(char *s, const uint8_t *in, size_t len)
@@ -641,6 +670,11 @@ static void sha1_hw_blocks2(uint32_t *s0, uint32_t *s1,
 #define SHA1_X86_MASK() _mm_set_epi64x( \
       (long long)0x0001020304050607ULL, (long long)0x08090a0b0c0d0e0fULL)
 
+#ifdef _MSC_VER
+/* The immediate-round macros deliberately contain constant branches. */
+#pragma warning(push)
+#pragma warning(disable: 4127)
+#endif
 SHA_TARGET_X86
 static void sha1_hw_blocks(uint32_t *state, const uint8_t *in, size_t n)
 {
@@ -704,6 +738,9 @@ static void sha1_hw_blocks2(uint32_t *s0, uint32_t *s1,
    s0[4] = (uint32_t)_mm_extract_epi32(e0, 3);
    s1[4] = (uint32_t)_mm_extract_epi32(e1, 3);
 }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 #endif
 
 #ifdef SHA_NEED_SCALAR
