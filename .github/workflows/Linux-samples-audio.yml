@@ -1063,6 +1063,24 @@ jobs:
           done
           make clean
 
+      - name: Build and run xaudio_lend_test (wine)
+        shell: bash
+        working-directory: samples/audio/xaudio_lend
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          # The XAudio2 driver lends the free span at the head of its
+          # buffers (write_begin / write_end), so the frontend's output
+          # lands in the buffer XAudio2 plays instead of being copied
+          # in by write().  On wine's XAudio2: a lend stays within the
+          # free room and the allocation, lends and writes make one
+          # stream, write_end publishes all it is given without
+          # waiting, an abandoned lend takes nothing, and lent audio
+          # plays at the pace written audio does.
+          make clean && make -j$(nproc) all
+          REQUIRE_XAUDIO=1 WINEDEBUG=-all timeout 120 make check
+          echo "[pass] xaudio_lend_test (wine)"
+
       - name: Build and run wasapi_exclusive_pacing_test (ASan + UBSan, then TSan)
         shell: bash
         working-directory: samples/audio/wasapi_exclusive_pacing

@@ -594,6 +594,31 @@ static void *xa_init(const char *dev_id, unsigned rate, unsigned latency,
    return xa;
 }
 
+/* The buffer at the head, full, to the voice; the head moves on */
+static bool xa_submit(xaudio2_t *handle)
+{
+   XAUDIO2_BUFFER xa2buffer;
+
+   xa2buffer.Flags      = 0;
+   xa2buffer.AudioBytes = handle->bufsize;
+   xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
+   xa2buffer.PlayBegin  = 0;
+   xa2buffer.PlayLength = 0;
+   xa2buffer.LoopBegin  = 0;
+   xa2buffer.LoopLength = 0;
+   xa2buffer.LoopCount  = 0;
+   xa2buffer.pContext   = NULL;
+
+   if (FAILED(IXAudio2SourceVoice_SubmitSourceBuffer(
+               handle->pSourceVoice, &xa2buffer, NULL)))
+      return false;
+
+   retro_atomic_fetch_add_int(&handle->buffers, 1);
+   handle->bufptr       = 0;
+   handle->write_buffer = (handle->write_buffer + 1) & MAX_BUFFERS_MASK;
+   return true;
+}
+
 static ssize_t xa_write(void *data, const void *s, size_t len)
 {
    size_t _len           = 0;
@@ -629,8 +654,6 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
 
       if (handle->bufptr == handle->bufsize)
       {
-         XAUDIO2_BUFFER xa2buffer;
-
          /* A period with no completion is a voice that has stopped, not
           * a device gone: the bytes already staged stay staged and are
           * submitted on the next write that finds a slot, and this one
@@ -651,31 +674,55 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
                return (ssize_t)_len;
          }
 
-         xa2buffer.Flags      = 0;
-         xa2buffer.AudioBytes = handle->bufsize;
-         xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
-         xa2buffer.PlayBegin  = 0;
-         xa2buffer.PlayLength = 0;
-         xa2buffer.LoopBegin  = 0;
-         xa2buffer.LoopLength = 0;
-         xa2buffer.LoopCount  = 0;
-         xa2buffer.pContext   = NULL;
-
-         if (FAILED(IXAudio2SourceVoice_SubmitSourceBuffer(
-                     handle->pSourceVoice, &xa2buffer, NULL)))
+         if (!xa_submit(handle))
          {
             if (len > 0)
                return -1;
             return 0;
          }
-
-         retro_atomic_fetch_add_int(&handle->buffers, 1);
-         handle->bufptr       = 0;
-         handle->write_buffer = (handle->write_buffer + 1) & MAX_BUFFERS_MASK;
       }
    }
 
    return _len;
+}
+
+/* The buffers are one allocation, so the free ones after the head are
+ * one span up to the allocation's end: lent there, the frontend's
+ * output lands in the buffer XAudio2 plays instead of being copied in.
+ * The span stops where the free room does, so filling it submits only
+ * buffers that have a slot, and write_end never waits. */
+static size_t xa_write_begin(void *data, size_t len, void **region)
+{
+   xa_t      *xa     = (xa_t*)data;
+   xaudio2_t *handle = xa->xa;
+   size_t     pos    = handle->write_buffer * handle->bufsize
+         + handle->bufptr;
+   size_t     avail  = xaudio2_write_available(handle);
+   size_t     to_end = (size_t)MAX_BUFFERS * handle->bufsize - pos;
+
+   if (avail > to_end)
+      avail = to_end;
+   if (len > avail)
+      len = avail;
+   *region = len ? handle->buf + pos : NULL;
+   return len;
+}
+
+static ssize_t xa_write_end(void *data, size_t len)
+{
+   xa_t      *xa     = (xa_t*)data;
+   xaudio2_t *handle = xa->xa;
+   size_t     done   = 0;
+
+   while (done < len)
+   {
+      size_t need = MIN(len - done, handle->bufsize - handle->bufptr);
+      handle->bufptr += (unsigned)need;
+      done           += need;
+      if (handle->bufptr == handle->bufsize && !xa_submit(handle))
+         return -1;
+   }
+   return (ssize_t)done;
 }
 
 static bool xa_stop(void *data)
@@ -830,5 +877,10 @@ audio_driver_t audio_xa = {
    xa_wait_writable,
    NULL, /* frames_consumed */
    NULL, /* underruns */
-   xa_layout
+   xa_layout,
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   xa_write_begin,
+   xa_write_end
 };
