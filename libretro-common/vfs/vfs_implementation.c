@@ -3965,7 +3965,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
    if (path_is_smb(name))
    {
       smb_dir_handle *dh = retro_vfs_opendir_smb(name, include_hidden);
-      if (!dh || !dh->dir)
+      if (!dh)
       {
          free(rdir->orig_path);
          free(rdir);
