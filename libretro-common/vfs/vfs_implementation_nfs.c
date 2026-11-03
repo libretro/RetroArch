@@ -627,11 +627,8 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
    ns->f      = f;
    ns->params = want;
    strlcpy(ns->server, server, sizeof(ns->server));
-   /* the export a URL-only mount ended up on is the slot's; a private
-    * connection reports it through the context */
-   strlcpy(ns->export_path, slot ? slot->export_path : export_path, sizeof(ns->export_path));
-   if (!*ns->export_path)
-      strlcpy(ns->export_path, export_path, sizeof(ns->export_path));
+   /* with no export set, the one the URL's path was mounted on */
+   strlcpy(ns->export_path, rnfs_get_export(c), sizeof(ns->export_path));
    nfs_give(c, slot);
    stream->nfs_fh  = (intptr_t)ns;
    stream->nfs_ctx = 0;
@@ -845,9 +842,7 @@ nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
    ds->d      = d;
    ds->params = want;
    strlcpy(ds->server, server, sizeof(ds->server));
-   strlcpy(ds->export_path, slot ? slot->export_path : export_path, sizeof(ds->export_path));
-   if (!*ds->export_path)
-      strlcpy(ds->export_path, export_path, sizeof(ds->export_path));
+   strlcpy(ds->export_path, rnfs_get_export(c), sizeof(ds->export_path));
    nfs_give(c, slot);
    dh->ctx = ds;
    dh->dir = d;

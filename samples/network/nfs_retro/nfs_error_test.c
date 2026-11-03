@@ -3,7 +3,9 @@
  * server; with the port of fake_nfs42.py, a v4 export it does not have
  * must name the LOOKUP that failed and the status it got. Given the
  * local copy of the fake's sparse.img too, a file opened before the
- * settings change must read on with the settings it was opened with.
+ * settings change must read on with the settings it was opened with,
+ * and with no export set and every slot busy, a file opened by URL must
+ * keep the export its own connection found.
  *
  * Usage: nfs_error_test [fake_nfs42.py port [local sparse.img]]
  * Exit status is the failure count. */
@@ -95,6 +97,57 @@ static int expect_open_file_kept(const char *local)
    return fails;
 }
 
+/* The only slot held by a prefetcher, a second open of @url goes over
+ * a connection of its own. Its prefetcher connects again, and finds
+ * the file only on the export that connection settled on. */
+static int expect_private_open_keeps_export(const char *local)
+{
+   static char got[16384], want[16384];
+   const char *url = "nfs://127.0.0.1/export/sparse.img";
+   unsigned window_kib = 0, direct_kib = 0;
+   int fails = 0;
+   RFILE *hold, *f, *l;
+   cfg.export_path  = "";
+   cfg.num_contexts = 1;
+   cfg.readahead    = 64;
+   nfs_init_cfg(&cfg);
+   hold = filestream_open(url, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   f    = filestream_open(url, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   l    = filestream_open(local, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!hold || !f || !l)
+   {
+      fprintf(stderr, "FAIL: open %s twice and %s (%s)\n", url, local,
+            nfs_get_last_error());
+      fails++;
+   }
+   else if (filestream_read(f, got, sizeof(got))  != (int64_t)sizeof(got)
+         || filestream_read(l, want, sizeof(want)) != (int64_t)sizeof(want)
+         || memcmp(got, want, sizeof(got)) != 0)
+   {
+      fprintf(stderr, "FAIL: read the file opened with every slot busy (%s)\n",
+            nfs_get_last_error());
+      fails++;
+   }
+   if (f)
+      filestream_close(f);
+   nfs_take_readahead_stats(&window_kib, &direct_kib);
+   if (!fails && !window_kib && !direct_kib)
+   {
+      fprintf(stderr, "FAIL: the file opened with every slot busy had no prefetcher\n");
+      fails++;
+   }
+   if (hold)
+      filestream_close(hold);
+   if (l)
+      filestream_close(l);
+   if (!fails)
+      printf("ok:   a file opened by URL with every slot busy keeps its export\n");
+   return fails;
+}
+
 int main(int argc, char **argv)
 {
    int fails = 0;
@@ -142,6 +195,10 @@ int main(int argc, char **argv)
       cfg.export_path = "/export";
       nfs_init_cfg(&cfg);
       fails += expect_open_file_kept(argv[2]);
+      cfg.nfs_port   = (unsigned)atoi(argv[1]);
+      cfg.mount_port = 0;
+      cfg.version    = 4;
+      fails += expect_private_open_keeps_export(argv[2]);
    }
    nfs_shutdown();
    return fails;

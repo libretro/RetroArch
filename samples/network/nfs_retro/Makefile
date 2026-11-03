@@ -32,9 +32,9 @@ VFS_SRC = vfs_test.c $(COMMON)/vfs/vfs_implementation_nfs.c $(COMMON)/vfs/vfs_im
       $(filter-out nfs_test.c,$(SRC))
 vfs_test: $(VFS_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -I$(ROOT) $(CFLAGS) $(VFS_SRC) $(LDLIBS) -o $@
-ERR_SRC = nfs_error_test.c $(filter-out vfs_test.c,$(VFS_SRC))
+ERR_SRC = nfs_error_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthreads/rthreads.c $(COMMON)/rthreads/retro_eventcount.c
 nfs_error_test: $(ERR_SRC)
-	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -I$(ROOT) $(CFLAGS) $(ERR_SRC) $(LDLIBS) -o $@
+	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -DHAVE_THREADS -I$(ROOT) $(CFLAGS) $(ERR_SRC) $(LDLIBS) -lpthread -o $@
 THR_SRC = vfs_threads_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthreads/rthreads.c $(COMMON)/rthreads/retro_eventcount.c
 vfs_threads_test: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -DHAVE_THREADS $(MMAP_FLAGS) -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@

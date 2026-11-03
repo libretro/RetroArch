@@ -140,6 +140,8 @@ int rnfs_get_read_plus(const struct rnfs_ctx *c);
 #define RNFS_STATUS_NONE  ((uint32_t)0xFFFFFFFFUL)
 uint32_t rnfs_get_status(const struct rnfs_ctx *c);
 int rnfs_get_fd(const struct rnfs_ctx *c);
+/* The export as rnfs_connect() was given it. */
+const char *rnfs_get_export(const struct rnfs_ctx *c);
 
 RETRO_END_DECLS
 

@@ -2000,6 +2000,7 @@ void rnfs_set_ports(struct rnfs_ctx *c, uint16_t nfs_port, uint16_t mount_port)
 const char *rnfs_get_error(const struct rnfs_ctx *c) { return c->error; }
 uint32_t    rnfs_get_status(const struct rnfs_ctx *c) { return c->status; }
 int         rnfs_get_fd(const struct rnfs_ctx *c)     { return c->fd; }
+const char *rnfs_get_export(const struct rnfs_ctx *c) { return c->export_path; }
 
 int rnfs_connect(struct rnfs_ctx *c, const char *server, const char *export_path)
 {
