@@ -47,6 +47,7 @@
             </intent-filter>
         </activity-alias>
         <activity android:name="com.retroarch.browser.debug.CoreSideloadActivity" android:exported="true"/>
+        <activity android:name="com.retroarch.browser.cores.CoreBulkImportActivity" android:exported="true" android:excludeFromRecents="true" android:theme="@android:style/Theme.NoTitleBar.Fullscreen"/>
         <receiver android:name="com.retroarch.browser.receiver.InstalledCoresReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="com.retroarch.QUERY_INSTALLED_CORES" />
