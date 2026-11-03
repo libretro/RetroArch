@@ -2561,7 +2561,10 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                size_t stride      = (size_t)VIDEO_SCALE_W(tex.dims) * (size_t)bpp;
                size_t row_bytes   = (size_t)width     * (size_t)bpp;
 
-               vkMapMemory(device, tex.memory, tex.offset, tex.size, 0, &ptr);
+               /* Whole: a VK_WHOLE_SIZE flush must end on a
+                * nonCoherentAtomSize multiple or the allocation's end */
+               vkMapMemory(device, tex.memory, tex.offset, VK_WHOLE_SIZE,
+                     0, &ptr);
 
                dst                = (uint8_t*)ptr;
                src                = (const uint8_t*)initial;
@@ -4085,7 +4088,7 @@ static void vulkan_font_follow_atlas(vulkan_raster_t *font)
    if (staging.memory == VK_NULL_HANDLE)
       return;
    if (vkMapMemory(font->vk->context->device, staging.memory,
-            staging.offset, staging.size, 0, &staging.mapped)
+            staging.offset, VK_WHOLE_SIZE, 0, &staging.mapped)
          != VK_SUCCESS)
    {
       staging.mapped = NULL;
@@ -4205,7 +4208,7 @@ static void *vulkan_font_init(void *data,
       {
          struct vk_texture *texture = &font->texture;
          if (vkMapMemory(font->vk->context->device, texture->memory,
-                  texture->offset, texture->size, 0, &texture->mapped)
+                  texture->offset, VK_WHOLE_SIZE, 0, &texture->mapped)
                != VK_SUCCESS)
          {
             /* pData is only written on success. */
@@ -6236,7 +6239,7 @@ static void vulkan_init_textures(vk_t *vk)
 
          {
             struct vk_texture *texture = &vk->swapchain[i].texture;
-            vkMapMemory(vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
+            vkMapMemory(vk->context->device, texture->memory, texture->offset, VK_WHOLE_SIZE, 0, &texture->mapped);
          }
 
          if (vk->swapchain[i].texture.type == VULKAN_TEXTURE_STAGING)
@@ -12454,7 +12457,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
          {
             struct vk_texture *texture = &chain->texture;
-            vkMapMemory(vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
+            vkMapMemory(vk->context->device, texture->memory, texture->offset, VK_WHOLE_SIZE, 0, &texture->mapped);
          }
 
          if (chain->texture.type == VULKAN_TEXTURE_STAGING)
@@ -14117,7 +14120,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       vk->flags       &= ~VK_FLAG_TEXTURE_FOR_LEND;
       {
          struct vk_texture *texture = &chain->texture;
-         vkMapMemory(vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
+         vkMapMemory(vk->context->device, texture->memory, texture->offset, VK_WHOLE_SIZE, 0, &texture->mapped);
       }
 
       if (chain->texture.type == VULKAN_TEXTURE_STAGING)
@@ -14640,7 +14643,7 @@ static struct vk_stream_state *vulkan_stream_state_get(vk_t *vk,
                || vkCreateFence(device, &fence_info, NULL,
                      &st->fence[i]) != VK_SUCCESS
                || vkMapMemory(device, st->staging[i].memory,
-                     st->staging[i].offset, st->staging[i].size, 0,
+                     st->staging[i].offset, VK_WHOLE_SIZE, 0,
                      &st->staging[i].mapped) != VK_SUCCESS)
             return NULL;
       }
@@ -14796,7 +14799,7 @@ static struct vk_stream_state *vulkan_planar_state_get(vk_t *vk,
             || vkCreateFence(device, &fence_info, NULL,
                   &st->fence[i]) != VK_SUCCESS
             || vkMapMemory(device, st->staging[i].memory,
-                  st->staging[i].offset, st->staging[i].size, 0,
+                  st->staging[i].offset, VK_WHOLE_SIZE, 0,
                   &st->staging[i].mapped) != VK_SUCCESS)
       {
          st->set[VK_STREAM_SLOTS - 1] = VK_NULL_HANDLE;
@@ -16533,7 +16536,7 @@ static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
          if (!bgrx)
             buffer += 3 * (VIDEO_SCALE_H(vk->vp.dims) - 1) * VIDEO_SCALE_W(vk->vp.dims);
          vkMapMemory(vk->context->device, staging->memory,
-               staging->offset, staging->size, 0, (void**)&src);
+               staging->offset, VK_WHOLE_SIZE, 0, (void**)&src);
 
          if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
                && (staging->memory != VK_NULL_HANDLE))
@@ -16623,7 +16626,7 @@ static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
 
       if (!staging->mapped)
       {
-         vkMapMemory(vk->context->device, staging->memory, staging->offset, staging->size, 0, &staging->mapped);
+         vkMapMemory(vk->context->device, staging->memory, staging->offset, VK_WHOLE_SIZE, 0, &staging->mapped);
       }
 
       if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
@@ -16907,7 +16910,7 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
 
    if (!staging->mapped)
       vkMapMemory(vk->context->device, staging->memory,
-            staging->offset, staging->size, 0, &staging->mapped);
+            staging->offset, VK_WHOLE_SIZE, 0, &staging->mapped);
 
    if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
          && (staging->memory != VK_NULL_HANDLE))
