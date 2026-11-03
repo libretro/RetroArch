@@ -56,6 +56,9 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "task_database_cue.h"
+#ifdef HAVE_SMBCLIENT
+#include "../libretro-common/vfs/vfs_implementation_smb.h"
+#endif
 
 /* Scan result structure for accumulating identification results */
 typedef struct scan_result
@@ -611,6 +614,10 @@ typedef struct manual_scan_handle
    task_dbscan_result_t result;
    /* What a scan that could not start told the user. */
    const char *fail_msg;
+#ifdef HAVE_SMBCLIENT
+   /* fail_msg for an smb:// folder: the English reason, " detail". */
+   char smb_fail[320];
+#endif
    /* What the --scan lines call the scan instead of its content
     * folder: a refreshed playlist's name. */
    char *cli_name;
@@ -4544,6 +4551,124 @@ static bool manual_scan_walk_within_budget(void *ud)
    return task_nbio_slice_within_budget(ud, 0, 0);
 }
 
+#ifdef HAVE_SMBCLIENT
+/* True when the smb:// URL @dir names no server, or another host or
+ * share than the SMB settings: @reason says which, and @detail the
+ * setting a mismatch names, else "".  Stats nothing, but may look up
+ * a name: not for the main thread. */
+static bool scan_smb_url_refused(const char *dir,
+      enum msg_hash_enums *reason, char *detail, size_t len)
+{
+   *reason = MSG_UNKNOWN;
+   switch (smb_url_check(dir, detail, len))
+   {
+      case SMB_URL_NO_SERVER:
+         *reason = MSG_SCAN_SMB_NO_SERVER;
+         return true;
+      case SMB_URL_HOST_DIFFERS:
+         *reason = MSG_SCAN_SMB_HOST_DIFFERS;
+         return true;
+      case SMB_URL_SHARE_DIFFERS:
+         *reason = MSG_SCAN_SMB_SHARE_DIFFERS;
+         return true;
+      case SMB_URL_OK:
+         break;
+   }
+   return false;
+}
+
+/* Why the smb:// folder @dir, which a stat did not find, cannot be
+ * read: its share's recorded connect failure, or MSG_UNKNOWN when
+ * nothing is known (the server answered, the folder is not there). */
+static enum msg_hash_enums scan_smb_failure_reason(const char *dir)
+{
+   switch (smb_url_failure(dir))
+   {
+      case SMB_FAILURE_RESOLVE:
+         return MSG_SCAN_SMB_CANNOT_RESOLVE;
+      case SMB_FAILURE_CONNECT:
+         return MSG_SCAN_SMB_CANNOT_CONNECT;
+      case SMB_FAILURE_LOGIN:
+         return MSG_SCAN_SMB_LOGIN_FAILED;
+      case SMB_FAILURE_SHARE:
+         return MSG_SCAN_SMB_NO_SHARE;
+      case SMB_FAILURE_UNKNOWN:
+      case SMB_FAILURE_CONNECTED:
+         break;
+   }
+   return MSG_UNKNOWN;
+}
+
+/* False when the smb:// folder @dir cannot be scanned: @reason is then
+ * the MSG_SCAN_SMB_* that says why, or MSG_UNKNOWN when nothing is
+ * known, and @detail the setting a host or share mismatch names, else
+ * "".  Not for the main thread. */
+static bool scan_smb_folder_ok(const char *dir,
+      enum msg_hash_enums *reason, char *detail, size_t len)
+{
+   if (scan_smb_url_refused(dir, reason, detail, len))
+      return false;
+   if (path_is_valid(dir))
+      return true;
+   *reason = scan_smb_failure_reason(dir);
+   return false;
+}
+
+/* Tells why the smb:// folder @dir cannot be scanned: the menu
+ * notification and the log line; @fail gets the --scan text. */
+static void scan_smb_tell(const char *dir, enum msg_hash_enums reason,
+      const char *detail, char *fail, size_t len)
+{
+   size_t _len;
+   char *s;
+   const char *_msg;
+
+   if (reason == MSG_UNKNOWN)
+   {
+      _msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      /* As a missing local path reads */
+      strlcpy(fail, "not found", len);
+      return;
+   }
+   /* English for --scan and the log, whatever the UI language */
+   if (*detail)
+      snprintf(fail, len, "%s %s", msg_hash_to_str_us(reason), detail);
+   else
+      strlcpy(fail, msg_hash_to_str_us(reason), len);
+   RARCH_ERR("[Scanner] %s: %s\n", dir, fail);
+   _msg = msg_hash_to_str(reason);
+   _len = strlen(_msg) + strlen(detail) + strlen(dir) + 4;
+   if ((s = (char*)malloc(_len)))
+   {
+      if (*detail)
+         snprintf(s, _len, "%s %s: %s", _msg, detail, dir);
+      else
+         snprintf(s, _len, "%s: %s", _msg, dir);
+      runloop_msg_queue_push(s, strlen(s), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      free(s);
+   }
+}
+
+/* True, with the reason told, when the smb:// content folder cannot
+ * be scanned. */
+static bool manual_scan_smb_refused(manual_scan_handle_t *manual_scan)
+{
+   enum msg_hash_enums reason;
+   char detail[256];
+   const char *dir = manual_scan->task_config->content_dir;
+
+   if (scan_smb_folder_ok(dir, &reason, detail, sizeof(detail)))
+      return false;
+   scan_smb_tell(dir, reason, detail, manual_scan->smb_fail,
+         sizeof(manual_scan->smb_fail));
+   manual_scan->fail_msg = manual_scan->smb_fail;
+   return true;
+}
+#endif
+
 static bool manual_scan_begin_setup(retro_task_t *task,
       manual_scan_handle_t *manual_scan)
 {
@@ -4553,6 +4678,15 @@ static bool manual_scan_begin_setup(retro_task_t *task,
       RARCH_ERR("[Scanner] Failed to initialize scan results\n");
       return true;
    }
+
+#ifdef HAVE_SMBCLIENT
+   /* Before the split: an unreachable folder would scan as a single
+    * file or a one-entry list. */
+   if (   string_starts_with_size(manual_scan->task_config->content_dir,
+             "smb://", STRLEN_CONST("smb://"))
+       && manual_scan_smb_refused(manual_scan))
+      return true;
+#endif
 
 #ifdef HAVE_LIBRETRODB
    if ((manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT ||
@@ -5921,6 +6055,10 @@ typedef struct
    enum dbscan_prep_kind kind;
    enum dbscan_load_status load;
    unsigned matches;         /* LOAD: files in another case, if ambiguous */
+#ifdef HAVE_SMBCLIENT
+   enum msg_hash_enums smb_reason; /* LOAD, PATH: why its smb:// path fails */
+   char smb_detail[256];     /* LOAD, PATH: the setting a mismatch names */
+#endif
    bool include_hidden;
    bool begun;
    bool failed;              /* LIST, PATH: out of memory */
@@ -6038,6 +6176,13 @@ static void dbscan_path_handler(retro_task_t *task)
          prep->failed = true;
       else if (!*s)
          free(s);
+#ifdef HAVE_SMBCLIENT
+      /* Never stat'd: no server, or another host or share */
+      else if (   string_starts_with_size(s, "smb://", STRLEN_CONST("smb://"))
+               && scan_smb_url_refused(s, &prep->smb_reason,
+                     prep->smb_detail, sizeof(prep->smb_detail)))
+         free(s);
+#endif
       else if (!(prep->fs = manual_content_scan_fs_read(s, NULL,
             prep->ov_core, prep->ov_dat)))
       {
@@ -6046,7 +6191,13 @@ static void dbscan_path_handler(retro_task_t *task)
       }
       /* The stat the content folder's setter takes */
       else if (!(prep->fs->content_stat & RETRO_VFS_STAT_IS_VALID))
+      {
+#ifdef HAVE_SMBCLIENT
+         if (string_starts_with_size(s, "smb://", STRLEN_CONST("smb://")))
+            prep->smb_reason = scan_smb_failure_reason(s);
+#endif
          free(s);
+      }
       else
          prep->path = s;
    }
@@ -6162,6 +6313,17 @@ static bool dbscan_chain_push_scan(dbscan_chain_t *chain,
    {
       if (prep->failed)
          fprintf(stderr, "out of memory\n");
+#ifdef HAVE_SMBCLIENT
+      else if (prep->smb_reason != MSG_UNKNOWN)
+      {
+         char fail[320];
+
+         scan_smb_tell(item->arg, prep->smb_reason, prep->smb_detail,
+               fail, sizeof(fail));
+         if (chain->cli_output)
+            fprintf(stderr, "%s: %s\n", item->arg, fail);
+      }
+#endif
       else
          fprintf(stderr, "%s: not found\n", item->arg);
       dbscan_chain_fold(chain, item->arg, TASK_DBSCAN_FAILED, NULL);
@@ -6590,19 +6752,34 @@ static void dbscan_load_handler(retro_task_t *task)
    }
    if (prep->load == DBSCAN_LOAD_OK)
    {
+      const char *dir = playlist_get_scan_content_dir(prep->playlist);
+
       /* A playlist that does not parse has no settings to read. */
       if (!playlist_scan_refresh_enabled(prep->playlist))
          prep->load = DBSCAN_LOAD_NO_SETTINGS;
+#ifdef HAVE_SMBCLIENT
+      /* Never stat'd: no server, or another host or share */
+      else if (   string_starts_with_size(dir, "smb://",
+                     STRLEN_CONST("smb://"))
+               && scan_smb_url_refused(dir, &prep->smb_reason,
+                     prep->smb_detail, sizeof(prep->smb_detail)))
+         prep->load = DBSCAN_LOAD_FOLDER_MISSING;
+#endif
       /* Here, so that the refresh asks the file system nothing on the
        * main thread: the folder, the saved DAT, the overrides'. */
-      else if (!(prep->fs = manual_content_scan_fs_read(
-            playlist_get_scan_content_dir(prep->playlist),
+      else if (!(prep->fs = manual_content_scan_fs_read(dir,
             playlist_get_scan_dat_file_path(prep->playlist),
             prep->ov_core, prep->ov_dat)))
          prep->load = DBSCAN_LOAD_NO_MEMORY;
       /* A single file's scan saves the file. */
       else if (!(prep->fs->content_stat & RETRO_VFS_STAT_IS_VALID))
+      {
          prep->load = DBSCAN_LOAD_FOLDER_MISSING;
+#ifdef HAVE_SMBCLIENT
+         if (string_starts_with_size(dir, "smb://", STRLEN_CONST("smb://")))
+            prep->smb_reason = scan_smb_failure_reason(dir);
+#endif
+      }
    }
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
@@ -6661,9 +6838,28 @@ static void dbscan_load_cb(retro_task_t *task, void *task_data,
          dbscan_chain_fold(chain, arg, TASK_DBSCAN_FAILED, NULL);
          break;
       case DBSCAN_LOAD_FOLDER_MISSING:
-         dbscan_chain_refresh_error(chain, prep->name,
-               "skipped: content folder not found",
-               playlist_get_scan_content_dir(prep->playlist));
+#ifdef HAVE_SMBCLIENT
+         if (prep->smb_reason != MSG_UNKNOWN)
+         {
+            char reason[320];
+
+            /* English, whatever the UI language; the folder takes the
+             * brackets. */
+            if (*prep->smb_detail)
+               snprintf(reason, sizeof(reason), "skipped: %s %s",
+                     msg_hash_to_str_us(prep->smb_reason),
+                     prep->smb_detail);
+            else
+               snprintf(reason, sizeof(reason), "skipped: %s",
+                     msg_hash_to_str_us(prep->smb_reason));
+            dbscan_chain_refresh_error(chain, prep->name, reason,
+                  playlist_get_scan_content_dir(prep->playlist));
+         }
+         else
+#endif
+            dbscan_chain_refresh_error(chain, prep->name,
+                  "skipped: content folder not found",
+                  playlist_get_scan_content_dir(prep->playlist));
          dbscan_chain_fold(chain, prep->name, TASK_DBSCAN_SKIPPED, NULL);
          break;
       case DBSCAN_LOAD_OK:
