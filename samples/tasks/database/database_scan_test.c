@@ -167,7 +167,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
    if (msg == MSG_SCANNING_OF_DIRECTORY_FINISHED && end_hold)
       end_step_hold();
    if (   msg == MSG_PLAYLIST_MANAGER_REFRESH_ALL_DONE
-       || msg == MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING)
+       || msg == MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING
+       || (msg >= MSG_SCAN_SMB_NO_SERVER && msg <= MSG_SCAN_SMB_NO_SHARE))
       return msg_hash_us_row(msg);
    if (msg == MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT)
       return "invalid content";
@@ -203,6 +204,9 @@ settings_t *config_get_ptr(void)
 static bool invalid_content_pushed = false;
 /* How often a refused scan or chain said why. */
 static unsigned busy_pushed = 0;
+/* Set when a message equal to push_watch is pushed. */
+static const char *push_watch;
+static bool        push_seen;
 
 /* Additional stubs for retroarch-core symbols referenced transitively,
  * to avoid pulling in retroarch.c, runloop.c, frontend drivers, and the
@@ -219,6 +223,8 @@ void runloop_msg_queue_push(const char *msg, size_t len,
    if (msg && !strcmp(msg,
             msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING)))
       busy_pushed++;
+   if (msg && push_watch && !strcmp(msg, push_watch))
+      push_seen = true;
 }
 
 /* Whether the scan prints what --scan prints. */
@@ -328,6 +334,33 @@ int retro_vfs_stat_smb(const char *path, int64_t *size)
 {
    (void)path; (void)size;
    return 0;
+}
+
+/* What smb_url_check() and smb_url_failure() answer, and how often
+ * each was asked. */
+static enum smb_url_result smb_stub_check;
+static const char         *smb_stub_detail = "";
+static enum smb_failure    smb_stub_failure;
+static retro_atomic_int_t  smb_stub_checks;
+static retro_atomic_int_t  smb_stub_checks_main;
+static retro_atomic_int_t  smb_stub_failures;
+
+enum smb_url_result smb_url_check(const char *url, char *detail,
+      size_t len)
+{
+   (void)url;
+   retro_atomic_fetch_add_int(&smb_stub_checks, 1);
+   if (task_is_on_main_thread())
+      retro_atomic_fetch_add_int(&smb_stub_checks_main, 1);
+   strlcpy(detail, smb_stub_detail, len);
+   return smb_stub_check;
+}
+
+enum smb_failure smb_url_failure(const char *url)
+{
+   (void)url;
+   retro_atomic_fetch_add_int(&smb_stub_failures, 1);
+   return smb_stub_failure;
 }
 #endif
 
@@ -9654,6 +9687,346 @@ static bool listed_as(const char *dir, const char *name, char *detail,
    return found;
 }
 
+#ifdef HAVE_SMBCLIENT
+/* An smb:// folder that cannot be scanned says why: --scan's line on
+ * stderr (the item fails, no totals), the menu's notification with
+ * the folder appended, one log line.  Without a reason, "not found"
+ * and the invalid content message.  The stub VFS finds nothing;
+ * smb_url_check() answers as the case says, and smb_url_failure() is
+ * asked only when that passes.  A local folder asks neither. */
+static void smb_reason_lane(const char *root, bool threaded)
+{
+   static const struct
+   {
+      const char         *name;
+      enum smb_url_result check;
+      enum smb_failure    failure;
+      const char         *detail;
+      enum msg_hash_enums reason; /* MSG_UNKNOWN: none */
+   } cases[] = {
+      { "no server",      SMB_URL_NO_SERVER,     SMB_FAILURE_UNKNOWN,
+            "",          MSG_SCAN_SMB_NO_SERVER },
+      { "host differs",   SMB_URL_HOST_DIFFERS,  SMB_FAILURE_UNKNOWN,
+            "127.0.0.1", MSG_SCAN_SMB_HOST_DIFFERS },
+      { "share differs",  SMB_URL_SHARE_DIFFERS, SMB_FAILURE_UNKNOWN,
+            "retro",     MSG_SCAN_SMB_SHARE_DIFFERS },
+      { "cannot resolve", SMB_URL_OK,            SMB_FAILURE_RESOLVE,
+            "",          MSG_SCAN_SMB_CANNOT_RESOLVE },
+      { "cannot connect", SMB_URL_OK,            SMB_FAILURE_CONNECT,
+            "",          MSG_SCAN_SMB_CANNOT_CONNECT },
+      { "login failed",   SMB_URL_OK,            SMB_FAILURE_LOGIN,
+            "",          MSG_SCAN_SMB_LOGIN_FAILED },
+      { "no share",       SMB_URL_OK,            SMB_FAILURE_SHARE,
+            "",          MSG_SCAN_SMB_NO_SHARE },
+      { "connected",      SMB_URL_OK,            SMB_FAILURE_CONNECTED,
+            "",          MSG_UNKNOWN },
+      { "no record",      SMB_URL_OK,            SMB_FAILURE_UNKNOWN,
+            "",          MSG_UNKNOWN }
+   };
+   const char         *url = "smb://host/share/roms";
+   const char         *q   = threaded ? "(threaded)" : "(regular)";
+   char                out[512], err[512], log[512], pl[512], local[512];
+   char                line[512], menu[512], what[96], detail[64];
+   struct string_list *l;
+   size_t              i;
+   bool                captured, pushed, off_main = false;
+   char               *saved_pl = strdup(
+         config_get_ptr()->paths.directory_playlist);
+
+#ifdef HAVE_THREADS
+   off_main = threaded;
+#endif
+   sprintf(out,   "%s/smb_reason.out",     root);
+   sprintf(err,   "%s/smb_reason.err",     root);
+   sprintf(log,   "%s/smb_reason.log",     root);
+   sprintf(pl,    "%s/smb_reason_pl",      root);
+   sprintf(local, "%s/smb_reason_missing", root);
+   path_mkdir(pl);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+   {
+      const char *text = cases[i].reason == MSG_UNKNOWN
+            ? "not found" : msg_hash_to_str_us(cases[i].reason);
+      int         checks_n, main_n, failures_n;
+
+      smb_stub_check   = cases[i].check;
+      smb_stub_failure = cases[i].failure;
+      smb_stub_detail  = cases[i].detail;
+      retro_atomic_store_release_int(&smb_stub_checks,      0);
+      retro_atomic_store_release_int(&smb_stub_checks_main, 0);
+      retro_atomic_store_release_int(&smb_stub_failures,    0);
+      if (*cases[i].detail)
+      {
+         sprintf(line, "%s: %s %s", url, text, cases[i].detail);
+         sprintf(menu, "%s %s: %s", text, cases[i].detail, url);
+      }
+      else
+      {
+         sprintf(line, "%s: %s", url, text);
+         sprintf(menu, "%s: %s", text, url);
+      }
+
+      invalid_content_pushed = false;
+      push_seen              = false;
+      push_watch             = menu;
+      retro_main_log_file_init(log, false);
+      verbosity_enable();
+      cli_output = true;
+      captured   = capture_begin(out, err);
+      pushed     = chain_push(chain_items(1, url, NULL), 1);
+      chain_wait(false);
+      if (captured)
+         capture_end();
+      cli_output = false;
+      verbosity_disable();
+      retro_main_log_file_deinit();
+      push_watch = NULL;
+      sprintf(what, "smb %s: %s, --scan", q, cases[i].name);
+      check(   captured && pushed && chain_seen == 1
+            && chain_outcomes[0] == TASK_DBSCAN_FAILED
+            && !strcmp(chain_names[0], url)
+            && chain_totals.failed == 1 && !chain_totals.ran
+            && file_contains(err, line) && !file_contains(out, " added, "),
+            what, line);
+      sprintf(what, "smb %s: %s, --scan notification", q, cases[i].name);
+      check(   push_seen == (cases[i].reason != MSG_UNKNOWN)
+            && !invalid_content_pushed, what, menu);
+      sprintf(what, "smb %s: %s, --scan log", q, cases[i].name);
+      if (cases[i].reason == MSG_UNKNOWN)
+         check(captured && !file_contains(log, "SMB"), what, "no SMB line");
+      else
+      {
+         char want[600];
+
+         sprintf(want, "[Scanner] %s", line);
+         check(captured && file_contains(log, want), what, want);
+      }
+      checks_n   = retro_atomic_load_acquire_int(&smb_stub_checks);
+      main_n     = retro_atomic_load_acquire_int(&smb_stub_checks_main);
+      failures_n = retro_atomic_load_acquire_int(&smb_stub_failures);
+      sprintf(what, "smb %s: %s, asked in order", q, cases[i].name);
+      sprintf(detail, "check %d (%d main), failure %d", checks_n, main_n,
+            failures_n);
+      check(   checks_n == 1 && (!off_main || !main_n)
+            && failures_n == (cases[i].check == SMB_URL_OK ? 1 : 0),
+            what, detail);
+
+      invalid_content_pushed = false;
+      push_seen              = false;
+      push_watch             = menu;
+      retro_main_log_file_init(log, false);
+      verbosity_enable();
+      captured = capture_scan(url, out, err, false);
+      verbosity_disable();
+      retro_main_log_file_deinit();
+      push_watch = NULL;
+      sprintf(what, "smb %s: %s, menu", q, cases[i].name);
+      if (cases[i].reason == MSG_UNKNOWN)
+      {
+         sprintf(detail, "failed %d, invalid content %d",
+               (int)scan_result.failed, (int)invalid_content_pushed);
+         check(   captured && scan_result.failed && invalid_content_pushed
+               && !push_seen, what, detail);
+      }
+      else
+         check(   captured && scan_result.failed && push_seen
+               && !invalid_content_pushed, what, menu);
+      sprintf(what, "smb %s: %s, log", q, cases[i].name);
+      if (cases[i].reason == MSG_UNKNOWN)
+         check(captured && !file_contains(log, "SMB"), what, "no SMB line");
+      else
+      {
+         char want[600];
+
+         sprintf(want, "[Scanner] %s", line);
+         check(captured && file_contains(log, want), what, want);
+      }
+   }
+   l = dir_list_new(pl, "lpl", false, false, false, false);
+   sprintf(what, "smb %s: no playlist written", q);
+   check(l && !l->size, what, pl);
+   string_list_free(l);
+
+   retro_atomic_store_release_int(&smb_stub_checks,   0);
+   retro_atomic_store_release_int(&smb_stub_failures, 0);
+   captured = capture_scan(local, out, err, false);
+   sprintf(what, "smb %s: a local folder asks neither", q);
+   check(   captured
+         && !retro_atomic_load_acquire_int(&smb_stub_checks)
+         && !retro_atomic_load_acquire_int(&smb_stub_failures), what, local);
+   if (saved_pl)
+      strlcpy(config_get_ptr()->paths.directory_playlist, saved_pl,
+            sizeof(config_get_ptr()->paths.directory_playlist));
+   free(saved_pl);
+}
+
+/* A refresh of a playlist saved with an smb:// folder that cannot be
+ * scanned skips it with the reason and the folder, on stderr and in
+ * the log, and leaves its file alone; a local playlist beside it
+ * refreshes.  Without a reason, "content folder not found".
+ * The load asks, off the main thread when the queue has a worker. */
+static void smb_refresh_lane(const char *root, uint32_t crc_a,
+      uint32_t sz_a, bool threaded)
+{
+   static const struct
+   {
+      const char         *name;
+      enum smb_url_result check;
+      enum smb_failure    failure;
+      const char         *detail;
+      enum msg_hash_enums reason; /* MSG_UNKNOWN: none */
+   } cases[] = {
+      { "no server",      SMB_URL_NO_SERVER,     SMB_FAILURE_UNKNOWN,
+            "",          MSG_SCAN_SMB_NO_SERVER },
+      { "host differs",   SMB_URL_HOST_DIFFERS,  SMB_FAILURE_UNKNOWN,
+            "127.0.0.1", MSG_SCAN_SMB_HOST_DIFFERS },
+      { "share differs",  SMB_URL_SHARE_DIFFERS, SMB_FAILURE_UNKNOWN,
+            "retro",     MSG_SCAN_SMB_SHARE_DIFFERS },
+      { "cannot resolve", SMB_URL_OK,            SMB_FAILURE_RESOLVE,
+            "",          MSG_SCAN_SMB_CANNOT_RESOLVE },
+      { "cannot connect", SMB_URL_OK,            SMB_FAILURE_CONNECT,
+            "",          MSG_SCAN_SMB_CANNOT_CONNECT },
+      { "login failed",   SMB_URL_OK,            SMB_FAILURE_LOGIN,
+            "",          MSG_SCAN_SMB_LOGIN_FAILED },
+      { "no share",       SMB_URL_OK,            SMB_FAILURE_SHARE,
+            "",          MSG_SCAN_SMB_NO_SHARE },
+      { "connected",      SMB_URL_OK,            SMB_FAILURE_CONNECTED,
+            "",          MSG_UNKNOWN },
+      { "no record",      SMB_URL_OK,            SMB_FAILURE_UNKNOWN,
+            "",          MSG_UNKNOWN }
+   };
+   const char         *url = "smb://host/share/roms";
+   const char         *q   = threaded ? "(threaded)" : "(regular)";
+   char                pl[512], a[512], ref[512], lpl_a[1024], lpl_s[1024];
+   char                out[512], err[512], log[512], p[1024], stale[1024];
+   char                line[256], want[320], what[96], detail[96];
+   task_dbscan_item_t *items;
+   size_t              i;
+   bool                ran, off_main = false;
+   char               *saved_pl = strdup(
+         config_get_ptr()->paths.directory_playlist);
+
+#ifdef HAVE_THREADS
+   off_main = threaded;
+#endif
+   sprintf(pl,    "%s/smb_refresh_pl",      root);
+   sprintf(a,     "%s/smb_refresh_a",       root);
+   sprintf(ref,   "%s/smb_refresh_ref.lpl", root);
+   sprintf(out,   "%s/smb_refresh.out",     root);
+   sprintf(err,   "%s/smb_refresh.err",     root);
+   sprintf(log,   "%s/smb_refresh.log",     root);
+   sprintf(lpl_a, "%s/a_local.lpl",         pl);
+   sprintf(lpl_s, "%s/s_smb.lpl",           pl);
+   sprintf(stale, "%s/00_gone.bin",         a);
+   path_mkdir(pl);
+   path_mkdir(a);
+   delete_playlists(pl);
+   filestream_delete(ref);
+   sprintf(p, "%s/01_alpha.bin", a);
+   if (   !write_content(p, crc_a, sz_a)
+       || !refresh_write(ref, url, NULL, stale))
+      goto fixture;
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+   {
+      const char *text = cases[i].reason == MSG_UNKNOWN
+            ? "content folder not found"
+            : msg_hash_to_str_us(cases[i].reason);
+      int         checks_n, main_n, failures_n;
+
+      smb_stub_check   = cases[i].check;
+      smb_stub_failure = cases[i].failure;
+      smb_stub_detail  = cases[i].detail;
+      retro_atomic_store_release_int(&smb_stub_checks,      0);
+      retro_atomic_store_release_int(&smb_stub_checks_main, 0);
+      retro_atomic_store_release_int(&smb_stub_failures,    0);
+      /* A stale entry again, so the local one adds its file each time */
+      delete_playlists(pl);
+      if (   !refresh_write(lpl_a, a,   NULL, stale)
+          || !refresh_write(lpl_s, url, NULL, stale)
+          || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+         goto fixture;
+      refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+      if (*cases[i].detail)
+         sprintf(line, "s_smb: skipped: %s %s (%s)", text,
+               cases[i].detail, url);
+      else
+         sprintf(line, "s_smb: skipped: %s (%s)", text, url);
+
+      retro_main_log_file_init(log, false);
+      verbosity_enable();
+      ran = refresh_run(items, 1, out, err, true);
+      verbosity_disable();
+      retro_main_log_file_deinit();
+      sprintf(what, "smb refresh %s: %s, refresh-all", q, cases[i].name);
+      sprintf(detail, "%u items, ran %u, added %u, failed %u, skipped %u",
+            chain_seen, chain_totals.ran, chain_totals.added,
+            chain_totals.failed, chain_totals.skipped);
+      check(   ran && chain_seen == 2
+            && chain_saw(0, "a_local", TASK_DBSCAN_RAN,     1)
+            && chain_saw(1, "s_smb",   TASK_DBSCAN_SKIPPED, -1)
+            && chain_totals.ran == 1 && chain_totals.added == 1
+            && !chain_totals.failed && chain_totals.skipped == 1,
+            what, detail);
+      sprintf(what, "smb refresh %s: %s, the skip line", q, cases[i].name);
+      check(file_contains(err, line) && !file_contains(out, "s_smb"),
+            what, line);
+      sprintf(what, "smb refresh %s: %s, log", q, cases[i].name);
+      sprintf(want, "[Playlist Refresh] %s.", line);
+      check(file_contains(log, want), what, want);
+      checks_n   = retro_atomic_load_acquire_int(&smb_stub_checks);
+      main_n     = retro_atomic_load_acquire_int(&smb_stub_checks_main);
+      failures_n = retro_atomic_load_acquire_int(&smb_stub_failures);
+      sprintf(what, "smb refresh %s: %s, asked by the load", q,
+            cases[i].name);
+      sprintf(detail, "check %d (%d main), failure %d", checks_n, main_n,
+            failures_n);
+      check(   checks_n == 1 && (!off_main || !main_n)
+            && failures_n == (cases[i].check == SMB_URL_OK ? 1 : 0),
+            what, detail);
+      sprintf(what, "smb refresh %s: %s, s_smb.lpl untouched", q,
+            cases[i].name);
+      check(files_equal(ref, lpl_s), what, lpl_s);
+   }
+
+   /* --scan-refresh=NAME skips it the same way. */
+   smb_stub_check   = SMB_URL_HOST_DIFFERS;
+   smb_stub_failure = SMB_FAILURE_UNKNOWN;
+   smb_stub_detail  = "127.0.0.1";
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH, "s_smb");
+   ran = refresh_run(items, 1, out, err, true);
+   sprintf(line, "s_smb: skipped: %s 127.0.0.1 (%s)",
+         msg_hash_to_str_us(MSG_SCAN_SMB_HOST_DIFFERS), url);
+   sprintf(what, "smb refresh %s: by name, skipped", q);
+   check(   ran && chain_seen == 1
+         && chain_saw(0, "s_smb", TASK_DBSCAN_SKIPPED, -1)
+         && chain_totals.skipped == 1 && !chain_totals.ran
+         && !chain_totals.failed && file_contains(err, line)
+         && files_equal(ref, lpl_s), what, line);
+   goto done;
+
+fixture:
+   check(0, "fixture", "could not write the smb refresh lane");
+done:
+   smb_stub_check   = SMB_URL_OK;
+   smb_stub_failure = SMB_FAILURE_UNKNOWN;
+   smb_stub_detail  = "";
+   /* A refresh leaves its playlist's settings; later lanes scan with
+    * the defaults. */
+   manual_content_scan_reset_settings();
+   if (saved_pl)
+      strlcpy(config_get_ptr()->paths.directory_playlist, saved_pl,
+            sizeof(config_get_ptr()->paths.directory_playlist));
+   free(saved_pl);
+}
+#endif
+
 /* Refresh items over a playlist folder: a refresh-all takes every
  * playlist with saved settings in name order, history and favorites
  * never, skips one whose folder is gone and fails one whose core is;
@@ -11396,6 +11769,12 @@ int main(int argc, char **argv)
    fs_main_lane(root, pl_dir);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, false);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, true);
+#ifdef HAVE_SMBCLIENT
+   smb_reason_lane(root, false);
+   smb_reason_lane(root, true);
+   smb_refresh_lane(root, crc_a, sz_a, false);
+   smb_refresh_lane(root, crc_a, sz_a, true);
+#endif
    {
       char reader_db[512];
 

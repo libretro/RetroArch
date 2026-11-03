@@ -32561,6 +32561,34 @@ MSG_HASH(
    "Playlists refreshed: %u, skipped: %u, failed: %u"
    )
 MSG_HASH(
+   MSG_SCAN_SMB_NO_SERVER,
+   "SMB server address not configured"
+   )
+MSG_HASH(
+   MSG_SCAN_SMB_HOST_DIFFERS,
+   "host differs from the SMB server setting"
+   )
+MSG_HASH(
+   MSG_SCAN_SMB_SHARE_DIFFERS,
+   "share differs from the SMB share setting"
+   )
+MSG_HASH(
+   MSG_SCAN_SMB_CANNOT_RESOLVE,
+   "cannot resolve the SMB server name"
+   )
+MSG_HASH(
+   MSG_SCAN_SMB_CANNOT_CONNECT,
+   "cannot connect to the SMB server"
+   )
+MSG_HASH(
+   MSG_SCAN_SMB_LOGIN_FAILED,
+   "SMB login failed"
+   )
+MSG_HASH(
+   MSG_SCAN_SMB_NO_SHARE,
+   "SMB share not found or access denied"
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "Added to favorites"
    )

@@ -84,6 +84,7 @@ Does --scan-refresh for every playlist that has saved scan settings, as Refresh 
 .IP
 These run in the order given, and one that fails does not stop the rest.
 Each prints a totals line on stdout, or its error on stderr.
+An smb:// folder must be on the server and share set in the SMB settings, and one that cannot be read says why.
 Without --menu, RetroArch exits when they are done and does not load content given on the command line.
 The exit status is then 1 if any failed, 0 if any added an entry, and 2 if none added anything; a skipped playlist does not count.
 With --menu, they run while the menu does.
