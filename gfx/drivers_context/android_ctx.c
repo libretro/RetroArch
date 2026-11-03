@@ -82,6 +82,12 @@ static bool android_gfx_ctx_window_bind_gl(void *owner,
    if (!state->gl_surface)
    {
       EGLSurface surf;
+      struct android_app *android_app = (struct android_app*)g_android;
+      /* Java took the surface back since the last poll */
+      if (     android_app && state->node
+            && state->node->generation == retro_atomic_load_acquire_int(
+               &android_app->second_display.surface_gone))
+         return false;
       ANativeWindow_setBuffersGeometry(
             (ANativeWindow*)window->surface, 0, 0, and->format);
       if ((surf = egl_window_surface_new(&and->egl, window->surface))
