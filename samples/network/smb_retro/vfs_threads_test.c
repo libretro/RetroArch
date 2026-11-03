@@ -80,6 +80,13 @@ static void worker(void *arg)
          report(id, i, "stat");
          bad++;
       }
+      /* not while the key flips: an evicted pool's code is whatever
+       * it last held */
+      else if (smb_url_failure(file) != SMB_FAILURE_CONNECTED && !flipping)
+      {
+         report(id, i, "failure code");
+         bad++;
+      }
       if ((d = retro_opendir(dir)))
       {
          while (retro_readdir(d))
