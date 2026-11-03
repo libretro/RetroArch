@@ -2560,7 +2560,7 @@ bool win32_video_window_create(void *owner,
 
    win32_video_window_place(&request->settings, NULL, &rect);
    snprintf(title, sizeof(title), "RetroArch - Screen %u",
-         request->screen + 1);
+         video_window_title_screen(request) + 1);
    if (!(state->hwnd = CreateWindowEx(0, WIN32_VIDEO_WINDOW_CLASS, title,
                state->fullscreen
                ? WIN32_VIDEO_WINDOW_FULLSCREEN_STYLE

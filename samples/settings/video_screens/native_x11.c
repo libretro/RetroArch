@@ -1063,8 +1063,9 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
 #endif
    CHECK(display == g_x11_dpy);
    CHECK(secondary != None && secondary != primary);
-   CHECK(native_x11_titled(display, request->screen) == 1);
-   native_x11_titles(display, primary, secondary, request->screen);
+   CHECK(native_x11_titled(display, video_window_title_screen(request)) == 1);
+   native_x11_titles(display, primary, secondary,
+         video_window_title_screen(request));
    /* After a restart, what was queued for the last lifetime's window
     * (a close and a resize) has to reach nothing */
    seen = native_window_wait(ctx, data, request, window,
@@ -1326,6 +1327,23 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_window_settle(ctx, data, request, 50000);
    CHECK(native_x11_primary_intact(display, primary));
 
+   /* Game Screen 1's window on a spare id: titled for its screen */
+   {
+      video_window_request_t spare;
+      video_window_native_t one;
+      native_window_spare(request, &spare);
+      memset(&one, 0, sizeof(one));
+      CHECK(ctx->windows->create(data, &spare, &one));
+      CHECK(native_x11_titled(display, 0) == 1);
+      CHECK(native_x11_titled(display, spare.screen) == 0);
+      if (one.surface)
+         native_x11_titles(display, primary,
+               (Window)(uintptr_t)one.surface, 0);
+      ctx->windows->destroy(data, &one);
+      XSync(display, False);
+      CHECK(!native_window_settle(ctx, data, &spare, 50000));
+   }
+
    /* Refused requests leave nothing behind and nothing retries them */
    request->generation = video_driver_window_generation();
    memset(&invalid, 0, sizeof(invalid));
@@ -1346,12 +1364,12 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(!ctx->windows->create(data, &other, &invalid));
    CHECK(!invalid.state && !invalid.surface && !invalid.display);
    CHECK(!native_window_settle(ctx, data, request, 200000));
-   CHECK(native_x11_titled(display, request->screen) == 0);
+   CHECK(native_x11_titled(display, video_window_title_screen(request)) == 0);
    CHECK(ctx->windows->create(data, request, window));
    CHECK(!ctx->windows->create(data, request, &invalid));
    CHECK(!invalid.state && !invalid.surface);
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
-   CHECK(native_x11_titled(display, request->screen) == 1);
+   CHECK(native_x11_titled(display, video_window_title_screen(request)) == 1);
 
    /* An error the handler takes for a window replaced before the next
     * pump does not close the replacement; one for the window does */

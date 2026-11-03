@@ -655,6 +655,15 @@ void video_windows_place(video_windows_host_t *host,
    out->move_seq = move ? host->move_seq : 0;
 }
 
+unsigned video_window_title_screen(const video_window_request_t *request)
+{
+   unsigned s;
+   for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
+      if (request->screens & (1u << s))
+         return s;
+   return request->screen;
+}
+
 void video_window_mark_closed(video_window_common_t *window)
 {
    video_window_native_t *native = window->native;

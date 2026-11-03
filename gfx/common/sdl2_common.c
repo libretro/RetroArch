@@ -462,7 +462,7 @@ bool sdl2_video_window_create(void *owner, SDL_Window *primary,
       rect.x  = rect.y = SDL_WINDOWPOS_CENTERED_DISPLAY(display);
    }
    snprintf(title, sizeof(title), "RetroArch - Screen %u",
-         request->screen + 1);
+         video_window_title_screen(request) + 1);
    if (!(state->win = SDL_CreateWindow(title, rect.x, rect.y, rect.w, rect.h,
                flags)))
    {

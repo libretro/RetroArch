@@ -236,6 +236,18 @@ static void test_spare_window(void)
    CHECK(video_windows_spare_window(0xffu, 8) == 0);
 }
 
+static void test_title_screen(void)
+{
+   video_window_request_t r;
+   memset(&r, 0, sizeof(r));
+   r.screen = 2;
+   CHECK(video_window_title_screen(&r) == 2);
+   r.screens = 1u;
+   CHECK(video_window_title_screen(&r) == 0);
+   r.screens = 6u;
+   CHECK(video_window_title_screen(&r) == 1);
+}
+
 static void test_display_own(void)
 {
    char keys[RETRO_VIDEO_VIEWS_MAX][VIDEO_WINDOW_DISPLAY_NAME_SIZE];
@@ -1999,6 +2011,7 @@ int main(void)
    test_windows_attached();
    test_resolve();
    test_spare_window();
+   test_title_screen();
    test_display_own();
    test_display_key();
    test_display_key_unnamed();

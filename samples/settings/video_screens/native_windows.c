@@ -94,6 +94,17 @@ static void native_window_titles(const char *title, const char *main_title,
          && strncmp(main_title, NATIVE_TITLE, strlen(NATIVE_TITLE)) != 0);
 }
 
+/* Game Screen 1's window as it comes on its own: an id past the
+ * content's screens, showing screen 0 */
+static void native_window_spare(const video_window_request_t *request,
+      video_window_request_t *spare)
+{
+   *spare            = *request;
+   spare->screen     = 2;
+   spare->screens    = 1u;
+   spare->generation = video_driver_window_generation();
+}
+
 static void native_gl_binding(const gfx_ctx_driver_t *ctx, void *data,
       video_window_native_t *window)
 {

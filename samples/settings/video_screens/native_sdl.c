@@ -534,7 +534,8 @@ static bool native_sdl_focus(const gfx_ctx_driver_t *ctx, void *data,
    /* a window manager may have given it the focus already */
    if (on && window->focused)
    {
-      CHECK(native_sdl_activate(primary, request->screen, true));
+      CHECK(native_sdl_activate(primary,
+               video_window_title_screen(request), true));
       while (window->focused && cpu_features_get_time_usec() < deadline)
       {
          seen |= native_window_drain(ctx, data, request);
@@ -542,7 +543,7 @@ static bool native_sdl_focus(const gfx_ctx_driver_t *ctx, void *data,
       }
    }
    if (!native_sdl_activate(on ? (SDL_Window*)window->surface : primary,
-            request->screen, !on))
+            video_window_title_screen(request), !on))
    {
       fprintf(stderr, "native sdl: no focus to give here\n");
       return false;
@@ -943,7 +944,7 @@ static bool native_sdl_kwin_send(const gfx_ctx_driver_t *ctx, void *data,
          " for (var i = 0; m && i < o.length; i++)"
          " if (o[i].geometry.x == %d && o[i].geometry.y == %d)"
          " workspace.sendClientToScreen(m, o[i]);", r.x, r.y);
-   if (!native_sdl_kwin(request->screen, script))
+   if (!native_sdl_kwin(video_window_title_screen(request), script))
       return false;
    deadline = cpu_features_get_time_usec() + 3000000;
    while (native_sdl_display_of(primary) != to)
@@ -1169,22 +1170,23 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(secondary && secondary != primary);
    CHECK(SDL_GetWindowFlags(secondary) & (ctx->windows->bind_gl
          ? SDL_WINDOW_OPENGL : SDL_WINDOW_VULKAN));
-   CHECK(native_sdl_titled(request->screen) == 1);
+   CHECK(native_sdl_titled(video_window_title_screen(request)) == 1);
    native_window_titles(SDL_GetWindowTitle(secondary),
-         SDL_GetWindowTitle(primary), request->screen);
+         SDL_GetWindowTitle(primary), video_window_title_screen(request));
 #ifdef HAVE_X11
    {
       Display *dpy, *main_dpy;
       Window xwin, main_xwin;
       if (     native_sdl_x11(secondary, &dpy, &xwin)
             && native_sdl_x11(primary, &main_dpy, &main_xwin))
-         native_x11_titles(dpy, main_xwin, xwin, request->screen);
+         native_x11_titles(dpy, main_xwin, xwin,
+               video_window_title_screen(request));
    }
 #endif
 #ifdef NATIVE_WIN32
    if (native_sdl_hwnd(secondary) && native_sdl_hwnd(primary))
       native_w32_titles(native_sdl_hwnd(primary), native_sdl_hwnd(secondary),
-            request->screen);
+            video_window_title_screen(request));
 #endif
    /* After a restart, what was queued for the last lifetime's window
     * (a close and a resize) has to reach nothing */
@@ -1356,7 +1358,8 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       ctx->windows->update(data, window, request);
       seen |= native_window_settle(ctx, data, request, 50000);
       CHECK(window->presentable == !minimised);
-      CHECK(native_sdl_unminimise(secondary, request->screen));
+      CHECK(native_sdl_unminimise(secondary,
+            video_window_title_screen(request)));
       if (minimised)
          seen |= native_window_wait(ctx, data, request, window,
                NATIVE_EVENT(RESUME), 0);
@@ -1459,8 +1462,9 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       CHECK(!window->focused && !window->presentable);
       /* ... and the closed window reports nothing more */
       SDL_SetWindowSize(secondary, 200, 200);
-      native_sdl_activate(secondary, request->screen, false);
-      native_sdl_activate(primary, request->screen, true);
+      native_sdl_activate(secondary, video_window_title_screen(request),
+            false);
+      native_sdl_activate(primary, video_window_title_screen(request), true);
       CHECK(!native_window_settle(ctx, data, request, 100000));
       native_sdl_replace(ctx, data, request, window);
       secondary = (SDL_Window*)window->surface;
@@ -1468,7 +1472,8 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
 
    /* Closed by the window system: CLOSE, the window still there, and no
     * quit while the main window is up */
-   if (mapped && native_sdl_close(secondary, request->screen, false))
+   if (mapped && native_sdl_close(secondary,
+            video_window_title_screen(request), false))
    {
       native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
       CHECK(SDL_GetWindowFromID(SDL_GetWindowID(secondary)) == secondary);
@@ -1480,7 +1485,8 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    /* The main window's own close still quits with a secondary up, which
     * keeps SDL from quitting by itself; the secondary stays as it is */
    if (     (placed || ctx->windows->bind_gl)
-         && native_sdl_close(primary, request->screen, true))
+         && native_sdl_close(primary, video_window_title_screen(request),
+               true))
    {
       seen = 0;
       CHECK(native_sdl_wait_quit(ctx, data, request, &seen));
@@ -1492,7 +1498,8 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    /* ... and a close request SDL took while the secondary was up, so
     * sent no quit for, still quits once the secondary has gone */
    if (     (placed || ctx->windows->bind_gl)
-         && native_sdl_close(primary, request->screen, true))
+         && native_sdl_close(primary, video_window_title_screen(request),
+               true))
    {
       unsigned dims = 0;
       bool quit     = false;
@@ -1503,9 +1510,26 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       CHECK(quit);
    }
 
-   /* Refused requests leave nothing behind and nothing retries them */
    ctx->windows->destroy(data, window);
    CHECK(window->state == NULL);
+
+   /* Game Screen 1's window on a spare id: titled for its screen */
+   {
+      video_window_request_t spare;
+      video_window_native_t one;
+      native_window_spare(request, &spare);
+      memset(&one, 0, sizeof(one));
+      CHECK(ctx->windows->create(data, &spare, &one));
+      CHECK(native_sdl_titled(0) == 1);
+      CHECK(native_sdl_titled(spare.screen) == 0);
+      if (one.surface)
+         native_window_titles(SDL_GetWindowTitle((SDL_Window*)one.surface),
+               SDL_GetWindowTitle(primary), 0);
+      ctx->windows->destroy(data, &one);
+      CHECK(!native_window_settle(ctx, data, &spare, 50000));
+   }
+
+   /* Refused requests leave nothing behind and nothing retries them */
    request->generation = video_driver_window_generation();
    memset(&invalid, 0, sizeof(invalid));
    other = *request;
@@ -1525,12 +1549,12 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(!ctx->windows->create(data, &other, &invalid));
    CHECK(!invalid.state && !invalid.surface && !invalid.display);
    CHECK(!native_window_settle(ctx, data, request, 200000));
-   CHECK(native_sdl_titled(request->screen) == 0);
+   CHECK(native_sdl_titled(video_window_title_screen(request)) == 0);
    CHECK(ctx->windows->create(data, request, window));
    CHECK(!ctx->windows->create(data, request, &invalid));
    CHECK(!invalid.state && !invalid.surface);
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
-   CHECK(native_sdl_titled(request->screen) == 1);
+   CHECK(native_sdl_titled(video_window_title_screen(request)) == 1);
    /* Made where its saved bounds are, frame or not */
    if (placed)
       native_sdl_wait_rect_at(ctx, data, request, window, native_sdl_expect(

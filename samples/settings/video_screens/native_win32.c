@@ -754,8 +754,9 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(strcmp(native_w32_class, "RetroArch") != 0);
    CHECK(GetWindowLongPtr(secondary, GWLP_WNDPROC)
          != (LONG_PTR)win32_window_proc);
-   CHECK(native_w32_titled(request->screen) == 1);
-   native_w32_titles(main_window.hwnd, secondary, request->screen);
+   CHECK(native_w32_titled(video_window_title_screen(request)) == 1);
+   native_w32_titles(main_window.hwnd, secondary,
+         video_window_title_screen(request));
    /* Shown without taking the focus from the main window */
    CHECK(GetFocus() != secondary);
    /* After a restart, what was queued for the last lifetime's window
@@ -1033,6 +1034,21 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_window_settle(ctx, data, request, 50000);
    CHECK(native_w32_main_intact(&main_state));
 
+   /* Game Screen 1's window on a spare id: titled for its screen */
+   {
+      video_window_request_t spare;
+      video_window_native_t one;
+      native_window_spare(request, &spare);
+      memset(&one, 0, sizeof(one));
+      CHECK(ctx->windows->create(data, &spare, &one));
+      CHECK(native_w32_titled(0) == 1);
+      CHECK(native_w32_titled(spare.screen) == 0);
+      if (one.surface)
+         native_w32_titles(main_window.hwnd, (HWND)one.surface, 0);
+      ctx->windows->destroy(data, &one);
+      CHECK(!native_window_settle(ctx, data, &spare, 50000));
+   }
+
    /* Refused requests leave nothing behind and nothing retries them */
    request->generation = video_driver_window_generation();
    memset(&invalid, 0, sizeof(invalid));
@@ -1069,12 +1085,12 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
 #endif
    CHECK(!invalid.state && !invalid.surface && !invalid.display);
    CHECK(!native_window_settle(ctx, data, request, 200000));
-   CHECK(native_w32_titled(request->screen) == 0);
+   CHECK(native_w32_titled(video_window_title_screen(request)) == 0);
    CHECK(ctx->windows->create(data, request, window));
    CHECK(!ctx->windows->create(data, request, &invalid));
    CHECK(!invalid.state && !invalid.surface);
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
-   CHECK(native_w32_titled(request->screen) == 1);
+   CHECK(native_w32_titled(video_window_title_screen(request)) == 1);
 
    /* Made fullscreen on a chosen monitor; then a window with automatic
     * bounds: the main window's size, centred on its monitor */

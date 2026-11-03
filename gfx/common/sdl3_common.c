@@ -1066,7 +1066,7 @@ bool sdl3_video_window_create(void *owner, SDL_WindowFlags flags,
       rect.x  = rect.y = SDL_WINDOWPOS_CENTERED_DISPLAY(display);
    }
    snprintf(title, sizeof(title), "RetroArch - Screen %u",
-         request->screen + 1);
+         video_window_title_screen(request) + 1);
    props = SDL_CreateProperties();
    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title);
    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, flags);

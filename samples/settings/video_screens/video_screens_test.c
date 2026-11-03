@@ -5268,7 +5268,8 @@ static void test_window_native_lifecycle(const char *ident, bool core)
          /* Focus as well, by the seat */
          if (!restart && window.state && native_wl_ident(ident))
          {
-            native_wl_kwin(request.screen, "var g = w.frameGeometry;"
+            native_wl_kwin(video_window_title_screen(&request),
+                  "var g = w.frameGeometry;"
                   " w.frameGeometry = {x: g.x, y: g.y, width: 500,"
                   " height: 400}; w.closeWindow();");
             native_wl_flood((gfx_ctx_wayland_data_t*)ctx_data,
@@ -5299,14 +5300,15 @@ static void test_window_native_lifecycle(const char *ident, bool core)
 #ifdef HAVE_X11
       if (native_x11_ident(ident))
       {
-         CHECK(native_x11_titled(g_x11_dpy, request.screen) == 0);
+         CHECK(native_x11_titled(g_x11_dpy,
+               video_window_title_screen(&request)) == 0);
          native_x11_torn_down(!restart);
       }
 #endif
 #ifdef NATIVE_WIN32
       if (native_w32_ident(ident))
       {
-         native_w32_torn_down(request.screen);
+         native_w32_torn_down(video_window_title_screen(&request));
          native_window_input = NULL;
       }
 #endif

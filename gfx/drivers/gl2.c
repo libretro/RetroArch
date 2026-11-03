@@ -7055,6 +7055,7 @@ static bool gl2_window_make(gl2_t *gl, const video_windows_frame_t *f,
    memset(&request, 0, sizeof(request));
    memset(win, 0, sizeof(*win));
    request.screen     = w;
+   request.screens    = f->window_screens[w];
    request.generation = video_driver_window_generation();
    request.settings   = f->settings[w];
    request.display    = f->display;

@@ -78,6 +78,8 @@ enum video_window_event_kind
 typedef struct video_window_request
 {
    unsigned screen;
+   /* The screens it shows, a bit each; 0 for screen @screen alone */
+   unsigned screens;
    unsigned generation;
    video_window_settings_t settings;
    /* The display it goes on: an ordinal of the published list, 0 where
@@ -142,6 +144,9 @@ typedef struct gfx_ctx_window_driver
 } gfx_ctx_window_driver_t;
 
 #define VIDEO_WINDOW_EVENT_BIT(kind) (1u << VIDEO_WINDOW_EVENT_##kind)
+
+/* The screen a window's title names: its first, else its id's */
+unsigned video_window_title_screen(const video_window_request_t *request);
 
 /* What a context's native layer keeps of each window it makes, first
  * in its own window->state, on the thread that runs the context */

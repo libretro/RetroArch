@@ -2357,7 +2357,7 @@ bool wl_video_window_create(void *owner,
          (size_t)(uintptr_t)state->surface);
 
    snprintf(title, sizeof(title), "RetroArch - Screen %u",
-         request->screen + 1);
+         video_window_title_screen(request) + 1);
 #ifdef HAVE_LIBDECOR_H
    if (wl->libdecor)
    {

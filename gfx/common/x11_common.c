@@ -1472,7 +1472,7 @@ bool x11_video_window_create(void *owner,
    XSetWMNormalHints(g_x11_dpy, state->handle, &hints);
    XSetWMProtocols(g_x11_dpy, state->handle, &g_x11_quit_atom, 1);
    snprintf(title, sizeof(title), "RetroArch - Screen %u",
-         request->screen + 1);
+         video_window_title_screen(request) + 1);
    /* As the main window's: WM_NAME, and EWMH's in UTF-8 */
    XStoreName(g_x11_dpy, state->handle, title);
 #ifdef X_HAVE_UTF8_STRING
