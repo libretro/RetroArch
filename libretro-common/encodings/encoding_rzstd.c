@@ -1895,8 +1895,10 @@ RZSTD_BODY_INLINE void rzstd_match_copy(uint8_t *to, const uint8_t *from,
    /* The wide copy strides two vectors at a time, so it needs the
     * source two vector widths back -- not one, which an earlier draft
     * of this change assumed until the sanitizer produced the
-    * overlapping pair. */
-   if (offset >= RZSTD_VEC_WIDTH * 2)
+    * overlapping pair. The short case is one fixed 32-byte copy, so the
+    * source must also be that far back: on builds with no vectors the
+    * width is eight and two widths is only sixteen. */
+   if (offset >= RZSTD_VEC_WIDTH * 2 && offset >= RZSTD_COPY_SMALL)
    {
       RZSTD_COPY(to, from, n);
       return;

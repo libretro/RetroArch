@@ -1,6 +1,9 @@
 include ../../sample_objdir.mk
 
 TARGET := rzstd_raw_block_test
+# The same test with the decoder's vector copies switched off, as on
+# builds with no SSE2 or NEON, where the copy widths differ
+TARGET_TEST := rzstd_raw_block_test_novec
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -18,7 +21,12 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET_TEST)
+
+# Three files: built in one step, so no objects to keep apart from the
+# vector build's
+$(TARGET_TEST): $(SOURCES)
+	$(CC) -o $@ $(SOURCES) -U__SSE2__ $(CFLAGS) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -30,11 +38,12 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-check: $(TARGET)
+check: $(TARGET) $(TARGET_TEST)
 	./$(TARGET)
+	./$(TARGET_TEST)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(OBJS)
 
 .PHONY: all check clean

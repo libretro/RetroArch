@@ -10,8 +10,8 @@
 # Every entry below was audited in the e942ee2 sweep. The recurring
 # safe patterns are:
 #  - LZ-style self-copies with explicit disjoint/periodic-chunk
-#    guards (r7z_lzma, encoding_vcdiff, encoding_rlz4, task_patch
-#    BPS TARGET_COPY)
+#    guards (r7z_lzma, encoding_vcdiff, encoding_rlz4, encoding_rzstd,
+#    task_patch BPS TARGET_COPY)
 #  - copies between provably distinct elements/rows/members of one
 #    array or struct (decoder state rotation, dirs[] defaults,
 #    channel/grid structs)
@@ -30,6 +30,10 @@ gfx/drivers/sdl_rs90_gfx.c|memcpy|target|target
 gfx/video_filters/ntsc_crt.c|memcpy|v->out|v->out
 libretro-common/encodings/encoding_rlz4.c|memcpy|to|to
 libretro-common/encodings/encoding_rlz4.c|rlz4_copy_match_blind|dst|dst
+# rzstd_match_copy: each copy it makes is disjoint -- periods doubled
+# while short, 16 and 8-byte words staged through a local, wide copies
+# only from 32 or more bytes back
+libretro-common/encodings/encoding_rzstd.c|rzstd_match_copy|dst|dst
 libretro-common/encodings/encoding_vcdiff.c|memcpy|d->out|d->out
 libretro-common/formats/7z/r7z_lzma.c|memcpy|dst|dst
 libretro-common/formats/aac/raac.c|memcpy|c->bs_invf_mode|c->bs_invf_mode

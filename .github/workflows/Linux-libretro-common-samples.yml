@@ -125,6 +125,7 @@ jobs:
             crc32_gas_test
             xxhash_test
             rzstd_raw_block_test
+            rzstd_raw_block_test_novec
             rbzip2_test
             rinflate_window_test
             rdeflate_hash_test
