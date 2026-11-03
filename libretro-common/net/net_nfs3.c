@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <net/net_nfs3.h>
 #include <net/net_compat.h>
@@ -258,6 +259,146 @@ static void rnfs_err(struct rnfs_ctx *c, const char *msg)
    strlcpy(c->error, msg, sizeof(c->error));
 }
 
+/* v3, MOUNT and v4 share these numbers. */
+static const char *rnfs_status_name(uint32_t st)
+{
+   switch (st)
+   {
+      case 1:     return "PERM";
+      case 2:     return "NOENT";
+      case 5:     return "IO";
+      case 13:    return "ACCESS";
+      case 20:    return "NOTDIR";
+      case 22:    return "INVAL";
+      case 63:    return "NAMETOOLONG";
+      case 70:    return "STALE";
+      case 10001: return "BADHANDLE";
+      case 10004: return "NOTSUPP";
+      case 10006: return "SERVERFAULT";
+      case 10016: return "WRONGSEC";
+      case 10018: return "RESOURCE";
+      case 10020: return "NOFILEHANDLE";
+      case 10021: return "MINOR_VERS_MISMATCH";
+      case 10036: return "BADXDR";
+      case 10044: return "OP_ILLEGAL";
+      default:    break;
+   }
+   return NULL;
+}
+
+/* Component @n of @path, cut to fit @out. */
+static void rnfs_component(const char *path, int n, char *out, size_t len)
+{
+   size_t l;
+   for (;;)
+   {
+      const char *e;
+      while (*path == '/')
+         path++;
+      e = strchr(path, '/');
+      l = e ? (size_t)(e - path) : strlen(path);
+      if (n-- <= 0 || !*path)
+         break;
+      path += l;
+   }
+   if (l >= len)
+      l = len - 1;
+   memcpy(out, path, l);
+   out[l] = '\0';
+}
+
+/* @step answered @st (on component @comp of @path, given one). A Linux
+ * server refuses a client on a port above 1023, as this one always is,
+ * unless the export says 'insecure'; its mountd also answers ACCES for
+ * a path it does not export. */
+static void rnfs_err_status(struct rnfs_ctx *c, const char *step,
+      const char *path, int comp, uint32_t st)
+{
+   char        name[25];
+   char        num[24];
+   int         mnt  = c->version != 4 && !strcmp(step, "MOUNT");
+   const char *pfx  = c->version == 4 ? "NFS4ERR_" : mnt ? "MNT3ERR_" : "NFS3ERR_";
+   const char *sn   = (st == 13 && c->version != 4) ? "ACCES" : rnfs_status_name(st);
+   const char *hint = "";
+
+   if (!sn)
+   {
+      snprintf(num, sizeof(num), "status %u", (unsigned)st);
+      sn  = num;
+      pfx = "";
+   }
+   if (mnt && st == 13)
+      hint = "; not exported to us, or a Linux export needs 'insecure' (client port >1023)";
+   else if (st == 1 || (c->version == 4 && (st == 13 || st == 10016)))
+      hint = "; a Linux export needs 'insecure' (client port >1023)";
+   name[0] = '\0';
+   if (path)
+      rnfs_component(path, comp, name, sizeof(name));
+   if (c->version == 4)
+      snprintf(c->error, sizeof(c->error), "v4.%u %s%s%s: %s%s%s",
+            (unsigned)c->minor, step, *name ? " " : "", name, pfx, sn, hint);
+   else
+      snprintf(c->error, sizeof(c->error), "v3 %s%s%s: %s%s%s",
+            step, *name ? " " : "", name, pfx, sn, hint);
+}
+
+/* The OS error the socket call that just failed left, where the
+ * platform keeps one; else 0. */
+static int rnfs_socket_error(void)
+{
+#if defined(_WIN32)
+   return WSAGetLastError();
+#elif defined(__PS3__) || defined(VITA) || defined(WIIU) \
+      || (defined(GEKKO) && !defined(GEKKO_NATIVE)) || defined(_3DS)
+   return 0;
+#else
+   return errno;
+#endif
+}
+
+/* A connect to @port that failed with @err after @waited usec. */
+static void rnfs_err_connect(struct rnfs_ctx *c, uint16_t port, int err,
+      retro_time_t waited)
+{
+   const char *why = NULL;
+#if defined(_WIN32)
+   if (err == WSAECONNREFUSED)
+      why = "refused";
+   else if (err == WSAEHOSTUNREACH || err == WSAENETUNREACH)
+      why = "unreachable";
+#else
+#ifdef ECONNREFUSED
+   if (err == ECONNREFUSED)
+      why = "refused";
+#endif
+#if defined(EHOSTUNREACH) && defined(ENETUNREACH)
+   if (err == EHOSTUNREACH || err == ENETUNREACH)
+      why = "unreachable";
+#endif
+#endif
+   if (!why && waited >= (retro_time_t)c->timeout * 900000)
+      snprintf(c->error, sizeof(c->error), "connect to %.64s:%u timed out after %us",
+            c->server, (unsigned)port, c->timeout);
+   else if (!why)
+      snprintf(c->error, sizeof(c->error), "connect to %.64s:%u failed (error %d)",
+            c->server, (unsigned)port, err);
+   else
+      snprintf(c->error, sizeof(c->error), "connect to %.64s:%u %s",
+            c->server, (unsigned)port, why);
+}
+
+/* A reply that did not come: silence for the whole timeout, or the
+ * server hanging up. */
+static void rnfs_err_recv(struct rnfs_ctx *c, retro_time_t start)
+{
+   if (cpu_features_get_time_usec() - start >= (retro_time_t)c->timeout * 900000)
+      snprintf(c->error, sizeof(c->error), "no reply from %.64s in %us",
+            c->server, c->timeout);
+   else
+      snprintf(c->error, sizeof(c->error), "%.64s closed the connection",
+            c->server);
+}
+
 /* XDR writer / reader over a byte buffer. */
 struct xdr
 {
@@ -410,19 +551,22 @@ static void xdr_get_wcc_data(struct xdr *x)
 static int rnfs_tcp_connect(struct rnfs_ctx *c, uint16_t port)
 {
    struct addrinfo *addr = NULL;
+   retro_time_t start;
    int fd = socket_init((void**)&addr, port, c->server, SOCKET_TYPE_STREAM, AF_UNSPEC);
    if (fd < 0 || !addr)
    {
       if (addr)
          freeaddrinfo_retro(addr);
-      rnfs_err(c, "cannot resolve server");
+      snprintf(c->error, sizeof(c->error), "cannot resolve %.64s", c->server);
       return -1;
    }
+   start = cpu_features_get_time_usec();
    if (!socket_connect_with_timeout(fd, addr, (int)c->timeout * 1000))
    {
+      int err = rnfs_socket_error();
+      rnfs_err_connect(c, port, err, cpu_features_get_time_usec() - start);
       freeaddrinfo_retro(addr);
       socket_close(fd);
-      rnfs_err(c, "connect failed");
       return -1;
    }
    freeaddrinfo_retro(addr);
@@ -488,8 +632,14 @@ static int rnfs_rpc_send(struct rnfs_ctx *c, int fd, uint32_t prog, uint32_t ver
  * reply cursor placed after the accepted-reply header. */
 static int rnfs_rpc_recv(struct rnfs_ctx *c, int fd, uint32_t *xid_out, struct xdr *reply)
 {
-   uint32_t rlen;
-   int      to = (int)c->timeout * 1000;
+   static const char *const rpc_auth[] = { "AUTH_OK", "AUTH_BADCRED",
+      "AUTH_REJECTEDCRED", "AUTH_BADVERF", "AUTH_REJECTEDVERF",
+      "AUTH_TOOWEAK" };
+   static const char *const rpc_accept[] = { "SUCCESS", "PROG_UNAVAIL",
+      "PROG_MISMATCH", "PROC_UNAVAIL", "GARBAGE_ARGS", "SYSTEM_ERR" };
+   uint32_t     rlen, st;
+   int          to    = (int)c->timeout * 1000;
+   retro_time_t start = cpu_features_get_time_usec();
 
    /* reply: one or more fragments, concatenated */
    rlen = 0;
@@ -499,7 +649,7 @@ static int rnfs_rpc_recv(struct rnfs_ctx *c, int fd, uint32_t *xid_out, struct x
       uint32_t frag, last;
       if (!socket_receive_all_blocking_with_timeout(fd, hdr, 4, to))
       {
-         rnfs_err(c, "receive failed or timed out");
+         rnfs_err_recv(c, start);
          return -1;
       }
       last = hdr[0] & 0x80;
@@ -512,7 +662,7 @@ static int rnfs_rpc_recv(struct rnfs_ctx *c, int fd, uint32_t *xid_out, struct x
       }
       if (!socket_receive_all_blocking_with_timeout(fd, c->rx + rlen, frag, to))
       {
-         rnfs_err(c, "receive failed or timed out");
+         rnfs_err_recv(c, start);
          return -1;
       }
       rlen += frag;
@@ -523,9 +673,20 @@ static int rnfs_rpc_recv(struct rnfs_ctx *c, int fd, uint32_t *xid_out, struct x
 
    reply->p = c->rx; reply->end = c->rx + rlen; reply->fail = 0;
    *xid_out = xdr_get_u32(reply);
-   if (xdr_get_u32(reply) != 1 || xdr_get_u32(reply) != 0)
+   if (xdr_get_u32(reply) != 1)               /* REPLY */
    {
-      rnfs_err(c, "rpc reply rejected");
+      rnfs_err(c, "rpc reply malformed");
+      return -1;
+   }
+   if (xdr_get_u32(reply) != 0)               /* MSG_DENIED */
+   {
+      if (xdr_get_u32(reply) != 1)            /* RPC_MISMATCH */
+         rnfs_err(c, "rpc denied: RPC_MISMATCH");
+      else if ((st = xdr_get_u32(reply)) < 6)
+         snprintf(c->error, sizeof(c->error), "rpc denied: %s", rpc_auth[st]);
+      else
+         snprintf(c->error, sizeof(c->error), "rpc denied: auth error %u",
+               (unsigned)st);
       return -1;
    }
    xdr_get_u32(reply);                        /* verifier flavor */
@@ -533,9 +694,19 @@ static int rnfs_rpc_recv(struct rnfs_ctx *c, int fd, uint32_t *xid_out, struct x
       size_t vl;
       xdr_get_opaque(reply, &vl);
    }
-   if (xdr_get_u32(reply) != 0 || reply->fail)
+   if ((st = xdr_get_u32(reply)) != 0 || reply->fail)
    {
-      rnfs_err(c, "rpc call not accepted");
+      if (st == 2)
+      {
+         uint32_t lo = xdr_get_u32(reply);
+         uint32_t hi = xdr_get_u32(reply);
+         snprintf(c->error, sizeof(c->error),
+               "rpc PROG_MISMATCH: server offers v%u-%u", (unsigned)lo, (unsigned)hi);
+      }
+      else if (st > 0 && st < 6)
+         snprintf(c->error, sizeof(c->error), "rpc %s", rpc_accept[st]);
+      else
+         rnfs_err(c, "rpc call not accepted");
       return -1;
    }
    return 0;
@@ -596,7 +767,6 @@ static int rnfs_call(struct rnfs_ctx *c, uint32_t proc,
          free(held);
          /* what the failed mount answered is not this call's status */
          c->status = RNFS_STATUS_NONE;
-         rnfs_err(c, "not connected");
          return -1;
       }
    }
@@ -621,11 +791,11 @@ static uint16_t rnfs_getport(struct rnfs_ctx *c, uint32_t prog, uint32_t vers)
       return 0;
    x.p = args; x.end = args + sizeof(args); x.fail = 0;
    xdr_u32(&x, prog); xdr_u32(&x, vers); xdr_u32(&x, 6); xdr_u32(&x, 0);
-   if (rnfs_rpc(c, fd, PMAP_PROG, PMAP_VERS, PMAP_GETPORT, args, 16, &reply) == 0)
-      port = (uint16_t)xdr_get_u32(&reply);
+   if (rnfs_rpc(c, fd, PMAP_PROG, PMAP_VERS, PMAP_GETPORT, args, 16, &reply) == 0
+         && !(port = (uint16_t)xdr_get_u32(&reply)))
+      rnfs_err(c, prog == MOUNT_PROG ? "portmapper: no MOUNT v3 service"
+            : "portmapper: no NFS v3 service");
    socket_close(fd);
-   if (!port)
-      rnfs_err(c, "portmapper has no such service");
    return port;
 }
 
@@ -747,7 +917,6 @@ static int nfs4_compound(struct rnfs_ctx *c, const uint8_t *ops, size_t ops_len,
    if (c->fd < 0 && rnfs_redial(c) != 0)
    {
       c->status = RNFS_STATUS_NONE;
-      rnfs_err(c, "not connected");
       return -1;
    }
    for (;;)
@@ -763,7 +932,10 @@ static int nfs4_compound(struct rnfs_ctx *c, const uint8_t *ops, size_t ops_len,
       if (sequenced)
          nfs4_sequence(&x, c, 0);
       if (x.fail || (size_t)(x.end - x.p) < ops_len)
+      {
+         rnfs_err(c, "request too large");
          return -1;
+      }
       memcpy(x.p, ops, ops_len); x.p += ops_len;
 
       if (rnfs_rpc(c, c->fd, NFS_PROG, 4, NFS4_COMPOUND, args,
@@ -938,9 +1110,11 @@ static int nfs4_setclientid(struct rnfs_ctx *c)
    xdr_u32(&x, 1);                      /* callback_ident */
    if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), 1, &r) != 0)
       return -1;
-   if (c->status != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+   st = nfs4_res(&r);
+   if (c->status != NFS3_OK || st != NFS3_OK)
    {
-      rnfs_err(c, "setclientid refused");
+      rnfs_err_status(c, "SETCLIENTID", NULL, 0,
+            c->status != NFS3_OK ? c->status : st);
       return -1;
    }
    clientid = xdr_get_u64(&r);
@@ -959,7 +1133,8 @@ static int nfs4_setclientid(struct rnfs_ctx *c)
    st = nfs4_res(&r);
    if (c->status != NFS3_OK || st != NFS3_OK)
    {
-      rnfs_err(c, "setclientid confirm refused");
+      rnfs_err_status(c, "SETCLIENTID_CONFIRM", NULL, 0,
+            c->status != NFS3_OK ? c->status : st);
       return -1;
    }
    c->clientid = clientid;
@@ -1006,9 +1181,11 @@ static int nfs4_session_setup(struct rnfs_ctx *c)
       return -1;
    if (c->status == NFS4ERR_MINOR_VERS_MISMATCH)
       return 1;
-   if (c->status != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+   st = nfs4_res(&r);
+   if (c->status != NFS3_OK || st != NFS3_OK)
    {
-      rnfs_err(c, "exchange_id refused");
+      rnfs_err_status(c, "EXCHANGE_ID", NULL, 0,
+            c->status != NFS3_OK ? c->status : st);
       return -1;
    }
    c->clientid = xdr_get_u64(&r);
@@ -1040,9 +1217,11 @@ static int nfs4_session_setup(struct rnfs_ctx *c)
    xdr_u32(&x, 0);                      /* AUTH_NONE */
    if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), 1, &r) != 0)
       return -1;
-   if (c->status != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+   st = nfs4_res(&r);
+   if (c->status != NFS3_OK || st != NFS3_OK)
    {
-      rnfs_err(c, "create_session refused");
+      rnfs_err_status(c, "CREATE_SESSION", NULL, 0,
+            c->status != NFS3_OK ? c->status : st);
       return -1;
    }
    xdr_get_fixed(&r, c->sessionid, 16);
@@ -1054,7 +1233,7 @@ static int nfs4_session_setup(struct rnfs_ctx *c)
    n = xdr_get_u32(&r);                 /* max requests: the slots granted */
    if (r.fail || !n)
    {
-      rnfs_err(c, "create_session reply");
+      rnfs_err(c, "v4 CREATE_SESSION: bad reply");
       return -1;
    }
    c->slots     = (uint32_t)(n < RNFS_SLOTS ? n : RNFS_SLOTS);
@@ -1075,7 +1254,7 @@ static int nfs4_session_setup(struct rnfs_ctx *c)
    st = nfs4_res(&r);
    if (st != NFS3_OK && st != NFS4ERR_COMPLETE_ALREADY)
    {
-      rnfs_err(c, "reclaim_complete refused");
+      rnfs_err_status(c, "RECLAIM_COMPLETE", NULL, 0, st);
       return -1;
    }
    return 0;
@@ -1101,21 +1280,26 @@ static int nfs4_establish(struct rnfs_ctx *c)
 
 /* The export root: PUTROOTFH then LOOKUP down the pseudo path. */
 /* PUTROOTFH, a LOOKUP per component of @path, GETFH: the handle of
- * @path in the server's pseudo-filesystem into c->root.
+ * @path in the server's pseudo-filesystem into c->root. With @note,
+ * a refusal says which operation the server refused, and how.
  *
  * Returns: 0; -1 when the path is not there; -2 when the call itself
  * failed, which no other path would change. */
-static int nfs4_mount_path(struct rnfs_ctx *c, const char *path)
+static int nfs4_mount_path(struct rnfs_ctx *c, const char *path, int note)
 {
    size_t   cap = NFS3_FHSIZE + 64 + strlen(path) * 2 + 32;
    uint8_t *ops = (uint8_t*)malloc(cap);
    struct xdr x, r;
    const char *p = path;
    unsigned n = 1, i;
+   uint32_t st = NFS3_OK;
    int ret = -1;
 
    if (!ops)
-      return -1;
+   {
+      rnfs_err(c, "out of memory");
+      return -2;
+   }
    x.p = ops; x.end = ops + cap; x.fail = 0;
    xdr_u32(&x, OP_PUTROOTFH);
    for (;;)
@@ -1139,12 +1323,23 @@ static int nfs4_mount_path(struct rnfs_ctx *c, const char *path)
       ret = -2;
       goto done;
    }
-   for (i = 0; i < n - 1; i++)
-      if (nfs4_res(&r) != NFS3_OK)
-         goto done;
-   if (nfs4_res(&r) != NFS3_OK || xdr_get_fh(&r, &c->root) != 0)
-      goto done;
-   ret = 0;
+   for (i = 0; i < n; i++)
+      if ((st = nfs4_res(&r)) != NFS3_OK)
+         break;
+   if (st == NFS3_OK && xdr_get_fh(&r, &c->root) == 0)
+      ret = 0;
+   else if (note && st == NFS3_OK)
+      rnfs_err(c, "v4 mount: bad GETFH reply");
+   else if (note)
+   {
+      const char *step = "mount: LOOKUP";
+      if (i == 0)
+         step = "mount: PUTROOTFH";
+      else if (i == n - 1)
+         step = "mount: GETFH";
+      rnfs_err_status(c, step, (i == 0 || i == n - 1) ? NULL : path,
+            (int)i - 1, st);
+   }
 done:
    free(ops);
    return ret;
@@ -1168,7 +1363,7 @@ static int nfs4_mount(struct rnfs_ctx *c)
       char        first[256];
       const char *e;
       size_t      len;
-      int         ret = nfs4_mount_path(c, p);
+      int         ret = nfs4_mount_path(c, p, 1);
       if (ret == 0)
          return 0;
       if (ret == -2)
@@ -1188,13 +1383,13 @@ static int nfs4_mount(struct rnfs_ctx *c)
       }
       memcpy(first, p, len);
       first[len] = '\0';
-      if ((ret = nfs4_mount_path(c, first)) == 0)
+      if ((ret = nfs4_mount_path(c, first, 0)) == 0)
          break;                        /* it is there: the rest is wrong */
       if (ret == -2)
          return -1;
       p = e;
    }
-   rnfs_err(c, "export not found");
+   /* the last whole path tried has said why */
    return -1;
 }
 
@@ -1214,10 +1409,14 @@ static int nfs4_walk_once(struct rnfs_ctx *c, const char *path, struct rnfs_fh *
    struct xdr x, r;
    const char *p = path;
    unsigned n = 1, i;
+   uint32_t rs;
    int ret = -1;
 
    if (!ops)
+   {
+      rnfs_err(c, "out of memory");
       return -1;
+   }
    if (last)
       last[0] = '\0';
    x.p = ops; x.end = ops + cap; x.fail = 0;
@@ -1233,7 +1432,10 @@ static int nfs4_walk_once(struct rnfs_ctx *c, const char *path, struct rnfs_fh *
       e   = strchr(p, '/');
       len = e ? (size_t)(e - p) : strlen(p);
       if (len >= 256)
+      {
+         rnfs_err(c, "name too long");
          goto done;
+      }
       if (parent)
       {
          q = e;
@@ -1258,25 +1460,34 @@ static int nfs4_walk_once(struct rnfs_ctx *c, const char *path, struct rnfs_fh *
    if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), n, &r) != 0)
       goto done;
    for (i = 0; i < n - 2; i++)
-      if (nfs4_res(&r) != NFS3_OK)
+      if ((rs = nfs4_res(&r)) != NFS3_OK)
       {
-         rnfs_err(c, "not found");
+         rnfs_err_status(c, i == 0 ? "PUTFH" : "LOOKUP",
+               i == 0 ? NULL : path, (int)i - 1, rs);
          goto done;
       }
-   if (nfs4_res(&r) != NFS3_OK || xdr_get_fh(&r, fh) != 0)
+   if ((rs = nfs4_res(&r)) != NFS3_OK)
    {
-      rnfs_err(c, "not found");
+      rnfs_err_status(c, "GETFH", NULL, 0, rs);
       goto done;
    }
-   if (nfs4_res(&r) != NFS3_OK)
+   if (xdr_get_fh(&r, fh) != 0)
    {
-      rnfs_err(c, "getattr failed");
+      rnfs_err(c, "v4 GETFH: bad reply");
+      goto done;
+   }
+   if ((rs = nfs4_res(&r)) != NFS3_OK)
+   {
+      rnfs_err_status(c, "GETATTR", NULL, 0, rs);
       goto done;
    }
    {
       struct rnfs_stat tmp;
       if (nfs4_get_fattr(&r, &tmp) != 0)
+      {
+         rnfs_err(c, "v4 GETATTR: bad reply");
          goto done;
+      }
       if (st)
          *st = tmp;
    }
@@ -1727,7 +1938,7 @@ static int nfs4_readdir_fill(struct rnfs_ctx *c, struct rnfs_dir *d)
       return -1;
    if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
    {
-      rnfs_err(c, "readdir failed");
+      rnfs_err_status(c, "READDIR", NULL, 0, c->status);
       return -1;
    }
    return rnfs_readdir_take(d, &r);
@@ -1841,9 +2052,14 @@ int rnfs_connect(struct rnfs_ctx *c, const char *server, const char *export_path
    }
    socket_close(mfd);
    c->status = xdr_get_u32(&reply);
-   if (c->status != NFS3_OK || xdr_get_fh(&reply, &c->root) != 0)
+   if (c->status != NFS3_OK)
    {
-      rnfs_err(c, c->status == 13 ? "mount refused (access denied)" : "mount failed");
+      rnfs_err_status(c, "MOUNT", NULL, 0, c->status);
+      return -1;
+   }
+   if (xdr_get_fh(&reply, &c->root) != 0)
+   {
+      rnfs_err(c, "v3 MOUNT: bad reply");
       return -1;
    }
 
@@ -1906,8 +2122,14 @@ static int rnfs_redial(struct rnfs_ctx *c)
    char server[256];
    char export_path[512];
    int  ret;
-   if (c->redialing || !c->server[0])
+   /* a dial that failed inside a dial has said why */
+   if (c->redialing)
       return -1;
+   if (!c->server[0])
+   {
+      rnfs_err(c, "not connected");
+      return -1;
+   }
    strlcpy(server, c->server, sizeof(server));
    strlcpy(export_path, c->export_path, sizeof(export_path));
    c->redialing = 1;
@@ -2052,7 +2274,7 @@ static int rnfs_walk_from(struct rnfs_ctx *c, const char *norm, size_t start,
          /* a cached handle the server no longer knows */
          if (start && (c->status == NFS3ERR_STALE || c->status == NFS3ERR_BADHANDLE))
             *stale = 1;
-         rnfs_err(c, c->status == NFS3ERR_NOENT ? "not found" : "lookup failed");
+         rnfs_err_status(c, "LOOKUP", p, 0, c->status);
          return -1;
       }
       if (xdr_get_fh(&reply, fh) != 0)
@@ -2203,16 +2425,30 @@ struct rnfs_file *rnfs_open(struct rnfs_ctx *c, const char *path, int flags)
    char last[256];
    struct rnfs_fh dir;
 
+   c->error[0] = '\0';
    if (!f)
+   {
+      rnfs_err(c, "out of memory");
       return NULL;
+   }
    memset(&st, 0, sizeof(st));
 
    if (c->version == 4)
    {
       if (flags & RNFS_O_CREAT)
       {
-         if (nfs4_walk(c, path, &dir, NULL, 1, last, sizeof(last)) != 0 || !last[0]
-               || nfs4_open_create(c, &dir, last, (flags & RNFS_O_TRUNC) != 0, f) != 0)
+         if (nfs4_walk(c, path, &dir, NULL, 1, last, sizeof(last)) != 0)
+         {
+            free(f);
+            return NULL;
+         }
+         if (!last[0])
+         {
+            rnfs_err(c, "is a directory");
+            free(f);
+            return NULL;
+         }
+         if (nfs4_open_create(c, &dir, last, (flags & RNFS_O_TRUNC) != 0, f) != 0)
          {
             free(f);
             return NULL;
@@ -2249,8 +2485,14 @@ struct rnfs_file *rnfs_open(struct rnfs_ctx *c, const char *path, int flags)
    {
       uint8_t args[NFS3_FHSIZE + 4 + 260 + 40];
       struct xdr x, reply;
-      if (rnfs_walk(c, path, &dir, NULL, 1, last, sizeof(last)) != 0 || !last[0])
+      if (rnfs_walk(c, path, &dir, NULL, 1, last, sizeof(last)) != 0)
       {
+         free(f);
+         return NULL;
+      }
+      if (!last[0])
+      {
+         rnfs_err(c, "is a directory");
          free(f);
          return NULL;
       }
@@ -2865,18 +3107,26 @@ struct rnfs_dir *rnfs_opendir(struct rnfs_ctx *c, const char *path)
 {
    struct rnfs_dir *d = (struct rnfs_dir*)calloc(1, sizeof(*d));
    struct rnfs_stat st;
+   int walked;
+   c->error[0] = '\0';
    if (!d)
-      return NULL;
-   if ((c->version == 4 ? nfs4_walk(c, path, &d->fh, &st, 0, NULL, 0)
-                        : rnfs_walk(c, path, &d->fh, &st, 0, NULL, 0)) != 0 || !st.is_dir)
    {
-      if (!c->error[0] || st.is_dir == 0)
+      rnfs_err(c, "out of memory");
+      return NULL;
+   }
+   walked = c->version == 4 ? nfs4_walk(c, path, &d->fh, &st, 0, NULL, 0)
+                            : rnfs_walk(c, path, &d->fh, &st, 0, NULL, 0);
+   if (walked != 0 || !st.is_dir)
+   {
+      /* a failed walk has said why */
+      if (walked == 0 || !c->error[0])
          rnfs_err(c, "not a directory");
       free(d);
       return NULL;
    }
    if (!(d->buf = (uint8_t*)malloc(NFS3_MAX_IO)))
    {
+      rnfs_err(c, "out of memory");
       free(d);
       return NULL;
    }
@@ -2914,7 +3164,7 @@ static int rnfs_readdir_fill(struct rnfs_ctx *c, struct rnfs_dir *d)
    }
    if (c->status != NFS3_OK)
    {
-      rnfs_err(c, "readdir failed");
+      rnfs_err_status(c, d->plain ? "READDIR" : "READDIRPLUS", NULL, 0, c->status);
       return -1;
    }
    xdr_get_post_op_attr(&reply, &st);

@@ -175,10 +175,37 @@ struct smb_pool
 
 static struct smb_pool    smb_pools[SMB_MAX_POOLS];
 static retro_atomic_ptr_t smb_cfg_ptr;    /* const struct smb_settings * */
+/* Last error for smb_get_last_error(), kept as nfs_get_last_error()
+ * keeps it: each writer fills a ring slot of its own, claimed by an
+ * atomic counter, then publishes its index for the reader. */
+#define SMB_ERR_SLOTS 8
+static char               smb_err_ring[SMB_ERR_SLOTS][256];
+static retro_atomic_int_t smb_err_seq;
+static retro_atomic_int_t smb_err_latest;
 
 static const struct smb_settings *smb_cfg_get(void)
 {
    return (const struct smb_settings*)retro_atomic_load_acquire_ptr(&smb_cfg_ptr);
+}
+
+/* "@what: @why", or @what alone when the client gave no reason. */
+static void smb_note_error(const char *what, const char *why)
+{
+   int slot = retro_atomic_fetch_add_int(&smb_err_seq, 1);
+   slot &= (SMB_ERR_SLOTS - 1);
+   strlcpy(smb_err_ring[slot], what, sizeof(smb_err_ring[slot]));
+   if (why && *why)
+   {
+      strlcat(smb_err_ring[slot], ": ", sizeof(smb_err_ring[slot]));
+      strlcat(smb_err_ring[slot], why, sizeof(smb_err_ring[slot]));
+   }
+   retro_atomic_store_release_int(&smb_err_latest, slot);
+}
+
+const char *smb_get_last_error(void)
+{
+   int slot = retro_atomic_load_acquire_int(&smb_err_latest);
+   return smb_err_ring[slot & (SMB_ERR_SLOTS - 1)];
 }
 
 /* Extracts the first path component after the server from an smb:// URL.
@@ -265,7 +292,10 @@ static struct smb2_context *smb_connect_with(const struct smb_conn_key *key, int
    struct smb2_context *ctx = smb_ctx_new();
    const char *username = *key->username ? key->username : NULL;
    if (!ctx)
+   {
+      smb_note_error("out of memory", NULL);
       return NULL;
+   }
    if (username)
       smb2_set_user(ctx, username);
    if (*key->password)
@@ -282,6 +312,11 @@ static struct smb2_context *smb_connect_with(const struct smb_conn_key *key, int
 #endif
    if (smb2_connect_share(ctx, key->server_address, key->share, username) < 0)
    {
+      char what[192];
+      snprintf(what, sizeof(what), "connect to %.64s, share %.64s (%s)",
+            key->server_address, key->share,
+            auth == RETRO_SMB2_SEC_KRB5 ? "Kerberos" : "NTLMSSP");
+      smb_note_error(what, smb2_get_error(ctx));
       smb_ctx_free(ctx);
       return NULL;
    }
@@ -470,7 +505,11 @@ static struct smb2_context *smb_connect_private(const struct smb_conn_key *key)
 {
    retro_atomic_int_t mode;
    if (!*key->server_address || !network_init())
+   {
+      smb_note_error(*key->server_address ? "network init failed"
+            : "no SMB server set", NULL);
       return NULL;
+   }
    retro_atomic_int_init(&mode, smb_settled_mode(key->server_address,
             key->username, (int)key->auth_mode));
    return smb_create_context(key, &mode);
@@ -487,7 +526,10 @@ static struct smb2_context *smb_take(const char *want_share, struct smb_slot **s
    *slot = NULL;
    smb_conn_key_fill(&key, want_share);
    if (!*key.server_address)
+   {
+      smb_note_error("no SMB server set", NULL);
       return NULL;
+   }
    if ((pool = smb_pool_for(&key)))
    {
       for (i = 0; i < pool->count; i++)
@@ -679,11 +721,15 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
    *out_count = 0;
 
    if (!smb_cfg || !smb_cfg->server_address || !*smb_cfg->server_address)
+   {
+      smb_note_error("no SMB server set", NULL);
       return false;
-   if (!network_init())
+   }
+   if (!network_init() || !(ctx = rsmb_new()))
+   {
+      smb_note_error("share list: setup failed", NULL);
       return false;
-   if (!(ctx = rsmb_new()))
-      return false;
+   }
    rsmb_set_credentials(ctx, smb_cfg->username, smb_cfg->password, smb_cfg->workgroup);
    rsmb_set_timeout(ctx, smb_cfg->timeout ? smb_cfg->timeout : RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT);
    /* a ticket when a realm is configured and the mode allows it; the
@@ -692,6 +738,7 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
       rsmb_set_kerberos(ctx, smb_cfg->realm, smb_cfg->kdc, 0);
    if (rsmb_connect(ctx, smb_cfg->server_address, "IPC$") != 0)
    {
+      smb_note_error("share list: connect to IPC$", rsmb_get_error(ctx));
       rsmb_free(ctx);
       return false;
    }
@@ -701,6 +748,8 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
       return false;
    }
    n = rsmb_enum_shares(ctx, list, 256);
+   if (n <= 0)
+      smb_note_error("share list", rsmb_get_error(ctx));
    rsmb_free(ctx);
    if (n <= 0 || !(shares = (char**)calloc((size_t)n, sizeof(char*))))
    {
@@ -725,6 +774,7 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
    free(list);
    if (count == 0)
    {
+      smb_note_error("share list: no disk shares", NULL);
       smb_free_share_list(shares, count);
       return false;
    }
@@ -751,13 +801,16 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
    *out_count = 0;
 
    if (!smb_cfg || !smb_cfg->server_address || !*smb_cfg->server_address)
+   {
+      smb_note_error("no SMB server set", NULL);
       return false;
+   }
 
-   if (!network_init())
+   if (!network_init() || !(ctx = smb_ctx_new()))
+   {
+      smb_note_error("share list: setup failed", NULL);
       return false;
-
-   if (!(ctx = smb_ctx_new()))
-      return false;
+   }
 
    if (!(timeout = smb_cfg->timeout))
       timeout = RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT;
@@ -784,6 +837,7 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
    if (smb2_connect_share(ctx, smb_cfg->server_address, "IPC$",
             smb_cfg->username) < 0)
    {
+      smb_note_error("share list: connect to IPC$", smb2_get_error(ctx));
       smb_ctx_free(ctx);
       return false;
    }
@@ -793,6 +847,7 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
    if (smb2_share_enum_async(ctx, SMB_SHARE_LEVEL_1,
             smb_share_enum_cb, &state) != 0)
    {
+      smb_note_error("share list", smb2_get_error(ctx));
       smb2_disconnect_share(ctx);
       smb_ctx_free(ctx);
       return false;
@@ -802,6 +857,8 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
          || state.status != 0
          || !state.rep)
    {
+      smb_note_error(state.finished ? "share list" : "share list: no reply",
+            smb2_get_error(ctx));
       if (state.rep)
          smb2_free_data(ctx, state.rep);
       smb2_disconnect_share(ctx);
@@ -858,6 +915,7 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
 
    if (count == 0)
    {
+      smb_note_error("share list: no disk shares", NULL);
       smb_free_share_list(shares, count);
       return false;
    }
@@ -1537,6 +1595,7 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
 
       if (!(handle = (smb_dir_handle*)malloc(sizeof(smb_dir_handle))))
       {
+         smb_note_error("out of memory", NULL);
          smb_free_share_list(shares, count);
          return NULL;
       }
@@ -1551,7 +1610,10 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
    }
 
    if (!smb_build_path(full_path, sizeof(full_path), path))
+   {
+      smb_note_error("opendir: bad path", NULL);
       return NULL;
+   }
 
    /* Root-of-share: bare "/" should become "" for libsmb2 opendir */
    if (full_path[0] == '/' && full_path[1] == '\0')
@@ -1566,10 +1628,12 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
    dir = smb2_opendir(smb_context, full_path);
    if (!dir)
    {
+      smb_note_error("opendir", smb2_get_error(smb_context));
       if ((fresh = smb_heal(smb_context, slot, share, &dead)))
       {
          smb_context = fresh;
-         dir         = smb2_opendir(smb_context, full_path);
+         if (!(dir = smb2_opendir(smb_context, full_path)))
+            smb_note_error("opendir", smb2_get_error(smb_context));
       }
       if (!dir)
       {
@@ -1580,6 +1644,7 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
    handle = (smb_dir_handle*)malloc(sizeof(smb_dir_handle));
    if (!handle)
    {
+      smb_note_error("out of memory", NULL);
       smb2_closedir(smb_context, dir);
       smb_give(smb_context, slot);
       return NULL;

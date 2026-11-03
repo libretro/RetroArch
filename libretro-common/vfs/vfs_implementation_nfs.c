@@ -79,6 +79,8 @@ static char               nfs_err_ring[NFS_ERR_SLOTS][128];
 static retro_atomic_int_t nfs_err_seq;    /* next slot to hand out */
 static retro_atomic_int_t nfs_err_latest; /* slot last published, or -1 */
 
+static void nfs_note_error(const char *msg);
+
 static const struct nfs_settings *nfs_cfg(void)
 {
    return (const struct nfs_settings*)retro_atomic_load_acquire_ptr(&nfs_cfg_ptr);
@@ -111,7 +113,10 @@ static bool nfs_resolve(const char *url, char *server, size_t server_len,
    const char *rest;
    const struct nfs_settings *cfg = nfs_cfg();
    if (!nfs_url_split(url, server, server_len, &rest))
+   {
+      nfs_note_error("bad URL: no server in it");
       return false;
+   }
    if (cfg && cfg->export_path && *cfg->export_path)
    {
       strlcpy(export_path, cfg->export_path, export_len);
@@ -273,7 +278,10 @@ static struct rnfs_ctx *nfs_take(const char *server, const char *export_path,
       *slot = NULL;
    }
    if (!c)
+   {
+      nfs_note_error("out of memory");
       return NULL;
+   }
    if (     rnfs_get_fd(c) < 0 || !*slot || (*slot)->gen != gen
          || strcmp((*slot)->server, server) != 0
          || strcmp((*slot)->export_path, export_path) != 0)
@@ -344,6 +352,7 @@ static struct rnfs_ctx *nfs_take_url(const char *server, const char *path,
    unsigned i;
    unsigned count = p ? (unsigned)retro_atomic_load_acquire_int(&p->count) : 0;
    const char *q;
+   bool tried = false;
 
    for (i = 0; i < count; i++)
    {
@@ -379,6 +388,7 @@ static struct rnfs_ctx *nfs_take_url(const char *server, const char *path,
          break;
       memcpy(export_buf, path, n);
       export_buf[n] = '\0';
+      tried = true;
       if ((c = nfs_take(server, export_buf, slot)))
       {
          *rel = path + n;
@@ -388,6 +398,10 @@ static struct rnfs_ctx *nfs_take_url(const char *server, const char *path,
          break;
       q = e;
    }
+   /* otherwise the last export tried has said why */
+   if (!tried)
+      nfs_note_error(*q ? "export path too long"
+            : "no export: set NFS Export, or use nfs://server/export/path");
    return NULL;
 }
 
@@ -797,6 +811,7 @@ nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
    ds = (struct nfs_dirstate*)calloc(1, sizeof(*ds));
    if (!dh || !ds)
    {
+      nfs_note_error("out of memory");
       rnfs_closedir(c, d);
       nfs_give(c, slot);
       free(dh);

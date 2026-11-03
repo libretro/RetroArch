@@ -8,12 +8,13 @@
 # on it), hence the fake. Its encoding is checked apart from the client
 # when tshark is installed: Wireshark's own NFS dissector decodes the
 # replies and their data and holes must add up to the file.
+# The fake also serves nfs_error_test: a failed listing must say why.
 # Runs as a Windows binary under Wine too (CC=..-mingw.. RUNNER=wine
 # EXE=.exe); needs python3.
 set -eu
 cd "$(dirname "$0")"
 command -v python3 >/dev/null 2>&1 || { echo "skip: no python3"; exit 0; }
-make -s nfs_sparse_test
+make -s nfs_sparse_test nfs_error_test
 RUN=${RUNNER:-}
 EXE=${EXE:-}
 PORT=20460
@@ -50,6 +51,11 @@ until python3 -c "import socket,sys; socket.create_connection(('127.0.0.1', int(
    [ $n -gt 150 ] && { echo "FAIL: fake_nfs42.py did not listen: $(cat $D/fake.log)"; exit 1; }
    sleep 0.2
 done
+if $RUN ./nfs_error_test$EXE $PORT > $D/err 2>&1; then
+   tr -d "\r" < $D/err
+else
+   echo "FAIL: why a listing failed: $(cat $D/err)"; exit 1
+fi
 local_path=$D/sparse.img
 [ -n "$RUN" ] && local_path="Z:$D/sparse.img"
 if $RUN ./nfs_sparse_test$EXE 127.0.0.1 /export $PORT sparse.img "$local_path" 1048576 plus > $D/res 2>&1; then

@@ -85,6 +85,13 @@
 #include <media/media_detect_cd.h>
 #endif
 
+#ifdef HAVE_NFSCLIENT
+#include "../libretro-common/vfs/vfs_implementation_nfs.h"
+#endif
+#ifdef HAVE_SMBCLIENT
+#include "../libretro-common/vfs/vfs_implementation_smb.h"
+#endif
+
 #include "../audio/audio_driver.h"
 #include "../midi_driver.h"
 #include "../record/record_driver.h"
@@ -367,6 +374,44 @@ bool menu_displaylist_nfs_title_path(char *s, size_t len, const char *path)
    return true;
 }
 #endif
+#endif
+
+#if defined(HAVE_NFSCLIENT) || defined(HAVE_SMBCLIENT)
+/* Why a network directory could not be listed, from its client,
+ * beside the settings it ran with. */
+static void filebrowser_log_net_failure(const char *path)
+{
+   settings_t *settings = config_get_ptr();
+   const char *why      = NULL;
+#ifdef HAVE_NFSCLIENT
+   if (string_starts_with_size(path, "nfs://", STRLEN_CONST("nfs://")))
+   {
+      const char *export_p = settings->arrays.nfs_export;
+      why = nfs_get_last_error();
+      RARCH_ERR("[NFS] Cannot list \"%s\" (version %u, port %u, export %s%s%s): %s.\n",
+            path,
+            settings->uints.nfs_version ? settings->uints.nfs_version : 3,
+            settings->uints.nfs_port,
+            *export_p ? "\"" : "", *export_p ? export_p : "none",
+            *export_p ? "\"" : "",
+            *why ? why : "no reason given");
+   }
+#endif
+#ifdef HAVE_SMBCLIENT
+   if (string_starts_with_size(path, "smb://", STRLEN_CONST("smb://")))
+   {
+      unsigned auth = settings->uints.smb_client_auth_mode;
+      why = smb_get_last_error();
+      RARCH_ERR("[SMB] Cannot list \"%s\" (server \"%s\", share \"%s\", auth %s): %s.\n",
+            path,
+            settings->arrays.smb_client_server_address,
+            settings->arrays.smb_client_share,
+            auth == RETRO_SMB2_SEC_KRB5    ? "Kerberos"
+            : auth == RETRO_SMB2_SEC_NTLMSSP ? "NTLMSSP" : "auto",
+            *why ? why : "no reason given");
+   }
+#endif
+}
 #endif
 
 void filebrowser_clear_type(void)
@@ -703,6 +748,11 @@ static int filebrowser_parse(
       const char *str = path_is_compressed
          ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE)
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
+
+#if defined(HAVE_NFSCLIENT) || defined(HAVE_SMBCLIENT)
+      if (!path_is_compressed && path && *path)
+         filebrowser_log_net_failure(path);
+#endif
 
       menu_entries_append(info_list, str, "",
             MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0, NULL);
