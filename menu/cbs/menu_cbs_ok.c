@@ -4540,8 +4540,8 @@ static int action_ok_path_scan_directory(const char *path,
 }
 #endif
 
-/* Also called by the Apple file pickers opened from Content Location. */
-void action_ok_manual_content_scan_set_dir(const char *content_dir)
+static void action_ok_manual_content_scan_set_dir_kind(
+      const char *content_dir, enum manual_content_scan_path_kind kind)
 {
 #ifdef HAVE_COCOATOUCH
    /* For iOS, set the path using realpath because the path name
@@ -4559,13 +4559,20 @@ void action_ok_manual_content_scan_set_dir(const char *content_dir)
    filebrowser_clear_type();
 
    /* Update manual content scan settings */
-   manual_content_scan_set_menu_content_dir(content_dir);
+   manual_content_scan_set_menu_content_dir_kind(content_dir, kind);
 #ifdef HAVE_COCOATOUCH
    free(real_dir);
 #endif
 
    /* Return to 'manual content scan' menu */
    menu_entries_flush_stack(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST_STR, 0);
+}
+
+/* Also called by the Apple file pickers opened from Content Location. */
+void action_ok_manual_content_scan_set_dir(const char *content_dir)
+{
+   action_ok_manual_content_scan_set_dir_kind(content_dir,
+         MANUAL_CONTENT_SCAN_PATH_UNKNOWN);
 }
 
 /* Whether Content Location's list of places or its browser, or a
@@ -4624,7 +4631,9 @@ static int action_ok_path_manual_scan_directory(const char *path,
          return 0;
    }
 
-   action_ok_manual_content_scan_set_dir(content_dir);
+   action_ok_manual_content_scan_set_dir_kind(content_dir,
+         type == FILE_TYPE_MANUAL_SCAN_DIRECTORY
+         ? MANUAL_CONTENT_SCAN_PATH_FOLDER : MANUAL_CONTENT_SCAN_PATH_FILE);
    return 0;
 }
 

@@ -54,6 +54,14 @@ enum manual_content_scan_system_name_type
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE
 };
 
+/* What the caller knows a content dir to be */
+enum manual_content_scan_path_kind
+{
+   MANUAL_CONTENT_SCAN_PATH_UNKNOWN = 0,
+   MANUAL_CONTENT_SCAN_PATH_FOLDER,
+   MANUAL_CONTENT_SCAN_PATH_FILE
+};
+
 /* Defines types of matching content to databases */
 enum manual_content_scan_db_usage
 {
@@ -300,6 +308,15 @@ void manual_content_scan_fs_free(manual_content_scan_fs_t *fs);
  * taken from @fs (NULL: asked now) */
 bool manual_content_scan_set_menu_content_dir_fs(const char *content_dir,
       const manual_content_scan_fs_t *fs);
+
+/* As manual_content_scan_set_menu_content_dir(), of @kind: an smb://
+ * path of known kind is not stat'd, as that can wait on the server. */
+bool manual_content_scan_set_menu_content_dir_kind(const char *content_dir,
+      enum manual_content_scan_path_kind kind);
+
+/* path_stat() of @path, the content directory last set, or for an
+ * smb:// one of known kind what its kind says. */
+int manual_content_scan_content_stat(const char *path);
 
 bool manual_content_scan_set_menu_scan_method(
       enum manual_content_scan_method method);

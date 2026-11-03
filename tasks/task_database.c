@@ -4218,13 +4218,29 @@ static bool manual_scan_end_flush_tick(
 }
 
 #ifdef HAVE_LIBRETRODB
-bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb,
+static bool task_push_dbscan_kind(const char *fullpath,
+      enum manual_content_scan_path_kind kind, retro_task_callback_t cb,
       void *user_data)
 {
    if (task_dbscan_chain_refuse())
       return false;
-   manual_content_scan_set_menu_content_dir(fullpath);
+   manual_content_scan_set_menu_content_dir_kind(fullpath, kind);
    return task_push_manual_content_scan(false, cb, user_data);
+}
+
+bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb,
+      void *user_data)
+{
+   return task_push_dbscan_kind(fullpath, MANUAL_CONTENT_SCAN_PATH_UNKNOWN,
+         cb, user_data);
+}
+
+bool task_push_dbscan_known(const char *fullpath, bool is_dir,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_dbscan_kind(fullpath, is_dir
+         ? MANUAL_CONTENT_SCAN_PATH_FOLDER : MANUAL_CONTENT_SCAN_PATH_FILE,
+         cb, user_data);
 }
 
 #endif
@@ -5933,7 +5949,8 @@ static bool task_manual_content_scan_push(
    if (manual_scan->task_config->db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH)
       manual_scan->flags |= DB_HANDLE_FLAG_USE_FIRST_MATCH_ONLY;
 
-   if (path_is_directory(manual_scan->task_config->content_dir))
+   if (manual_content_scan_content_stat(manual_scan->task_config->content_dir)
+         & RETRO_VFS_STAT_IS_DIRECTORY)
       manual_scan->flags |= DB_HANDLE_FLAG_IS_DIRECTORY;
 #endif 
 
