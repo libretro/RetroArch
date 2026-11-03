@@ -329,12 +329,17 @@ jobs:
           # 5.1 core reaches a Dolby Digital decoder as AC-3 bursts
           # that decode back to its own channels. Includes the
           # shipping audio_driver.c.
+          # The two builds in turn, the two runs at once: each run is
+          # one thread, so a runner's second core takes the other.
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/run-parallel.sh"
           make clean && make -j$(nproc) all
-          ./discrete_multichannel_test
-          echo "[pass] discrete_multichannel_test"
+          mv discrete_multichannel_test discrete_multichannel_test_plain
           make clean && make -j$(nproc) all SANITIZER=address,undefined
-          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./discrete_multichannel_test
-          echo "[pass] discrete_multichannel_test (ASan)"
+          par "discrete_multichannel_test" ./discrete_multichannel_test_plain
+          par "discrete_multichannel_test (ASan)" env ASAN_OPTIONS=detect_leaks=0 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./discrete_multichannel_test
+          par_wait
+          rm -f discrete_multichannel_test_plain
 
       - name: Build and run embedded_alsa_test (the embedded ALSA driver, mock kernel device)
         shell: bash
@@ -684,38 +689,39 @@ jobs:
           # ratio at a bound and the pipe overflows behind it. Real time,
           # so a loaded runner can shift the mean; the tolerance is ten
           # times the settled residual.
-          make clean && make -j$(nproc) all SANITIZER=address,undefined
-          test -x pipeline_rate_control_test
-          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
-             ./pipeline_rate_control_test
-          echo "[pass] pipeline_rate_control_test (ASan)"
           # A core late by 60 ms every 2 s, audio sync off: the silence is
           # the stalls' own and no more, the late audio is not kept, and
           # rate control is not pinned against a backlog. And with sync on:
           # the writer waits, nothing is dropped.
-          ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 12 4 jitter
-          ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 12 4 sync-jitter
-          echo "[pass] pipeline_rate_control_test (late core, ASan)"
           # The 64 ms default buffer, sync off, a steady core and a late one:
           # the consumer's chunks are whole publishes and the pipe's fill
           # swings by one with the phase; nothing is dropped from a steady
           # core at any phase.
-          ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 big
-          ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 big-jitter
-          echo "[pass] pipeline_rate_control_test (64 ms device, ASan)"
           # The producer held 4 ms every five seconds, as a loaded runner
           # holds it: a publish pushed across a sink window boundary. The
           # estimate must settle and apply about zero, not the shift.
-          ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 big-stall
-          echo "[pass] pipeline_rate_control_test (stalled producer, ASan)"
           # A float core on a float ring into a float device: a signal a
           # tenth of an int16 LSB high arrives as published, not as zero.
-          ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 float
-          echo "[pass] pipeline_rate_control_test (float core, ASan)"
+          # Every run is seconds of audio against a device that drains
+          # in real time, on almost no CPU: all eight at once, so the
+          # step takes as long as the longest of them.
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/run-parallel.sh"
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          mv pipeline_rate_control_test pipeline_rate_control_test_asan
           make clean && make -j$(nproc) all SANITIZER=thread
-          TSAN_OPTIONS=halt_on_error=1 timeout 240 ./pipeline_rate_control_test
-          echo "[pass] pipeline_rate_control_test (TSan)"
-
+          test -x pipeline_rate_control_test_asan && test -x pipeline_rate_control_test
+          A="env ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 120 ./pipeline_rate_control_test_asan"
+          par "pipeline_rate_control_test (ASan)" $A
+          par "pipeline_rate_control_test (late core, ASan)" $A 12 4 jitter
+          par "pipeline_rate_control_test (late core, Audio Sync, ASan)" $A 12 4 sync-jitter
+          par "pipeline_rate_control_test (64 ms device, ASan)" $A 16 4 big
+          par "pipeline_rate_control_test (64 ms device, late core, ASan)" $A 16 4 big-jitter
+          par "pipeline_rate_control_test (stalled producer, ASan)" $A 16 4 big-stall
+          par "pipeline_rate_control_test (float core, ASan)" $A 16 4 float
+          par "pipeline_rate_control_test (TSan)" env TSAN_OPTIONS=halt_on_error=1 \
+             timeout 240 ./pipeline_rate_control_test
+          par_wait
+          rm -f pipeline_rate_control_test_asan
       - name: Build and run resampler_reset_test (ASan + UBSan)
         shell: bash
         working-directory: samples/audio/resampler_reset
@@ -1340,11 +1346,16 @@ jobs:
           # retried, since a host that takes the consumer off its core
           # shows the same with the cap off; only a cap that never runs
           # clean fails.
+          # Its five lanes run in real time on next to no CPU, so they
+          # run at once: the step takes as long as the longest lane.
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/run-parallel.sh"
           make clean && make -j$(nproc)
           test -x pipeline_clocked_test
-          PACED_ONLY=1 timeout 600 ./pipeline_clocked_test 3
-          echo "[pass] pipeline_clocked_test (fill cap)"
-
+          for lane in audio_paced setpoint rate_control sync_off ff_exit; do
+             par "pipeline_clocked_test (fill cap: $lane)" \
+                env PACED_ONLY=$lane timeout 300 ./pipeline_clocked_test 3
+          done
+          par_wait
       - name: Build and run resampler option tests (C89, ASan + UBSan)
         working-directory: samples/audio/resampler_options
         run: |

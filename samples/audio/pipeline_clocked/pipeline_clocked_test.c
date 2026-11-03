@@ -27,7 +27,8 @@
  * with a present that blocks behind the runloop's back; and Audio
  * Sync off, display-paced, the pipe deep and shallow; and the second
  * after fast-forward or a pause, which FF_EXIT_ONLY runs alone.
- * PACED_ONLY runs those lanes alone; JITTER_US makes the display-paced
+ * PACED_ONLY=1 runs those lanes alone; PACED_ONLY=audio_paced, setpoint,
+ * rate_control, sync_off or ff_exit just that one; JITTER_US makes the display-paced
  * core up to that late on each frame, its schedule kept.
  *
  * Includes audio/audio_driver.c so the shipping producer and consumer
@@ -1290,6 +1291,7 @@ int main(int argc, char **argv)
 {
    static const unsigned sweep[] = { 8, 12, 16, 24, 32, 40, 48, 64 };
    double seconds = (argc > 1) ? atof(argv[1]) : 4.0;
+   const char *only;
    size_t i;
 
    memset(frame_audio, 0, sizeof(frame_audio));
@@ -1303,13 +1305,21 @@ int main(int argc, char **argv)
       sync_off_case(seconds);
       return paced_failures ? 1 : 0;
    }
-   if (getenv("PACED_ONLY"))
+   if ((only = getenv("PACED_ONLY")))
    {
-      audio_paced_case(seconds);
-      setpoint_case(seconds);
-      rate_control_case(seconds);
-      sync_off_case(seconds);
-      ff_exit_case();
+      /* PACED_ONLY=1 runs them all; a lane's name runs that one, so a
+       * runner can take the lanes in parallel, each in real time */
+      bool all = !strcmp(only, "1");
+      if (all || !strcmp(only, "audio_paced"))
+         audio_paced_case(seconds);
+      if (all || !strcmp(only, "setpoint"))
+         setpoint_case(seconds);
+      if (all || !strcmp(only, "rate_control"))
+         rate_control_case(seconds);
+      if (all || !strcmp(only, "sync_off"))
+         sync_off_case(seconds);
+      if (all || !strcmp(only, "ff_exit"))
+         ff_exit_case();
       return (paced_failures || ff_exit_failures) ? 1 : 0;
    }
    if (getenv("FF_EXIT_ONLY"))
