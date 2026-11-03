@@ -19,6 +19,9 @@
 #define FRAMES   800
 #define CAPTURE  (FRAMES * 2 + 256)
 static int16_t source_i[FRAMES * 2];
+/* a core that sends its own 5.1, each channel its own signal */
+static int16_t source_51[FRAMES * 6];
+static bool    core_surround;
 /* room for a device of up to eight channels */
 static uint8_t captured[CAPTURE * 8 * sizeof(float)];
 static size_t  captured_bytes, device_bytes;
@@ -30,6 +33,9 @@ static size_t  lent_at, lent_len;   /* outstanding lend */
 static bool    lending;
 static unsigned begin_calls, end_calls, write_calls;
 static size_t  span_cap;            /* 0: full spans; else cut to this */
+/* 0: a flat area; else the device is a ring of this many bytes, whose
+ * span stops where it wraps (the capture stays flat behind it) */
+static size_t  ring_bytes;
 /* the layout the device opens with, and Headphone Virtual Surround */
 static uint32_t dev_layout = AUDIO_LAYOUT_STEREO;
 static bool     virtual_surround;
@@ -73,6 +79,8 @@ static size_t test_begin(void *data, size_t len, void **region)
       len = sizeof(captured) - captured_bytes;
    if (span_cap && len > span_cap)
       len = span_cap;
+   if (ring_bytes && len > ring_bytes - captured_bytes % ring_bytes)
+      len = ring_bytes - captured_bytes % ring_bytes;
    if (!len)
       return 0;
    lending = true;
@@ -147,7 +155,11 @@ static void run_stream(bool dev_float, bool with_lend, unsigned in_rate,
    captured_bytes = 0;
    begin_calls = end_calls = write_calls = 0;
    memset(captured, 0, sizeof(captured));
-   audio_driver_sample_batch(source_i, FRAMES);
+   if (core_surround)
+      audio_driver_sample_batch_multi_int16(source_51, FRAMES, 6,
+            AUDIO_LAYOUT_5POINT1);
+   else
+      audio_driver_sample_batch(source_i, FRAMES);
    if (threaded != st->pipe_threaded)
    {
       printf("FAIL: the pipeline is %s, %s asked for\n",
@@ -215,6 +227,8 @@ int main(void)
    audio_null.layout        = test_layout;
    for (i = 0; i < FRAMES * 2; i++)
       source_i[i] = (int16_t)((int)(i % 1000) - 500);
+   for (i = 0; i < FRAMES * 6; i++)
+      source_51[i] = (int16_t)((int)((i * (7 + i % 6)) % 2000) - 1000);
 
    /* Real resampling into the lent span, float and int16 devices. */
    compare_case("float device, 32k -> 48k", true,  32000, 0, false);
@@ -258,6 +272,71 @@ int main(void)
       snprintf(what, sizeof(what), "%sheadphone surround, short spans", threaded ? "" : "inline, ");
       compare_case(what, false, 32000, 64, true);
       virtual_surround = false;
+   }
+
+   /* A device whose ring wraps inside the span: the stereo int16
+    * device's narrowing, the upmix and the binaural render are made
+    * span by span either side of the wrap, write() not called - and a
+    * ring that cuts a frame at its end sends that frame through write()
+    * with the stream intact. A float stereo device's resampler output
+    * cannot be split and still goes through write(). */
+   {
+      static const size_t rings[] = { 1920, 1000 }; /* whole frames, or not */
+      size_t r;
+      for (r = 0; r < 2; r++)
+         for (i = 0; i < 2; i++)
+         {
+            char what[96];
+            bool whole = r == 0;
+            threaded   = i == 0;
+            ring_bytes = rings[r];
+            snprintf(what, sizeof(what), "%swrapping ring %u, s16 device",
+                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            compare_case(what, false, 32000, 0, !whole);
+            snprintf(what, sizeof(what), "%swrapping ring %u, float device",
+                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            compare_case(what, true,  32000, 0, true);
+            dev_layout = AUDIO_LAYOUT_5POINT1;
+            snprintf(what, sizeof(what), "%swrapping ring %u, 5.1 float",
+                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            compare_case(what, true,  32000, 0, !whole);
+            snprintf(what, sizeof(what), "%swrapping ring %u, 5.1 s16",
+                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            compare_case(what, false, 32000, 0, !whole);
+            dev_layout = AUDIO_LAYOUT_STEREO;
+            virtual_surround = true;
+            snprintf(what, sizeof(what), "%swrapping ring %u, headphones float",
+                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            compare_case(what, true,  32000, 0, !whole);
+            snprintf(what, sizeof(what), "%swrapping ring %u, headphones s16",
+                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            compare_case(what, false, 32000, 0, !whole);
+            virtual_surround = false;
+         }
+      /* The core's own surround channels, merged over the upmix span by
+       * span: each span takes its own frames of them */
+      core_surround = true;
+      ring_bytes    = rings[0];
+      for (i = 0; i < 2; i++)
+      {
+         char what[96];
+         threaded   = i == 0;
+         dev_layout = AUDIO_LAYOUT_5POINT1;
+         snprintf(what, sizeof(what), "%swrapping ring, a 5.1 core, 5.1 float",
+               threaded ? "" : "inline, ");
+         compare_case(what, true,  32000, 0, false);
+         snprintf(what, sizeof(what), "%swrapping ring, a 5.1 core, 5.1 s16",
+               threaded ? "" : "inline, ");
+         compare_case(what, false, 32000, 0, false);
+         dev_layout = AUDIO_LAYOUT_STEREO;
+         virtual_surround = true;
+         snprintf(what, sizeof(what), "%swrapping ring, a 5.1 core, headphones",
+               threaded ? "" : "inline, ");
+         compare_case(what, true,  32000, 0, false);
+         virtual_surround = false;
+      }
+      core_surround = false;
+      ring_bytes = 0;
    }
 
    if (failures)

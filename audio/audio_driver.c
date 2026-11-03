@@ -2868,8 +2868,10 @@ static int audio_driver_extra_slot(uint32_t layout, uint32_t position)
    return (int)audio_layout_channels(below);
 }
 
+/* @dev holds frames [@first, @first + @frames) of the flush */
 static void audio_driver_extra_merge_layout_f32(audio_driver_state_t *audio_st,
-      float *dev, size_t frames, uint32_t into_layout, unsigned into_channels)
+      float *dev, size_t first, size_t frames, uint32_t into_layout,
+      unsigned into_channels)
 {
    const unsigned ch  = audio_st->extra.channels;
    const unsigned och = into_channels;
@@ -2898,7 +2900,7 @@ static void audio_driver_extra_merge_layout_f32(audio_driver_state_t *audio_st,
    }
    for (f = 0; f < frames; f++)
    {
-      const float *e = audio_st->extra.out_f + f * ch;
+      const float *e = audio_st->extra.out_f + (first + f) * ch;
       float *d = dev + f * och;
       for (k = 0; k < n; k++)
       {
@@ -2920,14 +2922,14 @@ static void audio_driver_extra_merge_layout_f32(audio_driver_state_t *audio_st,
 
 /* The device's own frame, which is the usual case. */
 static void audio_driver_extra_merge_f32(audio_driver_state_t *audio_st,
-      float *dev, size_t frames)
+      float *dev, size_t first, size_t frames)
 {
-   audio_driver_extra_merge_layout_f32(audio_st, dev, frames,
+   audio_driver_extra_merge_layout_f32(audio_st, dev, first, frames,
          audio_st->out_layout, audio_st->out_channels);
 }
 
 static void audio_driver_extra_merge_s16(audio_driver_state_t *audio_st,
-      int16_t *dev, size_t frames)
+      int16_t *dev, size_t first, size_t frames)
 {
    const unsigned ch  = audio_st->extra.channels;
    const unsigned och = audio_st->out_channels;
@@ -2954,7 +2956,7 @@ static void audio_driver_extra_merge_s16(audio_driver_state_t *audio_st,
    }
    for (f = 0; f < frames; f++)
    {
-      const int16_t *e = audio_st->extra.out_i + f * ch;
+      const int16_t *e = audio_st->extra.out_i + (first + f) * ch;
       int16_t *d = dev + f * och;
       for (k = 0; k < n; k++)
       {
@@ -3006,44 +3008,133 @@ static ssize_t audio_driver_dev_write(audio_driver_state_t *audio_st,
    return w;
 }
 
-/* The driver's own buffer for the @bytes a widening stage is about to
- * produce, or NULL. Lent, the upmix or the binaural render writes the
- * device frames there and they are published as they are, instead of
- * being produced in upmix_buf or upmix_i16 and copied in by write().
- * Inline and blocking, the device is waited on first for the whole
- * span, as write() would have waited for it piece by piece; with no
- * room after that, or a span the driver cut short, the stage writes
- * its own buffer and write() takes it as it always has. */
-static void *audio_driver_stage_lend(audio_driver_state_t *audio_st,
-      const audio_driver_t *audio, size_t bytes)
+/* A stage that makes the device's frames one at a time, its state
+ * carried from one call to the next: frames [@first, @first + @n) of
+ * the flush into @dst. */
+typedef void (*audio_stage_t)(audio_driver_state_t *audio_st, void *dst,
+      size_t first, size_t n, const void *src);
+
+/* What an upmix stage reads: the stereo, and whether the core's own
+ * surround channels are merged over it */
+typedef struct
 {
-   void  *region = NULL;
-   size_t got;
-   if (!audio->write_begin || !audio->write_end || !bytes)
-      return NULL;
+   const void *in;
+   bool        merge;
+} audio_stage_upmix_src_t;
+
+/* @frames of @stage into the driver's own buffer, in as many spans as
+ * it lends - two where its ring wraps - rather than produced in the
+ * stage's buffer and copied in by write(). Each span takes whole
+ * frames; a frame the wrap would cut, and whatever has no room, is left
+ * to the caller. Inline and blocking, the device is waited on first for
+ * all of it, as write() would have waited for it piece by piece.
+ * Returns the frames published. */
+static size_t audio_driver_stage_spans(audio_driver_state_t *audio_st,
+      const audio_driver_t *audio, audio_stage_t stage, const void *src,
+      size_t frames, size_t fb)
+{
+   size_t done = 0;
+   if (!audio->write_begin || !audio->write_end || !frames || !fb)
+      return 0;
    if (     !audio_st->pipe_threaded
          && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
          && audio->wait_writable)
-      audio->wait_writable(audio_st->context_audio_data, bytes);
-   got = audio->write_begin(audio_st->context_audio_data, bytes, &region);
-   if (!region || got < bytes)
+      audio->wait_writable(audio_st->context_audio_data, frames * fb);
+   while (done < frames)
    {
-      if (region)
-         audio->write_end(audio_st->context_audio_data, 0);
-      return NULL;
+      void  *region = NULL;
+      size_t got    = audio->write_begin(audio_st->context_audio_data,
+            (frames - done) * fb, &region);
+      size_t n      = got / fb;
+      if (!region || !n)
+      {
+         if (region)
+            audio->write_end(audio_st->context_audio_data, 0);
+         break;
+      }
+      stage(audio_st, region, done, n, src);
+      if (audio->write_end(audio_st->context_audio_data, n * fb)
+            != (ssize_t)(n * fb))
+         break;
+      done += n;
    }
-   return region;
+   return done;
 }
 
-/* @out, the stage's frames: published where they were lent, written
- * otherwise */
-static ssize_t audio_driver_stage_out(audio_driver_state_t *audio_st,
-      const audio_driver_t *audio, const void *out, const void *lent,
-      size_t bytes, bool wait_room)
+/* @frames of @stage: lent where the driver lends, the rest produced in
+ * @own - at the offset the whole would have had there, so a short
+ * threaded write's tail is where audio_driver_retain_output() looks -
+ * and written. Returns the bytes taken, both together. */
+static ssize_t audio_driver_stage_write(audio_driver_state_t *audio_st,
+      const audio_driver_t *audio, audio_stage_t stage, const void *src,
+      size_t frames, size_t fb, uint8_t *own, bool wait_room)
 {
-   if (lent)
-      return audio->write_end(audio_st->context_audio_data, bytes);
-   return audio_driver_dev_write(audio_st, audio, out, bytes, wait_room);
+   size_t  done = audio_driver_stage_spans(audio_st, audio, stage, src,
+         frames, fb);
+   ssize_t w;
+   if (done == frames)
+      return (ssize_t)(frames * fb);
+   stage(audio_st, own + done * fb, done, frames - done, src);
+   w = audio_driver_dev_write(audio_st, audio, own + done * fb,
+         (frames - done) * fb, wait_room);
+   if (w < 0)
+      return done ? (ssize_t)(done * fb) : w;
+   return (ssize_t)(done * fb) + w;
+}
+
+/* The stages. @src is the stereo, or what the stage reads in its place. */
+static void audio_stage_upmix_s16(audio_driver_state_t *audio_st, void *dst,
+      size_t first, size_t n, const void *src)
+{
+   const audio_stage_upmix_src_t *u = (const audio_stage_upmix_src_t*)src;
+   audio_upmix_process_s16(&audio_st->upmix, (int16_t*)dst,
+         (const int16_t*)u->in + first * 2, n);
+   if (u->merge)
+      audio_driver_extra_merge_s16(audio_st, (int16_t*)dst, first, n);
+}
+
+static void audio_stage_upmix_f32(audio_driver_state_t *audio_st, void *dst,
+      size_t first, size_t n, const void *src)
+{
+   const audio_stage_upmix_src_t *u = (const audio_stage_upmix_src_t*)src;
+   audio_upmix_process(&audio_st->upmix, (float*)dst,
+         (const float*)u->in + first * 2, n);
+   if (u->merge)
+      audio_driver_extra_merge_f32(audio_st, (float*)dst, first, n);
+}
+
+/* a float mix into an int16 device: upmixed in upmix_buf, narrowed */
+static void audio_stage_upmix_f32_s16(audio_driver_state_t *audio_st,
+      void *dst, size_t first, size_t n, const void *src)
+{
+   float *wide = audio_st->upmix_buf + first * audio_st->out_channels;
+   audio_stage_upmix_f32(audio_st, wide, first, n, src);
+   convert_float_to_s16((int16_t*)dst, wide, n * audio_st->out_channels);
+}
+
+/* @src the virtual 5.1 */
+static void audio_stage_binaural_f32(audio_driver_state_t *audio_st,
+      void *dst, size_t first, size_t n, const void *src)
+{
+   audio_binaural_process(&audio_st->binaural, (float*)dst,
+         (const float*)src + first * 6, n);
+}
+
+static void audio_stage_binaural_s16(audio_driver_state_t *audio_st,
+      void *dst, size_t first, size_t n, const void *src)
+{
+   float *ears = audio_st->upmix_buf + first * 2;
+   audio_binaural_process(&audio_st->binaural, ears,
+         (const float*)src + first * 6, n);
+   convert_float_to_s16((int16_t*)dst, ears, n * 2);
+}
+
+/* a float stereo mix narrowed for an int16 stereo device */
+static void audio_stage_narrow(audio_driver_state_t *audio_st, void *dst,
+      size_t first, size_t n, const void *src)
+{
+   (void)audio_st;
+   convert_float_to_s16((int16_t*)dst, (const float*)src + first * 2, n * 2);
 }
 
 static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
@@ -3052,7 +3143,7 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
 {
    bool   dev_float = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT) != 0;
    size_t sample    = dev_float ? sizeof(float) : sizeof(int16_t);
-   void  *lent;
+   audio_stage_upmix_src_t u;
 
    if (audio_st->out_channels <= 2 && audio_st->virtualize && audio_st->virt_buf)
    {
@@ -3081,61 +3172,59 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
             convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.out_i,
                   frames * audio_st->extra.channels, 1.0f);
          audio_driver_extra_merge_layout_f32(audio_st, audio_st->virt_buf,
-               frames, AUDIO_LAYOUT_5POINT1, 6);
+               0, frames, AUDIO_LAYOUT_5POINT1, 6);
          audio_st->extra.out_frames = 0;
       }
-      lent = audio_driver_stage_lend(audio_st, audio, frames * 2 * sample);
+      /* the ears rendered where the driver lends, as many spans as it
+       * takes */
       if (dev_float)
-      {
-         float *ears = lent ? (float*)lent : audio_st->upmix_buf;
-         audio_binaural_process(&audio_st->binaural, ears, audio_st->virt_buf, frames);
-         return audio_driver_stage_out(audio_st, audio, ears, lent,
-               frames * 2 * sizeof(float), wait_room);
-      }
-      audio_binaural_process(&audio_st->binaural, audio_st->upmix_buf, audio_st->virt_buf, frames);
-      {
-         int16_t *ears = lent ? (int16_t*)lent : audio_st->upmix_i16;
-         convert_float_to_s16(ears, audio_st->upmix_buf, frames * 2);
-         return audio_driver_stage_out(audio_st, audio, ears, lent,
-               frames * 2 * sizeof(int16_t), wait_room);
-      }
+         return audio_driver_stage_write(audio_st, audio,
+               audio_stage_binaural_f32, audio_st->virt_buf, frames,
+               2 * sizeof(float), (uint8_t*)audio_st->upmix_buf, wait_room);
+      return audio_driver_stage_write(audio_st, audio,
+            audio_stage_binaural_s16, audio_st->virt_buf, frames,
+            2 * sizeof(int16_t), (uint8_t*)audio_st->upmix_i16, wait_room);
    }
 
    if (audio_st->out_channels <= 2 || !audio_st->upmix_buf)
+   {
+      /* A float mix for an int16 device, the stereo lend's fallback:
+       * narrowed where the driver lends, the wrap's two spans and all */
+      if (stereo_is_float && !dev_float)
+         return audio_driver_stage_write(audio_st, audio, audio_stage_narrow,
+               stereo, frames, 2 * sizeof(int16_t),
+               (uint8_t*)audio_st->output_samples_int16, wait_room);
       return audio_driver_dev_write(audio_st, audio, stereo,
             frames * 2 * sample, wait_room);
+   }
 
    if (frames > audio_st->upmix_frames)
       frames = audio_st->upmix_frames;
+   /* The core's own surround channels, for the stages to merge: whole,
+    * in the format they are merged in, before the first span */
+   u.in    = stereo;
+   u.merge = audio_st->extra.out_frames >= frames && audio_st->extra.channels;
    /* An int16 mix into an int16 device stays int16 through the upmix:
     * the fixed-point form, so the all-integer pipeline never rounds
     * through float on the way out. It was widened to float, upmixed
     * and narrowed again - two conversions and a rounding for nothing. */
-   lent = audio_driver_stage_lend(audio_st, audio,
-         frames * audio_st->out_channels * sample);
    if (!stereo_is_float && !dev_float)
    {
-      int16_t *dev = lent ? (int16_t*)lent : audio_st->upmix_i16;
-      audio_upmix_process_s16(&audio_st->upmix, dev,
-            (const int16_t*)stereo, frames);
-      if (audio_st->extra.out_frames >= frames && audio_st->extra.channels)
-      {
-         if (audio_st->extra.res_int16)
-            audio_driver_extra_merge_s16(audio_st, dev, frames);
-         else
-         {
-            /* extras resampled as float behind an int16 front: narrow */
-            convert_float_to_s16(audio_st->extra.out_i, audio_st->extra.out_f, frames * audio_st->extra.channels);
-            audio_driver_extra_merge_s16(audio_st, dev, frames);
-         }
+      ssize_t w;
+      /* extras resampled as float behind an int16 front: narrow */
+      if (u.merge && !audio_st->extra.res_int16)
+         convert_float_to_s16(audio_st->extra.out_i, audio_st->extra.out_f, frames * audio_st->extra.channels);
+      w = audio_driver_stage_write(audio_st, audio, audio_stage_upmix_s16,
+            &u, frames, audio_st->out_channels * sizeof(int16_t),
+            (uint8_t*)audio_st->upmix_i16, wait_room);
+      if (u.merge)
          audio_st->extra.out_frames = 0;
-      }
-      return audio_driver_stage_out(audio_st, audio, dev, lent,
-            frames * audio_st->out_channels * sizeof(int16_t), wait_room);
+      return w;
    }
+   if (u.merge && audio_st->extra.res_int16)
+      convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.out_i, frames * audio_st->extra.channels, 1.0f);
    {
-      /* a float device's frames are produced where they are lent */
-      float *dev = (lent && dev_float) ? (float*)lent : audio_st->upmix_buf;
+      ssize_t w;
       if (!stereo_is_float)
       {
          /* Narrowed stereo from the int16 path into a float device: the
@@ -3145,35 +3234,21 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
           * channels >= 4), then upmixed from there. */
          float *stage = (float*)audio_st->upmix_i16;
          convert_s16_to_float(stage, (const int16_t*)stereo, frames * 2, 1.0f);
-         audio_upmix_process(&audio_st->upmix, dev, stage, frames);
-      }
-      else
-         audio_upmix_process(&audio_st->upmix, dev,
-               (const float*)stereo, frames);
-
-      if (audio_st->extra.out_frames >= frames && audio_st->extra.channels)
-      {
-         if (!audio_st->extra.res_int16)
-            audio_driver_extra_merge_f32(audio_st, dev, frames);
-         else
-         {
-            convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.out_i, frames * audio_st->extra.channels, 1.0f);
-            audio_driver_extra_merge_f32(audio_st, dev, frames);
-         }
-         audio_st->extra.out_frames = 0;
+         u.in = stage;
       }
       if (dev_float)
-         return audio_driver_stage_out(audio_st, audio, dev, lent,
-               frames * audio_st->out_channels * sizeof(float), wait_room);
-   }
-   /* a float mix into an int16 device: the one narrowing it needs,
-    * into the lend */
-   {
-      int16_t *dev = lent ? (int16_t*)lent : audio_st->upmix_i16;
-      convert_float_to_s16(dev, audio_st->upmix_buf,
-            frames * audio_st->out_channels);
-      return audio_driver_stage_out(audio_st, audio, dev, lent,
-            frames * audio_st->out_channels * sizeof(int16_t), wait_room);
+         w = audio_driver_stage_write(audio_st, audio, audio_stage_upmix_f32,
+               &u, frames, audio_st->out_channels * sizeof(float),
+               (uint8_t*)audio_st->upmix_buf, wait_room);
+      else
+         /* a float mix into an int16 device: the one narrowing it needs */
+         w = audio_driver_stage_write(audio_st, audio,
+               audio_stage_upmix_f32_s16, &u, frames,
+               audio_st->out_channels * sizeof(int16_t),
+               (uint8_t*)audio_st->upmix_i16, wait_room);
+      if (u.merge)
+         audio_st->extra.out_frames = 0;
+      return w;
    }
 }
 
@@ -3499,6 +3574,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    const int16_t *s16_in          = NULL;
    void    *lend                  = NULL;
    size_t   lend_bytes            = 0;
+   /* a stereo int16 device the lend missed: narrowed into its spans */
+   bool     narrow_late           = false;
    float   *out_f;
    int16_t *out_i;
    bool output_sanitized          = false;
@@ -4434,8 +4511,17 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             true);
 
       /* A float driver takes the float mix as it is; an int16 one gets
-       * it narrowed. A wider device gets either widened on the way. */
-      if (!(aflags & AUDIO_FLAG_USE_FLOAT))
+       * it narrowed. A wider device gets either widened on the way. A
+       * stereo int16 device the lend did not reach - its ring wrapping
+       * inside the span - has the mix narrowed into the driver's buffer
+       * span by span on the way out, the stage's own buffer out_i
+       * taking only what the spans did not. */
+      narrow_late = !lend
+            && !(aflags & AUDIO_FLAG_USE_FLOAT)
+            && audio_st->out_channels <= 2
+            && !(audio_st->virtualize && audio_st->virt_buf)
+            && audio->write_begin;
+      if (!(aflags & AUDIO_FLAG_USE_FLOAT) && !narrow_late)
       {
          convert_float_to_s16(out_i,
                (const float*)output_data, output_frames * 2);
@@ -4458,8 +4544,12 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          {
             w = audio_driver_write_frames(audio_st, audio, output_data,
                   output_frames,
-                  (aflags & AUDIO_FLAG_USE_FLOAT) != 0, true);
-            audio_driver_retain_output(audio_st, output_data, output_frames, w);
+                  (aflags & AUDIO_FLAG_USE_FLOAT) || narrow_late, true);
+            /* a tail narrowed late is in out_i, where the whole would
+             * have been */
+            audio_driver_retain_output(audio_st,
+                  narrow_late ? (const void*)out_i : output_data,
+                  output_frames, w);
          }
          audio_st->sink_offered_raw += (uint64_t)output_frames;
          if (!audio_st->pipe_threaded)
