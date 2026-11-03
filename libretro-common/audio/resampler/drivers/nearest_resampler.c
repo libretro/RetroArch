@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
+#include <float.h>
 
 #include <audio/audio_resampler.h>
 
@@ -93,6 +94,41 @@ static void resampler_nearest_reset(void *re_)
       re->fraction = 0;
 }
 
+/* process()'s clock run without the copies. Exact only where float
+ * arithmetic is: a build that keeps floats wider or reorders them could
+ * land a step on the other side of 1, so it answers 0 for the bound. */
+static size_t resampler_nearest_fit(void *re_, double ratio_d,
+      size_t max_output, size_t max_input)
+{
+#if (defined(FLT_EVAL_METHOD) && FLT_EVAL_METHOD != 0) || defined(__FAST_MATH__)
+   (void)re_; (void)ratio_d; (void)max_output; (void)max_input;
+   return 0;
+#else
+   rarch_nearest_resampler_t *re = (rarch_nearest_resampler_t*)re_;
+   float  ratio, fraction;
+   size_t in, out = 0;
+
+   if (!re || !(ratio_d > 0.0) || !(ratio_d <= NEAREST_RATIO_MAX))
+      return 0;
+   ratio    = 1.0 / ratio_d;
+   fraction = re->fraction;
+   for (in = 0; in < max_input; in++)
+   {
+      size_t emit = 0;
+      while (fraction > 1)
+      {
+         emit++;
+         fraction -= ratio;
+      }
+      if (out + emit > max_output)
+         break;
+      out += emit;
+      fraction++;
+   }
+   return in;
+#endif
+}
+
 retro_resampler_t nearest_resampler = {
    resampler_nearest_init,
    resampler_nearest_process,
@@ -101,5 +137,7 @@ retro_resampler_t nearest_resampler = {
    "nearest",
    "nearest",
    resampler_nearest_reset,
-   0
+   0,
+   NULL,
+   resampler_nearest_fit
 };

@@ -44,6 +44,8 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/file/config_file_userdata.c \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.c \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.c \
+	../../../audio/drivers_resampler/cc_resampler.c \
+	../../../audio/drivers_resampler/cc_resampler_int16.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
@@ -51,7 +53,7 @@ SOURCES_C := \
 
 CFLAGS += -Wall $(INCDIRS)
 CFLAGS += -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_AUDIOMIXER -DHAVE_MENU \
-	-DHAVE_CONFIGFILE -D_GNU_SOURCE
+	-DHAVE_CONFIGFILE -DHAVE_CC_RESAMPLER -DHAVE_NEAREST_RESAMPLER -D_GNU_SOURCE
 LDFLAGS += -lm -lpthread
 
 ifneq ($(SAN),)

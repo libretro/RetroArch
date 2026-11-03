@@ -30,6 +30,7 @@
 #endif
 
 #include <math.h>
+#include <float.h>
 
 #include <retro_inline.h>
 #include <retro_math.h>
@@ -771,6 +772,65 @@ static void resampler_CC_reset(void *re_)
 }
 #endif
 
+#if !defined(_MIPS_ARCH_ALLEGREX) && !(defined(FLT_EVAL_METHOD) && FLT_EVAL_METHOD != 0) \
+ && !defined(__FAST_MATH__)
+/* process()'s clock run without the kernels: every arm moves distance
+ * the same way, so this is exact for all of them where float arithmetic
+ * is exact. The upsampler's own stop at the ratio's bound only makes
+ * less, never more. The PSP's state is the VFPU's, and a build that
+ * keeps floats wider or reorders them could land a step on the other
+ * side of a threshold, so those have no fit and size from the bound. */
+static size_t resampler_CC_fit(void *re_, double ratio_d,
+      size_t max_output, size_t max_input)
+{
+   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
+   float  ratio, distance;
+   size_t in, out = 0;
+   bool   up;
+
+   if (!re || !CC_RATIO_USABLE(ratio_d))
+      return 0;
+   ratio    = 1.0 / ratio_d;
+   distance = re->distance;
+   up       = (re->process == re->upsample);
+   if (!up && ratio_d > 1.0)
+   {
+      /* process() moves the stream to the upsampler, from its start */
+      up       = true;
+      distance = 2.0;
+   }
+   for (in = 0; in < max_input; in++)
+   {
+      size_t emit = 0;
+      if (up)
+      {
+         while (distance < 1.0)
+         {
+            emit++;
+            distance += ratio;
+         }
+         distance -= 1.0;
+      }
+      else
+      {
+         distance++;
+         if (distance > (ratio + 0.5))
+         {
+            emit      = 1;
+            distance -= ratio;
+         }
+      }
+      if (out + emit > max_output)
+         break;
+      out += emit;
+   }
+   return in;
+}
+#define CC_FIT resampler_CC_fit
+#else
+#define CC_FIT NULL
+#endif
+
 retro_resampler_t CC_resampler = {
    resampler_CC_init,
    resampler_CC_process,
@@ -779,5 +839,7 @@ retro_resampler_t CC_resampler = {
    "CC",
    "cc",
    resampler_CC_reset,
-   0
+   0,
+   NULL,
+   CC_FIT
 };
