@@ -27,7 +27,11 @@
 
 #ifdef LIBCO_C
   #ifdef LIBCO_MP
-    #define thread_local __thread
+    #ifdef _MSC_VER
+      #define thread_local __declspec(thread)
+    #else
+      #define thread_local __thread
+    #endif
   #else
     #define thread_local
   #endif

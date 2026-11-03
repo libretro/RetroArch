@@ -337,6 +337,7 @@ jobs:
             fast_cores_test
             memshm_test
             fastjmp_test
+            context_test
             rdds_block_test
             faulthandler_test
             memshm_area_test
