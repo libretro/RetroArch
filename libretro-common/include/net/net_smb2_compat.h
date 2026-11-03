@@ -150,6 +150,9 @@ static INLINE int  smb2_disconnect_share(struct smb2_context *ctx) { rsmb_discon
 static INLINE int  smb2_context_active(struct smb2_context *ctx)   { return rsmb_get_fd(SMB2_CTX(ctx)) >= 0; }
 static INLINE int  smb2_echo(struct smb2_context *ctx)             { return rsmb_echo(SMB2_CTX(ctx)); }
 static INLINE const char *smb2_get_error(struct smb2_context *ctx) { return rsmb_get_error(SMB2_CTX(ctx)); }
+/* The step a failed smb2_connect_share() was on; RSMB_PHASE_NONE when a
+ * KRB5 request had no realm or got no ticket. Built-in client only. */
+static INLINE enum rsmb_phase smb2_get_phase(struct smb2_context *ctx) { return rsmb_get_phase(SMB2_CTX(ctx)); }
 
 static INLINE struct smb2fh *smb2_open(struct smb2_context *ctx, const char *path, int flags)
 {

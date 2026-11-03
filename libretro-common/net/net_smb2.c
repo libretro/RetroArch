@@ -194,6 +194,9 @@ struct rsmb_ctx
    uint8_t  connected;
    char     server[256];
    char     error[128];
+   /* a send or receive that fails is RSMB_PHASE_CONNECT, whatever
+    * step the connect was on */
+   enum rsmb_phase phase;
    /* Kerberos: set, the session is authenticated with a ticket for
     * cifs/@server from @krb_kdc, falling back to NTLMSSP when the
     * KDC cannot be reached or refuses */
@@ -329,6 +332,7 @@ static int rsmb_send_raw(struct rsmb_ctx *c, const uint8_t *msg, size_t len)
    if (!socket_send_all_blocking_with_timeout(c->fd, nb, 4 + len, (int)c->timeout * 1000, true))
    {
       rsmb_err(c, "send failed or timed out");
+      c->phase = RSMB_PHASE_CONNECT;
       return -1;
    }
    return 0;
@@ -342,17 +346,20 @@ static int rsmb_recv_raw(struct rsmb_ctx *c, size_t *len)
    if (socket_receive_all_blocking_with_timeout(c->fd, nb, 4, (int)c->timeout * 1000) <= 0)
    {
       rsmb_err(c, "receive failed or timed out");
+      c->phase = RSMB_PHASE_CONNECT;
       return -1;
    }
    n = ((size_t)nb[1] << 16) | ((size_t)nb[2] << 8) | nb[3];
    if (nb[0] != 0 || n < SMB2_HDR_SIZE || n > c->buf_size)
    {
       rsmb_err(c, "bad frame");
+      c->phase = RSMB_PHASE_CONNECT;
       return -1;
    }
    if (socket_receive_all_blocking_with_timeout(c->fd, c->rx, n, (int)c->timeout * 1000) <= 0)
    {
       rsmb_err(c, "receive failed or timed out");
+      c->phase = RSMB_PHASE_CONNECT;
       return -1;
    }
    *len = n;
@@ -1660,6 +1667,7 @@ int rsmb_connect(struct rsmb_ctx *c, const char *server, const char *share)
 
    rsmb_disconnect(c);
    strlcpy(c->server, server, sizeof(c->server));
+   c->phase = RSMB_PHASE_RESOLVE;
    fd = socket_init((void**)&addr, c->port ? c->port : SMB2_PORT, server, SOCKET_TYPE_STREAM, AF_UNSPEC);
    if (fd < 0 || !addr)
    {
@@ -1668,6 +1676,7 @@ int rsmb_connect(struct rsmb_ctx *c, const char *server, const char *share)
          freeaddrinfo_retro(addr);
       return -1;
    }
+   c->phase = RSMB_PHASE_CONNECT;
    if (!socket_connect_with_timeout(fd, addr, (int)c->timeout * 1000))
    {
       freeaddrinfo_retro(addr);
@@ -1691,15 +1700,22 @@ int rsmb_connect(struct rsmb_ctx *c, const char *server, const char *share)
    c->encrypt       = 0;
    c->nonce_counter = 0;
 
-   if (rsmb_negotiate(c) != 0 || rsmb_session_setup(c) != 0
-         || rsmb_tree_connect(c, share) != 0)
-   {
-      socket_close(c->fd);
-      c->fd = -1;
-      return -1;
-   }
+   if (rsmb_negotiate(c) != 0)
+      goto fail;
+   c->phase = RSMB_PHASE_SESSION;
+   if (rsmb_session_setup(c) != 0)
+      goto fail;
+   c->phase = RSMB_PHASE_TREE;
+   if (rsmb_tree_connect(c, share) != 0)
+      goto fail;
+   c->phase     = RSMB_PHASE_NONE;
    c->connected = 1;
    return 0;
+
+fail:
+   socket_close(c->fd);
+   c->fd = -1;
+   return -1;
 }
 
 void rsmb_disconnect(struct rsmb_ctx *c)
@@ -1751,6 +1767,7 @@ void rsmb_free(struct rsmb_ctx *c)
 
 const char *rsmb_get_error(const struct rsmb_ctx *c) { return c->error; }
 uint32_t    rsmb_get_status(const struct rsmb_ctx *c) { return c->status; }
+enum rsmb_phase rsmb_get_phase(const struct rsmb_ctx *c) { return c->phase; }
 unsigned    rsmb_get_sign_alg(const struct rsmb_ctx *c)
 {
    if (c->dialect < DIALECT_300)
