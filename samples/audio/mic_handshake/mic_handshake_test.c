@@ -618,6 +618,63 @@ static void resampler_choice_case(void)
       printf("mic resampler: only the one the flush uses is built\n");
 }
 
+/* The flush's last stage writes the core's samples straight into the
+ * outgoing ring, in the one span or two its wrap leaves: at every
+ * place the head can be, both fills - narrowed float, and the left of
+ * int16 stereo - must leave in the ring exactly what the stage used to
+ * produce on its own and copy in, sample for sample, the samples it
+ * reports and no more. */
+static void enqueue_case(void)
+{
+   retro_microphone_t mic;
+   float   fin[64];
+   int16_t sin_[128], want[64], got[64], junk[64];
+   unsigned bad = 0, at, n, k;
+
+   for (k = 0; k < 64; k++)
+      fin[k] = (float)sin((double)k * 0.7) * 1.3f; /* past full scale too */
+   for (k = 0; k < 128; k++)
+      sin_[k] = (int16_t)((k & 1) ? -7 * (int)k : 300 * (int)k - 9000);
+   memset(junk, 0, sizeof(junk));
+   for (at = 0; at < 64; at += 2)
+      for (n = 0; n <= 32; n += 3)
+      {
+         int fill;
+         for (fill = 0; fill < 2; fill++)
+         {
+            size_t sent;
+            memset(&mic, 0, sizeof(mic));
+            if (!retro_spsc_init(&mic.outgoing_samples, 64))
+               abort();
+            /* the head moved round to @at, the ring empty again */
+            retro_spsc_write(&mic.outgoing_samples, junk, at);
+            retro_spsc_read(&mic.outgoing_samples, junk, at);
+            if (fill == 0)
+               convert_float_to_s16(want, fin, n);
+            else
+               for (k = 0; k < n; k++)
+                  want[k] = sin_[k << 1];
+            sent = microphone_enqueue(&mic, fill == 0 ? (const void*)fin
+                  : (const void*)sin_, n,
+                  fill == 0 ? MIC_FILL_FLOAT : MIC_FILL_LEFT_S16);
+            if (     sent != n
+                  || retro_spsc_read_avail(&mic.outgoing_samples) != n * sizeof(int16_t)
+                  || retro_spsc_read(&mic.outgoing_samples, got, n * sizeof(int16_t))
+                        != n * sizeof(int16_t)
+                  || memcmp(got, want, n * sizeof(int16_t)))
+               bad++;
+            retro_spsc_free(&mic.outgoing_samples);
+         }
+      }
+   if (bad)
+   {
+      printf("FAIL: %u enqueues differ from what the stage produced\n", bad);
+      failures++;
+   }
+   else
+      printf("mic enqueue: every head position, both fills, the ring holds what the stage produced\n");
+}
+
 int main(int argc, char **argv)
 {
    static const unsigned sweep[] = { 8, 16, 32, 64 };
@@ -626,6 +683,8 @@ int main(int argc, char **argv)
 
    if (!(lat_us = (retro_time_t*)malloc(MAX_SAMPLES * sizeof(retro_time_t))))
       return 1;
+
+   enqueue_case();
 
    printf("threaded microphone capture against a clocked device,"
          " %.0f s per setting, %g fps core\n", seconds, FPS);

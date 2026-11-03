@@ -581,18 +581,6 @@ typedef struct microphone_driver_state
    size_t resampled_mono_frames_length;
 
    /**
-    * The buffer that contains the microphone input
-    * after it's been totally processed and converted.
-    * The contents of this buffer will be provided to the core.
-    */
-   int16_t *final_frames;
-
-   /**
-    * The length of \c final_frames in bytes.
-    */
-   size_t final_frames_length;
-
-   /**
     * The current microphone driver.
     * Will be a pointer to one of the elements of \c microphone_drivers.
     */

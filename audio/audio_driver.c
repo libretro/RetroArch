@@ -11941,9 +11941,7 @@ static bool mic_driver_allocate_frames(microphone_driver_state_t *mic_st)
    size_t i16_dual_mono = 0;
    size_t i16_resampled = AUDIO_ARENA_NEXT(i16_dual_mono,
          max_frames * 2, AUDIO_ARENA_ALIGN_INT16);
-   size_t i16_final     = AUDIO_ARENA_NEXT(i16_resampled,
-         max_frames * 2, AUDIO_ARENA_ALIGN_INT16);
-   size_t i16_total     = i16_final + max_frames;
+   size_t i16_total     = i16_resampled + max_frames * 2;
    /* input_frames holds whatever sample format the driver delivers;
     * its region is sized in floats, the widest format. */
    size_t f32_input     = 0;
@@ -11994,8 +11992,6 @@ static bool mic_driver_allocate_frames(microphone_driver_state_t *mic_st)
    mic_st->dual_mono_frames_int16_length = max_frames * sizeof(int16_t) * 2;
    mic_st->resampled_frames_int16        = arena_int16 + i16_resampled;
    mic_st->resampled_frames_int16_length = max_frames * sizeof(int16_t) * 2;
-   mic_st->final_frames                  = arena_int16 + i16_final;
-   mic_st->final_frames_length           = max_frames * sizeof(int16_t);
 
    return true;
 }
@@ -12315,6 +12311,48 @@ static size_t microphone_outgoing_room(const retro_microphone_t *microphone)
    return room > excess ? room - excess : 0;
 }
 
+/* How a flush's last stage reaches the outgoing ring */
+enum mic_fill
+{
+   MIC_FILL_FLOAT = 0, /* float samples, narrowed */
+   MIC_FILL_LEFT_S16   /* the left of int16 stereo frames */
+};
+
+/* @frames samples of @src into the outgoing ring where the core reads
+ * them, in the one span or two its wrap leaves, instead of produced in
+ * a buffer of its own and copied in by retro_spsc_write(). The ring holds
+ * whole samples, so every span does. Returns the samples that went. */
+static size_t microphone_enqueue(retro_microphone_t *microphone,
+      const void *src, size_t frames, enum mic_fill fill)
+{
+   size_t done = 0;
+   while (done < frames)
+   {
+      void    *p    = NULL;
+      size_t   span = retro_spsc_write_begin(&microphone->outgoing_samples,
+            &p) / sizeof(int16_t);
+      size_t   n    = MIN(span, frames - done);
+      int16_t *dst  = (int16_t*)p;
+      if (!n)
+      {
+         retro_spsc_write_end(&microphone->outgoing_samples, 0);
+         break;
+      }
+      if (fill == MIC_FILL_FLOAT)
+         convert_float_to_s16(dst, (const float*)src + done, n);
+      else
+      {
+         const int16_t *in = (const int16_t*)src + (done << 1);
+         size_t k;
+         for (k = 0; k < n; k++)
+            dst[k] = in[k << 1];
+      }
+      retro_spsc_write_end(&microphone->outgoing_samples, n * sizeof(int16_t));
+      done += n;
+   }
+   return done;
+}
+
 static size_t microphone_driver_flush(
       microphone_driver_state_t *mic_st,
       retro_microphone_t *microphone,
@@ -12376,10 +12414,9 @@ static size_t microphone_driver_flush(
 
       /* If this mic provides floating-point samples... */
       if (sample_size == sizeof(float))
-      {
-         convert_float_to_s16(mic_st->final_frames, (const float*)mic_st->input_frames, resampler_data.input_frames);
-         retro_spsc_write(&microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
-      }
+         /* narrowed straight into the ring */
+         frames_to_enqueue = microphone_enqueue(microphone,
+               mic_st->input_frames, frames_to_enqueue, MIC_FILL_FLOAT);
       else
          retro_spsc_write(&microphone->outgoing_samples, mic_st->input_frames, frames_to_enqueue * sizeof(int16_t));
 
@@ -12417,22 +12454,18 @@ static size_t microphone_driver_flush(
        * size. */
       s16.ratio         = audio_driver_bound_ratio(resampler_data.ratio,
             resampler_data.input_frames,
-            MIN(mic_st->resampled_frames_int16_length
-                     / (2 * sizeof(int16_t)),
-                mic_st->final_frames_length / sizeof(int16_t)));
+            mic_st->resampled_frames_int16_length
+                     / (2 * sizeof(int16_t)));
       microphone->resampler_int16_process(
             microphone->resampler_data_int16, &s16);
 
-      /* Left channel only; both carry the same signal. */
-      for (n = 0; n < s16.output_frames; n++)
-         mic_st->final_frames[n] = mic_st->resampled_frames_int16[n << 1];
-
+      /* Left channel only; both carry the same signal - taken straight
+       * into the ring. */
       frames_to_enqueue = MIN(
             microphone_outgoing_room(microphone) / sizeof(int16_t),
             s16.output_frames);
-      retro_spsc_write(&microphone->outgoing_samples, mic_st->final_frames,
-            frames_to_enqueue * sizeof(int16_t));
-      return frames_to_enqueue;
+      return microphone_enqueue(microphone, mic_st->resampled_frames_int16,
+            frames_to_enqueue, MIC_FILL_LEFT_S16);
    }
 
    /* First we need to format the input for the resampler. */
@@ -12449,13 +12482,12 @@ static size_t microphone_driver_flush(
    }
 
    /* Now we resample the mic data.  Bound the ratio first: the output is
-    * narrowed to mono and then to int16 through three separate buffers, so
-    * take the smallest capacity of the three. */
+    * narrowed to mono and then to int16 into the ring, so take the
+    * smaller capacity of the two buffers on the way. */
    resampler_data.ratio = audio_driver_bound_ratio(resampler_data.ratio,
          resampler_data.input_frames,
-         MIN(MIN(mic_st->resampled_frames_length / (2 * sizeof(float)),
-                 mic_st->resampled_mono_frames_length / sizeof(float)),
-             mic_st->final_frames_length / sizeof(int16_t)));
+         MIN(mic_st->resampled_frames_length / (2 * sizeof(float)),
+             mic_st->resampled_mono_frames_length / sizeof(float)));
 
    if (microphone->resampler_data)
       microphone->resampler->process(microphone->resampler_data, &resampler_data);
@@ -12467,12 +12499,11 @@ static size_t microphone_driver_flush(
    /* Why the left channel? No particular reason.
     * Left and right channels are the same in this case anyway. */
 
-   /* Finally, we convert the audio back to 16-bit ints, as the mic interface requires. */
-   convert_float_to_s16(mic_st->final_frames, mic_st->resampled_mono_frames, resampler_data.output_frames);
-
+   /* Finally, we convert the audio back to 16-bit ints, as the mic
+    * interface requires - straight into the ring. */
    frames_to_enqueue = MIN(microphone_outgoing_room(microphone) / sizeof(int16_t), resampler_data.output_frames);
-   retro_spsc_write(&microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
-   return frames_to_enqueue;
+   return microphone_enqueue(microphone, mic_st->resampled_mono_frames,
+         frames_to_enqueue, MIC_FILL_FLOAT);
 }
 
 #ifdef HAVE_THREADS
@@ -12858,8 +12889,6 @@ bool microphone_driver_deinit(bool is_reset)
    mic_st->dual_mono_frames_int16_length = 0;
    mic_st->resampled_frames_int16        = NULL;
    mic_st->resampled_frames_int16_length = 0;
-   mic_st->final_frames                  = NULL;
-   mic_st->final_frames_length           = 0;
 
    if (mic_st->arena_float)
       memalign_free(mic_st->arena_float);
