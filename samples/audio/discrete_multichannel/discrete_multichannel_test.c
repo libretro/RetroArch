@@ -62,7 +62,129 @@ static audio_pipeline_stretch_t *transport_test_new(unsigned rate,
 #define memalign_free transport_test_free
 #define audio_pipeline_stretch_new transport_test_new
 #define realloc canonical_test_realloc
+/* The consumer's bound on an idle wait, a second in the frontend, is
+ * what the scheduler cases run into when they call a pass with nothing
+ * queued: eight of them, eight seconds of nothing. 20 ms is still far
+ * past what any case here waits for. */
+#define AUDIO_PIPE_WAIT_MAX_US       20000
+/* The resamplers the driver makes come from a table cache (below): a
+ * sibling of one parent per configuration, so the hundreds of audio
+ * re-inits here build each set of sinc tables once rather than every
+ * time. The header's prototypes take the new names along. */
+#define retro_resampler_realloc_hq   test_resampler_realloc_hq
+#define retro_resampler_int16_new    test_resampler_int16_new
 #include "../../../audio/audio_driver.c"
+#undef retro_resampler_realloc_hq
+#undef retro_resampler_int16_new
+#undef realloc
+/* the real ones, which the renamed header no longer declares */
+bool retro_resampler_realloc_hq(void **re, const retro_resampler_t **backend,
+      const char *ident, enum resampler_quality quality, double bw_ratio,
+      bool hq_oversampling);
+bool retro_resampler_int16_new(retro_resampler_int16_t *out,
+      const char *short_ident, enum resampler_quality quality,
+      double bw_ratio, bool hq_oversampling);
+
+/* ---- the resampler table cache ----
+ * A parent per (backend, quality, bandwidth ratio, HQ) kept for the
+ * run; what the driver gets is a sibling of it: its own fresh stream
+ * over the parent's tables, freed like any other. A backend without
+ * siblings is made the usual way. */
+typedef struct
+{
+   char                     ident[32];
+   enum resampler_quality   quality;
+   double                   bw_ratio;
+   bool                     hq;
+   void                    *re;
+   const retro_resampler_t *backend;
+   retro_resampler_int16_t  re16;
+   bool                     has16;
+} table_parent_t;
+static table_parent_t table_parents[64];
+static unsigned       table_parents_n;
+
+static table_parent_t *table_parent(const char *ident,
+      enum resampler_quality quality, double bw_ratio, bool hq)
+{
+   unsigned i;
+   table_parent_t *p;
+   if (!ident)
+      ident = "";
+   for (i = 0; i < table_parents_n; i++)
+   {
+      p = &table_parents[i];
+      if (     !strcmp(p->ident, ident) && p->quality == quality
+            && p->bw_ratio == bw_ratio && p->hq == hq)
+         return p;
+   }
+   if (table_parents_n == sizeof(table_parents) / sizeof(table_parents[0]))
+      return NULL;
+   p = &table_parents[table_parents_n++];
+   memset(p, 0, sizeof(*p));
+   strncpy(p->ident, ident, sizeof(p->ident) - 1);
+   p->quality  = quality;
+   p->bw_ratio = bw_ratio;
+   p->hq       = hq;
+   return p;
+}
+
+bool test_resampler_realloc_hq(void **re, const retro_resampler_t **backend,
+      const char *ident, enum resampler_quality quality, double bw_ratio,
+      bool hq_oversampling)
+{
+   table_parent_t *p = table_parent(ident, quality, bw_ratio, hq_oversampling);
+   if (*re && *backend)
+      (*backend)->free(*re);
+   *re = NULL;
+   if (p && !p->re
+         && !retro_resampler_realloc_hq(&p->re, &p->backend, ident, quality,
+               bw_ratio, hq_oversampling))
+      p->re = NULL;
+   if (p && p->re && p->backend->sibling)
+   {
+      *backend = p->backend;
+      *re      = p->backend->sibling(p->re);
+      if (*re)
+         return true;
+   }
+   return retro_resampler_realloc_hq(re, backend, ident, quality, bw_ratio,
+         hq_oversampling);
+}
+
+bool test_resampler_int16_new(retro_resampler_int16_t *out,
+      const char *short_ident, enum resampler_quality quality,
+      double bw_ratio, bool hq_oversampling)
+{
+   table_parent_t *p = table_parent(short_ident, quality, bw_ratio, hq_oversampling);
+   if (p && !p->has16)
+      p->has16 = retro_resampler_int16_new(&p->re16, short_ident, quality,
+            bw_ratio, hq_oversampling);
+   if (p && p->has16 && p->re16.sibling)
+   {
+      *out      = p->re16;
+      out->data = p->re16.sibling(p->re16.data);
+      if (out->data)
+         return true;
+   }
+   return retro_resampler_int16_new(out, short_ident, quality, bw_ratio,
+         hq_oversampling);
+}
+
+static void table_parents_free(void)
+{
+   unsigned i;
+   for (i = 0; i < table_parents_n; i++)
+   {
+      table_parent_t *p = &table_parents[i];
+      if (p->re)
+         p->backend->free(p->re);
+      if (p->has16)
+         p->re16.free(p->re16.data);
+   }
+   table_parents_n = 0;
+}
+#define realloc canonical_test_realloc
 
 /* Pause and resume as the runloop would: the flags drive the publish,
  * so the snapshot keeps carrying the setting bits the fixture set. */
@@ -211,8 +333,9 @@ static bool up(bool core_float, uint32_t layout, bool float_dev)
    st->sink_bias              = 1.0;
    strcpy(st->resampler_ident, "sinc");
    st->resampler_quality      = RESAMPLER_QUALITY_NORMAL;
-   if (!retro_resampler_realloc(&st->resampler_data, &st->resampler,
-            st->resampler_ident, st->resampler_quality, st->src_ratio_orig))
+   if (!test_resampler_realloc_hq(&st->resampler_data, &st->resampler,
+            st->resampler_ident, st->resampler_quality, st->src_ratio_orig,
+            false))
       return false;
    config_get_ptr()->uints.audio_output_sample_rate = 48000;
    st->out_rate               = 48000;
@@ -2761,6 +2884,7 @@ int main(void)
    RUN("fold",     large_inline_batch_case(false, true));
    audio_driver_deinit_internal(true);
    owned_free();
+   table_parents_free();
    free(cap); free(rec_cap);
    if (failures) { printf("%u failure(s)\n", failures); return 1; }
    printf("discrete multi-channel: a core's channels reach their speakers as they are\n");

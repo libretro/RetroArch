@@ -187,7 +187,9 @@ static float audio_driver_input_rate(const audio_driver_state_t *audio_st);
  * microseconds. With audio_sync on this wait is the frontend's audio
  * throttle, the same thing a blocking driver write was; the cap only
  * exists so a device that stops draining cannot hang the frontend. */
+#ifndef AUDIO_PIPE_WAIT_MAX_US
 #define AUDIO_PIPE_WAIT_MAX_US         1000000
+#endif
 /* The producer's own bound is derived from the ring rather than flat:
  * this many of its playing times, floored so a tiny ring still leaves
  * a usable wait. See audio_driver_pipe_wait_us(). */
