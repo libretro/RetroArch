@@ -45,24 +45,29 @@
  * no slot between calls - every read borrows one. When every slot is
  * busy the caller makes a private connection for that one call and
  * drops it afterwards: slower, never blocked, never waiting on a
- * stalled server through someone else's slot. The pool itself is
- * published once by nfs_init_cfg() and only replaced while nothing
- * holds a slot. */
+ * stalled server through someone else's slot. The pool is published
+ * once and kept until nfs_shutdown(): new settings close the idle
+ * connections, and a slot held meanwhile is behind on the generation,
+ * so its next take connects again. */
 struct nfs_slot
 {
    struct rnfs_ctx   *ctx;
    retro_atomic_int_t busy;
-   char               export_path[512];   /* written by the holder only */
+   /* written by the holder only */
+   int                gen;                /* of the settings it connected with */
+   char               server[256];
+   char               export_path[512];
 };
 
 struct nfs_pool
 {
-   struct nfs_slot slots[NFS_MAX_SLOTS];
-   unsigned        count;
+   struct nfs_slot    slots[NFS_MAX_SLOTS];
+   retro_atomic_int_t count;
 };
 
 static retro_atomic_ptr_t nfs_pool_ptr;           /* struct nfs_pool * */
 static retro_atomic_ptr_t nfs_cfg_ptr;            /* const struct nfs_settings * */
+static retro_atomic_int_t nfs_cfg_gen;            /* one more per nfs_init_cfg() */
 /* Last error for nfs_get_last_error(), used only for diagnostics off
  * the hot path. Writers may run on several pool threads at once, so
  * each publishes into its own ring slot (claimed by an atomic counter)
@@ -128,7 +133,7 @@ static void nfs_pool_free(struct nfs_pool *p)
    unsigned i;
    if (!p)
       return;
-   for (i = 0; i < p->count; i++)
+   for (i = 0; i < NFS_MAX_SLOTS; i++)
       rnfs_free(p->slots[i].ctx);
    free(p);
 }
@@ -136,7 +141,7 @@ static void nfs_pool_free(struct nfs_pool *p)
 static int nfs_pool_busy(const struct nfs_pool *p)
 {
    unsigned i;
-   for (i = 0; p && i < p->count; i++)
+   for (i = 0; p && i < NFS_MAX_SLOTS; i++)
       if (retro_atomic_load_acquire_int(&p->slots[i].busy))
          return 1;
    return 0;
@@ -144,26 +149,37 @@ static int nfs_pool_busy(const struct nfs_pool *p)
 
 /* Settings are optional: an nfs://server/export/... URL carries all a
  * connection needs, so the pool comes up with defaults when there are
- * none. A new pool replaces the old one only when nothing holds a
- * slot; otherwise the settings are published and the old pool stays
- * until the next call here. */
+ * none. New settings wait for no slot: idle connections close here,
+ * and one in use connects again on its next take. */
 bool nfs_init_cfg(const struct nfs_settings *new_cfg)
 {
-   struct nfs_pool *old = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
-   struct nfs_pool *p;
+   struct nfs_pool *p = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
+   unsigned i;
    unsigned n = (new_cfg && new_cfg->num_contexts) ? new_cfg->num_contexts : RETRO_NFS_DEFAULT_NUM_CONTEXTS;
 
-   retro_atomic_store_release_ptr(&nfs_cfg_ptr, (void*)new_cfg);
    if (n > NFS_MAX_SLOTS)
       n = NFS_MAX_SLOTS;
-   if (old && nfs_pool_busy(old))
+   retro_atomic_store_release_ptr(&nfs_cfg_ptr, (void*)new_cfg);
+   retro_atomic_fetch_add_int(&nfs_cfg_gen, 1);
+   if (p)
+   {
+      retro_atomic_store_release_int(&p->count, (int)n);
+      for (i = 0; i < NFS_MAX_SLOTS; i++)
+      {
+         struct nfs_slot *s = &p->slots[i];
+         if (!retro_atomic_cas_int(&s->busy, 0, 1))
+            continue;
+         rnfs_free(s->ctx);
+         s->ctx            = NULL;
+         s->export_path[0] = '\0';
+         retro_atomic_store_release_int(&s->busy, 0);
+      }
       return true;
+   }
    if (!(p = (struct nfs_pool*)calloc(1, sizeof(*p))))
       return false;
-   p->count = n;
-   if (retro_atomic_cas_ptr(&nfs_pool_ptr, old, p))
-      nfs_pool_free(old);
-   else
+   retro_atomic_int_init(&p->count, (int)n);
+   if (!retro_atomic_cas_ptr(&nfs_pool_ptr, NULL, p))
       free(p);          /* someone else published one meanwhile */
    return true;
 }
@@ -204,25 +220,32 @@ const char *nfs_get_last_error(void)
 static struct rnfs_ctx *nfs_take(const char *server, const char *export_path,
       struct nfs_slot **slot)
 {
+   /* before the settings: a slot tagged with it saw them or newer */
+   int gen = retro_atomic_load_acquire_int(&nfs_cfg_gen);
    struct nfs_pool *p = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
    const struct nfs_settings *cfg = nfs_cfg();
    struct rnfs_ctx *c = NULL;
-   unsigned i, pass;
+   unsigned i, n, pass;
 
    *slot = NULL;
    if (!p)
    {
       nfs_init_cfg(cfg);
-      p = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
+      gen = retro_atomic_load_acquire_int(&nfs_cfg_gen);
+      cfg = nfs_cfg();
+      p   = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
    }
-   /* pass 0: a free slot on the right export; pass 1: any free slot */
-   for (pass = 0; p && pass < 2 && !c; pass++)
-      for (i = 0; i < p->count; i++)
+   n = p ? (unsigned)retro_atomic_load_acquire_int(&p->count) : 0;
+   /* pass 0: a free slot on the right server and export, connected
+    * with these settings; pass 1: any free slot */
+   for (pass = 0; pass < 2 && !c; pass++)
+      for (i = 0; i < n; i++)
       {
          struct nfs_slot *s = &p->slots[i];
          if (!retro_atomic_cas_int(&s->busy, 0, 1))
             continue;
-         if (pass == 0 && (!s->ctx || rnfs_get_fd(s->ctx) < 0
+         if (pass == 0 && (!s->ctx || rnfs_get_fd(s->ctx) < 0 || s->gen != gen
+                  || strcmp(s->server, server) != 0
                   || strcmp(s->export_path, export_path) != 0))
          {
             retro_atomic_store_release_int(&s->busy, 0);
@@ -251,7 +274,9 @@ static struct rnfs_ctx *nfs_take(const char *server, const char *export_path,
    }
    if (!c)
       return NULL;
-   if (rnfs_get_fd(c) < 0 || !*slot || strcmp((*slot)->export_path, export_path) != 0)
+   if (     rnfs_get_fd(c) < 0 || !*slot || (*slot)->gen != gen
+         || strcmp((*slot)->server, server) != 0
+         || strcmp((*slot)->export_path, export_path) != 0)
    {
       rnfs_set_timeout(c, cfg && cfg->timeout ? cfg->timeout : RETRO_NFS_DEFAULT_TIMEOUT);
       if (cfg)
@@ -274,17 +299,36 @@ static struct rnfs_ctx *nfs_take(const char *server, const char *export_path,
          return NULL;
       }
       if (*slot)
+      {
+         (*slot)->gen = gen;
+         strlcpy((*slot)->server, server, sizeof((*slot)->server));
          strlcpy((*slot)->export_path, export_path, sizeof((*slot)->export_path));
+      }
    }
    return c;
 }
 
 static void nfs_give(struct rnfs_ctx *c, struct nfs_slot *slot)
 {
-   if (slot)
-      retro_atomic_store_release_int(&slot->busy, 0);
-   else
+   struct nfs_pool *p = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
+   unsigned i;
+   if (!slot)
+   {
       rnfs_free(c);
+      return;
+   }
+   /* past a lowered count no take reaches the slot, and nfs_init_cfg()
+    * skipped it while held: close it here */
+   for (i = p ? (unsigned)retro_atomic_load_acquire_int(&p->count) : NFS_MAX_SLOTS;
+         i < NFS_MAX_SLOTS; i++)
+      if (slot == &p->slots[i])
+      {
+         rnfs_free(slot->ctx);
+         slot->ctx            = NULL;
+         slot->export_path[0] = '\0';
+         break;
+      }
+   retro_atomic_store_release_int(&slot->busy, 0);
 }
 
 /* With no export in the settings the URL's path starts with it: a
@@ -294,19 +338,23 @@ static void nfs_give(struct rnfs_ctx *c, struct nfs_slot *slot)
 static struct rnfs_ctx *nfs_take_url(const char *server, const char *path,
       const char **rel, struct nfs_slot **slot)
 {
+   int gen = retro_atomic_load_acquire_int(&nfs_cfg_gen);
    struct nfs_pool *p = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
    char export_buf[512];
    unsigned i;
+   unsigned count = p ? (unsigned)retro_atomic_load_acquire_int(&p->count) : 0;
    const char *q;
 
-   for (i = 0; p && i < p->count; i++)
+   for (i = 0; i < count; i++)
    {
       struct nfs_slot *s = &p->slots[i];
       size_t el;
       if (!retro_atomic_cas_int(&s->busy, 0, 1))
          continue;
       el = strlen(s->export_path);
-      if (s->ctx && el && rnfs_get_fd(s->ctx) >= 0 && strncmp(path, s->export_path, el) == 0
+      if (s->ctx && el && rnfs_get_fd(s->ctx) >= 0 && s->gen == gen
+            && strcmp(s->server, server) == 0
+            && strncmp(path, s->export_path, el) == 0
             && (path[el] == '/' || path[el] == '\0'))
       {
          *rel  = path + el;

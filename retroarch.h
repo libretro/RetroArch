@@ -215,6 +215,14 @@ void retroarch_favorites_init(void);
 
 void retroarch_favorites_deinit(void);
 
+/* Hand the network clients the current settings. */
+#ifdef HAVE_SMBCLIENT
+void retroarch_smb_init(void);
+#endif
+#ifdef HAVE_NFSCLIENT
+void retroarch_nfs_init(void);
+#endif
+
 /* Audio */
 
 /**

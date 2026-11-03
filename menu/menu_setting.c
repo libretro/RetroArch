@@ -10742,6 +10742,37 @@ static void general_write_handler(rarch_setting_t *setting)
          ssl_socket_set_verify_mode(*setting->value.target.unsigned_integer);
          break;
 #endif
+#ifdef HAVE_SMBCLIENT
+      case MENU_ENUM_LABEL_SMB_CLIENT_SERVER:
+      case MENU_ENUM_LABEL_SMB_CLIENT_SHARE:
+      case MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR:
+      case MENU_ENUM_LABEL_SMB_CLIENT_USERNAME:
+      case MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD:
+      case MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP:
+      case MENU_ENUM_LABEL_SMB_CLIENT_REALM:
+      case MENU_ENUM_LABEL_SMB_CLIENT_KDC:
+      case MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE:
+      case MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS:
+      case MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT:
+      case MENU_ENUM_LABEL_SMB_CLIENT_READAHEAD:
+         /* the client keeps copies of the numbers */
+         retroarch_smb_init();
+         break;
+#endif
+#ifdef HAVE_NFSCLIENT
+      case MENU_ENUM_LABEL_NFS_CLIENT_SERVER:
+      case MENU_ENUM_LABEL_NFS_CLIENT_EXPORT:
+      case MENU_ENUM_LABEL_NFS_CLIENT_TIMEOUT:
+      case MENU_ENUM_LABEL_NFS_CLIENT_NUM_CONTEXTS:
+      case MENU_ENUM_LABEL_NFS_CLIENT_PORT:
+      case MENU_ENUM_LABEL_NFS_CLIENT_MOUNT_PORT:
+      case MENU_ENUM_LABEL_NFS_CLIENT_VERSION:
+      case MENU_ENUM_LABEL_NFS_CLIENT_READAHEAD:
+         /* the client keeps copies of the numbers, and connections
+          * made with the old settings */
+         retroarch_nfs_init();
+         break;
+#endif
 #ifndef HAVE_LAKKA
       case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
          if (frontend_driver_has_gamemode())
@@ -19802,7 +19833,7 @@ static void settings_build_smbclient(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
+         general_write_handler,
          NULL);
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
@@ -19816,7 +19847,7 @@ static void settings_build_smbclient(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
+         general_write_handler,
          NULL);
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
@@ -19830,7 +19861,7 @@ static void settings_build_smbclient(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
+         general_write_handler,
          NULL);
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
@@ -19844,7 +19875,7 @@ static void settings_build_smbclient(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
+         general_write_handler,
          NULL);
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
@@ -19858,7 +19889,7 @@ static void settings_build_smbclient(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
+         general_write_handler,
          NULL);
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], setting_get_string_representation_smb_password)
@@ -19873,7 +19904,7 @@ static void settings_build_smbclient(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
+         general_write_handler,
          NULL);
       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
@@ -19889,7 +19920,7 @@ static void settings_build_smbclient(
    CONFIG_STRING(list, list_info, settings->arrays.field,                \
          sizeof(settings->arrays.field), MENU_ENUM_LABEL_##T,            \
          MENU_ENUM_LABEL_VALUE_##T, "", &group_info, &subgroup_info,     \
-         parent_group, NULL, NULL);                                      \
+         parent_group, general_write_handler, NULL);                     \
    SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT)
 #define NFS_UINT(field, T, def, mn, mx)                                  \
    CONFIG_UINT(list, list_info, &settings->uints.field,                  \

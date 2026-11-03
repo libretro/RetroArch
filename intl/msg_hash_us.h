@@ -37963,7 +37963,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
-   "Port of the NFS service. 0 asks the server's portmapper."
+   "Port of the NFS service. 0 asks the server's portmapper on version 3 and means 2049 on version 4."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NFS_CLIENT_MOUNT_PORT,
@@ -37971,7 +37971,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
-   "Port of the MOUNT service. 0 asks the server's portmapper."
+   "Port of the MOUNT service. 0 asks the server's portmapper. Version 4 does not use it."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NFS_CLIENT_VERSION,

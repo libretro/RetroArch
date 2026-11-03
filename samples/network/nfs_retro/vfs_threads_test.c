@@ -272,6 +272,48 @@ int main(int argc, char **argv)
       }
       nfs_shutdown();
    }
+   /* new settings reach the next call while a slot is held: a
+    * prefetcher holds one, a stat connects the other, and once the
+    * ports point where nothing listens no stat may ride an old
+    * connection - the idle one, nor the prefetcher's once it closes */
+   {
+      unsigned nfs_port   = cfg.nfs_port;
+      unsigned mount_port = cfg.mount_port;
+      RFILE   *f;
+      cfg.readahead = 1024;
+      nfs_init_cfg(&cfg);
+      f = filestream_open(url_file, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (!f || !path_is_valid(url_file))
+      {
+         fprintf(stderr, "FAIL: open and stat before the port change\n");
+         failures++;
+      }
+      cfg.nfs_port   = 1;
+      cfg.mount_port = 1;
+      nfs_init_cfg(&cfg);
+      if (path_is_valid(url_file))
+      {
+         fprintf(stderr, "FAIL: a stat after a port change used the old connection\n");
+         failures++;
+      }
+      if (f)
+         filestream_close(f);
+      if (path_is_valid(url_file))
+      {
+         fprintf(stderr, "FAIL: a stat after a port change used the prefetcher's old connection\n");
+         failures++;
+      }
+      cfg.nfs_port   = nfs_port;
+      cfg.mount_port = mount_port;
+      nfs_init_cfg(&cfg);
+      if (!path_is_valid(url_file))
+      {
+         fprintf(stderr, "FAIL: a stat with the ports set back (%s)\n", nfs_get_last_error());
+         failures++;
+      }
+      nfs_shutdown();
+   }
    if (failures)
    {
       fprintf(stderr, "FAIL: %d bad operations across %d threads\n", failures, NTHREADS);
