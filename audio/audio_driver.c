@@ -3006,12 +3006,53 @@ static ssize_t audio_driver_dev_write(audio_driver_state_t *audio_st,
    return w;
 }
 
+/* The driver's own buffer for the @bytes a widening stage is about to
+ * produce, or NULL. Lent, the upmix or the binaural render writes the
+ * device frames there and they are published as they are, instead of
+ * being produced in upmix_buf or upmix_i16 and copied in by write().
+ * Inline and blocking, the device is waited on first for the whole
+ * span, as write() would have waited for it piece by piece; with no
+ * room after that, or a span the driver cut short, the stage writes
+ * its own buffer and write() takes it as it always has. */
+static void *audio_driver_stage_lend(audio_driver_state_t *audio_st,
+      const audio_driver_t *audio, size_t bytes)
+{
+   void  *region = NULL;
+   size_t got;
+   if (!audio->write_begin || !audio->write_end || !bytes)
+      return NULL;
+   if (     !audio_st->pipe_threaded
+         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
+         && audio->wait_writable)
+      audio->wait_writable(audio_st->context_audio_data, bytes);
+   got = audio->write_begin(audio_st->context_audio_data, bytes, &region);
+   if (!region || got < bytes)
+   {
+      if (region)
+         audio->write_end(audio_st->context_audio_data, 0);
+      return NULL;
+   }
+   return region;
+}
+
+/* @out, the stage's frames: published where they were lent, written
+ * otherwise */
+static ssize_t audio_driver_stage_out(audio_driver_state_t *audio_st,
+      const audio_driver_t *audio, const void *out, const void *lent,
+      size_t bytes, bool wait_room)
+{
+   if (lent)
+      return audio->write_end(audio_st->context_audio_data, bytes);
+   return audio_driver_dev_write(audio_st, audio, out, bytes, wait_room);
+}
+
 static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
       const audio_driver_t *audio, const void *stereo, size_t frames,
       bool stereo_is_float, bool wait_room)
 {
    bool   dev_float = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT) != 0;
    size_t sample    = dev_float ? sizeof(float) : sizeof(int16_t);
+   void  *lent;
 
    if (audio_st->out_channels <= 2 && audio_st->virtualize && audio_st->virt_buf)
    {
@@ -3043,13 +3084,21 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
                frames, AUDIO_LAYOUT_5POINT1, 6);
          audio_st->extra.out_frames = 0;
       }
-      audio_binaural_process(&audio_st->binaural, audio_st->upmix_buf, audio_st->virt_buf, frames);
+      lent = audio_driver_stage_lend(audio_st, audio, frames * 2 * sample);
       if (dev_float)
-         return audio_driver_dev_write(audio_st, audio, audio_st->upmix_buf,
+      {
+         float *ears = lent ? (float*)lent : audio_st->upmix_buf;
+         audio_binaural_process(&audio_st->binaural, ears, audio_st->virt_buf, frames);
+         return audio_driver_stage_out(audio_st, audio, ears, lent,
                frames * 2 * sizeof(float), wait_room);
-      convert_float_to_s16(audio_st->upmix_i16, audio_st->upmix_buf, frames * 2);
-      return audio_driver_dev_write(audio_st, audio, audio_st->upmix_i16,
-            frames * 2 * sizeof(int16_t), wait_room);
+      }
+      audio_binaural_process(&audio_st->binaural, audio_st->upmix_buf, audio_st->virt_buf, frames);
+      {
+         int16_t *ears = lent ? (int16_t*)lent : audio_st->upmix_i16;
+         convert_float_to_s16(ears, audio_st->upmix_buf, frames * 2);
+         return audio_driver_stage_out(audio_st, audio, ears, lent,
+               frames * 2 * sizeof(int16_t), wait_room);
+      }
    }
 
    if (audio_st->out_channels <= 2 || !audio_st->upmix_buf)
@@ -3062,59 +3111,70 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
     * the fixed-point form, so the all-integer pipeline never rounds
     * through float on the way out. It was widened to float, upmixed
     * and narrowed again - two conversions and a rounding for nothing. */
+   lent = audio_driver_stage_lend(audio_st, audio,
+         frames * audio_st->out_channels * sample);
    if (!stereo_is_float && !dev_float)
    {
-      audio_upmix_process_s16(&audio_st->upmix, audio_st->upmix_i16,
+      int16_t *dev = lent ? (int16_t*)lent : audio_st->upmix_i16;
+      audio_upmix_process_s16(&audio_st->upmix, dev,
             (const int16_t*)stereo, frames);
       if (audio_st->extra.out_frames >= frames && audio_st->extra.channels)
       {
          if (audio_st->extra.res_int16)
-            audio_driver_extra_merge_s16(audio_st, audio_st->upmix_i16, frames);
+            audio_driver_extra_merge_s16(audio_st, dev, frames);
          else
          {
             /* extras resampled as float behind an int16 front: narrow */
             convert_float_to_s16(audio_st->extra.out_i, audio_st->extra.out_f, frames * audio_st->extra.channels);
-            audio_driver_extra_merge_s16(audio_st, audio_st->upmix_i16, frames);
+            audio_driver_extra_merge_s16(audio_st, dev, frames);
          }
          audio_st->extra.out_frames = 0;
       }
-      return audio_driver_dev_write(audio_st, audio, audio_st->upmix_i16,
+      return audio_driver_stage_out(audio_st, audio, dev, lent,
             frames * audio_st->out_channels * sizeof(int16_t), wait_room);
    }
-   if (!stereo_is_float)
    {
-      /* Narrowed stereo from the int16 path into a float device: the
-       * one conversion the mixed formats need, into the head of the
-       * int16 scratch reinterpreted as float (frames * channels int16
-       * is frames * channels / 2 floats, enough for stereo when
-       * channels >= 4), then upmixed from there. */
-      float *stage = (float*)audio_st->upmix_i16;
-      convert_s16_to_float(stage, (const int16_t*)stereo, frames * 2, 1.0f);
-      audio_upmix_process(&audio_st->upmix, audio_st->upmix_buf, stage, frames);
-   }
-   else
-      audio_upmix_process(&audio_st->upmix, audio_st->upmix_buf,
-            (const float*)stereo, frames);
-
-   if (audio_st->extra.out_frames >= frames && audio_st->extra.channels)
-   {
-      if (!audio_st->extra.res_int16)
-         audio_driver_extra_merge_f32(audio_st, audio_st->upmix_buf, frames);
-      else
+      /* a float device's frames are produced where they are lent */
+      float *dev = (lent && dev_float) ? (float*)lent : audio_st->upmix_buf;
+      if (!stereo_is_float)
       {
-         convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.out_i, frames * audio_st->extra.channels, 1.0f);
-         audio_driver_extra_merge_f32(audio_st, audio_st->upmix_buf, frames);
+         /* Narrowed stereo from the int16 path into a float device: the
+          * one conversion the mixed formats need, into the head of the
+          * int16 scratch reinterpreted as float (frames * channels int16
+          * is frames * channels / 2 floats, enough for stereo when
+          * channels >= 4), then upmixed from there. */
+         float *stage = (float*)audio_st->upmix_i16;
+         convert_s16_to_float(stage, (const int16_t*)stereo, frames * 2, 1.0f);
+         audio_upmix_process(&audio_st->upmix, dev, stage, frames);
       }
-      audio_st->extra.out_frames = 0;
+      else
+         audio_upmix_process(&audio_st->upmix, dev,
+               (const float*)stereo, frames);
+
+      if (audio_st->extra.out_frames >= frames && audio_st->extra.channels)
+      {
+         if (!audio_st->extra.res_int16)
+            audio_driver_extra_merge_f32(audio_st, dev, frames);
+         else
+         {
+            convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.out_i, frames * audio_st->extra.channels, 1.0f);
+            audio_driver_extra_merge_f32(audio_st, dev, frames);
+         }
+         audio_st->extra.out_frames = 0;
+      }
+      if (dev_float)
+         return audio_driver_stage_out(audio_st, audio, dev, lent,
+               frames * audio_st->out_channels * sizeof(float), wait_room);
    }
-   if (dev_float)
-      return audio_driver_dev_write(audio_st, audio, audio_st->upmix_buf,
-            frames * audio_st->out_channels * sizeof(float), wait_room);
-   /* a float mix into an int16 device: the one narrowing it needs */
-   convert_float_to_s16(audio_st->upmix_i16, audio_st->upmix_buf,
-         frames * audio_st->out_channels);
-   return audio_driver_dev_write(audio_st, audio, audio_st->upmix_i16,
-         frames * audio_st->out_channels * sizeof(int16_t), wait_room);
+   /* a float mix into an int16 device: the one narrowing it needs,
+    * into the lend */
+   {
+      int16_t *dev = lent ? (int16_t*)lent : audio_st->upmix_i16;
+      convert_float_to_s16(dev, audio_st->upmix_buf,
+            frames * audio_st->out_channels);
+      return audio_driver_stage_out(audio_st, audio, dev, lent,
+            frames * audio_st->out_channels * sizeof(int16_t), wait_room);
+   }
 }
 
 /* The three software flush exits pass persistent stereo output scratch.

@@ -7,7 +7,9 @@
  * pair removed, so the lend changes where the bytes are produced and
  * nothing about the bytes.  A driver that cuts the span short is fed
  * the same input and must fall back to write() with the stream intact,
- * and every begin must be balanced by an end. */
+ * and every begin must be balanced by an end. The same holds for a
+ * wider device, whose frames the upmix produces in the lent span, and
+ * for Headphone Virtual Surround, whose binaural render does. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +19,8 @@
 #define FRAMES   800
 #define CAPTURE  (FRAMES * 2 + 256)
 static int16_t source_i[FRAMES * 2];
-static uint8_t captured[CAPTURE * 2 * sizeof(float)];
+/* room for a device of up to eight channels */
+static uint8_t captured[CAPTURE * 8 * sizeof(float)];
 static size_t  captured_bytes, device_bytes;
 static bool    device_float;
 static unsigned failures;
@@ -27,12 +30,18 @@ static size_t  lent_at, lent_len;   /* outstanding lend */
 static bool    lending;
 static unsigned begin_calls, end_calls, write_calls;
 static size_t  span_cap;            /* 0: full spans; else cut to this */
+/* the layout the device opens with, and Headphone Virtual Surround */
+static uint32_t dev_layout = AUDIO_LAYOUT_STEREO;
+static bool     virtual_surround;
+
+static uint32_t test_layout(void *data) { (void)data; return dev_layout; }
 
 static void *test_init(const char *device, unsigned rate, unsigned latency,
       unsigned *new_rate)
 {
    (void)device;
-   device_bytes = (size_t)latency * rate / 1000 * 2
+   device_bytes = (size_t)latency * rate / 1000
+         * audio_layout_channels(dev_layout)
          * (device_float ? sizeof(float) : sizeof(int16_t));
    *new_rate = rate;
    return &device_bytes;
@@ -115,6 +124,7 @@ static void run_stream(bool dev_float, bool with_lend, unsigned in_rate,
    settings->floats.slowmotion_ratio        = 1.0f;
    strcpy(settings->arrays.audio_resampler, "sinc");
    settings->uints.audio_resampler_quality  = RESAMPLER_QUALITY_NORMAL;
+   settings->bools.audio_headphone_virtual_surround = virtual_surround;
 
    st->input       = in_rate;
    st->volume_gain = 1.0f;
@@ -125,6 +135,14 @@ static void run_stream(bool dev_float, bool with_lend, unsigned in_rate,
       abort();
    audio_driver_publish_runloop();
    st->pipe_priming = false;
+   /* the stage under test is the one running */
+   if (     st->out_channels != audio_layout_channels(dev_layout)
+         || st->virtualize != virtual_surround)
+   {
+      printf("FAIL: the device opened %u channels, virtual surround %s\n",
+            st->out_channels, st->virtualize ? "on" : "off");
+      failures++;
+   }
 
    captured_bytes = 0;
    begin_calls = end_calls = write_calls = 0;
@@ -194,6 +212,7 @@ int main(void)
    audio_null.write_avail   = test_avail;
    audio_null.buffer_size   = test_avail;
    audio_null.wait_writable = test_wait;
+   audio_null.layout        = test_layout;
    for (i = 0; i < FRAMES * 2; i++)
       source_i[i] = (int16_t)((int)(i % 1000) - 500);
 
@@ -213,6 +232,33 @@ int main(void)
    compare_case("inline, s16 device, 32k -> 48k",   false, 32000, 0, false);
    compare_case("inline, s16 device, unity",        false, 48000, 0, true);
    compare_case("inline, short spans",              true,  32000, 64, true);
+
+   /* A wider device: the upmix produces its frames in the driver's
+    * buffer, and the core's stereo through the binaural render does on
+    * headphones - threaded and inline, float and int16 devices. */
+   for (i = 0; i < 2; i++)
+   {
+      char what[96];
+      threaded = i == 0;
+      dev_layout = AUDIO_LAYOUT_5POINT1;
+      snprintf(what, sizeof(what), "%s5.1 device, float", threaded ? "" : "inline, ");
+      compare_case(what, true,  32000, 0, false);
+      snprintf(what, sizeof(what), "%s5.1 device, s16", threaded ? "" : "inline, ");
+      compare_case(what, false, 32000, 0, false);
+      snprintf(what, sizeof(what), "%s5.1 device, s16, unity", threaded ? "" : "inline, ");
+      compare_case(what, false, 48000, 0, false);
+      snprintf(what, sizeof(what), "%s5.1 device, short spans", threaded ? "" : "inline, ");
+      compare_case(what, true,  32000, 64, true);
+      dev_layout = AUDIO_LAYOUT_STEREO;
+      virtual_surround = true;
+      snprintf(what, sizeof(what), "%sheadphone surround, float", threaded ? "" : "inline, ");
+      compare_case(what, true,  32000, 0, false);
+      snprintf(what, sizeof(what), "%sheadphone surround, s16", threaded ? "" : "inline, ");
+      compare_case(what, false, 32000, 0, false);
+      snprintf(what, sizeof(what), "%sheadphone surround, short spans", threaded ? "" : "inline, ");
+      compare_case(what, false, 32000, 64, true);
+      virtual_surround = false;
+   }
 
    if (failures)
    {
