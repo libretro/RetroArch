@@ -3037,24 +3037,29 @@ void rzstd_blocks_free(rzstd_blocks_t *z)
 
 /* -------- the public interface -------- */
 
-int rzstd_decode(uint8_t *dst, size_t dst_len, const uint8_t *src,
-      size_t src_len, size_t *wrote)
+rzstd_decoder_t *rzstd_decoder_new(void)
 {
-   rzstd_frame_state_t *st;
+   return (rzstd_decoder_t*)malloc(sizeof(rzstd_frame_state_t));
+}
+
+void rzstd_decoder_free(rzstd_decoder_t *decoder)
+{
+   free(decoder);
+}
+
+int rzstd_decode_reuse(rzstd_decoder_t *st, uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len, size_t *wrote)
+{
    size_t               out  = 0;
    size_t               used = 0;
    int                  e;
 
-   if (!dst || !src)
-      return RZSTD_PROCESS_ERROR;
-
-   /* The per-frame state carries a literal buffer of the maximum block
-    * size, which is too large to put on the stack. */
-   if (!(st = (rzstd_frame_state_t*)malloc(sizeof(*st))))
+   if (wrote)
+      *wrote = 0;
+   if (!st || !dst || !src)
       return RZSTD_PROCESS_ERROR;
 
    e = rzstd_decode_frame(src, src_len, dst, dst_len, &out, &used, st);
-   free(st);
 
    if (e != RZ_OK)
       return RZSTD_PROCESS_ERROR;
@@ -3069,6 +3074,15 @@ int rzstd_decode(uint8_t *dst, size_t dst_len, const uint8_t *src,
    if (wrote)
       *wrote = out;
    return RZSTD_PROCESS_END;
+}
+
+int rzstd_decode(uint8_t *dst, size_t dst_len, const uint8_t *src,
+      size_t src_len, size_t *wrote)
+{
+   rzstd_decoder_t *decoder = rzstd_decoder_new();
+   int status = rzstd_decode_reuse(decoder, dst, dst_len, src, src_len, wrote);
+   rzstd_decoder_free(decoder);
+   return status;
 }
 
 int rzstd_frame_header_size(const uint8_t *src, size_t src_len)

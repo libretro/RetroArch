@@ -144,6 +144,15 @@ int rzstd_frame_header_size(const uint8_t *src, size_t src_len);
 int rzstd_decode(uint8_t *dst, size_t dst_len,
       const uint8_t *src, size_t src_len, size_t *wrote);
 
+/* Retain decode scratch across independent frames.
+ * One caller at a time per decoder; every call resets frame/table validity,
+ * including after an error. Output goes directly into the caller's buffer. */
+typedef struct rzstd_frame_state rzstd_decoder_t;
+rzstd_decoder_t *rzstd_decoder_new(void);
+void rzstd_decoder_free(rzstd_decoder_t *decoder);
+int rzstd_decode_reuse(rzstd_decoder_t *decoder, uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len, size_t *wrote);
+
 /**
  * rzstd_compress_bound:
  * @src_len    : length of the input to be compressed
