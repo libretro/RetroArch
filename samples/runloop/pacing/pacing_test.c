@@ -197,6 +197,41 @@ static void test_driver_pacing(void)
           "scanline sync, never as a clock\n");
 }
 
+/* Driver Pacing on, but nothing that could take it - gl, glcore, a GPU
+ * without the extension: the timer holds the loop where the backend
+ * would have, else vsync off and audio sync off run it unthrottled. */
+static void test_driver_fallback(void)
+{
+   runloop_pace_facts_t m = PACE_FACT_FOCUSED | PACE_FACT_CORE_RAN
+      | PACE_FACT_DRIVER_PACING_MISSING | PACE_FACT_PRESENTABLE;
+
+   DRIVER_ROW(m, RUNLOOP_PACE_TIMER,
+         "no backend, nothing else: the timer at the content's period");
+   DRIVER_ROW(m | PACE_FACT_WRAPPER, RUNLOOP_PACE_TIMER,
+         "no backend, threaded, no display pacing: the timer");
+   DRIVER_ROW(m & ~PACE_FACT_DRIVER_PACING_MISSING, RUNLOOP_PACE_NONE,
+         "Driver Pacing off: unthrottled, as before");
+   DRIVER_ROW(m | PACE_FACT_VSYNC, RUNLOOP_PACE_VSYNC,
+         "no backend, vsync: VSync alone");
+   DRIVER_ROW(m | PACE_FACT_AUDIO_HOLDING, RUNLOOP_PACE_AUDIO,
+         "no backend, audio sync: Audio alone");
+   DRIVER_ROW(m | PACE_FACT_WRAPPER | PACE_FACT_DISPLAY_PACING,
+         RUNLOOP_PACE_DISPLAY,
+         "no backend, display pacing: the hold alone");
+   DRIVER_ROW(m | PACE_FACT_RATE_CONTROL, RUNLOOP_PACE_TIMER,
+         "no backend, rate control: the gap limiter");
+   DRIVER_ROW(m | PACE_FACT_MENU_ALIVE, RUNLOOP_PACE_NONE,
+         "no backend, menu up: the menu's own pacing");
+   DRIVER_ROW(m | PACE_FACT_FASTMOTION | PACE_FACT_NONBLOCKING,
+         RUNLOOP_PACE_NONE,
+         "no backend, fast-forward: unthrottled");
+   DRIVER_ROW(m & ~PACE_FACT_FOCUSED, RUNLOOP_PACE_NONE,
+         "no backend, unfocused: as with a backend");
+
+   printf("   driver pacing without a backend: the timer holds the "
+          "content's period exactly where a backend would have\n");
+}
+
 /* The interval each owned release hands the driver, from the whole
  * decision: a release with nothing else holding the loop keeps the
  * content's rate rather than none. */
@@ -911,6 +946,7 @@ int main(void)
    test_menu_table();
    test_driver_pacing();
    test_driver_interval();
+   test_driver_fallback();
 
    if (failures)
    {

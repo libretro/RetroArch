@@ -6157,9 +6157,11 @@ static runloop_pace_facts_t runloop_driver_pacing_gather(settings_t *settings,
 {
    unsigned want                  = settings->uints.video_driver_pacing;
    unsigned reason                = VIDEO_DRIVER_PACING_REASON_NONE;
+   bool asked;
    const video_poke_interface_t *poke = video_st->poke;
    if (want >= VIDEO_DRIVER_PACING_LAST)
       want = VIDEO_DRIVER_PACING_OFF;
+   asked = want != VIDEO_DRIVER_PACING_OFF;
    if (!want)
       reason = VIDEO_DRIVER_PACING_REASON_OFF;
    else if (!poke || !poke->driver_pacing_set || !video_st->data)
@@ -6190,6 +6192,13 @@ static runloop_pace_facts_t runloop_driver_pacing_gather(settings_t *settings,
       f |= PACE_FACT_DRIVER_PACING;
    else
    {
+      /* nothing could take it: runloop_pace_driver_fallback() */
+      if (asked && (   reason == VIDEO_DRIVER_PACING_REASON_DRIVER
+                    || reason == VIDEO_DRIVER_PACING_REASON_DEVICE
+                    || reason == VIDEO_DRIVER_PACING_REASON_SWAPCHAIN
+                    || reason == VIDEO_DRIVER_PACING_REASON_FAILED
+                    || reason == VIDEO_DRIVER_PACING_REASON_CORE))
+         f |= PACE_FACT_DRIVER_PACING_MISSING;
       runloop_st->driver_pacing_frame_id     = 0;
       video_st->driver_pacing_id             = 0;
       video_st->driver_pacing_interval_us    = 0;
@@ -10318,6 +10327,14 @@ end:
             (video_st->video_refresh_rate_original)
                ? video_st->video_refresh_rate_original
                : settings->floats.video_refresh_rate);
+   }
+   else if (runloop_pace_driver_fallback(pace_facts, runloop_st->pace))
+   {
+      runloop_st->pace         |= RUNLOOP_PACE_TIMER;
+      pace_limit_min            = runloop_content_frame_time_us(
+            video_st->core_hz);
+      pace_limit_ns             = runloop_content_frame_time_ns(
+            video_st->core_hz);
    }
 
    /* The low-latency backend releases the next frame: the hold is the
