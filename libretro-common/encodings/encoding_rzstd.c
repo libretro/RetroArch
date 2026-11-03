@@ -3485,9 +3485,9 @@ static size_t rzstd_write_frame_header(uint8_t *dst, uint64_t size)
 {
    size_t at = 0;
 
-   dst[at++] = (uint8_t)(RZSTD_MAGIC);
-   dst[at++] = (uint8_t)(RZSTD_MAGIC >> 8);
-   dst[at++] = (uint8_t)(RZSTD_MAGIC >> 16);
+   dst[at++] = (uint8_t)(RZSTD_MAGIC & 255);
+   dst[at++] = (uint8_t)((RZSTD_MAGIC >> 8) & 255);
+   dst[at++] = (uint8_t)((RZSTD_MAGIC >> 16) & 255);
    dst[at++] = (uint8_t)(RZSTD_MAGIC >> 24);
 
    /* Single segment means no window descriptor: the content size is the
