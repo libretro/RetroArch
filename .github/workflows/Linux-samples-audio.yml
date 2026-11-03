@@ -1102,14 +1102,24 @@ jobs:
           # thread and the drain-first shared write this run gave 3-10% of
           # periods unanswered; the first smaller-period attempt without the
           # pump gave 75%.
+          # Each scenario is seconds of a fake device on the wall clock,
+          # on next to no CPU: every scenario under both sanitizers at
+          # once, so the step takes as long as one scenario.
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/run-parallel.sh"
           make clean && make -j$(nproc) all SANITIZER=address,undefined
-          test -x wasapi_exclusive_pacing_test
-          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
-             ./wasapi_exclusive_pacing_test 3
-          echo "[pass] wasapi_exclusive_pacing_test (ASan)"
+          mv wasapi_exclusive_pacing_test wasapi_exclusive_pacing_test_asan
           make clean && make -j$(nproc) all SANITIZER=thread
-          timeout 180 ./wasapi_exclusive_pacing_test 3
-          echo "[pass] wasapi_exclusive_pacing_test (TSan)"
+          test -x wasapi_exclusive_pacing_test_asan && test -x wasapi_exclusive_pacing_test
+          n=$(PACING_SCENARIO=count ./wasapi_exclusive_pacing_test_asan)
+          for sc in $(seq 0 $((n - 1))) rest; do
+             par "wasapi_exclusive_pacing_test $sc (ASan)" env PACING_SCENARIO=$sc \
+                ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                timeout 120 ./wasapi_exclusive_pacing_test_asan 3
+             par "wasapi_exclusive_pacing_test $sc (TSan)" env PACING_SCENARIO=$sc \
+                timeout 180 ./wasapi_exclusive_pacing_test 3
+          done
+          par_wait
+          rm -f wasapi_exclusive_pacing_test_asan
 
       - name: Build and run sink_rate_test (ASan + UBSan)
         shell: bash

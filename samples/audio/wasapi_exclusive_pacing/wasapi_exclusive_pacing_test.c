@@ -613,7 +613,24 @@ int main(int argc, char **argv)
       { 8,  seconds, true,  0,   0,   0,   "exclusive, no start()", true },
       { 64, seconds, false, 0,   0,   0,   "shared, no start()", true },
    };
+   /* PACING_SCENARIO=<n> runs scenario n alone and PACING_SCENARIO=rest
+    * the cases after them, so a runner can take them in parallel: each
+    * runs in real time on next to no CPU. Unset, all of them run. */
+   const char *only = getenv("PACING_SCENARIO");
+   bool        rest = !only || !strcmp(only, "rest");
    unsigned i;
+   const unsigned n_sc = (unsigned)(sizeof(sc) / sizeof(sc[0]));
+   /* PACING_SCENARIO=count prints how many there are, for the runner */
+   if (only && !strcmp(only, "count"))
+   {
+      printf("%u\n", n_sc);
+      return 0;
+   }
+   if (only && !rest && (*only < '0' || *only > '9' || (unsigned)atoi(only) >= n_sc))
+   {
+      printf("PACING_SCENARIO=%s: no such scenario\n", only);
+      return 1;
+   }
    fake_device_configure(48000, 30000, 100000, false);
    /* The endpoint offers both clocks, so frames_consumed() takes the
     * device's position rather than the events the pump saw - which is
@@ -626,9 +643,11 @@ int main(int argc, char **argv)
     * to back, which nobody could answer. A scenario that misses its
     * budget runs again, and fails when three runs in a row miss: the
     * defects these catch miss on every run. */
-   for (i = 0; i < sizeof(sc) / sizeof(sc[0]); i++)
+   for (i = 0; i < n_sc; i++)
    {
       unsigned attempt;
+      if (only && (rest || (unsigned)atoi(only) != i))
+         continue;
       for (attempt = 1; attempt <= 3; attempt++)
       {
          unsigned before = failures;
@@ -650,10 +669,12 @@ int main(int argc, char **argv)
     * clock does not. The engine keeps playing here while its event
     * goes unsignalled, and frames_consumed() has to follow the
     * device rather than the events nobody received. */
-   clock_vs_events_case();
-   device_clock_case();
-
-   ac3_bitstream_case();
+   if (rest)
+   {
+      clock_vs_events_case();
+      device_clock_case();
+      ac3_bitstream_case();
+   }
 
    /* Every init took COM up on its thread and every free put it back. */
    CHECK(fake_com_refs() == 0, "COM references left after free: %d", fake_com_refs());
