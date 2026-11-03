@@ -4265,6 +4265,17 @@ unsigned video_driver_get_ui_layer_dims(unsigned layer)
    return video_driver_get_ui_dims();
 }
 
+float video_driver_ui_display_aspect(void)
+{
+#ifdef HAVE_MODELINE
+   video_driver_state_t *video_st = &video_driver_st;
+   if (     retro_atomic_load_acquire_int(&video_st->crt_switching_active)
+         && video_st->crt_switch_st.gen)
+      return (float)video_st->crt_switch_st.gen->monitor_aspect;
+#endif
+   return 0.0f;
+}
+
 const video_views_layout_t *video_driver_get_views_layout(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
@@ -7575,6 +7586,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_grab_mouse_state = (input_flags & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
    video_info->input_poll_time               = input_driver_get_poll_time();
    video_info->disp_userdata                 = disp_get_ptr();
+   video_info->widget_display_aspect         = video_driver_ui_display_aspect();
 #if defined(HAVE_GFX_WIDGETS) && defined(HAVE_THREADS)
    /* The worker lays the widgets out at this, with the dims and the
     * fullscreen state the main thread would have */
@@ -7582,7 +7594,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
          (     video_info->widgets_active
             && retro_atomic_load_relaxed_int(&p_dispwidget->worker))
       ? gfx_widgets_scale_factor(video_info->disp_userdata, settings,
-            video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_NOTIFICATIONS),
+            gfx_widgets_layout_dims(
+               video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_NOTIFICATIONS),
+               video_info->widget_display_aspect),
             video_info->fullscreen)
       : 0.0f;
 #endif
@@ -9082,6 +9096,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
    video_info->osd_stat_params.y           = 0.970f;
    video_info->osd_stat_params.text_align  = TEXT_ALIGN_LEFT;
    video_info->osd_stat_params.scale       = scale;
+   video_info->osd_stat_params.x_scale     = 1.0f;
    video_info->osd_stat_params.full_screen = true;
    video_info->osd_stat_params.drop_x      = 2;
    video_info->osd_stat_params.drop_y      = -2;

@@ -579,6 +579,9 @@ struct font_params
    float x;
    float y;
    float scale;
+   /* Glyph width over glyph height, for pixels that are not square.
+    * 0 is taken as 1. */
+   float x_scale;
    /* Drop shadow color multiplier. */
    float drop_mod;
    /* Drop shadow alpha */

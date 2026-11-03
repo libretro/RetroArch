@@ -272,6 +272,9 @@ struct gfx_display
    unsigned  batch_first_dims;
    void     *batch_userdata;
    unsigned  batch_video_dims;
+   /* The size drawn to while callers lay out at a narrower or wider
+    * one of the same height (gfx_display_set_output_dims); 0 if none */
+   unsigned  output_dims;
    /* Whether a caller has blending on right now. A quad drawn on its
     * own turns blending on and off around itself; one gathered while
     * a caller has it on must leave it on, or the caller's group ends
@@ -331,6 +334,16 @@ void gfx_display_draw_text_hp(
       enum text_alignment text_align,
       float scale_factor, bool shadows_enable, float shadow_offset,
       bool draw_outside);
+
+/* Until cleared with 0, what is drawn at a video_dims of another
+ * width is stretched across the width of output_dims: for a display
+ * whose pixels are not square. Drawing thread only. */
+void gfx_display_set_output_dims(gfx_display_t *p_disp,
+      unsigned output_dims);
+
+/* What a driver is to be handed for video_dims */
+unsigned gfx_display_output_dims(const gfx_display_t *p_disp,
+      unsigned video_dims);
 
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,

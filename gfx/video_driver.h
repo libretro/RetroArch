@@ -652,6 +652,7 @@ typedef struct video_frame_info
       float x;
       float y;
       float scale;
+      float x_scale;
       /* Drop shadow color multiplier. */
       float drop_mod;
       /* Drop shadow alpha */
@@ -722,6 +723,8 @@ typedef struct video_frame_info
    /* The scale the worker lays the widgets out at, worked out from the
     * settings as the frame is built */
    float widget_scale_factor;
+   /* video_driver_ui_display_aspect() as the frame is built */
+   float widget_display_aspect;
 #ifdef HAVE_OPENXR
    /* 1 + the host's token for the eyes the core drew this frame from,
     * given on the drawing thread before it is drawn; 0 for none */
@@ -2526,6 +2529,10 @@ unsigned video_driver_get_ui_layer_window(unsigned layer);
 
 /* App thread: the size UI layer @layer lays out at this frame */
 unsigned video_driver_get_ui_layer_dims(unsigned layer);
+
+/* Main thread: width over height of the screen the output fills when
+ * its pixels are not square (a CRT at a super resolution), or 0. */
+float video_driver_ui_display_aspect(void);
 /* Main thread: the layout the last frame presented a core's views
  * with, or NULL when it was drawn whole. */
 const video_views_layout_t *video_driver_get_views_layout(void);

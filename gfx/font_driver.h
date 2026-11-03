@@ -289,6 +289,7 @@ typedef struct font_params_resolved
    float x;
    float y;
    float scale;
+   float x_scale;          /* Never 0 */
    float drop_mod;
    float drop_alpha;
    float color[4];         /* RGBA, 0..1, from the packed colour */
