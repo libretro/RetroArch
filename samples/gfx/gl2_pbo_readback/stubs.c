@@ -67,6 +67,7 @@ void video_driver_attach_windows(unsigned screens, unsigned restore)
 { (void)screens; (void)restore; }
 void video_driver_cached_frame(void) { }
 void video_driver_cached_frame_retire(void) { }
+void video_driver_hw_context_shared_note(bool shared) { (void)shared; }
 uint32_t video_driver_get_disp_flags(void) { return 0; }
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 { static struct retro_hw_render_callback cb; return &cb; }
