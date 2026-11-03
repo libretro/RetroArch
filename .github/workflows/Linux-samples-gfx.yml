@@ -1790,6 +1790,9 @@ jobs:
           CC=gcc CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/gl_context_move.py
           CC=clang CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/gl_context_move.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/gl_context_move.py
+          CC=gcc CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/wgl_context_keep.py
+          CC=clang CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/wgl_context_keep.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/wgl_context_keep.py
 
       - name: D3D menu source formats (Linux and mingw + Wine)
         shell: bash

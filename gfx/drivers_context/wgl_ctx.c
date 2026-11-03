@@ -221,6 +221,7 @@ void create_gl_context(HWND hwnd, bool *quit)
 #else
    bool debug                           = hwr->debug_context;
 #endif
+   bool cached                          = false;
 
 #ifdef __WINRT__
    win32_hdc                            = (HDC)(hwnd);
@@ -232,6 +233,7 @@ void create_gl_context(HWND hwnd, bool *quit)
 
    if (win32_hrc)
    {
+      cached = true;
       video_driver_cache_context_ack_set();
       RARCH_LOG("[WGL] Using cached GL context.\n");
    }
@@ -268,7 +270,8 @@ void create_gl_context(HWND hwnd, bool *quit)
       return;
    }
 
-   if (core_context || debug)
+   /* A kept context holds the core's objects: it is not made again */
+   if ((core_context || debug) && !cached)
    {
       unsigned i;
       int attribs[16];
