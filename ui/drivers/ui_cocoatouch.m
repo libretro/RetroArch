@@ -641,7 +641,14 @@ API_AVAILABLE(ios(13.0), tvos(13.0))
 
 - (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions {
    RetroArch_iOS *app = [RetroArch_iOS get];
-   app.window = [[UIWindow alloc] initWithWindowScene:(UIWindowScene *)scene];
+   /* A window made before the scene does not follow its safe area, but
+    * it has the root controller */
+   UIWindow *window       = [[UIWindow alloc] initWithWindowScene:(UIWindowScene *)scene];
+   UIViewController *root = app.window.rootViewController;
+   RARCH_AUTORELEASE(window);
+   app.window.rootViewController = nil;
+   window.rootViewController     = root;
+   app.window                    = window;
 
    [app.window makeKeyAndVisible];
 

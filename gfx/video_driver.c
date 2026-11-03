@@ -120,6 +120,7 @@ struct video_vp_param_snap
     * these, so a reader added outside the #if has to fail the build
     * rather than pick up whatever the stack held. */
    float    bias_portrait_x, bias_portrait_y;
+   unsigned fold, fold_screens;
 #endif
    unsigned rotation, core_req_rotation;
    unsigned aspect_ratio_idx, si_scaling, si_axis;
@@ -172,6 +173,7 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #include "../verbosity.h"
 #include "../command.h"
 #include "../configuration.h"
+#include "../core_info.h"
 #include "video_shader_parse.h"
 #include <compat/strl.h>
 #include <queues/task_queue.h>
@@ -4277,6 +4279,7 @@ static void video_driver_views_params(settings_t *settings,
 
    params->custom_vp       = NULL;
    params->single_aspect   = 0.0f;
+   params->fold_top        = 0;
    params->stretch         = !settings->bools.video_force_aspect;
    params->stereo_mode     = settings->uints.video_stereo_mode;
    params->screen_layout   = settings->uints.video_screen_layout;
@@ -4313,6 +4316,14 @@ static void video_driver_views_layout(settings_t *settings,
       if (custom_vp && VIDEO_SCALE_W(custom.dims) && VIDEO_SCALE_H(custom.dims))
          params.custom_vp = &custom;
    }
+#if defined(RARCH_MOBILE)
+   /* Across a fold: screens stacked, their seam on it, or one above it */
+   if (video_driver_st.display_fold)
+   {
+      params.screen_layout = VIDEO_SCREEN_LAYOUT_VERTICAL;
+      params.fold_top      = VIDEO_SCALE_W(video_driver_st.display_fold);
+   }
+#endif
 
    video_views_layout(&params, out);
 }
@@ -4338,6 +4349,7 @@ void video_driver_window_layout_screens(const video_windows_frame_t *frame,
    video_views_layout_params_t params;
    params.map             = &frame->core;
    params.custom_vp       = NULL;
+   params.fold_top        = 0;
    params.single_aspect   = frame->single_aspect;
    params.stretch         = frame->stretch;
    params.dims            = dims;
@@ -5361,6 +5373,23 @@ static void video_viewport_get_scaled_integer(
 }
 
 
+#if defined(RARCH_MOBILE)
+/* The screens the frame holds: as the core's map says, or for a system
+ * with two, whose cores stack them without sending a map, two. */
+static unsigned video_driver_content_screens(video_driver_state_t *video_st)
+{
+   core_info_t *core = NULL;
+   if (video_st->views.num_views)
+      return video_st->views.num_screens;
+   if (     core_info_get_current_core(&core)
+         && core
+         && (   string_is_equal(core->system_id, "nds")
+             || string_is_equal(core->system_id, "3ds")))
+      return 2;
+   return 1;
+}
+#endif
+
 /* Main-thread publisher of the seqlock'd viewport parameters; see
  * the field comment in video_driver.h for the publish points and
  * why each is ordered before its video-thread consumer. */
@@ -5396,6 +5425,9 @@ void video_driver_publish_vp_params(void)
          video_float_bits(settings->floats.video_vp_bias_portrait_x);
    v[VIDEO_VP_SLOT_BIAS_PORTRAIT_Y] =
          video_float_bits(settings->floats.video_vp_bias_portrait_y);
+   v[VIDEO_VP_SLOT_FOLD]            = (int)video_st->display_fold;
+   v[VIDEO_VP_SLOT_FOLD_SCREENS]    = video_st->display_fold
+         ? (int)video_driver_content_screens(video_st) : 0;
 #endif
 
    /* Compare before writing. This runs once per frame as the catch-all,
@@ -5458,6 +5490,8 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps)
                video_bits_float(v[VIDEO_VP_SLOT_BIAS_PORTRAIT_X]);
          ps->bias_portrait_y   =
                video_bits_float(v[VIDEO_VP_SLOT_BIAS_PORTRAIT_Y]);
+         ps->fold              = (unsigned)v[VIDEO_VP_SLOT_FOLD];
+         ps->fold_screens      = (unsigned)v[VIDEO_VP_SLOT_FOLD_SCREENS];
 #endif
          return;
       }
@@ -5487,6 +5521,11 @@ void video_driver_update_viewport(
    video_driver_state_t *video_st  = &video_driver_st;
    const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
    void *ctx_data                  = (void*)video_st->context_data;
+   unsigned dims                   = vp->full_dims;
+#if defined(RARCH_MOBILE)
+   bool fold_active                = false;
+   bool fold_split                 = false;
+#endif
 
    video_driver_read_vp_params(&ps);
    video_scale_integer             = ps.scale_integer;
@@ -5571,24 +5610,78 @@ void video_driver_update_viewport(
    }
 #endif
 
+#if defined(RARCH_MOBILE)
+   /* A custom viewport is where the user asked for it */
+   if (     ps.fold
+         && !force_full
+         && ps.aspect_ratio_idx != ASPECT_RATIO_CUSTOM)
+   {
+      fold_active = true;
+      /* Stacked screens are taller than wide; another layout is one image */
+      fold_split  = ps.fold_screens >= 2 && video_driver_aspect_ratio < 1.0f;
+      if (!fold_split)
+      {
+         dims     = VIDEO_SCALE_PACK(VIDEO_SCALE_W(vp->full_dims),
+               VIDEO_SCALE_W(ps.fold));
+         vp->dims = dims;
+      }
+   }
+#endif
+
    if (video_scale_integer && !force_full)
       video_viewport_get_scaled_integer(video_st,
             &ps,
             vp,
-            vp->full_dims,
+            dims,
             video_driver_aspect_ratio, keep_aspect, y_down, rotation);
    else if (keep_aspect && !force_full)
    {
       /* Calculate device_aspect, using translate_aspect if available
        * (e.g. for SD TV detection on Raspberry Pi) */
-      float device_aspect = (float)VIDEO_SCALE_W(vp->full_dims) / VIDEO_SCALE_H(vp->full_dims);
+      float device_aspect = (float)VIDEO_SCALE_W(dims) / VIDEO_SCALE_H(dims);
       if (ctx->translate_aspect)
          device_aspect = ctx->translate_aspect(ctx_data,
-            VIDEO_SCALE_W(vp->full_dims), VIDEO_SCALE_H(vp->full_dims));
-      video_viewport_get_scaled_aspect2(vp, vp->full_dims,
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+      video_viewport_get_scaled_aspect2(vp, dims,
             y_down, device_aspect, video_driver_aspect_ratio);
    }
+
+#if defined(RARCH_MOBILE)
+   if (fold_active)
+   {
+      int full_h = (int)VIDEO_SCALE_H(vp->full_dims);
+      int y      = VIDEO_POS_Y(vp->pos);
+      if (fold_split)
+      {
+         /* The seam between the screens on the middle of the fold */
+         y = (int)(VIDEO_SCALE_W(ps.fold) + VIDEO_SCALE_H(ps.fold)) / 2
+            - (int)VIDEO_SCALE_H(vp->dims) / 2;
+         if (!y_down)
+            y = full_h - y - (int)VIDEO_SCALE_H(vp->dims);
+      }
+      else if (!y_down)
+         y += full_h - (int)VIDEO_SCALE_H(dims);
+      vp->pos = VIDEO_POS_PACK(VIDEO_POS_X(vp->pos), y);
+   }
+#endif
 }
+
+#if defined(RARCH_MOBILE)
+void video_driver_set_display_fold(unsigned top, unsigned bottom)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   unsigned fold                  = VIDEO_SCALE_PACK(top, bottom);
+   if (fold == video_st->display_fold)
+      return;
+   video_st->display_fold = fold;
+   /* Before the poke: under the wrapper it is a blocking command, so the
+    * video thread sees the new snapshot before it can act on it. Before
+    * settings exist the first frame publishes it instead. */
+   if (config_get_ptr())
+      video_driver_publish_vp_params();
+   video_driver_apply_state_changes();
+}
+#endif
 
 void video_driver_restore_cached(void *settings_data)
 {

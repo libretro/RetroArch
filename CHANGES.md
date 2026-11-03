@@ -54,6 +54,7 @@
 - INPUT/UDEV: Add wiimote sensor capabilities
 - IOS: Fix external keyboards
 - IOS: Add pd777 core
+- IOS: Support iPhone Duo: use the whole inner display, keep clear of the outer display's camera and follow folding; half folded, the game keeps above the fold with the controls below it, and DS and 3DS screens take one side each
 - LAKKA: RetroFlag specific options for safe shutdown and reset
 - LIBRETRO: ROM memory type added
 - LIBRETRO: Sensor interface clarifications
