@@ -27,7 +27,7 @@ static int pieces(const uint8_t *z, size_t len, const uint8_t *want,
       size_t n)
 {
    rzstd_blocks_t *b  = rzstd_blocks_open();
-   size_t          at = 0, out = 0, w, got;
+   size_t          at = 0, out = 0, w, got = 0;
    const uint8_t  *d;
    int             ok = b != NULL;
 
@@ -107,6 +107,44 @@ static int reused(rzstd_decoder_t *decoder, const uint8_t *z, size_t len,
       return 0;
    return rzstd_decode_reuse(decoder, out, n, z, len, &got)
          == RZSTD_PROCESS_END && got == n && !memcmp(out, want, n);
+}
+
+static int bounded_tails(void)
+{
+   static const size_t sizes[] = { 17, 31, 32, 33, 63, 64, 65, 257, 65537 };
+   size_t cap = rzstd_compress_bound(65537), i, j, n, len, got;
+   uint8_t *src = (uint8_t*)malloc(65537);
+   uint8_t *z   = (uint8_t*)malloc(cap);
+   uint8_t *out = (uint8_t*)malloc(65537);
+   rzstd_decoder_t *decoder = rzstd_decoder_new();
+   unsigned period;
+   int ok = 0;
+
+   if (!src || !z || !out || !decoder)
+      goto done;
+   for (period = 1; period <= 32; period++)
+   {
+      for (i = 0; i < 65537; i++)
+         src[i] = (uint8_t)((i % period) * 13 + 7);
+      for (j = 0; j < sizeof(sizes) / sizeof(sizes[0]); j++)
+      {
+         n = sizes[j];
+         memset(out, 0xa5, 65537);
+         if (rzstd_encode(z, cap, src, n, 3, &len) != RZSTD_PROCESS_END
+               || rzstd_decode_reuse(decoder, out, n, z, len, &got)
+                  != RZSTD_PROCESS_END
+               || got != n || memcmp(src, out, n)
+               || (n < 65537 && out[n] != 0xa5))
+            goto done;
+      }
+   }
+   ok = 1;
+done:
+   rzstd_decoder_free(decoder);
+   free(src);
+   free(z);
+   free(out);
+   return ok;
 }
 
 int main(void)
@@ -201,6 +239,11 @@ int main(void)
    }
    free(src);
    free(z);
+   if (!bounded_tails())
+   {
+      fprintf(stderr, "FAIL: bounded tails, offsets 1 through 32\n");
+      fails++;
+   }
    if (fails)
       return 1;
    printf("ok: a raw block between compressed ones, levels 1 to 9, whole, reused and in pieces; a ring gone round\n");

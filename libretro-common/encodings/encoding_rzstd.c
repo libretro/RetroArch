@@ -1863,8 +1863,30 @@ RZSTD_BODY_INLINE void rzstd_match_copy(uint8_t *to, const uint8_t *from,
 
    if (!slack)
    {
+      uint64_t value[2];
       size_t k;
 
+      if (offset >= n)
+      {
+         memcpy(to, from, n);
+         return;
+      }
+      /* Grow short periods before bounded word copies. No tail overrun. */
+      while (offset < 16 && n > offset)
+      {
+         memcpy(to, from, offset);
+         to     += offset;
+         n      -= offset;
+         offset += offset;
+      }
+      while (n >= 16)
+      {
+         memcpy(value, from, 16);
+         memcpy(to, value, 16);
+         from += 16;
+         to   += 16;
+         n    -= 16;
+      }
       for (k = 0; k < n; k++)
          to[k] = from[k];
       return;
