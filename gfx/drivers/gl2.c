@@ -1315,8 +1315,8 @@ static void gl2_raster_font_draw_vertices(gl2_t *gl,
 
 static void gl2_raster_font_render_message(gl2_t *gl,
       gl2_raster_t *font, const char *msg, size_t msg_len,
-      GLfloat scale, const GLfloat color[4], GLfloat pos_x,
-      GLfloat pos_y, unsigned text_align)
+      GLfloat scale, GLfloat x_scale, const GLfloat color[4],
+      GLfloat pos_x, GLfloat pos_y, unsigned text_align)
 {
    struct video_coords coords;
    GLfloat color_block[4 * 6];
@@ -1332,7 +1332,8 @@ static void gl2_raster_font_render_message(gl2_t *gl,
    GLfloat *font_color                    = font->font_color;
    float inv_tex_size_x                   = 1.0f / VIDEO_SCALE_W(font->tex_dims);
    float inv_tex_size_y                   = 1.0f / VIDEO_SCALE_H(font->tex_dims);
-   float inv_win_width                    = 1.0f / VIDEO_SCALE_W(gl->vp.dims);
+   float win_width                        = VIDEO_SCALE_W(gl->vp.dims) / x_scale;
+   float inv_win_width                    = 1.0f / win_width;
    float inv_win_height                   = 1.0f / VIDEO_SCALE_H(gl->vp.dims);
    const struct font_glyph* (*get_glyph)(void*, uint32_t)
                                           = font->font_driver->get_glyph;
@@ -1357,7 +1358,7 @@ static void gl2_raster_font_render_message(gl2_t *gl,
    do \
    { \
       (void)(count); \
-      x = roundf(pos_x * VIDEO_SCALE_W(gl->vp.dims)); \
+      x = roundf(pos_x * win_width); \
       y = roundf((pos_y - (float)(line) * line_height) \
             * VIDEO_SCALE_H(gl->vp.dims)); \
       if (text_align == TEXT_ALIGN_RIGHT) \
@@ -1498,14 +1499,14 @@ static void gl2_raster_font_render_msg(
          color_dark[3] = color[3] * drop_alpha;
 
          gl2_raster_font_render_message(gl, font, msg, msg_len, scale,
-               color_dark,
-               x + scale * drop_x / VIDEO_SCALE_W(gl->vp.dims),
+               rp.x_scale, color_dark,
+               x + scale * drop_x * rp.x_scale / VIDEO_SCALE_W(gl->vp.dims),
                y + scale * drop_y / VIDEO_SCALE_H(gl->vp.dims),
                text_align);
       }
 
       gl2_raster_font_render_message(gl, font, msg, msg_len, scale,
-            color, x, y, text_align);
+            rp.x_scale, color, x, y, text_align);
    }
 
    if (!font->block)

@@ -2131,6 +2131,7 @@ void font_driver_resolve_params(const struct font_params *params,
       out->x           = params->x;
       out->y           = params->y;
       out->scale       = params->scale;
+      out->x_scale     = params->x_scale > 0.0f ? params->x_scale : 1.0f;
       out->drop_mod    = params->drop_mod;
       out->drop_alpha  = params->drop_alpha;
       out->drop_x      = params->drop_x;
@@ -2153,6 +2154,7 @@ void font_driver_resolve_params(const struct font_params *params,
       out->x           = settings->floats.video_msg_pos_x;
       out->y           = settings->floats.video_msg_pos_y;
       out->scale       = 1.0f;
+      out->x_scale     = 1.0f;
       out->drop_mod    = 0.3f;
       out->drop_alpha  = 1.0f;
       out->drop_x      = -2;

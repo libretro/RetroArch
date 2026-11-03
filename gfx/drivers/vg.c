@@ -382,7 +382,7 @@ static void vg_render_msg(vg_t *vg, const char *msg, size_t msg_len,
    float off_y                       = 0.0f;
    float line_x                      = 0.0f;
    float line_y                      = 0.0f;
-   float x0, y0, scale;
+   float x0, y0, scale, scale_x;
    bool atlas_ok                     = true;
    int pass;
 
@@ -391,6 +391,7 @@ static void vg_render_msg(vg_t *vg, const char *msg, size_t msg_len,
 
    font_driver_resolve_params(params, &rp);
    scale   = rp.scale;
+   scale_x = scale * rp.x_scale;
    x0      = rp.x * (float)width;
    y0      = rp.y * (float)height;
    glyph_q = get_glyph(font_data, '?');
@@ -415,7 +416,7 @@ static void vg_render_msg(vg_t *vg, const char *msg, size_t msg_len,
          color[1] = rp.color[1] * rp.drop_mod;
          color[2] = rp.color[2] * rp.drop_mod;
          color[3] = rp.color[3] * rp.drop_alpha;
-         off_x    = (float)rp.drop_x * scale;
+         off_x    = (float)rp.drop_x * scale_x;
          off_y    = (float)rp.drop_y * scale;
       }
       else
@@ -435,9 +436,9 @@ static void vg_render_msg(vg_t *vg, const char *msg, size_t msg_len,
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
       line_x = x0 + off_x; \
       if (rp.text_align == TEXT_ALIGN_RIGHT) \
-         line_x -= (float)(line_width) * scale; \
+         line_x -= (float)(line_width) * scale_x; \
       else if (rp.text_align == TEXT_ALIGN_CENTER) \
-         line_x -= (float)(line_width) * scale / 2.0f; \
+         line_x -= (float)(line_width) * scale_x / 2.0f; \
       line_y = y0 + off_y - (float)(line) * line_height * scale; \
       if (     atlas->dirty \
             || vg->font_atlas_dims != VIDEO_SCALE_PACK(atlas->width, \
@@ -451,9 +452,9 @@ static void vg_render_msg(vg_t *vg, const char *msg, size_t msg_len,
          { \
             vgLoadIdentity(); \
             vgTranslate( \
-                  line_x + (float)((pen_x) + (glyph)->draw_offset_x) * scale, \
+                  line_x + (float)((pen_x) + (glyph)->draw_offset_x) * scale_x, \
                   line_y - (float)((pen_y) + (glyph)->draw_offset_y) * scale); \
-            vgScale(scale, -scale); \
+            vgScale(scale_x, -scale); \
             vgDrawImage(vg_glyph_img); \
          } \
       }

@@ -2175,8 +2175,10 @@ static int sdl3_raster_font_get_message_width(void *data, const char *msg,
 static void sdl3_raster_font_render_message(
       sdl3_raster_t *font, const char *msg, size_t msg_len, float scale,
       const SDL_FColor col, float pos_x, float pos_y,
-      enum text_alignment align, unsigned width, unsigned height)
+      enum text_alignment align, unsigned width, unsigned height,
+      float x_scale)
 {
+   float scale_x                          = scale * x_scale;
    struct font_line_metrics *line_metrics = NULL;
    float line_height_norm                 = 0.0f;
    SDL_Vertex *verts                      = font->verts;
@@ -2237,9 +2239,9 @@ static void sdl3_raster_font_render_message(
       y = (1.0f - (pos_y - (float)(line) * line_height_norm)) \
          * (float)height; \
       if (align == TEXT_ALIGN_RIGHT) \
-         x -= (int)((float)(line_width) * scale); \
+         x -= (int)((float)(line_width) * scale_x); \
       else if (align == TEXT_ALIGN_CENTER) \
-         x -= (int)((float)(line_width) * scale) * 0.5f; \
+         x -= (int)((float)(line_width) * scale_x) * 0.5f; \
       inv_w = 1.0f / (float)VIDEO_SCALE_W(font->tex_dims); \
       inv_h = 1.0f / (float)VIDEO_SCALE_H(font->tex_dims); \
       n_glyphs = 0; \
@@ -2254,9 +2256,9 @@ static void sdl3_raster_font_render_message(
       (void)(pen_y); \
       if (!line_ok) \
          break; \
-      gx = x + (glyph)->draw_offset_x * scale; \
+      gx = x + (glyph)->draw_offset_x * scale_x; \
       gy = y + (glyph)->draw_offset_y * scale; \
-      gw = VIDEO_SCALE_W((glyph)->dims) * scale; \
+      gw = VIDEO_SCALE_W((glyph)->dims) * scale_x; \
       gh = VIDEO_SCALE_H((glyph)->dims) * scale; \
       u0 = (float)VIDEO_SCALE_W((glyph)->atlas_pos) * inv_w; \
       v0 = (float)VIDEO_SCALE_H((glyph)->atlas_pos) * inv_h; \
@@ -2289,7 +2291,7 @@ static void sdl3_raster_font_render_message(
       idx[n_glyphs * 6 + 3] = base + 2; \
       idx[n_glyphs * 6 + 4] = base + 1; \
       idx[n_glyphs * 6 + 5] = base + 3; \
-      x += (glyph)->advance_x * scale; \
+      x += (glyph)->advance_x * scale_x; \
       if (++n_glyphs >= SDL3_FONT_MAX_GLYPHS) \
       { \
          SDL_RenderGeometry(font->vid->renderer, font->tex, \
@@ -2369,13 +2371,13 @@ static void sdl3_raster_font_render_msg(
       col_drop.a = col.a * drop_alpha;
 
       sdl3_raster_font_render_message(font, msg, msg_len, scale, col_drop,
-            x + scale * drop_x / (float)width,
+            x + scale * drop_x * rp.x_scale / (float)width,
             y + scale * drop_y / (float)height,
-            align, width, height);
+            align, width, height, rp.x_scale);
    }
 
    sdl3_raster_font_render_message(font, msg, msg_len, scale, col,
-         x, y, align, width, height);
+         x, y, align, width, height, rp.x_scale);
 }
 
 static const struct font_glyph *sdl3_raster_font_get_glyph(

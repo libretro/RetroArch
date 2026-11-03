@@ -4481,6 +4481,7 @@ static void vulkan_font_render_msg(
    const struct font_glyph *glyph_q;
    float x, y, scale, drop_mod, drop_alpha;
    float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
+   float win_width;
    float scale_iww, scale_iwh;           /* pre-multiplied scale * inv_win */
    const struct font_glyph *(*get_glyph)(void*, uint32_t);
    void *font_data;
@@ -4582,7 +4583,8 @@ static void vulkan_font_render_msg(
    /* Hoist reciprocals, function pointer, and pre-multiplied factors. */
    inv_tex_size_x   = 1.0f / VIDEO_SCALE_W(font->texture.dims);
    inv_tex_size_y   = 1.0f / VIDEO_SCALE_H(font->texture.dims);
-   inv_win_width    = 1.0f / VIDEO_SCALE_W(vk->vp.dims);
+   win_width        = VIDEO_SCALE_W(vk->vp.dims) / rp.x_scale;
+   inv_win_width    = 1.0f / win_width;
    inv_win_height   = 1.0f / VIDEO_SCALE_H(vk->vp.dims);
    scale_iww        = scale * inv_win_width;
    scale_iwh        = scale * inv_win_height;
@@ -4601,7 +4603,7 @@ static void vulkan_font_render_msg(
 
       vk_color         = rgba16_pack(color);
 
-      fg_base_x        = roundf(x * VIDEO_SCALE_W(vk->vp.dims)) * inv_win_width;
+      fg_base_x        = roundf(x * win_width) * inv_win_width;
 
       sh_base_x        = 0.0f;
       sh_y_origin      = 0.0f;
@@ -4614,7 +4616,7 @@ static void vulkan_font_render_msg(
          dark[3]         = color[3] * drop_alpha;
          vk_color_dark   = rgba16_pack(dark);
          sh_base_x       = roundf((x + scale * drop_x
-                              * inv_win_width) * VIDEO_SCALE_W(vk->vp.dims))
+                              * inv_win_width) * win_width)
                               * inv_win_width;
          sh_y_origin     = y + scale * drop_y * inv_win_height;
       }
