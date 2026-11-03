@@ -2717,7 +2717,6 @@ static const struct
    char s_6fbfde48[33];
    char s_a72a3c80[12];
    char s_482ee1f1[12];
-   char s_3794746e[30];
    char s_214b7699[12];
    char s_3e628390[8];
    char s_6b25e2a0[20];
@@ -7928,7 +7927,6 @@ static const struct
    "Calidad del reescalador temporal",
    "Autom\303\241tico",
    "Equilibrado",
-   "Nativo (solo suavizar bordes)",
    "Rendimiento",
    "Calidad",
    "M\303\241ximo rendimiento",
@@ -11491,7 +11489,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (271109u
+      (sizeof(msg_hash_es_blob) == (271079u
 #ifdef ANDROID
        + 329u
 #endif
@@ -14773,7 +14771,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE,

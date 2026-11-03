@@ -2457,6 +2457,9 @@ static const struct
 #endif
    char s_f4341e25[19];
    char s_964cf6c8[12];
+   char s_28774055[8];
+   char s_28774056[8];
+   char s_28774057[8];
    char s_e09bad69[7];
    char s_f66c7b67[7];
    char s_cc973e8a[7];
@@ -2527,6 +2530,7 @@ static const struct
    char s_0cfd4fd0[19];
    char s_d64659c4[19];
    char s_0861dea4[13];
+   char s_430aec76[13];
    char s_fa462638[7];
    char s_29f97e35[4];
    char s_569b0627[4];
@@ -2683,7 +2687,6 @@ static const struct
    char s_6fbfde48[28];
    char s_a72a3c80[7];
    char s_482ee1f1[7];
-   char s_3794746e[34];
    char s_214b7699[7];
    char s_3e628390[23];
    char s_6b25e2a0[33];
@@ -8334,6 +8337,9 @@ static const struct
 #endif
    "\347\246\201\347\224\250\346\241\214\351\235\242\347\273\204\344\273\266",
    "DLSS \347\233\256\345\275\225",
+   "\351\242\204\350\256\2761",
+   "\351\242\204\350\256\2762",
+   "\351\242\204\350\256\2763",
    "\351\273\230\350\256\244",
    "\351\273\230\350\256\244",
    "\350\247\206\351\242\221",
@@ -8418,6 +8424,7 @@ static const struct
    "\345\220\210\345\271\266\346\211\213\346\237\204\346\250\241\345\274\217",
    "\347\213\254\347\253\213\346\211\213\346\237\204\346\250\241\345\274\217",
    "\345\261\217\345\271\225\350\267\235\347\246\273",
+   "\344\277\235\346\214\201\350\277\220\350\241\214",
    "\346\232\202\345\201\234",
    "\351\253\230",
    "\344\275\216",
@@ -8592,8 +8599,6 @@ static const struct
    "\351\207\217",
    "\350\207\252\345\212\250",
    "\345\271\263\350\241\241",
-   "\345\216\237\347\224\237\345\210\206\350\276\250\347\216\207\357\274\210\344\273\205\346\212\227"
-   "\351\224\257\351\275\277\357\274\211",
    "\346\200\247\350\203\275",
    "\350\264\250\351\207\217\344\274\230\345\205\210 (Quality)",
    "\346\236\201\350\207\264\346\200\247\350\203\275 (Ultra Performance)",
@@ -15007,7 +15012,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_chs_blob_check[
-      (sizeof(msg_hash_chs_blob) == (182753u
+      (sizeof(msg_hash_chs_blob) == (182756u
 #ifdef ANDROID
        + 220u
 #endif
@@ -18034,6 +18039,9 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_DIRECTORY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_1,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_2,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_3,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
@@ -18104,6 +18112,7 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
@@ -18260,7 +18269,6 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE,

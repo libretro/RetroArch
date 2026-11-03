@@ -2728,7 +2728,7 @@ static const struct
    char s_6fbfde48[43];
    char s_a72a3c80[14];
    char s_482ee1f1[8];
-   char s_3794746e[36];
+   char s_3794746e[42];
    char s_214b7699[13];
    char s_3e628390[12];
    char s_6b25e2a0[23];
@@ -8080,7 +8080,7 @@ static const struct
    "C\303\241il\303\255ocht an Uasghr\303\241daithe Thimpiri\303\272il",
    "Uathoibr\303\255och",
    "Cothrom",
-   "D\303\272chasach (frith-ailias\303\272 amh\303\241in)",
+   "D\303\272chasach (DLAA, frith-ailias\303\272 amh\303\241in)",
    "Feidhm\303\255ocht",
    "C\303\241il\303\255ocht",
    "Feidhm\303\255ocht den Scoth",
@@ -12225,7 +12225,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (268554u
+      (sizeof(msg_hash_ga_blob) == (268560u
 #ifdef ANDROID
        + 390u
 #endif

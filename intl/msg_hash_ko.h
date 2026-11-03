@@ -2590,7 +2590,6 @@ static const struct
    char s_6fbfde48[33];
    char s_a72a3c80[7];
    char s_482ee1f1[7];
-   char s_3794746e[40];
    char s_214b7699[7];
    char s_3e628390[7];
    char s_6b25e2a0[10];
@@ -8941,8 +8940,6 @@ static const struct
    "\254 \355\222\210\354\247\210",
    "\354\236\220\353\217\231",
    "\352\267\240\355\230\225",
-   "\353\204\244\354\235\264\355\213\260\353\270\214 (\354\225\210\355\213\260\354\227\220\354\235"
-   "\274\353\246\254\354\226\264\354\213\261\353\247\214)",
    "\354\204\261\353\212\245",
    "\355\222\210\354\247\210",
    "\352\263\240\354\204\261\353\212\245",
@@ -16235,7 +16232,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ko_blob_check[
-      (sizeof(msg_hash_ko_blob) == (229296u
+      (sizeof(msg_hash_ko_blob) == (229256u
 #ifdef ANDROID
        + 436u
 #endif
@@ -19295,7 +19292,6 @@ static const msg_hash_id_t msg_hash_ko_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE,

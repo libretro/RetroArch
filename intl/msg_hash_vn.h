@@ -2748,7 +2748,7 @@ static const struct
    char s_6fbfde48[57];
    char s_a72a3c80[13];
    char s_482ee1f1[12];
-   char s_3794746e[39];
+   char s_3794746e[45];
    char s_214b7699[13];
    char s_3e628390[16];
    char s_6b25e2a0[23];
@@ -4511,6 +4511,7 @@ static const struct
    char s_f0b48289[73];
    char s_19b9a241[42];
    char s_92998c8d[43];
+   char s_7541bcd3[91];
    char s_ca731381[27];
    char s_6b6a247d[79];
    char s_6704b41f[60];
@@ -8845,7 +8846,7 @@ static const struct
    "eo th\341\273\235i gian",
    "T\341\273\261 \304\221\341\273\231ng",
    "C\303\242n b\341\272\261ng",
-   "Nguy\303\252n b\341\272\243n (ch\341\273\211 kh\341\273\255 r\304\203ng c\306\260a)",
+   "Nguy\303\252n b\341\272\243n (DLAA, ch\341\273\211 kh\341\273\255 r\304\203ng c\306\260a)",
    "Hi\341\273\207u n\304\203ng",
    "Ch\341\272\245t l\306\260\341\273\243ng",
    "Hi\341\273\207u n\304\203ng c\341\273\261c cao",
@@ -14518,6 +14519,9 @@ static const struct
    "\341\272\267t tr\306\260\341\273\233c \304\221\303\263 t\341\273\223n t\341\272\241i: ",
    "Sao l\306\260u tr\303\254nh gi\341\272\243 l\341\272\255p ho\303\240n t\341\272\245t: ",
    "Sao l\306\260u tr\303\254nh gi\341\272\243 l\341\272\255p th\341\272\245t b\341\272\241i: ",
+   "\304\220ang c\303\263 m\341\273\231t qu\303\241 tr\303\254nh sao l\306\260u ho\341\272\267c kh"
+   "\303\264i ph\341\273\245c l\303\265i gi\341\272\243 l\341\272\255p n\303\240y di\341\273\205n ra"
+   ": ",
    "Qu\303\251t tr\303\254nh gi\341\272\243 l\341\272\255p: ",
    "X\303\263a tr\303\254nh gi\341\272\243 l\341\272\255p b\341\273\213 v\303\264 hi\341\273\207u h"
    "\303\263a - tr\303\254nh gi\341\272\243 l\341\272\255p b\341\273\213 kh\303\263a: ",
@@ -15404,7 +15408,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (306576u
+      (sizeof(msg_hash_vn_blob) == (306673u
 #ifdef ANDROID
        + 373u
 #endif
@@ -20433,6 +20437,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MSG_CORE_BACKUP_ALREADY_EXISTS,
    (msg_hash_id_t)MSG_CORE_BACKUP_COMPLETE,
    (msg_hash_id_t)MSG_CORE_BACKUP_FAILED,
+   (msg_hash_id_t)MSG_CORE_BACKUP_IN_PROGRESS,
    (msg_hash_id_t)MSG_CORE_BACKUP_SCANNING_CORE,
    (msg_hash_id_t)MSG_CORE_DELETE_DISABLED,
    (msg_hash_id_t)MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
