@@ -172,6 +172,49 @@ refused "wrong password fails at the session" session 127.0.0.1      share  'wro
 refused "unknown share fails at the tree"     tree    127.0.0.1      nosuch 'Sekret1!'
 refused "closed port fails at the connect"    connect 127.0.0.1      share  'Sekret1!' 1
 refused "unknown host fails at the lookup"    resolve nosuch.invalid share  'Sekret1!'
+# the VFS keeps why a share's connect failed, with no share configured;
+# 127.0.0.2 is on the loopback with nothing listening. libsmb2 cannot
+# tell a failed lookup from a failed connect.
+failed() { # label code server share password [binary]
+   if SMB_EXPECT_FAILURE=$2 $RUN ./${6:-vfs_test}$EXE "$3" "$4" rsmbtest "$5" RETRO >$D/out 2>&1; then
+      echo "ok:   $1"
+   else
+      echo "FAIL: $1: $(cat $D/out)"; exit 1
+   fi
+}
+# a frozen server reads as connect, then connected once it answers
+frozen() { # label binary
+   pid=$(cat $D/run/smbd.pid)
+   rm -f $D/out
+   kill -STOP $pid
+   SMB_EXPECT_FAILURE=connect SMB_WAIT_OK=20 $RUN ./$2$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO >$D/out 2>&1 &
+   waiter=$!
+   i=0; while ! grep -q '^ok:' $D/out 2>/dev/null && [ $i -lt 100 ]; do i=$((i + 1)); sleep 0.1; done
+   kill -CONT $pid
+   if wait $waiter; then echo "ok:   $1"; else echo "FAIL: $1: $(cat $D/out)"; exit 1; fi
+}
+# URL host and share against the settings; no server needed
+urls() { # label binary
+   if SMB_CHECK_URLS=1 $RUN ./$2$EXE >$D/out 2>&1; then
+      echo "ok:   $1"
+   else
+      echo "FAIL: $1: $(cat $D/out)"; exit 1
+   fi
+}
+failed "VFS: wrong password reads as a login failure" login   127.0.0.1      share  'wrong'
+failed "VFS: unknown share reads as a share failure"  share   127.0.0.1      nosuch 'Sekret1!'
+failed "VFS: closed port reads as a connect failure"  connect 127.0.0.2      share  'Sekret1!'
+failed "VFS: unknown host reads as a lookup failure"  resolve nosuch.invalid share  'Sekret1!'
+frozen "VFS: frozen server reads as a connect failure, then connected" vfs_test
+urls "VFS: URL host and share checked against the settings" vfs_test
+if [ -n "${WITH_LIBSMB2:-}" ]; then
+   failed "libsmb2 VFS: wrong password reads as a login failure" login   127.0.0.1      share  'wrong'    vfs_test_libsmb2
+   failed "libsmb2 VFS: unknown share reads as a share failure"  share   127.0.0.1      nosuch 'Sekret1!' vfs_test_libsmb2
+   failed "libsmb2 VFS: closed port reads as a connect failure"  connect 127.0.0.2      share  'Sekret1!' vfs_test_libsmb2
+   failed "libsmb2 VFS: unknown host reads as a connect failure" connect nosuch.invalid share  'Sekret1!' vfs_test_libsmb2
+   frozen "libsmb2 VFS: frozen server reads as a connect failure, then connected" vfs_test_libsmb2
+   urls "libsmb2 VFS: URL host and share checked against the settings" vfs_test_libsmb2
+fi
 # Kerberos configured with a realm whose KDC is not there: the client
 # must fall back to NTLMSSP and still get in (a standalone server has
 # no KDC); the AD DC matrix covers the ticket path itself
