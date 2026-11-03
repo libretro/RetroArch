@@ -1,15 +1,19 @@
 /* A failed nfs:// listing must say why: the reason nfs_get_last_error()
  * gives is never empty and names what failed. The first checks need no
  * server; with the port of fake_nfs42.py, a v4 export it does not have
- * must name the LOOKUP that failed and the status it got.
+ * must name the LOOKUP that failed and the status it got. Given the
+ * local copy of the fake's sparse.img too, a file opened before the
+ * settings change must read on with the settings it was opened with.
  *
- * Usage: nfs_error_test [fake_nfs42.py port]
+ * Usage: nfs_error_test [fake_nfs42.py port [local sparse.img]]
  * Exit status is the failure count. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <net/net_compat.h>
+#include <streams/file_stream.h>
 #include <compat/strl.h>
+#include <file/file_path.h>
 #include <retro_dirent.h>
 #include "../../../libretro-common/vfs/vfs_implementation_nfs.h"
 
@@ -33,6 +37,62 @@ static int expect_fail(const char *what, const char *url, const char *want)
    }
    printf("ok:   %s: %s\n", what, err);
    return 0;
+}
+
+/* Once the port and version point where nothing answers, a stat must
+ * fail, and a file opened before must still read what @local holds:
+ * its handle means nothing on the new settings' connections. */
+static int expect_open_file_kept(const char *local)
+{
+   static char got[16384], want[16384];
+   const char *url = "nfs://127.0.0.1/sparse.img";
+   int fails = 0;
+   int part;
+   RFILE *f = filestream_open(url, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE *l = filestream_open(local, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!f || !l)
+   {
+      fprintf(stderr, "FAIL: open %s and %s (%s)\n", url, local,
+            nfs_get_last_error());
+      fails++;
+   }
+   for (part = 0; part < 3 && !fails; part++)
+   {
+      if (part == 1)
+      {
+         cfg.nfs_port   = 1;
+         cfg.mount_port = 1;
+         cfg.version    = 3;
+         nfs_init_cfg(&cfg);
+      }
+      if (part > 0 && path_is_valid(url))
+      {
+         fprintf(stderr, "FAIL: a stat after the change used the old settings\n");
+         fails++;
+      }
+      if (     filestream_read(f, got, sizeof(got))  != (int64_t)sizeof(got)
+            || filestream_read(l, want, sizeof(want)) != (int64_t)sizeof(want)
+            || memcmp(got, want, sizeof(got)) != 0)
+      {
+         fprintf(stderr, "FAIL: read %d of the open file, %s the change (%s)\n",
+               part, part ? "after" : "before", nfs_get_last_error());
+         fails++;
+      }
+   }
+   if (f)
+      filestream_close(f);
+   if (l)
+      filestream_close(l);
+   if (!fails && path_is_valid(url))
+   {
+      fprintf(stderr, "FAIL: a stat used the closed file's connection\n");
+      fails++;
+   }
+   if (!fails)
+      printf("ok:   a file opened before a port and version change reads on\n");
+   return fails;
 }
 
 int main(int argc, char **argv)
@@ -76,6 +136,12 @@ int main(int argc, char **argv)
          url[_len + 300] = '\0';
          fails += expect_fail("v4 name too long", url, "name too long");
       }
+   }
+   if (argc > 2)
+   {
+      cfg.export_path = "/export";
+      nfs_init_cfg(&cfg);
+      fails += expect_open_file_kept(argv[2]);
    }
    nfs_shutdown();
    return fails;
