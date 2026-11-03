@@ -11,6 +11,26 @@
 
 #define CHECK(x, msg) do { if (!(x)) { fprintf(stderr, "FAIL: %s (%s, status 0x%08x)\n", msg, rsmb_get_error(c), rsmb_get_status(c)); return 1; } } while (0)
 
+/* The connect to @server/@share fails, at step @want. */
+static int expect_refused(struct rsmb_ctx *c, const char *server,
+      const char *share, const char *want)
+{
+   static const char *const names[] = { "none", "resolve", "connect", "session", "tree" };
+   unsigned p;
+   CHECK(rsmb_connect(c, server, share) != 0, "connect refused");
+   p = (unsigned)rsmb_get_phase(c);
+   if (p >= sizeof(names) / sizeof(*names) || strcmp(names[p], want) != 0)
+   {
+      fprintf(stderr, "FAIL: failed at step %s, want %s (%s)\n",
+            p < sizeof(names) / sizeof(*names) ? names[p] : "?", want, rsmb_get_error(c));
+      rsmb_free(c);
+      return 1;
+   }
+   printf("ok: %s/%s refused at %s (%s)\n", server, share, want, rsmb_get_error(c));
+   rsmb_free(c);
+   return 0;
+}
+
 int main(int argc, char **argv)
 {
    struct rsmb_ctx *c;
@@ -37,6 +57,12 @@ int main(int argc, char **argv)
    if (getenv("SMB_KRB_REALM"))
       rsmb_set_kerberos(c, getenv("SMB_KRB_REALM"), getenv("SMB_KRB_KDC"),
             getenv("SMB_KRB_PORT") ? (uint16_t)atoi(getenv("SMB_KRB_PORT")) : 0);
+   if (getenv("SMB_PORT"))
+      rsmb_set_port(c, (uint16_t)atoi(getenv("SMB_PORT")));
+   /* SMB_EXPECT_PHASE (resolve, connect, session or tree): the connect
+    * must fail, at that step */
+   if (getenv("SMB_EXPECT_PHASE"))
+      return expect_refused(c, argv[1], argv[2], getenv("SMB_EXPECT_PHASE"));
    CHECK(rsmb_connect(c, argv[1], argv[2]) == 0, "connect");
    /* the signing algorithm negotiated, when the harness says which */
    if (getenv("SMB_EXPECT_SIGN"))

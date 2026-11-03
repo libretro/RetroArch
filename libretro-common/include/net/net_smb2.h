@@ -48,6 +48,16 @@ struct rsmb_dir;
 #define RSMB_O_CREAT  0x40
 #define RSMB_O_TRUNC  0x200
 
+/* The step a failed rsmb_connect() was on. */
+enum rsmb_phase
+{
+   RSMB_PHASE_NONE = 0,
+   RSMB_PHASE_RESOLVE,  /* looking the server up */
+   RSMB_PHASE_CONNECT,  /* TCP connect, negotiate; or the server stopped answering */
+   RSMB_PHASE_SESSION,  /* logging in */
+   RSMB_PHASE_TREE      /* connecting to the share */
+};
+
 struct rsmb_stat
 {
    uint64_t size;
@@ -98,7 +108,8 @@ void rsmb_set_timeout(struct rsmb_ctx *c, unsigned seconds);
  * @server            : host name or address; port 445.
  * @share             : share name without slashes.
  *
- * Returns: 0 on success, -1 with rsmb_get_error() set.
+ * Returns: 0 on success, -1 with rsmb_get_error() and
+ * rsmb_get_phase() set.
  **/
 int rsmb_connect(struct rsmb_ctx *c, const char *server, const char *share);
 void rsmb_disconnect(struct rsmb_ctx *c);
@@ -160,6 +171,8 @@ int rsmb_echo(struct rsmb_ctx *c);
 const char *rsmb_get_error(const struct rsmb_ctx *c);
 /* Last NT status, for callers that map them. */
 uint32_t rsmb_get_status(const struct rsmb_ctx *c);
+/* After rsmb_connect() failed: the step it failed at. */
+enum rsmb_phase rsmb_get_phase(const struct rsmb_ctx *c);
 /* The signing algorithm in use: 0 HMAC-SHA256 (2.x), 1 AES-CMAC,
  * 2 AES-GMAC (3.1.1, when the server chose it). */
 unsigned rsmb_get_sign_alg(const struct rsmb_ctx *c);

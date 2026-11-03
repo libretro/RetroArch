@@ -160,6 +160,18 @@ else
 fi
 
 run "wrong password is refused"             SMB3_11 default  1 'wrong'
+# a refused connect names the step that failed
+refused() { # label step server share password [port]
+   if SMB_PORT=${6:-0} SMB_EXPECT_PHASE=$2 $RUN ./smb_test$EXE "$3" "$4" rsmbtest "$5" RETRO >$D/out 2>&1; then
+      echo "ok:   $1"
+   else
+      echo "FAIL: $1: $(cat $D/out)"; exit 1
+   fi
+}
+refused "wrong password fails at the session" session 127.0.0.1      share  'wrong'
+refused "unknown share fails at the tree"     tree    127.0.0.1      nosuch 'Sekret1!'
+refused "closed port fails at the connect"    connect 127.0.0.1      share  'Sekret1!' 1
+refused "unknown host fails at the lookup"    resolve nosuch.invalid share  'Sekret1!'
 # Kerberos configured with a realm whose KDC is not there: the client
 # must fall back to NTLMSSP and still get in (a standalone server has
 # no KDC); the AD DC matrix covers the ticket path itself
