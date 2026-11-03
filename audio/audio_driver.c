@@ -2436,8 +2436,7 @@ static INLINE size_t audio_driver_output_bound(double ratio, size_t input_frames
    return (size_t)((double)(input_frames + 16) * ratio) + 1;
 }
 
-/* Used by the threaded pipe, and by a harness's AUDIO_OUTPUT_BOUND_CHECK */
-#if defined(HAVE_THREADS) || defined(AUDIO_OUTPUT_BOUND_CHECK)
+/* The inverse, for the threaded pipe and the span a lend cut short */
 
 /* The inverse: the largest input frame count whose bound still fits in
  * output_frames. Not output_frames/ratio - the bound adds a resampler
@@ -2461,7 +2460,6 @@ static INLINE size_t audio_driver_input_bound(double ratio, size_t output_frames
       input_frames--;
    return input_frames;
 }
-#endif
 
 /* A harness may define this to count a flush that produced more than
  * its bound; the shipping build has no check on the audio thread. */
@@ -3565,6 +3563,132 @@ static void audio_driver_write_identity_s16(audio_driver_state_t *audio_st,
       audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
 }
 
+/* One run of the flush's output stage: @in_now frames of the input from
+ * @in_off, through the bypass's copy or the resampler, into @out_f. The
+ * frames produced, which may be fewer than the bound. */
+static size_t audio_driver_flush_produce(audio_driver_state_t *audio_st,
+      struct resampler_data *src_data, const void *in_all,
+      const int16_t *s16_in, size_t in_off, size_t in_now, float *out_f,
+      bool bypass, uint32_t aflags, bool *sanitized)
+{
+   src_data->data_in      = (const float*)in_all + in_off * 2;
+   src_data->input_frames = in_now;
+   src_data->data_out     = out_f;
+   *sanitized             = false;
+   if (bypass)
+   {
+      if (s16_in)
+      {
+         /* A float device, the mixer or the ramp: one conversion,
+          * straight to the output buffer.  s16 widened is in range. */
+         convert_s16_to_float(out_f, s16_in + in_off * 2, in_now * 2, 1.0f);
+         *sanitized = true;
+      }
+      else if ((aflags & AUDIO_FLAG_USE_FLOAT)
+#ifdef HAVE_AUDIOMIXER
+            && !(aflags & AUDIO_FLAG_MIXER_ACTIVE)
+#endif
+         )
+      {
+         audio_driver_copy_clamp(out_f, src_data->data_in, (unsigned)in_now * 2);
+         *sanitized = true;
+      }
+      else
+         memcpy(out_f, src_data->data_in, in_now * 2 * sizeof(float));
+      src_data->output_frames = in_now;
+   }
+   else if (audio_st->resampler_data)
+      audio_st->resampler->process(audio_st->resampler_data, src_data);
+   else
+      src_data->output_frames = 0;
+   AUDIO_OUTPUT_BOUND_CHECK(src_data->output_frames,
+         audio_driver_output_bound(src_data->ratio, in_now));
+   return src_data->output_frames;
+}
+
+/* What follows the produce on @frames of @out_f, every stage carrying
+ * its state from one run to the next: the mixer's voices, the clamp,
+ * the resume ramp and the pause mute. */
+static void audio_driver_flush_finish(audio_driver_state_t *audio_st,
+      float *out_f, size_t frames, bool sanitized, uint32_t aflags)
+{
+#ifdef HAVE_AUDIOMIXER
+   if (aflags & AUDIO_FLAG_MIXER_ACTIVE)
+   {
+      bool override                       = true;
+      float mixer_gain                    = 0.0f;
+      bool audio_driver_mixer_mute_enable = audio_st->mixer_mute_enable;
+
+      if (!audio_driver_mixer_mute_enable)
+      {
+         if (audio_st->mixer_volume_gain == 1.0f)
+            override                      = false;
+         mixer_gain                       = audio_st->mixer_volume_gain;
+      }
+      /* Fold any s16 voices (played while the int16 path was active, now
+       * on the float path) onto the float buffer before the float mix, so
+       * the clamp inside audio_mixer_mix covers them.  output_samples_int16
+       * is unused until the float->s16 driver conversion further on. */
+      if (audio_mixer_has_s16_voices())
+         audio_mixer_fold_s16_voices_into_float(
+               out_f,
+               audio_st->output_samples_int16,
+               (unsigned)frames,
+               mixer_gain, override);
+      audio_mixer_mix(out_f, frames, mixer_gain, override);
+   }
+#endif
+
+   /* Clamp float samples to [-1.0, 1.0] before writing to the
+    * audio driver.  Three sources can produce out-of-range values:
+    *
+    *   1. Volume gain above 0 dB (up to +12 dB ≈ 3.98× multiplier).
+    *   2. Sinc resampler overshoot on transients — Gibbs phenomenon
+    *      causes up to ~28% overshoot on step edges even at unity gain.
+    *   3. Mixer voice summation adding on top of core audio.
+    *
+    * Without clamping, float-output drivers (WASAPI, PulseAudio,
+    * PipeWire, CoreAudio, JACK) pass these values straight to the
+    * hardware.  The s16 path (convert_float_to_s16) saturates, but
+    * the float path had no protection.
+    *
+    * When the audio mixer is active, audio_mixer_mix() unconditionally
+    * clamps the entire buffer (core audio + voices) as its final step,
+    * so an additional pass here would be redundant.  We rely on this
+    * because audio_mixer_mix() is called on the same buffer immediately
+    * above, with no intervening modifications.
+    *
+    * Likewise, when the active driver consumes int16 (the path below
+    * via convert_float_to_s16), saturation is performed by the
+    * conversion itself: the scalar fallback clamps to the s16 range,
+    * and every SIMD variant (SSE2 _mm_packs_epi32, NEON vqmovn_s32,
+    * AltiVec vec_packs, PSP/Allegrex vi2s.q) uses a saturating narrow.
+    * Skipping the float-clamp pass on the s16 path produces a
+    * bit-identical result with one fewer touch of the buffer. */
+   if (!sanitized &&
+         (aflags & AUDIO_FLAG_USE_FLOAT)
+#ifdef HAVE_AUDIOMIXER
+      && !(aflags & AUDIO_FLAG_MIXER_ACTIVE)
+#endif
+      )
+      audio_driver_copy_clamp(out_f, out_f, (unsigned)frames * 2);
+
+   /* Resume ramp, and remember where the waveform got to: both belong on
+    * the last buffer before the device. See audio_driver_pause_fade(). */
+   audio_driver_pause_track(audio_st, (void*)out_f, frames, true);
+}
+
+/* @frames taken by the device, for the sink estimate */
+static INLINE void audio_driver_flush_offered(audio_driver_state_t *audio_st,
+      size_t frames, ssize_t w, size_t fb)
+{
+   audio_st->sink_offered_raw += (uint64_t)frames;
+   if (!audio_st->pipe_threaded)
+      audio_st->sink_offered  += (double)frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
+   if (w > 0)
+      audio_st->sink_accepted += (uint64_t)w / fb;
+}
+
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       const void *data, size_t samples, bool is_float,
@@ -3573,12 +3697,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    struct resampler_data src_data;
    const int16_t *s16_in          = NULL;
    void    *lend                  = NULL;
-   size_t   lend_bytes            = 0;
    /* a stereo int16 device the lend missed: narrowed into its spans */
    bool     narrow_late           = false;
-   float   *out_f;
-   int16_t *out_i;
-   bool output_sanitized          = false;
+   bool bypass;
    int snap                       = retro_atomic_load_acquire_int(
          &audio_st->runloop_snapshot);
    int aflags                     = AUDIO_FLAGS_GET(audio_st);
@@ -4275,43 +4396,6 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             src_data.input_frames, (cap_f < cap_i) ? cap_f : cap_i);
    }
 
-   /* Stereo output: borrow the driver's own buffer for the output
-    * stage, so what the write would copy into it is produced there.
-    * The threaded consumer takes it after the pipe's room wait, which
-    * asked for this same bound. Inline, a blocking device is waited on
-    * here for the whole chunk, as write() would have waited for it
-    * piece by piece. A span cut short by the driver's wrap, or no room
-    * after a bounded wait, falls back to the staged write, which
-    * splits the copy and blocks as it always has. */
-   if (     audio->write_begin && audio->write_end
-         && audio_st->out_channels <= 2
-         && !(audio_st->virtualize && audio_st->virt_buf))
-   {
-      size_t fb   = audio_driver_dev_frame_bytes(audio_st);
-      size_t need = audio_driver_output_bound(src_data.ratio,
-            src_data.input_frames) * fb;
-      size_t got;
-      if (     !audio_st->pipe_threaded
-            && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
-            && audio->wait_writable)
-         audio->wait_writable(audio_st->context_audio_data, need);
-      got         = audio->write_begin(audio_st->context_audio_data,
-            need, &lend);
-      if (!lend || got < need)
-      {
-         if (lend)
-            audio->write_end(audio_st->context_audio_data, 0);
-         lend = NULL;
-      }
-      else
-         lend_bytes = got;
-   }
-   out_f = (lend && (aflags & AUDIO_FLAG_USE_FLOAT))
-         ? (float*)lend : audio_st->output_samples_buf;
-   out_i = (lend && !(aflags & AUDIO_FLAG_USE_FLOAT))
-         ? (int16_t*)lend : audio_st->output_samples_int16;
-   src_data.data_out = out_f;
-
    /* Unity passthrough: with dynamic rate control disabled the resampler
     * ratio is static, and when it is exactly 1.0 (input rate == output
     * rate, no slow-motion / fast-forward pitch change) the resampler would
@@ -4348,54 +4432,29 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * bypass stops being taken, and the existing resampler_bypassed
     * transition re-initialises the ring - the same path already used when
     * slow-motion or fast-forward engages. */
-   if (     (   !(aflags & AUDIO_FLAG_CONTROL)
+   bypass = (   !(aflags & AUDIO_FLAG_CONTROL)
              || audio_st->rate_control_delta == 0.0f)
          && src_data.ratio == 1.0
-         && !audio_st->resampler_hq)
+         && !audio_st->resampler_hq;
+   if (bypass)
    {
-      if (s16_in)
-      {
-         if (     !(aflags & AUDIO_FLAG_USE_FLOAT)
-#ifdef HAVE_AUDIOMIXER
-               && !(aflags & AUDIO_FLAG_MIXER_ACTIVE)
-#endif
-               && !audio_st->fade_in_frames
-               && !audio_st->pause_mute_frames)
-         {
-            /* s16 end to end: the input reaches the driver as it is. */
-            if (lend)
-            {
-               audio->write_end(audio_st->context_audio_data, 0);
-               lend = NULL;
-            }
-            audio_st->stat_frontend_is_float = false;
-            audio_st->resampler_bypassed     = true;
-            audio_driver_extra_resample(audio_st, src_data.ratio,
-                  src_data.input_frames, true, false);
-            audio_driver_write_identity_s16(audio_st, audio, s16_in,
-                  src_data.input_frames);
-            return;
-         }
-         /* A float device, the mixer or the ramp: one conversion,
-          * straight to the output buffer.  s16 widened is in range. */
-         convert_s16_to_float(out_f, s16_in,
-               src_data.input_frames * 2, 1.0f);
-         output_sanitized = true;
-      }
-      else if ((aflags & AUDIO_FLAG_USE_FLOAT)
+      if (     s16_in
+            && !(aflags & AUDIO_FLAG_USE_FLOAT)
 #ifdef HAVE_AUDIOMIXER
             && !(aflags & AUDIO_FLAG_MIXER_ACTIVE)
 #endif
-         )
+            && !audio_st->fade_in_frames
+            && !audio_st->pause_mute_frames)
       {
-         audio_driver_copy_clamp(out_f,
-               src_data.data_in, (unsigned)src_data.input_frames * 2);
-         output_sanitized = true;
+         /* s16 end to end: the input reaches the driver as it is. */
+         audio_st->stat_frontend_is_float = false;
+         audio_st->resampler_bypassed     = true;
+         audio_driver_extra_resample(audio_st, src_data.ratio,
+               src_data.input_frames, true, false);
+         audio_driver_write_identity_s16(audio_st, audio, s16_in,
+               src_data.input_frames);
+         return;
       }
-      else
-         memcpy(out_f, src_data.data_in,
-               src_data.input_frames * 2 * sizeof(float));
-      src_data.output_frames       = src_data.input_frames;
       audio_st->resampler_bypassed = true;
    }
    else
@@ -4423,140 +4482,184 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                src_data.input_frames * 2, 1.0f);
          src_data.data_in = audio_st->input_data;
       }
-      if (audio_st->resampler_data)
-         audio_st->resampler->process(audio_st->resampler_data, &src_data);
-      else
-         src_data.output_frames = 0;
    }
    audio_driver_extra_resample(audio_st, src_data.ratio, src_data.input_frames,
          audio_st->resampler_bypassed, false);
 
-#ifdef HAVE_AUDIOMIXER
-   if (aflags & AUDIO_FLAG_MIXER_ACTIVE)
+   /* Stereo output: the output stage - the resampler or the bypass's
+    * copy, the mixer, the clamp, the ramp - produces its frames in the
+    * driver's own buffer, so what write() would copy into it is made
+    * there. The driver lends a span for the whole flush where it can.
+    *
+    * Where its ring wraps inside the flush the span is short. A float
+    * device then takes the flush in parts: the resampler is given as
+    * much input as is sure to fit the span, carrying its state, and the
+    * span is published; the few frames the bound kept back leave a
+    * sliver before the wrap, which is filled from the frontend's buffer
+    * - the one small copy left, the frames past it carried to the head
+    * of the next span - and the rest is produced in that span, past the
+    * wrap. An int16 device's spans are filled on the way out instead,
+    * the mix narrowed into them (audio_driver_write_frames()).
+    *
+    * Inline, a blocking device is waited on first for the whole chunk,
+    * as write() would have waited for it piece by piece. No room after
+    * a bounded wait, or a device with nothing to lend, leaves the rest
+    * to the frontend's buffer and the staged write, which blocks as it
+    * always has. The threaded consumer took the pipe's room wait for
+    * this same bound. */
    {
-      bool override                       = true;
-      float mixer_gain                    = 0.0f;
-      bool audio_driver_mixer_mute_enable = audio_st->mixer_mute_enable;
-
-      if (!audio_driver_mixer_mute_enable)
-      {
-         if (audio_st->mixer_volume_gain == 1.0f)
-            override                      = false;
-         mixer_gain                       = audio_st->mixer_volume_gain;
-
-      }
-      /* Fold any s16 voices (played while the int16 path was active, now on
-       * the float path) onto the float buffer before the float mix, so the
-       * clamp inside audio_mixer_mix covers them.  output_samples_int16 is
-       * unused until the float->s16 driver conversion further below. */
-      if (audio_mixer_has_s16_voices())
-         audio_mixer_fold_s16_voices_into_float(
-               out_f,
-               audio_st->output_samples_int16,
-               (unsigned)src_data.output_frames,
-               mixer_gain, override);
-      audio_mixer_mix(out_f,
-            src_data.output_frames, mixer_gain, override);
-   }
-#endif
-
-   /* Now we write our processed audio output to the driver.
-    * It may not be played immediately, depending on
-    * the driver implementation. */
-   {
-      const void *output_data = out_f;
-      unsigned output_frames  = (unsigned)src_data.output_frames; /* Unit: frames */
-      AUDIO_OUTPUT_BOUND_CHECK(output_frames,
-            audio_driver_output_bound(src_data.ratio, src_data.input_frames));
-
-      /* Clamp float samples to [-1.0, 1.0] before writing to the
-       * audio driver.  Three sources can produce out-of-range values:
-       *
-       *   1. Volume gain above 0 dB (up to +12 dB ≈ 3.98× multiplier).
-       *   2. Sinc resampler overshoot on transients — Gibbs phenomenon
-       *      causes up to ~28% overshoot on step edges even at unity gain.
-       *   3. Mixer voice summation adding on top of core audio.
-       *
-       * Without clamping, float-output drivers (WASAPI, PulseAudio,
-       * PipeWire, CoreAudio, JACK) pass these values straight to the
-       * hardware.  The s16 path (convert_float_to_s16) saturates, but
-       * the float path had no protection.
-       *
-       * When the audio mixer is active, audio_mixer_mix() unconditionally
-       * clamps the entire buffer (core audio + voices) as its final step,
-       * so an additional pass here would be redundant.  We rely on this
-       * because audio_mixer_mix() is called on the same buffer immediately
-       * above, with no intervening modifications.
-       *
-       * Likewise, when the active driver consumes int16 (the path below
-       * via convert_float_to_s16), saturation is performed by the
-       * conversion itself: the scalar fallback clamps to the s16 range,
-       * and every SIMD variant (SSE2 _mm_packs_epi32, NEON vqmovn_s32,
-       * AltiVec vec_packs, PSP/Allegrex vi2s.q) uses a saturating narrow.
-       * Skipping the float-clamp pass on the s16 path produces a
-       * bit-identical result with one fewer touch of the buffer. */
-      if (!output_sanitized &&
-            (aflags & AUDIO_FLAG_USE_FLOAT)
-#ifdef HAVE_AUDIOMIXER
-         && !(aflags & AUDIO_FLAG_MIXER_ACTIVE)
-#endif
-         )
-      {
-         audio_driver_copy_clamp(out_f, out_f, output_frames * 2);
-      }
-
-      /* Resume ramp, and remember where the waveform got to: both belong on
-       * the last buffer before the device. See audio_driver_pause_fade(). */
-      audio_driver_pause_track(audio_st, (void*)output_data, output_frames,
-            true);
-
-      /* A float driver takes the float mix as it is; an int16 one gets
-       * it narrowed. A wider device gets either widened on the way. A
-       * stereo int16 device the lend did not reach - its ring wrapping
-       * inside the span - has the mix narrowed into the driver's buffer
-       * span by span on the way out, the stage's own buffer out_i
-       * taking only what the spans did not. */
-      narrow_late = !lend
-            && !(aflags & AUDIO_FLAG_USE_FLOAT)
+      const size_t fb        = audio_driver_dev_frame_bytes(audio_st);
+      const bool   dev_float = (aflags & AUDIO_FLAG_USE_FLOAT) != 0;
+      const bool   lendable  = audio->write_begin && audio->write_end
             && audio_st->out_channels <= 2
-            && !(audio_st->virtualize && audio_st->virt_buf)
-            && audio->write_begin;
-      if (!(aflags & AUDIO_FLAG_USE_FLOAT) && !narrow_late)
-      {
-         convert_float_to_s16(out_i,
-               (const float*)output_data, output_frames * 2);
-         output_data          = out_i;
-      }
+            && !(audio_st->virtualize && audio_st->virt_buf);
+      const void  *in_all    = src_data.data_in;
+      const size_t in_total  = src_data.input_frames;
+      size_t       in_done   = 0;
+      /* frames finished in output_samples_buf, waiting for a span */
+      size_t       carry     = 0;
+      unsigned     parts     = 0;
+      float       *own       = audio_st->output_samples_buf;
 
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
+      if (lendable && !audio_st->pipe_threaded
+            && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
+            && audio->wait_writable)
+         audio->wait_writable(audio_st->context_audio_data,
+               audio_driver_output_bound(src_data.ratio, in_total) * fb);
+
+      while (in_done < in_total || carry)
       {
-         size_t  fb = audio_driver_dev_frame_bytes(audio_st);
-         ssize_t w;
-         if (lend)
+         size_t rest = in_total - in_done;
+         size_t span = 0, filled = 0, cap, fits, out;
+         bool   sanitized;
+
+         lend = NULL;
+         if (lendable && parts < 8)
          {
-            /* The output is already in the driver's buffer; publish it. */
-            size_t bytes = (size_t)output_frames * fb;
-            if (bytes > lend_bytes)
-               bytes = lend_bytes;
-            w = audio->write_end(audio_st->context_audio_data, bytes);
+            size_t got = audio->write_begin(audio_st->context_audio_data,
+                  (carry + audio_driver_output_bound(src_data.ratio, rest)) * fb,
+                  &lend);
+            span = lend ? got / fb : 0;
+            if (!span && lend)
+            {
+               audio->write_end(audio_st->context_audio_data, 0);
+               lend = NULL;
+            }
          }
-         else
+         parts++;
+
+         if (!lend)
          {
-            w = audio_driver_write_frames(audio_st, audio, output_data,
-                  output_frames,
-                  (aflags & AUDIO_FLAG_USE_FLOAT) || narrow_late, true);
-            /* a tail narrowed late is in out_i, where the whole would
-             * have been */
-            audio_driver_retain_output(audio_st,
-                  narrow_late ? (const void*)out_i : output_data,
-                  output_frames, w);
+            /* Nothing lent: what is carried, and the rest produced in
+             * the frontend's buffer behind it, through the staged write.
+             * An int16 device narrows into its spans on the way. */
+            ssize_t w;
+            out = carry;
+            if (rest)
+            {
+               out += audio_driver_flush_produce(audio_st, &src_data, in_all,
+                     s16_in, in_done, rest, own + carry * 2, bypass, aflags,
+                     &sanitized);
+               audio_driver_flush_finish(audio_st, own + carry * 2,
+                     out - carry, sanitized, aflags);
+               in_done = in_total;
+            }
+            carry = 0;
+            narrow_late = !dev_float && lendable;
+            if (!dev_float && !narrow_late)
+            {
+               convert_float_to_s16(audio_st->output_samples_int16, own, out * 2);
+               w = audio_driver_write_frames(audio_st, audio,
+                     audio_st->output_samples_int16, out, false, true);
+            }
+            else
+               w = audio_driver_write_frames(audio_st, audio, own, out,
+                     true, true);
+            /* a tail narrowed late is in output_samples_int16, where the
+             * whole would have been */
+            audio_driver_retain_output(audio_st, dev_float ? (const void*)own
+                  : (const void*)audio_st->output_samples_int16, out, w);
+            audio_driver_flush_offered(audio_st, out, w, fb);
+            break;
          }
-         audio_st->sink_offered_raw += (uint64_t)output_frames;
-         if (!audio_st->pipe_threaded)
-            audio_st->sink_offered  += (double)output_frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
-         if (w > 0)
-            audio_st->sink_accepted += (uint64_t)w / fb;
+
+         /* The carry first: finished frames into the span's head */
+         if (carry)
+         {
+            filled = carry < span ? carry : span;
+            memcpy(lend, own, filled * fb);
+            carry -= filled;
+            if (carry)
+               memmove(own, own + filled * 2, carry * 2 * sizeof(float));
+         }
+         cap  = span - filled;
+         fits = (dev_float && rest) ? audio_driver_input_bound(src_data.ratio, cap) : 0;
+         if (fits > rest)
+            fits = rest;
+
+         if (!dev_float && rest && !carry && span >= audio_driver_output_bound(src_data.ratio, rest))
+         {
+            /* An int16 device with the whole flush's room: produced in
+             * the float buffer, narrowed into the span */
+            out = audio_driver_flush_produce(audio_st, &src_data, in_all,
+                  s16_in, in_done, rest, own, bypass, aflags, &sanitized);
+            audio_driver_flush_finish(audio_st, own, out, sanitized, aflags);
+            convert_float_to_s16((int16_t*)lend, own, out * 2);
+            in_done = in_total;
+            filled  = out;
+         }
+         else if (fits)
+         {
+            /* Straight into the span, as much input as is sure to fit */
+            out = audio_driver_flush_produce(audio_st, &src_data, in_all,
+                  s16_in, in_done, fits, (float*)lend + filled * 2, bypass,
+                  aflags, &sanitized);
+            audio_driver_flush_finish(audio_st, (float*)lend + filled * 2,
+                  out, sanitized, aflags);
+            in_done += fits;
+            filled  += out;
+         }
+         else if (dev_float && rest && cap && !carry)
+         {
+            /* A sliver before the wrap, too small for the bound: enough
+             * input to fill it, produced in the frontend's buffer, the
+             * sliver copied from there and what is over carried to the
+             * next span */
+            size_t in_now = (size_t)((double)(cap + 1) / src_data.ratio) + 1;
+            size_t take;
+            if (in_now > rest)
+               in_now = rest;
+            out = audio_driver_flush_produce(audio_st, &src_data, in_all,
+                  s16_in, in_done, in_now, own, bypass, aflags, &sanitized);
+            audio_driver_flush_finish(audio_st, own, out, sanitized, aflags);
+            in_done += in_now;
+            take = out < cap ? out : cap;
+            memcpy((uint8_t*)lend + filled * fb, own, take * fb);
+            carry = out - take;
+            if (carry)
+               memmove(own, own + take * 2, carry * 2 * sizeof(float));
+            filled += take;
+         }
+         else if (!dev_float && rest)
+         {
+            /* An int16 device whose span is short: narrowed into the
+             * spans on the way out */
+            audio->write_end(audio_st->context_audio_data, filled * fb);
+            if (filled)
+               audio_driver_flush_offered(audio_st, filled, (ssize_t)(filled * fb), fb);
+            lend  = NULL;
+            parts = 8; /* no further lend: the staged write takes the rest */
+            continue;
+         }
+         {
+            ssize_t w = audio->write_end(audio_st->context_audio_data,
+                  filled * fb);
+            if (filled)
+               audio_driver_flush_offered(audio_st, filled, w, fb);
+         }
       }
+      lend = NULL;
       audio_driver_sink_refused(audio_st);
       if (!audio_st->pipe_threaded)
          audio_driver_sink_update(audio_st, cpu_features_get_time_usec());

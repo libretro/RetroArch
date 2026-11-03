@@ -36,6 +36,9 @@ static size_t  span_cap;            /* 0: full spans; else cut to this */
 /* 0: a flat area; else the device is a ring of this many bytes, whose
  * span stops where it wraps (the capture stays flat behind it) */
 static size_t  ring_bytes;
+/* ring_frames of the device's frames, plus ring_cut bytes: a ring set
+ * per case in frames, whatever the device's format */
+static size_t  ring_frames, ring_cut;
 /* the layout the device opens with, and Headphone Virtual Surround */
 static uint32_t dev_layout = AUDIO_LAYOUT_STEREO;
 static bool     virtual_surround;
@@ -49,6 +52,9 @@ static void *test_init(const char *device, unsigned rate, unsigned latency,
    device_bytes = (size_t)latency * rate / 1000
          * audio_layout_channels(dev_layout)
          * (device_float ? sizeof(float) : sizeof(int16_t));
+   if (ring_frames)
+      ring_bytes = ring_frames * audio_layout_channels(dev_layout)
+            * (device_float ? sizeof(float) : sizeof(int16_t)) + ring_cut;
    *new_rate = rate;
    return &device_bytes;
 }
@@ -276,47 +282,49 @@ int main(void)
 
    /* A device whose ring wraps inside the span: the stereo int16
     * device's narrowing, the upmix and the binaural render are made
-    * span by span either side of the wrap, write() not called - and a
-    * ring that cuts a frame at its end sends that frame through write()
-    * with the stream intact. A float stereo device's resampler output
-    * cannot be split and still goes through write(). */
+    * span by span either side of the wrap, and a float stereo device's
+    * resampler takes the input that fills the first span and carries on
+    * in the next; write() is not called - and a ring that cuts a frame
+    * at its end sends that frame through write() with the stream
+    * intact. The flush is 800 frames resampled to 1200; the ring wraps
+    * 1000 frames in. */
    {
-      static const size_t rings[] = { 1920, 1000 }; /* whole frames, or not */
       size_t r;
       for (r = 0; r < 2; r++)
          for (i = 0; i < 2; i++)
          {
             char what[96];
-            bool whole = r == 0;
-            threaded   = i == 0;
-            ring_bytes = rings[r];
-            snprintf(what, sizeof(what), "%swrapping ring %u, s16 device",
-                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            bool whole  = r == 0;
+            threaded    = i == 0;
+            ring_frames = 1000;
+            ring_cut    = whole ? 0 : 2;
+            snprintf(what, sizeof(what), "%swrapping ring%s, s16 device",
+                  threaded ? "" : "inline, ", whole ? "" : " cutting a frame");
             compare_case(what, false, 32000, 0, !whole);
-            snprintf(what, sizeof(what), "%swrapping ring %u, float device",
-                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
-            compare_case(what, true,  32000, 0, true);
-            dev_layout = AUDIO_LAYOUT_5POINT1;
-            snprintf(what, sizeof(what), "%swrapping ring %u, 5.1 float",
-                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            snprintf(what, sizeof(what), "%swrapping ring%s, float device",
+                  threaded ? "" : "inline, ", whole ? "" : " cutting a frame");
             compare_case(what, true,  32000, 0, !whole);
-            snprintf(what, sizeof(what), "%swrapping ring %u, 5.1 s16",
-                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            dev_layout = AUDIO_LAYOUT_5POINT1;
+            snprintf(what, sizeof(what), "%swrapping ring%s, 5.1 float",
+                  threaded ? "" : "inline, ", whole ? "" : " cutting a frame");
+            compare_case(what, true,  32000, 0, !whole);
+            snprintf(what, sizeof(what), "%swrapping ring%s, 5.1 s16",
+                  threaded ? "" : "inline, ", whole ? "" : " cutting a frame");
             compare_case(what, false, 32000, 0, !whole);
             dev_layout = AUDIO_LAYOUT_STEREO;
             virtual_surround = true;
-            snprintf(what, sizeof(what), "%swrapping ring %u, headphones float",
-                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            snprintf(what, sizeof(what), "%swrapping ring%s, headphones float",
+                  threaded ? "" : "inline, ", whole ? "" : " cutting a frame");
             compare_case(what, true,  32000, 0, !whole);
-            snprintf(what, sizeof(what), "%swrapping ring %u, headphones s16",
-                  threaded ? "" : "inline, ", (unsigned)ring_bytes);
+            snprintf(what, sizeof(what), "%swrapping ring%s, headphones s16",
+                  threaded ? "" : "inline, ", whole ? "" : " cutting a frame");
             compare_case(what, false, 32000, 0, !whole);
             virtual_surround = false;
          }
       /* The core's own surround channels, merged over the upmix span by
        * span: each span takes its own frames of them */
       core_surround = true;
-      ring_bytes    = rings[0];
+      ring_cut      = 0;
       for (i = 0; i < 2; i++)
       {
          char what[96];
@@ -336,7 +344,23 @@ int main(void)
          virtual_surround = false;
       }
       core_surround = false;
-      ring_bytes = 0;
+      /* A float stereo device at unity, the bypass's copy split likewise;
+       * and a ring wrapping twice inside the flush, three spans */
+      for (i = 0; i < 2; i++)
+      {
+         char what[96];
+         threaded    = i == 0;
+         ring_frames = 1000;
+         snprintf(what, sizeof(what), "%swrapping ring, float device, unity",
+               threaded ? "" : "inline, ");
+         compare_case(what, true, 48000, 0, false);
+         ring_frames = 500;
+         snprintf(what, sizeof(what), "%sring wrapping twice, float device",
+               threaded ? "" : "inline, ");
+         compare_case(what, true, 32000, 0, false);
+      }
+      ring_frames = 0;
+      ring_bytes  = 0;
    }
 
    if (failures)
