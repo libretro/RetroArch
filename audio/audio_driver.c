@@ -4594,9 +4594,23 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                memmove(own, own + filled * 2, carry * 2 * sizeof(float));
          }
          cap  = span - filled;
-         fits = (dev_float && rest) ? audio_driver_input_bound(src_data.ratio, cap) : 0;
-         if (fits > rest)
-            fits = rest;
+         /* The input that fills the span: exactly, where the resampler
+          * can say what its clock makes of each frame, so the span is
+          * filled to within one frame's output; the bound otherwise */
+         fits = 0;
+         if (dev_float && rest)
+         {
+            if (!bypass && audio_st->resampler && audio_st->resampler->fit
+                  && audio_st->resampler_data)
+               fits = audio_st->resampler->fit(audio_st->resampler_data,
+                     src_data.ratio, cap, rest);
+            if (!fits)
+               fits = audio_driver_input_bound(src_data.ratio, cap);
+            if (bypass && cap < rest)
+               fits = cap; /* the copy: a frame in, a frame out */
+            if (fits > rest)
+               fits = rest;
+         }
 
          if (!dev_float && rest && !carry && span >= audio_driver_output_bound(src_data.ratio, rest))
          {

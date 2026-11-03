@@ -170,6 +170,15 @@ typedef void (*resampler_reset_t)(void *data);
  * freed like any other. */
 typedef void *(*resampler_sibling_t)(void *data);
 
+/* The most input frames, at most @max_input, whose process() at @ratio
+ * is sure to produce no more than @max_output frames - exact for this
+ * stream's state, where the backend can tell, so a caller producing into
+ * a buffer of @max_output frames fills it to within the frames one
+ * input frame makes. 0 where it cannot tell (the caller then sizes from
+ * a bound), or where no input fits. The stream is not changed. */
+typedef size_t (*resampler_fit_t)(void *data, double ratio,
+      size_t max_output, size_t max_input);
+
 /* What a backend reads of the settings the frontend exposes. One that
  * reads neither leaves this zero, and the frontend has no control to
  * offer for it. */
@@ -202,6 +211,10 @@ typedef struct retro_resampler
    /* Optional: NULL where the backend has no tables worth sharing, and
     * the caller makes a fresh instance instead. */
    resampler_sibling_t  sibling;
+
+   /* Optional; last, so a backend that does not set it is NULL here, and
+    * the caller sizes its output from a bound instead. */
+   resampler_fit_t      fit;
 } retro_resampler_t;
 
 typedef struct audio_frame_float

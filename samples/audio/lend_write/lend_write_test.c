@@ -219,6 +219,76 @@ static void compare_case(const char *what, bool dev_float, unsigned in_rate,
             what, write_calls);
 }
 
+/* The sinc resampler's fit() is exact: for a stream at any state, after
+ * any run, the input it names produces no more than the frames asked
+ * for, and one input frame more produces more - so a span is filled to
+ * within one frame's output, and the copy left at a wrap is that or
+ * nothing. Every quality, with and without HQ oversampling, ratios
+ * above and below one, caps from one frame up. */
+static void fit_case(void)
+{
+   static float in[4096 * 2], out[8192 * 2];
+   static const double ratios[] = { 1.5, 48000.0 / 44100.0, 0.98, 2.0 / 3.0, 1.0 / 1.1 };
+   unsigned q, r, k, hq, checked = 0, bad = 0;
+   for (k = 0; k < 4096 * 2; k++)
+      in[k] = (float)((int)(k % 777) - 388) / 400.0f;
+   for (hq = 0; hq < 2; hq++)
+   for (q = RESAMPLER_QUALITY_LOWEST; q <= RESAMPLER_QUALITY_HIGHEST; q++)
+      for (r = 0; r < sizeof(ratios) / sizeof(ratios[0]); r++)
+      {
+         void *re = NULL;
+         const retro_resampler_t *backend = NULL;
+         struct resampler_data d;
+         unsigned caps[] = { 1, 2, 7, 25, 100, 999, 1200 };
+         unsigned c, warm;
+         if (!retro_resampler_realloc_hq(&re, &backend, "sinc",
+                  (enum resampler_quality)q, ratios[r], hq != 0))
+            continue;
+         if (!backend->fit)
+         {
+            printf("FAIL: the sinc resampler has no fit()\n");
+            failures++;
+            backend->free(re);
+            return;
+         }
+         memset(&d, 0, sizeof(d));
+         d.ratio = ratios[r];
+         for (c = 0; c < sizeof(caps) / sizeof(caps[0]); c++)
+            for (warm = 0; warm < 3; warm++)
+            {
+               size_t fits, a, b;
+               /* a run of odd length first: the state is wherever it lands */
+               d.data_in = in; d.data_out = out;
+               d.input_frames = 131 + warm * 37 + c;
+               backend->process(re, &d);
+               fits = backend->fit(re, d.ratio, caps[c], 800);
+               d.input_frames = fits;
+               d.output_frames = 0;
+               if (fits)
+                  backend->process(re, &d);
+               a = d.output_frames;
+               d.input_frames = 1;
+               backend->process(re, &d);
+               b = a + d.output_frames;
+               checked++;
+               if (a > caps[c] || (fits < 800 && b <= caps[c]))
+               {
+                  if (bad++ < 5)
+                     printf("FAIL fit: quality %u ratio %.4f cap %u: fit %u made %u, one more %u\n",
+                           q, ratios[r], caps[c], (unsigned)fits, (unsigned)a, (unsigned)b);
+               }
+            }
+         backend->free(re);
+      }
+   if (bad)
+   {
+      printf("FAIL: %u of %u fits were not exact\n", bad, checked);
+      failures++;
+   }
+   else
+      printf("resampler fit: %u fits exact, the span filled to within one frame's output\n", checked);
+}
+
 int main(void)
 {
    size_t i;
@@ -235,6 +305,8 @@ int main(void)
       source_i[i] = (int16_t)((int)(i % 1000) - 500);
    for (i = 0; i < FRAMES * 6; i++)
       source_51[i] = (int16_t)((int)((i * (7 + i % 6)) % 2000) - 1000);
+
+   fit_case();
 
    /* Real resampling into the lent span, float and int16 devices. */
    compare_case("float device, 32k -> 48k", true,  32000, 0, false);

@@ -1977,6 +1977,48 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
       resampler_sinc_process_decimated(re, data);
 }
 
+/* The output of the nominal kernels is the phase clock's: an input
+ * frame is pushed while time is a phase or more, and a frame comes out
+ * at each step of the integer ratio until it is again, so what the next
+ * process() makes of each input frame follows from time alone. Walked
+ * here as the kernels walk it, input frame by input frame, up to the
+ * last one whose output still fits. The decimated path, which the
+ * design ratio's fast-forward takes, is not this clock: 0 there. */
+static size_t resampler_sinc_fit(void *re_, double ratio_d,
+      size_t max_output, size_t max_input)
+{
+   rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)re_;
+   unsigned phases, step;
+   uint32_t time;
+   size_t   in, out = 0;
+
+   if (!sinc_resampler_ratio_valid(ratio_d, re->phase_bits, re->subphase_bits))
+      return 0;
+   if (     re->dec_stages || re->fade_left
+         || ratio_d < re->design_ratio * SINC_DEC_ENGAGE_FIRST)
+      return 0;
+   phases = 1 << (re->phase_bits + re->subphase_bits);
+   step   = (unsigned)(phases / ratio_d);
+   time   = re->time;
+   for (in = 0; in < max_input; in++)
+   {
+      /* this frame pushed, and what comes out before the next one */
+      size_t emit = 0;
+      if (time < phases)
+         break; /* the kernels never leave time here between calls */
+      time -= phases;
+      while (time < phases)
+      {
+         emit++;
+         time += step;
+      }
+      if (out + emit > max_output)
+         break;
+      out += emit;
+   }
+   return in;
+}
+
 retro_resampler_t sinc_resampler = {
    resampler_sinc_new,
    resampler_sinc_process,
@@ -1986,7 +2028,8 @@ retro_resampler_t sinc_resampler = {
    "sinc",
    resampler_sinc_reset,
    RESAMPLER_CAP_QUALITY | RESAMPLER_CAP_HQ_OVERSAMPLE,
-   resampler_sinc_sibling
+   resampler_sinc_sibling,
+   resampler_sinc_fit
 };
 
 #if defined(__GNUC__) && defined(__OPTIMIZE__) && !defined(__clang__)
