@@ -3617,6 +3617,10 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
  * still be holding it: see video_driver_hw_render_interface_kept(). */
 static const struct retro_hw_render_interface *video_hw_render_iface_held;
 
+/* See video_driver_hw_context_shared_note(): -1 until a GL driver
+ * reports one, and again once the core's context is destroyed. */
+static int video_hw_context_shared = -1;
+
 void video_driver_free_hw_context(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
@@ -3654,6 +3658,8 @@ void video_driver_free_hw_context(void)
    video_driver_invalidate_hw_render_cache();
    /* the core holds no interface of ours any more */
    video_hw_render_iface_held = NULL;
+   /* nor renders in a context of ours */
+   video_hw_context_shared    = -1;
 
    memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
    /* After the memset: an acquire reader that sees NONE is
@@ -4751,6 +4757,18 @@ bool video_driver_hw_render_interface_kept(void)
          || !video_st->poke->get_hw_render_interface(video_st->data, &iface))
       return false;
    return iface == video_hw_render_iface_held;
+}
+
+bool video_driver_hw_context_moved(int before, bool shared)
+{
+   return before != -1 && before != (shared ? 1 : 0);
+}
+
+void video_driver_hw_context_shared_note(bool shared)
+{
+   if (video_driver_hw_context_moved(video_hw_context_shared, shared))
+      video_driver_cache_context_ack_clear();
+   video_hw_context_shared = shared ? 1 : 0;
 }
 
 void video_driver_cache_context_ack_set(void)

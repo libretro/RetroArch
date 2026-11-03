@@ -8015,6 +8015,15 @@ static const gfx_ctx_driver_t *gl2_get_context(gl2_t *gl)
             gfx_ctx->ident);
    }
 
+   /* A kept context comes with the shared one it had, and the core is
+    * not reset: it goes on with the objects it made. That holds only
+    * if it renders in the same one of the two as before - framebuffer
+    * and vertex array objects are not shared between them, and a
+    * threaded video toggle moves the core from one to the other. */
+   if (gfx_ctx && hwr->context_type != RETRO_HW_CONTEXT_NONE)
+      video_driver_hw_context_shared_note(
+            (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE) ? true : false);
+
    return gfx_ctx;
 }
 
