@@ -364,6 +364,11 @@ typedef struct
  * settings.  @cb gets @user_data.  False while a chain runs. */
 bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb,
       void *user_data);
+
+/* As task_push_dbscan(), for a @fullpath known to be a folder
+ * (@is_dir) or a file. */
+bool task_push_dbscan_known(const char *fullpath, bool is_dir,
+      retro_task_callback_t cb, void *user_data);
 #endif
 
 struct manual_content_scan_overrides;

@@ -312,9 +312,13 @@ int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream)
    return 1;
 }
 
+/* How often a folder was opened */
+static retro_atomic_int_t smb_stub_opendirs;
+
 smb_dir_handle *retro_vfs_opendir_smb(const char *path, bool include_hidden)
 {
    (void)path; (void)include_hidden;
+   retro_atomic_fetch_add_int(&smb_stub_opendirs, 1);
    return NULL;
 }
 
@@ -330,10 +334,26 @@ int retro_vfs_closedir_smb(smb_dir_handle *dh)
    return -1;
 }
 
+/* Set: the share answers, names ending .bin are files and the rest
+ * folders.  How often a stat was asked on the main thread, and that
+ * count when a scan was pushed (-1: none was). */
+static bool               smb_stub_live;
+static retro_atomic_int_t smb_stub_stats_main;
+static retro_atomic_int_t smb_stats_at_push;
+
 int retro_vfs_stat_smb(const char *path, int64_t *size)
 {
-   (void)path; (void)size;
-   return 0;
+   size_t n = strlen(path);
+
+   if (size)
+      *size = 0;
+   if (task_is_on_main_thread())
+      retro_atomic_fetch_add_int(&smb_stub_stats_main, 1);
+   if (!smb_stub_live)
+      return 0;
+   if (n > 4 && !strcmp(path + n - 4, ".bin"))
+      return RETRO_VFS_STAT_IS_VALID;
+   return RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY;
 }
 
 /* What smb_url_check() and smb_url_failure() answer, and how often
@@ -1081,6 +1101,12 @@ bool __wrap_task_queue_push(retro_task_t *task)
 {
    int n;
 
+#ifdef HAVE_SMBCLIENT
+   /* Only a scan has a title */
+   if (task->title)
+      retro_atomic_store_release_int(&smb_stats_at_push,
+            retro_atomic_load_acquire_int(&smb_stub_stats_main));
+#endif
    if (!(task_get_flags(task) & RETRO_TASK_FLG_PARALLEL))
    {
       if (   prep_cancel_at && !task->title
@@ -10025,6 +10051,341 @@ done:
             sizeof(config_get_ptr()->paths.directory_playlist));
    free(saved_pl);
 }
+
+enum smb_kind_push
+{
+   SMB_KIND_DBSCAN = 0, /* task_push_dbscan(), kind unknown */
+   SMB_KIND_FOLDER,     /* task_push_dbscan_known(), a folder */
+   SMB_KIND_FILE,       /* task_push_dbscan_known(), a file */
+   SMB_KIND_AS_SET      /* the settings as set */
+};
+
+static void smb_kind_reset(void)
+{
+   retro_atomic_store_release_int(&smb_stub_stats_main, 0);
+   retro_atomic_store_release_int(&smb_stats_at_push,   -1);
+   retro_atomic_store_release_int(&smb_stub_opendirs,   0);
+}
+
+/* Scans @path as run_scan() does, pushed as @how says.  Returns the
+ * main thread's smb:// stats before the push (since smb_kind_reset()
+ * for SMB_KIND_AS_SET), or -1 if none was. */
+static int smb_kind_scan(const char *path, enum smb_kind_push how)
+{
+   time_t started;
+   bool   pushed;
+
+   if (how != SMB_KIND_AS_SET)
+      smb_kind_reset();
+   loop_active        = true;
+   scan_completed     = false;
+   scan_result.failed = true;
+   switch (how)
+   {
+      case SMB_KIND_DBSCAN:
+         pushed = task_push_dbscan(path, scan_cb, &scan_result);
+         break;
+      case SMB_KIND_FOLDER:
+      case SMB_KIND_FILE:
+         pushed = task_push_dbscan_known(path, how == SMB_KIND_FOLDER,
+               scan_cb, &scan_result);
+         break;
+      default:
+         pushed = task_push_manual_content_scan(false, scan_cb,
+               &scan_result);
+         break;
+   }
+   if (!pushed)
+      return -1;
+   started = time(NULL);
+   while (loop_active)
+   {
+      task_queue_check();
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         break;
+      retro_sleep(1);
+   }
+   return retro_atomic_load_acquire_int(&smb_stats_at_push);
+}
+
+/* A chain run of @items; the main thread's smb:// stats before its
+ * scan was pushed. */
+static int smb_kind_chain(task_dbscan_item_t *items, const char *out,
+      const char *err, bool *ran)
+{
+   smb_kind_reset();
+   *ran = refresh_run(items, 1, out, err, true);
+   return retro_atomic_load_acquire_int(&smb_stats_at_push);
+}
+
+/* An smb:// path of known kind is not stat'd on the main thread
+ * before its scan is pushed: Scan Directory and Scan File, the menu's
+ * folder pick, a lone refresh, and the chain's --scan and refresh
+ * items, whose path or load task stats it off the main thread
+ * instead.  Unknown kind, and a local path whatever its kind, are
+ * stat'd.  A single smb:// file keeps its folder's playlist name, its
+ * single-file database scan, saves no settings and ignores
+ * Overwrite, as when the stat told it. */
+static void smb_kind_lane(const char *root, bool threaded)
+{
+   const char *dir  = "smb://host/share/roms";
+   const char *file = "smb://host/share/roms/01_alpha.bin";
+   const char *q    = threaded ? "(threaded)" : "(regular)";
+   char        pl[512], lpl[1024], ref[1024], loc[512], p[1024];
+   char        out[512], err[512], line[1024], what[96], detail[160];
+   manual_content_scan_task_config_t *cfg = (manual_content_scan_task_config_t*)
+         calloc(2, sizeof(*cfg));
+   task_dbscan_result_t res;
+   task_dbscan_item_t  *items;
+   playlist_config_t   *pcfg = (playlist_config_t*)calloc(1, sizeof(*pcfg));
+   playlist_t          *plst;
+   int                  n, n2, task_n;
+   bool                 ok, ok2, ran, as_folder, as_file, off_main = false;
+   char                *saved_pl = strdup(
+         config_get_ptr()->paths.directory_playlist);
+
+#ifdef HAVE_THREADS
+   off_main = threaded;
+#endif
+   /* The path or load task's one stat */
+   task_n = off_main ? 0 : 1;
+   if (!cfg || !pcfg)
+      goto fixture;
+   sprintf(pl,  "%s/smb_kind_pl",       root);
+   sprintf(loc, "%s/smb_kind_local",    root);
+   sprintf(lpl, "%s/roms.lpl",          pl);
+   sprintf(ref, "%s/smb_kind_ref.lpl",  root);
+   sprintf(out, "%s/smb_kind.out",      root);
+   sprintf(err, "%s/smb_kind.err",      root);
+   path_mkdir(pl);
+   path_mkdir(loc);
+   delete_playlists(pl);
+   sprintf(p, "%s/02_beta.bin", loc);
+   if (!write_content(p, 0x52A3ED00u, 1024))
+      goto fixture;
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+   smb_stub_check   = SMB_URL_OK;
+   smb_stub_failure = SMB_FAILURE_UNKNOWN;
+   smb_stub_detail  = "";
+   smb_stub_live    = true;
+
+   /* Unknown kind: set_menu_content_dir, get_task_config and the
+    * directory flag stat it. */
+   manual_content_scan_reset_settings();
+   n  = smb_kind_scan(dir,  SMB_KIND_DBSCAN);
+   n2 = smb_kind_scan(file, SMB_KIND_DBSCAN);
+   sprintf(what, "smb kind %s: unknown kind stats the path", q);
+   sprintf(detail, "folder %d, file %d", n, n2);
+   check(n == 3 && n2 == 3, what, detail);
+
+   /* Scan Directory, Scan File.  Only a folder push opens the
+    * folder. */
+   n  = smb_kind_scan(dir,  SMB_KIND_FOLDER);
+   as_folder = retro_atomic_load_acquire_int(&smb_stub_opendirs) == 1
+         && manual_content_scan_get_task_config(&cfg[0], pl)
+         && !cfg[0].content_is_file;
+   n2 = smb_kind_scan(file, SMB_KIND_FILE);
+   as_file = !retro_atomic_load_acquire_int(&smb_stub_opendirs);
+   sprintf(what, "smb kind %s: Scan Directory and Scan File", q);
+   sprintf(detail, "folder %d, as a folder %d, file %d, as a file %d",
+         n, (int)as_folder, n2, (int)as_file);
+   check(n == 0 && as_folder && n2 == 0 && as_file, what, detail);
+
+   /* The menu's folder pick */
+   smb_kind_reset();
+   ok  = manual_content_scan_set_menu_content_dir_kind(dir,
+         MANUAL_CONTENT_SCAN_PATH_FOLDER);
+   as_folder = ok && manual_content_scan_get_task_config(&cfg[0], pl)
+         && !cfg[0].content_is_file;
+   n   = ok ? smb_kind_scan(dir, SMB_KIND_AS_SET) : -1;
+   as_folder = as_folder
+         && retro_atomic_load_acquire_int(&smb_stub_opendirs) == 1;
+   smb_kind_reset();
+   ok2 = manual_content_scan_set_menu_content_dir_kind(file,
+         MANUAL_CONTENT_SCAN_PATH_FILE);
+   n2  = ok2 ? smb_kind_scan(file, SMB_KIND_AS_SET) : -1;
+   as_file = ok2 && !retro_atomic_load_acquire_int(&smb_stub_opendirs);
+   sprintf(what, "smb kind %s: the menu's folder pick", q);
+   sprintf(detail, "folder %d, as a folder %d, file %d, as a file %d",
+         n, (int)as_folder, n2, (int)as_file);
+   check(n == 0 && as_folder && n2 == 0 && as_file, what, detail);
+
+   /* A lone refresh: the saved folder is a folder. */
+   delete_playlists(pl);
+   n = -1;
+   if (!refresh_write(lpl, dir, NULL, "smb://host/share/roms/00_old.bin"))
+      goto fixture;
+   playlist_config_set_path(pcfg, lpl);
+   pcfg->capacity = COLLECTION_SIZE;
+   if ((plst = playlist_init(pcfg)))
+   {
+      manual_content_scan_reset_settings();
+      smb_kind_reset();
+      if (manual_content_scan_set_menu_from_playlist(plst,
+            config_get_ptr()->paths.path_content_database, false)
+            == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK)
+         n = smb_kind_scan(dir, SMB_KIND_AS_SET);
+      playlist_free(plst);
+   }
+   sprintf(what, "smb kind %s: a lone refresh", q);
+   sprintf(detail, "%d", n);
+   check(n == 0, what, detail);
+
+   /* The chain: --scan of a folder and of a file with
+    * --scan-overwrite, --scan-refresh, refresh-all. */
+   delete_playlists(pl);
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   chain_item(&items[0], dir, NULL);
+   if ((items[0].overrides = manual_content_scan_overrides_new()))
+      items[0].overrides->flags |= MANUAL_CONTENT_SCAN_OVR_OVERWRITE;
+   n = smb_kind_chain(items, out, err, &ran);
+   sprintf(what, "smb kind %s: --scan of a folder", q);
+   sprintf(detail, "%d (want %d), %u items", n, task_n, chain_seen);
+   check(   ran && n == task_n && chain_seen == 1
+         && !file_contains(err, "single file")
+         && !file_contains(err, "not found"), what, detail);
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   chain_item(&items[0], file, NULL);
+   if ((items[0].overrides = manual_content_scan_overrides_new()))
+      items[0].overrides->flags |= MANUAL_CONTENT_SCAN_OVR_OVERWRITE;
+   n = smb_kind_chain(items, out, err, &ran);
+   sprintf(line, "%s: --scan-overwrite ignored for a single file", file);
+   sprintf(what, "smb kind %s: --scan of a file", q);
+   sprintf(detail, "%d (want %d), %u items", n, task_n, chain_seen);
+   check(   ran && n == task_n && chain_seen == 1
+         && file_contains(err, line), what, detail);
+
+   delete_playlists(pl);
+   if (!refresh_write(lpl, dir, NULL, "smb://host/share/roms/00_old.bin")
+         || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH, "roms");
+   n  = smb_kind_chain(items, out, err, &ran);
+   ok = ran;
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   n2 = smb_kind_chain(items, out, err, &ran);
+   sprintf(what, "smb kind %s: --scan-refresh and refresh-all", q);
+   sprintf(detail, "%d, %d (want %d)", n, n2, task_n);
+   check(ok && ran && n == task_n && n2 == task_n, what, detail);
+
+   /* A picked file is one still once a chain has put the settings
+    * back. */
+   manual_content_scan_reset_settings();
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_use_db(MANUAL_CONTENT_SCAN_USE_DB_NONE);
+   ok = manual_content_scan_set_menu_content_dir_kind(file,
+         MANUAL_CONTENT_SCAN_PATH_FILE);
+   delete_playlists(pl);
+   if (!refresh_write(lpl, dir, NULL, "smb://host/share/roms/00_old.bin")
+         || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   smb_kind_chain(items, out, err, &ran);
+   smb_kind_reset();
+   ok2 = ok && ran && manual_content_scan_get_task_config(&cfg[0], pl);
+   n   = retro_atomic_load_acquire_int(&smb_stub_stats_main);
+   sprintf(what, "smb kind %s: a picked file after refresh-all", q);
+   sprintf(detail, "%s, file %d, %d stats",
+         ok2 ? path_basename(cfg[0].content_dir) : "-",
+         ok2 && cfg[0].content_is_file, n);
+   check(   ok2 && n == 0 && cfg[0].content_is_file
+         && !strcmp(cfg[0].content_dir, file), what, detail);
+
+   /* One file: the folder's playlist name, no Overwrite, from the
+    * kind as from the stat; a local path stats whatever its kind. */
+   manual_content_scan_reset_settings();
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_use_db(MANUAL_CONTENT_SCAN_USE_DB_NONE);
+   *manual_content_scan_get_overwrite_playlist_ptr() = true;
+   ok = manual_content_scan_set_menu_content_dir(file)
+      && manual_content_scan_get_task_config(&cfg[0], pl);
+   smb_kind_reset();
+   ok2 = manual_content_scan_set_menu_content_dir_kind(file,
+         MANUAL_CONTENT_SCAN_PATH_FILE)
+      && manual_content_scan_get_task_config(&cfg[1], pl);
+   n = retro_atomic_load_acquire_int(&smb_stub_stats_main);
+   sprintf(what, "smb kind %s: one file's playlist and Overwrite", q);
+   sprintf(detail, "%s, %s, overwrite %d, %d stats",
+         ok ? path_basename(cfg[0].playlist_file) : "-",
+         ok2 ? path_basename(cfg[1].playlist_file) : "-",
+         (int)cfg[1].overwrite_playlist, n);
+   check(   ok && ok2 && n == 0
+         && cfg[0].content_is_file && cfg[1].content_is_file
+         && !cfg[0].overwrite_playlist && !cfg[1].overwrite_playlist
+         && !strcmp(cfg[0].playlist_file, cfg[1].playlist_file)
+         && !strcmp(path_basename(cfg[1].playlist_file), "roms.lpl"),
+         what, detail);
+   sprintf(p, "%s/02_beta.bin", loc);
+   ok = manual_content_scan_set_menu_content_dir_kind(p,
+         MANUAL_CONTENT_SCAN_PATH_FOLDER)
+      && manual_content_scan_get_task_config(&cfg[0], pl);
+   sprintf(what, "smb kind %s: a local file read as a folder", q);
+   check(   ok && cfg[0].content_is_file
+         && !strcmp(path_basename(cfg[0].playlist_file),
+               "smb_kind_local.lpl"), what,
+         ok ? path_basename(cfg[0].playlist_file) : "-");
+
+   /* With no database: one entry added to the folder's playlist,
+    * no settings saved, Overwrite and Validate not applied. */
+   *manual_content_scan_get_validate_entries_ptr() = true;
+   delete_playlists(pl);
+   if (!refresh_write(lpl, NULL, NULL, "smb://host/share/roms/00_old.bin"))
+      goto fixture;
+   n = smb_kind_scan(file, SMB_KIND_DBSCAN);
+   ok = !filestream_rename(lpl, ref);
+   if (!refresh_write(lpl, NULL, NULL, "smb://host/share/roms/00_old.bin"))
+      goto fixture;
+   n2 = smb_kind_scan(file, SMB_KIND_FILE);
+   sprintf(what, "smb kind %s: one file with no database", q);
+   sprintf(detail, "%d, %d stats, same %d, new %d, old %d", n, n2,
+         files_equal(ref, lpl), file_contains(lpl, "01_alpha.bin"),
+         file_contains(lpl, "00_old.bin"));
+   check(   ok && n == 3 && n2 == 0 && files_equal(ref, lpl)
+         && file_contains(lpl, "01_alpha.bin")
+         && file_contains(lpl, "00_old.bin")
+         && !scan_record(lpl, line, p, sizeof(p), &ran), what, detail);
+   filestream_delete(ref);
+
+   /* With the database: the single-file scan, not a folder's. */
+   manual_content_scan_reset_settings();
+   delete_playlists(pl);
+   smb_kind_scan(file, SMB_KIND_DBSCAN);
+   res = scan_result;
+   smb_kind_scan(file, SMB_KIND_FILE);
+   sprintf(what, "smb kind %s: one file with the database", q);
+   sprintf(detail, "added %u/%u, unmatched %u/%u, errors %u/%u, "
+         "failed %d/%d", res.added, scan_result.added, res.unmatched,
+         scan_result.unmatched, res.errors, scan_result.errors,
+         (int)res.failed, (int)scan_result.failed);
+   check(   res.added == scan_result.added
+         && res.unmatched == scan_result.unmatched
+         && res.errors == scan_result.errors
+         && res.failed == scan_result.failed, what, detail);
+   printf("  info smb kind %s: one file with the database: %s\n", q,
+         detail);
+   goto done;
+
+fixture:
+   check(0, "fixture", "could not write the smb kind lane");
+done:
+   smb_stub_live = false;
+   delete_playlists(pl);
+   manual_content_scan_reset_settings();
+   if (saved_pl)
+      strlcpy(config_get_ptr()->paths.directory_playlist, saved_pl,
+            sizeof(config_get_ptr()->paths.directory_playlist));
+   free(saved_pl);
+   free(pcfg);
+   free(cfg);
+}
 #endif
 
 /* Refresh items over a playlist folder: a refresh-all takes every
@@ -11774,6 +12135,8 @@ int main(int argc, char **argv)
    smb_reason_lane(root, true);
    smb_refresh_lane(root, crc_a, sz_a, false);
    smb_refresh_lane(root, crc_a, sz_a, true);
+   smb_kind_lane(root, false);
+   smb_kind_lane(root, true);
 #endif
    {
       char reader_db[512];

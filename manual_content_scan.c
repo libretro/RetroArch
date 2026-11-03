@@ -94,6 +94,7 @@ static char scan_file_exts_custom[PATH_MAX_LENGTH];
 static char scan_dat_file_path[PATH_MAX_LENGTH];
 /* A folder or a file */
 static char scan_content_dir[PATH_MAX_LENGTH];
+static enum manual_content_scan_path_kind scan_content_kind;
 /* Number of bytes held back when populating
  * manual_content_scan_task_config_t::system_name, so that the file
  * extensions appended to it downstream (".lpl", ".rdb") still fit in
@@ -400,6 +401,7 @@ void manual_content_scan_reset_settings(void)
    scan_file_exts_custom[0]        = '\0';
    scan_dat_file_path[0]           = '\0';
    scan_content_dir[0]             = '\0';
+   scan_content_kind               = MANUAL_CONTENT_SCAN_PATH_UNKNOWN;
    scan_system_name_content_dir[0] = '\0';
    scan_system_name_database[0]    = '\0';
    scan_system_name_custom[0]      = '\0';
@@ -409,6 +411,7 @@ void manual_content_scan_reset_settings(void)
 struct manual_content_scan_saved
 {
    scan_settings_t settings;
+   enum manual_content_scan_path_kind content_kind;
    char core_path[PATH_MAX_LENGTH];
    char file_exts_core[PATH_MAX_LENGTH];
    char file_exts_custom[PATH_MAX_LENGTH];
@@ -427,6 +430,7 @@ manual_content_scan_saved_t *manual_content_scan_save_settings(void)
    if (!sv)
       return NULL;
    sv->settings = scan_settings;
+   sv->content_kind = scan_content_kind;
    memcpy(sv->core_path,               scan_core_path,               sizeof(sv->core_path));
    memcpy(sv->file_exts_core,          scan_file_exts_core,          sizeof(sv->file_exts_core));
    memcpy(sv->file_exts_custom,        scan_file_exts_custom,        sizeof(sv->file_exts_custom));
@@ -444,6 +448,7 @@ void manual_content_scan_restore_settings(manual_content_scan_saved_t *sv)
    if (!sv)
       return;
    scan_settings = sv->settings;
+   scan_content_kind = sv->content_kind;
    memcpy(scan_core_path,               sv->core_path,               sizeof(scan_core_path));
    memcpy(scan_file_exts_core,          sv->file_exts_core,          sizeof(scan_file_exts_core));
    memcpy(scan_file_exts_custom,        sv->file_exts_custom,        sizeof(scan_file_exts_custom));
@@ -456,16 +461,21 @@ void manual_content_scan_restore_settings(manual_content_scan_saved_t *sv)
    free(sv);
 }
 
+static enum manual_content_scan_path_kind manual_content_scan_fs_kind(
+      const manual_content_scan_fs_t *fs)
+{
+   if (!fs || !(fs->content_stat & RETRO_VFS_STAT_IS_VALID))
+      return MANUAL_CONTENT_SCAN_PATH_UNKNOWN;
+   return (fs->content_stat & RETRO_VFS_STAT_IS_DIRECTORY)
+      ? MANUAL_CONTENT_SCAN_PATH_FOLDER : MANUAL_CONTENT_SCAN_PATH_FILE;
+}
+
 /* Sets content directory for next manual scan
  * operation.
  * Returns true if content directory is valid. */
-bool manual_content_scan_set_menu_content_dir(const char *content_dir)
-{
-   return manual_content_scan_set_menu_content_dir_fs(content_dir, NULL);
-}
-
-bool manual_content_scan_set_menu_content_dir_fs(const char *content_dir,
-      const manual_content_scan_fs_t *fs)
+static bool manual_content_scan_set_content_dir(const char *content_dir,
+      const manual_content_scan_fs_t *fs,
+      enum manual_content_scan_path_kind kind)
 {
    size_t _len;
    int path_stats;
@@ -525,9 +535,12 @@ bool manual_content_scan_set_menu_content_dir_fs(const char *content_dir,
    if (!dir_name || !*dir_name)
       goto error;
 
+   scan_content_kind = kind;
+
    /* A file takes the name of the folder that holds it,
     * as a scan of that folder would */
-   path_stats = fs ? fs->content_stat : path_stat(scan_content_dir);
+   path_stats = fs ? fs->content_stat
+         : manual_content_scan_content_stat(scan_content_dir);
    if (      (path_stats & RETRO_VFS_STAT_IS_VALID)
          && !(path_stats & RETRO_VFS_STAT_IS_DIRECTORY)
          &&  fill_pathname_parent_dir_name(scan_system_name_content_dir,
@@ -547,8 +560,40 @@ error:
     * content directory and associated 'directory'
     * system name */
    scan_content_dir[0]             = '\0';
+   scan_content_kind               = MANUAL_CONTENT_SCAN_PATH_UNKNOWN;
    scan_system_name_content_dir[0] = '\0';
    return false;
+}
+
+bool manual_content_scan_set_menu_content_dir(const char *content_dir)
+{
+   return manual_content_scan_set_content_dir(content_dir, NULL,
+         MANUAL_CONTENT_SCAN_PATH_UNKNOWN);
+}
+
+bool manual_content_scan_set_menu_content_dir_fs(const char *content_dir,
+      const manual_content_scan_fs_t *fs)
+{
+   return manual_content_scan_set_content_dir(content_dir, fs,
+         manual_content_scan_fs_kind(fs));
+}
+
+bool manual_content_scan_set_menu_content_dir_kind(const char *content_dir,
+      enum manual_content_scan_path_kind kind)
+{
+   return manual_content_scan_set_content_dir(content_dir, NULL, kind);
+}
+
+int manual_content_scan_content_stat(const char *path)
+{
+#ifdef HAVE_SMBCLIENT
+   if (   scan_content_kind != MANUAL_CONTENT_SCAN_PATH_UNKNOWN
+       && string_starts_with_size(path, "smb://", STRLEN_CONST("smb://")))
+      return scan_content_kind == MANUAL_CONTENT_SCAN_PATH_FOLDER
+         ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY
+         : RETRO_VFS_STAT_IS_VALID;
+#endif
+   return path_stat(path);
 }
 
 bool manual_content_scan_set_menu_scan_method(
@@ -854,8 +899,10 @@ enum manual_content_scan_playlist_refresh_status
    if (!*system_name)
       return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME;
 
-   /* Set content directory */
-   if (!manual_content_scan_set_menu_content_dir_fs(content_dir, fs))
+   /* Set content directory: a file scan saves none */
+   if (!manual_content_scan_set_content_dir(content_dir, fs,
+         fs ? manual_content_scan_fs_kind(fs)
+         : MANUAL_CONTENT_SCAN_PATH_FOLDER))
       return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CONTENT_DIR;
 
    if (!manual_content_scan_set_menu_scan_use_db((enum manual_content_scan_db_usage)db_usage))
@@ -1974,7 +2021,8 @@ bool manual_content_scan_get_task_config(
    if (!*scan_content_dir)
       return false;
 
-   task_config->content_is_file = !path_is_directory(scan_content_dir);
+   task_config->content_is_file = !(manual_content_scan_content_stat(
+         scan_content_dir) & RETRO_VFS_STAT_IS_DIRECTORY);
 
    strlcpy(
          task_config->content_dir,
