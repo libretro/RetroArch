@@ -281,6 +281,7 @@ gfx/common/wayland/wlr-output-management-unstable-v1.h
 # samples/: built harness executables and objects. Each directory's
 # test is <dir>_test; nothing built there is source.
 samples/**/*_test
+libretro-common/test/formats/rxml_oom_test
 samples/**/*_test_*
 samples/audio/stretch/stretch_bench
 samples/gfx/rslc_corpus/rslc_corpus_dump

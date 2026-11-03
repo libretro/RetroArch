@@ -471,6 +471,8 @@ darwin-floor-check:
 
 unit-tests:
 	# Build and execute tests in order, to avoid coverage file collision
+	$(CC) $(TEST_UNIT_CFLAGS) test/formats/rxml_oom_test.c -o test/formats/rxml_oom_test
+	test/formats/rxml_oom_test
 	# string
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STDSTRING_SRC) $(LIBCHECK_LIBS) -o $(TEST_STDSTRING)
 	$(TEST_STDSTRING)

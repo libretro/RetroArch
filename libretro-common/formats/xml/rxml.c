@@ -1648,7 +1648,15 @@ static rxml_document_t *rxml_parse_owned(char *buf, size_t len,
    ps.doc        = (rxml_document_t*)malloc(sizeof(*ps.doc));
 
    if (!ps.acc || !ps.frames || !ps.doc)
-      r = 0;
+   {
+      if (err)
+         rxml_error_position(buf, 0, err);
+      free(ps.acc);
+      free(ps.frames);
+      free(ps.doc);
+      free(buf);
+      return NULL;
+   }
    else
    {
       ps.doc->root_node = NULL;
