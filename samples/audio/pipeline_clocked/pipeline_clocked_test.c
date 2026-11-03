@@ -28,7 +28,8 @@
  * Sync off, display-paced, the pipe deep and shallow; and the second
  * after fast-forward or a pause, which FF_EXIT_ONLY runs alone.
  * PACED_ONLY=1 runs those lanes alone; PACED_ONLY=audio_paced, setpoint,
- * rate_control, sync_off or ff_exit just that one; JITTER_US makes the display-paced
+ * rate_control, sync_off or ff_exit just that one, and audio_paced_16,
+ * _32 or _64 one device latency of the first; JITTER_US makes the display-paced
  * core up to that late on each frame, its schedule kept.
  *
  * Includes audio/audio_driver.c so the shipping producer and consumer
@@ -665,7 +666,8 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
    }
 }
 
-static void audio_paced_case(double seconds)
+/* @only_lat: one device latency of the three, 0 for all of them */
+static void audio_paced_case(double seconds, unsigned only_lat)
 {
    static const unsigned lat[] = { 16, 32, 64 };
    size_t i;
@@ -673,6 +675,8 @@ static void audio_paced_case(double seconds)
    for (i = 0; i < sizeof(lat) / sizeof(lat[0]); i++)
    {
       int mode;
+      if (only_lat && lat[i] != only_lat)
+         continue;
       for (mode = 0; mode < 4; mode++)
       {
          bool   video = (mode & 2) != 0, cap = (mode & 1) != 0;
@@ -1311,7 +1315,18 @@ int main(int argc, char **argv)
        * runner can take the lanes in parallel, each in real time */
       bool all = !strcmp(only, "1");
       if (all || !strcmp(only, "audio_paced"))
-         audio_paced_case(seconds);
+         audio_paced_case(seconds, 0);
+      /* audio_paced_16, _32 or _64: that device latency alone */
+      else if (!strncmp(only, "audio_paced_", 12))
+      {
+         unsigned l = (unsigned)atoi(only + 12);
+         if (l != 16 && l != 32 && l != 64)
+         {
+            printf("PACED_ONLY=%s: no such lane\n", only);
+            return 1;
+         }
+         audio_paced_case(seconds, l);
+      }
       if (all || !strcmp(only, "setpoint"))
          setpoint_case(seconds);
       if (all || !strcmp(only, "rate_control"))
@@ -1329,7 +1344,7 @@ int main(int argc, char **argv)
    }
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds);
-   audio_paced_case(seconds);
+   audio_paced_case(seconds, 0);
    setpoint_case(seconds);
    rate_control_case(seconds);
    sync_off_case(seconds);

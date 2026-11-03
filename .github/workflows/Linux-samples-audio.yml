@@ -1249,29 +1249,43 @@ jobs:
       - name: Build and run sinc fast-forward test (C89, ASan + UBSan, MinGW)
         working-directory: samples/audio/sinc_fastforward
         run: |
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # Live ratios under the table's design are decimated first:
           # rejection as a table built for that ratio, the nominal path
           # untouched, the output bound, crossfaded stage changes.
-          make -j$(nproc) check SANITIZER=address,undefined
-          if grep -qw avx /proc/cpuinfo; then
-            make clean
-            make -j$(nproc) check CC="gcc -mavx" SANITIZER=address,undefined
-          fi
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/run-parallel.sh"
+          # Each build its own binary, then the runs at once: each is one
+          # thread, so the runner's cores take them side by side.
           make clean
-          WINEDEBUG=-all timeout 300 make check CC=x86_64-w64-mingw32-gcc \
-            RUN="wine ./sinc_fastforward_test.exe"
+          make TARGET=sff_asan SANITIZER=address,undefined
+          par "sinc_fastforward_test (ASan)" ./sff_asan
+          if grep -qw avx /proc/cpuinfo; then
+            make TARGET=sff_avx CC="gcc -mavx" SANITIZER=address,undefined
+            par "sinc_fastforward_test (AVX, ASan)" ./sff_avx
+          fi
+          make TARGET=sff_mingw CC=x86_64-w64-mingw32-gcc
+          par "sinc_fastforward_test (MinGW, wine)" env WINEDEBUG=-all \
+            timeout 300 wine ./sff_mingw.exe
+          par_wait
+          rm -f sff_asan sff_avx sff_mingw.exe
 
       - name: Build and run sinc sibling test (C89, ASan + UBSan, MinGW)
         working-directory: samples/audio/sinc_sibling
         run: |
-          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           # Siblings share their parent's tables: a fresh stream either
           # way, own state only, either free order.
-          make -j$(nproc) check SANITIZER=address,undefined
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/run-parallel.sh"
           make clean
-          WINEDEBUG=-all timeout 300 make check CC=x86_64-w64-mingw32-gcc \
-            RUN="wine ./sinc_sibling_test.exe"
+          make TARGET=sibling_asan SANITIZER=address,undefined
+          make TARGET=sibling_mingw CC=x86_64-w64-mingw32-gcc
+          par "sinc_sibling_test (ASan)" ./sibling_asan
+          par "sinc_sibling_test (MinGW, wine)" env WINEDEBUG=-all \
+            timeout 300 wine ./sibling_mingw.exe
+          par_wait
+          rm -f sibling_asan sibling_mingw.exe
 
       - name: Build and run mic_handshake_test (ASan + UBSan)
         working-directory: samples/audio/mic_handshake
@@ -1361,7 +1375,8 @@ jobs:
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/run-parallel.sh"
           make clean && make -j$(nproc)
           test -x pipeline_clocked_test
-          for lane in audio_paced setpoint rate_control sync_off ff_exit; do
+          for lane in audio_paced_16 audio_paced_32 audio_paced_64 setpoint \
+                rate_control sync_off ff_exit; do
              par "pipeline_clocked_test (fill cap: $lane)" \
                 env PACED_ONLY=$lane timeout 300 ./pipeline_clocked_test 3
           done
