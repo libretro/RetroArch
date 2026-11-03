@@ -123,7 +123,11 @@ int main(void)
          continue;
       }
       got = d->write_begin(xa, want, &region);
-      if (got > avail)
+      /* XAudio2's thread frees buffers at any time, so the room read
+       * before the lend can be less than the lend found: the room is
+       * read again after it. Only this thread takes room, so it can
+       * only have grown since the lend measured it. */
+      if (got > d->write_avail(xa))
          room_ok = false;
       if (!got)
          continue;
