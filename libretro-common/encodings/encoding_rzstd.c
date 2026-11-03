@@ -155,6 +155,7 @@
 #include <compat/intrinsics.h>
 #include <encodings/rzstd.h>
 #include <encodings/xxh64.h>
+#include <retro_atomic.h>
 
 /* The decode loops spend much of their time on variable shifts, which
  * BMI2 does in one flagless instruction where baseline x86-64 takes
@@ -179,28 +180,22 @@
 
 static int rzstd_cpu_bmi2(void)
 {
-   static volatile int have = -1;
+   static retro_atomic_int_t have;
+   int available = retro_atomic_load_acquire_int(&have);
 
-   if (have < 0)
+   if (!available)
    {
       unsigned a, b = 0, c, d;
 
       /* __get_cpuid_count only exists from GCC 7; __get_cpuid_max and
        * __cpuid_count are in every cpuid.h this branch accepts. Both
-       * racers write the same answer, so the race is benign. */
+       * concurrent probes publish the same immutable answer atomically. */
       if (__get_cpuid_max(0, NULL) >= 7)
          __cpuid_count(7, 0, a, b, c, d);
-      have = (b & (1u << 8)) ? 1 : 0;
+      available = (b & (1u << 8)) ? 2 : 1;
+      retro_atomic_store_release_int(&have, available);
    }
-   return have;
-}
-/* Deciding the flag in a constructor means no thread ever races the
- * lazy path: by the time a second thread can exist, the answer is
- * written. The lazy check stays as the fallback for an environment
- * that skips constructors. */
-__attribute__((constructor)) static void rzstd_cpu_bmi2_init(void)
-{
-   (void)rzstd_cpu_bmi2();
+   return available == 2;
 }
 #else
 #define RZSTD_BODY_INLINE static INLINE
