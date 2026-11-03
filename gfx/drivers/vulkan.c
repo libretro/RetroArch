@@ -4310,9 +4310,15 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
       if (!bpp)
          bpp                         = 1;
 
+      /* The copy's bounds: an empty box, left after the textures
+       * could not follow a grown atlas, starts past them */
       if (  (staging_tex->flags
                & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
-            && staging_tex->memory != VK_NULL_HANDLE)
+            && staging_tex->memory != VK_NULL_HANDLE
+            && VIDEO_SCALE_W(font->dirty_xy0)
+               < VIDEO_SCALE_W(staging_tex->dims)
+            && VIDEO_SCALE_H(font->dirty_xy0)
+               < VIDEO_SCALE_H(staging_tex->dims))
       {
          VkMappedMemoryRange mem_range;
          VkDeviceSize flush_size;
