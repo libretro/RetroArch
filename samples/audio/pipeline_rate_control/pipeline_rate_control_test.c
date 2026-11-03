@@ -338,17 +338,10 @@ static float   frame_audio_f[800 * 2];
 int main(int argc, char **argv)
 {
    pthread_t cons;
+   /* Sixteen seconds settles under a sanitizer too: the sink estimate
+    * applies two or three times and the mean is as close as in twice
+    * the run, which a loaded runner moves by the same few hundred ppm. */
    unsigned  i, frames = 960, warm = 240;
-   /* Under a sanitizer the publishes land late by more, and more of the
-    * estimate's windows are left out for it: twice the run, so it still
-    * settles within it. */
-#if defined(__SANITIZE_ADDRESS__) || defined(__SANITIZE_THREAD__)
-   frames = 1920;
-#elif defined(__has_feature)
-#if __has_feature(address_sanitizer) || __has_feature(thread_sanitizer)
-   frames = 1920;
-#endif
-#endif
    if (argc > 1)
       frames = (unsigned)atoi(argv[1]) * 60;
    if (argc > 2)
