@@ -77,8 +77,14 @@
  * doesn't work.
  */
 #if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
+static INLINE uint32_t md5_load_le(const unsigned char *p)
+{
+   return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
+      ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+}
+
 #define MD5_SET(n) \
-	(*(uint32_t*)&ptr[(n) * 4])
+	md5_load_le(ptr + (n) * 4)
 #define MD5_GET(n) \
 	MD5_SET(n)
 #else

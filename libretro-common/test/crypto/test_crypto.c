@@ -1346,11 +1346,41 @@ START_TEST(test_aes_cbc_decrypt)
 }
 END_TEST
 
+START_TEST(test_md5_unaligned)
+{
+   static const uint8_t expected[16] = {
+      0xef,0xc4,0x04,0xfa,0x60,0x9a,0x79,0x9c,
+      0x78,0x01,0x27,0x3d,0xe6,0xd6,0x5e,0x84
+   };
+   uint8_t *input = (uint8_t*)malloc(4098);
+   uint8_t digest[16];
+   MD5_CTX ctx;
+   unsigned i;
+   ck_assert(input != NULL);
+   input[0] = input[4097] = 0xa7;
+   for (i = 0; i < 4096; i++)
+      input[i + 1] = (uint8_t)(i * 37 + 11);
+   MD5_Init(&ctx);
+   MD5_Update(&ctx, input + 1, 4096);
+   MD5_Final(digest, &ctx);
+   ck_assert(!memcmp(digest, expected, sizeof(expected)));
+   MD5_Init(&ctx);
+   for (i = 0; i < 4096; i++)
+      MD5_Update(&ctx, input + 1 + i, 1);
+   MD5_Final(digest, &ctx);
+   ck_assert(!memcmp(digest, expected, sizeof(expected)));
+   ck_assert(input[0] == 0xa7 && input[4097] == 0xa7);
+   for (i = 0; i < 4096; i++)
+      ck_assert(input[i + 1] == (uint8_t)(i * 37 + 11));
+   free(input);
+}
+END_TEST
 Suite *create_suite(void)
 {
    Suite *s = suite_create(SUITE_NAME);
    TCase *tc_core = tcase_create("Core");
    tcase_set_timeout(tc_core, 60);
+   tcase_add_test(tc_core, test_md5_unaligned);
    tcase_add_test(tc_core, test_aes_block);
    tcase_add_test(tc_core, test_aes_cmac);
    tcase_add_test(tc_core, test_aes_gcm);
