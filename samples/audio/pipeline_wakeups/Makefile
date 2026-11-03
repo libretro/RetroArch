@@ -113,28 +113,53 @@ check-wrapper: $(TARGET)
 	WRAPPER=1 SOURCE_FLOAT=1 DEVICE_INT16=1 TRANSPORT=stretch ./$(TARGET) 1
 
 check-lend: $(TARGET)
+	$(MAKE) $(PAR) run-lend-i16 run-lend-f32i16 run-lend-f32
+run-lend-i16: $(TARGET)
 	WRAPPER=1 LEND=1 TRANSPORT=dry ./$(TARGET) 1
+run-lend-f32i16: $(TARGET)
 	WRAPPER=1 LEND=1 SOURCE_FLOAT=1 DEVICE_INT16=1 TRANSPORT=dry ./$(TARGET) 1
+run-lend-f32: $(TARGET)
 	WRAPPER=1 LEND=1 SOURCE_FLOAT=1 TRANSPORT=stretch ./$(TARGET) 1
 
-check-tempo: $(TARGET)
-	@for tempo in 0.25 0.5 1 2 4 8 16 32; do \
-		WRAPPER=1 DEVICE_INT16=1 TRANSPORT=stretch TEMPO=$$tempo ./$(TARGET) 0.25 || exit 1; \
-		WRAPPER=1 SOURCE_FLOAT=1 TRANSPORT=stretch TEMPO=$$tempo ./$(TARGET) 0.25 || exit 1; \
-	done
+# The runs below each wait on a clocked device for a quarter second of
+# audio and use next to no CPU, so a check runs its runs at once: one
+# make target per run, under a sub-make with PAR (-j and the output of
+# each run kept together). PAR= runs them one after another.
+PAR ?= -j16 -Otarget
 
+# A run: $(1) its name, $(2) its environment
+define RUN
+run-$(1): $$(TARGET)
+	$(2) ./$$(TARGET) 0.25
+.PHONY: run-$(1)
+endef
+
+TEMPOS := 0.25 0.5 1 2 4 8 16 32
+$(foreach t,$(TEMPOS),$(eval $(call RUN,tempo-i16-$(t),WRAPPER=1 DEVICE_INT16=1 TRANSPORT=stretch TEMPO=$(t))))
+$(foreach t,$(TEMPOS),$(eval $(call RUN,tempo-f32-$(t),WRAPPER=1 SOURCE_FLOAT=1 TRANSPORT=stretch TEMPO=$(t))))
+check-tempo: $(TARGET)
+	$(MAKE) $(PAR) $(foreach t,$(TEMPOS),run-tempo-i16-$(t) run-tempo-f32-$(t))
+
+# The live runs inherit LAYOUT, LIVE_LAYOUTS, SPEED_LPF, RUNLOOP_POLICY
+# and AUTO_RUNLOOP from the environment the check sets
+$(eval $(call RUN,live-i16,WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch DEVICE_INT16=1))
+$(eval $(call RUN,live-f32,WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch SOURCE_FLOAT=1))
+$(eval $(call RUN,live-mix,WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch))
+$(eval $(call RUN,live-f32i16,WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch SOURCE_FLOAT=1 DEVICE_INT16=1))
+LIVE_RUNS := run-live-i16 run-live-f32 run-live-mix run-live-f32i16
 check-live: $(TARGET)
-	WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch DEVICE_INT16=1 ./$(TARGET) 0.25
-	WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch SOURCE_FLOAT=1 ./$(TARGET) 0.25
-	WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch ./$(TARGET) 0.25
-	WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch SOURCE_FLOAT=1 DEVICE_INT16=1 ./$(TARGET) 0.25
+	$(MAKE) $(PAR) $(LIVE_RUNS)
 
 check-layout: $(TARGET)
-	LIVE_LAYOUTS=1 LAYOUT=7.1 $(MAKE) check-live
+	LIVE_LAYOUTS=1 LAYOUT=7.1 $(MAKE) $(PAR) $(LIVE_RUNS)
 
+# the two live sets of each, at once
 check-speed-lpf: $(TARGET)
-	SPEED_LPF=1 $(MAKE) check-live
-	SPEED_LPF=1 $(MAKE) check-layout
+	$(MAKE) $(PAR) speed-lpf-live speed-lpf-layout
+speed-lpf-live: $(TARGET)
+	SPEED_LPF=1 $(MAKE) $(PAR) $(LIVE_RUNS)
+speed-lpf-layout: $(TARGET)
+	SPEED_LPF=1 LIVE_LAYOUTS=1 LAYOUT=7.1 $(MAKE) $(PAR) $(LIVE_RUNS)
 
 check-runloop: $(TARGET)
 	RUNLOOP_POLICY=1 $(MAKE) check-speed-lpf
@@ -142,43 +167,66 @@ check-runloop: $(TARGET)
 check-auto: $(TARGET)
 	AUTO_RUNLOOP=1 $(MAKE) check-runloop
 
+# Every format through each layout, and the live set on each
+WIDE_RUNS :=
+define WIDE
+$(eval $(call RUN,wide-$(1)-$(2)-i16,LAYOUT=$(1) WRAPPER=1 TRANSPORT=$(2) DEVICE_INT16=1))
+$(eval $(call RUN,wide-$(1)-$(2)-f32,LAYOUT=$(1) WRAPPER=1 TRANSPORT=$(2) SOURCE_FLOAT=1))
+$(eval $(call RUN,wide-$(1)-$(2)-mix,LAYOUT=$(1) WRAPPER=1 TRANSPORT=$(2)))
+$(eval $(call RUN,wide-$(1)-$(2)-f32i16,LAYOUT=$(1) WRAPPER=1 TRANSPORT=$(2) SOURCE_FLOAT=1 DEVICE_INT16=1))
+WIDE_RUNS += run-wide-$(1)-$(2)-i16 run-wide-$(1)-$(2)-f32 run-wide-$(1)-$(2)-mix run-wide-$(1)-$(2)-f32i16
+endef
+$(foreach l,5.1 7.1,$(foreach m,dry lpf stretch,$(eval $(call WIDE,$(l),$(m)))))
+wide-live-5.1: $(TARGET)
+	LAYOUT=5.1 $(MAKE) $(PAR) $(LIVE_RUNS)
+wide-live-7.1: $(TARGET)
+	LAYOUT=7.1 $(MAKE) $(PAR) $(LIVE_RUNS)
 check-wide: $(TARGET)
-	@for layout in 5.1 7.1; do \
-		for mode in dry lpf stretch; do \
-			LAYOUT=$$layout WRAPPER=1 TRANSPORT=$$mode DEVICE_INT16=1 ./$(TARGET) 0.25 || exit 1; \
-			LAYOUT=$$layout WRAPPER=1 TRANSPORT=$$mode SOURCE_FLOAT=1 ./$(TARGET) 0.25 || exit 1; \
-			LAYOUT=$$layout WRAPPER=1 TRANSPORT=$$mode ./$(TARGET) 0.25 || exit 1; \
-			LAYOUT=$$layout WRAPPER=1 TRANSPORT=$$mode SOURCE_FLOAT=1 DEVICE_INT16=1 ./$(TARGET) 0.25 || exit 1; \
-		done; \
-		LAYOUT=$$layout $(MAKE) check-live || exit 1; \
-	done
+	$(MAKE) $(PAR) $(WIDE_RUNS) wide-live-5.1 wide-live-7.1
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: clean all check check-consumer-exit check-kept-device check-transport check-wrapper check-lend check-tempo check-live check-wide check-layout check-speed-lpf check-runloop check-auto
+.PHONY: clean all check check-consumer-exit check-kept-device check-transport check-wrapper check-lend check-tempo check-live check-wide check-layout check-speed-lpf check-runloop check-auto speed-lpf-live speed-lpf-layout wide-live-5.1 wide-live-7.1 run-lend-i16 run-lend-f32i16 run-lend-f32
 
 check-consumer-exit: $(TARGET)
+	$(MAKE) $(PAR) run-consumer-exit-1 run-consumer-exit-2
+run-consumer-exit-1: $(TARGET)
 	CONSUMER_EXIT=1 WRAPPER=1 TRANSPORT=dry ./$(TARGET) 0.25
+run-consumer-exit-2: $(TARGET)
 	CONSUMER_EXIT=1 WRAPPER=1 TRANSPORT=dry SOURCE_FLOAT=1 ./$(TARGET) 0.25
 
 check-kept-device: $(TARGET)
+	$(MAKE) $(PAR) run-kept-device-1 run-kept-device-2 run-kept-device-3 run-kept-device-4
+run-kept-device-1: $(TARGET)
 	KEPT_DEVICE=1 WRAPPER=1 ./$(TARGET) 0.25
+run-kept-device-2: $(TARGET)
 	KEPT_DEVICE=1 WRAPPER=1 SOURCE_FLOAT=1 ./$(TARGET) 0.25
+run-kept-device-3: $(TARGET)
 	KEPT_DROP=1 WRAPPER=1 ./$(TARGET) 0.25
+run-kept-device-4: $(TARGET)
 	KEPT_DROP=1 WRAPPER=1 SOURCE_FLOAT=1 ./$(TARGET) 0.25
 
 check-pause: $(TARGET)
+	$(MAKE) $(PAR) run-pause-1 run-pause-2 run-pause-3
+run-pause-1: $(TARGET)
 	PAUSE_BOUNDARY=1 WRAPPER=1 TRANSPORT=stretch DEVICE_INT16=1 ./$(TARGET) 0.25
+run-pause-2: $(TARGET)
 	PAUSE_BOUNDARY=1 WRAPPER=1 TRANSPORT=stretch ./$(TARGET) 0.25
+run-pause-3: $(TARGET)
 	PAUSE_BOUNDARY=1 WRAPPER=1 TRANSPORT=dry SOURCE_FLOAT=1 ./$(TARGET) 0.25
 
 check-menu: $(TARGET)
+	$(MAKE) $(PAR) run-menu-1 run-menu-2 run-menu-3 run-menu-4
+run-menu-1: $(TARGET)
 	MENU_SOURCE=1 WRAPPER=1 ./$(TARGET) 0.25
+run-menu-2: $(TARGET)
 	MENU_SOURCE=1 WRAPPER=1 SOURCE_FLOAT=1 ./$(TARGET) 0.25
+run-menu-3: $(TARGET)
 	MENU_SOURCE=1 WRAPPER=1 TRANSPORT=dry ./$(TARGET) 0.25
+run-menu-4: $(TARGET)
 	MENU_SOURCE=1 WRAPPER=1 TRANSPORT=dry DEVICE_INT16=1 ./$(TARGET) 0.25
 
-.PHONY: check-menu
+.PHONY: check-menu check-pause run-consumer-exit-1 run-consumer-exit-2 run-kept-device-1 run-kept-device-2 run-kept-device-3 run-kept-device-4 run-pause-1 run-pause-2 run-pause-3 run-menu-1 run-menu-2 run-menu-3 run-menu-4
