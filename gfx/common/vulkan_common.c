@@ -654,6 +654,7 @@ static VkResult vulkan_instance_extension_properties(uint32_t *count,
          || version < VULKAN_CUSTOM_ICD_INTERFACE)
    {
       RARCH_WARN("[Vulkan] Custom driver does not offer loader interface 7.\n");
+      vulkan_custom_driver_reason(VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES);
       return VK_ERROR_INCOMPATIBLE_DRIVER;
    }
    if (!(enumerate = (PFN_vkEnumerateInstanceExtensionProperties)
@@ -661,6 +662,7 @@ static VkResult vulkan_instance_extension_properties(uint32_t *count,
                "vkEnumerateInstanceExtensionProperties")))
    {
       RARCH_WARN("[Vulkan] Custom driver does not export vkEnumerateInstanceExtensionProperties.\n");
+      vulkan_custom_driver_reason(VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES);
       return VK_ERROR_INCOMPATIBLE_DRIVER;
    }
    if (!props)
@@ -712,6 +714,17 @@ static bool vulkan_find_instance_extensions(
    if (!vulkan_find_extensions(exts, num_exts, properties, property_count))
    {
       RARCH_ERR("[Vulkan] Could not find required instance extensions. Will attempt without them.\n");
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+      if (vulkan_custom_icd)
+      {
+         for (i = 0; i < num_exts; i++)
+            if (!vulkan_find_extensions(&exts[i], 1, properties,
+                     property_count))
+               RARCH_WARN("[Vulkan] Custom driver lacks instance extension \"%s\".\n",
+                     exts[i]);
+         vulkan_custom_driver_reason(VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES);
+      }
+#endif
       ret = false;
       goto end;
    }
@@ -2329,7 +2342,10 @@ static VkResult vulkan_context_create_instance(gfx_ctx_vulkan_data_t *vk,
 #if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
       /* Likely the custom driver's doing: the system one gets the headset. */
       if (vulkan_custom_icd)
+      {
+         vulkan_custom_driver_reason(VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED);
          return res;
+      }
 #endif
       vulkan_openxr_drop(vk->context.xr);
       vk->context.xr = NULL;
@@ -5451,7 +5467,10 @@ static void vulkan_context_openxr_init(gfx_ctx_vulkan_data_t *vk,
 #if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
       /* Likely the custom driver's doing: the system one gets the headset. */
       if (vulkan_custom_icd)
+      {
+         vulkan_custom_driver_reason(VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED);
          return;
+      }
 #endif
       vulkan_openxr_drop(vk->context.xr);
       vk->context.xr = NULL;

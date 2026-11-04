@@ -382,3 +382,11 @@ bool vulkan_custom_driver_device(function_t queue_submit)
    vulkan_custom_driver_glue_msg(msg);
    return ok;
 }
+
+void vulkan_custom_driver_reason(enum vulkan_custom_driver_msg msg)
+{
+   struct vulkan_custom_driver_glue *glue =
+      vulkan_custom_driver_glue_get_ptr();
+   if (glue->ready)
+      vulkan_custom_driver_session_reason(&glue->session, msg);
+}

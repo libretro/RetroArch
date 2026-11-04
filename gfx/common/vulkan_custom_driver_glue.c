@@ -52,6 +52,12 @@ void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg)
       case VULKAN_CUSTOM_DRIVER_MSG_RESTART:
          id = MSG_VULKAN_CUSTOM_DRIVER_RESTART;
          break;
+      case VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED:
+         id = MSG_VULKAN_CUSTOM_DRIVER_XR_UNSUPPORTED;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES:
+         id = MSG_VULKAN_CUSTOM_DRIVER_MISSING_FEATURES;
+         break;
       default:
          return;
    }
@@ -211,6 +217,12 @@ bool vulkan_custom_driver_glue_failed(void)
    msg = vulkan_custom_driver_session_failed(&custom_driver_st.session);
    if (msg == VULKAN_CUSTOM_DRIVER_MSG_FAILED)
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: failed to start.\n",
+            p->path);
+   else if (msg == VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED)
+      RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: the headset runtime cannot use it.\n",
+            p->path);
+   else if (msg == VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES)
+      RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: it lacks features RetroArch needs.\n",
             p->path);
    vulkan_custom_driver_glue_msg(msg);
    filestream_delete(custom_driver_st.marker);

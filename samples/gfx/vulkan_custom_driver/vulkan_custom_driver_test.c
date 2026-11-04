@@ -1090,6 +1090,56 @@ static void test_session_device(void)
             VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM, &msg));
 }
 
+static void test_session_reason(void)
+{
+   enum vulkan_custom_driver_msg msg;
+
+   begin(NULL, NULL);
+   /* no custom driver starting: nothing to give a reason for */
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED);
+   CHECK(session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   /* the first reason stands, in place of FAILED */
+   CHECK(open_drv("/d/a.json", "Core", &msg));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED);
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED);
+   CHECK(session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   /* the system driver all session, the notice once */
+   CHECK(!open_drv("/d/a.json", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(open_drv("/d/b.json", "Core", &msg));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES);
+   /* an init that never called failed(): the next open() drops its reason */
+   CHECK(open_drv("/d/c.json", "Core", &msg));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES);
+   CHECK(open_drv("/d/c.json", "Core", &msg));
+   CHECK(session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   /* a started driver, or a kept instance, takes none */
+   CHECK(open_drv("/d/d.json", "Core", &msg));
+   CHECK(vulkan_custom_driver_session_started(&session));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED);
+   CHECK(session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   vulkan_custom_driver_session_kept(&session);
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED);
+   CHECK(session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+}
+
 /* VkExtensionProperties' layout */
 struct ext_rec
 {
@@ -1222,6 +1272,7 @@ int main(void)
    test_icd();
    test_icd_library();
    test_session_device();
+   test_session_reason();
    test_loader_exts();
    test_icd_folder();
    printf("vulkan_custom_driver_test: %u checks, %u failures\n",
