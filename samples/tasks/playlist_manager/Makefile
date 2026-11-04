@@ -48,7 +48,8 @@ SOURCES := pl_manager_budget_test.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
            $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
-           $(REPO_ROOT)/verbosity.c
+           $(REPO_ROOT)/verbosity.c \
+           $(REPO_ROOT)/samples/ui_companion_log_stub.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 

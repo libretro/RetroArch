@@ -12,6 +12,7 @@ LRC      := $(CORE_DIR)/libretro-common
 SOURCES := salamander_pending_test.c \
            $(CORE_DIR)/frontend/frontend_salamander.c \
            $(CORE_DIR)/verbosity.c \
+           $(CORE_DIR)/samples/ui_companion_log_stub.c \
            $(LRC)/file/file_path.c \
            $(LRC)/file/file_path_io.c \
            $(LRC)/string/rstrtod.c \

@@ -3,6 +3,7 @@ ROOT := ../../..
 LC := $(ROOT)/libretro-common
 TARGET := log_ring_test
 SOURCES := log_ring_test.c $(ROOT)/verbosity.c \
+   $(ROOT)/samples/ui_companion_log_stub.c \
    $(LC)/rthreads/rthreads.c $(LC)/compat/compat_strl.c \
    $(LC)/file/file_path.c $(LC)/file/file_path_io.c \
    $(LC)/streams/file_stream.c $(LC)/vfs/vfs_implementation.c \

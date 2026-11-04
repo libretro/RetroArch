@@ -9,6 +9,7 @@ SOURCES_C := \
 	$(CORE_DIR)/samples/playlist/playlist_parity_test.c \
 	$(CORE_DIR)/playlist.c \
 	$(CORE_DIR)/verbosity.c \
+	$(CORE_DIR)/samples/ui_companion_log_stub.c \
 	$(LIBRETRO_COMM_DIR)/formats/json/rjson.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \

@@ -30,6 +30,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(CORE_DIR)/verbosity.c \
+	$(CORE_DIR)/samples/ui_companion_log_stub.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \

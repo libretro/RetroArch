@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <queues/task_queue.h>
+#include <compat/strl.h>
 #include <lists/dir_list.h>
 
 #include "../../../core_info.h"
