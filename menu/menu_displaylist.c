@@ -150,6 +150,9 @@
 #endif
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
+#ifdef HAVE_NETWORKING
+#include "menu_content_downloads.h"
+#endif
 #include "../dynamic.h"
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
@@ -16237,7 +16240,9 @@ static bool menu_displaylist_ctl_internal(
                   true);
 
             /* Mark entries with "[#]" if the file already exists in the
-             * download directory (core assets folder + category sub-folder). */
+             * download directory (core assets folder + category sub-folder),
+             * or the download was recorded there: an extracted archive is
+             * deleted, so its own name is no longer on disk. */
             {
                char content_dir[PATH_MAX_LENGTH];
                const char *core_assets = settings->paths.directory_core_assets;
@@ -16254,17 +16259,15 @@ static bool menu_displaylist_ctl_internal(
                if (*content_dir)
                {
                   size_t i;
+                  char *record = menu_content_downloads_load(content_dir);
                   for (i = 0; i < count; i++)
                   {
-                     char chk_path[PATH_MAX_LENGTH];
                      const char *fname = info->list->list[i].path;
-                     if (!fname || !*fname)
-                        continue;
-                     fill_pathname_join_special(chk_path, content_dir, fname,
-                           sizeof(chk_path));
-                     if (path_is_valid(chk_path))
+                     if (menu_content_downloads_present(content_dir, record,
+                              fname))
                         file_list_set_label_at_offset(info->list, i, "[#]");
                   }
+                  free(record);
                }
             }
 

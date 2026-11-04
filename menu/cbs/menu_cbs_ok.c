@@ -57,6 +57,9 @@
 #include "../menu_displaylist.h"
 #include "../menu_entries.h"
 #include "../menu_setting.h"
+#ifdef HAVE_NETWORKING
+#include "../menu_content_downloads.h"
+#endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
 #endif
@@ -6057,6 +6060,17 @@ finish:
    {
       RARCH_LOG("[Updater] Download \"%s\".\n",
             (transf ? transf->path : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
+
+      /* Content Downloader: record the download beside it, so the
+       * list can still mark it.  The extraction task pushed above has
+       * not run yet; it may delete the archive when it does. */
+      if (     transf
+            && transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD
+            && *output_path)
+      {
+         fill_pathname_basedir(buf, output_path, sizeof(buf));
+         menu_content_downloads_add(buf, path_basename(output_path));
+      }
 
       /* Content Downloader: Mark downloaded content label with a "[#]". */
       if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD)
