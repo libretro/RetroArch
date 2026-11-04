@@ -177,7 +177,16 @@ static char fixture_root[4096];
 static void rm_rf(const char *path)
 {
    char cmd[4352];
+#ifdef _WIN32
+   /* A native Windows build's system() runs cmd.exe */
+   char *c;
+   snprintf(cmd, sizeof(cmd), "rmdir /s /q \"%s\" >nul 2>&1", path);
+   for (c = cmd; *c; c++)
+      if (*c == '/')
+         *c = '\\';
+#else
    snprintf(cmd, sizeof(cmd), "rm -rf '%s'", path);
+#endif
    if (system(cmd) != 0) { /* best effort */ }
 }
 
@@ -1102,8 +1111,21 @@ int main(int argc, char *argv[])
    (void)argc;
    (void)argv;
 
-   snprintf(fixture_root, sizeof(fixture_root), "%s/scan_begin_fixture",
-         getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
+   {
+      /* The system's temporary folder: a native Windows build has no
+       * /tmp */
+#ifdef _WIN32
+      const char *tmp = getenv("TEMP");
+      if (!tmp || !*tmp)
+         tmp = getenv("TMP");
+#else
+      const char *tmp = getenv("TMPDIR");
+#endif
+      if (!tmp || !*tmp)
+         tmp = "/tmp";
+      snprintf(fixture_root, sizeof(fixture_root), "%s/scan_begin_fixture",
+            tmp);
+   }
    rm_rf(fixture_root);
 
    /* Logging stays off for the measured lanes: the reference costs
