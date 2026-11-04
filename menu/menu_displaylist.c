@@ -277,6 +277,55 @@ bool menu_displaylist_build_smb_root(char *s, size_t len)
 }
 #endif
 
+#if defined(HAVE_NFSCLIENT) || defined(HAVE_SMBCLIENT)
+/* What follows 'part' (without its trailing slashes) at the start
+ * of 's', or NULL. */
+static const char *menu_displaylist_skip_root_part(const char *s,
+      const char *part)
+{
+   size_t _len = strlen(part);
+   while (_len && part[_len - 1] == '/')
+      _len--;
+   if (strncmp(s, part, _len))
+      return NULL;
+   return s + _len;
+}
+
+bool menu_displaylist_is_network_root(const char *path)
+{
+   const char *rest     = NULL;
+   settings_t *settings = config_get_ptr();
+#ifdef HAVE_NFSCLIENT
+   if (     *settings->arrays.nfs_server
+         && string_starts_with_size(path, "nfs://", STRLEN_CONST("nfs://")))
+      rest = menu_displaylist_skip_root_part(path + STRLEN_CONST("nfs://"),
+            settings->arrays.nfs_server);
+#endif
+#ifdef HAVE_SMBCLIENT
+   if (     settings->bools.smb_client_enable
+         && *settings->arrays.smb_client_server_address
+         && string_starts_with_size(path, "smb://", STRLEN_CONST("smb://")))
+   {
+      rest = menu_displaylist_skip_root_part(path + STRLEN_CONST("smb://"),
+            settings->arrays.smb_client_server_address);
+      /* The VFS reads any first component as the configured share. */
+      if (rest && *rest == '/' && *settings->arrays.smb_client_share)
+      {
+         while (*rest == '/')
+            rest++;
+         while (*rest && *rest != '/')
+            rest++;
+      }
+   }
+#endif
+   if (!rest)
+      return false;
+   while (*rest == '/')
+      rest++;
+   return !*rest;
+}
+#endif
+
 void filebrowser_clear_type(void)
 {
    struct menu_displaylist_state *p_displist = &menu_displist_st;

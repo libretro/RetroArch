@@ -418,6 +418,11 @@ bool menu_displaylist_build_smb_root(char *s, size_t len);
 #ifdef HAVE_NFSCLIENT
 bool menu_displaylist_build_nfs_root(char *s, size_t len);
 #endif
+#if defined(HAVE_NFSCLIENT) || defined(HAVE_SMBCLIENT)
+/* True when 'path' is the configured NFS or SMB root without the subdir;
+ * nothing above it can be browsed. */
+bool menu_displaylist_is_network_root(const char *path);
+#endif
 
 void filebrowser_clear_type(void);
 

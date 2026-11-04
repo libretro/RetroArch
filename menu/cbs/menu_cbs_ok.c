@@ -1632,6 +1632,10 @@ int generic_action_ok_displaylist_push(
          fill_pathname_abbreviate_special(tmp, parent_dir, sizeof(tmp));
          strlcpy(parent_dir, tmp, sizeof(parent_dir));
 #endif
+#if defined(HAVE_NFSCLIENT) || defined(HAVE_SMBCLIENT)
+         if (menu_path && menu_displaylist_is_network_root(menu_path))
+            parent_dir[0] = '\0';
+#endif
 
          info.type          = type;
          info.directory_ptr = idx;
