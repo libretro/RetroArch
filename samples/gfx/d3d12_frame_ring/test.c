@@ -146,7 +146,8 @@ typedef struct
 {
    D3D12Resource handle, upload_buffer, upload_buffer2;
    d3d12_descriptor_heap_t *srv_heap;
-   struct { unsigned Width; unsigned short MipLevels; } desc;
+   struct { unsigned Width, Height; unsigned short MipLevels; } desc;
+   struct { struct { UINT RowPitch; } Footprint; } layout;
    D3D12_CPU_DESCRIPTOR_HANDLE cpu_descriptor[4];
    d3d12_planar_t *planar;
    uint8_t *lend_mapped[2];
@@ -210,6 +211,35 @@ static void d3d12_retire(d3d12_video_t *d3d12, d3d12_texture_t *texture,
    retired_fence   = fence;
 }
 typedef void IUnknown;
+typedef resource_t ID3D12Resource;
+
+/* The font atlas and the D3D12 font, as far as staging reads them */
+#define VIDEO_SCALE_PACK(w, h) (((unsigned)(w) << 16) | (unsigned)(h))
+#define VIDEO_SCALE_W(p)       ((unsigned)(p) >> 16)
+#define VIDEO_SCALE_H(p)       ((unsigned)(p) & 0xFFFFu)
+#define VIDEO_SCALE_MIN(a, b)  VIDEO_SCALE_PACK( \
+      VIDEO_SCALE_W(a) < VIDEO_SCALE_W(b) ? VIDEO_SCALE_W(a) : VIDEO_SCALE_W(b), \
+      VIDEO_SCALE_H(a) < VIDEO_SCALE_H(b) ? VIDEO_SCALE_H(a) : VIDEO_SCALE_H(b))
+#define VIDEO_SCALE_MAX(a, b)  VIDEO_SCALE_PACK( \
+      VIDEO_SCALE_W(a) > VIDEO_SCALE_W(b) ? VIDEO_SCALE_W(a) : VIDEO_SCALE_W(b), \
+      VIDEO_SCALE_H(a) > VIDEO_SCALE_H(b) ? VIDEO_SCALE_H(a) : VIDEO_SCALE_H(b))
+#define FONT_ATLAS_FORMAT_A8  0
+#define FONT_ATLAS_FORMAT_A16 1
+struct font_atlas
+{
+   uint8_t *buffer;
+   unsigned width, height;
+   unsigned dirty_xy0, dirty_xy1;
+   int format;
+   bool dirty;
+};
+typedef struct
+{
+   d3d12_texture_t    texture;
+   struct font_atlas *atlas;
+   unsigned           region_xy0, region_xy1;
+   bool               region_pending;
+} d3d12_font_t;
 
 #include "ring.inc"
 
@@ -386,6 +416,64 @@ int main(void)
       assert(!d3d12_texture_upload_turn(&d3d12, &t, false));
       second_fails    = false;
    }
+   /* Font atlas staging: several strings in one frame bring new
+    * glyphs, each one's copy recorded in the frame being recorded. No
+    * wait may be for a fence that frame has not yet signalled - with
+    * one frame in flight and with two - and an atlas larger than the
+    * texture it could not follow is staged only where the texture is */
+   {
+      static uint8_t atlas_buf[32 * 32];
+      static resource_t first;
+      struct font_atlas atlas;
+      d3d12_font_t font;
+      unsigned depth, s;
+      for (depth = 1; depth <= 2; depth++)
+      {
+         setup();
+         frame(depth, 0);
+         frame(depth, 0);
+         memset(&atlas, 0, sizeof(atlas));
+         memset(&font, 0, sizeof(font));
+         first.lpVtbl                         = &res_vtbl;
+         second_buffer.lpVtbl                 = &res_vtbl;
+         atlas.buffer                         = atlas_buf;
+         atlas.width                          = 16;
+         atlas.height                         = 16;
+         font.atlas                           = &atlas;
+         font.texture.upload_buffer           = &first;
+         font.texture.desc.Width              = 16;
+         font.texture.desc.Height             = 16;
+         font.texture.layout.Footprint.RowPitch = 32;
+         /* the previous frame's copy, still running */
+         font.texture.upload_fence            = signalled;
+         completed                            = signalled - 1;
+         d3d12.queue.depth                    = depth;
+         waits                                = 0;
+         for (s = 0; s < 3; s++)
+         {
+            atlas.dirty     = true;
+            atlas.dirty_xy0 = VIDEO_SCALE_PACK(s * 4, 0);
+            atlas.dirty_xy1 = VIDEO_SCALE_PACK(s * 4 + 4, 4);
+            d3d12_font_stage_dirty(&d3d12, &font);
+            assert(!atlas.dirty && font.region_pending);
+            /* the draw records its copy, as d3d12_font_upload_region */
+            font.texture.upload_fence = d3d12.queue.fenceValue + 1;
+            font.region_pending       = false;
+         }
+         /* depth 1 waited once, for the frame already submitted */
+         assert(waits == (depth == 1 ? 1u : 0u));
+      }
+      /* the texture stayed 16x16 while the atlas grew to 32x32 */
+      atlas.width               = 32;
+      atlas.height              = 32;
+      atlas.dirty               = true;
+      atlas.dirty_xy0           = 0;
+      atlas.dirty_xy1           = VIDEO_SCALE_PACK(32, 32);
+      font.texture.upload_fence = 0;
+      d3d12_font_stage_dirty(&d3d12, &font);
+      assert(font.region_pending
+            && font.region_xy1 == VIDEO_SCALE_PACK(16, 16));
+   }
    /* A texture let go while a frame in flight may draw from it goes
     * behind the frame being recorded, its views kept until then and
     * its description left for the texture made next; with nothing in
@@ -432,7 +520,7 @@ int main(void)
       assert(!retired_texture && released == 1 && !heap.map[3] && !t.handle);
    }
    puts("D3D12 frame ring: one frame in flight as before, two under"
-         " Driver Pacing, slot constants, upload turns and textures let"
-         " go behind the frame PASS");
+         " Driver Pacing, slot constants, upload turns, font atlas"
+         " staging and textures let go behind the frame PASS");
    return 0;
 }

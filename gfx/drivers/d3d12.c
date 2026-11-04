@@ -2805,11 +2805,18 @@ static void d3d12_font_update_atlas_region(d3d12_font_t *font,
    ID3D12Resource *resource = (ID3D12Resource*)font->texture.upload_buffer;
    unsigned row_pitch       = font->texture.layout.Footprint.RowPitch;
 
+   /* Within the texture as well as the atlas: an atlas the texture
+    * could not follow is larger than it */
+   if (x1 > (unsigned)font->texture.desc.Width)
+      x1 = (unsigned)font->texture.desc.Width;
+   if (y1 > (unsigned)font->texture.desc.Height)
+      y1 = (unsigned)font->texture.desc.Height;
    if (     !resource
          || x1 <= x0 || y1 <= y0
          || x1 > (unsigned)font->atlas->width
          || y1 > (unsigned)font->atlas->height)
       return;
+   xy1 = VIDEO_SCALE_PACK(x1, y1);
 
    read_range.Begin = 0;
    read_range.End   = 0;
@@ -2902,11 +2909,13 @@ static void d3d12_font_reap(d3d12_video_t *d3d12, d3d12_font_t *font)
 /* The atlas grew: a texture at its new size, the old one retired until
  * the frames still drawing from it are done - this frame's command
  * list, which signals the next fence value at its end, names only the
- * new one. With both retirement slots taken the old one stays, and
- * the atlas's new cells wait for a later frame. */
+ * new one. With both retirement slots taken, or when the new texture
+ * cannot be made, the old one stays and the cells it holds keep being
+ * uploaded into it. */
 static void d3d12_font_follow_atlas(d3d12_video_t *d3d12,
       d3d12_font_t *font)
 {
+   d3d12_texture_t old;
    d3d12_font_reap(d3d12, font);
    if (     font->texture.desc.Width  == font->atlas->width
          && font->texture.desc.Height == font->atlas->height)
@@ -2914,13 +2923,20 @@ static void d3d12_font_follow_atlas(d3d12_video_t *d3d12,
    if (font->retired_count >= sizeof(font->retired)
          / sizeof(font->retired[0]))
       return;
-   font->retired[font->retired_count].texture = font->texture;
+   old = font->texture;
+   memset(&font->texture, 0, sizeof(font->texture));
+   d3d12_font_make_texture(d3d12, font);
+   if (!font->texture.handle || !font->texture.upload_buffer)
+   {
+      d3d12_release_texture(NULL, &font->texture);
+      font->texture = old;
+      return;
+   }
+   font->retired[font->retired_count].texture = old;
    font->retired[font->retired_count].fence   =
       d3d12->queue.fenceValue + 1;
    font->retired_count++;
-   memset(&font->texture, 0, sizeof(font->texture));
    font->region_pending = false;
-   d3d12_font_make_texture(d3d12, font);
 }
 
 static void * d3d12_font_init(void* data, const char* font_path,
@@ -3053,6 +3069,32 @@ static void d3d12_font_draw_sprites(d3d12_video_t *d3d12,
 static bool d3d12_texture_upload_turn(d3d12_video_t *d3d12,
       d3d12_texture_t *texture, bool wait);
 
+/* Stages the atlas's dirty region in place over what the last copy
+ * from the upload buffer read: while a frame in flight still reads it,
+ * the second buffer takes its place, staged whole. A copy recorded in
+ * the frame being recorded reads the buffer only once that frame is
+ * submitted, and no cell drawn in a frame is staged again in it, so
+ * staging over that copy's source waits for nothing - its fence is not
+ * signalled before this frame is. */
+static void d3d12_font_stage_dirty(d3d12_video_t *d3d12, d3d12_font_t *font)
+{
+   unsigned xy0         = font->atlas->dirty_xy0;
+   unsigned xy1         = font->atlas->dirty_xy1;
+   D3D12Resource staged = font->texture.upload_buffer;
+   if (font->texture.upload_fence != d3d12->queue.fenceValue + 1)
+   {
+      if (!d3d12_texture_upload_turn(d3d12, &font->texture, false))
+         d3d12_fence_wait(d3d12, font->texture.upload_fence);
+      else if (font->texture.upload_buffer != staged)
+      {
+         xy0 = 0;
+         xy1 = VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height);
+      }
+   }
+   d3d12_font_update_atlas_region(font, xy0, xy1);
+   font->atlas->dirty = false;
+}
+
 static void d3d12_font_render_msg(
       void *userdata,
       void* data,
@@ -3153,23 +3195,7 @@ static void d3d12_font_render_msg(
    }
 
    if (font->atlas->dirty)
-   {
-      unsigned xy0         = font->atlas->dirty_xy0;
-      unsigned xy1         = font->atlas->dirty_xy1;
-      D3D12Resource staged = font->texture.upload_buffer;
-      /* Staged in place over what the last copy from the buffer read:
-       * while a frame in flight still reads it, the second buffer takes
-       * its place, staged whole */
-      if (!d3d12_texture_upload_turn(d3d12, &font->texture, false))
-         d3d12_fence_wait(d3d12, font->texture.upload_fence);
-      else if (font->texture.upload_buffer != staged)
-      {
-         xy0 = 0;
-         xy1 = VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height);
-      }
-      d3d12_font_update_atlas_region(font, xy0, xy1);
-      font->atlas->dirty = false;
-   }
+      d3d12_font_stage_dirty(d3d12, font);
 
    total_len = msg_len;
    if (has_shadow)
