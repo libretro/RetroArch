@@ -48,7 +48,8 @@ code = ''.join(define(n) for n in ('D3D12_FRAMES ', 'D3D12_CB_STRIDE(',
 for f in ('d3d12_cb_slot(', 'd3d12_cb_write_slot(', 'd3d12_cmd_begin(',
           'd3d12_cmd_execute(', 'd3d12_queue_settle(', 'd3d12_slot_begin(',
           'd3d12_queue_busy(', 'd3d12_release_texture(',
-          'd3d12_texture_upload_turn(', 'd3d12_font_update_atlas_region(',
+          'd3d12_texture_upload_turn(', 'd3d12_font_map(',
+          'd3d12_font_update_atlas_region(',
           'd3d12_font_stage_dirty('):
     code += function(f)
 

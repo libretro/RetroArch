@@ -38,9 +38,11 @@ struct resource
    uint8_t data[1024];
 };
 typedef resource_t *D3D12Resource;
+static unsigned buffer_maps;
 static HRESULT res_map(resource_t *r, UINT s, const D3D12_RANGE *n, void **p)
 {
    (void)s; (void)n;
+   buffer_maps++;
    *p = r->data;
    return 0;
 }
@@ -225,20 +227,49 @@ typedef resource_t ID3D12Resource;
       VIDEO_SCALE_H(a) > VIDEO_SCALE_H(b) ? VIDEO_SCALE_H(a) : VIDEO_SCALE_H(b))
 #define FONT_ATLAS_FORMAT_A8  0
 #define FONT_ATLAS_FORMAT_A16 1
+#define FONT_ATLAS_DIRTY_MAX  16
 struct font_atlas
 {
    uint8_t *buffer;
    unsigned width, height;
    unsigned dirty_xy0, dirty_xy1;
+   unsigned dirty_rect[FONT_ATLAS_DIRTY_MAX][2];
+   unsigned dirty_rects;
    int format;
    bool dirty;
 };
+/* gfx/font_driver.h's readers, and a list that joins all it is given
+ * once full */
+static unsigned font_atlas_dirty_rects(const struct font_atlas *a)
+{
+   return a->dirty_rects ? a->dirty_rects : 1;
+}
+static void font_atlas_dirty_rect(const struct font_atlas *a,
+      unsigned i, unsigned *xy0, unsigned *xy1)
+{
+   *xy0 = a->dirty_rects ? a->dirty_rect[i][0] : a->dirty_xy0;
+   *xy1 = a->dirty_rects ? a->dirty_rect[i][1] : a->dirty_xy1;
+}
+static void font_dirty_rects_add(unsigned (*r)[2], unsigned *n,
+      unsigned pos, unsigned end)
+{
+   if (*n < FONT_ATLAS_DIRTY_MAX)
+   {
+      r[*n][0]     = pos;
+      r[(*n)++][1] = end;
+      return;
+   }
+   r[*n - 1][0] = VIDEO_SCALE_MIN(r[*n - 1][0], pos);
+   r[*n - 1][1] = VIDEO_SCALE_MAX(r[*n - 1][1], end);
+}
 typedef struct
 {
    d3d12_texture_t    texture;
    struct font_atlas *atlas;
-   unsigned           region_xy0, region_xy1;
-   bool               region_pending;
+   D3D12Resource      map_buf[2];
+   uint8_t           *map_ptr[2];
+   unsigned           region_rect[FONT_ATLAS_DIRTY_MAX][2];
+   unsigned           region_rects;
 } d3d12_font_t;
 
 #include "ring.inc"
@@ -449,19 +480,22 @@ int main(void)
          completed                            = signalled - 1;
          d3d12.queue.depth                    = depth;
          waits                                = 0;
+         buffer_maps                          = 0;
          for (s = 0; s < 3; s++)
          {
             atlas.dirty     = true;
             atlas.dirty_xy0 = VIDEO_SCALE_PACK(s * 4, 0);
             atlas.dirty_xy1 = VIDEO_SCALE_PACK(s * 4 + 4, 4);
             d3d12_font_stage_dirty(&d3d12, &font);
-            assert(!atlas.dirty && font.region_pending);
+            assert(!atlas.dirty && font.region_rects);
             /* the draw records its copy, as d3d12_font_upload_region */
             font.texture.upload_fence = d3d12.queue.fenceValue + 1;
-            font.region_pending       = false;
+            font.region_rects         = 0;
          }
          /* depth 1 waited once, for the frame already submitted */
          assert(waits == (depth == 1 ? 1u : 0u));
+         /* the buffer the strings are staged into, mapped once */
+         assert(buffer_maps == 1);
       }
       /* the texture stayed 16x16 while the atlas grew to 32x32 */
       atlas.width               = 32;
@@ -471,8 +505,27 @@ int main(void)
       atlas.dirty_xy1           = VIDEO_SCALE_PACK(32, 32);
       font.texture.upload_fence = 0;
       d3d12_font_stage_dirty(&d3d12, &font);
-      assert(font.region_pending
-            && font.region_xy1 == VIDEO_SCALE_PACK(16, 16));
+      assert(font.region_rects == 1
+            && font.region_rect[0][1] == VIDEO_SCALE_PACK(16, 16));
+      /* still the one map, however many regions it took */
+      assert(buffer_maps == 1);
+      /* two cells far apart staged as two regions */
+      font.region_rects       = 0;
+      font.texture.upload_fence = d3d12.queue.fenceValue + 1;
+      atlas.width             = 16;
+      atlas.height            = 16;
+      atlas.dirty             = true;
+      atlas.dirty_xy0         = 0;
+      atlas.dirty_xy1         = VIDEO_SCALE_PACK(16, 16);
+      atlas.dirty_rect[0][0]  = 0;
+      atlas.dirty_rect[0][1]  = VIDEO_SCALE_PACK(2, 2);
+      atlas.dirty_rect[1][0]  = VIDEO_SCALE_PACK(12, 12);
+      atlas.dirty_rect[1][1]  = VIDEO_SCALE_PACK(16, 16);
+      atlas.dirty_rects       = 2;
+      d3d12_font_stage_dirty(&d3d12, &font);
+      assert(font.region_rects == 2
+            && font.region_rect[1][0] == VIDEO_SCALE_PACK(12, 12));
+      assert(buffer_maps == 1);
    }
    /* A texture let go while a frame in flight may draw from it goes
     * behind the frame being recorded, its views kept until then and

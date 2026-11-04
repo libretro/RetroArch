@@ -1029,11 +1029,15 @@ typedef struct
    video_font_raster_block_t*    block;
    unsigned                      acc_count;
    unsigned                      acc_cap;
-   /* Pending atlas dirty rectangle, staged to the upload buffer on
-    * the CPU and awaiting the boxed GPU copy at draw time */
-   unsigned                      region_xy0;
-   unsigned                      region_xy1;
-   bool                          region_pending;
+   /* The upload buffers, mapped for as long as the texture has them
+    * (d3d12_font_map) */
+   D3D12Resource                 map_buf[2];
+   uint8_t*                      map_ptr[2];
+   /* Pending atlas dirty rectangles, staged to the upload buffer on
+    * the CPU and awaiting the boxed GPU copies at draw time; each its
+    * corners in VIDEO_SCALE_PACK's layout */
+   unsigned                      region_rect[FONT_ATLAS_DIRTY_MAX][2];
+   unsigned                      region_rects;
    /* Textures the atlas outgrew, and the queue fence value past which
     * no command list still names them; released then, not waited for */
    struct
@@ -2787,11 +2791,49 @@ static void gfx_display_d3d12_scissor_end(void *data, unsigned video_dims)
  * FONT DRIVER
  */
 
-/* Stage only the atlas dirty rectangle into the persistent upload
- * buffer; previous contents are preserved, so untouched rows remain
- * valid. The matching boxed GPU copy is issued at draw time by
- * d3d12_font_upload_region(); the generic d3d12_update_texture() /
- * d3d12_upload_texture() pair re-transfers the whole surface. */
+/* The font texture's current upload buffer, mapped: each of its two
+ * buffers is mapped once and stays mapped while the texture has it. */
+static uint8_t *d3d12_font_map(d3d12_font_t *font)
+{
+   unsigned i;
+   void *mapped       = NULL;
+   D3D12Resource buf  = font->texture.upload_buffer;
+   D3D12_RANGE none;
+   if (!buf)
+      return NULL;
+   for (i = 0; i < 2; i++)
+      if (font->map_buf[i] == buf)
+         return font->map_ptr[i];
+   none.Begin = 0;
+   none.End   = 0;
+   if (FAILED(buf->lpVtbl->Map(buf, 0, &none, &mapped)) || !mapped)
+      return NULL;
+   i                 = font->map_buf[0] ? 1 : 0;
+   font->map_buf[i]  = buf;
+   font->map_ptr[i]  = (uint8_t*)mapped;
+   return font->map_ptr[i];
+}
+
+/* Lets go of the upload buffers' mappings, before the texture that has
+ * them goes */
+static void d3d12_font_unmap(d3d12_font_t *font)
+{
+   unsigned i;
+   for (i = 0; i < 2; i++)
+   {
+      if (font->map_buf[i])
+         font->map_buf[i]->lpVtbl->Unmap(font->map_buf[i], 0, NULL);
+      font->map_buf[i] = NULL;
+      font->map_ptr[i] = NULL;
+   }
+}
+
+/* Stage the atlas dirty rectangle @xy0..@xy1 into the persistently
+ * mapped upload buffer; previous contents are preserved, so untouched
+ * rows remain valid. The matching boxed GPU copies are issued at draw
+ * time by d3d12_font_upload_region(); the generic
+ * d3d12_update_texture() / d3d12_upload_texture() pair re-transfers the
+ * whole surface. */
 static void d3d12_font_update_atlas_region(d3d12_font_t *font,
       unsigned xy0, unsigned xy1)
 {
@@ -2800,10 +2842,8 @@ static void d3d12_font_update_atlas_region(d3d12_font_t *font,
    unsigned y0              = VIDEO_SCALE_H(xy0);
    unsigned x1              = VIDEO_SCALE_W(xy1);
    unsigned y1              = VIDEO_SCALE_H(xy1);
-   uint8_t *dst;
-   D3D12_RANGE read_range;
-   ID3D12Resource *resource = (ID3D12Resource*)font->texture.upload_buffer;
    unsigned row_pitch       = font->texture.layout.Footprint.RowPitch;
+   uint8_t *dst;
 
    /* Within the texture as well as the atlas: an atlas the texture
     * could not follow is larger than it */
@@ -2811,17 +2851,11 @@ static void d3d12_font_update_atlas_region(d3d12_font_t *font,
       x1 = (unsigned)font->texture.desc.Width;
    if (y1 > (unsigned)font->texture.desc.Height)
       y1 = (unsigned)font->texture.desc.Height;
-   if (     !resource
-         || x1 <= x0 || y1 <= y0
+   if (     x1 <= x0 || y1 <= y0
          || x1 > (unsigned)font->atlas->width
          || y1 > (unsigned)font->atlas->height)
       return;
-   xy1 = VIDEO_SCALE_PACK(x1, y1);
-
-   read_range.Begin = 0;
-   read_range.End   = 0;
-   if (FAILED(resource->lpVtbl->Map(resource, 0, &read_range, (void**)&dst))
-         || !dst)
+   if (!(dst = d3d12_font_map(font)))
       return;
 
    {
@@ -2834,19 +2868,8 @@ static void d3d12_font_update_atlas_region(d3d12_font_t *font,
                 (size_t)(x1 - x0) * esz);
    }
 
-   resource->lpVtbl->Unmap(resource, 0, NULL);
-
-   if (!font->region_pending)
-   {
-      font->region_xy0     = xy0;
-      font->region_xy1     = xy1;
-      font->region_pending = true;
-   }
-   else
-   {
-      font->region_xy0     = VIDEO_SCALE_MIN(font->region_xy0, xy0);
-      font->region_xy1     = VIDEO_SCALE_MAX(font->region_xy1, xy1);
-   }
+   font_dirty_rects_add(font->region_rect, &font->region_rects,
+         xy0, VIDEO_SCALE_PACK(x1, y1));
 }
 
 
@@ -2925,6 +2948,8 @@ static void d3d12_font_follow_atlas(d3d12_video_t *d3d12,
       return;
    old = font->texture;
    memset(&font->texture, 0, sizeof(font->texture));
+   d3d12_font_unmap(font);
+   font->region_rects = 0;
    d3d12_font_make_texture(d3d12, font);
    if (!font->texture.handle || !font->texture.upload_buffer)
    {
@@ -2936,7 +2961,6 @@ static void d3d12_font_follow_atlas(d3d12_video_t *d3d12,
    font->retired[font->retired_count].fence   =
       d3d12->queue.fenceValue + 1;
    font->retired_count++;
-   font->region_pending = false;
 }
 
 static void * d3d12_font_init(void* data, const char* font_path,
@@ -2999,6 +3023,7 @@ static void d3d12_font_free(void* data, bool is_threaded)
       font->font_driver->free(font->font_data);
 
    /* Drained above */
+   d3d12_font_unmap(font);
    d3d12_release_texture(NULL, &font->texture);
    {
       unsigned i;
@@ -3024,8 +3049,8 @@ static int d3d12_font_get_message_width(void *data, const char *msg,
 static void d3d12_font_upload_region(D3D12GraphicsCommandList cmd,
       d3d12_font_t *font)
 {
+   unsigned i;
    D3D12_TEXTURE_COPY_LOCATION src, dst;
-   D3D12_BOX box;
 
    src.pResource        = font->texture.upload_buffer;
    src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
@@ -3035,23 +3060,26 @@ static void d3d12_font_upload_region(D3D12GraphicsCommandList cmd,
    dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
    dst.SubresourceIndex = 0;
 
-   box.left   = VIDEO_SCALE_W(font->region_xy0);
-   box.top    = VIDEO_SCALE_H(font->region_xy0);
-   box.front  = 0;
-   box.right  = VIDEO_SCALE_W(font->region_xy1);
-   box.bottom = VIDEO_SCALE_H(font->region_xy1);
-   box.back   = 1;
-
    D3D12_RESOURCE_TRANSITION(
          cmd,
          font->texture.handle,
          D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
          D3D12_RESOURCE_STATE_COPY_DEST);
 
-   cmd->lpVtbl->CopyTextureRegion(cmd, &dst,
-         box.left, box.top, 0, &src, &box);
-   /* The copy reads the buffer until the frame being recorded is done:
-    * the next region staged waits for it */
+   for (i = 0; i < font->region_rects; i++)
+   {
+      D3D12_BOX box;
+      box.left   = VIDEO_SCALE_W(font->region_rect[i][0]);
+      box.top    = VIDEO_SCALE_H(font->region_rect[i][0]);
+      box.front  = 0;
+      box.right  = VIDEO_SCALE_W(font->region_rect[i][1]);
+      box.bottom = VIDEO_SCALE_H(font->region_rect[i][1]);
+      box.back   = 1;
+      cmd->lpVtbl->CopyTextureRegion(cmd, &dst,
+            box.left, box.top, 0, &src, &box);
+   }
+   /* The copies read the buffer until the frame being recorded is
+    * done: the next region staged waits for it */
    if (font->d3d12)
       font->texture.upload_fence = font->d3d12->queue.fenceValue + 1;
 
@@ -3061,7 +3089,7 @@ static void d3d12_font_upload_region(D3D12GraphicsCommandList cmd,
          D3D12_RESOURCE_STATE_COPY_DEST,
          D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-   font->region_pending = false;
+   font->region_rects = 0;
 }
 
 static void d3d12_font_draw_sprites(d3d12_video_t *d3d12,
@@ -3078,20 +3106,30 @@ static bool d3d12_texture_upload_turn(d3d12_video_t *d3d12,
  * signalled before this frame is. */
 static void d3d12_font_stage_dirty(d3d12_video_t *d3d12, d3d12_font_t *font)
 {
-   unsigned xy0         = font->atlas->dirty_xy0;
-   unsigned xy1         = font->atlas->dirty_xy1;
+   unsigned i;
+   bool whole           = false;
    D3D12Resource staged = font->texture.upload_buffer;
    if (font->texture.upload_fence != d3d12->queue.fenceValue + 1)
    {
       if (!d3d12_texture_upload_turn(d3d12, &font->texture, false))
          d3d12_fence_wait(d3d12, font->texture.upload_fence);
       else if (font->texture.upload_buffer != staged)
-      {
-         xy0 = 0;
-         xy1 = VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height);
-      }
+         whole = true;
    }
-   d3d12_font_update_atlas_region(font, xy0, xy1);
+   if (whole)
+   {
+      /* What went into the other buffer is not in this one */
+      font->region_rects = 0;
+      d3d12_font_update_atlas_region(font, 0,
+            VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height));
+   }
+   else
+      for (i = 0; i < font_atlas_dirty_rects(font->atlas); i++)
+      {
+         unsigned xy0, xy1;
+         font_atlas_dirty_rect(font->atlas, i, &xy0, &xy1);
+         d3d12_font_update_atlas_region(font, xy0, xy1);
+      }
    font->atlas->dirty = false;
 }
 
@@ -3362,7 +3400,7 @@ static void d3d12_font_draw_sprites(d3d12_video_t *d3d12,
 
    if (font->texture.dirty)
       d3d12_upload_texture(cmd, &font->texture, d3d12);
-   if (font->region_pending)
+   if (font->region_rects)
       d3d12_font_upload_region(cmd, font);
 
 #ifdef HAVE_DXGI_HDR
