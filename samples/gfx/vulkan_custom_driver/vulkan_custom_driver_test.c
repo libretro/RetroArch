@@ -913,6 +913,128 @@ static void test_patch_soname(void)
    CHECK(!memcmp(elf, want, ELF_LEN));
 }
 
+/* An ICD manifest as Mesa installs it */
+static const char radv_icd[] =
+   "{\n"
+   "    \"ICD\": {\n"
+   "        \"api_version\": \"1.4.367\",\n"
+   "        \"library_arch\": \"64\",\n"
+   "        \"library_path\": \"/opt/mesa/lib/libvulkan_radeon.so\"\n"
+   "    },\n"
+   "    \"file_format_version\": \"1.0.1\"\n"
+   "}\n";
+
+static struct vulkan_custom_driver_icd icd;
+
+static const char *icd_of(const char *text)
+{
+   return vulkan_custom_driver_parse_icd(text, strlen(text), &icd);
+}
+
+static void test_icd(void)
+{
+   CHECK(!icd_of(radv_icd));
+   CHECK(!strcmp(icd.library_path, "/opt/mesa/lib/libvulkan_radeon.so"));
+   CHECK(!strcmp(icd.api_version, "1.4.367"));
+   /* JSON escapes: a Windows manifest's backslashes */
+   CHECK(!icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":"
+         "{\"library_path\":\".\\\\vulkan_lvp.dll\",\"api_version\":\"1.3.290\"}}"));
+   CHECK(!strcmp(icd.library_path, ".\\vulkan_lvp.dll"));
+   /* other keys, and the same names deeper down, are not read */
+   CHECK(!icd_of("{\"x\":[1,{\"library_path\":2}],\"file_format_version\":\"1.0.0\","
+         "\"ICD\":{\"is_portability_driver\":false,\"library_path\":\"./a.so\","
+         "\"api_version\":\"1.3.0\",\"y\":{\"api_version\":3}}}"));
+   CHECK(!strcmp(icd.library_path, "./a.so"));
+   CHECK(!strcmp(icd.api_version, "1.3.0"));
+   /* missing fields; library_path outside ICD is not ICD's */
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"library_path\":\"./a.so\","
+         "\"ICD\":{\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"ICD\":{\"library_path\":\"./a.so\",\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"\",\"ICD\":"
+         "{\"library_path\":\"./a.so\",\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":{\"library_path\":\"./a.so\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":"
+         "{\"library_path\":\"\",\"api_version\":\"1.3.0\"}}") != NULL);
+   /* wrong types */
+   CHECK(icd_of("{\"file_format_version\":1,\"ICD\":"
+         "{\"library_path\":\"./a.so\",\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":\"./a.so\"}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":[]}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":"
+         "{\"library_path\":[\"./a.so\"],\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":"
+         "{\"library_path\":null,\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":"
+         "{\"library_path\":\"./a.so\",\"api_version\":{}}}") != NULL);
+   /* not an object, not JSON, cut short */
+   CHECK(icd_of("[]") != NULL);
+   CHECK(icd_of("\"ICD\"") != NULL);
+   CHECK(icd_of("") != NULL);
+   CHECK(icd_of("not json") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":{\"library_path\":\"./a.so\"") != NULL);
+   /* over 4 KiB */
+   memset(json, ' ', VULKAN_CUSTOM_DRIVER_META_MAX + 1);
+   memcpy(json, radv_icd, strlen(radv_icd));
+   CHECK(vulkan_custom_driver_parse_icd(json, VULKAN_CUSTOM_DRIVER_META_MAX + 1,
+            &icd) != NULL);
+   CHECK(!vulkan_custom_driver_parse_icd(json, VULKAN_CUSTOM_DRIVER_META_MAX,
+            &icd));
+}
+
+static char lib[PATH_MAX_LENGTH];
+
+static const char *lib_of(const char *json_path, const char *library_path)
+{
+   lib[0] = '\0';
+   return vulkan_custom_driver_icd_library(json_path, library_path,
+         lib, sizeof(lib));
+}
+
+static void test_icd_library(void)
+{
+   CHECK(!lib_of("/m/share/vulkan/icd.d/radeon_icd.x86_64.json",
+            "/m/lib/libvulkan_radeon.so"));
+   CHECK(!strcmp(lib, "/m/lib/libvulkan_radeon.so"));
+   CHECK(!lib_of("/m/share/vulkan/icd.d/radeon_icd.x86_64.json",
+            "../../../lib/libvulkan_radeon.so"));
+   CHECK(!strcmp(lib, "/m/share/vulkan/icd.d/../../../lib/libvulkan_radeon.so"));
+   CHECK(!lib_of("/d/icd.json", "./libvulkan_freedreno.so"));
+   CHECK(!strcmp(lib, "/d/./libvulkan_freedreno.so"));
+   /* a bare name is the system's library */
+   CHECK(lib_of("/d/icd.json", "libvulkan_radeon.so") != NULL);
+   CHECK(lib_of("C:\\Mesa\\lvp_icd.x86_64.json", "vulkan_lvp.dll") != NULL);
+   CHECK(lib_of("C:\\Mesa\\lvp_icd.x86_64.json", "C:vulkan_lvp.dll") != NULL);
+   /* Windows: backslashes, drive letters, forward slashes, shares */
+   CHECK(!lib_of("C:\\Mesa\\lvp_icd.x86_64.json", ".\\vulkan_lvp.dll"));
+   CHECK(!strcmp(lib, "C:\\Mesa\\.\\vulkan_lvp.dll"));
+   CHECK(!lib_of("C:\\Mesa\\lvp_icd.x86_64.json", "d:\\lvp\\vulkan_lvp.dll"));
+   CHECK(!strcmp(lib, "d:\\lvp\\vulkan_lvp.dll"));
+   CHECK(!lib_of("C:/Mesa/lvp_icd.x86_64.json", "bin/vulkan_lvp.dll"));
+   CHECK(!strcmp(lib, "C:/Mesa/bin/vulkan_lvp.dll"));
+   CHECK(!lib_of("\\\\nas\\mesa\\icd.json", "\\\\nas\\mesa\\vulkan_lvp.dll"));
+   CHECK(!strcmp(lib, "\\\\nas\\mesa\\vulkan_lvp.dll"));
+   /* a manifest path with no directory leaves the name as it is */
+   CHECK(!lib_of("icd.json", "./a.so"));
+   CHECK(!strcmp(lib, "./a.so"));
+   /* out holds PATH_MAX_LENGTH - 1 characters */
+   memset(json, 'a', PATH_MAX_LENGTH + 1);
+   json[0]                   = '/';
+   json[PATH_MAX_LENGTH - 1] = '\0';
+   CHECK(!lib_of("/d/icd.json", json));
+   CHECK(strlen(lib) == PATH_MAX_LENGTH - 1);
+   json[PATH_MAX_LENGTH - 1] = 'a';
+   json[PATH_MAX_LENGTH]     = '\0';
+   CHECK(lib_of("/d/icd.json", json) != NULL);
+   json[0]                   = 'a';
+   json[1]                   = '/';
+   json[PATH_MAX_LENGTH - 4] = '\0';
+   CHECK(!lib_of("/d/icd.json", json));
+   CHECK(strlen(lib) == PATH_MAX_LENGTH - 1);
+   json[PATH_MAX_LENGTH - 4] = 'a';
+   json[PATH_MAX_LENGTH - 3] = '\0';
+   CHECK(lib_of("/d/icd.json", json) != NULL);
+}
+
 int main(void)
 {
    test_meta();
@@ -925,6 +1047,8 @@ int main(void)
    test_session_table();
    test_crash_marker();
    test_patch_soname();
+   test_icd();
+   test_icd_library();
    printf("vulkan_custom_driver_test: %u checks, %u failures\n",
          checks, failures);
    return failures ? 1 : 0;
