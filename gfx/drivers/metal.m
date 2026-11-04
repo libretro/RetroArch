@@ -4986,10 +4986,8 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    void *_font_data;
    struct font_atlas *_atlas;
 
-   NSUInteger _stride;
    /* Bytes per atlas coverage sample (1 for A8, 2 for A16) */
    size_t _esz;
-   id<MTLBuffer> _buffer;
    id<MTLTexture> _texture;
 
    id<MTLRenderPipelineState> _state;
@@ -5031,7 +5029,6 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    [self deinit];
 #if !__has_feature(objc_arc)
    [_context release];
-   [(id)_buffer release];
    [(id)_texture release];
    [(id)_state release];
    [(id)_stateF16 release];
@@ -5066,7 +5063,8 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
       /* The atlas may grow, up to a texture every Metal GPU makes; the
        * buffer and texture follow it (_followAtlas) */
       _atlas->max_dims = VIDEO_SCALE_PACK(8192, 8192);
-      [self _makeAtlasTexture];
+      if (![self _makeAtlasTexture])
+         RARCH_RETURN_INIT_FAILURE();
 
       if (![self _initializeState])
          RARCH_RETURN_INIT_FAILURE();
@@ -5074,53 +5072,14 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    return self;
 }
 
-/* The managed buffer the atlas is copied into, and the texture made
- * on it, at the atlas's size: at init, and when the atlas has grown. A
- * command buffer still drawing from the old pair keeps it alive. */
-- (void)_makeAtlasTexture
+/* A texture holding all of the atlas, at its size: at init, and when
+ * the atlas has grown. Filled from the CPU while no command buffer
+ * names it; a command buffer still drawing from the old one keeps that
+ * alive. When the new one cannot be made the old one stays, and the
+ * cells it holds keep being uploaded into it. */
+- (bool)_makeAtlasTexture
 {
-#if !__has_feature(objc_arc)
-   [(id)_texture release];
-   [(id)_buffer release];
-#endif
-   _texture = nil;
-   _buffer  = nil;
-   _esz    = (_atlas->format == FONT_ATLAS_FORMAT_A16)
-         ? sizeof(uint16_t) : sizeof(uint8_t);
-   _stride = MTL_ALIGN_BUFFER(_atlas->width * _esz);
-
-   /* Allocate an uninitialized managed buffer and fill it through
-    * .contents. This collapses two previous branches (fast path
-    * via newBufferWithBytes:, slow path via row memcpy loop) into
-    * one: row memcpy handles both the aligned and padded cases
-    * and avoids the newBufferWithBytes: workaround (which had to
-    * manually didModifyRange: the whole buffer anyway because
-    * the initial copy was not correctly invalidated on macOS). */
-   _buffer = [_context.device newBufferWithLength:(NSUInteger)(_stride * _atlas->height)
-                                          options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
-   {
-      size_t i;
-      size_t row_bytes   = (size_t)_atlas->width * _esz;
-      uint8_t       *dst = (uint8_t *)_buffer.contents;
-      const uint8_t *src = (const uint8_t *)_atlas->buffer;
-      if (_stride == row_bytes)
-      {
-         memcpy(dst, src, (size_t)_stride * _atlas->height);
-      }
-      else
-      {
-         for (i = 0; i < _atlas->height; i++)
-         {
-            memcpy(dst, src, row_bytes);
-            dst += _stride;
-            src += row_bytes;
-         }
-      }
-   }
-#if !defined(HAVE_COCOATOUCH)
-   [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
-#endif
-
+   id<MTLTexture> texture;
    MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:
                                      (_atlas->format == FONT_ATLAS_FORMAT_A16)
                                            ? MTLPixelFormatR16Unorm
@@ -5128,8 +5087,26 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
                                                                                  width:_atlas->width
                                                                                 height:_atlas->height
                                                                              mipmapped:NO];
-
-   _texture  = [_buffer newTextureWithDescriptor:td offset:0 bytesPerRow:_stride];
+   td.usage       = MTLTextureUsageShaderRead;
+#ifdef HAVE_COCOATOUCH
+   td.storageMode = MTLStorageModeShared;
+#else
+   td.storageMode = MTLStorageModeManaged;
+#endif
+   if (!(texture = [_context.device newTextureWithDescriptor:td]))
+      return false;
+   _esz = (_atlas->format == FONT_ATLAS_FORMAT_A16)
+         ? sizeof(uint16_t) : sizeof(uint8_t);
+   [texture replaceRegion:MTLRegionMake2D(0, 0, _atlas->width, _atlas->height)
+              mipmapLevel:0
+                withBytes:_atlas->buffer
+              bytesPerRow:(NSUInteger)_atlas->width * _esz];
+#if !__has_feature(objc_arc)
+   [(id)_texture release];
+#endif
+   _texture      = texture;
+   _atlas->dirty = false;
+   return true;
 }
 
 /* Asked for before a message is laid out: when the atlas has grown,
@@ -5140,10 +5117,7 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    _atlas = _font_driver->get_atlas(_font_data);
    if (     _atlas->width  != _texture.width
          || _atlas->height != _texture.height)
-   {
       [self _makeAtlasTexture];
-      _atlas->dirty = false;
-   }
 }
 
 - (bool)_initializeState
@@ -5212,26 +5186,54 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    if (_atlas->dirty)
    {
       unsigned row;
+      BufferRange range;
+      NSUInteger pitch;
       unsigned x0 = VIDEO_SCALE_W(_atlas->dirty_xy0);
       unsigned y0 = VIDEO_SCALE_H(_atlas->dirty_xy0);
       unsigned x1 = VIDEO_SCALE_W(_atlas->dirty_xy1);
       unsigned y1 = VIDEO_SCALE_H(_atlas->dirty_xy1);
-      _atlas->dirty = false;
+      id<MTLBlitCommandEncoder> bce;
       if (     x1 <= x0 || y1 <= y0
             || x1 > _atlas->width || y1 > _atlas->height)
+      {
+         _atlas->dirty = false;
+         return;
+      }
+      /* Within the texture as well: an atlas the texture could not
+       * follow is larger than it */
+      if (x1 > _texture.width)
+         x1 = (unsigned)_texture.width;
+      if (y1 > _texture.height)
+         y1 = (unsigned)_texture.height;
+      if (x1 <= x0 || y1 <= y0)
+      {
+         _atlas->dirty = false;
+         return;
+      }
+      /* Staged in this frame's buffer ring and copied in by the blit
+       * the frame commits ahead of its drawing: the copy is ordered
+       * after the frames still in flight that sample the texture, so a
+       * cell a frame in flight draws is never written under it */
+      pitch = ((NSUInteger)(x1 - x0) * _esz + 3) & ~(NSUInteger)3;
+      if (![_context allocRange:&range length:pitch * (y1 - y0)])
          return;
       for (row = y0; row < y1; row++)
-         memcpy((uint8_t *)_buffer.contents
-                  + (size_t)row * _stride + (size_t)x0 * _esz,
+         memcpy((uint8_t *)range.data + (size_t)(row - y0) * pitch,
                _atlas->buffer
                   + ((size_t)row * _atlas->width + x0) * _esz,
                (size_t)(x1 - x0) * _esz);
-
-#if !defined(HAVE_COCOATOUCH)
-      /* didModifyRange takes a byte range */
-      [_buffer didModifyRange:NSMakeRange((NSUInteger)y0 * _stride,
-            (NSUInteger)(y1 - y0) * _stride)];
-#endif
+      bce = [_context.blitCommandBuffer blitCommandEncoder];
+      [bce copyFromBuffer:range.buffer
+             sourceOffset:range.offset
+        sourceBytesPerRow:pitch
+      sourceBytesPerImage:pitch * (y1 - y0)
+               sourceSize:MTLSizeMake(x1 - x0, y1 - y0, 1)
+                toTexture:_texture
+         destinationSlice:0
+         destinationLevel:0
+        destinationOrigin:MTLOriginMake(x0, y0, 0)];
+      [bce endEncoding];
+      _atlas->dirty = false;
    }
 }
 
