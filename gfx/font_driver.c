@@ -753,12 +753,53 @@ static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
    return victim;
 }
 
+void font_dirty_rects_add(unsigned (*r)[2], unsigned *n,
+      unsigned pos, unsigned end)
+{
+   unsigned i, j, bi = 0, bj = 1;
+   unsigned cand[FONT_ATLAS_DIRTY_MAX + 1][2];
+   size_t   best_add = (size_t)-1;
+
+   if (*n < FONT_ATLAS_DIRTY_MAX)
+   {
+      r[*n][0]   = pos;
+      r[(*n)++][1] = end;
+      return;
+   }
+
+   /* Full: of the rectangles and the new one, the two whose union adds
+    * least are joined */
+   memcpy(cand, r, sizeof(cand[0]) * FONT_ATLAS_DIRTY_MAX);
+   cand[FONT_ATLAS_DIRTY_MAX][0] = pos;
+   cand[FONT_ATLAS_DIRTY_MAX][1] = end;
+   for (i = 0; i < FONT_ATLAS_DIRTY_MAX; i++)
+      for (j = i + 1; j <= FONT_ATLAS_DIRTY_MAX; j++)
+      {
+         size_t both = VIDEO_SCALE_AREA(
+                  VIDEO_SCALE_MAX(cand[i][1], cand[j][1])
+                - VIDEO_SCALE_MIN(cand[i][0], cand[j][0]));
+         size_t each = VIDEO_SCALE_AREA(cand[i][1] - cand[i][0])
+                     + VIDEO_SCALE_AREA(cand[j][1] - cand[j][0]);
+         size_t add  = both > each ? both - each : 0;
+         if (add < best_add)
+         {
+            bi       = i;
+            bj       = j;
+            best_add = add;
+         }
+      }
+   cand[bi][0] = VIDEO_SCALE_MIN(cand[bi][0], cand[bj][0]);
+   cand[bi][1] = VIDEO_SCALE_MAX(cand[bi][1], cand[bj][1]);
+   cand[bj][0] = cand[FONT_ATLAS_DIRTY_MAX][0];
+   cand[bj][1] = cand[FONT_ATLAS_DIRTY_MAX][1];
+   memcpy(r, cand, sizeof(cand[0]) * FONT_ATLAS_DIRTY_MAX);
+}
+
 /* @pos and @dims add packed: the atlas never outgrows
  * VIDEO_SCALE_DIM_MAX, so nothing carries between halves */
 static void font_cache_dirty_cell(struct font_atlas *atlas,
       unsigned pos, unsigned dims)
 {
-   unsigned i;
    unsigned end = pos + dims;
 
    if (!atlas->dirty)
@@ -775,47 +816,8 @@ static void font_cache_dirty_cell(struct font_atlas *atlas,
    atlas->dirty_xy1 = VIDEO_SCALE_MAX(atlas->dirty_xy1, end);
 
    /* Only the corners describe a region someone else made */
-   if (!atlas->dirty_rects)
-      return;
-   if (atlas->dirty_rects < FONT_ATLAS_DIRTY_MAX)
-   {
-      atlas->dirty_rect[atlas->dirty_rects][0]   = pos;
-      atlas->dirty_rect[atlas->dirty_rects++][1] = end;
-      return;
-   }
-
-   /* Full: of the rectangles and the cell, the two whose union adds
-    * least are joined */
-   {
-      unsigned j, bi = 0, bj = 1;
-      unsigned (*r)[2]  = atlas->dirty_rect;
-      unsigned  cand[FONT_ATLAS_DIRTY_MAX + 1][2];
-      size_t    best_add = (size_t)-1;
-      memcpy(cand, r, sizeof(atlas->dirty_rect));
-      cand[FONT_ATLAS_DIRTY_MAX][0] = pos;
-      cand[FONT_ATLAS_DIRTY_MAX][1] = end;
-      for (i = 0; i < FONT_ATLAS_DIRTY_MAX; i++)
-         for (j = i + 1; j <= FONT_ATLAS_DIRTY_MAX; j++)
-         {
-            size_t both = VIDEO_SCALE_AREA(
-                     VIDEO_SCALE_MAX(cand[i][1], cand[j][1])
-                   - VIDEO_SCALE_MIN(cand[i][0], cand[j][0]));
-            size_t each = VIDEO_SCALE_AREA(cand[i][1] - cand[i][0])
-                        + VIDEO_SCALE_AREA(cand[j][1] - cand[j][0]);
-            size_t add  = both > each ? both - each : 0;
-            if (add < best_add)
-            {
-               bi       = i;
-               bj       = j;
-               best_add = add;
-            }
-         }
-      cand[bi][0] = VIDEO_SCALE_MIN(cand[bi][0], cand[bj][0]);
-      cand[bi][1] = VIDEO_SCALE_MAX(cand[bi][1], cand[bj][1]);
-      cand[bj][0] = cand[FONT_ATLAS_DIRTY_MAX][0];
-      cand[bj][1] = cand[FONT_ATLAS_DIRTY_MAX][1];
-      memcpy(r, cand, sizeof(atlas->dirty_rect));
-   }
+   if (atlas->dirty_rects)
+      font_dirty_rects_add(atlas->dirty_rect, &atlas->dirty_rects, pos, end);
 }
 
 /* Out of line, so a hit needs none of the registers a miss saves */

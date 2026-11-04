@@ -39,6 +39,8 @@ parts = {
     'gxm.inc':   ('gfx/drivers/gxm_gfx.c', ('gxm_font_upload_dirty(',)),
     'rsx.inc':   ('gfx/drivers/rsx_gfx.c', ('rsx_font_copy_dirty(',)),
     'd3d11.inc': ('gfx/drivers/d3d11.c', ('d3d11_font_make_texture(',)),
+    'd3d11_rects.inc': ('gfx/drivers/d3d11.c',
+                        ('d3d11_font_update_atlas_rects(',)),
 }
 
 with tempfile.TemporaryDirectory() as directory:

@@ -5185,55 +5185,58 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
 {
    if (_atlas->dirty)
    {
-      unsigned row;
-      BufferRange range;
-      NSUInteger pitch;
-      unsigned x0 = VIDEO_SCALE_W(_atlas->dirty_xy0);
-      unsigned y0 = VIDEO_SCALE_H(_atlas->dirty_xy0);
-      unsigned x1 = VIDEO_SCALE_W(_atlas->dirty_xy1);
-      unsigned y1 = VIDEO_SCALE_H(_atlas->dirty_xy1);
-      id<MTLBlitCommandEncoder> bce;
-      if (     x1 <= x0 || y1 <= y0
-            || x1 > _atlas->width || y1 > _atlas->height)
+      unsigned i;
+      unsigned n = font_atlas_dirty_rects(_atlas);
+      id<MTLBlitCommandEncoder> bce = nil;
+      for (i = 0; i < n; i++)
       {
-         _atlas->dirty = false;
-         return;
+         unsigned row, xy0, xy1, x0, y0, x1, y1;
+         BufferRange range;
+         NSUInteger pitch;
+         font_atlas_dirty_rect(_atlas, i, &xy0, &xy1);
+         x0 = VIDEO_SCALE_W(xy0);
+         y0 = VIDEO_SCALE_H(xy0);
+         x1 = VIDEO_SCALE_W(xy1);
+         y1 = VIDEO_SCALE_H(xy1);
+         if (     x1 <= x0 || y1 <= y0
+               || x1 > _atlas->width || y1 > _atlas->height)
+            continue;
+         /* Within the texture as well: an atlas the texture could not
+          * follow is larger than it */
+         if (x1 > _texture.width)
+            x1 = (unsigned)_texture.width;
+         if (y1 > _texture.height)
+            y1 = (unsigned)_texture.height;
+         if (x1 <= x0 || y1 <= y0)
+            continue;
+         /* Staged in this frame's buffer ring and copied in by the blit
+          * the frame commits ahead of its drawing: the copy is ordered
+          * after the frames still in flight that sample the texture, so
+          * a cell a frame in flight draws is never written under it */
+         pitch = ((NSUInteger)(x1 - x0) * _esz + 3) & ~(NSUInteger)3;
+         if (![_context allocRange:&range length:pitch * (y1 - y0)])
+            break;
+         for (row = y0; row < y1; row++)
+            memcpy((uint8_t *)range.data + (size_t)(row - y0) * pitch,
+                  _atlas->buffer
+                     + ((size_t)row * _atlas->width + x0) * _esz,
+                  (size_t)(x1 - x0) * _esz);
+         if (!bce)
+            bce = [_context.blitCommandBuffer blitCommandEncoder];
+         [bce copyFromBuffer:range.buffer
+                sourceOffset:range.offset
+           sourceBytesPerRow:pitch
+         sourceBytesPerImage:pitch * (y1 - y0)
+                  sourceSize:MTLSizeMake(x1 - x0, y1 - y0, 1)
+                   toTexture:_texture
+            destinationSlice:0
+            destinationLevel:0
+           destinationOrigin:MTLOriginMake(x0, y0, 0)];
       }
-      /* Within the texture as well: an atlas the texture could not
-       * follow is larger than it */
-      if (x1 > _texture.width)
-         x1 = (unsigned)_texture.width;
-      if (y1 > _texture.height)
-         y1 = (unsigned)_texture.height;
-      if (x1 <= x0 || y1 <= y0)
-      {
-         _atlas->dirty = false;
-         return;
-      }
-      /* Staged in this frame's buffer ring and copied in by the blit
-       * the frame commits ahead of its drawing: the copy is ordered
-       * after the frames still in flight that sample the texture, so a
-       * cell a frame in flight draws is never written under it */
-      pitch = ((NSUInteger)(x1 - x0) * _esz + 3) & ~(NSUInteger)3;
-      if (![_context allocRange:&range length:pitch * (y1 - y0)])
-         return;
-      for (row = y0; row < y1; row++)
-         memcpy((uint8_t *)range.data + (size_t)(row - y0) * pitch,
-               _atlas->buffer
-                  + ((size_t)row * _atlas->width + x0) * _esz,
-               (size_t)(x1 - x0) * _esz);
-      bce = [_context.blitCommandBuffer blitCommandEncoder];
-      [bce copyFromBuffer:range.buffer
-             sourceOffset:range.offset
-        sourceBytesPerRow:pitch
-      sourceBytesPerImage:pitch * (y1 - y0)
-               sourceSize:MTLSizeMake(x1 - x0, y1 - y0, 1)
-                toTexture:_texture
-         destinationSlice:0
-         destinationLevel:0
-        destinationOrigin:MTLOriginMake(x0, y0, 0)];
       [bce endEncoding];
-      _atlas->dirty = false;
+      /* Kept dirty while the ring has no room: the cells go next time */
+      if (i == n)
+         _atlas->dirty = false;
    }
 }
 

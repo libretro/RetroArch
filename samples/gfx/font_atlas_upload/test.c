@@ -23,15 +23,38 @@
 #define VIDEO_SCALE_H(p)       ((unsigned)(p) & 0xFFFFu)
 #define FONT_ATLAS_FORMAT_A8   0
 #define FONT_ATLAS_FORMAT_A16  1
+#define FONT_ATLAS_DIRTY_MAX   16
 
 struct font_atlas
 {
    uint8_t *buffer;
    unsigned width, height;
    unsigned dirty_xy0, dirty_xy1;
+   unsigned dirty_rect[FONT_ATLAS_DIRTY_MAX][2];
+   unsigned dirty_rects;
    int format;
    bool dirty;
 };
+
+/* gfx/font_driver.h's readers */
+static unsigned font_atlas_dirty_rects(const struct font_atlas *a)
+{
+   return a->dirty_rects ? a->dirty_rects : 1;
+}
+static void font_atlas_dirty_rect(const struct font_atlas *a,
+      unsigned i, unsigned *xy0, unsigned *xy1)
+{
+   if (a->dirty_rects)
+   {
+      *xy0 = a->dirty_rect[i][0];
+      *xy1 = a->dirty_rect[i][1];
+   }
+   else
+   {
+      *xy0 = a->dirty_xy0;
+      *xy1 = a->dirty_xy1;
+   }
+}
 
 /* A 32x32 atlas whose texel (x, y) is a function of both */
 static uint8_t atlas_buf[32 * 32];
@@ -56,6 +79,32 @@ static void atlas_grown(void)
    atlas.dirty     = true;
    atlas.dirty_xy0 = 0;
    atlas.dirty_xy1 = VIDEO_SCALE_PACK(32, 32);
+}
+
+/* Two cells in opposite corners dirtied since the last upload */
+static void atlas_two_cells(void)
+{
+   atlas.dirty          = true;
+   atlas.dirty_xy0      = 0;
+   atlas.dirty_xy1      = VIDEO_SCALE_PACK(32, 32);
+   atlas.dirty_rect[0][0] = 0;
+   atlas.dirty_rect[0][1] = VIDEO_SCALE_PACK(4, 4);
+   atlas.dirty_rect[1][0] = VIDEO_SCALE_PACK(24, 26);
+   atlas.dirty_rect[1][1] = VIDEO_SCALE_PACK(32, 32);
+   atlas.dirty_rects    = 2;
+}
+
+/* A 32x32 texture, @pitch bytes a row, filled with 0xEE, holds the
+ * atlas's texels in the two cells and nothing anywhere else */
+static void check_two_cells(const uint8_t *tex, unsigned pitch)
+{
+   unsigned x, y;
+   for (y = 0; y < 32; y++)
+      for (x = 0; x < 32; x++)
+      {
+         bool in = (x < 4 && y < 4) || (x >= 24 && y >= 26);
+         assert(tex[y * pitch + x] == (in ? texel(x, y) : 0xEE));
+      }
 }
 
 /* Rows @y0 to @h of a @w wide texture, @pitch bytes a row, hold the
@@ -206,6 +255,73 @@ static void d3d11_font_update_atlas_region(void *ctx, d3d11_font_t *font,
 }
 #include "d3d11.inc"
 
+/* A context whose staging texture can be the GPU's still, and the
+ * texture and staging texels it copies between */
+typedef long HRESULT;
+typedef unsigned UINT;
+#define FAILED(hr) ((hr) < 0)
+#define DXGI_ERROR_WAS_STILL_DRAWING (-2005270518L)
+#define D3D11_MAP_WRITE 2
+#define D3D11_MAP_FLAG_DO_NOT_WAIT 0x100000L
+typedef object *D3D11Resource;
+typedef struct { void *pData; UINT RowPitch, DepthPitch; } D3D11_MAPPED_SUBRESOURCE;
+typedef struct { UINT left, top, front, right, bottom, back; } D3D11_BOX;
+static uint8_t tex_px[32 * 32], staging_px[32 * 32];
+static bool still_drawing;
+static unsigned maps, copies, updates;
+typedef struct ctx ctx_t;
+struct ctx
+{
+   struct ctx_vtbl
+   {
+      HRESULT (*Map)(ctx_t*, D3D11Resource, UINT, int, long,
+            D3D11_MAPPED_SUBRESOURCE*);
+      void (*Unmap)(ctx_t*, D3D11Resource, UINT);
+      void (*UpdateSubresource)(ctx_t*, D3D11Resource, UINT,
+            const D3D11_BOX*, const void*, UINT, UINT);
+      void (*CopySubresourceRegion)(ctx_t*, D3D11Resource, UINT, UINT,
+            UINT, UINT, D3D11Resource, UINT, const D3D11_BOX*);
+   } *lpVtbl;
+};
+typedef ctx_t *D3D11DeviceContext;
+static HRESULT ctx_map(ctx_t *c, D3D11Resource r, UINT s, int t, long f,
+      D3D11_MAPPED_SUBRESOURCE *m)
+{
+   (void)c; (void)r; (void)s; (void)t; (void)f;
+   if (still_drawing)
+      return DXGI_ERROR_WAS_STILL_DRAWING;
+   maps++;
+   m->pData    = staging_px;
+   m->RowPitch = 32;
+   return 0;
+}
+static void ctx_unmap(ctx_t *c, D3D11Resource r, UINT s)
+{
+   (void)c; (void)r; (void)s;
+}
+static void ctx_update(ctx_t *c, D3D11Resource r, UINT s,
+      const D3D11_BOX *b, const void *src, UINT pitch, UINT depth)
+{
+   UINT y;
+   (void)c; (void)r; (void)s; (void)depth;
+   updates++;
+   for (y = b->top; y < b->bottom; y++)
+      memcpy(tex_px + y * 32 + b->left,
+            (const uint8_t*)src + (y - b->top) * pitch, b->right - b->left);
+}
+static void ctx_copy(ctx_t *c, D3D11Resource dst, UINT ds, UINT x, UINT y,
+      UINT z, D3D11Resource src, UINT ss, const D3D11_BOX *b)
+{
+   UINT row;
+   (void)c; (void)dst; (void)ds; (void)z; (void)src; (void)ss;
+   copies++;
+   for (row = 0; row < b->bottom - b->top; row++)
+      memcpy(tex_px + (y + row) * 32 + x,
+            staging_px + (b->top + row) * 32 + b->left, b->right - b->left);
+}
+static struct ctx_vtbl ctx_vtbl = { ctx_map, ctx_unmap, ctx_update, ctx_copy };
+#include "d3d11_rects.inc"
+
 int main(void)
 {
    /* GX2: the sprites' bytes, and an image the atlas outgrew */
@@ -235,6 +351,19 @@ int main(void)
       assert(gx2_at == image && gx2_len == 16 * 16);
       assert(!atlas.dirty);
       free(image);
+
+      /* two cells far apart go in on their own, each flushed */
+      image = (uint8_t*)malloc(32 * 32);
+      memset(image, 0xEE, 32 * 32);
+      font.texture.surface.image  = image;
+      font.texture.surface.width  = 32;
+      font.texture.surface.height = 32;
+      font.texture.surface.pitch  = 32;
+      atlas_two_cells();
+      gx2_font_upload_dirty(&font);
+      check_two_cells(image, 32);
+      assert(gx2_at == image + 26 * 32 + 24 && gx2_len == 5 * 32 + 8);
+      free(image);
    }
 
    /* GXM: a texture the atlas outgrew, and an empty dirty box */
@@ -257,6 +386,17 @@ int main(void)
       atlas.dirty_xy1 = VIDEO_SCALE_PACK(8, 8);
       gxm_font_upload_dirty(&font);
       check_texture(data, 16, 16, 16);
+      free(data);
+
+      /* two cells far apart go in on their own */
+      data = (uint8_t*)malloc(32 * 32);
+      memset(data, 0xEE, 32 * 32);
+      texture.gxm_tex.data   = data;
+      texture.gxm_tex.width  = 32;
+      texture.gxm_tex.height = 32;
+      atlas_two_cells();
+      gxm_font_upload_dirty(&font);
+      check_two_cells(data, 32);
       free(data);
    }
 
@@ -316,8 +456,44 @@ int main(void)
       assert(font.texture.view && font.texture.view->refs == 1);
    }
 
+   /* D3D11: two cells far apart go in on their own, through one map of
+    * the staging texture, or through the driver while it is the GPU's */
+   {
+      static object staging_obj = { 1 }, handle_obj = { 1 };
+      d3d11_font_t font;
+      ctx_t ctx;
+      unsigned pass, i, n, r[FONT_ATLAS_DIRTY_MAX][2];
+      ctx.lpVtbl = &ctx_vtbl;
+      for (pass = 0; pass < 2; pass++)
+      {
+         memset(&font, 0, sizeof(font));
+         atlas_grown();
+         atlas_two_cells();
+         font.atlas                = &atlas;
+         font.texture.handle       = &handle_obj;
+         font.texture.staging      = &staging_obj;
+         font.texture.desc.Width   = 32;
+         font.texture.desc.Height  = 32;
+         memset(tex_px, 0xEE, sizeof(tex_px));
+         memset(staging_px, 0xEE, sizeof(staging_px));
+         maps = copies = updates = 0;
+         still_drawing = pass == 1;
+         n = font_atlas_dirty_rects(&atlas);
+         for (i = 0; i < n; i++)
+            font_atlas_dirty_rect(&atlas, i, &r[i][0], &r[i][1]);
+         d3d11_font_update_atlas_rects(&ctx, &font,
+               (const unsigned (*)[2])r, n);
+         check_two_cells(tex_px, 32);
+         if (still_drawing)
+            assert(updates == 2 && !maps && !copies);
+         else
+            assert(maps == 1 && copies == 2 && !updates);
+      }
+   }
+
    puts("font atlas uploads: GX2, GXM and RSX clamped to a texture the"
          " atlas outgrew, GX2 sprites flushed whole, D3D11 keeps its"
-         " texture when a new one cannot be made PASS");
+         " texture when a new one cannot be made, dirty cells far apart"
+         " sent on their own PASS");
    return 0;
 }

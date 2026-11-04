@@ -1297,46 +1297,58 @@ static int d3d10_font_get_message_width(void *data, const char *msg,
          font->font_data, msg, msg_len, scale);
 }
 
-/* Update only the atlas dirty rectangle of the A8 font texture:
- * map the staging texture preserving its contents, copy the changed
- * rows, and issue a boxed CopySubresourceRegion for just that area.
+/* Update only the atlas dirty rectangles @r[0..@n) of the A8 font
+ * texture: map the staging texture once preserving its contents, copy
+ * each one's rows, and issue a boxed CopySubresourceRegion for each.
  * The generic d3d10_update_texture() re-uploads the whole surface. */
-static void d3d10_font_update_atlas_region(
-      D3D10Device ctx, d3d10_font_t *font, unsigned xy0, unsigned xy1)
+static void d3d10_font_update_atlas_rects(D3D10Device ctx,
+      d3d10_font_t *font, const unsigned (*r)[2], unsigned n)
 {
-   unsigned y;
-   unsigned x0 = VIDEO_SCALE_W(xy0);
-   unsigned y0 = VIDEO_SCALE_H(xy0);
-   unsigned x1 = VIDEO_SCALE_W(xy1);
-   unsigned y1 = VIDEO_SCALE_H(xy1);
+   unsigned i, y, kept = 0;
+   D3D10_BOX box[FONT_ATLAS_DIRTY_MAX];
    D3D10_MAPPED_TEXTURE2D mapped;
-   D3D10_BOX box;
 
-   if (     x1 <= x0 || y1 <= y0
-         || x1 > (unsigned)font->atlas->width
-         || y1 > (unsigned)font->atlas->height)
+   if (n > FONT_ATLAS_DIRTY_MAX)
+      n = FONT_ATLAS_DIRTY_MAX;
+   for (i = 0; i < n; i++)
+   {
+      unsigned x0 = VIDEO_SCALE_W(r[i][0]);
+      unsigned y0 = VIDEO_SCALE_H(r[i][0]);
+      unsigned x1 = VIDEO_SCALE_W(r[i][1]);
+      unsigned y1 = VIDEO_SCALE_H(r[i][1]);
+      if (     x1 <= x0 || y1 <= y0
+            || x1 > (unsigned)font->atlas->width
+            || y1 > (unsigned)font->atlas->height)
+         continue;
+      box[kept].left   = x0;
+      box[kept].top    = y0;
+      box[kept].front  = 0;
+      box[kept].right  = x1;
+      box[kept].bottom = y1;
+      box[kept].back   = 1;
+      kept++;
+   }
+   if (!kept)
       return;
 
    if (FAILED(font->texture.staging->lpVtbl->Map(
          font->texture.staging, 0, D3D10_MAP_WRITE, 0, &mapped)))
       return;
 
-   for (y = y0; y < y1; y++)
-      memcpy((uint8_t*)mapped.pData + y * mapped.RowPitch + x0,
-             font->atlas->buffer + (size_t)y * font->atlas->width + x0,
-             x1 - x0);
+   for (i = 0; i < kept; i++)
+      for (y = box[i].top; y < box[i].bottom; y++)
+         memcpy((uint8_t*)mapped.pData + y * mapped.RowPitch + box[i].left,
+                font->atlas->buffer + (size_t)y * font->atlas->width
+                   + box[i].left,
+                box[i].right - box[i].left);
 
    font->texture.staging->lpVtbl->Unmap(font->texture.staging, 0);
 
-   box.left   = x0;
-   box.top    = y0;
-   box.front  = 0;
-   box.right  = x1;
-   box.bottom = y1;
-   box.back   = 1;
-   ctx->lpVtbl->CopySubresourceRegion(
-         ctx, (D3D10Resource)font->texture.handle, 0, x0, y0, 0,
-         (D3D10Resource)font->texture.staging, 0, &box);
+   for (i = 0; i < kept; i++)
+      ctx->lpVtbl->CopySubresourceRegion(
+            ctx, (D3D10Resource)font->texture.handle, 0,
+            box[i].left, box[i].top, 0,
+            (D3D10Resource)font->texture.staging, 0, &box[i]);
 }
 
 static void d3d10_font_render_msg(
@@ -1552,8 +1564,14 @@ static void d3d10_font_render_msg(
    if (font->atlas->dirty)
    {
       if (font->texture.staging)
-         d3d10_font_update_atlas_region(d3d10->device, font,
-               font->atlas->dirty_xy0, font->atlas->dirty_xy1);
+      {
+         unsigned i, n = font_atlas_dirty_rects(font->atlas);
+         unsigned r[FONT_ATLAS_DIRTY_MAX][2];
+         for (i = 0; i < n; i++)
+            font_atlas_dirty_rect(font->atlas, i, &r[i][0], &r[i][1]);
+         d3d10_font_update_atlas_rects(d3d10->device, font,
+               (const unsigned (*)[2])r, n);
+      }
       font->atlas->dirty = false;
    }
 

@@ -1688,40 +1688,46 @@ static gxm_texture_t *gxm_font_make_texture(struct font_atlas *atlas)
    return texture;
 }
 
-/* Copies the atlas's dirty rectangle into the texture, one row at a
- * time, clamped to the texture as well as the atlas: an atlas the
+/* Copies each of the atlas's dirty rectangles into the texture, one row
+ * at a time, clamped to the texture as well as the atlas: an atlas the
  * texture could not follow is larger than it. An empty or inverted
  * rectangle takes all of both. */
 static void gxm_font_upload_dirty(vita_font_t *font)
 {
-   unsigned j;
+   unsigned i, j;
+   unsigned n             = font_atlas_dirty_rects(font->atlas);
    unsigned stride        = gxm_texture_get_stride(font->texture);
    uint8_t *tex32         = sceGxmTextureGetData(&font->texture->gxm_tex);
    const uint8_t *frame32 = font->atlas->buffer;
    unsigned pitch         = font->atlas->width;
    unsigned w             = sceGxmTextureGetWidth(&font->texture->gxm_tex);
    unsigned h             = sceGxmTextureGetHeight(&font->texture->gxm_tex);
-   unsigned x0            = VIDEO_SCALE_W(font->atlas->dirty_xy0);
-   unsigned y0            = VIDEO_SCALE_H(font->atlas->dirty_xy0);
-   unsigned x1            = VIDEO_SCALE_W(font->atlas->dirty_xy1);
-   unsigned y1            = VIDEO_SCALE_H(font->atlas->dirty_xy1);
    if (w > pitch)
       w = pitch;
    if (h > font->atlas->height)
       h = font->atlas->height;
-   if (x1 <= x0 || y1 <= y0 || x1 > pitch || y1 > font->atlas->height)
+   for (i = 0; i < n; i++)
    {
-      x0 = 0;
-      y0 = 0;
-      x1 = pitch;
-      y1 = font->atlas->height;
+      unsigned xy0, xy1, x0, y0, x1, y1;
+      font_atlas_dirty_rect(font->atlas, i, &xy0, &xy1);
+      x0 = VIDEO_SCALE_W(xy0);
+      y0 = VIDEO_SCALE_H(xy0);
+      x1 = VIDEO_SCALE_W(xy1);
+      y1 = VIDEO_SCALE_H(xy1);
+      if (x1 <= x0 || y1 <= y0 || x1 > pitch || y1 > font->atlas->height)
+      {
+         x0 = 0;
+         y0 = 0;
+         x1 = pitch;
+         y1 = font->atlas->height;
+      }
+      if (x1 > w)
+         x1 = w;
+      if (y1 > h)
+         y1 = h;
+      for (j = y0; j < y1 && x0 < x1; j++)
+         memcpy(tex32 + x0 + j * stride, frame32 + x0 + j * pitch, x1 - x0);
    }
-   if (x1 > w)
-      x1 = w;
-   if (y1 > h)
-      y1 = h;
-   for (j = y0; j < y1 && x0 < x1; j++)
-      memcpy(tex32 + x0 + j * stride, frame32 + x0 + j * pitch, x1 - x0);
    font->atlas->dirty = false;
 }
 

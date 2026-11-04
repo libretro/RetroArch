@@ -29,6 +29,14 @@
 
 RETRO_BEGIN_DECLS
 
+/* Adds the rectangle @pos..@end, its corners packed as dirty_xy0 and
+ * dirty_xy1 are, to the @*n rectangles of @r, which holds
+ * FONT_ATLAS_DIRTY_MAX: when it is full, of the rectangles and the new
+ * one the two whose union adds least are joined. For a consumer that
+ * keeps the regions it has staged since its last upload. */
+void font_dirty_rects_add(unsigned (*r)[2], unsigned *n,
+      unsigned pos, unsigned end);
+
 /* How many rectangles @a's dirty region is sent as */
 static INLINE unsigned font_atlas_dirty_rects(const struct font_atlas *a)
 {

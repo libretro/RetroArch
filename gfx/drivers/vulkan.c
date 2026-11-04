@@ -851,11 +851,11 @@ typedef struct
    unsigned acc_count;
    unsigned acc_cap;
 
-   /* The staging texture's region not yet sent to the sampled one:
-    * its corners, the second exclusive, in VIDEO_SCALE_PACK's layout.
-    * Empty when the first is past the second. */
-   unsigned dirty_xy0;
-   unsigned dirty_xy1;
+   /* The staging texture's regions not yet sent to the sampled one:
+    * each its corners, the second exclusive, in VIDEO_SCALE_PACK's
+    * layout (font_dirty_rects_add() keeps them) */
+   unsigned dirty_rect[FONT_ATLAS_DIRTY_MAX][2];
+   unsigned dirty_rects;
 
    bool needs_update;
 } vulkan_raster_t;
@@ -4001,36 +4001,43 @@ static void gfx_display_vk_scissor_end(void *data, unsigned video_dims)
  * FONT DRIVER
  */
 
-/* Copies the atlas's dirty region into the staging texture and adds it
- * to what the next upload sends. Whole cells go across, so no texel of
- * a cell's earlier glyph is left beside a smaller one for filtering to
- * pick up. */
+/* Copies each of the atlas's dirty rectangles into the staging texture
+ * and adds it to what the next upload sends, as much of it as the
+ * texture holds - an atlas the textures could not follow is larger than
+ * them. Whole cells go across, so no texel of a cell's earlier glyph is
+ * left beside a smaller one for filtering to pick up. */
 static INLINE void vulkan_font_update_dirty(vulkan_raster_t *font)
 {
-   unsigned row;
-   unsigned x0 = VIDEO_SCALE_W(font->atlas->dirty_xy0);
-   unsigned y0 = VIDEO_SCALE_H(font->atlas->dirty_xy0);
-   unsigned x1 = VIDEO_SCALE_W(font->atlas->dirty_xy1);
-   unsigned y1 = VIDEO_SCALE_H(font->atlas->dirty_xy1);
+   unsigned i, row;
+   unsigned n  = font_atlas_dirty_rects(font->atlas);
+   unsigned tw = VIDEO_SCALE_W(font->texture.dims);
+   unsigned th = VIDEO_SCALE_H(font->texture.dims);
    size_t esz  = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
          ? sizeof(uint16_t) : sizeof(uint8_t);
 
-   /* A region past the textures' size - the atlas grew and they could
-    * not be made again - has nowhere to go */
-   if (     x1 <= x0 || y1 <= y0
-         || x1 > VIDEO_SCALE_W(font->texture.dims)
-         || y1 > VIDEO_SCALE_H(font->texture.dims))
-      return;
-
-   for (row = y0; row < y1; row++)
-      memcpy((uint8_t*)font->texture.mapped
-               + (size_t)row * font->texture.stride + (size_t)x0 * esz,
-            font->atlas->buffer
-               + ((size_t)row * font->atlas->width + x0) * esz,
-            (size_t)(x1 - x0) * esz);
-
-   font->dirty_xy0 = VIDEO_SCALE_MIN(font->dirty_xy0, font->atlas->dirty_xy0);
-   font->dirty_xy1 = VIDEO_SCALE_MAX(font->dirty_xy1, font->atlas->dirty_xy1);
+   for (i = 0; i < n; i++)
+   {
+      unsigned xy0, xy1, x0, y0, x1, y1;
+      font_atlas_dirty_rect(font->atlas, i, &xy0, &xy1);
+      x0 = VIDEO_SCALE_W(xy0);
+      y0 = VIDEO_SCALE_H(xy0);
+      x1 = VIDEO_SCALE_W(xy1);
+      y1 = VIDEO_SCALE_H(xy1);
+      if (x1 > tw)
+         x1 = tw;
+      if (y1 > th)
+         y1 = th;
+      if (x1 <= x0 || y1 <= y0)
+         continue;
+      for (row = y0; row < y1; row++)
+         memcpy((uint8_t*)font->texture.mapped
+                  + (size_t)row * font->texture.stride + (size_t)x0 * esz,
+               font->atlas->buffer
+                  + ((size_t)row * font->atlas->width + x0) * esz,
+               (size_t)(x1 - x0) * esz);
+      font_dirty_rects_add(font->dirty_rect, &font->dirty_rects,
+            xy0, VIDEO_SCALE_PACK(x1, y1));
+   }
 }
 
 /* Makes the staging and the sampled texture anew at the atlas's size,
@@ -4075,8 +4082,9 @@ static void vulkan_font_follow_atlas(vulkan_raster_t *font)
    font->texture         = staging;
    font->texture_optimal = optimal;
    font->atlas->dirty    = false;
-   font->dirty_xy0       = 0;
-   font->dirty_xy1       = VIDEO_SCALE_PACK(font->atlas->width,
+   font->dirty_rects     = 1;
+   font->dirty_rect[0][0] = 0;
+   font->dirty_rect[0][1] = VIDEO_SCALE_PACK(font->atlas->width,
          font->atlas->height);
    font->needs_update    = true;
 }
@@ -4197,8 +4205,9 @@ static void *vulkan_font_init(void *data,
          font->vk->context->gpu_properties.limits.maxImageDimension2D);
 
    /* Initial upload is full atlas. */
-   font->dirty_xy0    = 0;
-   font->dirty_xy1    = VIDEO_SCALE_PACK(font->atlas->width,
+   font->dirty_rects      = 1;
+   font->dirty_rect[0][0] = 0;
+   font->dirty_rect[0][1] = VIDEO_SCALE_PACK(font->atlas->width,
          font->atlas->height);
    font->needs_update = true;
 
@@ -4277,71 +4286,107 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
          bpp                         = 1;
 
       {
-         /* The box clamped to the staging texture bounds both the
-          * flush and the copy. It is empty when nothing was dirtied
-          * since the last upload, or when the atlas grew and the
-          * textures could not follow, leaving it past them. */
-         unsigned dx = VIDEO_SCALE_W(font->dirty_xy0);
-         unsigned dy = VIDEO_SCALE_H(font->dirty_xy0);
-         unsigned x1 = VIDEO_SCALE_W(font->dirty_xy1);
-         unsigned y1 = VIDEO_SCALE_H(font->dirty_xy1);
-         unsigned sw = VIDEO_SCALE_W(staging_tex->dims);
-         unsigned sh = VIDEO_SCALE_H(staging_tex->dims);
-         unsigned dw, dh;
-
-         if (x1 > sw)
-            x1 = sw;
-         if (y1 > sh)
-            y1 = sh;
-         dw = (x1 > dx) ? x1 - dx : 0;
-         dh = (y1 > dy) ? y1 - dy : 0;
-
-         if (     dw > 0 && dh > 0
-               && (staging_tex->flags
+         /* Each region clamped to the staging texture bounds both its
+          * flush and its copy; one clamped to nothing - the atlas grew
+          * and the textures could not follow - is dropped */
+         VkBufferImageCopy   region[FONT_ATLAS_DIRTY_MAX];
+         VkMappedMemoryRange mem_range[FONT_ATLAS_DIRTY_MAX];
+         unsigned sw   = VIDEO_SCALE_W(staging_tex->dims);
+         unsigned sh   = VIDEO_SCALE_H(staging_tex->dims);
+         unsigned i, kept = 0;
+         bool manual   = (staging_tex->flags
                   & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
-               && staging_tex->memory != VK_NULL_HANDLE)
+               && staging_tex->memory != VK_NULL_HANDLE;
+         bool full_copy;
+
+         for (i = 0; i < font->dirty_rects && i < FONT_ATLAS_DIRTY_MAX; i++)
          {
-            VkMappedMemoryRange mem_range;
-            /* 256 is the largest nonCoherentAtomSize the spec allows,
-             * so a range aligned to it is aligned on every device. */
-            VkDeviceSize atom_size    = 256;
-            VkDeviceSize flush_offset = (VkDeviceSize)dy * staging_tex->stride
-                                      + (VkDeviceSize)dx * bpp;
-            VkDeviceSize flush_end    = (VkDeviceSize)(dy + dh - 1)
-                                      * staging_tex->stride
-                                      + (VkDeviceSize)(dx + dw) * bpp;
-            VkDeviceSize flush_size;
+            unsigned dx = VIDEO_SCALE_W(font->dirty_rect[i][0]);
+            unsigned dy = VIDEO_SCALE_H(font->dirty_rect[i][0]);
+            unsigned x1 = VIDEO_SCALE_W(font->dirty_rect[i][1]);
+            unsigned y1 = VIDEO_SCALE_H(font->dirty_rect[i][1]);
+            unsigned dw, dh;
+            if (x1 > sw)
+               x1 = sw;
+            if (y1 > sh)
+               y1 = sh;
+            if (x1 <= dx || y1 <= dy)
+               continue;
+            dw = x1 - dx;
+            dh = y1 - dy;
 
-            flush_offset = flush_offset & ~(atom_size - 1);
-            flush_size   = (flush_end - flush_offset + atom_size - 1)
-                         & ~(atom_size - 1);
+            if (manual)
+            {
+               /* 256 is the largest nonCoherentAtomSize the spec
+                * allows, so a range aligned to it is aligned on every
+                * device. */
+               VkDeviceSize atom_size    = 256;
+               VkDeviceSize flush_offset = (VkDeviceSize)dy * staging_tex->stride
+                                         + (VkDeviceSize)dx * bpp;
+               VkDeviceSize flush_end    = (VkDeviceSize)(dy + dh - 1)
+                                         * staging_tex->stride
+                                         + (VkDeviceSize)(dx + dw) * bpp;
+               VkDeviceSize flush_size;
+               flush_offset = flush_offset & ~(atom_size - 1);
+               flush_size   = (flush_end - flush_offset + atom_size - 1)
+                            & ~(atom_size - 1);
+               /* Past the texture's bytes: to the allocation's end,
+                * which the whole-allocation mapping reaches. */
+               if (flush_offset + flush_size > staging_tex->size)
+                  flush_size = VK_WHOLE_SIZE;
+               mem_range[kept].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+               mem_range[kept].pNext  = NULL;
+               mem_range[kept].memory = staging_tex->memory;
+               mem_range[kept].offset = flush_offset;
+               mem_range[kept].size   = flush_size;
+            }
 
-            /* Past the texture's bytes: to the allocation's end, which
-             * the whole-allocation mapping reaches. */
-            if (flush_offset + flush_size > staging_tex->size)
-               flush_size = VK_WHOLE_SIZE;
-
-            mem_range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-            mem_range.pNext  = NULL;
-            mem_range.memory = staging_tex->memory;
-            mem_range.offset = flush_offset;
-            mem_range.size   = flush_size;
-            vkFlushMappedMemoryRanges(vk->context->device, 1, &mem_range);
+            /* bufferOffset is in bytes; bufferRowLength is in
+             * TEXELS. For R8 the two coincide with the byte stride,
+             * for R16 they do not. */
+            region[kept].bufferOffset                    =
+               (VkDeviceSize)dy * staging_tex->stride
+                  + (VkDeviceSize)dx * bpp;
+            region[kept].bufferRowLength                 =
+               (uint32_t)(staging_tex->stride / bpp);
+            region[kept].bufferImageHeight               = 0;
+            region[kept].imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            region[kept].imageSubresource.mipLevel       = 0;
+            region[kept].imageSubresource.baseArrayLayer = 0;
+            region[kept].imageSubresource.layerCount     = 1;
+            region[kept].imageOffset.x                   = (int32_t)dx;
+            region[kept].imageOffset.y                   = (int32_t)dy;
+            region[kept].imageOffset.z                   = 0;
+            region[kept].imageExtent.width               = dw;
+            region[kept].imageExtent.height              = dh;
+            region[kept].imageExtent.depth               = 1;
+            kept++;
          }
 
-         if (dw > 0 && dh > 0)
+         if (!kept)
+         {
+            font->dirty_rects  = 0;
+            font->needs_update = false;
+            return;
+         }
+
+         if (manual)
+            vkFlushMappedMemoryRanges(vk->context->device, kept, mem_range);
+
+         /* UNDEFINED as oldLayout lets the implementation discard the
+          * whole image. That is only sound when the copy rewrites every
+          * texel - the initial full-atlas upload. Later uploads are
+          * incremental rects covering a few glyphs, and must preserve
+          * what lies outside them. */
+         full_copy =    kept == 1
+                     && region[0].imageOffset.x == 0
+                     && region[0].imageOffset.y == 0
+                     && region[0].imageExtent.width
+                        == VIDEO_SCALE_W(dynamic_tex->dims)
+                     && region[0].imageExtent.height
+                        == VIDEO_SCALE_H(dynamic_tex->dims);
          {
             VkCommandBuffer staging_cmd = vulkan_upload_batch_cmd(vk);
-            VkBufferImageCopy region;
-            /* UNDEFINED as oldLayout lets the implementation discard
-             * the whole image. That is only sound when the copy
-             * rewrites every texel - the initial full-atlas upload.
-             * Later uploads are incremental rects covering a single
-             * glyph, and must preserve what lies outside them. */
-            bool full_copy              = (   dx == 0
-                                           && dy == 0
-                                           && dw == VIDEO_SCALE_W(dynamic_tex->dims)
-                                           && dh == VIDEO_SCALE_H(dynamic_tex->dims));
             VkImageLayout old_layout    = full_copy
                ? VK_IMAGE_LAYOUT_UNDEFINED
                : dynamic_tex->layout;
@@ -4368,33 +4413,13 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
                      : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                   VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-            /* bufferOffset is in bytes; bufferRowLength is in
-             * TEXELS. For R8 the two coincide with the byte stride,
-             * for R16 they do not. */
-            region.bufferOffset                    =
-               (VkDeviceSize)dy * staging_tex->stride
-                  + (VkDeviceSize)dx * bpp;
-            region.bufferRowLength                 =
-               (uint32_t)(staging_tex->stride / bpp);
-            region.bufferImageHeight               = 0;
-            region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-            region.imageSubresource.mipLevel       = 0;
-            region.imageSubresource.baseArrayLayer = 0;
-            region.imageSubresource.layerCount     = 1;
-            region.imageOffset.x                   = (int32_t)dx;
-            region.imageOffset.y                   = (int32_t)dy;
-            region.imageOffset.z                   = 0;
-            region.imageExtent.width               = dw;
-            region.imageExtent.height              = dh;
-            region.imageExtent.depth               = 1;
-
             vkCmdCopyBufferToImage(
                   staging_cmd,
                   staging_tex->buffer,
                   dynamic_tex->image,
                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                  1,
-                  &region);
+                  kept,
+                  region);
 
             VULKAN_IMAGE_LAYOUT_TRANSITION(
                   staging_cmd,
@@ -4413,12 +4438,7 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
             dynamic_tex->layout =
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-            /* Reset only on a real upload. Clearing the dirty box
-             * after a rect that clamped away stranded that glyph's
-             * staging write permanently. */
-            font->dirty_xy0    = VIDEO_SCALE_PACK(font->atlas->width,
-                  font->atlas->height);
-            font->dirty_xy1    = 0;
+            font->dirty_rects  = 0;
             font->needs_update = false;
          }
       }

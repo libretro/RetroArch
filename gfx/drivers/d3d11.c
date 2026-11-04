@@ -1832,40 +1832,49 @@ static int d3d11_font_get_message_width(void *data, const char *msg,
          font->font_data, msg, msg_len, scale);
 }
 
-/* Update only the atlas dirty rectangle of the A8 font texture:
- * map the staging texture, copy the changed rows, and issue a boxed
- * CopySubresourceRegion for just that area - or, with the staging
- * texture still the GPU's, hand the rows to UpdateSubresource.
+/* Update only the atlas dirty rectangles @r[0..@n) of the font
+ * texture: map the staging texture once, copy each one's rows, and
+ * issue a boxed CopySubresourceRegion for each - or, with the staging
+ * texture still the GPU's, hand each one's rows to UpdateSubresource.
  * The generic d3d11_update_texture() re-uploads the whole surface. */
-static void d3d11_font_update_atlas_region(
-      D3D11DeviceContext ctx, d3d11_font_t *font, unsigned xy0, unsigned xy1)
+static void d3d11_font_update_atlas_rects(D3D11DeviceContext ctx,
+      d3d11_font_t *font, const unsigned (*r)[2], unsigned n)
 {
-   unsigned y;
-   unsigned x0 = VIDEO_SCALE_W(xy0);
-   unsigned y0 = VIDEO_SCALE_H(xy0);
-   unsigned x1 = VIDEO_SCALE_W(xy1);
-   unsigned y1 = VIDEO_SCALE_H(xy1);
+   unsigned i, y, kept = 0;
+   D3D11_BOX box[FONT_ATLAS_DIRTY_MAX];
    D3D11_MAPPED_SUBRESOURCE mapped;
-   D3D11_BOX box;
    HRESULT hr;
+   size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+         ? sizeof(uint16_t) : sizeof(uint8_t);
 
-   /* Within the texture as well as the atlas: an atlas the texture
-    * could not follow is larger than it */
-   if (x1 > (unsigned)font->texture.desc.Width)
-      x1 = (unsigned)font->texture.desc.Width;
-   if (y1 > (unsigned)font->texture.desc.Height)
-      y1 = (unsigned)font->texture.desc.Height;
-   if (     x1 <= x0 || y1 <= y0
-         || x1 > (unsigned)font->atlas->width
-         || y1 > (unsigned)font->atlas->height)
+   if (n > FONT_ATLAS_DIRTY_MAX)
+      n = FONT_ATLAS_DIRTY_MAX;
+   for (i = 0; i < n; i++)
+   {
+      unsigned x0 = VIDEO_SCALE_W(r[i][0]);
+      unsigned y0 = VIDEO_SCALE_H(r[i][0]);
+      unsigned x1 = VIDEO_SCALE_W(r[i][1]);
+      unsigned y1 = VIDEO_SCALE_H(r[i][1]);
+      /* Within the texture as well as the atlas: an atlas the texture
+       * could not follow is larger than it */
+      if (x1 > (unsigned)font->texture.desc.Width)
+         x1 = (unsigned)font->texture.desc.Width;
+      if (y1 > (unsigned)font->texture.desc.Height)
+         y1 = (unsigned)font->texture.desc.Height;
+      if (     x1 <= x0 || y1 <= y0
+            || x1 > (unsigned)font->atlas->width
+            || y1 > (unsigned)font->atlas->height)
+         continue;
+      box[kept].left   = x0;
+      box[kept].top    = y0;
+      box[kept].front  = 0;
+      box[kept].right  = x1;
+      box[kept].bottom = y1;
+      box[kept].back   = 1;
+      kept++;
+   }
+   if (!kept)
       return;
-
-   box.left   = x0;
-   box.top    = y0;
-   box.front  = 0;
-   box.right  = x1;
-   box.bottom = y1;
-   box.back   = 1;
 
    /* The staging texture may still be the GPU's from the last glyphs:
     * those go in through the driver instead, which never waits */
@@ -1873,34 +1882,43 @@ static void d3d11_font_update_atlas_region(
          D3D11_MAP_WRITE, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
    if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
    {
-      size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-            ? sizeof(uint16_t) : sizeof(uint8_t);
-      ctx->lpVtbl->UpdateSubresource(ctx,
-            (D3D11Resource)font->texture.handle, 0, &box,
-            font->atlas->buffer
-               + ((size_t)y0 * font->atlas->width + x0) * esz,
-            (UINT)(font->atlas->width * esz), 0);
+      for (i = 0; i < kept; i++)
+         ctx->lpVtbl->UpdateSubresource(ctx,
+               (D3D11Resource)font->texture.handle, 0, &box[i],
+               font->atlas->buffer
+                  + ((size_t)box[i].top * font->atlas->width
+                     + box[i].left) * esz,
+               (UINT)(font->atlas->width * esz), 0);
       return;
    }
    if (FAILED(hr))
       return;
 
-   {
-      size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-            ? sizeof(uint16_t) : sizeof(uint8_t);
-      for (y = y0; y < y1; y++)
+   for (i = 0; i < kept; i++)
+      for (y = box[i].top; y < box[i].bottom; y++)
          memcpy((uint8_t*)mapped.pData + y * mapped.RowPitch
-                     + (size_t)x0 * esz,
+                     + (size_t)box[i].left * esz,
                 font->atlas->buffer
-                     + ((size_t)y * font->atlas->width + x0) * esz,
-                (size_t)(x1 - x0) * esz);
-   }
+                     + ((size_t)y * font->atlas->width + box[i].left) * esz,
+                (size_t)(box[i].right - box[i].left) * esz);
 
    ctx->lpVtbl->Unmap(ctx, (D3D11Resource)font->texture.staging, 0);
 
-   ctx->lpVtbl->CopySubresourceRegion(
-         ctx, (D3D11Resource)font->texture.handle, 0, x0, y0, 0,
-         (D3D11Resource)font->texture.staging, 0, &box);
+   for (i = 0; i < kept; i++)
+      ctx->lpVtbl->CopySubresourceRegion(
+            ctx, (D3D11Resource)font->texture.handle, 0,
+            box[i].left, box[i].top, 0,
+            (D3D11Resource)font->texture.staging, 0, &box[i]);
+}
+
+/* The atlas region @xy0..@xy1, as one rectangle */
+static void d3d11_font_update_atlas_region(
+      D3D11DeviceContext ctx, d3d11_font_t *font, unsigned xy0, unsigned xy1)
+{
+   unsigned r[1][2];
+   r[0][0] = xy0;
+   r[0][1] = xy1;
+   d3d11_font_update_atlas_rects(ctx, font, (const unsigned (*)[2])r, 1);
 }
 
 static void d3d11_font_draw_sprites(d3d11_video_t *d3d11,
@@ -2228,8 +2246,14 @@ static void d3d11_font_upload_atlas(d3d11_video_t *d3d11,
    if (font->atlas->dirty)
    {
       if (font->texture.staging)
-         d3d11_font_update_atlas_region(d3d11->context, font,
-               font->atlas->dirty_xy0, font->atlas->dirty_xy1);
+      {
+         unsigned i, n = font_atlas_dirty_rects(font->atlas);
+         unsigned r[FONT_ATLAS_DIRTY_MAX][2];
+         for (i = 0; i < n; i++)
+            font_atlas_dirty_rect(font->atlas, i, &r[i][0], &r[i][1]);
+         d3d11_font_update_atlas_rects(d3d11->context, font,
+               (const unsigned (*)[2])r, n);
+      }
       font->atlas->dirty = false;
    }
 }
