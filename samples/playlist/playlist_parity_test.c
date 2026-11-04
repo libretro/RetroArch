@@ -692,8 +692,13 @@ static void lane_budgeted_autofix(void)
    CHECK(blocking && playlist_size(blocking) == 600,
          "autofix: blocking reference");
    playlist_get_index(blocking, 0, &e);
-   CHECK(e && e->path && strncmp(e->path, "/mnt/newgames/", 14) == 0,
-         "autofix: blocking rewrote paths (got \"%s\")",
+   /* the rest of the path in the local form, as autofix converts it */
+   CHECK(e && e->path && strncmp(e->path, "/mnt/newgames", 13) == 0
+         && (e->path[13] == '/'
+#ifdef _WIN32
+            || e->path[13] == '\\'
+#endif
+         ), "autofix: blocking rewrote paths (got \"%s\")",
          (e && e->path) ? e->path : "(null)");
 
    /* The fixture write above rewrote the file (autofix saves), so
@@ -1619,6 +1624,17 @@ char *__wrap_strdup(const char *s)
    return __real_strdup(s);
 }
 
+/* @in as a push stores it: playlist_resolve_path(), which leaves an
+ * absolute POSIX path as it is and makes "/games/x" "C:\games\x" on
+ * Windows.  Returns @s. */
+static const char *pushed_path(char *s, size_t len, const char *in,
+      bool is_core)
+{
+   strlcpy(s, in, len);
+   playlist_resolve_path(PLAYLIST_SAVE, is_core, s, len);
+   return s;
+}
+
 /* playlist_update() used to free an entry's string and then assign the
  * result of strdup(). With no memory to copy into, the field was left
  * NULL and the entry marked modified, so a complete entry became an
@@ -1633,6 +1649,7 @@ static void lane_update_survives_failed_copy(void)
    struct playlist_entry upd;
    const struct playlist_entry *got = NULL;
    char path[512];
+   char want[512];
 
    memset(&cfg, 0, sizeof(cfg));
    snprintf(path, sizeof(path), "%s/oom.lpl", fixture_dir);
@@ -1675,7 +1692,8 @@ static void lane_update_survives_failed_copy(void)
             "a failed copy did not keep the label that was there");
       CHECK(got->core_name != NULL,
             "a failed copy left the core name NULL instead of keeping it");
-      CHECK(got->path && !strcmp(got->path, "/games/game.bin"),
+      CHECK(got->path && !strcmp(got->path,
+               pushed_path(want, sizeof(want), "/games/game.bin", false)),
             "a failed copy disturbed a field it was not replacing");
    }
    /* With memory again, the same update lands. */
@@ -1711,6 +1729,7 @@ static void lane_push_runtime_survives_failed_copy(void)
       struct playlist_entry rt;
       const struct playlist_entry *got = NULL;
       char path[512];
+      char want[512];
       bool ok;
 
       memset(&cfg, 0, sizeof(cfg));
@@ -1748,7 +1767,8 @@ static void lane_push_runtime_survives_failed_copy(void)
                "after %d copies: a failed push changed the number of entries",
                allow);
          playlist_get_index(pl, 0, &got);
-         CHECK(got && got->path && !strcmp(got->path, "/games/first.bin"),
+         CHECK(got && got->path && !strcmp(got->path,
+                  pushed_path(want, sizeof(want), "/games/first.bin", false)),
                "after %d copies: a failed push disturbed the entry on top",
                allow);
       }
@@ -1758,10 +1778,12 @@ static void lane_push_runtime_survives_failed_copy(void)
                "after %d copies: a push that reported success added nothing",
                allow);
          playlist_get_index(pl, 0, &got);
-         CHECK(got && got->path && !strcmp(got->path, "/games/second.bin"),
+         CHECK(got && got->path && !strcmp(got->path,
+                  pushed_path(want, sizeof(want), "/games/second.bin", false)),
                "after %d copies: a push that reported success has no path on top",
                allow);
-         CHECK(got && got->core_path && !strcmp(got->core_path, "/cores/core.so"),
+         CHECK(got && got->core_path && !strcmp(got->core_path,
+                  pushed_path(want, sizeof(want), "/cores/core.so", true)),
                "after %d copies: a push that reported success has no core on top",
                allow);
          CHECK(got && got->runtime_str && !strcmp(got->runtime_str, "00:01:00"),
@@ -1772,7 +1794,8 @@ static void lane_push_runtime_survives_failed_copy(void)
                "after %d copies: a push that reported success lost its last-played",
                allow);
          playlist_get_index(pl, 1, &got);
-         CHECK(got && got->path && !strcmp(got->path, "/games/first.bin"),
+         CHECK(got && got->path && !strcmp(got->path,
+                  pushed_path(want, sizeof(want), "/games/first.bin", false)),
                "after %d copies: the entry that was on top did not move down intact",
                allow);
       }
