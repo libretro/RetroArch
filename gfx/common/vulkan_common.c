@@ -2165,6 +2165,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       return false;
    }
 
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   if (!vulkan_custom_driver_device((function_t)vkGetDeviceProcAddr(
+            vk->context.device, "vkQueueSubmit")))
+      return false;
+#endif
+
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    /* Resolve the explicit acquire/release now the device exists. Only
     * used under VIDEO_FSE_FORCED; NULL otherwise and never called. */
