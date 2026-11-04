@@ -2424,30 +2424,13 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
     * the frames that could reference it. A size change is rare; the
     * allocation it costs is not per frame. */
    if (old)
-   {
       vulkan_texture_defer_copy(vk, old);
-      old = NULL;
-   }
 
    if (tex.flags & VK_TEX_FLAG_BAR_MAPPED)
    {
       vulkan_debug_mark_memory(device, tex.memory);
       tex.memory_size = alloc.allocationSize;
       tex.memory_type = alloc.memoryTypeIndex;
-   }
-   /* We can pilfer the old memory and move it over to the new texture. */
-   else if (old
-         && old->memory_size >= mem_reqs.size
-         && old->memory_type == alloc.memoryTypeIndex)
-   {
-      tex.memory      = old->memory;
-      tex.memory_size = old->memory_size;
-      tex.memory_type = old->memory_type;
-
-      if (old->mapped)
-         vkUnmapMemory(device, old->memory);
-
-      old->memory     = VK_NULL_HANDLE;
    }
    else
    {
@@ -2459,43 +2442,12 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
             vkDestroyImage(device, tex.image, NULL);
          if (tex.buffer)
             vkDestroyBuffer(device, tex.buffer, NULL);
-         /* The `if (old)` cleanup further below is skipped by this
-          * early return, but old->view/image/buffer were already
-          * destroyed at the top of the `if (old)` block above and
-          * old->memory still owns a live VkDeviceMemory.  Free it
-          * here, otherwise it leaks across the call.  Mirrors the
-          * unmap-before-free done in the pilfer branch. */
-         if (old)
-         {
-            if (old->mapped)
-               vkUnmapMemory(device, old->memory);
-            if (old->memory != VK_NULL_HANDLE)
-               vkFreeMemory(device, old->memory, NULL);
-            memset(old, 0, sizeof(*old));
-         }
          memset(&tex, 0, sizeof(tex));
          return tex;
       }
       vulkan_debug_mark_memory(device, tex.memory);
       tex.memory_size = alloc.allocationSize;
       tex.memory_type = alloc.memoryTypeIndex;
-   }
-
-   if (old)
-   {
-      /* old->view/image/buffer were already destroyed at the top of
-       * the `if (old)` block above.  In the no-pilfer path we did not
-       * take ownership of old->memory, so it still owns a live
-       * VkDeviceMemory; free it here.  Unmap first to mirror the
-       * pilfer branch and to avoid free-while-mapped, which the spec
-       * permits but MoltenVK has historically handled poorly. */
-      if (old->memory != VK_NULL_HANDLE)
-      {
-         if (old->mapped)
-            vkUnmapMemory(device, old->memory);
-         vkFreeMemory(device, old->memory, NULL);
-      }
-      memset(old, 0, sizeof(*old));
    }
 
    if (tex.image)
