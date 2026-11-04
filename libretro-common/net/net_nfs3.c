@@ -1936,10 +1936,13 @@ static int nfs4_readdir_fill(struct rnfs_ctx *c, struct rnfs_dir *d)
    xdr_u32(&x, 2); xdr_u32(&x, FATTR4_W0_TYPE | FATTR4_W0_SIZE); xdr_u32(&x, FATTR4_W1_TIME_MODIFY);
    if (nfs4_compound(c, ops, (size_t)(x.p - ops), 2, &r) != 0)
       return -1;
-   if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
    {
-      rnfs_err_status(c, "READDIR", NULL, 0, c->status);
-      return -1;
+      uint32_t st;
+      if ((st = nfs4_res(&r)) != NFS3_OK || (st = nfs4_res(&r)) != NFS3_OK)
+      {
+         rnfs_err_status(c, "READDIR", NULL, 0, st);
+         return -1;
+      }
    }
    return rnfs_readdir_take(d, &r);
 }

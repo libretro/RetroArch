@@ -37,6 +37,7 @@
 #include <vfs/vfs_implementation.h>
 #include <vfs/vfs_prefetch.h>
 #include "vfs_implementation_smb.h"
+#include "vfs_cfg_snapshot.h"
 
 
 #define SMB_PREFIX "smb://"
@@ -170,11 +171,32 @@ struct smb_pool
    retro_atomic_int_t  word;        /* state and users */
    retro_atomic_int_t  hash;        /* of key, read before taking a use */
    retro_atomic_int_t  auth_mode;   /* resolved by the first connect */
+   /* the settings copy last found to match key (0: none): a take on
+    * that copy and the key's share skips building and comparing a key */
+   retro_atomic_int_t  gen;
    unsigned            count;
 };
 
 static struct smb_pool    smb_pools[SMB_MAX_POOLS];
-static retro_atomic_ptr_t smb_cfg_ptr;    /* const struct smb_settings * */
+/* The settings as last handed over: a copy that never changes, held
+ * between smb_cfg_enter() and smb_cfg_leave() (vfs_cfg_snapshot.h).
+ * gen tells copies apart; 0 is never one. */
+struct smb_cfg_snap
+{
+   vfs_cfg_hdr_t       hdr;
+   struct smb_settings s;
+   int                 gen;
+   char                server_address[256];
+   char                share[256];
+   char                username[256];
+   char                password[256];
+   char                workgroup[256];
+   char                subdir[PATH_MAX_LENGTH];
+   char                realm[128];
+   char                kdc[256];
+};
+static vfs_cfg_slot_t     smb_cfg_slot;
+static retro_atomic_int_t smb_cfg_gen;
 /* Last error for smb_get_last_error(), kept as nfs_get_last_error()
  * keeps it: each writer fills a ring slot of its own, claimed by an
  * atomic counter, then publishes its index for the reader. */
@@ -183,9 +205,16 @@ static char               smb_err_ring[SMB_ERR_SLOTS][256];
 static retro_atomic_int_t smb_err_seq;
 static retro_atomic_int_t smb_err_latest;
 
-static const struct smb_settings *smb_cfg_get(void)
+/* The settings copy (NULL: none), valid until smb_cfg_leave(*@h). */
+static const struct smb_cfg_snap *smb_cfg_enter(vfs_cfg_hdr_t **h)
 {
-   return (const struct smb_settings*)retro_atomic_load_acquire_ptr(&smb_cfg_ptr);
+   *h = vfs_cfg_enter(&smb_cfg_slot);
+   return (const struct smb_cfg_snap*)*h;
+}
+
+static void smb_cfg_leave(vfs_cfg_hdr_t *h)
+{
+   vfs_cfg_leave(&smb_cfg_slot, h);
 }
 
 /* "@what: @why", or @what alone when the client gave no reason. */
@@ -249,20 +278,23 @@ static bool smb_url_share(const char *path, char *s, size_t len)
  * otherwise the share is the leading component of the URL itself. */
 static void smb_effective_share(const char *path, char *s, size_t len)
 {
-   const struct smb_settings *smb_cfg = smb_cfg_get();
-   if (smb_cfg && smb_cfg->share && *smb_cfg->share)
-   {
-      strlcpy(s, smb_cfg->share, len);
+   vfs_cfg_hdr_t *h;
+   const struct smb_cfg_snap *snap = smb_cfg_enter(&h);
+   bool set = snap && *snap->share;
+   if (set)
+      strlcpy(s, snap->share, len);
+   smb_cfg_leave(h);
+   if (set)
       return;
-   }
 
    if (!smb_url_share(path, s, len))
       s[0] = '\0';
 }
 
-static void smb_conn_key_fill(struct smb_conn_key *key, const char *share)
+/* @key for @share from the settings copy @cfg (NULL: none). */
+static void smb_conn_key_fill_with(struct smb_conn_key *key,
+      const struct smb_settings *cfg, const char *share)
 {
-   const struct smb_settings *cfg = smb_cfg_get();
    memset(key, 0, sizeof(*key));
    if (!cfg)
       return;
@@ -284,6 +316,14 @@ static void smb_conn_key_fill(struct smb_conn_key *key, const char *share)
    key->num_contexts = cfg->num_contexts ? cfg->num_contexts : RETRO_SMB2_DEFAULT_MAX_CLIENTS;
    key->auth_mode    = cfg->auth_mode;
    key->readahead    = cfg->readahead;
+}
+
+static void smb_conn_key_fill(struct smb_conn_key *key, const char *share)
+{
+   vfs_cfg_hdr_t *h;
+   const struct smb_cfg_snap *snap = smb_cfg_enter(&h);
+   smb_conn_key_fill_with(key, snap ? &snap->s : NULL, share);
+   smb_cfg_leave(h);
 }
 
 /* A context set up from @key with @auth, connected to the key's share. */
@@ -457,6 +497,7 @@ static struct smb_pool *smb_pool_for(const struct smb_conn_key *key)
                   SMB_POOL_WORD(SMB_POOL_FREE), SMB_POOL_WORD(SMB_POOL_BUILDING)))
             continue;
          p->key   = *key;
+         retro_atomic_store_release_int(&p->gen, 0);
          p->count = key->num_contexts > SMB_MAX_SLOTS
                ? SMB_MAX_SLOTS : key->num_contexts;
          for (j = 0; j < SMB_MAX_SLOTS; j++)
@@ -468,6 +509,28 @@ static struct smb_pool *smb_pool_for(const struct smb_conn_key *key)
                SMB_POOL_WORD(SMB_POOL_LIVE - SMB_POOL_BUILDING) + 1);
          return p;
       }
+   return NULL;
+}
+
+/* A use of the live pool last matched to settings copy @gen and built
+ * for @share, or NULL: no key built, no key compared. */
+static struct smb_pool *smb_pool_find_gen(int gen, const char *share)
+{
+   unsigned i;
+   for (i = 0; i < SMB_MAX_POOLS; i++)
+   {
+      struct smb_pool *p = &smb_pools[i];
+      if (   retro_atomic_load_acquire_int(&p->gen) == gen
+          && SMB_POOL_STATE(retro_atomic_load_acquire_int(&p->word)) == SMB_POOL_LIVE
+          && smb_pool_get(p))
+      {
+         /* the use holds the key still; the copy may have moved on */
+         if (   retro_atomic_load_acquire_int(&p->gen) == gen
+             && string_is_equal(p->key.share, share ? share : ""))
+            return p;
+         smb_pool_put(p);
+      }
+   }
    return NULL;
 }
 
@@ -494,9 +557,34 @@ static int smb_settled_mode(const char *server, const char *user, int mode)
    return mode;
 }
 
+#define SMB_SNAP_STR(field) \
+   if (new_cfg->field) \
+      strlcpy(snap->field, new_cfg->field, sizeof(snap->field)); \
+   snap->s.field = snap->field
+
+/* @new_cfg is copied, strings included, so the caller may change or
+ * free it at once. */
 bool smb_init_cfg(const struct smb_settings *new_cfg)
 {
-   retro_atomic_store_release_ptr(&smb_cfg_ptr, (void*)new_cfg);
+   struct smb_cfg_snap *snap = NULL;
+   if (new_cfg)
+   {
+      if (!(snap = (struct smb_cfg_snap*)calloc(1, sizeof(*snap))))
+         return false;
+      snap->s = *new_cfg;
+      SMB_SNAP_STR(server_address);
+      SMB_SNAP_STR(share);
+      SMB_SNAP_STR(username);
+      SMB_SNAP_STR(password);
+      SMB_SNAP_STR(workgroup);
+      SMB_SNAP_STR(subdir);
+      SMB_SNAP_STR(realm);
+      SMB_SNAP_STR(kdc);
+      snap->gen = retro_atomic_fetch_add_int(&smb_cfg_gen, 1) + 1;
+      if (!snap->gen)           /* past a wrap: 0 means none */
+         snap->gen = retro_atomic_fetch_add_int(&smb_cfg_gen, 1) + 1;
+   }
+   vfs_cfg_publish(&smb_cfg_slot, snap ? &snap->hdr : NULL);
    return true;
 }
 
@@ -521,16 +609,27 @@ static struct smb2_context *smb_take(const char *want_share, struct smb_slot **s
 {
    struct smb_conn_key key;
    struct smb_pool    *pool;
+   struct smb2_context *ctx;
    unsigned            i;
+   vfs_cfg_hdr_t      *h;
+   const struct smb_cfg_snap *snap = smb_cfg_enter(&h);
 
    *slot = NULL;
-   smb_conn_key_fill(&key, want_share);
-   if (!*key.server_address)
+   if (!snap || !*snap->server_address)
    {
+      smb_cfg_leave(h);
       smb_note_error("no SMB server set", NULL);
       return NULL;
    }
-   if ((pool = smb_pool_for(&key)))
+   /* the pool this copy of the settings already found: nothing to
+    * build or compare; else the key, and the pool it names */
+   if (!(pool = smb_pool_find_gen(snap->gen, want_share)))
+   {
+      smb_conn_key_fill_with(&key, &snap->s, want_share);
+      if ((pool = smb_pool_for(&key)))
+         retro_atomic_store_release_int(&pool->gen, snap->gen);
+   }
+   if (pool)
    {
       for (i = 0; i < pool->count; i++)
       {
@@ -546,16 +645,21 @@ static struct smb2_context *smb_take(const char *want_share, struct smb_slot **s
          if (sl->ctx)
          {
             *slot = sl;                  /* the slot keeps the use */
+            smb_cfg_leave(h);
             return sl->ctx;
          }
          retro_atomic_store_release_int(&sl->busy, 0);
          smb_pool_put(pool);
+         smb_cfg_leave(h);
          return NULL;                    /* the server is not answering */
       }
       smb_pool_put(pool);
    }
    /* every slot busy, or no pool to be had: a private connection */
-   return smb_connect_private(&key);
+   smb_conn_key_fill_with(&key, &snap->s, want_share);
+   ctx = smb_connect_private(&key);
+   smb_cfg_leave(h);
+   return ctx;
 }
 
 static void smb_give(struct smb2_context *ctx, struct smb_slot *slot)
@@ -708,9 +812,9 @@ static void smb_free_share_list(char **shares, unsigned count)
 /* Collects the disk shares the server exports through the built-in
  * client's NetrShareEnum. Hidden and administrative shares are left
  * out, as are printer, device and IPC entries. */
-static bool smb_enum_shares(char ***out, unsigned *out_count)
+static bool smb_enum_shares_with(const struct smb_settings *smb_cfg,
+      char ***out, unsigned *out_count)
 {
-   const struct smb_settings *smb_cfg = smb_cfg_get();
    struct rsmb_ctx   *ctx;
    struct rsmb_share *list;
    char **shares;
@@ -785,9 +889,9 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
 #else
 /* Collects the disk shares the server exports.  Hidden and administrative
  * shares are left out, as are printer, device and IPC entries. */
-static bool smb_enum_shares(char ***out, unsigned *out_count)
+static bool smb_enum_shares_with(const struct smb_settings *smb_cfg,
+      char ***out, unsigned *out_count)
 {
-   const struct smb_settings *smb_cfg = smb_cfg_get();
    struct smb_enum_state state;
    struct smb2_context *ctx;
    const smb_share_info1_t *info1;
@@ -937,10 +1041,10 @@ void smb_shutdown(void)
 }
 
 /* Build full SMB path from settings */
-static bool smb_build_path(char *dest, size_t dest_size, const char *relative_path)
+static bool smb_build_path_with(const struct smb_settings *smb_cfg,
+      char *dest, size_t dest_size, const char *relative_path)
 {
    char temp_path[PATH_MAX_LENGTH];
-   const struct smb_settings *smb_cfg = smb_cfg_get();
    const char *p;
 
    /* If already has smb:// prefix, extract just the path component */
@@ -968,7 +1072,7 @@ static bool smb_build_path(char *dest, size_t dest_size, const char *relative_pa
       size_t sz   = sizeof(temp_path);
 
       /* Add base folder if specified */
-      if (smb_cfg->subdir && *smb_cfg->subdir)
+      if (smb_cfg && smb_cfg->subdir && *smb_cfg->subdir)
       {
          _len = strlcpy(temp_path, smb_cfg->subdir, sz);
          if (_len > 0 && _len < sz && temp_path[_len - 1] != '/')
@@ -1072,9 +1176,11 @@ static void smb_prefetch_start(libretro_vfs_implementation_file *stream,
       const char *share, const char *path)
 {
 #ifdef HAVE_THREADS
-   const struct smb_settings *cfg = smb_cfg_get();
+   vfs_cfg_hdr_t *h;
+   const struct smb_cfg_snap *snap = smb_cfg_enter(&h);
    struct smb_prefetch *sp;
-   size_t window = cfg ? (size_t)cfg->readahead * 1024 : 0;
+   size_t window = snap ? (size_t)snap->s.readahead * 1024 : 0;
+   smb_cfg_leave(h);
    if (!window)
       return;
    if (!(sp = (struct smb_prefetch*)calloc(1, sizeof(*sp))))
@@ -1200,6 +1306,26 @@ static bool smb_stream_mend(libretro_vfs_implementation_file *stream)
    if (prefetch)
       smb_prefetch_start(stream, ro->share, ro->path);
    return true;
+}
+
+/* The disk shares, on the settings as they are now. */
+static bool smb_enum_shares(char ***out, unsigned *out_count)
+{
+   vfs_cfg_hdr_t *h;
+   const struct smb_cfg_snap *snap = smb_cfg_enter(&h);
+   bool ok = smb_enum_shares_with(snap ? &snap->s : NULL, out, out_count);
+   smb_cfg_leave(h);
+   return ok;
+}
+
+/* The path under the share, on the settings as they are now. */
+static bool smb_build_path(char *dest, size_t dest_size, const char *relative_path)
+{
+   vfs_cfg_hdr_t *h;
+   const struct smb_cfg_snap *snap = smb_cfg_enter(&h);
+   bool ok = smb_build_path_with(snap ? &snap->s : NULL, dest, dest_size, relative_path);
+   smb_cfg_leave(h);
+   return ok;
 }
 
 bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,

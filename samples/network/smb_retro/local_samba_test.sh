@@ -6,8 +6,10 @@
 set -e
 cd "$(dirname "$0")"
 # directory pages and names from hostile replies: needs no server
-make -s smb_dir_bounds_test
+make -s smb_dir_bounds_test smb_cfg_race_test
 ${RUNNER:-} ./smb_dir_bounds_test${EXE:-}
+# settings handed over while threads resolve: needs no server
+${RUNNER:-} ./smb_cfg_race_test${EXE:-}
 command -v smbd >/dev/null 2>&1 || { echo "skip: no smbd"; exit 0; }
 [ "$(id -u)" = 0 ] || { echo "skip: needs root for port 445"; exit 0; }
 make -s smb_test vfs_test vfs_threads_test smb_idle_test

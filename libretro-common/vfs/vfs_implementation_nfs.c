@@ -21,7 +21,6 @@
  */
 
 #include <stdlib.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <net/net_nfs3.h>
@@ -34,6 +33,7 @@
 #include <vfs/vfs_prefetch.h>
 #include <vfs/vfs_implementation.h>
 #include "vfs_implementation_nfs.h"
+#include "vfs_cfg_snapshot.h"
 
 #define NFS_PREFIX "nfs://"
 #define NFS_MAX_SLOTS 16
@@ -55,7 +55,6 @@
  * version or port. */
 struct nfs_params
 {
-   unsigned timeout;
    unsigned nfs_port;
    unsigned mount_port;
    unsigned version;
@@ -78,7 +77,16 @@ struct nfs_pool
 };
 
 static retro_atomic_ptr_t nfs_pool_ptr;           /* struct nfs_pool * */
-static retro_atomic_ptr_t nfs_cfg_ptr;            /* const struct nfs_settings * */
+/* The settings as last handed over: a copy that never changes, held
+ * between nfs_cfg_enter() and nfs_cfg_leave() (vfs_cfg_snapshot.h) */
+struct nfs_cfg_snap
+{
+   vfs_cfg_hdr_t       hdr;
+   struct nfs_settings s;
+   char                server[256];
+   char                export_path[512];
+};
+static vfs_cfg_slot_t nfs_cfg_slot;
 /* Last error for nfs_get_last_error(), used only for diagnostics off
  * the hot path. Writers may run on several pool threads at once, so
  * each publishes into its own ring slot (claimed by an atomic counter)
@@ -92,9 +100,36 @@ static retro_atomic_int_t nfs_err_latest; /* slot last published, or -1 */
 
 static void nfs_note_error(const char *msg);
 
-static const struct nfs_settings *nfs_cfg(void)
+/* The settings (NULL: none), valid until nfs_cfg_leave(*@h). */
+static const struct nfs_settings *nfs_cfg_enter(vfs_cfg_hdr_t **h)
 {
-   return (const struct nfs_settings*)retro_atomic_load_acquire_ptr(&nfs_cfg_ptr);
+   *h = vfs_cfg_enter(&nfs_cfg_slot);
+   return *h ? &((struct nfs_cfg_snap*)*h)->s : NULL;
+}
+
+static void nfs_cfg_leave(vfs_cfg_hdr_t *h)
+{
+   vfs_cfg_leave(&nfs_cfg_slot, h);
+}
+
+/* What the client applies on every take, whatever a connection was
+ * made with: nothing a handle depends on. */
+struct nfs_numbers
+{
+   unsigned timeout;
+   unsigned readahead;          /* octets; 0: one request per read */
+   unsigned num_contexts;
+};
+
+static void nfs_cfg_numbers(struct nfs_numbers *n)
+{
+   vfs_cfg_hdr_t *h;
+   const struct nfs_settings *cfg = nfs_cfg_enter(&h);
+   n->timeout      = cfg && cfg->timeout ? cfg->timeout : RETRO_NFS_DEFAULT_TIMEOUT;
+   n->readahead    = cfg ? cfg->readahead * 1024 : 0;
+   n->num_contexts = cfg && cfg->num_contexts ? cfg->num_contexts
+                                              : RETRO_NFS_DEFAULT_NUM_CONTEXTS;
+   nfs_cfg_leave(h);
 }
 
 /* Splits nfs://server/... into the server and the part after it. */
@@ -117,35 +152,30 @@ static bool nfs_url_split(const char *url, char *server, size_t server_len,
 }
 
 /* With a configured export, the URL path is relative to it.
- * Otherwise mount prefixes of nfs://server/export/path. */
+ * Otherwise mount prefixes of nfs://server/export/path. *@export_path
+ * points into the settings held in *@h, which the caller leaves with
+ * nfs_cfg_leave() once done with it; nothing is held on failure. */
 static bool nfs_resolve(const char *url, char *server, size_t server_len,
-      char *export_path, size_t export_len, char *path, size_t path_len,
-      struct nfs_params *params)
+      const char **export_path, char *path, size_t path_len,
+      struct nfs_params *params, vfs_cfg_hdr_t **h)
 {
    const char *rest;
-   const struct nfs_settings *cfg = nfs_cfg();
+   const struct nfs_settings *cfg = nfs_cfg_enter(h);
    if (!nfs_url_split(url, server, server_len, &rest))
    {
       nfs_note_error("bad URL: no server in it");
+      nfs_cfg_leave(*h);
+      *h = NULL;
       return false;
    }
-   params->timeout    = cfg && cfg->timeout ? cfg->timeout : RETRO_NFS_DEFAULT_TIMEOUT;
    params->nfs_port   = cfg ? cfg->nfs_port   : 0;
    params->mount_port = cfg ? cfg->mount_port : 0;
    params->version    = cfg && cfg->version == 4 ? 4 : 3;
-   if (cfg && cfg->export_path && *cfg->export_path)
-   {
-      strlcpy(export_path, cfg->export_path, export_len);
-      strlcpy(path, rest, path_len);
-   }
-   else
-   {
-      /* nfs://server/export/path: where the export ends is the
-       * server's to say, so the split is found at connect time by
-       * mounting prefixes; the whole remainder is handed over here. */
-      export_path[0] = '\0';
-      strlcpy(path, rest, path_len);
-   }
+   /* nfs://server/export/path with no export set: where the export
+    * ends is the server's to say, so the split is found at connect time
+    * by mounting prefixes; the whole remainder is handed over here. */
+   *export_path = cfg && *cfg->export_path ? cfg->export_path : "";
+   strlcpy(path, rest, path_len);
    return true;
 }
 
@@ -168,19 +198,48 @@ static int nfs_pool_busy(const struct nfs_pool *p)
    return 0;
 }
 
-/* Settings are optional: an nfs://server/export/... URL carries all a
- * connection needs, so the pool comes up with defaults when there are
- * none. New settings wait for no slot: idle connections close here. */
-bool nfs_init_cfg(const struct nfs_settings *new_cfg)
+/* The pool, published with @n slots when there is none yet. */
+static struct nfs_pool *nfs_pool_get(unsigned n)
 {
    struct nfs_pool *p = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
+   if (p)
+      return p;
+   if (!(p = (struct nfs_pool*)calloc(1, sizeof(*p))))
+      return NULL;
+   retro_atomic_int_init(&p->count, (int)(n > NFS_MAX_SLOTS ? NFS_MAX_SLOTS : n));
+   if (!retro_atomic_cas_ptr(&nfs_pool_ptr, NULL, p))
+      free(p);          /* someone else published one meanwhile */
+   return (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
+}
+
+/* Settings are optional: an nfs://server/export/... URL carries all a
+ * connection needs, so the pool comes up with defaults when there are
+ * none. @new_cfg is copied, strings included, so the caller may change
+ * or free it at once. New settings wait for no slot: idle connections
+ * close here. */
+bool nfs_init_cfg(const struct nfs_settings *new_cfg)
+{
+   struct nfs_cfg_snap *snap = NULL;
+   struct nfs_pool *p;
    unsigned i;
    unsigned n = (new_cfg && new_cfg->num_contexts) ? new_cfg->num_contexts : RETRO_NFS_DEFAULT_NUM_CONTEXTS;
 
    if (n > NFS_MAX_SLOTS)
       n = NFS_MAX_SLOTS;
-   retro_atomic_store_release_ptr(&nfs_cfg_ptr, (void*)new_cfg);
-   if (p)
+   if (new_cfg)
+   {
+      if (!(snap = (struct nfs_cfg_snap*)calloc(1, sizeof(*snap))))
+         return false;
+      snap->s = *new_cfg;
+      if (new_cfg->server_address)
+         strlcpy(snap->server, new_cfg->server_address, sizeof(snap->server));
+      if (new_cfg->export_path)
+         strlcpy(snap->export_path, new_cfg->export_path, sizeof(snap->export_path));
+      snap->s.server_address = snap->server;
+      snap->s.export_path    = snap->export_path;
+   }
+   vfs_cfg_publish(&nfs_cfg_slot, snap ? &snap->hdr : NULL);
+   if ((p = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr)))
    {
       retro_atomic_store_release_int(&p->count, (int)n);
       for (i = 0; i < NFS_MAX_SLOTS; i++)
@@ -195,12 +254,7 @@ bool nfs_init_cfg(const struct nfs_settings *new_cfg)
       }
       return true;
    }
-   if (!(p = (struct nfs_pool*)calloc(1, sizeof(*p))))
-      return false;
-   retro_atomic_int_init(&p->count, (int)n);
-   if (!retro_atomic_cas_ptr(&nfs_pool_ptr, NULL, p))
-      free(p);          /* someone else published one meanwhile */
-   return true;
+   return nfs_pool_get(n) != NULL;
 }
 
 void nfs_shutdown(void)
@@ -239,18 +293,14 @@ const char *nfs_get_last_error(void)
 static struct rnfs_ctx *nfs_take(const char *server, const char *export_path,
       const struct nfs_params *want, struct nfs_slot **slot)
 {
-   struct nfs_pool *p = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
-   const struct nfs_settings *cfg = nfs_cfg();
+   struct nfs_pool *p;
+   struct nfs_numbers num;
    struct rnfs_ctx *c = NULL;
    unsigned i, n, pass;
 
    *slot = NULL;
-   if (!p)
-   {
-      nfs_init_cfg(cfg);
-      cfg = nfs_cfg();
-      p   = (struct nfs_pool*)retro_atomic_load_acquire_ptr(&nfs_pool_ptr);
-   }
+   nfs_cfg_numbers(&num);
+   p = nfs_pool_get(num.num_contexts);
    n = p ? (unsigned)retro_atomic_load_acquire_int(&p->count) : 0;
    /* pass 0: a free slot on the right server and export, connected
     * with @want; pass 1: a free slot with no connection, so an open
@@ -302,7 +352,7 @@ static struct rnfs_ctx *nfs_take(const char *server, const char *export_path,
          || strcmp((*slot)->server, server) != 0
          || strcmp((*slot)->export_path, export_path) != 0)
    {
-      rnfs_set_timeout(c, want->timeout);
+      rnfs_set_timeout(c, num.timeout);
       rnfs_set_ports(c, (uint16_t)want->nfs_port, (uint16_t)want->mount_port);
       rnfs_set_version(c, want->version);
       if (rnfs_connect(c, server, export_path) != 0)
@@ -324,10 +374,9 @@ static struct rnfs_ctx *nfs_take(const char *server, const char *export_path,
          strlcpy((*slot)->export_path, export_path, sizeof((*slot)->export_path));
       }
    }
-   /* client side only, so it follows the settings on any connection;
-    * 0 is off: one request per read */
-   if (cfg)
-      rnfs_set_readahead(c, cfg->readahead * 1024);
+   /* client side only, so they follow the settings on any connection */
+   rnfs_set_timeout(c, num.timeout);
+   rnfs_set_readahead(c, num.readahead);
    return c;
 }
 
@@ -438,24 +487,32 @@ static struct rnfs_ctx *nfs_take_resolved(const char *server,
 
 bool nfs_probe_connection(void)
 {
-   char server[256], export_path[512], path[8];
+   char server[256], path[8];
    char url[800];
+   const char *export_path;
    struct nfs_params want;
    struct nfs_slot *slot;
    struct rnfs_ctx *c;
-   const struct nfs_settings *cfg = nfs_cfg();
-   bool ok;
-   if (!cfg || !cfg->server_address || !*cfg->server_address)
+   vfs_cfg_hdr_t *h;
+   const struct nfs_settings *cfg = nfs_cfg_enter(&h);
+   bool ok = cfg && *cfg->server_address;
+   if (ok)
+   {
+      strlcpy(url, NFS_PREFIX, sizeof(url));
+      strlcat(url, cfg->server_address, sizeof(url));
+      strlcat(url, "/", sizeof(url));
+   }
+   nfs_cfg_leave(h);
+   if (!ok || !nfs_resolve(url, server, sizeof(server), &export_path, path, sizeof(path), &want, &h))
       return false;
-   strlcpy(url, NFS_PREFIX, sizeof(url));
-   strlcat(url, cfg->server_address, sizeof(url));
-   strlcat(url, "/", sizeof(url));
-   if (!nfs_resolve(url, server, sizeof(server), export_path, sizeof(export_path), path, sizeof(path), &want))
-      return false;
-   if (!(c = nfs_take_resolved(server, export_path, path, &want, &slot)))
-      return false;
-   ok = rnfs_ping(c) == 0;
-   nfs_give(c, slot);
+   if ((c = nfs_take_resolved(server, export_path, path, &want, &slot)))
+   {
+      ok = rnfs_ping(c) == 0;
+      nfs_give(c, slot);
+   }
+   else
+      ok = false;
+   nfs_cfg_leave(h);
    return ok;
 }
 
@@ -524,9 +581,11 @@ static void nfs_prefetch_start(libretro_vfs_implementation_file *stream,
       const struct nfs_stream *ns, const char *rel)
 {
 #ifdef HAVE_THREADS
-   const struct nfs_settings *cfg = nfs_cfg();
+   struct nfs_numbers num;
    struct nfs_prefetch *np;
-   size_t window = cfg ? (size_t)cfg->readahead * 1024 : 0;
+   size_t window;
+   nfs_cfg_numbers(&num);
+   window = num.readahead;
    /* read-ahead off: no second connection, no thread */
    if (!window)
       return;
@@ -564,15 +623,15 @@ static void nfs_prefetch_start(libretro_vfs_implementation_file *stream,
 static void nfs_prefetch_stop(libretro_vfs_implementation_file *stream)
 {
    struct nfs_prefetch *np = (struct nfs_prefetch*)(void*)(uintptr_t)stream->nfs_prefetch;
-   const struct nfs_settings *cfg;
+   struct nfs_numbers num;
    if (!np)
       return;
    vfs_prefetch_free(np->p);              /* joins the thread first */
    retro_atomic_fetch_add_int(&nfs_ra_window_kib, (int)((np->from_window + 512) >> 10));
    retro_atomic_fetch_add_int(&nfs_ra_direct_kib, (int)((np->direct + 512) >> 10));
    rnfs_close(np->c, np->f);
-   cfg = nfs_cfg();
-   rnfs_set_readahead(np->c, cfg ? cfg->readahead * 1024 : 0);
+   nfs_cfg_numbers(&num);
+   rnfs_set_readahead(np->c, num.readahead);
    nfs_give(np->c, np->slot);
    free(np);
    stream->nfs_prefetch = (intptr_t)0;
@@ -581,18 +640,18 @@ static void nfs_prefetch_stop(libretro_vfs_implementation_file *stream)
 bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints)
 {
-   char server[256], export_path[512], rel[PATH_MAX_LENGTH];
+   char server[256], rel[PATH_MAX_LENGTH];
+   const char *export_path;
    struct nfs_params want;
    struct nfs_slot *slot;
    struct rnfs_ctx *c;
    struct rnfs_file *f;
    struct rnfs_stat st;
    struct nfs_stream *ns;
+   vfs_cfg_hdr_t *h;
    int flags = 0;
    (void)hints;
 
-   if (!nfs_resolve(path, server, sizeof(server), export_path, sizeof(export_path), rel, sizeof(rel), &want))
-      return false;
    switch (mode & 0xf)
    {
       case RETRO_VFS_FILE_ACCESS_READ:
@@ -609,17 +668,24 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
       default:
          return false;
    }
-   if (!(c = nfs_take_resolved(server, export_path, rel, &want, &slot)))
+   if (!nfs_resolve(path, server, sizeof(server), &export_path, rel, sizeof(rel), &want, &h))
       return false;
+   if (!(c = nfs_take_resolved(server, export_path, rel, &want, &slot)))
+   {
+      nfs_cfg_leave(h);
+      return false;
+   }
    if (!(ns = (struct nfs_stream*)calloc(1, sizeof(*ns))))
    {
       nfs_give(c, slot);
+      nfs_cfg_leave(h);
       return false;
    }
    if (!(f = rnfs_open(c, rel, flags)))
    {
       nfs_note_error(rnfs_get_error(c));
       nfs_give(c, slot);
+      nfs_cfg_leave(h);
       free(ns);
       return false;
    }
@@ -630,6 +696,7 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
    /* with no export set, the one the URL's path was mounted on */
    strlcpy(ns->export_path, rnfs_get_export(c), sizeof(ns->export_path));
    nfs_give(c, slot);
+   nfs_cfg_leave(h);
    stream->nfs_fh  = (intptr_t)ns;
    stream->nfs_ctx = 0;
    stream->nfs_prefetch = 0;
@@ -775,23 +842,27 @@ int retro_vfs_file_error_nfs(libretro_vfs_implementation_file *stream)
 
 int retro_vfs_stat_nfs(const char *path, int64_t *size)
 {
-   char server[256], export_path[512], rel[PATH_MAX_LENGTH];
+   char server[256], rel[PATH_MAX_LENGTH];
+   const char *export_path;
    struct nfs_params want;
    struct nfs_slot *slot;
    struct rnfs_ctx *c;
    struct rnfs_stat st;
+   vfs_cfg_hdr_t *h;
    int ret = 0;
-   if (!nfs_resolve(path, server, sizeof(server), export_path, sizeof(export_path), rel, sizeof(rel), &want))
+   if (!nfs_resolve(path, server, sizeof(server), &export_path, rel, sizeof(rel), &want, &h))
       return 0;
-   if (!(c = nfs_take_resolved(server, export_path, rel, &want, &slot)))
-      return 0;
-   if (rnfs_stat(c, rel, &st) == 0)
+   if ((c = nfs_take_resolved(server, export_path, rel, &want, &slot)))
    {
-      if (size)
-         *size = (int64_t)st.size;
-      ret = RETRO_VFS_STAT_IS_VALID | (st.is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0);
+      if (rnfs_stat(c, rel, &st) == 0)
+      {
+         if (size)
+            *size = (int64_t)st.size;
+         ret = RETRO_VFS_STAT_IS_VALID | (st.is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0);
+      }
+      nfs_give(c, slot);
    }
-   nfs_give(c, slot);
+   nfs_cfg_leave(h);
    return ret;
 }
 
@@ -810,22 +881,28 @@ struct nfs_dirstate
 
 nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
 {
-   char server[256], export_path[512], rel[PATH_MAX_LENGTH];
+   char server[256], rel[PATH_MAX_LENGTH];
+   const char *export_path;
    struct nfs_params want;
    struct nfs_slot *slot;
    struct rnfs_ctx *c;
    struct rnfs_dir *d;
    nfs_dir_handle *dh;
    struct nfs_dirstate *ds;
+   vfs_cfg_hdr_t *h;
    (void)include_hidden;
-   if (!nfs_resolve(path, server, sizeof(server), export_path, sizeof(export_path), rel, sizeof(rel), &want))
+   if (!nfs_resolve(path, server, sizeof(server), &export_path, rel, sizeof(rel), &want, &h))
       return NULL;
    if (!(c = nfs_take_resolved(server, export_path, rel, &want, &slot)))
+   {
+      nfs_cfg_leave(h);
       return NULL;
+   }
    if (!(d = rnfs_opendir(c, rel)))
    {
       nfs_note_error(rnfs_get_error(c));
       nfs_give(c, slot);
+      nfs_cfg_leave(h);
       return NULL;
    }
    dh = (nfs_dir_handle*)calloc(1, sizeof(*dh));
@@ -835,6 +912,7 @@ nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
       nfs_note_error("out of memory");
       rnfs_closedir(c, d);
       nfs_give(c, slot);
+      nfs_cfg_leave(h);
       free(dh);
       free(ds);
       return NULL;
@@ -844,6 +922,7 @@ nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
    strlcpy(ds->server, server, sizeof(ds->server));
    strlcpy(ds->export_path, rnfs_get_export(c), sizeof(ds->export_path));
    nfs_give(c, slot);
+   nfs_cfg_leave(h);
    dh->ctx = ds;
    dh->dir = d;
    return dh;
