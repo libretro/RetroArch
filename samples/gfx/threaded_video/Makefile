@@ -56,6 +56,7 @@ check: all
 # Under a sanitizer (SAN=thread or SAN=address, matching the tree's
 # build) the uninstrumented layer and ICD are suppressed through
 # tsan-vulkan.supp; frontend reports still fail.
+# EXPECT_LOG names a string the log must contain, or the run fails.
 check-vulkan: all
 	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ]; then echo "check-vulkan: no DISPLAY, skipping"; exit 77; fi; \
 	 HARNESS_VIDEO_DRIVER=vulkan HARNESS_VERBOSE=1 HARNESS_MENU_UPSCALE=2 \
@@ -66,8 +67,10 @@ check-vulkan: all
 	 grep -E '\[pass\]|\[baseline\]|\[info\]|\[skip\]|FAIL|all lanes|Validation Error' check.log | grep -v 'XFree86-VidMode'; \
 	 if [ $$rc -ne 0 ]; then grep -vE '^\[(INFO|DEBUG|WARN)\]|XFree86-VidMode' check.log; fi; \
 	 errs=$$(grep -c 'Validation Error' check.log); \
+	 seen=1; if [ -n "$(EXPECT_LOG)" ]; then grep -F "$(EXPECT_LOG)" check.log || seen=0; fi; \
 	 rm -f check.log; \
 	 if [ "$$errs" != "0" ]; then echo "check-vulkan: $$errs validation error(s)"; exit 1; fi; \
+	 if [ "$$seen" = 0 ]; then echo "check-vulkan: the log never said \"$(EXPECT_LOG)\""; exit 1; fi; \
 	 exit $$rc
 
 # check-vulkan with a layer between the driver and the ICD that

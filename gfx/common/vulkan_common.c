@@ -1504,6 +1504,67 @@ static VkDevice vulkan_context_create_device_wrapper(
    return device;
 }
 
+/* A v1 core makes the device from RetroArch's required list but may
+ * leave it out, so its vkCreateDevice is ours and adds what is missing */
+static struct
+{
+   const char **required;
+   uint32_t num_required;
+   char added[512];
+   bool ran;
+} vulkan_v1_device;
+
+static VKAPI_ATTR VkResult VKAPI_CALL vulkan_v1_create_device(
+      VkPhysicalDevice gpu, const VkDeviceCreateInfo *create_info,
+      const VkAllocationCallbacks *allocator, VkDevice *device)
+{
+   VkResult res;
+   uint32_t i, j;
+   VkDeviceCreateInfo info = *create_info;
+   const char **exts       = NULL;
+
+   /* Called again after create_device returned */
+   if (!vulkan_v1_device.num_required)
+      return vkCreateDevice(gpu, create_info, allocator, device);
+   if (!(exts = (const char**)malloc(
+         (info.enabledExtensionCount + vulkan_v1_device.num_required)
+         * sizeof(const char*))))
+      return VK_ERROR_OUT_OF_HOST_MEMORY;
+   if (info.enabledExtensionCount)
+      memcpy((void*)exts, info.ppEnabledExtensionNames,
+            info.enabledExtensionCount * sizeof(const char*));
+
+   vulkan_v1_device.ran      = true;
+   vulkan_v1_device.added[0] = '\0';
+   for (i = 0; i < vulkan_v1_device.num_required; i++)
+   {
+      const char *name = vulkan_v1_device.required[i];
+      for (j = 0; j < info.enabledExtensionCount; j++)
+         if (!strcmp(exts[j], name))
+            break;
+      if (j < info.enabledExtensionCount)
+         continue;
+      exts[info.enabledExtensionCount++] = name;
+      if (vulkan_v1_device.added[0])
+         strlcat(vulkan_v1_device.added, ", ",
+               sizeof(vulkan_v1_device.added));
+      strlcat(vulkan_v1_device.added, name, sizeof(vulkan_v1_device.added));
+   }
+
+   info.ppEnabledExtensionNames = exts;
+   res = vkCreateDevice(gpu, &info, allocator, device);
+   free((void*)exts);
+   return res;
+}
+
+static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vulkan_v1_get_instance_proc_addr(
+      VkInstance instance, const char *name)
+{
+   if (!strcmp(name, "vkCreateDevice"))
+      return (PFN_vkVoidFunction)vulkan_v1_create_device;
+   return vulkan_symbol_wrapper_instance_proc_addr()(instance, name);
+}
+
 static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
    uint32_t queue_count;
@@ -1653,15 +1714,31 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          if (vk->context.gpu != VK_NULL_HANDLE)
             num_dev_exts = vulkan_upscaler_device_exts(vk, vk->context.gpu,
                   dev_exts, num_dev_exts, ARRAY_SIZE(dev_exts));
+         vulkan_v1_device.required     = dev_exts;
+         vulkan_v1_device.num_required = num_dev_exts;
          ret = iface->create_device(&context, vk->context.instance,
                vk->context.gpu,
                vk->vk_surface,
-               vulkan_symbol_wrapper_instance_proc_addr(),
+               vulkan_v1_get_instance_proc_addr,
                dev_exts,
                num_dev_exts,
                NULL,
                0,
                &features);
+         if (ret && vulkan_v1_device.added[0])
+            RARCH_WARN("[Vulkan] The core's create_device left out required device extensions: %s; added them.\n",
+                  vulkan_v1_device.added);
+#ifdef HAVE_OPENXR
+         /* The device may lack the runtime's extensions */
+         else if (ret && !vulkan_v1_device.ran && vk->context.xr
+               && !vulkan_openxr_uses_enable2(vk->context.xr))
+         {
+            RARCH_WARN("[OpenXR] The core made its Vulkan device without the vkCreateDevice it was given; headset output is off for this core.\n");
+            vulkan_openxr_drop(vk->context.xr);
+            vk->context.xr = NULL;
+         }
+#endif
+         memset(&vulkan_v1_device, 0, sizeof(vulkan_v1_device));
       }
 
       if (ret)
