@@ -80,7 +80,9 @@ enum vulkan_custom_driver_msg
    VULKAN_CUSTOM_DRIVER_MSG_INVALID,
    VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED,
    VULKAN_CUSTOM_DRIVER_MSG_RESTART,
-   VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED
+   VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED,
+   VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED,  /* desktop FAILED: the headset runtime */
+   VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES /* desktop FAILED: extensions, interface */
 };
 
 /* Crash state: one "<core>\t<zip or .json path>\n" line per driver that
@@ -149,6 +151,7 @@ typedef struct vulkan_custom_driver_session
    bool full_shown;   /* RESTART shown for a path past a full table */
    bool kept;         /* this init took a kept instance */
    bool restart_shown; /* RESTART shown for a system init on a custom library */
+   enum vulkan_custom_driver_msg reason; /* this init's, for session_failed() */
    struct vulkan_custom_driver_path paths[VULKAN_CUSTOM_DRIVER_PATHS];
    char state[VULKAN_CUSTOM_DRIVER_STATE_MAX];
 } vulkan_custom_driver_session_t;
@@ -172,6 +175,11 @@ void *vulkan_custom_driver_session_open(vulkan_custom_driver_session_t *s,
  * for its path all session. Returns the message to show. */
 enum vulkan_custom_driver_msg vulkan_custom_driver_session_failed(
       vulkan_custom_driver_session_t *s);
+/* Desktop: the message session_failed() returns in place of FAILED for
+ * the custom driver this init opened, while it starts. The first one
+ * stands; open() clears it. */
+void vulkan_custom_driver_session_reason(vulkan_custom_driver_session_t *s,
+      enum vulkan_custom_driver_msg msg);
 /* The driver opened last is up, or no longer starting. Returns true when
  * the crash marker is to be deleted. */
 bool vulkan_custom_driver_session_started(vulkan_custom_driver_session_t *s);
@@ -248,6 +256,9 @@ bool    vulkan_custom_driver_safe_mode(void);           /* Safe start: system dr
 /* Desktop: device creation passes the new device's vkQueueSubmit. False
  * when the custom driver this init opened did not take effect. */
 bool    vulkan_custom_driver_device(function_t queue_submit);
+/* Desktop: why this init's custom driver is failing; failed() shows it
+ * in place of FAILED. */
+void    vulkan_custom_driver_reason(enum vulkan_custom_driver_msg msg);
 #endif
 /* Between the glue files. vulkan_custom_driver_glue.c holds the state
  * both platforms share; its crash state and marker are in

@@ -34492,6 +34492,14 @@ MSG_HASH(
    "Custom Vulkan drivers need Vulkan loader 1.3.235 or newer. Using the system driver."
    )
 MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_XR_UNSUPPORTED,
+   "The headset runtime can't use the custom Vulkan driver. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_MISSING_FEATURES,
+   "Custom Vulkan driver lacks features RetroArch needs. Using the system driver."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Lowest"
    )
