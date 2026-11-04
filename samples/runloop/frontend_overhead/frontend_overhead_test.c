@@ -9718,6 +9718,36 @@ static void lane_frame_cost(void)
       printf("[pass] frame cost under %.0f us\n", FRAME_US_LIMIT);
 }
 
+/* Without audio rate control nothing holds the loop on the null
+ * drivers, so the core runs far faster than real time; play time may
+ * count what passed, not the frames made, plus the four frames it may
+ * have banked before. */
+static void lane_play_time(void)
+{
+   unsigned had                = failures;
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool rate_control           = settings->bools.audio_rate_control;
+   retro_time_t frame          = runloop_content_frame_time_us(
+         (float)video_state_get_ptr()->av_info.timing.fps);
+   retro_time_t t0, t1, p0, p1;
+
+   settings->bools.audio_rate_control = false;
+   p0 = runloop_st->core_runtime_usec;
+   t0 = cpu_features_get_time_usec();
+   run_frames(600);
+   t1 = cpu_features_get_time_usec();
+   p1 = runloop_st->core_runtime_usec;
+   settings->bools.audio_rate_control = rate_control;
+
+   printf("[info] %.1f ms of play time counted over %.1f ms of loop (600 frames)\n",
+         (double)(p1 - p0) / 1000.0, (double)(t1 - t0) / 1000.0);
+   CHECK(p1 > p0, "no play time counted");
+   CHECK(p1 - p0 <= t1 - t0 + 4 * frame, "play time counted ahead of wall time");
+   if (failures == had)
+      printf("[pass] play time counted, no more than the time that passed\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -9895,6 +9925,7 @@ int main(int argc, char *argv[])
    {
       lane_frame_path_heap();
       lane_frame_cost();
+      lane_play_time();
       lane_input_cost();
       lane_input_poll_modes();
       lane_device_registry();

@@ -5426,11 +5426,12 @@ static retro_time_t runloop_core_runtime_tick(
    uint32_t flags                 = runloop_st->flags;
    double fps                     = video_st->av_info.timing.fps;
    retro_time_t frame_time        = 0;
+   retro_time_t since             = current_time
+      - runloop_st->core_runtime_last;
 
    /* A core that reports no frame rate - the dummy core, or one that
     * has not set its timing yet - has no frame time to count, and
-    * neither has a rate so small that one frame outlasts a day.
-    * Any other rate is counted exactly as it always was. */
+    * neither has a rate so small that one frame outlasts a day. */
    if (fps > 0.0)
    {
       double frame_usec = (1.0 / fps) * 1000000.0;
@@ -5440,22 +5441,11 @@ static retro_time_t runloop_core_runtime_tick(
 
    /* Account for slow motion */
    if (flags & RUNLOOP_FLAG_SLOWMOTION)
-      return (retro_time_t)(frame_time * slowmotion_ratio);
+      frame_time = (retro_time_t)(frame_time * slowmotion_ratio);
 
-   /* Account for fast forward */
-   if (flags & RUNLOOP_FLAG_FASTMOTION)
-   {
-      retro_time_t potential_frame_time = current_time
-         - runloop_st->core_runtime_last;
-      runloop_st->core_runtime_last     = current_time;
-
-      if (potential_frame_time < frame_time)
-         return potential_frame_time;
-
-      return frame_time;
-   }
-
-   return frame_time;
+   runloop_st->core_runtime_last = current_time;
+   return runloop_core_runtime_step(frame_time, since,
+         &runloop_st->core_runtime_credit);
 }
 
 static bool core_unload_game(void)
@@ -6085,6 +6075,7 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
    const char *core_path               = path_get(RARCH_PATH_CORE);
 
    runloop_st->core_runtime_last       = cpu_features_get_time_usec();
+   runloop_st->core_runtime_credit     = 0;
    runloop_st->core_runtime_usec       = 0;
 
    /* Have to cache content and core path here, otherwise
