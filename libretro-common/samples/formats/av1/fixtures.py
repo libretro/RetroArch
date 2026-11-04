@@ -33,6 +33,10 @@ with tempfile.TemporaryDirectory(prefix='rav1-') as directory:
             path = Path(directory) / f'av1-{name}.{container}'
             subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i',
                 'testsrc2=size=192x128:rate=12', '-frames:v', '12', '-an',
+                # The frames are tagged too: ffmpeg 7.1 and later carry a
+                # frame's colour into the encoder over these options
+                '-vf', 'setparams=color_primaries=bt709:color_trc=bt709'
+                ':colorspace=bt709:range=tv',
                 '-c:v', 'libaom-av1', '-cpu-used', '8', '-threads', '2',
                 '-pix_fmt', pixel_format,
                 '-colorspace', 'bt709', '-color_primaries', 'bt709',
