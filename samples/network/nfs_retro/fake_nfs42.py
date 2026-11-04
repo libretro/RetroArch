@@ -224,7 +224,9 @@ class Server:
                 x.fixed(16)                   # stateid
                 off, count = x.u64(), x.u32()
                 full = self.path(cfh) if cfh not in (None, ROOT) else None
-                if full is None or os.path.isdir(full):
+                if op == OP_READ_PLUS and NO_READ_PLUS:
+                    st = NFS4ERR_NOTSUPP
+                elif full is None or os.path.isdir(full):
                     st = NFS4ERR_INVAL
                 else:
                     runs, eof = self.runs(full, off, count)
@@ -284,7 +286,15 @@ class Handler(socketserver.BaseRequestHandler):
                         results = u32(NFS4ERR_BADXDR) + opaque(b"") + u32(0)
                 reply = (u32(xid) + u32(1) + u32(0) + u32(0) + u32(0) + u32(0)
                          + results)
-                self.request.sendall(u32(0x80000000 | len(reply)) + reply)
+                if FRAGMENT:
+                    # the record in fragments of FRAGMENT octets, then an
+                    # empty last one: marks fall inside headers and data
+                    out = b""
+                    for i in range(0, len(reply), FRAGMENT):
+                        out += u32(len(reply[i:i + FRAGMENT])) + reply[i:i + FRAGMENT]
+                    self.request.sendall(out + u32(0x80000000))
+                else:
+                    self.request.sendall(u32(0x80000000 | len(reply)) + reply)
         except (EOFError, ConnectionError):
             pass
 
@@ -292,6 +302,12 @@ class Handler(socketserver.BaseRequestHandler):
 class TCP(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
     daemon_threads = True
+
+
+# FAKE_NFS_FRAGMENT=n: replies in fragments of n octets.
+# FAKE_NFS_NO_READ_PLUS: READ_PLUS refused, for READ.
+FRAGMENT = int(os.environ.get("FAKE_NFS_FRAGMENT", "0"))
+NO_READ_PLUS = bool(os.environ.get("FAKE_NFS_NO_READ_PLUS"))
 
 
 def main():

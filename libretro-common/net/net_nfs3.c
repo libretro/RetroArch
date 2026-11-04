@@ -628,50 +628,18 @@ static int rnfs_rpc_send(struct rnfs_ctx *c, int fd, uint32_t prog, uint32_t ver
    return 0;
 }
 
-/* Receive one reply record into c->rx; its xid in @xid_out and the
- * reply cursor placed after the accepted-reply header. */
-static int rnfs_rpc_recv(struct rnfs_ctx *c, int fd, uint32_t *xid_out, struct xdr *reply)
+/* A whole reply record at @reply: its xid in @xid_out, and the cursor
+ * placed after the accepted-reply header; -1, with the reason, for a
+ * reply that was denied or not accepted. */
+static int rnfs_rpc_reply(struct rnfs_ctx *c, uint32_t *xid_out,
+      struct xdr *reply)
 {
    static const char *const rpc_auth[] = { "AUTH_OK", "AUTH_BADCRED",
       "AUTH_REJECTEDCRED", "AUTH_BADVERF", "AUTH_REJECTEDVERF",
       "AUTH_TOOWEAK" };
    static const char *const rpc_accept[] = { "SUCCESS", "PROG_UNAVAIL",
       "PROG_MISMATCH", "PROC_UNAVAIL", "GARBAGE_ARGS", "SYSTEM_ERR" };
-   uint32_t     rlen, st;
-   int          to    = (int)c->timeout * 1000;
-   retro_time_t start = cpu_features_get_time_usec();
-
-   /* reply: one or more fragments, concatenated */
-   rlen = 0;
-   for (;;)
-   {
-      uint8_t  hdr[4];
-      uint32_t frag, last;
-      if (!socket_receive_all_blocking_with_timeout(fd, hdr, 4, to))
-      {
-         rnfs_err_recv(c, start);
-         return -1;
-      }
-      last = hdr[0] & 0x80;
-      frag = ((uint32_t)(hdr[0] & 0x7f) << 24) | ((uint32_t)hdr[1] << 16)
-           | ((uint32_t)hdr[2] << 8) | hdr[3];
-      if (rlen + frag > c->buf_size)
-      {
-         rnfs_err(c, "reply too large");
-         return -1;
-      }
-      if (!socket_receive_all_blocking_with_timeout(fd, c->rx + rlen, frag, to))
-      {
-         rnfs_err_recv(c, start);
-         return -1;
-      }
-      rlen += frag;
-      c->rx_bytes += frag;
-      if (last)
-         break;
-   }
-
-   reply->p = c->rx; reply->end = c->rx + rlen; reply->fail = 0;
+   uint32_t st;
    *xid_out = xdr_get_u32(reply);
    if (xdr_get_u32(reply) != 1)               /* REPLY */
    {
@@ -710,6 +678,48 @@ static int rnfs_rpc_recv(struct rnfs_ctx *c, int fd, uint32_t *xid_out, struct x
       return -1;
    }
    return 0;
+}
+
+/* Receive one reply record into c->rx; its xid in @xid_out and the
+ * reply cursor placed after the accepted-reply header. */
+static int rnfs_rpc_recv(struct rnfs_ctx *c, int fd, uint32_t *xid_out, struct xdr *reply)
+{
+   uint32_t     rlen;
+   int          to    = (int)c->timeout * 1000;
+   retro_time_t start = cpu_features_get_time_usec();
+
+   /* reply: one or more fragments, concatenated */
+   rlen = 0;
+   for (;;)
+   {
+      uint8_t  hdr[4];
+      uint32_t frag, last;
+      if (!socket_receive_all_blocking_with_timeout(fd, hdr, 4, to))
+      {
+         rnfs_err_recv(c, start);
+         return -1;
+      }
+      last = hdr[0] & 0x80;
+      frag = ((uint32_t)(hdr[0] & 0x7f) << 24) | ((uint32_t)hdr[1] << 16)
+           | ((uint32_t)hdr[2] << 8) | hdr[3];
+      if (rlen + frag > c->buf_size)
+      {
+         rnfs_err(c, "reply too large");
+         return -1;
+      }
+      if (!socket_receive_all_blocking_with_timeout(fd, c->rx + rlen, frag, to))
+      {
+         rnfs_err_recv(c, start);
+         return -1;
+      }
+      rlen += frag;
+      c->rx_bytes += frag;
+      if (last)
+         break;
+   }
+
+   reply->p = c->rx; reply->end = c->rx + rlen; reply->fail = 0;
+   return rnfs_rpc_reply(c, xid_out, reply);
 }
 
 static void rnfs_drop(struct rnfs_ctx *c);
@@ -2720,6 +2730,303 @@ broken:
    return 1;
 }
 
+/* One READ reply's record, read as it is parsed: what precedes the
+ * data into c->rx, the data itself straight to where the READ's octets
+ * go. Nothing is asked of the socket that the reply has not promised
+ * by then, so a short reply fails rather than waits. */
+struct rnfs_rd
+{
+   struct rnfs_ctx *c;
+   retro_time_t start;
+   size_t have;     /* octets of the record in c->rx */
+   uint32_t frag;   /* octets left in the fragment being read */
+   int fd;
+   int to;
+   int last;        /* that fragment is the record's last */
+};
+
+/* The next fragment's mark; a record that ends before it is broken */
+static int rnfs_rd_mark(struct rnfs_rd *s)
+{
+   uint8_t hdr[4];
+   if (s->last)
+   {
+      rnfs_err(s->c, "bad read reply");
+      return -1;
+   }
+   if (!socket_receive_all_blocking_with_timeout(s->fd, hdr, 4, s->to))
+   {
+      rnfs_err_recv(s->c, s->start);
+      return -1;
+   }
+   s->last = hdr[0] & 0x80;
+   s->frag = ((uint32_t)(hdr[0] & 0x7f) << 24)
+           | ((uint32_t)hdr[1] << 16) | ((uint32_t)hdr[2] << 8) | hdr[3];
+   return 0;
+}
+
+/* @n octets of the record into @dst, across fragment marks */
+static int rnfs_rd_take(struct rnfs_rd *s, uint8_t *dst, size_t n)
+{
+   while (n)
+   {
+      size_t k;
+      while (!s->frag)
+         if (rnfs_rd_mark(s) != 0)
+            return -1;
+      k = n < s->frag ? n : s->frag;
+      if (!socket_receive_all_blocking_with_timeout(s->fd, dst, k, s->to))
+      {
+         rnfs_err_recv(s->c, s->start);
+         return -1;
+      }
+      s->frag        -= (uint32_t)k;
+      s->c->rx_bytes += k;
+      dst            += k;
+      n              -= k;
+   }
+   return 0;
+}
+
+/* At least @n octets past the cursor in c->rx */
+static int rnfs_rd_need(struct rnfs_rd *s, struct xdr *r, size_t n)
+{
+   size_t in = (size_t)(r->end - r->p);
+   if (in >= n)
+      return 0;
+   n -= in;
+   if (n > s->c->buf_size - s->have)
+   {
+      rnfs_err(s->c, "reply too large");
+      return -1;
+   }
+   if (rnfs_rd_take(s, s->c->rx + s->have, n) != 0)
+      return -1;
+   s->have += n;
+   r->end   = s->c->rx + s->have;
+   return 0;
+}
+
+/* The rest of the record into c->rx, for the parsers that take one
+ * whole */
+static int rnfs_rd_rest(struct rnfs_rd *s, struct xdr *r)
+{
+   while (s->frag || !s->last)
+   {
+      if (!s->frag)
+      {
+         if (rnfs_rd_mark(s) != 0)
+            return -1;
+         continue;
+      }
+      if (rnfs_rd_need(s, r, (size_t)(r->end - r->p) + s->frag) != 0)
+         return -1;
+   }
+   return 0;
+}
+
+static uint32_t rnfs_peek_u32(const uint8_t *p)
+{
+   return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
+        | ((uint32_t)p[2] << 8) | p[3];
+}
+
+/* Receives one READ reply. @slot gets the in-flight index its xid
+ * names, RNFS_PIPELINE for none; the rest is rnfs_parse_read's, whose
+ * returns it gives, the reply's data going straight to @out at its
+ * offset. -2 when the connection can not be trusted on: the caller
+ * drops it. A reply the fast path does not take - an error, a GRACE,
+ * READ_PLUS refused - is read whole and parsed as ever. */
+static int rnfs_recv_read(struct rnfs_ctx *c, struct rnfs_file *f,
+      uint64_t off, uint8_t *out, const uint32_t *xids, const size_t *offs,
+      const size_t *lens, const unsigned *sslot, unsigned inflight,
+      unsigned *slot, size_t *got, uint32_t *eof)
+{
+   struct rnfs_rd s;
+   struct xdr r;
+   uint8_t *res;
+   uint8_t *dst;
+   size_t   want, pad, dl;
+   uint64_t at;
+   uint32_t xid, vlen, op;
+   unsigned i;
+
+   s.c     = c;
+   s.start = cpu_features_get_time_usec();
+   s.have  = 0;
+   s.frag  = 0;
+   s.fd    = c->fd;
+   s.to    = (int)c->timeout * 1000;
+   s.last  = 0;
+   r.p     = r.end = c->rx;
+   r.fail  = 0;
+   *slot   = RNFS_PIPELINE;
+
+   /* xid, REPLY, reply_stat and two more: every reply has them */
+   if (rnfs_rd_need(&s, &r, 20) != 0)
+      return -2;
+   xid = rnfs_peek_u32(r.p);
+   for (i = 0; i < inflight; i++)
+      if (xids[i] == xid)
+         *slot = i;
+   vlen = rnfs_peek_u32(r.p + 16);
+   if (     *slot == RNFS_PIPELINE
+         || rnfs_peek_u32(r.p + 4) != 1 || rnfs_peek_u32(r.p + 8) != 0
+         || vlen > 400
+         || rnfs_rd_need(&s, &r, 20 + ((vlen + 3) & ~3u) + 4) != 0
+         || rnfs_peek_u32(r.p + 20 + ((vlen + 3) & ~3u)) != 0)
+   {
+      /* not ours, or not accepted: read to its end, as ever */
+      if (rnfs_rd_rest(&s, &r) != 0)
+         return -2;
+      if (rnfs_rpc_reply(c, &xid, &r) != 0)
+         return -2;
+      if (*slot == RNFS_PIPELINE)
+         return 1;
+      goto whole;
+   }
+   r.p += 20 + ((vlen + 3) & ~3u) + 4;
+
+   want = lens[*slot];
+   dst  = out + offs[*slot];
+   at   = off + offs[*slot];
+   res  = r.p;                          /* where the NFS result starts */
+
+   if (c->version == 4)
+   {
+      uint32_t tl;
+      if (     rnfs_rd_need(&s, &r, 8) != 0)
+         return -2;
+      tl = rnfs_peek_u32(r.p + 4);
+      /* any status but OK, and any tag past what a client sends, the
+       * slow way */
+      if (rnfs_peek_u32(r.p) != NFS3_OK || tl > 64)
+         goto rest;
+      /* status, tag, numres, SEQUENCE, PUTFH, READ's op and status,
+       * eof, and READ's length or READ_PLUS's count */
+      if (rnfs_rd_need(&s, &r, 8 + ((tl + 3) & ~3u) + 4
+               + (c->have_session ? 8 + 36 : 0) + 8 + 8 + 4 + 4) != 0)
+         return -2;
+      c->status = xdr_get_u32(&r);
+      xdr_skip(&r, 4 + ((tl + 3) & ~3u));  /* tag */
+      xdr_get_u32(&r);                     /* numres */
+      if (     c->have_session
+            && nfs4_sequence_res(&r, c, sslot[*slot]) != NFS3_OK)
+         return -2;   /* a status OK compound has its SEQUENCE OK */
+      if (nfs4_res(&r) != NFS3_OK)         /* PUTFH */
+         return -2;
+      op = xdr_get_u32(&r);
+      if (xdr_get_u32(&r) != NFS3_OK || r.fail)
+         return -2;
+      *eof = xdr_get_u32(&r);
+      if (op == OP_READ_PLUS)
+      {
+         uint32_t n   = xdr_get_u32(&r);
+         size_t   pos = 0;
+         while (n--)
+         {
+            uint32_t type;
+            /* type, offset, and a data run's length - or the first
+             * half of a hole's, which is longer still */
+            if (rnfs_rd_need(&s, &r, 16) != 0)
+               return -2;
+            type = xdr_get_u32(&r);
+            if (xdr_get_u64(&r) != at + pos)
+               goto broken;               /* runs out of order */
+            if (type == NFS4_CONTENT_DATA)
+            {
+               dl = xdr_get_u32(&r);
+               if (dl > want - pos)
+                  goto broken;
+               pad = (4 - (dl & 3)) & 3;
+               if (rnfs_rd_take(&s, dst + pos, dl) != 0)
+                  return -2;
+               pos += dl;
+               if (rnfs_rd_need(&s, &r, pad) != 0)
+                  return -2;
+               r.p += pad;
+            }
+            else if (type == NFS4_CONTENT_HOLE)
+            {
+               uint64_t slen;
+               if (rnfs_rd_need(&s, &r, 8) != 0)
+                  return -2;
+               slen = xdr_get_u64(&r);
+               if (slen > want - pos)
+                  slen = want - pos;       /* a hole may run on past the request */
+               memset(dst + pos, 0, (size_t)slen);
+               pos += (size_t)slen;
+            }
+            else
+               goto broken;
+         }
+         if (     (!pos && want && !*eof)
+               || (*eof && at + pos < f->size))
+            goto broken;
+         if (rnfs_rd_rest(&s, &r) != 0)
+            return -2;
+         *got = pos;
+         return 1;
+broken:
+         /* a reply no READ could have given: plain READ from here on,
+          * and this range asked again as that */
+         if (rnfs_rd_rest(&s, &r) != 0)
+            return -2;
+         c->read_plus = 0;
+         return 2;
+      }
+      dl = xdr_get_u32(&r);
+   }
+   else
+   {
+      uint32_t follows;
+      if (rnfs_rd_need(&s, &r, 8) != 0)
+         return -2;
+      follows = rnfs_peek_u32(r.p + 4);
+      if (rnfs_peek_u32(r.p) != NFS3_OK || follows > 1)
+         goto rest;
+      if (rnfs_rd_need(&s, &r, 8 + (follows ? 84 : 0) + 12) != 0)
+         return -2;
+      {
+         struct rnfs_stat st;
+         uint32_t count;
+         c->status = xdr_get_u32(&r);
+         xdr_get_post_op_attr(&r, &st);
+         count = xdr_get_u32(&r);
+         *eof  = xdr_get_u32(&r);
+         dl    = xdr_get_u32(&r);
+         if (r.fail || dl != count)
+         {
+            rnfs_err(c, "bad read reply");
+            return -2;
+         }
+      }
+   }
+   /* the data, last in the reply, where it goes */
+   if (dl > want)
+   {
+      rnfs_err(c, "bad read reply");
+      return -2;
+   }
+   pad = (4 - (dl & 3)) & 3;
+   if (     rnfs_rd_take(&s, dst, dl) != 0
+         || rnfs_rd_need(&s, &r, pad) != 0)
+      return -2;
+   r.p += pad;
+   if (rnfs_rd_rest(&s, &r) != 0)
+      return -2;
+   *got = dl;
+   return 1;
+
+rest:
+   if (rnfs_rd_rest(&s, &r) != 0)
+      return -2;
+   r.p = res;
+whole:
+   return rnfs_parse_read(c, &r, sslot[*slot], off + offs[*slot],
+         f->size, out + offs[*slot], lens[*slot], got, eof);
+}
+
 /* Fetch @len octets at @off into @out with pipelined READs; the
  * octets read (short at end of file), -1 on failure. */
 static int64_t rnfs_fetch_once(struct rnfs_ctx *c, struct rnfs_file *f,
@@ -2728,7 +3035,7 @@ static int64_t rnfs_fetch_once(struct rnfs_ctx *c, struct rnfs_file *f,
    uint32_t xids[RNFS_PIPELINE];
    size_t   offs[RNFS_PIPELINE], lens[RNFS_PIPELINE];
    unsigned sslot[RNFS_PIPELINE];       /* the session slot each READ is on */
-   unsigned inflight = 0, i, grace = 0, short_at = 0;
+   unsigned inflight = 0, grace = 0, short_at = 0;
    /* in a session no more READs than slots, each on its own */
    unsigned depth    = (c->version == 4 && c->have_session && c->slots < RNFS_PIPELINE)
       ? c->slots : RNFS_PIPELINE;
@@ -2767,23 +3074,19 @@ static int64_t rnfs_fetch_once(struct rnfs_ctx *c, struct rnfs_file *f,
       if (!inflight)
          break;
       {
-         struct xdr r;
-         uint32_t xid, reof = 0;
+         uint32_t reof = 0;
          size_t dl = 0;
          unsigned slot = RNFS_PIPELINE;
-         int pr;
-         if (rnfs_rpc_recv(c, c->fd, &xid, &r) != 0)
+         /* the data lands where it goes, not in c->rx */
+         int pr = rnfs_recv_read(c, f, off, out, xids, offs, lens, sslot,
+               inflight, &slot, &dl, &reof);
+         if (pr == -2)
          {
             rnfs_drop(c);                /* the link went: dial again */
             return -1;
          }
-         for (i = 0; i < inflight; i++)
-            if (xids[i] == xid)
-               slot = i;
          if (slot == RNFS_PIPELINE)
             continue;
-         pr = rnfs_parse_read(c, &r, sslot[slot], off + offs[slot], f->size,
-               out + offs[slot], lens[slot], &dl, &reof);
          if (pr == 2)
          {
             /* READ_PLUS refused: this chunk again, now as READ */

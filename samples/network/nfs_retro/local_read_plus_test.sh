@@ -22,6 +22,7 @@ PORT=20460
 D=$(mktemp -d); chmod 755 $D
 cleanup() {
    [ -n "${SRV:-}" ] && kill $SRV 2>/dev/null || true
+   [ -n "${SRV2:-}" ] && kill $SRV2 2>/dev/null || true
    [ -n "${CAP:-}" ] && kill $CAP 2>/dev/null || true
    [ -n "$KEEP_PCAP" ] && cp $D/rp.pcap $KEEP_PCAP 2>/dev/null; rm -rf $D
 }
@@ -82,4 +83,29 @@ if $RUN ./nfs_error_test$EXE $PORT "$local_path" > $D/err 2>&1; then
 else
    echo "FAIL: nfs_error_test: $(cat $D/err)"; exit 1
 fi
+# Replies cut into fragments of a few hundred octets, the marks inside
+# headers, data runs and holes, then an empty last fragment: the client
+# takes READ data straight into the caller's buffer and must find every
+# octet, as READ_PLUS and, with READ_PLUS refused, as READ.
+for mode in plus fallback; do
+   P2=$((PORT + 1))
+   if [ $mode = plus ]; then
+      FAKE_NFS_FRAGMENT=333 python3 fake_nfs42.py $P2 $D > $D/fake2.log 2>&1 &
+   else
+      FAKE_NFS_FRAGMENT=333 FAKE_NFS_NO_READ_PLUS=1 python3 fake_nfs42.py $P2 $D > $D/fake2.log 2>&1 &
+   fi
+   SRV2=$!
+   n=0
+   until python3 -c "import socket,sys; socket.create_connection(('127.0.0.1', int(sys.argv[1])), 1).close()" $P2 2>/dev/null; do
+      n=$((n + 1))
+      [ $n -gt 150 ] && { echo "FAIL: fake_nfs42.py did not listen: $(cat $D/fake2.log)"; exit 1; }
+      sleep 0.2
+   done
+   if $RUN ./nfs_sparse_test$EXE 127.0.0.1 /export $P2 sparse.img "$local_path" 1048576 $mode > $D/res2 2>&1; then
+      echo "ok:   fragmented replies ($mode): $(grep replies $D/res2 | tr -d "\r")"
+   else
+      echo "FAIL: fragmented replies ($mode): $(cat $D/res2)"; exit 1
+   fi
+   kill $SRV2 2>/dev/null; wait $SRV2 2>/dev/null || true; SRV2=
+done
 echo "[pass] nfs_retro local read_plus"
