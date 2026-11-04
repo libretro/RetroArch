@@ -58,7 +58,8 @@ const char *vulkan_custom_driver_parse_icd(const char *buf, size_t len,
 const char *vulkan_custom_driver_icd_library(const char *json_path,
       const char *library_path, char *out, size_t size);
 
-/* Names the extraction dir, as "%08x". A new zip version gets a new key. */
+/* A new zip or .json version gets a new key. On Android it names the
+ * extraction dir, as "%08x". */
 uint32_t vulkan_custom_driver_key(const char *path,
       int64_t size, int64_t mtime);
 
@@ -77,9 +78,9 @@ enum vulkan_custom_driver_msg
    VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED
 };
 
-/* Crash state: one "<core>\t<zip path>\n" line per driver that took the
- * process down in init with that core; the menu's core is "". The crash
- * marker is one such line. A NULL core is the menu's. */
+/* Crash state: one "<core>\t<zip or .json path>\n" line per driver that
+ * took the process down in init with that core; the menu's core is "".
+ * The crash marker is one such line. A NULL core is the menu's. */
 bool vulkan_custom_driver_crash_find(const char *state, size_t len,
       const char *path, const char *core);
 /* Returns the new length. The oldest lines go when cap is reached. */
@@ -97,8 +98,8 @@ bool vulkan_custom_driver_trust_find(const char *trust, size_t len,
 size_t vulkan_custom_driver_trust_add(char *trust, size_t len, size_t cap,
       const char *path, uint32_t key);
 
-/* Loads the driver at path into the extraction dir named by key. Returns
- * its loader with *meta filled in, or NULL with *msg set to
+/* Loads the driver at path, on Android into the extraction dir named by
+ * key. Returns its handle with *meta filled in, or NULL with *msg set to
  * VULKAN_CUSTOM_DRIVER_MSG_INVALID (bad package) or _FAILED. */
 typedef void *(*vulkan_custom_driver_load_t)(void *data, const char *path,
       uint32_t key, struct vulkan_custom_driver_meta *meta,
@@ -106,11 +107,11 @@ typedef void *(*vulkan_custom_driver_load_t)(void *data, const char *path,
 
 struct vulkan_custom_driver_request
 {
-   int64_t size;      /* of the zip; < 0 when it is missing */
+   int64_t size;      /* of the zip or .json; < 0 when it is missing */
    int64_t mtime;
    const char *path;  /* the setting; empty: the system driver */
    const char *core;  /* the running core; "" or NULL: the menu */
-   bool supported;    /* Adreno and API >= 28 */
+   bool supported;    /* vulkan_custom_driver_supported() */
    bool safe_mode;    /* started with the system driver forced */
    bool trusted;      /* this version was picked in the menu */
 };
@@ -209,20 +210,29 @@ bool vulkan_custom_driver_patch_soname(uint8_t *elf, size_t len,
       const char *patch);
 
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
-/* Glue: vulkan_custom_driver_glue.c with vulkan_custom_driver_android.c.
- * Context init and surface creation call open, kept, failed, started and
- * current; the menu and the frontend call the rest. */
-dylib_t vulkan_custom_driver_open(void);                /* NULL: use the system loader */
+/* Glue: vulkan_custom_driver_glue.c with vulkan_custom_driver_android.c,
+ * or _desktop.c on Linux and Windows. Context init and surface creation
+ * call open, kept, failed, started and current; the menu and the
+ * frontend call the rest. */
+/* Desktop: returns the ICD library, after the loader's global symbols load. */
+dylib_t vulkan_custom_driver_open(void);                /* NULL: the system driver */
+/* Desktop: closes the ICD library, so instance and device are destroyed first. */
 void    vulkan_custom_driver_failed(void);              /* current custom driver failed */
 void    vulkan_custom_driver_started(void);             /* first surface up */
 void    vulkan_custom_driver_kept(void);                /* a kept instance is used, open skipped */
 bool    vulkan_custom_driver_current(void);             /* this init opened a custom driver, not started yet */
 bool    vulkan_custom_driver_mesa(void);                /* the driver open() returned is Mesa */
-bool    vulkan_custom_driver_supported(void);           /* Adreno and API >= 28 */
+/* Desktop: valid only during Vulkan init. */
+bool    vulkan_custom_driver_supported(void);           /* Adreno and API >= 28; desktop: the loader loads drivers directly */
 bool    vulkan_custom_driver_crashed(const char *path); /* off for the running core after a crash */
 void    vulkan_custom_driver_picked(const char *path);  /* trusts path; clears its crash state and INVALID mark */
 void    vulkan_custom_driver_set_safe_mode(bool safe_mode); /* true: system driver until the process ends */
 bool    vulkan_custom_driver_safe_mode(void);           /* Safe start: system driver for this process */
+#ifndef ANDROID
+/* Desktop: device creation passes the new device's vkQueueSubmit. False
+ * when the custom driver this init opened did not take effect. */
+bool    vulkan_custom_driver_device(function_t queue_submit);
+#endif
 /* Between the glue files. vulkan_custom_driver_glue.c holds the state
  * both platforms share; its crash state and marker are in
  * <dir>/vulkan_drivers/. */
@@ -245,7 +255,8 @@ char *vulkan_custom_driver_glue_read(const char *path, int64_t *len);
  * up or failed. */
 void vulkan_custom_driver_glue_mark(const char *path, const char *core);
 /* open() without the platform's log lines. NULL: the system driver.
- * *req is set unless the platform's dir is not known yet. */
+ * *req is set unless the platform's dir is not known yet or, on
+ * desktop, no driver path is set and none was before. */
 void *vulkan_custom_driver_glue_open(struct vulkan_custom_driver_request *req,
       const struct vulkan_custom_driver_meta **meta,
       enum vulkan_custom_driver_msg *msg);
