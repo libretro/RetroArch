@@ -58,6 +58,20 @@ typedef struct
    bool validate_entries;
 } scan_settings_t;
 
+#define MANUAL_CONTENT_SCAN_SETTINGS_DEFAULT { \
+   MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC,        /* scan method */ \
+   MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO,        /* system_name_type */ \
+   MANUAL_CONTENT_SCAN_CORE_DETECT,             /* core_type */ \
+   MANUAL_CONTENT_SCAN_USE_DB_STRICT, \
+   MANUAL_CONTENT_SCAN_SELECT_DB_AUTO, \
+   true,                                        /* search_recursively */ \
+   true,                                        /* search_archives */ \
+   false, \
+   false,                                       /* filter_dat_content */ \
+   false,                                       /* overwrite_playlist */ \
+   false                                        /* validate_entries */ \
+}
+
 /* TODO/FIXME - static public global variables */
 /* Static settings object
  * > Provides easy access to settings parameters
@@ -68,19 +82,7 @@ typedef struct
  *   but this should not be an issue (i.e. regular configuration_settings
  *   are not thread safe, but we only access them when pushing a
  *   task, not in the task thread itself, so all is well) */
-static scan_settings_t scan_settings = {
-   MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC,        /* scan method */
-   MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO,        /* system_name_type */
-   MANUAL_CONTENT_SCAN_CORE_DETECT,             /* core_type */
-   MANUAL_CONTENT_SCAN_USE_DB_STRICT,
-   MANUAL_CONTENT_SCAN_SELECT_DB_AUTO,
-   true,                                        /* search_recursively */
-   true,                                        /* search_archives */
-   false,
-   false,                                       /* filter_dat_content */
-   false,                                       /* overwrite_playlist */
-   false                                        /* validate_entries */
-};
+static scan_settings_t scan_settings = MANUAL_CONTENT_SCAN_SETTINGS_DEFAULT;
 
 /* The path and name buffers live outside the struct: three
  * non-zero defaults were dragging eleven kilobytes of zero buffers
@@ -268,24 +270,30 @@ void manual_content_scan_scrub_file_exts_custom(void)
  * in, structs out - so both the extension whitelist
  * and the file system checks live here, with the scan
  * configuration that owns the path. */
-bool manual_content_scan_dat_path_is_valid(
-      const char *path, uint64_t *file_size)
+/* The extensions a Logiqx XML DAT may legitimately carry:
+ * .dat and .xml */
+static bool manual_content_scan_dat_ext_is_valid(const char *path)
 {
    const char *file_ext = NULL;
-   int64_t file_size_int;
 
    if (!path || !*path)
       return false;
 
-   /* Check file extension (.dat / .xml, the extensions
-    * a Logiqx XML DAT may legitimately carry) */
    file_ext = path_get_extension(path);
 
    if (!file_ext || !*file_ext)
       return false;
 
-   if (   !string_is_equal_noncase(file_ext, "dat")
-       && !string_is_equal_noncase(file_ext, "xml"))
+   return string_is_equal_noncase(file_ext, "dat")
+       || string_is_equal_noncase(file_ext, "xml");
+}
+
+bool manual_content_scan_dat_path_is_valid(
+      const char *path, uint64_t *file_size)
+{
+   int64_t file_size_int;
+
+   if (!manual_content_scan_dat_ext_is_valid(path))
       return false;
 
    /* Ensure file exists */
@@ -305,9 +313,11 @@ bool manual_content_scan_dat_path_is_valid(
 }
 
 /* Checks 'dat_file_path' string and resets it
- * if invalid */
-enum manual_content_scan_dat_file_path_status
-      manual_content_scan_validate_dat_file_path(void)
+ * if invalid.  @known_size, when not NULL, is the file's
+ * size as read already (<= 0: not there), so the file
+ * system is not asked again. */
+static enum manual_content_scan_dat_file_path_status
+      manual_content_scan_validate_dat(const int64_t *known_size)
 {
    enum manual_content_scan_dat_file_path_status dat_file_path_status =
          MANUAL_CONTENT_SCAN_DAT_FILE_UNSET;
@@ -315,10 +325,22 @@ enum manual_content_scan_dat_file_path_status
    /* Check if 'dat_file_path' has been set */
    if (*scan_dat_file_path)
    {
-      uint64_t file_size;
+      uint64_t file_size = 0;
+      bool valid;
 
       /* Check if path itself is valid */
-      if (manual_content_scan_dat_path_is_valid(scan_dat_file_path, &file_size))
+      if (known_size)
+      {
+         valid = manual_content_scan_dat_ext_is_valid(scan_dat_file_path)
+              && *known_size > 0;
+         if (valid)
+            file_size = (uint64_t)*known_size;
+      }
+      else
+         valid = manual_content_scan_dat_path_is_valid(scan_dat_file_path,
+               &file_size);
+
+      if (valid)
       {
          uint64_t free_memory = mem_stats_free();
          dat_file_path_status = MANUAL_CONTENT_SCAN_DAT_FILE_OK;
@@ -359,12 +381,91 @@ enum manual_content_scan_dat_file_path_status
    return dat_file_path_status;
 }
 
+enum manual_content_scan_dat_file_path_status
+      manual_content_scan_validate_dat_file_path(void)
+{
+   return manual_content_scan_validate_dat(NULL);
+}
+
 /* Menu setters */
+
+/* Sets every setting back to its default */
+void manual_content_scan_reset_settings(void)
+{
+   static const scan_settings_t d = MANUAL_CONTENT_SCAN_SETTINGS_DEFAULT;
+
+   scan_settings                   = d;
+   scan_core_path[0]               = '\0';
+   scan_file_exts_core[0]          = '\0';
+   scan_file_exts_custom[0]        = '\0';
+   scan_dat_file_path[0]           = '\0';
+   scan_content_dir[0]             = '\0';
+   scan_system_name_content_dir[0] = '\0';
+   scan_system_name_database[0]    = '\0';
+   scan_system_name_custom[0]      = '\0';
+   scan_core_name[0]               = '\0';
+}
+
+struct manual_content_scan_saved
+{
+   scan_settings_t settings;
+   char core_path[PATH_MAX_LENGTH];
+   char file_exts_core[PATH_MAX_LENGTH];
+   char file_exts_custom[PATH_MAX_LENGTH];
+   char dat_file_path[PATH_MAX_LENGTH];
+   char content_dir[PATH_MAX_LENGTH];
+   char system_name_content_dir[DIR_MAX_LENGTH];
+   char system_name_database[NAME_MAX_LENGTH];
+   char system_name_custom[NAME_MAX_LENGTH];
+   char core_name[NAME_MAX_LENGTH];
+};
+
+manual_content_scan_saved_t *manual_content_scan_save_settings(void)
+{
+   manual_content_scan_saved_t *sv = (manual_content_scan_saved_t*)
+      malloc(sizeof(*sv));
+   if (!sv)
+      return NULL;
+   sv->settings = scan_settings;
+   memcpy(sv->core_path,               scan_core_path,               sizeof(sv->core_path));
+   memcpy(sv->file_exts_core,          scan_file_exts_core,          sizeof(sv->file_exts_core));
+   memcpy(sv->file_exts_custom,        scan_file_exts_custom,        sizeof(sv->file_exts_custom));
+   memcpy(sv->dat_file_path,           scan_dat_file_path,           sizeof(sv->dat_file_path));
+   memcpy(sv->content_dir,             scan_content_dir,             sizeof(sv->content_dir));
+   memcpy(sv->system_name_content_dir, scan_system_name_content_dir, sizeof(sv->system_name_content_dir));
+   memcpy(sv->system_name_database,    scan_system_name_database,    sizeof(sv->system_name_database));
+   memcpy(sv->system_name_custom,      scan_system_name_custom,      sizeof(sv->system_name_custom));
+   memcpy(sv->core_name,               scan_core_name,               sizeof(sv->core_name));
+   return sv;
+}
+
+void manual_content_scan_restore_settings(manual_content_scan_saved_t *sv)
+{
+   if (!sv)
+      return;
+   scan_settings = sv->settings;
+   memcpy(scan_core_path,               sv->core_path,               sizeof(scan_core_path));
+   memcpy(scan_file_exts_core,          sv->file_exts_core,          sizeof(scan_file_exts_core));
+   memcpy(scan_file_exts_custom,        sv->file_exts_custom,        sizeof(scan_file_exts_custom));
+   memcpy(scan_dat_file_path,           sv->dat_file_path,           sizeof(scan_dat_file_path));
+   memcpy(scan_content_dir,             sv->content_dir,             sizeof(scan_content_dir));
+   memcpy(scan_system_name_content_dir, sv->system_name_content_dir, sizeof(scan_system_name_content_dir));
+   memcpy(scan_system_name_database,    sv->system_name_database,    sizeof(scan_system_name_database));
+   memcpy(scan_system_name_custom,      sv->system_name_custom,      sizeof(scan_system_name_custom));
+   memcpy(scan_core_name,               sv->core_name,               sizeof(scan_core_name));
+   free(sv);
+}
 
 /* Sets content directory for next manual scan
  * operation.
  * Returns true if content directory is valid. */
 bool manual_content_scan_set_menu_content_dir(const char *content_dir)
+{
+   return manual_content_scan_set_menu_content_dir_fs(content_dir, NULL);
+}
+
+bool manual_content_scan_set_menu_content_dir_fs(const char *content_dir,
+      const manual_content_scan_fs_t *fs)
 {
    size_t _len;
    int path_stats;
@@ -426,7 +527,7 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 
    /* A file takes the name of the folder that holds it,
     * as a scan of that folder would */
-   path_stats = path_stat(scan_content_dir);
+   path_stats = fs ? fs->content_stat : path_stat(scan_content_dir);
    if (      (path_stats & RETRO_VFS_STAT_IS_VALID)
          && !(path_stats & RETRO_VFS_STAT_IS_DIRECTORY)
          &&  fill_pathname_parent_dir_name(scan_system_name_content_dir,
@@ -555,6 +656,53 @@ error:
    return false;
 }
 
+/* Copies the core's path, name and extensions
+ * to the settings.
+ * Returns false if the core has no path. */
+static bool manual_content_scan_set_core(const core_info_t *core_info)
+{
+   /* Copy core path to settings struct */
+   if (!core_info->path || !*core_info->path)
+      return false;
+
+   strlcpy(
+         scan_core_path,
+         core_info->path,
+         sizeof(scan_core_path));
+
+   /* Copy core name to settings struct */
+   strlcpy(
+         scan_core_name,
+         core_info->display_name,
+         sizeof(scan_core_name));
+
+   /* Copy supported extensions to settings
+    * struct, if required */
+   if (    core_info->supported_extensions
+       && *core_info->supported_extensions)
+   {
+      strlcpy(
+            scan_file_exts_core,
+            core_info->supported_extensions,
+            sizeof(scan_file_exts_core));
+
+      /* Core info extensions are delimited by
+       * vertical bars. For internal consistency,
+       * replace them with spaces */
+      string_replace_all_chars(scan_file_exts_core, '|', ' ');
+
+      /* Apply standard scrubbing/clean-up
+       * (should not be required, but must handle the
+       * case where a core info file is incorrectly
+       * formatted) */
+      manual_content_scan_scrub_file_exts(scan_file_exts_core);
+   }
+   else
+      scan_file_exts_core[0] = '\0';
+
+   return true;
+}
+
 /* Sets core name for the next manual scan
  * operation (+ core path and other associated
  * parameters).
@@ -607,44 +755,8 @@ bool manual_content_scan_set_menu_core_name(
                /* Core has been found */
                core_found = true;
 
-               /* Copy core path to settings struct */
-               if (!core_info->path || !*core_info->path)
+               if (!manual_content_scan_set_core(core_info))
                   goto error;
-
-               strlcpy(
-                     scan_core_path,
-                     core_info->path,
-                     sizeof(scan_core_path));
-
-               /* Copy core name to settings struct */
-               strlcpy(
-                     scan_core_name,
-                     core_info->display_name,
-                     sizeof(scan_core_name));
-
-               /* Copy supported extensions to settings
-                * struct, if required */
-               if (    core_info->supported_extensions 
-                   && *core_info->supported_extensions)
-               {
-                  strlcpy(
-                        scan_file_exts_core,
-                        core_info->supported_extensions,
-                        sizeof(scan_file_exts_core));
-
-                  /* Core info extensions are delimited by
-                   * vertical bars. For internal consistency,
-                   * replace them with spaces */
-                  string_replace_all_chars(scan_file_exts_core, '|', ' ');
-
-                  /* Apply standard scrubbing/clean-up
-                   * (should not be required, but must handle the
-                   * case where a core info file is incorrectly
-                   * formatted) */
-                  manual_content_scan_scrub_file_exts(scan_file_exts_core);
-               }
-               else
-                  scan_file_exts_core[0] = '\0';
 
                break;
             }
@@ -674,8 +786,17 @@ error:
  * Returns MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK
  * if playlist contains a valid scan record. */
 enum manual_content_scan_playlist_refresh_status
-      manual_content_scan_set_menu_from_playlist(playlist_t *playlist,
-            const char *path_content_database, bool show_hidden_files)
+      manual_content_scan_set_menu_from_playlist_list(playlist_t *playlist,
+            const struct string_list *rdb_list)
+{
+   return manual_content_scan_set_menu_from_playlist_list_fs(playlist,
+         rdb_list, NULL);
+}
+
+enum manual_content_scan_playlist_refresh_status
+      manual_content_scan_set_menu_from_playlist_list_fs(
+            playlist_t *playlist, const struct string_list *rdb_list,
+            const manual_content_scan_fs_t *fs)
 {
    const char *playlist_path    = NULL;
    const char *content_dir      = NULL;
@@ -689,9 +810,6 @@ enum manual_content_scan_playlist_refresh_status
    bool overwrite_playlist      = false;
    bool omit_db_ref             = false;
    int db_usage                 = MANUAL_CONTENT_SCAN_USE_DB_NONE;
-#ifdef HAVE_LIBRETRODB
-   struct string_list *rdb_list = NULL;
-#endif
    enum manual_content_scan_system_name_type
          system_name_type       = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
    enum manual_content_scan_core_type
@@ -729,13 +847,15 @@ enum manual_content_scan_playlist_refresh_status
 
    if (database_name_lpl && *database_name_lpl)
       fill_pathname(database_name,database_name_lpl,"",sizeof(database_name));
+   else
+      database_name[0] = '\0';
    /* Cannot happen, but would constitute a
     * 'system name' error */
    if (!*system_name)
       return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME;
 
    /* Set content directory */
-   if (!manual_content_scan_set_menu_content_dir(content_dir))
+   if (!manual_content_scan_set_menu_content_dir_fs(content_dir, fs))
       return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CONTENT_DIR;
 
    if (!manual_content_scan_set_menu_scan_use_db((enum manual_content_scan_db_usage)db_usage))
@@ -744,13 +864,6 @@ enum manual_content_scan_playlist_refresh_status
    scan_settings.db_selection = MANUAL_CONTENT_SCAN_SELECT_DB_AUTO;
 
    /* Set system name */
-#ifdef HAVE_LIBRETRODB
-   /* > If platform has database support, get names
-    *   of all installed database files */
-   rdb_list = dir_list_new_special(
-         path_content_database,
-         DIR_LIST_DATABASES, NULL, show_hidden_files);
-
    if (rdb_list && rdb_list->size)
    {
       size_t i;
@@ -785,9 +898,6 @@ enum manual_content_scan_playlist_refresh_status
          }
       }
    }
-
-   string_list_free(rdb_list);
-#endif
 
    /* > If system name does not match a database
     *   file, then check whether it matches the
@@ -853,7 +963,7 @@ enum manual_content_scan_playlist_refresh_status
       fill_pathname_expand_special(scan_dat_file_path, dat_file_path,
             sizeof(scan_dat_file_path));
 
-      switch (manual_content_scan_validate_dat_file_path())
+      switch (manual_content_scan_validate_dat(fs ? &fs->dat_size : NULL))
       {
          case MANUAL_CONTENT_SCAN_DAT_FILE_INVALID:
             return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_DAT_FILE;
@@ -878,6 +988,466 @@ enum manual_content_scan_playlist_refresh_status
    scan_settings.validate_entries   = true;
 
    return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK;
+}
+
+enum manual_content_scan_playlist_refresh_status
+      manual_content_scan_set_menu_from_playlist(playlist_t *playlist,
+            const char *path_content_database, bool show_hidden_files)
+{
+   enum manual_content_scan_playlist_refresh_status status;
+   struct string_list *rdb_list = NULL;
+#ifdef HAVE_LIBRETRODB
+   /* > If platform has database support, get names
+    *   of all installed database files */
+   rdb_list = dir_list_new_special(
+         path_content_database,
+         DIR_LIST_DATABASES, NULL, show_hidden_files);
+#endif
+   status   = manual_content_scan_set_menu_from_playlist_list(playlist,
+         rdb_list);
+   string_list_free(rdb_list);
+   return status;
+}
+
+/* Whether @name is an installed database: the basename,
+ * without extension, of a path in @rdb_list */
+static bool manual_content_scan_rdb_list_has(
+      const struct string_list *rdb_list, const char *name)
+{
+   size_t i;
+
+   if (!rdb_list)
+      return false;
+
+   for (i = 0; i < rdb_list->size; i++)
+   {
+      char rdb_name[NAME_MAX_LENGTH];
+      const char *rdb_path = rdb_list->elems[i].data;
+      if (!rdb_path || !*rdb_path)
+         continue;
+      fill_pathname(rdb_name, path_basename(rdb_path), "",
+            sizeof(rdb_name));
+      if (string_is_equal(name, rdb_name))
+         return true;
+   }
+
+   return false;
+}
+
+enum manual_content_scan_core_key
+{
+   MANUAL_CONTENT_SCAN_CORE_KEY_PATH = 0,
+   MANUAL_CONTENT_SCAN_CORE_KEY_FILE_ID_EXACT,
+   MANUAL_CONTENT_SCAN_CORE_KEY_FILE_ID,
+   MANUAL_CONTENT_SCAN_CORE_KEY_DISPLAY_NAME
+};
+
+/* Counts the cores whose @key is @s; *found gets the first */
+static unsigned manual_content_scan_match_cores(
+      core_info_list_t *core_info_list,
+      enum manual_content_scan_core_key key, const char *s,
+      const core_info_t **found)
+{
+   size_t i;
+   unsigned count = 0;
+#ifdef _WIN32
+   /* Either slash: core_info joins its folder and file with '/' */
+   char *core_path = NULL;
+
+   if (   key == MANUAL_CONTENT_SCAN_CORE_KEY_PATH
+       && !(core_path = (char*)malloc(PATH_MAX_LENGTH)))
+      return 0;
+#endif
+
+   for (i = 0; i < core_info_list->count; i++)
+   {
+      const core_info_t *core_info = core_info_get(core_info_list, i);
+      bool match                   = false;
+
+      if (!core_info)
+         continue;
+
+      switch (key)
+      {
+         case MANUAL_CONTENT_SCAN_CORE_KEY_PATH:
+#ifdef _WIN32
+            if (core_info->path)
+            {
+               strlcpy(core_path, core_info->path, PATH_MAX_LENGTH);
+               pathname_conform_slashes_to_os(core_path);
+               match = string_is_equal_case_insensitive(core_path, s);
+            }
+#else
+            match = string_is_equal(core_info->path, s);
+#endif
+            break;
+         case MANUAL_CONTENT_SCAN_CORE_KEY_FILE_ID_EXACT:
+            match = string_is_equal(core_info->core_file_id.str, s);
+            break;
+         case MANUAL_CONTENT_SCAN_CORE_KEY_FILE_ID:
+            match = string_is_equal_case_insensitive(
+                  core_info->core_file_id.str, s);
+            break;
+         case MANUAL_CONTENT_SCAN_CORE_KEY_DISPLAY_NAME:
+            match = string_is_equal(core_info->display_name, s);
+            break;
+      }
+
+      if (match && !count++)
+         *found = core_info;
+   }
+
+#ifdef _WIN32
+   free(core_path);
+#endif
+   return count;
+}
+
+/* Whether @core is written as a path: display names hold
+ * slashes too, so a path that matches no core falls through
+ * to the names */
+static bool manual_content_scan_core_is_path(const char *core)
+{
+   return strchr(core, '/')
+#ifdef _WIN32
+       || strchr(core, '\\')
+#endif
+       || *core == '~';
+}
+
+/* @core, a path, as the core list holds paths: expanded, and
+ * "//" and ".." folded in an absolute path too; "" when it
+ * resolves to nothing.  Asks the file system. */
+static void manual_content_scan_core_path_resolve(char *s,
+      const char *core, size_t len)
+{
+   fill_pathname_expand_special(s, core, len);
+#ifndef RARCH_CONSOLE
+   if (   *s
+       && !path_resolve_realpath(s, len, false)
+       && !path_is_absolute(s))
+      *s = '\0';
+#endif
+#ifdef _WIN32
+   pathname_conform_slashes_to_os(s);
+#endif
+}
+
+/* An override DAT path as the scan opens it: expanded, and a
+ * relative one resolved; "" when it resolves to nothing.
+ * Asks the file system. */
+static void manual_content_scan_dat_path_resolve(char *s,
+      const char *dat, size_t len)
+{
+   fill_pathname_expand_special(s, dat, len);
+#ifndef RARCH_CONSOLE
+   if (   *s && !path_is_absolute(s)
+       && !path_resolve_realpath(s, len, false))
+      *s = '\0';
+#endif
+}
+
+/* Finds the core @core names: a path, else a file name or
+ * file id, else a display name. The first of these that
+ * matches decides, and *count gets its matches.
+ * > @resolved: @core resolved as a path already, or NULL to
+ *   resolve it here */
+static const core_info_t *manual_content_scan_find_core(
+      const char *core, const char *resolved, unsigned *count)
+{
+   core_info_list_t *core_info_list = NULL;
+   const core_info_t *found         = NULL;
+   char *s                          = NULL;
+   char *lower                      = NULL;
+
+   *count = 0;
+   core_info_get_list(&core_info_list);
+
+   if (!core_info_list || !(s = (char*)malloc(PATH_MAX_LENGTH)))
+      return NULL;
+
+   if (manual_content_scan_core_is_path(core))
+   {
+      if (resolved)
+         strlcpy(s, resolved, PATH_MAX_LENGTH);
+      else
+         manual_content_scan_core_path_resolve(s, core, PATH_MAX_LENGTH);
+      if (*s)
+         *count = manual_content_scan_match_cores(core_info_list,
+               MANUAL_CONTENT_SCAN_CORE_KEY_PATH, s, &found);
+   }
+
+   /* Lower case, as core_info finds "_libretro" in lower case only */
+   if (!*count && (lower = strdup(core)))
+   {
+      size_t i, _len;
+      string_to_lower(lower);
+      /* core_info's rule would cut a bare id's last "_" part */
+      if (strstr(lower, "_libretro"))
+         _len = core_info_get_file_id(lower, s, PATH_MAX_LENGTH);
+      else
+      {
+         _len = fill_pathname(s, lower, "", PATH_MAX_LENGTH);
+         strlcpy(s + _len, "_libretro", PATH_MAX_LENGTH - _len);
+      }
+      /* The case typed, for an exact match first */
+      for (i = 0; i < _len; i++)
+         if (s[i] == lower[i])
+            s[i] = core[i];
+      free(lower);
+      *count = manual_content_scan_match_cores(core_info_list,
+            MANUAL_CONTENT_SCAN_CORE_KEY_FILE_ID_EXACT, s, &found);
+      if (!*count)
+         *count = manual_content_scan_match_cores(core_info_list,
+               MANUAL_CONTENT_SCAN_CORE_KEY_FILE_ID, s, &found);
+   }
+
+   if (!*count)
+      *count = manual_content_scan_match_cores(core_info_list,
+            MANUAL_CONTENT_SCAN_CORE_KEY_DISPLAY_NAME, core, &found);
+
+   free(s);
+   return found;
+}
+
+manual_content_scan_overrides_t *manual_content_scan_overrides_new(void)
+{
+   return (manual_content_scan_overrides_t*)calloc(1,
+         sizeof(manual_content_scan_overrides_t));
+}
+
+void manual_content_scan_overrides_free(manual_content_scan_overrides_t *ov)
+{
+   if (!ov)
+      return;
+   free(ov->playlist);
+   free(ov->database);
+   free(ov->dat);
+   free(ov->core);
+   free(ov->exts);
+   free(ov);
+}
+
+manual_content_scan_fs_t *manual_content_scan_fs_read(
+      const char *content_dir, const char *dat,
+      const char *ov_core, const char *ov_dat)
+{
+   manual_content_scan_fs_t *fs = (manual_content_scan_fs_t*)calloc(1,
+         sizeof(*fs));
+   char *s                      = (char*)malloc(PATH_MAX_LENGTH);
+
+   if (!fs || !s)
+      goto error;
+
+   /* The folder as manual_content_scan_set_menu_content_dir()
+    * stats it: expanded, one trailing slash gone */
+   if (content_dir && *content_dir)
+   {
+      size_t _len = fill_pathname_expand_special(s, content_dir,
+            PATH_MAX_LENGTH);
+      if (_len > 0 && _len < PATH_MAX_LENGTH
+            && s[_len - 1] == PATH_DEFAULT_SLASH_C())
+         s[_len - 1] = '\0';
+      if (*s)
+         fs->content_stat = path_stat(s);
+   }
+
+   /* The saved DAT, as a refresh expands it */
+   fs->dat_size = -1;
+   if (dat && *dat)
+   {
+      fill_pathname_expand_special(s, dat, PATH_MAX_LENGTH);
+      if (*s && path_is_valid(s))
+         fs->dat_size = path_get_size(s);
+   }
+
+   fs->ov_dat_size = -1;
+   if (ov_dat)
+   {
+      manual_content_scan_dat_path_resolve(s, ov_dat, PATH_MAX_LENGTH);
+      if (!(fs->ov_dat = strdup(s)))
+         goto error;
+      if (*s && path_is_valid(s))
+         fs->ov_dat_size = path_get_size(s);
+   }
+
+   if (ov_core && manual_content_scan_core_is_path(ov_core))
+   {
+      manual_content_scan_core_path_resolve(s, ov_core, PATH_MAX_LENGTH);
+      if (!(fs->ov_core = strdup(s)))
+         goto error;
+   }
+
+   free(s);
+   return fs;
+
+error:
+   free(s);
+   manual_content_scan_fs_free(fs);
+   return NULL;
+}
+
+void manual_content_scan_fs_free(manual_content_scan_fs_t *fs)
+{
+   if (!fs)
+      return;
+   free(fs->ov_dat);
+   free(fs->ov_core);
+   free(fs);
+}
+
+/* Lays @ov over the current settings and sets the Custom
+ * method, stopping at the first override that does not
+ * resolve; NULL @ov changes nothing.
+ * > @rdb_list: paths of the installed databases, or NULL
+ * > @count: the cores @ov->core matched, when not NULL */
+enum manual_content_scan_override_status
+      manual_content_scan_apply_overrides(
+            const manual_content_scan_overrides_t *ov,
+            const struct string_list *rdb_list, unsigned *count)
+{
+   return manual_content_scan_apply_overrides_fs(ov, rdb_list, count,
+         NULL);
+}
+
+enum manual_content_scan_override_status
+      manual_content_scan_apply_overrides_fs(
+            const manual_content_scan_overrides_t *ov,
+            const struct string_list *rdb_list, unsigned *count,
+            const manual_content_scan_fs_t *fs)
+{
+   if (count)
+      *count = 0;
+
+   if (!ov)
+      return MANUAL_CONTENT_SCAN_OVR_OK;
+
+   if (ov->core)
+   {
+      unsigned matches             = 0;
+      const core_info_t *core_info = manual_content_scan_find_core(
+            ov->core, fs ? fs->ov_core : NULL, &matches);
+
+      if (count)
+         *count = matches;
+      if (matches > 1)
+         return MANUAL_CONTENT_SCAN_OVR_AMBIGUOUS_CORE;
+      if (!core_info || !manual_content_scan_set_core(core_info))
+         return MANUAL_CONTENT_SCAN_OVR_NO_SUCH_CORE;
+      scan_settings.core_type = MANUAL_CONTENT_SCAN_CORE_SET;
+   }
+
+   if (ov->database)
+   {
+      if (!manual_content_scan_rdb_list_has(rdb_list, ov->database))
+         return MANUAL_CONTENT_SCAN_OVR_NO_SUCH_DATABASE;
+      /* A refreshed database playlist's name shares this
+       * buffer: it keeps that name as a custom one */
+      if (   scan_settings.system_name_type
+               == MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE
+          && !string_is_equal(scan_system_name_database, ov->database))
+      {
+         strlcpy(scan_system_name_custom, scan_system_name_database,
+               sizeof(scan_system_name_custom));
+         manual_content_scan_set_menu_system_name(
+               MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, NULL);
+      }
+      manual_content_scan_set_menu_scan_db_select(
+            MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC, ov->database);
+   }
+   else if (ov->flags & MANUAL_CONTENT_SCAN_OVR_FIRST_DB)
+      manual_content_scan_set_menu_scan_db_select(
+            MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH, NULL);
+
+   /* A database playlist's name and the database to match
+    * share one buffer: next to another database, the
+    * playlist is custom */
+   if (ov->playlist)
+   {
+      if (   manual_content_scan_rdb_list_has(rdb_list, ov->playlist)
+          && (!ov->database || string_is_equal(ov->database, ov->playlist)))
+         manual_content_scan_set_menu_system_name(
+               MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE, ov->playlist);
+      else
+      {
+         strlcpy(scan_system_name_custom, ov->playlist,
+               sizeof(scan_system_name_custom));
+         manual_content_scan_scrub_system_name_custom();
+         manual_content_scan_set_menu_system_name(
+               MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, NULL);
+      }
+   }
+
+   if (ov->dat)
+   {
+      if (   (ov->flags & MANUAL_CONTENT_SCAN_OVR_MATCH)
+          && ov->match == MANUAL_CONTENT_SCAN_USE_DB_NONE)
+         return MANUAL_CONTENT_SCAN_OVR_DAT_WITHOUT_MATCH;
+
+      if (fs && fs->ov_dat)
+         strlcpy(scan_dat_file_path, fs->ov_dat,
+               sizeof(scan_dat_file_path));
+      else
+         manual_content_scan_dat_path_resolve(scan_dat_file_path, ov->dat,
+               sizeof(scan_dat_file_path));
+      switch (manual_content_scan_validate_dat(
+            (fs && fs->ov_dat) ? &fs->ov_dat_size : NULL))
+      {
+         case MANUAL_CONTENT_SCAN_DAT_FILE_OK:
+            break;
+         case MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE:
+            return MANUAL_CONTENT_SCAN_OVR_DAT_TOO_LARGE;
+         default:
+            return MANUAL_CONTENT_SCAN_OVR_NOT_A_DAT;
+      }
+
+      manual_content_scan_set_menu_scan_use_db(
+               (   (ov->flags & MANUAL_CONTENT_SCAN_OVR_MATCH)
+                && ov->match == MANUAL_CONTENT_SCAN_USE_DB_LOOSE)
+            ? MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE
+            : MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT);
+   }
+   else if (ov->flags & MANUAL_CONTENT_SCAN_OVR_MATCH)
+   {
+      enum manual_content_scan_db_usage usage = ov->match;
+
+      /* A refresh keeps its saved DAT unless the match is none */
+      if (   scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT
+          || scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE)
+      {
+         if (ov->match == MANUAL_CONTENT_SCAN_USE_DB_STRICT)
+            usage = MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT;
+         else if (ov->match == MANUAL_CONTENT_SCAN_USE_DB_LOOSE)
+            usage = MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE;
+         else
+            scan_dat_file_path[0] = '\0';
+      }
+
+      manual_content_scan_set_menu_scan_use_db(usage);
+   }
+
+   if (ov->exts)
+   {
+      strlcpy(scan_file_exts_custom, ov->exts,
+            sizeof(scan_file_exts_custom));
+      manual_content_scan_scrub_file_exts_custom();
+   }
+
+   if (ov->flags & MANUAL_CONTENT_SCAN_OVR_NO_RECURSIVE)
+      scan_settings.search_recursively = false;
+   if (ov->flags & MANUAL_CONTENT_SCAN_OVR_NO_ARCHIVES)
+      scan_settings.search_archives    = false;
+   if (ov->flags & MANUAL_CONTENT_SCAN_OVR_OVERWRITE)
+      scan_settings.overwrite_playlist = true;
+   if (ov->flags & MANUAL_CONTENT_SCAN_OVR_VALIDATE)
+      scan_settings.validate_entries   = true;
+   if (ov->flags & MANUAL_CONTENT_SCAN_OVR_OMIT_DB_REF)
+      scan_settings.omit_db_ref        = true;
+
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+
+   return MANUAL_CONTENT_SCAN_OVR_OK;
 }
 
 /* Menu getters */
@@ -1340,6 +1910,32 @@ error:
 /* Task Helpers */
 /****************/
 
+/* The system name type a scan of the current settings takes: an
+ * automatic name is filled when the settings predict it. */
+static enum manual_content_scan_system_name_type
+      manual_content_scan_task_name_type(void)
+{
+   if (scan_settings.system_name_type == MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO)
+   {
+      if (scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT ||
+          scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
+          scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_NONE)
+         return MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
+      if (scan_settings.db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
+         return MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
+   }
+   return scan_settings.system_name_type;
+}
+
+/* True if a scan of the current settings writes one playlist
+ * (target_is_single_determined_playlist). */
+bool manual_content_scan_is_single_playlist(void)
+{
+   return    scan_settings.scan_method != MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC
+          && manual_content_scan_task_name_type()
+                != MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO;
+}
+
 /* Parses current manual content scan settings,
  * and extracts all information required to configure
  * a manual content scan task.
@@ -1386,15 +1982,7 @@ bool manual_content_scan_get_task_config(
          sizeof(task_config->content_dir));
 
    /* If name is set as automatic, but is predictable, fill it now. */
-   if (scan_settings.system_name_type == MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO)
-   {
-      if (scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT ||
-          scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
-          scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_NONE)
-         scan_settings.system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
-      else if (scan_settings.db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
-         scan_settings.system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
-   }
+   scan_settings.system_name_type = manual_content_scan_task_name_type();
    /* Get target playlist ("system name")
     *
     * The system name is not a leaf value: the scan pipeline appends a

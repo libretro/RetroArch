@@ -336,16 +336,90 @@ bool task_push_image_load_set(const char *const *paths,
  * task. Safe from a task_queue_find predicate. */
 bool task_image_set_tag(retro_task_t *task, uint64_t *tag);
 
+/* A content scan's outcome, handed to its callback as task_data and
+ * valid only during the call.  Counts cover every playlist the scan
+ * writes; errors are files it could not read. */
+typedef struct
+{
+   unsigned added;
+   unsigned duplicates;
+   unsigned unmatched;
+   unsigned errors;
+   bool     failed;
+} task_dbscan_result_t;
+
 #ifdef HAVE_LIBRETRODB
 /* Scans @fullpath, a directory or a single file, against the content
  * databases; the database and playlist directories come from the
- * settings. */
-bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb);
+ * settings.  @cb gets @user_data.  False while a chain runs. */
+bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb,
+      void *user_data);
 #endif
+
+struct manual_content_scan_overrides;
+
+enum task_dbscan_item_kind
+{
+   TASK_DBSCAN_ITEM_PATH = 0,     /* --scan */
+   TASK_DBSCAN_ITEM_REFRESH,      /* --scan-refresh */
+   TASK_DBSCAN_ITEM_REFRESH_ALL   /* --scan-refresh-all, Refresh All */
+};
+
+typedef struct
+{
+   char *arg;  /* as typed; NULL for REFRESH_ALL */
+   struct manual_content_scan_overrides *overrides; /* NULL: none */
+   enum task_dbscan_item_kind kind;
+} task_dbscan_item_t;
+
+enum task_dbscan_outcome
+{
+   TASK_DBSCAN_RAN = 0,   /* res holds the counts */
+   TASK_DBSCAN_FAILED,
+   TASK_DBSCAN_SKIPPED
+};
+
+typedef struct
+{
+   unsigned ran;     /* scans that ran and did not fail */
+   unsigned added;   /* of those, the ones that added an entry */
+   unsigned failed;
+   unsigned skipped;
+   bool     cancelled;
+} task_dbscan_chain_result_t;
+
+typedef void (*task_dbscan_item_cb_t)(const char *name,
+      enum task_dbscan_outcome outcome,
+      const task_dbscan_result_t *res, void *user_data);
+typedef void (*task_dbscan_chain_cb_t)(
+      const task_dbscan_chain_result_t *res, void *user_data);
+
+/* Runs @items in order, one task at a time: each step is pushed from
+ * the last one's callback, and a cancelled task ends the run.  The
+ * chain owns @items from the call, whatever it returns.  @item_cb: once
+ * per scan, failed item or skipped playlist; @done_cb: once at the end,
+ * from a task callback.  @res is valid during the call only.  False,
+ * calling neither, if out of memory or while a chain or a manual scan
+ * runs.  Main thread only. */
+bool task_push_dbscan_chain(task_dbscan_item_t *items, size_t count,
+      task_dbscan_item_cb_t item_cb, task_dbscan_chain_cb_t done_cb,
+      void *user_data);
+
+/* Main thread only. */
+bool task_dbscan_chain_is_running(void);
+
+/* False while task_push_dbscan_chain() would refuse: a chain or a
+ * manual scan runs.  Main thread only. */
+bool task_dbscan_chain_can_start(void);
+/* A scan asked for while a chain runs would use the settings the chain
+ * last loaded: true, with the message shown, when it must be refused. */
+bool task_dbscan_chain_refuse(void);
+/* The same for a new chain, which also waits for a running scan. */
+bool task_dbscan_chain_refuse_start(void);
 
 bool task_push_manual_content_scan(
       bool do_menu_refresh,
-      retro_task_callback_t user_cb);
+      retro_task_callback_t user_cb, void *user_data);
 
 #ifdef HAVE_OVERLAY
 bool task_push_overlay_load_default(

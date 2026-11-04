@@ -259,6 +259,16 @@ static void test_join_truncation(void)
    free(region);
 }
 
+/* mingw-w64 has no setenv(). */
+static void set_home(const char *home)
+{
+#ifdef _WIN32
+   _putenv_s("HOME", home);
+#else
+   setenv("HOME", home, 1);
+#endif
+}
+
 /* fill_pathname_abbreviated_or_relative() resolves a relative @in_path
  * against @in_refpath's directory before choosing between the
  * relative and abbreviated forms.  That join still carries its '..'
@@ -273,7 +283,7 @@ static void test_abbreviated_or_relative_long_join(void)
    size_t _len     = 0;
    size_t i;
 
-   setenv("HOME", "/nonexistent-home", 1);
+   set_home("/nonexistent-home");
 
    _len = strlcpy(refpath, "/r/s/t/u/v/w/", sizeof(refpath));
    for (i = 0; i < 230; i++)
@@ -315,6 +325,80 @@ static void test_abbreviated_or_relative_long_join(void)
       printf("[SUCCESS] absolute reference preferred over deeper relative\n");
 }
 
+/* Equal but for which slash separates. */
+static int path_same(const char *a, const char *b)
+{
+   for (; *a && *b; a++, b++)
+      if (*a != *b && !(PATH_CHAR_IS_SLASH(*a) && PATH_CHAR_IS_SLASH(*b)))
+         return 0;
+   return *a == *b;
+}
+
+/* fill_pathname_expand_special() replaces '~' and the slash after it.
+ * The input is a heap copy, so ASan sees a read past its NUL. */
+static void test_expand_special_home(void)
+{
+   static const char *const in[]   =
+         { "~",   "~/",  "~/x",  "~x",   "", "a/~" };
+   static const char *const want[] =
+         { "/h/", "/h/", "/h/x", "/h/x", "", "a/~" };
+   char   out[64];
+   size_t i;
+
+   set_home("/h");
+   for (i = 0; i < sizeof(in) / sizeof(in[0]); i++)
+   {
+      size_t n   = strlen(in[i]) + 1;
+      char *path = (char*)malloc(n);
+      if (!path)
+      {
+         printf("[FAILED] expand \"%s\": out of memory\n", in[i]);
+         failures++;
+         continue;
+      }
+      memcpy(path, in[i], n);
+      fill_pathname_expand_special(out, path, sizeof(out));
+      free(path);
+      if (!path_same(out, want[i]))
+      {
+         printf("[FAILED] expand \"%s\" gave \"%s\" (expected \"%s\")\n",
+               in[i], out, want[i]);
+         failures++;
+      }
+      else
+         printf("[SUCCESS] expand \"%s\"\n", in[i]);
+   }
+}
+
+/* A home directory longer than the buffer: the expansion is cut at the
+ * buffer's end and nothing is written past it.  The buffer is a heap
+ * block of exactly its size, so ASan sees a write past the end. */
+static void test_expand_special_truncation(void)
+{
+   const size_t len = 8;
+   char  *out       = (char*)malloc(len);
+   size_t got;
+
+   if (!out)
+   {
+      printf("[FAILED] expand truncation: out of memory\n");
+      failures++;
+      return;
+   }
+   set_home("/a-home-directory-longer-than-the-buffer");
+   got = fill_pathname_expand_special(out, "~/file", len);
+   if (got != len - 1 || strlen(out) != len - 1
+         || strncmp(out, "/a-home", len - 1))
+   {
+      printf("[FAILED] expand truncation gave \"%s\" (%u)\n",
+            out, (unsigned)got);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] expand truncation\n");
+   free(out);
+}
+
 int main(void)
 {
    /* Documented semantics. */
@@ -335,6 +419,8 @@ int main(void)
    test_overlong_input_no_dot();
    test_join_truncation();
    test_abbreviated_or_relative_long_join();
+   test_expand_special_home();
+   test_expand_special_truncation();
 
    if (failures)
    {

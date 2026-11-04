@@ -57,6 +57,7 @@
 
 #include "../../core_info.h"
 #include <compat/strl.h>
+#include <rthreads/rthreads.h>
 
 bool core_info_find(const char *core_path, core_info_t **core_info)
 {
@@ -810,6 +811,209 @@ static void check_cache_reuse(const char *path, bool compressed,
          lane);
 
    playlist_free_cached();
+}
+
+
+/* A task on a worker writes the playlist file the menu has cached.
+ * The writer leaves a note for the main thread rather than touching
+ * the cached playlist, which the main thread frees and installs at
+ * will; the main thread applies the note when it next asks the cache.
+ * The worker's write keeps the file's size, so the note alone must
+ * keep the cache from serving what is on disk no longer.  A stress
+ * round follows: the worker rewrites while the main thread reuses and
+ * frees the cache (under ASan, and TSan with SANITIZER=thread). */
+struct cache_writer
+{
+   const char *path;
+   unsigned    rounds;
+};
+
+static void cache_writer_name(const char *path, const char *name)
+{
+   playlist_config_t config;
+   playlist_t *pl;
+   config_defaults(&config, path);
+   if (!(pl = playlist_init(&config)))
+      return;
+   playlist_set_default_core_name(pl, name);
+   playlist_write_file(pl);
+   playlist_free(pl);
+}
+
+static void cache_writer_run(void *arg)
+{
+   struct cache_writer *w = (struct cache_writer*)arg;
+   unsigned i;
+   for (i = 0; i < w->rounds; i++)
+      cache_writer_name(w->path, (i & 1) ? "Core X" : "Core Y");
+}
+
+static void lane_cache_worker_write(void)
+{
+   char path[512];
+   playlist_config_t config;
+   struct cache_writer w;
+   sthread_t *t;
+   playlist_t *pl;
+   unsigned had = failures;
+   unsigned i;
+
+   snprintf(path, sizeof(path), "%s/worker.lpl", fixture_dir);
+   CHECK(write_whole(path, json_full), "worker lane: fixture write");
+   /* the writer's own form, so every later write has its size */
+   cache_writer_name(path, "Core Z");
+   config_defaults(&config, path);
+
+   playlist_free_cached();
+   CHECK(playlist_init_cached(&config), "worker lane: cached init");
+   pl = playlist_get_cached();
+   CHECK(pl && streq(playlist_get_default_core_name(pl), "Core Z"),
+         "worker lane: cached playlist");
+
+   w.path   = path;
+   w.rounds = 1;
+   CHECK((t = sthread_create(cache_writer_run, &w)) != NULL,
+         "worker lane: writer thread");
+   if (t)
+      sthread_join(t);
+
+   CHECK(playlist_init_cached(&config), "worker lane: cached init after");
+   pl = playlist_get_cached();
+   CHECK(pl && streq(playlist_get_default_core_name(pl), "Core Y"),
+         "worker lane: a same-size write from a worker was served "
+         "from the stale cache");
+
+   /* concurrent: the worker writes while the main thread reuses,
+    * reads and frees */
+   w.rounds = 200;
+   if ((t = sthread_create(cache_writer_run, &w)))
+   {
+      for (i = 0; i < 400; i++)
+      {
+         /* Windows replaces the file with MoveFileExW, and an open
+          * that meets it fails: that read is an empty playlist. */
+         if (playlist_init_cached(&config) && (pl = playlist_get_cached()))
+            CHECK(   playlist_get_default_core_name(pl) != NULL
+#ifdef _WIN32
+                  || !playlist_size(pl)
+#endif
+                  , "worker lane: stress read");
+         if (i & 1)
+            playlist_free_cached();
+      }
+      sthread_join(t);
+   }
+   CHECK(playlist_init_cached(&config), "worker lane: final init");
+   pl = playlist_get_cached();
+   /* the last of 200 writes, round 199, wrote "Core X" */
+   CHECK(pl && streq(playlist_get_default_core_name(pl), "Core X"),
+         "worker lane: the cache missed the worker's last write");
+   playlist_free_cached();
+   if (failures == had)
+      fprintf(stderr, "[pass] worker-write cache lane\n");
+}
+
+/* The whole file, for comparing it before and after; caller frees. */
+static char *slurp(const char *path, long *len)
+{
+   char *buf = NULL;
+   FILE *f   = fopen(path, "rb");
+   *len      = -1;
+   if (!f)
+      return NULL;
+   if (     !fseek(f, 0, SEEK_END)
+         && (*len = ftell(f)) >= 0
+         && !fseek(f, 0, SEEK_SET)
+         && (buf = (char*)malloc((size_t)*len + 1)))
+   {
+      if (fread(buf, 1, (size_t)*len, f) != (size_t)*len)
+      {
+         free(buf);
+         buf = NULL;
+      }
+   }
+   fclose(f);
+   return buf;
+}
+
+static playlist_t *header_read(const playlist_config_t *config)
+{
+   playlist_parse_t *p = playlist_parse_begin_header(config);
+   if (!p)
+      return NULL;
+   if (playlist_parse_step(p, NULL, NULL) < 0)
+   {
+      playlist_parse_abort(p);
+      return NULL;
+   }
+   return playlist_parse_end(p);
+}
+
+/* playlist_parse_begin_header(): what comes ahead of the entries and
+ * nothing after; under a moved base content directory the scan record
+ * moves in memory while the file stays as it was; the result is never
+ * written; the old format, which has no scan settings, reads empty. */
+static void lane_header_only(void)
+{
+   char path[512];
+   playlist_config_t config;
+   playlist_t *pl;
+   char *before, *after;
+   long blen, alen;
+   unsigned had = failures;
+
+   snprintf(path, sizeof(path), "%s/header.lpl", fixture_dir);
+   CHECK(write_whole(path, json_full), "header lane: fixture write");
+   config_defaults(&config, path);
+
+   pl = header_read(&config);
+   CHECK(pl != NULL, "header lane: read");
+   if (pl)
+   {
+      CHECK(playlist_size(pl) == 0, "header lane: %u entries read",
+            (unsigned)playlist_size(pl));
+      CHECK(streq(playlist_get_default_core_name(pl), "Core A"),
+            "header lane: default core name");
+      CHECK(streq(playlist_get_scan_content_dir(pl), "/games/snes"),
+            "header lane: scan content dir");
+      playlist_free(pl);
+   }
+
+   /* a base moved since the save: autofix's move, in memory only */
+   before = slurp(path, &blen);
+   playlist_config_set_base_content_directory(&config, "/moved");
+   pl = header_read(&config);
+   /* the suffix in the local form, as autofix converts it */
+   CHECK(pl && streq(playlist_get_scan_content_dir(pl),
+#ifdef _WIN32
+            "/moved\\snes"
+#else
+            "/moved/snes"
+#endif
+            ), "header lane: scan content dir under the moved base");
+   if (pl)
+   {
+      /* and never written, even when asked */
+      playlist_set_default_core_name(pl, "Core Changed");
+      playlist_write_file(pl);
+      playlist_free(pl);
+   }
+   after = slurp(path, &alen);
+   CHECK(before && after && blen == alen && !memcmp(before, after, (size_t)blen),
+         "header lane: the file changed under a header read");
+   free(before);
+   free(after);
+
+   CHECK(write_whole(path, old_format), "header lane: old format write");
+   config_defaults(&config, path);
+   pl = header_read(&config);
+   CHECK(pl && playlist_size(pl) == 0
+         && !playlist_get_scan_content_dir(pl),
+         "header lane: the old format reads empty");
+   playlist_free(pl);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] header-only lane\n");
 }
 
 static void lane_cache_reuse(void)
@@ -1660,6 +1864,8 @@ int main(int argc, char *argv[])
    lane_budgeted_autofix();
    lane_abort_midway();
    lane_cache_reuse();
+   lane_cache_worker_write();
+   lane_header_only();
    lane_switch_playlist_never_shows_previous();
    lane_switch_supersedes_pending();
    lane_saf_slow_reads();

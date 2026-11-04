@@ -527,7 +527,7 @@ static bool run_scan(const char *content_dir, const char *dat_path,
       return false;
 
    t0 = cpu_features_get_time_usec();
-   if (!task_push_manual_content_scan(false, scan_cb))
+   if (!task_push_manual_content_scan(false, scan_cb, NULL))
    {
       fprintf(stderr, "task_push_manual_content_scan refused\n");
       return false;
@@ -628,7 +628,7 @@ static bool run_db_scan(const char *content_dir, const char *db_dir,
       return false;
 
    t0 = cpu_features_get_time_usec();
-   if (!task_push_manual_content_scan(false, scan_cb))
+   if (!task_push_manual_content_scan(false, scan_cb, NULL))
    {
       fprintf(stderr, "database scan: push refused\n");
       return false;
@@ -693,7 +693,7 @@ static bool run_scan_threaded(const char *content_dir, const char *dat_path,
 
    task_queue_init(true, msgq_push);
 
-   if (!task_push_manual_content_scan(false, scan_cb))
+   if (!task_push_manual_content_scan(false, scan_cb, NULL))
    {
       fprintf(stderr, "threaded: task_push_manual_content_scan refused\n");
       task_queue_deinit();
@@ -742,7 +742,7 @@ static bool run_scan_cancelled(const char *content_dir, const char *dat_path,
 
    task_queue_init(false, msgq_push);
 
-   if (!task_push_manual_content_scan(false, scan_cb))
+   if (!task_push_manual_content_scan(false, scan_cb, NULL))
    {
       fprintf(stderr, "cancel lane: push refused\n");
       task_queue_deinit();

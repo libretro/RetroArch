@@ -104,6 +104,43 @@ enum manual_content_scan_playlist_refresh_status
    MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_DAT_FILE_TOO_LARGE
 };
 
+/* Defines all possible return values for
+ * manual_content_scan_apply_overrides() */
+enum manual_content_scan_override_status
+{
+   MANUAL_CONTENT_SCAN_OVR_OK = 0,
+   MANUAL_CONTENT_SCAN_OVR_NO_SUCH_CORE,
+   MANUAL_CONTENT_SCAN_OVR_AMBIGUOUS_CORE,
+   MANUAL_CONTENT_SCAN_OVR_NO_SUCH_DATABASE,
+   MANUAL_CONTENT_SCAN_OVR_NOT_A_DAT,
+   MANUAL_CONTENT_SCAN_OVR_DAT_TOO_LARGE,
+   MANUAL_CONTENT_SCAN_OVR_DAT_WITHOUT_MATCH
+};
+
+enum manual_content_scan_override_flags
+{
+   MANUAL_CONTENT_SCAN_OVR_MATCH        = (1 << 0), /* 'match' is set */
+   MANUAL_CONTENT_SCAN_OVR_FIRST_DB     = (1 << 1),
+   MANUAL_CONTENT_SCAN_OVR_NO_RECURSIVE = (1 << 2),
+   MANUAL_CONTENT_SCAN_OVR_NO_ARCHIVES  = (1 << 3),
+   MANUAL_CONTENT_SCAN_OVR_OVERWRITE    = (1 << 4),
+   MANUAL_CONTENT_SCAN_OVR_VALIDATE     = (1 << 5),
+   MANUAL_CONTENT_SCAN_OVR_OMIT_DB_REF  = (1 << 6)
+};
+
+/* Settings laid over a scan's own; a NULL string or a clear
+ * flag leaves its setting as it is */
+typedef struct manual_content_scan_overrides
+{
+   char *playlist;  /* --scan-playlist */
+   char *database;  /* --scan-database=NAME */
+   char *dat;       /* --scan-dat, as typed */
+   char *core;      /* --scan-core, as typed */
+   char *exts;      /* --scan-exts, space separated */
+   enum manual_content_scan_db_usage match; /* STRICT, LOOSE or NONE */
+   uint16_t flags;  /* MANUAL_CONTENT_SCAN_OVR_* */
+} manual_content_scan_overrides_t;
+
 /* Holds all configuration parameters required
  * for a manual content scan task */
 typedef struct
@@ -223,10 +260,46 @@ enum manual_content_scan_dat_file_path_status
 
 /* Menu setters */
 
+/* Sets every setting back to its default */
+void manual_content_scan_reset_settings(void);
+
+/* The Manual Scan settings as they are, for a scan chain to put back
+ * once it has run its own: NULL out of memory. Restoring frees it. */
+typedef struct manual_content_scan_saved manual_content_scan_saved_t;
+manual_content_scan_saved_t *manual_content_scan_save_settings(void);
+void manual_content_scan_restore_settings(manual_content_scan_saved_t *saved);
+
 /* Sets content directory for next manual scan
  * operation.
  * Returns true if content directory is valid. */
 bool manual_content_scan_set_menu_content_dir(const char *content_dir);
+
+/* What the file system says of one scan's paths, read off the main
+ * thread by manual_content_scan_fs_read(), so that the _fs setters
+ * below ask it nothing.  Only the paths it was read for: it holds no
+ * reference to the settings. */
+typedef struct manual_content_scan_fs
+{
+   char *ov_dat;         /* @ov_dat expanded and resolved, or NULL */
+   char *ov_core;        /* @ov_core resolved when it is a path, or NULL */
+   int64_t dat_size;     /* the saved DAT's size; <= 0: not there */
+   int64_t ov_dat_size;  /* likewise, @ov_dat's */
+   int content_stat;     /* path_stat() of the content folder */
+} manual_content_scan_fs_t;
+
+/* Any thread: reads nothing but its arguments and the file system.
+ * @content_dir and @dat as the settings hold them, before expansion;
+ * @ov_core and @ov_dat an item's overrides, each NULL when unset.
+ * NULL out of memory.  Free with manual_content_scan_fs_free(). */
+manual_content_scan_fs_t *manual_content_scan_fs_read(
+      const char *content_dir, const char *dat,
+      const char *ov_core, const char *ov_dat);
+void manual_content_scan_fs_free(manual_content_scan_fs_t *fs);
+
+/* As manual_content_scan_set_menu_content_dir(), the folder's stat
+ * taken from @fs (NULL: asked now) */
+bool manual_content_scan_set_menu_content_dir_fs(const char *content_dir,
+      const manual_content_scan_fs_t *fs);
 
 bool manual_content_scan_set_menu_scan_method(
       enum manual_content_scan_method method);
@@ -268,6 +341,40 @@ bool manual_content_scan_set_menu_core_name(
 enum manual_content_scan_playlist_refresh_status
       manual_content_scan_set_menu_from_playlist(playlist_t *playlist,
             const char *path_content_database, bool show_hidden_files);
+
+/* As manual_content_scan_set_menu_from_playlist(), with the
+ * paths of the installed databases in @rdb_list (NULL: none). */
+enum manual_content_scan_playlist_refresh_status
+      manual_content_scan_set_menu_from_playlist_list(playlist_t *playlist,
+            const struct string_list *rdb_list);
+
+/* As manual_content_scan_set_menu_from_playlist_list(), the folder
+ * and the DAT as @fs read them (NULL: asked now) */
+enum manual_content_scan_playlist_refresh_status
+      manual_content_scan_set_menu_from_playlist_list_fs(
+            playlist_t *playlist, const struct string_list *rdb_list,
+            const manual_content_scan_fs_t *fs);
+
+manual_content_scan_overrides_t *manual_content_scan_overrides_new(void);
+void manual_content_scan_overrides_free(manual_content_scan_overrides_t *ov);
+
+/* Lays @ov over the current settings and sets the Custom
+ * method, stopping at the first override that does not
+ * resolve; NULL @ov changes nothing.
+ * > @rdb_list: paths of the installed databases, or NULL
+ * > @count: the cores @ov->core matched, when not NULL */
+enum manual_content_scan_override_status
+      manual_content_scan_apply_overrides(
+            const manual_content_scan_overrides_t *ov,
+            const struct string_list *rdb_list, unsigned *count);
+
+/* As manual_content_scan_apply_overrides(), the core path and the
+ * DAT as @fs read them for @ov (NULL: asked now) */
+enum manual_content_scan_override_status
+      manual_content_scan_apply_overrides_fs(
+            const manual_content_scan_overrides_t *ov,
+            const struct string_list *rdb_list, unsigned *count,
+            const manual_content_scan_fs_t *fs);
 
 /* Menu getters */
 
@@ -317,6 +424,10 @@ struct string_list *manual_content_scan_get_menu_core_name_list(void);
 /****************/
 /* Task Helpers */
 /****************/
+
+/* True if a scan of the current settings writes one playlist
+ * (target_is_single_determined_playlist). */
+bool manual_content_scan_is_single_playlist(void);
 
 /* Parses current manual content scan settings,
  * and extracts all information required to configure

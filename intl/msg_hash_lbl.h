@@ -1956,6 +1956,10 @@ MSG_HASH(
    "playlist_manager_refresh_playlist"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
+   "playlist_manager_refresh_all_playlists"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN,
    "playlist_settings_begin"
    )

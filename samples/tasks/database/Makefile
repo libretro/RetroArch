@@ -250,8 +250,11 @@ $(INDEX_TEST)$(EXE_EXT): $(INDEX_TEST_OBJECTS)
 # count and refuse reader pushes, count queue worker starts, count an
 # archive's stored-CRC and directory reads, fail a chosen serial's
 # query, order the database and content lists, count reader passes,
-# hold chosen lookups, count an archive's member hits a step and hold
-# a chosen index build in one step.
+# hold chosen lookups, count an archive's member hits a step, hold
+# a chosen index build in one step, tell which thread the refresh
+# walks and playlist loads ran on, fail a chosen task_init, fail the
+# playlist folder walk, and count the file system calls the main
+# thread makes.
 SCAN_TEST_WRAPS := -Wl,--wrap=libretrodb_open -Wl,--wrap=task_queue_park \
 	-Wl,--wrap=intfstream_crc_step -Wl,--wrap=rm3u_is_m3u \
 	-Wl,--wrap=task_nbio_slice_open -Wl,--wrap=task_nbio_slice_close \
@@ -265,7 +268,12 @@ SCAN_TEST_WRAPS := -Wl,--wrap=libretrodb_open -Wl,--wrap=task_queue_park \
 	-Wl,--wrap=database_info_dir_init_from_list \
 	-Wl,--wrap=database_info_index_job_step \
 	-Wl,--wrap=task_nbio_slice_within_budget \
-	-Wl,--wrap=fill_pathname_join_delim
+	-Wl,--wrap=fill_pathname_join_delim \
+	-Wl,--wrap=dir_list_iter_new -Wl,--wrap=dir_list_iter_step \
+	-Wl,--wrap=playlist_parse_begin_header -Wl,--wrap=task_init \
+	-Wl,--wrap=path_stat -Wl,--wrap=path_is_valid \
+	-Wl,--wrap=path_is_directory -Wl,--wrap=path_get_size \
+	-Wl,--wrap=path_resolve_realpath
 ifeq ($(HAVE_THREADS), 1)
 SCAN_TEST_WRAPS += -Wl,--wrap=sthread_create
 endif

@@ -231,6 +231,7 @@
 #include "core.h"
 #include "configuration.h"
 #include "list_special.h"
+#include "manual_content_scan.h"
 #ifdef HAVE_CHEATS
 #include "cheat_manager.h"
 #endif
@@ -390,6 +391,19 @@ enum
    RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
    RA_OPT_SET_SHADER,
    RA_OPT_DATABASE_SCAN,
+   RA_OPT_SCAN_REFRESH,
+   RA_OPT_SCAN_REFRESH_ALL,
+   RA_OPT_SCAN_PLAYLIST,
+   RA_OPT_SCAN_DATABASE,
+   RA_OPT_SCAN_MATCH,
+   RA_OPT_SCAN_DAT,
+   RA_OPT_SCAN_CORE,
+   RA_OPT_SCAN_EXTS,
+   RA_OPT_SCAN_NO_RECURSIVE,
+   RA_OPT_SCAN_NO_ARCHIVES,
+   RA_OPT_SCAN_OVERWRITE,
+   RA_OPT_SCAN_VALIDATE,
+   RA_OPT_SCAN_OMIT_DB_REF,
    RA_OPT_ACCESSIBILITY,
    RA_OPT_LOAD_MENU_ON_ERROR,
    RA_OPT_CLOUDSYNC,
@@ -7941,9 +7955,59 @@ static void retroarch_print_help(const char *arg0)
          "  how a particular subsystem wants content to be loaded.\n");
 
 #ifdef HAVE_LIBRETRODB
+   fputs(buf, stdout);
+   buf[0] = '\0';
+   _len   = 0;
+
    strlcpy_append(buf, sizeof(buf), &_len,
          "      --scan=PATH|FILE           "
-         "Import content from path.\n");
+         "Import content from path. Repeatable.\n"
+         "                                 "
+         "  The options from --scan-playlist on apply\n"
+         "                                 "
+         "  to the --scan, --scan-refresh or\n"
+         "                                 "
+         "  --scan-refresh-all before them. Without\n"
+         "                                 "
+         "  any, the scan is Fully Automatic.\n");
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --scan-refresh=NAME|PATH   "
+         "Refresh a playlist by its saved scan settings.\n"
+         "      --scan-refresh-all         "
+         "Refresh each playlist that has saved settings.\n");
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --scan-playlist=NAME       "
+         "Playlist to add to.\n"
+         "      --scan-database=NAME|first "
+         "Database to match: one by name, or the first\n"
+         "                                 "
+         "  that matches.\n"
+         "      --scan-match=MODE          "
+         "Database check: strict, loose or none.\n"
+         "      --scan-dat=FILE            "
+         "Arcade DAT file to match instead, strict unless\n"
+         "                                 "
+         "  --scan-match=loose.\n");
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --scan-core=CORE           "
+         "Core: a path, a file name or a display name.\n"
+         "      --scan-exts=EXTS           "
+         "File extensions, separated by commas or spaces.\n"
+         "      --scan-no-recursive        "
+         "Do not scan subfolders.\n"
+         "      --scan-no-archives         "
+         "Do not look inside archives.\n");
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --scan-overwrite           "
+         "Replace the playlist instead of adding to it.\n"
+         "      --scan-validate            "
+         "Drop entries for missing or unsupported files.\n"
+         "      --scan-omit-db-ref         "
+         "Look up thumbnails by the playlist name.\n");
+
+   fputs(buf, stdout);
+   buf[0] = '\0';
+   _len   = 0;
 #endif
 #ifdef HAVE_CLOUDSYNC
    strlcpy_append(buf, sizeof(buf), &_len,
@@ -8274,6 +8338,253 @@ void handle_dbscan_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err);
 #endif
 
+#ifdef HAVE_LIBRETRODB
+/* Appends a @kind item for @arg; false if out of memory. */
+static bool retroarch_cli_scan_add(task_dbscan_item_t **items,
+      size_t *count, size_t *cap, enum task_dbscan_item_kind kind,
+      const char *arg)
+{
+   task_dbscan_item_t *item;
+
+   if (*count == *cap)
+   {
+      size_t n                  = *cap ? *cap * 2 : 4;
+      task_dbscan_item_t *grown = (task_dbscan_item_t*)realloc(*items,
+            n * sizeof(*grown));
+
+      if (!grown)
+         return false;
+      *items = grown;
+      *cap   = n;
+   }
+   item            = &(*items)[*count];
+   item->kind      = kind;
+   item->overrides = NULL;
+   item->arg       = NULL;
+   if (arg && !(item->arg = strdup(arg)))
+      return false;
+   (*count)++;
+   return true;
+}
+
+/* Sets scan option @c, one of @opts, on the latest of the @count
+ * items; a bad one ends the run before the config loads. */
+static void retroarch_cli_scan_option(task_dbscan_item_t *items,
+      size_t count, const struct option *opts, int c, const char *value)
+{
+   manual_content_scan_overrides_t *ov = NULL;
+   const char *err                     = NULL;
+   char **field                        = NULL;
+   char *copy                          = NULL;
+   size_t max_len                      = PATH_MAX_LENGTH - 1;
+
+   while (opts->val != c)
+      opts++;
+
+   if (!count)
+      err = "must follow a --scan";
+   else
+   {
+      if (!(ov = items[count - 1].overrides))
+         ov = items[count - 1].overrides =
+               manual_content_scan_overrides_new();
+      if (opts->has_arg)
+         copy = strdup(value);
+      if (!ov || (opts->has_arg && !copy))
+      {
+         fprintf(stderr, "out of memory\n");
+         exit(1);
+      }
+
+      switch (c)
+      {
+         case RA_OPT_SCAN_PLAYLIST:
+            /* A refresh writes its own playlist. */
+            if (items[count - 1].kind == TASK_DBSCAN_ITEM_REFRESH)
+               err     = "cannot follow --scan-refresh";
+            else if (items[count - 1].kind == TASK_DBSCAN_ITEM_REFRESH_ALL)
+               err     = "cannot follow --scan-refresh-all";
+            else
+            {
+               field   = &ov->playlist;
+               /* <name>.lpl.tmp fits a file name */
+               max_len = NAME_MAX_LENGTH - 9;
+            }
+            break;
+         case RA_OPT_SCAN_DATABASE:
+            if (string_is_equal(copy, "first"))
+            {
+               free(ov->database);
+               ov->database  = NULL;
+               ov->flags    |= MANUAL_CONTENT_SCAN_OVR_FIRST_DB;
+            }
+            else
+            {
+               ov->flags    &= ~MANUAL_CONTENT_SCAN_OVR_FIRST_DB;
+               field         = &ov->database;
+               max_len       = NAME_MAX_LENGTH - 1;
+            }
+            break;
+         case RA_OPT_SCAN_MATCH:
+            if (!*copy)
+               err       = "needs a value";
+            else if (string_is_equal(copy, "strict"))
+               ov->match = MANUAL_CONTENT_SCAN_USE_DB_STRICT;
+            else if (string_is_equal(copy, "loose"))
+               ov->match = MANUAL_CONTENT_SCAN_USE_DB_LOOSE;
+            else if (string_is_equal(copy, "none"))
+               ov->match = MANUAL_CONTENT_SCAN_USE_DB_NONE;
+            else
+               err       = "must be strict, loose or none";
+            ov->flags   |= MANUAL_CONTENT_SCAN_OVR_MATCH;
+            break;
+         case RA_OPT_SCAN_DAT:
+            field = &ov->dat;
+            break;
+         case RA_OPT_SCAN_CORE:
+            field = &ov->core;
+            break;
+         case RA_OPT_SCAN_EXTS:
+            {
+               /* Commas become spaces, runs of spaces one, ends trimmed */
+               char *out = copy;
+               const char *in;
+
+               for (in = copy; *in; in++)
+               {
+                  char ch = (*in == ',') ? ' ' : *in;
+                  if (ch != ' ' || (out > copy && out[-1] != ' '))
+                     *out++ = ch;
+               }
+               if (out > copy && out[-1] == ' ')
+                  out--;
+               *out  = '\0';
+               field = &ov->exts;
+            }
+            break;
+         case RA_OPT_SCAN_NO_RECURSIVE:
+            ov->flags |= MANUAL_CONTENT_SCAN_OVR_NO_RECURSIVE;
+            break;
+         case RA_OPT_SCAN_NO_ARCHIVES:
+            ov->flags |= MANUAL_CONTENT_SCAN_OVR_NO_ARCHIVES;
+            break;
+         case RA_OPT_SCAN_OVERWRITE:
+            ov->flags |= MANUAL_CONTENT_SCAN_OVR_OVERWRITE;
+            break;
+         case RA_OPT_SCAN_VALIDATE:
+            ov->flags |= MANUAL_CONTENT_SCAN_OVR_VALIDATE;
+            break;
+         case RA_OPT_SCAN_OMIT_DB_REF:
+            ov->flags |= MANUAL_CONTENT_SCAN_OVR_OMIT_DB_REF;
+            break;
+      }
+
+      if (field)
+      {
+         if (!*copy)
+            err = "needs a value";
+         else if (strlen(copy) > max_len)
+            err = "is too long";
+         else
+         {
+            free(*field);
+            *field = copy;
+            copy   = NULL;
+         }
+      }
+   }
+
+   free(copy);
+   if (err)
+   {
+      /* Before any --scan, no console yet on Windows. */
+      frontend_driver_attach_console();
+      fprintf(stderr, "--%s %s\n", opts->name, err);
+      exit(1);
+   }
+}
+
+/* What the chain told a run without --menu. */
+typedef struct
+{
+   task_dbscan_chain_result_t totals;
+   bool done;
+} retroarch_cli_scan_state_t;
+
+static void retroarch_cli_scan_done(
+      const task_dbscan_chain_result_t *res, void *user_data)
+{
+   retroarch_cli_scan_state_t *st = (retroarch_cli_scan_state_t*)user_data;
+
+   st->totals = *res;
+   st->done   = true;
+}
+
+static bool retroarch_cli_scan_running(void *data)
+{
+   return !((retroarch_cli_scan_state_t*)data)->done;
+}
+
+static void retroarch_cli_scan_menu_item(const char *name,
+      enum task_dbscan_outcome outcome,
+      const task_dbscan_result_t *res, void *user_data)
+{
+#ifdef HAVE_MENU
+   if (res)
+      handle_dbscan_finished(NULL, NULL, NULL, NULL);
+#endif
+}
+
+/* Runs the --scan @items through the scan chain, which owns them.
+ * With --menu the chain is pushed and the menu goes on.  Without, it
+ * is the whole run: the process exits 1 if any scan failed, else 0 if
+ * any added an entry, else 2. */
+static void retroarch_cli_scan(task_dbscan_item_t *items, size_t count,
+      bool menu, const char *content)
+{
+   retroarch_cli_scan_state_t st;
+   settings_t *settings = config_get_ptr();
+   int reinit_flags     = DRIVERS_CMD_ALL &
+         ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_MICROPHONE_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
+
+   drivers_init(settings, reinit_flags, (enum driver_lifetime_flags)0, false);
+   retroarch_init_task_queue();
+
+   if (menu)
+   {
+      if (!task_push_dbscan_chain(items, count,
+            retroarch_cli_scan_menu_item, NULL, NULL))
+         fprintf(stderr, "out of memory\n");
+      return;
+   }
+
+#ifdef HAVE_THREADS
+   /* Threaded for this run whatever the setting: only there does the
+    * scan get its readers. */
+   if (!task_queue_is_threaded())
+   {
+      task_queue_set_threaded();
+      task_queue_check();
+   }
+#endif
+
+   if (content)
+      fprintf(stderr, "without --menu: ignoring \"%s\"\n",
+            content);
+
+   memset(&st, 0, sizeof(st));
+   if (task_push_dbscan_chain(items, count, NULL,
+         retroarch_cli_scan_done, &st))
+      task_queue_wait(retroarch_cli_scan_running, &st);
+   else
+      fprintf(stderr, "out of memory\n");
+
+   driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+   task_queue_deinit();
+   exit((!st.done || st.totals.failed) ? 1 : st.totals.added ? 0 : 2);
+}
+#endif
+
 #ifdef HAVE_CLOUDSYNC
 /* The sync's verdict, where the waiting caller reads it. */
 static void retroarch_cloud_sync_finished(retro_task_t *task,
@@ -8327,8 +8638,11 @@ static bool retroarch_parse_input_and_config(
    access_state_t *access_st       = access_state_get_ptr();
 #endif
 #ifdef HAVE_LIBRETRODB
-   retro_task_callback_t cb_task_dbscan
-                                   = NULL;
+   task_dbscan_item_t   *scan_items = NULL;
+   size_t                scan_count = 0;
+   size_t                  scan_cap = 0;
+   const char        *scan_conflict = NULL;
+   bool                    cli_scan = false;
 #endif
 
    const struct option opts[]      = {
@@ -8391,6 +8705,19 @@ static bool retroarch_parse_input_and_config(
       { "entryslot",          1, NULL, 'e' },
 #ifdef HAVE_LIBRETRODB
       { "scan",               1, NULL, RA_OPT_DATABASE_SCAN },
+      { "scan-refresh",       1, NULL, RA_OPT_SCAN_REFRESH },
+      { "scan-refresh-all",   0, NULL, RA_OPT_SCAN_REFRESH_ALL },
+      { "scan-playlist",      1, NULL, RA_OPT_SCAN_PLAYLIST },
+      { "scan-database",      1, NULL, RA_OPT_SCAN_DATABASE },
+      { "scan-match",         1, NULL, RA_OPT_SCAN_MATCH },
+      { "scan-dat",           1, NULL, RA_OPT_SCAN_DAT },
+      { "scan-core",          1, NULL, RA_OPT_SCAN_CORE },
+      { "scan-exts",          1, NULL, RA_OPT_SCAN_EXTS },
+      { "scan-no-recursive",  0, NULL, RA_OPT_SCAN_NO_RECURSIVE },
+      { "scan-no-archives",   0, NULL, RA_OPT_SCAN_NO_ARCHIVES },
+      { "scan-overwrite",     0, NULL, RA_OPT_SCAN_OVERWRITE },
+      { "scan-validate",      0, NULL, RA_OPT_SCAN_VALIDATE },
+      { "scan-omit-db-ref",   0, NULL, RA_OPT_SCAN_OMIT_DB_REF },
 #endif
 #ifdef HAVE_CLOUDSYNC
       { "cloudsync",          0, NULL, RA_OPT_CLOUDSYNC },
@@ -8585,13 +8912,79 @@ static bool retroarch_parse_input_and_config(
                explicit_menu = true;
                break;
             case RA_OPT_DATABASE_SCAN:
+            case RA_OPT_SCAN_REFRESH:
+            case RA_OPT_SCAN_REFRESH_ALL:
 #ifdef HAVE_LIBRETRODB
-               verbosity_enable();
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
+               {
+                  enum task_dbscan_item_kind kind = TASK_DBSCAN_ITEM_PATH;
+                  const char *arg                 = optarg;
+
+                  if (c == RA_OPT_SCAN_REFRESH)
+                  {
+                     if (!*arg)
+                     {
+                        frontend_driver_attach_console();
+                        fprintf(stderr, "--scan-refresh needs a value\n");
+                        exit(1);
+                     }
+                     kind = TASK_DBSCAN_ITEM_REFRESH;
+                  }
+                  else if (c == RA_OPT_SCAN_REFRESH_ALL)
+                  {
+                     kind = TASK_DBSCAN_ITEM_REFRESH_ALL;
+                     arg  = NULL;
+                  }
+                  /* Cut to fit the chain's path buffers, a path could
+                   * name a folder above the one asked for. */
+                  if (arg && strlen(arg) >= PATH_MAX_LENGTH)
+                  {
+                     frontend_driver_attach_console();
+                     fprintf(stderr, "--%s is too long\n",
+                           c == RA_OPT_SCAN_REFRESH ? "scan-refresh" : "scan");
+                     exit(1);
+                  }
+                  cli_scan = true;
+                  /* The totals and errors are the command's output: the
+                   * config's log_verbosity must not turn them off, which
+                   * on Windows detaches the console. */
+                  verbosity_enable();
+                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
+                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
+                  if (!retroarch_cli_scan_add(&scan_items, &scan_count,
+                        &scan_cap, kind, arg))
+                  {
+                     fprintf(stderr, "out of memory\n");
+                     exit(1);
+                  }
+               }
 #endif
                break;
+            case RA_OPT_SCAN_PLAYLIST:
+            case RA_OPT_SCAN_DATABASE:
+            case RA_OPT_SCAN_MATCH:
+            case RA_OPT_SCAN_DAT:
+            case RA_OPT_SCAN_CORE:
+            case RA_OPT_SCAN_EXTS:
+            case RA_OPT_SCAN_NO_RECURSIVE:
+            case RA_OPT_SCAN_NO_ARCHIVES:
+            case RA_OPT_SCAN_OVERWRITE:
+            case RA_OPT_SCAN_VALIDATE:
+            case RA_OPT_SCAN_OMIT_DB_REF:
+#ifdef HAVE_LIBRETRODB
+               retroarch_cli_scan_option(scan_items, scan_count, opts, c,
+                     optarg);
+#endif
+               break;
+#if defined(HAVE_LIBRETRODB) && defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
+            case RA_OPT_COMMAND:
+               scan_conflict = "--command";
+               break;
+#endif
             case RA_OPT_CLOUDSYNC:
 #ifdef HAVE_CLOUDSYNC
+#ifdef HAVE_LIBRETRODB
+               scan_conflict = "--cloudsync";
+#endif
                /* The sync's summary is the command's output. */
                verbosity_enable();
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
@@ -8618,6 +9011,21 @@ static bool retroarch_parse_input_and_config(
          }
       }
    }
+#ifdef HAVE_LIBRETRODB
+   /* Each of them is the whole run. */
+   if (cli_scan && scan_conflict)
+   {
+      const char *first = "--scan";
+
+      if (scan_items[0].kind == TASK_DBSCAN_ITEM_REFRESH)
+         first = "--scan-refresh";
+      else if (scan_items[0].kind == TASK_DBSCAN_ITEM_REFRESH_ALL)
+         first = "--scan-refresh-all";
+      fprintf(stderr, "%s cannot be combined with %s\n", first,
+            scan_conflict);
+      exit(1);
+   }
+#endif
    verbosity_enabled = verbosity_is_enabled();
    /* Enable logging to file if verbosity and log-file arguments were passed.
     * RARCH_OVERRIDE_SETTING_LOG_TO_FILE is set by the RA_OPT_LOG_FILE case above
@@ -9039,42 +9447,20 @@ static bool retroarch_parse_input_and_config(
                }
                break;
             case RA_OPT_DATABASE_SCAN:
-#ifdef HAVE_LIBRETRODB
-               {
-                  settings_t *settings           = config_get_ptr();
-                  int reinit_flags               = DRIVERS_CMD_ALL &
-                        ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_MICROPHONE_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
-
-                  drivers_init(settings, reinit_flags, (enum driver_lifetime_flags)0, false);
-                  retroarch_init_task_queue();
-#ifdef HAVE_THREADS
-                  /* Threaded for this run whatever the setting: only
-                   * there does the scan get its readers. */
-                  if (!explicit_menu && !task_queue_is_threaded())
-                  {
-                     task_queue_set_threaded();
-                     task_queue_check();
-                  }
-#endif
-
-#ifdef HAVE_MENU
-                  if (explicit_menu)
-                     cb_task_dbscan = handle_dbscan_finished;
-#endif
-
-                  task_push_dbscan(optarg, cb_task_dbscan);
-
-                  if (!explicit_menu)
-                  {
-                     /* Command-line scan with no menu: the scan is
-                      * the whole run, so run the queue dry and exit.
-                      * Nothing is drawn meanwhile. */
-                     task_queue_wait(NULL, NULL);
-                     driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
-                     exit(0);
-                  }
-               }
-#endif
+            case RA_OPT_SCAN_REFRESH:
+            case RA_OPT_SCAN_REFRESH_ALL:
+            case RA_OPT_SCAN_PLAYLIST:
+            case RA_OPT_SCAN_DATABASE:
+            case RA_OPT_SCAN_MATCH:
+            case RA_OPT_SCAN_DAT:
+            case RA_OPT_SCAN_CORE:
+            case RA_OPT_SCAN_EXTS:
+            case RA_OPT_SCAN_NO_RECURSIVE:
+            case RA_OPT_SCAN_NO_ARCHIVES:
+            case RA_OPT_SCAN_OVERWRITE:
+            case RA_OPT_SCAN_VALIDATE:
+            case RA_OPT_SCAN_OMIT_DB_REF:
+               /* Taken in the first pass. */
                break;
             case RA_OPT_CLOUDSYNC:
 #ifdef HAVE_CLOUDSYNC
@@ -9118,6 +9504,12 @@ static bool retroarch_parse_input_and_config(
          }
       }
    }
+
+#ifdef HAVE_LIBRETRODB
+   if (scan_items)
+      retroarch_cli_scan(scan_items, scan_count, explicit_menu,
+            (optind < argc) ? argv[optind] : NULL);
+#endif
 
 #ifdef HAVE_GIT_VERSION
    RARCH_LOG("RetroArch %s (Git %s)\n",

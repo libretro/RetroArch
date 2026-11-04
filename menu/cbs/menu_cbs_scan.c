@@ -69,7 +69,7 @@ int action_scan_file(const char *path,
 
    fill_pathname_join_special(fullpath, menu_path, path, sizeof(fullpath));
 
-   task_push_dbscan(fullpath, handle_dbscan_finished);
+   task_push_dbscan(fullpath, handle_dbscan_finished, NULL);
 
    return 0;
 }
@@ -96,7 +96,7 @@ int action_scan_directory(const char *path,
    else
       strlcpy(fullpath, menu_path, sizeof(fullpath));
 
-   task_push_dbscan(fullpath, handle_dbscan_finished);
+   task_push_dbscan(fullpath, handle_dbscan_finished, NULL);
 
    return 0;
 }

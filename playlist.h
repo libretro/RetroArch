@@ -259,6 +259,12 @@ playlist_t *playlist_init(const playlist_config_t *config);
 typedef struct playlist_parse playlist_parse_t;
 
 playlist_parse_t *playlist_parse_begin(const playlist_config_t *config);
+/* The same, for what comes ahead of the entries only - the defaults
+ * and the scan record, which the writer puts before them - as a
+ * playlist with no entries that playlist_write_file() never writes.
+ * The scan record's paths move to the configured base content
+ * directory as a full read's autofix would move them, in memory. */
+playlist_parse_t *playlist_parse_begin_header(const playlist_config_t *config);
 int playlist_parse_step(playlist_parse_t *p,
       bool (*budget_cb)(void *), void *budget_ud);
 playlist_t *playlist_parse_end(playlist_parse_t *p);

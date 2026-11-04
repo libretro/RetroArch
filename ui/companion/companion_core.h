@@ -272,6 +272,8 @@ void companion_core_event_command(companion_core_t *core,
  * list has been reset. Returns false when no scan could be started
  * (no libretrodb in this build, or the task could not be pushed). */
 bool companion_core_request_scan(companion_core_t *core, const char *path);
+/* Why companion_core_request_scan() refused, for the status line. */
+const char *companion_core_scan_refusal(void);
 
 /* --- Companion settings (retroarch.cfg) ------------------------------- */
 

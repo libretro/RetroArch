@@ -66,6 +66,68 @@ Prints available features compiled into RetroArch, then exits.
 Runs a cloud sync with the configured cloud sync driver, then exits.
 
 .TP
+\fB--scan PATH\fR
+Scans the folder or file PATH for content and adds it to playlists, as Manual Scan does.
+Can be given more than once.
+
+.TP
+\fB--scan-refresh NAME|PATH\fR
+Rescans one playlist with the scan settings it saved, as Refresh Playlist does.
+NAME matches a playlist's name exactly first, then ignoring case. PATH must be in the playlist folder.
+Like Refresh Playlist, it drops entries whose files are gone or whose extension the saved settings no longer include.
+A playlist whose saved content folder is missing is skipped instead, so an unplugged drive does not empty it.
+
+.TP
+\fB--scan-refresh-all\fR
+Does --scan-refresh for every playlist that has saved scan settings, as Refresh All Playlists does.
+
+.IP
+These run in the order given, and one that fails does not stop the rest.
+Each prints a totals line on stdout, or its error on stderr.
+Without --menu, RetroArch exits when they are done and does not load content given on the command line.
+The exit status is then 1 if any failed, 0 if any added an entry, and 2 if none added anything; a skipped playlist does not count.
+With --menu, they run while the menu does.
+They cannot be combined with --cloudsync or --command.
+
+.IP
+The options below set the Manual Scan settings of the --scan, --scan-refresh or --scan-refresh-all before them.
+On a refresh they override the saved settings, and the refresh saves them.
+A --scan without any is Fully Automatic.
+
+.TP
+\fB--scan-playlist NAME\fR
+Sets Target Playlist: a database's name, or a custom playlist name. Not allowed on a refresh.
+
+.TP
+\fB--scan-database NAME|first\fR
+Sets Database To Match: the database NAME, or the first database that matches.
+
+.TP
+\fB--scan-match strict|loose|none\fR
+Sets Database Check.
+
+.TP
+\fB--scan-dat FILE\fR
+Sets Arcade DAT File. Matching is strict unless --scan-match loose is given.
+
+.TP
+\fB--scan-core CORE\fR
+Sets Default Core: a core's path, its file name (with or without _libretro and the extension) or its display name.
+
+.TP
+\fB--scan-exts EXTS\fR
+Sets File Extensions, separated by commas or spaces.
+
+.TP
+\fB--scan-no-recursive, --scan-no-archives\fR
+Turn off Scan Recursively and Scan Inside Archives.
+
+.TP
+\fB--scan-overwrite, --scan-validate, --scan-omit-db-ref\fR
+Turn on Overwrite Existing Playlist, Validate Existing Entries and Skip Database References From Playlist.
+They act only when the scan has one playlist, and --scan-overwrite only on a folder; otherwise they print a warning and are ignored.
+
+.TP
 \fB-L PATH, --libretro PATH\fR
 Path to a libretro implementation which is to be used.
 This option will override any setting in a config file.

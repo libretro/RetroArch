@@ -292,7 +292,7 @@ def enclosing_function(text, pos):
     return text[start if start >= 0 else 0:end if end >= 0 else len(text)]
 
 
-def source_entries(root, main_thread=None):
+def source_entries(root, main_thread=None, forwarded=None):
     entries = {}
     # handler name -> [path, every assignment flagged main-thread]
     handlers = {}
@@ -320,6 +320,14 @@ def source_entries(root, main_thread=None):
             entries.setdefault(m.group(1), rel)
         clears = MAIN_CLEAR_RE.search(text) is not None
         for m in HANDLER_RE.finditer(text):
+            # A handler set from a retro_task_handler_t parameter names
+            # no function, and the handlers its callers pass are never
+            # entries: the audit cannot see them, so it says so.
+            if re.search(r"\bretro_task_handler_t\s+%s\b"
+                         % re.escape(m.group(1)), text):
+                if forwarded is not None:
+                    forwarded.append((rel, m.group(1)))
+                continue
             main = (not clears and MAIN_SET_RE.search(
                 enclosing_function(text, m.start())) is not None)
             site = handlers.setdefault(m.group(1), [rel, True])
@@ -417,7 +425,8 @@ def load_allow(path):
 def run(binary, root, allow_path, list_unaudited=False,
         objdump="objdump"):
     main_thread = {}
-    entries = source_entries(root, main_thread)
+    forwarded = []
+    entries = source_entries(root, main_thread, forwarded)
     try:
         out = subprocess.run([objdump, "-d", binary],
                              capture_output=True, text=True, check=True)
@@ -436,6 +445,12 @@ def run(binary, root, allow_path, list_unaudited=False,
         print("tools/thread_read_allow.list.")
         for entry, fn, reader in findings:
             print("%s -> %s calls %s" % (entry, fn, reader))
+    if forwarded:
+        print("%d task handler(s) set from a parameter, so the handlers"
+              % len(forwarded))
+        print("passed in are not audited. Assign each by name:")
+        for rel, name in forwarded:
+            print("  %s: task->handler = %s" % (rel, name))
     if list_unaudited:
         absent = sorted(e for e in entries if e not in defined)
         print("%d source entr%s absent from this binary - compiled out"
@@ -452,7 +467,7 @@ def run(binary, root, allow_path, list_unaudited=False,
              len(boundaries), "y" if len(boundaries) == 1 else "ies",
              len(main_thread)),
           file=sys.stderr)
-    return 1 if findings else 0
+    return 1 if findings or forwarded else 0
 
 
 FIXTURE = """
@@ -520,11 +535,22 @@ def selftest():
                     "   task_set_flags(task, RETRO_TASK_FLG_MAIN_THREAD,"
                     " false);\n"
                     "}\n")
+        # A helper that sets whatever handler it is given hides it.
+        with open(os.path.join(td, "fwd.c"), "w") as f:
+            f.write("static void push_any(retro_task_t *task,\n"
+                    "      retro_task_handler_t handler)\n"
+                    "{\n"
+                    "   task->handler = handler;\n"
+                    "}\n")
         if subprocess.run(["gcc", "-O0", src, "-o", binp,
                            "-lpthread"]).returncode:
             print("selftest: fixture build failed")
             return 1
-        entries = source_entries(td)
+        forwarded = []
+        entries = source_entries(td, None, forwarded)
+        if forwarded != [("fwd.c", "handler")] or "handler" in entries:
+            print("selftest: FAIL forwarded handler %r" % forwarded)
+            return 1
         out = subprocess.run(["objdump", "-d", binp],
                              capture_output=True, text=True, check=True)
         calls, defined = call_graph(out.stdout.splitlines())

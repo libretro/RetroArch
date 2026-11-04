@@ -1507,7 +1507,7 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
                   sel_registerName("stopAccessingSecurityScopedResource"));
       }
    }
-   task_push_dbscan(fullpath, NULL);
+   task_push_dbscan(fullpath, NULL, NULL);
    return true;
 }
 

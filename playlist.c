@@ -32,6 +32,8 @@
 #include <formats/rjson.h>
 #include <formats/rjson_stream.h>
 #include <array/rbuf.h>
+#include <retro_atomic.h>
+#include <queues/mpsc_stack.h>
 
 #include "playlist.h"
 #include "verbosity.h"
@@ -75,7 +77,9 @@ enum content_playlist_flags
    CNT_PLAYLIST_FLG_MOD        = (1 << 0),
    CNT_PLAYLIST_FLG_OLD_FMT    = (1 << 1),
    CNT_PLAYLIST_FLG_COMPRESSED = (1 << 2),
-   CNT_PLAYLIST_FLG_CACHED_EXT = (1 << 3)
+   CNT_PLAYLIST_FLG_CACHED_EXT = (1 << 3),
+   /* read by playlist_parse_begin_header(): no entries, never written */
+   CNT_PLAYLIST_FLG_HEADER_ONLY = (1 << 4)
 };
 
 struct content_playlist
@@ -111,7 +115,9 @@ enum json_ctx_flags
    JSON_CTX_FLG_IN_ITEMS             = (1 << 0),
    JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT = (1 << 1),
    JSON_CTX_FLG_CAPACITY_EXCEEDED    = (1 << 2),
-   JSON_CTX_FLG_OOM                  = (1 << 3)
+   JSON_CTX_FLG_OOM                  = (1 << 3),
+   JSON_CTX_FLG_HEADER_ONLY          = (1 << 4),  /* stop at "items" */
+   JSON_CTX_FLG_HEADER_DONE          = (1 << 5)
 };
 
 /* The runtime and last-played values live packed inside the entry and
@@ -156,8 +162,26 @@ typedef struct
 static playlist_t *playlist_cached = NULL;
 /* Set when the cached playlist's file has been rewritten by something
  * else, so the next request re-reads it.  See
- * playlist_cached_after_write for why this is a flag and not a free. */
+ * playlist_cached_note_write for why this is a flag and not a free. */
 static bool playlist_cached_stale  = false;
+
+/* A write reaches the cache through a note, from whatever thread made
+ * it: the main thread applies the notes when it next decides whether
+ * the cache may stand in, so no writer reads or writes playlist_cached.
+ * Where the pointer atomics or threads are missing the write applies
+ * at once, as every write then comes from the one thread. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#define PLAYLIST_WRITE_NOTES 1
+typedef struct playlist_write_note
+{
+   mpsc_stack_node_t node;
+   const playlist_t *written;  /* compared, never dereferenced */
+   int64_t           size;     /* the file's size after the write */
+   char              path[1];  /* allocated to fit */
+} playlist_write_note_t;
+
+static mpsc_stack_t playlist_write_notes;
+#endif
 
 typedef int (playlist_sort_fun_t)(
       const struct playlist_entry *a,
@@ -2168,40 +2192,72 @@ end:
    }
 }
 
-/* A playlist file has just been written.  If the cached playlist is a
- * different object reading the same path, its contents are now stale -
- * a scan or a playlist-manager task writing the file the menu happens
- * to have open is the ordinary way this happens.  Drop it rather than
- * let a later reuse serve what is on disk no longer.  When the cached
- * playlist is the one that was written, it is still authoritative; only
- * its size stamp needs to catch up. */
-static void playlist_cached_after_write(playlist_t *written)
+/* What one write means for the cache: a write of the cached playlist
+ * itself moves its size stamp; any other write to its file leaves it
+ * stale, flagged rather than freed so nothing holding the pointer
+ * playlist_get_cached returned loses it (the next playlist_init_cached
+ * re-reads, at a point where nothing holds the old one).  Main thread. */
+static void playlist_cached_note_write(const playlist_t *written,
+      const char *path, int64_t size)
 {
-   if (!playlist_cached || !written || !*written->config.path)
+   if (!playlist_cached || !string_is_equal(playlist_cached->config.path, path))
       return;
    if (playlist_cached == written)
+      playlist_cached->file_size = size;
+   else
+      playlist_cached_stale = true;
+}
+
+/* The notes since the last look, newest first: only the newest write of
+ * the cached playlist sets its stamp. Main thread. */
+static void playlist_cached_apply_writes(void)
+{
+#ifdef PLAYLIST_WRITE_NOTES
+   bool sized              = false;
+   mpsc_stack_node_t *node = mpsc_stack_drain(&playlist_write_notes);
+   while (node)
    {
-      playlist_cached->file_size = path_get_size(written->config.path);
+      mpsc_stack_node_t     *next = node->next;
+      playlist_write_note_t *n    = (playlist_write_note_t*)node;
+      if (playlist_cached && n->written == playlist_cached)
+      {
+         if (!sized)
+            playlist_cached_note_write(n->written, n->path, n->size);
+         sized = true;
+      }
+      else
+         playlist_cached_note_write(n->written, n->path, n->size);
+      free(n);
+      node = next;
+   }
+#endif
+}
+
+/* A playlist file has just been written, possibly by a task on a
+ * worker.  A scan or a playlist-manager task writing the file the menu
+ * has open is the ordinary way the cache goes stale. */
+static void playlist_cached_after_write(playlist_t *written)
+{
+#ifdef PLAYLIST_WRITE_NOTES
+   size_t                 len;
+   playlist_write_note_t *n;
+   if (!written || !*written->config.path)
+      return;
+   len = strlen(written->config.path);
+   if (!(n = (playlist_write_note_t*)malloc(sizeof(*n) + len)))
+   {
+      /* no note to leave: a later size check still catches a change */
       return;
    }
-   if (string_is_equal(playlist_cached->config.path, written->config.path))
-   {
-      /* Mark it, do not free it.
-       *
-       * This runs from whatever happened to write the file, and the
-       * commonest case is the history list: launching an entry pushes
-       * it onto g_defaults.content_history, which is a different
-       * playlist_t for the same path as the one the menu is displaying
-       * from.  Freeing here would pull that object out from under
-       * every menu_displaylist caller still holding what
-       * playlist_get_cached returned - a use after free whose symptoms
-       * appear later and somewhere else entirely.
-       *
-       * The staleness is what matters, not the memory: flagging it
-       * makes the next playlist_init_cached re-read, which is a point
-       * where nothing is holding the old pointer. */
-      playlist_cached_stale = true;
-   }
+   n->written = written;
+   n->size    = path_get_size(written->config.path);
+   memcpy(n->path, written->config.path, len + 1);
+   mpsc_stack_push(&playlist_write_notes, &n->node);
+#else
+   if (written && *written->config.path)
+      playlist_cached_note_write(written, written->config.path,
+            path_get_size(written->config.path));
+#endif
 }
 
 void playlist_write_file(playlist_t *playlist)
@@ -2226,6 +2282,8 @@ void playlist_write_file(playlist_t *playlist)
 
    if (   !playlist
        || !*playlist->config.path
+       /* a header alone would replace the file's entries with none */
+       || (playlist->flags & CNT_PLAYLIST_FLG_HEADER_ONLY)
        || !( (playlist->flags & CNT_PLAYLIST_FLG_MOD)
 #if defined(HAVE_COMPRESSION)
           || (pl_compressed != playlist->config.compress)
@@ -3113,7 +3171,13 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
             break;
          case 'i':
             if (!strcmp(pValue, "items"))
-               pCtx->flags |= JSON_CTX_FLG_IN_ITEMS;
+            {
+               /* the writer puts every header field before the items */
+               if (pCtx->flags & JSON_CTX_FLG_HEADER_ONLY)
+                  pCtx->flags |= JSON_CTX_FLG_HEADER_DONE;
+               else
+                  pCtx->flags |= JSON_CTX_FLG_IN_ITEMS;
+            }
             break;
          case 'l':
             if (!strcmp(pValue, "label_display_mode"))
@@ -3215,6 +3279,7 @@ struct playlist_parse
    enum playlist_parse_phase phase;
    bool res;
    bool autofix_scan_done;
+   bool header_only;
 };
 
 static void playlist_parse_close_io(playlist_parse_t *p)
@@ -3253,6 +3318,35 @@ static void playlist_parse_close_io(playlist_parse_t *p)
 /* Decide what follows the parse: the autofix pass when it applies,   */
 /* completion otherwise.  Mirrors the condition playlist_init         */
 /* historically evaluated after playlist_read_file returned.          */
+/* The scan record's paths under the base content directory @p's
+ * config names, as autofix moves them. */
+static void playlist_rebase_scan_record(playlist_t *playlist,
+      size_t oldref_len, size_t newref_len)
+{
+   char tmp[PATH_MAX_LENGTH];
+
+   if (playlist->scan_record.content_dir && *playlist->scan_record.content_dir)
+   {
+      tmp[0] = '\0';
+      path_replace_base_path_and_convert_to_local_file_system(tmp,
+            playlist->scan_record.content_dir,
+            playlist->base_content_directory, oldref_len,
+            playlist->config.base_content_directory, newref_len,
+            sizeof(tmp));
+      playlist_entry_replace_str(&playlist->scan_record.content_dir, tmp);
+   }
+   if (playlist->scan_record.dat_file_path && *playlist->scan_record.dat_file_path)
+   {
+      tmp[0] = '\0';
+      path_replace_base_path_and_convert_to_local_file_system(tmp,
+            playlist->scan_record.dat_file_path,
+            playlist->base_content_directory, oldref_len,
+            playlist->config.base_content_directory, newref_len,
+            sizeof(tmp));
+      playlist_entry_replace_str(&playlist->scan_record.dat_file_path, tmp);
+   }
+}
+
 static void playlist_parse_enter_autofix(playlist_parse_t *p)
 {
    playlist_t *playlist = p->playlist;
@@ -3262,6 +3356,23 @@ static void playlist_parse_enter_autofix(playlist_parse_t *p)
    if (!p->res)
    {
       p->phase = PLAYLIST_PARSE_PHASE_ERROR;
+      return;
+   }
+
+   /* The header alone: its scan record moves as autofix would move
+    * it, in memory - there are no entries to fix and nothing is
+    * saved. */
+   if (p->header_only)
+   {
+      if (    playlist->config.autofix_paths
+          && !string_is_equal(playlist->base_content_directory,
+               playlist->config.base_content_directory)
+          && playlist->base_content_directory
+          && *playlist->base_content_directory)
+         playlist_rebase_scan_record(playlist,
+               strlen(playlist->base_content_directory),
+               strlen(playlist->config.base_content_directory));
+      p->phase = PLAYLIST_PARSE_PHASE_DONE;
       return;
    }
 
@@ -3367,6 +3478,11 @@ static int playlist_parse_step_json(playlist_parse_t *p,
       if (!ok)
       {
          stop = t;
+         goto stopped;
+      }
+      if (p->context.flags & JSON_CTX_FLG_HEADER_DONE)
+      {
+         stop = RJSON_DONE;
          goto stopped;
       }
    }
@@ -3678,35 +3794,8 @@ static int playlist_parse_step_autofix(playlist_parse_t *p,
       {
          p->autofix_scan_done = true;
 
-         /* Fix scan record content directory */
-         if (playlist->scan_record.content_dir && *playlist->scan_record.content_dir)
-         {
-            tmp_entry_path[0] = '\0';
-            path_replace_base_path_and_convert_to_local_file_system(
-                  tmp_entry_path,
-                  playlist->scan_record.content_dir,
-                  playlist->base_content_directory, p->oldref_len,
-                  playlist->config.base_content_directory, p->newref_len,
-                  sizeof(tmp_entry_path));
-
-            playlist_entry_replace_str(&playlist->scan_record.content_dir,
-                  tmp_entry_path);
-         }
-
-         /* Fix scan record arcade DAT file */
-         if (playlist->scan_record.dat_file_path && *playlist->scan_record.dat_file_path)
-         {
-            tmp_entry_path[0] = '\0';
-            path_replace_base_path_and_convert_to_local_file_system(
-                  tmp_entry_path,
-                  playlist->scan_record.dat_file_path,
-                  playlist->base_content_directory, p->oldref_len,
-                  playlist->config.base_content_directory, p->newref_len,
-                  sizeof(tmp_entry_path));
-
-            playlist_entry_replace_str(&playlist->scan_record.dat_file_path,
-                  tmp_entry_path);
-         }
+         /* Fix the scan record's content directory and DAT file */
+         playlist_rebase_scan_record(playlist, p->oldref_len, p->newref_len);
       }
    }
 
@@ -3729,7 +3818,8 @@ static int playlist_parse_step_autofix(playlist_parse_t *p,
    return 1;
 }
 
-playlist_parse_t *playlist_parse_begin(const playlist_config_t *config)
+static playlist_parse_t *playlist_parse_begin_ex(
+      const playlist_config_t *config, bool header_only)
 {
    playlist_parse_t *p  = NULL;
    playlist_t *playlist = (playlist_t*)malloc(sizeof(*playlist));
@@ -3770,6 +3860,11 @@ playlist_parse_t *playlist_parse_begin(const playlist_config_t *config)
    p->playlist = playlist;
    p->res      = true;
    p->phase    = PLAYLIST_PARSE_PHASE_DONE;   /* until proven otherwise */
+   if ((p->header_only = header_only))
+   {
+      playlist->flags  |= CNT_PLAYLIST_FLG_HEADER_ONLY;
+      p->context.flags |= JSON_CTX_FLG_HEADER_ONLY;
+   }
 
 #if defined(HAVE_COMPRESSION)
       /* Always use RZIP interface when reading playlists
@@ -3860,6 +3955,13 @@ playlist_parse_t *playlist_parse_begin(const playlist_config_t *config)
       return p;
    }
 
+   /* The old format has no scan settings: a header read is done. */
+   if (p->header_only)
+   {
+      playlist_parse_enter_autofix(p);
+      return p;
+   }
+
    /* Heap-held: at six entries this is 3 KiB even at the console
     * path length, on the playlist load path that runs from task
     * threads.  On allocation failure the legacy-format file simply
@@ -3877,6 +3979,16 @@ playlist_parse_t *playlist_parse_begin(const playlist_config_t *config)
 error:
    playlist_free(playlist);
    return NULL;
+}
+
+playlist_parse_t *playlist_parse_begin(const playlist_config_t *config)
+{
+   return playlist_parse_begin_ex(config, false);
+}
+
+playlist_parse_t *playlist_parse_begin_header(const playlist_config_t *config)
+{
+   return playlist_parse_begin_ex(config, true);
 }
 
 int playlist_parse_step(playlist_parse_t *p,
@@ -3950,6 +4062,8 @@ void playlist_parse_abort(playlist_parse_t *p)
 
 void playlist_free_cached(void)
 {
+   /* what was written since no longer has a cache to tell */
+   playlist_cached_apply_writes();
    if (playlist_cached && !(playlist_cached->flags & CNT_PLAYLIST_FLG_CACHED_EXT))
       playlist_free(playlist_cached);
    playlist_cached       = NULL;
@@ -3980,6 +4094,7 @@ playlist_t *playlist_get_cached(void)
  * size is the one signal the VFS layer offers portably. */
 static bool playlist_cached_is_reusable(const playlist_config_t *config)
 {
+   playlist_cached_apply_writes();
    if (!playlist_cached || playlist_cached_stale)
       return false;
    if (!string_is_equal(playlist_cached->config.path, config->path))
