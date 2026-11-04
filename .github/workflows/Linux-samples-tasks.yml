@@ -11,6 +11,7 @@ on:
       - '!libretro-common/samples/**'
       - '!.github/workflows/*.yml'
       - 'libretro-common/samples/encodings/rbzip2/**'
+      - 'samples/menu/content_downloads/**'
       - 'samples/menu/dirwalk/**'
       - 'samples/playlist/playlist_parity_test.c/**'
       - 'samples/tasks/autodetect_handoff/**'
@@ -57,6 +58,7 @@ on:
       - '!libretro-common/samples/**'
       - '!.github/workflows/*.yml'
       - 'libretro-common/samples/encodings/rbzip2/**'
+      - 'samples/menu/content_downloads/**'
       - 'samples/menu/dirwalk/**'
       - 'samples/playlist/playlist_parity_test.c/**'
       - 'samples/tasks/autodetect_handoff/**'
@@ -1743,6 +1745,24 @@ jobs:
              ./dirwalk_budget_test sanitize
           make clean
           echo "[pass] dirwalk_budget_test (TSan)"
+
+      - name: Build and run content_downloads_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/menu/content_downloads
+        run: |
+          set -eu
+          # Oracle for menu/menu_content_downloads.c: the record of
+          # finished downloads behind the Content and Core System
+          # Files Downloaders' "[#]" marker, which must survive the
+          # archive being extracted and deleted.
+          make clean && make -j"$(nproc)" all
+          timeout 120 ./content_downloads_test
+          echo "[pass] content_downloads_test"
+          make clean SANITIZER=address,undefined && make -j"$(nproc)" all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./content_downloads_test
+          make clean
+          echo "[pass] content_downloads_test (ASan)"
 
       - name: Build and run save_state_io_test (ASan + UBSan, TSan)
         shell: bash
