@@ -26,6 +26,21 @@ while [ $# -gt 0 ]; do
    esac
 done
 [ $# -gt 0 ] || { echo "apt-install.sh: no packages"; exit 2; }
+
+# Wine 10's packages keep wineserver in Wine's library directory with
+# nothing on the PATH; the jobs start and stop it by name.
+wineserver_on_path() {
+   command -v wineserver >/dev/null 2>&1 && return 0
+   for w in /usr/lib/x86_64-linux-gnu/wine/wineserver /usr/lib/wine/wineserver64 \
+            /usr/lib/wine/wineserver /usr/lib/aarch64-linux-gnu/wine/wineserver; do
+      if [ -x "$w" ]; then
+         sudo ln -sf "$w" /usr/local/bin/wineserver 2>/dev/null || true
+         return 0
+      fi
+   done
+   return 0
+}
+trap wineserver_on_path EXIT
 pkgs="$*"
 cache=${APT_CACHE:-$HOME/.apt-cache}
 
