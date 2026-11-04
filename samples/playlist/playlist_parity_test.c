@@ -45,6 +45,7 @@
 #include <streams/rzip_stream.h>
 #include <vfs/vfs.h>
 #include <libretro.h>
+#include <file/file_path.h>
 
 #include "../../playlist.h"
 #include "../../verbosity.h"
@@ -1844,12 +1845,24 @@ int main(int argc, char *argv[])
 
    verbosity_enable();
 
-   snprintf(fixture_dir, sizeof(fixture_dir),
-         "/tmp/playlist_fixture_%ld", (long)getpid());
-   snprintf(cmd, sizeof(cmd), "mkdir -p %s", fixture_dir);
-   if (system(cmd) != 0)
    {
-      fprintf(stderr, "fixture mkdir failed\n");
+      /* The system's temporary folder: a native Windows build has no
+       * /tmp, and system() runs cmd.exe there, not a POSIX shell. */
+#ifdef _WIN32
+      const char *tmp = getenv("TEMP");
+      if (!tmp || !*tmp)
+         tmp = getenv("TMP");
+#else
+      const char *tmp = getenv("TMPDIR");
+#endif
+      if (!tmp || !*tmp)
+         tmp = "/tmp";
+      snprintf(fixture_dir, sizeof(fixture_dir),
+            "%s/playlist_fixture_%ld", tmp, (long)getpid());
+   }
+   if (!path_mkdir(fixture_dir))
+   {
+      fprintf(stderr, "fixture mkdir failed: %s\n", fixture_dir);
       return 1;
    }
 
@@ -1875,7 +1888,17 @@ int main(int argc, char *argv[])
    lane_push_runtime_survives_failed_copy();
    lane_push_starts_without_thumbnail_flags();
 
-   snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
+#ifdef _WIN32
+   {
+      char *c;
+      snprintf(cmd, sizeof(cmd), "rmdir /s /q \"%s\"", fixture_dir);
+      for (c = cmd; *c; c++)
+         if (*c == '/')
+            *c = '\\';
+   }
+#else
+   snprintf(cmd, sizeof(cmd), "rm -rf '%s'", fixture_dir);
+#endif
    if (system(cmd) != 0) { }
 
    if (failures)
