@@ -1137,6 +1137,61 @@ static void test_icd_library(void)
    CHECK(lib_of("/d/icd.json", json) != NULL);
 }
 
+static void test_session_device(void)
+{
+   enum vulkan_custom_driver_msg msg;
+   void *a;
+   void *b;
+
+   begin(NULL, NULL);
+   /* a custom init: its own library, or a layer in front, passes */
+   a = open_drv("/d/a.json", "Core", &msg);
+   CHECK(a && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_CURRENT, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_UNKNOWN, &msg));
+   CHECK(!vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_OTHER, &msg));
+   /* it failed and was closed: its slot is free */
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(vulkan_custom_driver_session_drop(&session, a));
+   CHECK(!session.slots[0].handle);
+   CHECK(!vulkan_custom_driver_session_drop(&session, a));
+   CHECK(!vulkan_custom_driver_session_drop(&session, NULL));
+   /* the system init after it: RESTART once for a custom library */
+   CHECK(!open_drv("/d/a.json", "Core", &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_UNKNOWN, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_OTHER, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_RESTART);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_OTHER, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   /* the freed slot takes the next driver */
+   b = open_drv("/d/b.json", "Core", &msg);
+   CHECK(b && b != a && loader.loads == 2);
+   CHECK(session.slots[0].handle == b);
+   /* a kept instance is not judged, the next open() is */
+   vulkan_custom_driver_session_kept(&session);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM, &msg));
+   CHECK(open_drv("/d/b.json", "Core", &msg) == b && loader.loads == 2);
+   CHECK(!vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM, &msg));
+}
+
 int main(void)
 {
    test_meta();
@@ -1152,6 +1207,7 @@ int main(void)
    test_patch_soname();
    test_icd();
    test_icd_library();
+   test_session_device();
    printf("vulkan_custom_driver_test: %u checks, %u failures\n",
          checks, failures);
    return failures ? 1 : 0;
