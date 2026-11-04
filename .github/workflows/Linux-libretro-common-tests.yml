@@ -40,7 +40,9 @@ concurrency:
 jobs:
   libretro-common-tests:
     name: Build and run libretro-common/Makefile.test
-    runs-on: ubuntu-latest
+    # Ubuntu 26.04 ships no MIPS cross toolchain; the mipsel lanes
+    # need 24.04's gcc-mipsel-linux-gnu.
+    runs-on: ubuntu-24.04
     env:
       APT_PKGS: build-essential check pkg-config zlib1g-dev gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf gcc-mipsel-linux-gnu qemu-user ccache
     # The suites and the stack check have grown with the tree; the
