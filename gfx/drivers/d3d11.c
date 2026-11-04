@@ -2021,6 +2021,7 @@ static void d3d11_font_render_msg(
    void *font_data                  = NULL;
    float inv_vp_w, inv_vp_h, inv_tex_w, inv_tex_h;
    float scale_inv_vp_w, scale_inv_vp_h;
+   float win_w;
    int   drop_x_px, drop_y_px;
    int   base_lx;
 
@@ -2075,7 +2076,8 @@ static void d3d11_font_render_msg(
    }
 
    /* Precompute reciprocals and scale*reciprocal products once. */
-   inv_vp_w        = 1.0f / (float)d3d11->viewport.Width;
+   inv_vp_w        = rp.x_scale / (float)d3d11->viewport.Width;
+   win_w           = width / rp.x_scale;
    inv_vp_h        = 1.0f / (float)d3d11->viewport.Height;
    inv_tex_w       = 1.0f / (float)font->texture.desc.Width;
    inv_tex_h       = 1.0f / (float)font->texture.desc.Height;
@@ -2086,8 +2088,8 @@ static void d3d11_font_render_msg(
     * sprite positions are the foreground positions shifted by this constant,
     * so both can be emitted from a single glyph lookup. */
    drop_x_px = have_drop
-      ? (int)roundf((x + scale * drop_x / width) * width)
-        - (int)roundf(x * width)
+      ? (int)roundf((x + scale * drop_x / win_w) * win_w)
+        - (int)roundf(x * win_w)
       : 0;
    drop_y_px = have_drop
       ? (int)roundf((1.0f - (y + scale * drop_y / height)) * height)
@@ -2095,7 +2097,7 @@ static void d3d11_font_render_msg(
       : 0;
 
    /* Base lx depends only on x and width — constant across lines. */
-   base_lx = (int)roundf(x * width);
+   base_lx = (int)roundf(x * win_w);
 
    /* Capacity check without strlen: scan the message once to
     * count bytes while also finding newlines.  The byte count is a

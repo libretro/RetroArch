@@ -548,6 +548,10 @@ void gfx_widgets_status_text_to_frame(void *data, char *status_text);
 void gfx_widgets_iterate_main(void);
 #endif
 
+/* dims at display_aspect, same height: what the widgets lay out at
+ * when the output's pixels are not square; dims when it is 0 */
+unsigned gfx_widgets_layout_dims(unsigned dims, float display_aspect);
+
 /* The scale the widgets lay out at, from the settings, for @dims */
 float gfx_widgets_scale_factor(void *data_disp, void *settings_data,
       unsigned dims, bool fullscreen);

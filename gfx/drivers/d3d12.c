@@ -3205,7 +3205,7 @@ static void d3d12_font_render_msg(
    get_glyph  = font->font_driver->get_glyph;
    font_data  = font->font_data;
 
-   inv_vp_w   = 1.0f / (float)d3d12->chain.viewport.Width;
+   inv_vp_w   = rp.x_scale / (float)d3d12->chain.viewport.Width;
    inv_vp_h   = 1.0f / (float)d3d12->chain.viewport.Height;
    inv_tex_w  = 1.0f / (float)font->texture.desc.Width;
    inv_tex_h  = 1.0f / (float)font->texture.desc.Height;
@@ -3279,7 +3279,7 @@ static void d3d12_font_render_msg(
    {
       d3d12_sprite_t *line_v_first = v;
       bool line_ok                 = false;
-      int xi                       = roundf(x * width);
+      int xi                       = roundf(x * width / rp.x_scale);
       int lx                       = 0;
       int ly                       = 0;
       size_t line_cap              = font->block

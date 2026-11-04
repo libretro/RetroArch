@@ -5346,6 +5346,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
                length:(NSUInteger)msg_len
                height:(unsigned)height
                 scale:(float)scale
+               xScale:(float)x_scale
                 color:(vector_float4)color
                  posX:(float)posX
                  posY:(float)posY
@@ -5358,7 +5359,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
    float inv_win_height;
    float rgba[4];
    uint64_t packed;
-   unsigned full_w;
+   float full_w;
    unsigned full_h;
    SpriteVertex *v;
    struct font_line_metrics *line_metrics = NULL;
@@ -5385,7 +5386,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
    rgba[2]          = color.z;
    rgba[3]          = color.w;
    packed           = rgba16_pack(rgba);
-   full_w           = VIDEO_SCALE_W(_driver.viewport->full_dims);
+   full_w           = VIDEO_SCALE_W(_driver.viewport->full_dims) / x_scale;
    full_h           = VIDEO_SCALE_H(_driver.viewport->full_dims);
    inv_tex_size_x   = 1.0f / _texture.width;
    inv_tex_size_y   = 1.0f / _texture.height;
@@ -5493,8 +5494,9 @@ static INLINE void write_quad6(SpriteVertex *pv,
                       length:msg_len
                       height:height
                        scale:scale
+                      xScale:rp.x_scale
                        color:color_dark
-                        posX:x + scale * drop_x / width
+                        posX:x + scale * drop_x * rp.x_scale / width
                         posY:y + scale * drop_y / height
                      aligned:text_align];
       }
@@ -5503,6 +5505,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
                    length:msg_len
                    height:height
                     scale:scale
+                   xScale:rp.x_scale
                     color:color
                      posX:x
                      posY:y

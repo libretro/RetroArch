@@ -1421,7 +1421,7 @@ static void d3d10_font_render_msg(
 
    get_glyph         = font->font_driver->get_glyph;
    font_data         = font->font_data;
-   inv_viewport_w    = 1.0f / (float)d3d10->viewport.Width;
+   inv_viewport_w    = rp.x_scale / (float)d3d10->viewport.Width;
    inv_viewport_h    = 1.0f / (float)d3d10->viewport.Height;
    inv_tex_w         = 1.0f / (float)font->texture.desc.Width;
    inv_tex_h         = 1.0f / (float)font->texture.desc.Height;
@@ -1431,7 +1431,7 @@ static void d3d10_font_render_msg(
    drop_pos_x        = 0.0f;
    drop_pos_y        = 0.0f;
    drop_pre_x        = 0;
-   pre_x             = roundf(x * width);
+   pre_x             = roundf(x * width / rp.x_scale);
 
    if (has_drop)
    {
@@ -1440,9 +1440,9 @@ static void d3d10_font_render_msg(
       unsigned b_dark     = b * drop_mod;
       unsigned alpha_dark = alpha * drop_alpha;
       color_dark          = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
-      drop_pos_x          = x + scale * drop_x / width;
+      drop_pos_x          = x + scale * drop_x * rp.x_scale / width;
       drop_pos_y          = y + scale * drop_y / height;
-      drop_pre_x          = roundf(drop_pos_x * width);
+      drop_pre_x          = roundf(drop_pos_x * width / rp.x_scale);
    }
 
    /* Single VBO map for all geometry (drop shadow + main text) */

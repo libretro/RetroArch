@@ -14,6 +14,8 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <math.h>
+
 #include <string/stdstring.h>
 
 #include "gfx_display.h"
@@ -344,6 +346,34 @@ static void gfx_display_flush_as(gfx_display_t *p_disp,
    gfx_display_flush_impl(p_disp);
 }
 
+void gfx_display_set_output_dims(gfx_display_t *p_disp,
+      unsigned output_dims)
+{
+   p_disp->output_dims = output_dims;
+}
+
+static bool gfx_display_stretched(const gfx_display_t *p_disp,
+      unsigned video_dims)
+{
+   return  p_disp->output_dims
+        && VIDEO_SCALE_W(video_dims)
+        && VIDEO_SCALE_W(video_dims) != VIDEO_SCALE_W(p_disp->output_dims);
+}
+
+unsigned gfx_display_output_dims(const gfx_display_t *p_disp,
+      unsigned video_dims)
+{
+   return gfx_display_stretched(p_disp, video_dims)
+      ? p_disp->output_dims : video_dims;
+}
+
+static int gfx_display_stretch_x(const gfx_display_t *p_disp,
+      unsigned video_dims, int x)
+{
+   return (int)floor((double)x * VIDEO_SCALE_W(p_disp->output_dims)
+         / VIDEO_SCALE_W(video_dims) + 0.5);
+}
+
 /* Begin scissoring operation */
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
@@ -351,11 +381,23 @@ void gfx_display_scissor_begin(
       unsigned video_dims,
       int x, int y, unsigned dims)
 {
-   unsigned video_width              = VIDEO_SCALE_W(video_dims);
-   unsigned video_height             = VIDEO_SCALE_H(video_dims);
-   unsigned width                    = VIDEO_SCALE_W(dims);
-   unsigned height                   = VIDEO_SCALE_H(dims);
+   unsigned video_width;
+   unsigned video_height;
+   unsigned width;
+   unsigned height;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   if (gfx_display_stretched(p_disp, video_dims))
+   {
+      int x1     = gfx_display_stretch_x(p_disp, video_dims,
+            x + (int)VIDEO_SCALE_W(dims));
+      x          = gfx_display_stretch_x(p_disp, video_dims, x);
+      dims       = VIDEO_SCALE_PACK(x1 - x, VIDEO_SCALE_H(dims));
+      video_dims = p_disp->output_dims;
+   }
+   video_width                       = VIDEO_SCALE_W(video_dims);
+   video_height                      = VIDEO_SCALE_H(video_dims);
+   width                             = VIDEO_SCALE_W(dims);
+   height                            = VIDEO_SCALE_H(dims);
    /* What is gathered goes out before this draws */
    gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_SCISSOR);
    if (dispctx && dispctx->scissor_begin)
@@ -459,6 +501,9 @@ static void gfx_display_draw_text_internal(
    params.x           = x / width;
    params.y           = 1.0f - y / height;
    params.scale       = scale;
+   params.x_scale     = gfx_display_stretched(p_disp, dims)
+      ? (float)VIDEO_SCALE_W(p_disp->output_dims) / width
+      : 1.0f;
    params.drop_mod    = 0.0f;
    params.drop_x      = 0.0f;
    params.drop_y      = 0.0f;
@@ -1114,7 +1159,21 @@ void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *userdata,
       unsigned video_dims)
 {
-   gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_DRAW);
+   gfx_display_ctx_draw_t stretched;
+   gfx_display_t *p_disp = disp_get_ptr();
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
+   if (draw && gfx_display_stretched(p_disp, video_dims))
+   {
+      int x          = VIDEO_POS_X(draw->pos);
+      int x1         = gfx_display_stretch_x(p_disp, video_dims,
+            x + (int)VIDEO_SCALE_W(draw->dims));
+      x              = gfx_display_stretch_x(p_disp, video_dims, x);
+      stretched      = *draw;
+      stretched.pos  = VIDEO_POS_PACK(x, VIDEO_POS_Y(draw->pos));
+      stretched.dims = VIDEO_SCALE_PACK(x1 - x, VIDEO_SCALE_H(draw->dims));
+      draw           = &stretched;
+      video_dims     = p_disp->output_dims;
+   }
    if (dispctx && dispctx->draw && draw)
       dispctx->draw(draw, userdata, video_dims);
 }
@@ -1137,6 +1196,15 @@ void gfx_display_draw_quad(
    gfx_display_ctx_driver_t
       *dispctx             = p_disp->dispctx;
 
+   if (gfx_display_stretched(p_disp, video_dims))
+   {
+      int x1     = gfx_display_stretch_x(p_disp, video_dims, x + (int)w);
+      x          = gfx_display_stretch_x(p_disp, video_dims, x);
+      w          = (unsigned)(x1 - x);
+      width      = gfx_display_stretch_x(p_disp, video_dims, (int)width);
+      dims       = VIDEO_SCALE_PACK(w, h);
+      video_dims = p_disp->output_dims;
+   }
    if (w == 0 || h == 0)
       return;
    if (!dispctx || !color)

@@ -370,7 +370,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 
          if (dispctx && dispctx->scissor_end)
             dispctx->scissor_end(video_info->userdata,
-               VIDEO_SCALE_PACK(video_width, video_height));
+               gfx_display_output_dims(p_disp,
+                  VIDEO_SCALE_PACK(video_width, video_height)));
       }
    }
 

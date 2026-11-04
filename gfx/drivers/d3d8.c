@@ -1497,7 +1497,7 @@ static void d3d8_font_render_msg(
    float line_height;
    d3d8_font_t  *font  = (d3d8_font_t*)data;
    d3d8_video_t *d3d   = (d3d8_video_t*)userdata;
-   unsigned      width  = 0;
+   float         width  = 0.0f;
    unsigned      height = 0;
    /* Top-down ortho mapping x[0..1]→[-1..1], y[0..1]→[1..-1] so
     * (0,0) is the top-left corner.  D3D uses row-vector convention
@@ -1532,6 +1532,7 @@ static void d3d8_font_render_msg(
       return;
 
    font_driver_resolve_params(params, &rp);
+   width      = width / rp.x_scale;
    x          = rp.x;
    y          = rp.y;
    scale      = rp.scale;
