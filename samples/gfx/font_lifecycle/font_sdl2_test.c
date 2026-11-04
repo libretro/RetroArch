@@ -235,6 +235,22 @@ int main(void)
             CHECK(!a->dirty, "raster: the upload takes the region");
             CHECK(tex_matches(rf->tex, rf->atlas), "raster: the texture after a region");
          }
+         /* A left-aligned line is not measured first: a glyph it caches
+          * lands in the atlas after the line has begun, and goes into
+          * the texture before it is drawn */
+         {
+            static const char msg[] = "a\xd7\x90";
+            SDL_Color white;
+            white.r = white.g = white.b = white.a = 255;
+            font_driver_frame_begin();
+            clear_surface();
+            sdl2_raster_font_render_message(rf, msg, sizeof(msg) - 1, 1.0f,
+                  white, 0.1f, 0.5f, TEXT_ALIGN_LEFT, SURF_W, SURF_H);
+            CHECK(!a->dirty, "raster: a glyph cached mid-line is sent");
+            CHECK(surface_ink() > 0, "raster: the line is drawn");
+            CHECK(tex_matches(rf->tex, rf->atlas),
+                  "raster: the texture holds the glyph cached mid-line");
+         }
          sdl2_raster_font_free(rf, false);
       }
    }

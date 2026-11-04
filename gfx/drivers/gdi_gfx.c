@@ -2020,6 +2020,24 @@ static void gdi_font_render_line(
 
 #define FONT_LAYOUT_ALIGNED (!plain_white \
       || text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
+/* A glyph cached mid-line lands in the atlas after the line's upload:
+ * it goes into the mirror before it is drawn, the mirror deselected
+ * while it may be made again. Without one, untinted text stops. */
+#define FONT_LAYOUT_DIRTY(gl) \
+   do \
+   { \
+      (void)(gl); \
+      if (font->atlas->dirty) \
+      { \
+         SelectObject(atlas_dc, atlas_old); \
+         gdi_font_upload_atlas(font); \
+         font->atlas->dirty = false; \
+         if (font->atlas_bmp && font->atlas_pixels) \
+            SelectObject(atlas_dc, font->atlas_bmp); \
+         else if (plain_white) \
+            line_ok = false; \
+      } \
+   } while (0)
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \

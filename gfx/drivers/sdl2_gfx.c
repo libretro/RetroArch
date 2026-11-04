@@ -2185,7 +2185,6 @@ typedef struct
    uint32_t                      *staging;
    /* The atlas texture's pixel size, packed. */
    unsigned                       tex_dims;
-   bool                           atlas_dirty;
 
    /* The chunk a line is built into before it is handed over. Here
     * rather than on the stack of the function that fills it: a glyph
@@ -2244,7 +2243,7 @@ static void sdl2_raster_font_upload_atlas(sdl2_raster_t *font)
     * rectangles drawn into since the last upload change */
    tex_w = VIDEO_SCALE_W(font->tex_dims);
    tex_h = VIDEO_SCALE_H(font->tex_dims);
-   rects = (whole || font->atlas_dirty || !font->atlas->dirty)
+   rects = (whole || !font->atlas->dirty)
       ? 1 : font_atlas_dirty_rects(font->atlas);
    for (r = 0; r < rects; r++)
    {
@@ -2254,7 +2253,6 @@ static void sdl2_raster_font_upload_atlas(sdl2_raster_t *font)
       x1    = VIDEO_SCALE_W(xy1);
       y1    = VIDEO_SCALE_H(xy1);
       if (     whole
-            || font->atlas_dirty
             || !font->atlas->dirty
             || x1 <= x0 || y1 <= y0 || x1 > tex_w || y1 > tex_h)
       {
@@ -2286,7 +2284,6 @@ static void sdl2_raster_font_upload_atlas(sdl2_raster_t *font)
    }
 
    font->atlas->dirty = false;
-   font->atlas_dirty  = false;
 }
 
 static void *sdl2_raster_font_init(void *data, const char *font_path,
@@ -2408,6 +2405,24 @@ static void sdl2_raster_font_render_message(
 
 #define FONT_LAYOUT_ALIGNED (align == TEXT_ALIGN_RIGHT \
       || align == TEXT_ALIGN_CENTER)
+/* A glyph cached mid-line lands in the atlas after the line's upload:
+ * what is batched goes out first, on the texture it was laid out for. */
+#define FONT_LAYOUT_DIRTY(glyph) \
+   do \
+   { \
+      (void)(glyph); \
+      if (font->atlas->dirty) \
+      { \
+         if (line_ok && n_glyphs > 0) \
+            SDL_RenderGeometry(font->vid->renderer, font->tex, \
+                  verts, n_glyphs * 4, idx, n_glyphs * 6); \
+         n_glyphs = 0; \
+         sdl2_raster_font_upload_atlas(font); \
+         line_ok  = line_ok && font->tex; \
+         inv_w    = 1.0f / (float)VIDEO_SCALE_W(font->tex_dims); \
+         inv_h    = 1.0f / (float)VIDEO_SCALE_H(font->tex_dims); \
+      } \
+   } while (0)
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \
@@ -2415,7 +2430,7 @@ static void sdl2_raster_font_render_message(
       line_ok = ((bytes) > 0 && font->tex); \
       if (!line_ok) \
          break; \
-      if (font->atlas_dirty || font->atlas->dirty) \
+      if (font->atlas->dirty) \
          sdl2_raster_font_upload_atlas(font); \
       x = pos_x * (float)width; \
       y = (1.0f - (pos_y - (float)(line) * line_height_norm)) \
