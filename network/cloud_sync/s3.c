@@ -1772,13 +1772,34 @@ static bool s3_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
 }
 
 /* Read file from S3 */
+/* @path's request URL, and its canonical URI behind it in the same
+ * allocation, which the caller frees: two path buffers kept off the
+ * stack. NULL if either cannot be built or out of memory. */
+static char *s3_object_urls(s3_state_t *s3_st, const char *path,
+      char **canonical_uri)
+{
+   char *url = (char*)malloc(2 * PATH_MAX_LENGTH);
+
+   if (!url)
+      return NULL;
+   *canonical_uri = url + PATH_MAX_LENGTH;
+   if (     !s3_build_request_url(url, PATH_MAX_LENGTH, s3_st, path)
+         || !s3_build_canonical_uri_from_url(url, *canonical_uri,
+            PATH_MAX_LENGTH))
+   {
+      free(url);
+      return NULL;
+   }
+   return url;
+}
+
 static bool s3_read(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data)
 {
    s3_cb_state_t *s3_cb_st = (s3_cb_state_t*)calloc(1, sizeof(s3_cb_state_t));
    s3_state_t *s3_st = s3_state_get_ptr();
    char *auth_header = NULL;
-   char url[PATH_MAX_LENGTH];
-   char canonical_uri[PATH_MAX_LENGTH];
+   char *url = NULL;
+   char *canonical_uri = NULL;
    bool success = false;
 
    if (!s3_cb_st)
@@ -1789,16 +1810,12 @@ static bool s3_read(const char *path, const char *file, cloud_sync_complete_hand
    strlcpy(s3_cb_st->path, path, sizeof(s3_cb_st->path));
    strlcpy(s3_cb_st->file, file, sizeof(s3_cb_st->file));
 
-   /* Build S3 URL - all supported formats are virtual-hosted style */
-   if (!s3_build_request_url(url, sizeof(url), s3_st, path))
-      goto cleanup;
-
-   if (!s3_build_canonical_uri_from_url(url, canonical_uri, sizeof(canonical_uri)))
+   if (!(url = s3_object_urls(s3_st, path, &canonical_uri)))
       goto cleanup;
 
    /* Build authorization header */
    auth_header = s3_build_auth_header("GET", canonical_uri, "", "host;x-amz-content-sha256;x-amz-date",
-                                     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", s3_st);
+                                     S3_EMPTY_PAYLOAD_SHA256, s3_st);
 
    if (!auth_header)
    {
@@ -1823,6 +1840,7 @@ static bool s3_read(const char *path, const char *file, cloud_sync_complete_hand
 cleanup:
    free(auth_header);
    free(s3_cb_st);
+   free(url);
 
    return success;
 }
@@ -1834,20 +1852,15 @@ static bool s3_update_upload(const char *path, RFILE *file, cloud_sync_complete_
    s3_multipart_state_t *mp_st = NULL;
    s3_state_t *s3_st = s3_state_get_ptr();
    char *auth_header = NULL;
-   /* the URL and the canonical URI, off the stack */
-   char *url = (char*)malloc(2 * PATH_MAX_LENGTH);
-   char *canonical_uri = url + PATH_MAX_LENGTH;
+   char *url = NULL;
+   char *canonical_uri = NULL;
    size_t file_size = 0;
    char *payload_hash = NULL;
    size_t multipart_threshold = s3_get_multipart_nominal_threshold_bytes();
    bool success = false;
 
-   if (!s3_cb_st || !url)
-   {
-      free(s3_cb_st);
-      free(url);
+   if (!s3_cb_st)
       return false;
-   }
 
    s3_cb_st->cb = cb;
    s3_cb_st->user_data = user_data;
@@ -1868,11 +1881,7 @@ static bool s3_update_upload(const char *path, RFILE *file, cloud_sync_complete_
       file_size = (size_t)size;
    }
 
-   /* Build S3 URL - all supported formats are virtual-hosted style */
-   if (!s3_build_request_url(url, PATH_MAX_LENGTH, s3_st, path))
-      goto cleanup;
-
-   if (!s3_build_canonical_uri_from_url(url, canonical_uri, PATH_MAX_LENGTH))
+   if (!(url = s3_object_urls(s3_st, path, &canonical_uri)))
       goto cleanup;
 
    RARCH_DBG(S3_PFX "Request URL: %s\n", url);
@@ -1974,8 +1983,8 @@ static bool s3_delete_object(const char *path, cloud_sync_complete_handler_t cb,
    s3_cb_state_t *s3_cb_st = (s3_cb_state_t*)calloc(1, sizeof(s3_cb_state_t));
    s3_state_t *s3_st = s3_state_get_ptr();
    char *auth_header = NULL;
-   char url[PATH_MAX_LENGTH];
-   char canonical_uri[PATH_MAX_LENGTH];
+   char *url = NULL;
+   char *canonical_uri = NULL;
    bool success = false;
 
    if (!s3_cb_st)
@@ -1985,16 +1994,12 @@ static bool s3_delete_object(const char *path, cloud_sync_complete_handler_t cb,
    s3_cb_st->user_data = user_data;
    strlcpy(s3_cb_st->path, path, sizeof(s3_cb_st->path));
 
-   /* Build S3 URL - all supported formats are virtual-hosted style */
-   if (!s3_build_request_url(url, sizeof(url), s3_st, path))
-      goto cleanup;
-
-   if (!s3_build_canonical_uri_from_url(url, canonical_uri, sizeof(canonical_uri)))
+   if (!(url = s3_object_urls(s3_st, path, &canonical_uri)))
       goto cleanup;
 
    /* Build authorization header */
    auth_header = s3_build_auth_header("DELETE", canonical_uri, "", "host;x-amz-content-sha256;x-amz-date",
-                                     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", s3_st);
+                                     S3_EMPTY_PAYLOAD_SHA256, s3_st);
 
    if (!auth_header)
    {
@@ -2015,6 +2020,7 @@ static bool s3_delete_object(const char *path, cloud_sync_complete_handler_t cb,
 cleanup:
    free(auth_header);
    free(s3_cb_st);
+   free(url);
 
    return success;
 }
@@ -2137,33 +2143,42 @@ static void s3_backup_cb(retro_task_t *task, void *task_data, void *user_data, c
    free(st);
 }
 
-static bool s3_backup_then(const char *path, RFILE *file, bool is_delete,
-      cloud_sync_complete_handler_t cb, void *user_data)
+/* What a backup copy is named by: six path buffers, kept off the stack */
+typedef struct
 {
-   s3_state_t        *s3_st       = s3_state_get_ptr();
-   s3_backup_state_t *st          = NULL;
-   char              *auth_header = NULL;
    char key[PATH_MAX_LENGTH];
    char src_url[PATH_MAX_LENGTH];
    char src_uri[PATH_MAX_LENGTH];
    char dest_url[PATH_MAX_LENGTH];
    char dest_uri[PATH_MAX_LENGTH];
    char copy_source[PATH_MAX_LENGTH + NAME_MAX_LENGTH];
+} s3_backup_names_t;
 
-   if (   !s3_backup_key(key, sizeof(key), path)
-       || !s3_build_request_url(src_url, sizeof(src_url), s3_st, path)
-       || !s3_build_canonical_uri_from_url(src_url, src_uri, sizeof(src_uri))
-       || !s3_build_request_url(dest_url, sizeof(dest_url), s3_st, key)
-       || !s3_build_canonical_uri_from_url(dest_url, dest_uri, sizeof(dest_uri))
-       || !s3_copy_source(copy_source, sizeof(copy_source), s3_st, src_uri))
+static bool s3_backup_then(const char *path, RFILE *file, bool is_delete,
+      cloud_sync_complete_handler_t cb, void *user_data)
+{
+   s3_state_t        *s3_st       = s3_state_get_ptr();
+   s3_backup_state_t *st          = NULL;
+   char              *auth_header = NULL;
+   s3_backup_names_t *n           = (s3_backup_names_t*)malloc(sizeof(*n));
+   bool               ok          = false;
+
+   if (!n)
+      return false;
+   if (   !s3_backup_key(n->key, sizeof(n->key), path)
+       || !s3_build_request_url(n->src_url, sizeof(n->src_url), s3_st, path)
+       || !s3_build_canonical_uri_from_url(n->src_url, n->src_uri, sizeof(n->src_uri))
+       || !s3_build_request_url(n->dest_url, sizeof(n->dest_url), s3_st, n->key)
+       || !s3_build_canonical_uri_from_url(n->dest_url, n->dest_uri, sizeof(n->dest_uri))
+       || !s3_copy_source(n->copy_source, sizeof(n->copy_source), s3_st, n->src_uri))
    {
       RARCH_ERR(S3_PFX "Not %s '%s': could not name a backup for it.\n",
             is_delete ? "deleting" : "replacing", path);
-      return false;
+      goto done;
    }
 
    if (!(st = (s3_backup_state_t*)calloc(1, sizeof(*st))))
-      return false;
+      goto done;
    strlcpy(st->path, path, sizeof(st->path));
    st->rfile     = file;
    st->cb        = cb;
@@ -2171,28 +2186,31 @@ static bool s3_backup_then(const char *path, RFILE *file, bool is_delete,
    st->is_delete = is_delete;
 
    /* CopyObject: a PUT on the new key, empty body, naming the source. */
-   auth_header = s3_build_auth_header_ex("PUT", dest_uri, "",
+   auth_header = s3_build_auth_header_ex("PUT", n->dest_uri, "",
          "host;x-amz-content-sha256;x-amz-copy-source;x-amz-date",
-         S3_EMPTY_PAYLOAD_SHA256, copy_source, s3_st);
+         S3_EMPTY_PAYLOAD_SHA256, n->copy_source, s3_st);
    if (!auth_header)
    {
       RARCH_ERR(S3_PFX "Failed to build authorization header\n");
-      free(st);
-      return false;
+      goto done;
    }
 
-   RARCH_DBG(S3_PFX "COPY %s -> %s\n", copy_source, dest_url);
-   if (!task_push_http_transfer_with_content(dest_url, "PUT", NULL, 0, NULL,
+   RARCH_DBG(S3_PFX "COPY %s -> %s\n", n->copy_source, n->dest_url);
+   if (!task_push_http_transfer_with_content(n->dest_url, "PUT", NULL, 0, NULL,
             true, false, auth_header, s3_backup_cb, st))
    {
       RARCH_ERR(S3_PFX "Failed to start backup of '%s'\n", path);
-      free(auth_header);
-      free(st);
-      return false;
+      goto done;
    }
+   /* Ownership transferred to the backup callback */
+   st = NULL;
+   ok = true;
 
+done:
    free(auth_header);
-   return true;
+   free(st);
+   free(n);
+   return ok;
 }
 
 static bool s3_update(const char *path, RFILE *file, cloud_sync_complete_handler_t cb, void *user_data)

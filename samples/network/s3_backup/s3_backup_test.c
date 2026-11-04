@@ -489,6 +489,44 @@ static void test_upload_empty(const char *empty)
    CHECK(run.calls == 1 && run.success, "empty upload: must report success once");
 }
 
+/* The URLs and the backup's names are on the heap now, not 4 to 12 KiB
+ * of stack: out of memory for them, nothing starts, nothing is
+ * reported, and nothing leaks. */
+static void test_names_out_of_memory(const char *tmp)
+{
+   static const char *const what[5] = {
+      "backup then upload", "backup then delete", "upload", "delete", "read"
+   };
+   run_t    run;
+   unsigned i;
+
+   use_endpoint("https://bucket.s3.us-east-1.amazonaws.com/retroarch/");
+   for (i = 0; i < 5; i++)
+   {
+      RFILE *rfile = NULL;
+      bool   started;
+
+      memset(&run, 0, sizeof(run));
+      config_get_ptr()->bools.cloud_sync_destructive = i >= 2;
+      stub_has_pending = false;
+      if (i == 0 || i == 2)
+         rfile = filestream_open(tmp, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      fail_alloc = 1;
+      if (i == 0 || i == 2)
+         started = s3_update("saves/a.srm", rfile, on_done, &run);
+      else if (i == 4)
+         started = s3_read("saves/a.srm", tmp, on_done, &run);
+      else
+         started = s3_free("saves/a.srm", on_done, &run);
+      fail_alloc = 0;
+      CHECK(!started && !stub_has_pending && !run.calls,
+            "%s, out of memory: it started anyway", what[i]);
+      if (rfile)
+         filestream_close(rfile);
+   }
+}
+
 static char *sign_failing_alloc(unsigned nth)
 {
    char *sig;
@@ -663,6 +701,7 @@ int main(void)
    test_nothing_to_keep(tmp);
    test_copy_fails(tmp);
    test_no_backup_wanted(tmp);
+   test_names_out_of_memory(tmp);
 
    snprintf(big, sizeof(big), "%s.big", tmp);
    if ((f = fopen(big, "wb")))
