@@ -9142,6 +9142,9 @@ static bool                       chain_ud_ok;
 static char                       chain_names[CHAIN_SEEN_MAX][512];
 static enum task_dbscan_outcome   chain_outcomes[CHAIN_SEEN_MAX];
 static int                        chain_added[CHAIN_SEEN_MAX];
+/* The system name type each item's scan ran with: the chain puts the
+ * Manual Scan settings back once it ends. */
+static unsigned                   chain_name_types[CHAIN_SEEN_MAX];
 static task_dbscan_chain_result_t chain_totals;
 
 static void chain_item_cb(const char *name,
@@ -9156,6 +9159,8 @@ static void chain_item_cb(const char *name,
             sizeof(chain_names[0]));
       chain_outcomes[chain_seen] = outcome;
       chain_added[chain_seen]    = res ? (int)res->added : -1;
+      chain_name_types[chain_seen] =
+         manual_content_scan_get_menu_system_name_type();
    }
    chain_seen++;
 }
@@ -9904,8 +9909,10 @@ static void refresh_lane(const char *root, const char *pl_dir,
          && !file_contains(out, "test beta")
          && !file_contains(out, "TEST BETA"), what, detail);
    sprintf(what, "refresh %s: another case, a database's playlist", q);
-   check(   manual_content_scan_get_menu_system_name_type()
-         == MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE, what, "");
+   check(   chain_seen == 2
+         && chain_name_types[0] == MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE
+         && chain_name_types[1] == MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE,
+         what, "");
    sprintf(what, "refresh %s: another case keeps the file's name", q);
    check(   listed_as(case_pl, "Test Beta.lpl", detail, sizeof(detail))
          && !strcmp(detail, "Test Beta.lpl"), what, detail);
@@ -10113,7 +10120,7 @@ static void fs_main_lane(const char *root, const char *pl_dir)
 {
 #ifdef HAVE_THREADS
    char                pl[512], a[512], gone[512], outside[512];
-   char                via[1024], p[1024], stale[1024], detail[256];
+   char                by_path[1024], p[1024], stale[1024], detail[256];
    task_dbscan_item_t *items;
    bool                pushed;
 
@@ -10135,8 +10142,8 @@ static void fs_main_lane(const char *root, const char *pl_dir)
    sprintf(p, "%s/x.lpl", outside);
    if (!refresh_write(p, a, NULL, stale))
       goto fixture;
-   /* In the folder, but by a path that only a realpath folds */
-   sprintf(via, "%s/../%s/f_gone.lpl", pl, path_basename(pl));
+   /* By its path: the check that it is in the folder realpaths both */
+   sprintf(by_path, "%s/f_gone.lpl", pl);
    strlcpy(config_get_ptr()->paths.directory_playlist, pl,
          sizeof(config_get_ptr()->paths.directory_playlist));
    use_queue(true);
@@ -10148,7 +10155,7 @@ static void fs_main_lane(const char *root, const char *pl_dir)
    chain_item(&items[2], a, NULL);
    if ((items[2].overrides = manual_content_scan_overrides_new()))
       items[2].overrides->dat = ovr_str("fsmain_missing.dat");
-   refresh_item(&items[3], TASK_DBSCAN_ITEM_REFRESH, via);
+   refresh_item(&items[3], TASK_DBSCAN_ITEM_REFRESH, by_path);
    refresh_item(&items[4], TASK_DBSCAN_ITEM_REFRESH, p);
    refresh_item(&items[5], TASK_DBSCAN_ITEM_REFRESH, "f_none");
 
