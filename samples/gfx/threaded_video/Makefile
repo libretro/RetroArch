@@ -134,6 +134,38 @@ check-vulkan-mapfail: all $(FR_LIB) fake_rebar_layer.json
 	 if [ "$$refused" = 0 ]; then echo "check-vulkan-mapfail: no map was refused"; exit 1; fi; \
 	 echo "check-vulkan-mapfail: $$refused buffer maps refused, every lane passed"
 
+# check-vulkan through the same layer reporting a unified-memory device
+# whose cached host-visible memory is not coherent
+# (FAKE_REBAR_NONCOHERENT=1), with every linear image bound 4 KiB into
+# its memory (FAKE_REBAR_IMAGE_PAD) and every allocation a whole number
+# of pages: the driver's flushes and invalidates of its staging,
+# streamed, font and readback memory run, and the validation layer
+# fails a range outside the mapping or a whole-size range that cannot
+# end where it does. With either core
+# format every lane must pass and CPU-written textures must land in
+# the non-coherent type; with XRGB8888 frame textures must be linear
+# images there, bound past offset 0.
+check-vulkan-noncoherent: all $(FR_LIB) fake_rebar_layer.json
+	@for run in 565 xrgb; do \
+	    case $$run in xrgb) xrgb=1;; *) xrgb=;; esac; \
+	    echo "--- fake non-coherent memory, $$run"; \
+	    VK_ADD_LAYER_PATH=. VK_INSTANCE_LAYERS=VK_LAYER_RA_fake_rebar \
+	    FAKE_REBAR_NONCOHERENT=1 FAKE_REBAR_IMAGE_PAD=4096 \
+	    HARNESS_CORE_XRGB8888=$$xrgb \
+	    $(MAKE) -s --no-print-directory check-vulkan > noncoherent.log 2>&1; rc=$$?; \
+	    grep -E 'all lanes|FAIL|Validation|check-vulkan' noncoherent.log; \
+	    if [ $$rc -ne 0 ]; then cat noncoherent.log; rm -f noncoherent.log; exit $$rc; fi; \
+	    sums=$$(awk '/fake-rebar:/ { n++; nc += $$13; images += $$NF } \
+	                 /fake-rebar-pad:/ { pad += $$NF } \
+	                 END { print n + 0, nc + 0, images + 0, pad + 0 }' noncoherent.log); \
+	    rm -f noncoherent.log; \
+	    set -- $$sums; devices=$$1; nc=$$2; images=$$3; pad=$$4; \
+	    echo "check-vulkan-noncoherent: $$devices devices, $$nc allocations in non-coherent memory ($$images images), $$pad linear images bound past offset 0"; \
+	    if [ "$$devices" = 0 ]; then echo "check-vulkan-noncoherent: the layer did not load"; exit 1; fi; \
+	    if [ "$$nc" = 0 ]; then echo "check-vulkan-noncoherent: nothing in non-coherent memory"; exit 1; fi; \
+	    if [ -n "$$xrgb" ] && { [ "$$images" = 0 ] || [ "$$pad" = 0 ]; }; then echo "check-vulkan-noncoherent: no padded frame texture in non-coherent memory"; exit 1; fi; \
+	 done; echo "check-vulkan-noncoherent: passed"
+
 # The same lanes on any real driver named in DRIVER (gl, glcore, ...),
 # through whatever context the display offers - in CI, llvmpipe under
 # Xvfb with LIBGL_ALWAYS_SOFTWARE=1. No validation layer here: a
@@ -192,7 +224,7 @@ clean:
 	      harness_main.o harness_main.d harness_cocoa.o harness_cocoa.d default.metallib \
 	      rebar.log mapfail.log libfake_rebar_layer.so fake_rebar_layer.dll fake_rebar_layer.json
 
-.PHONY: all check check-vulkan check-vulkan-rebar check-vulkan-mapfail check-driver check-movie-gpu check-still check-hdr clean
+.PHONY: all check check-vulkan check-vulkan-rebar check-vulkan-mapfail check-vulkan-noncoherent check-driver check-movie-gpu check-still check-hdr clean
 
 # A multi-second movie fixture on a driver that can decode it.
 check-preview:

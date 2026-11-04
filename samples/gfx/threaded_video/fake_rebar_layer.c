@@ -43,6 +43,25 @@
  * space: check-vulkan-mapfail runs the lanes so, and the driver is to
  * get past the buffer it could not map.
  *
+ * With FAKE_REBAR_NONCOHERENT=1 it reports a unified-memory device
+ * instead, as mobile GPUs do:
+ *
+ *   heap 0  4 GB device local
+ *   type 0  device local
+ *   type 1  device local, host visible, coherent
+ *   type 2  device local, host visible, cached, not coherent
+ *
+ * so the driver's CPU-written textures land in memory it has to flush
+ * and invalidate by hand, a path no desktop driver takes; every
+ * resource then asks for a whole number of 4 KiB pages, as such
+ * drivers' allocations do, so a resource's own size ends short of its
+ * allocation and a whole-size range has to end at the allocation. With
+ * FAKE_REBAR_IMAGE_PAD=n, every linear image is bound n bytes (rounded
+ * up to its alignment) into its memory and reports its subresource
+ * that much further in, as a driver may: texels then start past
+ * offset 0 of the memory they are mapped from. check-vulkan-noncoherent
+ * runs the lanes with both, under the validation layer.
+ *
  * One instance and one device at a time, which is how the harness runs
  * the driver; the next layer's entry points are kept in globals. */
 
@@ -73,6 +92,10 @@ static unsigned long             s_refused;
 static unsigned long             s_images_bar;
 static VkDeviceMemory            s_live_bar[FR_LIVE];
 static unsigned long             s_map_refused;
+/* Linear images and the bytes each is bound into its memory */
+static VkImage                   s_pad_image[FR_LIVE];
+static VkDeviceSize              s_pad_bytes[FR_LIVE];
+static unsigned long             s_images_padded;
 
 static PFN_vkVoidFunction fr_next_instance(const char *name)
 {
@@ -93,9 +116,38 @@ static VkDeviceSize fr_fail_map_size(void)
    return v ? (VkDeviceSize)strtoul(v, NULL, 10) : 0;
 }
 
+/* FAKE_REBAR_NONCOHERENT set and not empty or 0 */
+static int fr_noncoherent(void)
+{
+   const char *v = getenv("FAKE_REBAR_NONCOHERENT");
+   return v && *v && strcmp(v, "0");
+}
+
+/* FAKE_REBAR_IMAGE_PAD, or 0 */
+static VkDeviceSize fr_image_pad(void)
+{
+   const char *v = getenv("FAKE_REBAR_IMAGE_PAD");
+   return v ? (VkDeviceSize)strtoul(v, NULL, 10) : 0;
+}
+
 static void fr_fill(VkPhysicalDeviceMemoryProperties *p)
 {
    memset(p, 0, sizeof(*p));
+   if (fr_noncoherent())
+   {
+      p->memoryHeapCount              = 1;
+      p->memoryHeaps[0].size          = 4096 * FR_MB;
+      p->memoryHeaps[0].flags         = VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
+      p->memoryTypeCount              = FR_TYPES;
+      p->memoryTypes[0].propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+      p->memoryTypes[1].propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                                      | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                                      | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+      p->memoryTypes[2].propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                                      | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                                      | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+      return;
+   }
    p->memoryHeapCount                 = 2;
    p->memoryHeaps[0].size             = 8192 * FR_MB;
    p->memoryHeaps[0].flags            = VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
@@ -131,13 +183,93 @@ static VKAPI_ATTR void VKAPI_CALL fr_GetPhysicalDeviceMemoryProperties2(
    fr_fill(&p->memoryProperties);
 }
 
+/* In the unified-memory layout, a whole number of pages */
+static void fr_page_round(VkMemoryRequirements *r)
+{
+   if (fr_noncoherent())
+      r->size = (r->size + 4095) & ~(VkDeviceSize)4095;
+}
+
 static VKAPI_ATTR void VKAPI_CALL fr_GetBufferMemoryRequirements(
       VkDevice device, VkBuffer buffer, VkMemoryRequirements *r)
 {
    PFN_vkGetBufferMemoryRequirements next = (PFN_vkGetBufferMemoryRequirements)
       s_next_gdpa(device, "vkGetBufferMemoryRequirements");
    next(device, buffer, r);
+   fr_page_round(r);
    r->memoryTypeBits = (1u << FR_TYPES) - 1;
+}
+
+/* The slot of a padded image, or -1 */
+static int fr_pad_slot(VkImage image)
+{
+   unsigned i;
+   if (image != VK_NULL_HANDLE)
+      for (i = 0; i < FR_LIVE; i++)
+         if (s_pad_image[i] == image)
+            return (int)i;
+   return -1;
+}
+
+static VkDeviceSize fr_pad_of(VkImage image)
+{
+   int slot = fr_pad_slot(image);
+   return (slot < 0) ? 0 : s_pad_bytes[slot];
+}
+
+/* Rounds the image's pad up to its alignment and grows its size by it */
+static void fr_pad_requirements(VkImage image, VkMemoryRequirements *r)
+{
+   int slot = fr_pad_slot(image);
+   if (slot < 0)
+      return;
+   if (r->alignment > 1)
+      s_pad_bytes[slot] = (s_pad_bytes[slot] + r->alignment - 1)
+                        / r->alignment * r->alignment;
+   r->size += s_pad_bytes[slot];
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL fr_CreateImage(VkDevice device,
+      const VkImageCreateInfo *info, const VkAllocationCallbacks *cb,
+      VkImage *image)
+{
+   PFN_vkCreateImage next = (PFN_vkCreateImage)
+      s_next_gdpa(device, "vkCreateImage");
+   VkDeviceSize pad       = fr_image_pad();
+   VkResult res           = next(device, info, cb, image);
+   if (res == VK_SUCCESS && pad && info->tiling == VK_IMAGE_TILING_LINEAR)
+   {
+      unsigned i;
+      for (i = 0; i < FR_LIVE; i++)
+         if (s_pad_image[i] == VK_NULL_HANDLE)
+         {
+            s_pad_image[i] = *image;
+            s_pad_bytes[i] = pad;
+            break;
+         }
+   }
+   return res;
+}
+
+static VKAPI_ATTR void VKAPI_CALL fr_DestroyImage(VkDevice device,
+      VkImage image, const VkAllocationCallbacks *cb)
+{
+   PFN_vkDestroyImage next = (PFN_vkDestroyImage)
+      s_next_gdpa(device, "vkDestroyImage");
+   int slot = fr_pad_slot(image);
+   if (slot >= 0)
+      s_pad_image[slot] = VK_NULL_HANDLE;
+   next(device, image, cb);
+}
+
+static VKAPI_ATTR void VKAPI_CALL fr_GetImageSubresourceLayout(
+      VkDevice device, VkImage image, const VkImageSubresource *sub,
+      VkSubresourceLayout *layout)
+{
+   PFN_vkGetImageSubresourceLayout next = (PFN_vkGetImageSubresourceLayout)
+      s_next_gdpa(device, "vkGetImageSubresourceLayout");
+   next(device, image, sub, layout);
+   layout->offset += fr_pad_of(image);
 }
 
 static VKAPI_ATTR void VKAPI_CALL fr_GetImageMemoryRequirements(
@@ -146,6 +278,8 @@ static VKAPI_ATTR void VKAPI_CALL fr_GetImageMemoryRequirements(
    PFN_vkGetImageMemoryRequirements next = (PFN_vkGetImageMemoryRequirements)
       s_next_gdpa(device, "vkGetImageMemoryRequirements");
    next(device, image, r);
+   fr_pad_requirements(image, r);
+   fr_page_round(r);
    r->memoryTypeBits = (1u << FR_TYPES) - 1;
 }
 
@@ -156,6 +290,7 @@ static VKAPI_ATTR void VKAPI_CALL fr_GetBufferMemoryRequirements2(
    PFN_vkGetBufferMemoryRequirements2 next = (PFN_vkGetBufferMemoryRequirements2)
       s_next_gdpa(device, "vkGetBufferMemoryRequirements2");
    next(device, info, r);
+   fr_page_round(&r->memoryRequirements);
    r->memoryRequirements.memoryTypeBits = (1u << FR_TYPES) - 1;
 }
 
@@ -166,6 +301,8 @@ static VKAPI_ATTR void VKAPI_CALL fr_GetImageMemoryRequirements2(
    PFN_vkGetImageMemoryRequirements2 next = (PFN_vkGetImageMemoryRequirements2)
       s_next_gdpa(device, "vkGetImageMemoryRequirements2");
    next(device, info, r);
+   fr_pad_requirements(info->image, &r->memoryRequirements);
+   fr_page_round(&r->memoryRequirements);
    r->memoryRequirements.memoryTypeBits = (1u << FR_TYPES) - 1;
 }
 
@@ -248,8 +385,11 @@ static VKAPI_ATTR VkResult VKAPI_CALL fr_BindImageMemory(VkDevice device,
 {
    PFN_vkBindImageMemory next = (PFN_vkBindImageMemory)
       s_next_gdpa(device, "vkBindImageMemory");
+   VkDeviceSize pad = fr_pad_of(image);
    fr_count_image(memory);
-   return next(device, image, memory, offset);
+   if (pad)
+      s_images_padded++;
+   return next(device, image, memory, offset + pad);
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL fr_BindImageMemory2(VkDevice device,
@@ -257,10 +397,20 @@ static VKAPI_ATTR VkResult VKAPI_CALL fr_BindImageMemory2(VkDevice device,
 {
    PFN_vkBindImageMemory2 next = (PFN_vkBindImageMemory2)
       s_next_gdpa(device, "vkBindImageMemory2");
+   VkBindImageMemoryInfo moved[16];
    uint32_t i;
+   if (count > 16)
+      return VK_ERROR_OUT_OF_HOST_MEMORY;
    for (i = 0; i < count; i++)
+   {
+      VkDeviceSize pad    = fr_pad_of(infos[i].image);
+      moved[i]            = infos[i];
+      moved[i].memoryOffset += pad;
       fr_count_image(infos[i].memory);
-   return next(device, count, infos);
+      if (pad)
+         s_images_padded++;
+   }
+   return next(device, count, moved);
 }
 
 static VKAPI_ATTR void VKAPI_CALL fr_DestroyDevice(VkDevice device,
@@ -272,8 +422,12 @@ static VKAPI_ATTR void VKAPI_CALL fr_DestroyDevice(VkDevice device,
          s_allocs[0], s_allocs[1], s_allocs[2], s_refused, s_images_bar);
    if (fr_fail_map_size())
       printf("[info] fake-rebar-map: maps refused %lu\n", s_map_refused);
+   if (fr_image_pad())
+      printf("[info] fake-rebar-pad: linear images bound past offset 0 %lu\n",
+            s_images_padded);
    fflush(stdout);
-   s_map_refused = 0;
+   s_map_refused   = 0;
+   s_images_padded = 0;
    next(device, cb);
 }
 
@@ -336,6 +490,9 @@ static PFN_vkVoidFunction fr_device_hook(const char *name)
    FR_HOOK(BindImageMemory);
    FR_HOOK(BindImageMemory2);
    FR_HOOK(DestroyDevice);
+   FR_HOOK(CreateImage);
+   FR_HOOK(DestroyImage);
+   FR_HOOK(GetImageSubresourceLayout);
    if (!strcmp(name, "vkGetBufferMemoryRequirements2KHR"))
       return (PFN_vkVoidFunction)fr_GetBufferMemoryRequirements2;
    if (!strcmp(name, "vkGetImageMemoryRequirements2KHR"))

@@ -278,6 +278,12 @@ jobs:
           # each device: the driver must not suballocate from a buffer
           # it could not map.
           SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan-mapfail
+          # And on a unified-memory device whose cached memory is not
+          # coherent, with linear images bound past offset 0: the
+          # driver's hand-written flushes and invalidates run, which
+          # no desktop driver's memory makes it do, and every range
+          # must lie inside its mapping.
+          SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan-noncoherent
           # And with the harness core as a Vulkan hardware core, which
           # runs its own lanes alone: the core's image must not be drawn
           # from once the core has destroyed it - at a content close,

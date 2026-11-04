@@ -123,6 +123,21 @@
 
 #define VK_REMAP_TO_TEXFMT(fmt) ((fmt == VK_FORMAT_R5G6B5_UNORM_PACK16) ? VK_FORMAT_R8G8B8A8_UNORM : fmt)
 
+/* Maps a texture's whole allocation, so the whole-size flushes and
+ * invalidates issued from offset 0 lie inside the mapping, and points
+ * at its texels, which a linear image may place past offset 0. NULL
+ * when the map fails. */
+#define VULKAN_MAP_TEXTURE(device, tex, out) \
+   do \
+   { \
+      void *vk_map_base_ = NULL; \
+      if (vkMapMemory((device), (tex)->memory, 0, VK_WHOLE_SIZE, 0, \
+               &vk_map_base_) == VK_SUCCESS) \
+         (out) = (uint8_t*)vk_map_base_ + (tex)->offset; \
+      else \
+         (out) = NULL; \
+   } while (0)
+
 /* Pick a 10-bit (XRGB2101010) sampled-image format the GPU can actually use.
  *
  * Frames/thumbnails are packed XRGB2101010 in memory: R in bits [29:20],
@@ -2409,30 +2424,13 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
     * the frames that could reference it. A size change is rare; the
     * allocation it costs is not per frame. */
    if (old)
-   {
       vulkan_texture_defer_copy(vk, old);
-      old = NULL;
-   }
 
    if (tex.flags & VK_TEX_FLAG_BAR_MAPPED)
    {
       vulkan_debug_mark_memory(device, tex.memory);
       tex.memory_size = alloc.allocationSize;
       tex.memory_type = alloc.memoryTypeIndex;
-   }
-   /* We can pilfer the old memory and move it over to the new texture. */
-   else if (old
-         && old->memory_size >= mem_reqs.size
-         && old->memory_type == alloc.memoryTypeIndex)
-   {
-      tex.memory      = old->memory;
-      tex.memory_size = old->memory_size;
-      tex.memory_type = old->memory_type;
-
-      if (old->mapped)
-         vkUnmapMemory(device, old->memory);
-
-      old->memory     = VK_NULL_HANDLE;
    }
    else
    {
@@ -2444,43 +2442,12 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
             vkDestroyImage(device, tex.image, NULL);
          if (tex.buffer)
             vkDestroyBuffer(device, tex.buffer, NULL);
-         /* The `if (old)` cleanup further below is skipped by this
-          * early return, but old->view/image/buffer were already
-          * destroyed at the top of the `if (old)` block above and
-          * old->memory still owns a live VkDeviceMemory.  Free it
-          * here, otherwise it leaks across the call.  Mirrors the
-          * unmap-before-free done in the pilfer branch. */
-         if (old)
-         {
-            if (old->mapped)
-               vkUnmapMemory(device, old->memory);
-            if (old->memory != VK_NULL_HANDLE)
-               vkFreeMemory(device, old->memory, NULL);
-            memset(old, 0, sizeof(*old));
-         }
          memset(&tex, 0, sizeof(tex));
          return tex;
       }
       vulkan_debug_mark_memory(device, tex.memory);
       tex.memory_size = alloc.allocationSize;
       tex.memory_type = alloc.memoryTypeIndex;
-   }
-
-   if (old)
-   {
-      /* old->view/image/buffer were already destroyed at the top of
-       * the `if (old)` block above.  In the no-pilfer path we did not
-       * take ownership of old->memory, so it still owns a live
-       * VkDeviceMemory; free it here.  Unmap first to mirror the
-       * pilfer branch and to avoid free-while-mapped, which the spec
-       * permits but MoltenVK has historically handled poorly. */
-      if (old->memory != VK_NULL_HANDLE)
-      {
-         if (old->mapped)
-            vkUnmapMemory(device, old->memory);
-         vkFreeMemory(device, old->memory, NULL);
-      }
-      memset(old, 0, sizeof(*old));
    }
 
    if (tex.image)
@@ -2561,7 +2528,9 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                size_t stride      = (size_t)VIDEO_SCALE_W(tex.dims) * (size_t)bpp;
                size_t row_bytes   = (size_t)width     * (size_t)bpp;
 
-               vkMapMemory(device, tex.memory, tex.offset, tex.size, 0, &ptr);
+               VULKAN_MAP_TEXTURE(device, &tex, ptr);
+               if (!ptr)
+                  break;
 
                dst                = (uint8_t*)ptr;
                src                = (const uint8_t*)initial;
@@ -4085,7 +4054,7 @@ static void vulkan_font_follow_atlas(vulkan_raster_t *font)
    if (staging.memory == VK_NULL_HANDLE)
       return;
    if (vkMapMemory(font->vk->context->device, staging.memory,
-            staging.offset, staging.size, 0, &staging.mapped)
+            staging.offset, VK_WHOLE_SIZE, 0, &staging.mapped)
          != VK_SUCCESS)
    {
       staging.mapped = NULL;
@@ -4205,7 +4174,7 @@ static void *vulkan_font_init(void *data,
       {
          struct vk_texture *texture = &font->texture;
          if (vkMapMemory(font->vk->context->device, texture->memory,
-                  texture->offset, texture->size, 0, &texture->mapped)
+                  texture->offset, VK_WHOLE_SIZE, 0, &texture->mapped)
                != VK_SUCCESS)
          {
             /* pData is only written on success. */
@@ -4307,64 +4276,57 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
       if (!bpp)
          bpp                         = 1;
 
-      if (  (staging_tex->flags
-               & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
-            && staging_tex->memory != VK_NULL_HANDLE)
       {
-         VkMappedMemoryRange mem_range;
-         VkDeviceSize flush_size;
-         /* Use nonCoherentAtomSize for alignment;
-          * fall back to 256 (common minimum) if unavailable. */
-         VkDeviceSize atom_size    = 256;
-
-         /* Compute tight flush range from dirty rectangle
-          * instead of flushing the entire allocation.
-          * Aligns offset down and size up to nonCoherentAtomSize
-          * as required by the spec (Â§12.1). */
-         unsigned y1               = VIDEO_SCALE_H(font->dirty_xy1);
-         VkDeviceSize flush_offset = (VkDeviceSize)
-                        VIDEO_SCALE_H(font->dirty_xy0) * staging_tex->stride
-                      + (VkDeviceSize)VIDEO_SCALE_W(font->dirty_xy0) * bpp;
-         VkDeviceSize flush_end    = (VkDeviceSize)(y1 > 0 ? (y1 - 1) : 0)
-                      * staging_tex->stride
-                      + (VkDeviceSize)VIDEO_SCALE_W(font->dirty_xy1) * bpp;
-         if (flush_end <= flush_offset)
-            flush_end = flush_offset + 1;
-         flush_size   = flush_end - flush_offset;
-
-         /* Align to nonCoherentAtomSize boundaries. */
-         flush_size   = flush_size + (flush_offset & (atom_size - 1));
-         flush_offset = flush_offset & ~(atom_size - 1);
-         flush_size   = (flush_size + atom_size - 1) & ~(atom_size - 1);
-
-         /* Clamp to allocation size. */
-         if (flush_offset + flush_size > staging_tex->size)
-            flush_size = VK_WHOLE_SIZE;
-
-         mem_range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-         mem_range.pNext  = NULL;
-         mem_range.memory = staging_tex->memory;
-         mem_range.offset = flush_offset;
-         mem_range.size   = flush_size;
-         vkFlushMappedMemoryRanges(vk->context->device, 1, &mem_range);
-      }
-
-      {
+         /* The box clamped to the staging texture bounds both the
+          * flush and the copy. It is empty when nothing was dirtied
+          * since the last upload, or when the atlas grew and the
+          * textures could not follow, leaving it past them. */
          unsigned dx = VIDEO_SCALE_W(font->dirty_xy0);
          unsigned dy = VIDEO_SCALE_H(font->dirty_xy0);
-         unsigned dw = VIDEO_SCALE_W(font->dirty_xy1) - dx;
-         unsigned dh = VIDEO_SCALE_H(font->dirty_xy1) - dy;
+         unsigned x1 = VIDEO_SCALE_W(font->dirty_xy1);
+         unsigned y1 = VIDEO_SCALE_H(font->dirty_xy1);
          unsigned sw = VIDEO_SCALE_W(staging_tex->dims);
          unsigned sh = VIDEO_SCALE_H(staging_tex->dims);
+         unsigned dw, dh;
 
-         if (dx >= sw || dy >= sh)
-            dw = dh = 0;
-         else
+         if (x1 > sw)
+            x1 = sw;
+         if (y1 > sh)
+            y1 = sh;
+         dw = (x1 > dx) ? x1 - dx : 0;
+         dh = (y1 > dy) ? y1 - dy : 0;
+
+         if (     dw > 0 && dh > 0
+               && (staging_tex->flags
+                  & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+               && staging_tex->memory != VK_NULL_HANDLE)
          {
-            if (dx + dw > sw)
-               dw = sw - dx;
-            if (dy + dh > sh)
-               dh = sh - dy;
+            VkMappedMemoryRange mem_range;
+            /* 256 is the largest nonCoherentAtomSize the spec allows,
+             * so a range aligned to it is aligned on every device. */
+            VkDeviceSize atom_size    = 256;
+            VkDeviceSize flush_offset = (VkDeviceSize)dy * staging_tex->stride
+                                      + (VkDeviceSize)dx * bpp;
+            VkDeviceSize flush_end    = (VkDeviceSize)(dy + dh - 1)
+                                      * staging_tex->stride
+                                      + (VkDeviceSize)(dx + dw) * bpp;
+            VkDeviceSize flush_size;
+
+            flush_offset = flush_offset & ~(atom_size - 1);
+            flush_size   = (flush_end - flush_offset + atom_size - 1)
+                         & ~(atom_size - 1);
+
+            /* Past the texture's bytes: to the allocation's end, which
+             * the whole-allocation mapping reaches. */
+            if (flush_offset + flush_size > staging_tex->size)
+               flush_size = VK_WHOLE_SIZE;
+
+            mem_range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+            mem_range.pNext  = NULL;
+            mem_range.memory = staging_tex->memory;
+            mem_range.offset = flush_offset;
+            mem_range.size   = flush_size;
+            vkFlushMappedMemoryRanges(vk->context->device, 1, &mem_range);
          }
 
          if (dw > 0 && dh > 0)
@@ -6236,7 +6198,7 @@ static void vulkan_init_textures(vk_t *vk)
 
          {
             struct vk_texture *texture = &vk->swapchain[i].texture;
-            vkMapMemory(vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
+            VULKAN_MAP_TEXTURE(vk->context->device, texture, texture->mapped);
          }
 
          if (vk->swapchain[i].texture.type == VULKAN_TEXTURE_STAGING)
@@ -12454,7 +12416,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
          {
             struct vk_texture *texture = &chain->texture;
-            vkMapMemory(vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
+            VULKAN_MAP_TEXTURE(vk->context->device, texture, texture->mapped);
          }
 
          if (chain->texture.type == VULKAN_TEXTURE_STAGING)
@@ -14117,7 +14079,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       vk->flags       &= ~VK_FLAG_TEXTURE_FOR_LEND;
       {
          struct vk_texture *texture = &chain->texture;
-         vkMapMemory(vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
+         VULKAN_MAP_TEXTURE(vk->context->device, texture, texture->mapped);
       }
 
       if (chain->texture.type == VULKAN_TEXTURE_STAGING)
@@ -14640,7 +14602,7 @@ static struct vk_stream_state *vulkan_stream_state_get(vk_t *vk,
                || vkCreateFence(device, &fence_info, NULL,
                      &st->fence[i]) != VK_SUCCESS
                || vkMapMemory(device, st->staging[i].memory,
-                     st->staging[i].offset, st->staging[i].size, 0,
+                     st->staging[i].offset, VK_WHOLE_SIZE, 0,
                      &st->staging[i].mapped) != VK_SUCCESS)
             return NULL;
       }
@@ -14796,7 +14758,7 @@ static struct vk_stream_state *vulkan_planar_state_get(vk_t *vk,
             || vkCreateFence(device, &fence_info, NULL,
                   &st->fence[i]) != VK_SUCCESS
             || vkMapMemory(device, st->staging[i].memory,
-                  st->staging[i].offset, st->staging[i].size, 0,
+                  st->staging[i].offset, VK_WHOLE_SIZE, 0,
                   &st->staging[i].mapped) != VK_SUCCESS)
       {
          st->set[VK_STREAM_SLOTS - 1] = VK_NULL_HANDLE;
@@ -16533,7 +16495,7 @@ static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
          if (!bgrx)
             buffer += 3 * (VIDEO_SCALE_H(vk->vp.dims) - 1) * VIDEO_SCALE_W(vk->vp.dims);
          vkMapMemory(vk->context->device, staging->memory,
-               staging->offset, staging->size, 0, (void**)&src);
+               staging->offset, VK_WHOLE_SIZE, 0, (void**)&src);
 
          if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
                && (staging->memory != VK_NULL_HANDLE))
@@ -16623,7 +16585,7 @@ static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
 
       if (!staging->mapped)
       {
-         vkMapMemory(vk->context->device, staging->memory, staging->offset, staging->size, 0, &staging->mapped);
+         vkMapMemory(vk->context->device, staging->memory, staging->offset, VK_WHOLE_SIZE, 0, &staging->mapped);
       }
 
       if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
@@ -16907,7 +16869,7 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
 
    if (!staging->mapped)
       vkMapMemory(vk->context->device, staging->memory,
-            staging->offset, staging->size, 0, &staging->mapped);
+            staging->offset, VK_WHOLE_SIZE, 0, &staging->mapped);
 
    if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
          && (staging->memory != VK_NULL_HANDLE))
