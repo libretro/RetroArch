@@ -427,13 +427,15 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             if (settings->ints.vulkan_gpu_index <(int)(list->size - 1))
                settings->ints.vulkan_gpu_index++;
             else if (settings->ints.vulkan_gpu_index == (int)(list->size - 1))
                settings->ints.vulkan_gpu_index = 0;
+            video_driver_gpu_index_select(api,
+                  settings->ints.vulkan_gpu_index);
          }
 
          break;
@@ -445,13 +447,15 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             if (settings->ints.gl_gpu_index < (int)(list->size - 1))
                settings->ints.gl_gpu_index++;
             else
                settings->ints.gl_gpu_index = 0;
+            video_driver_gpu_index_select(api,
+                  settings->ints.gl_gpu_index);
          }
 
          break;
@@ -462,13 +466,15 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             if (settings->ints.d3d10_gpu_index < (int)(list->size - 1))
                settings->ints.d3d10_gpu_index++;
             else if (settings->ints.d3d10_gpu_index == (int)(list->size - 1))
                settings->ints.d3d10_gpu_index = 0;
+            video_driver_gpu_index_select(api,
+                  settings->ints.d3d10_gpu_index);
          }
 
          break;
@@ -479,13 +485,15 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             if (settings->ints.d3d11_gpu_index < (int)(list->size - 1))
                settings->ints.d3d11_gpu_index++;
             else if (settings->ints.d3d11_gpu_index == (int)(list->size - 1))
                settings->ints.d3d11_gpu_index = 0;
+            video_driver_gpu_index_select(api,
+                  settings->ints.d3d11_gpu_index);
          }
 
          break;
@@ -496,13 +504,15 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             if (settings->ints.d3d12_gpu_index < (int)(list->size - 1))
                settings->ints.d3d12_gpu_index++;
             else if (settings->ints.d3d12_gpu_index == (int)(list->size - 1))
                settings->ints.d3d12_gpu_index = 0;
+            video_driver_gpu_index_select(api,
+                  settings->ints.d3d12_gpu_index);
          }
 
          break;
@@ -513,13 +523,15 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
       {
          struct string_list *list = video_driver_get_gpu_api_devices(api);
 
-         if (list)
+         if (list && list->size)
          {
             settings_t *settings = config_get_ptr();
             if (settings->ints.metal_gpu_index < (int)(list->size - 1))
                settings->ints.metal_gpu_index++;
             else if (settings->ints.metal_gpu_index == (int)(list->size - 1))
                settings->ints.metal_gpu_index = 0;
+            video_driver_gpu_index_select(api,
+                  settings->ints.metal_gpu_index);
          }
 
          break;
