@@ -4324,70 +4324,57 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
       if (!bpp)
          bpp                         = 1;
 
-      /* The copy's bounds: an empty box, left after the textures
-       * could not follow a grown atlas, starts past them */
-      if (  (staging_tex->flags
-               & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
-            && staging_tex->memory != VK_NULL_HANDLE
-            && VIDEO_SCALE_W(font->dirty_xy0)
-               < VIDEO_SCALE_W(staging_tex->dims)
-            && VIDEO_SCALE_H(font->dirty_xy0)
-               < VIDEO_SCALE_H(staging_tex->dims))
       {
-         VkMappedMemoryRange mem_range;
-         VkDeviceSize flush_size;
-         /* Use nonCoherentAtomSize for alignment;
-          * fall back to 256 (common minimum) if unavailable. */
-         VkDeviceSize atom_size    = 256;
-
-         /* Compute tight flush range from dirty rectangle
-          * instead of flushing the entire allocation.
-          * Aligns offset down and size up to nonCoherentAtomSize
-          * as required by the spec (Â§12.1). */
-         unsigned y1               = VIDEO_SCALE_H(font->dirty_xy1);
-         VkDeviceSize flush_offset = (VkDeviceSize)
-                        VIDEO_SCALE_H(font->dirty_xy0) * staging_tex->stride
-                      + (VkDeviceSize)VIDEO_SCALE_W(font->dirty_xy0) * bpp;
-         VkDeviceSize flush_end    = (VkDeviceSize)(y1 > 0 ? (y1 - 1) : 0)
-                      * staging_tex->stride
-                      + (VkDeviceSize)VIDEO_SCALE_W(font->dirty_xy1) * bpp;
-         if (flush_end <= flush_offset)
-            flush_end = flush_offset + 1;
-         flush_size   = flush_end - flush_offset;
-
-         /* Align to nonCoherentAtomSize boundaries. */
-         flush_size   = flush_size + (flush_offset & (atom_size - 1));
-         flush_offset = flush_offset & ~(atom_size - 1);
-         flush_size   = (flush_size + atom_size - 1) & ~(atom_size - 1);
-
-         /* Clamp to allocation size. */
-         if (flush_offset + flush_size > staging_tex->size)
-            flush_size = VK_WHOLE_SIZE;
-
-         mem_range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-         mem_range.pNext  = NULL;
-         mem_range.memory = staging_tex->memory;
-         mem_range.offset = flush_offset;
-         mem_range.size   = flush_size;
-         vkFlushMappedMemoryRanges(vk->context->device, 1, &mem_range);
-      }
-
-      {
+         /* The box clamped to the staging texture bounds both the
+          * flush and the copy. It is empty when nothing was dirtied
+          * since the last upload, or when the atlas grew and the
+          * textures could not follow, leaving it past them. */
          unsigned dx = VIDEO_SCALE_W(font->dirty_xy0);
          unsigned dy = VIDEO_SCALE_H(font->dirty_xy0);
-         unsigned dw = VIDEO_SCALE_W(font->dirty_xy1) - dx;
-         unsigned dh = VIDEO_SCALE_H(font->dirty_xy1) - dy;
+         unsigned x1 = VIDEO_SCALE_W(font->dirty_xy1);
+         unsigned y1 = VIDEO_SCALE_H(font->dirty_xy1);
          unsigned sw = VIDEO_SCALE_W(staging_tex->dims);
          unsigned sh = VIDEO_SCALE_H(staging_tex->dims);
+         unsigned dw, dh;
 
-         if (dx >= sw || dy >= sh)
-            dw = dh = 0;
-         else
+         if (x1 > sw)
+            x1 = sw;
+         if (y1 > sh)
+            y1 = sh;
+         dw = (x1 > dx) ? x1 - dx : 0;
+         dh = (y1 > dy) ? y1 - dy : 0;
+
+         if (     dw > 0 && dh > 0
+               && (staging_tex->flags
+                  & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+               && staging_tex->memory != VK_NULL_HANDLE)
          {
-            if (dx + dw > sw)
-               dw = sw - dx;
-            if (dy + dh > sh)
-               dh = sh - dy;
+            VkMappedMemoryRange mem_range;
+            /* 256 is the largest nonCoherentAtomSize the spec allows,
+             * so a range aligned to it is aligned on every device. */
+            VkDeviceSize atom_size    = 256;
+            VkDeviceSize flush_offset = (VkDeviceSize)dy * staging_tex->stride
+                                      + (VkDeviceSize)dx * bpp;
+            VkDeviceSize flush_end    = (VkDeviceSize)(dy + dh - 1)
+                                      * staging_tex->stride
+                                      + (VkDeviceSize)(dx + dw) * bpp;
+            VkDeviceSize flush_size;
+
+            flush_offset = flush_offset & ~(atom_size - 1);
+            flush_size   = (flush_end - flush_offset + atom_size - 1)
+                         & ~(atom_size - 1);
+
+            /* Past the texture's bytes: to the allocation's end, which
+             * the whole-allocation mapping reaches. */
+            if (flush_offset + flush_size > staging_tex->size)
+               flush_size = VK_WHOLE_SIZE;
+
+            mem_range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+            mem_range.pNext  = NULL;
+            mem_range.memory = staging_tex->memory;
+            mem_range.offset = flush_offset;
+            mem_range.size   = flush_size;
+            vkFlushMappedMemoryRanges(vk->context->device, 1, &mem_range);
          }
 
          if (dw > 0 && dh > 0)
