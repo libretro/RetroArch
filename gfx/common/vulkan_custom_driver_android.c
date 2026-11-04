@@ -12,6 +12,7 @@
 #include <file/archive_file.h>
 #include <file/file_path.h>
 #include <lists/string_list.h>
+#include <retro_atomic.h>
 #include <retro_dirent.h>
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
@@ -527,12 +528,22 @@ bool vulkan_custom_driver_mesa(void)
    return custom_driver_st.mesa;
 }
 
+/* 0 until asked, then 1 or 2. Asked once: the menu asks each time it
+ * builds the Video settings, and the context on every init. */
+static retro_atomic_int_t custom_driver_supported_st;
+
 bool vulkan_custom_driver_supported(void)
 {
-   return     g_android
-          &&  g_android->activity
-          &&  g_android->activity->sdkVersion >= 28
-          &&  path_is_valid("/dev/kgsl-3d0");
+   int known = retro_atomic_load_acquire_int(&custom_driver_supported_st);
+   if (!known)
+   {
+      known = (     g_android
+                &&  g_android->activity
+                &&  g_android->activity->sdkVersion >= 28
+                &&  path_is_valid("/dev/kgsl-3d0")) ? 1 : 2;
+      retro_atomic_store_release_int(&custom_driver_supported_st, known);
+   }
+   return known == 1;
 }
 
 bool vulkan_custom_driver_crashed(const char *path)

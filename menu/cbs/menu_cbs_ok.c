@@ -10019,11 +10019,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,                  action_ok_osk_overlay_preset},
          {MENU_ENUM_LABEL_RECORD_CONFIG,                       action_ok_record_configfile},
          {MENU_ENUM_LABEL_STREAM_CONFIG,                       action_ok_stream_configfile},
-#ifdef HAVE_RGUI
-         {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,              action_ok_rgui_menu_theme_preset},
-#endif
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
          {MENU_ENUM_LABEL_VIDEO_VULKAN_DRIVER_PATH,            action_ok_vulkan_driver},
+#endif
+#ifdef HAVE_RGUI
+         {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,              action_ok_rgui_menu_theme_preset},
 #endif
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,             action_ok_push_manual_content_scan_dir_select},
          {MENU_ENUM_LABEL_SCAN_METHOD,                         action_ok_scan_method},
