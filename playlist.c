@@ -32,6 +32,8 @@
 #include <formats/rjson.h>
 #include <formats/rjson_stream.h>
 #include <array/rbuf.h>
+#include <retro_atomic.h>
+#include <queues/mpsc_stack.h>
 
 #include "playlist.h"
 #include "verbosity.h"
@@ -156,8 +158,26 @@ typedef struct
 static playlist_t *playlist_cached = NULL;
 /* Set when the cached playlist's file has been rewritten by something
  * else, so the next request re-reads it.  See
- * playlist_cached_after_write for why this is a flag and not a free. */
+ * playlist_cached_note_write for why this is a flag and not a free. */
 static bool playlist_cached_stale  = false;
+
+/* A write reaches the cache through a note, from whatever thread made
+ * it: the main thread applies the notes when it next decides whether
+ * the cache may stand in, so no writer reads or writes playlist_cached.
+ * Where the pointer atomics or threads are missing the write applies
+ * at once, as every write then comes from the one thread. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#define PLAYLIST_WRITE_NOTES 1
+typedef struct playlist_write_note
+{
+   mpsc_stack_node_t node;
+   const playlist_t *written;  /* compared, never dereferenced */
+   int64_t           size;     /* the file's size after the write */
+   char              path[1];  /* allocated to fit */
+} playlist_write_note_t;
+
+static mpsc_stack_t playlist_write_notes;
+#endif
 
 typedef int (playlist_sort_fun_t)(
       const struct playlist_entry *a,
@@ -2168,40 +2188,72 @@ end:
    }
 }
 
-/* A playlist file has just been written.  If the cached playlist is a
- * different object reading the same path, its contents are now stale -
- * a scan or a playlist-manager task writing the file the menu happens
- * to have open is the ordinary way this happens.  Drop it rather than
- * let a later reuse serve what is on disk no longer.  When the cached
- * playlist is the one that was written, it is still authoritative; only
- * its size stamp needs to catch up. */
-static void playlist_cached_after_write(playlist_t *written)
+/* What one write means for the cache: a write of the cached playlist
+ * itself moves its size stamp; any other write to its file leaves it
+ * stale, flagged rather than freed so nothing holding the pointer
+ * playlist_get_cached returned loses it (the next playlist_init_cached
+ * re-reads, at a point where nothing holds the old one).  Main thread. */
+static void playlist_cached_note_write(const playlist_t *written,
+      const char *path, int64_t size)
 {
-   if (!playlist_cached || !written || !*written->config.path)
+   if (!playlist_cached || !string_is_equal(playlist_cached->config.path, path))
       return;
    if (playlist_cached == written)
+      playlist_cached->file_size = size;
+   else
+      playlist_cached_stale = true;
+}
+
+/* The notes since the last look, newest first: only the newest write of
+ * the cached playlist sets its stamp. Main thread. */
+static void playlist_cached_apply_writes(void)
+{
+#ifdef PLAYLIST_WRITE_NOTES
+   bool sized              = false;
+   mpsc_stack_node_t *node = mpsc_stack_drain(&playlist_write_notes);
+   while (node)
    {
-      playlist_cached->file_size = path_get_size(written->config.path);
+      mpsc_stack_node_t     *next = node->next;
+      playlist_write_note_t *n    = (playlist_write_note_t*)node;
+      if (playlist_cached && n->written == playlist_cached)
+      {
+         if (!sized)
+            playlist_cached_note_write(n->written, n->path, n->size);
+         sized = true;
+      }
+      else
+         playlist_cached_note_write(n->written, n->path, n->size);
+      free(n);
+      node = next;
+   }
+#endif
+}
+
+/* A playlist file has just been written, possibly by a task on a
+ * worker.  A scan or a playlist-manager task writing the file the menu
+ * has open is the ordinary way the cache goes stale. */
+static void playlist_cached_after_write(playlist_t *written)
+{
+#ifdef PLAYLIST_WRITE_NOTES
+   size_t                 len;
+   playlist_write_note_t *n;
+   if (!written || !*written->config.path)
+      return;
+   len = strlen(written->config.path);
+   if (!(n = (playlist_write_note_t*)malloc(sizeof(*n) + len)))
+   {
+      /* no note to leave: a later size check still catches a change */
       return;
    }
-   if (string_is_equal(playlist_cached->config.path, written->config.path))
-   {
-      /* Mark it, do not free it.
-       *
-       * This runs from whatever happened to write the file, and the
-       * commonest case is the history list: launching an entry pushes
-       * it onto g_defaults.content_history, which is a different
-       * playlist_t for the same path as the one the menu is displaying
-       * from.  Freeing here would pull that object out from under
-       * every menu_displaylist caller still holding what
-       * playlist_get_cached returned - a use after free whose symptoms
-       * appear later and somewhere else entirely.
-       *
-       * The staleness is what matters, not the memory: flagging it
-       * makes the next playlist_init_cached re-read, which is a point
-       * where nothing is holding the old pointer. */
-      playlist_cached_stale = true;
-   }
+   n->written = written;
+   n->size    = path_get_size(written->config.path);
+   memcpy(n->path, written->config.path, len + 1);
+   mpsc_stack_push(&playlist_write_notes, &n->node);
+#else
+   if (written && *written->config.path)
+      playlist_cached_note_write(written, written->config.path,
+            path_get_size(written->config.path));
+#endif
 }
 
 void playlist_write_file(playlist_t *playlist)
@@ -3950,6 +4002,8 @@ void playlist_parse_abort(playlist_parse_t *p)
 
 void playlist_free_cached(void)
 {
+   /* what was written since no longer has a cache to tell */
+   playlist_cached_apply_writes();
    if (playlist_cached && !(playlist_cached->flags & CNT_PLAYLIST_FLG_CACHED_EXT))
       playlist_free(playlist_cached);
    playlist_cached       = NULL;
@@ -3980,6 +4034,7 @@ playlist_t *playlist_get_cached(void)
  * size is the one signal the VFS layer offers portably. */
 static bool playlist_cached_is_reusable(const playlist_config_t *config)
 {
+   playlist_cached_apply_writes();
    if (!playlist_cached || playlist_cached_stale)
       return false;
    if (!string_is_equal(playlist_cached->config.path, config->path))

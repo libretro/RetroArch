@@ -411,6 +411,11 @@ bool task_dbscan_chain_is_running(void);
 /* False while task_push_dbscan_chain() would refuse: a chain or a
  * manual scan runs.  Main thread only. */
 bool task_dbscan_chain_can_start(void);
+/* A scan asked for while a chain runs would use the settings the chain
+ * last loaded: true, with the message shown, when it must be refused. */
+bool task_dbscan_chain_refuse(void);
+/* The same for a new chain, which also waits for a running scan. */
+bool task_dbscan_chain_refuse_start(void);
 
 bool task_push_manual_content_scan(
       bool do_menu_refresh,

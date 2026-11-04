@@ -8920,8 +8920,21 @@ static bool retroarch_parse_input_and_config(
                      kind = TASK_DBSCAN_ITEM_REFRESH_ALL;
                      arg  = NULL;
                   }
+                  /* Cut to fit the chain's path buffers, a path could
+                   * name a folder above the one asked for. */
+                  if (arg && strlen(arg) >= PATH_MAX_LENGTH)
+                  {
+                     frontend_driver_attach_console();
+                     fprintf(stderr, "--%s is too long\n",
+                           c == RA_OPT_SCAN_REFRESH ? "scan-refresh" : "scan");
+                     exit(1);
+                  }
                   cli_scan = true;
+                  /* The totals and errors are the command's output: the
+                   * config's log_verbosity must not turn them off, which
+                   * on Windows detaches the console. */
                   verbosity_enable();
+                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
                   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
                   if (!retroarch_cli_scan_add(&scan_items, &scan_count,
                         &scan_cap, kind, arg))

@@ -4214,8 +4214,7 @@ static bool manual_scan_end_flush_tick(
 bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb,
       void *user_data)
 {
-   /* It would run with the settings the chain last loaded. */
-   if (task_dbscan_chain_is_running())
+   if (task_dbscan_chain_refuse())
       return false;
    manual_content_scan_set_menu_content_dir(fullpath);
    return task_push_manual_content_scan(false, cb, user_data);
@@ -5927,6 +5926,8 @@ typedef struct
    size_t next;
    size_t all_next;
    task_dbscan_chain_result_t totals;
+   /* the Manual Scan settings the chain found, put back when it ends */
+   manual_content_scan_saved_t *saved;
    bool all_running;
    bool all_counted; /* a playlist of the refresh-all had settings */
    bool cli_output;
@@ -5950,8 +5951,14 @@ static void dbscan_chain_free_items(task_dbscan_item_t *items,
    free(items);
 }
 
+/* Ends the chain: what it found in the Manual Scan settings goes back,
+ * and it is no longer running when @done_cb hears the totals, so that
+ * callback may start another. */
 static void dbscan_chain_finish(dbscan_chain_t *chain)
 {
+   manual_content_scan_restore_settings(chain->saved);
+   chain->saved         = NULL;
+   dbscan_chain_running = NULL;
    if (chain->done_cb)
       chain->done_cb(&chain->totals, chain->user_data);
    dbscan_chain_free_items(chain->items, chain->count);
@@ -5961,7 +5968,6 @@ static void dbscan_chain_finish(dbscan_chain_t *chain)
       string_list_free(chain->playlists);
    free(chain->name);
    free(chain);
-   dbscan_chain_running = NULL;
 }
 
 static void dbscan_chain_fold(dbscan_chain_t *chain, const char *name,
@@ -6554,8 +6560,7 @@ static void dbscan_prep_free(retro_task_t *task)
 
 /* Pushes a prep task for @prep; false, @prep freed, if it cannot. */
 static bool dbscan_chain_push_prep(dbscan_chain_t *chain,
-      dbscan_prep_t *prep, retro_task_handler_t handler,
-      retro_task_callback_t cb)
+      dbscan_prep_t *prep, bool load, retro_task_callback_t cb)
 {
    retro_task_t *task = prep ? task_init() : NULL;
 
@@ -6569,8 +6574,12 @@ static bool dbscan_chain_push_prep(dbscan_chain_t *chain,
       }
       return false;
    }
-   /* Silent: no title, no notifications. */
-   task->handler   = handler;
+   /* Silent: no title, no notifications.  Each handler by name, so the
+    * thread-read audit takes both as worker entries. */
+   if (load)
+      task->handler = dbscan_load_handler;
+   else
+      task->handler = dbscan_prep_handler;
    task->state     = prep;
    task->user_data = chain;
    task->callback  = cb;
@@ -6616,7 +6625,7 @@ static bool dbscan_chain_push_load(dbscan_chain_t *chain,
             ? settings->paths.directory_menu_content : NULL);
       prep->kind = DBSCAN_PREP_LOAD;
    }
-   if (dbscan_chain_push_prep(chain, prep, dbscan_load_handler,
+   if (dbscan_chain_push_prep(chain, prep, true,
          dbscan_load_cb))
       return true;
    fill_pathname(name, path_basename(path), "", sizeof(name));
@@ -6723,7 +6732,7 @@ static bool dbscan_chain_push_list(dbscan_chain_t *chain)
          prep = NULL;
       }
    }
-   return dbscan_chain_push_prep(chain, prep, dbscan_prep_handler,
+   return dbscan_chain_push_prep(chain, prep, false,
          dbscan_prep_cb);
 }
 
@@ -6786,6 +6795,29 @@ static bool dbscan_chain_scan_finder(retro_task_t *task, void *user_data)
           && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
 }
 
+static void dbscan_chain_refusal(void)
+{
+   const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING);
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 150, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+}
+
+bool task_dbscan_chain_refuse(void)
+{
+   if (!dbscan_chain_running)
+      return false;
+   dbscan_chain_refusal();
+   return true;
+}
+
+bool task_dbscan_chain_refuse_start(void)
+{
+   if (task_dbscan_chain_can_start())
+      return false;
+   dbscan_chain_refusal();
+   return true;
+}
+
 bool task_dbscan_chain_can_start(void)
 {
    task_finder_data_t find_data;
@@ -6823,9 +6855,11 @@ bool task_push_dbscan_chain(task_dbscan_item_t *items, size_t count,
    chain->user_data  = user_data;
    chain->cli_output = retroarch_override_setting_is_set(
          RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
+   if (!(chain->saved = manual_content_scan_save_settings()))
+      goto error;
 
    dbscan_chain_running = chain;
-   if (dbscan_chain_push_prep(chain, prep, dbscan_prep_handler,
+   if (dbscan_chain_push_prep(chain, prep, false,
          dbscan_prep_cb))
       return true;
    dbscan_chain_running = NULL;
@@ -6835,6 +6869,8 @@ error:
    if (prep)
       free(prep->dir);
    free(prep);
+   if (chain)
+      free(chain->saved);
    free(chain);
    dbscan_chain_free_items(items, count);
    return false;

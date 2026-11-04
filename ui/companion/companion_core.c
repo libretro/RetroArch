@@ -1849,6 +1849,15 @@ static void companion_core_scan_finished(retro_task_t *task,
 }
 #endif
 
+const char *companion_core_scan_refusal(void)
+{
+#ifdef HAVE_LIBRETRODB
+   if (task_dbscan_chain_is_running())
+      return msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING);
+#endif
+   return "Scanning is not available in this build.";
+}
+
 bool companion_core_request_scan(companion_core_t *core, const char *path)
 {
 #ifdef HAVE_LIBRETRODB

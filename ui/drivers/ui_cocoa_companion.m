@@ -4227,7 +4227,7 @@ static const char *cc_thumb_subdir(int t)
    if (companion_core_request_scan(wimp->core, [path UTF8String]))
       [self setStatus:"Scanning..."];
    else
-      [self setStatus:"Scanning is not available in this build."];
+      [self setStatus:companion_core_scan_refusal()];
 }
 
 /* The companion's own Load Core window (like Qt's LoadCoreWindow):

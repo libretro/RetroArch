@@ -219,6 +219,8 @@ bool task_push_dbscan(const char *path, retro_task_callback_t cb,
    return true;
 }
 
+bool task_dbscan_chain_is_running(void) { return false; }
+
 /* Entries and macros (input_driver.c): kept by number as their text. An
  * entry reads when it has a colon, a macro when it has a digit, as a
  * stand-in for the real parsers; sixteen of each at most. */

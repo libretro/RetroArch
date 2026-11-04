@@ -201,6 +201,8 @@ settings_t *config_get_ptr(void)
 }
 
 static bool invalid_content_pushed = false;
+/* How often a refused scan or chain said why. */
+static unsigned busy_pushed = 0;
 
 /* Additional stubs for retroarch-core symbols referenced transitively,
  * to avoid pulling in retroarch.c, runloop.c, frontend drivers, and the
@@ -214,6 +216,9 @@ void runloop_msg_queue_push(const char *msg, size_t len,
    (void)flush; (void)title; (void)icon; (void)category;
    if (msg && !strcmp(msg, "invalid content"))
       invalid_content_pushed = true;
+   if (msg && !strcmp(msg,
+            msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING)))
+      busy_pushed++;
 }
 
 /* Whether the scan prints what --scan prints. */
@@ -9164,6 +9169,23 @@ static void chain_done_cb(const task_dbscan_chain_result_t *res,
    chain_dones++;
 }
 
+/* A done callback that starts the next chain: the one ending must no
+ * longer count as running. */
+static const char *chain_restart_arg;
+static bool        chain_restart_ok;
+
+static task_dbscan_item_t *chain_items(size_t n, const char *first,
+      const char *rest);
+
+static void chain_done_restart_cb(const task_dbscan_chain_result_t *res,
+      void *user_data)
+{
+   chain_done_cb(res, user_data);
+   chain_restart_ok = task_push_dbscan_chain(
+         chain_items(1, chain_restart_arg, NULL), 1,
+         chain_item_cb, chain_done_cb, &chain_seen);
+}
+
 /* A --scan item for @arg; with @core, an override naming it. */
 static void chain_item(task_dbscan_item_t *it, const char *arg,
       const char *core)
@@ -9261,6 +9283,7 @@ static void chain_lane(const char *root, const char *pl_dir,
    task_dbscan_item_t *items;
    bool                pushed, refused, captured, back, running;
    bool                scan_refused;
+   unsigned            busy_before, busy_scan;
 
    sprintf(a,       "%s/chain_a",       root);
    sprintf(b,       "%s/chain_b",       root);
@@ -9364,11 +9387,17 @@ static void chain_lane(const char *root, const char *pl_dir,
          && chain_saw(0, slow, TASK_DBSCAN_RAN, chain_added[0])
          && chain_totals.ran == 1 && chain_totals.cancelled, what, detail);
 
+   /* what the menu holds before the chain, to find again after it */
+   manual_content_scan_reset_settings();
+   strlcpy(manual_content_scan_get_system_name_custom_ptr(), "Kept Name",
+         manual_content_scan_get_system_name_custom_size());
    pushed  = chain_push(chain_items(1, a, NULL), 1);
    running = task_dbscan_chain_is_running();
    refused = !task_push_dbscan_chain(chain_items(1, b, NULL), 1,
          chain_item_cb, chain_done_cb, &chain_seen);
+   busy_before  = busy_pushed;
    scan_refused = !task_push_dbscan(b, scan_cb, NULL);
+   busy_scan    = busy_pushed - busy_before;
    chain_wait(false);
    sprintf(what, "chain %s: a second chain refused", q);
    sprintf(detail, "%u items, done %u", chain_seen, chain_dones);
@@ -9376,6 +9405,39 @@ static void chain_lane(const char *root, const char *pl_dir,
          && chain_saw(0, a, TASK_DBSCAN_RAN, 0), what, detail);
    sprintf(what, "chain %s: running from the push to the end", q);
    check(running && !task_dbscan_chain_is_running(), what, "");
+   sprintf(what, "chain %s: a scan refused while it runs says why", q);
+   sprintf(detail, "refused %d, told %u", (int)scan_refused, busy_scan);
+   check(scan_refused && busy_scan == 1, what, detail);
+   sprintf(what, "chain %s: the Manual Scan settings come back", q);
+   check(!strcmp(manual_content_scan_get_system_name_custom_ptr(),
+            "Kept Name"), what,
+         manual_content_scan_get_system_name_custom_ptr());
+   manual_content_scan_reset_settings();
+
+   /* the done callback starts the next chain */
+   chain_seen        = 0;
+   chain_dones       = 0;
+   chain_ud_ok       = true;
+   chain_restart_ok  = false;
+   chain_restart_arg = b;
+   pushed = task_push_dbscan_chain(chain_items(1, a, NULL), 1,
+         chain_item_cb, chain_done_restart_cb, &chain_seen);
+   {
+      time_t started = time(NULL);
+      while (   pushed && chain_dones < 2
+             && difftime(time(NULL), started) <= SCAN_TIMEOUT_SECONDS)
+      {
+         task_queue_check();
+         retro_sleep(1);
+      }
+   }
+   sprintf(what, "chain %s: its done callback may start another", q);
+   sprintf(detail, "pushed %d, restarted %d, done %u, items %u",
+         (int)pushed, (int)chain_restart_ok, chain_dones, chain_seen);
+   check(   pushed && chain_restart_ok && chain_dones == 2
+         && chain_saw(0, a, TASK_DBSCAN_RAN, 0)
+         && chain_saw(1, b, TASK_DBSCAN_RAN, chain_added[1]),
+         what, detail);
 
    /* Held, so the scan cannot end before the chain is pushed */
    slow_reset(sz_a, 0);

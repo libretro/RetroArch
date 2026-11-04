@@ -57,6 +57,7 @@
 
 #include "../../core_info.h"
 #include <compat/strl.h>
+#include <rthreads/rthreads.h>
 
 bool core_info_find(const char *core_path, core_info_t **core_info)
 {
@@ -810,6 +811,101 @@ static void check_cache_reuse(const char *path, bool compressed,
          lane);
 
    playlist_free_cached();
+}
+
+
+/* A task on a worker writes the playlist file the menu has cached.
+ * The writer leaves a note for the main thread rather than touching
+ * the cached playlist, which the main thread frees and installs at
+ * will; the main thread applies the note when it next asks the cache.
+ * The worker's write keeps the file's size, so the note alone must
+ * keep the cache from serving what is on disk no longer.  A stress
+ * round follows: the worker rewrites while the main thread reuses and
+ * frees the cache (under ASan, and TSan with SANITIZER=thread). */
+struct cache_writer
+{
+   const char *path;
+   unsigned    rounds;
+};
+
+static void cache_writer_name(const char *path, const char *name)
+{
+   playlist_config_t config;
+   playlist_t *pl;
+   config_defaults(&config, path);
+   if (!(pl = playlist_init(&config)))
+      return;
+   playlist_set_default_core_name(pl, name);
+   playlist_write_file(pl);
+   playlist_free(pl);
+}
+
+static void cache_writer_run(void *arg)
+{
+   struct cache_writer *w = (struct cache_writer*)arg;
+   unsigned i;
+   for (i = 0; i < w->rounds; i++)
+      cache_writer_name(w->path, (i & 1) ? "Core X" : "Core Y");
+}
+
+static void lane_cache_worker_write(void)
+{
+   char path[512];
+   playlist_config_t config;
+   struct cache_writer w;
+   sthread_t *t;
+   playlist_t *pl;
+   unsigned had = failures;
+   unsigned i;
+
+   snprintf(path, sizeof(path), "%s/worker.lpl", fixture_dir);
+   CHECK(write_whole(path, json_full), "worker lane: fixture write");
+   /* the writer's own form, so every later write has its size */
+   cache_writer_name(path, "Core Z");
+   config_defaults(&config, path);
+
+   playlist_free_cached();
+   CHECK(playlist_init_cached(&config), "worker lane: cached init");
+   pl = playlist_get_cached();
+   CHECK(pl && streq(playlist_get_default_core_name(pl), "Core Z"),
+         "worker lane: cached playlist");
+
+   w.path   = path;
+   w.rounds = 1;
+   CHECK((t = sthread_create(cache_writer_run, &w)) != NULL,
+         "worker lane: writer thread");
+   if (t)
+      sthread_join(t);
+
+   CHECK(playlist_init_cached(&config), "worker lane: cached init after");
+   pl = playlist_get_cached();
+   CHECK(pl && streq(playlist_get_default_core_name(pl), "Core Y"),
+         "worker lane: a same-size write from a worker was served "
+         "from the stale cache");
+
+   /* concurrent: the worker writes while the main thread reuses,
+    * reads and frees */
+   w.rounds = 200;
+   if ((t = sthread_create(cache_writer_run, &w)))
+   {
+      for (i = 0; i < 400; i++)
+      {
+         if (playlist_init_cached(&config) && (pl = playlist_get_cached()))
+            CHECK(playlist_get_default_core_name(pl) != NULL,
+                  "worker lane: stress read");
+         if (i & 1)
+            playlist_free_cached();
+      }
+      sthread_join(t);
+   }
+   CHECK(playlist_init_cached(&config), "worker lane: final init");
+   pl = playlist_get_cached();
+   /* the last of 200 writes, round 199, wrote "Core X" */
+   CHECK(pl && streq(playlist_get_default_core_name(pl), "Core X"),
+         "worker lane: the cache missed the worker's last write");
+   playlist_free_cached();
+   if (failures == had)
+      fprintf(stderr, "[pass] worker-write cache lane\n");
 }
 
 static void lane_cache_reuse(void)
@@ -1660,6 +1756,7 @@ int main(int argc, char *argv[])
    lane_budgeted_autofix();
    lane_abort_midway();
    lane_cache_reuse();
+   lane_cache_worker_write();
    lane_switch_playlist_never_shows_previous();
    lane_switch_supersedes_pending();
    lane_saf_slow_reads();

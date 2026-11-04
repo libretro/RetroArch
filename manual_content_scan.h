@@ -263,6 +263,12 @@ enum manual_content_scan_dat_file_path_status
 /* Sets every setting back to its default */
 void manual_content_scan_reset_settings(void);
 
+/* The Manual Scan settings as they are, for a scan chain to put back
+ * once it has run its own: NULL out of memory. Restoring frees it. */
+typedef struct manual_content_scan_saved manual_content_scan_saved_t;
+manual_content_scan_saved_t *manual_content_scan_save_settings(void);
+void manual_content_scan_restore_settings(manual_content_scan_saved_t *saved);
+
 /* Sets content directory for next manual scan
  * operation.
  * Returns true if content directory is valid. */

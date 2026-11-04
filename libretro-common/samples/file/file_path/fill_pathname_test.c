@@ -370,6 +370,35 @@ static void test_expand_special_home(void)
    }
 }
 
+/* A home directory longer than the buffer: the expansion is cut at the
+ * buffer's end and nothing is written past it.  The buffer is a heap
+ * block of exactly its size, so ASan sees a write past the end. */
+static void test_expand_special_truncation(void)
+{
+   const size_t len = 8;
+   char  *out       = (char*)malloc(len);
+   size_t got;
+
+   if (!out)
+   {
+      printf("[FAILED] expand truncation: out of memory\n");
+      failures++;
+      return;
+   }
+   set_home("/a-home-directory-longer-than-the-buffer");
+   got = fill_pathname_expand_special(out, "~/file", len);
+   if (got != len - 1 || strlen(out) != len - 1
+         || strncmp(out, "/a-home", len - 1))
+   {
+      printf("[FAILED] expand truncation gave \"%s\" (%u)\n",
+            out, (unsigned)got);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] expand truncation\n");
+   free(out);
+}
+
 int main(void)
 {
    /* Documented semantics. */
@@ -391,6 +420,7 @@ int main(void)
    test_join_truncation();
    test_abbreviated_or_relative_long_join();
    test_expand_special_home();
+   test_expand_special_truncation();
 
    if (failures)
    {

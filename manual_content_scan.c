@@ -380,6 +380,56 @@ void manual_content_scan_reset_settings(void)
    scan_core_name[0]               = '\0';
 }
 
+struct manual_content_scan_saved
+{
+   scan_settings_t settings;
+   char core_path[PATH_MAX_LENGTH];
+   char file_exts_core[PATH_MAX_LENGTH];
+   char file_exts_custom[PATH_MAX_LENGTH];
+   char dat_file_path[PATH_MAX_LENGTH];
+   char content_dir[PATH_MAX_LENGTH];
+   char system_name_content_dir[DIR_MAX_LENGTH];
+   char system_name_database[NAME_MAX_LENGTH];
+   char system_name_custom[NAME_MAX_LENGTH];
+   char core_name[NAME_MAX_LENGTH];
+};
+
+manual_content_scan_saved_t *manual_content_scan_save_settings(void)
+{
+   manual_content_scan_saved_t *sv = (manual_content_scan_saved_t*)
+      malloc(sizeof(*sv));
+   if (!sv)
+      return NULL;
+   sv->settings = scan_settings;
+   memcpy(sv->core_path,               scan_core_path,               sizeof(sv->core_path));
+   memcpy(sv->file_exts_core,          scan_file_exts_core,          sizeof(sv->file_exts_core));
+   memcpy(sv->file_exts_custom,        scan_file_exts_custom,        sizeof(sv->file_exts_custom));
+   memcpy(sv->dat_file_path,           scan_dat_file_path,           sizeof(sv->dat_file_path));
+   memcpy(sv->content_dir,             scan_content_dir,             sizeof(sv->content_dir));
+   memcpy(sv->system_name_content_dir, scan_system_name_content_dir, sizeof(sv->system_name_content_dir));
+   memcpy(sv->system_name_database,    scan_system_name_database,    sizeof(sv->system_name_database));
+   memcpy(sv->system_name_custom,      scan_system_name_custom,      sizeof(sv->system_name_custom));
+   memcpy(sv->core_name,               scan_core_name,               sizeof(sv->core_name));
+   return sv;
+}
+
+void manual_content_scan_restore_settings(manual_content_scan_saved_t *sv)
+{
+   if (!sv)
+      return;
+   scan_settings = sv->settings;
+   memcpy(scan_core_path,               sv->core_path,               sizeof(scan_core_path));
+   memcpy(scan_file_exts_core,          sv->file_exts_core,          sizeof(scan_file_exts_core));
+   memcpy(scan_file_exts_custom,        sv->file_exts_custom,        sizeof(scan_file_exts_custom));
+   memcpy(scan_dat_file_path,           sv->dat_file_path,           sizeof(scan_dat_file_path));
+   memcpy(scan_content_dir,             sv->content_dir,             sizeof(scan_content_dir));
+   memcpy(scan_system_name_content_dir, sv->system_name_content_dir, sizeof(scan_system_name_content_dir));
+   memcpy(scan_system_name_database,    sv->system_name_database,    sizeof(scan_system_name_database));
+   memcpy(scan_system_name_custom,      sv->system_name_custom,      sizeof(scan_system_name_custom));
+   memcpy(scan_core_name,               sv->core_name,               sizeof(scan_core_name));
+   free(sv);
+}
+
 /* Sets content directory for next manual scan
  * operation.
  * Returns true if content directory is valid. */
