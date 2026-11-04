@@ -792,6 +792,7 @@ void *vulkan_custom_driver_session_open(vulkan_custom_driver_session_t *s,
    s->current = NULL;
    s->full    = false;
    s->kept    = false;
+   s->reason  = VULKAN_CUSTOM_DRIVER_MSG_NONE;
    if (string_is_empty(req->path) || req->safe_mode)
       return NULL;
    /* Past a full table, as past full slots: the system driver. */
@@ -850,12 +851,24 @@ enum vulkan_custom_driver_msg vulkan_custom_driver_session_failed(
       vulkan_custom_driver_session_t *s)
 {
    struct vulkan_custom_driver_path *p = s->current;
+   enum vulkan_custom_driver_msg msg   = s->reason;
    s->current = NULL;
    s->pending = false;
+   s->reason  = VULKAN_CUSTOM_DRIVER_MSG_NONE;
    if (!p)
       return VULKAN_CUSTOM_DRIVER_MSG_NONE;
    p->failed = true;
-   return session_once(p, VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   if (msg == VULKAN_CUSTOM_DRIVER_MSG_NONE)
+      msg = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
+   return session_once(p, msg);
+}
+
+void vulkan_custom_driver_session_reason(vulkan_custom_driver_session_t *s,
+      enum vulkan_custom_driver_msg msg)
+{
+   if (     vulkan_custom_driver_session_current(s)
+         && s->reason == VULKAN_CUSTOM_DRIVER_MSG_NONE)
+      s->reason = msg;
 }
 
 bool vulkan_custom_driver_session_started(vulkan_custom_driver_session_t *s)
