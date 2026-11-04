@@ -131,6 +131,8 @@ typedef struct vulkan_custom_driver_session
    bool pending;      /* a custom driver opened and not started yet */
    bool full;         /* the path opened last found the table or slots full */
    bool full_shown;   /* RESTART shown for a path past a full table */
+   bool kept;         /* this init took a kept instance */
+   bool restart_shown; /* RESTART shown for a system init on a custom library */
    struct vulkan_custom_driver_path paths[VULKAN_CUSTOM_DRIVER_PATHS];
    char state[VULKAN_CUSTOM_DRIVER_STATE_MAX];
 } vulkan_custom_driver_session_t;
@@ -168,6 +170,27 @@ bool vulkan_custom_driver_session_current(
  * this session, as it may still be mapped, or has no room in the table. */
 enum vulkan_custom_driver_msg vulkan_custom_driver_session_picked(
       vulkan_custom_driver_session_t *s, const char *path);
+
+/* Desktop: the module a new device's vkQueueSubmit is in. */
+enum vulkan_custom_driver_module
+{
+   VULKAN_CUSTOM_DRIVER_MODULE_UNKNOWN = 0, /* a layer in front, or none */
+   VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM,      /* a driver not opened as custom */
+   VULKAN_CUSTOM_DRIVER_MODULE_CURRENT,     /* the custom driver this init opened */
+   VULKAN_CUSTOM_DRIVER_MODULE_OTHER        /* a custom driver still mapped */
+};
+
+/* Desktop: the custom driver opened last failed and its library is
+ * closed: its slot is free again. False when no slot holds handle. */
+bool vulkan_custom_driver_session_drop(vulkan_custom_driver_session_t *s,
+      const void *handle);
+/* Desktop: judges a new device by module. False when the custom driver
+ * this init opened did not take effect: the init fails over to the
+ * system driver. *msg is RESTART, once a session, when a system init runs
+ * on a custom driver's library. A kept device is not judged. */
+bool vulkan_custom_driver_session_device(vulkan_custom_driver_session_t *s,
+      enum vulkan_custom_driver_module module,
+      enum vulkan_custom_driver_msg *msg);
 
 /* Overwrites the start of an ELF64 file's DT_SONAME with patch, up to the
  * shorter of the two. False, with elf untouched, when elf is not a
