@@ -58,6 +58,8 @@ typedef struct {
                               * listings on different threads never share it */
 } smb_dir_handle;
 
+/* Hands the client new settings: they are copied, strings included,
+ * so the caller may change or free @new_cfg once this returns. */
 bool smb_init_cfg(const struct smb_settings *new_cfg);
 
 /* File operations */
@@ -84,6 +86,8 @@ int retro_vfs_stat_smb(const char *path, int64_t *size);
 
 /* Errors */
 int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream);
+/* Why the last connect, share listing or opendir failed; "" if none has. */
+const char *smb_get_last_error(void);
 
 /* Context management */
 void smb_shutdown(void);

@@ -15,6 +15,7 @@ int main(int argc, char **argv)
    libretro_vfs_implementation_file stream;
    libretro_vfs_implementation_file held[2];
    smb_dir_handle *dh;
+   libretro_vfs_implementation_dir *rdir;
    struct smbc_dirent *ent;
    char url[512];
    uint8_t buf[4096];
@@ -125,6 +126,23 @@ int main(int argc, char **argv)
    if (found != 1)
    {
       fprintf(stderr, "FAIL: share browse (%d)\n", found);
+      return 1;
+   }
+   /* the same listing through the dispatcher, as the menu browses it */
+   found = 0;
+   if (!(rdir = retro_vfs_opendir_impl(url, false)))
+   {
+      fprintf(stderr, "FAIL: dispatcher opendir server\n");
+      return 1;
+   }
+   while (retro_vfs_readdir_impl(rdir))
+      if (     strcmp(retro_vfs_dirent_get_name_impl(rdir), argv[2]) == 0
+            && retro_vfs_dirent_is_dir_impl(rdir))
+         found = 1;
+   retro_vfs_closedir_impl(rdir);
+   if (found != 1)
+   {
+      fprintf(stderr, "FAIL: dispatcher share browse\n");
       return 1;
    }
    smb_shutdown();

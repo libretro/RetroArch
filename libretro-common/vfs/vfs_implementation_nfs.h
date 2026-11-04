@@ -68,6 +68,8 @@ typedef struct
    struct nfs_dirent ent;
 } nfs_dir_handle;
 
+/* Hands the client new settings: they are copied, strings included,
+ * so the caller may change or free @new_cfg once this returns. */
 bool nfs_init_cfg(const struct nfs_settings *new_cfg);
 
 /* File operations */

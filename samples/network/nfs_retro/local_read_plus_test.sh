@@ -8,12 +8,14 @@
 # on it), hence the fake. Its encoding is checked apart from the client
 # when tshark is installed: Wireshark's own NFS dissector decodes the
 # replies and their data and holes must add up to the file.
+# The fake also serves nfs_error_test: a failed listing must say why,
+# and an open file must read on after a settings change.
 # Runs as a Windows binary under Wine too (CC=..-mingw.. RUNNER=wine
 # EXE=.exe); needs python3.
 set -eu
 cd "$(dirname "$0")"
 command -v python3 >/dev/null 2>&1 || { echo "skip: no python3"; exit 0; }
-make -s nfs_sparse_test
+make -s nfs_sparse_test nfs_error_test
 RUN=${RUNNER:-}
 EXE=${EXE:-}
 PORT=20460
@@ -73,5 +75,11 @@ if [ -n "$CAP" ]; then
    fi
 else
    echo "skip: the independent decode needs tshark and root"
+fi
+# after the capture, whose sums its reads would add to
+if $RUN ./nfs_error_test$EXE $PORT "$local_path" > $D/err 2>&1; then
+   tr -d "\r" < $D/err
+else
+   echo "FAIL: nfs_error_test: $(cat $D/err)"; exit 1
 fi
 echo "[pass] nfs_retro local read_plus"

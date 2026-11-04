@@ -8,8 +8,10 @@
 set -e
 cd "$(dirname "$0")"
 # reply parsing against short and hostile replies: needs no server
-make -s nfs_reply_bounds_test
+make -s nfs_reply_bounds_test nfs_cfg_race_test
 ${RUNNER:-} ./nfs_reply_bounds_test${EXE:-}
+# settings handed over while threads resolve: needs no server
+${RUNNER:-} ./nfs_cfg_race_test${EXE:-}
 UNFSD=$(command -v unfsd || true)
 if [ -z "$UNFSD" ]; then
    if command -v git >/dev/null 2>&1 && command -v flex >/dev/null 2>&1 && command -v bison >/dev/null 2>&1; then
@@ -36,7 +38,7 @@ $UNFSD -p -n 20049 -m 20048 -e $D/exports -d > $D/log 2>&1 &
 SRV=$!
 i=0; while [ $i -lt 50 ]; do
    $RUN ./nfs_test$EXE 127.0.0.1 $D/export 20049 20048 > $D/out 2>&1 && break
-   grep -q "connect failed" $D/out || break
+   grep -q "connect to " $D/out || break
    i=$((i + 1)); sleep 0.2
 done
 rm -rf $D/export/*

@@ -1143,6 +1143,7 @@ struct libretro_vfs_implementation_dir
 #ifdef HAVE_SMBCLIENT
     smb_dir_handle* smb_handle;
     char smb_path[PATH_MAX_LENGTH];
+    bool smb_is_dir;
 #endif
 };
 
@@ -1171,7 +1172,7 @@ libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
         name[3]==':' && name[4]=='/' && name[5]=='/' && name[6] != '\0')
     {
         smb_dir_handle *dh = retro_vfs_opendir_smb(name, include_hidden);
-        if (!dh || !dh->dir)
+        if (!dh)
         {
             free(rdir->orig_path);
             free(rdir);
@@ -1179,6 +1180,7 @@ libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
         }
         rdir->smb_handle = dh;
         rdir->smb_path[0] = '\0';
+        rdir->smb_is_dir = false;
         return rdir;
     }
 #endif
@@ -1213,13 +1215,14 @@ libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
 bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir* rdir)
 {
 #ifdef HAVE_SMBCLIENT
-    if (rdir && rdir->smb_handle && rdir->smb_handle->dir != 0)
+    if (rdir && rdir->smb_handle)
     {
         struct smbc_dirent *de = retro_vfs_readdir_smb(rdir->smb_handle);
         if (!de)
             return false;
 
         strlcpy(rdir->smb_path, de->name, sizeof(rdir->smb_path));
+        rdir->smb_is_dir = (de->type == RETRO_SMB_DIRENT_DIR);
        return true;
     }
     /* If we opened an SMB path but failed, do not fall through to native readdir */
@@ -1239,7 +1242,7 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir* rdir)
 const char* retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir* rdir)
 {
 #ifdef HAVE_SMBCLIENT
-    if (rdir && rdir->smb_handle && rdir->smb_handle->dir != 0)
+    if (rdir && rdir->smb_handle)
        return rdir->smb_path;
 #endif
     char* name = utf16_to_utf8_string_alloc(rdir->entry.cFileName);
@@ -1253,20 +1256,8 @@ const char* retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir* rdir
 bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir* rdir)
 {
 #ifdef HAVE_SMBCLIENT
-    if (rdir && rdir->smb_handle && rdir->smb_handle->dir != 0)
-    {
-       char full[PATH_MAX_LENGTH];
-       const char *name = retro_vfs_dirent_get_name_impl(rdir);
-
-       if (!name)
-          return false;
-
-       fill_pathname_join_special(full, rdir->orig_path, name, sizeof(full));
-       int64_t sz = 0;
-       int st = retro_vfs_stat_smb(full, &sz);
-
-       return (st & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
-    }
+    if (rdir && rdir->smb_handle)
+       return rdir->smb_is_dir;
 #endif
     const WIN32_FIND_DATA* entry = (const WIN32_FIND_DATA*)&rdir->entry;
     return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
@@ -1280,7 +1271,7 @@ int retro_vfs_dirent_stat_impl(libretro_vfs_implementation_dir* rdir,
     if (!rdir)
         return 0;
 #ifdef HAVE_SMBCLIENT
-    if (rdir->smb_handle && rdir->smb_handle->dir != 0)
+    if (rdir->smb_handle)
     {
        char full[PATH_MAX_LENGTH];
        const char *name = retro_vfs_dirent_get_name_impl(rdir);
@@ -1310,7 +1301,7 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir* rdir)
         return -1;
 
 #ifdef HAVE_SMBCLIENT
-    if (rdir->smb_handle && rdir->smb_handle->dir != 0)
+    if (rdir->smb_handle)
     {
         retro_vfs_closedir_smb(rdir->smb_handle);
         rdir->smb_handle = NULL;
