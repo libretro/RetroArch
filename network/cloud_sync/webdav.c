@@ -162,6 +162,8 @@ static void webdav_cleanup_digest(void)
       free(webdav_st->opaque);
    webdav_st->opaque = NULL;
 
+   webdav_st->cnonce[0] = '\0';
+
    webdav_st->qop_auth = false;
    webdav_st->nc = 1;
 }
@@ -475,6 +477,12 @@ static char *webdav_create_digest_auth_header(const char *method, const char *ur
    const char     *path      = url;
    int             count     = 0;
    size_t          total     = 0;
+
+   /* The cnonce is written only once a challenge has been accepted.  A
+    * rejected one leaves it empty, with realm and nonce possibly NULL,
+    * and basic auth stays off once any challenge has been accepted. */
+   if (!webdav_st->cnonce[0])
+      return NULL;
 
    /* Skip scheme and host to get at the path.  strchr() returns NULL
     * once the slashes run out, which happens for a URL that is only a
