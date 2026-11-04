@@ -5897,14 +5897,15 @@ void cb_generic_download(retro_task_t *task,
    http_transfer_data_t *data = (http_transfer_data_t*)task_data;
    bool streamed              = transf && *transf->sink_path;
 
+   /* Empty until a file is on disk; finish: reads it. */
+   output_path[0] = '\0';
+
    if (!data || !transf)
       goto finish;
    /* Streamed bodies arrive on disk and data->data stays NULL by
     * design; anything else has to have a body here. */
    if (!streamed && !data->data)
       goto finish;
-
-   output_path[0] = '\0';
 
    if (streamed)
    {
@@ -6050,6 +6051,8 @@ void cb_generic_download(retro_task_t *task,
    }
 #endif
 
+   /* A NULL err here does not always mean a download: the two checks
+    * at the top jump here with no err and output_path still empty. */
 finish:
    if (err)
    {
@@ -6061,26 +6064,22 @@ finish:
       RARCH_LOG("[Updater] Download \"%s\".\n",
             (transf ? transf->path : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
 
-      /* Content and Core System Files Downloaders: record the download
-       * beside it, so the list can still mark it.  The extraction task
-       * pushed above has not run yet; it may delete the archive when
-       * it does. */
+      /* Content and Core System Files Downloaders, once a file is on
+       * disk: record the download beside it, so the list can still mark
+       * it, and mark the entry "[#]" in the list on screen.  The
+       * extraction task pushed above has not run yet; it may delete
+       * the archive when it does. */
       if (     transf
-            && (   transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD
-                || transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD)
-            && *output_path)
-      {
-         fill_pathname_basedir(buf, output_path, sizeof(buf));
-         menu_content_downloads_add(buf, path_basename(output_path));
-      }
-
-      /* Mark the downloaded entry "[#]" in the list on screen. */
-      if (     transf
+            && *output_path
             && (   transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD
                 || transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD))
       {
          struct menu_state *menu_st = menu_state_get_ptr();
          const char *menu_label = NULL;
+
+         fill_pathname_basedir(buf, output_path, sizeof(buf));
+         menu_content_downloads_add(buf, path_basename(output_path));
+
          menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
          if (   string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR)
