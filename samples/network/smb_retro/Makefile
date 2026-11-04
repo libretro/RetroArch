@@ -13,10 +13,15 @@ else
    # file mapping as the shipping build has it (Win32 maps without it)
    MMAP_FLAGS = -DHAVE_MMAP
 endif
-all: smb_test vfs_test smb_idle_test vfs_threads_test
+all: smb_test smb_dir_bounds_test vfs_test smb_idle_test vfs_threads_test
 
 smb_test: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
+
+# includes net_smb2.c itself to reach its static directory decoder
+BOUNDS_SRC = smb_dir_bounds_test.c $(filter-out smb_test.c $(COMMON)/net/net_smb2.c,$(SRC))
+smb_dir_bounds_test: $(BOUNDS_SRC) $(COMMON)/net/net_smb2.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(BOUNDS_SRC) $(LDLIBS) -o $@
 
 VFS_SRC = vfs_test.c $(COMMON)/vfs/vfs_implementation_smb.c $(COMMON)/vfs/vfs_prefetch.c $(filter-out smb_test.c,$(SRC)) \
       $(COMMON)/lists/string_list.c
@@ -45,5 +50,5 @@ cloud_sync_test_libsmb2: cloud_sync_test.c $(L2_SRC)
 	$(CC) -I$(COMMON)/include -D_GNU_SOURCE -DHAVE_SMBCLIENT -DHAVE_STDINT_H -DHAVE_NETWORKING -DHAVE_CLOUDSYNC -DHAVE_THREADS -DRARCH_INTERNAL -I$(ROOT) $(LIBSMB2_CFLAGS) $(CFLAGS) cloud_sync_test.c $(L2_SRC) $(COMMON)/rthreads/rthreads.c $(COMMON)/rthreads/retro_eventcount.c $(LIBSMB2_LIBS) $(LDLIBS) -lpthread -o $@
 
 clean:
-	rm -f smb_idle_test smb_idle_test.exe smb_idle_test_libsmb2 smb_test smb_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe vfs_test_libsmb2 vfs_threads_test_libsmb2 cloud_sync_test_libsmb2
+	rm -f smb_dir_bounds_test smb_dir_bounds_test.exe smb_idle_test smb_idle_test.exe smb_idle_test_libsmb2 smb_test smb_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe vfs_test_libsmb2 vfs_threads_test_libsmb2 cloud_sync_test_libsmb2
 .PHONY: all clean

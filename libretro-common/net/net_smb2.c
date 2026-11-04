@@ -253,6 +253,14 @@ static size_t rsmb_utf16(const char *s, uint8_t *out, size_t cap, int path)
 }
 
 /* UTF-16LE to UTF-8 into a NUL-terminated buffer. */
+/* @off + @len lies within @total, checked so neither sum can wrap a
+ * 32-bit size_t. */
+static int rsmb_span_ok(size_t off, size_t len, size_t total)
+{
+   return off <= total && len <= total - off;
+}
+
+/* UTF-16LE to UTF-8; a surrogate without its pair becomes U+FFFD. */
 static void rsmb_utf8(const uint8_t *in, size_t in_len, char *out, size_t cap)
 {
    size_t i = 0, o = 0;
@@ -260,11 +268,16 @@ static void rsmb_utf8(const uint8_t *in, size_t in_len, char *out, size_t cap)
    {
       uint32_t cp = smb_get16(in + i);
       i += 2;
-      if (cp >= 0xd800 && cp < 0xdc00 && i + 1 < in_len)
+      if (cp >= 0xd800 && cp < 0xe000)
       {
-         uint32_t lo = smb_get16(in + i);
-         i += 2;
-         cp = 0x10000 + ((cp - 0xd800) << 10) + (lo - 0xdc00);
+         uint32_t lo = (cp < 0xdc00 && i + 1 < in_len) ? smb_get16(in + i) : 0;
+         if (lo >= 0xdc00 && lo < 0xe000)
+         {
+            i += 2;
+            cp = 0x10000 + ((cp - 0xd800) << 10) + (lo - 0xdc00);
+         }
+         else
+            cp = 0xfffd;
       }
       if (cp < 0x80)
          out[o++] = (char)cp;
@@ -1363,7 +1376,7 @@ static int rsmb_session_setup_ntlm(struct rsmb_ctx *c)
       tinfo_len = smb_get16(chal + 40);
       {
          size_t toff = smb_get32(chal + 44);
-         if (toff + tinfo_len > chal_len)
+         if (!rsmb_span_ok(toff, tinfo_len, chal_len))
          {
             rsmb_err(c, "bad challenge");
             return -1;
@@ -2275,6 +2288,7 @@ const struct rsmb_dirent *rsmb_readdir(struct rsmb_ctx *c, struct rsmb_dir *d)
    for (;;)
    {
       const uint8_t *e;
+      size_t remaining, entry_len;
       uint32_t next, name_len;
 
       if (d->buf_off >= d->buf_len)
@@ -2285,11 +2299,15 @@ const struct rsmb_dirent *rsmb_readdir(struct rsmb_ctx *c, struct rsmb_dir *d)
             return NULL;
       }
       e = d->buf + d->buf_off;
-      if (d->buf_len - d->buf_off < 64)
+      remaining = d->buf_len - d->buf_off;
+      if (remaining < 64)
          return NULL;
       next     = smb_get32(e);
       name_len = smb_get32(e + 60);
-      if (64 + name_len > d->buf_len - d->buf_off)
+      if ((size_t)name_len > remaining - 64)
+         return NULL;
+      entry_len = 64 + (size_t)name_len;
+      if (next && ((size_t)next < entry_len || (size_t)next > remaining))
          return NULL;
       d->ent.st.size   = smb_get64(e + 40);
       d->ent.st.mtime  = rsmb_filetime(smb_get64(e + 24));
