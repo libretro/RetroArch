@@ -270,24 +270,30 @@ void manual_content_scan_scrub_file_exts_custom(void)
  * in, structs out - so both the extension whitelist
  * and the file system checks live here, with the scan
  * configuration that owns the path. */
-bool manual_content_scan_dat_path_is_valid(
-      const char *path, uint64_t *file_size)
+/* The extensions a Logiqx XML DAT may legitimately carry:
+ * .dat and .xml */
+static bool manual_content_scan_dat_ext_is_valid(const char *path)
 {
    const char *file_ext = NULL;
-   int64_t file_size_int;
 
    if (!path || !*path)
       return false;
 
-   /* Check file extension (.dat / .xml, the extensions
-    * a Logiqx XML DAT may legitimately carry) */
    file_ext = path_get_extension(path);
 
    if (!file_ext || !*file_ext)
       return false;
 
-   if (   !string_is_equal_noncase(file_ext, "dat")
-       && !string_is_equal_noncase(file_ext, "xml"))
+   return string_is_equal_noncase(file_ext, "dat")
+       || string_is_equal_noncase(file_ext, "xml");
+}
+
+bool manual_content_scan_dat_path_is_valid(
+      const char *path, uint64_t *file_size)
+{
+   int64_t file_size_int;
+
+   if (!manual_content_scan_dat_ext_is_valid(path))
       return false;
 
    /* Ensure file exists */
@@ -307,9 +313,11 @@ bool manual_content_scan_dat_path_is_valid(
 }
 
 /* Checks 'dat_file_path' string and resets it
- * if invalid */
-enum manual_content_scan_dat_file_path_status
-      manual_content_scan_validate_dat_file_path(void)
+ * if invalid.  @known_size, when not NULL, is the file's
+ * size as read already (<= 0: not there), so the file
+ * system is not asked again. */
+static enum manual_content_scan_dat_file_path_status
+      manual_content_scan_validate_dat(const int64_t *known_size)
 {
    enum manual_content_scan_dat_file_path_status dat_file_path_status =
          MANUAL_CONTENT_SCAN_DAT_FILE_UNSET;
@@ -317,10 +325,22 @@ enum manual_content_scan_dat_file_path_status
    /* Check if 'dat_file_path' has been set */
    if (*scan_dat_file_path)
    {
-      uint64_t file_size;
+      uint64_t file_size = 0;
+      bool valid;
 
       /* Check if path itself is valid */
-      if (manual_content_scan_dat_path_is_valid(scan_dat_file_path, &file_size))
+      if (known_size)
+      {
+         valid = manual_content_scan_dat_ext_is_valid(scan_dat_file_path)
+              && *known_size > 0;
+         if (valid)
+            file_size = (uint64_t)*known_size;
+      }
+      else
+         valid = manual_content_scan_dat_path_is_valid(scan_dat_file_path,
+               &file_size);
+
+      if (valid)
       {
          uint64_t free_memory = mem_stats_free();
          dat_file_path_status = MANUAL_CONTENT_SCAN_DAT_FILE_OK;
@@ -359,6 +379,12 @@ enum manual_content_scan_dat_file_path_status
       scan_dat_file_path[0] = '\0';
 
    return dat_file_path_status;
+}
+
+enum manual_content_scan_dat_file_path_status
+      manual_content_scan_validate_dat_file_path(void)
+{
+   return manual_content_scan_validate_dat(NULL);
 }
 
 /* Menu setters */
@@ -435,6 +461,12 @@ void manual_content_scan_restore_settings(manual_content_scan_saved_t *sv)
  * Returns true if content directory is valid. */
 bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 {
+   return manual_content_scan_set_menu_content_dir_fs(content_dir, NULL);
+}
+
+bool manual_content_scan_set_menu_content_dir_fs(const char *content_dir,
+      const manual_content_scan_fs_t *fs)
+{
    size_t _len;
    int path_stats;
    const char *dir_name = NULL;
@@ -495,7 +527,7 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 
    /* A file takes the name of the folder that holds it,
     * as a scan of that folder would */
-   path_stats = path_stat(scan_content_dir);
+   path_stats = fs ? fs->content_stat : path_stat(scan_content_dir);
    if (      (path_stats & RETRO_VFS_STAT_IS_VALID)
          && !(path_stats & RETRO_VFS_STAT_IS_DIRECTORY)
          &&  fill_pathname_parent_dir_name(scan_system_name_content_dir,
@@ -757,6 +789,15 @@ enum manual_content_scan_playlist_refresh_status
       manual_content_scan_set_menu_from_playlist_list(playlist_t *playlist,
             const struct string_list *rdb_list)
 {
+   return manual_content_scan_set_menu_from_playlist_list_fs(playlist,
+         rdb_list, NULL);
+}
+
+enum manual_content_scan_playlist_refresh_status
+      manual_content_scan_set_menu_from_playlist_list_fs(
+            playlist_t *playlist, const struct string_list *rdb_list,
+            const manual_content_scan_fs_t *fs)
+{
    const char *playlist_path    = NULL;
    const char *content_dir      = NULL;
    const char *core_name        = NULL;
@@ -814,7 +855,7 @@ enum manual_content_scan_playlist_refresh_status
       return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME;
 
    /* Set content directory */
-   if (!manual_content_scan_set_menu_content_dir(content_dir))
+   if (!manual_content_scan_set_menu_content_dir_fs(content_dir, fs))
       return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CONTENT_DIR;
 
    if (!manual_content_scan_set_menu_scan_use_db((enum manual_content_scan_db_usage)db_usage))
@@ -922,7 +963,7 @@ enum manual_content_scan_playlist_refresh_status
       fill_pathname_expand_special(scan_dat_file_path, dat_file_path,
             sizeof(scan_dat_file_path));
 
-      switch (manual_content_scan_validate_dat_file_path())
+      switch (manual_content_scan_validate_dat(fs ? &fs->dat_size : NULL))
       {
          case MANUAL_CONTENT_SCAN_DAT_FILE_INVALID:
             return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_DAT_FILE;
@@ -1062,11 +1103,57 @@ static unsigned manual_content_scan_match_cores(
    return count;
 }
 
+/* Whether @core is written as a path: display names hold
+ * slashes too, so a path that matches no core falls through
+ * to the names */
+static bool manual_content_scan_core_is_path(const char *core)
+{
+   return strchr(core, '/')
+#ifdef _WIN32
+       || strchr(core, '\\')
+#endif
+       || *core == '~';
+}
+
+/* @core, a path, as the core list holds paths: expanded, and
+ * "//" and ".." folded in an absolute path too; "" when it
+ * resolves to nothing.  Asks the file system. */
+static void manual_content_scan_core_path_resolve(char *s,
+      const char *core, size_t len)
+{
+   fill_pathname_expand_special(s, core, len);
+#ifndef RARCH_CONSOLE
+   if (   *s
+       && !path_resolve_realpath(s, len, false)
+       && !path_is_absolute(s))
+      *s = '\0';
+#endif
+#ifdef _WIN32
+   pathname_conform_slashes_to_os(s);
+#endif
+}
+
+/* An override DAT path as the scan opens it: expanded, and a
+ * relative one resolved; "" when it resolves to nothing.
+ * Asks the file system. */
+static void manual_content_scan_dat_path_resolve(char *s,
+      const char *dat, size_t len)
+{
+   fill_pathname_expand_special(s, dat, len);
+#ifndef RARCH_CONSOLE
+   if (   *s && !path_is_absolute(s)
+       && !path_resolve_realpath(s, len, false))
+      *s = '\0';
+#endif
+}
+
 /* Finds the core @core names: a path, else a file name or
  * file id, else a display name. The first of these that
- * matches decides, and *count gets its matches. */
+ * matches decides, and *count gets its matches.
+ * > @resolved: @core resolved as a path already, or NULL to
+ *   resolve it here */
 static const core_info_t *manual_content_scan_find_core(
-      const char *core, unsigned *count)
+      const char *core, const char *resolved, unsigned *count)
 {
    core_info_list_t *core_info_list = NULL;
    const core_info_t *found         = NULL;
@@ -1079,25 +1166,12 @@ static const core_info_t *manual_content_scan_find_core(
    if (!core_info_list || !(s = (char*)malloc(PATH_MAX_LENGTH)))
       return NULL;
 
-   /* Display names hold slashes too, so a path
-    * that matches no core falls through */
-   if (   strchr(core, '/')
-#ifdef _WIN32
-       || strchr(core, '\\')
-#endif
-       || *core == '~')
+   if (manual_content_scan_core_is_path(core))
    {
-      fill_pathname_expand_special(s, core, PATH_MAX_LENGTH);
-#ifndef RARCH_CONSOLE
-      /* Folds "//" and ".." in an absolute path too */
-      if (   *s
-          && !path_resolve_realpath(s, PATH_MAX_LENGTH, false)
-          && !path_is_absolute(s))
-         *s = '\0';
-#endif
-#ifdef _WIN32
-      pathname_conform_slashes_to_os(s);
-#endif
+      if (resolved)
+         strlcpy(s, resolved, PATH_MAX_LENGTH);
+      else
+         manual_content_scan_core_path_resolve(s, core, PATH_MAX_LENGTH);
       if (*s)
          *count = manual_content_scan_match_cores(core_info_list,
                MANUAL_CONTENT_SCAN_CORE_KEY_PATH, s, &found);
@@ -1154,6 +1228,74 @@ void manual_content_scan_overrides_free(manual_content_scan_overrides_t *ov)
    free(ov);
 }
 
+manual_content_scan_fs_t *manual_content_scan_fs_read(
+      const char *content_dir, const char *dat,
+      const char *ov_core, const char *ov_dat)
+{
+   manual_content_scan_fs_t *fs = (manual_content_scan_fs_t*)calloc(1,
+         sizeof(*fs));
+   char *s                      = (char*)malloc(PATH_MAX_LENGTH);
+
+   if (!fs || !s)
+      goto error;
+
+   /* The folder as manual_content_scan_set_menu_content_dir()
+    * stats it: expanded, one trailing slash gone */
+   if (content_dir && *content_dir)
+   {
+      size_t _len = fill_pathname_expand_special(s, content_dir,
+            PATH_MAX_LENGTH);
+      if (_len > 0 && _len < PATH_MAX_LENGTH
+            && s[_len - 1] == PATH_DEFAULT_SLASH_C())
+         s[_len - 1] = '\0';
+      if (*s)
+         fs->content_stat = path_stat(s);
+   }
+
+   /* The saved DAT, as a refresh expands it */
+   fs->dat_size = -1;
+   if (dat && *dat)
+   {
+      fill_pathname_expand_special(s, dat, PATH_MAX_LENGTH);
+      if (*s && path_is_valid(s))
+         fs->dat_size = path_get_size(s);
+   }
+
+   fs->ov_dat_size = -1;
+   if (ov_dat)
+   {
+      manual_content_scan_dat_path_resolve(s, ov_dat, PATH_MAX_LENGTH);
+      if (!(fs->ov_dat = strdup(s)))
+         goto error;
+      if (*s && path_is_valid(s))
+         fs->ov_dat_size = path_get_size(s);
+   }
+
+   if (ov_core && manual_content_scan_core_is_path(ov_core))
+   {
+      manual_content_scan_core_path_resolve(s, ov_core, PATH_MAX_LENGTH);
+      if (!(fs->ov_core = strdup(s)))
+         goto error;
+   }
+
+   free(s);
+   return fs;
+
+error:
+   free(s);
+   manual_content_scan_fs_free(fs);
+   return NULL;
+}
+
+void manual_content_scan_fs_free(manual_content_scan_fs_t *fs)
+{
+   if (!fs)
+      return;
+   free(fs->ov_dat);
+   free(fs->ov_core);
+   free(fs);
+}
+
 /* Lays @ov over the current settings and sets the Custom
  * method, stopping at the first override that does not
  * resolve; NULL @ov changes nothing.
@@ -1163,6 +1305,16 @@ enum manual_content_scan_override_status
       manual_content_scan_apply_overrides(
             const manual_content_scan_overrides_t *ov,
             const struct string_list *rdb_list, unsigned *count)
+{
+   return manual_content_scan_apply_overrides_fs(ov, rdb_list, count,
+         NULL);
+}
+
+enum manual_content_scan_override_status
+      manual_content_scan_apply_overrides_fs(
+            const manual_content_scan_overrides_t *ov,
+            const struct string_list *rdb_list, unsigned *count,
+            const manual_content_scan_fs_t *fs)
 {
    if (count)
       *count = 0;
@@ -1174,7 +1326,7 @@ enum manual_content_scan_override_status
    {
       unsigned matches             = 0;
       const core_info_t *core_info = manual_content_scan_find_core(
-            ov->core, &matches);
+            ov->core, fs ? fs->ov_core : NULL, &matches);
 
       if (count)
          *count = matches;
@@ -1232,15 +1384,14 @@ enum manual_content_scan_override_status
           && ov->match == MANUAL_CONTENT_SCAN_USE_DB_NONE)
          return MANUAL_CONTENT_SCAN_OVR_DAT_WITHOUT_MATCH;
 
-      fill_pathname_expand_special(scan_dat_file_path, ov->dat,
-            sizeof(scan_dat_file_path));
-#ifndef RARCH_CONSOLE
-      if (   *scan_dat_file_path && !path_is_absolute(scan_dat_file_path)
-          && !path_resolve_realpath(scan_dat_file_path,
-               sizeof(scan_dat_file_path), false))
-         scan_dat_file_path[0] = '\0';
-#endif
-      switch (manual_content_scan_validate_dat_file_path())
+      if (fs && fs->ov_dat)
+         strlcpy(scan_dat_file_path, fs->ov_dat,
+               sizeof(scan_dat_file_path));
+      else
+         manual_content_scan_dat_path_resolve(scan_dat_file_path, ov->dat,
+               sizeof(scan_dat_file_path));
+      switch (manual_content_scan_validate_dat(
+            (fs && fs->ov_dat) ? &fs->ov_dat_size : NULL))
       {
          case MANUAL_CONTENT_SCAN_DAT_FILE_OK:
             break;

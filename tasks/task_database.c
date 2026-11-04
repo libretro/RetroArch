@@ -5882,7 +5882,8 @@ enum dbscan_prep_kind
 {
    DBSCAN_PREP_DBS = 0, /* the database folder */
    DBSCAN_PREP_LIST,    /* the playlist folder */
-   DBSCAN_PREP_LOAD     /* one playlist */
+   DBSCAN_PREP_LOAD,    /* one playlist */
+   DBSCAN_PREP_PATH     /* a --scan path */
 };
 
 enum dbscan_load_status
@@ -5891,7 +5892,9 @@ enum dbscan_load_status
    DBSCAN_LOAD_NO_PLAYLIST,
    DBSCAN_LOAD_AMBIGUOUS,
    DBSCAN_LOAD_NO_SETTINGS,
-   DBSCAN_LOAD_FOLDER_MISSING
+   DBSCAN_LOAD_FOLDER_MISSING,
+   DBSCAN_LOAD_OUTSIDE,     /* a --scan-refresh path not in the folder */
+   DBSCAN_LOAD_NO_MEMORY
 };
 
 /* A prep task's state: the handler fills it, and the callback takes
@@ -5901,6 +5904,16 @@ typedef struct
    playlist_config_t config; /* LOAD: the playlist */
    char *dir;                /* DBS, LIST; a --scan-refresh's LOAD */
    char *name;               /* LOAD: the name its lines give */
+   /* PATH, and a --scan-refresh's LOAD: the item as typed; that LOAD's
+    * playlist folder as configured.  Copies, as are the overrides'
+    * core and DAT: the worker reads nothing of the chain. */
+   char *arg;
+   char *pl_dir;
+   char *ov_core;
+   char *ov_dat;
+   char *path;               /* PATH: resolved, NULL when not there */
+   char *detail;             /* LOAD: OUTSIDE's folder, for its line */
+   manual_content_scan_fs_t *fs; /* PATH, LOAD: what the file system said */
    dir_list_iter_t *iter;
    struct string_list *list;
    playlist_parse_t *parse;
@@ -5910,7 +5923,7 @@ typedef struct
    unsigned matches;         /* LOAD: files in another case, if ambiguous */
    bool include_hidden;
    bool begun;
-   bool failed;              /* LIST: out of memory */
+   bool failed;              /* LIST, PATH: out of memory */
 } dbscan_prep_t;
 
 typedef struct
@@ -6010,24 +6023,34 @@ static char *dbscan_chain_expand(const char *in)
    return s;
 }
 
-/* @in expanded; NULL, with the reason on stderr, if nothing is
- * there.  Free the result. */
-static char *dbscan_chain_resolve(const char *in)
+/* Resolves a --scan path and reads what its scan will ask of the
+ * file system: on a threaded queue's worker, else at once on the main
+ * thread, as a stat is one call. */
+static void dbscan_path_handler(retro_task_t *task)
 {
-   char *s = dbscan_chain_expand(in);
+   dbscan_prep_t *prep = (dbscan_prep_t*)task->state;
 
-   if (!s)
+   if (!(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
    {
-      fprintf(stderr, "out of memory\n");
-      return NULL;
+      char *s = dbscan_chain_expand(prep->arg);
+
+      if (!s)
+         prep->failed = true;
+      else if (!*s)
+         free(s);
+      else if (!(prep->fs = manual_content_scan_fs_read(s, NULL,
+            prep->ov_core, prep->ov_dat)))
+      {
+         prep->failed = true;
+         free(s);
+      }
+      /* The stat the content folder's setter takes */
+      else if (!(prep->fs->content_stat & RETRO_VFS_STAT_IS_VALID))
+         free(s);
+      else
+         prep->path = s;
    }
-   if (!*s || !path_is_valid(s))
-   {
-      fprintf(stderr, "%s: not found\n", in);
-      free(s);
-      return NULL;
-   }
-   return s;
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 /* @name: the item, for the one error the overrides cannot name. */
@@ -6126,24 +6149,29 @@ static void dbscan_chain_single_warn(const dbscan_chain_t *chain,
             name);
 }
 
-/* True once the item's scan is pushed; otherwise it is folded as
- * failed. */
-static bool dbscan_chain_push_path(dbscan_chain_t *chain,
-      const task_dbscan_item_t *item)
+/* True once the item's scan is pushed, @prep's path and what the file
+ * system said of it in hand; otherwise it is folded as failed. */
+static bool dbscan_chain_push_scan(dbscan_chain_t *chain,
+      const task_dbscan_item_t *item, dbscan_prep_t *prep)
 {
    enum manual_content_scan_override_status st;
    unsigned count = 0;
-   char *path     = dbscan_chain_resolve(item->arg);
+   char *path     = prep->path;
 
    if (!path)
    {
+      if (prep->failed)
+         fprintf(stderr, "out of memory\n");
+      else
+         fprintf(stderr, "%s: not found\n", item->arg);
       dbscan_chain_fold(chain, item->arg, TASK_DBSCAN_FAILED, NULL);
       return false;
    }
+   prep->path = NULL;
    manual_content_scan_reset_settings();
-   manual_content_scan_set_menu_content_dir(path);
-   if ((st = manual_content_scan_apply_overrides(item->overrides,
-         chain->rdb_list, &count)) != MANUAL_CONTENT_SCAN_OVR_OK)
+   manual_content_scan_set_menu_content_dir_fs(path, prep->fs);
+   if ((st = manual_content_scan_apply_overrides_fs(item->overrides,
+         chain->rdb_list, &count, prep->fs)) != MANUAL_CONTENT_SCAN_OVR_OK)
       dbscan_chain_override_error(chain, item->arg, item->overrides, st,
             count);
    else
@@ -6152,7 +6180,7 @@ static bool dbscan_chain_push_path(dbscan_chain_t *chain,
 
       if (   chain->cli_output
           && (flags & MANUAL_CONTENT_SCAN_OVR_OVERWRITE)
-          && !path_is_directory(path))
+          && !(prep->fs->content_stat & RETRO_VFS_STAT_IS_DIRECTORY))
       {
          fprintf(stderr, "%s: --scan-overwrite ignored for a single file\n",
                path);
@@ -6184,8 +6212,8 @@ static bool dbscan_chain_push_refreshed(dbscan_chain_t *chain,
    playlist_t *pl     = prep->playlist;
 
    manual_content_scan_reset_settings();
-   switch (manual_content_scan_set_menu_from_playlist_list(pl,
-         chain->rdb_list))
+   switch (manual_content_scan_set_menu_from_playlist_list_fs(pl,
+         chain->rdb_list, prep->fs))
    {
       case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK:
          break;
@@ -6219,8 +6247,9 @@ static bool dbscan_chain_push_refreshed(dbscan_chain_t *chain,
    prep->playlist = NULL;
    if (!reason)
    {
-      if ((st = manual_content_scan_apply_overrides(item->overrides,
-            chain->rdb_list, &count)) != MANUAL_CONTENT_SCAN_OVR_OK)
+      if ((st = manual_content_scan_apply_overrides_fs(item->overrides,
+            chain->rdb_list, &count, prep->fs))
+            != MANUAL_CONTENT_SCAN_OVR_OK)
          dbscan_chain_override_error(chain, prep->name, item->overrides,
                st, count);
       else
@@ -6402,6 +6431,91 @@ static bool dbscan_load_name_step(dbscan_prep_t *prep)
    return true;
 }
 
+/* @prep loads @path: its name, the path, and, when @list_dir, the
+ * folder to list for the name's case.  Strings only, any thread. */
+static void dbscan_prep_set_playlist(dbscan_prep_t *prep,
+      const char *path, bool list_dir)
+{
+   fill_pathname(prep->name, path_basename(path), "", NAME_MAX_LENGTH);
+   if (list_dir && (prep->dir = (char*)malloc(PATH_MAX_LENGTH)))
+   {
+      fill_pathname_basedir(prep->dir, path, PATH_MAX_LENGTH);
+#ifdef _WIN32
+      pathname_conform_slashes_to_os(prep->dir);
+#endif
+   }
+   playlist_config_set_path(&prep->config, path);
+}
+
+/* The playlist a --scan-refresh's @prep->arg names in @prep->pl_dir:
+ * false, with the status set, when it names none there.  On the
+ * load's worker, as the realpaths ask the file system. */
+static bool dbscan_prep_refresh_resolve(dbscan_prep_t *prep)
+{
+   const char *arg = prep->arg;
+   size_t _len     = strlen(arg);
+   char *path      = NULL;
+   char *dir       = NULL;
+   char *want      = NULL;
+   bool ok         = false;
+
+   /* A playlist name cannot hold a slash; a file name is one too. */
+   if (!find_last_slash(arg))
+   {
+      if ((path = (char*)malloc(PATH_MAX_LENGTH)))
+      {
+         fill_pathname_join_special(path, prep->pl_dir, arg,
+               PATH_MAX_LENGTH);
+         if (!(   _len >= STRLEN_CONST(".lpl")
+               && string_is_equal_case_insensitive(
+                     arg + _len - STRLEN_CONST(".lpl"), ".lpl")))
+            strlcat(path, ".lpl", PATH_MAX_LENGTH);
+         dbscan_prep_set_playlist(prep, path, true);
+         ok = true;
+      }
+      else
+         prep->load = DBSCAN_LOAD_NO_MEMORY;
+      free(path);
+      return ok;
+   }
+   path = dbscan_chain_expand(arg);
+   dir  = dbscan_chain_expand(prep->pl_dir);
+   want = (char*)malloc(PATH_MAX_LENGTH);
+   if (path && dir && want)
+   {
+      /* "//", "/./" and ".." would fail the comparison; @dir stays
+       * as configured for the line. */
+      path_resolve_realpath(path, PATH_MAX_LENGTH, false);
+      /* The scan writes into the playlist folder, whatever the path. */
+      fill_pathname_join_special(want, dir, path_basename(path),
+            PATH_MAX_LENGTH);
+      path_resolve_realpath(want, PATH_MAX_LENGTH, false);
+#ifdef _WIN32
+      pathname_conform_slashes_to_os(path);
+      pathname_conform_slashes_to_os(want);
+      if (string_is_equal_case_insensitive(path, want))
+#else
+      if (string_is_equal(path, want))
+#endif
+      {
+         dbscan_prep_set_playlist(prep, path, true);
+         ok = true;
+      }
+      else
+      {
+         prep->load   = DBSCAN_LOAD_OUTSIDE;
+         prep->detail = dir;
+         dir          = NULL;
+      }
+   }
+   else
+      prep->load = DBSCAN_LOAD_NO_MEMORY;
+   free(path);
+   free(dir);
+   free(want);
+   return ok;
+}
+
 /* Loads one playlist and tells whether it can be refreshed: to the end
  * on a threaded queue's worker, else under the shared window. */
 static void dbscan_load_handler(retro_task_t *task)
@@ -6416,6 +6530,12 @@ static void dbscan_load_handler(retro_task_t *task)
    if (!prep->begun)
    {
       prep->begun = true;
+      /* A --scan-refresh: its path first. */
+      if (prep->arg && !dbscan_prep_refresh_resolve(prep))
+      {
+         task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+         return;
+      }
       /* The parse waits for the listed path. */
       if (prep->dir && (prep->list = string_list_new()))
          prep->iter = dir_list_iter_new(prep->dir, "lpl", false, true,
@@ -6470,21 +6590,19 @@ static void dbscan_load_handler(retro_task_t *task)
    }
    if (prep->load == DBSCAN_LOAD_OK)
    {
-      char *dir = NULL;
-
       /* A playlist that does not parse has no settings to read. */
       if (!playlist_scan_refresh_enabled(prep->playlist))
          prep->load = DBSCAN_LOAD_NO_SETTINGS;
-      else if ((dir = (char*)malloc(PATH_MAX_LENGTH)))
-      {
-         fill_pathname_expand_special(dir,
-               playlist_get_scan_content_dir(prep->playlist),
-               PATH_MAX_LENGTH);
-         /* A single file's scan saves the file. */
-         if (!path_is_valid(dir))
-            prep->load = DBSCAN_LOAD_FOLDER_MISSING;
-         free(dir);
-      }
+      /* Here, so that the refresh asks the file system nothing on the
+       * main thread: the folder, the saved DAT, the overrides'. */
+      else if (!(prep->fs = manual_content_scan_fs_read(
+            playlist_get_scan_content_dir(prep->playlist),
+            playlist_get_scan_dat_file_path(prep->playlist),
+            prep->ov_core, prep->ov_dat)))
+         prep->load = DBSCAN_LOAD_NO_MEMORY;
+      /* A single file's scan saves the file. */
+      else if (!(prep->fs->content_stat & RETRO_VFS_STAT_IS_VALID))
+         prep->load = DBSCAN_LOAD_FOLDER_MISSING;
    }
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
@@ -6532,6 +6650,16 @@ static void dbscan_load_cb(retro_task_t *task, void *task_data,
                NULL);
          dbscan_chain_fold(chain, arg, TASK_DBSCAN_FAILED, NULL);
          break;
+      case DBSCAN_LOAD_OUTSIDE:
+         dbscan_chain_refresh_error(chain, arg,
+               "not in the playlist folder", prep->detail);
+         dbscan_chain_fold(chain, arg, TASK_DBSCAN_FAILED, NULL);
+         break;
+      case DBSCAN_LOAD_NO_MEMORY:
+         if (chain->cli_output)
+            fprintf(stderr, "out of memory\n");
+         dbscan_chain_fold(chain, arg, TASK_DBSCAN_FAILED, NULL);
+         break;
       case DBSCAN_LOAD_FOLDER_MISSING:
          dbscan_chain_refresh_error(chain, prep->name,
                "skipped: content folder not found",
@@ -6546,10 +6674,8 @@ static void dbscan_load_cb(retro_task_t *task, void *task_data,
    dbscan_chain_next(chain);
 }
 
-static void dbscan_prep_free(retro_task_t *task)
+static void dbscan_prep_state_free(dbscan_prep_t *prep)
 {
-   dbscan_prep_t *prep = (dbscan_prep_t*)task->state;
-
    if (!prep)
       return;
    dir_list_iter_free(prep->iter);
@@ -6557,33 +6683,64 @@ static void dbscan_prep_free(retro_task_t *task)
       string_list_free(prep->list);
    playlist_parse_abort(prep->parse);
    playlist_free(prep->playlist);
+   manual_content_scan_fs_free(prep->fs);
    free(prep->name);
    free(prep->dir);
+   free(prep->arg);
+   free(prep->pl_dir);
+   free(prep->ov_core);
+   free(prep->ov_dat);
+   free(prep->path);
+   free(prep->detail);
    free(prep);
+}
+
+static void dbscan_prep_free(retro_task_t *task)
+{
+   dbscan_prep_state_free((dbscan_prep_t*)task->state);
+}
+
+/* Copies @item's core and DAT overrides into @prep, for its worker;
+ * false out of memory. */
+static bool dbscan_prep_take_overrides(dbscan_prep_t *prep,
+      const task_dbscan_item_t *item)
+{
+   const manual_content_scan_overrides_t *ov = item->overrides;
+
+   if (!ov)
+      return true;
+   if (ov->core && !(prep->ov_core = strdup(ov->core)))
+      return false;
+   if (ov->dat && !(prep->ov_dat = strdup(ov->dat)))
+      return false;
+   return true;
 }
 
 /* Pushes a prep task for @prep; false, @prep freed, if it cannot. */
 static bool dbscan_chain_push_prep(dbscan_chain_t *chain,
-      dbscan_prep_t *prep, bool load, retro_task_callback_t cb)
+      dbscan_prep_t *prep, retro_task_callback_t cb)
 {
    retro_task_t *task = prep ? task_init() : NULL;
 
    if (!task)
    {
-      if (prep)
-      {
-         free(prep->name);
-         free(prep->dir);
-         free(prep);
-      }
+      dbscan_prep_state_free(prep);
       return false;
    }
    /* Silent: no title, no notifications.  Each handler by name, so the
-    * thread-read audit takes both as worker entries. */
-   if (load)
-      task->handler = dbscan_load_handler;
-   else
-      task->handler = dbscan_prep_handler;
+    * thread-read audit takes them all as worker entries. */
+   switch (prep->kind)
+   {
+      case DBSCAN_PREP_LOAD:
+         task->handler = dbscan_load_handler;
+         break;
+      case DBSCAN_PREP_PATH:
+         task->handler = dbscan_path_handler;
+         break;
+      default:
+         task->handler = dbscan_prep_handler;
+         break;
+   }
    task->state     = prep;
    task->user_data = chain;
    task->callback  = cb;
@@ -6592,34 +6749,26 @@ static bool dbscan_chain_push_prep(dbscan_chain_t *chain,
    return true;
 }
 
-/* Loads the playlist at @path off the main thread; otherwise folds it
- * as failed. */
-static bool dbscan_chain_push_load(dbscan_chain_t *chain,
-      const char *path)
+/* A load prep for the current item, its playlist not yet set: NULL
+ * out of memory. */
+static dbscan_prep_t *dbscan_prep_load_new(dbscan_chain_t *chain)
 {
-   char name[NAME_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
    dbscan_prep_t *prep  = (dbscan_prep_t*)calloc(1, sizeof(*prep));
 
-   if (prep && !(prep->name = (char*)malloc(NAME_MAX_LENGTH)))
+   if (!prep)
+      return NULL;
+   prep->kind = DBSCAN_PREP_LOAD;
+   if (   !(prep->name = (char*)malloc(NAME_MAX_LENGTH))
+       || !dbscan_prep_take_overrides(prep,
+            &chain->items[chain->next - 1]))
    {
-      free(prep);
-      prep = NULL;
+      dbscan_prep_state_free(prep);
+      return NULL;
    }
-   if (prep)
+   *prep->name = '\0';
    {
-      fill_pathname(prep->name, path_basename(path), "", NAME_MAX_LENGTH);
-      /* A refresh-all's names come from its listing already. */
-      if (   chain->items[chain->next - 1].kind == TASK_DBSCAN_ITEM_REFRESH
-          && (prep->dir = (char*)malloc(PATH_MAX_LENGTH)))
-      {
-         fill_pathname_basedir(prep->dir, path, PATH_MAX_LENGTH);
-#ifdef _WIN32
-         pathname_conform_slashes_to_os(prep->dir);
-#endif
-      }
       /* As Manage Playlists opens it. */
-      playlist_config_set_path(&prep->config, path);
       prep->config.capacity            = COLLECTION_SIZE;
       prep->config.old_format          = settings->bools.playlist_use_old_format;
       prep->config.compress            = settings->bools.playlist_compression;
@@ -6627,10 +6776,22 @@ static bool dbscan_chain_push_load(dbscan_chain_t *chain,
       playlist_config_set_base_content_directory(&prep->config,
               settings->bools.playlist_portable_paths
             ? settings->paths.directory_menu_content : NULL);
-      prep->kind = DBSCAN_PREP_LOAD;
    }
-   if (dbscan_chain_push_prep(chain, prep, true,
-         dbscan_load_cb))
+   return prep;
+}
+
+/* Loads a refresh-all's playlist at @path off the main thread;
+ * otherwise folds it as failed.  Its names come from its listing
+ * already. */
+static bool dbscan_chain_push_load(dbscan_chain_t *chain,
+      const char *path)
+{
+   char name[NAME_MAX_LENGTH];
+   dbscan_prep_t *prep = dbscan_prep_load_new(chain);
+
+   if (prep)
+      dbscan_prep_set_playlist(prep, path, false);
+   if (dbscan_chain_push_prep(chain, prep, dbscan_load_cb))
       return true;
    fill_pathname(name, path_basename(path), "", sizeof(name));
    dbscan_chain_refresh_error(chain, name, "the scan could not start", NULL);
@@ -6638,84 +6799,69 @@ static bool dbscan_chain_push_load(dbscan_chain_t *chain,
    return false;
 }
 
-/* The playlist @arg names, or NULL, with its line, if it names none
- * in the playlist folder.  Free the result. */
-static char *dbscan_chain_refresh_path(const dbscan_chain_t *chain,
-      const char *arg)
-{
-   const char *pl_dir = config_get_ptr()->paths.directory_playlist;
-   size_t _len        = strlen(arg);
-   char *path         = NULL;
-   char *dir          = NULL;
-   char *want         = NULL;
-
-   /* A playlist name cannot hold a slash; a file name is one too. */
-   if (!find_last_slash(arg))
-   {
-      if ((path = (char*)malloc(PATH_MAX_LENGTH)))
-      {
-         fill_pathname_join_special(path, pl_dir, arg, PATH_MAX_LENGTH);
-         if (!(   _len >= STRLEN_CONST(".lpl")
-               && string_is_equal_case_insensitive(
-                     arg + _len - STRLEN_CONST(".lpl"), ".lpl")))
-            strlcat(path, ".lpl", PATH_MAX_LENGTH);
-      }
-      else if (chain->cli_output)
-         fprintf(stderr, "out of memory\n");
-      return path;
-   }
-   path = dbscan_chain_expand(arg);
-   dir  = dbscan_chain_expand(pl_dir);
-   want = (char*)malloc(PATH_MAX_LENGTH);
-   if (path && dir && want)
-   {
-      /* "//", "/./" and ".." would fail the comparison; @dir stays
-       * as configured for the line. */
-      path_resolve_realpath(path, PATH_MAX_LENGTH, false);
-      /* The scan writes into the playlist folder, whatever the path. */
-      fill_pathname_join_special(want, dir, path_basename(path),
-            PATH_MAX_LENGTH);
-      path_resolve_realpath(want, PATH_MAX_LENGTH, false);
-#ifdef _WIN32
-      pathname_conform_slashes_to_os(path);
-      pathname_conform_slashes_to_os(want);
-      if (!string_is_equal_case_insensitive(path, want))
-#else
-      if (!string_is_equal(path, want))
-#endif
-      {
-         dbscan_chain_refresh_error(chain, arg,
-               "not in the playlist folder", dir);
-         free(path);
-         path = NULL;
-      }
-   }
-   else
-   {
-      if (chain->cli_output)
-         fprintf(stderr, "out of memory\n");
-      free(path);
-      path = NULL;
-   }
-   free(dir);
-   free(want);
-   return path;
-}
-
 /* True once @item's playlist is loading; otherwise it is folded as
  * failed. */
 static bool dbscan_chain_push_refresh(dbscan_chain_t *chain,
       const task_dbscan_item_t *item)
 {
-   bool pushed = false;
-   char *path  = dbscan_chain_refresh_path(chain, item->arg);
+   dbscan_prep_t *prep = dbscan_prep_load_new(chain);
 
-   if (path)
-      pushed = dbscan_chain_push_load(chain, path);
-   else
-      dbscan_chain_fold(chain, item->arg, TASK_DBSCAN_FAILED, NULL);
-   free(path);
-   return pushed;
+   /* The worker finds the playlist: the realpaths ask the file
+    * system. */
+   if (   prep
+       && (   !(prep->arg    = strdup(item->arg))
+           || !(prep->pl_dir = strdup(
+                 config_get_ptr()->paths.directory_playlist))))
+   {
+      dbscan_prep_state_free(prep);
+      prep = NULL;
+   }
+   if (dbscan_chain_push_prep(chain, prep, dbscan_load_cb))
+      return true;
+   dbscan_chain_refresh_error(chain, item->arg, "the scan could not start",
+         NULL);
+   dbscan_chain_fold(chain, item->arg, TASK_DBSCAN_FAILED, NULL);
+   return false;
+}
+
+static void dbscan_path_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   dbscan_chain_t *chain = (dbscan_chain_t*)user_data;
+   dbscan_prep_t *prep   = (dbscan_prep_t*)task->state;
+
+   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+   {
+      chain->totals.cancelled = true;
+      dbscan_chain_finish(chain);
+      return;
+   }
+   if (!dbscan_chain_push_scan(chain, &chain->items[chain->next - 1], prep))
+      dbscan_chain_next(chain);
+}
+
+/* True once @item's path is being read; otherwise it is folded as
+ * failed. */
+static bool dbscan_chain_push_path(dbscan_chain_t *chain,
+      const task_dbscan_item_t *item)
+{
+   dbscan_prep_t *prep = (dbscan_prep_t*)calloc(1, sizeof(*prep));
+
+   if (prep)
+   {
+      prep->kind = DBSCAN_PREP_PATH;
+      if (   !(prep->arg = strdup(item->arg))
+          || !dbscan_prep_take_overrides(prep, item))
+      {
+         dbscan_prep_state_free(prep);
+         prep = NULL;
+      }
+   }
+   if (dbscan_chain_push_prep(chain, prep, dbscan_path_cb))
+      return true;
+   fprintf(stderr, "out of memory\n");
+   dbscan_chain_fold(chain, item->arg, TASK_DBSCAN_FAILED, NULL);
+   return false;
 }
 
 /* Lists the playlist folder off the main thread when a refresh-all is
@@ -6736,8 +6882,7 @@ static bool dbscan_chain_push_list(dbscan_chain_t *chain)
          prep = NULL;
       }
    }
-   return dbscan_chain_push_prep(chain, prep, false,
-         dbscan_prep_cb);
+   return dbscan_chain_push_prep(chain, prep, dbscan_prep_cb);
 }
 
 /* Runs items, and a refresh-all's playlists, until one pushes a task;
@@ -6863,16 +7008,13 @@ bool task_push_dbscan_chain(task_dbscan_item_t *items, size_t count,
       goto error;
 
    dbscan_chain_running = chain;
-   if (dbscan_chain_push_prep(chain, prep, false,
-         dbscan_prep_cb))
+   if (dbscan_chain_push_prep(chain, prep, dbscan_prep_cb))
       return true;
    dbscan_chain_running = NULL;
    prep                 = NULL;
 
 error:
-   if (prep)
-      free(prep->dir);
-   free(prep);
+   dbscan_prep_state_free(prep);
    if (chain)
       free(chain->saved);
    free(chain);

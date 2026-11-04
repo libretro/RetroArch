@@ -274,6 +274,33 @@ void manual_content_scan_restore_settings(manual_content_scan_saved_t *saved);
  * Returns true if content directory is valid. */
 bool manual_content_scan_set_menu_content_dir(const char *content_dir);
 
+/* What the file system says of one scan's paths, read off the main
+ * thread by manual_content_scan_fs_read(), so that the _fs setters
+ * below ask it nothing.  Only the paths it was read for: it holds no
+ * reference to the settings. */
+typedef struct manual_content_scan_fs
+{
+   char *ov_dat;         /* @ov_dat expanded and resolved, or NULL */
+   char *ov_core;        /* @ov_core resolved when it is a path, or NULL */
+   int64_t dat_size;     /* the saved DAT's size; <= 0: not there */
+   int64_t ov_dat_size;  /* likewise, @ov_dat's */
+   int content_stat;     /* path_stat() of the content folder */
+} manual_content_scan_fs_t;
+
+/* Any thread: reads nothing but its arguments and the file system.
+ * @content_dir and @dat as the settings hold them, before expansion;
+ * @ov_core and @ov_dat an item's overrides, each NULL when unset.
+ * NULL out of memory.  Free with manual_content_scan_fs_free(). */
+manual_content_scan_fs_t *manual_content_scan_fs_read(
+      const char *content_dir, const char *dat,
+      const char *ov_core, const char *ov_dat);
+void manual_content_scan_fs_free(manual_content_scan_fs_t *fs);
+
+/* As manual_content_scan_set_menu_content_dir(), the folder's stat
+ * taken from @fs (NULL: asked now) */
+bool manual_content_scan_set_menu_content_dir_fs(const char *content_dir,
+      const manual_content_scan_fs_t *fs);
+
 bool manual_content_scan_set_menu_scan_method(
       enum manual_content_scan_method method);
 
@@ -321,6 +348,13 @@ enum manual_content_scan_playlist_refresh_status
       manual_content_scan_set_menu_from_playlist_list(playlist_t *playlist,
             const struct string_list *rdb_list);
 
+/* As manual_content_scan_set_menu_from_playlist_list(), the folder
+ * and the DAT as @fs read them (NULL: asked now) */
+enum manual_content_scan_playlist_refresh_status
+      manual_content_scan_set_menu_from_playlist_list_fs(
+            playlist_t *playlist, const struct string_list *rdb_list,
+            const manual_content_scan_fs_t *fs);
+
 manual_content_scan_overrides_t *manual_content_scan_overrides_new(void);
 void manual_content_scan_overrides_free(manual_content_scan_overrides_t *ov);
 
@@ -333,6 +367,14 @@ enum manual_content_scan_override_status
       manual_content_scan_apply_overrides(
             const manual_content_scan_overrides_t *ov,
             const struct string_list *rdb_list, unsigned *count);
+
+/* As manual_content_scan_apply_overrides(), the core path and the
+ * DAT as @fs read them for @ov (NULL: asked now) */
+enum manual_content_scan_override_status
+      manual_content_scan_apply_overrides_fs(
+            const manual_content_scan_overrides_t *ov,
+            const struct string_list *rdb_list, unsigned *count,
+            const manual_content_scan_fs_t *fs);
 
 /* Menu getters */
 

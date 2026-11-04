@@ -10047,6 +10047,149 @@ fixture:
          sizeof(config_get_ptr()->paths.directory_playlist));
 }
 
+/* File system calls on the main thread while fs_main_watch is set:
+ * the scan chain's must all run in its prep tasks.  Only the main
+ * thread reads the flag. */
+static bool     fs_main_watch;
+static unsigned fs_main_calls;
+static char     fs_main_last[64];
+
+static void fs_main_note(const char *fn)
+{
+#ifdef HAVE_THREADS
+   if (current_tid() == main_tid && fs_main_watch)
+   {
+      fs_main_calls++;
+      strlcpy(fs_main_last, fn, sizeof(fs_main_last));
+   }
+#else
+   (void)fn;
+#endif
+}
+
+int __real_path_stat(const char *path);
+int __wrap_path_stat(const char *path)
+{
+   fs_main_note("path_stat");
+   return __real_path_stat(path);
+}
+
+bool __real_path_is_valid(const char *path);
+bool __wrap_path_is_valid(const char *path)
+{
+   fs_main_note("path_is_valid");
+   return __real_path_is_valid(path);
+}
+
+bool __real_path_is_directory(const char *path);
+bool __wrap_path_is_directory(const char *path)
+{
+   fs_main_note("path_is_directory");
+   return __real_path_is_directory(path);
+}
+
+int64_t __real_path_get_size(const char *path);
+int64_t __wrap_path_get_size(const char *path)
+{
+   fs_main_note("path_get_size");
+   return __real_path_get_size(path);
+}
+
+char *__real_path_resolve_realpath(char *s, size_t len,
+      bool resolve_symlinks);
+char *__wrap_path_resolve_realpath(char *s, size_t len,
+      bool resolve_symlinks)
+{
+   fs_main_note("path_resolve_realpath");
+   return __real_path_resolve_realpath(s, len, resolve_symlinks);
+}
+
+/* On a threaded queue the chain asks the file system nothing on the
+ * main thread before a scan: a --scan path's resolve and stat, an
+ * override core path's and DAT's, a --scan-refresh path's realpaths
+ * and its content folder's stat all run on the worker.  Every item
+ * here stops before its scan, so the whole run is watched. */
+static void fs_main_lane(const char *root, const char *pl_dir)
+{
+#ifdef HAVE_THREADS
+   char                pl[512], a[512], gone[512], outside[512];
+   char                via[1024], p[1024], stale[1024], detail[256];
+   task_dbscan_item_t *items;
+   bool                pushed;
+
+   sprintf(pl,      "%s/fsmain_pl",  root);
+   sprintf(a,       "%s/fsmain_a",   root);
+   sprintf(gone,    "%s/fsmain_gone", root);
+   sprintf(outside, "%s/fsmain_out", root);
+   sprintf(stale,   "%s/00_gone.bin", a);
+   path_mkdir(pl);
+   path_mkdir(a);
+   path_mkdir(outside);
+   delete_playlists(pl);
+   sprintf(p, "%s/f_gone.lpl", pl);
+   if (!refresh_write(p, gone, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/f_none.lpl", pl);
+   if (!refresh_write(p, NULL, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/x.lpl", outside);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   /* In the folder, but by a path that only a realpath folds */
+   sprintf(via, "%s/../%s/f_gone.lpl", pl, path_basename(pl));
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(true);
+
+   if (!(items = (task_dbscan_item_t*)calloc(6, sizeof(*items))))
+      goto fixture;
+   chain_item(&items[0], "fsmain_missing_dir", NULL);
+   chain_item(&items[1], a, "./fsmain_nocore_libretro.so");
+   chain_item(&items[2], a, NULL);
+   if ((items[2].overrides = manual_content_scan_overrides_new()))
+      items[2].overrides->dat = ovr_str("fsmain_missing.dat");
+   refresh_item(&items[3], TASK_DBSCAN_ITEM_REFRESH, via);
+   refresh_item(&items[4], TASK_DBSCAN_ITEM_REFRESH, p);
+   refresh_item(&items[5], TASK_DBSCAN_ITEM_REFRESH, "f_none");
+
+   fs_main_calls   = 0;
+   fs_main_last[0] = '\0';
+   fs_main_watch   = true;
+   pushed          = chain_push(items, 6);
+   chain_wait(false);
+   fs_main_watch   = false;
+
+   snprintf(detail, sizeof(detail), "%u items, failed %u, skipped %u",
+         chain_seen, chain_totals.failed, chain_totals.skipped);
+   check(   pushed && chain_dones == 1 && chain_seen == 6
+         && chain_saw(0, "fsmain_missing_dir", TASK_DBSCAN_FAILED, -1)
+         && chain_saw(1, a,        TASK_DBSCAN_FAILED,  -1)
+         && chain_saw(2, a,        TASK_DBSCAN_FAILED,  -1)
+         && chain_saw(3, "f_gone", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(4, p,        TASK_DBSCAN_FAILED,  -1)
+         && chain_saw(5, "f_none", TASK_DBSCAN_FAILED,  -1)
+         && chain_totals.failed == 5 && chain_totals.skipped == 1,
+         "fs off main: each item stops where it did", detail);
+   snprintf(detail, sizeof(detail), "%u calls, the last %s",
+         fs_main_calls, *fs_main_last ? fs_main_last : "none");
+   check(fs_main_calls == 0,
+         "fs off main: no file system call on the main thread", detail);
+
+   manual_content_scan_reset_settings();
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   return;
+
+fixture:
+   check(0, "fixture", "could not write the fs off main lane");
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+#else
+   (void)root;
+   (void)pl_dir;
+#endif
+}
+
 /* The summary the menu's Refresh All Playlists shows. */
 static char menu_all_msg[128];
 
@@ -11241,6 +11384,7 @@ int main(int argc, char **argv)
    chain_lane(root, pl_dir, crc_a, sz_a, true);
    refresh_lane(root, pl_dir, crc_a, sz_a, false);
    refresh_lane(root, pl_dir, crc_a, sz_a, true);
+   fs_main_lane(root, pl_dir);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, false);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, true);
    {
