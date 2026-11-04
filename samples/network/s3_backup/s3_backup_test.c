@@ -649,7 +649,8 @@ int main(void)
    char  big[80];
    FILE *f;
 
-   snprintf(tmp, sizeof(tmp), "/tmp/s3_backup_%ld", (long)getpid());
+   /* in the current directory: a native Windows build has no /tmp */
+   snprintf(tmp, sizeof(tmp), "s3_backup_%ld", (long)getpid());
    if ((f = fopen(tmp, "wb")))
    {
       fputs("SAVEDATA", f);

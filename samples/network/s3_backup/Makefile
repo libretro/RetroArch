@@ -45,6 +45,10 @@ SOURCES_C := \
 CFLAGS += -Wall $(INCDIRS)
 CFLAGS += -DHAVE_NETWORKING -DHAVE_CLOUDSYNC -DHAVE_S3 -D_GNU_SOURCE
 LDFLAGS += -lm
+# net_http and its sockets need Winsock on Windows
+ifneq (,$(findstring mingw,$(CC))$(findstring MINGW,$(MSYSTEM))$(findstring Windows,$(OS)))
+   LDFLAGS += -lws2_32
+endif
 
 ifneq ($(SAN),)
    SANITIZER := $(SAN)
@@ -77,6 +81,6 @@ check: $(TARGET)
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS)
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(TARGET).exe
 
 .PHONY: clean all check
