@@ -243,7 +243,10 @@ static void embedded(const char *path, bool threaded)
    assert(!strcmp(entry->path, path));
    request = task_subtitle_load_entry(entry);
    task_subtitle_catalog_release(catalog);
-   assert(request && !task_subtitle_status(request));
+   assert(request);
+   /* Threaded, the load may already be done */
+   if (!threaded)
+      assert(!task_subtitle_status(request));
    await(request);
    if (getenv("SUBTITLE_EXPECT_FAILURE"))
    {
