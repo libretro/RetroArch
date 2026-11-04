@@ -744,32 +744,12 @@ static unsigned vtt_global_kind(const char *line)
    return *tail ? 0 : kind;
 }
 
-static int vtt_lines_step(rsubtitle_srt_t *track)
+/* One whole WebVTT line, ending at @end, classified; its own function
+ * to keep each step's frame small in unoptimised sanitizer builds */
+static int vtt_lines_line(rsubtitle_srt_t *track, size_t end)
 {
-   size_t end = track->scan, next, length;
+   size_t next, length;
    char *line;
-   if (end < track->written && track->data[end] != '\n')
-   {
-      if (end - track->line_begin >= 2 && track->data[end - 2] == '-'
-            && track->data[end - 1] == '-' && track->data[end] == '>')
-         track->vtt_arrow = 1;
-      track->scan++;
-      length = track->scan - track->line_begin;
-      if (track->line_kind == VTT_SKIP)
-         return length <= RSUBTITLE_SRT_MAX_INPUT;
-      return length <= ((track->line_kind == VTT_TEXT
-            || track->line_kind >= VTT_STYLE) ? 65536 : 128);
-   }
-   if (end == track->written && end == track->line_begin)
-   {
-      if (track->line_kind == VTT_SIGNATURE)
-         return 0;
-      if (track->line_kind == VTT_TEXT && track->text_seen && !srt_complete_cue(track))
-         return 0;
-      if (track->line_kind >= VTT_STYLE && !vtt_global(track))
-         return 0;
-      return srt_prepare_index(track);
-   }
    next = end < track->written ? end + 1 : end;
    line = track->data + track->line_begin;
    length = end - track->line_begin;
@@ -872,6 +852,34 @@ static int vtt_lines_step(rsubtitle_srt_t *track)
    track->line_begin = track->scan = next;
    track->vtt_arrow = 0;
    return 1;
+}
+
+static int vtt_lines_step(rsubtitle_srt_t *track)
+{
+   size_t end = track->scan, length;
+   if (end < track->written && track->data[end] != '\n')
+   {
+      if (end - track->line_begin >= 2 && track->data[end - 2] == '-'
+            && track->data[end - 1] == '-' && track->data[end] == '>')
+         track->vtt_arrow = 1;
+      track->scan++;
+      length = track->scan - track->line_begin;
+      if (track->line_kind == VTT_SKIP)
+         return length <= RSUBTITLE_SRT_MAX_INPUT;
+      return length <= ((track->line_kind == VTT_TEXT
+            || track->line_kind >= VTT_STYLE) ? 65536 : 128);
+   }
+   if (end == track->written && end == track->line_begin)
+   {
+      if (track->line_kind == VTT_SIGNATURE)
+         return 0;
+      if (track->line_kind == VTT_TEXT && track->text_seen && !srt_complete_cue(track))
+         return 0;
+      if (track->line_kind >= VTT_STYLE && !vtt_global(track))
+         return 0;
+      return srt_prepare_index(track);
+   }
+   return vtt_lines_line(track, end);
 }
 
 
