@@ -73,6 +73,9 @@ int main(void)
    check_parent("smb://srv/",             "");
    check_parent("saf://tree/",            "");
    check_parent("/a/",                    "/");
+   /* "://" inside a local folder name is not a scheme */
+   check_parent("/home/a://b/",           "/home/a://");
+   check_parent("/home/a://",             "/home/a:/");
    check_parent("/",                      "");
 #ifdef _WIN32
    check_parent("C:\\",                   "");

@@ -695,7 +695,16 @@ size_t path_parent_dir(char *s, size_t len)
    {
       char *last_slash;
       const char *scheme = strstr(s, "://");
+      const char *q;
       bool was_absolute = path_is_absolute(s);
+
+      /* A scheme is only the path's first component: "://" in a
+       * folder name of a local path is not one. */
+      for (q = s; scheme && q < scheme; q++)
+         if (PATH_CHAR_IS_SLASH(*q))
+            scheme = NULL;
+      if (scheme == s)
+         scheme = NULL;
 
       s[len - 1]        = '\0';
       last_slash        = find_last_slash(s);

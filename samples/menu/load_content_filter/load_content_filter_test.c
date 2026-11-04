@@ -642,6 +642,95 @@ static void content_location_lanes(void)
    path_rmdir(sub);
 }
 
+#ifdef HAVE_NFSCLIENT
+/* The configured NFS server: its root, the levels above it that Parent
+ * Directory skips, its titles with the export, and its entry in a file
+ * browser's drive list. Pure string work over the settings; nothing
+ * here reaches a server. */
+static void nfs_root_set(const char *server, const char *export_p,
+      const char *subdir)
+{
+   settings_t *settings = config_get_ptr();
+   strlcpy(settings->arrays.nfs_server, server,
+         sizeof(settings->arrays.nfs_server));
+   strlcpy(settings->arrays.nfs_export, export_p,
+         sizeof(settings->arrays.nfs_export));
+   strlcpy(settings->arrays.nfs_subdir, subdir,
+         sizeof(settings->arrays.nfs_subdir));
+}
+
+static bool nfs_title_is(const char *path, const char *want)
+{
+   char s[PATH_MAX_LENGTH];
+   return menu_displaylist_nfs_title_path(s, sizeof(s), path)
+       && string_is_equal(s, want);
+}
+
+static void nfs_root_lanes(void)
+{
+   char root[PATH_MAX_LENGTH];
+   char small[16];
+
+   nfs_root_set("", "", "");
+   CHECK(!menu_displaylist_build_nfs_root(root, sizeof(root)),
+         "an NFS root is built with no server set");
+   CHECK(!menu_displaylist_is_network_root("nfs://127.0.0.1/"),
+         "nfs:// is a configured root with no server set");
+
+   /* the export given in the server address */
+   nfs_root_set("127.0.0.1/mnt/user/roms", "", "");
+   CHECK(   menu_displaylist_build_nfs_root(root, sizeof(root))
+         && string_is_equal(root, "nfs://127.0.0.1/mnt/user/roms"),
+         "the NFS root is not the server address");
+   CHECK(menu_displaylist_is_network_root("nfs://127.0.0.1/mnt/user/roms"),
+         "the server address is not the NFS root");
+   CHECK(menu_displaylist_is_network_root("nfs://127.0.0.1/mnt/user/roms/"),
+         "the server address with a slash is not the NFS root");
+   CHECK(!menu_displaylist_is_network_root("nfs://127.0.0.1/mnt/user/roms/snes"),
+         "a folder under the NFS root is taken for the root");
+   CHECK(!menu_displaylist_is_network_root("nfs://127.0.0.1/mnt/user"),
+         "a level above the NFS root is taken for the root");
+   CHECK(!menu_displaylist_nfs_title_path(root, sizeof(root),
+            "nfs://127.0.0.1/mnt/user/roms/snes"),
+         "a title gains an export with none set");
+
+   /* the export set apart, with a subdir */
+   nfs_root_set("127.0.0.1", "/srv/roms/", "games");
+   CHECK(   menu_displaylist_build_nfs_root(root, sizeof(root))
+         && string_is_equal(root, "nfs://127.0.0.1/games"),
+         "the NFS root is not the server and subdir");
+   CHECK(menu_displaylist_is_network_root("nfs://127.0.0.1/"),
+         "the server is not the NFS root with an export set");
+   CHECK(!menu_displaylist_is_network_root("nfs://127.0.0.1/games"),
+         "the subdir is taken for the NFS root");
+   CHECK(!menu_displaylist_is_network_root("nfs://127.0.0.10/"),
+         "another server sharing the name's start is taken for the root");
+   CHECK(nfs_title_is("nfs://127.0.0.1/games/snes",
+            "nfs://127.0.0.1/srv/roms/games/snes"),
+         "a title does not show the export after the server");
+   CHECK(nfs_title_is("nfs://127.0.0.1", "nfs://127.0.0.1/srv/roms"),
+         "the server's title does not show the export");
+   CHECK(!menu_displaylist_nfs_title_path(root, sizeof(root),
+            "nfs://127.0.0.10/x"),
+         "another server's title gains the export");
+   CHECK(!menu_displaylist_nfs_title_path(root, sizeof(root),
+            "smb://127.0.0.1/x"),
+         "an SMB title gains the NFS export");
+   CHECK(!menu_displaylist_nfs_title_path(small, sizeof(small),
+            "nfs://127.0.0.1/games"),
+         "a title too long for its buffer is written cut");
+
+   /* the drive list offers the configured root */
+   CHECK(   open_list("", MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
+               DISPLAYLIST_DEFAULT)
+         && listed("nfs://127.0.0.1/games"),
+         "a file browser's drive list does not offer the NFS root");
+   back();
+
+   nfs_root_set("", "", "");
+}
+#endif
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -763,6 +852,9 @@ int main(int argc, char *argv[])
 #endif
 
    content_location_lanes();
+#ifdef HAVE_NFSCLIENT
+   nfs_root_lanes();
+#endif
 
    main_exit(NULL);
 
