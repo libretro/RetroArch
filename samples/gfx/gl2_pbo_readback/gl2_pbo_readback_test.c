@@ -1,13 +1,31 @@
 /* The gl2 driver's PBO readback ring against a scripted GL: fences are
  * handed out and signalled by the test, and the map is counted, so a
  * read that waits on the GPU, or maps a slot whose fence has not
- * signalled, is a failure. */
+ * signalled, is a failure.
+ *
+ * Also the raster font's atlas texture following a grown atlas: the
+ * texture takes the new size only with the texels to fill it in hand,
+ * so with the allocation refused the font keeps the size it has, and a
+ * region of the atlas past that size goes no further than the texture. */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+/* Allocations gl2.c makes, the next @fail_mallocs of them refused */
+static int fail_mallocs;
+static void *test_malloc(size_t n)
+{
+   if (fail_mallocs)
+   {
+      fail_mallocs--;
+      return NULL;
+   }
+   return malloc(n);
+}
+#define malloc test_malloc
 #include "../../../gfx/drivers/gl2.c"
+#undef malloc
 
 #define W 64
 #define H 32
@@ -109,6 +127,13 @@ static int fails;
    if (cond) printf("  [ok]   %s\n", what); \
    else { printf("  [FAIL] %s\n", what); fails++; } \
 } while (0)
+
+static struct font_atlas *font_lane_atlas;
+static struct font_atlas *font_lane_get_atlas(void *data)
+{
+   (void)data;
+   return font_lane_atlas;
+}
 
 int main(void)
 {
@@ -272,6 +297,45 @@ int main(void)
    }
    CHECK(syncs_deleted == syncs_created, "failure-query teardown retires every fence");
    CHECK(!gl11_finishes, "no glFinish anywhere on the readback path");
+
+   /* The raster font's texture and a grown atlas */
+   {
+      static uint8_t atlas_buf[64 * 64];
+      static struct font_atlas atlas;
+      static font_renderer_driver_t renderer;
+      gl2_raster_t font;
+      memset(&font, 0, sizeof(font));
+      memset(&renderer, 0, sizeof(renderer));
+      memset(&atlas, 0, sizeof(atlas));
+      renderer.get_atlas = font_lane_get_atlas;
+      font_lane_atlas    = &atlas;
+      atlas.buffer       = atlas_buf;
+      atlas.width        = 32;
+      atlas.height       = 32;
+      font.gl            = &gl;
+      font.font_driver   = &renderer;
+      font.tex_dims      = VIDEO_SCALE_PACK(32, 32);
+      /* it grows, and the texels for the new size cannot be had */
+      atlas.width        = 64;
+      atlas.height       = 64;
+      atlas.dirty        = true;
+      atlas.dirty_xy0    = 0;
+      atlas.dirty_xy1    = VIDEO_SCALE_PACK(64, 64);
+      fail_mallocs       = 1;
+      gl2_raster_font_follow_atlas(&font);
+      CHECK(font.tex_dims == VIDEO_SCALE_PACK(32, 32) && !font.respecify,
+            "a refused allocation leaves the texture its size");
+      /* the region goes in clamped to the texture, under ASan */
+      CHECK(gl2_raster_font_upload_atlas(&font, atlas.dirty_xy0,
+               atlas.dirty_xy1, false),
+            "a region past the texture goes in clamped to it");
+      /* the next time it can be had */
+      gl2_raster_font_follow_atlas(&font);
+      CHECK(font.tex_dims == VIDEO_SCALE_PACK(64, 64) && font.respecify
+            && font.respecify_buf, "the texture takes the new size");
+      CHECK(gl2_raster_font_upload_atlas(&font, 0, 0, true)
+            && !font.respecify_buf, "the respecify sends the texels made");
+   }
 
    free(out);
    if (fails)

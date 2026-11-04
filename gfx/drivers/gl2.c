@@ -503,6 +503,9 @@ typedef struct gl2_renderchain_data
 typedef struct
 {
    gl2_t *gl;
+   /* The texture's texels, made when the atlas grew and the texture
+    * took its new size, sent and freed by the respecify */
+   uint8_t *respecify_buf;
    GLuint tex;
    unsigned tex_dims;            /* VIDEO_SCALE_PACK, the atlas texture */
    bool respecify;               /* The atlas grew: remake the texture */
@@ -1128,6 +1131,7 @@ static void gl2_raster_font_free(void *data,
       font->tex = 0;
    }
 
+   free(font->respecify_buf);
    free(font);
 }
 
@@ -1139,7 +1143,7 @@ static void gl2_raster_font_free(void *data,
  * eight bytes and reads the same under any GL_UNPACK_ALIGNMENT, and is
  * packed tightly, which OpenGL ES 2 needs for want of
  * GL_UNPACK_ROW_LENGTH. */
-static void gl2_raster_font_upload_atlas(gl2_raster_t *font,
+static bool gl2_raster_font_upload_atlas(gl2_raster_t *font,
       unsigned xy0, unsigned xy1, bool respecify)
 {
    unsigned x, y, x0, y0, x1, y1, xe;
@@ -1165,15 +1169,28 @@ static void gl2_raster_font_upload_atlas(gl2_raster_t *font,
       x1 = VIDEO_SCALE_W(xy1);
       y1 = VIDEO_SCALE_H(xy1);
       if (x1 <= x0 || y1 <= y0 || x1 > aw || y1 > ah)
-         return;
+         return true;
       x0 &= ~3u;
       x1  = (x1 + 3) & ~3u;
+      /* Within the texture: an atlas it has not yet followed is larger
+       * than it */
       if (x1 > tex_w)
          x1 = tex_w;
+      if (y1 > tex_h)
+         y1 = tex_h;
+      if (x1 <= x0 || y1 <= y0)
+         return true;
    }
 
-   if (!(tmp = (uint8_t*)malloc((size_t)(x1 - x0) * (y1 - y0) * 2)))
-      return;
+   /* A respecify takes the buffer made when the texture took its
+    * size, if one was */
+   if (respecify && font->respecify_buf)
+   {
+      tmp                 = font->respecify_buf;
+      font->respecify_buf = NULL;
+   }
+   else if (!(tmp = (uint8_t*)malloc((size_t)(x1 - x0) * (y1 - y0) * 2)))
+      return false;
 
    dst = tmp;
    for (y = y0; y < y1; y++)
@@ -1192,6 +1209,10 @@ static void gl2_raster_font_upload_atlas(gl2_raster_t *font,
       dst += (size_t)(x1 - xe) * 2;
    }
 
+   /* Tightly packed: no row length left from another upload */
+   if (font->gl && (font->gl->flags & GL2_FLAG_HAVE_UNPACK_ROW_LENGTH))
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
    if (respecify)
       glTexImage2D(GL_TEXTURE_2D, 0, gl_internal,
             tex_w, tex_h,
@@ -1202,6 +1223,7 @@ static void gl2_raster_font_upload_atlas(gl2_raster_t *font,
             gl_format, GL_UNSIGNED_BYTE, tmp);
 
    free(tmp);
+   return true;
 }
 
 static void *gl2_raster_font_init(void *data,
@@ -1278,13 +1300,16 @@ static void gl2_raster_font_draw_vertices(gl2_t *gl,
    }
    else if (font->atlas->dirty)
    {
+      /* Kept dirty, all of it, while a region cannot be sent */
+      bool sent = true;
       unsigned r, xy0, xy1;
       for (r = 0; r < font_atlas_dirty_rects(font->atlas); r++)
       {
          font_atlas_dirty_rect(font->atlas, r, &xy0, &xy1);
-         gl2_raster_font_upload_atlas(font, xy0, xy1, false);
+         if (!gl2_raster_font_upload_atlas(font, xy0, xy1, false))
+            sent = false;
       }
-      font->atlas->dirty   = false;
+      font->atlas->dirty   = !sent;
    }
 
    if (gl->shader)
@@ -1417,6 +1442,29 @@ static void gl2_raster_font_setup_viewport(
             gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 }
 
+/* Asked for before anything is laid out: the atlas may have grown,
+ * and the texture coordinates are taken from the texture's size. The
+ * texture takes the new size only with the texels to fill it in hand,
+ * sent by the next draw's respecify. */
+static void gl2_raster_font_follow_atlas(gl2_raster_t *font)
+{
+   unsigned tex_dims;
+   font->atlas = font->font_driver->get_atlas(font->font_data);
+   tex_dims    = VIDEO_SCALE_PACK(next_pow2(font->atlas->width),
+         next_pow2(font->atlas->height));
+   if (tex_dims != font->tex_dims && !font->respecify_buf)
+   {
+      uint8_t *buf = (uint8_t*)malloc((size_t)VIDEO_SCALE_W(tex_dims)
+            * VIDEO_SCALE_H(tex_dims) * 2);
+      if (buf)
+      {
+         font->respecify_buf = buf;
+         font->tex_dims      = tex_dims;
+         font->respecify     = true;
+      }
+   }
+}
+
 static void gl2_raster_font_render_msg(
       void *userdata,
       void *data,
@@ -1437,18 +1485,7 @@ static void gl2_raster_font_render_msg(
    if (!font || !msg || !*msg || !gl)
       return;
 
-   /* Asked for before anything is laid out: it may have grown, and the
-    * texture coordinates are taken from the texture's size */
-   font->atlas = font->font_driver->get_atlas(font->font_data);
-   {
-      unsigned tex_dims = VIDEO_SCALE_PACK(next_pow2(font->atlas->width),
-            next_pow2(font->atlas->height));
-      if (tex_dims != font->tex_dims)
-      {
-         font->tex_dims  = tex_dims;
-         font->respecify = true;
-      }
-   }
+   gl2_raster_font_follow_atlas(font);
 
    font_driver_resolve_params(params, &rp);
    x           = rp.x;
