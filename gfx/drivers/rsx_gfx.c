@@ -397,8 +397,9 @@ typedef struct
    unsigned tex_dims;
    /* Texture memory the atlas outgrew: a frame in flight may still
     * draw from it, and freeing it means waiting for the RSX, so it goes
-    * when the font does - the atlas grows at most twice */
-   u32 *retired[2];
+    * when the font does - the atlas grows at most twice, and when it is
+    * kept in texture memory the last of it goes with the font */
+   u32 *retired[4];
    unsigned retired_count;
    u32 fp_offset;
    u32 pos_offset;
@@ -413,6 +414,9 @@ typedef struct
    float font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
+   /* The atlas is kept in texture memory (rsx_font_storage) and is the
+    * texture: nothing is copied into it */
+   bool atlas_in_place;
 } rsx_font_t;
 
 static const float rsx_vertexes[8] = {
@@ -658,7 +662,9 @@ static void rsx_font_free(void *data,
     * font scale change or context reset. */
    rsxFinish(font->rsx->context, 0);
 
-   if (font->texture.data)
+   /* Kept in texture memory, the atlas's last buffer went to
+    * rsx_font_storage_free with the font driver's */
+   if (font->texture.data && !font->atlas_in_place)
       rsxFree(font->texture.data);
    {
       unsigned i;
@@ -713,7 +719,8 @@ static void rsx_font_copy_dirty(rsx_font_t *font)
 
 static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
 {
-   rsx_font_copy_dirty(font);
+   if (!font->atlas_in_place)
+      rsx_font_copy_dirty(font);
 
    font->texture.tex.format    = GCM_TEXTURE_FORMAT_B8 | GCM_TEXTURE_FORMAT_LIN;
    font->texture.tex.mipmap    = 1;
@@ -751,6 +758,24 @@ static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
          GCM_TEXTURE_CLAMP_TO_EDGE, 0, GCM_TEXTURE_ZFUNC_LESS, 0);
 
    return true;
+}
+
+/* Texture memory for the atlas, which the cache rasterizes glyphs
+ * straight into and the RSX samples: the texture is linear B8 with its
+ * pitch its width, the atlas's own layout */
+static void *rsx_font_storage(void *user, size_t size)
+{
+   (void)user;
+   return rsxMemalign(128, (u32)size);
+}
+
+/* Texture memory the atlas moved out of: a frame in flight may still
+ * draw from it, so it goes when the font does */
+static void rsx_font_storage_free(void *user, void *buffer)
+{
+   rsx_font_t *font = (rsx_font_t*)user;
+   if (font->retired_count < sizeof(font->retired) / sizeof(font->retired[0]))
+      font->retired[font->retired_count++] = (u32*)buffer;
 }
 
 static void *rsx_font_init(void *data,
@@ -807,7 +832,14 @@ static void *rsx_font_init(void *data,
    font->atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
    font->tex_dims           = VIDEO_SCALE_PACK(font->atlas->width,
          font->atlas->height);
-   if (!(font->texture.data = (u32*)rsxMemalign(128,
+   /* The atlas kept in texture memory, or copied into it */
+   if (font_atlas_place(font->atlas, rsx_font_storage,
+            rsx_font_storage_free, font))
+   {
+      font->atlas_in_place = true;
+      font->texture.data   = (u32*)font->atlas->buffer;
+   }
+   else if (!(font->texture.data = (u32*)rsxMemalign(128,
          VIDEO_SCALE_AREA(font->tex_dims))))
       goto error;
    rsxAddressToOffset(font->texture.data, &font->texture.offset);
@@ -1083,7 +1115,20 @@ static void rsx_font_render_msg(
    if (font->font_driver && font->font_data)
    {
       font->atlas = font->font_driver->get_atlas(font->font_data);
-      if (     font->retired_count < 2
+      /* Kept in texture memory, the grown atlas is the texture already;
+       * the cache handed the memory it left to rsx_font_storage_free */
+      if (     font->atlas_in_place
+            && font->tex_dims != VIDEO_SCALE_PACK(font->atlas->width,
+               font->atlas->height))
+      {
+         font->texture.data = (u32*)font->atlas->buffer;
+         rsxAddressToOffset(font->texture.data, &font->texture.offset);
+         font->tex_dims     = VIDEO_SCALE_PACK(font->atlas->width,
+               font->atlas->height);
+         font->atlas->dirty = true;
+      }
+      else if (!font->atlas_in_place
+            && font->retired_count < 2
             && font->tex_dims != VIDEO_SCALE_PACK(font->atlas->width,
                font->atlas->height))
       {
