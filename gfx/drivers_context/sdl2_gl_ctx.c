@@ -300,6 +300,9 @@ static void sdl2_ctx_check_window(void *data, bool *quit,
    gfx_ctx_sdl2_data_t *sdl = (gfx_ctx_sdl2_data_t*)data;
 
    SDL_PumpEvents();
+#ifdef HAVE_VIDEO_WINDOWS
+   sdl2_video_windows_judge();
+#endif
 
    while (SDL_PeepEvents(&event, 1,
             SDL_GETEVENT, SDL_QUIT, SDL_WINDOWEVENT) > 0)

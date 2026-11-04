@@ -221,6 +221,20 @@ static void test_resolve(void)
    /* No settings at all: Auto everywhere */
    video_windows_resolve(d, 3, NULL, NULL, &r);
    CHECK(r.main_screens == 1u && r.target[1] == 2);
+
+   /* Every listed ordinal is present; a screen naming one is named */
+   monitor_display(&d[0], 1, "RA-A", true);
+   monitor_display(&d[1], 2, "RA-B", false);
+   memset(keys, 0, sizeof(keys));
+   strcpy(keys[1], "RA-B");
+   video_windows_resolve(d, 2, KEYS, s, &r);
+   CHECK(r.named == 2u && r.present == 3u);
+   CHECK(r.target[1] == 2);
+   /* Not listed: no named bit */
+   video_windows_resolve(d, 1, KEYS, s, &r);
+   CHECK(r.named == 0u && r.present == 1u);
+   video_windows_resolve(NULL, 0, KEYS, s, &r);
+   CHECK(r.named == 0u && r.present == 0u);
 #undef KEYS
 }
 
@@ -1693,6 +1707,165 @@ static void test_window_events(void)
    CHECK(test_window_at(3) != NULL);
 }
 
+static video_window_common_t *moved_at_window;
+static video_window_common_t *moved_at(unsigned screen)
+{
+   return screen == 1 ? moved_at_window : NULL;
+}
+
+static void test_window_moved(void)
+{
+   video_window_common_t w;
+   video_window_native_t native;
+   video_window_event_t ev[4];
+   retro_time_t t = 1000;
+   retro_time_t s = 1000 + VIDEO_WINDOW_SETTLE_USEC;
+   unsigned a     = VIDEO_SCALE_PACK(640, 480);
+   memset(&w, 0, sizeof(w));
+   memset(&native, 0, sizeof(native));
+   w.native              = &native;
+   w.owner               = &w;
+   w.request.screen      = 1;
+   w.request.generation  = 7;
+   moved_at_window       = &w;
+   /* Not placed yet */
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(5, 5), true, a, true, s));
+   video_window_placed(&w, VIDEO_POS_PACK(100, 100), a, t);
+   /* Where it was put */
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(100, 100), true, a, true, s));
+   /* The window manager's placing, before it settles, and where it
+    * left it */
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(120, 90), true, a, true, s - 1));
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(120, 90), true, a, true, s));
+   CHECK(!(w.pending & VIDEO_WINDOW_EVENT_BIT(GEOMETRY)));
+   /* Maximised, fullscreen or minimised */
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(0, 0), true,
+         VIDEO_SCALE_PACK(1920, 1050), false, s));
+   CHECK(w.save_dims == 0u);
+   /* Restored to where it was */
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(120, 90), true, a, true, s));
+   /* A drag */
+   CHECK(video_window_moved(&w, VIDEO_POS_PACK(300, 200), true, a, true, s));
+   CHECK(w.save_moved && w.save_pos == VIDEO_POS_PACK(300, 200));
+   CHECK(w.save_dims == a);
+   CHECK(w.request.settings.pos == VIDEO_POS_PACK(300, 200));
+   CHECK(w.request.settings.pos_set && w.request.settings.dims == a);
+   CHECK(w.pending & VIDEO_WINDOW_EVENT_BIT(GEOMETRY));
+   /* A resize in place before poll keeps the move */
+   CHECK(video_window_moved(&w, VIDEO_POS_PACK(300, 200), true,
+         VIDEO_SCALE_PACK(700, 500), true, s));
+   CHECK(w.save_moved && w.save_dims == VIDEO_SCALE_PACK(700, 500));
+   /* poll() hands it over once */
+   CHECK(video_windows_drain(&w, moved_at, ev, 4) == 1);
+   CHECK(ev[0].kind == VIDEO_WINDOW_EVENT_GEOMETRY && ev[0].save_moved);
+   CHECK(ev[0].save_pos == VIDEO_POS_PACK(300, 200));
+   CHECK(ev[0].save_dims == VIDEO_SCALE_PACK(700, 500));
+   CHECK(video_windows_drain(&w, moved_at, ev, 4) == 0);
+   /* A resize alone: no position */
+   CHECK(video_window_moved(&w, VIDEO_POS_PACK(300, 200), true,
+         VIDEO_SCALE_PACK(800, 600), true, s));
+   CHECK(video_windows_drain(&w, moved_at, ev, 4) == 1);
+   CHECK(!ev[0].save_moved && ev[0].save_dims == VIDEO_SCALE_PACK(800, 600));
+   /* The rect just saved again: nothing new */
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(300, 200), true,
+         VIDEO_SCALE_PACK(800, 600), true, s));
+   CHECK(video_windows_drain(&w, moved_at, ev, 4) == 0);
+   /* Back where it first was */
+   CHECK(video_window_moved(&w, VIDEO_POS_PACK(120, 90), true, a, true, s));
+   CHECK(video_windows_drain(&w, moved_at, ev, 4) == 1);
+   CHECK(ev[0].save_moved && ev[0].save_pos == VIDEO_POS_PACK(120, 90));
+   CHECK(ev[0].save_dims == a);
+   /* Where the compositor places: size only, pos_set left alone */
+   w.request.settings.pos_set = false;
+   CHECK(video_window_moved(&w, 0, false, VIDEO_SCALE_PACK(900, 600), true, s));
+   CHECK(!w.save_moved && !w.request.settings.pos_set);
+   video_windows_drain(&w, moved_at, ev, 4);
+   /* Another kind carries no bounds */
+   w.pending = VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+   ev[0].save_dims = ev[0].save_pos = 1;
+   ev[0].save_moved = true;
+   CHECK(video_windows_drain(&w, moved_at, ev, 4) == 1);
+   CHECK(!ev[0].save_moved && !ev[0].save_dims && !ev[0].save_pos);
+   /* RetroArch's own move */
+   video_window_placed(&w, VIDEO_POS_PACK(40, 40), a, s);
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(40, 40), true, a, true,
+         s + VIDEO_WINDOW_SETTLE_USEC));
+   /* An older event's time leaves it unsettled as long */
+   video_window_unsettled(&w, t);
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(60, 60), true, a, true, s + 1));
+   /* Its monitors changed: the OS's move is not saved, nor where it
+    * left it */
+   video_window_unsettled(&w, s);
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(10, 10), true, a, true, s + 1));
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(10, 10), true, a, true,
+         s + VIDEO_WINDOW_SETTLE_USEC));
+   /* A closed window saves nothing */
+   w.closed = true;
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(20, 20), true, a, true,
+         s + VIDEO_WINDOW_SETTLE_USEC));
+   CHECK(!(w.pending & VIDEO_WINDOW_EVENT_BIT(GEOMETRY)));
+}
+
+static void test_window_moved_back(void)
+{
+   video_window_common_t w;
+   video_window_native_t native;
+   video_window_event_t ev[4];
+   retro_time_t t = 1000;
+   retro_time_t s = 1000 + VIDEO_WINDOW_SETTLE_USEC;
+   unsigned a     = VIDEO_SCALE_PACK(640, 480);
+   unsigned b     = VIDEO_SCALE_PACK(700, 500);
+   memset(&w, 0, sizeof(w));
+   memset(&native, 0, sizeof(native));
+   w.native              = &native;
+   w.owner               = &w;
+   w.request.screen      = 1;
+   moved_at_window       = &w;
+   /* The window manager moves it on while it settles, then back to
+    * where RetroArch put it */
+   video_window_placed(&w, VIDEO_POS_PACK(100, 100), a, t);
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(120, 90), true, a, true, s - 1));
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(100, 100), true, a, true, s));
+   CHECK(!(w.pending & VIDEO_WINDOW_EVENT_BIT(GEOMETRY)));
+   /* A move first seen while not normal is a move when it is saved */
+   CHECK(!video_window_moved(&w, VIDEO_POS_PACK(500, 400), true, a, false, s));
+   CHECK(video_window_moved(&w, VIDEO_POS_PACK(500, 400), true, b, true, s));
+   CHECK(w.save_moved && w.save_pos == VIDEO_POS_PACK(500, 400));
+   CHECK(w.save_dims == b);
+   video_windows_drain(&w, moved_at, ev, 4);
+   /* After a save, the user's drag back to where RetroArch put it */
+   CHECK(video_window_moved(&w, VIDEO_POS_PACK(100, 100), true, a, true, s));
+   CHECK(video_windows_drain(&w, moved_at, ev, 4) == 1);
+   CHECK(ev[0].save_moved && ev[0].save_pos == VIDEO_POS_PACK(100, 100));
+   CHECK(ev[0].save_dims == a);
+
+   /* After a resize is saved, a resize back to the first size */
+   video_window_placed(&w, VIDEO_POS_PACK(100, 100), a, t);
+   CHECK(video_window_moved(&w, VIDEO_POS_PACK(100, 100), true, b, true, s));
+   video_windows_drain(&w, moved_at, ev, 4);
+   CHECK(video_window_moved(&w, VIDEO_POS_PACK(100, 100), true, a, true, s));
+   CHECK(video_windows_drain(&w, moved_at, ev, 4) == 1);
+   CHECK(!ev[0].save_moved && ev[0].save_dims == a);
+   /* The same where the compositor places */
+   video_window_placed(&w, 0, a, t);
+   CHECK(video_window_moved(&w, 0, false, b, true, s));
+   video_windows_drain(&w, moved_at, ev, 4);
+   CHECK(video_window_moved(&w, 0, false, a, true, s));
+   CHECK(video_windows_drain(&w, moved_at, ev, 4) == 1);
+   CHECK(!ev[0].save_moved && ev[0].save_dims == a);
+}
+
+static void test_window_rect_lost(void)
+{
+   video_window_rect_t r = { 2000, 100, 300, 200 };
+   video_window_rect_t m[2];
+   m[0].x = 0;    m[0].y = 0; m[0].w = 1920; m[0].h = 1080;
+   m[1].x = 1920; m[1].y = 0; m[1].w = 1920; m[1].h = 1080;
+   CHECK(!video_window_rect_lost(&r, m, 2));
+   CHECK(video_window_rect_lost(&r, m, 1));
+   CHECK(!video_window_rect_lost(&r, m, 0));
+}
+
 static bool test_place(int x, int y, int w, int h, bool automatic,
       int ax, int ay, int aw, int ah, int wx, int wy, int ww, int wh)
 {
@@ -1857,25 +2030,51 @@ static void test_windows_steps_follow(void)
    held.live = create;
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 0u && create == 0u);
-   /* Game Screen 2 to another monitor: its window alone */
+   frame.monitors_present = VIDEO_WINDOWS_ORDINAL_BIT(1)
+      | VIDEO_WINDOWS_ORDINAL_BIT(2);
+   /* Its target moved with no edit: it stays (Auto does not hop) */
    frame.settings[1].monitor = 1;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   /* The same, with an edit: made again there */
+   frame.settings[1].edit++;
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 2u && create == 2u);
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 0u && create == 0u);
-   /* A size, fullscreen, a position, a position set */
-   frame.settings[2].dims = VIDEO_SCALE_PACK(640, 480);
-   video_windows_steps(&held, &frame, &retire, &create);
-   CHECK(retire == 4u && create == 4u);
-   frame.settings[2].fullscreen = true;
-   video_windows_steps(&held, &frame, &retire, &create);
-   CHECK(retire == 4u && create == 4u);
-   frame.settings[2].pos = VIDEO_POS_PACK(10, 20);
-   video_windows_steps(&held, &frame, &retire, &create);
-   CHECK(retire == 4u && create == 4u);
+   /* Saved bounds with no edit: left alone */
+   frame.settings[2].dims    = VIDEO_SCALE_PACK(640, 480);
+   frame.settings[2].pos     = VIDEO_POS_PACK(10, 20);
    frame.settings[2].pos_set = true;
    video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   /* An edit that changes them: made again */
+   frame.settings[2].fullscreen = true;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 4u && create == 4u);
+   /* An edit that changes nothing: recorded, not made again */
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   frame.settings[2].fullscreen = false;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u);
+   /* Its monitor went away */
+   frame.settings[2].monitor = 2;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   frame.monitors_present    = VIDEO_WINDOWS_ORDINAL_BIT(1);
+   frame.settings[2].monitor = 1;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   /* Its named monitor came back as ordinal 3 */
+   frame.monitors_present |= VIDEO_WINDOWS_ORDINAL_BIT(3);
+   frame.settings[2].monitor = 3;
+   frame.window_named        = 4u;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   frame.window_named = 0u;
    /* An id that now shows another screen, as Game Screen 1's spare id
     * can */
    frame.window_screens[2] = 1u;
@@ -1899,8 +2098,100 @@ static void test_windows_steps_follow(void)
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 0u && create == 0u);
    frame.settings[1].monitor = 2;
+   frame.settings[1].edit++;
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 2u && create == 2u);
+}
+
+/* Desktop: a window's saved bounds come back in the frames as what it
+ * was made for, not as an edit */
+static void test_windows_held_saved(void)
+{
+   static video_windows_frame_t frame;
+   video_windows_held_t held;
+   unsigned retire;
+   unsigned create;
+   memset(&held, 0, sizeof(held));
+   memset(&frame, 0, sizeof(frame));
+   frame.monitors            = true;
+   frame.monitors_present    = VIDEO_WINDOWS_ORDINAL_BIT(1)
+      | VIDEO_WINDOWS_ORDINAL_BIT(2);
+   frame.window_screens[1]   = 2u;
+   frame.window_screens[2]   = 4u;
+   frame.window_named        = 4u;
+   frame.settings[1].mode    = VIDEO_WINDOW_SEPARATE;
+   frame.settings[2].mode    = VIDEO_WINDOW_SEPARATE;
+   /* Window 1 Auto, on the monitor RetroArch is not on; 2 named */
+   frame.settings[1].monitor = 2;
+   frame.settings[2].monitor = 1;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 6u);
+   held.live = create;
+   /* Window 1 moved; a frame laid out before the take still left */
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(300, 200),
+         VIDEO_SCALE_PACK(500, 400), true);
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   /* Then the saved bounds, which target 0 */
+   frame.settings[1].pos     = VIDEO_POS_PACK(300, 200);
+   frame.settings[1].dims    = VIDEO_SCALE_PACK(500, 400);
+   frame.settings[1].pos_set = true;
+   frame.settings[1].monitor = 0;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   CHECK(held.made[1].monitor == 0);
+   /* An edit that changes nothing still makes nothing again */
+   frame.settings[1].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   /* One that changes something does */
+   frame.settings[1].fullscreen = true;
+   frame.settings[1].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u && create == 2u);
+   /* Named: moved, and kept on its monitor */
+   video_windows_held_saved(&held, 2, VIDEO_POS_PACK(40, 50),
+         VIDEO_SCALE_PACK(320, 240), true);
+   CHECK(held.made[2].monitor == 1);
+   frame.settings[2].pos     = VIDEO_POS_PACK(40, 50);
+   frame.settings[2].dims    = VIDEO_SCALE_PACK(320, 240);
+   frame.settings[2].pos_set = true;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   /* A size alone, with no position set: Auto keeps its monitor */
+   memset(&frame.settings[1], 0, sizeof(frame.settings[1]));
+   frame.settings[1].mode    = VIDEO_WINDOW_SEPARATE;
+   frame.settings[1].monitor = 2;
+   frame.settings[1].edit    = held.made[1].edit + 1;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u && create == 2u);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(7, 7),
+         VIDEO_SCALE_PACK(640, 480), false);
+   CHECK(held.made[1].monitor == 2);
+   CHECK(held.made[1].pos == 0 && !held.made[1].pos_set);
+   frame.settings[1].dims = VIDEO_SCALE_PACK(640, 480);
+   frame.settings[1].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u);
+   /* A size with a position set before: saved bounds, target 0 */
+   frame.settings[1].dims    = 0;
+   frame.settings[1].pos_set = true;
+   frame.settings[1].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 2u && create == 2u);
+   video_windows_held_saved(&held, 1, 0, VIDEO_SCALE_PACK(640, 480),
+         false);
+   CHECK(held.made[1].monitor == 0);
+   /* Only for a window made for a known frame */
+   video_windows_held_saved(&held, 3, VIDEO_POS_PACK(1, 1),
+         VIDEO_SCALE_PACK(10, 10), true);
+   CHECK(held.made[3].dims == 0 && !held.made[3].pos_set);
+   video_windows_held_saved(&held, 0, VIDEO_POS_PACK(1, 1),
+         VIDEO_SCALE_PACK(10, 10), true);
+   video_windows_held_saved(&held, RETRO_VIDEO_VIEWS_MAX,
+         VIDEO_POS_PACK(1, 1), VIDEO_SCALE_PACK(10, 10), true);
+   CHECK(held.made[0].dims == 0);
 }
 
 /* A window lives while it shows screens or a UI layer, or is kept */
@@ -2024,9 +2315,13 @@ int main(void)
    test_selected_layout();
    test_second_output_touch();
    test_window_events();
+   test_window_moved();
+   test_window_moved_back();
+   test_window_rect_lost();
    test_window_place();
    test_windows_steps();
    test_windows_steps_follow();
+   test_windows_held_saved();
    test_windows_steps_ui();
    test_window_ui_drawn();
    if (failures)

@@ -106,9 +106,6 @@ void video_windows_display_key(const video_window_display_t *displays,
    out[len] = '\0';
 }
 
-#define VIDEO_WINDOWS_ORDINAL_BIT(o) \
-   (((o) && (o) <= 32) ? 1u << ((o) - 1) : 0u)
-
 /* The display @name names, if a window may go there; 0 for none */
 static unsigned video_windows_named(const video_window_display_t *displays,
       unsigned count, const char *name)
@@ -270,7 +267,7 @@ void video_windows_resolve(const video_window_display_t *displays,
       const video_window_settings_t *settings,
       video_windows_route_t *out)
 {
-   unsigned s;
+   unsigned i, s;
    unsigned automatic = 0;
    if (!displays)
       count = 0;
@@ -278,6 +275,8 @@ void video_windows_resolve(const video_window_display_t *displays,
       automatic = video_windows_resolve_auto(displays, count);
    memset(out, 0, sizeof(*out));
    out->monitors = true;
+   for (i = 0; i < count; i++)
+      out->present |= VIDEO_WINDOWS_ORDINAL_BIT(displays[i].ordinal);
    for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
    {
       const char *key = screen_display ? screen_display[s] : "";
@@ -295,6 +294,7 @@ void video_windows_resolve(const video_window_display_t *displays,
       if (named)
       {
          out->screens  |= bit;
+         out->named    |= bit;
          out->target[s] = named;
       }
       else if (!s)
@@ -679,6 +679,60 @@ void video_window_mark_closed(video_window_common_t *window)
    native->presentable = false;
 }
 
+void video_window_placed(video_window_common_t *window, unsigned pos,
+      unsigned dims, retro_time_t now)
+{
+   window->asked_pos   = pos;
+   window->asked_dims  = dims;
+   window->placed_pos  = pos;
+   window->placed_dims = dims;
+   video_window_unsettled(window, now);
+}
+
+void video_window_unsettled(video_window_common_t *window, retro_time_t now)
+{
+   /* Never shorter: an event's time can be older than the last one's */
+   retro_time_t settle = now + VIDEO_WINDOW_SETTLE_USEC;
+   if (settle > window->settle)
+      window->settle = settle;
+}
+
+bool video_window_moved(video_window_common_t *window, unsigned pos,
+      bool has_pos, unsigned dims, bool normal, retro_time_t now)
+{
+   video_window_settings_t *asked = &window->request.settings;
+   bool moved                     = has_pos && pos != window->asked_pos;
+   if (!normal || !dims || window->closed || !window->settle)
+      return false;
+   if (     now < window->settle
+         || (     dims == window->asked_dims
+               && (!has_pos || pos == window->asked_pos))
+         || (     dims == window->placed_dims
+               && (!has_pos || pos == window->placed_pos)))
+   {
+      /* Where the window manager or the OS left it is no move later */
+      if (has_pos)
+         window->asked_pos = pos;
+      window->asked_dims = dims;
+      return false;
+   }
+   if (moved)
+   {
+      window->save_pos   = pos;
+      window->save_moved = true;
+      asked->pos         = pos;
+      asked->pos_set     = true;
+   }
+   if (has_pos)
+      window->asked_pos = pos;
+   window->asked_dims  = dims;
+   window->placed_dims = 0;
+   window->save_dims   = dims;
+   asked->dims         = dims;
+   window->pending    |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+   return true;
+}
+
 unsigned video_windows_drain(void *owner, video_window_at_t at,
       video_window_event_t *events, unsigned capacity)
 {
@@ -709,6 +763,17 @@ unsigned video_windows_drain(void *owner, video_window_at_t at,
             event->kind       = order[j];
             event->pos        = window->pos;
             event->dims       = window->native->dims;
+            event->save_pos   = 0;
+            event->save_dims  = 0;
+            event->save_moved = false;
+            if (order[j] == VIDEO_WINDOW_EVENT_GEOMETRY)
+            {
+               event->save_pos    = window->save_pos;
+               event->save_dims   = window->save_dims;
+               event->save_moved  = window->save_moved;
+               window->save_dims  = 0;
+               window->save_moved = false;
+            }
             window->pending  &= ~bit;
          }
       }
@@ -741,6 +806,16 @@ unsigned video_window_rect_overlap(const video_window_rect_t *a,
    if (w <= 0 || h <= 0)
       return 0;
    return (unsigned)w * (unsigned)h;
+}
+
+bool video_window_rect_lost(const video_window_rect_t *rect,
+      const video_window_rect_t *areas, unsigned count)
+{
+   unsigned i;
+   for (i = 0; i < count; i++)
+      if (video_window_rect_overlap(rect, &areas[i]))
+         return false;
+   return count > 0;
 }
 
 void video_window_place_rect(video_window_rect_t *rect,
@@ -780,9 +855,12 @@ unsigned video_windows_wanted(const video_windows_frame_t *frame)
 static void video_windows_held_made(video_windows_held_t *held,
       const video_windows_frame_t *frame, unsigned w)
 {
+   unsigned bit           = 1u << w;
    held->made[w]          = frame->settings[w];
    held->made_screens[w]  = frame->window_screens[w];
-   held->made_known      |= 1u << w;
+   held->made_known      |= bit;
+   held->made_named       = (held->made_named & ~bit)
+      | (frame->window_named & bit);
 }
 
 static bool video_windows_made_changed(const video_windows_held_t *held,
@@ -790,13 +868,20 @@ static bool video_windows_made_changed(const video_windows_held_t *held,
 {
    const video_window_settings_t *a = &held->made[w];
    const video_window_settings_t *b = &frame->settings[w];
-   return     a->monitor    != b->monitor
-           || a->mode       != b->mode
-           || a->fullscreen != b->fullscreen
-           || a->dims       != b->dims
-           || a->pos        != b->pos
-           || a->pos_set    != b->pos_set
-           || held->made_screens[w] != frame->window_screens[w];
+   if (     a->mode != b->mode
+         || held->made_screens[w] != frame->window_screens[w])
+      return true;
+   if (a->edit != b->edit)
+      return     a->monitor    != b->monitor
+              || a->fullscreen != b->fullscreen
+              || a->dims       != b->dims
+              || a->pos        != b->pos
+              || a->pos_set    != b->pos_set;
+   /* Sticky: only a monitor that went, or a named one back */
+   return     a->monitor != b->monitor
+          && (   (frame->window_named & (1u << w))
+              || (a->monitor && !(frame->monitors_present
+                    & VIDEO_WINDOWS_ORDINAL_BIT(a->monitor))));
 }
 
 void video_windows_steps(video_windows_held_t *held,
@@ -829,6 +914,8 @@ void video_windows_steps(video_windows_held_t *held,
                video_windows_held_made(held, frame, w);
             else if (video_windows_made_changed(held, frame, w))
                *retire |= bit;
+            else if (held->made[w].edit != frame->settings[w].edit)
+               video_windows_held_made(held, frame, w);
          }
       }
    }
@@ -843,4 +930,24 @@ void video_windows_steps(video_windows_held_t *held,
       for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
          if (*create & (1u << w))
             video_windows_held_made(held, frame, w);
+}
+
+void video_windows_held_saved(video_windows_held_t *held, unsigned w,
+      unsigned pos, unsigned dims, bool moved)
+{
+   video_window_settings_t *made;
+   if (     !w || w >= RETRO_VIDEO_VIEWS_MAX
+         || !(held->made_known & (1u << w)))
+      return;
+   made       = &held->made[w];
+   made->dims = dims;
+   if (moved)
+   {
+      made->pos     = pos;
+      made->pos_set = true;
+   }
+   /* As video_windows_resolve() targets saved bounds */
+   if (     !(held->made_named & (1u << w))
+         && made->dims && made->pos_set)
+      made->monitor = 0;
 }

@@ -194,6 +194,8 @@ void sdl2_set_handles(void *data, enum rarch_display_type
 typedef struct sdl2_video_window
 {
    video_window_common_t common;
+   /* When the check of judge_pos and judge_dims ran */
+   retro_time_t judge_at;
    SDL_Window *win;
    /* The context's main window, for placement */
    SDL_Window *primary;
@@ -203,10 +205,18 @@ typedef struct sdl2_video_window
    /* What SDL is still to finish of what it was asked, which an
     * update waits for, as it does for a minimised window */
    Uint32 waiting;
+   /* SDL's flags at the last check */
+   Uint32 flags;
+   /* Bounds the next pump judges, where 'judge' */
+   unsigned judge_pos;
+   unsigned judge_dims;
    bool fullscreen;
    bool windowed_set;
    /* An update that waits for the window */
    bool apply;
+   /* Whether they were normal at that check */
+   bool judge_normal;
+   bool judge;
 } sdl2_video_window_t;
 
 /* Context thread, at init once SDL video is up: what
@@ -229,6 +239,8 @@ void sdl2_video_windows_free(void *owner,
  * The main window's close request sets 'quit', as SDL would for its
  * last window. */
 bool sdl2_video_window_event(const SDL_Event *event, bool *quit);
+/* After each SDL_PumpEvents(), before its window events are taken */
+void sdl2_video_windows_judge(void);
 /* The displays for the screens' Display setting, on the context's
  * thread: 'changed' after a display event, 'moved' after a main
  * window move. Published once the main window is made (@init), then

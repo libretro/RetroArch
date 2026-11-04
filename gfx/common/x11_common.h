@@ -120,13 +120,26 @@ bool x11_has_net_wm_fullscreen(Display *dpy);
 typedef struct x11_video_window
 {
    video_window_common_t common;
+   /* When the event that asked for the root position was taken */
+   retro_time_t translate_at;
+   /* When the event of judge_pos and judge_dims was taken */
+   retro_time_t judge_at;
    /* The context's GL drawable for the window, if it has one */
    void *drawable;
    Window handle;
    Colormap colormap;
    /* The request asking for the root position, 0 for none */
    unsigned translate;
+   /* The request reading _NET_WM_STATE, 0 for none */
+   unsigned wm_state;
+   /* Bounds the next poll() judges, where 'judge' */
+   unsigned judge_pos;
+   unsigned judge_dims;
    bool translate_again;
+   bool wm_state_again;
+   /* Not fullscreen, maximised or minimised, as last read */
+   bool wm_normal;
+   bool judge;
    /* The context has set its drawable's swap interval */
    bool interval_set;
    bool reparented;

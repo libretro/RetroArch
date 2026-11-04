@@ -120,6 +120,8 @@ typedef struct wl_video_window
    /* floating_dims was asked for while the window did not float */
    bool floating_asked;
    bool suspended;
+   /* Shown by the compositor: its first wl_surface.enter */
+   bool mapped;
    /* The context has set its drawable's swap interval */
    bool interval_set;
 } wl_video_window_t;

@@ -52,6 +52,7 @@
 #endif
 
 #include <encodings/utf.h>
+#include <features/features_cpu.h>
 #include <retro_atomic.h>
 #include <compat/strl.h>
 
@@ -133,6 +134,10 @@ static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
 static Atom g_x11_quit_atom;
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_XCB)
+/* _NET_WM_STATE, then the states that are not a normal window's */
+static Atom x11_video_window_states[5];
+#endif
 #ifdef HAVE_MENU
 enum x11_dnd_atom
 {
@@ -1139,9 +1144,11 @@ static video_window_common_t *x11_video_window_at(unsigned screen)
  * event that has the root's. So the root position is asked for, and
  * the answer taken once it has come rather than waited for; one
  * question at a time, asked again if the window moved meanwhile. */
-static void x11_video_window_translate(x11_video_window_t *state)
+static void x11_video_window_translate(x11_video_window_t *state,
+      retro_time_t at)
 {
    xcb_connection_t *conn;
+   state->translate_at = at;
    if (state->translate)
    {
       state->translate_again = true;
@@ -1152,6 +1159,97 @@ static void x11_video_window_translate(x11_video_window_t *state)
          (xcb_window_t)state->handle,
          (xcb_window_t)DefaultRootWindow(g_x11_dpy), 0, 0).sequence;
    xcb_flush(conn);
+}
+
+/* The bounds it is at, for GEOMETRY to save where the user left them,
+ * as of 'at', when the event that told of them was taken. Before it is
+ * mapped nothing is the user's. */
+static void x11_video_window_moved(x11_video_window_t *state,
+      retro_time_t at)
+{
+   if (!state->common.native->presentable)
+      video_window_unsettled(&state->common, at);
+   state->judge_at   = at;
+   state->judge_pos  = state->common.pos;
+   state->judge_dims = state->common.native->dims;
+   state->judge      = true;
+}
+
+/* A manager may set _NET_WM_STATE just after it configures, so bounds
+ * wait one poll() for a change that came with them; while the state is
+ * being read it counts as not normal. */
+static void x11_video_windows_judge(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      x11_video_window_t *state = x11_video_windows[i];
+      if (!state || !state->judge)
+         continue;
+      state->judge = false;
+      video_window_moved(&state->common, state->judge_pos, true,
+            state->judge_dims,
+            !state->wm_state && state->wm_normal
+            && !state->common.request.settings.fullscreen,
+            state->judge_at);
+   }
+}
+
+/* _NET_WM_STATE changed: read again, taken once it has come, as the
+ * root position is */
+static void x11_video_window_read_state(x11_video_window_t *state)
+{
+   xcb_connection_t *conn;
+   if (state->wm_state)
+   {
+      state->wm_state_again = true;
+      return;
+   }
+   conn            = XGetXCBConnection(g_x11_dpy);
+   state->wm_state = xcb_get_property(conn, 0,
+         (xcb_window_t)state->handle,
+         (xcb_atom_t)x11_video_window_states[0], XCB_ATOM_ATOM, 0,
+         32).sequence;
+   xcb_flush(conn);
+}
+
+static void x11_video_windows_states(void)
+{
+   unsigned i, j, k;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      xcb_get_property_reply_t *reply = NULL;
+      xcb_generic_error_t *error      = NULL;
+      x11_video_window_t *state       = x11_video_windows[i];
+      if (     !state || !state->wm_state
+            || !xcb_poll_for_reply(XGetXCBConnection(g_x11_dpy),
+               state->wm_state, (void**)&reply, &error))
+         continue;
+      state->wm_state = 0;
+      if (reply)
+      {
+         const xcb_atom_t *atoms = NULL;
+         unsigned count          = 0;
+         if (reply->format == 32 && reply->type == XCB_ATOM_ATOM)
+         {
+            atoms = (const xcb_atom_t*)xcb_get_property_value(reply);
+            count = (unsigned)xcb_get_property_value_length(reply)
+               / sizeof(*atoms);
+         }
+         state->wm_normal = true;
+         for (j = 0; j < count; j++)
+            for (k = 1; k < ARRAY_SIZE(x11_video_window_states); k++)
+               if (atoms[j] == (xcb_atom_t)x11_video_window_states[k])
+                  state->wm_normal = false;
+      }
+      free(reply);
+      free(error);
+      if (state->wm_state_again)
+      {
+         state->wm_state_again = false;
+         x11_video_window_read_state(state);
+      }
+   }
 }
 
 static void x11_video_windows_translated(void)
@@ -1175,13 +1273,16 @@ static void x11_video_windows_translated(void)
             state->common.pos      = pos;
             state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
          }
+         /* One asked again has the size this position goes with */
+         if (!state->translate_again)
+            x11_video_window_moved(state, state->translate_at);
       }
       free(reply);
       free(error);
       if (state->translate_again)
       {
          state->translate_again = false;
-         x11_video_window_translate(state);
+         x11_video_window_translate(state, state->translate_at);
       }
    }
 }
@@ -1248,20 +1349,24 @@ static bool x11_video_window_event(const XEvent *event)
             != DefaultRootWindow(g_x11_dpy);
 #ifdef HAVE_XCB
          if (state->reparented)
-            x11_video_window_translate(state);
+            x11_video_window_translate(state,
+                  cpu_features_get_time_usec());
 #endif
          break;
       case ConfigureNotify:
          {
-            unsigned pos  = state->common.pos;
-            unsigned dims = VIDEO_SCALE_PACK(event->xconfigure.width,
+#ifdef HAVE_XCB
+            retro_time_t at = cpu_features_get_time_usec();
+#endif
+            unsigned pos    = state->common.pos;
+            unsigned dims   = VIDEO_SCALE_PACK(event->xconfigure.width,
                   event->xconfigure.height);
             if (!state->reparented)
                pos = VIDEO_POS_PACK(event->xconfigure.x,
                      event->xconfigure.y);
 #ifdef HAVE_XCB
             else
-               x11_video_window_translate(state);
+               x11_video_window_translate(state, at);
 #else
             /* The manager's synthetic event has root coordinates */
             else if (event->xconfigure.send_event)
@@ -1274,9 +1379,22 @@ static bool x11_video_window_event(const XEvent *event)
                state->common.pos      = pos;
                state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
             }
+#ifdef HAVE_XCB
+            if (!state->reparented)
+               x11_video_window_moved(state, at);
+#endif
          }
          break;
+#ifdef HAVE_XCB
+      case PropertyNotify:
+         if (     x11_video_window_states[0]
+               && event->xproperty.atom == x11_video_window_states[0])
+            x11_video_window_read_state(state);
+         break;
+#endif
       case MapNotify:
+         video_window_unsettled(&state->common,
+               cpu_features_get_time_usec());
          window->presentable    = true;
          state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(SUSPEND);
          state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(RESUME);
@@ -1455,7 +1573,8 @@ bool x11_video_window_create(void *owner,
    memset(&swa, 0, sizeof(swa));
    state->colormap = XCreateColormap(g_x11_dpy, root, visual, AllocNone);
    swa.colormap    = state->colormap;
-   swa.event_mask  = StructureNotifyMask | FocusChangeMask;
+   swa.event_mask  = StructureNotifyMask | FocusChangeMask
+      | PropertyChangeMask;
    state->handle   = XCreateWindow(g_x11_dpy, root, x, y, width, height, 0,
          depth, InputOutput, visual,
          CWBackPixel | CWBorderPixel | CWColormap | CWEventMask, &swa);
@@ -1499,6 +1618,9 @@ bool x11_video_window_create(void *owner,
    state->common.native               = window;
    state->common.request              = *request;
    state->common.pos                  = VIDEO_POS_PACK(x, y);
+   state->wm_normal                   = true;
+   video_window_placed(&state->common, VIDEO_POS_PACK(x, y),
+         VIDEO_SCALE_PACK(width, height), cpu_features_get_time_usec());
    x11_video_windows[request->screen] = state;
    x11_video_window_count++;
 
@@ -1584,6 +1706,8 @@ unsigned x11_video_window_poll(void *owner, video_window_event_t *events,
 {
    x11_video_windows_check_failed();
 #ifdef HAVE_XCB
+   x11_video_windows_states();
+   x11_video_windows_judge();
    x11_video_windows_translated();
 #endif
    return video_windows_drain(owner, x11_video_window_at, events, capacity);
@@ -1603,6 +1727,8 @@ void x11_video_window_destroy(void *owner, video_window_native_t *window)
 #ifdef HAVE_XCB
    if (state->translate)
       xcb_discard_reply(XGetXCBConnection(g_x11_dpy), state->translate);
+   if (state->wm_state)
+      xcb_discard_reply(XGetXCBConnection(g_x11_dpy), state->wm_state);
 #endif
    if (!state->destroyed)
       XDestroyWindow(g_x11_dpy, state->handle);
@@ -2161,6 +2287,18 @@ void x11_install_quit_atom(void)
          "WM_DELETE_WINDOW", False);
    if (g_x11_quit_atom)
       XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_XCB)
+   {
+      static char *names[ARRAY_SIZE(x11_video_window_states)] = {
+         "_NET_WM_STATE", "_NET_WM_STATE_FULLSCREEN",
+         "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ",
+         "_NET_WM_STATE_HIDDEN" };
+      if (!XInternAtoms(g_x11_dpy, names,
+               ARRAY_SIZE(x11_video_window_states), False,
+               x11_video_window_states))
+         x11_video_window_states[0] = None;
+   }
+#endif
 #ifdef HAVE_MENU
    {
       static char *names[X11_DND_ATOM_LAST] = {

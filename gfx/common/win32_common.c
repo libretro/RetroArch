@@ -2259,7 +2259,18 @@ static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
          /* the WM_SIZE and WM_MOVE it makes first */
          ret = DefWindowProc(hwnd, message, wparam, lparam);
          if ((state = win32_video_window_of(hwnd)) && !state->common.closed)
+         {
+            /* Judged once both are in. Nothing is the user's while it
+             * is hidden or minimised. */
+            retro_time_t now = cpu_features_get_time_usec();
+            if (!state->common.native->presentable)
+               video_window_unsettled(&state->common, now);
+            video_window_moved(&state->common, state->common.pos, true,
+                  state->common.native->dims,
+                     !IsZoomed(hwnd) && !IsIconic(hwnd)
+                  && !state->common.request.settings.fullscreen, now);
             win32_video_window_presentable(state);
+         }
          return ret;
       case WM_SIZE:
          if (     wparam != SIZE_MINIMIZED
@@ -2585,6 +2596,8 @@ bool win32_video_window_create(void *owner,
    window->surface   = state->hwnd;
    window->dims      = VIDEO_SCALE_PACK(client.right, client.bottom);
    state->common.pos = VIDEO_POS_PACK(origin.x, origin.y);
+   video_window_placed(&state->common, state->common.pos, window->dims,
+         cpu_features_get_time_usec());
    win32_video_windows[request->screen] = state;
    win32_video_window_count++;
    return true;

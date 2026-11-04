@@ -1109,6 +1109,336 @@ static void native_sdl_torn_down(const gfx_ctx_driver_t *ctx, bool again)
    video_driver_publish_window_displays(foreign, 1);
 }
 
+/* Whether a window manager or compositor is there to maximise it */
+static bool native_sdl_managed(SDL_Window *win)
+{
+#ifdef HAVE_X11
+   Display *dpy;
+   Window xwin;
+   if (native_sdl_x11(win, &dpy, &xwin))
+   {
+      Atom type;
+      int format;
+      unsigned long count, after;
+      unsigned char *prop = NULL;
+      bool managed        = XGetWindowProperty(dpy, DefaultRootWindow(dpy),
+            XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False), 0, 1,
+            False, XA_WINDOW, &type, &format, &count, &after, &prop)
+         == Success && count == 1;
+      if (prop)
+         XFree(prop);
+      return managed;
+   }
+#endif
+   return native_sdl_driver("wayland");
+}
+
+/* Pumps until a GEOMETRY with bounds to save arrives; false at the
+ * deadline */
+static bool native_sdl_wait_save(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request)
+{
+   unsigned saves        = native_window_saves;
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   while (native_window_saves == saves)
+   {
+      if (cpu_features_get_time_usec() > deadline)
+         return false;
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   return true;
+}
+
+/* Nothing saved since '*saves', else what was; counts on from there */
+static void native_sdl_no_save(const char *what, unsigned *saves)
+{
+   if (native_window_saves != *saves)
+      fprintf(stderr, "native sdl: %s saved %u, the last %s%d,%d "
+            "%ux%u\n", what, native_window_saves - *saves,
+            native_window_saved.save_moved ? "moved " : "",
+            VIDEO_POS_X(native_window_saved.save_pos),
+            VIDEO_POS_Y(native_window_saved.save_pos),
+            VIDEO_SCALE_W(native_window_saved.save_dims),
+            VIDEO_SCALE_H(native_window_saved.save_dims));
+   CHECK(native_window_saves == *saves);
+   *saves = native_window_saves;
+}
+
+/* Maximised or restored by the window manager, asked from a connection
+ * of the fixture's own as a title bar would: SDL has nothing in flight.
+ * False where SDL is not on X11. */
+static bool native_sdl_wm_maximise(SDL_Window *win, bool on)
+{
+#ifdef HAVE_X11
+   Display *dpy;
+   Window xwin;
+   XEvent event;
+   Display *fix = NULL;
+   if (native_sdl_x11(win, &dpy, &xwin))
+      fix = XOpenDisplay(DisplayString(dpy));
+   if (!fix)
+      return false;
+   memset(&event, 0, sizeof(event));
+   event.xclient.type         = ClientMessage;
+   event.xclient.window       = xwin;
+   event.xclient.message_type = XInternAtom(fix, "_NET_WM_STATE", False);
+   event.xclient.format       = 32;
+   /* _NET_WM_STATE_ADD or _REMOVE */
+   event.xclient.data.l[0]    = on ? 1 : 0;
+   event.xclient.data.l[1]    = (long)XInternAtom(fix,
+         "_NET_WM_STATE_MAXIMIZED_VERT", False);
+   event.xclient.data.l[2]    = (long)XInternAtom(fix,
+         "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+   event.xclient.data.l[3]    = 1;
+   XSendEvent(fix, DefaultRootWindow(fix), False,
+         SubstructureRedirectMask | SubstructureNotifyMask, &event);
+   XCloseDisplay(fix);
+   return true;
+#else
+   return false;
+#endif
+}
+
+/* Pumped until SDL says it is maximised, or not */
+static void native_sdl_wait_maximised(const gfx_ctx_driver_t *ctx,
+      void *data, const video_window_request_t *request, SDL_Window *win,
+      bool on)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   while (     !(SDL_GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) != !on
+            && cpu_features_get_time_usec() < deadline)
+   {
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   CHECK(!(SDL_GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == !on);
+}
+
+/* Maximised or restored by SDL, or with 'wm' by the window manager
+ * alone, pumped until SDL says so */
+static void native_sdl_maximise(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, SDL_Window *win, bool on,
+      bool wm)
+{
+   if (wm)
+      CHECK(native_sdl_wm_maximise(win, on));
+   else if (on)
+      SDL_MaximizeWindow(win);
+   else
+      SDL_RestoreWindow(win);
+   native_sdl_wait_maximised(ctx, data, request, win, on);
+}
+
+/* A manager that configures, and sets _NET_WM_STATE a pump later, from a
+ * connection of the fixture's own: the maximised bounds are not saved.
+ * No manager may be running. */
+static void native_sdl_max_first(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, video_window_native_t *window,
+      const SDL_Rect *home, unsigned *saves)
+{
+#ifdef HAVE_X11
+   Display *dpy;
+   Window xwin;
+   Atom state, max[2];
+   int x, y;
+   Display *fix    = NULL;
+   SDL_Window *win = (SDL_Window*)window->surface;
+   unsigned dims   = window->dims;
+   if (native_sdl_x11(win, &dpy, &xwin))
+      fix = XOpenDisplay(DisplayString(dpy));
+   CHECK(fix != NULL);
+   if (!fix)
+      return;
+   SDL_GetWindowPosition(win, &x, &y);
+   state  = XInternAtom(fix, "_NET_WM_STATE", False);
+   max[0] = XInternAtom(fix, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+   max[1] = XInternAtom(fix, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+   XMoveResizeWindow(fix, xwin, home->x, home->y, home->w, home->h);
+   XSync(fix, False);
+   native_window_wait(ctx, data, request, window, 0,
+         VIDEO_SCALE_PACK(home->w, home->h));
+   XChangeProperty(fix, xwin, state, XA_ATOM, 32, PropModeReplace,
+         (unsigned char*)max, 2);
+   XSync(fix, False);
+   native_sdl_wait_maximised(ctx, data, request, win, true);
+   native_window_settle(ctx, data, request, 200000);
+   native_sdl_no_save("maximised a pump after its bounds", saves);
+   XDeleteProperty(fix, xwin, state);
+   XMoveResizeWindow(fix, xwin, x, y, VIDEO_SCALE_W(dims),
+         VIDEO_SCALE_H(dims));
+   XSync(fix, False);
+   native_sdl_wait_maximised(ctx, data, request, win, false);
+   native_window_wait(ctx, data, request, window, 0, dims);
+   native_window_settle(ctx, data, request, 200000);
+   native_sdl_no_save("restored from that", saves);
+   XCloseDisplay(fix);
+#endif
+}
+
+/* The user's bounds are saved, and neither RetroArch's nor the window
+ * manager's are. Once a process; leaves the window made anew from
+ * 'request'. */
+static void native_sdl_saves(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window,
+      const SDL_Rect *home, bool mapped)
+{
+   static bool done;
+   video_window_request_t r;
+   video_window_event_t saved;
+   SDL_Window *win;
+   native_sdl_state_t *state;
+   unsigned i, saves;
+   float density;
+   bool placed         = !native_sdl_driver("wayland");
+   bool x11            = native_sdl_driver("x11");
+   int x               = home->x;
+   int y               = home->y;
+#ifdef HAVE_SDL3
+   int slack           = 1;
+#else
+   int slack           = 0;
+#endif
+
+   if (done)
+      return;
+   done                  = true;
+   r                     = *request;
+   r.settings.monitor    = 0;
+   r.settings.fullscreen = false;
+   r.settings.pos        = VIDEO_POS_PACK(x + 200, y + 150);
+   r.settings.dims       = VIDEO_SCALE_PACK(400, 300);
+   r.settings.pos_set    = placed;
+   native_sdl_replace(ctx, data, &r, window);
+   win     = (SDL_Window*)window->surface;
+   density = native_sdl_density(win);
+   saves   = native_window_saves;
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("settling", &saves);
+
+   /* A drag */
+   if (placed)
+   {
+      SDL_SetWindowPosition(win, x + 260, y + 170);
+      CHECK(native_sdl_wait_save(ctx, data, &r));
+      CHECK(native_window_saved.save_moved);
+      CHECK(native_window_saved.save_pos == VIDEO_POS_PACK(x + 260, y + 170));
+      CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(400, 300));
+   }
+
+   /* A resize in place: the size alone, once. Where the compositor
+    * places windows, never a position. */
+   SDL_SetWindowSize(win, (int)(420 / density), (int)(310 / density));
+   CHECK(native_sdl_wait_save(ctx, data, &r));
+   CHECK(!native_window_saved.save_moved);
+   CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(420, 310));
+   saves = native_window_saves;
+   native_window_settle(ctx, data, &r, 200000);
+   native_sdl_no_save("resized again", &saves);
+
+   /* Maximised and restored, where something does it: nothing, each
+    * time. On X, the last three by the window manager alone. */
+   if (mapped && native_sdl_managed(win))
+      for (i = 0; i < (x11 ? 6u : 3u); i++)
+      {
+         bool wm = i >= 3;
+         native_sdl_maximise(ctx, data, &r, win, true, wm);
+         native_window_settle(ctx, data, &r, 300000);
+         CHECK(window->dims != VIDEO_SCALE_PACK(420, 310));
+         native_sdl_no_save(wm ? "maximised by the manager" : "maximised",
+               &saves);
+         native_sdl_maximise(ctx, data, &r, win, false, wm);
+         native_window_wait(ctx, data, &r, window, 0,
+               VIDEO_SCALE_PACK(420, 310));
+         native_window_settle(ctx, data, &r, 200000);
+         native_sdl_no_save(wm ? "restored by the manager" : "restored",
+               &saves);
+      }
+   else if (mapped && x11)
+      native_sdl_max_first(ctx, data, &r, window, home, &saves);
+   else
+      fprintf(stderr, "native sdl: nothing here maximises, so no "
+            "maximised checks\n");
+
+   /* Settled again, the user's moves are saved */
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("settling again", &saves);
+   if (placed)
+      SDL_SetWindowPosition(win, x + 280, y + 180);
+   else
+      SDL_SetWindowSize(win, (int)(400 / density), (int)(300 / density));
+   CHECK(native_sdl_wait_save(ctx, data, &r));
+   CHECK(native_window_saved.save_moved == placed);
+   CHECK(!placed
+         || native_window_saved.save_pos == VIDEO_POS_PACK(x + 280, y + 180));
+   CHECK(native_window_saved.save_dims == (placed
+            ? VIDEO_SCALE_PACK(420, 310) : VIDEO_SCALE_PACK(400, 300)));
+   saved = native_window_saved;
+   saves = native_window_saves;
+
+   /* Fullscreen, moved: nothing */
+   r.settings.fullscreen = true;
+   native_sdl_replace(ctx, data, &r, window);
+   win = (SDL_Window*)window->surface;
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   if (placed)
+      SDL_SetWindowPosition(win, x + 100, y + 100);
+   SDL_SetWindowSize(win, (int)(300 / density), (int)(200 / density));
+   native_window_settle(ctx, data, &r, 300000);
+   native_sdl_no_save("fullscreen", &saves);
+   r.settings.fullscreen = false;
+
+   /* Moved at once after it was made, as a window manager places it */
+   ctx->windows->destroy(data, window);
+   r.generation = video_driver_window_generation();
+   CHECK(ctx->windows->create(data, &r, window));
+   win = (SDL_Window*)window->surface;
+   if (placed)
+      SDL_SetWindowPosition(win, x + 240, y + 190);
+   else
+      SDL_SetWindowSize(win, (int)(380 / density), (int)(280 / density));
+   native_sdl_map(ctx, data, window);
+   native_window_settle(ctx, data, &r, 600000);
+   native_sdl_no_save("moved at once", &saves);
+
+   /* Saved bounds make the window they were saved from, and it reports
+    * them: SDL 3's size in pixels to one pixel, and exactly the second
+    * time round */
+   r.settings.pos     = saved.save_pos;
+   r.settings.dims    = saved.save_dims;
+   r.settings.pos_set = placed;
+   for (i = 0; i < 2; i++)
+   {
+      int s = i ? 0 : slack;
+      native_sdl_replace(ctx, data, &r, window);
+      native_window_settle(ctx, data, &r,
+            VIDEO_WINDOW_SETTLE_USEC + 100000);
+      state = (native_sdl_state_t*)window->state;
+      if (     window->dims != r.settings.dims
+            || (placed && state && state->common.pos != r.settings.pos))
+         fprintf(stderr, "native sdl: remade at %d,%d %ux%u from %d,%d "
+               "%ux%u\n", state ? VIDEO_POS_X(state->common.pos) : 0,
+               state ? VIDEO_POS_Y(state->common.pos) : 0,
+               VIDEO_SCALE_W(window->dims), VIDEO_SCALE_H(window->dims),
+               VIDEO_POS_X(r.settings.pos), VIDEO_POS_Y(r.settings.pos),
+               VIDEO_SCALE_W(r.settings.dims),
+               VIDEO_SCALE_H(r.settings.dims));
+      CHECK(!placed || (state && state->common.pos == r.settings.pos));
+      CHECK(abs((int)VIDEO_SCALE_W(window->dims)
+               - (int)VIDEO_SCALE_W(r.settings.dims)) <= s);
+      CHECK(abs((int)VIDEO_SCALE_H(window->dims)
+               - (int)VIDEO_SCALE_H(r.settings.dims)) <= s);
+      native_sdl_no_save("remade", &saves);
+      r.settings.dims = window->dims;
+   }
+
+   native_sdl_replace(ctx, data, request, window);
+   /* It came up where it was put, which no GEOMETRY says */
+   state = (native_sdl_state_t*)window->state;
+   if (state)
+      native_window_pos = state->common.pos;
+}
+
 static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       video_window_request_t *request, video_window_native_t *window)
 {
@@ -1199,6 +1529,10 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(!(seen & NATIVE_EVENT(CLOSE)));
    CHECK(window->dims == request->settings.dims);
    CHECK(window->configured && window->presentable);
+#ifdef HAVE_VULKAN
+   if (strcmp(ctx->ident, "vk_sdl3") == 0)
+      native_vk_output(ctx, data, window);
+#endif
    /* Shown without taking the focus from the main window, where the
     * window system leaves that to the client */
    if (native_sdl_driver("windows"))
@@ -1206,6 +1540,9 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    /* as the window manager has settled the main window */
    native_sdl_main_get(data, &main_state);
    density = native_sdl_density(secondary);
+   native_sdl_saves(ctx, data, request, window, &home, mapped);
+   secondary = (SDL_Window*)window->surface;
+   CHECK(native_sdl_main_intact(data, &main_state));
 
    /* Resized by the user */
    native_sdl_user(secondary, 0, 0, (int)(400 / density),

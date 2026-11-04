@@ -714,6 +714,208 @@ static void native_wl_monitors(const gfx_ctx_driver_t *ctx, void *data,
             " to another not checked\n");
 }
 
+/* Pumps until a GEOMETRY with bounds to save arrives; false at the
+ * deadline */
+static bool native_wl_wait_save(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request)
+{
+   unsigned saves        = native_window_saves;
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   while (native_window_saves == saves)
+   {
+      if (cpu_features_get_time_usec() > deadline)
+         return false;
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   return true;
+}
+
+/* Nothing saved since '*saves', else what was; counts on from there */
+static void native_wl_no_save(const char *what, unsigned *saves)
+{
+   if (native_window_saves != *saves)
+      fprintf(stderr, "native wayland: %s saved %u, the last %ux%u\n",
+            what, native_window_saves - *saves,
+            VIDEO_SCALE_W(native_window_saved.save_dims),
+            VIDEO_SCALE_H(native_window_saved.save_dims));
+   CHECK(native_window_saves == *saves);
+   *saves = native_window_saves;
+}
+
+static void native_wl_replace(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window)
+{
+   ctx->windows->destroy(data, window);
+   CHECK(window->state == NULL && window->surface == NULL);
+   request->generation = video_driver_window_generation();
+   CHECK(ctx->windows->create(data, request, window));
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+   native_wl_map(ctx, data, window);
+}
+
+/* Maximised or back, by KWin or as the window asks, and pumped until
+ * the compositor has done it */
+static void native_wl_maximise(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, video_window_native_t *window,
+      bool on, bool by_kwin)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl_video_window_t *state   = (wl_video_window_t*)window->state;
+   retro_time_t deadline      = cpu_features_get_time_usec() + 3000000;
+   if (by_kwin)
+      native_wl_kwin(video_window_title_screen(request), on
+            ? "w.setMaximize(true, true);" : "w.setMaximize(false, false);");
+#ifdef HAVE_LIBDECOR_H
+   else if (state->libdecor_frame)
+   {
+      if (on)
+         wl->libdecor_frame_set_maximized(state->libdecor_frame);
+      else
+         wl->libdecor_frame_unset_maximized(state->libdecor_frame);
+   }
+#endif
+   else if (on)
+      xdg_toplevel_set_maximized(state->xdg_toplevel);
+   else
+      xdg_toplevel_unset_maximized(state->xdg_toplevel);
+   wl_display_flush(wl->input.dpy);
+   while (state->floating == on)
+   {
+      if (cpu_features_get_time_usec() > deadline)
+         break;
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   if (state->floating == on)
+      fprintf(stderr, "native wayland: %s by %s not done\n",
+            on ? "maximised" : "restored", by_kwin ? "KWin" : "the window");
+   CHECK(state->floating != on);
+}
+
+/* The size the user leaves a window at is saved once it has settled:
+ * the surface's, never a position, and never the compositor's first
+ * size, a maximised one or the one it was made at */
+static void native_wl_saves(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window,
+      bool kwin)
+{
+   static bool done;
+   video_window_request_t r;
+   video_window_event_t saved;
+   wl_video_window_t *state;
+   unsigned i;
+   unsigned saves = native_window_saves;
+
+   if (done)
+      return;
+   done                  = true;
+   r                     = *request;
+   r.settings.monitor    = 0;
+   r.settings.fullscreen = false;
+   r.settings.dims       = VIDEO_SCALE_PACK(360, 270);
+
+   /* The first configure is the compositor's, however late it is taken.
+    * The harness's KWin has a rule that sizes Screen 7's window then. */
+   r.screens    = 1u << 6;
+   ctx->windows->destroy(data, window);
+   r.generation = video_driver_window_generation();
+   CHECK(ctx->windows->create(data, &r, window));
+   retro_sleep(VIDEO_WINDOW_SETTLE_USEC / 1000 + 100);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   state = (wl_video_window_t*)window->state;
+   fprintf(stderr, "native wayland: first configured late at %ux%u\n",
+         VIDEO_SCALE_W(state->dims), VIDEO_SCALE_H(state->dims));
+   native_wl_map(ctx, data, window);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_wl_no_save("first configured late", &saves);
+
+   /* Mapped and settled: nothing */
+   r.screens = request->screens;
+   native_wl_replace(ctx, data, &r, window);
+   state     = (wl_video_window_t*)window->state;
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_wl_no_save("settling", &saves);
+   CHECK(state->dims == r.settings.dims);
+
+   /* Resized by the user: the surface's size, not the buffer's (at
+    * scale 2 here), once */
+   if (kwin)
+   {
+      native_wl_rescale(state, 2);
+      native_window_settle(ctx, data, &r, 50000);
+      native_wl_no_save("rescaled", &saves);
+      native_wl_kwin(video_window_title_screen(&r),
+            "var g = w.frameGeometry, c = w.clientGeometry;"
+            " w.frameGeometry = {x: g.x, y: g.y,"
+            " width: 390 + g.width - c.width,"
+            " height: 280 + g.height - c.height};");
+      CHECK(native_wl_wait_save(ctx, data, &r));
+      CHECK(!native_window_saved.save_moved);
+      CHECK(native_window_saved.save_pos == 0);
+      CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(390, 280));
+      fprintf(stderr, "native wayland: saved %ux%u, buffer %ux%u\n",
+            VIDEO_SCALE_W(native_window_saved.save_dims),
+            VIDEO_SCALE_H(native_window_saved.save_dims),
+            VIDEO_SCALE_W(window->dims), VIDEO_SCALE_H(window->dims));
+      CHECK(window->dims == native_wl_buffer(state, 390, 280));
+      CHECK(window->dims != native_window_saved.save_dims);
+      saves = native_window_saves;
+      native_wl_rescale(state, 1);
+      native_window_settle(ctx, data, &r, 200000);
+      native_wl_no_save("resized again", &saves);
+   }
+
+   /* Maximised and restored, by KWin and by the window: nothing */
+   for (i = 0; i < 2; i++)
+   {
+      unsigned was = state->dims;
+      bool by_kwin = kwin && !i;
+      native_wl_maximise(ctx, data, &r, window, true, by_kwin);
+      native_window_settle(ctx, data, &r, 300000);
+      CHECK(state->dims != was);
+      native_wl_no_save("maximised", &saves);
+      native_wl_maximise(ctx, data, &r, window, false, by_kwin);
+      native_window_wait(ctx, data, &r, window, 0,
+            native_wl_buffer(state, VIDEO_SCALE_W(was), VIDEO_SCALE_H(was)));
+      native_window_settle(ctx, data, &r, 200000);
+      CHECK(state->dims == was);
+      native_wl_no_save("restored", &saves);
+   }
+
+   if (!kwin)
+   {
+      native_wl_replace(ctx, data, request, window);
+      return;
+   }
+
+   /* Settled again, the user's size is saved */
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_wl_no_save("settling again", &saves);
+   native_wl_kwin(video_window_title_screen(&r),
+         "var g = w.frameGeometry, c = w.clientGeometry;"
+         " w.frameGeometry = {x: g.x, y: g.y,"
+         " width: 400 + g.width - c.width,"
+         " height: 300 + g.height - c.height};");
+   CHECK(native_wl_wait_save(ctx, data, &r));
+   CHECK(!native_window_saved.save_moved);
+   CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(400, 300));
+   saved = native_window_saved;
+   saves = native_window_saves;
+
+   /* Saved bounds make the window they were saved from */
+   r.settings.dims = saved.save_dims;
+   native_wl_replace(ctx, data, &r, window);
+   state = (wl_video_window_t*)window->state;
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(state->dims == saved.save_dims);
+   CHECK(window->dims == native_wl_buffer(state,
+            VIDEO_SCALE_W(saved.save_dims), VIDEO_SCALE_H(saved.save_dims)));
+   native_wl_no_save("remade", &saves);
+
+   native_wl_replace(ctx, data, request, window);
+}
+
 static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       video_window_request_t *request, video_window_native_t *window)
 {
@@ -1051,6 +1253,9 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
 #endif
    native_wl_map(ctx, data, window);
    native_window_settle(ctx, data, request, 100000);
+   CHECK(native_wl_main_intact(wl, &main_window));
+
+   native_wl_saves(ctx, data, request, window, kwin);
    CHECK(native_wl_main_intact(wl, &main_window));
 }
 

@@ -4,6 +4,9 @@
 /* Secondary windows through a context's optional table. The deadlines
  * below are the fixture's own; the shipping code never waits. */
 static unsigned native_window_pos;
+/* The last GEOMETRY with bounds to save, and how many there were */
+static video_window_event_t native_window_saved;
+static unsigned native_window_saves;
 /* The frontend's input poll, where this one thread runs it too */
 static void (*native_window_input)(void *data);
 
@@ -27,7 +30,14 @@ static unsigned native_window_drain(const gfx_ctx_driver_t *ctx, void *data,
          CHECK(events[i].screen == request->screen);
          CHECK(events[i].generation == request->generation);
          if (events[i].kind == VIDEO_WINDOW_EVENT_GEOMETRY)
+         {
             native_window_pos = events[i].pos;
+            if (events[i].save_dims)
+            {
+               native_window_saved = events[i];
+               native_window_saves++;
+            }
+         }
          seen |= 1u << events[i].kind;
       }
    return seen;
@@ -105,12 +115,79 @@ static void native_window_spare(const video_window_request_t *request,
    spare->generation = video_driver_window_generation();
 }
 
+#ifdef HAVE_VULKAN
+/* The surface and swapchain vulkan.c makes for a screen window */
+static void native_vk_output(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_native_t *window)
+{
+   VkAttachmentDescription color;
+   VkAttachmentReference ref;
+   VkSubpassDescription subpass;
+   VkRenderPassCreateInfo info;
+   vulkan_output_t output;
+   vulkan_context_t *vk = ctx->get_context_data
+      ? (vulkan_context_t*)ctx->get_context_data(data) : NULL;
+
+   CHECK(vk != NULL && vk->device != VK_NULL_HANDLE);
+   if (!vk || vk->device == VK_NULL_HANDLE)
+      return;
+   color.flags                     = 0;
+   color.format                    = vk->swapchain_format;
+   color.samples                   = VK_SAMPLE_COUNT_1_BIT;
+   color.loadOp                    = VK_ATTACHMENT_LOAD_OP_CLEAR;
+   color.storeOp                   = VK_ATTACHMENT_STORE_OP_STORE;
+   color.stencilLoadOp             = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+   color.stencilStoreOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+   color.initialLayout             = VK_IMAGE_LAYOUT_UNDEFINED;
+   color.finalLayout               = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+   ref.attachment                  = 0;
+   ref.layout                      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   subpass.flags                   = 0;
+   subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+   subpass.inputAttachmentCount    = 0;
+   subpass.pInputAttachments       = NULL;
+   subpass.colorAttachmentCount    = 1;
+   subpass.pColorAttachments       = &ref;
+   subpass.pResolveAttachments     = NULL;
+   subpass.pDepthStencilAttachment = NULL;
+   subpass.preserveAttachmentCount = 0;
+   subpass.pPreserveAttachments    = NULL;
+   info.sType                      = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+   info.pNext                      = NULL;
+   info.flags                      = 0;
+   info.attachmentCount            = 1;
+   info.pAttachments               = &color;
+   info.subpassCount               = 1;
+   info.pSubpasses                 = &subpass;
+   info.dependencyCount            = 0;
+   info.pDependencies              = NULL;
+   memset(&output, 0, sizeof(output));
+   if (vkCreateRenderPass(vk->device, &info, NULL, &output.render_pass)
+         != VK_SUCCESS)
+   {
+      CHECK(!"render pass");
+      return;
+   }
+   CHECK(vulkan_output_create(&output, vk,
+         VULKAN_CTX_DATA_FROM_CONTEXT(vk)->wsi_type, window->display,
+         window->surface, window->dims));
+   CHECK(output.swapchain != VK_NULL_HANDLE);
+   vulkan_output_finish(&output);
+   CHECK(vulkan_output_retire(&output));
+   vkDestroyRenderPass(vk->device, output.render_pass, NULL);
+}
+#endif
+
 static void native_gl_binding(const gfx_ctx_driver_t *ctx, void *data,
       video_window_native_t *window)
 {
    if (!ctx->windows->bind_gl)
    {
       CHECK(ctx->windows->present_gl == NULL);
+#ifdef HAVE_VULKAN
+      if (strncmp(ctx->ident, "vk_", 3) == 0)
+         native_vk_output(ctx, data, window);
+#endif
       return;
    }
 #ifdef NATIVE_GLX

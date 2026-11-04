@@ -25,6 +25,7 @@
 #include <string/stdstring.h>
 #ifdef HAVE_VIDEO_WINDOWS
 #include <encodings/utf.h>
+#include <features/features_cpu.h>
 #endif
 
 #include "sdl2_common.h"
@@ -107,6 +108,17 @@ static bool sdl2_video_window_placed(void)
    return !string_is_equal(SDL_GetCurrentVideoDriver(), "wayland");
 }
 
+/* Not fullscreen, maximised or minimised, by SDL and by what it was
+ * asked. While an update waits (apply), the bounds are RetroArch's. */
+static bool sdl2_video_window_normal(const sdl2_video_window_t *state,
+      Uint32 flags)
+{
+   return !(flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_MAXIMIZED
+            | SDL_WINDOW_MINIMIZED))
+      && !state->common.request.settings.fullscreen
+      && !state->apply;
+}
+
 /* Where it is, its size and whether it is presentable, as SDL has them
  * now: a minimised or hidden window is skipped, never closed */
 static void sdl2_video_window_check(sdl2_video_window_t *state)
@@ -117,12 +129,14 @@ static void sdl2_video_window_check(sdl2_video_window_t *state)
    int h                         = 0;
    video_window_native_t *window = state->common.native;
    Uint32 flags                  = SDL_GetWindowFlags(state->win);
+   retro_time_t now              = cpu_features_get_time_usec();
+   bool placed                   = sdl2_video_window_placed();
+   bool normal                   = sdl2_video_window_normal(state, flags);
    if (!(flags & SDL_WINDOW_MINIMIZED))
    {
       SDL_GetWindowSize(state->win, &w, &h);
       SDL_GetWindowPosition(state->win, &x, &y);
-      if (     sdl2_video_window_placed()
-            && VIDEO_POS_PACK(x, y) != state->common.pos)
+      if (placed && VIDEO_POS_PACK(x, y) != state->common.pos)
       {
          state->common.pos      = VIDEO_POS_PACK(x, y);
          state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
@@ -133,6 +147,19 @@ static void sdl2_video_window_check(sdl2_video_window_t *state)
       window->dims           = VIDEO_SCALE_PACK(w, h);
       state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
    }
+   /* Hidden, or back from a state, by the flags SDL has after its
+    * whole pump: SDL and the window manager place it for a while */
+   if (     (flags & (SDL_WINDOW_HIDDEN | SDL_WINDOW_MINIMIZED))
+         || (state->flags & ~flags & (SDL_WINDOW_HIDDEN
+               | SDL_WINDOW_MINIMIZED | SDL_WINDOW_MAXIMIZED
+               | SDL_WINDOW_FULLSCREEN)))
+      video_window_unsettled(&state->common, now);
+   state->flags        = flags;
+   state->judge_at     = now;
+   state->judge_pos    = state->common.pos;
+   state->judge_dims   = window->dims;
+   state->judge_normal = normal;
+   state->judge        = true;
    presentable = w > 0 && h > 0
       && !(flags & (SDL_WINDOW_MINIMIZED | SDL_WINDOW_HIDDEN));
    if (presentable == window->presentable)
@@ -181,6 +208,12 @@ bool sdl2_video_window_event(const SDL_Event *event, bool *quit)
       case SDL_WINDOWEVENT_CLOSE:
          video_window_mark_closed(&state->common);
          return true;
+      /* Mapped. create() shows it, which clears HIDDEN before the
+       * first check, so only this event tells. */
+      case SDL_WINDOWEVENT_SHOWN:
+         video_window_unsettled(&state->common,
+               cpu_features_get_time_usec());
+         break;
       case SDL_WINDOWEVENT_FOCUS_GAINED:
          window->focused        = true;
          state->common.pending |= VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
@@ -195,6 +228,27 @@ bool sdl2_video_window_event(const SDL_Event *event, bool *quit)
    }
    sdl2_video_window_check(state);
    return true;
+}
+
+/* What the last check took, once SDL has pumped again: a window manager
+ * may set _NET_WM_STATE a pump after it configures. Normal only if it
+ * was at the check and still is. */
+void sdl2_video_windows_judge(void)
+{
+   unsigned i;
+   for (i = 1; sdl2_video_window_count && i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      bool normal;
+      sdl2_video_window_t *state = sdl2_video_windows[i];
+      if (!state || !state->judge)
+         continue;
+      state->judge = false;
+      normal       = state->judge_normal
+         && sdl2_video_window_normal(state, SDL_GetWindowFlags(state->win));
+      video_window_moved(&state->common, state->judge_pos,
+            sdl2_video_window_placed(), state->judge_dims, normal,
+            state->judge_at);
+   }
 }
 
 void sdl2_video_monitors_changed(void)
@@ -506,6 +560,8 @@ bool sdl2_video_window_create(void *owner, SDL_Window *primary,
    }
    SDL_GetWindowSize(state->win, &rect.w, &rect.h);
    window->dims = VIDEO_SCALE_PACK(rect.w, rect.h);
+   video_window_placed(&state->common, state->common.pos, window->dims,
+         cpu_features_get_time_usec());
    sdl2_video_window_check(state);
    return true;
 }
@@ -533,6 +589,8 @@ void sdl2_video_window_update(void *owner, video_window_native_t *window,
       return;
    state->common.request = *request;
    state->apply          = true;
+   /* What a check took before it is not what it asks */
+   state->judge          = false;
    sdl2_video_window_settle(state);
 }
 

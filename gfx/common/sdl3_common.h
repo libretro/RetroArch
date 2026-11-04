@@ -249,17 +249,27 @@ bool sdl3_uses_screen_keyboard(void);
 typedef struct sdl3_video_window
 {
    video_window_common_t common;
+   /* When the check of judge_pos and judge_dims ran */
+   retro_time_t judge_at;
    SDL_Window *win;
    /* What SDL is still to finish of what it was asked, which an
     * update waits for, as it does for a minimised window */
    SDL_WindowFlags waiting;
+   /* SDL's flags at the last check */
+   SDL_WindowFlags flags;
    /* Where it stood before it last went fullscreen */
    SDL_Rect windowed;
    SDL_WindowID id;
+   /* Bounds the next pump judges, where 'judge' */
+   unsigned judge_pos;
+   unsigned judge_dims;
    bool fullscreen;
    bool windowed_set;
    /* An update that waits for the window */
    bool apply;
+   /* Whether they were normal at that check */
+   bool judge_normal;
+   bool judge;
 } sdl3_video_window_t;
 
 /* Context thread, at init once SDL video is up: what

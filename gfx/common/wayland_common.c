@@ -29,6 +29,7 @@
 #ifdef HAVE_VIDEO_WINDOWS
 #include <compat/strl.h>
 #include <encodings/utf.h>
+#include <features/features_cpu.h>
 #endif
 #ifdef HAVE_THREADS
 #include <retro_spsc.h>
@@ -1973,6 +1974,12 @@ static void wl_video_window_surface_enter(void *data,
 {
    unsigned i;
    wl_video_window_t *state = (wl_video_window_t*)data;
+   /* Shown: the compositor may still size it for a while */
+   if (!state->mapped && state->common.native->configured)
+   {
+      state->mapped = true;
+      video_window_unsettled(&state->common, cpu_features_get_time_usec());
+   }
    for (i = 0; output && i < WL_VIDEO_WINDOW_OUTPUTS; i++)
       if (state->outputs[i] == output)
          return;
@@ -2061,8 +2068,13 @@ static void wl_video_window_configure(wl_video_window_t *state,
       unsigned dims, bool fullscreen, bool suspended, bool floating)
 {
    video_window_native_t *window = state->common.native;
+   retro_time_t now              = cpu_features_get_time_usec();
    if (state->common.closed)
       return;
+   /* Before it is shown, while it is suspended and as it comes back,
+    * the compositor sizes it */
+   if (!state->mapped || suspended || state->suspended)
+      video_window_unsettled(&state->common, now);
    state->dims       = dims;
    state->fullscreen = fullscreen;
    state->floating   = floating;
@@ -2084,6 +2096,9 @@ static void wl_video_window_configure(wl_video_window_t *state,
    state->suspended    = suspended;
    window->configured  = true;
    window->presentable = !suspended;
+   video_window_moved(&state->common, 0, false, dims,
+         floating && !fullscreen
+         && !state->common.request.settings.fullscreen, now);
 }
 
 static void wl_video_window_toplevel_configure(void *data,
@@ -2411,6 +2426,7 @@ bool wl_video_window_create(void *owner,
    window->generation = request->generation;
    wl_video_window_resized(state);
    state->common.pending     = 0;
+   video_window_placed(&state->common, 0, dims, cpu_features_get_time_usec());
    return true;
 }
 

@@ -4178,6 +4178,7 @@ static void setting_video_screen_window_xy_change(rarch_setting_t *setting)
    settings->uints.video_screen_window_pos[s] = pos;
    settings->flags |= SETTINGS_FLG_MODIFIED;
    setting_video_screen_window_read(setting);
+   video_driver_edit_window(s);
    video_driver_restore_windows();
 }
 
@@ -4205,6 +4206,7 @@ static void setting_video_screen_window_wh_change(rarch_setting_t *setting)
    settings->flags |= SETTINGS_FLG_MODIFIED;
    /* Both rows step from what is stored, 640x480 after a jump */
    setting_video_screen_window_read(setting);
+   video_driver_edit_window(s);
    video_driver_restore_windows();
    /* X and Y are listed only with a size */
    if (!was != !settings->uints.video_screen_window_dims[s])
@@ -11148,6 +11150,15 @@ static void general_write_handler(rarch_setting_t *setting)
          && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
       input_driver_ports_user_set(setting->index_offset);
 #ifdef HAVE_VIDEO_WINDOWS
+   /* a screen's window rows: its window is made again for them */
+   if (     setting->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
+         && setting->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY_LAST)
+      video_driver_edit_window(setting->enum_idx
+            - MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY);
+   else if (setting->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN
+         && setting->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN_LAST)
+      video_driver_edit_window(setting->enum_idx
+            - MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN);
    /* a screen sent back to the main window gets another try at the
     * window or display it is now given */
    if (     (   setting->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY

@@ -50,6 +50,8 @@ typedef struct video_window_settings
    unsigned dims;
    unsigned monitor;
    unsigned mode;
+   /* Counts edits of the screen's window rows; not saved */
+   unsigned edit;
    bool fullscreen;
    /* @pos was set, by the user or a window's move; (0,0) is a place */
    bool pos_set;
@@ -107,6 +109,11 @@ typedef struct video_window_event
    unsigned kind;
    unsigned pos;
    unsigned dims;
+   /* GEOMETRY: the bounds the user left it at, in create()'s units: a
+    * size, 0 for none to save, and @save_pos where @save_moved */
+   unsigned save_pos;
+   unsigned save_dims;
+   bool save_moved;
 } video_window_event_t;
 
 /* A context's optional operations on secondary windows, on the thread
@@ -152,6 +159,9 @@ unsigned video_window_title_screen(const video_window_request_t *request);
  * in its own window->state, on the thread that runs the context */
 typedef struct video_window_common
 {
+   /* Moves before then are the window manager's or the OS's; 0 until
+    * it is first placed */
+   retro_time_t settle;
    void *owner;
    /* The caller's record, which stays put until destroy */
    video_window_native_t *native;
@@ -160,7 +170,17 @@ typedef struct video_window_common
    unsigned pos;
    /* What waits for poll(), one VIDEO_WINDOW_EVENT_BIT per kind */
    unsigned pending;
+   /* What the next GEOMETRY saves (video_window_moved()) */
+   unsigned save_pos;
+   unsigned save_dims;
+   /* Where it was last put, left by the window manager, or saved */
+   unsigned asked_pos;
+   unsigned asked_dims;
+   /* Where RetroArch last put it, until a save; 0 dims for none */
+   unsigned placed_pos;
+   unsigned placed_dims;
    bool closed;
+   bool save_moved;
 } video_window_common_t;
 
 /* A native layer's windows by screen, NULL for none */
@@ -169,6 +189,27 @@ typedef video_window_common_t *(*video_window_at_t)(unsigned screen);
 /* Closed by the window manager or by a failure: CLOSE, and FOCUS_LOSS
  * where it had the focus; a gain or resume still waiting goes. */
 void video_window_mark_closed(video_window_common_t *window);
+
+#define VIDEO_WINDOW_SETTLE_USEC 500000
+
+/* The native layer put it at @pos and @dims (create()'s units), or is
+ * about to: a move there is not the user's, nor any move until it
+ * settles */
+void video_window_placed(video_window_common_t *window, unsigned pos,
+      unsigned dims, retro_time_t now);
+
+/* Its monitors changed or it was mapped: moves for a while after @now
+ * are not the user's */
+void video_window_unsettled(video_window_common_t *window, retro_time_t now);
+
+/* Now at @pos (known where @has_pos) and @dims, in create()'s units, as
+ * of @now; @normal: not fullscreen, maximised or minimised. For a
+ * settled normal window not where it was last put or saved, keeps the
+ * bounds for GEOMETRY to save and writes them into its request, so
+ * update() takes them as no change. True when there is something to
+ * save. */
+bool video_window_moved(video_window_common_t *window, unsigned pos,
+      bool has_pos, unsigned dims, bool normal, retro_time_t now);
 
 /* poll() over 'owner''s windows: each one's transitions in the order
  * focus loss, close, geometry, suspend, resume, focus gain, and what
@@ -196,6 +237,10 @@ typedef struct video_window_rect
 /* The area two rects share, 0 for none */
 unsigned video_window_rect_overlap(const video_window_rect_t *a,
       const video_window_rect_t *b);
+
+/* @rect lies on none of @count @areas; false with no areas */
+bool video_window_rect_lost(const video_window_rect_t *rect,
+      const video_window_rect_t *areas, unsigned count);
 
 /* Saved bounds on 'area', a monitor or its work area: bounds partly on
  * it are moved onto it, automatic ones and those not on it at all are
@@ -348,12 +393,19 @@ typedef struct video_windows_route
    unsigned move;
    /* That move's number, which a failure of it names */
    unsigned move_seq;
+   /* A bit per listed ordinal (bit 0 = ordinal 1) */
+   unsigned present;
+   /* Screens whose Display names a listed monitor */
+   unsigned named;
    /* The main window has nothing to show: the idle logo */
    bool logo;
    /* From video_windows_resolve(): @screens are those with a window of
     * their own, @target their monitors */
    bool monitors;
 } video_windows_route_t;
+
+#define VIDEO_WINDOWS_ORDINAL_BIT(o) \
+   (((o) && (o) <= 32) ? 1u << ((o) - 1) : 0u)
 
 /* How long a move may take before its display is given up on */
 #define VIDEO_WINDOWS_MOVE_USEC 2000000
@@ -430,13 +482,17 @@ typedef struct video_windows_frame
    unsigned window_ui[RETRO_VIDEO_VIEWS_MAX];
    /* A bit a window id: kept with its last image, not drawn */
    unsigned window_keep;
+   /* With @monitors: the route's present */
+   unsigned monitors_present;
+   /* By window id: shows a screen whose Display names a listed monitor */
+   unsigned window_named;
    /* The idle logo's texture, 0 for black only */
    uintptr_t logo_texture;
    /* The main window shows the idle logo */
    bool logo;
    /* Desktop: each screen's window from its Display setting
-    * (video_windows_resolve()); a live window is made again when what
-    * it was made for changes */
+    * (video_windows_resolve()); a live window is made again for an
+    * edit, or when its monitor goes or its named one comes back */
    bool monitors;
    /* The main window's layout parameters, for a window's own */
    float single_aspect;
@@ -512,6 +568,10 @@ void video_driver_window_layout(const video_windows_frame_t *frame,
  * the frame's restore count asks drivers to place them again. */
 void video_driver_restore_windows(void);
 
+/* App thread: screen @screen's window rows changed; its window is made
+ * again for them */
+void video_driver_edit_window(unsigned screen);
+
 /* UI thread, the only publisher: the platform's displays, latest wins,
  * at most VIDEO_WINDOW_DISPLAYS_MAX kept. Once a list is published,
  * every frame places the screens and the menu through
@@ -552,6 +612,15 @@ void video_driver_publish_window_layout(unsigned window,
       const video_views_map_t *core_map, unsigned core_dims,
       unsigned window_dims);
 
+/* The context's thread: window @window, showing @screens, was left at
+ * @dims, and at @pos where @moved; latest wins */
+void video_driver_publish_window_bounds(unsigned window, unsigned screens,
+      unsigned pos, unsigned dims, bool moved);
+
+/* Main thread: those bounds into their screens' settings now, as a
+ * frame does, before a config save that runs no frame first */
+void video_driver_take_window_bounds(void);
+
 /* Main thread: a point in window @window to libretro coordinates in
  * the core's frame. Window 0 is the main window, through its viewport;
  * another is a screen's own, through its last published layout, and
@@ -583,6 +652,8 @@ typedef struct video_windows_held
    video_window_settings_t made[RETRO_VIDEO_VIEWS_MAX];
    unsigned made_screens[RETRO_VIDEO_VIEWS_MAX];
    unsigned made_known;
+   /* Of made_known: those made on a named Display (window_named) */
+   unsigned made_named;
 } video_windows_held_t;
 
 /* @frame's ids with screens, UI layers or a keep, a bit an id: those
@@ -591,7 +662,9 @@ unsigned video_windows_wanted(const video_windows_frame_t *frame);
 
 /* For @frame, NULL while windows are off: in *@retire the live ids to
  * let go of, those with nothing to show now or made for another
- * display, or on a monitors frame made for other settings or screens;
+ * display, or on a monitors frame made for another mode or other
+ * screens, for other settings after an edit, or on a monitor gone or
+ * other than its named one;
  * in *@create the ids with screens or UI layers, no keep and no window,
  * those that failed since the restore count last moved left out. An id
  * in both is made again. The caller keeps live, failed and display as
@@ -600,6 +673,13 @@ unsigned video_windows_wanted(const video_windows_frame_t *frame);
 void video_windows_steps(video_windows_held_t *held,
       const video_windows_frame_t *frame, unsigned *retire,
       unsigned *create);
+
+/* Window @w's bounds, @dims and @pos where @moved, went to its screen's
+ * settings (video_driver_publish_window_bounds()): what it was made for
+ * becomes what the frames carry from then, so their echo is no edit.
+ * Pure, any thread. */
+void video_windows_held_saved(video_windows_held_t *held, unsigned w,
+      unsigned pos, unsigned dims, bool moved);
 
 RETRO_END_DECLS
 

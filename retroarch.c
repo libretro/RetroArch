@@ -11036,6 +11036,10 @@ static bool retroarch_main_quit_begin(void)
     * settings_t before the config is written below; its own
     * deinit runs only after the run loop has left, too late. */
    ui_companion_event_command(CMD_EVENT_QUIT);
+#ifdef HAVE_VIDEO_WINDOWS
+   /* And the bounds the screen windows were left at */
+   video_driver_take_window_bounds();
+#endif
 
    /* Restore video driver before saving */
    video_driver_restore_cached(settings);

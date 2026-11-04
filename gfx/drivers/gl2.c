@@ -7200,12 +7200,24 @@ static bool gl2_windows_draw(gl2_t *gl,
       for (i = 0; i < count; i++)
       {
          unsigned id = events[i].screen;
-         if (     events[i].kind == VIDEO_WINDOW_EVENT_CLOSE
-               && id && id < RETRO_VIDEO_VIEWS_MAX
-               && (gl->windows.held.live & (1u << id))
-               && gl->windows.win[id].native.generation
-                  == events[i].generation)
+         if (     !id || id >= RETRO_VIDEO_VIEWS_MAX
+               || !(gl->windows.held.live & (1u << id))
+               || gl->windows.win[id].native.generation
+                  != events[i].generation)
+            continue;
+         if (events[i].kind == VIDEO_WINDOW_EVENT_CLOSE)
             closed |= 1u << id;
+         else if (     events[i].kind == VIDEO_WINDOW_EVENT_GEOMETRY
+                    && events[i].save_dims
+                    && (gl->windows.held.made_known & (1u << id)))
+         {
+            video_driver_publish_window_bounds(id,
+                  gl->windows.held.made_screens[id], events[i].save_pos,
+                  events[i].save_dims, events[i].save_moved);
+            video_windows_held_saved(&gl->windows.held, id,
+                  events[i].save_pos, events[i].save_dims,
+                  events[i].save_moved);
+         }
       }
    }
    video_windows_steps(&gl->windows.held, f, &retire, &create);

@@ -12,6 +12,13 @@ static bool native_w32_ident(const char *ident)
           || strcmp(ident, "d3d") == 0;
 }
 
+/* The window's handle, which a Vulkan context's surface points at */
+static HWND native_w32_window(const video_window_native_t *window)
+{
+   return window->state
+      ? ((const win32_video_window_t*)window->state)->hwnd : NULL;
+}
+
 /* The run loop's pump, which is the only one a window has when video
  * is not threaded */
 static void native_w32_pump(void *data)
@@ -398,7 +405,7 @@ static void native_w32_wait_rect(const gfx_ctx_driver_t *ctx, void *data,
    for (;;)
    {
       native_window_drain(ctx, data, request);
-      rect = native_w32_client((HWND)window->surface);
+      rect = native_w32_client(native_w32_window(window));
       if (anywhere)
          want = rect;
       if (     EqualRect(&rect, &want)
@@ -557,7 +564,7 @@ static void native_wgl_failures(const gfx_ctx_driver_t *ctx, void *data,
 static void native_w32_sizemove(const gfx_ctx_driver_t *ctx, void *data,
       video_window_request_t *request, video_window_native_t *window)
 {
-   HWND secondary = (HWND)window->surface;
+   HWND secondary = native_w32_window(window);
    HWND primary   = main_window.hwnd;
    CHECK(!video_driver_is_threaded());
    CHECK(!win32_message_modal_active());
@@ -679,7 +686,7 @@ static void native_w32_sizemove_pumped(const gfx_ctx_driver_t *ctx,
       void *data, video_window_request_t *request,
       video_window_native_t *window)
 {
-   HWND secondary = (HWND)window->surface;
+   HWND secondary = native_w32_window(window);
    const void *state;
    void *handler;
    if (!win32_message_pump(native_w32_next))
@@ -713,13 +720,163 @@ static void native_w32_sizemove_pumped(const gfx_ctx_driver_t *ctx,
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
 }
 
+/* Screen 1's window made anew from 'request', of a new generation */
+static HWND native_w32_remake(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window)
+{
+   ctx->windows->destroy(data, window);
+   request->generation = video_driver_window_generation();
+   CHECK(ctx->windows->create(data, request, window));
+   return native_w32_window(window);
+}
+
+/* The client area put at x,y w*h from outside the backend, as the user
+ * puts it */
+static void native_w32_move(HWND hwnd, int x, int y, unsigned w,
+      unsigned h)
+{
+   RECT rect;
+   rect.left   = x;
+   rect.top    = y;
+   rect.right  = x + (int)w;
+   rect.bottom = y + (int)h;
+   AdjustWindowRectEx(&rect, (DWORD)GetWindowLongPtr(hwnd, GWL_STYLE),
+         FALSE, 0);
+   SetWindowPos(hwnd, NULL, rect.left, rect.top, rect.right - rect.left,
+         rect.bottom - rect.top, SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
+/* GEOMETRY saves where the user left a window: a move or a resize, but
+ * nothing while it is maximised, minimised or fullscreen, nor at once
+ * after it was made. Leaves a window of 'request' up. */
+static void native_w32_saves(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window,
+      const RECT *work)
+{
+   static bool done;
+   video_window_request_t r;
+   RECT rect;
+   HWND win;
+   win32_video_window_t *state;
+   unsigned saves;
+   unsigned saved_pos  = VIDEO_POS_PACK(work->left + 260, work->top + 170);
+   unsigned saved_dims = VIDEO_SCALE_PACK(400, 300);
+   int x               = work->left;
+   int y               = work->top;
+
+   if (done)
+      return;
+   done                  = true;
+   r                     = *request;
+   r.settings.monitor    = 0;
+   r.settings.fullscreen = false;
+   r.settings.pos        = VIDEO_POS_PACK(x + 200, y + 150);
+   r.settings.dims       = VIDEO_SCALE_PACK(400, 300);
+   r.settings.pos_set    = true;
+   win   = native_w32_remake(ctx, data, &r, window);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   saves = native_window_saves;
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_window_saves == saves);
+
+   /* A drag */
+   native_w32_move(win, x + 260, y + 170, 400, 300);
+   native_window_settle(ctx, data, &r, 200000);
+   CHECK(native_window_saves == saves + 1);
+   CHECK(native_window_saved.save_moved);
+   CHECK(native_window_saved.save_pos == VIDEO_POS_PACK(x + 260, y + 170));
+   CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(400, 300));
+   if (native_window_saved.save_moved)
+   {
+      saved_pos  = native_window_saved.save_pos;
+      saved_dims = native_window_saved.save_dims;
+   }
+   saves = native_window_saves;
+
+   /* A resize in place: the size alone, once */
+   native_w32_move(win, x + 260, y + 170, 420, 310);
+   native_window_settle(ctx, data, &r, 200000);
+   CHECK(native_window_saves == saves + 1);
+   CHECK(!native_window_saved.save_moved);
+   CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(420, 310));
+   saves = native_window_saves;
+
+   /* Maximised and back: nothing */
+   ShowWindow(win, SW_MAXIMIZE);
+   CHECK(IsZoomed(win));
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(GEOMETRY), 0);
+   CHECK(native_window_saves == saves);
+   native_window_settle(ctx, data, &r, 200000);
+   fprintf(stderr, "native win32: maximised %s after a pump\n",
+         IsZoomed(win) ? "still" : "no longer");
+   ShowWindow(win, SW_RESTORE);
+   native_window_settle(ctx, data, &r, 200000);
+   CHECK(native_window_saves == saves);
+   rect.left   = x + 260;
+   rect.top    = y + 170;
+   rect.right  = rect.left + 420;
+   rect.bottom = rect.top  + 310;
+   native_w32_wait_rect(ctx, data, &r, window, rect);
+
+   /* Minimised and back: nothing */
+   ShowWindow(win, SW_MINIMIZE);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(SUSPEND), 0);
+   ShowWindow(win, SW_RESTORE);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_window_settle(ctx, data, &r, 200000);
+   CHECK(native_window_saves == saves);
+
+   /* Fullscreen, moved: nothing */
+   r.settings.fullscreen = true;
+   win = native_w32_remake(ctx, data, &r, window);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_move(win, x + 100, y + 100, 300, 200);
+   native_window_settle(ctx, data, &r, 300000);
+   CHECK(native_window_saves == saves);
+   r.settings.fullscreen = false;
+
+   /* Moved at once after it was made */
+   win = native_w32_remake(ctx, data, &r, window);
+   native_w32_move(win, x + 240, y + 190, 400, 300);
+   native_window_settle(ctx, data, &r, 600000);
+   CHECK(native_window_saves == saves);
+
+   /* Saved bounds make the window they were saved from, and it reports
+    * them */
+   r.settings.pos  = saved_pos;
+   r.settings.dims = saved_dims;
+   win  = native_w32_remake(ctx, data, &r, window);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   rect = native_w32_client(win);
+   if (     VIDEO_POS_PACK(rect.left, rect.top) != saved_pos
+         || VIDEO_SCALE_PACK(rect.right - rect.left,
+            rect.bottom - rect.top) != saved_dims)
+      fprintf(stderr, "native win32: remade at %ld,%ld %ldx%ld from %d,%d"
+            " %ux%u\n", (long)rect.left, (long)rect.top,
+            (long)(rect.right - rect.left), (long)(rect.bottom - rect.top),
+            VIDEO_POS_X(saved_pos), VIDEO_POS_Y(saved_pos),
+            VIDEO_SCALE_W(saved_dims), VIDEO_SCALE_H(saved_dims));
+   CHECK(VIDEO_POS_PACK(rect.left, rect.top) == saved_pos);
+   CHECK(VIDEO_SCALE_PACK(rect.right - rect.left, rect.bottom - rect.top)
+         == saved_dims);
+   state = (win32_video_window_t*)window->state;
+   CHECK(state && state->common.pos == saved_pos);
+   CHECK(window->dims == saved_dims);
+   CHECK(native_window_saves == saves);
+
+   native_w32_remake(ctx, data, request, window);
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+}
+
 /* Focus given to the window and back to the main window */
 static void native_w32_focus(const gfx_ctx_driver_t *ctx, void *data,
       const video_window_request_t *request,
       const video_window_native_t *window, bool on)
 {
    unsigned seen;
-   SetFocus(on ? (HWND)window->surface : main_window.hwnd);
+   SetFocus(on ? native_w32_window(window) : main_window.hwnd);
    seen = native_window_wait(ctx, data, request, window,
          on ? NATIVE_EVENT(FOCUS_GAIN) : NATIVE_EVENT(FOCUS_LOSS), 0);
    CHECK(window->focused == on);
@@ -736,7 +893,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    video_window_native_t invalid;
    RECT rect, before;
    unsigned i, seen, last;
-   HWND secondary = (HWND)window->surface;
+   HWND secondary = native_w32_window(window);
    unsigned count = native_w32_monitors(monitors, 8);
    native_w32_main_last = main_window.hwnd;
 
@@ -747,7 +904,9 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    home = native_w32_monitor_of(monitors, count,
          MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST));
    native_w32_main_get(&main_state);
-   CHECK(window->display == (void*)GetModuleHandle(NULL));
+   CHECK(strcmp(ctx->ident, "vk_w") == 0
+         ? *(const HINSTANCE*)window->display == GetModuleHandle(NULL)
+         : window->display == (void*)GetModuleHandle(NULL));
    CHECK(secondary && IsWindow(secondary) && secondary != main_window.hwnd);
    CHECK(GetWindowThreadProcessId(secondary, NULL) == GetCurrentThreadId());
    CHECK(GetClassName(secondary, native_w32_class, sizeof(native_w32_class)));
@@ -780,6 +939,9 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_w32_kept = false;
    CHECK(window->dims == request->settings.dims);
    CHECK(window->configured && window->presentable);
+   CHECK(native_w32_main_intact(&main_state));
+   native_w32_saves(ctx, data, request, window, &home->work);
+   secondary = native_w32_window(window);
    CHECK(native_w32_main_intact(&main_state));
 
    /* Resized by the user; the events follow where the window is */
@@ -987,7 +1149,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(!(seen & NATIVE_EVENT(CLOSE)));
    CHECK(window->presentable);
    CHECK(window->dims == request->settings.dims);
-   secondary = (HWND)window->surface;
+   secondary = native_w32_window(window);
 
    /* Closing the focused window takes its focus with it */
    native_w32_focus(ctx, data, request, window, true);
@@ -1006,7 +1168,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    request->generation = video_driver_window_generation();
    CHECK(ctx->windows->create(data, request, window));
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
-   secondary = (HWND)window->surface;
+   secondary = native_w32_window(window);
 
    /* The system menu's close, which Alt+F4 sends too */
    PostMessage(secondary, WM_SYSCOMMAND, SC_CLOSE, 0);
@@ -1017,7 +1179,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    request->generation = video_driver_window_generation();
    CHECK(ctx->windows->create(data, request, window));
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
-   secondary = (HWND)window->surface;
+   secondary = native_w32_window(window);
 
    /* Destroyed by something else: closed, and nothing is done to the
     * window again */
@@ -1043,8 +1205,8 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       CHECK(ctx->windows->create(data, &spare, &one));
       CHECK(native_w32_titled(0) == 1);
       CHECK(native_w32_titled(spare.screen) == 0);
-      if (one.surface)
-         native_w32_titles(main_window.hwnd, (HWND)one.surface, 0);
+      if (one.state)
+         native_w32_titles(main_window.hwnd, native_w32_window(&one), 0);
       ctx->windows->destroy(data, &one);
       CHECK(!native_window_settle(ctx, data, &spare, 50000));
    }
@@ -1100,7 +1262,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    request->settings.monitor    = 1;
    CHECK(ctx->windows->create(data, request, window));
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
-   secondary = (HWND)window->surface;
+   secondary = native_w32_window(window);
    rect      = native_w32_client(secondary);
    CHECK(EqualRect(&rect, &monitors[0].rect));
    CHECK(native_w32_fullscreen_style(secondary));

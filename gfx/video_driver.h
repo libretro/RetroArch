@@ -1728,12 +1728,25 @@ bool video_driver_get_vr_controller_poses(
 bool video_driver_get_vr_frame_state(struct retro_vr_frame_state *out);
 #endif
 
+/* A window's bounds as the user left them, for its screen's settings */
+typedef struct video_window_bounds
+{
+   unsigned pos;
+   unsigned dims;
+   /* The screens of the window they are from */
+   unsigned screens;
+   /* Count moves, and moves or resizes; 0 for none yet */
+   unsigned moves;
+   unsigned sizes;
+} video_window_bounds_t;
+
 /* A screen's own window's layout, as its renderer last published it;
  * generation 0 for none */
 typedef struct video_window_layout
 {
    video_views_layout_t layout;
    video_views_map_t core_map;
+   video_window_bounds_t bounds;
    unsigned core_dims;
    unsigned window_dims;
    /* The display it was drawn on */
@@ -1750,10 +1763,13 @@ typedef struct video_window_layout
 typedef struct video_window_layouts
 {
    video_window_layout_t slot[3];
+   video_window_bounds_t bounds;  /* the publisher's */
    retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
    unsigned next;                 /* the publisher's: slot to fill */
    unsigned last;                 /* the publisher's: slot + 1 */
    unsigned held;                 /* the main thread's: slot + 1 */
+   unsigned bounds_moves;         /* the main thread's: last taken */
+   unsigned bounds_sizes;
    /* The main thread's: the serial of the snapshot that last asked
     * for the window differently; a layout drawn before it is not
     * shown */
@@ -2171,6 +2187,8 @@ typedef struct
    retro_atomic_int_t windows_failed;
    unsigned windows_forced_attached;
    unsigned windows_restore;
+   /* Each screen's video_window_settings_t::edit */
+   unsigned windows_edit[RETRO_VIDEO_VIEWS_MAX];
    /* A bit a window id: those the last snapshot wanted, 0 while
     * windows are off; main thread */
    unsigned windows_wanted;

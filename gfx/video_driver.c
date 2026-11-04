@@ -979,6 +979,13 @@ void video_driver_restore_windows(void)
    video_st->windows_restore++;
 }
 
+void video_driver_edit_window(unsigned screen)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (screen < RETRO_VIDEO_VIEWS_MAX)
+      video_st->windows_edit[screen]++;
+}
+
 /* The three-slot protocol of video_title_publish(), latest wins: hands
  * over the slot just filled and picks the next one to fill */
 static void video_window_slot_publish(retro_atomic_int_t *published,
@@ -1117,21 +1124,52 @@ void video_driver_publish_window_layout(unsigned window,
    }
    else
       slot->generation  = 0;
+   slot->bounds         = box->bounds;
+   video_window_slot_publish(&box->published, &box->next, &box->last);
+}
+
+void video_driver_publish_window_bounds(unsigned window, unsigned screens,
+      unsigned pos, unsigned dims, bool moved)
+{
+   video_window_layouts_t *box;
+   video_window_layout_t *slot;
+   if (!window || window >= RETRO_VIDEO_VIEWS_MAX || !dims || !screens)
+      return;
+   box                 = &video_driver_st.window_layouts[window - 1];
+   box->bounds.screens = screens;
+   box->bounds.dims    = dims;
+   box->bounds.sizes++;
+   if (moved)
+   {
+      box->bounds.pos = pos;
+      box->bounds.moves++;
+   }
+   /* With the last layout, so input keeps mapping it */
+   slot = &box->slot[box->next];
+   if (box->last)
+      *slot = box->slot[box->last - 1];
+   else
+      slot->generation = 0;
+   slot->bounds = box->bounds;
    video_window_slot_publish(&box->published, &box->next, &box->last);
 }
 
 /* Once the driver has gone, with no publisher left: no window has a
- * layout */
+ * layout, and the bounds its last frames left are in settings */
 static void video_driver_window_layouts_clear(video_driver_state_t *video_st)
 {
    unsigned i;
+   video_driver_take_window_bounds();
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX - 1; i++)
    {
       video_window_layouts_t *box = &video_st->window_layouts[i];
       retro_atomic_store_release_int(&box->published, 0);
-      box->next = 0;
-      box->last = 0;
-      box->held = 0;
+      box->next         = 0;
+      box->last         = 0;
+      box->held         = 0;
+      box->bounds_moves = 0;
+      box->bounds_sizes = 0;
+      memset(&box->bounds, 0, sizeof(box->bounds));
    }
 }
 
@@ -4678,6 +4716,50 @@ static void video_driver_windows_route_publish(video_driver_state_t *video_st)
    video_window_slot_publish(&box->published, &box->next, &box->last);
 }
 
+/* App thread: the bounds the user left the screens' windows at, into
+ * their settings */
+static void video_driver_windows_bounds_take(video_driver_state_t *video_st,
+      settings_t *settings)
+{
+   unsigned w;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      video_window_layouts_t *box = &video_st->window_layouts[w - 1];
+      const video_window_bounds_t *b;
+      unsigned s = 0;
+      bool changed;
+      video_window_slot_take(&box->published, &box->held);
+      if (!box->held)
+         continue;
+      b = &box->slot[box->held - 1].bounds;
+      if (!b->screens || b->sizes == box->bounds_sizes)
+         continue;
+      while (!(b->screens & (1u << s)))
+         s++;
+      changed = settings->uints.video_screen_window_dims[s] != b->dims;
+      settings->uints.video_screen_window_dims[s] = b->dims;
+      if (b->moves != box->bounds_moves)
+      {
+         changed = changed
+            || settings->uints.video_screen_window_pos[s] != b->pos
+            || !settings->bools.video_screen_window_pos_set[s];
+         settings->uints.video_screen_window_pos[s]     = b->pos;
+         settings->bools.video_screen_window_pos_set[s] = true;
+      }
+      box->bounds_moves = b->moves;
+      box->bounds_sizes = b->sizes;
+      if (changed)
+         settings->flags |= SETTINGS_FLG_MODIFIED;
+   }
+}
+
+void video_driver_take_window_bounds(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (settings)
+      video_driver_windows_bounds_take(&video_driver_st, settings);
+}
+
 /* This frame's windows, with or without content views, or NULL while
  * they are off or the driver has none; @now is the frame's clock
  * sample. Not inlined: the frame's stack has no room to spare. */
@@ -4711,6 +4793,8 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       }
       return NULL;
    }
+   if (!redraw)
+      video_driver_windows_bounds_take(video_st, settings);
 #ifdef HAVE_THREADS
    if (redraw)
       out = &video_st->windows_redraw;
@@ -4728,6 +4812,7 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
          ? VIDEO_WINDOW_ATTACHED : VIDEO_WINDOW_SEPARATE;
       w->fullscreen = settings->bools.video_screen_window_fullscreen[i];
       w->pos_set    = settings->bools.video_screen_window_pos_set[i];
+      w->edit       = video_st->windows_edit[i];
    }
    out->core          = video_st->views_core;
    out->core_dims     = video_st->views_frame_dims;
@@ -4814,6 +4899,7 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
          }
    out->display     = route.display;
    out->monitors    = route.monitors;
+   out->monitors_present = route.present;
    out->window_keep = route.keep ? 1u << VIDEO_WINDOWS_PRESENTATION : 0;
    out->logo        = route.logo;
 #ifdef HAVE_GFX_WIDGETS
@@ -4846,6 +4932,10 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
          out->plan.main_mask     |= 1u;
       }
    }
+   out->window_named = 0;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (out->window_screens[i] & route.named)
+         out->window_named |= 1u << i;
    if (!redraw)
       video_driver_windows_asked(video_st, out, display_was);
    return out;
