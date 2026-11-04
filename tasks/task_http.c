@@ -1006,6 +1006,30 @@ void *task_push_http_transfer_with_content(const char *url,
          headers_accept_err, cb, user_data);
 }
 
+void *task_push_http_transfer_with_source(const char *url,
+      const char *method, net_http_source_t source,
+      net_http_source_rewind_t rewind, void *source_data, size_t len,
+      const char *content_type, bool mute, bool headers_accept_err,
+      const char *headers, retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+
+   if (!url || !*url || !source)
+      return NULL;
+
+   if (!(conn = net_http_connection_new(url, method, NULL)))
+      return NULL;
+
+   net_http_connection_set_content_source(conn, content_type, len,
+         source, rewind, source_data);
+
+   if (headers)
+      net_http_connection_set_headers(conn, headers);
+
+   return task_push_http_transfer_generic(conn, url, mute,
+         headers_accept_err, cb, user_data);
+}
+
 /**
  * task_push_http_download_file:
  *

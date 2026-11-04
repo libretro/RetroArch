@@ -38,6 +38,8 @@
 #define S3_SIGNATURE_VERSION "AWS4-HMAC-SHA256"
 #define S3_SERVICE "s3"
 
+/* A test can set its own, down to the 5 MiB a part has at least */
+#ifndef S3_MULTIPART_NOMINAL_THRESHOLD_BYTES
 #if defined(_3DS) || defined(VITA) || defined(PSP) || defined(PS2) || defined(WIIU) || defined(GEKKO)
 #define S3_MULTIPART_NOMINAL_THRESHOLD_BYTES (16ULL * 1024ULL * 1024ULL)
 #elif defined(HAVE_LIBNX)
@@ -45,9 +47,21 @@
 #else
 #define S3_MULTIPART_NOMINAL_THRESHOLD_BYTES (64ULL * 1024ULL * 1024ULL)
 #endif
+#endif
+
+/* A byte range of the file being uploaded, pulled by net_http on the
+ * task thread as the socket takes it */
+typedef struct
+{
+   int64_t start;
+   RFILE  *file;
+   size_t  len;
+   size_t  pos;
+} s3_body_t;
 
 typedef struct
 {
+   s3_body_t body;
    char path[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    cloud_sync_complete_handler_t cb;
@@ -71,7 +85,8 @@ typedef struct
    s3_cb_state_t *cb_state;
    char url[PATH_MAX_LENGTH];
    char canonical_uri[PATH_MAX_LENGTH];
-   char *file_data;
+   s3_body_t part;
+   RFILE *file;
    size_t file_size;
    size_t part_size;
    size_t part_count;
@@ -398,6 +413,86 @@ static char* s3_sha256_hash(const char *data, size_t len)
    return hash;
 }
 
+static void s3_hex32(char *s, const uint8_t *digest)
+{
+   static const char hex[] = "0123456789abcdef";
+   unsigned i;
+   for (i = 0; i < 32; i++)
+   {
+      s[2 * i]     = hex[digest[i] >> 4];
+      s[2 * i + 1] = hex[digest[i] & 15];
+   }
+   s[64] = '\0';
+}
+
+/* Read in runs this long to hash a range of the file */
+#define S3_HASH_RUN (64 * 1024)
+
+/* The SHA-256 of @len bytes of @file from @start, in hex, read in runs
+ * rather than whole: the body is hashed here, then read again as the
+ * socket takes it. NULL if the file reads short or out of memory. */
+static char *s3_sha256_file(RFILE *file, int64_t start, size_t len)
+{
+   struct sha256_state st;
+   uint8_t  digest[32];
+   uint8_t *run;
+   char    *hash = NULL;
+
+   if (!(run = (uint8_t*)malloc(len < S3_HASH_RUN ? (len ? len : 1) : S3_HASH_RUN)))
+      return NULL;
+   if (filestream_seek(file, start, SEEK_SET) < 0)
+      goto done;
+   sha256_stream_init(&st, 0);
+   while (len)
+   {
+      size_t n = len < S3_HASH_RUN ? len : S3_HASH_RUN;
+      if (filestream_read(file, run, (int64_t)n) != (int64_t)n)
+         goto done;
+      sha256_stream_update(&st, run, n);
+      len -= n;
+   }
+   sha256_stream_final(&st, digest);
+   if ((hash = (char*)malloc(65)))
+      s3_hex32(hash, digest);
+done:
+   free(run);
+   return hash;
+}
+
+/* net_http's source for an upload body: the next run of the range.
+ * The first run seeks to the range, so each part of a multipart
+ * upload reads its own bytes whatever was read before it. */
+static int64_t s3_body_source(void *data, void *buf, size_t len)
+{
+   s3_body_t *b = (s3_body_t*)data;
+   int64_t    got;
+
+   if (len > b->len - b->pos)
+      len = b->len - b->pos;
+   if (!len)
+      return 0;
+   if (!b->pos && filestream_seek(b->file, b->start, SEEK_SET) < 0)
+      return -1;
+   if ((got = filestream_read(b->file, buf, (int64_t)len)) > 0)
+      b->pos += (size_t)got;
+   return got;
+}
+
+/* A replay on a fresh connection sends the range again from its start */
+static bool s3_body_rewind(void *data)
+{
+   ((s3_body_t*)data)->pos = 0;
+   return true;
+}
+
+static void s3_body_set(s3_body_t *b, RFILE *file, int64_t start, size_t len)
+{
+   b->start = start;
+   b->file  = file;
+   b->len   = len;
+   b->pos   = 0;
+}
+
 /* URL encode a string according to RFC 3986 */
 static char* s3_url_encode(const char *input)
 {
@@ -557,7 +652,6 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
                                       const char *secret_key, const char *host,
                                       const char *copy_source, time_t now)
 {
-   static const char hex[] = "0123456789abcdef";
    struct sha256_state    cr;
    struct hmac_sha256_ctx mac;
    uint8_t  digest[32];
@@ -568,7 +662,6 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
    /* "AWS4" and the secret, which the settings keep to 185 octets */
    char     aws4_key[4 + 186];
    size_t   secret_len = strlen(secret_key);
-   unsigned i;
    char    *signature;
    struct tm *tm_info = gmtime(&now);
 
@@ -620,12 +713,7 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
    S3_SHA_STR(&cr, "\n");
    S3_SHA_STR(&cr, payload_hash);
    sha256_stream_final(&cr, digest);
-   for (i = 0; i < 32; i++)
-   {
-      cr_hash[2 * i]     = hex[digest[i] >> 4];
-      cr_hash[2 * i + 1] = hex[digest[i] & 15];
-   }
-   cr_hash[64] = '\0';
+   s3_hex32(cr_hash, digest);
 
    /* The signing key: HMAC chained from "AWS4" and the secret, through
     * the date, the region, the service and "aws4_request" */
@@ -650,13 +738,7 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
    S3_MAC_STR(&mac, "/aws4_request\n");
    S3_MAC_STR(&mac, cr_hash);
    hmac_sha256_final(&mac, digest);
-
-   for (i = 0; i < 32; i++)
-   {
-      signature[2 * i]     = hex[digest[i] >> 4];
-      signature[2 * i + 1] = hex[digest[i] & 15];
-   }
-   signature[64] = '\0';
+   s3_hex32(signature, digest);
    crypto_memzero(aws4_key, sizeof(aws4_key));
    crypto_memzero(key, sizeof(key));
    return signature;
@@ -850,11 +932,17 @@ static bool s3_http_get_async(const char *url, const char *headers, s3_cb_state_
          headers, s3_read_cb, cb_state) != NULL;
 }
 
+/* PUT @cb_state's body, streamed from its file */
 static bool s3_http_put_async(const char *url, const char *headers,
-      const void *data, size_t data_len, s3_cb_state_t *cb_state)
+      s3_cb_state_t *cb_state)
 {
-   return task_push_http_transfer_with_content(url, "PUT",
-         data, data_len, "application/octet-stream", true, false,
+   if (!cb_state->body.len)
+      return task_push_http_transfer_with_content(url, "PUT",
+            NULL, 0, "application/octet-stream", true, false,
+            headers, s3_update_cb, cb_state) != NULL;
+   return task_push_http_transfer_with_source(url, "PUT",
+         s3_body_source, s3_body_rewind, &cb_state->body, cb_state->body.len,
+         "application/octet-stream", true, false,
          headers, s3_update_cb, cb_state) != NULL;
 }
 
@@ -1118,7 +1206,6 @@ static void s3_multipart_free(s3_multipart_state_t *mp_st)
    }
 
    free(mp_st->upload_id);
-   free(mp_st->file_data);
    free(mp_st->cb_state);
    free(mp_st);
 }
@@ -1201,12 +1288,8 @@ static bool s3_multipart_fallback_single_put(s3_multipart_state_t *mp_st)
    if (!mp_st || !mp_st->cb_state)
       return false;
 
-   if (mp_st->file_data && mp_st->file_size > 0)
-      payload_hash = s3_sha256_hash(mp_st->file_data, mp_st->file_size);
-   else
-      payload_hash = strdup(S3_EMPTY_PAYLOAD_SHA256);
-
-   if (!payload_hash)
+   s3_body_set(&mp_st->cb_state->body, mp_st->file, 0, mp_st->file_size);
+   if (!(payload_hash = s3_sha256_file(mp_st->file, 0, mp_st->file_size)))
       return false;
 
    auth_header = s3_build_auth_header("PUT", mp_st->canonical_uri, "",
@@ -1217,8 +1300,7 @@ static bool s3_multipart_fallback_single_put(s3_multipart_state_t *mp_st)
       return false;
    }
 
-   if (!s3_http_put_async(mp_st->url, auth_header,
-            mp_st->file_data, mp_st->file_size, mp_st->cb_state))
+   if (!s3_http_put_async(mp_st->url, auth_header, mp_st->cb_state))
    {
       free(payload_hash);
       free(auth_header);
@@ -1491,7 +1573,8 @@ static void s3_multipart_upload_next_part(s3_multipart_state_t *mp_st)
    }
    part_number = (unsigned)(mp_st->current_part + 1);
 
-   payload_hash = s3_sha256_hash(mp_st->file_data + offset, content_len);
+   s3_body_set(&mp_st->part, mp_st->file, (int64_t)offset, content_len);
+   payload_hash = s3_sha256_file(mp_st->file, (int64_t)offset, content_len);
    encoded_upload_id = s3_url_encode_query_value(mp_st->upload_id);
    if (!payload_hash || !encoded_upload_id)
       goto fail;
@@ -1508,8 +1591,9 @@ static void s3_multipart_upload_next_part(s3_multipart_state_t *mp_st)
    if (!url_with_query || !auth_header)
       goto fail;
 
-   if (!task_push_http_transfer_with_content(url_with_query, "PUT",
-            mp_st->file_data + offset, content_len, "application/octet-stream", true, true,
+   if (!task_push_http_transfer_with_source(url_with_query, "PUT",
+            s3_body_source, s3_body_rewind, &mp_st->part, content_len,
+            "application/octet-stream", true, true,
             auth_header, s3_multipart_upload_part_cb, mp_st))
       goto fail;
 
@@ -1750,47 +1834,45 @@ static bool s3_update_upload(const char *path, RFILE *file, cloud_sync_complete_
    s3_multipart_state_t *mp_st = NULL;
    s3_state_t *s3_st = s3_state_get_ptr();
    char *auth_header = NULL;
-   char url[PATH_MAX_LENGTH];
-   char canonical_uri[PATH_MAX_LENGTH];
-   char *file_data = NULL;
+   /* the URL and the canonical URI, off the stack */
+   char *url = (char*)malloc(2 * PATH_MAX_LENGTH);
+   char *canonical_uri = url + PATH_MAX_LENGTH;
    size_t file_size = 0;
    char *payload_hash = NULL;
    size_t multipart_threshold = s3_get_multipart_nominal_threshold_bytes();
    bool success = false;
 
-   if (!s3_cb_st)
+   if (!s3_cb_st || !url)
+   {
+      free(s3_cb_st);
+      free(url);
       return false;
+   }
 
    s3_cb_st->cb = cb;
    s3_cb_st->user_data = user_data;
    s3_cb_st->rfile = file;
    strlcpy(s3_cb_st->path, path, sizeof(s3_cb_st->path));
 
-   /* Get file size and data */
+   /* The body is streamed from the file, never read into memory whole:
+    * hashed in runs for the signature, then read again as the socket
+    * takes it. */
    if (file)
    {
-      filestream_seek(file, 0, SEEK_END);
-      file_size = filestream_tell(file);
-      filestream_seek(file, 0, SEEK_SET);
-
-      if (file_size > 0)
+      int64_t size = filestream_get_size(file);
+      if (size < 0 || (uint64_t)size > (uint64_t)((size_t)-1))
       {
-         file_data = malloc(file_size);
-         if (file_data)
-            filestream_read(file, file_data, file_size);
-         else
-         {
-            RARCH_ERR(S3_PFX "Failed to allocate memory for upload (%zu bytes)\n", file_size);
-            goto cleanup;
-         }
+         RARCH_ERR(S3_PFX "Could not read %s for upload\n", path);
+         goto cleanup;
       }
+      file_size = (size_t)size;
    }
 
    /* Build S3 URL - all supported formats are virtual-hosted style */
-   if (!s3_build_request_url(url, sizeof(url), s3_st, path))
+   if (!s3_build_request_url(url, PATH_MAX_LENGTH, s3_st, path))
       goto cleanup;
 
-   if (!s3_build_canonical_uri_from_url(url, canonical_uri, sizeof(canonical_uri)))
+   if (!s3_build_canonical_uri_from_url(url, canonical_uri, PATH_MAX_LENGTH))
       goto cleanup;
 
    RARCH_DBG(S3_PFX "Request URL: %s\n", url);
@@ -1817,8 +1899,7 @@ static bool s3_update_upload(const char *path, RFILE *file, cloud_sync_complete_
 
       mp_st->cb_state = s3_cb_st;
       s3_cb_st = NULL;
-      mp_st->file_data = file_data;
-      file_data = NULL;
+      mp_st->file = file;
       mp_st->file_size = file_size;
       mp_st->part_size = part_size;
       mp_st->part_count = part_count;
@@ -1839,15 +1920,15 @@ static bool s3_update_upload(const char *path, RFILE *file, cloud_sync_complete_
 
       /* Ownership transferred to multipart callbacks */
       s3_cb_st = NULL;
-      file_data = NULL;
       mp_st = NULL;
       success = true;
    }
    else
    {
       /* Single PUT request */
-      if (file_data && file_size > 0)
-         payload_hash = s3_sha256_hash(file_data, file_size);
+      s3_body_set(&s3_cb_st->body, file, 0, file_size);
+      if (file_size)
+         payload_hash = s3_sha256_file(file, 0, file_size);
       else
          payload_hash = strdup(S3_EMPTY_PAYLOAD_SHA256);
 
@@ -1867,7 +1948,7 @@ static bool s3_update_upload(const char *path, RFILE *file, cloud_sync_complete_
       }
 
       /* Perform HTTP PUT request */
-      if (!s3_http_put_async(url, auth_header, file_data, file_size, s3_cb_st))
+      if (!s3_http_put_async(url, auth_header, s3_cb_st))
       {
          RARCH_ERR(S3_PFX "Failed to start HTTP PUT request\n");
          goto cleanup;
@@ -1880,9 +1961,9 @@ static bool s3_update_upload(const char *path, RFILE *file, cloud_sync_complete_
 cleanup:
    s3_multipart_free(mp_st);
    free(auth_header);
-   free(file_data);
    free(payload_hash);
    free(s3_cb_st);
+   free(url);
 
    return success;
 }

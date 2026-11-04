@@ -136,6 +136,16 @@ void *task_push_http_transfer_with_content(const char *url, const char *method,
    bool headers_accept_err, const char *headers,
    retro_task_callback_t cb, void *user_data);
 
+/* The same with a body of @len bytes pulled from @source as the socket
+ * takes them, so the body is never held whole in memory. @rewind
+ * restarts it for a replay on a fresh connection; NULL means the
+ * request is never replayed. */
+void *task_push_http_transfer_with_source(const char *url, const char *method,
+   net_http_source_t source, net_http_source_rewind_t rewind,
+   void *source_data, size_t len, const char *content_type, bool mute,
+   bool headers_accept_err, const char *headers,
+   retro_task_callback_t cb, void *user_data);
+
 void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
 void *task_push_webdav_mkdir(const char *url, bool mute, const char *headers,

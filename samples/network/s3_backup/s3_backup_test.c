@@ -20,6 +20,11 @@
  *   CopyObject can answer - stops the delete or upload, reported once;
  * - destructive sync and the server manifest skip the copy.
  *
+ * Every upload body is streamed from the file and drained here the way
+ * net_http does it, a replay from the start included: it must be all of
+ * the file (or of a part's own range of it, for a multipart upload, and
+ * for the single PUT it falls back to) and what was signed.
+ *
  * It also calls the signer directly: query parameters sort as SigV4
  * requires, and out of memory the signer returns no signature rather
  * than a wrong one.
@@ -62,6 +67,10 @@ static char *test_strdup(const char *s)
 #define malloc test_malloc
 #define strdup test_strdup
 
+/* Parts of 5 MiB, the least S3 takes, so a multipart upload is 11 MiB
+ * rather than the 64 the driver waits for */
+#define S3_MULTIPART_NOMINAL_THRESHOLD_BYTES (5ULL * 1024ULL * 1024ULL)
+
 #include "../../../network/cloud_sync/s3.c"
 
 #include "stubs_retroarch.h"
@@ -83,8 +92,10 @@ static unsigned failures = 0;
 
 typedef struct
 {
-   int         copy_status;
    const char *copy_body;
+   int         copy_status;
+   /* nonzero: what CreateMultipartUpload answers, -1 a transport error */
+   int         initiate_status;
 } script_t;
 
 typedef struct
@@ -120,8 +131,16 @@ static void use_endpoint(const char *url)
    s3_parse_url(s3_st->url, s3_st->bucket, s3_st->region, s3_st->host, NULL);
 }
 
+static bool header_is(const stub_request_t *req, const char *name,
+      const char *value);
+
 static void serve(const script_t *script, run_t *run)
 {
+   static char initiated[] =
+      "<InitiateMultipartUploadResult><UploadId>up1</UploadId>"
+      "</InitiateMultipartUploadResult>";
+   static char etag[] = "ETag: \"part\"\0";
+
    while (stub_has_pending && run->steps < MAX_STEPS)
    {
       http_transfer_data_t resp;
@@ -130,9 +149,35 @@ static void serve(const script_t *script, run_t *run)
       stub_has_pending = false;
       run->req[run->steps++] = req;
 
+      /* Every body is streamed from the file, all of it, and is what
+       * was signed */
+      if (!strcmp(req.method, "PUT") && req.body_len)
+         CHECK(req.body_streamed, "%s: the body was handed over whole, not streamed",
+               req.url);
+      if (req.body_streamed)
+      {
+         CHECK(req.body_whole, "%s: the body did not stream %u bytes, replay included",
+               req.url, (unsigned)req.body_len);
+         CHECK(header_is(&req, "x-amz-content-sha256", req.body_sha),
+               "%s: signed for another body than the %s it sent",
+               req.url, req.body_sha);
+      }
+
       memset(&resp, 0, sizeof(resp));
       resp.status = 200;
-      if (is_copy(&req))
+      if (!strcmp(req.method, "POST") && strstr(req.url, "?uploads="))
+      {
+         if (script->initiate_status)
+            resp.status = script->initiate_status;
+         else
+         {
+            resp.data = initiated;
+            resp.len  = strlen(initiated);
+         }
+      }
+      else if (!strcmp(req.method, "PUT") && strstr(req.url, "partNumber="))
+         resp.headers = etag;
+      else if (is_copy(&req))
       {
          if (script->copy_status)
             resp.status = script->copy_status;
@@ -281,7 +326,7 @@ static void test_delete(const char *tmp)
 
 static void test_nothing_to_keep(const char *tmp)
 {
-   script_t script = {404, NULL};
+   script_t script = {NULL, 404};
    run_t    run;
 
    use_endpoint("https://bucket.s3.us-east-1.amazonaws.com/retroarch/");
@@ -298,8 +343,8 @@ static void test_copy_fails(const char *tmp)
    static const char error_body[] =
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
       "<Error><Code>InternalError</Code><Message>We encountered an internal error.</Message></Error>";
-   script_t failed  = {500, NULL};
-   script_t errored = {200, error_body};
+   script_t failed  = {NULL, 500};
+   script_t errored = {error_body, 200};
    run_t    run;
 
    use_endpoint("https://bucket.s3.us-east-1.amazonaws.com/retroarch/");
@@ -338,6 +383,110 @@ static void test_no_backup_wanted(const char *tmp)
    CHECK(!count_copies(&run) && find(&run, false, "PUT") >= 0
          && run.calls == 1 && run.success,
          "the server manifest must upload without a copy");
+}
+
+#define BIG_PART  (5u * 1024u * 1024u)
+#define BIG_SIZE  (2u * BIG_PART + 4099u)
+
+/* The SHA-256 of @len bytes of @path from @start, read here on its own */
+static void sha_of(char *out, const char *path, long start, size_t len)
+{
+   static const char hex[] = "0123456789abcdef";
+   static uint8_t     run[65536];
+   struct sha256_state st;
+   uint8_t digest[32];
+   FILE   *f = fopen(path, "rb");
+   unsigned i;
+
+   sha256_stream_init(&st, 0);
+   if (f && !fseek(f, start, SEEK_SET))
+      while (len)
+      {
+         size_t n = len < sizeof(run) ? len : sizeof(run);
+         if (fread(run, 1, n, f) != n)
+            break;
+         sha256_stream_update(&st, run, n);
+         len -= n;
+      }
+   if (f)
+      fclose(f);
+   sha256_stream_final(&st, digest);
+   for (i = 0; i < 32; i++)
+   {
+      out[2 * i]     = hex[digest[i] >> 4];
+      out[2 * i + 1] = hex[digest[i] & 15];
+   }
+   out[64] = '\0';
+}
+
+/* A file past the multipart threshold goes up in parts, each streamed
+ * from its own range of the file and signed for those bytes; when the
+ * multipart start fails in transport, the whole file goes up in one
+ * PUT, streamed the same way. */
+static void test_multipart_streamed(const char *big)
+{
+   static const char base[] = "https://bucket.s3.us-east-1.amazonaws.com/retroarch/";
+   static const size_t want_len[3] = { BIG_PART, BIG_PART, 4099u };
+   script_t script = {0};
+   run_t    run;
+   char     sha[65];
+   unsigned i;
+   int      part = 0;
+
+   use_endpoint(base);
+   run_op(false, "saves/big.srm", true, &script, &run, big);
+   CHECK(run.steps == 5, "multipart: wanted start, 3 parts, complete; got %u requests",
+         run.steps);
+   CHECK(run.calls == 1 && run.success, "multipart: must report success once");
+   for (i = 0; i < run.steps; i++)
+   {
+      const stub_request_t *req = &run.req[i];
+      char want[64];
+      if (strcmp(req->method, "PUT"))
+         continue;
+      snprintf(want, sizeof(want), "partNumber=%d&uploadId=up1", part + 1);
+      CHECK(strstr(req->url, want) != NULL, "multipart: part %d went to %s",
+            part + 1, req->url);
+      if (part < 3)
+      {
+         sha_of(sha, big, (long)part * (long)BIG_PART, want_len[part]);
+         CHECK(req->body_len == want_len[part], "multipart: part %d is %u bytes, wanted %u",
+               part + 1, (unsigned)req->body_len, (unsigned)want_len[part]);
+         CHECK(!strcmp(req->body_sha, sha),
+               "multipart: part %d sent other bytes than its range of the file", part + 1);
+      }
+      part++;
+   }
+   CHECK(part == 3, "multipart: %d parts went up, wanted 3", part);
+
+   script.initiate_status = -1;
+   run_op(false, "saves/big.srm", true, &script, &run, big);
+   sha_of(sha, big, 0, BIG_SIZE);
+   i = (unsigned)find(&run, false, "PUT");
+   CHECK(run.steps == 2 && find(&run, false, "PUT") == 1,
+         "multipart fallback: wanted the start, then one PUT; got %u requests", run.steps);
+   if (run.steps == 2 && i == 1)
+   {
+      CHECK(run.req[1].body_len == BIG_SIZE && !strcmp(run.req[1].body_sha, sha),
+            "multipart fallback: the single PUT must send the whole file");
+      CHECK(!strstr(run.req[1].url, "partNumber="),
+            "multipart fallback: the single PUT must go to the object itself");
+   }
+   CHECK(run.calls == 1 && run.success, "multipart fallback: must report success once");
+}
+
+/* An upload of nothing still goes up, with the empty payload hash */
+static void test_upload_empty(const char *empty)
+{
+   script_t script = {0};
+   run_t    run;
+
+   use_endpoint("https://bucket.s3.us-east-1.amazonaws.com/retroarch/");
+   run_op(false, "saves/empty.srm", true, &script, &run, empty);
+   CHECK(run.steps == 1 && run.req[0].body_len == 0
+         && header_is(&run.req[0], "x-amz-content-sha256", S3_EMPTY_PAYLOAD_SHA256),
+         "empty upload: one PUT, no body, the empty payload hash");
+   CHECK(run.calls == 1 && run.success, "empty upload: must report success once");
 }
 
 static char *sign_failing_alloc(unsigned nth)
@@ -497,6 +646,7 @@ static void test_signature_known(void)
 int main(void)
 {
    char  tmp[64];
+   char  big[80];
    FILE *f;
 
    snprintf(tmp, sizeof(tmp), "/tmp/s3_backup_%ld", (long)getpid());
@@ -512,6 +662,24 @@ int main(void)
    test_nothing_to_keep(tmp);
    test_copy_fails(tmp);
    test_no_backup_wanted(tmp);
+
+   snprintf(big, sizeof(big), "%s.big", tmp);
+   if ((f = fopen(big, "wb")))
+   {
+      unsigned i;
+      for (i = 0; i < BIG_SIZE; i++)
+         fputc((int)((i * 31u + (i >> 13)) % 251u), f);
+      fclose(f);
+   }
+   test_multipart_streamed(big);
+   remove(big);
+
+   snprintf(big, sizeof(big), "%s.empty", tmp);
+   if ((f = fopen(big, "wb")))
+      fclose(f);
+   test_upload_empty(big);
+   remove(big);
+
    test_signer_out_of_memory();
    test_query_order();
    test_signature_known();
