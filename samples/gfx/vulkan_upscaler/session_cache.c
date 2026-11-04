@@ -25,6 +25,8 @@ void vulkan_custom_driver_failed(void) { }
 void vulkan_custom_driver_kept(void) { }
 size_t vulkan_custom_driver_loader_exts(char *names, size_t stride,
       size_t count, size_t cap) { return count; }
+bool vulkan_custom_driver_current(void) { return false; }
+void vulkan_custom_driver_started(void) { }
 
 static VKAPI_ATTR VkResult VKAPI_CALL cache_create_instance(
       const VkInstanceCreateInfo *info,
