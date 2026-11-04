@@ -1,4 +1,4 @@
-/* The font atlas uploads of the GX2, GXM, RSX and D3D11 drivers
+/* The font atlas uploads of the GX2, GXM, RSX, D3D10 and D3D11 drivers
  * (extracted by run.py) against textures in memory.
  *
  * The glyph cache grows its atlas, and each driver makes its texture
@@ -188,9 +188,15 @@ typedef struct
 #include "rsx.inc"
 
 /* ---- D3D11 -------------------------------------------------------- */
+typedef long HRESULT;
+typedef unsigned UINT;
+#define FAILED(hr) ((hr) < 0)
 typedef unsigned DXGI_FORMAT;
-#define DXGI_FORMAT_A8_UNORM  65
-#define DXGI_FORMAT_R16_UNORM 56
+#define DXGI_FORMAT_R8G8B8A8_UNORM 28
+#define DXGI_FORMAT_R16_UNORM      56
+#define DXGI_FORMAT_A8_UNORM       65
+#define D3D11_FORMAT_SUPPORT_TEXTURE2D     0x20
+#define D3D11_FORMAT_SUPPORT_SHADER_SAMPLE 0x100
 #define RARCH_FILTER_LINEAR 1
 #define RARCH_WRAP_BORDER   0
 typedef struct object { int refs; } object;
@@ -201,23 +207,45 @@ typedef struct
    struct { unsigned Width, Height; DXGI_FORMAT Format; } desc;
    D3D11SamplerStateRef sampler;
 } d3d11_texture_t;
+/* A device that samples A8, or - some of feature level 9 - does not */
+static bool a8_sampled = true;
+typedef struct dev dev_t;
+struct dev
+{
+   struct dev_vtbl
+   {
+      HRESULT (*CheckFormatSupport)(dev_t*, DXGI_FORMAT, UINT*);
+   } *lpVtbl;
+};
+static HRESULT dev_check(dev_t *d, DXGI_FORMAT f, UINT *support)
+{
+   (void)d;
+   *support = (f != DXGI_FORMAT_A8_UNORM || a8_sampled)
+      ? D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE
+      : 0;
+   return 0;
+}
+static struct dev_vtbl dev_vtbl = { dev_check };
 typedef struct
 {
-   void *device, *context;
+   dev_t *device;
+   void *context;
    D3D11SamplerStateRef samplers[2][4];
 } d3d11_video_t;
 typedef struct
 {
    d3d11_texture_t texture;
    struct font_atlas *atlas;
+   uint32_t *expand;
+   size_t expand_size;
 } d3d11_font_t;
 static object made[3][3];
 static unsigned makes;
 static bool make_fails;
-static unsigned uploads;
+static unsigned uploads, region_uploads;
 /* As the driver's: makes the resources, or fails having made the
  * texture but none of its views */
-static bool d3d11_init_texture(void *device, d3d11_texture_t *t)
+static bool d3d11_init_texture(dev_t *device, d3d11_texture_t *t)
 {
    object *o = made[makes % 3];
    (void)device;
@@ -244,6 +272,8 @@ static void d3d11_update_texture(void *ctx, unsigned w, unsigned h,
 {
    (void)ctx; (void)w; (void)h; (void)pitch; (void)fmt; (void)data;
    assert(t->staging && t->staging->refs > 0);
+   /* the generic path converts no coverage into RGBA8's alpha */
+   assert(t->desc.Format == DXGI_FORMAT_A8_UNORM);
    uploads++;
 }
 static void d3d11_font_update_atlas_region(void *ctx, d3d11_font_t *font,
@@ -252,21 +282,20 @@ static void d3d11_font_update_atlas_region(void *ctx, d3d11_font_t *font,
    (void)ctx; (void)xy0; (void)xy1;
    assert(font->texture.staging && font->texture.staging->refs > 0);
    uploads++;
+   region_uploads++;
 }
 #include "d3d11.inc"
 
 /* A context whose staging texture can be the GPU's still, and the
- * texture and staging texels it copies between */
-typedef long HRESULT;
-typedef unsigned UINT;
-#define FAILED(hr) ((hr) < 0)
+ * texture and staging texels it copies between, @texel_bytes each */
 #define DXGI_ERROR_WAS_STILL_DRAWING (-2005270518L)
 #define D3D11_MAP_WRITE 2
 #define D3D11_MAP_FLAG_DO_NOT_WAIT 0x100000L
 typedef object *D3D11Resource;
 typedef struct { void *pData; UINT RowPitch, DepthPitch; } D3D11_MAPPED_SUBRESOURCE;
 typedef struct { UINT left, top, front, right, bottom, back; } D3D11_BOX;
-static uint8_t tex_px[32 * 32], staging_px[32 * 32];
+static uint8_t tex_px[32 * 32 * 4], staging_px[32 * 32 * 4];
+static unsigned texel_bytes = 1;
 static bool still_drawing;
 static unsigned maps, copies, updates;
 typedef struct ctx ctx_t;
@@ -292,7 +321,7 @@ static HRESULT ctx_map(ctx_t *c, D3D11Resource r, UINT s, int t, long f,
       return DXGI_ERROR_WAS_STILL_DRAWING;
    maps++;
    m->pData    = staging_px;
-   m->RowPitch = 32;
+   m->RowPitch = 32 * texel_bytes;
    return 0;
 }
 static void ctx_unmap(ctx_t *c, D3D11Resource r, UINT s)
@@ -305,9 +334,11 @@ static void ctx_update(ctx_t *c, D3D11Resource r, UINT s,
    UINT y;
    (void)c; (void)r; (void)s; (void)depth;
    updates++;
+   /* a source row is the box's texels: the sanitizer sees a read past */
    for (y = b->top; y < b->bottom; y++)
-      memcpy(tex_px + y * 32 + b->left,
-            (const uint8_t*)src + (y - b->top) * pitch, b->right - b->left);
+      memcpy(tex_px + (y * 32 + b->left) * texel_bytes,
+            (const uint8_t*)src + (y - b->top) * pitch,
+            (b->right - b->left) * texel_bytes);
 }
 static void ctx_copy(ctx_t *c, D3D11Resource dst, UINT ds, UINT x, UINT y,
       UINT z, D3D11Resource src, UINT ss, const D3D11_BOX *b)
@@ -316,11 +347,82 @@ static void ctx_copy(ctx_t *c, D3D11Resource dst, UINT ds, UINT x, UINT y,
    (void)c; (void)dst; (void)ds; (void)z; (void)src; (void)ss;
    copies++;
    for (row = 0; row < b->bottom - b->top; row++)
-      memcpy(tex_px + (y + row) * 32 + x,
-            staging_px + (b->top + row) * 32 + b->left, b->right - b->left);
+      memcpy(tex_px + ((y + row) * 32 + x) * texel_bytes,
+            staging_px + ((b->top + row) * 32 + b->left) * texel_bytes,
+            (b->right - b->left) * texel_bytes);
 }
 static struct ctx_vtbl ctx_vtbl = { ctx_map, ctx_unmap, ctx_update, ctx_copy };
 #include "d3d11_rects.inc"
+
+/* ---- D3D10 -------------------------------------------------------- */
+#define D3D10_MAP_WRITE 2
+typedef object *D3D10Resource;
+typedef struct { void *pData; UINT RowPitch; } D3D10_MAPPED_TEXTURE2D;
+typedef struct { UINT left, top, front, right, bottom, back; } D3D10_BOX;
+/* The staging texture, mapped over staging_px as D3D11's is */
+typedef struct staging10 staging10_t;
+struct staging10
+{
+   struct staging10_vtbl
+   {
+      HRESULT (*Map)(staging10_t*, UINT, int, UINT, D3D10_MAPPED_TEXTURE2D*);
+      void (*Unmap)(staging10_t*, UINT);
+   } *lpVtbl;
+   int refs;
+};
+static HRESULT staging10_map(staging10_t *t, UINT s, int type, UINT f,
+      D3D10_MAPPED_TEXTURE2D *m)
+{
+   (void)t; (void)s; (void)type; (void)f;
+   maps++;
+   m->pData    = staging_px;
+   m->RowPitch = 32;
+   return 0;
+}
+static void staging10_unmap(staging10_t *t, UINT s) { (void)t; (void)s; }
+static struct staging10_vtbl staging10_vtbl = { staging10_map, staging10_unmap };
+typedef struct dev10 dev10_t;
+struct dev10
+{
+   struct dev10_vtbl
+   {
+      void (*CopySubresourceRegion)(dev10_t*, D3D10Resource, UINT, UINT,
+            UINT, UINT, D3D10Resource, UINT, const D3D10_BOX*);
+   } *lpVtbl;
+};
+typedef dev10_t *D3D10Device;
+static void dev10_copy(dev10_t *d, D3D10Resource dst, UINT ds, UINT x,
+      UINT y, UINT z, D3D10Resource src, UINT ss, const D3D10_BOX *b)
+{
+   UINT row;
+   (void)d; (void)dst; (void)ds; (void)z; (void)src; (void)ss;
+   copies++;
+   for (row = 0; row < b->bottom - b->top; row++)
+      memcpy(tex_px + (y + row) * 32 + x,
+            staging_px + (b->top + row) * 32 + b->left, b->right - b->left);
+}
+static struct dev10_vtbl dev10_vtbl = { dev10_copy };
+typedef struct
+{
+   struct { object *handle; staging10_t *staging; } texture;
+   struct font_atlas *atlas;
+} d3d10_font_t;
+#include "d3d10_rects.inc"
+
+/* As check_two_cells, for white RGBA8 texels carrying the coverage */
+static void check_two_cells_rgba(const uint8_t *tex)
+{
+   unsigned x, y;
+   for (y = 0; y < 32; y++)
+      for (x = 0; x < 32; x++)
+      {
+         bool in = (x < 4 && y < 4) || (x >= 24 && y >= 26);
+         uint32_t px;
+         memcpy(&px, tex + (y * 32 + x) * 4, 4);
+         assert(px == (in ? ((uint32_t)texel(x, y) << 24) | 0x00FFFFFFu
+                          : 0xEEEEEEEEu));
+      }
+}
 
 int main(void)
 {
@@ -427,9 +529,12 @@ int main(void)
       d3d11_video_t d3d11;
       d3d11_font_t font;
       object *handle, *staging, *view;
+      static dev_t dev;
       memset(&d3d11, 0, sizeof(d3d11));
       memset(&font, 0, sizeof(font));
       memset(made, 0, sizeof(made));
+      dev.lpVtbl   = &dev_vtbl;
+      d3d11.device = &dev;
       makes = uploads = 0;
       make_fails = false;
       atlas_grown();
@@ -454,6 +559,17 @@ int main(void)
       assert(font.texture.desc.Width == 32 && uploads == 2 && !atlas.dirty);
       assert(handle->refs == 0 && staging->refs == 0 && view->refs == 0);
       assert(font.texture.view && font.texture.view->refs == 1);
+      assert(font.texture.desc.Format == DXGI_FORMAT_A8_UNORM);
+      /* on a device that samples no A8: RGBA8, sent through the region
+       * path that puts the coverage in its alpha */
+      a8_sampled     = false;
+      region_uploads = 0;
+      atlas_grown();
+      atlas.width = atlas.height = 16;
+      d3d11_font_make_texture(&d3d11, &font);
+      assert(font.texture.desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM
+            && region_uploads == 1);
+      a8_sampled     = true;
    }
 
    /* D3D11: two cells far apart go in on their own, through one map of
@@ -489,11 +605,62 @@ int main(void)
          else
             assert(maps == 1 && copies == 2 && !updates);
       }
+      /* the same into RGBA8, white with the coverage its alpha */
+      texel_bytes = 4;
+      for (pass = 0; pass < 2; pass++)
+      {
+         memset(&font, 0, sizeof(font));
+         atlas_grown();
+         atlas_two_cells();
+         font.atlas                = &atlas;
+         font.texture.handle       = &handle_obj;
+         font.texture.staging      = &staging_obj;
+         font.texture.desc.Width   = 32;
+         font.texture.desc.Height  = 32;
+         font.texture.desc.Format  = DXGI_FORMAT_R8G8B8A8_UNORM;
+         memset(tex_px, 0xEE, sizeof(tex_px));
+         memset(staging_px, 0xEE, sizeof(staging_px));
+         still_drawing = pass == 1;
+         n = font_atlas_dirty_rects(&atlas);
+         for (i = 0; i < n; i++)
+            font_atlas_dirty_rect(&atlas, i, &r[i][0], &r[i][1]);
+         d3d11_font_update_atlas_rects(&ctx, &font,
+               (const unsigned (*)[2])r, n);
+         check_two_cells_rgba(tex_px);
+         free(font.expand);
+      }
+      texel_bytes   = 1;
+      still_drawing = false;
+   }
+
+   /* D3D10: two cells far apart, through one map and a copy each */
+   {
+      static object handle_obj = { 1 };
+      static staging10_t staging;
+      d3d10_font_t font;
+      dev10_t dev;
+      unsigned i, n, r[FONT_ATLAS_DIRTY_MAX][2];
+      staging.lpVtbl = &staging10_vtbl;
+      dev.lpVtbl     = &dev10_vtbl;
+      atlas_grown();
+      atlas_two_cells();
+      font.atlas           = &atlas;
+      font.texture.handle  = &handle_obj;
+      font.texture.staging = &staging;
+      memset(tex_px, 0xEE, sizeof(tex_px));
+      memset(staging_px, 0xEE, sizeof(staging_px));
+      maps = copies = 0;
+      n = font_atlas_dirty_rects(&atlas);
+      for (i = 0; i < n; i++)
+         font_atlas_dirty_rect(&atlas, i, &r[i][0], &r[i][1]);
+      d3d10_font_update_atlas_rects(&dev, &font, (const unsigned (*)[2])r, n);
+      check_two_cells(tex_px, 32);
+      assert(maps == 1 && copies == 2);
    }
 
    puts("font atlas uploads: GX2, GXM and RSX clamped to a texture the"
          " atlas outgrew, GX2 sprites flushed whole, D3D11 keeps its"
-         " texture when a new one cannot be made, dirty cells far apart"
-         " sent on their own PASS");
+         " texture when a new one cannot be made or samples no A8, dirty"
+         " cells far apart sent on their own, D3D10 too PASS");
    return 0;
 }

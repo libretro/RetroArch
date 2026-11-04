@@ -1719,6 +1719,11 @@ typedef struct
    d3d11_sprite_t*               acc;
    video_font_raster_block_t*    block;
    d3d11_video_t*                d3d11;
+   /* An RGBA8 texture's texels, when the device samples no A8: white
+    * with the coverage as alpha, for UpdateSubresource, grown to the
+    * largest region asked for and kept */
+   uint32_t*                     expand;
+   size_t                        expand_size;
    unsigned                      acc_count;
    unsigned                      acc_cap;
 } d3d11_font_t;
@@ -1741,6 +1746,20 @@ static void d3d11_font_make_texture(d3d11_video_t *d3d11,
    texture.desc.Height = font->atlas->height;
    texture.desc.Format = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
          ? DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_A8_UNORM;
+   /* A device that samples no A8 - some of feature level 9 - takes the
+    * coverage as the alpha of white RGBA8, which every feature level
+    * samples and the font shader reads the same way. No fallback a
+    * format list offers past A8 keeps the coverage in alpha. */
+   if (texture.desc.Format == DXGI_FORMAT_A8_UNORM)
+   {
+      UINT support    = 0;
+      const UINT need = D3D11_FORMAT_SUPPORT_TEXTURE2D
+                      | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE;
+      if (     FAILED(d3d11->device->lpVtbl->CheckFormatSupport(
+                  d3d11->device, DXGI_FORMAT_A8_UNORM, &support))
+            || (support & need) != need)
+         texture.desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+   }
    if (     !d3d11_init_texture(d3d11->device, &texture)
          || !texture.staging || !texture.view)
    {
@@ -1749,10 +1768,11 @@ static void d3d11_font_make_texture(d3d11_video_t *d3d11,
    }
    d3d11_release_texture(&font->texture);
    font->texture = texture;
-   if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-      /* the generic path's conversion table does not cover R16;
-       * stage the whole atlas through the element-size-aware
-       * region helper instead */
+   if (     font->atlas->format == FONT_ATLAS_FORMAT_A16
+         || font->texture.desc.Format != DXGI_FORMAT_A8_UNORM)
+      /* the generic path's conversion table covers neither R16 nor
+       * coverage into RGBA8's alpha; stage the whole atlas through the
+       * region helper, which does both, instead */
       d3d11_font_update_atlas_region(d3d11->context, font, 0,
             VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height));
    else
@@ -1818,6 +1838,7 @@ static void d3d11_font_free(void* data, bool is_threaded)
    Release(font->texture.handle);
    Release(font->texture.staging);
    Release(font->texture.view);
+   free(font->expand);
    free(font->acc);
    free(font);
 }
@@ -1846,6 +1867,9 @@ static void d3d11_font_update_atlas_rects(D3D11DeviceContext ctx,
    HRESULT hr;
    size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
          ? sizeof(uint16_t) : sizeof(uint8_t);
+   /* An RGBA8 texture, for a device that samples no A8: white, the
+    * coverage its alpha */
+   bool rgba  = font->texture.desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM;
 
    if (n > FONT_ATLAS_DIRTY_MAX)
       n = FONT_ATLAS_DIRTY_MAX;
@@ -1883,12 +1907,43 @@ static void d3d11_font_update_atlas_rects(D3D11DeviceContext ctx,
    if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
    {
       for (i = 0; i < kept; i++)
-         ctx->lpVtbl->UpdateSubresource(ctx,
-               (D3D11Resource)font->texture.handle, 0, &box[i],
-               font->atlas->buffer
-                  + ((size_t)box[i].top * font->atlas->width
-                     + box[i].left) * esz,
-               (UINT)(font->atlas->width * esz), 0);
+      {
+         if (rgba)
+         {
+            unsigned x;
+            unsigned w = box[i].right - box[i].left;
+            unsigned h = box[i].bottom - box[i].top;
+            if ((size_t)w * h > font->expand_size)
+            {
+               uint32_t *buf = (uint32_t*)malloc((size_t)w * h
+                     * sizeof(uint32_t));
+               if (!buf)
+                  continue;
+               free(font->expand);
+               font->expand      = buf;
+               font->expand_size = (size_t)w * h;
+            }
+            for (y = 0; y < h; y++)
+            {
+               const uint8_t *src = font->atlas->buffer
+                  + (size_t)(box[i].top + y) * font->atlas->width
+                  + box[i].left;
+               for (x = 0; x < w; x++)
+                  font->expand[(size_t)y * w + x] =
+                     ((uint32_t)src[x] << 24) | 0x00FFFFFFu;
+            }
+            ctx->lpVtbl->UpdateSubresource(ctx,
+                  (D3D11Resource)font->texture.handle, 0, &box[i],
+                  font->expand, (UINT)(w * sizeof(uint32_t)), 0);
+         }
+         else
+            ctx->lpVtbl->UpdateSubresource(ctx,
+                  (D3D11Resource)font->texture.handle, 0, &box[i],
+                  font->atlas->buffer
+                     + ((size_t)box[i].top * font->atlas->width
+                        + box[i].left) * esz,
+                  (UINT)(font->atlas->width * esz), 0);
+      }
       return;
    }
    if (FAILED(hr))
@@ -1896,11 +1951,22 @@ static void d3d11_font_update_atlas_rects(D3D11DeviceContext ctx,
 
    for (i = 0; i < kept; i++)
       for (y = box[i].top; y < box[i].bottom; y++)
-         memcpy((uint8_t*)mapped.pData + y * mapped.RowPitch
-                     + (size_t)box[i].left * esz,
-                font->atlas->buffer
-                     + ((size_t)y * font->atlas->width + box[i].left) * esz,
-                (size_t)(box[i].right - box[i].left) * esz);
+      {
+         const uint8_t *src = font->atlas->buffer
+               + ((size_t)y * font->atlas->width + box[i].left) * esz;
+         if (rgba)
+         {
+            unsigned x;
+            uint32_t *dst = (uint32_t*)((uint8_t*)mapped.pData
+                  + y * mapped.RowPitch) + box[i].left;
+            for (x = 0; x < box[i].right - box[i].left; x++)
+               dst[x] = ((uint32_t)src[x] << 24) | 0x00FFFFFFu;
+         }
+         else
+            memcpy((uint8_t*)mapped.pData + y * mapped.RowPitch
+                        + (size_t)box[i].left * esz,
+                   src, (size_t)(box[i].right - box[i].left) * esz);
+      }
 
    ctx->lpVtbl->Unmap(ctx, (D3D11Resource)font->texture.staging, 0);
 

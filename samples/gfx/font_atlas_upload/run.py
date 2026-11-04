@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the font atlas uploads of the GX2, GXM, RSX and D3D11 drivers,
+"""Run the font atlas uploads of the GX2, GXM, RSX, D3D10 and D3D11 drivers,
 extracted from the shipping sources, against textures in memory that
 are exactly their size, and against a D3D11 device whose texture
 creation can be made to fail."""
@@ -41,6 +41,8 @@ parts = {
     'd3d11.inc': ('gfx/drivers/d3d11.c', ('d3d11_font_make_texture(',)),
     'd3d11_rects.inc': ('gfx/drivers/d3d11.c',
                         ('d3d11_font_update_atlas_rects(',)),
+    'd3d10_rects.inc': ('gfx/drivers/d3d10.c',
+                        ('d3d10_font_update_atlas_rects(',)),
 }
 
 with tempfile.TemporaryDirectory() as directory:
