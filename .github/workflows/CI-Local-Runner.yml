@@ -71,6 +71,16 @@ jobs:
           python3 tools/ci_apt_check.py --selftest
           python3 tools/ci_apt_check.py
 
+      - name: Every workflow's paths filter names the samples it runs
+        shell: bash
+        run: |
+          set -eu
+          # A workflow skips a push that touches only samples it does not
+          # build or run; a step that starts naming another sample, or a
+          # sample's files that start reaching into another, leave the
+          # filter written by tools/ci_paths.py out of date.
+          python3 tools/ci_paths.py --check
+
       - name: compile_commands.py self-test
         shell: bash
         run: |
