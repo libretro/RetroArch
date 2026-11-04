@@ -1354,7 +1354,11 @@ static void frontend_win32_env_get(int *argc, char *argv[],
 #define RARCH_QUICK_EDIT_MODE 0x0040
 #define RARCH_EXTENDED_FLAGS  0x0080
 
+#define RARCH_ATTACH_PARENT_PROCESS ((DWORD)-1)
+
 typedef HWND (WINAPI *get_console_window_t)(void);
+/* Windows XP on; an SDK targeting older Windows does not declare it */
+typedef BOOL (WINAPI *attach_console_t)(DWORD);
 
 static void frontend_win32_attach_console(void)
 {
@@ -1387,11 +1391,15 @@ static void frontend_win32_attach_console(void)
    if (need_stdout || need_stderr)
    {
       HWND fg = GetForegroundWindow();
-      if (!AttachConsole(ATTACH_PARENT_PROCESS) && AllocConsole())
+      HMODULE kernel32 = GetModuleHandleA("kernel32.dll");
+      attach_console_t attach = kernel32
+         ? (attach_console_t)GetProcAddress(kernel32, "AttachConsole")
+         : NULL;
+      if (     !(attach && attach(RARCH_ATTACH_PARENT_PROCESS))
+            && AllocConsole())
       {
          /* A selection in the window would block every log write */
          DWORD mode, pid = 0;
-         HMODULE kernel32 = GetModuleHandleA("kernel32.dll");
          get_console_window_t get_window = kernel32
             ? (get_console_window_t)GetProcAddress(kernel32,
                   "GetConsoleWindow")
