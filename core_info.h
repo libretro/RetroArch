@@ -122,6 +122,9 @@ typedef struct
    char *display_name;
    char *description;
    char *licenses;
+   /* "<manufacturer> <systemname>", or the system name alone;
+    * NULL when the info file names no system */
+   char *system_name;
    bool is_experimental;
 } core_updater_info_t;
 

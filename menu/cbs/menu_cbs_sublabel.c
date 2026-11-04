@@ -1460,17 +1460,28 @@ static int action_bind_sublabel_core_updater_entry(
 {
    core_updater_list_t *core_list         = core_updater_list_get_cached();
    const core_updater_list_entry_t *entry = NULL;
-   size_t _len =
-      strlcpy(s,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-   s[  _len]   = ':';
-   s[++_len]   = ' ';
-   s[++_len]   = '\0';
+   size_t _len                            = 0;
 
    /* Search for specified core */
-   if (   core_list
-       && core_updater_list_get_filename(core_list, path, &entry)
-       && entry->licenses_list)
+   if (   !core_list
+       || !core_updater_list_get_filename(core_list, path, &entry))
+      entry = NULL;
+
+   /* The system the core runs, above its licence */
+   if (entry && entry->system_name)
+   {
+      _len  = strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME), len);
+      _len += strlcpy_lit(s + _len, ": ", len - _len);
+      _len += strlcpy(s + _len, entry->system_name, len - _len);
+      _len += strlcpy_lit(s + _len, "\n", len - _len);
+   }
+
+   _len += strlcpy(s + _len,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len - _len);
+   _len += strlcpy_lit(s + _len, ": ", len - _len);
+
+   if (entry && entry->licenses_list)
    {
       unsigned i;
       /* Add license text */
