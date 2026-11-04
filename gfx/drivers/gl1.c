@@ -445,9 +445,11 @@ static bool gl1_scrgb_init_program(gl1_t *gl1);
 typedef struct
 {
    gl1_t *gl;
-   /* The texture's texels, made when the atlas grew and the texture
-    * took its new size, sent and freed by the respecify */
-   uint8_t *respecify_buf;
+   /* The texels each upload is converted into, grown to the largest
+    * one asked for and kept: the whole texture for a respecify, made
+    * before the texture takes a grown atlas's size */
+   uint8_t *scratch;
+   size_t scratch_size;
    GLuint tex;
    unsigned tex_dims;            /* VIDEO_SCALE_PACK, the atlas texture */
    bool respecify;               /* The atlas grew: remake the texture */
@@ -687,8 +689,23 @@ static void gl1_raster_font_free(void *data,
 
    glDeleteTextures(1, &font->tex);
 
-   free(font->respecify_buf);
+   free(font->scratch);
    free(font);
+}
+
+/* Grows the font's upload scratch to @size bytes; false, with it as
+ * it was, when that cannot be had */
+static bool gl1_raster_font_scratch(gl1_raster_t *font, size_t size)
+{
+   uint8_t *buf;
+   if (size <= font->scratch_size)
+      return true;
+   if (!(buf = (uint8_t*)malloc(size)))
+      return false;
+   free(font->scratch);
+   font->scratch      = buf;
+   font->scratch_size = size;
+   return true;
 }
 
 /* Converts atlas texels to LUMINANCE_ALPHA, opaque white with the
@@ -738,15 +755,9 @@ static bool gl1_raster_font_upload_atlas(gl1_raster_t *font,
          return true;
    }
 
-   /* A respecify takes the buffer made when the texture took its
-    * size, if one was */
-   if (respecify && font->respecify_buf)
-   {
-      tmp                 = font->respecify_buf;
-      font->respecify_buf = NULL;
-   }
-   else if (!(tmp = (uint8_t*)malloc((size_t)(x1 - x0) * (y1 - y0) * 2)))
+   if (!gl1_raster_font_scratch(font, (size_t)(x1 - x0) * (y1 - y0) * 2))
       return false;
+   tmp = font->scratch;
 
    dst = tmp;
    for (y = y0; y < y1; y++)
@@ -792,7 +803,6 @@ static bool gl1_raster_font_upload_atlas(gl1_raster_t *font,
             (GLsizei)(x1 - x0), (GLsizei)(y1 - y0),
             gl_format, GL_UNSIGNED_BYTE, tmp);
 
-   free(tmp);
    return true;
 }
 
@@ -1033,7 +1043,7 @@ static void gl1_raster_font_setup_viewport(
 
 /* Asked for before anything is laid out: the atlas may have grown,
  * and the texture coordinates are taken from the texture's size. The
- * texture takes the new size only with the texels to fill it in hand,
+ * texture takes the new size only with the scratch to fill it in hand,
  * sent by the next draw's respecify. */
 static void gl1_raster_font_follow_atlas(gl1_raster_t *font)
 {
@@ -1041,16 +1051,12 @@ static void gl1_raster_font_follow_atlas(gl1_raster_t *font)
    font->atlas = font->font_driver->get_atlas(font->font_data);
    tex_dims    = VIDEO_SCALE_PACK(next_pow2(font->atlas->width),
          next_pow2(font->atlas->height));
-   if (tex_dims != font->tex_dims && !font->respecify_buf)
+   if (     tex_dims != font->tex_dims
+         && gl1_raster_font_scratch(font, (size_t)VIDEO_SCALE_W(tex_dims)
+            * VIDEO_SCALE_H(tex_dims) * 2))
    {
-      uint8_t *buf = (uint8_t*)malloc((size_t)VIDEO_SCALE_W(tex_dims)
-            * VIDEO_SCALE_H(tex_dims) * 2);
-      if (buf)
-      {
-         font->respecify_buf = buf;
-         font->tex_dims      = tex_dims;
-         font->respecify     = true;
-      }
+      font->tex_dims  = tex_dims;
+      font->respecify = true;
    }
 }
 

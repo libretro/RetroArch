@@ -4,9 +4,10 @@
  * signalled, is a failure.
  *
  * Also the raster font's atlas texture following a grown atlas: the
- * texture takes the new size only with the texels to fill it in hand,
+ * texture takes the new size only with the scratch to fill it in hand,
  * so with the allocation refused the font keeps the size it has, and a
- * region of the atlas past that size goes no further than the texture. */
+ * region of the atlas past that size goes no further than the texture.
+ * The scratch is kept: uploads after it was made allocate nothing. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -332,9 +333,17 @@ int main(void)
       /* the next time it can be had */
       gl2_raster_font_follow_atlas(&font);
       CHECK(font.tex_dims == VIDEO_SCALE_PACK(64, 64) && font.respecify
-            && font.respecify_buf, "the texture takes the new size");
-      CHECK(gl2_raster_font_upload_atlas(&font, 0, 0, true)
-            && !font.respecify_buf, "the respecify sends the texels made");
+            && font.scratch_size >= 64 * 64 * 2,
+            "the texture takes the new size, its scratch made");
+      /* nothing more is allocated for the respecify or the regions */
+      fail_mallocs = 1000;
+      CHECK(gl2_raster_font_upload_atlas(&font, 0, 0, true),
+            "the respecify sends the scratch made");
+      CHECK(gl2_raster_font_upload_atlas(&font, VIDEO_SCALE_PACK(8, 8),
+               VIDEO_SCALE_PACK(24, 20), false),
+            "a region goes through the same scratch");
+      fail_mallocs = 0;
+      free(font.scratch);
    }
 
    free(out);
