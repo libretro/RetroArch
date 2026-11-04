@@ -1513,7 +1513,39 @@ static int action_bind_sublabel_core_backup_entry(
 }
 
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
+#ifdef ANDROID
+#define VULKAN_DRIVER_PATH_SUBLABEL MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vulkan_driver_path, MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH)
+#else
+#ifdef _WIN32
+#define VULKAN_DRIVER_PATH_SUBLABEL MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_WINDOWS
+#else
+#define VULKAN_DRIVER_PATH_SUBLABEL MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD
+#endif
+
+/* The folder: the system's .json can have the same name. */
+static int action_bind_sublabel_video_vulkan_driver_path(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   size_t _len       = 0;
+   const char *saved = config_get_ptr()->paths.path_vulkan_driver;
+   if (!string_is_empty(saved))
+   {
+      char folder[NAME_MAX_LENGTH];
+      vulkan_custom_driver_icd_folder(saved, folder, sizeof(folder));
+      snprintf(s, len, msg_hash_to_str(
+               MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_FROM), folder);
+      _len = strlen(s);
+      strlcpy_append(s, len, &_len, "\n");
+   }
+   strlcpy_append(s, len, &_len, msg_hash_to_str(
+            VULKAN_DRIVER_PATH_SUBLABEL));
+   return 1;
+}
+#endif
 
 static int action_bind_sublabel_video_vulkan_driver_path_crashed(
       file_list_t *list,
@@ -1526,7 +1558,7 @@ static int action_bind_sublabel_video_vulkan_driver_path_crashed(
             MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED));
    strlcpy_append(s, len, &_len, "\n");
    strlcpy_append(s, len, &_len, msg_hash_to_str(
-            MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH));
+            VULKAN_DRIVER_PATH_SUBLABEL));
    return 1;
 }
 
@@ -1548,7 +1580,7 @@ static int action_bind_sublabel_video_vulkan_driver_path_safe_mode(
       strlcpy_append(s, len, &_len, "\n");
    }
    strlcpy_append(s, len, &_len, msg_hash_to_str(
-            MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH));
+            VULKAN_DRIVER_PATH_SUBLABEL));
    return 1;
 }
 #endif

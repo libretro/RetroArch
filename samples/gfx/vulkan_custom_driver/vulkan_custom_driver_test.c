@@ -1170,6 +1170,43 @@ static void test_loader_exts(void)
    CHECK(vulkan_custom_driver_loader_exts((char*)exts, 16, 1, 8) == 1);
 }
 
+static void test_icd_folder(void)
+{
+   char f[PATH_MAX_LENGTH];
+   char small[8];
+   vulkan_custom_driver_icd_folder("/home/d/x/mesa-linux/install-radv/"
+         "share/vulkan/icd.d/radeon_icd.x86_64.json", f, sizeof(f));
+   CHECK(!strcmp(f, ".../mesa-linux/install-radv"));
+   vulkan_custom_driver_icd_folder(
+         "/usr/share/vulkan/icd.d/radeon_icd.x86_64.json", f, sizeof(f));
+   CHECK(!strcmp(f, "/usr"));
+   vulkan_custom_driver_icd_folder(
+         "C:\\mesa\\x64\\lvp_icd.x86_64.json", f, sizeof(f));
+   CHECK(!strcmp(f, "...\\mesa\\x64"));
+   vulkan_custom_driver_icd_folder("C:\\m\\inst\\share\\vulkan\\icd.d\\x.json", f, sizeof(f));
+   CHECK(!strcmp(f, "...\\m\\inst"));
+   vulkan_custom_driver_icd_folder("C:\\x.json", f, sizeof(f));
+   CHECK(!strcmp(f, "C:\\"));
+   vulkan_custom_driver_icd_folder("/opt/mesa/lib/x.json", f, sizeof(f));
+   CHECK(!strcmp(f, ".../mesa/lib"));
+   vulkan_custom_driver_icd_folder("/a/b/x.json", f, sizeof(f));
+   CHECK(!strcmp(f, "/a/b"));
+   vulkan_custom_driver_icd_folder("/radeon.json", f, sizeof(f));
+   CHECK(!strcmp(f, "/"));
+   vulkan_custom_driver_icd_folder("/share/vulkan/icd.d/x.json", f, sizeof(f));
+   CHECK(!strcmp(f, "/"));
+   vulkan_custom_driver_icd_folder("radeon.json", f, sizeof(f));
+   CHECK(!strcmp(f, "."));
+   vulkan_custom_driver_icd_folder("share/vulkan/icd.d/x.json", f, sizeof(f));
+   CHECK(!strcmp(f, "."));
+   vulkan_custom_driver_icd_folder("icd/radeon.json", f, sizeof(f));
+   CHECK(!strcmp(f, "icd"));
+   /* truncated, still terminated */
+   CHECK(vulkan_custom_driver_icd_folder("/opt/mesa/lib/x.json",
+            small, sizeof(small)) == sizeof(small) - 1);
+   CHECK(!strcmp(small, ".../mes"));
+}
+
 int main(void)
 {
    test_meta();
@@ -1186,6 +1223,7 @@ int main(void)
    test_icd_library();
    test_session_device();
    test_loader_exts();
+   test_icd_folder();
    printf("vulkan_custom_driver_test: %u checks, %u failures\n",
          checks, failures);
    return failures ? 1 : 0;

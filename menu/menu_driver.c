@@ -768,6 +768,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
       if (   (entry.type == FILE_TYPE_SCAN_DIRECTORY)
           || (entry.type == FILE_TYPE_MANUAL_SCAN_DIRECTORY)
           || (entry.type == FILE_TYPE_USE_DIRECTORY)
+          || (entry.type == FILE_TYPE_VULKAN_DRIVER_SYSTEM)
           || (entry.type == FILE_TYPE_PARENT_DIRECTORY))
          continue;
 

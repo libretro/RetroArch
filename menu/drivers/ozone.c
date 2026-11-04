@@ -2535,6 +2535,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case FILE_TYPE_DIRECTORY:
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_FOLDER];
       case FILE_TYPE_USE_DIRECTORY:
+      case FILE_TYPE_VULKAN_DRIVER_SYSTEM:
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK];
       case FILE_TYPE_PLAIN:
       case FILE_TYPE_IN_CARCHIVE:

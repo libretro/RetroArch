@@ -2709,7 +2709,13 @@ static int generic_action_ok(const char *path,
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
       case ACTION_OK_LOAD_VULKAN_DRIVER:
          flush_char = MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST_STR;
-         if (settings)
+         if (type == FILE_TYPE_VULKAN_DRIVER_SYSTEM)
+         {
+            if (settings && *settings->paths.path_vulkan_driver)
+               configuration_set_string(settings,
+                     settings->paths.path_vulkan_driver, "");
+         }
+         else if (settings)
          {
             configuration_set_string(settings,
                   settings->paths.path_vulkan_driver, action_path);
@@ -10591,6 +10597,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
          case FILE_TYPE_VULKAN_DRIVER:
+         case FILE_TYPE_VULKAN_DRIVER_SYSTEM:
             BIND_ACTION_OK(cbs, action_ok_vulkan_driver_load);
             break;
 #endif

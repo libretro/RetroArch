@@ -16643,9 +16643,14 @@ static void settings_build_video(
          }
 #endif
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
-         /* Any video driver: HW cores force Vulkan under gl too */
+         /* Any video driver: HW cores force Vulkan under gl too. The
+          * desktop asks the loader at Vulkan init instead. */
+#ifdef ANDROID
          if (vulkan_custom_driver_supported())
             ADD_DESC(vulkan_driver_desc);
+#else
+         ADD_DESC(vulkan_driver_desc);
+#endif
 #endif
 
 #ifdef HAVE_D3D10
