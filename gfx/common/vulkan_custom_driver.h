@@ -57,6 +57,11 @@ const char *vulkan_custom_driver_parse_icd(const char *buf, size_t len,
  * passes, else the reason; a bare file name means the system's library. */
 const char *vulkan_custom_driver_icd_library(const char *json_path,
       const char *library_path, char *out, size_t size);
+/* Desktop menu: where a .json came from, short enough for one line. Its
+ * install prefix when it sits in share/vulkan/icd.d, else its directory;
+ * the last two components after "...", or all of it when shorter. */
+size_t vulkan_custom_driver_icd_folder(const char *json_path,
+      char *out, size_t size);
 
 /* A new zip or .json version gets a new key. On Android it names the
  * extraction dir, as "%08x". */
