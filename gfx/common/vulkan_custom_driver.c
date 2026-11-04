@@ -437,6 +437,72 @@ const char *vulkan_custom_driver_icd_library(const char *json_path,
    return NULL;
 }
 
+size_t vulkan_custom_driver_icd_folder(const char *json_path,
+      char *out, size_t size)
+{
+   static const char icd_dir[] = "share/vulkan/icd.d";
+   size_t icd_len = sizeof(icd_dir) - 1;
+   size_t len     = 0;
+   size_t start   = 0;
+   size_t _len    = 0;
+   size_t i, n;
+   unsigned seps  = 0;
+
+   if (!size)
+      return 0;
+   for (i = 0; json_path[i]; i++)
+      if (icd_slash(json_path[i]))
+         len = i;
+   if (len >= icd_len)
+   {
+      for (i = 0; i < icd_len; i++)
+      {
+         char c = json_path[len - icd_len + i];
+         if (c != icd_dir[i] && !(icd_dir[i] == '/' && icd_slash(c)))
+            break;
+      }
+      if (i == icd_len)
+      {
+         if (len == icd_len)
+            len = 0;
+         else if (icd_slash(json_path[len - icd_len - 1]))
+            len -= icd_len + 1;
+      }
+   }
+   if (!len)
+   {
+      /* "/x.json" is in the root; "x.json" is relative */
+      out[0] = (size > 1) ? (icd_slash(json_path[0]) ? json_path[0] : '.')
+            : '\0';
+      if (size > 1)
+         out[1] = '\0';
+      return (size > 1) ? 1 : 0;
+   }
+   /* A drive root keeps its separator: "C:\" */
+   if (     len == 2 && json_path[1] == ':'
+         && (     (json_path[0] >= 'A' && json_path[0] <= 'Z')
+               || (json_path[0] >= 'a' && json_path[0] <= 'z'))
+         && icd_slash(json_path[2]))
+      len++;
+   for (i = len; i > 0; i--)
+      if (icd_slash(json_path[i - 1]) && ++seps == 2)
+      {
+         start = i - 1;
+         break;
+      }
+   if (start)
+      _len = strlcpy(out, "...", size);
+   if (_len >= size)
+      _len = size - 1;
+   n = len - start;
+   if (n > size - 1 - _len)
+      n = size - 1 - _len;
+   memcpy(out + _len, json_path + start, n);
+   _len += n;
+   out[_len] = '\0';
+   return _len;
+}
+
 const char *vulkan_custom_driver_check_members(
       const struct string_list *members, const char *library_name)
 {
