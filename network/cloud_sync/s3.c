@@ -14,6 +14,8 @@
 
 #include <encodings/base64.h>
 #include <lrc_hash.h>
+#include <crypto/crypto.h>
+#include <crypto/kdf.h>
 #include <string/stdstring.h>
 #include <time/rtime.h>
 #include <formats/rjson.h>
@@ -444,6 +446,19 @@ static char* s3_url_encode(const char *input)
    return output;
 }
 
+/* One query parameter: a span of the caller's string, and how much of
+ * it is the name. */
+typedef struct
+{
+   const char *p;
+   size_t      len;
+   size_t      name;
+} s3_query_param_t;
+
+/* Parameters sorted without allocating, past which the index is on
+ * the heap. Every request this client signs has one or two. */
+#define S3_QUERY_INLINE 16
+
 /* qsort comparator: SigV4 sorts query parameters by URL-encoded name,
  * then by URL-encoded value, in byte order.  The names are compared on
  * their own: on the whole "name=value" string, a name that extends
@@ -451,280 +466,90 @@ static char* s3_url_encode(const char *input)
  * digits, '-', '.' and '%' all sort below '='. */
 static int s3_query_param_cmp(const void *a, const void *b)
 {
-   const char *x  = *(const char* const*)a;
-   const char *y  = *(const char* const*)b;
-   size_t      xn = strcspn(x, "=");
-   size_t      yn = strcspn(y, "=");
-   int         r  = strncmp(x, y, xn < yn ? xn : yn);
+   const s3_query_param_t *x = (const s3_query_param_t*)a;
+   const s3_query_param_t *y = (const s3_query_param_t*)b;
+   size_t xr                 = x->len - x->name;
+   size_t yr                 = y->len - y->name;
+   int    r                  = memcmp(x->p, y->p,
+         x->name < y->name ? x->name : y->name);
 
    if (r)
       return r;
-   if (xn != yn)
-      return xn < yn ? -1 : 1;
-   return strcmp(x + xn, y + yn);
+   if (x->name != y->name)
+      return x->name < y->name ? -1 : 1;
+   if ((r = memcmp(x->p + x->name, y->p + y->name, xr < yr ? xr : yr)))
+      return r;
+   return xr == yr ? 0 : (xr < yr ? -1 : 1);
 }
 
-/* Canonicalize query string parameters per SigV4: split on '&', sort
- * with s3_query_param_cmp, re-join.  The caller encodes each name and
- * value with s3_url_encode_query_value, and writes every parameter as
- * name=value, even with an empty value ("uploads=").  Returns NULL only
- * when out of memory; an empty query gives "". */
-static char* s3_canonicalize_query_string(const char *query_string)
+typedef void (*s3_emit_t)(void *data, const char *s, size_t len);
+
+/* The canonical query string per SigV4, handed to @emit piece by
+ * piece: @query's parameters, sorted with s3_query_param_cmp, joined
+ * by '&'. Names and values arrive URL-encoded, and every parameter as
+ * name=value, even with an empty value ("uploads="). False only out of
+ * memory. */
+static bool s3_query_emit(const char *query, s3_emit_t emit, void *data)
 {
-   size_t i;
-   size_t query_len;
-   size_t count = 1;
-   size_t pos   = 0;
-   char  *copy;
-   char  *out;
-   char **params;
+   s3_query_param_t  inline_params[S3_QUERY_INLINE];
+   s3_query_param_t *params = inline_params;
+   const char       *q;
+   size_t            count  = 1;
+   size_t            i;
 
-   if (!query_string || !*query_string)
-      return strdup("");
-
-   if (!(copy = strdup(query_string)))
-      return NULL;
-
-   query_len = strlen(copy);
-   for (i = 0; i < query_len; i++)
-      if (copy[i] == '&')
+   if (!query || !*query)
+      return true;
+   for (q = query; *q; q++)
+      if (*q == '&')
          count++;
+   if (     count > S3_QUERY_INLINE
+         && !(params = (s3_query_param_t*)malloc(count * sizeof(*params))))
+      return false;
 
-   params = (char**)malloc(count * sizeof(char*));
-   /* Sorting moves the parameters but adds nothing, so the result is
-    * the input's length. */
-   out    = (char*)malloc(query_len + 1);
-
-   if (!params || !out)
+   for (i = 0, q = query; i < count; i++)
    {
-      free(params);
-      free(out);
-      free(copy);
-      return NULL;
+      const char *amp = strchr(q, '&');
+      size_t      len = amp ? (size_t)(amp - q) : strlen(q);
+      const char *eq  = (const char*)memchr(q, '=', len);
+      params[i].p     = q;
+      params[i].len   = len;
+      params[i].name  = eq ? (size_t)(eq - q) : len;
+      q              += len + (amp ? 1 : 0);
    }
 
-   /* Cut the copy into one string per parameter. */
-   params[0] = copy;
-   for (i = 0, count = 1; i < query_len; i++)
-   {
-      if (copy[i] == '&')
-      {
-         copy[i]         = '\0';
-         params[count++] = copy + i + 1;
-      }
-   }
-
-   qsort(params, count, sizeof(char*), s3_query_param_cmp);
+   qsort(params, count, sizeof(*params), s3_query_param_cmp);
 
    for (i = 0; i < count; i++)
    {
-      size_t len = strlen(params[i]);
-      if (i > 0)
-         out[pos++] = '&';
-      memcpy(out + pos, params[i], len);
-      pos += len;
+      if (i)
+         emit(data, "&", 1);
+      emit(data, params[i].p, params[i].len);
    }
-   out[pos] = '\0';
 
-   free(params);
-   free(copy);
-   return out;
+   if (params != inline_params)
+      free(params);
+   return true;
 }
 
-/* Calculate HMAC-SHA256 and return binary result */
-static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const char *data, uint8_t *output)
+/* @s, NUL-terminated, into the hash or the MAC being made */
+#define S3_SHA_STR(st, str) \
+   sha256_stream_update((st), (const uint8_t*)(str), strlen(str))
+#define S3_MAC_STR(ctx, str) \
+   hmac_sha256_update((ctx), (const uint8_t*)(str), strlen(str))
+
+static void s3_sha_emit(void *data, const char *s, size_t len)
 {
-   unsigned i       = 0;
-   char *inner_data = NULL;
-   size_t data_len  = strlen(data);
-
-   char inner_pad[64];
-   char outer_pad[64];
-   uint8_t key_hash[32];
-
-   char inner_hash_hex[65];
-   uint8_t inner_hash_bin[32];
-   char final_hash_hex[65];
-
-   /* Hash the key if it's longer than 64 bytes */
-   if (key_len > 64)
-   {
-      char temp_hash[65];/* Use a temporary buffer for the hash */
-      sha256_hash(temp_hash, (const uint8_t*)key, key_len);
-
-      /* Convert hex to binary */
-      for (i = 0; i < 32; i++)
-      {
-         char hex_byte[3];
-         hex_byte[0] = temp_hash[i*2];
-         hex_byte[1] = temp_hash[i*2+1];
-         hex_byte[2] = '\0';
-         key_hash[i] = (uint8_t)strtol(hex_byte, NULL, 16);
-      }
-      key = key_hash;
-      key_len = 32;
-   }
-   else
-   {
-   }
-
-   /* Pad the key to 64 bytes */
-   memset(outer_pad, 0, 64);
-   memset(inner_pad, 0, 64);
-   if (key_len <= 64)
-   {
-      memcpy(outer_pad, key, key_len);
-      memcpy(inner_pad, key, key_len);
-   }
-   else
-   {
-      /* Key is longer than 64 bytes, this shouldn't happen after hashing */
-      memcpy(outer_pad, key, 64);
-      memcpy(inner_pad, key, 64);
-   }
-
-   /* XOR with constants */
-   for (i = 0; i < 64; i++)
-   {
-      outer_pad[i] ^= 0x5c;
-      inner_pad[i] ^= 0x36;
-   }
-
-   /* Inner hash: H(K XOR 0x36, text) */
-   inner_data = malloc(64 + data_len);
-   if (!inner_data)
-      return NULL;
-
-   memcpy(inner_data, inner_pad, 64);
-   memcpy(inner_data + 64, data, data_len);
-
-   /* Hash and convert to binary */
-   sha256_hash(inner_hash_hex, (const uint8_t*)inner_data, 64 + data_len);
-
-   for (i = 0; i < 32; i++)
-   {
-      char hex_byte[3];
-      hex_byte[0] = inner_hash_hex[i*2];
-      hex_byte[1] = inner_hash_hex[i*2+1];
-      hex_byte[2] = '\0';
-      inner_hash_bin[i] = (uint8_t)strtol(hex_byte, NULL, 16);
-   }
-
-   /* Outer hash: H(K XOR 0x5c, inner_hash_bin) */
-   /* Ensure we have enough space for outer hash (64 + 32 = 96 bytes) */
-   if (64 + data_len < 96)
-   {
-      /* Reallocate if needed */
-      char *outer_data = realloc(inner_data, 96);
-      if (!outer_data)
-      {
-         free(inner_data);
-         return NULL;
-      }
-      inner_data = outer_data;
-   }
-
-   memcpy(inner_data, outer_pad, 64);
-   memcpy(inner_data + 64, inner_hash_bin, 32);
-
-   sha256_hash(final_hash_hex, (const uint8_t*)inner_data, 64 + 32);
-
-   /* Convert final result to binary */
-   for (i = 0; i < 32; i++)
-   {
-      char hex_byte[3];
-      hex_byte[0] = final_hash_hex[i*2];
-      hex_byte[1] = final_hash_hex[i*2+1];
-      hex_byte[2] = '\0';
-      output[i] = (uint8_t)strtol(hex_byte, NULL, 16);
-   }
-
-   /* Cleanup */
-   free(inner_data);
-
-   return output;
-}
-
-/* Calculate AWS Signature Version 4 signature with proper key derivation */
-static char* s3_calculate_aws4_signature(const char *secret_key, const char *date,
-                                        const char *region, const char *service,
-                                        const char *string_to_sign)
-{
-   unsigned i;
-   char *signature;
-   char aws4_key[128];
-   uint8_t k_date[32];
-   uint8_t k_region[32];
-   uint8_t k_service[32];
-   uint8_t k_signing[32];
-   uint8_t final_signature[32];
-   char k_date_hex[65];
-   char k_region_hex[65];
-   char k_service_hex[65];
-
-   signature = malloc(65);
-   if (!signature)
-      return NULL;
-
-   /* Build AWS4 key string */
-   snprintf(aws4_key, sizeof(aws4_key), "AWS4%s", secret_key);
-
-   /* Derive keys step by step using binary HMAC throughout */
-   /* Step 1: DateKey = HMAC-SHA256("AWS4" + SecretAccessKey, Date) */
-   /* Note: aws4_key is a string, but HMAC treats it as byte data */
-   if (!s3_hmac_sha256_bin((uint8_t*)aws4_key, strlen(aws4_key), date, k_date))
-      goto error;
-
-   /* Debug: Show k_date */
-   for (i = 0; i < 32; i++)
-      snprintf(k_date_hex + 2 * i, 3, "%02x", (unsigned)k_date[i]);
-   k_date_hex[64] = '\0';
-   /* Step 2: DateRegionKey = HMAC-SHA256(DateKey, Region) */
-   if (!s3_hmac_sha256_bin(k_date, 32, region, k_region))
-      goto error;
-
-   /* Debug: Show k_region */
-   for (i = 0; i < 32; i++)
-      snprintf(k_region_hex + 2 * i, 3, "%02x", (unsigned)k_region[i]);
-   k_region_hex[64] = '\0';
-   /* Step 3: DateRegionServiceKey = HMAC-SHA256(DateRegionKey, Service) */
-   if (!s3_hmac_sha256_bin(k_region, 32, service, k_service))
-      goto error;
-
-   /* Debug: Show k_service */
-   for (i = 0; i < 32; i++)
-      snprintf(k_service_hex + 2 * i, 3, "%02x", (unsigned)k_service[i]);
-   k_service_hex[64] = '\0';
-   /* Step 4: SigningKey = HMAC-SHA256(DateRegionServiceKey, "aws4_request") */
-   if (!s3_hmac_sha256_bin(k_service, 32, "aws4_request", k_signing))
-      goto error;
-
-   /* Calculate final signature using the derived signing key in binary
-   * format
-   */
-   if (!s3_hmac_sha256_bin(k_signing, 32, string_to_sign, final_signature))
-   {
-      RARCH_ERR(S3_PFX "Failed to calculate final signature\n");
-      goto error;
-   }
-
-   /* Convert final signature to hex string */
-   for (i = 0; i < 32; i++)
-      snprintf(signature + 2 * i, 3, "%02x", (unsigned)final_signature[i]);
-
-   signature[64] = '\0';
-   return signature;
-
-error:
-   free(signature);
-   return NULL;
+   sha256_stream_update((struct sha256_state*)data, (const uint8_t*)s, len);
 }
 
 /* AWS Signature Version 4 calculation with provided timestamp */
 /* @copy_source, when set, is the x-amz-copy-source value of a
  * CopyObject request.  S3 requires every x-amz-* header a request
  * carries to be signed, so it joins the canonical and signed headers
- * in its sorted place, between x-amz-content-sha256 and x-amz-date. */
+ * in its sorted place, between x-amz-content-sha256 and x-amz-date.
+ * The canonical request is hashed as it is made, and the string to
+ * sign MACed the same way: nothing is assembled, so nothing is cut
+ * short. Returns the signature in hex, NULL out of memory. */
 static char* s3_calculate_signature_v4_with_time(const char *method, const char *canonical_uri,
                                       const char *query_string, const char *headers,
                                       const char *payload_hash, const char *region,
@@ -732,101 +557,108 @@ static char* s3_calculate_signature_v4_with_time(const char *method, const char 
                                       const char *secret_key, const char *host,
                                       const char *copy_source, time_t now)
 {
-   char *signature = NULL;
-   char date[16];
-   char datetime[32];
-   char credential_scope[128];
-   char canonical_request[4096];
-   char string_to_sign[4096];
-   char signed_headers[256];
-   char *canonical_headers = NULL;
-   char *canonical_query_string = NULL;
-   char *canonical_request_hash = NULL;
-
-   /* Use provided timestamp */
+   static const char hex[] = "0123456789abcdef";
+   struct sha256_state    cr;
+   struct hmac_sha256_ctx mac;
+   uint8_t  digest[32];
+   uint8_t  key[32];
+   char     cr_hash[65];
+   char     date[16];
+   char     datetime[32];
+   /* "AWS4" and the secret, which the settings keep to 185 octets */
+   char     aws4_key[4 + 186];
+   size_t   secret_len = strlen(secret_key);
+   unsigned i;
+   char    *signature;
    struct tm *tm_info = gmtime(&now);
+
+   (void)access_key;
+   if (secret_len > sizeof(aws4_key) - 4)
+   {
+      RARCH_ERR(S3_PFX "Secret access key too long to sign with\n");
+      return NULL;
+   }
+   if (!(signature = (char*)malloc(65)))
+      return NULL;
    strftime(date, sizeof(date), "%Y%m%d", tm_info);
    strftime(datetime, sizeof(datetime), "%Y%m%dT%H%M%SZ", tm_info);
 
-   /* Build credential scope */
-   snprintf(credential_scope, sizeof(credential_scope), "%s/%s/%s/aws4_request",
-            date, region, service);
-
-   /* Build canonical headers */
+   /* The canonical request, into its hash */
+   sha256_stream_init(&cr, 0);
+   S3_SHA_STR(&cr, method);
+   S3_SHA_STR(&cr, "\n");
+   S3_SHA_STR(&cr, canonical_uri);
+   S3_SHA_STR(&cr, "\n");
+   /* Out of memory, the request is not signed at all: a signature made
+    * without the query only shows up later, as a 403. */
+   if (!s3_query_emit(query_string, s3_sha_emit, &cr))
+   {
+      free(signature);
+      return NULL;
+   }
+   S3_SHA_STR(&cr, "\n");
    if (headers)
    {
-      /* Format headers for canonical request - must be sorted alphabetically
-       * and lowercase. Each header must be trimmed and end with a newline.
-       * Each header must be in the following order:
-       * host
-       * x-amz-content-sha256
-       * x-amz-date
-       */
-      size_t canonical_len = 512 + (copy_source ? strlen(copy_source) : 0);
-      /* Out of memory, the request is not signed at all: a signature
-       * made without the headers or the query only shows up later, as
-       * a 403. */
-      if (!(canonical_headers = malloc(canonical_len)))
-         goto cleanup;
-
+      /* sorted, lowercase, each ending in a newline */
+      S3_SHA_STR(&cr, "host:");
+      S3_SHA_STR(&cr, host);
+      S3_SHA_STR(&cr, "\nx-amz-content-sha256:");
+      S3_SHA_STR(&cr, payload_hash);
       if (copy_source)
-         snprintf(canonical_headers, canonical_len,
-               "host:%s\nx-amz-content-sha256:%s\nx-amz-copy-source:%s\nx-amz-date:%s\n",
-               host, payload_hash, copy_source, datetime);
-      else
-         snprintf(canonical_headers, canonical_len,
-               "host:%s\nx-amz-content-sha256:%s\nx-amz-date:%s\n",
-               host, payload_hash, datetime);
+      {
+         S3_SHA_STR(&cr, "\nx-amz-copy-source:");
+         S3_SHA_STR(&cr, copy_source);
+      }
+      S3_SHA_STR(&cr, "\nx-amz-date:");
+      S3_SHA_STR(&cr, datetime);
+      S3_SHA_STR(&cr, "\n");
    }
-
-   /* Build signed headers list */
-   strlcpy(signed_headers, copy_source
+   S3_SHA_STR(&cr, "\n");
+   S3_SHA_STR(&cr, copy_source
          ? "host;x-amz-content-sha256;x-amz-copy-source;x-amz-date"
-         : "host;x-amz-content-sha256;x-amz-date", sizeof(signed_headers));
+         : "host;x-amz-content-sha256;x-amz-date");
+   S3_SHA_STR(&cr, "\n");
+   S3_SHA_STR(&cr, payload_hash);
+   sha256_stream_final(&cr, digest);
+   for (i = 0; i < 32; i++)
+   {
+      cr_hash[2 * i]     = hex[digest[i] >> 4];
+      cr_hash[2 * i + 1] = hex[digest[i] & 15];
+   }
+   cr_hash[64] = '\0';
 
-   /* Build canonical query string */
-   if (query_string
-         && !(canonical_query_string =
-            s3_canonicalize_query_string(query_string)))
-      goto cleanup;
+   /* The signing key: HMAC chained from "AWS4" and the secret, through
+    * the date, the region, the service and "aws4_request" */
+   memcpy(aws4_key, "AWS4", 4);
+   memcpy(aws4_key + 4, secret_key, secret_len);
+   hmac_sha256((const uint8_t*)aws4_key, 4 + secret_len,
+         (const uint8_t*)date, strlen(date), key);
+   hmac_sha256(key, 32, (const uint8_t*)region, strlen(region), key);
+   hmac_sha256(key, 32, (const uint8_t*)service, strlen(service), key);
+   hmac_sha256(key, 32, (const uint8_t*)"aws4_request", 12, key);
 
-   /* Build canonical request */
-   snprintf(canonical_request, sizeof(canonical_request),
-            "%s\n%s\n%s\n%s\n%s\n%s",
-            method,
-            canonical_uri,
-            canonical_query_string ? canonical_query_string : "",
-            canonical_headers ? canonical_headers : "",
-            signed_headers,
-            payload_hash);
+   /* The string to sign, into its MAC */
+   hmac_sha256_init(&mac, key, 32);
+   S3_MAC_STR(&mac, S3_SIGNATURE_VERSION "\n");
+   S3_MAC_STR(&mac, datetime);
+   S3_MAC_STR(&mac, "\n");
+   S3_MAC_STR(&mac, date);
+   S3_MAC_STR(&mac, "/");
+   S3_MAC_STR(&mac, region);
+   S3_MAC_STR(&mac, "/");
+   S3_MAC_STR(&mac, service);
+   S3_MAC_STR(&mac, "/aws4_request\n");
+   S3_MAC_STR(&mac, cr_hash);
+   hmac_sha256_final(&mac, digest);
 
-   /* Calculate SHA256 hash of canonical request */
-   canonical_request_hash = s3_sha256_hash(canonical_request, strlen(canonical_request));
-   if (!canonical_request_hash)
-      goto cleanup;
-
-   /* Build string to sign */
-   snprintf(string_to_sign, sizeof(string_to_sign),
-            "%s\n%s\n%s\n%s",
-            S3_SIGNATURE_VERSION,
-            datetime,
-            credential_scope,
-            canonical_request_hash);
-
-   /* Calculate signature using AWS Signature Version 4 key derivation */
-   signature = s3_calculate_aws4_signature(secret_key, date, region, service, string_to_sign);
-   if (!signature)
-      RARCH_ERR(S3_PFX "Failed to calculate signature\n");
-
-   /* Cleanup */
-   cleanup:
-   if (canonical_headers)
-      free(canonical_headers);
-   if (canonical_query_string)
-      free(canonical_query_string);
-   if (canonical_request_hash)
-      free(canonical_request_hash);
-
+   for (i = 0; i < 32; i++)
+   {
+      signature[2 * i]     = hex[digest[i] >> 4];
+      signature[2 * i + 1] = hex[digest[i] & 15];
+   }
+   signature[64] = '\0';
+   crypto_memzero(aws4_key, sizeof(aws4_key));
+   crypto_memzero(key, sizeof(key));
    return signature;
 }
 

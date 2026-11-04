@@ -2144,6 +2144,10 @@ CLOUD SYNC
 #include "../network/cloud_sync/nfs.c"
 #endif
 #ifdef HAVE_S3
+/* SigV4 signs with crypto/kdf.c's SHA-256 and HMAC */
+#ifndef HAVE_CRYPTO
+#error "HAVE_S3 needs HAVE_CRYPTO"
+#endif
 #include "../network/cloud_sync/s3.c"
 #endif
 #endif

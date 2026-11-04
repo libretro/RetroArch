@@ -353,22 +353,55 @@ static char *sign_failing_alloc(unsigned nth)
    return sig;
 }
 
-/* The signer allocates the canonical headers first, then the canonical
- * query.  Losing either must give no signature: one made without them
- * only shows up later, as a 403 from S3. */
+/* The signer allocates nothing but its result, and the index of a query
+ * with more parameters than it sorts in place.  Losing either must give
+ * no signature: one made without the query only shows up later, as a
+ * 403 from S3. */
 static void test_signer_out_of_memory(void)
 {
-   char *sig = sign_failing_alloc(0);
+   static char many[128];
+   char       *sig = sign_failing_alloc(0);
+   int         n;
+   int         i;
+
    CHECK(sig, "the signer must sign when memory is available");
    free(sig);
 
    sig = sign_failing_alloc(1);
-   CHECK(!sig, "no memory for the headers, but it signed: %s", sig);
+   CHECK(!sig, "no memory for the signature, but it signed: %s", sig);
    free(sig);
 
    sig = sign_failing_alloc(2);
-   CHECK(!sig, "no memory for the query, but it signed: %s", sig);
+   CHECK(sig, "a short query must sign without another allocation");
    free(sig);
+
+   for (n = 0, i = 0; i < 17; i++)
+      n += snprintf(many + n, sizeof(many) - n, "%sq%02d=v", i ? "&" : "", i);
+   fail_alloc = 2;
+   sig        = s3_calculate_signature_v4_with_time("GET", "/", many,
+         "host;x-amz-content-sha256;x-amz-date", S3_EMPTY_PAYLOAD_SHA256,
+         "us-east-1", S3_SERVICE, "access", "secret", "example.com",
+         NULL, 0);
+   fail_alloc = 0;
+   CHECK(!sig, "no memory for the query index, but it signed: %s", sig);
+   free(sig);
+}
+
+struct query_sink
+{
+   size_t len;
+   char   buf[512];
+};
+
+static void query_sink_emit(void *data, const char *s, size_t len)
+{
+   struct query_sink *q = (struct query_sink*)data;
+   if (q->len + len < sizeof(q->buf))
+   {
+      memcpy(q->buf + q->len, s, len);
+      q->len += len;
+   }
+   q->buf[q->len] = '\0';
 }
 
 /* SigV4 sorts query parameters by name, then by value.  Sorting the
@@ -381,29 +414,83 @@ static void test_query_order(void)
       { "a-b=1&a=2",                 "a=2&a-b=1" },
       { "uploadId=x&partNumber=3",   "partNumber=3&uploadId=x" },
       { "k=2&k=1",                   "k=1&k=2" },
-      { "",                          "" }
+      { "k=10&k=1",                  "k=1&k=10" },
+      { "uploads=",                  "uploads=" },
+      { "",                          "" },
+      { "b=2&c=3&a=1&b=1",           "a=1&b=1&b=2&c=3" }
    };
    size_t i;
 
    for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
    {
-      char *got = s3_canonicalize_query_string(cases[i][0]);
-      CHECK(got && !strcmp(got, cases[i][1]),
+      struct query_sink q;
+      bool              ok;
+      q.len    = 0;
+      q.buf[0] = '\0';
+      ok       = s3_query_emit(cases[i][0], query_sink_emit, &q);
+      CHECK(ok && !strcmp(q.buf, cases[i][1]),
             "query \"%s\": sorted to \"%s\", SigV4 wants \"%s\"",
-            cases[i][0], got ? got : "(null)", cases[i][1]);
-      free(got);
+            cases[i][0], q.buf, cases[i][1]);
    }
+}
 
-   /* Each of its three allocations can fail, and none may leak. */
-   for (i = 1; i <= 3; i++)
+/* Signatures against an independent SigV4 computation (Python's
+ * hashlib and hmac over the same canonical request), at time 0: the
+ * plain requests, a CopyObject, a query too long for the signer's own
+ * index, a URI past 4 KiB and a 150-octet secret, both signed whole. */
+static void test_signature_known(void)
+{
+   static char many[256];
+   static char long_uri[5002];
+   static char long_secret[151];
+   static const char *const E  = S3_EMPTY_PAYLOAD_SHA256;
+   static const char *const HD = "host;x-amz-content-sha256;x-amz-date";
+   struct
    {
-      char *got;
+      const char *method, *uri, *query, *region, *ak, *sk, *host, *copy;
+      const char *want;
+   } c[7];
+   size_t i, n = 0;
 
-      fail_alloc = (unsigned)i;
-      got        = s3_canonicalize_query_string("b=2&a=1");
-      fail_alloc = 0;
-      CHECK(!got, "allocation %u failed, but it returned: %s", (unsigned)i, got);
-      free(got);
+   for (i = 20; i-- > 0;)
+      n += (size_t)snprintf(many + n, sizeof(many) - n, "%sp%02u=%u",
+            n ? "&" : "", (unsigned)i, (unsigned)(i % 3));
+   long_uri[0] = '/';
+   memset(long_uri + 1, 'k', 5000);
+   long_uri[5001] = '\0';
+   memset(long_secret, 'S', 150);
+   long_secret[150] = '\0';
+
+   c[0].method = "PUT";  c[0].uri = "/key"; c[0].query = "uploadId=x";
+   c[0].region = "us-east-1"; c[0].ak = "access"; c[0].sk = "secret";
+   c[0].host = "example.com"; c[0].copy = NULL;
+   c[0].want = "d808fe25cbc9179929e8278876efe7eafa74c6f8e61b5fcd48f336e049b05f09";
+   c[1].method = "GET";  c[1].uri = "/retroarch/saves/a.srm"; c[1].query = "";
+   c[1].region = "eu-west-2"; c[1].ak = "AKIDEXAMPLE";
+   c[1].sk = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY";
+   c[1].host = "bucket.s3.eu-west-2.amazonaws.com"; c[1].copy = NULL;
+   c[1].want = "88628b3cd21ef9099ec3e65c4206ffdbfbdcb1c8bcea85788f1369b50c8dce9c";
+   c[2] = c[0]; c[2].uri = "/dst"; c[2].query = "partNumber=3&uploadId=abc";
+   c[2].copy = "bucket/src%20name";
+   c[2].want = "3b1f9dc7df0aa60e39acdbb7e83ffe00eff9d1dc48a31b667155c7728bc090c7";
+   c[3] = c[0]; c[3].method = "POST"; c[3].uri = "/k"; c[3].query = "uploads=";
+   c[3].want = "ea8e6b2d0d077940803de2f7528709ee5051d071c3dd9abff1cb2f2547b27456";
+   c[4] = c[0]; c[4].method = "GET"; c[4].uri = "/"; c[4].query = many;
+   c[4].want = "f3afef1486dc1ad64f77dc483359a0e40c69fcb4ffba1efc623f9735dc1a700d";
+   c[5] = c[0]; c[5].uri = long_uri; c[5].query = "";
+   c[5].want = "d5e860eac53dd460cea810f05454bbd084c3a37166a2a059ad362592f0efc2d3";
+   c[6] = c[0]; c[6].query = ""; c[6].sk = long_secret;
+   c[6].want = "789d5f99519bb1bc6cd055d8f9d60eaee5204e62d093b432428e7e80b77beb16";
+
+   for (i = 0; i < sizeof(c) / sizeof(c[0]); i++)
+   {
+      char *sig = s3_calculate_signature_v4_with_time(c[i].method, c[i].uri,
+            c[i].query, HD, E, c[i].region, S3_SERVICE, c[i].ak, c[i].sk,
+            c[i].host, c[i].copy, 0);
+      CHECK(sig && !strcmp(sig, c[i].want),
+            "signature %u: %s, SigV4 gives %s", (unsigned)i,
+            sig ? sig : "(none)", c[i].want);
+      free(sig);
    }
 }
 
@@ -427,6 +514,7 @@ int main(void)
    test_no_backup_wanted(tmp);
    test_signer_out_of_memory();
    test_query_order();
+   test_signature_known();
 
    remove(tmp);
 

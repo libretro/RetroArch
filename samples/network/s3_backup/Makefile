@@ -12,7 +12,8 @@ flags   += -std=gnu99
 
 # The test includes network/cloud_sync/s3.c so it can drive the driver
 # as shipped; everything below is what that translation unit needs to
-# link.  The HTTP task layer is stubbed in stubs_retroarch.c; net_http.c
+# link (the signer's HMAC is libretro-common's crypto/kdf.c, which
+# brings crypto.c and md5.c).  The HTTP task layer is stubbed in stubs_retroarch.c; net_http.c
 # is linked for the response header helpers the driver reads with.
 SOURCES_C := \
 	s3_backup_test.c \
@@ -28,6 +29,9 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_base64.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/hash/lrc_hash.c \
+	$(LIBRETRO_COMM_DIR)/crypto/kdf.c \
+	$(LIBRETRO_COMM_DIR)/crypto/crypto.c \
+	$(LIBRETRO_COMM_DIR)/utils/md5.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/formats/json/rjson.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
@@ -53,6 +57,9 @@ endif
 OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 all: $(TARGET)
+
+# The test includes the driver, so it rebuilds when the driver changes
+s3_backup_test.o: $(CORE_DIR)/network/cloud_sync/s3.c
 
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
