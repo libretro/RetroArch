@@ -109,6 +109,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_content_collection_list,        DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_configurations_list,            DISPLAYLIST_CONFIGURATIONS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_load_content_list,              DISPLAYLIST_LOAD_CONTENT_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_manual_content_scan_dir_list,   DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_dump_disk_list,                 DISPLAYLIST_DUMP_DISC)
 #ifdef HAVE_LAKKA
 GENERIC_DEFERRED_PUSH(deferred_push_eject_disc,                     DISPLAYLIST_EJECT_DISC)
@@ -824,6 +825,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST, deferred_push_playlist_manager_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS, deferred_push_playlist_manager_settings},
       {MENU_ENUM_LABEL_LOAD_CONTENT_LIST, deferred_push_load_content_list},
+      {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_DIR_LIST, deferred_push_manual_content_scan_dir_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST, deferred_push_playlist_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST, deferred_push_database_manager_list_deferred},
       {MENU_ENUM_LABEL_CONFIGURATIONS, deferred_push_configurations},
@@ -948,6 +950,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          { MENU_ENUM_LABEL_CONFIGURATIONS_LIST, deferred_push_configurations_list },
          { MENU_ENUM_LABEL_LOAD_CONTENT_LIST, deferred_push_load_content_list },
          { MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL, deferred_push_load_content_special },
+         { MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_DIR_LIST, deferred_push_manual_content_scan_dir_list },
          { MENU_ENUM_LABEL_INFORMATION_LIST, deferred_push_information_list },
          { MENU_ENUM_LABEL_INFORMATION, deferred_push_information },
          { MENU_ENUM_LABEL_DEFERRED_CORE_LIST, deferred_push_core_list_deferred },

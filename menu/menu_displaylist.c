@@ -10151,9 +10151,25 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
+      case DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST:
       {
          core_info_list_t *info_list = NULL;
          core_info_get_list(&info_list);
+
+         if (type == DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST)
+         {
+            const char *content_dir = NULL;
+            /* Not stat'd here: a network location would block every
+             * build; a stored folder that is gone falls back when opened */
+            if (     manual_content_scan_get_menu_content_dir(&content_dir)
+                  && menu_entries_append(list,
+                     msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR),
+                     MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR,
+                     MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,
+                     MENU_SETTING_MANUAL_CONTENT_SCAN_DIR, 0, 0, NULL))
+               count++;
+         }
 
          if (*settings->paths.directory_menu_content)
             if (menu_entries_append(list,
@@ -10208,7 +10224,8 @@ unsigned menu_displaylist_build_list(
          }
 #endif
          if (     !settings->bools.kiosk_mode_enable
-               &&  settings->bools.settings_show_file_browser)
+               &&  settings->bools.settings_show_file_browser
+               &&  type != DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST)
          {
             menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
@@ -17385,6 +17402,7 @@ static bool menu_displaylist_ctl_internal(
 #endif
          case DISPLAYLIST_LOAD_CONTENT_LIST:
          case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
+         case DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST:
          case DISPLAYLIST_OPTIONS_REMAPPINGS:
          case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_SETTINGS_LIST:
