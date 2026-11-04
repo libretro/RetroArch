@@ -120,6 +120,12 @@ static void core_updater_list_free_entry(core_updater_list_entry_t *entry)
       entry->description = NULL;
    }
 
+   if (entry->system_name)
+   {
+      free(entry->system_name);
+      entry->system_name = NULL;
+   }
+
    if (entry->licenses_list)
    {
       string_list_free(entry->licenses_list);
@@ -755,6 +761,12 @@ static bool core_updater_list_set_core_info(
       entry->licenses_list = NULL;
    }
 
+   if (entry->system_name)
+   {
+      free(entry->system_name);
+      entry->system_name = NULL;
+   }
+
    entry->is_experimental = false;
 
    /* Read core info file
@@ -782,6 +794,10 @@ static bool core_updater_list_set_core_info(
       /* licenses_list */
       if (core_info->licenses && *core_info->licenses)
          entry->licenses_list   = string_split(core_info->licenses, "|");
+
+      /* system_name: taken over, so the free below skips it */
+      entry->system_name        = core_info->system_name;
+      core_info->system_name    = NULL;
 
       /* Clean up */
       core_info_free_core_updater_info(core_info);
@@ -834,6 +850,7 @@ static bool core_updater_list_push_entry(
    /* Assign core info */
    list_entry->display_name     = entry->display_name;
    list_entry->description      = entry->description;
+   list_entry->system_name      = entry->system_name;
    list_entry->licenses_list    = entry->licenses_list;
    list_entry->is_experimental  = entry->is_experimental;
 

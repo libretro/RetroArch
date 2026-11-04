@@ -1208,6 +1208,22 @@ jobs:
           make clean
           echo "[pass] database_scan_test (ASan)"
 
+      - name: Build and run core_updater_info_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -eu
+          # The system name core_info.c reads for the Core Downloader's
+          # entries: manufacturer and system joined, and the cases
+          # where the manufacturer is left out or no system is named.
+          make clean SANITIZER=address,undefined && make -j"$(nproc)" core_updater_info_test SANITIZER=address,undefined
+          info_root="$(mktemp -d)"
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             ./core_updater_info_test "$info_root"
+          rm -rf "$info_root"
+          make clean
+          echo "[pass] core_updater_info_test (ASan)"
+
       - name: Build and run database_scan_test (TSan, no threads, no readers)
         shell: bash
         working-directory: samples/tasks/database

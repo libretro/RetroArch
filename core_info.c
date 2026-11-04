@@ -2921,6 +2921,7 @@ core_updater_info_t *core_info_get_core_updater_info(
    info->display_name        = NULL;
    info->description         = NULL;
    info->licenses            = NULL;
+   info->system_name         = NULL;
 
    /* Fetch required parameters */
 
@@ -2936,6 +2937,38 @@ core_updater_info_t *core_info_get_core_updater_info(
 
    /* > licenses */
    info->licenses = config_take_string(conf, "license");
+
+   /* > system_name: the manufacturer goes in front unless it says
+    *   nothing ("N/A", "Various"), lists several makers, or the
+    *   system name already starts with it ("Atari Atari 2600") */
+   {
+      char *maker  = config_take_string(conf, "manufacturer");
+      char *system = config_take_string(conf, "systemname");
+
+      if (system && *system)
+      {
+         size_t maker_len = maker ? strlen(maker) : 0;
+
+         if (   maker_len
+             && !string_is_equal(maker, "N/A")
+             && !string_is_equal(maker, "Various")
+             && !strchr(maker, '|')
+             && strncmp(system, maker, maker_len))
+         {
+            size_t _len = maker_len + 1 + strlen(system) + 1;
+            if ((info->system_name = (char*)malloc(_len)))
+               snprintf(info->system_name, _len, "%s %s", maker, system);
+         }
+         else
+         {
+            info->system_name = system;
+            system            = NULL;
+         }
+      }
+
+      free(maker);
+      free(system);
+   }
 
    /* Clean up */
    config_file_free(conf);
@@ -2956,6 +2989,9 @@ void core_info_free_core_updater_info(core_updater_info_t *info)
 
    if (info->licenses)
       free(info->licenses);
+
+   if (info->system_name)
+      free(info->system_name);
 
    free(info);
    info = NULL;
