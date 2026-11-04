@@ -131,6 +131,24 @@ If a change touches code already covered by the GitHub CI workflow regression te
 - A workflow construct `ci_local.py` cannot read fails `tools/ci_local.py selftest`, which CI runs; extend the script in the same change.
 - A job's Ubuntu packages go in its `APT_PKGS` and are installed once, through `.github/workflows/scripts/apt-install.sh` and its cache steps; `tools/ci_apt_check.py` fails any other `apt-get` in a runner job.
 
+### Adding or changing a regression test
+
+- Show the test failing without the fix and passing with it. A test never seen to fail proves nothing.
+- Put a new step in the job that already runs its area: `tools/ci_local.py which` on a neighbouring sample names it. Within a job, steps run in order, so a step goes after any step whose output it uses. A step that takes more than a couple of minutes gets a job of its own instead of lengthening a shared one; jobs run side by side.
+- A new directory under `samples/` or `libretro-common/samples/` is claimed by a workflow step in the same commit, or the unclaimed-samples job builds it on its own.
+- After adding or changing a workflow step, or making one sample use another's files, run `tools/ci_paths.py` and commit the paths filters it rewrites. CI runs `tools/ci_paths.py --check` and fails on a stale filter.
+- Harnesses list their sources by hand. When a change makes a shipping file call a function defined in another file, run `tools/ci_local.py which` on the calling file and build every harness it lists. Each one that links the caller needs the callee's source, or a stand-in that does what the real function does, added in the same change.
+
+The runner image moves under the tree: Ubuntu releases bring new Mesa, Wine, ffmpeg, compilers, mingw-w64 headers and validation layers. Test what the code does, not what the current image happens to do:
+
+- Find tools by name on the `PATH`. When a package moves one, fix it once in `apt-install.sh`, not in each step.
+- Match a Vulkan validation message by its ID, which the driver's log line carries as `[ VUID-... ]`, never by its wording.
+- A fixture made with an external tool (ffmpeg and the like) builds the property under test explicitly, so the tool cannot choose it. For example, give the encoder frames of its own length so timestamps reach it unchanged. Where you can, have the generator check the property, so a tool that changes fails there with a clear message rather than as a wrong result in the test.
+- System headers can change dialect: newer SPA headers declare variables in `for` loops, and mingw-w64 13 hides APIs newer than the `_WIN32_WINNT` a build targets. Resolve newer Windows APIs at runtime; do not depend on what an SDK happens to declare.
+- Start an X server with `xvfb-run -a`, or on a display number no other step of the job uses.
+- With threads, assert only states that cannot have moved on yet: a load queued on a worker may already be finished when the next line runs.
+- Sanitizer builds at `-O0` have larger stack frames than optimised ones, and they grow with the compiler. A function close to the frame limit (2 KiB in libretro-common, 4 KiB elsewhere) is split; the limit is not raised.
+
 ## Never commit build output
 
 Nothing built is ever committed: no executables, objects, libraries,
