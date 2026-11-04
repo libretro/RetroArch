@@ -241,6 +241,202 @@ const char *vulkan_custom_driver_parse_meta(const char *buf, size_t len,
    return NULL;
 }
 
+enum icd_key
+{
+   ICD_KEY_NONE = 0,
+   ICD_KEY_FORMAT,
+   ICD_KEY_ICD,
+   ICD_KEY_LIBRARY,
+   ICD_KEY_API
+};
+
+struct icd_ctx
+{
+   struct vulkan_custom_driver_icd *icd;
+   const char *err;
+   unsigned depth;
+   enum icd_key key;
+   bool format;
+   bool in_icd;       /* depth 2 is the "ICD" object */
+};
+
+/* A value the current key cannot take, or a root that is not an object. */
+static bool icd_other(struct icd_ctx *ctx)
+{
+   if (ctx->depth == 0)
+      ctx->err = "the .json is not an object";
+   else if (ctx->key != ICD_KEY_NONE)
+      ctx->err = "the .json has a value of the wrong type";
+   ctx->key = ICD_KEY_NONE;
+   return !ctx->err;
+}
+
+static bool icd_member(void *data, const char *s, size_t len)
+{
+   struct icd_ctx *ctx = (struct icd_ctx*)data;
+   ctx->key = ICD_KEY_NONE;
+   if (ctx->depth == 1)
+   {
+      if (meta_is(s, len, "file_format_version"))
+         ctx->key = ICD_KEY_FORMAT;
+      else if (meta_is(s, len, "ICD"))
+         ctx->key = ICD_KEY_ICD;
+   }
+   else if (ctx->depth == 2 && ctx->in_icd)
+   {
+      if (meta_is(s, len, "library_path"))
+         ctx->key = ICD_KEY_LIBRARY;
+      else if (meta_is(s, len, "api_version"))
+         ctx->key = ICD_KEY_API;
+   }
+   return true;
+}
+
+static bool icd_string(void *data, const char *s, size_t len)
+{
+   struct icd_ctx *ctx = (struct icd_ctx*)data;
+   if (ctx->depth == 0 || ctx->key == ICD_KEY_ICD)
+      return icd_other(ctx);
+   switch (ctx->key)
+   {
+      case ICD_KEY_FORMAT:
+         ctx->format = (len > 0);
+         break;
+      case ICD_KEY_LIBRARY:
+         if (     len >= sizeof(ctx->icd->library_path)
+               || memchr(s, '\0', len))
+            ctx->err = "ICD.library_path is too long or not a path";
+         else
+         {
+            memcpy(ctx->icd->library_path, s, len);
+            ctx->icd->library_path[len] = '\0';
+         }
+         break;
+      case ICD_KEY_API:
+         meta_text(s, len, ctx->icd->api_version);
+         break;
+      default:
+         break;
+   }
+   ctx->key = ICD_KEY_NONE;
+   return !ctx->err;
+}
+
+static bool icd_number(void *data, const char *s, size_t len)
+{
+   (void)s;
+   (void)len;
+   return icd_other((struct icd_ctx*)data);
+}
+
+static bool icd_start_object(void *data)
+{
+   struct icd_ctx *ctx = (struct icd_ctx*)data;
+   if (ctx->depth == 1 && ctx->key == ICD_KEY_ICD)
+      ctx->in_icd = true;
+   else if (ctx->depth && !icd_other(ctx))
+      return false;
+   ctx->key = ICD_KEY_NONE;
+   ctx->depth++;
+   return true;
+}
+
+static bool icd_end_object(void *data)
+{
+   struct icd_ctx *ctx = (struct icd_ctx*)data;
+   if (--ctx->depth == 1)
+      ctx->in_icd = false;
+   return true;
+}
+
+static bool icd_start_array(void *data)
+{
+   struct icd_ctx *ctx = (struct icd_ctx*)data;
+   if (!icd_other(ctx))
+      return false;
+   ctx->depth++;
+   return true;
+}
+
+static bool icd_end_array(void *data)
+{
+   ((struct icd_ctx*)data)->depth--;
+   return true;
+}
+
+static bool icd_bool(void *data, bool value)
+{
+   (void)value;
+   return icd_other((struct icd_ctx*)data);
+}
+
+static bool icd_null(void *data)
+{
+   return icd_other((struct icd_ctx*)data);
+}
+
+const char *vulkan_custom_driver_parse_icd(const char *buf, size_t len,
+      struct vulkan_custom_driver_icd *icd)
+{
+   struct icd_ctx ctx;
+   memset(icd, 0, sizeof(*icd));
+   if (len > VULKAN_CUSTOM_DRIVER_META_MAX)
+      return "the .json is over 4 KiB";
+   ctx.icd    = icd;
+   ctx.err    = NULL;
+   ctx.depth  = 0;
+   ctx.key    = ICD_KEY_NONE;
+   ctx.format = false;
+   ctx.in_icd = false;
+   if (!rjson_parse_quick(buf, len, &ctx, RJSON_OPTION_ALLOW_UTF8BOM,
+         icd_member, icd_string, icd_number,
+         icd_start_object, icd_end_object, icd_start_array, icd_end_array,
+         icd_bool, icd_null, NULL))
+      return ctx.err ? ctx.err : "the .json is not valid JSON";
+   if (!ctx.format)
+      return "file_format_version is missing";
+   if (!*icd->library_path)
+      return "ICD.library_path is missing";
+   if (!*icd->api_version)
+      return "ICD.api_version is missing";
+   return NULL;
+}
+
+/* Either separator on every platform: the checks match on both. */
+static bool icd_slash(char c)
+{
+   return c == '/' || c == '\\';
+}
+
+const char *vulkan_custom_driver_icd_library(const char *json_path,
+      const char *library_path, char *out, size_t size)
+{
+   const char *s;
+   size_t dir_len = 0;
+   size_t len     = strlen(library_path);
+   if (!strpbrk(library_path, "/\\"))
+      return "ICD.library_path is a bare name, the system's library";
+   /* A slash first, or a drive letter */
+   if (     icd_slash(library_path[0])
+         || (     ((library_path[0] >= 'A' && library_path[0] <= 'Z')
+               ||  (library_path[0] >= 'a' && library_path[0] <= 'z'))
+               && library_path[1] == ':'))
+   {
+      if (len >= size)
+         return "ICD.library_path is too long";
+      memcpy(out, library_path, len + 1);
+      return NULL;
+   }
+   for (s = json_path; *s; s++)
+      if (icd_slash(*s))
+         dir_len = (size_t)(s - json_path) + 1;
+   if (dir_len + len >= size)
+      return "ICD.library_path is too long";
+   memcpy(out, json_path, dir_len);
+   memcpy(out + dir_len, library_path, len + 1);
+   return NULL;
+}
+
 const char *vulkan_custom_driver_check_members(
       const struct string_list *members, const char *library_name)
 {

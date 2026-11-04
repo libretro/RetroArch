@@ -41,6 +41,23 @@ const char *vulkan_custom_driver_check_members(
 const char *vulkan_custom_driver_check_elf(const unsigned char *head,
       size_t len, int64_t size);
 
+/* Desktop: an ICD manifest, the loader's .json for one driver. */
+struct vulkan_custom_driver_icd
+{
+   char library_path[PATH_MAX_LENGTH];             /* as the .json has it */
+   char api_version[VULKAN_CUSTOM_DRIVER_TEXT_MAX];
+};
+
+/* Desktop: checks an ICD manifest, at most 4 KiB. NULL when it passes,
+ * else the reason, for the log. */
+const char *vulkan_custom_driver_parse_icd(const char *buf, size_t len,
+      struct vulkan_custom_driver_icd *icd);
+/* Desktop: the library to open for library_path, from the manifest at
+ * json_path: a relative path is the manifest's directory's. NULL when it
+ * passes, else the reason; a bare file name means the system's library. */
+const char *vulkan_custom_driver_icd_library(const char *json_path,
+      const char *library_path, char *out, size_t size);
+
 /* Names the extraction dir, as "%08x". A new zip version gets a new key. */
 uint32_t vulkan_custom_driver_key(const char *path,
       int64_t size, int64_t mtime);
