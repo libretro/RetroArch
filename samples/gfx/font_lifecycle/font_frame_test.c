@@ -125,6 +125,45 @@ int main(void)
 
    drv->free(h);
 
+   /* A consumer whose GPU may still draw the two frames before: the
+    * cells those looked up are not given to other codepoints until both
+    * are over, and a glyph drawn three frames back is still where it
+    * was */
+   if (!font_renderer_create_default(&drv, &h, dejavu, 16,
+            FONT_ATLAS_FORMAT_A8))
+      return 1;
+   {
+      struct font_atlas *atlas = drv->get_atlas(h);
+      const struct font_glyph *g;
+      unsigned pos, i, missing = 0;
+      atlas->inflight = 2;
+      /* The glyphs drawn as the font was made count as looked up in
+       * the frame it was made in: past them */
+      for (i = 0; i < 3; i++)
+         font_driver_frame_begin();
+      g   = drv->get_glyph(h, 0x0100);
+      pos = g ? g->atlas_pos : 0;
+      for (i = 1; i < 256; i++)
+         if (!drv->get_glyph(h, 0x0100 + i))
+            missing++;
+      CHECK(g && missing == 0, "inflight: a frame fills every cell");
+      font_driver_frame_begin();
+      undrawn = frame(drv, h, 0x0400, &moved);
+      CHECK(undrawn == 299, "inflight: the frame after takes none of its cells");
+      font_driver_frame_begin();
+      undrawn = frame(drv, h, 0x0400, &moved);
+      CHECK(undrawn == 299, "inflight: nor the one after that");
+      font_driver_frame_begin();
+      g = drv->get_glyph(h, 0x0100);
+      CHECK(g && g->atlas_pos == pos, "inflight: its glyph is where it was");
+      undrawn = frame(drv, h, 0x0400, &moved);
+      CHECK(undrawn == 300 - 255,
+            "inflight: three frames on, every cell but the one in use");
+      printf("  inflight 2: %u of 300 undrawn once the frames are over\n",
+            undrawn);
+   }
+   drv->free(h);
+
    /* A consumer that can take a bigger texture: the frame after one
     * that ran out finds the atlas grown, every earlier glyph where it
     * was, and draws all it asks for */

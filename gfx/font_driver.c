@@ -449,7 +449,7 @@ typedef struct font_cache
    unsigned cand_count;
    unsigned cand_next;
    unsigned cand_frame;
-   /* The frame a search found every cell looked up in, when full_set:
+   /* The frame a search found every cell busy in, when full_set:
     * no cell is free again before the next one */
    unsigned full_frame;
    bool full_set;
@@ -640,9 +640,10 @@ static void *font_cache_fallback_face(font_cache_t *c, int id,
 /* Advanced once a video frame by font_driver_frame_begin(). A cell
  * looked up in the current frame may already have glyphs queued from
  * it, so it is not handed to another codepoint until the frame is over:
- * reusing it would draw the new glyph in the earlier one's place. 0
- * until the first frame, which leaves plain LRU in place for a cache
- * used outside the video loop.  It is only ever compared, never used
+ * reusing it would draw the new glyph in the earlier one's place. The
+ * same holds for the atlas's inflight frames before it, which the GPU
+ * may still be drawing. 0 until the first frame, which leaves plain LRU
+ * in place for a cache used outside the video loop.  It is only ever compared, never used
  * to publish anything, so it is read relaxed: a plain load on every
  * backend, where the glyph lookup reads it once a glyph. */
 static retro_atomic_int_t font_frame_epoch;
@@ -652,8 +653,14 @@ void font_driver_frame_begin(void)
    retro_atomic_fetch_add_int(&font_frame_epoch, 1);
 }
 
-/* Searches every cell for the least recently used one not looked up
- * in @frame, keeping the oldest few in c->cand for the misses after */
+/* Whether @s was looked up in @frame or in one of the atlas's inflight
+ * frames before it; 0 for a cell never looked up in a frame */
+#define FONT_CACHE_BUSY(c, s, frame) \
+   (   (frame) && (s)->last_frame \
+    && (unsigned)((frame) - (s)->last_frame) <= (c)->atlas.inflight)
+
+/* Searches every cell for the least recently used one not busy in
+ * @frame, keeping the oldest few in c->cand for the misses after */
 static font_cache_slot_t *font_cache_search(font_cache_t *c, unsigned frame)
 {
    unsigned i, b, k;
@@ -667,7 +674,7 @@ static font_cache_slot_t *font_cache_search(font_cache_t *c, unsigned frame)
       {
          /* Unsigned subtraction handles the counter wrapping */
          unsigned age = c->usage_counter - blk[i].last_used;
-         if (frame && blk[i].last_frame == frame)
+         if (FONT_CACHE_BUSY(c, &blk[i], frame))
             continue;
          if (     n == FONT_CACHE_CANDIDATES
                && age <= c->usage_counter - c->cand_used[n - 1])
@@ -690,8 +697,8 @@ static font_cache_slot_t *font_cache_search(font_cache_t *c, unsigned frame)
    return n ? c->cand[0] : NULL;
 }
 
-/* The least recently used cell not looked up in this frame, taken out
- * of the hash; NULL when every cell is in use this frame */
+/* The least recently used cell not busy in this frame, taken out of
+ * the hash; NULL when every cell is */
 static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
 {
    unsigned frame            = (unsigned)retro_atomic_load_relaxed_int(
@@ -708,7 +715,7 @@ static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
       {
          font_cache_slot_t *s = c->cand[c->cand_next];
          unsigned        used = c->cand_used[c->cand_next++];
-         if (s->last_used == used && !(frame && s->last_frame == frame))
+         if (s->last_used == used && !FONT_CACHE_BUSY(c, s, frame))
          {
             victim = s;
             break;
@@ -910,9 +917,11 @@ VIDEO_NOINLINE static const struct font_glyph *font_cache_miss(
    if (!rast->render_glyph(face, code, gi, dst, c->atlas.width,
             c->cell_dims, c->atlas.format, &slot->glyph))
    {
-      /* Nothing to draw: the cell goes back as the oldest there is */
+      /* Nothing to draw: the cell goes back as the oldest there is,
+       * free again at once - no frame has drawn from it since it was
+       * taken */
       slot->last_used  = c->usage_counter - 0x80000000u;
-      slot->last_frame--;
+      slot->last_frame = 0;
       c->cand_count    = 0;
       return NULL;
    }

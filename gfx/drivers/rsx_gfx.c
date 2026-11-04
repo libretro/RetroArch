@@ -830,6 +830,9 @@ static void *rsx_font_init(void *data,
 
    /* The atlas may grow; the texture follows it */
    font->atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
+   /* Its cells are written where the RSX samples them, and the frame
+    * before may still be drawing: one per buffer the flip waits on */
+   font->atlas->inflight = RSX_MAX_BUFFERS - 1;
    font->tex_dims           = VIDEO_SCALE_PACK(font->atlas->width,
          font->atlas->height);
    /* The atlas kept in texture memory, or copied into it */

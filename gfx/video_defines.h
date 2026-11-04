@@ -541,6 +541,13 @@ struct font_atlas
     * keeps the atlas at its first size. Cells only ever get added: a
     * glyph's offsets never change. */
    unsigned max_dims;
+   /* Set by the consumer whose GPU may still be drawing earlier frames
+    * from memory the CPU writes glyphs into - a texture sampled in
+    * place, or one the CPU copies cells into: how many frames before
+    * the current one may still be reading it. A cell looked up in any
+    * of them is not given to another codepoint. Zero, the default:
+    * only the current frame's cells are kept. */
+   unsigned inflight;
    enum font_atlas_format format;
    bool dirty;
 };

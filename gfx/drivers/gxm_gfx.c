@@ -1756,6 +1756,9 @@ static void *gxm_font_init(void *data,
 
    /* The atlas may grow; the texture follows it */
    atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
+   /* Cells are copied into the texture the GPU samples, and as many
+    * frames as swaps may be pending can still be drawing from it */
+   atlas->inflight = DISPLAY_MAX_PENDING_SWAPS;
 
    if (!(font->texture = gxm_font_make_texture(atlas)))
       goto error;

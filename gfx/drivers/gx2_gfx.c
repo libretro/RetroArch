@@ -745,6 +745,9 @@ static void* gx2_font_init(void* data, const char* font_path,
    font->atlas                       = font->font_driver->get_atlas(font->font_data);
    /* The atlas may grow, kept modest for the 32 MB of MEM1 */
    font->atlas->max_dims = VIDEO_SCALE_PACK(1024, 1024);
+   /* Cells are copied into the texture the GPU samples, and the frame
+    * swapped last may still be drawing from it */
+   font->atlas->inflight = 1;
    if (!gx2_font_make_texture(font))
    {
       font->font_driver->free(font->font_data);
