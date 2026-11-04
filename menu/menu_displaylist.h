@@ -418,6 +418,10 @@ bool menu_displaylist_build_smb_root(char *s, size_t len);
 #endif
 #ifdef HAVE_NFSCLIENT
 bool menu_displaylist_build_nfs_root(char *s, size_t len);
+/* Writes 'path' for a title with the configured export after the server,
+ * returning false when 'path' is not under the configured server or no
+ * export is set. */
+bool menu_displaylist_nfs_title_path(char *s, size_t len, const char *path);
 #endif
 #if defined(HAVE_NFSCLIENT) || defined(HAVE_SMBCLIENT)
 /* True when 'path' is the configured NFS or SMB root without the subdir;

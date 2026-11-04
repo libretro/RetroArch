@@ -324,6 +324,49 @@ bool menu_displaylist_is_network_root(const char *path)
       rest++;
    return !*rest;
 }
+
+#ifdef HAVE_NFSCLIENT
+/* The VFS reads the server's paths against the export, which the path
+ * itself does not show. */
+bool menu_displaylist_nfs_title_path(char *s, size_t len, const char *path)
+{
+   size_t _len, export_len;
+   const char *rest;
+   settings_t *settings = config_get_ptr();
+   const char *export_p = settings->arrays.nfs_export;
+
+   if (     !*settings->arrays.nfs_server
+         || !string_starts_with_size(path, "nfs://", STRLEN_CONST("nfs://")))
+      return false;
+   rest = menu_displaylist_skip_root_part(path + STRLEN_CONST("nfs://"),
+         settings->arrays.nfs_server);
+   if (!rest || (*rest && *rest != '/'))
+      return false;
+
+   while (*export_p == '/')
+      export_p++;
+   export_len = strlen(export_p);
+   while (export_len && export_p[export_len - 1] == '/')
+      export_len--;
+   _len = (size_t)(rest - path);
+   if (!export_len || _len + 1 + export_len >= len)
+      return false;
+
+   memcpy(s, path, _len);
+   s[_len++] = '/';
+   memcpy(s + _len, export_p, export_len);
+   _len     += export_len;
+   s[_len]   = '\0';
+   while (*rest == '/')
+      rest++;
+   if (*rest && _len + 1 < len)
+   {
+      s[_len++] = '/';
+      strlcpy(s + _len, rest, len - _len);
+   }
+   return true;
+}
+#endif
 #endif
 
 void filebrowser_clear_type(void)
