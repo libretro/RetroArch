@@ -734,7 +734,8 @@ int net_http_urldecode(char *dst, size_t dst_size, const char *src)
 
 int net_http_urldecode_inplace(char *s)
 {
-   return string_percent_decode(s, (size_t)-1, s);
+   /* Decoding never grows the string, so its own size is the bound */
+   return string_percent_decode(s, strlen(s) + 1, s);
 }
 
 /* Base64 "user:pass" for Basic auth, from a URL's userinfo. */
@@ -748,7 +749,7 @@ static char *net_http_basic_auth(const char *userinfo, size_t len)
       return NULL;
    memcpy(raw, userinfo, len);
    raw[len] = '\0';
-   out = base64(raw, net_http_urldecode_inplace(raw), &flen);
+   out = base64(raw, string_percent_decode(raw, len + 1, raw), &flen);
    free(raw);
    return out;
 }

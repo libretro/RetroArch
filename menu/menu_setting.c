@@ -8767,6 +8767,7 @@ static size_t setting_get_string_representation_input_rotation(
    return strlcpy(s, msg_hash_to_str(e), len);
 }
 
+#ifdef HAVE_OVERLAY
 static size_t setting_get_string_representation_overlay_contact_method(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -8784,6 +8785,7 @@ static size_t setting_get_string_representation_overlay_contact_method(
    }
    return strlcpy(s, msg_hash_to_str(e), len);
 }
+#endif
 
 static size_t setting_get_string_representation_socd(
       rarch_setting_t *setting, char *s, size_t len)

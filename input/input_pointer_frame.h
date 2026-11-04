@@ -383,6 +383,7 @@ static bool input_pointer_frame_pos(unsigned port, unsigned device,
    return false;
 }
 
+#ifdef HAVE_OVERLAY
 /* Finger @idx of the pointer @port reads as @device (RETRO_DEVICE_POINTER
  * or RARCH_DEVICE_POINTER_SCREEN), down or not and where, packed, at one
  * look: what reading PRESSED, X and Y in turn gives. 1 down, 0 not; -1
@@ -406,6 +407,7 @@ static int input_pointer_frame_finger(unsigned port, unsigned device,
    *pos = (device == RARCH_DEVICE_POINTER_SCREEN) ? screen_pos : vp_pos;
    return down ? 1 : 0;
 }
+#endif
 
 /* One value of a mouse, a pointer or a lightgun's aim. False if the
  * frontend does not hold it and the driver is to be asked. */

@@ -311,7 +311,7 @@ static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
    RARCH_LOG("[hidraw] \"%s\" at %s on port %d.\n",
          name, devnode, dev->slot + 1);
    input_autoconfigure_connect(name, NULL, NULL, "hid",
-         dev->slot, vid, pid);
+         dev->slot, dev->vid, dev->pid);
 }
 
 /* A pad let go: @gone when it left, and is said to have; not when the

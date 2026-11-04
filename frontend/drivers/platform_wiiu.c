@@ -439,9 +439,10 @@ static void get_arguments(int *argc, char ***argv)
       ARGV_PTR = NULL;
    }
 
-   DEBUG_VAR(argc);
-   DEBUG_VAR(argv[0]);
-   DEBUG_VAR(argv[1]);
+   DEBUG_VAR(*argc);
+   DEBUG_VAR((*argv)[0]);
+   if (*argc > 1)
+      DEBUG_VAR((*argv)[1]);
    fflush(stdout);
 }
 

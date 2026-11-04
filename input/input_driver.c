@@ -2722,6 +2722,7 @@ static bool input_gun_button_from_binds(input_driver_t *input, void *data,
    return true;
 }
 
+#ifdef HAVE_OVERLAY
 /* A value from what the driver published, or from the driver. */
 static int16_t input_frame_or_driver(input_driver_t *input, void *data,
       const input_device_driver_t *joypad,
@@ -2735,6 +2736,7 @@ static int16_t input_frame_or_driver(input_driver_t *input, void *data,
    return input->input_state(data, joypad, joypad_info, binds,
          port, device, idx, id);
 }
+#endif
 
 INPUT_NOINLINE static int32_t input_state_wrap_slow(
       input_driver_t *input,

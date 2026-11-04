@@ -3980,13 +3980,13 @@ void MainWindow::saveDockLayout()
  * the default tabbing / splits are undone and rebuilt from the rows),
  * tabbed onto their saved partner, sized, and the saved tab raised. */
 /* The usable area of the screen a point falls on, for placing windows
- * and docks. QScreen and QGuiApplication are Qt 5; QDesktopWidget is
- * Qt 4 and Qt 5 and gone in Qt 6. This is the one place the companion
- * asks which screen a point is on, so it is the one place that knows
- * which Qt it is built against. */
+ * and docks. QGuiApplication::screenAt is Qt 5.10 and later; older Qt
+ * asks QDesktopWidget, which is deprecated from 5.10 and gone in Qt 6.
+ * This is the one place the companion asks which screen a point is on,
+ * so it is the one place that knows which Qt it is built against. */
 static QRect ui_qt_available_geometry_at(const QPoint &p)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
    QScreen *screen = QGuiApplication::screenAt(p);
    if (!screen)
       screen = QGuiApplication::primaryScreen();
@@ -5173,10 +5173,9 @@ static void* ui_companion_qt_init(void)
          handle);
    qt_companion_core = handle->core;
 
-   /* The usable area of the primary screen, asked for the way the rest
-    * of this file asks: QScreen is Qt 5 and later, QDesktopWidget is
-    * Qt 4 and Qt 5 and gone in Qt 6. */
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+   /* The usable area of the primary screen: QScreen is Qt 5 and later,
+    * QDesktopWidget is for Qt 4. */
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
    {
       QScreen *screen = QGuiApplication::primaryScreen();
       if (screen)

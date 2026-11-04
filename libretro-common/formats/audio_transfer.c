@@ -623,6 +623,7 @@ static int audio_transfer_time_add(int64_t a, int64_t b, int64_t *out)
    return 1;
 }
 
+#if defined(HAVE_RWEBM) || (defined(HAVE_RAAC) && defined(HAVE_RMP4))
 static int audio_transfer_time_frames(int64_t ns, unsigned rate, int64_t *out)
 {
    const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
@@ -644,6 +645,7 @@ static int audio_transfer_time_packet(struct audio_transfer_time *t,
    t->continued = continued;
    return 1;
 }
+#endif
 
 static int audio_transfer_time_map(struct audio_transfer_time *t,
       size_t skip, size_t frames)
@@ -1978,6 +1980,7 @@ static int audio_transfer_vorbis_movie_fill(struct audio_transfer_vorbis *v, int
    return 1;
 }
 
+#ifdef HAVE_RWEBM
 /* Header-only contribution in the original decoder sequence. A seek's
  * priming packet still occupies that sequence even though decoding it
  * after reset produces no PCM. */
@@ -1994,6 +1997,7 @@ static int audio_transfer_vorbis_movie_header(struct audio_transfer_vorbis *v,
          || !audio_transfer_time_add(v->emitted, frames, &v->emitted)) return -1;
    return frames;
 }
+#endif
 
 static int audio_transfer_vorbis_movie_read(struct audio_transfer_vorbis *v,
       int s16, int16_t *out16, float *outf, size_t frames, size_t *got)
@@ -4869,6 +4873,7 @@ static int audio_transfer_opus_movie_read(struct audio_transfer_opus *op,
    return produced || op->wall || op->yielded ? AUDIO_PROCESS_NEXT : AUDIO_PROCESS_END;
 }
 
+#ifdef HAVE_RWEBM
 static int audio_transfer_opus_movie_header(struct audio_transfer_opus *op,
       const uint8_t *packet, uint32_t size, int64_t pad)
 {
@@ -4892,6 +4897,7 @@ static int audio_transfer_opus_movie_header(struct audio_transfer_opus *op,
          || !audio_transfer_time_add(op->emitted, frames, &op->emitted)) return -1;
    return (int)frames;
 }
+#endif
 #endif
 
 #ifdef HAVE_RAAC
@@ -5061,6 +5067,7 @@ static void audio_transfer_aac_to_head(struct audio_transfer_aac *ac)
    audio_transfer_aac_withdraw_bound(ac);
 }
 
+#ifdef HAVE_RWEBM
 static int audio_transfer_aac_movie_header(struct audio_transfer_aac *ac)
 {
    size_t frames = raac_frame_len(ac->handle);
@@ -5078,6 +5085,7 @@ static int audio_transfer_aac_movie_header(struct audio_transfer_aac *ac)
          || !audio_transfer_time_add(ac->emitted, (int64_t)frames, &ac->emitted)) return -1;
    return (int)frames;
 }
+#endif
 
 static int audio_transfer_aac_fill(struct audio_transfer_aac *ac);
 

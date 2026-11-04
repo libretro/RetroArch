@@ -403,6 +403,7 @@ static void xxh3_stripe_scalar(uint64_t *a, const uint8_t *p,
    XXH3_LANE(4); XXH3_LANE(5); XXH3_LANE(6); XXH3_LANE(7);
 }
 
+#if !defined(XXH3_HAVE_NEON)
 static uint64_t xxh3_long_scalar(const uint8_t *in, size_t len, uint64_t seed)
 {
    const size_t   total = len;
@@ -433,6 +434,7 @@ static uint64_t xxh3_long_scalar(const uint8_t *in, size_t len, uint64_t seed)
    xxh3_stripe_scalar(acc, in + len - XXH3_STRIPE, sec + XXH3_LAST_KEY);
    return xxh3_merge_sec(acc, sec, total);
 }
+#endif
 
 /* ---- a stripe at a time, for xxh3_update() ----
  *
