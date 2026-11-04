@@ -566,8 +566,11 @@ static int action_start_manual_content_scan_dir(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
+   struct menu_state *menu_st = menu_state_get_ptr();
    /* Reset content directory */
    manual_content_scan_set_menu_content_dir("");
+   /* Content Location's list drops the stored location's entry */
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 

@@ -1,6 +1,6 @@
 include ../../sample_objdir.mk
 
-TARGETS := path_resolve_realpath_test fill_pathname_test path_mkdir_test
+TARGETS := path_resolve_realpath_test fill_pathname_test path_mkdir_test path_parent_dir_test
 
 LIBRETRO_COMM_DIR := ../../..
 

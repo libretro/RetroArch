@@ -1353,13 +1353,24 @@ int generic_action_ok_displaylist_push(
          info.type          = FILE_TYPE_DIRECTORY;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_DIR;
          info.directory_ptr = idx;
-         info_label         = label;
+         info_label         = MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR;
+         info_path          = new_path;
 
-         action_ok_get_file_browser_start_path(
-               manual_content_scan_get_content_dir_ptr(),
-               new_path, parent_dir, sizeof(parent_dir), true);
-
-         info_path          = parent_dir;
+         /* The stored location's own entry reopens it; the other
+          * places open at their root */
+         if (type == MENU_SETTING_MANUAL_CONTENT_SCAN_DIR)
+         {
+            const char *stored = manual_content_scan_get_content_dir_ptr();
+            info_path          = parent_dir;
+#if defined(HAVE_NFSCLIENT) || defined(HAVE_SMBCLIENT)
+            /* Nothing above a network root can be browsed */
+            if (menu_displaylist_is_network_root(stored))
+               info_path       = stored;
+            else
+#endif
+               action_ok_get_file_browser_start_path(stored,
+                     new_path, parent_dir, sizeof(parent_dir), true);
+         }
          break;
       case ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE:
          filebrowser_clear_type();
@@ -1631,6 +1642,10 @@ int generic_action_ok_displaylist_push(
 #if TARGET_OS_IPHONE
          fill_pathname_abbreviate_special(tmp, parent_dir, sizeof(tmp));
          strlcpy(parent_dir, tmp, sizeof(parent_dir));
+#endif
+#if defined(HAVE_NFSCLIENT) || defined(HAVE_SMBCLIENT)
+         if (menu_path && menu_displaylist_is_network_root(menu_path))
+            parent_dir[0] = '\0';
 #endif
 
          info.type          = type;
@@ -4553,9 +4568,9 @@ void action_ok_manual_content_scan_set_dir(const char *content_dir)
    menu_entries_flush_stack(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST_STR, 0);
 }
 
-/* Whether Content Location's browser, or a folder entered from it,
- * is the current menu. Back leaves the browser type set; a folder
- * entered keeps the browser's label. */
+/* Whether Content Location's list of places or its browser, or a
+ * folder entered from it, is the current menu. Back leaves the browser
+ * type set; a folder entered keeps the browser's label. */
 bool action_ok_manual_content_scan_dir_browsing(void)
 {
    const char *menu_label = NULL;
@@ -4563,7 +4578,9 @@ bool action_ok_manual_content_scan_dir_browsing(void)
       return false;
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
    return string_is_equal(menu_label,
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR);
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR)
+       || string_is_equal(menu_label,
+         MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_DIR_LIST_STR);
 }
 
 #ifdef HAVE_LIBRETRODB
@@ -7740,6 +7757,23 @@ int action_ok_push_manual_content_scan_dir_select(const char *path,
          ACTION_OK_DL_MANUAL_SCAN_DIR_LIST);
 }
 
+/* The browser type lets an Apple file picker opened from the list
+ * set the location */
+static int action_ok_push_manual_content_scan_dir_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   filebrowser_set_type(FILEBROWSER_MANUAL_SCAN_DIR);
+   return generic_action_ok_displaylist_push(
+         path, NULL,
+         MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_DIR_LIST_STR, type,
+         idx, entry_idx,
+         ACTION_OK_DL_PUSH_DEFAULT);
+}
+
+DEFAULT_ACTION_OK_DL_PUSH(action_ok_manual_content_scan_dir_start, FILEBROWSER_MANUAL_SCAN_DIR, ACTION_OK_DL_MANUAL_SCAN_DIR_LIST, settings->paths.directory_menu_content)
+DEFAULT_ACTION_OK_DL_PUSH(action_ok_manual_content_scan_dir_downloads, FILEBROWSER_MANUAL_SCAN_DIR, ACTION_OK_DL_MANUAL_SCAN_DIR_LIST, settings->paths.directory_core_assets)
+DEFAULT_ACTION_OK_DL_PUSH(action_ok_manual_content_scan_dir_drive, FILEBROWSER_MANUAL_SCAN_DIR, ACTION_OK_DL_MANUAL_SCAN_DIR_LIST, path)
+
 /* TODO/FIXME */
 static int action_ok_push_dropdown_setting_core_options_item_special(
       const char *path,
@@ -9733,6 +9767,7 @@ static int action_ok_nfs_browse(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char nfs_path[PATH_MAX_LENGTH];
+   const char *menu_label = NULL;
 
    if (!menu_displaylist_build_nfs_root(nfs_path, sizeof(nfs_path)))
    {
@@ -9743,6 +9778,14 @@ static int action_ok_nfs_browse(const char *path,
             MESSAGE_QUEUE_CATEGORY_ERROR);
       return -1;
    }
+
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   if (string_is_equal(menu_label,
+            MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_DIR_LIST_STR))
+      return generic_action_ok_displaylist_push(
+            nfs_path, nfs_path, label, type, idx, entry_idx,
+            ACTION_OK_DL_MANUAL_SCAN_DIR_LIST);
+
    filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    return generic_action_ok_displaylist_push(
       nfs_path,
@@ -9758,6 +9801,7 @@ static int action_ok_smb_browse(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t *settings = config_get_ptr();
+   const char *menu_label = NULL;
    char smb_path[PATH_MAX_LENGTH];
 
    if (!settings->bools.smb_client_enable)
@@ -9779,6 +9823,13 @@ static int action_ok_smb_browse(const char *path,
             MESSAGE_QUEUE_CATEGORY_ERROR);
       return -1;
    }
+
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   if (string_is_equal(menu_label,
+            MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_DIR_LIST_STR))
+      return generic_action_ok_displaylist_push(
+            smb_path, smb_path, label, type, idx, entry_idx,
+            ACTION_OK_DL_MANUAL_SCAN_DIR_LIST);
 
    /* Push as a content list under the same label Load Content uses:
     * files inside then bind to the detect-core handler instead of
@@ -9978,7 +10029,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_RGUI
          {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,              action_ok_rgui_menu_theme_preset},
 #endif
-         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,             action_ok_push_manual_content_scan_dir_select},
+         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,             action_ok_push_manual_content_scan_dir_list},
          {MENU_ENUM_LABEL_SCAN_METHOD,                         action_ok_scan_method},
          {MENU_ENUM_LABEL_SCAN_USE_DB,                         action_ok_scan_use_db},
          {MENU_ENUM_LABEL_SCAN_DB_SELECT,                      action_ok_scan_db_select},
@@ -10869,6 +10920,33 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    return 0;
 }
 
+/* Content Location's places open its folder picker instead of
+ * Load Content's browser. Browse SMB Share and Browse NFS Export
+ * keep their own actions, which check the menu they are in. */
+static int menu_cbs_init_bind_ok_manual_content_scan_dir_list(
+      menu_file_list_cbs_t *cbs)
+{
+   switch (cbs->enum_idx)
+   {
+      case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
+         BIND_ACTION_OK(cbs, action_ok_push_manual_content_scan_dir_select);
+         break;
+      case MENU_ENUM_LABEL_FAVORITES:
+         BIND_ACTION_OK(cbs, action_ok_manual_content_scan_dir_start);
+         break;
+      case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+         BIND_ACTION_OK(cbs, action_ok_manual_content_scan_dir_downloads);
+         break;
+      case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
+         BIND_ACTION_OK(cbs, action_ok_manual_content_scan_dir_drive);
+         break;
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path,
       const char *label, size_t lbl_len,
@@ -10879,6 +10957,11 @@ int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_OK(cbs, action_ok_lookup_setting);
+
+   if (     string_is_equal(menu_label,
+               MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_DIR_LIST_STR)
+         && menu_cbs_init_bind_ok_manual_content_scan_dir_list(cbs) == 0)
+      return 0;
 
    if (menu_cbs_init_bind_ok_compare_label(cbs, label) == 0)
       return 0;

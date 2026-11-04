@@ -20,6 +20,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
+#include "../menu_displaylist.h"
 
 #include "../../msg_hash_lbl_str.h"
 #include "../../configuration.h"
@@ -141,7 +142,12 @@ static void action_get_title_fill_path_search_filter_default(
    }
 
    if (path && *path != '\0')
-      _len += strlcpy(s + _len, path, len - _len);
+   {
+#ifdef HAVE_NFSCLIENT
+      if (!menu_displaylist_nfs_title_path(s + _len, len - _len, path))
+#endif
+         _len += strlcpy(s + _len, path, len - _len);
+   }
 
    menu_entries_search_append_terms_string(s, len);
 }
@@ -358,6 +364,7 @@ static const title_enum_map_t title_enum_map[] = {
    { MENU_ENUM_LABEL_SCAN_USE_DB, MENU_ENUM_LABEL_VALUE_SCAN_USE_DB, TITLE_VARIANT_FILL },
    { MENU_ENUM_LABEL_SCAN_DB_SELECT, MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT, TITLE_VARIANT_FILL },
    { MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR, TITLE_VARIANT_FILL },
+   { MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_DIR_LIST, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR, TITLE_VARIANT_PLAIN },
    { MENU_ENUM_LABEL_DEFERRED_CORE_LIST, MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES, TITLE_VARIANT_PLAIN },
    { MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET, MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES, TITLE_VARIANT_PLAIN },
    { MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_MANAGER_LIST, MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER, TITLE_VARIANT_COPY },
@@ -414,7 +421,10 @@ static int action_get_title_from_enum(
          {
             memcpy(s + _len, ": ", STRLEN_CONST(": "));
             _len += STRLEN_CONST(": ");
-            strlcpy(s + _len, path, len - _len);
+#ifdef HAVE_NFSCLIENT
+            if (!menu_displaylist_nfs_title_path(s + _len, len - _len, path))
+#endif
+               strlcpy(s + _len, path, len - _len);
          }
          return 1;
       }
@@ -963,6 +973,10 @@ static int action_get_sideload_core_list(const char *path, const char *label,
       if (path && *path)
       {
          size_t path_len = strlen(path);
+#ifdef HAVE_NFSCLIENT
+         if (menu_displaylist_nfs_title_path(s + _len, len - _len, path))
+            return 0;
+#endif
          if (_len + path_len >= len)
             path_len = len - _len - 1;
          memcpy(s + _len, path, path_len);
@@ -993,10 +1007,13 @@ static int action_get_title_default(const char *path, const char *label,
          _len       += 2;
          s[_len]     = '\0';
       }
+#ifdef HAVE_NFSCLIENT
+      if (!menu_displaylist_nfs_title_path(s + _len, len - _len, path))
+#endif
 #if TARGET_OS_IPHONE
-      fill_pathname_abbreviate_special(s + _len, path, len - _len);
+         fill_pathname_abbreviate_special(s + _len, path, len - _len);
 #else
-      strlcpy(s + _len, path, len - _len);
+         strlcpy(s + _len, path, len - _len);
 #endif
    }
    menu_entries_search_append_terms_string(s, len);

@@ -277,6 +277,98 @@ bool menu_displaylist_build_smb_root(char *s, size_t len)
 }
 #endif
 
+#if defined(HAVE_NFSCLIENT) || defined(HAVE_SMBCLIENT)
+/* What follows 'part' (without its trailing slashes) at the start
+ * of 's', or NULL. */
+static const char *menu_displaylist_skip_root_part(const char *s,
+      const char *part)
+{
+   size_t _len = strlen(part);
+   while (_len && part[_len - 1] == '/')
+      _len--;
+   if (strncmp(s, part, _len))
+      return NULL;
+   return s + _len;
+}
+
+bool menu_displaylist_is_network_root(const char *path)
+{
+   const char *rest     = NULL;
+   settings_t *settings = config_get_ptr();
+#ifdef HAVE_NFSCLIENT
+   if (     *settings->arrays.nfs_server
+         && string_starts_with_size(path, "nfs://", STRLEN_CONST("nfs://")))
+      rest = menu_displaylist_skip_root_part(path + STRLEN_CONST("nfs://"),
+            settings->arrays.nfs_server);
+#endif
+#ifdef HAVE_SMBCLIENT
+   if (     settings->bools.smb_client_enable
+         && *settings->arrays.smb_client_server_address
+         && string_starts_with_size(path, "smb://", STRLEN_CONST("smb://")))
+   {
+      rest = menu_displaylist_skip_root_part(path + STRLEN_CONST("smb://"),
+            settings->arrays.smb_client_server_address);
+      /* The VFS reads any first component as the configured share. */
+      if (rest && *rest == '/' && *settings->arrays.smb_client_share)
+      {
+         while (*rest == '/')
+            rest++;
+         while (*rest && *rest != '/')
+            rest++;
+      }
+   }
+#endif
+   if (!rest)
+      return false;
+   while (*rest == '/')
+      rest++;
+   return !*rest;
+}
+
+#ifdef HAVE_NFSCLIENT
+/* The VFS reads the server's paths against the export, which the path
+ * itself does not show. */
+bool menu_displaylist_nfs_title_path(char *s, size_t len, const char *path)
+{
+   size_t _len, export_len;
+   const char *rest;
+   settings_t *settings = config_get_ptr();
+   const char *export_p = settings->arrays.nfs_export;
+
+   if (     !*settings->arrays.nfs_server
+         || !string_starts_with_size(path, "nfs://", STRLEN_CONST("nfs://")))
+      return false;
+   rest = menu_displaylist_skip_root_part(path + STRLEN_CONST("nfs://"),
+         settings->arrays.nfs_server);
+   if (!rest || (*rest && *rest != '/'))
+      return false;
+
+   while (*export_p == '/')
+      export_p++;
+   export_len = strlen(export_p);
+   while (export_len && export_p[export_len - 1] == '/')
+      export_len--;
+   _len = (size_t)(rest - path);
+   if (!export_len || _len + 1 + export_len >= len)
+      return false;
+
+   memcpy(s, path, _len);
+   s[_len++] = '/';
+   memcpy(s + _len, export_p, export_len);
+   _len     += export_len;
+   s[_len]   = '\0';
+   while (*rest == '/')
+      rest++;
+   if (*rest && _len + 1 < len)
+   {
+      s[_len++] = '/';
+      strlcpy(s + _len, rest, len - _len);
+   }
+   return true;
+}
+#endif
+#endif
+
 void filebrowser_clear_type(void)
 {
    struct menu_displaylist_state *p_displist = &menu_displist_st;
@@ -10102,9 +10194,25 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
+      case DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST:
       {
          core_info_list_t *info_list = NULL;
          core_info_get_list(&info_list);
+
+         if (type == DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST)
+         {
+            const char *content_dir = NULL;
+            /* Not stat'd here: a network location would block every
+             * build; a stored folder that is gone falls back when opened */
+            if (     manual_content_scan_get_menu_content_dir(&content_dir)
+                  && menu_entries_append(list,
+                     msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR),
+                     MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR,
+                     MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,
+                     MENU_SETTING_MANUAL_CONTENT_SCAN_DIR, 0, 0, NULL))
+               count++;
+         }
 
          if (*settings->paths.directory_menu_content)
             if (menu_entries_append(list,
@@ -10159,7 +10267,8 @@ unsigned menu_displaylist_build_list(
          }
 #endif
          if (     !settings->bools.kiosk_mode_enable
-               &&  settings->bools.settings_show_file_browser)
+               &&  settings->bools.settings_show_file_browser
+               &&  type != DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST)
          {
             menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
@@ -17336,6 +17445,7 @@ static bool menu_displaylist_ctl_internal(
 #endif
          case DISPLAYLIST_LOAD_CONTENT_LIST:
          case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
+         case DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST:
          case DISPLAYLIST_OPTIONS_REMAPPINGS:
          case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_SETTINGS_LIST:
@@ -19302,6 +19412,19 @@ static bool menu_displaylist_ctl_internal(
 
                if (menu_displaylist_build_smb_root(smb_root, sizeof(smb_root)))
                   if (menu_entries_append(info->list, smb_root, "",
+                           load_content ?
+                           MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+                           MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
+                           FILE_TYPE_DIRECTORY, 0, 0, NULL))
+                     count++;
+            }
+#endif
+#ifdef HAVE_NFSCLIENT
+            {
+               char nfs_root[PATH_MAX_LENGTH];
+
+               if (menu_displaylist_build_nfs_root(nfs_root, sizeof(nfs_root)))
+                  if (menu_entries_append(info->list, nfs_root, "",
                            load_content ?
                            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
                            MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
