@@ -268,7 +268,7 @@ SCAN_TEST_WRAPS := -Wl,--wrap=libretrodb_open -Wl,--wrap=task_queue_park \
 	-Wl,--wrap=task_nbio_slice_within_budget \
 	-Wl,--wrap=fill_pathname_join_delim \
 	-Wl,--wrap=dir_list_iter_new -Wl,--wrap=dir_list_iter_step \
-	-Wl,--wrap=playlist_parse_begin -Wl,--wrap=task_init
+	-Wl,--wrap=playlist_parse_begin_header -Wl,--wrap=task_init
 ifeq ($(HAVE_THREADS), 1)
 SCAN_TEST_WRAPS += -Wl,--wrap=sthread_create
 endif

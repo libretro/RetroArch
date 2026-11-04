@@ -908,6 +908,103 @@ static void lane_cache_worker_write(void)
       fprintf(stderr, "[pass] worker-write cache lane\n");
 }
 
+/* The whole file, for comparing it before and after; caller frees. */
+static char *slurp(const char *path, long *len)
+{
+   char *buf = NULL;
+   FILE *f   = fopen(path, "rb");
+   *len      = -1;
+   if (!f)
+      return NULL;
+   if (     !fseek(f, 0, SEEK_END)
+         && (*len = ftell(f)) >= 0
+         && !fseek(f, 0, SEEK_SET)
+         && (buf = (char*)malloc((size_t)*len + 1)))
+   {
+      if (fread(buf, 1, (size_t)*len, f) != (size_t)*len)
+      {
+         free(buf);
+         buf = NULL;
+      }
+   }
+   fclose(f);
+   return buf;
+}
+
+static playlist_t *header_read(const playlist_config_t *config)
+{
+   playlist_parse_t *p = playlist_parse_begin_header(config);
+   if (!p)
+      return NULL;
+   if (playlist_parse_step(p, NULL, NULL) < 0)
+   {
+      playlist_parse_abort(p);
+      return NULL;
+   }
+   return playlist_parse_end(p);
+}
+
+/* playlist_parse_begin_header(): what comes ahead of the entries and
+ * nothing after; under a moved base content directory the scan record
+ * moves in memory while the file stays as it was; the result is never
+ * written; the old format, which has no scan settings, reads empty. */
+static void lane_header_only(void)
+{
+   char path[512];
+   playlist_config_t config;
+   playlist_t *pl;
+   char *before, *after;
+   long blen, alen;
+   unsigned had = failures;
+
+   snprintf(path, sizeof(path), "%s/header.lpl", fixture_dir);
+   CHECK(write_whole(path, json_full), "header lane: fixture write");
+   config_defaults(&config, path);
+
+   pl = header_read(&config);
+   CHECK(pl != NULL, "header lane: read");
+   if (pl)
+   {
+      CHECK(playlist_size(pl) == 0, "header lane: %u entries read",
+            (unsigned)playlist_size(pl));
+      CHECK(streq(playlist_get_default_core_name(pl), "Core A"),
+            "header lane: default core name");
+      CHECK(streq(playlist_get_scan_content_dir(pl), "/games/snes"),
+            "header lane: scan content dir");
+      playlist_free(pl);
+   }
+
+   /* a base moved since the save: autofix's move, in memory only */
+   before = slurp(path, &blen);
+   playlist_config_set_base_content_directory(&config, "/moved");
+   pl = header_read(&config);
+   CHECK(pl && streq(playlist_get_scan_content_dir(pl), "/moved/snes"),
+         "header lane: scan content dir under the moved base");
+   if (pl)
+   {
+      /* and never written, even when asked */
+      playlist_set_default_core_name(pl, "Core Changed");
+      playlist_write_file(pl);
+      playlist_free(pl);
+   }
+   after = slurp(path, &alen);
+   CHECK(before && after && blen == alen && !memcmp(before, after, (size_t)blen),
+         "header lane: the file changed under a header read");
+   free(before);
+   free(after);
+
+   CHECK(write_whole(path, old_format), "header lane: old format write");
+   config_defaults(&config, path);
+   pl = header_read(&config);
+   CHECK(pl && playlist_size(pl) == 0
+         && !playlist_get_scan_content_dir(pl),
+         "header lane: the old format reads empty");
+   playlist_free(pl);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] header-only lane\n");
+}
+
 static void lane_cache_reuse(void)
 {
    char path[512];
@@ -1757,6 +1854,7 @@ int main(int argc, char *argv[])
    lane_abort_midway();
    lane_cache_reuse();
    lane_cache_worker_write();
+   lane_header_only();
    lane_switch_playlist_never_shows_previous();
    lane_switch_supersedes_pending();
    lane_saf_slow_reads();

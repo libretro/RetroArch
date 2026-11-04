@@ -6425,7 +6425,9 @@ static void dbscan_load_handler(retro_task_t *task)
       if (!path_is_valid(prep->config.path))
          prep->load  = DBSCAN_LOAD_NO_PLAYLIST;
       else
-         prep->parse = playlist_parse_begin(&prep->config);
+         /* The header alone: the saved settings, never the entries,
+          * and nothing written. */
+         prep->parse = playlist_parse_begin_header(&prep->config);
    }
    /* One window per call on the main thread. */
    if (prep->iter)
@@ -6437,7 +6439,9 @@ static void dbscan_load_handler(retro_task_t *task)
          if (!path_is_valid(prep->config.path))
             prep->load  = DBSCAN_LOAD_NO_PLAYLIST;
          else
-            prep->parse = playlist_parse_begin(&prep->config);
+            /* The header alone: the saved settings, never the entries,
+             * and nothing written. */
+            prep->parse = playlist_parse_begin_header(&prep->config);
       }
       if (!task_queue_is_threaded())
          return;

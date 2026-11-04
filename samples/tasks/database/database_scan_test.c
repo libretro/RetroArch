@@ -9539,12 +9539,15 @@ int __wrap_dir_list_iter_step(dir_list_iter_t *iter,
    return __real_dir_list_iter_step(iter, within_budget, ud);
 }
 
-playlist_parse_t *__real_playlist_parse_begin(const playlist_config_t *config);
-playlist_parse_t *__wrap_playlist_parse_begin(const playlist_config_t *config)
+/* Linked with --wrap: a refresh's load reads the playlist's header. */
+playlist_parse_t *__real_playlist_parse_begin_header(
+      const playlist_config_t *config);
+playlist_parse_t *__wrap_playlist_parse_begin_header(
+      const playlist_config_t *config)
 {
    refresh_began_one(REFRESH_LOAD);
    prep_cancel_begun();
-   return __real_playlist_parse_begin(config);
+   return __real_playlist_parse_begin_header(config);
 }
 
 /* Linked with --wrap: the task_init() this counts down to fails, as
