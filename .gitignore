@@ -319,6 +319,7 @@ samples/gfx/font_lifecycle/chain
 samples/gfx/font_lifecycle/frame
 samples/gfx/font_lifecycle/vg
 samples/gfx/font_lifecycle/sdl2
+samples/gfx/font_lifecycle/omap
 samples/gfx/slang_cache/mapped
 samples/gfx/slang_cache/read
 samples/tasks/database/database_task

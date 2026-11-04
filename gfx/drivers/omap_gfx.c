@@ -930,8 +930,6 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
          const uint8_t *src = NULL; \
          base_x               = (line_x + (pen_x)) + glyph->draw_offset_x; \
          base_y               = (line_y + (pen_y)) + glyph->draw_offset_y; \
-         max_width            = vid_width  - base_x; \
-         max_height           = vid_height - base_y; \
          glyph_width          = VIDEO_SCALE_W(glyph->dims); \
          glyph_height         = VIDEO_SCALE_H(glyph->dims); \
          src                  = atlas->buffer + VIDEO_SCALE_W(glyph->atlas_pos) + \
@@ -948,7 +946,12 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
             glyph_height += base_y; \
             base_y        = 0; \
          } \
-         if (max_width <= 0 || max_height <= 0) \
+         /* Clipped to nothing: wholly off the page's left or top, or \
+          * past its right or bottom */ \
+         max_width            = vid_width  - base_x; \
+         max_height           = vid_height - base_y; \
+         if (     glyph_width <= 0 || glyph_height <= 0 \
+               || max_width   <= 0 || max_height   <= 0) \
             break; \
          if (glyph_width > max_width) \
             glyph_width = max_width; \

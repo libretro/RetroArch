@@ -670,7 +670,7 @@ jobs:
     # installation on a slow runner it took the job past 30 min.
     timeout-minutes: 30
     env:
-      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono
+      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev
 
     steps:
       - name: Checkout
@@ -2505,7 +2505,10 @@ jobs:
           # vg and sdl2 draw on-screen messages through the shipping
           # OpenVG and SDL2 drivers - OpenVG onto a software OpenVG in
           # the test, SDL2 through its own software renderer - and check
-          # every glyph texel lands where it should.
+          # every glyph texel lands where it should; omap blends
+          # FreeType's glyphs into a page exactly its pixels in size,
+          # so a glyph clipped off its edge that is blended anyway is
+          # an overflow the sanitizer reports.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 timeout 120 make check SANITIZER=address,undefined
