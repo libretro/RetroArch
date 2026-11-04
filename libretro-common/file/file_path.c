@@ -694,12 +694,15 @@ size_t path_parent_dir(char *s, size_t len)
    if (len && PATH_CHAR_IS_SLASH(s[len - 1]))
    {
       char *last_slash;
+      const char *scheme = strstr(s, "://");
       bool was_absolute = path_is_absolute(s);
 
       s[len - 1]        = '\0';
       last_slash        = find_last_slash(s);
 
-      if (was_absolute && !last_slash)
+      /* The slashes of "scheme://" belong to the root. */
+      if (was_absolute && (!last_slash
+            || (scheme && last_slash <= scheme + 2)))
       {
          /* We removed the only slash from what used 
           * to be an absolute path.

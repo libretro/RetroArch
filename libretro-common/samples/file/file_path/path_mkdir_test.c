@@ -10,6 +10,8 @@
  *   chain       - "ms0:/a/b/c" creates a, a/b and a/b/c, in order.
  *   existing    - an existing directory costs no mkdir.
  *   unaffected  - URL schemes and plain paths recurse as before.
+ *   scheme root - "nfs://h/x/y" with nothing there probes nothing
+ *                 above "nfs://h/".
  */
 
 #include <stdio.h>
@@ -41,6 +43,8 @@ static unsigned n_dirs;
 static char mkdirs[MAX_ENTRIES][64];
 static unsigned n_mkdirs;
 static unsigned n_relative;
+static const char *scope;
+static unsigned n_outside;
 
 /* path_parent_dir() keeps a trailing separator, so "a" and "a/" name
  * the same directory here. */
@@ -58,6 +62,8 @@ static void reset(void)
    n_dirs     = 0;
    n_mkdirs   = 0;
    n_relative = 0;
+   scope      = NULL;
+   n_outside  = 0;
 }
 
 static void add_dir(const char *p)
@@ -83,6 +89,8 @@ static int RETRO_CALLCONV fake_stat(const char *path, int32_t *size)
       *size = 0;
    if (!strchr(path, ':') && path[0] != '/')
       n_relative++;
+   if (scope && strncmp(path, scope, strlen(scope)))
+      n_outside++;
    /* No stat of a device root, as on the PSP. */
    return is_dir(path)
       ? (RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY) : 0;
@@ -94,6 +102,8 @@ static int RETRO_CALLCONV fake_mkdir(const char *path)
       norm(mkdirs[n_mkdirs++], path);
    if (!strchr(path, ':') && path[0] != '/')
       n_relative++;
+   if (scope && strncmp(path, scope, strlen(scope)))
+      n_outside++;
    if (is_dir(path))
       return -2;
    add_dir(path);
@@ -169,6 +179,12 @@ int main(void)
    add_dir("/r");
    CHECK(path_mkdir("/r/x") && mkdirs_are(1, "/r/x", NULL, NULL),
          "unaffected: a plain path recurses to its existing parent");
+
+   reset();
+   scope = "nfs://h/";
+   CHECK(!path_mkdir("nfs://h/x/y") && n_mkdirs == 0
+         && !n_outside && !n_relative,
+         "scheme root: nfs://h/x/y stops at nfs://h/");
 
    if (failures)
    {
