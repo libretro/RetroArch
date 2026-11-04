@@ -669,7 +669,7 @@ typedef size_t retro_atomic_size_t;
 #include <stddef.h>
 /* Use the Win32 API forms (capital I, declared in <windows.h>) rather
  * than the compiler intrinsics (_InterlockedFoo, declared in <intrin.h>).
- * The intrinsics require <intrin.h> which doesn't exist before VS2005.
+ * Compiler intrinsics require <intrin.h>, unavailable before VS2005.
  * The Win32 API forms are available on every MSVC since Windows NT and
  * on the Xbox 360 / OG Xbox XDKs.
  *
@@ -698,8 +698,8 @@ typedef size_t retro_atomic_size_t;
  * The __dmb intrinsic is declared in <intrin.h> and is available from
  * VS2008 (the same release that introduced ARM as a target).  Since
  * MSVC ARM/ARM64 builds are themselves a VS2008+ feature, the
- * <intrin.h> include is gated on _M_ARM / _M_ARM64 and remains absent
- * on the legacy x86 / Xbox 360 / Itanium paths.
+ * <intrin.h> is used for ARM fences and modern x86 compiler barriers;
+ * legacy x86 / Xbox 360 / Itanium paths do not need it.
  */
 
 #ifndef NOMINMAX
@@ -715,6 +715,13 @@ typedef size_t retro_atomic_size_t;
 #define RETRO_ATOMIC_MSVC_ARM_FENCE() __dmb(_ARM64_BARRIER_ISH)
 #else
 #define RETRO_ATOMIC_MSVC_ARM_FENCE() ((void)0)
+#endif
+
+#if _MSC_VER >= 1400 && \
+      (defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64)) && \
+      !defined(_M_ARM64EC) && !defined(_M_ARM64) && !defined(_M_ARM)
+#include <intrin.h>
+#define RETRO_ATOMIC_MSVC_NATIVE_WORD 1
 #endif
 
 typedef volatile LONG     retro_atomic_int_t;
@@ -739,6 +746,28 @@ typedef volatile LONG_PTR retro_atomic_size_t;
       RETRO_ATOMIC_MSVC_ARM_FENCE();                                      \
       (void)InterlockedExchange((LONG volatile*)(p), (LONG)(v));          \
    } while (0)
+/* x86 TSO supplies acquire/release ordering for aligned native words.
+ * Compiler barriers preserve it with either MSVC volatile mode. */
+#if defined(RETRO_ATOMIC_MSVC_NATIVE_WORD)
+static INLINE int retro_atomic_msvc_load_acquire_int_(const volatile LONG *p)
+{
+   LONG value = *p;
+   _ReadWriteBarrier();
+   return (int)value;
+}
+static INLINE void retro_atomic_msvc_store_release_int_(volatile LONG *p, LONG value)
+{
+   _ReadWriteBarrier();
+   *p = value;
+}
+#undef retro_atomic_load_acquire_int
+#undef retro_atomic_store_release_int
+#define retro_atomic_load_acquire_int(p) \
+   retro_atomic_msvc_load_acquire_int_((const volatile LONG*)(p))
+#define retro_atomic_store_release_int(p, v) \
+   retro_atomic_msvc_store_release_int_((volatile LONG*)(p), (LONG)(v))
+#endif
+
 /* fetch_add / fetch_sub: plain Interlocked* on x86/x64/Itanium/PPC
  * is full-barrier; on ARM we surround with __dmb to get acq_rel. */
 #define retro_atomic_fetch_add_int(p, v) (                                \
@@ -809,7 +838,7 @@ static INLINE LONG retro_atomic_fetch_and_int_cas(LONG volatile *p, LONG v)
 /* Relaxed load: retro_atomic_size_t is volatile LONG_PTR, so a plain
  * read is an aligned native-width volatile load, which MSVC guarantees
  * is atomic (no tearing) on every architecture it targets.  This is
- * the one load here that is not a locked RMW. */
+ * a load without a compiler ordering barrier. */
 #define retro_atomic_load_relaxed_size(p) ((size_t)(*(p)))
 #define retro_atomic_store_relaxed_size(p, v) \
    do { *(p) = (LONG_PTR)(v); } while (0)
@@ -842,6 +871,26 @@ static INLINE LONG retro_atomic_fetch_and_int_cas(LONG volatile *p, LONG v)
 #define retro_atomic_fetch_sub_size(p, v) (                               \
    RETRO_ATOMIC_MSVC_ARM_FENCE(),                                         \
    (size_t)InterlockedExchangeAdd((LONG volatile*)(p), -(LONG)(v)) )
+#endif
+
+#if defined(RETRO_ATOMIC_MSVC_NATIVE_WORD)
+static INLINE size_t retro_atomic_msvc_load_acquire_size_(const volatile LONG_PTR *p)
+{
+   LONG_PTR value = *p;
+   _ReadWriteBarrier();
+   return (size_t)value;
+}
+static INLINE void retro_atomic_msvc_store_release_size_(volatile LONG_PTR *p, LONG_PTR value)
+{
+   _ReadWriteBarrier();
+   *p = value;
+}
+#undef retro_atomic_load_acquire_size
+#undef retro_atomic_store_release_size
+#define retro_atomic_load_acquire_size(p) \
+   retro_atomic_msvc_load_acquire_size_((const volatile LONG_PTR*)(p))
+#define retro_atomic_store_release_size(p, v) \
+   retro_atomic_msvc_store_release_size_((volatile LONG_PTR*)(p), (LONG_PTR)(v))
 #endif
 
 /* ---- Apple OSAtomic (deprecated but available pre-10.7) --------------- */
@@ -1473,6 +1522,25 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
 #define retro_atomic_cas_ptr(p, expected, desired) \
    (InterlockedCompareExchangePointer((void* volatile*)(p), (void*)(desired), \
          (void*)(expected)) == (void*)(expected))
+#if defined(RETRO_ATOMIC_MSVC_NATIVE_WORD)
+static INLINE void *retro_atomic_msvc_load_acquire_ptr_(const retro_atomic_ptr_t *p)
+{
+   void *value = *p;
+   _ReadWriteBarrier();
+   return value;
+}
+static INLINE void retro_atomic_msvc_store_release_ptr_(retro_atomic_ptr_t *p, void *value)
+{
+   _ReadWriteBarrier();
+   *p = value;
+}
+#undef retro_atomic_load_acquire_ptr
+#undef retro_atomic_store_release_ptr
+#define retro_atomic_load_acquire_ptr(p) \
+   retro_atomic_msvc_load_acquire_ptr_((const retro_atomic_ptr_t*)(p))
+#define retro_atomic_store_release_ptr(p, v) \
+   retro_atomic_msvc_store_release_ptr_((retro_atomic_ptr_t*)(p), (void*)(v))
+#endif
 /* Vulkan-Hpp undefines the Windows MemoryBarrier macro. */
 static INLINE void retro_atomic_msvc_thread_fence_(void)
 {
@@ -1481,8 +1549,13 @@ static INLINE void retro_atomic_msvc_thread_fence_(void)
    (void)InterlockedExchange(&barrier, 0);
    RETRO_ATOMIC_MSVC_ARM_FENCE();
 }
+#if defined(RETRO_ATOMIC_MSVC_NATIVE_WORD)
+#define retro_atomic_thread_fence_acquire() _ReadWriteBarrier()
+#define retro_atomic_thread_fence_release() _ReadWriteBarrier()
+#else
 #define retro_atomic_thread_fence_acquire() retro_atomic_msvc_thread_fence_()
 #define retro_atomic_thread_fence_release() retro_atomic_msvc_thread_fence_()
+#endif
 #define retro_atomic_thread_fence_seq_cst() retro_atomic_msvc_thread_fence_()
 #define RETRO_ATOMIC_HAS_CAS 1
 #define RETRO_ATOMIC_HAS_PTR 1
@@ -1974,6 +2047,25 @@ static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, LONGLONG expec
    RETRO_ATOMIC_MSVC_CMPX64_((p), 0, 0)
 #define retro_atomic_store_relaxed_64(p, v) \
    ((void)RETRO_ATOMIC_MSVC_XCHG64_((p), (LONGLONG)(v)))
+#endif
+#if defined(RETRO_ATOMIC_MSVC_NATIVE_WORD) && defined(_WIN64)
+static INLINE int64_t retro_atomic_msvc_load_acquire_64_(const volatile LONGLONG *p)
+{
+   LONGLONG value = *p;
+   _ReadWriteBarrier();
+   return (int64_t)value;
+}
+static INLINE void retro_atomic_msvc_store_release_64_(volatile LONGLONG *p, LONGLONG value)
+{
+   _ReadWriteBarrier();
+   *p = value;
+}
+#undef retro_atomic_load_acquire_64
+#undef retro_atomic_store_release_64
+#define retro_atomic_load_acquire_64(p) \
+   retro_atomic_msvc_load_acquire_64_((const volatile LONGLONG*)(p))
+#define retro_atomic_store_release_64(p, v) \
+   retro_atomic_msvc_store_release_64_((volatile LONGLONG*)(p), (LONGLONG)(v))
 #endif
 #define RETRO_ATOMIC_HAS_64 1
 
