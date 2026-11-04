@@ -21,10 +21,7 @@
 
 #include "vulkan_custom_driver.h"
 
-#include "../../configuration.h"
 #include "../../frontend/drivers/platform_unix.h"
-#include "../../msg_hash.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 /* One load's paths, on the heap: frames stay under 4 KiB. */
@@ -40,93 +37,14 @@ struct custom_driver_work
 
 static struct
 {
-   vulkan_custom_driver_session_t session;
-   char base[PATH_MAX_LENGTH];   /* <internalDataPath>/vulkan_drivers/ */
-   char marker[PATH_MAX_LENGTH];
-   char state[PATH_MAX_LENGTH];
    char prep[PATH_MAX_LENGTH];   /* the zip a pick's task was pushed for */
-   const char *core;             /* of the open() in progress */
    bool mesa;                    /* of the last driver open() returned */
-   bool ready;
    bool pruned;
-   bool safe_mode;
-   bool safe_mode_msg;
    bool shortcut;
-} custom_driver_st;
+} custom_driver_android_st;
 
 /* dladdr target: a data address needs no function-to-object cast. */
 static const char custom_driver_anchor = 0;
-
-static void custom_driver_msg(enum vulkan_custom_driver_msg msg)
-{
-   const char *s;
-   enum msg_hash_enums id;
-   switch (msg)
-   {
-      case VULKAN_CUSTOM_DRIVER_MSG_FAILED:
-         id = MSG_VULKAN_CUSTOM_DRIVER_FAILED;
-         break;
-      case VULKAN_CUSTOM_DRIVER_MSG_CRASHED:
-         id = MSG_VULKAN_CUSTOM_DRIVER_CRASHED;
-         break;
-      case VULKAN_CUSTOM_DRIVER_MSG_INVALID:
-         id = MSG_VULKAN_CUSTOM_DRIVER_INVALID;
-         break;
-      case VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED:
-         id = MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED;
-         break;
-      case VULKAN_CUSTOM_DRIVER_MSG_RESTART:
-         id = MSG_VULKAN_CUSTOM_DRIVER_RESTART;
-         break;
-      default:
-         return;
-   }
-   s = msg_hash_to_str(id);
-   runloop_msg_queue_push(s, strlen(s), 2, 360, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-}
-
-/* A whole small file, NUL-terminated; NULL with *len 0 when missing. */
-static char *custom_driver_read(const char *path, int64_t *len)
-{
-   void *buf = NULL;
-   if (!filestream_read_file(path, &buf, len))
-   {
-      *len = 0;
-      return NULL;
-   }
-   return (char*)buf;
-}
-
-/* The crash state's key for the running core; "" for the menu. */
-static const char *custom_driver_core(void)
-{
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   if (     runloop_st->current_core_type == CORE_TYPE_DUMMY
-         || string_is_empty(runloop_st->system.info.library_name))
-      return "";
-   return runloop_st->system.info.library_name;
-}
-
-static bool custom_driver_save_state(void)
-{
-   return filestream_write_file_atomic(custom_driver_st.state,
-         custom_driver_st.session.state,
-         (int64_t)custom_driver_st.session.state_len);
-}
-
-/* Written before driver code runs, deleted once it is up or failed. */
-static void custom_driver_mark(const char *path, const char *core)
-{
-   size_t cap = strlen(path) + strlen(core) + 2;
-   char *line = (char*)malloc(cap);
-   size_t len;
-   if (!line)
-      return;
-   len = vulkan_custom_driver_crash_add(line, 0, cap, path, core);
-   filestream_write_file(custom_driver_st.marker, line, (int64_t)len);
-   free(line);
-}
 
 /* Deletes what an extraction leaves in dir, file by file, then dir.
  * Reads no meta.json, so a package this build rejects still goes. */
@@ -159,7 +77,7 @@ static bool custom_driver_current_dir(struct custom_driver_work *w,
    char *zip;
    bool keep     = false;
    fill_pathname_join_special(w->file, w->dir, "source", sizeof(w->file));
-   if (!(zip = custom_driver_read(w->file, &len)))
+   if (!(zip = vulkan_custom_driver_glue_read(w->file, &len)))
       return false;
    if (     (size = path_get_size(zip)) >= 0
          && path_get_mtime(zip, &mtime))
@@ -179,8 +97,9 @@ static retro_atomic_int_t custom_driver_preps;
  * whose zip is gone or changed, and any half-done one. No recursion. */
 static void custom_driver_prune(struct custom_driver_work *w)
 {
+   const char *base  = vulkan_custom_driver_glue_get_ptr()->base;
    bool preps        = retro_atomic_load_acquire_int(&custom_driver_preps) > 0;
-   struct RDIR *rdir = retro_opendir(custom_driver_st.base);
+   struct RDIR *rdir = retro_opendir(base);
    if (!rdir)
       return;
    while (retro_readdir(rdir))
@@ -194,8 +113,7 @@ static void custom_driver_prune(struct custom_driver_work *w)
                      && !preps))
             || strspn(name, "0123456789abcdef") != 8)
          continue;
-      fill_pathname_join_special(w->dir, custom_driver_st.base, name,
-            sizeof(w->dir));
+      fill_pathname_join_special(w->dir, base, name, sizeof(w->dir));
       if (len == 8 && custom_driver_current_dir(w, name))
          continue;
       custom_driver_remove(w, w->dir);
@@ -211,7 +129,7 @@ static bool custom_driver_extracted(struct custom_driver_work *w,
    char *buf;
    bool ok     = false;
    fill_pathname_join_special(w->file, w->dir, "meta.json", sizeof(w->file));
-   if (!(buf = custom_driver_read(w->file, &len)))
+   if (!(buf = vulkan_custom_driver_glue_read(w->file, &len)))
       return false;
    if (!vulkan_custom_driver_parse_meta(buf, (size_t)len, api_level, meta))
    {
@@ -341,19 +259,21 @@ static bool custom_driver_hook_dir(struct custom_driver_work *w)
 static void custom_driver_shortcut(void)
 {
    JNIEnv *env;
-   if (custom_driver_st.shortcut)
+   if (custom_driver_android_st.shortcut)
       return;
-   custom_driver_st.shortcut = true;
+   custom_driver_android_st.shortcut = true;
    if (g_android->addSafeStartShortcut && (env = jni_thread_getenv()))
       CALL_VOID_METHOD(env, g_android->activity->clazz,
             g_android->addSafeStartShortcut);
 }
 
 /* vulkan_custom_driver_load_t: runs on a loader cache miss only. */
-static void *custom_driver_load(void *data, const char *path, uint32_t key,
-      struct vulkan_custom_driver_meta *meta,
+void *vulkan_custom_driver_platform_load(void *data, const char *path,
+      uint32_t key, struct vulkan_custom_driver_meta *meta,
       enum vulkan_custom_driver_msg *msg)
 {
+   struct vulkan_custom_driver_glue *glue =
+      vulkan_custom_driver_glue_get_ptr();
    void *handle                 = NULL;
    const char *reason           = NULL;
    struct custom_driver_work *w = (struct custom_driver_work*)
@@ -366,13 +286,13 @@ static void *custom_driver_load(void *data, const char *path, uint32_t key,
       *msg = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
       return NULL;
    }
-   if (!custom_driver_st.pruned)
+   if (!custom_driver_android_st.pruned)
    {
-      custom_driver_st.pruned = true;
+      custom_driver_android_st.pruned = true;
       custom_driver_prune(w);
    }
    snprintf(w->other, sizeof(w->other), "%08x", (unsigned)key);
-   fill_pathname_join_special(w->dir, custom_driver_st.base, w->other,
+   fill_pathname_join_special(w->dir, glue->base, w->other,
          sizeof(w->dir));
    strlcpy(w->tmp, w->dir, sizeof(w->tmp));
    strlcat(w->tmp, ".tmp", sizeof(w->tmp));
@@ -385,12 +305,12 @@ static void *custom_driver_load(void *data, const char *path, uint32_t key,
    else
    {
       custom_driver_shortcut();
-      custom_driver_mark(path, custom_driver_st.core);
+      vulkan_custom_driver_glue_mark(path, glue->core);
       if (!custom_driver_hook_dir(w))
          reason = "the library directory is unknown";
       else
       {
-         fill_pathname_join_special(w->file, custom_driver_st.base, "tmp",
+         fill_pathname_join_special(w->file, glue->base, "tmp",
                sizeof(w->file));
          fill_pathname_slash(w->file, sizeof(w->file));
          path_mkdir(w->file);
@@ -401,7 +321,7 @@ static void *custom_driver_load(void *data, const char *path, uint32_t key,
       }
       if (!handle)
       {
-         filestream_delete(custom_driver_st.marker);
+         filestream_delete(glue->marker);
          *msg = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
       }
    }
@@ -412,97 +332,33 @@ static void *custom_driver_load(void *data, const char *path, uint32_t key,
    return handle;
 }
 
-/* Reads the crash state and the marker the last process left, once. */
-static bool custom_driver_init(void)
+bool vulkan_custom_driver_platform_dir(char *s, size_t len)
 {
-   int64_t state_len  = 0;
-   int64_t marker_len = 0;
-   char *state;
-   char *marker;
-
-   if (custom_driver_st.ready)
-      return true;
    if (     !g_android
          || !g_android->activity
          || string_is_empty(g_android->activity->internalDataPath))
       return false;
-   custom_driver_st.ready = true;
-   fill_pathname_join_special(custom_driver_st.base,
-         g_android->activity->internalDataPath, "vulkan_drivers",
-         sizeof(custom_driver_st.base));
-   path_mkdir(custom_driver_st.base);
-   fill_pathname_join_special(custom_driver_st.marker, custom_driver_st.base,
-         "pending", sizeof(custom_driver_st.marker));
-   fill_pathname_join_special(custom_driver_st.state, custom_driver_st.base,
-         "state", sizeof(custom_driver_st.state));
-   fill_pathname_slash(custom_driver_st.base, sizeof(custom_driver_st.base));
-
-   state  = custom_driver_read(custom_driver_st.state, &state_len);
-   marker = custom_driver_read(custom_driver_st.marker, &marker_len);
-   /* A failed save keeps the marker for the next start, until a custom
-    * driver opens and writes its own. */
-   if (     !vulkan_custom_driver_session_init(&custom_driver_st.session,
-               custom_driver_load, NULL, state, (size_t)state_len,
-               marker, (size_t)marker_len)
-         || custom_driver_save_state())
-      filestream_delete(custom_driver_st.marker);
-   free(state);
-   free(marker);
+   strlcpy(s, g_android->activity->internalDataPath, len);
    return true;
 }
 
 dylib_t vulkan_custom_driver_open(void)
 {
    struct vulkan_custom_driver_request req;
-   const struct vulkan_custom_driver_meta *meta = NULL;
-   enum vulkan_custom_driver_msg msg            = VULKAN_CUSTOM_DRIVER_MSG_NONE;
-   settings_t *settings                         = config_get_ptr();
-   int64_t mtime                                = 0;
-   void *handle;
+   const struct vulkan_custom_driver_meta *meta;
+   enum vulkan_custom_driver_msg msg;
+   void *handle = vulkan_custom_driver_glue_open(&req, &meta, &msg);
 
-   if (!custom_driver_init())
-      return NULL;
-   if (vulkan_custom_driver_session_started(&custom_driver_st.session))
-      filestream_delete(custom_driver_st.marker);
-   if (custom_driver_st.safe_mode_msg)
-   {
-      const char *s = msg_hash_to_str(MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE);
-      custom_driver_st.safe_mode_msg = false;
-      runloop_msg_queue_push(s, strlen(s), 2, 360, false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-
-   req.path      = settings->paths.path_vulkan_driver;
-   req.core      = custom_driver_core();
-   req.safe_mode = custom_driver_st.safe_mode;
-   req.supported = false;
-   req.size      = -1;
-   req.mtime     = 0;
-   if (!string_is_empty(req.path) && !req.safe_mode)
-   {
-      req.supported = vulkan_custom_driver_supported();
-      req.size      = path_get_size(req.path);
-      if (path_get_mtime(req.path, &mtime))
-         req.mtime  = mtime;
-   }
-   custom_driver_st.core = req.core;
-   handle = vulkan_custom_driver_session_open(&custom_driver_st.session,
-         &req, &meta, &msg);
-   custom_driver_msg(msg);
-   custom_driver_st.mesa = handle && meta->mesa;
+   custom_driver_android_st.mesa = handle && meta->mesa;
    /* The load callback warns for the INVALID it returns. */
    if (msg == VULKAN_CUSTOM_DRIVER_MSG_INVALID && req.size < 0)
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: zip missing or not readable.\n",
             req.path);
-   if (custom_driver_st.session.full)
-      RARCH_LOG("[Vulkan] Custom driver \"%s\" not used: too many drivers tried this session.\n",
-            req.path);
    if (handle)
    {
-      custom_driver_mark(req.path, req.core);
       RARCH_LOG("[Vulkan] Custom driver: \"%s\" (%s), version \"%s\", core \"%s\".\n",
             meta->name, meta->library_name, meta->version, req.core);
-      if (!custom_driver_st.mesa)
+      if (!custom_driver_android_st.mesa)
          RARCH_WARN("[Vulkan] Custom driver vendor \"%s\" is untested.\n",
                meta->vendor);
    }
@@ -511,41 +367,12 @@ dylib_t vulkan_custom_driver_open(void)
 
 void vulkan_custom_driver_failed(void)
 {
-   const struct vulkan_custom_driver_path *p;
-   enum vulkan_custom_driver_msg msg;
-   if (!custom_driver_st.ready)
-      return;
-   p   = custom_driver_st.session.current;
-   msg = vulkan_custom_driver_session_failed(&custom_driver_st.session);
-   if (msg == VULKAN_CUSTOM_DRIVER_MSG_FAILED)
-      RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: failed to start.\n",
-            p->path);
-   custom_driver_msg(msg);
-   filestream_delete(custom_driver_st.marker);
-}
-
-void vulkan_custom_driver_started(void)
-{
-   if (     custom_driver_st.ready
-         && vulkan_custom_driver_session_started(&custom_driver_st.session))
-      filestream_delete(custom_driver_st.marker);
-}
-
-void vulkan_custom_driver_kept(void)
-{
-   if (custom_driver_st.ready)
-      vulkan_custom_driver_session_kept(&custom_driver_st.session);
-}
-
-bool vulkan_custom_driver_current(void)
-{
-   return     custom_driver_st.ready
-          &&  vulkan_custom_driver_session_current(&custom_driver_st.session);
+   vulkan_custom_driver_glue_failed();
 }
 
 bool vulkan_custom_driver_mesa(void)
 {
-   return custom_driver_st.mesa;
+   return custom_driver_android_st.mesa;
 }
 
 /* 0 until asked, then 1 or 2. Asked once: the menu asks each time it
@@ -564,14 +391,6 @@ bool vulkan_custom_driver_supported(void)
       retro_atomic_store_release_int(&custom_driver_supported_st, known);
    }
    return known == 1;
-}
-
-bool vulkan_custom_driver_crashed(const char *path)
-{
-   if (string_is_empty(path) || !custom_driver_init())
-      return false;
-   return vulkan_custom_driver_crash_find(custom_driver_st.session.state,
-         custom_driver_st.session.state_len, path, custom_driver_core());
 }
 
 /* A pick's task: the package checked and extracted ahead of the
@@ -621,14 +440,16 @@ static void custom_driver_prep_free(retro_task_t *task)
 /* Main thread, at a pick: extracts path ahead of its first start. */
 static void custom_driver_prepare(const char *path)
 {
+   struct vulkan_custom_driver_glue *glue =
+      vulkan_custom_driver_glue_get_ptr();
    struct custom_driver_prep *p;
    retro_task_t *task;
 
    /* One task per zip at a time: two write the same .prep */
-   if (     custom_driver_st.safe_mode
+   if (     glue->safe_mode
          || !vulkan_custom_driver_supported()
          || (     retro_atomic_load_acquire_int(&custom_driver_preps) > 0
-               && string_is_equal(custom_driver_st.prep, path))
+               && string_is_equal(custom_driver_android_st.prep, path))
          || !(p = (struct custom_driver_prep*)calloc(1, sizeof(*p))))
       return;
    if (!(task = task_init()))
@@ -636,9 +457,10 @@ static void custom_driver_prepare(const char *path)
       free(p);
       return;
    }
-   strlcpy(custom_driver_st.prep, path, sizeof(custom_driver_st.prep));
+   strlcpy(custom_driver_android_st.prep, path,
+         sizeof(custom_driver_android_st.prep));
    strlcpy(p->path, path, sizeof(p->path));
-   strlcpy(p->base, custom_driver_st.base, sizeof(p->base));
+   strlcpy(p->base, glue->base, sizeof(p->base));
    p->api_level    = g_android->activity->sdkVersion;
    task->handler   = custom_driver_prep_handler;
    task->state     = p;
@@ -647,30 +469,19 @@ static void custom_driver_prepare(const char *path)
    task_queue_push(task);
 }
 
-void vulkan_custom_driver_picked(const char *path)
+void vulkan_custom_driver_platform_picked(const char *path)
 {
-   size_t len;
-   if (string_is_empty(path) || !custom_driver_init())
-      return;
-   len = custom_driver_st.session.state_len;
-   custom_driver_msg(vulkan_custom_driver_session_picked(
-            &custom_driver_st.session, path));
-   if (custom_driver_st.session.state_len != len)
-      custom_driver_save_state();
    custom_driver_prepare(path);
 }
 
 void vulkan_custom_driver_set_safe_mode(bool safe_mode)
 {
+   struct vulkan_custom_driver_glue *glue =
+      vulkan_custom_driver_glue_get_ptr();
    /* Latched: a recreate may re-read an intent without the extra.
     * Re-armed per session: a recreate frees the old session's message. */
-   if (!safe_mode && !custom_driver_st.safe_mode)
+   if (!safe_mode && !glue->safe_mode)
       return;
-   custom_driver_st.safe_mode     = true;
-   custom_driver_st.safe_mode_msg = true;
-}
-
-bool vulkan_custom_driver_safe_mode(void)
-{
-   return custom_driver_st.safe_mode;
+   glue->safe_mode     = true;
+   glue->safe_mode_msg = true;
 }

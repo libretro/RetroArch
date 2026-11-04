@@ -199,9 +199,9 @@ bool vulkan_custom_driver_patch_soname(uint8_t *elf, size_t len,
       const char *patch);
 
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
-/* Android glue, vulkan_custom_driver_android.c. Context init and surface
- * creation call open, kept, failed, started and current; the menu and the
- * frontend call the rest. */
+/* Glue: vulkan_custom_driver_glue.c with vulkan_custom_driver_android.c.
+ * Context init and surface creation call open, kept, failed, started and
+ * current; the menu and the frontend call the rest. */
 dylib_t vulkan_custom_driver_open(void);                /* NULL: use the system loader */
 void    vulkan_custom_driver_failed(void);              /* current custom driver failed */
 void    vulkan_custom_driver_started(void);             /* first surface up */
@@ -213,6 +213,43 @@ bool    vulkan_custom_driver_crashed(const char *path); /* off for the running c
 void    vulkan_custom_driver_picked(const char *path);  /* clears path's crash state and INVALID mark */
 void    vulkan_custom_driver_set_safe_mode(bool safe_mode); /* true: system driver until the process ends */
 bool    vulkan_custom_driver_safe_mode(void);           /* Safe start: system driver for this process */
+/* Between the glue files. vulkan_custom_driver_glue.c holds the state
+ * both platforms share; its crash state and marker are in
+ * <dir>/vulkan_drivers/. */
+struct vulkan_custom_driver_glue
+{
+   vulkan_custom_driver_session_t session;
+   char base[PATH_MAX_LENGTH];   /* <dir>/vulkan_drivers/ */
+   char marker[PATH_MAX_LENGTH];
+   char state[PATH_MAX_LENGTH];
+   const char *core;             /* of the open() in progress */
+   bool ready;
+   bool safe_mode;
+   bool safe_mode_msg;
+};
+struct vulkan_custom_driver_glue *vulkan_custom_driver_glue_get_ptr(void);
+void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg);
+/* A whole small file, NUL-terminated; NULL with *len 0 when missing. */
+char *vulkan_custom_driver_glue_read(const char *path, int64_t *len);
+/* The crash marker: written before driver code runs, deleted once it is
+ * up or failed. */
+void vulkan_custom_driver_glue_mark(const char *path, const char *core);
+/* open() without the platform's log lines. NULL: the system driver.
+ * *req is set unless the platform's dir is not known yet. */
+void *vulkan_custom_driver_glue_open(struct vulkan_custom_driver_request *req,
+      const struct vulkan_custom_driver_meta **meta,
+      enum vulkan_custom_driver_msg *msg);
+/* failed() without closing a library. True when a custom driver was
+ * the current one. */
+bool vulkan_custom_driver_glue_failed(void);
+/* Each platform's glue: the dir vulkan_drivers/ goes in (false while it
+ * is not known), its vulkan_custom_driver_load_t, and its part of
+ * vulkan_custom_driver_picked(). */
+bool vulkan_custom_driver_platform_dir(char *s, size_t len);
+void *vulkan_custom_driver_platform_load(void *data, const char *path,
+      uint32_t key, struct vulkan_custom_driver_meta *meta,
+      enum vulkan_custom_driver_msg *msg);
+void vulkan_custom_driver_platform_picked(const char *path);
 /* vulkan_custom_driver_linker.c: a private copy of the system Vulkan
  * loader whose HAL is driver_dir/driver_name. hook_dir holds
  * libvulkan_driver_hook.so; below API 29 the copy is written to tmp_dir.
