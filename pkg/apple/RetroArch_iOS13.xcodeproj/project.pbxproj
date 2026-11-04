@@ -21,6 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		A10A00000000000000000001 /* RetroArchMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10A00000000000000000002 /* RetroArchMenuView.swift */; };
 		07019B932CD24FF200D6C3FD /* GCDWebDAVServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 07C5C63E2CD167470030FBEC /* GCDWebDAVServer.m */; };
 		070672FB2D1723A10099FC74 /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 92CC059F21FE3C1700FF79F0 /* GCDWebUploader.bundle */; };
 		070A88432A4E7AA9003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A88422A4E7AA9003161C0 /* OpenAL.framework */; };
@@ -161,6 +162,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A10A00000000000000000002 /* RetroArchMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RetroArchMenuView.swift; path = ../../ui/ios/RetroArchMenuView.swift; sourceTree = SOURCE_ROOT; };
 		070A88422A4E7AA9003161C0 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
 		071212C72C6FD65B00F1B4B0 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		0712A7702B807AE400C9765F /* RetroArchTopShelfExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RetroArchTopShelfExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -512,6 +514,7 @@
 			isa = PBXGroup;
 			children = (
 				07ATRANS012025010700000001 /* AppleTranslateBackend.swift */,
+				A10A00000000000000000002 /* RetroArchMenuView.swift */,
 				076EAFD82E1F70D100C727AD /* RetroArchAppShortcuts.swift */,
 				07ATRANS022025010700000002 /* translation_driver_apple.h */,
 			);
@@ -1512,6 +1515,7 @@
 				92CC05B021FE3C1700FF79F0 /* GCDWebServerDataResponse.m in Sources */,
 				92CC05C221FE3C6D00FF79F0 /* WebServer.m in Sources */,
 				07ATRANS032025010700000003 /* AppleTranslateBackend.swift in Sources */,
+				A10A00000000000000000001 /* RetroArchMenuView.swift in Sources */,
 				076EAFD92E1F70D100C727AD /* RetroArchAppShortcuts.swift in Sources */,
 				9210C2FE24B4CB4900E6FE7C /* Shaders.metal in Sources */,
 				92CC05BA21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */,
@@ -1670,8 +1674,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = "$(IOS_CODE_SIGN_ENTITLEMENTS)";
+				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited) HAVE_IOS_MENU";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) HAVE_IOS_MENU";
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=12.0)";
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=13.0)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1690,8 +1696,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = "$(IOS_CODE_SIGN_ENTITLEMENTS)";
+				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited) HAVE_IOS_MENU";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) HAVE_IOS_MENU";
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=12.0)";
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=13.0)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
