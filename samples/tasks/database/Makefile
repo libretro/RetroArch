@@ -291,12 +291,19 @@ $(CLAIM_TEST)$(EXE_EXT): $(CLAIM_TEST_OBJECTS)
 # The scan test runs twice in one root: what a run leaves behind must
 # not decide the next one's checks. A sanitized build gives the budget
 # test its sanitizer's allowance, as CI does.
+# Each test gets a fresh root.  Under MSYS2 the tests are native Windows
+# programs, which cannot open the POSIX path mktemp gives: cygpath
+# turns it into C:/msys64/tmp/..., and where there is no cygpath the
+# path stays as it is.
+TEST_ROOT = root=$$(mktemp -d) && \
+	{ ! command -v cygpath >/dev/null 2>&1 || root=$$(cygpath -m "$$root"); }
 check: $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT) $(BEGIN_TEST)$(EXE_EXT) \
 	$(CLAIM_TEST)$(EXE_EXT)
-	./$(INDEX_TEST)$(EXE_EXT)
-	root=$$(mktemp -d) && ./$(CLAIM_TEST)$(EXE_EXT) "$$root"; r=$$?; \
+	$(TEST_ROOT) && ./$(INDEX_TEST)$(EXE_EXT) "$$root"; r=$$?; \
 	   rm -rf "$$root"; exit $$r
-	root=$$(mktemp -d) && ./$(SCAN_TEST)$(EXE_EXT) "$$root" \
+	$(TEST_ROOT) && ./$(CLAIM_TEST)$(EXE_EXT) "$$root"; r=$$?; \
+	   rm -rf "$$root"; exit $$r
+	$(TEST_ROOT) && ./$(SCAN_TEST)$(EXE_EXT) "$$root" \
 	   && ./$(SCAN_TEST)$(EXE_EXT) "$$root"; r=$$?; rm -rf "$$root"; exit $$r
 	./$(BEGIN_TEST)$(EXE_EXT) $(if $(SANITIZER),sanitize)
 
