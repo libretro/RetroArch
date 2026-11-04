@@ -753,6 +753,44 @@ static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
    return victim;
 }
 
+/* @size bytes for the atlas's samples, zeroed, from its storage */
+static uint8_t *font_atlas_alloc(struct font_atlas *atlas, size_t size)
+{
+   uint8_t *buf;
+   if (!atlas->storage)
+      return (uint8_t*)calloc(1, size);
+   if ((buf = (uint8_t*)atlas->storage(atlas->storage_user, size)))
+      memset(buf, 0, size);
+   return buf;
+}
+
+/* Lets go of a buffer the atlas's samples were in */
+static void font_atlas_release(struct font_atlas *atlas, uint8_t *buffer)
+{
+   if (atlas->storage_free)
+      atlas->storage_free(atlas->storage_user, buffer);
+   else
+      free(buffer);
+}
+
+bool font_atlas_place(struct font_atlas *atlas,
+      void *(*storage)(void *user, size_t size),
+      void (*storage_free)(void *user, void *buffer), void *user)
+{
+   size_t   size = (size_t)atlas->width * atlas->height
+                 * ((atlas->format == FONT_ATLAS_FORMAT_A16) ? 2 : 1);
+   uint8_t *buf;
+   if (!storage || !(buf = (uint8_t*)storage(user, size)))
+      return false;
+   memcpy(buf, atlas->buffer, size);
+   font_atlas_release(atlas, atlas->buffer);
+   atlas->buffer       = buf;
+   atlas->storage      = storage;
+   atlas->storage_free = storage_free;
+   atlas->storage_user = user;
+   return true;
+}
+
 void font_dirty_rects_add(unsigned (*r)[2], unsigned *n,
       unsigned pos, unsigned end)
 {
@@ -963,11 +1001,12 @@ static bool font_cache_grow(font_cache_t *c)
          || width  > VIDEO_SCALE_W(c->atlas.max_dims)
          || height > VIDEO_SCALE_H(c->atlas.max_dims))
       return false;
-   if (!(buffer = (uint8_t*)calloc(height, (size_t)width * esz)))
-      return false;
    if (!(blk = (font_cache_slot_t*)calloc(added, sizeof(*blk))))
+      return false;
+   if (!(buffer = font_atlas_alloc(&c->atlas,
+               (size_t)height * width * esz)))
    {
-      free(buffer);
+      free(blk);
       return false;
    }
 
@@ -992,7 +1031,7 @@ static bool font_cache_grow(font_cache_t *c)
       }
    }
 
-   free(c->atlas.buffer);
+   font_atlas_release(&c->atlas, c->atlas.buffer);
    c->atlas.buffer             = buffer;
    c->atlas.width              = width;
    c->atlas.height             = height;
@@ -1057,7 +1096,7 @@ static void font_cache_free(void *data)
       free(c->grown[i]);
    if (c->map != c->map_small)
       free(c->map);
-   free(c->atlas.buffer);
+   font_atlas_release(&c->atlas, c->atlas.buffer);
    free(c);
 }
 

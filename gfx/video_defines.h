@@ -510,6 +510,13 @@ enum font_atlas_format
 struct font_atlas
 {
    uint8_t *buffer; /* Coverage samples; layout per 'format'. */
+   /* Where 'buffer' is kept, set by font_atlas_place() for a consumer
+    * that samples the atlas in place - its texture, say: storage()
+    * returns @size bytes or NULL, storage_free() lets go of a buffer the
+    * atlas has moved out of. NULL: the heap. */
+   void *(*storage)(void *user, size_t size);
+   void (*storage_free)(void *user, void *buffer);
+   void *storage_user;
    unsigned width;
    unsigned height;
    /* Dirty region in pixels, covering every glyph cell updated since

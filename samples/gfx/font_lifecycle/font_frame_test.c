@@ -17,6 +17,25 @@ extern int read_real_files;
 static int fails = 0;
 #define CHECK(c,m) do { if(!(c)) { printf("  FAIL: %s\n", m); fails++; } } while (0)
 
+/* A consumer's own storage for the atlas: buffers handed out, the ones
+ * let go of, and whether to refuse the next */
+static unsigned stores, store_frees, store_refuse;
+static void *store_last;
+static void *test_storage(void *user, size_t size)
+{
+   (void)user;
+   if (store_refuse)
+      return NULL;
+   stores++;
+   return store_last = malloc(size);
+}
+static void test_storage_free(void *user, void *buffer)
+{
+   (void)user;
+   store_frees++;
+   free(buffer);
+}
+
 /* 300 distinct codepoints DejaVu Sans has, from @base */
 static unsigned frame(const font_renderer_driver_t *drv, void *h,
       uint32_t base, int *moved)
@@ -156,6 +175,58 @@ int main(void)
             atlas->height);
    }
    drv->free(h);
+
+   /* An atlas kept in the consumer's storage: moved there whole, grown
+    * there, and handed back when the font goes; refused, it stays */
+   if (!font_renderer_create_default(&drv, &h, dejavu, 16,
+            FONT_ATLAS_FORMAT_A8))
+      return 1;
+   {
+      struct font_atlas *atlas = drv->get_atlas(h);
+      size_t   size            = (size_t)atlas->width * atlas->height;
+      uint8_t *copy            = (uint8_t*)malloc(size);
+      uint8_t *heap            = atlas->buffer;
+      unsigned ax, ay, aw, ah;
+      const struct font_glyph *g;
+      aw = atlas->width;
+      ah = atlas->height;
+      memcpy(copy, atlas->buffer, size);
+      store_refuse = 1;
+      CHECK(!font_atlas_place(atlas, test_storage, test_storage_free, NULL)
+            && atlas->buffer == heap && !atlas->storage,
+            "storage: refused, the atlas stays where it was");
+      store_refuse = 0;
+      CHECK(font_atlas_place(atlas, test_storage, test_storage_free, NULL)
+            && atlas->buffer == store_last && stores == 1 && !store_frees
+            && !memcmp(atlas->buffer, copy, size),
+            "storage: the atlas moves there whole");
+      atlas->max_dims = VIDEO_SCALE_PACK(4096, 4096);
+      font_driver_frame_begin();
+      g  = drv->get_glyph(h, 'A');
+      ax = VIDEO_SCALE_W(g->atlas_pos);
+      ay = VIDEO_SCALE_H(g->atlas_pos);
+      frame(drv, h, 0x0100, &moved);
+      /* what the cells hold as the frame that ran out ends */
+      memcpy(copy, atlas->buffer, size);
+      font_driver_frame_begin();
+      atlas = drv->get_atlas(h);
+      CHECK(atlas->width == 2 * aw && atlas->buffer == store_last
+            && stores == 2 && store_frees == 1,
+            "storage: grown there, the buffer it left handed back");
+      {
+         unsigned y;
+         int same = 1;
+         for (y = 0; y < ah; y++)
+            same &= !memcmp(atlas->buffer + (size_t)y * atlas->width,
+                  copy + (size_t)y * aw, aw);
+         CHECK(same && VIDEO_SCALE_W(drv->get_glyph(h, 'A')->atlas_pos) == ax
+               && VIDEO_SCALE_H(drv->get_glyph(h, 'A')->atlas_pos) == ay,
+               "storage: the cells it had kept where they were");
+      }
+      drv->free(h);
+      CHECK(store_frees == 2, "storage: the last buffer handed back");
+      free(copy);
+   }
 
    /* A cell never used goes before any glyph is evicted: a glyph new
     * to a font in a later frame takes an empty cell, and the ones

@@ -29,6 +29,15 @@
 
 RETRO_BEGIN_DECLS
 
+/* Moves @atlas's samples into storage the consumer makes with @storage
+ * - memory it can sample them from in place - and keeps them there as
+ * the atlas grows, each buffer it moves out of handed to
+ * @storage_free, the last when the font goes. False, with the atlas
+ * where it was, when the storage cannot be had. */
+bool font_atlas_place(struct font_atlas *atlas,
+      void *(*storage)(void *user, size_t size),
+      void (*storage_free)(void *user, void *buffer), void *user);
+
 /* Adds the rectangle @pos..@end, its corners packed as dirty_xy0 and
  * dirty_xy1 are, to the @*n rectangles of @r, which holds
  * FONT_ATLAS_DIRTY_MAX: when it is full, of the rectangles and the new
