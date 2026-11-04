@@ -193,6 +193,17 @@ bool vulkan_custom_driver_session_device(vulkan_custom_driver_session_t *s,
       enum vulkan_custom_driver_module module,
       enum vulkan_custom_driver_msg *msg);
 
+#define VULKAN_CUSTOM_DRIVER_EXT_NAME_MAX 256 /* VK_MAX_EXTENSION_NAME_SIZE */
+#define VULKAN_CUSTOM_DRIVER_LOADER_EXTS  4
+
+/* Desktop: an instance whose only driver is the custom one has that
+ * driver's instance extensions and the loader's own. names holds count
+ * extension names in records of stride bytes (a VkExtensionProperties
+ * array); the loader's names not among them are appended, zero-filled,
+ * up to cap records. Returns the new count. */
+size_t vulkan_custom_driver_loader_exts(char *names, size_t stride,
+      size_t count, size_t cap);
+
 /* Overwrites the start of an ELF64 file's DT_SONAME with patch, up to the
  * shorter of the two. False, with elf untouched, when elf is not a
  * little-endian ELF64 with a DT_SONAME inside len. */

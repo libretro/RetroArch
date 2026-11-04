@@ -105,6 +105,10 @@ static dylib_t                       vulkan_library;
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
 /* From vulkan_custom_driver_open(), which keeps it: never closed here. */
 static bool                          vulkan_library_custom;
+#ifndef ANDROID
+/* The driver this init loads directly; NULL: the system's. */
+static PFN_vkGetInstanceProcAddrLUNARG vulkan_custom_icd;
+#endif
 #endif
 static VkInstance                    cached_instance_vk;
 #if defined(_WIN32) && !defined(__WINRT__)
@@ -620,6 +624,64 @@ static bool vulkan_find_extensions(const char * const *exts, unsigned num_exts,
    return true;
 }
 
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+/* From vk_icd.h, which needs <stdbool.h>. Direct loading needs
+ * interface 7. */
+typedef VkResult (VKAPI_PTR *vulkan_icd_negotiate_t)(uint32_t *version);
+#define VULKAN_CUSTOM_ICD_INTERFACE 7
+#endif
+
+/* vkEnumerateInstanceExtensionProperties(NULL, ...) for the instance this
+ * init makes. With only the custom driver loaded, that is its list and
+ * the loader's own, not the system drivers' that the loader lists. */
+static VkResult vulkan_instance_extension_properties(uint32_t *count,
+      VkExtensionProperties *props)
+{
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   PFN_vkEnumerateInstanceExtensionProperties enumerate;
+   vulkan_icd_negotiate_t negotiate;
+   VkResult res;
+   uint32_t cap;
+   uint32_t version = VULKAN_CUSTOM_ICD_INTERFACE;
+
+   if (!vulkan_custom_icd)
+      return vkEnumerateInstanceExtensionProperties(NULL, count, props);
+   /* As the loader does: the interface before any other call. */
+   negotiate = (vulkan_icd_negotiate_t)vulkan_custom_icd(VK_NULL_HANDLE,
+         "vk_icdNegotiateLoaderICDInterfaceVersion");
+   if (     !negotiate
+         || negotiate(&version) != VK_SUCCESS
+         || version < VULKAN_CUSTOM_ICD_INTERFACE)
+   {
+      RARCH_WARN("[Vulkan] Custom driver does not offer loader interface 7.\n");
+      return VK_ERROR_INCOMPATIBLE_DRIVER;
+   }
+   if (!(enumerate = (PFN_vkEnumerateInstanceExtensionProperties)
+            vulkan_custom_icd(VK_NULL_HANDLE,
+               "vkEnumerateInstanceExtensionProperties")))
+   {
+      RARCH_WARN("[Vulkan] Custom driver does not export vkEnumerateInstanceExtensionProperties.\n");
+      return VK_ERROR_INCOMPATIBLE_DRIVER;
+   }
+   if (!props)
+   {
+      if ((res = enumerate(NULL, count, NULL)) == VK_SUCCESS)
+         *count += VULKAN_CUSTOM_DRIVER_LOADER_EXTS;
+      return res;
+   }
+   if ((cap = *count) < VULKAN_CUSTOM_DRIVER_LOADER_EXTS)
+      return VK_INCOMPLETE;
+   *count -= VULKAN_CUSTOM_DRIVER_LOADER_EXTS;
+   if ((res = enumerate(NULL, count, props)) != VK_SUCCESS)
+      return res;
+   *count = (uint32_t)vulkan_custom_driver_loader_exts((char*)props,
+         sizeof(*props), *count, cap);
+   return VK_SUCCESS;
+#else
+   return vkEnumerateInstanceExtensionProperties(NULL, count, props);
+#endif
+}
+
 static bool vulkan_find_instance_extensions(
       const char **enabled, unsigned *inout_enabled_count,
       const char **exts, unsigned num_exts,
@@ -631,7 +693,7 @@ static bool vulkan_find_instance_extensions(
    bool ret                          = true;
    VkExtensionProperties *properties = NULL;
 
-   if (vkEnumerateInstanceExtensionProperties(NULL, &property_count, NULL) != VK_SUCCESS)
+   if (vulkan_instance_extension_properties(&property_count, NULL) != VK_SUCCESS)
       return false;
 
    if (!(properties = (VkExtensionProperties*)malloc(property_count *
@@ -641,7 +703,7 @@ static bool vulkan_find_instance_extensions(
       goto end;
    }
 
-   if (vkEnumerateInstanceExtensionProperties(NULL, &property_count, properties) != VK_SUCCESS)
+   if (vulkan_instance_extension_properties(&property_count, properties) != VK_SUCCESS)
    {
       ret = false;
       goto end;
@@ -736,7 +798,7 @@ end:
    return ret;
 }
 
-#ifdef HAVE_OPENXR
+#if defined(HAVE_OPENXR) || (defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID))
 /* Appends name unless the list has it. */
 static void vulkan_append_ext(const char **list, uint32_t *count,
       uint32_t cap, const char *name)
@@ -748,7 +810,9 @@ static void vulkan_append_ext(const char **list, uint32_t *count,
    if (*count < cap)
       list[(*count)++] = name;
 }
+#endif
 
+#ifdef HAVE_OPENXR
 /* Whether a queue family init_device() can use presents to the window. */
 static bool vulkan_context_gpu_presents(gfx_ctx_vulkan_data_t *vk,
       VkPhysicalDevice gpu)
@@ -2244,7 +2308,8 @@ static unsigned vulkan_optional_instance_count(const gfx_ctx_vulkan_data_t *vk)
 }
 
 /* vkCreateInstance, or the runtime's, which adds what it needs. An
- * instance the runtime refuses drops the headset. */
+ * instance the runtime refuses drops the headset; on a custom driver
+ * the init retries on the system one with it. */
 static VkResult vulkan_context_create_instance(gfx_ctx_vulkan_data_t *vk,
       const VkInstanceCreateInfo *info, VkInstance *instance)
 {
@@ -2255,6 +2320,11 @@ static VkResult vulkan_context_create_instance(gfx_ctx_vulkan_data_t *vk,
             vulkan_symbol_wrapper_instance_proc_addr(), info, instance);
       if (res == VK_SUCCESS)
          return res;
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+      /* Likely the custom driver's doing: the system one gets the headset. */
+      if (vulkan_custom_icd)
+         return res;
+#endif
       vulkan_openxr_drop(vk->context.xr);
       vk->context.xr = NULL;
    }
@@ -2278,6 +2348,10 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
                                                           + VULKAN_UPSCALER_EXTS;
    const char **instance_extensions = (const char**)malloc(instance_extensions_cap * sizeof(const char *));
    const char **instance_layers     = (const char**)malloc((info.enabledLayerCount     + 1)                * sizeof(const char *));
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   VkDirectDriverLoadingInfoLUNARG custom_icd;
+   VkDirectDriverLoadingListLUNARG custom_icds;
+#endif
 
    /* Both mallocs must have succeeded before the memcpy / field
     * assignments below dereference the buffers.  The 'end' label
@@ -2373,6 +2447,12 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
                ARRAY_SIZE(required_extensions), xr_exts[i]);
    }
 #endif
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   if (vulkan_custom_icd)
+      vulkan_append_ext(required_extensions, &required_extension_count,
+            ARRAY_SIZE(required_extensions),
+            VK_LUNARG_DIRECT_DRIVER_LOADING_EXTENSION_NAME);
+#endif
 
    if (!(vulkan_find_instance_extensions(
             instance_extensions, &info.enabledExtensionCount,
@@ -2433,6 +2513,23 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
          goto end;
       }
    }
+
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   /* Own, a core's and the runtime's instances all come through here. */
+   if (vulkan_custom_icd)
+   {
+      custom_icd.sType                  = VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_INFO_LUNARG;
+      custom_icd.pNext                  = NULL;
+      custom_icd.flags                  = 0;
+      custom_icd.pfnGetInstanceProcAddr = vulkan_custom_icd;
+      custom_icds.sType                 = VK_STRUCTURE_TYPE_DIRECT_DRIVER_LOADING_LIST_LUNARG;
+      custom_icds.pNext                 = info.pNext;
+      custom_icds.mode                  = VK_DIRECT_DRIVER_LOADING_MODE_EXCLUSIVE_LUNARG;
+      custom_icds.driverCount           = 1;
+      custom_icds.pDrivers              = &custom_icd;
+      info.pNext                        = &custom_icds;
+   }
+#endif
 
    if ((res = vulkan_context_create_instance(vk, &info, &instance)) != VK_SUCCESS)
    {
@@ -5242,11 +5339,11 @@ static bool vulkan_context_openxr_instance_exts_ok(vulkan_openxr_t *xr)
    n = vulkan_openxr_instance_extensions(xr, xr_exts, VULKAN_OPENXR_MAX_EXTS);
    if (!n)
       return true;
-   if (     vkEnumerateInstanceExtensionProperties(NULL, &count, NULL) != VK_SUCCESS
+   if (     vulkan_instance_extension_properties(&count, NULL) != VK_SUCCESS
          || !count
          || !(props = (VkExtensionProperties*)malloc(count * sizeof(*props))))
       return false;
-   if (vkEnumerateInstanceExtensionProperties(NULL, &count, props) != VK_SUCCESS)
+   if (vulkan_instance_extension_properties(&count, props) != VK_SUCCESS)
       ok = false;
    for (i = 0; ok && i < n; i++)
       ok = vulkan_find_extensions(&xr_exts[i], 1, props, count);
@@ -5299,13 +5396,18 @@ static void vulkan_context_openxr_init(gfx_ctx_vulkan_data_t *vk,
    if (     vk->context.xr && enable1
          && !vulkan_context_openxr_instance_exts_ok(vk->context.xr))
    {
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+      /* Likely the custom driver's doing: the system one gets the headset. */
+      if (vulkan_custom_icd)
+         return;
+#endif
       vulkan_openxr_drop(vk->context.xr);
       vk->context.xr = NULL;
    }
 }
 #endif
 
-#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && defined(ANDROID)
 /* A custom driver has to see a GPU. A Mesa one must also not report the
  * system driver's ID: the hook loads that driver when the custom library
  * fails to. Other vendors' builds may report that ID themselves. */
@@ -5349,12 +5451,19 @@ static bool vulkan_context_custom_driver_ok(gfx_ctx_vulkan_data_t *vk,
    }
    return true;
 }
+#endif
 
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
 /* The custom driver failed before its surface: init once more. Its path
  * is now off for the session, so this one gets the system driver. */
 static bool vulkan_context_init_system(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type)
 {
+#if defined(HAVE_OPENXR) && !defined(ANDROID)
+   /* The runtime's objects first; the system init makes them again. */
+   vulkan_openxr_free(vk->context.xr);
+   vk->context.xr = NULL;
+#endif
    if (vk->context.instance)
    {
       PFN_vkDestroyInstance destroy = (PFN_vkDestroyInstance)
@@ -5370,6 +5479,15 @@ static bool vulkan_context_init_system(gfx_ctx_vulkan_data_t *vk,
          destroy(vk->context.instance, NULL);
       vk->context.instance = VK_NULL_HANDLE;
    }
+#ifndef ANDROID
+   /* With no instance to destroy, the loader still holds the drivers it
+    * preloaded next to the custom one: unload it before the retry. */
+   if (vulkan_library)
+   {
+      dylib_close(vulkan_library);
+      vulkan_library = NULL;
+   }
+#endif
    vulkan_custom_driver_failed();
    return vulkan_context_init(vk, type);
 }
@@ -5404,6 +5522,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    vulkan_swapchain_settings_init(&vk->context.swapchain_settings);
 
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
+#ifdef ANDROID
    /* A kept instance keeps the loader it was made with. */
    if (!cached_instance_vk)
    {
@@ -5420,6 +5539,11 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    }
    else
       vulkan_custom_driver_kept();
+#else
+   vulkan_custom_icd = NULL;
+   if (cached_instance_vk)
+      vulkan_custom_driver_kept();
+#endif
 #endif
 
    if (!vulkan_library)
@@ -5484,6 +5608,18 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 #endif
       return false;
    }
+
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   /* After the loader: open() asks it for direct driver loading. */
+   if (!cached_instance_vk)
+   {
+      dylib_t custom = vulkan_custom_driver_open();
+      if (custom)
+         vulkan_custom_icd = (PFN_vkGetInstanceProcAddrLUNARG)
+            dylib_proc(custom, "vk_icdGetInstanceProcAddr");
+      custom_driver = (vulkan_custom_icd != NULL);
+   }
+#endif
 
    prog_name              = msg_hash_to_str(MSG_PROGRAM);
    app.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -5632,7 +5768,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
    }
 
-#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && defined(ANDROID)
    if (custom_driver && !vulkan_context_custom_driver_ok(vk, app.apiVersion))
       return vulkan_context_init_system(vk, type);
 #endif
