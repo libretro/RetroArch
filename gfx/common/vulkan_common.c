@@ -173,6 +173,9 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
 {
    const char *severity = "";
    const char *type     = "";
+   const char *prefix   = "";
+   const char *id       = "";
+   const char *close    = "";
 
    switch (msg_severity)
    {
@@ -203,16 +206,35 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
          break;
    }
 
+   /* Validation layers before 1.4 began each message with its ID,
+    * "Validation Error: [ VUID-... ] ..."; later ones hand the ID over
+    * only as pMessageIdName. It is put back in front, in the old shape,
+    * so a log names what fired either way. */
+   if (     pCallbackData->pMessageIdName
+         && *pCallbackData->pMessageIdName
+         && pCallbackData->pMessage
+         && !strstr(pCallbackData->pMessage, pCallbackData->pMessageIdName))
+   {
+      prefix = (msg_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
+            && msg_type == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
+         ? "Validation Error: [ " : "[ ";
+      id     = pCallbackData->pMessageIdName;
+      close  = " ] ";
+   }
+
    switch (msg_severity)
    {
       case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-         RARCH_ERR("[Vulkan] %s %s: %s.\n", severity, type, pCallbackData->pMessage);
+         RARCH_ERR("[Vulkan] %s %s: %s%s%s%s.\n", severity, type,
+               prefix, id, close, pCallbackData->pMessage);
          break;
       case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-         RARCH_WARN("[Vulkan] %s %s: %s.\n", severity, type, pCallbackData->pMessage);
+         RARCH_WARN("[Vulkan] %s %s: %s%s%s%s.\n", severity, type,
+               prefix, id, close, pCallbackData->pMessage);
          break;
       default:
-         RARCH_LOG("[Vulkan] %s %s: %s.\n", severity, type, pCallbackData->pMessage);
+         RARCH_LOG("[Vulkan] %s %s: %s%s%s%s.\n", severity, type,
+               prefix, id, close, pCallbackData->pMessage);
          break;
    }
    return VK_FALSE;
