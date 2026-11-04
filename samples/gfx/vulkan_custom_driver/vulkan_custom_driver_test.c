@@ -1192,6 +1192,86 @@ static void test_session_device(void)
             VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM, &msg));
 }
 
+/* VkExtensionProperties' layout */
+struct ext_rec
+{
+   char name[VULKAN_CUSTOM_DRIVER_EXT_NAME_MAX];
+   uint32_t spec;
+};
+
+static struct ext_rec exts[8];
+
+/* A driver's list of up to two names; the records after it are junk. */
+static size_t exts_of(const char *a, const char *b)
+{
+   size_t n = 0;
+   memset(exts, 0x5a, sizeof(exts));
+   if (a)
+   {
+      strcpy(exts[n].name, a);
+      exts[n++].spec = 1;
+   }
+   if (b)
+   {
+      strcpy(exts[n].name, b);
+      exts[n++].spec = 1;
+   }
+   return n;
+}
+
+static unsigned exts_count(size_t n, const char *name)
+{
+   size_t i;
+   unsigned found = 0;
+   for (i = 0; i < n; i++)
+      if (!strcmp(exts[i].name, name))
+         found++;
+   return found;
+}
+
+static size_t add_loader_exts(size_t n, size_t cap)
+{
+   return vulkan_custom_driver_loader_exts((char*)exts, sizeof(exts[0]),
+         n, cap);
+}
+
+static void test_loader_exts(void)
+{
+   size_t n;
+
+   /* a WSI-only driver: the loader's four follow, zero-filled */
+   n = add_loader_exts(exts_of("VK_KHR_surface", "VK_KHR_xlib_surface"), 8);
+   CHECK(n == 6);
+   CHECK(!strcmp(exts[0].name, "VK_KHR_surface") && exts[0].spec == 1);
+   CHECK(!strcmp(exts[1].name, "VK_KHR_xlib_surface") && exts[1].spec == 1);
+   CHECK(!strcmp(exts[2].name, "VK_EXT_debug_report"));
+   CHECK(!strcmp(exts[3].name, "VK_EXT_debug_utils"));
+   CHECK(!strcmp(exts[4].name, "VK_KHR_portability_enumeration"));
+   CHECK(!strcmp(exts[5].name, "VK_LUNARG_direct_driver_loading"));
+   CHECK(exts[5].spec == 0
+         && !exts[5].name[VULKAN_CUSTOM_DRIVER_EXT_NAME_MAX - 1]);
+   CHECK(exts[6].spec == 0x5a5a5a5aUL);
+   /* Mesa lists the debug extensions itself: no duplicates */
+   n = add_loader_exts(exts_of("VK_EXT_debug_utils", "VK_EXT_debug_report"), 8);
+   CHECK(n == 4);
+   CHECK(exts_count(n, "VK_EXT_debug_utils") == 1);
+   CHECK(exts_count(n, "VK_EXT_debug_report") == 1);
+   CHECK(exts_count(n, "VK_LUNARG_direct_driver_loading") == 1);
+   /* a longer name is another extension */
+   n = add_loader_exts(exts_of("VK_EXT_debug_utils_x", NULL), 8);
+   CHECK(n == 5 && exts_count(n, "VK_EXT_debug_utils") == 1);
+   /* a driver with none */
+   CHECK(add_loader_exts(exts_of(NULL, NULL), 8)
+         == VULKAN_CUSTOM_DRIVER_LOADER_EXTS);
+   /* cap records at most */
+   n = add_loader_exts(exts_of("VK_KHR_surface", NULL), 2);
+   CHECK(n == 2 && !strcmp(exts[1].name, "VK_EXT_debug_report"));
+   CHECK(exts[2].spec == 0x5a5a5a5aUL);
+   CHECK(add_loader_exts(2, 2) == 2);
+   /* records too small for a Vulkan name are left alone */
+   CHECK(vulkan_custom_driver_loader_exts((char*)exts, 16, 1, 8) == 1);
+}
+
 int main(void)
 {
    test_meta();
@@ -1208,6 +1288,7 @@ int main(void)
    test_icd();
    test_icd_library();
    test_session_device();
+   test_loader_exts();
    printf("vulkan_custom_driver_test: %u checks, %u failures\n",
          checks, failures);
    return failures ? 1 : 0;
