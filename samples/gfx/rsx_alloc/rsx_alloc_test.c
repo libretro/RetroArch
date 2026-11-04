@@ -332,7 +332,34 @@ int font_renderer_get_message_width(
       const char *msg, size_t msg_len, float scale) { return 0; }
 
 static struct font_atlas *fake_get_atlas(void *data) { return &fake_atlas; }
-static void fake_font_free(void *data) { }
+/* The font driver's font_atlas_place() and the release a renderer's
+ * free makes: the atlas moved into the consumer's storage, and handed
+ * back to it when the font goes. The fake's own buffer is static. */
+bool font_atlas_place(struct font_atlas *atlas,
+      void *(*storage)(void *user, size_t size),
+      void (*storage_free)(void *user, void *buffer), void *user)
+{
+   size_t   size = (size_t)atlas->width * atlas->height;
+   uint8_t *buf;
+   if (!storage || !(buf = (uint8_t*)storage(user, size)))
+      return false;
+   memcpy(buf, atlas->buffer, size);
+   atlas->buffer       = buf;
+   atlas->storage      = storage;
+   atlas->storage_free = storage_free;
+   atlas->storage_user = user;
+   return true;
+}
+static void fake_font_free(void *data)
+{
+   struct font_atlas *atlas = (struct font_atlas*)data;
+   if (atlas->storage_free && atlas->buffer != fake_atlas_buffer)
+      atlas->storage_free(atlas->storage_user, atlas->buffer);
+   atlas->buffer       = fake_atlas_buffer;
+   atlas->storage      = NULL;
+   atlas->storage_free = NULL;
+   atlas->storage_user = NULL;
+}
 static struct font_glyph fake_glyph;
 static const struct font_glyph *fake_get_glyph(void *data, uint32_t code)
 { return &fake_glyph; }
