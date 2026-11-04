@@ -1893,6 +1893,7 @@ static bool net_http_build_head(struct http_t *state)
    const char *method      = request->method ? request->method : "GET";
    bool body_method        = request->method && request->method[0] == 'P';
    size_t cap              = 192
+      + STRLEN_CONST("Accept-Encoding: identity\r\n")
       + strlen(method) + strlen(request->path) + strlen(request->domain)
       + (request->headers     ? strlen(request->headers)     : 0)
       + (request->auth        ? strlen(request->auth)
@@ -1940,6 +1941,9 @@ static bool net_http_build_head(struct http_t *state)
             (long long unsigned)request->contentlength);
 #endif
    }
+   /* The body reaches callers as sent: no content coding is decoded,
+    * so none is accepted. Without this header a server may pick any. */
+   n = net_http_put(h, n, "Accept-Encoding: identity\r\n");
    n = net_http_put(h, n, "User-Agent: ");
    n = net_http_put(h, n, request->useragent ? request->useragent : "libretro");
    n = net_http_put(h, n, "\r\n\r\n");

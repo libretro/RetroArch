@@ -77,6 +77,7 @@ static int    g_nsteps;
 static int    g_nreqs;
 static char   g_range[MAX_REQS][64];
 static char   g_ifrange[MAX_REQS][64];
+static char   g_accenc[MAX_REQS][64];
 static int    g_listen_fd = -1, g_port;
 static int    g_stop;
 static pthread_t g_th;
@@ -158,6 +159,7 @@ static void serve_one(int cs)
    {
       header_value(req, "Range", g_range[idx], sizeof(g_range[idx]));
       header_value(req, "If-Range", g_ifrange[idx], sizeof(g_ifrange[idx]));
+      header_value(req, "Accept-Encoding", g_accenc[idx], sizeof(g_accenc[idx]));
       if (!strncmp(g_range[idx], "bytes=", 6))
          from = strtoul(g_range[idx] + 6, NULL, 10);
    }
@@ -373,6 +375,11 @@ int main(void)
          && !strcmp(g_ifrange[1], "\"v1\""),
          "resume: second request Range '%s' If-Range '%s'",
          g_range[1], g_ifrange[1]);
+   /* The body is written as received, so no content coding may be
+    * accepted on either the first request or the resumed one. */
+   CHECK(!strcmp(g_accenc[0], "identity") && !strcmp(g_accenc[1], "identity"),
+         "resume: Accept-Encoding '%s' then '%s', expected identity",
+         g_accenc[0], g_accenc[1]);
    remove(g_path);
 
    run("dropped twice, resumed twice", s_twice, 3);
