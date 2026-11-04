@@ -12,6 +12,7 @@
 #include <file/archive_file.h>
 #include <file/file_path.h>
 #include <lists/string_list.h>
+#include <queues/task_queue.h>
 #include <retro_atomic.h>
 #include <retro_dirent.h>
 #include <retro_miscellaneous.h>
@@ -43,6 +44,7 @@ static struct
    char base[PATH_MAX_LENGTH];   /* <internalDataPath>/vulkan_drivers/ */
    char marker[PATH_MAX_LENGTH];
    char state[PATH_MAX_LENGTH];
+   char prep[PATH_MAX_LENGTH];   /* the zip a pick's task was pushed for */
    const char *core;             /* of the open() in progress */
    bool mesa;                    /* of the last driver open() returned */
    bool ready;
@@ -170,10 +172,14 @@ static bool custom_driver_current_dir(struct custom_driver_work *w,
    return keep;
 }
 
+/* Pick tasks running; prune leaves their .prep dirs alone */
+static retro_atomic_int_t custom_driver_preps;
+
 /* Once per process, before any driver is mapped: drops each extraction
  * whose zip is gone or changed, and any half-done one. No recursion. */
 static void custom_driver_prune(struct custom_driver_work *w)
 {
+   bool preps        = retro_atomic_load_acquire_int(&custom_driver_preps) > 0;
    struct RDIR *rdir = retro_opendir(custom_driver_st.base);
    if (!rdir)
       return;
@@ -182,7 +188,10 @@ static void custom_driver_prune(struct custom_driver_work *w)
       const char *name = retro_dirent_get_name(rdir);
       size_t len       = strlen(name);
       if (     !retro_dirent_is_dir(rdir, NULL)
-            || !(len == 8 || (len == 12 && string_is_equal(name + 8, ".tmp")))
+            || !(     len == 8
+                  || (len == 12 && string_is_equal(name + 8, ".tmp"))
+                  || (len == 13 && string_is_equal(name + 8, ".prep")
+                     && !preps))
             || strspn(name, "0123456789abcdef") != 8)
          continue;
       fill_pathname_join_special(w->dir, custom_driver_st.base, name,
@@ -196,7 +205,7 @@ static void custom_driver_prune(struct custom_driver_work *w)
 
 /* True when w->dir holds a finished extraction; fills *meta. */
 static bool custom_driver_extracted(struct custom_driver_work *w,
-      struct vulkan_custom_driver_meta *meta)
+      int api_level, struct vulkan_custom_driver_meta *meta)
 {
    int64_t len = 0;
    char *buf;
@@ -204,8 +213,7 @@ static bool custom_driver_extracted(struct custom_driver_work *w,
    fill_pathname_join_special(w->file, w->dir, "meta.json", sizeof(w->file));
    if (!(buf = custom_driver_read(w->file, &len)))
       return false;
-   if (!vulkan_custom_driver_parse_meta(buf, (size_t)len,
-            g_android->activity->sdkVersion, meta))
+   if (!vulkan_custom_driver_parse_meta(buf, (size_t)len, api_level, meta))
    {
       fill_pathname_join_special(w->file, w->dir, meta->library_name,
             sizeof(w->file));
@@ -228,10 +236,13 @@ static bool custom_driver_one_member(const struct string_list *members,
    return n == 1;
 }
 
-/* Checks the package at path and extracts it into w->dir. Returns NULL,
- * or the reason it is not usable. */
+/* Checks the package at path and extracts it into w->dir, through
+ * w->tmp. Returns NULL, or the reason it is not usable. Any thread: the
+ * pick's task and a context init may extract one version at once, each
+ * through a tmp of its own; the second to finish keeps the first's. */
 static const char *custom_driver_extract(struct custom_driver_work *w,
-      const char *path, struct vulkan_custom_driver_meta *meta)
+      const char *path, int api_level,
+      struct vulkan_custom_driver_meta *meta)
 {
    unsigned char head[VULKAN_CUSTOM_DRIVER_ELF_HEAD];
    uint64_t size              = 0;
@@ -251,7 +262,7 @@ static const char *custom_driver_extract(struct custom_driver_work *w,
    else if (!file_archive_compressed_read(w->member, &buf, NULL, &len))
       reason = "no readable meta.json";
    else if (!(reason = vulkan_custom_driver_parse_meta((const char*)buf,
-               (size_t)len, g_android->activity->sdkVersion, meta))
+               (size_t)len, api_level, meta))
          && !(reason = vulkan_custom_driver_check_members(members,
                meta->library_name))
          && !custom_driver_one_member(members, meta->library_name))
@@ -298,9 +309,16 @@ static const char *custom_driver_extract(struct custom_driver_work *w,
       if (!(reason = vulkan_custom_driver_check_elf(head,
                   got > 0 ? (size_t)got : 0, path_get_size(w->other))))
       {
-         custom_driver_remove(w, w->dir);
-         if (filestream_rename(w->tmp, w->dir) != 0)
-            reason = "cannot write the driver dir";
+         struct vulkan_custom_driver_meta done;
+         if (custom_driver_extracted(w, api_level, &done))
+            custom_driver_remove(w, w->tmp);
+         else
+         {
+            custom_driver_remove(w, w->dir);
+            if (     filestream_rename(w->tmp, w->dir) != 0
+                  && !custom_driver_extracted(w, api_level, &done))
+               reason = "cannot write the driver dir";
+         }
       }
    }
    if (reason)
@@ -359,8 +377,10 @@ static void *custom_driver_load(void *data, const char *path, uint32_t key,
    strlcpy(w->tmp, w->dir, sizeof(w->tmp));
    strlcat(w->tmp, ".tmp", sizeof(w->tmp));
 
-   if (     !custom_driver_extracted(w, meta)
-         && (reason = custom_driver_extract(w, path, meta)))
+   if (     !custom_driver_extracted(w, g_android->activity->sdkVersion,
+               meta)
+         && (reason = custom_driver_extract(w, path,
+               g_android->activity->sdkVersion, meta)))
       *msg = VULKAN_CUSTOM_DRIVER_MSG_INVALID;
    else
    {
@@ -554,6 +574,79 @@ bool vulkan_custom_driver_crashed(const char *path)
          custom_driver_st.session.state_len, path, custom_driver_core());
 }
 
+/* A pick's task: the package checked and extracted ahead of the
+ * context init that loads it, which then finds it done. Its state is
+ * all it reads. */
+struct custom_driver_prep
+{
+   struct custom_driver_work w;
+   struct vulkan_custom_driver_meta meta;
+   char path[PATH_MAX_LENGTH];
+   char base[PATH_MAX_LENGTH];
+   int api_level;
+};
+
+static void custom_driver_prep_handler(retro_task_t *task)
+{
+   struct custom_driver_prep *p = (struct custom_driver_prep*)task->state;
+   int64_t mtime                = 0;
+   int64_t size;
+
+   if (     !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+         && (size = path_get_size(p->path)) >= 0
+         && path_get_mtime(p->path, &mtime))
+   {
+      const char *reason;
+      snprintf(p->w.other, sizeof(p->w.other), "%08x",
+            (unsigned)vulkan_custom_driver_key(p->path, size, mtime));
+      fill_pathname_join_special(p->w.dir, p->base, p->w.other,
+            sizeof(p->w.dir));
+      strlcpy(p->w.tmp, p->w.dir, sizeof(p->w.tmp));
+      strlcat(p->w.tmp, ".prep", sizeof(p->w.tmp));
+      if (     !custom_driver_extracted(&p->w, p->api_level, &p->meta)
+            && (reason = custom_driver_extract(&p->w, p->path,
+                  p->api_level, &p->meta)))
+         RARCH_WARN("[Vulkan] Custom driver \"%s\" not usable: %s.\n",
+               p->path, reason);
+   }
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void custom_driver_prep_free(retro_task_t *task)
+{
+   free(task->state);
+   retro_atomic_fetch_add_int(&custom_driver_preps, -1);
+}
+
+/* Main thread, at a pick: extracts path ahead of its first start. */
+static void custom_driver_prepare(const char *path)
+{
+   struct custom_driver_prep *p;
+   retro_task_t *task;
+
+   /* One task per zip at a time: two write the same .prep */
+   if (     custom_driver_st.safe_mode
+         || !vulkan_custom_driver_supported()
+         || (     retro_atomic_load_acquire_int(&custom_driver_preps) > 0
+               && string_is_equal(custom_driver_st.prep, path))
+         || !(p = (struct custom_driver_prep*)calloc(1, sizeof(*p))))
+      return;
+   if (!(task = task_init()))
+   {
+      free(p);
+      return;
+   }
+   strlcpy(custom_driver_st.prep, path, sizeof(custom_driver_st.prep));
+   strlcpy(p->path, path, sizeof(p->path));
+   strlcpy(p->base, custom_driver_st.base, sizeof(p->base));
+   p->api_level    = g_android->activity->sdkVersion;
+   task->handler   = custom_driver_prep_handler;
+   task->state     = p;
+   task->cleanup   = custom_driver_prep_free;
+   retro_atomic_fetch_add_int(&custom_driver_preps, 1);
+   task_queue_push(task);
+}
+
 void vulkan_custom_driver_picked(const char *path)
 {
    size_t len;
@@ -564,6 +657,7 @@ void vulkan_custom_driver_picked(const char *path)
             &custom_driver_st.session, path));
    if (custom_driver_st.session.state_len != len)
       custom_driver_save_state();
+   custom_driver_prepare(path);
 }
 
 void vulkan_custom_driver_set_safe_mode(bool safe_mode)
