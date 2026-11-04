@@ -7687,12 +7687,12 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD,
-   "Use another Vulkan driver: pick its .json, from share/vulkan/icd.d.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver."
+   "Use another Vulkan driver: pick its .json, from share/vulkan/icd.d.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver. One run without it: --vulkan-driver=system"
    )
 #if defined(_WIN32)
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_WINDOWS,
-   "Use another Vulkan driver: pick its .json, usually beside its .dll.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver."
+   "Use another Vulkan driver: pick its .json, usually beside its .dll.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver. One run without it: --vulkan-driver=system"
    )
 #endif
 /* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group (see settings_def_video_hdr_toggles.h, settings_def_video_stereo.h and settings_def_video_headset.h). */

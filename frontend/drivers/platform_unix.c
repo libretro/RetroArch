@@ -4376,6 +4376,31 @@ static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
    return true;
 }
 
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+extern char **environ;
+
+/* environ with RETROARCH_VULKAN_DRIVER=system replacing any other value */
+static char **frontend_unix_safe_start_env(void)
+{
+   static char safe[] = "RETROARCH_VULKAN_DRIVER=system";
+   static const char key[] = "RETROARCH_VULKAN_DRIVER=";
+   size_t n = 0;
+   size_t i, j;
+   char **envp;
+
+   while (environ[n])
+      n++;
+   if (!(envp = (char**)malloc((n + 2) * sizeof(*envp))))
+      return NULL;
+   for (i = 0, j = 0; i < n; i++)
+      if (strncmp(environ[i], key, sizeof(key) - 1))
+         envp[j++] = environ[i];
+   envp[j++] = safe;
+   envp[j]   = NULL;
+   return envp;
+}
+#endif
+
 static void frontend_unix_exec(const char *path, bool should_load_content)
 {
    char *newargv[]    = { NULL, NULL };
@@ -4399,6 +4424,19 @@ static void frontend_unix_exec(const char *path, bool should_load_content)
 
    strlcpy(newargv[0], path, _len);
 
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   /* Only argv[0] is passed on: carry safe start in the environment. */
+   if (vulkan_custom_driver_safe_mode())
+   {
+      char **envp = frontend_unix_safe_start_env();
+      if (envp)
+      {
+         execve(path, newargv, envp);
+         free(envp);
+         return;
+      }
+   }
+#endif
    execv(path, newargv);
 }
 
