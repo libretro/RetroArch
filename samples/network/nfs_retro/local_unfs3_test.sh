@@ -7,6 +7,9 @@
 # skips, and passes.
 set -e
 cd "$(dirname "$0")"
+# reply parsing against short and hostile replies: needs no server
+make -s nfs_reply_bounds_test
+${RUNNER:-} ./nfs_reply_bounds_test${EXE:-}
 UNFSD=$(command -v unfsd || true)
 if [ -z "$UNFSD" ]; then
    if command -v git >/dev/null 2>&1 && command -v flex >/dev/null 2>&1 && command -v bison >/dev/null 2>&1; then
