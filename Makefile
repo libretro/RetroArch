@@ -143,10 +143,13 @@ ifneq ($(CXX_BUILD), 1)
       endif
       ifeq ($(HAVE_PIPEWIRE), 1)
          # The SPA headers are C99: read them as system headers, which
-         # takes them out of -pedantic, and give them __inline__.
+         # takes them out of -pedantic, and give them __inline__. Newer
+         # ones declare in for loops, which no C89 compiler reads, so
+         # these three are built as gnu99 (the last -std given wins);
+         # their own declarations stay held before statements.
          PIPEWIRE_C89_OBJ := $(addprefix $(OBJDIR)/,audio/drivers/pipewire.o \
                audio/common/pipewire.o camera/drivers/pipewire.o)
-         $(PIPEWIRE_C89_OBJ): DEFINES += -Dinline=__inline__ \
+         $(PIPEWIRE_C89_OBJ): DEFINES += -std=gnu99 -Dinline=__inline__ \
                $(patsubst -I%,-isystem %,$(filter -I%,$(PIPEWIRE_CFLAGS)))
       endif
    else ifeq ($(HAVE_C99), 1)
