@@ -6061,25 +6061,30 @@ finish:
       RARCH_LOG("[Updater] Download \"%s\".\n",
             (transf ? transf->path : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
 
-      /* Content Downloader: record the download beside it, so the
-       * list can still mark it.  The extraction task pushed above has
-       * not run yet; it may delete the archive when it does. */
+      /* Content and Core System Files Downloaders: record the download
+       * beside it, so the list can still mark it.  The extraction task
+       * pushed above has not run yet; it may delete the archive when
+       * it does. */
       if (     transf
-            && transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD
+            && (   transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD
+                || transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD)
             && *output_path)
       {
          fill_pathname_basedir(buf, output_path, sizeof(buf));
          menu_content_downloads_add(buf, path_basename(output_path));
       }
 
-      /* Content Downloader: Mark downloaded content label with a "[#]". */
-      if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD)
+      /* Mark the downloaded entry "[#]" in the list on screen. */
+      if (     transf
+            && (   transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD
+                || transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD))
       {
          struct menu_state *menu_st = menu_state_get_ptr();
          const char *menu_label = NULL;
          menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
-         if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR))
+         if (   string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR)
+             || string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST_STR))
          {
             menu_list_t *menu_list     = menu_st->entries.list;
             file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;

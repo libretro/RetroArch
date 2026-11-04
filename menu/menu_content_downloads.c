@@ -105,3 +105,20 @@ bool menu_content_downloads_add(const char *dir, const char *name)
    }
    return ret;
 }
+
+void menu_content_downloads_mark(file_list_t *list, size_t count,
+      const char *dir)
+{
+   size_t i;
+   char *record;
+
+   if (!list || !dir || !*dir)
+      return;
+   if (count > list->size)
+      count = list->size;
+   record = menu_content_downloads_load(dir);
+   for (i = 0; i < count; i++)
+      if (menu_content_downloads_present(dir, record, list->list[i].path))
+         file_list_set_label_at_offset(list, i, "[#]");
+   free(record);
+}

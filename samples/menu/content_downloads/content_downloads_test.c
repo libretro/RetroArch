@@ -10,6 +10,7 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
+#include <lists/file_list.h>
 #include <streams/file_stream.h>
 
 #include "../../../menu/menu_content_downloads.h"
@@ -51,6 +52,13 @@ static bool present(const char *name)
    bool   ret   = menu_content_downloads_present(DIR_NAME, record, name);
    free(record);
    return ret;
+}
+
+/* True when entry @i of @list carries the "[#]" label. */
+static bool marked(file_list_t *list, size_t i)
+{
+   const char *label = list->list[i].label;
+   return label && !strcmp(label, "[#]");
 }
 
 static int record_lines(void)
@@ -97,6 +105,30 @@ int main(void)
          "a name with a line break is refused");
    CHECK(!present("bad") && !present("name.zip"),
          "and nothing of it is recorded");
+
+   printf("[a list is marked]\n");
+   reset();
+   {
+      file_list_t list;
+      memset(&list, 0, sizeof(list));
+      file_list_append(&list, "never.zip",    NULL, 0, 0, 0);
+      file_list_append(&list, "recorded.zip", NULL, 0, 0, 0);
+      file_list_append(&list, "prboom.wad",   NULL, 0, 0, 0);
+      file_list_append(&list, "beyond.zip",   NULL, 0, 0, 0);
+      menu_content_downloads_add(DIR_NAME, "recorded.zip");
+      menu_content_downloads_add(DIR_NAME, "beyond.zip");
+      filestream_write_file(DIR_NAME "/prboom.wad", "x", 1);
+      /* The fallback entry a list appends after its own lines is past
+       * @count, and is left alone. */
+      menu_content_downloads_mark(&list, 3, DIR_NAME);
+      CHECK(!marked(&list, 0), "an entry never downloaded is not marked");
+      CHECK(marked(&list, 1), "a recorded entry is marked");
+      CHECK(marked(&list, 2), "an entry on disk is marked");
+      CHECK(!marked(&list, 3), "an entry past the count is not touched");
+      menu_content_downloads_mark(&list, 3, NULL);
+      CHECK(marked(&list, 1), "no folder leaves the list as it was");
+      file_list_deinitialize(&list);
+   }
 
    reset();
    printf("%d checks, %d failures\n", checks, failures);

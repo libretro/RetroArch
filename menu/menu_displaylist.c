@@ -16256,19 +16256,7 @@ static bool menu_displaylist_ctl_internal(
                            category, sizeof(content_dir));
                }
 
-               if (*content_dir)
-               {
-                  size_t i;
-                  char *record = menu_content_downloads_load(content_dir);
-                  for (i = 0; i < count; i++)
-                  {
-                     const char *fname = info->list->list[i].path;
-                     if (menu_content_downloads_present(content_dir, record,
-                              fname))
-                        file_list_set_label_at_offset(info->list, i, "[#]");
-                  }
-                  free(record);
-               }
+               menu_content_downloads_mark(info->list, count, content_dir);
             }
 
             menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
@@ -16310,6 +16298,11 @@ static bool menu_displaylist_ctl_internal(
             count = (unsigned)print_buf_lines(info->list, "", menu->core_buf,
                   menu->core_len, FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES,
                   true);
+            /* Mark entries with "[#]" once downloaded: the archive is
+             * extracted into the system folder and deleted, so the
+             * download is also recorded there. */
+            menu_content_downloads_mark(info->list, count,
+                  settings->paths.directory_system);
 
             menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 
