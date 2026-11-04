@@ -34282,6 +34282,14 @@ MSG_HASH(
    "Started with the system Vulkan driver."
    )
 MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_INVALID_ICD,
+   "Custom Vulkan driver .json is not usable. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED_LOADER,
+   "Custom Vulkan drivers need Vulkan loader 1.3.235 or newer. Using the system driver."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Lowest"
    )

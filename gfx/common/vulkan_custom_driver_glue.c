@@ -36,10 +36,18 @@ void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg)
          id = MSG_VULKAN_CUSTOM_DRIVER_CRASHED;
          break;
       case VULKAN_CUSTOM_DRIVER_MSG_INVALID:
+#ifdef ANDROID
          id = MSG_VULKAN_CUSTOM_DRIVER_INVALID;
+#else
+         id = MSG_VULKAN_CUSTOM_DRIVER_INVALID_ICD;
+#endif
          break;
       case VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED:
+#ifdef ANDROID
          id = MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED;
+#else
+         id = MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED_LOADER;
+#endif
          break;
       case VULKAN_CUSTOM_DRIVER_MSG_RESTART:
          id = MSG_VULKAN_CUSTOM_DRIVER_RESTART;
@@ -141,6 +149,21 @@ void *vulkan_custom_driver_glue_open(struct vulkan_custom_driver_request *req,
 
    *meta = NULL;
    *msg  = VULKAN_CUSTOM_DRIVER_MSG_NONE;
+#ifndef ANDROID
+   if (custom_driver_st.safe_mode_msg)
+   {
+      RARCH_LOG("[Vulkan] Started with the system driver (safe start).\n");
+      /* Nothing was skipped: no notice, nor a late one once a driver
+       * is picked. */
+      if (string_is_empty(settings->paths.path_vulkan_driver))
+         custom_driver_st.safe_mode_msg = false;
+   }
+   /* Nothing next to the config until a driver is set; a crash marker
+    * left there waits until then. */
+   if (     !custom_driver_st.ready
+         && string_is_empty(settings->paths.path_vulkan_driver))
+      return NULL;
+#endif
    if (!custom_driver_init())
       return NULL;
    if (vulkan_custom_driver_session_started(&custom_driver_st.session))
@@ -224,6 +247,14 @@ bool vulkan_custom_driver_crashed(const char *path)
 void vulkan_custom_driver_picked(const char *path)
 {
    size_t len;
+#ifndef ANDROID
+   /* The notice is for a driver set at start, not one picked since. */
+   if (custom_driver_st.safe_mode_msg)
+   {
+      RARCH_LOG("[Vulkan] Started with the system driver (safe start).\n");
+      custom_driver_st.safe_mode_msg = false;
+   }
+#endif
    if (string_is_empty(path) || !custom_driver_init())
       return;
    len = custom_driver_st.session.state_len;
