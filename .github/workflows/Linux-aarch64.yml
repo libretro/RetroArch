@@ -61,7 +61,7 @@ jobs:
 
       - name: Configure
         run: |
-          ./configure --disable-qt --disable-ffmpeg --disable-cg --disable-xscrnsaver --enable-openxr
+          ./configure --disable-qt --disable-ffmpeg --disable-cg --enable-openxr
           grep -q '^HAVE_OPENXR = 1' config.mk
 
       - name: Compile RA

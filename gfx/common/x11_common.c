@@ -284,10 +284,90 @@ void x11_set_window_attr(Display *dpy, Window win)
    x11_set_window_pid(dpy, win);
 }
 
-#ifdef HAVE_XSCRNSAVER
-#include <X11/extensions/scrnsaver.h>
+#if defined(HAVE_XSCRNSAVER) && defined(HAVE_DYLIB)
+#include <dynamic/dylib.h>
+
+typedef Bool (*xss_query_extension_t)(Display*, int*, int*);
+typedef Status (*xss_query_version_t)(Display*, int*, int*);
+typedef void (*xss_suspend_t)(Display*, Bool);
+
+typedef struct
+{
+   dylib_t lib;
+   xss_query_extension_t query_extension;
+   xss_query_version_t query_version;
+   xss_suspend_t suspend;
+} xss_t;
+
+/* libXss is loaded on first use, so the binary starts where it is
+ * absent. A threaded video driver asks from its own thread; whoever
+ * loads first publishes. */
+#ifdef RETRO_ATOMIC_HAS_PTR
+static retro_atomic_ptr_t xss_published;
+#else
+static xss_t *xss_published;
+#endif
+
+#define XSS_SYM(field, name) \
+   if (!(sym = dylib_proc(t->lib, name))) \
+      goto fail; \
+   memcpy(&t->field, &sym, sizeof(sym))
+
+static xss_t *xss_load(void)
+{
+   function_t sym;
+   xss_t *t = (xss_t*)calloc(1, sizeof(*t));
+
+   if (!t)
+      return NULL;
+   t->lib = dylib_load("libXss.so.1");
+#ifdef __OpenBSD__
+   /* OpenBSD's sonames carry its own version numbers. */
+   if (!t->lib)
+      t->lib = dylib_load("libXss.so");
+#endif
+   if (!t->lib)
+   {
+      free(t);
+      return NULL;
+   }
+
+   XSS_SYM(query_extension, "XScreenSaverQueryExtension");
+   XSS_SYM(query_version,   "XScreenSaverQueryVersion");
+   XSS_SYM(suspend,         "XScreenSaverSuspend");
+   return t;
+
+fail:
+   dylib_close(t->lib);
+   free(t);
+   return NULL;
+}
+
+static const xss_t *xss_get(void)
+{
+   xss_t *t;
+#ifdef RETRO_ATOMIC_HAS_PTR
+   if ((t = (xss_t*)retro_atomic_load_acquire_ptr(&xss_published)))
+      return t;
+   if (!(t = xss_load()))
+      return NULL;
+   if (!retro_atomic_cas_ptr(&xss_published, NULL, t))
+   {
+      dylib_close(t->lib);
+      free(t);
+      return (const xss_t*)retro_atomic_load_acquire_ptr(&xss_published);
+   }
+   return t;
+#else
+   if (!xss_published)
+      xss_published = xss_load();
+   return xss_published;
+#endif
+}
+
 static bool xss_screensaver_inhibit(Display *dpy, bool enable)
 {
+    const xss_t *xss;
     int dummy, min, maj;
     /* Guard against being called with a NULL Display.  This
      * happens with the SDL2 video driver under HAVE_X11 +
@@ -302,14 +382,14 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable)
      * offset off the NULL display pointer.  Surfaced by the
      * ASan+UBSan CI workflow's headless SDL2 smoke (b9777c8 +
      * d967813), where dbus-1 isn't apt-installed but libXss is. */
-    if (!dpy)
+    if (!dpy || !(xss = xss_get()))
        return false;
-    if (       !XScreenSaverQueryExtension(dpy, &dummy, &dummy)
-            || !XScreenSaverQueryVersion(dpy, &maj, &min)
+    if (       !xss->query_extension(dpy, &dummy, &dummy)
+            || !xss->query_version(dpy, &maj, &min)
             || (maj < 1)
             || (maj == 1 && min < 1))
             return false;
-    XScreenSaverSuspend(dpy, enable);
+    xss->suspend(dpy, enable);
     XResetScreenSaver(dpy);
     return true;
 }
