@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Run the font atlas uploads of the GX2, GXM and RSX drivers, extracted
-from the shipping sources, against textures in memory that are exactly
-their size."""
+"""Run the font atlas uploads of the GX2, GXM, RSX and D3D11 drivers,
+extracted from the shipping sources, against textures in memory that
+are exactly their size, and against a D3D11 device whose texture
+creation can be made to fail."""
 import os
 from pathlib import Path
 import shlex
@@ -37,6 +38,7 @@ parts = {
                   ('gx2_font_invalidate_sprites(', 'gx2_font_upload_dirty(')),
     'gxm.inc':   ('gfx/drivers/gxm_gfx.c', ('gxm_font_upload_dirty(',)),
     'rsx.inc':   ('gfx/drivers/rsx_gfx.c', ('rsx_font_copy_dirty(',)),
+    'd3d11.inc': ('gfx/drivers/d3d11.c', ('d3d11_font_make_texture(',)),
 }
 
 with tempfile.TemporaryDirectory() as directory:

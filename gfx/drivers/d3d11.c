@@ -1728,30 +1728,37 @@ static void d3d11_font_update_atlas_region(
 
 /* (Re)makes the font texture at the atlas's size and uploads all of
  * it: at init, and when the atlas has grown. The context keeps a
- * released texture alive for draws already recorded against it. */
+ * released texture alive for draws already recorded against it. When
+ * the new texture cannot be made the old one stays, and the cells it
+ * holds keep being uploaded into it. */
 static void d3d11_font_make_texture(d3d11_video_t *d3d11,
       d3d11_font_t *font)
 {
-   font->texture.sampler     = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
-   font->texture.desc.Width  = font->atlas->width;
-   font->texture.desc.Height = font->atlas->height;
-   font->texture.desc.Format = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+   d3d11_texture_t texture;
+   memset(&texture, 0, sizeof(texture));
+   texture.sampler     = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
+   texture.desc.Width  = font->atlas->width;
+   texture.desc.Height = font->atlas->height;
+   texture.desc.Format = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
          ? DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_A8_UNORM;
-   d3d11_release_texture(&font->texture);
-   d3d11_init_texture(d3d11->device, &font->texture);
-   if (font->texture.staging)
+   if (     !d3d11_init_texture(d3d11->device, &texture)
+         || !texture.staging || !texture.view)
    {
-      if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-         /* the generic path's conversion table does not cover R16;
-          * stage the whole atlas through the element-size-aware
-          * region helper instead */
-         d3d11_font_update_atlas_region(d3d11->context, font, 0,
-               VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height));
-      else
-         d3d11_update_texture(
-               d3d11->context, font->atlas->width, font->atlas->height, font->atlas->width,
-               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+      d3d11_release_texture(&texture);
+      return;
    }
+   d3d11_release_texture(&font->texture);
+   font->texture = texture;
+   if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+      /* the generic path's conversion table does not cover R16;
+       * stage the whole atlas through the element-size-aware
+       * region helper instead */
+      d3d11_font_update_atlas_region(d3d11->context, font, 0,
+            VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height));
+   else
+      d3d11_update_texture(
+            d3d11->context, font->atlas->width, font->atlas->height, font->atlas->width,
+            DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
    font->atlas->dirty = false;
 }
 
@@ -1842,6 +1849,12 @@ static void d3d11_font_update_atlas_region(
    D3D11_BOX box;
    HRESULT hr;
 
+   /* Within the texture as well as the atlas: an atlas the texture
+    * could not follow is larger than it */
+   if (x1 > (unsigned)font->texture.desc.Width)
+      x1 = (unsigned)font->texture.desc.Width;
+   if (y1 > (unsigned)font->texture.desc.Height)
+      y1 = (unsigned)font->texture.desc.Height;
    if (     x1 <= x0 || y1 <= y0
          || x1 > (unsigned)font->atlas->width
          || y1 > (unsigned)font->atlas->height)

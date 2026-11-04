@@ -1,4 +1,4 @@
-/* The font atlas uploads of the GX2, GXM and RSX drivers
+/* The font atlas uploads of the GX2, GXM, RSX and D3D11 drivers
  * (extracted by run.py) against textures in memory.
  *
  * The glyph cache grows its atlas, and each driver makes its texture
@@ -8,7 +8,9 @@
  * that is not clamped to the texture runs past it, which the sanitizer
  * reports, and every byte it does write is checked against the atlas.
  * GX2's glyph sprites are flushed from the CPU's cache before the GPU
- * reads them: the flushed size must be that of the sprites. */
+ * reads them: the flushed size must be that of the sprites. D3D11's
+ * font texture is made again on a device whose texture creation fails:
+ * the texture the font has must be the one it had, unreleased. */
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -136,6 +138,74 @@ typedef struct
 } rsx_font_t;
 #include "rsx.inc"
 
+/* ---- D3D11 -------------------------------------------------------- */
+typedef unsigned DXGI_FORMAT;
+#define DXGI_FORMAT_A8_UNORM  65
+#define DXGI_FORMAT_R16_UNORM 56
+#define RARCH_FILTER_LINEAR 1
+#define RARCH_WRAP_BORDER   0
+typedef struct object { int refs; } object;
+typedef object *D3D11SamplerStateRef;
+typedef struct
+{
+   object *handle, *staging, *view;
+   struct { unsigned Width, Height; DXGI_FORMAT Format; } desc;
+   D3D11SamplerStateRef sampler;
+} d3d11_texture_t;
+typedef struct
+{
+   void *device, *context;
+   D3D11SamplerStateRef samplers[2][4];
+} d3d11_video_t;
+typedef struct
+{
+   d3d11_texture_t texture;
+   struct font_atlas *atlas;
+} d3d11_font_t;
+static object made[3][3];
+static unsigned makes;
+static bool make_fails;
+static unsigned uploads;
+/* As the driver's: makes the resources, or fails having made the
+ * texture but none of its views */
+static bool d3d11_init_texture(void *device, d3d11_texture_t *t)
+{
+   object *o = made[makes % 3];
+   (void)device;
+   makes++;
+   o[0].refs = 1;
+   t->handle = &o[0];
+   if (make_fails)
+      return false;
+   o[1].refs  = o[2].refs = 1;
+   t->staging = &o[1];
+   t->view    = &o[2];
+   return true;
+}
+/* As the driver's: lets go of each resource, leaving the pointers */
+static void release(object *o) { if (o) { assert(o->refs > 0); o->refs--; } }
+static void d3d11_release_texture(d3d11_texture_t *t)
+{
+   release(t->handle);
+   release(t->staging);
+   release(t->view);
+}
+static void d3d11_update_texture(void *ctx, unsigned w, unsigned h,
+      unsigned pitch, DXGI_FORMAT fmt, const void *data, d3d11_texture_t *t)
+{
+   (void)ctx; (void)w; (void)h; (void)pitch; (void)fmt; (void)data;
+   assert(t->staging && t->staging->refs > 0);
+   uploads++;
+}
+static void d3d11_font_update_atlas_region(void *ctx, d3d11_font_t *font,
+      unsigned xy0, unsigned xy1)
+{
+   (void)ctx; (void)xy0; (void)xy1;
+   assert(font->texture.staging && font->texture.staging->refs > 0);
+   uploads++;
+}
+#include "d3d11.inc"
+
 int main(void)
 {
    /* GX2: the sprites' bytes, and an image the atlas outgrew */
@@ -211,7 +281,43 @@ int main(void)
       free(data);
    }
 
+   /* D3D11: the texture made again, and made again on a device that
+    * cannot make it */
+   {
+      d3d11_video_t d3d11;
+      d3d11_font_t font;
+      object *handle, *staging, *view;
+      memset(&d3d11, 0, sizeof(d3d11));
+      memset(&font, 0, sizeof(font));
+      memset(made, 0, sizeof(made));
+      makes = uploads = 0;
+      make_fails = false;
+      atlas_grown();
+      atlas.width = atlas.height = 16;
+      font.atlas = &atlas;
+      d3d11_font_make_texture(&d3d11, &font);
+      assert(font.texture.view && uploads == 1 && !atlas.dirty);
+      handle  = font.texture.handle;
+      staging = font.texture.staging;
+      view    = font.texture.view;
+      /* it grows; the new texture cannot be made */
+      atlas_grown();
+      make_fails = true;
+      d3d11_font_make_texture(&d3d11, &font);
+      assert(font.texture.handle == handle && font.texture.staging == staging
+            && font.texture.view == view);
+      assert(handle->refs == 1 && staging->refs == 1 && view->refs == 1);
+      assert(font.texture.desc.Width == 16 && uploads == 1);
+      /* the next time it can */
+      make_fails = false;
+      d3d11_font_make_texture(&d3d11, &font);
+      assert(font.texture.desc.Width == 32 && uploads == 2 && !atlas.dirty);
+      assert(handle->refs == 0 && staging->refs == 0 && view->refs == 0);
+      assert(font.texture.view && font.texture.view->refs == 1);
+   }
+
    puts("font atlas uploads: GX2, GXM and RSX clamped to a texture the"
-         " atlas outgrew, GX2 sprites flushed whole PASS");
+         " atlas outgrew, GX2 sprites flushed whole, D3D11 keeps its"
+         " texture when a new one cannot be made PASS");
    return 0;
 }
