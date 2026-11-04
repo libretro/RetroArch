@@ -871,3 +871,33 @@ bool vulkan_custom_driver_session_device(vulkan_custom_driver_session_t *s,
    }
    return true;
 }
+
+/* What the loader lists itself, whichever drivers it has. */
+static const char *const icd_loader_exts[VULKAN_CUSTOM_DRIVER_LOADER_EXTS] = {
+   "VK_EXT_debug_report",
+   "VK_EXT_debug_utils",
+   "VK_KHR_portability_enumeration",
+   "VK_LUNARG_direct_driver_loading"
+};
+
+size_t vulkan_custom_driver_loader_exts(char *names, size_t stride,
+      size_t count, size_t cap)
+{
+   size_t i, j, len;
+   if (stride < VULKAN_CUSTOM_DRIVER_EXT_NAME_MAX)
+      return count;
+   for (i = 0; i < VULKAN_CUSTOM_DRIVER_LOADER_EXTS && count < cap; i++)
+   {
+      /* The terminator too: a longer name is another extension. */
+      len = strlen(icd_loader_exts[i]) + 1;
+      for (j = 0; j < count; j++)
+         if (!strncmp(names + j * stride, icd_loader_exts[i], len))
+            break;
+      if (j < count)
+         continue;
+      memset(names + count * stride, 0, stride);
+      memcpy(names + count * stride, icd_loader_exts[i], len);
+      count++;
+   }
+   return count;
+}
