@@ -123,6 +123,21 @@
 
 #define VK_REMAP_TO_TEXFMT(fmt) ((fmt == VK_FORMAT_R5G6B5_UNORM_PACK16) ? VK_FORMAT_R8G8B8A8_UNORM : fmt)
 
+/* Maps a texture's whole allocation, so the whole-size flushes and
+ * invalidates issued from offset 0 lie inside the mapping, and points
+ * at its texels, which a linear image may place past offset 0. NULL
+ * when the map fails. */
+#define VULKAN_MAP_TEXTURE(device, tex, out) \
+   do \
+   { \
+      void *vk_map_base_ = NULL; \
+      if (vkMapMemory((device), (tex)->memory, 0, VK_WHOLE_SIZE, 0, \
+               &vk_map_base_) == VK_SUCCESS) \
+         (out) = (uint8_t*)vk_map_base_ + (tex)->offset; \
+      else \
+         (out) = NULL; \
+   } while (0)
+
 /* Pick a 10-bit (XRGB2101010) sampled-image format the GPU can actually use.
  *
  * Frames/thumbnails are packed XRGB2101010 in memory: R in bits [29:20],
@@ -2561,10 +2576,9 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                size_t stride      = (size_t)VIDEO_SCALE_W(tex.dims) * (size_t)bpp;
                size_t row_bytes   = (size_t)width     * (size_t)bpp;
 
-               /* Whole: a VK_WHOLE_SIZE flush must end on a
-                * nonCoherentAtomSize multiple or the allocation's end */
-               vkMapMemory(device, tex.memory, tex.offset, VK_WHOLE_SIZE,
-                     0, &ptr);
+               VULKAN_MAP_TEXTURE(device, &tex, ptr);
+               if (!ptr)
+                  break;
 
                dst                = (uint8_t*)ptr;
                src                = (const uint8_t*)initial;
@@ -6245,7 +6259,7 @@ static void vulkan_init_textures(vk_t *vk)
 
          {
             struct vk_texture *texture = &vk->swapchain[i].texture;
-            vkMapMemory(vk->context->device, texture->memory, texture->offset, VK_WHOLE_SIZE, 0, &texture->mapped);
+            VULKAN_MAP_TEXTURE(vk->context->device, texture, texture->mapped);
          }
 
          if (vk->swapchain[i].texture.type == VULKAN_TEXTURE_STAGING)
@@ -12463,7 +12477,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
          {
             struct vk_texture *texture = &chain->texture;
-            vkMapMemory(vk->context->device, texture->memory, texture->offset, VK_WHOLE_SIZE, 0, &texture->mapped);
+            VULKAN_MAP_TEXTURE(vk->context->device, texture, texture->mapped);
          }
 
          if (chain->texture.type == VULKAN_TEXTURE_STAGING)
@@ -14126,7 +14140,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       vk->flags       &= ~VK_FLAG_TEXTURE_FOR_LEND;
       {
          struct vk_texture *texture = &chain->texture;
-         vkMapMemory(vk->context->device, texture->memory, texture->offset, VK_WHOLE_SIZE, 0, &texture->mapped);
+         VULKAN_MAP_TEXTURE(vk->context->device, texture, texture->mapped);
       }
 
       if (chain->texture.type == VULKAN_TEXTURE_STAGING)
