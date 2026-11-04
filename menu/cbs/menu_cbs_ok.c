@@ -92,6 +92,9 @@
 #include "../../bluetooth/bluetooth_driver.h"
 #endif
 #include "../../gfx/video_display_server.h"
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+#include "../../gfx/common/vulkan_custom_driver.h"
+#endif
 #include "../../manual_content_scan.h"
 #ifdef __MACH__
 #include <TargetConditionals.h>
@@ -149,6 +152,7 @@ enum
    ACTION_OK_SHOW_WIMP,
    ACTION_OK_LOAD_CHEAT_FILE_APPEND,
    ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,
+   ACTION_OK_LOAD_VULKAN_DRIVER,
    ACTION_OK_SET_MANUAL_CONTENT_SCAN_DAT_FILE
 };
 
@@ -1540,6 +1544,33 @@ int generic_action_ok_displaylist_push(
             info_path          = parent_dir;
          }
          break;
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+      case ACTION_OK_DL_VULKAN_DRIVER:
+         {
+            char drivers_dir[DIR_MAX_LENGTH];
+
+            filebrowser_clear_type();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+
+            fill_pathname_join_special(drivers_dir,
+                  settings->paths.directory_system, "vulkan_drivers",
+                  sizeof(drivers_dir));
+            if (     *settings->paths.directory_system
+                  && !path_is_directory(drivers_dir))
+               path_mkdir(drivers_dir);
+
+            action_ok_get_file_browser_start_path(
+                  settings->paths.path_vulkan_driver,
+                  drivers_dir,
+                  parent_dir, sizeof(parent_dir), true);
+
+            info_path          = parent_dir;
+         }
+         break;
+#endif
       case ACTION_OK_DL_CORE_LIST:
          filebrowser_clear_type();
          info.type          = type;
@@ -2675,6 +2706,17 @@ static int generic_action_ok(const char *path,
                   settings->paths.path_rgui_theme_preset, action_path);
          }
          break;
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+      case ACTION_OK_LOAD_VULKAN_DRIVER:
+         flush_char = MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST_STR;
+         if (settings)
+         {
+            configuration_set_string(settings,
+                  settings->paths.path_vulkan_driver, action_path);
+            vulkan_custom_driver_picked(settings->paths.path_vulkan_driver);
+         }
+         break;
+#endif
       case ACTION_OK_SUBSYSTEM_ADD:
          /* Return to the subsystem list (which rebuilds to offer the
           * next required ROM, or the Load entry once all are set)
@@ -2886,6 +2928,9 @@ DEFAULT_ACTION_OK_SET(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET,    
 DEFAULT_ACTION_OK_SET(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
 #endif
 DEFAULT_ACTION_OK_SET(action_ok_rgui_menu_theme_preset_load,  ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,  MENU_ENUM_LABEL_MENU_SETTINGS)
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+DEFAULT_ACTION_OK_SET(action_ok_vulkan_driver_load,  ACTION_OK_LOAD_VULKAN_DRIVER,  MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST)
+#endif
 DEFAULT_ACTION_OK_SET(action_ok_set_manual_content_scan_dat_file, ACTION_OK_SET_MANUAL_CONTENT_SCAN_DAT_FILE, MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST)
 
 static int action_ok_file_load(const char *path,
@@ -7320,6 +7365,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_cheevos_list, ACTION_OK_DL
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC)
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_vulkan_driver, ACTION_OK_DL_VULKAN_DRIVER)
+#endif
 #ifdef HAVE_NETWORKING
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_pl_thumbnails_updater_list, ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST)
 #endif
@@ -10058,6 +10106,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,                  action_ok_osk_overlay_preset},
          {MENU_ENUM_LABEL_RECORD_CONFIG,                       action_ok_record_configfile},
          {MENU_ENUM_LABEL_STREAM_CONFIG,                       action_ok_stream_configfile},
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+         {MENU_ENUM_LABEL_VIDEO_VULKAN_DRIVER_PATH,            action_ok_vulkan_driver},
+#endif
 #ifdef HAVE_RGUI
          {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,              action_ok_rgui_menu_theme_preset},
 #endif
@@ -10256,6 +10307,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_RECORD_CONFIG,                       action_ok_record_configfile},
          {MENU_ENUM_LABEL_STREAM_CONFIG,                       action_ok_stream_configfile},
          {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,              action_ok_rgui_menu_theme_preset},
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+         {MENU_ENUM_LABEL_VIDEO_VULKAN_DRIVER_PATH,            action_ok_vulkan_driver},
+#endif
          {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},
          {MENU_ENUM_LABEL_FAVORITES,                           action_ok_push_content_list},
          {MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,    action_ok_push_downloads_dir},
@@ -10535,6 +10589,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_RGUI_THEME_PRESET:
             BIND_ACTION_OK(cbs, action_ok_rgui_menu_theme_preset_load);
             break;
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+         case FILE_TYPE_VULKAN_DRIVER:
+            BIND_ACTION_OK(cbs, action_ok_vulkan_driver_load);
+            break;
+#endif
          case FILE_TYPE_REMAP:
             BIND_ACTION_OK(cbs, action_ok_remap_file_load);
             break;

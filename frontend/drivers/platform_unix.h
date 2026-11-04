@@ -353,6 +353,9 @@ struct android_app
    jmethodID showKeyboard;
    jmethodID hideKeyboard;
    jmethodID setSecondDisplay;
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+   jmethodID addSafeStartShortcut;
+#endif
 
    /* Written by the Android UI thread in onContentRectChanged(), read by
     * the video thread in the context drivers, with no lock on either
