@@ -50,7 +50,7 @@ jobs:
     timeout-minutes: 15
     container:
       image: reallibretroretroarch/libretro-build-ps2:latest
-      options: --user root
+      options: --user root --dns 1.1.1.1 --dns 8.8.8.8
 
     steps:
     - uses: actions/checkout@v4

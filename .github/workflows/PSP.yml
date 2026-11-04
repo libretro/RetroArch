@@ -39,7 +39,7 @@ jobs:
     timeout-minutes: 30
     container:
       image: reallibretroretroarch/libretro-build-psp:latest
-      options: --user root
+      options: --user root --dns 1.1.1.1 --dns 8.8.8.8
 
     steps:
     - uses: actions/checkout@v4

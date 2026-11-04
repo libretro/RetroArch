@@ -56,7 +56,7 @@ jobs:
     timeout-minutes: 60
     container:
       image: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-MacOSXSDK10.5
-      options: --user root
+      options: --user root --dns 1.1.1.1 --dns 8.8.8.8
     strategy:
       fail-fast: false
       matrix:
