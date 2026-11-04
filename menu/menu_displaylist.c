@@ -19309,6 +19309,19 @@ static bool menu_displaylist_ctl_internal(
                      count++;
             }
 #endif
+#ifdef HAVE_NFSCLIENT
+            {
+               char nfs_root[PATH_MAX_LENGTH];
+
+               if (menu_displaylist_build_nfs_root(nfs_root, sizeof(nfs_root)))
+                  if (menu_entries_append(info->list, nfs_root, "",
+                           load_content ?
+                           MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+                           MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
+                           FILE_TYPE_DIRECTORY, 0, 0, NULL))
+                     count++;
+            }
+#endif
          }
          else
          {
