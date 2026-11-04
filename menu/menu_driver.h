@@ -873,6 +873,9 @@ extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_xmb;
+#ifdef HAVE_IOS_MENU
+extern menu_ctx_driver_t menu_ctx_ios;
+#endif
 
 RETRO_END_DECLS
 

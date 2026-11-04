@@ -1945,6 +1945,10 @@ MENU
 #include "../menu/drivers/materialui.c"
 #endif
 
+#ifdef HAVE_IOS_MENU
+#include "../menu/drivers/ios_menu.c"
+#endif
+
 #ifdef HAVE_NETWORKGAMEPAD
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif

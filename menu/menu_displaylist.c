@@ -5700,6 +5700,9 @@ static bool menu_history_in_main_menu(const char *menu_ident,
       settings_t *settings)
 {
    return   (!strcmp(menu_ident, "rgui"))
+#ifdef HAVE_IOS_MENU
+         || (!strcmp(menu_ident, "ios"))
+#endif
          || (!strcmp(menu_ident, "glui") && !settings->bools.menu_materialui_show_nav_bar)
          || (!strcmp(menu_ident, "ozone") && !settings->bools.ozone_show_sidebar)
          || (!strcmp(menu_ident, "xmb") && !settings->bools.menu_xmb_show_horizontal_list);
