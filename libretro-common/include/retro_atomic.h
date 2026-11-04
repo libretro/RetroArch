@@ -1473,9 +1473,17 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
 #define retro_atomic_cas_ptr(p, expected, desired) \
    (InterlockedCompareExchangePointer((void* volatile*)(p), (void*)(desired), \
          (void*)(expected)) == (void*)(expected))
-#define retro_atomic_thread_fence_acquire() MemoryBarrier()
-#define retro_atomic_thread_fence_release() MemoryBarrier()
-#define retro_atomic_thread_fence_seq_cst() MemoryBarrier()
+/* Vulkan-Hpp undefines the Windows MemoryBarrier macro. */
+static INLINE void retro_atomic_msvc_thread_fence_(void)
+{
+   volatile LONG barrier = 0;
+   RETRO_ATOMIC_MSVC_ARM_FENCE();
+   (void)InterlockedExchange(&barrier, 0);
+   RETRO_ATOMIC_MSVC_ARM_FENCE();
+}
+#define retro_atomic_thread_fence_acquire() retro_atomic_msvc_thread_fence_()
+#define retro_atomic_thread_fence_release() retro_atomic_msvc_thread_fence_()
+#define retro_atomic_thread_fence_seq_cst() retro_atomic_msvc_thread_fence_()
 #define RETRO_ATOMIC_HAS_CAS 1
 #define RETRO_ATOMIC_HAS_PTR 1
 

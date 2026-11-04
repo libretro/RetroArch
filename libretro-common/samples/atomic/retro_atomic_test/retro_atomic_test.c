@@ -107,7 +107,15 @@
 #include <stdio.h>
 #include <stddef.h>
 
+/* Model headers that remove this Windows macro before or after inclusion. */
+#ifdef _WIN32
+#include <windows.h>
+#undef MemoryBarrier
+#endif
 #include <retro_atomic.h>
+#ifdef _WIN32
+#undef MemoryBarrier
+#endif
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
