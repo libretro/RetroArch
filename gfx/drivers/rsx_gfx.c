@@ -675,14 +675,13 @@ static void rsx_font_free(void *data,
    free(font);
 }
 
-static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
+/* Copies the atlas's dirty row band into the texture */
+static void rsx_font_copy_dirty(rsx_font_t *font)
 {
    u8 *texbuffer               = (u8 *)font->texture.data;
    const u8 *atlas_data        = (u8 *)font->atlas->buffer;
-   /* Texture pitch equals the atlas width, so the dirty row band is
-    * contiguous in both buffers and one memcpy of just that band
-    * suffices; the initial upload (dirty rect covering everything
-    * after the renderer pre-cache) still transfers the full atlas. */
+   unsigned tex_w              = VIDEO_SCALE_W(font->tex_dims);
+   unsigned tex_h              = VIDEO_SCALE_H(font->tex_dims);
    unsigned y0                 = VIDEO_SCALE_H(font->atlas->dirty_xy0);
    unsigned y1                 = VIDEO_SCALE_H(font->atlas->dirty_xy1);
    if (y1 > font->atlas->height || y1 <= y0)
@@ -690,9 +689,31 @@ static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
       y0 = 0;
       y1 = font->atlas->height;
    }
-   memcpy(texbuffer   + (size_t)y0 * font->atlas->width,
-          atlas_data  + (size_t)y0 * font->atlas->width,
-          (size_t)(y1 - y0) * font->atlas->width);
+   if (y1 > tex_h)
+      y1 = tex_h;
+   /* Texture pitch is its width. At the atlas's size the dirty row band
+    * is contiguous in both buffers and one memcpy of just that band
+    * suffices; the initial upload (dirty rect covering everything
+    * after the renderer pre-cache) still transfers the full atlas. An
+    * atlas the texture could not follow is larger than it, and goes
+    * across row by row, as much of each as the texture holds. */
+   if (tex_w == font->atlas->width)
+      memcpy(texbuffer   + (size_t)y0 * tex_w,
+             atlas_data  + (size_t)y0 * tex_w,
+             (size_t)(y1 > y0 ? y1 - y0 : 0) * tex_w);
+   else
+   {
+      unsigned y;
+      unsigned w = (tex_w < font->atlas->width) ? tex_w : font->atlas->width;
+      for (y = y0; y < y1; y++)
+         memcpy(texbuffer  + (size_t)y * tex_w,
+                atlas_data + (size_t)y * font->atlas->width, w);
+   }
+}
+
+static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
+{
+   rsx_font_copy_dirty(font);
 
    font->texture.tex.format    = GCM_TEXTURE_FORMAT_B8 | GCM_TEXTURE_FORMAT_LIN;
    font->texture.tex.mipmap    = 1;

@@ -1886,6 +1886,13 @@ jobs:
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d12_frame_ring/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d12_frame_ring/run.py
 
+      - name: Font atlas uploads into a texture the atlas outgrew (Linux and mingw + Wine)
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          CFLAGS="-O1 -g -std=c89 -Wall -Wextra -Werror=declaration-after-statement -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/font_atlas_upload/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/font_atlas_upload/run.py
+
       - name: D3D10/11 failed maps and swapchain recovery (Linux and mingw + Wine)
         run: |
           set -eu
