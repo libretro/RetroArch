@@ -10132,7 +10132,9 @@ static void fs_main_lane(const char *root, const char *pl_dir)
    path_mkdir(pl);
    path_mkdir(a);
    path_mkdir(outside);
+   /* Both, as the check runs the test twice in one root */
    delete_playlists(pl);
+   delete_playlists(outside);
    sprintf(p, "%s/f_gone.lpl", pl);
    if (!refresh_write(p, gone, NULL, stale))
       goto fixture;

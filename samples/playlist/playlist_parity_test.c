@@ -1914,13 +1914,14 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
    {
       char *c;
-      snprintf(cmd, sizeof(cmd), "rmdir /s /q \"%s\"", fixture_dir);
+      snprintf(cmd, sizeof(cmd), "rmdir /s /q \"%s\" >nul 2>&1",
+            fixture_dir);
       for (c = cmd; *c; c++)
          if (*c == '/')
             *c = '\\';
    }
 #else
-   snprintf(cmd, sizeof(cmd), "rm -rf '%s'", fixture_dir);
+   snprintf(cmd, sizeof(cmd), "rm -rf '%s' 2>/dev/null", fixture_dir);
 #endif
    if (system(cmd) != 0) { }
 
