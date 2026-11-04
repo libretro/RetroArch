@@ -114,6 +114,7 @@
 #define NFS4ERR_BADSESSION     10052
 #define NFS4ERR_COMPLETE_ALREADY 10054
 #define NFS4ERR_DEADSESSION    10078
+#define NFS4ERR_BADXDR         10036
 #define NF4DIR            2
 /* attribute bits: type(1) size(4) in word 0, time_modify(53) in word 1 */
 #define FATTR4_W0_TYPE    (1u << 1)
@@ -315,17 +316,49 @@ static uint64_t xdr_get_u64(struct xdr *x)
    return (hi << 32) | xdr_get_u32(x);
 }
 
-/* Returns a pointer into the buffer; *len the octet count. */
+/* Returns a pointer into the buffer; *len the octet count. The
+ * length and its pad are checked apart so a server-sent count near
+ * 2^32 cannot wrap the sum on 32-bit targets. */
 static const uint8_t *xdr_get_opaque(struct xdr *x, size_t *len)
 {
    const uint8_t *d;
    size_t n = xdr_get_u32(x);
    size_t pad = (4 - (n & 3)) & 3;
-   if (x->fail || (size_t)(x->end - x->p) < n + pad) { x->fail = 1; *len = 0; return NULL; }
+   size_t avail;
+   if (x->fail || (avail = (size_t)(x->end - x->p)) < n || avail - n < pad)
+   {
+      x->fail = 1;
+      *len    = 0;
+      return NULL;
+   }
    d = x->p;
    x->p += n + pad;
    *len = n;
    return d;
+}
+
+/* @n fixed octets (a stateid, a verifier, a session id): copied to
+ * @dst when the reply holds them, else the cursor fails and @dst is
+ * zeroed. Every raw read goes through here or xdr_skip, so the cursor
+ * never passes the end. */
+static void xdr_get_fixed(struct xdr *x, void *dst, size_t n)
+{
+   if (x->fail || (size_t)(x->end - x->p) < n)
+   {
+      x->fail = 1;
+      memset(dst, 0, n);
+      return;
+   }
+   memcpy(dst, x->p, n);
+   x->p += n;
+}
+
+static void xdr_skip(struct xdr *x, size_t n)
+{
+   if (x->fail || (size_t)(x->end - x->p) < n)
+      x->fail = 1;
+   else
+      x->p += n;
 }
 
 static int xdr_get_fh(struct xdr *x, struct rnfs_fh *fh)
@@ -675,7 +708,7 @@ static uint32_t nfs4_sequence_res(struct xdr *r, struct rnfs_ctx *c,
       c->slot_seq[slot]--;
       return st;
    }
-   r->p += 16;                          /* sessionid */
+   xdr_skip(r, 16);                     /* sessionid */
    xdr_get_u32(r); xdr_get_u32(r);      /* sequenceid, slotid */
    xdr_get_u32(r); xdr_get_u32(r);      /* highest, target highest */
    xdr_get_u32(r);                      /* status flags */
@@ -762,11 +795,14 @@ static int nfs4_compound(struct rnfs_ctx *c, const uint8_t *ops, size_t ops_len,
    return reply->fail ? -1 : 0;
 }
 
-/* Next result: its status, positioned at the body. */
+/* Next result: its status, positioned at the body. A reply that
+ * ended before it is a decode error, never NFS4_OK. */
 static uint32_t nfs4_res(struct xdr *r)
 {
+   uint32_t st;
    xdr_get_u32(r);                      /* opnum */
-   return xdr_get_u32(r);
+   st = xdr_get_u32(r);
+   return r->fail ? NFS4ERR_BADXDR : st;
 }
 
 static void nfs4_put_fh(struct xdr *x, const struct rnfs_fh *fh)
@@ -794,7 +830,7 @@ static int nfs4_get_fattr(struct xdr *r, struct rnfs_stat *st)
    struct xdr a;
    if (n >= 1) w0 = xdr_get_u32(r);
    if (n >= 2) w1 = xdr_get_u32(r);
-   while (n > 2) { xdr_get_u32(r); n--; }
+   while (n > 2 && !r->fail) { xdr_get_u32(r); n--; }
    v = xdr_get_opaque(r, &vl);
    if (!v)
       return -1;
@@ -908,7 +944,12 @@ static int nfs4_setclientid(struct rnfs_ctx *c)
       return -1;
    }
    clientid = xdr_get_u64(&r);
-   memcpy(verf, r.p, 8);
+   xdr_get_fixed(&r, verf, 8);
+   if (r.fail)
+   {
+      rnfs_err(c, "setclientid reply truncated");
+      return -1;
+   }
    x.p = ops; x.fail = 0;
    xdr_u32(&x, OP_SETCLIENTID_CONFIRM);
    xdr_u64(&x, clientid);
@@ -1004,7 +1045,7 @@ static int nfs4_session_setup(struct rnfs_ctx *c)
       rnfs_err(c, "create_session refused");
       return -1;
    }
-   memcpy(c->sessionid, r.p, 16); r.p += 16;
+   xdr_get_fixed(&r, c->sessionid, 16);
    xdr_get_u32(&r);                     /* sequence */
    xdr_get_u32(&r);                     /* flags */
    xdr_get_u32(&r);                     /* fore: header padding */
@@ -1245,6 +1286,36 @@ done:
    return ret;
 }
 
+/* A stateid in a reply, written to @stateid only when whole. */
+static int nfs4_get_stateid(struct xdr *r, uint8_t *stateid)
+{
+   uint8_t sid[16];
+   xdr_get_fixed(r, sid, 16);
+   if (r->fail)
+      return -1;
+   memcpy(stateid, sid, 16);
+   return 0;
+}
+
+/* OPEN4resok up to its delegation: stateid, change_info (atomic +
+ * 2 x u64), rflags, attrset. No delegation is asked for, so a granted
+ * one is refused. @stateid is written only for a whole result. */
+static int nfs4_open_res(struct xdr *r, uint8_t *stateid, uint32_t *rflags)
+{
+   uint8_t  sid[16];
+   uint32_t nb;
+   xdr_get_fixed(r, sid, 16);
+   xdr_get_u32(r); xdr_get_u64(r); xdr_get_u64(r);
+   *rflags = xdr_get_u32(r);
+   nb      = xdr_get_u32(r);            /* attrset */
+   while (nb-- && !r->fail)
+      xdr_get_u32(r);
+   if (xdr_get_u32(r) != 0 || r->fail)  /* delegation type */
+      return -1;
+   memcpy(stateid, sid, 16);
+   return 0;
+}
+
 /* OPEN with create in @dir, then OPEN_CONFIRM when asked; the result
  * stateid is CLOSEd by rnfs_close. */
 static int nfs4_open_create(struct rnfs_ctx *c, const struct rnfs_fh *dir,
@@ -1254,7 +1325,6 @@ static int nfs4_open_create(struct rnfs_ctx *c, const struct rnfs_fh *dir,
    struct xdr x, r;
    uint32_t rflags;
    size_t sl;
-   const uint8_t *sid;
 
    x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
    nfs4_put_fh(&x, dir);
@@ -1290,20 +1360,8 @@ static int nfs4_open_create(struct rnfs_ctx *c, const struct rnfs_fh *dir,
       return -1;
    }
    c->open_seq++;
-   /* stateid, change_info(atomic + 2 x u64), rflags, attrset, delegation */
-   sid = r.p; r.p += 16;
-   xdr_get_u32(&r); xdr_get_u64(&r); xdr_get_u64(&r);
-   rflags = xdr_get_u32(&r);
-   {
-      uint32_t nb = xdr_get_u32(&r);
-      while (nb--) xdr_get_u32(&r);
-   }
-   {
-      uint32_t dt = xdr_get_u32(&r);   /* delegation: none expected */
-      if (dt != 0)
-         return -1;
-   }
-   memcpy(f->stateid, sid, 16);
+   if (nfs4_open_res(&r, f->stateid, &rflags) != 0)
+      return -1;
    if (nfs4_res(&r) != NFS3_OK || xdr_get_fh(&r, &f->fh) != 0)
       return -1;
    if (nfs4_res(&r) == NFS3_OK)
@@ -1329,7 +1387,8 @@ static int nfs4_open_create(struct rnfs_ctx *c, const struct rnfs_fh *dir,
          return -1;
       }
       c->open_seq++;
-      memcpy(f->stateid, r.p, 16);
+      if (nfs4_get_stateid(&r, f->stateid) != 0)
+         return -1;
    }
    (void)sl;
    return 0;
@@ -1372,15 +1431,7 @@ static int nfs4_open_reclaim(struct rnfs_ctx *c, struct rnfs_file *f)
    if (nfs4_res(&r) != NFS3_OK || (st = nfs4_res(&r)) != NFS3_OK)
       return -1;
    c->open_seq++;
-   memcpy(f->stateid, r.p, 16); r.p += 16;
-   xdr_get_u32(&r); xdr_get_u64(&r); xdr_get_u64(&r);   /* change_info */
-   rflags = xdr_get_u32(&r);
-   {
-      uint32_t nb = xdr_get_u32(&r);    /* attrset */
-      while (nb-- && !r.fail)
-         xdr_get_u32(&r);
-   }
-   if (r.fail || xdr_get_u32(&r) != 0)  /* no delegation asked, none taken */
+   if (nfs4_open_res(&r, f->stateid, &rflags) != 0)
       return -1;
    f->opened = 1;
    nfs4_state_link(c, f);
@@ -1395,7 +1446,8 @@ static int nfs4_open_reclaim(struct rnfs_ctx *c, struct rnfs_file *f)
             || nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
          return -1;
       c->open_seq++;
-      memcpy(f->stateid, r.p, 16);
+      if (nfs4_get_stateid(&r, f->stateid) != 0)
+         return -1;
    }
    return 0;
 }
@@ -1638,12 +1690,31 @@ static int nfs4_rename(struct rnfs_ctx *c, const char *from, const char *to)
    return 0;
 }
 
+/* The rest of a READDIR reply at @r: its cookie verifier, then the
+ * entry list taken into d->buf as received. @d is left as it was for
+ * a reply cut short. */
+static int rnfs_readdir_take(struct rnfs_dir *d, struct xdr *r)
+{
+   uint8_t verf[8];
+   size_t  n;
+   xdr_get_fixed(r, verf, 8);
+   if (r->fail)
+      return -1;
+   memcpy(d->cookieverf, verf, 8);
+   n = (size_t)(r->end - r->p);
+   if (n > NFS3_MAX_IO)
+      n = NFS3_MAX_IO;
+   memcpy(d->buf, r->p, n);
+   d->buf_len = n;
+   d->buf_off = 0;
+   return 0;
+}
+
 /* One READDIR page into d->buf: entries of cookie, name, fattr4. */
 static int nfs4_readdir_fill(struct rnfs_ctx *c, struct rnfs_dir *d)
 {
    uint8_t ops[NFS3_FHSIZE + 64];
    struct xdr x, r;
-   size_t n;
    x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
    nfs4_put_fh(&x, &d->fh);
    xdr_u32(&x, OP_READDIR);
@@ -1659,14 +1730,7 @@ static int nfs4_readdir_fill(struct rnfs_ctx *c, struct rnfs_dir *d)
       rnfs_err(c, "readdir failed");
       return -1;
    }
-   memcpy(d->cookieverf, r.p, 8); r.p += 8;
-   n = (size_t)(r.end - r.p);
-   if (n > NFS3_MAX_IO)
-      n = NFS3_MAX_IO;
-   memcpy(d->buf, r.p, n);
-   d->buf_len = n;
-   d->buf_off = 0;
-   return 0;
+   return rnfs_readdir_take(d, &r);
 }
 
 struct rnfs_ctx *rnfs_new(void)
@@ -2828,7 +2892,6 @@ static int rnfs_readdir_fill(struct rnfs_ctx *c, struct rnfs_dir *d)
    uint8_t args[NFS3_FHSIZE + 32];
    struct xdr x, reply;
    struct rnfs_stat st;
-   size_t n;
 
    for (;;)
    {
@@ -2855,14 +2918,7 @@ static int rnfs_readdir_fill(struct rnfs_ctx *c, struct rnfs_dir *d)
       return -1;
    }
    xdr_get_post_op_attr(&reply, &st);
-   memcpy(d->cookieverf, reply.p, 8); reply.p += 8;
-   n = (size_t)(reply.end - reply.p);
-   if (n > NFS3_MAX_IO)
-      n = NFS3_MAX_IO;
-   memcpy(d->buf, reply.p, n);
-   d->buf_len = n;
-   d->buf_off = 0;
-   return 0;
+   return rnfs_readdir_take(d, &reply);
 }
 
 /* Attributes of one entry by LOOKUP, for the plain READDIR path. */

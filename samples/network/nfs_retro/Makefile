@@ -11,13 +11,17 @@ else
    # file mapping as the shipping build has it (Win32 maps without it)
    MMAP_FLAGS = -DHAVE_MMAP
 endif
-all: nfs_test nfs_sparse_test nfs_idle_test vfs_test vfs_threads_test
+all: nfs_test nfs_sparse_test nfs_idle_test nfs_reply_bounds_test vfs_test vfs_threads_test
 
 nfs_test: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 SPARSE_SRC = nfs_sparse_test.c $(filter-out nfs_test.c,$(SRC))
 nfs_sparse_test: $(SPARSE_SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SPARSE_SRC) $(LDLIBS) -o $@
+# includes net_nfs3.c itself to reach its static reply decoders
+BOUNDS_SRC = nfs_reply_bounds_test.c $(filter-out nfs_test.c $(COMMON)/net/net_nfs3.c,$(SRC))
+nfs_reply_bounds_test: $(BOUNDS_SRC) $(COMMON)/net/net_nfs3.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(BOUNDS_SRC) $(LDLIBS) -o $@
 IDLE_SRC = nfs_idle_test.c $(filter-out nfs_test.c,$(SRC))
 nfs_idle_test: $(IDLE_SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(IDLE_SRC) $(LDLIBS) -o $@
@@ -32,5 +36,5 @@ THR_SRC = vfs_threads_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthre
 vfs_threads_test: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -DHAVE_THREADS $(MMAP_FLAGS) -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
-	rm -f nfs_test nfs_test.exe nfs_sparse_test nfs_sparse_test.exe nfs_idle_test nfs_idle_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe
+	rm -f nfs_test nfs_test.exe nfs_sparse_test nfs_sparse_test.exe nfs_idle_test nfs_idle_test.exe nfs_reply_bounds_test nfs_reply_bounds_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe
 .PHONY: all clean
