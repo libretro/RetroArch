@@ -3325,7 +3325,7 @@ static bool vulkan_wsi_surface_create(VkInstance instance,
    return true;
 }
 
-bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
+static bool vulkan_surface_create_once(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,
       void *display, void *surface,
       unsigned dims, int8_t swap_interval)
@@ -3392,6 +3392,52 @@ error_surface:
       vk->vk_surface = VK_NULL_HANDLE;
    }
    return false;
+}
+
+/* Makes the surface, and the device on the context's first call. A custom
+ * driver that fails there gets the context made again on the system
+ * driver. */
+bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
+      enum vulkan_wsi_type type,
+      void *display, void *surface,
+      unsigned dims, int8_t swap_interval)
+{
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+   uint8_t flags;
+#ifdef HAVE_OPENXR
+   bool openxr_headset;
+#endif
+   /* A later surface has the renderer's objects on the device. */
+   bool first = (vk->context.device == VK_NULL_HANDLE);
+   if (vulkan_surface_create_once(vk, type, display, surface,
+            dims, swap_interval))
+   {
+      vulkan_custom_driver_started();
+      return true;
+   }
+   if (!first || !vulkan_custom_driver_current())
+      return false;
+   /* The context's own state survives the remake. */
+   flags          = vk->flags;
+#ifdef HAVE_OPENXR
+   openxr_headset = vk->openxr_headset;
+#endif
+   /* This init made it, before the core's context_reset: drop it. */
+   vk->flags     |= VK_DATA_FLAG_DROP_CONTEXT;
+   vulkan_context_destroy(vk, true);
+   vulkan_custom_driver_failed();
+   memset(vk, 0, sizeof(*vk));
+   vk->flags      = flags;
+#ifdef HAVE_OPENXR
+   vk->openxr_headset = openxr_headset;
+#endif
+   return     vulkan_context_init(vk, type)
+          &&  vulkan_surface_create_once(vk, type, display, surface,
+                dims, swap_interval);
+#else
+   return vulkan_surface_create_once(vk, type, display, surface,
+         dims, swap_interval);
+#endif
 }
 
 #ifdef HAVE_VIDEO_WINDOWS
