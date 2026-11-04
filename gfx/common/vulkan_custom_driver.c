@@ -725,6 +725,7 @@ void *vulkan_custom_driver_session_open(vulkan_custom_driver_session_t *s,
    *msg       = VULKAN_CUSTOM_DRIVER_MSG_NONE;
    s->current = NULL;
    s->full    = false;
+   s->kept    = false;
    if (string_is_empty(req->path) || req->safe_mode)
       return NULL;
    /* Past a full table, as past full slots: the system driver. */
@@ -802,6 +803,7 @@ bool vulkan_custom_driver_session_started(vulkan_custom_driver_session_t *s)
 void vulkan_custom_driver_session_kept(vulkan_custom_driver_session_t *s)
 {
    s->current = NULL;
+   s->kept    = true;
 }
 
 bool vulkan_custom_driver_session_current(
@@ -829,4 +831,43 @@ enum vulkan_custom_driver_msg vulkan_custom_driver_session_picked(
    p->shown   &= ~((1u << VULKAN_CUSTOM_DRIVER_MSG_INVALID)
                |  (1u << VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED));
    return VULKAN_CUSTOM_DRIVER_MSG_NONE;
+}
+
+bool vulkan_custom_driver_session_drop(vulkan_custom_driver_session_t *s,
+      const void *handle)
+{
+   unsigned i;
+   if (!handle)
+      return false;
+   for (i = 0; i < VULKAN_CUSTOM_DRIVER_SLOTS; i++)
+   {
+      if (s->slots[i].handle == handle)
+      {
+         memset(&s->slots[i], 0, sizeof(s->slots[i]));
+         return true;
+      }
+   }
+   return false;
+}
+
+bool vulkan_custom_driver_session_device(vulkan_custom_driver_session_t *s,
+      enum vulkan_custom_driver_module module,
+      enum vulkan_custom_driver_msg *msg)
+{
+   *msg = VULKAN_CUSTOM_DRIVER_MSG_NONE;
+   if (s->kept)
+      return true;
+   /* A layer in front hides the driver: not held against it. */
+   if (vulkan_custom_driver_session_current(s))
+      return     module == VULKAN_CUSTOM_DRIVER_MODULE_CURRENT
+             ||  module == VULKAN_CUSTOM_DRIVER_MODULE_UNKNOWN;
+   if (     module != VULKAN_CUSTOM_DRIVER_MODULE_OTHER
+         && module != VULKAN_CUSTOM_DRIVER_MODULE_CURRENT)
+      return true;
+   if (!s->restart_shown)
+   {
+      s->restart_shown = true;
+      *msg             = VULKAN_CUSTOM_DRIVER_MSG_RESTART;
+   }
+   return true;
 }
