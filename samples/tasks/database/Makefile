@@ -252,9 +252,9 @@ $(INDEX_TEST)$(EXE_EXT): $(INDEX_TEST_OBJECTS)
 # query, order the database and content lists, count reader passes,
 # hold chosen lookups, count an archive's member hits a step, hold
 # a chosen index build in one step, tell which thread the refresh
-# walks and playlist loads ran on, fail a chosen task_init, fail the
-# playlist folder walk, and count the file system calls the main
-# thread makes.
+# walks, playlist loads and file stats ran on, fail a chosen task_init,
+# fail the playlist folder walk, and count the file system calls the
+# main thread makes.
 SCAN_TEST_WRAPS := -Wl,--wrap=libretrodb_open -Wl,--wrap=task_queue_park \
 	-Wl,--wrap=intfstream_crc_step -Wl,--wrap=rm3u_is_m3u \
 	-Wl,--wrap=task_nbio_slice_open -Wl,--wrap=task_nbio_slice_close \
@@ -273,10 +273,14 @@ SCAN_TEST_WRAPS := -Wl,--wrap=libretrodb_open -Wl,--wrap=task_queue_park \
 	-Wl,--wrap=playlist_parse_begin_header -Wl,--wrap=task_init \
 	-Wl,--wrap=path_stat -Wl,--wrap=path_is_valid \
 	-Wl,--wrap=path_is_directory -Wl,--wrap=path_get_size \
-	-Wl,--wrap=path_resolve_realpath
+	-Wl,--wrap=path_resolve_realpath -Wl,--wrap=retro_vfs_stat_64_impl
 ifeq ($(HAVE_THREADS), 1)
 SCAN_TEST_WRAPS += -Wl,--wrap=sthread_create
 endif
+# Counts the playlist sorts.
+SCAN_TEST_WRAPS += -Wl,--wrap=playlist_qsort
+# Counts a group's member opens.
+SCAN_TEST_WRAPS += -Wl,--wrap=playlist_init
 $(SCAN_TEST)$(EXE_EXT): $(SCAN_TEST_OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(SCAN_TEST_OBJECTS) $(LDFLAGS) $(SCAN_TEST_WRAPS) $(LIBS)
 

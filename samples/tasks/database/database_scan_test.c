@@ -324,9 +324,26 @@ int retro_vfs_closedir_smb(smb_dir_handle *dh)
    return -1;
 }
 
+/* Stats are counted and, while smb_stat_log is set, listed there; only
+ * the folders in smb_stat_valid, when set, answer. */
+static retro_atomic_int_t smb_stat_count;
+static char              *smb_stat_log;
+static const char *const *smb_stat_valid;
+
 int retro_vfs_stat_smb(const char *path, int64_t *size)
 {
-   (void)path; (void)size;
+   const char *const *v;
+
+   (void)size;
+   retro_atomic_fetch_add_int(&smb_stat_count, 1);
+   if (smb_stat_log)
+   {
+      strlcat(smb_stat_log, path, 512);
+      strlcat(smb_stat_log, " ", 512);
+   }
+   for (v = smb_stat_valid; v && *v; v++)
+      if (string_is_equal(path, *v))
+         return RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY;
    return 0;
 }
 #endif
@@ -1043,6 +1060,9 @@ static void prep_cancel_begun(void)
    }
 }
 
+/* The title of the last task pushed with one, a reader's aside. */
+static char pushed_title[256];
+
 bool __real_task_queue_push(retro_task_t *task);
 bool __wrap_task_queue_push(retro_task_t *task)
 {
@@ -1050,6 +1070,8 @@ bool __wrap_task_queue_push(retro_task_t *task)
 
    if (!(task_get_flags(task) & RETRO_TASK_FLG_PARALLEL))
    {
+      if (task->title)
+         strlcpy(pushed_title, task->title, sizeof(pushed_title));
       if (   prep_cancel_at && !task->title
           && ++prep_pushes == prep_cancel_at)
          prep_cancel_task = task;
@@ -1998,6 +2020,11 @@ static void msgq_push(retro_task_t *task, const char *msg,
    (void)task; (void)msg; (void)prio; (void)duration; (void)flush;
 }
 
+/* While set, run_scan() pushes a group scan of these playlists, its
+ * --scan lines labelled group_label, in place of a scan of its dir. */
+static const struct string_list *group_names;
+static const char               *group_label;
+
 /* Returns false if the scan could not be started; otherwise waits for
  * it, and scan_completed says whether it finished in time. */
 static bool run_scan(const char *dir)
@@ -2024,7 +2051,10 @@ static bool run_scan(const char *dir)
    scan_result.errors     = 9999;
    scan_result.failed     = true;
    scan_err               = false;
-   if (!task_push_dbscan(dir, scan_cb, &scan_result))
+   if (!(group_names
+         ? task_push_manual_content_scan_group(group_names, group_label,
+               scan_cb, &scan_result)
+         : task_push_dbscan(dir, scan_cb, &scan_result)))
       return false;
 
    started = time(NULL);
@@ -3022,6 +3052,117 @@ end:
    free(out);
    free(err);
    free(log);
+   free(want);
+}
+
+static unsigned file_count(const char *path, const char *needle);
+
+/* A DAT scan and one that matches nothing print a database scan's
+ * lines: the folder, a line per file and a "??" for each file the
+ * totals count unmatched.  Rescans counts_lane()'s folders. */
+static void cli_lines_lane(const char *root, const char *pl_dir)
+{
+   char    *dat_dir = (char*)malloc(512);
+   char    *m3u_dir = (char*)malloc(512);
+   char    *res_pl  = (char*)malloc(512);
+   char    *dat     = (char*)malloc(512);
+   char    *out     = (char*)malloc(512);
+   char    *err     = (char*)malloc(512);
+   char    *want    = (char*)malloc(1024);
+   char     detail[64];
+   unsigned qq;
+
+   if (!dat_dir || !m3u_dir || !res_pl || !dat || !out || !err || !want)
+   {
+      check(0, "lines lane", "out of memory");
+      goto end;
+   }
+
+   sprintf(dat_dir, "%s/scan_result_dat", root);
+   sprintf(m3u_dir, "%s/scan_result_m3u", root);
+   sprintf(res_pl,  "%s/scan_result_pl",  root);
+   sprintf(dat,     "%s/scan_result.dat", root);
+   sprintf(out,     "%s/scan_lines.out",  root);
+   sprintf(err,     "%s/scan_lines.err",  root);
+   strlcpy(config_get_ptr()->paths.directory_playlist, res_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT);
+   strlcpy(manual_content_scan_get_dat_file_path_ptr(), dat,
+         manual_content_scan_get_dat_file_path_size());
+
+   delete_playlists(res_pl);
+   if (capture_scan(dat_dir, out, err, true))
+   {
+      sprintf(want, "\"%s\"...", dat_dir);
+      check(file_contains(out, want),
+            "lines: a DAT scan starts with its folder", want);
+      check(   file_contains(out, "1/2: \"01_alpha.bin\"...")
+            && file_contains(out, "2/2: \"02_none.bin\"..."),
+            "lines: and prints a line per file", out);
+      sprintf(want, " ?? \"%s/02_none.bin\"", dat_dir);
+      check(file_contains(out, want),
+            "lines: and ?? for the file it leaves out", want);
+      qq = file_count(out, " ?? \"");
+      sprintf(detail, "%u ??, %u unmatched", qq, scan_result.unmatched);
+      check(qq == 1 && scan_result.unmatched == 1,
+            "lines: one ?? per unmatched file", detail);
+   }
+
+   /* Nothing the DAT lists: two discs, then the m3u in its own pass. */
+   delete_playlists(res_pl);
+   if (capture_scan(m3u_dir, out, err, true))
+   {
+      sprintf(want, " ?? \"%s/Game.m3u\"", m3u_dir);
+      qq = file_count(out, " ?? \"");
+      sprintf(detail, "%u ??, %u unmatched", qq, scan_result.unmatched);
+      check(   file_contains(out, want)
+            && qq == 3 && scan_result.unmatched == 3,
+            "lines: an unmatched m3u gets its ??", detail);
+   }
+
+   delete_playlists(res_pl);
+   if (capture_scan(dat_dir, out, err, false))
+      check(path_get_size(out) == 0 && path_get_size(err) == 0,
+            "lines: none without --scan", out);
+
+   manual_content_scan_get_dat_file_path_ptr()[0] = '\0';
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_NONE);
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL);
+   delete_playlists(res_pl);
+   if (capture_scan(dat_dir, out, err, true))
+   {
+      sprintf(want, "\"%s\"...", dat_dir);
+      check(   file_contains(out, want)
+            && file_contains(out, "1/2: \"01_alpha.bin\"...")
+            && file_contains(out, "2/2: \"02_none.bin\"..."),
+            "lines: match none prints them too", want);
+      qq = file_count(out, " ?? \"");
+      sprintf(detail, "%u ??, %u unmatched", qq, scan_result.unmatched);
+      check(qq == 0 && scan_result.unmatched == 0,
+            "lines: and no ?? with nothing unmatched", detail);
+   }
+
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO, NULL);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   delete_playlists(res_pl);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+end:
+   free(dat_dir);
+   free(m3u_dir);
+   free(res_pl);
+   free(dat);
+   free(out);
+   free(err);
    free(want);
 }
 
@@ -5259,8 +5400,6 @@ end:
    free(pl_cfg);
    free(cfg);
 }
-
-static unsigned file_count(const char *path, const char *needle);
 
 /* Skip Database References names a match after the playlist it is
  * written to, and only when the scan has one playlist: left to the
@@ -9505,6 +9644,21 @@ static void refresh_began_one(int k)
       retro_atomic_fetch_add_int(&refresh_began_main[k], 1);
 }
 
+/* Linked with --wrap: file stats on the main thread while at most
+ * stat_loads playlist loads have begun (0: none counted). */
+static int                stat_loads;
+static retro_atomic_int_t stat_main;
+
+int __real_retro_vfs_stat_64_impl(const char *path, int64_t *size);
+int __wrap_retro_vfs_stat_64_impl(const char *path, int64_t *size)
+{
+   if (   task_is_on_main_thread() && stat_loads
+       && retro_atomic_load_acquire_int(&refresh_began[REFRESH_LOAD])
+          <= stat_loads)
+      retro_atomic_fetch_add_int(&stat_main, 1);
+   return __real_retro_vfs_stat_64_impl(path, size);
+}
+
 /* Set by the walk's own thread, which is the one that steps it. */
 static retro_atomic_int_t lpl_walk_fail;
 static dir_list_iter_t   *lpl_fail_iter;
@@ -9544,6 +9698,10 @@ int __wrap_dir_list_iter_step(dir_list_iter_t *iter,
    return __real_dir_list_iter_step(iter, within_budget, ud);
 }
 
+/* The folder made as load mkdir_at_load begins (0: none). */
+static int         mkdir_at_load;
+static const char *mkdir_at_path;
+
 /* Linked with --wrap: a refresh's load reads the playlist's header. */
 playlist_parse_t *__real_playlist_parse_begin_header(
       const playlist_config_t *config);
@@ -9552,6 +9710,10 @@ playlist_parse_t *__wrap_playlist_parse_begin_header(
 {
    refresh_began_one(REFRESH_LOAD);
    prep_cancel_begun();
+   if (   mkdir_at_load
+       && retro_atomic_load_acquire_int(&refresh_began[REFRESH_LOAD])
+          == mkdir_at_load)
+      path_mkdir(mkdir_at_path);
    return __real_playlist_parse_begin_header(config);
 }
 
@@ -9769,8 +9931,9 @@ static void refresh_lane(const char *root, const char *pl_dir,
    sprintf(p, "%s/x_history.lpl", pl);
    sprintf(detail, "%d loads",
          retro_atomic_load_acquire_int(&refresh_began[REFRESH_LOAD]));
+   /* Five, then a_ok, e_core and n_new again to run. */
    check(   file_contains(p, stale) && !file_contains(p, want)
-         && retro_atomic_load_acquire_int(&refresh_began[REFRESH_LOAD]) == 5,
+         && retro_atomic_load_acquire_int(&refresh_began[REFRESH_LOAD]) == 8,
          what, detail);
    sprintf(what, "refresh %s: the refresh lines", q);
    sprintf(want, "%s: skipped: content folder not found (%s)", "b_gone",
@@ -9996,7 +10159,7 @@ static void refresh_lane(const char *root, const char *pl_dir,
          what, err);
 
    /* Cancelled while the folder is walked, then while its second
-    * playlist loads: nothing after runs. */
+    * playlist loads, before the first runs: nothing runs. */
    strlcpy(config_get_ptr()->paths.directory_playlist, pl,
          sizeof(config_get_ptr()->paths.directory_playlist));
    if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
@@ -10023,13 +10186,11 @@ static void refresh_lane(const char *root, const char *pl_dir,
    ran            = refresh_run(items, 2, out, err, true);
    prep_cancel_at = 0;
    sprintf(what, "refresh %s: cancelled while loading a playlist", q);
-   sprintf(detail, "%u items: %s, ran %u, done %u%s", chain_seen,
-         chain_names[0], chain_totals.ran, chain_dones,
+   sprintf(detail, "%u items, ran %u, done %u%s", chain_seen,
+         chain_totals.ran, chain_dones,
          chain_totals.cancelled ? ", cancelled" : "");
-   check(   ran && !prep_cancel_task && chain_seen == 1
-         && !strcmp(chain_names[0], "a_ok")
-         && chain_outcomes[0] == TASK_DBSCAN_RAN
-         && chain_totals.cancelled && chain_totals.ran == 1
+   check(   ran && !prep_cancel_task && !chain_seen
+         && chain_totals.cancelled && !chain_totals.ran
          && !chain_totals.skipped && !chain_totals.failed, what, detail);
 
    /* Without --scan: the outcome, no lines. */
@@ -10304,6 +10465,1227 @@ fixture:
          sizeof(config_get_ptr()->paths.directory_playlist));
 }
 
+/* Runs the queue until no scan is left on it. */
+static void group_drain(void)
+{
+   task_finder_data_t finder;
+   time_t             started = time(NULL);
+
+   finder.func     = find_scan;
+   finder.userdata = NULL;
+   while (task_queue_find(&finder))
+   {
+      task_queue_check();
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         break;
+      retro_sleep(1);
+   }
+}
+
+/* Linked with --wrap: the playlist sorts. */
+static retro_atomic_int_t pl_sorts;
+
+void __real_playlist_qsort(playlist_t *playlist);
+void __wrap_playlist_qsort(playlist_t *playlist)
+{
+   retro_atomic_fetch_add_int(&pl_sorts, 1);
+   __real_playlist_qsort(playlist);
+}
+
+/* The most of these playlists written, and opened, between two window
+ * opens. */
+static const char *spent_lpl[2];
+static unsigned    spent_had;
+static unsigned    spent_most;
+static unsigned    spent_opens;
+static unsigned    spent_opens_most;
+
+/* Linked with --wrap: counts the opens of spent_lpl. */
+playlist_t *__real_playlist_init(const playlist_config_t *config);
+playlist_t *__wrap_playlist_init(const playlist_config_t *config)
+{
+   if (   spent_lpl[0] && config
+       && (   string_is_equal(config->path, spent_lpl[0])
+           || string_is_equal(config->path, spent_lpl[1])))
+      spent_opens++;
+   return __real_playlist_init(config);
+}
+
+static void spent_count(void)
+{
+   unsigned now = (unsigned)path_is_valid(spent_lpl[0])
+         + (unsigned)path_is_valid(spent_lpl[1]);
+
+   if (now - spent_had > spent_most)
+      spent_most = now - spent_had;
+   spent_had = now;
+   if (spent_opens > spent_opens_most)
+      spent_opens_most = spent_opens;
+   spent_opens = 0;
+}
+
+static void spent_open(void)
+{
+   scan_tick_open();
+   spent_count();
+   spend_window();
+}
+
+/* Loads @lpl's saved settings as a refresh does, lays strict matching
+ * (refresh_write() saves none), @archives and @overwrite over them as
+ * overrides would, and runs the group scan of group_names; with @out,
+ * its --scan lines go to @out and @err. */
+static bool group_load(const char *lpl, const char *db)
+{
+   playlist_config_t *cfg = (playlist_config_t*)calloc(1, sizeof(*cfg));
+   playlist_t        *pl  = NULL;
+   bool               set = false;
+
+   if (!cfg)
+      return false;
+   cfg->capacity = COLLECTION_SIZE;
+   playlist_config_set_path(cfg, lpl);
+   manual_content_scan_reset_settings();
+   if ((pl = playlist_init(cfg)))
+   {
+      set = manual_content_scan_set_menu_from_playlist(pl, db, false)
+            == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK;
+      playlist_free(pl);
+   }
+   free(cfg);
+   if (set)
+      manual_content_scan_set_menu_scan_use_db(
+            MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+   return set;
+}
+
+static bool group_run(const char *lpl, const char *db, const char *dir,
+      bool archives, bool overwrite, const char *out, const char *err)
+{
+   if (!group_load(lpl, db))
+      return false;
+   *manual_content_scan_get_search_archives_ptr()    = archives;
+   *manual_content_scan_get_overwrite_playlist_ptr() = overwrite;
+   if (out)
+      return capture_scan(dir, out, err, true);
+   return run_scan(dir) && scan_completed;
+}
+
+/* A group scan: one scan of a folder for two playlists named after
+ * their databases.  Each gets only its own match and a third database
+ * is never opened; each drops its stale entry and gets the settings,
+ * new entries or not; overwrite clears both. */
+static void group_scan_lane(const char *root, const char *pl_dir,
+      const char *db_dir, bool threaded)
+{
+   static const char *const names[3] =
+         { "Test Alpha", "Test Beta", "Test Disc" };
+   static const char *const games[3] =
+         { "Group Alpha", "Group Beta", "Group Disc" };
+   static const uint32_t    crcs[3]  =
+         { 0x6E0A0001u, 0x6E0A0002u, 0x6E0A0003u };
+   char               *db    = (char*)malloc(512);
+   char               *pl    = (char*)malloc(512);
+   char               *dir   = (char*)malloc(512);
+   char               *label = (char*)malloc(640);
+   char               *out   = (char*)malloc(1024);
+   char               *err   = (char*)malloc(1024);
+   char               *keep  = (char*)malloc(1024);
+   char               *p     = (char*)malloc(1024);
+   char              (*lpl)[1024] = (char(*)[1024])malloc(3 * sizeof(*lpl));
+   char                what[128], detail[128];
+   db_rec_t            rec;
+   union string_list_elem_attr attr;
+   struct string_list *group = string_list_new();
+   const char         *q     = threaded ? "(threaded)" : "(regular)";
+   unsigned            k, qq, opens;
+   int                 sorts;
+   bool                ran;
+
+   if (   !db || !pl || !dir || !label || !out || !err || !keep || !p
+       || !lpl)
+   {
+      check(0, "group lane", "out of memory");
+      goto end;
+   }
+   sprintf(db,   "%s/group_db",       root);
+   sprintf(pl,   "%s/group_pl",       root);
+   sprintf(dir,  "%s/group",          root);
+   sprintf(out,  "%s/group_out.txt",  root);
+   sprintf(err,  "%s/group_err.txt",  root);
+   sprintf(keep, "%s/group_keep.bin", root);
+   path_mkdir(db);
+   path_mkdir(pl);
+   path_mkdir(dir);
+   delete_playlists(pl);
+   for (k = 0; k < 2; k++)
+   {
+      sprintf(p, "%s/%c.bin", dir, 'd' + k);
+      filestream_delete(p);
+   }
+   for (k = 0; k < 3; k++)
+   {
+      set_rec(&rec, games[k], crcs[k], 1024);
+      sprintf(p, "%s/%s.rdb", db, names[k]);
+      if (!write_db_set(p, &rec, 1))
+         goto fixture;
+      sprintf(p, "%s/%c.bin", dir, 'a' + k);
+      if (!write_content(p, crcs[k], 1024))
+         goto fixture;
+      sprintf(lpl[k], "%s/%s.lpl", pl, names[k]);
+   }
+   for (k = 0; k < 2; k++)
+   {
+      sprintf(p, "%s/00_gone_%c.bin", dir, 'a' + k);
+      if (!refresh_write(lpl[k], dir, NULL, p))
+         goto fixture;
+   }
+   attr.i = 0;
+   if (   !write_content(keep, 0x6E0A00FFu, 1024)
+       || !group
+       || !string_list_append(group, names[0], attr)
+       || !string_list_append(group, names[1], attr))
+      goto fixture;
+   sprintf(label, "%s (%s, %s)", dir, names[0], names[1]);
+   use_db(db);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+   group_names = group;
+   group_label = label;
+
+   open_name   = names[2];
+   named_opens = 0;
+   ran         = group_run(lpl[0], db, dir, false, false, out, err);
+   opens       = named_opens;
+   open_name   = NULL;
+   sprintf(what, "group %s: one scan for both", q);
+   check_result(what, 2, 0, 1, 0, false);
+   /* Cut to the task's 128 bytes, as a long label is. */
+   strlcpy(p, msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), 128);
+   strlcat(p, label, 128);
+   sprintf(what, "group %s: its title names the group", q);
+   check(ran && !strcmp(pushed_title, p), what, pushed_title);
+   sprintf(what, "group %s: each playlist gets its own", q);
+   check(   ran
+         && file_contains(lpl[0], "/a.bin\"")
+         && file_contains(lpl[0], games[0])
+         && !file_contains(lpl[0], "/b.bin\"")
+         && file_contains(lpl[1], "/b.bin\"")
+         && file_contains(lpl[1], games[1])
+         && !file_contains(lpl[1], "/a.bin\""), what, "a.bin, b.bin");
+   sprintf(what, "group %s: a third database never opened", q);
+   sprintf(detail, "%u opens of %s", opens, names[2]);
+   check(   ran && opens == 0 && !path_is_valid(lpl[2])
+         && !file_contains(lpl[0], "/c.bin\"")
+         && !file_contains(lpl[1], "/c.bin\""), what, detail);
+   qq = file_count(out, " ?? ");
+   sprintf(p, " ?? \"%s/c.bin\"", dir);
+   sprintf(what, "group %s: one ?? for the file neither has", q);
+   check(ran && qq == 1 && file_contains(out, p), what, p);
+   sprintf(p, "%s: 2 added, 0 duplicates, 1 unmatched, 0 errors", label);
+   sprintf(what, "group %s: its totals line", q);
+   check(ran && file_contains(out, p), what, p);
+   sprintf(what, "group %s: each drops its stale entry", q);
+   check(   ran && !file_contains(lpl[0], "00_gone_a")
+         && !file_contains(lpl[1], "00_gone_b"), what,
+         "00_gone_a.bin, 00_gone_b.bin");
+   sprintf(what, "group %s: each saves its own database name", q);
+   check(   ran
+         && file_contains(lpl[0],
+               "\"scan_database_name\": \"Test Alpha.lpl\"")
+         && file_contains(lpl[1],
+               "\"scan_database_name\": \"Test Beta.lpl\""),
+         what, "Test Alpha.lpl, Test Beta.lpl");
+
+   /* Beta's file gone: Beta gets no result, Alpha a duplicate. */
+   sprintf(p, "%s/b.bin", dir);
+   filestream_delete(p);
+   ran = group_run(lpl[0], db, dir, true, false, NULL, NULL);
+   sprintf(what, "group %s: settings saved without a new entry", q);
+   sprintf(detail, "%u added, %u duplicates, %u unmatched",
+         scan_result.added, scan_result.duplicates, scan_result.unmatched);
+   check(   ran && scan_result.added == 0 && scan_result.duplicates == 1
+         && scan_result.unmatched == 1
+         && !file_contains(lpl[1], "/b.bin\"")
+         && file_contains(lpl[1], "\"scan_search_archives\": true")
+         && file_contains(lpl[0], "\"scan_search_archives\": true"),
+         what, detail);
+
+   /* An entry a refresh keeps, in both. */
+   if (   !write_content(p, crcs[1], 1024)
+       || !refresh_write(lpl[0], dir, NULL, keep)
+       || !refresh_write(lpl[1], dir, NULL, keep))
+      goto fixture;
+   ran = group_run(lpl[0], db, dir, false, true, NULL, NULL);
+   sprintf(what, "group %s: overwrite clears both", q);
+   sprintf(detail, "%u added, %u duplicates, %u unmatched",
+         scan_result.added, scan_result.duplicates, scan_result.unmatched);
+   check(   ran && scan_result.added == 2
+         && !file_contains(lpl[0], "group_keep")
+         && !file_contains(lpl[1], "group_keep")
+         && file_contains(lpl[0], "/a.bin\"")
+         && file_contains(lpl[1], "/b.bin\"")
+         && file_contains(lpl[0], "\"scan_overwrite_playlist\": true")
+         && file_contains(lpl[1], "\"scan_overwrite_playlist\": true"),
+         what, detail);
+
+   /* Members interleaved in content order: a, b, (c,) d, e. */
+   sprintf(p, "%s/d.bin", dir);
+   if (!write_content(p, crcs[0], 1024))
+      goto fixture;
+   sprintf(p, "%s/e.bin", dir);
+   if (!write_content(p, crcs[1], 1024))
+      goto fixture;
+   sorts = retro_atomic_load_acquire_int(&pl_sorts);
+   ran   = group_run(lpl[0], db, dir, false, false, NULL, NULL);
+   sorts = retro_atomic_load_acquire_int(&pl_sorts) - sorts;
+   sprintf(what, "group %s: interleaved, each sorted once", q);
+   sprintf(detail, "%d sorts; %u added, %u duplicates, %u unmatched",
+         sorts, scan_result.added, scan_result.duplicates,
+         scan_result.unmatched);
+   check(   ran && sorts == 2 && scan_result.added == 2
+         && scan_result.duplicates == 2 && scan_result.unmatched == 1,
+         what, detail);
+   sprintf(what, "group %s: interleaved, each gets only its own", q);
+   check(   ran
+         && file_contains(lpl[0], "/a.bin\"")
+         && file_contains(lpl[0], "/d.bin\"")
+         && !file_contains(lpl[0], "/b.bin\"")
+         && !file_contains(lpl[0], "/e.bin\"")
+         && file_contains(lpl[1], "/b.bin\"")
+         && file_contains(lpl[1], "/e.bin\"")
+         && !file_contains(lpl[1], "/a.bin\"")
+         && !file_contains(lpl[1], "/d.bin\""), what, "a, d / b, e");
+
+   /* The first member empty: the second is still validated. */
+   filestream_delete(lpl[0]);
+   sprintf(p, "%s/00_gone_b.bin", dir);
+   if (!refresh_write(lpl[1], dir, NULL, p))
+      goto fixture;
+   ran = group_run(lpl[1], db, dir, false, false, NULL, NULL);
+   sprintf(what, "group %s: first member empty, second validated", q);
+   check(   ran && file_contains(lpl[0], "/a.bin\"")
+         && !file_contains(lpl[1], "00_gone_b"), what, "00_gone_b.bin");
+
+   /* Each window held to its floor: one member written in each. */
+   if (!threaded)
+   {
+      sprintf(p, "%s/group_src", root);
+      path_mkdir(p);
+      strlcat(p, "/Test Alpha.lpl", 1024);
+      filestream_delete(p);
+      filestream_delete(lpl[0]);
+      filestream_delete(lpl[1]);
+      if (!refresh_write(p, dir, NULL, keep))
+         goto fixture;
+      spent_lpl[0]     = lpl[0];
+      spent_lpl[1]     = lpl[1];
+      spent_had        = 0;
+      spent_most       = 0;
+      spent_opens      = 0;
+      spent_opens_most = 0;
+      window_open_hook = spent_open;
+      ran              = group_run(p, db, dir, false, false, NULL, NULL);
+      window_open_hook = scan_tick_open;
+      spent_count();
+      spent_lpl[0]     = NULL;
+      sprintf(what, "group %s: one member written a window", q);
+      sprintf(detail, "%u written at most, %u in all", spent_most,
+            spent_had);
+      check(ran && spent_had == 2 && spent_most == 1, what, detail);
+      sprintf(what, "group %s: one member opened a window", q);
+      sprintf(detail, "%u opened at most", spent_opens_most);
+      check(ran && spent_opens_most == 1, what, detail);
+   }
+
+   /* A member's own refresh and the group never run at once, either
+    * started first. */
+   if (!threaded)
+   {
+      bool grouped, lone;
+
+      grouped = group_load(lpl[0], db)
+            && task_push_manual_content_scan_group(group, label,
+                  NULL, NULL);
+      lone    = group_load(lpl[1], db)
+            && task_push_manual_content_scan(false, NULL, NULL);
+      group_drain();
+      sprintf(what, "group %s: no member refresh while it runs", q);
+      check(grouped && !lone, what, lone ? "both pushed" : "group");
+      lone    = group_load(lpl[1], db)
+            && task_push_manual_content_scan(false, NULL, NULL);
+      grouped = group_load(lpl[0], db)
+            && task_push_manual_content_scan_group(group, label,
+                  NULL, NULL);
+      group_drain();
+      sprintf(what, "group %s: not while a member's refresh runs", q);
+      check(lone && !grouped, what, grouped ? "both pushed" : "lone");
+   }
+
+   /* Only a strict database scan sends each match to a member. */
+   ran = group_load(lpl[0], db);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_LOOSE);
+   ran = ran && !task_push_manual_content_scan_group(group, label,
+         NULL, NULL);
+   group_drain();
+   sprintf(what, "group %s: a loose scan refused", q);
+   check(ran, what, "pushed");
+   goto restore;
+
+fixture:
+   check(0, "fixture", "could not write the group scan set");
+restore:
+   group_names = NULL;
+   group_label = NULL;
+   open_name   = NULL;
+   manual_content_scan_reset_settings();
+   use_db(db_dir);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+end:
+   string_list_free(group);
+   free(db);
+   free(pl);
+   free(dir);
+   free(label);
+   free(out);
+   free(err);
+   free(keep);
+   free(p);
+   free(lpl);
+}
+
+/* refresh_write() with strict matching, the extensions @exts and the
+ * saved database name @db_name (NULL: none for either). */
+static bool refresh_group_write(const char *lpl, const char *dir,
+      const char *exts, const char *db_name, const char *core,
+      const char *entry)
+{
+   playlist_config_t *cfg = NULL;
+   playlist_t        *pl  = NULL;
+   bool               ok  = false;
+
+   if (   !refresh_write(lpl, dir, core, entry)
+       || !(cfg = (playlist_config_t*)calloc(1, sizeof(*cfg))))
+      return false;
+   playlist_config_set_path(cfg, lpl);
+   cfg->capacity = COLLECTION_SIZE;
+   if ((pl = playlist_init(cfg)))
+   {
+      playlist_set_scan_db_usage(pl, MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+      if (exts)
+         playlist_set_scan_file_exts(pl, exts);
+      if (db_name)
+         playlist_set_scan_database_name(pl, db_name);
+      playlist_write_file(pl);
+      playlist_free(pl);
+      ok = true;
+   }
+   free(cfg);
+   return ok;
+}
+
+/* Saves @usage and the DAT @dat as @lpl's match settings. */
+static bool refresh_group_match(const char *lpl, int usage, const char *dat)
+{
+   playlist_config_t *cfg = NULL;
+   playlist_t        *pl  = NULL;
+   bool               ok  = false;
+
+   if (!(cfg = (playlist_config_t*)calloc(1, sizeof(*cfg))))
+      return false;
+   playlist_config_set_path(cfg, lpl);
+   cfg->capacity = COLLECTION_SIZE;
+   if ((pl = playlist_init(cfg)))
+   {
+      playlist_set_scan_db_usage(pl, usage);
+      playlist_set_scan_dat_file_path(pl, dat);
+      playlist_write_file(pl);
+      playlist_free(pl);
+      ok = true;
+   }
+   free(cfg);
+   return ok;
+}
+
+/* Refresh All over database playlists that share a folder: Alpha and
+ * Beta, equal but for a saved database name empty in one and its own
+ * in the other, share one scan and one line, each validated and saved;
+ * Disc with other extensions and Custom, named after no database, run
+ * alone.  The keys are made with no stat on the main thread.  A
+ * missing folder skips the pair with one line, an override leaves it
+ * one scan and is saved to both, a cancel during it stops the rest,
+ * and the menu still counts playlists.  Loose, a DAT or another
+ * database's name, or another load status, runs alone; a pair whose
+ * scan cannot start fails under its label. */
+static void refresh_group_lane(const char *root, const char *pl_dir,
+      const char *db_dir, bool threaded)
+{
+   static const char *const names[3] =
+         { "Test Alpha", "Test Beta", "Test Disc" };
+   static const char *const games[3] =
+         { "Refresh Group Alpha", "Refresh Group Beta", "Refresh Group Disc" };
+   static const uint32_t    crcs[3]  =
+         { 0x6E0B0001u, 0x6E0B0002u, 0x6E0B0003u };
+   static char         db[512], pl[512], dir[512], gone[512], slow[512];
+   static char         late[512], dat[512], dot_db[512], dot_lpl[1024];
+   static char         label[640], gone_label[640], slow_label[640];
+   static char         dot_label[640];
+   static char         out[1024], err[1024], lpl[4][1024], stale[4][1024];
+   static char         p[1024], want[1536];
+   char                what[128], detail[192];
+   db_rec_t            rec;
+   task_dbscan_item_t *items;
+   const char         *q = threaded ? "(threaded)" : "(regular)";
+   unsigned            k;
+   bool                ran, pushed, back, off_main = false;
+
+#ifdef HAVE_THREADS
+   off_main = threaded;
+#endif
+   sprintf(db,   "%s/rgroup_db",      root);
+   sprintf(dot_db, "%s/rgroup_db_dot", root);
+   sprintf(pl,   "%s/rgroup_pl",      root);
+   sprintf(dir,  "%s/rgroup",         root);
+   sprintf(gone, "%s/rgroup_gone",    root);
+   sprintf(slow, "%s/rgroup_slow",    root);
+   sprintf(late, "%s/rgroup_late_%c", root, threaded ? 't' : 'r');
+   sprintf(dat,  "%s/rgroup.dat",     root);
+   sprintf(out,  "%s/rgroup_out.txt", root);
+   sprintf(err,  "%s/rgroup_err.txt", root);
+   path_mkdir(db);
+   path_mkdir(dot_db);
+   path_mkdir(pl);
+   path_mkdir(dir);
+   path_mkdir(slow);
+   for (k = 0; k < 3; k++)
+   {
+      set_rec(&rec, games[k], crcs[k], 1024);
+      sprintf(p, "%s/%s.rdb", db, names[k]);
+      if (!write_db_set(p, &rec, 1))
+         goto fixture;
+      sprintf(p, "%s/%c.bin", dir, 'a' + k);
+      if (!write_content(p, crcs[k], 1024))
+         goto fixture;
+   }
+   for (k = 0; k < 2; k++)
+   {
+      set_rec(&rec, games[k], crcs[k], 1024);
+      sprintf(p, "%s/%s.rdb", dot_db, k ? "Test Dot.Com" : names[0]);
+      if (!write_db_set(p, &rec, 1))
+         goto fixture;
+   }
+   sprintf(p, "%s/00_slow.bin", slow);
+   if (!write_content(p, 0x6E0B00FFu, 1536))
+      goto fixture;
+   {
+      FILE *f = fopen(dat, "w");
+
+      if (!f)
+         goto fixture;
+      fputs("<?xml version=\"1.0\"?>\n<datafile>\n"
+            "<header><name>Group</name></header>\n"
+            "<game name=\"c\"><description>Disc</description></game>\n"
+            "</datafile>\n", f);
+      fclose(f);
+   }
+   sprintf(lpl[0], "%s/Test Alpha.lpl",  pl);
+   sprintf(lpl[1], "%s/Test Beta.lpl",   pl);
+   sprintf(lpl[2], "%s/Test Custom.lpl", pl);
+   sprintf(lpl[3], "%s/Test Disc.lpl",   pl);
+   for (k = 0; k < 4; k++)
+      sprintf(stale[k], "%s/00_gone_%c.bin", dir, 'a' + k);
+   sprintf(label,      "%s (Test Alpha, Test Beta)", dir);
+   sprintf(gone_label, "%s (Test Alpha, Test Beta)", gone);
+   sprintf(slow_label, "%s (Test Alpha, Test Beta)", slow);
+   sprintf(dot_label,  "%s (Test Alpha, Test Dot.Com)", dir);
+   sprintf(dot_lpl,    "%s/Test Dot.Com.lpl", pl);
+   use_db(db);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+
+   delete_playlists(pl);
+   if (   !refresh_group_write(lpl[0], dir, NULL, NULL, NULL, stale[0])
+       || !refresh_group_write(lpl[1], dir, NULL, "Test Beta.lpl", NULL,
+            stale[1])
+       || !refresh_group_write(lpl[2], dir, NULL, NULL, NULL, stale[2])
+       || !refresh_group_write(lpl[3], dir, "bin", NULL, NULL, stale[3])
+       || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   refresh_began_reset();
+   retro_atomic_store_release_int(&stat_main, 0);
+   stat_loads = 4;
+   ran        = refresh_run(items, 1, out, err, true);
+   stat_loads = 0;
+   sprintf(what, "refresh groups %s: equal keys, one scan", q);
+   snprintf(detail, sizeof(detail), "%u items: %s", chain_seen,
+         chain_names[0]);
+   check(   ran && chain_seen == 3
+         && chain_saw(0, label, TASK_DBSCAN_RAN, 2), what, detail);
+   sprintf(what, "refresh groups %s: a name no database has, alone", q);
+   check(ran && chain_saw(1, "Test Custom", TASK_DBSCAN_RAN, 3), what,
+         chain_names[1]);
+   sprintf(what, "refresh groups %s: other extensions, another scan", q);
+   check(ran && chain_saw(2, "Test Disc", TASK_DBSCAN_RAN, 1), what,
+         chain_names[2]);
+   sprintf(what, "refresh groups %s: the totals count playlists", q);
+   sprintf(detail, "ran %u, added %u, failed %u, skipped %u",
+         chain_totals.ran, chain_totals.added, chain_totals.failed,
+         chain_totals.skipped);
+   check(   chain_totals.ran == 4 && chain_totals.added == 4
+         && !chain_totals.failed && !chain_totals.skipped, what, detail);
+   sprintf(what, "refresh groups %s: both refreshed and validated", q);
+   check(   ran
+         && file_contains(lpl[0], "/a.bin\"")
+         && !file_contains(lpl[0], "/b.bin\"")
+         && !file_contains(lpl[0], "00_gone_a")
+         && file_contains(lpl[1], "/b.bin\"")
+         && !file_contains(lpl[1], "/a.bin\"")
+         && !file_contains(lpl[1], "00_gone_b"), what, "a.bin, b.bin");
+   sprintf(what, "refresh groups %s: both settings saved", q);
+   check(   ran
+         && file_contains(lpl[0],
+               "\"scan_database_name\": \"Test Alpha.lpl\"")
+         && file_contains(lpl[1],
+               "\"scan_database_name\": \"Test Beta.lpl\""),
+         what, lpl[1]);
+   sprintf(what, "refresh groups %s: one line for the pair", q);
+   sprintf(want, "%s: 2 added, 0 duplicates, 1 unmatched, 0 errors",
+         label);
+   check(   ran && file_contains(out, want)
+         && file_contains(out,
+               "Test Custom: 3 added, 0 duplicates, 0 unmatched, 0 errors")
+         && file_contains(out,
+               "Test Disc: 1 added, 0 duplicates, 2 unmatched, 0 errors")
+         && !file_contains(out, "Test Alpha: ")
+         && !file_contains(out, "Test Beta: ")
+         && file_count(out, " added, ") == 3, what, want);
+   /* Four to group them, then one per scan. */
+   sprintf(what, "refresh groups %s: loaded to group, then once per scan",
+         q);
+   sprintf(detail, "%d loads",
+         retro_atomic_load_acquire_int(&refresh_began[REFRESH_LOAD]));
+   check(retro_atomic_load_acquire_int(&refresh_began[REFRESH_LOAD]) == 7,
+         what, detail);
+   sprintf(what, "refresh groups %s: keys made %s", q,
+         off_main ? "with no stat on the main thread" : "while loading");
+   sprintf(detail, "%d stats on the main thread",
+         retro_atomic_load_acquire_int(&stat_main));
+   check(   ran
+         && (!off_main || !retro_atomic_load_acquire_int(&stat_main)),
+         what, detail);
+
+   /* The pair's folder gone, Custom's there. */
+   delete_playlists(pl);
+   if (   !refresh_group_write(lpl[0], gone, NULL, NULL, NULL, stale[0])
+       || !refresh_group_write(lpl[1], gone, NULL, NULL, NULL, stale[1])
+       || !refresh_group_write(lpl[2], dir, NULL, NULL, NULL, stale[2])
+       || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   ran = refresh_run(items, 1, out, err, true);
+   sprintf(what, "refresh groups %s: a missing folder skips the pair", q);
+   snprintf(detail, sizeof(detail), "%u items: %s, skipped %u, ran %u",
+         chain_seen, chain_names[0], chain_totals.skipped, chain_totals.ran);
+   check(   ran && chain_seen == 2
+         && chain_saw(0, gone_label, TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(1, "Test Custom", TASK_DBSCAN_RAN, 3)
+         && chain_totals.skipped == 2 && chain_totals.ran == 1, what,
+         detail);
+   sprintf(what, "refresh groups %s: one skipped line", q);
+   sprintf(want, "%s: skipped: content folder not found (%s)", gone_label,
+         gone);
+   check(   ran && file_contains(err, want)
+         && file_count(err, "skipped") == 1, what, want);
+
+   /* Each of these would join Alpha but for the one setting. */
+   delete_playlists(pl);
+   if (   !refresh_group_write(lpl[0], dir, NULL, NULL, NULL, stale[0])
+       || !refresh_group_write(lpl[1], dir, NULL, NULL, NULL, stale[1])
+       || !refresh_group_match(lpl[1], MANUAL_CONTENT_SCAN_USE_DB_LOOSE,
+            NULL)
+       || !refresh_group_write(lpl[3], dir, NULL, NULL, NULL, stale[3])
+       || !refresh_group_match(lpl[3], MANUAL_CONTENT_SCAN_USE_DB_STRICT,
+            dat)
+       || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   ran = refresh_run(items, 1, out, err, true);
+   sprintf(what, "refresh groups %s: loose and a DAT run alone", q);
+   snprintf(detail, sizeof(detail), "%u items: %s | %s | %s", chain_seen,
+         chain_names[0], chain_names[1], chain_names[2]);
+   check(   ran && chain_seen == 3
+         && !strcmp(chain_names[0], "Test Alpha")
+         && !strcmp(chain_names[1], "Test Beta")
+         && !strcmp(chain_names[2], "Test Disc"), what, detail);
+   delete_playlists(pl);
+   if (   !refresh_group_write(lpl[0], dir, NULL, NULL, NULL, stale[0])
+       || !refresh_group_write(lpl[1], dir, NULL, "Test Disc.lpl", NULL,
+            stale[1])
+       || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   ran = refresh_run(items, 1, out, err, true);
+   sprintf(what, "refresh groups %s: another database's name, alone", q);
+   snprintf(detail, sizeof(detail), "%u items: %s | %s", chain_seen,
+         chain_names[0], chain_names[1]);
+   check(   ran && chain_seen == 2
+         && !strcmp(chain_names[0], "Test Alpha")
+         && !strcmp(chain_names[1], "Test Beta"), what, detail);
+
+   /* A database name with a dot, run twice: it groups both times. */
+   delete_playlists(pl);
+   use_db(dot_db);
+   if (   !refresh_group_write(lpl[0], dir, NULL, NULL, NULL, stale[0])
+       || !refresh_group_write(dot_lpl, dir, NULL, NULL, NULL, stale[1]))
+      goto fixture;
+   for (k = 0; k < 2; k++)
+   {
+      if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+         goto fixture;
+      refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+      ran = refresh_run(items, 1, out, err, true);
+      sprintf(what, "refresh groups %s: a dotted name groups, run %u", q,
+            k + 1);
+      snprintf(detail, sizeof(detail), "%u items: %s, %d added",
+            chain_seen, chain_names[0], chain_added[0]);
+      check(   ran && chain_seen == 1
+            && chain_saw(0, dot_label, TASK_DBSCAN_RAN, k ? 0 : 2)
+            && file_contains(dot_lpl,
+                  "\"scan_database_name\": \"Test Dot.Com.lpl\""),
+            what, detail);
+   }
+   use_db(db);
+
+   /* The folder appears between the pair's loads. */
+   delete_playlists(pl);
+   path_rmdir(late);
+   if (   !refresh_group_write(lpl[0], late, NULL, NULL, NULL, stale[0])
+       || !refresh_group_write(lpl[1], late, NULL, NULL, NULL, stale[1])
+       || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   refresh_began_reset();
+   mkdir_at_path = late;
+   mkdir_at_load = 2;
+   ran           = refresh_run(items, 1, out, err, true);
+   mkdir_at_load = 0;
+   sprintf(what, "refresh groups %s: another load status, alone", q);
+   snprintf(detail, sizeof(detail), "%u items: %s, skipped %u, failed %u",
+         chain_seen, chain_names[0], chain_totals.skipped,
+         chain_totals.failed);
+   /* Beta's folder is there but empty. */
+   check(   ran && chain_seen == 2
+         && chain_saw(0, "Test Alpha", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(1, "Test Beta", TASK_DBSCAN_FAILED, 0)
+         && chain_totals.skipped == 1 && chain_totals.failed == 1, what,
+         detail);
+
+   /* The listing, two loads, then the pair's second load fails. */
+   delete_playlists(pl);
+   if (   !refresh_group_write(lpl[0], dir, NULL, NULL, NULL, stale[0])
+       || !refresh_group_write(lpl[1], dir, NULL, NULL, NULL, stale[1])
+       || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   retro_atomic_store_release_int(&task_init_fail_in, 5);
+   ran = refresh_run(items, 1, out, err, true);
+   retro_atomic_store_release_int(&task_init_fail_in, 0);
+   sprintf(what, "refresh groups %s: a pair that cannot start, its label",
+         q);
+   sprintf(want, "%s: the scan could not start", label);
+   check(   ran && chain_seen == 1
+         && chain_saw(0, label, TASK_DBSCAN_FAILED, -1)
+         && chain_totals.failed == 2 && file_contains(err, want)
+         && !file_contains(err, "Test Alpha: "), what, err);
+
+   /* An override over the pair alone. */
+   delete_playlists(pl);
+   if (   !refresh_group_write(lpl[0], dir, NULL, NULL, NULL, stale[0])
+       || !refresh_group_write(lpl[1], dir, NULL, NULL, NULL, stale[1])
+       || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   if ((items[0].overrides = manual_content_scan_overrides_new()))
+      items[0].overrides->exts = ovr_str("bin");
+   ran = refresh_run(items, 1, out, err, true);
+   sprintf(what, "refresh groups %s: an override, still one scan", q);
+   snprintf(detail, sizeof(detail), "%u items: %s", chain_seen,
+         chain_names[0]);
+   check(   ran && chain_seen == 1
+         && chain_saw(0, label, TASK_DBSCAN_RAN, 2), what, detail);
+   sprintf(what, "refresh groups %s: the override saved to both", q);
+   check(   ran
+         && file_contains(lpl[0], "\"scan_file_exts\": \"bin\"")
+         && file_contains(lpl[1], "\"scan_file_exts\": \"bin\""), what,
+         lpl[1]);
+
+   /* Held on the threaded queue, so the scan cannot end before the
+    * cancel; the regular one reads on this thread */
+   delete_playlists(pl);
+   if (   !refresh_group_write(lpl[0], slow, NULL, NULL, NULL, stale[0])
+       || !refresh_group_write(lpl[1], slow, NULL, NULL, NULL, stale[1])
+       || !refresh_group_write(lpl[2], dir, NULL, NULL, NULL, stale[2])
+       || !(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   slow_reset(1536, 300);
+   if (threaded)
+      retro_atomic_store_release_int(&slow_hold, 1);
+   pushed = chain_push(items, 1);
+   chain_wait(true);
+   retro_atomic_store_release_int(&slow_hold, 0);
+   slow_size = 0;
+   back      = slow_reads_back() && readers_gone();
+   sprintf(what, "refresh groups %s: a cancel in the pair stops the rest",
+         q);
+   sprintf(detail, "%u items, ran %u%s, done %u", chain_seen,
+         chain_totals.ran, chain_totals.cancelled ? ", cancelled" : "",
+         chain_dones);
+   check(   pushed && back && chain_seen == 1 && chain_dones == 1
+         && chain_saw(0, slow_label, TASK_DBSCAN_RAN, chain_added[0])
+         && chain_totals.ran == 2 && chain_totals.cancelled
+         && file_contains(lpl[2], "00_gone_c"), what, detail);
+
+   /* As the menu pushes it: the pair, and Custom with a missing core. */
+   delete_playlists(pl);
+   if (   !refresh_group_write(lpl[0], dir, NULL, NULL, NULL, stale[0])
+       || !refresh_group_write(lpl[1], dir, NULL, NULL, NULL, stale[1])
+       || !refresh_group_write(lpl[2], dir, NULL, NULL, "No Such Core",
+            stale[2]))
+      goto fixture;
+   chain_dones     = 0;
+   chain_ud_ok     = true;
+   menu_all_msg[0] = '\0';
+   pushed          = task_push_dbscan_chain(menu_all_item(), 1, NULL,
+         menu_all_done_cb, NULL);
+   chain_wait(false);
+   sprintf(what, "refresh groups %s: the menu counts playlists", q);
+   check(   pushed && chain_dones == 1 && chain_ud_ok
+         && !strcmp(menu_all_msg,
+               "Playlists refreshed: 2, skipped: 0, failed: 1"),
+         what, menu_all_msg);
+   goto restore;
+
+fixture:
+   check(0, "fixture", "could not write the refresh group set");
+restore:
+   slow_size     = 0;
+   mkdir_at_load = 0;
+   path_rmdir(late);
+   retro_atomic_store_release_int(&task_init_fail_in, 0);
+   manual_content_scan_reset_settings();
+   use_db(db_dir);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+
+/* As many "??" lines in @out as the totals count unmatched, @want. */
+static void qq_check(const char *what, const char *q, const char *out,
+      unsigned want)
+{
+   char     name[128], detail[64];
+   unsigned qq = file_count(out, " ?? \"");
+
+   snprintf(name, sizeof(name), "?? lines %s: %s", q, what);
+   snprintf(detail, sizeof(detail), "%u ??, %u unmatched, want %u", qq,
+         scan_result.unmatched, want);
+   check(qq == scan_result.unmatched && qq == want, name, detail);
+}
+
+/* Every scan kind prints a "??" for each file its totals count
+ * unmatched and for no other.  Rescans counts_lane()'s folders; then a
+ * .lutro, which matches by extension alone, in a refresh and in a
+ * group without a Lutro playlist. */
+static void unmatched_lines_run(const char *root, const char *db_dir,
+      bool threaded)
+{
+   static const char *const names[2] = { "Test Alpha", "Test Beta" };
+   static char         dir[512], dat_dir[512], m3u_dir[512], res_pl[512];
+   static char         dat[512], db[512], gdir[512], pl[512], label[640];
+   static char         out[1024], err[1024], lpl[2][1024], p[1024];
+   db_rec_t            rec;
+   union string_list_elem_attr attr;
+   struct string_list *group = string_list_new();
+   const char         *q     = threaded ? "(threaded)" : "(regular)";
+   unsigned            k;
+
+   sprintf(dir,     "%s/scan_result",     root);
+   sprintf(dat_dir, "%s/scan_result_dat", root);
+   sprintf(m3u_dir, "%s/scan_result_m3u", root);
+   sprintf(res_pl,  "%s/scan_result_pl",  root);
+   sprintf(dat,     "%s/scan_result.dat", root);
+   sprintf(out,     "%s/qq_lines.out",    root);
+   sprintf(err,     "%s/qq_lines.err",    root);
+   strlcpy(config_get_ptr()->paths.directory_playlist, res_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+
+   /* One archive's member stores no CRC, so it is expanded. */
+   delete_playlists(res_pl);
+   if (capture_scan(dir, out, err, true))
+      qq_check("strict, an archive expanded", q, out, 2);
+   delete_playlists(res_pl);
+   if (capture_scan(m3u_dir, out, err, true))
+      qq_check("an m3u its discs match", q, out, 0);
+
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_LOOSE);
+   delete_playlists(res_pl);
+   if (capture_scan(dir, out, err, true))
+      qq_check("loose, all added", q, out, 0);
+
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT);
+   strlcpy(manual_content_scan_get_dat_file_path_ptr(), dat,
+         manual_content_scan_get_dat_file_path_size());
+   delete_playlists(res_pl);
+   if (capture_scan(dat_dir, out, err, true))
+      qq_check("DAT", q, out, 1);
+
+   manual_content_scan_get_dat_file_path_ptr()[0] = '\0';
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_NONE);
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL);
+   delete_playlists(res_pl);
+   if (capture_scan(dir, out, err, true))
+      qq_check("match none", q, out, 0);
+   manual_content_scan_reset_settings();
+   delete_playlists(res_pl);
+
+   sprintf(db,   "%s/qq_db",    root);
+   sprintf(gdir, "%s/qq_group", root);
+   sprintf(pl,   "%s/qq_pl",    root);
+   path_mkdir(db);
+   path_mkdir(gdir);
+   path_mkdir(pl);
+   delete_playlists(pl);
+   for (k = 0; k < 2; k++)
+   {
+      set_rec(&rec, names[k], 0x6E0C0001u + k, 1024);
+      sprintf(p, "%s/%s.rdb", db, names[k]);
+      if (!write_db_set(p, &rec, 1))
+         goto fixture;
+      sprintf(lpl[k], "%s/%s.lpl", pl, names[k]);
+      sprintf(p, "%s/00_gone.bin", gdir);
+      if (!refresh_write(lpl[k], gdir, NULL, p))
+         goto fixture;
+   }
+   sprintf(p, "%s/a.bin", gdir);
+   if (!write_content(p, 0x6E0C0001u, 1024))
+      goto fixture;
+   sprintf(p, "%s/x.lutro", gdir);
+   if (!write_content(p, 0x6E0C00FFu, 1024))
+      goto fixture;
+   attr.i = 0;
+   if (   !group
+       || !string_list_append(group, names[0], attr)
+       || !string_list_append(group, names[1], attr))
+      goto fixture;
+   sprintf(label, "%s (%s, %s)", gdir, names[0], names[1]);
+   use_db(db);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+
+   if (group_run(lpl[0], db, gdir, false, false, out, err))
+      qq_check("a refresh, a .lutro", q, out, 1);
+   group_names = group;
+   group_label = label;
+   if (group_run(lpl[0], db, gdir, false, false, out, err))
+      qq_check("a group, a .lutro", q, out, 1);
+   goto restore;
+
+fixture:
+   check(0, "fixture", "could not write the ?? lines set");
+restore:
+   group_names = NULL;
+   group_label = NULL;
+   string_list_free(group);
+   manual_content_scan_reset_settings();
+   use_db(db_dir);
+}
+
+static void unmatched_lines_lane(const char *root, const char *pl_dir,
+      const char *db_dir)
+{
+   unmatched_lines_run(root, db_dir, false);
+   unmatched_lines_run(root, db_dir, true);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+
+#ifdef HAVE_SMBCLIENT
+/* The number of times @s is in @log. */
+static unsigned smb_log_count(const char *log, const char *s)
+{
+   unsigned n = 0;
+
+   while ((log = strstr(log, s)))
+   {
+      n++;
+      log += strlen(s);
+   }
+   return n;
+}
+
+/* A refresh-all whose first smb:// folder fails stats the share root:
+ * when that fails too, later smb:// folders, --scan paths and refreshes
+ * in the run fail without a stat, and local playlists still run.  When
+ * the root answers, the run goes on as before.  With no share set, the
+ * URL names it, so a dead one leaves the others to run and each is
+ * checked once, until a root answers; with one set, all are down. */
+static void smb_down_lane(const char *root, const char *pl_dir,
+      uint32_t crc_a, uint32_t sz_a, bool threaded)
+{
+   static const char *smb_names[] = { "b_one", "d_two", "e_three" };
+   static const char *smb_dirs[]  = { "smb://host/share/one",
+      "smb://host/share/two", "smb://host/share/three" };
+   static const char *share_names[] = { "a_games", "a_old", "b_dead" };
+   static const char *share_dirs[]  = { "smb://host/games/nes",
+      "smb://host/old/early", "smb://host/old/md" };
+   static const char *const up_root[] = { "smb://host/share/", NULL };
+   static const char *const shares_up[] = { "smb://host/games/",
+      "smb://host/games/nes", "smb://host/old/early", NULL };
+   static const char *mix_dirs[] = { "smb://host/aa/1", "smb://host/bb/2",
+      "smb://host/aa/3", "smb://host/bb/4", "smb://host/aa/5",
+      "smb://host/bb/6" };
+   static const char *const bb_root[] = { "smb://host/bb/",
+      "smb://host/aa/3", NULL };
+   static char         pl[512], live_pl[512], two_pl[512], mix_pl[512];
+   static char         a[512], log[512];
+   static char         out[1024], err[1024], p[1024], stale[1024];
+   static char         want[1536], detail[640];
+   char                what[128];
+   const char         *q = threaded ? "(threaded)" : "(regular)";
+   task_dbscan_item_t *items;
+   unsigned            i;
+   bool                ran;
+
+   sprintf(pl,      "%s/smb_pl",      root);
+   sprintf(live_pl, "%s/smb_live_pl", root);
+   sprintf(two_pl,  "%s/smb_two_pl",  root);
+   sprintf(mix_pl,  "%s/smb_mix_pl",  root);
+   sprintf(a,       "%s/smb_a",       root);
+   sprintf(out,     "%s/smb_out.txt", root);
+   sprintf(err,     "%s/smb_err.txt", root);
+   sprintf(stale,   "%s/00_gone.bin", a);
+   path_mkdir(pl);
+   path_mkdir(live_pl);
+   path_mkdir(two_pl);
+   path_mkdir(mix_pl);
+   path_mkdir(a);
+   delete_playlists(pl);
+   delete_playlists(live_pl);
+   delete_playlists(two_pl);
+   delete_playlists(mix_pl);
+   sprintf(p, "%s/01_alpha.bin", a);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/a_local.lpl", pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/c_local.lpl", pl);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   for (i = 0; i < 3; i++)
+   {
+      sprintf(p, "%s/%s.lpl", pl, smb_names[i]);
+      if (!refresh_write(p, smb_dirs[i], NULL, stale))
+         goto fixture;
+      sprintf(p, "%s/%s.lpl", live_pl, smb_names[i]);
+      if (i < 2 && !refresh_write(p, smb_dirs[i], NULL, stale))
+         goto fixture;
+      sprintf(p, "%s/%s.lpl", two_pl, share_names[i]);
+      if (!refresh_write(p, share_dirs[i], NULL, stale))
+         goto fixture;
+   }
+   for (i = 0; i < 6; i++)
+   {
+      sprintf(p, "%s/m_%u.lpl", mix_pl, i + 1);
+      if (!refresh_write(p, mix_dirs[i], NULL, stale))
+         goto fixture;
+   }
+   use_queue(threaded);
+   smb_stat_log = log;
+
+   /* A dead server: a refresh-all, then a --scan and a refresh on it. */
+   if (!(items = (task_dbscan_item_t*)calloc(3, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   chain_item(&items[1], "smb://host/share/x", NULL);
+   refresh_item(&items[2], TASK_DBSCAN_ITEM_REFRESH, "b_one");
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   *log = '\0';
+   retro_atomic_store_release_int(&smb_stat_count, 0);
+   ran = refresh_run(items, 3, out, err, true);
+   sprintf(what, "smb down %s: a dead server, two stats", q);
+   snprintf(detail, sizeof(detail), "%d stats: %s",
+         retro_atomic_load_acquire_int(&smb_stat_count), log);
+   check(   ran && retro_atomic_load_acquire_int(&smb_stat_count) == 2
+         && string_is_equal(log, "smb://host/share/one smb://host/share/ "),
+         what, detail);
+   sprintf(what, "smb down %s: the items", q);
+   snprintf(detail, sizeof(detail),
+         "%u items: ran %u, added %u, failed %u, skipped %u", chain_seen,
+         chain_totals.ran, chain_totals.added, chain_totals.failed,
+         chain_totals.skipped);
+   check(   chain_seen == 7
+         && chain_saw(0, "a_local", TASK_DBSCAN_RAN,     1)
+         && chain_saw(1, "b_one",   TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(2, "c_local", TASK_DBSCAN_RAN,     1)
+         && chain_saw(3, "d_two",   TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(4, "e_three", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(5, "smb://host/share/x", TASK_DBSCAN_FAILED, -1)
+         && chain_saw(6, "b_one",   TASK_DBSCAN_SKIPPED, -1)
+         && chain_totals.ran == 2 && chain_totals.added == 2
+         && chain_totals.failed == 1 && chain_totals.skipped == 4,
+         what, detail);
+   sprintf(what, "smb down %s: the lines", q);
+   check(   file_contains(err,
+               "b_one: skipped: content folder not found "
+               "(smb://host/share/one)")
+         && file_contains(err,
+               "d_two: skipped: content folder not found "
+               "(smb://host/share/two)")
+         && file_contains(err,
+               "e_three: skipped: content folder not found "
+               "(smb://host/share/three)")
+         && file_contains(err, "smb://host/share/x: not found")
+         && file_contains(out, "a_local: 1 added")
+         && file_contains(out, "c_local: 1 added"), what, err);
+   sprintf(what, "smb down %s: local playlists refreshed", q);
+   sprintf(want, "%s/01_alpha.bin", a);
+   sprintf(p, "%s/a_local.lpl", pl);
+   ran = file_contains(p, want) && !file_contains(p, stale);
+   sprintf(p, "%s/c_local.lpl", pl);
+   check(ran && file_contains(p, want) && !file_contains(p, stale),
+         what, p);
+
+   /* The root answers: the folders are missing, the server is not. */
+   if (!(items = (task_dbscan_item_t*)calloc(2, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   chain_item(&items[1], "smb://host/share/x", NULL);
+   strlcpy(config_get_ptr()->paths.directory_playlist, live_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   *log           = '\0';
+   smb_stat_valid = up_root;
+   ran            = refresh_run(items, 2, out, err, true);
+   sprintf(what, "smb up %s: the root stat once, the rest as before", q);
+   snprintf(detail, sizeof(detail), "%u items: %s", chain_seen, log);
+   check(   ran && chain_seen == 3
+         && chain_saw(0, "b_one", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(1, "d_two", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(2, "smb://host/share/x", TASK_DBSCAN_FAILED, -1)
+         && string_is_equal(log,
+               "smb://host/share/one smb://host/share/ "
+               "smb://host/share/two smb://host/share/x "), what, detail);
+
+   /* Two shares, no share set: "old" dies after a_games and a_old
+    * loaded. */
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   strlcpy(config_get_ptr()->paths.directory_playlist, two_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   *log           = '\0';
+   smb_stat_valid = shares_up;
+   ran            = refresh_run(items, 1, out, err, true);
+   sprintf(what, "smb shares %s: a dead share, the other runs", q);
+   snprintf(detail, sizeof(detail), "%u items: %s %d | %s %d | %s %d: %s",
+         chain_seen, chain_names[0], chain_outcomes[0], chain_names[1],
+         chain_outcomes[1], chain_names[2], chain_outcomes[2], log);
+   /* Its scan starts, then fails: the stub lists no folder. */
+   check(   ran && chain_seen == 3
+         && chain_saw(0, "a_games", TASK_DBSCAN_FAILED, 0)
+         && smb_log_count(log, "smb://host/games/nes ") > 1
+         && !file_contains(err, "a_games: skipped"), what, detail);
+   sprintf(what, "smb shares %s: loaded before, skipped at its run", q);
+   check(   ran
+         && chain_saw(1, "a_old",  TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(2, "b_dead", TASK_DBSCAN_SKIPPED, -1)
+         && smb_log_count(log, "smb://host/old/early ") == 1
+         && smb_log_count(log, "smb://host/old/ ") == 1
+         && file_contains(err,
+               "a_old: skipped: content folder not found "
+               "(smb://host/old/early)"), what, detail);
+
+   /* The same with a share set: it is every path's. */
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   strlcpy(config_get_ptr()->arrays.smb_client_share, "games",
+         sizeof(config_get_ptr()->arrays.smb_client_share));
+   *log = '\0';
+   ran  = refresh_run(items, 1, out, err, true);
+   config_get_ptr()->arrays.smb_client_share[0] = '\0';
+   sprintf(what, "smb shares %s: a share set, all down", q);
+   snprintf(detail, sizeof(detail), "%u items: %s", chain_seen, log);
+   check(   ran && chain_seen == 3
+         && chain_saw(0, "a_games", TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(1, "a_old",   TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(2, "b_dead",  TASK_DBSCAN_SKIPPED, -1)
+         && smb_log_count(log, "smb://host/games/nes ") == 1, what,
+         detail);
+
+   /* Two dead shares in turn, no share set: two stats each. */
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   strlcpy(config_get_ptr()->paths.directory_playlist, mix_pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   *log           = '\0';
+   smb_stat_valid = NULL;
+   ran            = refresh_run(items, 1, out, err, true);
+   sprintf(what, "smb shares %s: two dead, two stats each", q);
+   snprintf(detail, sizeof(detail), "%u items, skipped %u: %s",
+         chain_seen, chain_totals.skipped, log);
+   check(   ran && chain_seen == 6 && chain_totals.skipped == 6
+         && string_is_equal(log, "smb://host/aa/1 smb://host/aa/ "
+               "smb://host/bb/2 smb://host/bb/ "), what, detail);
+
+   /* bb's root answers after aa's failed, as a waking NAS does: aa is
+    * checked again, and aa/3 now answers. */
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   *log           = '\0';
+   smb_stat_valid = bb_root;
+   ran            = refresh_run(items, 1, out, err, true);
+   sprintf(what, "smb shares %s: one answers, the dead one is checked again",
+         q);
+   snprintf(detail, sizeof(detail), "%u items: %s", chain_seen, log);
+   check(   ran && chain_seen == 6
+         && chain_saw(2, "m_3", TASK_DBSCAN_FAILED,  0)
+         && chain_saw(4, "m_5", TASK_DBSCAN_SKIPPED, -1)
+         && smb_log_count(log, "smb://host/aa/ ") == 1
+         && smb_log_count(log, "smb://host/bb/ ") == 1
+         && smb_log_count(log, "smb://host/aa/3 ") > 1
+         && smb_log_count(log, "smb://host/aa/5 ") == 1
+         && smb_log_count(log, "smb://host/bb/4 ") == 1
+         && smb_log_count(log, "smb://host/bb/6 ") == 1, what, detail);
+   goto restore;
+
+fixture:
+   check(0, "fixture", "could not write the smb lane");
+restore:
+   smb_stat_log   = NULL;
+   smb_stat_valid = NULL;
+   config_get_ptr()->arrays.smb_client_share[0] = '\0';
+   manual_content_scan_reset_settings();
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+#endif
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -10429,7 +11811,8 @@ int main(int argc, char **argv)
             "display_name = \"Scan Test\"\n"
             "corename = \"ScanTest\"\n"
             "supported_extensions = \"bin|cue|gdi|m3u|zip\"\n"
-            "database = \"Test Alpha|Test Beta|Test Disc|Test Zip\"\n");
+            "database = \"Test Alpha|Test Beta|Test Disc|Test Zip|"
+            "Test Dot.Com\"\n");
       fclose(f);
    }
    sprintf(p, "%s/test_libretro.so", core_dir);
@@ -10506,6 +11889,21 @@ int main(int argc, char **argv)
       fclose(f);
    }
    sprintf(p, "%s/archive_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   /* Lutro content matches by its extension, with no database. */
+   sprintf(p, "%s/lutro_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"Lutro Test\"\n"
+            "corename = \"LutroTest\"\n"
+            "supported_extensions = \"lutro\"\n"
+            "database = \"Lutro\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/lutro_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
    /* Cartridge cores list their ROMs' extensions, most without zip;
     * arcade cores list zip. */
@@ -11386,6 +12784,7 @@ int main(int argc, char **argv)
    failed_lane(root, pl_dir, db_dir, crc_a, sz_a);
    errors_lane(root, pl_dir, crc_a, sz_a);
    output_lane(root, pl_dir, db_dir);
+   cli_lines_lane(root, pl_dir);
    reset_lane(root, pl_dir);
    overrides_lane(root, pl_dir);
    core_lookup_lane(root);
@@ -11396,6 +12795,15 @@ int main(int argc, char **argv)
    fs_main_lane(root, pl_dir);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, false);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, true);
+   group_scan_lane(root, pl_dir, db_dir, false);
+   group_scan_lane(root, pl_dir, db_dir, true);
+   refresh_group_lane(root, pl_dir, db_dir, false);
+   refresh_group_lane(root, pl_dir, db_dir, true);
+   unmatched_lines_lane(root, pl_dir, db_dir);
+#ifdef HAVE_SMBCLIENT
+   smb_down_lane(root, pl_dir, crc_a, sz_a, false);
+   smb_down_lane(root, pl_dir, crc_a, sz_a, true);
+#endif
    {
       char reader_db[512];
 

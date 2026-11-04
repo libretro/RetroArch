@@ -381,7 +381,8 @@ enum task_dbscan_outcome
 
 typedef struct
 {
-   unsigned ran;     /* scans that ran and did not fail */
+   /* Each --scan and each playlist; a group counts all its members. */
+   unsigned ran;     /* ran and did not fail */
    unsigned added;   /* of those, the ones that added an entry */
    unsigned failed;
    unsigned skipped;
@@ -420,6 +421,19 @@ bool task_dbscan_chain_refuse_start(void);
 bool task_push_manual_content_scan(
       bool do_menu_refresh,
       retro_task_callback_t user_cb, void *user_data);
+
+#ifdef HAVE_LIBRETRODB
+/* One scan of the manual scan settings' folder for the playlists named
+ * in @group, each named after an installed database: only those
+ * databases are matched, each match goes to its database's playlist,
+ * and every member is cleared when overwriting, validated and given
+ * the settings, new entries or not.  False unless the settings are a
+ * strict database scan.  @group is copied; @cli_name labels the --scan
+ * lines, NULL for the folder.  @user_cb gets the whole group's counts.
+ * Main thread only. */
+bool task_push_manual_content_scan_group(const struct string_list *group,
+      const char *cli_name, retro_task_callback_t user_cb, void *user_data);
+#endif
 
 #ifdef HAVE_OVERLAY
 bool task_push_overlay_load_default(

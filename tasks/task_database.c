@@ -571,8 +571,8 @@ typedef struct manual_scan_handle
     * written, its group key and running count, and the path scratch
     * buffer, kept on the handle so the flush can yield on the
     * shared window and resume next gather.  flush_group points into
-    * either the task config or the owned results array, both of
-    * which outlive the flush. */
+    * the task config, the owned results array or the group's names,
+    * all of which outlive the flush. */
    size_t flush_pos;
    playlist_t *flush_playlist;
    const char *flush_group;
@@ -614,6 +614,13 @@ typedef struct manual_scan_handle
    /* What the --scan lines call the scan instead of its content
     * folder: a refreshed playlist's name. */
    char *cli_name;
+   /* A group scan's members: their names, each also its database's,
+    * and their playlists, open from MANUAL_SCAN_BEGIN_PLAYLIST to the
+    * end.  NULL for any other scan. */
+   struct string_list *group;
+   playlist_t **group_playlists;
+   /* The member being opened, validated, filled or written. */
+   size_t group_index;
 } manual_scan_handle_t;
 
 enum scan_verdict
@@ -745,6 +752,100 @@ static void task_database_scan_console_output(FILE *stream,
       fprintf(stream, "%s\"%s\"\n", string, label);
    else
       fprintf(stream, "%s\"%s / %s\"\n", string, db_name, label);
+}
+
+/* Whether --scan's numbered lines are printed outside the database
+ * lookup, which prints its own. */
+static bool manual_scan_cli_lines(const manual_scan_handle_t *manual_scan)
+{
+#ifdef HAVE_LIBRETRODB
+   if (   manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT
+       || manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_LOOSE)
+      return false;
+#endif
+   return manual_scan->task_config->cli_scan_output;
+}
+
+/* Every scan counts a file unmatched here, so each "??" is one the
+ * totals count. */
+static void manual_scan_unmatched(manual_scan_handle_t *manual_scan,
+      const char *path)
+{
+   manual_scan->result.unmatched++;
+   if (manual_scan->task_config->cli_scan_output)
+      task_database_scan_console_output(stdout, path, NULL,
+            SCAN_CONSOLE_UNMATCHED);
+}
+
+/* Puts the path of group member @i's playlist in @s. */
+static void manual_scan_group_path(const manual_scan_handle_t *manual_scan,
+      size_t i, char *s, size_t len)
+{
+   fill_pathname_join_special(s, manual_scan->playlist_directory,
+         manual_scan->group->elems[i].data, len);
+   strlcat(s, ".lpl", len);
+}
+
+/* A group scan's open member named @name; NULL if none is. */
+static playlist_t *manual_scan_group_find(
+      const manual_scan_handle_t *manual_scan, const char *name)
+{
+   size_t i;
+   for (i = 0; i < manual_scan->group->size; i++)
+      if (string_is_equal(manual_scan->group->elems[i].data, name))
+         return manual_scan->group_playlists[i];
+   return NULL;
+}
+
+/* Whether the flush's pass for member group_index takes a result for
+ * the database @name; the first makes the member the flush's playlist.
+ * A result no member takes counts unmatched in the first pass. */
+static bool manual_scan_group_flush_takes(
+      manual_scan_handle_t *manual_scan, const char *name,
+      const char *path)
+{
+   size_t i = manual_scan->group_index;
+
+   if (!string_is_equal(manual_scan->group->elems[i].data, name))
+   {
+      if (!i && !manual_scan_group_find(manual_scan, name))
+         manual_scan_unmatched(manual_scan, path);
+      return false;
+   }
+   if (!manual_scan->flush_playlist)
+   {
+      manual_scan->flush_group    = manual_scan->group->elems[i].data;
+      manual_scan->flush_playlist = manual_scan->group_playlists[i];
+      /* NULL on failure: existence checks then take the linear
+       * fallback */
+      manual_scan->flush_dedup    = playlist_dedup_init();
+   }
+   return true;
+}
+
+/* Ends the flush's pass for a group member, sorting it if it took a
+ * result, and starts the next member's; false after the last, which
+ * the flush closes itself. */
+static bool manual_scan_group_flush_next(manual_scan_handle_t *manual_scan)
+{
+   if (   !manual_scan->group
+       || manual_scan->group_index + 1 >= manual_scan->group->size)
+      return false;
+   if (manual_scan->flush_playlist)
+   {
+      RARCH_LOG("[Scanner] Added %u entries to \"%s\".\n",
+            manual_scan->flush_added, manual_scan->flush_group);
+      playlist_set_sort_mode(manual_scan->flush_playlist,
+            PLAYLIST_SORT_MODE_DEFAULT);
+      playlist_qsort(manual_scan->flush_playlist);
+      manual_scan->flush_playlist = NULL;
+      manual_scan->flush_added    = 0;
+   }
+   playlist_dedup_free(manual_scan->flush_dedup);
+   manual_scan->flush_dedup = NULL;
+   manual_scan->group_index++;
+   manual_scan->flush_pos   = 0;
+   return true;
 }
 #ifdef HAVE_LIBRETRODB
 static enum scan_verdict task_database_iterate_start(retro_task_t *task,
@@ -980,7 +1081,7 @@ static void task_database_iterate_m3u(
    {
       RARCH_ERR("[Scanner] Failed to open M3U file: \"%s\".\n", m3u_path);
       if (!counted && !scan_results_find(&_db->scan_results, m3u_path))
-         _db->result.unmatched++;
+         manual_scan_unmatched(_db, m3u_path);
       return;
    }
 
@@ -1094,7 +1195,7 @@ static void task_database_iterate_m3u(
       }
    }
    else if (!own && !counted)
-      _db->result.unmatched++;
+      manual_scan_unmatched(_db, m3u_path);
 
    /* Compact scan_results to remove NULL entries */
    {
@@ -2276,11 +2377,6 @@ static enum scan_verdict database_info_list_iterate_end_no_match(
       bool path_contains_compressed_file)
 {
    bool archive_added = false;
-   /* Reached end of database list,
-    * CRC match probably didn't succeed. */
-   if (_db->task_config->cli_scan_output)
-      task_database_scan_console_output(stdout, path, NULL,
-            SCAN_CONSOLE_UNMATCHED);
 
    /* With its directory read, an archive's held hits were its
     * expansion.  It still expands where a member stores no CRC, and
@@ -3490,6 +3586,9 @@ static int task_database_iterate_playlist_lutro(
        && *_db->task_config->database_name
        && memcmp(_db->task_config->database_name, "Lutro",  6) != 0 )
       return SCAN_VERDICT_NO_DB_MATCH;
+   /* Or a group scan without a Lutro playlist. */
+   if (_db->group && !manual_scan_group_find(_db, "Lutro"))
+      return SCAN_VERDICT_NO_DB_MATCH;
 
    scan_results_add(&_db->scan_results,
                     path,
@@ -3967,8 +4066,11 @@ static bool manual_scan_end_flush_tick(
 
    task_nbio_slice_open(&b);
 
-   /* Process results, grouping by playlist */
-   while (manual_scan->flush_pos < sr->count)
+   /* Process results, grouping by playlist.  A group takes one pass
+    * per member, so each is indexed and sorted once however their
+    * files interleave. */
+   while (   manual_scan->flush_pos < sr->count
+          || manual_scan_group_flush_next(manual_scan))
    {
       scan_result_t *result = &sr->results[manual_scan->flush_pos];
       char db_name_noext[PATH_MAX_LENGTH];
@@ -3995,8 +4097,17 @@ static bool manual_scan_end_flush_tick(
       strlcpy(db_name_noext, result->db_name, sizeof(db_name_noext));
       path_remove_extension(db_name_noext);
 
+      if (manual_scan->group)
+      {
+         if (!manual_scan_group_flush_takes(manual_scan, db_name_noext,
+               result->entry_path))
+         {
+            manual_scan->flush_pos++;
+            continue;
+         }
+      }
       /* Check if we need to switch to a different playlist */
-      if (!single_playlist && (!manual_scan->flush_group || !string_is_equal(manual_scan->flush_group, group_key)))
+      else if (!single_playlist && (!manual_scan->flush_group || !string_is_equal(manual_scan->flush_group, group_key)))
       {
          /* Write and close previous playlist if any.  One blocking
           * write per group. */
@@ -4189,23 +4300,49 @@ static bool manual_scan_end_flush_tick(
       /* Ensure playlist is alphabetically sorted (matches manual scan behavior) */
       playlist_set_sort_mode(manual_scan->flush_playlist, PLAYLIST_SORT_MODE_DEFAULT);
       playlist_qsort(manual_scan->flush_playlist);
-      playlist_write_file(manual_scan->flush_playlist);
+      if (!manual_scan->group)
+         playlist_write_file(manual_scan->flush_playlist);
       /* Free whatever this flush opened.  Only the single-playlist
        * path borrows manual_scan->playlist, which the handle teardown
        * owns; comparing the handles says that exactly, where the
        * previous string compare against playlist_file also matched
        * the playlist this flush had opened itself and leaked it. */
-      if (manual_scan->flush_playlist != manual_scan->playlist)
+      if (   manual_scan->flush_playlist != manual_scan->playlist
+          && !manual_scan->group)
          playlist_free(manual_scan->flush_playlist);
       manual_scan->flush_playlist = NULL;
    }
 
    playlist_dedup_free(manual_scan->flush_dedup);
    manual_scan->flush_dedup = NULL;
+   /* A group's members are then written from the first */
+   manual_scan->group_index = 0;
 
    free(manual_scan->flush_path_buf);
    manual_scan->flush_path_buf = NULL;
    RARCH_LOG("[Scanner] Batch playlist update complete.\n");
+   task_nbio_slice_close(&b);
+   return true;
+}
+
+/* Writes every member of a group scan, new entries or not, yielding
+ * between members; true once all are written. */
+static bool manual_scan_group_write_tick(manual_scan_handle_t *manual_scan)
+{
+   nbio_budget_t b;
+
+   task_nbio_slice_open(&b);
+   while (manual_scan->group_index < manual_scan->group->size)
+   {
+      /* The window's floor grants the first */
+      if (!task_nbio_slice_within_budget(&b, 0, 0))
+      {
+         task_nbio_slice_close(&b);
+         return false;
+      }
+      playlist_write_file(
+            manual_scan->group_playlists[manual_scan->group_index++]);
+   }
    task_nbio_slice_close(&b);
    return true;
 }
@@ -4244,7 +4381,8 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
     * that handle, and the identity comparison that prevents a double
     * free needs the pointer still live to say so. */
    if (  manual_scan->flush_playlist
-       && manual_scan->flush_playlist != manual_scan->playlist)
+       && manual_scan->flush_playlist != manual_scan->playlist
+       && !manual_scan->group)
       playlist_free(manual_scan->flush_playlist);
    manual_scan->flush_playlist = NULL;
 
@@ -4258,6 +4396,19 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
       free(manual_scan->flush_path_buf);
       manual_scan->flush_path_buf = NULL;
    }
+
+   /* A group scan's manual_scan->playlist borrows a member */
+   if (manual_scan->group_playlists)
+   {
+      size_t i;
+      for (i = 0; i < manual_scan->group->size; i++)
+         playlist_free(manual_scan->group_playlists[i]);
+      free(manual_scan->group_playlists);
+      manual_scan->group_playlists = NULL;
+      manual_scan->playlist        = NULL;
+   }
+   string_list_free(manual_scan->group);
+   manual_scan->group = NULL;
 
    if (manual_scan->playlist)
    {
@@ -4608,7 +4759,30 @@ static bool manual_scan_begin_setup(retro_task_t *task,
       {
          if (manual_scan->content_database_path && *manual_scan->content_database_path)
          {
-            if (manual_scan->task_config->db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
+            if (manual_scan->group)
+            {
+               size_t i;
+               size_t str_len     = PATH_MAX_LENGTH * sizeof(char);
+               char* rdb_fullpath = (char*)malloc(str_len);
+               union string_list_elem_attr attr;
+               attr.i = 0;
+
+               if (!rdb_fullpath || !(dbstate->list = string_list_new()))
+               {
+                  free(rdb_fullpath);
+                  return true;
+               }
+               for (i = 0; i < manual_scan->group->size; i++)
+               {
+                  fill_pathname_join_special(rdb_fullpath,
+                        manual_scan->content_database_path,
+                        manual_scan->group->elems[i].data, str_len);
+                  strlcat(rdb_fullpath, ".rdb", str_len);
+                  string_list_append(dbstate->list, rdb_fullpath, attr);
+               }
+               free(rdb_fullpath);
+            }
+            else if (manual_scan->task_config->db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
             {
                size_t str_len     = PATH_MAX_LENGTH * sizeof(char);
                char* rdb_name     = (char*)malloc(str_len);
@@ -4707,6 +4881,9 @@ static bool manual_scan_begin_setup(retro_task_t *task,
          manual_scan->fail_msg = _msg;
          return true;
       }
+      RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->task_config->content_dir);
+      if (manual_scan->task_config->cli_scan_output)
+         printf("%s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->task_config->content_dir);
    }
 
    manual_scan->status = MANUAL_SCAN_BEGIN_DIR_LIST;
@@ -4936,33 +5113,25 @@ error_no_cleanup:
    return true;
 }
 
-static bool manual_scan_begin_playlist(retro_task_t *task,
-      manual_scan_handle_t *manual_scan)
+/* Readies @playlist as a refresh of it would: cleared when the scan
+ * overwrites, then given the scan's default core and settings, with
+ * @database_name. */
+static void manual_scan_playlist_setup(
+      const manual_scan_handle_t *manual_scan, playlist_t *playlist,
+      const char *database_name)
 {
-   (void)task;
-
-   /* Open playlist */
-   if (manual_scan->task_config->target_is_single_determined_playlist &&
-       !(manual_scan->playlist =
-            playlist_init(&manual_scan->playlist_config)))
-      return true;
-
    /* Reset playlist, if required */
    if (manual_scan->task_config->overwrite_playlist)
-      playlist_clear(manual_scan->playlist);
-
-   /* Get initial playlist size */
-   manual_scan->playlist_size =
-      playlist_size(manual_scan->playlist);
+      playlist_clear(playlist);
 
    /* Set default core, if required.
     * A file is only added: the playlist keeps its own. */
    if (    manual_scan->task_config->core_set
        && !manual_scan->task_config->content_is_file)
    {
-      playlist_set_default_core_path(manual_scan->playlist,
+      playlist_set_default_core_path(playlist,
             manual_scan->task_config->core_path);
-      playlist_set_default_core_name(manual_scan->playlist,
+      playlist_set_default_core_name(playlist,
             manual_scan->task_config->core_name);
    }
 
@@ -4972,30 +5141,102 @@ static bool manual_scan_begin_playlist(retro_task_t *task,
     * settings. */
    if (!manual_scan->task_config->content_is_file)
    {
-      playlist_set_scan_content_dir(manual_scan->playlist,
+      playlist_set_scan_content_dir(playlist,
             manual_scan->task_config->content_dir);
-      playlist_set_scan_file_exts(manual_scan->playlist,
+      playlist_set_scan_file_exts(playlist,
             manual_scan->task_config->file_exts_custom_set ?
                   manual_scan->task_config->file_exts : NULL);
       if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
           manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
-         playlist_set_scan_dat_file_path(manual_scan->playlist,
+         playlist_set_scan_dat_file_path(playlist,
                manual_scan->task_config->dat_file_path);
-      playlist_set_scan_database_name(manual_scan->playlist,
-            manual_scan->task_config->database_name);
-      playlist_set_scan_search_recursively(manual_scan->playlist,
+      playlist_set_scan_database_name(playlist, database_name);
+      playlist_set_scan_search_recursively(playlist,
             manual_scan->task_config->search_recursively);
-      playlist_set_scan_search_archives(manual_scan->playlist,
+      playlist_set_scan_search_archives(playlist,
             manual_scan->task_config->search_archives);
-      playlist_set_scan_filter_dat_content(manual_scan->playlist,
+      playlist_set_scan_filter_dat_content(playlist,
             manual_scan->task_config->filter_dat_content);
-      playlist_set_scan_overwrite_playlist(manual_scan->playlist,
+      playlist_set_scan_overwrite_playlist(playlist,
             manual_scan->task_config->overwrite_playlist);
-      playlist_set_scan_db_usage(manual_scan->playlist,
+      playlist_set_scan_db_usage(playlist,
             manual_scan->task_config->db_usage);
-      playlist_set_scan_omit_db_ref(manual_scan->playlist,
+      playlist_set_scan_omit_db_ref(playlist,
             manual_scan->task_config->omit_db_reference);
    }
+}
+
+/* Opens the group's next member and readies it; false if it cannot
+ * be opened. */
+static bool manual_scan_group_open(manual_scan_handle_t *manual_scan)
+{
+   playlist_t *playlist;
+   char *path = manual_scan->playlist_config.path;
+
+   if (!manual_scan->playlist_directory)
+      return false;
+   manual_scan_group_path(manual_scan, manual_scan->group_index, path,
+         sizeof(manual_scan->playlist_config.path));
+   if (!(playlist = playlist_init(&manual_scan->playlist_config)))
+      return false;
+   manual_scan->group_playlists[manual_scan->group_index++] = playlist;
+   /* "<name>.lpl", as its own refresh saves */
+   manual_scan_playlist_setup(manual_scan, playlist,
+         path_basename_nocompression(path));
+   return true;
+}
+
+/* Moves the CLEAN pass to the group's next member; false after the
+ * last, or for any other scan. */
+static bool manual_scan_group_next(manual_scan_handle_t *manual_scan)
+{
+   if (!manual_scan->group)
+      return false;
+   if (++manual_scan->group_index >= manual_scan->group->size)
+   {
+      manual_scan->group_index = 0;
+      return false;
+   }
+   manual_scan->playlist       =
+         manual_scan->group_playlists[manual_scan->group_index];
+   manual_scan->playlist_index = 0;
+   manual_scan->playlist_size  = playlist_size(manual_scan->playlist);
+   return true;
+}
+
+static bool manual_scan_begin_playlist(retro_task_t *task,
+      manual_scan_handle_t *manual_scan, nbio_budget_t *b)
+{
+   (void)task;
+
+   if (manual_scan->group)
+   {
+      /* The members while the window lasts: a gather that resumes
+       * here opens at least one, on the window's floor */
+      while (manual_scan->group_index < manual_scan->group->size)
+      {
+         if (!task_nbio_slice_within_budget(b, 0, 0))
+            return false;
+         if (!manual_scan_group_open(manual_scan))
+            return true;
+      }
+      manual_scan->group_index = 0;
+      manual_scan->playlist    = manual_scan->group_playlists[0];
+   }
+   else
+   {
+      /* Open playlist */
+      if (manual_scan->task_config->target_is_single_determined_playlist &&
+          !(manual_scan->playlist =
+               playlist_init(&manual_scan->playlist_config)))
+         return true;
+      manual_scan_playlist_setup(manual_scan, manual_scan->playlist,
+            manual_scan->task_config->database_name);
+   }
+
+   /* Get initial playlist size */
+   manual_scan->playlist_size =
+      playlist_size(manual_scan->playlist);
 
    /* All good - can start iterating
     * > If playlist has content and 'validate
@@ -5004,7 +5245,7 @@ static bool manual_scan_begin_playlist(retro_task_t *task,
     * > Otherwise go straight to content scan phase */
    if (    manual_scan->task_config->validate_entries
        && !manual_scan->task_config->content_is_file
-       && (manual_scan->playlist_size > 0))
+       && (manual_scan->playlist_size > 0 || manual_scan->group))
       manual_scan->status = MANUAL_SCAN_ITERATE_CLEAN;
    else
    {
@@ -5048,7 +5289,7 @@ static bool task_manual_scan_begin_tick(retro_task_t *task,
             error = manual_scan_begin_dat_load(task, manual_scan, &b);
             break;
          case MANUAL_SCAN_BEGIN_PLAYLIST:
-            error = manual_scan_begin_playlist(task, manual_scan);
+            error = manual_scan_begin_playlist(task, manual_scan, &b);
             break;
          default:
             /* Left the BEGIN family: done for this gather. */
@@ -5172,6 +5413,8 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
             if (manual_scan->playlist_index >=
                   manual_scan->playlist_size)
             {
+               if (manual_scan_group_next(manual_scan))
+                  break;
 #ifdef HAVE_LIBRETRODB
                if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_LOOSE ||
                    manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT)
@@ -5248,7 +5491,7 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                   {
                      /* An m3u is counted in the m3u pass. */
                      if (!rm3u_is_m3u_filestream(content_path))
-                        manual_scan->result.unmatched++;
+                        manual_scan_unmatched(manual_scan, content_path);
                      manual_scan->status = DATABASE_SCAN_ITERATE_NEXT;
                   }
                   break;
@@ -5335,6 +5578,11 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                task_set_progress(task,
                      (manual_scan->content_list_index * 100) /
                      manual_scan->content_list->size);
+               if (manual_scan_cli_lines(manual_scan))
+                  printf(STRING_REP_USIZE "/" STRING_REP_USIZE ": \"%s\"...\n",
+                        manual_scan->content_list_index + 1,
+                        (size_t)manual_scan->content_list->size,
+                        path_basename_nocompression(content_path));
 
                /* If "search archives" is enabled, but compressed files are not in the list,    *
                 * do not add the compressed file itself, just add the contents to the end.      *
@@ -5381,7 +5629,7 @@ static enum scan_step task_manual_scan_iterate_step(retro_task_t *task,
                      {
                         label[0] = '\0';
                         if (!rm3u_is_m3u_filestream(content_path))
-                           manual_scan->result.unmatched++;
+                           manual_scan_unmatched(manual_scan, content_path);
 #ifdef DEBUG
                         RARCH_DBG("[Scanner] Rejecting item: %s\n",content_path);
 #endif
@@ -5616,6 +5864,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             /* If no results, still write an empty playlist, if it is specified. */
             else if (manual_scan->task_config->target_is_single_determined_playlist)
                playlist_write_file(manual_scan->playlist);
+            if (   manual_scan->group
+                && !manual_scan_group_write_tick(manual_scan))
+               break;   /* more members next gather */
 
             /* Update progress display */
 #ifdef HAVE_LIBRETRODB
@@ -5714,14 +5965,32 @@ static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
       return false;
    if (!(manual_scan = (manual_scan_handle_t*)task->state))
       return false;
+   /* Every member: its list and folder are fixed once pushed */
+   if (manual_scan->group)
+   {
+      size_t i;
+      char member[PATH_MAX_LENGTH];
+
+      if (!manual_scan->playlist_directory)
+         return false;
+      for (i = 0; i < manual_scan->group->size; i++)
+      {
+         manual_scan_group_path(manual_scan, i, member, sizeof(member));
+         if (string_is_equal((const char*)user_data, member))
+            return true;
+      }
+      return false;
+   }
    return string_is_equal(
          (const char*)user_data, manual_scan->playlist_config.path);
 }
 
 /* @cli_name: what the --scan lines call the scan, NULL for its
- * content folder. */
+ * content folder.  @group: the playlists a group scan fills, NULL for
+ * any other scan. */
 static bool task_manual_content_scan_push(
       bool do_menu_refresh, const char *cli_name,
+      const struct string_list *group,
       retro_task_callback_t user_cb, void *user_data)
 {
    size_t _len;
@@ -5795,6 +6064,22 @@ static bool task_manual_content_scan_push(
       goto error;
    }
 
+   if (group)
+   {
+      /* Only a strict database scan matches each file to a member */
+      if (manual_scan->task_config->db_usage
+            != MANUAL_CONTENT_SCAN_USE_DB_STRICT)
+         goto error;
+      /* Each match goes to its own database's playlist */
+      manual_scan->task_config->target_is_single_determined_playlist = false;
+      manual_scan->task_config->playlist_file[0]                     = '\0';
+      manual_scan->task_config->database_name[0]                     = '\0';
+      if (   !(manual_scan->group = string_list_clone(group))
+          || !(manual_scan->group_playlists = (playlist_t**)
+               calloc(group->size, sizeof(playlist_t*))))
+         goto error;
+   }
+
 #ifdef HAVE_LIBRETRODB
    if (manual_scan->task_config->db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH)
       manual_scan->flags |= DB_HANDLE_FLAG_USE_FIRST_MATCH_ONLY;
@@ -5814,6 +6099,22 @@ static bool task_manual_content_scan_push(
 
    if (task_queue_find(&find_data))
       goto error;
+   if (manual_scan->group)
+   {
+      size_t i;
+
+      if (!manual_scan->playlist_directory)
+         goto error;
+      for (i = 0; i < manual_scan->group->size; i++)
+      {
+         manual_scan_group_path(manual_scan, i,
+               manual_scan->playlist_config.path,
+               sizeof(manual_scan->playlist_config.path));
+         if (task_queue_find(&find_data))
+            goto error;
+      }
+      manual_scan->playlist_config.path[0] = '\0';
+   }
 
    /* Create task */
    if (!(task = task_init()))
@@ -5834,7 +6135,9 @@ static bool task_manual_content_scan_push(
          sizeof(task_title));
    if (_len < sizeof(task_title))
       strlcpy(task_title       + _len,
-            manual_scan->task_config->system_name,
+            manual_scan->group
+            ? manual_scan_cli_name(manual_scan)
+            : manual_scan->task_config->system_name,
             sizeof(task_title) - _len);
 
    /* > Configure task */
@@ -5872,9 +6175,20 @@ bool task_push_manual_content_scan(
       bool do_menu_refresh,
       retro_task_callback_t user_cb, void *user_data)
 {
-   return task_manual_content_scan_push(do_menu_refresh, NULL, user_cb,
-         user_data);
+   return task_manual_content_scan_push(do_menu_refresh, NULL, NULL,
+         user_cb, user_data);
 }
+
+#ifdef HAVE_LIBRETRODB
+bool task_push_manual_content_scan_group(const struct string_list *group,
+      const char *cli_name, retro_task_callback_t user_cb, void *user_data)
+{
+   if (!group || !group->size)
+      return false;
+   return task_manual_content_scan_push(false, cli_name, group,
+         user_cb, user_data);
+}
+#endif
 
 /* --- The scan chain ----------------------------------------------- */
 
@@ -5924,14 +6238,33 @@ typedef struct
    bool include_hidden;
    bool begun;
    bool failed;              /* LIST, PATH: out of memory */
+#ifdef HAVE_SMBCLIENT
+   struct string_list *smb_down; /* LOAD, PATH: the chain's, copied */
+   char smb_share[256];      /* LOAD: the share it found down */
+   bool smb_up;              /* LOAD: the chain's, then what it found */
+   bool smb_root;            /* LOAD: a refresh-all's first load */
+#endif
 } dbscan_prep_t;
+
+/* What a refresh-all keeps of a playlist's first load to group it;
+ * the playlist is loaded again to run. */
+typedef struct
+{
+   char *name;
+   char *dir;            /* its saved content folder */
+   char *key;            /* NULL: it runs alone */
+   enum dbscan_load_status load;
+   bool done;            /* ran in an earlier playlist's group */
+} dbscan_refresh_t;
 
 typedef struct
 {
    task_dbscan_item_t *items;
    struct string_list *rdb_list;
    struct string_list *playlists; /* the running refresh-all's */
-   char *name;   /* the running scan's */
+   dbscan_refresh_t *refreshes;   /* one per playlist */
+   struct string_list *group;     /* the running scan's playlists */
+   char *name;   /* the running scan's, or its label while it loads */
    task_dbscan_item_cb_t item_cb;
    task_dbscan_chain_cb_t done_cb;
    void *user_data;
@@ -5941,8 +6274,15 @@ typedef struct
    task_dbscan_chain_result_t totals;
    /* the Manual Scan settings the chain found, put back when it ends */
    manual_content_scan_saved_t *saved;
+#ifdef HAVE_SMBCLIENT
+   /* The shares found down, "" for all: a dead server costs two
+    * timeouts a share, not one a playlist. */
+   struct string_list *smb_down;
+   bool smb_up;                  /* a share's root answered */
+#endif
    bool all_running;
    bool all_counted; /* a playlist of the refresh-all had settings */
+   bool all_loaded;  /* every playlist of the refresh-all loaded */
    bool cli_output;
 } dbscan_chain_t;
 
@@ -5964,6 +6304,22 @@ static void dbscan_chain_free_items(task_dbscan_item_t *items,
    free(items);
 }
 
+static void dbscan_chain_free_refreshes(dbscan_chain_t *chain)
+{
+   size_t i;
+
+   if (!chain->refreshes)
+      return;
+   for (i = 0; i < chain->playlists->size; i++)
+   {
+      free(chain->refreshes[i].name);
+      free(chain->refreshes[i].dir);
+      free(chain->refreshes[i].key);
+   }
+   free(chain->refreshes);
+   chain->refreshes = NULL;
+}
+
 /* Ends the chain: what it found in the Manual Scan settings goes back,
  * and it is no longer running when @done_cb hears the totals, so that
  * callback may start another. */
@@ -5975,10 +6331,15 @@ static void dbscan_chain_finish(dbscan_chain_t *chain)
    if (chain->done_cb)
       chain->done_cb(&chain->totals, chain->user_data);
    dbscan_chain_free_items(chain->items, chain->count);
+   dbscan_chain_free_refreshes(chain);
+   string_list_free(chain->group);
    if (chain->rdb_list)
       string_list_free(chain->rdb_list);
    if (chain->playlists)
       string_list_free(chain->playlists);
+#ifdef HAVE_SMBCLIENT
+   string_list_free(chain->smb_down);
+#endif
    free(chain->name);
    free(chain);
 }
@@ -5986,18 +6347,21 @@ static void dbscan_chain_finish(dbscan_chain_t *chain)
 static void dbscan_chain_fold(dbscan_chain_t *chain, const char *name,
       enum task_dbscan_outcome outcome, const task_dbscan_result_t *res)
 {
+   /* A group counts as its playlists. */
+   unsigned n = chain->group ? (unsigned)chain->group->size : 1;
+
    switch (outcome)
    {
       case TASK_DBSCAN_RAN:
-         chain->totals.ran++;
+         chain->totals.ran += n;
          if (res && res->added)
-            chain->totals.added++;
+            chain->totals.added += n;
          break;
       case TASK_DBSCAN_FAILED:
-         chain->totals.failed++;
+         chain->totals.failed += n;
          break;
       case TASK_DBSCAN_SKIPPED:
-         chain->totals.skipped++;
+         chain->totals.skipped += n;
          break;
    }
    if (chain->item_cb)
@@ -6023,6 +6387,32 @@ static char *dbscan_chain_expand(const char *in)
    return s;
 }
 
+#ifdef HAVE_SMBCLIENT
+/* True if the SMB share of @path is in @down. */
+static bool dbscan_smb_down(const struct string_list *down,
+      const char *path)
+{
+   const char *p;
+   size_t i;
+   size_t _len = 0;
+
+   if (   !down
+       || !string_starts_with_size(path, "smb://", STRLEN_CONST("smb://")))
+      return false;
+   /* The client talks to the configured server whatever the host. */
+   if ((p = strchr(path + STRLEN_CONST("smb://"), '/')))
+      _len = strcspn(++p, "/");
+   for (i = 0; i < down->size; i++)
+   {
+      const char *share = down->elems[i].data;
+      if (   !*share
+          || (_len && strlen(share) == _len && !strncmp(p, share, _len)))
+         return true;
+   }
+   return false;
+}
+#endif
+
 /* Resolves a --scan path and reads what its scan will ask of the
  * file system: on a threaded queue's worker, else at once on the main
  * thread, as a stat is one call. */
@@ -6038,6 +6428,10 @@ static void dbscan_path_handler(retro_task_t *task)
          prep->failed = true;
       else if (!*s)
          free(s);
+#ifdef HAVE_SMBCLIENT
+      else if (dbscan_smb_down(prep->smb_down, s))
+         free(s);
+#endif
       else if (!(prep->fs = manual_content_scan_fs_read(s, NULL,
             prep->ov_core, prep->ov_dat)))
       {
@@ -6120,6 +6514,8 @@ static void dbscan_chain_scan_cb(retro_task_t *task, void *task_data,
    dbscan_chain_fold(chain, name,
          res->failed ? TASK_DBSCAN_FAILED : TASK_DBSCAN_RAN, res);
    free(name);
+   string_list_free(chain->group);
+   chain->group = NULL;
    /* Cancelled, as on quit: start no more. */
    if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
    {
@@ -6201,9 +6597,11 @@ static bool dbscan_chain_push_scan(dbscan_chain_t *chain,
 }
 
 /* Sets the loaded playlist's saved settings, @item's overrides over
- * them, and pushes its scan; otherwise folds it as failed. */
+ * them, and pushes its scan, of chain->group if set, labelled @name;
+ * otherwise folds it as failed.  Frees the playlist; takes @name once
+ * pushed. */
 static bool dbscan_chain_push_refreshed(dbscan_chain_t *chain,
-      const task_dbscan_item_t *item, dbscan_prep_t *prep)
+      const task_dbscan_item_t *item, dbscan_prep_t *prep, char **name)
 {
    enum manual_content_scan_override_status st;
    unsigned count     = 0;
@@ -6242,7 +6640,7 @@ static bool dbscan_chain_push_refreshed(dbscan_chain_t *chain,
          break;
    }
    if (reason)
-      dbscan_chain_refresh_error(chain, prep->name, reason, detail);
+      dbscan_chain_refresh_error(chain, *name, reason, detail);
    playlist_free(pl);
    prep->playlist = NULL;
    if (!reason)
@@ -6250,24 +6648,24 @@ static bool dbscan_chain_push_refreshed(dbscan_chain_t *chain,
       if ((st = manual_content_scan_apply_overrides_fs(item->overrides,
             chain->rdb_list, &count, prep->fs))
             != MANUAL_CONTENT_SCAN_OVR_OK)
-         dbscan_chain_override_error(chain, prep->name, item->overrides,
+         dbscan_chain_override_error(chain, *name, item->overrides,
                st, count);
       else
       {
-         dbscan_chain_single_warn(chain, prep->name,
+         dbscan_chain_single_warn(chain, *name,
                item->overrides ? item->overrides->flags : 0);
-         if (task_manual_content_scan_push(false, prep->name,
+         if (task_manual_content_scan_push(false, *name, chain->group,
                dbscan_chain_scan_cb, chain))
          {
-            chain->name = prep->name;
-            prep->name  = NULL;
+            chain->name = *name;
+            *name       = NULL;
             return true;
          }
-         dbscan_chain_refresh_error(chain, prep->name,
+         dbscan_chain_refresh_error(chain, *name,
                "the scan could not start", NULL);
       }
    }
-   dbscan_chain_fold(chain, prep->name, TASK_DBSCAN_FAILED, NULL);
+   dbscan_chain_fold(chain, *name, TASK_DBSCAN_FAILED, NULL);
    return false;
 }
 
@@ -6355,10 +6753,19 @@ static void dbscan_prep_cb(retro_task_t *task, void *task_data,
 
    if (prep->kind == DBSCAN_PREP_LIST)
    {
+      if (   prep->list && prep->list->size
+          && !(chain->refreshes = (dbscan_refresh_t*)calloc(
+               prep->list->size, sizeof(*chain->refreshes))))
+      {
+         string_list_free(prep->list);
+         prep->list   = NULL;
+         prep->failed = true;
+      }
       chain->playlists   = prep->list;
       chain->all_next    = 0;
       chain->all_running = !prep->failed;
       chain->all_counted = false;
+      chain->all_loaded  = false;
    }
    else
       chain->rdb_list = prep->list;
@@ -6516,6 +6923,124 @@ static bool dbscan_prep_refresh_resolve(dbscan_prep_t *prep)
    return ok;
 }
 
+/* What a refresh of the loaded @prep scans with, @ov over it: the
+ * folder, then after its NUL the rest.  NULL unless it can share a
+ * scan: named after a database in @rdb_list it is matched against
+ * alone, strictly, with no DAT, its saved database name empty or its
+ * own.  Strings only: it runs in the load's callback. */
+static char *dbscan_refresh_key(const dbscan_prep_t *prep,
+      const struct string_list *rdb_list,
+      const manual_content_scan_overrides_t *ov)
+{
+   char own[NAME_MAX_LENGTH];
+   size_t i, dlen, _len;
+   playlist_t *pl    = prep->playlist;
+   unsigned flags    = ov ? ov->flags : 0;
+   bool recursive    = playlist_get_scan_search_recursively(pl)
+         && !(flags & MANUAL_CONTENT_SCAN_OVR_NO_RECURSIVE);
+   bool archives     = playlist_get_scan_search_archives(pl)
+         && !(flags & MANUAL_CONTENT_SCAN_OVR_NO_ARCHIVES);
+   bool omit         = playlist_get_scan_omit_db_ref(pl)
+         || (flags & MANUAL_CONTENT_SCAN_OVR_OMIT_DB_REF);
+   bool overwrite    = playlist_get_scan_overwrite_playlist(pl)
+         || (flags & MANUAL_CONTENT_SCAN_OVR_OVERWRITE);
+   int usage         = playlist_get_scan_db_usage(pl);
+   const char *saved = playlist_get_scan_database_name(pl);
+   const char *dat   = playlist_get_scan_dat_file_path(pl);
+   const char *exts  = playlist_get_scan_file_exts(pl);
+   const char *core  = playlist_get_default_core_name(pl);
+   char *dir         = NULL;
+   char *key         = NULL;
+   bool installed    = false;
+
+   for (i = 0; !installed && i < rdb_list->size; i++)
+   {
+      fill_pathname(own, path_basename(rdb_list->elems[i].data), "",
+            sizeof(own));
+      installed = string_is_equal(own, prep->name);
+   }
+   /* As a group saves it; fill_pathname() would cut a dotted name. */
+   strlcpy(own, prep->name, sizeof(own));
+   strlcat(own, ".lpl", sizeof(own));
+   if (flags & MANUAL_CONTENT_SCAN_OVR_MATCH)
+      usage = ov->match;
+   /* Another database, or the first that matches, renames it. */
+   if (   !installed
+       || (saved && *saved && !string_is_equal(saved, own))
+       || usage != MANUAL_CONTENT_SCAN_USE_DB_STRICT
+       || (dat && *dat)
+       || (ov && (   ov->dat
+                  || (ov->database
+                        ? !string_is_equal(ov->database, prep->name)
+                        : (flags & MANUAL_CONTENT_SCAN_OVR_FIRST_DB))))
+       || !(dir = (char*)malloc(PATH_MAX_LENGTH)))
+      return NULL;
+   if (ov && ov->exts)
+      exts = ov->exts;
+   else if (!exts)
+      exts = "";
+   if (ov && ov->core)
+      core = ov->core;
+   else if (!core || string_is_equal(core, FILE_PATH_DETECT))
+      core = "";
+   /* As manual_content_scan_set_menu_content_dir() stores it. */
+   fill_pathname_expand_special(dir, playlist_get_scan_content_dir(pl),
+         PATH_MAX_LENGTH);
+   dlen = strlen(dir);
+   if (dlen && dir[dlen - 1] == PATH_DEFAULT_SLASH_C())
+      dir[--dlen] = '\0';
+   _len = dlen + strlen(exts) + strlen(core) + 9;
+   if (dlen && (key = (char*)malloc(_len)))
+   {
+      memcpy(key, dir, dlen + 1);
+#ifdef _WIN32
+      pathname_conform_slashes_to_os(key);
+#endif
+      snprintf(key + dlen + 1, _len - dlen - 1, "%s\n%s\n%d%d%d%d%d",
+            exts, core, recursive, archives,
+            playlist_get_scan_filter_dat_content(pl), omit, overwrite);
+   }
+   free(dir);
+   return key;
+}
+
+#ifdef HAVE_SMBCLIENT
+/* The stat found the saved folder @dir not there.  In a refresh-all's
+ * first loads, until a share's root answers, an smb:// @dir is cut to
+ * its share, smb://host/share/, and that is stat'd: a dead server
+ * fails it too. */
+static void dbscan_load_smb_root(dbscan_prep_t *prep, const char *dir)
+{
+   char *s;
+   char *share;
+   char *root;
+   size_t _len;
+
+   if (   !prep->smb_root || prep->smb_up
+       || !string_starts_with_size(dir, "smb://", STRLEN_CONST("smb://"))
+       || !(root = (char*)malloc(PATH_MAX_LENGTH)))
+      return;
+   strlcpy(root, dir, PATH_MAX_LENGTH);
+   if ((share = strchr(root + STRLEN_CONST("smb://"), '/')))
+   {
+      _len = (s = strchr(++share, '/')) ? (size_t)(s - share)
+            : strlen(share);
+      if (_len && _len < sizeof(prep->smb_share))
+      {
+         if (s)
+            s[1] = '\0';
+         else
+            strlcat(root, "/", PATH_MAX_LENGTH);
+         if (path_is_valid(root))
+            prep->smb_up = true;
+         else
+            strlcpy(prep->smb_share, share, _len + 1);
+      }
+   }
+   free(root);
+}
+#endif
+
 /* Loads one playlist and tells whether it can be refreshed: to the end
  * on a threaded queue's worker, else under the shared window. */
 static void dbscan_load_handler(retro_task_t *task)
@@ -6593,6 +7118,12 @@ static void dbscan_load_handler(retro_task_t *task)
       /* A playlist that does not parse has no settings to read. */
       if (!playlist_scan_refresh_enabled(prep->playlist))
          prep->load = DBSCAN_LOAD_NO_SETTINGS;
+#ifdef HAVE_SMBCLIENT
+      /* No stat on a share found down */
+      else if (dbscan_smb_down(prep->smb_down,
+            playlist_get_scan_content_dir(prep->playlist)))
+         prep->load = DBSCAN_LOAD_FOLDER_MISSING;
+#endif
       /* Here, so that the refresh asks the file system nothing on the
        * main thread: the folder, the saved DAT, the overrides'. */
       else if (!(prep->fs = manual_content_scan_fs_read(
@@ -6602,9 +7133,99 @@ static void dbscan_load_handler(retro_task_t *task)
          prep->load = DBSCAN_LOAD_NO_MEMORY;
       /* A single file's scan saves the file. */
       else if (!(prep->fs->content_stat & RETRO_VFS_STAT_IS_VALID))
+      {
          prep->load = DBSCAN_LOAD_FOLDER_MISSING;
+#ifdef HAVE_SMBCLIENT
+         dbscan_load_smb_root(prep,
+               playlist_get_scan_content_dir(prep->playlist));
+#endif
+      }
    }
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* True if @m, not yet run, shares @r's key and load status. */
+static bool dbscan_refresh_joins(const dbscan_refresh_t *r,
+      const dbscan_refresh_t *m)
+{
+   if (m->done || !m->key || m->load != r->load)
+      return false;
+   /* Folders compare as dbscan_prep_refresh_resolve() compares them. */
+#ifdef _WIN32
+   if (!string_is_equal_case_insensitive(r->key, m->key))
+#else
+   if (!string_is_equal(r->key, m->key))
+#endif
+      return false;
+   return string_is_equal(r->key + strlen(r->key) + 1,
+         m->key + strlen(m->key) + 1);
+}
+
+/* Sets chain->group to the names of the refresh-all's playlist @i and
+ * of the later ones that share its key, in run order, and marks those
+ * run; returns its label, "<folder> (A, B)".  NULL, and no group, if
+ * it runs alone, as each of them does when out of memory. */
+static char *dbscan_chain_group(dbscan_chain_t *chain, size_t i)
+{
+   size_t j;
+   union string_list_elem_attr attr;
+   dbscan_refresh_t *r       = &chain->refreshes[i];
+   struct string_list *group = NULL;
+   bool ok                   = false;
+
+   if (!r->key)
+      return NULL;
+   attr.i = 0;
+   ok     = (group = string_list_new())
+         && string_list_append(group, r->name, attr);
+   for (j = i + 1; ok && j < chain->playlists->size; j++)
+      if (dbscan_refresh_joins(r, &chain->refreshes[j]))
+         ok = string_list_append(group, chain->refreshes[j].name, attr);
+   if (ok && group->size > 1)
+   {
+      size_t _len = strlen(r->dir) + 4;
+      char *label;
+
+      for (j = 0; j < group->size; j++)
+         _len += strlen(group->elems[j].data) + 2;
+      if ((label = (char*)malloc(_len)))
+      {
+         strlcpy(label, r->dir, _len);
+         strlcat(label, " (", _len);
+         string_list_join_concat(label, _len, group, ", ");
+         strlcat(label, ")", _len);
+         for (j = i + 1; j < chain->playlists->size; j++)
+            if (dbscan_refresh_joins(r, &chain->refreshes[j]))
+               chain->refreshes[j].done = true;
+         chain->group = group;
+         return label;
+      }
+   }
+   string_list_free(group);
+   return NULL;
+}
+
+/* Keeps the refresh-all's record of the loaded @prep: its name, its
+ * saved folder and its key.  The prep task frees the playlist. */
+static void dbscan_chain_keep_loaded(dbscan_chain_t *chain,
+      dbscan_prep_t *prep)
+{
+   dbscan_refresh_t *r = &chain->refreshes[chain->all_next - 1];
+   const char *dir     = playlist_get_scan_content_dir(prep->playlist);
+
+   r->load = prep->load;
+   if (r->load == DBSCAN_LOAD_NO_SETTINGS)
+      return;
+   /* Out of memory it runs alone.  A missing folder keeps it: its
+    * group skips with one line. */
+   if (   dir && (r->dir = strdup(dir))
+       && chain->rdb_list
+       && (   r->load == DBSCAN_LOAD_OK
+           || r->load == DBSCAN_LOAD_FOLDER_MISSING))
+      r->key = dbscan_refresh_key(prep, chain->rdb_list,
+            chain->items[chain->next - 1].overrides);
+   r->name    = prep->name;
+   prep->name = NULL;
 }
 
 static void dbscan_load_cb(retro_task_t *task, void *task_data,
@@ -6613,6 +7234,8 @@ static void dbscan_load_cb(retro_task_t *task, void *task_data,
    dbscan_chain_t *chain          = (dbscan_chain_t*)user_data;
    dbscan_prep_t *prep            = (dbscan_prep_t*)task->state;
    const task_dbscan_item_t *item = &chain->items[chain->next - 1];
+   char *label                    = NULL;
+   char **name                    = &prep->name;
    /* A --scan-refresh's own failures name it as typed. */
    const char *arg                = item->kind == TASK_DBSCAN_ITEM_REFRESH
       ? item->arg : prep->name;
@@ -6623,8 +7246,45 @@ static void dbscan_load_cb(retro_task_t *task, void *task_data,
       dbscan_chain_finish(chain);
       return;
    }
+#ifdef HAVE_SMBCLIENT
+   /* A root answered: the shares found down are checked again, so a
+    * waking NAS recovers and a missing share fails fast.  With a share
+    * set, a failed root lists "", after which none is tried. */
+   if (prep->smb_up && !chain->smb_up)
+   {
+      string_list_free(chain->smb_down);
+      chain->smb_down = NULL;
+   }
+   chain->smb_up = prep->smb_up;
+   if (*prep->smb_share)
+   {
+      union string_list_elem_attr attr;
+      attr.i = 0;
+      if (!chain->smb_down)
+         chain->smb_down = string_list_new();
+      /* With a share set, every smb:// path is on it. */
+      if (chain->smb_down)
+         string_list_append(chain->smb_down,
+                 *config_get_ptr()->arrays.smb_client_share
+               ? "" : prep->smb_share, attr);
+   }
+#endif
    if (prep->load != DBSCAN_LOAD_NO_SETTINGS)
       chain->all_counted = true;
+   /* A refresh-all loads every playlist before it runs one. */
+   if (item->kind == TASK_DBSCAN_ITEM_REFRESH_ALL && !chain->all_loaded)
+   {
+      dbscan_chain_keep_loaded(chain, prep);
+      dbscan_chain_next(chain);
+      return;
+   }
+   /* Loaded again to run a group: under its label. */
+   if ((label = chain->name))
+   {
+      chain->name = NULL;
+      name        = &label;
+      arg         = label;
+   }
    switch (prep->load)
    {
       case DBSCAN_LOAD_NO_PLAYLIST:
@@ -6643,9 +7303,6 @@ static void dbscan_load_cb(retro_task_t *task, void *task_data,
          }
          break;
       case DBSCAN_LOAD_NO_SETTINGS:
-         /* A refresh-all neither lists nor counts it. */
-         if (item->kind == TASK_DBSCAN_ITEM_REFRESH_ALL)
-            break;
          dbscan_chain_refresh_error(chain, arg, "no saved scan settings",
                NULL);
          dbscan_chain_fold(chain, arg, TASK_DBSCAN_FAILED, NULL);
@@ -6661,16 +7318,19 @@ static void dbscan_load_cb(retro_task_t *task, void *task_data,
          dbscan_chain_fold(chain, arg, TASK_DBSCAN_FAILED, NULL);
          break;
       case DBSCAN_LOAD_FOLDER_MISSING:
-         dbscan_chain_refresh_error(chain, prep->name,
+         dbscan_chain_refresh_error(chain, *name,
                "skipped: content folder not found",
                playlist_get_scan_content_dir(prep->playlist));
-         dbscan_chain_fold(chain, prep->name, TASK_DBSCAN_SKIPPED, NULL);
+         dbscan_chain_fold(chain, *name, TASK_DBSCAN_SKIPPED, NULL);
          break;
       case DBSCAN_LOAD_OK:
-         if (dbscan_chain_push_refreshed(chain, item, prep))
+         if (dbscan_chain_push_refreshed(chain, item, prep, name))
             return;
          break;
    }
+   free(label);
+   string_list_free(chain->group);
+   chain->group = NULL;
    dbscan_chain_next(chain);
 }
 
@@ -6692,6 +7352,9 @@ static void dbscan_prep_state_free(dbscan_prep_t *prep)
    free(prep->ov_dat);
    free(prep->path);
    free(prep->detail);
+#ifdef HAVE_SMBCLIENT
+   string_list_free(prep->smb_down);
+#endif
    free(prep);
 }
 
@@ -6713,6 +7376,29 @@ static bool dbscan_prep_take_overrides(dbscan_prep_t *prep,
       return false;
    if (ov->dat && !(prep->ov_dat = strdup(ov->dat)))
       return false;
+   return true;
+}
+
+/* Copies the shares the chain found down into @prep, for its worker;
+ * false out of memory. */
+static bool dbscan_prep_take_smb_down(dbscan_prep_t *prep,
+      const dbscan_chain_t *chain)
+{
+#ifdef HAVE_SMBCLIENT
+   size_t i;
+   union string_list_elem_attr attr;
+
+   if (!chain->smb_down)
+      return true;
+   /* Not string_list_clone(): it makes "", every share, NULL. */
+   if (!(prep->smb_down = string_list_new()))
+      return false;
+   attr.i = 0;
+   for (i = 0; i < chain->smb_down->size; i++)
+      if (!string_list_append(prep->smb_down,
+            chain->smb_down->elems[i].data, attr))
+         return false;
+#endif
    return true;
 }
 
@@ -6761,7 +7447,8 @@ static dbscan_prep_t *dbscan_prep_load_new(dbscan_chain_t *chain)
    prep->kind = DBSCAN_PREP_LOAD;
    if (   !(prep->name = (char*)malloc(NAME_MAX_LENGTH))
        || !dbscan_prep_take_overrides(prep,
-            &chain->items[chain->next - 1]))
+            &chain->items[chain->next - 1])
+       || !dbscan_prep_take_smb_down(prep, chain))
    {
       dbscan_prep_state_free(prep);
       return NULL;
@@ -6776,15 +7463,19 @@ static dbscan_prep_t *dbscan_prep_load_new(dbscan_chain_t *chain)
       playlist_config_set_base_content_directory(&prep->config,
               settings->bools.playlist_portable_paths
             ? settings->paths.directory_menu_content : NULL);
+#ifdef HAVE_SMBCLIENT
+      prep->smb_up   = chain->smb_up;
+      prep->smb_root = chain->all_running && !chain->all_loaded;
+#endif
    }
    return prep;
 }
 
 /* Loads a refresh-all's playlist at @path off the main thread;
- * otherwise folds it as failed.  Its names come from its listing
- * already. */
+ * otherwise folds it as failed, under @label if set.  Its names come
+ * from its listing already. */
 static bool dbscan_chain_push_load(dbscan_chain_t *chain,
-      const char *path)
+      const char *path, const char *label)
 {
    char name[NAME_MAX_LENGTH];
    dbscan_prep_t *prep = dbscan_prep_load_new(chain);
@@ -6794,8 +7485,11 @@ static bool dbscan_chain_push_load(dbscan_chain_t *chain,
    if (dbscan_chain_push_prep(chain, prep, dbscan_load_cb))
       return true;
    fill_pathname(name, path_basename(path), "", sizeof(name));
-   dbscan_chain_refresh_error(chain, name, "the scan could not start", NULL);
-   dbscan_chain_fold(chain, name, TASK_DBSCAN_FAILED, NULL);
+   if (!label)
+      label = name;
+   dbscan_chain_refresh_error(chain, label, "the scan could not start",
+         NULL);
+   dbscan_chain_fold(chain, label, TASK_DBSCAN_FAILED, NULL);
    return false;
 }
 
@@ -6851,7 +7545,8 @@ static bool dbscan_chain_push_path(dbscan_chain_t *chain,
    {
       prep->kind = DBSCAN_PREP_PATH;
       if (   !(prep->arg = strdup(item->arg))
-          || !dbscan_prep_take_overrides(prep, item))
+          || !dbscan_prep_take_overrides(prep, item)
+          || !dbscan_prep_take_smb_down(prep, chain))
       {
          dbscan_prep_state_free(prep);
          prep = NULL;
@@ -6885,6 +7580,47 @@ static bool dbscan_chain_push_list(dbscan_chain_t *chain)
    return dbscan_chain_push_prep(chain, prep, dbscan_prep_cb);
 }
 
+/* Runs the refresh-all's playlist @i, in one scan with the later ones
+ * that share its key, or folds them; true once its second load is
+ * pushed, a group's label in chain->name. */
+static bool dbscan_chain_run_refresh(dbscan_chain_t *chain, size_t i)
+{
+   dbscan_refresh_t *r = &chain->refreshes[i];
+   char *label         = NULL;
+   const char *name    = r->name;
+
+   /* A refresh-all neither lists nor counts one without settings. */
+   if (r->done || r->load == DBSCAN_LOAD_NO_SETTINGS)
+      return false;
+   if ((label = dbscan_chain_group(chain, i)))
+      name = label;
+   switch (r->load)
+   {
+      case DBSCAN_LOAD_NO_PLAYLIST:
+         dbscan_chain_refresh_error(chain, name, "no such playlist", NULL);
+         dbscan_chain_fold(chain, name, TASK_DBSCAN_FAILED, NULL);
+         break;
+      case DBSCAN_LOAD_FOLDER_MISSING:
+         dbscan_chain_refresh_error(chain, name,
+               "skipped: content folder not found", r->dir);
+         dbscan_chain_fold(chain, name, TASK_DBSCAN_SKIPPED, NULL);
+         break;
+      default:
+         /* Loaded again to run, as a lone refresh loads it. */
+         if (dbscan_chain_push_load(chain,
+               chain->playlists->elems[i].data, label))
+         {
+            chain->name = label;
+            return true;
+         }
+         break;
+   }
+   free(label);
+   string_list_free(chain->group);
+   chain->group = NULL;
+   return false;
+}
+
 /* Runs items, and a refresh-all's playlists, until one pushes a task;
  * after the last, finishes. */
 static void dbscan_chain_next(dbscan_chain_t *chain)
@@ -6898,13 +7634,28 @@ static void dbscan_chain_next(dbscan_chain_t *chain)
          if (   chain->playlists
              && chain->all_next < chain->playlists->size)
          {
-            if (dbscan_chain_push_load(chain,
-                  chain->playlists->elems[chain->all_next++].data))
+            size_t i = chain->all_next++;
+
+            if (!chain->all_loaded)
+            {
+               if (dbscan_chain_push_load(chain,
+                     chain->playlists->elems[i].data, NULL))
+                  return;
+               chain->refreshes[i].done = true;
+            }
+            else if (dbscan_chain_run_refresh(chain, i))
                return;
+            continue;
+         }
+         if (chain->playlists && !chain->all_loaded)
+         {
+            chain->all_loaded = true;
+            chain->all_next   = 0;
             continue;
          }
          if (!chain->all_counted && chain->cli_output)
             fprintf(stderr, "no playlists with saved scan settings\n");
+         dbscan_chain_free_refreshes(chain);
          if (chain->playlists)
             string_list_free(chain->playlists);
          chain->playlists   = NULL;
