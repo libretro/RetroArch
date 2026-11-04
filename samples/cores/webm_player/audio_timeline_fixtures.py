@@ -12,10 +12,17 @@ from audio_movie_reference import aac_matroska_pcm
 out = Path(sys.argv[1] if len(sys.argv) > 1 else "fixtures")
 out.mkdir(parents=True, exist_ok=True)
 
-def make(name, *, delay=0, duration=4, audio_duration=2, codec="libopus", filter=None, mp4=False, trim=0):
+# An encoder's frame length in samples. A source whose frames are this
+# long reaches the encoder as they leave the filter, timestamps included:
+# ffmpeg 8 otherwise regroups them into encoder frames and
+# keeps only the first one's timestamp, closing a gap or an overlap.
+FRAME = {"libopus": 960, "libvorbis": 64}
+
+def make(name, *, delay=0, duration=4, audio_duration=2, codec="libopus", filter=None, mp4=False, trim=0, framed=False):
+    frames = f":samples_per_frame={FRAME[codec]}" if framed else ""
     args = ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
             f"testsrc2=size=64x48:rate=12:duration={duration}", "-itsoffset", str(delay),
-            "-f", "lavfi", "-i", f"sine=frequency=440:sample_rate=48000:duration={audio_duration}"]
+            "-f", "lavfi", "-i", f"sine=frequency=440:sample_rate=48000:duration={audio_duration}{frames}"]
     if filter:
         args += ["-af", filter]
     if mp4:
@@ -108,9 +115,9 @@ for delay in (0, 1, 2):
     make(f"timeline-{delay}.webm", delay=delay)
 for codec in ("libopus", "libvorbis"):
     make(f"timeline-gap-{codec}.webm", duration=5, audio_duration=4,
-         codec=codec, filter=r"aselect=not(between(t\,1\,2))")
+         codec=codec, filter=r"aselect=not(between(t\,1\,2))", framed=True)
 make("timeline-overlap.webm", duration=5, audio_duration=4,
-     filter=r"asetpts=PTS-0.5/TB*gte(T\,2)")
+     filter=r"asetpts=PTS-0.5/TB*gte(T\,2)", framed=True)
 for delay in (0, 1):
     make(f"timeline-{delay}.mp4", delay=delay, codec="aac", mp4=True)
 
