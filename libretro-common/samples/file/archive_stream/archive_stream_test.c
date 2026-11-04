@@ -79,6 +79,7 @@ static unsigned failures;
 static unsigned opens;
 static unsigned last_hints;
 static uint64_t bytes_read;
+static uint64_t bytes_written;
 
 static void fail(const char *what, const char *detail)
 {
@@ -144,7 +145,11 @@ static int64_t fe_read(struct retro_vfs_file_handle *h, void *s, uint64_t len)
 
 static int64_t fe_write(struct retro_vfs_file_handle *h, const void *s, uint64_t len)
 {
-   return retro_vfs_file_write_impl((libretro_vfs_implementation_file*)h, s, len);
+   int64_t w = retro_vfs_file_write_impl((libretro_vfs_implementation_file*)h,
+         s, len);
+   if (w > 0)
+      bytes_written += (uint64_t)w;
+   return w;
 }
 
 static int fe_flush(struct retro_vfs_file_handle *h)
@@ -328,6 +333,116 @@ static void check_map_hint(void)
             (unsigned)(sizeof(size_t) * 8), want ? "mapped" : "streamed");
 }
 
+/* A Deflate member that inflates past the size its headers give.
+ * The member is big enough to stream to its file a window at a time;
+ * no more than its given size may reach the disk, however much the
+ * stream holds. Stored blocks make the stream without a compressor. */
+#define BOUND_ZIP    "archive_stream_bound.zip"
+#define BOUND_DIR    "archive_stream_bound"
+#define BOUND_GIVEN  (300u * 1024)
+#define BOUND_REAL   (1024u * 1024)
+#define BOUND_BLOCK  65535u
+
+static void put16(uint8_t *p, unsigned v)
+{
+   p[0] = (uint8_t)v;
+   p[1] = (uint8_t)(v >> 8);
+}
+
+static void put32(uint8_t *p, uint32_t v)
+{
+   put16(p, v & 0xffffu);
+   put16(p + 2, v >> 16);
+}
+
+/* A local header, or with @central a central directory entry */
+static size_t zip_header(uint8_t *p, bool central, uint32_t csize,
+      uint32_t usize, const char *name)
+{
+   size_t   n   = strlen(name);
+   size_t   off = central ? 46 : 30;
+   uint8_t *f   = p + (central ? 6 : 4); /* version needed onwards */
+   memset(p, 0, off);
+   put32(p, central ? 0x02014b50u : 0x04034b50u);
+   if (central)
+      put16(p + 4, 20);
+   put16(f, 20);
+   put16(f + 4, 8);                      /* Deflate */
+   put32(f + 14, csize);
+   put32(f + 18, usize);
+   put16(f + 22, (unsigned)n);
+   memcpy(p + off, name, n);
+   return off + n;
+}
+
+static bool write_bound_zip(void)
+{
+   size_t   blocks = (BOUND_REAL + BOUND_BLOCK - 1) / BOUND_BLOCK;
+   size_t   csize  = BOUND_REAL + blocks * 5;
+   size_t   cap    = csize + 256;
+   uint8_t *z      = (uint8_t*)malloc(cap);
+   size_t   pos, cd, left, i;
+   FILE    *f;
+   bool     ok;
+
+   if (!z)
+      return false;
+   pos  = zip_header(z, false, (uint32_t)csize, BOUND_GIVEN, "big.so");
+   left = BOUND_REAL;
+   for (i = 0; i < blocks; i++)
+   {
+      unsigned n = left > BOUND_BLOCK ? BOUND_BLOCK : (unsigned)left;
+      z[pos] = (uint8_t)(i + 1 == blocks); /* BFINAL, stored */
+      put16(z + pos + 1, n);
+      put16(z + pos + 3, ~n & 0xffffu);
+      memset(z + pos + 5, 'A', n);
+      pos  += 5 + n;
+      left -= n;
+   }
+   cd   = pos;
+   pos += zip_header(z + pos, true, (uint32_t)csize, BOUND_GIVEN, "big.so");
+   memset(z + pos, 0, 22);
+   put32(z + pos, 0x06054b50u);
+   put16(z + pos + 8, 1);
+   put16(z + pos + 10, 1);
+   put32(z + pos + 12, (uint32_t)(pos - cd));
+   put32(z + pos + 16, (uint32_t)cd);
+   pos += 22;
+   ok = (f = fopen(BOUND_ZIP, "wb")) && fwrite(z, 1, pos, f) == pos;
+   if (f)
+      fclose(f);
+   free(z);
+   return ok;
+}
+
+static void check_inflate_bound(void)
+{
+   char out[PATH_MAX_LENGTH];
+   char detail[128];
+   bool ok;
+
+   if (!write_bound_zip() || !path_mkdir(BOUND_DIR))
+   {
+      fail("inflate bound", "could not write the fixture");
+      return;
+   }
+   bytes_written = 0;
+   out[0]        = '\0';
+   ok = file_archive_extract_file(BOUND_ZIP "#big.so", "so", BOUND_DIR,
+         out, sizeof(out));
+   snprintf(detail, sizeof(detail), "%s, %lu octets written of %u given",
+         ok ? "extracted" : "refused", (unsigned long)bytes_written,
+         BOUND_GIVEN);
+   if (ok || bytes_written > BOUND_GIVEN)
+      fail("inflate bound", detail);
+   fill_pathname_join_special(out, BOUND_DIR, "big.so", sizeof(out));
+   if (path_is_valid(out))
+      fail("inflate bound", "a refused member left its file");
+   filestream_delete(out);
+   path_rmdir(BOUND_DIR);
+   remove(BOUND_ZIP);
+}
+
 int main(int argc, char *argv[])
 {
    const char *rar_dir = argc > 1 ? argv[1] : "../../formats/rrar/archives";
@@ -361,6 +476,7 @@ int main(int argc, char *argv[])
    check_crc("rar bsdcat.exe", path, 204288, 0x4db10349u);
 
    check_map_hint();
+   check_inflate_bound();
 
    remove(FIXTURE);
    if (failures)

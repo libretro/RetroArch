@@ -777,6 +777,10 @@ static int zlib_stream_decompress_data_to_file_iterate(
          zip_context->crc      = encoding_crc32(zip_context->crc, out,
                (size_t)(zip_context->zstream->next_out - out));
          zip_context->out_off += (uint64_t)(zip_context->zstream->next_out - out);
+         /* No more than the member's size reaches the sink, whatever
+          * the stream holds */
+         if (zip_context->out_off > zip_context->usize)
+            return -1;
 
          /* With the whole member as output, one call takes all the
           * input */
@@ -831,6 +835,10 @@ static int zlib_stream_decompress_data_to_file_iterate(
                got_out);
          zip_context->win_pos += got_out;
          zip_context->out_off += got_out;
+         /* No more than the member's size reaches the sink, whatever
+          * the stream holds */
+         if (zip_context->out_off > zip_context->usize)
+            return -1;
          /* END: stream finished.  NEXT with no further progress means this
           * input chunk is drained; fetch the next one on the outer loop. */
          if (st == RDEFLATE_PROCESS_END)
