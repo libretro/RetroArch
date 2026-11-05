@@ -412,6 +412,11 @@ static const char *const rslc_keywords[] = {
    "mat3x2", "mat3x3", "mat3x4",
    "mat4x2", "mat4x3", "mat4x4",
    "sampler2D", "isampler2D", "usampler2D"
+#ifdef RSLC_EXTENDED
+   , "sampler2DArray", "isampler2DArray", "usampler2DArray",
+   "sampler2DMSArray", "isampler2DMSArray", "usampler2DMSArray",
+   "samplerBuffer", "isamplerBuffer", "usamplerBuffer"
+#endif
 };
 
 static bool rslc_seed_keywords(struct rslc_ctx *c)
@@ -636,6 +641,12 @@ const struct rslc_type *rslc_type_basic(struct rslc_ctx *c, enum rslc_tkind kind
 const struct rslc_type *rslc_type_sampler2d(struct rslc_ctx *c, enum rslc_base base)
 {
    return rslc_type_basic(c, RSLC_TY_SAMPLER2D, base, 1, 1);
+}
+
+const struct rslc_type *rslc_type_sampler(struct rslc_ctx *c, enum rslc_tkind kind,
+      enum rslc_base base)
+{
+   return rslc_type_basic(c, kind, base, 1, 1);
 }
 
 const struct rslc_type *rslc_type_array(struct rslc_ctx *c,
@@ -973,6 +984,8 @@ enum spv_section
 #define SPV_VERSION_1_0      0x00010000u
 #define SPV_CAP_SHADER       1
 #define SPV_CAP_IMAGEQUERY   50
+#define SPV_CAP_SAMPLEDBUFFER 46
+#define SPV_CAP_SAMPLERATESHADING 35
 #define SPV_MODEL_VERTEX     0
 #define SPV_MODEL_FRAGMENT   4
 #define SPV_MODE_ORIGINUPPERLEFT 7
@@ -1009,6 +1022,7 @@ enum spv_section
 #define SPV_BI_FRAGCOORD     15
 #define SPV_BI_FRONTFACING   17
 #define SPV_BI_FRAGDEPTH     22
+#define SPV_BI_SAMPLEID      18
 
 enum spv_op
 {
@@ -1030,7 +1044,7 @@ enum spv_op
    SpvOpSampledImage = 86, SpvOpImageSampleImplicitLod = 87, SpvOpImageSampleExplicitLod = 88,
    SpvOpImageSampleProjImplicitLod = 91, SpvOpImageSampleProjExplicitLod = 92,
    SpvOpImageFetch = 95, SpvOpImageGather = 96, SpvOpImage = 100,
-   SpvOpImageQuerySizeLod = 103, SpvOpImageQueryLod = 105, SpvOpImageQueryLevels = 106,
+   SpvOpImageQuerySizeLod = 103, SpvOpImageQuerySize = 104, SpvOpImageQueryLod = 105, SpvOpImageQueryLevels = 106,
    SpvOpConvertFToU = 109, SpvOpConvertFToS = 110, SpvOpConvertSToF = 111,
    SpvOpConvertUToF = 112, SpvOpBitcast = 124,
    SpvOpSNegate = 126, SpvOpFNegate = 127, SpvOpIAdd = 128, SpvOpFAdd = 129,
@@ -1153,6 +1167,8 @@ struct spv_emit
    uint32_t             cur_label;    /* current block's label, 0 = terminated */
    uint32_t             entry_label;
    bool                 need_imagequery;
+   bool                 need_sampledbuffer;
+   bool                 need_samplerateshading;
    bool                 in_main;
 };
 
@@ -1448,6 +1464,11 @@ static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t)
          break;
       }
       case RSLC_TY_SAMPLER2D:
+#ifdef RSLC_EXTENDED
+      case RSLC_TY_SAMPLER2DARRAY:
+      case RSLC_TY_SAMPLER2DMSARRAY:
+      case RSLC_TY_SAMPLERBUFFER:
+#endif
       {
          uint32_t s   = spv_type(e, rslc_type_basic(e->c, RSLC_TY_SCALAR, (enum rslc_base)t->base, 1, 1));
          uint32_t img;
@@ -1455,7 +1476,19 @@ static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t)
             return 0;
          ti  = &e->tinfo[t->id];
          img = spv_id(e);
+         /* Dim, Depth, Arrayed, MS, Sampled, Format */
          w[0] = img; w[1] = s; w[2] = 1 /* 2D */; w[3] = 0; w[4] = 0; w[5] = 0; w[6] = 1; w[7] = 0 /* Unknown */;
+#ifdef RSLC_EXTENDED
+         if (t->kind == RSLC_TY_SAMPLER2DARRAY || t->kind == RSLC_TY_SAMPLER2DMSARRAY)
+            w[4] = 1;
+         if (t->kind == RSLC_TY_SAMPLER2DMSARRAY)
+            w[5] = 1;
+         if (t->kind == RSLC_TY_SAMPLERBUFFER)
+         {
+            w[2] = 5 /* Buffer */;
+            e->need_sampledbuffer = true;
+         }
+#endif
          if (!spv_inst(e, SPV_SEC_TYPES, SpvOpTypeImage, w, 8))
             return 0;
          if (!spv_inst2(e, SPV_SEC_TYPES, SpvOpTypeSampledImage, id, img))
@@ -1532,7 +1565,7 @@ static uint32_t spv_ptr(struct spv_emit *e, uint32_t tid, unsigned sc)
 /* Function parameters are pointers; samplers point at the uniform. */
 static unsigned spv_param_sc(const struct rslc_type *t)
 {
-   return t->kind == RSLC_TY_SAMPLER2D ? SPV_SC_UNIFORMCONSTANT : SPV_SC_FUNCTION;
+   return RSLC_TY_IS_SAMPLER(t->kind) ? SPV_SC_UNIFORMCONSTANT : SPV_SC_FUNCTION;
 }
 
 static uint32_t spv_ptr_to(struct spv_emit *e, const struct rslc_type *t, unsigned sc)
@@ -2744,6 +2777,7 @@ static uint32_t spv_image_op(struct spv_emit *e, enum spv_op op, uint32_t tid, u
 #define SPV_IMG_LOD         2u
 #define SPV_IMG_GRAD        4u
 #define SPV_IMG_CONSTOFFSET 8u
+#define SPV_IMG_SAMPLE      0x40u
 
 static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
 {
@@ -2843,6 +2877,11 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
             img = spv_r1(e, SpvOpImage, imgt, args[0], 0);
             if (!img)
                return 0;
+#ifdef RSLC_EXTENDED
+            /* multisampled and buffer images have no levels */
+            if (t0->kind == RSLC_TY_SAMPLER2DMSARRAY || t0->kind == RSLC_TY_SAMPLERBUFFER)
+               return spv_r1(e, SpvOpImageQuerySize, tid, img, prec);
+#endif
             return spv_r2(e, SpvOpImageQuerySizeLod, tid, img, args[1], prec);
          case RSLC_BFN_TEXTUREQUERYLEVELS:
             e->need_imagequery = true;
@@ -2862,6 +2901,16 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
             img = spv_r1(e, SpvOpImage, imgt, args[0], 0);
             if (!img)
                return 0;
+#ifdef RSLC_EXTENDED
+            /* a buffer has no level; a multisampled image takes the sample */
+            if (t0->kind == RSLC_TY_SAMPLERBUFFER)
+               return spv_image_op(e, SpvOpImageFetch, tid, img, args[1], 0, 0, NULL, 0, prec);
+            if (t0->kind == RSLC_TY_SAMPLER2DMSARRAY)
+            {
+               ops[0] = args[2];
+               return spv_image_op(e, SpvOpImageFetch, tid, img, args[1], 0, SPV_IMG_SAMPLE, ops, 1, prec);
+            }
+#endif
             ops[0] = args[2];
             if (bfn == RSLC_BFN_TEXELFETCHOFFSET)
             {
@@ -3400,7 +3449,7 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
          {
             uint32_t an = rslc_list_item(e->c, n->b, i);
             const struct rslc_var *pv = f->params[i];
-            if (pv->type->kind == RSLC_TY_SAMPLER2D)
+            if (RSLC_TY_IS_SAMPLER(pv->type->kind))
             {
                unsigned sc; bool laid, std140;
                temps[i] = spv_lvalue(e, an, &sc, &laid, &std140);
@@ -3433,7 +3482,7 @@ static uint32_t spv_rvalue_impl(struct spv_emit *e, uint32_t node)
          for (i = 0; i < nargs; i++)
          {
             const struct rslc_var *pv = f->params[i];
-            if (pv->dir != RSLC_DIR_IN && pv->type->kind != RSLC_TY_SAMPLER2D)
+            if (pv->dir != RSLC_DIR_IN && !RSLC_TY_IS_SAMPLER(pv->type->kind))
             {
                uint32_t v = spv_load(e, pv->type, temps[i], pv->precision);
                if (!v || !spv_assign_to(e, rslc_list_item(e->c, n->b, i), v))
@@ -4262,9 +4311,13 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
       : v->builtin == RSLC_BI_FRAGDEPTH ? SPV_BI_FRAGDEPTH
       : v->builtin == RSLC_BI_VERTEXINDEX ? SPV_BI_VERTEXINDEX
       : v->builtin == RSLC_BI_INSTANCEINDEX ? SPV_BI_INSTANCEINDEX
-      : v->builtin == RSLC_BI_FRONTFACING ? SPV_BI_FRONTFACING : SPV_BI_POSITION;
+      : v->builtin == RSLC_BI_FRONTFACING ? SPV_BI_FRONTFACING
+      : v->builtin == RSLC_BI_SAMPLEID ? SPV_BI_SAMPLEID : SPV_BI_POSITION;
    if (!ptr)
       return false;
+   /* reading the sample index runs the stage per sample */
+   if (v->builtin == RSLC_BI_SAMPLEID)
+      e->need_samplerateshading = true;
    id = spv_id(e);
    if (!spv_inst3(e, SPV_SEC_TYPES, SpvOpVariable, ptr, id, sc))
       return false;
@@ -4273,6 +4326,9 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
    if (!spv_name(e, id, v->name->str))
       return false;
    if (!spv_decorate1(e, id, SPV_DEC_BUILTIN, bi) || !spv_w(e, &e->entry_iface, id))
+      return false;
+   /* an integer fragment input is flat, a builtin too */
+   if (v->builtin == RSLC_BI_SAMPLEID && !spv_decorate(e, id, SPV_DEC_FLAT))
       return false;
    if ((v->precision == RSLC_PREC_LOW || v->precision == RSLC_PREC_MEDIUM)
          && !spv_decorate(e, id, SPV_DEC_RELAXEDPRECISION))
@@ -4599,6 +4655,11 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
 
    /* header-ish sections */
    if (!spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_SHADER))
+      return false;
+   if (e->need_sampledbuffer && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_SAMPLEDBUFFER))
+      return false;
+   if (e->need_samplerateshading
+         && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_SAMPLERATESHADING))
       return false;
    if (e->need_imagequery && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_IMAGEQUERY))
       return false;

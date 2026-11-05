@@ -2939,6 +2939,8 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
  *   f i u b   scalar
  *   2 3 4     vec2 vec3 vec4; i2.. ivec, u2.. uvec, b2.. bvec
  *   S         sampler2D
+ *   A N Z     sampler2DArray, sampler2DMSArray, samplerBuffer
+ *             (RSLC_EXTENDED; their overloads are absent otherwise)
  *   M         any matrix;  Q square matrix;  T transposed M result
  *   X         any scalar or vector, same type as other X
  *   o<tok>    out parameter
@@ -2949,6 +2951,14 @@ struct rslc_bsig
    const char *name;
    const char *sigs;   /* overloads separated by ';', params space separated, result after ':' */
 };
+
+/* Overloads on the RSLC_EXTENDED samplers, appended to a builtin's
+ * list in that build only. */
+#ifdef RSLC_EXTENDED
+#define RSLC_X(s) s
+#else
+#define RSLC_X(s) ""
+#endif
 
 static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_RADIANS, "radians", "F:F" }, { RSLC_BFN_DEGREES, "degrees", "F:F" },
@@ -3006,14 +3016,14 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_BITFIELDREVERSE, "bitfieldReverse", "I:I;U:U" },
    { RSLC_BFN_BITCOUNT, "bitCount", "I:I;U:I" },
    { RSLC_BFN_FINDLSB, "findLSB", "I:I;U:I" }, { RSLC_BFN_FINDMSB, "findMSB", "I:I;U:I" },
-   { RSLC_BFN_TEXTURESIZE, "textureSize", "S i:i2" },
+   { RSLC_BFN_TEXTURESIZE, "textureSize", "S i:i2" RSLC_X(";A i:i3;N:i3;Z:i") },
    { RSLC_BFN_TEXTUREQUERYLOD, "textureQueryLod", "S 2:2" },
    { RSLC_BFN_TEXTUREQUERYLEVELS, "textureQueryLevels", "S:i" },
-   { RSLC_BFN_TEXTURE, "texture", "S 2:4;S 2 f:4" },
+   { RSLC_BFN_TEXTURE, "texture", "S 2:4;S 2 f:4" RSLC_X(";A 3:4;A 3 f:4") },
    { RSLC_BFN_TEXTUREPROJ, "textureProj", "S 3:4;S 4:4;S 3 f:4;S 4 f:4" },
-   { RSLC_BFN_TEXTURELOD, "textureLod", "S 2 f:4" },
+   { RSLC_BFN_TEXTURELOD, "textureLod", "S 2 f:4" RSLC_X(";A 3 f:4") },
    { RSLC_BFN_TEXTUREOFFSET, "textureOffset", "S 2 i2:4;S 2 i2 f:4" },
-   { RSLC_BFN_TEXELFETCH, "texelFetch", "S i2 i:4" },
+   { RSLC_BFN_TEXELFETCH, "texelFetch", "S i2 i:4" RSLC_X(";A i3 i:4;N i3 i:4;Z i:4") },
    { RSLC_BFN_TEXELFETCHOFFSET, "texelFetchOffset", "S i2 i i2:4" },
    { RSLC_BFN_TEXTUREPROJOFFSET, "textureProjOffset", "S 3 i2:4;S 4 i2:4;S 3 i2 f:4;S 4 i2 f:4" },
    { RSLC_BFN_TEXTURELODOFFSET, "textureLodOffset", "S 2 f i2:4" },
@@ -3106,9 +3116,12 @@ static bool rslc_bsig_match_tok(struct rslc_parser *p, const char *tok, unsigned
       if (t->kind != RSLC_TY_VEC || t->rows != width)
          return false;
    }
-   else if (len == 1 && tok[0] == 'S')
+   else if (len == 1 && (tok[0] == 'S' || tok[0] == 'A' || tok[0] == 'N' || tok[0] == 'Z'))
    {
-      if (t->kind != RSLC_TY_SAMPLER2D)
+      enum rslc_tkind want_kind = tok[0] == 'S' ? RSLC_TY_SAMPLER2D
+         : tok[0] == 'A' ? RSLC_TY_SAMPLER2DARRAY
+         : tok[0] == 'N' ? RSLC_TY_SAMPLER2DMSARRAY : RSLC_TY_SAMPLERBUFFER;
+      if (t->kind != want_kind)
          return false;
       *sbase = t->base;
       return true;
@@ -3189,7 +3202,7 @@ static const struct rslc_type *rslc_bsig_param_type(struct rslc_parser *p,
       const char *tok, unsigned len, unsigned n, unsigned m, const struct rslc_type *x,
       const struct rslc_type *actual)
 {
-   if (len == 1 && tok[0] == 'S')
+   if (len == 1 && (tok[0] == 'S' || tok[0] == 'A' || tok[0] == 'N' || tok[0] == 'Z'))
       return actual;
    return rslc_bsig_result(p, tok, len, n, m, x, 0);
 }
@@ -3739,7 +3752,7 @@ static uint32_t rslc_p_primary(struct rslc_parser *p)
          return rslc_p_const_bool(p, sym->kw == RSLC_KW_TRUE, line);
       }
       /* Type name: constructor, with optional [N] for arrays. */
-      if ((sym->kw >= RSLC_KW_VOID && sym->kw <= RSLC_KW_USAMPLER2D)
+      if ((sym->kw >= RSLC_KW_VOID && sym->kw <= RSLC_KW_LAST_TYPE)
             || (sym->decl && sym->decl->kind == RSLC_DK_TYPE))
       {
          struct rslc_quals q;
@@ -4402,7 +4415,7 @@ static const struct rslc_type *rslc_p_type_spec(struct rslc_parser *p,
       }
       return rslc_p_struct_def(p);
    }
-   if (s->kw >= RSLC_KW_VOID && s->kw <= RSLC_KW_USAMPLER2D)
+   if (s->kw >= RSLC_KW_VOID && s->kw <= RSLC_KW_LAST_TYPE)
    {
       const struct rslc_type *ty = NULL;
       unsigned k = s->kw;
@@ -4433,6 +4446,16 @@ static const struct rslc_type *rslc_p_type_spec(struct rslc_parser *p,
          ty = rslc_type_sampler2d(p->c, RSLC_BASE_INT);
       else if (k == RSLC_KW_USAMPLER2D)
          ty = rslc_type_sampler2d(p->c, RSLC_BASE_UINT);
+      else if (k >= RSLC_KW_SAMPLER2DARRAY && k <= RSLC_KW_USAMPLERBUFFER)
+      {
+         /* three of each kind: float, int, uint */
+         static const uint8_t kinds[3] = { RSLC_TY_SAMPLER2DARRAY,
+               RSLC_TY_SAMPLER2DMSARRAY, RSLC_TY_SAMPLERBUFFER };
+         static const uint8_t bases[3] = { RSLC_BASE_FLOAT, RSLC_BASE_INT, RSLC_BASE_UINT };
+         unsigned i = k - RSLC_KW_SAMPLER2DARRAY;
+         ty = rslc_type_sampler(p->c, (enum rslc_tkind)kinds[i / 3],
+               (enum rslc_base)bases[i % 3]);
+      }
       return ty;
    }
    if (s->decl && s->decl->kind == RSLC_DK_TYPE)
@@ -4591,7 +4614,7 @@ static bool rslc_p_starts_declaration(struct rslc_parser *p)
    s = rslc_tok_sym(p->c, t);
    if (s->kw >= RSLC_KW_CONST && s->kw <= RSLC_KW_STRUCT)
       return true;
-   if (s->kw >= RSLC_KW_VOID && s->kw <= RSLC_KW_USAMPLER2D)
+   if (s->kw >= RSLC_KW_VOID && s->kw <= RSLC_KW_LAST_TYPE)
    {
       /* A type followed by '(' is a constructor expression; a type
        * followed by [..] is one when the brackets are followed by '('
@@ -4889,7 +4912,7 @@ static uint8_t rslc_p_default_prec(struct rslc_parser *p, const struct rslc_type
       return explicit_prec;
    if (t->kind == RSLC_TY_ARRAY)
       return rslc_p_default_prec(p, t->elem, 0);
-   if (t->kind == RSLC_TY_SAMPLER2D)
+   if (RSLC_TY_IS_SAMPLER(t->kind))
       return 0;   /* sampler precision is its own default, never float's */
    if (t->kind == RSLC_TY_MAT || t->base == RSLC_BASE_FLOAT)
       return p->scope->prec_float;
@@ -5376,10 +5399,10 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       v->binding   = q.binding;
       v->set       = q.set;
 
-      if (vt->kind == RSLC_TY_SAMPLER2D)
+      if (RSLC_TY_IS_SAMPLER(vt->kind))
       {
          if (!global || !q.is_uniform)
-            return rslc_p_fail(p, "sampler2D must be a global uniform", NULL), 0;
+            return rslc_p_fail(p, "a sampler must be a global uniform", NULL), 0;
          v->storage = RSLC_ST_SAMPLER;
       }
       else if (q.is_uniform)
@@ -5570,6 +5593,10 @@ static bool rslc_p_run(struct rslc_ctx *c)
             || !rslc_p_builtin_var(p, "gl_FragDepth", p->t_float, RSLC_BI_FRAGDEPTH, RSLC_DIR_OUT)
             || !rslc_p_builtin_var(p, "gl_FrontFacing", p->t_bool, RSLC_BI_FRONTFACING, RSLC_DIR_IN))
          return false;
+#ifdef RSLC_EXTENDED
+      if (!rslc_p_builtin_var(p, "gl_SampleID", p->t_int, RSLC_BI_SAMPLEID, RSLC_DIR_IN))
+         return false;
+#endif
    }
 
    while (P_TOK(p)->kind != RSLC_TK_EOF)
@@ -5757,6 +5784,10 @@ struct rslc_builder *rslc_b_begin(const struct rslc_opts *opts, enum rslc_stage 
          || !rslc_p_builtin_var(p, "gl_FragDepth", p->t_float, RSLC_BI_FRAGDEPTH, RSLC_DIR_OUT)
          || !rslc_p_builtin_var(p, "gl_FrontFacing", p->t_bool, RSLC_BI_FRONTFACING, RSLC_DIR_IN))
       return b;
+#ifdef RSLC_EXTENDED
+   else if (!rslc_p_builtin_var(p, "gl_SampleID", p->t_int, RSLC_BI_SAMPLEID, RSLC_DIR_IN))
+      return b;
+#endif
    return b;
 }
 
@@ -5910,7 +5941,7 @@ struct rslc_var *rslc_b_sampler(struct rslc_builder *b, const char *name,
       const struct rslc_type *type, uint32_t set, uint32_t binding)
 {
    struct rslc_var *v;
-   if (type && type->kind != RSLC_TY_SAMPLER2D)
+   if (type && !RSLC_TY_IS_SAMPLER(type->kind))
    {
       rslc_b_fail(b, "not a sampler type: ", name);
       return NULL;

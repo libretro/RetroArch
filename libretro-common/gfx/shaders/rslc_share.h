@@ -211,6 +211,11 @@ enum rslc_kw
    RSLC_KW_MAT3X2, RSLC_KW_MAT3X3, RSLC_KW_MAT3X4,
    RSLC_KW_MAT4X2, RSLC_KW_MAT4X3, RSLC_KW_MAT4X4,
    RSLC_KW_SAMPLER2D, RSLC_KW_ISAMPLER2D, RSLC_KW_USAMPLER2D,
+   /* RSLC_EXTENDED only: seeded in that build alone, so elsewhere no
+    * name ever carries them */
+   RSLC_KW_SAMPLER2DARRAY, RSLC_KW_ISAMPLER2DARRAY, RSLC_KW_USAMPLER2DARRAY,
+   RSLC_KW_SAMPLER2DMSARRAY, RSLC_KW_ISAMPLER2DMSARRAY, RSLC_KW_USAMPLER2DMSARRAY,
+   RSLC_KW_SAMPLERBUFFER, RSLC_KW_ISAMPLERBUFFER, RSLC_KW_USAMPLERBUFFER,
    RSLC_KW_COUNT
 };
 
@@ -231,8 +236,18 @@ enum rslc_tkind
    RSLC_TY_MAT,
    RSLC_TY_SAMPLER2D,
    RSLC_TY_ARRAY,
-   RSLC_TY_STRUCT
+   RSLC_TY_STRUCT,
+   /* RSLC_EXTENDED only */
+   RSLC_TY_SAMPLER2DARRAY,
+   RSLC_TY_SAMPLER2DMSARRAY,
+   RSLC_TY_SAMPLERBUFFER
 };
+
+/* The last keyword that names a type. */
+#define RSLC_KW_LAST_TYPE RSLC_KW_USAMPLERBUFFER
+
+/* Every sampler kind: sampler2D, and the RSLC_EXTENDED ones. */
+#define RSLC_TY_IS_SAMPLER(k) ((k) == RSLC_TY_SAMPLER2D || (k) >= RSLC_TY_SAMPLER2DARRAY)
 
 struct rslc_type;
 
@@ -326,6 +341,11 @@ struct rslc_var
 #define RSLC_BI_POINTSIZE    5
 #define RSLC_BI_FRONTFACING  6
 #define RSLC_BI_INSTANCEINDEX 7
+#define RSLC_BI_SAMPLEID     8   /* RSLC_EXTENDED */
+
+/* The integer builtins HLSL and MSL hand over as uint. */
+#define RSLC_BI_IS_UINT_IN(b) ((b) == RSLC_BI_VERTEXINDEX || (b) == RSLC_BI_INSTANCEINDEX \
+      || (b) == RSLC_BI_SAMPLEID)
 
 /* A uniform block or push-constant block. */
 struct rslc_blockdecl
@@ -614,6 +634,9 @@ const struct rslc_type *rslc_type_array(struct rslc_ctx *c,
 struct rslc_type *rslc_type_struct(struct rslc_ctx *c, struct rslc_sym *name,
       const struct rslc_field *fields, uint32_t nfields);
 const struct rslc_type *rslc_type_sampler2d(struct rslc_ctx *c, enum rslc_base base);
+/* kind is RSLC_TY_SAMPLER2D or one of the RSLC_EXTENDED sampler kinds. */
+const struct rslc_type *rslc_type_sampler(struct rslc_ctx *c, enum rslc_tkind kind,
+      enum rslc_base base);
 uint32_t rslc_node_new(struct rslc_ctx *c, enum rslc_op op,
       const struct rslc_type *type, uint32_t a, uint32_t b, uint32_t c_,
       uint16_t aux, uint32_t line);

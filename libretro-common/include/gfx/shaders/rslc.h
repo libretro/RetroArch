@@ -36,7 +36,14 @@
  * retro_common_api only.  The compiler never opens a file, never takes
  * a lock, never touches process-global mutable state, and is re-entrant:
  * any number of rslc_compile calls may run on different threads at once
- * with their own opts and result. */
+ * with their own opts and result.
+ *
+ * A build with RSLC_EXTENDED defined also takes what an emulator's own
+ * shaders need and the frontend's never do: sampler2DArray,
+ * sampler2DMSArray and samplerBuffer (each with its i and u forms) and
+ * gl_SampleID.  Without it those names are not keywords, nothing is
+ * compiled in for them, and every destination is word for word what it
+ * was.  MSL has no form of the extended samplers yet and refuses them. */
 
 #include <stdint.h>
 #include <stddef.h>

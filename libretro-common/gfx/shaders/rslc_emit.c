@@ -140,6 +140,7 @@ struct rslc_pr
 #define RSLC_HL_FINDLSB       (1u << 24)
 #define RSLC_HL_FINDMSB_I     (1u << 25)
 #define RSLC_HL_FINDMSB_U     (1u << 26)
+#define RSLC_HL_SIZE_X        (1u << 27)   /* RSLC_EXTENDED samplers */
 
 /* ---- output ---- */
 
@@ -303,6 +304,29 @@ static void pr_type(struct rslc_pr *p, const struct rslc_type *t)
          pr_scalar_prefix(p, t->base);
          pr_s(p, "sampler2D");
          break;
+#ifdef RSLC_EXTENDED
+      case RSLC_TY_SAMPLER2DARRAY:
+      case RSLC_TY_SAMPLER2DMSARRAY:
+      case RSLC_TY_SAMPLERBUFFER:
+         if (p->msl)
+         {
+            rslc_err(p->c, "msl: no form of this sampler type", NULL, 0);
+            p->ok = false;
+            break;
+         }
+         if (p->hlsl)
+         {
+            pr_s(p, t->kind == RSLC_TY_SAMPLER2DARRAY ? "Texture2DArray<"
+                  : t->kind == RSLC_TY_SAMPLER2DMSARRAY ? "Texture2DMSArray<" : "Buffer<");
+            pr_scalar_name(p, t->base);
+            pr_s(p, "4>");
+            break;
+         }
+         pr_scalar_prefix(p, t->base);
+         pr_s(p, t->kind == RSLC_TY_SAMPLER2DARRAY ? "sampler2DArray"
+               : t->kind == RSLC_TY_SAMPLER2DMSARRAY ? "sampler2DMSArray" : "samplerBuffer");
+         break;
+#endif
       case RSLC_TY_STRUCT:
          if (t->name)
             pr_ident(p, t->name);
@@ -870,7 +894,7 @@ static void pr_args(struct rslc_pr *p, uint32_t list)
       if (i)
          pr_s(p, ", ");
       if ((p->hlsl || p->msl) && rslc_node_at(p->c, a)->type
-            && rslc_node_at(p->c, a)->type->kind == RSLC_TY_SAMPLER2D)
+            && RSLC_TY_IS_SAMPLER(rslc_node_at(p->c, a)->type->kind))
       {
          pr_hl_tex(p, a, false);
          pr_s(p, ", ");
@@ -1068,6 +1092,22 @@ static void pr_hlsl_builtin(struct rslc_pr *p, const struct rslc_node *n)
          return;
       case RSLC_BFN_TEXTURESIZE:
       {
+#ifdef RSLC_EXTENDED
+         const struct rslc_type *st = pr_arg_type(p, list, 0);
+         if (st->kind != RSLC_TY_SAMPLER2D)
+         {
+            pr_s(p, "rslc_size_x(");
+            pr_hl_tex(p, rslc_list_item(p->c, list, 0), false);
+            if (cnt > 1)
+            {
+               pr_s(p, ", uint(");
+               pr_expr(p, rslc_list_item(p->c, list, 1), PR_PREC_SEQ);
+               pr_c(p, ')');
+            }
+            pr_c(p, ')');
+            return;
+         }
+#endif
          pr_s(p, "int2(rslc_size(");
          pr_hl_tex(p, rslc_list_item(p->c, list, 0), false);
          pr_s(p, ", uint(");
@@ -1130,6 +1170,27 @@ static void pr_hlsl_builtin(struct rslc_pr *p, const struct rslc_node *n)
          return;
       case RSLC_BFN_TEXELFETCH:
       case RSLC_BFN_TEXELFETCHOFFSET:
+#ifdef RSLC_EXTENDED
+      {
+         /* an array takes its level in a fourth coordinate; a
+          * multisampled image the sample after the coordinate; a
+          * buffer neither */
+         const struct rslc_type *st = pr_arg_type(p, list, 0);
+         if (st->kind != RSLC_TY_SAMPLER2D)
+         {
+            pr_hl_tex(p, rslc_list_item(p->c, list, 0), false);
+            pr_s(p, st->kind == RSLC_TY_SAMPLER2DARRAY ? ".Load(int4(" : ".Load(");
+            pr_expr(p, rslc_list_item(p->c, list, 1), PR_PREC_ASSIGN);
+            if (st->kind != RSLC_TY_SAMPLERBUFFER)
+            {
+               pr_s(p, ", ");
+               pr_expr(p, rslc_list_item(p->c, list, 2), PR_PREC_ASSIGN);
+            }
+            pr_s(p, st->kind == RSLC_TY_SAMPLER2DARRAY ? "))" : ")");
+            return;
+         }
+      }
+#endif
          pr_hl_tex(p, rslc_list_item(p->c, list, 0), false);
          pr_s(p, ".Load(int3(");
          pr_expr(p, rslc_list_item(p->c, list, 1), PR_PREC_ASSIGN);
@@ -2348,7 +2409,7 @@ static void pr_expr(struct rslc_pr *p, uint32_t node, int ctx)
                uint32_t a = rslc_list_item(p->c, n->b, i);
                if (i)
                   pr_s(p, ", ");
-               if (rslc_node_at(p->c, a)->type->kind == RSLC_TY_SAMPLER2D)
+               if (RSLC_TY_IS_SAMPLER(rslc_node_at(p->c, a)->type->kind))
                {
                   pr_hl_tex(p, a, false);
                   pr_s(p, ", ");
@@ -3320,7 +3381,7 @@ static void pr_func_head(struct rslc_pr *p, const struct rslc_func *f)
       if (p->msl)
       {
          /* out and inout by reference; a sampler as its pair */
-         if (v->type->kind == RSLC_TY_SAMPLER2D)
+         if (RSLC_TY_IS_SAMPLER(v->type->kind))
          {
             pr_type(p, v->type);
             pr_c(p, ' ');
@@ -3349,7 +3410,7 @@ static void pr_func_head(struct rslc_pr *p, const struct rslc_func *f)
       else
          pr_c(p, '_');
       pr_array_suffix(p, v->type);
-      if (p->hlsl && v->type->kind == RSLC_TY_SAMPLER2D)
+      if (p->hlsl && RSLC_TY_IS_SAMPLER(v->type->kind))
       {
          /* the texture's sampler state travels with it */
          pr_s(p, ", SamplerState _");
@@ -3405,6 +3466,11 @@ static void pr_hl_note(struct rslc_pr *p, const struct rslc_node *n)
          break;
       case RSLC_BFN_TEXTURESIZE:
          t = rslc_node_at(p->c, rslc_list_item(p->c, n->b, 0))->type;
+         if (t->kind != RSLC_TY_SAMPLER2D)
+         {
+            p->hl_uses |= RSLC_HL_SIZE_X;
+            break;
+         }
          p->hl_uses |= t->base == RSLC_BASE_INT ? RSLC_HL_SIZE_I
             : t->base == RSLC_BASE_UINT ? RSLC_HL_SIZE_U : RSLC_HL_SIZE_F;
          break;
@@ -3928,6 +3994,27 @@ static void pr_hlsl_helpers(struct rslc_pr *p)
       pr_s(p, "> t, uint lod) { uint2 d; uint l; t.GetDimensions(lod, d.x, d.y, l); return d; }");
       pr_nl(p);
    }
+#ifdef RSLC_EXTENDED
+   if (p->hl_uses & RSLC_HL_SIZE_X)
+   {
+      /* every RSLC_EXTENDED kind and base: overloads nothing calls cost nothing */
+      for (k = 0; k < 3; k++)
+      {
+         pr_s(p, "int3 rslc_size_x(Texture2DArray<");
+         pr_s(p, tex[k]);
+         pr_s(p, "> t, uint lod) { uint3 d; uint l; t.GetDimensions(lod, d.x, d.y, d.z, l); return int3(d); }");
+         pr_nl(p);
+         pr_s(p, "int3 rslc_size_x(Texture2DMSArray<");
+         pr_s(p, tex[k]);
+         pr_s(p, "> t) { uint3 d; uint s; t.GetDimensions(d.x, d.y, d.z, s); return int3(d); }");
+         pr_nl(p);
+         pr_s(p, "int rslc_size_x(Buffer<");
+         pr_s(p, tex[k]);
+         pr_s(p, "> t) { uint d; t.GetDimensions(d); return int(d); }");
+         pr_nl(p);
+      }
+   }
+#endif
    if (p->hl_uses & RSLC_HL_LEVELS)
    {
       pr_s(p, "int rslc_levels(Texture2D<float4> t) { uint2 d; uint l; t.GetDimensions(0u, d.x, d.y, l); return int(l); }");
@@ -4015,6 +4102,7 @@ static void pr_hlsl_semantic(struct rslc_pr *p, const struct rslc_var *v, bool i
          case RSLC_BI_VERTEXINDEX:   pr_s(p, "SV_VertexID"); return;
          case RSLC_BI_INSTANCEINDEX: pr_s(p, "SV_InstanceID"); return;
          case RSLC_BI_FRONTFACING:   pr_s(p, "SV_IsFrontFace"); return;
+         case RSLC_BI_SAMPLEID:      pr_s(p, "SV_SampleIndex"); return;
          default: return;
       }
    }
@@ -4042,7 +4130,7 @@ static void pr_hlsl_io_field(struct rslc_pr *p, const struct rslc_var *v, bool i
       if (v->quals & RSLC_VQ_SAMPLE)
          pr_s(p, "sample ");
    }
-   if (builtin && (v->builtin == RSLC_BI_VERTEXINDEX || v->builtin == RSLC_BI_INSTANCEINDEX))
+   if (builtin && RSLC_BI_IS_UINT_IN(v->builtin))
       pr_s(p, "uint");
    else
       pr_type(p, v->type);
@@ -4065,6 +4153,7 @@ static bool pr_hlsl_builtin_in(const struct rslc_var *v, bool *in_struct)
       case RSLC_BI_VERTEXINDEX:
       case RSLC_BI_INSTANCEINDEX:
       case RSLC_BI_FRONTFACING:
+      case RSLC_BI_SAMPLEID:
          return true;
       case RSLC_BI_POSITION:
       case RSLC_BI_FRAGDEPTH:
@@ -4346,13 +4435,13 @@ static bool pr_hlsl(struct rslc_pr *p, struct rslc_result *result)
          pr_var_name(p, v);
          pr_s(p, " = ");
          if (v->storage == RSLC_ST_BUILTIN
-               && (v->builtin == RSLC_BI_VERTEXINDEX || v->builtin == RSLC_BI_INSTANCEINDEX))
+               && RSLC_BI_IS_UINT_IN(v->builtin))
             pr_s(p, "int(stage_input.");
          else
             pr_s(p, "stage_input.");
          pr_var_name(p, v);
          if (v->storage == RSLC_ST_BUILTIN
-               && (v->builtin == RSLC_BI_VERTEXINDEX || v->builtin == RSLC_BI_INSTANCEINDEX))
+               && RSLC_BI_IS_UINT_IN(v->builtin))
             pr_c(p, ')');
          pr_c(p, ';');
          if (v->storage == RSLC_ST_BUILTIN && v->builtin == RSLC_BI_FRAGCOORD)
@@ -4874,6 +4963,7 @@ static bool pr_msl(struct rslc_pr *p, struct rslc_result *result)
          case RSLC_BI_FRONTFACING:   attr = "bool gl_FrontFacing [[front_facing]]"; break;
          case RSLC_BI_VERTEXINDEX:   attr = "uint gl_VertexIndex_in [[vertex_id]]"; break;
          case RSLC_BI_INSTANCEINDEX: attr = "uint gl_InstanceIndex_in [[instance_id]]"; break;
+         case RSLC_BI_SAMPLEID:      attr = "uint gl_SampleID_in [[sample_id]]"; break;
          default: continue;
       }
       if (!first)
@@ -4921,7 +5011,7 @@ static bool pr_msl(struct rslc_pr *p, struct rslc_result *result)
             pr_s(p, " = {};");
             break;
          case RSLC_ST_BUILTIN:
-            if (v->builtin == RSLC_BI_VERTEXINDEX || v->builtin == RSLC_BI_INSTANCEINDEX)
+            if (RSLC_BI_IS_UINT_IN(v->builtin))
             {
                pr_nl(p);
                pr_s(p, "int ");
