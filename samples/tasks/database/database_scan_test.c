@@ -8929,6 +8929,180 @@ end:
    ovr_cfg = NULL;
 }
 
+/* A refresh drops a missing entry only when the folder it is judged
+ * by - the content folder for an entry inside it, else its own or its
+ * archive's - holds something; extensions count only inside. */
+struct anchor_case
+{
+   const char *path;
+   const char *needle;
+   bool        kept;
+   const char *what;
+};
+
+/* Refreshes @lpl as the menu does: an entry per case under @root,
+ * saved folder @saved, extension bin, no database. */
+static void anchor_refresh(const char *root, const char *lpl,
+      const char *saved, const struct anchor_case *cases, size_t n)
+{
+   playlist_config_t    *cfg = (playlist_config_t*)calloc(1, sizeof(*cfg));
+   playlist_t           *pl  = NULL;
+   char                  p[1024];
+   struct playlist_entry e;
+   size_t                i;
+   bool                  ran = false;
+
+   if (!cfg)
+   {
+      check(0, "anchor lane", "out of memory");
+      return;
+   }
+   filestream_delete(lpl);
+   playlist_config_set_path(cfg, lpl);
+   cfg->capacity = COLLECTION_SIZE;
+   if (!(pl = playlist_init(cfg)))
+      goto fixture;
+   for (i = 0; i < n; i++)
+   {
+      sprintf(p, "%s/%s", root, cases[i].path);
+      memset(&e, 0, sizeof(e));
+      e.path      = p;
+      e.label     = (char*)"Anchor";
+      e.core_path = (char*)"DETECT";
+      e.core_name = (char*)"DETECT";
+      if (!playlist_push(pl, &e))
+         goto fixture;
+   }
+   playlist_set_scan_content_dir(pl, saved);
+   playlist_set_scan_file_exts(pl, "bin");
+   playlist_set_scan_db_usage(pl, MANUAL_CONTENT_SCAN_USE_DB_NONE);
+   playlist_write_file(pl);
+
+   ran =    manual_content_scan_set_menu_from_playlist(pl,
+               config_get_ptr()->paths.path_content_database, false)
+               == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK
+         && run_scan(saved) && scan_completed;
+   check(ran, "validate: refresh ran", lpl);
+   for (i = 0; ran && i < n; i++)
+      check(file_contains(lpl, cases[i].needle) == cases[i].kept,
+            cases[i].what, cases[i].needle);
+   goto end;
+
+fixture:
+   check(0, "fixture", "could not write the anchor lane");
+end:
+   if (pl)
+      playlist_free(pl);
+   free(cfg);
+   manual_content_scan_reset_settings();
+}
+
+static void anchor_lane(const char *root, const char *pl_dir)
+{
+   /* The needles leave the folders out: Windows stores backslashes. */
+   static const struct anchor_case cases[] = {
+      { "anchor_saved/in_here.bin",      "in_here.bin",     true,
+        "validate: inside, present: kept" },
+      { "anchor_saved/in_gone.bin",      "in_gone.bin",     false,
+        "validate: inside, missing: dropped" },
+      { "anchor_saved/in_here.img",      "in_here.img",     false,
+        "validate: inside, extension not saved: dropped" },
+      { "anchor_full/full_gone.bin",     "full_gone.bin",   false,
+        "validate: outside, missing, folder there: dropped" },
+      { "anchor_absent/absent_gone.bin", "absent_gone.bin", true,
+        "validate: outside, missing, folder gone: kept" },
+      { "anchor_void/void_gone.bin",     "void_gone.bin",   true,
+        "validate: outside, missing, folder empty: kept" },
+      { "anchor_full/full_here.img",     "full_here.img",   true,
+        "validate: outside, extension not saved: kept" },
+      { "anchor_saved2/sib_gone.bin",    "sib_gone.bin",    true,
+        "validate: outside, name shares the prefix: kept" },
+      { "anchor_absent/absent.zip#sub/m.bin", "absent.zip#sub", true,
+        "validate: member, archive's folder gone: kept" },
+      { "anchor_full/full.zip#sub/m.bin",     "full.zip#sub",   false,
+        "validate: member, archive's folder there: dropped" }
+   };
+#ifdef _WIN32
+   static const struct anchor_case other_case[] = {
+      { "anchor_saved/in_here.img", "in_here.img", false,
+        "validate: saved folder in another case: inside" }
+   };
+#else
+   /* Saved through a link to anchor_real.  Entries are saved with
+    * their symlinks resolved, so a missing one names anchor_real. */
+   static const struct anchor_case linked[] = {
+      { "anchor_link/link_here.img",          "link_here.img", false,
+        "validate: via symlink, extension not saved: dropped" },
+      { "anchor_real/link_sub/link_gone.bin", "link_gone.bin", false,
+        "validate: via symlink, missing: dropped" }
+   };
+#endif
+   char saved[512], full[512], plist[512], lpl[1024];
+   char p[1024];
+
+   sprintf(saved, "%s/anchor_saved", root);
+   sprintf(full,  "%s/anchor_full",  root);
+   sprintf(plist, "%s/anchor_pl",    root);
+   sprintf(lpl,   "%s/Anchor.lpl",   plist);
+   path_mkdir(saved);
+   path_mkdir(full);
+   path_mkdir(plist);
+   sprintf(p, "%s/anchor_void", root);
+   path_mkdir(p);
+   sprintf(p, "%s/in_here.bin", saved);
+   if (!filestream_write_file(p, "bin", 3))
+      goto fixture;
+   sprintf(p, "%s/in_here.img", saved);
+   if (!filestream_write_file(p, "img", 3))
+      goto fixture;
+   sprintf(p, "%s/full_here.img", full);
+   if (!filestream_write_file(p, "img", 3))
+      goto fixture;
+
+   strlcpy(config_get_ptr()->paths.directory_playlist, plist,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   anchor_refresh(root, lpl, saved, cases,
+         sizeof(cases) / sizeof(cases[0]));
+
+#ifdef _WIN32
+   sprintf(saved, "%s/ANCHOR_SAVED", root);
+   sprintf(lpl, "%s/AnchorCase.lpl", plist);
+   anchor_refresh(root, lpl, saved, other_case,
+         sizeof(other_case) / sizeof(other_case[0]));
+   printf("  skip  validate: via symlink (none made on Windows)\n");
+#else
+   sprintf(p, "%s/anchor_real", root);
+   path_mkdir(p);
+   sprintf(p, "%s/anchor_real/link_here.bin", root);
+   if (!filestream_write_file(p, "bin", 3))
+      goto fixture;
+   sprintf(p, "%s/anchor_real/link_here.img", root);
+   if (!filestream_write_file(p, "img", 3))
+      goto fixture;
+   sprintf(saved, "%s/anchor_link", root);
+   sprintf(lpl, "%s/AnchorLink.lpl", plist);
+   filestream_delete(saved);
+   if (symlink("anchor_real", saved) != 0)
+      goto fixture;
+   strlcpy(p, saved, sizeof(p));
+   if (   !path_resolve_realpath(p, sizeof(p), true)
+       || !strcmp(p, saved))
+   {
+      printf("  skip  validate: via symlink (links not resolved)\n");
+      goto end;
+   }
+   anchor_refresh(root, lpl, saved, linked,
+         sizeof(linked) / sizeof(linked[0]));
+#endif
+   goto end;
+
+fixture:
+   check(0, "fixture", "could not write the anchor lane");
+end:
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+
 /* --scan-core: a path, then a file name, then a display name; more
  * than one match in the step that decides is ambiguous. */
 static void core_lookup_lane(const char *root)
@@ -10304,9 +10478,142 @@ fixture:
          sizeof(config_get_ptr()->paths.directory_playlist));
 }
 
+/* A refresh-all skips a playlist whose saved folder is empty, as it
+ * skips one whose folder is gone: an unplugged drive's mount point.
+ * The menu's single refresh is not a chain item; it stops at the
+ * empty listing and leaves the playlist as it was. */
+static void empty_folder_lane(const char *root, const char *pl_dir,
+      uint32_t crc_a, uint32_t sz_a, bool threaded)
+{
+   char                pl[512], one_pl[512], a[512], gone[512];
+   char                mount[512], out[1024], err[1024], p[1024];
+   char                stale[1024], want[1536], what[128], detail[160];
+   const char         *q = threaded ? "(threaded)" : "(regular)";
+   task_dbscan_item_t *items;
+   playlist_config_t  *cfg    = NULL;
+   playlist_t         *one    = NULL;
+   void               *before = NULL, *after = NULL;
+   int64_t             before_len, after_len;
+   bool                ran, captured, pushed, same;
+
+   sprintf(pl,     "%s/empty_pl",      root);
+   sprintf(one_pl, "%s/empty_one_pl",  root);
+   sprintf(a,      "%s/empty_a",       root);
+   sprintf(gone,   "%s/empty_gone",    root);
+   sprintf(mount,  "%s/empty_mount",   root);
+   sprintf(out,    "%s/empty_out.txt", root);
+   sprintf(err,    "%s/empty_err.txt", root);
+   path_mkdir(pl);
+   path_mkdir(one_pl);
+   path_mkdir(a);
+   path_mkdir(mount);
+   delete_playlists(pl);
+   sprintf(p, "%s/01_alpha.bin", a);
+   if (!write_content(p, crc_a, sz_a))
+      goto fixture;
+   sprintf(p, "%s/a_ok.lpl", pl);
+   sprintf(stale, "%s/00_gone.bin", a);
+   if (!refresh_write(p, a, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/b_gone.lpl", pl);
+   sprintf(stale, "%s/00_gone.bin", gone);
+   if (!refresh_write(p, gone, NULL, stale))
+      goto fixture;
+   sprintf(p, "%s/d_mount.lpl", pl);
+   sprintf(stale, "%s/00_gone.bin", mount);
+   if (!refresh_write(p, mount, NULL, stale))
+      goto fixture;
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   use_queue(threaded);
+
+   if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
+      goto fixture;
+   refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH_ALL, NULL);
+   ran = refresh_run(items, 1, out, err, true);
+   sprintf(what, "empty mount %s: skipped like a gone folder", q);
+   snprintf(detail, sizeof(detail), "%u items, ran %u, skipped %u, "
+         "failed %u", chain_seen, chain_totals.ran, chain_totals.skipped,
+         chain_totals.failed);
+   check(   ran && chain_seen == 3
+         && chain_saw(0, "a_ok",    TASK_DBSCAN_RAN,     1)
+         && chain_saw(1, "b_gone",  TASK_DBSCAN_SKIPPED, -1)
+         && chain_saw(2, "d_mount", TASK_DBSCAN_SKIPPED, -1)
+         && chain_totals.ran == 1 && chain_totals.skipped == 2
+         && !chain_totals.failed, what, detail);
+   sprintf(what, "empty mount %s: its line", q);
+   sprintf(want, "%s: skipped: content folder empty (%s)", "d_mount",
+         mount);
+   check(file_contains(err, want), what, err);
+   sprintf(what, "empty mount %s: its entry kept", q);
+   sprintf(p, "%s/d_mount.lpl", pl);
+   check(file_contains(p, stale), what, p);
+
+   chain_seen      = 0;
+   chain_dones     = 0;
+   chain_ud_ok     = true;
+   menu_all_msg[0] = '\0';
+   cli_output      = false;
+   captured        = capture_begin(out, err);
+   pushed          = task_push_dbscan_chain(menu_all_item(), 1, NULL,
+         menu_all_done_cb, NULL);
+   chain_wait(false);
+   if (captured)
+      capture_end();
+   sprintf(what, "empty mount %s: the menu's summary", q);
+   check(   pushed && chain_dones == 1 && chain_ud_ok
+         && !strcmp(menu_all_msg,
+               "Playlists refreshed: 1, skipped: 2, failed: 0")
+         && captured && path_get_size(err) == 0, what, menu_all_msg);
+
+   if (!threaded)
+   {
+      sprintf(p, "%s/Empty.lpl", one_pl);
+      strlcpy(config_get_ptr()->paths.directory_playlist, one_pl,
+            sizeof(config_get_ptr()->paths.directory_playlist));
+      filestream_delete(p);
+      if (   !refresh_write(p, mount, NULL, stale)
+          || !filestream_read_file(p, &before, &before_len)
+          || !(cfg = (playlist_config_t*)calloc(1, sizeof(*cfg))))
+         goto fixture;
+      playlist_config_set_path(cfg, p);
+      cfg->capacity          = COLLECTION_SIZE;
+      invalid_content_pushed = false;
+      one = playlist_init(cfg);
+      ran =    one
+            && manual_content_scan_set_menu_from_playlist(one,
+                  config_get_ptr()->paths.path_content_database, false)
+                  == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK
+            && run_scan(mount) && scan_completed;
+      same =    filestream_read_file(p, &after, &after_len)
+             && after_len == before_len
+             && !memcmp(after, before, (size_t)before_len);
+      check(   ran && invalid_content_pushed && same
+            && scan_result.failed && scan_result.added == 0
+            && scan_result.errors == 0,
+            "empty mount: a menu refresh fails, the playlist as it was", p);
+   }
+   goto end;
+
+fixture:
+   check(0, "fixture", "could not write the empty folder lane");
+end:
+   if (one)
+      playlist_free(one);
+   free(cfg);
+   free(before);
+   free(after);
+   manual_content_scan_reset_settings();
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
+#ifndef _WIN32
+   static char root_real[512];
+#endif
    char db_dir[512], core_dir[512], info_dir[512];
    char in_dir[512], pl_dir[512], p[1024];
    bool cache_supported = false;
@@ -10337,6 +10644,13 @@ int main(int argc, char **argv)
    window_open_hook = scan_tick_open;
    crc_init();
    verbosity_disable();
+#ifndef _WIN32
+   /* Playlists save paths with their symlinks resolved */
+   path_mkdir(root);
+   strlcpy(root_real, root, sizeof(root_real));
+   if (path_resolve_realpath(root_real, sizeof(root_real), true))
+      root = root_real;
+#endif
 
    printf("scanner end-to-end test (dir: %s)\n\n", root);
 
@@ -11388,6 +11702,7 @@ int main(int argc, char **argv)
    output_lane(root, pl_dir, db_dir);
    reset_lane(root, pl_dir);
    overrides_lane(root, pl_dir);
+   anchor_lane(root, pl_dir);
    core_lookup_lane(root);
    chain_lane(root, pl_dir, crc_a, sz_a, false);
    chain_lane(root, pl_dir, crc_a, sz_a, true);
@@ -11396,6 +11711,8 @@ int main(int argc, char **argv)
    fs_main_lane(root, pl_dir);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, false);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, true);
+   empty_folder_lane(root, pl_dir, crc_a, sz_a, false);
+   empty_folder_lane(root, pl_dir, crc_a, sz_a, true);
    {
       char reader_db[512];
 
