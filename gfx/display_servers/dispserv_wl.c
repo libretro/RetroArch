@@ -22,6 +22,7 @@
 
 #include <poll.h>
 #include <wayland-client.h>
+#include <time.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -226,7 +227,24 @@ static void *wl_display_server_init(void)
    serv->registry = wl_display_get_registry(serv->dpy);
    wl_registry_add_listener(serv->registry, &registry_listener, serv);
 
-   wl_display_flush(serv->dpy);
+   /* Wait for wayland output information to become available,
+    * with a maximum wait time of 5 seconds. */
+
+   struct timespec start, now;
+
+   clock_gettime(CLOCK_MONOTONIC, &start);
+
+   while (!kwin_outputs_ready(&serv->kwin)
+      && !wlr_outputs_ready(&serv->wlr))
+   {
+      if (wl_display_roundtrip(serv->dpy) < 0)
+         break;
+
+      clock_gettime(CLOCK_MONOTONIC, &now);
+
+      if ((now.tv_sec - start.tv_sec) >= 5)
+         break;
+   }
 
 #ifdef RARCH_HAVE_MUTTER_DC
    /* Starts the Mutter worker; its answer is read at each call. */
