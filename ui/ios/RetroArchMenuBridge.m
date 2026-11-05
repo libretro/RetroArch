@@ -67,12 +67,35 @@ bool ios_menu_bridge_visible(bool visible)
    {
       if (!ios_menu_controller || !ios_menu_controller.parentViewController)
          return false;
+      if (visible)
+      {
+         UIView *parent = ios_menu_controller.parentViewController.view;
+         UIWindow *window = parent.window;
+         if (window)
+         {
+            /* Navigation must remain outside the game's cropped viewport. */
+            CGRect frame = window.bounds;
+            UIEdgeInsets extra = ios_menu_controller.additionalSafeAreaInsets;
+            UIEdgeInsets current = ios_menu_controller.view.safeAreaInsets;
+            UIEdgeInsets target = window.safeAreaInsets;
+            if (ios_menu_controller.view.superview != window)
+               [window addSubview:ios_menu_controller.view];
+            if (!CGRectEqualToRect(ios_menu_controller.view.frame, frame))
+               ios_menu_controller.view.frame = frame;
+            target.top = MAX(0, target.top - current.top + extra.top);
+            target.left = MAX(0, target.left - current.left + extra.left);
+            target.bottom = MAX(0, target.bottom - current.bottom + extra.bottom);
+            target.right = MAX(0, target.right - current.right + extra.right);
+            if (!UIEdgeInsetsEqualToEdgeInsets(extra, target))
+               ios_menu_controller.additionalSafeAreaInsets = target;
+         }
+      }
       if (ios_menu_controller.view.hidden == visible)
       {
          ios_menu_controller.view.hidden = !visible;
          cocoa_input_touches_reset();
          if (visible)
-            [ios_menu_controller.parentViewController.view
+            [ios_menu_controller.view.superview
                bringSubviewToFront:ios_menu_controller.view];
       }
       return true;

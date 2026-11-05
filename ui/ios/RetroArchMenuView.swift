@@ -151,6 +151,8 @@ private struct NativeMenuSettingsView: View {
       .disabled(model.busy)
       .navigationTitle(model.label("settings", fallback: "Menu Settings"))
       .navigationBarTitleDisplayMode(.inline)
+      .toolbarBackground(Color(UIColor.systemGroupedBackground), for: .navigationBar)
+      .toolbarBackground(.visible, for: .navigationBar)
       .onAppear { ios_menu_settings_visible(self.model.session, true) }
       .onDisappear { ios_menu_settings_visible(self.model.session, false) }
    }
@@ -237,21 +239,26 @@ private struct NativeMenuView: View {
          .listStyle(GroupedListStyle())
          .navigationTitle(model.title)
          .navigationBarTitleDisplayMode(.inline)
+         .toolbarBackground(Color(UIColor.systemGroupedBackground), for: .navigationBar)
+         .toolbarBackground(.visible, for: .navigationBar)
          .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                Button(action: {
                   self.model.send(self.model.canGoBack ? IOS_MENU_BACK : IOS_MENU_HOME)
                }) {
-                  Image(systemName: model.canGoBack ? "chevron.left" : "house")
-                     .accessibilityLabel(model.canGoBack
-                        ? model.label("back", fallback: "Back")
-                        : model.label("home", fallback: "Main Menu"))
+                  if model.canGoBack {
+                     Label(model.label("back", fallback: "Back"), systemImage: "chevron.backward")
+                        .labelStyle(.titleAndIcon)
+                  } else {
+                     Label(model.label("home", fallback: "Main Menu"), systemImage: "line.3.horizontal")
+                        .labelStyle(.iconOnly)
+                  }
                }.disabled(model.busy)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                Button(action: { self.model.settingsOpen = true }) {
-                  Image(systemName: "gear")
-                     .accessibilityLabel(model.label("settings", fallback: "Menu Settings"))
+                  Label(model.label("settings", fallback: "Menu Settings"), systemImage: "gearshape")
+                     .labelStyle(.iconOnly)
                }
             }
          }
@@ -272,6 +279,8 @@ private struct NativeMenuView: View {
                }
          }
       }
+      .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+      .tint(.accentColor)
    }
 
    var body: some View {
@@ -310,6 +319,7 @@ final class RetroArchNativeMenuController: UIViewController {
 
    override func viewDidLoad() {
       super.viewDidLoad()
+      view.backgroundColor = .systemGroupedBackground
       let host = UIHostingController(rootView: NativeMenuView(model: model))
       addChild(host)
       host.view.frame = view.bounds
