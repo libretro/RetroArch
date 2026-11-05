@@ -2405,6 +2405,7 @@ static const struct
    char s_8f379310[49];
    char s_6a9b757c[30];
    char s_6c52dfb1[33];
+   char s_334daaaa[8];
    char s_9119ef97[24];
 #if defined (WIIU)
 #ifdef WIIU
@@ -6906,6 +6907,7 @@ static const struct
    "Posi\303\247\303\243o Y personalizada da propor\303\247\303\243o de tela",
    "Definir largura de tela de VI",
    "Sincroniza\303\247\303\243o vertical (Vsync)",
+   "Sistema",
    "Swapchains Aguard\303\241veis",
 #if defined (WIIU)
 #ifdef WIIU
@@ -9522,7 +9524,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193613u
+      (sizeof(msg_hash_pt_br_blob) == (193621u
 #ifdef ANDROID
        + 352u
 #endif
@@ -12386,6 +12388,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU

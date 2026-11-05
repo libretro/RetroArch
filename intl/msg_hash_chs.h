@@ -2710,6 +2710,7 @@ static const struct
    char s_8f379310[28];
    char s_6a9b757c[23];
    char s_6c52dfb1[21];
+   char s_334daaaa[7];
    char s_9119ef97[22];
 #if defined (WIIU)
 #ifdef WIIU
@@ -3600,9 +3601,7 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[60];
    char s_1536325c[209];
-   char s_ad621411[92];
    char s_f6ec26c1[43];
-   char s_4f7fb41f[84];
    char s_70f70009[331];
    char s_3487ce71[35];
 #endif
@@ -8630,6 +8629,7 @@ static const struct
    "\256",
    "\350\256\276\347\275\256 VI \345\261\217\345\271\225\345\256\275\345\272\246",
    "\345\236\202\347\233\264\345\220\214\346\255\245 (VSync)",
+   "\347\263\273\347\273\237",
    "\345\217\257\347\255\211\345\276\205\347\232\204\344\272\244\346\215\242\351\223\276",
 #if defined (WIIU)
 #ifdef WIIU
@@ -11582,15 +11582,8 @@ static const struct
    "\345\210\231\344\275\277\347\224\250\345\214\205\345\220\253\345\256\214\346\225\264\350\267\257"
    "\345\276\204\347\232\204\345\234\260\345\235\200\357\274\214\344\276\213\345\246\202 nfs://serve"
    "r/export/path\343\200\202",
-   "MOUNT \346\214\202\350\275\275\346\234\215\345\212\241\347\232\204\347\253\257\345\217\243\343"
-   "\200\202\350\256\276\344\270\272 0 \345\210\231\346\237\245\350\257\242\346\234\215\345\212\241"
-   "\345\231\250\347\232\204\347\253\257\345\217\243\346\230\240\345\260\204\345\231\250 (portmapper"
-   ")\343\200\202",
    "\344\277\235\346\214\201\344\270\216\346\234\215\345\212\241\345\231\250\345\274\200\345\220\257"
    "\347\232\204\350\277\236\346\216\245\346\225\260\351\207\217\343\200\202",
-   "NFS \346\234\215\345\212\241\347\232\204\347\253\257\345\217\243\343\200\202\350\256\276\344\270"
-   "\272 0 \345\210\231\346\237\245\350\257\242\346\234\215\345\212\241\345\231\250\347\232\204\347"
-   "\253\257\345\217\243\346\230\240\345\260\204\345\231\250 (portmapper)\343\200\202",
    "\345\275\223\346\270\270\346\210\217\345\210\206\345\235\227\350\257\273\345\217\226\346\226\207"
    "\344\273\266\346\227\266\351\242\204\345\205\210\346\213\211\345\217\226\346\225\260\346\215\256"
    "\357\274\214\345\220\216\345\217\260\347\272\277\347\250\213\344\274\232\346\214\201\347\273\255"
@@ -15012,7 +15005,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_chs_blob_check[
-      (sizeof(msg_hash_chs_blob) == (182756u
+      (sizeof(msg_hash_chs_blob) == (182763u
 #ifdef ANDROID
        + 220u
 #endif
@@ -15421,9 +15414,7 @@ typedef char msg_hash_chs_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 60u
        + 209u
-       + 92u
        + 43u
-       + 84u
        + 331u
        + 35u
 #endif
@@ -18292,6 +18283,7 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -19181,9 +19173,7 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif

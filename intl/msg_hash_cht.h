@@ -2167,6 +2167,7 @@ static const struct
    char s_8f379310[19];
    char s_6a9b757c[23];
    char s_6c52dfb1[21];
+   char s_334daaaa[7];
    char s_9119ef97[22];
 #if defined (WIIU)
 #ifdef WIIU
@@ -6708,6 +6709,7 @@ static const struct
    "\350\207\252\350\250\202\345\236\202\347\233\264\344\275\215\347\275\256",
    "\350\250\255\345\256\232\350\236\242\345\271\225(VI)\345\257\254\345\272\246",
    "\345\236\202\347\233\264\345\220\214\346\255\245 (VSync)",
+   "\347\263\273\347\265\261",
    "\345\217\257\347\255\211\345\200\231\344\272\244\346\217\233\351\217\210\347\265\220",
 #if defined (WIIU)
 #ifdef WIIU
@@ -10471,7 +10473,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cht_blob_check[
-      (sizeof(msg_hash_cht_blob) == (120249u
+      (sizeof(msg_hash_cht_blob) == (120256u
 #ifdef ANDROID
        + 157u
 #endif
@@ -12943,6 +12945,7 @@ static const msg_hash_id_t msg_hash_cht_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU

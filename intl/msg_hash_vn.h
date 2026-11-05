@@ -1703,6 +1703,7 @@ static const struct
    char s_fa6d4901[25];
    char s_4e2d78a1[32];
    char s_7ea8ec8f[28];
+   char s_0cb936fe[44];
    char s_e1606ab3[30];
    char s_7772fc51[44];
    char s_29889f9f[28];
@@ -2772,6 +2773,9 @@ static const struct
    char s_8f379310[49];
    char s_6a9b757c[36];
    char s_6c52dfb1[27];
+   char s_9e5596c6[43];
+   char s_b9bc0c48[39];
+   char s_334daaaa[13];
    char s_9119ef97[37];
 #if defined (WIIU)
 #ifdef WIIU
@@ -3694,9 +3698,9 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[68];
    char s_1536325c[373];
-   char s_ad621411[125];
+   char s_ad621411[137];
    char s_f6ec26c1[58];
-   char s_4f7fb41f[117];
+   char s_4f7fb41f[157];
    char s_70f70009_0[500];
    char s_70f70009_1[28];
    char s_3487ce71[40];
@@ -3793,6 +3797,7 @@ static const struct
    char s_abf90aae[146];
    char s_b48e1eda[77];
    char s_4113227d[64];
+   char s_1e07c6ac[108];
    char s_0a1cf5a1[188];
    char s_64e37a7f[102];
    char s_cac7ba4d[71];
@@ -4355,6 +4360,9 @@ static const struct
    char s_9506fc7d[116];
    char s_9506fc7e[116];
    char s_47ae341f[121];
+   char s_5e122df4[344];
+   char s_cc84c32d[88];
+   char s_fa09f4f6[90];
    char s_48696c85[81];
 #if defined (WIIU)
 #ifdef WIIU
@@ -4766,6 +4774,7 @@ static const struct
    char s_f279fcb2[72];
    char s_8b487430[32];
 #endif
+   char s_4e346408[52];
    char s_a602dd84[43];
    char s_aa7139c6[75];
    char s_4ae9f9f9[70];
@@ -4868,6 +4877,7 @@ static const struct
    char s_bd039188[37];
    char s_9c7aa654[48];
    char s_e43d27b3[45];
+   char s_3d24ce62[84];
    char s_fbd2d537[82];
    char s_bd8967e3[81];
    char s_58cc2bb3[65];
@@ -5024,6 +5034,12 @@ static const struct
    char s_4f3bb585[36];
    char s_5876788a[78];
    char s_b7248c5d[78];
+   char s_a3e7b13a[166];
+   char s_966a8865[127];
+   char s_69e2b087[138];
+   char s_098459c5[80];
+   char s_35e09a43[77];
+   char s_a27fec29[135];
    char s_a7ae1b42[39];
 #ifdef HAVE_LAKKA
    char s_ebacf443[23];
@@ -7638,6 +7654,7 @@ static const struct
    "X\303\263a n\341\273\231i dung trong ()",
    "X\303\263a tr\303\262 ch\306\241i trong () v\303\240 []",
    "Qu\341\272\243n l\303\275 danh s\303\241ch ch\306\241i",
+   "L\303\240m m\341\273\233i t\341\272\245t c\341\272\243 danh s\303\241ch tr\303\262 ch\306\241i",
    "C\341\272\255p nh\341\272\255t danh s\303\241ch ch\306\241i",
    "\304\220\341\272\267t l\341\272\241i li\303\252n k\341\272\277t tr\303\254nh gi\341\272\243 l"
    "\341\272\255p",
@@ -8880,6 +8897,9 @@ static const struct
    "\255 Y)",
    "\304\220\341\272\267t chi\341\273\201u r\341\273\231ng m\303\240n h\303\254nh VI",
    "\304\220\341\273\223ng b\341\273\231 d\341\273\215c (VSync)",
+   "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n Vulkan t\303\271y ch\341\273\211nh",
+   "H\341\273\207 th\341\273\221ng (Kh\341\273\237i \304\221\341\273\231ng an to\303\240n)",
+   "H\341\273\207 th\341\273\221ng",
    "Chu\341\273\227i ho\303\241n \304\221\341\273\225i c\303\263 th\341\273\203 ch\341\273\235",
 #if defined (WIIU)
 #ifdef WIIU
@@ -11869,15 +11889,16 @@ static const struct
    "\241n. \304\220\341\273\203 tr\341\273\221ng \304\221\341\273\203 s\341\273\255 d\341\273\245ng "
    "\304\221\306\260\341\273\235ng d\341\272\253n chia s\341\272\273 \304\221\306\260\341\273\243c g"
    "hi trong \304\221\341\273\213a ch\341\273\211 d\341\272\241ng nfs://server/export/path.",
-   "C\341\273\225ng c\341\273\247a d\341\273\213ch v\341\273\245 G\341\272\256N K\341\272\276T. Nh"
-   "\341\272\255p 0 \304\221\341\273\203 y\303\252u c\341\272\247u tr\303\254nh qu\341\272\243n l"
-   "\303\275 c\341\273\225ng c\341\273\247a m\303\241y ch\341\273\247 cung c\341\272\245p c\341\273"
-   "\225ng.",
+   "C\341\273\225ng c\341\273\247a d\341\273\213ch v\341\273\245 MOUNT. 0 y\303\252u c\341\272\247u "
+   "b\341\273\231 \303\241nh x\341\272\241 c\341\273\225ng c\341\273\247a m\303\241y ch\341\273\247."
+   " Phi\303\252n b\341\272\243n 4 kh\303\264ng s\341\273\255 d\341\273\245ng d\341\273\213ch v\341"
+   "\273\245 n\303\240y.",
    "S\341\273\221 k\341\272\277t n\341\273\221i \304\221\306\260\341\273\243c duy tr\303\254 m\341"
    "\273\237 t\341\273\233i m\303\241y ch\341\273\247.",
-   "C\341\273\225ng c\341\273\247a d\341\273\213ch v\341\273\245 NFS. Nh\341\272\255p 0 \304\221\341"
-   "\273\203 y\303\252u c\341\272\247u tr\303\254nh qu\341\272\243n l\303\275 c\341\273\225ng c\341"
-   "\273\247a m\303\241y ch\341\273\247 cung c\341\272\245p c\341\273\225ng.",
+   "C\341\273\225ng c\341\273\247a d\341\273\213ch v\341\273\245 NFS. 0 y\303\252u c\341\272\247u b"
+   "\341\273\231 \303\241nh x\341\272\241 c\341\273\225ng c\341\273\247a m\303\241y ch\341\273\247 k"
+   "hi d\303\271ng phi\303\252n b\341\272\243n 3 v\303\240 c\303\263 ngh\304\251a l\303\240 2049 khi"
+   " d\303\271ng phi\303\252n b\341\272\243n 4.",
    "D\341\273\257 li\341\273\207u \304\221\306\260\341\273\243c t\341\272\243i tr\306\260\341\273"
    "\233c khi tr\303\262 ch\306\241i \304\221\341\273\215c t\341\273\207p theo t\341\273\253ng ph"
    "\341\272\247n nh\341\273\217, v\341\273\233i m\341\273\231t lu\341\273\223ng ch\341\272\241y n"
@@ -12179,6 +12200,9 @@ static const struct
    " dung trong danh s\303\241ch ch\306\241i n\303\240y.",
    "Th\341\273\261c hi\341\273\207n c\303\241c t\303\241c v\341\273\245 b\341\272\243o tr\303\254 tr"
    "\303\252n danh s\303\241ch ch\306\241i.",
+   "Qu\303\251t l\341\272\241i m\341\273\215i danh s\303\241ch tr\303\262 ch\306\241i \304\221\303"
+   "\243 l\306\260u thi\341\272\277t l\341\272\255p qu\303\251t, s\341\273\255 d\341\273\245ng c\303"
+   "\241c thi\341\272\277t l\341\272\255p \304\221\303\263.",
    "Th\303\252m n\341\273\231i dung m\341\273\233i v\303\240 x\303\263a c\303\241c m\341\273\245c kh"
    "\303\264ng h\341\273\243p l\341\273\207 b\341\272\261ng c\303\241ch l\341\272\267p l\341\272\241"
    "i thao t\303\241c qu\303\251t n\341\273\231i dung \304\221\303\243 d\303\271ng \304\221\341\273"
@@ -14188,6 +14212,20 @@ static const struct
    "\304\220\341\273\223ng b\341\273\231 h\303\263a video \304\221\341\272\247u ra c\341\273\247a ca"
    "rd \304\221\341\273\223 h\341\273\215a v\341\273\233i t\341\273\221c \304\221\341\273\231 l\303"
    "\240m m\341\273\233i c\341\273\247a m\303\240n h\303\254nh. Khuy\341\272\277n ngh\341\273\213.",
+   "S\341\273\255 d\341\273\245ng g\303\263i tr\303\254nh \304\221i\341\273\201u khi\341\273\203n Vu"
+   "lkan (.zip) thay cho tr\303\254nh \304\221i\341\273\201u khi\341\273\203n h\341\273\207 th\341"
+   "\273\221ng. Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n ch\341\272\241y b\303\252n tron"
+   "g RetroArch: ch\341\273\211 s\341\273\255 d\341\273\245ng c\303\241c g\303\263i t\341\273\253 ng"
+   "u\341\273\223n m\303\240 b\341\272\241n tin c\341\272\255y. Thi\341\272\277t l\341\272\255p c"
+   "\303\263 hi\341\273\207u l\341\273\261c v\303\240o l\341\272\247n kh\341\273\237i \304\221\341"
+   "\273\231ng Vulkan ti\341\272\277p theo. Kh\341\273\237i \304\221\341\273\231ng: tr\303\254nh "
+   "\304\221i\341\273\201u khi\341\273\203n h\341\273\207 th\341\273\221ng.",
+   "L\341\272\247n ch\341\272\241y tr\306\260\341\273\233c b\341\273\213 l\341\273\227i, \304\221ang"
+   " s\341\273\255 d\341\273\245ng tr\303\254nh \304\221i\341\273\201u khi\341\273\203n h\341\273"
+   "\207 th\341\273\221ng",
+   "%s s\341\272\275 \304\221\306\260\341\273\243c s\341\273\255 d\341\273\245ng l\341\272\241i tron"
+   "g l\341\272\247n kh\341\273\237i \304\221\341\273\231ng b\303\254nh th\306\260\341\273\235ng ti"
+   "\341\272\277p theo",
    "\304\220\341\273\223ng b\341\273\231 c\341\273\251ng CPU v\303\240 GPU. Gi\341\272\243m \304\221"
    "\341\273\231 tr\341\273\205 nh\306\260ng gi\341\272\243m hi\341\273\207u su\341\272\245t.",
 #if defined (WIIU)
@@ -14949,6 +14987,8 @@ static const struct
    "\233i SSID=%s v\303\240 M\341\272\255t kh\341\272\251u=%s",
    "T\341\272\257t \304\220i\341\273\203m Truy c\341\272\255p Wi-Fi.",
 #endif
+   "M\341\273\231t qu\303\241 tr\303\254nh qu\303\251t n\341\273\231i dung \304\221ang di\341\273"
+   "\205n ra.",
    "T\341\273\207p DAT arcade ch\341\273\215n kh\303\264ng h\341\273\243p l\341\273\207.",
    "Kh\303\264ng t\341\272\243i \304\221\306\260\341\273\243c t\341\273\207p DAT arcade (\304\221"
    "\341\273\213nh d\341\272\241ng kh\303\264ng h\341\273\243p l\341\273\207?)",
@@ -15147,6 +15187,8 @@ static const struct
    "\221\341\272\267t l\341\272\241i: ",
    "Danh s\303\241ch ch\306\241i \304\221\303\243 \304\221\306\260\341\273\243c l\303\240m s\341\272"
    "\241ch: ",
+   "S\341\273\221 danh s\303\241ch tr\303\262 ch\306\241i \304\221\303\243 l\303\240m m\341\273\233i"
+   ": %u, b\341\273\213 b\341\273\217 qua: %u, th\341\272\245t b\341\272\241i: %u",
    "L\303\240m m\341\273\233i th\341\272\245t b\341\272\241i - t\341\273\207p DAT arcade qu\303\241 "
    "l\341\273\233n (b\341\273\231 nh\341\273\233 kh\303\264ng \304\221\341\273\247): ",
    "L\303\240m m\341\273\233i th\341\272\245t b\341\272\241i - th\306\260 m\341\273\245c n\341\273"
@@ -15395,6 +15437,25 @@ static const struct
    "\303\254nh tr\303\262 ch\306\241i ch\303\255nh x\303\241c \304\221\303\243 t\341\272\257t.",
    "\304\220\341\273\223ng b\341\273\231 v\341\273\233i t\341\273\221c \304\221\341\273\231 khung h"
    "\303\254nh tr\303\262 ch\306\241i ch\303\255nh x\303\241c \304\221\303\243 b\341\272\255t.",
+   "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n Vulkan t\303\271y ch\341\273\211nh \304\221"
+   "\303\243 g\341\272\267p s\341\273\261 c\341\273\221 tr\306\260\341\273\233c \304\221\303\263 v"
+   "\303\240 b\341\273\213 t\341\272\257t \304\221\341\273\221i v\341\273\233i l\303\265i gi\341\272"
+   "\243 l\341\272\255p n\303\240y. H\303\243y ch\341\273\215n l\341\272\241i \304\221\341\273\203 t"
+   "h\341\273\255 l\341\272\241i.",
+   "Kh\303\264ng th\341\273\203 kh\341\273\237i \304\221\341\273\231ng tr\303\254nh \304\221i\341"
+   "\273\201u khi\341\273\203n Vulkan t\303\271y ch\341\273\211nh. \304\220ang s\341\273\255 d\341"
+   "\273\245ng tr\303\254nh \304\221i\341\273\201u khi\341\273\203n h\341\273\207 th\341\273\221ng.",
+   "G\303\263i tr\303\254nh \304\221i\341\273\201u khi\341\273\203n Vulkan t\303\271y ch\341\273\211"
+   "nh kh\303\264ng th\341\273\203 s\341\273\255 d\341\273\245ng \304\221\306\260\341\273\243c. \304"
+   "\220ang s\341\273\255 d\341\273\245ng tr\303\254nh \304\221i\341\273\201u khi\341\273\203n h\341"
+   "\273\207 th\341\273\221ng.",
+   "Kh\341\273\237i \304\221\341\273\231ng l\341\272\241i RetroArch \304\221\341\273\203 thay \304"
+   "\221\341\273\225i tr\303\254nh \304\221i\341\273\201u khi\341\273\203n Vulkan.",
+   "\304\220\303\243 kh\341\273\237i \304\221\341\273\231ng b\341\272\261ng tr\303\254nh \304\221i"
+   "\341\273\201u khi\341\273\203n Vulkan c\341\273\247a h\341\273\207 th\341\273\221ng.",
+   "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n Vulkan t\303\271y ch\341\273\211nh y\303"
+   "\252u c\341\272\247u GPU Adreno v\303\240 Android 9. \304\220ang s\341\273\255 d\341\273\245ng t"
+   "r\303\254nh \304\221i\341\273\201u khi\341\273\203n h\341\273\207 th\341\273\221ng.",
    "\304\220ang ch\341\273\235 k\341\272\277t n\341\273\221i t\341\273\253 client...",
 #ifdef HAVE_LAKKA
    "K\341\272\277t n\341\273\221i Wi-Fi '%s'",
@@ -15408,7 +15469,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (306673u
+      (sizeof(msg_hash_vn_blob) == (308301u
 #ifdef ANDROID
        + 373u
 #endif
@@ -15820,9 +15881,9 @@ typedef char msg_hash_vn_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 68u
        + 373u
-       + 125u
+       + 137u
        + 58u
-       + 117u
+       + 157u
        + 528u
        + 40u
 #endif
@@ -17673,6 +17734,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
@@ -18741,6 +18803,9 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -19740,6 +19805,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
@@ -20282,6 +20348,9 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -20692,6 +20761,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MSG_LOCALAP_STARTING,
    (msg_hash_id_t)MSG_LOCALAP_SWITCHING_OFF,
 #endif
+   (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
@@ -20794,6 +20864,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_CORES_RESET,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_ALL_DONE,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
@@ -20950,6 +21021,12 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MSG_VIRTUAL_DISK_TRAY_EJECT,
    (msg_hash_id_t)MSG_VRR_RUNLOOP_DISABLED,
    (msg_hash_id_t)MSG_VRR_RUNLOOP_ENABLED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_FAILED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_INVALID,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_RESTART,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MSG_WIFI_CONNECTING_TO,

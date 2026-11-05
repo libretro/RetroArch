@@ -2751,6 +2751,7 @@ static const struct
    char s_8f379310[40];
    char s_6a9b757c[36];
    char s_6c52dfb1[30];
+   char s_334daaaa[7];
    char s_9119ef97[36];
 #if defined (WIIU)
 #ifdef WIIU
@@ -3663,9 +3664,7 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[66];
    char s_1536325c[311];
-   char s_ad621411[74];
    char s_f6ec26c1[54];
-   char s_4f7fb41f[73];
    char s_70f70009_0[500];
    char s_70f70009_1[13];
    char s_3487ce71[45];
@@ -4466,6 +4465,7 @@ static const struct
    char s_f0b48289[59];
    char s_19b9a241[31];
    char s_92998c8d[27];
+   char s_7541bcd3[69];
    char s_ca731381[16];
    char s_6b6a247d[59];
    char s_6704b41f[38];
@@ -8104,6 +8104,7 @@ static const struct
    "C\303\263imheas Gn\303\251 Saincheaptha (Su\303\255omh Y)",
    "Socraigh Leithead an Sc\303\241ile\303\241in VI",
    "Sioncr\303\263n\303\272 Ingearach (VSync)",
+   "C\303\263ras",
    "Slabhra\303\255 Malartaithe Infheithicl\303\255",
 #if defined (WIIU)
 #ifdef WIIU
@@ -9964,11 +9965,7 @@ static const struct
    "\303\251 go bhf\303\251adfadh an freastala\303\255 \303\251 a chur i l\303\241thair faoi ainm n"
    "\303\255os giorra. F\303\241g b\303\241n \303\251 chun an t-easp\303\263rt\303\241il a shonr\303"
    "\272 sa seoladh mar nfs://server/export/path.",
-   "Port na seirbh\303\255se MOUNT. Iarrann 0 \303\251 ar phortmap\303\241la\303\255 an fhreastala"
-   "\303\255.",
    "Coinn\303\255odh na naisc leis an bhfreastala\303\255 ar oscailt.",
-   "Port na seirbh\303\255se NFS. Iarrann 0 \303\251 ar mhap\303\241la\303\255 port an fhreastala"
-   "\303\255.",
    "Faightear sonra\303\255 roimh r\303\251 nuair a l\303\251ann cluiche comhad ina chodanna beaga, "
    "agus sn\303\241ithe c\303\272lra ag cinnti\303\272 go mb\303\255onn an ch\303\251ad chuid eile a"
    "r f\303\241il i gc\303\263na\303\255. Is f\303\251idir leis seo feidhm\303\255ocht \303\255omh"
@@ -11600,6 +11597,8 @@ static const struct
    "T\303\241 c\303\272ltaca den chro\303\255l\303\241r suite\303\241ilte ann cheana f\303\251in: ",
    "C\303\272ltaca cro\303\255 cr\303\255ochnaithe: ",
    "Theip ar ch\303\272ltaca cro\303\255: ",
+   "T\303\241 c\303\272ltaca n\303\263 athch\303\263iri\303\272 den chro\303\255 seo ar si\303\272l "
+   "cheana f\303\251in: ",
    "Cro\303\255 scanadh: ",
    "Scriosadh cro\303\255 d\303\255chumasaithe - t\303\241 an cro\303\255 faoi ghlas: ",
    "N\303\255 thaca\303\255onn Croi le Rial\303\272 Diosca.",
@@ -12225,7 +12224,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (268560u
+      (sizeof(msg_hash_ga_blob) == (268636u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12626,9 +12625,7 @@ typedef char msg_hash_ga_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 66u
        + 311u
-       + 74u
        + 54u
-       + 73u
        + 513u
        + 45u
 #endif
@@ -15531,6 +15528,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -16430,9 +16428,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
@@ -17222,6 +17218,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MSG_CORE_BACKUP_ALREADY_EXISTS,
    (msg_hash_id_t)MSG_CORE_BACKUP_COMPLETE,
    (msg_hash_id_t)MSG_CORE_BACKUP_FAILED,
+   (msg_hash_id_t)MSG_CORE_BACKUP_IN_PROGRESS,
    (msg_hash_id_t)MSG_CORE_BACKUP_SCANNING_CORE,
    (msg_hash_id_t)MSG_CORE_DELETE_DISABLED,
    (msg_hash_id_t)MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,

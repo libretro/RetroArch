@@ -2522,6 +2522,7 @@ static const struct
    char s_8f379310[80];
    char s_6a9b757c[50];
    char s_6c52dfb1[58];
+   char s_334daaaa[15];
    char s_9119ef97[41];
 #if defined (WIIU)
 #ifdef WIIU
@@ -10823,6 +10824,7 @@ static const struct
    "\320\222\320\265\321\200\321\202\320\270\320\272\320\260\320\273\321\214\320\275\320\260 \321"
    "\201\320\270\320\275\321\205\321\200\320\276\320\275\321\226\320\267\320\260\321\206\321\226\321"
    "\217 (VSync)",
+   "\320\241\320\270\321\201\321\202\320\265\320\274\320\260",
    "\320\235\320\276\320\262\320\260\321\207\320\276\320\272 \320\264\320\273\321\217 \320\267\320"
    "\260\320\274\321\226\321\211\320\265\320\275\320\275\321\217",
 #if defined (WIIU)
@@ -21275,7 +21277,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_uk_blob_check[
-      (sizeof(msg_hash_uk_blob) == (347567u
+      (sizeof(msg_hash_uk_blob) == (347582u
 #ifdef ANDROID
        + 610u
 #endif
@@ -24230,6 +24232,7 @@ static const msg_hash_id_t msg_hash_uk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU

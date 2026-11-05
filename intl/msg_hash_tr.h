@@ -2219,6 +2219,7 @@ static const struct
    char s_8f379310[31];
    char s_6a9b757c[30];
    char s_6c52dfb1[24];
+   char s_334daaaa[7];
    char s_9119ef97[27];
 #if defined (WIIU)
 #ifdef WIIU
@@ -6486,6 +6487,7 @@ static const struct
    "\303\226zel En Boy Oran\304\261 (Y Konumu)",
    "VI Ekran Geni\305\237li\304\237ini Ayarla",
    "Dikey E\305\237itleme (Vsync)",
+   "Sistem",
    "Beklenebilir Takas Zinciri",
 #if defined (WIIU)
 #ifdef WIIU
@@ -9189,7 +9191,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169302u
+      (sizeof(msg_hash_tr_blob) == (169309u
 #ifdef ANDROID
        + 340u
 #endif
@@ -11768,6 +11770,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU

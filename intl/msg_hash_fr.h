@@ -2608,6 +2608,7 @@ static const struct
    char s_8f379310[59];
    char s_6a9b757c[35];
    char s_6c52dfb1[35];
+   char s_334daaaa[9];
    char s_9119ef97[32];
 #if defined (WIIU)
 #ifdef WIIU
@@ -3491,9 +3492,7 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[49];
    char s_1536325c[313];
-   char s_ad621411[80];
    char s_f6ec26c1[48];
-   char s_4f7fb41f[78];
    char s_70f70009_0[500];
    char s_70f70009_1[19];
    char s_3487ce71[38];
@@ -7610,6 +7609,7 @@ static const struct
    "Position Y de l'affichage (Rapport d'aspect personnalis\303\251)",
    "D\303\251finir la largeur d'\303\251cran de VI",
    "Synchronisation verticale (V-Sync)",
+   "Syst\303\250me",
    "Cha\303\256nes d'\303\251changes en attente",
 #if defined (WIIU)
 #ifdef WIIU
@@ -9184,9 +9184,7 @@ static const struct
    "ur le serveur fonctionne \303\251galement avec NFS version 4, m\303\252me si le serveur peut le "
    "pr\303\251senter sous un nom plus court. Laissez ce champ vide pour sp\303\251cifier l'exportati"
    "on dans l'adresse sous la forme nfs://serveur/chemin/export.",
-   "Port du service MOUNT. 0 interroge le mappeur de ports (portmapper) du serveur.",
    "Connexions maintenues ouvertes vers le serveur.",
-   "Port du service NFS. 0 interroge le mappeur de ports (portmapper) du serveur.",
    "Donn\303\251es pr\303\251charg\303\251es lorsqu'un jeu lit un fichier par petits segments, un fi"
    "l d'ex\303\251cution d'arri\303\250re-plan assurant le chargement continu de la fen\303\252tre d"
    "e donn\303\251es suivante. Permet de fluidifier l'acc\303\250s \303\240 de grandes images disque"
@@ -11035,7 +11033,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (258058u
+      (sizeof(msg_hash_fr_blob) == (258067u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11435,9 +11433,7 @@ typedef char msg_hash_fr_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 49u
        + 313u
-       + 80u
        + 48u
-       + 78u
        + 519u
        + 38u
 #endif
@@ -14194,6 +14190,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -15064,9 +15061,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif

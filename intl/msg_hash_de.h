@@ -2616,6 +2616,7 @@ static const struct
    char s_9e5c39c0[17];
    char s_6fbfde48[35];
    char s_482ee1f1[11];
+   char s_3794746e[31];
    char s_214b7699[9];
    char s_3e628390[10];
    char s_574badd6[34];
@@ -3538,9 +3539,7 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[57];
    char s_1536325c[300];
-   char s_ad621411[64];
    char s_f6ec26c1[40];
-   char s_4f7fb41f[62];
    char s_70f70009[466];
    char s_3487ce71[33];
 #endif
@@ -4341,6 +4340,7 @@ static const struct
    char s_f0b48289[54];
    char s_19b9a241[23];
    char s_92998c8d[29];
+   char s_7541bcd3[78];
    char s_ca731381[14];
    char s_6b6a247d[49];
    char s_6704b41f[37];
@@ -7705,6 +7705,7 @@ static const struct
    "Voreinstellung O",
    "Qualit\303\244t des temporalen Upscalers",
    "Ausgewogen",
+   "Nativ (DLAA, nur Antialiasing)",
    "Leistung",
    "Qualit\303\244t",
    "Sch\303\244rfe des temporalen Upscalers",
@@ -9225,9 +9226,7 @@ static const struct
    "funktioniert auch f\303\274r NFS Version 4, wo der Server es m\303\266glicherweise unter einem k"
    "\303\274rzeren Namen bereitstellt. Das Feld leer lassen, um den Export in der Adresse als nfs://"
    "server/export/path anzugeben.",
-   "Port des MOUNT-Dienstes. 0 fragt den Portmapper des Servers ab.",
    "Zum Server offengehaltene Verbindungen.",
-   "Port des NFS-Dienstes. 0 fragt den Portmapper des Servers ab.",
    "Daten werden vorab abgerufen, wenn ein Spiel eine Datei in kleinen Abschnitten liest, wobei ein "
    "Hintergrundthread daf\303\274r sorgt, dass das n\303\244chste Fenster angezeigt wird. Dies kann "
    "gro\303\237e Disc-Images \303\274ber eine langsame Verbindung fl\303\274ssiger wiedergeben; es e"
@@ -10579,6 +10578,7 @@ static const struct
    "Sicherung des installierten Cores existiert bereits: ",
    "Core-Backup erstellt: ",
    "Core-Backup fehlgeschlagen: ",
+   "Eine Sicherung oder Wiederherstellung dieses Cores wird bereits ausgef\303\274hrt: ",
    "Scanne Core: ",
    "L\303\266schen des Cores deaktiviert - Core gesperrt: ",
    "Core unterst\303\274tzt kein Disc Control.",
@@ -11147,7 +11147,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (254279u
+      (sizeof(msg_hash_de_blob) == (254388u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11560,9 +11560,7 @@ typedef char msg_hash_de_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 57u
        + 300u
-       + 64u
        + 40u
-       + 62u
        + 466u
        + 33u
 #endif
@@ -14333,6 +14331,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_O,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_SHARPNESS,
@@ -15244,9 +15243,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
@@ -16035,6 +16032,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_CORE_BACKUP_ALREADY_EXISTS,
    (msg_hash_id_t)MSG_CORE_BACKUP_COMPLETE,
    (msg_hash_id_t)MSG_CORE_BACKUP_FAILED,
+   (msg_hash_id_t)MSG_CORE_BACKUP_IN_PROGRESS,
    (msg_hash_id_t)MSG_CORE_BACKUP_SCANNING_CORE,
    (msg_hash_id_t)MSG_CORE_DELETE_DISABLED,
    (msg_hash_id_t)MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,

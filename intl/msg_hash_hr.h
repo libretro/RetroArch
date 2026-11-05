@@ -259,6 +259,7 @@ static const struct
    char s_730df420[15];
    char s_bcddf275[12];
    char s_214b7699[12];
+   char s_334daaaa[7];
    char s_0f5266ce[15];
    char s_30140cb5[16];
    char s_65e6ea7c[7];
@@ -550,6 +551,7 @@ static const struct
    "Sinkronizacija",
    "Videozapisi",
    "Performanse",
+   "Sustav",
    "Visina prozora",
    "\305\240irina prozora",
    "Ni\305\241ta",
@@ -603,7 +605,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
-      (sizeof(msg_hash_hr_blob) == (4277u
+      (sizeof(msg_hash_hr_blob) == (4284u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -892,6 +894,7 @@ static const msg_hash_id_t msg_hash_hr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,

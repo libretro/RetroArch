@@ -763,6 +763,7 @@ static const struct
    char s_bcddf275[8];
    char s_214b7699[12];
    char s_6c52dfb1[25];
+   char s_334daaaa[8];
    char s_84c46931[35];
    char s_ebf10493[12];
    char s_a64b3a0b[28];
@@ -1778,6 +1779,7 @@ static const struct
    "V\303\255deos",
    "Rindimientu",
    "Sincronizaci\303\263n vertical",
+   "Sistema",
    "Mou de ventana a pantalla completa",
    "Mou ventana",
    "Altor m\303\241ximu de la ventana",
@@ -2084,7 +2086,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24563u
+      (sizeof(msg_hash_ast_blob) == (24571u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2921,6 +2923,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,

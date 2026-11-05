@@ -2642,6 +2642,7 @@ static const struct
    char s_8f379310[46];
    char s_6a9b757c[46];
    char s_6c52dfb1[33];
+   char s_334daaaa[8];
    char s_9119ef97[31];
 #if defined (WIIU)
 #ifdef WIIU
@@ -3525,9 +3526,7 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[51];
    char s_1536325c[282];
-   char s_ad621411[80];
    char s_f6ec26c1[43];
-   char s_4f7fb41f[78];
    char s_70f70009[380];
    char s_3487ce71[37];
 #endif
@@ -7655,6 +7654,7 @@ static const struct
    "Relaci\303\263 d'aspecte personalitzat (posici\303\263 Y)",
    "Estableix l\342\200\231amplada de la pantalla de la VI",
    "Sincronitzaci\303\263 vertical (VSync)",
+   "Sistema",
    "Cadenes d'intercanvi en espera",
 #if defined (WIIU)
 #ifdef WIIU
@@ -9135,9 +9135,7 @@ static const struct
    "\251 \303\251s v\303\240lida per a NFS versi\303\263 4, tot i que el servidor la pot presentar a"
    "mb un nom m\303\251s curt. Deixeu-ho en blanc per especificar l'exportaci\303\263 a l'adre\303"
    "\247a com a nfs://server/export/path.",
-   "Port de servei del MOUNT. 0 demana al port l'assignaci\303\263 de ports del servidor.",
    "Mant\303\251 les connexions obertes al servidor.",
-   "Port de servei del NFS. 0 demana al port l'assignaci\303\263 de ports del servidor.",
    "Dades recuperades per endavant quan un joc llegeix un fitxer en petits fragments, amb un fil de "
    "fons que mant\303\251 la finestra seg\303\274ent en marxa. Pot suavitzar imatges de disc grans a"
    " trav\303\251s d'un enlla\303\247 lent; costa aquesta quantitat de mem\303\262ria i una connexi"
@@ -10922,7 +10920,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (243974u
+      (sizeof(msg_hash_ca_blob) == (243982u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11317,9 +11315,7 @@ typedef char msg_hash_ca_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 51u
        + 282u
-       + 80u
        + 43u
-       + 78u
        + 380u
        + 37u
 #endif
@@ -14114,6 +14110,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -14989,9 +14986,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif

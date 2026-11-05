@@ -316,7 +316,7 @@ static const struct
    char s_9f1f3534[44];
    char s_e66b1cb9[42];
    char s_1bf49fce[37];
-   char s_11e34db0[34];
+   char s_11e34db0[45];
    char s_0058b881[9];
    char s_14ec7b7e[10];
    char s_00614813[8];
@@ -3298,7 +3298,7 @@ static const struct
    char s_dfc23214[176];
    char s_dd9def2d[81];
    char s_fa6b7e78[222];
-   char s_eea265bb[168];
+   char s_eea265bb[150];
    char s_8f3929a3[112];
    char s_91e03bff[28];
    char s_287215f6[215];
@@ -3514,9 +3514,7 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[59];
    char s_1536325c[253];
-   char s_ad621411[59];
    char s_f6ec26c1[45];
-   char s_4f7fb41f[57];
    char s_70f70009[343];
    char s_3487ce71[36];
 #endif
@@ -5375,7 +5373,7 @@ static const struct
    "Sparad fil: Intervall f\303\266r SaveRAM Autosave",
    "L\303\244s automatiskt in \303\245sidos\303\244ttningsfiler",
    "L\303\244s in ommappningsfiler automatiskt",
-   "L\303\244s in shaderf\303\266rval automatiskt",
+   "L\303\244s in shaderf\303\266rinst\303\244llningar automatiskt",
    "Tillbaka",
    "Bekr\303\244fta",
    "Avsluta",
@@ -8864,9 +8862,8 @@ static const struct
    "N\303\244r denna funktion \303\244r aktiverad raderas alla befintliga spellistor innan inneh\303"
    "\245llet s\303\266ks igenom. N\303\244r funktionen \303\244r inaktiverad beh\303\245lls befintli"
    "ga spellistor och endast inneh\303\245ll som saknas i spellistan l\303\244ggs till.",
-   "N\303\244r detta \303\244r aktiverat kommer arkivfiler (.zip, .7z, etc.) att genoms\303\266kas e"
-   "fter giltigt/st\303\266dd inneh\303\245ll. Kan ha en betydande inverkan p\303\245 genoms\303\266"
-   "kningsprestandan.",
+   "N\303\244r detta \303\244r aktiverat genoms\303\266ks arkivfiler (.zip, .7z osv.) efter giltigt "
+   "inneh\303\245ll som st\303\266ds. Det kan ha stor inverkan p\303\245 skanningsprestandan.",
    "N\303\244r den \303\244r aktiverad kommer alla underkataloger i den angivna \342\200\235Inneh"
    "\303\245llskatalog\342\200\235 att ing\303\245 i s\303\266kningen.",
    "S\303\266k igenom valt inneh\303\245ll.",
@@ -9257,9 +9254,7 @@ static const struct
    "\303\244g p\303\245 servern fungerar \303\244ven f\303\266r NFS version 4, d\303\244r servern ka"
    "n visa den under ett kortare namn. L\303\244mna tomt f\303\266r att ange exporten i adressen som"
    " nfs://server/export/path.",
-   "Port f\303\266r MOUNT-tj\303\244nsten. 0 fr\303\245gar serverns portmappare.",
    "Anslutningar som h\303\245lls \303\266ppna till servern.",
-   "Port f\303\266r NFS-tj\303\244nsten. 0 fr\303\245gar serverns portmappare.",
    "Data som h\303\244mtas i f\303\266rv\303\244g n\303\244r ett spel l\303\244ser en fil i sm\303"
    "\245 delar. En bakgrundstr\303\245d f\303\266rbereder n\303\244sta f\303\266nster. Kan g\303\266"
    "ra stora skivavbildningar mjukare \303\266ver en l\303\245ngsam l\303\244nk, men anv\303\244nder"
@@ -11208,7 +11203,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (231372u
+      (sizeof(msg_hash_sv_blob) == (231365u
 #ifdef ANDROID
        + 361u
 #endif
@@ -11616,9 +11611,7 @@ typedef char msg_hash_sv_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 59u
        + 253u
-       + 59u
        + 45u
-       + 57u
        + 343u
        + 36u
 #endif
@@ -15278,9 +15271,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif

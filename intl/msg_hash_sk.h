@@ -2628,6 +2628,7 @@ static const struct
    char s_8f379310[35];
    char s_6a9b757c[31];
    char s_6c52dfb1[36];
+   char s_334daaaa[8];
    char s_9119ef97[23];
 #if defined (WIIU)
 #ifdef WIIU
@@ -3527,9 +3528,7 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[50];
    char s_1536325c[240];
-   char s_ad621411[53];
    char s_f6ec26c1[50];
-   char s_4f7fb41f[51];
    char s_70f70009[376];
    char s_3487ce71[43];
 #endif
@@ -7732,6 +7731,7 @@ static const struct
    "Vlastn\303\275 pomer str\303\241n (poz\303\255cia Y)",
    "Nastavi\305\245 \305\241\303\255rku obrazovky VI",
    "Vertik\303\241lna synchroniz\303\241cia (VSync)",
+   "Syst\303\251m",
    "\304\214akate\304\276n\303\251 swapchain",
 #if defined (WIIU)
 #ifdef WIIU
@@ -9432,9 +9432,7 @@ static const struct
    "nguje aj pre NFS verzie 4, kde ju server m\303\264\305\276e pon\303\272ka\305\245 pod krat\305"
    "\241\303\255m menom. Nechajte pr\303\241zdne, ak export zad\303\241te v adrese ako nfs://server/"
    "export/cesta.",
-   "Port slu\305\276by MOUNT. 0 sa op\303\275ta portmappera servera.",
    "Pripojenia, ktor\303\251 sa k serveru dr\305\276ia otvoren\303\251.",
-   "Port slu\305\276by NFS. 0 sa op\303\275ta portmappera servera.",
    "D\303\241ta na\304\215\303\255tan\303\251 dopredu, ke\304\217 hra \304\215\303\255ta s\303\272bo"
    "r po mal\303\275ch k\303\272skoch, pri\304\215om vl\303\241kno na pozad\303\255 priebe\305\276ne"
    " pripravuje \304\217al\305\241ie okno. M\303\264\305\276e zjemni\305\245 ve\304\276k\303\251 obr"
@@ -11470,7 +11468,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (227830u
+      (sizeof(msg_hash_sk_blob) == (227838u
 #ifdef ANDROID
        + 389u
 #endif
@@ -11878,9 +11876,7 @@ typedef char msg_hash_sk_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 50u
        + 240u
-       + 53u
        + 50u
-       + 51u
        + 376u
        + 43u
 #endif
@@ -14664,6 +14660,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -15556,9 +15553,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif

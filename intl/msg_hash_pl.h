@@ -3341,9 +3341,7 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[63];
    char s_1536325c[256];
-   char s_ad621411[48];
    char s_f6ec26c1[52];
-   char s_4f7fb41f[46];
    char s_3487ce71[34];
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -8590,9 +8588,7 @@ static const struct
    "werze dzia\305\202a r\303\263wnie\305\274 dla NFS w wersji 4, gdzie serwer mo\305\274e wy\305"
    "\233wietla\304\207 j\304\205 pod kr\303\263tsz\304\205 nazw\304\205. Pozostaw puste, aby poda"
    "\304\207 eksport w adresie jako nfs://serwer/eksport/\305\233cie\305\274ka.",
-   "Port us\305\202ugi MOUNT. 0 prosi portmapper serwera.",
    "Po\305\202\304\205czenia, kt\303\263re pozostan\304\205 otwarte do serwera.",
-   "Port us\305\202ugi NFS. 0 prosi portmapper serwera.",
    "Adres IP serwera lub nazwa hosta.",
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -10598,9 +10594,7 @@ typedef char msg_hash_pl_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 63u
        + 256u
-       + 48u
        + 52u
-       + 46u
        + 34u
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -14066,9 +14060,7 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)

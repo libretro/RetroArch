@@ -899,6 +899,7 @@ static const struct
    char s_aded1e43[53];
    char s_0b32f489[55];
    char s_1c82054d[51];
+   char s_cb11ce3d[74];
    char s_d458f013[42];
    char s_5aa6602e[62];
    char s_6e1d0b9d[25];
@@ -2549,6 +2550,7 @@ static const struct
    char s_0cfd4fd0[11];
    char s_d64659c4[15];
    char s_0861dea4[23];
+   char s_ca605800[19];
    char s_e3d6646f[6];
    char s_e3d66470[6];
    char s_5ea2f2a0[7];
@@ -2563,6 +2565,8 @@ static const struct
    char s_569b0627[5];
    char s_99b1b2f6[6];
    char s_569b11b0[11];
+   char s_ec2c67d0[20];
+   char s_a2f70d09[19];
    char s_328ddae3[11];
    char s_d7deafe0[25];
    char s_83217fd0[15];
@@ -2717,6 +2721,7 @@ static const struct
    char s_6fbfde48[33];
    char s_a72a3c80[12];
    char s_482ee1f1[12];
+   char s_3794746e[36];
    char s_214b7699[12];
    char s_3e628390[8];
    char s_6b25e2a0[20];
@@ -2739,6 +2744,7 @@ static const struct
    char s_8f379310[49];
    char s_6a9b757c[33];
    char s_6c52dfb1[28];
+   char s_334daaaa[8];
    char s_9119ef97[22];
 #if defined (WIIU)
 #ifdef WIIU
@@ -3218,6 +3224,8 @@ static const struct
    char s_6da9b571[265];
    char s_c2827177[140];
    char s_09f2837b[287];
+   char s_dac2c1eb_0[500];
+   char s_dac2c1eb_1[102];
    char s_512d7a8b[70];
    char s_2c4c27eb[283];
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
@@ -3613,6 +3621,7 @@ static const struct
    char s_7ef3d15a[209];
    char s_a166bef0[49];
    char s_20212574[33];
+   char s_a8acf2d7[360];
    char s_48f7693a[114];
    char s_91a3e1a5[122];
    char s_19a250ff[135];
@@ -3645,9 +3654,7 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[61];
    char s_1536325c[333];
-   char s_ad621411[96];
    char s_f6ec26c1[77];
-   char s_4f7fb41f[94];
    char s_70f70009[489];
    char s_3487ce71[51];
 #endif
@@ -3933,6 +3940,7 @@ static const struct
    char s_a55bf936[33];
    char s_c519f84d[38];
    char s_48aefa30[28];
+   char s_5d383a58[133];
    char s_dcf8bd8b[52];
    char s_bce9b94f[52];
    char s_d32f5a63[35];
@@ -4177,8 +4185,11 @@ static const struct
    char s_4a09218b[31];
    char s_dea334de[235];
    char s_cacc1492[91];
+   char s_9382c86e[277];
    char s_774bb68a[196];
    char s_a68955c4[331];
+   char s_fbdd5b7e[289];
+   char s_3e7750f7[439];
    char s_c0c6924e[243];
    char s_c83fcc7e[256];
    char s_d0c5c252[264];
@@ -4441,6 +4452,7 @@ static const struct
    char s_f0b48289[57];
    char s_19b9a241[53];
    char s_92998c8d[51];
+   char s_7541bcd3[64];
    char s_ca731381[22];
    char s_6b6a247d[66];
    char s_6704b41f[54];
@@ -6098,6 +6110,7 @@ static const struct
    "Retraso para activar teclas r\303\241pidas (en fotogramas)",
    "Fusionar tipos de dispositivo para las teclas r\303\241pidas",
    "Reconocer solo las teclas r\303\241pidas en el jugador 1",
+   "Retraso para pulsar la tecla para activar teclas r\303\241pidas (en fotogramas)",
    "Configuraci\303\263n del modo teclado del mando",
    "Mando %04X:%04X ignorado (selecci\303\263nalo para volver a usarlo)",
    "Informaci\303\263n de entradas",
@@ -7759,6 +7772,7 @@ static const struct
    "Combinados",
    "Independientes",
    "Distancia de pantallas",
+   "Espacio de bisagra",
    "0\302\240cm",
    "1\302\240cm",
    "10\302\240cm",
@@ -7773,6 +7787,8 @@ static const struct
    "Baja",
    "Media",
    "Desactivar",
+   "Acoplar a pantallas",
+   "Acoplar a \303\241ngulos",
    "Desactivar",
    "Imagen en gafas (openXR)",
    "Puntero l\303\241ser",
@@ -7927,6 +7943,7 @@ static const struct
    "Calidad del reescalador temporal",
    "Autom\303\241tico",
    "Equilibrado",
+   "Nativo (DLAA, solo suavizar bordes)",
    "Rendimiento",
    "Calidad",
    "M\303\241ximo rendimiento",
@@ -7951,6 +7968,7 @@ static const struct
    "Relaci\303\263n de aspecto personalizada (posici\303\263n Y)",
    "Fijar ancho de pantalla de la VI",
    "Sincron\303\255a vertical (VSync)",
+   "Sistema",
    "Swap chains en espera",
 #if defined (WIIU)
 #ifdef WIIU
@@ -8729,6 +8747,15 @@ static const struct
    " sea reasignado a otro usuario. Nota: las teclas r\303\241pidas del teclado no funcionar\303\241"
    "n si el puerto 1 del n\303\272cleo es reasignado a cualquier usuario que no sea el 1 (las accion"
    "es del teclado son del usuario 1).",
+   "Si la tecla para activar teclas r\303\241pidas es tambi\303\251n un bot\303\263n de juego (por e"
+   "jemplo, SELECT), se evitar\303\241 enviar sus pulsaciones hasta confirmar que no son para invoca"
+   "r a una tecla r\303\241pida: una pulsaci\303\263n que no vaya acompa\303\261ada de una tecla r"
+   "\303\241pida se enviar\303\241 al juego cuando sueltes el bot\303\263n durante el tiempo que la "
+   "hayas mantenido pulsada; si mantienes pulsado el bot\303\263n se enviar\303\241 la se\303\261al "
+   "en cuanto pase la cantidad de milisegundos configurada aqu\303\255 sin pulsar una tecla r\303"
+   "\241pida, si se pul",
+   "sa una tecla r\303\241pida, el juego no recibir\303\241 la pulsaci\303\263n. Selecciona 0 para d"
+   "esactivar esta opci\303\263n.",
    "Muestra el mando que hay conectado a cada puerto y su configuraci\303\263n.",
    "Acepta las pulsaciones de entrada de los mandos cuando RetroArch no sea la ventana activa. Al de"
    "sactivar esta opci\303\263n, se ignorar\303\241 a los mandos cuando RetroArch est\303\251 en seg"
@@ -9439,6 +9466,11 @@ static const struct
    "a latencia de entrada.",
    "Indica la direcci\303\263n IP del servidor a conectar.",
    "Expulsa a un cliente de tu sala.",
+   "Ejecuta cada fotograma solo una vez que han llegado las entradas de todos los jugadores en vez d"
+   "e suponer por adelantado para luego rebobinar. Utilizar\303\241 solo un guardado r\303\241pido e"
+   "n vez de guardar uno por cada fotograma. Los juegos cuyos guardados r\303\241pidos sean demasiad"
+   "o grandes como para caber en el b\303\272fer de rebobinado utilizar\303\241n este sistema igualm"
+   "ente.",
    "Indica el n\303\272mero m\303\241ximo de conexiones activas que admitir\303\241 el servidor ante"
    "s de rechazar cualquier otra nueva.",
    "Indica la latencia (ping) m\303\241xima que aceptar\303\241 el servidor de otras conexiones. Sel"
@@ -9507,9 +9539,7 @@ static const struct
    "l servidor tambi\303\251n funciona con la versi\303\263n 4 de NFS, en la que el servidor podr"
    "\303\255a presentar dicha ruta con un nombre m\303\241s corto. Deja esta opci\303\263n en blanco"
    " para que el exportado vaya en la direcci\303\263n como nfs://servidor/export/ruta.",
-   "Indica el puerto del servicio MOUNT. 0 solicita el puerto al asignador de puertos del servidor.",
    "Indica el n\303\272mero de conexiones que se mantendr\303\241n abiertas con el servidor.",
-   "Indica el puerto del servicio NFS. 0 solicita el puerto al asignador de puertos del servidor.",
    "Establece la cantidad de datos que se obtendr\303\241n por adelantado cuando un juego lea un arc"
    "hivo en fragmentos peque\303\261os y mantiene un hilo en segundo plano preparado para el siguien"
    "te bloque. Podr\303\255a suavizar la copia de im\303\241genes de disco de gran tama\303\261o en "
@@ -9991,6 +10021,8 @@ static const struct
    "Muestra los ajustes de latencia.",
    "Muestra los ajustes de los registros.",
    "Muestra los ajustes de red.",
+   "Muestra los ajustes de la presentaci\303\263n en pantalla. Afecta a Notificaciones y a Superposi"
+   "ciones en la secci\303\263n Interfaz de usuario.",
    "Muestra los ajustes de las listas de reproducci\303\263n.",
    "Muestra los ajustes de administraci\303\263n de energ\303\255a.",
    "Muestra los ajustes de grabaci\303\263n.",
@@ -10423,6 +10455,10 @@ static const struct
    "dor 1 y el mando derecho el del jugador 2.",
    "Indica la distancia respecto a tu posici\303\263n con la que las gafas mostrar\303\241n las pant"
    "allas.",
+   "Deja este espacio entre las pantallas que se conecten por sus bordes, de forma lateral, en una e"
+   "squina o con un \303\241ngulo de bisagra. Una pantalla se conectar\303\241 a 1\302\240cm de dist"
+   "ancia, a partir de ah\303\255 habr\303\241 un espacio de hasta 10\302\240cm. Selecciona 0 para q"
+   "ue se toquen los bordes.",
    "Indica qu\303\251 har\303\241 el contenido mientras se editan las pantallas del casco: seguir ej"
    "ecut\303\241ndose o pausarse hasta que acabe la edici\303\263n. El modo de edici\303\263n reanud"
    "ar\303\241 solo lo que se haya pausado.",
@@ -10430,6 +10466,15 @@ static const struct
    "antalla que est\303\251 lejos no temblar\303\241 con el pulso de tu mano: si el movimiento es le"
    "nto, se suavizar\303\241 m\303\241s, si el movimiento es r\303\241pido, se suavizar\303\241 meno"
    "s. Desactiva esta opci\303\263n para que el movimiento sea tal y como se est\303\251 detectando.",
+   "Alinea una pantalla agarrada a las que est\303\251n cerca: primero en paralelo a una pantalla, l"
+   "uego dentro de su plano y nivel o entre bordes, o haciendo bisagra con un eje compartido con un "
+   "\303\241ngulo arbitrario. La mano que est\303\251 agarrando la pantalla vibrar\303\241 cuando se"
+   " active un acoplamiento.",
+   "Detiene una pantalla a cada paso del \303\241ngulo indicado cada vez que la otra mano se gire o "
+   "incline, vibrando para indicarlo: las rotaciones empiezan a contar desde tu c\303\241mara, las i"
+   "nclinaciones desde un \303\241ngulo recto, y las pantallas en bisagra cuentan con el de su panta"
+   "lla vecina. Si se junta con otra pantalla, Acoplar a pantallas tendr\303\241 preferencia. Desact"
+   "iva esta opci\303\263n para que los giros e inclinaciones con el stick sean fluidos.",
    "Muestra tambi\303\251n los contenidos en un casco OpenXR: cada pantalla flotando por separado, e"
    "n ambos ojos de la estereoscopia 3D y con el men\303\272 delante. Para Vulkan, as\303\255 como p"
    "ara OpenGL en Linux. La ventana seguir\303\241 mostrando su imagen normal.",
@@ -10907,6 +10952,7 @@ static const struct
    "Ya existe una copia de seguridad del n\303\272cleo instalado: ",
    "Se ha completado la copia de seguridad del n\303\272cleo: ",
    "Error al hacer la copia de seguridad del n\303\272cleo: ",
+   "Ya se est\303\241 ejecutando una copia de seguridad de este n\303\272cleo: ",
    "Buscando en n\303\272cleo: ",
    "Eliminaci\303\263n de n\303\272cleo desactivada, el n\303\272cleo est\303\241 protegido: ",
    "El n\303\272cleo no es compatible con el control de discos.",
@@ -11489,7 +11535,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (271079u
+      (sizeof(msg_hash_es_blob) == (273419u
 #ifdef ANDROID
        + 329u
 #endif
@@ -11900,9 +11946,7 @@ typedef char msg_hash_es_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 61u
        + 333u
-       + 96u
        + 77u
-       + 94u
        + 489u
        + 51u
 #endif
@@ -12954,6 +12998,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_TAP_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_IGNORED_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION,
@@ -14603,6 +14648,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_0,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_1,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_HINGE_GAP_10,
@@ -14617,6 +14663,8 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_MEDIUM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_OFF,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SNAP_ANGLES_OFF,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
@@ -14771,6 +14819,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE,
@@ -14793,6 +14842,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -15262,6 +15312,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_TAP_DELAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
@@ -15656,6 +15707,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_LOCKSTEP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
@@ -15688,9 +15740,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
@@ -15976,6 +16026,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
@@ -16216,8 +16267,11 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_HINGE_GAP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_PAUSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_SMOOTHING,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_SNAP,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_SNAP_ANGLES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER_BEAM,
@@ -16474,6 +16528,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_CORE_BACKUP_ALREADY_EXISTS,
    (msg_hash_id_t)MSG_CORE_BACKUP_COMPLETE,
    (msg_hash_id_t)MSG_CORE_BACKUP_FAILED,
+   (msg_hash_id_t)MSG_CORE_BACKUP_IN_PROGRESS,
    (msg_hash_id_t)MSG_CORE_BACKUP_SCANNING_CORE,
    (msg_hash_id_t)MSG_CORE_DELETE_DISABLED,
    (msg_hash_id_t)MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
