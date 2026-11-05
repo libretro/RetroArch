@@ -3068,6 +3068,9 @@ int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
 
    r = rvp9_parse_uncompressed(data, len, hd, ref_dims);
    if (r < 0) return r;
+   if (r == 0 && (!hd->first_partition_size || hd->uncomp_size >= len
+         || (size_t)hd->first_partition_size >= len - hd->uncomp_size))
+      return -1;
    /* 10-bit (profile 2) dispatches to the high-bit-depth pipeline;
     * 12-bit stays unsupported.  Frame buffers are sized by the first
     * decoded frame's pixel width, so a stream that switches bit depth
