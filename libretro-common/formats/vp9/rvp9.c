@@ -1421,6 +1421,11 @@ static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
       }
    }
 
+   /* Full 16-bit dimensions overflow padded plane sizes on 32-bit.
+    * Match the maximum dimension accepted by the VP8 decoder. */
+   if (hd->w <= 0 || hd->h <= 0 || hd->w > 16384 || hd->h > 16384)
+      return -1;
+
    if (!hd->error_resilient)
    {
       hd->refresh_frame_context     = rvp9_rb_bit(&rb);
