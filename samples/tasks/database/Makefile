@@ -162,7 +162,7 @@ SOURCES_C := \
 SCAN_TEST_DEFINES ?= -DSCAN_READER_PARK_USEC=30000000 \
 	-DSCAN_READER_CUTOFF=65536
 DEFINES    = -DHAVE_LIBRETRODB -DHAVE_COMPRESSION \
-	-DHAVE_RZSTD -DHAVE_RBZIP2 -DHAVE_RRAR \
+	-DHAVE_RZSTD -DHAVE_RBZIP2 -DHAVE_RRAR -DHAVE_CORE_INFO_CACHE \
 	$(SCAN_TEST_DEFINES) $(SCAN_DEFINES)
 
 LIBS += -lm
@@ -221,6 +221,11 @@ CLAIM_TEST        := core_info_claim_test
 CLAIM_TEST_MAIN   := $(CORE_DIR)/samples/tasks/database/core_info_claim_test.o
 CLAIM_TEST_OBJECTS = $(filter-out $(call sample_objs,$(CORE_DIR)/samples/tasks/database/main.o),$(OBJECTS)) \
 	$(CLAIM_TEST_MAIN)
+
+CACHE_TEST        := core_info_cache_test
+CACHE_TEST_MAIN   := $(CORE_DIR)/samples/tasks/database/core_info_cache_test.o
+CACHE_TEST_OBJECTS = $(filter-out $(call sample_objs,$(CORE_DIR)/samples/tasks/database/main.o),$(OBJECTS)) \
+	$(CACHE_TEST_MAIN)
 
 OBJOUT   = -o
 LINKOUT  = -o
@@ -288,6 +293,10 @@ $(BEGIN_TEST)$(EXE_EXT): $(BEGIN_TEST_OBJECTS)
 $(CLAIM_TEST)$(EXE_EXT): $(CLAIM_TEST_OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(CLAIM_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
 
+# Needs a writable dir for its cores, info files and cache.
+$(CACHE_TEST)$(EXE_EXT): $(CACHE_TEST_OBJECTS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(CACHE_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+
 # The scan test runs twice in one root: what a run leaves behind must
 # not decide the next one's checks. A sanitized build gives the budget
 # test its sanitizer's allowance, as CI does.
@@ -298,10 +307,12 @@ $(CLAIM_TEST)$(EXE_EXT): $(CLAIM_TEST_OBJECTS)
 TEST_ROOT = root=$$(mktemp -d) && \
 	{ ! command -v cygpath >/dev/null 2>&1 || root=$$(cygpath -m "$$root"); }
 check: $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT) $(BEGIN_TEST)$(EXE_EXT) \
-	$(CLAIM_TEST)$(EXE_EXT)
+	$(CLAIM_TEST)$(EXE_EXT) $(CACHE_TEST)$(EXE_EXT)
 	$(TEST_ROOT) && ./$(INDEX_TEST)$(EXE_EXT) "$$root"; r=$$?; \
 	   rm -rf "$$root"; exit $$r
 	$(TEST_ROOT) && ./$(CLAIM_TEST)$(EXE_EXT) "$$root"; r=$$?; \
+	   rm -rf "$$root"; exit $$r
+	$(TEST_ROOT) && ./$(CACHE_TEST)$(EXE_EXT) "$$root"; r=$$?; \
 	   rm -rf "$$root"; exit $$r
 	$(TEST_ROOT) && ./$(SCAN_TEST)$(EXE_EXT) "$$root" \
 	   && ./$(SCAN_TEST)$(EXE_EXT) "$$root"; r=$$?; rm -rf "$$root"; exit $$r
@@ -324,8 +335,8 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).cpp
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJECTS) $(INDEX_TEST_MAIN) $(SCAN_TEST_MAIN) $(BEGIN_TEST_MAIN) \
-	      $(CLAIM_TEST_MAIN) \
+	      $(CLAIM_TEST_MAIN) $(CACHE_TEST_MAIN) \
 	      $(TARGET)$(EXE_EXT) $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT) \
-	      $(BEGIN_TEST)$(EXE_EXT) $(CLAIM_TEST)$(EXE_EXT)
+	      $(BEGIN_TEST)$(EXE_EXT) $(CLAIM_TEST)$(EXE_EXT) $(CACHE_TEST)$(EXE_EXT)
 
 .PHONY: all check clean

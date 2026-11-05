@@ -1320,6 +1320,30 @@ end:
    return success;
 }
 
+/* Writes the cache from the built list, which holds the entries moved out of the cache */
+static bool core_info_cache_write_list(core_info_list_t *core_info_list,
+      const char *info_dir)
+{
+#ifdef HAVE_CORE_INFO_CACHE
+   size_t i;
+   bool success                 = false;
+   core_info_cache_list_t *list = core_info_cache_list_new();
+
+   if (!list)
+      return false;
+
+   for (i = 0; i < core_info_list->count; i++)
+      core_info_cache_add(list, &core_info_list->list[i], false);
+
+   success = core_info_cache_write(list, info_dir);
+   core_info_cache_list_free(list);
+   free(list);
+   return success;
+#else
+   return false;
+#endif
+}
+
 static void core_info_check_uninstalled(core_info_cache_list_t *list)
 {
    size_t i;
@@ -2188,6 +2212,29 @@ static void core_info_list_free(core_info_list_t *core_info_list)
    free(core_info_list);
 }
 
+/* True when a core was cached without an info file that exists now */
+static bool core_info_cache_entry_missed_info(const core_info_t *info_cache,
+      const char *core_file_id, size_t len, const char *info_dir)
+{
+   char info_name[256];
+   char info_path[PATH_MAX_LENGTH];
+
+   if (info_cache->flags & CORE_INFO_FLAG_HAS_INFO)
+      return false;
+
+   strlcpy(info_name, core_file_id, sizeof(info_name));
+   strlcpy(info_name + len, FILE_PATH_CORE_INFO_EXTENSION,
+         sizeof(info_name) - len);
+
+   if (info_dir && *info_dir)
+      fill_pathname_join_special(info_path, info_dir, info_name,
+            sizeof(info_path));
+   else
+      strlcpy(info_path, info_name, sizeof(info_path));
+
+   return path_is_valid(info_path);
+}
+
 static core_info_list_t *core_info_list_new(const char *path,
       const char *libretro_info_dir,
       const char *exts,
@@ -2257,6 +2304,15 @@ static core_info_list_t *core_info_list_new(const char *path,
       {
          core_info_t *info_cache = core_info_cache_find(
                core_info_cache_list, core_file_id);
+
+         /* Info file added after caching: parse it, drop the stale entry */
+         if (     info_cache
+               && core_info_cache_entry_missed_info(info_cache,
+                     core_file_id, _len, info_dir))
+         {
+            info_cache->flags &= ~CORE_INFO_FLAG_IS_INSTALLED;
+            info_cache         = NULL;
+         }
 
          if (info_cache)
          {
@@ -2366,8 +2422,8 @@ static core_info_list_t *core_info_list_new(const char *path,
       core_info_check_uninstalled(core_info_cache_list);
 
       if (core_info_cache_list->refresh)
-         *cache_supported = core_info_cache_write(
-               core_info_cache_list, info_dir);
+         *cache_supported = core_info_cache_write_list(
+               core_info_list, info_dir);
 
       core_info_cache_list_free(core_info_cache_list);
       free(core_info_cache_list);
