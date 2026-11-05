@@ -22,6 +22,7 @@
 
 /* Begin PBXBuildFile section */
 		A10A00000000000000000001 /* RetroArchMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10A00000000000000000002 /* RetroArchMenuView.swift */; };
+		A10A00000000000000000003 /* Combine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10A00000000000000000004 /* Combine.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		07019B932CD24FF200D6C3FD /* GCDWebDAVServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 07C5C63E2CD167470030FBEC /* GCDWebDAVServer.m */; };
 		070672FB2D1723A10099FC74 /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 92CC059F21FE3C1700FF79F0 /* GCDWebUploader.bundle */; };
 		070A88432A4E7AA9003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A88422A4E7AA9003161C0 /* OpenAL.framework */; };
@@ -163,6 +164,7 @@
 
 /* Begin PBXFileReference section */
 		A10A00000000000000000002 /* RetroArchMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RetroArchMenuView.swift; path = ../../ui/ios/RetroArchMenuView.swift; sourceTree = SOURCE_ROOT; };
+		A10A00000000000000000004 /* Combine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Combine.framework; path = System/Library/Frameworks/Combine.framework; sourceTree = SDKROOT; };
 		070A88422A4E7AA9003161C0 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
 		071212C72C6FD65B00F1B4B0 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		0712A7702B807AE400C9765F /* RetroArchTopShelfExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RetroArchTopShelfExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -461,6 +463,7 @@
 				9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */,
 				9204BE131D319EF300BD49DB /* QuartzCore.framework in Frameworks */,
 				077D61D42C8CCF7400E492B4 /* SwiftUI.framework in Frameworks */,
+				A10A00000000000000000003 /* Combine.framework in Frameworks */,
 				9204BE141D319EF300BD49DB /* GameController.framework in Frameworks */,
 				9204BE151D319EF300BD49DB /* CoreText.framework in Frameworks */,
 				9204BE161D319EF300BD49DB /* CoreLocation.framework in Frameworks */,
@@ -1178,6 +1181,7 @@
 				96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */,
 				9292D6E228F549D000E47A75 /* WidgetKit.framework */,
 				9292D6E428F549D000E47A75 /* SwiftUI.framework */,
+				A10A00000000000000000004 /* Combine.framework */,
 				0712A7712B807AE400C9765F /* TVServices.framework */,
 			);
 			name = Frameworks;
@@ -1677,7 +1681,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited) HAVE_IOS_MENU";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) HAVE_IOS_MENU";
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=13.0)";
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=12.0)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1699,7 +1703,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited) HAVE_IOS_MENU";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) HAVE_IOS_MENU";
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=13.0)";
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=12.0)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

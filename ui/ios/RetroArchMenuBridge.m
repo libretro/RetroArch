@@ -8,7 +8,7 @@
 #include "../../input/drivers/cocoa_input.h"
 #import "RetroArch-Swift.h"
 
-static RetroArchNativeMenuController *ios_menu_controller;
+static RetroArchNativeMenuController *ios_menu_controller API_AVAILABLE(ios(16.0));
 static NSMutableDictionary *ios_menu_snapshot;
 
 static NSString *ios_menu_string(const char *value)
@@ -16,11 +16,18 @@ static NSString *ios_menu_string(const char *value)
    return value ? ([NSString stringWithUTF8String:value] ?: @"") : @"";
 }
 
+bool ios_menu_bridge_available(void)
+{
+   if (@available(iOS 16.0, *))
+      return true;
+   return false;
+}
+
 bool ios_menu_bridge_init(uint64_t session)
 {
    if (![NSThread isMainThread])
       return false;
-   if (@available(iOS 13.0, *))
+   if (@available(iOS 16.0, *))
    {
       UIViewController *parent = [CocoaView get];
       if (!parent || !parent.view)
@@ -42,28 +49,35 @@ bool ios_menu_bridge_init(uint64_t session)
 
 void ios_menu_bridge_free(void)
 {
-   [ios_menu_controller willMoveToParentViewController:nil];
-   [ios_menu_controller.view removeFromSuperview];
-   [ios_menu_controller removeFromParentViewController];
-   RARCH_RELEASE(ios_menu_controller);
-   ios_menu_controller = nil;
+   if (@available(iOS 16.0, *))
+   {
+      [ios_menu_controller willMoveToParentViewController:nil];
+      [ios_menu_controller.view removeFromSuperview];
+      [ios_menu_controller removeFromParentViewController];
+      RARCH_RELEASE(ios_menu_controller);
+      ios_menu_controller = nil;
+   }
    RARCH_RELEASE(ios_menu_snapshot);
    ios_menu_snapshot = nil;
 }
 
 bool ios_menu_bridge_visible(bool visible)
 {
-   if (!ios_menu_controller || !ios_menu_controller.parentViewController)
-      return false;
-   if (ios_menu_controller.view.hidden == visible)
+   if (@available(iOS 16.0, *))
    {
-      ios_menu_controller.view.hidden = !visible;
-      cocoa_input_touches_reset();
-      if (visible)
-         [ios_menu_controller.parentViewController.view
-            bringSubviewToFront:ios_menu_controller.view];
+      if (!ios_menu_controller || !ios_menu_controller.parentViewController)
+         return false;
+      if (ios_menu_controller.view.hidden == visible)
+      {
+         ios_menu_controller.view.hidden = !visible;
+         cocoa_input_touches_reset();
+         if (visible)
+            [ios_menu_controller.parentViewController.view
+               bringSubviewToFront:ios_menu_controller.view];
+      }
+      return true;
    }
-   return true;
+   return false;
 }
 
 void ios_menu_bridge_begin(uint64_t session, uint64_t revision,
@@ -116,22 +130,26 @@ void ios_menu_bridge_add(size_t index, unsigned type,
 
 void ios_menu_bridge_commit(void)
 {
-   [ios_menu_controller publish:ios_menu_snapshot];
+   if (@available(iOS 16.0, *))
+      [ios_menu_controller publish:ios_menu_snapshot];
 }
 
 void ios_menu_bridge_status(size_t selection, bool busy, const char *dialog)
 {
-   [ios_menu_controller updateSelection:selection busy:busy dialog:ios_menu_string(dialog)];
+   if (@available(iOS 16.0, *))
+      [ios_menu_controller updateSelection:selection busy:busy dialog:ios_menu_string(dialog)];
 }
 
 void ios_menu_bridge_message(const char *message)
 {
    /* Task completions are delivered by the main run loop. */
-   if ([NSThread isMainThread])
-      [ios_menu_controller showMessage:ios_menu_string(message)];
+   if (@available(iOS 16.0, *))
+      if ([NSThread isMainThread])
+         [ios_menu_controller showMessage:ios_menu_string(message)];
 }
 
 void ios_menu_bridge_close_settings(void)
 {
-   [ios_menu_controller closeSettings];
+   if (@available(iOS 16.0, *))
+      [ios_menu_controller closeSettings];
 }

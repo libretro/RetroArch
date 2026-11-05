@@ -5,6 +5,7 @@ import argparse
 import os
 import shlex
 import subprocess
+import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
@@ -22,3 +23,5 @@ with tempfile.TemporaryDirectory(prefix='ios-menu-') as tmp:
         '-o', str(exe)] + shlex.split(os.environ.get('CFLAGS', '')), check=True)
     if not args.build_only:
         subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
+subprocess.run([sys.executable, str(Path(__file__).with_name('availability.py'))] +
+               (['--build-only'] if args.build_only else []), check=True)
