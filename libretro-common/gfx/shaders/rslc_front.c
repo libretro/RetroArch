@@ -5644,3 +5644,942 @@ bool rslc_compile(const char *glsl, size_t len,
    rslc_ctx_close(&c);
    return ok;
 }
+
+#ifdef RSLC_BUILD
+/* ------------------------------------------------------------------ */
+/* Builder: the IR made by calls (gfx/shaders/rslc_build.h)            */
+/* ------------------------------------------------------------------ */
+
+#include <gfx/shaders/rslc_build.h>
+
+#define RSLC_B_MAX_DEPTH 64
+
+struct rslc_b_list
+{
+   uint32_t *v;
+   uint32_t  n;
+   uint32_t  cap;
+   uint32_t  line;
+};
+
+struct rslc_builder
+{
+   struct rslc_ctx     c;
+   struct rslc_tok     eof;
+   struct rslc_tok    *eof_chunk;
+   struct rslc_parser *p;
+   struct rslc_b_list  blocks[RSLC_B_MAX_DEPTH];
+   uint32_t            depth;
+   uint32_t            fn_depth;   /* block depth the current function's body opened at */
+   uint32_t            line;       /* a running count, for messages */
+};
+
+static bool rslc_b_ok(struct rslc_builder *b)
+{
+   return b && !b->c.failed;
+}
+
+static uint32_t rslc_b_fail(struct rslc_builder *b, const char *msg, const char *what)
+{
+   rslc_err(&b->c, msg, what, b->line);
+   return 0;
+}
+
+static struct rslc_sym *rslc_b_sym(struct rslc_builder *b, const char *name)
+{
+   return name ? rslc_sym(&b->c, name, strlen(name)) : NULL;
+}
+
+static bool rslc_b_list_push(struct rslc_builder *b, struct rslc_b_list *l, uint32_t id)
+{
+   if (l->n == l->cap)
+   {
+      uint32_t  ncap = l->cap ? l->cap * 2 : 16;
+      uint32_t *nv   = (uint32_t*)rslc_arena_alloc(&b->c, ncap * sizeof(*nv));
+      if (!nv)
+         return false;
+      if (l->n)
+         memcpy(nv, l->v, l->n * sizeof(*nv));
+      l->v   = nv;
+      l->cap = ncap;
+   }
+   l->v[l->n++] = id;
+   return true;
+}
+
+struct rslc_builder *rslc_b_begin(const struct rslc_opts *opts, enum rslc_stage stage)
+{
+   struct rslc_builder *b;
+   struct rslc_parser  *p;
+   if (!opts)
+      return NULL;
+   b = (struct rslc_builder*)calloc(1, sizeof(*b));
+   if (!b)
+      return NULL;
+   if (!rslc_ctx_init(&b->c, opts, stage))
+   {
+      rslc_ctx_close(&b->c);
+      free(b);
+      return NULL;
+   }
+   /* The parser's helpers read the current token for messages: give
+    * them one EOF to read. */
+   b->eof.kind     = RSLC_TK_EOF;
+   b->eof_chunk    = &b->eof;
+   b->c.tok_chunks = &b->eof_chunk;
+   b->c.ntoks      = 1;
+   b->c.version    = 450;
+
+   p = (struct rslc_parser*)rslc_arena_zalloc(&b->c, sizeof(*p));
+   b->p = p;
+   if (!p)
+      return b;
+   p->c       = &b->c;
+   p->t_void  = rslc_type_basic(&b->c, RSLC_TY_VOID, RSLC_BASE_VOID, 0, 0);
+   p->t_bool  = rslc_type_basic(&b->c, RSLC_TY_SCALAR, RSLC_BASE_BOOL, 1, 1);
+   p->t_int   = rslc_type_basic(&b->c, RSLC_TY_SCALAR, RSLC_BASE_INT, 1, 1);
+   p->t_uint  = rslc_type_basic(&b->c, RSLC_TY_SCALAR, RSLC_BASE_UINT, 1, 1);
+   p->t_float = rslc_type_basic(&b->c, RSLC_TY_SCALAR, RSLC_BASE_FLOAT, 1, 1);
+   p->t_s2d   = rslc_type_sampler2d(&b->c, RSLC_BASE_FLOAT);
+   if (!p->t_void || !p->t_bool || !p->t_int || !p->t_uint || !p->t_float || !p->t_s2d)
+      return b;
+   if (!rslc_p_seed_builtins(p) || !rslc_p_push_scope(p))
+      return b;
+   if (stage == RSLC_STAGE_VERTEX)
+   {
+      if (     !rslc_p_builtin_var(p, "gl_Position", rslc_ty_vecn(p, RSLC_BASE_FLOAT, 4), RSLC_BI_POSITION, RSLC_DIR_OUT)
+            || !rslc_p_builtin_var(p, "gl_PointSize", p->t_float, RSLC_BI_POINTSIZE, RSLC_DIR_OUT)
+            || !rslc_p_builtin_var(p, "gl_VertexIndex", p->t_int, RSLC_BI_VERTEXINDEX, RSLC_DIR_IN)
+            || !rslc_p_builtin_var(p, "gl_InstanceIndex", p->t_int, RSLC_BI_INSTANCEINDEX, RSLC_DIR_IN))
+         return b;
+   }
+   else if (!rslc_p_builtin_var(p, "gl_FragCoord", rslc_ty_vecn(p, RSLC_BASE_FLOAT, 4), RSLC_BI_FRAGCOORD, RSLC_DIR_IN)
+         || !rslc_p_builtin_var(p, "gl_FragDepth", p->t_float, RSLC_BI_FRAGDEPTH, RSLC_DIR_OUT)
+         || !rslc_p_builtin_var(p, "gl_FrontFacing", p->t_bool, RSLC_BI_FRONTFACING, RSLC_DIR_IN))
+      return b;
+   return b;
+}
+
+void rslc_b_abort(struct rslc_builder *b)
+{
+   if (!b)
+      return;
+   rslc_ctx_close(&b->c);
+   free(b);
+}
+
+bool rslc_b_end(struct rslc_builder *b, struct rslc_result *result)
+{
+   bool ok = false;
+   if (!b)
+      return false;
+   if (rslc_b_ok(b))
+   {
+      if (b->depth)
+         rslc_b_fail(b, "unclosed block at the end of the stage", NULL);
+      else if (!b->c.prog.main_fn)
+         rslc_b_fail(b, "no main() in stage", NULL);
+      else if (b->c.prog.main_fn->ret != b->p->t_void)
+         rslc_b_fail(b, "main() must return void", NULL);
+      else if (result)
+         ok = rslc_emit_dst(&b->c, result);
+   }
+   rslc_b_abort(b);
+   return ok;
+}
+
+/* ---- types ---- */
+
+const struct rslc_type *rslc_b_void(struct rslc_builder *b)
+{
+   return rslc_b_ok(b) ? b->p->t_void : NULL;
+}
+
+const struct rslc_type *rslc_b_vec(struct rslc_builder *b, enum rslc_base base, unsigned rows)
+{
+   if (!rslc_b_ok(b) || rows < 1 || rows > 4 || base == RSLC_BASE_VOID)
+      return NULL;
+   return rslc_ty_vecn(b->p, base, rows);
+}
+
+const struct rslc_type *rslc_b_mat(struct rslc_builder *b, unsigned cols, unsigned rows)
+{
+   if (!rslc_b_ok(b) || cols < 2 || cols > 4 || rows < 2 || rows > 4)
+      return NULL;
+   return rslc_ty_mat(b->p, cols, rows);
+}
+
+const struct rslc_type *rslc_b_array(struct rslc_builder *b, const struct rslc_type *elem,
+      uint32_t len)
+{
+   if (!rslc_b_ok(b) || !elem || !len)
+      return NULL;
+   return rslc_type_array(&b->c, elem, len);
+}
+
+const struct rslc_type *rslc_b_struct(struct rslc_builder *b, const char *name,
+      const struct rslc_type *const *types, const char *const *names, uint32_t n)
+{
+   struct rslc_field *fields;
+   struct rslc_type  *st;
+   uint32_t           i;
+   if (!rslc_b_ok(b) || !n)
+      return NULL;
+   fields = (struct rslc_field*)rslc_arena_zalloc(&b->c, n * sizeof(*fields));
+   if (!fields)
+      return NULL;
+   for (i = 0; i < n; i++)
+   {
+      if (!types[i])
+         return NULL;
+      fields[i].type = types[i];
+      fields[i].name = rslc_b_sym(b, names[i]);
+      if (!fields[i].name)
+         return NULL;
+   }
+   st = rslc_type_struct(&b->c, rslc_b_sym(b, name), fields, n);
+   if (!st)
+      return NULL;
+   RSLC_GROW_PTRS(&b->c, b->c.prog.structs, b->c.prog.nstructs, b->c.prog.structs_cap,
+         struct rslc_type, NULL);
+   b->c.prog.structs[b->c.prog.nstructs++] = st;
+   return st;
+}
+
+const struct rslc_type *rslc_b_sampler2d(struct rslc_builder *b, enum rslc_base base)
+{
+   if (!rslc_b_ok(b))
+      return NULL;
+   return rslc_type_sampler2d(&b->c, base);
+}
+
+/* ---- declarations ---- */
+
+static struct rslc_var *rslc_b_new_var(struct rslc_builder *b, const char *name,
+      const struct rslc_type *type, uint8_t storage)
+{
+   struct rslc_var *v;
+   if (!rslc_b_ok(b) || !type)
+      return NULL;
+   if (type == b->p->t_void)
+   {
+      rslc_b_fail(b, "variable of type void: ", name);
+      return NULL;
+   }
+   v = rslc_p_new_var(b->p, rslc_b_sym(b, name), type, b->line);
+   if (!v)
+      return NULL;
+   v->storage   = storage;
+   v->global    = storage != RSLC_ST_LOCAL && storage != RSLC_ST_PARAM;
+   v->precision = rslc_p_default_prec(b->p, type, 0);
+   return v;
+}
+
+static struct rslc_var *rslc_b_io(struct rslc_builder *b, const char *name,
+      const struct rslc_type *type, uint32_t location, enum rslc_b_interp interp,
+      unsigned quals, uint8_t storage)
+{
+   struct rslc_var *v = rslc_b_new_var(b, name, type, storage);
+   if (!v)
+      return NULL;
+   v->location = location;
+   v->interp   = (uint8_t)interp;
+   v->quals    = (uint8_t)quals;
+   if (storage == RSLC_ST_IN && b->c.stage == RSLC_STAGE_FRAGMENT
+         && (type->base == RSLC_BASE_INT || type->base == RSLC_BASE_UINT)
+         && v->interp == RSLC_INTERP_NONE)
+      v->interp = RSLC_INTERP_FLAT;
+   return rslc_p_add_interface(b->p, v) ? v : NULL;
+}
+
+struct rslc_var *rslc_b_input(struct rslc_builder *b, const char *name,
+      const struct rslc_type *type, uint32_t location, enum rslc_b_interp interp,
+      unsigned quals)
+{
+   return rslc_b_io(b, name, type, location, interp, quals, RSLC_ST_IN);
+}
+
+struct rslc_var *rslc_b_output(struct rslc_builder *b, const char *name,
+      const struct rslc_type *type, uint32_t location, enum rslc_b_interp interp,
+      unsigned quals)
+{
+   return rslc_b_io(b, name, type, location, interp, quals, RSLC_ST_OUT);
+}
+
+struct rslc_var *rslc_b_sampler(struct rslc_builder *b, const char *name,
+      const struct rslc_type *type, uint32_t set, uint32_t binding)
+{
+   struct rslc_var *v;
+   if (type && type->kind != RSLC_TY_SAMPLER2D)
+   {
+      rslc_b_fail(b, "not a sampler type: ", name);
+      return NULL;
+   }
+   v = rslc_b_new_var(b, name, type, RSLC_ST_SAMPLER);
+   if (!v)
+      return NULL;
+   v->set     = set;
+   v->binding = binding;
+   return rslc_p_add_interface(b->p, v) ? v : NULL;
+}
+
+struct rslc_var *rslc_b_block(struct rslc_builder *b, bool push, bool std140,
+      const char *type_name, const char *instance, uint32_t set, uint32_t binding,
+      const struct rslc_type *const *types, const char *const *names, uint32_t n,
+      struct rslc_var **members)
+{
+   struct rslc_prog      *pr;
+   struct rslc_blockdecl *bd;
+   struct rslc_field     *fields;
+   struct rslc_type      *st;
+   unsigned               idx = push ? 1 : 0;
+   uint32_t               i;
+
+   if (!rslc_b_ok(b) || !n)
+      return NULL;
+   pr = &b->c.prog;
+   if (pr->has_block[idx])
+   {
+      rslc_b_fail(b, push ? "more than one push_constant block"
+            : "more than one uniform block", NULL);
+      return NULL;
+   }
+   fields = (struct rslc_field*)rslc_arena_zalloc(&b->c, n * sizeof(*fields));
+   if (!fields)
+      return NULL;
+   for (i = 0; i < n; i++)
+   {
+      if (!types[i])
+         return NULL;
+      fields[i].type      = types[i];
+      fields[i].name      = rslc_b_sym(b, names[i]);
+      fields[i].line      = b->line;
+      fields[i].precision = rslc_p_default_prec(b->p, types[i], 0);
+      if (!fields[i].name)
+         return NULL;
+   }
+   st = rslc_type_struct(&b->c, rslc_b_sym(b, type_name), fields, n);
+   if (!st)
+      return NULL;
+   bd           = &pr->blocks[idx];
+   bd->type     = st;
+   bd->instance = instance ? rslc_b_sym(b, instance) : NULL;
+   bd->binding  = binding;
+   bd->set      = set;
+   bd->line     = b->line;
+   bd->push     = push;
+   bd->std140   = !push || std140;
+   pr->has_block[idx] = true;
+
+   if (instance)
+   {
+      struct rslc_var *v = rslc_b_new_var(b, instance, st, RSLC_ST_BLOCK);
+      if (!v)
+         return NULL;
+      v->block   = idx;
+      v->binding = binding;
+      v->set     = set;
+      v->precision = 0;
+      return v;
+   }
+   for (i = 0; i < n; i++)
+   {
+      struct rslc_var *v = rslc_b_new_var(b, names[i], types[i], RSLC_ST_MEMBER);
+      if (!v)
+         return NULL;
+      v->block     = idx;
+      v->member    = i;
+      v->precision = fields[i].precision;
+      if (members)
+         members[i] = v;
+   }
+   return NULL;
+}
+
+struct rslc_var *rslc_b_builtin_var(struct rslc_builder *b, const char *name)
+{
+   struct rslc_sym *s;
+   if (!rslc_b_ok(b) || !name)
+      return NULL;
+   s = rslc_b_sym(b, name);
+   if (!s || !s->decl || s->decl->kind != RSLC_DK_VAR
+         || ((struct rslc_var*)s->decl->ptr)->storage != RSLC_ST_BUILTIN)
+   {
+      rslc_b_fail(b, "no such builtin variable in this stage: ", name);
+      return NULL;
+   }
+   return (struct rslc_var*)s->decl->ptr;
+}
+
+static uint32_t rslc_b_init(struct rslc_builder *b, struct rslc_var *v, uint32_t init,
+      bool is_const)
+{
+   if (!init)
+   {
+      if (is_const)
+         return rslc_b_fail(b, "const without an initialiser: ", v->name ? v->name->str : "");
+      return 1;
+   }
+   if (!rslc_p_coerce(b->p, &init, v->type, "initialiser"))
+      return 0;
+   v->init = init;
+   if (is_const)
+   {
+      struct rslc_cval cv;
+      if (!rslc_p_eval(b->p, init, &cv) && v->type->kind != RSLC_TY_ARRAY
+            && v->type->kind != RSLC_TY_STRUCT && v->type->kind != RSLC_TY_MAT)
+         v->storage = v->global ? RSLC_ST_GLOBAL : RSLC_ST_LOCAL;
+   }
+   return 1;
+}
+
+struct rslc_var *rslc_b_global(struct rslc_builder *b, const char *name,
+      const struct rslc_type *type, uint32_t init, bool is_const)
+{
+   struct rslc_var *v = rslc_b_new_var(b, name, type,
+         is_const ? RSLC_ST_CONST : RSLC_ST_GLOBAL);
+   if (!v)
+      return NULL;
+   v->global = 1;
+   return rslc_b_init(b, v, init, is_const) ? v : NULL;
+}
+
+static uint32_t rslc_b_local_decl(struct rslc_builder *b, const char *name,
+      const struct rslc_type *type, uint32_t init, bool is_const, struct rslc_var **out)
+{
+   struct rslc_var *v = rslc_b_new_var(b, name, type,
+         is_const ? RSLC_ST_CONST : RSLC_ST_LOCAL);
+   if (!v)
+      return 0;
+   v->global = 0;
+   if (!rslc_b_init(b, v, init, is_const))
+      return 0;
+   if (out)
+      *out = v;
+   return rslc_p_mk(b->p, RSLC_OP_DECL, NULL, v->id, 0, 0, 0, b->line, 0);
+}
+
+struct rslc_var *rslc_b_local(struct rslc_builder *b, const char *name,
+      const struct rslc_type *type, uint32_t init, bool is_const)
+{
+   struct rslc_var *v = NULL;
+   uint32_t         d = rslc_b_local_decl(b, name, type, init, is_const, &v);
+   return d && rslc_b_stmt(b, d) ? v : NULL;
+}
+
+uint32_t rslc_b_decl_stmt(struct rslc_builder *b, const char *name,
+      const struct rslc_type *type, uint32_t init, struct rslc_var **out)
+{
+   return rslc_b_local_decl(b, name, type, init, false, out);
+}
+
+/* ---- functions ---- */
+
+struct rslc_func *rslc_b_func(struct rslc_builder *b, const char *name,
+      const struct rslc_type *ret, uint32_t nparams,
+      const struct rslc_type *const *types, const unsigned *dirs, const char *const *names)
+{
+   struct rslc_func *f;
+   uint32_t          i;
+   if (!rslc_b_ok(b) || !ret || !name)
+      return NULL;
+   f = rslc_p_new_func(b->p, rslc_b_sym(b, name), ret, b->line);
+   if (!f)
+      return NULL;
+   f->nparams = nparams;
+   f->params  = (struct rslc_var**)rslc_arena_alloc(&b->c,
+         (nparams ? nparams : 1) * sizeof(*f->params));
+   if (!f->params)
+      return NULL;
+   for (i = 0; i < nparams; i++)
+   {
+      struct rslc_var *v = rslc_b_new_var(b, names ? names[i] : NULL, types[i], RSLC_ST_PARAM);
+      if (!v)
+         return NULL;
+      v->dir       = (uint8_t)(dirs ? dirs[i] : RSLC_DIR_IN);
+      f->params[i] = v;
+   }
+   if (nparams == 0 && !strcmp(name, "main"))
+      b->c.prog.main_fn = f;
+   return f;
+}
+
+struct rslc_var *rslc_b_param(const struct rslc_func *f, uint32_t i)
+{
+   return f && i < f->nparams ? f->params[i] : NULL;
+}
+
+bool rslc_b_func_begin(struct rslc_builder *b, struct rslc_func *f)
+{
+   if (!rslc_b_ok(b) || !f)
+      return false;
+   if (b->p->cur_fn || b->depth)
+      return rslc_b_fail(b, "function inside a function: ", f->name->str) != 0;
+   if (f->body)
+      return rslc_b_fail(b, "function defined twice: ", f->name->str) != 0;
+   b->p->cur_fn = f;
+   b->fn_depth  = 0;
+   return rslc_b_begin_block(b);
+}
+
+bool rslc_b_func_end(struct rslc_builder *b)
+{
+   struct rslc_func *f;
+   uint32_t          body;
+   if (!rslc_b_ok(b) || !b->p->cur_fn)
+      return false;
+   if (b->depth != 1)
+      return rslc_b_fail(b, "unclosed block in ", b->p->cur_fn->name->str) != 0;
+   f            = b->p->cur_fn;
+   body         = rslc_b_end_block(b);
+   b->p->cur_fn = NULL;
+   if (!body)
+      return false;
+   f->body = body;
+   return true;
+}
+
+/* ---- expressions ---- */
+
+static struct rslc_node *rslc_b_node(struct rslc_builder *b, uint32_t e)
+{
+   return rslc_node_at(&b->c, e);
+}
+
+uint32_t rslc_b_int(struct rslc_builder *b, int32_t v)
+{
+   return rslc_b_ok(b) ? rslc_p_const_int(b->p, v, b->line) : 0;
+}
+
+uint32_t rslc_b_uint(struct rslc_builder *b, uint32_t v)
+{
+   return rslc_b_ok(b) ? rslc_p_const_uint(b->p, v, b->line) : 0;
+}
+
+uint32_t rslc_b_float(struct rslc_builder *b, double v)
+{
+   return rslc_b_ok(b) ? rslc_p_const_float(b->p, v, b->line) : 0;
+}
+
+uint32_t rslc_b_bool(struct rslc_builder *b, bool v)
+{
+   return rslc_b_ok(b) ? rslc_p_const_bool(b->p, v, b->line) : 0;
+}
+
+uint32_t rslc_b_ref(struct rslc_builder *b, const struct rslc_var *v)
+{
+   if (!rslc_b_ok(b) || !v)
+      return 0;
+   return rslc_p_mk(b->p, RSLC_OP_VAR, v->type, v->id, 0, 0, 0, b->line, v->precision);
+}
+
+uint32_t rslc_b_member(struct rslc_builder *b, uint32_t e, uint32_t field)
+{
+   const struct rslc_type *bt;
+   if (!rslc_b_ok(b) || !e)
+      return 0;
+   bt = rslc_b_node(b, e)->type;
+   if (bt->kind != RSLC_TY_STRUCT || field >= bt->nfields)
+      return rslc_b_fail(b, "no such field", NULL);
+   return rslc_p_mk(b->p, RSLC_OP_MEMBER, bt->fields[field].type, e, field, 0, 0, b->line,
+         rslc_prec_max(rslc_b_node(b, e)->prec, bt->fields[field].precision));
+}
+
+uint32_t rslc_b_index(struct rslc_builder *b, uint32_t e, uint32_t idx)
+{
+   const struct rslc_type *bt, *rt, *it;
+   if (!rslc_b_ok(b) || !e || !idx)
+      return 0;
+   bt = rslc_b_node(b, e)->type;
+   it = rslc_b_node(b, idx)->type;
+   if (!rslc_ty_is_integer(it) || it->kind != RSLC_TY_SCALAR)
+      return rslc_b_fail(b, "index is not an integer", NULL);
+   switch (bt->kind)
+   {
+      case RSLC_TY_ARRAY: rt = bt->elem; break;
+      case RSLC_TY_VEC:   rt = rslc_ty_scalar_of(b->p, bt); break;
+      case RSLC_TY_MAT:   rt = rslc_ty_vecn(b->p, RSLC_BASE_FLOAT, bt->rows); break;
+      default:
+         return rslc_b_fail(b, "indexing a non-aggregate", NULL);
+   }
+   return rslc_p_mk(b->p, RSLC_OP_INDEX, rt, e, idx, 0, 0, b->line,
+         rslc_prec_max(rslc_b_node(b, e)->prec, rslc_b_node(b, idx)->prec));
+}
+
+uint32_t rslc_b_swizzle(struct rslc_builder *b, uint32_t e, const char *s)
+{
+   const struct rslc_type *bt;
+   unsigned cnt, width, i;
+   uint16_t aux;
+   if (!rslc_b_ok(b) || !e || !s)
+      return 0;
+   bt  = rslc_b_node(b, e)->type;
+   cnt = (unsigned)strlen(s);
+   if (bt->kind != RSLC_TY_SCALAR && bt->kind != RSLC_TY_VEC)
+      return rslc_b_fail(b, "swizzle of a non-vector", NULL);
+   width = bt->kind == RSLC_TY_SCALAR ? 1 : bt->rows;
+   if (cnt < 1 || cnt > 4)
+      return rslc_b_fail(b, "bad swizzle ", s);
+   aux = (uint16_t)(cnt & 3u);
+   for (i = 0; i < cnt; i++)
+   {
+      unsigned k = rslc_swizzle_index(s[i]);
+      if (k >= width)
+         return rslc_b_fail(b, "bad swizzle ", s);
+      aux = (uint16_t)(aux | (k << (2 + 2 * i)));
+   }
+   return rslc_p_mk(b->p, RSLC_OP_SWIZZLE, rslc_ty_vecn(b->p, bt->base, cnt), e, 0, 0, aux,
+         b->line, rslc_b_node(b, e)->prec);
+}
+
+uint32_t rslc_b_unary(struct rslc_builder *b, enum rslc_b_unop op, uint32_t e)
+{
+   struct rslc_node *n;
+   uint16_t          un = (uint16_t)op;
+   if (!rslc_b_ok(b) || !e)
+      return 0;
+   n = rslc_b_node(b, e);
+   switch (un)
+   {
+      case RSLC_UN_NEG:
+         if (!rslc_ty_is_numeric(n->type))
+            return rslc_b_fail(b, "unary - on a non-numeric", NULL);
+         if (n->op == RSLC_OP_CONST && n->type->kind == RSLC_TY_SCALAR)
+         {
+            if (n->type->base == RSLC_BASE_FLOAT)
+               return rslc_p_const_float(b->p, -rslc_p_const_double(n), b->line);
+            if (n->type->base == RSLC_BASE_INT)
+               return rslc_p_const_int(b->p, -(int32_t)n->a, b->line);
+            return rslc_p_const_uint(b->p, (uint32_t)(-(int32_t)n->a), b->line);
+         }
+         break;
+      case RSLC_UN_NOT:
+         if (n->type != b->p->t_bool)
+            return rslc_b_fail(b, "! on a non-bool", NULL);
+         break;
+      case RSLC_UN_BITNOT:
+         if (!rslc_ty_is_integer(n->type))
+            return rslc_b_fail(b, "~ on a non-integer", NULL);
+         break;
+      case RSLC_UN_PREINC: case RSLC_UN_PREDEC: case RSLC_UN_POSTINC: case RSLC_UN_POSTDEC:
+         if (!rslc_p_is_lvalue(b->p, e) || !rslc_ty_is_numeric(n->type))
+            return rslc_b_fail(b, "++/-- needs a numeric lvalue", NULL);
+         break;
+      default:
+         return rslc_b_fail(b, "unknown unary operator", NULL);
+   }
+   return rslc_p_mk(b->p, RSLC_OP_UNARY, n->type, e, 0, 0, un, b->line, n->prec);
+}
+
+uint32_t rslc_b_binary(struct rslc_builder *b, enum rslc_b_binop op, uint32_t l, uint32_t r)
+{
+   const struct rslc_type *rt;
+   uint32_t e;
+   if (!rslc_b_ok(b) || !l || !r)
+      return 0;
+   if (op < RSLC_B_ADD || op > RSLC_B_BXOR)
+      return rslc_b_fail(b, "unknown binary operator", NULL);
+   rt = rslc_p_binary_type(b->p, (uint16_t)op, &l, &r, b->line);
+   if (!rt)
+      return 0;
+   e = rslc_p_mk(b->p, RSLC_OP_BINARY, rt, l, r, 0, (uint16_t)op, b->line,
+         rslc_prec_max(rslc_b_node(b, l)->prec, rslc_b_node(b, r)->prec));
+   return rslc_p_fold_binary(b->p, e);
+}
+
+uint32_t rslc_b_select(struct rslc_builder *b, uint32_t cond, uint32_t a, uint32_t c)
+{
+   const struct rslc_type *ta, *tc;
+   if (!rslc_b_ok(b) || !cond || !a || !c)
+      return 0;
+   if (rslc_b_node(b, cond)->type != b->p->t_bool)
+      return rslc_b_fail(b, "?: condition is not a bool", NULL);
+   ta = rslc_b_node(b, a)->type;
+   tc = rslc_b_node(b, c)->type;
+   if (ta != tc)
+   {
+      if (rslc_ty_converts(ta, tc))
+         a = rslc_p_convert(b->p, a, tc);
+      else if (rslc_ty_converts(tc, ta))
+         c = rslc_p_convert(b->p, c, ta);
+      else
+         return rslc_b_fail(b, "?: branches differ in type", NULL);
+   }
+   return rslc_p_mk(b->p, RSLC_OP_TERNARY, rslc_b_node(b, a)->type, cond, a, c, 0, b->line,
+         rslc_prec_max(rslc_b_node(b, a)->prec, rslc_b_node(b, c)->prec));
+}
+
+uint32_t rslc_b_assign(struct rslc_builder *b, enum rslc_b_binop op, uint32_t l, uint32_t r)
+{
+   const struct rslc_type *lt;
+   if (!rslc_b_ok(b) || !l || !r)
+      return 0;
+   if (!rslc_p_is_lvalue(b->p, l))
+      return rslc_b_fail(b, "assignment to a non-lvalue", NULL);
+   lt = rslc_b_node(b, l)->type;
+   if (op == RSLC_B_SET)
+   {
+      if (!rslc_p_coerce(b->p, &r, lt, "assignment"))
+         return 0;
+   }
+   else
+   {
+      uint32_t tmp = l;
+      const struct rslc_type *rt;
+      if (op > RSLC_B_SHR && op < RSLC_B_BAND)
+         return rslc_b_fail(b, "no compound assignment for this operator", NULL);
+      rt = rslc_p_binary_type(b->p, (uint16_t)op, &tmp, &r, b->line);
+      if (!rt)
+         return 0;
+      if (tmp != l)
+         return rslc_b_fail(b, "compound assignment would convert the left side", NULL);
+      if (rt != lt && !(lt->kind == RSLC_TY_MAT && rt->kind == RSLC_TY_MAT
+               && op == RSLC_B_MUL && rt->rows == lt->rows && rt->cols == lt->cols))
+         return rslc_b_fail(b, "compound assignment result type mismatch", NULL);
+   }
+   return rslc_p_mk(b->p, RSLC_OP_ASSIGN, lt, l, r, 0, (uint16_t)op, b->line,
+         rslc_prec_max(rslc_b_node(b, l)->prec, rslc_b_node(b, r)->prec));
+}
+
+/* The arguments are converted in place, so the caller's array is
+ * copied first. */
+static uint32_t *rslc_b_args(struct rslc_builder *b, const uint32_t *args, uint32_t n)
+{
+   uint32_t *v = (uint32_t*)rslc_arena_alloc(&b->c, (n ? n : 1) * sizeof(*v));
+   uint32_t  i;
+   if (!v)
+      return NULL;
+   for (i = 0; i < n; i++)
+   {
+      if (!args[i])
+         return NULL;
+      v[i] = args[i];
+   }
+   return v;
+}
+
+uint32_t rslc_b_construct(struct rslc_builder *b, const struct rslc_type *type,
+      const uint32_t *args, uint32_t n)
+{
+   uint32_t *v;
+   if (!rslc_b_ok(b) || !type)
+      return 0;
+   v = rslc_b_args(b, args, n);
+   return v ? rslc_p_construct(b->p, type, v, n, b->line) : 0;
+}
+
+uint32_t rslc_b_call(struct rslc_builder *b, const struct rslc_func *f,
+      const uint32_t *args, uint32_t n)
+{
+   uint32_t *v;
+   uint8_t   prec = 0;
+   uint32_t  i;
+   if (!rslc_b_ok(b) || !f)
+      return 0;
+   if (n != f->nparams)
+      return rslc_b_fail(b, "wrong argument count in call to ", f->name->str);
+   v = rslc_b_args(b, args, n);
+   if (!v)
+      return 0;
+   for (i = 0; i < n; i++)
+   {
+      if (f->params[i]->dir != RSLC_DIR_IN)
+      {
+         if (!rslc_p_is_lvalue(b->p, v[i]) || rslc_b_node(b, v[i])->type != f->params[i]->type)
+            return rslc_b_fail(b, "out argument is not a matching lvalue in call to ",
+                  f->name->str);
+      }
+      else if (!rslc_p_coerce(b->p, &v[i], f->params[i]->type, f->name->str))
+         return 0;
+      prec = rslc_prec_max(prec, rslc_b_node(b, v[i])->prec);
+   }
+   return rslc_p_mk(b->p, RSLC_OP_CALL, f->ret, f->id, rslc_list_new(&b->c, v, n), 0, 0,
+         b->line, prec);
+}
+
+uint32_t rslc_b_builtin(struct rslc_builder *b, const char *name,
+      const uint32_t *args, uint32_t n)
+{
+   const struct rslc_bsig *bs;
+   const struct rslc_type *ret = NULL;
+   struct rslc_sym        *s;
+   uint32_t               *v;
+   uint8_t                 prec = 0;
+   uint32_t                i;
+   if (!rslc_b_ok(b) || !name)
+      return 0;
+   s = rslc_b_sym(b, name);
+   if (!s || !s->bfn)
+      return rslc_b_fail(b, "no such builtin function: ", name);
+   bs = rslc_bsig_by_id(s->bfn);
+   v  = rslc_b_args(b, args, n);
+   if (!v || !rslc_p_resolve_builtin(b->p, bs, v, n, &ret, b->line))
+      return 0;
+   for (i = 0; i < n; i++)
+      prec = rslc_prec_max(prec, rslc_b_node(b, v[i])->prec);
+   return rslc_p_mk(b->p, RSLC_OP_BUILTIN, ret, s->bfn, rslc_list_new(&b->c, v, n), 0, 0,
+         b->line, prec);
+}
+
+/* ---- statements ---- */
+
+bool rslc_b_begin_block(struct rslc_builder *b)
+{
+   if (!rslc_b_ok(b))
+      return false;
+   if (b->depth == RSLC_B_MAX_DEPTH)
+      return rslc_b_fail(b, "blocks nest too deep", NULL) != 0;
+   b->blocks[b->depth].n    = 0;
+   b->blocks[b->depth].line = b->line;
+   b->depth++;
+   return true;
+}
+
+uint32_t rslc_b_end_block(struct rslc_builder *b)
+{
+   struct rslc_b_list *l;
+   uint32_t            list;
+   if (!rslc_b_ok(b))
+      return 0;
+   if (!b->depth)
+      return rslc_b_fail(b, "no open block", NULL);
+   l    = &b->blocks[--b->depth];
+   list = rslc_list_new(&b->c, l->v, l->n);
+   if (l->n && !list)
+      return 0;
+   return rslc_p_mk(b->p, RSLC_OP_BLOCK, NULL, 0, list, 0, 0, l->line, 0);
+}
+
+bool rslc_b_stmt(struct rslc_builder *b, uint32_t stmt)
+{
+   if (!rslc_b_ok(b) || !stmt)
+      return false;
+   if (!b->depth)
+      return rslc_b_fail(b, "statement outside a block", NULL) != 0;
+   b->line++;
+   return rslc_b_list_push(b, &b->blocks[b->depth - 1], stmt);
+}
+
+static uint32_t rslc_b_mk_stmt(struct rslc_builder *b, enum rslc_op op, uint32_t a,
+      uint32_t bb, uint32_t c)
+{
+   if (!rslc_b_ok(b))
+      return 0;
+   return rslc_p_mk(b->p, op, NULL, a, bb, c, 0, b->line, 0);
+}
+
+uint32_t rslc_b_expr(struct rslc_builder *b, uint32_t e)
+{
+   return e ? rslc_b_mk_stmt(b, RSLC_OP_EXPR, e, 0, 0) : 0;
+}
+
+static bool rslc_b_cond(struct rslc_builder *b, uint32_t cond, const char *what)
+{
+   if (!cond || !rslc_b_ok(b))
+      return false;
+   if (rslc_b_node(b, cond)->type != b->p->t_bool)
+      return rslc_b_fail(b, what, " is not a bool") != 0;
+   return true;
+}
+
+uint32_t rslc_b_if(struct rslc_builder *b, uint32_t cond, uint32_t then_stmt,
+      uint32_t else_stmt)
+{
+   if (!rslc_b_cond(b, cond, "if condition") || !then_stmt)
+      return 0;
+   return rslc_b_mk_stmt(b, RSLC_OP_IF, cond, then_stmt, else_stmt);
+}
+
+uint32_t rslc_b_for(struct rslc_builder *b, uint32_t init, uint32_t cond, uint32_t iter,
+      uint32_t body)
+{
+   uint32_t parts[4];
+   if (!rslc_b_ok(b) || !body)
+      return 0;
+   if (cond && !rslc_b_cond(b, cond, "for condition"))
+      return 0;
+   parts[0] = init;
+   parts[1] = cond;
+   parts[2] = iter;
+   parts[3] = body;
+   return rslc_b_mk_stmt(b, RSLC_OP_FOR, 0, rslc_list_new(&b->c, parts, 4), 0);
+}
+
+uint32_t rslc_b_while(struct rslc_builder *b, uint32_t cond, uint32_t body)
+{
+   if (!rslc_b_cond(b, cond, "while condition") || !body)
+      return 0;
+   return rslc_b_mk_stmt(b, RSLC_OP_WHILE, cond, body, 0);
+}
+
+uint32_t rslc_b_do(struct rslc_builder *b, uint32_t body, uint32_t cond)
+{
+   if (!rslc_b_cond(b, cond, "do condition") || !body)
+      return 0;
+   return rslc_b_mk_stmt(b, RSLC_OP_DO, body, cond, 0);
+}
+
+uint32_t rslc_b_switch(struct rslc_builder *b, uint32_t e, uint32_t body)
+{
+   const struct rslc_type *t;
+   if (!rslc_b_ok(b) || !e || !body)
+      return 0;
+   t = rslc_b_node(b, e)->type;
+   if (t->kind != RSLC_TY_SCALAR || !rslc_ty_is_integer(t))
+      return rslc_b_fail(b, "switch needs an integer", NULL);
+   if (rslc_b_node(b, body)->op != RSLC_OP_BLOCK)
+      return rslc_b_fail(b, "switch body is not a block", NULL);
+   return rslc_b_mk_stmt(b, RSLC_OP_SWITCH, e, rslc_b_node(b, body)->b, 0);
+}
+
+uint32_t rslc_b_case(struct rslc_builder *b, int32_t value)
+{
+   if (!rslc_b_ok(b))
+      return 0;
+   return rslc_b_mk_stmt(b, RSLC_OP_CASE, rslc_p_const_int(b->p, value, b->line), 0, 0);
+}
+
+uint32_t rslc_b_default(struct rslc_builder *b)
+{
+   return rslc_b_mk_stmt(b, RSLC_OP_CASE, 0, 0, 0);
+}
+
+uint32_t rslc_b_break(struct rslc_builder *b)
+{
+   return rslc_b_mk_stmt(b, RSLC_OP_BREAK, 0, 0, 0);
+}
+
+uint32_t rslc_b_continue(struct rslc_builder *b)
+{
+   return rslc_b_mk_stmt(b, RSLC_OP_CONTINUE, 0, 0, 0);
+}
+
+uint32_t rslc_b_discard(struct rslc_builder *b)
+{
+   if (!rslc_b_ok(b))
+      return 0;
+   if (b->c.stage != RSLC_STAGE_FRAGMENT)
+      return rslc_b_fail(b, "discard outside a fragment shader", NULL);
+   return rslc_b_mk_stmt(b, RSLC_OP_DISCARD, 0, 0, 0);
+}
+
+uint32_t rslc_b_return(struct rslc_builder *b, uint32_t e)
+{
+   const struct rslc_func *f;
+   if (!rslc_b_ok(b))
+      return 0;
+   f = b->p->cur_fn;
+   if (!f)
+      return rslc_b_fail(b, "return outside a function", NULL);
+   if (e)
+   {
+      if (f->ret == b->p->t_void)
+         return rslc_b_fail(b, "return with a value in a void function", NULL);
+      if (!rslc_p_coerce(b->p, &e, f->ret, "return"))
+         return 0;
+   }
+   else if (f->ret != b->p->t_void)
+      return rslc_b_fail(b, "return without a value", NULL);
+   return rslc_b_mk_stmt(b, RSLC_OP_RETURN, e, 0, 0);
+}
+#endif
