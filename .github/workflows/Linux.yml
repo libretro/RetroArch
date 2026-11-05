@@ -31,7 +31,10 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # The 32-bit xenial image resolves no host on an Ubuntu 26.04 runner,
+    # public resolvers or not: since ubuntu-latest moved, its runs stop at
+    # checkout. The other container jobs, all 64-bit, are unaffected.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     container:
       image: reallibretroretroarch/libretro-build-i386-ubuntu:xenial-gcc9
