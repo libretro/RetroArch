@@ -132,6 +132,8 @@ set_nil:
       "crc",
       "md5",
       "sha1",
+      "set_fp1",
+      "set_fpm1",
       "serial"
    };
    for (i = 0; i < (sizeof(ordered_keys)/sizeof(char*)); i++)

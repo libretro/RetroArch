@@ -58,6 +58,7 @@ struct sevenzip_context_t
    uint32_t       decompress_index;
    bool           streaming;  /* the member goes to the sink in pieces */
    bool           gathering;  /* or into member */
+   bool           name_dirs;
 };
 
 /* A member bound for a file, bigger than this, is streamed to it */
@@ -487,6 +488,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
 
    state->context = sevenzip_context;
    sevenzip_context->state = state;
+   sevenzip_context->name_dirs = state->name_dirs;
 
    if (!sevenzip_open_archive(sevenzip_context, state))
       goto error;
@@ -543,6 +545,9 @@ static int sevenzip_parse_file_iterate_step_internal(
 
       *cdata    = (uint8_t *)(size_t)sevenzip_context->parse_index;
    }
+   else if (entry && sevenzip_context->name_dirs
+         && sevenzip_name_to_char(entry->name, s, PATH_MAX_LENGTH - 1))
+      strlcat(s, "/", PATH_MAX_LENGTH);
 
    *payback = 1;
 
