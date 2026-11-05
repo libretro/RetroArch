@@ -300,6 +300,10 @@ int main(void)
    assert(published_depth == 0 && !published_running);
    ios_menu_update();
    assert(commits == 1);
+   test_stack_items[1].label = (char*)MENU_ENUM_LABEL_PLAYLISTS_TAB_STR;
+   test_stack.size = 2;
+   assert(ios_menu_stack_tab(&test_stack) == IOS_MENU_TAB_MAIN);
+   test_stack.size = 1;
 
    assert(ios_menu_set_value(published_session, published_revision, 1, 101, "12345"));
    assert(!ios_menu_set_value(published_session, published_revision, 1, 101, "54321"));

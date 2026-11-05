@@ -83,6 +83,7 @@ private final class NativeMenuModel: ObservableObject {
    @Published var pages: [NativeMenuPage] = []
    @Published var path: [Int] = []
    @Published var selection = 0
+   @Published private(set) var focusRevision: UInt64 = 0
    @Published var busy = true
    @Published var dialog = ""
    @Published private(set) var message = ""
@@ -92,6 +93,7 @@ private final class NativeMenuModel: ObservableObject {
    @Published var running = false
    private(set) var depth = 0
    private var returnDepth: Int?
+   private var nativeActionPending = false
    private var messageRevision: UInt64 = 0
 
    init(session: UInt64) { self.session = session }
@@ -118,6 +120,7 @@ private final class NativeMenuModel: ObservableObject {
       if ios_menu_request(session, revision ?? self.revision, row?.id ?? index,
             row?.type ?? 0, action.rawValue) {
          busy = true
+         nativeActionPending = true
          return true
       }
       showMessage("The menu has changed. Please try again.")
@@ -128,6 +131,7 @@ private final class NativeMenuModel: ObservableObject {
       guard !busy else { return false }
       if ios_menu_set_value(session, revision, row.id, row.type, value) {
          busy = true
+         nativeActionPending = true
          return true
       }
       showMessage("The menu has changed. Please try again.")
@@ -163,13 +167,17 @@ private final class NativeMenuModel: ObservableObject {
    }
 
    func update(selection: Int, busy: Bool, dialog: String) {
-      if self.selection != selection { self.selection = selection }
+      if self.selection != selection {
+         self.selection = selection
+         if !busy && !nativeActionPending { focusRevision &+= 1 }
+      }
       if self.dialog != dialog { self.dialog = dialog }
       if self.busy && !busy && returnDepth != nil {
          returnDepth = nil
          path = enginePath
       }
       if self.busy != busy { self.busy = busy }
+      if !busy { nativeActionPending = false }
    }
 
    func publish(_ data: NSDictionary) {
@@ -315,10 +323,10 @@ private struct NativeMenuValueEditor: View {
          .navigationBarTitleDisplayMode(.inline)
          .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-               Button(model.label("back", fallback: "Cancel")) { dismiss() }
+               Button(model.label("cancel", fallback: "Cancel"), role: .cancel) { dismiss() }
             }
             ToolbarItem(placement: .confirmationAction) {
-               Button(model.label("confirm", fallback: "Apply")) {
+               Button(model.label("apply", fallback: "Apply")) {
                   if let value = submittedValue,
                         model.setValue(value, row: row, revision: revision) { dismiss() }
                }.disabled(submittedValue == nil || model.busy)
@@ -337,43 +345,73 @@ private struct NativeMenuPageView: View {
 
    private var active: Bool { page.depth == model.depth && page.revision == model.revision }
 
-   private func row(_ entry: NativeMenuRow) -> some View {
+   private func title(_ entry: NativeMenuRow) -> some View {
+      VStack(alignment: .leading, spacing: 4) {
+         Text(entry.title)
+            .foregroundColor(entry.enabled && !entry.boolean && !entry.editable
+               && !entry.submenu && !entry.checked ? .accentColor : .primary)
+         if !entry.sublabel.isEmpty {
+            Text(entry.sublabel).font(.caption).foregroundColor(.secondary)
+         }
+      }
+      .fixedSize(horizontal: false, vertical: true)
+   }
+
+   private func contents(_ entry: NativeMenuRow) -> some View {
       HStack {
+         title(entry)
+         Spacer(minLength: 12)
+         if entry.inputKind == Int(IOS_MENU_VALUE_COLOR.rawValue),
+               let rgb = UInt32(entry.inputValue) {
+            Circle()
+               .fill(Color(red: Double((rgb >> 16) & 255) / 255,
+                  green: Double((rgb >> 8) & 255) / 255, blue: Double(rgb & 255) / 255))
+               .frame(width: 24, height: 24)
+               .overlay(Circle().strokeBorder(Color.primary.opacity(0.15)))
+               .accessibilityHidden(true)
+         }
+         if !entry.value.isEmpty && entry.value != "..." {
+            Text(entry.value)
+               .foregroundColor(entry.editable ? .accentColor : .secondary)
+               .multilineTextAlignment(.trailing)
+         }
+         if entry.checked {
+            Image(systemName: "checkmark").foregroundColor(.accentColor)
+         } else if entry.submenu {
+            Image(systemName: "chevron.right").font(.caption)
+               .foregroundColor(Color(UIColor.tertiaryLabel))
+               .accessibilityHidden(true)
+         }
+      }
+      .padding(.vertical, 4)
+      .contentShape(Rectangle())
+   }
+
+   @ViewBuilder
+   private func row(_ entry: NativeMenuRow) -> some View {
+      if entry.boolean {
+         Toggle(isOn: Binding(
+            get: { entry.checked },
+            set: { _ in self.model.send(IOS_MENU_RIGHT, row: entry, revision: self.page.revision) })) {
+            title(entry)
+         }
+         .tint(.green)
+         .padding(.vertical, 4)
+         .disabled(!entry.enabled)
+      } else if entry.enabled {
          Button(action: {
             if entry.editable {
                self.editing = NativeMenuEdit(row: entry, revision: self.page.revision)
             }
             else { self.model.send(IOS_MENU_OK, row: entry, revision: self.page.revision) }
          }) {
-            HStack {
-               VStack(alignment: .leading, spacing: 4) {
-                  Text(entry.title).foregroundColor(.primary)
-                  if !entry.sublabel.isEmpty {
-                     Text(entry.sublabel).font(.caption).foregroundColor(.secondary)
-                  }
-               }
-               Spacer()
-               if !entry.boolean {
-                  if !entry.value.isEmpty && entry.value != "..." {
-                     Text(entry.value).foregroundColor(.secondary).multilineTextAlignment(.trailing)
-                  }
-                  if entry.checked { Image(systemName: "checkmark") }
-                  if entry.submenu && !entry.checked {
-                     Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
-                  }
-               }
-            }
-         }.buttonStyle(BorderlessButtonStyle())
-         if entry.boolean {
-            Toggle(entry.title, isOn: Binding(
-               get: { entry.checked },
-               set: { _ in self.model.send(IOS_MENU_RIGHT, row: entry, revision: self.page.revision) }))
-               .labelsHidden()
+            contents(entry)
          }
+         .buttonStyle(.plain)
+         .accessibilityAddTraits(entry.checked ? .isSelected : [])
+      } else {
+         contents(entry).accessibilityElement(children: .combine)
       }
-      .padding(.vertical, 4)
-      .listRowBackground(entry.id == model.selection
-         ? Color.accentColor.opacity(0.12) : Color.clear)
    }
 
    var body: some View {
@@ -387,7 +425,7 @@ private struct NativeMenuPageView: View {
          } else {
             ForEach(page.rows) { entry in
                self.row(entry).id(entry.id)
-                  .disabled(!entry.enabled || !active || self.model.busy)
+                  .disabled(!active || self.model.busy)
             }
             if page.total > page.rows.count {
                Section(footer: Text("\(page.offset + 1)–\(page.offset + page.rows.count) / \(page.total)")) {
@@ -401,7 +439,7 @@ private struct NativeMenuPageView: View {
             }
          }
       }
-      .listStyle(GroupedListStyle())
+      .listStyle(.insetGrouped)
       .navigationTitle(page.title)
       .navigationBarTitleDisplayMode(.inline)
       .toolbarBackground(Color(UIColor.systemGroupedBackground), for: .navigationBar)
@@ -409,6 +447,7 @@ private struct NativeMenuPageView: View {
       .sheet(item: $editing) { edit in
          NativeMenuValueEditor(model: model, row: edit.row, revision: edit.revision)
             .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
       }
       .toolbar {
          ToolbarItem(placement: .navigationBarTrailing) {
@@ -431,10 +470,10 @@ private struct NativeMenuView: View {
       if model.pages.indices.contains(depth) {
          ScrollViewReader { proxy in
             NativeMenuPageView(model: model, page: model.pages[depth])
-               .onChange(of: model.selection) { index in
-                  if depth == self.model.depth { proxy.scrollTo(index, anchor: .center) }
+               .onChange(of: model.focusRevision) { _ in
+                  if depth == self.model.depth { proxy.scrollTo(self.model.selection, anchor: .center) }
                }
-               .onChange(of: model.revision) { _ in
+               .onChange(of: model.pages[depth].offset) { _ in
                   if depth == self.model.depth { proxy.scrollTo(self.model.selection, anchor: .center) }
                }
          }

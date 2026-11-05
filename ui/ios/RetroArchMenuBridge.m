@@ -123,6 +123,25 @@ void ios_menu_bridge_begin(uint64_t session, uint64_t revision,
       const char *title, size_t total, size_t offset, size_t depth,
       unsigned tab, unsigned tabs, bool running)
 {
+   NSString *cancel = ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK));
+   NSString *apply = ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM));
+   switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
+   {
+      case RETRO_LANGUAGE_ENGLISH:
+         cancel = @"Cancel";
+         apply = @"Apply";
+         break;
+      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+         cancel = @"取消";
+         apply = @"应用";
+         break;
+      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+         cancel = @"取消";
+         apply = @"套用";
+         break;
+      default:
+         break;
+   }
    RARCH_RELEASE(ios_menu_snapshot);
    ios_menu_snapshot = [[NSMutableDictionary alloc] initWithDictionary:@{
       @"session": @(session), @"revision": @(revision),
@@ -136,6 +155,7 @@ void ios_menu_bridge_begin(uint64_t session, uint64_t revision,
       @"library": ios_menu_tab_title(IOS_MENU_TAB_LIBRARY),
       @"resume": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT)),
       @"home": ios_menu_tab_title(IOS_MENU_TAB_MAIN),
+      @"cancel": cancel, @"apply": apply,
       @"back": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK)),
       @"confirm": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM))
    };

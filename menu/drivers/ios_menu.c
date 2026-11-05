@@ -150,10 +150,10 @@ static unsigned ios_menu_tabs(void)
 
 static unsigned ios_menu_stack_tab(file_list_t *stack)
 {
-   size_t i = stack ? stack->size : 0;
-   while (i > 0)
+   size_t i;
+   for (i = 0; stack && i < stack->size; i++)
    {
-      const char *label = stack->list[--i].label;
+      const char *label = stack->list[i].label;
       if (!label)
          continue;
       if (!strcmp(label, MENU_ENUM_LABEL_SETTINGS_TAB_STR))
