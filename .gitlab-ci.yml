@@ -698,6 +698,23 @@ build-retroarch-android-playstore-plus:
       cp -r ./* .retroarch-precompiled/
       mv .retroarch-precompiled/ retroarch-precompiled/
 
+build-retroarch-android-quest-aarch64:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
+  stage: build
+  artifacts:
+    paths:
+    - retroarch-precompiled/
+    expire_in: 10 min
+  script:
+    - |
+      set -e
+      cd pkg/android/phoenix
+      ./gradlew assembleQuestRelease
+      cd -
+      mkdir .retroarch-precompiled
+      cp -r ./* .retroarch-precompiled/
+      mv .retroarch-precompiled/ retroarch-precompiled/
+
 build-static-retroarch-libnx-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:v4-10-0
   stage: prepare-for-static-cores
