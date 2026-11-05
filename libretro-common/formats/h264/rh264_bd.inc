@@ -38,6 +38,13 @@
 #define RH264_PMAX  ((1 << bd) - 1)
 #define RH264_PHALF (1 << (bd - 1))
 #endif
+/* 'bd' sets the ceiling only above 8 bits; the 8-bit kernels that take
+ * it for the shared signature leave it unread */
+#if RH264_BD == 8 && defined(__GNUC__)
+#define RH264_BDPARAM int bd __attribute__((__unused__))
+#else
+#define RH264_BDPARAM int bd
+#endif
 #define RH264_CLIP(v) ((v)<0?0:((v)>RH264_PMAX?RH264_PMAX:(v)))
 /* the unshifted 6-tap sums of the luma interpolation: up to 52 * 255
  * fits sixteen bits; 52 * 16383 does not (it overflowed at 10 bits,
@@ -49,7 +56,7 @@
 #endif
 
 static void RH264_FN(add_bypass)(RH264_PEL *dst, int stride,
-      const int32_t *r, int rstride, int w, int h, int bd)
+      const int32_t *r, int rstride, int w, int h, RH264_BDPARAM)
 {
    int x, y;
    for (y = 0; y < h; y++)
@@ -63,7 +70,7 @@ static void RH264_FN(add_bypass)(RH264_PEL *dst, int stride,
    }
 }
 
-static void RH264_FN(intra16x16)(RH264_PEL *dst,int stride,int mode,int have_up,int have_left, int bd){
+static void RH264_FN(intra16x16)(RH264_PEL *dst,int stride,int mode,int have_up,int have_left, RH264_BDPARAM){
    int x,y; const RH264_PEL *up=dst-stride;
    /* Vertical(0)/Horizontal(1)/Plane(3) require the corresponding neighbours;
     * fall back to DC(2) if unavailable rather than read out of bounds. */
@@ -94,7 +101,7 @@ static void RH264_FN(intra16x16)(RH264_PEL *dst,int stride,int mode,int have_up,
  * macroblock; the plane mode's vertical term is built from sixteen
  * neighbours rather than eight and scaled to match. */
 static void RH264_FN(intra_chroma_h)(RH264_PEL *dst,int stride,int mode,
-      int have_up,int have_left,int ch, int bd){
+      int have_up,int have_left,int ch, RH264_BDPARAM){
    int x,y; const RH264_PEL *up=dst-stride;
    /* Horizontal(1)/Vertical(2)/Plane(3) require the corresponding neighbours.
     * A conformant stream never signals them when unavailable, but arbitrary
@@ -136,7 +143,7 @@ static void RH264_FN(intra_chroma_h)(RH264_PEL *dst,int stride,int mode,
 }
 /* Intra_4x4 (8.3.1.2). p[] samples: p[-1,-1]=C, p[x,-1]=T[0..7] (top+topright),
  * p[-1,y]=L[0..3]. avail flags gate which samples are valid. */
-static void RH264_FN(intra4x4)(RH264_PEL *dst,int stride,int mode,int have_up,int have_left,int have_up_right,int have_ul, int bd){
+static void RH264_FN(intra4x4)(RH264_PEL *dst,int stride,int mode,int have_up,int have_left,int have_up_right,int have_ul, RH264_BDPARAM){
    const RH264_PEL *up=dst-stride; RH264_PEL L[4],C,T[8]; int x,y;
    for(y=0;y<4;y++)L[y]=have_left?dst[y*stride-1]:0;
    C=have_ul?dst[-stride-1]:0;
@@ -191,7 +198,7 @@ static void RH264_FN(intra4x4)(RH264_PEL *dst,int stride,int mode,int have_up,in
  * (8.3.2.2.1), then apply the requested mode. Mode numbering matches the
  * 4x4 modes. */
 static void RH264_FN(intra8x8)(RH264_PEL *dst, int stride, int mode,
-      int have_up, int have_left, int have_ul, int have_ur, int bd)
+      int have_up, int have_left, int have_ul, int have_ur, RH264_BDPARAM)
 {
    /* p[0]=corner, p[1..16]=top row (incl. top-right 8), p[17..24]=left */
    int p[25], q[25];
@@ -321,7 +328,7 @@ static void RH264_FN(intra8x8)(RH264_PEL *dst, int stride, int mode,
 
 /* Filter one luma sample line across an edge (p3..p0 | q0..q3), stride s.
  * bS in 1..4. a=alpha, be=beta, tc0v from table (unused for bS==4). */
-static void RH264_FN(filter_luma_edge)(RH264_PEL *e,int s,int bS,int a,int be,int tc0v, int bd)
+static void RH264_FN(filter_luma_edge)(RH264_PEL *e,int s,int bS,int a,int be,int tc0v, RH264_BDPARAM)
 {
    int p0=e[-1*s],p1=e[-2*s],p2=e[-3*s],p3=e[-4*s];
    int q0=e[0],q1=e[1*s],q2=e[2*s],q3=e[3*s];
@@ -399,7 +406,7 @@ static RH264_INLINE uint8x8_t RH264_FN(neon_load4)(const RH264_PEL *s)
  * rather than a sample at a time: unpack the predicted bytes into
  * 16-bit lanes, add, and pack back with unsigned saturation, which
  * performs the clip to [0,RH264_PMAX] for free. */
-static void RH264_FN(add_residual)(RH264_PEL *dst,int stride,const int32_t *r,int n, int bd)
+static void RH264_FN(add_residual)(RH264_PEL *dst,int stride,const int32_t *r,int n, RH264_BDPARAM)
 {
    int y;
 #if RH264_BD == 8 && defined(RH264_SSE2)
@@ -882,7 +889,7 @@ static void RH264_FN(filter_luma_edge_n)(RH264_PEL *e, int s, int ls, int n,
 }
 
 /* Filter one chroma sample across an edge. */
-static void RH264_FN(filter_chroma_edge)(RH264_PEL *e,int s,int bS,int a,int be,int tc0v, int bd)
+static void RH264_FN(filter_chroma_edge)(RH264_PEL *e,int s,int bS,int a,int be,int tc0v, RH264_BDPARAM)
 {
    int p1=e[-2*s],p0=e[-1*s],q0=e[0],q1=e[1*s];
    if(RH264_ABS(p0-q0)>=a||RH264_ABS(p1-p0)>=be||RH264_ABS(q1-q0)>=be) return;
@@ -1463,7 +1470,7 @@ static RH264_INLINE uint8x8_t RH264_FN(neon_j8)(const int16_t *r0,
  * stacks; the 8-bit instantiation keeps them local. */
 static void RH264_FN(mc_luma)(RH264_PEL *dst, int dstride,
       const RH264_PEL *ref, int rstride, int rw, int rh,
-      int ox, int oy, int bw, int bh, int mvx, int mvy, int bd,
+      int ox, int oy, int bw, int bh, int mvx, int mvy, RH264_BDPARAM,
       void *scratch)
 {
    int fx = mvx & 3, fy = mvy & 3;
@@ -1872,7 +1879,7 @@ static void RH264_FN(mc_luma)(RH264_PEL *dst, int dstride,
  * mv directly as 1/8-pel offsets (4:2:0 -> chroma mv = luma mv, 1/8 units). */
 static void RH264_FN(mc_chroma)(RH264_PEL *dst, int dstride,
       const RH264_PEL *ref, int rstride, int rw, int rh,
-      int ox, int oy, int bw, int bh, int mvx, int mvy, int bd)
+      int ox, int oy, int bw, int bh, int mvx, int mvy)
 {
    int ix = ox + (mvx >> 3);
    int iy = oy + (mvy >> 3);
@@ -1998,7 +2005,7 @@ static void RH264_FN(mc_chroma)(RH264_PEL *dst, int dstride,
 
 /* d[i] = clip(((d[i]*w + rnd) >> sh) + o): explicit weighting of one
  * prediction in place (8.4.2.3.2; rnd is 1<<(sh-1), or 0 when sh is 0). */
-static void RH264_FN(wp_row)(RH264_PEL *d, int n, int w, int rnd, int sh, int o, int bd)
+static void RH264_FN(wp_row)(RH264_PEL *d, int n, int w, int rnd, int sh, int o, RH264_BDPARAM)
 {
    int x = 0;
 #if RH264_BD == 8 && defined(RH264_SSE2)
@@ -2065,7 +2072,7 @@ static void RH264_FN(wp_row)(RH264_PEL *d, int n, int w, int rnd, int sh, int o,
  * inside one setup instead. */
 static void RH264_FN(bi_block)(RH264_PEL *d, int dstride,
       const RH264_PEL *s0, int s0stride, const RH264_PEL *s1, int s1stride,
-      int w, int h, int w0, int w1, int bias, int sh, int o, int bd)
+      int w, int h, int w0, int w1, int bias, int sh, int o, RH264_BDPARAM)
 {
    int y;
 #if RH264_BD == 8 && defined(RH264_SSE2)
@@ -2165,7 +2172,7 @@ static void RH264_FN(bi_block)(RH264_PEL *d, int dstride,
 /* (s0 + s1 + 1) >> 1 per sample: the default bi-prediction (8.4.2.3.1) */
 static void RH264_FN(avg_block)(RH264_PEL *d, int dstride,
       const RH264_PEL *s0, int s0s, const RH264_PEL *s1, int s1s,
-      int w, int h, int bd)
+      int w, int h)
 {
    int x, y;
    for (y = 0; y < h; y++)
@@ -2202,6 +2209,7 @@ static void RH264_FN(avg_block)(RH264_PEL *d, int dstride,
 }
 
 #undef RH264_PMAX
+#undef RH264_BDPARAM
 #undef RH264_PHALF
 #undef RH264_CLIP
 #undef RH264_HB

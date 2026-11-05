@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: MIT */
 #ifndef RAV1_WEBM_FIXTURE_H
 #define RAV1_WEBM_FIXTURE_H
+/* the byte writer only: a WebM test never builds an MP4 */
+#define RAV1_MP4_FIXTURE_WRITER_ONLY
 #include "rav1_mp4_fixture.h"
 
 static size_t element(uint32_t id)

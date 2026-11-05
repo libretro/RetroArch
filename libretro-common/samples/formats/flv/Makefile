@@ -2,7 +2,7 @@ CC ?= cc
 LRC := ../../..
 CFLAGS += -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wframe-larger-than=2048 -I$(LRC)/include
 ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
-CFLAGS += -Wno-c99-extensions
+CFLAGS += -Wno-c99-extensions -Wno-c11-extensions
 endif
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

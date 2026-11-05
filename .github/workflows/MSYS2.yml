@@ -100,7 +100,7 @@ jobs:
         run: |
           set -eu
           flags=''
-          if cc --version | grep -qi clang; then flags=-Wno-c99-extensions; fi
+          if cc --version | grep -qi clang; then flags="-Wno-c99-extensions -Wno-c11-extensions"; fi
           cc $flags -std=c89 -pedantic -Wall -Wextra -Werror -Wno-unused-function -Wframe-larger-than=4096 -Ilibretro-common/include samples/gfx/win32_window_proc/modal_frame_test.c -o modal_frame_test.exe -lgdi32 -luser32
           rc=0
           ./modal_frame_test.exe || rc=$?

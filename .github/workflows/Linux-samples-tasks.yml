@@ -12,7 +12,7 @@ on:
       - '!.github/workflows/*.yml'
       - 'libretro-common/samples/encodings/rbzip2/**'
       - 'samples/menu/dirwalk/**'
-      - 'samples/playlist/playlist_parity_test.c/**'
+      - 'samples/playlist/playlist_parity_test.c'
       - 'samples/tasks/autodetect_handoff/**'
       - 'samples/tasks/bluetooth_scan/**'
       - 'samples/tasks/bps_patch/**'
@@ -45,6 +45,7 @@ on:
       - 'samples/tasks/watchdog/**'
       - 'samples/tasks/wifi_tasks/**'
       - 'samples/playlist/**'
+      - 'samples/ui_companion_log_stub.c'
       - '.github/workflows/Linux-samples-tasks.yml'
     # ci_paths: end
   pull_request:
@@ -58,7 +59,7 @@ on:
       - '!.github/workflows/*.yml'
       - 'libretro-common/samples/encodings/rbzip2/**'
       - 'samples/menu/dirwalk/**'
-      - 'samples/playlist/playlist_parity_test.c/**'
+      - 'samples/playlist/playlist_parity_test.c'
       - 'samples/tasks/autodetect_handoff/**'
       - 'samples/tasks/bluetooth_scan/**'
       - 'samples/tasks/bps_patch/**'
@@ -91,6 +92,7 @@ on:
       - 'samples/tasks/watchdog/**'
       - 'samples/tasks/wifi_tasks/**'
       - 'samples/playlist/**'
+      - 'samples/ui_companion_log_stub.c'
       - '.github/workflows/Linux-samples-tasks.yml'
     # ci_paths: end
   workflow_dispatch:

@@ -9,7 +9,7 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
-CFLAGS += -Wno-c99-extensions
+CFLAGS += -Wno-c99-extensions -Wno-c11-extensions
 endif
 all: $(TARGET) $(TARGET_NOTHREADS)
 $(TARGET): gpu_reinit_test.c $(ROOT)/record/record_gpu_reinit.c $(ROOT)/record/record_driver.h

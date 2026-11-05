@@ -6,7 +6,7 @@
 #   run_vm.sh --kernel-version     (prints the kernel it would fetch)
 #
 # KERNEL_DIR, when set, names a directory holding vmlinuz and vkms.ko;
-# otherwise Ubuntu's current HWE kernel is fetched with apt-get download
+# otherwise the runner release's current HWE kernel is fetched with apt-get download
 # into VKMS_CACHE (default .kernel here) and taken from there. Needs
 # qemu-system-x86_64, a static busybox, zstd and cpio; uses KVM where
 # /dev/kvm can be opened, and plain emulation otherwise.
@@ -15,10 +15,16 @@ set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 . "$here/fetch_debs.sh"
 
+# The kernel the runner's own release tracks: its HWE metapackage, or
+# the plain generic one on a release that has none yet
 hwe_kernel() {
-   apt-cache depends linux-image-generic-hwe-24.04 2>/dev/null \
-      | sed -n 's/.*Depends: linux-image-\([0-9][^ ]*-generic\)$/\1/p' \
-      | head -n 1
+   rel=$(. /etc/os-release && echo "$VERSION_ID")
+   for meta in "linux-image-generic-hwe-$rel" linux-image-generic; do
+      k=$(apt-cache depends "$meta" 2>/dev/null \
+         | sed -n 's/.*Depends: linux-image-\([0-9][^ ]*-generic\)$/\1/p' \
+         | head -n 1)
+      [ -n "$k" ] && { echo "$k"; return; }
+   done
 }
 # Lists the runner never refreshed name no kernel: refreshed once
 if [ -z "$(hwe_kernel)" ] && command -v sudo >/dev/null 2>&1; then
@@ -49,13 +55,16 @@ if [ -z "${KERNEL_DIR:-}" ]; then
       download_debs "$work/deb" "linux-image-unsigned-$kver" \
          "linux-modules-$kver" \
          || { echo "run_vm.sh: could not fetch $kver"; exit 1; }
-      # vkms is in the modules, or in the extra ones, by kernel
-      download_debs "$work/deb" "linux-modules-extra-$kver" || true
+      # vkms is in the modules, or in the extra ones on a kernel that
+      # still splits them out
+      if apt-cache show "linux-modules-extra-$kver" >/dev/null 2>&1; then
+         download_debs "$work/deb" "linux-modules-extra-$kver" || true
+      fi
       for d in "$work"/deb/*.deb; do
          dpkg-deb -x "$d" "$work/root"
       done
       cp "$work/root/boot/vmlinuz-$kver" "$KERNEL_DIR/vmlinuz"
-      ko=$(find "$work/root/lib/modules" -name 'vkms.ko*' | head -n 1)
+      ko=$(find "$work/root" -path "*/lib/modules/*" -name 'vkms.ko*' | head -n 1)
       [ -n "$ko" ] || { echo "run_vm.sh: $kver has no vkms"; exit 1; }
       case $ko in
          *.zst) zstd -dqf "$ko" -o "$KERNEL_DIR/vkms.ko" ;;

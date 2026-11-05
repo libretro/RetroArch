@@ -3,7 +3,7 @@ RA := ../../..
 CFLAGS += -DHAVE_THREADS -O1 -g1 -std=c89 -pedantic -Wall -Wextra -Werror -Wno-long-long -Wframe-larger-than=2048 -I$(RA)/libretro-common/include
 ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
 # The project boolean.h uses clang's _Bool spelling in C89 as well.
-CFLAGS += -Wno-c99-extensions
+CFLAGS += -Wno-c99-extensions -Wno-c11-extensions
 endif
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

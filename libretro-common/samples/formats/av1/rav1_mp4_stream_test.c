@@ -100,7 +100,7 @@ static void test_stream(void)
    video_hw_frame_t frame;
    unsigned i, w = 0, h = 0, before;
    int duration = 0, frames = 0, loops = 0, ret = 2;
-   make_mp4(1);
+   make_mp4_clip(1, 0);
    CHECK(!rmp4_video_stream_open(bytes, used));
    CHECK(!opens);
    s = rmp4_video_stream_open_hw_avail(
@@ -159,7 +159,7 @@ static void test_seek(void)
    unsigned before, n;
    int ret = 0;
    int64_t position = -1;
-   make_mp4(1);
+   make_mp4_clip(1, 0);
    s = rmp4_video_stream_open_hw_avail(bytes, used,
          media_at + sizeof(packet) - 1, NULL, NULL, NULL);
    CHECK(s != NULL);
@@ -197,7 +197,7 @@ static void test_color(void)
    const uint32_t *marker = NULL;
    for (transfer = 16; transfer <= 18; transfer += 2)
    {
-      make_mp4(1);
+      make_mp4_clip(1, 0);
       bytes[color_at + 1] = 9;
       bytes[color_at + 3] = (uint8_t)transfer;
       bytes[color_at + 5] = 9;
@@ -218,7 +218,7 @@ static void test_color(void)
    }
    CHECK(opens == before + 2);
    before = opens;
-   make_mp4(1);
+   make_mp4_clip(1, 0);
    bytes[color_at + 6] = 128;
    s = rmp4_video_stream_open_hw_avail(bytes, used, used, NULL, NULL, NULL);
    CHECK(s != NULL);
@@ -229,7 +229,7 @@ static void test_color(void)
    }
    CHECK(opens == before);
    marker = NULL;
-   make_mp4(1);
+   make_mp4_clip(1, 0);
    bytes[color_at + 5] = 1;
    s = rmp4_video_stream_open_hw_avail(bytes, used, used, NULL, NULL, NULL);
    CHECK(s != NULL);
@@ -504,7 +504,7 @@ static void test_unavailable(void)
 {
    rmp4_video_stream_t *s;
    unsigned before = opens;
-   make_mp4(1);
+   make_mp4_clip(1, 0);
    rav1_set_hw_backend(NULL);
    s = rmp4_video_stream_open_hw_avail(bytes, used, used, NULL, NULL, NULL);
    CHECK(s != NULL);

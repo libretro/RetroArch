@@ -1786,8 +1786,8 @@ static void rh264_mc_luma(const rh264_frame *f, uint8_t *dst, int dstride,
 static void rh264_mc_chroma(const rh264_frame *f, uint8_t *dst, int dstride,
       const uint8_t *ref, int rstride, int rw, int rh,
       int ox, int oy, int bw, int bh, int mvx, int mvy)
-{  if (f->bsh) rh264_mc_chroma_16((uint16_t*)dst, dstride, (const uint16_t*)ref, rstride, rw, rh, ox, oy, bw, bh, mvx, mvy, f->bd);
-   else        rh264_mc_chroma_8(dst, dstride, ref, rstride, rw, rh, ox, oy, bw, bh, mvx, mvy, 8); }
+{  if (f->bsh) rh264_mc_chroma_16((uint16_t*)dst, dstride, (const uint16_t*)ref, rstride, rw, rh, ox, oy, bw, bh, mvx, mvy);
+   else        rh264_mc_chroma_8(dst, dstride, ref, rstride, rw, rh, ox, oy, bw, bh, mvx, mvy); }
 static void rh264_wp_row(const rh264_frame *f, uint8_t *d, int n, int w,
       int rnd, int sh, int o)
 {  if (f->bsh) rh264_wp_row_16((uint16_t*)d, n, w, rnd, sh, o, f->bd);
@@ -1799,8 +1799,8 @@ static void rh264_bi_block(const rh264_frame *f, uint8_t *d, int dstride,
    else        rh264_bi_block_8(d, dstride, s0, s0s, s1, s1s, w, h, w0, w1, rnd, sh, o, 8); }
 static void rh264_avg_block(const rh264_frame *f, uint8_t *d, int dstride,
       const uint8_t *s0, int s0s, const uint8_t *s1, int s1s, int w, int h)
-{  if (f->bsh) rh264_avg_block_16((uint16_t*)d, dstride, (const uint16_t*)s0, s0s, (const uint16_t*)s1, s1s, w, h, f->bd);
-   else        rh264_avg_block_8(d, dstride, s0, s0s, s1, s1s, w, h, 8); }
+{  if (f->bsh) rh264_avg_block_16((uint16_t*)d, dstride, (const uint16_t*)s0, s0s, (const uint16_t*)s1, s1s, w, h);
+   else        rh264_avg_block_8(d, dstride, s0, s0s, s1, s1s, w, h); }
 
 /* Macroblock position from its address.  With macroblock-adaptive
  * frame/field coding the picture is scanned in vertical PAIRS:
@@ -4021,7 +4021,7 @@ static RH264_INLINE int rh264_col_zero(const rh264_mv *c)
 /* Spatial direct per-macroblock preparation (8.4.1.2.2): the minimum
  * non-negative reference of the three MV predictor neighbours per list, and
  * the 16x16 median predictor toward it. */
-static void rh264_b_direct_prepare(const rh264_bctx *bc, const rh264_mv *mvg,
+static void rh264_b_direct_prepare(const rh264_mv *mvg,
       int gwmax, int ghmax, int mbx, int mby,
       int *l0r, int *l1r, int *pm0x, int *pm0y, int *pm1x, int *pm1y)
 {
@@ -4243,7 +4243,7 @@ static int rh264_b_direct_mb(rh264_frame *f, const rh264_bctx *bc,
 {
    int l0r = -1, l1r = -1, pm0x = 0, pm0y = 0, pm1x = 0, pm1y = 0, q;
    if (bc->direct_spatial)
-      rh264_b_direct_prepare(bc, mvg, gwmax, ghmax, mbx, mby,
+      rh264_b_direct_prepare(mvg, gwmax, ghmax, mbx, mby,
             &l0r, &l1r, &pm0x, &pm0y, &pm1x, &pm1y);
    for (q = 0; q < 4; q++)
       if (rh264_b_direct_quadrant(bc, mvg, gwmax, mbx, mby,
@@ -4275,8 +4275,8 @@ static const int8_t rh264_b_sub_pdir[13] = {3, 0, 1, 2, 0, 0, 1, 1, 2, 2, 0, 1, 
 
 /* One non-direct B partition, both lists resolved: predict per list off the
  * grid, fill the cells, compensate. Refs below zero mean the list is unused. */
-static void rh264_b_part(rh264_frame *f, const rh264_bctx *bc,
-      const rh264_slice_hdr *sh, rh264_mv *mvg, int gwmax, int ghmax,
+static void rh264_b_part(const rh264_bctx *bc,
+      rh264_mv *mvg, int gwmax, int ghmax,
       int mbx, int mby, int bx, int by, int bw, int bh,
       int r0, int mvd0x, int mvd0y, int r1, int mvd1x, int mvd1y,
       int hint, int *m0x, int *m0y, int *m1x, int *m1y)
@@ -4424,7 +4424,7 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
             if (pd == 1 || pd == 2) r1 = rh264_ref_idx_te(b, bc->n1);
             if (r0 >= 0) { d0x = rh264_se(b); d0y = rh264_se(b); }
             if (r1 >= 0) { d1x = rh264_se(b); d1y = rh264_se(b); }
-            rh264_b_part(f, bc, sh, mvg, gwmax, ghmax, mbx, mby, 0, 0, 16, 16,
+            rh264_b_part(bc, mvg, gwmax, ghmax, mbx, mby, 0, 0, 16, 16,
                   r0, d0x, d0y, r1, d1x, d1y, RH264_MVP_MEDIAN,
                   &m0x, &m0y, &m1x, &m1y);
             rh264_b_pred_block(f, bc, sh, mbx, mby, 0, 0, 16, 16,
@@ -4458,7 +4458,7 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                int bx = is16x8 ? 0 : pi * 8, by = is16x8 ? pi * 8 : 0;
                int bw = is16x8 ? 16 : 8,     bh = is16x8 ? 8 : 16;
                int rr0 = pi ? r0b : r0a, rr1 = pi ? r1b : r1a;
-               rh264_b_part(f, bc, sh, mvg, gwmax, ghmax, mbx, mby,
+               rh264_b_part(bc, mvg, gwmax, ghmax, mbx, mby,
                      bx, by, bw, bh, rr0, d0[pi*2], d0[pi*2+1],
                      rr1, d1[pi*2], d1[pi*2+1], hints[pi],
                      &m0[pi*2], &m0[pi*2+1], &m1[pi*2], &m1[pi*2+1]);
@@ -4492,7 +4492,7 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
             if (need_prepare)
             {
                if (bc->direct_spatial)
-                  rh264_b_direct_prepare(bc, mvg, gwmax, ghmax, mbx, mby,
+                  rh264_b_direct_prepare(mvg, gwmax, ghmax, mbx, mby,
                         &l0r, &l1r, &pm0x, &pm0y, &pm1x, &pm1y);
                for (p = 0; p < 4; p++)
                   if (rh264_b_sub_pdir[sub[p]] == 3)
@@ -8670,7 +8670,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                if (r1 >= 0)
                   rh264_cabac_b_mvd(cb, am1, gwmax, mbx*4, mby*4, 4, 4,
                         &d1x, &d1y);
-               rh264_b_part(f, bc, sh, mvg, gwmax, ghmax, mbx, mby,
+               rh264_b_part(bc, mvg, gwmax, ghmax, mbx, mby,
                      0, 0, 16, 16, r0, d0x, d0y, r1, d1x, d1y,
                      RH264_MVP_MEDIAN, &m0x, &m0y, &m1x, &m1y);
                rh264_b_pred_block(f, bc, sh, mbx, mby, 0, 0, 16, 16,
@@ -8739,7 +8739,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                   int bx = is16x8 ? 0 : pi * 8, by = is16x8 ? pi * 8 : 0;
                   int bw = is16x8 ? 16 : 8,     bh = is16x8 ? 8 : 16;
                   int rr0 = pi ? r0b : r0a, rr1 = pi ? r1b : r1a;
-                  rh264_b_part(f, bc, sh, mvg, gwmax, ghmax, mbx, mby,
+                  rh264_b_part(bc, mvg, gwmax, ghmax, mbx, mby,
                         bx, by, bw, bh, rr0, d0[pi*2], d0[pi*2+1],
                         rr1, d1[pi*2], d1[pi*2+1], hints[pi],
                         &m0[pi*2], &m0[pi*2+1], &m1[pi*2], &m1[pi*2+1]);
@@ -8772,7 +8772,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                if (need_prepare)
                {
                   if (bc->direct_spatial)
-                     rh264_b_direct_prepare(bc, mvg, gwmax, ghmax, mbx, mby,
+                     rh264_b_direct_prepare(mvg, gwmax, ghmax, mbx, mby,
                            &l0r, &l1r, &pm0x, &pm0y, &pm1x, &pm1y);
                   for (p = 0; p < 4; p++)
                      if (rh264_b_sub_pdir[sub[p]] == 3)

@@ -5,7 +5,7 @@
 #include <string.h>
 
 static uint8_t bytes[4096];
-static size_t used, config_at, media_at, color_at;
+static size_t used, config_at, media_at;
 static const uint8_t config[] = {0x81, 0x00, 0x0c, 0x00, 0x0a, 0x09, 0x00, 0x00,
                                  0x00, 0x02, 0xaf, 0xff, 0x80, 0x00, 0x01};
 static const uint8_t packet[] = {0x32, 0x05, 0x0e, 0xff, 0x40,
@@ -22,22 +22,26 @@ static void be32(uint32_t n)
    put(n >> 8);
    put(n);
 }
-static void zeros(size_t n)
-{
-   while (n--)
-      put(0);
-}
 static void copy(const void *p, size_t n)
 {
    memcpy(bytes + used, p, n);
    used += n;
 }
+
+/* the MP4 boxes, which a WebM-only test leaves out */
+#ifndef RAV1_MP4_FIXTURE_WRITER_ONLY
+static size_t color_at;
 static void patch32(size_t at, uint32_t n)
 {
    bytes[at] = n >> 24;
    bytes[at + 1] = n >> 16;
    bytes[at + 2] = n >> 8;
    bytes[at + 3] = n;
+}
+static void zeros(size_t n)
+{
+   while (n--)
+      put(0);
 }
 static size_t box(const char *name)
 {
@@ -50,7 +54,6 @@ static void end_box(size_t at)
 {
    patch32(at, (uint32_t)(used - at));
 }
-
 static void make_mp4_clip(int with_config, int hdr)
 {
    static const uint8_t cll[] = {0x2a, 6, 1, 3, 232, 1, 144, 128};
@@ -193,10 +196,6 @@ static void make_mp4_clip(int with_config, int hdr)
    end_box(b);
    patch32(chunk, (uint32_t)media_at);
 }
-
-static void make_mp4(int with_config)
-{
-   make_mp4_clip(with_config, 0);
-}
+#endif
 
 #endif

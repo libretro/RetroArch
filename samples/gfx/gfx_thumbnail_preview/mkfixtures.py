@@ -503,10 +503,17 @@ def main():
     audio_large_packet(j('trailing_small.mp4'), j('audio_large_packet.m4a'))
     audio_large_packet(j('trailing_small.mp4'), j('audio_seek_gap.m4a'),
                        32 * 1024 * 1024)
-    # trailing moov well past any plausible head
+    # trailing moov well past any plausible head. The picture loops; the
+    # sound is one track encoded whole, since a looped copy carries each
+    # loop's priming frame and, from ffmpeg 8, a timestamp gap at every
+    # seam, which a decode that honours timestamps fills and ffmpeg's
+    # raw decode, the audio oracle's reference, does not
     subprocess.check_call(['ffmpeg', '-v', 'error', '-y', '-stream_loop',
-                           '60', '-i', j('seed_4k.mp4'), '-c', 'copy',
-                           j('trailing_large.mp4')])
+                           '60', '-i', j('seed_4k.mp4'),
+                           '-f', 'lavfi', '-i', 'sine=f=440:r=48000',
+                           '-map', '0:v', '-map', '1:a', '-c:v', 'copy',
+                           '-c:a', 'aac', '-b:a', '64k', '-ac', '2',
+                           '-shortest', j('trailing_large.mp4')])
     # trailing moov at 7.28 GB, co64 offsets past 4 GiB
     trailing_padded(j('seed_4k.mp4'), j('trailing_huge.mp4'), BIG)
     # leading moov at 7.28 GB, media past 4 GiB

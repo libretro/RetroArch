@@ -39,7 +39,7 @@ STRICT_FLAGS := -std=c89 -pedantic -Wdeclaration-after-statement \
                 -Wframe-larger-than=4096 -Werror
 ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
 # boolean.h uses the compiler _Bool spelling in C89 builds.
-STRICT_FLAGS += -Wno-c99-extensions
+STRICT_FLAGS += -Wno-c99-extensions -Wno-c11-extensions
 endif
 $(STRICT_OBJS): CFLAGS += $(STRICT_FLAGS)
 

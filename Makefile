@@ -135,7 +135,7 @@ ifneq ($(CXX_BUILD), 1)
          # Keep the SDK's long-long declarations visible in C89 mode.
          CFLAGS += -U__STRICT_ANSI__
          ifeq ($(shell $(CC) --version 2>&1 | head -n 1 | grep -c "clang"),1)
-            CFLAGS += -Wno-c99-extensions
+            CFLAGS += -Wno-c99-extensions -Wno-c11-extensions
          endif
       endif
       ifneq ($(findstring Win32,$(OS)),)

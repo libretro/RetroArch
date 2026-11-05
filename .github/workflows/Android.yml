@@ -123,7 +123,7 @@ jobs:
                 if [ "$offset" = 64 ]; then extra="-D_FILE_OFFSET_BITS=64"; fi
                 CC="$bin/$target$api-clang $extra" python3 libretro-common/samples/formats/vp9/check_stack.py
                 "$bin/$target$api-clang" $extra -O1 -std=c89 -pedantic -Wall -Wextra -Werror \
-                  -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 \
+                  -Wno-long-long -Wno-c99-extensions -Wno-c11-extensions -Wframe-larger-than=2048 \
                   -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include -Igfx/include \
                   -c "$unity" -o "$RUNNER_TEMP/record-$target-$api-$offset.o"
                 if "$bin/llvm-nm" -u "$RUNNER_TEMP/record-$target-$api-$offset.o" | \
@@ -136,7 +136,7 @@ jobs:
                     vulkan_android_image vulkan_android_pipeline vulkan_android_sync \
                     vulkan_android_submit vulkan_android_cache_entry vulkan_android_cache vulkan_android_queue; do
                   "$bin/$target$api-clang" $extra -O1 -std=c89 -pedantic -Wall -Wextra -Werror \
-                    -Wno-long-long -Wno-c99-extensions -Wframe-larger-than=2048 \
+                    -Wno-long-long -Wno-c99-extensions -Wno-c11-extensions -Wframe-larger-than=2048 \
                     -DHAVE_THREADS -DHAVE_DYLIB -Ilibretro-common/include -Igfx/include \
                     -c "gfx/common/$source.c" -o "$RUNNER_TEMP/$source-$target-$api-$offset.o"
                 done

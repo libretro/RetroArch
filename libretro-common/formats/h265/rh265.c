@@ -4605,7 +4605,7 @@ static void rh265_row_done(rh265_video *v, rh265_dec *d, int ry)
 
 /* The finish: whatever the hook left - the last row's SAO, or the
  * whole picture when the hook could not run. */
-static int rh265_filters_finish(rh265_video *v, rh265_dec *d)
+static int rh265_filters_finish(rh265_dec *d)
 {
    const rh265_sps *sps = d->sps;
    int ctb = 1 << sps->log2_ctb;
@@ -4860,7 +4860,7 @@ static void rh265_ctx_run_slices(rh265_video *v, rh265_dec *d)
    if (d->job_rc == 0 && d->cur && d->ctb_end >= d->sps->pic_size_ctbs
          && !d->completed)
    {
-      if (rh265_filters_finish(v, d) < 0)
+      if (rh265_filters_finish(d) < 0)
          d->job_rc = -1;
       d->completed = 1;
    }

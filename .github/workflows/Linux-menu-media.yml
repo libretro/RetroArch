@@ -232,7 +232,7 @@ jobs:
           for compiler in gcc clang; do
             for sample in libretro-common/samples/formats/subtitle_srt samples/tasks/subtitle_load samples/gfx/media_subtitle samples/gfx/media_controls; do
               extra_flags=''
-              if [ "$compiler" = clang ]; then extra_flags=-Wno-c99-extensions; fi
+              if [ "$compiler" = clang ]; then extra_flags="-Wno-c99-extensions -Wno-c11-extensions"; fi
               make -C "$sample" clean
               ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 CFLAGS="$extra_flags" \
                 make -C "$sample" check CC="$compiler" SANITIZER=address,undefined
@@ -244,7 +244,7 @@ jobs:
           set -eu
           for sample in samples/tasks/subtitle_load samples/gfx/media_subtitle samples/gfx/media_controls; do
             make -C "$sample" clean
-            TSAN_OPTIONS=halt_on_error=1 CFLAGS=-Wno-c99-extensions \
+            TSAN_OPTIONS=halt_on_error=1 CFLAGS="-Wno-c99-extensions -Wno-c11-extensions" \
               make -C "$sample" check CC=clang SANITIZER=thread
           done
       - name: Threadless subtitle loading and drawing

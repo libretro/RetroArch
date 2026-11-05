@@ -474,10 +474,12 @@ int main(void)
          "-x265-params crf=24:sao=1:deblock=1:bframes=3:b-pyramid=1:wpp=0:frame-threads=1");
    oracle_case("lossy_ctu16",   "mandelbrot=s=176x144:r=10", 6, "yuv420p",
          "-x265-params crf=24:ctu=16:sao=1:deblock=1:bframes=2:wpp=0:frame-threads=1");
+   /* One worker: x265 4.1 encoding two slices on several threads writes
+    * slice headers no decoder can read, ffmpeg's included */
    oracle_case("multi_slice_b", "mandelbrot=s=256x256:r=10", 12, "yuv420p",
-         "-x265-params crf=24:slices=2:bframes=3:b-pyramid=1:wpp=1:frame-threads=1");
+         "-x265-params crf=24:slices=2:bframes=3:b-pyramid=1:wpp=1:frame-threads=1:pools=1");
    oracle_case("multi_slice_10", "mandelbrot=s=256x256:r=10", 12, "yuv420p10le",
-         "-x265-params crf=24:slices=2:bframes=3:b-pyramid=1:wpp=1:frame-threads=1");
+         "-x265-params crf=24:slices=2:bframes=3:b-pyramid=1:wpp=1:frame-threads=1:pools=1");
    #ifdef HAVE_THREADS
    if (g_pool)
       tpool_destroy((tpool_t*)g_pool);

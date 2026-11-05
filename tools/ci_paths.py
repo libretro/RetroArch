@@ -163,8 +163,11 @@ def plan(wf):
     if not keep_workflows:
         paths += ['!.github/workflows/*.yml']
     if not keep_samples:
-        paths += [d + '/**' for d in sorted(dirs) if d.count('/') >= 2]
-        paths += [d + '/**' for d in sorted(dirs) if d.count('/') < 2]
+        # A file at a tree's top (a stub several samples link) is
+        # filtered by its own path, not as a directory
+        glob = lambda d: d if os.path.isfile(os.path.join(c.ROOT, d)) else d + '/**'
+        paths += [glob(d) for d in sorted(dirs) if d.count('/') >= 2]
+        paths += [glob(d) for d in sorted(dirs) if d.count('/') < 2]
     if not keep_workflows:
         paths.append('.github/workflows/' + wf.file)
     if paths == ['**']:

@@ -14,7 +14,7 @@ flags = [
     "-I" + str(root / "include"),
 ]
 if "clang" in subprocess.check_output(compiler + ["--version"], text=True):
-    flags += ["-Wno-c99-extensions"]
+    flags += ["-Wno-c99-extensions", "-Wno-c11-extensions"]
 with tempfile.TemporaryDirectory(prefix="rvp9-stack-") as directory:
     for threaded in (False, True):
         name = "threaded" if threaded else "threadless"

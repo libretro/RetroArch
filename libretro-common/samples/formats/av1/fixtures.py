@@ -20,6 +20,10 @@ def fnv(data):
         value = ((value ^ byte) * 16777619) & 0xffffffff
     return f'{value:08x}'
 
+# ffprobe's names for the ISO/IEC 23091-4 code points these streams use
+CODE = {'gbr': 0, 'bt709': 1, 'unknown': 2}
+RANGE = {'tv': 0, 'pc': 1}
+
 exe = str(Path(os.environ.get('AV1_CONTAINER_TEST', './rav1_container_test')).resolve())
 with tempfile.TemporaryDirectory(prefix='rav1-') as directory:
     cases = [('420-8', 'yuv420p', 8, 0), ('420-10', 'yuv420p10le', 10, 0),
@@ -46,7 +50,14 @@ with tempfile.TemporaryDirectory(prefix='rav1-') as directory:
             stream = oracle['streams'][0]
             assert stream['codec_name'] == 'av1'
             private = raw_dump(stream['extradata'])
-            expected = [f"S {stream['width']} {stream['height']} {depth} 1 1 1 0", f"C {stream['width']} {stream['height']} {profile} {depth} {len(private)} {fnv(private)}"]
+            # The colour comes from what ffprobe read in this stream, not
+            # from what was asked for: libaom 3.13 writes a monochrome
+            # sequence as full range with no matrix whatever it is told
+            colour = (CODE[stream.get('color_primaries', 'unknown')],
+                      CODE[stream.get('color_transfer', 'unknown')],
+                      CODE[stream.get('color_space', 'unknown')],
+                      RANGE[stream.get('color_range', 'tv')])
+            expected = [f"S {stream['width']} {stream['height']} {depth} %u %u %u %u" % colour, f"C {stream['width']} {stream['height']} {profile} {depth} {len(private)} {fnv(private)}"]
             for packet in oracle['packets']:
                 data = raw_dump(packet['data'])
                 timestamp = int(int(packet['pts']) * Fraction(stream['time_base']) * 1000000000)

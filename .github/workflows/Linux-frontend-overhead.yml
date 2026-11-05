@@ -74,6 +74,7 @@ on:
       - 'samples/tasks/wifi_tasks/**'
       - 'samples/runloop/**'
       - 'samples/tasks/**'
+      - 'samples/ui_companion_log_stub.c'
       - '.github/workflows/Linux-frontend-overhead.yml'
     # ci_paths: end
   pull_request:
@@ -134,6 +135,7 @@ on:
       - 'samples/tasks/wifi_tasks/**'
       - 'samples/runloop/**'
       - 'samples/tasks/**'
+      - 'samples/ui_companion_log_stub.c'
       - '.github/workflows/Linux-frontend-overhead.yml'
     # ci_paths: end
   workflow_dispatch:
