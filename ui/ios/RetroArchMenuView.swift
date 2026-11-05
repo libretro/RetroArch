@@ -66,18 +66,30 @@ private final class NativeMenuModel: ObservableObject {
    @Published var selection = 0
    @Published var busy = true
    @Published var dialog = ""
-   @Published var message = ""
+   @Published private(set) var message = ""
    @Published var labels: [String: String] = [:]
    @Published var tab = Int(IOS_MENU_TAB_MAIN.rawValue)
    @Published var tabs = 7
    @Published var running = false
    private(set) var depth = 0
    private var returnDepth: Int?
+   private var messageRevision: UInt64 = 0
 
    init(session: UInt64) { self.session = session }
 
    func label(_ key: String, fallback: String) -> String {
       labels[key] ?? fallback
+   }
+
+   func showMessage(_ message: String) {
+      guard self.message != message else { return }
+      self.message = message
+      messageRevision &+= 1
+      let revision = messageRevision
+      DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+         guard let self = self, self.messageRevision == revision else { return }
+         self.message = ""
+      }
    }
 
    @discardableResult
@@ -89,7 +101,7 @@ private final class NativeMenuModel: ObservableObject {
          busy = true
          return true
       }
-      message = "The menu has changed. Please try again."
+      showMessage("The menu has changed. Please try again.")
       return false
    }
 
@@ -231,12 +243,6 @@ private struct NativeMenuPageView: View {
 
    var body: some View {
       List {
-         if !model.message.isEmpty {
-            Section {
-               Text(model.message).font(.callout)
-               Button("Dismiss") { self.model.message = "" }
-            }
-         }
          if active && !model.dialog.isEmpty {
             Section {
                Text(model.dialog)
@@ -324,6 +330,17 @@ private struct NativeMenuView: View {
             .tag(tab.id)
          }
       }
+      .overlay(alignment: .bottom) {
+         if !model.message.isEmpty {
+            Text(model.message)
+               .font(.callout)
+               .padding()
+               .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+               .padding(.horizontal)
+               .padding(.bottom, 90)
+               .allowsHitTesting(false)
+         }
+      }
    }
 }
 
@@ -359,7 +376,7 @@ final class RetroArchNativeMenuController: UIViewController {
    }
 
    @objc func showMessage(_ message: String) {
-      if model.message != message { model.message = message }
+      model.showMessage(message)
    }
 }
 #endif
