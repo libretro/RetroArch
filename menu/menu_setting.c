@@ -43,6 +43,9 @@
 #include "menu_displaylist.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
+#ifdef HAVE_IOS_MENU
+#include "../ui/ios/RetroArchMenuBridge.h"
+#endif
 #include "menu_input.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
@@ -6819,6 +6822,19 @@ static bool setting_is_protected_driver(rarch_setting_t *setting)
    return false;
 }
 
+static bool setting_skip_driver(const rarch_setting_t *setting)
+{
+   const char *ident = setting->value.target.string;
+   if (string_is_equal(ident, "null"))
+      return true;
+#ifdef HAVE_IOS_MENU
+   if (setting->enum_idx == MENU_ENUM_LABEL_MENU_DRIVER
+         && string_is_equal(ident, "ios") && !ios_menu_bridge_available())
+      return true;
+#endif
+   return false;
+}
+
 static int setting_action_left_analog_dpad_mode(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -7295,12 +7311,12 @@ static int setting_string_action_left_driver(
 
    /* Find the previous driver in the array of drivers.
     * If the driver is protected, keep finding more previous drivers while the
-    * driver is null or until there are no more previous drivers. */
+    * driver is unavailable or until there are no more previous drivers. */
    success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv);
    if (setting_is_protected_driver(setting))
    {
       while (    success
-             &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+             &&  setting_skip_driver(setting)
              && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
    }
 
@@ -7313,7 +7329,7 @@ static int setting_string_action_left_driver(
       {
          /* If wraparound is enabled, find the LAST driver in the array of drivers.
           * If the driver is protected, find the previous driver and keep finding more
-          * previous drivers while the driver is null or until there are no more previous drivers. */
+          * previous drivers while the driver is unavailable or until there are no more previous drivers. */
          drv.label = setting->name;
          drv.s     = setting->value.target.string;
          drv.len   = setting->size;
@@ -7321,7 +7337,7 @@ static int setting_string_action_left_driver(
          if (setting_is_protected_driver(setting))
          {
             while (    success
-                   &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+                   &&  setting_skip_driver(setting)
                    && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
          }
       }
@@ -7329,10 +7345,10 @@ static int setting_string_action_left_driver(
       {
          /* If wraparound is disabled and if the driver is protected,
           * find the next driver in the array of drivers and keep finding more
-          * next drivers while the driver is null or until there are no more next drivers. */
+          * next drivers while the driver is unavailable or until there are no more next drivers. */
          success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv);
          while (    success
-                &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+                &&  setting_skip_driver(setting)
                 && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
       }
    }
@@ -7618,12 +7634,12 @@ static int setting_string_action_right_driver(
 
    /* Find the next driver in the array of drivers.
     * If the driver is protected, keep finding next drivers while the
-    * driver is null or until there are no more next drivers. */
+    * driver is unavailable or until there are no more next drivers. */
    success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv);
    if (setting_is_protected_driver(setting))
    {
       while (    success
-             &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+             &&  setting_skip_driver(setting)
              && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
    }
 
@@ -7636,7 +7652,7 @@ static int setting_string_action_right_driver(
       {
          /* If wraparound is enabled, find the first driver in the array of drivers.
           * If the driver is protected, find the next driver and keep finding more
-          * next drivers while the driver is null or until there are no more next drivers. */
+          * next drivers while the driver is unavailable or until there are no more next drivers. */
          drv.label = setting->name;
          drv.s     = setting->value.target.string;
          drv.len   = setting->size;
@@ -7644,7 +7660,7 @@ static int setting_string_action_right_driver(
          if (setting_is_protected_driver(setting))
          {
             while (    success
-                   &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+                   &&  setting_skip_driver(setting)
                    && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv)));
          }
       }
@@ -7652,10 +7668,10 @@ static int setting_string_action_right_driver(
       {
          /* If wraparound is disabled and if the driver is protected,
           * find the previous driver in the array of drivers and keep finding more
-          * previous drivers while the driver is null or until there are no more previous drivers. */
+          * previous drivers while the driver is unavailable or until there are no more previous drivers. */
          success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv);
          while (    success
-                &&  memcmp(drv.s, "null", 4) == 0 && drv.s[4] == '\0'
+                &&  setting_skip_driver(setting)
                 && (success = driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv)));
       }
    }

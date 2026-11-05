@@ -5,6 +5,7 @@
 import SwiftUI
 import UIKit
 
+@available(iOS 16.0, *)
 private struct NativeMenuTab: Identifiable {
    let id: Int
    let key: String
@@ -20,6 +21,7 @@ private struct NativeMenuTab: Identifiable {
    ]
 }
 
+@available(iOS 16.0, *)
 private struct NativeMenuRow: Identifiable {
    let id: Int
    let type: UInt32
@@ -47,6 +49,7 @@ private struct NativeMenuRow: Identifiable {
    }
 }
 
+@available(iOS 16.0, *)
 private final class NativeMenuModel: ObservableObject {
    let session: UInt64
    @Published var revision: UInt64 = 0
@@ -113,6 +116,7 @@ private final class NativeMenuModel: ObservableObject {
    }
 }
 
+@available(iOS 16.0, *)
 private struct NativeMenuSettingsView: View {
    @ObservedObject var model: NativeMenuModel
 
@@ -145,12 +149,14 @@ private struct NativeMenuSettingsView: View {
          }
       }
       .disabled(model.busy)
-      .navigationBarTitle(model.label("settings", fallback: "Menu Settings"), displayMode: .inline)
+      .navigationTitle(model.label("settings", fallback: "Menu Settings"))
+      .navigationBarTitleDisplayMode(.inline)
       .onAppear { ios_menu_settings_visible(self.model.session, true) }
       .onDisappear { ios_menu_settings_visible(self.model.session, false) }
    }
 }
 
+@available(iOS 16.0, *)
 private struct NativeMenuView: View {
    @ObservedObject var model: NativeMenuModel
 
@@ -229,39 +235,43 @@ private struct NativeMenuView: View {
          }
       }
          .listStyle(GroupedListStyle())
-         .navigationBarTitle(model.title, displayMode: .inline)
-         .navigationBarItems(leading: Group {
-            Button(action: {
-               self.model.send(self.model.canGoBack ? IOS_MENU_BACK : IOS_MENU_HOME)
-            }) {
-               Image(systemName: model.canGoBack ? "chevron.left" : "house")
-                  .accessibility(label: Text(model.canGoBack
-                     ? model.label("back", fallback: "Back")
-                     : model.label("home", fallback: "Main Menu")))
-            }.disabled(model.busy)
-         }, trailing: NavigationLink(destination: NativeMenuSettingsView(model: model),
-               isActive: $model.settingsOpen) {
-            Image(systemName: "gear")
-               .accessibility(label: Text(model.label("settings", fallback: "Menu Settings")))
-         })
+         .navigationTitle(model.title)
+         .navigationBarTitleDisplayMode(.inline)
+         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+               Button(action: {
+                  self.model.send(self.model.canGoBack ? IOS_MENU_BACK : IOS_MENU_HOME)
+               }) {
+                  Image(systemName: model.canGoBack ? "chevron.left" : "house")
+                     .accessibilityLabel(model.canGoBack
+                        ? model.label("back", fallback: "Back")
+                        : model.label("home", fallback: "Main Menu"))
+               }.disabled(model.busy)
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+               Button(action: { self.model.settingsOpen = true }) {
+                  Image(systemName: "gear")
+                     .accessibilityLabel(model.label("settings", fallback: "Menu Settings"))
+               }
+            }
+         }
+         .navigationDestination(isPresented: $model.settingsOpen) {
+            NativeMenuSettingsView(model: model)
+         }
    }
 
    private var navigationView: some View {
-      NavigationView {
-         if #available(iOS 14.0, *) {
-            ScrollViewReader { proxy in
-               menuList
-                  .onChange(of: model.selection) { index in
-                     proxy.scrollTo(index, anchor: .center)
-                  }
-                  .onChange(of: model.revision) { _ in
-                     proxy.scrollTo(model.selection, anchor: .center)
-                  }
-            }
-         } else {
+      NavigationStack {
+         ScrollViewReader { proxy in
             menuList
+               .onChange(of: model.selection) { index in
+                  proxy.scrollTo(index, anchor: .center)
+               }
+               .onChange(of: model.revision) { _ in
+                  proxy.scrollTo(model.selection, anchor: .center)
+               }
          }
-      }.navigationViewStyle(StackNavigationViewStyle())
+      }
    }
 
    var body: some View {
@@ -285,7 +295,7 @@ private struct NativeMenuView: View {
    }
 }
 
-@available(iOS 13.0, *)
+@available(iOS 16.0, *)
 @objc(RetroArchNativeMenuController)
 final class RetroArchNativeMenuController: UIViewController {
    private let model: NativeMenuModel

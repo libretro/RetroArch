@@ -42,6 +42,7 @@ unsigned ios_menu_take_action(unsigned action);
 bool ios_menu_visible(void);
 void ios_menu_settings_visible(uint64_t session, bool visible);
 
+bool ios_menu_bridge_available(void);
 bool ios_menu_bridge_init(uint64_t session);
 void ios_menu_bridge_free(void);
 bool ios_menu_bridge_visible(bool visible);
