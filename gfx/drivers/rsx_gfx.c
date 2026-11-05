@@ -37,6 +37,7 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../gfx_display.h"
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx_widgets.h"
 #endif
@@ -52,8 +53,8 @@
 #include <libretro_rsx.h>
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
-#include "../display_servers/dispserv_ps3.h"
 #endif
+#include "../display_servers/dispserv_ps3.h"
 
 #define RSX_MAX_BUFFERS 2
 #define RSX_MAX_MENU_BUFFERS 2
@@ -1480,11 +1481,10 @@ error:
 
 static int rsx_flip(gcmContextData *context, s32 buffer)
 {
+   gcmResetFlipStatus();
    if (gcmSetFlip(context, buffer) == 0)
    {
       rsxFlushBuffer (context);
-      /* Prevent the RSX from continuing until the flip has finished. */
-      gcmSetWaitFlip (context);
       return 1;
    }
    return 0;
@@ -1520,7 +1520,6 @@ static void rsx_wait_flip(void)
 {
   while(gcmGetFlipStatus() != 0)
     usleep(200);  /* Sleep, to not stress the cpu. */
-  gcmResetFlipStatus();
 }
 
 static gcmContextData *rsx_init_screen(rsx_t* gcm)
@@ -2651,8 +2650,6 @@ static void rsx_update_screen(rsx_t* gcm)
    }
 
    rsx_flip(gcm->context, buffer->id);
-   if (gcm->vsync)
-      rsx_wait_flip();
    rsxSetSurface(gcm->context, &gcm->surface[gcm->nextBuffer]);
 #ifdef HAVE_SYSUTILS
    cellSysutilCheckCallback();
@@ -2715,16 +2712,27 @@ static bool rsx_frame(void* data, const void* frame,
          || gcm->overlay_enable
 #endif
          || video_info->widgets_visible;
-   bool draw_ui                     = ui_now || gcm->ui_presented;
-   /* The core shares the FIFO and leaves its own state behind.
-    * Restore the frontend's state before anything of ours is drawn:
-    * a core frame (hardware or CPU fallback), or a duped frame that
-    * still gets the menu, overlay, OSD or widgets drawn on top.  A
-    * bare dupe draws nothing and skips it. */
-   bool restore                     = gcm->hw_render && (frame || draw_ui);
+   bool draw_cached                 = ui_now || gcm->ui_presented || gcm->vsync;
+   bool sync_ui                     = false
+#ifdef HAVE_MENU
+         || menu_is_alive || gcm->menu_frame_enable
+#endif
+#ifdef HAVE_OVERLAY
+         || gcm->overlay_enable
+#endif
+         ;
+   /* The core shares the FIFO and leaves its own state behind. */
+   bool restore                     = gcm->hw_render && (frame || draw_cached);
 
    rsx_collect_retired_memory();
    rsx_fence_retired_memory(gcm->context);
+   /* Core work overlaps the previous flip; UI buffers cannot. */
+   if (frame || draw_cached)
+   {
+      if (gcm->vsync)
+         rsx_wait_flip();
+      gcmSetWaitFlip(gcm->context);
+   }
    if (restore)
    {
       unsigned attrib;
@@ -2752,6 +2760,9 @@ static bool rsx_frame(void* data, const void* frame,
 
    if (gcm->should_resize)
       rsx_update_viewport(gcm);
+
+   if (frame || draw_cached)
+      rsx_clear_surface(gcm);
 
    vp.min                           = 0.0f;
    vp.max                           = 1.0f;
@@ -2800,8 +2811,8 @@ static bool rsx_frame(void* data, const void* frame,
       }
    }
 
-   /* Rebuild the background before any frontend layers. */
-   if (!draw && draw_ui)
+   /* Core duplicates still need a synchronized present. */
+   if (!draw && draw_cached)
    {
       if (gcm->hw_render && gcm->hw_image_valid)
          rsx_draw_hw_image(gcm);
@@ -2841,10 +2852,7 @@ static bool rsx_frame(void* data, const void* frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   /* Called on bare dupes too, for the widgets' own per-frame work.
-    * Those go out without the state restore and are not presented,
-    * so this relies on gfx_widgets_frame drawing nothing whenever
-    * the frame's widgets_visible is false. */
+   /* Invisible widgets still need their per-frame work. */
    if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
@@ -2859,7 +2867,9 @@ static bool rsx_frame(void* data, const void* frame,
    {
       /* Only update when we draw to prevent flickering when core frame duping is enabled */
       rsx_update_screen(gcm);
-      rsx_clear_surface(gcm);
+      /* Menu and overlay uploads happen between frame calls. */
+      if (gcm->vsync && sync_ui)
+         rsx_wait_flip();
       gcm->ui_presented = ui_now;
    }
    gcm->vert_idx         = 0;
