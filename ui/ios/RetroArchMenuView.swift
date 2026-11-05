@@ -29,7 +29,14 @@ private struct NativeMenuRow: Identifiable {
    let enabled: Bool
    let boolean: Bool
    let checked: Bool
-   let adjustable: Bool
+   let submenu: Bool
+   let inputKind: Int
+   let inputValue: String
+   let inputLimit: Int
+   let minimum: Double?
+   let maximum: Double?
+
+   var editable: Bool { inputKind != Int(IOS_MENU_VALUE_NONE.rawValue) }
 
    init?(_ data: [String: Any]) {
       guard let index = data["index"] as? NSNumber,
@@ -43,7 +50,12 @@ private struct NativeMenuRow: Identifiable {
       enabled = data["enabled"] as? Bool ?? false
       boolean = data["boolean"] as? Bool ?? false
       checked = data["checked"] as? Bool ?? false
-      adjustable = data["adjustable"] as? Bool ?? false
+      submenu = data["submenu"] as? Bool ?? false
+      inputKind = (data["inputKind"] as? NSNumber)?.intValue ?? 0
+      inputValue = data["inputValue"] as? String ?? ""
+      inputLimit = (data["inputLimit"] as? NSNumber)?.intValue ?? 0
+      minimum = (data["minimum"] as? NSNumber)?.doubleValue
+      maximum = (data["maximum"] as? NSNumber)?.doubleValue
    }
 }
 
@@ -55,6 +67,13 @@ private struct NativeMenuPage {
    let rows: [NativeMenuRow]
    let offset: Int
    let total: Int
+}
+
+@available(iOS 16.0, *)
+private struct NativeMenuEdit: Identifiable {
+   let row: NativeMenuRow
+   let revision: UInt64
+   var id: Int { row.id }
 }
 
 @available(iOS 16.0, *)
@@ -98,6 +117,16 @@ private final class NativeMenuModel: ObservableObject {
       guard !busy else { return false }
       if ios_menu_request(session, revision ?? self.revision, row?.id ?? index,
             row?.type ?? 0, action.rawValue) {
+         busy = true
+         return true
+      }
+      showMessage("The menu has changed. Please try again.")
+      return false
+   }
+
+   func setValue(_ value: String, row: NativeMenuRow, revision: UInt64) -> Bool {
+      guard !busy else { return false }
+      if ios_menu_set_value(session, revision, row.id, row.type, value) {
          busy = true
          return true
       }
@@ -192,15 +221,130 @@ private final class NativeMenuModel: ObservableObject {
 }
 
 @available(iOS 16.0, *)
+private struct NativeMenuValueEditor: View {
+   @ObservedObject var model: NativeMenuModel
+   let row: NativeMenuRow
+   let revision: UInt64
+   @Environment(\.dismiss) private var dismiss
+   @State private var value: String
+   @State private var color: Color
+   @FocusState private var focused: Bool
+
+   init(model: NativeMenuModel, row: NativeMenuRow, revision: UInt64) {
+      self.model = model
+      self.row = row
+      self.revision = revision
+      _value = State(initialValue: row.inputValue)
+      let rgb = UInt32(row.inputValue) ?? 0
+      _color = State(initialValue: Color(red: Double((rgb >> 16) & 255) / 255,
+         green: Double((rgb >> 8) & 255) / 255, blue: Double(rgb & 255) / 255))
+   }
+
+   private var submittedValue: String? {
+      var result = value
+      var number: Double?
+      switch row.inputKind {
+         case Int(IOS_MENU_VALUE_INT.rawValue):
+            guard let parsed = Int32(value) else { return nil }
+            result = String(parsed)
+            number = Double(parsed)
+         case Int(IOS_MENU_VALUE_UINT.rawValue):
+            guard let parsed = UInt32(value) else { return nil }
+            result = String(parsed)
+            number = Double(parsed)
+         case Int(IOS_MENU_VALUE_SIZE.rawValue):
+            guard let parsed = UInt64(value) else { return nil }
+            result = String(parsed)
+            number = Double(parsed)
+         case Int(IOS_MENU_VALUE_FLOAT.rawValue):
+            guard let parsed = Float(value.replacingOccurrences(of: ",", with: ".")),
+                  parsed.isFinite else { return nil }
+            result = String(parsed)
+            number = Double(parsed)
+         case Int(IOS_MENU_VALUE_COLOR.rawValue):
+            var red: CGFloat = 0
+            var green: CGFloat = 0
+            var blue: CGFloat = 0
+            UIColor(color).getRed(&red, green: &green, blue: &blue, alpha: nil)
+            return String((UInt32((red * 255).rounded()) << 16)
+               | (UInt32((green * 255).rounded()) << 8) | UInt32((blue * 255).rounded()))
+         default:
+            if row.inputLimit > 0 && value.utf8.count >= row.inputLimit { return nil }
+      }
+      if let number = number {
+         if let minimum = row.minimum, number < minimum { return nil }
+         if let maximum = row.maximum, number > maximum { return nil }
+      }
+      return result
+   }
+
+   private var keyboard: UIKeyboardType {
+      switch row.inputKind {
+         case Int(IOS_MENU_VALUE_UINT.rawValue), Int(IOS_MENU_VALUE_SIZE.rawValue):
+            return .numberPad
+         case Int(IOS_MENU_VALUE_INT.rawValue), Int(IOS_MENU_VALUE_FLOAT.rawValue):
+            return .numbersAndPunctuation
+         default: return .default
+      }
+   }
+
+   var body: some View {
+      NavigationStack {
+         Form {
+            Section(footer: Text(row.sublabel)) {
+               if row.inputKind == Int(IOS_MENU_VALUE_COLOR.rawValue) {
+                  ColorPicker(row.title, selection: $color, supportsOpacity: false)
+               } else if row.inputKind == Int(IOS_MENU_VALUE_PASSWORD.rawValue) {
+                  SecureField(row.title, text: $value).focused($focused)
+               } else {
+                  TextField(row.title, text: $value)
+                     .keyboardType(keyboard)
+                     .textInputAutocapitalization(.never)
+                     .autocorrectionDisabled()
+                     .focused($focused)
+               }
+            }
+            if row.minimum != nil || row.maximum != nil {
+               Section {
+                  if let minimum = row.minimum { Text("≥ \(minimum.formatted())") }
+                  if let maximum = row.maximum { Text("≤ \(maximum.formatted())") }
+               }.foregroundColor(.secondary)
+            }
+         }
+         .navigationTitle(row.title)
+         .navigationBarTitleDisplayMode(.inline)
+         .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+               Button(model.label("back", fallback: "Cancel")) { dismiss() }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+               Button(model.label("confirm", fallback: "Apply")) {
+                  if let value = submittedValue,
+                        model.setValue(value, row: row, revision: revision) { dismiss() }
+               }.disabled(submittedValue == nil || model.busy)
+            }
+         }
+         .onAppear { focused = row.inputKind != Int(IOS_MENU_VALUE_COLOR.rawValue) }
+      }
+   }
+}
+
+@available(iOS 16.0, *)
 private struct NativeMenuPageView: View {
    @ObservedObject var model: NativeMenuModel
    let page: NativeMenuPage
+   @State private var editing: NativeMenuEdit?
 
    private var active: Bool { page.depth == model.depth && page.revision == model.revision }
 
    private func row(_ entry: NativeMenuRow) -> some View {
       HStack {
-         Button(action: { self.model.send(IOS_MENU_OK, row: entry, revision: self.page.revision) }) {
+         Button(action: {
+            if entry.editable {
+               self.editing = NativeMenuEdit(row: entry, revision: self.page.revision)
+            }
+            else { self.model.send(IOS_MENU_OK, row: entry, revision: self.page.revision) }
+         }) {
             HStack {
                VStack(alignment: .leading, spacing: 4) {
                   Text(entry.title).foregroundColor(.primary)
@@ -214,7 +358,7 @@ private struct NativeMenuPageView: View {
                      Text(entry.value).foregroundColor(.secondary).multilineTextAlignment(.trailing)
                   }
                   if entry.checked { Image(systemName: "checkmark") }
-                  if entry.enabled && !entry.adjustable && !entry.checked {
+                  if entry.submenu && !entry.checked {
                      Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
                   }
                }
@@ -225,15 +369,6 @@ private struct NativeMenuPageView: View {
                get: { entry.checked },
                set: { _ in self.model.send(IOS_MENU_RIGHT, row: entry, revision: self.page.revision) }))
                .labelsHidden()
-         } else {
-            if entry.adjustable {
-               Button(action: { self.model.send(IOS_MENU_LEFT, row: entry, revision: self.page.revision) }) {
-                  Image(systemName: "minus.circle")
-               }.buttonStyle(BorderlessButtonStyle())
-               Button(action: { self.model.send(IOS_MENU_RIGHT, row: entry, revision: self.page.revision) }) {
-                  Image(systemName: "plus.circle")
-               }.buttonStyle(BorderlessButtonStyle())
-            }
          }
       }
       .padding(.vertical, 4)
@@ -250,13 +385,6 @@ private struct NativeMenuPageView: View {
                Button(model.label("back", fallback: "Back")) { self.model.send(IOS_MENU_BACK) }
             }
          } else {
-            if page.depth == 0 && model.tab == Int(IOS_MENU_TAB_MAIN.rawValue) && model.running {
-               Section {
-                  Button(action: { self.model.send(IOS_MENU_RESUME, revision: self.page.revision) }) {
-                     Label(model.label("resume", fallback: "Resume"), systemImage: "play.fill")
-                  }.disabled(!active || model.busy)
-               }
-            }
             ForEach(page.rows) { entry in
                self.row(entry).id(entry.id)
                   .disabled(!entry.enabled || !active || self.model.busy)
@@ -278,6 +406,19 @@ private struct NativeMenuPageView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbarBackground(Color(UIColor.systemGroupedBackground), for: .navigationBar)
       .toolbarBackground(.visible, for: .navigationBar)
+      .sheet(item: $editing) { edit in
+         NativeMenuValueEditor(model: model, row: edit.row, revision: edit.revision)
+            .presentationDetents([.medium, .large])
+      }
+      .toolbar {
+         ToolbarItem(placement: .navigationBarTrailing) {
+            if model.running {
+               Button(model.label("resume", fallback: "Resume")) {
+                  self.model.send(IOS_MENU_RESUME)
+               }.disabled(model.busy || !model.dialog.isEmpty)
+            }
+         }
+      }
    }
 }
 

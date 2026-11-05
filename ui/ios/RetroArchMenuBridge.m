@@ -143,14 +143,18 @@ void ios_menu_bridge_begin(uint64_t session, uint64_t revision,
 
 void ios_menu_bridge_add(size_t index, unsigned type,
       const char *title, const char *value, const char *sublabel,
-      bool enabled, bool boolean, bool checked, bool adjustable)
+      bool enabled, bool boolean, bool checked, bool submenu,
+      const ios_menu_value_t *input)
 {
    [(NSMutableArray*)ios_menu_snapshot[@"rows"] addObject:@{
       @"index": @(index), @"type": @(type),
       @"title": ios_menu_string(title), @"value": ios_menu_string(value),
       @"sublabel": ios_menu_string(sublabel), @"enabled": @(enabled),
       @"boolean": @(boolean), @"checked": @(checked),
-      @"adjustable": @(adjustable)
+      @"submenu": @(submenu), @"inputKind": @(input->kind),
+      @"inputValue": ios_menu_string(input->text), @"inputLimit": @(input->limit),
+      @"minimum": input->has_minimum ? @(input->minimum) : [NSNull null],
+      @"maximum": input->has_maximum ? @(input->maximum) : [NSNull null]
    }];
 }
 

@@ -19,6 +19,7 @@ typedef struct ios_menu
    uint64_t session;
    uint64_t revision;
    uint64_t request_revision;
+   char *request_value;
    menu_entry_t entry;
    size_t offset;
    size_t cursor;
@@ -55,6 +56,87 @@ static bool ios_menu_busy(void)
    return task_content_load_pending()
       || content_save_state_in_progress(NULL)
       || content_load_state_in_progress(NULL);
+}
+
+static unsigned ios_menu_value_kind(rarch_setting_t *setting)
+{
+   if (!setting)
+      return IOS_MENU_VALUE_NONE;
+   switch (setting->type)
+   {
+      case ST_INT:
+         return IOS_MENU_VALUE_INT;
+      case ST_UINT:
+         if (setting->ui_type == ST_UI_TYPE_UINT_COLOR_BUTTON)
+            return IOS_MENU_VALUE_COLOR;
+         if (setting->ui_type == ST_UI_TYPE_UINT_COMBOBOX
+               || setting->ui_type == ST_UI_TYPE_UINT_RADIO_BUTTONS)
+            break;
+         return IOS_MENU_VALUE_UINT;
+      case ST_SIZE:
+         return IOS_MENU_VALUE_SIZE;
+      case ST_FLOAT:
+         return IOS_MENU_VALUE_FLOAT;
+      case ST_STRING:
+         if (!setting->value.target.string)
+            break;
+         return setting->ui_type == ST_UI_TYPE_PASSWORD_LINE_EDIT
+            ? IOS_MENU_VALUE_PASSWORD : IOS_MENU_VALUE_TEXT;
+      default:
+         break;
+   }
+   return IOS_MENU_VALUE_NONE;
+}
+
+static bool ios_menu_has_submenu(menu_entry_t *entry, menu_file_list_cbs_t *cbs)
+{
+   rarch_setting_t *setting = cbs ? cbs->setting : NULL;
+   if (!cbs || !cbs->action_ok || entry->type == MENU_SETTINGS_CORE_INFO_NONE
+         || entry->type == MENU_INFO_MESSAGE || entry->type == MENU_SETTING_NO_ITEM
+         || (entry->flags & MENU_ENTRY_FLAG_CHECKED)
+         || ios_menu_value_kind(setting) != IOS_MENU_VALUE_NONE)
+      return false;
+   if (!strcmp(entry->value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE)))
+      return true;
+   if (setting)
+   {
+      if ((setting->flags & SD_FLAG_BROWSER_ACTION)
+            || setting->type == ST_PATH || setting->type == ST_DIR
+            || setting->type == ST_GROUP || setting->type == ST_SUB_GROUP
+            || setting->type == ST_STRING_OPTIONS
+            || setting->ui_type == ST_UI_TYPE_UINT_COMBOBOX
+            || setting->ui_type == ST_UI_TYPE_UINT_RADIO_BUTTONS)
+         return true;
+      if (setting->type == ST_ACTION && setting->cmd_trigger_idx == CMD_EVENT_NONE)
+         return true;
+   }
+   switch (entry->type)
+   {
+      case MENU_SETTINGS:
+      case MENU_SETTING_GROUP:
+      case MENU_SETTING_SUBGROUP:
+      case MENU_SETTING_ACTION_CORE_OPTIONS:
+      case MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST:
+      case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_SETTING_ACTION_REMAP_FILE_MANAGER_LIST:
+      case MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS:
+      case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
+      case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
+      case MENU_SETTING_ACTION_CORE_SHADER_OPTIONS:
+      case MENU_HISTORY_TAB:
+      case MENU_FAVORITES_TAB:
+      case MENU_PLAYLISTS_TAB:
+      case FILE_TYPE_DIRECTORY:
+      case FILE_TYPE_PARENT_DIRECTORY:
+      case FILE_TYPE_COMPRESSED:
+      case FILE_TYPE_PLAYLIST_COLLECTION:
+      case FILE_TYPE_RPL_ENTRY:
+      case FILE_TYPE_CONTENTLIST_ENTRY:
+         return true;
+      default:
+         break;
+   }
+   return false;
 }
 
 static unsigned ios_menu_tabs(void)
@@ -134,13 +216,33 @@ bool ios_menu_request(uint64_t session, uint64_t revision,
    ios_menu_t *ios = ios_menu_current();
    if (!ios || !ios->visible || ios->pending || ios_menu_busy()
          || session != ios->session || revision != ios->revision
-         || ios->dirty || action > IOS_MENU_TAB)
+         || ios->dirty || action > IOS_MENU_SET_VALUE)
       return false;
    ios->request_revision = revision;
    ios->request_index    = index;
    ios->request_type     = type;
    ios->request_action   = action;
    ios->pending          = true;
+   return true;
+}
+
+bool ios_menu_set_value(uint64_t session, uint64_t revision,
+      size_t index, unsigned type, const char *value)
+{
+   char *copy;
+   size_t len;
+   if (!value || (len = strlen(value)) >= 8192)
+      return false;
+   copy = (char*)malloc(len + 1);
+   if (!copy)
+      return false;
+   memcpy(copy, value, len + 1);
+   if (!ios_menu_request(session, revision, index, type, IOS_MENU_SET_VALUE))
+   {
+      free(copy);
+      return false;
+   }
+   ios_menu_current()->request_value = copy;
    return true;
 }
 
@@ -151,18 +253,46 @@ unsigned ios_menu_take_action(unsigned action)
    file_list_t *list;
    unsigned request;
    size_t index;
+   char *value;
 
    if (!ios)
       return action;
    if (!ios->pending)
       return action;
    ios->pending = false;
+   value = ios->request_value;
+   ios->request_value = NULL;
    if (!ios->visible || ios->request_revision != ios->revision
          || ios_menu_busy() || action != MENU_ACTION_NOOP)
+   {
+      free(value);
       return action;
+   }
    request = ios->request_action;
    index   = ios->request_index;
    list    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, 0);
+   if (request == IOS_MENU_SET_VALUE)
+   {
+      menu_file_list_cbs_t *cbs = list && index < list->size
+         ? (menu_file_list_cbs_t*)list->list[index].actiondata : NULL;
+      rarch_setting_t *setting = cbs ? cbs->setting : NULL;
+      if (value && setting && list->list[index].type == ios->request_type
+            && ios_menu_value_kind(setting) != IOS_MENU_VALUE_NONE
+            && !(menu_st->driver_data && *menu_st->driver_data->menu_state_msg))
+      {
+         menu_st->selection_ptr = index;
+         ios_menu_invalidate(ios);
+         if (setting->type == ST_STRING)
+         {
+            strlcpy(setting->value.target.string, value, setting->size);
+            menu_setting_generic(setting, 0, false);
+         }
+         else
+            menu_setting_set_with_string_representation(setting, value);
+      }
+      free(value);
+      return action;
+   }
    if (request <= IOS_MENU_RIGHT)
    {
       if (!list || index >= list->size
@@ -219,7 +349,9 @@ static void *ios_menu_init(void **userdata, bool video_is_threaded)
 
 static void ios_menu_free(void *userdata)
 {
-   (void)userdata;
+   ios_menu_t *ios = (ios_menu_t*)userdata;
+   if (ios)
+      free(ios->request_value);
    ios_menu_bridge_free();
 }
 
@@ -259,6 +391,8 @@ static void ios_menu_toggle(void *userdata, bool visible)
    ios_menu_t *ios = (ios_menu_t*)userdata;
    ios->visible   = visible;
    ios->pending   = false;
+   free(ios->request_value);
+   ios->request_value = NULL;
    ios_menu_invalidate(ios);
 }
 
@@ -379,6 +513,10 @@ void ios_menu_update(void)
       const char *title;
       bool boolean;
       bool checked;
+      bool enabled;
+      rarch_setting_t *setting;
+      ios_menu_value_t value;
+      char input[64];
       if (ios->cursor >= end)
          break;
       MENU_ENTRY_INITIALIZE((*entry));
@@ -394,15 +532,50 @@ void ios_menu_update(void)
       checked = boolean && cbs->setting->value.target.boolean
          ? *cbs->setting->value.target.boolean
          : (entry->flags & MENU_ENTRY_FLAG_CHECKED) != 0;
+      enabled = cbs && (cbs->action_ok || cbs->action_select || cbs->action_right)
+         && entry->type != MENU_SETTINGS_CORE_INFO_NONE
+         && entry->type != MENU_INFO_MESSAGE && entry->type != MENU_SETTING_NO_ITEM;
+      setting = cbs ? cbs->setting : NULL;
+      value.kind = ios_menu_value_kind(setting);
+      value.text = "";
+      value.limit = setting ? setting->size : 0;
+      value.minimum = setting ? setting->min : 0;
+      value.maximum = setting ? setting->max : 0;
+      value.has_minimum = setting && (setting->flags & SD_FLAG_HAS_RANGE)
+         && (setting->flags & SD_FLAG_ENFORCE_MINRANGE);
+      value.has_maximum = setting && (setting->flags & SD_FLAG_HAS_RANGE)
+         && (setting->flags & SD_FLAG_ENFORCE_MAXRANGE);
+      input[0] = '\0';
+      switch (value.kind)
+      {
+         case IOS_MENU_VALUE_INT:
+            snprintf(input, sizeof(input), "%d", setting_int_get(setting));
+            value.text = input;
+            break;
+         case IOS_MENU_VALUE_UINT:
+         case IOS_MENU_VALUE_COLOR:
+            snprintf(input, sizeof(input), "%u", setting_uint_get(setting));
+            value.text = input;
+            break;
+         case IOS_MENU_VALUE_SIZE:
+            snprintf(input, sizeof(input), "%" PRIu64,
+                  (uint64_t)*setting->value.target.sizet);
+            value.text = input;
+            break;
+         case IOS_MENU_VALUE_FLOAT:
+            snprintf(input, sizeof(input), "%.9g", *setting->value.target.fraction);
+            value.text = input;
+            break;
+         case IOS_MENU_VALUE_TEXT:
+            value.text = setting->value.target.string;
+            break;
+         default:
+            break;
+      }
       ios_menu_bridge_add(ios->cursor, entry->type, title,
             *entry->password_value ? entry->password_value : entry->value,
-            entry->sublabel, cbs && (cbs->action_ok || cbs->action_select
-               || cbs->action_right), boolean, checked,
-            cbs && cbs->action_left && cbs->action_right
-               && (entry->setting_type == ST_INT
-                  || entry->setting_type == ST_UINT
-                  || entry->setting_type == ST_SIZE
-                  || entry->setting_type == ST_FLOAT));
+            entry->sublabel, enabled, boolean, checked,
+            enabled && ios_menu_has_submenu(entry, cbs), &value);
       ios->cursor++;
    } while (task_nbio_slice_within_budget(&budget, 0, 0));
    task_nbio_slice_close(&budget);

@@ -1,7 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include <assert.h>
 #include <stdio.h>
+#include <string/stdstring.h>
 #include "../../../menu/drivers/ios_menu.c"
+
+#if defined(__APPLE__) && defined(__STRICT_ANSI__)
+uint64_t strtoull(const char *value, char **end, int base);
+#endif
 
 #define MSG_HASH_LBL_ROW(Id, str) str,
 const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob = {
@@ -19,6 +24,11 @@ static file_list_t *test_buffers[] = { &test_list };
 static file_list_t *test_stacks[] = { &test_stack };
 static menu_list_t test_lists;
 static menu_file_list_cbs_t test_cbs;
+static menu_file_list_cbs_t value_cbs;
+static rarch_setting_t value_setting;
+static setting_actions_t value_actions;
+static int setting_value = 55435;
+static unsigned changes;
 static bool init_ok = true;
 static bool mount_ok = true;
 static bool loading;
@@ -45,6 +55,8 @@ static bool back_on_commit;
 
 struct menu_state *menu_state_get_ptr(void) { return &test_menu; }
 settings_t *config_get_ptr(void) { return &test_settings; }
+const char *msg_hash_to_str(enum msg_hash_enums message)
+{ assert(message == MENU_ENUM_LABEL_VALUE_MORE); return "..."; }
 bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 { (void)data; assert(state == RARCH_CTL_IS_DUMMY_CORE); return !core_running; }
 bool task_content_load_pending(void) { return loading; }
@@ -81,6 +93,24 @@ void menu_entry_get(menu_entry_t *entry, size_t stack, size_t index,
    entry->setting_type = index == 1 ? ST_INT : ST_ACTION;
    strcpy(entry->rich_label, "Game");
 }
+
+static void test_setting_changed(rarch_setting_t *setting)
+{
+   assert(setting == &value_setting);
+   changes++;
+}
+
+int menu_setting_generic(rarch_setting_t *setting, size_t index, bool wrap)
+{
+   (void)index;
+   (void)wrap;
+   if (setting->actions->change)
+      setting->actions->change(setting);
+   return 0;
+}
+
+float rstrtof(const char *value, char **end)
+{ return (float)strtod(value, end); }
 
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry,
       size_t index, enum menu_action action)
@@ -121,12 +151,22 @@ void ios_menu_bridge_begin(uint64_t session, uint64_t revision,
 }
 void ios_menu_bridge_add(size_t index, unsigned type, const char *title,
       const char *value, const char *sublabel, bool enabled, bool boolean,
-      bool checked, bool adjustable)
+      bool checked, bool submenu, const ios_menu_value_t *input)
 {
    (void)title; (void)value; (void)sublabel; (void)enabled;
    (void)boolean; (void)checked;
    assert(index < test_list.size && type == test_items[index].type);
-   assert(adjustable == (index == 1));
+   if (type == MENU_SETTINGS_CORE_INFO_NONE)
+      assert(!enabled);
+   if (type == MENU_SETTINGS)
+      assert(submenu);
+   assert(input->kind == (index == 1 ? IOS_MENU_VALUE_INT : IOS_MENU_VALUE_NONE));
+   if (index == 1)
+   {
+      assert(!submenu && input->has_minimum && input->minimum == 1);
+      assert(input->has_maximum && input->maximum == 65535);
+      assert(atoi(input->text) == setting_value);
+   }
    additions++;
    published_rows++;
 }
@@ -237,6 +277,18 @@ int main(void)
       test_items[i].type = 100 + (unsigned)i;
       test_items[i].actiondata = &test_cbs;
    }
+   test_items[2].type = MENU_SETTINGS_CORE_INFO_NONE;
+   test_items[4].type = MENU_SETTINGS;
+   value_actions.change = test_setting_changed;
+   value_setting.type = ST_INT;
+   value_setting.value.target.integer = &setting_value;
+   value_setting.actions = &value_actions;
+   value_setting.flags = SD_FLAG_HAS_RANGE | SD_FLAG_ENFORCE_MINRANGE | SD_FLAG_ENFORCE_MAXRANGE;
+   value_setting.min = 1;
+   value_setting.max = 65535;
+   value_cbs = test_cbs;
+   value_cbs.setting = &value_setting;
+   test_items[1].actiondata = &value_cbs;
 
    init_ok = false;
    assert(!menu_ctx_ios.init(&test_menu.userdata, false));
@@ -248,6 +300,21 @@ int main(void)
    assert(published_depth == 0 && !published_running);
    ios_menu_update();
    assert(commits == 1);
+
+   assert(ios_menu_set_value(published_session, published_revision, 1, 101, "12345"));
+   assert(!ios_menu_set_value(published_session, published_revision, 1, 101, "54321"));
+   assert(setting_value == 55435);
+   ios_menu_take_action(MENU_ACTION_NOOP);
+   test_refresh();
+   assert(setting_value == 12345 && changes == 1);
+   assert(ios_menu_set_value(published_session, published_revision, 1, 999, "23456"));
+   ios_menu_take_action(MENU_ACTION_NOOP);
+   assert(setting_value == 12345 && changes == 1);
+   assert(ios_menu_set_value(published_session, published_revision, 1, 101, "23456"));
+   menu_ctx_ios.list_clear(&test_list);
+   ios_menu_take_action(MENU_ACTION_NOOP);
+   test_refresh();
+   assert(setting_value == 12345 && changes == 1);
 
    /* A rebuild between enqueue and dispatch must not retarget a tap. */
    assert(test_request(3, 103, IOS_MENU_OK));

@@ -18,8 +18,32 @@ enum ios_menu_action
    IOS_MENU_PREVIOUS_PAGE,
    IOS_MENU_NEXT_PAGE,
    IOS_MENU_CONFIRM,
-   IOS_MENU_TAB
+   IOS_MENU_TAB,
+   IOS_MENU_SET_VALUE
 };
+
+enum ios_menu_value_kind
+{
+   IOS_MENU_VALUE_NONE = 0,
+   IOS_MENU_VALUE_INT,
+   IOS_MENU_VALUE_UINT,
+   IOS_MENU_VALUE_SIZE,
+   IOS_MENU_VALUE_FLOAT,
+   IOS_MENU_VALUE_TEXT,
+   IOS_MENU_VALUE_PASSWORD,
+   IOS_MENU_VALUE_COLOR
+};
+
+typedef struct ios_menu_value
+{
+   double minimum;
+   double maximum;
+   const char *text;
+   size_t limit;
+   unsigned kind;
+   bool has_minimum;
+   bool has_maximum;
+} ios_menu_value_t;
 
 enum ios_menu_tab
 {
@@ -31,6 +55,8 @@ enum ios_menu_tab
 /* Main thread only. Requests are consumed by menu iteration. */
 bool ios_menu_request(uint64_t session, uint64_t revision,
       size_t index, unsigned type, unsigned action);
+bool ios_menu_set_value(uint64_t session, uint64_t revision,
+      size_t index, unsigned type, const char *value);
 void ios_menu_update(void);
 unsigned ios_menu_take_action(unsigned action);
 bool ios_menu_visible(void);
@@ -44,7 +70,8 @@ void ios_menu_bridge_begin(uint64_t session, uint64_t revision,
       unsigned tab, unsigned tabs, bool running);
 void ios_menu_bridge_add(size_t index, unsigned type,
       const char *title, const char *value, const char *sublabel,
-      bool enabled, bool boolean, bool checked, bool adjustable);
+      bool enabled, bool boolean, bool checked, bool submenu,
+      const ios_menu_value_t *input);
 void ios_menu_bridge_commit(void);
 void ios_menu_bridge_status(size_t selection, bool busy, const char *dialog);
 void ios_menu_bridge_message(const char *message);

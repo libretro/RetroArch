@@ -490,14 +490,14 @@ typedef struct rarch_setting_info
 /* SETTINGS LIST */
 
 /**
- * setting_set_with_string_representation:
+ * menu_setting_set_with_string_representation:
  * @setting            : pointer to setting
  * @value              : value for the setting (string)
  *
  * Set a settings' value with a string. It is assumed
  * that the string has been properly formatted.
  **/
-static int setting_set_with_string_representation(rarch_setting_t* setting,
+int menu_setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
    switch (setting->type)
@@ -639,7 +639,7 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
             {
                rarch_setting_t *setting = NULL;
                if ((setting = menu_setting_find(label)))
-                  setting_set_with_string_representation(setting, str);
+                  menu_setting_set_with_string_representation(setting, str);
             }
          }
       }
@@ -670,7 +670,7 @@ static void menu_input_st_int_cb(void *userdata, const char *str)
             {
                rarch_setting_t *setting = NULL;
                if ((setting = menu_setting_find(label)))
-                  setting_set_with_string_representation(setting, str);
+                  menu_setting_set_with_string_representation(setting, str);
             }
          }
       }
@@ -692,7 +692,7 @@ static void menu_input_st_float_cb(void *userdata, const char *str)
          {
             rarch_setting_t *setting = NULL;
             if ((setting = menu_setting_find(label)))
-               setting_set_with_string_representation(setting, str);
+               menu_setting_set_with_string_representation(setting, str);
          }
       }
    }
