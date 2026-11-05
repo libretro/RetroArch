@@ -6397,6 +6397,54 @@ static int action_ok_switch_installed_cores_pfd(const char *path,
 #endif
 #endif
 
+/* Copy the info file found beside a sideloaded core into the info directory */
+static void action_ok_sideload_core_info(const char *src_path,
+      const char *dir_libretro, const char *dir_info)
+{
+   size_t _len;
+   void *buf          = NULL;
+   int64_t buf_len    = 0;
+   char core_path[PATH_MAX_LENGTH];
+   char core_file_id[256];
+   char src_dir[PATH_MAX_LENGTH];
+   char info_src[PATH_MAX_LENGTH];
+   char info_dst[PATH_MAX_LENGTH];
+
+   if (!dir_info || !*dir_info)
+      dir_info = dir_libretro;
+   if (!dir_info || !*dir_info)
+      return;
+
+   if (core_backup_get_core_path(src_path, dir_libretro,
+            core_path, sizeof(core_path)) != CORE_BACKUP_TYPE_LIB)
+      return;
+
+   if (!(_len = core_info_get_file_id(path_basename(core_path),
+            core_file_id, sizeof(core_file_id))))
+      return;
+   strlcpy(core_file_id + _len, FILE_PATH_CORE_INFO_EXTENSION,
+         sizeof(core_file_id) - _len);
+
+   fill_pathname_basedir(src_dir, src_path, sizeof(src_dir));
+   fill_pathname_join_special(info_src, src_dir, core_file_id,
+         sizeof(info_src));
+   fill_pathname_join_special(info_dst, dir_info, core_file_id,
+         sizeof(info_dst));
+
+   if (   string_is_equal(info_src, info_dst)
+       || !path_is_valid(info_src))
+      return;
+
+   if (filestream_read_file(info_src, &buf, &buf_len) && buf)
+   {
+      if (filestream_write_file_atomic(info_dst, buf, buf_len))
+         RARCH_LOG("[Core Install] Copied core info file: \"%s\".\n", info_dst);
+      else
+         RARCH_ERR("[Core Install] Failed to copy core info file: \"%s\".\n", info_dst);
+   }
+   free(buf);
+}
+
 static int action_ok_sideload_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6420,9 +6468,17 @@ static int action_ok_sideload_core(const char *path,
       fill_pathname_join_special(
             backup_path, menu_path, path, sizeof(backup_path));
       pushed = task_push_core_restore(backup_path, dir_libretro, &core_loaded);
+      if (pushed)
+         action_ok_sideload_core_info(backup_path, dir_libretro,
+               settings->paths.path_libretro_info);
    }
    else
+   {
       pushed = task_push_core_restore(path, dir_libretro, &core_loaded);
+      if (pushed)
+         action_ok_sideload_core_info(path, dir_libretro,
+               settings->paths.path_libretro_info);
+   }
 
    /* Flush stack
     * > Since the 'sideload core' option is present
