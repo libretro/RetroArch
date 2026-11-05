@@ -33,7 +33,7 @@ jobs:
     name: retroarch --mcp-stdio driving a core
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential pkg-config zlib1g-dev libfreetype6-dev python3 ccache
+      APT_PKGS: build-essential pkg-config zlib1g-dev libfreetype-dev python3 ccache
     timeout-minutes: 40
 
     steps:

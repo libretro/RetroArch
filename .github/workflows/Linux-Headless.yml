@@ -38,7 +38,7 @@ jobs:
   linux-nomenu: # Smoketest build with no menu support compiled in
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev nvidia-cg-toolkit nvidia-cg-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm ccache
+      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev zlib1g-dev libfreetype-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev nvidia-cg-toolkit nvidia-cg-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm ccache
     timeout-minutes: 30
     steps:
       - name: Checkout

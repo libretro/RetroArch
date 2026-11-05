@@ -36,7 +36,7 @@ jobs:
     name: Build and run the autoconfig regression suite (${{ matrix.lane }})
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential zlib1g-dev libfreetype6-dev ccache
+      APT_PKGS: build-essential zlib1g-dev libfreetype-dev ccache
     timeout-minutes: ${{ matrix.sanitizer == '' && 15 || 40 }}
     strategy:
       fail-fast: false

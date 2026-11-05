@@ -4,7 +4,7 @@
 # on ARM) and the scalar path forced with RGBA16_PACK_NO_SIMD. Both are
 # held to the same reference. The NEON path on an x86 host:
 #    make CC=arm-linux-gnueabihf-gcc EXTRA_CFLAGS="-mfpu=neon -static"
-#    qemu-arm-static ./rgba16_pack_test
+#    qemu-arm ./rgba16_pack_test
 TARGET := rgba16_pack_test
 
 CORE_DIR          := ../../..

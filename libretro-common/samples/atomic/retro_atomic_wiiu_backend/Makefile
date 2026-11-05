@@ -5,7 +5,7 @@ LIBRETRO_COMM_DIR := ../../..
 # RETRO_ATOMIC_FORCE_WIIU selects the backend off-target; coreinit_stub.c
 # supplies the OS*Atomic exports it calls. For the word-sized size_t and
 # pointer paths too, build for 32-bit PowerPC:
-#   make CC=powerpc-linux-gnu-gcc LDFLAGS=-static check RUNNER=qemu-ppc-static
+#   make CC=powerpc-linux-gnu-gcc LDFLAGS=-static check RUNNER=qemu-ppc
 SOURCES := retro_atomic_wiiu_backend_test.c coreinit_stub.c
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O2 \

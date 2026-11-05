@@ -50,7 +50,7 @@ jobs:
     timeout-minutes: 45
 
     env:
-      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm
+      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev xvfb x11-utils zlib1g-dev libfreetype-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm
       # Line tables are all a sanitizer report needs. configure and
       # make take these in place of DEBUG=1's -O0 -g, adding their own.
       CFLAGS: -O0 -g1

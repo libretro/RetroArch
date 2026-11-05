@@ -1126,7 +1126,7 @@ jobs:
   # at the hardware level even when the macros emit no barriers at all.
   #
   # This job cross-compiles retro_atomic_test for AArch64 and ARMv7 and
-  # runs the binary under qemu-user-static.  qemu-user emulates the
+  # runs the binary under qemu-user.  qemu-user emulates the
   # weak memory model faithfully enough to expose missing-barrier bugs
   # in the SPSC stress test, and is cheap enough to run on every push.
   #
@@ -1393,7 +1393,7 @@ jobs:
     name: Cross-arch retro_atomic_test (${{ matrix.arch }})
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential ${{ matrix.apt_pkgs }} qemu-user-static ccache
+      APT_PKGS: build-essential ${{ matrix.apt_pkgs }} qemu-user ccache
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -1402,12 +1402,12 @@ jobs:
           - arch: aarch64
             cc: aarch64-linux-gnu-gcc
             apt_pkgs: gcc-aarch64-linux-gnu
-            qemu: qemu-aarch64-static
+            qemu: qemu-aarch64
             sysroot: /usr/aarch64-linux-gnu
           - arch: armv7
             cc: arm-linux-gnueabihf-gcc
             apt_pkgs: gcc-arm-linux-gnueabihf
-            qemu: qemu-arm-static
+            qemu: qemu-arm
             sysroot: /usr/arm-linux-gnueabihf
 
     steps:
@@ -1541,7 +1541,7 @@ jobs:
     name: Cross-arch crc32_test (${{ matrix.name }})
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential ${{ matrix.apt_pkgs }} qemu-user-static ccache
+      APT_PKGS: build-essential ${{ matrix.apt_pkgs }} qemu-user ccache
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -1551,25 +1551,25 @@ jobs:
             cc: aarch64-linux-gnu-gcc
             cflags: ""
             apt_pkgs: gcc-aarch64-linux-gnu
-            qemu: qemu-aarch64-static
+            qemu: qemu-aarch64
             sysroot: /usr/aarch64-linux-gnu
           - name: aarch64+crc
             cc: aarch64-linux-gnu-gcc
             cflags: "-march=armv8-a+crc"
             apt_pkgs: gcc-aarch64-linux-gnu
-            qemu: qemu-aarch64-static
+            qemu: qemu-aarch64
             sysroot: /usr/aarch64-linux-gnu
           - name: armv7
             cc: arm-linux-gnueabihf-gcc
             cflags: ""
             apt_pkgs: gcc-arm-linux-gnueabihf
-            qemu: qemu-arm-static
+            qemu: qemu-arm
             sysroot: /usr/arm-linux-gnueabihf
           - name: powerpc-big-endian
             cc: powerpc-linux-gnu-gcc
             cflags: ""
             apt_pkgs: gcc-powerpc-linux-gnu
-            qemu: qemu-ppc-static
+            qemu: qemu-ppc
             sysroot: /usr/powerpc-linux-gnu
 
     steps:

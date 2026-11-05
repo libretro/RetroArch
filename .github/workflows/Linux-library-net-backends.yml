@@ -52,7 +52,7 @@ jobs:
     name: ${{ matrix.lane }}
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential pkg-config cmake libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev libsdl2-dev zlib1g-dev libfreetype6-dev python3 openssl libmbedtls-dev libbearssl-dev samba ccache
+      APT_PKGS: build-essential pkg-config cmake libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev libsdl2-dev zlib1g-dev libfreetype-dev python3 openssl libmbedtls-dev libbearssl-dev samba ccache
     timeout-minutes: 60
     strategy:
       fail-fast: false

@@ -185,7 +185,7 @@ jobs:
     name: Threaded-video harness on Vulkan (lavapipe, validation layer)
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev libgl1-mesa-dri libgl-dev imagemagick libsdl2-dev ccache
+      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev libgl1-mesa-dri libgl-dev imagemagick libsdl2-dev ccache
     timeout-minutes: 75
 
     steps:
@@ -368,7 +368,7 @@ jobs:
     name: Threaded-video harness on Vulkan built with OpenXR (lavapipe, validation layer)
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev ccache
+      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev ccache
     timeout-minutes: 45
 
     steps:
@@ -527,7 +527,7 @@ jobs:
     timeout-minutes: 60
 
     env:
-      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev ccache
+      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev ccache
       # Line tables are all a sanitizer report needs. configure and
       # make take these in place of DEBUG=1's -O0 -g, adding their own.
       CFLAGS: -O0 -g1
@@ -627,7 +627,7 @@ jobs:
     timeout-minutes: 60
 
     env:
-      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev ccache
+      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev ccache
       # Line tables are all a sanitizer report needs. configure and
       # make take these in place of DEBUG=1's -O0 -g, adding their own.
       CFLAGS: -O0 -g1
@@ -723,7 +723,7 @@ jobs:
     name: Threaded-video harness on ${{ matrix.drivers }} (llvmpipe, ${{ matrix.api }}, ${{ matrix.san }})
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libgl-dev libglx-dev libegl-dev libgles-dev libgl1-mesa-dri libglx-mesa0 mesa-utils libasound2-dev ccache
+      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype-dev libgl-dev libglx-dev libegl-dev libgles-dev libgl1-mesa-dri libglx-mesa0 mesa-utils libasound2-dev ccache
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -949,7 +949,7 @@ jobs:
     name: Views on SDL3, end to end (Xvfb, llvmpipe)
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential ninja-build cmake xvfb x11-utils imagemagick libx11-dev libxext-dev libxrandr-dev libxi-dev libxss-dev libxcursor-dev libxfixes-dev libxkbcommon-dev libgl1-mesa-dri libgl-dev libegl-dev zlib1g-dev libfreetype6-dev libasound2-dev
+      APT_PKGS: build-essential ninja-build cmake xvfb x11-utils imagemagick libx11-dev libxext-dev libxrandr-dev libxi-dev libxss-dev libxcursor-dev libxfixes-dev libxkbcommon-dev libgl1-mesa-dri libgl-dev libegl-dev zlib1g-dev libfreetype-dev libasound2-dev
     timeout-minutes: 45
 
     steps:
@@ -1039,7 +1039,7 @@ jobs:
     name: Views on SDL 1.2, XShm and XVideo, end to end (Xvfb, sdl12-compat)
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential gdb xvfb x11-utils imagemagick openbox libx11-dev libxext-dev libxv-dev libsdl1.2-dev libgl1-mesa-dri libgl-dev zlib1g-dev libfreetype6-dev libasound2-dev
+      APT_PKGS: build-essential gdb xvfb x11-utils imagemagick openbox libx11-dev libxext-dev libxv-dev libsdl1.2-dev libgl1-mesa-dri libgl-dev zlib1g-dev libfreetype-dev libasound2-dev
     timeout-minutes: 45
 
     steps:
