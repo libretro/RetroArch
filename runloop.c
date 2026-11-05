@@ -9194,6 +9194,10 @@ static enum runloop_state_enum runloop_check_state(
 
          if (sys_info)
             disk_control_set_eject_state(&sys_info->disk_control, false, true);
+#ifdef HAVE_MENU
+         menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                     | MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
       }
    }
 

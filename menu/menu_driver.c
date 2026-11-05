@@ -6342,7 +6342,8 @@ unsigned menu_event(
             ok_trigger = ok_trigger_release;
 
          /* Resume */
-         if (     ok_enum_idx == MENU_ENUM_LABEL_RESUME_CONTENT
+         if (    (ok_enum_idx == MENU_ENUM_LABEL_RESUME_CONTENT
+               || ok_enum_idx == MENU_ENUM_LABEL_DISK_INSERT_PENDING)
                && ok_enum_idx == entry.enum_idx)
             ok_trigger = ok_trigger_release;
 

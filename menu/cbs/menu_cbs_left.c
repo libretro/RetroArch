@@ -991,11 +991,11 @@ static int action_left_core_set_standalone_exempt(unsigned type, const char *lab
 static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
-   /* Note: Menu itself provides visual feedback - no
-    * need to print info message to screen */
-   bool print_log = false;
-
-   command_event(CMD_EVENT_DISK_PREV, &print_log);
+   disk_control_interface_t *disk = &runloop_state_get_ptr()->system.disk_control;
+   unsigned index = disk_control_get_image_index(disk);
+   if (index > 0)
+      index--;
+   command_event(CMD_EVENT_DISK_INDEX, &index);
 
    return 0;
 }
