@@ -51,6 +51,11 @@ static retro_atomic_int_t null_decoder_calls;
 static retro_atomic_int_t scripted_read_error;
 static retro_atomic_int_t scripted_error_reads;
 static retro_atomic_int_t colour_source;
+/* Decoded frames past this many are relabelled BT.601: FFmpeg 8's concat
+ * converts every segment to the first one's colour space, so a lavfi
+ * graph can no longer change the label mid-stream by itself */
+static retro_atomic_int_t relabel_after;
+static retro_atomic_int_t relabel_seen;
 extern retro_atomic_int_t camera_read_errors;
 
 int __real_avformat_find_stream_info(AVFormatContext *ctx, AVDictionary **options);
@@ -73,6 +78,10 @@ int __wrap_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame)
       return 0;
    }
    ret = __real_avcodec_receive_frame(ctx, frame);
+   if (ret == 0 && retro_atomic_load_acquire_int(&relabel_after)
+         && retro_atomic_fetch_add_int(&relabel_seen, 1)
+            >= retro_atomic_load_acquire_int(&relabel_after))
+      frame->colorspace = AVCOL_SPC_SMPTE170M;
    if (ret == 0 && retro_atomic_load_acquire_int(&duplicate_output))
    {
       extra_frame = av_frame_clone(frame);
@@ -721,7 +730,7 @@ int main(void)
    {
       const char *sources[] = {
          "nullsrc=s=32x16:r=25,format=yuv420p,geq=lum=16:cb=128:cr=128,setparams=range=full,trim=end_frame=3[a];nullsrc=s=32x16:r=25,format=yuv420p,geq=lum=16:cb=128:cr=128,setparams=range=limited,trim=end_frame=3[b];[a][b]concat=n=2:v=1:a=0",
-         "nullsrc=s=32x16:r=25,format=yuv420p,geq=lum=100:cb=90:cr=170,setparams=range=full:colorspace=bt709,trim=end_frame=3[a];nullsrc=s=32x16:r=25,format=yuv420p,geq=lum=100:cb=90:cr=170,setparams=range=full:colorspace=smpte170m,trim=end_frame=3[b];[a][b]concat=n=2:v=1:a=0",
+         "nullsrc=s=32x16:r=25,format=yuv420p,geq=lum=100:cb=90:cr=170,setparams=range=full:colorspace=bt709,trim=end_frame=6",
          "nullsrc=s=32x16:r=25,format=gray,geq=lum=16,trim=end_frame=3[a];nullsrc=s=32x16:r=25,format=gray,geq=lum=48,trim=end_frame=3[b];[a][b]concat=n=2:v=1:a=0"
       };
       /* Full-range BT.709 and BT.601 YCbCr equations, rounded to bytes. */
@@ -737,6 +746,8 @@ int main(void)
          if (!h)
             continue;
          retro_atomic_store_release_int(&colour_source, 1);
+         retro_atomic_store_release_int(&relabel_seen, 0);
+         retro_atomic_store_release_int(&relabel_after, lane == 1 ? 3 : 0);
          CHECK(camera_ffmpeg.start(h), "colour source start failed");
          check_colour = true;
          for (attempt = 0; attempt < 100 && stage < 2; attempt++)
@@ -756,6 +767,7 @@ int main(void)
          camera_ffmpeg.stop(h);
          camera_ffmpeg.free(h);
          retro_atomic_store_release_int(&colour_source, 0);
+         retro_atomic_store_release_int(&relabel_after, 0);
       }
    }
    current = "direct output";

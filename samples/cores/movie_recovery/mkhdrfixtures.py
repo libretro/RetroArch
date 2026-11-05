@@ -96,7 +96,10 @@ with tempfile.TemporaryDirectory(prefix="movie-hdr-fixtures-") as temporary:
             end = command.index('-color_range')
             command[start:end] = ['-c:v', 'libvpx-vp9', '-deadline', 'good',
                 '-cpu-used', '4', '-row-mt', '1', '-threads', '2',
-                '-profile:v', '2', '-g', '48', '-crf', '18', '-b:v', '0']
+                '-profile:v', '2', '-g', '48', '-crf', '18', '-b:v', '0',
+                # FFmpeg 7.1 and later take primaries and transfer from the
+                # frames, dropping the output options; x265 carries its own
+                '-vf', 'setparams=color_primaries=' + args.primaries + ':color_trc=' + tag]
             command[command.index('-c:a') + 1] = 'libopus'
         subprocess.run(command,check=True)
         if args.max_cll:

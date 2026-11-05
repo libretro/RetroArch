@@ -17,7 +17,10 @@ for depth in (8, 10):
             ('sb128', 6, ['-aom-params', 'sb-size=128']),
             ('lossless', 6, ['-crf', '0', '-b:v', '0']),
             ('still', 1, ['-still-picture', '1']),
-            ('color', 6, ['-color_range', 'pc', '-colorspace', 'bt709',
+            # FFmpeg 7.1 and later take primaries and transfer from the
+            # frames, dropping the output options, so tag those too
+            ('color', 6, ['-vf', 'setparams=color_primaries=bt709:color_trc=bt709',
+                          '-color_range', 'pc', '-colorspace', 'bt709',
                           '-color_primaries', 'bt709', '-color_trc', 'bt709'])):
         path = args.directory / f'{depth}-{mode}.obu'
         subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i',

@@ -18,7 +18,7 @@ out.mkdir(parents=True, exist_ok=True)
 # keeps only the first one's timestamp, closing a gap or an overlap.
 FRAME = {"libopus": 960, "libvorbis": 64}
 
-def make(name, *, delay=0, duration=4, audio_duration=2, codec="libopus", filter=None, mp4=False, trim=0, framed=False):
+def make(name, *, delay=0, duration=4, audio_duration=2, codec="libopus", filter=None, mp4=False, trim=0, framed=False, drop=None):
     frames = f":samples_per_frame={FRAME[codec]}" if framed else ""
     args = ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
             f"testsrc2=size=64x48:rate=12:duration={duration}", "-itsoffset", str(delay),
@@ -31,7 +31,14 @@ def make(name, *, delay=0, duration=4, audio_duration=2, codec="libopus", filter
         args += ["-c:v", "libvpx", "-deadline", "realtime", "-cpu-used", "8", "-auto-alt-ref", "0"]
     if codec == "libvorbis" and mp4:
         args += ["-strict", "experimental"]
-    args += ["-c:a", codec, "-ac", "2", str(out / name)]
+    args += ["-c:a", codec, "-ac", "2"]
+    if drop:
+        # Coded packets leave the encoder and are dropped on their way to
+        # the muxer, which keeps every timestamp: ffmpeg 8 closes a gap
+        # cut before the encoder by giving the next frame the previous
+        # one's end
+        args += ["-bsf:a", f"noise=drop=gte(pts*tb\\,{drop[0]})*lt(pts*tb\\,{drop[1]})"]
+    args += [str(out / name)]
     subprocess.run(args, check=True)
     if trim:
         # Change only the audio edit's media_time. Coded packets and
@@ -115,7 +122,7 @@ for delay in (0, 1, 2):
     make(f"timeline-{delay}.webm", delay=delay)
 for codec in ("libopus", "libvorbis"):
     make(f"timeline-gap-{codec}.webm", duration=5, audio_duration=4,
-         codec=codec, filter=r"aselect=not(between(t\,1\,2))", framed=True)
+         codec=codec, drop=(1, 2))
 make("timeline-overlap.webm", duration=5, audio_duration=4,
      filter=r"asetpts=PTS-0.5/TB*gte(T\,2)", framed=True)
 for delay in (0, 1):

@@ -98,6 +98,9 @@ def main():
         marker = '-static' if args.hdr_static else ''
         cases = tuple((f'{transfer}{marker}-{range_name}', 12, '256x144',
                        ['-lag-in-frames', '0', '-g', '6', '-tiles', '2x2',
+                        # FFmpeg 7.1 and later take primaries and transfer
+                        # from the frames, dropping the output options
+                        '-vf', f'setparams=color_primaries=bt2020:color_trc={transfer}',
                         '-color_primaries', 'bt2020', '-color_trc', transfer,
                         '-colorspace', 'bt2020nc', '-color_range', range_name])
                       for transfer in ('smpte2084', 'arib-std-b67')

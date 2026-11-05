@@ -56,7 +56,10 @@ with tempfile.TemporaryDirectory(prefix='record-mp4-') as temp:
                    ['-c:v', 'libaom-av1', '-cpu-used', '8', '-lag-in-frames', '0', '-g', '8', '-threads', '1'])
         command([ffmpeg, '-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=64x48:rate=30000/1001',
                  '-frames:v', '32', '-pix_fmt', 'yuv420p10le' if depth == 10 else 'yuv420p',
-                 *options, *(['-color_primaries', 'bt2020', '-color_trc', transfer,
+                 # FFmpeg 7.1 and later take primaries and transfer from the
+                 # frames, dropping the output options, so tag those too
+                 *options, *(['-vf', f'setparams=color_primaries=bt2020:color_trc={transfer}',
+                              '-color_primaries', 'bt2020', '-color_trc', transfer,
                               '-colorspace', 'bt2020nc', '-color_range', 'tv'] if transfer else []),
                  '-f', name, str(source)])
         source_info = probe(source)

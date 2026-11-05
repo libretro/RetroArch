@@ -10,6 +10,8 @@
 #include <rthreads/rthreads.h>
 #endif
 #include "../../../gfx/gfx_anim_preview.h"
+/* The whole MP4 writer: the WebM fixture alone takes only its byte helpers */
+#include "../../../libretro-common/samples/formats/av1/rav1_mp4_fixture.h"
 #include "../../../libretro-common/samples/formats/av1/rav1_webm_fixture.h"
 
 static const char *fixture_path;
@@ -205,7 +207,7 @@ static void test_container(unsigned container)
    if (container)
       make_webm(container == 2, 0, 0, 0);
    else
-      make_mp4(1);
+      make_mp4_clip(1, 0);
    file = fopen(fixture_path, "wb");
    if (!file)
    {

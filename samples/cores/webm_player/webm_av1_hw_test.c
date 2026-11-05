@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 #include <formats/rav1_hw.h>
+/* The whole MP4 writer: the WebM fixture alone takes only its byte helpers */
+#include "../../../libretro-common/samples/formats/av1/rav1_mp4_fixture.h"
 #include "../../../libretro-common/samples/formats/av1/rav1_webm_fixture.h"
 #include "../../../cores/libretro-media/media_core.c"
 
@@ -229,7 +231,7 @@ static void test_container(void)
    if (container)
       make_webm(container == 2, 1, 1, 0);
    else
-      make_mp4(1);
+      make_mp4_clip(1, 0);
    file = fopen(fixture_path, "wb");
    if (!file)
    {
