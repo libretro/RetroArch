@@ -1,7 +1,9 @@
-# function                  size  stack-frame   (release build, x86-64 GCC)
+# function                  size  stack-frame   (release build, x86-64 GCC 15, Ubuntu 26.04)
 # Driver Pacing release/marker dispatch adds code; the stack guard stays put.
 # sample_batch settles pending pause and reset requests on the submitting thread.
-runloop_iterate             6527  88
-video_driver_frame          9447  4008
-video_thread_frame          3873  152
-audio_driver_sample_batch    410  24
+# Measured again under GCC 15 when ubuntu-latest moved to 26.04: from the same
+# source it emits 12-22% more code than GCC 13 did for three of these.
+runloop_iterate             8026  120
+video_driver_frame          8191  3992
+video_thread_frame          4825  200
+audio_driver_sample_batch    623  24
