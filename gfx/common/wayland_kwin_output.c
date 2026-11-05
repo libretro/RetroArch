@@ -86,6 +86,8 @@ static void kwin_output_device_mode_removed(void *data,
       }
    if (dev->current == obj)
       dev->current = NULL;
+   if (dev->requested == obj)
+      dev->requested = NULL;
    kde_output_device_mode_v2_destroy(obj);
 }
 
@@ -97,6 +99,8 @@ static void kwin_output_device_current_mode(void *data,
    kwin_output_device_t *dev = (kwin_output_device_t*)data;
    (void)obj;
    dev->current = mode;
+   if (dev->requested == mode)
+      dev->requested = NULL;
 }
 
 static void kwin_output_device_mode(void *data,
@@ -189,7 +193,9 @@ static void kwin_output_device_registry_finished(void *data,
 static void kwin_output_configuration_applied(void *data,
       struct kde_output_configuration_v2 *obj)
 {
-   (void)data;
+   kwin_output_device_t *dev = (kwin_output_device_t*)data;
+   if (dev)
+      dev->requested = NULL;
    RARCH_LOG("[Wayland] KWin applied the mode switch.\n");
    kde_output_configuration_v2_destroy(obj);
 }
@@ -197,7 +203,9 @@ static void kwin_output_configuration_applied(void *data,
 static void kwin_output_configuration_failed(void *data,
       struct kde_output_configuration_v2 *obj)
 {
-   (void)data;
+   kwin_output_device_t *dev = (kwin_output_device_t*)data;
+   if (dev)
+      dev->requested = NULL;
    RARCH_WARN("[Wayland] KWin refused the mode switch.\n");
    kde_output_configuration_v2_destroy(obj);
 }
@@ -553,16 +561,18 @@ bool kwin_outputs_set_mode(kwin_outputs_t *kw, const char *connector,
       return false;
    }
    best = &dev->modes[pick];
-   if (best->mode == dev->current)
+   /* What the output will be once pending requests land, else what it is */
+   if (best->mode == (dev->requested ? dev->requested : dev->current))
       return true;
 
    if (!(config = kde_output_management_v2_create_configuration(
                kw->management)))
       return false;
    kde_output_configuration_v2_add_listener(config,
-         &kwin_output_configuration_listener, NULL);
+         &kwin_output_configuration_listener, dev);
    kde_output_configuration_v2_mode(config, dev->device, best->mode);
    kde_output_configuration_v2_apply(config);
+   dev->requested = best->mode;
    RARCH_LOG("[Wayland] Asked KWin for %dx%d at %.3f Hz on %s.\n",
          best->width, best->height, (float)best->refresh_mhz / 1000.0f,
          dev->name[0] ? dev->name : "its output");

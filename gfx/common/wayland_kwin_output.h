@@ -48,6 +48,10 @@ typedef struct kwin_output_device
 {
    struct kde_output_device_v2      *device;
    struct kde_output_device_mode_v2 *current;
+   /* Mode asked of KWin whose outcome has not been reported yet: KWin
+    * only updates `current` some time after applying, so a request made
+    * in that window must be compared against this, not against `current` */
+   struct kde_output_device_mode_v2 *requested;
    kwin_output_mode_t               *modes;
    unsigned                          nmodes;
    unsigned                          capacity;
