@@ -6414,11 +6414,17 @@ static void lane_frame_mem_mode(int mode, const uint8_t *ref,
 #ifdef HAVE_GFX_INSTRUMENT
    gfx_instrument_reset();
 #endif
-   /* Measure frame storage without replacing queued frames. */
+   /* Measure frame storage without replacing queued frames, a display
+    * period apart. The video thread hands a buffer back on the pass
+    * after the GPU is done with it, so frames pushed back to back on
+    * a slow GPU (the macOS runners' paravirtual one) find every one of
+    * the driver's in flight and are copied from host memory: that is
+    * the GPU's latency, not the path under test. */
    for (i = 0; i < 60; i++)
    {
       run_frames(1);
       video_thread_wait_idle();
+      retro_sleep(17);
    }
 #ifdef HAVE_GFX_INSTRUMENT
    {
