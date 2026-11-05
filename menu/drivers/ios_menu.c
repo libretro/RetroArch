@@ -7,7 +7,6 @@
 #include "../../ui/ios/RetroArchMenuBridge.h"
 #include "../../configuration.h"
 #include "../../content.h"
-#include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../msg_hash_lbl_str.h"
 #include "../../tasks/task_content.h"
@@ -31,7 +30,6 @@ typedef struct ios_menu
    bool dirty;
    bool building;
    bool visible;
-   bool settings_visible;
 } ios_menu_t;
 
 static uint64_t ios_menu_session;
@@ -62,19 +60,13 @@ static bool ios_menu_busy(void)
 static unsigned ios_menu_tabs(void)
 {
    settings_t *settings = config_get_ptr();
-   unsigned tabs       = 1 << IOS_MENU_TAB_LIBRARY;
-   if (settings->bools.menu_content_show_history)
-      tabs |= 1 << IOS_MENU_TAB_HISTORY;
-   if (settings->bools.menu_content_show_favorites)
-      tabs |= 1 << IOS_MENU_TAB_FAVORITES;
+   unsigned tabs       = (1 << IOS_MENU_TAB_MAIN) | (1 << IOS_MENU_TAB_LIBRARY);
    if (settings->bools.menu_content_show_settings && !settings->bools.kiosk_mode_enable)
       tabs |= 1 << IOS_MENU_TAB_SETTINGS;
-   if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-      tabs |= 1 << IOS_MENU_TAB_QUICK;
    return tabs;
 }
 
-static unsigned ios_menu_stack_tab(file_list_t *stack, menu_handle_t *menu)
+static unsigned ios_menu_stack_tab(file_list_t *stack)
 {
    size_t i = stack ? stack->size : 0;
    while (i > 0)
@@ -82,47 +74,34 @@ static unsigned ios_menu_stack_tab(file_list_t *stack, menu_handle_t *menu)
       const char *label = stack->list[--i].label;
       if (!label)
          continue;
-      if (!strcmp(label, MENU_ENUM_LABEL_CONTENT_SETTINGS_STR))
-         return IOS_MENU_TAB_QUICK;
-      if (!strcmp(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
-            && !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-            && !strcmp(menu->deferred_path, path_get(RARCH_PATH_CONTENT)))
-         return IOS_MENU_TAB_QUICK;
-      if (!strcmp(label, MENU_ENUM_LABEL_HISTORY_TAB_STR))
-         return IOS_MENU_TAB_HISTORY;
-      if (!strcmp(label, MENU_ENUM_LABEL_FAVORITES_TAB_STR))
-         return IOS_MENU_TAB_FAVORITES;
       if (!strcmp(label, MENU_ENUM_LABEL_SETTINGS_TAB_STR))
          return IOS_MENU_TAB_SETTINGS;
+      if (!strcmp(label, MENU_ENUM_LABEL_PLAYLISTS_TAB_STR))
+         return IOS_MENU_TAB_LIBRARY;
+      if (!strcmp(label, MENU_ENUM_LABEL_MAIN_MENU_STR))
+         return IOS_MENU_TAB_MAIN;
    }
-   return IOS_MENU_TAB_LIBRARY;
+   return IOS_MENU_TAB_MAIN;
 }
 
-static bool ios_menu_switch_tab(ios_menu_t *ios, unsigned tab, bool home)
+static bool ios_menu_switch_tab(ios_menu_t *ios, unsigned tab)
 {
    static const char *const labels[] = {
+      MENU_ENUM_LABEL_MAIN_MENU_STR,
       MENU_ENUM_LABEL_PLAYLISTS_TAB_STR,
-      MENU_ENUM_LABEL_HISTORY_TAB_STR,
-      MENU_ENUM_LABEL_FAVORITES_TAB_STR,
       MENU_ENUM_LABEL_SETTINGS_TAB_STR
    };
    static const unsigned types[] = {
-      MENU_PLAYLISTS_TAB, MENU_HISTORY_TAB, MENU_FAVORITES_TAB, MENU_SETTINGS
+      MENU_SETTINGS, MENU_PLAYLISTS_TAB, MENU_SETTINGS
    };
    struct menu_state *menu_st = menu_state_get_ptr();
    file_list_t *stack;
    file_list_t *list = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, 0);
    char *label;
    const char *target;
-   if (tab > IOS_MENU_TAB_QUICK || !(ios_menu_tabs() & (1 << tab)) || !list)
+   if (tab > IOS_MENU_TAB_SETTINGS || !(ios_menu_tabs() & (1 << tab)) || !list)
       return false;
-   if (tab == IOS_MENU_TAB_QUICK)
-   {
-      ios->tab = tab;
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-      return true;
-   }
-   target = home ? MENU_ENUM_LABEL_MAIN_MENU_STR : labels[tab];
+   target = labels[tab];
    label  = (char*)malloc(strlen(target) + 1);
    if (!label)
       return false;
@@ -136,7 +115,7 @@ static bool ios_menu_switch_tab(ios_menu_t *ios, unsigned tab, bool home)
    }
    file_list_free_label(stack, stack->size - 1);
    stack->list[stack->size - 1].label = label;
-   stack->list[stack->size - 1].type  = home ? MENU_SETTINGS : types[tab];
+   stack->list[stack->size - 1].type  = types[tab];
    filebrowser_clear_type();
    ios->tab = tab;
    menu_st->selection_ptr = 0;
@@ -149,23 +128,13 @@ bool ios_menu_visible(void)
    return ios && ios->visible;
 }
 
-void ios_menu_settings_visible(uint64_t session, bool visible)
-{
-   ios_menu_t *ios = ios_menu_current();
-   if (!ios || ios->session != session)
-      return;
-   ios->settings_visible = visible;
-   if (visible)
-      ios->pending = false;
-}
-
 bool ios_menu_request(uint64_t session, uint64_t revision,
       size_t index, unsigned type, unsigned action)
 {
    ios_menu_t *ios = ios_menu_current();
    if (!ios || !ios->visible || ios->pending || ios_menu_busy()
          || session != ios->session || revision != ios->revision
-         || ios->dirty || action > IOS_MENU_HOME)
+         || ios->dirty || action > IOS_MENU_TAB)
       return false;
    ios->request_revision = revision;
    ios->request_index    = index;
@@ -185,12 +154,6 @@ unsigned ios_menu_take_action(unsigned action)
 
    if (!ios)
       return action;
-   if (ios->settings_visible && action != MENU_ACTION_NOOP)
-   {
-      if (action == MENU_ACTION_CANCEL)
-         ios_menu_bridge_close_settings();
-      action = MENU_ACTION_NOOP;
-   }
    if (!ios->pending)
       return action;
    ios->pending = false;
@@ -213,10 +176,7 @@ unsigned ios_menu_take_action(unsigned action)
    switch (request)
    {
       case IOS_MENU_TAB:
-         ios_menu_switch_tab(ios, (unsigned)index, false);
-         break;
-      case IOS_MENU_HOME:
-         ios_menu_switch_tab(ios, IOS_MENU_TAB_LIBRARY, true);
+         ios_menu_switch_tab(ios, (unsigned)index);
          break;
       case IOS_MENU_BACK:
          return MENU_ACTION_CANCEL;
@@ -231,31 +191,6 @@ unsigned ios_menu_take_action(unsigned action)
       case IOS_MENU_NEXT_PAGE:
          if (list && ios->offset + IOS_MENU_PAGE_SIZE < list->size)
             ios->offset += IOS_MENU_PAGE_SIZE;
-         break;
-      case IOS_MENU_SAVE_CONFIG:
-         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-         break;
-      case IOS_MENU_SET_DRIVER:
-         {
-            /* The picker uses the same registration order. */
-            size_t n;
-            for (n = 0; menu_ctx_drivers[n]; n++)
-               if (n == index && strcmp(menu_ctx_drivers[n]->ident, "null"))
-               {
-                  configuration_set_string(config_get_ptr(),
-                        config_get_ptr()->arrays.menu_driver,
-                        menu_ctx_drivers[n]->ident);
-                  break;
-               }
-         }
-         break;
-      case IOS_MENU_POINTER:
-         {
-            rarch_setting_t *setting = menu_setting_find_enum(
-                  MENU_ENUM_LABEL_POINTER_ENABLE);
-            if (setting && setting->actions->right)
-               setting->actions->right(setting, 0, false);
-         }
          break;
       default:
          break;
@@ -305,7 +240,7 @@ static bool ios_menu_lists_init(void *data)
             MENU_SETTINGS, 0, 0, NULL))
       return false;
    return ios_menu_switch_tab((ios_menu_t*)menu_st->userdata,
-         IOS_MENU_TAB_LIBRARY, false);
+         IOS_MENU_TAB_MAIN);
 }
 
 static void ios_menu_populate(void *userdata, const char *path,
@@ -425,11 +360,11 @@ void ios_menu_update(void)
          ios->offset = 0;
       title[0] = '\0';
       menu_entries_get_title(title, sizeof(title));
-      ios->tab = ios_menu_stack_tab(stack, menu_st->driver_data);
+      ios->tab = ios_menu_stack_tab(stack);
       ios_menu_bridge_begin(ios->session, ios->revision, title,
-            list->size, ios->offset, stack && stack->size > 1,
-            config_get_ptr()->arrays.menu_driver,
-            config_get_ptr()->bools.menu_pointer_enable, ios->tab, ios_menu_tabs());
+            list->size, ios->offset, stack && stack->size ? stack->size - 1 : 0,
+            ios->tab, ios_menu_tabs(),
+            !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL));
       ios->cursor   = ios->offset;
       ios->building = true;
    }
@@ -476,7 +411,7 @@ void ios_menu_update(void)
       ios->dirty    = false;
       ios->building = false;
       ios_menu_bridge_commit();
-      ios_menu_bridge_status(menu_st->selection_ptr, ios_menu_busy(),
+      ios_menu_bridge_status(menu_st->selection_ptr, ios->pending || ios_menu_busy(),
             menu_st->driver_data->menu_state_msg);
    }
 }

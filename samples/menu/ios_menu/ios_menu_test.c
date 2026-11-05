@@ -11,8 +11,6 @@ const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob = {
 
 static struct menu_state test_menu;
 static settings_t test_settings;
-static menu_ctx_driver_t legacy;
-const menu_ctx_driver_t *menu_ctx_drivers[] = { &legacy, &menu_ctx_ios, NULL };
 static struct item_file test_items[205];
 static file_list_t test_list;
 static file_list_t test_stack;
@@ -21,8 +19,6 @@ static file_list_t *test_buffers[] = { &test_list };
 static file_list_t *test_stacks[] = { &test_stack };
 static menu_list_t test_lists;
 static menu_file_list_cbs_t test_cbs;
-static rarch_setting_t pointer_setting;
-static setting_actions_t pointer_actions;
 static bool init_ok = true;
 static bool mount_ok = true;
 static bool loading;
@@ -36,18 +32,19 @@ static unsigned slice_items;
 static unsigned saved;
 static unsigned reinits;
 static unsigned dispatched;
-static unsigned settings_closed;
 static uint64_t published_session;
 static uint64_t published_revision;
 static size_t published_offset;
 static size_t published_rows;
+static size_t published_depth;
 static unsigned published_tab;
 static unsigned published_tabs;
+static bool published_running;
+static bool published_busy;
+static bool back_on_commit;
 
 struct menu_state *menu_state_get_ptr(void) { return &test_menu; }
 settings_t *config_get_ptr(void) { return &test_settings; }
-const char *path_get(enum rarch_path_type type)
-{ assert(type == RARCH_PATH_CONTENT); return "game.bin"; }
 bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 { (void)data; assert(state == RARCH_CTL_IS_DUMMY_CORE); return !core_running; }
 bool task_content_load_pending(void) { return loading; }
@@ -85,21 +82,6 @@ void menu_entry_get(menu_entry_t *entry, size_t stack, size_t index,
    strcpy(entry->rich_label, "Game");
 }
 
-rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums label)
-{
-   assert(label == MENU_ENUM_LABEL_POINTER_ENABLE);
-   return &pointer_setting;
-}
-
-static int test_pointer_right(rarch_setting_t *setting, size_t index, bool wrap)
-{
-   (void)setting;
-   (void)index;
-   (void)wrap;
-   test_settings.bools.menu_pointer_enable = !test_settings.bools.menu_pointer_enable;
-   return 0;
-}
-
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry,
       size_t index, enum menu_action action)
 {
@@ -123,17 +105,19 @@ bool ios_menu_bridge_init(uint64_t session)
 void ios_menu_bridge_free(void) { }
 bool ios_menu_bridge_visible(bool visible) { (void)visible; return mount_ok; }
 void ios_menu_bridge_begin(uint64_t session, uint64_t revision,
-      const char *title, size_t total, size_t offset, bool back,
-      const char *driver, bool pointer, unsigned tab, unsigned tabs)
+      const char *title, size_t total, size_t offset, size_t depth,
+      unsigned tab, unsigned tabs, bool running)
 {
-   (void)title; (void)back; (void)driver; (void)pointer;
+   (void)title;
    assert(total == test_list.size);
    published_session = session;
    published_revision = revision;
    published_offset = offset;
    published_rows = 0;
+   published_depth = depth;
    published_tab = tab;
    published_tabs = tabs;
+   published_running = running;
 }
 void ios_menu_bridge_add(size_t index, unsigned type, const char *title,
       const char *value, const char *sublabel, bool enabled, bool boolean,
@@ -146,11 +130,19 @@ void ios_menu_bridge_add(size_t index, unsigned type, const char *title,
    additions++;
    published_rows++;
 }
-void ios_menu_bridge_commit(void) { commits++; }
+void ios_menu_bridge_commit(void)
+{
+   commits++;
+   if (back_on_commit)
+   {
+      back_on_commit = false;
+      assert(ios_menu_request(published_session, published_revision,
+               0, 0, IOS_MENU_BACK));
+   }
+}
 void ios_menu_bridge_status(size_t selection, bool busy, const char *dialog)
-{ (void)selection; (void)busy; (void)dialog; }
+{ (void)selection; (void)dialog; published_busy = busy; }
 void ios_menu_bridge_message(const char *message) { (void)message; }
-void ios_menu_bridge_close_settings(void) { settings_closed++; }
 
 static void test_refresh(void)
 {
@@ -221,21 +213,12 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
    return 0;
 }
 
-bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
-{
-   (void)data;
-   assert(state == RARCH_MENU_CTL_SET_PENDING_QUICK_MENU);
-   test_menu.flags |= MENU_ST_FLAG_PENDING_QUICK_MENU;
-   return true;
-}
-
 int main(void)
 {
    size_t i;
    uint64_t old_session;
    uint64_t old_revision;
    menu_entry_t *entry;
-   legacy.ident = "glui";
    strcpy(test_settings.arrays.menu_driver, "ios");
    test_list.list = test_items;
    test_list.size = 205;
@@ -249,8 +232,6 @@ int main(void)
    test_cbs.action_ok = test_ok;
    test_cbs.action_left = test_direction;
    test_cbs.action_right = test_direction;
-   pointer_setting.actions = &pointer_actions;
-   pointer_actions.right = test_pointer_right;
    for (i = 0; i < test_list.size; i++)
    {
       test_items[i].type = 100 + (unsigned)i;
@@ -263,7 +244,8 @@ int main(void)
    init_ok = true;
    test_start();
    assert(commits == 1 && published_rows == 100);
-   assert(published_tab == IOS_MENU_TAB_LIBRARY && published_tabs == 15);
+   assert(published_tab == IOS_MENU_TAB_MAIN && published_tabs == 7);
+   assert(published_depth == 0 && !published_running);
    ios_menu_update();
    assert(commits == 1);
 
@@ -292,47 +274,54 @@ int main(void)
    assert(!test_request(3, 103, IOS_MENU_OK));
    restoring = false;
 
-   ios_menu_settings_visible(published_session, true);
-   assert(ios_menu_take_action(MENU_ACTION_DOWN) == MENU_ACTION_NOOP);
-   assert(ios_menu_take_action(MENU_ACTION_CANCEL) == MENU_ACTION_NOOP);
-   assert(settings_closed == 1);
-   ios_menu_settings_visible(published_session, false);
-   assert(ios_menu_take_action(MENU_ACTION_DOWN) == MENU_ACTION_DOWN);
-
-   for (i = IOS_MENU_TAB_HISTORY; i <= IOS_MENU_TAB_SETTINGS; i++)
+   for (i = IOS_MENU_TAB_MAIN; i <= IOS_MENU_TAB_SETTINGS; i++)
    {
       assert(test_request(i, 0, IOS_MENU_TAB));
       ios_menu_take_action(MENU_ACTION_NOOP);
       test_refresh();
       assert(published_tab == i && test_stack.size == 1);
    }
-   assert(test_request(IOS_MENU_TAB_QUICK, 0, IOS_MENU_TAB));
+   assert(test_request(IOS_MENU_TAB_SETTINGS + 1, 0, IOS_MENU_TAB));
    ios_menu_take_action(MENU_ACTION_NOOP);
-   assert(!(test_menu.flags & MENU_ST_FLAG_PENDING_QUICK_MENU));
+   test_refresh();
+   assert(published_tab == IOS_MENU_TAB_SETTINGS && test_stack.size == 1);
+   test_settings.bools.kiosk_mode_enable = true;
+   assert(ios_menu_tabs() == 3);
+   test_settings.bools.kiosk_mode_enable = false;
+   assert(test_request(IOS_MENU_TAB_MAIN, 0, IOS_MENU_TAB));
+   ios_menu_take_action(MENU_ACTION_NOOP);
    test_refresh();
    core_running = true;
-   assert(test_request(IOS_MENU_TAB_QUICK, 0, IOS_MENU_TAB));
-   ios_menu_take_action(MENU_ACTION_NOOP);
-   assert(test_menu.flags & MENU_ST_FLAG_PENDING_QUICK_MENU);
-   test_menu.flags &= ~MENU_ST_FLAG_PENDING_QUICK_MENU;
    test_stack_items[1].label = (char*)MENU_ENUM_LABEL_CONTENT_SETTINGS_STR;
    test_stack.size = 2;
    menu_ctx_ios.list_insert(test_menu.userdata, &test_list, "", "", 0, 0, 0);
    test_refresh();
-   assert(published_tab == IOS_MENU_TAB_QUICK && published_tabs == 31);
+   assert(published_tab == IOS_MENU_TAB_MAIN && published_tabs == 7);
+   assert(published_depth == 1 && published_running);
+   assert(test_request(0, 0, IOS_MENU_RESUME));
+   assert(ios_menu_take_action(MENU_ACTION_NOOP) == MENU_ACTION_RESUME);
    test_stack_items[2].label = (char*)"state_submenu";
    test_stack.size = 3;
-   assert(ios_menu_stack_tab(&test_stack, test_menu.driver_data) == IOS_MENU_TAB_QUICK);
-   test_stack_items[1].label = (char*)MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR;
-   strcpy(test_menu.driver_data->deferred_path, "other.bin");
-   assert(ios_menu_stack_tab(&test_stack, test_menu.driver_data) == IOS_MENU_TAB_SETTINGS);
-   strcpy(test_menu.driver_data->deferred_path, "game.bin");
-   assert(ios_menu_stack_tab(&test_stack, test_menu.driver_data) == IOS_MENU_TAB_QUICK);
-   core_running = false;
-   assert(test_request(0, 0, IOS_MENU_HOME));
+   menu_ctx_ios.list_insert(test_menu.userdata, &test_list, "", "", 0, 0, 0);
+   back_on_commit = true;
+   test_refresh();
+   assert(published_depth == 2 && published_busy);
+   assert(ios_menu_take_action(MENU_ACTION_NOOP) == MENU_ACTION_CANCEL);
+   assert(test_request(IOS_MENU_TAB_LIBRARY, 0, IOS_MENU_TAB));
    ios_menu_take_action(MENU_ACTION_NOOP);
    test_refresh();
-   assert(published_tab == IOS_MENU_TAB_LIBRARY);
+   test_stack.size = 2;
+   test_stack_items[1].label = (char*)MENU_ENUM_LABEL_HISTORY_TAB_STR;
+   assert(ios_menu_stack_tab(&test_stack) == IOS_MENU_TAB_LIBRARY);
+   test_stack_items[1].label = (char*)MENU_ENUM_LABEL_FAVORITES_TAB_STR;
+   assert(ios_menu_stack_tab(&test_stack) == IOS_MENU_TAB_LIBRARY);
+   test_stack_items[1].label = (char*)MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR;
+   assert(ios_menu_stack_tab(&test_stack) == IOS_MENU_TAB_LIBRARY);
+   core_running = false;
+   assert(test_request(IOS_MENU_TAB_MAIN, 0, IOS_MENU_TAB));
+   ios_menu_take_action(MENU_ACTION_NOOP);
+   test_refresh();
+   assert(published_tab == IOS_MENU_TAB_MAIN && !published_running);
    assert(!strcmp(test_stack_items[0].label, MENU_ENUM_LABEL_MAIN_MENU_STR));
 
    assert(test_request(0, 0, IOS_MENU_NEXT_PAGE));
@@ -347,19 +336,6 @@ int main(void)
    menu_ctx_ios.navigation_set(test_menu.userdata, true);
    test_refresh();
    assert(published_offset == 0);
-
-   assert(test_request(0, 0, IOS_MENU_POINTER));
-   ios_menu_take_action(MENU_ACTION_NOOP);
-   test_refresh();
-   assert(test_settings.bools.menu_pointer_enable);
-   assert(test_request(0, 0, IOS_MENU_SET_DRIVER));
-   ios_menu_take_action(MENU_ACTION_NOOP);
-   test_refresh();
-   assert(!strcmp(test_settings.arrays.menu_driver, "glui"));
-   assert(test_request(0, 0, IOS_MENU_SAVE_CONFIG));
-   ios_menu_take_action(MENU_ACTION_NOOP);
-   test_refresh();
-   assert(saved == 1);
 
    assert(test_request(3, 103, IOS_MENU_OK));
    menu_ctx_ios.toggle(test_menu.userdata, false);
@@ -380,12 +356,12 @@ int main(void)
    assert(!ios_menu_request(old_session, published_revision, 0, 100, IOS_MENU_OK));
    mount_ok = false;
    ios_menu_update();
-   assert(reinits == 1 && saved == 2);
+   assert(reinits == 1 && saved == 1);
    assert(!strcmp(test_settings.arrays.menu_driver, "glui"));
    menu_ctx_ios.free(test_menu.userdata);
    free(test_menu.userdata);
    free(test_menu.driver_data);
    free(test_stack_items[0].label);
-   puts("PASS: iOS menu snapshots, stale actions, paging, busy state, settings and lifecycle");
+   puts("PASS: iOS menu snapshots, stale actions, paging, navigation, busy state and lifecycle");
    return 0;
 }

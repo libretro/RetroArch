@@ -16,6 +16,22 @@ static NSString *ios_menu_string(const char *value)
    return value ? ([NSString stringWithUTF8String:value] ?: @"") : @"";
 }
 
+static NSString *ios_menu_tab_title(enum ios_menu_tab tab)
+{
+   switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
+   {
+      case RETRO_LANGUAGE_ENGLISH:
+         return tab == IOS_MENU_TAB_LIBRARY ? @"Game Library" : @"Main Menu";
+      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+         return tab == IOS_MENU_TAB_LIBRARY ? @"游戏库" : @"主菜单";
+      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+         return tab == IOS_MENU_TAB_LIBRARY ? @"遊戲庫" : @"主選單";
+      default:
+         return ios_menu_string(msg_hash_to_str(tab == IOS_MENU_TAB_LIBRARY
+               ? MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB : MENU_ENUM_LABEL_VALUE_MAIN_MENU));
+   }
+}
+
 bool ios_menu_bridge_available(void)
 {
    if (@available(iOS 16.0, *))
@@ -104,38 +120,25 @@ bool ios_menu_bridge_visible(bool visible)
 }
 
 void ios_menu_bridge_begin(uint64_t session, uint64_t revision,
-      const char *title, size_t total, size_t offset, bool can_go_back,
-      const char *driver, bool pointer, unsigned tab, unsigned tabs)
+      const char *title, size_t total, size_t offset, size_t depth,
+      unsigned tab, unsigned tabs, bool running)
 {
-   NSMutableArray *drivers = [NSMutableArray array];
-   size_t i;
    RARCH_RELEASE(ios_menu_snapshot);
    ios_menu_snapshot = [[NSMutableDictionary alloc] initWithDictionary:@{
       @"session": @(session), @"revision": @(revision),
       @"title": ios_menu_string(title), @"total": @(total),
-      @"offset": @(offset), @"back": @(can_go_back),
-      @"driver": ios_menu_string(driver), @"pointer": @(pointer),
+      @"offset": @(offset), @"depth": @(depth), @"running": @(running),
       @"tab": @(tab), @"tabs": @(tabs)
    }];
    ios_menu_snapshot[@"rows"] = [NSMutableArray array];
    ios_menu_snapshot[@"labels"] = @{
       @"settings": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB)),
-      @"library": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)),
-      @"history": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)),
-      @"favorites": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)),
-      @"quick": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS)),
-      @"home": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU)),
-      @"driver": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_DRIVER)),
-      @"touch": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE)),
-      @"save": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG)),
+      @"library": ios_menu_tab_title(IOS_MENU_TAB_LIBRARY),
+      @"resume": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT)),
+      @"home": ios_menu_tab_title(IOS_MENU_TAB_MAIN),
       @"back": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK)),
       @"confirm": ios_menu_string(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM))
    };
-   for (i = 0; menu_ctx_drivers[i]; i++)
-      if (strcmp(menu_ctx_drivers[i]->ident, "null"))
-         [drivers addObject:@{ @"index": @(i),
-            @"name": ios_menu_string(menu_ctx_drivers[i]->ident) }];
-   ios_menu_snapshot[@"drivers"] = drivers;
 }
 
 void ios_menu_bridge_add(size_t index, unsigned type,
@@ -169,10 +172,4 @@ void ios_menu_bridge_message(const char *message)
    if (@available(iOS 16.0, *))
       if ([NSThread isMainThread])
          [ios_menu_controller showMessage:ios_menu_string(message)];
-}
-
-void ios_menu_bridge_close_settings(void)
-{
-   if (@available(iOS 16.0, *))
-      [ios_menu_controller closeSettings];
 }

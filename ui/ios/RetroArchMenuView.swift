@@ -13,11 +13,9 @@ private struct NativeMenuTab: Identifiable {
    let icon: String
 
    static let all = [
-      NativeMenuTab(id: Int(IOS_MENU_TAB_LIBRARY.rawValue), key: "library", title: "Library", icon: "square.stack"),
-      NativeMenuTab(id: Int(IOS_MENU_TAB_HISTORY.rawValue), key: "history", title: "History", icon: "clock"),
-      NativeMenuTab(id: Int(IOS_MENU_TAB_FAVORITES.rawValue), key: "favorites", title: "Favorites", icon: "star"),
-      NativeMenuTab(id: Int(IOS_MENU_TAB_SETTINGS.rawValue), key: "settings", title: "Settings", icon: "gear"),
-      NativeMenuTab(id: Int(IOS_MENU_TAB_QUICK.rawValue), key: "quick", title: "Quick Menu", icon: "gamecontroller")
+      NativeMenuTab(id: Int(IOS_MENU_TAB_MAIN.rawValue), key: "home", title: "Main Menu", icon: "house"),
+      NativeMenuTab(id: Int(IOS_MENU_TAB_LIBRARY.rawValue), key: "library", title: "Game Library", icon: "square.stack"),
+      NativeMenuTab(id: Int(IOS_MENU_TAB_SETTINGS.rawValue), key: "settings", title: "Settings", icon: "gearshape")
    ]
 }
 
@@ -50,25 +48,31 @@ private struct NativeMenuRow: Identifiable {
 }
 
 @available(iOS 16.0, *)
+private struct NativeMenuPage {
+   let depth: Int
+   let revision: UInt64
+   let title: String
+   let rows: [NativeMenuRow]
+   let offset: Int
+   let total: Int
+}
+
+@available(iOS 16.0, *)
 private final class NativeMenuModel: ObservableObject {
    let session: UInt64
    @Published var revision: UInt64 = 0
-   @Published var title = "RetroArch"
-   @Published var rows: [NativeMenuRow] = []
-   @Published var drivers: [(index: Int, name: String)] = []
-   @Published var driver = "ios"
-   @Published var pointer = false
-   @Published var canGoBack = false
-   @Published var offset = 0
-   @Published var total = 0
+   @Published var pages: [NativeMenuPage] = []
+   @Published var path: [Int] = []
    @Published var selection = 0
    @Published var busy = true
    @Published var dialog = ""
    @Published var message = ""
-   @Published var settingsOpen = false
    @Published var labels: [String: String] = [:]
-   @Published var tab = Int(IOS_MENU_TAB_LIBRARY.rawValue)
-   @Published var tabs = 15
+   @Published var tab = Int(IOS_MENU_TAB_MAIN.rawValue)
+   @Published var tabs = 7
+   @Published var running = false
+   private(set) var depth = 0
+   private var returnDepth: Int?
 
    init(session: UInt64) { self.session = session }
 
@@ -76,95 +80,115 @@ private final class NativeMenuModel: ObservableObject {
       labels[key] ?? fallback
    }
 
-   func send(_ action: ios_menu_action, row: NativeMenuRow? = nil, index: Int = 0) {
-      guard !busy else { return }
-      if ios_menu_request(session, revision, row?.id ?? index, row?.type ?? 0,
-            action.rawValue) {
+   @discardableResult
+   func send(_ action: ios_menu_action, row: NativeMenuRow? = nil, index: Int = 0,
+         revision: UInt64? = nil) -> Bool {
+      guard !busy else { return false }
+      if ios_menu_request(session, revision ?? self.revision, row?.id ?? index,
+            row?.type ?? 0, action.rawValue) {
          busy = true
-      } else {
-         message = "The menu has changed. Please try again."
+         return true
       }
+      message = "The menu has changed. Please try again."
+      return false
    }
 
    func selectTab(_ tab: Int) {
-      guard !busy else { return }
-      settingsOpen = false
+      guard !busy, self.tab != tab else { return }
       send(IOS_MENU_TAB, index: tab)
+   }
+
+   private var enginePath: [Int] {
+      depth > 0 ? Array(1...depth) : []
+   }
+
+   private func returnToPage() {
+      guard let target = returnDepth, depth > target else { return }
+      if !send(IOS_MENU_BACK) {
+         returnDepth = nil
+         path = enginePath
+      }
+   }
+
+   func navigate(_ path: [Int]) {
+      guard !busy else { return }
+      let target = path.last ?? 0
+      guard target <= depth else { return }
+      self.path = path
+      if target < depth {
+         returnDepth = target
+         returnToPage()
+      }
+   }
+
+   func update(selection: Int, busy: Bool, dialog: String) {
+      if self.selection != selection { self.selection = selection }
+      if self.dialog != dialog { self.dialog = dialog }
+      if self.busy && !busy && returnDepth != nil {
+         returnDepth = nil
+         path = enginePath
+      }
+      if self.busy != busy { self.busy = busy }
    }
 
    func publish(_ data: NSDictionary) {
       guard (data["session"] as? NSNumber)?.uint64Value == session else { return }
-      revision = (data["revision"] as? NSNumber)?.uint64Value ?? 0
-      title = data["title"] as? String ?? "RetroArch"
-      rows = (data["rows"] as? [[String: Any]] ?? []).compactMap(NativeMenuRow.init)
-      labels = data["labels"] as? [String: String] ?? [:]
+      let oldDepth = depth
       let newTab = (data["tab"] as? NSNumber)?.intValue ?? 0
-      if tab != newTab { settingsOpen = false }
+      let changedTab = tab != newTab
+      if changedTab {
+         path = []
+         pages = []
+         returnDepth = nil
+      }
+      revision = (data["revision"] as? NSNumber)?.uint64Value ?? 0
+      depth = (data["depth"] as? NSNumber)?.intValue ?? 0
+      labels = data["labels"] as? [String: String] ?? [:]
       tab = newTab
-      tabs = (data["tabs"] as? NSNumber)?.intValue ?? 1
-      drivers = (data["drivers"] as? [[String: Any]] ?? []).compactMap {
-         guard let index = $0["index"] as? NSNumber,
-               let name = $0["name"] as? String else { return nil }
-         return (index.intValue, name)
+      tabs = (data["tabs"] as? NSNumber)?.intValue ?? 7
+      running = data["running"] as? Bool ?? false
+      var title = data["title"] as? String ?? "RetroArch"
+      if depth == 0, tab == Int(IOS_MENU_TAB_LIBRARY.rawValue) {
+         title = label("library", fallback: "Game Library")
+      } else if depth == 0, tab == Int(IOS_MENU_TAB_MAIN.rawValue) {
+         title = label("home", fallback: "Main Menu")
       }
-      driver = data["driver"] as? String ?? "ios"
-      pointer = data["pointer"] as? Bool ?? false
-      canGoBack = data["back"] as? Bool ?? false
-      offset = (data["offset"] as? NSNumber)?.intValue ?? 0
-      total = (data["total"] as? NSNumber)?.intValue ?? 0
+      if pages.count > depth { pages.removeSubrange(depth...) }
+      while pages.count < depth {
+         pages.append(NativeMenuPage(depth: pages.count, revision: 0,
+            title: "RetroArch", rows: [], offset: 0, total: 0))
+      }
+      pages.append(NativeMenuPage(depth: depth, revision: revision, title: title,
+         rows: (data["rows"] as? [[String: Any]] ?? []).compactMap(NativeMenuRow.init),
+         offset: (data["offset"] as? NSNumber)?.intValue ?? 0,
+         total: (data["total"] as? NSNumber)?.intValue ?? 0))
       busy = false
-   }
-}
-
-@available(iOS 16.0, *)
-private struct NativeMenuSettingsView: View {
-   @ObservedObject var model: NativeMenuModel
-
-   var body: some View {
-      Form {
-         Section(header: Text(model.label("driver", fallback: "Menu Driver")),
-               footer: Text("Save the configuration, then close and reopen RetroArch to use the selected menu.")) {
-            ForEach(model.drivers, id: \.index) { driver in
-               Button(action: { self.model.send(IOS_MENU_SET_DRIVER, index: driver.index) }) {
-                  HStack {
-                     Text(driver.name)
-                     Spacer()
-                     if self.model.driver == driver.name {
-                        Image(systemName: "checkmark")
-                     }
-                  }
-               }
-            }
+      if let target = returnDepth {
+         if depth <= target {
+            returnDepth = nil
+            path = enginePath
+         } else if depth < oldDepth {
+            returnToPage()
+         } else {
+            returnDepth = nil
+            path = enginePath
          }
-         Section {
-            Toggle(model.label("touch", fallback: "Touch Support"), isOn: Binding(
-               get: { self.model.pointer },
-               set: { _ in self.model.send(IOS_MENU_POINTER) }))
-            Button(model.label("save", fallback: "Save Current Configuration")) {
-               self.model.send(IOS_MENU_SAVE_CONFIG)
-            }
-         }
-         if !model.message.isEmpty {
-            Section { Text(model.message) }
-         }
+      } else {
+         path = enginePath
       }
-      .disabled(model.busy)
-      .navigationTitle(model.label("settings", fallback: "Menu Settings"))
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbarBackground(Color(UIColor.systemGroupedBackground), for: .navigationBar)
-      .toolbarBackground(.visible, for: .navigationBar)
-      .onAppear { ios_menu_settings_visible(self.model.session, true) }
-      .onDisappear { ios_menu_settings_visible(self.model.session, false) }
    }
 }
 
 @available(iOS 16.0, *)
-private struct NativeMenuView: View {
+private struct NativeMenuPageView: View {
    @ObservedObject var model: NativeMenuModel
+   let page: NativeMenuPage
+
+   private var active: Bool { page.depth == model.depth && page.revision == model.revision }
 
    private func row(_ entry: NativeMenuRow) -> some View {
       HStack {
-         Button(action: { self.model.send(IOS_MENU_OK, row: entry) }) {
+         Button(action: { self.model.send(IOS_MENU_OK, row: entry, revision: self.page.revision) }) {
             HStack {
                VStack(alignment: .leading, spacing: 4) {
                   Text(entry.title).foregroundColor(.primary)
@@ -187,14 +211,14 @@ private struct NativeMenuView: View {
          if entry.boolean {
             Toggle(entry.title, isOn: Binding(
                get: { entry.checked },
-               set: { _ in self.model.send(IOS_MENU_RIGHT, row: entry) }))
+               set: { _ in self.model.send(IOS_MENU_RIGHT, row: entry, revision: self.page.revision) }))
                .labelsHidden()
          } else {
             if entry.adjustable {
-               Button(action: { self.model.send(IOS_MENU_LEFT, row: entry) }) {
+               Button(action: { self.model.send(IOS_MENU_LEFT, row: entry, revision: self.page.revision) }) {
                   Image(systemName: "minus.circle")
                }.buttonStyle(BorderlessButtonStyle())
-               Button(action: { self.model.send(IOS_MENU_RIGHT, row: entry) }) {
+               Button(action: { self.model.send(IOS_MENU_RIGHT, row: entry, revision: self.page.revision) }) {
                   Image(systemName: "plus.circle")
                }.buttonStyle(BorderlessButtonStyle())
             }
@@ -205,7 +229,7 @@ private struct NativeMenuView: View {
          ? Color.accentColor.opacity(0.12) : Color.clear)
    }
 
-   private var menuList: some View {
+   var body: some View {
       List {
          if !model.message.isEmpty {
             Section {
@@ -213,79 +237,78 @@ private struct NativeMenuView: View {
                Button("Dismiss") { self.model.message = "" }
             }
          }
-         if !model.dialog.isEmpty {
+         if active && !model.dialog.isEmpty {
             Section {
                Text(model.dialog)
                Button(model.label("confirm", fallback: "Continue")) { self.model.send(IOS_MENU_CONFIRM) }
                Button(model.label("back", fallback: "Back")) { self.model.send(IOS_MENU_BACK) }
             }
          } else {
-            ForEach(model.rows) { entry in
-               self.row(entry).id(entry.id)
-                  .disabled(!entry.enabled || self.model.busy)
+            if page.depth == 0 && model.tab == Int(IOS_MENU_TAB_MAIN.rawValue) && model.running {
+               Section {
+                  Button(action: { self.model.send(IOS_MENU_RESUME, revision: self.page.revision) }) {
+                     Label(model.label("resume", fallback: "Resume"), systemImage: "play.fill")
+                  }.disabled(!active || model.busy)
+               }
             }
-            if model.total > model.rows.count {
-               Section(footer: Text("\(model.offset + 1)–\(model.offset + model.rows.count) / \(model.total)")) {
-                  if model.offset > 0 {
-                     Button("Previous Page") { self.model.send(IOS_MENU_PREVIOUS_PAGE) }
+            ForEach(page.rows) { entry in
+               self.row(entry).id(entry.id)
+                  .disabled(!entry.enabled || !active || self.model.busy)
+            }
+            if page.total > page.rows.count {
+               Section(footer: Text("\(page.offset + 1)–\(page.offset + page.rows.count) / \(page.total)")) {
+                  if page.offset > 0 {
+                     Button("Previous Page") { self.model.send(IOS_MENU_PREVIOUS_PAGE, revision: self.page.revision) }
                   }
-                  if model.offset + model.rows.count < model.total {
-                     Button("Next Page") { self.model.send(IOS_MENU_NEXT_PAGE) }
+                  if page.offset + page.rows.count < page.total {
+                     Button("Next Page") { self.model.send(IOS_MENU_NEXT_PAGE, revision: self.page.revision) }
                   }
-               }.disabled(model.busy)
+               }.disabled(!active || model.busy)
             }
          }
       }
-         .listStyle(GroupedListStyle())
-         .navigationTitle(model.title)
-         .navigationBarTitleDisplayMode(.inline)
-         .toolbarBackground(Color(UIColor.systemGroupedBackground), for: .navigationBar)
-         .toolbarBackground(.visible, for: .navigationBar)
-         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-               Button(action: {
-                  self.model.send(self.model.canGoBack ? IOS_MENU_BACK : IOS_MENU_HOME)
-               }) {
-                  if model.canGoBack {
-                     Label(model.label("back", fallback: "Back"), systemImage: "chevron.backward")
-                        .labelStyle(.titleAndIcon)
-                  } else {
-                     Label(model.label("home", fallback: "Main Menu"), systemImage: "line.3.horizontal")
-                        .labelStyle(.iconOnly)
-                  }
-               }.disabled(model.busy)
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-               Button(action: { self.model.settingsOpen = true }) {
-                  Label(model.label("settings", fallback: "Menu Settings"), systemImage: "gearshape")
-                     .labelStyle(.iconOnly)
+      .listStyle(GroupedListStyle())
+      .navigationTitle(page.title)
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbarBackground(Color(UIColor.systemGroupedBackground), for: .navigationBar)
+      .toolbarBackground(.visible, for: .navigationBar)
+   }
+}
+
+@available(iOS 16.0, *)
+private struct NativeMenuView: View {
+   @ObservedObject var model: NativeMenuModel
+
+   @ViewBuilder
+   private func page(_ depth: Int) -> some View {
+      if model.pages.indices.contains(depth) {
+         ScrollViewReader { proxy in
+            NativeMenuPageView(model: model, page: model.pages[depth])
+               .onChange(of: model.selection) { index in
+                  if depth == self.model.depth { proxy.scrollTo(index, anchor: .center) }
                }
-            }
+               .onChange(of: model.revision) { _ in
+                  if depth == self.model.depth { proxy.scrollTo(self.model.selection, anchor: .center) }
+               }
          }
-         .navigationDestination(isPresented: $model.settingsOpen) {
-            NativeMenuSettingsView(model: model)
-         }
+      } else {
+         ProgressView()
+      }
    }
 
    private var navigationView: some View {
-      NavigationStack {
-         ScrollViewReader { proxy in
-            menuList
-               .onChange(of: model.selection) { index in
-                  proxy.scrollTo(index, anchor: .center)
-               }
-               .onChange(of: model.revision) { _ in
-                  proxy.scrollTo(model.selection, anchor: .center)
-               }
-         }
+      NavigationStack(path: Binding(get: { self.model.path }, set: { self.model.navigate($0) })) {
+         page(0)
+            .navigationDestination(for: Int.self) { depth in
+               self.page(depth)
+            }
       }
       .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
       .tint(.accentColor)
    }
 
    var body: some View {
-      TabView(selection: Binding(get: { self.model.tab },
-            set: { self.model.selectTab($0) })) {
+      TabView(selection: Binding(get: { self.model.tab }, set: { self.model.selectTab($0) })) {
          ForEach(NativeMenuTab.all.filter { model.tabs & (1 << $0.id) != 0 }) { tab in
             Group {
                if self.model.tab == tab.id {
@@ -332,15 +355,11 @@ final class RetroArchNativeMenuController: UIViewController {
 
    @objc(updateSelection:busy:dialog:)
    func update(selection: Int, busy: Bool, dialog: String) {
-      if model.selection != selection { model.selection = selection }
-      if model.busy != busy { model.busy = busy }
-      if model.dialog != dialog { model.dialog = dialog }
+      model.update(selection: selection, busy: busy, dialog: dialog)
    }
 
    @objc func showMessage(_ message: String) {
       if model.message != message { model.message = message }
    }
-
-   @objc func closeSettings() { model.settingsOpen = false }
 }
 #endif
