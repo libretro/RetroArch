@@ -1374,9 +1374,6 @@ ifeq ($(HAVE_X11), 1)
       LIBS += -lXi
       DEFINES += -DHAVE_XI2
    endif
-   ifeq ($(HAVE_XSCRNSAVER),1)
-      LIBS += -lXss
-   endif
    ifneq ($(HAVE_OPENGLES), 1)
       OBJ += gfx/drivers_context/x_ctx.o
    endif

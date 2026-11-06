@@ -77,8 +77,9 @@ jobs:
 
       - name: Configure
         run: |
-          ./configure --disable-qt --disable-ffmpeg --disable-cg --disable-xscrnsaver --enable-openxr
+          ./configure --disable-qt --disable-ffmpeg --disable-cg --enable-openxr
           grep -q '^HAVE_OPENXR = 1' config.mk
+          grep -q '^HAVE_XSCRNSAVER = 1' config.mk
 
       - name: Compile RA
         run: make -j$(getconf _NPROCESSORS_ONLN)
@@ -86,6 +87,10 @@ jobs:
       - name: Check and strip
         run: |
           ./retroarch --version
+          if readelf -d retroarch | grep -q 'libXss'; then
+            echo 'retroarch must load libXss at run time, not link it'
+            exit 1
+          fi
           strip retroarch
 
       - name: Get short SHA

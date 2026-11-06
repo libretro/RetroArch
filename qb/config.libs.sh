@@ -830,12 +830,13 @@ if [ "$HAVE_X11" != 'no' ]; then
 
    check_val '' XEXT -lXext '' xext '' '' false
    check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
-   check_val '' XSCRNSAVER -lXss '' xscrnsaver '' '' false
    check_val '' XI2 -lXi '' xi '' '' false
 else
    die : 'Notice: X11 not present. Skipping X11 code paths.'
 fi
 
+check_enabled X11 XSCRNSAVER XScrnSaver 'X11 is' true
+check_enabled DYLIB XSCRNSAVER XScrnSaver 'Dynamic loading is' true
 check_enabled X11 XINERAMA Xinerama 'Xinerama is' false
 check_enabled X11 XSHM XShm 'XShm is' false
 check_enabled X11 XRANDR Xrandr 'Xrandr is' false
