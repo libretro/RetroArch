@@ -56,6 +56,8 @@ typedef struct preemptive_frames_data
 
 RETRO_BEGIN_DECLS
 
+enum retro_savestate_phase runahead_get_savestate_phase(void);
+
 typedef bool(*runahead_load_state_function)(const void*, size_t);
 
 /* Whether the primary core advanced. */
