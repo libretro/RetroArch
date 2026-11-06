@@ -6509,7 +6509,14 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
          if (     runloop_st->entry_state_slot < 0
                && path_is_valid(runtime_log->path)
                && runtime_log->state_slot < 1000)
-            configuration_set_int(settings, settings->ints.state_slot, runtime_log->state_slot);
+         {
+            char state_path[PATH_MAX_LENGTH];
+            if (     !settings->bools.savestate_auto_index
+                  || (runloop_get_savestate_path(state_path, sizeof(state_path),
+                           (int)runtime_log->state_slot)
+                        && path_is_valid(state_path)))
+               configuration_set_int(settings, settings->ints.state_slot, runtime_log->state_slot);
+         }
 
          free(runtime_log);
       }

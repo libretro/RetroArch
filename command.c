@@ -6917,202 +6917,144 @@ bool command_event_load_auto_state(void)
    return ret;
 }
 
-/**
- * Scans existing states to determine which one should be loaded
- * and which one can be deleted, using savestate wraparound if
- * enabled.
- *
- * @param settings The usual RetroArch settings ptr.
- * @param last_index Return value for load slot.
- * @param @s Return value for file name that should be removed.
- */
+static bool command_state_index(const char *suffix, unsigned *index)
+{
+   unsigned long value;
+   char *end;
+   *index = 0;
+   if (!*suffix)
+      return true;
+   if (*suffix < '1' || *suffix > '9')
+      return false;
+   errno = 0;
+   value = strtoul(suffix, &end, 10);
+   if (errno == ERANGE || *end || value > INT_MAX)
+      return false;
+   *index = (unsigned)value;
+   return true;
+}
+
+static int command_state_index_compare(const void *a, const void *b)
+{
+   int left  = ((const struct string_list_elem*)a)->attr.i;
+   int right = ((const struct string_list_elem*)b)->attr.i;
+   return left < right ? -1 : left > right;
+}
+
+/* Restores an existing slot and optionally finds one excess state to prune. */
 static void command_scan_states(
+      const char *name_savestate,
       bool show_hidden_files,
       unsigned savestate_max_keep,
       int curr_state_slot,
       unsigned *last_index, char *s)
 {
-   /* Base name of 128 may be too short for some (<<1%) of the
-      tosec-based file names, but in practice truncating will not
-      lead to mismatch */
-   char state_base[128];
    char state_dir[DIR_MAX_LENGTH];
-   runloop_state_t *runloop_st        = runloop_state_get_ptr();
-   const char *name_savestate         = runloop_st->name.savestate;
+   const char *state_base;
+   size_t base_len;
+   unsigned max_idx       = 0;
+   unsigned loa_idx       = 0;
+   unsigned first_idx     = UINT_MAX;
+   unsigned last_idx      = 0;
+   unsigned gap_idx       = 0;
+   unsigned del_idx       = UINT_MAX;
+   struct string_list *dir_list;
+   size_t i, cnt          = 0;
+   size_t cnt_in_range    = 0;
 
-   unsigned max_idx                   = 0;
-   unsigned loa_idx                   = 0;
-   unsigned gap_idx                   = UINT_MAX;
-   unsigned del_idx                   = UINT_MAX;
-   retro_bits_512_t slot_mapping_low  = {{0}};
-   retro_bits_512_t slot_mapping_high = {{0}};
-
-   struct string_list *dir_list       = NULL;
-   const char *savefile_root          = NULL;
-   size_t savefile_root_length        = 0;
-
-   size_t i, cnt                      = 0;
-   size_t cnt_in_range                = 0;
-
-   fill_pathname_basedir(state_dir, name_savestate,
-         sizeof(state_dir));
-
+   if (!name_savestate || !*name_savestate)
+      return;
+   state_base = path_basename(name_savestate);
+   base_len = strlen(state_base);
+   fill_pathname_basedir(state_dir, name_savestate, sizeof(state_dir));
    if (!(dir_list = dir_list_new_special(state_dir,
                DIR_LIST_PLAIN, NULL, show_hidden_files)))
       return;
 
-   fill_pathname_base(state_base, name_savestate, sizeof(state_base));
-
    for (i = 0; i < dir_list->size; i++)
    {
-      unsigned idx;
-      size_t _len;
-      char elem_base[128];
-      const char *ext      = NULL;
-      const char *end      = NULL;
-      const char *dir_elem = dir_list->elems[i].data;
-
-      if (!dir_elem || !*dir_elem)
+      unsigned idx = 0;
+      const char *base;
+      const char *suffix;
+      const char *entry = dir_list->elems[i].data;
+      if (!entry || !*entry)
          continue;
-
-      _len = strlen(dir_elem);
-      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
-
-      /* Only consider files with a '.state' extension
-       * > i.e. Ignore '.state.auto', '.state.bak', etc. */
-      ext = path_get_extension(elem_base);
-      if (    (!ext || !*ext)
-          || !string_starts_with_size(ext, "state", STRLEN_CONST("state")))
+      base = path_basename(entry);
+      if (strncmp(base, state_base, base_len))
          continue;
-
-      /* Check whether this file is associated with
-       * the current content */
-      if (!string_starts_with(elem_base, state_base))
+      suffix = base + base_len;
+      if (!command_state_index(suffix, &idx))
          continue;
-
-      /* This looks like a valid savestate */
-      /* Save filename root and length (once) */
-      if (savefile_root_length == 0)
+      dir_list->elems[i].attr.i = (int)idx;
+      if (cnt != i)
       {
-         savefile_root        = dir_elem;
-         savefile_root_length = _len;
+         struct string_list_elem tmp = dir_list->elems[cnt];
+         dir_list->elems[cnt] = dir_list->elems[i];
+         dir_list->elems[i] = tmp;
       }
-
-      /* Decode the savestate index */
-      end = dir_elem + _len;
-      while ((end > dir_elem) && ISDIGIT((int)end[-1]))
-      {
-         end--;
-         if (savefile_root == dir_elem)
-            savefile_root_length--;
-      }
-      idx = string_to_unsigned(end);
-
-      /* Simple administration: max, total. */
       if (idx > max_idx)
          max_idx = idx;
       cnt++;
       if (idx <= savestate_max_keep)
          cnt_in_range++;
-
-      /* Maintain a 2x512 bit map of occupied save states */
-      if (idx < 512)
-         BIT512_SET(slot_mapping_low,idx);
-      else if (idx < 1024)
-         BIT512_SET(slot_mapping_high, idx - 512);
    }
 
-   /* Next loop on the bitmap, since the file system may have presented the files in any order above */
-   for (i = 0; i <= savestate_max_keep; i++)
-   {
-      /* Unoccupied save slots */
-      if (   (i < 512 && !BIT512_GET(slot_mapping_low,  i))
-          || (i > 511 && !BIT512_GET(slot_mapping_high, i-512)))
-      {
-         /* Gap index: lowest free slot in the wraparound range */
-         if (gap_idx == UINT_MAX)
-            gap_idx = (unsigned)i;
-      }
-      else /* Occupied save slots */
-      {
-         /* Del index: first occupied slot in the wraparound range,
-            after gap index */
-         if (    gap_idx < UINT_MAX && del_idx == UINT_MAX)
-            del_idx = (unsigned)i;
-      }
-   }
-
-   /* Special cases of wraparound */
-
-   /* No previous savestate - set to end, so that first save
-      goes to 0 */
-   if (cnt_in_range == 0)
-   {
-      if (cnt == 0)
-         loa_idx = savestate_max_keep;
-      /* Transient: nothing in current range, but something is present
-       * higher up -> load that */
-      else
-         loa_idx = max_idx;
-      gap_idx    = savestate_max_keep;
-      del_idx    = savestate_max_keep;
-   }
-   /* No gap was found - deduct from current index or default
-      and set (missing) gap index to be deleted */
-   else if (gap_idx == UINT_MAX)
-   {
-      /* Transient: no gap, and max is higher than currently
-       * allowed -> load that, but wrap around so that next
-       * time gap will be present */
-      if (max_idx > savestate_max_keep)
-      {
-         loa_idx = max_idx;
-         gap_idx = 1;
-      }
-      /* Current index is in range, so let's assume it is correct */
-      else if ( (unsigned)curr_state_slot < savestate_max_keep)
-      {
-         loa_idx = curr_state_slot;
-         gap_idx = curr_state_slot + 1;
-      }
-      else
-      {
-         loa_idx = savestate_max_keep;
-         gap_idx = 0;
-      }
-      del_idx    = gap_idx;
-   }
-   /* Gap was found */
+   if (!savestate_max_keep || !cnt_in_range)
+      loa_idx = cnt ? max_idx : MIN(savestate_max_keep, INT_MAX);
    else
    {
-      /* No candidate to delete */
-      /* Either gap is at the end of the range: wraparound.
-         or there is no better idea than the lowest index  */
-      if (del_idx == UINT_MAX)
-         del_idx = 0;
-      /* Adjust load index */
-      if (gap_idx == 0)
-         loa_idx = savestate_max_keep;
+      qsort(dir_list->elems, cnt,
+            sizeof(*dir_list->elems), command_state_index_compare);
+      for (i = 0; i < cnt; i++)
+      {
+         int slot = dir_list->elems[i].attr.i;
+         if (slot < 0 || (unsigned)slot > savestate_max_keep)
+            continue;
+         if (first_idx == UINT_MAX)
+            first_idx = (unsigned)slot;
+         last_idx = (unsigned)slot;
+         if ((unsigned)slot == gap_idx)
+            gap_idx++;
+         if (     del_idx == UINT_MAX
+               && (curr_state_slot < 0 || slot > curr_state_slot))
+            del_idx = (unsigned)slot;
+      }
+
+      if (gap_idx > savestate_max_keep)
+      {
+         if (max_idx > savestate_max_keep)
+            loa_idx = max_idx;
+         else if (curr_state_slot >= 0
+               && (unsigned)curr_state_slot <= savestate_max_keep)
+            loa_idx = (unsigned)curr_state_slot;
+         else
+            loa_idx = savestate_max_keep;
+      }
       else
-         loa_idx = gap_idx - 1;
+         loa_idx = gap_idx ? gap_idx - 1 : last_idx;
+      if (del_idx == UINT_MAX)
+         del_idx = first_idx;
    }
 
    RARCH_DBG("[State] Save state scanning finished, used slots (in range): "
-             "%d (%d), max:%d, load index %d, gap index %d, delete index %d.\n",
-             cnt, cnt_in_range, max_idx, loa_idx, gap_idx, del_idx);
-
+             "%u (%u), max:%u, load index %u, gap index %u, delete index %u.\n",
+             (unsigned)cnt, (unsigned)cnt_in_range, max_idx,
+             loa_idx, gap_idx, del_idx);
    if (last_index)
-         *last_index = loa_idx;
+      *last_index = loa_idx;
 
-   if (     s
-         && cnt_in_range >= savestate_max_keep)
+   if (s && cnt_in_range >= savestate_max_keep && del_idx != UINT_MAX)
    {
-      strlcpy(s, savefile_root, savefile_root_length + 1);
-      /* ".state0" is just ".state" instead, so don't print that. */
-      if (del_idx > 0)
-         snprintf(s + savefile_root_length, 5, "%d", del_idx);
+      size_t len = strlcpy(s, name_savestate, PATH_MAX_LENGTH);
+      if (len >= PATH_MAX_LENGTH)
+         s[0] = '\0';
+      else if (del_idx > 0)
+      {
+         int written = snprintf(s + len, PATH_MAX_LENGTH - len, "%u", del_idx);
+         if (written < 0 || (size_t)written >= PATH_MAX_LENGTH - len)
+            s[0] = '\0';
+      }
    }
-
    dir_list_free(dir_list);
 }
 
@@ -7128,7 +7070,10 @@ static void command_scan_states(
 int command_event_get_next_savestate_auto_index(settings_t *settings)
 {
    unsigned savestate_max_keep = settings->uints.savestate_max_keep;
-   int new_state_slot          = settings->ints.state_slot + 1;
+   int new_state_slot          = settings->ints.state_slot;
+   if (new_state_slot < 0 || new_state_slot == INT_MAX)
+      return 0;
+   new_state_slot++;
    /* If previous save was above the wraparound range, or it overflows,
       return to the start of the range. */
    if (     (savestate_max_keep > 0)
@@ -7151,6 +7096,7 @@ void command_event_set_savestate_auto_index(settings_t *settings)
    {
       int prev_slot          = settings->ints.state_slot;
       command_scan_states(
+            runloop_state_get_ptr()->name.savestate,
             settings->bools.show_hidden_files,
             settings->uints.savestate_max_keep,
             settings->ints.state_slot, &max_idx, NULL);
@@ -7167,16 +7113,12 @@ void command_event_set_savestate_auto_index(settings_t *settings)
       configuration_set_int(settings, settings->ints.state_slot, 0);
 }
 
-/**
- * Deletes the oldest save state and its thumbnail, if needed.
- *
- * @param settings The usual RetroArch settings ptr.
- */
 static void command_event_set_savestate_garbage_collect(settings_t *settings)
 {
    size_t i;
    char state_to_delete[PATH_MAX_LENGTH] = {0};
    command_scan_states(
+         runloop_state_get_ptr()->name.savestate,
          settings->bools.show_hidden_files,
          settings->uints.savestate_max_keep,
          settings->ints.state_slot, NULL, state_to_delete);
