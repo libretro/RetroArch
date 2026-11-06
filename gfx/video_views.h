@@ -46,7 +46,8 @@ enum video_screen_layout
 };
 
 /* Headset input settings (video_openxr_controllers, video_openxr_laser,
- * video_openxr_laser_beam). */
+ * video_openxr_laser_beam, video_openxr_touch_hands,
+ * video_openxr_touch_button). */
 enum video_openxr_controllers
 {
    VIDEO_OPENXR_CONTROLLERS_COMBINED = 0,
@@ -60,6 +61,28 @@ enum video_openxr_laser
    VIDEO_OPENXR_LASER_ALWAYS,
    VIDEO_OPENXR_LASER_OFF,
    VIDEO_OPENXR_LASER_LAST
+};
+
+enum video_openxr_touch_hands
+{
+   VIDEO_OPENXR_TOUCH_HANDS_BOTH = 0,
+   VIDEO_OPENXR_TOUCH_HANDS_LEFT,
+   VIDEO_OPENXR_TOUCH_HANDS_RIGHT,
+   VIDEO_OPENXR_TOUCH_HANDS_NONE,
+   VIDEO_OPENXR_TOUCH_HANDS_LAST
+};
+
+enum video_openxr_touch_button
+{
+   VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER = 0,
+   VIDEO_OPENXR_TOUCH_BUTTON_GRIP,
+   VIDEO_OPENXR_TOUCH_BUTTON_STICK,
+   VIDEO_OPENXR_TOUCH_BUTTON_BUMPER,
+   VIDEO_OPENXR_TOUCH_BUTTON_A,
+   VIDEO_OPENXR_TOUCH_BUTTON_B,
+   VIDEO_OPENXR_TOUCH_BUTTON_X,
+   VIDEO_OPENXR_TOUCH_BUTTON_Y,
+   VIDEO_OPENXR_TOUCH_BUTTON_LAST
 };
 
 /* What a core is told the headset shows, cycled by the Headset View

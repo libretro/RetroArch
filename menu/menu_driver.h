@@ -507,7 +507,8 @@ typedef struct
 
    /* The Controllers row to put the cursor back on: a controller's
     * row type less MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN, and one, or
-    * PLAYS_AS_ROW_LAYOUT (menu_displaylist.c); 0 for none. */
+    * PLAYS_AS_ROW_LAYOUT plus a headset row's index
+    * (menu_displaylist.c); 0 for none. */
    unsigned plays_as_row;
    /* Port N Controls as last made, N, its controller rows and its
     * links, while no other list was made since; N is 0 for none. */

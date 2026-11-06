@@ -59,6 +59,9 @@
 #include "../../../tasks/tasks_internal.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../frontend/frontend_driver.h"
+#include "../../../paths.h"
+#include "../../../runloop.h"
+#include "../../../file_path_special.h"
 
 static unsigned failures = 0;
 
@@ -94,6 +97,9 @@ static const char *const headset_drivers[] = {
 
 /* The driver the off, on and toggle lanes run under. */
 static const char *lane_driver;
+
+/* The harness's own directory; overrides are saved under it. */
+static char fixture_root[512];
 
 static file_list_t *selection_buf(void)
 {
@@ -161,6 +167,14 @@ static void open_stereo_list(void)
 {
    generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
          ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST);
+   run_frame();
+}
+
+/* What OK on Settings > Input > Controllers does. */
+static void open_controllers_list(void)
+{
+   generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
+         ACTION_OK_DL_INPUT_CONTROLLERS_LIST);
    run_frame();
 }
 
@@ -241,8 +255,6 @@ static void lane_headset_rows(void)
    static const char *const rows[] = {
       MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR,
       MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR,
-      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM_STR,
       MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT_STR,
       MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE_STR,
       MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH_STR };
@@ -279,6 +291,9 @@ static void lane_headset_rows(void)
                headset_drivers[d], rows[i], r, last);
          last = r;
       }
+      CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR) < 0,
+            "%s: Laser Pointer is listed with the headset's video rows",
+            headset_drivers[d]);
    }
 
    set_driver(NO_PATH_DRIVER);
@@ -289,44 +304,65 @@ static void lane_headset_rows(void)
    set_driver(HEADSET_DRIVER);
 }
 
-/* The headset's controller layout is the last row of Settings > Input
- * > Controllers, and is not among the headset's rows. */
+/* The headset's input rows are the last rows of Settings > Input >
+ * Controllers, in order, and none of them is among its video rows; a
+ * hotplug's rebuild keeps the cursor on its row, not at its index;
+ * under a driver without a headset path there are none. */
 static void lane_controller_layout(void)
 {
+   static const char *const rows[] = {
+      MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH_STR };
    file_list_t *buf;
+   unsigned i;
    int r;
    struct menu_state *menu_st = menu_state_get_ptr();
 
    set_driver(HEADSET_DRIVER);
    open_stereo_list();
-   CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR) < 0,
-         "the controller layout is listed with the headset's rows");
-   generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
-         ACTION_OK_DL_INPUT_CONTROLLERS_LIST);
-   run_frame();
+   for (i = 0; i < ARRAY_SIZE(rows); i++)
+      CHECK(row(rows[i]) < 0, "%s is listed with the headset's video rows",
+            rows[i]);
+   open_controllers_list();
    buf = selection_buf();
-   r   = row(MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR);
-   CHECK(buf && r >= 0 && (size_t)r == buf->size - 1,
-         "the controller layout is not the last row of Controllers "
-         "(row %d)", r);
+   for (i = 0; i < ARRAY_SIZE(rows); i++)
+   {
+      r = row(rows[i]);
+      CHECK(buf && r >= 0
+            && (size_t)r == buf->size - ARRAY_SIZE(rows) + i,
+            "%s is row %d of the %u of Controllers", rows[i], r,
+            buf ? (unsigned)buf->size : 0);
+   }
 
-   /* A controller connecting puts a row above the layout, as Separate
-    * does; the list made again as on a hotplug keeps the cursor on
-    * the layout, not at its index. */
-   menu_st->selection_ptr = (r > 0) ? (size_t)r : 0;
-   input_config_set_device_name(0, "Test Pad");
-   rebuild_as_hotplug();
-   r = row(MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR);
-   CHECK(r == 1 && menu_st->selection_ptr == 1,
-         "a row added above the controller layout took the cursor "
-         "(cursor %u, layout row %d)", (unsigned)menu_st->selection_ptr, r);
+   /* A controller connecting puts a row above them, as Separate does. */
+   for (i = 0; i < ARRAY_SIZE(rows); i++)
+   {
+      open_controllers_list();
+      r                      = row(rows[i]);
+      menu_st->selection_ptr = (r > 0) ? (size_t)r : 0;
+      input_config_set_device_name(0, "Test Pad");
+      rebuild_as_hotplug();
+      r = row(rows[i]);
+      CHECK(r == (int)i + 1 && menu_st->selection_ptr == i + 1,
+            "a row added above %s took the cursor (cursor %u, row %d)",
+            rows[i], (unsigned)menu_st->selection_ptr, r);
+      input_config_clear_device_name(0);
+      rebuild_as_hotplug();
+      r = row(rows[i]);
+      CHECK(r == (int)i && menu_st->selection_ptr == i,
+            "the cursor left %s when the row above went (cursor %u, row %d)",
+            rows[i], (unsigned)menu_st->selection_ptr, r);
+   }
 
-   input_config_clear_device_name(0);
-   rebuild_as_hotplug();
-   r = row(MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR);
-   CHECK(r == 0 && menu_st->selection_ptr == 0,
-         "the cursor left the controller layout when the row above went "
-         "(cursor %u, layout row %d)", (unsigned)menu_st->selection_ptr, r);
+   set_driver(NO_PATH_DRIVER);
+   open_controllers_list();
+   for (i = 0; i < ARRAY_SIZE(rows); i++)
+      CHECK(row(rows[i]) < 0, "%s is listed under " NO_PATH_DRIVER, rows[i]);
+   set_driver(HEADSET_DRIVER);
 }
 
 /* Fixed in Room by default; each value shows its own name. */
@@ -357,6 +393,120 @@ static void lane_placement(void)
    }
    configuration_set_uint(settings, settings->uints.video_openxr_placement,
          VIDEO_OPENXR_PLACEMENT_FIXED);
+}
+
+/* Touch Hands, Touch Button and Touch Passthrough: Both, Trigger and
+ * Off by default; each value shows its own name. */
+static void lane_touch_rows(void)
+{
+   static const char *const hands[]   = { "Both", "Left", "Right", "None" };
+   static const char *const buttons[] = { "Trigger", "Grip", "Stick Click",
+      "Bumper", "A", "B", "X", "Y" };
+   char s[64];
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+   rarch_setting_t *h   = menu_setting_find_enum(
+         MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS);
+   rarch_setting_t *b   = menu_setting_find_enum(
+         MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON);
+   rarch_setting_t *p   = menu_setting_find_enum(
+         MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH);
+
+   CHECK(h && b && p, "fixture: a touch setting is missing");
+   if (!h || !b || !p)
+      return;
+   CHECK(     settings->uints.video_openxr_touch_hands
+            == VIDEO_OPENXR_TOUCH_HANDS_BOTH
+         && settings->uints.video_openxr_touch_button
+            == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER
+         && !settings->bools.video_openxr_touch_passthrough,
+         "the touch defaults are %u, %u, %d; want Both, Trigger, Off",
+         settings->uints.video_openxr_touch_hands,
+         settings->uints.video_openxr_touch_button,
+         (int)settings->bools.video_openxr_touch_passthrough);
+   for (i = 0; i < ARRAY_SIZE(hands); i++)
+   {
+      configuration_set_uint(settings,
+            settings->uints.video_openxr_touch_hands, i);
+      h->actions->repr(h, s, sizeof(s));
+      CHECK(string_is_equal(s, hands[i]),
+            "Touch Hands %u shows \"%s\", want \"%s\"", i, s, hands[i]);
+   }
+   for (i = 0; i < ARRAY_SIZE(buttons); i++)
+   {
+      configuration_set_uint(settings,
+            settings->uints.video_openxr_touch_button, i);
+      b->actions->repr(b, s, sizeof(s));
+      CHECK(string_is_equal(s, buttons[i]),
+            "Touch Button %u shows \"%s\", want \"%s\"", i, s, buttons[i]);
+   }
+   configuration_set_uint(settings, settings->uints.video_openxr_touch_hands,
+         VIDEO_OPENXR_TOUCH_HANDS_BOTH);
+   configuration_set_uint(settings, settings->uints.video_openxr_touch_button,
+         VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER);
+}
+
+/* Touch Hands and Touch Button set for one game go into its override
+ * and come back with it. */
+static void lane_touch_override(void)
+{
+   static rarch_system_info_t sys;
+   char dir[DIR_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+   int v                = -1;
+   config_file_t *conf  = NULL;
+   settings_t *settings = config_get_ptr();
+
+   fill_pathname_application_special(dir, sizeof(dir),
+         APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+   CHECK(*fixture_root && string_starts_with(dir, fixture_root),
+         "fixture: overrides would be saved in %s", dir);
+   if (!*fixture_root || !string_starts_with(dir, fixture_root))
+      return;
+
+   memset(&sys, 0, sizeof(sys));
+   sys.info.library_name = "stereo_headset_test";
+   path_set(RARCH_PATH_BASENAME, "touch_game.nds");
+   configuration_set_uint(settings, settings->uints.video_openxr_touch_hands,
+         VIDEO_OPENXR_TOUCH_HANDS_LEFT);
+   configuration_set_uint(settings, settings->uints.video_openxr_touch_button,
+         VIDEO_OPENXR_TOUCH_BUTTON_GRIP);
+   CHECK(config_save_overrides(OVERRIDE_GAME, &sys, false, NULL) == 1,
+         "the game override was not saved");
+   strlcpy(path, path_get(RARCH_PATH_CONFIG_OVERRIDE), sizeof(path));
+   if ((conf = config_file_new_from_path_to_string(path)))
+   {
+      CHECK(config_get_int(conf, "video_openxr_touch_hands", &v)
+            && v == VIDEO_OPENXR_TOUCH_HANDS_LEFT,
+            "the override holds Touch Hands %d, want Left", v);
+      v = -1;
+      CHECK(config_get_int(conf, "video_openxr_touch_button", &v)
+            && v == VIDEO_OPENXR_TOUCH_BUTTON_GRIP,
+            "the override holds Touch Button %d, want Grip", v);
+      config_file_free(conf);
+   }
+   else
+      CHECK(false, "no override at \"%s\"", path);
+
+   configuration_set_uint(settings, settings->uints.video_openxr_touch_hands,
+         VIDEO_OPENXR_TOUCH_HANDS_BOTH);
+   configuration_set_uint(settings, settings->uints.video_openxr_touch_button,
+         VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER);
+   CHECK(config_load_override_file(path), "the override did not load");
+   CHECK(     settings->uints.video_openxr_touch_hands
+            == VIDEO_OPENXR_TOUCH_HANDS_LEFT
+         && settings->uints.video_openxr_touch_button
+            == VIDEO_OPENXR_TOUCH_BUTTON_GRIP,
+         "loaded, the override gives Touch Hands %u, Touch Button %u",
+         settings->uints.video_openxr_touch_hands,
+         settings->uints.video_openxr_touch_button);
+   CHECK(config_unload_override(), "the override did not unload");
+   path_clear(RARCH_PATH_BASENAME);
+   configuration_set_uint(settings, settings->uints.video_openxr_touch_hands,
+         VIDEO_OPENXR_TOUCH_HANDS_BOTH);
+   configuration_set_uint(settings, settings->uints.video_openxr_touch_button,
+         VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER);
+   set_driver(HEADSET_DRIVER);
 }
 
 static void lane_toggle(void)
@@ -1533,6 +1683,7 @@ int main(int argc, char *argv[])
    snprintf(cmd, sizeof(cmd), "mkdir -p %s", fixture_dir);
    if (system(cmd) != 0)
       return 1;
+   strlcpy(fixture_root, fixture_dir, sizeof(fixture_root));
 
    rarch_argv[rarch_argc++] = (char*)"retroarch";
    rarch_argv[rarch_argc++] = (char*)"--menu";
@@ -1559,6 +1710,10 @@ int main(int argc, char *argv[])
          fprintf(cfg, "menu_driver = \"rgui\"\n");
          fprintf(cfg, "video_threaded = \"false\"\n");
          fprintf(cfg, "video_openxr_enable = \"false\"\n");
+         /* overrides go to the fixture, never the user's config dir */
+         fprintf(cfg, "rgui_config_directory = \"%s\"\n", fixture_dir);
+         fprintf(cfg, "audio_enable = \"false\"\n");
+         fprintf(cfg, "pause_nonactive = \"false\"\n");
          fclose(cfg);
       }
    }
@@ -1592,6 +1747,7 @@ int main(int argc, char *argv[])
    lane_headset_rows();
    lane_controller_layout();
    lane_placement();
+   lane_touch_rows();
    lane_refresh_rate();
    lane_controller_rows();
    lane_device_index_used_by();
@@ -1604,6 +1760,7 @@ int main(int argc, char *argv[])
    lane_port_controls_add_items();
    lane_port_controls_add_full();
    lane_bind_prompt();
+   lane_touch_override();
 
    set_driver("null");
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);

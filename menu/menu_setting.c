@@ -4331,6 +4331,68 @@ static size_t setting_get_string_representation_video_openxr_edit_pause(
             : MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_OFF), len);
 }
 
+static size_t setting_get_string_representation_video_openxr_touch_hands(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_OPENXR_TOUCH_HANDS_BOTH:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH), len);
+         case VIDEO_OPENXR_TOUCH_HANDS_LEFT:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_LEFT), len);
+         case VIDEO_OPENXR_TOUCH_HANDS_RIGHT:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_RIGHT), len);
+         case VIDEO_OPENXR_TOUCH_HANDS_NONE:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_openxr_touch_button(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   enum msg_hash_enums name;
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_GRIP:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_GRIP;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_STICK:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_STICK;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_BUMPER:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_BUMPER;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_A:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_A;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_B:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_B;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_X:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_X;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_Y:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_Y;
+         break;
+      default:
+         return 0;
+   }
+   return strlcpy(s, msg_hash_to_str(name), len);
+}
+
 static size_t setting_get_string_representation_video_openxr_placement(
       rarch_setting_t *setting, char *s, size_t len)
 {

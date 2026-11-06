@@ -1000,10 +1000,8 @@ static void test_xr_edit_rows(void)
          "video_openxr_edit_smoothing"));
    CHECK(menu_setting_follows("video_openxr_refresh_rate",
          "video_openxr_edit_pause"));
-   CHECK(menu_setting_follows("video_openxr_laser",
-         "video_openxr_perf_boost"));
    CHECK(menu_setting_follows("video_openxr_placement",
-         "video_openxr_laser_beam"));
+         "video_openxr_perf_boost"));
    CHECK(menu_setting_follows("video_openxr_width",
          "video_openxr_distance"));
    CHECK(menu_setting_follows("video_openxr_menu_follow",
@@ -1050,13 +1048,14 @@ static void test_xr_edit_rows(void)
    settings->bools.video_openxr_enable = false;
 }
 
-/* Laser Beam sits with the headset's rows: Edit Mode Only unless the
- * config says otherwise; the menu steps through its values. */
+/* Laser Beam is on Settings > Input > Controllers, not with the
+ * headset's rows: Edit Mode Only unless the config says otherwise; the
+ * menu steps through its values. */
 static void test_xr_laser_beam_row(void)
 {
    settings_t *settings = config_get_ptr();
    load_fixture("video_driver = \"glcore\"\n");
-   CHECK(menu_has_setting("video_openxr_laser_beam"));
+   CHECK(!menu_has_setting("video_openxr_laser_beam"));
    CHECK(settings->uints.video_openxr_laser_beam
          == VIDEO_OPENXR_LASER_BEAM_EDIT);
    menu_value("video_openxr_laser_beam", "Edit Mode Only");
