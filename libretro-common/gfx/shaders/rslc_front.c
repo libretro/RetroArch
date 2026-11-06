@@ -5918,8 +5918,10 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
             return rslc_p_fail(p, "an image must be a global uniform", NULL), 0;
          if (!q.img_fmt)
             return rslc_p_fail(p, "an image needs its format in the layout", NULL), 0;
-         v->type = rslc_type_basic(p->c, (enum rslc_tkind)vt->kind,
-               (enum rslc_base)vt->base, 1, q.img_fmt);
+         /* rows carries the access: 1 read-write, 2 write only, 3 read only */
+         v->type = rslc_type_basic(p->c, (enum rslc_tkind)vt->kind, (enum rslc_base)vt->base,
+               q.writeonly ? RSLC_IMG_WRITEONLY : q.readonly ? RSLC_IMG_READONLY : RSLC_IMG_READWRITE,
+               q.img_fmt);
          if (!v->type)
             return 0;
          v->storage = RSLC_ST_IMAGE;

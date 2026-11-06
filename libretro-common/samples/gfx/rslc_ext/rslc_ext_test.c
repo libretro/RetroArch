@@ -419,11 +419,11 @@ static void write_text(const char *dir, const char *name, const char *text)
    fclose(f);
 }
 
-/* SPIR-V, GLSL and HLSL; MSL has no form of the new samplers or of a
- * third block yet and says so (msl_ok when the stage has neither). */
+/* SPIR-V, GLSL, HLSL and MSL; the MSL is written beside the SPIR-V
+ * (msl_needle NULL: MSL refuses the stage). */
 static void test_stage(const char *dir, const char *name, const char *src,
       const char *glsl_needle, const char *hlsl_needle, uint32_t want_cap, uint32_t no_cap,
-      bool msl_ok)
+      const char *msl_needle)
 {
    char err[256];
    struct rslc_opts   o;
@@ -459,16 +459,22 @@ static void test_stage(const char *dir, const char *name, const char *src,
    }
 
    memset(&r, 0, sizeof(r));
-   if (msl_ok)
+   if (!msl_needle)
    {
-      CHECK(compile(src, RSLC_DST_MSL, 20000, &o, &r, err, sizeof(err)));
-      if (r.blob)
-         rslc_result_free(&r, &o);
-   }
-   else
-   {
-      CHECK(!compile(src, RSLC_DST_MSL, 20000, &o, &r, err, sizeof(err)));
+      CHECK(!compile(src, RSLC_DST_MSL, 23, &o, &r, err, sizeof(err)));
       CHECK(strstr(err, "msl") != NULL);
+      return;
+   }
+   CHECK(compile(src, RSLC_DST_MSL, 23, &o, &r, err, sizeof(err)));
+   if (err[0])
+      fprintf(stderr, "%s msl: %s\n", name, err);
+   if (r.blob)
+   {
+      char file[64];
+      CHECK(strstr(r.text, msl_needle) != NULL);
+      sprintf(file, "%s.msl", name);
+      write_text(dir, file, r.text);
+      rslc_result_free(&r, &o);
    }
 }
 
@@ -477,17 +483,20 @@ int main(int argc, char **argv)
    const char *dir = argc > 1 ? argv[1] : NULL;
 
    /* SampledBuffer 46, ImageQuery 50, SampleRateShading 35 */
-   test_stage(dir, "samplers", fs_samplers, "usamplerBuffer", "Texture2DMSArray<float4>", 46, 35, false);
-   test_stage(dir, "sample_id", fs_sample_id, "gl_SampleID", "SV_SampleIndex", 35, 0, false);
-   test_stage(dir, "plain", fs_plain, "sampler2DArray", "Texture2DArray<float4>", 0, 35, false);
-   test_stage(dir, "blocks", fs_blocks, "uniform GSBlock", "cbuffer GSBlock : register(b2)", 0, 0, false);
+   test_stage(dir, "samplers", fs_samplers, "usamplerBuffer", "Texture2DMSArray<float4>", 46, 35,
+         "texture2d_ms_array<float>");
+   test_stage(dir, "sample_id", fs_sample_id, "gl_SampleID", "SV_SampleIndex", 35, 0, "[[sample_id]]");
+   test_stage(dir, "plain", fs_plain, "sampler2DArray", "Texture2DArray<float4>", 0, 35,
+         "texture2d_array<float>");
+   test_stage(dir, "blocks", fs_blocks, "uniform GSBlock", "cbuffer GSBlock : register(b2)", 0, 0,
+         NULL);   /* MSL: the push block's buffer 1 is VSBlock's binding */
    test_stage(dir, "sampler_array", fs_sampler_array, "sampler2DArray samp[8]",
-         "samp[i].Sample(_samp_sampler[i]", 0, 0, false);
+         "samp[i].Sample(_samp_sampler[i]", 0, 0, "array<texture2d_array<float>, 8> samp [[texture(");
    test_stage(dir, "dual_source", fs_dual_source, "layout(early_fragment_tests) in;",
-         "SV_Target1", 0, 0, true);
+         "SV_Target1", 0, 0, "[[color(0), index(1)]]");
 
    /* ClipDistance 32, CullDistance 33; HLSL carries them in
-    * SV_ClipDistance0, MSL refuses them yet */
+    * SV_ClipDistance0, MSL in a [[clip_distance]] array */
    cur_stage = RSLC_STAGE_VERTEX;
    {
       char err[256];
@@ -518,34 +527,41 @@ int main(int argc, char **argv)
          rslc_result_free(&r, &o);
       }
       memset(&r, 0, sizeof(r));
-      CHECK(!compile(vs_clip, RSLC_DST_MSL, 20000, &o, &r, err, sizeof(err)));
+      CHECK(compile(vs_clip, RSLC_DST_MSL, 23, &o, &r, err, sizeof(err)));
+      if (r.blob)
+      {
+         CHECK(strstr(r.text, "[[clip_distance]] [2];") != NULL);
+         write_text(dir, "clip.msl", r.text);
+         rslc_result_free(&r, &o);
+      }
       CHECK(!compile(vs_clip_bad, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
       CHECK(strstr(err, "constant index below 8") != NULL);
    }
 
    /* in / out blocks, a geometry stage (Geometry 2), a compute stage and
-    * storage buffers: SPIR-V and GLSL; HLSL save the geometry stage, its
-    * text written beside the SPIR-V for an HLSL compiler to check */
+    * storage buffers: SPIR-V and GLSL; HLSL save the geometry stage; MSL
+    * save it and the in / out blocks; the texts written beside the SPIR-V
+    * for a compiler to check */
    {
       static const struct { const char *name, *src; enum rslc_stage stage;
-         const char *needle, *hlsl; }
+         const char *needle, *hlsl, *msl; }
       cases[] = {
          { "ioblock_vert", vs_ioblock, RSLC_STAGE_VERTEX, "out VertexData {",
-            "VertexData_colors_0 : TEXCOORD1;" },
+            "VertexData_colors_0 : TEXCOORD1;", NULL },
          { "ioblock_frag", fs_ioblock, RSLC_STAGE_FRAGMENT, "in VertexData {",
-            "VertexData_colors_0 : TEXCOORD1;" },
+            "VertexData_colors_0 : TEXCOORD1;", NULL },
          { "wide_line", gs_wide_line, RSLC_STAGE_GEOMETRY,
-            "layout(triangle_strip, max_vertices = 4) out;", NULL },
+            "layout(triangle_strip, max_vertices = 4) out;", NULL, NULL },
          { "bbox", fs_bbox, RSLC_STAGE_FRAGMENT, "coherent buffer BBox {",
-            "RWByteAddressBuffer BBox : register(u" },
+            "RWByteAddressBuffer BBox : register(u", "atomic_fetch_min_explicit((volatile device atomic_int*)&" },
          { "vertex_fetch", vs_vertex_fetch, RSLC_STAGE_VERTEX, "InputData input_buffer[];",
-            "ByteAddressBuffer InputBuffer : register(t" },
+            "ByteAddressBuffer InputBuffer : register(t", "const device InputBuffer& " },
          { "unnamed_vert", vs_unnamed, RSLC_STAGE_VERTEX, "out VertexData {",
-            "VertexData_v_tex0 : TEXCOORD0;" },
-         { "passthrough", gs_passthrough, RSLC_STAGE_GEOMETRY, "gl_in[", NULL },
+            "VertexData_v_tex0 : TEXCOORD0;", NULL },
+         { "passthrough", gs_passthrough, RSLC_STAGE_GEOMETRY, "gl_in[", NULL, NULL },
          { "decode", cs_decode, RSLC_STAGE_COMPUTE,
             "layout(rgba8) uniform writeonly image2DArray output_image;",
-            "[numthreads(64, 1, 1)]" }
+            "[numthreads(64, 1, 1)]", "kernel void main0(" }
       };
       unsigned i;
       for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
@@ -571,6 +587,23 @@ int main(int argc, char **argv)
          {
             CHECK(strstr(r.text, cases[i].needle) != NULL);
             rslc_result_free(&r, &o);
+         }
+         memset(&r, 0, sizeof(r));
+         if (!cases[i].msl)
+            CHECK(!compile(cases[i].src, RSLC_DST_MSL, 23, &o, &r, err, sizeof(err)));
+         else
+         {
+            CHECK(compile(cases[i].src, RSLC_DST_MSL, 23, &o, &r, err, sizeof(err)));
+            if (err[0])
+               fprintf(stderr, "%s msl: %s\n", cases[i].name, err);
+            if (r.blob)
+            {
+               char file[64];
+               CHECK(strstr(r.text, cases[i].msl) != NULL);
+               sprintf(file, "%s.msl", cases[i].name);
+               write_text(dir, file, r.text);
+               rslc_result_free(&r, &o);
+            }
          }
          memset(&r, 0, sizeof(r));
          if (!cases[i].hlsl)

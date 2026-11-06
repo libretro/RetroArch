@@ -253,6 +253,10 @@ enum rslc_tkind
 };
 
 #define RSLC_TY_IS_IMAGE(k) ((k) == RSLC_TY_IMAGE2D || (k) == RSLC_TY_IMAGE2DARRAY)
+/* A storage image type's rows: its access. */
+#define RSLC_IMG_READWRITE 1
+#define RSLC_IMG_WRITEONLY 2
+#define RSLC_IMG_READONLY  3
 
 /* RSLC_EXTENDED: a storage image's format, as its layout names it; the
  * values are SPIR-V's ImageFormat. */
