@@ -60,6 +60,7 @@ static char *get_game_name(char *full_path);
 
 /* Global local variables */
 static bool ini_overrides_loaded = false;
+static int  csync_warned         = MODELINE_CSYNC_OFF;
 static char core_name[NAME_MAX_LENGTH]; /* Same size as library_name on retroarch_data.h */
 static char content_dir[DIR_MAX_LENGTH];
 static char current_content_name[256];
@@ -226,6 +227,14 @@ static void crt_apply_server_policy(videocrt_switch_t *p_switch)
    settings_t *settings = config_get_ptr();
    if (!p_switch->gen)
       return;
+   if (     p_switch->gen->csync != MODELINE_CSYNC_OFF
+         && p_switch->gen->csync != csync_warned
+         && !(p_switch->gen->caps & MODELINE_CAPS_CSYNC))
+   {
+      RARCH_WARN("[CRT] Display server \"%s\" cannot set composite sync; using separate sync.\n",
+            p_switch->ops.name ? p_switch->ops.name : "none");
+      csync_warned = p_switch->gen->csync;
+   }
    if (string_is_equal(p_switch->ops.name, "videocore"))
    {
       p_switch->gen->doublescan = 0;
@@ -588,9 +597,13 @@ static void switch_res_crt(
          return;
       }
       if (!modeline_flush(gen, &p_switch->ops)
-            && gen->csync != MODELINE_CSYNC_OFF)
+            && mode->csync != MODELINE_CSYNC_OFF)
       {
          RARCH_ERR("[CRT] CSync mode creation failed; switch aborted.\n");
+         crt_switch_set_aspect(p_switch,
+               p_switch->rotated ? VIDEO_SCALE_PACK(h, w)
+                                 : VIDEO_SCALE_PACK(w, h),
+               0, 1.0f, 1.0f, false);
          return;
       }
 
@@ -704,6 +717,7 @@ void crt_destroy_modes(videocrt_switch_t *p_switch)
    p_switch->ops_valid = false;
    p_switch->ops_lost  = false;
    ini_overrides_loaded = false;
+   csync_warned         = MODELINE_CSYNC_OFF;
 }
 
 void crt_switch_res_core(
@@ -841,8 +855,7 @@ static void crt_adjust_ini(videocrt_switch_t *p_switch)
       RARCH_LOG("[CRT] Loading default switchres.ini...\n");
       /* A missing csync line in the base config means off, even if
        * the previous game's overlay selected another polarity. */
-      p_switch->gen->csync         = MODELINE_CSYNC_OFF;
-      p_switch->gen->csync_invalid = false;
+      p_switch->gen->csync = MODELINE_CSYNC_OFF;
       modeline_ini_load(p_switch->gen, "switchres.ini");
       crt_apply_menu_preset(p_switch, settings->uints.crt_switch_resolution,
             settings->uints.crt_switch_resolution_super);

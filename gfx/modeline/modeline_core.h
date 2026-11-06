@@ -87,7 +87,7 @@ RETRO_BEGIN_DECLS
 #define MODELINE_REQ_INTERLACED   (1 << 0)
 #define MODELINE_REQ_ROTATED      (1 << 1)
 
-/* CSync is opt-in. UNKNOWN prevents reuse of ambiguous XRandR modes. */
+/* UNKNOWN: a listed mode whose polarity is ambiguous, never reused */
 #define MODELINE_CSYNC_OFF       0
 #define MODELINE_CSYNC_NEGATIVE  1
 #define MODELINE_CSYNC_POSITIVE  2
@@ -228,7 +228,6 @@ typedef struct video_modeline_gen
    size_t   edid_len;
    bool     modeline_generation;
    bool     lock_system_modes;
-   bool     csync_invalid;
    bool     refresh_dont_care;
    bool     desktop_is_rotated;
    bool     switching_required;

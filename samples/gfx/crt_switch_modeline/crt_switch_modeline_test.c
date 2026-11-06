@@ -60,6 +60,12 @@
  *
  * 5. The EDID install hint names the head the monitor index selects,
  *    not the first output in the list.
+ *
+ * 6. The csync key: generated modes carry the polarity on a server
+ *    that can set it; a server that cannot, an invalid value and the
+ *    EDID writer all fall back to separate sync and keep switching;
+ *    with csync off a listed composite mode stays selectable; and a
+ *    game's polarity does not outlive the game.
  */
 
 #include <stdio.h>
@@ -165,12 +171,22 @@ static bool srv_open(void *data, const video_modeline_disp_t *ds)
 static int srv_adds;
 static int srv_sets;
 
+static video_modeline_t srv_last_add;
+static unsigned srv_caps;       /* 0: the server has no caps op */
+
 static bool srv_add(void *data, video_modeline_t *mode)
 {
    (void)data;
-   (void)mode;
    srv_adds++;
+   if (mode)
+      srv_last_add = *mode;
    return true;
+}
+
+static unsigned srv_caps_get(void *data)
+{
+   (void)data;
+   return srv_caps;
 }
 
 static video_modeline_t srv_last_set;
@@ -188,11 +204,30 @@ static bool srv_set(void *data, video_modeline_t *mode)
  * derives its line count from it, so without one that path cannot be
  * reached at all. */
 static bool srv_have_desktop;
+static int  srv_listed_csync = -1; /* >= 0: list a 15 kHz mode too */
 
 static int srv_enum(void *data, video_modeline_t *modes, int max)
 {
    (void)data;
-   if (!srv_have_desktop || max < 1)
+   if (srv_listed_csync >= 0 && max >= 2)
+   {
+      memset(&modes[1], 0, sizeof(modes[1]));
+      modes[1].pclock  = 6700000;
+      modes[1].hactive = 320;
+      modes[1].hbegin  = 336;
+      modes[1].hend    = 368;
+      modes[1].htotal  = 426;
+      modes[1].vactive = 240;
+      modes[1].vbegin  = 244;
+      modes[1].vend    = 247;
+      modes[1].vtotal  = 262;
+      modes[1].hfreq   = 6700000.0 / 426.0;
+      modes[1].vfreq   = modes[1].hfreq / 262.0;
+      modes[1].dims    = VIDEO_SCALE_PACK(320, 240);
+      modes[1].refresh = (int)modes[1].vfreq;
+      modes[1].csync   = srv_listed_csync;
+   }
+   if ((!srv_have_desktop && srv_listed_csync < 0) || max < 1)
       return 0;
    memset(&modes[0], 0, sizeof(modes[0]));
    modes[0].pclock  = 148500000;
@@ -211,7 +246,7 @@ static int srv_enum(void *data, video_modeline_t *modes, int max)
    modes[0].hsync   = 1;
    modes[0].vsync   = 1;
    modes[0].type    = MODELINE_DESKTOP;
-   return 1;
+   return (srv_listed_csync >= 0 && max >= 2) ? 2 : 1;
 }
 
 bool video_display_server_get_modeline_ops(struct video_modeline_ops *ops)
@@ -224,6 +259,7 @@ bool video_display_server_get_modeline_ops(struct video_modeline_ops *ops)
    ops->add  = srv_add;
    ops->enum_modes = srv_enum;
    ops->set  = srv_set;
+   ops->caps = srv_caps ? srv_caps_get : NULL;
    ops->name = srv_ident;
    return true;
 }
@@ -787,6 +823,227 @@ static void test_ini_geometry_overrides_survive(void)
    ctx_ident = "wl";
 }
 
+/* config/switchres.ini next to retroarch.cfg; NULL removes it */
+static void write_base_ini(const char *body)
+{
+   char path[1100];
+   FILE *f;
+   snprintf(path, sizeof(path), "%s/switchres.ini", getenv("XDG_CONFIG_HOME"));
+   if (!body)
+   {
+      remove(path);
+      return;
+   }
+   f = fopen(path, "w");
+   if (!f)
+   {
+      fails++;
+      return;
+   }
+   fputs(body, f);
+   fclose(f);
+}
+
+static void csync_case_begin(unsigned caps)
+{
+   srv_has_ops = true;
+   srv_set_ok  = true;
+   srv_caps    = caps;
+   srv_ident   = "x11";
+   ctx_ident   = "x11";
+   srv_adds    = srv_sets = 0;
+   memset(&srv_last_add, 0, sizeof(srv_last_add));
+   memset(&srv_last_set, 0, sizeof(srv_last_set));
+   log_reset();
+}
+
+static void csync_case_end(videocrt_switch_t *sw)
+{
+   crt_destroy_modes(sw);
+   write_base_ini(NULL);
+   srv_caps         = 0;
+   srv_listed_csync = -1;
+   ctx_ident        = "wl";
+}
+
+static void test_csync_on_capable_server(void)
+{
+   videocrt_switch_t sw;
+
+   printf("\n-- csync negative on a server that can set it --\n");
+   memset(&sw, 0, sizeof(sw));
+   write_base_ini("csync negative\n");
+   csync_case_begin(MODELINE_CAPS_ADD | MODELINE_CAPS_CSYNC);
+
+   run_switches(&sw, 0);
+
+   check("modes were added and applied", srv_adds > 0 && srv_sets > 0);
+   check_eq("the added mode carries negative csync",
+         srv_last_add.csync, MODELINE_CSYNC_NEGATIVE);
+   check_eq("so does the one applied",
+         srv_last_set.csync, MODELINE_CSYNC_NEGATIVE);
+   check_eq("no fallback warning",
+         log_hits("cannot set composite sync"), 0);
+
+   csync_case_end(&sw);
+}
+
+static void test_csync_on_server_without_it(void)
+{
+   videocrt_switch_t sw;
+
+   printf("\n-- csync negative on a server that cannot set it --\n");
+   memset(&sw, 0, sizeof(sw));
+   write_base_ini("csync negative\n");
+   csync_case_begin(0);
+
+   run_switches(&sw, 0);
+
+   check("switching still works", srv_sets > 0);
+   check_eq("with separate sync",
+         srv_last_set.csync, MODELINE_CSYNC_OFF);
+   check_eq("said once, not per switch",
+         log_hits("cannot set composite sync"), 1);
+   check_eq("no apply failure",
+         log_hits("Engine failed"), 0);
+
+   csync_case_end(&sw);
+}
+
+static void test_csync_invalid_value(void)
+{
+   videocrt_switch_t sw;
+
+   printf("\n-- an invalid csync value --\n");
+   memset(&sw, 0, sizeof(sw));
+   write_base_ini("csync composite\n");
+   csync_case_begin(MODELINE_CAPS_ADD | MODELINE_CAPS_CSYNC);
+
+   run_switches(&sw, 0);
+
+   check("is reported", log_hits("Invalid csync 'composite'") >= 1);
+   check("switching still works", srv_sets > 0);
+   check_eq("with separate sync",
+         srv_last_set.csync, MODELINE_CSYNC_OFF);
+
+   csync_case_end(&sw);
+}
+
+static void test_csync_edid(void)
+{
+   char path[4096];
+   videocrt_switch_t sw;
+
+   printf("\n-- the EDID writer with csync set --\n");
+   memset(&sw, 0, sizeof(sw));
+   write_base_ini("csync negative\n");
+   csync_case_begin(MODELINE_CAPS_ADD | MODELINE_CAPS_CSYNC);
+   srv_nout = 1;
+   strlcpy(srv_out_name[0], "VGA-1", sizeof(srv_out_name[0]));
+   stub_settings.uints.crt_switch_resolution = CRT_SWITCH_15KHZ;
+   stub_settings.uints.video_monitor_index   = 0;
+
+   check("still writes a block", crt_switch_write_edid(path, sizeof(path)));
+
+   csync_case_end(&sw);
+}
+
+static void test_csync_off_keeps_listed_composite_modes(void)
+{
+   videocrt_switch_t sw;
+
+   printf("\n-- csync off, a listed composite mode, no generation --\n");
+   memset(&sw, 0, sizeof(sw));
+   write_base_ini("modeline_generation 0\n");
+   csync_case_begin(MODELINE_CAPS_ADD | MODELINE_CAPS_CSYNC);
+   srv_listed_csync = MODELINE_CSYNC_NEGATIVE;
+
+   crt_switch_res_core(&sw, 320, VIDEO_SCALE_PACK(320, 240), 59.94f, false,
+         CRT_SWITCH_15KHZ, 0, 0, 0, false, 0, false, ASPECT_RATIO_CORE, 0);
+
+   check_eq("the listed mode is still selectable",
+         log_hits("Could not find a video mode"), 0);
+   check("and applied", srv_sets > 0 && srv_last_set.hactive == 320);
+   check_eq("as listed, polarity untouched",
+         srv_last_set.csync, MODELINE_CSYNC_NEGATIVE);
+   crt_destroy_modes(&sw);
+
+   /* A request for the other polarity must not take it */
+   printf("\n-- csync positive, the same listed negative mode --\n");
+   memset(&sw, 0, sizeof(sw));
+   write_base_ini("modeline_generation 0\ncsync positive\n");
+   csync_case_begin(MODELINE_CAPS_ADD | MODELINE_CAPS_CSYNC);
+   srv_listed_csync = MODELINE_CSYNC_NEGATIVE;
+
+   crt_switch_res_core(&sw, 320, VIDEO_SCALE_PACK(320, 240), 59.94f, false,
+         CRT_SWITCH_15KHZ, 0, 0, 0, false, 0, false, ASPECT_RATIO_CORE, 0);
+
+   check_eq("the negative mode is not applied",
+         srv_last_set.csync == MODELINE_CSYNC_NEGATIVE, 0);
+
+   csync_case_end(&sw);
+}
+
+static void test_csync_does_not_outlive_the_game(void)
+{
+   videocrt_switch_t sw;
+   char dir[1024];
+   char ini[1100];
+   FILE *f;
+
+   printf("\n-- a game's csync, then a game without one --\n");
+   memset(&sw, 0, sizeof(sw));
+   csync_case_begin(MODELINE_CAPS_ADD | MODELINE_CAPS_CSYNC);
+
+   snprintf(dir, sizeof(dir), "%s/TestCore", getenv("XDG_CONFIG_HOME"));
+   strlcpy(stub_config_dir, getenv("XDG_CONFIG_HOME"), sizeof(stub_config_dir));
+   {
+      char mk[1200];
+      snprintf(mk, sizeof(mk), "mkdir -p '%s'", dir);
+      if (system(mk) != 0)
+         fails++;
+   }
+   snprintf(ini, sizeof(ini), "%s/game.switchres.ini", dir);
+   f = fopen(ini, "w");
+   check("wrote the game override file", f != NULL);
+   if (f)
+   {
+      fputs("csync positive\n", f);
+      fclose(f);
+   }
+   stub_runloop_st.system.info.library_name = "TestCore";
+   strlcpy(stub_content_path, "/roms/game", sizeof(stub_content_path));
+
+   crt_switch_res_core(&sw, 256, VIDEO_SCALE_PACK(256, 224), 60.10f, false,
+         CRT_SWITCH_15KHZ, 0, 0, 0, false, 0, false, ASPECT_RATIO_CORE, 0);
+   check_eq("the game's mode is positive",
+         srv_last_set.csync, MODELINE_CSYNC_POSITIVE);
+
+   /* Another game with no file of its own */
+   strlcpy(stub_content_path, "/roms/other", sizeof(stub_content_path));
+   srv_sets = 0;
+   crt_switch_res_core(&sw, 320, VIDEO_SCALE_PACK(320, 240), 59.94f, false,
+         CRT_SWITCH_15KHZ, 0, 0, 0, false, 0, false, ASPECT_RATIO_CORE, 0);
+   check("the other game switched", srv_sets > 0);
+   check_eq("with separate sync",
+         srv_last_set.csync, MODELINE_CSYNC_OFF);
+
+   /* Back at the first game's size: its positive mode is not reused */
+   srv_sets = 0;
+   crt_switch_res_core(&sw, 256, VIDEO_SCALE_PACK(256, 224), 60.10f, false,
+         CRT_SWITCH_15KHZ, 0, 0, 0, false, 0, false, ASPECT_RATIO_CORE, 0);
+   check("switched back to 256x224", srv_sets > 0
+         && srv_last_set.hactive == 256);
+   check_eq("still with separate sync",
+         srv_last_set.csync, MODELINE_CSYNC_OFF);
+
+   remove(ini);
+   stub_content_path[0] = '\0';
+   stub_config_dir[0]   = '\0';
+   stub_runloop_st.system.info.library_name = "";
+   csync_case_end(&sw);
+}
+
 int main(int argc, char **argv)
 {
    int i;
@@ -815,6 +1072,12 @@ int main(int argc, char **argv)
    test_failing_set_still_reports();
    test_edid_hint_names_the_selected_head();
    test_ini_geometry_overrides_survive();
+   test_csync_on_capable_server();
+   test_csync_on_server_without_it();
+   test_csync_invalid_value();
+   test_csync_edid();
+   test_csync_off_keeps_listed_composite_modes();
+   test_csync_does_not_outlive_the_game();
 
    printf("\n%s\n", fails ? "FAILED" : "all checks passed");
    return fails ? 1 : 0;
