@@ -124,7 +124,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <assert.h>
 #include <stdarg.h>
+#include <compat/strl.h>
 
 #include <retro_common_api.h>
 #include <queues/message_queue.h>
@@ -337,13 +339,19 @@ bool runloop_get_savestate_path(char *path, size_t len, int slot)
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
 {
-   (void)msg;
+   if (msg == MSG_SAVED_STATE_TO_SLOT)
+      return "saved state %d";
    return "state message";
 }
 
 void RARCH_LOG(const char *fmt, ...)  { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
-void RARCH_ERR(const char *fmt, ...)  { (void)fmt; }
+static unsigned load_errors;
+void RARCH_ERR(const char *fmt, ...)
+{
+   if (strcmp(fmt, "[State] %s \"%s\".\n") == 0)
+      load_errors++;
+}
 
 static void msg_push_stub(retro_task_t *task, const char *msg,
       unsigned prio, unsigned dur, bool flush)
@@ -1209,6 +1217,7 @@ static void test_close_waits_for_save(void)
 static unsigned told_calls;
 static int      told_error;
 static char     told_path[PATH_MAX_LENGTH];
+static int      told_slot;
 
 static void told_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *error)
@@ -1218,6 +1227,49 @@ static void told_cb(retro_task_t *task, void *task_data,
    told_error = error != NULL;
    strlcpy(told_path, task_data ? (const char*)task_data : "",
          sizeof(told_path));
+}
+
+static void told_slot_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   const char *title = task ? task_get_title(task) : NULL;
+   told_cb(task, task_data, user_data, error);
+   if (title)
+      sscanf(title, "saved state %d", &told_slot);
+}
+
+static void test_overwrite_keeps_slot(bool threaded)
+{
+   const char *path = "sst_slot.state";
+   frontend_reset();
+   core_fill(3 * TEST_SAVE_STATE_CHUNK);
+   filestream_delete(path);
+   content_save_state(path, true);
+   if (threaded)
+      pump_threaded();
+   else
+      pump(1000);
+
+   stub_settings.bools.notification_show_save_state = true;
+   stub_settings.ints.state_slot = 7;
+   told_calls = 0;
+   told_slot = -1;
+   okf(content_save_state_notify(path, true, told_slot_cb, NULL),
+         "slot: the overwrite was accepted");
+   okf(content_load_state_in_progress(NULL),
+         "slot: its backup read is pending before the selection changes");
+   okf(content_state_file_in_use(path),
+         "slot: the pending backup protects the existing file");
+   stub_settings.ints.state_slot = 9;
+   if (threaded)
+      pump_threaded();
+   else
+      pump(20000);
+   okf(told_calls == 1 && !told_error && told_slot == 7,
+         "slot: the completed overwrite reports its original slot");
+   okf(!content_state_file_in_use(path),
+         "slot: completing the chained write releases the file");
+   filestream_delete(path);
 }
 
 static void test_notify_without_allocation(void)
@@ -1298,6 +1350,274 @@ static void test_load_held_behind_save(void)
        "held: the load runs after the save and loads what it wrote");
 
    clock_step = 0;
+   filestream_delete(path);
+}
+
+static void test_pending_file_ownership(void)
+{
+   char paths[6][64];
+   unsigned i;
+   frontend_reset();
+   core_fill(3 * TEST_SAVE_STATE_CHUNK);
+   for (i = 0; i < 6; i++)
+   {
+      bool accepted;
+      snprintf(paths[i], sizeof(paths[i]), "sst_pending%u.state", i);
+      filestream_delete(paths[i]);
+      accepted = content_save_state(paths[i], true);
+      okf(accepted == (i < 5), "pending: admission reaches the held-task limit");
+      okf(content_state_file_in_use(paths[i]) == accepted,
+            "pending: ownership includes accepted work only");
+   }
+   content_reset_savestate_backups();
+   okf(content_state_file_in_use(paths[0]),
+         "pending: resetting held work preserves the active file");
+   for (i = 1; i < 6; i++)
+      okf(!content_state_file_in_use(paths[i]),
+            "pending: discarded and refused work owns no file");
+   task_queue_reset();
+   pump(1000);
+   okf(!content_state_file_in_use(paths[0]),
+         "pending: the cancelled active task releases its file");
+   filestream_delete(paths[0]);
+}
+
+struct prune_fixture
+{
+   const char *path;
+   bool explicit_load;
+};
+
+static void prune_queued_backup_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   struct prune_fixture *fixture = (struct prune_fixture*)user_data;
+   (void)task; (void)task_data;
+   okf(!error, "queued: the preceding save committed");
+   okf(content_state_file_in_use(fixture->path) == fixture->explicit_load,
+         "queued: only a required consumer prevents retention");
+   if (!fixture->explicit_load)
+      filestream_delete(fixture->path);
+}
+
+static void test_pruned_queued_backup(void)
+{
+   unsigned explicit_load;
+   const char *preceding = "sst_preceding.state";
+   struct prune_fixture fixture = {"sst_queued.state", false};
+   for (explicit_load = 0; explicit_load < 2; explicit_load++)
+   {
+      frontend_reset();
+      core_fill(3 * TEST_SAVE_STATE_CHUNK);
+      fixture.explicit_load = explicit_load != 0;
+      filestream_delete(preceding);
+      filestream_delete(fixture.path);
+      content_save_state(fixture.path, true);
+      pump(1000);
+      content_save_state_notify(preceding, true, prune_queued_backup_cb, &fixture);
+      memset(core_mem, 0x66, core_len);
+      told_calls = load_errors = 0;
+      okf(content_save_state_notify(fixture.path, true, told_cb, NULL),
+            "queued: the overwrite waits behind the preceding save");
+      if (fixture.explicit_load)
+      {
+         stub_video.frame_count = 1;
+         okf(content_load_state(fixture.path, false, false),
+               "queued: an explicit load waits for that overwrite");
+      }
+      memset(core_mem, 0x88, core_len);
+      pump(10000);
+      okf(told_calls == 1 && !told_error && !load_errors,
+            "queued: optional pruning produces no failed backup read");
+      if (fixture.explicit_load)
+      {
+         okf(content_load_state_in_progress(NULL)
+               && content_state_file_in_use(fixture.path)
+               && core_mem[0] == 0x88,
+               "queued: the load still owns the file before frame two");
+         stub_video.frame_count = 2;
+         pump(1000);
+         okf(!content_load_state_in_progress(NULL)
+               && core_mem[0] == 0x66 && core_mem[core_len - 1] == 0x66,
+               "queued: frame two loads the completed overwrite");
+      }
+      memset(core_mem, 0x88, core_len);
+      content_load_state(fixture.path, false, false);
+      pump(1000);
+      okf(core_mem[0] == 0x66 && core_mem[core_len - 1] == 0x66,
+            "queued: the actual consumer receives the queued save");
+   }
+   filestream_delete(preceding);
+   filestream_delete(fixture.path);
+}
+
+struct cycle_result
+{
+   unsigned calls;
+   unsigned errors;
+};
+
+static void cycle_done(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   struct cycle_result *result = (struct cycle_result*)user_data;
+   (void)task; (void)task_data;
+   result->calls++;
+   if (error)
+      result->errors++;
+}
+
+static void drain_states(bool threaded)
+{
+   if (threaded)
+      pump_threaded();
+   else
+      pump(20000);
+   okf(!queue_busy() && !content_save_state_in_progress(NULL)
+         && !content_load_state_in_progress(NULL),
+         "cycles: tasks and both pending counts drain");
+}
+
+static void failed_conversion_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   told_cb(task, task_data, user_data, error);
+   calloc_fail_big = 0;
+}
+
+static void prune_and_fail_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   prune_queued_backup_cb(task, task_data, user_data, error);
+   calloc_fail_big = 1;
+}
+
+static void test_queued_conversion_failure(void)
+{
+   const char *first = "sst_conversion_first.state";
+   const char *other = "sst_conversion_other.state";
+   struct prune_fixture fixture = {"sst_conversion_target.state", false};
+   frontend_reset();
+   core_fill(3 * TEST_SAVE_STATE_CHUNK);
+   content_save_state(fixture.path, true);
+   pump(1000);
+   content_save_state_notify(first, true, prune_and_fail_cb, &fixture);
+   told_calls = 0;
+   okf(content_save_state_notify(fixture.path, true, failed_conversion_cb, NULL),
+         "conversion: the overwrite is held before allocation fails");
+   memset(core_mem, 0x77, core_len);
+   okf(content_save_state(other, true), "conversion: an unrelated save is held");
+   drain_states(false);
+   okf(told_calls == 1 && told_error && !calloc_fail_big,
+         "conversion: the failed transition reports once and clears the injection");
+   okf(!content_state_file_in_use(fixture.path),
+         "conversion: the failed transition releases ownership");
+   memset(core_mem, 0x88, core_len);
+   content_load_state(other, false, false);
+   drain_states(false);
+   okf(core_mem[0] == 0x77 && core_mem[core_len - 1] == 0x77,
+         "conversion: unrelated saved bytes still reach the consumer");
+   okf(content_save_state(fixture.path, true), "conversion: the failed target retries");
+   drain_states(false);
+   okf(file_size(fixture.path) > 0, "conversion: the retry writes its file");
+   filestream_delete(first);
+   filestream_delete(other);
+   filestream_delete(fixture.path);
+}
+
+static void test_state_task_cycles(bool threaded)
+{
+   const char *path = "sst_cycles.state";
+   const char *other = "sst_cycles_other.state";
+   struct cycle_result result;
+   unsigned round;
+   frontend_reset();
+   core_fill(3 * TEST_SAVE_STATE_CHUNK + 17);
+   filestream_delete(path);
+   filestream_delete(other);
+   clock_step = TEST_TICK_BUDGET_US;
+   for (round = 0; round < 64; round++)
+   {
+      uint8_t value = (uint8_t)(round + 1);
+      memset(&result, 0, sizeof(result));
+      memset(core_mem, value, core_len);
+      okf(content_save_state_notify(path, true, cycle_done, &result),
+            "cycles: a new or overwritten save is accepted");
+      okf(content_load_state_notify(path, false, false, cycle_done, &result),
+            "cycles: a load behind the save is accepted");
+      okf(content_load_state_in_progress(NULL),
+            "cycles: the load is pending before callbacks run");
+      okf(content_save_state_notify(other, true, cycle_done, &result),
+            "cycles: another save is accepted behind the load");
+      drain_states(threaded);
+      okf(result.calls == 3 && result.errors == 0,
+            "cycles: each accepted request completes once");
+      okf(core_mem[0] == value && core_mem[core_len - 1] == value,
+            "cycles: the load consumes the preceding save's bytes");
+      okf(!content_state_file_in_use(path) && !content_state_file_in_use(other),
+            "cycles: completed requests release both files");
+      if (round % 8 == 7)
+         content_reset_savestate_backups();
+   }
+   filestream_delete(path);
+   filestream_delete(other);
+}
+
+static void test_close_with_pending_load(bool threaded)
+{
+   const char *path = "sst_close_held.state";
+   struct cycle_result result = {0, 0};
+   frontend_reset();
+   core_fill(32 * TEST_SAVE_STATE_CHUNK);
+   filestream_delete(path);
+   clock_step = TEST_TICK_BUDGET_US;
+   okf(content_save_state_notify(path, true, cycle_done, &result),
+         "close: the save is accepted");
+   okf(content_load_state_notify(path, false, false, cycle_done, &result),
+         "close: a load is accepted behind it");
+   okf(content_save_state_in_progress(NULL) && content_load_state_in_progress(NULL),
+         "close: both requests are pending before the close waits");
+   content_wait_for_save_state_task();
+   content_wait_for_load_state_task();
+   drain_states(threaded);
+   okf(result.calls == 2 && !result.errors,
+         "close: the close waits complete the save and its held load");
+   content_reset_savestate_backups();
+   okf(!content_state_file_in_use(path), "close: the closed content owns no file");
+   filestream_delete(path);
+   test_state_task_cycles(threaded);
+}
+
+static void test_task_failure_recovery(bool threaded)
+{
+   const char *path = "sst_recovery.state";
+   const char *missing = "sst_absent_review_directory/state";
+   struct cycle_result result;
+   unsigned attempt;
+   frontend_reset();
+   core_fill(3 * TEST_SAVE_STATE_CHUNK);
+   filestream_delete(path);
+   assert(!path_is_valid("sst_absent_review_directory"));
+   okf(content_save_state(path, true), "recovery: the initial save is accepted");
+   drain_states(threaded);
+   for (attempt = 0; attempt < 2; attempt++)
+   {
+      memset(&result, 0, sizeof(result));
+      okf(content_save_state_notify(missing, true, cycle_done, &result),
+            "recovery: the write which will fail is accepted");
+      okf(content_load_state_notify(path, false, false, cycle_done, &result),
+            "recovery: an unrelated load is accepted after it");
+      drain_states(threaded);
+      okf(result.calls == 2 && result.errors == 1,
+            "recovery: the write fails once and the unrelated load succeeds");
+      calloc_fail_big = 1;
+      okf(!content_save_state(path, true),
+            "recovery: task allocation failure refuses the request");
+      calloc_fail_big = 0;
+      drain_states(threaded);
+      okf(content_save_state(path, true), "recovery: a later save is accepted");
+      drain_states(threaded);
+   }
    filestream_delete(path);
 }
 
@@ -1496,8 +1816,14 @@ static int run_default_lane(void)
    test_undo_snapshot_failure_keeps_previous();
    test_undo_allocates_nothing();
    test_notify_without_allocation();
+   test_overwrite_keeps_slot(false);
    test_load_held_behind_save();
    test_load_waits_for_frames(false);
+   test_pending_file_ownership();
+   test_pruned_queued_backup();
+   test_queued_conversion_failure();
+   test_close_with_pending_load(false);
+   test_task_failure_recovery(false);
 #ifdef HAVE_COMPRESSION
    test_undo_save_restores_file();
 #endif
@@ -1517,6 +1843,9 @@ static int run_threaded_lane(void)
 
    test_threaded_roundtrip();
    test_load_waits_for_frames(true);
+   test_overwrite_keeps_slot(true);
+   test_close_with_pending_load(true);
+   test_task_failure_recovery(true);
 
    content_reset_savestate_backups();
    task_queue_deinit();

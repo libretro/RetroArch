@@ -150,8 +150,9 @@ enum save_task_state_flags
    SAVE_TASK_FLAG_COMPRESS_FILES        = (1 << 7)
 };
 
-typedef struct
+typedef struct save_task_state
 {
+   struct save_task_state *next;
    intfstream_t *file;
    void *data;
    void *undo_data;
@@ -227,6 +228,52 @@ static bool save_state_disable_undo        = false;
 #define STATE_TASKS_HELD_MAX 4
 static retro_task_t *state_tasks_held[STATE_TASKS_HELD_MAX];
 static unsigned      state_tasks_held_count     = 0;
+/* Frame-thread ownership outlives worker completion and includes held tasks. */
+static save_task_state_t *state_tasks_pending;
+
+static void content_load_and_save_state_cb(retro_task_t *task,
+      void *task_data, void *user_data, const char *error);
+static bool task_push_save_state(const char *path, void *data, size_t len,
+      bool autosave, bool first, int slot,
+      retro_task_callback_t cb, void *user_data);
+
+static bool state_task_record(retro_task_t *task)
+{
+   save_task_state_t *state = (save_task_state_t*)task->state;
+   state->next = state_tasks_pending;
+   state_tasks_pending = state;
+   return true;
+}
+
+static void state_task_forget(save_task_state_t *state)
+{
+   save_task_state_t **link = &state_tasks_pending;
+   while (*link && *link != state)
+      link = &(*link)->next;
+   if (*link)
+      *link = state->next;
+}
+
+bool content_state_file_in_use(const char *path)
+{
+   const save_task_state_t *state;
+   for (state = state_tasks_pending; state; state = state->next)
+      if (strcmp(state->path, path) == 0)
+      {
+         unsigned i;
+         bool required = true;
+         for (i = 0; i < state_tasks_held_count; i++)
+            if (     state_tasks_held[i]->state == state
+                  && state_tasks_held[i]->callback == content_load_and_save_state_cb)
+            {
+               required = false;
+               break;
+            }
+         if (required)
+            return true;
+      }
+   return false;
+}
 
 /* A state task pushed whose callback has yet to run. The queue does
  * not say: one finished on its thread no longer blocks a push, while
@@ -296,11 +343,11 @@ static bool state_task_push(retro_task_t *task)
          && !state_task_in_flight()
          && !state_task_waits_frames(task)
          && task_queue_push(task))
-      return true;
+      return state_task_record(task);
    if (state_tasks_held_count >= STATE_TASKS_HELD_MAX)
       return false;
    state_tasks_held[state_tasks_held_count++] = task;
-   return true;
+   return state_task_record(task);
 }
 
 /* As state_task_push(), ahead of anything held: a callback chaining
@@ -309,28 +356,52 @@ static bool state_task_push_first(retro_task_t *task)
 {
    unsigned i;
    if (task_queue_push(task))
-      return true;
+      return state_task_record(task);
    if (state_tasks_held_count >= STATE_TASKS_HELD_MAX)
       return false;
    for (i = state_tasks_held_count; i > 0; i--)
       state_tasks_held[i] = state_tasks_held[i - 1];
    state_tasks_held[0] = task;
    state_tasks_held_count++;
-   return true;
+   return state_task_record(task);
 }
 
 /* At the end of a state task's callback: the next held one goes in. */
 static void state_tasks_release(void)
 {
    unsigned i;
-   if (     !state_tasks_held_count
-         || state_task_in_flight()
-         || state_task_waits_frames(state_tasks_held[0])
-         || !task_queue_push(state_tasks_held[0]))
+   while (state_tasks_held_count && !state_task_in_flight())
+   {
+      retro_task_t *task = state_tasks_held[0];
+      save_task_state_t *state = (save_task_state_t*)task->state;
+      /* A preceding committed save may have pruned this optional backup. */
+      bool skip_backup = task->callback == content_load_and_save_state_cb
+            && !path_is_valid(state->path);
+      if (!skip_backup && (state_task_waits_frames(task)
+            || !task_queue_push(task)))
+         return;
+      for (i = 1; i < state_tasks_held_count; i++)
+         state_tasks_held[i - 1] = state_tasks_held[i];
+      state_tasks_held[--state_tasks_held_count] = NULL;
+      if (skip_backup)
+      {
+         bool queued;
+         state_task_forget(state);
+         load_state_tasks_pending--;
+         queued = task_push_save_state(state->path, state->undo_data,
+               state->undo_size, state->flags & SAVE_TASK_FLAG_AUTOSAVE,
+               true, state->state_slot, state->done_cb, task->user_data);
+         if (!queued && state->done_cb)
+            state->done_cb(NULL, state->path, task->user_data,
+                  msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO));
+         task_free_title(task);
+         free(state);
+         free(task);
+         if (!queued)
+            continue;
+      }
       return;
-   for (i = 1; i < state_tasks_held_count; i++)
-      state_tasks_held[i - 1] = state_tasks_held[i];
-   state_tasks_held[--state_tasks_held_count] = NULL;
+   }
 }
 
 /* Time tracking for automatic savestate interval */
@@ -526,6 +597,7 @@ static void undo_save_state_cb(retro_task_t *task,
       void *user_data, const char *error)
 {
    save_task_state_t *state = (save_task_state_t*)task_data;
+   state_task_forget(state);
 
    if (save_state_tasks_pending)
       save_state_tasks_pending--;
@@ -1636,6 +1708,7 @@ static void content_load_state_apply(retro_task_t *task,
     * whichever way this callback exits. */
    if (load_state_tasks_pending)
       load_state_tasks_pending--;
+   state_task_forget(load_data);
 
    _len = load_data->size;
    buf  = load_data->data;
@@ -1803,6 +1876,7 @@ static void save_state_cb(retro_task_t *task,
       void *user_data, const char *error)
 {
    save_task_state_t *state   = (save_task_state_t*)task_data;
+   state_task_forget(state);
 
    /* Out of the core whichever way this callback exits. */
    if (save_state_tasks_pending)
@@ -1884,7 +1958,8 @@ static void content_capture_frontend_blocks(save_task_state_t *state)
  * Create a new task to save the content state.
  **/
 static bool task_push_save_state(const char *path, void *data, size_t len,
-      bool autosave, bool first, retro_task_callback_t cb, void *user_data)
+      bool autosave, bool first, int slot,
+      retro_task_callback_t cb, void *user_data)
 {
    settings_t     *settings        = config_get_ptr();
    retro_task_t       *task        = task_init();
@@ -1915,7 +1990,7 @@ static bool task_push_save_state(const char *path, void *data, size_t len,
       runloop_st->msg_queue_delay = 12;
       state->flags               |= SAVE_TASK_FLAG_THUMBNAIL_ENABLE;
    }
-   state->state_slot             = settings->ints.state_slot;
+   state->state_slot             = slot;
    if (video_driver_cached_frame_is_hw_render())
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_COMPRESSION)
@@ -1984,12 +2059,14 @@ static void content_load_and_save_state_cb(retro_task_t *task,
    char                  *path;
    void                  *data;
    size_t                 size;
+   int                    slot;
    bool               autosave;
    retro_task_callback_t done_cb;
 
    path     = strdup(load_data->path);
    data     = load_data->undo_data;
    size     = load_data->undo_size;
+   slot     = load_data->state_slot;
    autosave = (load_data->flags & SAVE_TASK_FLAG_AUTOSAVE) ? true : false;
    /* the caller asked about the save, not this backup load */
    done_cb  = load_data->done_cb;
@@ -1999,7 +2076,7 @@ static void content_load_and_save_state_cb(retro_task_t *task,
 
    /* The save this backup load was for goes ahead of anything held: a
     * Load State held behind it loads what it writes. */
-   if (     !task_push_save_state(path, data, size, autosave, true,
+   if (     !task_push_save_state(path, data, size, autosave, true, slot,
                done_cb, user_data)
          && done_cb)
    {
@@ -2291,7 +2368,8 @@ bool content_save_state_notify(const char *path, bool save_to_disk,
       return task_push_load_and_save_state(path, data, _len, true, false,
             cb, user_data);
    }
-   return task_push_save_state(path, data, _len, false, false, cb, user_data);
+   return task_push_save_state(path, data, _len, false, false,
+         config_get_ptr()->ints.state_slot, cb, user_data);
 }
 
 /**
@@ -2494,6 +2572,7 @@ static void state_tasks_discard_held(void)
          save_state_tasks_pending--;
       if (state)
       {
+         state_task_forget(state);
          if (state->done_cb)
             state->done_cb(NULL, state->path, task->user_data,
                   msg_hash_to_str(is_load
