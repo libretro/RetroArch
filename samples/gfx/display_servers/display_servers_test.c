@@ -1147,9 +1147,10 @@ static int test_modeline_lifecycle(void)
       fprintf(stderr, "FAIL: modeline_open failed on a connected output\n");
       return 1;
    }
-   if (dispserv_x11.modeline_caps(data) != MODELINE_CAPS_ADD)
+   if (dispserv_x11.modeline_caps(data)
+         != (MODELINE_CAPS_ADD | MODELINE_CAPS_CSYNC))
    {
-      fprintf(stderr, "FAIL: XRandR caps should be ADD only\n");
+      fprintf(stderr, "FAIL: XRandR caps should be ADD and CSYNC\n");
       return 1;
    }
    n = dispserv_x11.modeline_enum(data, listed, 8);

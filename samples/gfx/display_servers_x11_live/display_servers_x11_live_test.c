@@ -25,7 +25,8 @@
  * server back to check that the crtc is scanning out exactly the
  * timing the engine produced. Then a second switch, then restore and
  * close, and the server must be back on its desktop mode with the
- * generated modes gone.
+ * generated modes gone. Then the csync key on the wire, and how a
+ * same-named RA mode already on the server is treated.
  *
  * Needs an X server whose RandR implementation honours XRRCreateMode
  * on an output: an Xorg 'dummy' driver server does, Xvfb does not (it
@@ -705,6 +706,184 @@ done:
    return failed;
 }
 
+/* An engine on the managed head, the way the CRT consumer opens one */
+static video_modeline_gen_t *live_engine(video_modeline_ops_t *ops,
+      void *data, const char *csync)
+{
+   video_modeline_disp_t ds;
+   video_modeline_gen_t *gen = modeline_gen_new();
+   if (!gen)
+      return NULL;
+   modeline_set_monitor(gen, "arcade_15");
+   if (csync)
+      modeline_set_option(gen, "csync", csync);
+   memset(&ds, 0, sizeof(ds));
+   strcpy(ds.screen, "auto");
+   if (!ops->open(data, &ds) || !modeline_list_init(gen, ops))
+   {
+      modeline_gen_free(gen);
+      return NULL;
+   }
+   return gen;
+}
+
+static void live_engine_end(video_modeline_ops_t *ops, void *data,
+      video_modeline_gen_t *gen)
+{
+   modeline_restore(gen, ops);
+   ops->close(data);
+   modeline_gen_free(gen);
+}
+
+static video_modeline_t *live_switch(video_modeline_gen_t *gen,
+      video_modeline_ops_t *ops)
+{
+   video_modeline_t *mode = modeline_get(gen, ops,
+         VIDEO_SCALE_PACK(320, 240), 60.0, 0);
+   if (!mode || !modeline_flush(gen, ops) || !modeline_set(gen, ops, mode))
+      return NULL;
+   return mode;
+}
+
+/* An RA-named mode on the server that this run did not create */
+static RRMode live_foreign_mode(Display *dpy, const video_modeline_t *m,
+      const char *name, int htotal_delta)
+{
+   XRRModeInfo xm;
+   char buf[64];
+   memset(&xm, 0, sizeof(xm));
+   strncpy(buf, name, sizeof(buf) - 1);
+   buf[sizeof(buf) - 1] = '\0';
+   xm.name       = buf;
+   xm.nameLength = (unsigned)strlen(buf);
+   xm.dotClock   = (unsigned long)m->pclock;
+   xm.width      = m->hactive;
+   xm.hSyncStart = m->hbegin;
+   xm.hSyncEnd   = m->hend;
+   xm.hTotal     = m->htotal + htotal_delta;
+   xm.height     = m->vactive;
+   xm.vSyncStart = m->vbegin;
+   xm.vSyncEnd   = m->vend;
+   xm.vTotal     = m->vtotal;
+   xm.modeFlags  = (m->interlace ? RR_Interlace : 0)
+      | (m->doublescan ? RR_DoubleScan : 0)
+      | (m->hsync ? RR_HSyncPositive : RR_HSyncNegative)
+      | (m->vsync ? RR_VSyncPositive : RR_VSyncNegative);
+   return XRRCreateMode(dpy, DefaultRootWindow(dpy), &xm);
+}
+
+static bool live_mode_listed(Display *dpy, RRMode id)
+{
+   int m;
+   bool found = false;
+   XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy,
+         DefaultRootWindow(dpy));
+   for (m = 0; res && m < res->nmode && !found; m++)
+      found = (res->modes[m].id == id);
+   if (res)
+      XRRFreeScreenResources(res);
+   return found;
+}
+
+/* The csync key reaches the wire, and a same-named RA mode already on
+ * the server is reused when its timing is identical (a leftover of
+ * an earlier session) and left alone when it is not. */
+static int test_csync_and_mode_names(Display *dpy,
+      video_modeline_ops_t *ops, void *data)
+{
+   live_state_t st;
+   video_modeline_gen_t *gen;
+   video_modeline_t *mode;
+   video_modeline_t plain;
+   char name[64];
+   RRMode foreign = 0;
+   int failed = 1;
+
+   /* Composite sync, negative */
+   if (!(gen = live_engine(ops, data, "negative")))
+      return 1;
+   mode = live_switch(gen, ops);
+   if (!mode || check_on_wire(dpy, mode, "320x240@60 csync negative")
+         || live_read(dpy, &st) < 0)
+      goto done_engine;
+   if ((st.flags & (RR_CSync | RR_CSyncNegative | RR_CSyncPositive))
+         != (RR_CSync | RR_CSyncNegative)
+         || !strstr(st.name, "-cn"))
+   {
+      fprintf(stderr, "FAIL: csync mode %s has flags %lx\n", st.name, st.flags);
+      goto done_engine;
+   }
+   printf("[pass] csync negative on the wire as %s\n", st.name);
+   live_engine_end(ops, data, gen);
+
+   /* The plain mode, for its name and timing */
+   if (!(gen = live_engine(ops, data, NULL)))
+      return 1;
+   mode = live_switch(gen, ops);
+   if (!mode || live_read(dpy, &st) < 0
+         || (st.flags & RR_CSync))
+   {
+      fprintf(stderr, "FAIL: plain 320x240 switch\n");
+      goto done_engine;
+   }
+   plain = *mode;
+   strcpy(name, st.name);
+   live_engine_end(ops, data, gen);
+
+   /* A leftover with the same name and timing is taken over */
+   foreign = live_foreign_mode(dpy, &plain, name, 0);
+   if (!(gen = live_engine(ops, data, NULL)))
+      goto done;
+   mode = live_switch(gen, ops);
+   if (!mode || (RRMode)mode->platform_data != foreign
+         || check_on_wire(dpy, mode, "leftover reused"))
+   {
+      fprintf(stderr, "FAIL: the identical leftover %s was not reused\n", name);
+      goto done_engine;
+   }
+   live_engine_end(ops, data, gen);
+   if (live_mode_listed(dpy, foreign) || live_read(dpy, &st) < 0
+         || st.ra_modes)
+   {
+      fprintf(stderr, "FAIL: the reused leftover outlived restore\n");
+      goto done;
+   }
+   foreign = 0;
+   printf("[pass] identical leftover %s reused and cleaned up\n", name);
+
+   /* Same name, other timing: a suffixed mode, the other one kept */
+   foreign = live_foreign_mode(dpy, &plain, name, 8);
+   if (!(gen = live_engine(ops, data, NULL)))
+      goto done;
+   mode = live_switch(gen, ops);
+   if (!mode || (RRMode)mode->platform_data == foreign
+         || check_on_wire(dpy, mode, "same name, other timing")
+         || live_read(dpy, &st) < 0
+         || strncmp(st.name, name, strlen(name)) || !strstr(st.name, "-1"))
+   {
+      fprintf(stderr, "FAIL: a same-named mode with other timing was taken (%s)\n",
+            st.name);
+      goto done_engine;
+   }
+   live_engine_end(ops, data, gen);
+   if (!live_mode_listed(dpy, foreign))
+   {
+      fprintf(stderr, "FAIL: restore destroyed a mode it did not create\n");
+      goto done;
+   }
+   printf("[pass] other timing under %s: own mode, theirs kept\n", name);
+   failed = 0;
+   goto done;
+
+done_engine:
+   live_engine_end(ops, data, gen);
+done:
+   if (foreign && live_mode_listed(dpy, foreign))
+      XRRDestroyMode(dpy, foreign);
+   XSync(dpy, False);
+   return failed;
+}
+
 int main(void)
 {
    Display *dpy;
@@ -870,6 +1049,9 @@ int main(void)
       if (res)
          XRRFreeScreenResources(res);
    }
+
+   if (test_csync_and_mode_names(dpy, &ops, data))
+      return 1;
 
    if (test_screen_resolution(dpy, data))
       return 1;

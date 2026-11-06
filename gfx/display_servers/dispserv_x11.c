@@ -397,27 +397,6 @@ static bool x11_ml_find_mode(x11_modeline_t *ml, uint64_t xid,
    return found;
 }
 
-static bool x11_ml_find_mode_by_name(x11_modeline_t *ml, const char *name,
-      XRRModeInfo *out)
-{
-   int m;
-   bool found = false;
-   XRRScreenResources *resources = XRRGetScreenResourcesCurrent(ml->dpy, ml->root);
-   if (!resources)
-      return false;
-   for (m = 0; m < resources->nmode; m++)
-   {
-      if (strcmp(resources->modes[m].name, name) == 0)
-      {
-         *out  = resources->modes[m];
-         found = true;
-         break;
-      }
-   }
-   XRRFreeScreenResources(resources);
-   return found;
-}
-
 /* Switch the managed output to pxmode, relocating the other crtcs
  * and resizing the framebuffer as needed. flags selects crtc
  * relocation and the one-time desktop reordering pass. */
@@ -1028,7 +1007,7 @@ static void x11_display_server_modeline_close(void *data)
 
 static unsigned x11_display_server_modeline_caps(void *data)
 {
-   return MODELINE_CAPS_ADD;
+   return MODELINE_CAPS_ADD | MODELINE_CAPS_CSYNC;
 }
 
 static int x11_display_server_modeline_enum(void *data,
@@ -1078,6 +1057,17 @@ static int x11_display_server_modeline_enum(void *data,
          mode->doublescan = (pxmode->modeFlags & RR_DoubleScan) ? 1 : 0;
          mode->hsync      = (pxmode->modeFlags & RR_HSyncPositive) ? 1 : 0;
          mode->vsync      = (pxmode->modeFlags & RR_VSyncPositive) ? 1 : 0;
+         if (pxmode->modeFlags & RR_CSync)
+         {
+            if ((pxmode->modeFlags & RR_CSyncNegative)
+                  && !(pxmode->modeFlags & RR_CSyncPositive))
+               mode->csync = MODELINE_CSYNC_NEGATIVE;
+            else if ((pxmode->modeFlags & RR_CSyncPositive)
+                  && !(pxmode->modeFlags & RR_CSyncNegative))
+               mode->csync = MODELINE_CSYNC_POSITIVE;
+            else
+               mode->csync = MODELINE_CSYNC_UNKNOWN;
+         }
          /* Whole hertz for the line rate, the label the list uses. A
           * virtual or headless server lists its mode with the timing
           * left at zero; the mode is real, its rate is unknown, and
@@ -1185,13 +1175,90 @@ static bool x11_display_server_modeline_delete(void *data,
    return total_xerrors == 0;
 }
 
+static unsigned long x11_ml_mode_flags(const video_modeline_t *mode)
+{
+   return (mode->interlace ? RR_Interlace : 0)
+      | (mode->doublescan ? RR_DoubleScan : 0)
+      | (mode->hsync ? RR_HSyncPositive : RR_HSyncNegative)
+      | (mode->vsync ? RR_VSyncPositive : RR_VSyncNegative)
+      | (mode->csync == MODELINE_CSYNC_NEGATIVE
+         ? RR_CSync | RR_CSyncNegative : 0)
+      | (mode->csync == MODELINE_CSYNC_POSITIVE
+         ? RR_CSync | RR_CSyncPositive : 0);
+}
+
+static bool x11_ml_mode_matches(const XRRModeInfo *existing,
+      const video_modeline_t *mode)
+{
+   return existing->dotClock == mode->pclock
+      && existing->width      == (unsigned int)mode->hactive
+      && existing->hSyncStart == (unsigned int)mode->hbegin
+      && existing->hSyncEnd   == (unsigned int)mode->hend
+      && existing->hTotal     == (unsigned int)mode->htotal
+      && existing->height     == (unsigned int)mode->vactive
+      && existing->vSyncStart == (unsigned int)mode->vbegin
+      && existing->vSyncEnd   == (unsigned int)mode->vend
+      && existing->vTotal     == (unsigned int)mode->vtotal
+      && existing->modeFlags  == x11_ml_mode_flags(mode);
+}
+
+/* A same-named mode is reused only when its timing is identical;
+ * otherwise the new one gets a suffix. *reuse is 0 for a new mode. */
+static bool x11_ml_pick_name(const XRRScreenResources *res,
+      const video_modeline_t *mode, char *name, size_t len, RRMode *reuse)
+{
+   int m, suffix;
+   char base[48];
+
+   snprintf(base, sizeof(base), "RA-%dx%d@%.02f%s%s",
+         mode->hactive, mode->vactive, mode->vfreq,
+         mode->interlace ? "i" : "",
+         mode->csync == MODELINE_CSYNC_NEGATIVE ? "-cn" :
+         mode->csync == MODELINE_CSYNC_POSITIVE ? "-cp" : "");
+
+   *reuse = 0;
+   for (suffix = 0; suffix < 100; suffix++)
+   {
+      if (!suffix)
+         strlcpy(name, base, len);
+      else
+         snprintf(name, len, "%s-%d", base, suffix);
+      for (m = 0; m < res->nmode; m++)
+         if (!strcmp(res->modes[m].name, name))
+            break;
+      if (m == res->nmode)
+         return true;
+      if (x11_ml_mode_matches(&res->modes[m], mode))
+      {
+         *reuse = res->modes[m].id;
+         return true;
+      }
+   }
+   return false;
+}
+
+static bool x11_ml_output_has_mode(x11_modeline_t *ml,
+      XRRScreenResources *res, RRMode id)
+{
+   int m;
+   bool found = false;
+   XRROutputInfo *oi = XRRGetOutputInfo(ml->dpy, res,
+         res->outputs[ml->desktop_output]);
+   if (!oi)
+      return false;
+   for (m = 0; m < oi->nmode && !found; m++)
+      found = (oi->modes[m] == id);
+   XRRFreeOutputInfo(oi);
+   return found;
+}
+
 static bool x11_display_server_modeline_add(void *data,
       video_modeline_t *mode)
 {
-   char name[48];
+   char name[64];
    XRRModeInfo xmode;
    XRRModeInfo found;
-   RRMode gmid;
+   RRMode reuse;
    XRRScreenResources *resources;
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
    x11_modeline_t *ml       = &dispserv->ml;
@@ -1204,57 +1271,68 @@ static bool x11_display_server_modeline_add(void *data,
       return false;
    }
 
-   if (x11_ml_find_mode(ml, mode->platform_data, &found))
+   if (mode->platform_data
+         && x11_ml_find_mode(ml, mode->platform_data, &found)
+         && x11_ml_mode_matches(&found, mode))
    {
       RARCH_DBG("[XRandR] Mode already exists\n");
       return true;
    }
 
-   snprintf(name, sizeof(name), "RA-%dx%d@%.02f%s", mode->hactive,
-         mode->vactive, mode->vfreq, mode->interlace ? "i" : "");
-
-   if (x11_ml_find_mode_by_name(ml, name, &found))
-   {
-      RARCH_DBG("[XRandR] Mode already exists (duplicate request)\n");
-      mode->platform_data = found.id;
-      return true;
-   }
-
-   RARCH_DBG("[XRandR] Create mode %s\n", name);
-
-   memset(&xmode, 0, sizeof(xmode));
-   xmode.name       = name;
-   xmode.nameLength = strlen(name);
-   xmode.dotClock   = mode->pclock;
-   xmode.width      = mode->hactive;
-   xmode.hSyncStart = mode->hbegin;
-   xmode.hSyncEnd   = mode->hend;
-   xmode.hTotal     = mode->htotal;
-   xmode.height     = mode->vactive;
-   xmode.vSyncStart = mode->vbegin;
-   xmode.vSyncEnd   = mode->vend;
-   xmode.vTotal     = mode->vtotal;
-   xmode.modeFlags  = (mode->interlace ? RR_Interlace : 0)
-      | (mode->doublescan ? RR_DoubleScan : 0)
-      | (mode->hsync ? RR_HSyncPositive : RR_HSyncNegative)
-      | (mode->vsync ? RR_VSyncPositive : RR_VSyncNegative);
-   xmode.hSkew      = 0;
-   mode->type      |= MODELINE_TIMING_XRANDR;
-
-   ml->xerrors = 0;
-   x11_ml_trap(ml, 0x01);
-   gmid = XRRCreateMode(ml->dpy, ml->root, &xmode);
-   x11_ml_untrap(ml);
-   if (ml->xerrors & ml->xerrors_flag)
-   {
-      RARCH_ERR("[XRandR] Error in XRRCreateMode\n");
-      return false;
-   }
-   mode->platform_data = gmid;
-
    resources = XRRGetScreenResourcesCurrent(ml->dpy, ml->root);
    if (!resources)
       return false;
+   if (!x11_ml_pick_name(resources, mode, name, sizeof(name), &reuse))
+   {
+      RARCH_ERR("[XRandR] No unused mode name for %s\n", name);
+      XRRFreeScreenResources(resources);
+      return false;
+   }
+   mode->type |= MODELINE_TIMING_XRANDR;
+
+   if (reuse)
+   {
+      RARCH_DBG("[XRandR] Reuse mode %s\n", name);
+      mode->platform_data = reuse;
+      if (x11_ml_output_has_mode(ml, resources, reuse))
+      {
+         XRRFreeScreenResources(resources);
+         return true;
+      }
+   }
+   else
+   {
+      RARCH_DBG("[XRandR] Create mode %s\n", name);
+
+      memset(&xmode, 0, sizeof(xmode));
+      xmode.name       = name;
+      xmode.nameLength = strlen(name);
+      xmode.dotClock   = mode->pclock;
+      xmode.width      = mode->hactive;
+      xmode.hSyncStart = mode->hbegin;
+      xmode.hSyncEnd   = mode->hend;
+      xmode.hTotal     = mode->htotal;
+      xmode.height     = mode->vactive;
+      xmode.vSyncStart = mode->vbegin;
+      xmode.vSyncEnd   = mode->vend;
+      xmode.vTotal     = mode->vtotal;
+      xmode.modeFlags  = x11_ml_mode_flags(mode);
+      xmode.hSkew      = 0;
+
+      ml->xerrors = 0;
+      x11_ml_trap(ml, 0x01);
+      mode->platform_data = XRRCreateMode(ml->dpy, ml->root, &xmode);
+      x11_ml_untrap(ml);
+      if (ml->xerrors & ml->xerrors_flag)
+      {
+         RARCH_ERR("[XRandR] Error in XRRCreateMode\n");
+         mode->platform_data = 0;
+         XRRFreeScreenResources(resources);
+         return false;
+      }
+   }
+
+   ml->xerrors = 0;
    x11_ml_trap(ml, 0x02);
    XRRAddOutputMode(ml->dpy, resources->outputs[ml->desktop_output],
          (RRMode)mode->platform_data);
@@ -1264,20 +1342,20 @@ static bool x11_display_server_modeline_add(void *data,
    if (ml->xerrors & ml->xerrors_flag)
    {
       RARCH_ERR("[XRandR] Error in XRRAddOutputMode\n");
-      if (mode->platform_data)
+      if (!reuse)
       {
          RARCH_ERR("[XRandR] Remove mode [%04llx]\n",
                (unsigned long long)mode->platform_data);
          XRRDestroyMode(ml->dpy, (RRMode)mode->platform_data);
-         mode->platform_data = 0;
       }
+      mode->platform_data = 0;
+      return false;
    }
-   else
-      RARCH_DBG("[XRandR] Mode %04llx %dx%d refresh %.6f added\n",
-            (unsigned long long)mode->platform_data, mode->hactive,
-            mode->vactive, mode->vfreq);
 
-   return ml->xerrors == 0;
+   RARCH_DBG("[XRandR] Mode %04llx %dx%d refresh %.6f added\n",
+         (unsigned long long)mode->platform_data, mode->hactive,
+         mode->vactive, mode->vfreq);
+   return true;
 }
 
 static bool x11_display_server_modeline_update(void *data,
