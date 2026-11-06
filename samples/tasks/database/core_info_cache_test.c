@@ -7,6 +7,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <stdint.h>
+
 #include <boolean.h>
 #include <file/file_path.h>
 #include <lists/string_list.h>
@@ -124,6 +126,148 @@ static unsigned long cache_ino(void)
    return (unsigned long)st.st_ino;
 }
 
+static void use_dir(const char *root, const char *sub)
+{
+   snprintf(dir, sizeof(dir), "%s/%s", root, sub);
+   path_mkdir(dir);
+}
+
+static void remove_file(const char *name)
+{
+   char p[1100];
+   snprintf(p, sizeof(p), "%s/%s", dir, name);
+   remove(p);
+}
+
+static void build_list(void)
+{
+   bool cache_supported = false;
+   core_info_deinit_list();
+   core_info_init_list(dir, dir, "so", true, true, &cache_supported);
+}
+
+#define MANY_CORES 20
+
+/* More cores than the cache list starts with and long firmware lists:
+ * the second start is served from the cache alone (the info files are
+ * gone by then), and must give back what the info files said, each
+ * core at its own path. */
+static int check_many_cores(const char *root)
+{
+   int c, f, pass;
+   char name[64], text[4096], core_path[1100];
+
+   use_dir(root, "many");
+   for (c = 0; c < MANY_CORES; c++)
+   {
+      size_t _len;
+      snprintf(name, sizeof(name), "c%02d_libretro.so", c);
+      if (!write_file(name, "\177ELF"))
+         return 1;
+      _len = (size_t)snprintf(text, sizeof(text),
+            "display_name = \"Core %d\"\nsupported_extensions = \"a%d|b\"\n"
+            "firmware_count = %d\n", c, c, c % 7);
+      for (f = 0; f < c % 7; f++)
+         _len += (size_t)snprintf(text + _len, sizeof(text) - _len,
+               "firmware%d_path = \"bios/c%d_%d.bin\"\n"
+               "firmware%d_desc = \"BIOS %d of core %d\"\n"
+               "firmware%d_opt = \"%s\"\n",
+               f, c, f, f, f, c, f, (f & 1) ? "true" : "false");
+      snprintf(name, sizeof(name), "c%02d_libretro.info", c);
+      if (!write_file(name, text))
+         return 1;
+   }
+
+   for (pass = 0; pass < 2; pass++)
+   {
+      build_list();
+      for (c = 0; c < MANY_CORES; c++)
+      {
+         char want[64];
+         core_info_t *info = NULL;
+         snprintf(core_path, sizeof(core_path), "%s/c%02d_libretro.so", dir, c);
+         snprintf(want, sizeof(want), "Core %d", c);
+         if (     !core_info_find(core_path, &info) || !info
+               || !info->path || strcmp(info->path, core_path)
+               || !info->display_name || strcmp(info->display_name, want)
+               || info->firmware_count != (size_t)(c % 7))
+         {
+            fprintf(stderr, "FAIL  core_info_cache: core %d wrong on %s start\n",
+                  c, pass ? "cached" : "first");
+            return 1;
+         }
+         for (f = 0; f < c % 7; f++)
+         {
+            char fw_path[64], fw_desc[64];
+            snprintf(fw_path, sizeof(fw_path), "bios/c%d_%d.bin", c, f);
+            snprintf(fw_desc, sizeof(fw_desc), "BIOS %d of core %d", f, c);
+            if (     !info->firmware[f].path || strcmp(info->firmware[f].path, fw_path)
+                  || !info->firmware[f].desc || strcmp(info->firmware[f].desc, fw_desc)
+                  || info->firmware[f].optional != ((f & 1) ? true : false))
+            {
+               fprintf(stderr, "FAIL  core_info_cache: core %d firmware %d wrong on %s start\n",
+                     c, f, pass ? "cached" : "first");
+               return 1;
+            }
+         }
+      }
+      if (!pass)
+         for (c = 0; c < MANY_CORES; c++)
+         {
+            snprintf(name, sizeof(name), "c%02d_libretro.info", c);
+            remove_file(name);
+         }
+   }
+   core_info_deinit_list();
+   printf("ok    core_info_cache: %d cores and their firmware come back whole from the cache\n",
+         MANY_CORES);
+   return 0;
+}
+
+static uint32_t id_hash(const char *s)
+{
+   unsigned char ch;
+   uint32_t hash = (uint32_t)0x811c9dc5;
+   while ((ch = (unsigned char)*(s++)) != '\0')
+      hash = ((hash * (uint32_t)0x01000193) ^ (uint32_t)ch);
+   return hash ? hash : 1;
+}
+
+/* A cache cut off inside an entry's firmware list is thrown away
+ * without leaking the half-read entry, and the info file is read. */
+static int check_truncated_cache(const char *root)
+{
+   char text[1024], core_path[1100];
+   core_info_t *info = NULL;
+
+   use_dir(root, "truncated");
+   if (     !write_file("t_libretro.so", "\177ELF")
+         || !write_file("t_libretro.info", "display_name = \"From Info\"\n"))
+      return 1;
+   snprintf(text, sizeof(text),
+         "{\n  \"version\": \"1.2\",\n  \"items\": [\n"
+         "    {\n      \"display_name\": \"Whole\",\n"
+         "      \"core_file_id\": { \"str\": \"other_libretro\", \"hash\": %u }\n    },\n"
+         "    {\n      \"display_name\": \"Cut\",\n"
+         "      \"core_file_id\": { \"str\": \"t_libretro\", \"hash\": %u },\n"
+         "      \"firmware\": [ { \"path\": \"a.bin\", \"desc\": \"A\" }, { \"path\": \"b",
+         (unsigned)id_hash("other_libretro"), (unsigned)id_hash("t_libretro"));
+   if (!write_file("core_info.cache", text))
+      return 1;
+
+   build_list();
+   snprintf(core_path, sizeof(core_path), "%s/t_libretro.so", dir);
+   if (     !core_info_find(core_path, &info) || !info
+         || !info->display_name || strcmp(info->display_name, "From Info"))
+   {
+      fprintf(stderr, "FAIL  core_info_cache: a cut-off cache was trusted\n");
+      return 1;
+   }
+   core_info_deinit_list();
+   printf("ok    core_info_cache: a cache cut off inside an entry is discarded\n");
+   return 0;
+}
+
 int main(int argc, char **argv)
 {
    int i;
@@ -202,5 +346,8 @@ int main(int argc, char **argv)
 
    core_info_deinit_list();
    printf("ok    core_info_cache: a late info file is read, and rebuilds keep the cache whole\n");
+
+   if (check_many_cores(argv[1]) || check_truncated_cache(argv[1]))
+      return 1;
    return 0;
 }
