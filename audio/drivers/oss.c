@@ -69,6 +69,13 @@ typedef struct oss_audio
    int16_t *stage;
    size_t   stage_bytes;
    bool is_paused;
+   bool nonblock;
+   /* select() on this device does not wait for room: a driver with no
+    * poll method - RetroFW's jz4760 one - reports every descriptor
+    * ready at once. Latched by oss_wait_writable(); from then on the
+    * wait for room is the blocking write's, in the driver, on its own
+    * fragment-done interrupt. */
+   bool select_blind;
 } oss_audio_t;
 
 #define OSS_FRAME_BYTES (ossaudio->channels * sizeof(int16_t))
@@ -242,10 +249,12 @@ static size_t oss_frames_consumed(void *data)
 /* Sleep in select() on the device until it is writable, which OSS
  * reports at fragment granularity, then ask SNDCTL_DSP_GETOSPACE how
  * much fits; repeat until at least len bytes do, len capped at one
- * fragment. Every select() is bounded to two fragments' worth of time
- * and the loop to OSS_WAIT_WRITABLE_LAPS, so a device that stalls or
- * wakes without space returns 0 - a pass to skip - rather than holding
- * the audio thread. Returns the free space otherwise. */
+ * fragment. Every select() is bounded to two fragments' worth of time,
+ * so a device that stalls returns 0 - a pass to skip - rather than
+ * holding the audio thread. A device that wakes OSS_WAIT_WRITABLE_LAPS
+ * times without space has a select() that does not wait on room
+ * (select_blind): its room is claimed from then on, and the blocking
+ * write waits for it. Returns the free space otherwise. */
 static size_t oss_wait_writable(void *data, size_t len)
 {
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
@@ -266,6 +275,12 @@ static size_t oss_wait_writable(void *data, size_t len)
          want = (size_t)info.fragsize;
       if (info.bytes >= (int)want)
          return (size_t)info.bytes;
+      /* Nothing here can wait on such a device: the room is claimed,
+       * and the write that follows sleeps in the driver until a
+       * fragment is played. Not without blocking writes - there the
+       * write would refuse, and the caller skips the pass instead. */
+      if (ossaudio->select_blind)
+         return ossaudio->nonblock ? 0 : want;
 
       /* Two fragments, in microseconds: a fragment is fragsize bytes
        * of 16-bit stereo at the device rate. Clamped so a strange
@@ -290,8 +305,15 @@ static size_t oss_wait_writable(void *data, size_t len)
       }
       if (rc == 0)
          return 0;
+      /* Every lap woken and none of them with room: select() is not
+       * waiting on room. Handed 0 for it, the audio thread comes
+       * straight back, and on a single core at real-time priority
+       * nothing else then runs. */
       if (--laps < 0)
-         return 0;
+      {
+         ossaudio->select_blind = true;
+         return ossaudio->nonblock ? 0 : want;
+      }
    }
 }
 
@@ -336,6 +358,8 @@ static void oss_set_nonblock_state(void *data, bool state)
             fcntl(ossaudio->fd, F_GETFL) & (~O_NONBLOCK));
    if (rc != 0)
       RARCH_WARN("[OSS] Could not set nonblocking on OSS file descriptor. Will not be able to fast-forward.\n");
+   else
+      ossaudio->nonblock = state;
 }
 
 static void oss_free(void *data)
@@ -348,6 +372,9 @@ static void oss_free(void *data)
       return;
 #endif
 
+   if (ossaudio->select_blind)
+      RARCH_LOG("[OSS] The device's select() did not wait for room; "
+            "its blocking write did.\n");
    close(ossaudio->fd);
    free(ossaudio->stage);
    free(data);
