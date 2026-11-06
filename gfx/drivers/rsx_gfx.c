@@ -37,6 +37,7 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../gfx_display.h"
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx_widgets.h"
 #endif
@@ -52,8 +53,8 @@
 #include <libretro_rsx.h>
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
-#include "../display_servers/dispserv_ps3.h"
 #endif
+#include "../display_servers/dispserv_ps3.h"
 
 #define RSX_MAX_BUFFERS 2
 #define RSX_MAX_MENU_BUFFERS 2
@@ -1480,11 +1481,10 @@ error:
 
 static int rsx_flip(gcmContextData *context, s32 buffer)
 {
+   gcmResetFlipStatus();
    if (gcmSetFlip(context, buffer) == 0)
    {
       rsxFlushBuffer (context);
-      /* Prevent the RSX from continuing until the flip has finished. */
-      gcmSetWaitFlip (context);
       return 1;
    }
    return 0;
@@ -1520,7 +1520,6 @@ static void rsx_wait_flip(void)
 {
   while(gcmGetFlipStatus() != 0)
     usleep(200);  /* Sleep, to not stress the cpu. */
-  gcmResetFlipStatus();
 }
 
 static gcmContextData *rsx_init_screen(rsx_t* gcm)
@@ -2651,8 +2650,6 @@ static void rsx_update_screen(rsx_t* gcm)
    }
 
    rsx_flip(gcm->context, buffer->id);
-   if (gcm->vsync)
-      rsx_wait_flip();
    rsxSetSurface(gcm->context, &gcm->surface[gcm->nextBuffer]);
 #ifdef HAVE_SYSUTILS
    cellSysutilCheckCallback();
@@ -2715,16 +2712,29 @@ static bool rsx_frame(void* data, const void* frame,
          || gcm->overlay_enable
 #endif
          || video_info->widgets_visible;
-   bool draw_ui                     = ui_now || gcm->ui_presented;
-   /* The core shares the FIFO and leaves its own state behind.
-    * Restore the frontend's state before anything of ours is drawn:
-    * a core frame (hardware or CPU fallback), or a duped frame that
-    * still gets the menu, overlay, OSD or widgets drawn on top.  A
-    * bare dupe draws nothing and skips it. */
-   bool restore                     = gcm->hw_render && (frame || draw_ui);
+   bool draw_cached                 = ui_now || gcm->ui_presented || gcm->vsync;
+   bool sync_ui                     = false
+#ifdef HAVE_MENU
+         || menu_is_alive || gcm->menu_frame_enable
+#endif
+#ifdef HAVE_OVERLAY
+         || gcm->overlay_enable
+#endif
+         ;
+   /* Two images keep the core behind the flip: lowest input latency */
+   bool overlap                     = video_info->max_swapchain_images > 2;
+   /* The core shares the FIFO and leaves its own state behind. */
+   bool restore                     = gcm->hw_render && (frame || draw_cached);
 
    rsx_collect_retired_memory();
    rsx_fence_retired_memory(gcm->context);
+   /* Core work overlaps the previous flip; UI buffers cannot. */
+   if (frame || draw_cached)
+   {
+      if (gcm->vsync)
+         rsx_wait_flip();
+      gcmSetWaitFlip(gcm->context);
+   }
    if (restore)
    {
       unsigned attrib;
@@ -2752,6 +2762,9 @@ static bool rsx_frame(void* data, const void* frame,
 
    if (gcm->should_resize)
       rsx_update_viewport(gcm);
+
+   if (frame || draw_cached)
+      rsx_clear_surface(gcm);
 
    vp.min                           = 0.0f;
    vp.max                           = 1.0f;
@@ -2784,14 +2797,16 @@ static bool rsx_frame(void* data, const void* frame,
    }
    else if (frame && width && height)
    {
-      gcm->tex_index  = ((gcm->tex_index + 1) % RSX_MAX_TEXTURES);
+      /* A failed load leaves the last good frame the cached one */
+      unsigned next   = (gcm->tex_index + 1) % RSX_MAX_TEXTURES;
       if (rsx_load_texture_data(gcm,
-            &gcm->texture[gcm->tex_index],
+            &gcm->texture[next],
             frame, width, height, pitch, gcm->rgb32, false,
             gcm->smooth
             ? TEXTURE_FILTER_LINEAR
             : TEXTURE_FILTER_NEAREST))
       {
+         gcm->tex_index = next;
          /* TODO/FIXME - pipeline ID being used here is RSX_SHADER_MENU,
           * shouldn't this be RSX_SHADER_STOCK_BLEND instead? */
          rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
@@ -2800,17 +2815,24 @@ static bool rsx_frame(void* data, const void* frame,
       }
    }
 
-   /* Rebuild the background before any frontend layers. */
-   if (!draw && draw_ui)
+   /* Core duplicates still need a synchronized present. */
+   if (!draw && draw_cached)
    {
       if (gcm->hw_render && gcm->hw_image_valid)
+      {
          rsx_draw_hw_image(gcm);
+         draw = true;
+      }
       else if (gcm->texture[gcm->tex_index].data)
       {
          rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
          rsx_draw_vertices(gcm);
+         draw = true;
       }
-      draw = true;
+      /* Nothing cached: a cleared buffer goes out only to put up or
+       * take down UI, never in place of the image on screen */
+      else if (ui_now || gcm->ui_presented)
+         draw = true;
    }
 
 #ifdef HAVE_MENU
@@ -2842,9 +2864,9 @@ static bool rsx_frame(void* data, const void* frame,
 
 #ifdef HAVE_GFX_WIDGETS
    /* Called on bare dupes too, for the widgets' own per-frame work.
-    * Those go out without the state restore and are not presented,
-    * so this relies on gfx_widgets_frame drawing nothing whenever
-    * the frame's widgets_visible is false. */
+    * Without vsync those go out without the state restore and are not
+    * presented, so this relies on gfx_widgets_frame drawing nothing
+    * whenever the frame's widgets_visible is false. */
    if (widgets_active)
       gfx_widgets_frame(video_info);
 #endif
@@ -2857,9 +2879,11 @@ static bool rsx_frame(void* data, const void* frame,
 #endif
    if (draw)
    {
-      /* Only update when we draw to prevent flickering when core frame duping is enabled */
+      /* Undrawn frames are not presented: the last image stays up */
       rsx_update_screen(gcm);
-      rsx_clear_surface(gcm);
+      /* Menu and overlay uploads happen between frame calls. */
+      if (gcm->vsync && (sync_ui || !overlap))
+         rsx_wait_flip();
       gcm->ui_presented = ui_now;
    }
    gcm->vert_idx         = 0;
@@ -2998,7 +3022,12 @@ static void rsx_set_osd_msg(void *data,
 }
 #endif
 
-static uint32_t rsx_get_flags(void *data) { return 0; }
+static uint32_t rsx_get_flags(void *data)
+{
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
+   return flags;
+}
 
 /* --- GPU-native BCn compressed-texture upload (PoC) --- */
 /* RSX (NV47/G70) natively samples DXT1/DXT23/DXT45 == BC1/BC2/BC3.

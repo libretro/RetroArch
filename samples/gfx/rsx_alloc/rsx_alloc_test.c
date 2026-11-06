@@ -30,6 +30,10 @@
  *    cursors and GPU fences.
  *  - native_menu_frame, menu_dupe_frame: a menu with no new core
  *    frame is presented, over the last core frame if there is one.
+ *  - flip_latency: two swapchain images keep the core behind the
+ *    flip, three let it run into the pending one.
+ *  - dupe_keeps_image: a dupe redraws the last frame that loaded,
+ *    and with none presents nothing.
  *
  * Plain C and the C library only, so it builds and runs the same with
  * mingw on Windows. */
@@ -156,15 +160,83 @@ void rsxSetWaitForIdle(gcmContextData *context) { }
 void rsxSetWriteBackendLabel(gcmContextData *context, u8 index, u32 value)
 { if (!fake_defer_backend) fake_labels[index] = value; }
 u32 *gcmGetLabelAddress(const u8 index) { return &fake_labels[index]; }
-u32  gcmGetFlipStatus(void) { return 0; }
-void gcmResetFlipStatus(void) { }
+static unsigned rsx_flip_waits;
+static retro_time_t fake_time;
+static retro_time_t fake_flip_period;
+static retro_time_t fake_flip_due;
+static retro_time_t fake_gpu_time;
+static unsigned fake_flip_overlap;
+static unsigned fake_clear_hazards;
+static unsigned fake_time_reads;
+static retro_time_t fake_last_flip_due;
+/* The flip status as GCM keeps it: 1 from a reset until the flip
+ * queued after it has been shown, 0 from then on */
+static u32 fake_flip_status;
+static bool fake_flip_queued;
+static unsigned fake_flip_hangs;
+/* rsx_wait_flip spins on this; a pending flip is shown at its due
+ * time, a reset with no flip behind it would spin forever */
+u32 gcmGetFlipStatus(void)
+{
+   rsx_flip_waits++;
+   if (fake_flip_status)
+   {
+      if (!fake_flip_queued)
+         fake_flip_hangs++;
+      else if (fake_flip_period && fake_time < fake_flip_due)
+         fake_time = fake_flip_due;
+      fake_flip_status = 0;
+      fake_flip_due    = 0;
+   }
+   return 0;
+}
+void gcmResetFlipStatus(void)
+{
+   fake_flip_status = 1;
+   fake_flip_queued = false;
+}
 s32  gcmSetDisplayBuffer(const u8 bufferId, const u32 offset,
       const u32 pitch, const u32 width, const u32 height) { return 0; }
 static unsigned rsx_flip_calls;
+retro_time_t cpu_features_get_time_usec(void)
+{
+   fake_time_reads++;
+   return fake_time;
+}
 s32  gcmSetFlip(gcmContextData *context, const u8 bufferId)
-{ rsx_flip_calls++; return 0; }
+{
+   rsx_flip_calls++;
+   fake_flip_queued = true;
+   if (fake_flip_period)
+   {
+      if (fake_flip_due > fake_time)
+         fake_flip_overlap++;
+      if (fake_gpu_time < fake_time)
+         fake_gpu_time = fake_time;
+      fake_flip_due = (fake_gpu_time / fake_flip_period + 1) * fake_flip_period;
+      fake_last_flip_due = fake_flip_due;
+   }
+   return 0;
+}
+
+/* A flip queued one period out, as a test's first frame finds it */
+static void fake_flip_pending(void)
+{
+   fake_flip_status = 1;
+   fake_flip_queued = true;
+   fake_flip_due    = fake_time + fake_flip_period;
+}
 void gcmSetFlipMode(const u32 mode) { }
-void gcmSetWaitFlip(gcmContextData *context) { }
+void gcmSetWaitFlip(gcmContextData *context)
+{
+   if (fake_flip_period)
+   {
+      if (fake_gpu_time < fake_time)
+         fake_gpu_time = fake_time;
+      if (fake_gpu_time < fake_flip_due)
+         fake_gpu_time = fake_flip_due;
+   }
+}
 
 void rsxVertexProgramGetUCode(const rsxVertexProgram *vp, void **ucode,
       u32 *size) { *ucode = fake_ucode; *size = sizeof(fake_ucode); }
@@ -181,7 +253,11 @@ rsxProgramAttrib *rsxFragmentProgramGetAttrib(const rsxFragmentProgram *fp,
 
 void rsxBindVertexArrayAttrib(gcmContextData *c, u8 attr, u16 frequency,
       u32 offset, u8 stride, u8 elems, u8 dtype, u8 location) { }
-void rsxClearSurface(gcmContextData *c, u32 clear_mask) { }
+void rsxClearSurface(gcmContextData *c, u32 clear_mask)
+{
+   if (fake_flip_period && fake_gpu_time < fake_flip_due)
+      fake_clear_hazards++;
+}
 static unsigned rsx_draw_calls;
 #define FAKE_DRAW_OSD UINT32_MAX
 #define FAKE_DRAW_WIDGET (UINT32_MAX - 1)
@@ -298,6 +374,7 @@ void input_driver_video_window(enum input_window_kind window,
 void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info) { }
 static bool fake_widgets_visible = true;
 static unsigned fake_widget_calls;
+static bool fake_widget_restored;
 bool gfx_widgets_visible(void *data)
 {
    video_frame_info_t *info = (video_frame_info_t*)data;
@@ -308,7 +385,10 @@ void gfx_widgets_frame(void *data)
 {
    fake_widget_calls++;
    if (gfx_widgets_visible(data))
+   {
+      fake_widget_restored = rsx_depth_test_enable == GCM_FALSE;
       fake_record_draw(FAKE_DRAW_WIDGET);
+   }
 }
 int32_t sysUtilCheckCallback(void) { return 0; }
 uintptr_t video_thread_texture_handle(void *data,
@@ -1214,6 +1294,262 @@ static void test_widget_visibility(void)
    printf("widget_visibility: ok\n");
 }
 
+static void test_ui_dupe_pacing(void)
+{
+   static uint16_t pixels[4 * 4];
+   video_frame_info_t info;
+   rsx_t *rsx;
+   unsigned mode, i, flips, waits, calls, reads, overlaps, hazards;
+   retro_time_t start;
+
+   memset(&info, 0, sizeof(info));
+   fake_hwr.context_type = RETRO_HW_CONTEXT_RSX;
+   rsx = driver_up();
+   info.refresh_rate = 60.0f;
+   info.max_swapchain_images = 3;
+   info.widgets_active = true;
+   rsx_set_nonblock_state(rsx, false, false, 1);
+   fake_flip_period = 16667;
+   for (mode = 0; mode < 5; mode++)
+   {
+      flips = rsx_flip_calls;
+      waits = rsx_flip_waits;
+      calls = fake_widget_calls;
+      reads = fake_time_reads;
+      overlaps = fake_flip_overlap;
+      hazards = fake_clear_hazards;
+      fake_time = start = 10 * fake_flip_period;
+      fake_gpu_time = fake_time;
+      fake_flip_pending();
+      for (i = 0; i < 120; i++)
+      {
+         const void *frame = mode == 0 || mode >= 3 ? (i & 1 ? NULL : pixels)
+            : mode == 1 ? (i & 1 ? NULL : RETRO_HW_FRAME_BUFFER_VALID)
+            : NULL;
+         fake_time += mode == 3 && !(i & 1) ? 20000 : 1000;
+         if (mode == 4)
+         {
+            if (fake_gpu_time < fake_time)
+               fake_gpu_time = fake_time;
+            fake_gpu_time += (i & 1) ? 1000 : 20000;
+         }
+         rsx_depth_test_enable = GCM_TRUE;
+         fake_widget_restored = false;
+         frame_out(rsx, frame, VIDEO_SCALE_PACK(4, 4), i, 8, NULL, &info);
+         CHECK(fake_widget_restored,
+               "ui_dupe_pacing: visible widgets missing or drawn without state restore");
+      }
+      CHECK(rsx_flip_calls == flips + 120 && rsx_flip_waits == waits + 120,
+            "ui_dupe_pacing: core duplicates lost synchronized presents");
+      CHECK(fake_time - start == 120 * fake_flip_period,
+            "ui_dupe_pacing: lost display cadence (%ld us, expected %ld us)",
+            (long)(fake_time - start), (long)(120 * fake_flip_period));
+      CHECK(fake_widget_calls == calls + 120 && !info.notifications_hidden,
+            "ui_dupe_pacing: widget frames suppressed");
+      CHECK(fake_time_reads == reads,
+            "ui_dupe_pacing: frame path reads wall clock");
+      CHECK(fake_flip_overlap == overlaps,
+            "ui_dupe_pacing: new flip submitted before previous one completes");
+      CHECK(fake_clear_hazards == hazards,
+            "ui_dupe_pacing: framebuffer cleared before previous flip completes");
+   }
+
+   flips = rsx_flip_calls;
+   waits = rsx_flip_waits;
+   rsx->menu_frame_enable = true;
+   info.menu_st_flags = MENU_ST_FLAG_ALIVE;
+   frame_out(rsx, NULL, 0, 120, 0, NULL, &info);
+   frame_out(rsx, NULL, 0, 121, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips + 2 && !fake_flip_due,
+         "ui_dupe_pacing: menu returned with uploads still in use");
+   rsx->menu_frame_enable = false;
+   info.menu_st_flags = 0;
+   rsx->should_resize = true;
+   frame_out(rsx, NULL, 0, 122, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips + 3 && !rsx->should_resize,
+         "ui_dupe_pacing: viewport resize deferred");
+
+   info.widgets_active = false;
+   frame_out(rsx, NULL, 0, 123, 0, NULL, &info);
+   frame_out(rsx, NULL, 0, 124, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips + 5 && !rsx->ui_presented,
+         "ui_dupe_pacing: cleanup lost display cadence or stayed pending");
+
+   info.widgets_active = true;
+   flips = rsx_flip_calls;
+   waits = rsx_flip_waits;
+   rsx_set_nonblock_state(rsx, true, false, 1);
+   frame_out(rsx, NULL, 0, 125, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips + 1 && rsx_flip_waits == waits,
+         "ui_dupe_pacing: nonblocking frame waited or deferred");
+   rsx_set_nonblock_state(rsx, false, false, 1);
+   info.frame_repeat = true;
+   frame_out(rsx, NULL, 0, 126, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips + 2 && rsx_flip_waits == waits + 1,
+         "ui_dupe_pacing: cached replay deferred");
+   rsx->overlay_enable = true;
+   flips = rsx_flip_calls;
+   frame_out(rsx, NULL, 0, 127, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips + 1 && !fake_flip_due,
+         "ui_dupe_pacing: overlay returned with vertices still in use");
+   fake_flip_period = 0;
+   fake_flip_due = 0;
+   driver_down(rsx);
+   fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
+   printf("ui_dupe_pacing: ok\n");
+}
+
+static void test_bare_dupe_pacing(void)
+{
+   static uint16_t pixels[4 * 4];
+   video_frame_info_t info;
+   struct retro_rsx_image image;
+   rsx_t *rsx;
+   unsigned mode, i, flips, waits, calls, draws, restores, index, allocations;
+   retro_time_t start;
+
+   for (mode = 0; mode < 4; mode++)
+   {
+      const void *source = mode & 1 ? RETRO_HW_FRAME_BUFFER_VALID : pixels;
+      memset(&info, 0, sizeof(info));
+      info.widgets_active = true;
+      info.max_swapchain_images = 3;
+      fake_hwr.context_type = mode & 1 ? RETRO_HW_CONTEXT_RSX : RETRO_HW_CONTEXT_NONE;
+      rsx = driver_up();
+      fake_widgets_visible = false;
+      image.offset = 0x10000;
+      image.pitch  = 4 * 4;
+      image.width  = image.height = 4;
+      if (mode & 1)
+         CHECK(rsx_set_hw_image(rsx, &image), "bare_dupe_pacing: cached image");
+      frame_out(rsx, source, VIDEO_SCALE_PACK(4, 4), 0, 8, NULL, &info);
+      rsx_set_nonblock_state(rsx, false, false, 1);
+      flips = rsx_flip_calls;
+      waits = rsx_flip_waits;
+      calls = fake_widget_calls;
+      draws = rsx_draw_calls;
+      restores = rsx_depth_test_calls;
+      index = rsx->tex_index;
+      allocations = rsx_alloc_calls;
+      fake_flip_period = 16667;
+      fake_time = start = 10 * fake_flip_period;
+      fake_gpu_time = fake_time;
+      fake_flip_pending();
+      for (i = 0; i < 120; i++)
+      {
+         fake_time += 1000;
+         frame_out(rsx, mode >= 2 || (i & 1) ? NULL : source,
+               VIDEO_SCALE_PACK(4, 4), i + 1, 8, NULL, &info);
+      }
+      CHECK(rsx_flip_calls == flips + 120 && rsx_flip_waits == waits + 120,
+            "bare_dupe_pacing: core duplicates lost synchronized presents (mode %u)", mode);
+      CHECK(fake_time - start == 120 * fake_flip_period,
+            "bare_dupe_pacing: lost display cadence (mode %u, %ld us)",
+            mode, (long)(fake_time - start));
+      CHECK(rsx_draw_calls == draws + 120 && !rsx->ui_presented,
+            "bare_dupe_pacing: cached background missing or marked as UI");
+      CHECK(!(mode & 1) || rsx_depth_test_calls == restores + 120,
+            "bare_dupe_pacing: cached hardware draw missing state restore");
+      CHECK(fake_widget_calls == calls + 120 && !info.widgets_visible,
+            "bare_dupe_pacing: invisible widget housekeeping suppressed");
+      CHECK(mode < 2 || (rsx->tex_index == index && rsx_alloc_calls == allocations),
+            "bare_dupe_pacing: duplicate uploaded or allocated a texture");
+      flips = rsx_flip_calls;
+      waits = rsx_flip_waits;
+      draws = rsx_draw_calls;
+      rsx_set_nonblock_state(rsx, true, false, 1);
+      frame_out(rsx, NULL, 0, 121, 0, NULL, &info);
+      CHECK(rsx_flip_calls == flips && rsx_flip_waits == waits && rsx_draw_calls == draws,
+            "bare_dupe_pacing: nonblocking duplicate presented or waited");
+      fake_flip_period = fake_flip_due = 0;
+      driver_down(rsx);
+   }
+   fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
+   printf("bare_dupe_pacing: ok\n");
+}
+
+/* Input is polled as retro_run starts, when the last frame call has
+ * returned; the frame is seen at the vblank its flip lands on */
+static void test_flip_latency(void)
+{
+   static uint16_t pixels[4 * 4];
+   video_frame_info_t info;
+   rsx_t *rsx;
+   unsigned images, i, hangs;
+   retro_time_t poll, worst;
+
+   for (images = 2; images <= 3; images++)
+   {
+      memset(&info, 0, sizeof(info));
+      info.max_swapchain_images = images;
+      rsx = driver_up();
+      rsx_set_nonblock_state(rsx, false, false, 1);
+      fake_flip_period = 16667;
+      fake_time        = 10 * fake_flip_period;
+      fake_gpu_time    = fake_time;
+      fake_flip_pending();
+      hangs            = fake_flip_hangs;
+      worst            = 0;
+      for (i = 0; i < 120; i++)
+      {
+         poll       = fake_time;
+         fake_time += 1000;
+         frame_out(rsx, pixels, VIDEO_SCALE_PACK(4, 4), i, 8, NULL, &info);
+         if (i && fake_last_flip_due - poll > worst)
+            worst = fake_last_flip_due - poll;
+      }
+      CHECK(fake_flip_hangs == hangs,
+            "flip_latency: waited on a flip never queued (%u images)", images);
+      if (images == 2)
+         CHECK(worst <= fake_flip_period + 1000,
+               "flip_latency: two images ran the core into the pending flip"
+               " (%ld us to display)", (long)worst);
+      else
+         CHECK(worst > fake_flip_period + 1000,
+               "flip_latency: three images kept the core behind the flip");
+      fake_flip_period = fake_flip_due = 0;
+      driver_down(rsx);
+   }
+   printf("flip_latency: ok\n");
+}
+
+/* A dupe redraws the last frame that loaded, and with nothing loaded
+ * leaves the screen as it is */
+static void test_dupe_keeps_image(void)
+{
+   static uint16_t pixels[4 * 4];
+   video_frame_info_t info;
+   rsx_t *rsx;
+   unsigned flips, draws, index;
+
+   memset(&info, 0, sizeof(info));
+   rsx = driver_up();
+   rsx_set_nonblock_state(rsx, false, false, 1);
+
+   flips = rsx_flip_calls;
+   frame_out(rsx, NULL, 0, 0, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips,
+         "dupe_keeps_image: a dupe with nothing cached presented a cleared buffer");
+
+   frame_out(rsx, pixels, VIDEO_SCALE_PACK(4, 4), 1, 8, NULL, &info);
+   index           = rsx->tex_index;
+   rsx_alloc_calls = 0;
+   rsx_fail_at     = 1;
+   frame_out(rsx, pixels, VIDEO_SCALE_PACK(4, 4), 2, 8, NULL, &info);
+   rsx_fail_at     = 0;
+   CHECK(rsx->tex_index == index && rsx->texture[index].data,
+         "dupe_keeps_image: a failed upload became the cached frame");
+
+   flips = rsx_flip_calls;
+   draws = rsx_draw_calls;
+   frame_out(rsx, NULL, 0, 3, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips + 1 && rsx_draw_calls == draws + 1,
+         "dupe_keeps_image: the last loaded frame was not presented");
+
+   driver_down(rsx);
+   printf("dupe_keeps_image: ok\n");
+}
+
 static void test_widget_layer_order(void)
 {
    uint32_t pixels[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff };
@@ -1513,6 +1849,10 @@ int main(int argc, char **argv)
    } tests[] = {
       { "widget_dupe_frame", test_widget_dupe_frame },
       { "widget_visibility", test_widget_visibility },
+      { "ui_dupe_pacing", test_ui_dupe_pacing },
+      { "bare_dupe_pacing", test_bare_dupe_pacing },
+      { "flip_latency", test_flip_latency },
+      { "dupe_keeps_image", test_dupe_keeps_image },
       { "widget_layer_order", test_widget_layer_order },
       { "ui_cleanup", test_ui_cleanup },
       { "hw_interface", test_hw_interface },
