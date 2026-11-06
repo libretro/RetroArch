@@ -2276,6 +2276,111 @@ static bool scan_gone(const char *dir, char *gone)
    return !filestream_rename(gone, dir) && ran;
 }
 
+static void dotted_names_lane(const char *root, const char *pl_dir,
+      const char *db_dir, uint32_t crc, uint32_t size)
+{
+   char dir[512], db[512], out[512], p[1024], lpl[1024];
+   playlist_config_t *cfg = (playlist_config_t*)calloc(1, sizeof(*cfg));
+   manual_content_scan_task_config_t *scan =
+         (manual_content_scan_task_config_t*)calloc(1, sizeof(*scan));
+   playlist_t *pl = NULL;
+   bool ready;
+
+   if (!cfg || !scan)
+   {
+      check(0, "dotted names", "out of memory");
+      goto end;
+   }
+
+   sprintf(dir, "%s/scan.dotted", root);
+   sprintf(db, "%s/scan_dotted_db", root);
+   sprintf(out, "%s/scan_dotted_playlist", root);
+   path_mkdir(dir);
+   path_mkdir(db);
+   path_mkdir(out);
+   sprintf(p, "%s/Tiger - Game.com.rdb", db);
+   if (!write_db(p, "Dotted Game", crc, size))
+      goto fixture;
+   sprintf(p, "%s/before.bin", dir);
+   if (!write_content(p, crc, size))
+      goto fixture;
+   sprintf(p, "%s/after.bin", dir);
+   filestream_delete(p);
+   sprintf(lpl, "%s/Tiger - Game.com.lpl", out);
+   filestream_delete(lpl);
+   sprintf(p, "%s/Tiger - Game.lpl", out);
+   filestream_delete(p);
+
+   strlcpy(config_get_ptr()->paths.directory_playlist, out,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   strlcpy(config_get_ptr()->paths.path_content_database, db,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   ready = run_scan(dir) && scan_completed;
+   check(ready && file_contains(lpl, "Dotted Game"),
+         "automatic scan keeps a dotted database", "Tiger - Game.com");
+
+   playlist_config_set_path(cfg, lpl);
+   cfg->capacity = COLLECTION_SIZE;
+   pl = playlist_init(cfg);
+   ready = pl && manual_content_scan_set_menu_from_playlist(pl, db, false)
+         == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK;
+   if (pl)
+      playlist_free(pl);
+   sprintf(p, "%s/after.bin", dir);
+   if (!write_content(p, crc, size))
+      goto fixture;
+   ready = ready && run_scan(dir) && scan_completed;
+   check(ready && file_contains(lpl, "after.bin"),
+         "refresh keeps the dotted playlist and database", "Tiger - Game.com");
+   sprintf(p, "%s/Tiger - Game.lpl", out);
+   check(!path_is_valid(p), "refresh creates no truncated playlist",
+         "Tiger - Game.lpl");
+
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_NONE);
+   strlcpy(manual_content_scan_get_system_name_custom_ptr(),
+         "VTech - V.Smile", manual_content_scan_get_system_name_custom_size());
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, NULL);
+   sprintf(p, "%s/VTech - V.Smile.lpl", out);
+   filestream_delete(p);
+   ready = run_scan(dir) && scan_completed;
+   check(ready && file_contains(p, "after.bin"),
+         "custom playlist keeps dots", "VTech - V.Smile.lpl");
+
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL);
+   sprintf(p, "%s/scan.dotted.lpl", out);
+   filestream_delete(p);
+   ready = run_scan(dir) && scan_completed;
+   check(ready && file_contains(p, "after.bin"),
+         "folder playlist keeps dots", "scan.dotted.lpl");
+
+   manual_content_scan_set_menu_scan_use_db(
+         MANUAL_CONTENT_SCAN_USE_DB_STRICT);
+   manual_content_scan_set_menu_scan_db_select(
+         MANUAL_CONTENT_SCAN_SELECT_DB_AUTO, NULL);
+   ready = manual_content_scan_get_task_config(scan, out);
+   check(ready && !strcmp(scan->dat_file_path, "scan.dotted.lpl"),
+         "fallback database name keeps dots", "scan.dotted.lpl");
+   goto restore;
+
+fixture:
+   check(0, "fixture", "could not write the dotted-name set");
+restore:
+   manual_content_scan_set_menu_scan_method(
+         MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);
+   strlcpy(config_get_ptr()->paths.directory_playlist, pl_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
+   strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+         sizeof(config_get_ptr()->paths.path_content_database));
+end:
+   free(cfg);
+   free(scan);
+}
+
 /* A file given as the content location is only added: Overwrite is
  * not applied to it, the playlist keeps the folder and settings it
  * refreshes with, and with no database the file is filed under its
@@ -11159,7 +11264,7 @@ int main(int argc, char **argv)
             "display_name = \"Scan Test\"\n"
             "corename = \"ScanTest\"\n"
             "supported_extensions = \"bin|cue|gdi|m3u|zip\"\n"
-            "database = \"Test Alpha|Test Beta|Test Disc|Test Zip\"\n");
+            "database = \"Test Alpha|Test Beta|Test Disc|Test Zip|Tiger - Game.com\"\n");
       fclose(f);
    }
    sprintf(p, "%s/test_libretro.so", core_dir);
@@ -12112,6 +12217,7 @@ int main(int argc, char **argv)
 
    walk_lane(root, pl_dir, db_dir);
    single_lane(root, pl_dir, crc_a, sz_a);
+   dotted_names_lane(root, pl_dir, db_dir, crc_a, sz_a);
    counts_lane(root, pl_dir, crc_a, sz_a, crc_d, sz_d);
    failed_lane(root, pl_dir, db_dir, crc_a, sz_a);
    errors_lane(root, pl_dir, crc_a, sz_a);
