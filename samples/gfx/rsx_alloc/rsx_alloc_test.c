@@ -30,6 +30,10 @@
  *    cursors and GPU fences.
  *  - native_menu_frame, menu_dupe_frame: a menu with no new core
  *    frame is presented, over the last core frame if there is one.
+ *  - flip_latency: two swapchain images keep the core behind the
+ *    flip, three let it run into the pending one.
+ *  - dupe_keeps_image: a dupe redraws the last frame that loaded,
+ *    and with none presents nothing.
  *
  * Plain C and the C library only, so it builds and runs the same with
  * mingw on Windows. */
@@ -164,15 +168,33 @@ static retro_time_t fake_gpu_time;
 static unsigned fake_flip_overlap;
 static unsigned fake_clear_hazards;
 static unsigned fake_time_reads;
+static retro_time_t fake_last_flip_due;
+/* The flip status as GCM keeps it: 1 from a reset until the flip
+ * queued after it has been shown, 0 from then on */
+static u32 fake_flip_status;
+static bool fake_flip_queued;
+static unsigned fake_flip_hangs;
+/* rsx_wait_flip spins on this; a pending flip is shown at its due
+ * time, a reset with no flip behind it would spin forever */
 u32 gcmGetFlipStatus(void)
 {
    rsx_flip_waits++;
-   if (fake_flip_period && fake_time < fake_flip_due)
-      fake_time = fake_flip_due;
-   fake_flip_due = 0;
+   if (fake_flip_status)
+   {
+      if (!fake_flip_queued)
+         fake_flip_hangs++;
+      else if (fake_flip_period && fake_time < fake_flip_due)
+         fake_time = fake_flip_due;
+      fake_flip_status = 0;
+      fake_flip_due    = 0;
+   }
    return 0;
 }
-void gcmResetFlipStatus(void) { }
+void gcmResetFlipStatus(void)
+{
+   fake_flip_status = 1;
+   fake_flip_queued = false;
+}
 s32  gcmSetDisplayBuffer(const u8 bufferId, const u32 offset,
       const u32 pitch, const u32 width, const u32 height) { return 0; }
 static unsigned rsx_flip_calls;
@@ -184,6 +206,7 @@ retro_time_t cpu_features_get_time_usec(void)
 s32  gcmSetFlip(gcmContextData *context, const u8 bufferId)
 {
    rsx_flip_calls++;
+   fake_flip_queued = true;
    if (fake_flip_period)
    {
       if (fake_flip_due > fake_time)
@@ -191,8 +214,17 @@ s32  gcmSetFlip(gcmContextData *context, const u8 bufferId)
       if (fake_gpu_time < fake_time)
          fake_gpu_time = fake_time;
       fake_flip_due = (fake_gpu_time / fake_flip_period + 1) * fake_flip_period;
+      fake_last_flip_due = fake_flip_due;
    }
    return 0;
+}
+
+/* A flip queued one period out, as a test's first frame finds it */
+static void fake_flip_pending(void)
+{
+   fake_flip_status = 1;
+   fake_flip_queued = true;
+   fake_flip_due    = fake_time + fake_flip_period;
 }
 void gcmSetFlipMode(const u32 mode) { }
 void gcmSetWaitFlip(gcmContextData *context)
@@ -1274,6 +1306,7 @@ static void test_ui_dupe_pacing(void)
    fake_hwr.context_type = RETRO_HW_CONTEXT_RSX;
    rsx = driver_up();
    info.refresh_rate = 60.0f;
+   info.max_swapchain_images = 3;
    info.widgets_active = true;
    rsx_set_nonblock_state(rsx, false, false, 1);
    fake_flip_period = 16667;
@@ -1287,7 +1320,7 @@ static void test_ui_dupe_pacing(void)
       hazards = fake_clear_hazards;
       fake_time = start = 10 * fake_flip_period;
       fake_gpu_time = fake_time;
-      fake_flip_due = fake_time + fake_flip_period;
+      fake_flip_pending();
       for (i = 0; i < 120; i++)
       {
          const void *frame = mode == 0 || mode >= 3 ? (i & 1 ? NULL : pixels)
@@ -1380,6 +1413,7 @@ static void test_bare_dupe_pacing(void)
       const void *source = mode & 1 ? RETRO_HW_FRAME_BUFFER_VALID : pixels;
       memset(&info, 0, sizeof(info));
       info.widgets_active = true;
+      info.max_swapchain_images = 3;
       fake_hwr.context_type = mode & 1 ? RETRO_HW_CONTEXT_RSX : RETRO_HW_CONTEXT_NONE;
       rsx = driver_up();
       fake_widgets_visible = false;
@@ -1400,7 +1434,7 @@ static void test_bare_dupe_pacing(void)
       fake_flip_period = 16667;
       fake_time = start = 10 * fake_flip_period;
       fake_gpu_time = fake_time;
-      fake_flip_due = fake_time + fake_flip_period;
+      fake_flip_pending();
       for (i = 0; i < 120; i++)
       {
          fake_time += 1000;
@@ -1432,6 +1466,88 @@ static void test_bare_dupe_pacing(void)
    }
    fake_hwr.context_type = RETRO_HW_CONTEXT_NONE;
    printf("bare_dupe_pacing: ok\n");
+}
+
+/* Input is polled as retro_run starts, when the last frame call has
+ * returned; the frame is seen at the vblank its flip lands on */
+static void test_flip_latency(void)
+{
+   static uint16_t pixels[4 * 4];
+   video_frame_info_t info;
+   rsx_t *rsx;
+   unsigned images, i, hangs;
+   retro_time_t poll, worst;
+
+   for (images = 2; images <= 3; images++)
+   {
+      memset(&info, 0, sizeof(info));
+      info.max_swapchain_images = images;
+      rsx = driver_up();
+      rsx_set_nonblock_state(rsx, false, false, 1);
+      fake_flip_period = 16667;
+      fake_time        = 10 * fake_flip_period;
+      fake_gpu_time    = fake_time;
+      fake_flip_pending();
+      hangs            = fake_flip_hangs;
+      worst            = 0;
+      for (i = 0; i < 120; i++)
+      {
+         poll       = fake_time;
+         fake_time += 1000;
+         frame_out(rsx, pixels, VIDEO_SCALE_PACK(4, 4), i, 8, NULL, &info);
+         if (i && fake_last_flip_due - poll > worst)
+            worst = fake_last_flip_due - poll;
+      }
+      CHECK(fake_flip_hangs == hangs,
+            "flip_latency: waited on a flip never queued (%u images)", images);
+      if (images == 2)
+         CHECK(worst <= fake_flip_period + 1000,
+               "flip_latency: two images ran the core into the pending flip"
+               " (%ld us to display)", (long)worst);
+      else
+         CHECK(worst > fake_flip_period + 1000,
+               "flip_latency: three images kept the core behind the flip");
+      fake_flip_period = fake_flip_due = 0;
+      driver_down(rsx);
+   }
+   printf("flip_latency: ok\n");
+}
+
+/* A dupe redraws the last frame that loaded, and with nothing loaded
+ * leaves the screen as it is */
+static void test_dupe_keeps_image(void)
+{
+   static uint16_t pixels[4 * 4];
+   video_frame_info_t info;
+   rsx_t *rsx;
+   unsigned flips, draws, index;
+
+   memset(&info, 0, sizeof(info));
+   rsx = driver_up();
+   rsx_set_nonblock_state(rsx, false, false, 1);
+
+   flips = rsx_flip_calls;
+   frame_out(rsx, NULL, 0, 0, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips,
+         "dupe_keeps_image: a dupe with nothing cached presented a cleared buffer");
+
+   frame_out(rsx, pixels, VIDEO_SCALE_PACK(4, 4), 1, 8, NULL, &info);
+   index           = rsx->tex_index;
+   rsx_alloc_calls = 0;
+   rsx_fail_at     = 1;
+   frame_out(rsx, pixels, VIDEO_SCALE_PACK(4, 4), 2, 8, NULL, &info);
+   rsx_fail_at     = 0;
+   CHECK(rsx->tex_index == index && rsx->texture[index].data,
+         "dupe_keeps_image: a failed upload became the cached frame");
+
+   flips = rsx_flip_calls;
+   draws = rsx_draw_calls;
+   frame_out(rsx, NULL, 0, 3, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips + 1 && rsx_draw_calls == draws + 1,
+         "dupe_keeps_image: the last loaded frame was not presented");
+
+   driver_down(rsx);
+   printf("dupe_keeps_image: ok\n");
 }
 
 static void test_widget_layer_order(void)
@@ -1735,6 +1851,8 @@ int main(int argc, char **argv)
       { "widget_visibility", test_widget_visibility },
       { "ui_dupe_pacing", test_ui_dupe_pacing },
       { "bare_dupe_pacing", test_bare_dupe_pacing },
+      { "flip_latency", test_flip_latency },
+      { "dupe_keeps_image", test_dupe_keeps_image },
       { "widget_layer_order", test_widget_layer_order },
       { "ui_cleanup", test_ui_cleanup },
       { "hw_interface", test_hw_interface },
