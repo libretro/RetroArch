@@ -4365,6 +4365,11 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_RAM_STATE_TO_FILE:
          if (!content_ram_state_to_file((char *) data))
             return false;
+         if (     settings->bools.savestate_auto_index
+               && settings->uints.savestate_max_keep > 0)
+            command_event_set_savestate_garbage_collect((const char*)data,
+                  settings->ints.state_slot, settings->uints.savestate_max_keep,
+                  settings->bools.show_hidden_files);
          break;
       case CMD_EVENT_APPLY_WINDOWED_SCALE:
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
@@ -4542,7 +4547,7 @@ bool command_event(enum event_command cmd, void *data)
             {
                /* Turned away, the save wrote nothing to the slot moved
                 * to: the next load would have found it empty */
-               if (advanced && cmd == CMD_EVENT_SAVE_STATE)
+               if (advanced)
                   configuration_set_int(settings, settings->ints.state_slot,
                      prev_slot);
                return false;

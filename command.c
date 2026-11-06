@@ -7043,7 +7043,8 @@ static void command_scan_states(
    if (last_index)
       *last_index = loa_idx;
 
-   if (s && cnt_in_range >= savestate_max_keep && del_idx != UINT_MAX)
+   /* A committed replacement only needs pruning when it added a file. */
+   if (s && cnt_in_range > savestate_max_keep && del_idx != UINT_MAX)
    {
       size_t len = strlcpy(s, name_savestate, PATH_MAX_LENGTH);
       if (len >= PATH_MAX_LENGTH)
@@ -7113,22 +7114,37 @@ void command_event_set_savestate_auto_index(settings_t *settings)
       configuration_set_int(settings, settings->ints.state_slot, 0);
 }
 
-static void command_event_set_savestate_garbage_collect(settings_t *settings)
+/* The path and policy belong to the write that actually completed. */
+void command_event_set_savestate_garbage_collect(const char *path,
+      int slot, unsigned max_keep, bool show_hidden_files)
 {
    size_t i;
+   unsigned path_slot;
+   const char *ext;
+   char *state_base;
    char state_to_delete[PATH_MAX_LENGTH] = {0};
+   if (!path || slot < 0 || !max_keep)
+      return;
+   ext = path_get_extension(path);
+   if (     strncmp(ext, "state", STRLEN_CONST("state"))
+         || !command_state_index(ext + STRLEN_CONST("state"), &path_slot)
+         || path_slot != (unsigned)slot)
+      return;
+   state_base = strdup(path);
+   if (!state_base)
+      return;
+   state_base[ext + STRLEN_CONST("state") - path] = '\0';
    command_scan_states(
-         runloop_state_get_ptr()->name.savestate,
-         settings->bools.show_hidden_files,
-         settings->uints.savestate_max_keep,
-         settings->ints.state_slot, NULL, state_to_delete);
+         state_base, show_hidden_files, max_keep, slot, NULL, state_to_delete);
+   free(state_base);
    /* Only delete one save state per save action
     * > Conservative behaviour, designed to minimise
     *   the risk of deleting multiple incorrect files
     *   in case of accident */
-   if (*state_to_delete)
+   if (     *state_to_delete
+         && !content_state_file_in_use(state_to_delete)
+         && filestream_delete(state_to_delete) == 0)
    {
-      filestream_delete(state_to_delete);
       RARCH_DBG("[State] Garbage collect, deleting \"%s\".\n",state_to_delete);
       /* Construct the save state thumbnail name
        * and delete that one as well. */
@@ -7137,6 +7153,24 @@ static void command_event_set_savestate_garbage_collect(settings_t *settings)
       filestream_delete(state_to_delete);
       RARCH_DBG("[State] Garbage collect, deleting \"%s\".\n",state_to_delete);
    }
+}
+
+struct command_save_state
+{
+   unsigned max_keep;
+   int slot;
+   bool show_hidden_files;
+};
+
+static void command_save_state_cb(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
+{
+   struct command_save_state *save = (struct command_save_state*)user_data;
+   (void)task;
+   if (!error && task_data)
+      command_event_set_savestate_garbage_collect((const char*)task_data,
+            save->slot, save->max_keep, save->show_hidden_files);
+   free(save);
 }
 
 void command_event_set_replay_auto_index(settings_t *settings)
@@ -7646,7 +7680,24 @@ bool command_event_main_state(unsigned cmd)
 
                if (cmd == CMD_EVENT_SAVE_STATE)
                {
-                  queued = content_save_state(state_path, true);
+                  if (savestate_auto_index && savestate_max_keep > 0)
+                  {
+                     struct command_save_state *save =
+                           (struct command_save_state*)malloc(sizeof(*save));
+                     queued = false;
+                     if (save)
+                     {
+                        save->slot = settings->ints.state_slot;
+                        save->max_keep = savestate_max_keep;
+                        save->show_hidden_files = settings->bools.show_hidden_files;
+                        queued = content_save_state_notify(state_path, true,
+                              command_save_state_cb, save);
+                        if (!queued)
+                           free(save);
+                     }
+                  }
+                  else
+                     queued = content_save_state(state_path, true);
                   RARCH_LOG("[State] Save dispatch for slot %d, path "
                         "\"%s\": content_save_state queued=%s "
                         "(auto_index=%s, max_keep=%u). NOTE: actual disk "
@@ -7665,13 +7716,7 @@ bool command_event_main_state(unsigned cmd)
                            path_basename(state_path));
                }
                else
-                  content_save_state_to_ram();
-
-               /* Clean up excess savestates if necessary: not for a
-                * save that was turned away, which wrote nothing */
-               if (     queued
-                     && savestate_auto_index && (savestate_max_keep > 0))
-                  command_event_set_savestate_garbage_collect(settings);
+                  queued = content_save_state_to_ram();
 
                if (frame_time_counter_auto_reset)
                   video_st->frame_time_count = 0;

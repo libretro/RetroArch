@@ -1404,15 +1404,26 @@ static void test_pruned_queued_backup(void)
 {
    unsigned explicit_load;
    const char *preceding = "sst_preceding.state";
+   const char *older = "sst_older_backup.state";
    struct prune_fixture fixture = {"sst_queued.state", false};
    for (explicit_load = 0; explicit_load < 2; explicit_load++)
    {
       frontend_reset();
+      content_reset_savestate_backups();
       core_fill(3 * TEST_SAVE_STATE_CHUNK);
       fixture.explicit_load = explicit_load != 0;
       filestream_delete(preceding);
       filestream_delete(fixture.path);
+      filestream_delete(older);
+      memset(core_mem, 0x11, core_len);
       content_save_state(fixture.path, true);
+      pump(1000);
+      /* A skipped backup leaves this earlier undo entry intact. */
+      memset(core_mem, 0x22, core_len);
+      content_save_state(older, true);
+      pump(1000);
+      memset(core_mem, 0x33, core_len);
+      content_save_state(older, true);
       pump(1000);
       content_save_state_notify(preceding, true, prune_queued_backup_cb, &fixture);
       memset(core_mem, 0x66, core_len);
@@ -1446,9 +1457,24 @@ static void test_pruned_queued_backup(void)
       pump(1000);
       okf(core_mem[0] == 0x66 && core_mem[core_len - 1] == 0x66,
             "queued: the actual consumer receives the queued save");
+      okf(content_undo_save_state(), "queued: the previous backup remains undoable");
+      pump(1000);
+      memset(core_mem, 0x88, core_len);
+      content_load_state(fixture.explicit_load ? fixture.path : older, false, false);
+      pump(1000);
+      okf(core_mem[0] == (fixture.explicit_load ? 0x11 : 0x22)
+            && core_mem[core_len - 1] == core_mem[0],
+            "queued: undo restores the pinned backup or the older retained backup");
+      memset(core_mem, 0x88, core_len);
+      content_load_state(fixture.explicit_load ? older : fixture.path, false, false);
+      pump(1000);
+      okf(core_mem[0] == (fixture.explicit_load ? 0x33 : 0x66)
+            && core_mem[core_len - 1] == core_mem[0],
+            "queued: undo leaves the other file's completed save intact");
    }
    filestream_delete(preceding);
    filestream_delete(fixture.path);
+   filestream_delete(older);
 }
 
 struct cycle_result
@@ -1618,6 +1644,36 @@ static void test_task_failure_recovery(bool threaded)
       okf(content_save_state(path, true), "recovery: a later save is accepted");
       drain_states(threaded);
    }
+   filestream_delete(path);
+}
+
+static void test_ram_flush_retry(bool threaded)
+{
+   const char *path = "sst_ram_flush.state";
+   frontend_reset();
+   core_fill(3 * TEST_SAVE_STATE_CHUNK);
+   memset(core_mem, 0x11, core_len);
+   filestream_delete(path);
+   okf(content_save_state(path, true), "RAM: an existing disk save is created");
+   drain_states(threaded);
+   memset(core_mem, 0x22, core_len);
+   okf(content_save_state_to_ram() && content_ram_state_pending(),
+         "RAM: a new snapshot is pending in memory");
+   okf(!content_ram_state_to_file("sst_absent_review_directory/state")
+         && content_ram_state_pending(),
+         "RAM: a failed flush preserves the pending snapshot");
+   memset(core_mem, 0x33, core_len);
+   content_load_state(path, false, false);
+   drain_states(threaded);
+   okf(core_mem[0] == 0x11 && core_mem[core_len - 1] == 0x11,
+         "RAM: the earlier disk save still reaches the consumer");
+   stub_settings.bools.save_file_compression = true;
+   okf(content_ram_state_to_file(path) && !content_ram_state_pending(),
+         "RAM: retry commits the pending snapshot");
+   content_load_state(path, false, false);
+   drain_states(threaded);
+   okf(core_mem[0] == 0x22 && core_mem[core_len - 1] == 0x22,
+         "RAM: the actual consumer receives the retried snapshot");
    filestream_delete(path);
 }
 
@@ -1824,6 +1880,7 @@ static int run_default_lane(void)
    test_queued_conversion_failure();
    test_close_with_pending_load(false);
    test_task_failure_recovery(false);
+   test_ram_flush_retry(false);
 #ifdef HAVE_COMPRESSION
    test_undo_save_restores_file();
 #endif
@@ -1846,6 +1903,7 @@ static int run_threaded_lane(void)
    test_overwrite_keeps_slot(true);
    test_close_with_pending_load(true);
    test_task_failure_recovery(true);
+   test_ram_flush_retry(true);
 
    content_reset_savestate_backups();
    task_queue_deinit();

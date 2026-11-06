@@ -96,6 +96,16 @@ static void choose(unsigned max_keep, int stale, int expected, bool exists)
    checks++;
 }
 
+static size_t file_count(void)
+{
+   struct string_list *files = dir_list_new(directory, NULL, false, true, false, false);
+   size_t count;
+   assert(files);
+   count = files->size;
+   dir_list_free(files);
+   return count;
+}
+
 static void test_selection(void)
 {
    unsigned i;
@@ -150,6 +160,56 @@ static void test_selection(void)
    assert(command_event_get_next_savestate_auto_index(&settings) == 0);
 }
 
+static void test_retention(void)
+{
+   unsigned limit, write;
+   char path[256];
+   for (limit = 1; limit <= 5; limit++)
+   {
+      set_base("game.state");
+      settings.uints.savestate_max_keep = limit;
+      settings.ints.state_slot = (int)limit;
+      for (write = 0; write < 40; write++)
+      {
+         int slot = command_event_get_next_savestate_auto_index(&settings);
+         add_slot((unsigned)slot);
+         slot_path(path, sizeof(path), slot);
+         command_event_set_savestate_garbage_collect(path, slot, limit, true);
+         choose(limit, -1, slot, true);
+         assert(file_count() == (write + 1 < limit ? write + 1 : limit));
+      }
+   }
+}
+
+static void test_prune_path(void)
+{
+   unsigned i;
+   const char *invalid[] = {"game.state01", "game.state.auto", "game.state1.tmp"};
+   char path[256];
+   set_base("game.state");
+   for (i = 0; i <= 10; i++)
+      add_slot(i);
+   slot_path(path, sizeof(path), 10);
+   command_event_set_savestate_garbage_collect(NULL, 10, 10, true);
+   command_event_set_savestate_garbage_collect(path, -1, 10, true);
+   command_event_set_savestate_garbage_collect(path, 10, 0, true);
+   assert(file_count() == 11);
+   command_event_set_savestate_garbage_collect(path, 9, 10, true);
+   assert(file_count() == 11);
+   for (i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++)
+   {
+      snprintf(path, sizeof(path), "%s/%s", directory, invalid[i]);
+      command_event_set_savestate_garbage_collect(path, 1, 10, true);
+      assert(file_count() == 11);
+   }
+   set_base("custom");
+   for (i = 0; i <= 10; i++)
+      add_slot(i);
+   slot_path(path, sizeof(path), 10);
+   command_event_set_savestate_garbage_collect(path, 10, 10, true);
+   assert(file_count() == 11);
+}
+
 int main(int argc, char **argv)
 {
    unsigned attempt;
@@ -171,6 +231,8 @@ int main(int argc, char **argv)
    }
    settings.bools.savestate_auto_index = true;
    test_selection();
+   test_retention();
+   test_prune_path();
    clear_files();
    assert(path_rmdir(directory));
    printf("real-directory rolling scan: %u selections passed\n", checks);
