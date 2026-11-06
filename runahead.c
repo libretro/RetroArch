@@ -45,6 +45,7 @@
 
 #include "tasks/tasks_internal.h"
 #include "configuration.h"
+#include "command.h"
 #include "content.h"
 #include "core.h"
 #include "dynamic.h"

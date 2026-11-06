@@ -52,8 +52,6 @@ def generate(name, output):
     old, new, _ = MUTANTS[name]
     source = replace_once(source, old, new)
     test = (sample / 'lifetime_test.c').read_text(encoding='utf-8')
-    test = replace_once(test, '#include "../../../command.h"',
-                        '#include "' + (root / 'command.h').as_posix() + '"')
     test = replace_once(test, '#include "../../../runahead.c"', source)
     test = replace_once(test, '#include "reference_core.h"',
                         '#include "' + (sample / 'reference_core.h').as_posix() + '"')

@@ -1,6 +1,5 @@
 /* Include the shipping owner implementation, including its private save path. */
 #undef NDEBUG
-#include "../../../command.h"
 #include "../../../runahead.c"
 #include <assert.h>
 #include "reference_core.h"
