@@ -931,7 +931,7 @@ static bool video_xr_handle_hit(const video_xr_quad_t *q,
 }
 
 static int video_xr_pick_with(const video_xr_quad_set_t *set,
-      unsigned laser, bool menu_open, bool stuck,
+      unsigned laser, bool menu_open, bool menu_only, bool stuck,
       const video_xr_vec3_t *origin, const video_xr_vec3_t *dir,
       float *u, float *v, float *t, bool *stick)
 {
@@ -948,7 +948,10 @@ static int video_xr_pick_with(const video_xr_quad_set_t *set,
       float qu, qv, qt;
       const video_xr_quad_t *q = &set->quads[i];
       if (     !video_xr_quad_live(q, laser, menu_open)
-            || (laser == VIDEO_XR_LIVE_EDIT && set->slots[q->slot].fixed))
+            || (laser == VIDEO_XR_LIVE_EDIT && set->slots[q->slot].fixed)
+            || (menu_only && !(menu_open
+                  && (q->kind == VIDEO_XR_QUAD_MENU
+                     || q->kind == VIDEO_XR_QUAD_WINDOW))))
          continue;
       if (laser == VIDEO_XR_LIVE_EDIT && q->kind == VIDEO_XR_QUAD_MENU)
       {
@@ -988,18 +991,18 @@ static int video_xr_pick_with(const video_xr_quad_set_t *set,
 }
 
 int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
-      bool menu_open, const video_xr_vec3_t *origin,
+      bool menu_open, bool menu_only, const video_xr_vec3_t *origin,
       const video_xr_vec3_t *dir, float *u, float *v, float *t)
 {
-   return video_xr_pick_with(set, laser, menu_open, false, origin, dir,
-         u, v, t, NULL);
+   return video_xr_pick_with(set, laser, menu_open, menu_only, false,
+         origin, dir, u, v, t, NULL);
 }
 
 int video_xr_pick_edit(const video_xr_quad_set_t *set, bool stuck,
       const video_xr_vec3_t *origin, const video_xr_vec3_t *dir,
       float *u, float *v, float *t, bool *stick)
 {
-   return video_xr_pick_with(set, VIDEO_XR_LIVE_EDIT, false, stuck,
+   return video_xr_pick_with(set, VIDEO_XR_LIVE_EDIT, false, false, stuck,
          origin, dir, u, v, t, stick);
 }
 

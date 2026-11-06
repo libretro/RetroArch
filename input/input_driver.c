@@ -18306,7 +18306,11 @@ void input_driver_poll(void)
 #ifdef HAVE_OPENXR
    input_openxr_poll(max_users, settings->uints.video_openxr_controllers,
          settings->uints.video_openxr_laser,
-         settings->uints.video_openxr_laser_beam, input_axis_threshold);
+         settings->uints.video_openxr_laser_beam,
+         settings->uints.video_openxr_touch_hands,
+         settings->uints.video_openxr_touch_button,
+         settings->bools.video_openxr_touch_passthrough,
+         input_axis_threshold);
 #endif
    {
       uint8_t join[MAX_USERS];

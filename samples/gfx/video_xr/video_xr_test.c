@@ -180,7 +180,7 @@ static void test_screen_transform(void)
    origin.z = -1.24064f;
    dir.x = -1.0f;
    dir.y = dir.z = 0.0f;
-   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, false,
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, false, false,
             &origin, &dir, &u, &v, &t) == 2);
    CHECK(NEAR(u, 0.251) && NEAR(v, 0.251) && NEAR(t, 1.0));
    CHECK(video_xr_quad_to_frame(&set.quads[2], u, v, &map,
@@ -1390,13 +1390,13 @@ static void test_menu_handle(void)
    set.num_quads = 1;
    o.x = 1.2886f; o.y = 2.1f; o.z = 4.0f;
    d.x = 0.0f;   d.y = 0.0f; d.z = -1.0f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 0);
    CHECK(NEAR(u, 0.6) && NEAR(v, 1.0773) && NEAR(t, 1.0));
    video_xr_cursor(&set.quads[0], u, v, t, &pose);
    CHECK(NEAR(pose.position.x, 1.2886) && NEAR(pose.position.y, 2.1));
    o.x = 1.0f; o.y = 2.0f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == -1);
 
    /* A menu placed a quarter turn left: its handle 1.7 m to the left,
@@ -1408,7 +1408,7 @@ static void test_menu_handle(void)
    video_xr_place(&p, &set);
    o.x = o.y = o.z = 0.0f;
    d.x = -1.7f; d.y = -0.5309f; d.z = -0.16f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 3);
    CHECK(NEAR(u, 0.6) && NEAR(v, 1.0531) && NEAR(t, 1.0));
 
@@ -1460,40 +1460,40 @@ static void test_handle_first(void)
 
    /* On the bar, through the nearer screen: the menu. */
    o.y = -0.541f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 1);
    CHECK(NEAR(u, 0.5) && NEAR(t, 1.7) && NEAR(v, 0.5 + 0.541 / 0.96));
    /* 1.5 cm under the bar, in its margin over the screen: the screen. */
    o.y = -0.561f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 0);
    CHECK(NEAR(t, 1.5));
    /* In the margin over nothing, 2.5 cm past the bar's end or 1.5 cm
     * above it: the menu. */
    o.x = 0.345f;
    o.y = -0.531f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 1);
    CHECK(NEAR(u, 0.5 + 0.345 / 1.6));
    o.x = 0.0f;
    o.y = -0.501f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 1);
    CHECK(NEAR(v, 0.5 + 0.501 / 0.96) && NEAR(t, 1.7));
    /* Past the margin: the screen below, nothing beside. */
    o.x = 0.0f;
    o.y = -0.586f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 0);
    CHECK(NEAR(t, 1.5));
    o.x = 0.36f;
    o.y = -0.531f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == -1);
    /* Outside edit mode the bar is nothing: the screen. */
    o.x = 0.0f;
    o.y = -0.541f;
-   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, false,
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, false, false,
             &o, &d, &u, &v, &t) == 0);
 }
 
@@ -1539,7 +1539,7 @@ static void test_handle_sticky(void)
    /* Not stuck there: the screen, as video_xr_pick. */
    CHECK(video_xr_pick_edit(&set, false, &o, &d, &u, &v, &t, &stick) == 0
          && !stick && NEAR(t, 1.5));
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, &o, &d, &u, &v,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false, &o, &d, &u, &v,
             &t) == 0);
    /* Stuck, past the margin: the screen, unstuck. */
    o.y = -0.586f;
@@ -1585,46 +1585,46 @@ static void test_live_edit(void)
    o.x = o.y = o.z = 0.0f;
    /* Straight ahead the menu covers screen 0: through it, screen 0. */
    d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 0);
    /* Its handle, nearer than screen 1 behind it, takes the menu; the
     * point is in the menu's frame, so the dot lands on the handle. */
    d.x = 0.0f; d.y = -0.5309f; d.z = -1.7f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 3);
    CHECK(NEAR(u, 0.5) && NEAR(v, 1.0531) && NEAR(t, 1.0));
    video_xr_cursor(&set.quads[3], u, v, t, &pose);
    CHECK(NEAR(pose.position.x, 0.0) && NEAR(pose.position.y, -0.5309));
    /* The handle is edit mode's alone. */
-   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true, false,
             &o, &d, &u, &v, &t) == 2);
    /* Through the gap between the menu and its handle, in the bar's
     * margin and just above it: what is behind, screen 1. */
    o.y = 1.455f;
    d.x = 0.0f; d.y = -1.15f; d.z = -1.0f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 2);
    o.y = 1.472f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 2);
    /* From the head, screen 1's top middle, 3.2 cm under screen 0: above
     * and below the bar, in its margin, screen 1; on the bar, the
     * menu. */
    o.y = 0.0f;
    d.x = 0.0f; d.y = -0.53f; d.z = -1.8f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 2);
    CHECK(NEAR(t, 1.0));
    d.y = -0.595f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 2);
    d.y = -0.56f;
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 3);
    /* Other lasers still see the whole menu. */
    o.y = 0.0f;
    d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
-   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true, false,
             &o, &d, &u, &v, &t) == 3);
 
    /* A whole frame and a window are items too. */
@@ -1660,9 +1660,9 @@ static void test_edit_fixed(void)
    video_xr_place(&p, &set);
    CHECK(set.num_quads == 2 && set.slots[0].fixed
          && !set.slots[VIDEO_XR_MENU_SLOT].fixed);
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == -1);
-   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, false,
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, false, false,
             &o, &d, &u, &v, &t) == 0);
    /* gl's window, shown whole while the menu is open or the eyes are
     * tracked, likewise. */
@@ -1673,7 +1673,7 @@ static void test_edit_fixed(void)
    p.screens = screens;
    video_xr_place(&p, &set);
    CHECK(!set.slots[0].fixed);
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 0);
 
    map_3ds(&map);
@@ -1682,7 +1682,7 @@ static void test_edit_fixed(void)
    video_xr_place(&p, &set);
    for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
       CHECK(!set.slots[s].fixed);
-   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, false,
             &o, &d, &u, &v, &t) == 0);
 }
 
@@ -2408,29 +2408,42 @@ static void test_pick(void)
    /* Screen 0 in Auto, the menu closed though its quad is up: nothing. */
    d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, false,
-            &o, &d, &u, &v, &t) == -1);
+            false, &o, &d, &u, &v, &t) == -1);
    /* The bottom screen. */
    d.x = -0.32f; d.y = -1.232f; d.z = -1.8f;
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, false,
-            &o, &d, &u, &v, &t) == 2);
+            false, &o, &d, &u, &v, &t) == 2);
    CHECK(NEAR(u, 0.25) && NEAR(v, 0.75) && NEAR(t, 1.0));
    /* The open menu, in front of screen 0. */
    d.x = 0.4f; d.y = 0.24f; d.z = -1.7f;
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
-            &o, &d, &u, &v, &t) == 3);
+            false, &o, &d, &u, &v, &t) == 3);
    CHECK(NEAR(u, 0.75) && NEAR(v, 0.25) && NEAR(t, 1.0));
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, true,
-            &o, &d, &u, &v, &t) == 3);
+            false, &o, &d, &u, &v, &t) == 3);
    /* Closed, the ray goes through it to screen 0's left eye. */
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, false,
-            &o, &d, &u, &v, &t) == 0);
+            false, &o, &d, &u, &v, &t) == 0);
    CHECK(NEAR(u, 0.76471) && NEAR(v, 0.23529) && NEAR(t, 1.05882));
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_OFF, true,
-            &o, &d, &u, &v, &t) == -1);
+            false, &o, &d, &u, &v, &t) == -1);
    /* Beside every screen. */
    d.x = 3.0f; d.y = 0.0f; d.z = -1.8f;
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, true,
-            &o, &d, &u, &v, &t) == -1);
+            false, &o, &d, &u, &v, &t) == -1);
+
+   /* Menu only: the open menu; not the bottom screen beside it, nor
+    * screen 0 through the closed menu. */
+   d.x = 0.4f; d.y = 0.24f; d.z = -1.7f;
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, true,
+            true, &o, &d, &u, &v, &t) == 3);
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, false,
+            true, &o, &d, &u, &v, &t) == -1);
+   d.x = -0.32f; d.y = -1.232f; d.z = -1.8f;
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
+            false, &o, &d, &u, &v, &t) == 2);
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
+            true, &o, &d, &u, &v, &t) == -1);
 
    /* A whole frame: only Always points at it. */
    params_init(&p, NULL);
@@ -2438,9 +2451,9 @@ static void test_pick(void)
    video_xr_place(&p, &set);
    d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, false,
-            &o, &d, &u, &v, &t) == -1);
+            false, &o, &d, &u, &v, &t) == -1);
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, false,
-            &o, &d, &u, &v, &t) == 0);
+            false, &o, &d, &u, &v, &t) == 0);
    CHECK(NEAR(u, 0.5) && NEAR(v, 0.5) && NEAR(t, 1.8));
 }
 
@@ -2467,8 +2480,13 @@ static void test_window(void)
    o.x = 0.0f; o.y = 0.0f; o.z = 0.0f;
    d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
-            &o, &d, &u, &v, &t) == 0);
+            false, &o, &d, &u, &v, &t) == 0);
    CHECK(NEAR(u, 0.5) && NEAR(v, 0.5));
+   /* Menu only: the window while the menu is open over it. */
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
+            true, &o, &d, &u, &v, &t) == 0);
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, false,
+            true, &o, &d, &u, &v, &t) == -1);
    CHECK(video_xr_quad_to_frame(&set.quads[0], 0.25f, 0.75f, NULL, frame,
             &x, &y));
    CHECK(x == -16364 && y == 16485);
@@ -3134,14 +3152,14 @@ static void test_back_pick(void)
    d.x = 0.0f; d.y = 0.0f; d.z = 1.0f;
    CHECK(video_xr_pick_edit(&set, false, &o, &d, &u, &v, &t, NULL) == 0);
    CHECK(NEAR(u, 0.75) && NEAR(v, 0.5 - 0.2 / 0.96) && NEAR(t, 1.2));
-   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, true,
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, true, false,
             &o, &d, &u, &v, &t) == -1);
    /* The menu's handle bar too. */
    set.quads[0].kind = VIDEO_XR_QUAD_MENU;
    o.x = 0.0f;
    o.y = -0.531f;
    CHECK(video_xr_pick_edit(&set, false, &o, &d, &u, &v, &t, NULL) == 0);
-   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, true,
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, true, false,
             &o, &d, &u, &v, &t) == -1);
 }
 

@@ -52,9 +52,11 @@ void input_openxr_register(void);
 
 /* Syncs the controllers, and connects or disconnects their devices;
  * once per input poll, with Max Users, the OpenXR Controller Layout,
- * Laser Pointer and Laser Beam settings and the axis threshold. */
+ * Laser Pointer, Laser Beam, Touch Hands, Touch Button and Touch
+ * Passthrough settings and the axis threshold. */
 void input_openxr_poll(unsigned max_users, unsigned controllers,
-      unsigned laser, unsigned beam, float threshold);
+      unsigned laser, unsigned beam, unsigned touch_hands,
+      unsigned touch_button, bool touch_passthrough, float threshold);
 
 /* @joypad, or while the devices have slots a joypad driver that
  * answers theirs and passes every other to @joypad. */
@@ -100,11 +102,11 @@ void input_openxr_edit_release(void);
 
 /* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on a core
  * port whose users read @slots (a bit per slot), while it can point
- * (the headset focused, a screen live for the laser) and a controller
- * of the headset's is in one of those slots: true, with *res set. The
- * pointing hand's port aims and fires; another hand's reads offscreen,
- * as a miss does. A controller no user reads drives no core's
- * pointer. */
+ * (the headset focused, a screen live for the laser and a hand that can
+ * touch it) and a controller of the headset's is in one of those
+ * slots: true, with *res set. The pointing hand's port aims and fires;
+ * another hand's reads offscreen, as a miss does. A controller no user
+ * reads drives no core's pointer. */
 bool input_openxr_pointer(uint32_t slots, unsigned device, unsigned idx,
       unsigned id, int16_t *res);
 

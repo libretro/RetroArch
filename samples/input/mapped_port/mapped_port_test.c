@@ -152,8 +152,10 @@ void runloop_msg_queue_push(const char *msg, size_t len,
 #ifdef HAVE_OPENXR
 /* the headset's controllers, announced by the tests */
 void input_openxr_poll(unsigned max_users, unsigned controllers,
-      unsigned laser, unsigned beam, float threshold)
+      unsigned laser, unsigned beam, unsigned touch_hands,
+      unsigned touch_button, bool touch_passthrough, float threshold)
 { (void)max_users; (void)controllers; (void)laser; (void)beam;
+  (void)touch_hands; (void)touch_button; (void)touch_passthrough;
   (void)threshold; }
 const input_device_driver_t *input_openxr_joypad(
       const input_device_driver_t *joypad) { return joypad; }
