@@ -720,6 +720,15 @@ static void pr_var_name(struct rslc_pr *p, const struct rslc_var *v)
             pr_s(p, pr_msl_instance(p, v->block));
             return;
          case RSLC_ST_BUILTIN:
+#ifdef RSLC_EXTENDED
+            /* asked where it is read: a fragment discarded by then
+             * is a helper */
+            if (v->builtin == RSLC_BI_HELPERINVOCATION)
+            {
+               pr_s(p, "simd_is_helper_thread()");
+               return;
+            }
+#endif
             pr_s(p, v->name->str);
             if (p->renamed[v->id])
                pr_s(p, "_g");
@@ -1913,6 +1922,15 @@ static void pr_msl_builtin(struct rslc_pr *p, const struct rslc_node *n)
       case RSLC_BFN_SUBPASSLOAD:
          pr_expr(p, rslc_list_item(p->c, list, 0), PR_PREC_POSTFIX);
          return;
+      case RSLC_BFN_SUBGROUPELECT:
+         pr_s(p, "simd_is_first()");
+         return;
+      case RSLC_BFN_SUBGROUPMIN:
+      case RSLC_BFN_SUBGROUPMAX:
+         pr_s(p, bfn == RSLC_BFN_SUBGROUPMIN ? "simd_min(" : "simd_max(");
+         pr_expr(p, rslc_list_item(p->c, list, 0), PR_PREC_SEQ);
+         pr_c(p, ')');
+         return;
       case RSLC_BFN_IMAGESIZE:
       {
          const struct rslc_type *it = pr_arg_type(p, list, 0);
@@ -2629,6 +2647,9 @@ static void pr_msl_env_mark(struct rslc_pr *p, uint8_t *env, uint32_t node, bool
             case RSLC_ST_GLOBAL: case RSLC_ST_SAMPLER:
 #ifdef RSLC_EXTENDED
             case RSLC_ST_IMAGE: case RSLC_ST_SHARED: case RSLC_ST_SUBPASS:
+               /* a call, not a value handed down */
+               if (v->builtin == RSLC_BI_HELPERINVOCATION)
+                  return;
 #endif
                slot = n->a;
                break;
@@ -6661,6 +6682,22 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
       rslc_err(c, p->hlsl ? "hlsl: no geometry stage yet" : "msl: no geometry stage", NULL, 0);
       return false;
    }
+   /* subgroup operations have a form in SPIR-V and MSL alone; HLSL's
+    * shader models here have no helper invocation either */
+   if (!p->msl && pr->subgroup)
+   {
+      rslc_err(c, p->hlsl ? "hlsl: no form of subgroup operations"
+            : "glsl: no form of subgroup operations", NULL, 0);
+      return false;
+   }
+   if (p->hlsl)
+      for (k = 1; k < pr->nvars; k++)
+         if (pr->vars[k]->storage == RSLC_ST_BUILTIN && p->used[k]
+               && pr->vars[k]->builtin == RSLC_BI_HELPERINVOCATION)
+         {
+            rslc_err(c, "hlsl: no form of gl_HelperInvocation", NULL, 0);
+            return false;
+         }
    /* an input attachment has a form in MSL alone */
    if (!p->msl)
       for (k = 1; k < pr->nvars; k++)

@@ -401,6 +401,7 @@ struct rslc_var
 #define RSLC_BI_WORKGROUPID        15
 #define RSLC_BI_NUMWORKGROUPS      16
 #define RSLC_BI_LOCALINVOCATIONINDEX 17
+#define RSLC_BI_HELPERINVOCATION   18   /* RSLC_EXTENDED, fragment */
 
 /* RSLC_EXTENDED: a geometry stage's primitives, in and out. */
 #define RSLC_GS_POINTS              1
@@ -591,6 +592,8 @@ enum rslc_bfn
    RSLC_BFN_MEMORYBARRIERBUFFER, RSLC_BFN_MEMORYBARRIERIMAGE, RSLC_BFN_GROUPMEMORYBARRIER,
    RSLC_BFN_IMAGESTORE, RSLC_BFN_IMAGELOAD, RSLC_BFN_IMAGESIZE,
    RSLC_BFN_SUBPASSLOAD,   /* RSLC_EXTENDED, fragment */
+   /* RSLC_EXTENDED: subgroup operations */
+   RSLC_BFN_SUBGROUPELECT, RSLC_BFN_SUBGROUPMIN, RSLC_BFN_SUBGROUPMAX,
    RSLC_BFN_COUNT
 };
 
@@ -622,6 +625,7 @@ struct rslc_prog
    uint32_t                noutputs, outputs_cap;
    bool                    has_block[RSLC_MAX_BLOCKS];
    bool                    early_fragment_tests;   /* RSLC_EXTENDED */
+   bool                    subgroup;   /* RSLC_EXTENDED: calls a subgroup operation */
    /* RSLC_EXTENDED: one past the highest gl_ClipDistance /
     * gl_CullDistance element written, 0 when none is */
    uint8_t                 clip_n;

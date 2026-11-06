@@ -3078,7 +3078,10 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_IMAGESTORE, "imageStore", "J i2 g:v;K i3 g:v" },
    { RSLC_BFN_IMAGELOAD, "imageLoad", "J i2:4;K i3:4" },
    { RSLC_BFN_IMAGESIZE, "imageSize", "J:i2;K:i3" },
-   { RSLC_BFN_SUBPASSLOAD, "subpassLoad", "P:4" }
+   { RSLC_BFN_SUBPASSLOAD, "subpassLoad", "P:4" },
+   { RSLC_BFN_SUBGROUPELECT, "subgroupElect", ":b" },
+   { RSLC_BFN_SUBGROUPMIN, "subgroupMin", "F:F;I:I;U:U" },
+   { RSLC_BFN_SUBGROUPMAX, "subgroupMax", "F:F;I:I;U:U" }
 #endif
 };
 
@@ -3341,6 +3344,10 @@ static bool rslc_p_resolve_builtin(struct rslc_parser *p, const struct rslc_bsig
    const char *s;
    int         pass;
 
+#ifdef RSLC_EXTENDED
+   if (bs->id >= RSLC_BFN_SUBGROUPELECT && bs->id <= RSLC_BFN_SUBGROUPMAX)
+      p->c->prog.subgroup = true;
+#endif
    if (bs->sigs[0] == '@')
    {
       /* outerProduct(vecC, vecR) -> matCxR...: column vec first. */
@@ -6201,7 +6208,9 @@ static bool rslc_p_run(struct rslc_ctx *c)
             || !rslc_p_builtin_var(p, "gl_FrontFacing", p->t_bool, RSLC_BI_FRONTFACING, RSLC_DIR_IN))
          return false;
 #ifdef RSLC_EXTENDED
-      if (!rslc_p_builtin_var(p, "gl_SampleID", p->t_int, RSLC_BI_SAMPLEID, RSLC_DIR_IN))
+      if (!rslc_p_builtin_var(p, "gl_SampleID", p->t_int, RSLC_BI_SAMPLEID, RSLC_DIR_IN)
+            || !rslc_p_builtin_var(p, "gl_HelperInvocation", p->t_bool,
+                  RSLC_BI_HELPERINVOCATION, RSLC_DIR_IN))
          return false;
 #endif
    }

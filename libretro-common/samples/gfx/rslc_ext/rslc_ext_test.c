@@ -381,6 +381,34 @@ static const char fs_subpass_bad[] =
    "layout(location = 0) out vec4 col;\n"
    "void main() { col = subpassLoad(in_ocol0); }\n";
 
+/* The bounding box reduced over the subgroup: helper invocations
+ * stay out, the first active one writes. */
+static const char fs_subgroup[] =
+   "#version 450\n"
+   "#extension GL_KHR_shader_subgroup_basic : enable\n"
+   "#extension GL_KHR_shader_subgroup_arithmetic : enable\n"
+   "layout(std430, set = 2, binding = 0) coherent buffer BBox {\n"
+   "  int bbox_data[4];\n"
+   "};\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void update(ivec2 tl, ivec2 br) {\n"
+   "  atomicMin(bbox_data[0], tl.x);\n"
+   "  atomicMax(bbox_data[1], br.x);\n"
+   "}\n"
+   "void main()\n"
+   "{\n"
+   "   ivec2 pos_tl = ivec2(gl_FragCoord.xy) & ~1;\n"
+   "   ivec2 pos_br = ivec2(gl_FragCoord.xy) | 1;\n"
+   "   if (!gl_HelperInvocation)\n"
+   "   {\n"
+   "      pos_tl = subgroupMin(pos_tl);\n"
+   "      pos_br = subgroupMax(pos_br);\n"
+   "      if (subgroupElect())\n"
+   "         update(pos_tl, pos_br);\n"
+   "   }\n"
+   "   col = vec4(subgroupMax(gl_FragCoord.x));\n"
+   "}\n";
+
 static enum rslc_stage cur_stage = RSLC_STAGE_FRAGMENT;
 
 static bool compile(const char *src, enum rslc_dst dst, unsigned version,
@@ -682,6 +710,51 @@ int main(int argc, char **argv)
       CHECK(strstr(err, "subpassInput") != NULL);
       CHECK(!compile(fs_subpass_bad, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
       CHECK(strstr(err, "input_attachment_index") != NULL);
+   }
+
+   /* subgroup operations (GroupNonUniform 61, its Arithmetic 63) in a
+    * SPIR-V 1.3 module; MSL's simdgroup functions; GLSL and HLSL refuse */
+   {
+      char err[256];
+      struct rslc_opts   o;
+      struct rslc_result r;
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_subgroup, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "subgroup: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(r.spirv[1] == 0x00010300u);
+         CHECK(has_capability(r.spirv, r.spirv_len, 61));
+         CHECK(has_capability(r.spirv, r.spirv_len, 63));
+         write_spirv(dir, "subgroup", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_subgroup, RSLC_DST_MSL, 23, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "subgroup msl: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(strstr(r.text, "if (!simd_is_helper_thread())") != NULL);
+         CHECK(strstr(r.text, "simd_min(pos_tl)") != NULL);
+         CHECK(strstr(r.text, "if (simd_is_first())") != NULL);
+         write_text(dir, "subgroup.msl", r.text);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_subgroup, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(!compile(fs_subgroup, RSLC_DST_HLSL, 50, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "subgroup") != NULL);
+      /* a plain stage stays SPIR-V 1.0 */
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_plain, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (r.blob)
+      {
+         CHECK(r.spirv[1] == 0x00010000u);
+         rslc_result_free(&r, &o);
+      }
    }
 
    /* bools in a block and a depth write */

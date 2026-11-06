@@ -42,11 +42,15 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-# The SPIR-V it writes also goes through spirv-val when that is installed.
+# The SPIR-V it writes also goes through spirv-val when that is installed;
+# the subgroup stage is SPIR-V 1.3, Vulkan 1.1's.
 check: $(TARGET)
 	./$(TARGET) obj
 	@if command -v spirv-val >/dev/null 2>&1; then \
-		for f in obj/*.spv; do spirv-val --target-env vulkan1.0 $$f || exit 1; done; \
+		for f in obj/*.spv; do \
+			env=vulkan1.0; case $$f in */subgroup.spv) env=vulkan1.1;; esac; \
+			spirv-val --target-env $$env $$f || exit 1; \
+		done; \
 	fi
 
 clean:

@@ -1001,6 +1001,9 @@ enum spv_section
 #define SPV_CAP_CULLDISTANCE 33
 #define SPV_CAP_GEOMETRY     2
 #define SPV_CAP_INPUTATTACHMENT 40
+#define SPV_CAP_GROUPNONUNIFORM 61
+#define SPV_CAP_GROUPNONUNIFORMARITHMETIC 63
+#define SPV_VERSION_1_3      0x00010300u
 #define SPV_MODEL_VERTEX     0
 #define SPV_MODEL_FRAGMENT   4
 #define SPV_MODEL_GEOMETRY   3
@@ -1061,6 +1064,7 @@ enum spv_section
 #define SPV_BI_LOCALINVOCATIONID 27
 #define SPV_BI_GLOBALINVOCATIONID 28
 #define SPV_BI_LOCALINVOCATIONINDEX 29
+#define SPV_BI_HELPERINVOCATION 23
 
 enum spv_op
 {
@@ -1118,7 +1122,11 @@ enum spv_op
    SpvOpAtomicSMin = 236, SpvOpAtomicUMin = 237, SpvOpAtomicSMax = 238, SpvOpAtomicUMax = 239,
    SpvOpAtomicAnd = 240, SpvOpAtomicOr = 241, SpvOpAtomicXor = 242,
    SpvOpSwitch = 251, SpvOpKill = 252, SpvOpReturn = 253, SpvOpReturnValue = 254,
-   SpvOpUnreachable = 255
+   SpvOpUnreachable = 255,
+   SpvOpGroupNonUniformElect = 333, SpvOpGroupNonUniformSMin = 353,
+   SpvOpGroupNonUniformUMin = 354, SpvOpGroupNonUniformFMin = 355,
+   SpvOpGroupNonUniformSMax = 356, SpvOpGroupNonUniformUMax = 357,
+   SpvOpGroupNonUniformFMax = 358
 };
 
 /* GLSL.std.450 instruction numbers. */
@@ -1211,6 +1219,8 @@ struct spv_emit
    uint32_t             entry_label;
    bool                 need_imagequery;
    bool                 need_inputattachment;
+   bool                 need_groupnonuniform;
+   bool                 need_groupnonuniformarith;
    bool                 need_sampledbuffer;
    bool                 need_samplerateshading;
    bool                 need_clipdistance;
@@ -3288,6 +3298,33 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
             return 0;
          return spv_r2(e, SpvOpImageRead, tid, args[0], coord, prec);
       }
+      case RSLC_BFN_SUBGROUPELECT:
+      {
+         /* subgroup scope; SPIR-V 1.3 */
+         uint32_t scope = spv_const_uint(e, 3);
+         if (!scope)
+            return 0;
+         e->need_groupnonuniform = true;
+         return spv_r1(e, SpvOpGroupNonUniformElect, tid, scope, prec);
+      }
+      case RSLC_BFN_SUBGROUPMIN:
+      case RSLC_BFN_SUBGROUPMAX:
+      {
+         /* subgroup scope, a reduction of the whole subgroup */
+         uint32_t w[3];
+         bool     mn = bfn == RSLC_BFN_SUBGROUPMIN;
+         w[0] = spv_const_uint(e, 3);
+         if (!w[0])
+            return 0;
+         w[1] = 0;   /* Reduce */
+         w[2] = args[0];
+         e->need_groupnonuniform = e->need_groupnonuniformarith = true;
+         return spv_fn_result(e, t0->base == RSLC_BASE_FLOAT
+               ? (mn ? SpvOpGroupNonUniformFMin : SpvOpGroupNonUniformFMax)
+               : t0->base == RSLC_BASE_INT
+               ? (mn ? SpvOpGroupNonUniformSMin : SpvOpGroupNonUniformSMax)
+               : (mn ? SpvOpGroupNonUniformUMin : SpvOpGroupNonUniformUMax), tid, w, 3, prec);
+      }
       case RSLC_BFN_EMITVERTEX:
       case RSLC_BFN_ENDPRIMITIVE:
          /* no result: the void type's id stands for the expression */
@@ -4637,7 +4674,8 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
       : v->builtin == RSLC_BI_LOCALINVOCATIONID ? SPV_BI_LOCALINVOCATIONID
       : v->builtin == RSLC_BI_WORKGROUPID ? SPV_BI_WORKGROUPID
       : v->builtin == RSLC_BI_NUMWORKGROUPS ? SPV_BI_NUMWORKGROUPS
-      : v->builtin == RSLC_BI_LOCALINVOCATIONINDEX ? SPV_BI_LOCALINVOCATIONINDEX : SPV_BI_POSITION;
+      : v->builtin == RSLC_BI_LOCALINVOCATIONINDEX ? SPV_BI_LOCALINVOCATIONINDEX
+      : v->builtin == RSLC_BI_HELPERINVOCATION ? SPV_BI_HELPERINVOCATION : SPV_BI_POSITION;
    if (!ptr)
       return false;
    /* reading the sample index runs the stage per sample */
@@ -5043,6 +5081,12 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    if (e->need_inputattachment
          && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_INPUTATTACHMENT))
       return false;
+   if (e->need_groupnonuniform
+         && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_GROUPNONUNIFORM))
+      return false;
+   if (e->need_groupnonuniformarith
+         && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_GROUPNONUNIFORMARITHMETIC))
+      return false;
 #endif
    if (!spv_inst_str(e, SPV_SEC_CAPS, SpvOpExtInstImport, &e->ext_id, 1, "GLSL.std.450", NULL, 0))
       return false;
@@ -5125,7 +5169,12 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
          return false;
       out = (uint32_t*)(pb.data + pb.len);
       out[0] = SPV_MAGIC;
+#ifdef RSLC_EXTENDED
+      /* the subgroup operations are SPIR-V 1.3's */
+      out[1] = e->need_groupnonuniform ? SPV_VERSION_1_3 : SPV_VERSION_1_0;
+#else
       out[1] = SPV_VERSION_1_0;
+#endif
       out[2] = 0;             /* generator */
       out[3] = e->bound;
       out[4] = 0;
