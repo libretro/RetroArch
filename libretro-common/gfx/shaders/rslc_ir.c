@@ -1230,6 +1230,7 @@ struct spv_emit
    bool                 need_groupnonuniformarith;
    bool                 need_sampledbuffer;
    bool                 need_samplerateshading;
+   bool                 need_geometry;   /* a pixel stage reading gl_Layer */
    bool                 need_clipdistance;
    bool                 writes_fragdepth;   /* the entry point declares DepthReplacing */
    bool                 need_culldistance;
@@ -4699,8 +4700,12 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
       return false;
    if (!spv_decorate1(e, id, SPV_DEC_BUILTIN, bi) || !spv_w(e, &e->entry_iface, id))
       return false;
-   /* an integer fragment input is flat, a builtin too */
-   if (v->builtin == RSLC_BI_SAMPLEID && !spv_decorate(e, id, SPV_DEC_FLAT))
+   /* an integer fragment input is flat, a builtin too; a pixel stage
+    * reading the layer needs the geometry capability */
+   if (v->builtin == RSLC_BI_LAYER && sc == SPV_SC_INPUT)
+      e->need_geometry = true;
+   if ((v->builtin == RSLC_BI_SAMPLEID || (v->builtin == RSLC_BI_LAYER && sc == SPV_SC_INPUT))
+         && !spv_decorate(e, id, SPV_DEC_FLAT))
       return false;
    if ((v->precision == RSLC_PREC_LOW || v->precision == RSLC_PREC_MEDIUM)
          && !spv_decorate(e, id, SPV_DEC_RELAXEDPRECISION))
@@ -5070,7 +5075,7 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    /* header-ish sections */
    if (!spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_SHADER))
       return false;
-   if (c->stage == RSLC_STAGE_GEOMETRY
+   if ((c->stage == RSLC_STAGE_GEOMETRY || e->need_geometry)
          && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_GEOMETRY))
       return false;
    if (e->need_sampledbuffer && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_SAMPLEDBUFFER))

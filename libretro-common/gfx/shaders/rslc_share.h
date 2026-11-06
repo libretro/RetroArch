@@ -395,7 +395,7 @@ struct rslc_var
 #define RSLC_BI_CLIPDISTANCE 9   /* RSLC_EXTENDED */
 #define RSLC_BI_CULLDISTANCE 10  /* RSLC_EXTENDED */
 #define RSLC_BI_INVOCATIONID 11  /* RSLC_EXTENDED, geometry */
-#define RSLC_BI_LAYER        12  /* RSLC_EXTENDED, geometry */
+#define RSLC_BI_LAYER        12  /* RSLC_EXTENDED, geometry out, fragment in */
 #define RSLC_BI_GLOBALINVOCATIONID 13   /* RSLC_EXTENDED, compute */
 #define RSLC_BI_LOCALINVOCATIONID  14
 #define RSLC_BI_WORKGROUPID        15
@@ -425,9 +425,10 @@ struct rslc_var
  * the least maxClipDistances Vulkan guarantees. */
 #define RSLC_MAX_CLIP 8
 
-/* The integer builtins HLSL and MSL hand over as uint. */
+/* The integer builtins HLSL and MSL hand over as uint (gl_Layer: a
+ * pixel stage's, the only stage those printers take it in). */
 #define RSLC_BI_IS_UINT_IN(b) ((b) == RSLC_BI_VERTEXINDEX || (b) == RSLC_BI_INSTANCEINDEX \
-      || (b) == RSLC_BI_SAMPLEID)
+      || (b) == RSLC_BI_SAMPLEID || (b) == RSLC_BI_LAYER)
 
 /* A uniform block or push-constant block. */
 struct rslc_blockdecl

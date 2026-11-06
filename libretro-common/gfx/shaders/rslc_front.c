@@ -3492,7 +3492,8 @@ static bool rslc_p_is_lvalue(struct rslc_parser *p, uint32_t e)
          if (v->storage == RSLC_ST_BUILTIN)
             return v->builtin == RSLC_BI_POSITION || v->builtin == RSLC_BI_FRAGDEPTH
                || v->builtin == RSLC_BI_POINTSIZE || v->builtin == RSLC_BI_CLIPDISTANCE
-               || v->builtin == RSLC_BI_CULLDISTANCE || v->builtin == RSLC_BI_LAYER;
+               || v->builtin == RSLC_BI_CULLDISTANCE
+               || (v->builtin == RSLC_BI_LAYER && v->dir == RSLC_DIR_OUT);
          return true;
       }
       case RSLC_OP_MEMBER:
@@ -6210,7 +6211,8 @@ static bool rslc_p_run(struct rslc_ctx *c)
 #ifdef RSLC_EXTENDED
       if (!rslc_p_builtin_var(p, "gl_SampleID", p->t_int, RSLC_BI_SAMPLEID, RSLC_DIR_IN)
             || !rslc_p_builtin_var(p, "gl_HelperInvocation", p->t_bool,
-                  RSLC_BI_HELPERINVOCATION, RSLC_DIR_IN))
+                  RSLC_BI_HELPERINVOCATION, RSLC_DIR_IN)
+            || !rslc_p_builtin_var(p, "gl_Layer", p->t_int, RSLC_BI_LAYER, RSLC_DIR_IN))
          return false;
 #endif
    }
@@ -6435,7 +6437,8 @@ struct rslc_builder *rslc_b_begin(const struct rslc_opts *opts, enum rslc_stage 
          || !rslc_p_builtin_var(p, "gl_FrontFacing", p->t_bool, RSLC_BI_FRONTFACING, RSLC_DIR_IN))
       return b;
 #ifdef RSLC_EXTENDED
-   else if (!rslc_p_builtin_var(p, "gl_SampleID", p->t_int, RSLC_BI_SAMPLEID, RSLC_DIR_IN))
+   else if (!rslc_p_builtin_var(p, "gl_SampleID", p->t_int, RSLC_BI_SAMPLEID, RSLC_DIR_IN)
+         || !rslc_p_builtin_var(p, "gl_Layer", p->t_int, RSLC_BI_LAYER, RSLC_DIR_IN))
       return b;
 #endif
    return b;

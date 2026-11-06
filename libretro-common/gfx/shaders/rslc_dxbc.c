@@ -1329,7 +1329,7 @@ static bool dx_interface(struct dx_emit *e)
    const struct rslc_prog *pr = &e->c->prog;
    bool frag = e->c->stage == RSLC_STAGE_FRAGMENT;
    struct dx_packer pk;
-   uint32_t i, pass;
+   uint32_t i, layer, pass;
 
    if (e->c->stage == RSLC_STAGE_COMPUTE)
       return true;
@@ -1375,6 +1375,44 @@ static bool dx_interface(struct dx_emit *e)
          return false;
       dv->has_home = true;
    }
+   /* a pixel stage reading gl_Layer: the position, then the layer, where
+    * the geometry stage writes them, the position declared even when
+    * unread */
+   layer = 0;
+   for (i = 1; frag && i < pr->nvars; i++)
+   {
+      const struct rslc_var *v = pr->vars[i];
+      if (v->global && v->storage == RSLC_ST_BUILTIN && e->used[i]
+            && v->builtin == RSLC_BI_LAYER)
+         layer = i;
+   }
+   if (layer)
+   {
+      uint32_t reg;
+      uint8_t comp;
+      for (i = 1; i < pr->nvars; i++)
+      {
+         const struct rslc_var *v = pr->vars[i];
+         if (v->global && v->storage == RSLC_ST_BUILTIN && e->used[i]
+               && v->builtin == RSLC_BI_FRAGCOORD)
+            break;
+      }
+      if (!dx_pack(e, &pk, 4, 1, DX_GROUP_ALONE, &reg, &comp)
+            || !dx_sig_add(e, true, "SV_Position", 0, reg, 0, DX_SV_POSITION, DX_CT_FLOAT, 4,
+               DX_INTERP_NOPERSPECTIVE))
+         return false;
+      if (i < pr->nvars)
+      {
+         e->vars[i].home     = dx_place_of(DXO_INPUT, reg);
+         e->vars[i].has_home = true;
+      }
+      if (!dx_pack(e, &pk, 1, 1, DX_GROUP_ALONE, &reg, &comp)
+            || !dx_sig_add(e, true, "SV_RenderTargetArrayIndex", 0, reg, 0, DX_SV_RTINDEX,
+               DX_CT_UINT, 1, DX_INTERP_CONSTANT))
+         return false;
+      e->vars[layer].home     = dx_place_of(DXO_INPUT, reg);
+      e->vars[layer].has_home = true;
+   }
    for (i = 1; i < pr->nvars; i++)
    {
       const struct rslc_var *v = pr->vars[i];
@@ -1385,6 +1423,8 @@ static bool dx_interface(struct dx_emit *e)
       uint32_t reg;
       uint8_t comp;
       if (!v->global || v->storage != RSLC_ST_BUILTIN || !e->used[i])
+         continue;
+      if (layer && (v->builtin == RSLC_BI_FRAGCOORD || v->builtin == RSLC_BI_LAYER))
          continue;
       switch (v->builtin)
       {
@@ -1486,7 +1526,7 @@ static bool dx_interface(struct dx_emit *e)
       struct dx_var *dv = &e->vars[i];
       uint32_t n, reg;
       uint8_t comp;
-      if (!v->global || v->storage != RSLC_ST_BUILTIN || !e->used[i])
+      if (!v->global || v->storage != RSLC_ST_BUILTIN || !e->used[i] || v->dir != RSLC_DIR_OUT)
          continue;
       if (pass != (v->builtin == RSLC_BI_POSITION ? 0u : v->builtin == RSLC_BI_LAYER ? 1u : 2u))
          continue;
@@ -4693,8 +4733,8 @@ static bool dx_decls(struct dx_emit *e)
       }
       if (frag)
       {
-         op = s->sv ? (s->sv == DX_SV_POSITION ? DX_DCL_INPUT_PS_SIV : DX_DCL_INPUT_PS_SGV)
-            : DX_DCL_INPUT_PS;
+         op = s->sv ? (s->sv == DX_SV_POSITION || s->sv == DX_SV_RTINDEX ? DX_DCL_INPUT_PS_SIV
+               : DX_DCL_INPUT_PS_SGV) : DX_DCL_INPUT_PS;
          if (op != DX_DCL_INPUT_PS_SGV)
             fl = (uint32_t)s->interp << 11;
       }

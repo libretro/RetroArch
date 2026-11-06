@@ -5062,6 +5062,7 @@ static void pr_hlsl_semantic(struct rslc_pr *p, const struct rslc_var *v, bool i
          case RSLC_BI_FRONTFACING:   pr_s(p, "SV_IsFrontFace"); return;
          case RSLC_BI_SAMPLEID:      pr_s(p, "SV_SampleIndex"); return;
 #ifdef RSLC_EXTENDED
+         case RSLC_BI_LAYER:         pr_s(p, "SV_RenderTargetArrayIndex"); return;
          case RSLC_BI_GLOBALINVOCATIONID:   pr_s(p, "SV_DispatchThreadID"); return;
          case RSLC_BI_LOCALINVOCATIONID:    pr_s(p, "SV_GroupThreadID"); return;
          case RSLC_BI_WORKGROUPID:          pr_s(p, "SV_GroupID"); return;
@@ -5173,6 +5174,7 @@ static bool pr_hlsl_builtin_in(const struct rslc_var *v, bool *in_struct)
       case RSLC_BI_FRONTFACING:
       case RSLC_BI_SAMPLEID:
 #ifdef RSLC_EXTENDED
+      case RSLC_BI_LAYER:
       case RSLC_BI_GLOBALINVOCATIONID:
       case RSLC_BI_LOCALINVOCATIONID:
       case RSLC_BI_WORKGROUPID:
@@ -6417,6 +6419,7 @@ static bool pr_msl(struct rslc_pr *p, struct rslc_result *result)
          case RSLC_BI_INSTANCEINDEX: attr = "uint gl_InstanceIndex_in [[instance_id]]"; break;
          case RSLC_BI_SAMPLEID:      attr = "uint gl_SampleID_in [[sample_id]]"; break;
 #ifdef RSLC_EXTENDED
+         case RSLC_BI_LAYER:         attr = "uint gl_Layer_in [[render_target_array_index]]"; break;
          case RSLC_BI_GLOBALINVOCATIONID:
             attr = "uint3 gl_GlobalInvocationID [[thread_position_in_grid]]"; break;
          case RSLC_BI_LOCALINVOCATIONID:

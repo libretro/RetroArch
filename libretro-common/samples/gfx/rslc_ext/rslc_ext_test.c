@@ -268,6 +268,25 @@ static const char gs_passthrough[] =
    "   }\n"
    "}\n";
 
+/* A layered pass's pixel stage: the layer the geometry stage chose,
+ * read through gl_Layer, picks the array slice. */
+static const char fs_layer[] =
+   "#version 450\n"
+   "layout(set = 0, binding = 0) uniform sampler2DArray samp0;\n"
+   "layout(location = 0) in vec3 v_tex0;\n"
+   "layout(location = 0) out vec4 ocol0;\n"
+   "void main()\n"
+   "{\n"
+   "   int layer = gl_Layer;\n"
+   "   ocol0 = texture(samp0, vec3(v_tex0.xy, float(layer))) + vec4(gl_FragCoord.x * 0.0);\n"
+   "}\n";
+
+/* What a pixel stage may not do with it. */
+static const char fs_layer_write[] =
+   "#version 450\n"
+   "layout(location = 0) out vec4 ocol0;\n"
+   "void main() { gl_Layer = 1; ocol0 = vec4(1.0); }\n";
+
 /* A uniform block holding bools, as the ubershaders' does, and a depth
  * write: SPIR-V holds the bools as uint and declares DepthReplacing. */
 static const char fs_bool_depth[] =
@@ -609,6 +628,8 @@ int main(int argc, char **argv)
          { "unnamed_vert", vs_unnamed, RSLC_STAGE_VERTEX, "out VertexData {",
             "VertexData_v_tex0 : TEXCOORD0;", NULL },
          { "passthrough", gs_passthrough, RSLC_STAGE_GEOMETRY, "gl_in[", NULL, NULL },
+         { "layer_frag", fs_layer, RSLC_STAGE_FRAGMENT, "int layer = gl_Layer;",
+            ": SV_RenderTargetArrayIndex;", "uint gl_Layer_in [[render_target_array_index]]" },
          { "decode", cs_decode, RSLC_STAGE_COMPUTE,
             "layout(rgba8) uniform writeonly image2DArray output_image;",
             "[numthreads(64, 1, 1)]", "kernel void main0(" }
@@ -626,7 +647,9 @@ int main(int argc, char **argv)
             fprintf(stderr, "%s: %s\n", cases[i].name, err);
          if (r.blob)
          {
-            if (cases[i].stage == RSLC_STAGE_GEOMETRY)
+            /* Geometry 2: a geometry stage, and a pixel stage reading
+             * the layer */
+            if (cases[i].stage == RSLC_STAGE_GEOMETRY || cases[i].src == fs_layer)
                CHECK(has_capability(r.spirv, r.spirv_len, 2));
             write_spirv(dir, cases[i].name, &r);
             rslc_result_free(&r, &o);
@@ -771,7 +794,8 @@ int main(int argc, char **argv)
          { "vertex_fetch", vs_vertex_fetch, RSLC_STAGE_VERTEX, 1 },
          { "decode", cs_decode, RSLC_STAGE_COMPUTE, 5 },
          { "wide_line", gs_wide_line, RSLC_STAGE_GEOMETRY, 2 },
-         { "passthrough", gs_passthrough, RSLC_STAGE_GEOMETRY, 2 }
+         { "passthrough", gs_passthrough, RSLC_STAGE_GEOMETRY, 2 },
+         { "layer_frag", fs_layer, RSLC_STAGE_FRAGMENT, 0 }
       };
       unsigned i;
       for (i = 0; i < sizeof(dx) / sizeof(dx[0]); i++)
@@ -825,6 +849,8 @@ int main(int argc, char **argv)
          struct rslc_result r;
          CHECK(!compile(fs_subpass, RSLC_DST_DXBC, 50, &o, &r, err, sizeof(err)));
          CHECK(!compile(fs_subgroup, RSLC_DST_DXBC, 50, &o, &r, err, sizeof(err)));
+         /* a pixel stage reads the layer, never writes it */
+         CHECK(!compile(fs_layer_write, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
          cur_stage = RSLC_STAGE_COMPUTE;
          CHECK(!compile(cs_decode, RSLC_DST_DXBC, 40, &o, &r, err, sizeof(err)));
          CHECK(strstr(err, "shader model 5") != NULL);
