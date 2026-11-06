@@ -1686,6 +1686,9 @@ struct rslc_quals
    bool     is_out;
    bool     is_inout;
 #ifdef RSLC_EXTENDED
+   bool     is_buffer;
+   bool     readonly;
+   bool     coherent;
    bool     early_fragment_tests;
    uint8_t  gs_prim;          /* RSLC_GS_* named in the layout */
    uint32_t index;
@@ -3047,7 +3050,15 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_FWIDTHFINE, "fwidthFine", "F:F" }, { RSLC_BFN_DFDXCOARSE, "dFdxCoarse", "F:F" },
    { RSLC_BFN_DFDYCOARSE, "dFdyCoarse", "F:F" }, { RSLC_BFN_FWIDTHCOARSE, "fwidthCoarse", "F:F" }
 #ifdef RSLC_EXTENDED
-   , { RSLC_BFN_EMITVERTEX, "EmitVertex", ":v" }, { RSLC_BFN_ENDPRIMITIVE, "EndPrimitive", ":v" }
+   , { RSLC_BFN_EMITVERTEX, "EmitVertex", ":v" }, { RSLC_BFN_ENDPRIMITIVE, "EndPrimitive", ":v" },
+   { RSLC_BFN_ATOMICADD, "atomicAdd", "i i:i;u u:u" },
+   { RSLC_BFN_ATOMICMIN, "atomicMin", "i i:i;u u:u" },
+   { RSLC_BFN_ATOMICMAX, "atomicMax", "i i:i;u u:u" },
+   { RSLC_BFN_ATOMICAND, "atomicAnd", "i i:i;u u:u" },
+   { RSLC_BFN_ATOMICOR, "atomicOr", "i i:i;u u:u" },
+   { RSLC_BFN_ATOMICXOR, "atomicXor", "i i:i;u u:u" },
+   { RSLC_BFN_ATOMICEXCHANGE, "atomicExchange", "i i:i;u u:u" },
+   { RSLC_BFN_ATOMICCOMPSWAP, "atomicCompSwap", "i i i:i;u u u:u" }
 #endif
 };
 
@@ -3381,6 +3392,30 @@ static const struct rslc_type *rslc_p_type_spec(struct rslc_parser *p,
 static const struct rslc_type *rslc_p_array_suffix(struct rslc_parser *p,
       const struct rslc_type *ty);
 
+#ifdef RSLC_EXTENDED
+/* The block an access is rooted in, when it is a storage buffer. */
+static const struct rslc_blockdecl *rslc_p_buffer_of(struct rslc_parser *p, uint32_t e)
+{
+   for (;;)
+   {
+      struct rslc_node *n = rslc_p_node(p, e);
+      if (n->op == RSLC_OP_MEMBER || n->op == RSLC_OP_INDEX || n->op == RSLC_OP_SWIZZLE)
+      {
+         e = n->a;
+         continue;
+      }
+      if (n->op == RSLC_OP_VAR)
+      {
+         const struct rslc_var *v = p->c->prog.vars[n->a];
+         if ((v->storage == RSLC_ST_MEMBER || v->storage == RSLC_ST_BLOCK)
+               && p->c->prog.blocks[v->block].buffer)
+            return &p->c->prog.blocks[v->block];
+      }
+      return NULL;
+   }
+}
+#endif
+
 static bool rslc_p_is_lvalue(struct rslc_parser *p, uint32_t e)
 {
    struct rslc_node *n = rslc_p_node(p, e);
@@ -3389,6 +3424,12 @@ static bool rslc_p_is_lvalue(struct rslc_parser *p, uint32_t e)
       case RSLC_OP_VAR:
       {
          struct rslc_var *v = p->c->prog.vars[n->a];
+#ifdef RSLC_EXTENDED
+         /* a storage buffer is written unless it is readonly */
+         if ((v->storage == RSLC_ST_MEMBER || v->storage == RSLC_ST_BLOCK)
+               && p->c->prog.blocks[v->block].buffer)
+            return !p->c->prog.blocks[v->block].readonly;
+#endif
          if (v->storage == RSLC_ST_CONST || v->storage == RSLC_ST_IN
                || v->storage == RSLC_ST_SAMPLER || v->storage == RSLC_ST_BLOCK
                || v->storage == RSLC_ST_MEMBER)
@@ -3710,6 +3751,15 @@ static uint32_t rslc_p_call(struct rslc_parser *p, struct rslc_sym *name, uint32
       uint32_t i;
       if (!rslc_p_resolve_builtin(p, bs, args, nargs, &ret, line))
          return 0;
+#ifdef RSLC_EXTENDED
+      /* an atomic works on a member of a storage buffer in place */
+      if (name->bfn >= RSLC_BFN_ATOMICADD && name->bfn <= RSLC_BFN_ATOMICCOMPSWAP
+            && (!rslc_p_is_lvalue(p, args[0]) || !rslc_p_buffer_of(p, args[0])))
+      {
+         rslc_err(p->c, "an atomic needs a writable storage buffer member, in ", name->str, line);
+         return 0;
+      }
+#endif
       for (i = 0; i < nargs; i++)
          prec = rslc_prec_max(prec, rslc_p_node(p, args[i])->prec);
       r = rslc_p_mk(p, RSLC_OP_BUILTIN, ret, name->bfn, rslc_list_new(p->c, args, nargs),
@@ -4432,6 +4482,14 @@ static bool rslc_p_quals(struct rslc_parser *p, struct rslc_quals *q)
          case RSLC_KW_LOWP:    q->precision = RSLC_PREC_LOW; break;
          case RSLC_KW_MEDIUMP: q->precision = RSLC_PREC_MEDIUM; break;
          case RSLC_KW_HIGHP:   q->precision = RSLC_PREC_HIGH; break;
+#ifdef RSLC_EXTENDED
+         case RSLC_KW_BUFFER:    q->is_buffer = true; break;
+         case RSLC_KW_READONLY:  q->readonly = true; break;
+         case RSLC_KW_COHERENT:  q->coherent = true; break;
+         case RSLC_KW_WRITEONLY:
+         case RSLC_KW_RESTRICT:
+         case RSLC_KW_VOLATILE:  break;
+#endif
          default:
             return true;
       }
@@ -4665,6 +4723,8 @@ static bool rslc_p_starts_declaration(struct rslc_parser *p)
    s = rslc_tok_sym(p->c, t);
    if (s->kw >= RSLC_KW_CONST && s->kw <= RSLC_KW_STRUCT)
       return true;
+   if (s->kw >= RSLC_KW_BUFFER && s->kw <= RSLC_KW_VOLATILE)
+      return true;   /* RSLC_EXTENDED: only seeded there */
    if (s->kw >= RSLC_KW_VOID && s->kw <= RSLC_KW_LAST_TYPE)
    {
       /* A type followed by '(' is a constructor expression; a type
@@ -5225,18 +5285,22 @@ static bool rslc_p_block_decl(struct rslc_parser *p, struct rslc_quals *q,
    struct rslc_type      *st;
    struct rslc_sym       *instance = NULL;
 
-   if (!q->is_uniform)
-      return rslc_p_fail(p, "only uniform blocks are supported", NULL);
 #ifdef RSLC_EXTENDED
-   /* a further uniform block takes the next slot past the push block */
-   if (idx == 0 && pr->has_block[0])
+   if (!q->is_uniform && !q->is_buffer)
+      return rslc_p_fail(p, "only uniform and buffer blocks are supported", NULL);
+   /* a storage buffer, and a further uniform block, take the next slot
+    * past the push block */
+   if (q->is_buffer || (idx == 0 && pr->has_block[0]))
    {
       idx = 2;
       while (idx < RSLC_MAX_BLOCKS && pr->has_block[idx])
          idx++;
       if (idx == RSLC_MAX_BLOCKS)
-         return rslc_p_fail(p, "too many uniform blocks", NULL);
+         return rslc_p_fail(p, "too many uniform and buffer blocks", NULL);
    }
+#else
+   if (!q->is_uniform)
+      return rslc_p_fail(p, "only uniform blocks are supported", NULL);
 #endif
    if (pr->has_block[idx])
       return rslc_p_fail(p, idx ? "more than one push_constant block"
@@ -5306,6 +5370,20 @@ static bool rslc_p_block_decl(struct rslc_parser *p, struct rslc_quals *q,
    b->line     = line;
    b->push     = idx == 1;
    b->std140   = idx == 0 || q->std140;
+#ifdef RSLC_EXTENDED
+   /* a further uniform block is std140 as the first is; a storage
+    * buffer std430 unless it says otherwise, and only its last member
+    * may be an array of unstated length */
+   b->buffer   = q->is_buffer;
+   b->readonly = q->readonly;
+   b->coherent = q->coherent;
+   if (idx >= 2 && !q->is_buffer)
+      b->std140 = true;
+   for (i = 0; i < nfields; i++)
+      if (fields[i].type->kind == RSLC_TY_ARRAY && !fields[i].type->array_len
+            && (!q->is_buffer || i + 1 != nfields))
+         return rslc_p_fail(p, "only a storage buffer's last member may be unsized", NULL);
+#endif
    pr->has_block[idx] = true;
 
    if (instance)
@@ -5551,8 +5629,12 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
    }
 #endif
 
-   /* uniform Block { ... }; */
-   if (q.is_uniform && P_TOK(p)->kind == RSLC_TK_IDENT
+   /* uniform Block { ... };  RSLC_EXTENDED: buffer Block { ... }; */
+   if ((q.is_uniform
+#ifdef RSLC_EXTENDED
+            || q.is_buffer
+#endif
+            ) && P_TOK(p)->kind == RSLC_TK_IDENT
          && rslc_tok_sym(p->c, P_TOK(p))->kw == RSLC_KW_NONE
          && rslc_tok_is_punct(P_PEEK(p, 1), RSLC_P_LBRACE))
    {

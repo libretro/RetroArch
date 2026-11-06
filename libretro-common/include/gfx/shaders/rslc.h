@@ -47,7 +47,8 @@
  * outputs (layout index), layout(early_fragment_tests), and a vertex
  * stage's gl_ClipDistance / gl_CullDistance (sized by the highest
  * constant element written; HLSL and MSL refuse them yet), in / out
- * interface blocks, and RSLC_STAGE_GEOMETRY (SPIR-V and GLSL only).
+ * interface blocks, RSLC_STAGE_GEOMETRY (SPIR-V and GLSL only), and
+ * storage buffers with the atomic builtins (SPIR-V and GLSL only).
  * Without it
  * none of that is accepted, nothing is compiled in for it, and every
  * destination is word for word what it was.  MSL has no form of the

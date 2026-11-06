@@ -415,7 +415,8 @@ static const char *const rslc_keywords[] = {
 #ifdef RSLC_EXTENDED
    , "sampler2DArray", "isampler2DArray", "usampler2DArray",
    "sampler2DMSArray", "isampler2DMSArray", "usampler2DMSArray",
-   "samplerBuffer", "isamplerBuffer", "usamplerBuffer"
+   "samplerBuffer", "isamplerBuffer", "usamplerBuffer",
+   "buffer", "readonly", "writeonly", "coherent", "restrict", "volatile"
 #endif
 };
 
@@ -1017,6 +1018,9 @@ enum spv_section
 
 #define SPV_DEC_RELAXEDPRECISION 0
 #define SPV_DEC_BLOCK        2
+#define SPV_DEC_BUFFERBLOCK  3
+#define SPV_DEC_COHERENT     23
+#define SPV_DEC_NONWRITABLE  24
 #define SPV_DEC_COLMAJOR     5
 #define SPV_DEC_ARRAYSTRIDE  6
 #define SPV_DEC_MATRIXSTRIDE 7
@@ -1052,7 +1056,7 @@ enum spv_op
    SpvOpEntryPoint = 15, SpvOpExecutionMode = 16, SpvOpCapability = 17,
    SpvOpTypeVoid = 19, SpvOpTypeBool = 20, SpvOpTypeInt = 21, SpvOpTypeFloat = 22,
    SpvOpTypeVector = 23, SpvOpTypeMatrix = 24, SpvOpTypeImage = 25,
-   SpvOpTypeSampledImage = 27, SpvOpTypeArray = 28, SpvOpTypeStruct = 30,
+   SpvOpTypeSampledImage = 27, SpvOpTypeArray = 28, SpvOpTypeRuntimeArray = 29, SpvOpTypeStruct = 30,
    SpvOpTypePointer = 32, SpvOpTypeFunction = 33,
    SpvOpConstantTrue = 41, SpvOpConstantFalse = 42, SpvOpConstant = 43,
    SpvOpConstantComposite = 44,
@@ -1096,6 +1100,9 @@ enum spv_op
    SpvOpPhi = 245, SpvOpLoopMerge = 246, SpvOpSelectionMerge = 247,
    SpvOpLabel = 248, SpvOpBranch = 249, SpvOpBranchConditional = 250,
    SpvOpEmitVertex = 218, SpvOpEndPrimitive = 219,
+   SpvOpAtomicExchange = 229, SpvOpAtomicCompareExchange = 230, SpvOpAtomicIAdd = 234,
+   SpvOpAtomicSMin = 236, SpvOpAtomicUMin = 237, SpvOpAtomicSMax = 238, SpvOpAtomicUMax = 239,
+   SpvOpAtomicAnd = 240, SpvOpAtomicOr = 241, SpvOpAtomicXor = 242,
    SpvOpSwitch = 251, SpvOpKill = 252, SpvOpReturn = 253, SpvOpReturnValue = 254,
    SpvOpUnreachable = 255
 };
@@ -1347,6 +1354,19 @@ static uint32_t spv_type_laid(struct spv_emit *e, const struct rslc_type *t, boo
       uint32_t w[3];
       if (!elem)
          return 0;
+#ifdef RSLC_EXTENDED
+      /* a storage buffer's last member, as long as the buffer bound */
+      if (!t->array_len)
+      {
+         rslc_layout_of(t, std140, &a, &s, &st);
+         id = spv_id(e);
+         if (!spv_inst2(e, SPV_SEC_TYPES, SpvOpTypeRuntimeArray, id, elem)
+               || !spv_decorate1(e, id, SPV_DEC_ARRAYSTRIDE, st))
+            return 0;
+         ti->laid[k] = id;
+         return id;
+      }
+#endif
       /* OpConstant for the length, int typed */
       {
          uint32_t i;
@@ -2832,6 +2852,47 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
       w[0] = x; w[1] = ptr;
       return spv_ext(e, tid, bfn == RSLC_BFN_MODF ? GLSLstd450Modf : GLSLstd450Frexp, w, 2, prec);
    }
+#ifdef RSLC_EXTENDED
+   /* atomics: on the member in place, device scope, no ordering, as
+    * glslang emits them */
+   if (bfn >= RSLC_BFN_ATOMICADD && bfn <= RSLC_BFN_ATOMICCOMPSWAP)
+   {
+      const struct rslc_type *at = rslc_node_at(e->c, rslc_list_item(e->c, n->b, 0))->type;
+      bool     sgn = at->base == RSLC_BASE_INT;
+      uint32_t scope = spv_const_uint(e, 1);   /* Device */
+      uint32_t sem   = spv_const_uint(e, 0);
+      uint32_t ptr, val, w[8];
+      unsigned sc; bool laid, std140;
+      enum spv_op op;
+      if (!scope || !sem)
+         return 0;
+      ptr = spv_lvalue(e, rslc_list_item(e->c, n->b, 0), &sc, &laid, &std140);
+      val = ptr ? spv_rvalue(e, rslc_list_item(e->c, n->b, 1)) : 0;
+      if (!val)
+         return 0;
+      switch (bfn)
+      {
+         case RSLC_BFN_ATOMICADD:      op = SpvOpAtomicIAdd; break;
+         case RSLC_BFN_ATOMICMIN:      op = sgn ? SpvOpAtomicSMin : SpvOpAtomicUMin; break;
+         case RSLC_BFN_ATOMICMAX:      op = sgn ? SpvOpAtomicSMax : SpvOpAtomicUMax; break;
+         case RSLC_BFN_ATOMICAND:      op = SpvOpAtomicAnd; break;
+         case RSLC_BFN_ATOMICOR:       op = SpvOpAtomicOr; break;
+         case RSLC_BFN_ATOMICXOR:      op = SpvOpAtomicXor; break;
+         case RSLC_BFN_ATOMICEXCHANGE: op = SpvOpAtomicExchange; break;
+         default:
+         {
+            /* atomicCompSwap(mem, compare, data): data, then the comparator */
+            uint32_t data = spv_rvalue(e, rslc_list_item(e->c, n->b, 2));
+            if (!data)
+               return 0;
+            w[0] = ptr; w[1] = scope; w[2] = sem; w[3] = sem; w[4] = data; w[5] = val;
+            return spv_fn_result(e, SpvOpAtomicCompareExchange, tid, w, 6, prec);
+         }
+      }
+      w[0] = ptr; w[1] = scope; w[2] = sem; w[3] = val;
+      return spv_fn_result(e, op, tid, w, 4, prec);
+   }
+#endif
    if (bfn == RSLC_BFN_UADDCARRY || bfn == RSLC_BFN_USUBBORROW || bfn == RSLC_BFN_UMULEXTENDED
          || bfn == RSLC_BFN_IMULEXTENDED)
    {
@@ -4421,6 +4482,23 @@ static bool spv_block(struct spv_emit *e, unsigned idx)
    stid = spv_type_laid(e, b->type, std140);
    if (!stid)
       return false;
+#ifdef RSLC_EXTENDED
+   /* SPIR-V 1.0: a storage buffer is a BufferBlock in the Uniform class */
+   if (b->buffer)
+   {
+      uint32_t k;
+      if (!spv_decorate(e, stid, SPV_DEC_BUFFERBLOCK))
+         return false;
+      for (k = 0; k < b->type->nfields; k++)
+      {
+         if (b->readonly && !spv_mdecorate(e, stid, k, SPV_DEC_NONWRITABLE))
+            return false;
+         if (b->coherent && !spv_mdecorate(e, stid, k, SPV_DEC_COHERENT))
+            return false;
+      }
+   }
+   else
+#endif
    if (!spv_decorate(e, stid, SPV_DEC_BLOCK))
       return false;
    ptr = spv_ptr(e, stid, sc);

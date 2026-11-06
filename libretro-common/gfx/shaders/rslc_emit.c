@@ -357,6 +357,9 @@ static void pr_array_suffix(struct rslc_pr *p, const struct rslc_type *t)
    while (t->kind == RSLC_TY_ARRAY)
    {
       pr_c(p, '[');
+#ifdef RSLC_EXTENDED
+      if (t->array_len)   /* a storage buffer's unsized last member */
+#endif
       pr_u(p, t->array_len);
       pr_c(p, ']');
       t = t->elem;
@@ -3610,9 +3613,25 @@ static void pr_block_decl(struct rslc_pr *p, unsigned idx)
    /* CafeGLSL takes the push block as a second uniform block, laid out
     * as the source declared it; the runtime reads offsets back from
     * the .gsh */
+#ifdef RSLC_EXTENDED
+   if (b->buffer)
+   {
+      pr_s(p, b->std140 ? "layout(std140) " : "layout(std430) ");
+      if (b->readonly)
+         pr_s(p, "readonly ");
+      if (b->coherent)
+         pr_s(p, "coherent ");
+      pr_s(p, "buffer ");
+   }
+   else
+   {
+#endif
    if (!b->push || b->std140)
       pr_s(p, "layout(std140) ");
    pr_s(p, "uniform ");
+#ifdef RSLC_EXTENDED
+   }
+#endif
    pr_s(p, type_name);
    pr_s(p, " {");
    p->indent++;
@@ -5316,6 +5335,17 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
       rslc_err(c, p->hlsl ? "hlsl: no form of gl_ClipDistance / gl_CullDistance"
             : "msl: no form of gl_ClipDistance / gl_CullDistance", NULL, 0);
       return false;
+   }
+   if (p->hlsl || p->msl)
+   {
+      uint32_t b;
+      for (b = 2; b < RSLC_MAX_BLOCKS; b++)
+         if (c->prog.has_block[b] && c->prog.blocks[b].buffer)
+         {
+            rslc_err(c, p->hlsl ? "hlsl: no form of a storage buffer yet"
+                  : "msl: no form of a storage buffer", NULL, c->prog.blocks[b].line);
+            return false;
+         }
    }
    if (p->hlsl || p->msl)
    {

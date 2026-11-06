@@ -229,6 +229,62 @@ static const char gs_wide_line[] =
    "   EndPrimitive();\n"
    "}\n";
 
+/* The bounding box: a coherent storage buffer, kept by atomics. */
+static const char fs_bbox[] =
+   "#version 450\n"
+   "layout(std430, set = 2, binding = 0) coherent buffer BBox {\n"
+   "  int bbox_data[4];\n"
+   "};\n"
+   "#define bbox_left bbox_data[0]\n"
+   "#define bbox_right bbox_data[1]\n"
+   "#define bbox_top bbox_data[2]\n"
+   "#define bbox_bottom bbox_data[3]\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void UpdateBoundingBoxBuffer(ivec2 min_pos, ivec2 max_pos) {\n"
+   "  if (bbox_left > min_pos.x)\n"
+   "    atomicMin(bbox_left, min_pos.x);\n"
+   "  if (bbox_right < max_pos.x)\n"
+   "    atomicMax(bbox_right, max_pos.x);\n"
+   "  if (bbox_top > min_pos.y)\n"
+   "    atomicMin(bbox_top, min_pos.y);\n"
+   "  if (bbox_bottom < max_pos.y)\n"
+   "    atomicMax(bbox_bottom, max_pos.y);\n"
+   "}\n"
+   "void main()\n"
+   "{\n"
+   "   ivec2 p = ivec2(gl_FragCoord.xy);\n"
+   "   UpdateBoundingBoxBuffer(p, p);\n"
+   "   col = vec4(1.0);\n"
+   "}\n";
+
+/* The dynamic vertex loader: readonly storage buffers of unstated
+ * length, one of structs. */
+static const char vs_vertex_fetch[] =
+   "#version 450\n"
+   "uvec4 unpack_ubyte4(uint value) {\n"
+   "  return uvec4(value & 0xffu, (value >> 8) & 0xffu, (value >> 16) & 0xffu, value >> 24);\n"
+   "}\n"
+   "struct InputData {\n"
+   "  uint posmtx;\n"
+   "  float pos0;\n"
+   "  float pos1;\n"
+   "  float pos2;\n"
+   "  uint color0;\n"
+   "};\n"
+   "layout(std430, set = 2, binding = 1) readonly restrict buffer InputBuffer {\n"
+   "  InputData input_buffer[];\n"
+   "};\n"
+   "layout(std430, set = 2, binding = 2) readonly restrict buffer Vertices {\n"
+   "  uint vertex_buffer[];\n"
+   "};\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   InputData i = input_buffer[gl_VertexIndex];\n"
+   "   col = vec4(unpack_ubyte4(i.color0)) / 255.0 + vec4(float(vertex_buffer[gl_VertexIndex * 3 + 1]));\n"
+   "   gl_Position = vec4(i.pos0, i.pos1, i.pos2, 1.0);\n"
+   "}\n";
+
 static enum rslc_stage cur_stage = RSLC_STAGE_FRAGMENT;
 
 static bool compile(const char *src, enum rslc_dst dst, unsigned version,
@@ -369,15 +425,17 @@ int main(int argc, char **argv)
       CHECK(strstr(err, "constant index below 8") != NULL);
    }
 
-   /* in / out blocks; Geometry 2: a geometry stage in SPIR-V and GLSL,
-    * refused by HLSL */
+   /* in / out blocks, a geometry stage (Geometry 2) and storage buffers:
+    * SPIR-V and GLSL, refused by HLSL */
    {
       static const struct { const char *name, *src; enum rslc_stage stage; const char *needle; }
       cases[] = {
          { "ioblock_vert", vs_ioblock, RSLC_STAGE_VERTEX, "out VertexData {" },
          { "ioblock_frag", fs_ioblock, RSLC_STAGE_FRAGMENT, "in VertexData {" },
          { "wide_line", gs_wide_line, RSLC_STAGE_GEOMETRY,
-            "layout(triangle_strip, max_vertices = 4) out;" }
+            "layout(triangle_strip, max_vertices = 4) out;" },
+         { "bbox", fs_bbox, RSLC_STAGE_FRAGMENT, "coherent buffer BBox {" },
+         { "vertex_fetch", vs_vertex_fetch, RSLC_STAGE_VERTEX, "InputData input_buffer[];" }
       };
       unsigned i;
       for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
