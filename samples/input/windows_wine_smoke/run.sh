@@ -505,7 +505,13 @@ focus_lost() {
    sleep 1
    xdotool keydown z; sleep 1.5
    focus_on "$other" || echo "       (the other window would not take the focus)"
-   sleep 1.5
+   # The release reaches the core on its next poll after Wine hands the
+   # focus over, which a loaded runner can take well past a fixed wait:
+   # watch the log for it, for at most 15 s
+   for i in $(seq 1 60); do
+      [ "$(count "$log" 'smoke core\] joypad B released')" -gt 0 ] && break
+      sleep 0.25
+   done
    ( cd "$work" && WINEDEBUG=-all $WINE ./close.exe ) >/dev/null 2>&1
    for i in $(seq 1 30); do kill -0 $app 2>/dev/null || break; sleep 0.5; done
    xdotool keyup z
