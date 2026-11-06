@@ -11345,6 +11345,15 @@ static void general_write_handler(rarch_setting_t *setting)
             }
          }
          break;
+#ifdef HAVE_COCOATOUCH
+      case MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_LEFT:
+      case MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_RIGHT:
+      case MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_TOP:
+      case MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_BOTTOM:
+         video_display_server_set_screen_orientation(
+               (enum rotation)settings->uints.screen_orientation);
+         break;
+#endif
       case MENU_ENUM_LABEL_SCREEN_ORIENTATION:
 #ifndef ANDROID
          /* FIXME: Changing at runtime on Android causes setting to somehow be incremented again, many times */

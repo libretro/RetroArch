@@ -826,7 +826,11 @@ retro_time_t cocoa_last_vblank_time(void)
       if (!screen)
          return;
 
-      CGRect screenSize    = [screen bounds];
+      UIWindow *window     = self.view.window;
+      if (!window)
+         window = [[UIApplication sharedApplication] delegate].window;
+
+      CGRect screenSize    = window ? window.bounds : [screen bounds];
 
       if (ios_running_on_ipad())
       {
@@ -846,7 +850,6 @@ retro_time_t cocoa_last_vblank_time(void)
       }
 
       /* Only apply safe area adjustments when in full screen mode */
-      UIWindow *window     = [[UIApplication sharedApplication] delegate].window;
       if (!window)
          return;
 
@@ -920,7 +923,14 @@ retro_time_t cocoa_last_vblank_time(void)
 
 - (void)viewWillLayoutSubviews
 {
+   [super viewWillLayoutSubviews];
    [self adjustViewFrameForSafeArea];
+}
+
+- (void)viewDidLayoutSubviews
+{
+   [super viewDidLayoutSubviews];
+   [[RetroArch_iOS get] layoutRenderView];
 #if defined(HAVE_OPENGL)
    /* Runs on the main thread; refresh the published backing size so a
     * threaded-video worker observes orientation/safe-area changes. Safe

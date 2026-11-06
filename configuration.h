@@ -604,6 +604,10 @@ typedef struct settings
       float video_aspect_ratio;
       float video_vp_bias_x;
       float video_vp_bias_y;
+      float video_ios_margin_left;
+      float video_ios_margin_right;
+      float video_ios_margin_top;
+      float video_ios_margin_bottom;
 #if defined(RARCH_MOBILE)
       float video_vp_bias_portrait_x;
       float video_vp_bias_portrait_y;

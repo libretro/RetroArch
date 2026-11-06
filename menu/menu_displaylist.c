@@ -12859,6 +12859,19 @@ unsigned menu_displaylist_build_list(
                   default:
                      break;
                }
+#ifdef HAVE_COCOATOUCH
+               if (video_display_server_can_set_screen_orientation())
+               {
+                  static const menu_displaylist_settings_row_t margin_rows[] = {
+                     { MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_LEFT, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_RIGHT, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_TOP, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_IOS_MARGIN_BOTTOM, PARSE_ONLY_FLOAT, false }
+                  };
+                  count += menu_displaylist_parse_settings_rows(list, settings,
+                        margin_rows, (unsigned)ARRAY_SIZE(margin_rows));
+               }
+#endif
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
                         PARSE_ONLY_FLOAT, false) == 0)

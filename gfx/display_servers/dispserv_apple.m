@@ -547,8 +547,27 @@ static void *apple_display_server_get_resolution_list(
 }
 
 #if TARGET_OS_IOS
+static void apple_display_server_publish_margins(void)
+{
+   settings_t *settings = config_get_ptr();
+   float values[4] = { 0, 0, 0, 0 };
+   NSData *layout;
+   if (settings)
+   {
+      values[0] = settings->floats.video_ios_margin_left;
+      values[1] = settings->floats.video_ios_margin_right;
+      values[2] = settings->floats.video_ios_margin_top;
+      values[3] = settings->floats.video_ios_margin_bottom;
+   }
+   layout = [[NSData alloc] initWithBytes:values length:sizeof(values)];
+   [(RetroArch_iOS *)apple_platform performSelectorOnMainThread:
+         @selector(setScreenLayout:) withObject:layout waitUntilDone:NO];
+   RARCH_RELEASE(layout);
+}
+
 static void apple_display_server_set_screen_orientation(void *data, enum rotation rotation)
 {
+    apple_display_server_publish_margins();
     switch (rotation)
     {
         case ORIENTATION_VERTICAL:
@@ -651,6 +670,9 @@ static void *apple_display_server_init(void)
       }
    }
 
+#if TARGET_OS_IOS
+   apple_display_server_publish_margins();
+#endif
    return apple;
 }
 

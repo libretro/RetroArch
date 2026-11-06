@@ -720,6 +720,10 @@ float	video_viewport_bias_x	1	0.5
 float	video_viewport_bias_y	1	0.5
 float	video_viewport_bias_portrait_x	1	0.5
 float	video_viewport_bias_portrait_y	1	0.0
+float	video_ios_margin_left	1	0.0f
+float	video_ios_margin_right	1	0.0f
+float	video_ios_margin_top	1	0.0f
+float	video_ios_margin_bottom	1	0.0f
 float	menu_footer_opacity	1	1.000f
 float	menu_header_opacity	1	1.000f
 float	ozone_thumbnail_scale_factor	1	1.0f
@@ -1440,6 +1444,10 @@ float	video_hdr_max_nits	1	1000.0f
 float	slowmotion_ratio	1	3.0f
 float	video_viewport_bias_x	1	0.5
 float	video_viewport_bias_y	1	0.5
+float	video_ios_margin_left	1	0.0f
+float	video_ios_margin_right	1	0.0f
+float	video_ios_margin_top	1	0.0f
+float	video_ios_margin_bottom	1	0.0f
 float	menu_footer_opacity	1	1.000f
 float	menu_header_opacity	1	1.000f
 float	ozone_thumbnail_scale_factor	1	1.0f
@@ -2188,6 +2196,10 @@ float	video_hdr_max_nits	1	1000.0f
 float	slowmotion_ratio	1	3.0f
 float	video_viewport_bias_x	1	0.5
 float	video_viewport_bias_y	1	0.5
+float	video_ios_margin_left	1	0.0f
+float	video_ios_margin_right	1	0.0f
+float	video_ios_margin_top	1	0.0f
+float	video_ios_margin_bottom	1	0.0f
 float	menu_footer_opacity	1	1.000f
 float	menu_header_opacity	1	1.000f
 float	ozone_thumbnail_scale_factor	1	1.0f
