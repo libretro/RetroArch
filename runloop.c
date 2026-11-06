@@ -839,6 +839,23 @@ void libretro_get_environment_info(
    runloop_st->flags &= ~RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB;
 }
 
+dylib_t runloop_core_dylib_load(const char *path, bool quiet)
+{
+#if defined(ANDROID)
+   /* Another app's intent can name the core */
+   if (!android_core_path_allowed(path))
+   {
+      if (!quiet)
+         RARCH_ERR("[Core] Not loading \"%s\": not found in the app's own folders.\n",
+               path);
+      /* Leave no stale loader error for the failure path to print */
+      dylib_error();
+      return NULL;
+   }
+#endif
+   return dylib_load(path);
+}
+
 /* Whether the core path is resolved through symlinks before it is
  * opened (and saved to history) */
 static bool load_dynamic_core_resolves_symlinks(void)
@@ -890,7 +907,7 @@ static void core_preload_task_handler(retro_task_t *task)
    core_preload_handle_t *h = task ? (core_preload_handle_t*)task->state : NULL;
    /* The open: the one thing off the main thread */
    if (h && h->path)
-      h->lib = dylib_load(h->path);
+      h->lib = runloop_core_dylib_load(h->path, true);
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
@@ -1051,7 +1068,7 @@ static dylib_t load_dynamic_core(const char *path, char *s,
          return pre;
    }
 #endif
-   return dylib_load(path);
+   return runloop_core_dylib_load(path, false);
 }
 
 /* @live is set when @path opened the library already loaded as the
@@ -1062,7 +1079,7 @@ static dylib_t libretro_get_system_info_lib(const char *path,
       struct retro_system_info *sysinfo, bool *load_no_content,
       bool *live)
 {
-   dylib_t lib = dylib_load(path);
+   dylib_t lib = runloop_core_dylib_load(path, false);
    void (*proc)(struct retro_system_info*);
 
    *live = false;
@@ -5025,10 +5042,12 @@ bool libretro_get_system_info(
       core_probe_capture = NULL;
       if (!lib)
       {
+         const char *err = dylib_error();
          RARCH_ERR("[Core] %s: \"%s\"\n",
                msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
                path);
-         RARCH_ERR("[Core] Error(s): %s\n", dylib_error());
+         if (err)
+            RARCH_ERR("[Core] Error(s): %s\n", err);
          return false;
       }
       if (load_no_content)
@@ -5160,7 +5179,11 @@ bool runloop_init_libretro_symbols(
                            )))
                {
                   const char *_msg = msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE);
-                  RARCH_ERR("[Core] %s: \"%s\"\nError(s): %s\n", _msg, path, dylib_error());
+                  const char *err  = dylib_error();
+                  if (err)
+                     RARCH_ERR("[Core] %s: \"%s\"\nError(s): %s\n", _msg, path, err);
+                  else
+                     RARCH_ERR("[Core] %s: \"%s\"\n", _msg, path);
                   runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return false;
@@ -5176,7 +5199,7 @@ bool runloop_init_libretro_symbols(
                 * unless the caller has opened it already */
                if (!(lib_handle_local = *lib_handle_p))
                {
-                  if (!(lib_handle_local = dylib_load(lib_path)))
+                  if (!(lib_handle_local = runloop_core_dylib_load(lib_path, false)))
                      return false;
                   *lib_handle_p = lib_handle_local;
                }
