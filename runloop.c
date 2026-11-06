@@ -4003,9 +4003,21 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 #endif
          return true;
 
+#ifdef HAVE_RUNAHEAD
+      case RETRO_ENVIRONMENT_SET_SAVESTATE_LIFETIME:
+         return serialization_register((const struct retro_savestate_lifetime*)data);
+#endif
       case RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT:
       {
          int result = RETRO_SAVESTATE_CONTEXT_NORMAL;
+#ifdef HAVE_RUNAHEAD
+         if (serialization_owned_context())
+         {
+            if (data)
+               *(int*)data = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_MANAGED;
+            break;
+         }
+#endif
 
 #if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
          if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
@@ -5472,6 +5484,9 @@ static bool core_unload_game(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
 
+#ifdef HAVE_RUNAHEAD
+   serialization_clear_history();
+#endif
    video_driver_free_hw_context();
 #ifdef HAVE_TEMPORAL_UPSCALER
    video_upscaler_clear_wanted();
@@ -5757,6 +5772,9 @@ void runloop_event_deinit_core(void)
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
       RARCH_LOG("[Core] Unloading core...\n");
+#ifdef HAVE_RUNAHEAD
+      serialization_close();
+#endif
       runloop_st->current_core.retro_deinit();
 #if TARGET_OS_IPHONE
       exec_mem_ledger_free_all();
@@ -10004,7 +10022,11 @@ int runloop_iterate(void)
 #endif
 
 #ifdef HAVE_CHEEVOS
-         if (runloop_st->frame_work & RUNLOOP_WORK_CHEEVOS)
+         if ((runloop_st->frame_work & RUNLOOP_WORK_CHEEVOS)
+#ifdef HAVE_RUNAHEAD
+               && serialization_usable()
+#endif
+            )
          {
             if (runloop_is_libretro_running(runloop_st, menu_pause_libretro))
             {
@@ -10082,6 +10104,14 @@ int runloop_iterate(void)
 #endif
          goto end;
       case RUNLOOP_STATE_ITERATE:
+#ifdef HAVE_RUNAHEAD
+         if (!serialization_usable())
+         {
+            command_event(CMD_EVENT_PAUSE, NULL);
+            video_driver_cached_frame();
+            goto end;
+         }
+#endif
          /* A staged content load has no core to run between its
           * stages: poll, present what is on screen, and pace as a
           * paused frame does. */
@@ -10135,6 +10165,10 @@ int runloop_iterate(void)
       want_runahead                     = want_runahead && !netplay_is_enabled;
 #endif
 
+      if ((!want_runahead && runloop_st->runahead_state_owned) ||
+          (runloop_st->core_options && runloop_st->core_options->updated))
+         serialization_clear_history();
+
       if (want_runahead)
          frame_advanced = runahead_run(
                runloop_st,
@@ -10147,6 +10181,14 @@ int runloop_iterate(void)
 #endif
          frame_advanced = core_run();
    }
+
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+   {
+      frame_advanced = false;
+      goto frame_end;
+   }
+#endif
 
    runloop_load_deferred_auto_state();
 
@@ -10217,11 +10259,18 @@ int runloop_iterate(void)
    }
 #endif
 
+#ifdef HAVE_RUNAHEAD
+frame_end:
+#endif
 #ifdef HAVE_THREADS
    if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
       autosave_unlock();
 #endif
 
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+      goto end;
+#endif
    /* Check if we should save state automatically */
    if (savestate_automatic_enable)
       content_save_state_automatic(current_time);
@@ -10776,6 +10825,10 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
    }
 #endif
 
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+      return false;
+#endif
    runloop_st->current_core.retro_cheat_set(info->index, info->enabled, info->code);
 
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
@@ -10817,6 +10870,10 @@ bool core_reset_cheat(void)
    }
 #endif
 
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+      return false;
+#endif
    runloop_st->current_core.retro_cheat_reset();
 
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
@@ -10860,6 +10917,9 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
          sizeof(input_st->touchpad_requested));
 
 #if defined(HAVE_RUNAHEAD)
+   serialization_clear_history();
+   if (!serialization_usable())
+      return false;
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    runahead_remember_controller_port_device(runloop_st, pad->port, pad->device);
 #endif
@@ -10874,6 +10934,14 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
    runloop_state_t *runloop_st    = &runloop_state;
    if (!info)
       return false;
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+   {
+      info->data = NULL;
+      info->size = 0;
+      return false;
+   }
+#endif
    info->size  = runloop_st->current_core.retro_get_memory_size(info->id);
    info->data  = runloop_st->current_core.retro_get_memory_data(info->id);
    return true;
@@ -10947,16 +11015,27 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
    bool ok;
    if (!info)
       return false;
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+      return false;
+#endif
 #ifdef HAVE_THREADS
    video_thread_core_context_take();
 #endif
    ok = runloop_st->current_core.retro_unserialize(info->data_const, info->size);
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_check())
+      ok = false;
+#endif
 #ifdef HAVE_THREADS
    video_thread_core_context_release();
 #endif
    if (!ok)
       return false;
 
+#ifdef HAVE_RUNAHEAD
+   serialization_clear_history();
+#endif
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, info);
 #endif
@@ -10964,7 +11043,11 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
    command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
 #endif
 
+#ifdef HAVE_RUNAHEAD
+   return serialization_usable();
+#else
    return true;
+#endif
 }
 
 bool core_unserialize_special(retro_ctx_serialize_info_t *info)
@@ -10975,8 +11058,16 @@ bool core_unserialize_special(retro_ctx_serialize_info_t *info)
    if (!info)
       return false;
 
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+      return false;
+#endif
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    ret = runloop_st->current_core.retro_unserialize(info->data_const, info->size);
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_check())
+      ret = false;
+#endif
    runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 
 #ifdef HAVE_NETWORKING
@@ -10990,9 +11081,19 @@ bool core_unserialize_special(retro_ctx_serialize_info_t *info)
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
    runloop_state_t *runloop_st  = &runloop_state;
-   if (!info || !runloop_st->current_core.retro_serialize(info->data, info->size))
+   bool ret;
+   if (!info)
       return false;
-   return true;
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+      return false;
+#endif
+   ret = runloop_st->current_core.retro_serialize(info->data, info->size);
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_check())
+      ret = false;
+#endif
+   return ret;
 }
 
 bool core_serialize_special(retro_ctx_serialize_info_t *info)
@@ -11004,8 +11105,7 @@ bool core_serialize_special(retro_ctx_serialize_info_t *info)
       return false;
 
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
-   ret                = runloop_st->current_core.retro_serialize(
-                        info->data, info->size);
+   ret                = core_serialize(info);
    runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 
    return ret;
@@ -11014,7 +11114,17 @@ bool core_serialize_special(retro_ctx_serialize_info_t *info)
 size_t core_serialize_size(void)
 {
    runloop_state_t *runloop_st  = &runloop_state;
-   return runloop_st->current_core.retro_serialize_size();
+   size_t size;
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+      return 0;
+#endif
+   size = runloop_st->current_core.retro_serialize_size();
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_check())
+      size = 0;
+#endif
+   return size;
 }
 
 size_t core_serialize_size_special(void)
@@ -11022,7 +11132,7 @@ size_t core_serialize_size_special(void)
    size_t val;
    runloop_state_t *runloop_st = &runloop_state;
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
-   val                = runloop_st->current_core.retro_serialize_size();
+   val                = core_serialize_size();
    runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 
    return val;
@@ -11037,6 +11147,14 @@ uint64_t core_serialization_quirks(void)
 void core_reset(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
+
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+      return;
+   serialization_clear_history();
+   if (!serialization_usable())
+      return;
+#endif
 
    /* Drop video-driver caches of core-owned GPU resources before
     * retro_reset() is allowed to destroy them. No-op on software
@@ -11117,6 +11235,11 @@ bool core_run(void)
    bool netplay_preframe;
 #endif
 
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+      return false;
+#endif
+
    /* The core is being torn down, or replaced: do not run it.
     *
     * retro_run() must not be entered once closing has begun, because
@@ -11177,8 +11300,15 @@ bool core_run(void)
       video_thread_core_context_take();
 #endif
       current_core->retro_run();
+#ifdef HAVE_RUNAHEAD
+      serialization_check();
+#endif
 #ifdef HAVE_THREADS
       video_thread_core_context_release();
+#endif
+#ifdef HAVE_RUNAHEAD
+      if (!serialization_usable())
+         return false;
 #endif
       ran = true;
       if (runloop_st->auto_state_load_pending)

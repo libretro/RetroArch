@@ -380,6 +380,9 @@ struct runloop
    /* The auto state was asked for by name (Load State > Auto), so it
     * loads whatever Auto Load State says. */
    bool auto_state_load_asked;
+#ifdef HAVE_RUNAHEAD
+   bool runahead_state_owned;
+#endif
 
    bool perfcnt_enable;
    bool paused_hotkey;
