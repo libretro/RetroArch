@@ -2399,6 +2399,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          break;
       case FILE_TYPE_PARENT_DIRECTORY:
       case FILE_TYPE_USE_DIRECTORY:
+      case FILE_TYPE_VULKAN_DRIVER_SYSTEM:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_generic);
          break;

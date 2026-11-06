@@ -362,6 +362,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/android_vk_ctx.c"
 #if defined(HAVE_VULKAN_CUSTOM_DRIVER)
 #include "../gfx/common/vulkan_custom_driver.c"
+#include "../gfx/common/vulkan_custom_driver_glue.c"
 #include "../gfx/common/vulkan_custom_driver_android.c"
 #include "../gfx/common/vulkan_custom_driver_linker.c"
 #endif
@@ -440,6 +441,11 @@ VIDEO CONTEXT
 #endif
 #include "../gfx/common/vulkan_common.c"
 #include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+#include "../gfx/common/vulkan_custom_driver.c"
+#include "../gfx/common/vulkan_custom_driver_glue.c"
+#include "../gfx/common/vulkan_custom_driver_desktop.c"
+#endif
 #ifdef HAVE_RMP4
 #include "../gfx/common/vulkan_video_decode.c"
 #endif

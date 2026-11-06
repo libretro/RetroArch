@@ -305,7 +305,7 @@ jobs:
           make -C samples/gfx/vulkan_driver_pacing clean
 
   vulkan-custom-driver:
-    name: Android custom Vulkan driver packages and crash state
+    name: "Custom Vulkan drivers: packages, ICD manifests and crash state"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -339,9 +339,9 @@ jobs:
 
       - name: Regression test (Linux, ASan + UBSan)
         run: |
-          # Package checks, the extraction key, the sticky crash state,
-          # the session's driver choices and the soname patch, fed from
-          # buffers; the loader itself is Android-only.
+          # Package and ICD manifest checks, the extraction key, the sticky
+          # crash state, the session's driver choices and the soname patch,
+          # fed from buffers; the loaders themselves are not run.
           UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              make -C samples/gfx/vulkan_custom_driver SANITIZER=address,undefined check
           make -C samples/gfx/vulkan_custom_driver clean

@@ -1434,6 +1434,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_AUDIOFILTER:
          case FILE_TYPE_CONFIG:
          case FILE_TYPE_USE_DIRECTORY:
+         case FILE_TYPE_VULKAN_DRIVER_SYSTEM:
          case FILE_TYPE_PLAYLIST_ENTRY:
          case MENU_INFO_MESSAGE:
          case FILE_TYPE_DOWNLOAD_CORE:

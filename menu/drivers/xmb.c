@@ -4853,6 +4853,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_SHADER_PRESET:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS]);
       case FILE_TYPE_USE_DIRECTORY:
+      case FILE_TYPE_VULKAN_DRIVER_SYSTEM:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_CHECKMARK]);
       case FILE_TYPE_CARCHIVE:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_ZIP]);

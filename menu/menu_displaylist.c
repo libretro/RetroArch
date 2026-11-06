@@ -572,6 +572,17 @@ static bool filebrowser_parent_is_hidden_root(const char *dir)
    return slash - 1 == dir;
 }
 
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+static void filebrowser_prepend_vulkan_driver_system(file_list_t *list)
+{
+   menu_entries_prepend(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_USE_SYSTEM),
+         "",
+         MSG_UNKNOWN,
+         FILE_TYPE_VULKAN_DRIVER_SYSTEM, 0, 0);
+}
+#endif
+
 static int filebrowser_parse(
       file_list_t *info_list,
       const char *path,
@@ -970,6 +981,10 @@ end:
             path,
             MENU_ENUM_LABEL_PARENT_DIRECTORY,
             FILE_TYPE_PARENT_DIRECTORY, 0, 0);
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+   if (type == DISPLAYLIST_VULKAN_DRIVERS)
+      filebrowser_prepend_vulkan_driver_system(info_list);
+#endif
    return count;
 }
 
@@ -18547,7 +18562,11 @@ static bool menu_displaylist_ctl_internal(
                   break;
                case DISPLAYLIST_VULKAN_DRIVERS:
                   info->type_default = FILE_TYPE_VULKAN_DRIVER;
+#ifdef ANDROID
                   info->exts         = strldup("zip", sizeof("zip"));
+#else
+                  info->exts         = strldup("json", sizeof("json"));
+#endif
                   break;
                case DISPLAYLIST_STREAM_CONFIG_FILES:
                   info->type_default = FILE_TYPE_STREAM_CONFIG;
@@ -19501,6 +19520,10 @@ static bool menu_displaylist_ctl_internal(
                            FILE_TYPE_DIRECTORY, 0, 0, NULL))
                      count++;
             }
+#endif
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+            if (type == DISPLAYLIST_VULKAN_DRIVERS)
+               filebrowser_prepend_vulkan_driver_system(info->list);
 #endif
          }
          else
