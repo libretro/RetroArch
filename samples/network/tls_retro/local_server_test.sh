@@ -247,6 +247,57 @@ cfg "client certificate signed with SHA-1"            0 "TLS 1.2" -Verify 1 -CAf
 cfg "client certificate over RSA key exchange and AES-256-CBC-SHA" 0 "suite 0035" \
    -tls1_2 -cipher AES256-SHA -Verify 1 -CAfile $D/cca.pem -- \
    localhost 44331 -t $D/ca.der -c $D/cli.der -k $D/cli.key.der -s 0035 $G
+# net_http with one connection's own settings (net_http_connection_set_tls):
+# the 3 MiB body over a client certificate and AES-256-CBC. Such a
+# connection is its own, never taken from or handed to the pool: a
+# keep-alive server below logs each connection, and a GET with another
+# trust anchor or none must fail or pass on its own settings, whatever
+# the transfer before it left open.
+openssl req -newkey rsa:2048 -nodes -keyout $D/untr.key -out $D/untr.csr -subj "/CN=localhost" 2>/dev/null
+printf 'subjectAltName=DNS:localhost\nbasicConstraints=CA:FALSE\n' > $D/untr.ext
+openssl x509 -req -in $D/untr.csr -CA $D/cca.pem -CAkey $D/cca.key -CAcreateserial -out $D/untr.pem -days 2 -extfile $D/untr.ext 2>/dev/null
+openssl x509 -in $D/cca.pem -outform DER -out $D/cca.der
+(cd $D/www && exec openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key -tls1_2 -cipher AES256-SHA -Verify 1 -CAfile $D/cca.pem -WWW) >/dev/null 2>&1 &
+SRV=$!; sleep 0.4
+set +e; $RUN ./tls_http$EXE 44331 body.bin $SUM $D/ca.pem -t $D/ca.der -c $D/cli.der -k $D/cli.key.der -s 0035 -g > $D/http.out 2>&1; rc=$?; set -e
+kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+if [ $rc -eq 0 ]; then echo "ok:   net_http with its own settings: client certificate, AES-256-CBC"
+else echo "FAIL: net_http with its own settings (rc=$rc): $(cat $D/http.out)"; exit 1; fi
+cat > $D/ka.py << 'PYEOF'
+import http.server, os, ssl, sys
+port, cert, key, root, log = sys.argv[1:6]
+log = os.path.abspath(log)
+class H(http.server.SimpleHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+    def log_message(self, *a): pass
+class S(http.server.ThreadingHTTPServer):
+    allow_reuse_address = True
+    def handle_error(self, *a): pass   # a refused handshake
+    def get_request(self):
+        s, a = super().get_request()
+        with open(log, "a") as f: f.write("conn\n")
+        return s, a
+ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ctx.load_cert_chain(cert, key)
+os.chdir(root)
+srv = S(("127.0.0.1", int(port)), H)
+srv.socket = ctx.wrap_socket(srv.socket, server_side=True, do_handshake_on_connect=False)
+srv.serve_forever()
+PYEOF
+pool() { # label leaf want-rc want-output want-connections -- steps
+   L=$1; LEAF=$2; W=$3; O=$4; C=$5; shift 6
+   rm -f $D/ka.log
+   python3 $D/ka.py 44331 $D/$LEAF.pem $D/$LEAF.key $D/www $D/ka.log & SRV=$!; sleep 0.8
+   set +e; $RUN ./tls_http$EXE 44331 body.bin $SUM $D/ca.pem "$@" > $D/http.out 2>&1; rc=$?; set -e
+   kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+   N=$(wc -l < $D/ka.log 2>/dev/null || echo 0)
+   if [ $rc -eq $W ] && grep -q "$O" $D/http.out && [ $N -eq $C ]; then echo "ok:   $L"
+   else echo "FAIL: $L (rc=$rc, want $W; $N connections, want $C): $(cat $D/http.out)"; exit 1; fi
+}
+pool "net_http keeps one connection for two GETs"         rsa   0 "get 2 ok"     1 -- -u -u
+pool "a pooled connection is not lent to other settings"   rsa   1 "get 2 failed" 2 -- -u -t $D/other.der -g
+pool "nor one with its own settings to a later GET"        untr  1 "get 2 failed" 2 -- -t $D/cca.der -g -u
+pool "settings of its own, a connection each time"         rsa   0 "get 2 ok"     2 -- -t $D/ca.der -g -g
 # A CBC record changed in flight fails its MAC: the transfer stops there
 # with a record error rather than handing over the altered bytes.
 cat > $D/flip.py << 'PYEOF'

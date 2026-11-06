@@ -279,6 +279,8 @@ struct http_t
    size_t      out_head_len;
    size_t      body_queued;   /* body bytes handed to out so far */
    int         send_phase;    /* enum net_http_send_phase */
+   /* the connection's own TLS settings, borrowed from the caller */
+   const struct ssl_socket_retro_config *tls;
    bool ssl;
    bool request_sent;
    /* The last net_http_update() stopped because the transport had
@@ -326,6 +328,7 @@ struct http_connection_t
    net_http_source_t source;
    net_http_source_rewind_t source_rewind;
    void *source_data;
+   const struct ssl_socket_retro_config *tls;
    int port;
    bool ssl;
 };
@@ -974,6 +977,13 @@ void net_http_connection_set_headers(
    conn->headers = headers ? strdup(headers) : NULL;
 }
 
+void net_http_connection_set_tls(struct http_connection_t *conn,
+      const struct ssl_socket_retro_config *cfg)
+{
+   if (conn)
+      conn->tls = cfg;
+}
+
 /**
  * net_http_connection_set_sink:
  *
@@ -1426,6 +1436,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       return NULL;
 
    state->ssl  = conn->ssl;
+   state->tls  = conn->tls;
    state->conn = NULL;
 
    state->request.domain        = strdup(conn->domain);
@@ -1731,6 +1742,20 @@ static bool net_http_connect(struct http_t *state)
             net_http_log_transport_state(state, "ssl_init_failed", -1);
             socket_close(conn->fd);
             break;
+         }
+         if (state->tls)
+         {
+            /* settings only the built-in client takes */
+#ifdef HAVE_RETROSSL
+            if (ssl_socket_retro_configure(conn->ssl_ctx, state->tls) != 0)
+#endif
+            {
+               net_http_log_transport_state(state, "ssl_config_failed", -1);
+               ssl_socket_free(conn->ssl_ctx);
+               conn->ssl_ctx = NULL;
+               socket_close(conn->fd);
+               break;
+            }
          }
 
          /* TODO: Properly figure out what's going wrong when the newer
@@ -3326,8 +3351,9 @@ bool net_http_update_budget(struct http_t *state,
    if (!state->conn)
    {
       /* A replayed request goes out on a connection of its own;
-       * the pool is what it is recovering from. */
-      if (!state->retried)
+       * the pool is what it is recovering from. One with TLS settings
+       * of its own never shares one. */
+      if (!state->retried && !state->tls)
          state->conn = net_http_conn_pool_find(state->request.domain, state->request.port);
       state->conn_reused = (state->conn != NULL);
       if (!state->conn)
@@ -3579,7 +3605,9 @@ bool net_http_update_budget(struct http_t *state,
       state->conn = NULL;
    }
 
-   if (state->conn)
+   if (state->conn && state->tls)
+      net_http_conn_pool_remove(state->conn);
+   else if (state->conn)
       net_http_conn_pool_release(state->conn);
    state->conn = NULL;
 
