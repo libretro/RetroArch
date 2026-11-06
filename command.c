@@ -5879,6 +5879,14 @@ static uint8_t *command_memory_get_pointer(
       unsigned address, unsigned int* max_bytes,
       int for_write, char *s, size_t len)
 {
+#ifdef HAVE_RUNAHEAD
+   if (!serialization_usable())
+   {
+      strlcpy_lit(s, " -1 core memory unavailable\n", len);
+      *max_bytes = 0;
+      return NULL;
+   }
+#endif
    if (!sys_info || sys_info->mmaps.num_descriptors == 0)
    {
       struct command_ram_block blocks[2];
