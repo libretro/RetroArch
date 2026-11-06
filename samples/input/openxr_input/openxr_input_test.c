@@ -156,6 +156,11 @@ static char     t_bound[256][3][XR_MAX_PATH_LENGTH];
 static unsigned t_num_bound;
 /* A runtime whose profiles lack XR_EXT_palm_pose's path. */
 static bool t_refuse_palm;
+/* A runtime that refuses the Touch Button's rows. */
+static bool t_refuse_touch;
+/* A runtime that refuses a suggestion holding all of t_refuse_with's
+ * rows at once: the palm (1), the Touch Button's (2), edit mode's (4). */
+static unsigned t_refuse_with;
 static XRAPI_ATTR XrResult XRAPI_CALL t_suggest(XrInstance i,
       const XrInteractionProfileSuggestedBinding *sb)
 {
@@ -171,6 +176,29 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_suggest(XrInstance i,
          if (!strncmp(t_actions[t_action_index(
                      sb->suggestedBindings[k].action)], "edit/", 5))
             return XR_ERROR_PATH_UNSUPPORTED;
+   if (t_refuse_touch)
+      for (k = 0; k < sb->countSuggestedBindings; k++)
+         if (!strncmp(t_actions[t_action_index(
+                     sb->suggestedBindings[k].action)],
+                  "pointer/touch_", 14))
+            return XR_ERROR_PATH_UNSUPPORTED;
+   if (t_refuse_with)
+   {
+      unsigned held = 0;
+      for (k = 0; k < sb->countSuggestedBindings; k++)
+      {
+         const char *a = t_actions[t_action_index(
+               sb->suggestedBindings[k].action)];
+         if (strstr(t_path(sb->suggestedBindings[k].binding), "palm_ext"))
+            held |= 1;
+         else if (!strncmp(a, "pointer/touch_", 14))
+            held |= 2;
+         else if (!strncmp(a, "edit/", 5))
+            held |= 4;
+      }
+      if ((held & t_refuse_with) == t_refuse_with)
+         return XR_ERROR_PATH_UNSUPPORTED;
+   }
    t_suggested++;
    for (k = 0; k < sb->countSuggestedBindings && t_num_bound < 256; k++)
    {
@@ -1047,8 +1075,8 @@ static void test_session_made(void)
 {
    t_reset_log();
    t_session(false);
-   CHECK(t_num_sets == 4 && t_num_actions == 47,
-         "%u sets and %u actions made, want 4 and 47", t_num_sets,
+   CHECK(t_num_sets == 4 && t_num_actions == 54,
+         "%u sets and %u actions made, want 4 and 54", t_num_sets,
          t_num_actions);
    CHECK(t_suggested == 4,
          "%u profiles suggested without the Frame's extension, want 4",
@@ -2871,6 +2899,8 @@ static void test_edit_oversized(void)
    input_openxr_profile_t p;
    unsigned i;
    const char *path = "/interaction_profiles/test/oversized";
+   XrPath taken     = XR_NULL_PATH;
+   bool touch       = false;
    t_forget_devices();
    t_fresh_session();
    for (i = 0; i < ARRAY_SIZE(game); i++)
@@ -2885,7 +2915,7 @@ static void test_edit_oversized(void)
    p.count      = ARRAY_SIZE(game);
    p.edit_count = ARRAY_SIZE(edit);
    t_reset_log();
-   CHECK(!input_openxr_suggest(&input_openxr_st, &p),
+   CHECK(!input_openxr_suggest(&input_openxr_st, &p, &taken, &touch),
          "edit mode's bindings taken past the limit");
    CHECK(t_binds(path, "combined/a", NULL) && !t_binds(path, "edit/grab",
             NULL), "the game's not suggested, or edit mode's were");
@@ -10588,6 +10618,93 @@ static void test_edit_room(void)
    t_edit_end();
 }
 
+/* The Touch Button's own actions, a hand each in the pointer set, as
+ * Touch binds them: grip, stick click, A and B on the right, X and Y on
+ * the left, no bumper. A runtime that refuses them keeps the rest of
+ * each profile. */
+static void test_touch_binds(void)
+{
+   t_fresh_session();
+   CHECK(     t_touch_binds("pointer/touch_grip",
+               "/user/hand/left/input/squeeze/value")
+         && t_touch_binds("pointer/touch_grip",
+               "/user/hand/right/input/squeeze/value")
+         && t_touch_binds("pointer/touch_stick",
+               "/user/hand/right/input/thumbstick/click")
+         && t_touch_binds("pointer/touch_a", "/user/hand/right/input/a/click")
+         && t_touch_binds("pointer/touch_b", "/user/hand/right/input/b/click")
+         && t_touch_binds("pointer/touch_x", "/user/hand/left/input/x/click")
+         && t_touch_binds("pointer/touch_y", "/user/hand/left/input/y/click")
+         && !t_touch_binds("pointer/touch_a",
+               "/user/hand/left/input/a/click")
+         && !t_touch_binds("pointer/touch_bumper", NULL),
+         "Touch's Touch Button rows are not its buttons");
+   CHECK(     input_openxr_st.profile_paths[1] != XR_NULL_PATH
+         && input_openxr_st.touch_bound[1]
+         && input_openxr_st.profile_paths[2] == XR_NULL_PATH,
+         "Touch's path %d and rows %d kept, the Frame's path %d",
+         input_openxr_st.profile_paths[1] != XR_NULL_PATH,
+         (int)input_openxr_st.touch_bound[1],
+         input_openxr_st.profile_paths[2] != XR_NULL_PATH);
+   t_hooks.session_destroying(t_hooks.user);
+
+   t_reset_log();
+   t_refuse_touch = true;
+   t_suggested    = 0;
+   t_fresh_session();
+   CHECK(     t_suggested == 4
+         && t_touch_binds("combined/b", "/user/hand/right/input/a/click")
+         && !t_touch_binds("pointer/touch_grip", NULL)
+         && input_openxr_st.profile_paths[1] != XR_NULL_PATH
+         && !input_openxr_st.touch_bound[1],
+         "refused, the Touch Button rows took the profile with them "
+         "(%u profiles)", t_suggested);
+   CHECK(t_logged("[OpenXR] Touch Button bindings refused for "
+            "/interaction_profiles/oculus/touch_controller.\n") == 1,
+         "log: %s", t_log);
+   t_hooks.session_destroying(t_hooks.user);
+   t_refuse_touch = false;
+}
+
+/* A runtime that refuses some of a profile's rows only together: the
+ * palm goes first, then the Touch Button's, then edit mode's. */
+static void test_suggest_order(void)
+{
+   t_forget_devices();
+   t_palm_pose   = true;
+   t_refuse_with = 1 | 2;
+   t_fresh_session();
+   CHECK(     t_touch_binds("pointer/touch_grip", NULL)
+         && t_touch_binds("edit/grab", NULL)
+         && !t_touch_binds("pointer/palm", NULL),
+         "the palm with the Touch Button's: Touch Button %d, palm %d",
+         (int)t_touch_binds("pointer/touch_grip", NULL),
+         (int)t_touch_binds("pointer/palm", NULL));
+   t_hooks.session_destroying(t_hooks.user);
+   t_refuse_with = 2 | 4;
+   t_fresh_session();
+   CHECK(     t_touch_binds("edit/grab", NULL)
+         && t_touch_binds("pointer/palm", NULL)
+         && !t_touch_binds("pointer/touch_grip", NULL),
+         "the Touch Button's with edit mode's: edit %d, Touch Button %d",
+         (int)t_touch_binds("edit/grab", NULL),
+         (int)t_touch_binds("pointer/touch_grip", NULL));
+   t_hooks.session_destroying(t_hooks.user);
+   t_refuse_with = 1 | 4;
+   t_fresh_session();
+   CHECK(     t_touch_binds("edit/grab", NULL)
+         && t_touch_binds("pointer/touch_grip", NULL)
+         && !t_touch_binds("pointer/palm", NULL),
+         "the palm with edit mode's: edit %d, palm %d",
+         (int)t_touch_binds("edit/grab", NULL),
+         (int)t_touch_binds("pointer/palm", NULL));
+   t_hooks.session_destroying(t_hooks.user);
+   t_refuse_with = 0;
+   t_palm_pose   = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
 int main(void)
 {
    t_forget_devices();
@@ -10730,6 +10847,8 @@ int main(void)
    test_edit_hinge_attach();
    test_edit_smoothing();
    test_edit_room();
+   test_touch_binds();
+   test_suggest_order();
    if (failures)
    {
       printf("%d failure(s)\n", failures);

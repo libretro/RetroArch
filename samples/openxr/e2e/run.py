@@ -2132,7 +2132,8 @@ _FL = '/user/hand/left/input/'
 _FR = '/user/hand/right/input/'
 # The Frame's right controller has A, B, X and Y, the left a D-pad; the
 # right stick's click opens the RetroArch menu in place of R3, and the
-# grips are left to edit mode, whose Reset is the left D-pad's down.
+# grips are left to edit mode and the Touch Button, and edit mode's
+# Reset is the left D-pad's down.
 FRAME_BINDS = set([
     ('combined/b', _FR + 'a/click'), ('combined/a', _FR + 'b/click'),
     ('combined/y', _FR + 'x/click'), ('combined/x', _FR + 'y/click'),
@@ -2169,7 +2170,15 @@ FRAME_BINDS = set([
     ('pointer/aim', _FL + 'aim/pose'), ('pointer/aim', _FR + 'aim/pose'),
     ('pointer/grip', _FL + 'grip/pose'), ('pointer/grip', _FR + 'grip/pose'),
     ('pointer/rumble', '/user/hand/left/output/haptic'),
-    ('pointer/rumble', '/user/hand/right/output/haptic')])
+    ('pointer/rumble', '/user/hand/right/output/haptic'),
+    ('pointer/touch_grip', _FL + 'squeeze/value'),
+    ('pointer/touch_grip', _FR + 'squeeze/value'),
+    ('pointer/touch_stick', _FL + 'thumbstick/click'),
+    ('pointer/touch_stick', _FR + 'thumbstick/click'),
+    ('pointer/touch_bumper', _FL + 'bumper/click'),
+    ('pointer/touch_bumper', _FR + 'bumper/click'),
+    ('pointer/touch_a', _FR + 'a/click'), ('pointer/touch_b', _FR + 'b/click'),
+    ('pointer/touch_x', _FR + 'x/click'), ('pointer/touch_y', _FR + 'y/click')])
 
 
 def check_frame_profile(res):

@@ -45,7 +45,7 @@
 #endif
 
 #define INPUT_OPENXR_HANDS     2
-#define INPUT_OPENXR_MAX_BINDS 48
+#define INPUT_OPENXR_MAX_BINDS 64
 /* With XR_EXT_palm_pose, every profile gets both hands' palm too. */
 #define INPUT_OPENXR_PALM_BINDS 2
 /* A steady rumble is applied again this often (us), each time for
@@ -144,8 +144,19 @@ enum input_openxr_action
    IXA_E_EDIT,
    IXA_E_NEXT,
    IXA_E_PREV,
+   /* Each hand's Touch Button, in enum video_openxr_touch_button order
+    * from Grip; the Trigger is the pad set's trigger. */
+   IXA_T_GRIP,
+   IXA_T_STICK,
+   IXA_T_BUMPER,
+   IXA_T_A,
+   IXA_T_B,
+   IXA_T_X,
+   IXA_T_Y,
    IXA_COUNT
 };
+
+#define IXA_TOUCH(c) (IXA_T_GRIP + (c) - VIDEO_OPENXR_TOUCH_BUTTON_GRIP)
 
 typedef struct input_openxr_action_def
 {
@@ -205,7 +216,14 @@ static const input_openxr_action_def_t input_openxr_actions[IXA_COUNT] = {
    { INPUT_OPENXR_SET_EDIT,     "menu",        "RetroArch Menu", XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_EDIT,     "edit_screens", "Edit Screens",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_EDIT,     "select_next", "Select Next",    XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
-   { INPUT_OPENXR_SET_EDIT,     "select_previous", "Select Previous", XR_ACTION_TYPE_BOOLEAN_INPUT, true }
+   { INPUT_OPENXR_SET_EDIT,     "select_previous", "Select Previous", XR_ACTION_TYPE_BOOLEAN_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_grip",   "Touch Button: Grip",        XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_stick",  "Touch Button: Stick Click", XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_bumper", "Touch Button: Bumper",      XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_a",      "Touch Button: A",           XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_b",      "Touch Button: B",           XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_x",      "Touch Button: X",           XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_y",      "Touch Button: Y",           XR_ACTION_TYPE_FLOAT_INPUT, true }
 };
 
 static const char *const input_openxr_set_names[INPUT_OPENXR_SETS] = {
@@ -286,7 +304,8 @@ static const input_openxr_bind_t input_openxr_touch[] = {
 
 /* Steam Frame: A, B, X and Y on the right, a D-pad on the left; View
  * is Select, Menu is Start, and the right stick's click is the
- * RetroArch menu in place of R3. The grips stay free. */
+ * RetroArch menu in place of R3. The grips are left to edit mode and
+ * the Touch Button. */
 static const input_openxr_bind_t input_openxr_frame[] = {
    IXB_R(IXA_C_B,      "a/click"),
    IXB_R(IXA_C_A,      "b/click"),
@@ -401,12 +420,48 @@ static const input_openxr_bind_t input_openxr_simple_edit[] = {
    IXB_L(IXA_E_MENU,     "menu/click")
 };
 
+/* Each profile's Touch Button rows: its buttons by their names on the
+ * controller (Index's A and B are on both hands, the Frame's A to Y on
+ * the right). The simple controller has only its trigger. */
+static const input_openxr_bind_t input_openxr_touch_rows_index[] = {
+   IXB_BOTH(IXA_T_GRIP,  "squeeze/value"),
+   IXB_BOTH(IXA_T_STICK, "thumbstick/click"),
+   IXB_BOTH(IXA_T_A,     "a/click"),
+   IXB_BOTH(IXA_T_B,     "b/click")
+};
+
+static const input_openxr_bind_t input_openxr_touch_rows_touch[] = {
+   IXB_BOTH(IXA_T_GRIP,  "squeeze/value"),
+   IXB_BOTH(IXA_T_STICK, "thumbstick/click"),
+   IXB_R(IXA_T_A,        "a/click"),
+   IXB_R(IXA_T_B,        "b/click"),
+   IXB_L(IXA_T_X,        "x/click"),
+   IXB_L(IXA_T_Y,        "y/click")
+};
+
+static const input_openxr_bind_t input_openxr_touch_rows_frame[] = {
+   IXB_BOTH(IXA_T_GRIP,   "squeeze/value"),
+   IXB_BOTH(IXA_T_STICK,  "thumbstick/click"),
+   IXB_BOTH(IXA_T_BUMPER, "bumper/click"),
+   IXB_R(IXA_T_A,         "a/click"),
+   IXB_R(IXA_T_B,         "b/click"),
+   IXB_R(IXA_T_X,         "x/click"),
+   IXB_R(IXA_T_Y,         "y/click")
+};
+
+static const input_openxr_bind_t input_openxr_touch_rows_vive[] = {
+   IXB_BOTH(IXA_T_GRIP,  "squeeze/click"),
+   IXB_BOTH(IXA_T_STICK, "trackpad/click")
+};
+
 typedef struct input_openxr_profile
 {
    const char *path;
    const input_openxr_bind_t *binds;
+   const input_openxr_bind_t *touch; /* its Touch Button rows, or NULL */
    const input_openxr_bind_t *edit;
    unsigned count;
+   unsigned touch_count;
    unsigned edit_count;
    /* Only with XR_VALVE_frame_controller_interaction. */
    bool frame;
@@ -414,25 +469,33 @@ typedef struct input_openxr_profile
 
 static const input_openxr_profile_t input_openxr_profiles[] = {
    { "/interaction_profiles/valve/index_controller",
-      input_openxr_index,  input_openxr_index_edit,
-      ARRAY_SIZE(input_openxr_index),  ARRAY_SIZE(input_openxr_index_edit),
-      false },
+      input_openxr_index,  input_openxr_touch_rows_index,
+      input_openxr_index_edit,
+      ARRAY_SIZE(input_openxr_index),
+      ARRAY_SIZE(input_openxr_touch_rows_index),
+      ARRAY_SIZE(input_openxr_index_edit), false },
    { "/interaction_profiles/oculus/touch_controller",
-      input_openxr_touch,  input_openxr_touch_edit,
-      ARRAY_SIZE(input_openxr_touch),  ARRAY_SIZE(input_openxr_touch_edit),
-      false },
+      input_openxr_touch,  input_openxr_touch_rows_touch,
+      input_openxr_touch_edit,
+      ARRAY_SIZE(input_openxr_touch),
+      ARRAY_SIZE(input_openxr_touch_rows_touch),
+      ARRAY_SIZE(input_openxr_touch_edit), false },
    { "/interaction_profiles/valve/frame_controller_valve",
-      input_openxr_frame,  input_openxr_frame_edit,
-      ARRAY_SIZE(input_openxr_frame),  ARRAY_SIZE(input_openxr_frame_edit),
-      true  },
+      input_openxr_frame,  input_openxr_touch_rows_frame,
+      input_openxr_frame_edit,
+      ARRAY_SIZE(input_openxr_frame),
+      ARRAY_SIZE(input_openxr_touch_rows_frame),
+      ARRAY_SIZE(input_openxr_frame_edit), true  },
    { "/interaction_profiles/htc/vive_controller",
-      input_openxr_vive,   input_openxr_vive_edit,
-      ARRAY_SIZE(input_openxr_vive),   ARRAY_SIZE(input_openxr_vive_edit),
-      false },
+      input_openxr_vive,  input_openxr_touch_rows_vive,
+      input_openxr_vive_edit,
+      ARRAY_SIZE(input_openxr_vive),
+      ARRAY_SIZE(input_openxr_touch_rows_vive),
+      ARRAY_SIZE(input_openxr_vive_edit), false },
    { "/interaction_profiles/khr/simple_controller",
-      input_openxr_simple, input_openxr_simple_edit,
-      ARRAY_SIZE(input_openxr_simple), ARRAY_SIZE(input_openxr_simple_edit),
-      false }
+      input_openxr_simple, NULL, input_openxr_simple_edit,
+      ARRAY_SIZE(input_openxr_simple), 0,
+      ARRAY_SIZE(input_openxr_simple_edit), false }
 };
 
 typedef struct input_openxr_pad
@@ -490,6 +553,10 @@ typedef struct input_openxr
    /* The profiles that refused edit mode's bindings. */
    XrPath edit_refused[ARRAY_SIZE(input_openxr_profiles)];
    unsigned num_edit_refused;
+   /* Each profile's path once suggested, or none, and whether its Touch
+    * Button rows were taken. */
+   XrPath profile_paths[ARRAY_SIZE(input_openxr_profiles)];
+   bool touch_bound[ARRAY_SIZE(input_openxr_profiles)];
    PFN_xrStringToPath StringToPath;
    PFN_xrPathToString PathToString;
    PFN_xrCreateActionSet CreateActionSet;
@@ -739,40 +806,53 @@ static bool input_openxr_load(input_openxr_t *st,
       && INPUT_OPENXR_PROC(st, get, inst, StopHapticFeedback);
 }
 
-/* One profile's suggestions, edit mode's and the palm's with them. A
- * runtime that refuses either keeps the rest; one without the profile,
- * or that refuses a path, only loses that profile. Returns whether edit
- * mode's were taken. */
+/* One profile's suggestions, its Touch Button rows, edit mode's and the
+ * palm's with them. A runtime that refuses some keeps the rest; one
+ * without the profile, or that refuses a path, only loses that profile.
+ * @path is set to the profile's once suggested and @touch_bound to
+ * whether its Touch Button rows were taken. Returns whether edit mode's
+ * were. */
 static bool input_openxr_suggest(input_openxr_t *st,
-      const input_openxr_profile_t *p)
+      const input_openxr_profile_t *p, XrPath *path, bool *touch_bound)
 {
    unsigned i;
+   unsigned drop;
    unsigned count;
    unsigned palms;
-   unsigned edit = p->edit_count;
+   unsigned touch = p->touch_count;
+   unsigned edit  = p->edit_count;
    XrResult res;
    XrPath profile = XR_NULL_PATH;
    XrActionSuggestedBinding binds[INPUT_OPENXR_MAX_BINDS
+      + INPUT_OPENXR_PALM_BINDS];
+   /* Each try after a refusal copies from the whole binds: 2 KiB with
+    * it, once per profile as a session is made. */
+   XrActionSuggestedBinding kept[INPUT_OPENXR_MAX_BINDS
       + INPUT_OPENXR_PALM_BINDS];
    XrInteractionProfileSuggestedBinding sb;
    static const char *const palm[INPUT_OPENXR_PALM_BINDS] = {
       "/user/hand/left/input/palm_ext/pose",
       "/user/hand/right/input/palm_ext/pose" };
 
-   if (p->count > INPUT_OPENXR_MAX_BINDS)
+   if (p->count + touch > INPUT_OPENXR_MAX_BINDS)
+   {
+      RARCH_WARN("[OpenXR] Too many bindings for %s (%u, at most %d).\n",
+            p->path, p->count + touch, INPUT_OPENXR_MAX_BINDS);
       return false;
+   }
    /* Past one suggestion's room, the rest go without edit mode's. */
-   if (p->count + edit > INPUT_OPENXR_MAX_BINDS)
+   if (p->count + touch + edit > INPUT_OPENXR_MAX_BINDS)
       edit = 0;
    if (XR_FAILED(res = st->StringToPath(st->instance, p->path, &profile)))
    {
       RARCH_WARN("[OpenXR] No path %s (%d).\n", p->path, (int)res);
       return false;
    }
-   for (i = 0; i < p->count + edit; i++)
+   for (i = 0; i < p->count + touch + edit; i++)
    {
-      const input_openxr_bind_t *b = (i < p->count)
-         ? &p->binds[i] : &p->edit[i - p->count];
+      const input_openxr_bind_t *b = (i < p->count) ? &p->binds[i]
+         : (i < p->count + touch) ? &p->touch[i - p->count]
+         : &p->edit[i - p->count - touch];
       binds[i].action = st->actions[b->action];
       if (XR_FAILED(res = st->StringToPath(st->instance, b->path,
                   &binds[i].binding)))
@@ -781,7 +861,7 @@ static bool input_openxr_suggest(input_openxr_t *st,
          return false;
       }
    }
-   count = p->count + edit;
+   count = p->count + touch + edit;
    if (st->palm_pose)
       for (i = 0; i < INPUT_OPENXR_PALM_BINDS; i++)
       {
@@ -790,7 +870,7 @@ static bool input_openxr_suggest(input_openxr_t *st,
                      &binds[count].binding)))
             count++;
       }
-   palms                     = count - p->count - edit;
+   palms                     = count - p->count - touch - edit;
    sb.type                   = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
    sb.next                   = NULL;
    sb.interactionProfile     = profile;
@@ -798,30 +878,37 @@ static bool input_openxr_suggest(input_openxr_t *st,
    sb.suggestedBindings      = binds;
    res = st->SuggestInteractionProfileBindings(st->instance, &sb);
 
-   /* Refused: without the palm, then without edit mode's, then the rest
-    * on their own. */
-   if (XR_FAILED(res) && palms && edit)
+   /* Refused: without the palm (1), the Touch Button's (2) or edit
+    * mode's (4), the least lost first: the palm, the Touch Button's,
+    * both, edit mode's, then edit mode's with those; lastly the rest on
+    * their own. */
+   for (drop = 1; XR_FAILED(res) && drop < 8; drop++)
    {
-      sb.countSuggestedBindings = p->count + edit;
+      unsigned n = 0;
+      if (     ((drop & 1) && !palms)
+            || ((drop & 2) && !touch)
+            || ((drop & 4) && !edit))
+         continue;
+      for (i = 0; i < count; i++)
+      {
+         unsigned group = (i < p->count) ? 0
+            : (i < p->count + touch) ? 2
+            : (i < p->count + touch + edit) ? 4 : 1;
+         if (!(drop & group))
+            kept[n++] = binds[i];
+      }
+      sb.countSuggestedBindings = n;
+      sb.suggestedBindings      = kept;
       if (XR_SUCCEEDED(res = st->SuggestInteractionProfileBindings(
                   st->instance, &sb)))
-         palms = 0;
-   }
-   if (XR_FAILED(res) && edit)
-   {
-      for (i = 0; i < palms; i++)
-         binds[p->count + i] = binds[p->count + edit + i];
-      sb.countSuggestedBindings = p->count + palms;
-      if (XR_SUCCEEDED(res = st->SuggestInteractionProfileBindings(
-                  st->instance, &sb)))
-         edit = 0;
-   }
-   if (XR_FAILED(res) && palms)
-   {
-      sb.countSuggestedBindings = p->count;
-      res = st->SuggestInteractionProfileBindings(st->instance, &sb);
-      edit  = 0;
-      palms = 0;
+      {
+         if (drop & 1)
+            palms = 0;
+         if (drop & 2)
+            touch = 0;
+         if (drop & 4)
+            edit  = 0;
+      }
    }
    if (XR_FAILED(res))
    {
@@ -829,12 +916,17 @@ static bool input_openxr_suggest(input_openxr_t *st,
             (int)res);
       return false;
    }
+   if (touch < p->touch_count)
+      RARCH_WARN("[OpenXR] Touch Button bindings refused for %s.\n",
+            p->path);
    if (edit < p->edit_count)
    {
       RARCH_WARN("[OpenXR] Edit Screens bindings refused for %s.\n",
             p->path);
       st->edit_refused[st->num_edit_refused++] = profile;
    }
+   *path        = profile;
+   *touch_bound = touch == p->touch_count;
    RARCH_LOG("[OpenXR] Bindings suggested for %s%s.\n", p->path,
          palms ? ", with the palm" : "");
    return edit > 0;
@@ -985,7 +1077,8 @@ static void input_openxr_session_created(void *user,
 
    for (i = 0; i < ARRAY_SIZE(input_openxr_profiles); i++)
       if (     (!input_openxr_profiles[i].frame || h->frame_controller)
-            && input_openxr_suggest(st, &input_openxr_profiles[i]))
+            && input_openxr_suggest(st, &input_openxr_profiles[i],
+               &st->profile_paths[i], &st->touch_bound[i]))
          st->edit_ok = true;
 
    /* All four are attached; each poll syncs the pointer set and the pad
