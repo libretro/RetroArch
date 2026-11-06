@@ -1241,6 +1241,22 @@ jobs:
           make clean
           echo "[pass] database_scan_test (TSan, HAVE_THREADS=0, SCAN_READERS_MAX=0)"
 
+      - name: Build and run core_info_cache_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -eu
+          # core_info.cache: an info file added after its core was
+          # cached is read, a rewrite keeps the entries served from the
+          # cache whole, and an unchanged core set rewrites nothing.
+          make clean SANITIZER=address,undefined && make -j$(nproc) core_info_cache_test SANITIZER=address,undefined
+          root="$(mktemp -d)"
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./core_info_cache_test "$root"
+          rm -rf "${root:?}"
+          make clean
+          echo "[pass] core_info_cache_test (ASan)"
+
       - name: Build and run pl_manager_budget_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/playlist_manager

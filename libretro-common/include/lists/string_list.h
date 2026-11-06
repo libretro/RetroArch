@@ -88,6 +88,20 @@ bool string_list_find_elem_prefix(const struct string_list *list,
  */
 struct string_list *string_split(const char *str, const char *delim);
 
+/**
+ * string_split_packed:
+ * @str              : string to split
+ * @delim            : delimiter characters
+ *
+ * Like string_split(), in one allocation holding the list, its
+ * elements and the tokens. The list is read-only: it cannot grow,
+ * and string_list_deinitialize() refuses it. Free it with
+ * string_list_free(). A packed list has cap 0 and non-NULL elems.
+ *
+ * @return the list, or NULL on allocation failure.
+ */
+struct string_list *string_split_packed(const char *str, const char *delim);
+
 bool string_split_noalloc(struct string_list *list,
       const char *str, const char *delim);
 

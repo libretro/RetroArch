@@ -54,6 +54,8 @@ static bool string_list_deinitialize_internal(struct string_list *list)
    return true;
 }
 
+#define STRING_LIST_PACKED(list) (!(list)->cap && (list)->elems)
+
 bool string_list_capacity(struct string_list *list, size_t cap)
 {
    struct string_list_elem *new_data;
@@ -63,7 +65,7 @@ bool string_list_capacity(struct string_list *list, size_t cap)
     * still counted them, and the next walk or free ran off the end;
     * a cap of zero is a realloc(p, 0), which on glibc frees p and
     * returns NULL - reported here as failure with elems dangling. */
-   if (!list || cap < list->size || cap == 0)
+   if (!list || cap < list->size || cap == 0 || STRING_LIST_PACKED(list))
       return false;
 
    /* Guard the byte-count multiplication: a huge cap would wrap and
@@ -92,14 +94,15 @@ void string_list_free(struct string_list *list)
    if (!list)
       return;
 
-   string_list_deinitialize_internal(list);
+   if (!STRING_LIST_PACKED(list))
+      string_list_deinitialize_internal(list);
 
    free(list);
 }
 
 bool string_list_deinitialize(struct string_list *list)
 {
-   if (!list)
+   if (!list || STRING_LIST_PACKED(list))
       return false;
    if (!string_list_deinitialize_internal(list))
       return false;
@@ -360,6 +363,52 @@ struct string_list *string_split(const char *str, const char *delim)
 error:
    string_list_free(list);
    return NULL;
+}
+
+struct string_list *string_split_packed(const char *str, const char *delim)
+{
+   size_t i, n, slen, head;
+   char *out;
+   const char *p;
+   struct string_list *list;
+
+   if (!str || !delim)
+      return NULL;
+
+   n    = string_count_tokens(str, delim);
+   slen = strlen(str);
+   head = sizeof(*list) + n * sizeof(struct string_list_elem);
+   if (n > (SIZE_MAX - sizeof(*list)) / sizeof(struct string_list_elem)
+         || slen >= SIZE_MAX - head)
+      return NULL;
+   if (!(list = (struct string_list*)malloc(head + slen + 1)))
+      return NULL;
+
+   list->size  = n;
+   list->cap   = 0;
+   list->elems = n ? (struct string_list_elem*)(list + 1) : NULL;
+   out         = (char*)list + head;
+   p           = str;
+
+   for (i = 0; i < n; i++)
+   {
+      const char *tok;
+
+      while (*p && strchr(delim, *p))
+         p++;
+      tok = p;
+      while (*p && !strchr(delim, *p))
+         p++;
+
+      memcpy(out, tok, (size_t)(p - tok));
+      list->elems[i].data     = out;
+      list->elems[i].userdata = NULL;
+      list->elems[i].attr.i   = 0;
+      out                    += p - tok;
+      *out++                  = '\0';
+   }
+
+   return list;
 }
 
 bool string_split_noalloc(struct string_list *list,

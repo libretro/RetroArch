@@ -3074,7 +3074,7 @@ jobs:
         shell: bash
         run: |
           set -eu
-          for sample in samples/gfx/video_frame_failure libretro-common/samples/lists/file_list_oom libretro-common/samples/gfx/scaler_point libretro-common/samples/gfx/image_scale_transfer samples/tasks/translation_reply; do
+          for sample in samples/gfx/video_frame_failure libretro-common/samples/lists/file_list_oom libretro-common/samples/lists/string_split_packed libretro-common/samples/gfx/scaler_point libretro-common/samples/gfx/image_scale_transfer samples/tasks/translation_reply; do
             make -C "$sample" clean
             make -C "$sample" check SANITIZER=address,undefined
             make -C "$sample" clean

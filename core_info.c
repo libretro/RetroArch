@@ -85,6 +85,7 @@ typedef struct
    char **current_string_val;
    struct string_list **current_string_list_val;
    uint32_t *current_entry_uint_val;
+   size_t firmware_capacity;
    uint8_t current_entry_flag_mask; /* which CORE_INFO_FLAG_* to set */
    bool *current_entry_bool_val;    /* for firmware optional */
    unsigned array_depth;
@@ -98,9 +99,8 @@ static void core_info_free(core_info_t* info);
 static uint32_t core_info_hash_string(const char *str);
 #ifdef HAVE_CORE_INFO_CACHE
 static core_info_cache_list_t *core_info_cache_list_new(void);
+static core_info_t *core_info_cache_next_slot(core_info_cache_list_t *list);
 #endif
-static void core_info_cache_add(core_info_cache_list_t *list,
-      core_info_t *info, bool transfer);
 
 static core_info_state_t core_info_st = {
 #ifdef HAVE_COMPRESSION
@@ -377,20 +377,14 @@ static bool CCJSONStringHandler(void *context,
          free(*pCtx->current_string_val);
       *pCtx->current_string_val = strdup(pValue);
 
-      /* Gate the string_list split on strdup success: if strdup
-       * returned NULL (OOM), the assignment above stored NULL
-       * into *current_string_val, and string_split dereferences
-       * its first parameter unconditionally at
-       * libretro-common/lists/string_list.c:252 ('while (*p)' with
-       * p = str).  On OOM just leave current_string_list_val
-       * alone; downstream core_info readers already tolerate
-       * missing split lists. */
+      /* No list for a value strdup could not hold; readers
+       * tolerate a missing one */
       if (pCtx->current_string_list_val && *pCtx->current_string_val)
       {
          if (*pCtx->current_string_list_val)
             string_list_free(*pCtx->current_string_list_val);
          *pCtx->current_string_list_val =
-            string_split(*pCtx->current_string_val, "|");
+            string_split_packed(*pCtx->current_string_val, "|");
       }
    }
 
@@ -454,14 +448,16 @@ static bool CCJSONStartObjectHandler(void *context)
       case 1:
          if (pCtx->object_depth == 2)
          {
+            /* Parsed in place, into the slot past the list's end */
             if (pCtx->core_info)
             {
                core_info_free(pCtx->core_info);
-               free(pCtx->core_info);
                pCtx->core_info = NULL;
             }
 
-            if (!(pCtx->core_info = (core_info_t*)calloc(1, sizeof(core_info_t))))
+            pCtx->firmware_capacity = 0;
+            if (!(pCtx->core_info = core_info_cache_next_slot(
+                        pCtx->core_info_cache_list)))
                return false;
 
             /* Assume all cores have 'full' savestate support
@@ -474,20 +470,24 @@ static bool CCJSONStartObjectHandler(void *context)
          if (pCtx->object_depth == 3 && pCtx->to_firmware)
          {
             size_t new_idx            = pCtx->core_info->firmware_count;
-            core_info_firmware_t *tmp = (core_info_firmware_t*)
-               realloc(pCtx->core_info->firmware,
-                     (pCtx->core_info->firmware_count + 1)
-                     * sizeof(core_info_firmware_t));
+            core_info_firmware_t *tmp = pCtx->core_info->firmware;
 
-            if (!tmp)
-               return false;
+            if (new_idx >= pCtx->firmware_capacity)
+            {
+               size_t cap = pCtx->firmware_capacity
+                  ? pCtx->firmware_capacity << 1 : 4;
+               if (!(tmp = (core_info_firmware_t*)realloc(tmp,
+                           cap * sizeof(core_info_firmware_t))))
+                  return false;
+               pCtx->core_info->firmware = tmp;
+               pCtx->firmware_capacity   = cap;
+            }
 
             tmp[new_idx].path              = NULL;
             tmp[new_idx].desc              = NULL;
             tmp[new_idx].missing           = false;
             tmp[new_idx].optional          = false;
 
-            pCtx->core_info->firmware      = tmp;
             pCtx->core_info->firmware_count++;
          }
          break;
@@ -508,9 +508,13 @@ static bool CCJSONEndObjectHandler(void *context)
          case 2:
             if (pCtx->core_info)
             {
-               core_info_cache_add(
-                     pCtx->core_info_cache_list, pCtx->core_info, true);
-               free(pCtx->core_info);
+               core_info_t *info = pCtx->core_info;
+               if (     info->core_file_id.hash
+                     && info->core_file_id.str
+                     && *info->core_file_id.str)
+                  pCtx->core_info_cache_list->length++;
+               else
+                  core_info_free(info);
                pCtx->core_info = NULL;
             }
             break;
@@ -549,68 +553,7 @@ static bool CCJSONEndArrayHandler(void *context)
 /* JSON Handlers END */
 #endif
 
-/* Note: 'dst' must be zero initialised, or memory
- * leaks will occur */
-static void core_info_copy(core_info_t *src, core_info_t *dst)
-{
-   dst->path                      = src->path                 ? strdup(src->path)                 : NULL;
-   dst->display_name              = src->display_name         ? strdup(src->display_name)         : NULL;
-   dst->display_version           = src->display_version      ? strdup(src->display_version)      : NULL;
-   dst->core_name                 = src->core_name            ? strdup(src->core_name)            : NULL;
-   dst->system_manufacturer       = src->system_manufacturer  ? strdup(src->system_manufacturer)  : NULL;
-   dst->systemname                = src->systemname           ? strdup(src->systemname)           : NULL;
-   dst->system_id                 = src->system_id            ? strdup(src->system_id)            : NULL;
-   dst->supported_extensions      = src->supported_extensions ? strdup(src->supported_extensions) : NULL;
-   dst->authors                   = src->authors              ? strdup(src->authors)              : NULL;
-   dst->permissions               = src->permissions          ? strdup(src->permissions)          : NULL;
-   dst->licenses                  = src->licenses             ? strdup(src->licenses)             : NULL;
-   dst->categories                = src->categories           ? strdup(src->categories)           : NULL;
-   dst->databases                 = src->databases            ? strdup(src->databases)            : NULL;
-   dst->notes                     = src->notes                ? strdup(src->notes)                : NULL;
-   dst->required_hw_api           = src->required_hw_api      ? strdup(src->required_hw_api)      : NULL;
-   dst->description               = src->description          ? strdup(src->description)          : NULL;
-
-   dst->categories_list           = src->categories_list           ? string_list_clone(src->categories_list)           : NULL;
-   dst->databases_list            = src->databases_list            ? string_list_clone(src->databases_list)            : NULL;
-   dst->note_list                 = src->note_list                 ? string_list_clone(src->note_list)                 : NULL;
-   dst->supported_extensions_list = src->supported_extensions_list ? string_list_clone(src->supported_extensions_list) : NULL;
-   dst->authors_list              = src->authors_list              ? string_list_clone(src->authors_list)              : NULL;
-   dst->permissions_list          = src->permissions_list          ? string_list_clone(src->permissions_list)          : NULL;
-   dst->licenses_list             = src->licenses_list             ? string_list_clone(src->licenses_list)             : NULL;
-   dst->required_hw_api_list      = src->required_hw_api_list      ? string_list_clone(src->required_hw_api_list)      : NULL;
-
-   if (src->firmware_count > 0)
-   {
-      dst->firmware = (core_info_firmware_t*)calloc(src->firmware_count,
-            sizeof(core_info_firmware_t));
-
-      if (dst->firmware)
-      {
-         size_t i;
-
-         dst->firmware_count = src->firmware_count;
-
-         for (i = 0; i < src->firmware_count; i++)
-         {
-            dst->firmware[i].path     = src->firmware[i].path ? strdup(src->firmware[i].path) : NULL;
-            dst->firmware[i].desc     = src->firmware[i].desc ? strdup(src->firmware[i].desc) : NULL;
-            dst->firmware[i].missing  = src->firmware[i].missing;
-            dst->firmware[i].optional = src->firmware[i].optional;
-         }
-      }
-      else
-         dst->firmware_count = 0;
-   }
-
-   dst->core_file_id.str              = src->core_file_id.str
-      ? strdup(src->core_file_id.str) : NULL;
-   dst->core_file_id.hash             = src->core_file_id.hash;
-
-   dst->savestate_support_level       = src->savestate_support_level;
-   dst->flags                         = src->flags;
-}
-
-/* Like core_info_copy, but transfers 'ownership'
+/* Transfers 'ownership'
  * of internal objects/data structures from 'src'
  * to 'dst' */
 static void core_info_transfer(core_info_t *src, core_info_t *dst)
@@ -751,17 +694,14 @@ static core_info_t *core_info_cache_find(
    return NULL;
 }
 
-static void core_info_cache_add(
-      core_info_cache_list_t *list, core_info_t *info,
-      bool transfer)
+#ifdef HAVE_CORE_INFO_CACHE
+/* The zeroed slot past the end; length grows once the entry is whole */
+static core_info_t *core_info_cache_next_slot(core_info_cache_list_t *list)
 {
-   core_info_t *info_cache = NULL;
+   core_info_t *slot;
 
-   if (   !list
-       || !info
-       || (info->core_file_id.hash == 0)
-       || (!info->core_file_id.str || !*info->core_file_id.str))
-      return;
+   if (!list)
+      return NULL;
 
    if (list->length >= list->capacity)
    {
@@ -770,7 +710,7 @@ static void core_info_cache_add(
             (list->capacity << 1) * sizeof(core_info_t));
 
       if (!items_tmp)
-         return;
+         return NULL;
 
       list->capacity         = list->capacity << 1;
       list->items            = items_tmp;
@@ -779,17 +719,11 @@ static void core_info_cache_add(
             (list->capacity - prev_capacity) * sizeof(core_info_t));
    }
 
-   info_cache = (core_info_t*)&list->items[list->length];
-
-   if (transfer)
-      core_info_transfer(info, info_cache);
-   else
-      core_info_copy(info, info_cache);
-
-   list->length++;
+   slot = &list->items[list->length];
+   memset(slot, 0, sizeof(*slot));
+   return slot;
 }
 
-#ifdef HAVE_CORE_INFO_CACHE
 static core_info_cache_list_t *core_info_cache_list_new(void)
 {
    core_info_cache_list_t *core_info_cache_list =
@@ -891,6 +825,13 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
              ? rjson_get_error(parser)
              : "format error"));
 
+      /* The entry being parsed sits past the list's end */
+      if (context.core_info)
+      {
+         core_info_free(context.core_info);
+         context.core_info = NULL;
+      }
+
       /* Info cache is corrupt - discard it.
        * core_info_cache_list_free() releases the contents but not the
        * structure itself (see the caller in core_info_list_new, which
@@ -905,13 +846,8 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
 
    rjson_free(parser);
 
-   /* Clean up leftovers in the event of
-    * a parsing error */
    if (context.core_info)
-   {
       core_info_free(context.core_info);
-      free(context.core_info);
-   }
 
    if (!core_info_cache_list)
       goto end;
@@ -945,7 +881,8 @@ end:
 }
 #endif
 
-static bool core_info_cache_write(core_info_cache_list_t *list, const char *info_dir)
+static bool core_info_cache_write(const core_info_t *items, size_t count,
+      const char *info_dir)
 {
    intfstream_t *file    = NULL;
    rjsonwriter_t *writer = NULL;
@@ -955,7 +892,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    char write_path[PATH_MAX_LENGTH];
    size_t i, j;
 
-   if (!list)
+   if (!items)
       return false;
 
    /* Open info cache file */
@@ -1025,9 +962,9 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    {
       bool first_written = true;
 
-      for (i = 0; i < list->length; i++)
+      for (i = 0; i < count; i++)
       {
-         core_info_t* info = &list->items[i];
+         const core_info_t *info = &items[i];
 
          if (!(info->flags & CORE_INFO_FLAG_IS_INSTALLED))
             continue;
@@ -1285,7 +1222,6 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
       filestream_delete(write_path);
       RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n",
             file_path);
-      list->refresh = false;
       return false;
    }
 
@@ -1316,7 +1252,6 @@ end:
    if (!success && *write_path)
       filestream_delete(write_path);
 
-   list->refresh = false;
    return success;
 }
 
@@ -1386,8 +1321,8 @@ bool core_info_cache_force_refresh(const char *path_info)
 
 typedef struct
 {
-   const char *path;
    const char *filename;
+   char **owner; /* the dir_list slot holding the path, handed over */
 } core_file_path_t;
 
 typedef struct
@@ -1469,7 +1404,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
       return NULL;
    if (!(path_list = (core_path_list_t*)calloc(1, sizeof(*path_list))))
       return NULL;
-   if (!(core_ext_list = string_split(core_exts, "|")))
+   if (!(core_ext_list = string_split_packed(core_exts, "|")))
    {
       core_info_path_list_free(path_list);
       return NULL;
@@ -1558,9 +1493,10 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
       if (string_list_find_elem(core_ext_list, file_ext))
       {
          path_list->core_list->list[
-               path_list->core_list->size].path     = file_path;
-         path_list->core_list->list[
                path_list->core_list->size].filename = filename;
+         path_list->core_list->list[
+               path_list->core_list->size].owner    =
+               &path_list->dir_list->elems[i].data;
          path_list->core_list->size++;
       }
       else if (memcmp(file_ext, FILE_PATH_LOCK_EXTENSION_NO_DOT, sizeof(FILE_PATH_LOCK_EXTENSION_NO_DOT)) == 0)
@@ -1787,7 +1723,7 @@ static void core_info_parse_config_file(
    {
 
       info->supported_extensions_list =
-            string_split(info->supported_extensions, "|");
+            string_split_packed(info->supported_extensions, "|");
    }
 
    info->authors = config_take_string(conf, "authors");
@@ -1796,7 +1732,7 @@ static void core_info_parse_config_file(
    {
 
       info->authors_list =
-            string_split(info->authors, "|");
+            string_split_packed(info->authors, "|");
    }
 
    info->permissions = config_take_string(conf, "permissions");
@@ -1805,7 +1741,7 @@ static void core_info_parse_config_file(
    {
 
       info->permissions_list =
-            string_split(info->permissions, "|");
+            string_split_packed(info->permissions, "|");
    }
 
    info->licenses = config_take_string(conf, "license");
@@ -1814,7 +1750,7 @@ static void core_info_parse_config_file(
    {
 
       info->licenses_list =
-            string_split(info->licenses, "|");
+            string_split_packed(info->licenses, "|");
    }
 
    info->categories = config_take_string(conf, "categories");
@@ -1823,7 +1759,7 @@ static void core_info_parse_config_file(
    {
 
       info->categories_list =
-            string_split(info->categories, "|");
+            string_split_packed(info->categories, "|");
    }
 
    info->databases = config_take_string(conf, "database");
@@ -1832,7 +1768,7 @@ static void core_info_parse_config_file(
    {
 
       info->databases_list =
-            string_split(info->databases, "|");
+            string_split_packed(info->databases, "|");
    }
 
    info->notes = config_take_string(conf, "notes");
@@ -1841,7 +1777,7 @@ static void core_info_parse_config_file(
    {
 
       info->note_list =
-            string_split(info->notes, "|");
+            string_split_packed(info->notes, "|");
    }
 
    info->required_hw_api = config_take_string(conf, "required_hw_api");
@@ -1850,7 +1786,7 @@ static void core_info_parse_config_file(
    {
 
       info->required_hw_api_list =
-            string_split(info->required_hw_api, "|");
+            string_split_packed(info->required_hw_api, "|");
    }
 
    info->description = config_take_string(conf, "description");
@@ -2188,6 +2124,29 @@ static void core_info_list_free(core_info_list_t *core_info_list)
    free(core_info_list);
 }
 
+/* True when a core was cached without an info file that exists now */
+static bool core_info_cache_entry_missed_info(const core_info_t *info_cache,
+      const char *core_file_id, size_t len, const char *info_dir)
+{
+   char info_name[256];
+   char info_path[PATH_MAX_LENGTH];
+
+   if (info_cache->flags & CORE_INFO_FLAG_HAS_INFO)
+      return false;
+
+   strlcpy(info_name, core_file_id, sizeof(info_name));
+   strlcpy(info_name + len, FILE_PATH_CORE_INFO_EXTENSION,
+         sizeof(info_name) - len);
+
+   if (info_dir && *info_dir)
+      fill_pathname_join_special(info_path, info_dir, info_name,
+            sizeof(info_path));
+   else
+      strlcpy(info_path, info_name, sizeof(info_path));
+
+   return path_is_valid(info_path);
+}
+
 static core_info_list_t *core_info_list_new(const char *path,
       const char *libretro_info_dir,
       const char *exts,
@@ -2244,7 +2203,6 @@ static core_info_list_t *core_info_list_new(const char *path,
       config_file_t *conf         = NULL;
       core_info_t *info           = &core_info[i];
       core_file_path_t *core_file = &path_list->core_list->list[i];
-      const char *base_path       = core_file->path;
       const char *core_filename   = core_file->filename;
       size_t _len = core_info_get_file_id(core_filename, core_file_id,
                sizeof(core_file_id));
@@ -2258,6 +2216,15 @@ static core_info_list_t *core_info_list_new(const char *path,
          core_info_t *info_cache = core_info_cache_find(
                core_info_cache_list, core_file_id);
 
+         /* Info file added after caching: parse it, drop the stale entry */
+         if (     info_cache
+               && core_info_cache_entry_missed_info(info_cache,
+                     core_file_id, _len, info_dir))
+         {
+            info_cache->flags &= ~CORE_INFO_FLAG_IS_INSTALLED;
+            info_cache         = NULL;
+         }
+
          if (info_cache)
          {
             /* MEM-3: Transfer ownership instead of deep-copy
@@ -2269,7 +2236,8 @@ static core_info_list_t *core_info_list_new(const char *path,
              * change between runs) */
             if (info->path)
                free(info->path);
-            info->path = strdup(base_path);
+            info->path        = *core_file->owner;
+            *core_file->owner = NULL;
 
             /* Core lock status is 'dynamic', and
              * cannot be cached */
@@ -2303,7 +2271,8 @@ static core_info_list_t *core_info_list_new(const char *path,
       }
 
       /* Cache core path */
-      info->path              = strdup(base_path);
+      info->path              = *core_file->owner;
+      *core_file->owner       = NULL;
 
       /* Get core lock status */
       if (core_info_path_is_locked(
@@ -2341,15 +2310,9 @@ static core_info_list_t *core_info_list_new(const char *path,
 
       info->flags |= CORE_INFO_FLAG_IS_INSTALLED;
 
-      /* If info cache is enabled and we reach this
-       * point, current core is uncached
-       * > Add it to the list, and trigger a cache
-       *   refresh */
+      /* Uncached core: the cache is rewritten from the list */
       if (core_info_cache_list)
-      {
-         core_info_cache_add(core_info_cache_list, info, false);
          core_info_cache_list->refresh = true;
-      }
    }
 
    core_info_list_resolve_all_extensions(core_info_list);
@@ -2367,7 +2330,7 @@ static core_info_list_t *core_info_list_new(const char *path,
 
       if (core_info_cache_list->refresh)
          *cache_supported = core_info_cache_write(
-               core_info_cache_list, info_dir);
+               core_info_list->list, core_info_list->count, info_dir);
 
       core_info_cache_list_free(core_info_cache_list);
       free(core_info_cache_list);
