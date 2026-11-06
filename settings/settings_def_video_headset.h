@@ -48,7 +48,7 @@ S_UINT_EX(video_openxr_laser, VIDEO_OPENXR_LASER,
       "video_openxr_laser",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_laser, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Laser Pointer",
-      "Where a controller's trigger points and touches instead of pressing L2 or R2. Auto: the menu while it is open, and second screens such as a touch screen. Always: every screen, for light guns. Off: nowhere.")
+      "Where a controller points, for the Touch Button to touch a screen and the trigger to click the menu. Auto: the menu while it is open, and second screens such as a touch screen. Always: every screen, for light guns. Off: nowhere.")
 S_UINT_EX(video_openxr_laser_beam, VIDEO_OPENXR_LASER_BEAM,
       "video_openxr_laser_beam",
       1, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_laser_beam, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
