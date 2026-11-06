@@ -329,7 +329,7 @@ struct rslc_var
    uint8_t                 quals;      /* RSLC_VQ_* */
    uint8_t                 builtin;    /* RSLC_BI_* for RSLC_ST_BUILTIN */
    uint8_t                 global;     /* declared at file scope */
-   uint8_t                 pad;
+   uint8_t                 index;      /* RSLC_EXTENDED: a fragment output's blend source */
 };
 
 /* Builtin variables. */
@@ -502,6 +502,13 @@ enum rslc_bfn
 };
 
 /* The parsed stage. */
+/* Uniform and push blocks one stage may declare. */
+#ifdef RSLC_EXTENDED
+#define RSLC_MAX_BLOCKS 10
+#else
+#define RSLC_MAX_BLOCKS 2
+#endif
+
 struct rslc_prog
 {
    struct rslc_var       **vars;      /* every variable, by id (1-based) */
@@ -511,14 +518,17 @@ struct rslc_prog
    struct rslc_var       **inputs;    /* stage in, by declaration order */
    struct rslc_var       **outputs;
    struct rslc_func       *main_fn;
-   struct rslc_blockdecl   blocks[2]; /* [0] uniform block, [1] push block */
+   /* [0] uniform block, [1] push block; RSLC_EXTENDED: [2..] the
+    * further uniform blocks, by declaration order */
+   struct rslc_blockdecl   blocks[RSLC_MAX_BLOCKS];
    uint32_t                nvars, vars_cap;
    uint32_t                nfuncs, funcs_cap;
    uint32_t                nstructs, structs_cap;
    uint32_t                nsamplers, samplers_cap;
    uint32_t                ninputs, inputs_cap;
    uint32_t                noutputs, outputs_cap;
-   bool                    has_block[2];
+   bool                    has_block[RSLC_MAX_BLOCKS];
+   bool                    early_fragment_tests;   /* RSLC_EXTENDED */
 };
 
 /* Source file names seen through #line, for diagnostics. */

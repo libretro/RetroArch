@@ -1685,6 +1685,8 @@ struct rslc_quals
    bool     is_in;
    bool     is_out;
    bool     is_inout;
+   bool     early_fragment_tests;
+   uint32_t index;
 };
 
 struct rslc_parser
@@ -4325,6 +4327,11 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
       else if (len == 12 && !memcmp(s, "column_major", 12)) { }
       else if (len == 9 && !memcmp(s, "row_major", 9))
          return rslc_p_fail(p, "row_major is not supported", NULL);
+#ifdef RSLC_EXTENDED
+      else if (len == 5 && !memcmp(s, "index", 5))    slot = &q->index;
+      else if (len == 20 && !memcmp(s, "early_fragment_tests", 20))
+         q->early_fragment_tests = true;
+#endif
       else if (len == 7 && !memcmp(s, "index", 5))    { }
       else
          return rslc_p_fail(p, "unknown layout qualifier ", rslc_intern(p->c, s, len));
@@ -5168,7 +5175,7 @@ static bool rslc_p_block_decl(struct rslc_parser *p, struct rslc_quals *q,
 {
    struct rslc_prog      *pr  = &p->c->prog;
    unsigned               idx = q->push_constant ? 1 : 0;
-   struct rslc_blockdecl *b   = &pr->blocks[idx];
+   struct rslc_blockdecl *b;
    struct rslc_field     *fields = NULL;
    uint32_t               nfields = 0, cap = 0, i;
    struct rslc_type      *st;
@@ -5176,9 +5183,21 @@ static bool rslc_p_block_decl(struct rslc_parser *p, struct rslc_quals *q,
 
    if (!q->is_uniform)
       return rslc_p_fail(p, "only uniform blocks are supported", NULL);
+#ifdef RSLC_EXTENDED
+   /* a further uniform block takes the next slot past the push block */
+   if (idx == 0 && pr->has_block[0])
+   {
+      idx = 2;
+      while (idx < RSLC_MAX_BLOCKS && pr->has_block[idx])
+         idx++;
+      if (idx == RSLC_MAX_BLOCKS)
+         return rslc_p_fail(p, "too many uniform blocks", NULL);
+   }
+#endif
    if (pr->has_block[idx])
       return rslc_p_fail(p, idx ? "more than one push_constant block"
             : "more than one uniform block", NULL);
+   b = &pr->blocks[idx];
    rslc_p_next(p);   /* '{' */
    while (!rslc_p_accept(p, RSLC_P_RBRACE))
    {
@@ -5338,6 +5357,19 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
    if (!rslc_p_quals(p, &q))
       return 0;
 
+#ifdef RSLC_EXTENDED
+   /* layout(early_fragment_tests) in; */
+   if (q.early_fragment_tests)
+   {
+      if (!global || !q.is_in || p->c->stage != RSLC_STAGE_FRAGMENT)
+         return rslc_p_fail(p, "early_fragment_tests belongs on a fragment 'in;'", NULL), 0;
+      if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
+         return 0;
+      p->c->prog.early_fragment_tests = true;
+      return 1;
+   }
+#endif
+
    /* uniform Block { ... }; */
    if (q.is_uniform && P_TOK(p)->kind == RSLC_TK_IDENT
          && rslc_tok_sym(p->c, P_TOK(p))->kw == RSLC_KW_NONE
@@ -5396,10 +5428,18 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       v->interp    = q.interp;
       v->quals     = q.vq;
       v->location  = q.location;
+      if (q.index > 1)
+         return rslc_p_fail(p, "a fragment output's index is 0 or 1", NULL), 0;
+      v->index     = (uint8_t)q.index;
       v->binding   = q.binding;
       v->set       = q.set;
 
-      if (RSLC_TY_IS_SAMPLER(vt->kind))
+      if (RSLC_TY_IS_SAMPLER(vt->kind)
+#ifdef RSLC_EXTENDED
+            /* a sized array of samplers, one binding for all of them */
+            || (vt->kind == RSLC_TY_ARRAY && vt->array_len && RSLC_TY_IS_SAMPLER(vt->elem->kind))
+#endif
+            )
       {
          if (!global || !q.is_uniform)
             return rslc_p_fail(p, "a sampler must be a global uniform", NULL), 0;

@@ -40,10 +40,14 @@
  *
  * A build with RSLC_EXTENDED defined also takes what an emulator's own
  * shaders need and the frontend's never do: sampler2DArray,
- * sampler2DMSArray and samplerBuffer (each with its i and u forms) and
- * gl_SampleID.  Without it those names are not keywords, nothing is
- * compiled in for them, and every destination is word for word what it
- * was.  MSL has no form of the extended samplers yet and refuses them. */
+ * sampler2DMSArray and samplerBuffer (each with its i and u forms),
+ * sized arrays of samplers, gl_SampleID, more than one uniform block
+ * (each at its own set and binding; the reflection tables still
+ * describe only the first and the push block), dual-source fragment
+ * outputs (layout index) and layout(early_fragment_tests).  Without it
+ * none of that is accepted, nothing is compiled in for it, and every
+ * destination is word for word what it was.  MSL has no form of the
+ * extended samplers or of a third block yet and refuses them. */
 
 #include <stdint.h>
 #include <stddef.h>

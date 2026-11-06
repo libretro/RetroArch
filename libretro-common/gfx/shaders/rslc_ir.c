@@ -989,6 +989,7 @@ enum spv_section
 #define SPV_MODEL_VERTEX     0
 #define SPV_MODEL_FRAGMENT   4
 #define SPV_MODE_ORIGINUPPERLEFT 7
+#define SPV_MODE_EARLYFRAGMENTTESTS 9
 #define SPV_SC_UNIFORMCONSTANT 0
 #define SPV_SC_INPUT         1
 #define SPV_SC_UNIFORM       2
@@ -1009,6 +1010,7 @@ enum spv_section
 #define SPV_DEC_SAMPLE       17
 #define SPV_DEC_INVARIANT    18
 #define SPV_DEC_LOCATION     30
+#define SPV_DEC_INDEX        32
 #define SPV_DEC_BINDING      33
 #define SPV_DEC_DESCRIPTORSET 34
 #define SPV_DEC_OFFSET       35
@@ -1161,8 +1163,8 @@ struct spv_emit
    uint32_t             ext_id;       /* GLSL.std.450 */
    uint32_t             void_id, bool_id, int_id, uint_id, float_id;
    uint32_t             pervertex_var;/* vertex: the gl_PerVertex block variable */
-   uint32_t             block_var[2]; /* uniform / push block variables */
-   uint8_t             *member_active[2]; /* per block member, set on use */
+   uint32_t             block_var[RSLC_MAX_BLOCKS]; /* uniform / push block variables */
+   uint8_t             *member_active[RSLC_MAX_BLOCKS]; /* per block member, set on use */
    uint32_t             cur_fn;       /* rslc func id being emitted */
    uint32_t             cur_label;    /* current block's label, 0 = terminated */
    uint32_t             entry_label;
@@ -4272,6 +4274,8 @@ static bool spv_global_var(struct spv_emit *e, const struct rslc_var *v)
    sv->sc = (uint8_t)sc;
    if (v->name && !spv_name(e, id, v->name->str))
       return false;
+   if (v->index && !spv_decorate1(e, id, SPV_DEC_INDEX, v->index))
+      return false;
    if (v->location != RSLC_UNSET && !spv_decorate1(e, id, SPV_DEC_LOCATION, v->location))
       return false;
    if (v->storage == RSLC_ST_SAMPLER)
@@ -4639,8 +4643,9 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
          return false;
    }
 
-   if (!spv_block(e, 0) || !spv_block(e, 1))
-      return false;
+   for (i = 0; i < RSLC_MAX_BLOCKS; i++)
+      if (!spv_block(e, i))
+         return false;
    for (i = 1; i < pr->nvars; i++)
       if (!spv_global_var(e, pr->vars[i]))
          return false;
@@ -4677,6 +4682,9 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    }
    if (c->stage == RSLC_STAGE_FRAGMENT
          && !spv_inst2(e, SPV_SEC_ENTRY, SpvOpExecutionMode, main_id, SPV_MODE_ORIGINUPPERLEFT))
+      return false;
+   if (c->prog.early_fragment_tests
+         && !spv_inst2(e, SPV_SEC_ENTRY, SpvOpExecutionMode, main_id, SPV_MODE_EARLYFRAGMENTTESTS))
       return false;
    {
       uint32_t src[2];

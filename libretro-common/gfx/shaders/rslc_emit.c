@@ -82,7 +82,7 @@ struct rslc_pr
     * constant it names prints as its value (Metal builds no global
     * constructors to copy one constant into another) */
    bool                     msl_ginit;
-   uint8_t                 *active[2];
+   uint8_t                 *active[RSLC_MAX_BLOCKS];
    unsigned                 version;
    unsigned                 indent;
    unsigned                 sampler_prec_done;
@@ -394,7 +394,8 @@ static const char *pr_block_instance(struct rslc_pr *p, unsigned block)
 {
    const struct rslc_blockdecl *b = &p->c->prog.blocks[block];
    const char *forced = NULL;
-   if (p->names)
+   /* the frontend's names are for its two blocks; further ones keep theirs */
+   if (p->names && block < 2)
       forced = b->push ? p->names->push_instance : p->names->ubo_instance;
    if (forced)
       return forced;
@@ -871,6 +872,17 @@ static const char *pr_binop_str(uint16_t op, int *prec)
 static void pr_hl_tex(struct rslc_pr *p, uint32_t node, bool state)
 {
    const struct rslc_node *n = rslc_node_at(p->c, node);
+#ifdef RSLC_EXTENDED
+   /* an element of a sampler array: the texture and its state alike */
+   if (n->op == RSLC_OP_INDEX && rslc_node_at(p->c, n->a)->op == RSLC_OP_VAR)
+   {
+      pr_hl_tex(p, n->a, state);
+      pr_c(p, '[');
+      pr_expr(p, n->b, PR_PREC_SEQ);
+      pr_c(p, ']');
+      return;
+   }
+#endif
    if (n->op != RSLC_OP_VAR)
    {
       rslc_err(p->c, "hlsl: sampler expression", NULL, n->line);
@@ -3560,7 +3572,7 @@ static void pr_block_decl(struct rslc_pr *p, unsigned idx)
    const char *type_name = b->type->name ? b->type->name->str : (b->push ? "Push" : "UBO");
    const char *inst      = pr_block_instance(p, idx);
    uint32_t i;
-   if (p->names)
+   if (p->names && idx < 2)
    {
       const char *forced = b->push ? p->names->push_block : p->names->ubo_block;
       if (forced)
@@ -3646,6 +3658,11 @@ static void pr_io_decl(struct rslc_pr *p, const struct rslc_var *v, bool is_in)
    {
       pr_s(p, "layout(location = ");
       pr_u(p, v->location);
+      if (v->index)
+      {
+         pr_s(p, ", index = ");
+         pr_u(p, v->index);
+      }
       pr_s(p, ") ");
    }
    if (!(fragment && !is_in))
@@ -3801,7 +3818,7 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
 
    /* a flattened block reads its integer members through bitcasts */
    if (p->names && p->names->flatten)
-      for (i = 0; i < 2; i++)
+      for (i = 0; i < RSLC_MAX_BLOCKS; i++)
       {
          uint32_t k;
          if (!pr->has_block[i])
@@ -3867,14 +3884,14 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
       const struct rslc_type *t = pr->structs[i];
       bool is_block = false;
       unsigned k;
-      for (k = 0; k < 2; k++)
+      for (k = 0; k < RSLC_MAX_BLOCKS; k++)
          if (pr->has_block[k] && pr->blocks[k].type == t)
             is_block = true;
       if (!is_block && t->name)
          pr_struct(p, t, NULL);
    }
 
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < RSLC_MAX_BLOCKS; i++)
       if (pr->has_block[i])
          pr_block_decl(p, i);
 
@@ -3884,7 +3901,13 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
       pr_type(p, pr->samplers[i]->type);
       pr_c(p, ' ');
       pr_var_name(p, pr->samplers[i]);
+      pr_array_suffix(p, pr->samplers[i]->type);
       pr_c(p, ';');
+      pr_nl(p);
+   }
+   if (pr->early_fragment_tests)
+   {
+      pr_s(p, "layout(early_fragment_tests) in;");
       pr_nl(p);
    }
    for (i = 0; i < pr->ninputs; i++)
@@ -4110,7 +4133,8 @@ static void pr_hlsl_semantic(struct rslc_pr *p, const struct rslc_var *v, bool i
       pr_s(p, "SV_Target");
    else
       pr_s(p, "TEXCOORD");
-   pr_u(p, v->location == RSLC_UNSET ? 0 : v->location);
+   /* the second blend source of a dual-source pair is the next target */
+   pr_u(p, (v->location == RSLC_UNSET ? 0 : v->location) + v->index);
 }
 
 /* One field of the stage's input or output struct. */
@@ -4173,6 +4197,16 @@ static void pr_hlsl_cbuffer(struct rslc_pr *p, unsigned idx)
    pr_s(p, b->type->name ? b->type->name->str : (b->push ? "Push" : "UBO"));
    /* the uniform block is slot 0 and the push block slot 1, as the
     * D3D filter chains bind them */
+#ifdef RSLC_EXTENDED
+   /* an emulator's blocks sit at the bindings it gave them */
+   if (!b->push && (idx >= 2 || b->binding != RSLC_UNSET))
+   {
+      pr_s(p, " : register(b");
+      pr_u(p, b->binding == RSLC_UNSET ? 0 : b->binding);
+      pr_c(p, ')');
+   }
+   else
+#endif
    pr_s(p, b->push ? " : register(b1)" : " : register(b0)");
    pr_nl(p);
    pr_c(p, '{');
@@ -4287,7 +4321,7 @@ static bool pr_hlsl(struct rslc_pr *p, struct rslc_result *result)
       const struct rslc_type *t = pr->structs[i];
       bool is_block = false;
       unsigned k;
-      for (k = 0; k < 2; k++)
+      for (k = 0; k < RSLC_MAX_BLOCKS; k++)
          if (pr->has_block[k] && pr->blocks[k].type == t)
             is_block = true;
       if (!is_block && t->name)
@@ -4315,7 +4349,7 @@ static bool pr_hlsl(struct rslc_pr *p, struct rslc_result *result)
          pr_hlsl_lift(p, pr->funcs[i]->body);
 
    pr_hlsl_helpers(p);
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < RSLC_MAX_BLOCKS; i++)
       if (pr->has_block[i])
          pr_hlsl_cbuffer(p, i);
 
@@ -4325,13 +4359,16 @@ static bool pr_hlsl(struct rslc_pr *p, struct rslc_result *result)
       pr_type(p, v->type);
       pr_c(p, ' ');
       pr_var_name(p, v);
+      pr_array_suffix(p, v->type);
       pr_s(p, " : register(t");
       pr_u(p, v->binding == RSLC_UNSET ? 0 : v->binding);
       pr_s(p, ");");
       pr_nl(p);
       pr_s(p, "SamplerState _");
       pr_var_name(p, v);
-      pr_s(p, "_sampler : register(s");
+      pr_s(p, "_sampler");
+      pr_array_suffix(p, v->type);
+      pr_s(p, " : register(s");
       pr_u(p, v->binding == RSLC_UNSET ? 0 : v->binding);
       pr_s(p, ");");
       pr_nl(p);
@@ -4410,6 +4447,11 @@ static bool pr_hlsl(struct rslc_pr *p, struct rslc_result *result)
    pr_globals_and_funcs(p);
 
    /* the entry point around rslc_main */
+   if (p->c->prog.early_fragment_tests)
+   {
+      pr_s(p, "[earlydepthstencil]");
+      pr_nl(p);
+   }
    pr_s(p, nout ? "rslc_out main(" : "void main(");
    if (nin)
       pr_s(p, "rslc_in stage_input");
@@ -4797,6 +4839,12 @@ static void pr_msl_io_leaf(struct rslc_pr *p, const struct rslc_var *v,
       pr_s(p, "color(");
       pr_u(p, loc);
       pr_c(p, ')');
+      if (v->index)
+      {
+         pr_s(p, ", index(");
+         pr_u(p, v->index);
+         pr_c(p, ')');
+      }
    }
    else
    {
@@ -4845,12 +4893,20 @@ static bool pr_msl(struct rslc_pr *p, struct rslc_result *result)
       const struct rslc_type *t = pr->structs[i];
       bool is_block = false;
       unsigned k;
-      for (k = 0; k < 2; k++)
+      for (k = 0; k < RSLC_MAX_BLOCKS; k++)
          if (pr->has_block[k] && pr->blocks[k].type == t)
             is_block = true;
       if (!is_block && t->name)
          pr_struct(p, t, NULL);
    }
+#ifdef RSLC_EXTENDED
+   for (i = 2; i < RSLC_MAX_BLOCKS; i++)
+      if (pr->has_block[i])
+      {
+         rslc_err(p->c, "msl: more than one uniform block", NULL, pr->blocks[i].line);
+         return false;
+      }
+#endif
    for (i = 0; i < 2; i++)
       if (pr->has_block[i])
          pr_msl_block(p, i);
@@ -4908,6 +4964,8 @@ static bool pr_msl(struct rslc_pr *p, struct rslc_result *result)
 
    /* the entry point: the stage structs, every block and sampler at
     * its binding, the builtins used */
+   if (fragment && p->c->prog.early_fragment_tests)
+      pr_s(p, "[[early_fragment_tests]] ");
    pr_s(p, fragment ? "fragment " : "vertex ");
    pr_s(p, nout ? "main0_out main0(" : "void main0(");
    first = true;
@@ -5126,7 +5184,7 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
       if (pr->funcs[k]->name)
          p->symfn[pr->funcs[k]->name->index] = 1;
    rslc_reach_funcs(c, p->reach);
-   for (k = 0; k < 2; k++)
+   for (k = 0; k < RSLC_MAX_BLOCKS; k++)
       if (pr->has_block[k])
       {
          p->active[k] = (uint8_t*)rslc_arena_zalloc(c, pr->blocks[k].type->nfields

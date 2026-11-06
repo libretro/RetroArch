@@ -79,6 +79,46 @@ static const char fs_plain[] =
    "   col = texture(samp, uv);\n"
    "}\n";
 
+/* More than one uniform block, at their own sets and bindings. */
+static const char fs_blocks[] =
+   "#version 450\n"
+   "layout(std140, set = 0, binding = 0) uniform PSBlock { vec4 color; ivec4 konst[4]; };\n"
+   "layout(std140, set = 0, binding = 1) uniform VSBlock { vec4 light; mat4 proj; } vs;\n"
+   "layout(std140, set = 0, binding = 2) uniform GSBlock { vec4 stereo; };\n"
+   "layout(push_constant) uniform Push { vec4 scale; } push;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   col = color * vs.light + vec4(konst[1]) + stereo * push.scale + vs.proj[0];\n"
+   "}\n";
+
+/* A sampler array, indexed by constants and by a uniform. */
+static const char fs_sampler_array[] =
+   "#version 450\n"
+   "layout(set = 1, binding = 0) uniform sampler2DArray samp[8];\n"
+   "layout(std140, set = 0, binding = 0) uniform PSBlock { ivec4 sel; };\n"
+   "layout(location = 0) in vec3 uv;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "vec4 fetch(int i) { return texture(samp[i], uv); }\n"
+   "void main()\n"
+   "{\n"
+   "   col = texture(samp[2], uv) + fetch(sel.x) + texelFetch(samp[sel.y], ivec3(0), 0);\n"
+   "   col.x += float(textureSize(samp[1], 0).x);\n"
+   "}\n";
+
+/* Dual-source blending and early depth. */
+static const char fs_dual_source[] =
+   "#version 450\n"
+   "layout(early_fragment_tests) in;\n"
+   "layout(location = 0) in vec4 c;\n"
+   "layout(location = 0, index = 0) out vec4 ocol0;\n"
+   "layout(location = 0, index = 1) out vec4 ocol1;\n"
+   "void main()\n"
+   "{\n"
+   "   ocol0 = c;\n"
+   "   ocol1 = c.aaaa;\n"
+   "}\n";
+
 static bool compile(const char *src, enum rslc_dst dst, unsigned version,
       struct rslc_opts *opts, struct rslc_result *res, char *err, size_t err_cap)
 {
@@ -122,9 +162,11 @@ static void write_spirv(const char *dir, const char *name, const struct rslc_res
    fclose(f);
 }
 
-/* SPIR-V, GLSL and HLSL; MSL has no form of these types yet and says so. */
+/* SPIR-V, GLSL and HLSL; MSL has no form of the new samplers or of a
+ * third block yet and says so (msl_ok when the stage has neither). */
 static void test_stage(const char *dir, const char *name, const char *src,
-      const char *glsl_needle, const char *hlsl_needle, uint32_t want_cap, uint32_t no_cap)
+      const char *glsl_needle, const char *hlsl_needle, uint32_t want_cap, uint32_t no_cap,
+      bool msl_ok)
 {
    char err[256];
    struct rslc_opts   o;
@@ -160,8 +202,17 @@ static void test_stage(const char *dir, const char *name, const char *src,
    }
 
    memset(&r, 0, sizeof(r));
-   CHECK(!compile(src, RSLC_DST_MSL, 20000, &o, &r, err, sizeof(err)));
-   CHECK(strstr(err, "msl") != NULL);
+   if (msl_ok)
+   {
+      CHECK(compile(src, RSLC_DST_MSL, 20000, &o, &r, err, sizeof(err)));
+      if (r.blob)
+         rslc_result_free(&r, &o);
+   }
+   else
+   {
+      CHECK(!compile(src, RSLC_DST_MSL, 20000, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "msl") != NULL);
+   }
 }
 
 int main(int argc, char **argv)
@@ -169,9 +220,14 @@ int main(int argc, char **argv)
    const char *dir = argc > 1 ? argv[1] : NULL;
 
    /* SampledBuffer 46, ImageQuery 50, SampleRateShading 35 */
-   test_stage(dir, "samplers", fs_samplers, "usamplerBuffer", "Texture2DMSArray<float4>", 46, 35);
-   test_stage(dir, "sample_id", fs_sample_id, "gl_SampleID", "SV_SampleIndex", 35, 0);
-   test_stage(dir, "plain", fs_plain, "sampler2DArray", "Texture2DArray<float4>", 0, 35);
+   test_stage(dir, "samplers", fs_samplers, "usamplerBuffer", "Texture2DMSArray<float4>", 46, 35, false);
+   test_stage(dir, "sample_id", fs_sample_id, "gl_SampleID", "SV_SampleIndex", 35, 0, false);
+   test_stage(dir, "plain", fs_plain, "sampler2DArray", "Texture2DArray<float4>", 0, 35, false);
+   test_stage(dir, "blocks", fs_blocks, "uniform GSBlock", "cbuffer GSBlock : register(b2)", 0, 0, false);
+   test_stage(dir, "sampler_array", fs_sampler_array, "sampler2DArray samp[8]",
+         "samp[i].Sample(_samp_sampler[i]", 0, 0, false);
+   test_stage(dir, "dual_source", fs_dual_source, "layout(early_fragment_tests) in;",
+         "SV_Target1", 0, 0, true);
 
    if (fails)
    {
