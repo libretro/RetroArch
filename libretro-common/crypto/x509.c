@@ -1282,16 +1282,31 @@ static int x509_name_eq(const struct x509_cert *a, const struct x509_cert *b)
 int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
       const char *host, time_t now, char *info, size_t info_len)
 {
+   return x509_verify_chain_ex(ders, lens, n, host, now, NULL, NULL, 0, 0,
+         info, info_len);
+}
+
+int x509_verify_chain_ex(const uint8_t **ders, const size_t *lens, unsigned n,
+      const char *host, time_t now,
+      const uint8_t *const *trust, const size_t *trust_lens, unsigned trust_count,
+      unsigned flags, char *info, size_t info_len)
+{
    /* Parsed chain on the heap: one x509_cert is ~200 bytes and a
     * server may send a dozen. */
    struct x509_cert *certs;
    const struct x509_cert *cur;
    struct x509_store *st = NULL;
+   /* the caller's anchors in place of the store's */
+   struct x509_anchor *own = NULL;
+   const struct x509_anchor *anchors = NULL;
+   unsigned anchor_count = 0;
 #ifdef X509_STORE_LOCK_FREE
    int entered = 0;
 #endif
    unsigned i, depth;
    unsigned used = 0;   /* bitmask of chain certs already on the path */
+   unsigned ku_need = (flags & X509_VERIFY_KEY_ENCIPHERMENT)
+      ? X509_KU_KEY_ENCIPHERMENT : X509_KU_DIGITAL_SIGNATURE;
    int ret = -1;
 
    if (!n || n > 16)
@@ -1324,9 +1339,10 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
       x509_info(info, info_len, "certificate not for server authentication");
       goto done;
    }
-   if (certs[0].key_usage >= 0 && !(certs[0].key_usage & X509_KU_DIGITAL_SIGNATURE))
+   if (certs[0].key_usage >= 0 && !(certs[0].key_usage & ku_need))
    {
-      x509_info(info, info_len, "certificate key cannot sign");
+      x509_info(info, info_len, (flags & X509_VERIFY_KEY_ENCIPHERMENT)
+            ? "certificate key cannot encipher" : "certificate key cannot sign");
       goto done;
    }
    if (certs[0].is_ca == 1 && n > 1)
@@ -1335,20 +1351,42 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
       goto done;
    }
 
-   /* The walk reads the store through its own reference: a reload
-    * meanwhile swaps in a new one and leaves this one to the walk. */
+   if (trust)
+   {
+      if (trust_count && !(own = (struct x509_anchor*)malloc(
+                  trust_count * sizeof(*own))))
+         goto done;
+      for (i = 0; i < trust_count; i++)
+      {
+         own[anchor_count].der     = trust[i];
+         own[anchor_count].der_len = trust_lens[i];
+         if (x509_parse(&own[anchor_count].cert, trust[i], trust_lens[i]) == 0)
+            anchor_count++;
+      }
+      anchors = own;
+   }
+   else
+   {
+      /* The walk reads the store through its own reference: a reload
+       * meanwhile swaps in a new one and leaves this one to the walk. */
 #ifdef X509_STORE_LOCK_FREE
-   st      = x509_store_enter();
-   entered = 1;
+      st      = x509_store_enter();
+      entered = 1;
 #else
-   X509_LOCK();
+      X509_LOCK();
 #ifdef X509_STORE_TEST_HOLD
-   X509_STORE_TEST_HOLD();
+      X509_STORE_TEST_HOLD();
 #endif
-   if ((st = x509_store_cur))
-      st->refs++;
-   X509_UNLOCK();
+      if ((st = x509_store_cur))
+         st->refs++;
+      X509_UNLOCK();
 #endif
+      if (st)
+      {
+         anchors      = st->anchors;
+         anchor_count = st->count;
+      }
+   }
 
    cur  = &certs[0];
    used = 1;
@@ -1382,9 +1420,9 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
       }
 
       /* A trust anchor issuing this one ends the walk. */
-      for (j = 0; st && j < st->count; j++)
+      for (j = 0; j < anchor_count; j++)
       {
-         const struct x509_cert *a = &st->anchors[j].cert;
+         const struct x509_cert *a = &anchors[j].cert;
          if (x509_name_eq(a, cur) && x509_verify_signature(cur, a) == 0)
          {
             ret = 0;
@@ -1407,7 +1445,7 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
       }
       if (!issuer)
       {
-         x509_info(info, info_len, (st && st->count)
+         x509_info(info, info_len, anchor_count
                ? "issuer not found or signature invalid"
                : "no trust anchors loaded");
          goto done;
@@ -1431,6 +1469,7 @@ done:
          x509_store_free(st);
    }
 #endif
+   free(own);
    free(certs);
    return ret;
 }

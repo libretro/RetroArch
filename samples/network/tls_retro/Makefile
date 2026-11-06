@@ -24,6 +24,9 @@ tls_fetch_noaes: $(SRC)
 	$(CC) $(CPPFLAGS) -DAES_NO_X86 -DAES_NO_ARM $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 tls_bench: tls_bench.c $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_bench.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
+# one connection under ssl_socket_retro_configure()
+tls_config: tls_config.c $(filter-out tls_fetch.c,$(SRC))
+	$(CC) $(CPPFLAGS) $(CFLAGS) tls_config.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
 tls_keyupdate: tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
 # net_http over the built-in client, as RetroArch's HTTP task drives it
@@ -67,5 +70,5 @@ THR_SRC = tls_threads.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthr
 tls_threads: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
-	rm -f tls_verify_hook tls_verify_hook.exe tls_stall tls_stall.exe tls_fetch_noaes tls_fetch_noaes.exe tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_threads tls_threads.exe
+	rm -f tls_verify_hook tls_verify_hook.exe tls_stall tls_stall.exe tls_fetch_noaes tls_fetch_noaes.exe tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_config tls_config.exe tls_threads tls_threads.exe
 .PHONY: all clean

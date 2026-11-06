@@ -138,6 +138,19 @@ int rsa_pkcs1_verify(const uint8_t *n, size_t n_len,
       enum rsa_hash hash, const uint8_t *digest, size_t digest_len,
       const uint8_t *sig, size_t sig_len);
 
+/**
+ * rsa_pkcs1_encrypt:
+ * RSAES-PKCS1-v1_5 encryption (RFC 8017 7.2.1) under a public key, as
+ * a TLS RSA key exchange sends its premaster secret.
+ * @out, @out_len     : Out, @out_len == the modulus length.
+ *
+ * Returns: 0 on success, -1 on a bad key, a message longer than the
+ * modulus allows, or no randomness.
+ **/
+int rsa_pkcs1_encrypt(const uint8_t *n, size_t n_len,
+      const uint8_t *e, size_t e_len,
+      const uint8_t *msg, size_t msg_len, uint8_t *out, size_t out_len);
+
 /* An RSA private key, every member a big-endian integer pointing into
  * memory the caller keeps (x509_rsa_private_key_parse() fills it from
  * DER). Leading zero octets are allowed. */

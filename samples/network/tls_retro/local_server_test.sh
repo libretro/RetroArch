@@ -192,6 +192,90 @@ http "net_http over TLS 1.2, AES-128-GCM"        -tls1_2 -cipher       ECDHE-RSA
 http "net_http over TLS 1.2, ChaCha20-Poly1305"  -tls1_2 -cipher       ECDHE-RSA-CHACHA20-POLY1305
 http "net_http over TLS 1.3, AES-128-GCM"        -tls1_3 -ciphersuites TLS_AES_128_GCM_SHA256
 http "net_http over TLS 1.3, ChaCha20-Poly1305"  -tls1_3 -ciphersuites TLS_CHACHA20_POLY1305_SHA256
+# One connection's own settings (ssl_socket_retro_configure): its own
+# trust anchor in place of the bundle, a client certificate when the
+# server asks for one, and the RSA key exchange and CBC suites, which a
+# client offers only when told to. Each GET checks the body's hash, so
+# the CBC records' MAC and padding are checked in both directions.
+make -s tls_config
+openssl x509 -in $D/ca.pem -outform DER -out $D/ca.der
+openssl x509 -in $D/p256.pem -outform DER -out $D/other.der
+openssl req -x509 -newkey rsa:2048 -nodes -keyout $D/cca.key -out $D/cca.pem -days 2 -subj "/CN=client CA" 2>/dev/null
+openssl req -newkey rsa:2048 -nodes -keyout $D/cli.key -out $D/cli.csr -subj "/CN=client" 2>/dev/null
+openssl x509 -req -in $D/cli.csr -CA $D/cca.pem -CAkey $D/cca.key -CAcreateserial -out $D/cli.pem -days 2 2>/dev/null
+openssl x509 -in $D/cli.pem -outform DER -out $D/cli.der
+openssl rsa -in $D/cli.key -traditional -outform DER -out $D/cli.key.der 2>/dev/null
+openssl pkcs8 -topk8 -nocrypt -in $D/cli.key -outform DER -out $D/cli.p8.der
+mkdir -p $D/cfgwww
+head -c 1000003 /dev/urandom > $D/cfgwww/b.bin
+CSUM=$(openssl dgst -sha256 -r $D/cfgwww/b.bin | cut -d' ' -f1)
+cfg() { # label expect_rc want_output server-options -- client-options
+   L=$1; W=$2; O=$3; shift 3
+   SOPT=""; while [ "$1" != "--" ]; do SOPT="$SOPT $1"; shift; done; shift
+   (cd $D/cfgwww && exec openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key $SOPT -WWW) >/dev/null 2>&1 &
+   SRV=$!; sleep 0.4
+   set +e; $RUN ./tls_config$EXE "$@" > $D/cfg.out 2>&1; rc=$?; set -e
+   kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+   if [ $rc -eq $W ] && grep -q "$O" $D/cfg.out; then echo "ok:   $L"
+   else echo "FAIL: $L (rc=$rc, want $W): $(cat $D/cfg.out)"; exit 1; fi
+}
+G="-g b.bin $CSUM"
+cfg "own trust anchor in place of the bundle"         0 "TLS 1.3" -- localhost 44331 -t $D/ca.der $G
+cfg "own trust anchor that signed nothing: refused"   1 "FAILED" -- localhost 44331 -t $D/other.der $G
+cfg "no hostname check: an address passes"            0 "TLS 1.3" -- 127.0.0.1 44331 -t $D/ca.der -H $G
+cfg "hostname still checked otherwise"                1 "FAILED" -- 127.0.0.1 44331 -t $D/ca.der $G
+cfg "no verification"                                 0 "TLS 1.3" -- localhost 44331 -n $G
+cfg "a suite list without a known suite: refused"     1 "refused" -- localhost 44331 -t $D/ca.der -s 0005
+for s in AES128-SHA:002f AES256-SHA:0035 AES128-SHA256:003c AES256-SHA256:003d \
+      AES128-GCM-SHA256:009c AES256-GCM-SHA384:009d ECDHE-RSA-AES128-SHA:c013 \
+      ECDHE-RSA-AES256-SHA:c014 ECDHE-RSA-AES128-SHA256:c027 ECDHE-RSA-AES256-SHA384:c028; do
+   cfg "TLS 1.2 ${s%%:*}, offered by the client" 0 "suite ${s##*:}" -tls1_2 -cipher ${s%%:*} -- \
+      localhost 44331 -t $D/ca.der -s ${s##*:} $G
+done
+cfg "client certificate the server requires"          0 "TLS 1.2 suite c02f" -Verify 1 -CAfile $D/cca.pem -- \
+   localhost 44331 -t $D/ca.der -c $D/cli.der -k $D/cli.key.der $G
+cfg "client certificate, PKCS#8 key"                  0 "TLS 1.2" -Verify 1 -CAfile $D/cca.pem -- \
+   localhost 44331 -t $D/ca.der -c $D/cli.der -k $D/cli.p8.der $G
+cfg "no client certificate where one is required"     1 "failed" -Verify 1 -CAfile $D/cca.pem -- \
+   localhost 44331 -t $D/ca.der $G
+cfg "client certificate requested, none to give"      0 "TLS 1.2" -tls1_2 -verify 1 -CAfile $D/cca.pem -- \
+   localhost 44331 -t $D/ca.der $G
+cfg "client certificate signed with SHA-384"          0 "TLS 1.2" -Verify 1 -CAfile $D/cca.pem -client_sigalgs RSA+SHA384 -- \
+   localhost 44331 -t $D/ca.der -c $D/cli.der -k $D/cli.key.der $G
+cfg "client certificate signed with SHA-1"            0 "TLS 1.2" -Verify 1 -CAfile $D/cca.pem -client_sigalgs RSA+SHA1 -cipher DEFAULT:@SECLEVEL=0 -- \
+   localhost 44331 -t $D/ca.der -c $D/cli.der -k $D/cli.key.der $G
+cfg "client certificate over RSA key exchange and AES-256-CBC-SHA" 0 "suite 0035" \
+   -tls1_2 -cipher AES256-SHA -Verify 1 -CAfile $D/cca.pem -- \
+   localhost 44331 -t $D/ca.der -c $D/cli.der -k $D/cli.key.der -s 0035 $G
+# A CBC record changed in flight fails its MAC: the transfer stops there
+# with a record error rather than handing over the altered bytes.
+cat > $D/flip.py << 'PYEOF'
+import socket, sys, threading
+lst = socket.socket(); lst.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+lst.bind(("127.0.0.1", 44332)); lst.listen(1)
+c, _ = lst.accept(); s = socket.create_connection(("127.0.0.1", 44331))
+def up():
+    while True:
+        b = c.recv(65536)
+        if not b: break
+        s.sendall(b)
+threading.Thread(target=up, daemon=True).start()
+seen = 0
+while True:
+    b = bytearray(s.recv(65536))
+    if not b: break
+    if seen <= 300000 < seen + len(b): b[300000 - seen] ^= 1
+    seen += len(b); c.sendall(bytes(b))
+c.close()
+PYEOF
+for s in AES256-SHA:0035 AES128-SHA256:003c ECDHE-RSA-AES256-SHA384:c028; do
+   (cd $D/cfgwww && exec openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key -tls1_2 -cipher ${s%%:*} -WWW) >/dev/null 2>&1 &
+   SRV=$!; python3 $D/flip.py & PRX=$!; sleep 0.5
+   set +e; $RUN ./tls_config$EXE localhost 44332 -t $D/ca.der -s ${s##*:} $G > $D/cfg.out 2>&1; rc=$?; set -e
+   kill $SRV $PRX 2>/dev/null || true; wait $SRV $PRX 2>/dev/null || true
+   if [ $rc -eq 1 ] && grep -q "receive error -4" $D/cfg.out; then echo "ok:   ${s%%:*}: a record changed in flight is refused"
+   else echo "FAIL: ${s%%:*}: changed record (rc=$rc): $(cat $D/cfg.out)"; exit 1; fi
+done
 # A server that goes silent mid-handshake: the read bound ends it.
 make -s tls_stall
 $RUN ./tls_stall$EXE

@@ -23,6 +23,7 @@
 #ifndef _LIBRETRO_SDK_NET_SOCKET_SSL_H
 #define _LIBRETRO_SDK_NET_SOCKET_SSL_H
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <boolean.h>
 #include <retro_common_api.h>
@@ -102,6 +103,49 @@ unsigned ssl_socket_retro_version(void *state_data);
  * number (0x1303 is TLS_CHACHA20_POLY1305_SHA256), 0 before the
  * handshake. */
 unsigned ssl_socket_retro_suite(void *state_data);
+
+struct rsa_private_key;
+
+/* net_socket_ssl_retro.c only: one connection's own settings, for
+ * clients that pin their own CAs or present a certificate. Every
+ * pointer is borrowed until ssl_socket_connect() returns. */
+struct ssl_socket_retro_config
+{
+   /* Trust anchors, DER, in place of the built-in bundle; NULL for
+    * the bundle. */
+   const uint8_t *const *trust;
+   const size_t   *trust_lens;
+   /* Client certificate chain, DER, leaf first, and the leaf's RSA
+    * key: sent when the server asks for one. A connection presenting
+    * a certificate runs TLS 1.2. */
+   const uint8_t *const *chain;
+   const size_t   *chain_lens;
+   const struct rsa_private_key *key;
+   /* TLS 1.2 and 1.3 suites to offer, by IANA number, most preferred
+    * first; NULL for the default ECDHE AEAD set. This may name the RSA
+    * key exchange and CBC suites, which the default never offers. */
+   const unsigned *suites;
+   unsigned trust_count;
+   unsigned chain_count;
+   unsigned suite_count;
+   unsigned flags;           /* SSL_RETRO_* */
+};
+
+/* Accept any server certificate. */
+#define SSL_RETRO_NO_VERIFY   (1 << 0)
+/* Check the chain but not that it names the host. */
+#define SSL_RETRO_NO_HOSTNAME (1 << 1)
+
+/**
+ * ssl_socket_retro_configure:
+ * Applies @cfg to a connection between ssl_socket_init() and
+ * ssl_socket_connect(). Such a connection neither resumes a cached
+ * session nor leaves one in the cache.
+ *
+ * Returns: 0 on success, -1 when @cfg names no suite this client has.
+ **/
+int ssl_socket_retro_configure(void *state_data,
+      const struct ssl_socket_retro_config *cfg);
 
 RETRO_END_DECLS
 

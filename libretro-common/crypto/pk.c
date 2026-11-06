@@ -509,6 +509,62 @@ int rsa_pkcs1_verify(const uint8_t *n, size_t n_len,
    return ok ? 0 : -1;
 }
 
+int rsa_pkcs1_encrypt(const uint8_t *n, size_t n_len,
+      const uint8_t *e, size_t e_len,
+      const uint8_t *msg, size_t msg_len, uint8_t *out, size_t out_len)
+{
+   unsigned k, ek;
+   size_t   ps_len, i;
+   struct rsa_work *w;
+   int ret = -1;
+
+   while (n_len && n[0] == 0)
+   {
+      n++;
+      n_len--;
+   }
+   while (e_len && e[0] == 0)
+   {
+      e++;
+      e_len--;
+   }
+   if (n_len < 64 || n_len > BN_MAX_WORDS * BN_WORD_BYTES || !(n[n_len - 1] & 1))
+      return -1;
+   if (!e_len || e_len > n_len || out_len != n_len || msg_len + 11 > n_len)
+      return -1;
+   if (!(w = (struct rsa_work*)malloc(sizeof(*w))))
+      return -1;
+
+   /* EM = 0x00 || 0x02 || PS (nonzero random, at least 8) || 0x00 || M */
+   ps_len = n_len - msg_len - 3;
+   w->em[0] = 0x00;
+   w->em[1] = 0x02;
+   if (crypto_random_bytes(w->em + 2, ps_len) != 0)
+      goto done;
+   for (i = 0; i < ps_len; i++)
+      while (!w->em[2 + i])
+         if (crypto_random_bytes(w->em + 2 + i, 1) != 0)
+            goto done;
+   w->em[2 + ps_len] = 0x00;
+   memcpy(w->em + 3 + ps_len, msg, msg_len);
+
+   k  = (unsigned)((n_len + BN_WORD_BYTES - 1) / BN_WORD_BYTES);
+   ek = (unsigned)((e_len + BN_WORD_BYTES - 1) / BN_WORD_BYTES);
+   bn_from_be(w->mod, k, n, n_len);
+   bn_from_be(w->m,   k, w->em, n_len);
+   bn_from_be(w->exp, ek, e, e_len);
+   bn_mont_r2(w->r2, w->mod, k);
+   bn_mod_exp(w->s, w->m, w->exp, ek, w->mod, w->r2,
+         bn_mont_n0(w->mod), k, w->work);
+   bn_to_be(out, out_len, w->s, k);
+   ret = 0;
+
+done:
+   crypto_memzero(w, sizeof(*w));
+   free(w);
+   return ret;
+}
+
 /* RSASSA-PSS verification (RFC 8017 9.1.2) with MGF1 over the same
  * hash and a salt of the hash length, the form TLS 1.3 signs with.
  * The modular exponentiation is the one rsa_pkcs1_verify() uses. */
