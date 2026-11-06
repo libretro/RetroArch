@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug-only activity for core sideloading -->
+        <activity android:name="com.retroarch.browser.debug.CoreSideloadActivity" android:exported="true"/>
+    </application>
+</manifest>
