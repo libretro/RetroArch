@@ -10219,6 +10219,8 @@ int runloop_iterate(void)
       want_runahead                     = want_runahead && !netplay_is_enabled;
 #endif
 
+      /* GET_VARIABLE consumes the update. Until then, history is dropped
+       * each frame and Preemptive Frames cannot build a replay window. */
       if ((!want_runahead && runloop_st->runahead_state_owned) ||
           (runloop_st->core_options && runloop_st->core_options->updated))
          serialization_clear_history();
