@@ -46,6 +46,10 @@ static int hw_mode;
  * frontend then does on the strength of an optional extension is a
  * validation error here. */
 static int hw_own_device;
+/* HARNESS_CORE_IGNORE_REQUIRED_EXTS (with HARNESS_CORE_HW_VULKAN=2):
+ * create_device leaves the required extensions out, as Flycast does,
+ * for the frontend to add. */
+static int hw_ignore_required_exts;
 /* HARNESS_CORE_HW_VULKAN=3: the core caches its context across a video
  * reinit (hw_render.cache_context), as Azahar does: the frontend keeps
  * the instance and device and calls neither context_destroy nor
@@ -527,7 +531,7 @@ static bool hw_create_device(struct retro_vulkan_context *context,
    di.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
    di.queueCreateInfoCount    = 1;
    di.pQueueCreateInfos       = &qi;
-   di.enabledExtensionCount   = num_exts;
+   di.enabledExtensionCount   = hw_ignore_required_exts ? 0 : num_exts;
    di.ppEnabledExtensionNames = exts;
    di.enabledLayerCount       = num_layers;
    di.ppEnabledLayerNames     = layers;
@@ -617,6 +621,8 @@ void retro_set_environment(retro_environment_t cb)
       hw_mode          = (hw && *hw) ? 1 : 0;
       hw_own_device    = (hw && *hw == '2') ? 1 : 0;
       hw_cache_context = (hw && *hw == '3') ? 1 : 0;
+      hw = getenv("HARNESS_CORE_IGNORE_REQUIRED_EXTS");
+      hw_ignore_required_exts = (hw && *hw) ? 1 : 0;
    }
    /* RGB565 by default; XRGB8888 with HARNESS_CORE_XRGB8888 set. The
     * two take different paths through a driver - Vulkan converts

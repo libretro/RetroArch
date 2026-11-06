@@ -315,6 +315,11 @@ jobs:
           # else. The filter chain's mirror-clamp samplers were.
           HARNESS_CORE_HW_VULKAN=2 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
+          # And as one whose create_device leaves the required extensions
+          # out (Flycast): the frontend must add them and say so.
+          HARNESS_CORE_HW_VULKAN=2 HARNESS_CORE_IGNORE_REQUIRED_EXTS=1 EXPECT_LOG='left out required device extensions' \
+            SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          make -C samples/gfx/threaded_video clean
           # And as a core that caches its context across a video reinit
           # (Azahar): the instance comes back from the cache with what
           # it was created with, HDR support included.
