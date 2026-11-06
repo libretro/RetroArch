@@ -359,6 +359,28 @@ static const char vs_vertex_fetch[] =
    "   gl_Position = vec4(i.pos0, i.pos1, i.pos2, 1.0);\n"
    "}\n";
 
+/* Framebuffer fetch: an input attachment, read in main and in a
+ * function it calls. */
+static const char fs_subpass[] =
+   "#version 450\n"
+   "layout(location = 0, index = 0) out vec4 real_ocol0;\n"
+   "layout(location = 0, index = 1) out vec4 ocol1;\n"
+   "layout(set = 0, binding = 0, input_attachment_index = 0) uniform subpassInput in_ocol0;\n"
+   "layout(location = 0) in vec4 c;\n"
+   "float dst_alpha() { return subpassLoad(in_ocol0).a; }\n"
+   "void main()\n"
+   "{\n"
+   "   vec4 initial_ocol0 = subpassLoad(in_ocol0);\n"
+   "   real_ocol0 = c * dst_alpha() + initial_ocol0;\n"
+   "   ocol1 = initial_ocol0;\n"
+   "}\n";
+
+static const char fs_subpass_bad[] =
+   "#version 450\n"
+   "layout(set = 0, binding = 0) uniform subpassInput in_ocol0;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main() { col = subpassLoad(in_ocol0); }\n";
+
 static enum rslc_stage cur_stage = RSLC_STAGE_FRAGMENT;
 
 static bool compile(const char *src, enum rslc_dst dst, unsigned version,
@@ -624,6 +646,42 @@ int main(int argc, char **argv)
             rslc_result_free(&r, &o);
          }
       }
+   }
+
+   /* an input attachment (InputAttachment 40): SPIR-V and MSL, which
+    * takes it as the colour attachment's value; GLSL and HLSL refuse */
+   {
+      char err[256];
+      struct rslc_opts   o;
+      struct rslc_result r;
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_subpass, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "subpass: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(has_capability(r.spirv, r.spirv_len, 40));
+         write_spirv(dir, "subpass", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_subpass, RSLC_DST_MSL, 23, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "subpass msl: %s\n", err);
+      if (r.blob)
+      {
+         CHECK(strstr(r.text, "float4 in_ocol0 [[color(0)]]") != NULL);
+         CHECK(strstr(r.text, "dst_alpha(float4 in_ocol0)") != NULL);
+         write_text(dir, "subpass.msl", r.text);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(fs_subpass, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      CHECK(!compile(fs_subpass, RSLC_DST_HLSL, 50, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "subpassInput") != NULL);
+      CHECK(!compile(fs_subpass_bad, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "input_attachment_index") != NULL);
    }
 
    /* bools in a block and a depth write */

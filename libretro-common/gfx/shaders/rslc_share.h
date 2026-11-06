@@ -219,6 +219,8 @@ enum rslc_kw
    /* RSLC_EXTENDED image types: float, int, uint of each */
    RSLC_KW_IMAGE2D, RSLC_KW_IIMAGE2D, RSLC_KW_UIMAGE2D,
    RSLC_KW_IMAGE2DARRAY, RSLC_KW_IIMAGE2DARRAY, RSLC_KW_UIMAGE2DARRAY,
+   /* RSLC_EXTENDED: a fragment stage's input attachment */
+   RSLC_KW_SUBPASSINPUT,
    /* RSLC_EXTENDED qualifiers */
    RSLC_KW_BUFFER, RSLC_KW_READONLY, RSLC_KW_WRITEONLY, RSLC_KW_COHERENT,
    RSLC_KW_RESTRICT, RSLC_KW_VOLATILE, RSLC_KW_SHARED,
@@ -249,7 +251,9 @@ enum rslc_tkind
    RSLC_TY_SAMPLERBUFFER,
    /* RSLC_EXTENDED storage images; cols is the RSLC_IMGFMT_* */
    RSLC_TY_IMAGE2D,
-   RSLC_TY_IMAGE2DARRAY
+   RSLC_TY_IMAGE2DARRAY,
+   /* RSLC_EXTENDED: a float input attachment */
+   RSLC_TY_SUBPASSINPUT
 };
 
 #define RSLC_TY_IS_IMAGE(k) ((k) == RSLC_TY_IMAGE2D || (k) == RSLC_TY_IMAGE2DARRAY)
@@ -274,7 +278,7 @@ enum rslc_tkind
 #define RSLC_IMGFMT_R32UI    33
 
 /* The last keyword that names a type. */
-#define RSLC_KW_LAST_TYPE RSLC_KW_UIMAGE2DARRAY
+#define RSLC_KW_LAST_TYPE RSLC_KW_SUBPASSINPUT
 
 /* Every sampler kind: sampler2D, and the RSLC_EXTENDED ones. */
 #define RSLC_TY_IS_SAMPLER(k) ((k) == RSLC_TY_SAMPLER2D \
@@ -326,7 +330,9 @@ enum rslc_storage
    RSLC_ST_MEMBER,      /* a member of an unnamed block, visible bare */
    RSLC_ST_BUILTIN,     /* gl_Position and friends */
    RSLC_ST_SHARED,      /* RSLC_EXTENDED: compute workgroup memory */
-   RSLC_ST_IMAGE        /* RSLC_EXTENDED: uniform image2D and the like */
+   RSLC_ST_IMAGE,       /* RSLC_EXTENDED: uniform image2D and the like */
+   RSLC_ST_SUBPASS      /* RSLC_EXTENDED: uniform subpassInput; member is
+                         * its input_attachment_index */
 };
 
 #define RSLC_DIR_IN    0
@@ -364,7 +370,8 @@ struct rslc_var
    uint32_t                binding;
    uint32_t                set;
    uint32_t                block;      /* RSLC_ST_MEMBER / BLOCK: block index */
-   uint32_t                member;     /* RSLC_ST_MEMBER: field index */
+   uint32_t                member;     /* RSLC_ST_MEMBER: field index; SUBPASS:
+                                        * input_attachment_index */
    uint8_t                 storage;    /* enum rslc_storage */
    uint8_t                 dir;        /* RSLC_DIR_* for params */
    uint8_t                 interp;
@@ -583,6 +590,7 @@ enum rslc_bfn
    RSLC_BFN_BARRIER, RSLC_BFN_MEMORYBARRIER, RSLC_BFN_MEMORYBARRIERSHARED,
    RSLC_BFN_MEMORYBARRIERBUFFER, RSLC_BFN_MEMORYBARRIERIMAGE, RSLC_BFN_GROUPMEMORYBARRIER,
    RSLC_BFN_IMAGESTORE, RSLC_BFN_IMAGELOAD, RSLC_BFN_IMAGESIZE,
+   RSLC_BFN_SUBPASSLOAD,   /* RSLC_EXTENDED, fragment */
    RSLC_BFN_COUNT
 };
 

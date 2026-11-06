@@ -417,6 +417,7 @@ static const char *const rslc_keywords[] = {
    "sampler2DMSArray", "isampler2DMSArray", "usampler2DMSArray",
    "samplerBuffer", "isamplerBuffer", "usamplerBuffer",
    "image2D", "iimage2D", "uimage2D", "image2DArray", "iimage2DArray", "uimage2DArray",
+   "subpassInput",
    "buffer", "readonly", "writeonly", "coherent", "restrict", "volatile", "shared"
 #endif
 };
@@ -999,6 +1000,7 @@ enum spv_section
 #define SPV_CAP_CLIPDISTANCE 32
 #define SPV_CAP_CULLDISTANCE 33
 #define SPV_CAP_GEOMETRY     2
+#define SPV_CAP_INPUTATTACHMENT 40
 #define SPV_MODEL_VERTEX     0
 #define SPV_MODEL_FRAGMENT   4
 #define SPV_MODEL_GEOMETRY   3
@@ -1039,6 +1041,7 @@ enum spv_section
 #define SPV_DEC_INDEX        32
 #define SPV_DEC_BINDING      33
 #define SPV_DEC_DESCRIPTORSET 34
+#define SPV_DEC_INPUTATTACHMENTINDEX 43
 #define SPV_DEC_OFFSET       35
 
 #define SPV_BI_POSITION      0
@@ -1207,6 +1210,7 @@ struct spv_emit
    uint32_t             cur_label;    /* current block's label, 0 = terminated */
    uint32_t             entry_label;
    bool                 need_imagequery;
+   bool                 need_inputattachment;
    bool                 need_sampledbuffer;
    bool                 need_samplerateshading;
    bool                 need_clipdistance;
@@ -1575,6 +1579,20 @@ static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t)
          if (!spv_inst(e, SPV_SEC_TYPES, SpvOpTypeImage, w, 8))
             return 0;
          ti->img = id;
+         break;
+      }
+      case RSLC_TY_SUBPASSINPUT:
+      {
+         /* Dim SubpassData, Sampled 2, format Unknown */
+         uint32_t s = spv_type(e, rslc_type_basic(e->c, RSLC_TY_SCALAR, RSLC_BASE_FLOAT, 1, 1));
+         if (!s)
+            return 0;
+         ti = &e->tinfo[t->id];
+         w[0] = id; w[1] = s; w[2] = 6; w[3] = 0; w[4] = 0; w[5] = 0; w[6] = 2; w[7] = 0;
+         if (!spv_inst(e, SPV_SEC_TYPES, SpvOpTypeImage, w, 8))
+            return 0;
+         ti->img = id;
+         e->need_inputattachment = true;
          break;
       }
 #endif
@@ -3260,6 +3278,16 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
       case RSLC_BFN_IMAGESIZE:
          e->need_imagequery = true;
          return spv_r1(e, SpvOpImageQuerySize, tid, args[0], prec);
+      case RSLC_BFN_SUBPASSLOAD:
+      {
+         /* the fragment's own texel: coordinate (0, 0) */
+         static const uint32_t zero[2] = { 0, 0 };
+         uint32_t used, coord = spv_const_composite(e,
+               rslc_type_basic(e->c, RSLC_TY_VEC, RSLC_BASE_INT, 2, 1), zero, &used);
+         if (!coord)
+            return 0;
+         return spv_r2(e, SpvOpImageRead, tid, args[0], coord, prec);
+      }
       case RSLC_BFN_EMITVERTEX:
       case RSLC_BFN_ENDPRIMITIVE:
          /* no result: the void type's id stands for the expression */
@@ -4468,6 +4496,7 @@ static bool spv_global_var(struct spv_emit *e, const struct rslc_var *v)
       case RSLC_ST_GLOBAL:  sc = SPV_SC_PRIVATE; break;
 #ifdef RSLC_EXTENDED
       case RSLC_ST_IMAGE:   sc = SPV_SC_UNIFORMCONSTANT; break;
+      case RSLC_ST_SUBPASS: sc = SPV_SC_UNIFORMCONSTANT; break;
       case RSLC_ST_SHARED:  sc = SPV_SC_WORKGROUP; break;
 #endif
       case RSLC_ST_CONST:
@@ -4509,6 +4538,13 @@ static bool spv_global_var(struct spv_emit *e, const struct rslc_var *v)
       if ((v->quals & RSLC_VQ_WRITEONLY) && !spv_decorate(e, id, SPV_DEC_NONREADABLE))
          return false;
       if ((v->quals & RSLC_VQ_READONLY) && !spv_decorate(e, id, SPV_DEC_NONWRITABLE))
+         return false;
+   }
+   if (v->storage == RSLC_ST_SUBPASS)
+   {
+      if (!spv_decorate1(e, id, SPV_DEC_DESCRIPTORSET, v->set == RSLC_UNSET ? 0 : v->set)
+            || !spv_decorate1(e, id, SPV_DEC_BINDING, v->binding == RSLC_UNSET ? 0 : v->binding)
+            || !spv_decorate1(e, id, SPV_DEC_INPUTATTACHMENTINDEX, v->member))
          return false;
    }
 #endif
@@ -5003,6 +5039,11 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       return false;
    if (e->need_imagequery && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_IMAGEQUERY))
       return false;
+#ifdef RSLC_EXTENDED
+   if (e->need_inputattachment
+         && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_INPUTATTACHMENT))
+      return false;
+#endif
    if (!spv_inst_str(e, SPV_SEC_CAPS, SpvOpExtInstImport, &e->ext_id, 1, "GLSL.std.450", NULL, 0))
       return false;
    if (!spv_inst2(e, SPV_SEC_CAPS, SpvOpMemoryModel, 0 /* Logical */, 1 /* GLSL450 */))

@@ -1698,6 +1698,7 @@ struct rslc_quals
    bool     early_fragment_tests;
    uint8_t  gs_prim;          /* RSLC_GS_* named in the layout */
    uint32_t index;
+   uint32_t input_att;        /* input_attachment_index; RSLC_UNSET if absent */
    uint32_t gs_invocations;
    uint32_t gs_max_vertices;
 #endif
@@ -2958,6 +2959,7 @@ static bool rslc_p_eval(struct rslc_parser *p, uint32_t e, struct rslc_cval *out
  *   A N Z     sampler2DArray, sampler2DMSArray, samplerBuffer
  *   J K       image2D, image2DArray; g the gvec4 of the image's base,
  *             matched exactly
+ *   P         subpassInput
  *             (RSLC_EXTENDED; their overloads are absent otherwise)
  *   M         any matrix;  Q square matrix;  T transposed M result
  *   X         any scalar or vector, same type as other X
@@ -3075,7 +3077,8 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_GROUPMEMORYBARRIER, "groupMemoryBarrier", ":v" },
    { RSLC_BFN_IMAGESTORE, "imageStore", "J i2 g:v;K i3 g:v" },
    { RSLC_BFN_IMAGELOAD, "imageLoad", "J i2:4;K i3:4" },
-   { RSLC_BFN_IMAGESIZE, "imageSize", "J:i2;K:i3" }
+   { RSLC_BFN_IMAGESIZE, "imageSize", "J:i2;K:i3" },
+   { RSLC_BFN_SUBPASSLOAD, "subpassLoad", "P:4" }
 #endif
 };
 
@@ -3165,6 +3168,8 @@ static bool rslc_bsig_match_tok(struct rslc_parser *p, const char *tok, unsigned
       return true;
    }
 #ifdef RSLC_EXTENDED
+   else if (len == 1 && tok[0] == 'P')
+      return t->kind == RSLC_TY_SUBPASSINPUT;
    else if (len == 1 && (tok[0] == 'J' || tok[0] == 'K'))
    {
       if (t->kind != (tok[0] == 'J' ? RSLC_TY_IMAGE2D : RSLC_TY_IMAGE2DARRAY))
@@ -3261,7 +3266,7 @@ static const struct rslc_type *rslc_bsig_param_type(struct rslc_parser *p,
    if (len == 1 && (tok[0] == 'S' || tok[0] == 'A' || tok[0] == 'N' || tok[0] == 'Z'))
       return actual;
 #ifdef RSLC_EXTENDED
-   if (len == 1 && (tok[0] == 'J' || tok[0] == 'K'))
+   if (len == 1 && (tok[0] == 'J' || tok[0] == 'K' || tok[0] == 'P'))
       return actual;
    if (len == 1 && tok[0] == 'g')
       return actual;   /* matched exactly */
@@ -4525,6 +4530,7 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
       else if (len == 12 && !memcmp(s, "local_size_x", 12)) slot = &q->cs_local[0];
       else if (len == 12 && !memcmp(s, "local_size_y", 12)) slot = &q->cs_local[1];
       else if (len == 12 && !memcmp(s, "local_size_z", 12)) slot = &q->cs_local[2];
+      else if (len == 22 && !memcmp(s, "input_attachment_index", 22)) slot = &q->input_att;
       else if (rslc_p_image_format(s, len, &q->img_fmt)) { }
 #endif
       else if (len == 7 && !memcmp(s, "index", 5))    { }
@@ -4554,6 +4560,9 @@ static bool rslc_p_quals(struct rslc_parser *p, struct rslc_quals *q)
 {
    memset(q, 0, sizeof(*q));
    q->location = q->binding = q->set = q->offset = RSLC_UNSET;
+#ifdef RSLC_EXTENDED
+   q->input_att = RSLC_UNSET;
+#endif
    for (;;)
    {
       const struct rslc_tok *t = P_TOK(p);
@@ -4657,6 +4666,8 @@ static const struct rslc_type *rslc_p_type_spec(struct rslc_parser *p,
          ty = rslc_type_sampler2d(p->c, RSLC_BASE_INT);
       else if (k == RSLC_KW_USAMPLER2D)
          ty = rslc_type_sampler2d(p->c, RSLC_BASE_UINT);
+      else if (k == RSLC_KW_SUBPASSINPUT)
+         ty = rslc_type_basic(p->c, RSLC_TY_SUBPASSINPUT, RSLC_BASE_FLOAT, 1, 1);
       else if (k >= RSLC_KW_IMAGE2D && k <= RSLC_KW_UIMAGE2DARRAY)
       {
          /* the format is the declaration's layout; it is applied there */
@@ -5251,6 +5262,11 @@ static bool rslc_p_params(struct rslc_parser *p, struct rslc_func *f)
       ty = rslc_p_array_suffix(p, ty);
       if (!ty)
          return false;
+#ifdef RSLC_EXTENDED
+      /* the printers hand it over as the value it reads */
+      if (ty->kind == RSLC_TY_SUBPASSINPUT)
+         return rslc_p_fail(p, "a subpassInput cannot be a parameter", NULL);
+#endif
       v = rslc_p_new_var(p, name, ty, line);
       if (!v)
          return false;
@@ -5929,6 +5945,17 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
             v->quals |= RSLC_VQ_READONLY;
          if (q.writeonly)
             v->quals |= RSLC_VQ_WRITEONLY;
+      }
+      else if (vt->kind == RSLC_TY_SUBPASSINPUT)
+      {
+         /* an input attachment: the fragment stage's framebuffer read */
+         if (!global || !q.is_uniform || p->c->stage != RSLC_STAGE_FRAGMENT)
+            return rslc_p_fail(p, "a subpassInput must be a fragment stage\'s global uniform", NULL), 0;
+         if (q.input_att == RSLC_UNSET)
+            return rslc_p_fail(p, "a subpassInput needs its input_attachment_index", NULL), 0;
+         v->storage   = RSLC_ST_SUBPASS;
+         v->member    = q.input_att;
+         v->precision = 0;
       }
       else if (q.is_shared)
       {
