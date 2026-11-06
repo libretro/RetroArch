@@ -31,7 +31,8 @@
 RETRO_BEGIN_DECLS
 
 /* Public-key side of the cleanroom stack: fixed-width bignum, RSA
- * PKCS#1 v1.5 verification and P-256 ECDH / ECDSA verification. */
+ * PKCS#1 v1.5 signing and verification, P-256 / P-384 ECDH and ECDSA
+ * verification, X25519, and ECDH / ECDSA on sect233r1. */
 
 /* Fixed-width multi-precision arithmetic for the public-key code:
  * little-endian arrays of bn_word, every operand of one call the
@@ -113,7 +114,10 @@ enum rsa_hash
 {
    RSA_HASH_SHA256 = 0,
    RSA_HASH_SHA384 = 1,
-   RSA_HASH_SHA512 = 2
+   RSA_HASH_SHA512 = 2,
+   RSA_HASH_SHA1   = 3,
+   /* MD5 || SHA-1, 36 octets, without a DigestInfo (TLS 1.0, 1.1) */
+   RSA_HASH_MD5_SHA1 = 4
 };
 
 /**
@@ -133,6 +137,37 @@ int rsa_pkcs1_verify(const uint8_t *n, size_t n_len,
       const uint8_t *e, size_t e_len,
       enum rsa_hash hash, const uint8_t *digest, size_t digest_len,
       const uint8_t *sig, size_t sig_len);
+
+/* An RSA private key, every member a big-endian integer pointing into
+ * memory the caller keeps (x509_rsa_private_key_parse() fills it from
+ * DER). Leading zero octets are allowed. */
+struct rsa_private_key
+{
+   const uint8_t *n;  size_t n_len;
+   const uint8_t *e;  size_t e_len;
+   const uint8_t *d;  size_t d_len;
+   const uint8_t *p;  size_t p_len;
+   const uint8_t *q;  size_t q_len;
+   const uint8_t *dp; size_t dp_len;   /* d mod (p - 1) */
+   const uint8_t *dq; size_t dq_len;   /* d mod (q - 1) */
+   const uint8_t *qi; size_t qi_len;   /* q^-1 mod p */
+};
+
+/**
+ * rsa_pkcs1_sign:
+ * RSASSA-PKCS1-v1_5 signature (RFC 8017 8.2.1) over an already
+ * computed @digest, through the CRT with an exponentiation whose
+ * operations and memory accesses do not depend on the key. p and q
+ * must have the same number of words. The signature is checked with
+ * the public exponent before it is returned.
+ * @sig, @sig_len     : Out, @sig_len == the modulus length.
+ *
+ * Returns: 0 on success, -1 on a bad or inconsistent key or a
+ * parameter out of range (@sig is then zeroed).
+ **/
+int rsa_pkcs1_sign(const struct rsa_private_key *key,
+      enum rsa_hash hash, const uint8_t *digest, size_t digest_len,
+      uint8_t *sig, size_t sig_len);
 
 /**
  * rsa_pss_verify:
@@ -202,6 +237,44 @@ int p256_ecdsa_verify(const uint8_t *pub,
 int p384_keygen(const uint8_t *priv, uint8_t *pub);
 int p384_ecdh(const uint8_t *priv, const uint8_t *peer, uint8_t *shared);
 int p384_ecdsa_verify(const uint8_t *pub,
+      const uint8_t *digest, size_t digest_len,
+      const uint8_t *r, const uint8_t *s);
+
+/* SECG sect233r1 (NIST B-233), the binary curve of the Nintendo DSi,
+ * Wii, Wii U and 3DS certificates and tickets. Scalars, coordinates and
+ * signature halves are 30 octets big-endian; points are 0x04 || X || Y.
+ * A private key may be any 30 octets: it is reduced mod n, and rejected
+ * only when that leaves 0. Every operation with a private key runs a
+ * fixed-length Montgomery ladder. */
+#define B233_SCALAR_SIZE 30
+#define B233_POINT_SIZE  61
+
+int b233_keygen(const uint8_t *priv, uint8_t *pub);
+
+/**
+ * b233_ecdh:
+ * @shared            : 30 octets out, the x coordinate.
+ *
+ * Validates @peer (on the curve, in the subgroup of order n) first.
+ *
+ * Returns: 0 on success, -1 on a bad key.
+ **/
+int b233_ecdh(const uint8_t *priv, const uint8_t *peer, uint8_t *shared);
+
+/**
+ * b233_ecdsa_sign:
+ * @digest            : Message hash; its leftmost 233 bits are used.
+ * @r, @s             : 30 octets each, out.
+ *
+ * The nonce is deterministic, RFC 6979 with HMAC-SHA256.
+ *
+ * Returns: 0 on success, -1 on an unusable private key.
+ **/
+int b233_ecdsa_sign(const uint8_t *priv,
+      const uint8_t *digest, size_t digest_len,
+      uint8_t *r, uint8_t *s);
+
+int b233_ecdsa_verify(const uint8_t *pub,
       const uint8_t *digest, size_t digest_len,
       const uint8_t *r, const uint8_t *s);
 

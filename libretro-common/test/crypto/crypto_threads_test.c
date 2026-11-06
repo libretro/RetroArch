@@ -34,13 +34,14 @@
 
 #include <crypto/crypto.h>
 #include <crypto/kdf.h>
+#include <crypto/pk.h>
 
 #define NTHREADS 8
 
 static pthread_barrier_t go;
 /* AES block, GCM ciphertext and tag, ChaCha20-Poly1305 ciphertext and
- * tag, HMAC-SHA256 */
-static uint8_t results[NTHREADS][16 + 16 + 16 + 16 + 16 + 32];
+ * tag, HMAC-SHA256, a B-233 public key */
+static uint8_t results[NTHREADS][16 + 16 + 16 + 16 + 16 + 32 + B233_POINT_SIZE];
 
 static void *worker(void *arg)
 {
@@ -66,6 +67,8 @@ static void *worker(void *arg)
          pt, 16, out + 48, out + 64, 16);
    /* SHA-256 through HMAC: the SHA-NI / ARMv8 dispatch */
    hmac_sha256(key, 32, pt, 16, out + 80);
+   /* sect233r1: the PCLMUL / PMULL dispatch of its field product */
+   b233_keygen(key, out + 112);
    return NULL;
 }
 

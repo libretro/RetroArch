@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <crypto/pk.h>
 #include <crypto/crypto.h>
+#include <crypto/kdf.h>
 #include <lrc_hash.h>
 #include <retro_atomic.h>
 
@@ -395,6 +396,42 @@ static const uint8_t rsa_di_sha384[19] = {
 static const uint8_t rsa_di_sha512[19] = {
    0x30,0x51,0x30,0x0d,0x06,0x09,0x60,0x86,0x48,0x01,0x65,0x03,0x04,0x02,0x03,0x05,0x00,0x04,0x40
 };
+static const uint8_t rsa_di_sha1[15] = {
+   0x30,0x21,0x30,0x09,0x06,0x05,0x2b,0x0e,0x03,0x02,0x1a,0x05,0x00,0x04,0x14
+};
+
+/* The DigestInfo prefix and digest length of @hash; MD5 || SHA-1 (TLS
+ * 1.0 and 1.1) has none. */
+static int rsa_pkcs1_hash(enum rsa_hash hash, const uint8_t **di,
+      size_t *di_len, size_t *hlen)
+{
+   switch (hash)
+   {
+      case RSA_HASH_SHA256: *di = rsa_di_sha256; *di_len = 19; *hlen = 32; break;
+      case RSA_HASH_SHA384: *di = rsa_di_sha384; *di_len = 19; *hlen = 48; break;
+      case RSA_HASH_SHA512: *di = rsa_di_sha512; *di_len = 19; *hlen = 64; break;
+      case RSA_HASH_SHA1:   *di = rsa_di_sha1;   *di_len = 15; *hlen = 20; break;
+      case RSA_HASH_MD5_SHA1: *di = NULL;        *di_len = 0;  *hlen = 36; break;
+      default:
+         return -1;
+   }
+   return 0;
+}
+
+/* EM = 0x00 || 0x01 || PS (0xff, at least 8) || 0x00 || T, @n_len octets;
+ * the caller has checked that T fits. */
+static void rsa_pkcs1_encode(uint8_t *em, size_t n_len, const uint8_t *di,
+      size_t di_len, const uint8_t *digest, size_t hlen)
+{
+   size_t ps_len = n_len - di_len - hlen - 3;
+   em[0] = 0x00;
+   em[1] = 0x01;
+   memset(em + 2, 0xff, ps_len);
+   em[2 + ps_len] = 0x00;
+   if (di_len)
+      memcpy(em + 3 + ps_len, di, di_len);
+   memcpy(em + 3 + ps_len + di_len, digest, hlen);
+}
 
 struct rsa_work
 {
@@ -414,23 +451,14 @@ int rsa_pkcs1_verify(const uint8_t *n, size_t n_len,
       const uint8_t *sig, size_t sig_len)
 {
    const uint8_t *di;
-   size_t   di_len = 19;
+   size_t   di_len;
    size_t   hlen;
    size_t   tlen;
-   size_t   ps_len;
    unsigned k, ek;
    struct rsa_work *w;
    int ok;
 
-   switch (hash)
-   {
-      case RSA_HASH_SHA256: di = rsa_di_sha256; hlen = 32; break;
-      case RSA_HASH_SHA384: di = rsa_di_sha384; hlen = 48; break;
-      case RSA_HASH_SHA512: di = rsa_di_sha512; hlen = 64; break;
-      default:
-         return -1;
-   }
-   if (digest_len != hlen)
+   if (rsa_pkcs1_hash(hash, &di, &di_len, &hlen) != 0 || digest_len != hlen)
       return -1;
 
    while (n_len && n[0] == 0)
@@ -473,16 +501,7 @@ int rsa_pkcs1_verify(const uint8_t *n, size_t n_len,
       bn_mod_exp(w->m, w->s, w->exp, ek, w->mod, w->r2,
             bn_mont_n0(w->mod), k, w->work);
       bn_to_be(w->em, n_len, w->m, k);
-
-      /* EM = 0x00 || 0x01 || PS (0xff * ps_len, >= 8) || 0x00 || T */
-      ps_len = n_len - tlen - 3;
-      w->expect[0] = 0x00;
-      w->expect[1] = 0x01;
-      memset(w->expect + 2, 0xff, ps_len);
-      w->expect[2 + ps_len] = 0x00;
-      memcpy(w->expect + 3 + ps_len, di, di_len);
-      memcpy(w->expect + 3 + ps_len + di_len, digest, hlen);
-
+      rsa_pkcs1_encode(w->expect, n_len, di, di_len, digest, hlen);
       ok = crypto_memeq_ct(w->em, w->expect, n_len);
    }
 
@@ -1888,4 +1907,988 @@ int p384_ecdsa_verify(const uint8_t *pub,
 {
    struct ec_curve own;
    return ec_ecdsa_verify(ec_get(&ec_p384, &own), pub, digest, digest_len, r, s);
+}
+
+/* r = base^exp in the Montgomery domain of m, @base_m and @one_m (R mod m)
+ * there too. All @ebits bits are walked, four at a time, and the table
+ * entry is chosen by scanning all sixteen, so neither the operations nor
+ * the memory touched follow the exponent. Squarings go through
+ * bn_mont_mul(): its loops do not depend on the operands. @tab has
+ * 16 * k words, @tmp BN_MONT_TMP_WORDS(k). */
+static void bn_mont_exp_ct(bn_word *r, const bn_word *base_m,
+      const bn_word *exp, unsigned ebits, const bn_word *one_m,
+      const bn_word *m, bn_word n0, unsigned k, bn_word *tab, bn_word *tmp)
+{
+   bn_word  sel[BN_MAX_WORDS];
+   unsigned w, j;
+
+   bn_copy(tab, one_m, k);
+   bn_copy(tab + k, base_m, k);
+   for (j = 2; j < 16; j++)
+      bn_mont_mul(tab + j * k, tab + (j - 1) * k, base_m, m, n0, k, tmp);
+
+   bn_copy(r, one_m, k);
+   for (w = (ebits + 3) / 4; w-- > 0; )
+   {
+      unsigned d = 0;
+      for (j = 0; j < 4; j++)
+         if (4 * w + j < ebits)
+            d |= bn_get_bit(exp, 4 * w + j) << j;
+      for (j = 0; j < 4; j++)
+         bn_mont_mul(r, r, r, m, n0, k, tmp);
+      bn_copy(sel, tab, k);
+      for (j = 1; j < 16; j++)
+      {
+         bn_word x  = (bn_word)(j ^ d);
+         bn_word eq = (bn_word)1 ^ ((x | ((bn_word)0 - x)) >> (BN_WORD_BITS - 1));
+         bn_select(sel, eq, tab + j * k, sel, k);
+      }
+      bn_mont_mul(r, r, sel, m, n0, k, tmp);
+   }
+   crypto_memzero(sel, sizeof(sel));
+}
+
+/* ---- RSA signing ---------------------------------------------------- */
+
+/* Halves of a modulus up to BN_MAX_WORDS. */
+#define RSA_HALF_WORDS (BN_MAX_WORDS / 2)
+
+struct rsa_sign_work
+{
+   bn_word c[2 * RSA_HALF_WORDS];
+   bn_word s[2 * RSA_HALF_WORDS];
+   bn_word t[2 * RSA_HALF_WORDS];
+   bn_word prime[2][RSA_HALF_WORDS];
+   bn_word r2[2][RSA_HALF_WORDS];
+   bn_word m[2][RSA_HALF_WORDS];
+   bn_word x[RSA_HALF_WORDS];
+   bn_word one[RSA_HALF_WORDS];
+   bn_word one_m[RSA_HALF_WORDS];
+   bn_word qi[RSA_HALF_WORDS];
+   bn_word tab[16 * RSA_HALF_WORDS];
+   bn_word tmp[BN_MONT_TMP_WORDS(RSA_HALF_WORDS)];
+   uint8_t em[BN_MAX_WORDS * BN_WORD_BYTES];
+};
+
+/* m = c^d mod p for one CRT half: c (kn words) is reduced to p first. */
+static int rsa_crt_half(struct rsa_sign_work *w, unsigned h,
+      const uint8_t *d, size_t d_len, unsigned kn, unsigned kp)
+{
+   const bn_word *p  = w->prime[h];
+   bn_word        n0 = bn_mont_n0(p);
+   unsigned       dk = (unsigned)((d_len + BN_WORD_BYTES - 1) / BN_WORD_BYTES);
+
+   if (dk > kp)
+      return -1;
+   bn_mont_r2(w->r2[h], p, kp);
+   bn_zero(w->one, kp);
+   w->one[0] = 1;
+   bn_mont_mul(w->one_m, w->r2[h], w->one, p, n0, kp, w->tmp);
+
+   /* c < n < p * R: one reduction gives c R^-1, two products c R. */
+   bn_zero(w->t, 2 * kp);
+   bn_copy(w->t, w->c, kn);
+   bn_mont_reduce(w->x, w->t, p, n0, kp);
+   bn_mont_mul(w->x, w->x, w->r2[h], p, n0, kp, w->tmp);
+   bn_mont_mul(w->x, w->x, w->r2[h], p, n0, kp, w->tmp);
+
+   bn_zero(w->t, kp);
+   bn_from_be(w->t, kp, d, d_len);
+   bn_mont_exp_ct(w->m[h], w->x, w->t, kp * BN_WORD_BITS, w->one_m,
+         p, n0, kp, w->tab, w->tmp);
+   bn_mont_mul(w->m[h], w->m[h], w->one, p, n0, kp, w->tmp);
+   return 0;
+}
+
+static void bn_mul_plain(bn_word *r, const bn_word *a, const bn_word *b,
+      unsigned k)
+{
+   unsigned i, j;
+   bn_zero(r, 2 * k);
+   for (i = 0; i < k; i++)
+   {
+      bn_dword carry = 0;
+      for (j = 0; j < k; j++)
+      {
+         carry   += (bn_dword)r[i + j] + (bn_dword)a[j] * b[i];
+         r[i + j] = (bn_word)carry;
+         carry  >>= BN_WORD_BITS;
+      }
+      r[i + k] = (bn_word)carry;
+   }
+}
+
+/* Strips the leading zero octets of a big-endian integer. */
+static void rsa_strip(const uint8_t **v, size_t *len)
+{
+   while (*len && (*v)[0] == 0)
+   {
+      (*v)++;
+      (*len)--;
+   }
+}
+
+int rsa_pkcs1_sign(const struct rsa_private_key *key,
+      enum rsa_hash hash, const uint8_t *digest, size_t digest_len,
+      uint8_t *sig, size_t sig_len)
+{
+   const uint8_t *di, *n, *e, *p, *q, *dp, *dq, *qi;
+   size_t   di_len, hlen, n_len, e_len, p_len, q_len, dp_len, dq_len, qi_len;
+   unsigned kn, kp, i;
+   bn_word  carry;
+   struct rsa_sign_work *w;
+   int ret = -1;
+
+   if (rsa_pkcs1_hash(hash, &di, &di_len, &hlen) != 0 || digest_len != hlen)
+      return -1;
+   n  = key->n;  n_len  = key->n_len;  rsa_strip(&n, &n_len);
+   e  = key->e;  e_len  = key->e_len;  rsa_strip(&e, &e_len);
+   p  = key->p;  p_len  = key->p_len;  rsa_strip(&p, &p_len);
+   q  = key->q;  q_len  = key->q_len;  rsa_strip(&q, &q_len);
+   dp = key->dp; dp_len = key->dp_len; rsa_strip(&dp, &dp_len);
+   dq = key->dq; dq_len = key->dq_len; rsa_strip(&dq, &dq_len);
+   qi = key->qi; qi_len = key->qi_len; rsa_strip(&qi, &qi_len);
+
+   if (n_len < 64 || n_len > BN_MAX_WORDS * BN_WORD_BYTES || !(n[n_len - 1] & 1))
+      return -1;
+   if (!e_len || e_len > n_len || !p_len || !q_len || !(p[p_len - 1] & 1) || !(q[q_len - 1] & 1))
+      return -1;
+   if (sig_len != n_len || n_len < di_len + hlen + 11)
+      return -1;
+   /* The CRT halves share one word count, at least half the modulus'. */
+   kn = (unsigned)((n_len + BN_WORD_BYTES - 1) / BN_WORD_BYTES);
+   kp = (unsigned)((p_len + BN_WORD_BYTES - 1) / BN_WORD_BYTES);
+   if (kp != (unsigned)((q_len + BN_WORD_BYTES - 1) / BN_WORD_BYTES)
+         || kp > RSA_HALF_WORDS || 2 * kp < kn || qi_len > p_len)
+      return -1;
+
+   if (!(w = (struct rsa_sign_work*)malloc(sizeof(*w))))
+      return -1;
+
+   rsa_pkcs1_encode(w->em, n_len, di, di_len, digest, hlen);
+   bn_from_be(w->c, kn, w->em, n_len);
+   bn_from_be(w->prime[0], kp, p, p_len);
+   bn_from_be(w->prime[1], kp, q, q_len);
+   bn_from_be(w->qi, kp, qi, qi_len);
+
+   if (bn_cmp(w->qi, w->prime[0], kp) >= 0
+         || rsa_crt_half(w, 0, dp, dp_len, kn, kp) != 0
+         || rsa_crt_half(w, 1, dq, dq_len, kn, kp) != 0)
+      goto done;
+
+   /* h = qi (m1 - m2) mod p, with m2 < q brought below p first;
+    * s = m2 + h q. */
+   {
+      const bn_word *pr = w->prime[0];
+      bn_word        n0 = bn_mont_n0(pr);
+      bn_zero(w->one, kp);
+      w->one[0] = 1;
+      bn_mont_mul(w->x, w->m[1], w->r2[0], pr, n0, kp, w->tmp);
+      bn_mont_mul(w->x, w->x, w->one, pr, n0, kp, w->tmp);
+      bn_mod_sub(w->x, w->m[0], w->x, pr, kp);
+      bn_mod_mul(w->x, w->qi, w->x, pr, w->r2[0], n0, kp, w->tmp);
+   }
+   bn_mul_plain(w->s, w->x, w->prime[1], kp);
+   carry = 0;
+   for (i = 0; i < 2 * kp; i++)
+   {
+      bn_dword t = (bn_dword)w->s[i] + carry + (i < kp ? w->m[1][i] : 0);
+      w->s[i]    = (bn_word)t;
+      carry      = (bn_word)(t >> BN_WORD_BITS);
+   }
+   bn_to_be(sig, n_len, w->s, kn);
+
+   /* A bad CRT parameter or a fault gives a signature that does not
+    * verify, and one that leaks the factors: it is not handed out. */
+   if (rsa_pkcs1_verify(n, n_len, e, e_len, hash, digest, digest_len,
+            sig, sig_len) == 0)
+      ret = 0;
+   else
+      memset(sig, 0, sig_len);
+
+done:
+   crypto_memzero(w, sizeof(*w));
+   free(w);
+   return ret;
+}
+
+/* ---- sect233r1 (NIST B-233) ------------------------------------------ */
+
+/* y^2 + xy = x^3 + x^2 + b over GF(2^233), f = z^233 + z^74 + 1,
+ * cofactor 2. Field elements are eight little-endian 32-bit words. */
+#define B233_W 8
+#define B233_K (256 / BN_WORD_BITS)
+
+typedef uint32_t b233_fe[B233_W];
+
+static const uint8_t b233_b_be[30] = {
+   0x00,0x66,0x64,0x7e,0xde,0x6c,0x33,0x2c,0x7f,0x8c,0x09,0x23,0xbb,0x58,0x21,
+   0x3b,0x33,0x3b,0x20,0xe9,0xce,0x42,0x81,0xfe,0x11,0x5f,0x7d,0x8f,0x90,0xad
+};
+static const uint8_t b233_gx_be[30] = {
+   0x00,0xfa,0xc9,0xdf,0xcb,0xac,0x83,0x13,0xbb,0x21,0x39,0xf1,0xbb,0x75,0x5f,
+   0xef,0x65,0xbc,0x39,0x1f,0x8b,0x36,0xf8,0xf8,0xeb,0x73,0x71,0xfd,0x55,0x8b
+};
+static const uint8_t b233_gy_be[30] = {
+   0x01,0x00,0x6a,0x08,0xa4,0x19,0x03,0x35,0x06,0x78,0xe5,0x85,0x28,0xbe,0xbf,
+   0x8a,0x0b,0xef,0xf8,0x67,0xa7,0xca,0x36,0x71,0x6f,0x7e,0x01,0xf8,0x10,0x52
+};
+static const uint8_t b233_n_be[30] = {
+   0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+   0x13,0xe9,0x74,0xe7,0x2f,0x8a,0x69,0x22,0x03,0x1d,0x26,0x03,0xcf,0xe0,0xd7
+};
+
+static void b233_from_be(b233_fe r, const uint8_t *in)
+{
+   unsigned i;
+   memset(r, 0, sizeof(b233_fe));
+   for (i = 0; i < 30; i++)
+      r[(29 - i) / 4] |= (uint32_t)in[i] << (8 * ((29 - i) & 3));
+}
+
+static void b233_to_be(uint8_t *out, const b233_fe a)
+{
+   unsigned i;
+   for (i = 0; i < 30; i++)
+      out[i] = (uint8_t)(a[(29 - i) / 4] >> (8 * ((29 - i) & 3)));
+}
+
+static int b233_is_zero(const b233_fe a)
+{
+   uint32_t v = 0;
+   unsigned i;
+   for (i = 0; i < B233_W; i++)
+      v |= a[i];
+   return v == 0;
+}
+
+static int b233_eq(const b233_fe a, const b233_fe b)
+{
+   uint32_t v = 0;
+   unsigned i;
+   for (i = 0; i < B233_W; i++)
+      v |= a[i] ^ b[i];
+   return v == 0;
+}
+
+static void b233_add(b233_fe r, const b233_fe a, const b233_fe b)
+{
+   unsigned i;
+   for (i = 0; i < B233_W; i++)
+      r[i] = a[i] ^ b[i];
+}
+
+/* c (sixteen words, clobbered) mod f into r. */
+static void b233_reduce(b233_fe r, uint32_t *c)
+{
+   uint32_t t;
+   int      i;
+   for (i = 15; i >= 8; i--)
+   {
+      t         = c[i];
+      c[i - 8] ^= t << 23;
+      c[i - 7] ^= t >> 9;
+      c[i - 5] ^= t << 1;
+      c[i - 4] ^= t >> 31;
+   }
+   t     = c[7] >> 9;
+   c[0] ^= t;
+   c[2] ^= t << 10;
+   c[3] ^= t >> 22;
+   c[7] &= 0x1ff;
+   memcpy(r, c, sizeof(b233_fe));
+}
+
+/* Carry-less 32x32 product, without operand-dependent branches or
+ * memory accesses. */
+static uint64_t b233_clmul32(uint32_t a, uint32_t b)
+{
+   uint64_t r  = 0;
+   uint64_t aa = a;
+   unsigned i;
+   for (i = 0; i < 32; i++)
+      r ^= (aa << i) & ((uint64_t)0 - ((b >> i) & 1));
+   return r;
+}
+
+static void b233_mul_sw(b233_fe r, const b233_fe a, const b233_fe b)
+{
+   uint32_t c[16];
+   unsigned i, j;
+   memset(c, 0, sizeof(c));
+   for (i = 0; i < B233_W; i++)
+      for (j = 0; j < B233_W; j++)
+      {
+         uint64_t t   = b233_clmul32(a[i], b[j]);
+         c[i + j]    ^= (uint32_t)t;
+         c[i + j + 1] ^= (uint32_t)(t >> 32);
+      }
+   b233_reduce(r, c);
+}
+
+/* The field product on the carry-less multiply instructions, four
+ * 64-bit limbs a side, where the CPU has them: PCLMULQDQ, or PMULL with
+ * the ARMv8 crypto extension. Chosen at run time as crypto.c chooses its
+ * AES and GHASH paths. */
+#if (defined(__x86_64__) || defined(__i386__)) && !defined(_MSC_VER) && !defined(B233_NO_X86)
+#if defined(__has_attribute) && defined(__has_include)
+#if __has_attribute(target) && __has_include(<immintrin.h>) \
+   && (!defined(__SCE__) || defined(__PCLMUL__))
+#define B233_HAVE_X86_PATH 1
+#endif
+#endif
+#endif
+
+#if (defined(__aarch64__) || defined(_M_ARM64)) && !defined(_MSC_VER) && !defined(B233_NO_ARM)
+#if defined(__ARM_FEATURE_CRYPTO) || defined(__ARM_FEATURE_AES)
+#define B233_HAVE_ARM_PATH 1
+#elif (defined(__clang__) && __clang_major__ >= 16) \
+   || (!defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 9)
+#define B233_HAVE_ARM_PATH    1
+#define B233_ARM_NEEDS_TARGET 1
+#endif
+#endif
+
+#if defined(B233_HAVE_X86_PATH) || defined(B233_HAVE_ARM_PATH)
+#include <features/features_cpu.h>
+
+static retro_atomic_int_t b233_clmul_ok;
+
+static int b233_clmul_available(void)
+{
+   int v = retro_atomic_load_acquire_int(&b233_clmul_ok);
+   if (!v)
+   {
+      uint64_t f = cpu_features_get();
+#if defined(B233_HAVE_X86_PATH)
+      v = (f & RETRO_SIMD_PCLMUL) ? 2 : 1;
+#elif defined(B233_ARM_NEEDS_TARGET)
+      v = (f & RETRO_SIMD_AES) ? 2 : 1;
+#else
+      (void)f;
+      v = 2;
+#endif
+      retro_atomic_store_release_int(&b233_clmul_ok, v);
+   }
+   return v == 2;
+}
+
+/* c[0..15] = the unreduced product, from 64 x 64 products. */
+#if defined(B233_HAVE_X86_PATH)
+#include <immintrin.h>
+
+__attribute__((target("pclmul,sse2")))
+static void b233_mul_hw(b233_fe r, const b233_fe a, const b233_fe b)
+{
+   uint64_t c64[8];
+   uint32_t c[16];
+   __m128i  av[4], bv[4];
+   unsigned i, j;
+
+   for (i = 0; i < 4; i++)
+   {
+      av[i] = _mm_set_epi32(0, 0, (int)a[2 * i + 1], (int)a[2 * i]);
+      bv[i] = _mm_set_epi32(0, 0, (int)b[2 * i + 1], (int)b[2 * i]);
+   }
+   memset(c64, 0, sizeof(c64));
+   for (i = 0; i < 4; i++)
+      for (j = 0; j < 4; j++)
+      {
+         uint64_t t[2];
+         _mm_storeu_si128((__m128i*)t, _mm_clmulepi64_si128(av[i], bv[j], 0x00));
+         c64[i + j]     ^= t[0];
+         c64[i + j + 1] ^= t[1];
+      }
+   for (i = 0; i < 8; i++)
+   {
+      c[2 * i]     = (uint32_t)c64[i];
+      c[2 * i + 1] = (uint32_t)(c64[i] >> 32);
+   }
+   b233_reduce(r, c);
+}
+#else
+#include <arm_neon.h>
+
+#if defined(B233_ARM_NEEDS_TARGET)
+__attribute__((target("+crypto")))
+#endif
+static void b233_mul_hw(b233_fe r, const b233_fe a, const b233_fe b)
+{
+   uint64_t c64[8];
+   uint32_t c[16];
+   uint64_t av[4], bv[4];
+   unsigned i, j;
+
+   for (i = 0; i < 4; i++)
+   {
+      av[i] = a[2 * i] | ((uint64_t)a[2 * i + 1] << 32);
+      bv[i] = b[2 * i] | ((uint64_t)b[2 * i + 1] << 32);
+   }
+   memset(c64, 0, sizeof(c64));
+   for (i = 0; i < 4; i++)
+      for (j = 0; j < 4; j++)
+      {
+         uint64x2_t t = vreinterpretq_u64_p128(vmull_p64((poly64_t)av[i], (poly64_t)bv[j]));
+         c64[i + j]     ^= vgetq_lane_u64(t, 0);
+         c64[i + j + 1] ^= vgetq_lane_u64(t, 1);
+      }
+   for (i = 0; i < 8; i++)
+   {
+      c[2 * i]     = (uint32_t)c64[i];
+      c[2 * i + 1] = (uint32_t)(c64[i] >> 32);
+   }
+   b233_reduce(r, c);
+}
+#endif
+#endif
+
+static void b233_mul(b233_fe r, const b233_fe a, const b233_fe b)
+{
+#if defined(B233_HAVE_X86_PATH) || defined(B233_HAVE_ARM_PATH)
+   if (b233_clmul_available())
+   {
+      b233_mul_hw(r, a, b);
+      return;
+   }
+#endif
+   b233_mul_sw(r, a, b);
+}
+
+/* The low sixteen bits of x with a zero inserted above each. */
+static uint32_t b233_spread16(uint32_t x)
+{
+   x &= 0xffff;
+   x  = (x | (x << 8)) & 0x00ff00ffu;
+   x  = (x | (x << 4)) & 0x0f0f0f0fu;
+   x  = (x | (x << 2)) & 0x33333333u;
+   x  = (x | (x << 1)) & 0x55555555u;
+   return x;
+}
+
+static void b233_sqr(b233_fe r, const b233_fe a)
+{
+   uint32_t c[16];
+   unsigned i;
+   for (i = 0; i < B233_W; i++)
+   {
+      c[2 * i]     = b233_spread16(a[i]);
+      c[2 * i + 1] = b233_spread16(a[i] >> 16);
+   }
+   b233_reduce(r, c);
+}
+
+static void b233_sqrn(b233_fe r, const b233_fe a, unsigned n)
+{
+   memcpy(r, a, sizeof(b233_fe));
+   while (n--)
+      b233_sqr(r, r);
+}
+
+/* a^(2^233 - 2) by Itoh-Tsujii: t_k = a^(2^k - 1) along
+ * 1, 2, 4, 8, 16, 32, 64, 128, 192, 224, 232. */
+static void b233_inv(b233_fe r, const b233_fe a)
+{
+   b233_fe t1, t2, t4, t8, t32, t64, t, u;
+
+   memcpy(t1, a, sizeof(b233_fe));
+   b233_sqr(t, t1);       b233_mul(t2, t, t1);
+   b233_sqrn(t, t2, 2);   b233_mul(t4, t, t2);
+   b233_sqrn(t, t4, 4);   b233_mul(t8, t, t4);
+   b233_sqrn(t, t8, 8);   b233_mul(u, t, t8);      /* 16 */
+   b233_sqrn(t, u, 16);   b233_mul(t32, t, u);
+   b233_sqrn(t, t32, 32); b233_mul(t64, t, t32);
+   b233_sqrn(t, t64, 64); b233_mul(u, t, t64);     /* 128 */
+   b233_sqrn(t, u, 64);   b233_mul(u, t, t64);     /* 192 */
+   b233_sqrn(t, u, 32);   b233_mul(u, t, t32);     /* 224 */
+   b233_sqrn(t, u, 8);    b233_mul(u, t, t8);      /* 232 */
+   b233_sqr(r, u);
+}
+
+/* Tr(a) = a + a^2 + ... + a^(2^232), which is 0 or 1. */
+static unsigned b233_trace(const b233_fe a)
+{
+   b233_fe t, s;
+   unsigned i;
+   memcpy(t, a, sizeof(b233_fe));
+   memcpy(s, a, sizeof(b233_fe));
+   for (i = 1; i < 233; i++)
+   {
+      b233_sqr(t, t);
+      b233_add(s, s, t);
+   }
+   return s[0] & 1;
+}
+
+static void b233_cswap(uint32_t bit, b233_fe a, b233_fe b)
+{
+   uint32_t mask = (uint32_t)0 - bit;
+   unsigned i;
+   for (i = 0; i < B233_W; i++)
+   {
+      uint32_t t = mask & (a[i] ^ b[i]);
+      a[i] ^= t;
+      b[i] ^= t;
+   }
+}
+
+/* Parse 0x04 || X || Y, the coordinates below 2^233, and check the
+ * curve equation and that the point lies in the subgroup of order n:
+ * with h = 2, those are the points 2Q, which are the ones with
+ * Tr(x) = Tr(a) = 1. That also rules out x = 0. */
+static int b233_pt_load(b233_fe x, b233_fe y, const uint8_t *pub)
+{
+   b233_fe b, lhs, rhs, t;
+
+   if (pub[0] != 0x04 || pub[1] > 1 || pub[31] > 1)
+      return -1;
+   b233_from_be(x, pub + 1);
+   b233_from_be(y, pub + 31);
+   b233_from_be(b, b233_b_be);
+
+   b233_sqr(lhs, y);
+   b233_mul(t, x, y);
+   b233_add(lhs, lhs, t);
+   b233_sqr(t, x);
+   b233_mul(rhs, t, x);
+   b233_add(rhs, rhs, t);
+   b233_add(rhs, rhs, b);
+   if (!b233_eq(lhs, rhs))
+      return -1;
+   return b233_trace(x) == 1 ? 0 : -1;
+}
+
+/* Scalar-side constants, the order n with its Montgomery machinery. */
+struct b233_order
+{
+   bn_word n[B233_K];
+   bn_word r2[B233_K];
+   bn_word one_m[B233_K];
+   bn_word n0;
+};
+
+static void b233_order_init(struct b233_order *o)
+{
+   bn_word one[B233_K];
+   bn_word tmp[BN_MONT_TMP_WORDS(B233_K)];
+   bn_from_be(o->n, B233_K, b233_n_be, sizeof(b233_n_be));
+   o->n0 = bn_mont_n0(o->n);
+   bn_mont_r2(o->r2, o->n, B233_K);
+   bn_zero(one, B233_K);
+   one[0] = 1;
+   bn_mont_mul(o->one_m, o->r2, one, o->n, o->n0, B233_K, tmp);
+}
+
+/* k = a mod n for a below 2^256: a * R^2 * R^-1 then * 1 * R^-1. */
+static void b233_mod_n(const struct b233_order *o, bn_word *k, const bn_word *a)
+{
+   bn_word one[B233_K];
+   bn_word tmp[BN_MONT_TMP_WORDS(B233_K)];
+   bn_zero(one, B233_K);
+   one[0] = 1;
+   bn_mont_mul(k, a, o->r2, o->n, o->n0, B233_K, tmp);
+   bn_mont_mul(k, k, one, o->n, o->n0, B233_K, tmp);
+}
+
+/* A private key, any 30 octets, reduced mod n. -1 when that is 0. */
+static int b233_scalar_load(const struct b233_order *o, bn_word *k, const uint8_t *s)
+{
+   bn_word a[B233_K];
+   bn_from_be(a, B233_K, s, B233_SCALAR_SIZE);
+   b233_mod_n(o, k, a);
+   crypto_memzero(a, sizeof(a));
+   return bn_is_zero(k, B233_K) ? -1 : 0;
+}
+
+/* kP for k < n through the Lopez-Dahab Montgomery ladder on X/Z, which
+ * does the same field operations for every bit. k is taken as k + n or
+ * k + 2n, whichever has bit 233 as its top bit, so the ladder length is
+ * fixed too; nP = O for the points b233_pt_load() accepts. y is
+ * recovered from the two ladder points at the end (Lopez and Dahab,
+ * CHES 1999). @y may be NULL. Returns -1 when kP is infinity. */
+static int b233_pt_mul(const struct b233_order *o, b233_fe xr, b233_fe yr,
+      const bn_word *k, const b233_fe x, const b233_fe y)
+{
+   bn_word k1[B233_K], k2[B233_K];
+   b233_fe b, x1, z1, x2, z2, t1, t2, t3;
+   int i;
+   int ret = 0;
+
+   bn_add(k1, k, o->n, B233_K);
+   bn_add(k2, k1, o->n, B233_K);
+   bn_select(k1, (bn_word)bn_get_bit(k1, 233), k1, k2, B233_K);
+
+   b233_from_be(b, b233_b_be);
+   memcpy(x1, x, sizeof(b233_fe));
+   memset(z1, 0, sizeof(b233_fe));
+   z1[0] = 1;
+   b233_sqr(z2, x);
+   b233_sqr(x2, z2);
+   b233_add(x2, x2, b);
+
+   for (i = 232; i >= 0; i--)
+   {
+      uint32_t bit = (uint32_t)bn_get_bit(k1, (unsigned)i);
+      b233_cswap(bit, x1, x2);
+      b233_cswap(bit, z1, z2);
+      /* (x2, z2) = (x1, z1) + (x2, z2), their difference being P */
+      b233_mul(t1, x1, z2);
+      b233_mul(t2, x2, z1);
+      b233_add(t3, t1, t2);
+      b233_sqr(z2, t3);
+      b233_mul(t1, t1, t2);
+      b233_mul(x2, x, z2);
+      b233_add(x2, x2, t1);
+      /* (x1, z1) = 2 (x1, z1) */
+      b233_sqr(t1, x1);
+      b233_sqr(t2, z1);
+      b233_mul(z1, t1, t2);
+      b233_sqr(t1, t1);
+      b233_sqr(t2, t2);
+      b233_mul(t2, t2, b);
+      b233_add(x1, t1, t2);
+      b233_cswap(bit, x1, x2);
+      b233_cswap(bit, z1, z2);
+   }
+
+   if (b233_is_zero(z1))
+      ret = -1;
+   else if (b233_is_zero(z2))
+   {
+      /* (k + 1)P = O: kP = -P */
+      memcpy(xr, x, sizeof(b233_fe));
+      if (yr)
+         b233_add(yr, x, y);
+   }
+   else if (!yr)
+   {
+      b233_inv(t1, z1);
+      b233_mul(xr, x1, t1);
+   }
+   else
+   {
+      /* t3 = 1 / (x z1 z2), x3 = x1 x z2 t3,
+       * y3 = (x + x3) ((x1 + x z1)(x2 + x z2) + (x^2 + y) z1 z2) t3 + y */
+      b233_fe zz, x3;
+      b233_mul(zz, z1, z2);
+      b233_mul(t3, x, zz);
+      b233_inv(t3, t3);
+      b233_mul(x3, x1, z2);
+      b233_mul(x3, x3, x);
+      b233_mul(x3, x3, t3);
+      b233_mul(t1, x, z1);
+      b233_add(t1, t1, x1);
+      b233_mul(t2, x, z2);
+      b233_add(t2, t2, x2);
+      b233_mul(t1, t1, t2);
+      b233_sqr(t2, x);
+      b233_add(t2, t2, y);
+      b233_mul(t2, t2, zz);
+      b233_add(t1, t1, t2);
+      b233_add(t2, x, x3);
+      b233_mul(t1, t1, t2);
+      b233_mul(t1, t1, t3);
+      b233_add(yr, t1, y);
+      memcpy(xr, x3, sizeof(b233_fe));
+      crypto_memzero(zz, sizeof(zz));
+      crypto_memzero(x3, sizeof(x3));
+   }
+
+   crypto_memzero(k1, sizeof(k1));
+   crypto_memzero(k2, sizeof(k2));
+   crypto_memzero(x1, sizeof(x1));
+   crypto_memzero(z1, sizeof(z1));
+   crypto_memzero(x2, sizeof(x2));
+   crypto_memzero(z2, sizeof(z2));
+   crypto_memzero(t1, sizeof(t1));
+   crypto_memzero(t2, sizeof(t2));
+   return ret;
+}
+
+static void b233_base(b233_fe gx, b233_fe gy)
+{
+   b233_from_be(gx, b233_gx_be);
+   b233_from_be(gy, b233_gy_be);
+}
+
+/* An x coordinate as an integer mod n: x < 2^233 < 2n. */
+static void b233_x_mod_n(const struct b233_order *o, bn_word *r, const b233_fe x)
+{
+   uint8_t be[30];
+   b233_to_be(be, x);
+   bn_from_be(r, B233_K, be, sizeof(be));
+   if (bn_cmp(r, o->n, B233_K) >= 0)
+      bn_sub(r, r, o->n, B233_K);
+}
+
+/* The leftmost 233 bits of a digest as an integer, mod n (FIPS 186-4
+ * 6.4, and bits2octets of RFC 6979). */
+static void b233_digest_load(const struct b233_order *o, bn_word *e,
+      const uint8_t *digest, size_t len)
+{
+   size_t   m = len > 30 ? 30 : len;
+   unsigned i;
+   bn_from_be(e, B233_K, digest, m);
+   if (m == 30)
+   {
+      for (i = 0; i < B233_K - 1; i++)
+         e[i] = (e[i] >> 7) | (e[i + 1] << (BN_WORD_BITS - 7));
+      e[B233_K - 1] >>= 7;
+   }
+   if (bn_cmp(e, o->n, B233_K) >= 0)
+      bn_sub(e, e, o->n, B233_K);
+}
+
+int b233_keygen(const uint8_t *priv, uint8_t *pub)
+{
+   struct b233_order o;
+   bn_word k[B233_K];
+   b233_fe gx, gy, x, y;
+   int ret;
+
+   b233_order_init(&o);
+   if (b233_scalar_load(&o, k, priv) != 0)
+      return -1;
+   b233_base(gx, gy);
+   ret = b233_pt_mul(&o, x, y, k, gx, gy);
+   crypto_memzero(k, sizeof(k));
+   if (ret != 0)
+      return -1;
+   pub[0] = 0x04;
+   b233_to_be(pub + 1, x);
+   b233_to_be(pub + 31, y);
+   return 0;
+}
+
+int b233_ecdh(const uint8_t *priv, const uint8_t *peer, uint8_t *shared)
+{
+   struct b233_order o;
+   bn_word k[B233_K];
+   b233_fe px, py, x;
+   int ret;
+
+   b233_order_init(&o);
+   if (b233_pt_load(px, py, peer) != 0 || b233_scalar_load(&o, k, priv) != 0)
+      return -1;
+   ret = b233_pt_mul(&o, x, NULL, k, px, py);
+   crypto_memzero(k, sizeof(k));
+   if (ret != 0)
+      return -1;
+   b233_to_be(shared, x);
+   crypto_memzero(x, sizeof(x));
+   return 0;
+}
+
+/* RFC 6979 3.2 with HMAC-SHA256: K and V, then candidates one by one. */
+struct b233_nonce
+{
+   uint8_t k[32];
+   uint8_t v[32];
+};
+
+static void b233_nonce_hmac(struct b233_nonce *st, int with_sep, uint8_t sep,
+      const uint8_t *x, const uint8_t *h)
+{
+   struct hmac_sha256_ctx ctx;
+   if (with_sep)
+   {
+      hmac_sha256_init(&ctx, st->k, 32);
+      hmac_sha256_update(&ctx, st->v, 32);
+      hmac_sha256_update(&ctx, &sep, 1);
+      if (x)
+      {
+         hmac_sha256_update(&ctx, x, 30);
+         hmac_sha256_update(&ctx, h, 30);
+      }
+      hmac_sha256_final(&ctx, st->k);
+   }
+   hmac_sha256(st->k, 32, st->v, 32, st->v);
+}
+
+static void b233_nonce_init(struct b233_nonce *st,
+      const bn_word *d, const bn_word *e)
+{
+   uint8_t x[30], h[30];
+   bn_to_be(x, sizeof(x), d, B233_K);
+   bn_to_be(h, sizeof(h), e, B233_K);
+   memset(st->v, 0x01, sizeof(st->v));
+   memset(st->k, 0x00, sizeof(st->k));
+   b233_nonce_hmac(st, 1, 0x00, x, h);
+   b233_nonce_hmac(st, 1, 0x01, x, h);
+   crypto_memzero(x, sizeof(x));
+}
+
+/* The next candidate k in [1, n), drawing again past one out of range. */
+static void b233_nonce_next(struct b233_nonce *st, const struct b233_order *o,
+      bn_word *k, int retry)
+{
+   for (;;)
+   {
+      if (retry)
+         b233_nonce_hmac(st, 1, 0x00, NULL, NULL);
+      retry = 1;
+      b233_nonce_hmac(st, 0, 0, NULL, NULL);
+      bn_from_be(k, B233_K, st->v, 30);
+      {
+         unsigned i;
+         for (i = 0; i < B233_K - 1; i++)
+            k[i] = (k[i] >> 7) | (k[i + 1] << (BN_WORD_BITS - 7));
+         k[B233_K - 1] >>= 7;
+      }
+      if (!bn_is_zero(k, B233_K) && bn_cmp(k, o->n, B233_K) < 0)
+         return;
+   }
+}
+
+/* s = k^-1 (e + r d) mod n; k^-1 = k^(n - 2). */
+static void b233_sign_s(const struct b233_order *o, bn_word *s,
+      const bn_word *k, const bn_word *e, const bn_word *r, const bn_word *d)
+{
+   bn_word tab[16 * B233_K];
+   bn_word tmp[BN_MONT_TMP_WORDS(B233_K)];
+   bn_word km[B233_K], nm2[B233_K], t[B233_K];
+
+   bn_zero(t, B233_K);
+   t[0] = 2;
+   bn_sub(nm2, o->n, t, B233_K);
+   bn_mont_mul(km, k, o->r2, o->n, o->n0, B233_K, tmp);
+   bn_mont_exp_ct(km, km, nm2, 233, o->one_m, o->n, o->n0, B233_K, tab, tmp);
+   bn_mod_mul(t, r, d, o->n, o->r2, o->n0, B233_K, tmp);
+   bn_mod_add(t, t, e, o->n, B233_K);
+   bn_mont_mul(s, km, t, o->n, o->n0, B233_K, tmp);
+   crypto_memzero(tab, sizeof(tab));
+   crypto_memzero(km, sizeof(km));
+   crypto_memzero(t, sizeof(t));
+}
+
+int b233_ecdsa_sign(const uint8_t *priv,
+      const uint8_t *digest, size_t digest_len,
+      uint8_t *r, uint8_t *s)
+{
+   struct b233_order o;
+   struct b233_nonce st;
+   bn_word d[B233_K], e[B233_K], k[B233_K], rr[B233_K], ss[B233_K];
+   b233_fe gx, gy, x;
+   int retry = 0;
+
+   b233_order_init(&o);
+   if (b233_scalar_load(&o, d, priv) != 0)
+      return -1;
+   b233_digest_load(&o, e, digest, digest_len);
+   b233_base(gx, gy);
+   b233_nonce_init(&st, d, e);
+   for (;;)
+   {
+      b233_nonce_next(&st, &o, k, retry);
+      retry = 1;
+      if (b233_pt_mul(&o, x, NULL, k, gx, gy) != 0)
+         continue;
+      b233_x_mod_n(&o, rr, x);
+      if (bn_is_zero(rr, B233_K))
+         continue;
+      b233_sign_s(&o, ss, k, e, rr, d);
+      if (!bn_is_zero(ss, B233_K))
+         break;
+   }
+   bn_to_be(r, B233_SCALAR_SIZE, rr, B233_K);
+   bn_to_be(s, B233_SCALAR_SIZE, ss, B233_K);
+   crypto_memzero(&st, sizeof(st));
+   crypto_memzero(d, sizeof(d));
+   crypto_memzero(k, sizeof(k));
+   return 0;
+}
+
+/* Affine sum of two points for signature checks, where everything is
+ * public. A point at infinity is flagged rather than encoded. */
+static void b233_pt_add_affine(b233_fe x3, b233_fe y3, int *inf3,
+      const b233_fe x1, const b233_fe y1, int inf1,
+      const b233_fe x2, const b233_fe y2, int inf2)
+{
+   b233_fe l, t, xs, ys;
+
+   *inf3 = 0;
+   if (inf1 || inf2)
+   {
+      *inf3 = inf1 && inf2;
+      memcpy(x3, inf1 ? x2 : x1, sizeof(b233_fe));
+      memcpy(y3, inf1 ? y2 : y1, sizeof(b233_fe));
+      return;
+   }
+   if (b233_eq(x1, x2))
+   {
+      if (!b233_eq(y1, y2) || b233_is_zero(x1))
+      {
+         *inf3 = 1;
+         return;
+      }
+      /* l = x + y / x, x3 = l^2 + l + 1, y3 = x^2 + (l + 1) x3 */
+      b233_inv(t, x1);
+      b233_mul(l, y1, t);
+      b233_add(l, l, x1);
+      b233_sqr(xs, l);
+      b233_add(xs, xs, l);
+      xs[0] ^= 1;
+      l[0] ^= 1;
+      b233_mul(ys, l, xs);
+      b233_sqr(t, x1);
+      b233_add(ys, ys, t);
+   }
+   else
+   {
+      /* l = (y1 + y2) / (x1 + x2), x3 = l^2 + l + x1 + x2 + 1,
+       * y3 = l (x1 + x3) + x3 + y1 */
+      b233_add(t, x1, x2);
+      b233_inv(t, t);
+      b233_add(l, y1, y2);
+      b233_mul(l, l, t);
+      b233_sqr(xs, l);
+      b233_add(xs, xs, l);
+      b233_add(xs, xs, x1);
+      b233_add(xs, xs, x2);
+      xs[0] ^= 1;
+      b233_add(t, x1, xs);
+      b233_mul(ys, l, t);
+      b233_add(ys, ys, xs);
+      b233_add(ys, ys, y1);
+   }
+   memcpy(x3, xs, sizeof(b233_fe));
+   memcpy(y3, ys, sizeof(b233_fe));
+}
+
+int b233_ecdsa_verify(const uint8_t *pub,
+      const uint8_t *digest, size_t digest_len,
+      const uint8_t *r, const uint8_t *s)
+{
+   struct b233_order o;
+   bn_word rr[B233_K], ss[B233_K], e[B233_K], w[B233_K], u[B233_K], v[B233_K];
+   bn_word work[3 * B233_K + BN_MONT_TMP_WORDS(B233_K)];
+   bn_word one[B233_K];
+   b233_fe qx, qy, gx, gy, ax, ay, bx, by;
+   int ainf, binf, inf;
+
+   b233_order_init(&o);
+   if (b233_pt_load(qx, qy, pub) != 0)
+      return -1;
+   bn_from_be(rr, B233_K, r, B233_SCALAR_SIZE);
+   bn_from_be(ss, B233_K, s, B233_SCALAR_SIZE);
+   if (bn_is_zero(rr, B233_K) || bn_cmp(rr, o.n, B233_K) >= 0
+         || bn_is_zero(ss, B233_K) || bn_cmp(ss, o.n, B233_K) >= 0)
+      return -1;
+   b233_digest_load(&o, e, digest, digest_len);
+
+   /* w = s^-1 = s^(n - 2) mod n */
+   bn_zero(one, B233_K);
+   one[0] = 2;
+   bn_sub(v, o.n, one, B233_K);
+   bn_mod_exp(w, ss, v, B233_K, o.n, o.r2, o.n0, B233_K, work);
+
+   b233_base(gx, gy);
+   bn_mod_mul(u, e, w, o.n, o.r2, o.n0, B233_K, work);
+   ainf = b233_pt_mul(&o, ax, ay, u, gx, gy) != 0;
+   bn_mod_mul(u, rr, w, o.n, o.r2, o.n0, B233_K, work);
+   binf = b233_pt_mul(&o, bx, by, u, qx, qy) != 0;
+   b233_pt_add_affine(ax, ay, &inf, ax, ay, ainf, bx, by, binf);
+   if (inf)
+      return -1;
+   b233_x_mod_n(&o, v, ax);
+   return bn_cmp(v, rr, B233_K) == 0 ? 0 : -1;
 }

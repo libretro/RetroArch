@@ -96,6 +96,18 @@ struct x509_cert
  **/
 int x509_parse(struct x509_cert *c, const uint8_t *der, size_t len);
 
+struct rsa_private_key;
+
+/**
+ * x509_rsa_private_key_parse:
+ * An RSAPrivateKey (PKCS#1) or a PrivateKeyInfo with one (PKCS#8),
+ * unencrypted DER. @key points into @der afterwards.
+ *
+ * Returns: 0 on success, -1 on anything else.
+ **/
+int x509_rsa_private_key_parse(struct rsa_private_key *key,
+      const uint8_t *der, size_t len);
+
 /**
  * x509_verify_signature:
  *

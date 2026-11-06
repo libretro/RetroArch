@@ -456,6 +456,65 @@ static int x509_parse_extensions(struct x509_cert *c, struct der *d)
    return 0;
 }
 
+/* RSAPrivateKey (RFC 8017 A.1.2), two-prime, version 0. */
+static int x509_rsa_key_seq(struct rsa_private_key *key, struct der *d)
+{
+   struct der k;
+   const uint8_t *v;
+   size_t vl;
+
+   if (der_enter(d, DER_SEQUENCE, &k) != 0)
+      return -1;
+   if (der_read_uint(&k, &v, &vl) != 0 || vl != 1 || v[0] != 0)
+      return -1;
+   if (     der_read_uint(&k, &key->n,  &key->n_len)  != 0
+         || der_read_uint(&k, &key->e,  &key->e_len)  != 0
+         || der_read_uint(&k, &key->d,  &key->d_len)  != 0
+         || der_read_uint(&k, &key->p,  &key->p_len)  != 0
+         || der_read_uint(&k, &key->q,  &key->q_len)  != 0
+         || der_read_uint(&k, &key->dp, &key->dp_len) != 0
+         || der_read_uint(&k, &key->dq, &key->dq_len) != 0
+         || der_read_uint(&k, &key->qi, &key->qi_len) != 0)
+      return -1;
+   return k.p == k.end ? 0 : -1;
+}
+
+int x509_rsa_private_key_parse(struct rsa_private_key *key,
+      const uint8_t *der, size_t len)
+{
+   struct der d, info, params;
+   const uint8_t *v, *oid;
+   size_t vl, oid_len;
+
+   memset(key, 0, sizeof(*key));
+   d.p   = der;
+   d.end = der + len;
+   if (x509_rsa_key_seq(key, &d) == 0)
+      return d.p == d.end ? 0 : -1;
+
+   /* PrivateKeyInfo (RFC 5208): version 0, rsaEncryption, the
+    * RSAPrivateKey in an OCTET STRING, optional attributes. */
+   memset(key, 0, sizeof(*key));
+   d.p = der;
+   if (der_enter(&d, DER_SEQUENCE, &info) != 0 || d.p != d.end)
+      return -1;
+   if (der_read_uint(&info, &v, &vl) != 0 || vl != 1 || v[0] != 0)
+      return -1;
+   if (der_read_alg(&info, &oid, &oid_len, &params) != 0
+         || !OID_EQ(oid, oid_len, oid_rsa_enc))
+      return -1;
+   if (der_read(&info, DER_OCTET, &v, &vl) != 0)
+      return -1;
+   d.p   = v;
+   d.end = v + vl;
+   if (x509_rsa_key_seq(key, &d) != 0 || d.p != d.end)
+   {
+      memset(key, 0, sizeof(*key));
+      return -1;
+   }
+   return 0;
+}
+
 int x509_parse(struct x509_cert *c, const uint8_t *der, size_t len)
 {
    struct der d, cert, tbs, params;
