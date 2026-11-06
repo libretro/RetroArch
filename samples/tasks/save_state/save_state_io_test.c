@@ -1559,6 +1559,7 @@ static void test_state_task_cycles(bool threaded)
    unsigned round;
    frontend_reset();
    core_fill(3 * TEST_SAVE_STATE_CHUNK + 17);
+   set_save_state_in_background(false);
    filestream_delete(path);
    filestream_delete(other);
    clock_step = TEST_TICK_BUDGET_US;
@@ -1575,6 +1576,7 @@ static void test_state_task_cycles(bool threaded)
             "cycles: the load is pending before callbacks run");
       okf(content_save_state_notify(other, true, cycle_done, &result),
             "cycles: another save is accepted behind the load");
+      memset(core_mem, 0xa5, core_len);
       drain_states(threaded);
       okf(result.calls == 3 && result.errors == 0,
             "cycles: each accepted request completes once");
@@ -1603,8 +1605,8 @@ static void test_close_with_pending_load(bool threaded)
          "close: a load is accepted behind it");
    okf(content_save_state_in_progress(NULL) && content_load_state_in_progress(NULL),
          "close: both requests are pending before the close waits");
-   content_wait_for_save_state_task();
    content_wait_for_load_state_task();
+   content_wait_for_save_state_task();
    drain_states(threaded);
    okf(result.calls == 2 && !result.errors,
          "close: the close waits complete the save and its held load");
@@ -1612,6 +1614,37 @@ static void test_close_with_pending_load(bool threaded)
    okf(!content_state_file_in_use(path), "close: the closed content owns no file");
    filestream_delete(path);
    test_state_task_cycles(threaded);
+}
+
+static void test_close_after_backup(bool threaded)
+{
+   const char *path = "sst_close_backup.state";
+   struct cycle_result result = {0, 0};
+   frontend_reset();
+   core_fill(32 * TEST_SAVE_STATE_CHUNK);
+   filestream_delete(path);
+   memset(core_mem, 0x11, core_len);
+   content_save_state(path, true);
+   drain_states(threaded);
+   memset(core_mem, 0x22, core_len);
+   clock_step = TEST_TICK_BUDGET_US;
+   okf(content_save_state_notify(path, true, cycle_done, &result),
+         "close backup: the overwrite is accepted");
+   okf(content_load_state_in_progress(NULL),
+         "close backup: its backup is pending before the waits");
+   content_wait_for_load_state_task();
+   content_wait_for_save_state_task();
+   okf(!content_save_state_in_progress(NULL) && !content_load_state_in_progress(NULL),
+         "close backup: both waits include the chained write");
+   okf(result.calls == 1 && !result.errors,
+         "close backup: the write completed before the core could close");
+   memset(core_mem, 0x33, core_len);
+   content_load_state(path, false, false);
+   drain_states(threaded);
+   okf(core_mem[0] == 0x22 && core_mem[core_len - 1] == 0x22,
+         "close backup: the consumer receives the completed replacement");
+   content_reset_savestate_backups();
+   filestream_delete(path);
 }
 
 static void test_task_failure_recovery(bool threaded)
@@ -1691,7 +1724,7 @@ static void test_ram_flush_retry(bool threaded)
  *     between the save and the one over it, both ways, so a backup
  *     that went through rzip would come back in the other form.
  * ----------------------------------------------------------------- */
-static void test_undo_save_restores_file(void)
+static void test_undo_save_restores_file(bool threaded)
 {
    const char *path = "sst_undo_file.state";
    int z;
@@ -1706,14 +1739,14 @@ static void test_undo_save_restores_file(void)
       core_fill(3 * TEST_SAVE_STATE_CHUNK + 123);
       stub_settings.bools.savestate_file_compression = z;
       content_save_state(path, true);
-      pump(1000);
+      drain_states(threaded);
       if (!filestream_read_file(path, &was, &n_was))
          n_was = -1;
 
       stub_settings.bools.savestate_file_compression = !z;
       memset(core_mem, 0x5A, core_len);
       content_save_state(path, true);
-      pump(1000);
+      drain_states(threaded);
       if (!filestream_read_file(path, &over, &n_over))
          n_over = -2;
       okf(n_over > 0 && (n_over != n_was || memcmp(was, over, (size_t)n_was)),
@@ -1721,7 +1754,10 @@ static void test_undo_save_restores_file(void)
             : "a compressed save over a plain slot replaces it");
 
       okf(content_undo_save_state(), "the undo of that save is pushed");
-      pump(1000);
+      okf(content_state_file_in_use(path) && content_save_state_in_progress(NULL),
+            "undo owns its file before completion");
+      drain_states(threaded);
+      okf(!content_state_file_in_use(path), "undo releases its completed file");
       if (!filestream_read_file(path, &back, &n_back))
          n_back = -3;
       okf(n_was > 0 && n_back == n_was && !memcmp(was, back, (size_t)n_was),
@@ -1879,10 +1915,11 @@ static int run_default_lane(void)
    test_pruned_queued_backup();
    test_queued_conversion_failure();
    test_close_with_pending_load(false);
+   test_close_after_backup(false);
    test_task_failure_recovery(false);
    test_ram_flush_retry(false);
 #ifdef HAVE_COMPRESSION
-   test_undo_save_restores_file();
+   test_undo_save_restores_file(false);
 #endif
 
    content_reset_savestate_backups();
@@ -1902,8 +1939,12 @@ static int run_threaded_lane(void)
    test_load_waits_for_frames(true);
    test_overwrite_keeps_slot(true);
    test_close_with_pending_load(true);
+   test_close_after_backup(true);
    test_task_failure_recovery(true);
    test_ram_flush_retry(true);
+#ifdef HAVE_COMPRESSION
+   test_undo_save_restores_file(true);
+#endif
 
    content_reset_savestate_backups();
    task_queue_deinit();

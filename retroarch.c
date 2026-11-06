@@ -5352,8 +5352,9 @@ bool command_event(enum event_command cmd, void *data)
           * frame loop, so there is nothing left to wait for.  The
           * interactive close goes through retroarch_main_deinit_begin /
           * _pending / _finish instead. */
-         content_wait_for_save_state_task();
+         /* An overwrite's backup load can start its save. */
          content_wait_for_load_state_task();
+         content_wait_for_save_state_task();
          command_event_core_deinit_finish();
          break;
       case CMD_EVENT_CORE_INIT:
@@ -10871,8 +10872,9 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          /* In one go: reached on exit and from the load at startup,
           * before the first frame.  A load from the menu waits these
           * out a frame at a time (task_content.c). */
-         content_wait_for_save_state_task();
+         /* An overwrite's backup load can start its save. */
          content_wait_for_load_state_task();
+         content_wait_for_save_state_task();
          retroarch_main_deinit_finish();
          break;
 #ifdef HAVE_CONFIGFILE

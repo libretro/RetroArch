@@ -429,7 +429,7 @@ static void test_rolling_states(void)
    test_settings.ints.state_slot = 10;
    CHECK_ROLLING(command_event_main_state(CMD_EVENT_SAVE_STATE));
    strcpy(runloop_state.name.savestate, "other.state");
-   test_settings.uints.savestate_max_keep = 2;
+   test_settings.uints.savestate_max_keep = 100;
    test_settings.ints.state_slot = 2;
    add_slot(0);
    add_slot(1);
@@ -437,6 +437,8 @@ static void test_rolling_states(void)
    CHECK_ROLLING(!has_file("test.state") && has_file("test.state10"));
    CHECK_ROLLING(has_file("other.state") && has_file("other.state1"));
    CHECK_ROLLING(test_settings.ints.state_slot == 2);
+   CHECK_ROLLING(test_settings.uints.savestate_max_keep == 100);
+   test_settings.uints.savestate_max_keep = 2;
    CHECK_ROLLING(command_event_main_state(CMD_EVENT_SAVE_STATE));
    finish_save(true);
    CHECK_ROLLING(!has_file("other.state") && has_file("other.state2"));
