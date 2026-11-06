@@ -44,7 +44,9 @@
  * sized arrays of samplers, gl_SampleID, more than one uniform block
  * (each at its own set and binding; the reflection tables still
  * describe only the first and the push block), dual-source fragment
- * outputs (layout index) and layout(early_fragment_tests).  Without it
+ * outputs (layout index), layout(early_fragment_tests), and a vertex
+ * stage's gl_ClipDistance / gl_CullDistance (sized by the highest
+ * constant element written; HLSL and MSL refuse them yet).  Without it
  * none of that is accepted, nothing is compiled in for it, and every
  * destination is word for word what it was.  MSL has no form of the
  * extended samplers or of a third block yet and refuses them. */

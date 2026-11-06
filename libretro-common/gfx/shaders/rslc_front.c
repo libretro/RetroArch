@@ -3389,7 +3389,8 @@ static bool rslc_p_is_lvalue(struct rslc_parser *p, uint32_t e)
             return true;   /* in params are writable locals */
          if (v->storage == RSLC_ST_BUILTIN)
             return v->builtin == RSLC_BI_POSITION || v->builtin == RSLC_BI_FRAGDEPTH
-               || v->builtin == RSLC_BI_POINTSIZE;
+               || v->builtin == RSLC_BI_POINTSIZE || v->builtin == RSLC_BI_CLIPDISTANCE
+               || v->builtin == RSLC_BI_CULLDISTANCE;
          return true;
       }
       case RSLC_OP_MEMBER:
@@ -3842,6 +3843,29 @@ static uint32_t rslc_p_postfix_ops(struct rslc_parser *p, uint32_t e)
                rslc_err(p->c, "indexing a non-aggregate", NULL, line);
                return 0;
          }
+#ifdef RSLC_EXTENDED
+         /* an element of gl_ClipDistance / gl_CullDistance: the array is
+          * as long as the highest one named, so the index is constant */
+         if (n->op == RSLC_OP_VAR)
+         {
+            const struct rslc_var *bv = p->c->prog.vars[n->a];
+            if (bv->storage == RSLC_ST_BUILTIN
+                  && (bv->builtin == RSLC_BI_CLIPDISTANCE || bv->builtin == RSLC_BI_CULLDISTANCE))
+            {
+               int32_t  k;
+               uint8_t *count = bv->builtin == RSLC_BI_CLIPDISTANCE
+                  ? &p->c->prog.clip_n : &p->c->prog.cull_n;
+               if (!rslc_p_eval_int(p, idx, &k) || k < 0 || k >= RSLC_MAX_CLIP)
+               {
+                  rslc_err(p->c, "a clip or cull distance needs a constant index below 8",
+                        NULL, line);
+                  return 0;
+               }
+               if ((unsigned)k + 1 > *count)
+                  *count = (uint8_t)(k + 1);
+            }
+         }
+#endif
          e = rslc_p_mk(p, RSLC_OP_INDEX, rt, e, idx, 0, 0, line,
                rslc_prec_max(n->prec, rslc_p_node(p, idx)->prec));
          continue;
@@ -5626,6 +5650,14 @@ static bool rslc_p_run(struct rslc_ctx *c)
             || !rslc_p_builtin_var(p, "gl_VertexIndex", p->t_int, RSLC_BI_VERTEXINDEX, RSLC_DIR_IN)
             || !rslc_p_builtin_var(p, "gl_InstanceIndex", p->t_int, RSLC_BI_INSTANCEINDEX, RSLC_DIR_IN))
          return false;
+#ifdef RSLC_EXTENDED
+      /* sized to what is written once the stage is read */
+      if (     !rslc_p_builtin_var(p, "gl_ClipDistance",
+                  rslc_type_array(c, p->t_float, RSLC_MAX_CLIP), RSLC_BI_CLIPDISTANCE, RSLC_DIR_OUT)
+            || !rslc_p_builtin_var(p, "gl_CullDistance",
+                  rslc_type_array(c, p->t_float, RSLC_MAX_CLIP), RSLC_BI_CULLDISTANCE, RSLC_DIR_OUT))
+         return false;
+#endif
    }
    else
    {
@@ -5651,6 +5683,24 @@ static bool rslc_p_run(struct rslc_ctx *c)
       rslc_err(c, "no main() in stage", NULL, 0);
       return false;
    }
+#ifdef RSLC_EXTENDED
+   /* gl_ClipDistance and gl_CullDistance hold what the stage writes */
+   {
+      uint32_t i;
+      for (i = 1; i < c->prog.nvars; i++)
+      {
+         struct rslc_var *v = c->prog.vars[i];
+         unsigned n;
+         if (v->storage != RSLC_ST_BUILTIN
+               || (v->builtin != RSLC_BI_CLIPDISTANCE && v->builtin != RSLC_BI_CULLDISTANCE))
+            continue;
+         n = v->builtin == RSLC_BI_CLIPDISTANCE ? c->prog.clip_n : c->prog.cull_n;
+         v->type = rslc_type_array(c, p->t_float, n ? n : 1);
+         if (!v->type)
+            return false;
+      }
+   }
+#endif
    if (c->prog.main_fn->ret != p->t_void)
    {
       rslc_err(c, "main() must return void", NULL, c->prog.main_fn->line);

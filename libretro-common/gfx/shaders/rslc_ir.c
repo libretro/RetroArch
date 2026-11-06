@@ -986,6 +986,8 @@ enum spv_section
 #define SPV_CAP_IMAGEQUERY   50
 #define SPV_CAP_SAMPLEDBUFFER 46
 #define SPV_CAP_SAMPLERATESHADING 35
+#define SPV_CAP_CLIPDISTANCE 32
+#define SPV_CAP_CULLDISTANCE 33
 #define SPV_MODEL_VERTEX     0
 #define SPV_MODEL_FRAGMENT   4
 #define SPV_MODE_ORIGINUPPERLEFT 7
@@ -1171,6 +1173,8 @@ struct spv_emit
    bool                 need_imagequery;
    bool                 need_sampledbuffer;
    bool                 need_samplerateshading;
+   bool                 need_clipdistance;
+   bool                 need_culldistance;
    bool                 in_main;
 };
 
@@ -2130,8 +2134,7 @@ static uint32_t spv_var_ptr(struct spv_emit *e, const struct rslc_var *v, unsign
    {
       /* builtins are emitted on first use, so an unreferenced
        * gl_FragDepth never becomes an output */
-      if (e->c->stage == RSLC_STAGE_VERTEX
-            && (v->builtin == RSLC_BI_POSITION || v->builtin == RSLC_BI_POINTSIZE))
+      if (e->c->stage == RSLC_STAGE_VERTEX && RSLC_BI_IN_PERVERTEX(v->builtin))
       {
          if (!e->pervertex_var && !spv_pervertex(e))
             return 0;
@@ -2139,10 +2142,11 @@ static uint32_t spv_var_ptr(struct spv_emit *e, const struct rslc_var *v, unsign
       else if (!spv_builtin_var(e, v))
          return 0;
    }
-   if (v->storage == RSLC_ST_BUILTIN && e->pervertex_var
-         && (v->builtin == RSLC_BI_POSITION || v->builtin == RSLC_BI_POINTSIZE))
+   if (v->storage == RSLC_ST_BUILTIN && e->pervertex_var && RSLC_BI_IN_PERVERTEX(v->builtin))
    {
-      uint32_t idx  = spv_const_int(e, v->builtin == RSLC_BI_POSITION ? 0 : 1);
+      /* gl_PerVertex members: Position, PointSize, ClipDistance, CullDistance */
+      uint32_t idx  = spv_const_int(e, v->builtin == RSLC_BI_POSITION ? 0
+            : v->builtin == RSLC_BI_POINTSIZE ? 1 : v->builtin == RSLC_BI_CLIPDISTANCE ? 2 : 3);
       uint32_t ptrt = spv_ptr_to(e, v->type, SPV_SC_OUTPUT);
       uint32_t ww[4];
       uint32_t id;
@@ -4393,15 +4397,39 @@ static bool spv_pervertex(struct spv_emit *e)
    uint32_t v4 = spv_type(e, rslc_type_basic(e->c, RSLC_TY_VEC, RSLC_BASE_FLOAT, 4, 1));
    uint32_t f  = e->float_id;
    uint32_t one = spv_const_int(e, 1);
-   uint32_t arr, st, ptr, id;
+   uint32_t arr, carr, st, ptr, id;
    uint32_t w[5];
    if (!v4 || !one)
       return false;
    arr = spv_id(e);
    if (!spv_inst3(e, SPV_SEC_TYPES, SpvOpTypeArray, arr, f, one))
       return false;
+   carr = arr;
+#ifdef RSLC_EXTENDED
+   /* the clip and cull arrays as long as the stage writes them */
+   {
+      if (e->c->prog.clip_n)
+      {
+         arr = spv_type(e, rslc_type_array(e->c, rslc_type_basic(e->c, RSLC_TY_SCALAR,
+                     RSLC_BASE_FLOAT, 1, 1), e->c->prog.clip_n));
+         if (!arr)
+            return false;
+      }
+      if (e->c->prog.cull_n)
+      {
+         carr = spv_type(e, rslc_type_array(e->c, rslc_type_basic(e->c, RSLC_TY_SCALAR,
+                     RSLC_BASE_FLOAT, 1, 1), e->c->prog.cull_n));
+         if (!carr)
+            return false;
+      }
+   }
+   if (e->c->prog.clip_n)
+      e->need_clipdistance = true;
+   if (e->c->prog.cull_n)
+      e->need_culldistance = true;
+#endif
    st = spv_id(e);
-   w[0] = st; w[1] = v4; w[2] = f; w[3] = arr; w[4] = arr;
+   w[0] = st; w[1] = v4; w[2] = f; w[3] = arr; w[4] = carr;
    if (!spv_inst(e, SPV_SEC_TYPES, SpvOpTypeStruct, w, 5))
       return false;
    if (!spv_name(e, st, "gl_PerVertex")
@@ -4665,6 +4693,10 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       return false;
    if (e->need_samplerateshading
          && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_SAMPLERATESHADING))
+      return false;
+   if (e->need_clipdistance && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_CLIPDISTANCE))
+      return false;
+   if (e->need_culldistance && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_CULLDISTANCE))
       return false;
    if (e->need_imagequery && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_IMAGEQUERY))
       return false;

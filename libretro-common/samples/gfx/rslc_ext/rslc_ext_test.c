@@ -119,6 +119,30 @@ static const char fs_dual_source[] =
    "   ocol1 = c.aaaa;\n"
    "}\n";
 
+/* Clip distances, sized by the elements written; a cull distance unused. */
+static const char vs_clip[] =
+   "#version 450\n"
+   "layout(location = 0) in vec4 pos;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position = pos;\n"
+   "   gl_ClipDistance[0] = pos.z;\n"
+   "   gl_ClipDistance[1] = -pos.z;\n"
+   "   col = pos;\n"
+   "}\n";
+
+/* An element past the guaranteed eight. */
+static const char vs_clip_bad[] =
+   "#version 450\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position = vec4(0.0);\n"
+   "   gl_ClipDistance[8] = 1.0;\n"
+   "}\n";
+
+static enum rslc_stage cur_stage = RSLC_STAGE_FRAGMENT;
+
 static bool compile(const char *src, enum rslc_dst dst, unsigned version,
       struct rslc_opts *opts, struct rslc_result *res, char *err, size_t err_cap)
 {
@@ -128,7 +152,7 @@ static bool compile(const char *src, enum rslc_dst dst, unsigned version,
    opts->err     = err;
    opts->err_cap = err_cap;
    err[0]        = '\0';
-   return rslc_compile(src, strlen(src), RSLC_STAGE_FRAGMENT, opts, res);
+   return rslc_compile(src, strlen(src), cur_stage, opts, res);
 }
 
 /* Whether the module declares the capability. */
@@ -228,6 +252,34 @@ int main(int argc, char **argv)
          "samp[i].Sample(_samp_sampler[i]", 0, 0, false);
    test_stage(dir, "dual_source", fs_dual_source, "layout(early_fragment_tests) in;",
          "SV_Target1", 0, 0, true);
+
+   /* ClipDistance 32, CullDistance 33: HLSL and MSL refuse these yet */
+   cur_stage = RSLC_STAGE_VERTEX;
+   {
+      char err[256];
+      struct rslc_opts   o;
+      struct rslc_result r;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(vs_clip, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (r.blob)
+      {
+         CHECK(has_capability(r.spirv, r.spirv_len, 32));
+         CHECK(!has_capability(r.spirv, r.spirv_len, 33));
+         write_spirv(dir, "clip", &r);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(vs_clip, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+      if (r.blob)
+      {
+         CHECK(strstr(r.text, "gl_ClipDistance[1]") != NULL);
+         rslc_result_free(&r, &o);
+      }
+      memset(&r, 0, sizeof(r));
+      CHECK(!compile(vs_clip, RSLC_DST_HLSL, 50, &o, &r, err, sizeof(err)));
+      CHECK(!compile(vs_clip_bad, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      CHECK(strstr(err, "constant index below 8") != NULL);
+   }
 
    if (fails)
    {

@@ -342,6 +342,16 @@ struct rslc_var
 #define RSLC_BI_FRONTFACING  6
 #define RSLC_BI_INSTANCEINDEX 7
 #define RSLC_BI_SAMPLEID     8   /* RSLC_EXTENDED */
+#define RSLC_BI_CLIPDISTANCE 9   /* RSLC_EXTENDED */
+#define RSLC_BI_CULLDISTANCE 10  /* RSLC_EXTENDED */
+
+/* The builtins a vertex stage writes through its gl_PerVertex block. */
+#define RSLC_BI_IN_PERVERTEX(b) ((b) == RSLC_BI_POSITION || (b) == RSLC_BI_POINTSIZE \
+      || (b) == RSLC_BI_CLIPDISTANCE || (b) == RSLC_BI_CULLDISTANCE)
+
+/* Elements a stage may write of gl_ClipDistance / gl_CullDistance:
+ * the least maxClipDistances Vulkan guarantees. */
+#define RSLC_MAX_CLIP 8
 
 /* The integer builtins HLSL and MSL hand over as uint. */
 #define RSLC_BI_IS_UINT_IN(b) ((b) == RSLC_BI_VERTEXINDEX || (b) == RSLC_BI_INSTANCEINDEX \
@@ -529,6 +539,10 @@ struct rslc_prog
    uint32_t                noutputs, outputs_cap;
    bool                    has_block[RSLC_MAX_BLOCKS];
    bool                    early_fragment_tests;   /* RSLC_EXTENDED */
+   /* RSLC_EXTENDED: one past the highest gl_ClipDistance /
+    * gl_CullDistance element written, 0 when none is */
+   uint8_t                 clip_n;
+   uint8_t                 cull_n;
 };
 
 /* Source file names seen through #line, for diagnostics. */
