@@ -2242,10 +2242,21 @@ static chd_error map_read(chd_file *chd)
 	 * this size overruns on entry. One allocation per open. */
 	uint8_t *raw_map_entries;
 	uint64_t fileoffset, maxoffset = 0;
+	uint64_t filesize = core_fsize(chd->file);
 	uint8_t cookie[MAP_ENTRY_SIZE];
 	size_t count;
 	chd_error err;
 	uint32_t i;
+
+	/* totalhunks is a header field. The map follows the header as one
+	 * entrysize record per hunk plus the end-of-list cookie, so the file
+	 * bounds the count before anything is allocated for it, and the
+	 * allocation's product must also fit size_t on 32-bit hosts. */
+	if (   filesize < chd->header.length
+	    || (uint64_t)chd->header.totalhunks + 1
+	       > (filesize - chd->header.length) / entrysize
+	    || chd->header.totalhunks > (size_t)-1 / sizeof(chd->map[0]))
+		return CHDERR_INVALID_DATA;
 
 	raw_map_entries = (uint8_t *)malloc(MAP_STACK_ENTRIES * MAP_ENTRY_SIZE);
 	if (!raw_map_entries)

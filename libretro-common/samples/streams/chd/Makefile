@@ -3,6 +3,7 @@ include ../../sample_objdir.mk
 TARGET         := chd_meta_overflow_test
 TARGET_TEST    := chd_stream_threads_test$(EXE)
 TARGET_TEST2   := chd_stream_ahead_test$(EXE)
+TARGET_TEST3   := chd_map_alloc_test$(EXE)
 .DEFAULT_GOAL  := all
 
 LIBRETRO_COMM_DIR := ../../..
@@ -38,6 +39,20 @@ THREADS_SOURCES := \
 
 THREADS_OBJS := $(call sample_objs,$(THREADS_SOURCES:.c=.o))
 
+# libchdr's v3/v4 map reader, opened from memory; the object set
+# Makefile.common builds when HAVE_RCHD is off, minus the codecs the
+# uncompressed images here never reach.
+LIBCHDR_SOURCES := \
+	$(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.c \
+	$(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.c \
+	$(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.c \
+	$(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c
+
+LIBCHDR_OBJS := $(call sample_objs,$(LIBCHDR_SOURCES:.c=.o))
+
 CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0
 
 THREADS_CFLAGS := -I$(LIBRETRO_COMM_DIR)/include -DHAVE_THREADS \
@@ -50,11 +65,12 @@ endif
 
 ifeq ($(OS),Windows_NT)
    THREADS_LDLIBS += -lwinmm
+   LIBCHDR_LDLIBS += -lwinmm
 else
    THREADS_LDLIBS += -lpthread
 endif
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -72,13 +88,17 @@ $(TARGET_TEST): $(SAMPLE_OBJDIR)/chd_stream_threads_test.o $(THREADS_OBJS)
 $(TARGET_TEST2): $(SAMPLE_OBJDIR)/chd_stream_ahead_test.o $(THREADS_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(THREADS_LDLIBS)
 
-check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
+$(TARGET_TEST3): $(SAMPLE_OBJDIR)/chd_map_alloc_test.o $(LIBCHDR_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LIBCHDR_LDLIBS)
+
+check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
 	./$(TARGET)
 	./$(TARGET_TEST)
 	./$(TARGET_TEST2)
+	./$(TARGET_TEST3)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS)
 
 .PHONY: all check clean
