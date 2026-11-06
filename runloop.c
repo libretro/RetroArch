@@ -3993,6 +3993,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_SAVESTATE_PHASE:
+         if (data)
+            *(enum retro_savestate_phase*)data =
+#ifdef HAVE_RUNAHEAD
+               runahead_get_savestate_phase();
+#else
+               RETRO_SAVESTATE_PHASE_NORMAL;
+#endif
+         return true;
+
       case RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT:
       {
          int result = RETRO_SAVESTATE_CONTEXT_NORMAL;
