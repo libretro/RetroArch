@@ -39,4 +39,8 @@ S_UINT_EX(video_notifications_window, VIDEO_NOTIFICATIONS_WINDOW,
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_notifications_window, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Notifications",
       "Where notifications appear when the menu is on another display than the game.")
+S_ACTION_EX(VIDEO_SCREEN_WINDOWS_RESTORE,
+      "video_screen_windows_restore", SD_FLAG_NONE, setting_action_video_screen_windows_restore, NULL, 0,
+      "Restore Screen Windows",
+      "Reopen screen windows closed from their title bar, at their saved size and position, when the game resumes.")
 #endif

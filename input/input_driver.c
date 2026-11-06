@@ -2334,6 +2334,11 @@ bool input_driver_window_touch(unsigned window, unsigned idx,
 {
    return input_pointer_window_touch(window, idx, screen_pos, down);
 }
+
+void input_driver_release_window(unsigned window)
+{
+   input_pointer_frames_forget(window);
+}
 #endif
 
 /* The keys a port's binds name, compiled when the binds change, and

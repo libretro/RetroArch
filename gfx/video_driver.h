@@ -2182,11 +2182,17 @@ typedef struct
    /* The last video_driver_window_generation(); never reset, so a
     * replacement window never reuses one. */
    retro_atomic_int_t window_generation;
-   /* Screens video_driver_attach_windows() sent back, for the next
-    * frame */
+   /* Screens video_driver_attach_windows() and
+    * video_driver_close_windows() sent back, for the next frame */
    retro_atomic_int_t windows_failed;
+   retro_atomic_int_t windows_closed;
+   /* Each screen's edit count in the frame of its last close, as a
+    * VIDEO_WINDOWS_FAILED_TAG() */
+   retro_atomic_int_t windows_closed_edit[RETRO_VIDEO_VIEWS_MAX];
    unsigned windows_forced_attached;
+   unsigned windows_closed_attached;
    unsigned windows_restore;
+   unsigned windows_retry;
    /* Each screen's video_window_settings_t::edit */
    unsigned windows_edit[RETRO_VIDEO_VIEWS_MAX];
    /* A bit a window id: those the last snapshot wanted, 0 while

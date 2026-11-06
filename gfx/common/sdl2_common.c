@@ -96,6 +96,8 @@ static unsigned sdl2_video_monitor_count;
 static bool sdl2_video_monitors_dirty;
 static bool sdl2_video_monitors_own_dirty;
 
+static void sdl2_video_windows_lost(bool removed);
+
 static video_window_common_t *sdl2_video_window_at(unsigned screen)
 {
    return sdl2_video_windows[screen]
@@ -206,7 +208,7 @@ bool sdl2_video_window_event(const SDL_Event *event, bool *quit)
    switch (event->window.event)
    {
       case SDL_WINDOWEVENT_CLOSE:
-         video_window_mark_closed(&state->common);
+         video_window_mark_closed_by_user(&state->common);
          return true;
       /* Mapped. create() shows it, which clears HIDDEN before the
        * first check, so only this event tells. */
@@ -251,9 +253,20 @@ void sdl2_video_windows_judge(void)
    }
 }
 
-void sdl2_video_monitors_changed(void)
+Uint32 sdl2_video_windows_flags(void)
+{
+   unsigned i;
+   Uint32 flags = 0;
+   for (i = 1; sdl2_video_window_count && i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (sdl2_video_windows[i] && !sdl2_video_windows[i]->common.closed)
+         flags |= SDL_GetWindowFlags(sdl2_video_windows[i]->win);
+   return flags;
+}
+
+void sdl2_video_monitors_changed(bool removed)
 {
    sdl2_video_monitors_dirty = true;
+   sdl2_video_windows_lost(removed);
 }
 
 void sdl2_video_monitors_moved(void)
@@ -389,6 +402,63 @@ static int sdl2_video_window_place(SDL_Window *primary,
    out->w = rect.w;
    out->h = rect.h;
    return display;
+}
+
+/* A display came, went or changed. On X11 a window one that went left
+ * on none is placed again from its request; the window system may move
+ * the others. Neither move is the user's, so neither is saved. */
+static void sdl2_video_windows_lost(bool removed)
+{
+   unsigned i;
+   video_window_rect_t areas[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned n       = 0;
+   retro_time_t now = cpu_features_get_time_usec();
+   bool x11         = removed
+      && string_is_equal(SDL_GetCurrentVideoDriver(), "x11");
+
+   if (!sdl2_video_window_count)
+      return;
+   if (x11)
+   {
+      int j;
+      int count = SDL_GetNumVideoDisplays();
+      for (j = 0; j < count && n < VIDEO_WINDOW_DISPLAYS_MAX; j++)
+      {
+         SDL_Rect bounds;
+         if (SDL_GetDisplayBounds(j, &bounds) != 0)
+            continue;
+         areas[n].x = bounds.x;
+         areas[n].y = bounds.y;
+         areas[n].w = bounds.w;
+         areas[n].h = bounds.h;
+         n++;
+      }
+   }
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      SDL_Rect rect;
+      video_window_rect_t was;
+      sdl2_video_window_t *state = sdl2_video_windows[i];
+      if (!state || state->common.closed)
+         continue;
+      SDL_GetWindowPosition(state->win, &was.x, &was.y);
+      SDL_GetWindowSize(state->win, &was.w, &was.h);
+      if (     !x11
+            || !sdl2_video_window_normal(state, SDL_GetWindowFlags(state->win))
+            || !video_window_rect_lost(&was, areas, n))
+      {
+         video_window_unsettled(&state->common, now);
+         continue;
+      }
+      sdl2_video_window_place(state->primary,
+            &state->common.request.settings, -1, &rect);
+      video_window_placed(&state->common, VIDEO_POS_PACK(rect.x, rect.y),
+            VIDEO_SCALE_PACK(rect.w, rect.h), now);
+      SDL_SetWindowSize(state->win, rect.w, rect.h);
+      SDL_SetWindowPosition(state->win, rect.x, rect.y);
+      /* SDL 2 has it where it was put without an event to say so */
+      sdl2_video_window_check(state);
+   }
 }
 
 /* Puts the window where its request has it */

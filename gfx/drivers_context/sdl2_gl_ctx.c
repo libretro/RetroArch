@@ -315,7 +315,8 @@ static void sdl2_ctx_check_window(void *data, bool *quit,
             break;
 #if defined(HAVE_VIDEO_WINDOWS) && SDL_VERSION_ATLEAST(2, 0, 14)
          case SDL_DISPLAYEVENT:
-            sdl2_video_monitors_changed();
+            sdl2_video_monitors_changed(
+                  event.display.event == SDL_DISPLAYEVENT_DISCONNECTED);
             break;
 #endif
          case SDL_WINDOWEVENT:
@@ -367,7 +368,13 @@ static bool sdl2_ctx_has_focus(void *data)
 #else
    unsigned flags           = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
 #endif
-   return (SDL_GetWindowFlags(sdl->win) & flags) == flags;
+   unsigned have            = SDL_GetWindowFlags(sdl->win);
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The keyboard on one of RetroArch's windows and the pointer over
+    * another still counts */
+   have                    |= sdl2_video_windows_flags();
+#endif
+   return (have & flags) == flags;
 }
 
 static void sdl2_ctx_swap_buffers(void *data)

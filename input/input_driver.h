@@ -1623,6 +1623,10 @@ void input_driver_publish_window_touches(const uint32_t *pos,
  * has not shown (video_driver_window_shown()). App thread. */
 bool input_driver_window_touch(unsigned window, unsigned idx,
       uint32_t *screen_pos, bool *down);
+
+/* Screen window @window is gone: the buttons, motion and touches
+ * published in it are let go until the next poll. App thread. */
+void input_driver_release_window(unsigned window);
 #endif
 
 typedef struct input_pointer_view

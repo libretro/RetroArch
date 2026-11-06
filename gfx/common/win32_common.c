@@ -1278,6 +1278,11 @@ static bool win32_wnd_input_message(UINT message,
    return false;
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+static void win32_video_windows_unsettled(void);
+static win32_video_window_t *win32_video_window_of(HWND hwnd);
+#endif
+
 /* The window procedure, past the window's creation. What it does with
  * a message is win32_msg_route()'s answer for the kind of input driver
  * in use; the steps are taken here, in order. */
@@ -1441,6 +1446,15 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
    if (     message == WM_KILLFOCUS
          && main_window.hwnd && hwnd != main_window.hwnd)
       route &= ~(WIN32_ROUTE_INPUT | WIN32_ROUTE_CLIP_ON | WIN32_ROUTE_CLIP_OFF);
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   /* To one of its own screens' windows: the mouse stays clipped */
+   else if (message == WM_KILLFOCUS && wparam)
+   {
+      win32_video_window_t *to = win32_video_window_of((HWND)wparam);
+      if (to && !to->common.closed)
+         route &= ~WIN32_ROUTE_CLIP_OFF;
+   }
+#endif
 
 #ifdef HAVE_CLIP_WINDOW
    if (     (route & (WIN32_ROUTE_CLIP_ON | WIN32_ROUTE_CLIP_OFF))
@@ -1470,6 +1484,7 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
 #if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
       win32_video_monitors_dirty     = true;
       win32_video_monitors_own_dirty = true;
+      win32_video_windows_unsettled();
 #endif
    }
 
@@ -2166,6 +2181,16 @@ static win32_video_window_t *win32_video_window_of(HWND hwnd)
    return NULL;
 }
 
+/* Windows moves windows as the displays change: not the user's */
+static void win32_video_windows_unsettled(void)
+{
+   unsigned i;
+   retro_time_t now = cpu_features_get_time_usec();
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (win32_video_windows[i] && !win32_video_windows[i]->common.closed)
+         video_window_unsettled(&win32_video_windows[i]->common, now);
+}
+
 /* Presentable while shown, not minimised and not of zero size. Shown
  * by its own style: IsWindowVisible() is false for every window of a
  * desktop that is never shown, as a service's. */
@@ -2237,7 +2262,7 @@ static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
       /* Unlike the main window's, this close does not quit, and the
        * window stays until its owner destroys it */
       case WM_CLOSE:
-         video_window_mark_closed(&state->common);
+         video_window_mark_closed_by_user(&state->common);
          return 0;
       /* By something else: destroy() takes the window out first */
       case WM_DESTROY:
@@ -2305,6 +2330,18 @@ static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
          window->focused        = false;
          state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
          state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(FOCUS_LOSS);
+#ifdef HAVE_CLIP_WINDOW
+         /* Out of RetroArch's windows: the main window's loss to this
+          * one kept the clip */
+         if (     (HWND)wparam != main_window.hwnd
+               && (input_driver_get_flags() & INP_FLAG_GRAB_MOUSE_STATE))
+         {
+            win32_video_window_t *to = wparam
+                  ? win32_video_window_of((HWND)wparam) : NULL;
+            if (!to || to->common.closed)
+               win32_clip_window(false);
+         }
+#endif
          break;
       default:
          break;
@@ -2865,8 +2902,16 @@ bool win32_has_focus(void *data)
    }
 
    if (g_win32_flags & WIN32_CMN_FLAG_INITED)
-      if (GetForegroundWindow() == main_window.hwnd)
+   {
+      HWND fg = GetForegroundWindow();
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+      win32_video_window_t *state = fg ? win32_video_window_of(fg) : NULL;
+      if (state && !state->common.closed)
          return true;
+#endif
+      if (fg == main_window.hwnd)
+         return true;
+   }
 
    return false;
 }

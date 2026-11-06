@@ -4179,7 +4179,6 @@ static void setting_video_screen_window_xy_change(rarch_setting_t *setting)
    settings->flags |= SETTINGS_FLG_MODIFIED;
    setting_video_screen_window_read(setting);
    video_driver_edit_window(s);
-   video_driver_restore_windows();
 }
 
 static void setting_video_screen_window_wh_change(rarch_setting_t *setting)
@@ -4207,7 +4206,6 @@ static void setting_video_screen_window_wh_change(rarch_setting_t *setting)
    /* Both rows step from what is stored, 640x480 after a jump */
    setting_video_screen_window_read(setting);
    video_driver_edit_window(s);
-   video_driver_restore_windows();
    /* X and Y are listed only with a size */
    if (!was != !settings->uints.video_screen_window_dims[s])
       menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
@@ -4245,6 +4243,13 @@ static size_t setting_get_string_representation_video_screen_window_pos(
    return snprintf(s, len, "%d", setting_int_get(setting));
 }
 #endif
+
+static int setting_action_video_screen_windows_restore(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   video_driver_restore_windows();
+   return 0;
+}
 #endif
 
 static size_t setting_get_string_representation_video_openxr_controllers(
@@ -11150,7 +11155,8 @@ static void general_write_handler(rarch_setting_t *setting)
          && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
       input_driver_ports_user_set(setting->index_offset);
 #ifdef HAVE_VIDEO_WINDOWS
-   /* a screen's window rows: its window is made again for them */
+   /* a screen's window rows: its window is made again for them, after
+    * a close too */
    if (     setting->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
          && setting->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY_LAST)
       video_driver_edit_window(setting->enum_idx
@@ -11159,17 +11165,14 @@ static void general_write_handler(rarch_setting_t *setting)
          && setting->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN_LAST)
       video_driver_edit_window(setting->enum_idx
             - MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN);
+   else if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE)
+      video_driver_restore_windows();
    /* a screen sent back to the main window gets another try at the
     * window or display it is now given */
-   if (     (   setting->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
-             && setting->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY_LAST)
-         || (   setting->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN
-             && setting->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN_LAST)
-         || setting->enum_idx == MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE
-         || setting->enum_idx == MENU_ENUM_LABEL_VIDEO_MENU_FOLLOWS
+   else if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_MENU_FOLLOWS
          || setting->enum_idx == MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY
          || setting->enum_idx == MENU_ENUM_LABEL_VIDEO_NOTIFICATIONS_WINDOW)
-      video_driver_restore_windows();
+      video_driver_retry_windows();
 #endif
 
    switch (setting->enum_idx)

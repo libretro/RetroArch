@@ -555,6 +555,49 @@ static bool native_sdl_focus(const gfx_ctx_driver_t *ctx, void *data,
    return true;
 }
 
+/* RetroArch has the focus while SDL gives it to one of its windows,
+ * either one. SDL 2's check wants the pointer over one of them too:
+ * nothing is checked where neither holds. */
+static void native_sdl_has_focus(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, SDL_Window *secondary)
+{
+   SDL_Window *primary = native_sdl_main(data);
+   if (!((SDL_GetWindowFlags(primary) | SDL_GetWindowFlags(secondary))
+            & SDL_WINDOW_INPUT_FOCUS))
+   {
+      fprintf(stderr, "native sdl: no window has the focus, "
+            "has_focus not checked\n");
+      return;
+   }
+#ifndef HAVE_SDL3
+   if (SDL_GetMouseFocus() != primary && SDL_GetMouseFocus() != secondary)
+   {
+      fprintf(stderr, "native sdl: the pointer is over neither window, "
+            "has_focus not checked\n");
+      return;
+   }
+#endif
+   fprintf(stderr, "native sdl: has_focus checked, focus on the %s window\n",
+         (SDL_GetWindowFlags(secondary) & SDL_WINDOW_INPUT_FOCUS)
+         ? "screen's" : "main");
+   CHECK(native_window_has_focus(ctx, data, request, true));
+}
+
+/* SDL 2 only: the pointer over the window, where it can be put */
+static void native_sdl_pointer(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, SDL_Window *win)
+{
+#ifndef HAVE_SDL3
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   SDL_WarpMouseInWindow(win, 40, 40);
+   while (SDL_GetMouseFocus() != win && cpu_features_get_time_usec() < deadline)
+   {
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+#endif
+}
+
 /* Back from minimised: a Wayland client cannot ask for it */
 static bool native_sdl_unminimise(SDL_Window *win, unsigned screen)
 {
@@ -812,6 +855,7 @@ static void native_sdl_gl_failures(const gfx_ctx_driver_t *ctx,
          CHECK(!native_sdl_intervals || native_sdl_interval() == 1);
       }
       native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+      CHECK(!native_window_closed_user);
       CHECK(!window->presentable);
       CHECK(!ctx->windows->bind_gl(data, window));
       CHECK(SDL_GL_GetCurrentWindow() == primary);
@@ -982,7 +1026,7 @@ static void native_sdl_monitors_check(const gfx_ctx_driver_t *ctx,
 {
    video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
    SDL_Event event;
-   unsigned i, n, restore;
+   unsigned i, n, restore, retry;
    int x, y;
    video_driver_state_t *video_st = video_state_get_ptr();
    SDL_Window *primary            = native_sdl_main(data);
@@ -1004,6 +1048,7 @@ static void native_sdl_monitors_check(const gfx_ctx_driver_t *ctx,
     * nothing is republished */
    video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    restore = video_st->windows_restore;
+   retry   = video_st->windows_retry;
    memset(&event, 0, sizeof(event));
 #ifdef HAVE_SDL3
    event.type              = SDL_EVENT_DISPLAY_ADDED;
@@ -1018,7 +1063,7 @@ static void native_sdl_monitors_check(const gfx_ctx_driver_t *ctx,
    native_sdl_push(primary, NATIVE_SDL_MOVED, x, y);
    native_window_settle(ctx, data, request, 50000);
    video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
-   CHECK(video_st->windows_restore == restore);
+   CHECK(video_st->windows_retry == retry);
    CHECK(native_sdl_monitors_match(primary, got, n, true));
 
    /* The main window's display follows it */
@@ -1038,7 +1083,8 @@ static void native_sdl_monitors_check(const gfx_ctx_driver_t *ctx,
       native_sdl_on_display(ctx, data, request, to);
       native_sdl_monitors_wait(ctx, data, request, got);
       CHECK(got[to].own);
-      CHECK(video_st->windows_restore != restore);
+      CHECK(video_st->windows_retry != retry);
+      CHECK(video_st->windows_restore == restore);
       SDL_SetWindowPosition(primary, x, y);
       native_sdl_on_display(ctx, data, request, (unsigned)from);
       native_sdl_monitors_wait(ctx, data, request, got);
@@ -1049,7 +1095,8 @@ static void native_sdl_monitors_check(const gfx_ctx_driver_t *ctx,
    {
       native_sdl_monitors_wait(ctx, data, request, got);
       CHECK(got[from ? 0 : 1].own);
-      CHECK(video_st->windows_restore != restore);
+      CHECK(video_st->windows_retry != retry);
+      CHECK(video_st->windows_restore == restore);
       CHECK(native_sdl_kwin_send(ctx, data, request, (unsigned)from));
       native_sdl_monitors_wait(ctx, data, request, got);
       CHECK(got[from].own);
@@ -1439,6 +1486,144 @@ static void native_sdl_saves(const gfx_ctx_driver_t *ctx, void *data,
       native_window_pos = state->common.pos;
 }
 
+#if defined(HAVE_SDL3) || SDL_VERSION_ATLEAST(2, 0, 14)
+/* Whether one of the @n displays has all of @rect */
+static bool native_sdl_on(const SDL_Rect *displays, unsigned n,
+      const SDL_Rect *rect)
+{
+   unsigned i;
+   for (i = 0; i < n; i++)
+      if (     rect->x >= displays[i].x && rect->y >= displays[i].y
+            && rect->x + rect->w <= displays[i].x + displays[i].w
+            && rect->y + rect->h <= displays[i].y + displays[i].h)
+         return true;
+   return false;
+}
+
+/* A display taken away moves no window it leaves on a display, and
+ * saves nothing. On X11 a window it leaves on none is placed again,
+ * unsaved. SDL's displays cannot be taken away here, so the event
+ * comes alone, and the window is put on none first. */
+static void native_sdl_gone(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window,
+      const SDL_Rect *home)
+{
+   static bool done;
+   static const char *changes_seen[] = {
+      "moved as a display went", "moved as a display came",
+      "moved as a display turned", "moved as a display moved",
+      "moved as a display's desktop mode changed",
+      "moved as a display's mode was switched" };
+#ifdef HAVE_SDL3
+   static const Uint32 changes[] = {
+      SDL_EVENT_DISPLAY_REMOVED, SDL_EVENT_DISPLAY_ADDED,
+      SDL_EVENT_DISPLAY_ORIENTATION, SDL_EVENT_DISPLAY_MOVED,
+      SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED,
+      SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED };
+#else
+   static const Uint8 changes[] = {
+      SDL_DISPLAYEVENT_DISCONNECTED, SDL_DISPLAYEVENT_CONNECTED,
+      SDL_DISPLAYEVENT_ORIENTATION
+#if SDL_VERSION_ATLEAST(2, 28, 0)
+      , SDL_DISPLAYEVENT_MOVED
+#endif
+   };
+#endif
+   SDL_Rect displays[8];
+   SDL_Rect before, rect;
+   SDL_Event event;
+   video_window_request_t r;
+   native_sdl_state_t *state;
+   SDL_Window *win;
+   unsigned i, n, saves;
+   int right   = 0;
+   bool placed = !native_sdl_driver("wayland");
+
+   if (done)
+      return;
+   done                  = true;
+   r                     = *request;
+   r.settings.monitor    = 0;
+   r.settings.fullscreen = false;
+   r.settings.pos        = VIDEO_POS_PACK(home->x + 200, home->y + 150);
+   r.settings.dims       = VIDEO_SCALE_PACK(400, 300);
+   r.settings.pos_set    = placed;
+   native_sdl_replace(ctx, data, &r, window);
+   win    = (SDL_Window*)window->surface;
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   saves  = native_window_saves;
+   before = native_sdl_rect(win);
+
+   memset(&event, 0, sizeof(event));
+#ifdef HAVE_SDL3
+   event.type              = SDL_EVENT_DISPLAY_REMOVED;
+   event.display.displayID = SDL_GetDisplayForWindow(win);
+#else
+   event.type              = SDL_DISPLAYEVENT;
+   event.display.event     = SDL_DISPLAYEVENT_DISCONNECTED;
+#endif
+   CHECK(SDL_PushEvent(&event) > 0);
+   native_window_settle(ctx, data, &r, 200000);
+   rect = native_sdl_rect(win);
+   CHECK(     rect.x == before.x && rect.y == before.y
+           && rect.w == before.w && rect.h == before.h);
+   native_sdl_no_save("a display taken away", &saves);
+
+   if (native_sdl_driver("x11") && !native_sdl_managed(win))
+   {
+      n = native_sdl_displays(displays, 8);
+      for (i = 0; i < n; i++)
+         right = MAX(right, displays[i].x + displays[i].w);
+      /* past the settle of the display taken away */
+      native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC);
+      SDL_SetWindowPosition(win, right + 200, before.y);
+      CHECK(native_sdl_wait_save(ctx, data, &r));
+      native_window_settle(ctx, data, &r, 100000);
+      rect  = native_sdl_rect(win);
+      CHECK(!native_sdl_on(displays, n, &rect));
+      saves = native_window_saves;
+      CHECK(SDL_PushEvent(&event) > 0);
+      native_window_settle(ctx, data, &r,
+            VIDEO_WINDOW_SETTLE_USEC + 100000);
+      rect  = native_sdl_rect(win);
+      fprintf(stderr, "native sdl: on no display, then a display taken"
+            " away: at %d,%d %dx%d\n", rect.x, rect.y, rect.w, rect.h);
+      CHECK(native_sdl_on(displays, n, &rect));
+      native_sdl_no_save("placed again", &saves);
+   }
+
+   /* Moved as a display goes, comes or changes, as a window manager
+    * or the system may: nothing, until it has settled again */
+   before = native_sdl_rect(win);
+   for (i = 0; i < ARRAY_SIZE(changes); i++)
+   {
+#ifdef HAVE_SDL3
+      event.type          = changes[i];
+#else
+      event.display.event = changes[i];
+#endif
+      native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+      saves = native_window_saves;
+      CHECK(SDL_PushEvent(&event) > 0);
+      native_window_settle(ctx, data, &r, 20000);
+      SDL_SetWindowPosition(win, before.x + 40 * (i + 1), before.y + 30);
+      native_window_settle(ctx, data, &r, 200000);
+      native_sdl_no_save(changes_seen[i], &saves);
+   }
+   if (native_sdl_driver("x11") && !native_sdl_managed(win))
+   {
+      native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+      SDL_SetWindowPosition(win, before.x + 20, before.y + 20);
+      CHECK(native_sdl_wait_save(ctx, data, &r));
+   }
+
+   native_sdl_replace(ctx, data, request, window);
+   state = (native_sdl_state_t*)window->state;
+   if (state)
+      native_window_pos = state->common.pos;
+}
+#endif
+
 static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       video_window_request_t *request, video_window_native_t *window)
 {
@@ -1541,6 +1726,9 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_sdl_main_get(data, &main_state);
    density = native_sdl_density(secondary);
    native_sdl_saves(ctx, data, request, window, &home, mapped);
+#if defined(HAVE_SDL3) || SDL_VERSION_ATLEAST(2, 0, 14)
+   native_sdl_gone(ctx, data, request, window, &home);
+#endif
    secondary = (SDL_Window*)window->surface;
    CHECK(native_sdl_main_intact(data, &main_state));
 
@@ -1740,9 +1928,16 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
 
    native_sdl_main_resize(ctx, data);
 
-   /* Focus in and out */
+   /* Focus in and out, which keeps it RetroArch's; for SDL 2, with
+    * the pointer over the screen's window */
+   if (mapped)
+      native_sdl_pointer(ctx, data, request, secondary);
    if (mapped && native_sdl_focus(ctx, data, request, window, true))
+   {
+      native_sdl_has_focus(ctx, data, request, secondary);
       CHECK(native_sdl_focus(ctx, data, request, window, false));
+      native_sdl_has_focus(ctx, data, request, secondary);
+   }
 
    /* Close and focus loss outlast a flood the consumer has no room for */
    for (i = 0; i < 128; i++)
@@ -1763,6 +1958,7 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
          break;
       CHECK(one.screen == request->screen);
       CHECK(one.generation == request->generation);
+      CHECK(one.user == (one.kind == VIDEO_WINDOW_EVENT_CLOSE));
       seen |= 1u << one.kind;
    }
    CHECK(i <= 6);
@@ -1795,8 +1991,11 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       native_sdl_push(secondary, NATIVE_SDL_CLOSE, 0, 0);
       seen = native_window_drain(ctx, data, request);
       CHECK(seen & NATIVE_EVENT(CLOSE));
+      CHECK(native_window_closed_user);
       CHECK(seen & NATIVE_EVENT(FOCUS_LOSS));
       CHECK(!window->focused && !window->presentable);
+      if (!(SDL_GetWindowFlags(primary) & SDL_WINDOW_INPUT_FOCUS))
+         CHECK(!ctx->has_focus(data));
       /* ... and the closed window reports nothing more */
       SDL_SetWindowSize(secondary, 200, 200);
       native_sdl_activate(secondary, video_window_title_screen(request),
@@ -1813,6 +2012,7 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
             video_window_title_screen(request), false))
    {
       native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+      CHECK(native_window_closed_user);
       CHECK(SDL_GetWindowFromID(SDL_GetWindowID(secondary)) == secondary);
       CHECK(native_sdl_main_intact(data, &main_state));
       native_sdl_replace(ctx, data, request, window);

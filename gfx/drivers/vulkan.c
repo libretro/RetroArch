@@ -11033,14 +11033,27 @@ static void vulkan_window_retire(vk_t *vk, unsigned w, bool keep)
    vk->windows.held.live &= ~(1u << w);
 }
 
-/* Window @w's screens back in the main window, until the next restore
- * (video_driver_restore_windows()) */
+/* Window @w's screens back in the main window: closed by the @user
+ * until the next restore or an edit of their rows, failed until the
+ * next retry */
 static void vulkan_window_attach(vk_t *vk,
-      const video_windows_frame_t *f, unsigned w)
+      const video_windows_frame_t *f, unsigned w, bool user)
 {
-   if (f)
-      video_driver_attach_windows(f->window_screens[w], f->restore);
-   vk->windows.held.failed |= 1u << w;
+   if (user)
+   {
+      if (f)
+      {
+         video_driver_close_windows(f, f->window_screens[w]);
+         vk->windows.held.closed_edit[w] = f->settings[w].edit;
+      }
+      vk->windows.held.closed |= 1u << w;
+   }
+   else
+   {
+      if (f)
+         video_driver_attach_windows(f->window_screens[w], f->retry);
+      vk->windows.held.failed |= 1u << w;
+   }
    vulkan_window_retire(vk, w, false);
 }
 
@@ -11352,6 +11365,7 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
    unsigned w, i, retire, create;
    video_views_rect_t rects[RETRO_VIDEO_VIEWS_MAX];
    unsigned closed                    = 0;
+   unsigned user_closed               = 0;
    const video_windows_frame_t *f     = video_info->windows;
    const gfx_ctx_window_driver_t *ctx = vk->ctx_driver
       ? vk->ctx_driver->windows : NULL;
@@ -11373,7 +11387,11 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
                   != events[i].generation)
             continue;
          if (events[i].kind == VIDEO_WINDOW_EVENT_CLOSE)
+         {
             closed |= 1u << id;
+            if (events[i].user)
+               user_closed |= 1u << id;
+         }
          else if (     events[i].kind == VIDEO_WINDOW_EVENT_GEOMETRY
                     && events[i].save_dims
                     && (vk->windows.held.made_known & (1u << id)))
@@ -11398,11 +11416,11 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
    if (!f)
       return;
    /* Marked after steps(), which clears the marks when this frame's
-    * restore count moved, so a closed window waits for the next one */
+    * counts moved, so a closed window waits for the next one */
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (     (closed & (1u << w))
             && (f->window_screens[w] || f->window_ui[w]))
-         vulkan_window_attach(vk, f, w);
+         vulkan_window_attach(vk, f, w, (user_closed & (1u << w)) != 0);
    create &= ~closed;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
    {
@@ -11413,7 +11431,7 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
          continue;
       RARCH_WARN("[Vulkan] A screen window can't be made. "
             "What it shows stays in the main window.\n");
-      vulkan_window_attach(vk, f, w);
+      vulkan_window_attach(vk, f, w, false);
    }
 
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
@@ -11463,7 +11481,7 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       {
          RARCH_WARN("[Vulkan] A screen window can't be drawn. "
                "What it shows stays in the main window.\n");
-         vulkan_window_attach(vk, f, w);
+         vulkan_window_attach(vk, f, w, false);
          continue;
       }
       /* No free image is no failure: its last image stays */
@@ -11675,7 +11693,7 @@ static void vulkan_windows_present(vk_t *vk,
          {
             RARCH_WARN("[Vulkan] A screen window's surface is gone. "
                   "What it shows stays in the main window.\n");
-            vulkan_window_attach(vk, f, w);
+            vulkan_window_attach(vk, f, w, false);
          }
          continue;
       }

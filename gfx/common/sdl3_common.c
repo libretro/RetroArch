@@ -112,6 +112,8 @@ static unsigned sdl3_video_monitor_count;
 static bool sdl3_video_monitors_dirty;
 static bool sdl3_video_monitors_own_dirty;
 
+static void sdl3_video_windows_lost(bool removed);
+
 static video_window_common_t *sdl3_video_window_at(unsigned screen)
 {
    return sdl3_video_windows[screen]
@@ -223,7 +225,7 @@ static bool sdl3_video_window_event(const SDL_Event *event, bool *quit)
    switch (event->type)
    {
       case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-         video_window_mark_closed(&state->common);
+         video_window_mark_closed_by_user(&state->common);
          return true;
       /* Mapped. create() shows it, which clears HIDDEN before the
        * first check, so only this event tells. */
@@ -351,8 +353,13 @@ void sdl3_pump_window_events(bool *quit, bool *resize)
       else if (   event.type == SDL_EVENT_DISPLAY_ADDED
                || event.type == SDL_EVENT_DISPLAY_REMOVED
                || event.type == SDL_EVENT_DISPLAY_MOVED
-               || event.type == SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED)
+               || event.type == SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED
+               || event.type == SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED
+               || event.type == SDL_EVENT_DISPLAY_ORIENTATION)
+      {
          sdl3_video_monitors_dirty = true;
+         sdl3_video_windows_lost(event.type == SDL_EVENT_DISPLAY_REMOVED);
+      }
 #endif
    }
 
@@ -819,8 +826,24 @@ void sdl3_ctx_update_title(void *data)
    sdl3_window_update_title(sdl3_ctx_window(data));
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
+static bool sdl3_video_windows_focused(void)
+{
+   unsigned i;
+   for (i = 1; sdl3_video_window_count && i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (     sdl3_video_windows[i] && !sdl3_video_windows[i]->common.closed
+            && sdl3_window_has_focus(sdl3_video_windows[i]->win))
+         return true;
+   return false;
+}
+#endif
+
 bool sdl3_ctx_has_focus(void *data)
 {
+#ifdef HAVE_VIDEO_WINDOWS
+   if (sdl3_video_windows_focused())
+      return true;
+#endif
    return sdl3_window_has_focus(sdl3_ctx_window(data));
 }
 
@@ -993,6 +1016,68 @@ static SDL_DisplayID sdl3_video_window_place(SDL_Window *primary,
    out->w = rect.w;
    out->h = rect.h;
    return display;
+}
+
+/* A display came, went or changed. On X11 a window one that went left
+ * on none is placed again from its request; the window system may move
+ * the others. Neither move is the user's, so neither is saved. */
+static void sdl3_video_windows_lost(bool removed)
+{
+   unsigned i;
+   video_window_rect_t areas[VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned n       = 0;
+   retro_time_t now = cpu_features_get_time_usec();
+   bool x11         = removed
+      && string_is_equal(SDL_GetCurrentVideoDriver(), "x11");
+
+   if (!sdl3_video_window_count)
+      return;
+   if (x11)
+   {
+      int j, count            = 0;
+      SDL_DisplayID *displays = SDL_GetDisplays(&count);
+      for (j = 0; displays && j < count && n < VIDEO_WINDOW_DISPLAYS_MAX;
+            j++)
+      {
+         SDL_Rect bounds;
+         if (!SDL_GetDisplayBounds(displays[j], &bounds))
+            continue;
+         areas[n].x = bounds.x;
+         areas[n].y = bounds.y;
+         areas[n].w = bounds.w;
+         areas[n].h = bounds.h;
+         n++;
+      }
+      SDL_free(displays);
+   }
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      SDL_Rect rect;
+      video_window_rect_t was;
+      float density;
+      sdl3_video_window_t *state = sdl3_video_windows[i];
+      if (!state || state->common.closed)
+         continue;
+      if (     !x11
+            || !sdl3_video_window_normal(state, SDL_GetWindowFlags(state->win))
+            || !SDL_GetWindowPosition(state->win, &was.x, &was.y)
+            || !SDL_GetWindowSize(state->win, &was.w, &was.h)
+            || !video_window_rect_lost(&was, areas, n))
+      {
+         video_window_unsettled(&state->common, now);
+         continue;
+      }
+      density = SDL_GetWindowPixelDensity(state->win);
+      if (density <= 0.0f)
+         density = 1.0f;
+      sdl3_video_window_place(sdl3_ctx_window(state->common.owner),
+            &state->common.request.settings, 0, density, &rect);
+      video_window_placed(&state->common, VIDEO_POS_PACK(rect.x, rect.y),
+            VIDEO_SCALE_PACK((unsigned)(rect.w * density + 0.5f),
+               (unsigned)(rect.h * density + 0.5f)), now);
+      SDL_SetWindowSize(state->win, rect.w, rect.h);
+      SDL_SetWindowPosition(state->win, rect.x, rect.y);
+   }
 }
 
 /* Puts the window where its request has it */

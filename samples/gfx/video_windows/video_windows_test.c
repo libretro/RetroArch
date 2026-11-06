@@ -1682,7 +1682,7 @@ static void test_window_events(void)
    n = video_windows_drain(&a, test_window_at, events, 4);
    CHECK(n == 4);
    CHECK(events[0].kind == VIDEO_WINDOW_EVENT_FOCUS_LOSS);
-   CHECK(events[1].kind == VIDEO_WINDOW_EVENT_CLOSE);
+   CHECK(events[1].kind == VIDEO_WINDOW_EVENT_CLOSE && !events[1].user);
    CHECK(events[2].kind == VIDEO_WINDOW_EVENT_GEOMETRY);
    CHECK(events[3].kind == VIDEO_WINDOW_EVENT_SUSPEND);
    CHECK(events[0].screen == 1 && events[0].generation == 11);
@@ -1699,6 +1699,24 @@ static void test_window_events(void)
             | VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN)
             | VIDEO_WINDOW_EVENT_BIT(CLOSE)));
    CHECK(test_windows[3].pending == VIDEO_WINDOW_EVENT_BIT(CLOSE));
+
+   /* A title-bar close is the user's; a failure before it stays one */
+   video_window_mark_closed_by_user(&test_windows[2]);
+   CHECK(!test_windows[2].user_closed && !test_windows[2].pending);
+   test_windows[1].closed      = false;
+   test_windows[1].pending     = 0;
+   test_natives[1].focused     = true;
+   test_natives[1].presentable = true;
+   video_window_mark_closed_by_user(&test_windows[1]);
+   CHECK(test_windows[1].closed && test_windows[1].user_closed);
+   CHECK(test_windows[1].pending == (VIDEO_WINDOW_EVENT_BIT(CLOSE)
+            | VIDEO_WINDOW_EVENT_BIT(FOCUS_LOSS)));
+   CHECK(!test_natives[1].focused && !test_natives[1].presentable);
+   n = video_windows_drain(&a, test_window_at, events, 4);
+   CHECK(n == 2);
+   CHECK(events[0].kind == VIDEO_WINDOW_EVENT_FOCUS_LOSS && !events[0].user);
+   CHECK(events[1].kind == VIDEO_WINDOW_EVENT_CLOSE && events[1].user);
+   CHECK(events[1].screen == 1 && events[1].generation == 11);
 
    /* Only the owner's windows go */
    test_destroyed = 0;
@@ -1976,25 +1994,50 @@ static void test_windows_steps(void)
    CHECK(retire == 6u && create == 0);
    held.live = 0;
 
-   /* A failure stays out until the restore count moves */
+   /* A failure stays out until the retry count moves */
    frame.window_screens[1] = 2u;
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(create == 2u);
    held.failed |= 2u;
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 0 && create == 0);
-   frame.restore = 6;
+   frame.retry = 6;
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(create == 2u && held.failed == 0);
+   /* A close stays out over a retry, until the restore count moves */
+   held.closed |= 2u;
+   frame.retry = 7;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 0 && held.closed == 2u);
+   frame.restore = 6;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(create == 2u && held.closed == 0);
+   /* ... or its screen's edit count moves, with no frame between that
+    * did not want it; another screen's edit leaves it closed */
+   held.closed         = 2u;
+   held.closed_edit[1] = frame.settings[1].edit;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0 && create == 0 && held.closed == 2u);
+   frame.settings[1].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(create == 2u && held.closed == 0);
+   /* A close in a frame that carries the edit stays */
+   held.closed         = 2u;
+   held.closed_edit[1] = frame.settings[1].edit;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(create == 0 && held.closed == 2u);
    /* ... or the id has no screens */
    held.failed = 2u;
+   held.closed = 2u;
    frame.window_screens[1] = 0;
    video_windows_steps(&held, &frame, &retire, &create);
-   CHECK(held.failed == 0 && create == 0);
+   CHECK(held.failed == 0 && held.closed == 0 && create == 0);
    /* ... or windows go off */
    held.failed = 2u;
+   held.closed = 2u;
    video_windows_steps(&held, NULL, &retire, &create);
-   CHECK(held.failed == 0);
+   CHECK(held.failed == 0 && held.closed == 0);
 
    /* A window a screen, as on a desktop: ids 1 and 2 */
    frame.display           = 0;

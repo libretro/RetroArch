@@ -114,6 +114,8 @@ typedef struct video_window_event
    unsigned save_pos;
    unsigned save_dims;
    bool save_moved;
+   /* CLOSE: from its title bar, not a failure */
+   bool user;
 } video_window_event_t;
 
 /* A context's optional operations on secondary windows, on the thread
@@ -180,15 +182,19 @@ typedef struct video_window_common
    unsigned placed_pos;
    unsigned placed_dims;
    bool closed;
+   bool user_closed;
    bool save_moved;
 } video_window_common_t;
 
 /* A native layer's windows by screen, NULL for none */
 typedef video_window_common_t *(*video_window_at_t)(unsigned screen);
 
-/* Closed by the window manager or by a failure: CLOSE, and FOCUS_LOSS
+/* Closed by a failure or by another client: CLOSE, and FOCUS_LOSS
  * where it had the focus; a gain or resume still waiting goes. */
 void video_window_mark_closed(video_window_common_t *window);
+
+/* Closed from its title bar: CLOSE with user set */
+void video_window_mark_closed_by_user(video_window_common_t *window);
 
 #define VIDEO_WINDOW_SETTLE_USEC 500000
 
@@ -372,6 +378,8 @@ typedef struct video_windows_route
 {
    /* Each screen's display; 0 for an Off one or one past the content */
    unsigned target[RETRO_VIDEO_VIEWS_MAX];
+   /* Each screen's edit count: the edits it was worked out with */
+   unsigned edit[RETRO_VIDEO_VIEWS_MAX];
    /* The menu's display, open or not */
    unsigned menu;
    /* RetroArch's display, the list's own; 0 when nothing is routed */
@@ -466,8 +474,10 @@ typedef struct video_windows_frame
    video_window_settings_t settings[RETRO_VIDEO_VIEWS_MAX];
    video_windows_plan_t plan;
    unsigned core_dims;
-   /* Counts video_driver_restore_windows() */
+   /* Count video_driver_restore_windows(), and the retries
+    * (video_driver_retry_windows() and each restore) */
    unsigned restore;
+   unsigned retry;
    /* Counts the main thread's snapshots; a redraw's is the last drawn */
    unsigned serial;
    /* Where the platform puts the windows: a display's ordinal, 0 where
@@ -564,12 +574,15 @@ void video_windows_host_reset(video_windows_host_t *host);
 void video_driver_window_layout(const video_windows_frame_t *frame,
       unsigned screen, unsigned dims, video_views_layout_t *out);
 
-/* Main thread: screens a close attached go back to their windows, and
- * the frame's restore count asks drivers to place them again. */
+/* App thread: closed and failed screens get their windows again, each
+ * at its saved settings (a restore-windows action, a content change) */
 void video_driver_restore_windows(void);
 
+/* App thread: failed screens get another try (a new display list) */
+void video_driver_retry_windows(void);
+
 /* App thread: screen @screen's window rows changed; its window is made
- * again for them */
+ * again for them, after a close too */
 void video_driver_edit_window(unsigned screen);
 
 /* UI thread, the only publisher: the platform's displays, latest wins,
@@ -596,10 +609,16 @@ void video_driver_window_layout_screens(const video_windows_frame_t *frame,
       unsigned screens, unsigned dims, video_views_layout_t *out);
 
 /* Any thread: the screens in @screens go back to the main window until
- * video_driver_restore_windows(). For a window the renderer could not
- * make or keep, in a frame of @restore (video_windows_frame_t's): one
- * laid out before the last restore is ignored. */
-void video_driver_attach_windows(unsigned screens, unsigned restore);
+ * the next retry. For a window the renderer could not make or keep, in
+ * a frame of @retry (video_windows_frame_t's): one laid out before the
+ * last retry is ignored. */
+void video_driver_attach_windows(unsigned screens, unsigned retry);
+
+/* Any thread: @screens' window was closed by the user in @frame;
+ * attached until the next restore or an edit of their rows, those
+ * since @frame included */
+void video_driver_close_windows(const video_windows_frame_t *frame,
+      unsigned screens);
 
 /* Window @window's layout as drawn on display @display (an ordinal, 0
  * where the native layer placed it), from the thread that runs the
@@ -641,10 +660,15 @@ typedef struct video_windows_held
 {
    /* Ids that have a window */
    unsigned live;
-   /* Ids whose window closed or could not be made or drawn: not made
-    * again while the frame's restore count stays at restore */
+   /* Ids whose window could not be made or drawn, or closed: not made
+    * again while the frame's retry count stays at retry, or for a
+    * user's close its restore count at restore and the id's
+    * settings[].edit at closed_edit[] */
    unsigned failed;
+   unsigned closed;
+   unsigned retry;
    unsigned restore;
+   unsigned closed_edit[RETRO_VIDEO_VIEWS_MAX];
    /* Each live id's video_window_request_t::display */
    unsigned display[RETRO_VIDEO_VIEWS_MAX];
    /* With video_windows_frame_t::monitors: what each id was made for,
@@ -666,10 +690,11 @@ unsigned video_windows_wanted(const video_windows_frame_t *frame);
  * screens, for other settings after an edit, or on a monitor gone or
  * other than its named one;
  * in *@create the ids with screens or UI layers, no keep and no window,
- * those that failed since the restore count last moved left out. An id
- * in both is made again. The caller keeps live, failed and display as
- * it makes and lets go of windows; made is kept here. Pure, any
- * thread. */
+ * those that failed since the retry count last moved, or were closed
+ * since the restore count or their edit count did, left out. An id in
+ * both is made again. The caller keeps live, failed, closed,
+ * closed_edit and display as it makes and lets go of windows; made is
+ * kept here. Pure, any thread. */
 void video_windows_steps(video_windows_held_t *held,
       const video_windows_frame_t *frame, unsigned *retire,
       unsigned *create);

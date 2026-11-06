@@ -1081,6 +1081,9 @@ static unsigned x11_video_window_retired;
 /* By screen, the generation of a window that drew an error, for the
  * context thread */
 static retro_atomic_int_t x11_video_window_failed[RETRO_VIDEO_VIEWS_MAX];
+/* A bit by screen for each open window with the keyboard focus, for
+ * x11_has_focus() */
+static retro_atomic_int_t x11_video_windows_focus;
 /* The handler x11_video_window_error() replaced, as a size_t */
 static retro_atomic_size_t x11_video_window_chain;
 
@@ -1305,6 +1308,17 @@ static void x11_video_windows_check_failed(void)
    }
 }
 
+static void x11_video_windows_update_focus(void)
+{
+   unsigned i;
+   int focus = 0;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (     x11_video_windows[i] && !x11_video_windows[i]->common.closed
+            && x11_video_windows[i]->common.native->focused)
+         focus |= 1 << i;
+   retro_atomic_store_relaxed_int(&x11_video_windows_focus, focus);
+}
+
 /* An event of a secondary window goes to it; false for any other. A
  * window's events are told apart by its handle, so what is still
  * queued for a destroyed one cannot reach its replacement. */
@@ -1339,7 +1353,7 @@ static bool x11_video_window_event(const XEvent *event)
       /* Unlike the main window's, this close does not quit */
       case ClientMessage:
          if ((Atom)event->xclient.data.l[0] == g_x11_quit_atom)
-            video_window_mark_closed(&state->common);
+            video_window_mark_closed_by_user(&state->common);
          break;
       case DestroyNotify:
          video_window_mark_closed(&state->common);
@@ -1705,6 +1719,7 @@ unsigned x11_video_window_poll(void *owner, video_window_event_t *events,
       unsigned capacity)
 {
    x11_video_windows_check_failed();
+   x11_video_windows_update_focus();
 #ifdef HAVE_XCB
    x11_video_windows_states();
    x11_video_windows_judge();
@@ -1755,6 +1770,7 @@ void x11_video_window_destroy(void *owner, video_window_native_t *window)
 
    x11_video_windows[screen] = NULL;
    x11_video_window_count--;
+   x11_video_windows_update_focus();
    XFlush(g_x11_dpy);
    free(state);
    memset(window, 0, sizeof(*window));
@@ -1772,6 +1788,53 @@ static bool x11_video_monitors_published;
 static bool x11_video_monitors_lazy;
 /* The frame waits until the worker has looked for g_x11_win */
 static bool x11_video_monitors_pending;
+/* The monitors' bounds the windows were last checked against */
+static video_window_rect_t x11_video_monitor_areas[VIDEO_WINDOW_DISPLAYS_MAX];
+static unsigned x11_video_monitor_area_count;
+
+/* The monitors changed. A window left on none of @areas, as by a
+ * monitor that went, is placed again from its request; the window
+ * manager may move the others. Neither move is the user's, so neither
+ * is saved. */
+static void x11_video_windows_replace(const video_window_rect_t *areas,
+      unsigned count)
+{
+   unsigned i;
+   bool moved       = false;
+   retro_time_t now = cpu_features_get_time_usec();
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      video_window_rect_t rect;
+      unsigned width, height;
+      int x, y;
+      const video_window_settings_t *settings;
+      x11_video_window_t *state = x11_video_windows[i];
+      if (!state || state->common.closed)
+         continue;
+      rect.x = VIDEO_POS_X(state->common.pos);
+      rect.y = VIDEO_POS_Y(state->common.pos);
+      rect.w = VIDEO_SCALE_W(state->common.native->dims);
+      rect.h = VIDEO_SCALE_H(state->common.native->dims);
+      if (!video_window_rect_lost(&rect, areas, count))
+      {
+         video_window_unsettled(&state->common, now);
+         continue;
+      }
+      settings = &state->common.request.settings;
+      x11_video_window_place(settings, &x, &y, &width, &height);
+      video_window_placed(&state->common, VIDEO_POS_PACK(x, y),
+            VIDEO_SCALE_PACK(width, height), now);
+      /* Window managers keep a fullscreen window where it is */
+      if (settings->fullscreen)
+         x11_video_window_unfullscreen(state->handle);
+      XMoveResizeWindow(g_x11_dpy, state->handle, x, y, width, height);
+      if (settings->fullscreen)
+         x11_set_net_wm_fullscreen(g_x11_dpy, state->handle);
+      moved = true;
+   }
+   if (moved)
+      XFlush(g_x11_dpy);
+}
 
 /* The worker's monitors as the screens' Display setting lists them.
  * Published when they changed, and once per context whatever is up:
@@ -1780,9 +1843,11 @@ static bool x11_video_monitors_pending;
 static void x11_video_monitors_publish(void)
 {
    video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   video_window_rect_t areas[VIDEO_WINDOW_DISPLAYS_MAX];
    const x11_monitors_t *snap;
    unsigned count  = 0;
    bool located    = false;
+   bool changed    = false;
    unsigned serial = x11_monitors_serial();
    if (!x11_video_monitors_on || !serial)
    {
@@ -1804,6 +1869,7 @@ static void x11_video_monitors_publish(void)
       for (i = 0; i < snap->count && count < VIDEO_WINDOW_DISPLAYS_MAX; i++)
       {
          const x11_monitor_t *mon        = &snap->mon[i];
+         video_window_rect_t *area       = &areas[count];
          video_window_display_t *display = &list[count++];
          memset(display, 0, sizeof(*display));
          display->ordinal  = mon->ordinal;
@@ -1818,11 +1884,25 @@ static void x11_video_monitors_publish(void)
          strlcpy(display->name, mon->name, sizeof(display->name));
          if (VIDEO_SCALE_FITS(mon->w, mon->h))
             display->dims  = VIDEO_SCALE_PACK(mon->w, mon->h);
+         area->x           = mon->x;
+         area->y           = mon->y;
+         area->w           = (int)mon->w;
+         area->h           = (int)mon->h;
       }
       serial  = snap->serial;
       located = g_x11_win && snap->win == (unsigned long)g_x11_win;
+      changed = count != x11_video_monitor_area_count
+         || memcmp(areas, x11_video_monitor_areas, count * sizeof(*areas));
    }
+   /* Before placing, which reads a snapshot of its own */
    x11_monitors_put();
+   if (changed)
+   {
+      memcpy(x11_video_monitor_areas, areas, count * sizeof(*areas));
+      x11_video_monitor_area_count = count;
+      if (x11_video_window_count)
+         x11_video_windows_replace(areas, count);
+   }
    x11_video_monitors_serial = serial;
    if (     x11_video_monitors_published
          && !(x11_video_monitors_pending && located)
@@ -2061,6 +2141,7 @@ bool x11_alive(void *data)
 
 #ifdef HAVE_VIDEO_WINDOWS
    x11_video_windows_check_failed();
+   x11_video_windows_update_focus();
 #ifdef HAVE_XCB
    if (x11_video_window_count)
       x11_video_windows_translated();
@@ -2154,6 +2235,9 @@ bool x11_has_focus(void *data)
 {
    return (   retro_atomic_load_relaxed_int(&g_x11_focused)
            && g_x11_mapped)
+#ifdef HAVE_VIDEO_WINDOWS
+      || retro_atomic_load_relaxed_int(&x11_video_windows_focus)
+#endif
       || g_x11_true_full;
 }
 

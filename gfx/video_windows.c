@@ -679,6 +679,15 @@ void video_window_mark_closed(video_window_common_t *window)
    native->presentable = false;
 }
 
+void video_window_mark_closed_by_user(video_window_common_t *window)
+{
+   /* A failure first stays one */
+   if (window->closed)
+      return;
+   window->user_closed = true;
+   video_window_mark_closed(window);
+}
+
 void video_window_placed(video_window_common_t *window, unsigned pos,
       unsigned dims, retro_time_t now)
 {
@@ -766,6 +775,8 @@ unsigned video_windows_drain(void *owner, video_window_at_t at,
             event->save_pos   = 0;
             event->save_dims  = 0;
             event->save_moved = false;
+            event->user       = order[j] == VIDEO_WINDOW_EVENT_CLOSE
+               && window->user_closed;
             if (order[j] == VIDEO_WINDOW_EVENT_GEOMETRY)
             {
                event->save_pos    = window->save_pos;
@@ -894,9 +905,14 @@ void video_windows_steps(video_windows_held_t *held,
    *retire         = 0;
    if (frame)
    {
-      /* A restore tries the failed ones again */
-      if (frame->restore != held->restore)
+      if (frame->retry != held->retry)
          held->failed = 0;
+      if (frame->restore != held->restore)
+         held->closed = 0;
+      for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+         if (held->closed_edit[w] != frame->settings[w].edit)
+            held->closed &= ~(1u << w);
+      held->retry   = frame->retry;
       held->restore = frame->restore;
       wanted        = video_windows_wanted(frame);
       kept          = frame->window_keep;
@@ -920,11 +936,12 @@ void video_windows_steps(video_windows_held_t *held,
       }
    }
    held->failed &= wanted;
+   held->closed &= wanted;
    *retire      |= held->live & ~wanted;
    /* A keep only holds a window that is up: one made for it is never
     * drawn */
    *create       = wanted & ~kept & ~(held->live & ~*retire)
-      & ~held->failed;
+      & ~held->failed & ~held->closed;
    held->made_known &= ~*retire;
    if (frame && frame->monitors)
       for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)

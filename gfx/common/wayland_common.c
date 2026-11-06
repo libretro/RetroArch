@@ -1969,11 +1969,31 @@ void wl_video_windows_rescale(void)
          wl_video_window_rescale(wl_video_windows[i]);
 }
 
+void wl_video_windows_unsettled(void)
+{
+   unsigned i;
+   retro_time_t now = cpu_features_get_time_usec();
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (wl_video_windows[i] && !wl_video_windows[i]->common.closed)
+         video_window_unsettled(&wl_video_windows[i]->common, now);
+}
+
+/* A compositor may resize a window for the scale of the output it
+ * crossed onto */
+static void wl_video_window_crossed(wl_video_window_t *state,
+      const output_info_t *was)
+{
+   const output_info_t *on = wl_video_window_on(state);
+   if (state->mapped && was && on && was->scale != on->scale)
+      video_window_unsettled(&state->common, cpu_features_get_time_usec());
+}
+
 static void wl_video_window_surface_enter(void *data,
       struct wl_surface *surface, struct wl_output *output)
 {
    unsigned i;
    wl_video_window_t *state = (wl_video_window_t*)data;
+   output_info_t *was       = wl_video_window_on(state);
    /* Shown: the compositor may still size it for a while */
    if (!state->mapped && state->common.native->configured)
    {
@@ -1994,6 +2014,7 @@ static void wl_video_window_surface_enter(void *data,
          break;
       }
    }
+   wl_video_window_crossed(state, was);
    wl_video_window_rescale(state);
 }
 
@@ -2002,9 +2023,11 @@ static void wl_video_window_surface_leave(void *data,
 {
    unsigned i;
    wl_video_window_t *state = (wl_video_window_t*)data;
+   output_info_t *was       = wl_video_window_on(state);
    for (i = 0; output && i < WL_VIDEO_WINDOW_OUTPUTS; i++)
       if (state->outputs[i] == output)
          state->outputs[i] = NULL;
+   wl_video_window_crossed(state, was);
    wl_video_window_rescale(state);
 }
 
@@ -2138,7 +2161,7 @@ static void wl_video_window_toplevel_configure(void *data,
 static void wl_video_window_toplevel_close(void *data,
       struct xdg_toplevel *toplevel)
 {
-   video_window_mark_closed(&((wl_video_window_t*)data)->common);
+   video_window_mark_closed_by_user(&((wl_video_window_t*)data)->common);
 }
 
 static void wl_video_window_surface_configure(void *data,
@@ -2206,7 +2229,7 @@ static void wl_video_window_libdecor_configure(struct libdecor_frame *frame,
 static void wl_video_window_libdecor_close(struct libdecor_frame *frame,
       void *data)
 {
-   video_window_mark_closed(&((wl_video_window_t*)data)->common);
+   video_window_mark_closed_by_user(&((wl_video_window_t*)data)->common);
 }
 
 static const struct libdecor_frame_interface

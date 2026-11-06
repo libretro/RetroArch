@@ -65,6 +65,7 @@ static const gfx_ctx_driver_t *native_w32_d3d_init(void **data)
    native_w32_d3d.ident          = "d3d";
    native_w32_d3d.set_video_mode = native_w32_d3d_set_video_mode;
    native_w32_d3d.check_window   = win32_check_window;
+   native_w32_d3d.has_focus      = win32_has_focus;
    native_w32_d3d.destroy        = native_w32_d3d_destroy;
    native_w32_d3d.windows        = &win32_video_window_driver;
    *data                         = &native_w32_d3d_owner;
@@ -269,7 +270,7 @@ static void native_w32_monitors_check(const gfx_ctx_driver_t *ctx,
    video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
    video_window_display_t nosuch;
    RECT was;
-   unsigned i, n, restore;
+   unsigned i, n, restore, retry;
    video_driver_state_t *video_st = video_state_get_ptr();
    unsigned want = native_w32_monitors(monitors, VIDEO_WINDOW_DISPLAYS_MAX);
    int from      = -1;
@@ -298,6 +299,7 @@ static void native_w32_monitors_check(const gfx_ctx_driver_t *ctx,
     * nothing: nothing is republished */
    video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    restore = video_st->windows_restore;
+   retry   = video_st->windows_retry;
    GetWindowRect(main_window.hwnd, &was);
    SetWindowPos(main_window.hwnd, NULL, was.left + 8, was.top + 8, 0, 0,
          SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
@@ -310,7 +312,7 @@ static void native_w32_monitors_check(const gfx_ctx_driver_t *ctx,
          SWP_NOZORDER | SWP_NOACTIVATE);
    native_window_settle(ctx, data, request, 50000);
    video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
-   CHECK(video_st->windows_restore == restore);
+   CHECK(video_st->windows_retry == retry);
 
    /* The main window's monitor follows it */
    if (n >= 2 && from >= 0)
@@ -321,7 +323,8 @@ static void native_w32_monitors_check(const gfx_ctx_driver_t *ctx,
             SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
       native_w32_monitors_wait(ctx, data, request, monitors, want, got);
       CHECK(got[to].own);
-      CHECK(video_st->windows_restore != restore);
+      CHECK(video_st->windows_retry != retry);
+      CHECK(video_st->windows_restore == restore);
       SetWindowPos(main_window.hwnd, NULL, was.left, was.top, 0, 0,
             SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
       native_w32_monitors_wait(ctx, data, request, monitors, want, got);
@@ -457,10 +460,10 @@ static void native_w32_titles(HWND primary, HWND win, unsigned screen)
 /* The secondaries' class, as the first window had it */
 static char native_w32_class[64];
 
-/* The restore count when a main window was kept: taking it back must
+/* The retry count when a main window was kept: taking it back must
  * publish nothing */
 static bool native_w32_kept;
-static unsigned native_w32_kept_restore;
+static unsigned native_w32_kept_retry;
 
 /* Once the context is gone: no window left, and no class either. A
  * main window kept for the next driver keeps its monitors up. */
@@ -479,7 +482,7 @@ static void native_w32_torn_down(unsigned screen)
    {
       CHECK(n == native_w32_monitors(monitors, VIDEO_WINDOW_DISPLAYS_MAX));
       native_w32_kept         = true;
-      native_w32_kept_restore = video_state_get_ptr()->windows_restore;
+      native_w32_kept_retry   = video_state_get_ptr()->windows_retry;
    }
    else
       CHECK(n == 0);
@@ -545,6 +548,7 @@ static void native_wgl_failures(const gfx_ctx_driver_t *ctx, void *data,
       state->hdc                  = good;
       CHECK(!i || !get_interval || get_interval() == 1);
       native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+      CHECK(!native_window_closed_user);
       CHECK(!window->presentable);
       CHECK(!ctx->windows->bind_gl(data, window));
       CHECK(wglGetCurrentDC() == primary);
@@ -866,6 +870,25 @@ static void native_w32_saves(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(window->dims == saved_dims);
    CHECK(native_window_saves == saves);
 
+   /* Moved as the displays change, as Windows moves it: nothing, until
+    * it has settled again */
+   GetWindowRect(main_window.hwnd, &rect);
+   SendMessage(main_window.hwnd, WM_DISPLAYCHANGE, 32,
+         MAKELPARAM(1920, 1080));
+   SetWindowPos(main_window.hwnd, NULL, rect.left, rect.top,
+         rect.right - rect.left, rect.bottom - rect.top,
+         SWP_NOZORDER | SWP_NOACTIVATE);
+   native_w32_move(win, x + 280, y + 180, VIDEO_SCALE_W(saved_dims),
+         VIDEO_SCALE_H(saved_dims));
+   native_window_settle(ctx, data, &r, 200000);
+   CHECK(native_window_saves == saves);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC);
+   native_w32_move(win, x + 300, y + 200, VIDEO_SCALE_W(saved_dims),
+         VIDEO_SCALE_H(saved_dims));
+   native_window_settle(ctx, data, &r, 200000);
+   CHECK(native_window_saves == saves + 1);
+   CHECK(native_window_saved.save_pos == VIDEO_POS_PACK(x + 300, y + 200));
+
    native_w32_remake(ctx, data, request, window);
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
 }
@@ -881,6 +904,63 @@ static void native_w32_focus(const gfx_ctx_driver_t *ctx, void *data,
          on ? NATIVE_EVENT(FOCUS_GAIN) : NATIVE_EVENT(FOCUS_LOSS), 0);
    CHECK(window->focused == on);
    CHECK(!(seen & NATIVE_EVENT(CLOSE)));
+}
+
+/* Brings the window to the foreground; whether it got there */
+static bool native_w32_foreground(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, HWND hwnd)
+{
+   SetForegroundWindow(hwnd);
+   native_window_settle(ctx, data, request, 20000);
+   return GetForegroundWindow() == hwnd;
+}
+
+/* Whether the mouse is held anywhere short of the whole desktop */
+static bool native_w32_clipped(void)
+{
+   RECT clip;
+   RECT all;
+   all.left   = GetSystemMetrics(SM_XVIRTUALSCREEN);
+   all.top    = GetSystemMetrics(SM_YVIRTUALSCREEN);
+   all.right  = all.left + GetSystemMetrics(SM_CXVIRTUALSCREEN);
+   all.bottom = all.top  + GetSystemMetrics(SM_CYVIRTUALSCREEN);
+   return GetClipCursor(&clip) && !EqualRect(&clip, &all);
+}
+
+/* A grabbed mouse stays clipped while the focus moves between the main
+ * window and the screen's window, and is let go when it goes to
+ * another window, of the same thread too */
+static void native_w32_clip(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, HWND secondary)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   uint16_t flags                 = input_st->flags;
+   HWND foreign = CreateWindowExA(0, "STATIC", "foreign",
+         WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 160, 120, NULL, NULL,
+         GetModuleHandle(NULL), NULL);
+   CHECK(foreign != NULL);
+   CHECK(native_w32_foreground(ctx, data, request, main_window.hwnd));
+   input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
+   win32_clip_window(true);
+   CHECK(native_w32_clipped());
+   CHECK(native_w32_foreground(ctx, data, request, secondary));
+   CHECK(native_w32_clipped());
+   CHECK(native_w32_foreground(ctx, data, request, main_window.hwnd));
+   CHECK(native_w32_clipped());
+   CHECK(native_w32_foreground(ctx, data, request, secondary));
+   /* The main window's focus gain clips again, so this side alone */
+   SendMessage(secondary, WM_KILLFOCUS, (WPARAM)main_window.hwnd, 0);
+   CHECK(native_w32_clipped());
+   CHECK(native_w32_foreground(ctx, data, request, foreign));
+   CHECK(!native_w32_clipped());
+   CHECK(native_w32_foreground(ctx, data, request, main_window.hwnd));
+   CHECK(native_w32_clipped());
+   CHECK(native_w32_foreground(ctx, data, request, foreign));
+   CHECK(!native_w32_clipped());
+   ClipCursor(NULL);
+   input_st->flags = flags;
+   DestroyWindow(foreign);
+   CHECK(native_w32_foreground(ctx, data, request, main_window.hwnd));
 }
 
 static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
@@ -928,13 +1008,13 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    if (native_w32_kept && win32_window_was_taken())
    {
       video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
-      unsigned restore;
+      unsigned retry;
       video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
-      restore = video_state_get_ptr()->windows_restore;
+      retry = video_state_get_ptr()->windows_retry;
       fprintf(stderr, "native win32: main window taken back,"
-            " %u restore(s) since it was kept\n",
-            restore - native_w32_kept_restore);
-      CHECK(restore == native_w32_kept_restore);
+            " %u retries since it was kept\n",
+            retry - native_w32_kept_retry);
+      CHECK(retry == native_w32_kept_retry);
    }
    native_w32_kept = false;
    CHECK(window->dims == request->settings.dims);
@@ -1097,7 +1177,26 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_window_settle(ctx, data, request, 20000);
    CHECK(!window->focused);
    native_w32_focus(ctx, data, request, window, true);
+   /* Either window in front is RetroArch's focus; another one is not */
+   CHECK(native_w32_foreground(ctx, data, request, secondary));
+   CHECK(native_window_has_focus(ctx, data, request, true));
    native_w32_focus(ctx, data, request, window, false);
+   CHECK(native_w32_foreground(ctx, data, request, main_window.hwnd));
+   CHECK(native_window_has_focus(ctx, data, request, true));
+   {
+      HWND foreign = CreateWindowExA(0, "STATIC", "foreign",
+            WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 160, 120, NULL, NULL,
+            GetModuleHandle(NULL), NULL);
+      CHECK(foreign != NULL);
+      CHECK(native_w32_foreground(ctx, data, request, foreign));
+      CHECK(native_window_has_focus(ctx, data, request, false));
+      DestroyWindow(foreign);
+   }
+   CHECK(native_w32_foreground(ctx, data, request, main_window.hwnd));
+   native_w32_clip(ctx, data, request, secondary);
+   SetFocus(main_window.hwnd);
+   native_window_settle(ctx, data, request, 20000);
+   CHECK(!window->focused);
 
    /* Close and focus loss outlast a flood the consumer has no room for */
    for (i = 0; i < 128; i++)
@@ -1119,6 +1218,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
          break;
       CHECK(one.screen == request->screen);
       CHECK(one.generation == request->generation);
+      CHECK(one.user == (one.kind == VIDEO_WINDOW_EVENT_CLOSE));
       seen |= 1u << one.kind;
    }
    CHECK(i <= 6);
@@ -1156,6 +1256,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    PostMessage(secondary, WM_CLOSE, 0, 0);
    seen = native_window_drain(ctx, data, request);
    CHECK(seen & NATIVE_EVENT(CLOSE));
+   CHECK(native_window_closed_user);
    CHECK(seen & NATIVE_EVENT(FOCUS_LOSS));
    CHECK(!window->focused && !window->presentable);
    /* ... and the closed window reports nothing more */
@@ -1173,6 +1274,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    /* The system menu's close, which Alt+F4 sends too */
    PostMessage(secondary, WM_SYSCOMMAND, SC_CLOSE, 0);
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+   CHECK(native_window_closed_user);
    CHECK(IsWindow(secondary));
    CHECK(native_w32_main_intact(&main_state));
    ctx->windows->destroy(data, window);
@@ -1188,6 +1290,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
          monitors[0].work.top + 80);
    ctx->windows->update(data, window, request);
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+   CHECK(!native_window_closed_user);
    CHECK(!window->presentable);
    CHECK(ctx->windows->bind_gl == NULL
          || !ctx->windows->bind_gl(data, window));

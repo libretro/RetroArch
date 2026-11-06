@@ -939,6 +939,7 @@ static void wl_output_handle_done(void *data, struct wl_output *output)
    output_info_t *oi = (output_info_t*)data;
    if (oi->wl)
       oi->wl->video_monitors_dirty = true;
+   wl_video_windows_unsettled();
    /* Its scale may have changed under a secondary screen's window */
    wl_video_windows_rescale();
 #endif
@@ -1152,6 +1153,7 @@ static void wl_registry_handle_global_remove(void *data,
 #ifdef HAVE_VIDEO_WINDOWS
          free(od->output->name);
          wl->video_monitors_dirty = true;
+         wl_video_windows_unsettled();
 #endif
          free(od->output);
          free(od);

@@ -560,6 +560,7 @@ static void native_wl_close_focused(const gfx_ctx_driver_t *ctx,
       retro_sleep(2);
    }
    CHECK(seen & NATIVE_EVENT(CLOSE));
+   CHECK(native_window_closed_user);
    CHECK(seen & NATIVE_EVENT(FOCUS_LOSS));
    CHECK(!window->focused && !window->presentable);
    /* Nor does a closed window report a new scale */
@@ -625,7 +626,7 @@ static void native_wl_monitors(const gfx_ctx_driver_t *ctx, void *data,
    video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
    char make[64], model[64], cut[VIDEO_WINDOW_DISPLAY_MODEL_SIZE + 1];
    char published[VIDEO_WINDOW_DISPLAY_MODEL_SIZE];
-   unsigned i, restore, dims;
+   unsigned i, restore, retry, dims;
    gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
    video_driver_state_t *video_st = video_state_get_ptr();
    output_info_t *first           = native_wl_output(wl, 1);
@@ -657,10 +658,11 @@ static void native_wl_monitors(const gfx_ctx_driver_t *ctx, void *data,
 
    /* An output sent again unchanged publishes nothing */
    restore = video_st->windows_restore;
+   retry   = video_st->windows_retry;
    output_listener.done(first, first->output);
    native_window_settle(ctx, data, request, 50000);
    video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
-   CHECK(video_st->windows_restore == restore);
+   CHECK(video_st->windows_retry == retry);
 
    /* A new mode does, and so does going back */
    dims = first->dims;
@@ -670,7 +672,8 @@ static void native_wl_monitors(const gfx_ctx_driver_t *ctx, void *data,
    native_wl_monitors_wait(ctx, data, request, got);
    CHECK(got[0].dims == VIDEO_SCALE_PACK(VIDEO_SCALE_W(dims) + 16,
             VIDEO_SCALE_H(dims)));
-   CHECK(video_st->windows_restore != restore);
+   CHECK(video_st->windows_retry != retry);
+   CHECK(video_st->windows_restore == restore);
    output_listener.mode(first, first->output, WL_OUTPUT_MODE_CURRENT,
          VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), first->refresh_rate);
    output_listener.done(first, first->output);
@@ -804,8 +807,11 @@ static void native_wl_saves(const gfx_ctx_driver_t *ctx, void *data,
    video_window_request_t r;
    video_window_event_t saved;
    wl_video_window_t *state;
+   output_info_t *oi;
+   retro_time_t changed;
    unsigned i;
-   unsigned saves = native_window_saves;
+   unsigned saves             = native_window_saves;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    if (done)
       return;
@@ -912,6 +918,40 @@ static void native_wl_saves(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(window->dims == native_wl_buffer(state,
             VIDEO_SCALE_W(saved.save_dims), VIDEO_SCALE_H(saved.save_dims)));
    native_wl_no_save("remade", &saves);
+
+   /* Resized as an output changes, as a compositor may: nothing, until
+    * it has settled again. The change comes as libwayland would hand
+    * it; KWin's resize must land inside the settle to tell. */
+   changed = cpu_features_get_time_usec();
+   oi      = native_wl_output(wl, 1);
+   ((const struct wl_output_listener*)wl_proxy_get_listener(
+         (struct wl_proxy*)oi->output))->done(oi, oi->output);
+   native_wl_kwin(video_window_title_screen(&r),
+         "var g = w.frameGeometry, c = w.clientGeometry;"
+         " w.frameGeometry = {x: g.x, y: g.y,"
+         " width: 380 + g.width - c.width,"
+         " height: 290 + g.height - c.height};");
+   while (     state->dims != VIDEO_SCALE_PACK(380, 290)
+         && cpu_features_get_time_usec() < changed
+            + VIDEO_WINDOW_SETTLE_USEC)
+   {
+      native_window_drain(ctx, data, &r);
+      retro_sleep(2);
+   }
+   if (state->dims == VIDEO_SCALE_PACK(380, 290))
+      native_wl_no_save("resized as an output changed", &saves);
+   else
+      fprintf(stderr, "native wayland: output change not checked,"
+            " KWin's resize came after the settle\n");
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   saves = native_window_saves;
+   native_wl_kwin(video_window_title_screen(&r),
+         "var g = w.frameGeometry, c = w.clientGeometry;"
+         " w.frameGeometry = {x: g.x, y: g.y,"
+         " width: 370 + g.width - c.width,"
+         " height: 280 + g.height - c.height};");
+   CHECK(native_wl_wait_save(ctx, data, &r));
+   CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(370, 280));
 
    native_wl_replace(ctx, data, request, window);
 }
@@ -1192,6 +1232,7 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_window_settle(ctx, data, request, 100000);
    native_wl_close(wl, state);
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+   CHECK(native_window_closed_user);
    CHECK(!window->presentable);
    CHECK(native_wl_main_intact(wl, &main_window));
    ctx->windows->destroy(data, window);

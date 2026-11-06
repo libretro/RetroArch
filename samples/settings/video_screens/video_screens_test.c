@@ -1693,13 +1693,29 @@ static void test_window_layout(void)
    CHECK(layout.num_placements == 0);
 }
 
+static void window_test_display(video_window_display_t *d,
+      unsigned ordinal, unsigned connection, bool own, const char *name)
+{
+   memset(d, 0, sizeof(*d));
+   d->ordinal    = ordinal;
+   d->connection = connection;
+   d->own        = own;
+   d->valid      = true;
+   d->on         = true;
+   d->physical   = true;
+   /* Listed first, as Android lists its default display */
+   d->is_default = ordinal == 1;
+   strlcpy(d->name, name, sizeof(d->name));
+}
+
 /* The frame's snapshot of the screens' windows, and the main window's
  * layout without the screens that have windows of their own */
 static void test_window_frame(void)
 {
+   video_window_display_t monitors[2];
    video_driver_state_t *video_st = video_state_get_ptr();
    settings_t *settings           = config_get_ptr();
-   unsigned restore;
+   unsigned restore, retry;
    window_test_begin();
    window_test_flags = 1u << GFX_CTX_FLAGS_VIDEO_VIEWS;
    window_test_run();
@@ -1751,17 +1767,41 @@ static void test_window_frame(void)
    settings->uints.video_stereo_mode           = VIDEO_STEREO_MODE_2D;
    settings->bools.video_stereo_swap_eyes      = false;
 
-   /* A close attaches a screen until the windows are restored */
+   /* A close attaches a screen over a new list, until the windows are
+    * restored */
    settings->arrays.video_screen_display[1][0] = '\0';
-   video_st->windows_forced_attached           = 2u;
+   video_st->windows_closed_attached           = 2u;
    window_test_run();
    CHECK(window_test_placements() == 2);
    CHECK(window_test_seen.plan.main_mask == 3u);
    CHECK(window_test_seen.restore == restore);
+   retry = window_test_seen.retry;
+   window_test_display(&monitors[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "DP-1");
+   window_test_display(&monitors[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "HDMI-A-1");
+   monitors[0].monitor = monitors[1].monitor = true;
+   video_driver_publish_window_displays(monitors, 2);
+   window_test_run();
+   CHECK(window_test_seen.monitors);
+   CHECK(window_test_seen.retry == retry + 1);
+   CHECK(window_test_seen.restore == restore);
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   CHECK(video_st->windows_closed_attached == 2u);
    video_driver_restore_windows();
-   CHECK(video_st->windows_forced_attached == 0u);
+   CHECK(video_st->windows_closed_attached == 0u);
    window_test_run();
    CHECK(window_test_placements() == 1);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.restore == restore + 1);
+   CHECK(window_test_seen.retry == retry + 2);
+   /* A failure only until the next list */
+   video_st->windows_forced_attached = 2u;
+   window_test_run();
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   video_driver_publish_window_displays(NULL, 0);
+   window_test_run();
+   CHECK(video_st->windows_forced_attached == 0u);
    CHECK(window_test_seen.plan.separate_mask == 2u);
    CHECK(window_test_seen.restore == restore + 1);
 
@@ -1769,22 +1809,14 @@ static void test_window_frame(void)
    window_test_run();
    CHECK(window_test_placements() == 2);
    CHECK(window_test_handed == NULL);
+   /* Content unloads (video_driver_clear_views()): none stay closed */
+   video_st->windows_forced_attached = 2u;
+   video_st->windows_closed_attached = 2u;
+   restore                           = video_st->windows_restore;
    window_test_end();
-}
-
-static void window_test_display(video_window_display_t *d,
-      unsigned ordinal, unsigned connection, bool own, const char *name)
-{
-   memset(d, 0, sizeof(*d));
-   d->ordinal    = ordinal;
-   d->connection = connection;
-   d->own        = own;
-   d->valid      = true;
-   d->on         = true;
-   d->physical   = true;
-   /* Listed first, as Android lists its default display */
-   d->is_default = ordinal == 1;
-   strlcpy(d->name, name, sizeof(d->name));
+   CHECK(video_st->windows_forced_attached == 0u);
+   CHECK(video_st->windows_closed_attached == 0u);
+   CHECK(video_st->windows_restore == restore + 1);
 }
 
 /* Desktop monitors: each screen's window where its Display puts it,
@@ -1902,7 +1934,8 @@ static void test_window_displays(void)
    video_window_display_t many[VIDEO_WINDOW_DISPLAYS_MAX + 1];
    video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX + 1];
    video_views_layout_t layout;
-   unsigned restore;
+   video_windows_frame_t before;
+   unsigned restore, retry;
    unsigned i;
    /* The Thor: its own panel, then Screen-2 */
    window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
@@ -1918,14 +1951,17 @@ static void test_window_displays(void)
    CHECK(window_test_seen.display == 0);
    CHECK(window_test_seen.window_screens[1] == 2u);
    restore = window_test_seen.restore;
+   retry   = window_test_seen.retry;
 
+   /* A new list retries, and restores nothing */
    video_driver_publish_window_displays(displays, 2);
    window_test_run();
    CHECK(window_test_seen.display == 2);
    CHECK(window_test_seen.plan.separate_mask == 2u);
    CHECK(window_test_seen.window_screens[0] == 0u);
    CHECK(window_test_seen.window_screens[1] == 2u);
-   CHECK(window_test_seen.restore == restore + 1);
+   CHECK(window_test_seen.retry == retry + 1);
+   CHECK(window_test_seen.restore == restore);
    CHECK(window_test_placements() == 1);
    video_driver_window_layout_screens(&window_test_seen, 2u,
          VIDEO_SCALE_PACK(400, 200), &layout);
@@ -1943,17 +1979,71 @@ static void test_window_displays(void)
    CHECK(got[1].ordinal == 0);
    /* A list is taken once */
    window_test_run();
-   CHECK(window_test_seen.restore == restore + 1);
+   CHECK(window_test_seen.retry == retry + 1);
 
-   /* A failure from a frame laid out before the last restore is not
-    * held against the window the restore asked for */
-   video_driver_attach_windows(2u, window_test_seen.restore - 1);
+   /* A failure from a frame laid out before the last retry is not
+    * held against the window the retry asked for */
+   video_driver_attach_windows(2u, window_test_seen.retry - 1);
    window_test_run();
    CHECK(window_test_seen.plan.separate_mask == 2u);
    CHECK(window_test_seen.window_screens[1] == 2u);
 
+   /* ... nor a close from before the last restore */
+   before         = window_test_seen;
+   before.restore = window_test_seen.restore - 1;
+   video_driver_close_windows(&before, 2u);
+   window_test_run();
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(video_state_get_ptr()->windows_closed_attached == 0u);
+
+   /* Closed from its title bar: attached over a new list, until a
+    * restore */
+   video_driver_close_windows(&window_test_seen, 2u);
+   window_test_run();
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   CHECK(window_test_seen.window_screens[1] == 0u);
+   CHECK(video_state_get_ptr()->windows_closed_attached == 2u);
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   video_driver_restore_windows();
+   window_test_run();
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.window_screens[1] == 2u);
+
+   /* ... or an edit of its rows: a close from a frame before the edit,
+    * sent before it or after, is dropped */
+   before = window_test_seen;
+   video_driver_close_windows(&before, 2u);
+   video_driver_edit_window(1);
+   window_test_run();
+   CHECK(video_state_get_ptr()->windows_closed_attached == 0u);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   before = window_test_seen;
+   video_driver_edit_window(1);
+   video_driver_close_windows(&before, 2u);
+   window_test_run();
+   CHECK(video_state_get_ptr()->windows_closed_attached == 0u);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   /* One from a frame that carries the edit holds */
+   video_driver_close_windows(&window_test_seen, 2u);
+   window_test_run();
+   CHECK(video_state_get_ptr()->windows_closed_attached == 2u);
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   /* An edit of Game Screen 1 leaves Game Screen 2's close */
+   video_driver_restore_windows();
+   window_test_run();
+   video_driver_close_windows(&window_test_seen, 3u);
+   video_driver_edit_window(0);
+   window_test_run();
+   CHECK(video_state_get_ptr()->windows_closed_attached == 2u);
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   video_driver_restore_windows();
+   window_test_run();
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+
    /* The renderer could not make it: attached until the next list */
-   video_driver_attach_windows(2u, window_test_seen.restore);
+   video_driver_attach_windows(2u, window_test_seen.retry);
    window_test_run();
    CHECK(window_test_seen.plan.main_mask == 3u);
    CHECK(window_test_seen.window_screens[1] == 0u);
@@ -3608,6 +3698,72 @@ static void test_window_pointer_mapping(void)
    CHECK(!video_driver_translate_window_point(1, gen, 400, 240, true, &pos));
 }
 
+/* Device @i's left button and motion, and the touches down in a list */
+#define WINDOW_TEST_LEFT(i) input_driver_device_state(i, RETRO_DEVICE_MOUSE, \
+      0, RETRO_DEVICE_ID_MOUSE_LEFT)
+#define WINDOW_TEST_MOTION(i) input_driver_device_state(i, \
+      RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X)
+#define WINDOW_TEST_TOUCHES(device) input_driver_device_state(0, device, \
+      0, RETRO_DEVICE_ID_POINTER_COUNT)
+
+/* Input from a screen's window that goes is let go; the main window's
+ * is kept */
+static void test_window_pointer_release(void)
+{
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_pointer_frame_t frames[2];
+   input_video_window_t windows[2];
+   uint32_t touches[2];
+   unsigned off;
+
+   memset(frames, 0, sizeof(frames));
+   memset(windows, 0, sizeof(windows));
+   frames[0].pos         = VIDEO_POS_PACK(10, 10);
+   frames[0].rel         = VIDEO_POS_PACK(3, -4);
+   frames[0].buttons     = INPUT_POINTER_LEFT;
+   frames[1]             = frames[0];
+   windows[1].window     = 1;
+   windows[1].generation = video_driver_window_generation();
+   touches[0]            = VIDEO_POS_PACK(10, 10);
+   touches[1]            = VIDEO_POS_PACK(10, 10);
+
+   window_test_begin();
+   /* Display Off for Screen 2, then the windows off */
+   for (off = 0; off < 2; off++)
+   {
+      settings->arrays.video_screen_display[1][0] = '\0';
+      settings->bools.video_windows_enable        = true;
+      window_test_run();
+      CHECK(video_st->windows_wanted == 2u);
+      input_driver_publish_window_pointers(frames, windows, 2,
+            INPUT_POINTERS_WINDOWS_SECOND);
+      input_driver_publish_window_touches(touches, windows, 2, 3u, 3u);
+      CHECK(WINDOW_TEST_LEFT(1) == 1);
+      CHECK(WINDOW_TEST_MOTION(1) == 3);
+      CHECK(WINDOW_TEST_TOUCHES(RARCH_DEVICE_POINTER_SECOND) == 1);
+
+      if (off)
+         settings->bools.video_windows_enable = false;
+      else
+         strlcpy(settings->arrays.video_screen_display[1],
+               VIDEO_WINDOW_DISPLAY_OFF,
+               sizeof(settings->arrays.video_screen_display[1]));
+      window_test_run();
+      CHECK(video_st->windows_wanted == 0);
+      CHECK(WINDOW_TEST_LEFT(1) == 0);
+      CHECK(WINDOW_TEST_MOTION(1) == 0);
+      CHECK(WINDOW_TEST_TOUCHES(RARCH_DEVICE_POINTER_SECOND) == 0);
+      CHECK(WINDOW_TEST_LEFT(0) == 1);
+      CHECK(WINDOW_TEST_MOTION(0) == 3);
+      CHECK(WINDOW_TEST_TOUCHES(RETRO_DEVICE_POINTER) == 1);
+   }
+   settings->arrays.video_screen_display[1][0] = '\0';
+   input_driver_publish_pointers(frames, 0, 0);
+   input_driver_publish_touches(touches, 0, 0, 0);
+   window_test_end();
+}
+
 /* Game Screen 2's window turned: drawn again at the swapped size, the menu
  * lays out at that size */
 static void test_window_turned(void)
@@ -3904,7 +4060,7 @@ static void test_window_menu_settings(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    rarch_setting_t *enable;
-   unsigned i;
+   unsigned i, restore;
    char name[64];
    load_fixture("");
    for (i = 1; i <= RETRO_VIDEO_VIEWS_MAX; i++)
@@ -3920,10 +4076,18 @@ static void test_window_menu_settings(void)
    CHECK(enable != NULL);
    if (!enable)
       return;
-   /* A change gives closed windows another try */
+   /* A change brings failed and closed windows back */
    video_st->windows_forced_attached = 2u;
+   video_st->windows_closed_attached = 2u;
    enable->actions->change(enable);
    CHECK(video_st->windows_forced_attached == 0u);
+   CHECK(video_st->windows_closed_attached == 0u);
+   /* So does Restore Screen Windows */
+   restore = video_st->windows_restore;
+   video_st->windows_closed_attached = 2u;
+   menu_action("video_screen_windows_restore", MENU_ACTION_OK);
+   CHECK(video_st->windows_closed_attached == 0u);
+   CHECK(video_st->windows_restore == restore + 1u);
 }
 
 static void window_test_named(video_window_display_t *d, unsigned ordinal,
@@ -4033,10 +4197,14 @@ static void test_window_menu_display(void)
    CHECK(row->actions->right(row, 0, false) == 0);
    CHECK(string_is_equal(picked, "Screen-2 2"));
 
-   /* A change gives closed windows another try */
+   /* A change gives failed windows another try, and brings back its
+    * own screen's closed window only */
    video_st->windows_forced_attached = 2u;
+   video_st->windows_closed_attached = 6u;
    row->actions->change(row);
    CHECK(video_st->windows_forced_attached == 0u);
+   CHECK(video_st->windows_closed_attached == 4u);
+   video_st->windows_closed_attached = 0u;
    picked[0] = '\0';
    video_driver_publish_window_displays(displays, 0);
 }
@@ -4368,7 +4536,9 @@ static void test_window_menu_rows(void)
    menu_setting_video_screen_display_values();
    CHECK(string_is_equal(menu->aux.values, "|Built-in Screen"));
 
-   /* A change to any of them gives closed windows another try */
+   /* A change to any of them gives failed windows another try, and
+    * leaves closed ones closed */
+   video_st->windows_closed_attached = 2u;
    video_st->windows_forced_attached = 2u;
    follows->actions->change(follows);
    CHECK(video_st->windows_forced_attached == 0u);
@@ -4378,6 +4548,8 @@ static void test_window_menu_rows(void)
    video_st->windows_forced_attached = 2u;
    notes->actions->change(notes);
    CHECK(video_st->windows_forced_attached == 0u);
+   CHECK(video_st->windows_closed_attached == 2u);
+   video_st->windows_closed_attached = 0u;
 
    picked[0] = '\0';
    video_driver_publish_window_displays(displays, 0);
@@ -4503,8 +4675,24 @@ static bool window_menu_has(const file_list_t *list, const char *label)
    return false;
 }
 
+/* Whether @label is listed right after Game Screen @screen's rows */
+static bool window_menu_after_screen(const file_list_t *list,
+      const char *label, unsigned screen)
+{
+   char prefix[32];
+   size_t i;
+   snprintf(prefix, sizeof(prefix), "video_screen%u_", screen);
+   for (i = 1; i < list->size; i++)
+      if (     string_is_equal(list->list[i].label, label)
+            && list->list[i - 1].label
+            && string_starts_with(list->list[i - 1].label, prefix))
+         return true;
+   return false;
+}
+
 /* The switch sits in Stereo 3D & Screens where the driver has windows,
- * with the screens' Display rows; the menu's rows are Android's */
+ * with the screens' Display rows and, on the desktop, Restore Screen
+ * Windows; the menu's rows are Android's */
 static void test_window_menu_list(void)
 {
    settings_t *settings = config_get_ptr();
@@ -4516,6 +4704,7 @@ static void test_window_menu_list(void)
          DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
    CHECK(!window_menu_has(&list, "video_windows_enable"));
    CHECK(!window_menu_has(&list, "video_screen2_window_mode"));
+   CHECK(!window_menu_has(&list, "video_screen_windows_restore"));
    file_list_deinitialize(&list);
 
    window_test_begin();
@@ -4535,6 +4724,12 @@ static void test_window_menu_list(void)
    CHECK(!window_menu_has(&list, "video_menu_display"));
    CHECK(!window_menu_has(&list, "video_notifications_window"));
    CHECK(!window_menu_has(&list, "video_screen2_window_x"));
+#ifdef ANDROID
+   CHECK(!window_menu_has(&list, "video_screen_windows_restore"));
+#else
+   CHECK(window_menu_after_screen(&list, "video_screen_windows_restore",
+            2));
+#endif
    file_list_deinitialize(&list);
 
    settings->bools.video_windows_enable = false;
@@ -4544,6 +4739,7 @@ static void test_window_menu_list(void)
    CHECK(window_menu_has(&list, "video_windows_enable"));
    CHECK(!window_menu_has(&list, "video_screen2_window_mode"));
    CHECK(!window_menu_has(&list, "video_screen2_display"));
+   CHECK(!window_menu_has(&list, "video_screen_windows_restore"));
    file_list_deinitialize(&list);
    window_test_end();
 
@@ -4578,6 +4774,10 @@ static void test_window_menu_list(void)
          0, 0, s, sizeof(s));
    CHECK(string_is_equal(s,
             msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE)));
+   menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOWS_RESTORE,
+         0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOWS_RESTORE)));
 }
 
 /* A screen with its own window gets its window rows; X and Y once it
@@ -4718,8 +4918,9 @@ static void test_window_menu_window_rows(void)
       y->actions->repr(y, s, sizeof(s));
       CHECK(string_is_equal(s, "30"));
 
-      /* A row change gives a window that was closed or could not be
-       * made another try, as the Display row does */
+      /* A row change gives a window that could not be made another
+       * try, and brings back its own screen's closed one, as the Display
+       * row does */
       fullscreen = menu_setting_find_enum((enum msg_hash_enums)
             (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN + 1));
       display    = menu_setting_find_enum((enum msg_hash_enums)
@@ -4731,21 +4932,27 @@ static void test_window_menu_window_rows(void)
       restore                           = video_st->windows_restore;
       edit                              = video_st->windows_edit[1];
       video_st->windows_forced_attached = 2u;
+      video_st->windows_closed_attached = 6u;
       CHECK(width->actions->right(width, 0, false) == 0);
       width->actions->change(width);
       CHECK(video_st->windows_forced_attached == 0u);
-      CHECK(video_st->windows_restore != restore);
+      CHECK(video_st->windows_closed_attached == 4u);
+      CHECK(video_st->windows_restore == restore);
       CHECK(video_st->windows_edit[1] == edit + 1);
+      video_st->windows_closed_attached = 0u;
       window_test_run();
       CHECK(window_test_seen.settings[1].edit == video_st->windows_edit[1]);
       restore                           = video_st->windows_restore;
       edit                              = video_st->windows_edit[1];
       video_st->windows_forced_attached = 2u;
+      video_st->windows_closed_attached = 6u;
       CHECK(x->actions->right(x, 0, false) == 0);
       x->actions->change(x);
       CHECK(video_st->windows_forced_attached == 0u);
-      CHECK(video_st->windows_restore != restore);
+      CHECK(video_st->windows_closed_attached == 4u);
+      CHECK(video_st->windows_restore == restore);
       CHECK(video_st->windows_edit[1] == edit + 1);
+      video_st->windows_closed_attached = 0u;
       window_test_run();
       CHECK(window_test_seen.settings[1].edit == video_st->windows_edit[1]);
       if (fullscreen)
@@ -4753,10 +4960,13 @@ static void test_window_menu_window_rows(void)
          restore                           = video_st->windows_restore;
          edit                              = video_st->windows_edit[1];
          video_st->windows_forced_attached = 2u;
+         video_st->windows_closed_attached = 6u;
          menu_action_handle_setting(fullscreen, 0, MENU_ACTION_RIGHT, false);
          CHECK(settings->bools.video_screen_window_fullscreen[1]);
          CHECK(video_st->windows_forced_attached == 0u);
-         CHECK(video_st->windows_restore != restore);
+         CHECK(video_st->windows_closed_attached == 4u);
+         CHECK(video_st->windows_restore == restore);
+         video_st->windows_closed_attached = 0u;
          /* Not by 1: the menu runs a toggle's change handler twice */
          CHECK(video_st->windows_edit[1] != edit);
          window_test_run();
@@ -4766,11 +4976,14 @@ static void test_window_menu_window_rows(void)
       }
       if (display)
       {
-         edit = video_st->windows_edit[1];
+         edit                              = video_st->windows_edit[1];
+         video_st->windows_closed_attached = 6u;
          menu_action_handle_setting(display, 0, MENU_ACTION_RIGHT, false);
          CHECK(string_is_equal(settings->arrays.video_screen_display[1],
                   VIDEO_WINDOW_DISPLAY_MAIN));
          CHECK(video_st->windows_edit[1] == edit + 1);
+         CHECK(video_st->windows_closed_attached == 4u);
+         video_st->windows_closed_attached = 0u;
          window_test_run();
          CHECK(window_test_seen.settings[1].edit
                == video_st->windows_edit[1]);
@@ -5361,6 +5574,93 @@ static void test_window_redraw_own_moved(void)
       fprintf(stderr, "redraw own moved: %u remake(s)\n", made);
       CHECK(made == 1);
       CHECK(window_test_seen.settings[1].monitor == 1);
+
+      video_driver_publish_window_displays(NULL, 0);
+      window_test_run();
+      threaded->free(data);
+   }
+   else
+      CHECK(false);
+   window_test_end();
+#endif
+}
+
+/* An edit between the app thread's frames: a redraw's route is from
+ * before it, so the edit waits for the frame laid out with it */
+static void test_window_redraw_edit(void)
+{
+#ifdef HAVE_THREADS
+   static video_driver_t driver;
+   const video_driver_t *threaded = NULL;
+   void *data                     = NULL;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   video_window_display_t monitors[2];
+   video_windows_held_t held;
+   video_info_t info;
+   unsigned edit;
+   window_test_display(&monitors[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "DP-1");
+   window_test_display(&monitors[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "HDMI-A-1");
+   monitors[0].monitor = monitors[1].monitor = true;
+   memset(&driver, 0, sizeof(driver));
+   memset(&info, 0, sizeof(info));
+   memset(&held, 0, sizeof(held));
+   driver.init          = snapshot_init;
+   driver.frame         = window_test_frame;
+   driver.free          = snapshot_free;
+   driver.viewport_info = redraw_viewport;
+   driver.read_viewport = redraw_read_viewport;
+   driver.ident         = "redraw";
+   info.input_scale     = 1;
+   info.rgb32           = true;
+   window_test_begin();
+   if (video_init_thread(&threaded, &data, &driver, info))
+   {
+      video_st->thread_wrapper_active = false;
+      strlcpy(settings->arrays.video_screen_display[1], "DP-1",
+            sizeof(settings->arrays.video_screen_display[1]));
+      video_driver_publish_window_displays(monitors, 2);
+      window_test_run();
+      CHECK(redraw_bits(redraw_made(&held, "app")) == 1);
+      CHECK(window_test_seen.settings[1].monitor == 1);
+
+      /* To Auto, the other monitor: only the app thread's frame knows */
+      settings->arrays.video_screen_display[1][0] = '\0';
+      video_driver_edit_window(1);
+      edit = held.made[1].edit;
+      window_test_redraw(threaded, data);
+      CHECK(!redraw_made(&held, "redraw"));
+      CHECK(held.made[1].edit == edit);
+      window_test_run();
+      CHECK(window_test_seen.settings[1].monitor == 2);
+      CHECK(redraw_bits(redraw_made(&held, "app")) == 1);
+      CHECK(held.made[1].monitor == 2);
+
+      /* Reopened by a redraw on the old route: moved by the frame with
+       * the edit */
+      video_driver_close_windows(&window_test_seen,
+            window_test_seen.window_screens[1]);
+      held.closed_edit[1] = window_test_seen.settings[1].edit;
+      held.closed         = 2u;
+      held.live           = 0u;
+      window_test_run();
+      CHECK(!redraw_made(&held, "app"));
+      settings->arrays.video_screen_display[1][0] = '\0';
+      settings->uints.video_screen_window_pos[1]     = 0;
+      settings->bools.video_screen_window_pos_set[1] = false;
+      video_driver_edit_window(1);
+      window_test_redraw(threaded, data);
+      CHECK(redraw_bits(redraw_made(&held, "redraw")) == 1);
+      CHECK(held.made[1].monitor == 2);
+      monitors[0].own = false;
+      monitors[1].own = true;
+      video_driver_publish_window_displays(monitors, 2);
+      window_test_run();
+      CHECK(window_test_seen.settings[1].monitor == 1);
+      CHECK(redraw_bits(redraw_made(&held, "app")) == 1);
+      CHECK(held.made[1].monitor == 1);
 
       video_driver_publish_window_displays(NULL, 0);
       window_test_run();
@@ -6002,6 +6302,7 @@ int main(int argc, char **argv)
    test_window_turned_display();
    test_window_turned_waiting();
    test_window_pointer_mapping();
+   test_window_pointer_release();
    test_window_menu_touch_window();
    test_window_menu_mouse_kept();
    test_window_generation();
@@ -6020,6 +6321,7 @@ int main(int argc, char **argv)
    test_window_menu_window_rows();
    test_window_redraw();
    test_window_redraw_own_moved();
+   test_window_redraw_edit();
    test_screen_frame_snapshot();
    test_xr_screen_menu();
    test_xr_menu_map_change();

@@ -469,6 +469,10 @@ void wl_video_window_keyboard(gfx_ctx_wayland_data_t *wl,
 /* An output's properties changed: secondary screens' windows on it
  * take its scale again. On the thread that runs the context. */
 void wl_video_windows_rescale(void);
+/* An output changed or went away: what the compositor does to secondary
+ * screens' windows then is not the user's. On the thread that runs the
+ * context. */
+void wl_video_windows_unsettled(void);
 #endif
 
 extern const struct wl_keyboard_listener keyboard_listener;

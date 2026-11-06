@@ -13193,6 +13193,11 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_NOTIFICATIONS_WINDOW,
                         PARSE_ONLY_UINT, false) == 0)
                   count++;
+#else
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOWS_RESTORE,
+                        PARSE_ACTION, false) == 0)
+                  count++;
 #endif
             }
          }

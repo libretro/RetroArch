@@ -334,6 +334,53 @@ static void native_x11_focus(Display *display, Window window, bool managed)
    XFlush(display);
 }
 
+/* Focus on the main window is RetroArch's; focus on a window of
+ * another client, made here, is not */
+static void native_x11_has_focus(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, Display *display,
+      Window primary, bool managed)
+{
+   XWindowAttributes attrs;
+   retro_time_t deadline;
+   Window foreign;
+
+   native_x11_focus(display, primary, managed);
+   CHECK(native_window_has_focus(ctx, data, request, true));
+   foreign  = XCreateSimpleWindow(display, DefaultRootWindow(display),
+         0, 0, 64, 64, 0, 0, 0);
+   XMapWindow(display, foreign);
+   XSync(display, False);
+   deadline = cpu_features_get_time_usec() + 3000000;
+   while (     XGetWindowAttributes(display, foreign, &attrs)
+         && attrs.map_state != IsViewable
+         && cpu_features_get_time_usec() < deadline)
+   {
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   native_x11_focus(display, foreign, managed);
+   CHECK(native_window_has_focus(ctx, data, request, false));
+   XDestroyWindow(display, foreign);
+   XSync(display, False);
+}
+
+/* Pumps until the window has the keyboard focus */
+static void native_x11_focused(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request,
+      const video_window_native_t *window, Display *display,
+      Window win, bool managed)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   native_x11_focus(display, win, managed);
+   while (!window->focused && cpu_features_get_time_usec() < deadline)
+   {
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   native_window_settle(ctx, data, request, 100000);
+   CHECK(window->focused);
+}
+
 /* An error in 'window' handed to 'handler' as Xlib would hand it */
 static void native_x11_fake_error(int (*handler)(Display*, XErrorEvent*),
       Display *display, Window window)
@@ -411,6 +458,7 @@ static void native_glx_failure(const gfx_ctx_driver_t *ctx, void *data,
       return;
    }
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+   CHECK(!native_window_closed_user);
    CHECK(!window->presentable);
    CHECK(!ctx->windows->bind_gl(data, window));
    CHECK(glXGetCurrentDrawable() == primary);
@@ -1192,6 +1240,347 @@ static const gfx_ctx_driver_t *native_x11_located(
 #endif
    return ctx;
 }
+
+#if defined(HAVE_XRANDR) && (RANDR_MAJOR > 1 || RANDR_MINOR >= 5)
+/* Takes away every monitor the fixture named */
+static void native_x11_unlay(Display *dpy)
+{
+   int i, n             = 0;
+   XRRMonitorInfo *mons = XRRGetMonitors(dpy, DefaultRootWindow(dpy),
+         False, &n);
+   for (i = 0; mons && i < n; i++)
+   {
+      char *name = XGetAtomName(dpy, mons[i].name);
+      if (name && strncmp(name, "RA-", 3) == 0)
+         XRRDeleteMonitor(dpy, DefaultRootWindow(dpy), mons[i].name);
+      if (name)
+         XFree(name);
+   }
+   if (mons)
+      XRRFreeMonitors(mons);
+   XSync(dpy, False);
+}
+
+/* RA-A with the output, RA-M and RA-B, side by side, each @w wide */
+static void native_x11_three(Display *dpy, int w)
+{
+   RROutput output         = 0;
+   XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy,
+         DefaultRootWindow(dpy));
+   if (res)
+   {
+      if (res->noutput > 0)
+         output = res->outputs[0];
+      XRRFreeScreenResources(res);
+   }
+   native_x11_rr_set(dpy, "RA-A", 0, w, output);
+   native_x11_rr_set(dpy, "RA-M", w, w, 0);
+   native_x11_rr_set(dpy, "RA-B", 2 * w, w, 0);
+   XSync(dpy, False);
+   x11_monitors_wake(X11_MONITORS_ENUMERATE);
+}
+
+/* Takes monitor @name away and has the worker look */
+static void native_x11_unplug(Display *dpy, const char *name)
+{
+   XRRDeleteMonitor(dpy, DefaultRootWindow(dpy),
+         XInternAtom(dpy, name, False));
+   XSync(dpy, False);
+   x11_monitors_wake(X11_MONITORS_ENUMERATE);
+}
+
+/* Until the worker has @want monitors: their bounds and ordinals */
+static bool native_x11_snap(unsigned want, native_rect_t *areas,
+      unsigned *ordinals)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   unsigned i, n         = 0;
+   for (;;)
+   {
+      const x11_monitors_t *snap = x11_monitors_get();
+      n = snap ? snap->count : 0;
+      for (i = 0; snap && i < n && i < 8; i++)
+      {
+         areas[i].x  = snap->mon[i].x;
+         areas[i].y  = snap->mon[i].y;
+         areas[i].w  = snap->mon[i].w;
+         areas[i].h  = snap->mon[i].h;
+         ordinals[i] = snap->mon[i].ordinal;
+      }
+      x11_monitors_put();
+      if (n == want || cpu_features_get_time_usec() > deadline)
+         break;
+      retro_sleep(2);
+   }
+   CHECK(n == want);
+   return n == want;
+}
+
+/* The ordinal of the monitor at @x, 0 for none */
+static unsigned native_x11_ordinal_at(const native_rect_t *areas,
+      const unsigned *ordinals, unsigned n, int x)
+{
+   unsigned i;
+   for (i = 0; i < n; i++)
+      if (areas[i].x == x)
+         return ordinals[i];
+   return 0;
+}
+
+/* Pumps every screen's windows for @usec: the GEOMETRY events that
+ * save */
+static unsigned native_x11_pumped(const gfx_ctx_driver_t *ctx, void *data,
+      retro_time_t usec)
+{
+   video_window_event_t events[4];
+   unsigned i, count;
+   unsigned saves        = 0;
+   retro_time_t deadline = cpu_features_get_time_usec() + usec;
+   do
+   {
+      unsigned dims = VIDEO_SCALE_PACK(640, 480);
+      bool quit     = false;
+      bool resize   = false;
+      ctx->check_window(data, &quit, &resize, &dims);
+      while ((count = ctx->windows->poll(data, events,
+                  sizeof(events) / sizeof(*events))))
+         for (i = 0; i < count; i++)
+            if (     events[i].kind == VIDEO_WINDOW_EVENT_GEOMETRY
+                  && events[i].save_dims)
+               saves++;
+      retro_sleep(2);
+   } while (cpu_features_get_time_usec() < deadline);
+   return saves;
+}
+
+/* Pumps every screen's windows until @n monitors are published, the
+ * main window on the @own'th (-1: any): the GEOMETRY events that save */
+static unsigned native_x11_published(const gfx_ctx_driver_t *ctx,
+      void *data, unsigned n, int own)
+{
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   unsigned saves        = 0;
+   for (;;)
+   {
+      unsigned count = video_driver_get_window_displays(got,
+            VIDEO_WINDOW_DISPLAYS_MAX);
+      if (count == n && (own < 0 || (own < (int)count && got[own].own)))
+         return saves;
+      if (cpu_features_get_time_usec() > deadline)
+         break;
+      saves += native_x11_pumped(ctx, data, 5000);
+   }
+   CHECK(!"monitors published");
+   return saves;
+}
+
+/* Where the window's record has it, by its last ConfigureNotify */
+static native_rect_t native_x11_record(const video_window_native_t *window)
+{
+   native_rect_t rect;
+   const x11_video_window_t *state =
+      (const x11_video_window_t*)window->state;
+   rect.x = state ? VIDEO_POS_X(state->common.pos) : 0;
+   rect.y = state ? VIDEO_POS_Y(state->common.pos) : 0;
+   rect.w = VIDEO_SCALE_W(window->dims);
+   rect.h = VIDEO_SCALE_H(window->dims);
+   return rect;
+}
+
+/* The monitor of @n that has all of @rect, -1 for none */
+static int native_x11_on(const native_rect_t *areas, unsigned n,
+      native_rect_t rect)
+{
+   unsigned i;
+   for (i = 0; i < n; i++)
+      if (native_x11_inside(areas[i], rect))
+         return (int)i;
+   return -1;
+}
+
+/* A monitor taken away: each window it leaves on none is placed again,
+ * whatever monitor it prefers, and that move is not saved; a window on
+ * a monitor that stays does not move. Then the middle one of three,
+ * whose window's monitor number the shorter list still has. On the
+ * split, which it puts back. */
+static void native_x11_gone(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window)
+{
+   static bool done;
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   video_window_request_t req[4];
+   video_window_native_t win[4];
+   native_rect_t areas[8], monitors[8], was, rect;
+   unsigned ordinals[8];
+   unsigned i, saves, b, m, count;
+   int on;
+   int width = DisplayWidth(g_x11_dpy, DefaultScreen(g_x11_dpy));
+   int half  = width / 2;
+   int third = width / 3;
+   Display *fix;
+
+   if (done)
+      return;
+   done = true;
+   if (!native_x11_relayout)
+   {
+      fprintf(stderr, "native x11: monitors taken away not checked: that"
+            " needs the NATIVE_X11_MONITORS=2 split and no window"
+            " manager\n");
+      return;
+   }
+   if (!(fix = XOpenDisplay(DisplayString(g_x11_dpy))))
+   {
+      CHECK(!"fixture display");
+      return;
+   }
+   ctx->windows->destroy(data, window);
+   memset(win, 0, sizeof(win));
+
+   /* Saved on RA-B with no preferred monitor; preferring RA-A;
+    * fullscreen on RA-B; preferring RA-B */
+   native_x11_unlay(fix);
+   native_x11_two(fix, 0, half, half);
+   native_x11_snap(2, areas, ordinals);
+   b = native_x11_ordinal_at(areas, ordinals, 2, half);
+   for (i = 0; i < 4; i++)
+   {
+      req[i]                     = *request;
+      req[i].screen              = i + 1;
+      req[i].generation          = video_driver_window_generation();
+      req[i].settings.monitor    = 0;
+      req[i].settings.fullscreen = false;
+      req[i].settings.pos        = VIDEO_POS_PACK(half + 140, 100);
+      req[i].settings.dims       = VIDEO_SCALE_PACK(400, 300);
+      req[i].settings.pos_set    = true;
+   }
+   req[1].settings.monitor    = native_x11_ordinal_at(areas, ordinals, 2, 0);
+   req[1].settings.pos        = VIDEO_POS_PACK(100, 100);
+   req[2].settings.fullscreen = true;
+   req[3].settings.monitor    = b;
+   req[3].settings.pos        = VIDEO_POS_PACK(half + 140, 500);
+   for (i = 0; i < 4; i++)
+      CHECK(ctx->windows->create(data, &req[i], &win[i]));
+   native_x11_pumped(ctx, data, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   for (i = 0; i < 4; i++)
+      CHECK(win[i].presentable);
+   CHECK(native_x11_record(&win[0]).x >= half);
+   was = native_x11_rect(fix, native_x11_window(&win[1]));
+
+   native_x11_unplug(fix, "RA-B");
+   native_x11_snap(1, areas, ordinals);
+   saves = native_x11_pumped(ctx, data, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   for (i = 0; i < 4; i++)
+   {
+      rect = native_x11_record(&win[i]);
+      fprintf(stderr, "native x11: RA-B gone, window %u (monitor %u%s)"
+            " at %d,%d %ux%u\n", i + 1, req[i].settings.monitor,
+            req[i].settings.fullscreen ? ", fullscreen" : "",
+            rect.x, rect.y, rect.w, rect.h);
+   }
+   CHECK(native_x11_inside(areas[0], native_x11_record(&win[0])));
+   CHECK(native_x11_inside(areas[0],
+            native_x11_rect(fix, native_x11_window(&win[0]))));
+   rect = native_x11_rect(fix, native_x11_window(&win[1]));
+   CHECK(rect.x == was.x && rect.y == was.y
+         && rect.w == was.w && rect.h == was.h);
+   rect = native_x11_rect(fix, native_x11_window(&win[2]));
+   CHECK(rect.x == areas[0].x && rect.y == areas[0].y
+         && rect.w == areas[0].w && rect.h == areas[0].h);
+   CHECK(native_x11_inside(areas[0], native_x11_record(&win[3])));
+   CHECK(saves == 0);
+   for (i = 0; i < 4; i++)
+      ctx->windows->destroy(data, &win[i]);
+
+   /* Three, preferring the middle one */
+   native_x11_unlay(fix);
+   native_x11_three(fix, third);
+   native_x11_snap(3, areas, ordinals);
+   m                          = native_x11_ordinal_at(areas, ordinals, 3,
+         third);
+   req[0].generation          = video_driver_window_generation();
+   req[0].settings.monitor    = m;
+   req[0].settings.fullscreen = false;
+   req[0].settings.pos        = VIDEO_POS_PACK(third + 50, 100);
+   req[0].settings.dims       = VIDEO_SCALE_PACK(300, 200);
+   CHECK(ctx->windows->create(data, &req[0], &win[0]));
+   native_x11_pumped(ctx, data, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_x11_record(&win[0]).x >= third
+         && native_x11_record(&win[0]).x < 2 * third);
+   native_x11_unplug(fix, "RA-M");
+   native_x11_snap(2, areas, ordinals);
+   saves = native_x11_pumped(ctx, data, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   rect  = native_x11_record(&win[0]);
+   on    = native_x11_on(areas, 2, rect);
+   fprintf(stderr, "native x11: RA-M (monitor %u of 3) gone, its window"
+         " at %d,%d %ux%u, on monitor %u of 2\n", m, rect.x, rect.y,
+         rect.w, rect.h, on >= 0 ? ordinals[on] : 0);
+   CHECK(on >= 0);
+   CHECK(native_x11_on(areas, 2,
+            native_x11_rect(fix, native_x11_window(&win[0]))) >= 0);
+   CHECK(saves == 0);
+   ctx->windows->destroy(data, &win[0]);
+
+   /* What a window manager does as a monitor goes is not saved, and the
+    * user's move after the settle is */
+   native_x11_unlay(fix);
+   native_x11_two(fix, 0, half, half);
+   req[0].generation       = video_driver_window_generation();
+   req[0].settings.monitor = 0;
+   req[0].settings.pos     = VIDEO_POS_PACK(100, 100);
+   req[0].settings.dims    = VIDEO_SCALE_PACK(400, 300);
+   CHECK(ctx->windows->create(data, &req[0], &win[0]));
+   native_x11_published(ctx, data, 2, -1);
+   native_x11_pumped(ctx, data, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_x11_unplug(fix, "RA-B");
+   saves  = native_x11_published(ctx, data, 1, -1);
+   XMoveWindow(fix, native_x11_window(&win[0]), 150, 120);
+   XFlush(fix);
+   saves += native_x11_pumped(ctx, data, 200000);
+   rect   = native_x11_record(&win[0]);
+   fprintf(stderr, "native x11: moved as RA-B went, to %d,%d, %u save(s)\n",
+         rect.x, rect.y, saves);
+   CHECK(rect.x == 150 && rect.y == 120);
+   CHECK(saves == 0);
+   native_x11_pumped(ctx, data, VIDEO_WINDOW_SETTLE_USEC);
+   XMoveWindow(fix, native_x11_window(&win[0]), 200, 150);
+   XFlush(fix);
+   CHECK(native_x11_pumped(ctx, data, 200000) == 1);
+
+   /* The same monitors, the main window on another: a window the user
+    * left on none stays */
+   native_x11_unlay(fix);
+   native_x11_two(fix, 0, half, half);
+   native_x11_published(ctx, data, 2, -1);
+   native_x11_pumped(ctx, data, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   XMoveWindow(fix, native_x11_window(&win[0]), width + 50, 100);
+   XFlush(fix);
+   native_x11_pumped(ctx, data, 200000);
+   was = native_x11_rect(fix, g_x11_win);
+   XMoveWindow(fix, g_x11_win, was.x < half ? half + 100 : 100, 100);
+   XFlush(fix);
+   native_x11_published(ctx, data, 2, was.x < half ? 1 : 0);
+   native_x11_pumped(ctx, data, 200000);
+   rect = native_x11_record(&win[0]);
+   fprintf(stderr, "native x11: main window to the other monitor, the"
+         " window on none at %d,%d\n", rect.x, rect.y);
+   CHECK(rect.x == width + 50 && rect.y == 100);
+   XMoveWindow(fix, g_x11_win, was.x, was.y);
+   XFlush(fix);
+   native_x11_published(ctx, data, 2, was.x < half ? 0 : 1);
+   ctx->windows->destroy(data, &win[0]);
+
+   native_x11_unlay(fix);
+   native_x11_two(fix, 0, half, half);
+   XCloseDisplay(fix);
+   count = native_x11_monitors(g_x11_dpy, monitors, 8);
+   native_x11_monitors_wait(ctx, data, request, monitors, count, -1, got);
+   request->generation = video_driver_window_generation();
+   CHECK(ctx->windows->create(data, request, window));
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+}
+#endif
 #endif
 
 /* The monitors as the screens' Display setting lists them, republished
@@ -1202,7 +1591,7 @@ static void native_x11_monitors_check(const gfx_ctx_driver_t *ctx,
 {
 #ifdef RARCH_HAVE_X11_MONITORS
    video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
-   unsigned i, n, restore, serial;
+   unsigned i, n, restore, retry, serial;
    video_driver_state_t *video_st = video_state_get_ptr();
    unsigned want                  = native_x11_heads(display);
    int from                       = -1;
@@ -1228,6 +1617,7 @@ static void native_x11_monitors_check(const gfx_ctx_driver_t *ctx,
    native_x11_located_wait();
    video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
    restore = video_st->windows_restore;
+   retry   = video_st->windows_retry;
    serial  = x11_monitors_serial();
    x11_monitors_window(0);
    native_x11_serial_wait(serial);
@@ -1237,7 +1627,7 @@ static void native_x11_monitors_check(const gfx_ctx_driver_t *ctx,
    native_x11_serial_wait(serial);
    native_window_settle(ctx, data, request, 50000);
    video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX);
-   CHECK(video_st->windows_restore == restore);
+   CHECK(video_st->windows_retry == retry);
 
    /* The main window's monitor follows it */
    if (n >= 2 && from >= 0)
@@ -1248,7 +1638,8 @@ static void native_x11_monitors_check(const gfx_ctx_driver_t *ctx,
             monitors[to].y + 100);
       XFlush(display);
       native_x11_monitors_wait(ctx, data, request, monitors, want, to, got);
-      CHECK(video_st->windows_restore != restore);
+      CHECK(video_st->windows_retry != retry);
+      CHECK(video_st->windows_restore == restore);
       XMoveWindow(display, g_x11_win, was.x, was.y);
       XFlush(display);
       native_x11_monitors_wait(ctx, data, request, monitors, want, from,
@@ -1513,6 +1904,7 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
          break;
       CHECK(one.screen == request->screen);
       CHECK(one.generation == request->generation);
+      CHECK(one.user == (one.kind == VIDEO_WINDOW_EVENT_CLOSE));
       seen |= 1u << one.kind;
    }
    CHECK(i <= 6);
@@ -1542,28 +1934,35 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(window->dims == request->settings.dims);
    secondary = native_x11_window(window);
 
-   /* Closing the focused window takes its focus with it */
-   native_x11_focus(display, secondary, managed);
-   {
-      retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
-      while (!window->focused && cpu_features_get_time_usec() < deadline)
-      {
-         native_window_drain(ctx, data, request);
-         retro_sleep(2);
-      }
-   }
-   native_window_settle(ctx, data, request, 100000);
-   CHECK(window->focused);
+   /* Focus going to a screen's window stays RetroArch's. Closing the
+    * focused window takes its focus with it. */
+   native_x11_has_focus(ctx, data, request, display, primary, managed);
+   native_x11_focused(ctx, data, request, window, display, secondary,
+         managed);
+   CHECK(ctx->has_focus(data));
    native_x11_close(display, secondary);
    XSync(display, False);
    seen = native_window_drain(ctx, data, request);
    CHECK(seen & NATIVE_EVENT(CLOSE));
+   CHECK(native_window_closed_user);
    CHECK(seen & NATIVE_EVENT(FOCUS_LOSS));
    CHECK(!window->focused && !window->presentable);
+   CHECK(!ctx->has_focus(data));
    ctx->windows->destroy(data, window);
    /* Xlib's default handler back, as a save and restore elsewhere can
     * leave it: the next create has to put the window handler back */
    XSetErrorHandler(NULL);
+   request->generation = video_driver_window_generation();
+   CHECK(ctx->windows->create(data, request, window));
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+   secondary = native_x11_window(window);
+
+   /* ... and so does destroying it */
+   native_x11_focused(ctx, data, request, window, display, secondary,
+         managed);
+   CHECK(ctx->has_focus(data));
+   ctx->windows->destroy(data, window);
+   CHECK(!ctx->has_focus(data));
    request->generation = video_driver_window_generation();
    CHECK(ctx->windows->create(data, request, window));
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
@@ -1574,6 +1973,7 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    {
       native_x11_wm_close(display, secondary);
       native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+      CHECK(native_window_closed_user);
       CHECK(native_x11_primary_intact(display, primary));
       ctx->windows->destroy(data, window);
       request->generation = video_driver_window_generation();
@@ -1599,6 +1999,7 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
          monitors[0].y + 80);
    ctx->windows->update(data, window, request);
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+   CHECK(!native_window_closed_user);
    CHECK(!window->presentable);
    CHECK(ctx->windows->bind_gl == NULL
          || !ctx->windows->bind_gl(data, window));
@@ -1666,6 +2067,7 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(window->presentable);
    native_x11_fake_error(handler, display, native_x11_window(window));
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+   CHECK(!native_window_closed_user);
    CHECK(!window->presentable);
    ctx->windows->destroy(data, window);
    request->generation = video_driver_window_generation();
@@ -1674,6 +2076,11 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(native_x11_primary_intact(display, primary));
    native_x11_saves(ctx, data, request, window, monitors[0], managed);
    CHECK(native_x11_primary_intact(display, primary));
+#if defined(RARCH_HAVE_X11_MONITORS) && defined(HAVE_XRANDR) \
+   && (RANDR_MAJOR > 1 || RANDR_MINOR >= 5)
+   native_x11_gone(ctx, data, request, window);
+   CHECK(native_x11_primary_intact(display, primary));
+#endif
 #ifdef NATIVE_EGL
    if (strcmp(ctx->ident, "egl_x") == 0)
    {

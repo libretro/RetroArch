@@ -7,6 +7,8 @@ static unsigned native_window_pos;
 /* The last GEOMETRY with bounds to save, and how many there were */
 static video_window_event_t native_window_saved;
 static unsigned native_window_saves;
+/* The last CLOSE's user flag */
+static bool native_window_closed_user;
 /* The frontend's input poll, where this one thread runs it too */
 static void (*native_window_input)(void *data);
 
@@ -38,6 +40,8 @@ static unsigned native_window_drain(const gfx_ctx_driver_t *ctx, void *data,
                native_window_saves++;
             }
          }
+         else if (events[i].kind == VIDEO_WINDOW_EVENT_CLOSE)
+            native_window_closed_user = events[i].user;
          seen |= 1u << events[i].kind;
       }
    return seen;
@@ -80,6 +84,20 @@ static unsigned native_window_settle(const gfx_ctx_driver_t *ctx,
       retro_sleep(2);
    } while (cpu_features_get_time_usec() < deadline);
    return seen;
+}
+
+/* Pumps until the context's has_focus reads 'want'; whether it did */
+static bool native_window_has_focus(const gfx_ctx_driver_t *ctx,
+      void *data, const video_window_request_t *request, bool want)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   while (     ctx->has_focus(data) != want
+         && cpu_features_get_time_usec() < deadline)
+   {
+      native_window_drain(ctx, data, request);
+      retro_sleep(2);
+   }
+   return ctx->has_focus(data) == want;
 }
 
 #define NATIVE_EVENT(kind) (1u << VIDEO_WINDOW_EVENT_##kind)
@@ -326,6 +344,7 @@ static void native_egl_failures(const gfx_ctx_driver_t *ctx, void *data,
          CHECK(!ctx->windows->bind_gl(data, window));
       }
       native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+      CHECK(!native_window_closed_user);
       CHECK(!window->presentable);
       CHECK(!ctx->windows->bind_gl(data, window));
       CHECK(eglGetCurrentSurface(EGL_DRAW) == primary);

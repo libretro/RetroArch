@@ -16,6 +16,9 @@ SDX(OK, setting_action_asio_control_panel)
 #ifdef HAVE_MODELINE
 SDX(OK, setting_action_crt_switch_write_edid)
 #endif
+#ifdef HAVE_VIDEO_WINDOWS
+SDX(OK, setting_action_video_screen_windows_restore)
+#endif
 #if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
 SDX(OK, setting_action_keychain_passphrase)
 #endif

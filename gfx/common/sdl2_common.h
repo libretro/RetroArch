@@ -241,11 +241,13 @@ void sdl2_video_windows_free(void *owner,
 bool sdl2_video_window_event(const SDL_Event *event, bool *quit);
 /* After each SDL_PumpEvents(), before its window events are taken */
 void sdl2_video_windows_judge(void);
+/* The window flags of the screens' open windows, together */
+Uint32 sdl2_video_windows_flags(void);
 /* The displays for the screens' Display setting, on the context's
- * thread: 'changed' after a display event, 'moved' after a main
- * window move. Published once the main window is made (@init), then
- * after each pump, and only when the list changed. */
-void sdl2_video_monitors_changed(void);
+ * thread: 'changed' after a display event (@removed: one went),
+ * 'moved' after a main window move. Published once the main window is
+ * made (@init), then after each pump, and only when the list changed. */
+void sdl2_video_monitors_changed(bool removed);
 void sdl2_video_monitors_moved(void);
 void sdl2_video_monitors_publish(SDL_Window *primary, bool init);
 #endif
