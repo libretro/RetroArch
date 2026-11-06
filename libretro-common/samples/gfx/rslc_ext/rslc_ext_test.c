@@ -281,6 +281,32 @@ static const char fs_layer[] =
    "   ocol0 = texture(samp0, vec3(v_tex0.xy, float(layer))) + vec4(gl_FragCoord.x * 0.0);\n"
    "}\n";
 
+/* Calls with early returns, one from inside a loop, and an indexed
+ * parameter: Direct3D bytecode expands each call where it is made. */
+static const char fs_inline[] =
+   "#version 450\n"
+   "layout(location = 0) in vec4 c;\n"
+   "layout(location = 0) out vec4 o;\n"
+   "float find(vec4 v, float t)\n"
+   "{\n"
+   "   for (int i = 0; i < 4; i++)\n"
+   "   {\n"
+   "      if (v[i] > t)\n"
+   "         return float(i);\n"
+   "   }\n"
+   "   return -1.0;\n"
+   "}\n"
+   "float pick(float x)\n"
+   "{\n"
+   "   if (x < 0.0)\n"
+   "      return 0.0;\n"
+   "   return x * 2.0;\n"
+   "}\n"
+   "void main()\n"
+   "{\n"
+   "   o = vec4(find(c, 0.5), pick(c.x), find(c, pick(c.y)), 1.0);\n"
+   "}\n";
+
 /* What a pixel stage may not do with it. */
 static const char fs_layer_write[] =
    "#version 450\n"
@@ -795,7 +821,8 @@ int main(int argc, char **argv)
          { "decode", cs_decode, RSLC_STAGE_COMPUTE, 5 },
          { "wide_line", gs_wide_line, RSLC_STAGE_GEOMETRY, 2 },
          { "passthrough", gs_passthrough, RSLC_STAGE_GEOMETRY, 2 },
-         { "layer_frag", fs_layer, RSLC_STAGE_FRAGMENT, 0 }
+         { "layer_frag", fs_layer, RSLC_STAGE_FRAGMENT, 0 },
+         { "inline", fs_inline, RSLC_STAGE_FRAGMENT, 0 }
       };
       unsigned i;
       for (i = 0; i < sizeof(dx) / sizeof(dx[0]); i++)
@@ -821,6 +848,20 @@ int main(int argc, char **argv)
             /* the program's type and model, and its length in words */
             CHECK(r.spirv[shex / 4 + 2] == ((dx[i].prog << 16) | 0x50u));
             CHECK(r.spirv[shex / 4 + 3] * 4 == r.spirv[shex / 4 + 1]);
+            /* no subroutines: call and label are not taken everywhere */
+            {
+               const uint32_t *t = r.spirv + shex / 4 + 2;
+               uint32_t words = t[1], k = 2;
+               while (k < words)
+               {
+                  uint32_t op = t[k] & 0x7ffu;
+                  uint32_t len = op == 53 ? t[k + 1] : (t[k] >> 24) & 0x7fu;
+                  CHECK(op != 4 && op != 44);
+                  if (!len)
+                     break;
+                  k += len;
+               }
+            }
             {
                char file[64];
                FILE *f;

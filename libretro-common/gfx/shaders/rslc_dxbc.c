@@ -38,10 +38,9 @@
  * value that is not constant lives in an indexable temporary; every
  * other one in temporaries.  The outputs are written to temporaries and
  * copied to the output registers where the stage ends, as the output
- * registers cannot be read.  Functions other than main are
- * subroutines: each owns a range of temporaries no other function
- * shares, its parameters and its result among them, so a call copies
- * the arguments in, calls, and copies the results out. */
+ * registers cannot be read.  A call is expanded where it is made, as
+ * fxc does: its parameters, locals and result take temporaries above
+ * the caller's. */
 
 #include <string.h>
 
@@ -56,14 +55,14 @@
 /* Opcodes of the tokenized program format. */
 enum dx_op
 {
-   DX_ADD = 0, DX_AND = 1, DX_BREAK = 2, DX_BREAKC = 3, DX_CALL = 4, DX_CASE = 6,
+   DX_ADD = 0, DX_AND = 1, DX_BREAK = 2, DX_BREAKC = 3, DX_CASE = 6,
    DX_CONTINUE = 7, DX_CUT = 9, DX_DEFAULT = 10, DX_DERIV_RTX = 11, DX_DERIV_RTY = 12,
    DX_DISCARD = 13, DX_DIV = 14, DX_DP2 = 15, DX_DP3 = 16, DX_DP4 = 17, DX_ELSE = 18,
    DX_EMIT = 19, DX_ENDIF = 21, DX_ENDLOOP = 22, DX_ENDSWITCH = 23, DX_EQ = 24,
    DX_EXP = 25, DX_FRC = 26, DX_FTOI = 27, DX_FTOU = 28, DX_GE = 29, DX_IADD = 30,
    DX_IF = 31, DX_IEQ = 32, DX_IGE = 33, DX_ILT = 34, DX_IMAD = 35, DX_IMAX = 36,
    DX_IMIN = 37, DX_IMUL = 38, DX_INE = 39, DX_INEG = 40, DX_ISHL = 41, DX_ISHR = 42,
-   DX_ITOF = 43, DX_LABEL = 44, DX_LD = 45, DX_LD_MS = 46, DX_LOG = 47, DX_LOOP = 48,
+   DX_ITOF = 43, DX_LD = 45, DX_LD_MS = 46, DX_LOG = 47, DX_LOOP = 48,
    DX_LT = 49, DX_MAD = 50, DX_MIN = 51, DX_MAX = 52, DX_MOV = 54, DX_MOVC = 55,
    DX_MUL = 56, DX_NE = 57, DX_NOT = 59, DX_OR = 60, DX_RESINFO = 61, DX_RET = 62,
    DX_ROUND_NE = 64, DX_ROUND_NI = 65, DX_ROUND_PI = 66, DX_ROUND_Z = 67, DX_RSQ = 68,
@@ -105,7 +104,6 @@ enum dx_op
 #define DXO_SAMPLER    6
 #define DXO_RESOURCE   7
 #define DXO_CB         8
-#define DXO_LABEL      10
 #define DXO_ODEPTH     12
 #define DXO_NULL       13
 #define DXO_UAV        30
@@ -233,31 +231,32 @@ struct dx_var
    bool            folded;    /* a constant: no storage */
 };
 
-/* A function emitted as a subroutine for one binding of its sampler
- * parameters. */
+/* A call being expanded in place, as fxc does: DXBC subroutines are
+ * not taken everywhere (Wine's translator refuses call). A
+ * return that is not the body's last statement leaves through a loop
+ * wrapped around the body; one from inside a loop or switch of the
+ * body sets the flag and breaks out, and each enclosing loop and switch
+ * breaks again on the flag. */
 #define DX_MAX_TEXPARAMS 8
-struct dx_fninst
+#define DX_MAX_INLINE    32
+struct dx_inline
 {
    const struct rslc_func *f;
-   struct dx_place        *params;   /* the parameters' homes */
-   uint32_t                tex[DX_MAX_TEXPARAMS];
-   uint32_t                label;
-   uint32_t                ret;      /* the result's first register */
-   bool                    done;
+   uint32_t                ret;    /* the result's first register */
+   uint32_t                flag;   /* RSLC_UNSET when no return leaves from deeper */
+   uint32_t                nctl;   /* loops and switches open in its wrapper */
+   bool                    wrapped;
 };
 
 struct dx_emit
 {
    struct rslc_ctx  *c;
-   struct rslc_pbuf  code;     /* main's instructions */
-   struct rslc_pbuf  subs;     /* the subroutines' */
+   struct rslc_pbuf  code;     /* the program's instructions */
    struct rslc_pbuf *out;      /* the one being written */
    struct dx_var    *vars;
-   /* the subroutines: one per function and textures its sampler
-    * parameters are bound to */
-   struct dx_fninst *insts;
-   uint32_t          ninsts, insts_cap;
-   const struct dx_fninst *cur_inst;
+   /* the calls being expanded, innermost last */
+   struct dx_inline  inl[DX_MAX_INLINE];
+   uint32_t          ninl;
    uint32_t         *tex_bind;  /* a sampler parameter's texture, by variable */
    uint32_t          xtemp_len[DX_MAX_XTEMP];
    struct dx_sig     isig[DX_MAX_SIG];
@@ -269,7 +268,6 @@ struct dx_emit
    uint32_t          ntemp;      /* the next free temporary */
    uint32_t          max_temp;   /* one past the highest used */
    uint32_t          nxtemp;
-   uint32_t          nlabel;
    uint32_t          nctl;
    uint32_t          sm;         /* 40, 41, 50 */
    /* outputs: per signature element, the register its value is kept in
@@ -295,9 +293,6 @@ struct dx_emit
    uint32_t          tgsm_size[DX_MAX_TGSM];   /* bytes */
    uint32_t          ntgsm;
    uint32_t          cb_size[RSLC_MAX_BLOCKS];   /* registers */
-   const struct rslc_func *cur_fn;
-   uint32_t          fn_base;   /* the first temporary the function owns */
-   bool              in_main;
    bool              early_z;
 };
 
@@ -435,7 +430,7 @@ static bool dx_put_opnd(struct dx_emit *e, const struct dx_opnd *o, bool dst, un
       tok |= 0;   /* no components: a null destination, a declared register */
    else if (o->file == DXO_ODEPTH || o->file == DXO_THREADIDINGROUPFLAT)
       tok |= 1;   /* one component */
-   else if (o->file == DXO_LABEL || (o->file == DXO_SAMPLER && o->n != 4))
+   else if (o->file == DXO_SAMPLER && o->n != 4)
       tok |= 0;
    else if (o->file == DXO_SAMPLER)
       tok |= 2u | (2u << 2) | ((uint32_t)o->swz[0] << 4);   /* gather's component */
@@ -3150,7 +3145,7 @@ static bool dx_tex_of(struct dx_emit *e, uint32_t node, struct dx_tex *tx)
    t = v->type->kind == RSLC_TY_ARRAY ? v->type->elem : v->type;
    if (v->storage == RSLC_ST_PARAM)
    {
-      /* a sampler parameter: the texture this subroutine was made for */
+      /* a sampler parameter: the texture the call being expanded binds */
       if (v->type->kind == RSLC_TY_ARRAY)
          return dx_fail(e, "an array of samplers as a parameter", n->line);
       tx->t    = e->tex_bind[v->id];
@@ -4032,96 +4027,199 @@ static bool dx_call_key(struct dx_emit *e, const struct rslc_func *f, uint32_t a
    return true;
 }
 
-static struct dx_fninst *dx_find_inst(struct dx_emit *e, const struct rslc_func *f,
-      const uint32_t *tex)
+/* What a body's returns need: how many there are, and whether one sits
+ * in a loop or switch of the body. */
+static void dx_returns(struct dx_emit *e, uint32_t node, uint32_t depth, uint32_t *count,
+      bool *deep)
 {
-   uint32_t i;
-   for (i = 0; i < e->ninsts; i++)
-      if (e->insts[i].f == f && !memcmp(e->insts[i].tex, tex, sizeof(e->insts[i].tex)))
-         return &e->insts[i];
-   return NULL;
+   const struct rslc_node *n;
+   uint32_t i, cnt;
+   if (!node)
+      return;
+   n = rslc_node_at(e->c, node);
+   switch (n->op)
+   {
+      case RSLC_OP_RETURN:
+         (*count)++;
+         if (depth)
+            *deep = true;
+         break;
+      case RSLC_OP_BLOCK:
+         cnt = n->b ? rslc_list_len(e->c, n->b) : 0;
+         for (i = 0; i < cnt; i++)
+            dx_returns(e, rslc_list_item(e->c, n->b, i), depth, count, deep);
+         break;
+      case RSLC_OP_IF:
+         dx_returns(e, n->b, depth, count, deep);
+         dx_returns(e, n->c, depth, count, deep);
+         break;
+      case RSLC_OP_FOR:
+         dx_returns(e, rslc_list_item(e->c, n->b, 3), depth + 1, count, deep);
+         break;
+      case RSLC_OP_WHILE:
+         dx_returns(e, n->b, depth + 1, count, deep);
+         break;
+      case RSLC_OP_DO:
+         dx_returns(e, n->a, depth + 1, count, deep);
+         break;
+      case RSLC_OP_SWITCH:
+         cnt = n->b ? rslc_list_len(e->c, n->b) : 0;
+         for (i = 0; i < cnt; i++)
+            dx_returns(e, rslc_list_item(e->c, n->b, i), depth + 1, count, deep);
+         break;
+      default:
+         break;
+   }
 }
 
-static struct dx_opnd dx_label(uint32_t l)
+/* Whether a body's last statement is a return. */
+static bool dx_ends_in_return(struct dx_emit *e, uint32_t node)
 {
-   struct dx_opnd o = dx_reg(DXO_LABEL, l, 1);
-   return o;
+   const struct rslc_node *n = rslc_node_at(e->c, node);
+   while (n->op == RSLC_OP_BLOCK)
+   {
+      uint32_t cnt = n->b ? rslc_list_len(e->c, n->b) : 0;
+      if (!cnt)
+         return false;
+      n = rslc_node_at(e->c, rslc_list_item(e->c, n->b, cnt - 1));
+   }
+   return n->op == RSLC_OP_RETURN;
 }
 
-/* A call: the arguments into the callee's parameters, call, the out
- * parameters back, the result into registers of the caller's. */
+/* After a loop or switch of an expanded body closes: a return that left
+ * it leaves the next one out too, up to the wrapper. */
+static bool dx_return_cascade(struct dx_emit *e)
+{
+   const struct dx_inline *in;
+   if (!e->ninl)
+      return true;
+   in = &e->inl[e->ninl - 1];
+   if (in->flag == RSLC_UNSET || e->nctl < in->nctl)
+      return true;
+   return dx_cond(e, DX_BREAKC, true, dx_comp(dx_reg(DXO_TEMP, in->flag, 1), 0));
+}
+
+/* A call, expanded where it is: the arguments, in order, then the
+ * callee's parameters in fresh registers of the caller's, the body, the
+ * out parameters back. */
 static bool dx_call(struct dx_emit *e, const struct rslc_node *n, struct dx_val *out)
 {
    const struct rslc_func *f = e->c->prog.funcs[n->a];
-   uint32_t cnt = n->b ? rslc_list_len(e->c, n->b) : 0, i;
+   uint32_t cnt = n->b ? rslc_list_len(e->c, n->b) : 0, i, k, returns = 0;
    uint32_t tex[DX_MAX_TEXPARAMS];
-   const struct dx_fninst *fi;
-   struct dx_path *outs;
-   struct dx_opnd  l;
+   struct dx_path  *outs;
+   struct dx_val   *vals;
+   struct dx_place *homes;
+   struct dx_inline *in;
+   bool deep = false, trailing, wrapped, ok;
+   if (e->ninl == DX_MAX_INLINE)
+      return dx_fail(e, "calls nested too deep", n->line);
    if (!dx_call_key(e, f, n->b, tex))
       return false;
-   fi = dx_find_inst(e, f, tex);
-   if (!fi || !fi->done)
-      return dx_fail(e, "internal: a function called before it was emitted", n->line);
-   outs = (struct dx_path*)rslc_scratch_alloc(e->c, (cnt ? cnt : 1) * sizeof(*outs));
-   if (!outs)
+   outs  = (struct dx_path*)rslc_scratch_alloc(e->c, (cnt ? cnt : 1) * sizeof(*outs));
+   vals  = (struct dx_val*)rslc_scratch_alloc(e->c, (cnt ? cnt : 1) * sizeof(*vals));
+   homes = (struct dx_place*)rslc_scratch_alloc(e->c, (cnt ? cnt : 1) * sizeof(*homes));
+   if (!outs || !vals || !homes)
       return false;
+   /* the arguments, left to right; a call among them is expanded whole
+    * before this callee's parameters take their homes */
    for (i = 0; i < cnt; i++)
    {
       const struct rslc_var *pv = f->params[i];
       uint32_t an = rslc_list_item(e->c, n->b, i);
-      struct dx_path home;
       if (RSLC_TY_IS_SAMPLER(pv->type->kind))
-         continue;   /* bound in the subroutine */
-      dx_path_regs(&home, pv->type, fi->params[i]);
+         continue;
       if (pv->dir != RSLC_DIR_IN && !dx_path_of(e, an, &outs[i]))
          return false;
-      if (pv->dir != RSLC_DIR_OUT)
-      {
-         if (pv->dir == RSLC_DIR_INOUT)
-         {
-            if (!dx_copy(e, &home, &outs[i], n->line))
-               return false;
-         }
-         else
-         {
-            struct dx_val v;
-            if (!dx_rv(e, an, &v) || !dx_assign_to(e, &home, &v, n->line))
-               return false;
-         }
-      }
+      if (pv->dir == RSLC_DIR_IN && !dx_rv(e, an, &vals[i]))
+         return false;
    }
-   l = dx_label(fi->label);
-   if (!dx_inst(e, DX_CALL, 0, NULL, 0, &l, 1))
+   for (i = 0; i < cnt; i++)
+   {
+      const struct rslc_var *pv = f->params[i];
+      struct dx_var *dv = &e->vars[pv->id];
+      struct dx_path home;
+      if (RSLC_TY_IS_SAMPLER(pv->type->kind))
+         continue;
+      /* an indexed parameter keeps its indexable temporary: the callee
+       * is never active twice */
+      if (!dv->dynamic || !dv->has_home)
+         homes[i] = dx_home(e, pv->id, dx_slots(pv->type));
+      else
+         homes[i] = dv->home;
+      dx_path_regs(&home, pv->type, homes[i]);
+      if (pv->dir == RSLC_DIR_INOUT && !dx_copy(e, &home, &outs[i], n->line))
+         return false;
+      if (pv->dir == RSLC_DIR_IN && !dx_assign_to(e, &home, &vals[i], n->line))
+         return false;
+   }
+   for (i = 0, k = 0; i < f->nparams; i++)
+   {
+      struct dx_var *dv = &e->vars[f->params[i]->id];
+      if (RSLC_TY_IS_SAMPLER(f->params[i]->type->kind))
+      {
+         e->tex_bind[f->params[i]->id] = tex[k++];
+         continue;
+      }
+      dv->home     = homes[i];
+      dv->has_home = true;
+   }
+
+   dx_returns(e, f->body, 0, &returns, &deep);
+   trailing = dx_ends_in_return(e, f->body);
+   wrapped  = returns > (trailing ? 1u : 0u);
+   in = &e->inl[e->ninl++];
+   memset(in, 0, sizeof(*in));
+   in->f    = f;
+   in->flag = RSLC_UNSET;
+   if (f->ret->kind != RSLC_TY_VOID)
+      in->ret = dx_temp(e, dx_slots(f->ret));
+   ok = true;
+   if (wrapped)
+   {
+      if (e->nctl == DX_MAX_LOOPS)
+         return dx_fail(e, "loops nested too deep", n->line);
+      if (deep)
+      {
+         in->flag = dx_temp(e, 1);
+         ok = dx_mov(e, dx_reg(DXO_TEMP, in->flag, 1), dx_immu(0));
+      }
+      memset(&e->ctl[e->nctl], 0, sizeof(e->ctl[0]));
+      e->nctl++;
+      in->nctl    = e->nctl;
+      in->wrapped = true;
+      ok = ok && dx_op0(e, DX_LOOP, 0);
+   }
+   ok = ok && dx_stmt(e, f->body);
+   if (wrapped)
+   {
+      /* the body's last return has left already */
+      e->nctl--;
+      ok = ok && (trailing || dx_op0(e, DX_BREAK, 0)) && dx_op0(e, DX_ENDLOOP, 0);
+   }
+   e->ninl--;
+   if (!ok)
       return false;
+
    for (i = 0; i < cnt; i++)
    {
       const struct rslc_var *pv = f->params[i];
       struct dx_path home;
       if (pv->dir == RSLC_DIR_IN || RSLC_TY_IS_SAMPLER(pv->type->kind))
          continue;
-      dx_path_regs(&home, pv->type, fi->params[i]);
+      dx_path_regs(&home, pv->type, homes[i]);
       if (!dx_copy(e, &outs[i], &home, n->line))
          return false;
    }
    memset(out, 0, sizeof(*out));
    if (f->ret->kind == RSLC_TY_VOID)
-   {
       out->v = dx_immu(0);
-      return true;
-   }
+   else if (f->ret->kind == RSLC_TY_SCALAR || f->ret->kind == RSLC_TY_VEC)
+      out->v = dx_reg(DXO_TEMP, in->ret, dx_width(f->ret));
+   else
    {
-      /* the result, out of the callee's registers before another call */
-      uint32_t k, slots = dx_slots(f->ret), base = dx_temp(e, slots);
-      for (k = 0; k < slots; k++)
-         dx_mov(e, dx_reg(DXO_TEMP, base + k, 4), dx_reg(DXO_TEMP, fi->ret + k, 4));
-      if (f->ret->kind == RSLC_TY_SCALAR || f->ret->kind == RSLC_TY_VEC)
-         out->v = dx_reg(DXO_TEMP, base, dx_width(f->ret));
-      else
-      {
-         out->agg = true;
-         out->p   = dx_place_of(DXO_TEMP, base);
-      }
+      out->agg = true;
+      out->p   = dx_place_of(DXO_TEMP, in->ret);
    }
    return true;
 }
@@ -4252,7 +4350,10 @@ static bool dx_stmt(struct dx_emit *e, uint32_t node)
             dv->folded = true;
             break;
          }
-         if (!dv->has_home)
+         /* a home each time the declaration is reached: an expanded
+          * call's locals are its own; an indexed one keeps its
+          * indexable temporary */
+         if (!dv->has_home || !dv->dynamic)
          {
             dv->home = dx_home(e, v->id, dx_slots(v->type));
             dv->has_home = true;
@@ -4357,7 +4458,7 @@ static bool dx_stmt(struct dx_emit *e, uint32_t node)
             ok = dx_rv(e, cond, &cv) && dx_cond(e, DX_BREAKC, false, dx_comp(cv.v, 0));
          }
          e->nctl--;
-         ok = ok && dx_op0(e, DX_ENDLOOP, 0);
+         ok = ok && dx_op0(e, DX_ENDLOOP, 0) && dx_return_cascade(e);
          break;
       }
       case RSLC_OP_SWITCH:
@@ -4416,7 +4517,7 @@ static bool dx_stmt(struct dx_emit *e, uint32_t node)
          if (ok && open)
             ok = dx_op0(e, DX_BREAK, 0);
          e->nctl--;
-         ok = ok && dx_op0(e, DX_ENDSWITCH, 0);
+         ok = ok && dx_op0(e, DX_ENDSWITCH, 0) && dx_return_cascade(e);
          break;
       }
       case RSLC_OP_BREAK:
@@ -4426,19 +4527,25 @@ static bool dx_stmt(struct dx_emit *e, uint32_t node)
          ok = dx_continue(e, n->line);
          break;
       case RSLC_OP_RETURN:
-         if (e->in_main)
+         if (!e->ninl)
             ok = (e->c->stage == RSLC_STAGE_GEOMETRY || dx_write_outputs(e))
                && dx_op0(e, DX_RET, 0);
          else
          {
+            const struct dx_inline *in = &e->inl[e->ninl - 1];
             if (n->a)
             {
                struct dx_val v;
                struct dx_path p;
-               dx_path_regs(&p, e->cur_fn->ret, dx_place_of(DXO_TEMP, e->cur_inst->ret));
+               dx_path_regs(&p, in->f->ret, dx_place_of(DXO_TEMP, in->ret));
                ok = dx_rv(e, n->a, &v) && dx_assign_to(e, &p, &v, n->line);
             }
-            ok = ok && dx_op0(e, DX_RET, 0);
+            /* out of the wrapper; from a loop or switch inside it, by
+             * the flag */
+            if (ok && in->wrapped && e->nctl > in->nctl)
+               ok = dx_mov(e, dx_reg(DXO_TEMP, in->flag, 1), dx_immu(~0u));
+            if (ok && in->wrapped)
+               ok = dx_op0(e, DX_BREAK, 0);
          }
          break;
       case RSLC_OP_DISCARD:
@@ -4458,131 +4565,6 @@ static bool dx_stmt(struct dx_emit *e, uint32_t node)
    if (!ok && !e->c->failed)
       dx_fail(e, "cannot emit a statement", n->line);
    return ok;
-}
-
-/* ------------------------------------------------------------------ */
-/* Functions                                                           */
-/* ------------------------------------------------------------------ */
-
-static bool dx_function(struct dx_emit *e, const struct rslc_func *f, const uint32_t *tex);
-
-/* Emits the functions a body calls before the body itself, so each
- * call finds its callee's registers. */
-static bool dx_callees(struct dx_emit *e, uint32_t node)
-{
-   const struct rslc_node *n;
-   uint32_t i, cnt;
-   if (!node)
-      return true;
-   n = rslc_node_at(e->c, node);
-   switch (n->op)
-   {
-      case RSLC_OP_CONST: case RSLC_OP_VAR: case RSLC_OP_BREAK: case RSLC_OP_CONTINUE:
-      case RSLC_OP_DISCARD: case RSLC_OP_NONE:
-         return true;
-      case RSLC_OP_DECL:
-         return dx_callees(e, e->c->prog.vars[n->a]->init);
-      case RSLC_OP_CALL:
-         cnt = n->b ? rslc_list_len(e->c, n->b) : 0;
-         for (i = 0; i < cnt; i++)
-            if (!dx_callees(e, rslc_list_item(e->c, n->b, i)))
-               return false;
-         {
-            uint32_t tex[DX_MAX_TEXPARAMS];
-            const struct rslc_func *f = e->c->prog.funcs[n->a];
-            if (!dx_call_key(e, f, n->b, tex))
-               return false;
-            if (!dx_find_inst(e, f, tex))
-               return dx_function(e, f, tex);
-         }
-         return true;
-      case RSLC_OP_BUILTIN: case RSLC_OP_CONSTRUCT: case RSLC_OP_BLOCK: case RSLC_OP_SWITCH:
-      case RSLC_OP_FOR:
-         cnt = n->b ? rslc_list_len(e->c, n->b) : 0;
-         for (i = 0; i < cnt; i++)
-            if (!dx_callees(e, rslc_list_item(e->c, n->b, i)))
-               return false;
-         return n->op == RSLC_OP_SWITCH ? dx_callees(e, n->a) : true;
-      default:
-         return dx_callees(e, n->a) && dx_callees(e, n->b) && dx_callees(e, n->c);
-   }
-}
-
-/* A function other than main, for one binding of its sampler
- * parameters: a subroutine owning temporaries no other uses. */
-static bool dx_function(struct dx_emit *e, const struct rslc_func *f, const uint32_t *tex)
-{
-   struct rslc_pbuf *saved_out = e->out;
-   const struct rslc_func *saved_fn = e->cur_fn;
-   const struct dx_fninst *saved_inst = e->cur_inst;
-   bool saved_main = e->in_main;
-   struct dx_fninst *fi;
-   struct dx_opnd l;
-   uint32_t i, k, saved_nctl = e->nctl, idx;
-   if (e->ninsts == e->insts_cap)
-   {
-      uint32_t cap = e->insts_cap ? e->insts_cap * 2 : 32;
-      struct dx_fninst *n = (struct dx_fninst*)rslc_arena_zalloc(e->c, cap * sizeof(*n));
-      if (!n)
-         return false;
-      if (e->ninsts)
-         memcpy(n, e->insts, e->ninsts * sizeof(*n));
-      e->insts = n;
-      e->insts_cap = cap;
-   }
-   idx = e->ninsts++;
-   fi = &e->insts[idx];
-   memset(fi, 0, sizeof(*fi));
-   fi->f = f;
-   memcpy(fi->tex, tex, sizeof(fi->tex));
-   fi->params = (struct dx_place*)rslc_arena_zalloc(e->c, (f->nparams ? f->nparams : 1)
-         * sizeof(*fi->params));
-   if (!fi->params)
-      return false;
-   /* the sampler parameters name the textures; what this body calls
-    * is made first */
-   for (i = 0, k = 0; i < f->nparams; i++)
-      if (RSLC_TY_IS_SAMPLER(f->params[i]->type->kind))
-         e->tex_bind[f->params[i]->id] = tex[k++];
-   if (!dx_callees(e, f->body))
-      return false;
-   fi = &e->insts[idx];   /* the table may have grown */
-   for (i = 0, k = 0; i < f->nparams; i++)
-      if (RSLC_TY_IS_SAMPLER(f->params[i]->type->kind))
-         e->tex_bind[f->params[i]->id] = tex[k++];
-   e->ntemp    = e->max_temp;
-   e->out      = &e->subs;
-   e->cur_fn   = f;
-   e->cur_inst = fi;
-   e->in_main  = false;
-   e->nctl     = 0;
-   fi->label   = e->nlabel++;
-   for (i = 0; i < f->nparams; i++)
-   {
-      struct dx_var *dv = &e->vars[f->params[i]->id];
-      if (RSLC_TY_IS_SAMPLER(f->params[i]->type->kind))
-         continue;
-      dv->home = dx_home(e, f->params[i]->id, dx_slots(f->params[i]->type));
-      dv->has_home = true;
-      fi->params[i] = dv->home;
-   }
-   if (f->ret->kind != RSLC_TY_VOID)
-      fi->ret = dx_temp(e, dx_slots(f->ret));
-   fi->done = true;   /* calls in its own body find it: recursion is refused earlier */
-   /* the locals get fresh homes in this body */
-   for (i = 1; i < e->c->prog.nvars; i++)
-      if (!e->c->prog.vars[i]->global && e->c->prog.vars[i]->storage != RSLC_ST_PARAM)
-         e->vars[i].has_home = false;
-   l = dx_label(fi->label);
-   if (!dx_inst(e, DX_LABEL, 0, NULL, 0, &l, 1) || !dx_stmt(e, f->body)
-         || !dx_op0(e, DX_RET, 0))
-      return false;
-   e->out      = saved_out;
-   e->cur_fn   = saved_fn;
-   e->cur_inst = saved_inst;
-   e->in_main  = saved_main;
-   e->nctl     = saved_nctl;
-   return true;
 }
 
 /* ------------------------------------------------------------------ */
@@ -4926,11 +4908,6 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
 
    if (!rslc_pbuf_init(c, &e->code, 0, 4096))
       return false;
-   if (!rslc_pbuf_init(c, &e->subs, 0, 1024))
-   {
-      rslc_pbuf_free(c, &e->code);
-      return false;
-   }
    e->out = &e->code;
    ok = dx_interface(e);
    /* the globals' homes, below every function's */
@@ -4941,18 +4918,10 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
             && (v->storage == RSLC_ST_GLOBAL || v->storage == RSLC_ST_CONST))
          ok = dx_var_home(e, v);
    }
-   /* the subroutines, then main above them all */
-   e->in_main = true;
-   ok = ok && dx_callees(e, pr->main_fn->body);
-   for (i = 1; ok && i < pr->nvars; i++)
-      if (pr->vars[i]->global && pr->vars[i]->init)
-         ok = dx_callees(e, pr->vars[i]->init);
    if (ok)
    {
-      e->ntemp   = e->max_temp;
-      e->out     = &e->code;
-      e->cur_fn  = pr->main_fn;
-      e->in_main = true;
+      e->ntemp = e->max_temp;
+      e->out   = &e->code;
       /* in blocks into their temporaries */
       for (i = 0; ok && i < e->nic; i++)
       {
@@ -5004,7 +4973,6 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
       if (!c->failed)
          rslc_err(c, "dxbc: emission failed", NULL, 0);
       rslc_pbuf_free(c, &e->code);
-      rslc_pbuf_free(c, &e->subs);
       return false;
    }
 
@@ -5026,15 +4994,14 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
       && dx_sig_chunk(e, &osgn, e->osig, e->nosig, c->stage == RSLC_STAGE_GEOMETRY && e->sm >= 50);
    if (ok)
    {
-      uint32_t words = (uint32_t)((decl.len + e->code.len + e->subs.len) / 4) + 2;
+      uint32_t words = (uint32_t)((decl.len + e->code.len) / 4) + 2;
       uint32_t ver;
       prog_type = c->stage == RSLC_STAGE_FRAGMENT ? 0u : c->stage == RSLC_STAGE_VERTEX ? 1u
          : c->stage == RSLC_STAGE_GEOMETRY ? 2u : 5u;
       ver = (prog_type << 16) | ((e->sm / 10) << 4) | (e->sm % 10);
       ok = rslc_pbuf_put(c, &shex, &ver, 4) && rslc_pbuf_put(c, &shex, &words, 4)
          && rslc_pbuf_put(c, &shex, decl.data, decl.len)
-         && rslc_pbuf_put(c, &shex, e->code.data, e->code.len)
-         && rslc_pbuf_put(c, &shex, e->subs.data, e->subs.len);
+         && rslc_pbuf_put(c, &shex, e->code.data, e->code.len);
    }
    if (ok)
    {
@@ -5070,7 +5037,6 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
    rslc_pbuf_free(c, &shex);
    rslc_pbuf_free(c, &dxbc);
    rslc_pbuf_free(c, &e->code);
-   rslc_pbuf_free(c, &e->subs);
    if (!ok)
       return false;
    rslc_blob_end(c, &blob, RSLC_DST_DXBC, result);
