@@ -126,6 +126,7 @@ jobs:
             rtmp_socket_test
             rslc_test
             rslc_build_test
+            rslc_ext_test
             s16_to_float_test
             float_to_s16_test
             float_to_s32_test
