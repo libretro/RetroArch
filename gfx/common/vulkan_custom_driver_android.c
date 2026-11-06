@@ -44,6 +44,7 @@ static struct
    char base[PATH_MAX_LENGTH];   /* <internalDataPath>/vulkan_drivers/ */
    char marker[PATH_MAX_LENGTH];
    char state[PATH_MAX_LENGTH];
+   char trust[PATH_MAX_LENGTH];
    char prep[PATH_MAX_LENGTH];   /* the zip a pick's task was pushed for */
    const char *core;             /* of the open() in progress */
    bool mesa;                    /* of the last driver open() returned */
@@ -77,6 +78,9 @@ static void custom_driver_msg(enum vulkan_custom_driver_msg msg)
          break;
       case VULKAN_CUSTOM_DRIVER_MSG_RESTART:
          id = MSG_VULKAN_CUSTOM_DRIVER_RESTART;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED:
+         id = MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED;
          break;
       default:
          return;
@@ -113,6 +117,34 @@ static bool custom_driver_save_state(void)
    return filestream_write_file_atomic(custom_driver_st.state,
          custom_driver_st.session.state,
          (int64_t)custom_driver_st.session.state_len);
+}
+
+/* Adds a picked version to the trust file. Never two writers: the seed
+ * runs before any pick is queued, and pick tasks run one at a time. */
+static void custom_driver_trust(const char *file, const char *path,
+      uint32_t key)
+{
+   int64_t len = 0;
+   char *old   = custom_driver_read(file, &len);
+   size_t n    = (size_t)len;
+   size_t added;
+   char *trust;
+   /* Rewriting a file it could not read would drop its other picks */
+   if (!old && path_is_valid(file))
+      return;
+   if ((trust = (char*)malloc(VULKAN_CUSTOM_DRIVER_STATE_MAX)))
+   {
+      if (n > VULKAN_CUSTOM_DRIVER_STATE_MAX)
+         n = VULKAN_CUSTOM_DRIVER_STATE_MAX;
+      if (n)
+         memcpy(trust, old, n);
+      added = vulkan_custom_driver_trust_add(trust, n,
+            VULKAN_CUSTOM_DRIVER_STATE_MAX, path, key);
+      if (added != n)
+         filestream_write_file_atomic(file, trust, (int64_t)added);
+      free(trust);
+   }
+   free(old);
 }
 
 /* Written before driver code runs, deleted once it is up or failed. */
@@ -221,6 +253,48 @@ static bool custom_driver_extracted(struct custom_driver_work *w,
    }
    free(buf);
    return ok;
+}
+
+/* With no trust file yet, trusts each finished extraction whose zip is
+ * unchanged: those drivers were in use before picks were recorded. */
+static void custom_driver_seed(struct custom_driver_work *w)
+{
+   struct vulkan_custom_driver_meta meta;
+   size_t len        = 0;
+   char *trust       = (char*)malloc(VULKAN_CUSTOM_DRIVER_STATE_MAX);
+   struct RDIR *rdir = retro_opendir(custom_driver_st.base);
+   if (trust && rdir)
+   {
+      while (retro_readdir(rdir))
+      {
+         int64_t n        = 0;
+         const char *name = retro_dirent_get_name(rdir);
+         char *zip;
+         if (     !retro_dirent_is_dir(rdir, NULL)
+               || strlen(name) != 8
+               || strspn(name, "0123456789abcdef") != 8)
+            continue;
+         fill_pathname_join_special(w->dir, custom_driver_st.base, name,
+               sizeof(w->dir));
+         /* current_dir leaves w->file at the source file */
+         if (     custom_driver_extracted(w, g_android->activity->sdkVersion,
+                     &meta)
+               && custom_driver_current_dir(w, name)
+               && (zip = custom_driver_read(w->file, &n)))
+         {
+            len = vulkan_custom_driver_trust_add(trust, len,
+                  VULKAN_CUSTOM_DRIVER_STATE_MAX, zip,
+                  (uint32_t)strtoul(name, NULL, 16));
+            free(zip);
+         }
+      }
+   }
+   if (trust)
+      filestream_write_file_atomic(custom_driver_st.trust, trust,
+            (int64_t)len);
+   if (rdir)
+      retro_closedir(rdir);
+   free(trust);
 }
 
 /* Extraction matches the member name ignoring case, so only one member
@@ -435,7 +509,19 @@ static bool custom_driver_init(void)
          "pending", sizeof(custom_driver_st.marker));
    fill_pathname_join_special(custom_driver_st.state, custom_driver_st.base,
          "state", sizeof(custom_driver_st.state));
+   fill_pathname_join_special(custom_driver_st.trust, custom_driver_st.base,
+         "trusted", sizeof(custom_driver_st.trust));
    fill_pathname_slash(custom_driver_st.base, sizeof(custom_driver_st.base));
+   if (!path_is_valid(custom_driver_st.trust))
+   {
+      struct custom_driver_work *w = (struct custom_driver_work*)
+         calloc(1, sizeof(*w));
+      if (w)
+      {
+         custom_driver_seed(w);
+         free(w);
+      }
+   }
 
    state  = custom_driver_read(custom_driver_st.state, &state_len);
    marker = custom_driver_read(custom_driver_st.marker, &marker_len);
@@ -449,6 +535,27 @@ static bool custom_driver_init(void)
    free(state);
    free(marker);
    return true;
+}
+
+/* Picked in the menu: in the trust file, or its pick's task has not
+ * recorded it yet. */
+static bool custom_driver_trusted(const char *path, int64_t size,
+      int64_t mtime)
+{
+   int64_t len = 0;
+   char *trust;
+   bool trusted;
+   /* No newline: the trust file could not record it */
+   if (     retro_atomic_load_acquire_int(&custom_driver_preps) > 0
+         && string_is_equal(custom_driver_st.prep, path)
+         && !strchr(path, '\n'))
+      return true;
+   if (!(trust = custom_driver_read(custom_driver_st.trust, &len)))
+      return false;
+   trusted = vulkan_custom_driver_trust_find(trust, (size_t)len, path,
+         vulkan_custom_driver_key(path, size, mtime));
+   free(trust);
+   return trusted;
 }
 
 dylib_t vulkan_custom_driver_open(void)
@@ -478,12 +585,14 @@ dylib_t vulkan_custom_driver_open(void)
    req.supported = false;
    req.size      = -1;
    req.mtime     = 0;
+   req.trusted   = false;
    if (!string_is_empty(req.path) && !req.safe_mode)
    {
       req.supported = vulkan_custom_driver_supported();
       req.size      = path_get_size(req.path);
       if (path_get_mtime(req.path, &mtime))
          req.mtime  = mtime;
+      req.trusted   = custom_driver_trusted(req.path, req.size, req.mtime);
    }
    custom_driver_st.core = req.core;
    handle = vulkan_custom_driver_session_open(&custom_driver_st.session,
@@ -493,6 +602,9 @@ dylib_t vulkan_custom_driver_open(void)
    /* The load callback warns for the INVALID it returns. */
    if (msg == VULKAN_CUSTOM_DRIVER_MSG_INVALID && req.size < 0)
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: zip missing or not readable.\n",
+            req.path);
+   if (msg == VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED)
+      RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: not picked in the menu, or changed since.\n",
             req.path);
    if (custom_driver_st.session.full)
       RARCH_LOG("[Vulkan] Custom driver \"%s\" not used: too many drivers tried this session.\n",
@@ -574,9 +686,9 @@ bool vulkan_custom_driver_crashed(const char *path)
          custom_driver_st.session.state_len, path, custom_driver_core());
 }
 
-/* A pick's task: the package checked and extracted ahead of the
- * context init that loads it, which then finds it done. Its state is
- * all it reads. */
+/* A pick's task: trusts the pick, then checks and extracts the package
+ * ahead of the context init that loads it. Its state and the trust file
+ * are all it reads. */
 struct custom_driver_prep
 {
    struct custom_driver_work w;
@@ -584,6 +696,7 @@ struct custom_driver_prep
    char path[PATH_MAX_LENGTH];
    char base[PATH_MAX_LENGTH];
    int api_level;
+   bool extract;      /* not in safe mode */
 };
 
 static void custom_driver_prep_handler(retro_task_t *task)
@@ -597,13 +710,17 @@ static void custom_driver_prep_handler(retro_task_t *task)
          && path_get_mtime(p->path, &mtime))
    {
       const char *reason;
-      snprintf(p->w.other, sizeof(p->w.other), "%08x",
-            (unsigned)vulkan_custom_driver_key(p->path, size, mtime));
+      uint32_t key = vulkan_custom_driver_key(p->path, size, mtime);
+      fill_pathname_join_special(p->w.file, p->base, "trusted",
+            sizeof(p->w.file));
+      custom_driver_trust(p->w.file, p->path, key);
+      snprintf(p->w.other, sizeof(p->w.other), "%08x", (unsigned)key);
       fill_pathname_join_special(p->w.dir, p->base, p->w.other,
             sizeof(p->w.dir));
       strlcpy(p->w.tmp, p->w.dir, sizeof(p->w.tmp));
       strlcat(p->w.tmp, ".prep", sizeof(p->w.tmp));
-      if (     !custom_driver_extracted(&p->w, p->api_level, &p->meta)
+      if (     p->extract
+            && !custom_driver_extracted(&p->w, p->api_level, &p->meta)
             && (reason = custom_driver_extract(&p->w, p->path,
                   p->api_level, &p->meta)))
          RARCH_WARN("[Vulkan] Custom driver \"%s\" not usable: %s.\n",
@@ -618,15 +735,15 @@ static void custom_driver_prep_free(retro_task_t *task)
    retro_atomic_fetch_add_int(&custom_driver_preps, -1);
 }
 
-/* Main thread, at a pick: extracts path ahead of its first start. */
+/* Main thread, at a pick: trusts path and extracts it ahead of its
+ * first start. */
 static void custom_driver_prepare(const char *path)
 {
    struct custom_driver_prep *p;
    retro_task_t *task;
 
    /* One task per zip at a time: two write the same .prep */
-   if (     custom_driver_st.safe_mode
-         || !vulkan_custom_driver_supported()
+   if (     !vulkan_custom_driver_supported()
          || (     retro_atomic_load_acquire_int(&custom_driver_preps) > 0
                && string_is_equal(custom_driver_st.prep, path))
          || !(p = (struct custom_driver_prep*)calloc(1, sizeof(*p))))
@@ -640,6 +757,7 @@ static void custom_driver_prepare(const char *path)
    strlcpy(p->path, path, sizeof(p->path));
    strlcpy(p->base, custom_driver_st.base, sizeof(p->base));
    p->api_level    = g_android->activity->sdkVersion;
+   p->extract      = !custom_driver_st.safe_mode;
    task->handler   = custom_driver_prep_handler;
    task->state     = p;
    task->cleanup   = custom_driver_prep_free;

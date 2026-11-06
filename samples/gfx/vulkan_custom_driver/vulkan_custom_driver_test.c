@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <lists/string_list.h>
@@ -443,6 +444,7 @@ static struct vulkan_custom_driver_request request(const char *path,
    req.core      = core;
    req.supported = true;
    req.safe_mode = false;
+   req.trusted   = true;
    return req;
 }
 
@@ -580,6 +582,106 @@ static void test_session(void)
          == VULKAN_CUSTOM_DRIVER_MSG_RESTART);
    CHECK(!open_drv("/d/A.zip", "Core", &msg)
          && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE && loader.loads == 2);
+}
+
+static void test_trust(void)
+{
+   static char full[VULKAN_CUSTOM_DRIVER_STATE_MAX];
+   enum vulkan_custom_driver_msg msg;
+   struct vulkan_custom_driver_request req;
+   char trust[64];
+   char path[32];
+   char dir[9];
+   unsigned i;
+   size_t len = 0;
+   uint32_t a = vulkan_custom_driver_key("/d/A.zip", 18870258, 1000);
+   uint32_t b = vulkan_custom_driver_key("/d/B.zip", 4096, 2000);
+
+   /* a pick trusts that path in that version */
+   len = vulkan_custom_driver_trust_add(trust, len, sizeof(trust),
+         "/d/A.zip", a);
+   sprintf(dir, "%08x", (unsigned)a);
+   CHECK(len == 18 && !memcmp(trust, dir, 8)
+         && !memcmp(trust + 8, "\t/d/A.zip\n", 10));
+   CHECK(vulkan_custom_driver_trust_find(trust, len, "/d/A.zip", a));
+   CHECK(vulkan_custom_driver_trust_add(trust, len, sizeof(trust),
+         "/d/A.zip", a) == len);
+   /* a changed zip, or the key under another path, is not trusted */
+   CHECK(!vulkan_custom_driver_trust_find(trust, len, "/d/A.zip",
+         vulkan_custom_driver_key("/d/A.zip", 18870259, 1000)));
+   CHECK(!vulkan_custom_driver_trust_find(trust, len, "/d/A.zip",
+         vulkan_custom_driver_key("/d/A.zip", 18870258, 1001)));
+   CHECK(!vulkan_custom_driver_trust_find(trust, len, "/d/B.zip", a));
+
+   /* seeded from an extraction: its dir is named by the key */
+   sprintf(dir, "%08x", (unsigned)b);
+   len = vulkan_custom_driver_trust_add(trust, len, sizeof(trust),
+         "/d/B.zip", (uint32_t)strtoul(dir, NULL, 16));
+   CHECK(len == 36);
+   CHECK(vulkan_custom_driver_trust_find(trust, len, "/d/B.zip", b));
+   CHECK(vulkan_custom_driver_trust_find(trust, len, "/d/A.zip", a));
+
+   /* a torn last line does not count, and is dropped by the next add */
+   sprintf(dir, "%08x", (unsigned)b);
+   memcpy(trust + len, dir, 8);
+   memcpy(trust + len + 8, "\t/d/C.zip", 9);
+   CHECK(!vulkan_custom_driver_trust_find(trust, len + 17, "/d/C.zip", b));
+   len = vulkan_custom_driver_trust_add(trust, len + 17, sizeof(trust),
+         "/d/D.zip", a);
+   CHECK(len == 54 && !memcmp(trust + 44, "\t/d/D.zip\n", 10));
+   CHECK(!vulkan_custom_driver_trust_find(trust, len, "/d/C.zip", b));
+   CHECK(vulkan_custom_driver_trust_find(trust, len, "/d/D.zip", a));
+
+   /* a tab in the path is fine, a newline cannot be read back */
+   len = vulkan_custom_driver_trust_add(trust, 0, sizeof(trust),
+         "/d/a\tb.zip", a);
+   CHECK(len == 20);
+   CHECK(vulkan_custom_driver_trust_find(trust, len, "/d/a\tb.zip", a));
+   CHECK(!vulkan_custom_driver_trust_find(trust, len, "/d/a", a));
+   CHECK(!vulkan_custom_driver_trust_find(trust, len, "b.zip", a));
+   CHECK(vulkan_custom_driver_trust_add(trust, len, sizeof(trust),
+         "/d/\n.zip", a) == len);
+   CHECK(vulkan_custom_driver_trust_add(trust, len, sizeof(trust),
+         "/d/C.zip\n", a) == len);
+
+   /* full at the file's cap: the oldest picks go */
+   len = 0;
+   for (i = 0; i < VULKAN_CUSTOM_DRIVER_STATE_MAX / 32; i++)
+   {
+      sprintf(path, "/d/drivers/v%06u.zip", i); /* 32-byte lines */
+      len = vulkan_custom_driver_trust_add(full, len, sizeof(full), path, i);
+   }
+   CHECK(len == VULKAN_CUSTOM_DRIVER_STATE_MAX);
+   CHECK(vulkan_custom_driver_trust_find(full, len,
+         "/d/drivers/v000000.zip", 0));
+   sprintf(path, "/d/drivers/v%06u.zip", i);
+   len = vulkan_custom_driver_trust_add(full, len, sizeof(full), path, i);
+   CHECK(len == VULKAN_CUSTOM_DRIVER_STATE_MAX);
+   CHECK(!vulkan_custom_driver_trust_find(full, len,
+         "/d/drivers/v000000.zip", 0));
+   CHECK(vulkan_custom_driver_trust_find(full, len,
+         "/d/drivers/v000001.zip", 1));
+   CHECK(vulkan_custom_driver_trust_find(full, len, path, i));
+
+   /* never picked: the system driver, UNTRUSTED once, nothing loaded */
+   begin(NULL, NULL);
+   req         = request("/d/A.zip", "Core");
+   req.trusted = false;
+   CHECK(!open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED);
+   CHECK(!open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(loader.loads == 0 && !vulkan_custom_driver_session_current(&session));
+   /* picked again: said again while not yet trusted; trusted, it loads */
+   CHECK(vulkan_custom_driver_session_picked(&session, "/d/A.zip")
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED);
+   req.trusted = true;
+   CHECK(open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE
+         && loader.loads == 1);
+   /* a missing zip is INVALID, trusted or not */
+   req         = request("/d/gone.zip", "Core");
+   req.size    = -1;
+   req.trusted = false;
+   CHECK(!open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
 }
 
 static bool opened(void)
@@ -922,6 +1024,7 @@ int main(void)
    test_key();
    test_crash_state();
    test_session();
+   test_trust();
    test_session_table();
    test_crash_marker();
    test_patch_soname();

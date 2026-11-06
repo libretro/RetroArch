@@ -56,7 +56,8 @@ enum vulkan_custom_driver_msg
    VULKAN_CUSTOM_DRIVER_MSG_CRASHED,
    VULKAN_CUSTOM_DRIVER_MSG_INVALID,
    VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED,
-   VULKAN_CUSTOM_DRIVER_MSG_RESTART
+   VULKAN_CUSTOM_DRIVER_MSG_RESTART,
+   VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED
 };
 
 /* Crash state: one "<core>\t<zip path>\n" line per driver that took the
@@ -70,6 +71,14 @@ size_t vulkan_custom_driver_crash_add(char *state, size_t len, size_t cap,
 /* Drops path's lines for every core. Returns the new length. */
 size_t vulkan_custom_driver_crash_clear(char *state, size_t len,
       const char *path);
+
+/* Trust list: one "<key>\t<zip path>\n" line per driver version picked
+ * in the menu, the key as "%08x". add returns the new length; the oldest
+ * lines go when cap is reached. */
+bool vulkan_custom_driver_trust_find(const char *trust, size_t len,
+      const char *path, uint32_t key);
+size_t vulkan_custom_driver_trust_add(char *trust, size_t len, size_t cap,
+      const char *path, uint32_t key);
 
 /* Loads the driver at path into the extraction dir named by key. Returns
  * its loader with *meta filled in, or NULL with *msg set to
@@ -86,6 +95,7 @@ struct vulkan_custom_driver_request
    const char *core;  /* the running core; "" or NULL: the menu */
    bool supported;    /* Adreno and API >= 28 */
    bool safe_mode;    /* started with the system driver forced */
+   bool trusted;      /* this version was picked in the menu */
 };
 
 struct vulkan_custom_driver_slot
@@ -170,7 +180,7 @@ bool    vulkan_custom_driver_current(void);             /* this init opened a cu
 bool    vulkan_custom_driver_mesa(void);                /* the driver open() returned is Mesa */
 bool    vulkan_custom_driver_supported(void);           /* Adreno and API >= 28 */
 bool    vulkan_custom_driver_crashed(const char *path); /* off for the running core after a crash */
-void    vulkan_custom_driver_picked(const char *path);  /* clears path's crash state and INVALID mark */
+void    vulkan_custom_driver_picked(const char *path);  /* trusts path; clears its crash state and INVALID mark */
 void    vulkan_custom_driver_set_safe_mode(bool safe_mode); /* true: system driver until the process ends */
 bool    vulkan_custom_driver_safe_mode(void);           /* Safe start: system driver for this process */
 /* vulkan_custom_driver_linker.c: a private copy of the system Vulkan

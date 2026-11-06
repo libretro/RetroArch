@@ -34306,6 +34306,10 @@ MSG_HASH(
    "Started with the system Vulkan driver."
    )
 MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
+   "Custom Vulkan driver was not picked in the menu or has changed. Pick it again to use it."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Lowest"
    )
