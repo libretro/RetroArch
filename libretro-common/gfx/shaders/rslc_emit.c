@@ -3716,6 +3716,8 @@ static void pr_io_decl(struct rslc_pr *p, const struct rslc_var *v, bool is_in)
    bool layout_ok = p->es ? p->version >= 300 : p->version >= 330;
    bool fragment  = p->c->stage == RSLC_STAGE_FRAGMENT;
 #ifdef RSLC_EXTENDED
+   if (v->quals & RSLC_VQ_PERVERTEX)
+      return;   /* gl_in is the stage's own */
    if (v->quals & RSLC_VQ_IOBLOCK)
    {
       pr_ioblock_decl(p, v, is_in);

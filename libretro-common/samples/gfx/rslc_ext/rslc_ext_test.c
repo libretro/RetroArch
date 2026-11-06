@@ -229,6 +229,58 @@ static const char gs_wide_line[] =
    "   EndPrimitive();\n"
    "}\n";
 
+/* The screen-quad vertex stage parallel-gamecubewii shares between its
+ * utility passes: an unnamed out block, its member named on its own. */
+static const char vs_unnamed[] =
+   "#version 450\n"
+   "layout(location = 0) out VertexData {\n"
+   "   vec3 v_tex0;\n"
+   "};\n"
+   "void main()\n"
+   "{\n"
+   "   v_tex0 = vec3(float((gl_VertexIndex << 1) & 2), float(gl_VertexIndex & 2), 0.0);\n"
+   "   gl_Position = vec4(v_tex0.xy * vec2(2.0, -2.0) + vec2(-1.0, 1.0), 0.0, 1.0);\n"
+   "}\n";
+
+/* Its layered pass-through geometry stage: the input instance sized by
+ * the input primitive, the position and clip distances read from gl_in. */
+static const char gs_passthrough[] =
+   "#version 450\n"
+   "layout(triangles) in;\n"
+   "layout(triangle_strip, max_vertices = 6) out;\n"
+   "layout(location = 0) in VertexData { vec3 v_tex0; } v_in[];\n"
+   "layout(location = 0) out VertexData { vec3 v_tex0; } v_out;\n"
+   "void main()\n"
+   "{\n"
+   "   int j, v;\n"
+   "   for (j = 0; j < 2; j++)\n"
+   "   {\n"
+   "      for (v = 0; v < 3; v++)\n"
+   "      {\n"
+   "         gl_Layer = j;\n"
+   "         gl_Position = gl_in[v].gl_Position;\n"
+   "         gl_ClipDistance[0] = gl_in[v].gl_ClipDistance[0];\n"
+   "         gl_ClipDistance[1] = gl_in[v].gl_ClipDistance[1];\n"
+   "         v_out.v_tex0 = vec3(v_in[v].v_tex0.xy, float(j));\n"
+   "         EmitVertex();\n"
+   "      }\n"
+   "      EndPrimitive();\n"
+   "   }\n"
+   "}\n";
+
+/* A uniform block holding bools, as the ubershaders' does, and a depth
+ * write: SPIR-V holds the bools as uint and declares DepthReplacing. */
+static const char fs_bool_depth[] =
+   "#version 450\n"
+   "layout(std140, set = 0, binding = 0) uniform PSBlock { bool enabled; bvec2 flags; vec4 color; };\n"
+   "layout(location = 0) in vec3 v_tex0;\n"
+   "layout(location = 0) out vec4 ocol0;\n"
+   "void main()\n"
+   "{\n"
+   "   ocol0 = enabled && flags.y ? color : vec4(v_tex0, 1.0);\n"
+   "   gl_FragDepth = flags.x ? 0.5 : v_tex0.z;\n"
+   "}\n";
+
 /* The bounding box: a coherent storage buffer, kept by atomics. */
 static const char fs_bbox[] =
    "#version 450\n"
@@ -435,7 +487,9 @@ int main(int argc, char **argv)
          { "wide_line", gs_wide_line, RSLC_STAGE_GEOMETRY,
             "layout(triangle_strip, max_vertices = 4) out;" },
          { "bbox", fs_bbox, RSLC_STAGE_FRAGMENT, "coherent buffer BBox {" },
-         { "vertex_fetch", vs_vertex_fetch, RSLC_STAGE_VERTEX, "InputData input_buffer[];" }
+         { "vertex_fetch", vs_vertex_fetch, RSLC_STAGE_VERTEX, "InputData input_buffer[];" },
+         { "unnamed_vert", vs_unnamed, RSLC_STAGE_VERTEX, "out VertexData {" },
+         { "passthrough", gs_passthrough, RSLC_STAGE_GEOMETRY, "gl_in[" }
       };
       unsigned i;
       for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
@@ -464,6 +518,23 @@ int main(int argc, char **argv)
          }
          memset(&r, 0, sizeof(r));
          CHECK(!compile(cases[i].src, RSLC_DST_HLSL, 50, &o, &r, err, sizeof(err)));
+      }
+   }
+
+   /* bools in a block and a depth write */
+   {
+      char err[256];
+      struct rslc_opts   o;
+      struct rslc_result r;
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      memset(&r, 0, sizeof(r));
+      CHECK(compile(fs_bool_depth, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+      if (err[0])
+         fprintf(stderr, "bool_depth: %s\n", err);
+      if (r.blob)
+      {
+         write_spirv(dir, "bool_depth", &r);
+         rslc_result_free(&r, &o);
       }
    }
 

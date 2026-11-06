@@ -1199,6 +1199,7 @@ struct spv_emit
    bool                 need_sampledbuffer;
    bool                 need_samplerateshading;
    bool                 need_clipdistance;
+   bool                 writes_fragdepth;   /* the entry point declares DepthReplacing */
    bool                 need_culldistance;
    bool                 in_main;
 };
@@ -1334,12 +1335,21 @@ static bool spv_mdecorate1(struct spv_emit *e, uint32_t id, uint32_t m, uint32_t
 
 static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t);
 
+/* The uint scalar or vector a bool one is held as in a block. */
+static const struct rslc_type *spv_laid_bool(struct spv_emit *e, const struct rslc_type *t)
+{
+   return rslc_type_basic(e->c, (enum rslc_tkind)t->kind, RSLC_BASE_UINT, t->rows, 1);
+}
+
 static uint32_t spv_type_laid(struct spv_emit *e, const struct rslc_type *t, bool std140)
 {
    struct spv_tinfo *ti = &e->tinfo[t->id];
    uint32_t id;
    unsigned k = std140 ? 1 : 0;
 
+   /* a bool has no size in memory: a block holds it as a uint */
+   if (t->base == RSLC_BASE_BOOL && (t->kind == RSLC_TY_SCALAR || t->kind == RSLC_TY_VEC))
+      return spv_type(e, spv_laid_bool(e, t));
    if (t->kind != RSLC_TY_ARRAY && t->kind != RSLC_TY_STRUCT)
       return spv_type(e, t);
    if (ti->laid[k])
@@ -2291,7 +2301,23 @@ static uint32_t spv_lvalue(struct spv_emit *e, uint32_t node, unsigned *sc, bool
             idx = spv_rvalue(e, n->b);
          if (!idx)
             return 0;
+#ifdef RSLC_EXTENDED
+         /* gl_in's clip and cull arrays took their length after the
+          * member was read: the block's field has it */
+         if (n->op == RSLC_OP_MEMBER)
+         {
+            const struct rslc_type *bt = rslc_node_at(e->c, n->a)->type;
+            if (RSLC_TY_IS_IOBLOCK(bt))
+            {
+               tid = spv_type(e, bt->fields[n->b].type);
+               goto have_tid;
+            }
+         }
+#endif
          tid = *laid ? spv_type_laid(e, n->type, *std140) : spv_type(e, n->type);
+#ifdef RSLC_EXTENDED
+have_tid:
+#endif
          if (!tid)
             return 0;
          ptrt = spv_ptr(e, tid, *sc);
@@ -2376,6 +2402,13 @@ static bool spv_assign_to(struct spv_emit *e, uint32_t node, uint32_t val)
       uint32_t ptr = spv_lvalue(e, node, &sc, &laid, &std140);
       if (!ptr)
          return false;
+      if (laid && n->type->base == RSLC_BASE_BOOL
+            && (n->type->kind == RSLC_TY_SCALAR || n->type->kind == RSLC_TY_VEC))
+      {
+         val = spv_cast(e, val, n->type, spv_laid_bool(e, n->type), n->prec);
+         if (!val)
+            return false;
+      }
       return spv_store(e, ptr, val);
    }
 }
@@ -2390,6 +2423,8 @@ static uint32_t spv_unlay(struct spv_emit *e, const struct rslc_type *t, uint32_
    uint32_t *parts;
    uint32_t  i, n, r;
    struct rslc_mark mark;
+   if (t->base == RSLC_BASE_BOOL && (t->kind == RSLC_TY_SCALAR || t->kind == RSLC_TY_VEC))
+      return spv_cast(e, lv, spv_laid_bool(e, t), t, prec);
    if (t->kind != RSLC_TY_ARRAY && t->kind != RSLC_TY_STRUCT)
       return lv;
    n = t->kind == RSLC_TY_ARRAY ? t->array_len : t->nfields;
@@ -2419,6 +2454,12 @@ static uint32_t spv_load_from(struct spv_emit *e, const struct rslc_type *t, uin
       bool laid, bool std140, uint8_t prec)
 {
    uint32_t ltid, lv;
+   if (laid && t->base == RSLC_BASE_BOOL
+         && (t->kind == RSLC_TY_SCALAR || t->kind == RSLC_TY_VEC))
+   {
+      lv = spv_load(e, spv_laid_bool(e, t), ptr, prec);
+      return lv ? spv_cast(e, lv, spv_laid_bool(e, t), t, prec) : 0;
+   }
    if (!laid || (t->kind != RSLC_TY_ARRAY && t->kind != RSLC_TY_STRUCT))
       return spv_load(e, t, ptr, prec);
    ltid = spv_type_laid(e, t, std140);
@@ -4406,6 +4447,20 @@ static bool spv_global_var(struct spv_emit *e, const struct rslc_var *v)
          stid = spv_type(e, bt);
          if (!stid || !spv_decorate(e, stid, SPV_DEC_BLOCK))
             return false;
+         if (v->quals & RSLC_VQ_PERVERTEX)
+         {
+            /* gl_in: Position, PointSize, ClipDistance, CullDistance */
+            if (!spv_mdecorate1(e, stid, 0, SPV_DEC_BUILTIN, SPV_BI_POSITION)
+                  || !spv_mdecorate1(e, stid, 1, SPV_DEC_BUILTIN, SPV_BI_POINTSIZE)
+                  || !spv_mdecorate1(e, stid, 2, SPV_DEC_BUILTIN, SPV_BI_CLIPDISTANCE)
+                  || !spv_mdecorate1(e, stid, 3, SPV_DEC_BUILTIN, SPV_BI_CULLDISTANCE))
+               return false;
+            if (e->c->prog.clip_in_n)
+               e->need_clipdistance = true;
+            if (e->c->prog.cull_in_n)
+               e->need_culldistance = true;
+         }
+         else
          for (k = 0; k < bt->nfields; k++)
          {
             const struct rslc_field *f = &bt->fields[k];
@@ -4452,6 +4507,8 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
    /* reading the sample index runs the stage per sample */
    if (v->builtin == RSLC_BI_SAMPLEID)
       e->need_samplerateshading = true;
+   if (v->builtin == RSLC_BI_FRAGDEPTH)
+      e->writes_fragdepth = true;
    id = spv_id(e);
    if (!spv_inst3(e, SPV_SEC_TYPES, SpvOpVariable, ptr, id, sc))
       return false;
@@ -4864,6 +4921,9 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       return false;
    if (c->prog.early_fragment_tests
          && !spv_inst2(e, SPV_SEC_ENTRY, SpvOpExecutionMode, main_id, SPV_MODE_EARLYFRAGMENTTESTS))
+      return false;
+   if (e->writes_fragdepth
+         && !spv_inst2(e, SPV_SEC_ENTRY, SpvOpExecutionMode, main_id, 12u /* DepthReplacing */))
       return false;
    if (c->stage == RSLC_STAGE_GEOMETRY)
    {

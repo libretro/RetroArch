@@ -1643,7 +1643,8 @@ enum rslc_dkind
 {
    RSLC_DK_VAR = 1,
    RSLC_DK_FUNC,     /* ptr = first struct rslc_func of the overload chain */
-   RSLC_DK_TYPE      /* ptr = struct rslc_type (a struct) */
+   RSLC_DK_TYPE,     /* ptr = struct rslc_type (a struct) */
+   RSLC_DK_IOMEMBER  /* RSLC_EXTENDED: ptr = an unnamed in / out block's instance */
 };
 
 struct rslc_decl
@@ -1653,7 +1654,8 @@ struct rslc_decl
    struct rslc_decl *next;    /* within the scope */
    void             *ptr;
    uint8_t           kind;
-   uint8_t           pad[7];
+   uint8_t           member;   /* RSLC_DK_IOMEMBER: the field */
+   uint8_t           pad[6];
 };
 
 struct rslc_scope
@@ -3840,6 +3842,19 @@ static uint32_t rslc_p_primary(struct rslc_parser *p)
       rslc_p_next(p);
       if (rslc_p_accept(p, RSLC_P_LPAREN))
          return rslc_p_call(p, sym, line);
+#ifdef RSLC_EXTENDED
+      /* a member of an unnamed in / out block reads through its instance */
+      if (sym->decl && sym->decl->kind == RSLC_DK_IOMEMBER)
+      {
+         struct rslc_var         *v = (struct rslc_var*)sym->decl->ptr;
+         const struct rslc_field *f = &v->type->fields[sym->decl->member];
+         uint32_t e = rslc_p_mk(p, RSLC_OP_VAR, v->type, v->id, 0, 0, 0, line, v->precision);
+         if (!e)
+            return 0;
+         return rslc_p_mk(p, RSLC_OP_MEMBER, f->type, e, sym->decl->member, 0, 0, line,
+               rslc_prec_max(v->precision, f->precision));
+      }
+#endif
       if (sym->decl && sym->decl->kind == RSLC_DK_VAR)
       {
          struct rslc_var *v = (struct rslc_var*)sym->decl->ptr;
@@ -3913,6 +3928,26 @@ static uint32_t rslc_p_postfix_ops(struct rslc_parser *p, uint32_t e)
                int32_t  k;
                uint8_t *count = bv->builtin == RSLC_BI_CLIPDISTANCE
                   ? &p->c->prog.clip_n : &p->c->prog.cull_n;
+               if (!rslc_p_eval_int(p, idx, &k) || k < 0 || k >= RSLC_MAX_CLIP)
+               {
+                  rslc_err(p->c, "a clip or cull distance needs a constant index below 8",
+                        NULL, line);
+                  return 0;
+               }
+               if ((unsigned)k + 1 > *count)
+                  *count = (uint8_t)(k + 1);
+            }
+         }
+         /* gl_in[v].gl_ClipDistance[k] / gl_CullDistance[k] alike */
+         if (n->op == RSLC_OP_MEMBER && n->b >= 2)
+         {
+            const struct rslc_node *iv = rslc_p_node(p, n->a);
+            if (iv->op == RSLC_OP_INDEX)
+               iv = rslc_p_node(p, iv->a);
+            if (iv->op == RSLC_OP_VAR && (p->c->prog.vars[iv->a]->quals & RSLC_VQ_PERVERTEX))
+            {
+               int32_t  k;
+               uint8_t *count = n->b == 2 ? &p->c->prog.clip_in_n : &p->c->prog.cull_in_n;
                if (!rslc_p_eval_int(p, idx, &k) || k < 0 || k >= RSLC_MAX_CLIP)
                {
                   rslc_err(p->c, "a clip or cull distance needs a constant index below 8",
@@ -5438,6 +5473,8 @@ static bool rslc_p_ioblock_decl(struct rslc_parser *p, struct rslc_quals *q,
    const struct rslc_type *vt;
    struct rslc_sym        *instance;
    struct rslc_var        *v;
+   bool                    unnamed;
+   uint32_t                i;
 
    if (q->is_in && q->is_out)
       return rslc_p_fail(p, "a block is in or out", NULL);
@@ -5489,10 +5526,26 @@ static bool rslc_p_ioblock_decl(struct rslc_parser *p, struct rslc_quals *q,
       if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
          return false;
    }
-   if (P_TOK(p)->kind != RSLC_TK_IDENT)
-      return rslc_p_fail(p, "an in / out block needs an instance name", NULL);
-   instance = rslc_tok_sym(p->c, P_TOK(p));
-   rslc_p_next(p);
+   /* an unnamed block's members are named on their own; its instance
+    * takes the block's name behind a prefix no source can spell */
+   unnamed = P_TOK(p)->kind != RSLC_TK_IDENT;
+   if (unnamed)
+   {
+      char   buf[96];
+      size_t len = strlen(name->str);
+      if (len > sizeof(buf) - 5)
+         return rslc_p_fail(p, "block name too long", NULL);
+      memcpy(buf, "_io_", 4);
+      memcpy(buf + 4, name->str, len + 1);
+      instance = rslc_sym(p->c, buf, len + 4);
+      if (!instance)
+         return false;
+   }
+   else
+   {
+      instance = rslc_tok_sym(p->c, P_TOK(p));
+      rslc_p_next(p);
+   }
    st = rslc_type_struct(p->c, name, fields, nfields);
    if (!st)
       return false;
@@ -5501,6 +5554,12 @@ static bool rslc_p_ioblock_decl(struct rslc_parser *p, struct rslc_quals *q,
    if (!vt)
       return false;
    if (!rslc_p_expect(p, RSLC_P_SEMI, "';' after block"))
+      return false;
+   /* a geometry input instance[] is as long as the input primitive */
+   if (p->c->stage == RSLC_STAGE_GEOMETRY && q->is_in && vt->kind == RSLC_TY_ARRAY
+         && !vt->array_len && vt->elem == st && p->c->prog.gs_in)
+      vt = rslc_type_array(p->c, st, RSLC_GS_IN_VERTICES(p->c->prog.gs_in));
+   if (!vt)
       return false;
    if (p->c->stage == RSLC_STAGE_GEOMETRY && q->is_in
          && (vt->kind != RSLC_TY_ARRAY || !vt->array_len))
@@ -5514,6 +5573,64 @@ static bool rslc_p_ioblock_decl(struct rslc_parser *p, struct rslc_quals *q,
    v->quals    = RSLC_VQ_IOBLOCK;
    if (rslc_p_find_here(p, instance) || !rslc_p_bind(p, instance, RSLC_DK_VAR, v))
       return rslc_p_fail(p, "redeclaration of ", instance->str);
+   if (unnamed)
+      for (i = 0; i < nfields; i++)
+      {
+         struct rslc_decl *d;
+         if (rslc_p_find_here(p, fields[i].name))
+            return rslc_p_fail(p, "redeclaration of ", fields[i].name->str);
+         d = rslc_p_bind(p, fields[i].name, RSLC_DK_IOMEMBER, v);
+         if (!d)
+            return false;
+         d->member = (uint8_t)i;
+      }
+   return rslc_p_add_interface(p, v);
+}
+
+/* gl_in[]: what the previous stage wrote of gl_PerVertex, one element
+ * per vertex of the input primitive.  The clip and cull arrays take
+ * their length once the whole stage is read. */
+static bool rslc_p_declare_gl_in(struct rslc_parser *p)
+{
+   static const char *const names[4] = {
+      "gl_Position", "gl_PointSize", "gl_ClipDistance", "gl_CullDistance" };
+   struct rslc_sym   *sym = rslc_sym(p->c, "gl_in", 5);
+   struct rslc_field *fields;
+   struct rslc_type  *st;
+   struct rslc_var   *v;
+   const struct rslc_type *vt;
+   uint32_t           i;
+
+   if (!sym)
+      return false;
+   if (p->c->prog.glin_fields)
+      return true;
+   fields = (struct rslc_field*)rslc_arena_zalloc(p->c, 4 * sizeof(*fields));
+   if (!fields)
+      return false;
+   fields[0].type = rslc_ty_vecn(p, RSLC_BASE_FLOAT, 4);
+   fields[1].type = p->t_float;
+   fields[2].type = fields[3].type = rslc_type_array(p->c, p->t_float, 1);
+   for (i = 0; i < 4; i++)
+   {
+      fields[i].name      = rslc_sym(p->c, names[i], strlen(names[i]));
+      fields[i].precision = RSLC_PREC_HIGH;
+      if (!fields[i].name || !fields[i].type)
+         return false;
+   }
+   st = rslc_type_struct(p->c, rslc_sym(p->c, "gl_PerVertex", 12), fields, 4);
+   if (!st)
+      return false;
+   st->rows = 1;   /* RSLC_TY_IS_IOBLOCK */
+   vt = rslc_type_array(p->c, st, RSLC_GS_IN_VERTICES(p->c->prog.gs_in));
+   v  = vt ? rslc_p_new_var(p, sym, vt, P_LINE(p)) : NULL;
+   if (!v)
+      return false;
+   v->storage = RSLC_ST_IN;
+   v->quals   = RSLC_VQ_IOBLOCK | RSLC_VQ_PERVERTEX;
+   p->c->prog.glin_fields = fields;
+   if (!rslc_p_bind(p, sym, RSLC_DK_VAR, v))
+      return false;
    return rslc_p_add_interface(p, v);
 }
 #endif
@@ -5611,7 +5728,13 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
          if (q.gs_prim > RSLC_GS_TRIANGLES_ADJACENCY || q.gs_max_vertices)
             return rslc_p_fail(p, "not an input primitive layout", NULL), 0;
          if (q.gs_prim)
+         {
+            if (pr->gs_in && pr->gs_in != q.gs_prim)
+               return rslc_p_fail(p, "a second input primitive", NULL), 0;
             pr->gs_in = q.gs_prim;
+            if (!rslc_p_declare_gl_in(p))
+               return 0;
+         }
          if (q.gs_invocations)
             pr->gs_invocations = q.gs_invocations;
       }
@@ -5962,6 +6085,15 @@ static bool rslc_p_run(struct rslc_ctx *c)
          n = v->builtin == RSLC_BI_CLIPDISTANCE ? c->prog.clip_n : c->prog.cull_n;
          v->type = rslc_type_array(c, p->t_float, n ? n : 1);
          if (!v->type)
+            return false;
+      }
+      if (c->prog.glin_fields)
+      {
+         c->prog.glin_fields[2].type = rslc_type_array(c, p->t_float,
+               c->prog.clip_in_n ? c->prog.clip_in_n : 1);
+         c->prog.glin_fields[3].type = rslc_type_array(c, p->t_float,
+               c->prog.cull_in_n ? c->prog.cull_in_n : 1);
+         if (!c->prog.glin_fields[2].type || !c->prog.glin_fields[3].type)
             return false;
       }
    }

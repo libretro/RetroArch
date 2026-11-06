@@ -312,6 +312,7 @@ enum rslc_storage
 #define RSLC_VQ_INVARIANT 4u
 #define RSLC_VQ_PRECISE   8u
 #define RSLC_VQ_IOBLOCK  16u   /* RSLC_EXTENDED: the instance of an in / out block */
+#define RSLC_VQ_PERVERTEX 128u /* RSLC_EXTENDED: a geometry stage's gl_in */
 
 /* RSLC_EXTENDED: the struct of an in / out interface block, which the
  * printers write as a block and SPIR-V decorates Block. */
@@ -364,6 +365,11 @@ struct rslc_var
 #define RSLC_GS_TRIANGLES_ADJACENCY 5
 #define RSLC_GS_LINE_STRIP          6
 #define RSLC_GS_TRIANGLE_STRIP      7
+
+/* The vertices an input primitive hands a geometry stage. */
+#define RSLC_GS_IN_VERTICES(prim) ((prim) == RSLC_GS_POINTS ? 1u \
+      : (prim) == RSLC_GS_LINES ? 2u : (prim) == RSLC_GS_LINES_ADJACENCY ? 4u \
+      : (prim) == RSLC_GS_TRIANGLES ? 3u : 6u)
 
 /* The builtins a vertex stage writes through its gl_PerVertex block. */
 #define RSLC_BI_IN_PERVERTEX(b) ((b) == RSLC_BI_POSITION || (b) == RSLC_BI_POINTSIZE \
@@ -575,6 +581,13 @@ struct rslc_prog
    uint8_t                 gs_out;
    uint32_t                gs_invocations;   /* 0: one */
    uint32_t                gs_max_vertices;
+#ifdef RSLC_EXTENDED
+   /* geometry: gl_in's members, made with the input primitive layout,
+    * and one past the highest clip / cull element it reads */
+   struct rslc_field      *glin_fields;
+   uint8_t                 clip_in_n;
+   uint8_t                 cull_in_n;
+#endif
 };
 
 /* Source file names seen through #line, for diagnostics. */
