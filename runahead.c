@@ -58,6 +58,13 @@
 #include "core_load_file.h"
 #endif
 
+static enum retro_savestate_phase serialization_phase_value;
+
+enum retro_savestate_phase runahead_get_savestate_phase(void)
+{
+   return serialization_phase_value;
+}
+
 /* ===== BEGIN runahead dense input cache =====
  * The last value each input tuple returned, for the dirty comparison
  * on every core poll. The common tuples - a plain joypad's sixteen
@@ -1721,7 +1728,7 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
    runloop_st->current_core.retro_set_input_state(cbs->state_cb);
 }
 
-bool runahead_run(void *data,
+static bool runahead_run_impl(void *data,
       int runahead_count,
       bool runahead_hide_warnings,
       bool use_secondary)
@@ -1837,6 +1844,8 @@ bool runahead_run(void *data,
             video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
          }
 
+         serialization_phase_value = frame_number == 0
+               ? RETRO_SAVESTATE_PHASE_CANONICAL : RETRO_SAVESTATE_PHASE_SPECULATIVE;
          if (frame_number == 0)
             advanced = core_run();
          else
@@ -1887,6 +1896,7 @@ bool runahead_run(void *data,
       /* sec_status == RUNAHEAD_COPY_READY here (checked above) */
 
       /* run main core with video suspended */
+      serialization_phase_value = RETRO_SAVESTATE_PHASE_CANONICAL;
       video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
       advanced = core_run();
       if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
@@ -1911,6 +1921,7 @@ bool runahead_run(void *data,
             return advanced;
          }
 
+         serialization_phase_value = RETRO_SAVESTATE_PHASE_SPECULATIVE;
          if (!runahead_load_state_secondary(runloop_st, settings))
          {
             const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
@@ -1935,6 +1946,7 @@ bool runahead_run(void *data,
                video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
          }
       }
+      serialization_phase_value = RETRO_SAVESTATE_PHASE_SPECULATIVE;
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
       if (secondary_core_run_use_last_input(runloop_st))
          runloop_st->flags              |=  RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
@@ -1947,6 +1959,7 @@ bool runahead_run(void *data,
    return advanced;
 
 force_input_dirty:
+   serialization_phase_value = RETRO_SAVESTATE_PHASE_NORMAL;
    advanced = core_run();
    runloop_st->flags |=  RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
    return advanced;
@@ -2283,7 +2296,7 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
  *
  * Call in place of core_run() for preemptive frames.
  **/
-bool preempt_run(preempt_t *preempt, void *data)
+static bool preempt_run_impl(preempt_t *preempt, void *data)
 {
    runloop_state_t     *runloop_st   = (runloop_state_t*)data;
    struct retro_core_t *current_core = &runloop_st->current_core;
@@ -2292,6 +2305,8 @@ bool preempt_run(preempt_t *preempt, void *data)
    settings_t *settings              = config_get_ptr();
    unsigned input_max_users          = settings->uints.input_max_users;
    bool run_ahead_hide_warnings      = settings->bools.run_ahead_hide_warnings;
+
+   serialization_phase_value = RETRO_SAVESTATE_PHASE_CANONICAL;
 
    /* Poll and check for dirty input */
    preempt_input_poll(preempt, runloop_st, input_max_users);
@@ -2312,6 +2327,7 @@ bool preempt_run(preempt_t *preempt, void *data)
          goto error;
       }
 
+      serialization_phase_value = RETRO_SAVESTATE_PHASE_SPECULATIVE;
       current_core->retro_run();
       if (runloop_st->auto_state_load_pending)
          runloop_st->auto_state_load_core_ran = true;
@@ -2336,6 +2352,7 @@ bool preempt_run(preempt_t *preempt, void *data)
       video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
    }
 
+   serialization_phase_value = RETRO_SAVESTATE_PHASE_CANONICAL;
    /* Save current state and set start_ptr to oldest state. A rewind
     * push left for this point serializes it for both. */
    {
@@ -2388,4 +2405,17 @@ void runahead_clear_variables(void *data)
                                           | RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE
                                           | RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
    runloop_st->runahead_last_frame_count  = 0;
+}
+
+bool runahead_run(void *data, int count, bool hide, bool secondary)
+{
+   bool result = runahead_run_impl(data, count, hide, secondary);
+   serialization_phase_value = RETRO_SAVESTATE_PHASE_NORMAL;
+   return result;
+}
+bool preempt_run(preempt_t *preempt, void *data)
+{
+   bool result = preempt_run_impl(preempt, data);
+   serialization_phase_value = RETRO_SAVESTATE_PHASE_NORMAL;
+   return result;
 }
