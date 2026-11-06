@@ -62,24 +62,35 @@ int main(void)
    for (ask = 0; ask < ASKS; ask++)
    {
       int before;
-      unsigned took;
+      unsigned took = 0, tries;
       bool running = false;
-      /* The core taking turns right now, beside this thread: watched
-       * without sleeping, for at most 20 ms */
+      /* An ask that finds the core far ahead is asked again: the frontend
+       * thread taken off its CPU between reading the count and asking
+       * lets the core run on, which a fair core cannot prevent, but not
+       * twice running. A core that does not give way is far ahead on the
+       * second ask too. */
+      for (tries = 0; tries < 2; tries++)
       {
-         DWORD began = GetTickCount();
-         int seen    = retro_atomic_load_acquire_int(&core_turns);
-         while (GetTickCount() - began < 20)
-            if (retro_atomic_load_acquire_int(&core_turns) >= seen + 2)
-            {
-               running = true;
-               break;
-            }
+         /* The core taking turns right now, beside this thread: watched
+          * without sleeping, for at most 20 ms */
+         {
+            DWORD began = GetTickCount();
+            int seen    = retro_atomic_load_acquire_int(&core_turns);
+            running     = false;
+            while (GetTickCount() - began < 20)
+               if (retro_atomic_load_acquire_int(&core_turns) >= seen + 2)
+               {
+                  running = true;
+                  break;
+               }
+         }
+         before = retro_atomic_load_acquire_int(&core_turns);
+         d3d11_turns_frontend_enter(&turns);
+         took = (unsigned)(retro_atomic_load_acquire_int(&core_turns) - before);
+         d3d11_turns_frontend_leave(&turns);
+         if (!running || took <= MOST_TURNS)
+            break;
       }
-      before = retro_atomic_load_acquire_int(&core_turns);
-      d3d11_turns_frontend_enter(&turns);
-      took = (unsigned)(retro_atomic_load_acquire_int(&core_turns) - before);
-      d3d11_turns_frontend_leave(&turns);
       if (running)
       {
          counted++;
