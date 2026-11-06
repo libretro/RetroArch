@@ -757,6 +757,76 @@ int main(int argc, char **argv)
       }
    }
 
+   /* Direct3D bytecode: a container of the input and output signatures
+    * and the shader model 5 program, for the stages the HLSL printer
+    * takes; written beside the SPIR-V for a disassembler to check */
+   {
+      static const struct { const char *name, *src; enum rslc_stage stage; uint32_t prog; }
+      dx[] = {
+         { "samplers", fs_samplers, RSLC_STAGE_FRAGMENT, 0 },
+         { "dual_source", fs_dual_source, RSLC_STAGE_FRAGMENT, 0 },
+         { "clip", vs_clip, RSLC_STAGE_VERTEX, 1 },
+         { "bbox", fs_bbox, RSLC_STAGE_FRAGMENT, 0 },
+         { "vertex_fetch", vs_vertex_fetch, RSLC_STAGE_VERTEX, 1 },
+         { "decode", cs_decode, RSLC_STAGE_COMPUTE, 5 }
+      };
+      unsigned i;
+      for (i = 0; i < sizeof(dx) / sizeof(dx[0]); i++)
+      {
+         char err[256];
+         struct rslc_opts   o;
+         struct rslc_result r;
+         cur_stage = dx[i].stage;
+         memset(&r, 0, sizeof(r));
+         CHECK(compile(dx[i].src, RSLC_DST_DXBC, 50, &o, &r, err, sizeof(err)));
+         if (err[0])
+            fprintf(stderr, "%s dxbc: %s\n", dx[i].name, err);
+         if (r.blob)
+         {
+            const uint8_t *b = (const uint8_t*)r.spirv;
+            uint32_t total = r.spirv[6], shex;
+            CHECK(!memcmp(b, "DXBC", 4) && r.spirv[5] == 1 && total == r.spirv_len * 4);
+            CHECK(r.spirv[7] == 3);
+            CHECK(!memcmp(b + r.spirv[8], "ISGN", 4) && !memcmp(b + r.spirv[9], "OSGN", 4));
+            shex = r.spirv[10];
+            CHECK(!memcmp(b + shex, "SHEX", 4));
+            /* the program's type and model, and its length in words */
+            CHECK(r.spirv[shex / 4 + 2] == ((dx[i].prog << 16) | 0x50u));
+            CHECK(r.spirv[shex / 4 + 3] * 4 == r.spirv[shex / 4 + 1]);
+            {
+               char file[64];
+               FILE *f;
+               sprintf(file, "%s.dxbc", dx[i].name);
+               if (dir && strlen(dir) + strlen(file) + 2 < 1024)
+               {
+                  char path[1024];
+                  sprintf(path, "%s/%s", dir, file);
+                  f = fopen(path, "wb");
+                  CHECK(f != NULL);
+                  if (f)
+                  {
+                     CHECK(fwrite(r.spirv, 4, r.spirv_len, f) == r.spirv_len);
+                     fclose(f);
+                  }
+               }
+            }
+            rslc_result_free(&r, &o);
+         }
+      }
+      /* what Direct3D bytecode has no form of */
+      cur_stage = RSLC_STAGE_FRAGMENT;
+      {
+         char err[256];
+         struct rslc_opts   o;
+         struct rslc_result r;
+         CHECK(!compile(fs_subpass, RSLC_DST_DXBC, 50, &o, &r, err, sizeof(err)));
+         CHECK(!compile(fs_subgroup, RSLC_DST_DXBC, 50, &o, &r, err, sizeof(err)));
+         cur_stage = RSLC_STAGE_COMPUTE;
+         CHECK(!compile(cs_decode, RSLC_DST_DXBC, 40, &o, &r, err, sizeof(err)));
+         CHECK(strstr(err, "shader model 5") != NULL);
+      }
+   }
+
    /* bools in a block and a depth write */
    {
       char err[256];

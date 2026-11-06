@@ -798,6 +798,9 @@ bool rslc_front_parse(struct rslc_ctx *c, const char *src, size_t len);
 bool  rslc_front_compile(struct rslc_ctx *c, const char *src, size_t len);
 bool  rslc_emit_dst(struct rslc_ctx *c, struct rslc_result *result);
 bool  rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result);
+#ifdef RSLC_EXTENDED
+bool  rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result);   /* rslc_dxbc.c */
+#endif
 
 /* Shared by the backends (TU 2): which functions main reaches, the
  * reflection section, and the blob around a payload. */

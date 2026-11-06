@@ -8,7 +8,8 @@ SOURCES := \
 	rslc_ext_test.c \
 	$(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_front.c \
 	$(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_ir.c \
-	$(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_emit.c
+	$(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_emit.c \
+	$(LIBRETRO_COMM_DIR)/gfx/shaders/rslc_dxbc.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 

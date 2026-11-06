@@ -555,7 +555,11 @@ bool rslc_ctx_init(struct rslc_ctx *c, const struct rslc_opts *opts,
       rslc_err(c, "unknown stage", NULL, 0);
       return false;
    }
+#ifdef RSLC_EXTENDED
+   if (opts->dst > RSLC_DST_DXBC)
+#else
    if (opts->dst > RSLC_DST_REFLECT)
+#endif
    {
       rslc_err(c, "unknown destination", NULL, 0);
       return false;
@@ -814,7 +818,7 @@ bool rslc_blob_open(void *blob, size_t len, struct rslc_result *result)
          || !rslc_blob_range_ok(h->payload_off, 1, h->payload_len, h->total_len))
       return false;
 #ifdef RSLC_EXTENDED
-   if (h->stage > RSLC_STAGE_GEOMETRY || h->dst > RSLC_DST_REFLECT)
+   if (h->stage > RSLC_STAGE_COMPUTE || h->dst > RSLC_DST_DXBC)
 #else
    if (h->stage > RSLC_STAGE_FRAGMENT || h->dst > RSLC_DST_REFLECT)
 #endif
@@ -852,6 +856,9 @@ bool rslc_blob_open(void *blob, size_t len, struct rslc_result *result)
    switch (h->dst)
    {
       case RSLC_DST_SPIRV:
+#ifdef RSLC_EXTENDED
+      case RSLC_DST_DXBC:
+#endif
          if (h->payload_len & 3)
             return false;
          result->spirv     = (const uint32_t*)(bytes + h->payload_off);
@@ -5240,6 +5247,10 @@ bool rslc_emit_dst(struct rslc_ctx *c, struct rslc_result *result)
          if (!c->failed)
             rslc_err(c, "SPIR-V emission failed", NULL, 0);
          return false;
+#ifdef RSLC_EXTENDED
+      case RSLC_DST_DXBC:
+         return rslc_emit_dxbc(c, result);
+#endif
       default:
          break;
    }

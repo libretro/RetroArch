@@ -79,7 +79,10 @@ enum rslc_dst
    RSLC_DST_GLSL_CAFE,   /* GLSL for the Wii U's offline CafeGLSL: version
                             150, the push block as a second uniform block,
                             a location on every in and out */
-   RSLC_DST_REFLECT      /* tables only */
+   RSLC_DST_REFLECT,     /* tables only */
+   RSLC_DST_DXBC         /* RSLC_EXTENDED: a Direct3D bytecode container of
+                            shader model opts.version = 40 / 41 / 50, in
+                            the result's spirv / spirv_len words */
 };
 
 /* Scalar base of a reflected member or I/O slot. */
