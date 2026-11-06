@@ -86,7 +86,7 @@ S_UINT_EX(video_openxr_touch_hands, VIDEO_OPENXR_TOUCH_HANDS,
       "The hands that touch a screen they point at, such as a touch screen. The other hand still points at the menu. None turns touch off for the headset's controllers, leaving the screens to the mouse and the overlay.")
 S_UINT_EX(video_openxr_touch_button, VIDEO_OPENXR_TOUCH_BUTTON,
       "video_openxr_touch_button",
-      0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 7, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_touch_button, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 7, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_touch_button, NULL, NULL, setting_uint_action_left_video_openxr_touch_button, setting_uint_action_right_video_openxr_touch_button, ST_UI_TYPE_UINT_COMBOBOX,
       "Touch Button",
       "The button that touches where a hand points. Pointed anywhere else it presses what it is bound to. A hand without this button cannot touch. The trigger always clicks the menu.")
 S_BOOL(video_openxr_touch_passthrough, VIDEO_OPENXR_TOUCH_PASSTHROUGH,

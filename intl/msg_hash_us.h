@@ -8106,6 +8106,10 @@ MSG_HASH(
    "Y"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_MISSING,
+   "%s (not on this controller)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
    "Fixed in Room"
    )

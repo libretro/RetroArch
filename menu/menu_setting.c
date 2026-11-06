@@ -140,6 +140,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #endif
 #include "../gfx/video_views.h"
 #include "../gfx/video_windows.h"
+#ifdef HAVE_OPENXR
+#include "../input/common/input_openxr.h"
+#endif
 #ifdef HAVE_MODELINE
 #include "../gfx/video_crt_switch.h"
 #endif
@@ -4390,7 +4393,39 @@ static size_t setting_get_string_representation_video_openxr_touch_button(
       default:
          return 0;
    }
+#ifdef HAVE_OPENXR
+   if (!input_openxr_touch_offered(*setting->value.target.unsigned_integer))
+      return snprintf(s, len, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_MISSING),
+            msg_hash_to_str(name));
+#endif
    return strlcpy(s, msg_hash_to_str(name), len);
+}
+
+/* The next or previous Touch Button the controllers have, round. The
+ * row is listed only with HAVE_OPENXR. */
+static int setting_uint_step_video_openxr_touch_button(
+      rarch_setting_t *setting, bool forward)
+{
+   if (!setting)
+      return -1;
+#ifdef HAVE_OPENXR
+   *setting->value.target.unsigned_integer = input_openxr_touch_step(
+         *setting->value.target.unsigned_integer, forward);
+#endif
+   return 0;
+}
+
+static int setting_uint_action_left_video_openxr_touch_button(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_uint_step_video_openxr_touch_button(setting, false);
+}
+
+static int setting_uint_action_right_video_openxr_touch_button(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_uint_step_video_openxr_touch_button(setting, true);
 }
 
 static size_t setting_get_string_representation_video_openxr_placement(

@@ -747,6 +747,11 @@ static retro_atomic_int_t input_openxr_rumble[INPUT_OPENXR_PADS];
 static retro_atomic_int_t input_openxr_rumble_slots;
 static retro_atomic_int_t input_openxr_ready;
 
+/* The Touch Buttons neither hand's controller has, a bit each; none,
+ * as it starts, while no controller is known. Atomic: with threaded
+ * video, XMB draws the Touch Button's value on the video thread. */
+static retro_atomic_int_t input_openxr_lacking;
+
 /* The pads as joypad devices. Main thread; apart from input_openxr_st,
  * which a session's release clears, so a session remade before the
  * next poll keeps them. */
@@ -951,6 +956,7 @@ static void input_openxr_release(input_openxr_t *st)
 {
    unsigned i;
    retro_atomic_store_release_int(&input_openxr_ready, 0);
+   retro_atomic_store_release_int(&input_openxr_lacking, 0);
    for (i = 0; i < INPUT_OPENXR_HANDS; i++)
    {
       if (st->aim[i] && st->DestroySpace)
@@ -1389,6 +1395,26 @@ static bool input_openxr_has_button(const input_openxr_t *st, int prof,
 {
    return c == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER
       || input_openxr_touch_path(st, prof, h, c);
+}
+
+/* The Touch Buttons the hands' controllers lack, for
+ * input_openxr_touch_offered(). */
+static void input_openxr_publish_lacking(const input_openxr_t *st)
+{
+   unsigned h, c;
+   int offered = 0;
+   bool known  = false;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      if (st->hand_profile[h] < 0)
+         continue;
+      known = true;
+      for (c = 0; c < VIDEO_OPENXR_TOUCH_BUTTON_LAST; c++)
+         if (input_openxr_has_button(st, st->hand_profile[h], h, c))
+            offered |= 1 << c;
+   }
+   retro_atomic_store_release_int(&input_openxr_lacking, known
+         ? ~offered & ((1 << VIDEO_OPENXR_TOUCH_BUTTON_LAST) - 1) : 0);
 }
 
 /* Each hand's Touch Button, whether it can touch and Touch Passthrough,
@@ -4094,6 +4120,7 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
    }
    st->sync_result = XR_SUCCESS;
    input_openxr_hand_profiles(st);
+   input_openxr_publish_lacking(st);
    if (st->mode != (int)separate)
    {
       RARCH_LOG("[OpenXR] Controllers: %s.\n",
@@ -4310,6 +4337,28 @@ void input_openxr_edit_end(void)
 void input_openxr_edit_release(void)
 {
    input_openxr_edit_let_go_all(&input_openxr_edit);
+}
+
+bool input_openxr_touch_offered(unsigned button)
+{
+   return button < VIDEO_OPENXR_TOUCH_BUTTON_LAST
+      && !((retro_atomic_load_acquire_int(&input_openxr_lacking) >> button)
+         & 1);
+}
+
+unsigned input_openxr_touch_step(unsigned cur, bool forward)
+{
+   unsigned i;
+   const unsigned n = VIDEO_OPENXR_TOUCH_BUTTON_LAST;
+   int lacking      = retro_atomic_load_acquire_int(&input_openxr_lacking);
+   cur %= n;
+   for (i = 1; i < n; i++)
+   {
+      unsigned b = forward ? (cur + i) % n : (cur + n - i) % n;
+      if (!((lacking >> b) & 1))
+         return b;
+   }
+   return cur;
 }
 
 bool input_openxr_pointer(uint32_t slots, unsigned device, unsigned idx,

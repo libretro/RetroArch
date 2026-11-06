@@ -100,6 +100,17 @@ void input_openxr_edit_end(void);
  * recenter. Edit mode stays on. */
 void input_openxr_edit_release(void);
 
+/* Any thread: whether a controller has Touch Button @button (enum
+ * video_openxr_touch_button) on either hand, as the last poll found:
+ * every button while no session runs or no hand's controller is
+ * known. */
+bool input_openxr_touch_offered(unsigned button);
+
+/* The Touch Button after @cur, or before it unless @forward, that
+ * input_openxr_touch_offered() offers, round; @cur when it offers no
+ * other. For the menu's left and right. */
+unsigned input_openxr_touch_step(unsigned cur, bool forward);
+
 /* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on a core
  * port whose users read @slots (a bit per slot), while it can point
  * (the headset focused, a screen live for the laser and a hand that can

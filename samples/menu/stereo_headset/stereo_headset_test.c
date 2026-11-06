@@ -62,6 +62,9 @@
 #include "../../../paths.h"
 #include "../../../runloop.h"
 #include "../../../file_path_special.h"
+#ifdef HAVE_OPENXR
+#include "../../../input/common/input_openxr.h"
+#endif
 
 static unsigned failures = 0;
 
@@ -77,6 +80,27 @@ static unsigned failures = 0;
    } while (0)
 
 #ifdef HAVE_OPENXR
+/* The Touch Buttons the controllers lack, a bit each, in place of
+ * what a poll would publish from a session (--wrap in build.sh). */
+static int touch_lacking;
+
+bool __wrap_input_openxr_touch_offered(unsigned button)
+{
+   return button < VIDEO_OPENXR_TOUCH_BUTTON_LAST
+      && !((touch_lacking >> button) & 1);
+}
+
+/* With no session the real step offers every button. */
+unsigned __real_input_openxr_touch_step(unsigned cur, bool forward);
+unsigned __wrap_input_openxr_touch_step(unsigned cur, bool forward)
+{
+   unsigned b = cur;
+   do
+      b = __real_input_openxr_touch_step(b, forward);
+   while (b != cur && !__wrap_input_openxr_touch_offered(b));
+   return b;
+}
+
 /* The drivers with a headset path, and one without. A build has
  * Vulkan's, the desktop GL drivers', or both. */
 static const char *const headset_drivers[] = {
@@ -443,6 +467,92 @@ static void lane_touch_rows(void)
    configuration_set_uint(settings, settings->uints.video_openxr_touch_hands,
          VIDEO_OPENXR_TOUCH_HANDS_BOTH);
    configuration_set_uint(settings, settings->uints.video_openxr_touch_button,
+         VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER);
+}
+
+/* With no controller known, Touch Button's dropdown lists all eight
+ * buttons, Trigger to Y. */
+static void lane_touch_button_offered(void)
+{
+   unsigned i;
+   file_list_t *buf;
+   settings_t *settings     = config_get_ptr();
+   rarch_setting_t *setting = menu_setting_find_enum(
+         MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON);
+
+   CHECK(setting != NULL, "fixture: no Touch Button setting");
+   if (!setting)
+      return;
+   for (i = 0; i < VIDEO_OPENXR_TOUCH_BUTTON_LAST; i++)
+      CHECK(input_openxr_touch_offered(i),
+            "fixture: with no controller, button %u is not offered", i);
+
+   configuration_set_uint(settings, settings->uints.video_openxr_touch_button,
+         VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER);
+   setting->actions->ok(setting, 0, false);
+   run_frame();
+   buf = selection_buf();
+   CHECK(buf && buf->size == VIDEO_OPENXR_TOUCH_BUTTON_LAST,
+         "the dropdown has %u rows, want 8", buf ? (unsigned)buf->size : 0);
+   if (buf && buf->size == VIDEO_OPENXR_TOUCH_BUTTON_LAST)
+      CHECK(     string_is_equal(buf->list[0].path, "Trigger")
+            && string_is_equal(buf->list[7].path, "Y"),
+            "the dropdown runs \"%s\" to \"%s\"", buf->list[0].path,
+            buf->list[7].path);
+}
+
+/* With a Vive controller known, Touch Button's dropdown lists the
+ * buttons it has and the one chosen, which it lacks; left and right
+ * step over the rest. */
+static void lane_touch_button_controller(void)
+{
+   char s[64];
+   file_list_t *buf;
+   settings_t *settings     = config_get_ptr();
+   unsigned *button         = &settings->uints.video_openxr_touch_button;
+   rarch_setting_t *setting = menu_setting_find_enum(
+         MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON);
+
+   CHECK(setting != NULL, "fixture: no Touch Button setting");
+   if (!setting)
+      return;
+   touch_lacking = (1 << VIDEO_OPENXR_TOUCH_BUTTON_LAST)
+      - (1 << VIDEO_OPENXR_TOUCH_BUTTON_BUMPER);
+
+   configuration_set_uint(settings, *button, VIDEO_OPENXR_TOUCH_BUTTON_A);
+   setting->actions->repr(setting, s, sizeof(s));
+   CHECK(string_is_equal(s, "A (not on this controller)"),
+         "Vive, A: the row shows \"%s\"", s);
+   setting->actions->ok(setting, 0, false);
+   run_frame();
+   buf = selection_buf();
+   CHECK(buf && buf->size == 4, "Vive, A: the dropdown has %u rows, want 4",
+         buf ? (unsigned)buf->size : 0);
+   if (buf && buf->size == 4)
+      CHECK(     string_is_equal(buf->list[0].path, "Trigger")
+            && string_is_equal(buf->list[1].path, "Grip")
+            && string_is_equal(buf->list[2].path, "Stick Click")
+            && string_is_equal(buf->list[3].path,
+               "A (not on this controller)"),
+            "Vive, A: the dropdown lists \"%s\", \"%s\", \"%s\", \"%s\"",
+            buf->list[0].path, buf->list[1].path, buf->list[2].path,
+            buf->list[3].path);
+
+   setting->actions->right(setting, 0, false);
+   CHECK(*button == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER,
+         "Vive: right from A gives %u, want Trigger", *button);
+   setting->actions->left(setting, 0, false);
+   CHECK(*button == VIDEO_OPENXR_TOUCH_BUTTON_STICK,
+         "Vive: left from Trigger gives %u, want Stick Click", *button);
+   setting->actions->repr(setting, s, sizeof(s));
+   CHECK(string_is_equal(s, "Stick Click"),
+         "Vive, Stick Click: the row shows \"%s\"", s);
+   setting->actions->right(setting, 0, false);
+   CHECK(*button == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER,
+         "Vive: right from Stick Click gives %u, want Trigger", *button);
+
+   touch_lacking = 0;
+   configuration_set_uint(settings, *button,
          VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER);
 }
 
@@ -1748,6 +1858,8 @@ int main(int argc, char *argv[])
    lane_controller_layout();
    lane_placement();
    lane_touch_rows();
+   lane_touch_button_offered();
+   lane_touch_button_controller();
    lane_refresh_rate();
    lane_controller_rows();
    lane_device_index_used_by();

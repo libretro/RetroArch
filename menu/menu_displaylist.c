@@ -133,6 +133,9 @@
 #ifdef HAVE_TEMPORAL_UPSCALER
 #include "../gfx/video_upscaler.h"
 #endif
+#ifdef HAVE_OPENXR
+#include "../input/common/input_openxr.h"
+#endif
 #ifdef HAVE_MODELINE
 #include "../gfx/modeline/modeline_edid.h"
 #endif
@@ -19495,6 +19498,15 @@ static bool menu_displaylist_ctl_internal(
                                     if (     setting->enum_idx == MENU_ENUM_LABEL_VIDEO_MENU_FOLLOWS
                                           && val != (int)orig_value
                                           && !menu_setting_video_menu_follows_offered((unsigned)val))
+                                       continue;
+#endif
+#ifdef HAVE_OPENXR
+                                    /* Touch Button: the buttons the
+                                     * controllers have, and the one
+                                     * chosen now whatever it is */
+                                    if (     setting->enum_idx == MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON
+                                          && val != (int)orig_value
+                                          && !input_openxr_touch_offered((unsigned)val))
                                        continue;
 #endif
                                     /* Keyboard Index: "All" and the

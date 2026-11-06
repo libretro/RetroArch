@@ -11278,6 +11278,126 @@ static void test_touch_hold_back(void)
    t_forget_devices();
 }
 
+#define T_VIVE_PROFILE   "/interaction_profiles/htc/vive_controller"
+#define T_SIMPLE_PROFILE "/interaction_profiles/khr/simple_controller"
+
+/* Touch Button offers what the controllers have on either hand, and
+ * left and right step through those alone, round: no Bumper on Touch;
+ * Vive's trigger, grip and trackpad click; the simple controller's
+ * trigger; all of the Frame's, but none of A to Y with its left
+ * controller alone; the trigger alone when the runtime refused the
+ * rows; every button while no controller is known. */
+static void test_touch_offered(void)
+{
+   unsigned b, l, r;
+
+   for (b = 0; b < VIDEO_OPENXR_TOUCH_BUTTON_LAST; b++)
+      CHECK(input_openxr_touch_offered(b),
+            "with no session, button %u is not offered", b);
+   CHECK(!input_openxr_touch_offered(VIDEO_OPENXR_TOUCH_BUTTON_LAST),
+         "a button past Y is offered");
+   r = input_openxr_touch_step(VIDEO_OPENXR_TOUCH_BUTTON_Y, true);
+   l = input_openxr_touch_step(VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER, false);
+   CHECK(r == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER
+         && l == VIDEO_OPENXR_TOUCH_BUTTON_Y,
+         "with no session, right from Y gives %u, left from Trigger %u",
+         r, l);
+
+   t_let_go();
+   t_forget_devices();
+   t_fresh_session();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   for (b = 0; b < VIDEO_OPENXR_TOUCH_BUTTON_LAST; b++)
+      CHECK(input_openxr_touch_offered(b)
+            == (b != VIDEO_OPENXR_TOUCH_BUTTON_BUMPER),
+            "Touch: button %u offered %d", b, input_openxr_touch_offered(b));
+   r = input_openxr_touch_step(VIDEO_OPENXR_TOUCH_BUTTON_STICK, true);
+   l = input_openxr_touch_step(VIDEO_OPENXR_TOUCH_BUTTON_A, false);
+   CHECK(r == VIDEO_OPENXR_TOUCH_BUTTON_A
+         && l == VIDEO_OPENXR_TOUCH_BUTTON_STICK,
+         "Touch: right from Stick Click gives %u, left from A %u", r, l);
+   t_current[1] = T_VIVE_PROFILE;
+   t_current[2] = T_VIVE_PROFILE;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   for (b = 0; b < VIDEO_OPENXR_TOUCH_BUTTON_LAST; b++)
+      CHECK(input_openxr_touch_offered(b)
+            == (b <= VIDEO_OPENXR_TOUCH_BUTTON_STICK),
+            "Vive: button %u offered %d", b, input_openxr_touch_offered(b));
+   CHECK(retro_atomic_load_acquire_int(&input_openxr_lacking)
+         == (1 << VIDEO_OPENXR_TOUCH_BUTTON_LAST)
+          - (1 << VIDEO_OPENXR_TOUCH_BUTTON_BUMPER),
+         "Vive: published as lacking %#x, want Bumper to Y",
+         (unsigned)retro_atomic_load_acquire_int(&input_openxr_lacking));
+   /* From A, which Vive has not, the step goes on to the next it has. */
+   r = input_openxr_touch_step(VIDEO_OPENXR_TOUCH_BUTTON_STICK, true);
+   l = input_openxr_touch_step(VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER, false);
+   b = input_openxr_touch_step(VIDEO_OPENXR_TOUCH_BUTTON_A, true);
+   CHECK(r == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER
+         && l == VIDEO_OPENXR_TOUCH_BUTTON_STICK
+         && b == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER,
+         "Vive: right from Stick Click gives %u, left from Trigger %u, "
+         "right from A %u", r, l, b);
+   t_current[1] = T_SIMPLE_PROFILE;
+   t_current[2] = T_SIMPLE_PROFILE;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   for (b = 0; b < VIDEO_OPENXR_TOUCH_BUTTON_LAST; b++)
+      CHECK(input_openxr_touch_offered(b)
+            == (b == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER),
+            "simple: button %u offered %d", b,
+            input_openxr_touch_offered(b));
+   r = input_openxr_touch_step(VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER, true);
+   CHECK(r == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER,
+         "simple: right from Trigger gives %u", r);
+   t_current[1] = "";
+   t_current[2] = "";
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   for (b = 0; b < VIDEO_OPENXR_TOUCH_BUTTON_LAST; b++)
+      CHECK(input_openxr_touch_offered(b),
+            "no controller known: button %u is not offered", b);
+   t_hooks.session_destroying(t_hooks.user);
+
+   t_frame_session();
+   t_current[1] = T_FRAME_PROFILE;
+   t_current[2] = T_FRAME_PROFILE;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   for (b = 0; b < VIDEO_OPENXR_TOUCH_BUTTON_LAST; b++)
+      CHECK(input_openxr_touch_offered(b), "Frame: button %u not offered",
+            b);
+   t_current[2] = "";
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   for (b = 0; b < VIDEO_OPENXR_TOUCH_BUTTON_LAST; b++)
+      CHECK(input_openxr_touch_offered(b)
+            == (b <= VIDEO_OPENXR_TOUCH_BUTTON_BUMPER),
+            "the Frame's left controller alone: button %u offered %d", b,
+            input_openxr_touch_offered(b));
+   r = input_openxr_touch_step(VIDEO_OPENXR_TOUCH_BUTTON_BUMPER, true);
+   l = input_openxr_touch_step(VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER, false);
+   CHECK(r == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER
+         && l == VIDEO_OPENXR_TOUCH_BUTTON_BUMPER,
+         "the Frame's left controller alone: right from Bumper gives %u, "
+         "left from Trigger %u", r, l);
+   t_hooks.session_destroying(t_hooks.user);
+
+   t_refuse_touch = true;
+   t_current[1]   = NULL;
+   t_current[2]   = NULL;
+   t_fresh_session();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   for (b = 0; b < VIDEO_OPENXR_TOUCH_BUTTON_LAST; b++)
+      CHECK(input_openxr_touch_offered(b)
+            == (b == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER),
+            "rows refused: button %u offered %d", b,
+            input_openxr_touch_offered(b));
+   t_hooks.session_destroying(t_hooks.user);
+   CHECK(retro_atomic_load_acquire_int(&input_openxr_lacking) == 0,
+         "the session gone, still published as lacking %#x",
+         (unsigned)retro_atomic_load_acquire_int(&input_openxr_lacking));
+   t_refuse_touch = false;
+   t_touch_reset();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
 int main(void)
 {
    t_forget_devices();
@@ -11425,6 +11545,7 @@ int main(void)
    test_touch_button();
    test_touch_edit();
    test_touch_hold_back();
+   test_touch_offered();
    if (failures)
    {
       printf("%d failure(s)\n", failures);
