@@ -398,6 +398,31 @@ size_t vulkan_custom_driver_crash_clear(char *state, size_t len,
    return len;
 }
 
+static void trust_hex(char *out, uint32_t key)
+{
+   static const char digits[] = "0123456789abcdef";
+   int i;
+   for (i = 7; i >= 0; i--, key >>= 4)
+      out[i] = digits[key & 15];
+   out[8] = '\0';
+}
+
+bool vulkan_custom_driver_trust_find(const char *trust, size_t len,
+      const char *path, uint32_t key)
+{
+   char hex[9];
+   trust_hex(hex, key);
+   return crash_has(trust, len, path, strlen(path), hex, 8);
+}
+
+size_t vulkan_custom_driver_trust_add(char *trust, size_t len, size_t cap,
+      const char *path, uint32_t key)
+{
+   char hex[9];
+   trust_hex(hex, key);
+   return crash_put(trust, len, cap, path, strlen(path), hex, 8);
+}
+
 bool vulkan_custom_driver_session_init(vulkan_custom_driver_session_t *s,
       vulkan_custom_driver_load_t load, void *load_data,
       const char *state, size_t state_len,
@@ -479,6 +504,11 @@ static bool session_wants(vulkan_custom_driver_session_t *s,
    {
       p->invalid = true;
       *msg       = session_once(p, VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+      return false;
+   }
+   if (!req->trusted)
+   {
+      *msg = session_once(p, VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED);
       return false;
    }
    return true;
@@ -600,6 +630,7 @@ enum vulkan_custom_driver_msg vulkan_custom_driver_session_picked(
    if (p->failed)
       return VULKAN_CUSTOM_DRIVER_MSG_RESTART;
    p->invalid  = false;
-   p->shown   &= ~(1u << VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+   p->shown   &= ~((1u << VULKAN_CUSTOM_DRIVER_MSG_INVALID)
+               |  (1u << VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED));
    return VULKAN_CUSTOM_DRIVER_MSG_NONE;
 }
