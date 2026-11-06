@@ -198,10 +198,13 @@ struct smb_cfg_snap
 static vfs_cfg_slot_t     smb_cfg_slot;
 static retro_atomic_int_t smb_cfg_gen;
 /* Last error for smb_get_last_error(), kept as nfs_get_last_error()
- * keeps it: each writer fills a ring slot of its own, claimed by an
- * atomic counter, then publishes its index for the reader. */
+ * keeps it: a writer takes a free ring slot, fills it and publishes
+ * its index for the reader. The counter only says where to start
+ * looking: once it wraps, two writers can start on the same slot, and
+ * the slot's busy flag is what keeps one of them out. */
 #define SMB_ERR_SLOTS 8
 static char               smb_err_ring[SMB_ERR_SLOTS][256];
+static retro_atomic_int_t smb_err_busy[SMB_ERR_SLOTS];
 static retro_atomic_int_t smb_err_seq;
 static retro_atomic_int_t smb_err_latest;
 
@@ -220,8 +223,21 @@ static void smb_cfg_leave(vfs_cfg_hdr_t *h)
 /* "@what: @why", or @what alone when the client gave no reason. */
 static void smb_note_error(const char *what, const char *why)
 {
-   int slot = retro_atomic_fetch_add_int(&smb_err_seq, 1);
-   slot &= (SMB_ERR_SLOTS - 1);
+   int i;
+   int slot   = retro_atomic_fetch_add_int(&smb_err_seq, 1);
+   int latest = retro_atomic_load_acquire_int(&smb_err_latest)
+              & (SMB_ERR_SLOTS - 1);
+   /* Never the published slot, which a reader may be holding; with
+    * every other one taken this message goes unrecorded */
+   for (i = 0; i < SMB_ERR_SLOTS; i++, slot++)
+   {
+      slot &= (SMB_ERR_SLOTS - 1);
+      if (     slot != latest
+            && retro_atomic_cas_int(&smb_err_busy[slot], 0, 1))
+         break;
+   }
+   if (i == SMB_ERR_SLOTS)
+      return;
    strlcpy(smb_err_ring[slot], what, sizeof(smb_err_ring[slot]));
    if (why && *why)
    {
@@ -229,6 +245,7 @@ static void smb_note_error(const char *what, const char *why)
       strlcat(smb_err_ring[slot], why, sizeof(smb_err_ring[slot]));
    }
    retro_atomic_store_release_int(&smb_err_latest, slot);
+   retro_atomic_store_release_int(&smb_err_busy[slot], 0);
 }
 
 const char *smb_get_last_error(void)

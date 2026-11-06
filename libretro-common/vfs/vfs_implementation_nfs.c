@@ -89,12 +89,13 @@ struct nfs_cfg_snap
 static vfs_cfg_slot_t nfs_cfg_slot;
 /* Last error for nfs_get_last_error(), used only for diagnostics off
  * the hot path. Writers may run on several pool threads at once, so
- * each publishes into its own ring slot (claimed by an atomic counter)
- * and then advances an atomic "latest" index; the reader loads that
- * index. Distinct slots per writer means no buffer is written by two
- * threads at once, and the only shared scalars are atomic. */
+ * each takes a free ring slot, fills it and then advances an atomic
+ * "latest" index; the reader loads that index. The counter only says
+ * where to start looking: once it wraps, two writers can start on the
+ * same slot, and the slot's busy flag is what keeps one of them out. */
 #define NFS_ERR_SLOTS 8
 static char               nfs_err_ring[NFS_ERR_SLOTS][128];
+static retro_atomic_int_t nfs_err_busy[NFS_ERR_SLOTS];
 static retro_atomic_int_t nfs_err_seq;    /* next slot to hand out */
 static retro_atomic_int_t nfs_err_latest; /* slot last published, or -1 */
 
@@ -273,10 +274,23 @@ void nfs_shutdown(void)
 /* Record a diagnostic string from whichever thread hit the error. */
 static void nfs_note_error(const char *msg)
 {
-   int slot = retro_atomic_fetch_add_int(&nfs_err_seq, 1);
-   slot &= (NFS_ERR_SLOTS - 1);
+   int i;
+   int slot   = retro_atomic_fetch_add_int(&nfs_err_seq, 1);
+   int latest = retro_atomic_load_acquire_int(&nfs_err_latest);
+   /* Never the published slot, which a reader may be holding; with
+    * every other one taken this message goes unrecorded */
+   for (i = 0; i < NFS_ERR_SLOTS; i++, slot++)
+   {
+      slot &= (NFS_ERR_SLOTS - 1);
+      if (     slot != latest
+            && retro_atomic_cas_int(&nfs_err_busy[slot], 0, 1))
+         break;
+   }
+   if (i == NFS_ERR_SLOTS)
+      return;
    strlcpy(nfs_err_ring[slot], msg, sizeof(nfs_err_ring[slot]));
    retro_atomic_store_release_int(&nfs_err_latest, slot);
+   retro_atomic_store_release_int(&nfs_err_busy[slot], 0);
 }
 
 const char *nfs_get_last_error(void)
