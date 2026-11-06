@@ -1480,10 +1480,11 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
  * back an open stream on the winning data track (or NULL if that file
  * could not be opened during the parse) together with its size, so
  * the caller's serial/CRC probe does not pay a second open of a file
- * this parse already opened to learn its size. */
+ * this parse already opened to learn its size.  A non-zero
+ * @force_track parses that track as data (session 2 fallback). */
 static int cue_find_track_internal(const char *cue_path, bool first,
       uint64_t *offset, size_t *size, char *s, size_t len,
-      intfstream_t **track_fd, int64_t *track_fsize)
+      intfstream_t **track_fd, int64_t *track_fsize, int32_t force_track)
 {
    int rv;
    intfstream_info_t info;
@@ -1500,9 +1501,13 @@ static int cue_find_track_internal(const char *cue_path, bool first,
    int64_t cand_index         = -1;
    int32_t cand_track         = -1;
    int32_t track              = 0;
+   int32_t session            = 1;
+   int32_t session2_track     = 0;
    uint64_t largest           = 0;
    int64_t volatile file_size = -1;
    bool is_data               = false;
+   bool has_data              = false;
+   bool after_rem             = false;
    cue_dir[0] = last_file[0]  = '\0';
 
    fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
@@ -1533,7 +1538,16 @@ static int cue_find_track_internal(const char *cue_path, bool first,
 
    while (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) > 0)
    {
-      if (string_is_equal_noncase(tmp_token, "FILE"))
+      bool rem  = after_rem;
+      after_rem = string_is_equal_noncase(tmp_token, "REM");
+
+      if (rem && string_is_equal_noncase(tmp_token, "SESSION"))
+      {
+         /* Multi-session sheets mark sessions with "REM SESSION nn" */
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+         session = atoi(tmp_token);
+      }
+      else if (string_is_equal_noncase(tmp_token, "FILE"))
       {
          /* Set last index to last EOF */
          if (file_size != -1)
@@ -1601,6 +1615,16 @@ static int cue_find_track_internal(const char *cue_path, bool first,
 #endif
             }
          }
+
+         /* Special case: Atari Jaguar CD labels every track AUDIO and
+          * boots from the first track of session 2.  The fallback pass
+          * below treats that track as the data track. */
+         if (session >= 2 && session2_track == 0)
+            session2_track = track;
+         if (force_track && track == force_track)
+            is_data = true;
+         if (is_data)
+            has_data = true;
       }
       else if (string_is_equal_noncase(tmp_token, "INDEX"))
       {
@@ -1689,6 +1713,22 @@ clean:
    }
    else
       cue_track_stream_close(cand_fd);
+
+   /* No data track, but a second session: hash its first track.
+    * Only the CRC path (!first) does this; serial probes skip it. */
+   if (     rv != 0
+         && !first
+         && !force_track
+         && !has_data
+         && session2_track > 0)
+   {
+#ifdef DEBUG
+      RARCH_LOG("[Scanner] No data track, using session 2 track %d\n",
+            (int)session2_track);
+#endif
+      return cue_find_track_internal(cue_path, first, offset, size,
+            s, len, track_fd, track_fsize, session2_track);
+   }
    return rv;
 
 error:
@@ -1706,7 +1746,7 @@ int cue_find_track(const char *cue_path, bool first,
       uint64_t *offset, size_t *size, char *s, size_t len)
 {
    return cue_find_track_internal(cue_path, first, offset, size,
-         s, len, NULL, NULL);
+         s, len, NULL, NULL, 0);
 }
 
 bool cue_next_file(intfstream_t *fd,
@@ -2080,7 +2120,7 @@ int task_database_cue_get_serial(const char *name, char *s, size_t len,
    track_path[0]       = '\0';
 
    if (cue_find_track_internal(name, true, &offset, &_len,
-         track_path, sizeof(track_path), &track, &track_fsize) < 0)
+         track_path, sizeof(track_path), &track, &track_fsize, 0) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("[Scanner] %s\n",
@@ -2268,7 +2308,7 @@ intfstream_t *task_database_crc_open(const char *name,
    {
       size_t _len = 0;
       if (cue_find_track_internal(name, false, &offset, &_len,
-            track_path, sizeof(track_path), &fd, &file_size) < 0)
+            track_path, sizeof(track_path), &fd, &file_size, 0) < 0)
       {
 #ifdef DEBUG
          RARCH_LOG("[Scanner] %s\n",
