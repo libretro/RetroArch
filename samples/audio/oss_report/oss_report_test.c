@@ -18,9 +18,12 @@
  * the blocking write's, which sleeps in the driver until a fragment is
  * played.
  *
+ * free() on a device whose SNDCTL_DSP_RESET fails returned before
+ * closing it, leaking the descriptor, the stage and the driver.
+ *
  * The driver is this translation unit; a closed descriptor makes the
- * real ioctl fail, and ioctl, select and write are wrapped (--wrap) so
- * one descriptor is the modelled device. */
+ * real ioctl fail, and ioctl, select, write and close are wrapped
+ * (--wrap) so one descriptor is the modelled device. */
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -60,11 +63,21 @@ static unsigned dev_write_sleeps;
 /* select() as a driver without a poll method answers it (1), or as one
  * that waits for a fragment and times out on a full device (0) */
 static int      dev_select_blind;
+static unsigned dev_closes;
 
 int __real_ioctl(int fd, unsigned long req, ...);
 int __real_select(int n, fd_set *r, fd_set *w, fd_set *e,
       struct timeval *tv);
 ssize_t __real_write(int fd, const void *buf, size_t len);
+int __real_close(int fd);
+
+int __wrap_close(int fd)
+{
+   if (fd != DEV_FD)
+      return __real_close(fd);
+   dev_closes++;
+   return 0;
+}
 
 int __wrap_ioctl(int fd, unsigned long req, ...)
 {
@@ -200,6 +213,18 @@ int main(void)
          room, 0);
    CHECK(dev_selects == 1, "after one bounded wait", dev_selects, 1);
    CHECK(!oss.select_blind, "and is not latched as poll-less", 1, 0);
+
+   /* SNDCTL_DSP_RESET fails on the modelled device: free() still closes
+    * it, and LeakSanitizer sees the stage and the driver freed. */
+   {
+      oss_audio_t *heap = (oss_audio_t*)calloc(1, sizeof(*heap));
+      heap->fd          = DEV_FD;
+      heap->stage       = (int16_t*)malloc(64);
+      dev_closes        = 0;
+      oss_free(heap);
+      CHECK(dev_closes == 1, "a device that cannot reset is still closed",
+            dev_closes, 1);
+   }
 
    if (failures)
    {

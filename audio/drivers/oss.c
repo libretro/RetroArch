@@ -368,8 +368,8 @@ static void oss_free(void *data)
 
 /*RETROFW IOCTL always returns EINVAL*/
 #if !defined(RETROFW)
-   if (ioctl(ossaudio->fd, SNDCTL_DSP_RESET, 0) < 0)
-      return;
+   /* Fails on a device that has gone away; it is closed all the same. */
+   ioctl(ossaudio->fd, SNDCTL_DSP_RESET, 0);
 #endif
 
    if (ossaudio->select_blind)
