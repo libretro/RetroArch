@@ -413,8 +413,10 @@ static const char *pr_block_instance(struct rslc_pr *p, unsigned block)
 {
    const struct rslc_blockdecl *b = &p->c->prog.blocks[block];
    const char *forced = NULL;
-   /* the frontend's names are for its two blocks; further ones keep theirs */
-   if (p->names && block < 2)
+   /* the frontend's names are for its two blocks; further ones keep
+    * theirs. Without RSLC_EXTENDED every block is one of those two,
+    * so the index test folds away. */
+   if (p->names && (RSLC_MAX_BLOCKS == 2 || block < 2))
       forced = b->push ? p->names->push_instance : p->names->ubo_instance;
    if (forced)
       return forced;

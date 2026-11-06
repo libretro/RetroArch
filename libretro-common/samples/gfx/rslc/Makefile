@@ -13,9 +13,10 @@ SOURCES := \
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 # The compiler is C89 everywhere it ships; the test is held to the
-# same flags so a C99-ism cannot hide in it.
+# same flags so a C99-ism cannot hide in it. -O2 lets the bounds
+# checker see the fixed-size block arrays of the default build.
 CFLAGS  += -Wall -Wextra -pedantic -std=c89 -Wno-long-long -Wno-overlength-strings -D_GNU_SOURCE \
-	-Werror=implicit-function-declaration -g1 \
+	-Werror=implicit-function-declaration -g1 -O2 -Werror=array-bounds \
 	-I$(LIBRETRO_COMM_DIR)/include -I$(LIBRETRO_COMM_DIR)/gfx/shaders
 
 # Constant folding of the GLSL math builtins runs on libm.
