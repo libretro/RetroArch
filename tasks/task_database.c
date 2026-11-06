@@ -6784,7 +6784,6 @@ static void dbscan_load_handler(retro_task_t *task)
             playlist_get_scan_dat_file_path(prep->playlist),
             prep->ov_core, prep->ov_dat)))
          prep->load = DBSCAN_LOAD_NO_MEMORY;
-      /* A single file's scan saves the file. */
       else if (!(prep->fs->content_stat & RETRO_VFS_STAT_IS_VALID))
       {
          prep->load = DBSCAN_LOAD_FOLDER_MISSING;
