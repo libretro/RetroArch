@@ -281,6 +281,28 @@ static const char fs_bool_depth[] =
    "   gl_FragDepth = flags.x ? 0.5 : v_tex0.z;\n"
    "}\n";
 
+/* A texture decoder, as parallel-gamecubewii generates one: texels from
+ * a buffer, a block shared across the workgroup, an image written. */
+static const char cs_decode[] =
+   "#version 450\n"
+   "layout(std140, set = 0, binding = 0) uniform UBO { uvec2 u_dst_size; uint u_src_offset; };\n"
+   "layout(set = 0, binding = 9) uniform usamplerBuffer s_input_buffer;\n"
+   "layout(rgba8, set = 0, binding = 11) uniform writeonly image2DArray output_image;\n"
+   "shared uvec2 shared_temp[4];\n"
+   "layout(local_size_x = 64, local_size_y = 1) in;\n"
+   "void main()\n"
+   "{\n"
+   "   uint group = gl_LocalInvocationID.x / 16u;\n"
+   "   uvec2 coords = gl_GlobalInvocationID.xy;\n"
+   "   if ((gl_LocalInvocationID.x % 16u) == 0u)\n"
+   "      shared_temp[group] = texelFetch(s_input_buffer, int(gl_WorkGroupID.x + u_src_offset)).rg;\n"
+   "   memoryBarrierShared();\n"
+   "   barrier();\n"
+   "   if (all(lessThan(coords, u_dst_size)))\n"
+   "      imageStore(output_image, ivec3(ivec2(coords), 0),\n"
+   "                 vec4(unpackUnorm4x8(shared_temp[group].x).rgb, 1.0));\n"
+   "}\n";
+
 /* The bounding box: a coherent storage buffer, kept by atomics. */
 static const char fs_bbox[] =
    "#version 450\n"
@@ -477,7 +499,8 @@ int main(int argc, char **argv)
       CHECK(strstr(err, "constant index below 8") != NULL);
    }
 
-   /* in / out blocks, a geometry stage (Geometry 2) and storage buffers:
+   /* in / out blocks, a geometry stage (Geometry 2), a compute stage and
+    * storage buffers:
     * SPIR-V and GLSL, refused by HLSL */
    {
       static const struct { const char *name, *src; enum rslc_stage stage; const char *needle; }
@@ -489,7 +512,9 @@ int main(int argc, char **argv)
          { "bbox", fs_bbox, RSLC_STAGE_FRAGMENT, "coherent buffer BBox {" },
          { "vertex_fetch", vs_vertex_fetch, RSLC_STAGE_VERTEX, "InputData input_buffer[];" },
          { "unnamed_vert", vs_unnamed, RSLC_STAGE_VERTEX, "out VertexData {" },
-         { "passthrough", gs_passthrough, RSLC_STAGE_GEOMETRY, "gl_in[" }
+         { "passthrough", gs_passthrough, RSLC_STAGE_GEOMETRY, "gl_in[" },
+         { "decode", cs_decode, RSLC_STAGE_COMPUTE,
+            "layout(rgba8) uniform writeonly image2DArray output_image;" }
       };
       unsigned i;
       for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)

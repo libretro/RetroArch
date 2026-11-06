@@ -326,6 +326,12 @@ static void pr_type(struct rslc_pr *p, const struct rslc_type *t)
          pr_s(p, t->kind == RSLC_TY_SAMPLER2DARRAY ? "sampler2DArray"
                : t->kind == RSLC_TY_SAMPLER2DMSARRAY ? "sampler2DMSArray" : "samplerBuffer");
          break;
+      case RSLC_TY_IMAGE2D:
+      case RSLC_TY_IMAGE2DARRAY:
+         /* compute is refused by HLSL and MSL before printing */
+         pr_scalar_prefix(p, t->base);
+         pr_s(p, t->kind == RSLC_TY_IMAGE2D ? "image2D" : "image2DArray");
+         break;
 #endif
       case RSLC_TY_STRUCT:
          if (t->name)
@@ -3769,6 +3775,28 @@ static bool pr_global_init_in_place(struct rslc_pr *p, const struct rslc_var *v)
 /* Globals, then prototypes and bodies for the functions main reaches:
  * a global's constant initialiser prints in place, any other runs at
  * the top of main. */
+#ifdef RSLC_EXTENDED
+/* A storage image's layout format by its RSLC_IMGFMT_* (SPIR-V) value. */
+static const char *pr_image_format(unsigned fmt)
+{
+   switch (fmt)
+   {
+      case RSLC_IMGFMT_RGBA32F:  return "rgba32f";
+      case RSLC_IMGFMT_RGBA16F:  return "rgba16f";
+      case RSLC_IMGFMT_R32F:     return "r32f";
+      case RSLC_IMGFMT_RGBA8:    return "rgba8";
+      case RSLC_IMGFMT_RGBA32I:  return "rgba32i";
+      case RSLC_IMGFMT_RGBA16I:  return "rgba16i";
+      case RSLC_IMGFMT_RGBA8I:   return "rgba8i";
+      case RSLC_IMGFMT_R32I:     return "r32i";
+      case RSLC_IMGFMT_RGBA32UI: return "rgba32ui";
+      case RSLC_IMGFMT_RGBA16UI: return "rgba16ui";
+      case RSLC_IMGFMT_RGBA8UI:  return "rgba8ui";
+      default:                   return "r32ui";
+   }
+}
+#endif
+
 static void pr_globals_and_funcs(struct rslc_pr *p)
 {
    struct rslc_ctx        *c  = p->c;
@@ -4002,6 +4030,45 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
       pr_s(p, ", max_vertices = ");
       pr_u(p, pr->gs_max_vertices);
       pr_s(p, ") out;");
+      pr_nl(p);
+   }
+   if (p->c->stage == RSLC_STAGE_COMPUTE)
+   {
+      static const char *const axes[3] = { "local_size_x = ", ", local_size_y = ",
+            ", local_size_z = " };
+      unsigned k;
+      pr_s(p, "layout(");
+      for (k = 0; k < 3; k++)
+      {
+         pr_s(p, axes[k]);
+         pr_u(p, pr->cs_local[k] ? pr->cs_local[k] : 1);
+      }
+      pr_s(p, ") in;");
+      pr_nl(p);
+   }
+   /* storage images, with their format, and workgroup memory */
+   for (i = 1; i < pr->nvars; i++)
+   {
+      const struct rslc_var *v = pr->vars[i];
+      if (v->storage == RSLC_ST_IMAGE)
+      {
+         pr_s(p, "layout(");
+         pr_s(p, pr_image_format(v->type->cols));
+         pr_s(p, ") uniform ");
+         if (v->quals & RSLC_VQ_READONLY)
+            pr_s(p, "readonly ");
+         if (v->quals & RSLC_VQ_WRITEONLY)
+            pr_s(p, "writeonly ");
+      }
+      else if (v->storage == RSLC_ST_SHARED)
+         pr_s(p, "shared ");
+      else
+         continue;
+      pr_type(p, v->type);
+      pr_c(p, ' ');
+      pr_var_name(p, v);
+      pr_array_suffix(p, v->type);
+      pr_c(p, ';');
       pr_nl(p);
    }
 #endif
@@ -5330,6 +5397,11 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
    if ((p->hlsl || p->msl) && c->stage == RSLC_STAGE_GEOMETRY)
    {
       rslc_err(c, p->hlsl ? "hlsl: no geometry stage yet" : "msl: no geometry stage", NULL, 0);
+      return false;
+   }
+   if ((p->hlsl || p->msl) && c->stage == RSLC_STAGE_COMPUTE)
+   {
+      rslc_err(c, p->hlsl ? "hlsl: no compute stage yet" : "msl: no compute stage yet", NULL, 0);
       return false;
    }
    if ((p->hlsl || p->msl) && (c->prog.clip_n || c->prog.cull_n))

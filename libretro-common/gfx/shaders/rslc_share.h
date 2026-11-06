@@ -216,8 +216,12 @@ enum rslc_kw
    RSLC_KW_SAMPLER2DARRAY, RSLC_KW_ISAMPLER2DARRAY, RSLC_KW_USAMPLER2DARRAY,
    RSLC_KW_SAMPLER2DMSARRAY, RSLC_KW_ISAMPLER2DMSARRAY, RSLC_KW_USAMPLER2DMSARRAY,
    RSLC_KW_SAMPLERBUFFER, RSLC_KW_ISAMPLERBUFFER, RSLC_KW_USAMPLERBUFFER,
+   /* RSLC_EXTENDED image types: float, int, uint of each */
+   RSLC_KW_IMAGE2D, RSLC_KW_IIMAGE2D, RSLC_KW_UIMAGE2D,
+   RSLC_KW_IMAGE2DARRAY, RSLC_KW_IIMAGE2DARRAY, RSLC_KW_UIMAGE2DARRAY,
+   /* RSLC_EXTENDED qualifiers */
    RSLC_KW_BUFFER, RSLC_KW_READONLY, RSLC_KW_WRITEONLY, RSLC_KW_COHERENT,
-   RSLC_KW_RESTRICT, RSLC_KW_VOLATILE,
+   RSLC_KW_RESTRICT, RSLC_KW_VOLATILE, RSLC_KW_SHARED,
    RSLC_KW_COUNT
 };
 
@@ -242,14 +246,35 @@ enum rslc_tkind
    /* RSLC_EXTENDED only */
    RSLC_TY_SAMPLER2DARRAY,
    RSLC_TY_SAMPLER2DMSARRAY,
-   RSLC_TY_SAMPLERBUFFER
+   RSLC_TY_SAMPLERBUFFER,
+   /* RSLC_EXTENDED storage images; cols is the RSLC_IMGFMT_* */
+   RSLC_TY_IMAGE2D,
+   RSLC_TY_IMAGE2DARRAY
 };
 
+#define RSLC_TY_IS_IMAGE(k) ((k) == RSLC_TY_IMAGE2D || (k) == RSLC_TY_IMAGE2DARRAY)
+
+/* RSLC_EXTENDED: a storage image's format, as its layout names it; the
+ * values are SPIR-V's ImageFormat. */
+#define RSLC_IMGFMT_RGBA32F  1
+#define RSLC_IMGFMT_RGBA16F  2
+#define RSLC_IMGFMT_R32F     3
+#define RSLC_IMGFMT_RGBA8    4
+#define RSLC_IMGFMT_RGBA32I  21
+#define RSLC_IMGFMT_RGBA16I  22
+#define RSLC_IMGFMT_RGBA8I   23
+#define RSLC_IMGFMT_R32I     24
+#define RSLC_IMGFMT_RGBA32UI 30
+#define RSLC_IMGFMT_RGBA16UI 31
+#define RSLC_IMGFMT_RGBA8UI  32
+#define RSLC_IMGFMT_R32UI    33
+
 /* The last keyword that names a type. */
-#define RSLC_KW_LAST_TYPE RSLC_KW_USAMPLERBUFFER
+#define RSLC_KW_LAST_TYPE RSLC_KW_UIMAGE2DARRAY
 
 /* Every sampler kind: sampler2D, and the RSLC_EXTENDED ones. */
-#define RSLC_TY_IS_SAMPLER(k) ((k) == RSLC_TY_SAMPLER2D || (k) >= RSLC_TY_SAMPLER2DARRAY)
+#define RSLC_TY_IS_SAMPLER(k) ((k) == RSLC_TY_SAMPLER2D \
+      || ((k) >= RSLC_TY_SAMPLER2DARRAY && (k) <= RSLC_TY_SAMPLERBUFFER))
 
 struct rslc_type;
 
@@ -295,7 +320,9 @@ enum rslc_storage
    RSLC_ST_SAMPLER,     /* uniform sampler2D */
    RSLC_ST_BLOCK,       /* the instance of a named uniform / push block */
    RSLC_ST_MEMBER,      /* a member of an unnamed block, visible bare */
-   RSLC_ST_BUILTIN      /* gl_Position and friends */
+   RSLC_ST_BUILTIN,     /* gl_Position and friends */
+   RSLC_ST_SHARED,      /* RSLC_EXTENDED: compute workgroup memory */
+   RSLC_ST_IMAGE        /* RSLC_EXTENDED: uniform image2D and the like */
 };
 
 #define RSLC_DIR_IN    0
@@ -312,6 +339,8 @@ enum rslc_storage
 #define RSLC_VQ_INVARIANT 4u
 #define RSLC_VQ_PRECISE   8u
 #define RSLC_VQ_IOBLOCK  16u   /* RSLC_EXTENDED: the instance of an in / out block */
+#define RSLC_VQ_READONLY 32u   /* RSLC_EXTENDED: an image only read */
+#define RSLC_VQ_WRITEONLY 64u  /* RSLC_EXTENDED: an image only written */
 #define RSLC_VQ_PERVERTEX 128u /* RSLC_EXTENDED: a geometry stage's gl_in */
 
 /* RSLC_EXTENDED: the struct of an in / out interface block, which the
@@ -356,6 +385,11 @@ struct rslc_var
 #define RSLC_BI_CULLDISTANCE 10  /* RSLC_EXTENDED */
 #define RSLC_BI_INVOCATIONID 11  /* RSLC_EXTENDED, geometry */
 #define RSLC_BI_LAYER        12  /* RSLC_EXTENDED, geometry */
+#define RSLC_BI_GLOBALINVOCATIONID 13   /* RSLC_EXTENDED, compute */
+#define RSLC_BI_LOCALINVOCATIONID  14
+#define RSLC_BI_WORKGROUPID        15
+#define RSLC_BI_NUMWORKGROUPS      16
+#define RSLC_BI_LOCALINVOCATIONINDEX 17
 
 /* RSLC_EXTENDED: a geometry stage's primitives, in and out. */
 #define RSLC_GS_POINTS              1
@@ -541,6 +575,10 @@ enum rslc_bfn
    /* RSLC_EXTENDED: on a member of a storage buffer */
    RSLC_BFN_ATOMICADD, RSLC_BFN_ATOMICMIN, RSLC_BFN_ATOMICMAX, RSLC_BFN_ATOMICAND,
    RSLC_BFN_ATOMICOR, RSLC_BFN_ATOMICXOR, RSLC_BFN_ATOMICEXCHANGE, RSLC_BFN_ATOMICCOMPSWAP,
+   /* RSLC_EXTENDED, compute and images */
+   RSLC_BFN_BARRIER, RSLC_BFN_MEMORYBARRIER, RSLC_BFN_MEMORYBARRIERSHARED,
+   RSLC_BFN_MEMORYBARRIERBUFFER, RSLC_BFN_MEMORYBARRIERIMAGE, RSLC_BFN_GROUPMEMORYBARRIER,
+   RSLC_BFN_IMAGESTORE, RSLC_BFN_IMAGELOAD, RSLC_BFN_IMAGESIZE,
    RSLC_BFN_COUNT
 };
 
@@ -581,6 +619,7 @@ struct rslc_prog
    uint8_t                 gs_out;
    uint32_t                gs_invocations;   /* 0: one */
    uint32_t                gs_max_vertices;
+   uint32_t                cs_local[3];      /* RSLC_EXTENDED, compute: 0 is unset */
 #ifdef RSLC_EXTENDED
    /* geometry: gl_in's members, made with the input primitive layout,
     * and one past the highest clip / cull element it reads */

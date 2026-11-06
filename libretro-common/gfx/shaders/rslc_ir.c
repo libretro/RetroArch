@@ -416,7 +416,8 @@ static const char *const rslc_keywords[] = {
    , "sampler2DArray", "isampler2DArray", "usampler2DArray",
    "sampler2DMSArray", "isampler2DMSArray", "usampler2DMSArray",
    "samplerBuffer", "isamplerBuffer", "usamplerBuffer",
-   "buffer", "readonly", "writeonly", "coherent", "restrict", "volatile"
+   "image2D", "iimage2D", "uimage2D", "image2DArray", "iimage2DArray", "uimage2DArray",
+   "buffer", "readonly", "writeonly", "coherent", "restrict", "volatile", "shared"
 #endif
 };
 
@@ -546,7 +547,7 @@ bool rslc_ctx_init(struct rslc_ctx *c, const struct rslc_opts *opts,
    }
    if (stage != RSLC_STAGE_VERTEX && stage != RSLC_STAGE_FRAGMENT
 #ifdef RSLC_EXTENDED
-         && stage != RSLC_STAGE_GEOMETRY
+         && stage != RSLC_STAGE_GEOMETRY && stage != RSLC_STAGE_COMPUTE
 #endif
          )
    {
@@ -1001,6 +1002,10 @@ enum spv_section
 #define SPV_MODEL_VERTEX     0
 #define SPV_MODEL_FRAGMENT   4
 #define SPV_MODEL_GEOMETRY   3
+#define SPV_MODEL_GLCOMPUTE  5
+#define SPV_MODE_LOCALSIZE   17
+#define SPV_SC_WORKGROUP     4
+#define SPV_DEC_NONREADABLE  25
 #define SPV_MODE_ORIGINUPPERLEFT 7
 #define SPV_MODE_EARLYFRAGMENTTESTS 9
 #define SPV_MODE_INVOCATIONS 0
@@ -1048,6 +1053,11 @@ enum spv_section
 #define SPV_BI_SAMPLEID      18
 #define SPV_BI_INVOCATIONID  8
 #define SPV_BI_LAYER         9
+#define SPV_BI_NUMWORKGROUPS 24
+#define SPV_BI_WORKGROUPID   26
+#define SPV_BI_LOCALINVOCATIONID 27
+#define SPV_BI_GLOBALINVOCATIONID 28
+#define SPV_BI_LOCALINVOCATIONINDEX 29
 
 enum spv_op
 {
@@ -1100,6 +1110,7 @@ enum spv_op
    SpvOpPhi = 245, SpvOpLoopMerge = 246, SpvOpSelectionMerge = 247,
    SpvOpLabel = 248, SpvOpBranch = 249, SpvOpBranchConditional = 250,
    SpvOpEmitVertex = 218, SpvOpEndPrimitive = 219,
+   SpvOpImageRead = 98, SpvOpImageWrite = 99, SpvOpControlBarrier = 224, SpvOpMemoryBarrier = 225,
    SpvOpAtomicExchange = 229, SpvOpAtomicCompareExchange = 230, SpvOpAtomicIAdd = 234,
    SpvOpAtomicSMin = 236, SpvOpAtomicUMin = 237, SpvOpAtomicSMax = 238, SpvOpAtomicUMax = 239,
    SpvOpAtomicAnd = 240, SpvOpAtomicOr = 241, SpvOpAtomicXor = 242,
@@ -1550,6 +1561,23 @@ static uint32_t spv_type(struct spv_emit *e, const struct rslc_type *t)
          ti->img = img;
          break;
       }
+#ifdef RSLC_EXTENDED
+      case RSLC_TY_IMAGE2D:
+      case RSLC_TY_IMAGE2DARRAY:
+      {
+         /* a storage image: Sampled 2, its format from the layout (cols) */
+         uint32_t s = spv_type(e, rslc_type_basic(e->c, RSLC_TY_SCALAR, (enum rslc_base)t->base, 1, 1));
+         if (!s)
+            return 0;
+         ti = &e->tinfo[t->id];
+         w[0] = id; w[1] = s; w[2] = 1 /* 2D */; w[3] = 0;
+         w[4] = t->kind == RSLC_TY_IMAGE2DARRAY; w[5] = 0; w[6] = 2; w[7] = t->cols;
+         if (!spv_inst(e, SPV_SEC_TYPES, SpvOpTypeImage, w, 8))
+            return 0;
+         ti->img = id;
+         break;
+      }
+#endif
       case RSLC_TY_ARRAY:
       {
          uint32_t elem = spv_type(e, t->elem);
@@ -1619,6 +1647,10 @@ static uint32_t spv_ptr(struct spv_emit *e, uint32_t tid, unsigned sc)
 /* Function parameters are pointers; samplers point at the uniform. */
 static unsigned spv_param_sc(const struct rslc_type *t)
 {
+#ifdef RSLC_EXTENDED
+   if (RSLC_TY_IS_IMAGE(t->kind))
+      return SPV_SC_UNIFORMCONSTANT;
+#endif
    return RSLC_TY_IS_SAMPLER(t->kind) ? SPV_SC_UNIFORMCONSTANT : SPV_SC_FUNCTION;
 }
 
@@ -3181,6 +3213,53 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
       case RSLC_BFN_OUTERPRODUCT: return spv_r2(e, SpvOpOuterProduct, tid, args[0], args[1], prec);
       case RSLC_BFN_MATRIXCOMPMULT: return spv_mat_columnwise(e, SpvOpFMul, t0, args[0], args[1], true, prec);
 #ifdef RSLC_EXTENDED
+      case RSLC_BFN_BARRIER:
+      case RSLC_BFN_MEMORYBARRIER:
+      case RSLC_BFN_MEMORYBARRIERSHARED:
+      case RSLC_BFN_MEMORYBARRIERBUFFER:
+      case RSLC_BFN_MEMORYBARRIERIMAGE:
+      case RSLC_BFN_GROUPMEMORYBARRIER:
+      {
+         /* as glslang: a barrier waits the workgroup and orders its
+          * shared memory; the memory barriers order what they name,
+          * device wide save groupMemoryBarrier */
+         uint32_t w[3];
+         uint32_t sem = bfn == RSLC_BFN_BARRIER || bfn == RSLC_BFN_MEMORYBARRIERSHARED ? 0x108u
+            : bfn == RSLC_BFN_MEMORYBARRIERBUFFER ? 0x48u
+            : bfn == RSLC_BFN_MEMORYBARRIERIMAGE ? 0x808u : 0x948u;
+         if (bfn == RSLC_BFN_BARRIER && e->c->stage != RSLC_STAGE_COMPUTE)
+         {
+            rslc_err(e->c, "barrier belongs to a compute stage", NULL, n->line);
+            return 0;
+         }
+         w[0] = spv_const_uint(e, 2);   /* Workgroup */
+         w[1] = spv_const_uint(e, bfn == RSLC_BFN_BARRIER || bfn == RSLC_BFN_GROUPMEMORYBARRIER
+               ? 2u : 1u /* Device */);
+         w[2] = spv_const_uint(e, sem);
+         if (!w[0] || !w[1] || !w[2])
+            return 0;
+         if (bfn == RSLC_BFN_BARRIER)
+         {
+            if (!spv_fn_inst(e, SpvOpControlBarrier, w, 3))
+               return 0;
+         }
+         else if (!spv_fn_inst(e, SpvOpMemoryBarrier, w + 1, 2))
+            return 0;
+         return tid;
+      }
+      case RSLC_BFN_IMAGESTORE:
+      {
+         uint32_t w[3];
+         w[0] = args[0]; w[1] = args[1]; w[2] = args[2];
+         if (!spv_fn_inst(e, SpvOpImageWrite, w, 3))
+            return 0;
+         return tid;
+      }
+      case RSLC_BFN_IMAGELOAD:
+         return spv_r2(e, SpvOpImageRead, tid, args[0], args[1], prec);
+      case RSLC_BFN_IMAGESIZE:
+         e->need_imagequery = true;
+         return spv_r1(e, SpvOpImageQuerySize, tid, args[0], prec);
       case RSLC_BFN_EMITVERTEX:
       case RSLC_BFN_ENDPRIMITIVE:
          /* no result: the void type's id stands for the expression */
@@ -4387,6 +4466,10 @@ static bool spv_global_var(struct spv_emit *e, const struct rslc_var *v)
       case RSLC_ST_OUT:     sc = SPV_SC_OUTPUT; break;
       case RSLC_ST_SAMPLER: sc = SPV_SC_UNIFORMCONSTANT; break;
       case RSLC_ST_GLOBAL:  sc = SPV_SC_PRIVATE; break;
+#ifdef RSLC_EXTENDED
+      case RSLC_ST_IMAGE:   sc = SPV_SC_UNIFORMCONSTANT; break;
+      case RSLC_ST_SHARED:  sc = SPV_SC_WORKGROUP; break;
+#endif
       case RSLC_ST_CONST:
       {
          /* fold to a constant when possible */
@@ -4417,6 +4500,18 @@ static bool spv_global_var(struct spv_emit *e, const struct rslc_var *v)
       return false;
    if (v->location != RSLC_UNSET && !spv_decorate1(e, id, SPV_DEC_LOCATION, v->location))
       return false;
+#ifdef RSLC_EXTENDED
+   if (v->storage == RSLC_ST_IMAGE)
+   {
+      if (!spv_decorate1(e, id, SPV_DEC_DESCRIPTORSET, v->set == RSLC_UNSET ? 0 : v->set)
+            || !spv_decorate1(e, id, SPV_DEC_BINDING, v->binding == RSLC_UNSET ? 0 : v->binding))
+         return false;
+      if ((v->quals & RSLC_VQ_WRITEONLY) && !spv_decorate(e, id, SPV_DEC_NONREADABLE))
+         return false;
+      if ((v->quals & RSLC_VQ_READONLY) && !spv_decorate(e, id, SPV_DEC_NONWRITABLE))
+         return false;
+   }
+#endif
    if (v->storage == RSLC_ST_SAMPLER)
    {
       if (!spv_decorate1(e, id, SPV_DEC_DESCRIPTORSET, v->set == RSLC_UNSET ? 0 : v->set)
@@ -4501,7 +4596,12 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
       : v->builtin == RSLC_BI_FRONTFACING ? SPV_BI_FRONTFACING
       : v->builtin == RSLC_BI_SAMPLEID ? SPV_BI_SAMPLEID
       : v->builtin == RSLC_BI_INVOCATIONID ? SPV_BI_INVOCATIONID
-      : v->builtin == RSLC_BI_LAYER ? SPV_BI_LAYER : SPV_BI_POSITION;
+      : v->builtin == RSLC_BI_LAYER ? SPV_BI_LAYER
+      : v->builtin == RSLC_BI_GLOBALINVOCATIONID ? SPV_BI_GLOBALINVOCATIONID
+      : v->builtin == RSLC_BI_LOCALINVOCATIONID ? SPV_BI_LOCALINVOCATIONID
+      : v->builtin == RSLC_BI_WORKGROUPID ? SPV_BI_WORKGROUPID
+      : v->builtin == RSLC_BI_NUMWORKGROUPS ? SPV_BI_NUMWORKGROUPS
+      : v->builtin == RSLC_BI_LOCALINVOCATIONINDEX ? SPV_BI_LOCALINVOCATIONINDEX : SPV_BI_POSITION;
    if (!ptr)
       return false;
    /* reading the sample index runs the stage per sample */
@@ -4910,7 +5010,11 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    {
       uint32_t pre[2];
       pre[0] = c->stage == RSLC_STAGE_VERTEX ? SPV_MODEL_VERTEX
-         : c->stage == RSLC_STAGE_GEOMETRY ? SPV_MODEL_GEOMETRY : SPV_MODEL_FRAGMENT;
+         : c->stage == RSLC_STAGE_GEOMETRY ? SPV_MODEL_GEOMETRY
+#ifdef RSLC_EXTENDED
+         : c->stage == RSLC_STAGE_COMPUTE ? SPV_MODEL_GLCOMPUTE
+#endif
+         : SPV_MODEL_FRAGMENT;
       pre[1] = main_id;
       if (!spv_inst_str(e, SPV_SEC_ENTRY, SpvOpEntryPoint, pre, 2, "main",
                e->entry_iface.v, e->entry_iface.n))
@@ -4925,6 +5029,18 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    if (e->writes_fragdepth
          && !spv_inst2(e, SPV_SEC_ENTRY, SpvOpExecutionMode, main_id, 12u /* DepthReplacing */))
       return false;
+#ifdef RSLC_EXTENDED
+   if (c->stage == RSLC_STAGE_COMPUTE)
+   {
+      uint32_t w[5];
+      unsigned k;
+      w[0] = main_id; w[1] = SPV_MODE_LOCALSIZE;
+      for (k = 0; k < 3; k++)
+         w[2 + k] = c->prog.cs_local[k] ? c->prog.cs_local[k] : 1;
+      if (!spv_inst(e, SPV_SEC_ENTRY, SpvOpExecutionMode, w, 5))
+         return false;
+   }
+#endif
    if (c->stage == RSLC_STAGE_GEOMETRY)
    {
       /* InputPoints 19, InputLines 20, InputLinesAdjacency 21,

@@ -65,7 +65,8 @@ enum rslc_stage
 {
    RSLC_STAGE_VERTEX = 0,
    RSLC_STAGE_FRAGMENT,
-   RSLC_STAGE_GEOMETRY   /* RSLC_EXTENDED; SPIR-V and GLSL only */
+   RSLC_STAGE_GEOMETRY,  /* RSLC_EXTENDED; SPIR-V and GLSL only */
+   RSLC_STAGE_COMPUTE    /* RSLC_EXTENDED; SPIR-V and GLSL only */
 };
 
 enum rslc_dst
