@@ -11087,6 +11087,197 @@ static void test_touch_edit(void)
    t_forget_devices();
 }
 
+#define T_INDEX_PROFILE "/interaction_profiles/valve/index_controller"
+
+/* While a Touch Button other than the trigger is the laser's, what else
+ * it is bound to is held back, in Combined and Separate, by each
+ * profile's pad rows; Touch Passthrough presses it too; pointed beside
+ * the screens it is plain. */
+static void test_touch_hold_back(void)
+{
+   t_let_go();
+   t_forget_devices();
+   t_fresh_session();
+   t_aim_at_screen_1();
+   t_touch_button = VIDEO_OPENXR_TOUCH_BUTTON_GRIP;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+
+   /* Touch, Combined: the right grip is R. */
+   t_hold("pointer/touch_grip", 2, 1.0f, 0.0f);
+   t_hold("combined/r", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_touching() && !t_btn(0, RETRO_DEVICE_ID_JOYPAD_R),
+         "Touch: the grip's touch pressed R");
+   t_let_go();
+   t_touch_pass = true;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_hold("pointer/touch_grip", 2, 1.0f, 0.0f);
+   t_hold("combined/r", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_touching() && t_btn(0, RETRO_DEVICE_ID_JOYPAD_R),
+         "Touch Passthrough: the grip's touch held R back");
+   t_let_go();
+   t_touch_pass = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+
+   /* Only the grip's own binds: A, on the same hand, still presses. */
+   t_hold("pointer/touch_grip", 2, 1.0f, 0.0f);
+   t_hold("combined/r", 0, 1.0f, 0.0f);
+   t_hold("combined/a", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_touching() && !t_btn(0, RETRO_DEVICE_ID_JOYPAD_R)
+         && t_btn(0, RETRO_DEVICE_ID_JOYPAD_A),
+         "the grip's touch: R %d, A %d, want A alone",
+         t_btn(0, RETRO_DEVICE_ID_JOYPAD_R),
+         t_btn(0, RETRO_DEVICE_ID_JOYPAD_A));
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+
+   /* With the menu open the grip still touches a live screen, and
+    * aimed at nothing its R is plain; neither takes the laser from the
+    * dots. */
+   t_menu_open = true;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_hold("pointer/touch_grip", 2, 1.0f, 0.0f);
+   t_hold("combined/r", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_touching() && !t_btn(0, RETRO_DEVICE_ID_JOYPAD_R)
+         && (retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK) == VIDEO_OPENXR_LASER_AUTO,
+         "menu open, the grip on the screen: touch %d, R %d, laser %d",
+         t_touching(), t_btn(0, RETRO_DEVICE_ID_JOYPAD_R),
+         retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK);
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_aim[1].position.x = 3.0f;
+   t_aim[2].position.x = 3.0f;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_hold("pointer/touch_grip", 2, 1.0f, 0.0f);
+   t_hold("combined/r", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(!t_touching() && t_btn(0, RETRO_DEVICE_ID_JOYPAD_R)
+         && (retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK) == VIDEO_OPENXR_LASER_AUTO,
+         "menu open, the grip aimed at nothing: touch %d, R %d, laser %d",
+         t_touching(), t_btn(0, RETRO_DEVICE_ID_JOYPAD_R),
+         retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK);
+   t_aim[1].position.x = 0.0f;
+   t_aim[2].position.x = 0.0f;
+   t_let_go();
+   t_touch_pass = true;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_hold("pointer/touch_grip", 2, 1.0f, 0.0f);
+   t_hold("combined/r", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_touching() && t_btn(0, RETRO_DEVICE_ID_JOYPAD_R)
+         && (retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK) == VIDEO_OPENXR_LASER_AUTO,
+         "menu open, Passthrough, the grip on the screen: touch %d, R %d, "
+         "laser %d", t_touching(), t_btn(0, RETRO_DEVICE_ID_JOYPAD_R),
+         retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK);
+   t_let_go();
+   t_touch_pass = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+
+   /* Another button on the grip's hand still takes the laser from the
+    * dots, until a trigger is pulled. */
+   t_hold("combined/a", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK((retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK) == VIDEO_OPENXR_LASER_OFF,
+         "menu open, Grip: A did not take the laser from the dots");
+   t_hold("combined/r2", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK((retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK) == VIDEO_OPENXR_LASER_AUTO,
+         "menu open, Grip: a trigger pull did not give the laser back");
+   t_let_go();
+   t_menu_open = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+
+   /* Short of a touch, a grip the runtime already reads as R is held
+    * back while the hand points at the screen, and plain beside it. */
+   t_hold("pointer/touch_grip", 2, 0.3f, 0.0f);
+   t_hold("combined/r", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(!t_touching() && !t_btn(0, RETRO_DEVICE_ID_JOYPAD_R),
+         "pointing at the screen, a grip short of a touch pressed R");
+   t_aim[1].position.x = 3.0f;
+   t_aim[2].position.x = 3.0f;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_btn(0, RETRO_DEVICE_ID_JOYPAD_R),
+         "pointed beside the screen, the grip's R was held back");
+   t_aim[1].position.x = 0.0f;
+   t_aim[2].position.x = 0.0f;
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+
+   /* Touch, Separate: the grip is each hand's R. */
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_AUTO);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_AUTO);
+   t_hold("pointer/touch_grip", 2, 1.0f, 0.0f);
+   t_hold("separate/r", 2, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_touching() && !t_btn(1, RETRO_DEVICE_ID_JOYPAD_R),
+         "Separate: the right grip's touch pressed its R");
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_AUTO);
+
+   /* The Frame: the right stick's click is button 16 in Combined and
+    * Start in Separate. */
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_frame_session();
+   t_current[1]   = T_FRAME_PROFILE;
+   t_current[2]   = T_FRAME_PROFILE;
+   t_touch_button = VIDEO_OPENXR_TOUCH_BUTTON_STICK;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_hold("pointer/touch_stick", 2, 1.0f, 0.0f);
+   t_hold("combined/menu", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_touching() && !t_btn(0, INPUT_OPENXR_BUTTON_MENU),
+         "Frame: the right stick's touch pressed button 16");
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_AUTO);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_AUTO);
+   t_hold("pointer/touch_stick", 2, 1.0f, 0.0f);
+   t_hold("separate/start", 2, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_touching() && !t_btn(1, RETRO_DEVICE_ID_JOYPAD_START),
+         "Frame, Separate: the right stick's touch pressed its Start");
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_AUTO);
+
+   /* Index: the grip is R too. */
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_fresh_session();
+   t_current[1]   = T_INDEX_PROFILE;
+   t_current[2]   = T_INDEX_PROFILE;
+   t_touch_button = VIDEO_OPENXR_TOUCH_BUTTON_GRIP;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_hold("pointer/touch_grip", 2, 1.0f, 0.0f);
+   t_hold("combined/r", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_touching() && !t_btn(0, RETRO_DEVICE_ID_JOYPAD_R),
+         "Index: the grip's touch pressed R");
+
+   t_touch_reset();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_forget_devices();
+}
+
 int main(void)
 {
    t_forget_devices();
@@ -11233,6 +11424,7 @@ int main(void)
    test_suggest_order();
    test_touch_button();
    test_touch_edit();
+   test_touch_hold_back();
    if (failures)
    {
       printf("%d failure(s)\n", failures);

@@ -1863,18 +1863,96 @@ static void input_openxr_triggers(input_openxr_t *st, unsigned laser,
    }
 }
 
-/* Whether this read newly presses a button other than the triggers' L2
- * and R2 or the menu button (it navigates nothing), or pushes a stick
- * past half. */
-static bool input_openxr_new_press(input_openxr_t *st)
+/* The buttons input @path feeds in profile @p's pad rows, on pad *pad:
+ * Combined's one, or in Separate the hand's. */
+static uint32_t input_openxr_fed(const input_openxr_profile_t *p,
+      bool separate, unsigned h, const char *path, unsigned *pad)
 {
-   unsigned p, s;
+   unsigned i;
+   uint32_t bits = 0;
+   *pad          = separate ? h : 0;
+   for (i = 0; i < p->count; i++)
+   {
+      unsigned a = p->binds[i].action;
+      if (!string_is_equal(p->binds[i].path, path))
+         continue;
+      if (separate)
+      {
+         if (a == IXA_S_B)
+            bits |= 1u << RETRO_DEVICE_ID_JOYPAD_B;
+         else if (a == IXA_S_A)
+            bits |= 1u << RETRO_DEVICE_ID_JOYPAD_A;
+         else if (a == IXA_S_R)
+            bits |= 1u << RETRO_DEVICE_ID_JOYPAD_R;
+         else if (a == IXA_S_START)
+            bits |= 1u << RETRO_DEVICE_ID_JOYPAD_START;
+         else if (a == IXA_S_MENU)
+            bits |= 1u << INPUT_OPENXR_BUTTON_MENU;
+      }
+      else if (a <= IXA_C_R3)
+         bits |= 1u << (a - IXA_C_B);
+      else if (a == IXA_C_MENU)
+         bits |= 1u << INPUT_OPENXR_BUTTON_MENU;
+      else if (a == IXA_C_START_MENU)
+         bits |= (1u << RETRO_DEVICE_ID_JOYPAD_START)
+            | (1u << INPUT_OPENXR_BUTTON_MENU);
+   }
+   return bits;
+}
+
+/* OpenXR gives an input to every action bound to it: while a Touch
+ * Button other than the trigger is the laser's, what else that input
+ * presses is let go, unless Touch Passthrough is on. */
+static void input_openxr_hold_back(input_openxr_t *st, bool separate,
+      unsigned laser, bool menu_open)
+{
+   unsigned h;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      unsigned pad;
+      uint32_t bits;
+      const char *path;
+      int prof = st->hand_profile[h];
+      if (     st->touch_pass[h]
+            || !input_openxr_touch_held(st, h, laser, menu_open)
+            || !(path = input_openxr_touch_path(st, prof, h,
+                  st->touch_c[h])))
+         continue;
+      bits                   = input_openxr_fed(
+            &input_openxr_profiles[prof], separate, h, path, &pad);
+      st->pads[pad].buttons &= ~bits;
+   }
+}
+
+/* Whether this read newly presses a button other than the triggers' L2
+ * and R2, the menu button (it navigates nothing) or what a Touch
+ * Button's input feeds (it may touch), or pushes a stick past half. */
+static bool input_openxr_new_press(input_openxr_t *st, bool separate)
+{
+   unsigned h, p, s;
+   uint32_t touch[INPUT_OPENXR_PADS];
    bool press = false;
+   for (p = 0; p < INPUT_OPENXR_PADS; p++)
+      touch[p] = 0;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      unsigned pad;
+      uint32_t bits;
+      const char *path;
+      int prof = st->hand_profile[h];
+      if (     !st->can_touch[h]
+            || !(path = input_openxr_touch_path(st, prof, h,
+                  st->touch_c[h])))
+         continue;
+      bits        = input_openxr_fed(&input_openxr_profiles[prof],
+            separate, h, path, &pad);
+      touch[pad] |= bits;
+   }
    for (p = 0; p < INPUT_OPENXR_PADS; p++)
    {
       const input_openxr_pad_t *pad = &st->pads[p];
       unsigned sticks               = 0;
-      uint32_t buttons              = pad->buttons
+      uint32_t buttons              = pad->buttons & ~touch[p]
             & ~((1u << RETRO_DEVICE_ID_JOYPAD_L2)
                | (1u << RETRO_DEVICE_ID_JOYPAD_R2)
                | (1u << INPUT_OPENXR_BUTTON_MENU));
@@ -1897,11 +1975,11 @@ static bool input_openxr_new_press(input_openxr_t *st)
  * press alone tilts one by over 3 degrees on the Steam Frame.
  * That pull is spent, with a press's or without: an unseen laser must
  * not click. */
-static void input_openxr_yield(input_openxr_t *st, unsigned laser,
-      bool menu_open, float threshold)
+static void input_openxr_yield(input_openxr_t *st, bool separate,
+      unsigned laser, bool menu_open, float threshold)
 {
    unsigned h;
-   bool press = input_openxr_new_press(st);
+   bool press = input_openxr_new_press(st, separate);
 
    if (     !menu_open || laser == VIDEO_OPENXR_LASER_OFF
          || (!st->yield && !press))
@@ -4045,7 +4123,7 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
       else
          input_openxr_read_combined(st);
       input_openxr_read_touch(st);
-      input_openxr_yield(st, laser, menu_open, threshold);
+      input_openxr_yield(st, separate, laser, menu_open, threshold);
       if (st->yield)
          laser = VIDEO_OPENXR_LASER_OFF;
       retro_atomic_store_release_int(&input_openxr_pointer_config,
@@ -4055,6 +4133,7 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
       input_openxr_laser_poll(st, laser, menu_open, threshold,
             was_pressed);
       input_openxr_triggers(st, laser, menu_open, threshold);
+      input_openxr_hold_back(st, separate, laser, menu_open);
    }
    input_openxr_haptics(st, separate,
          (run_flags & RUNLOOP_FLAG_PAUSED) ? true : false);
