@@ -543,7 +543,11 @@ bool rslc_ctx_init(struct rslc_ctx *c, const struct rslc_opts *opts,
       rslc_err(c, "alloc and free_fn must both be set or both unset", NULL, 0);
       return false;
    }
-   if (stage != RSLC_STAGE_VERTEX && stage != RSLC_STAGE_FRAGMENT)
+   if (stage != RSLC_STAGE_VERTEX && stage != RSLC_STAGE_FRAGMENT
+#ifdef RSLC_EXTENDED
+         && stage != RSLC_STAGE_GEOMETRY
+#endif
+         )
    {
       rslc_err(c, "unknown stage", NULL, 0);
       return false;
@@ -806,7 +810,11 @@ bool rslc_blob_open(void *blob, size_t len, struct rslc_result *result)
    if (     (h->payload_off & 3)
          || !rslc_blob_range_ok(h->payload_off, 1, h->payload_len, h->total_len))
       return false;
+#ifdef RSLC_EXTENDED
+   if (h->stage > RSLC_STAGE_GEOMETRY || h->dst > RSLC_DST_REFLECT)
+#else
    if (h->stage > RSLC_STAGE_FRAGMENT || h->dst > RSLC_DST_REFLECT)
+#endif
       return false;
 
    r = (const struct rslc_reflect*)(bytes + h->refl_off);
@@ -988,10 +996,17 @@ enum spv_section
 #define SPV_CAP_SAMPLERATESHADING 35
 #define SPV_CAP_CLIPDISTANCE 32
 #define SPV_CAP_CULLDISTANCE 33
+#define SPV_CAP_GEOMETRY     2
 #define SPV_MODEL_VERTEX     0
 #define SPV_MODEL_FRAGMENT   4
+#define SPV_MODEL_GEOMETRY   3
 #define SPV_MODE_ORIGINUPPERLEFT 7
 #define SPV_MODE_EARLYFRAGMENTTESTS 9
+#define SPV_MODE_INVOCATIONS 0
+#define SPV_MODE_OUTPUTVERTICES 26
+#define SPV_MODE_OUTPUTPOINTS 27
+#define SPV_MODE_OUTPUTLINESTRIP 28
+#define SPV_MODE_OUTPUTTRIANGLESTRIP 29
 #define SPV_SC_UNIFORMCONSTANT 0
 #define SPV_SC_INPUT         1
 #define SPV_SC_UNIFORM       2
@@ -1027,6 +1042,8 @@ enum spv_section
 #define SPV_BI_FRONTFACING   17
 #define SPV_BI_FRAGDEPTH     22
 #define SPV_BI_SAMPLEID      18
+#define SPV_BI_INVOCATIONID  8
+#define SPV_BI_LAYER         9
 
 enum spv_op
 {
@@ -1078,6 +1095,7 @@ enum spv_op
    SpvOpDPdxCoarse = 213, SpvOpDPdyCoarse = 214, SpvOpFwidthCoarse = 215,
    SpvOpPhi = 245, SpvOpLoopMerge = 246, SpvOpSelectionMerge = 247,
    SpvOpLabel = 248, SpvOpBranch = 249, SpvOpBranchConditional = 250,
+   SpvOpEmitVertex = 218, SpvOpEndPrimitive = 219,
    SpvOpSwitch = 251, SpvOpKill = 252, SpvOpReturn = 253, SpvOpReturnValue = 254,
    SpvOpUnreachable = 255
 };
@@ -2134,7 +2152,8 @@ static uint32_t spv_var_ptr(struct spv_emit *e, const struct rslc_var *v, unsign
    {
       /* builtins are emitted on first use, so an unreferenced
        * gl_FragDepth never becomes an output */
-      if (e->c->stage == RSLC_STAGE_VERTEX && RSLC_BI_IN_PERVERTEX(v->builtin))
+      if ((e->c->stage == RSLC_STAGE_VERTEX || e->c->stage == RSLC_STAGE_GEOMETRY)
+            && RSLC_BI_IN_PERVERTEX(v->builtin))
       {
          if (!e->pervertex_var && !spv_pervertex(e))
             return 0;
@@ -3059,6 +3078,20 @@ static uint32_t spv_builtin_node(struct spv_emit *e, const struct rslc_node *n)
       case RSLC_BFN_TRANSPOSE: return spv_r1(e, SpvOpTranspose, tid, args[0], prec);
       case RSLC_BFN_OUTERPRODUCT: return spv_r2(e, SpvOpOuterProduct, tid, args[0], args[1], prec);
       case RSLC_BFN_MATRIXCOMPMULT: return spv_mat_columnwise(e, SpvOpFMul, t0, args[0], args[1], true, prec);
+#ifdef RSLC_EXTENDED
+      case RSLC_BFN_EMITVERTEX:
+      case RSLC_BFN_ENDPRIMITIVE:
+         /* no result: the void type's id stands for the expression */
+         if (e->c->stage != RSLC_STAGE_GEOMETRY)
+         {
+            rslc_err(e->c, "EmitVertex and EndPrimitive belong to a geometry stage", NULL, n->line);
+            return 0;
+         }
+         if (!spv_fn_inst(e, bfn == RSLC_BFN_EMITVERTEX ? SpvOpEmitVertex : SpvOpEndPrimitive,
+                  NULL, 0))
+            return 0;
+         return tid;
+#endif
       case RSLC_BFN_DFDX: return spv_r1(e, SpvOpDPdx, tid, args[0], prec);
       case RSLC_BFN_DFDY: return spv_r1(e, SpvOpDPdy, tid, args[0], prec);
       case RSLC_BFN_FWIDTH: return spv_r1(e, SpvOpFwidth, tid, args[0], prec);
@@ -4300,6 +4333,36 @@ static bool spv_global_var(struct spv_emit *e, const struct rslc_var *v)
          return false;
       if ((v->quals & RSLC_VQ_INVARIANT) && !spv_decorate(e, id, SPV_DEC_INVARIANT))
          return false;
+#ifdef RSLC_EXTENDED
+      /* an in / out block: its struct is a Block, each member keeps its
+       * interpolation; an integer member of a fragment input is flat */
+      if (v->quals & RSLC_VQ_IOBLOCK)
+      {
+         const struct rslc_type *bt = v->type;
+         uint32_t stid, k;
+         while (bt->kind == RSLC_TY_ARRAY)
+            bt = bt->elem;
+         stid = spv_type(e, bt);
+         if (!stid || !spv_decorate(e, stid, SPV_DEC_BLOCK))
+            return false;
+         for (k = 0; k < bt->nfields; k++)
+         {
+            const struct rslc_field *f = &bt->fields[k];
+            bool flat = f->interp == RSLC_INTERP_FLAT
+               || (sc == SPV_SC_INPUT && e->c->stage == RSLC_STAGE_FRAGMENT
+                  && (f->type->base == RSLC_BASE_INT || f->type->base == RSLC_BASE_UINT));
+            if (flat && !spv_mdecorate(e, stid, k, SPV_DEC_FLAT))
+               return false;
+            if (f->interp == RSLC_INTERP_NOPERSPECTIVE
+                  && !spv_mdecorate(e, stid, k, SPV_DEC_NOPERSPECTIVE))
+               return false;
+            if ((f->quals & RSLC_VQ_CENTROID) && !spv_mdecorate(e, stid, k, SPV_DEC_CENTROID))
+               return false;
+            if ((f->quals & RSLC_VQ_SAMPLE) && !spv_mdecorate(e, stid, k, SPV_DEC_SAMPLE))
+               return false;
+         }
+      }
+#endif
       if (!spv_w(e, &e->entry_iface, id))
          return false;
    }
@@ -4320,7 +4383,9 @@ static bool spv_builtin_var(struct spv_emit *e, const struct rslc_var *v)
       : v->builtin == RSLC_BI_VERTEXINDEX ? SPV_BI_VERTEXINDEX
       : v->builtin == RSLC_BI_INSTANCEINDEX ? SPV_BI_INSTANCEINDEX
       : v->builtin == RSLC_BI_FRONTFACING ? SPV_BI_FRONTFACING
-      : v->builtin == RSLC_BI_SAMPLEID ? SPV_BI_SAMPLEID : SPV_BI_POSITION;
+      : v->builtin == RSLC_BI_SAMPLEID ? SPV_BI_SAMPLEID
+      : v->builtin == RSLC_BI_INVOCATIONID ? SPV_BI_INVOCATIONID
+      : v->builtin == RSLC_BI_LAYER ? SPV_BI_LAYER : SPV_BI_POSITION;
    if (!ptr)
       return false;
    /* reading the sample index runs the stage per sample */
@@ -4689,6 +4754,9 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    /* header-ish sections */
    if (!spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_SHADER))
       return false;
+   if (c->stage == RSLC_STAGE_GEOMETRY
+         && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_GEOMETRY))
+      return false;
    if (e->need_sampledbuffer && !spv_inst1(e, SPV_SEC_CAPS, SpvOpCapability, SPV_CAP_SAMPLEDBUFFER))
       return false;
    if (e->need_samplerateshading
@@ -4706,7 +4774,8 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
       return false;
    {
       uint32_t pre[2];
-      pre[0] = c->stage == RSLC_STAGE_VERTEX ? SPV_MODEL_VERTEX : SPV_MODEL_FRAGMENT;
+      pre[0] = c->stage == RSLC_STAGE_VERTEX ? SPV_MODEL_VERTEX
+         : c->stage == RSLC_STAGE_GEOMETRY ? SPV_MODEL_GEOMETRY : SPV_MODEL_FRAGMENT;
       pre[1] = main_id;
       if (!spv_inst_str(e, SPV_SEC_ENTRY, SpvOpEntryPoint, pre, 2, "main",
                e->entry_iface.v, e->entry_iface.n))
@@ -4718,6 +4787,28 @@ static bool rslc_emit_spirv(struct rslc_ctx *c, struct rslc_result *result)
    if (c->prog.early_fragment_tests
          && !spv_inst2(e, SPV_SEC_ENTRY, SpvOpExecutionMode, main_id, SPV_MODE_EARLYFRAGMENTTESTS))
       return false;
+   if (c->stage == RSLC_STAGE_GEOMETRY)
+   {
+      /* InputPoints 19, InputLines 20, InputLinesAdjacency 21,
+       * Triangles 22, InputTrianglesAdjacency 23 */
+      uint32_t in_mode  = 18u + c->prog.gs_in;
+      uint32_t out_mode = c->prog.gs_out == RSLC_GS_POINTS ? SPV_MODE_OUTPUTPOINTS
+         : c->prog.gs_out == RSLC_GS_LINE_STRIP ? SPV_MODE_OUTPUTLINESTRIP
+         : SPV_MODE_OUTPUTTRIANGLESTRIP;
+      uint32_t w[3];
+      if (!spv_inst2(e, SPV_SEC_ENTRY, SpvOpExecutionMode, main_id, in_mode))
+         return false;
+      w[0] = main_id; w[1] = SPV_MODE_INVOCATIONS;
+      w[2] = c->prog.gs_invocations ? c->prog.gs_invocations : 1;
+      if (!spv_inst(e, SPV_SEC_ENTRY, SpvOpExecutionMode, w, 3))
+         return false;
+      if (!spv_inst2(e, SPV_SEC_ENTRY, SpvOpExecutionMode, main_id, out_mode))
+         return false;
+      w[1] = SPV_MODE_OUTPUTVERTICES;
+      w[2] = c->prog.gs_max_vertices;
+      if (!spv_inst(e, SPV_SEC_ENTRY, SpvOpExecutionMode, w, 3))
+         return false;
+   }
    {
       uint32_t src[2];
       src[0] = 2;   /* GLSL */

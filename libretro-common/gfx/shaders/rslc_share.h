@@ -257,7 +257,9 @@ struct rslc_field
    struct rslc_sym        *name;
    uint32_t                line;
    uint8_t                 precision;   /* RSLC_PREC_* */
-   uint8_t                 pad[3];
+   uint8_t                 interp;      /* RSLC_EXTENDED: an in / out block member's */
+   uint8_t                 quals;       /* RSLC_VQ_* of that member */
+   uint8_t                 pad;
 };
 
 struct rslc_type
@@ -307,6 +309,11 @@ enum rslc_storage
 #define RSLC_VQ_SAMPLE    2u
 #define RSLC_VQ_INVARIANT 4u
 #define RSLC_VQ_PRECISE   8u
+#define RSLC_VQ_IOBLOCK  16u   /* RSLC_EXTENDED: the instance of an in / out block */
+
+/* RSLC_EXTENDED: the struct of an in / out interface block, which the
+ * printers write as a block and SPIR-V decorates Block. */
+#define RSLC_TY_IS_IOBLOCK(t) ((t)->kind == RSLC_TY_STRUCT && (t)->rows == 1)
 
 #define RSLC_UNSET 0xffffffffu
 
@@ -344,6 +351,17 @@ struct rslc_var
 #define RSLC_BI_SAMPLEID     8   /* RSLC_EXTENDED */
 #define RSLC_BI_CLIPDISTANCE 9   /* RSLC_EXTENDED */
 #define RSLC_BI_CULLDISTANCE 10  /* RSLC_EXTENDED */
+#define RSLC_BI_INVOCATIONID 11  /* RSLC_EXTENDED, geometry */
+#define RSLC_BI_LAYER        12  /* RSLC_EXTENDED, geometry */
+
+/* RSLC_EXTENDED: a geometry stage's primitives, in and out. */
+#define RSLC_GS_POINTS              1
+#define RSLC_GS_LINES               2
+#define RSLC_GS_LINES_ADJACENCY     3
+#define RSLC_GS_TRIANGLES           4
+#define RSLC_GS_TRIANGLES_ADJACENCY 5
+#define RSLC_GS_LINE_STRIP          6
+#define RSLC_GS_TRIANGLE_STRIP      7
 
 /* The builtins a vertex stage writes through its gl_PerVertex block. */
 #define RSLC_BI_IN_PERVERTEX(b) ((b) == RSLC_BI_POSITION || (b) == RSLC_BI_POINTSIZE \
@@ -508,6 +526,7 @@ enum rslc_bfn
    RSLC_BFN_TEXTUREGATHEROFFSET,
    RSLC_BFN_DFDX, RSLC_BFN_DFDY, RSLC_BFN_FWIDTH, RSLC_BFN_DFDXFINE, RSLC_BFN_DFDYFINE,
    RSLC_BFN_FWIDTHFINE, RSLC_BFN_DFDXCOARSE, RSLC_BFN_DFDYCOARSE, RSLC_BFN_FWIDTHCOARSE,
+   RSLC_BFN_EMITVERTEX, RSLC_BFN_ENDPRIMITIVE,   /* RSLC_EXTENDED, geometry */
    RSLC_BFN_COUNT
 };
 
@@ -543,6 +562,11 @@ struct rslc_prog
     * gl_CullDistance element written, 0 when none is */
    uint8_t                 clip_n;
    uint8_t                 cull_n;
+   /* RSLC_EXTENDED, geometry: RSLC_GS_* in and out, 0 when undeclared */
+   uint8_t                 gs_in;
+   uint8_t                 gs_out;
+   uint32_t                gs_invocations;   /* 0: one */
+   uint32_t                gs_max_vertices;
 };
 
 /* Source file names seen through #line, for diagnostics. */

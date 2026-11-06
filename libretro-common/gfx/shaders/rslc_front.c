@@ -1685,8 +1685,13 @@ struct rslc_quals
    bool     is_in;
    bool     is_out;
    bool     is_inout;
+#ifdef RSLC_EXTENDED
    bool     early_fragment_tests;
+   uint8_t  gs_prim;          /* RSLC_GS_* named in the layout */
    uint32_t index;
+   uint32_t gs_invocations;
+   uint32_t gs_max_vertices;
+#endif
 };
 
 struct rslc_parser
@@ -3041,6 +3046,9 @@ static const struct rslc_bsig rslc_bsigs[] = {
    { RSLC_BFN_DFDXFINE, "dFdxFine", "F:F" }, { RSLC_BFN_DFDYFINE, "dFdyFine", "F:F" },
    { RSLC_BFN_FWIDTHFINE, "fwidthFine", "F:F" }, { RSLC_BFN_DFDXCOARSE, "dFdxCoarse", "F:F" },
    { RSLC_BFN_DFDYCOARSE, "dFdyCoarse", "F:F" }, { RSLC_BFN_FWIDTHCOARSE, "fwidthCoarse", "F:F" }
+#ifdef RSLC_EXTENDED
+   , { RSLC_BFN_EMITVERTEX, "EmitVertex", ":v" }, { RSLC_BFN_ENDPRIMITIVE, "EndPrimitive", ":v" }
+#endif
 };
 
 static const struct rslc_bsig *rslc_bsig_by_id(unsigned id)
@@ -3390,7 +3398,7 @@ static bool rslc_p_is_lvalue(struct rslc_parser *p, uint32_t e)
          if (v->storage == RSLC_ST_BUILTIN)
             return v->builtin == RSLC_BI_POSITION || v->builtin == RSLC_BI_FRAGDEPTH
                || v->builtin == RSLC_BI_POINTSIZE || v->builtin == RSLC_BI_CLIPDISTANCE
-               || v->builtin == RSLC_BI_CULLDISTANCE;
+               || v->builtin == RSLC_BI_CULLDISTANCE || v->builtin == RSLC_BI_LAYER;
          return true;
       }
       case RSLC_OP_MEMBER:
@@ -4355,6 +4363,18 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
       else if (len == 5 && !memcmp(s, "index", 5))    slot = &q->index;
       else if (len == 20 && !memcmp(s, "early_fragment_tests", 20))
          q->early_fragment_tests = true;
+      else if (len == 6 && !memcmp(s, "points", 6))   q->gs_prim = RSLC_GS_POINTS;
+      else if (len == 5 && !memcmp(s, "lines", 5))    q->gs_prim = RSLC_GS_LINES;
+      else if (len == 15 && !memcmp(s, "lines_adjacency", 15))
+         q->gs_prim = RSLC_GS_LINES_ADJACENCY;
+      else if (len == 9 && !memcmp(s, "triangles", 9)) q->gs_prim = RSLC_GS_TRIANGLES;
+      else if (len == 19 && !memcmp(s, "triangles_adjacency", 19))
+         q->gs_prim = RSLC_GS_TRIANGLES_ADJACENCY;
+      else if (len == 10 && !memcmp(s, "line_strip", 10)) q->gs_prim = RSLC_GS_LINE_STRIP;
+      else if (len == 14 && !memcmp(s, "triangle_strip", 14))
+         q->gs_prim = RSLC_GS_TRIANGLE_STRIP;
+      else if (len == 11 && !memcmp(s, "invocations", 11)) slot = &q->gs_invocations;
+      else if (len == 12 && !memcmp(s, "max_vertices", 12)) slot = &q->gs_max_vertices;
 #endif
       else if (len == 7 && !memcmp(s, "index", 5))    { }
       else
@@ -5323,6 +5343,103 @@ static bool rslc_p_block_decl(struct rslc_parser *p, struct rslc_quals *q,
    return true;
 }
 
+static bool rslc_p_add_interface(struct rslc_parser *p, struct rslc_var *v);
+
+#ifdef RSLC_EXTENDED
+/* in / out Name { members } instance[N];  The block is a struct whose
+ * members keep their own interpolation; the instance is one in or out
+ * variable of it, at the block's location, its members at the ones
+ * after.  A geometry stage's input instance is an array, one element
+ * per vertex of the primitive. */
+static bool rslc_p_ioblock_decl(struct rslc_parser *p, struct rslc_quals *q,
+      struct rslc_sym *name, uint32_t line)
+{
+   struct rslc_field      *fields = NULL;
+   uint32_t                nfields = 0, cap = 0;
+   struct rslc_type       *st;
+   const struct rslc_type *vt;
+   struct rslc_sym        *instance;
+   struct rslc_var        *v;
+
+   if (q->is_in && q->is_out)
+      return rslc_p_fail(p, "a block is in or out", NULL);
+   rslc_p_next(p);   /* '{' */
+   while (!rslc_p_accept(p, RSLC_P_RBRACE))
+   {
+      struct rslc_quals       fq;
+      const struct rslc_type *ft;
+      if (!rslc_p_quals(p, &fq))
+         return false;
+      if (fq.is_in || fq.is_out || fq.is_uniform || fq.location != RSLC_UNSET)
+         return rslc_p_fail(p, "a block member takes only interpolation and precision", NULL);
+      ft = rslc_p_type_spec(p, &fq, false);
+      if (!ft)
+         return false;
+      for (;;)
+      {
+         const struct rslc_tok  *nt = P_TOK(p);
+         const struct rslc_type *mt;
+         if (nt->kind != RSLC_TK_IDENT)
+            return rslc_p_fail(p, "expected a member name", NULL);
+         rslc_p_next(p);
+         mt = rslc_p_array_suffix(p, ft);
+         if (!mt)
+            return false;
+         if (nfields == cap)
+         {
+            uint32_t           ncap = cap ? cap * 2 : 16;
+            struct rslc_field *nf   = (struct rslc_field*)rslc_arena_zalloc(p->c,
+                  ncap * sizeof(*nf));
+            if (!nf)
+               return false;
+            if (nfields)
+               memcpy(nf, fields, nfields * sizeof(*nf));
+            fields = nf;
+            cap    = ncap;
+         }
+         fields[nfields].type      = mt;
+         fields[nfields].name      = rslc_tok_sym(p->c, nt);
+         fields[nfields].line      = nt->line;
+         fields[nfields].precision = rslc_p_default_prec(p, mt, fq.precision);
+         fields[nfields].interp    = fq.interp;
+         fields[nfields].quals     = fq.vq;
+         nfields++;
+         if (rslc_p_accept(p, RSLC_P_COMMA))
+            continue;
+         break;
+      }
+      if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
+         return false;
+   }
+   if (P_TOK(p)->kind != RSLC_TK_IDENT)
+      return rslc_p_fail(p, "an in / out block needs an instance name", NULL);
+   instance = rslc_tok_sym(p->c, P_TOK(p));
+   rslc_p_next(p);
+   st = rslc_type_struct(p->c, name, fields, nfields);
+   if (!st)
+      return false;
+   st->rows = 1;   /* RSLC_TY_IS_IOBLOCK */
+   vt = rslc_p_array_suffix(p, st);
+   if (!vt)
+      return false;
+   if (!rslc_p_expect(p, RSLC_P_SEMI, "';' after block"))
+      return false;
+   if (p->c->stage == RSLC_STAGE_GEOMETRY && q->is_in
+         && (vt->kind != RSLC_TY_ARRAY || !vt->array_len))
+      return rslc_p_fail(p, "a geometry input block is an array, one element per vertex", NULL);
+
+   v = rslc_p_new_var(p, instance, vt, line);
+   if (!v)
+      return false;
+   v->storage  = q->is_in ? RSLC_ST_IN : RSLC_ST_OUT;
+   v->location = q->location;
+   v->quals    = RSLC_VQ_IOBLOCK;
+   if (rslc_p_find_here(p, instance) || !rslc_p_bind(p, instance, RSLC_DK_VAR, v))
+      return rslc_p_fail(p, "redeclaration of ", instance->str);
+   return rslc_p_add_interface(p, v);
+}
+#endif
+
 static bool rslc_p_add_interface(struct rslc_parser *p, struct rslc_var *v)
 {
    struct rslc_prog *pr = &p->c->prog;
@@ -5382,6 +5499,17 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       return 0;
 
 #ifdef RSLC_EXTENDED
+   /* in / out Block { ... } instance; */
+   if ((q.is_in || q.is_out) && P_TOK(p)->kind == RSLC_TK_IDENT
+         && rslc_tok_sym(p->c, P_TOK(p))->kw == RSLC_KW_NONE
+         && rslc_tok_is_punct(P_PEEK(p, 1), RSLC_P_LBRACE))
+   {
+      struct rslc_sym *bname = rslc_tok_sym(p->c, P_TOK(p));
+      if (!global)
+         return rslc_p_fail(p, "block inside a function", NULL), 0;
+      rslc_p_next(p);
+      return rslc_p_ioblock_decl(p, &q, bname, line) ? 1 : 0;
+   }
    /* layout(early_fragment_tests) in; */
    if (q.early_fragment_tests)
    {
@@ -5390,6 +5518,35 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
          return 0;
       p->c->prog.early_fragment_tests = true;
+      return 1;
+   }
+   /* layout(lines, invocations = 2) in;  layout(triangle_strip, max_vertices = 4) out; */
+   if (q.gs_prim || q.gs_invocations || q.gs_max_vertices)
+   {
+      struct rslc_prog *pr = &p->c->prog;
+      if (!global || p->c->stage != RSLC_STAGE_GEOMETRY || (q.is_in == q.is_out))
+         return rslc_p_fail(p, "a primitive layout belongs on a geometry 'in;' or 'out;'", NULL), 0;
+      if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
+         return 0;
+      if (q.is_in)
+      {
+         if (q.gs_prim > RSLC_GS_TRIANGLES_ADJACENCY || q.gs_max_vertices)
+            return rslc_p_fail(p, "not an input primitive layout", NULL), 0;
+         if (q.gs_prim)
+            pr->gs_in = q.gs_prim;
+         if (q.gs_invocations)
+            pr->gs_invocations = q.gs_invocations;
+      }
+      else
+      {
+         if ((q.gs_prim && q.gs_prim != RSLC_GS_POINTS && q.gs_prim < RSLC_GS_LINE_STRIP)
+               || q.gs_invocations)
+            return rslc_p_fail(p, "not an output primitive layout", NULL), 0;
+         if (q.gs_prim)
+            pr->gs_out = q.gs_prim;
+         if (q.gs_max_vertices)
+            pr->gs_max_vertices = q.gs_max_vertices;
+      }
       return 1;
    }
 #endif
@@ -5452,9 +5609,11 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       v->interp    = q.interp;
       v->quals     = q.vq;
       v->location  = q.location;
+#ifdef RSLC_EXTENDED
       if (q.index > 1)
          return rslc_p_fail(p, "a fragment output's index is 0 or 1", NULL), 0;
       v->index     = (uint8_t)q.index;
+#endif
       v->binding   = q.binding;
       v->set       = q.set;
 
@@ -5643,6 +5802,23 @@ static bool rslc_p_run(struct rslc_ctx *c)
    if (!rslc_p_push_scope(p))
       return false;
 
+#ifdef RSLC_EXTENDED
+   if (c->stage == RSLC_STAGE_GEOMETRY)
+   {
+      /* what a geometry stage writes per vertex, and which invocation
+       * and which layer */
+      if (     !rslc_p_builtin_var(p, "gl_Position", rslc_ty_vecn(p, RSLC_BASE_FLOAT, 4), RSLC_BI_POSITION, RSLC_DIR_OUT)
+            || !rslc_p_builtin_var(p, "gl_PointSize", p->t_float, RSLC_BI_POINTSIZE, RSLC_DIR_OUT)
+            || !rslc_p_builtin_var(p, "gl_ClipDistance",
+                  rslc_type_array(c, p->t_float, RSLC_MAX_CLIP), RSLC_BI_CLIPDISTANCE, RSLC_DIR_OUT)
+            || !rslc_p_builtin_var(p, "gl_CullDistance",
+                  rslc_type_array(c, p->t_float, RSLC_MAX_CLIP), RSLC_BI_CULLDISTANCE, RSLC_DIR_OUT)
+            || !rslc_p_builtin_var(p, "gl_InvocationID", p->t_int, RSLC_BI_INVOCATIONID, RSLC_DIR_IN)
+            || !rslc_p_builtin_var(p, "gl_Layer", p->t_int, RSLC_BI_LAYER, RSLC_DIR_OUT))
+         return false;
+   }
+   else
+#endif
    if (c->stage == RSLC_STAGE_VERTEX)
    {
       if (     !rslc_p_builtin_var(p, "gl_Position", rslc_ty_vecn(p, RSLC_BASE_FLOAT, 4), RSLC_BI_POSITION, RSLC_DIR_OUT)
@@ -5684,6 +5860,13 @@ static bool rslc_p_run(struct rslc_ctx *c)
       return false;
    }
 #ifdef RSLC_EXTENDED
+   if (c->stage == RSLC_STAGE_GEOMETRY
+         && (!c->prog.gs_in || !c->prog.gs_out || !c->prog.gs_max_vertices))
+   {
+      rslc_err(c, "a geometry stage needs its input primitive, output primitive and max_vertices",
+            NULL, 0);
+      return false;
+   }
    /* gl_ClipDistance and gl_CullDistance hold what the stage writes */
    {
       uint32_t i;

@@ -46,7 +46,9 @@
  * describe only the first and the push block), dual-source fragment
  * outputs (layout index), layout(early_fragment_tests), and a vertex
  * stage's gl_ClipDistance / gl_CullDistance (sized by the highest
- * constant element written; HLSL and MSL refuse them yet).  Without it
+ * constant element written; HLSL and MSL refuse them yet), in / out
+ * interface blocks, and RSLC_STAGE_GEOMETRY (SPIR-V and GLSL only).
+ * Without it
  * none of that is accepted, nothing is compiled in for it, and every
  * destination is word for word what it was.  MSL has no form of the
  * extended samplers or of a third block yet and refuses them. */
@@ -61,7 +63,8 @@ RETRO_BEGIN_DECLS
 enum rslc_stage
 {
    RSLC_STAGE_VERTEX = 0,
-   RSLC_STAGE_FRAGMENT
+   RSLC_STAGE_FRAGMENT,
+   RSLC_STAGE_GEOMETRY   /* RSLC_EXTENDED; SPIR-V and GLSL only */
 };
 
 enum rslc_dst

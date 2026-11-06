@@ -3647,10 +3647,62 @@ static bool pr_type_is_integer(const struct rslc_type *t)
       && (t->base == RSLC_BASE_INT || t->base == RSLC_BASE_UINT);
 }
 
+#ifdef RSLC_EXTENDED
+/* An in / out block, matched across stages by its block name. */
+static void pr_ioblock_decl(struct rslc_pr *p, const struct rslc_var *v, bool is_in)
+{
+   const struct rslc_type *bt = v->type;
+   uint32_t k;
+   while (bt->kind == RSLC_TY_ARRAY)
+      bt = bt->elem;
+   if (v->location != RSLC_UNSET && !p->es)
+   {
+      pr_s(p, "layout(location = ");
+      pr_u(p, v->location);
+      pr_s(p, ") ");
+   }
+   pr_s(p, is_in ? "in " : "out ");
+   pr_ident(p, bt->name);
+   pr_s(p, " {");
+   pr_nl(p);
+   for (k = 0; k < bt->nfields; k++)
+   {
+      const struct rslc_field *f = &bt->fields[k];
+      pr_s(p, "   ");
+      if (f->interp == RSLC_INTERP_FLAT || pr_type_is_integer(f->type))
+         pr_s(p, "flat ");
+      else if (f->interp == RSLC_INTERP_NOPERSPECTIVE && !p->es)
+         pr_s(p, "noperspective ");
+      if (f->quals & RSLC_VQ_CENTROID)
+         pr_s(p, "centroid ");
+      if (f->quals & RSLC_VQ_SAMPLE)
+         pr_s(p, "sample ");
+      pr_type(p, f->type);
+      pr_c(p, ' ');
+      pr_ident(p, f->name);
+      pr_array_suffix(p, f->type);
+      pr_c(p, ';');
+      pr_nl(p);
+   }
+   pr_s(p, "} ");
+   pr_var_name(p, v);
+   pr_array_suffix(p, v->type);
+   pr_c(p, ';');
+   pr_nl(p);
+}
+#endif
+
 static void pr_io_decl(struct rslc_pr *p, const struct rslc_var *v, bool is_in)
 {
    bool layout_ok = p->es ? p->version >= 300 : p->version >= 330;
    bool fragment  = p->c->stage == RSLC_STAGE_FRAGMENT;
+#ifdef RSLC_EXTENDED
+   if (v->quals & RSLC_VQ_IOBLOCK)
+   {
+      pr_ioblock_decl(p, v, is_in);
+      return;
+   }
+#endif
    /* fragment outputs keep their location; attributes and varyings are
     * bound by name by the driver.  CafeGLSL takes a location on every
     * in and out, as the Wii U lane has always handed it. */
@@ -3910,6 +3962,28 @@ static bool pr_glsl(struct rslc_pr *p, struct rslc_result *result)
       pr_s(p, "layout(early_fragment_tests) in;");
       pr_nl(p);
    }
+#ifdef RSLC_EXTENDED
+   if (p->c->stage == RSLC_STAGE_GEOMETRY)
+   {
+      static const char *const prims[] = { "", "points", "lines", "lines_adjacency",
+            "triangles", "triangles_adjacency", "line_strip", "triangle_strip" };
+      pr_s(p, "layout(");
+      pr_s(p, prims[pr->gs_in]);
+      if (pr->gs_invocations)
+      {
+         pr_s(p, ", invocations = ");
+         pr_u(p, pr->gs_invocations);
+      }
+      pr_s(p, ") in;");
+      pr_nl(p);
+      pr_s(p, "layout(");
+      pr_s(p, prims[pr->gs_out]);
+      pr_s(p, ", max_vertices = ");
+      pr_u(p, pr->gs_max_vertices);
+      pr_s(p, ") out;");
+      pr_nl(p);
+   }
+#endif
    for (i = 0; i < pr->ninputs; i++)
       pr_io_decl(p, pr->inputs[i], true);
    for (i = 0; i < pr->noutputs; i++)
@@ -5230,12 +5304,35 @@ bool rslc_emit_text(struct rslc_ctx *c, struct rslc_result *result)
          pr_mark_members(p, pr->vars[k]->init);
 
 #ifdef RSLC_EXTENDED
-   /* HLSL and MSL have no form of the clip and cull distances yet */
+   /* HLSL and MSL have no form of the clip and cull distances or of
+    * in / out blocks yet */
+   if ((p->hlsl || p->msl) && c->stage == RSLC_STAGE_GEOMETRY)
+   {
+      rslc_err(c, p->hlsl ? "hlsl: no geometry stage yet" : "msl: no geometry stage", NULL, 0);
+      return false;
+   }
    if ((p->hlsl || p->msl) && (c->prog.clip_n || c->prog.cull_n))
    {
       rslc_err(c, p->hlsl ? "hlsl: no form of gl_ClipDistance / gl_CullDistance"
             : "msl: no form of gl_ClipDistance / gl_CullDistance", NULL, 0);
       return false;
+   }
+   if (p->hlsl || p->msl)
+   {
+      bool     ioblock = false;
+      uint32_t k;
+      for (k = 0; k < c->prog.ninputs; k++)
+         if (c->prog.inputs[k]->quals & RSLC_VQ_IOBLOCK)
+            ioblock = true;
+      for (k = 0; k < c->prog.noutputs; k++)
+         if (c->prog.outputs[k]->quals & RSLC_VQ_IOBLOCK)
+            ioblock = true;
+      if (ioblock)
+      {
+         rslc_err(c, p->hlsl ? "hlsl: no form of an in / out block"
+               : "msl: no form of an in / out block", NULL, 0);
+         return false;
+      }
    }
 #endif
    if (!rslc_blob_begin(c, &p->out, 4096, p->active, p->used))

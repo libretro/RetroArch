@@ -141,6 +141,94 @@ static const char vs_clip_bad[] =
    "   gl_ClipDistance[8] = 1.0;\n"
    "}\n";
 
+/* An in / out block from the vertex stage to the fragment stage. */
+static const char vs_ioblock[] =
+   "#version 450\n"
+   "layout(location = 0) in vec4 pos;\n"
+   "layout(location = 0) out VertexData {\n"
+   "   centroid vec4 pos;\n"
+   "   centroid vec4 colors_0;\n"
+   "   vec3 tex0;\n"
+   "   float clipDist0;\n"
+   "} vs;\n"
+   "void main()\n"
+   "{\n"
+   "   vs.pos = pos;\n"
+   "   vs.colors_0 = pos.zyxw;\n"
+   "   vs.tex0 = pos.xyz;\n"
+   "   vs.clipDist0 = pos.w;\n"
+   "   gl_Position = pos;\n"
+   "}\n";
+
+static const char fs_ioblock[] =
+   "#version 450\n"
+   "layout(location = 0) in VertexData {\n"
+   "   centroid vec4 pos;\n"
+   "   centroid vec4 colors_0;\n"
+   "   vec3 tex0;\n"
+   "   float clipDist0;\n"
+   "} ps;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   col = ps.colors_0 + vec4(ps.tex0, ps.clipDist0);\n"
+   "}\n";
+
+/* A wide-line geometry stage, as parallel-gamecubewii generates one:
+ * a line in, a quad out, through in / out blocks. */
+static const char gs_wide_line[] =
+   "#version 450\n"
+   "layout(lines, invocations = 1) in;\n"
+   "layout(triangle_strip, max_vertices = 4) out;\n"
+   "layout(std140, set = 0, binding = 3) uniform GSBlock { vec4 lineptparams; vec4 texOffset; ivec4 texoffsetflags; uint vpw; };\n"
+   "struct VS_OUTPUT { vec4 pos; vec4 colors_0; vec3 tex0; float clipDist0; float clipDist1; };\n"
+   "layout(location = 0) in VertexData {\n"
+   "   centroid vec4 pos;\n"
+   "   centroid vec4 colors_0;\n"
+   "   centroid vec3 tex0;\n"
+   "   centroid float clipDist0;\n"
+   "   centroid float clipDist1;\n"
+   "} vs[2];\n"
+   "layout(location = 0) out VertexData {\n"
+   "   centroid vec4 pos;\n"
+   "   centroid vec4 colors_0;\n"
+   "   centroid vec3 tex0;\n"
+   "   centroid float clipDist0;\n"
+   "   centroid float clipDist1;\n"
+   "} ps;\n"
+   "void emit(VS_OUTPUT v)\n"
+   "{\n"
+   "   gl_Position = vec4(v.pos.x, -v.pos.y, v.pos.z, v.pos.w);\n"
+   "   gl_ClipDistance[0] = v.clipDist0;\n"
+   "   gl_ClipDistance[1] = v.clipDist1;\n"
+   "   ps.pos = v.pos; ps.colors_0 = v.colors_0; ps.tex0 = v.tex0;\n"
+   "   ps.clipDist0 = v.clipDist0; ps.clipDist1 = v.clipDist1;\n"
+   "   gl_Layer = gl_InvocationID;\n"
+   "   EmitVertex();\n"
+   "}\n"
+   "void main()\n"
+   "{\n"
+   "   VS_OUTPUT start, end;\n"
+   "   int i;\n"
+   "   start.pos = vs[0].pos; start.colors_0 = vs[0].colors_0; start.tex0 = vs[0].tex0;\n"
+   "   start.clipDist0 = vs[0].clipDist0; start.clipDist1 = vs[0].clipDist1;\n"
+   "   end.pos = vs[1].pos; end.colors_0 = vs[1].colors_0; end.tex0 = vs[1].tex0;\n"
+   "   end.clipDist0 = vs[1].clipDist0; end.clipDist1 = vs[1].clipDist1;\n"
+   "   vec2 offset = vec2(lineptparams.w / lineptparams.x, 0.0);\n"
+   "   for (i = 0; i < 2; ++i)\n"
+   "   {\n"
+   "      VS_OUTPUT f = i == 0 ? start : end;\n"
+   "      VS_OUTPUT l = f, r = f;\n"
+   "      l.pos.xy -= offset * l.pos.w;\n"
+   "      r.pos.xy += offset * r.pos.w;\n"
+   "      if (texoffsetflags.z != 0)\n"
+   "         r.tex0.x += 1.0 / float(texoffsetflags.z);\n"
+   "      emit(l);\n"
+   "      emit(r);\n"
+   "   }\n"
+   "   EndPrimitive();\n"
+   "}\n";
+
 static enum rslc_stage cur_stage = RSLC_STAGE_FRAGMENT;
 
 static bool compile(const char *src, enum rslc_dst dst, unsigned version,
@@ -279,6 +367,46 @@ int main(int argc, char **argv)
       CHECK(!compile(vs_clip, RSLC_DST_HLSL, 50, &o, &r, err, sizeof(err)));
       CHECK(!compile(vs_clip_bad, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
       CHECK(strstr(err, "constant index below 8") != NULL);
+   }
+
+   /* in / out blocks; Geometry 2: a geometry stage in SPIR-V and GLSL,
+    * refused by HLSL */
+   {
+      static const struct { const char *name, *src; enum rslc_stage stage; const char *needle; }
+      cases[] = {
+         { "ioblock_vert", vs_ioblock, RSLC_STAGE_VERTEX, "out VertexData {" },
+         { "ioblock_frag", fs_ioblock, RSLC_STAGE_FRAGMENT, "in VertexData {" },
+         { "wide_line", gs_wide_line, RSLC_STAGE_GEOMETRY,
+            "layout(triangle_strip, max_vertices = 4) out;" }
+      };
+      unsigned i;
+      for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+      {
+         char err[256];
+         struct rslc_opts   o;
+         struct rslc_result r;
+         cur_stage = cases[i].stage;
+         memset(&r, 0, sizeof(r));
+         CHECK(compile(cases[i].src, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+         if (err[0])
+            fprintf(stderr, "%s: %s\n", cases[i].name, err);
+         if (r.blob)
+         {
+            if (cases[i].stage == RSLC_STAGE_GEOMETRY)
+               CHECK(has_capability(r.spirv, r.spirv_len, 2));
+            write_spirv(dir, cases[i].name, &r);
+            rslc_result_free(&r, &o);
+         }
+         memset(&r, 0, sizeof(r));
+         CHECK(compile(cases[i].src, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+         if (r.blob)
+         {
+            CHECK(strstr(r.text, cases[i].needle) != NULL);
+            rslc_result_free(&r, &o);
+         }
+         memset(&r, 0, sizeof(r));
+         CHECK(!compile(cases[i].src, RSLC_DST_HLSL, 50, &o, &r, err, sizeof(err)));
+      }
    }
 
    if (fails)
