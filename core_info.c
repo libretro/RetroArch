@@ -377,20 +377,14 @@ static bool CCJSONStringHandler(void *context,
          free(*pCtx->current_string_val);
       *pCtx->current_string_val = strdup(pValue);
 
-      /* Gate the string_list split on strdup success: if strdup
-       * returned NULL (OOM), the assignment above stored NULL
-       * into *current_string_val, and string_split dereferences
-       * its first parameter unconditionally at
-       * libretro-common/lists/string_list.c:252 ('while (*p)' with
-       * p = str).  On OOM just leave current_string_list_val
-       * alone; downstream core_info readers already tolerate
-       * missing split lists. */
+      /* No list for a value strdup could not hold; readers
+       * tolerate a missing one */
       if (pCtx->current_string_list_val && *pCtx->current_string_val)
       {
          if (*pCtx->current_string_list_val)
             string_list_free(*pCtx->current_string_list_val);
          *pCtx->current_string_list_val =
-            string_split(*pCtx->current_string_val, "|");
+            string_split_packed(*pCtx->current_string_val, "|");
       }
    }
 
@@ -1410,7 +1404,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
       return NULL;
    if (!(path_list = (core_path_list_t*)calloc(1, sizeof(*path_list))))
       return NULL;
-   if (!(core_ext_list = string_split(core_exts, "|")))
+   if (!(core_ext_list = string_split_packed(core_exts, "|")))
    {
       core_info_path_list_free(path_list);
       return NULL;
@@ -1729,7 +1723,7 @@ static void core_info_parse_config_file(
    {
 
       info->supported_extensions_list =
-            string_split(info->supported_extensions, "|");
+            string_split_packed(info->supported_extensions, "|");
    }
 
    info->authors = config_take_string(conf, "authors");
@@ -1738,7 +1732,7 @@ static void core_info_parse_config_file(
    {
 
       info->authors_list =
-            string_split(info->authors, "|");
+            string_split_packed(info->authors, "|");
    }
 
    info->permissions = config_take_string(conf, "permissions");
@@ -1747,7 +1741,7 @@ static void core_info_parse_config_file(
    {
 
       info->permissions_list =
-            string_split(info->permissions, "|");
+            string_split_packed(info->permissions, "|");
    }
 
    info->licenses = config_take_string(conf, "license");
@@ -1756,7 +1750,7 @@ static void core_info_parse_config_file(
    {
 
       info->licenses_list =
-            string_split(info->licenses, "|");
+            string_split_packed(info->licenses, "|");
    }
 
    info->categories = config_take_string(conf, "categories");
@@ -1765,7 +1759,7 @@ static void core_info_parse_config_file(
    {
 
       info->categories_list =
-            string_split(info->categories, "|");
+            string_split_packed(info->categories, "|");
    }
 
    info->databases = config_take_string(conf, "database");
@@ -1774,7 +1768,7 @@ static void core_info_parse_config_file(
    {
 
       info->databases_list =
-            string_split(info->databases, "|");
+            string_split_packed(info->databases, "|");
    }
 
    info->notes = config_take_string(conf, "notes");
@@ -1783,7 +1777,7 @@ static void core_info_parse_config_file(
    {
 
       info->note_list =
-            string_split(info->notes, "|");
+            string_split_packed(info->notes, "|");
    }
 
    info->required_hw_api = config_take_string(conf, "required_hw_api");
@@ -1792,7 +1786,7 @@ static void core_info_parse_config_file(
    {
 
       info->required_hw_api_list =
-            string_split(info->required_hw_api, "|");
+            string_split_packed(info->required_hw_api, "|");
    }
 
    info->description = config_take_string(conf, "description");
