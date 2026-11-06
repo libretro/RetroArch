@@ -3497,9 +3497,6 @@ void gfx_savestate_thumbnail_get_path(
 
    s[0] = '\0';
 
-   if (!state_name || !*state_name)
-      return;
-
 #ifdef HAVE_MENU
    if (playlist)
    {
@@ -3513,8 +3510,8 @@ void gfx_savestate_thumbnail_get_path(
       if (entry && *entry->path)
       {
          size_t _len;
-         /* Four path buffers in one heap block: even at the console
-          * PATH_MAX_LENGTH of 512 the set is a whole 2 KiB stack
+         /* Three path buffers in one heap block: even at the console
+          * PATH_MAX_LENGTH of 512 the set is most of a 2 KiB stack
           * budget, and this runs from the menu task path.  On
           * allocation failure the thumbnail path is simply not
           * resolved -- the caller already treats an empty result as
@@ -3523,41 +3520,68 @@ void gfx_savestate_thumbnail_get_path(
          {
             char new_path[PATH_MAX_LENGTH];
             char entry_basename[PATH_MAX_LENGTH];
-            char old_savefile_dir[PATH_MAX_LENGTH];
-            char old_savestate_dir[PATH_MAX_LENGTH];
+            char new_savestate_dir[PATH_MAX_LENGTH];
          } *pb = (struct gfx_ss_thumb_paths*)calloc(1, sizeof(*pb));
          char *new_path          = pb ? pb->new_path : NULL;
          char *entry_basename    = pb ? pb->entry_basename : NULL;
-         char *old_savefile_dir  = pb ? pb->old_savefile_dir : NULL;
-         char *old_savestate_dir = pb ? pb->old_savestate_dir : NULL;
+         char *new_savestate_dir = pb ? pb->new_savestate_dir : NULL;
+         settings_t *settings    = config_get_ptr();
+         const char *core        = runloop_st->system.info.library_name;
+         char *delim;
 
          if (!pb)
             return;
 
-         strlcpy(old_savefile_dir, runloop_st->savefile_dir, PATH_MAX_LENGTH);
-         strlcpy(old_savestate_dir, runloop_st->savestate_dir, PATH_MAX_LENGTH);
+         strlcpy(new_savestate_dir, runloop_st->savestate_dir, PATH_MAX_LENGTH);
 
-         strlcpy(new_path, entry->path, PATH_MAX_LENGTH);
+         fill_pathname_expand_special(new_path, entry->path, PATH_MAX_LENGTH);
+         if ((delim = (char*)path_get_archive_delim(new_path)))
+         {
+            *delim = '\0';
+            if (!runloop_st->system.info.block_extract)
+            {
+               path_basedir(new_path);
+               fill_pathname_dir(new_path, entry->path, "", PATH_MAX_LENGTH);
+            }
+         }
          path_remove_extension(new_path);
 
          _len = strlcpy(entry_basename, path_basename(new_path), PATH_MAX_LENGTH);
          _len = strlcpy_lit(entry_basename + _len, ".state", PATH_MAX_LENGTH - _len);
 
-         /* Set temporary save redirection paths */
-         runloop_path_set_redirect(config_get_ptr(), old_savefile_dir, old_savestate_dir);
+         if (settings->bools.savestates_in_content_dir || !*new_savestate_dir)
+            fill_pathname_basedir(new_savestate_dir, new_path, PATH_MAX_LENGTH);
+
+         _len = strcspn(new_path, "/\\");
+
+         if (     core && *core
+               && !string_is_equal(core, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
+               && !(   settings->bools.sort_savestates_by_content_enable
+                    && _len && new_path[_len - 1] == ':'
+                    && path_basename(new_path) == new_path + _len + 1))
+         {
+            if (settings->bools.sort_savestates_by_content_enable)
+            {
+               _len = fill_pathname_slash(new_savestate_dir, PATH_MAX_LENGTH);
+               fill_pathname_parent_dir_name(new_savestate_dir + _len,
+                     new_path, PATH_MAX_LENGTH - _len);
+            }
+            if (settings->bools.sort_savestates_enable)
+               fill_pathname_join(new_savestate_dir, new_savestate_dir,
+                     core, PATH_MAX_LENGTH);
+         }
 
          fill_pathname_join_special(new_path,
-               runloop_st->savestate_dir, entry_basename, PATH_MAX_LENGTH);
-
-         /* Restore current save redirection paths */
-         dir_set(RARCH_DIR_CURRENT_SAVEFILE, old_savefile_dir);
-         dir_set(RARCH_DIR_CURRENT_SAVESTATE, old_savestate_dir);
+               new_savestate_dir, entry_basename, PATH_MAX_LENGTH);
 
          state_name = new_path;
          owned      = pb;
       }
    }
 #endif /* HAVE_MENU */
+
+   if (!state_name || !*state_name)
+      return;
 
    _len = strlcpy(s, state_name, len);
 
