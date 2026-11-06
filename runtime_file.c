@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
@@ -106,6 +107,22 @@ static bool RtlJSONStringHandler(void *ctx, const char *s, size_t len)
 
 /* Initialisation */
 
+static bool runtime_log_parse_unsigned(const char *str, unsigned *out)
+{
+   const char *number = str;
+   char *end = NULL;
+   unsigned long value;
+   while (isspace((unsigned char)*number))
+      number++;
+   errno = 0;
+   value = strtoul(str, &end, 10);
+   if (end == str || *end || errno == ERANGE || value > UINT_MAX
+         || (*number == '-' && value != 0))
+      return false;
+   *out = (unsigned)value;
+   return true;
+}
+
 /* Parses log file referenced by runtime_log->path.
  * Does nothing if log file does not exist. */
 static void runtime_log_read_file(runtime_log_t *runtime_log)
@@ -124,7 +141,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
 
    unsigned play_count         = 0;
 
-   unsigned state_slot         = 0;
+   unsigned state_slot         = UINT_MAX;
 
    RtlJSONContext context      = {0};
    uint8_t *file_buf           = NULL;
@@ -273,26 +290,20 @@ parsed:
    /* Play count */
    if (context.play_count)
    {
-      char *endptr      = NULL;
-      unsigned long val = strtoul(context.play_count, &endptr, 10);
-      if (*endptr != '\0' || errno == ERANGE)
+      if (!runtime_log_parse_unsigned(context.play_count, &play_count))
       {
          RARCH_ERR("[Runtime] Invalid \"play count\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;
       }
-      play_count = (unsigned)val;
    }
    /* State slot */
    if (context.state_slot)
    {
-      char *endptr      = NULL;
-      unsigned long val = strtoul(context.state_slot, &endptr, 10);
-      if (*endptr != '\0' || errno == ERANGE)
+      if (!runtime_log_parse_unsigned(context.state_slot, &state_slot))
       {
          RARCH_ERR("[Runtime] Invalid \"state slot\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;
       }
-      state_slot = (unsigned)val;
    }
 
    /* If we reach this point then all is well
@@ -484,7 +495,7 @@ runtime_log_t *runtime_log_init(
 
    runtime_log->play_count         = 0;
 
-   runtime_log->state_slot         = 0;
+   runtime_log->state_slot         = UINT_MAX;
 
    runtime_log->path[0]            = '\0';
 
@@ -588,7 +599,7 @@ void runtime_log_reset(runtime_log_t *runtime_log)
 
    runtime_log->play_count         = 0;
 
-   runtime_log->state_slot         = 0;
+   runtime_log->state_slot         = UINT_MAX;
 }
 
 /* Getters */
