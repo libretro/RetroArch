@@ -4568,10 +4568,9 @@ static bool manual_scan_walk_within_budget(void *ud)
 }
 
 #ifdef HAVE_SMBCLIENT
-/* True when the smb:// URL @dir names no server, or another host or
- * share than the SMB settings: @reason says which, and @detail the
- * setting a mismatch names, else "".  Stats nothing, but may look up
- * a name: not for the main thread. */
+/* True when no SMB server is set, or the smb:// URL @dir names
+ * another share than the SMB settings: @reason says which, and
+ * @detail the configured share on a mismatch, else "".  No I/O. */
 static bool scan_smb_url_refused(const char *dir,
       enum msg_hash_enums *reason, char *detail, size_t len)
 {
@@ -4580,9 +4579,6 @@ static bool scan_smb_url_refused(const char *dir,
    {
       case SMB_URL_NO_SERVER:
          *reason = MSG_SCAN_SMB_NO_SERVER;
-         return true;
-      case SMB_URL_HOST_DIFFERS:
-         *reason = MSG_SCAN_SMB_HOST_DIFFERS;
          return true;
       case SMB_URL_SHARE_DIFFERS:
          *reason = MSG_SCAN_SMB_SHARE_DIFFERS;
@@ -6194,7 +6190,7 @@ static void dbscan_path_handler(retro_task_t *task)
       else if (!*s)
          free(s);
 #ifdef HAVE_SMBCLIENT
-      /* Never stat'd: no server, or another host or share */
+      /* Never stat'd: no server, or another share */
       else if (   string_starts_with_size(s, "smb://", STRLEN_CONST("smb://"))
                && scan_smb_url_refused(s, &prep->smb_reason,
                      prep->smb_detail, sizeof(prep->smb_detail)))
@@ -6775,7 +6771,7 @@ static void dbscan_load_handler(retro_task_t *task)
       if (!playlist_scan_refresh_enabled(prep->playlist))
          prep->load = DBSCAN_LOAD_NO_SETTINGS;
 #ifdef HAVE_SMBCLIENT
-      /* Never stat'd: no server, or another host or share */
+      /* Never stat'd: no server, or another share */
       else if (   string_starts_with_size(dir, "smb://",
                      STRLEN_CONST("smb://"))
                && scan_smb_url_refused(dir, &prep->smb_reason,

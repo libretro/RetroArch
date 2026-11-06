@@ -67,7 +67,7 @@ static int expect_failure(struct smb_settings *cfg, const char *share,
 
 static const char *check_name(enum smb_url_result r)
 {
-   static const char *const names[] = { "ok", "no server", "host differs", "share differs" };
+   static const char *const names[] = { "ok", "no server", "share differs" };
    return (unsigned)r < sizeof(names) / sizeof(*names) ? names[r] : "?";
 }
 
@@ -113,7 +113,8 @@ static int check_menu(struct smb_settings *cfg, const char *server,
 }
 
 /* SMB_CHECK_URLS: URLs against the settings, before network_init(), with
- * no server; localhost must resolve to 127.0.0.1. */
+ * no server. The host is never compared, so any host passes and only
+ * the share decides. */
 static int check_urls(void)
 {
    struct smb_settings cfg;
@@ -125,16 +126,15 @@ static int check_urls(void)
    memcpy(long_host, "smb://", 6);
    memset(long_host + 6, 'a', 300);
    strcpy(long_host + 306, "/share/roms");
-   /* the same text resolves nowhere: no lookup when only case differs */
    bad += check_url(&cfg, "nas.INVALID", "share", "smb://NAS.invalid/share/roms", SMB_URL_OK, "");
    bad += check_url(&cfg, "127.0.0.1", "share", "smb://localhost/share/roms", SMB_URL_OK, "");
    bad += check_url(&cfg, "localhost", "", "smb://127.0.0.1/share", SMB_URL_OK, "");
-   bad += check_url(&cfg, "127.0.0.1", "share", "smb://127.0.0.2/share/roms", SMB_URL_HOST_DIFFERS, "127.0.0.1");
-   bad += check_url(&cfg, "127.0.0.1", "share", "smb://nosuch.invalid/share/roms", SMB_URL_HOST_DIFFERS, "127.0.0.1");
-   bad += check_url(&cfg, "nosuch.invalid", "share", "smb://127.0.0.1/share/roms", SMB_URL_HOST_DIFFERS, "nosuch.invalid");
-   bad += check_url(&cfg, "127.0.0.1", "share", "smb:///share/roms", SMB_URL_HOST_DIFFERS, "127.0.0.1");
-   bad += check_url(&cfg, "127.0.0.1", "share", "smb://[::1/share/roms", SMB_URL_HOST_DIFFERS, "127.0.0.1");
-   bad += check_url(&cfg, "127.0.0.1", "share", long_host, SMB_URL_HOST_DIFFERS, "127.0.0.1");
+   bad += check_url(&cfg, "127.0.0.1", "share", "smb://127.0.0.2/share/roms", SMB_URL_OK, "");
+   bad += check_url(&cfg, "127.0.0.1", "share", "smb://nosuch.invalid/share/roms", SMB_URL_OK, "");
+   bad += check_url(&cfg, "nosuch.invalid", "share", "smb://127.0.0.1/share/roms", SMB_URL_OK, "");
+   bad += check_url(&cfg, "127.0.0.1", "share", "smb:///share/roms", SMB_URL_OK, "");
+   bad += check_url(&cfg, "127.0.0.1", "share", "smb://[::1/share/roms", SMB_URL_OK, "");
+   bad += check_url(&cfg, "127.0.0.1", "share", long_host, SMB_URL_OK, "");
    bad += check_url(&cfg, "127.0.0.1", "share", "smb://guest@127.0.0.1:445/share/roms", SMB_URL_OK, "");
    bad += check_url(&cfg, "127.0.0.1:445", "share", "smb://127.0.0.1/share/roms", SMB_URL_OK, "");
    bad += check_url(&cfg, "::1", "share", "smb://[::1]/share/roms", SMB_URL_OK, "");
@@ -148,7 +148,7 @@ static int check_urls(void)
    bad += check_url(&cfg, "127.0.0.1", "share", "smb://127.0.0.1", SMB_URL_SHARE_DIFFERS, "share");
    bad += check_url(&cfg, "127.0.0.1", "share", "smb://127.0.0.1/", SMB_URL_SHARE_DIFFERS, "share");
    bad += check_url(&cfg, "127.0.0.1", "share", "smb://127.0.0.1//roms", SMB_URL_SHARE_DIFFERS, "share");
-   bad += check_url(&cfg, "127.0.0.1", "share", "smb://127.0.0.2/other", SMB_URL_HOST_DIFFERS, "127.0.0.1");
+   bad += check_url(&cfg, "127.0.0.1", "share", "smb://127.0.0.2/other", SMB_URL_SHARE_DIFFERS, "share");
    bad += check_url(&cfg, "", "share", "smb://127.0.0.1/share/roms", SMB_URL_NO_SERVER, "");
    bad += check_menu(&cfg, "127.0.0.1", "share", "roms");
    bad += check_menu(&cfg, "127.0.0.1", "share", "/roms/nes");

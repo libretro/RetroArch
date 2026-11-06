@@ -681,131 +681,29 @@ enum smb_failure smb_url_failure(const char *url)
    return SMB_FAILURE_UNKNOWN;
 }
 
-/* The host in @s, a URL past smb:// or the server setting: up to the
- * first '/', without a user@ prefix, a :port suffix or IPv6 brackets. */
-static bool smb_host_split(const char *s, char *host, size_t len)
-{
-   const char *end = strchr(s, '/');
-   const char *p;
-   size_t      n;
-   if (!end)
-      end = s + strlen(s);
-   for (p = s; p < end; p++)
-      if (*p == '@')
-         s = p + 1;
-   if (*s == '[')
-   {
-      s++;
-      p = s;
-      while (p < end && *p != ']')
-         p++;
-      if (p == end)
-         return false;
-      end = p;
-   }
-   /* one colon starts a port, more are a bare IPv6 address */
-   else if (   (p = (const char*)memchr(s, ':', (size_t)(end - s)))
-            && !memchr(p + 1, ':', (size_t)(end - p - 1)))
-      end = p;
-   n = (size_t)(end - s);
-   if (!n || n >= len)
-      return false;
-   memcpy(host, s, n);
-   host[n] = '\0';
-   return true;
-}
-
-static bool smb_addr_equal(const struct addrinfo *a, const struct addrinfo *b)
-{
-   if (a->ai_family != b->ai_family || !a->ai_addr || !b->ai_addr)
-      return false;
-   switch (a->ai_family)
-   {
-      case AF_INET:
-         return !memcmp(&((const struct sockaddr_in*)a->ai_addr)->sin_addr,
-               &((const struct sockaddr_in*)b->ai_addr)->sin_addr,
-               sizeof(struct in_addr));
-#ifdef HAVE_INET6
-      case AF_INET6:
-         return !memcmp(&((const struct sockaddr_in6*)a->ai_addr)->sin6_addr,
-               &((const struct sockaddr_in6*)b->ai_addr)->sin6_addr,
-               sizeof(struct in6_addr));
-#endif
-      default:
-         break;
-   }
-   return false;
-}
-
-/* Whether @a and @b share an address; a failed lookup shares none. */
-static bool smb_hosts_meet(const char *a, const char *b)
-{
-   struct addrinfo  hints;
-   struct addrinfo *ra = NULL;
-   struct addrinfo *rb = NULL;
-   struct addrinfo *x;
-   struct addrinfo *y;
-   bool             met = false;
-   if (!network_init())
-      return false;
-   memset(&hints, 0, sizeof(hints));
-   hints.ai_family   = AF_UNSPEC;
-   hints.ai_socktype = SOCK_STREAM;
-   if (getaddrinfo_retro(a, NULL, &hints, &ra) == 0 && ra)
-   {
-      if (getaddrinfo_retro(b, NULL, &hints, &rb) == 0 && rb)
-      {
-         for (x = ra; x && !met; x = x->ai_next)
-            for (y = rb; y && !met; y = y->ai_next)
-               met = smb_addr_equal(x, y);
-         freeaddrinfo_retro(rb);
-      }
-      freeaddrinfo_retro(ra);
-   }
-   return met;
-}
-
-/* The setting goes through the same split as the URL, so the URL the
- * menu builds from it (smb://<server>/<share>/...) always matches. */
+/* The host a URL names is not compared: every URL is read from the
+ * configured server, so a playlist saved under an older server
+ * address still refreshes. */
 enum smb_url_result smb_url_check(const char *url, char *detail, size_t len)
 {
    vfs_cfg_hdr_t *h;
    const struct smb_cfg_snap *snap = smb_cfg_enter(&h);
-   char server[256];
-   char share[256];
-   char want[256];
+   enum smb_url_result r = SMB_URL_OK;
    char got[256];
    detail[0] = '\0';
-   server[0] = '\0';
-   share[0]  = '\0';
-   /* copies, so the lookup below holds no settings copy */
-   if (snap)
-   {
-      strlcpy(server, snap->server_address, sizeof(server));
-      strlcpy(share, snap->share, sizeof(share));
-   }
-   smb_cfg_leave(h);
-   if (!*server)
-      return SMB_URL_NO_SERVER;
-   if (   !string_starts_with(url, SMB_PREFIX)
-       || !smb_host_split(url + STRLEN_CONST(SMB_PREFIX), got, sizeof(got))
-       || !smb_host_split(server, want, sizeof(want))
-       || (   !string_is_equal_case_insensitive(got, want)
-           && !smb_hosts_meet(got, want)))
-   {
-      strlcpy(detail, server, len);
-      return SMB_URL_HOST_DIFFERS;
-   }
+   if (!snap || !*snap->server_address)
+      r = SMB_URL_NO_SERVER;
    /* an empty URL share differs too: the VFS would read the
     * configured share in its place */
-   if (   *share
-       && (   !smb_url_share(url, got, sizeof(got))
-           || !string_is_equal_case_insensitive(got, share)))
+   else if (   *snap->share
+            && (   !smb_url_share(url, got, sizeof(got))
+                || !string_is_equal_case_insensitive(got, snap->share)))
    {
-      strlcpy(detail, share, len);
-      return SMB_URL_SHARE_DIFFERS;
+      strlcpy(detail, snap->share, len);
+      r = SMB_URL_SHARE_DIFFERS;
    }
-   return SMB_URL_OK;
+   smb_cfg_leave(h);
+   return r;
 }
 
 /* A private connection for @key, owned by the caller; the outcome is

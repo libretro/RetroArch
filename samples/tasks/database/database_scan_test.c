@@ -9732,8 +9732,6 @@ static void smb_reason_lane(const char *root, bool threaded)
    } cases[] = {
       { "no server",      SMB_URL_NO_SERVER,     SMB_FAILURE_UNKNOWN,
             "",          MSG_SCAN_SMB_NO_SERVER },
-      { "host differs",   SMB_URL_HOST_DIFFERS,  SMB_FAILURE_UNKNOWN,
-            "127.0.0.1", MSG_SCAN_SMB_HOST_DIFFERS },
       { "share differs",  SMB_URL_SHARE_DIFFERS, SMB_FAILURE_UNKNOWN,
             "retro",     MSG_SCAN_SMB_SHARE_DIFFERS },
       { "cannot resolve", SMB_URL_OK,            SMB_FAILURE_RESOLVE,
@@ -9906,8 +9904,6 @@ static void smb_refresh_lane(const char *root, uint32_t crc_a,
    } cases[] = {
       { "no server",      SMB_URL_NO_SERVER,     SMB_FAILURE_UNKNOWN,
             "",          MSG_SCAN_SMB_NO_SERVER },
-      { "host differs",   SMB_URL_HOST_DIFFERS,  SMB_FAILURE_UNKNOWN,
-            "127.0.0.1", MSG_SCAN_SMB_HOST_DIFFERS },
       { "share differs",  SMB_URL_SHARE_DIFFERS, SMB_FAILURE_UNKNOWN,
             "retro",     MSG_SCAN_SMB_SHARE_DIFFERS },
       { "cannot resolve", SMB_URL_OK,            SMB_FAILURE_RESOLVE,
@@ -10020,15 +10016,15 @@ static void smb_refresh_lane(const char *root, uint32_t crc_a,
    }
 
    /* --scan-refresh=NAME skips it the same way. */
-   smb_stub_check   = SMB_URL_HOST_DIFFERS;
+   smb_stub_check   = SMB_URL_SHARE_DIFFERS;
    smb_stub_failure = SMB_FAILURE_UNKNOWN;
-   smb_stub_detail  = "127.0.0.1";
+   smb_stub_detail  = "retro";
    if (!(items = (task_dbscan_item_t*)calloc(1, sizeof(*items))))
       goto fixture;
    refresh_item(&items[0], TASK_DBSCAN_ITEM_REFRESH, "s_smb");
    ran = refresh_run(items, 1, out, err, true);
-   sprintf(line, "s_smb: skipped: %s 127.0.0.1 (%s)",
-         msg_hash_to_str_us(MSG_SCAN_SMB_HOST_DIFFERS), url);
+   sprintf(line, "s_smb: skipped: %s retro (%s)",
+         msg_hash_to_str_us(MSG_SCAN_SMB_SHARE_DIFFERS), url);
    sprintf(what, "smb refresh %s: by name, skipped", q);
    check(   ran && chain_seen == 1
          && chain_saw(0, "s_smb", TASK_DBSCAN_SKIPPED, -1)

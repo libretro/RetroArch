@@ -32582,10 +32582,6 @@ MSG_HASH(
    "SMB server address not configured"
    )
 MSG_HASH(
-   MSG_SCAN_SMB_HOST_DIFFERS,
-   "host differs from the SMB server setting"
-   )
-MSG_HASH(
    MSG_SCAN_SMB_SHARE_DIFFERS,
    "share differs from the SMB share setting"
    )

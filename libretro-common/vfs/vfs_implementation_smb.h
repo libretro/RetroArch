@@ -78,19 +78,18 @@ enum smb_failure
  * leave either's code. */
 enum smb_failure smb_url_failure(const char *url);
 
-/* Whether a URL names the server and share of the settings. */
+/* Whether a URL can be read under the settings. */
 enum smb_url_result
 {
    SMB_URL_OK = 0,
    SMB_URL_NO_SERVER,
-   SMB_URL_HOST_DIFFERS,
    SMB_URL_SHARE_DIFFERS     /* a share is configured and the URL's differs */
 };
 
-/* Checks @url's host and share against the settings; on a difference
- * @detail gets the configured server or share, else "". Hosts compare
- * as text, ignoring case, then by address: this may block on a name
- * lookup, so never call it from the main thread. */
+/* Checks @url's share against the settings, ignoring case; on a
+ * difference @detail gets the configured share, else "". The URL's
+ * host is not compared: the configured server is always read. No
+ * I/O. */
 enum smb_url_result smb_url_check(const char *url, char *detail, size_t len);
 
 /* File operations */
