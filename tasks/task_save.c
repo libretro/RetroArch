@@ -2110,14 +2110,10 @@ static bool task_push_load_and_save_state(const char *path, void *data,
       calloc(1, sizeof(*state));
 
    if (!state)
-      return false;
+      goto error;
 
    if (!(task = task_init()))
-   {
-      free(state);
-      return false;
-   }
-
+      goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
    if (load_to_backup_buffer)
@@ -2154,19 +2150,23 @@ static bool task_push_load_and_save_state(const char *path, void *data,
       task->flags              &= ~RETRO_TASK_FLG_MUTE;
 
    if (state_task_push(task))
-      load_state_tasks_pending++;
-   else
    {
-      /* The hold is full.  No callback will run for this task. */
-      if (data)
-         free(data);
+      load_state_tasks_pending++;
+      return true;
+   }
+
+error:
+   /* No callback will run for a request that was not accepted. */
+   if (data)
+      free(data);
+   if (task)
+   {
       if (task->title)
          task_free_title(task);
       free(task);
-      free(state);
-      return false;
    }
-   return true;
+   free(state);
+   return false;
 }
 
 /**

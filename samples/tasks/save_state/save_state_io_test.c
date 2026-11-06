@@ -226,11 +226,18 @@ size_t core_serialize_size(void) { return core_len; }
 
 static int big_allocs     = 0;
 static int alloc_count_on = 0;
+/* Refuse the state's calloc (1) or task_init's malloc (2), once. */
+static int alloc_fail_at_push = 0;
 
 extern void *__real_malloc(size_t n);
 
 void *__wrap_malloc(size_t n)
 {
+   if (alloc_fail_at_push == 2 && n == sizeof(retro_task_t))
+   {
+      alloc_fail_at_push = 0;
+      return NULL;
+   }
    if (alloc_count_on && n >= BIG_ALLOC_BYTES)
       big_allocs++;
    return __real_malloc(n);
@@ -254,6 +261,11 @@ extern void *__real_calloc(size_t n, size_t size);
 
 void *__wrap_calloc(size_t n, size_t size)
 {
+   if (alloc_fail_at_push == 1 && size && n >= PATH_MAX_LENGTH / size)
+   {
+      alloc_fail_at_push = 0;
+      return NULL;
+   }
    if (calloc_fail_big && size && n >= PATH_MAX_LENGTH / size)
       return NULL;
    return __real_calloc(n, size);
@@ -1652,7 +1664,7 @@ static void test_task_failure_recovery(bool threaded)
    const char *path = "sst_recovery.state";
    const char *missing = "sst_absent_review_directory/state";
    struct cycle_result result;
-   unsigned attempt;
+   unsigned attempt, allocation;
    frontend_reset();
    core_fill(3 * TEST_SAVE_STATE_CHUNK);
    filestream_delete(path);
@@ -1669,11 +1681,23 @@ static void test_task_failure_recovery(bool threaded)
       drain_states(threaded);
       okf(result.calls == 2 && result.errors == 1,
             "recovery: the write fails once and the unrelated load succeeds");
-      calloc_fail_big = 1;
-      okf(!content_save_state(path, true),
-            "recovery: task allocation failure refuses the request");
-      calloc_fail_big = 0;
-      drain_states(threaded);
+      for (allocation = 0; allocation < 2; allocation++)
+      {
+         memset(core_mem, 0x44, core_len);
+         alloc_fail_at_push = (int)allocation + 1;
+         okf(!content_save_state(path, true) && !alloc_fail_at_push,
+               "recovery: each overwrite allocation failure refuses the request");
+         okf(!content_save_state_in_progress(NULL)
+               && !content_load_state_in_progress(NULL)
+               && !content_state_file_in_use(path),
+               "recovery: a refused overwrite owns no task or file");
+         okf(content_load_state(path, false, false),
+               "recovery: the earlier disk save remains loadable");
+         drain_states(threaded);
+         okf(core_mem[0] == 7
+               && core_mem[core_len - 1] == (uint8_t)((core_len - 1) * 31u + 7u),
+               "recovery: the consumer receives the earlier disk save's bytes");
+      }
       okf(content_save_state(path, true), "recovery: a later save is accepted");
       drain_states(threaded);
    }
