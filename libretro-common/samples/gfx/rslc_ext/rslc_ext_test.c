@@ -758,8 +758,9 @@ int main(int argc, char **argv)
    }
 
    /* Direct3D bytecode: a container of the input and output signatures
-    * and the shader model 5 program, for the stages the HLSL printer
-    * takes; written beside the SPIR-V for a disassembler to check */
+    * and the shader model 5 program (a geometry stage's outputs with
+    * their streams); written beside the SPIR-V for a disassembler to
+    * check */
    {
       static const struct { const char *name, *src; enum rslc_stage stage; uint32_t prog; }
       dx[] = {
@@ -768,7 +769,9 @@ int main(int argc, char **argv)
          { "clip", vs_clip, RSLC_STAGE_VERTEX, 1 },
          { "bbox", fs_bbox, RSLC_STAGE_FRAGMENT, 0 },
          { "vertex_fetch", vs_vertex_fetch, RSLC_STAGE_VERTEX, 1 },
-         { "decode", cs_decode, RSLC_STAGE_COMPUTE, 5 }
+         { "decode", cs_decode, RSLC_STAGE_COMPUTE, 5 },
+         { "wide_line", gs_wide_line, RSLC_STAGE_GEOMETRY, 2 },
+         { "passthrough", gs_passthrough, RSLC_STAGE_GEOMETRY, 2 }
       };
       unsigned i;
       for (i = 0; i < sizeof(dx) / sizeof(dx[0]); i++)
@@ -787,7 +790,8 @@ int main(int argc, char **argv)
             uint32_t total = r.spirv[6], shex;
             CHECK(!memcmp(b, "DXBC", 4) && r.spirv[5] == 1 && total == r.spirv_len * 4);
             CHECK(r.spirv[7] == 3);
-            CHECK(!memcmp(b + r.spirv[8], "ISGN", 4) && !memcmp(b + r.spirv[9], "OSGN", 4));
+            CHECK(!memcmp(b + r.spirv[8], "ISGN", 4));
+            CHECK(!memcmp(b + r.spirv[9], dx[i].prog == 2 ? "OSG5" : "OSGN", 4));
             shex = r.spirv[10];
             CHECK(!memcmp(b + shex, "SHEX", 4));
             /* the program's type and model, and its length in words */

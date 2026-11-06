@@ -90,7 +90,8 @@ enum dx_op
    DX_IMM_ATOMIC_OR = 182, DX_IMM_ATOMIC_XOR = 183, DX_IMM_ATOMIC_EXCH = 184,
    DX_IMM_ATOMIC_CMP_EXCH = 185, DX_IMM_ATOMIC_IMAX = 186, DX_IMM_ATOMIC_IMIN = 187,
    DX_IMM_ATOMIC_UMAX = 188, DX_IMM_ATOMIC_UMIN = 189, DX_SYNC = 190,
-   DX_LOD = 108, DX_BUFINFO = 121, DX_SAMPLE_C = 70
+   DX_LOD = 108, DX_BUFINFO = 121, DX_SAMPLE_C = 70,
+   DX_EMIT_STREAM = 117, DX_CUT_STREAM = 118, DX_DCL_STREAM = 143, DX_DCL_GS_INSTANCES = 206
 };
 
 #define DX_RESINFO_UINT (2u << 11)
@@ -113,6 +114,8 @@ enum dx_op
 #define DXO_GROUPID    33
 #define DXO_THREADIDINGROUP 34
 #define DXO_THREADIDINGROUPFLAT 36
+#define DXO_STREAM     16
+#define DXO_GSINSTANCEID 37
 
 /* System values of signatures and declarations. */
 #define DX_SV_NONE        0
@@ -123,6 +126,7 @@ enum dx_op
 #define DX_SV_INSTANCEID  8
 #define DX_SV_FRONTFACE   9
 #define DX_SV_SAMPLEINDEX 10
+#define DX_SV_RTINDEX     4
 
 /* Signature component types. */
 #define DX_CT_UINT  1
@@ -166,7 +170,8 @@ struct dx_opnd
    uint8_t  swz[4];   /* the register component of each value component */
    uint8_t  mod;      /* 1 negate, 2 absolute value, 3 both */
    uint8_t  rel_comp;
-   uint8_t  pad[2];
+   uint8_t  twod;     /* a geometry stage's input: [vertex][register] */
+   uint8_t  pad;
 };
 
 /* Where an aggregate (or any variable) lives: its first register and
@@ -276,11 +281,14 @@ struct dx_emit
    uint8_t           oc_comp[DX_MAX_SIG];   /* the first component in its register */
    /* inputs copied to temporaries where main begins: an in block's
     * members, which its path reaches by register */
-   uint32_t          ic_temp[DX_MAX_SIG];
-   uint32_t          ic_reg[DX_MAX_SIG];
-   uint8_t           ic_comp[DX_MAX_SIG];
-   uint8_t           ic_n[DX_MAX_SIG];
+   struct dx_place   ic_home[DX_MAX_SIG * 6];
+   uint32_t          ic_off[DX_MAX_SIG * 6];    /* registers past the home */
+   uint32_t          ic_vert[DX_MAX_SIG * 6];   /* a geometry stage's vertex, or RSLC_UNSET */
+   uint32_t          ic_reg[DX_MAX_SIG * 6];
+   uint8_t           ic_comp[DX_MAX_SIG * 6];
+   uint8_t           ic_n[DX_MAX_SIG * 6];
    uint32_t          nic;
+   uint32_t          gs_verts;   /* vertices a geometry stage's primitive hands it */
    uint8_t          *reach;     /* functions main reaches */
    uint8_t          *used;      /* variables reachable code names */
    bool              cb_dynamic[RSLC_MAX_BLOCKS];
@@ -415,14 +423,15 @@ static bool dx_put_opnd(struct dx_emit *e, const struct dx_opnd *o, bool dst, un
       case DXO_GROUPID:
       case DXO_THREADIDINGROUP:
       case DXO_THREADIDINGROUPFLAT:
+      case DXO_GSINSTANCEID:
          dims = 0;
          break;
       default:
-         dims = 1;
+         dims = o->twod ? 2 : 1;
          break;
    }
 
-   if (o->file == DXO_NULL || o->n == 0)
+   if (o->file == DXO_NULL || o->n == 0 || o->file == DXO_STREAM)
       tok |= 0;   /* no components: a null destination, a declared register */
    else if (o->file == DXO_ODEPTH || o->file == DXO_THREADIDINGROUPFLAT)
       tok |= 1;   /* one component */
@@ -492,10 +501,13 @@ static unsigned dx_opnd_len(const struct dx_opnd *o)
    switch (o->file)
    {
       case DXO_NULL: case DXO_ODEPTH: case DXO_THREADID: case DXO_GROUPID:
-      case DXO_THREADIDINGROUP: case DXO_THREADIDINGROUPFLAT:
+      case DXO_THREADIDINGROUP: case DXO_THREADIDINGROUPFLAT: case DXO_GSINSTANCEID:
          return n;
       case DXO_CB: case DXO_XTEMP:
          n += 2;
+         break;
+      case DXO_INPUT:
+         n += o->twod ? 2 : 1;
          break;
       default:
          n += 1;
@@ -798,9 +810,10 @@ static void dx_checksum(uint8_t *dxbc, uint32_t size)
 
 /* A signature chunk's body: the elements, then their names. */
 static bool dx_sig_chunk(struct dx_emit *e, struct rslc_pbuf *b, const struct dx_sig *s,
-      uint32_t n)
+      uint32_t n, bool stream)
 {
-   uint32_t i, name_off = 8 + 24 * n;
+   uint32_t es = stream ? 28u : 24u;
+   uint32_t i, name_off = 8 + es * n;
    uint32_t hdr[2];
    hdr[0] = n;
    hdr[1] = 8;
@@ -821,7 +834,7 @@ static bool dx_sig_chunk(struct dx_emit *e, struct rslc_pbuf *b, const struct dx
       if (k < i)
       {
          uint32_t j;
-         off = 8 + 24 * n;
+         off = 8 + es * n;
          for (j = 0; j < k; j++)
          {
             uint32_t m;
@@ -840,6 +853,12 @@ static bool dx_sig_chunk(struct dx_emit *e, struct rslc_pbuf *b, const struct dx
       el[3] = s[i].ct;
       el[4] = s[i].reg;
       el[5] = (uint32_t)s[i].mask | ((uint32_t)s[i].rw << 8);
+      if (stream)
+      {
+         static const uint32_t zero = 0;
+         if (!rslc_pbuf_put(e->c, b, &zero, 4))
+            return false;
+      }
       if (!rslc_pbuf_put(e->c, b, el, 24))
          return false;
    }
@@ -1073,7 +1092,9 @@ static struct dx_sig *dx_sig_add(struct dx_emit *e, bool in, const char *name, u
    s->sv     = sv;
    s->ct     = ct;
    s->mask   = (uint8_t)(((1u << n) - 1) << comp);
-   s->rw     = in ? s->mask : 0;
+   /* an input's components read; an output's never written, which fxc
+    * counts as those outside its mask */
+   s->rw     = in ? s->mask : (uint8_t)(~s->mask & 0xfu);
    s->interp = interp;
    return s;
 }
@@ -1143,6 +1164,137 @@ static bool dx_in_var(struct dx_emit *e, struct dx_packer *pk, bool pack, uint32
    return true;
 }
 
+/* An input copied where main begins into the home of its variable. */
+static bool dx_ic_add(struct dx_emit *e, struct dx_place home, uint32_t off, uint32_t vert,
+      uint32_t reg, uint8_t comp, unsigned n)
+{
+   if (e->nic == DX_MAX_SIG * 6)
+      return dx_fail(e, "too many interface elements", 0);
+   e->ic_home[e->nic] = home;
+   e->ic_off[e->nic]  = off;
+   e->ic_vert[e->nic] = vert;
+   e->ic_reg[e->nic]  = reg;
+   e->ic_comp[e->nic] = comp;
+   e->ic_n[e->nic]    = (uint8_t)n;
+   e->nic++;
+   return true;
+}
+
+/* A geometry stage's inputs: each element of a per-vertex array (an
+ * in block's members, or a variable) packed as the vertex stage packs
+ * its outputs, and copied for every vertex into the array's home. */
+static bool dx_gs_inputs(struct dx_emit *e)
+{
+   const struct rslc_prog *pr = &e->c->prog;
+   struct dx_packer pk;
+   uint32_t i, k, vtx;
+   memset(&pk, 0, sizeof(pk));
+   for (i = 0; i < pr->ninputs; i++)
+   {
+      const struct rslc_var *v = pr->inputs[i];
+      uint32_t loc = v->location == RSLC_UNSET ? 0 : v->location;
+      struct dx_var *dv = &e->vars[v->id];
+      const struct rslc_type *et;
+      uint32_t per;
+      if (v->quals & RSLC_VQ_PERVERTEX)
+         continue;   /* gl_in: after the varyings, below */
+      if (v->type->kind != RSLC_TY_ARRAY)
+         return dx_fail(e, "a geometry stage input that is not per vertex", v->line);
+      et  = v->type->elem;
+      per = dx_slots(et);
+      dv->home = dx_home(e, v->id, dx_slots(v->type));
+      dv->has_home = true;
+      if (v->quals & RSLC_VQ_IOBLOCK)
+      {
+         for (k = 0; k < et->nfields; k++)
+         {
+            const struct rslc_field *f = &et->fields[k];
+            uint32_t reg;
+            uint8_t comp;
+            unsigned w = dx_width(f->type);
+            if (dx_slots(f->type) != 1)
+               return dx_fail(e, "an in block member of more than one location", v->line);
+            if (!dx_pack(e, &pk, w, 1, dx_interp(v, f->interp, f->quals, f->type), &reg, &comp)
+                  || !dx_sig_add(e, true, dx_texcoord, loc + k, reg, comp, DX_SV_NONE,
+                     dx_ct_of(f->type), w, 0))
+               return false;
+            for (vtx = 0; vtx < e->gs_verts; vtx++)
+               if (!dx_ic_add(e, dv->home, vtx * per + dx_field_slot(et, k), vtx, reg, comp, w))
+                  return false;
+         }
+         continue;
+      }
+      {
+         uint32_t reg, rows = per;
+         uint8_t comp;
+         unsigned w = dx_width(et);
+         if (et->kind == RSLC_TY_STRUCT)
+            return dx_fail(e, "a struct geometry stage input", v->line);
+         if (!dx_pack(e, &pk, w, rows, dx_interp(v, v->interp, v->quals, et), &reg, &comp))
+            return false;
+         for (k = 0; k < rows; k++)
+         {
+            if (!dx_sig_add(e, true, dx_texcoord, loc + k, reg + k, comp, DX_SV_NONE, dx_ct_of(et),
+                     w, 0))
+               return false;
+            for (vtx = 0; vtx < e->gs_verts; vtx++)
+               if (!dx_ic_add(e, dv->home, vtx * per + k, vtx, reg + k, comp, w))
+                  return false;
+         }
+      }
+   }
+   /* gl_in: the vertex stage's builtins, which follow its varyings */
+   for (i = 0; i < pr->ninputs; i++)
+   {
+      const struct rslc_var *v = pr->inputs[i];
+      const struct rslc_type *et;
+      struct dx_var *dv = &e->vars[v->id];
+      uint32_t per;
+      if (!(v->quals & RSLC_VQ_PERVERTEX) || !e->used[v->id])
+         continue;
+      et  = v->type->elem;
+      per = dx_slots(et);
+      dv->home = dx_home(e, v->id, dx_slots(v->type));
+      dv->has_home = true;
+      for (k = 0; k < et->nfields; k++)
+      {
+         const struct rslc_field *f = &et->fields[k];
+         const char *nm = f->name->str;
+         uint32_t reg, n, d;
+         uint8_t comp;
+         bool clip = !strcmp(nm, "gl_ClipDistance"), cull = !strcmp(nm, "gl_CullDistance");
+         if (!strcmp(nm, "gl_Position"))
+         {
+            if (!dx_pack(e, &pk, 4, 1, DX_GROUP_ALONE, &reg, &comp)
+                  || !dx_sig_add(e, true, "SV_Position", 0, reg, 0, DX_SV_POSITION, DX_CT_FLOAT,
+                     4, 0))
+               return false;
+            for (vtx = 0; vtx < e->gs_verts; vtx++)
+               if (!dx_ic_add(e, dv->home, vtx * per + dx_field_slot(et, k), vtx, reg, 0, 4))
+                  return false;
+            continue;
+         }
+         if (!clip && !cull)
+            continue;   /* gl_PointSize: Direct3D has none */
+         n = clip ? pr->clip_in_n : pr->cull_in_n;
+         if (!n)
+            continue;
+         if (n > 4)
+            return dx_fail(e, "more than four clip or cull distances", v->line);
+         if (!dx_pack(e, &pk, n, 1, DX_GROUP_ALONE, &reg, &comp)
+               || !dx_sig_add(e, true, clip ? "SV_ClipDistance" : "SV_CullDistance", 0, reg, 0,
+                  clip ? DX_SV_CLIP : DX_SV_CULL, DX_CT_FLOAT, n, 0))
+            return false;
+         for (vtx = 0; vtx < e->gs_verts; vtx++)
+            for (d = 0; d < n; d++)
+               if (!dx_ic_add(e, dv->home, vtx * per + dx_field_slot(et, k) + d, vtx, reg,
+                        (uint8_t)d, 1))
+                  return false;
+      }
+   }
+   return true;
+}
+
 /* Sorts a signature by register and component, as fxc lists it,
  * carrying the outputs' homes along. */
 static void dx_sig_sort(struct dx_emit *e, bool in)
@@ -1177,7 +1329,7 @@ static bool dx_interface(struct dx_emit *e)
    const struct rslc_prog *pr = &e->c->prog;
    bool frag = e->c->stage == RSLC_STAGE_FRAGMENT;
    struct dx_packer pk;
-   uint32_t i;
+   uint32_t i, pass;
 
    if (e->c->stage == RSLC_STAGE_COMPUTE)
       return true;
@@ -1185,7 +1337,9 @@ static bool dx_interface(struct dx_emit *e)
    /* inputs: the declared ones, then the builtins read; a vertex
     * stage's attributes one register each */
    memset(&pk, 0, sizeof(pk));
-   for (i = 0; i < pr->ninputs; i++)
+   if (e->c->stage == RSLC_STAGE_GEOMETRY && !dx_gs_inputs(e))
+      return false;
+   for (i = 0; e->c->stage != RSLC_STAGE_GEOMETRY && i < pr->ninputs; i++)
    {
       const struct rslc_var *v = pr->inputs[i];
       uint32_t loc = v->location == RSLC_UNSET ? 0 : v->location;
@@ -1209,13 +1363,8 @@ static bool dx_interface(struct dx_emit *e)
             if (!dx_in_var(e, &pk, frag, loc + k, f->type,
                      frag ? dx_interp(v, f->interp, f->quals, f->type) : 0, &h))
                return false;
-            if (e->nic == DX_MAX_SIG)
-               return dx_fail(e, "too many interface elements", v->line);
-            e->ic_temp[e->nic] = dv->home.reg + k;
-            e->ic_reg[e->nic]  = h.reg;
-            e->ic_comp[e->nic] = h.comp;
-            e->ic_n[e->nic]    = (uint8_t)dx_width(f->type);
-            e->nic++;
+            if (!dx_ic_add(e, dv->home, k, RSLC_UNSET, h.reg, h.comp, dx_width(f->type)))
+               return false;
          }
          continue;
       }
@@ -1246,6 +1395,11 @@ static bool dx_interface(struct dx_emit *e)
          case RSLC_BI_SAMPLEID:      name = "SV_SampleIndex"; sv = DX_SV_SAMPLEINDEX; group = DX_GROUP_SGV; break;
          case RSLC_BI_HELPERINVOCATION:
             return dx_fail(e, "no form of gl_HelperInvocation", v->line);
+         case RSLC_BI_INVOCATIONID:
+            /* vGSInstanceID: no signature element */
+            dv->home = dx_place_of(DXO_GSINSTANCEID, 0);
+            dv->has_home = true;
+            continue;
          default:
             continue;
       }
@@ -1323,6 +1477,9 @@ static bool dx_interface(struct dx_emit *e)
             return false;
       }
    }
+   /* the position, the layer, then the rest: the layer where a pixel
+    * stage reading it would place it, after the position */
+   for (pass = 0; pass < 3; pass++)
    for (i = 1; i < pr->nvars; i++)
    {
       const struct rslc_var *v = pr->vars[i];
@@ -1330,6 +1487,8 @@ static bool dx_interface(struct dx_emit *e)
       uint32_t n, reg;
       uint8_t comp;
       if (!v->global || v->storage != RSLC_ST_BUILTIN || !e->used[i])
+         continue;
+      if (pass != (v->builtin == RSLC_BI_POSITION ? 0u : v->builtin == RSLC_BI_LAYER ? 1u : 2u))
          continue;
       switch (v->builtin)
       {
@@ -1360,6 +1519,14 @@ static bool dx_interface(struct dx_emit *e)
                   || !dx_out_add(e, v->builtin == RSLC_BI_CLIPDISTANCE ? "SV_ClipDistance"
                      : "SV_CullDistance", 0, reg, 0, v->builtin == RSLC_BI_CLIPDISTANCE
                      ? DX_SV_CLIP : DX_SV_CULL, v->type->elem, n, dv->home, (uint8_t)n))
+               return false;
+            break;
+         case RSLC_BI_LAYER:
+            dv->home = dx_place_of(DXO_TEMP, dx_temp(e, 1));
+            dv->has_home = true;
+            if (!dx_pack(e, &pk, 1, 1, DX_GROUP_ALONE, &reg, &comp)
+                  || !dx_out_add(e, "SV_RenderTargetArrayIndex", 0, reg, 0, DX_SV_RTINDEX,
+                     rslc_type_basic(e->c, RSLC_TY_SCALAR, RSLC_BASE_UINT, 1, 1), 1, dv->home, 0))
                return false;
             break;
          case RSLC_BI_POINTSIZE:
@@ -3308,6 +3475,8 @@ static struct dx_opnd dx_find_msb(struct dx_emit *e, struct dx_opnd v, unsigned 
    return r;
 }
 
+static bool dx_write_outputs(struct dx_emit *e);
+
 static bool dx_builtin(struct dx_emit *e, const struct rslc_node *n, struct dx_val *out)
 {
    unsigned bfn = n->a;
@@ -3352,7 +3521,19 @@ static bool dx_builtin(struct dx_emit *e, const struct rslc_node *n, struct dx_v
    if (bfn >= RSLC_BFN_IMAGESTORE && bfn <= RSLC_BFN_IMAGESIZE)
       return dx_image(e, n, bfn, out);
    if (bfn == RSLC_BFN_EMITVERTEX || bfn == RSLC_BFN_ENDPRIMITIVE)
-      return dx_fail(e, "geometry stages are not supported yet", n->line);
+   {
+      /* the outputs written, then the vertex; stream 0 on model 5 */
+      struct dx_opnd m = dx_reg(DXO_STREAM, 0, 0);
+      out->v = dx_immu(0);
+      if (e->c->stage != RSLC_STAGE_GEOMETRY)
+         return dx_fail(e, "EmitVertex and EndPrimitive belong to a geometry stage", n->line);
+      if (bfn == RSLC_BFN_EMITVERTEX && !dx_write_outputs(e))
+         return false;
+      if (e->sm >= 50)
+         return dx_inst(e, bfn == RSLC_BFN_EMITVERTEX ? DX_EMIT_STREAM : DX_CUT_STREAM, 0,
+               NULL, 0, &m, 1);
+      return dx_op0(e, bfn == RSLC_BFN_EMITVERTEX ? DX_EMIT : DX_CUT, 0);
+   }
 
    /* the arguments' values; samplers stay unevaluated */
    if (cnt > 5)
@@ -4206,7 +4387,8 @@ static bool dx_stmt(struct dx_emit *e, uint32_t node)
          break;
       case RSLC_OP_RETURN:
          if (e->in_main)
-            ok = dx_write_outputs(e) && dx_op0(e, DX_RET, 0);
+            ok = (e->c->stage == RSLC_STAGE_GEOMETRY || dx_write_outputs(e))
+               && dx_op0(e, DX_RET, 0);
          else
          {
             if (n->a)
@@ -4500,8 +4682,15 @@ static bool dx_decls(struct dx_emit *e)
       struct dx_opnd o = dx_reg(DXO_INPUT, s->reg, 4);
       unsigned n = dx_mask_opnd(&o, s->mask);
       bool frag = e->c->stage == RSLC_STAGE_FRAGMENT;
+      uint32_t sv = s->sv;
       enum dx_op op;
       uint32_t fl = 0;
+      if (e->c->stage == RSLC_STAGE_GEOMETRY)
+      {
+         o.twod   = 1;
+         o.idx[1] = o.idx[0];
+         o.idx[0] = e->gs_verts;
+      }
       if (frag)
       {
          op = s->sv ? (s->sv == DX_SV_POSITION ? DX_DCL_INPUT_PS_SIV : DX_DCL_INPUT_PS_SGV)
@@ -4509,12 +4698,42 @@ static bool dx_decls(struct dx_emit *e)
          if (op != DX_DCL_INPUT_PS_SGV)
             fl = (uint32_t)s->interp << 11;
       }
+      else if (e->c->stage == RSLC_STAGE_GEOMETRY)
+      {
+         /* a vertex's position is interpreted; its clip distances are
+          * plain values here, as fxc declares them */
+         if (sv != DX_SV_POSITION)
+            sv = 0;
+         op = sv ? DX_DCL_INPUT_SIV : DX_DCL_INPUT;
+      }
       else
-         op = s->sv ? DX_DCL_INPUT_SGV : DX_DCL_INPUT;
-      if (!dx_w(e, (uint32_t)op | fl | ((uint32_t)(1 + dx_opnd_len(&o) + (s->sv ? 1 : 0)) << 24))
+         op = sv ? DX_DCL_INPUT_SGV : DX_DCL_INPUT;
+      if (!dx_w(e, (uint32_t)op | fl | ((uint32_t)(1 + dx_opnd_len(&o) + (sv ? 1 : 0)) << 24))
             || !dx_put_opnd(e, &o, true, n))
          return false;
-      if (s->sv && !dx_w(e, s->sv))
+      if (sv && !dx_w(e, sv))
+         return false;
+   }
+   if (e->c->stage == RSLC_STAGE_GEOMETRY)
+   {
+      static const uint8_t in_prim[8]  = { 0, 1, 2, 6, 3, 7, 0, 0 };
+      static const uint8_t out_topo[8] = { 0, 1, 3, 0, 0, 0, 3, 5 };
+      for (i = 1; i < pr->nvars; i++)
+      {
+         const struct rslc_var *v = pr->vars[i];
+         if (v->global && v->storage == RSLC_ST_BUILTIN && e->used[i]
+               && v->builtin == RSLC_BI_INVOCATIONID
+               && !dx_decl1(e, DX_DCL_INPUT, 0, dx_reg(DXO_GSINSTANCEID, 0, 0), true))
+            return false;
+      }
+      if (pr->gs_invocations > 1
+            && (!dx_w(e, DX_DCL_GS_INSTANCES | (2u << 24)) || !dx_w(e, pr->gs_invocations)))
+         return false;
+      if (!dx_op0(e, DX_DCL_GS_INPUT_PRIMITIVE, (uint32_t)in_prim[pr->gs_in] << 11))
+         return false;
+      if (e->sm >= 50 && !dx_decl1(e, DX_DCL_STREAM, 0, dx_reg(DXO_STREAM, 0, 0), false))
+         return false;
+      if (!dx_op0(e, DX_DCL_GS_OUTPUT_TOPOLOGY, (uint32_t)out_topo[pr->gs_out] << 11))
          return false;
    }
    for (i = 0; i < e->nosig; i++)
@@ -4539,6 +4758,9 @@ static bool dx_decls(struct dx_emit *e)
       else if (!dx_decl1(e, DX_DCL_OUTPUT, 0, o, true))
          return false;
    }
+   if (e->c->stage == RSLC_STAGE_GEOMETRY
+         && (!dx_w(e, DX_DCL_MAX_OUTPUT_VERTEX_COUNT | (2u << 24)) || !dx_w(e, pr->gs_max_vertices)))
+      return false;
    if (e->c->stage == RSLC_STAGE_COMPUTE)
    {
       /* the thread ids read, workgroup memory, the group's size */
@@ -4620,8 +4842,17 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
    }
    if (c->stage == RSLC_STAGE_GEOMETRY)
    {
-      rslc_err(c, "dxbc: geometry stages are not supported yet", NULL, 0);
-      return false;
+      if (!pr->gs_in || !pr->gs_out || !pr->gs_max_vertices)
+      {
+         rslc_err(c, "dxbc: a geometry stage needs its primitives and max_vertices", NULL, 0);
+         return false;
+      }
+      if (pr->gs_invocations > 1 && e->sm < 50)
+      {
+         rslc_err(c, "dxbc: geometry instancing needs shader model 5", NULL, 0);
+         return false;
+      }
+      e->gs_verts = RSLC_GS_IN_VERTICES(pr->gs_in);
    }
    if (c->stage == RSLC_STAGE_COMPUTE && e->sm < 50)
    {
@@ -4686,8 +4917,17 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
       for (i = 0; ok && i < e->nic; i++)
       {
          struct dx_place src = dx_place_of(DXO_INPUT, e->ic_reg[i]);
+         struct dx_opnd  so;
          src.comp = e->ic_comp[i];
-         ok = dx_mov(e, dx_reg(DXO_TEMP, e->ic_temp[i], e->ic_n[i]), dx_at(&src, 0, e->ic_n[i]));
+         so = dx_at(&src, 0, e->ic_n[i]);
+         if (e->ic_vert[i] != RSLC_UNSET)
+         {
+            /* v[vertex][register] */
+            so.twod   = 1;
+            so.idx[1] = so.idx[0];
+            so.idx[0] = e->ic_vert[i];
+         }
+         ok = dx_mov(e, dx_at(&e->ic_home[i], e->ic_off[i], e->ic_n[i]), so);
       }
       /* outputs and globals start at zero, as HLSL's statics do */
       for (i = 0; ok && i < e->nosig; i++)
@@ -4716,7 +4956,8 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
          }
          e->ntemp = mark;
       }
-      ok = ok && dx_stmt(e, pr->main_fn->body) && dx_write_outputs(e) && dx_op0(e, DX_RET, 0);
+      ok = ok && dx_stmt(e, pr->main_fn->body)
+         && (c->stage == RSLC_STAGE_GEOMETRY || dx_write_outputs(e)) && dx_op0(e, DX_RET, 0);
    }
    if (!ok)
    {
@@ -4741,12 +4982,14 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
       e->out = &decl;
       ok = dx_decls(e);
    }
-   ok = ok && dx_sig_chunk(e, &isgn, e->isig, e->nisig) && dx_sig_chunk(e, &osgn, e->osig, e->nosig);
+   ok = ok && dx_sig_chunk(e, &isgn, e->isig, e->nisig, false)
+      && dx_sig_chunk(e, &osgn, e->osig, e->nosig, c->stage == RSLC_STAGE_GEOMETRY && e->sm >= 50);
    if (ok)
    {
       uint32_t words = (uint32_t)((decl.len + e->code.len + e->subs.len) / 4) + 2;
       uint32_t ver;
-      prog_type = c->stage == RSLC_STAGE_FRAGMENT ? 0u : c->stage == RSLC_STAGE_VERTEX ? 1u : 5u;
+      prog_type = c->stage == RSLC_STAGE_FRAGMENT ? 0u : c->stage == RSLC_STAGE_VERTEX ? 1u
+         : c->stage == RSLC_STAGE_GEOMETRY ? 2u : 5u;
       ver = (prog_type << 16) | ((e->sm / 10) << 4) | (e->sm % 10);
       ok = rslc_pbuf_put(c, &shex, &ver, 4) && rslc_pbuf_put(c, &shex, &words, 4)
          && rslc_pbuf_put(c, &shex, decl.data, decl.len)
@@ -4771,7 +5014,9 @@ bool rslc_emit_dxbc(struct rslc_ctx *c, struct rslc_result *result)
       hdr[6] = total;
       hdr[7] = 3;
       ok = rslc_pbuf_put(c, &dxbc, hdr, 32) && rslc_pbuf_put(c, &dxbc, offs, 12)
-         && dx_put_chunk(c, &dxbc, "ISGN", &isgn) && dx_put_chunk(c, &dxbc, "OSGN", &osgn)
+         && dx_put_chunk(c, &dxbc, "ISGN", &isgn)
+         && dx_put_chunk(c, &dxbc, c->stage == RSLC_STAGE_GEOMETRY && e->sm >= 50 ? "OSG5" : "OSGN",
+            &osgn)
          && dx_put_chunk(c, &dxbc, e->sm >= 50 ? "SHEX" : "SHDR", &shex);
       if (ok)
          dx_checksum(dxbc.data, total);
