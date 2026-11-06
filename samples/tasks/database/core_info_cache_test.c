@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include <boolean.h>
 #include <file/file_path.h>
@@ -112,9 +113,21 @@ static bool cache_names(const char *a, const char *b)
    return strstr(buf, a) && strstr(buf, b);
 }
 
+/* The cache is replaced by a rename, so a rewrite shows as a new inode */
+static unsigned long cache_ino(void)
+{
+   char p[1100];
+   struct stat st;
+   snprintf(p, sizeof(p), "%s/core_info.cache", dir);
+   if (stat(p, &st) != 0)
+      return 0;
+   return (unsigned long)st.st_ino;
+}
+
 int main(int argc, char **argv)
 {
    int i;
+   unsigned long ino;
    const char *exts;
 
    if (argc < 2)
@@ -176,6 +189,15 @@ int main(int argc, char **argv)
          fprintf(stderr, "FAIL  core_info_cache: build %d wrote a cache that lost a core\n", i + 1);
          return 1;
       }
+   }
+
+   /* Settled: the next start is served from the cache and writes nothing */
+   ino = cache_ino();
+   list_up();
+   if (ino != cache_ino())
+   {
+      fprintf(stderr, "FAIL  core_info_cache: an unchanged core set rewrote the cache\n");
+      return 1;
    }
 
    core_info_deinit_list();

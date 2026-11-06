@@ -945,7 +945,8 @@ end:
 }
 #endif
 
-static bool core_info_cache_write(core_info_cache_list_t *list, const char *info_dir)
+static bool core_info_cache_write(const core_info_t *items, size_t count,
+      const char *info_dir)
 {
    intfstream_t *file    = NULL;
    rjsonwriter_t *writer = NULL;
@@ -955,7 +956,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    char write_path[PATH_MAX_LENGTH];
    size_t i, j;
 
-   if (!list)
+   if (!items)
       return false;
 
    /* Open info cache file */
@@ -1025,9 +1026,9 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    {
       bool first_written = true;
 
-      for (i = 0; i < list->length; i++)
+      for (i = 0; i < count; i++)
       {
-         core_info_t* info = &list->items[i];
+         const core_info_t *info = &items[i];
 
          if (!(info->flags & CORE_INFO_FLAG_IS_INSTALLED))
             continue;
@@ -1285,7 +1286,6 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
       filestream_delete(write_path);
       RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n",
             file_path);
-      list->refresh = false;
       return false;
    }
 
@@ -1316,32 +1316,7 @@ end:
    if (!success && *write_path)
       filestream_delete(write_path);
 
-   list->refresh = false;
    return success;
-}
-
-/* Writes the cache from the built list, which holds the entries moved out of the cache */
-static bool core_info_cache_write_list(core_info_list_t *core_info_list,
-      const char *info_dir)
-{
-#ifdef HAVE_CORE_INFO_CACHE
-   size_t i;
-   bool success                 = false;
-   core_info_cache_list_t *list = core_info_cache_list_new();
-
-   if (!list)
-      return false;
-
-   for (i = 0; i < core_info_list->count; i++)
-      core_info_cache_add(list, &core_info_list->list[i], false);
-
-   success = core_info_cache_write(list, info_dir);
-   core_info_cache_list_free(list);
-   free(list);
-   return success;
-#else
-   return false;
-#endif
 }
 
 static void core_info_check_uninstalled(core_info_cache_list_t *list)
@@ -2397,15 +2372,9 @@ static core_info_list_t *core_info_list_new(const char *path,
 
       info->flags |= CORE_INFO_FLAG_IS_INSTALLED;
 
-      /* If info cache is enabled and we reach this
-       * point, current core is uncached
-       * > Add it to the list, and trigger a cache
-       *   refresh */
+      /* Uncached core: the cache is rewritten from the list */
       if (core_info_cache_list)
-      {
-         core_info_cache_add(core_info_cache_list, info, false);
          core_info_cache_list->refresh = true;
-      }
    }
 
    core_info_list_resolve_all_extensions(core_info_list);
@@ -2422,8 +2391,8 @@ static core_info_list_t *core_info_list_new(const char *path,
       core_info_check_uninstalled(core_info_cache_list);
 
       if (core_info_cache_list->refresh)
-         *cache_supported = core_info_cache_write_list(
-               core_info_list, info_dir);
+         *cache_supported = core_info_cache_write(
+               core_info_list->list, core_info_list->count, info_dir);
 
       core_info_cache_list_free(core_info_cache_list);
       free(core_info_cache_list);
