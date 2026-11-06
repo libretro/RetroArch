@@ -261,7 +261,7 @@ static enum rwav_state rwav_walk(rwav_t *out, const uint8_t *data,
       /* fmt_off is the chunk body: nBlockAlign at 12, and the
        * extension past cbSize at 18, where both layouts state the
        * frames a block holds. */
-      unsigned spb;
+      unsigned spb, max_spb;
       blockalign = (size_t)rwav_u16(data + fmt_off + 12);
       spb        = (fmt_size >= 20)
                  ? (unsigned)rwav_u16(data + fmt_off + 18) : 0;
@@ -284,13 +284,20 @@ static enum rwav_state rwav_walk(rwav_t *out, const uint8_t *data,
                   (short)rwav_u16(data + fmt_off + 24 + i * 4);
          }
          out->numcoef = n;
-         if (!spb)
-            spb = (unsigned)((blockalign - 7 * channels) * 2 / channels
-                  + 2);
+         max_spb = (unsigned)((blockalign - 7 * channels) * 2 / channels
+               + 2);
       }
-      else if (!spb)
-         spb = (unsigned)((blockalign - 4 * channels) * 2 / channels + 1);
+      else
+         max_spb = (unsigned)((blockalign - 4 * channels) * 2 / channels
+               + 1);
       if (!spb)
+         spb = max_spb;
+      /* samples-per-block comes from the file, but a coded block can
+       * only hold as many frames as remain after its per-channel
+       * predictor header.  Trusting a larger declaration lets a small
+       * payload expand the frame count enough to wrap callers' output
+       * allocations. */
+      if (!spb || spb > max_spb)
          return RWAV_ITERATE_ERROR;
       out->samplesperblock = spb;
    }
@@ -311,8 +318,10 @@ static enum rwav_state rwav_walk(rwav_t *out, const uint8_t *data,
    out->samplerate    = rate;
    out->subchunk2size = data_size;
    out->blockalign    = (unsigned)blockalign;
-   out->numsamples    = (data_size / blockalign)
-                      * (size_t)out->samplesperblock;
+   avail = data_size / blockalign;
+   if (avail > SIZE_MAX / (size_t)out->samplesperblock)
+      return RWAV_ITERATE_ERROR;
+   out->numsamples    = avail * (size_t)out->samplesperblock;
    out->dataoffset    = data_off;
    out->samples       = NULL;
    return RWAV_ITERATE_DONE;
