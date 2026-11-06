@@ -1294,6 +1294,8 @@ static int rwebm_read_packet_filtered(rwebm_t *webm, rwebm_packet *pkt,
                webm->cur      = body + sz;
                return 1;
             }
+            else if (!frame_len)
+            { r.p = body + sz; continue; }
             else
             {
                /* Laced block: parse the frame count + sizes, stash them,
