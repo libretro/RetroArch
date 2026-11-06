@@ -17,9 +17,10 @@
  *   device on, and its port with it.
  * - Out of focus, a failed sync, the session gone, a failed setup:
  *   nothing held; the first two logged once.
- * - Touch's menu button: Start, and the RetroArch menu held a second;
- *   a failed sync starts the second over.
- * - Recenter, Laser Pointer and the RetroArch menu answer on any port.
+ * - The menu button: button 16 of the pad, the left hand's in
+ *   Separate, and no hotkey; Touch's one menu button is Start, and
+ *   button 16 too held a second; a failed sync starts the second over.
+ * - Recenter, Laser Pointer and Headset View answer on any port.
  * - The laser: a whole frame in Always is the light gun's, the open
  *   menu's quad the menu's pointer; a window is the menu's while it
  *   is open, and in Always the gun's where gl2 draws the core in it.
@@ -976,7 +977,7 @@ static uint32_t t_on(unsigned p)
 static bool t_btn(unsigned port, unsigned id)
 {
    const input_device_driver_t *j = input_openxr_joypad(&t_joypad);
-   if (id >= RARCH_FIRST_CUSTOM_BIND)
+   if (id > INPUT_OPENXR_BUTTON_MENU)
       return input_openxr_hotkey(id);
    return t_slot(port) >= 0
       && j->button((unsigned)t_slot(port), (uint16_t)id);
@@ -1011,7 +1012,7 @@ static bool t_nothing_held(void)
    unsigned p, id;
    for (p = 0; p < INPUT_OPENXR_PADS; p++)
    {
-      for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+      for (id = 0; id < INPUT_OPENXR_BUTTONS; id++)
          if (t_btn(p, id))
             return false;
       for (id = 0; id < 2; id++)
@@ -1024,7 +1025,7 @@ static bool t_nothing_held(void)
                   RETRO_DEVICE_ID_JOYPAD_R2))
          return false;
    }
-   return !t_btn(0, RARCH_MENU_TOGGLE) && !t_btn(0, RARCH_HEADSET_RECENTER)
+   return !t_btn(0, RARCH_HEADSET_RECENTER)
       && !t_btn(0, RARCH_LASER_POINTER_TOGGLE)
       && !t_btn(0, RARCH_HEADSET_VIEW_TOGGLE)
       && !t_btn(0, RARCH_HEADSET_EDIT_SCREENS);
@@ -1163,25 +1164,42 @@ static void test_hotkeys(void)
    t_hold("combined/recenter", 0, 1.0f, 0.0f);
    t_hold("combined/laser", 0, 1.0f, 0.0f);
    t_hold("combined/view", 0, 1.0f, 0.0f);
-   t_hold("combined/menu", 0, 1.0f, 0.0f);
    t_hold("combined/edit_screens", 0, 1.0f, 0.0f);
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
    CHECK(t_btn(3, RARCH_HEADSET_RECENTER)
          && t_btn(3, RARCH_LASER_POINTER_TOGGLE)
          && t_btn(3, RARCH_HEADSET_VIEW_TOGGLE)
-         && t_btn(3, RARCH_MENU_TOGGLE)
          && t_btn(3, RARCH_HEADSET_EDIT_SCREENS),
-         "the hotkeys do not answer on any port: %d %d %d %d %d",
+         "the hotkeys do not answer on any port: %d %d %d %d",
          t_btn(3, RARCH_HEADSET_RECENTER),
          t_btn(3, RARCH_LASER_POINTER_TOGGLE),
-         t_btn(3, RARCH_HEADSET_VIEW_TOGGLE), t_btn(3, RARCH_MENU_TOGGLE),
+         t_btn(3, RARCH_HEADSET_VIEW_TOGGLE),
          t_btn(3, RARCH_HEADSET_EDIT_SCREENS));
+
+   /* The menu button is a button of the pad, the menu's by its
+    * profile's bind, and no hotkey of its own. */
+   t_let_go();
+   t_hold("combined/menu", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_btn(0, INPUT_OPENXR_BUTTON_MENU)
+         && !t_btn(0, RETRO_DEVICE_ID_JOYPAD_R3)
+         && !input_openxr_hotkey(RARCH_MENU_TOGGLE),
+         "the menu button: button 16 %d, R3 %d, hotkey %d",
+         t_btn(0, INPUT_OPENXR_BUTTON_MENU),
+         t_btn(0, RETRO_DEVICE_ID_JOYPAD_R3),
+         input_openxr_hotkey(RARCH_MENU_TOGGLE));
 
    t_let_go();
    t_hold("separate/view", 0, 1.0f, 0.0f);
+   t_hold("separate/menu", 0, 1.0f, 0.0f);
    t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_OFF);
    CHECK(t_btn(3, RARCH_HEADSET_VIEW_TOGGLE),
          "the Separate set's Headset View does not answer");
+   CHECK(t_btn(0, INPUT_OPENXR_BUTTON_MENU)
+         && !t_btn(1, INPUT_OPENXR_BUTTON_MENU),
+         "Separate's menu button is not the left hand's button 16: "
+         "left %d, right %d", t_btn(0, INPUT_OPENXR_BUTTON_MENU),
+         t_btn(1, INPUT_OPENXR_BUTTON_MENU));
 }
 
 static void test_nothing_held(void)
@@ -1231,24 +1249,31 @@ static void test_start_menu(void)
    t_hold("combined/start_menu", 0, 1.0f, 0.0f);
    t_clock = 50000000;
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
-   CHECK(t_btn(0, RETRO_DEVICE_ID_JOYPAD_START) && !t_btn(0, RARCH_MENU_TOGGLE),
+   CHECK(t_btn(0, RETRO_DEVICE_ID_JOYPAD_START)
+         && !t_btn(0, INPUT_OPENXR_BUTTON_MENU),
          "the press: Start %d, menu %d",
-         t_btn(0, RETRO_DEVICE_ID_JOYPAD_START), t_btn(0, RARCH_MENU_TOGGLE));
+         t_btn(0, RETRO_DEVICE_ID_JOYPAD_START),
+         t_btn(0, INPUT_OPENXR_BUTTON_MENU));
    t_clock += 999000;
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
-   CHECK(!t_btn(0, RARCH_MENU_TOGGLE), "the menu before the second was up");
+   CHECK(!t_btn(0, INPUT_OPENXR_BUTTON_MENU),
+         "the menu before the second was up");
    t_clock += 1000;
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
-   CHECK(t_btn(0, RARCH_MENU_TOGGLE) && t_btn(0, RETRO_DEVICE_ID_JOYPAD_START),
-         "held a second: menu %d, Start %d", t_btn(0, RARCH_MENU_TOGGLE),
+   CHECK(t_btn(0, INPUT_OPENXR_BUTTON_MENU)
+         && t_btn(0, RETRO_DEVICE_ID_JOYPAD_START),
+         "held a second: menu %d, Start %d", t_btn(0, INPUT_OPENXR_BUTTON_MENU),
          t_btn(0, RETRO_DEVICE_ID_JOYPAD_START));
+   CHECK(!input_openxr_hotkey(RARCH_MENU_TOGGLE),
+         "Touch's held menu button is reported as a hotkey");
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
-   CHECK(t_btn(0, RARCH_MENU_TOGGLE), "the menu is not held on every read");
+   CHECK(t_btn(0, INPUT_OPENXR_BUTTON_MENU),
+         "the menu is not held on every read");
    t_let_go();
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
-   CHECK(!t_btn(0, RARCH_MENU_TOGGLE)
+   CHECK(!t_btn(0, INPUT_OPENXR_BUTTON_MENU)
          && !t_btn(0, RETRO_DEVICE_ID_JOYPAD_START),
-         "let go: menu %d, Start %d", t_btn(0, RARCH_MENU_TOGGLE),
+         "let go: menu %d, Start %d", t_btn(0, INPUT_OPENXR_BUTTON_MENU),
          t_btn(0, RETRO_DEVICE_ID_JOYPAD_START));
 
    /* A failed sync starts the second over. */
@@ -1261,10 +1286,11 @@ static void test_start_menu(void)
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
    t_clock += 600000;
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
-   CHECK(!t_btn(0, RARCH_MENU_TOGGLE), "the hold went on through a failed sync");
+   CHECK(!t_btn(0, INPUT_OPENXR_BUTTON_MENU),
+         "the hold went on through a failed sync");
    t_clock += 400000;
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
-   CHECK(t_btn(0, RARCH_MENU_TOGGLE),
+   CHECK(t_btn(0, INPUT_OPENXR_BUTTON_MENU),
          "a second's hold after the failed sync did not open the menu");
    t_let_go();
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
@@ -1289,10 +1315,10 @@ static void test_start_menu_after_edit(void)
    CHECK(!t_editing, "edit mode went on with the menu open");
    t_clock += 1500000;
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
-   CHECK(     !t_btn(0, RARCH_MENU_TOGGLE)
+   CHECK(     !t_btn(0, INPUT_OPENXR_BUTTON_MENU)
          && !t_btn(0, RETRO_DEVICE_ID_JOYPAD_START),
          "the press held from edit mode: menu %d, Start %d",
-         t_btn(0, RARCH_MENU_TOGGLE),
+         t_btn(0, INPUT_OPENXR_BUTTON_MENU),
          t_btn(0, RETRO_DEVICE_ID_JOYPAD_START));
    t_let_go();
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
@@ -1301,7 +1327,8 @@ static void test_start_menu_after_edit(void)
    CHECK(t_btn(0, RETRO_DEVICE_ID_JOYPAD_START), "a new press is no Start");
    t_clock += 1000000;
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
-   CHECK(t_btn(0, RARCH_MENU_TOGGLE), "a new second's hold opens no menu");
+   CHECK(t_btn(0, INPUT_OPENXR_BUTTON_MENU),
+         "a new second's hold opens no menu");
    t_let_go();
    t_menu_open = false;
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
@@ -1460,6 +1487,53 @@ static void test_laser(void)
    t_aim[2].position.x     = 0.0f;
    t_vp                    = t_vp_whole;
 
+   t_menu_open = false;
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_aim_tracked[2] = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+}
+
+/* With the menu open, a press takes the laser from the dots until a
+ * pull; the menu button does not, as Menu Toggle leaves the menu open
+ * with no content. */
+static void test_laser_yield(void)
+{
+   float u      = 0.0f;
+   float v      = 0.0f;
+   bool pressed = false;
+
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_quads.num_quads = 1;
+   video_xr_pose_identity(&t_quads.quads[0].pose);
+   t_quads.quads[0].pose.position.z = -1.7f;
+   t_quads.quads[0].width           = 1.6f;
+   t_quads.quads[0].height          = 0.96f;
+   t_quads.quads[0].kind            = VIDEO_XR_QUAD_MENU;
+   memset(t_aim, 0, sizeof(t_aim));
+   t_aim[2].orientation.w = 1.0f;
+   t_aim_tracked[2]       = true;
+   t_menu_open            = true;
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(input_openxr_menu_pointer(&u, &v, &pressed),
+         "fixture: the menu pointer is off");
+
+   t_hold("combined/menu", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(input_openxr_menu_pointer(&u, &v, &pressed)
+         && (retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK) == VIDEO_OPENXR_LASER_AUTO,
+         "the menu button took the laser from the dots");
+
+   t_let_go();
+   t_hold("combined/a", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(!input_openxr_menu_pointer(&u, &v, &pressed)
+         && (retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK) == VIDEO_OPENXR_LASER_OFF,
+         "A did not take the laser from the dots");
+
+   t_let_go();
    t_menu_open = false;
    memset(&t_quads, 0, sizeof(t_quads));
    t_aim_tracked[2] = false;
@@ -2275,6 +2349,17 @@ static void test_joypad_wrapped(void)
             (unsigned)bits.data[0]);
    }
 
+   /* The menu button is button 16, beside the RetroPad's. */
+   t_let_go();
+   t_hold("combined/menu", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   j->get_buttons(s, &bits);
+   CHECK(j->button(s, INPUT_OPENXR_BUTTON_MENU)
+         && !j->button(s, INPUT_OPENXR_BUTTONS)
+         && bits.data[0] == (1u << INPUT_OPENXR_BUTTON_MENU),
+         "the menu button reads %d, get_buttons 0x%x",
+         j->button(s, INPUT_OPENXR_BUTTON_MENU), (unsigned)bits.data[0]);
+
    t_let_go();
    t_hold("combined/b", 0, 1.0f, 0.0f);
    t_hold("combined/left_stick", 0, 0.5f, 0.5f);
@@ -2416,6 +2501,12 @@ static void test_joypad_lent(void)
          v->axes[0], v->axes[1]);
    CHECK(t_bridge_take(j, 5) == &t_lent[5],
          "slot 5 does not read the driver's view");
+
+   t_hold("combined/menu", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   v = t_bridge_take(j, s);
+   CHECK(BIT256_GET_PTR(&v->buttons, INPUT_OPENXR_BUTTON_MENU),
+         "the bridge's copy of slot %u lacks the menu button", s);
 
    t_hooks.session_destroying(t_hooks.user);
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
@@ -10509,6 +10600,7 @@ int main(void)
    test_start_menu();
    test_start_menu_after_edit();
    test_laser();
+   test_laser_yield();
    test_hands();
    test_rumble();
    test_session_gone();

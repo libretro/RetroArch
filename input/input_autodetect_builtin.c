@@ -780,8 +780,8 @@ DECL_AXIS(r_y_minus, -3)
 
 #ifdef HAVE_OPENXR
 /* The headset's controllers (input_openxr.c): the RetroPad's ids as
- * buttons, the sticks as axes 0 to 3 with Y down, L2 and R2 as axes 4
- * and 5. */
+ * buttons, the menu button as 16 with Menu Toggle on it, the sticks as
+ * axes 0 to 3 with Y down, L2 and R2 as axes 4 and 5. */
 #define OPENXR_DEFAULT_BINDS \
 DECL_BTN(b, 0) \
 DECL_BTN(y, 1) \
@@ -799,6 +799,7 @@ DECL_BTN(l2, 12) \
 DECL_BTN(r2, 13) \
 DECL_BTN(l3, 14) \
 DECL_BTN(r3, 15) \
+DECL_MENU_EX(16, "Menu") \
 DECL_AXIS(l2, +4) \
 DECL_AXIS(r2, +5) \
 DECL_AXIS(l_x_plus,  +0) \

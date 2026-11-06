@@ -33,11 +33,17 @@ RETRO_BEGIN_DECLS
 
 /* The devices' joypad driver, and their names: both hands, or each in
  * Separate. Each name has a built-in profile, the RetroPad's ids as
- * buttons, the sticks as axes 0 to 3, L2 and R2 as axes 4 and 5. */
+ * buttons, the menu button as button 16 with Menu Toggle on it, the
+ * sticks as axes 0 to 3, L2 and R2 as axes 4 and 5. */
 #define INPUT_OPENXR_JOYPAD          "openxr"
 #define INPUT_OPENXR_JOYPAD_COMBINED "OpenXR Controllers"
 #define INPUT_OPENXR_JOYPAD_LEFT     "OpenXR Left Controller"
 #define INPUT_OPENXR_JOYPAD_RIGHT    "OpenXR Right Controller"
+
+/* The menu button, past the RetroPad's sixteen, and the buttons a
+ * device has. */
+#define INPUT_OPENXR_BUTTON_MENU 16
+#define INPUT_OPENXR_BUTTONS     17
 
 struct rarch_joypad_driver;
 
@@ -69,9 +75,9 @@ void input_openxr_reannounce(void);
  * headset's. */
 bool input_openxr_autoconfigure(unsigned slot);
 
-/* RARCH_MENU_TOGGLE, RARCH_HEADSET_RECENTER, RARCH_LASER_POINTER_TOGGLE,
- * RARCH_HEADSET_VIEW_TOGGLE or RARCH_HEADSET_EDIT_SCREENS, from the
- * headset's own actions. */
+/* RARCH_MENU_TOGGLE in edit mode, RARCH_HEADSET_RECENTER,
+ * RARCH_LASER_POINTER_TOGGLE, RARCH_HEADSET_VIEW_TOGGLE or
+ * RARCH_HEADSET_EDIT_SCREENS, from the headset's own actions. */
 bool input_openxr_hotkey(unsigned id);
 
 /* Edit Screens, main thread, between frames: a pause draws a frame.

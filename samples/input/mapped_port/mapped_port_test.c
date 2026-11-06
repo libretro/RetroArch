@@ -6327,6 +6327,112 @@ static void test_headset_above_max_users(void)
          && input_remapping_join_user(3) == 0,
          "the headset joining on 6 does not share player 1 from port 4");
 }
+
+extern const char* const input_builtin_autoconfs[];
+
+/* The headset's menu button is button 16 of its built-in profiles, with
+ * Menu Toggle on it as a pad's Guide has: it opens the menu from the
+ * Combined device sharing player 1, and from either hand's in
+ * Separate. */
+static void test_headset_menu_button(void)
+{
+   static const char *const names[] = {
+      INPUT_OPENXR_JOYPAD_COMBINED, INPUT_OPENXR_JOYPAD_LEFT,
+      INPUT_OPENXR_JOYPAD_RIGHT };
+   static struct retro_keybind xr[RARCH_BIND_LIST_END];
+   input_bits_t bits;
+   unsigned i, n;
+   unsigned found = 0;
+
+   for (i = 0; input_builtin_autoconfs[i]; i++)
+      for (n = 0; n < sizeof(names) / sizeof(names[0]); n++)
+      {
+         char dev[64];
+         snprintf(dev, sizeof(dev), "input_device = \"%s\"\n", names[n]);
+         if (!strstr(input_builtin_autoconfs[i], dev))
+            continue;
+         found++;
+         CHECK(strstr(input_builtin_autoconfs[i],
+                  "input_menu_toggle_btn = 16\n"
+                  "input_menu_toggle_btn_label = \"Menu\"\n")
+               && strstr(input_builtin_autoconfs[i], "input_r3_btn = 15\n"),
+               "a headset's built-in profile has no Menu Toggle on button "
+               "16 labelled Menu");
+      }
+   CHECK(found == sizeof(names) / sizeof(names[0]),
+         "the headset's three profiles are not all built in");
+
+   t_reset();
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+      xr[i] = t_auto[i];
+   xr[RARCH_MENU_TOGGLE].joykey = INPUT_OPENXR_BUTTON_MENU;
+   t_valid(RARCH_MENU_TOGGLE);
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   t_pad(3, xr, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_driver_poll();
+   t_buttons[3] = T_BIT(INPUT_OPENXR_BUTTON_MENU);
+   t_collect(&bits);
+   t_buttons[3] = 0;
+   t_collect(&bits);
+   CHECK(BIT256_GET(bits, RARCH_MENU_TOGGLE),
+         "the headset's menu button does not open the menu");
+
+   t_reset();
+   t_valid(RARCH_MENU_TOGGLE);
+   t_headset(3, INPUT_OPENXR_JOYPAD_LEFT);
+   t_headset(2, INPUT_OPENXR_JOYPAD_RIGHT);
+   t_pad(3, xr, INPUT_OPENXR_JOYPAD_LEFT);
+   t_pad(2, xr, INPUT_OPENXR_JOYPAD_RIGHT);
+   input_driver_poll();
+   for (n = 2; n <= 3; n++)
+   {
+      t_buttons[n] = T_BIT(INPUT_OPENXR_BUTTON_MENU);
+      t_collect(&bits);
+      t_buttons[n] = 0;
+      t_collect(&bits);
+      CHECK(BIT256_GET(bits, RARCH_MENU_TOGGLE),
+            "Separate: a hand's menu button does not open the menu");
+   }
+}
+
+/* Sharing player 1, the headset's menu button goes by Hotkey Enable as
+ * a sharer's Guide does: its profile has none, so the button opens the
+ * menu with user 1's held or not, and user 1's alone opens nothing. */
+static void test_headset_menu_hotkey_enable(void)
+{
+   static struct retro_keybind xr[RARCH_BIND_LIST_END];
+   unsigned i;
+
+   for (i = 0; input_builtin_autoconfs[i]; i++)
+      if (strstr(input_builtin_autoconfs[i],
+               "input_device = \"" INPUT_OPENXR_JOYPAD_COMBINED "\"\n"))
+         CHECK(!strstr(input_builtin_autoconfs[i], "input_enable_hotkey"),
+               "the headset's built-in profile has a Hotkey Enable");
+
+   t_reset();
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+      xr[i] = t_auto[i];
+   xr[RARCH_MENU_TOGGLE].joykey = INPUT_OPENXR_BUTTON_MENU;
+   t_valid(RARCH_MENU_TOGGLE);
+   t_bind(RARCH_ENABLE_HOTKEY, T_ENABLE);
+   t_connect(0, "Pad", 1, 1);
+   t_headset(3, INPUT_OPENXR_JOYPAD_COMBINED);
+   t_pad(3, xr, INPUT_OPENXR_JOYPAD_COMBINED);
+   input_driver_poll();
+   CHECK(input_remapping_join_user(3) == 0,
+         "the headset does not share player 1");
+
+   t_buttons[3] = T_BIT(INPUT_OPENXR_BUTTON_MENU);
+   CHECK(t_menu_tap(),
+         "the headset's menu button waits for user 1's Hotkey Enable");
+   t_buttons[0] = T_BIT(T_ENABLE);
+   t_buttons[3] = T_BIT(INPUT_OPENXR_BUTTON_MENU);
+   CHECK(t_menu_tap(),
+         "the headset's menu button with user 1's Hotkey Enable held does "
+         "not open the menu");
+   t_buttons[0] = T_BIT(T_ENABLE);
+   CHECK(!t_menu_tap(), "user 1's Hotkey Enable alone opens the menu");
+}
 #endif
 
 int main(void)
@@ -6454,6 +6560,8 @@ int main(void)
    test_headset_displaced();
    test_headset_displaced_full();
    test_headset_above_max_users();
+   test_headset_menu_button();
+   test_headset_menu_hotkey_enable();
 #endif
    test_hotkey_enable_own_delay();
    test_hotkey_enable_own_game_focus();

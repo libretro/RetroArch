@@ -70,7 +70,7 @@
  * that end it: a runtime can read a binding inactive for a sync around
  * a controller change. */
 #define INPUT_OPENXR_EDIT_UNBOUND  3
-/* Touch's one menu button opens the RetroArch menu once held this long
+/* Touch's one menu button is the menu button too once held this long
  * (us). */
 #define INPUT_OPENXR_MENU_HOLD     1000000
 /* Edit mode's longest stick step (s): a stalled poll does not fling the
@@ -437,7 +437,7 @@ static const input_openxr_profile_t input_openxr_profiles[] = {
 
 typedef struct input_openxr_pad
 {
-   uint16_t buttons;     /* 1 << RETRO_DEVICE_ID_JOYPAD_* */
+   uint32_t buttons;     /* 1 << RETRO_DEVICE_ID_JOYPAD_*, INPUT_OPENXR_BUTTON_MENU */
    int16_t analog[4];    /* left x, left y, right x, right y */
    int16_t trigger[2];   /* analog L2, R2 */
 } input_openxr_pad_t;
@@ -560,7 +560,7 @@ typedef struct input_openxr
    /* The laser's yield to the controllers: the last read's buttons and
     * sticks past half. */
    bool yield;
-   uint16_t last_buttons[INPUT_OPENXR_PADS];
+   uint32_t last_buttons[INPUT_OPENXR_PADS];
    unsigned last_sticks[INPUT_OPENXR_PADS];
 
    /* XR thread: the dots, the beams, edit mode's outlines, the menu's
@@ -1149,9 +1149,9 @@ static void input_openxr_stick(input_openxr_t *st, unsigned a, XrPath hand,
    xy[1] = input_openxr_axis(-s.currentState.y);
 }
 
-/* Touch's one menu button: Start while it is held, and the RetroArch
- * menu too when let go after a second. A press that opened the menu
- * from edit mode is neither until let go. */
+/* Touch's one menu button: Start while it is held, and the menu button
+ * too once held a second. A press that opened the menu from edit mode
+ * is neither until let go. */
 static void input_openxr_start_menu(input_openxr_t *st, bool down,
       input_openxr_pad_t *pad)
 {
@@ -1172,7 +1172,7 @@ static void input_openxr_start_menu(input_openxr_t *st, bool down,
    }
    pad->buttons |= (uint16_t)(1u << RETRO_DEVICE_ID_JOYPAD_START);
    if (now - st->start_menu_since >= INPUT_OPENXR_MENU_HOLD)
-      st->menu_toggle = true;
+      pad->buttons |= 1u << INPUT_OPENXR_BUTTON_MENU;
 }
 
 static void input_openxr_read_combined(input_openxr_t *st)
@@ -1193,7 +1193,8 @@ static void input_openxr_read_combined(input_openxr_t *st)
    st->trig[1].value = input_openxr_float(st, IXA_C_R2, XR_NULL_PATH);
    st->trig[1].pad   = 0;
    st->trig[1].slot  = 1;
-   st->menu_toggle   = input_openxr_bool(st, IXA_C_MENU, XR_NULL_PATH);
+   if (input_openxr_bool(st, IXA_C_MENU, XR_NULL_PATH))
+      pad->buttons |= 1u << INPUT_OPENXR_BUTTON_MENU;
    st->recenter      = input_openxr_bool(st, IXA_C_RECENTER, XR_NULL_PATH);
    st->laser_toggle  = input_openxr_bool(st, IXA_C_LASER, XR_NULL_PATH);
    st->view_toggle   = input_openxr_bool(st, IXA_C_VIEW, XR_NULL_PATH);
@@ -1224,7 +1225,9 @@ static void input_openxr_read_separate(input_openxr_t *st)
       st->trig[h].pad   = h;
       st->trig[h].slot  = 1;
    }
-   st->menu_toggle  = input_openxr_bool(st, IXA_S_MENU, XR_NULL_PATH);
+   /* Bound on the left hand only. */
+   if (input_openxr_bool(st, IXA_S_MENU, XR_NULL_PATH))
+      st->pads[0].buttons |= 1u << INPUT_OPENXR_BUTTON_MENU;
    st->recenter     = input_openxr_bool(st, IXA_S_RECENTER, XR_NULL_PATH);
    st->laser_toggle = input_openxr_bool(st, IXA_S_LASER, XR_NULL_PATH);
    st->view_toggle  = input_openxr_bool(st, IXA_S_VIEW, XR_NULL_PATH);
@@ -1591,7 +1594,8 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
 }
 
 /* Whether this read newly presses a button other than the triggers' L2
- * and R2, or pushes a stick past half. */
+ * and R2 or the menu button (it navigates nothing), or pushes a stick
+ * past half. */
 static bool input_openxr_new_press(input_openxr_t *st)
 {
    unsigned p, s;
@@ -1600,9 +1604,10 @@ static bool input_openxr_new_press(input_openxr_t *st)
    {
       const input_openxr_pad_t *pad = &st->pads[p];
       unsigned sticks               = 0;
-      uint16_t buttons              = (uint16_t)(pad->buttons
+      uint32_t buttons              = pad->buttons
             & ~((1u << RETRO_DEVICE_ID_JOYPAD_L2)
-               | (1u << RETRO_DEVICE_ID_JOYPAD_R2)));
+               | (1u << RETRO_DEVICE_ID_JOYPAD_R2)
+               | (1u << INPUT_OPENXR_BUTTON_MENU));
       for (s = 0; s < 2; s++)
          if (     abs(pad->analog[s * 2])     > INPUT_OPENXR_YIELD_STICK
                || abs(pad->analog[s * 2 + 1]) > INPUT_OPENXR_YIELD_STICK)
@@ -2518,7 +2523,7 @@ static int32_t input_openxr_joypad_button(unsigned port, uint16_t joykey)
    if (!pad)
       return input_openxr_inner->button
          ? input_openxr_inner->button(port, joykey) : 0;
-   return joykey < RARCH_FIRST_CUSTOM_BIND
+   return joykey < INPUT_OPENXR_BUTTONS
       && (pad->buttons & (1u << joykey));
 }
 
@@ -2578,7 +2583,7 @@ static void input_openxr_joypad_get_buttons(unsigned port,
       return;
    }
    BIT256_CLEAR_ALL_PTR(state);
-   for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+   for (id = 0; id < INPUT_OPENXR_BUTTONS; id++)
       if (pad->buttons & (1u << id))
          BIT256_SET_PTR(state, id);
 }

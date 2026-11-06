@@ -7,6 +7,7 @@ ROOT   := ../../..
 TARGET := mapped_port_test$(EXE)
 OPENXR_TARGET := mapped_port_openxr_test$(EXE)
 SOURCES := mapped_port_test.c $(ROOT)/input/input_driver.c $(ROOT)/command.c \
+   $(ROOT)/input/input_autodetect_builtin.c \
    $(ROOT)/libretro-common/file/config_file.c \
    $(ROOT)/tasks/task_autodetect.c \
    $(ROOT)/libretro-common/string/stdstring.c \
