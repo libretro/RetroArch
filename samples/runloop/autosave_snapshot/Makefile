@@ -5,7 +5,7 @@ SOURCES := autosave_snapshot_test.c $(ROOT)/libretro-common/rthreads/rthreads.c 
            $(ROOT)/libretro-common/rthreads/retro_eventcount.c \
            $(ROOT)/libretro-common/features/features_cpu.c \
            $(ROOT)/libretro-common/time/rtime.c
-CFLAGS += -std=gnu89 -Wall -Wextra -g -O1 -DHAVE_THREADS \
+CFLAGS += -std=gnu89 -Wall -Wextra -g -O1 -DHAVE_THREADS -DHAVE_RUNAHEAD \
           -ffunction-sections -fdata-sections \
           -I$(ROOT) -I$(ROOT)/libretro-common/include
 LDFLAGS += -Wl,--gc-sections

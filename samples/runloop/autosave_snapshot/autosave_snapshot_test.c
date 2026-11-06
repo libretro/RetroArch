@@ -18,6 +18,9 @@ static unsigned char disk_image[SRAM_SIZE];
 static autosave_t *current;
 static unsigned char ram_storage[SRAM_SIZE + 1];
 static unsigned char *ram = ram_storage + 1;
+static bool core_usable = true;
+
+bool serialization_usable(void) { return core_usable; }
 
 void RARCH_ERR(const char *fmt, ...)
 {
@@ -225,6 +228,16 @@ int main(void)
    /* Shutdown is also safe before the first snapshot is published. */
    start_save(false);
    stop_save();
+
+   start_save(false);
+   assert(retro_atomic_load_acquire_int(&current->snapshot_requested));
+   core_usable = false;
+   current->retro_buffer = (const void*)1;
+   autosave_check();
+   assert(retro_atomic_load_acquire_int(&current->snapshot_requested));
+   stop_save();
+   core_usable = true;
+   puts("PASS unusable_core_skips_pending_autosave");
    scond_free(io_cond);
    slock_free(io_lock);
    puts("autosave snapshot tests passed");
