@@ -134,6 +134,12 @@ enum platform_android_flags
 
 static char app_dir[DIR_MAX_LENGTH];
 static char apk_dir[DIR_MAX_LENGTH];
+/* Where cores may load from: dataDir and nativeLibraryDir, realpath'd */
+static char android_core_dirs[2][DIR_MAX_LENGTH];
+/* And any "<package>-" code folder of ours in the install folder:
+ * Play installs move the code folder mid-session. */
+static char android_install_dir[DIR_MAX_LENGTH];
+static char android_code_prefix[NAME_MAX_LENGTH];
 static char android_config_path[PATH_MAX_LENGTH];
 /* Set in android_app_create on the UI thread, so the
  * permissionsResolved upcall can reach the app state before the
@@ -1447,9 +1453,48 @@ static bool android_env_file_path(JNIEnv *env, jobject file,
    return android_env_jstring_copy(env, jpath, buf, len);
 }
 
-/* getApplicationInfo().dataDir / .sourceDir for absent DATADIR / APK. */
+/* sourceDir is <install dir>/[~~X/]<package>-Y/base.apk. */
+static bool android_env_derive_install_dir(JNIEnv *env,
+      jobject appinfo, jclass appinfo_class)
+{
+   char *s;
+   size_t _len;
+   jfieldID fid = (*env)->GetFieldID(env, appinfo_class,
+         "packageName", "Ljava/lang/String;");
+   if (     android_env_exception(env, "ApplicationInfo.packageName")
+         || !android_env_jstring_copy(env,
+               (jstring)(*env)->GetObjectField(env, appinfo, fid),
+               android_code_prefix, sizeof(android_code_prefix)))
+      return false;
+   _len = strlcat(android_code_prefix, "-", sizeof(android_code_prefix));
+   if (_len >= sizeof(android_code_prefix))
+      return false;
+   fid = (*env)->GetFieldID(env, appinfo_class,
+         "sourceDir", "Ljava/lang/String;");
+   if (     android_env_exception(env, "ApplicationInfo.sourceDir")
+         || !android_env_jstring_copy(env,
+               (jstring)(*env)->GetObjectField(env, appinfo, fid),
+               android_install_dir, sizeof(android_install_dir))
+         || !path_resolve_realpath(android_install_dir,
+               sizeof(android_install_dir), true)
+         || !(s = strrchr(android_install_dir, '/')))
+      return false;
+   *s = '\0';
+   if (     !(s = strrchr(android_install_dir, '/'))
+         || strncmp(s + 1, android_code_prefix, _len))
+      return false;
+   *s = '\0';
+   if ((s = strrchr(android_install_dir, '/')) && s[1] == '~' && s[2] == '~')
+      *s = '\0';
+   return (*android_install_dir != '\0');
+}
+
+/* getApplicationInfo().dataDir / .sourceDir for absent DATADIR / APK,
+ * and the core folders, which no extra may move. */
 static void android_env_derive_application_info(JNIEnv *env, jobject activity)
 {
+   static const char *core_dir_fields[] = { "dataDir", "nativeLibraryDir" };
+   size_t i;
    jclass activity_class;
    jclass appinfo_class;
    jmethodID get_application_info;
@@ -1484,8 +1529,70 @@ static void android_env_derive_application_info(JNIEnv *env, jobject activity)
                (jstring)(*env)->GetObjectField(env, appinfo, fid),
                apk_dir, sizeof(apk_dir));
    }
+   for (i = 0; i < ARRAY_SIZE(android_core_dirs); i++)
+   {
+      jfieldID fid = (*env)->GetFieldID(env, appinfo_class,
+            core_dir_fields[i], "Ljava/lang/String;");
+      if (     android_env_exception(env, core_dir_fields[i])
+            || !android_env_jstring_copy(env,
+                  (jstring)(*env)->GetObjectField(env, appinfo, fid),
+                  android_core_dirs[i], sizeof(android_core_dirs[i]))
+            || !path_resolve_realpath(android_core_dirs[i],
+                  sizeof(android_core_dirs[i]), true))
+         *android_core_dirs[i] = '\0';
+      __android_log_print(ANDROID_LOG_INFO,
+         "RetroArch", "[ENV] Core folder: \"%s\".\n", android_core_dirs[i]);
+   }
+   if (!android_env_derive_install_dir(env, appinfo, appinfo_class))
+   {
+      *android_install_dir = '\0';
+      *android_code_prefix = '\0';
+      __android_log_print(ANDROID_LOG_INFO, "RetroArch",
+         "[ENV] Core folder: no install folder found.\n");
+   }
+   else
+      __android_log_print(ANDROID_LOG_INFO, "RetroArch",
+         "[ENV] Core folder: \"%s\" (%s*).\n",
+         android_install_dir, android_code_prefix);
    (*env)->DeleteLocalRef(env, appinfo_class);
    (*env)->DeleteLocalRef(env, appinfo);
+}
+
+bool android_core_path_allowed(const char *path)
+{
+   char real_path[PATH_MAX_LENGTH];
+   const char *s;
+   size_t _len;
+   size_t i;
+
+   strlcpy(real_path, path, sizeof(real_path));
+   if (!path_resolve_realpath(real_path, sizeof(real_path), true))
+      *real_path = '\0';
+   for (i = 0; i < ARRAY_SIZE(android_core_dirs); i++)
+   {
+      _len = strlen(android_core_dirs[i]);
+      if (     _len
+            && !strncmp(real_path, android_core_dirs[i], _len)
+            && real_path[_len] == '/')
+         return true;
+   }
+   /* <install dir>/[~~X/]<package>-Y/... */
+   _len = strlen(android_install_dir);
+   if (     !_len
+         || strncmp(real_path, android_install_dir, _len)
+         || real_path[_len] != '/')
+      return false;
+   s = real_path + _len + 1;
+   if (s[0] == '~' && s[1] == '~')
+   {
+      if (!(s = strchr(s, '/')))
+         return false;
+      s++;
+   }
+   _len = strlen(android_code_prefix);
+   return (!strncmp(s, android_code_prefix, _len)
+         && s[_len] != '/'
+         && strchr(s + _len, '/'));
 }
 
 /* getPackageManager().getPackageInfo(getPackageName(), 0).versionCode. */
@@ -3221,9 +3328,8 @@ static void frontend_unix_get_env(int *argc,
    /* Anything the intent did not supply is derived from the
     * application context, so a direct launch of the native activity
     * behaves like one through the Java launcher.  Extras always win:
-    * every derivation below runs only for a value still unset. */
-   if (!*app_dir || !*apk_dir)
-      android_env_derive_application_info(env, android_app->activity->clazz);
+    * a value an extra can set is derived only while it is still unset. */
+   android_env_derive_application_info(env, android_app->activity->clazz);
    if (!*internal_storage_path || !*internal_storage_app_path)
       android_env_derive_storage(env, android_app->activity->clazz);
    if (!*android_app->current_ime)

@@ -755,7 +755,7 @@ static void runahead_copy_task_handler(retro_task_t *task)
        * on while the loader maps the copy. A copy that will not
        * open is still published; the main thread's own open of it
        * then reports why. */
-      h->lib      = dylib_load(h->out_path);
+      h->lib      = runloop_core_dylib_load(h->out_path, true);
    }
    else
    {
