@@ -16,15 +16,24 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/fetch_debs.sh"
 
 # The kernel the runner's own release tracks: its HWE metapackage, or
-# the plain generic one on a release that has none yet
+# the plain generic one on a release that has none yet. The newest
+# version whose image and modules can both be fetched: the archive can
+# publish a metapackage before the packages it names
 hwe_kernel() {
    rel=$(. /etc/os-release && echo "$VERSION_ID")
    for meta in "linux-image-generic-hwe-$rel" linux-image-generic; do
-      k=$(apt-cache depends "$meta" 2>/dev/null \
-         | sed -n 's/.*Depends: linux-image-\([0-9][^ ]*-generic\)$/\1/p' \
-         | head -n 1)
-      [ -n "$k" ] && { echo "$k"; return; }
+      for k in $(apt-cache show "$meta" 2>/dev/null \
+         | sed -n 's/^Depends: linux-image-\([0-9][^ ,]*-generic\).*/\1/p'); do
+         if has_candidate "linux-image-unsigned-$k" \
+               && has_candidate "linux-modules-$k"; then
+            echo "$k"
+            return
+         fi
+      done
    done
+}
+has_candidate() {
+   apt-cache policy "$1" 2>/dev/null | grep -q '^ *Candidate: [0-9]'
 }
 # Lists the runner never refreshed name no kernel: refreshed once
 if [ -z "$(hwe_kernel)" ] && command -v sudo >/dev/null 2>&1; then
