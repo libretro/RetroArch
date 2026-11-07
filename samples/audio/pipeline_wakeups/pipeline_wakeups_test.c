@@ -1885,9 +1885,16 @@ static bool ff_stretch_on(void)
 }
 
 /* A 2x hold without Audio Sync, the stretch following the runloop. The
- * core stalls for 1.5 s: the device runs dry and the consumer primes
+ * core stalls for 1.25 s: the device runs dry and the consumer primes
  * again, waiting for the ring to fill. The hold's audio must reach the
- * device again, with the stretch on. */
+ * device again, with the stretch on.
+ *
+ * Real time, so every part is as short as it can be and still tell. The
+ * stall is the shortest that, measured as one interval, takes the
+ * estimate past the stretch's 4x duration bound (one sixteenth of it
+ * over four 1x frames, from a bit over 1 s) with margin; shorter, the old
+ * code passes too. A quarter of a second to settle on each side, and
+ * half a second judged. */
 static void ff_stall_case(void)
 {
    settings_t *settings = config_get_ptr();
@@ -1902,21 +1909,21 @@ static void ff_stall_case(void)
    runloop_state_get_ptr()->flags            = RUNLOOP_FLAG_FASTMOTION;
    audio_driver_publish_runloop();
    clock_gettime(CLOCK_MONOTONIC, &next);
-   for (frame = 0; frame < 60; frame++)
+   for (frame = 0; frame < 30; frame++)
       ff_hold_frame(&next, step_ns);
    if (!ff_stretch_on())
    {
       fprintf(stderr, "the stretch did not follow a 2x hold\n");
       fixture_failures++;
    }
-   next.tv_sec += 1;
-   next.tv_nsec += 500000000L;
-   for (frame = 0; frame < 120; frame++)
+   next.tv_sec  += 1;
+   next.tv_nsec += 250000000L;
+   for (frame = 0; frame < 90; frame++)
    {
-      if (frame == 60)
+      if (frame == 30)
          silent = retro_atomic_load_acquire_size(&dev_silent_samples);
       ff_hold_frame(&next, step_ns);
-      if (frame >= 60 && !ff_stretch_on())
+      if (frame >= 30 && !ff_stretch_on())
          off++;
    }
    /* Half a second of device time: a quarter of it silent is a fail. */
