@@ -661,7 +661,7 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
    {
       int co1[16], co2[16], delta[16], s1[16], s2[16];
       unsigned need = 7 * ch;
-      size_t   off;
+      size_t   off, n;
       if (ch > 16 || blen < need || spb < 2)
          return 0;
       for (c = 0; c < ch; c++)
@@ -683,14 +683,19 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
          RWAV_PUT(0, c, s2[c]);
          RWAV_PUT(1, c, s1[c]);
       }
+      /* The nibbles are one stream, high nibble first, a frame's
+       * channels in turn: with an odd channel count a frame starts
+       * mid-byte, so which half to take follows the stream, not the
+       * channel. */
       off = need;
       i   = 2;
+      n   = 0;
       while (i < spb && off < blen)
       {
-         for (c = 0; c < ch && i < spb; c++)
+         for (c = 0; c < ch && i < spb; c++, n++)
          {
             unsigned byte = b[off];
-            int      nib  = (c & 1) ? (byte & 0x0f) : (byte >> 4);
+            int      nib  = (n & 1) ? (byte & 0x0f) : (byte >> 4);
             int      sn   = (nib & 8) ? nib - 16 : nib;
             int      p    = rwav_ms_predict(s1[c], co1[c], s2[c], co2[c])
                           + sn * delta[c];
@@ -699,7 +704,7 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
             s1[c]    = p;
             delta[c] = rwav_ms_adapt_delta(nib, delta[c]);
             RWAV_PUT(i, c, p);
-            if (c & 1)
+            if (n & 1)
                off++;
             if (c == ch - 1)
                i++;
@@ -722,6 +727,7 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
                i++;
             }
             off++;
+            n++;
          }
       }
       end = (spb < first + count) ? spb : first + count;

@@ -2553,6 +2553,199 @@ START_TEST (test_rwav_ms_adpcm_delta_growth)
 }
 END_TEST
 
+/* ---- round trip through a reference encoder ----
+ *
+ * Each block is encoded from a signal while the encoder keeps its own
+ * reconstruction, which is what a decoder has to produce exactly.  At
+ * one to five channels this covers each decoder rwav dispatches to:
+ * IMA's runs (and stereo's paired ones), MS mono, MS stereo, and the
+ * general MS loop - whose nibbles are one stream, so an odd channel
+ * count starts a frame mid-byte. */
+static short rt_sig(size_t i, unsigned c)
+{
+   /* a few slow partials and a fast one, different per channel */
+   static const short tri[16] = { 0, 4, 8, 12, 16, 12, 8, 4,
+                                  0, -4, -8, -12, -16, -12, -8, -4 };
+   return (short)(tri[(i / (3 + c)) & 15] * 1500 + tri[(i * 5) & 15] * 300
+         + (short)((i * 2654435761u + c * 40503u) >> 24) * 8);
+}
+
+static int rt_clamp(int v)
+{
+   return v > 32767 ? 32767 : (v < -32768 ? -32768 : v);
+}
+
+static void rt_put16(uint8_t *p, int v)
+{
+   p[0] = (uint8_t)(v & 0xFF);
+   p[1] = (uint8_t)((v >> 8) & 0xFF);
+}
+
+/* A WAV header for @nb blocks of @ba bytes at @ch channels, and the
+ * blocks encoded into it; @recon gets the encoder's reconstruction. */
+static size_t rt_encode(uint8_t *w, int ms, unsigned ch, unsigned ba,
+      unsigned nb, short *recon, unsigned *spb_out)
+{
+   static const short step[89] = { 7,8,9,10,11,12,13,14,16,17,19,21,23,
+      25,28,31,34,37,41,45,50,55,60,66,73,80,88,97,107,118,130,143,157,
+      173,190,209,230,253,279,307,337,371,408,449,494,544,598,658,724,796,
+      876,963,1060,1166,1282,1411,1552,1707,1878,2066,2272,2499,2749,3024,
+      3327,3660,4026,4428,4871,5358,5894,6484,7132,7845,8630,9493,10442,
+      11487,12635,13899,15289,16818,18500,20350,22385,24623,27086,29794,
+      32767 };
+   static const signed char index[16] = { -1,-1,-1,-1,2,4,6,8,
+                                          -1,-1,-1,-1,2,4,6,8 };
+   static const short adapt[16] = { 230,230,230,230,307,409,512,614,
+                                    768,614,512,409,307,230,230,230 };
+   unsigned spb = ms ? (ba - 7 * ch) * 2 / ch + 2
+                     : (ba - 4 * ch) * 2 / ch + 1;
+   size_t   fmt = ms ? 32 : 20, o = 12, blk, frame = 0;
+   memset(w, 0, 12 + 8 + fmt + 8 + (size_t)ba * nb);
+   memcpy(w, "RIFF", 4);
+   memcpy(w + 8, "WAVE", 4);
+   memcpy(w + o, "fmt ", 4);
+   rt_put16(w + o + 4, (int)fmt);
+   rt_put16(w + o + 8, ms ? 2 : 17);
+   rt_put16(w + o + 10, (int)ch);
+   rt_put16(w + o + 12, 22050);
+   rt_put16(w + o + 20, (int)ba);
+   rt_put16(w + o + 22, 4);
+   rt_put16(w + o + 24, (int)fmt - 18);
+   rt_put16(w + o + 26, (int)spb);
+   if (ms)
+   {
+      rt_put16(w + o + 28, 2);                       /* two pairs     */
+      rt_put16(w + o + 30, 256);                     /* (256, 0)      */
+      rt_put16(w + o + 34, 512);                     /* (512, -256)   */
+      rt_put16(w + o + 36, -256);
+   }
+   o += 8 + fmt;
+   memcpy(w + o, "data", 4);
+   rt_put16(w + o + 4, (int)(ba * nb & 0xFFFF));
+   rt_put16(w + o + 6, (int)((ba * nb) >> 16));
+   o += 8;
+   rt_put16(w + 4, (int)((o + ba * nb - 8) & 0xFFFF));
+   rt_put16(w + 6, (int)((o + ba * nb - 8) >> 16));
+
+   for (blk = 0; blk < nb; blk++, frame += spb)
+   {
+      uint8_t *b = w + o + blk * ba;
+      unsigned c, i, k;
+      if (!ms)
+      {
+         int pred[16], idx[16];
+         for (c = 0; c < ch; c++)
+         {
+            pred[c] = rt_sig(frame, c);
+            idx[c]  = 20;
+            rt_put16(b + c * 4, pred[c]);
+            b[c * 4 + 2] = 20;
+            recon[frame * ch + c] = (short)pred[c];
+         }
+         for (i = 1; i < spb; i += 8)
+            for (c = 0; c < ch; c++)
+               for (k = 0; k < 8; k++)
+               {
+                  int want = (i + k < spb) ? rt_sig(frame + i + k, c) : 0;
+                  int diff = want - pred[c], nib = 0, d, dq;
+                  if (diff < 0)
+                  {
+                     nib  = 8;
+                     diff = -diff;
+                  }
+                  d    = (diff * 4) / step[idx[c]];
+                  nib |= (d > 7) ? 7 : d;
+                  dq   = ((2 * (nib & 7) + 1) * step[idx[c]]) >> 3;
+                  pred[c] = rt_clamp(pred[c] + ((nib & 8) ? -dq : dq));
+                  idx[c] += index[nib];
+                  idx[c]  = idx[c] < 0 ? 0 : (idx[c] > 88 ? 88 : idx[c]);
+                  b[4 * ch + ((i - 1) / 8) * 4 * ch + c * 4 + (k >> 1)]
+                        |= (uint8_t)(nib << ((k & 1) * 4));
+                  if (i + k < spb)
+                     recon[(frame + i + k) * ch + c] = (short)pred[c];
+               }
+      }
+      else
+      {
+         int    s1[16], s2[16], dl[16];
+         size_t n = 0;
+         for (c = 0; c < ch; c++)
+         {
+            s2[c] = rt_sig(frame, c);
+            s1[c] = rt_sig(frame + 1, c);
+            dl[c] = 64;
+            b[c]  = 1;                                /* (512, -256)   */
+            rt_put16(b + ch + c * 2, 64);
+            rt_put16(b + ch * 3 + c * 2, s1[c]);
+            rt_put16(b + ch * 5 + c * 2, s2[c]);
+            recon[frame * ch + c]       = (short)s2[c];
+            recon[(frame + 1) * ch + c] = (short)s1[c];
+         }
+         for (i = 2; i < spb; i++)
+            for (c = 0; c < ch; c++, n++)
+            {
+               int pred = (s1[c] * 512 - s2[c] * 256) / 256;
+               int e    = rt_sig(frame + i, c) - pred;
+               int sn   = (e >= 0) ? (e + dl[c] / 2) / dl[c]
+                                   : -((-e + dl[c] / 2) / dl[c]);
+               int nib, p;
+               sn    = sn > 7 ? 7 : (sn < -8 ? -8 : sn);
+               nib   = sn & 15;
+               p     = rt_clamp(pred + sn * dl[c]);
+               s2[c] = s1[c];
+               s1[c] = p;
+               dl[c] = adapt[nib] * dl[c] / 256;
+               if (dl[c] < 16)
+                  dl[c] = 16;
+               b[7 * ch + (n >> 1)] |= (uint8_t)((n & 1) ? nib : nib << 4);
+               recon[(frame + i) * ch + c] = (short)p;
+            }
+      }
+   }
+   *spb_out = spb;
+   return o + (size_t)ba * nb;
+}
+
+START_TEST (test_rwav_adpcm_round_trip)
+{
+   int      ms;
+   unsigned ch;
+   for (ms = 0; ms < 2; ms++)
+      for (ch = 1; ch <= 5; ch++)
+      {
+         unsigned ba = 128 * ch, nb = 9, spb;
+         uint8_t *w  = (uint8_t*)malloc(64 + (size_t)ba * nb);
+         short   *rc = (short*)malloc((size_t)400 * nb * ch * sizeof(short));
+         short   *o  = (short*)malloc((size_t)400 * nb * ch * sizeof(short));
+         size_t   len, got, pos, n;
+         rwav_t   h;
+         ck_assert(w && rc && o);
+         len = rt_encode(w, ms, ch, ba, nb, rc, &spb);
+         ck_assert_int_eq(rwav_parse(&h, w, len), RWAV_ITERATE_DONE);
+         ck_assert_uint_eq(h.numsamples, (size_t)spb * nb);
+         n   = h.numsamples * ch;
+         got = rwav_decode_s16(&h, w, 0, h.numsamples, o);
+         ck_assert_uint_eq(got, h.numsamples);
+         ck_assert_msg(!memcmp(o, rc, n * sizeof(short)),
+               "%s, %u channels: decode differs from the encoder's",
+               ms ? "MS" : "IMA", ch);
+         /* windows that start and end inside blocks */
+         memset(o, 0x55, n * sizeof(short));
+         for (pos = 0; pos < h.numsamples; pos += got)
+         {
+            got = rwav_decode_s16(&h, w, pos, 37, o + pos * ch);
+            ck_assert(got > 0);
+         }
+         ck_assert_msg(!memcmp(o, rc, n * sizeof(short)),
+               "%s, %u channels: windowed decode differs",
+               ms ? "MS" : "IMA", ch);
+         free(o);
+         free(rc);
+         free(w);
+      }
+}
+END_TEST
+
 static Suite *rwav_suite(void)
 {
    Suite *s       = suite_create(SUITE_NAME);
@@ -2564,6 +2757,7 @@ static Suite *rwav_suite(void)
    tcase_add_test(tc_core, test_rwav_truncation_robustness);
    tcase_add_test(tc_core, test_rwav_adpcm_block_frames_bound);
    tcase_add_test(tc_core, test_rwav_ms_adpcm_delta_growth);
+   tcase_add_test(tc_core, test_rwav_adpcm_round_trip);
    suite_add_tcase(s, tc_core);
    return s;
 }
