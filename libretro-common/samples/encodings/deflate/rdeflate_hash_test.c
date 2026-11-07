@@ -38,12 +38,15 @@ int main(void)
 
    for (i = 0; i < 200000; i++)
    {
-      uint8_t  p[3];
+      /* rd_key3() reads a whole word, as the window's 8-byte margin
+       * lets it; the fourth byte is noise it has to mask off */
+      uint8_t  p[4];
       uint32_t k, want, got;
       seed = seed * 1664525u + 1013904223u;
       p[0] = (uint8_t)(seed >> 8);
       p[1] = (uint8_t)(seed >> 16);
       p[2] = (uint8_t)(seed >> 24);
+      p[3] = (uint8_t)seed;
       if (i < 256)
       {
          /* every value of each byte on its own */
