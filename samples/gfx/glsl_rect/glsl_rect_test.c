@@ -76,8 +76,11 @@ static bool supported(const char *src)
    "#define COMPAT_TEXTURE_LOD(s, c, l) texture2D(s, c)\n" \
    "#endif\n" \
    "uniform vec2 TextureSize;\n" \
-   "uniform sampler2D Texture;\n" \
    "COMPAT_VARYING vec2 vTex;\n" \
+   COMPAT_FRAME
+
+#define COMPAT_FRAME \
+   "uniform sampler2D Texture;\n" \
    "#define Source Texture\n"
 
 /* Five taps a texel and a half apart each way, past the edges */
@@ -104,6 +107,38 @@ static const char *shader_two =
    "   vec2 d = 0.75 / TextureSize;\n"
    "   FragColor = COMPAT_TEXTURE(Source, vTex + d) * 0.5\n"
    "      + COMPAT_TEXTURE(s_p, vTex - d) * 0.5;\n"
+   "}\n"
+   "#endif\n";
+
+/* A function reading the frame ahead of its declaration */
+#undef COMPAT_FRAME
+#define COMPAT_FRAME ""
+static const char *shader_early =
+   COMPAT_HEAD
+   "vec4 early(sampler2D s, vec2 c)\n"
+   "{\n"
+   "   return COMPAT_TEXTURE(s, c + 0.75 / TextureSize);\n"
+   "}\n"
+   "uniform sampler2D Texture;\n"
+   "void main()\n"
+   "{\n"
+   "   FragColor = early(Texture, vTex) * 0.5\n"
+   "      + COMPAT_TEXTURE(Texture, vTex) * 0.5;\n"
+   "}\n"
+   "#endif\n";
+#undef COMPAT_FRAME
+#define COMPAT_FRAME \
+   "uniform sampler2D Texture;\n" \
+   "#define Source Texture\n"
+
+/* Reads moved whole texels, as GLSL 1.30 and GLES 3 have them */
+static const char *shader_offset =
+   COMPAT_HEAD
+   "void main()\n"
+   "{\n"
+   "   FragColor = textureOffset(Source, vTex, ivec2(1, 0)) * 0.25\n"
+   "      + textureOffset(Source, vTex, ivec2(-2, 1), 0.0) * 0.25\n"
+   "      + textureLodOffset(Source, vTex, 0.0, ivec2(0, -1)) * 0.5;\n"
    "}\n"
    "#endif\n";
 
@@ -136,6 +171,34 @@ int test_rewrite(void)
          && strstr(out, "RARCH_frame(vTex - d)"),
          "a second name for the frame in one stage reads through one helper");
    free(out);
+
+   out = rewrite(shader_offset, GLSL_RECT_LINEAR_EDGE);
+   CHECK(out && strstr(out, "RARCH_frame_at(vTex, vec2(ivec2(1, 0)))")
+         && strstr(out, "RARCH_frame_at(vTex, vec2(ivec2(-2, 1)))")
+         && strstr(out, "RARCH_frame_at(vTex, vec2(ivec2(0, -1)))"),
+         "reads with an offset go in place, moved in the view's texels");
+   free(out);
+   out = rewrite(shader_early, GLSL_RECT_LINEAR_EDGE);
+   CHECK(out && strstr(out, "\nuniform sampler2D Texture;\n#ifndef RARCH_FRAME_HELPER")
+         && strstr(out, "#endif\nvec4 early(")
+         && strstr(out, "}\n\nvoid main()"),
+         "a read ahead of the frame's declaration takes it and the helper up");
+   free(out);
+   CHECK(!supported(
+         "varying vec2 t;\n"
+         "vec4 f(sampler2D s) { return texture2D(s, t); }\n"
+         "uniform sampler2D Texture, LUT;\n"
+         "void main() { gl_FragColor = f(Texture); }\n"),
+         "a declaration of two names is not moved");
+   CHECK(supported(
+         "uniform sampler2D Texture;\nvarying vec2 t;\n"
+         "#define TEX(x, y) textureOffset(Texture, t, ivec2(x, y))\n"
+         "void main() { gl_FragColor = TEX(1, -1); }\n"),
+         "an offset read in a function-like macro's body");
+   CHECK(!supported(
+         "uniform sampler2D Texture;\nvarying vec2 t;\n"
+         "void main() { gl_FragColor = textureOffset(Texture, t); }\n"),
+         "an offset read missing its offset keeps the copy");
 
    CHECK(supported(
          "uniform sampler2D rubyTexture;\n"
@@ -196,12 +259,38 @@ int test_rewrite(void)
          "vec4 f(sampler2D s, vec2 c) { return texture2D(s, c); }\n"
          "void main() { gl_FragColor = f(Texture, t) * f(LUT, t); }\n"),
          "a function given the frame and another sampler keeps the copy");
-   CHECK(!supported(
+   CHECK(supported(
          "uniform sampler2D Texture;\nvarying vec2 t;\n"
          "vec4 f(sampler2D s, vec2 c) { return texture2D(s, c); }\n"
          "vec4 f(sampler2D s, vec3 c) { return texture2D(s, c.xy); }\n"
-         "void main() { gl_FragColor = f(Texture, t); }\n"),
-         "an overloaded function given the frame keeps the copy");
+         "void main() { gl_FragColor = f(Texture, t) + f(Texture, t.xyx); }\n"),
+         "an overloaded function every call gives the frame");
+   CHECK(!supported(
+         "uniform sampler2D Texture;\nuniform sampler2D LUT;\nvarying vec2 t;\n"
+         "vec4 f(sampler2D s, vec2 c) { return texture2D(s, c); }\n"
+         "vec4 f(sampler2D s, vec3 c) { return texture2D(s, c.xy); }\n"
+         "void main() { gl_FragColor = f(Texture, t) * f(LUT, t.xyx); }\n"),
+         "an overload given another sampler keeps the copy");
+   CHECK(!supported(
+         "uniform sampler2D Texture;\nvarying vec2 t;\n"
+         "vec4 f(sampler2D s, vec2 c) { return texture2D(s, c); }\n"
+         "vec4 f(float s, vec2 c) { return vec4(s); }\n"
+         "void main() { gl_FragColor = f(Texture, t) * f(1.0, t); }\n"),
+         "an overload taking no sampler there keeps the copy");
+   CHECK(!supported(
+         "uniform sampler2D Texture;\nvarying vec2 t;\n"
+         "#define GET(c) texture2D(tex, c)\n"
+         "vec4 f(sampler2D s, vec2 c) { return texture2D(s, c); }\n"
+         "vec4 f(sampler2D tex, vec3 c) { return GET(c.xy); }\n"
+         "void main() { gl_FragColor = f(Texture, t) + f(Texture, t.xyx); }\n"),
+         "one overload keeping the copy keeps it for all");
+   CHECK(supported(
+         "uniform sampler2D Texture;\nuniform sampler2D LUT;\nvarying vec2 t;\n"
+         "vec4 g(sampler2D s, vec2 c) { return texture2D(s, c); }\n"
+         "vec4 f(sampler2D s, vec2 c) { return g(s, c); }\n"
+         "vec4 f(sampler2D s, vec3 c) { return f(s, c.xy); }\n"
+         "void main() { gl_FragColor = texture2D(Texture, t) * g(LUT, t); }\n"),
+         "functions only calling each other carry nothing");
    CHECK(!supported(
          "uniform sampler2D Texture;\nvarying vec2 t;\n"
          "void main() { gl_FragColor = texelFetch(Texture, ivec2(t), 0); }\n"),
@@ -460,11 +549,14 @@ static int test_oracle(EGLint client_version, const char *version,
       { 0, 0, 40, 15 },   /* the top screen of two */
       { 0, 15, 40, 15 },  /* the bottom one */
       { 19, 3, 1, 1 } };  /* one texel */
-   static const char *const kinds[] = { "blur", "wide", "two-name" };
-   const char *shaders[3];
+   static const char *const kinds[] = { "blur", "wide", "two-name",
+      "offset", "early" };
+   const char *shaders[5];
    shaders[0] = shader_blur;
    shaders[1] = shader_wide;
    shaders[2] = shader_two;
+   shaders[3] = shader_offset;
+   shaders[4] = shader_early;
 
    if (     dpy == EGL_NO_DISPLAY || !eglInitialize(dpy, NULL, NULL)
          || !eglBindAPI(EGL_OPENGL_ES_API))
@@ -495,10 +587,13 @@ static int test_oracle(EGLint client_version, const char *version,
       if (m == GLSL_RECT_NEAREST_BORDER
             && !strstr((const char*)glGetString(GL_VERSION), "3.2"))
          continue;
-      for (s = 0; s < 3; s++)
+      for (s = 0; s < 5; s++)
       {
          bool all = true, compiled = true;
          char what_case[160];
+         /* GLES 2 reads no offsets */
+         if (client_version < 3 && shaders[s] == shader_offset)
+            continue;
          for (v = 0; v < sizeof(views) / sizeof(views[0]); v++)
          {
             bool c;

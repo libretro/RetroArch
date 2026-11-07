@@ -97,6 +97,8 @@ struct glsl_rect_token
  * inside the function the parameter is the frame */
 #define GLSL_RECT_FLAG_SKIP  1
 #define GLSL_RECT_FLAG_FRAME 2
+/* A function-like define's parameter, in its body */
+#define GLSL_RECT_FLAG_MACRO_PARAM 4
 
 struct glsl_rect_alias
 {
@@ -381,6 +383,16 @@ static void glsl_rect_scan_source(struct glsl_rect_scan *s)
                   if ((fwd = glsl_rect_forwards(s, first, k)))
                      glsl_rect_push_alias(s, n, n_end - n,
                            s->tok[k].start, s->tok[k].len);
+                  {
+                     size_t a, q;
+                     for (a = k; a < s->num_tok; a++)
+                        for (q = first; q < k; q++)
+                           if (     s->tok[a].type == GLSL_RECT_TOK_IDENT
+                                 && s->tok[a].len == s->tok[q].len
+                                 && !memcmp(s->src + s->tok[a].start,
+                                    s->src + s->tok[q].start, s->tok[a].len))
+                              s->tok[a].flags |= GLSL_RECT_FLAG_MACRO_PARAM;
+                  }
                   /* The parameters are not code */
                   memmove(s->tok + first, s->tok + k,
                         (s->num_tok - k) * sizeof(*s->tok));
@@ -427,8 +439,12 @@ static void glsl_rect_scan_source(struct glsl_rect_scan *s)
    }
 }
 
-static const char *const glsl_rect_reads[] = {
-   "texture2D", "texture", "texture2DLod", "textureLod"
+/* The reads the rewrite takes; the last two with an offset in texels,
+ * their third and fourth argument */
+#define GLSL_RECT_NUM_READS 6
+static const char *const glsl_rect_reads[GLSL_RECT_NUM_READS] = {
+   "texture2D", "texture", "texture2DLod", "textureLod",
+   "textureOffset", "textureLodOffset"
 };
 
 /* 1: every meaning of @name is one of @names; 0: none is; -1: some
@@ -445,7 +461,7 @@ static int glsl_rect_resolves_to(const struct glsl_rect_scan *s,
    for (i = 0; i < count; i++)
       if (glsl_rect_span_is(s->src, name, len, names[i]))
          return 1;
-   for (i = 0; i < 4; i++)
+   for (i = 0; i < GLSL_RECT_NUM_READS; i++)
       if (glsl_rect_span_is(s->src, name, len, glsl_rect_reads[i]))
          return 0;
    if (depth >= GLSL_RECT_ALIAS_DEPTH)
@@ -484,6 +500,8 @@ struct glsl_rect_param
    unsigned func;
    unsigned pos;
    size_t tok;
+   /* Could carry the frame; does */
+   bool eligible;
    bool alive;
 };
 
@@ -646,20 +664,28 @@ static void glsl_rect_frame_params(struct glsl_rect_scan *s,
    for (p = 0; p < np; p++)
    {
       const struct glsl_rect_token *pt = &s->tok[param[p].tok];
-      if (func[param[p].func].overloaded)
-         param[p].alive = false;
       if (glsl_rect_resolves_to(s, pt->start, pt->len, frame, num_frame,
                0) == 1)
          continue;
       for (i = 0; param[p].alive && i < s->num_tok; i++)
          if (     s->tok[i].region
+               && !(s->tok[i].flags & GLSL_RECT_FLAG_MACRO_PARAM)
                && s->tok[i].type == GLSL_RECT_TOK_IDENT
                && s->tok[i].len == pt->len
                && !memcmp(s->src + s->tok[i].start, s->src + pt->start,
                   pt->len))
             param[p].alive = false;
    }
-   /* Each call must give the frame, or a caller's own such parameter */
+   /* Each call must give the frame, or a caller's own such parameter,
+    * grown from the calls giving the frame itself, so functions calling
+    * only each other carry nothing. A call to an overloaded function
+    * goes to any of its definitions: each must take a sampler there,
+    * and they live or die together */
+   for (p = 0; p < np; p++)
+   {
+      param[p].eligible = param[p].alive;
+      param[p].alive    = false;
+   }
    while (changed)
    {
       changed = false;
@@ -667,16 +693,36 @@ static void glsl_rect_frame_params(struct glsl_rect_scan *s,
       {
          const struct glsl_rect_func *fn = &func[param[p].func];
          unsigned calls = 0;
-         bool ok        = param[p].alive;
+         bool ok        = param[p].eligible && !param[p].alive;
+         if (ok && fn->overloaded)
+            for (f = 0; ok && f < nf; f++)
+            {
+               unsigned q;
+               bool has = false;
+               if (     s->tok[func[f].name].len != s->tok[fn->name].len
+                     || memcmp(s->src + s->tok[func[f].name].start,
+                        s->src + s->tok[fn->name].start,
+                        s->tok[fn->name].len))
+                  continue;
+               for (q = 0; q < np; q++)
+                  if (param[q].func == f && param[q].pos == param[p].pos)
+                     has = param[q].eligible;
+               ok = has;
+            }
          for (i = 0; ok && i + 1 < s->num_tok; i++)
          {
             size_t close, a;
             unsigned q;
-            bool good;
-            if (     i == fn->name || s->tok[i].len != s->tok[fn->name].len
+            bool good, def = false;
+            if (     s->tok[i].len != s->tok[fn->name].len
                   || memcmp(s->src + s->tok[i].start,
                      s->src + s->tok[fn->name].start, s->tok[i].len)
                   || !glsl_rect_tok_is(s, i + 1, "("))
+               continue;
+            /* A definition of it, not a call */
+            for (f = 0; f < nf && !def; f++)
+               def = func[f].name == i;
+            if (def)
                continue;
             /* Called from a define, or outside a function: not followed */
             if (s->tok[i].region || !s->tok[i].brace)
@@ -700,9 +746,9 @@ static void glsl_rect_frame_params(struct glsl_rect_scan *s,
             ok = good;
             calls++;
          }
-         if (param[p].alive && (!ok || !calls))
+         if (ok && calls)
          {
-            param[p].alive = false;
+            param[p].alive = true;
             changed        = true;
          }
       }
@@ -748,13 +794,24 @@ struct glsl_rect_edit
    /* The coordinate's span; for a declaration, the frame's name */
    size_t arg;
    size_t arg_len;
+   /* A read's offset in texels, its span, or 0 long */
+   size_t off;
+   size_t off_len;
+   /* For the helper, the declaration moved ahead of it, or 0 long */
+   size_t pre;
+   size_t pre_len;
+   /* The read's name token; the frame's, for a declaration */
+   size_t tok;
    bool decl;
+   /* Only takes the span away */
+   bool drop;
 };
 
 static const char *glsl_rect_helper(enum glsl_rect_mode mode)
 {
-   /* Nearest: the texel a sampler would pick, i = floor(u * size),
-    * wrapped as it would, read at its centre */
+   /* @c into the view, moved @o texels. Nearest: the texel a sampler
+    * would pick, i = floor(u * size) + o, wrapped as it would, read at
+    * its centre */
 #define GLSL_RECT_TEXEL \
    "   return RARCH_FRAME_READ(%s, t * " GLSL_RECT_NAME_RECT ".xy\n" \
    "         + " GLSL_RECT_NAME_RECT ".zw);\n"
@@ -762,29 +819,31 @@ static const char *glsl_rect_helper(enum glsl_rect_mode mode)
    {
       case GLSL_RECT_LINEAR_EDGE:
          return
-            "   return RARCH_FRAME_READ(%s, clamp(c * " GLSL_RECT_NAME_RECT ".xy\n"
-            "         + " GLSL_RECT_NAME_RECT ".zw, " GLSL_RECT_NAME_CLAMP ".xy,\n"
+            "   return RARCH_FRAME_READ(%s, clamp((c + o * "
+            GLSL_RECT_NAME_TEXELS ".zw)\n"
+            "         * " GLSL_RECT_NAME_RECT ".xy + " GLSL_RECT_NAME_RECT ".zw, "
+            GLSL_RECT_NAME_CLAMP ".xy,\n"
             "         " GLSL_RECT_NAME_CLAMP ".zw));\n";
       case GLSL_RECT_NEAREST_EDGE:
          return
             "   RARCH_HP vec2 s = " GLSL_RECT_NAME_TEXELS ".xy;\n"
-            "   RARCH_HP vec2 t = clamp(floor(c * s), vec2(0.0), s - 1.0);\n"
+            "   RARCH_HP vec2 t = clamp(floor(c * s) + o, vec2(0.0), s - 1.0);\n"
             GLSL_RECT_TEXEL;
       case GLSL_RECT_NEAREST_REPEAT:
          return
             "   RARCH_HP vec2 s = " GLSL_RECT_NAME_TEXELS ".xy;\n"
-            "   RARCH_HP vec2 t = mod(floor(c * s), s);\n"
+            "   RARCH_HP vec2 t = mod(floor(c * s) + o, s);\n"
             GLSL_RECT_TEXEL;
       case GLSL_RECT_NEAREST_MIRROR:
          return
             "   RARCH_HP vec2 s = " GLSL_RECT_NAME_TEXELS ".xy;\n"
-            "   RARCH_HP vec2 m = mod(floor(c * s), 2.0 * s);\n"
+            "   RARCH_HP vec2 m = mod(floor(c * s) + o, 2.0 * s);\n"
             "   RARCH_HP vec2 t = mix(m, 2.0 * s - 1.0 - m, step(s, m));\n"
             GLSL_RECT_TEXEL;
       case GLSL_RECT_NEAREST_BORDER:
          return
             "   RARCH_HP vec2 s = " GLSL_RECT_NAME_TEXELS ".xy;\n"
-            "   RARCH_HP vec2 t = floor(c * s);\n"
+            "   RARCH_HP vec2 t = floor(c * s) + o;\n"
             "   if (any(lessThan(t, vec2(0.0))) || any(greaterThanEqual(t, s)))\n"
             "      return vec4(0.0);\n"
             GLSL_RECT_TEXEL;
@@ -819,9 +878,15 @@ static const char *glsl_rect_helper(enum glsl_rect_mode mode)
    "uniform RARCH_HP vec4 " GLSL_RECT_NAME_RECT ";\n" \
    "uniform RARCH_HP vec4 " GLSL_RECT_NAME_CLAMP ";\n" \
    "uniform RARCH_HP vec4 " GLSL_RECT_NAME_TEXELS ";\n" \
-   "vec4 RARCH_frame(RARCH_HP vec2 c)\n" \
+   "vec4 RARCH_frame_at(RARCH_HP vec2 c, RARCH_HP vec2 o)\n" \
    "{\n"
-#define GLSL_RECT_POSTLUDE "}\n#endif\n"
+#define GLSL_RECT_POSTLUDE \
+   "}\n" \
+   "vec4 RARCH_frame(RARCH_HP vec2 c)\n" \
+   "{\n" \
+   "   return RARCH_frame_at(c, vec2(0.0));\n" \
+   "}\n" \
+   "#endif\n"
 
 static int glsl_rect_edit_cmp(const void *a, const void *b)
 {
@@ -861,11 +926,27 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
       goto fail;
    /* A frame or a read taken away again is followed nowhere */
    for (i = 0; i < s.num_undef; i++)
-      if (     glsl_rect_resolves_to(&s, s.undef[i].name, s.undef[i].len,
-                  frame, num_frame, 0)
-            || glsl_rect_resolves_to(&s, s.undef[i].name, s.undef[i].len,
-                  glsl_rect_reads, 4, 0))
+   {
+      size_t k;
+      int r;
+      if (glsl_rect_resolves_to(&s, s.undef[i].name, s.undef[i].len,
+               frame, num_frame, 0))
          goto fail;
+      if (!(r = glsl_rect_resolves_to(&s, s.undef[i].name, s.undef[i].len,
+               glsl_rect_reads, GLSL_RECT_NUM_READS, 0)))
+         continue;
+      if (r < 0)
+         goto fail;
+      /* A name for a read taken away means nothing until it is defined
+       * again, unless code declares a function of it */
+      for (k = 0; k + 1 < s.num_tok; k++)
+         if (     !s.tok[k].region && !s.tok[k].brace
+               && s.tok[k].len == s.undef[i].len
+               && !memcmp(s.src + s.tok[k].start, s.src + s.undef[i].name,
+                  s.undef[i].len)
+               && glsl_rect_tok_is(&s, k + 1, "("))
+            goto fail;
+   }
 
    for (i = 0; i < s.num_tok; i++)
    {
@@ -905,6 +986,7 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
          edit[num_edit].end     = s.tok[k].start + 1;
          edit[num_edit].arg     = t->start;
          edit[num_edit].arg_len = t->len;
+         edit[num_edit].tok     = i;
          edit[num_edit].decl    = true;
          num_edit++;
          decl = true;
@@ -917,10 +999,22 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
             && s.tok[i - 1].region == t->region
             && s.tok[i - 2].region == t->region
             && glsl_rect_resolves_to(&s, s.tok[i - 2].start, s.tok[i - 2].len,
-               glsl_rect_reads, 4, 0) == 1)
+               glsl_rect_reads, GLSL_RECT_NUM_READS, 0) == 1)
       {
          size_t k, arg_end = 0;
+         size_t comma[4];
+         unsigned commas = 0, off_pos = 0;
          int depth = 0;
+         /* Every meaning of the read one with an offset, or none */
+         for (k = 4; k < GLSL_RECT_NUM_READS; k++)
+         {
+            int o = glsl_rect_resolves_to(&s, s.tok[i - 2].start,
+                  s.tok[i - 2].len, glsl_rect_reads + k, 1, 0);
+            if (o < 0)
+               goto fail;
+            if (o)
+               off_pos = (unsigned)k - 3;
+         }
          for (k = i + 2; k < s.num_tok; k++)
          {
             if (s.tok[k].region != t->region)
@@ -937,17 +1031,36 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
                   break;
                depth--;
             }
-            else if (s.src[s.tok[k].start] == ',' && !depth && !arg_end)
-               arg_end = s.tok[k].start;
+            else if (s.src[s.tok[k].start] == ',' && !depth)
+            {
+               if (commas == 4)
+                  goto fail;
+               comma[commas++] = k;
+               if (!arg_end)
+                  arg_end = s.tok[k].start;
+            }
          }
          if (k == s.num_tok || k == i + 2)
             goto fail;
          if (!arg_end)
             arg_end = s.tok[k].start;
+         /* The offset: the argument after comma off_pos - 1 */
+         edit[num_edit].off     = 0;
+         edit[num_edit].off_len = 0;
+         if (off_pos)
+         {
+            size_t a = comma[off_pos - 1] + 1;
+            size_t b = off_pos < commas ? comma[off_pos] : k;
+            if (off_pos > commas || b == a)
+               goto fail;
+            edit[num_edit].off     = s.tok[a].start;
+            edit[num_edit].off_len = s.tok[b].start - s.tok[a].start;
+         }
          edit[num_edit].start   = s.tok[i - 2].start;
          edit[num_edit].end     = s.tok[k].start + 1;
          edit[num_edit].arg     = s.tok[i + 2].start;
          edit[num_edit].arg_len = arg_end - s.tok[i + 2].start;
+         edit[num_edit].tok     = i - 2;
          edit[num_edit].decl    = false;
          num_edit++;
          continue;
@@ -957,6 +1070,62 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
    if (!decl || brace || paren)
       goto fail;
 
+   /* A function reading the frame ahead of its one declaration, as
+    * crt-royale's helpers do: the declaration moves up to just before
+    * the first such function, and the helper with it */
+   {
+      size_t d = num_edit, r = num_edit, k, j, s0, n;
+      unsigned decls = 0;
+      for (i = 0; i < num_edit; i++)
+      {
+         if (edit[i].decl)
+         {
+            d = i;
+            decls++;
+         }
+         else if (!s.tok[edit[i].tok].region
+               && (r == num_edit || edit[i].start < edit[r].start))
+            r = i;
+      }
+      if (decls == 1 && r < num_edit && edit[r].start < edit[d].start)
+      {
+         /* The function's '{', then the start of its signature */
+         for (j = edit[r].tok; j > 0; j--)
+            if (     !s.tok[j].region && !s.tok[j].brace
+                  && glsl_rect_tok_is(&s, j, "{"))
+               break;
+         if (!j)
+            goto fail;
+         for (k = j; k > 0; k--)
+            if (     s.tok[k - 1].region
+                  || glsl_rect_tok_is(&s, k - 1, ";")
+                  || glsl_rect_tok_is(&s, k - 1, "}")
+                  || glsl_rect_tok_is(&s, k - 1, "{"))
+               break;
+         /* The declaration's statement, one name in it */
+         n = edit[d].tok;
+         if (     n + 1 >= s.num_tok || s.tok[n + 1].region
+               || !glsl_rect_tok_is(&s, n + 1, ";"))
+            goto fail;
+         for (s0 = n; s0 > 0; s0--)
+            if (     s.tok[s0 - 1].region
+                  || glsl_rect_tok_is(&s, s0 - 1, ";")
+                  || glsl_rect_tok_is(&s, s0 - 1, "}")
+                  || glsl_rect_tok_is(&s, s0 - 1, "{"))
+               break;
+         if (s.tok[k].start >= s.tok[s0].start)
+            goto fail;
+         edit[d].start   = s.tok[k].start;
+         edit[d].end     = s.tok[k].start;
+         edit[d].pre     = s.tok[s0].start;
+         edit[d].pre_len = s.tok[n + 1].start + 1 - s.tok[s0].start;
+         edit[num_edit].start = s.tok[s0].start;
+         edit[num_edit].end   = s.tok[n + 1].start + 1;
+         edit[num_edit].drop  = true;
+         num_edit++;
+      }
+   }
+
    qsort(edit, num_edit, sizeof(*edit), glsl_rect_edit_cmp);
    out_len = strlen(buf) + 1;
    for (i = 0; i < num_edit; i++)
@@ -964,7 +1133,7 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
       if (i && edit[i].start < edit[i - 1].end)
          goto fail;
       /* A coordinate spanning a directive line */
-      if (!edit[i].decl)
+      if (!edit[i].decl && !edit[i].drop)
       {
          size_t k;
          for (k = edit[i].start; k < edit[i].end; k++)
@@ -978,9 +1147,9 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
             }
       }
       out_len += edit[i].decl
-         ? strlen(GLSL_RECT_PRELUDE) + strlen(helper) + edit[i].arg_len
-            + strlen(GLSL_RECT_POSTLUDE)
-         : edit[i].arg_len + 16;
+         ? edit[i].pre_len + 2 + strlen(GLSL_RECT_PRELUDE) + strlen(helper)
+            + edit[i].arg_len + strlen(GLSL_RECT_POSTLUDE)
+         : edit[i].arg_len + edit[i].off_len + 32;
    }
    if (!(out = (char*)malloc(out_len)))
       goto fail;
@@ -990,10 +1159,18 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
    {
       memcpy(out + o, buf + at, edit[i].start - at);
       o += edit[i].start - at;
-      if (edit[i].decl)
+      if (edit[i].drop)
+         ;
+      else if (edit[i].decl)
       {
          const char *pct = strstr(helper, "%s");
          size_t pre_len  = strlen(GLSL_RECT_PRELUDE);
+         if (edit[i].pre_len)
+         {
+            out[o++] = '\n';
+            memcpy(out + o, buf + edit[i].pre, edit[i].pre_len);
+            o += edit[i].pre_len;
+         }
          memcpy(out + o, GLSL_RECT_PRELUDE, pre_len);
          o += pre_len;
          memcpy(out + o, helper, (size_t)(pct - helper));
@@ -1007,10 +1184,26 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
       }
       else
       {
-         memcpy(out + o, "RARCH_frame(", 12);
-         o += 12;
+         if (edit[i].off_len)
+         {
+            memcpy(out + o, "RARCH_frame_at(", 15);
+            o += 15;
+         }
+         else
+         {
+            memcpy(out + o, "RARCH_frame(", 12);
+            o += 12;
+         }
          memcpy(out + o, buf + edit[i].arg, edit[i].arg_len);
          o += edit[i].arg_len;
+         if (edit[i].off_len)
+         {
+            memcpy(out + o, ", vec2(", 7);
+            o += 7;
+            memcpy(out + o, buf + edit[i].off, edit[i].off_len);
+            o += edit[i].off_len;
+            out[o++] = ')';
+         }
          out[o++] = ')';
       }
       at = edit[i].end;
@@ -1066,8 +1259,10 @@ static void glsl_rect_values(enum glsl_rect_mode mode, bool flipped,
       out[2] = (x0 + 0.5f) / W;
       out[3] = (flipped ? y0 + (float)h - 0.5f : y0 + 0.5f) / H;
    }
-   out[8] = (float)w;
-   out[9] = (float)h;
+   out[8]  = (float)w;
+   out[9]  = (float)h;
+   out[10] = 1.0f / (float)w;
+   out[11] = 1.0f / (float)h;
 }
 
 #endif
