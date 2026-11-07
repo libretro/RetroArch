@@ -398,3 +398,11 @@ samples/gfx/d3d12_upscaler/Zdir_none/
 samples/record/ffmpeg_pipeline/record_finalize_fragment.c
 samples/record/ffmpeg_pipeline/record_start_fragment.c
 samples/input/sensor_subdevice/core_sensor_fragment.c
+samples/runahead/lifetime/lifetime_test
+samples/runahead/lifetime/no-threads/
+samples/runahead/lifetime/plain/
+samples/runahead/lifetime/plain-no-threads/
+samples/runahead/lifetime/sanitized/
+samples/runahead/lifetime/sanitized-no-threads/
+samples/runahead/lifetime/windows/
+samples/runahead/lifetime/mutants/
