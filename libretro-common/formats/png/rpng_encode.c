@@ -475,20 +475,43 @@ static INLINE unsigned rpng_sad_final(__m128i acc)
         + (unsigned)_mm_cvtsi128_si32(_mm_srli_si128(acc, 8));
 }
 
-/* Branch-free Paeth predictor over 8 unsigned 16-bit lanes; same
- * identity and selection order as the decoder's. */
-static INLINE __m128i rpng_paeth_pred_epi16(__m128i a, __m128i b, __m128i c)
+/* Paeth predictor over 16 unsigned bytes, without widening.
+ *
+ * pa = |b - c| and pb = |a - c| are plain byte absolute differences.
+ * pc = |a + b - 2c| = |(b - c) + (a - c)| needs nine bits, but only
+ * where both differences have the same sign, and there it is pa + pb -
+ * no smaller than either, so saturating it at 255 cannot change how it
+ * compares with pa or pb (both <= 255).  Where the signs differ it is
+ * |pa - pb|, which fits.  (b == c or a == c makes both forms equal, so
+ * the sign of a zero difference does not matter.)  The selection is
+ * the scalar rpng_paeth_pred()'s: a unless pa > pb or pa > pc, then b
+ * unless pb > pc.  Twice the lanes of the widened form it replaces,
+ * and checked against the scalar predictor for all 2^24 inputs. */
+static INLINE __m128i rpng_absdiff_u8(__m128i x, __m128i y)
 {
-   __m128i bc     = _mm_sub_epi16(b, c);
-   __m128i ac     = _mm_sub_epi16(a, c);
-   __m128i sm     = _mm_add_epi16(bc, ac);
-   __m128i z      = _mm_setzero_si128();
-   __m128i pa     = _mm_max_epi16(bc, _mm_sub_epi16(z, bc));
-   __m128i pb     = _mm_max_epi16(ac, _mm_sub_epi16(z, ac));
-   __m128i pc     = _mm_max_epi16(sm, _mm_sub_epi16(z, sm));
-   __m128i not_a  = _mm_or_si128(_mm_cmpgt_epi16(pa, pb),
-                                 _mm_cmpgt_epi16(pa, pc));
-   __m128i pick_c = _mm_cmpgt_epi16(pb, pc);
+   return _mm_or_si128(_mm_subs_epu8(x, y), _mm_subs_epu8(y, x));
+}
+
+static INLINE __m128i rpng_gt_u8(__m128i x, __m128i y)
+{
+   return _mm_xor_si128(_mm_cmpeq_epi8(_mm_subs_epu8(x, y),
+            _mm_setzero_si128()), _mm_set1_epi8(-1));
+}
+
+static INLINE __m128i rpng_paeth_pred_epu8(__m128i a, __m128i b, __m128i c)
+{
+   const __m128i z = _mm_setzero_si128();
+   __m128i pa     = rpng_absdiff_u8(b, c);
+   __m128i pb     = rpng_absdiff_u8(a, c);
+   /* 0xFF where b >= c and a >= c agree */
+   __m128i same   = _mm_cmpeq_epi8(
+         _mm_cmpeq_epi8(_mm_subs_epu8(c, b), z),
+         _mm_cmpeq_epi8(_mm_subs_epu8(c, a), z));
+   __m128i pc     = _mm_or_si128(
+         _mm_and_si128(   same, _mm_adds_epu8(pa, pb)),
+         _mm_andnot_si128(same, rpng_absdiff_u8(pa, pb)));
+   __m128i not_a  = _mm_or_si128(rpng_gt_u8(pa, pb), rpng_gt_u8(pa, pc));
+   __m128i pick_c = rpng_gt_u8(pb, pc);
    __m128i bc_sel = _mm_or_si128(_mm_andnot_si128(pick_c, b),
                                  _mm_and_si128(   pick_c, c));
    return           _mm_or_si128(_mm_andnot_si128(not_a,  a),
@@ -502,21 +525,19 @@ static INLINE uint8x16_t rpng_abs_i8(uint8x16_t v)
    return vminq_u8(v, vsubq_u8(vdupq_n_u8(0), v));
 }
 
-static INLINE uint16x8_t rpng_paeth_pred_u16(
-      uint16x8_t a, uint16x8_t b, uint16x8_t c)
+/* The byte-wide Paeth predictor; see the SSE2 version for why the
+ * saturated pc is exact. */
+static INLINE uint8x16_t rpng_paeth_pred_u8(
+      uint8x16_t a, uint8x16_t b, uint8x16_t c)
 {
-   int16x8_t  bc     = vsubq_s16(vreinterpretq_s16_u16(b),
-                                 vreinterpretq_s16_u16(c));
-   int16x8_t  ac     = vsubq_s16(vreinterpretq_s16_u16(a),
-                                 vreinterpretq_s16_u16(c));
-   int16x8_t  sm     = vaddq_s16(bc, ac);
-   uint16x8_t pa     = vreinterpretq_u16_s16(vabsq_s16(bc));
-   uint16x8_t pb     = vreinterpretq_u16_s16(vabsq_s16(ac));
-   uint16x8_t pc     = vreinterpretq_u16_s16(vabsq_s16(sm));
-   uint16x8_t not_a  = vorrq_u16(vcgtq_u16(pa, pb), vcgtq_u16(pa, pc));
-   uint16x8_t pick_c = vcgtq_u16(pb, pc);
-   uint16x8_t bc_sel = vbslq_u16(pick_c, c, b);
-   return              vbslq_u16(not_a,  bc_sel, a);
+   uint8x16_t pa     = vabdq_u8(b, c);
+   uint8x16_t pb     = vabdq_u8(a, c);
+   uint8x16_t same   = vceqq_u8(vcgeq_u8(b, c), vcgeq_u8(a, c));
+   uint8x16_t pc     = vbslq_u8(same, vqaddq_u8(pa, pb), vabdq_u8(pa, pb));
+   uint8x16_t not_a  = vorrq_u8(vcgtq_u8(pa, pb), vcgtq_u8(pa, pc));
+   uint8x16_t pick_c = vcgtq_u8(pb, pc);
+   uint8x16_t bc_sel = vbslq_u8(pick_c, c, b);
+   return              vbslq_u8(not_a,  bc_sel, a);
 }
 #endif
 
@@ -724,36 +745,29 @@ static unsigned filter_paeth(uint8_t *target,
    {
       const __m128i z = _mm_setzero_si128();
       __m128i acc = _mm_setzero_si128();
-      for (; i + 8 <= len; i += 8)
+      for (; i + 16 <= len; i += 16)
       {
-         __m128i a  = _mm_unpacklo_epi8(
-               _mm_loadl_epi64((const __m128i*)(line + i - bpp)), z);
-         __m128i b  = _mm_unpacklo_epi8(
-               _mm_loadl_epi64((const __m128i*)(prev + i)), z);
-         __m128i c  = _mm_unpacklo_epi8(
-               _mm_loadl_epi64((const __m128i*)(prev + i - bpp)), z);
-         __m128i pr = _mm_packus_epi16(rpng_paeth_pred_epi16(a, b, c), z);
+         __m128i pr = rpng_paeth_pred_epu8(
+               _mm_loadu_si128((const __m128i*)(line + i - bpp)),
+               _mm_loadu_si128((const __m128i*)(prev + i)),
+               _mm_loadu_si128((const __m128i*)(prev + i - bpp)));
          __m128i v  = _mm_sub_epi8(
-               _mm_loadl_epi64((const __m128i*)(line + i)), pr);
-         _mm_storel_epi64((__m128i*)(target + i), v);
-         acc = _mm_add_epi64(acc,
-               _mm_sad_epu8(rpng_abs_i8(_mm_unpacklo_epi64(v, z)), z));
+               _mm_loadu_si128((const __m128i*)(line + i)), pr);
+         _mm_storeu_si128((__m128i*)(target + i), v);
+         acc = _mm_add_epi64(acc, _mm_sad_epu8(rpng_abs_i8(v), z));
       }
       cnt += rpng_sad_final(acc);
    }
 #elif defined(RPNG_ENC_NEON)
    {
       uint32x4_t acc = vdupq_n_u32(0);
-      for (; i + 8 <= len; i += 8)
+      for (; i + 16 <= len; i += 16)
       {
-         uint16x8_t a  = vmovl_u8(vld1_u8(line + i - bpp));
-         uint16x8_t b  = vmovl_u8(vld1_u8(prev + i));
-         uint16x8_t c  = vmovl_u8(vld1_u8(prev + i - bpp));
-         uint8x8_t  pr = vmovn_u16(rpng_paeth_pred_u16(a, b, c));
-         uint8x8_t  v  = vsub_u8(vld1_u8(line + i), pr);
-         vst1_u8(target + i, v);
-         acc = vpadalq_u16(acc, vpaddlq_u8(
-                  rpng_abs_i8(vcombine_u8(v, vdup_n_u8(0)))));
+         uint8x16_t pr = rpng_paeth_pred_u8(vld1q_u8(line + i - bpp),
+               vld1q_u8(prev + i), vld1q_u8(prev + i - bpp));
+         uint8x16_t v  = vsubq_u8(vld1q_u8(line + i), pr);
+         vst1q_u8(target + i, v);
+         acc = vpadalq_u16(acc, vpaddlq_u8(rpng_abs_i8(v)));
       }
       cnt += vgetq_lane_u32(acc, 0) + vgetq_lane_u32(acc, 1)
            + vgetq_lane_u32(acc, 2) + vgetq_lane_u32(acc, 3);
