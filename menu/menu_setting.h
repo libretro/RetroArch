@@ -69,6 +69,8 @@ enum setting_list_flags
 int menu_setting_generic(rarch_setting_t *setting, size_t idx, bool wraparound);
 
 int menu_setting_set(unsigned type, unsigned action, bool wraparound);
+int menu_setting_set_with_string_representation(rarch_setting_t *setting,
+      const char *value);
 
 /**
  * menu_setting_find:

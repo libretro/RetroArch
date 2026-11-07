@@ -128,6 +128,9 @@
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #endif
+#ifdef HAVE_IOS_MENU
+#include "ui/ios/RetroArchMenuBridge.h"
+#endif
 
 #include "location_driver.h"
 
@@ -2662,6 +2665,10 @@ static struct string_list *string_list_new_special(
          for (i = 0; menu_ctx_drivers[i]; i++)
          {
             const char *opt  = menu_ctx_drivers[i]->ident;
+#ifdef HAVE_IOS_MENU
+            if (string_is_equal(opt, "ios") && !ios_menu_bridge_available())
+               continue;
+#endif
             *len            += strlen(opt) + 1;
 
             /* Don't allow the user to set menu driver to "null" using the UI.
