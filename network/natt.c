@@ -246,7 +246,9 @@ static void natt_query_device_cb(retro_task_t *task, void *task_data,
    xml[data->len] = '\0';
 
    /* Parse the device's description XML. */
-   document = rxml_load_document_string(xml);
+   /* The document takes the copy over (and frees it on failure)
+    * rather than copying it a second time. */
+   document = rxml_load_document_owned(xml, data->len);
    if (document)
    {
       rxml_node_t *root = rxml_root_node(document);
@@ -256,7 +258,6 @@ static void natt_query_device_cb(retro_task_t *task, void *task_data,
       rxml_free_document(document);
    }
 
-   free(xml);
 
 done:
    retro_atomic_store_release_int(&device->busy, 0);
@@ -345,7 +346,9 @@ static void natt_external_address_cb(retro_task_t *task, void *task_data,
    xml[data->len] = '\0';
 
    /* Parse the returned external ip address. */
-   document = rxml_load_document_string(xml);
+   /* The document takes the copy over (and frees it on failure)
+    * rather than copying it a second time. */
+   document = rxml_load_document_owned(xml, data->len);
    if (document)
    {
       rxml_node_t *root = rxml_root_node(document);
@@ -355,7 +358,6 @@ static void natt_external_address_cb(retro_task_t *task, void *task_data,
       rxml_free_document(document);
    }
 
-   free(xml);
 
 done:
    retro_atomic_store_release_int(&device->busy, 0);
@@ -433,7 +435,9 @@ static void natt_open_port_cb(retro_task_t *task, void *task_data,
    xml[data->len] = '\0';
 
    /* Parse the device's port forwarding response. */
-   document = rxml_load_document_string(xml);
+   /* The document takes the copy over (and frees it on failure)
+    * rather than copying it a second time. */
+   document = rxml_load_document_owned(xml, data->len);
    if (document)
    {
       rxml_node_t *root = rxml_root_node(document);
@@ -443,7 +447,6 @@ static void natt_open_port_cb(retro_task_t *task, void *task_data,
       rxml_free_document(document);
    }
 
-   free(xml);
 
 done:
    retro_atomic_store_release_int(&device->busy, 0);
