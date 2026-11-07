@@ -1,9 +1,10 @@
 /* gfx/drivers_shader/shader_glsl.c's first pass reading a view where it
  * lies, on an EGL device with GLES 3 (Mesa's llvmpipe on the runners):
- * a preset that may has its pass rewritten once for the filter and wrap,
- * swapped in for a view and given back; what it draws from the whole
- * frame matches what the pass draws from a copy of the view, byte for
- * byte. A pass reading the original frame, or the frame in a way the
+ * a preset that may has its passes reading the frame - the first, and
+ * those reading the original - rewritten once for the filter and wrap,
+ * swapped in for a view and given back; what they draw from the whole
+ * frame matches what the passes draw from a copy of the view, byte for
+ * byte. A preset reading earlier frames, or the frame in a way the
  * rewrite does not take, keeps its copy. Skipped without a device. */
 
 #include <stdio.h>
@@ -104,6 +105,16 @@ static const char *shader_orig =
    "}\n"
    "#endif\n";
 
+static const char *shader_prev =
+   SHADER_HEAD
+   "uniform sampler2D PrevTexture;\n"
+   "void main()\n"
+   "{\n"
+   "   FragColor = COMPAT_TEXTURE(Texture, vTex)\n"
+   "      - COMPAT_TEXTURE(PrevTexture, vTex);\n"
+   "}\n"
+   "#endif\n";
+
 static const char *shader_fetch =
    SHADER_HEAD
    "void main()\n"
@@ -119,33 +130,41 @@ static const char *shader_fetch =
 
 static uint8_t frame_px[TEX_H][TEX_W][4];
 
-static glsl_shader_data_t *make_glsl(const char *src)
+/* A preset of @passes passes from @src, each compiled as the backend
+ * does */
+static glsl_shader_data_t *make_glsl(const char *const *src, unsigned passes)
 {
-   struct shader_program_info info;
+   unsigned p;
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)calloc(1, sizeof(*glsl));
    glsl->shader             = (struct video_shader*)
       calloc(1, sizeof(*glsl->shader));
-   glsl->shader->passes     = 1;
-   glsl->shader->pass[0].source.string.vertex   = strdup(src);
-   glsl->shader->pass[0].source.string.fragment = strdup(src);
-   info.vertex   = src;
-   info.fragment = src;
-   info.is_file  = false;
-   if (!gl_glsl_compile_program(glsl, 1, &glsl->prg[1], &info))
-      return glsl;
-   gl_glsl_find_uniforms(glsl, 1, glsl->prg[1].id, &glsl->uniforms[1]);
+   glsl->shader->passes     = passes;
+   for (p = 1; p <= passes; p++)
+   {
+      struct shader_program_info info;
+      glsl->shader->pass[p - 1].source.string.vertex   = strdup(src[p - 1]);
+      glsl->shader->pass[p - 1].source.string.fragment = strdup(src[p - 1]);
+      info.vertex   = src[p - 1];
+      info.fragment = src[p - 1];
+      info.is_file  = false;
+      if (gl_glsl_compile_program(glsl, p, &glsl->prg[p], &info))
+         gl_glsl_find_uniforms(glsl, p, glsl->prg[p].id, &glsl->uniforms[p]);
+   }
    return glsl;
 }
 
 static void free_glsl(glsl_shader_data_t *glsl)
 {
+   unsigned p;
    gl_glsl_in_place_end(glsl);
-   if (glsl->prg[1].id)
-      glDeleteProgram(glsl->prg[1].id);
-   if (glsl->in_place.prg.id)
-      glDeleteProgram(glsl->in_place.prg.id);
-   free(glsl->shader->pass[0].source.string.vertex);
-   free(glsl->shader->pass[0].source.string.fragment);
+   for (p = 1; p <= glsl->shader->passes; p++)
+   {
+      if (glsl->prg[p].id)
+         glDeleteProgram(glsl->prg[p].id);
+      free(glsl->shader->pass[p - 1].source.string.vertex);
+      free(glsl->shader->pass[p - 1].source.string.fragment);
+   }
+   gl_glsl_in_place_free(glsl);
    free(glsl->shader);
    free(glsl);
 }
@@ -165,9 +184,10 @@ static GLuint make_texture(unsigned w, unsigned h, const void *px)
    return tex;
 }
 
-/* The bound program from @tex, laid out for a @in_w by @in_h input */
-static void draw(GLuint prog, GLuint tex, unsigned in_w, unsigned in_h,
-      unsigned ow, unsigned oh, uint8_t *out)
+/* @prog from @tex, and @orig as the original when not 0, laid out for a
+ * @in_w by @in_h input */
+static void draw(GLuint prog, GLuint tex, GLuint orig, unsigned in_w,
+      unsigned in_h, unsigned ow, unsigned oh, uint8_t *out)
 {
    static const GLfloat quad[] = {
       -1, -1, 0, 1,   1, -1, 0, 1,   -1, 1, 0, 1,   1, 1, 0, 1 };
@@ -185,6 +205,13 @@ static void draw(GLuint prog, GLuint tex, unsigned in_w, unsigned in_h,
          GL_TEXTURE_2D, target, 0);
    glViewport(0, 0, ow, oh);
    glUseProgram(prog);
+   if (orig)
+   {
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, orig);
+      if ((loc = glGetUniformLocation(prog, "OrigTexture")) >= 0)
+         glUniform1i(loc, 1);
+   }
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, tex);
    if ((loc = glGetUniformLocation(prog, "TextureSize")) >= 0)
@@ -205,45 +232,57 @@ static void draw(GLuint prog, GLuint tex, unsigned in_w, unsigned in_h,
    glDeleteTextures(1, &target);
 }
 
+static uint8_t slot[FRAME_H * FRAME_W * 4];
+static uint8_t tex_px[TEX_H][TEX_W][4];
+static const unsigned vx = 3, vy = 16, vw = 30, vh = 14;
+
+/* The view's copy, and the frame as a hardware frame: its last row first */
+static void make_inputs(GLuint *t_slot, GLuint *t_frame)
+{
+   unsigned r;
+   for (r = 0; r < vh; r++)
+      memcpy(slot + r * vw * 4, frame_px[vy + r][vx], vw * 4);
+   for (r = 0; r < TEX_H; r++)
+      memcpy(tex_px[r], frame_px[r < FRAME_H ? FRAME_H - 1 - r : r],
+            sizeof(tex_px[r]));
+   *t_slot  = make_texture(vw, vh, slot);
+   *t_frame = make_texture(TEX_W, TEX_H, tex_px);
+}
+
+static void begin(glsl_shader_data_t *glsl)
+{
+   gl_glsl_in_place_begin(glsl, true, VIDEO_POS_PACK(vx, vy),
+         VIDEO_SCALE_PACK(vw, vh), FRAME_H, VIDEO_SCALE_PACK(TEX_W, TEX_H));
+}
+
 static void test_blur(void)
 {
-   static uint8_t slot[FRAME_H * FRAME_W * 4];
-   static uint8_t tex_px[TEX_H][TEX_W][4];
    static uint8_t img_a[4 * 64 * 64], img_b[4 * 64 * 64];
-   const unsigned vx = 3, vy = 16, vw = 30, vh = 14;
    const unsigned ow = vw * 2 + 1, oh = vh * 2 + 3;
-   glsl_shader_data_t *glsl = make_glsl(shader_blur);
+   glsl_shader_data_t *glsl = make_glsl(&shader_blur, 1);
    GLuint pass_id           = glsl->prg[1].id;
    GLuint t_slot, t_frame;
-   unsigned r;
 
+   printf("[glsl_in_place] one pass\n");
    CHECK(pass_id, "the pass compiles");
    CHECK(gl_glsl_in_place(glsl, GL_LINEAR, GL_CLAMP_TO_EDGE),
          "it can read in place, linear and clamped to edge");
    CHECK(gl_glsl_in_place(glsl, GL_LINEAR, GL_CLAMP_TO_EDGE)
-         && glsl->in_place.key == 1 + GLSL_RECT_LINEAR_EDGE,
+         && glsl->in_place.key == 1 + GLSL_RECT_LINEAR_EDGE
+         && glsl->in_place.count == 1,
          "rewritten once for that filter and wrap");
    CHECK(!gl_glsl_in_place(glsl, GL_LINEAR, GL_REPEAT),
          "linear and repeating it can't");
-
    CHECK(gl_glsl_in_place(glsl, GL_LINEAR, GL_CLAMP_TO_EDGE),
          "back to linear, clamped: made again");
-   for (r = 0; r < vh; r++)
-      memcpy(slot + r * vw * 4, frame_px[vy + r][vx], vw * 4);
-   /* As a hardware frame: its last row first */
-   for (r = 0; r < TEX_H; r++)
-      memcpy(tex_px[r], frame_px[r < FRAME_H ? FRAME_H - 1 - r : r],
-            sizeof(tex_px[r]));
-   t_slot  = make_texture(vw, vh, slot);
-   t_frame = make_texture(TEX_W, TEX_H, tex_px);
-   draw(pass_id, t_slot, vw, vh, ow, oh, img_a);
 
-   gl_glsl_in_place_begin(glsl, true, VIDEO_POS_PACK(vx, vy),
-         VIDEO_SCALE_PACK(vw, vh), FRAME_H, VIDEO_SCALE_PACK(TEX_W, TEX_H));
+   make_inputs(&t_slot, &t_frame);
+   draw(pass_id, t_slot, 0, vw, vh, ow, oh, img_a);
+   begin(glsl);
    CHECK(glsl->in_place.swapped && glsl->prg[1].id != pass_id
-         && glsl->in_place.prg.id == pass_id,
+         && glsl->in_place.pass[0].prg.id == pass_id,
          "a view swaps the rewritten pass in");
-   draw(glsl->prg[1].id, t_frame, vw, vh, ow, oh, img_b);
+   draw(glsl->prg[1].id, t_frame, 0, vw, vh, ow, oh, img_b);
    CHECK(!memcmp(img_a, img_b, ow * oh * 4),
          "drawn from the frame, byte for byte as from the copy");
    gl_glsl_in_place_end(glsl);
@@ -257,11 +296,50 @@ static void test_blur(void)
    free_glsl(glsl);
 }
 
+/* Two passes, the second reading the first's output and the original */
+static void test_orig(void)
+{
+   static uint8_t img_a[4 * 64 * 64], img_b[4 * 64 * 64];
+   static uint8_t prev_px[FRAME_H * FRAME_W * 4];
+   const unsigned ow = vw * 2 + 1, oh = vh * 2 + 3;
+   const char *src[2];
+   glsl_shader_data_t *glsl;
+   GLuint pass2, t_slot, t_frame, t_prev;
+   unsigned i;
+
+   printf("[glsl_in_place] a later pass reading the original\n");
+   src[0] = shader_blur;
+   src[1] = shader_orig;
+   glsl   = make_glsl(src, 2);
+   pass2  = glsl->prg[2].id;
+   CHECK(gl_glsl_in_place(glsl, GL_LINEAR, GL_CLAMP_TO_EDGE)
+         && glsl->in_place.count == 2,
+         "the first pass and the one reading the original are rewritten");
+
+   for (i = 0; i < sizeof(prev_px); i++)
+      prev_px[i] = (uint8_t)(i * 7 + 3);
+   make_inputs(&t_slot, &t_frame);
+   t_prev = make_texture(vw, vh, prev_px);
+   draw(pass2, t_prev, t_slot, vw, vh, ow, oh, img_a);
+   begin(glsl);
+   CHECK(glsl->prg[2].id != pass2, "a view swaps the second in too");
+   draw(glsl->prg[2].id, t_prev, t_frame, vw, vh, ow, oh, img_b);
+   CHECK(!memcmp(img_a, img_b, ow * oh * 4),
+         "its original read from the frame, byte for byte as from the copy");
+   gl_glsl_in_place_end(glsl);
+   CHECK(glsl->prg[2].id == pass2, "and gives it back");
+
+   glDeleteTextures(1, &t_slot);
+   glDeleteTextures(1, &t_frame);
+   glDeleteTextures(1, &t_prev);
+   free_glsl(glsl);
+}
+
 static void test_kept(const char *src, const char *what)
 {
-   glsl_shader_data_t *glsl = make_glsl(src);
+   glsl_shader_data_t *glsl = make_glsl(&src, 1);
    CHECK(glsl->prg[1].id && !gl_glsl_in_place(glsl, GL_LINEAR,
-            GL_CLAMP_TO_EDGE) && !glsl->in_place.prg.id, what);
+            GL_CLAMP_TO_EDGE) && !glsl->in_place.ok, what);
    free_glsl(glsl);
 }
 
@@ -298,7 +376,8 @@ int main(void)
 
    printf("[glsl_in_place] %s\n", (const char*)glGetString(GL_RENDERER));
    test_blur();
-   test_kept(shader_orig, "a preset reading the original frame keeps its copy");
+   test_orig();
+   test_kept(shader_prev, "a preset reading earlier frames keeps its copy");
    test_kept(shader_fetch, "one fetching the frame's texels keeps its copy");
 
    eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);

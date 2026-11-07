@@ -1071,10 +1071,11 @@ jobs:
         working-directory: samples/gfx/glsl_rect
         run: |
           set -eu
-          # A GLSL preset's first pass rewritten to read a hardware
-          # frame's view where it lies draws byte for byte what it draws
-          # from a copy of the view, every filter and wrap it takes, both
-          # row orders, GLES 3 and 2; what it can't read keeps the copy.
+          # A GLSL preset's passes reading the frame - the first, and
+          # those reading the original - rewritten to read a hardware
+          # frame's view where it lies draw byte for byte what they draw
+          # from a copy of the view, every filter and wrap taken, both
+          # row orders, GLES 3 and 2; what can't be read keeps the copy.
           make clean
           LIBGL_ALWAYS_SOFTWARE=1 ASAN_OPTIONS=detect_leaks=0 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
