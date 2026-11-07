@@ -218,6 +218,13 @@ run-pause-2: $(TARGET)
 run-pause-3: $(TARGET)
 	PAUSE_BOUNDARY=1 WRAPPER=1 TRANSPORT=dry SOURCE_FLOAT=1 ./$(TARGET) 0.25
 
+check-ff-stall: $(TARGET)
+	$(MAKE) $(PAR) run-ff-stall-1 run-ff-stall-2
+run-ff-stall-1: $(TARGET)
+	FF_STALL=1 WRAPPER=1 TRANSPORT=stretch DEVICE_INT16=1 ./$(TARGET) 0.25
+run-ff-stall-2: $(TARGET)
+	FF_STALL=1 FF_SPEEDUP=1 WRAPPER=1 TRANSPORT=stretch SOURCE_FLOAT=1 ./$(TARGET) 0.25
+
 check-menu: $(TARGET)
 	$(MAKE) $(PAR) run-menu-1 run-menu-2 run-menu-3 run-menu-4
 run-menu-1: $(TARGET)
@@ -229,4 +236,4 @@ run-menu-3: $(TARGET)
 run-menu-4: $(TARGET)
 	MENU_SOURCE=1 WRAPPER=1 TRANSPORT=dry DEVICE_INT16=1 ./$(TARGET) 0.25
 
-.PHONY: check-menu check-pause run-consumer-exit-1 run-consumer-exit-2 run-kept-device-1 run-kept-device-2 run-kept-device-3 run-kept-device-4 run-pause-1 run-pause-2 run-pause-3 run-menu-1 run-menu-2 run-menu-3 run-menu-4
+.PHONY: check-menu check-pause check-ff-stall run-ff-stall-1 run-ff-stall-2 run-consumer-exit-1 run-consumer-exit-2 run-kept-device-1 run-kept-device-2 run-kept-device-3 run-kept-device-4 run-pause-1 run-pause-2 run-pause-3 run-menu-1 run-menu-2 run-menu-3 run-menu-4

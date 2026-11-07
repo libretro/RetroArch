@@ -1085,11 +1085,11 @@ static void hold_frame(const int16_t *block)
    audio_driver_frame_end();
 }
 
-/* A gap inside a fast-forward hold, with Speedup off so only the
- * stretch follows the measured speed. A pause is not measured at all:
+/* A gap inside a fast-forward hold. A pause is not measured at all:
  * the estimate holds the hold's speed through it. A stall is back on
- * within a few frames, not once fast-forward is released. */
-static void test_threaded_hold_survives_a_gap(bool pause)
+ * within a few frames, with or without Speedup, not once fast-forward
+ * is released. */
+static void test_threaded_hold_survives_a_gap(bool pause, bool speedup)
 {
    static int16_t stage_out[FRAMES * 8];
    int16_t block[FRAMES * 2];
@@ -1108,7 +1108,7 @@ static void test_threaded_hold_survives_a_gap(bool pause)
    fresh();
    st->current_audio      = &dev;
    st->context_audio_data = &dev;
-   settings->bools.audio_fastforward_speedup = false;
+   settings->bools.audio_fastforward_speedup = speedup;
    settings->bools.audio_sync                = true;
    settings->floats.fastforward_ratio        = 2.0f;
    runloop_state_get_ptr()->flags            = RUNLOOP_FLAG_FASTMOTION;
@@ -1173,7 +1173,8 @@ static void test_threaded_hold_survives_a_gap(bool pause)
    else
    {
       snprintf(what, sizeof(what), "threaded: the stretch is back on after a "
-            "stall within 12 frames (off until %d)", last_off);
+            "stall%s within 12 frames (off until %d)",
+            speedup ? " with Speedup" : "", last_off);
       CHECK(last_off < 12, what);
    }
    CHECK(near(retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16), held),
@@ -1189,9 +1190,10 @@ static void test_threaded_hold_survives_a_gap(bool pause)
    retro_spsc_free(&st->pipe_ring);
    retro_eventcount_free(&st->pipe_space);
    retro_eventcount_free(&st->pipe_data);
-   settings->bools.audio_sync         = false;
-   settings->floats.fastforward_ratio = 0.0f;
-   runloop_state_get_ptr()->flags     = 0;
+   settings->bools.audio_sync                = false;
+   settings->bools.audio_fastforward_speedup = false;
+   settings->floats.fastforward_ratio        = 0.0f;
+   runloop_state_get_ptr()->flags            = 0;
    audio_driver_publish_runloop();
    fresh();
 }
@@ -1218,7 +1220,9 @@ int main(void)
    test_stop_excludes_idle_gap();
    test_inline_silent_boundaries();
    test_callback_optin();
-   test_threaded_hold_survives_a_gap(true);
+   test_threaded_hold_survives_a_gap(true, false);
+   test_threaded_hold_survives_a_gap(false, false);
+   test_threaded_hold_survives_a_gap(false, true);
 
    if (failures)
    {

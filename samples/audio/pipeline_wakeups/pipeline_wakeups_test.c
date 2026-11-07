@@ -153,6 +153,8 @@ static bool live_layouts;
 static bool speed_lowpass;
 static bool runloop_policy;
 static bool auto_runloop;
+static bool ff_stall_mode;
+static bool ff_speedup;
 #define LATENCY_MS    32
 #define MAX_SAMPLES   65536
 
@@ -598,7 +600,7 @@ static float frame_audio_float[32768 * 8];
 
 static bool prepare_transport(bool reset)
 {
-   if (auto_runloop)
+   if (auto_runloop || ff_stall_mode)
    {
       config_get_ptr()->bools.audio_time_stretch = true;
       config_get_ptr()->bools.audio_time_stretch_lowpass = speed_lowpass;
@@ -706,6 +708,10 @@ static bool pipeline_up(unsigned latency_ms)
    audio_driver_publish_runloop();
 
    ring_bytes = per_frame * 3 * st->pipe_frame_bytes;
+   /* Sized as audio_driver_pipe_ring_frames() sizes it without Audio Sync */
+   if (ff_stall_mode)
+      ring_bytes += 2 * (size_t)(latency_ms * CORE_RATE / 1000)
+         * st->pipe_frame_bytes;
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
       return false;
    retro_eventcount_init(&st->pipe_space);
@@ -788,6 +794,7 @@ static void kept_device_run(void);
 static bool kept_device_mode;
 static void kept_drop_run(void);
 static bool kept_drop_mode;
+static void ff_stall_run(void);
 /* The pause boundary and consumer exit lanes run their one scenario in
  * place of the load sweep's phases. */
 static bool single_lane;
@@ -1367,6 +1374,11 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
       kept_drop_run();
       frames = 0;
    }
+   if (ff_stall_mode)
+   {
+      ff_stall_run();
+      frames = 0;
+   }
    clock_gettime(CLOCK_MONOTONIC, &next);
    for (i = 0; i < frames; i++)
    {
@@ -1851,6 +1863,89 @@ static void pause_boundary_run(void)
          fixture_failures - f0);
 }
 
+/* --- a stall inside a fast-forward hold ----------------------------- */
+
+static void ff_hold_frame(struct timespec *next, long step_ns)
+{
+   next->tv_nsec += step_ns;
+   next->tv_sec  += next->tv_nsec / 1000000000L;
+   next->tv_nsec %= 1000000000L;
+   pipeline_sleep_until(next);
+   audio_driver_submit(&audio_driver_st, 1.0f,
+         source_float ? (const void*)frame_audio_float : (const void*)frame_audio,
+         (size_t)(CORE_RATE / FPS) * 2, source_float, false, true, true);
+   audio_driver_frame_end();
+}
+
+static bool ff_stretch_on(void)
+{
+   return audio_driver_st.pipe_transport_mode == AUDIO_TRANSPORT_RUNNING
+      && (audio_driver_st.pipe_layouts.published_control
+         & AUDIO_PIPELINE_STRETCH);
+}
+
+/* A 2x hold without Audio Sync, the stretch following the runloop. The
+ * core stalls for 1.5 s: the device runs dry and the consumer primes
+ * again, waiting for the ring to fill. The hold's audio must reach the
+ * device again, with the stretch on. */
+static void ff_stall_case(void)
+{
+   settings_t *settings = config_get_ptr();
+   long step_ns         = (long)(1e9 / FPS / 2);
+   struct timespec next;
+   size_t silent = 0;
+   unsigned frame, off = 0;
+
+   settings->bools.audio_sync                = false;
+   settings->bools.audio_fastforward_speedup = ff_speedup;
+   settings->floats.fastforward_ratio        = 2.0f;
+   runloop_state_get_ptr()->flags            = RUNLOOP_FLAG_FASTMOTION;
+   audio_driver_publish_runloop();
+   clock_gettime(CLOCK_MONOTONIC, &next);
+   for (frame = 0; frame < 60; frame++)
+      ff_hold_frame(&next, step_ns);
+   if (!ff_stretch_on())
+   {
+      fprintf(stderr, "the stretch did not follow a 2x hold\n");
+      fixture_failures++;
+   }
+   next.tv_sec += 1;
+   next.tv_nsec += 500000000L;
+   for (frame = 0; frame < 120; frame++)
+   {
+      if (frame == 60)
+         silent = retro_atomic_load_acquire_size(&dev_silent_samples);
+      ff_hold_frame(&next, step_ns);
+      if (frame >= 60 && !ff_stretch_on())
+         off++;
+   }
+   /* Half a second of device time: a quarter of it silent is a fail. */
+   silent = retro_atomic_load_acquire_size(&dev_silent_samples) - silent;
+   if (silent > (size_t)OUT_RATE * channels / 8)
+   {
+      fprintf(stderr, "fast-forward audio silent after a stall: %u samples\n",
+            (unsigned)silent);
+      fixture_failures++;
+   }
+   if (off)
+   {
+      fprintf(stderr, "the stretch off %u of 60 frames after a stall\n", off);
+      fixture_failures++;
+   }
+   runloop_state_get_ptr()->flags            = 0;
+   settings->floats.fastforward_ratio        = 0.0f;
+   settings->bools.audio_fastforward_speedup = false;
+   audio_driver_publish_runloop();
+}
+
+static void ff_stall_run(void)
+{
+   unsigned f0 = fixture_failures;
+   ff_stall_case();
+   printf("fast-forward stall: audio and the stretch back, %u failures\n",
+         fixture_failures - f0);
+}
+
 /* The fields the pipe's producer and consumer write every frame or
  * pass sit on lines of their own (AUDIO_PIPE_LINE padding in
  * audio_driver_state_t). Nothing else notices a field added above a
@@ -1939,9 +2034,11 @@ int main(int argc, char **argv)
    kept_device_mode    = getenv("KEPT_DEVICE") != NULL;
    kept_drop_mode      = getenv("KEPT_DROP") != NULL;
    menu_source_mode    = getenv("MENU_SOURCE") != NULL;
+   ff_stall_mode       = getenv("FF_STALL") != NULL;
+   ff_speedup          = getenv("FF_SPEEDUP") != NULL;
    single_lane         = pause_boundary_mode || consumer_exit_mode
                       || kept_device_mode || kept_drop_mode
-                      || menu_source_mode;
+                      || menu_source_mode || ff_stall_mode;
    if (menu_source_mode && !use_wrapper)
    {
       fputs("MENU_SOURCE requires WRAPPER\n", stderr);
@@ -1950,6 +2047,12 @@ int main(int argc, char **argv)
    if (pause_boundary_mode && (!use_wrapper || !transport))
    {
       fprintf(stderr, "PAUSE_BOUNDARY requires WRAPPER and a TRANSPORT\n");
+      return 1;
+   }
+   if (ff_stall_mode && (!use_wrapper || !transport
+            || strcmp(transport, "stretch") || layout))
+   {
+      fprintf(stderr, "FF_STALL requires WRAPPER and TRANSPORT=stretch, stereo\n");
       return 1;
    }
    if (consumer_exit_mode && !use_wrapper)
@@ -2048,7 +2151,7 @@ int main(int argc, char **argv)
    printf("  pubs     wakes/f  writes/f |   wake latency us     |  producer us/frame   | short  pulls\n");
    printf("                             |    p50     p99     max |   mean  blkd   worst |\n");
    }
-   for (i = 0; i < ((pause_boundary_mode || menu_source_mode)
+   for (i = 0; i < ((pause_boundary_mode || menu_source_mode || ff_stall_mode)
             ? 1 : sizeof(sweep) / sizeof(sweep[0])); i++)
       run_one(sweep[i], seconds, true);
    /* Both single lanes need a device that pushes back: without it the
