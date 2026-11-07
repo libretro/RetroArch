@@ -129,6 +129,11 @@ struct rpng_apng_stream
     * animation would otherwise churn the heap every loop. */
    uint8_t  *synth;
    size_t    synth_cap;
+   /* The decoder's buffers - inflate ring, scanlines, Adam7 pass, the
+    * frame's pixels - handed back after each frame for the next to
+    * take, so a playing animation stops allocating once every size it
+    * needs has been seen. */
+   struct rpng_pool pool;
 
    /* Progressive indexing over a still-arriving buffer.  avail is the
     * resident byte count (== len once the read completes); scan_pos is
@@ -180,6 +185,7 @@ void rpng_apng_stream_close(rpng_apng_stream_t *s)
    free(s->canvas);
    free(s->prev_save);
    free(s->synth);
+   rpng_pool_release(&s->pool);
    free(s);
 }
 
@@ -648,6 +654,7 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
    if (!png)
       return NULL;
    r = rpng_alloc();
+   rpng_set_pool(r, &s->pool);
    if (!r || !rpng_set_buf_ptr(r, png, png_len) || !rpng_start(r))
    {
       if (r) rpng_free(r);
@@ -669,7 +676,8 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
    rpng_free(r);
    if (ret != IMAGE_PROCESS_END)
    {
-      free(data);
+      rpng_pool_give(&s->pool, RPNG_POOL_OUT, data,
+            (size_t)f->width * f->height * sizeof(uint32_t));
       return NULL;
    }
    return data;
@@ -794,12 +802,14 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
    frame = apng_decode_frame(s, f, &fw, &fh);
    if (!frame || fw != f->width || fh != f->height)
    {
-      free(frame);
+      rpng_pool_give(&s->pool, RPNG_POOL_OUT, frame,
+            (size_t)fw * fh * sizeof(uint32_t));
       return NULL;
    }
 
    apng_composite(s, f, frame);
-   free(frame);
+   rpng_pool_give(&s->pool, RPNG_POOL_OUT, frame,
+         (size_t)fw * fh * sizeof(uint32_t));
 
    /* Record disposal state for the next call. */
    s->prev_x       = (int)f->x_off;

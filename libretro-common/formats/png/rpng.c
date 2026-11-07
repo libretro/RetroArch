@@ -239,6 +239,7 @@ struct rpng_process
    uint8_t flags;
    bool supports_rgba;
    bool want_10bit;
+   struct rpng_pool *pool;   /* the rpng's, if it has one              */
 };
 
 enum rpng_flags
@@ -272,6 +273,7 @@ struct rpng
     * rpng_add_idat_spans gave them a buffer of their own (an APNG
     * frame's data, read where it lies in the animation file). */
    const uint8_t *idat_base;
+   struct rpng_pool *pool;     /* rpng_set_pool; NULL: plain malloc/free */
    struct idat_spans idat_buf; /* ptr alignment */
    struct png_ihdr ihdr; /* uint32 alignment */
    uint32_t palette[256];
@@ -2244,16 +2246,69 @@ static void rpng_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
    }
 }
 
+/* Buffer pool (rpng_internal.h).  take hands out the slot's buffer when
+ * it is at least size bytes and empties the slot, else NULL and the
+ * caller allocates as it always did; give keeps a released buffer for
+ * the next take, or frees it.  With no pool, give is free(). */
+void *rpng_pool_take(struct rpng_pool *pool, int slot, size_t size)
+{
+   void *p;
+   if (!pool || !pool->buf[slot] || pool->cap[slot] < size)
+      return NULL;
+   p               = pool->buf[slot];
+   pool->buf[slot] = NULL;
+   pool->cap[slot] = 0;
+   return p;
+}
+
+void rpng_pool_give(struct rpng_pool *pool, int slot, void *p, size_t size)
+{
+   if (!p)
+      return;
+   if (!pool)
+   {
+      free(p);
+      return;
+   }
+   if (pool->buf[slot])
+   {
+      if (pool->cap[slot] >= size)
+      {
+         free(p);
+         return;
+      }
+      free(pool->buf[slot]);
+   }
+   pool->buf[slot] = p;
+   pool->cap[slot] = size;
+}
+
+void rpng_pool_release(struct rpng_pool *pool)
+{
+   int i;
+   if (!pool)
+      return;
+   for (i = 0; i < RPNG_POOL_SLOTS; i++)
+   {
+      free(pool->buf[i]);
+      pool->buf[i] = NULL;
+      pool->cap[i] = 0;
+   }
+}
+
+void rpng_set_pool(rpng_t *rpng, struct rpng_pool *pool)
+{
+   if (rpng)
+      rpng->pool = pool;
+}
+
 static void rpng_reverse_filter_deinit(struct rpng_process *pngp)
 {
    if (!pngp)
       return;
-   if (pngp->scratch[0])
-      free(pngp->scratch[0]);
-   if (pngp->scratch[1])
-      free(pngp->scratch[1]);
-   if (pngp->scratch[2])
-      free(pngp->scratch[2]);
+   rpng_pool_give(pngp->pool, RPNG_POOL_LINE0, pngp->scratch[0], pngp->pitch);
+   rpng_pool_give(pngp->pool, RPNG_POOL_LINE1, pngp->scratch[1], pngp->pitch);
+   rpng_pool_give(pngp->pool, RPNG_POOL_LINE2, pngp->scratch[2], pngp->pitch);
    pngp->scratch[0] = NULL;
    pngp->scratch[1] = NULL;
    pngp->scratch[2] = NULL;
@@ -2281,8 +2336,11 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
       pngp->pass_height = (ihdr->height - rpng_passes[pngp->pass_pos].y +
             rpng_passes[pngp->pass_pos].stride_y - 1) / rpng_passes[pngp->pass_pos].stride_y;
 
-      if (!(pngp->data = (uint32_t*)malloc(
-            (size_t)pngp->pass_width * (size_t)pngp->pass_height * sizeof(uint32_t))))
+      if (   !(pngp->data = (uint32_t*)rpng_pool_take(pngp->pool,
+                  RPNG_POOL_PASS, (size_t)pngp->pass_width
+                  * (size_t)pngp->pass_height * sizeof(uint32_t)))
+          && !(pngp->data = (uint32_t*)malloc((size_t)pngp->pass_width
+                  * (size_t)pngp->pass_height * sizeof(uint32_t))))
          return -1;
 
       pngp->ihdr        = *ihdr;
@@ -2299,7 +2357,9 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
           * has ended it is a truncation (and the inflate end path
           * has already refused an under-produced stream, so this
           * arm is belt and braces). */
-         free(pngp->data);
+         rpng_pool_give(pngp->pool, RPNG_POOL_PASS, pngp->data,
+               (size_t)pngp->pass_width * (size_t)pngp->pass_height
+               * sizeof(uint32_t));
          pngp->data = NULL;
          if (!(pngp->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
             return RPNG_FILTER_WAIT;
@@ -2330,9 +2390,17 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
    /* scratch[0] doubles as row 0's zero prev; scratch_cur starts at 0
     * so the first out-of-place line (cur ^= 1) lands in scratch[1],
     * leaving the zeroes intact while anything still points at them. */
-   pngp->scratch[0]            = (uint8_t*)calloc(1, pngp->pitch);
-   pngp->scratch[1]            = (uint8_t*)malloc(pngp->pitch);
-   pngp->scratch[2]            = (uint8_t*)malloc(pngp->pitch);
+   if ((pngp->scratch[0] = (uint8_t*)rpng_pool_take(pngp->pool,
+               RPNG_POOL_LINE0, pngp->pitch)))
+      memset(pngp->scratch[0], 0, pngp->pitch);
+   else
+      pngp->scratch[0]         = (uint8_t*)calloc(1, pngp->pitch);
+   if (!(pngp->scratch[1] = (uint8_t*)rpng_pool_take(pngp->pool,
+               RPNG_POOL_LINE1, pngp->pitch)))
+      pngp->scratch[1]         = (uint8_t*)malloc(pngp->pitch);
+   if (!(pngp->scratch[2] = (uint8_t*)rpng_pool_take(pngp->pool,
+               RPNG_POOL_LINE2, pngp->pitch)))
+      pngp->scratch[2]         = (uint8_t*)malloc(pngp->pitch);
    pngp->scratch_cur           = 0;
 
    if (!pngp->scratch[0] || !pngp->scratch[1] || !pngp->scratch[2])
@@ -2701,7 +2769,9 @@ static int rpng_reverse_filter_adam7_iterate(uint32_t **data_,
          ihdr, pngp->data, pngp->pass_width, pngp->pass_height,
          &rpng_passes[pngp->pass_pos]);
 
-   free(pngp->data);
+   rpng_pool_give(pngp->pool, RPNG_POOL_PASS, pngp->data,
+         (size_t)pngp->pass_width * (size_t)pngp->pass_height
+         * sizeof(uint32_t));
 
    pngp->data                   = NULL;
    pngp->pass_width             = 0;
@@ -2736,7 +2806,9 @@ static int rpng_reverse_filter_adam7(uint32_t **data_,
       case IMAGE_PROCESS_ERROR:
          if (pngp->data)
          {
-            free(pngp->data);
+            rpng_pool_give(pngp->pool, RPNG_POOL_PASS, pngp->data,
+                  (size_t)pngp->pass_width * (size_t)pngp->pass_height
+                  * sizeof(uint32_t));
             pngp->data = NULL;
          }
          pngp->inflate_buf -= pngp->adam7_restore_buf_size;
@@ -2929,6 +3001,10 @@ static int rpng_load_image_argb_process_output_init(
 {
    struct rpng_process *process = (struct rpng_process*)rpng->process;
 
+   /* A pool's buffer was allocated here too, so it is aligned alike. */
+   if (!(*data = (uint32_t*)rpng_pool_take(rpng->pool, RPNG_POOL_OUT,
+               (size_t)rpng->ihdr.width * (size_t)rpng->ihdr.height
+               * sizeof(uint32_t))))
 #ifdef GEKKO
    /* We often use these in textures, make sure 
     * they're 32-byte aligned */
@@ -3013,6 +3089,22 @@ static bool rpng_idat_append_span(struct idat_spans *sp,
    return true;
 }
 
+/* The process's buffers, back to the pool (or freed, without one):
+ * the per-pass output, the scanline buffers and the inflate window may
+ * all still be live when a decode is abandoned or fails. */
+static void rpng_process_give_back(struct rpng_process *p)
+{
+   rpng_pool_give(p->pool, RPNG_POOL_PASS, p->data,
+         (size_t)p->pass_width * (size_t)p->pass_height * sizeof(uint32_t));
+   rpng_pool_give(p->pool, RPNG_POOL_LINE0, p->scratch[0], p->pitch);
+   rpng_pool_give(p->pool, RPNG_POOL_LINE1, p->scratch[1], p->pitch);
+   rpng_pool_give(p->pool, RPNG_POOL_LINE2, p->scratch[2], p->pitch);
+   rpng_pool_give(p->pool, RPNG_POOL_RING, p->inflate_base, p->ring_size);
+   p->data       = NULL;
+   p->scratch[0] = p->scratch[1] = p->scratch[2] = NULL;
+   p->inflate_base = NULL;
+}
+
 static struct rpng_process *rpng_process_init(rpng_t *rpng)
 {
    uint8_t *inflate_buf            = NULL;
@@ -3076,8 +3168,10 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
       return NULL;
    }
 
-   inflate_buf = (uint8_t*)malloc(process->ring_size);
-   if (!inflate_buf)
+   process->pool = rpng->pool;
+   if (   !(inflate_buf = (uint8_t*)rpng_pool_take(process->pool,
+               RPNG_POOL_RING, process->ring_size))
+       && !(inflate_buf = (uint8_t*)malloc(process->ring_size)))
       goto error;
 
    process->inflate_buf  = inflate_buf;
@@ -3560,16 +3654,7 @@ error:
       /* An externally abandoned decode (cancelled task) can be torn
        * down at any machine state: the per-pass output, the scanline
        * buffers and the inflate window may all still be live here. */
-      if (rpng->process->data)
-         free(rpng->process->data);
-      if (rpng->process->scratch[0])
-         free(rpng->process->scratch[0]);
-      if (rpng->process->scratch[1])
-         free(rpng->process->scratch[1]);
-      if (rpng->process->scratch[2])
-         free(rpng->process->scratch[2]);
-      if (rpng->process->inflate_base)
-         free(rpng->process->inflate_base);
+      rpng_process_give_back(rpng->process);
       if (rpng->process->stream)
          rpng->process->stream_backend->stream_free(rpng->process->stream);
       free(rpng->process);
@@ -3591,16 +3676,7 @@ void rpng_free(rpng_t *rpng)
        * here at an arbitrary machine state: the per-pass output and
        * the scanline buffers may still be live alongside the inflate
        * window. */
-      if (rpng->process->data)
-         free(rpng->process->data);
-      if (rpng->process->scratch[0])
-         free(rpng->process->scratch[0]);
-      if (rpng->process->scratch[1])
-         free(rpng->process->scratch[1]);
-      if (rpng->process->scratch[2])
-         free(rpng->process->scratch[2]);
-      if (rpng->process->inflate_base)
-         free(rpng->process->inflate_base);
+      rpng_process_give_back(rpng->process);
       if (rpng->process->stream)
       {
          if (   rpng->process->stream_backend 

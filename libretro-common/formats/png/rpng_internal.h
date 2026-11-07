@@ -45,6 +45,33 @@ struct rpng_ext_span
    size_t len;
 };
 
+/* Buffers a decode can hand back for the next one to take instead of
+ * allocating, for a caller that decodes many images of similar size in
+ * a row - an APNG stream, every frame.  One per role; a slot holds at
+ * most one buffer, kept if it is the larger.  See rpng.c. */
+enum rpng_pool_slot
+{
+   RPNG_POOL_RING = 0,   /* the inflate ring                         */
+   RPNG_POOL_LINE0,      /* the three out-of-place scanlines          */
+   RPNG_POOL_LINE1,
+   RPNG_POOL_LINE2,
+   RPNG_POOL_PASS,       /* an Adam7 pass's pixels                    */
+   RPNG_POOL_OUT,        /* the decoded image, given back by the caller */
+   RPNG_POOL_SLOTS
+};
+
+struct rpng_pool
+{
+   void  *buf[RPNG_POOL_SLOTS];
+   size_t cap[RPNG_POOL_SLOTS];
+};
+
+void  rpng_set_pool(rpng_t *rpng, struct rpng_pool *pool);
+void *rpng_pool_take(struct rpng_pool *pool, int slot, size_t size);
+void  rpng_pool_give(struct rpng_pool *pool, int slot, void *p,
+      size_t size);
+void  rpng_pool_release(struct rpng_pool *pool);
+
 /* See rpng.c. */
 bool rpng_add_idat_spans(rpng_t *rpng, const uint8_t *base,
       const struct rpng_ext_span *v, int n);
