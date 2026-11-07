@@ -208,6 +208,22 @@ int main(void)
 OTHER
 ${MINGW_CC:-x86_64-w64-mingw32-gcc} -O1 -mwindows -o "$work/other.exe" "$work/other.c" \
    || { echo "the other-window helper did not build" >&2; exit 1; }
+# And a way to make a window the foreground one: with no window
+# manager, Wine 10 gives the X focus a click moves straight back to the
+# window it calls the foreground, so the focus is moved as Windows
+# itself moves it. The argument is a window's title, else its class.
+cat > "$work/front.c" <<'FRONT'
+#include <windows.h>
+int main(int argc, char **argv)
+{
+   HWND w = NULL;
+   if (argc > 1 && !(w = FindWindowA(NULL, argv[1])))
+      w = FindWindowA(argv[1], NULL);
+   return w && SetForegroundWindow(w) ? 0 : 1;
+}
+FRONT
+${MINGW_CC:-x86_64-w64-mingw32-gcc} -O1 -o "$work/front.exe" "$work/front.c" \
+   || { echo "the foreground helper did not build" >&2; exit 1; }
 # And a way to close RetroArch's window from outside it.
 cat > "$work/close.c" <<'CLOSE'
 #include <windows.h>
@@ -464,10 +480,13 @@ VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=3 WANT_WINDOW="2 2 0
 # button is left held by switching windows. $1 name, $2 input driver.
 
 # Gives @1 the focus: there is no window manager, so by a click in it,
-# as the scenarios above do for RetroArch's window.
+# as the scenarios above do for RetroArch's window, and by Windows' own
+# foreground call on @2, the window's title or class, which Wine 10
+# needs as well.
 focus_on() {
    xdotool mousemove --window "$1" 40 40 click 1 2>/dev/null
    xdotool windowfocus "$1" 2>/dev/null
+   ( cd "$work" && WINEDEBUG=-all $WINE ./front.exe "$2" ) >/dev/null 2>&1
    sleep 0.5
    [ "$(xdotool getwindowfocus 2>/dev/null)" = "$1" ]
 }
@@ -501,10 +520,10 @@ focus_lost() {
       return
    fi
    sleep 2
-   focus_on "$wid" || echo "       (RetroArch's window would not take the focus)"
+   focus_on "$wid" RetroArch || echo "       (RetroArch's window would not take the focus)"
    sleep 1
    xdotool keydown z; sleep 1.5
-   focus_on "$other" || echo "       (the other window would not take the focus)"
+   focus_on "$other" "Other window" || echo "       (the other window would not take the focus)"
    # The release reaches the core on its next poll after Wine hands the
    # focus over, which a loaded runner can take well past a fixed wait:
    # watch the log for it, for at most 15 s
