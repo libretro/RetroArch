@@ -288,6 +288,14 @@ struct rjpeg_jpeg_s
     * (0 = CMYK, 2 = YCCK) and the two 3-component ones (0 = RGB,
     * 1 = YCbCr).  See rjpeg_process_marker() and rjpeg_output_rows(). */
    int      app14_transform;
+   /* A JFIF APP0 segment was seen: its colour space is YCbCr whatever
+    * else the file says. */
+   int      jfif;
+   /* Three components holding R, G and B rather than Y, Cb and Cr -
+    * decided once the markers are in (rjpeg_is_rgb), as libjpeg does:
+    * JFIF means YCbCr; else Adobe's transform 0 means RGB; else the
+    * component ids 'R', 'G', 'B' do. */
+   int      rgb;
    uint32_t img_x;
    uint32_t img_y;
 
@@ -2649,6 +2657,15 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
             && z->img_buffer[3] == 'b'
             && z->img_buffer[4] == 'e')
          z->app14_transform = z->img_buffer[11];
+      if (     m == 0xE0
+            && n >= 5
+            && z->img_buffer_end - z->img_buffer >= 5
+            && z->img_buffer[0] == 'J'
+            && z->img_buffer[1] == 'F'
+            && z->img_buffer[2] == 'I'
+            && z->img_buffer[3] == 'F'
+            && z->img_buffer[4] == 0)
+         z->jfif = 1;
 
       if (z->img_buffer + n > z->img_buffer_end)
          z->img_buffer = z->img_buffer_end;
@@ -2806,9 +2823,16 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
 
    for (i = 0; i < s->img_n; ++i)
    {
+      int k;
+      /* Any id will do - the scans name components by it - but two
+       * components cannot share one.  JFIF numbers them from 1, some
+       * jpegtran builds from 0, Adobe's CMYK and RGB files use 'C',
+       * 'M', 'Y', 'K' and 'R', 'G', 'B'; libjpeg takes all of these,
+       * and requiring 1.. or 0.. refused every Adobe CMYK file the
+       * 4-component path below exists for. */
       z->img_comp[i].id = RJPEG_GET8(s);
-      if (z->img_comp[i].id != i+1)   /* JFIF requires */
-         if (z->img_comp[i].id != i)  /* some version of jpegtran outputs non-JFIF-compliant files! */
+      for (k = 0; k < i; ++k)
+         if (z->img_comp[k].id == z->img_comp[i].id)
             return 0;
 
       q                = RJPEG_GET8(s);
@@ -4287,6 +4311,8 @@ bool rjpeg_start(rjpeg_t *rjpeg)
    j->plane_ring = 1;   /* iterative: fused decode may ring the planes */
    j->img_n = 0;
    j->app14_transform = -1;   /* no Adobe APP14 seen yet */
+   j->jfif            = 0;
+   j->rgb             = 0;
 
    /* Context fields embedded in j */
    j->img_buffer          = (uint8_t*)rjpeg->buff_data;
@@ -4349,10 +4375,21 @@ bool rjpeg_is_valid(rjpeg_t *rjpeg)
 static int rjpeg_resample_setup(rjpeg_jpeg *j, rjpeg_resample *res)
 {
    int k;
-   /* Every component is resampled: 1 (grayscale), 3 (YCbCr) or 4
-    * (CMYK/YCCK, where the K plane carries its own sampling factors
-    * and must be upsampled like any other). */
+   /* Every component is resampled: 1 (grayscale), 3 (YCbCr or RGB)
+    * or 4 (CMYK/YCCK, where the K plane carries its own sampling
+    * factors and must be upsampled like any other). */
    int decode_n = j->img_n;
+
+   j->rgb = 0;
+   if (j->img_n == 3 && !j->jfif)
+   {
+      if (j->app14_transform >= 0)
+         j->rgb = (j->app14_transform == 0);
+      else
+         j->rgb =  j->img_comp[0].id == 'R'
+               &&  j->img_comp[1].id == 'G'
+               &&  j->img_comp[2].id == 'B';
+   }
 
    for (k = 0; k < decode_n; ++k)
    {
@@ -4414,6 +4451,7 @@ static void rjpeg_output_rows(rjpeg_jpeg *z, rjpeg_resample *res,
     * kernel, all fixed once the header is parsed, so it is constant for
     * every row in the image - hoist it out of the row loop. */
    int use_fused = (z->img_n == 3
+         && !z->rgb
          && z->upsample_YCbCr_to_BGRA_kernel
          && decode_n >= 3
          && res[1].hs == 2
@@ -4546,6 +4584,29 @@ static void rjpeg_output_rows(rjpeg_jpeg *z, rjpeg_resample *res,
                   out[i*4 + 2] = RJPEG_MUL255(coutput[0][i], kv);
                   out[i*4 + 3] = 255;
                }
+            }
+         }
+      }
+      else if (z->img_n == 3 && z->rgb)
+      {
+         /* R, G and B planes: no colour transform, only the byte order
+          * the caller asked for. */
+         if (coutput[0] && coutput[1] && coutput[2])
+         {
+            const uint8_t *r = coutput[0], *g = coutput[1], *b = coutput[2];
+            unsigned i;
+            if (!supports_rgba)
+            {
+               const uint8_t *t = r;
+               r = b;
+               b = t;
+            }
+            for (i = 0; i < z->img_x; ++i)
+            {
+               out[i*4    ] = r[i];
+               out[i*4 + 1] = g[i];
+               out[i*4 + 2] = b[i];
+               out[i*4 + 3] = 255;
             }
          }
       }
@@ -5355,6 +5416,8 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
 
          j->img_n            = 0;
          j->app14_transform  = -1;   /* no Adobe APP14 seen yet */
+         j->jfif             = 0;
+         j->rgb              = 0;
 
          if (!rjpeg_decode_jpeg_image(j))
          {
