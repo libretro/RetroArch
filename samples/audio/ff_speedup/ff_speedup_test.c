@@ -1061,6 +1061,141 @@ static void test_stop_excludes_idle_gap(void)
    fresh();
 }
 
+/* --- a pause or a stall inside a fast-forward hold ------------------ */
+
+static ssize_t hold_dev_write(void *data, const void *buf, size_t len)
+{ (void)data; (void)buf; return (ssize_t)len; }
+static size_t hold_dev_wait(void *data, size_t len) { (void)data; return len; }
+
+/* One 2x frame. The consumer pulls at the core's speed while the
+ * stretch runs, and at the device's 1x without it. */
+static void hold_frame(const int16_t *block)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   size_t pull = (st->pipe_transport_mode == AUDIO_TRANSPORT_RUNNING
+         ? FRAMES : FRAMES / 2) * st->pipe_frame_bytes;
+   if (pull > retro_spsc_read_avail(&st->pipe_ring))
+      pull = retro_spsc_read_avail(&st->pipe_ring);
+   retro_spsc_skip(&st->pipe_ring, pull);
+   audio_pipeline_layout_limit_transport(&st->pipe_layouts,
+         retro_atomic_load_relaxed_size(&st->pipe_ring.tail), 0,
+         st->pipe_ring.capacity);
+   fake_now += ONE_X / 2;
+   audio_driver_submit(st, 1.0f, block, FRAMES * 2, false, false, true, true);
+   audio_driver_frame_end();
+}
+
+/* A gap inside a fast-forward hold, with Speedup off so only the
+ * stretch follows the measured speed. A pause is not measured at all:
+ * the estimate holds the hold's speed through it. A stall is back on
+ * within a few frames, not once fast-forward is released. */
+static void test_threaded_hold_survives_a_gap(bool pause)
+{
+   static int16_t stage_out[FRAMES * 8];
+   int16_t block[FRAMES * 2];
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings     = config_get_ptr();
+   audio_driver_t dev;
+   char what[96];
+   int i, held, last_off = -1, drift = -1;
+   double speed;
+
+   memset(block, 0, sizeof(block));
+   memset(&dev, 0, sizeof(dev));
+   dev.write         = hold_dev_write;
+   dev.wait_writable = hold_dev_wait;
+   dev.ident         = "hold";
+   fresh();
+   st->current_audio      = &dev;
+   st->context_audio_data = &dev;
+   settings->bools.audio_fastforward_speedup = false;
+   settings->bools.audio_sync                = true;
+   settings->floats.fastforward_ratio        = 2.0f;
+   runloop_state_get_ptr()->flags            = RUNLOOP_FLAG_FASTMOTION;
+   audio_driver_publish_runloop();
+   st->pipe_threaded    = true;
+   st->pipe_channels    = 2;
+   st->pipe_frame_bytes = 2 * sizeof(int16_t);
+   st->pipe_pass_frames = FRAMES;
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_STARTED
+         | AUDIO_FLAG_ACTIVE);
+   if (!retro_spsc_init(&st->pipe_ring, FRAMES * 3 * st->pipe_frame_bytes))
+      abort();
+   if (!retro_eventcount_init(&st->pipe_space)
+         || !retro_eventcount_init(&st->pipe_data)) abort();
+   audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
+   retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 65536);
+   retro_atomic_store_release_int(&st->pipe_stalled, 1);
+   st->pipe_transport = audio_pipeline_stretch_new(48000, 2, false, 3,
+         &st->pipe_ring, &st->pipe_layouts, stage_out, FRAMES * 4);
+   if (!st->pipe_transport) abort();
+   st->pipe_transport_mode   = AUDIO_TRANSPORT_RUNNING;
+   st->pipe_transport_follow = AUDIO_TRANSPORT_FOLLOW | AUDIO_TRANSPORT_UPDATE;
+
+   for (i = 0; i < 64; i++)
+      hold_frame(block);
+   CHECK(st->pipe_transport_mode == AUDIO_TRANSPORT_RUNNING
+         && (st->pipe_layouts.published_control & AUDIO_PIPELINE_STRETCH),
+         "threaded: the stretch follows a 2x hold");
+   held  = retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16);
+   speed = (double)st->avg_flush_delta / st->avg_expected_delta;
+
+   /* A pause shorter than a gap: measured, it would read as a slower
+    * hold without ever leaving the stretch's range. */
+   if (pause)
+   {
+      audio_driver_pause_fade(true);
+      retro_spsc_skip(&st->pipe_ring, retro_spsc_read_avail(&st->pipe_ring));
+      fake_now += ONE_X * 15 / 2;
+      audio_driver_pause_fade(false);
+   }
+   else
+      fake_now += 3 * 1000000;
+
+   for (i = 0; i < 64; i++)
+   {
+      hold_frame(block);
+      if (     st->pipe_transport_mode != AUDIO_TRANSPORT_RUNNING
+            || !(st->pipe_layouts.published_control & AUDIO_PIPELINE_STRETCH))
+         last_off = i;
+      if (!near((double)st->avg_flush_delta / st->avg_expected_delta, speed))
+         drift = i;
+   }
+   if (pause)
+   {
+      snprintf(what, sizeof(what), "threaded: the stretch stays on through a "
+            "pause (off until %d)", last_off);
+      CHECK(last_off < 0, what);
+      snprintf(what, sizeof(what), "threaded: the pause is not measured "
+            "(off the hold's speed until %d)", drift);
+      CHECK(drift < 0, what);
+   }
+   else
+   {
+      snprintf(what, sizeof(what), "threaded: the stretch is back on after a "
+            "stall within 12 frames (off until %d)", last_off);
+      CHECK(last_off < 12, what);
+   }
+   CHECK(near(retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16), held),
+         "and measures the hold as before it");
+
+   if (st->pipe_transport)
+      audio_pipeline_stretch_free(st->pipe_transport);
+   if (st->pipe_transport_suspended)
+      audio_pipeline_stretch_free(st->pipe_transport_suspended);
+   st->pipe_transport           = NULL;
+   st->pipe_transport_suspended = NULL;
+   st->pipe_transport_mode      = AUDIO_TRANSPORT_NONE;
+   retro_spsc_free(&st->pipe_ring);
+   retro_eventcount_free(&st->pipe_space);
+   retro_eventcount_free(&st->pipe_data);
+   settings->bools.audio_sync         = false;
+   settings->floats.fastforward_ratio = 0.0f;
+   runloop_state_get_ptr()->flags     = 0;
+   audio_driver_publish_runloop();
+   fresh();
+}
+
 int main(void)
 {
    printf("fast-forward audio speedup:\n");
@@ -1083,6 +1218,7 @@ int main(void)
    test_stop_excludes_idle_gap();
    test_inline_silent_boundaries();
    test_callback_optin();
+   test_threaded_hold_survives_a_gap(true);
 
    if (failures)
    {

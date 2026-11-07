@@ -73,7 +73,17 @@ static audio_pipeline_stretch_t *transport_test_new(unsigned rate,
  * time. The header's prototypes take the new names along. */
 #define retro_resampler_realloc_hq   test_resampler_realloc_hq
 #define retro_resampler_int16_new    test_resampler_int16_new
+/* The driver's clock: real time unless a case steps it itself. */
+#include <features/features_cpu.h>
+static bool fake_clock;
+static retro_time_t fake_now;
+static retro_time_t harness_time_usec(void)
+{
+   return fake_clock ? fake_now : cpu_features_get_time_usec();
+}
+#define cpu_features_get_time_usec   harness_time_usec
 #include "../../../audio/audio_driver.c"
+#undef cpu_features_get_time_usec
 #undef retro_resampler_realloc_hq
 #undef retro_resampler_int16_new
 #undef realloc
@@ -2783,6 +2793,89 @@ static void inline_transport_cases(void)
    printf("inline native transport: 10 cases, %u failures\n", failures - before);
 }
 
+static void inline_hold_frame(const float *input)
+{
+   fake_now += (retro_time_t)(735 * 1000000.0 / 44100.0) / 2;
+   CHECK(audio_driver_sample_batch_float(input, 735) == 735, "hold source accounting");
+   audio_driver_frame_end();
+}
+
+/* A gap inside a fast-forward hold, with Speedup off so only the
+ * stretch follows the measured speed. A pause is not measured at all:
+ * the estimate holds the hold's speed through it. A stall is back on
+ * within a few frames, not once fast-forward is released. */
+static void inline_hold_gap_case(bool pause)
+{
+   static float input[735 * 2];
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   unsigned before = failures;
+   int i, last_off = -1, drift = -1;
+   double speed;
+   size_t f;
+   for (f = 0; f < 735; f++)
+      input[2 * f] = input[2 * f + 1] = 0.3f * (float)sin(2 * M_PI * 441 * f / 44100.0);
+   CHECK(up(true, AUDIO_LAYOUT_STEREO, true), "hold stand-up");
+   settings->bools.audio_time_stretch = true;
+   settings->bools.audio_time_stretch_lowpass = false;
+   settings->bools.audio_fastforward_speedup = false;
+   settings->floats.fastforward_ratio = 2.0f;
+   CHECK(audio_driver_transport_configure(settings) && st->inline_transport,
+         "hold inline configuration");
+   if (!st->inline_transport)
+   {
+      settings->bools.audio_time_stretch = false;
+      settings->floats.fastforward_ratio = 0.0f;
+      audio_driver_deinit_internal(true);
+      return;
+   }
+   fake_now   = 1000000;
+   fake_clock = true;
+   runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
+   audio_driver_publish_runloop();
+   for (i = 0; i < 64; i++)
+      inline_hold_frame(input);
+   CHECK(!st->inline_transport->bypassed, "inline stretch did not follow a 2x hold");
+   speed = (double)st->avg_flush_delta / st->avg_expected_delta;
+   /* A pause shorter than a gap: measured, it would read as a slower
+    * hold without ever leaving the stretch's range. */
+   if (pause)
+   {
+      audio_driver_pause_fade(true);
+      fake_now += 125000;
+      audio_driver_pause_fade(false);
+   }
+   else
+      fake_now += 3 * 1000000;
+   for (i = 0; i < 64; i++)
+   {
+      inline_hold_frame(input);
+      if (st->inline_transport->bypassed)
+         last_off = i;
+      if (fabs((double)st->avg_flush_delta / st->avg_expected_delta - speed)
+            > speed * 0.05)
+         drift = i;
+   }
+   if (pause)
+   {
+      CHECK(last_off < 0, "inline stretch off %d frames after a pause",
+            last_off + 1);
+      CHECK(drift < 0, "inline pause measured: off the hold's speed until %d",
+            drift);
+   }
+   else
+      CHECK(last_off < 24, "inline stretch still off %d frames after a stall",
+            last_off + 1);
+   fake_clock = false;
+   runloop_state_get_ptr()->flags = 0;
+   settings->bools.audio_time_stretch = false;
+   settings->floats.fastforward_ratio = 0.0f;
+   audio_driver_publish_runloop();
+   audio_driver_deinit_internal(true);
+   printf("inline fast-forward %s: %u failures\n", pause ? "pause" : "stall",
+         failures - before);
+}
+
 #include "inline_wide.h"
 #include "producer_spans.h"
 
@@ -2808,6 +2901,7 @@ int main(void)
    RUN("inlineformat", inline_format_cases());
    RUN("callbackcontinuity", inline_callback_cases());
    RUN("inline", inline_transport_cases());
+   RUN("inlinehold", inline_hold_gap_case(true));
    RUN("canonicalreserve", canonical_reserve_cases());
    RUN("transportowner", transport_owner_cases());
    RUN("transportdiscard", transport_discard_cases());
