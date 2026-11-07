@@ -998,7 +998,12 @@
  * will display a screensaver after SCREENSAVER_TIMEOUT
  * seconds of inactivity. A timeout of zero disables
  * the screensaver */
+#if defined(WEBOS)
+/* OLED TVs: blank an idle menu after 3 minutes */
+#define DEFAULT_MENU_SCREENSAVER_TIMEOUT 180
+#else
 #define DEFAULT_MENU_SCREENSAVER_TIMEOUT 0
+#endif
 
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
 /* When menu screensaver is enabled, specifies
