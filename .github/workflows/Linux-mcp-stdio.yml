@@ -83,6 +83,9 @@ jobs:
             -o samples/network/command_frames/harness_core_nomap.so \
             samples/network/command_frames/harness_core.c
 
+      - name: Command-line command errors and delivery
+        run: python3 samples/network/command_frames/cli_e2e.py ./retroarch
+
       - name: MCP over stdin and stdout, end to end
         shell: bash
         run: |

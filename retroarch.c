@@ -9277,10 +9277,7 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_NETWORK_CMD
             case RA_OPT_COMMAND:
 #ifdef HAVE_COMMAND
-               if (command_network_send((const char*)optarg))
-                  exit(0);
-               else
-                  retroarch_fail(1, "network_cmd_send()");
+               exit(command_network_send((const char*)optarg) ? 0 : 1);
 #endif
                break;
 #endif
