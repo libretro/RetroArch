@@ -2905,6 +2905,19 @@ static size_t audio_transfer_flac_pull(struct audio_transfer_flac *fl,
    return produced;
 }
 
+/* How many frames a decode-forward step may ask for into a scratch of
+ * @samples s16: the scratch holds frames times channels, and FLAC goes
+ * up to eight channels.  Before the header is read the count is not
+ * known, so the step assumes the most. */
+static size_t audio_transfer_flac_step_frames(
+      const struct audio_transfer_flac *fl, size_t samples)
+{
+   const rflac_format_t *ff = rflac_format(fl->handle);
+   unsigned ch = (ff && ff->channels && ff->channels <= 8)
+      ? ff->channels : 8;
+   return samples / ch;
+}
+
 /* Restarts the stream and decodes forward to @frame.  Returns 1 when
  * positioned. */
 static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
@@ -2945,9 +2958,11 @@ static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
          {
             int16_t skip[1024 * 2];
             size_t  want = (size_t)(frame - landed);
+            size_t  most = audio_transfer_flac_step_frames(fl,
+                  sizeof(skip) / sizeof(skip[0]));
             size_t  got;
-            if (want > 1024)
-               want = 1024;
+            if (want > most)
+               want = most;
             got = audio_transfer_flac_pull(fl, skip, want, 0);
             if (!got)
                break;
@@ -2976,9 +2991,11 @@ static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
    for (at = 0; at < frame; )
    {
       size_t want = (size_t)(frame - at);
+      size_t most = audio_transfer_flac_step_frames(fl,
+            sizeof(scratch) / sizeof(scratch[0]));
       size_t got;
-      if (want > 1024)
-         want = 1024;
+      if (want > most)
+         want = most;
       got = audio_transfer_flac_pull(fl, scratch, want, 0);
       if (!got)
          return 0;
