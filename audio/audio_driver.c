@@ -1284,7 +1284,7 @@ static void audio_driver_core_stream_reset(audio_driver_state_t *audio_st)
    audio_st->last_out[0]              = 0.0f;
    audio_st->last_out[1]              = 0.0f;
    audio_st->fade_in_frames           = 0;
-   audio_st->fade_in_pending          = false;
+   retro_atomic_store_release_int(&audio_st->fade_in_pending, 0);
    audio_st->pause_mute_frames        = 0;
    audio_st->pause_hist_pos           = 0;
    audio_st->pause_hist_fill          = 0;
@@ -6346,7 +6346,7 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
             /* Without the threaded pipeline the ramp's arming is the
              * submitter's, as is the rest of a pause and a resume. */
             if (!audio_st->pipe_threaded)
-               audio_st->fade_in_pending = false;
+               retro_atomic_store_release_int(&audio_st->fade_in_pending, 0);
             audio_driver_pause_tail(audio_st, audio_st->current_audio,
                   write_tail);
             break;
@@ -6355,7 +6355,7 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
                bool topup = retro_atomic_load_acquire_int(
                      &audio_st->pipe_resume_topup) != 0;
                if (!audio_st->pipe_threaded && topup)
-                  audio_st->fade_in_pending = true;
+                  retro_atomic_store_release_int(&audio_st->fade_in_pending, 1);
                audio_driver_resume_reset(audio_st, topup);
             }
             break;
@@ -6557,9 +6557,9 @@ void audio_driver_pause_fade(bool paused)
        * inside the menu it paused), and ramping audio that never
        * stopped is a dip in the middle of it. */
       if (paused)
-         audio_st->fade_in_pending = false;
+         retro_atomic_store_release_int(&audio_st->fade_in_pending, 0);
       else if (was_silenced)
-         audio_st->fade_in_pending = true;
+         retro_atomic_store_release_int(&audio_st->fade_in_pending, 1);
       audio_driver_request_post(audio_st,
             paused ? &audio_st->pipe_tail_seq : &audio_st->pipe_resume_seq);
       audio_driver_pipeline_signal(audio_st);
@@ -6571,7 +6571,7 @@ void audio_driver_pause_fade(bool paused)
 #else
    if (paused)
    {
-      audio_st->fade_in_pending = false;
+      retro_atomic_store_release_int(&audio_st->fade_in_pending, 0);
       audio_driver_pause_tail(audio_st, audio, true);
    }
    else
@@ -6579,7 +6579,7 @@ void audio_driver_pause_fade(bool paused)
       /* Ramp the first frames of whatever comes back, in audio_driver_flush;
        * only when the stream was actually taken down. */
       if (was_silenced)
-         audio_st->fade_in_pending = true;
+         retro_atomic_store_release_int(&audio_st->fade_in_pending, 1);
       audio_driver_resume_reset(audio_st, was_silenced);
    }
 #endif
@@ -6643,15 +6643,21 @@ static bool audio_driver_ff_drain(audio_driver_state_t *audio_st,
    return false;
 }
 
+/* Takes the resume ramp owed, if one is: armed on the main thread,
+ * taken on the thread that submits, by fetch-and with zero (exchange is
+ * not on every retro_atomic.h backend). */
+static INLINE bool audio_driver_fade_take(audio_driver_state_t *audio_st)
+{
+   return retro_atomic_load_acquire_int(&audio_st->fade_in_pending)
+      && retro_atomic_fetch_and_int(&audio_st->fade_in_pending, 0);
+}
+
 /* Arms the resume ramp owed since the last resume. Under the state lock,
  * on the flush that carries the core's first audio. */
 static void audio_driver_arm_resume(audio_driver_state_t *audio_st)
 {
-   if (audio_st->fade_in_pending)
-   {
+   if (audio_driver_fade_take(audio_st))
       audio_st->fade_in_frames  = AUDIO_PAUSE_TAIL_FRAMES;
-      audio_st->fade_in_pending = false;
-   }
 }
 
 void audio_driver_pipeline_wake(void)
@@ -7211,11 +7217,10 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
 
       /* The resume ramp belongs to the core's first audio, not to
        * whatever the consumer flushes next: mark where that starts. */
-      if (from_core && audio_st->fade_in_pending)
+      if (from_core && audio_driver_fade_take(audio_st))
       {
          audio_driver_pipe_fade_publish(audio_st, true,
                retro_atomic_load_relaxed_size(&audio_st->pipe_ring.head));
-         audio_st->fade_in_pending = false;
       }
 
       /* Where the producer stops short of a full ring; see

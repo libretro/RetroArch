@@ -988,8 +988,10 @@ typedef struct
    float                 last_out[2];
    unsigned              fade_in_frames;
    /* A resume ramp owed to the core's first audio after the pause; the
-    * menu's silence in between must not spend it. */
-   bool                  fade_in_pending;
+    * menu's silence in between must not spend it. Armed by the main
+    * thread at a resume on the threaded pipeline and taken by the
+    * producer, which may run on a core's thread of its own. */
+   retro_atomic_int_t    fade_in_pending;
    /* Rolling copy of the most recent output frames, and how much of it is
     * valid. A copy of what has already gone to the device, never a delay
     * line, so it costs nothing on the fast-forward path. Lets a pause be

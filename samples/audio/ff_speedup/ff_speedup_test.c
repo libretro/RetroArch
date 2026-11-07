@@ -32,10 +32,16 @@
 #include <boolean.h>
 #include <retro_atomic.h>
 #include <rthreads/rthreads.h>
+#include <retro_timers.h>
 #include <features/features_cpu.h>
 
 static retro_time_t fake_now;
-static retro_time_t fake_time_usec(void) { return fake_now; }
+/* Real time for a case that runs threads; set before they start. */
+static bool real_clock;
+static retro_time_t fake_time_usec(void)
+{
+   return real_clock ? cpu_features_get_time_usec() : fake_now;
+}
 #define cpu_features_get_time_usec fake_time_usec
 
 #include "../../../audio/audio_driver.c"
@@ -1208,6 +1214,107 @@ static void test_threaded_hold_survives_a_gap(bool pause, bool speedup)
    fresh();
 }
 
+/* --- the threaded pipeline with a core on a thread of its own ------- */
+
+/* The producer submits from the core's thread while the main thread
+ * ends frames, holds and releases fast-forward and pauses: the frame
+ * count is added on one and taken on the other, and the measurement is
+ * the main thread's alone. Judged by ThreadSanitizer. */
+static retro_atomic_int_t hold_core_done;
+static void hold_core_thread(void *data)
+{
+   static int16_t block[FRAMES * 2];
+   audio_driver_state_t *st = &audio_driver_st;
+   int i;
+   (void)data;
+   for (i = 0; i < 400; i++)
+   {
+      size_t avail = retro_spsc_write_avail(&st->pipe_ring);
+      if (avail >= FRAMES * st->pipe_frame_bytes)
+         audio_driver_submit(st, 1.0f, block, FRAMES * 2, false, false,
+               (retro_atomic_load_acquire_int(&st->runloop_snapshot)
+                & AUDIO_SNAP_FASTMOTION) != 0, true);
+      retro_sleep(1);
+   }
+   retro_atomic_store_release_int(&hold_core_done, 1);
+}
+
+static void test_threaded_core_thread(void)
+{
+   static int16_t stage_out[FRAMES * 8];
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings     = config_get_ptr();
+   audio_driver_t dev;
+   sthread_t *th;
+   unsigned step = 0;
+
+   memset(&dev, 0, sizeof(dev));
+   dev.write         = hold_dev_write;
+   dev.wait_writable = hold_dev_wait;
+   dev.ident         = "hold";
+   fresh();
+   st->current_audio      = &dev;
+   st->context_audio_data = &dev;
+   settings->bools.audio_fastforward_speedup = true;
+   settings->floats.fastforward_ratio        = 2.0f;
+   runloop_state_get_ptr()->flags            = RUNLOOP_FLAG_FASTMOTION;
+   audio_driver_publish_runloop();
+   st->pipe_threaded    = true;
+   st->pipe_channels    = 2;
+   st->pipe_frame_bytes = 2 * sizeof(int16_t);
+   st->pipe_pass_frames = FRAMES;
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_STARTED
+         | AUDIO_FLAG_ACTIVE);
+   if (!retro_spsc_init(&st->pipe_ring, FRAMES * 3 * st->pipe_frame_bytes))
+      abort();
+   if (!retro_eventcount_init(&st->pipe_space)
+         || !retro_eventcount_init(&st->pipe_data)) abort();
+   audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
+   retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 65536);
+   (void)stage_out;
+   real_clock = true;
+   retro_atomic_int_init(&hold_core_done, 0);
+   th = sthread_create(hold_core_thread, NULL);
+   CHECK(th != NULL, "core thread: started");
+   while (th && !retro_atomic_load_acquire_int(&hold_core_done))
+   {
+      switch (step++ % 5)
+      {
+         case 0: case 2:
+            runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
+            break;
+         case 1:
+            runloop_state_get_ptr()->flags = 0;
+            break;
+         case 3:
+            audio_driver_pause_fade(true);
+            runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION
+               | RUNLOOP_FLAG_PAUSED;
+            break;
+         case 4:
+            runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
+            audio_driver_pause_fade(false);
+            break;
+      }
+      /* The consumer's share: take the ring down. */
+      retro_spsc_skip(&st->pipe_ring, retro_spsc_read_avail(&st->pipe_ring));
+      audio_driver_frame_end();
+      retro_sleep(1);
+   }
+   if (th)
+      sthread_join(th);
+   real_clock = false;
+   CHECK(step > 5, "core thread: the main thread ended frames beside it");
+   retro_spsc_free(&st->pipe_ring);
+   retro_eventcount_free(&st->pipe_space);
+   retro_eventcount_free(&st->pipe_data);
+   settings->bools.audio_fastforward_speedup = false;
+   settings->floats.fastforward_ratio        = 0.0f;
+   runloop_state_get_ptr()->flags            = 0;
+   audio_driver_publish_runloop();
+   fresh();
+}
+
 int main(void)
 {
    printf("fast-forward audio speedup:\n");
@@ -1233,6 +1340,7 @@ int main(void)
    test_threaded_hold_survives_a_gap(true, false);
    test_threaded_hold_survives_a_gap(false, false);
    test_threaded_hold_survives_a_gap(false, true);
+   test_threaded_core_thread();
 
    if (failures)
    {
