@@ -75,6 +75,14 @@ static int test_output(void *owner, unsigned slot, video_hw_frame_t *frame)
    return 8;
 }
 
+static int test_available(void *owner, unsigned *capacity, uint32_t *slots)
+{
+   assert(owner && capacity && slots);
+   *capacity = 4;
+   *slots = UINT32_C(10);
+   return 11;
+}
+
 static int test_drain(void *owner)
 {
    assert(owner);
@@ -87,7 +95,7 @@ bool vaapi_hevc_owner_open_source(vaapi_hevc_owner_t **out,
       const video_color_metadata_t *color, unsigned yuv, unsigned slots,
       size_t max_input, rh265_hw_ops_t *ops)
 {
-   assert(source && !*out && !ops->decoder && p == &params && slots == 3
+   assert(source && !*out && !ops->decoder && p == &params && slots == 4
          && max_input == 4096 && !strcmp(path, "/dev/dri/renderD128")
          && major_id == seen_major && minor_id == seen_minor);
    seen_yuv   = yuv;
@@ -107,6 +115,7 @@ bool vaapi_hevc_owner_open_source(vaapi_hevc_owner_t **out,
    ops->decode  = test_decode;
    ops->output  = test_output;
    ops->drain   = test_drain;
+   ops->available = test_available;
    return true;
 }
 
@@ -282,7 +291,8 @@ int main(void)
    rh265_hw_backend_t foreign;
    vaapi_hevc_backend_t exhausted;
    pthread_t setup;
-   unsigned i, before;
+   unsigned i, before, capacity;
+   uint32_t writable;
    int owners[2];
    caller = pthread_self();
    test_driver_admission();
@@ -328,6 +338,8 @@ int main(void)
    assert(first.decode(first.decoder, &params, NULL, NULL, NULL) == 7);
    assert(first.output(first.decoder, 2, NULL) == 8);
    assert(first.drain(first.decoder) == 9);
+   assert(first.available(first.decoder, &capacity, &writable) == 11
+         && capacity == 4 && writable == UINT32_C(10));
    backend.offer.close(&first);
    backend.offer.close(&second);
    assert(!first.decoder && !second.decoder);
@@ -361,6 +373,8 @@ int main(void)
    assert(vaapi_hevc_backend_withdraw(&backend, owners));
    assert(!registered && !test_open(&refused));
    assert(first.drain(first.decoder) == 9);
+   assert(first.available(first.decoder, &capacity, &writable) == 11
+         && capacity == 4 && writable == UINT32_C(10));
    backend.offer.close(&first);
    wait_value(&backend.active, 0);
    assert(vaapi_hevc_backend_publish(&backend, owners, 226, 129));

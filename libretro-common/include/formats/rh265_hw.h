@@ -58,12 +58,12 @@ static INLINE bool rh265_hw_state_init(rh265_hw_state_t *s, unsigned slots)
    return true;
 }
 
-/* 0 ready, 1 backpressure, 2 skipped RASL, negative invalid/unsupported.
+/* 0 ready, 1 DPB pressure, 2 skipped RASL, 3 no writable slot, negative invalid.
  * No state changes. Keep the packet and prepared metadata immutable while
  * the backend is busy; commit once only, after decode accepts this plan. */
-static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
+static INLINE int rh265_hw_prepare_available(const rh265_hw_state_t *s,
       const rh265_video_params_t *params, const rh265_access_unit_t *au,
-      rh265_hw_picture_t *out)
+      uint32_t available, rh265_hw_picture_t *out)
 {
    const rh265_slice_info_t *h;
    int64_t poc, prev_lsb, prev_msb, msb, max_lsb;
@@ -204,10 +204,13 @@ static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
    {
       unsigned slot = (i + (unsigned)((s->serial - 1) % s->slots)) % s->slots;
       if (occupied & (UINT32_C(1) << slot)) held++;
-      else if (out->slot == s->slots) out->slot = slot;
+      else if (out->slot == s->slots && (available & (UINT32_C(1) << slot)))
+         out->slot = slot;
    }
-   if (out->slot == s->slots || held >= (unsigned)params->max_dec_pic_buffering)
+   if (held >= (unsigned)params->max_dec_pic_buffering)
    { memset(out, 0, sizeof(*out)); return 1; }
+   if (out->slot == s->slots)
+   { memset(out, 0, sizeof(*out)); return 3; }
    out->reference = type >= 16 || (type & 1);
    out->output = h->pic_output_flag;
    out->width = (unsigned)params->width; out->height = (unsigned)params->height;
@@ -217,6 +220,13 @@ static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
 invalid:
    memset(out, 0, sizeof(*out));
    return -1;
+}
+
+static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
+      const rh265_video_params_t *params, const rh265_access_unit_t *au,
+      rh265_hw_picture_t *out)
+{
+   return rh265_hw_prepare_available(s, params, au, ~(uint32_t)0, out);
 }
 
 /* Output releases may occur between prepare and commit; another decode or
@@ -267,6 +277,7 @@ static INLINE bool rh265_hw_output_release(rh265_hw_state_t *s, unsigned slot)
    s->outputs &= ~bit;
    return true;
 }
+/* Zero initialize before assigning callbacks. */
 typedef struct rh265_hw_ops
 {
    void *decoder;
@@ -278,6 +289,9 @@ typedef struct rh265_hw_ops
    int (*output)(void *decoder, unsigned slot, video_hw_frame_t *frame);
    /* Optional EOF submission: 0 accepted, 1 busy, negative failure. */
    int (*drain)(void *decoder);
+   /* Optional nonblocking query: 0 supplies capacity/writable mask, negative
+    * failure. Capacity may exceed the requested slots but stays fixed. */
+   int (*available)(void *decoder, unsigned *capacity, uint32_t *writable);
 } rh265_hw_ops_t;
 
 typedef struct rh265_hw_backend
@@ -355,8 +369,18 @@ static INLINE int rh265_hw_session_submit(rh265_hw_session_t *s,
    }
    if (s->phase == 1)
    {
-      ret = rh265_hw_prepare(&s->state, params, au, &s->pending);
+      uint32_t available = ~(uint32_t)0;
+      unsigned capacity = s->state.slots;
+      if (s->ops.available && (s->ops.available(s->ops.decoder, &capacity, &available)
+               != 0 || capacity != s->state.slots))
+      {
+         s->broken = 1;
+         rh265_hw_session_clear_packet(s);
+         return -1;
+      }
+      ret = rh265_hw_prepare_available(&s->state, params, au, available, &s->pending);
       if (ret == 1) { s->pressure = 1; return 1; }
+      if (ret == 3) { s->pressure = 0; return 1; }
       if (ret == 2) { rh265_hw_session_clear_packet(s); return 0; }
       if (ret < 0) { rh265_hw_session_clear_packet(s); return ret; }
       s->phase = 2; s->pressure = 0;

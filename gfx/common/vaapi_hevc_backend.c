@@ -121,6 +121,16 @@ static void *vaapi_hevc_backend_retire(void *opaque)
    return NULL;
 }
 
+static int vaapi_hevc_backend_available(
+      void *opaque, unsigned *capacity, uint32_t *slots)
+{
+   vaapi_hevc_backend_session_t *session =
+         (vaapi_hevc_backend_session_t *)opaque;
+   if (!session || !session->native.available)
+      return -1;
+   return session->native.available(session->native.decoder, capacity, slots);
+}
+
 static int vaapi_hevc_backend_decode(void *opaque,
       const rh265_video_params_t *params, const rh265_access_unit_t *au,
       const rh265_nal_t *slices, const rh265_hw_picture_t *picture)
@@ -240,7 +250,7 @@ static bool vaapi_hevc_backend_open(void *opaque, const rh265_video *source,
       return false;
    }
    if (!vaapi_hevc_owner_open_source(&session->retired, source, path, major_id,
-             minor_id, params, &color, yuv, slots, backend->max_input,
+             minor_id, params, &color, yuv, slots < 32 ? slots + 1 : slots, backend->max_input,
              &session->native))
    {
       vaapi_hevc_backend_release(session);
@@ -257,6 +267,7 @@ static bool vaapi_hevc_backend_open(void *opaque, const rh265_video *source,
    ops->decode  = vaapi_hevc_backend_decode;
    ops->output  = vaapi_hevc_backend_output;
    ops->drain   = vaapi_hevc_backend_drain;
+   ops->available = vaapi_hevc_backend_available;
    return true;
 }
 #endif

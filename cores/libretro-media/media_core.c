@@ -161,6 +161,7 @@ typedef struct
    rmp4_video_stream_t *mp4vs;       /* video stream when playing MP4   */
    int          mp4_hw_required;
    int          mp4_restoring;
+   int          mp4_prefetched, mp4_prefetch_ms;
 #endif
    int          vtrack;              /* video track index               */
    enum rwebm_codec codec;
@@ -597,6 +598,9 @@ static void media_drop_hw(media_player_t *p)
    if (p->hw_frame.image)
       video_hw_frame_abandon(&p->hw_frame);
    memset(&p->hw_frame, 0, sizeof(p->hw_frame));
+#ifdef HAVE_RMP4
+   p->mp4_prefetched = 0;
+#endif
 }
 
 static void media_close_webm_hw(media_player_t *p)
@@ -686,6 +690,21 @@ static void media_present_hw(media_player_t *p)
 }
 
 #ifdef HAVE_RMP4
+static void media_prefetch_mp4(media_player_t *p)
+{
+   int duration = 0;
+   if (!p->hw_video || !rmp4_video_stream_h265(p->mp4vs)
+         || p->hw_frame.image || p->eof || !p->vshown
+         || p->seeking || p->mp4_restoring || p->pending_seek_ns >= 0)
+      return;
+   if (rmp4_video_stream_skip(p->mp4vs, &duration) == 1
+         && rmp4_video_stream_hw_frame(p->mp4vs, &p->hw_frame))
+   {
+      p->mp4_prefetched = 1;
+      p->mp4_prefetch_ms = duration;
+   }
+}
+
 static void media_present_mp4(media_player_t *p, int have)
 {
    if (!p->hw_video)
@@ -2357,6 +2376,18 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
       p->play_ns += p->frame_ns;
       {
          int have = 0;
+         if (p->mp4_prefetched)
+         {
+            if (p->vpts_ns > p->play_ns - p->frame_ns / 2)
+            {
+               MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+               goto mp4_presented;
+            }
+            p->vpts_ns += (int64_t)p->mp4_prefetch_ms * 1000000;
+            p->vshown++;
+            p->mp4_prefetched = 0;
+            have = 1;
+         }
          while (!p->eof && !p->hw_frame.image
                && p->vpts_ns <= p->play_ns - p->frame_ns / 2)
          {
@@ -2401,6 +2432,7 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
          }
       }
 mp4_presented:
+      media_prefetch_mp4(p);
       if (p->eof && !p->hw_frame.image)
       {
          int audio_done = 1;
@@ -2764,6 +2796,7 @@ static bool media_load_mp4(media_player_t *p)
     * interleave stage at no per-frame cost), so the per-frame copy
     * below needs no per-pixel swizzle. */
    rmp4_video_stream_set_argb(p->mp4vs, 1);
+   rmp4_video_stream_set_decode_ahead(p->mp4vs, 1);
    p->hw_video = 0;
    p->hw_started = 0;
    rmp4_video_stream_get_info(p->mp4vs, &w, &h, &nframes, &loops);

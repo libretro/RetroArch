@@ -267,6 +267,11 @@ int rh265_video_drain(rh265_video *v);
 int rh265_video_decode_timed(rh265_video *v, const uint8_t *data, size_t len,
       int64_t timestamp, int64_t *output_timestamp);
 int rh265_video_drain_timed(rh265_video *v, int64_t *output_timestamp);
+/* Opt-in input pipelining: hardware 0 also consumes accepted input while
+ * output is not ready. 2/3 still require an identical-packet retry.
+ * Timestamp and software behavior follow decode_timed. */
+int rh265_video_decode_timed_ahead(rh265_video *v, const uint8_t *data,
+      size_t len, int64_t timestamp, int64_t *output_timestamp);
 /* Timed decode/drain without exporting a hardware output lease. The display
  * timestamp still advances; CPU decoding and busy retry rules are unchanged. */
 int rh265_video_decode_timed_discard(rh265_video *v, const uint8_t *data,

@@ -189,16 +189,21 @@ static void owner_lifetime(unsigned bits, bool claimed)
    video_hw_frame_t frame;
    vaapi_frame_view_t view;
    vaapi_hevc_export_t taken;
-   unsigned native_calls;
+   unsigned native_calls, capacity;
+   uint32_t writable;
    owner_reset(bits);
    owner_yuv = IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709;
    assert(owner_open() && owner_ops.decoder == test_owner);
    assert(!vaapi_hevc_owner_retire(test_owner));
    assert(!owner_ops.drain(owner_ops.decoder));
+   assert(!owner_ops.available(owner_ops.decoder, &capacity, &writable)
+         && capacity == 4 && writable == UINT32_C(15));
    test_owner->pool.ready = test_owner->pool.valid = 1;
    test_owner->pool.generation[0]                  = 1;
    assert(!owner_ops.output(owner_ops.decoder, 0, &frame));
    assert(owner_fds && frame.width == 64 && frame.height == 64);
+   assert(!owner_ops.available(owner_ops.decoder, &capacity, &writable)
+         && capacity == 4 && writable == UINT32_C(14));
    assert(frame.yuv == owner_yuv);
    memset(&taken, 0, sizeof(taken));
    if (claimed)
@@ -210,7 +215,7 @@ static void owner_lifetime(unsigned bits, bool claimed)
    }
    assert(vaapi_hevc_owner_detach(&owner_ops) == test_owner);
    assert(!owner_ops.decoder && !owner_ops.decode && !owner_ops.output
-         && !owner_ops.drain);
+         && !owner_ops.drain && !owner_ops.available);
    assert(!vaapi_hevc_owner_retire(test_owner));
    assert(!term_calls && !unloads && driver_live && fd_live && owner_fds);
    video_hw_frame_abandon(&frame);

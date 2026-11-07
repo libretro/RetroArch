@@ -5467,6 +5467,19 @@ int rh265_video_set_hw(rh265_video *v, int enable)
       free(hw);
       return 0;
    }
+   if (ops.available)
+   {
+      uint32_t available = 0;
+      unsigned capacity = slots;
+      if (ops.available(ops.decoder, &capacity, &available) != 0
+            || capacity < slots || capacity > 32)
+      {
+         hw->backend.close(&ops);
+         free(hw);
+         return 0;
+      }
+      slots = capacity;
+   }
    if (!rh265_hw_session_init(&hw->session, &ops, slots))
    {
       hw->backend.close(&ops);
@@ -5526,7 +5539,7 @@ static int rh265_hw_show(rh265_hw_t *hw, bool drain, bool discard)
 }
 
 static int rh265_hw_decode(rh265_video *v, const uint8_t *data, size_t size,
-      bool discard)
+      bool discard, bool ahead)
 {
    rh265_hw_t *hw = v->hw;
    int ret;
@@ -5565,7 +5578,7 @@ static int rh265_hw_decode(rh265_video *v, const uint8_t *data, size_t size,
       }
       if (ret == 1)
       {
-         if (!hw->session.pressure)
+         if (!hw->session.pressure && !ahead)
             return 2;
          ret = rh265_hw_show(hw, false, discard);
          return ret == 1 ? 3 : ret < 0 ? -1 : 2;
@@ -5575,6 +5588,7 @@ static int rh265_hw_decode(rh265_video *v, const uint8_t *data, size_t size,
       hw->pending = 2;
    }
    ret = rh265_hw_show(hw, false, discard);
+   if (ahead && ret == 2) ret = 0;
    if (ret != 2)
    {
       hw->pending = 0;
@@ -6205,7 +6219,7 @@ int rh265_video_decode(rh265_video *v, const uint8_t *data, size_t len)
       return -1;
 
    if (v->hw)
-      return rh265_hw_decode(v, data, len, false);
+      return rh265_hw_decode(v, data, len, false, false);
 
    /* hvcC extradata fixes the framing as length-prefixed; a 4-byte
     * length in 256..511 is byte-identical to a start code, so once the
@@ -6343,7 +6357,7 @@ int rh265_video_decode_timed_discard(rh265_video *v, const uint8_t *data,
    v->dropped = 0;
    if (!data || len < 4) return -1;
    v->packet_timestamp = timestamp;
-   ret = rh265_hw_decode(v, data, len, true);
+   ret = rh265_hw_decode(v, data, len, true, false);
    if (ret == 1 || ret == 3)
       *output_timestamp = v->hw->shown_timestamp;
    return ret;
@@ -6507,4 +6521,20 @@ unsigned rh265_video_reorder_depth(const rh265_video *v)
       if (v->sps[i].valid && v->sps[i].max_num_reorder_pics > (int)depth)
          depth = (unsigned)v->sps[i].max_num_reorder_pics;
    return depth;
+}
+
+int rh265_video_decode_timed_ahead(rh265_video *v, const uint8_t *data,
+      size_t len, int64_t timestamp, int64_t *output_timestamp)
+{
+   int ret;
+   if (!v || !output_timestamp) return -1;
+   if (!v->hw)
+      return rh265_video_decode_timed(v, data, len, timestamp, output_timestamp);
+   v->dropped = 0;
+   if (!data || len < 4) return -1;
+   v->packet_timestamp = timestamp;
+   ret = rh265_hw_decode(v, data, len, false, true);
+   if (ret == 1 || ret == 3)
+      *output_timestamp = v->hw->shown_timestamp;
+   return ret;
 }

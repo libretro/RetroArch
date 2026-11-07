@@ -45,6 +45,22 @@ int vaapi_hevc_decoder_poll(vaapi_hevc_decoder_t *decoder)
    return result;
 }
 
+static int vaapi_hevc_decoder_available(
+      void *opaque, unsigned *capacity, uint32_t *slots)
+{
+   vaapi_hevc_decoder_t *decoder = (vaapi_hevc_decoder_t *)opaque;
+   unsigned count;
+   if (!decoder || !capacity || !slots || decoder->closed
+         || !decoder->pool->active
+         || vaapi_hevc_decoder_poll(decoder) < 0)
+      return -1;
+   count = decoder->pool->session->slots;
+   *capacity = count;
+   *slots = (count == 32 ? ~(uint32_t)0 : (UINT32_C(1) << count) - 1)
+      & ~vaapi_hevc_pool_held(decoder->pool);
+   return 0;
+}
+
 static int vaapi_hevc_decoder_decode(void *opaque,
       const rh265_video_params_t *params, const rh265_access_unit_t *au,
       const rh265_nal_t *slices, const rh265_hw_picture_t *picture)
@@ -152,6 +168,7 @@ bool vaapi_hevc_decoder_open(vaapi_hevc_pool_t *pool,
    ops->decode  = vaapi_hevc_decoder_decode;
    ops->output  = vaapi_hevc_decoder_output;
    ops->drain   = vaapi_hevc_decoder_drain;
+   ops->available = vaapi_hevc_decoder_available;
    return true;
 }
 

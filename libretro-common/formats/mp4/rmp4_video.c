@@ -61,9 +61,7 @@
 #ifdef HAVE_RAV1
 #include <formats/rav1_hw_stream.h>
 #endif
-#if defined(HAVE_RAV1) || defined(HAVE_RVP9)
 #include <features/features_cpu.h>
-#endif
 
 /* The demuxer's bounded sample table supplies presentation timestamps
  * without lookahead decoding or reading media bytes. */
@@ -109,7 +107,7 @@ struct rmp4_video_stream
    int64_t h265_timestamp, h265_display_timestamp;
    size_t h265_probe_offset, h265_probe_need, h265_need_lo, h265_need_hi;
    uint32_t h265_decode_sample, h265_probe_sample;
-   int h265_picture_pending, h265_timing_active, h265_have_time;
+   int h265_picture_pending, h265_timing_active, h265_have_time, h265_ahead;
 #ifdef HAVE_RAV1
    rav1_hw_stream_t *av1;
    uint8_t *av1_sequence_bytes;
@@ -1709,7 +1707,8 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       dec = discard
          ? rh265_video_decode_timed_discard(s->h265, pkt->data, pkt->size,
                pkt->timestamp, &s->h265_timestamp)
-         : rh265_video_decode_timed(s->h265, pkt->data, pkt->size,
+         : (s->h265_ahead ? rh265_video_decode_timed_ahead
+               : rh265_video_decode_timed)(s->h265, pkt->data, pkt->size,
                pkt->timestamp, &s->h265_timestamp);
       if (dec == 2) return 2;
       if (dec == 3) return rmp4_video_h265_output(s, discard) == 0 ? 3 : -1;
@@ -1951,36 +1950,31 @@ static int rmp4_video_stream_advance(rmp4_video_stream_t *s,
       int *duration_ms, int discard)
 {
    int r;
-#if defined(HAVE_RAV1) || defined(HAVE_RVP9)
    int64_t started = 0;
-   int bounded = 0;
-#endif
+   int bounded;
 
    if (!s)
       return -1;
+   bounded = s->h265_ahead && s->h265 && rh265_video_is_hw(s->h265);
    s->completed = 0;
    s->waiting = 0;
 #ifdef HAVE_RAV1
-   bounded = s->codec == RMP4_CODEC_AV1;
+   bounded |= s->codec == RMP4_CODEC_AV1;
 #endif
 #ifdef HAVE_RVP9
    bounded |= s->vp9_hw != NULL;
 #endif
-#if defined(HAVE_RAV1) || defined(HAVE_RVP9)
    if (bounded)
       started = cpu_features_get_time_usec();
-#endif
 
    /* Retry later for input or decoder capacity, without spinning. */
    while ((r = rmp4_video_stream_step(s, duration_ms, discard)) == 0)
    {
-#if defined(HAVE_RAV1) || defined(HAVE_RVP9)
       if (bounded && cpu_features_get_time_usec() - started >= 4000)
       {
          s->waiting = RMP4_VIDEO_WAIT_DECODER;
          return 2;
       }
-#endif
    }
    if (r != 2)
       s->waiting = RMP4_VIDEO_WAIT_NONE;
@@ -2012,6 +2006,12 @@ enum rmp4_video_wait_reason rmp4_video_stream_wait_reason(
       const rmp4_video_stream_t *s)
 {
    return s ? (enum rmp4_video_wait_reason)s->waiting : RMP4_VIDEO_WAIT_NONE;
+}
+
+void rmp4_video_stream_set_decode_ahead(rmp4_video_stream_t *s, int enable)
+{
+   if (s)
+      s->h265_ahead = enable != 0;
 }
 
 int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)

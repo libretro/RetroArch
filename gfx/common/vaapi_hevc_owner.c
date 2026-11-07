@@ -17,6 +17,15 @@ struct vaapi_hevc_owner
    bool published, closing, terminating;
 };
 
+static int vaapi_hevc_owner_available(
+      void *opaque, unsigned *capacity, uint32_t *slots)
+{
+   vaapi_hevc_owner_t *owner = (vaapi_hevc_owner_t *)opaque;
+   if (!owner || owner->closing || !owner->decoder.available)
+      return -1;
+   return owner->decoder.available(owner->decoder.decoder, capacity, slots);
+}
+
 static int vaapi_hevc_owner_decode(void *opaque,
       const rh265_video_params_t *params, const rh265_access_unit_t *au,
       const rh265_nal_t *slices, const rh265_hw_picture_t *picture)
@@ -120,6 +129,7 @@ static bool vaapi_hevc_owner_open_common(vaapi_hevc_owner_t **out,
    ops->decode      = vaapi_hevc_owner_decode;
    ops->output      = vaapi_hevc_owner_output;
    ops->drain       = vaapi_hevc_owner_drain;
+   ops->available = vaapi_hevc_owner_available;
    owner->published = true;
    return true;
 }

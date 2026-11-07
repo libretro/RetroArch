@@ -78,6 +78,55 @@ static void check_seek_state_busy(void)
    for (i = 0; i < sizeof(state); i++) CHECK(state[i] == 0x5a);
 }
 
+static void check_prefetch(void)
+{
+   unsigned i, before, released;
+   int64_t shown, pts;
+   uint8_t state[40], after[40];
+   sink_busy = decode_busy = output_busy = 0;
+   CHECK(start_core(1));
+   media_video_hw_ready();
+   for (i = 0; i < 40 && !media_player.mp4_prefetched; i++) retro_run();
+   CHECK(media_player.mp4_prefetched && media_player.hw_frame.image);
+   shown = media_player.vshown;
+   pts = media_player.vpts_ns;
+   CHECK(shown == 1 && last_sink_ordinal == shown);
+   CHECK(rmp4_video_stream_frame_index(media_player.mp4vs) == shown + 1);
+   CHECK(retro_serialize(state, sizeof(state)));
+   CHECK(state[16] == shown);
+   before = sink_taken;
+   /* Hold the current picture through a long presentation interval. */
+   media_player.play_ns = pts - media_player.frame_ns * 3;
+   retro_run();
+   CHECK(sink_taken == before && media_player.mp4_prefetched
+         && media_player.vshown == shown && media_player.vpts_ns == pts);
+   released = abandoned;
+   CHECK(retro_unserialize(state, sizeof(state)));
+   CHECK(!media_player.mp4_prefetched && abandoned > released);
+   CHECK(retro_serialize(after, sizeof(after)));
+   CHECK(!memcmp(state, after, sizeof(state)));
+   for (i = 0; i < 40 && sink_taken == before; i++) retro_run();
+   CHECK(sink_taken == before + 1 && last_sink_ordinal == shown);
+   for (i = 0; i < 40 && !media_player.mp4_prefetched; i++) retro_run();
+   CHECK(media_player.mp4_prefetched && media_player.hw_frame.image);
+   released = abandoned;
+   media_suspend_video_hw();
+   CHECK(!media_player.mp4_prefetched && !media_player.hw_frame.image
+         && abandoned > released);
+   CHECK(opened == closed && exported == abandoned);
+   retro_unload_game();
+   CHECK(start_core(1));
+   media_video_hw_ready();
+   for (i = 0; i < 40 && !media_player.mp4_prefetched; i++) retro_run();
+   CHECK(media_player.mp4_prefetched);
+   released = abandoned;
+   retro_reset();
+   CHECK(!media_player.mp4_prefetched && !media_player.hw_frame.image
+         && !media_player.vshown && abandoned > released);
+   retro_unload_game();
+   CHECK(opened == closed && exported == abandoned);
+}
+
 int main(void)
 {
    unsigned i, before, decoded, seek_phases = 0;
@@ -92,7 +141,7 @@ int main(void)
    if (!start_core(1)) return 1;
    media_video_hw_ready();
    CHECK(media_player.hw_video && media_player.hw_started);
-   decode_busy = output_busy = 1; sink_busy = 2;
+   decode_busy = 1; output_busy = 16; sink_busy = 2;
    restart_clock = media_player.play_ns;
    retro_run();
    CHECK(!media_player.eof && !sink_calls
@@ -220,7 +269,7 @@ int main(void)
    before = sink_taken;
    sink_busy = 2;
    decode_busy = 4;
-   output_busy = 2;
+   output_busy = 16;
    media_seek(&media_player, 200000000);
    CHECK(media_player.seeking && media_player.pending_seek_ns == 200000000);
    for (i = 0; i < 40 && sink_taken == before; i++)
@@ -344,6 +393,7 @@ int main(void)
    CHECK(media_player.eof && !media_player.mp4_restoring);
    retro_unload_game();
    CHECK(opened == closed && exported == abandoned);
+   check_prefetch();
    media_player.width = 64; media_player.height = 48;
    media_player.mp4_hw_required = 1;
    CHECK(!media_make_framebuffer(&media_player, false));

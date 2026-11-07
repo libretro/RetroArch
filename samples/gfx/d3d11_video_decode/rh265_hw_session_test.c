@@ -11,6 +11,9 @@ typedef struct mock_backend
    rh265_hw_picture_t seen;
 } mock_backend_t;
 static mock_backend_t mock;
+static uint32_t writable;
+static unsigned available_capacity, available_calls;
+static int available_error;
 static rh265_hw_session_t session;
 static rh265_video_params_t params;
 static rh265_access_unit_t au;
@@ -47,10 +50,22 @@ static int output(void *decoder, unsigned slot, video_hw_frame_t *out)
    out->done = 77; out->done_value = 1; out->owner = m; out->abandon = abandon;
    return 0;
 }
+static int available(void *decoder, unsigned *capacity, uint32_t *slots)
+{
+   CHECK(decoder == &mock && capacity && slots);
+   available_calls++;
+   if (available_error) return available_error;
+   *capacity = available_capacity;
+   *slots = writable;
+   return 0;
+}
 static void setup(unsigned slots)
 {
    rh265_hw_ops_t ops;
    memset(&mock, 0, sizeof(mock)); memset(&params, 0, sizeof(params)); memset(&au, 0, sizeof(au));
+   memset(&ops, 0, sizeof(ops));
+   available_capacity = slots; available_calls = 0; available_error = 0;
+   writable = ~(uint32_t)0;
    ops.decoder = &mock; ops.decode = decode; ops.output = output;
    CHECK(rh265_hw_session_init(&session, &ops, slots));
    params.width = params.height = 64; params.bit_depth = 8; params.chroma_format_idc = 1;
@@ -137,9 +152,48 @@ static void test_errors(void)
    CHECK(rh265_hw_session_submit(NULL, packet, sizeof(packet), &params, &au, slices) == -1);
    CHECK(rh265_hw_session_output(NULL, false, &frame) == -1);
 }
+static void test_writable_slots(void)
+{
+   rh265_hw_state_t saved;
+   rh265_hw_picture_t pending;
+   setup(4); session.ops.available = available;
+   writable = UINT32_C(1) << 3; mock.decode_busy = 1;
+   saved = session.state;
+   CHECK(submit() == 1 && mock.decodes == 1 && mock.seen.slot == 3);
+   CHECK(!memcmp(&saved, &session.state, sizeof(saved)));
+   pending = session.pending;
+   writable = UINT32_C(1) << 2;
+   CHECK(!submit() && mock.decodes == 2 && mock.seen.slot == 3);
+   CHECK(available_calls == 1 && !memcmp(&pending, &mock.seen, sizeof(pending)));
+
+   setup(4); session.ops.available = available; writable = 0;
+   saved = session.state;
+   CHECK(submit() == 1 && session.phase == 1 && !session.pressure && !mock.decodes);
+   CHECK(!memcmp(&saved, &session.state, sizeof(saved)));
+   writable = UINT32_C(1) << 2;
+   CHECK(!submit() && mock.seen.slot == 2 && available_calls == 2);
+
+   setup(4); session.ops.available = available; writable = UINT32_C(1) << 31;
+   CHECK(submit() == 1 && !session.pressure && !mock.decodes);
+   setup(32); params.max_dec_pic_buffering = 4;
+   session.ops.available = available; writable = UINT32_C(1) << 31;
+   CHECK(!submit() && mock.seen.slot == 31);
+
+   setup(1); session.ops.available = available;
+   CHECK(!submit()); next_frame(); writable = 0; saved = session.state;
+   CHECK(submit() == 1 && session.pressure && mock.decodes == 1);
+   CHECK(!memcmp(&saved, &session.state, sizeof(saved)));
+
+   setup(4); session.ops.available = available; available_error = -1;
+   saved = session.state;
+   CHECK(submit() == -1 && session.broken && !session.packet && !mock.decodes);
+   CHECK(!memcmp(&saved, &session.state, sizeof(saved)));
+   setup(4); session.ops.available = available; available_capacity = 5;
+   CHECK(submit() == -1 && session.broken && !mock.decodes);
+}
 int main(void)
 {
-   test_retry_and_lease(); test_pressure_and_cancel(); test_errors();
+   test_retry_and_lease(); test_pressure_and_cancel(); test_errors(); test_writable_slots();
    printf("HEVC hardware callback session: %u failures\n", failures);
    return failures ? 1 : 0;
 }

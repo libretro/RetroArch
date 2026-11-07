@@ -61,9 +61,9 @@ static void test_transaction(void)
    CHECK(rh265_hw_output_release(&state, 1));
    frame(2, -1, 1);
    CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
-   CHECK(picture.slot == 0 && picture.keep_references == 2);
+   CHECK(picture.slot == 2 && picture.keep_references == 2);
    CHECK(rh265_hw_commit(&state, &picture));
-   CHECK(state.poc[0] == 2 && state.references == 3);
+   CHECK(state.poc[2] == 2 && state.references == 6);
 }
 
 static void test_pressure(void)
@@ -214,10 +214,31 @@ static void test_invalid(void)
    CHECK(!rh265_hw_state_init(&state, 33));
    CHECK(!rh265_hw_state_init(NULL, 1));
 }
+static void test_writable_slots(void)
+{
+   setup(4); saved = state;
+   CHECK(!rh265_hw_prepare_available(&state, &params, &au,
+            UINT32_C(1) << 3, &picture) && picture.slot == 3);
+   CHECK(!memcmp(&state, &saved, sizeof(state)));
+   CHECK(rh265_hw_prepare_available(&state, &params, &au, 0, &picture) == 3);
+   CHECK(!picture.serial && !memcmp(&state, &saved, sizeof(state)));
+   CHECK(rh265_hw_prepare_available(&state, &params, &au,
+            UINT32_C(1) << 31, &picture) == 3);
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture) && !picture.slot);
+   CHECK(rh265_hw_commit(&state, &picture));
+   frame(1, -1, 1); saved = state;
+   CHECK(rh265_hw_prepare_available(&state, &params, &au, 1, &picture) == 3);
+   CHECK(!picture.serial && !memcmp(&state, &saved, sizeof(state)));
+   CHECK(!rh265_hw_prepare_available(&state, &params, &au,
+            UINT32_C(1) << 2, &picture) && picture.slot == 2);
+   setup(32);
+   CHECK(!rh265_hw_prepare_available(&state, &params, &au,
+            UINT32_C(1) << 31, &picture) && picture.slot == 31);
+}
 
 int main(void)
 {
-   test_transaction(); test_pressure(); test_reorder(); test_wrap_and_epochs(); test_empty_long_term(); test_long_term(); test_reference_capacity(); test_invalid();
+   test_transaction(); test_pressure(); test_reorder(); test_wrap_and_epochs(); test_empty_long_term(); test_long_term(); test_reference_capacity(); test_invalid(); test_writable_slots();
    printf("HEVC hardware owner state: %u failures\n", failures);
    return failures ? 1 : 0;
 }

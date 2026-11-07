@@ -76,6 +76,7 @@ static void check_picture(const uint8_t *config, size_t config_size,
    CHECK(!rh265_video_get_params(original, (unsigned)au.first.pps_id, &metadata));
    CHECK(metadata.bit_depth == depth && metadata.width == 64 && metadata.height == 64);
    memset(&backend, 0, sizeof(backend));
+   memset(&ops, 0, sizeof(ops));
    ops.decoder = &backend; ops.decode = pipeline_decode; ops.output = pipeline_output;
    CHECK(rh265_hw_session_init(&session, &ops, 32)); unchanged = session.state;
    CHECK(rh265_hw_session_submit(&session, sample, sample_size, &metadata, &au, slices) == 1);

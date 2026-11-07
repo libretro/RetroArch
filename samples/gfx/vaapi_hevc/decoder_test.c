@@ -76,7 +76,8 @@ static void decoder_case(const sequence_case_t *fixture, bool claimed,
    vaapi_hevc_decoder_t *decoder;
    vaapi_frame_view_t view;
    vaapi_hevc_export_t taken;
-   unsigned before_checks;
+   unsigned before_checks, capacity;
+   uint32_t writable, target;
    decoder_fault = false;
    assert(source
          && !rh265_video_set_extradata(
@@ -99,6 +100,11 @@ static void decoder_case(const sequence_case_t *fixture, bool claimed,
    assert(vaapi_hevc_decoder_open(&po_pool, &po_params, &decoder_color, yuv,
          &decoder_exports, &decoder_ops));
    decoder = (vaapi_hevc_decoder_t *)decoder_ops.decoder;
+   assert(!decoder_ops.available(decoder, &capacity, &writable)
+         && capacity == 32 && writable == ~(uint32_t)0);
+   assert(decoder_ops.available(NULL, &capacity, &writable) == -1);
+   assert(decoder_ops.available(decoder, NULL, &writable) == -1);
+   assert(decoder_ops.available(decoder, &capacity, NULL) == -1);
    assert(!vaapi_hevc_decoder_retire(decoder));
    assert(!vaapi_hevc_decoder_open(&po_pool, &po_params, &decoder_color, yuv,
          &decoder_exports, &decoder_ops));
@@ -107,6 +113,9 @@ static void decoder_case(const sequence_case_t *fixture, bool claimed,
    assert(!decoder_ops.decode(
          decoder, &po_params, &po_au, po_slices, &po_picture));
    assert(rh265_hw_commit(&decoder_state, &po_picture));
+   target = UINT32_C(1) << po_picture.slot;
+   assert(!decoder_ops.available(decoder, &capacity, &writable)
+         && !(writable & target) && capacity == 32);
    memset(&decoder_frame, 0xa5, sizeof(decoder_frame));
    decoder_before = decoder_frame;
    before_checks  = po_checks;
@@ -133,6 +142,8 @@ static void decoder_case(const sequence_case_t *fixture, bool claimed,
    }
    assert(!decoder_ops.output(decoder, po_picture.slot, &decoder_frame));
    assert(decoder_fds && !decoder_closes && po_pool.exports);
+   assert(!decoder_ops.available(decoder, &capacity, &writable)
+         && !(writable & target) && capacity == 32);
    assert(decoder_frame.yuv == yuv);
    assert(decoder_frame.width
          == (unsigned)(po_params.width - po_params.crop_left
@@ -156,7 +167,7 @@ static void decoder_case(const sequence_case_t *fixture, bool claimed,
    rh265_video_close(source);
    source = NULL;
    assert(!decoder_ops.decoder && !decoder_ops.decode && !decoder_ops.output
-         && !decoder_ops.drain);
+         && !decoder_ops.drain && !decoder_ops.available);
    assert(!vaapi_hevc_decoder_retire(decoder) && !decoder_closes);
    video_hw_frame_abandon(&decoder_frame);
    if (claimed)

@@ -15,13 +15,25 @@ static int enable_drain, drain_busy, drain_error;
 static unsigned drains;
 static uint32_t decoder_slots_held;
 static int complete_later;
+static int enable_available, available_error, capacity_override = -1;
+static uint32_t available_mask;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %u: %s\n", \
       (unsigned)__LINE__, #c); failures++; } } while (0)
 
 typedef struct mock_decoder
 {
-   unsigned width, height, bit_depth;
+   unsigned width, height, bit_depth, slots;
 } mock_decoder_t;
+
+static int available(void *decoder, unsigned *capacity, uint32_t *slots)
+{
+   mock_decoder_t *d = (mock_decoder_t*)decoder;
+   CHECK(d && capacity && slots);
+   if (available_error) return available_error;
+   *capacity = capacity_override >= 0 ? (unsigned)capacity_override : d->slots;
+   *slots = available_mask & ~decoder_slots_held;
+   return 0;
+}
 
 static void abandon(void *owner, uint64_t done, uint64_t value)
 {
@@ -89,8 +101,10 @@ static bool open_backend(void *user, const rh265_video *source, const rh265_vide
    d->width = params->width - params->crop_left - params->crop_right;
    d->height = params->height - params->crop_top - params->crop_bottom;
    d->bit_depth = params->bit_depth;
+   d->slots = slots + 1;
    ops->decoder = d; ops->decode = decode; ops->output = output;
    ops->drain = enable_drain ? drain_backend : NULL;
+   ops->available = enable_available ? available : NULL;
    opened++;
    return true;
 }
@@ -258,7 +272,7 @@ static void check_pressure(void)
    rh265_video_close(v);
 }
 
-static void check_mp4(void)
+static void check_mp4(int ahead)
 {
    static uint32_t pixels[64 * 48];
    FILE *f = fopen("../../formats/video_hdr_fp16/fixtures/sdr_hevc.mp4", "rb");
@@ -278,6 +292,7 @@ static void check_mp4(void)
    require_sets = 1;
    stream = rmp4_video_stream_open(bytes, (size_t)size);
    CHECK(stream != NULL); if (!stream) { free(bytes); return; }
+   rmp4_video_stream_set_decode_ahead(stream, ahead);
    CHECK(rmp4_video_stream_set_hw(stream, 1));
    memset(pixels, 0xa5, sizeof(pixels));
    rmp4_video_stream_set_output(stream, pixels);
@@ -297,7 +312,9 @@ static void check_mp4(void)
       count++;
       if (count == 1) output_busy = 1;
    }
-   CHECK(count == 3 && waits == 3 && attempt < 20 && accepted == prior_accepted + 3);
+   CHECK(count == 3 && attempt < 20 && accepted == prior_accepted + 3);
+   if (ahead) CHECK(waits >= 1 && waits <= 3);
+   else CHECK(waits == 3);
    rmp4_video_stream_rewind(stream);
    CHECK(opened == prior_opened + 2);
    CHECK(rmp4_video_stream_skip(stream, &duration) == 1);
@@ -357,13 +374,66 @@ static void check_eof(void)
    enable_drain = drain_error = 0;
 }
 
+static void check_ahead(void)
+{
+   rh265_video *v;
+   video_hw_frame_t frame;
+   uint8_t other[sizeof(hevc_sample8)];
+   int64_t timestamp = -99;
+   unsigned before = accepted, before_opened = opened, before_closed = closed;
+   unsigned slots;
+   rh265_set_hw_backend(&backend);
+   enable_available = 1; available_mask = ~(uint32_t)0;
+   v = start(); if (!v) return;
+   slots = v->hw->session.state.slots;
+   CHECK(slots == (unsigned)v->hw->params.max_dec_pic_buffering + 2);
+   available_mask = 0;
+   CHECK(rh265_video_decode_timed_ahead(v, hevc_sample8,
+            sizeof(hevc_sample8), 123, &timestamp) == 2);
+   CHECK(accepted == before && timestamp == -99);
+   memcpy(other, hevc_sample8, sizeof(other));
+   CHECK(rh265_video_decode_timed_ahead(v, other, sizeof(other), 123, &timestamp) < 0);
+   available_mask = UINT32_C(1) << (slots - 1); output_busy = 1;
+   CHECK(rh265_video_decode_timed_ahead(v, hevc_sample8,
+            sizeof(hevc_sample8), 123, &timestamp) == 0);
+   CHECK(accepted == before + 1 && timestamp == -99 && !v->hw->pending);
+   CHECK(!rh265_video_drain_timed(v, &timestamp) && timestamp == 123);
+   CHECK(!rh265_video_hw_frame(v, &frame) && frame.image == slots);
+   rh265_video_close(v); video_hw_frame_abandon(&frame);
+
+   v = start(); if (!v) return;
+   capacity_override = (int)v->hw->session.state.slots + 1;
+   CHECK(rh265_video_decode_timed_ahead(v, hevc_sample8,
+            sizeof(hevc_sample8), 456, &timestamp) < 0 && timestamp == 123);
+   CHECK(accepted == before + 1);
+   rh265_video_close(v);
+   capacity_override = 0;
+   v = rh265_video_open(); CHECK(v != NULL);
+   CHECK(!rh265_video_set_extradata(v, hevc_config8, sizeof(hevc_config8)));
+   CHECK(!rh265_video_set_hw(v, 1) && !rh265_video_is_hw(v));
+   rh265_video_close(v);
+   capacity_override = 33;
+   v = rh265_video_open(); CHECK(v != NULL);
+   CHECK(!rh265_video_set_extradata(v, hevc_config8, sizeof(hevc_config8)));
+   CHECK(!rh265_video_set_hw(v, 1) && !rh265_video_is_hw(v));
+   rh265_video_close(v);
+   capacity_override = -1; available_error = -1;
+   v = rh265_video_open(); CHECK(v != NULL);
+   CHECK(!rh265_video_set_extradata(v, hevc_config8, sizeof(hevc_config8)));
+   CHECK(!rh265_video_set_hw(v, 1) && !rh265_video_is_hw(v));
+   rh265_video_close(v);
+   CHECK(opened == before_opened + 5 && closed == before_closed + 5);
+   enable_available = available_error = 0; available_mask = 0;
+}
+
 int main(void)
 {
    check_decoder();
+   check_ahead();
    check_discard();
    check_pressure();
    check_eof();
-   check_mp4();
+   check_mp4(0); check_mp4(1);
    rh265_set_hw_backend(NULL);
    CHECK(opened == closed && exported == abandoned);
    printf("HEVC hardware decoder/MP4 stream: %u failures\n", failures);
