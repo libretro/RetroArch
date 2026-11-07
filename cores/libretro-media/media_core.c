@@ -1574,7 +1574,6 @@ static int64_t media_seek_internal_resume(media_player_t *p, int64_t target_ns,
    {
       int64_t ms;
       int64_t delay = rmp4_video_stream_presentation_delay_ns(p->mp4vs);
-      int64_t relative = target_ns > delay ? target_ns - delay : 0;
       p->mp4_restoring = 0;
       p->seeking = MEDIA_MP4_SEEK_NONE;
       p->pending_seek_ns = -1;
@@ -1586,14 +1585,14 @@ static int64_t media_seek_internal_resume(media_player_t *p, int64_t target_ns,
          media_mp4_seek_begin(p, target_ns);
          return p->vpts_ns;
       }
-      ms = rmp4_video_stream_seek_ms(p->mp4vs, relative / 1000000);
+      ms = rmp4_video_stream_seek_movie_ms(p->mp4vs, target_ns / 1000000);
       if (target_ns < delay && p->fb)
          memset(p->fb, 0, (size_t)p->width * p->height * sizeof(*p->fb));
       /* States restore by display ordinal. Seeking consumes pictures
        * without passing through the normal playback counter. */
       p->vshown = rmp4_video_stream_frame_index(p->mp4vs);
       p->hw_video = media_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
-      p->vpts_ns = (ms >= 0 ? ms * 1000000 : 0) + delay;
+      p->vpts_ns = ms >= 0 ? ms * 1000000 : delay;
       p->play_ns = target_ns < delay ? target_ns : p->vpts_ns;
       p->eof     = 0;
       (void)to_slot;   /* the mp4 glue's timestamp table is exact */

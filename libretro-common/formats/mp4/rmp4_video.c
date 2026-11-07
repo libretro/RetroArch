@@ -3082,6 +3082,35 @@ int64_t rmp4_video_stream_seek_frame(rmp4_video_stream_t *s, int frame)
    return s->disp_idx < s->ts_count ? s->ts[s->disp_idx] / 1000000 : 0;
 }
 
+int64_t rmp4_video_stream_seek_movie_ms(rmp4_video_stream_t *s, int64_t ms)
+{
+   const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
+   int64_t target, time;
+   int lo = 0, hi;
+   if (!s || s->ts_count <= 0)
+      return -1;
+   if (ms < 0)
+      ms = 0;
+   target = ms > (maximum - 999999) / 1000000
+      ? maximum : ms * 1000000 + 999999;
+   hi = s->ts_count;
+   while (lo < hi)
+   {
+      int mid = lo + (hi - lo) / 2;
+      time = rmp4_video_stream_movie_time_ns(s, mid);
+      if (time < 0)
+         return -1;
+      if (time <= target)
+         lo = mid + 1;
+      else
+         hi = mid;
+   }
+   if (rmp4_video_stream_seek_frame(s, lo ? lo - 1 : 0) < 0)
+      return -1;
+   time = rmp4_video_stream_movie_time_ns(s, s->disp_idx);
+   return time < 0 ? -1 : time / 1000000;
+}
+
 int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *s, int64_t ms)
 {
    int64_t target_ns;

@@ -117,13 +117,38 @@ static void run_lane(const char *path,unsigned compare)
    }
    retro_unload_game();
 }
+static void reordered_seek(const char *path)
+{
+   struct retro_game_info game;
+   uint32_t expected;
+   unsigned i;
+   int64_t position;
+   current=path;memset(&game,0,sizeof(game));game.path=path;
+   capture_begin(0);
+   check(retro_load_game(&game),"cannot load reordered seek fixture");
+   if(!media_player.mp4vs)return;
+   for(i=0;i<200 && media_player.vshown<121;i++)retro_run();
+   check(media_player.vshown==121,"sequential reference did not reach target");
+   expected=frame_hash;
+   position=media_seek(&media_player,INT64_C(10000000000));
+   check(position==INT64_C(10000000000) && media_player.vshown==120,
+         "CPU seek used raw decoder timestamps instead of movie time");
+   retro_run();
+   check(frame_hash==expected && media_player.vshown==121,
+         "CPU movie seek differs from independently decoded target picture");
+   printf("Reordered CPU seek: slot=%ld hash=%u reference=%u\n",
+         (long)media_player.vshown,frame_hash,expected);
+   retro_unload_game();
+}
+
 int main(int argc,char **argv)
 {
-   if(argc!=3)return 2;
+   if(argc!=5)return 2;
    check(!rmp4_video_stream_presentation_delay_ns(NULL),"NULL stream delay is nonzero");
    retro_set_environment(environment);retro_set_video_refresh(video);
    retro_set_audio_sample_batch(audio);retro_set_audio_sample(audio_sample);
    retro_set_input_poll(input_poll);retro_set_input_state(input_state);retro_init();
-   run_lane(argv[1],0);run_lane(argv[2],1);retro_deinit();
+   run_lane(argv[1],0);run_lane(argv[2],1);
+   reordered_seek(argv[3]);reordered_seek(argv[4]);retro_deinit();
    return failures?1:0;
 }

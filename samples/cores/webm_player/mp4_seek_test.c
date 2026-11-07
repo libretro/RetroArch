@@ -103,7 +103,26 @@ static int check_file(const char *path)
                path, n, state, steps, rmp4_video_stream_frame_index(stream));
          failures++;
       }
+      position = (times[n] - times[0]
+            + rmp4_video_stream_presentation_delay_ns(stream)) / 1000000;
+      if (rmp4_video_stream_seek_movie_ms(stream, position) != position)
+         failures++;
+      picture = rmp4_video_stream_next(stream, &duration);
+      if (!picture || rmp4_video_stream_frame_index(stream) != n + 1
+            || memcmp(picture, reference + n * pixels,
+               pixels * sizeof(*picture)))
+      {
+         printf("%s: movie target %d mismatch\n", path, n);
+         failures++;
+      }
    }
+   if (rmp4_video_stream_seek_movie_ms(stream, -1)
+         != rmp4_video_stream_presentation_delay_ns(stream) / 1000000
+         || rmp4_video_stream_frame_index(stream) != 0)
+      failures++;
+   if (rmp4_video_stream_seek_movie_ms(stream, INT64_MAX) < 0
+         || rmp4_video_stream_frame_index(stream) != frames - 1)
+      failures++;
    if (rmp4_video_stream_seek_begin_ns(stream, 0))
    {
       rmp4_video_stream_rewind(stream);
@@ -124,6 +143,7 @@ done:
 int main(int argc, char **argv)
 {
    int i, failed = argc < 2;
+   if (rmp4_video_stream_seek_movie_ms(NULL, 0) != -1) failed = 1;
    for (i = 1; i < argc; i++) failed |= check_file(argv[i]);
    return failed;
 }

@@ -218,7 +218,7 @@ ifeq ($(MP4),1)
 	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-vorbis.mp4 0
 	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-aac-0.mkv 0
 	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-aac-1.mkv 48000
-	$(RUNNER) ./$(VIDEO_TIMELINE_TARGET) fixtures/video-timeline-0.mp4 fixtures/video-timeline-1.mp4
+	$(RUNNER) ./$(VIDEO_TIMELINE_TARGET) fixtures/video-timeline-0.mp4 fixtures/video-timeline-1.mp4 fixtures/h264-seek-aac.mp4 fixtures/hevc-seek-aac.mp4
 endif
 	$(RUNNER) ./$(VORBIS_SEEK_TARGET) fixtures/vp9-vorbis.webm fixtures/vp9-seek-vorbis.webm
 	$(RUNNER) ./$(OPUS_SEEK_TARGET) fixtures/vp8-opus.webm fixtures/vp8-seek-opus.webm
