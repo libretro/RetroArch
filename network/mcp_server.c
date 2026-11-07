@@ -54,6 +54,7 @@
 #else
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <unistd.h>
 #endif
 
@@ -1126,6 +1127,7 @@ static void mcp_structured_record(rjsonwriter_t *w,
    const char *p        = text;
    const char *eol      = (const char*)memchr(text, '\n', len);
    size_t      name_len = strlen(name);
+   size_t      nseps    = strlen(rows->seps);
    size_t      i        = 0;
    bool        first    = true;
    bool        wrote;
@@ -1139,10 +1141,9 @@ static void mcp_structured_record(rjsonwriter_t *w,
    for (col = rows->columns; col && col->name && p < end; col++, i++)
    {
       const char *stop = end;
-      if (col[1].name)
+      if (col[1].name && nseps)
       {
-         size_t n = strlen(rows->seps);
-         char sep = rows->seps[i < n ? i : n - 1];
+         char sep = rows->seps[i < nseps ? i : nseps - 1];
          const char *q = (const char*)memchr(p, sep, (size_t)(end - p));
          if (q)
             stop = q;
@@ -2358,10 +2359,14 @@ bool command_mcp_stdio_claim(void)
       dup2(STDERR_FILENO, STDOUT_FILENO);
       fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
       fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+#ifdef SIGPIPE
+      /* a client gone must not kill us mid-write: the write fails
+       * with EPIPE instead. Only the signal: stdio needs no sockets,
+       * so no network stack bring-up (WSAStartup, console netInit) */
+      signal(SIGPIPE, SIG_IGN);
+#endif
    }
 #endif
-   /* for its SIGPIPE ignore: a client gone must not kill us mid-write */
-   network_init();
    mcp_stdio.log_level = -1;
    mcp_stdio.claimed   = true;
    return true;
