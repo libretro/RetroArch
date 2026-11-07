@@ -160,6 +160,8 @@ static void scripted_install(void)
    scripted                       = *input_st->current_driver;
    scripted.poll                  = scripted_poll;
    scripted.input_state           = scripted_input_state;
+   /* its keys are answered by input_state */
+   scripted.keys_down             = NULL;
    input_st->current_driver       = &scripted;
 
    scripted_video                 = *video_st->current_video;

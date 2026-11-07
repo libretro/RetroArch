@@ -3910,6 +3910,8 @@ static void lane_menu_pause(void)
    saved_input              = input_st->current_driver;
    pm_input                 = *saved_input;
    pm_input.input_state     = pm_input_state;
+   /* its keys are answered by input_state */
+   pm_input.keys_down       = NULL;
    pm_return_down           = false;
    input_st->current_driver = &pm_input;
    /* the pause hotkey on a button of its own */
@@ -8941,6 +8943,8 @@ static void lane_first_press(void)
       input_driver_t *input_real = input_st->current_driver;
       fp_input                   = *input_real;
       fp_input.input_state       = fp_input_state;
+      /* its keys are answered by input_state */
+      fp_input.keys_down         = NULL;
       input_st->current_driver   = &fp_input;
       syn_buttons                = 0;
       fp_keys                    = 0;

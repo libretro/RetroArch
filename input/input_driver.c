@@ -614,6 +614,11 @@ static uint64_t input_null_get_capabilities(void *data) { return 0; }
 static void input_null_grab_mouse(void *data, bool state) { }
 static bool input_null_grab_stdin(void *data) { return false; }
 static void input_null_keypress_vibrate(void) { }
+/* No keyboard: no key is down. With this the frontend knows that every
+ * frame instead of asking for each bind. */
+static void input_null_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down) { }
 
 static input_driver_t input_null = {
    input_null_init,
@@ -626,7 +631,9 @@ static input_driver_t input_null = {
    "null",
    input_null_grab_mouse,
    input_null_grab_stdin,
-   input_null_keypress_vibrate
+   input_null_keypress_vibrate,
+   NULL, /* survives_video */
+   input_null_keys_down
 };
 
 static input_device_driver_t null_joypad = {
