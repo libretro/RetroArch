@@ -48,7 +48,8 @@ static int hw_mode;
 static int hw_own_device;
 /* HARNESS_CORE_IGNORE_REQUIRED_EXTS (with HARNESS_CORE_HW_VULKAN=2):
  * create_device leaves the required extensions out, as Flycast does,
- * for the frontend to add. */
+ * for the frontend to add. =2 also resolves vkCreateDevice through
+ * the vkGetInstanceProcAddr it gets from the one it was given. */
 static int hw_ignore_required_exts;
 /* HARNESS_CORE_HW_VULKAN=3: the core caches its context across a video
  * reinit (hw_render.cache_context), as Azahar does: the frontend keeps
@@ -485,8 +486,7 @@ static bool hw_create_device(struct retro_vulkan_context *context,
    PFN_vkGetPhysicalDeviceSurfaceSupportKHR surface_support =
       (PFN_vkGetPhysicalDeviceSurfaceSupportKHR)
       gipa(instance, "vkGetPhysicalDeviceSurfaceSupportKHR");
-   PFN_vkCreateDevice create_device = (PFN_vkCreateDevice)
-      gipa(instance, "vkCreateDevice");
+   PFN_vkCreateDevice create_device;
    PFN_vkGetDeviceProcAddr gdpa = (PFN_vkGetDeviceProcAddr)
       gipa(instance, "vkGetDeviceProcAddr");
    PFN_vkGetDeviceQueue get_queue;
@@ -499,6 +499,11 @@ static bool hw_create_device(struct retro_vulkan_context *context,
    uint32_t i;
    static const float prio = 1.0f;
 
+   if (hw_ignore_required_exts == 2)
+      gipa = (PFN_vkGetInstanceProcAddr)gipa(instance,
+            "vkGetInstanceProcAddr");
+   create_device = gipa
+      ? (PFN_vkCreateDevice)gipa(instance, "vkCreateDevice") : NULL;
    if (!enum_gpus || !family_props || !create_device || !gdpa)
       return false;
    if (gpu == VK_NULL_HANDLE)
@@ -622,7 +627,7 @@ void retro_set_environment(retro_environment_t cb)
       hw_own_device    = (hw && *hw == '2') ? 1 : 0;
       hw_cache_context = (hw && *hw == '3') ? 1 : 0;
       hw = getenv("HARNESS_CORE_IGNORE_REQUIRED_EXTS");
-      hw_ignore_required_exts = (hw && *hw) ? 1 : 0;
+      hw_ignore_required_exts = (hw && *hw) ? (*hw == '2' ? 2 : 1) : 0;
    }
    /* RGB565 by default; XRGB8888 with HARNESS_CORE_XRGB8888 set. The
     * two take different paths through a driver - Vulkan converts

@@ -1206,7 +1206,7 @@ static const void *vulkan_upscaler_features(gfx_ctx_vulkan_data_t *vk,
 
 static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
       VkPhysicalDevice gpu, const VkDeviceCreateInfo *info,
-      VkDevice *device)
+      const VkAllocationCallbacks *allocator, VkDevice *device)
 {
    unsigned i;
    const VkBaseInStructure *chain;
@@ -1261,7 +1261,7 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
       vk->context.xr = NULL;
    }
 #endif
-   return vkCreateDevice(gpu, info, NULL, device);
+   return vkCreateDevice(gpu, info, allocator, device);
 }
 
 #ifdef HAVE_OPENXR
@@ -1447,7 +1447,7 @@ static VkDevice vulkan_context_create_device_wrapper(
          vinfo.pQueueCreateInfos = qi;
          vinfo.queueCreateInfoCount = nq;
          vinfo.enabledExtensionCount = next;
-         if (video.lanes && vulkan_context_create_device(vk, gpu, &vinfo, &device) == VK_SUCCESS)
+         if (video.lanes && vulkan_context_create_device(vk, gpu, &vinfo, NULL, &device) == VK_SUCCESS)
          {
             vk->context.video_decode_family = video.decode_family;
             vk->context.video_xfer_family = video.xfer_family;
@@ -1494,7 +1494,7 @@ static VkDevice vulkan_context_create_device_wrapper(
       }
    }
    info.pNext = vulkan_anti_lag_chain(vk, gpu, &anti_lag_features, info.pNext);
-   if ((res = vulkan_context_create_device(vk, gpu, &info, &device)) != VK_SUCCESS)
+   if ((res = vulkan_context_create_device(vk, gpu, &info, NULL, &device)) != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan] Failed to create device (%d).\n", res);
       device = VK_NULL_HANDLE;
@@ -1508,6 +1508,7 @@ static VkDevice vulkan_context_create_device_wrapper(
  * leave it out, so its vkCreateDevice is ours and adds what is missing */
 static struct
 {
+   gfx_ctx_vulkan_data_t *vk;
    const char **required;
    uint32_t num_required;
    char added[512];
@@ -1520,11 +1521,13 @@ static VKAPI_ATTR VkResult VKAPI_CALL vulkan_v1_create_device(
 {
    VkResult res;
    uint32_t i, j;
-   VkDeviceCreateInfo info = *create_info;
-   const char **exts       = NULL;
+   uint32_t num_props             = 0;
+   VkExtensionProperties *props   = NULL;
+   VkDeviceCreateInfo info        = *create_info;
+   const char **exts              = NULL;
 
    /* Called again after create_device returned */
-   if (!vulkan_v1_device.num_required)
+   if (!vulkan_v1_device.vk)
       return vkCreateDevice(gpu, create_info, allocator, device);
    if (!(exts = (const char**)malloc(
          (info.enabledExtensionCount + vulkan_v1_device.num_required)
@@ -1533,6 +1536,15 @@ static VKAPI_ATTR VkResult VKAPI_CALL vulkan_v1_create_device(
    if (info.enabledExtensionCount)
       memcpy((void*)exts, info.ppEnabledExtensionNames,
             info.enabledExtensionCount * sizeof(const char*));
+   /* The core may have picked another GPU than the list was made for */
+   if (     vkEnumerateDeviceExtensionProperties(gpu, NULL, &num_props,
+               NULL) == VK_SUCCESS
+         && num_props
+         && (props = (VkExtensionProperties*)malloc(
+               num_props * sizeof(*props)))
+         && vkEnumerateDeviceExtensionProperties(gpu, NULL, &num_props,
+               props) != VK_SUCCESS)
+      num_props = 0;
 
    vulkan_v1_device.ran      = true;
    vulkan_v1_device.added[0] = '\0';
@@ -1544,15 +1556,20 @@ static VKAPI_ATTR VkResult VKAPI_CALL vulkan_v1_create_device(
             break;
       if (j < info.enabledExtensionCount)
          continue;
+      if (!props || !vulkan_find_extensions(&name, 1, props, num_props))
+         continue;
       exts[info.enabledExtensionCount++] = name;
       if (vulkan_v1_device.added[0])
          strlcat(vulkan_v1_device.added, ", ",
                sizeof(vulkan_v1_device.added));
       strlcat(vulkan_v1_device.added, name, sizeof(vulkan_v1_device.added));
    }
+   free(props);
 
    info.ppEnabledExtensionNames = exts;
-   res = vkCreateDevice(gpu, &info, allocator, device);
+   /* The upscaler's features and the runtime's vkCreateDevice too */
+   res = vulkan_context_create_device(vulkan_v1_device.vk, gpu, &info,
+         allocator, device);
    free((void*)exts);
    return res;
 }
@@ -1562,6 +1579,9 @@ static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vulkan_v1_get_instance_proc_addr
 {
    if (!strcmp(name, "vkCreateDevice"))
       return (PFN_vkVoidFunction)vulkan_v1_create_device;
+   /* A loader that resolves the rest through this must not miss it */
+   if (!strcmp(name, "vkGetInstanceProcAddr"))
+      return (PFN_vkVoidFunction)vulkan_v1_get_instance_proc_addr;
    return vulkan_symbol_wrapper_instance_proc_addr()(instance, name);
 }
 
@@ -1714,6 +1734,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          if (vk->context.gpu != VK_NULL_HANDLE)
             num_dev_exts = vulkan_upscaler_device_exts(vk, vk->context.gpu,
                   dev_exts, num_dev_exts, ARRAY_SIZE(dev_exts));
+         vulkan_v1_device.vk           = vk;
          vulkan_v1_device.required     = dev_exts;
          vulkan_v1_device.num_required = num_dev_exts;
          ret = iface->create_device(&context, vk->context.instance,
@@ -1729,9 +1750,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             RARCH_WARN("[Vulkan] The core's create_device left out required device extensions: %s; added them.\n",
                   vulkan_v1_device.added);
 #ifdef HAVE_OPENXR
-         /* The device may lack the runtime's extensions */
-         else if (ret && !vulkan_v1_device.ran && vk->context.xr
-               && !vulkan_openxr_uses_enable2(vk->context.xr))
+         /* The device may lack the runtime's extensions, or under
+          * enable2 not be the runtime's */
+         else if (ret && !vulkan_v1_device.ran && vk->context.xr)
          {
             RARCH_WARN("[OpenXR] The core made its Vulkan device without the vkCreateDevice it was given; headset output is off for this core.\n");
             vulkan_openxr_drop(vk->context.xr);
@@ -2089,7 +2110,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             vinfo.pQueueCreateInfos       = qi;
             vinfo.enabledExtensionCount   = next;
             if (vulkan_context_create_device(vk, vk->context.gpu,
-                     &vinfo, &dev) == VK_SUCCESS)
+                     &vinfo, NULL, &dev) == VK_SUCCESS)
             {
                vk->context.video_decode_family = video.decode_family;
                vk->context.video_xfer_family   = video.xfer_family;
@@ -2108,7 +2129,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          }
          if (     dev == VK_NULL_HANDLE
                && vulkan_context_create_device(vk, vk->context.gpu,
-                  &device_info, &dev) != VK_SUCCESS)
+                  &device_info, NULL, &dev) != VK_SUCCESS)
          {
             dev = VK_NULL_HANDLE;
 #if defined(ANDROID) \
@@ -2119,7 +2140,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             {
                device_info.enabledExtensionCount = enabled_device_extension_count;
                if (vulkan_context_create_device(vk, vk->context.gpu,
-                        &device_info, &dev) != VK_SUCCESS)
+                        &device_info, NULL, &dev) != VK_SUCCESS)
                   dev = VK_NULL_HANDLE;
             }
 #endif

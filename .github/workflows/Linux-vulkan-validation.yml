@@ -301,11 +301,18 @@ jobs:
           # anything the driver or the filter chain does that leans on
           # an optional extension is a validation error here and nowhere
           # else. The filter chain's mirror-clamp samplers were.
-          HARNESS_CORE_HW_VULKAN=2 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          # It passes the required extensions, so none are added.
+          HARNESS_CORE_HW_VULKAN=2 FORBID_LOG='left out required device extensions' \
+            SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
           # And as one whose create_device leaves the required extensions
-          # out (Flycast): the frontend must add them and say so.
+          # out (Flycast): the frontend must add them and say so, also
+          # when the core resolves vkCreateDevice through the
+          # vkGetInstanceProcAddr it looked up itself.
           HARNESS_CORE_HW_VULKAN=2 HARNESS_CORE_IGNORE_REQUIRED_EXTS=1 EXPECT_LOG='left out required device extensions' \
+            SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          make -C samples/gfx/threaded_video clean
+          HARNESS_CORE_HW_VULKAN=2 HARNESS_CORE_IGNORE_REQUIRED_EXTS=2 EXPECT_LOG='left out required device extensions' \
             SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
           # And as a core that caches its context across a video reinit
