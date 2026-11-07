@@ -2293,9 +2293,11 @@ tp_ok:
     * present and this is an inter frame, allocate it here. */
    if (s->is_inter && !s->mb_info)
       s->mb_info = calloc((size_t)mbw * mbh, sizeof(rvp8_mbinfo));
-   memset(s->yb, 127, s->ys * mbh * 16);
-   memset(s->ub, 127, s->uvs * mbh * 8);
-   memset(s->vb, 127, s->uvs * mbh * 8);
+   /* The planes are not pre-filled: every macroblock writes its whole
+    * 16x16 (8x8 chroma) area, the 127 / 129 edges intra prediction
+    * reads beyond the frame are supplied per macroblock, and motion
+    * compensation clamps to the reference - so a fill was 3 MB of
+    * writes a 1080p frame, all overwritten. */
    return 0;
 }
 
