@@ -6748,10 +6748,12 @@ static unsigned gl2_window_ui_prepare(gl2_t *gl,
    bool menu                      = (gl->flags
          & GL2_FLAG_MENU_TEXTURE_ENABLE) ? true : false;
    bool ready;
+   bool direct;
 
    *draw                 = 0;
    *in_main              = false;
    gl->windows.ui_window = 0;
+   gl->windows.ui_direct = 0;
    if (f)
       for (l = 0; l < VIDEO_WINDOW_UI_LAYERS; l++)
       {
@@ -6776,11 +6778,16 @@ static unsigned gl2_window_ui_prepare(gl2_t *gl,
       return 0;
    drawn = VIDEO_WINDOW_UI_DRAWN(layers, menu, msg,
          video_info->statistics_show, video_info->widgets_visible);
-   if (     !drawn
-         || !gl2_vv_target_ensure(gl, &gl->windows.ui_target,
+   if (!drawn)
+      return layers;
+   ready  = gl2_window_ready(gl, f, w);
+   /* Laid out at the window's size: drawn on its back buffer, no image */
+   direct = ready && dims == gl->windows.win[w].native.dims;
+   if (direct)
+      gl2_vv_target_drop(gl, &gl->windows.ui_target, &gl->windows.ui);
+   else if (!gl2_vv_target_ensure(gl, &gl->windows.ui_target,
             &gl->windows.ui, dims))
-      return drawn ? 0 : layers;
-   ready = gl2_window_ready(gl, f, w);
+      return 0;
    for (l = 0; l < VIDEO_WINDOW_UI_LAYERS; l++)
       if (     (drawn & VIDEO_WINDOW_UI_BIT(l))
             && (ready || !f->ui[l].wait))
@@ -6788,7 +6795,71 @@ static unsigned gl2_window_ui_prepare(gl2_t *gl,
    if (*draw && ready)
       gl->windows.ui_window = w;
    *in_main = *draw && !ready;
+   if (direct)
+   {
+      gl->windows.ui_direct = *draw;
+      gl->windows.ui_dims   = dims;
+      gl->windows.ui_msg    = msg;
+      *draw                 = 0;
+   }
    return layers;
+}
+
+/* Layers @layers, VIDEO_WINDOW_UI_BIT()s, on the bound target */
+static void gl2_window_ui_layers(gl2_t *gl, video_frame_info_t *video_info,
+      const char *msg, unsigned layers)
+{
+#if defined(HAVE_MENU)
+   if (     (layers & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU))
+         && (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
+   {
+      menu_driver_frame(
+            (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false,
+            video_info);
+      if (gl->menu_texture)
+         gl2_draw_texture(gl);
+   }
+   else if ((layers & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS))
+         && !(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE)
+         && video_info->statistics_show)
+      font_driver_render_msg(gl, video_info->stat_text,
+            video_info->stat_text_len,
+            (const struct font_params*)&video_info->osd_stat_params, NULL);
+#endif
+   if (layers & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS))
+   {
+#ifdef HAVE_GFX_WIDGETS
+      if (video_info->widgets_active)
+         gfx_widgets_frame(video_info);
+#endif
+      if (msg && *msg)
+         font_driver_render_msg(gl, msg, strlen(msg), NULL, NULL);
+   }
+}
+
+/* The direct layers on the bound window's back buffer of @dims, the
+ * size they were laid out at; the main window's viewport and
+ * projections as they were */
+static void gl2_window_ui_direct(gl2_t *gl, video_frame_info_t *video_info,
+      unsigned dims)
+{
+   video_views_ui_dims_t saved;
+   struct video_viewport vp    = gl->vp;
+   math_matrix_4x4 mvp         = gl->mvp;
+   math_matrix_4x4 mvp_no_rot  = gl->mvp_no_rot;
+   unsigned out_vp_dims        = gl->out_vp_dims;
+   glDisable(GL_SCISSOR_TEST);
+   video_views_ui_enter(&saved, &video_info->dims, &gl->video_dims, dims);
+   gl2_set_viewport(gl, video_info->dims, false, true);
+   gl2_window_ui_layers(gl, video_info, gl->windows.ui_msg,
+         gl->windows.ui_direct);
+   video_views_ui_leave(&saved, &video_info->dims, &gl->video_dims);
+   gl->vp          = vp;
+   gl->mvp         = mvp;
+   gl->mvp_no_rot  = mvp_no_rot;
+   gl->out_vp_dims = out_vp_dims;
+   glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos),
+         VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
 }
 
 /* Moves UI drawing into the window UI image, laid out at @dims */
@@ -6830,13 +6901,15 @@ static void gl2_window_ui_end(gl2_t *gl, video_frame_info_t *video_info,
  * back buffer before the swap, unless all its layers wait. True when
  * it was. */
 static bool gl2_window_ui_fallback(gl2_t *gl,
-      const video_frame_info_t *video_info)
+      video_frame_info_t *video_info)
 {
    unsigned l;
    const video_windows_frame_t *f = video_info->windows;
+   unsigned direct                = gl->windows.ui_direct;
    bool wait                      = true;
 
    gl->windows.ui_window = 0;
+   gl->windows.ui_direct = 0;
    if (!f)
       return false;
    for (l = 0; l < VIDEO_WINDOW_UI_LAYERS; l++)
@@ -6844,6 +6917,19 @@ static bool gl2_window_ui_fallback(gl2_t *gl,
          wait = false;
    if (wait)
       return false;
+   /* Meant for its back buffer: the image only now */
+   if (direct)
+   {
+      video_views_ui_dims_t saved;
+      if (!gl2_vv_target_ensure(gl, &gl->windows.ui_target,
+               &gl->windows.ui, gl->windows.ui_dims))
+         return false;
+      gl2_window_ui_begin(gl, video_info, &saved,
+            gl->windows.ui_target.dims);
+      gl2_window_ui_layers(gl, video_info, gl->windows.ui_msg, direct);
+      gl2_window_ui_end(gl, video_info, &saved, true);
+      return true;
+   }
    gl2_renderchain_bind_backbuffer();
    gl2_window_ui_quad(gl, video_info->dims);
    return true;
@@ -6933,7 +7019,7 @@ static void gl2_windows_fit_chain(gl2_t *gl,
  * frame, then the window UI image where it is for this window, and
  * shown. Without a surface it can show, it keeps its last image. */
 static bool gl2_window_draw(gl2_t *gl,
-      const video_frame_info_t *video_info, unsigned w, bool new_frame)
+      video_frame_info_t *video_info, unsigned w, bool new_frame)
 {
    void *chains[RETRO_VIDEO_VIEWS_MAX];
    video_views_rect_t rects[RETRO_VIDEO_VIEWS_MAX];
@@ -7000,8 +7086,12 @@ static bool gl2_window_draw(gl2_t *gl,
    }
    if (gl->windows.ui_window == w)
    {
-      gl2_window_ui_quad(gl, dims);
+      if (gl->windows.ui_direct)
+         gl2_window_ui_direct(gl, video_info, dims);
+      else
+         gl2_window_ui_quad(gl, dims);
       gl->windows.ui_window = 0;
+      gl->windows.ui_direct = 0;
    }
    /* False: not shown this time, its last image stays */
    ctx->present_gl(gl->ctx_data, &win->native);
@@ -7016,7 +7106,7 @@ static bool gl2_window_draw(gl2_t *gl,
  * only one that waits; a window swaps at interval 0. The input overlay
  * stays in the main window. True when anything was drawn. */
 static bool gl2_windows_draw(gl2_t *gl,
-      const video_frame_info_t *video_info, bool new_frame)
+      video_frame_info_t *video_info, bool new_frame)
 {
    unsigned w, retire, create;
    unsigned closed                    = 0;
@@ -7471,35 +7561,13 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #if defined(GL2_VIEWS) && defined(HAVE_VIDEO_WINDOWS)
-   /* The layers drawn in another window go into its image first */
+   /* Layers their window cannot draw on its back buffer go into its
+    * image first */
    if (window_ui_draw)
    {
       gl2_window_ui_begin(gl, video_info, &window_ui_saved,
             gl->windows.ui_target.dims);
-#if defined(HAVE_MENU)
-      if (     (window_ui_draw & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU))
-            && (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
-      {
-         menu_driver_frame(menu_is_alive, video_info);
-         if (gl->menu_texture)
-            gl2_draw_texture(gl);
-      }
-      else if ((window_ui_draw
-               & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS))
-            && !(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE)
-            && statistics_show && osd_params)
-         font_driver_render_msg(gl, stat_text, video_info->stat_text_len,
-               (const struct font_params*)osd_params, NULL);
-#endif
-      if (window_ui_draw & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS))
-      {
-#ifdef HAVE_GFX_WIDGETS
-         if (widgets_active)
-            gfx_widgets_frame(video_info);
-#endif
-         if (msg && *msg)
-            font_driver_render_msg(gl, msg, strlen(msg), NULL, NULL);
-      }
+      gl2_window_ui_layers(gl, video_info, msg, window_ui_draw);
       gl2_window_ui_end(gl, video_info, &window_ui_saved, window_ui_main);
    }
 #endif

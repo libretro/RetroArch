@@ -382,12 +382,17 @@ struct gl2
       video_windows_held_t  held;
       /* gl2_frame()'s, for the preset's passes in them */
       unsigned              frame_count;
-      /* The UI layers drawn in another window, in one image */
+      /* The UI layers drawn in another window, in one image, only
+       * while they cannot be drawn on that window's back buffer */
       struct gl2_views_fbo  ui;
       video_views_target_t  ui_target;
-      /* This frame: the window the image is still to go in, 0 for
-       * none */
+      /* This frame: the window the UI is still to go in, 0 for none */
       unsigned              ui_window;
+      /* This frame: the layers drawn straight on ui_window's back
+       * buffer, 0 when the image goes there; their size and message */
+      unsigned              ui_direct;
+      unsigned              ui_dims;
+      const char           *ui_msg;
    } windows;
 #endif
 
