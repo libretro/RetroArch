@@ -683,8 +683,23 @@ bool path_rmdir(const char *dir);
  */
 bool path_is_directory(const char *path);
 
+/**
+ * path_is_empty_directory:
+ * @dir                : path
+ *
+ * @return true if @dir is a directory holding nothing but "." and "..",
+ * false if it holds anything else or cannot be opened.
+ */
 bool path_is_empty_directory(const char *dir);
 
+/**
+ * path_get_free_space:
+ * @path               : an existing file or directory
+ *
+ * @return bytes available to the caller on the volume holding @path,
+ * or -1 when that cannot be determined (no such path, or a platform
+ * without a free-space query).
+ */
 int64_t path_get_free_space(const char *path);
 
 /* Time format strings with AM-PM designation require special

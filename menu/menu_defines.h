@@ -17,6 +17,8 @@
 #ifndef __MENU_DEFINES__H
 #define __MENU_DEFINES__H
 
+#include <stdint.h>
+
 #include <retro_common_api.h>
 
 #include "../audio/audio_defines.h"
@@ -601,7 +603,7 @@ struct menu_dialog
    unsigned              confirm_msg;
    unsigned              confirm_cmd;
    unsigned              pending_cmd;
-   char                  confirm_text[512];
+   uint8_t               first_run_downloads; /* bundles to fetch on OK */
    bool                  confirm_hover_ok;
    bool                  confirm_hover_back;
    bool                  pending_push;

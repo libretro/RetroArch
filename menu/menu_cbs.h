@@ -401,6 +401,10 @@ void cb_generic_download(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);
 
+#ifdef HAVE_NETWORKING
+int action_ok_download_bundle(enum msg_hash_enums enum_idx);
+#endif
+
 RETRO_END_DECLS
 
 #endif

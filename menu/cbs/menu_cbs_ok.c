@@ -6446,6 +6446,13 @@ static int action_ok_sideload_core(const char *path,
 }
 
 #ifdef HAVE_NETWORKING
+/* An Online Updater bundle (assets, autoconfig, core info, databases,
+ * overlays...) by its CB enum, for callers outside a menu entry */
+int action_ok_download_bundle(enum msg_hash_enums enum_idx)
+{
+   return action_ok_download_generic("", "", NULL, 0, 0, 0, enum_idx);
+}
+
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_system_files_download, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_download_url, MENU_ENUM_LABEL_CB_DOWNLOAD_URL)

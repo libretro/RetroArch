@@ -33747,9 +33747,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FIRST_RUN_DOWNLOAD_PROMPT,
-   "RetroArch is missing assets, core & controller profiles as well as overlays.\n\n"
-   "Would you like to download them now? The process requires your internet connection.\n\n"
-   "Further downloads can be managed later in the online updater."
+   "Some of RetroArch's downloadable files (menu assets, controller profiles, core info, databases) are missing.\n\n"
+   "Download them now? This needs an internet connection.\n\n"
+   "They can be updated later from the Online Updater."
    )
 MSG_HASH(
    MSG_TO,
