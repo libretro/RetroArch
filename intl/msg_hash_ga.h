@@ -1696,6 +1696,7 @@ static const struct
    char s_fa6d4901[15];
    char s_4e2d78a1[16];
    char s_7ea8ec8f[25];
+   char s_0cb936fe[27];
    char s_e1606ab3[22];
    char s_7772fc51[32];
    char s_29889f9f[15];
@@ -2751,6 +2752,8 @@ static const struct
    char s_8f379310[40];
    char s_6a9b757c[36];
    char s_6c52dfb1[30];
+   char s_9e5596c6[31];
+   char s_b9bc0c48[27];
    char s_334daaaa[7];
    char s_9119ef97[36];
 #if defined (WIIU)
@@ -3664,7 +3667,9 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[66];
    char s_1536325c[311];
+   char s_ad621411[109];
    char s_f6ec26c1[54];
+   char s_4f7fb41f[151];
    char s_70f70009_0[500];
    char s_70f70009_1[13];
    char s_3487ce71[45];
@@ -3761,6 +3766,7 @@ static const struct
    char s_abf90aae[131];
    char s_b48e1eda[71];
    char s_4113227d[45];
+   char s_1e07c6ac[108];
    char s_0a1cf5a1[188];
    char s_64e37a7f[82];
    char s_cac7ba4d[63];
@@ -4311,6 +4317,9 @@ static const struct
    char s_9506fc7d[93];
    char s_9506fc7e[93];
    char s_47ae341f[96];
+   char s_5e122df4[282];
+   char s_cc84c32d[63];
+   char s_fa09f4f6[51];
    char s_48696c85[90];
 #if defined (WIIU)
 #ifdef WIIU
@@ -4721,6 +4730,7 @@ static const struct
    char s_f279fcb2[65];
    char s_8b487430[35];
 #endif
+   char s_4e346408[43];
    char s_a602dd84[43];
    char s_aa7139c6[66];
    char s_4ae9f9f9[76];
@@ -4824,6 +4834,7 @@ static const struct
    char s_bd039188[22];
    char s_9c7aa654[26];
    char s_e43d27b3[21];
+   char s_3d24ce62[60];
    char s_fbd2d537[73];
    char s_bd8967e3[65];
    char s_58cc2bb3[43];
@@ -4979,6 +4990,12 @@ static const struct
    char s_4f3bb585[51];
    char s_5876788a[67];
    char s_b7248c5d[60];
+   char s_a3e7b13a[154];
+   char s_966a8865[94];
+   char s_69e2b087[101];
+   char s_098459c5[55];
+   char s_35e09a43[44];
+   char s_a27fec29[121];
    char s_a7ae1b42[30];
 #ifdef HAVE_LAKKA
    char s_ebacf443[25];
@@ -7027,6 +7044,7 @@ static const struct
    "Bain () \303\201bhar",
    "Bain () agus []",
    "Bainistigh Seinmliosta\303\255",
+   "Athnuaigh Gach Seinmliosta",
    "Athnuaigh Seinmliosta",
    "Athshocraigh Comhlachais Chro\303\255",
    "Modh S\303\263rt\303\241la",
@@ -8104,6 +8122,8 @@ static const struct
    "C\303\263imheas Gn\303\251 Saincheaptha (Su\303\255omh Y)",
    "Socraigh Leithead an Sc\303\241ile\303\241in VI",
    "Sioncr\303\263n\303\272 Ingearach (VSync)",
+   "Tiom\303\241na\303\255 Vulkan Saincheaptha",
+   "C\303\263ras (Tos\303\272 s\303\241bh\303\241ilte)",
    "C\303\263ras",
    "Slabhra\303\255 Malartaithe Infheithicl\303\255",
 #if defined (WIIU)
@@ -9965,7 +9985,12 @@ static const struct
    "\303\251 go bhf\303\251adfadh an freastala\303\255 \303\251 a chur i l\303\241thair faoi ainm n"
    "\303\255os giorra. F\303\241g b\303\241n \303\251 chun an t-easp\303\263rt\303\241il a shonr\303"
    "\272 sa seoladh mar nfs://server/export/path.",
+   "Port an tseirbh\303\255s MOUNT. 0 iarrann s\303\251 ar mhaip\303\251ar calafoirt an fhreastala"
+   "\303\255. N\303\255 \303\272s\303\241ideann Leagan 4 \303\251.",
    "Coinn\303\255odh na naisc leis an bhfreastala\303\255 ar oscailt.",
+   "Port na seirbh\303\255se NFS. Cialla\303\255onn 0 go nd\303\251antar fiosr\303\272 ar portmapper"
+   " an fhreastala\303\255 i gc\303\241s leagan 3, agus cialla\303\255onn s\303\251 2049 i gc\303"
+   "\241s leagan 4.",
    "Faightear sonra\303\255 roimh r\303\251 nuair a l\303\251ann cluiche comhad ina chodanna beaga, "
    "agus sn\303\241ithe c\303\272lra ag cinnti\303\272 go mb\303\255onn an ch\303\251ad chuid eile a"
    "r f\303\241il i gc\303\263na\303\255. Is f\303\251idir leis seo feidhm\303\255ocht \303\255omh"
@@ -10166,6 +10191,8 @@ static const struct
    "\303\255 iontr\303\241il seinmliosta nach bhfuil baint l\303\241rnach aige cheana f\303\251in.",
    "Athraigh an chaoi a l\303\251ir\303\255tear lip\303\251id an \303\241bhair sa seinmliosta seo.",
    "D\303\251an tascanna cothabh\303\241la ar seinmliosta\303\255.",
+   "Athscan gach seinmliosta a bhfuil socruithe scanta s\303\241bh\303\241ilte aige, ag baint \303"
+   "\272s\303\241ide as na socruithe sin.",
    "Cuir \303\241bhar nua leis agus bain iontr\303\241lacha neamhbhail\303\255 tr\303\255d an oibr"
    "\303\255ocht scanadh \303\241bhair a \303\272s\303\241ideadh go deireanach chun an seinmliosta a"
    " chruth\303\272 n\303\263 a chur in eagar a athdh\303\251anamh.",
@@ -11379,6 +11406,13 @@ static const struct
    "radhairc a shaini\303\272.",
    "Sioncr\303\263naigh f\303\255se\303\241n aschuir an ch\303\241rta grafaic\303\255 le r\303\241ta"
    " athnuachana an sc\303\241ile\303\241in. Molta.",
+   "\303\232s\303\241id pac\303\241iste tiom\303\241na\303\255 Vulkan (.zip) in \303\241it thiom\303"
+   "\241na\303\255 an ch\303\263rais. Ritheann an tiom\303\241na\303\255 laistigh de RetroArch: n"
+   "\303\241 h\303\272s\303\241id ach pac\303\241ist\303\255 \303\263 fhoinse a bhfuil muin\303\255n"
+   " agat as. Tiocfaidh s\303\251 i bhfeidhm an ch\303\251ad uair eile a thos\303\263idh Vulkan. T"
+   "\303\272s: tiom\303\241na\303\255 an ch\303\263rais.",
+   "Thuairte\303\241il s\303\251 ar an rith deireanach, ag \303\272s\303\241id an Ch\303\263rais",
+   "\303\232s\303\241idtear %s ar\303\255s ag an gc\303\251ad t\303\272s gn\303\241th eile",
    "Sioncr\303\263naigh an LAP agus an GPU go crua. Laghda\303\255onn s\303\251 moill ar chostas fei"
    "dhm\303\255ochta.",
 #if defined (WIIU)
@@ -11895,6 +11929,7 @@ static const struct
    "Ag tos\303\272 Pointe Rochtana Wi-Fi le SSID=%s agus Eochairfhocail=%s",
    "Ag m\303\272chadh Pointe Rochtana Wi-Fi.",
 #endif
+   "T\303\241 scanadh \303\241bhair ar si\303\272l cheana f\303\251in.",
    "Comhad DAT stuara neamhbhail\303\255 roghnaithe.",
    "Theip ar chomhad DAT an stuara a lucht\303\272 (form\303\241id neamhbhail\303\255?)",
    "T\303\241 an comhad DAT stuara roghnaithe r\303\263-mh\303\263r (n\303\255l d\303\263thain cuimh"
@@ -12028,6 +12063,7 @@ static const struct
    "Glanadh seinmliosta: ",
    "Athshocr\303\272 cro\303\255leac\303\241n: ",
    "Seinmliosta glanta: ",
+   "Seinnliosta\303\255 athnuachana: %u, scipe\303\241ilte: %u, teipthe: %u",
    "Theip ar athnuachan - comhad DAT an stua r\303\263-mh\303\263r (cuimhne neamhleor): ",
    "Theip ar athnuachan - eolaire \303\241bhair neamhbhail\303\255/ar iarraidh: ",
    "Theip ar athnuachan - cro\303\255 neamhbhail\303\255: ",
@@ -12211,6 +12247,17 @@ static const struct
    "T\303\241 sioncr\303\263n\303\272 le r\303\241ta fr\303\241ma an \303\241bhair chruinn d\303\255"
    "chumasaithe.",
    "Cumasa\303\255odh sioncr\303\263n\303\272 le r\303\241ta fr\303\241ma an \303\241bhair chruinn.",
+   "Thit tiom\303\241na\303\255 saincheaptha Vulkan as a ch\303\251ile roimhe seo, agus t\303\241 s"
+   "\303\251 d\303\255chumasaithe don chro\303\255 seo. Roghnaigh ar\303\255s \303\251 chun triail e"
+   "ile a bhaint as.",
+   "Theip ar th\303\272s\303\272 an tiom\303\241na\303\255 Vulkan saincheaptha. \303\201 \303\272s"
+   "\303\241id anois: tiom\303\241na\303\255 an ch\303\263rais.",
+   "N\303\255 f\303\251idir an pac\303\241iste tiom\303\241na\303\255 Vulkan saincheaptha a \303\272"
+   "s\303\241id. \303\201 \303\272s\303\241id an tiom\303\241na\303\255 c\303\263rais.",
+   "Atosaigh RetroArch chun an tiom\303\241na\303\255 Vulkan a athr\303\272.",
+   "Thosaigh leis an tiom\303\241na\303\255 Vulkan c\303\263rais.",
+   "Teasta\303\255onn GPU Adreno agus Android 9 \303\263 thiom\303\241naithe saincheaptha Vulkan. Ag"
+   " baint \303\272s\303\241ide as tiom\303\241na\303\255 an ch\303\263rais.",
    "Ag fanacht leis an gcliant...",
 #ifdef HAVE_LAKKA
    "Ag ceangal le Wi-Fi '%s'",
@@ -12224,7 +12271,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (268636u
+      (sizeof(msg_hash_ga_blob) == (269897u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12625,7 +12672,9 @@ typedef char msg_hash_ga_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 66u
        + 311u
+       + 109u
        + 54u
+       + 151u
        + 513u
        + 45u
 #endif
@@ -14474,6 +14523,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
@@ -15528,6 +15578,8 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
@@ -16428,7 +16480,9 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
@@ -16524,6 +16578,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
@@ -17065,6 +17120,9 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -17474,6 +17532,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MSG_LOCALAP_STARTING,
    (msg_hash_id_t)MSG_LOCALAP_SWITCHING_OFF,
 #endif
+   (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
@@ -17577,6 +17636,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_CORES_RESET,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_ALL_DONE,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
@@ -17732,6 +17792,12 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MSG_VIRTUAL_DISK_TRAY_EJECT,
    (msg_hash_id_t)MSG_VRR_RUNLOOP_DISABLED,
    (msg_hash_id_t)MSG_VRR_RUNLOOP_ENABLED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_FAILED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_INVALID,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_RESTART,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MSG_WIFI_CONNECTING_TO,

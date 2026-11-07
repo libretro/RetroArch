@@ -4974,6 +4974,12 @@ static const struct
    char s_bdc78c0d[30];
    char s_850e7bf8[30];
    char s_710d99e5[33];
+   char s_ad0b447c[46];
+   char s_18bc6492[46];
+   char s_607ae60d[31];
+   char s_dee6b223[46];
+   char s_ff0097ff[87];
+   char s_a9177805[74];
    char s_efceecfb[36];
    char s_60038fe5[26];
    char s_91ec0bdf[55];
@@ -15348,6 +15354,16 @@ static const struct
    "Qu\303\251t th\306\260 m\341\273\245c ho\303\240n t\341\272\245t.",
    "Qu\303\251t t\341\273\207p \304\221\303\243 ho\303\240n t\341\272\245t.",
    "Qu\303\251t c\303\241c m\341\272\241ng kh\303\264ng d\303\242y...",
+   "kh\303\264ng th\341\273\203 k\341\272\277t n\341\273\221i v\341\273\233i m\303\241y ch\341\273"
+   "\247 SMB",
+   "kh\303\264ng th\341\273\203 ph\303\242n gi\341\272\243i t\303\252n m\303\241y ch\341\273\247 SMB",
+   "\304\220\304\203ng nh\341\272\255p SMB th\341\272\245t b\341\272\241i",
+   "Ch\306\260a c\341\272\245u h\303\254nh \304\221\341\273\213a ch\341\273\211 m\303\241y ch\341"
+   "\273\247 SMB",
+   "Kh\303\264ng t\303\254m th\341\272\245y th\306\260 m\341\273\245c chia s\341\272\273 SMB ho\341"
+   "\272\267c b\341\273\213 t\341\273\253 ch\341\273\221i quy\341\273\201n truy c\341\272\255p",
+   "\304\221\306\260\341\273\235ng d\341\272\253n chia s\341\272\273 kh\303\264ng kh\341\273\233p v"
+   "\341\273\233i thi\341\272\277t l\341\272\255p chia s\341\272\273 SMB",
    "\341\272\242nh m\303\240n h\303\254nh \304\221\303\243 \304\221\306\260\341\273\243c l\306\260u",
    "\303\201p d\341\273\245ng: M\341\272\267c \304\221\341\273\213nh",
    "\303\201p d\341\273\245ng: %dx%d - %s\nNH\341\272\244N Start \304\221\341\273\203 \304\221\341"
@@ -15469,7 +15485,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (308301u
+      (sizeof(msg_hash_vn_blob) == (308631u
 #ifdef ANDROID
        + 373u
 #endif
@@ -20961,6 +20977,12 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MSG_SCANNING_OF_DIRECTORY_FINISHED,
    (msg_hash_id_t)MSG_SCANNING_OF_FILE_FINISHED,
    (msg_hash_id_t)MSG_SCANNING_WIRELESS_NETWORKS,
+   (msg_hash_id_t)MSG_SCAN_SMB_CANNOT_CONNECT,
+   (msg_hash_id_t)MSG_SCAN_SMB_CANNOT_RESOLVE,
+   (msg_hash_id_t)MSG_SCAN_SMB_LOGIN_FAILED,
+   (msg_hash_id_t)MSG_SCAN_SMB_NO_SERVER,
+   (msg_hash_id_t)MSG_SCAN_SMB_NO_SHARE,
+   (msg_hash_id_t)MSG_SCAN_SMB_SHARE_DIFFERS,
    (msg_hash_id_t)MSG_SCREENSHOT_SAVED,
    (msg_hash_id_t)MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
    (msg_hash_id_t)MSG_SCREEN_RESOLUTION_APPLYING_DESC,

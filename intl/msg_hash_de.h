@@ -1636,6 +1636,7 @@ static const struct
    char s_fa6d4901[27];
    char s_4e2d78a1[20];
    char s_7ea8ec8f[27];
+   char s_0cb936fe[29];
    char s_e1606ab3[30];
    char s_7772fc51[31];
    char s_29889f9f[15];
@@ -2638,6 +2639,8 @@ static const struct
    char s_8f379310[22];
    char s_6a9b757c[15];
    char s_6c52dfb1[34];
+   char s_9e5596c6[35];
+   char s_b9bc0c48[24];
 #if defined (WIIU)
 #ifdef WIIU
    char s_afb881f7[54];
@@ -3539,7 +3542,9 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_0dc9bb2c[57];
    char s_1536325c[300];
+   char s_ad621411[114];
    char s_f6ec26c1[40];
+   char s_4f7fb41f[119];
    char s_70f70009[466];
    char s_3487ce71[33];
 #endif
@@ -3635,6 +3640,7 @@ static const struct
    char s_abf90aae[138];
    char s_b48e1eda[92];
    char s_4113227d[49];
+   char s_1e07c6ac[102];
    char s_0a1cf5a1[169];
    char s_64e37a7f[75];
    char s_cac7ba4d[68];
@@ -4188,6 +4194,9 @@ static const struct
    char s_9506fc7d[87];
    char s_9506fc7e[79];
    char s_47ae341f[104];
+   char s_5e122df4[266];
+   char s_cc84c32d[47];
+   char s_fa09f4f6[55];
    char s_48696c85[76];
 #if defined (WIIU)
 #ifdef WIIU
@@ -4594,6 +4603,7 @@ static const struct
    char s_f279fcb2[54];
    char s_8b487430[39];
 #endif
+   char s_4e346408[32];
    char s_a602dd84[41];
    char s_aa7139c6[61];
    char s_4ae9f9f9[77];
@@ -4696,6 +4706,7 @@ static const struct
    char s_bd039188[26];
    char s_9c7aa654[23];
    char s_e43d27b3[28];
+   char s_3d24ce62[66];
    char s_fbd2d537[79];
    char s_bd8967e3[74];
    char s_58cc2bb3[50];
@@ -4791,6 +4802,12 @@ static const struct
    char s_bdc78c0d[31];
    char s_850e7bf8[25];
    char s_710d99e5[30];
+   char s_ad0b447c[41];
+   char s_18bc6492[44];
+   char s_607ae60d[29];
+   char s_dee6b223[37];
+   char s_ff0097ff[52];
+   char s_a9177805[63];
    char s_efceecfb[23];
    char s_60038fe5[21];
    char s_91ec0bdf[47];
@@ -4850,6 +4867,12 @@ static const struct
    char s_4f3bb585[53];
    char s_5876788a[63];
    char s_b7248c5d[61];
+   char s_a3e7b13a[143];
+   char s_966a8865[104];
+   char s_69e2b087[96];
+   char s_098459c5[58];
+   char s_35e09a43[40];
+   char s_a27fec29[109];
    char s_a7ae1b42[22];
 #ifdef HAVE_LAKKA
    char s_ebacf443[23];
@@ -6715,6 +6738,7 @@ static const struct
    "()-Informationen entfernen",
    "() und [] entfernen",
    "Wiedergabelisten verwalten",
+   "Alle Playlists aktualisieren",
    "Wiedergabeliste aktualisieren",
    "Core-Zuordnungen zur\303\274cksetzen",
    "Sortiermethode",
@@ -7727,6 +7751,8 @@ static const struct
    "Y-Position des Bildes",
    "VI-Bildgr\303\266\303\237e",
    "Vertikale Synchronisation (VSync)",
+   "Benutzerdefinierter Vulkan-Treiber",
+   "System (Sicherer Start)",
 #if defined (WIIU)
 #ifdef WIIU
    "F\303\274r Wii U GamePad optimieren (Neustart erforderlich)",
@@ -9226,7 +9252,11 @@ static const struct
    "funktioniert auch f\303\274r NFS Version 4, wo der Server es m\303\266glicherweise unter einem k"
    "\303\274rzeren Namen bereitstellt. Das Feld leer lassen, um den Export in der Adresse als nfs://"
    "server/export/path anzugeben.",
+   "Port des MOUNT-Dienstes. 0 fragt den Portmapper des Servers ab. Bei Version 4 wird dieser Dienst"
+   " nicht verwendet.",
    "Zum Server offengehaltene Verbindungen.",
+   "Port des NFS-Dienstes. 0 fragt den Portmapper des Servers bei Version 3 ab und entspricht bei Ve"
+   "rsion 4 dem Port 2049.",
    "Daten werden vorab abgerufen, wenn ein Spiel eine Datei in kleinen Abschnitten liest, wobei ein "
    "Hintergrundthread daf\303\274r sorgt, dass das n\303\244chste Fenster angezeigt wird. Dies kann "
    "gro\303\237e Disc-Images \303\274ber eine langsame Verbindung fl\303\274ssiger wiedergeben; es e"
@@ -9381,6 +9411,8 @@ static const struct
    "et werden soll, dem kein Core zugeordnet wurde.",
    "Die Art und Weise, wie die Inhaltsbezeichnungen in dieser Wiedergabeliste angezeigt werden.",
    "Wartungsarbeiten an Wiedergabelisten ausf\303\274hren.",
+   "Alle Playlists, f\303\274r die Scaneinstellungen gespeichert sind, mit diesen Einstellungen erne"
+   "ut scannen.",
    "Neue Inhalte hinzuf\303\274gen und ung\303\274ltige Eintr\303\244ge entfernen, indem der zuletzt"
    " zum Erstellen oder Bearbeiten der Wiedergabeliste verwendete Inhaltsscan wiederholt wird.",
    "Vorhandene Core-Zuordnungen f\303\274r alle Wiedergabelisteneintr\303\244ge entfernen.",
@@ -10387,6 +10419,12 @@ static const struct
    "Angepasster Viewport-Offset zur Definition der Y-Achsenposition des Viewports.",
    "Die Video-Ausgabe der Grafikkarte mit der Bildwiederholrate des Bildschirms synchronisieren. Emp"
    "fohlen.",
+   "Ein Vulkan-Treiberpaket (.zip) anstelle des Systemtreibers verwenden. Der Treiber wird innerhalb"
+   " von RetroArch ausgef\303\274hrt. Daher nur Pakete aus vertrauensw\303\274rdigen Quellen verwend"
+   "en. Die \303\204nderung wird beim n\303\244chsten Start von Vulkan wirksam. Start: Systemtreiber"
+   ".",
+   "Absturz beim letzten Start, daher \342\200\236System\342\200\234",
+   "%s wird beim n\303\244chsten normalen Start wieder verwendet",
    "CPU und GPU fest synchronisieren. Reduziert Latenz auf Kosten der Leistung.",
 #if defined (WIIU)
 #ifdef WIIU
@@ -10850,6 +10888,7 @@ static const struct
    "Starte Wi-Fi Access Point mit SSID=%s und Passwort=%s",
    "Wi-Fi Access Point wird ausgeschaltet.",
 #endif
+   "Ein Inhaltsscan l\303\244uft bereits.",
    "Ung\303\274ltige Arcade-DAT-Datei ausgew\303\244hlt.",
    "Fehler beim Laden der Arcade-DAT-Datei (ung\303\274ltiges Format?)",
    "Ausgew\303\244hlte Arcade-DAT-Datei ist zu gro\303\237 (unzureichender freier Speicher).",
@@ -10967,6 +11006,7 @@ static const struct
    "Reinige Wiedergabeliste: ",
    "Cores zur\303\274ckgesetzt: ",
    "Wiedergabeliste bereinigt: ",
+   "Playlists aktualisiert: %u, \303\274bersprungen: %u, fehlgeschlagen: %u",
    "Aktualisieren fehlgeschlagen - Arcade-DAT-Datei zu gro\303\237 (zu wenig Speicher): ",
    "Aktualisieren fehlgeschlagen - ung\303\274ltiges/fehlendes Inhaltsverzeichnis: ",
    "Aktualisieren fehlgeschlagen - ung\303\274ltiger Core: ",
@@ -11070,6 +11110,12 @@ static const struct
    "Verzeichnisscan abgeschlossen.",
    "Dateiscan abgeschlossen.",
    "Suche nach WLAN-Netzwerken...",
+   "Verbindung zum SMB-Server nicht m\303\266glich",
+   "SMB-Servername kann nicht aufgel\303\266st werden",
+   "SMB-Anmeldung fehlgeschlagen",
+   "SMB-Serveradresse nicht konfiguriert",
+   "SMB-Freigabe nicht gefunden oder Zugriff verweigert",
+   "Freigabe stimmt nicht mit der SMB-Freigabeeinstellung \303\274berein",
    "Screenshot gespeichert",
    "Angewendet: Standard",
    "Angewendet: %dx%d - %s\nSTART zum Zur\303\274cksetzen",
@@ -11134,6 +11180,15 @@ static const struct
    "Virtuelles Laufwerk konnte nicht ausgeworfen werden.",
    "Synchronisation mit exakter Inhaltssignalfrequenz deaktiviert.",
    "Synchronisation mit exakter Inhaltssignalfrequenz aktiviert.",
+   "Der benutzerdefinierter Vulkan-Treiber ist zuvor mit diesem Core abgest\303\274rzt und wurde dea"
+   "ktiviert. Zur erneuten Verwendung wieder ausw\303\244hlen.",
+   "Der benutzerdefinierter Vulkan-Treiber konnte nicht gestartet werden. Der Systemtreiber wird ver"
+   "wendet.",
+   "Benutzerdefiniertes Vulkan-Treiberpaket ist nicht verwendbar. Der Systemtreiber wird verwendet.",
+   "RetroArch neu starten, um den Vulkan-Treiber zu wechseln.",
+   "Mit dem Vulkan-Systemtreiber gestartet.",
+   "Benutzerdefinierte Vulkan-Treiber erfordern eine Adreno-GPU und Android 9. Der Systemtreiber wir"
+   "d verwendet.",
    "Auf Client warten ...",
 #ifdef HAVE_LAKKA
    "Verbinde mit WLAN '%s'",
@@ -11147,7 +11202,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (254388u
+      (sizeof(msg_hash_de_blob) == (255860u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11560,7 +11615,9 @@ typedef char msg_hash_de_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 57u
        + 300u
+       + 114u
        + 40u
+       + 119u
        + 466u
        + 33u
 #endif
@@ -13352,6 +13409,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
@@ -14353,6 +14411,8 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
 #if defined (WIIU)
 #ifdef WIIU
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
@@ -15243,7 +15303,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
 #ifdef HAVE_NFSCLIENT
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
@@ -15339,6 +15401,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
@@ -15881,6 +15944,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -16286,6 +16352,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_LOCALAP_STARTING,
    (msg_hash_id_t)MSG_LOCALAP_SWITCHING_OFF,
 #endif
+   (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_ALREADY_RUNNING,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    (msg_hash_id_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
@@ -16388,6 +16455,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_CORES_RESET,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_ALL_DONE,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
    (msg_hash_id_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
@@ -16483,6 +16551,12 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_SCANNING_OF_DIRECTORY_FINISHED,
    (msg_hash_id_t)MSG_SCANNING_OF_FILE_FINISHED,
    (msg_hash_id_t)MSG_SCANNING_WIRELESS_NETWORKS,
+   (msg_hash_id_t)MSG_SCAN_SMB_CANNOT_CONNECT,
+   (msg_hash_id_t)MSG_SCAN_SMB_CANNOT_RESOLVE,
+   (msg_hash_id_t)MSG_SCAN_SMB_LOGIN_FAILED,
+   (msg_hash_id_t)MSG_SCAN_SMB_NO_SERVER,
+   (msg_hash_id_t)MSG_SCAN_SMB_NO_SHARE,
+   (msg_hash_id_t)MSG_SCAN_SMB_SHARE_DIFFERS,
    (msg_hash_id_t)MSG_SCREENSHOT_SAVED,
    (msg_hash_id_t)MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
    (msg_hash_id_t)MSG_SCREEN_RESOLUTION_APPLYING_DESC,
@@ -16542,6 +16616,12 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_VIRTUAL_DISK_TRAY_EJECT,
    (msg_hash_id_t)MSG_VRR_RUNLOOP_DISABLED,
    (msg_hash_id_t)MSG_VRR_RUNLOOP_ENABLED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_FAILED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_INVALID,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_RESTART,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MSG_WIFI_CONNECTING_TO,
