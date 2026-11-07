@@ -46,12 +46,11 @@ S_BOOL(menu_materialui_playlist_icons_enable, MATERIALUI_PLAYLIST_ICONS_ENABLE,
 /* Descriptor and configuration rows are #ifdef HAVE_MATERIALUI; the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_MATERIALUI) || defined(SETTINGS_DEF_STRINGS_PASS)
-/* The configuration row lives under defined(HAVE_MENU); other passes are
- * unaffected. */
-#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
-S_UINT_EX(menu_materialui_color_theme, MATERIALUI_MENU_COLOR_THEME,
+/* The configuration.c row stays literal for this setting. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS)
+S_STRING(menu_materialui_color_theme, MATERIALUI_MENU_COLOR_THEME,
       "materialui_menu_color_theme",
-      DEFAULT_MATERIALUI_THEME, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, MATERIALUI_THEME_LAST-1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_materialui_menu_color_theme, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      DEFAULT_MATERIALUI_THEME, SD_FLAG_NONE, 0, setting_action_ok_uint, setting_get_string_representation_menu_theme, setting_generic_action_start_default, NULL, setting_string_action_left_menu_theme, setting_string_action_right_menu_theme, ST_UI_TYPE_STRING_COMBOBOX,
       "Color Theme",
       "Select a different background color theme.")
 #endif
