@@ -2191,10 +2191,26 @@ static void rvp9_decode_block(rvp9_dec *d, int mi_row, int mi_col,
       rvp9_kf_uv_mode_prob + mi->mode * 9);
 
 modes_done:
-   /* replicate mi into the covered grid (context for later blocks) */
-   for (j = 0; j < y_mis; j++)
-      for (i = 0; i < x_mis; i++)
-         if (i || j) mi[j * d->mi_cols + i] = *mi;
+   /* Replicate mi into the covered grid (context for later blocks),
+    * and store the block's references and MVs for the next frame's
+    * prediction in the same pass: they are final here, and every cell
+    * of the frame is covered by exactly one block, so the grid needs no
+    * clearing each frame and no second pass over it at the end. */
+   {
+      rvp9_mv_ref  mr;
+      rvp9_mv_ref *cm = d->cur_mvs + mi_row * d->mi_cols + mi_col;
+      mr.ref_frame[0] = mi->ref_frame[0];
+      mr.ref_frame[1] = mi->ref_frame[1];
+      mr.mv[0]        = mi->mv[0];
+      mr.mv[1]        = mi->mv[1];
+      for (j = 0; j < y_mis; j++)
+         for (i = 0; i < x_mis; i++)
+         {
+            if (i || j)
+               mi[j * d->mi_cols + i] = *mi;
+            cm[j * d->mi_cols + i] = mr;
+         }
+   }
 
    /* --- inter blocks: motion compensation over whole block first --- */
    if (rvp9_is_inter(mi))
@@ -2763,7 +2779,9 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
    memset(d->above_seg, 0, d->mi_cols + 8);
    for (i = 0; i < 3; i++)
       memset(d->above_ctx[i], 0, d->mi_cols * 2 + 16);
-   memset(d->mi, 0, (size_t)d->mi_cols * d->mi_rows * sizeof(rvp9_mi));
+   /* d->mi is not cleared: every block writes its whole footprint
+    * before anything later reads it (rvp9_decode_block), and the
+    * neighbours a block reads were decoded earlier in this frame. */
 
    {
       const uint8_t *tp   = data + tile_off;
@@ -2859,17 +2877,10 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
 
    rvp9_loop_filter_frame(d);
 
-   /* store this frame's MVs for the next frame's prediction */
+   /* this frame's MVs, stored block by block as they were decoded,
+    * become the next frame's prediction */
    {
       rvp9_mv_ref *tmp = d->prev_mvs;
-      int n = d->mi_cols * d->mi_rows;
-      for (i = 0; i < n; i++)
-      {
-         d->cur_mvs[i].ref_frame[0] = d->mi[i].ref_frame[0];
-         d->cur_mvs[i].ref_frame[1] = d->mi[i].ref_frame[1];
-         d->cur_mvs[i].mv[0] = d->mi[i].mv[0];
-         d->cur_mvs[i].mv[1] = d->mi[i].mv[1];
-      }
       d->prev_mvs = d->cur_mvs;
       d->cur_mvs = tmp;
    }
