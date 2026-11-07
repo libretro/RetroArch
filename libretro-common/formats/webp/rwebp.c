@@ -951,6 +951,21 @@ static int vlbd_xform_rows(vlbd *s, int nrows)
             int nc = x->dw, bits = x->bits, rw = (int)width;
             uint32_t *out;
             int px2, py2;
+            if (bits == 0)
+            {
+               /* One index per pixel, so the image is not packed: each
+                * index becomes its colour where it lies, no expansion
+                * buffer.  (Packed indices need one, rows being read
+                * top to bottom while the expansion would overwrite the
+                * packed rows below it.) */
+               size_t j, j1 = (size_t)r1 * cw;
+               for (j = (size_t)r0 * cw; j < j1; j++)
+               {
+                  int idx = (int)((pix[j] >> 8) & 0xFF);
+                  pix[j]  = pal[idx < nc ? idx : 0];
+               }
+               break;
+            }
             if (!s->xout)
             {
                s->xout = (uint32_t*)malloc((size_t)rw * height * sizeof(uint32_t));
