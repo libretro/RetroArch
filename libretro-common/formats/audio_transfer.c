@@ -1294,7 +1294,6 @@ static bool audio_transfer_ac3_seek_to(struct audio_transfer_ac3 *a, uint64_t fr
 {
    size_t   pos = 0;
    uint64_t at  = 0;
-   rac3_decoder_t *fresh;
    size_t   prev_pos = (size_t)-1;
    while (pos < a->buf_size)
    {
@@ -1311,11 +1310,7 @@ static bool audio_transfer_ac3_seek_to(struct audio_transfer_ac3 *a, uint64_t fr
    }
    if (pos >= a->buf_size)
       return false;
-   fresh = rac3_decoder_new();
-   if (!fresh)
-      return false;
-   rac3_decoder_free(a->dec);
-   a->dec = fresh;
+   rac3_decoder_reset(a->dec);
    if (prev_pos != (size_t)-1)
    {
       rac3_frame_info_t info;

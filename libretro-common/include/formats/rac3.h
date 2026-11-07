@@ -130,6 +130,11 @@ typedef struct rac3_decoder rac3_decoder_t;
 rac3_decoder_t *rac3_decoder_new(void);
 void            rac3_decoder_free(rac3_decoder_t *d);
 
+/* Back to the state rac3_decoder_new gives - no overlap carried from
+ * earlier frames - without an allocation or the table set-up, for a
+ * seek.  The DRC setting is kept. */
+void            rac3_decoder_reset(rac3_decoder_t *d);
+
 /* Apply the stream's dynamic range control words (default on). */
 void rac3_decoder_set_drc(rac3_decoder_t *d, bool on);
 

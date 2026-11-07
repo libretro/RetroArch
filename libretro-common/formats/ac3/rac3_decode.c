@@ -24,6 +24,7 @@
  * range of 7.7.1, and the transforms of 7.9.4 with the window of
  * 7.33. Section numbers are given where the code follows the text. */
 
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -112,7 +113,13 @@ typedef struct
 
 struct rac3_decoder
 {
+   /* What survives rac3_decoder_reset: the caller's setting and the
+    * tables made once.  Everything from acmod on is stream state, and
+    * a reset zeroes it as the calloc in rac3_decoder_new did. */
    bool     drc;
+   /* transform twiddles and the IFFT tables, made once */
+   float    xcos1[128], xsin1[128], xcos2[64], xsin2[64];
+   float    fft_cos[128], fft_sin[128];
    unsigned acmod, nfchans, lfeon, fscod;
    unsigned cmixlev, surmixlev;
    /* the transform coefficients of the block, per channel, and the LFE */
@@ -120,9 +127,6 @@ struct rac3_decoder
    float    lfecoef[256];
    /* overlap-add delay per output channel (fbw + lfe) */
    float    delay[RAC3_NCH_MAX + 1][256];
-   /* transform twiddles and the IFFT tables, made once */
-   float    xcos1[128], xsin1[128], xcos2[64], xsin2[64];
-   float    fft_cos[128], fft_sin[128];
    /* grouped-mantissa state carried across channels within a block */
    int      grp1_left, grp1_codes[3];
    int      grp2_left, grp2_codes[3];
@@ -183,6 +187,14 @@ rac3_decoder_t *rac3_decoder_new(void)
 void rac3_decoder_free(rac3_decoder_t *d)
 {
    free(d);
+}
+
+void rac3_decoder_reset(rac3_decoder_t *d)
+{
+   if (!d)
+      return;
+   memset(&d->acmod, 0, sizeof(*d) - offsetof(rac3_decoder_t, acmod));
+   d->dither = 0x12345678u;
 }
 
 void rac3_decoder_set_drc(rac3_decoder_t *d, bool on)
