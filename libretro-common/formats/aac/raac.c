@@ -5654,43 +5654,59 @@ static int raac_upsample_frame(raac_t *a)
    return (int)(a->frame_len * 2);
 }
 
-int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
-      int16_t *out)
+int raac_decode(raac_t *a, const uint8_t *pkt, size_t size)
 {
-   int      ret;
-   int      i;
-   unsigned ch;
+   int ret;
    if (!a)
       return -1;
    if ((ret = raac_decode_frame(a, pkt, size, a->pcm)) < 0)
       return ret;
    if (a->sbr_mode)
       ret = raac_upsample_frame(a);
+   return ret;
+}
+
+/* The decoded frame stays where synthesis left it, one plane per
+ * channel at s16 scale, so each copy below is the single interleaving
+ * pass, from any offset into it straight into the caller's buffer. */
+void raac_copy_s16(const raac_t *a, size_t first, size_t count,
+      int16_t *out)
+{
+   size_t   i;
+   unsigned ch;
+   if (!a)
+      return;
 #ifdef RAAC_HAVE_S16
-   if (a->channels == 2 && !(ret & 7))
+   if (a->channels == 2)
    {
-      const float *l = a->sbr_mode ? a->qmf[0].out : a->pcm[0];
-      const float *r = a->sbr_mode ? a->qmf[1].out : a->pcm[1];
-      for (i = 0; i < ret; i += 4)
+      const float *l = (a->sbr_mode ? a->qmf[0].out : a->pcm[0]) + first;
+      const float *r = (a->sbr_mode ? a->qmf[1].out : a->pcm[1]) + first;
+      size_t       n = count & ~(size_t)3;
+      for (i = 0; i < n; i += 4)
       {
          raac_v x = RAAC_LD(l + i), y = RAAC_LD(r + i);
          raac_v_st_s16x8(out + 2 * i, RAAC_ZIPLO(x, y), RAAC_ZIPHI(x, y));
       }
-      return ret;
+      out   += 2 * n;
+      first += n;
+      count -= n;
    }
-   if (a->channels == 1 && !(ret & 7))
+   else if (a->channels == 1)
    {
-      const float *p = a->sbr_mode ? a->qmf[0].out : a->pcm[0];
-      for (i = 0; i < ret; i += 8)
+      const float *p = (a->sbr_mode ? a->qmf[0].out : a->pcm[0]) + first;
+      size_t       n = count & ~(size_t)7;
+      for (i = 0; i < n; i += 8)
          raac_v_st_s16x8(out + i, RAAC_LD(p + i), RAAC_LD(p + i + 4));
-      return ret;
+      out   += n;
+      first += n;
+      count -= n;
    }
 #endif
    for (ch = 0; ch < a->channels; ch++)
    {
-      const float *p = a->sbr_mode ? a->qmf[ch].out : a->pcm[ch];
+      const float *p = (a->sbr_mode ? a->qmf[ch].out : a->pcm[ch]) + first;
       int16_t     *o = out + ch;
-      for (i = 0; i < ret; i++, o += a->channels)
+      for (i = 0; i < count; i++, o += a->channels)
       {
          /* one rounding, clamped in the float domain: casting an
           * out-of-range or non-finite float to int is undefined, and
@@ -5705,41 +5721,66 @@ int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
          *o = (int16_t)(int)v;
       }
    }
-   return ret;
 }
 
-int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
+void raac_copy_f32(const raac_t *a, size_t first, size_t count,
       float *out)
 {
-   int      ret;
-   int      i;
+   size_t   i;
    unsigned ch;
    if (!a)
-      return -1;
-   if ((ret = raac_decode_frame(a, pkt, size, a->pcm)) < 0)
-      return ret;
-   if (a->sbr_mode)
-      ret = raac_upsample_frame(a);
-   if (a->channels == 2 && !(ret & 3))
+      return;
+   if (a->channels == 2)
    {
-      const float *l = a->sbr_mode ? a->qmf[0].out : a->pcm[0];
-      const float *r = a->sbr_mode ? a->qmf[1].out : a->pcm[1];
+      const float *l = (a->sbr_mode ? a->qmf[0].out : a->pcm[0]) + first;
+      const float *r = (a->sbr_mode ? a->qmf[1].out : a->pcm[1]) + first;
       raac_v       k = RAAC_SET1(1.0f / 32768.0f);
-      for (i = 0; i < ret; i += 4)
+      size_t       n = count & ~(size_t)3;
+      for (i = 0; i < n; i += 4)
       {
          raac_v x = RAAC_MUL(RAAC_LD(l + i), k);
          raac_v y = RAAC_MUL(RAAC_LD(r + i), k);
          RAAC_ST(out + 2 * i,     RAAC_ZIPLO(x, y));
          RAAC_ST(out + 2 * i + 4, RAAC_ZIPHI(x, y));
       }
-      return ret;
+      out   += 2 * n;
+      first += n;
+      count -= n;
+   }
+   else if (a->channels == 1)
+   {
+      const float *p = (a->sbr_mode ? a->qmf[0].out : a->pcm[0]) + first;
+      raac_v       k = RAAC_SET1(1.0f / 32768.0f);
+      size_t       n = count & ~(size_t)3;
+      for (i = 0; i < n; i += 4)
+         RAAC_ST(out + i, RAAC_MUL(RAAC_LD(p + i), k));
+      out   += n;
+      first += n;
+      count -= n;
    }
    for (ch = 0; ch < a->channels; ch++)
    {
-      const float *p = a->sbr_mode ? a->qmf[ch].out : a->pcm[ch];
-      for (i = 0; i < ret; i++)
+      const float *p = (a->sbr_mode ? a->qmf[ch].out : a->pcm[ch]) + first;
+      for (i = 0; i < count; i++)
          out[i * a->channels + ch] = p[i] * (1.0f / 32768.0f);
    }
+}
+
+int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
+      int16_t *out)
+{
+   int ret = raac_decode(a, pkt, size);
+   if (ret > 0)
+      raac_copy_s16(a, 0, (size_t)ret, out);
+   return ret;
+}
+
+int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
+      float *out)
+{
+   int ret = raac_decode(a, pkt, size);
+   if (ret > 0)
+      raac_copy_f32(a, 0, (size_t)ret, out);
    return ret;
 }
 

@@ -430,9 +430,10 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     track's CodecPrivate and the access units its blocks, with the
  *     priming from CodecDelay), and demuxed (ASC + delimited access
  *     units, trim via set_start_trim); s16 and f32, freely mixed at any point (the
- *     pending frames are held as raac's float output and converted on
- *     the way out of read_s16, which is what raac_decode_s16 does
- *     internally, so the s16 samples are the same either way); the
+ *     pending frames stay inside raac, planar, and each read
+ *     interleaves and converts its slice of them straight into the
+ *     caller's buffer, so the samples are raac_decode_s16's or
+ *     raac_decode_f32's whichever is asked for); the
  *     encoder-delay trim, and, from an MP4, the end trim too - the
  *     declared duration bounds emission, so the tail padding coded into
  *     the last access unit is not handed out and the length info()
@@ -488,13 +489,10 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  * audio_transfer_webm_audio_type), .ogg being ambiguous between Vorbis
  * and Opus in any case. */
 
-#if defined(HAVE_RAAC) || defined(HAVE_RWAV) || defined(HAVE_RAC3)
+#if defined(HAVE_RWAV) || defined(HAVE_RAC3)
 /* Unit-scale float (full scale +-1.0) to s16, the conversion raac
- * applies at its own edge.  Kept in one place because two arms need
- * exactly it: the AAC arm holds raac's f32 output and converts on the
- * way out of read_s16, where the result must be the sample
- * raac_decode_s16 would have produced, and float WAV arrives at unit
- * scale already.  A float source can carry anything, including
+ * applies at its own edge, for the arms whose float arrives at unit
+ * scale already (float WAV, AC-3).  A float source can carry anything, including
  * non-finite values, and casting one of those to int is undefined, so
  * pin and saturate before the cast. */
 static int16_t audio_transfer_unit_to_s16(float unit)
@@ -1457,23 +1455,16 @@ struct audio_transfer_aac
     * would otherwise be handed out.  -1 where nothing declares one. */
    int64_t     limit;
    int64_t     emitted;
-   /* Decoded-but-unconsumed frames from the last packet, always held
-    * as raac's float output.  raac synthesises in float and converts
-    * at its edge, so decoding f32 and converting on the way out of
-    * read_s16 gives the same samples raac_decode_s16 would have (see
-    * audio_transfer_aac_to_s16), and the two entry points can be
-    * mixed at any point in the stream, including mid-packet, without
-    * a pending buffer of the wrong type to strand.  Opus cannot do
-    * this: ropus's s16 and f32 are separate pipelines rather than one
-    * pipeline with two edges, so that arm keeps its format latch. */
+   /* Decoded-but-unconsumed frames of the last packet, which stay
+    * inside raac as its synthesis left them: each read interleaves
+    * its slice straight into the caller's buffer in the format asked
+    * for (raac_copy_s16/raac_copy_f32), so the two may be mixed at
+    * any point, mid-packet included, and no copy of the packet is
+    * kept here.  Opus cannot do this: ropus's s16 and f32 are
+    * separate pipelines rather than one pipeline with two edges, so
+    * that arm keeps its format latch. */
    size_t      pend_frames;
    size_t      pend_pos;
-   /* raac's per-packet output: raac_frame_len() (doubled under SBR)
-    * times the channel count, sized at start when both are known.  A
-    * fixed 1024x2 array here once assumed plain LC and overflowed on
-    * SBR stereo streams. */
-   float      *pend_f32;
-   size_t      pend_cap;   /* capacity in samples */
    uint64_t    seek_target, seek_position;
    bool        seek_pending; /* exclusive owner, bounded MP4 preparation */
    struct audio_transfer_time time;
@@ -4186,23 +4177,6 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                return false;
          }
          ac->channels    = raac_channels(ac->handle);
-         {
-            size_t need = (size_t)raac_frame_len(ac->handle)
-                  * ac->channels;
-            if (need > ac->pend_cap)
-            {
-               float *nf = (float*)realloc(ac->pend_f32,
-                     need * sizeof(float));
-               if (!nf)
-               {
-                  raac_close(ac->handle);
-                  ac->handle = NULL;
-                  return false;
-               }
-               ac->pend_f32 = nf;
-               ac->pend_cap = need;
-            }
-         }
          ac->trim_left   = ac->start_trim;
          ac->emitted     = 0;
          ac->pkt_index   = 0;
@@ -5257,7 +5231,7 @@ static int audio_transfer_aac_fill(struct audio_transfer_aac *ac)
          return r;
       }
       ac->wall = 0;
-      r = raac_decode_f32(ac->handle, pdata, plen, ac->pend_f32);
+      r = raac_decode(ac->handle, pdata, plen);
       if (r < 0)
          return -1;
       ac->pend_frames = (size_t)r;
@@ -5319,7 +5293,7 @@ static int audio_transfer_aac_read(struct audio_transfer_aac *ac,
    ac->yielded = 0;
    while (produced < frames)
    {
-      size_t take, skip, i;
+      size_t take, skip;
       int r;
       if (++walked > 32) { ac->yielded = 1; break; }
       if (ac->time.enabled && ac->time.total >= 0
@@ -5346,12 +5320,10 @@ static int audio_transfer_aac_read(struct audio_transfer_aac *ac,
       if (ac->time.enabled && ac->time.total >= 0
             && (uint64_t)(ac->time.total - ac->time.position) < take)
          take = (size_t)(ac->time.total - ac->time.position);
-      if (f32) memcpy(f32 + produced * ac->channels,
-            ac->pend_f32 + ac->pend_pos * ac->channels,
-            take * ac->channels * sizeof(*f32));
-      else for (i = 0; i < take * ac->channels; i++)
-         s16[produced * ac->channels + i] = audio_transfer_unit_to_s16(
-               ac->pend_f32[ac->pend_pos * ac->channels + i]);
+      if (f32) raac_copy_f32(ac->handle, ac->pend_pos, take,
+            f32 + produced * ac->channels);
+      else raac_copy_s16(ac->handle, ac->pend_pos, take,
+            s16 + produced * ac->channels);
       ac->pend_pos += take;
       ac->pend_frames -= take;
       if (ac->time.enabled)
@@ -6916,8 +6888,6 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_AAC:
       {
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
-         if (ac)
-            free(ac->pend_f32);
          if (ac && ac->handle)
             raac_close(ac->handle);
 #ifdef HAVE_RMP4

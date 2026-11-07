@@ -107,6 +107,21 @@ int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
 int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
       float *out);
 
+/* The same decode in two halves, for a caller that hands the output
+ * on in slices or straight into a buffer of its own: raac_decode
+ * returns what the two entry points above return and keeps the frame
+ * inside the decoder, and the copies interleave frames [first,
+ * first + count) of it into out, converted exactly as raac_decode_s16
+ * and raac_decode_f32 would have.  The frame stays valid until the
+ * next raac_decode, raac_decode_s16, raac_decode_f32, raac_reset or
+ * raac_load_state; first + count must not pass what raac_decode
+ * returned, and nothing is held after a failed decode. */
+int raac_decode(raac_t *a, const uint8_t *pkt, size_t size);
+void raac_copy_s16(const raac_t *a, size_t first, size_t count,
+      int16_t *out);
+void raac_copy_f32(const raac_t *a, size_t first, size_t count,
+      float *out);
+
 /* Return the decoder to its just-opened state (clears the overlap-add
  * history and reseeds the noise generator) so a stream can be decoded
  * again from its first packet, e.g. for looping. */
