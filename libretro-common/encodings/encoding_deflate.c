@@ -2097,6 +2097,11 @@ error:
 #define RD_MIN_MATCH   3
 #define RD_MAX_MATCH   258
 #define RD_HASH_BITS   15
+/* hoff is rebased past this; stored links stay below it plus twice the
+ * window, well inside int32 */
+#ifndef RD_HOFF_REBASE
+#define RD_HOFF_REBASE 0x40000000
+#endif
 #define RD_HASH_SIZE   (1 << RD_HASH_BITS)
 #define RD_HASH_MASK   (RD_HASH_SIZE - 1)
 /* symbols accumulated per block before we flush */
@@ -2132,6 +2137,8 @@ struct rdeflate
    /* hash chains */
    int32_t  head[RD_HASH_SIZE];
    int32_t  prev[RD_WINDOW];
+   /* head[] and prev[] hold pos + hoff; see rd_insert() */
+   int32_t  hoff;
    uint32_t hash;
 
    /* deferred symbol buffer for the current block */
@@ -2534,20 +2541,26 @@ static uint32_t rd_hash(struct rdeflate *s, const uint8_t *p)
 /* Insert position `pos` into its hash chain; return the previous head
  * as a position, or -1 if the chain was empty.
  *
- * head[] and prev[] hold pos+1, so that 0 - what calloc already put
- * there - means "empty".  The tables are 128 KB together; filling
- * them with a -1 sentinel at construction cost more than compressing
- * a small payload does, and made stream setup 7x slower than zlib's.
- * With a zero sentinel the fill disappears and the pages are faulted
- * in on demand, so a short input only ever touches the buckets it
- * uses. */
+ * head[] and prev[] hold pos + hoff, hoff starting at 1, so that 0 -
+ * what calloc already put there - reads back as position -1, "empty".
+ * The tables are 128 KB together; filling them with a -1 sentinel at
+ * construction cost more than compressing a small payload does, and
+ * made stream setup 7x slower than zlib's.  With a zero sentinel the
+ * fill disappears and the pages are faulted in on demand, so a short
+ * input only ever touches the buckets it uses.
+ *
+ * The offset is what lets the window slide without touching the
+ * tables: every stored position drops by the slide when hoff rises by
+ * it, and an entry that slid out of the window reads back negative,
+ * which ends a chain walk exactly where the zero it used to be
+ * rewritten to did (see the slide in rdeflate_process). */
 static INLINE int32_t rd_insert(struct rdeflate *s, uint32_t pos)
 {
    uint32_t h    = rd_hash(s, s->win + pos);
    int32_t  prev = s->head[h];
    s->prev[pos & RD_WMASK] = prev;
-   s->head[h] = (int32_t)pos + 1;
-   return prev - 1;
+   s->head[h] = (int32_t)pos + s->hoff;
+   return prev - s->hoff;
 }
 
 /* Insert every position in [q, stop) - the interior of a match just
@@ -2565,6 +2578,7 @@ static void rd_insert_range(struct rdeflate *s, uint32_t q, uint32_t stop)
    const uint8_t *w    = s->win;
    int32_t       *head = s->head;
    int32_t       *prev = s->prev;
+   int32_t        off  = s->hoff;
    if (q >= stop)
       return;
 #if defined(RD_CRC32_HASH_DIRECT)
@@ -2572,7 +2586,7 @@ static void rd_insert_range(struct rdeflate *s, uint32_t q, uint32_t stop)
    {
       uint32_t h = rd_hash(s, w + q);
       prev[q & RD_WMASK] = head[h];
-      head[h]            = (int32_t)q + 1;
+      head[h]            = (int32_t)q + off;
    }
 #else
 #if defined(RD_CRC32_HASH_RUNTIME)
@@ -2582,7 +2596,7 @@ static void rd_insert_range(struct rdeflate *s, uint32_t q, uint32_t stop)
       {
          uint32_t h = rd_hash_crc(w + q);
          prev[q & RD_WMASK] = head[h];
-         head[h]            = (int32_t)q + 1;
+         head[h]            = (int32_t)q + off;
       }
       return;
    }
@@ -2593,7 +2607,7 @@ static void rd_insert_range(struct rdeflate *s, uint32_t q, uint32_t stop)
       {
          h = ((h << RD_HASH_SHIFT) ^ w[q + 2]) & RD_HASH_MASK;
          prev[q & RD_WMASK] = head[h];
-         head[h]            = (int32_t)q + 1;
+         head[h]            = (int32_t)q + off;
       }
    }
 #endif
@@ -2622,10 +2636,11 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
    const uint8_t *scan = win + pos;
    uint32_t best_len   = best_start;   /* only a longer match is interesting */
    uint32_t best_dist  = 0;
-   /* Chain links are stored as position+1 with 0 for "empty" (see
-    * rd_insert), so `cur` is one-based throughout this walk and `cpos`
-    * is the position. */
-   int32_t cur         = first + 1;
+   /* Chain links are stored as position + hoff (see rd_insert); an
+    * empty link or one that slid out of the window reads back as a
+    * negative position, below any limit, and ends the walk. */
+   int32_t cpos        = first;
+   int32_t hoff        = s->hoff;
 
    {
       const int32_t *prev = s->prev;   /* hoisted: avoids repeated struct load */
@@ -2642,9 +2657,8 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
        * equality of the same two bytes on both sides. */
       memcpy(&scan_end, scan + best_len - 1, 2);
 
-      while (cur != 0 && (uint32_t)(cur - 1) >= limit && chain-- > 0)
+      while (cpos >= (int32_t)limit && chain-- > 0)
       {
-         uint32_t cpos    = (uint32_t)(cur - 1);
          const uint8_t *m = win + cpos;
          uint16_t m_end;
          /* Quick reject: a candidate can only beat best_len if the two bytes
@@ -2653,7 +2667,7 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
          memcpy(&m_end, m + best_len - 1, 2);
          if (m_end != scan_end)
          {
-            cur = prev[cpos & RD_WMASK];
+            cpos = prev[cpos & RD_WMASK] - hoff;
             continue;
          }
          {
@@ -2696,13 +2710,13 @@ have_len:
             if (l > best_len)
             {
                best_len  = l;
-               best_dist = pos - cpos;
+               best_dist = pos - (uint32_t)cpos;
                if (l >= max_len || l >= (uint32_t)s->nice)
                   break;
                memcpy(&scan_end, scan + best_len - 1, 2);
             }
          }
-         cur = prev[cpos & RD_WMASK];
+         cpos = prev[cpos & RD_WMASK] - hoff;
       }
    }
    /* best_dist stays 0 until an actual candidate beats best_len; when the
@@ -3578,6 +3592,7 @@ void *rdeflate_new(int level, int window_bits)
 #endif
    /* head[]/prev[] need no initialisation: calloc's zeroes already
     * mean "empty chain" (see rd_insert). */
+   s->hoff = 1;
    return s;
 }
 
@@ -3710,15 +3725,26 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
             s->win_len     -= slide;
             s->pos         -= slide;
             s->block_start -= slide;
-            /* rebase hash chains: drop entries that fall below the window */
-            /* one-based links: an entry survives when its position
-             * (value-1) is at or above the slide, i.e. value > slide */
-            for (i = 0; i < RD_HASH_SIZE; i++)
-               s->head[i] = (s->head[i] > (int32_t)slide)
-                  ? s->head[i] - (int32_t)slide : 0;
-            for (i = 0; i < RD_WINDOW; i++)
-               s->prev[i] = (s->prev[i] > (int32_t)slide)
-                  ? s->prev[i] - (int32_t)slide : 0;
+            /* The hash chains follow by raising the offset their links
+             * are stored against, not by rewriting 128 KB of links every
+             * 32 KB of input: every stored position drops by the slide,
+             * and the links that fell out of the window read back
+             * negative, which ends a walk where the zero they used to be
+             * set to did.  Before the stored values could run out of
+             * int32 range - every 1 GiB or so - the links are rebased
+             * once, as every slide used to do: a link survives when its
+             * position is at or above zero, i.e. its value exceeds
+             * hoff - 1, and the offset starts again from 1. */
+            s->hoff += (int32_t)slide;
+            if (s->hoff > RD_HOFF_REBASE)
+            {
+               int32_t base = s->hoff - 1;
+               for (i = 0; i < RD_HASH_SIZE; i++)
+                  s->head[i] = (s->head[i] > base) ? s->head[i] - base : 0;
+               for (i = 0; i < RD_WINDOW; i++)
+                  s->prev[i] = (s->prev[i] > base) ? s->prev[i] - base : 0;
+               s->hoff = 1;
+            }
          }
          /* top the window back up from any remaining caller input so a
           * single process() call can consume an arbitrarily large input
