@@ -60,15 +60,6 @@ struct logiqx_dat
 
 /* List of HTML formatting codes that must
  * be replaced when parsing XML data */
-const char *logiqx_dat_html_code_list[][2] = {
-   {"&amp;",  "&"},
-   {"&apos;", "'"},
-   {"&gt;",   ">"},
-   {"&lt;",   "<"},
-   {"&quot;", "\""}
-};
-
-#define LOGIQX_DAT_HTML_CODE_LIST_SIZE 5
 
 /* Initialisation/de-initialisation */
 
@@ -409,57 +400,31 @@ static bool logiqx_dat_game_node_matches_name(
  * DAT files are very 'messy'. This function
  * removes all cruft, replaces formatting strings
  * and copies the result (if valid) to 'str' */
+/* Copies element text into @str, trimmed of the newlines and
+ * indentation around it, straight from the node with one bounded copy.
+ * The text is used as rxml hands it over: rxml has already decoded the
+ * character references, so decoding &amp;, &lt; and the rest again (as
+ * this used to) turned a literal "&amp;" in a title into "&". */
 static void logiqx_dat_sanitise_element_data(
       const char *data, char *str, size_t len)
 {
-   char sanitised_data[PATH_MAX_LENGTH];
-   size_t i;
-   sanitised_data[0] = '\0';
-   if (!data || !*data)
+   const char *end;
+   size_t      n;
+   if (!data || !len)
       return;
-   strlcpy(sanitised_data, data, sizeof(sanitised_data));
-   /* Element data includes leading/trailing
-    * newline characters - trim them away */
-   string_trim_whitespace_right(sanitised_data);
-   string_trim_whitespace_left(sanitised_data);
-   if (!*sanitised_data)
+   while (*data == ' ' || *data == '\t' || *data == '\n'
+         || *data == '\r' || *data == '\v' || *data == '\f')
+      data++;
+   end = data + strlen(data);
+   while (end > data && ISSPACE((unsigned char)end[-1]))
+      end--;
+   if (end == data)
       return;
-   /* XML has a number of special characters that
-    * are handled using a HTML formatting codes.
-    * All of these have to be replaced...
-    * &amp;  -> &
-    * &apos; -> '
-    * &gt;   -> >
-    * &lt;   -> <
-    * &quot; -> "
-    */
-   for (i = 0; i < LOGIQX_DAT_HTML_CODE_LIST_SIZE; i++)
-   {
-      const char *find_string    = logiqx_dat_html_code_list[i][0];
-      const char *replace_string = logiqx_dat_html_code_list[i][1];
-
-      /* string_replace_substring() is expensive
-       * > only invoke if element string contains
-       *   HTML code */
-      if (strstr(sanitised_data, find_string))
-      {
-         char *tmp = string_replace_substring(
-               sanitised_data, strlen(sanitised_data),
-               find_string,    strlen(find_string),
-               replace_string, strlen(replace_string));
-
-         if (tmp)
-         {
-            if (*tmp)
-               strlcpy(sanitised_data, tmp, sizeof(sanitised_data));
-            free(tmp);
-         }
-      }
-   }
-
-   /* All is well - can copy result */
-   if (*sanitised_data)
-      strlcpy(str, sanitised_data, len);
+   n = (size_t)(end - data);
+   if (n >= len)
+      n = len - 1;
+   memcpy(str, data, n);
+   str[n] = '\0';
 }
 
 /* Extracts game information from specified node.
