@@ -981,6 +981,30 @@ static void test_folding(void)
    CHECK(spirv_has_const(r.spirv, r.spirv_len, 0xbe860a92u));    /* radians(-15.0) folded */
    rslc_result_free(&r, &o);
    CHECK(alloc_live == 0);
+
+   /* a division by zero folds as IEEE has it, as glslang folds it */
+   {
+      static const char div[] =
+         "#version 450\n"
+         "layout(location = 0) out vec4 FragColor;\n"
+         "const int n = 1;\n"
+         "void main() {\n"
+         "  float k = 2.0 * (1.0 / float(n - 1));\n"
+         "  FragColor = vec4(k, -1.0 / 0.0, 1.0 / -0.0, vec2(0.0 / 0.0, 1.0) / vec2(0.0, -0.0).y);\n"
+         "}\n";
+      opts_default(&o, err, sizeof(err));
+      o.dst = RSLC_DST_SPIRV;
+      CHECK(rslc_compile(div, sizeof(div) - 1, RSLC_STAGE_FRAGMENT, &o, &r));
+      if (r.blob)
+      {
+         CHECK(spirv_has_const(r.spirv, r.spirv_len, 0x7f800000u));   /* +inf */
+         CHECK(spirv_has_const(r.spirv, r.spirv_len, 0xff800000u));   /* -inf */
+         CHECK(spirv_has_const(r.spirv, r.spirv_len, 0x7fc00000u)
+               || spirv_has_const(r.spirv, r.spirv_len, 0xffc00000u)); /* NaN */
+         rslc_result_free(&r, &o);
+      }
+      CHECK(alloc_live == 0);
+   }
 }
 
 /* --glsl <in> <version> [es]: print a stage as GLSL to stdout, with the

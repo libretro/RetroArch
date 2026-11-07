@@ -326,6 +326,132 @@ static const char fs_bool_depth[] =
    "   gl_FragDepth = flags.x ? 0.5 : v_tex0.z;\n"
    "}\n";
 
+/* The other sampler shapes and the shadow samplers, as a Wii U
+ * emulator's shaders read them: every texture function on each */
+static const char fs_shapes[] =
+   "#version 450\n"
+   "layout(set = 1, binding = 0) uniform sampler1D s1;\n"
+   "layout(set = 1, binding = 1) uniform sampler3D s3;\n"
+   "layout(set = 1, binding = 2) uniform samplerCube sc;\n"
+   "layout(set = 1, binding = 3) uniform samplerCubeArray sca;\n"
+   "layout(set = 1, binding = 4) uniform usampler1D u1;\n"
+   "layout(set = 1, binding = 5) uniform sampler2DArray sa;\n"
+   "layout(location = 0) in vec4 uv;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   int  w  = textureSize(s1, 0) + textureQueryLevels(s1) + textureQueryLevels(sa);\n"
+   "   ivec3 d = textureSize(s3, 1) + textureSize(sca, 0);\n"
+   "   ivec2 c = textureSize(sc, 0);\n"
+   "   vec4 a  = texture(s1, uv.x) + texture(s1, uv.x, 0.5) + textureLod(s1, uv.x, 1.0)\n"
+   "           + textureOffset(s1, uv.x, 1) + textureLodOffset(s1, uv.x, 0.0, -1)\n"
+   "           + textureGrad(s1, uv.x, 0.1, 0.2) + texelFetch(s1, w - 1, 0);\n"
+   "   vec4 b  = texture(s3, uv.xyz) + textureLod(s3, uv.xyz, 2.0) + textureOffset(s3, uv.xyz, ivec3(1, 0, -1))\n"
+   "           + textureGrad(s3, uv.xyz, vec3(0.1), vec3(0.2)) + texelFetch(s3, d - 1, 0);\n"
+   "   vec4 e  = texture(sc, uv.xyz) + textureLod(sc, uv.xyz, 1.0) + textureGather(sc, uv.xyz, 2)\n"
+   "           + texture(sca, uv) + textureLod(sca, uv, 0.5) + textureGather(sca, uv)\n"
+   "           + textureGrad(sca, uv, vec3(0.1), vec3(0.2));\n"
+   "   vec4 f  = textureOffset(sa, uv.xyz, ivec2(1, 1)) + textureLodOffset(sa, uv.xyz, 1.0, ivec2(-1, 0))\n"
+   "           + textureGrad(sa, uv.xyz, vec2(0.1), vec2(0.2)) + textureGather(sa, uv.xyz, 1);\n"
+   "   vec2 l  = textureQueryLod(s1, uv.x) + textureQueryLod(s3, uv.xyz) + textureQueryLod(sa, uv.xy);\n"
+   "   uvec4 u = texture(u1, uv.x) + texelFetch(u1, 0, 0);\n"
+   "   col = a + b + e + f + vec4(u) + vec4(l, float(c.x), float(w + d.z));\n"
+   "}\n";
+
+static const char fs_shadow[] =
+   "#version 450\n"
+   "layout(set = 1, binding = 0) uniform sampler1DShadow h1;\n"
+   "layout(set = 1, binding = 1) uniform sampler2DShadow h2;\n"
+   "layout(set = 1, binding = 2) uniform sampler2DArrayShadow ha;\n"
+   "layout(set = 1, binding = 3) uniform samplerCubeShadow hc;\n"
+   "layout(set = 1, binding = 4) uniform samplerCubeArrayShadow hr;\n"
+   "layout(location = 0) in vec4 uv;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   float a = texture(h1, uv.xyz) + textureLod(h1, uv.xyz, 1.0) + textureOffset(h1, uv.xyz, 1)\n"
+   "           + textureGrad(h1, uv.xyz, 0.1, 0.2);\n"
+   "   float b = texture(h2, uv.xyz) + texture(h2, uv.xyz, 0.5) + textureLod(h2, uv.xyz, 0.0)\n"
+   "           + textureOffset(h2, uv.xyz, ivec2(1, -1)) + textureLodOffset(h2, uv.xyz, 0.0, ivec2(1, 0))\n"
+   "           + textureGrad(h2, uv.xyz, vec2(0.1), vec2(0.2));\n"
+   "   float c = texture(ha, uv) + textureOffset(ha, uv, ivec2(0, 1)) + textureGrad(ha, uv, vec2(0.1), vec2(0.2));\n"
+   "   float d = texture(hc, uv) + texture(hr, uv, 0.5);\n"
+   "   vec4  g = textureGather(h2, uv.xy, uv.z) + textureGather(ha, uv.xyz, uv.w) + textureGather(hr, uv, 0.5);\n"
+   "   ivec3 s = textureSize(hr, 0) + ivec3(textureSize(h2, 0), textureSize(h1, 0));\n"
+   "   col = vec4(a, b, c, d) + g + vec4(s, 0.0);\n"
+   "}\n";
+
+/* A vertex stage that redeclares its gl_PerVertex and asks, through
+ * GL_EXT_spirv_intrinsics, for round-to-even arithmetic */
+static const char vs_pervertex[] =
+   "#version 450\n"
+   "#extension GL_EXT_spirv_intrinsics: enable\n"
+   "spirv_execution_mode(capabilities = [4467], extensions = [\"SPV_KHR_float_controls\"], 4462, 32);\n"
+   "out gl_PerVertex\n"
+   "{\n"
+   "   vec4 gl_Position;\n"
+   "   float gl_PointSize;\n"
+   "};\n"
+   "layout(location = 0) in vec4 pos;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position  = pos;\n"
+   "   gl_PointSize = 2.0;\n"
+   "}\n";
+
+/* A float controls mode without its capability or extension: both are
+ * added, as the module needs them */
+static const char fs_rte_bare[] =
+   "#version 450\n"
+   "spirv_execution_mode(4462, 32);\n"
+   "spirv_execution_mode(4461, 32);\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main() { col = vec4(1.0); }\n";
+
+/* A pixel stage redeclaring gl_FragCoord, reading gl_PointCoord */
+static const char fs_point[] =
+   "#version 450\n"
+   "in vec4 gl_FragCoord;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main()\n"
+   "{\n"
+   "   col = vec4(gl_PointCoord, gl_FragCoord.xy);\n"
+   "}\n";
+
+/* A geometry stage's inputs as plain arrays, sized by the primitive,
+ * and its gl_PrimitiveIDIn */
+static const char gs_arrays[] =
+   "#version 450\n"
+   "layout(triangles) in;\n"
+   "layout(triangle_strip) out;\n"
+   "layout(max_vertices = 3) out;\n"
+   "layout(location = 0) in vec4 vcol[];\n"
+   "layout(location = 1) flat in ivec4 vid[];\n"
+   "layout(location = 0) out vec4 gcol;\n"
+   "void main()\n"
+   "{\n"
+   "   for (int i = 0; i < 3; i++)\n"
+   "   {\n"
+   "      gcol = vcol[i] + vec4(vid[i]) + vec4(float(gl_PrimitiveIDIn));\n"
+   "      gl_Position = gl_in[i].gl_Position;\n"
+   "      EmitVertex();\n"
+   "   }\n"
+   "   EndPrimitive();\n"
+   "}\n";
+
+static const char gs_array_early[] =
+   "#version 450\n"
+   "layout(location = 0) in vec4 vcol[];\n"
+   "layout(triangles) in;\n"
+   "layout(points, max_vertices = 1) out;\n"
+   "void main() { gl_Position = vcol[0]; EmitVertex(); }\n";
+
+static const char fs_redecl_bad[] =
+   "#version 450\n"
+   "in vec3 gl_FragCoord;\n"
+   "layout(location = 0) out vec4 col;\n"
+   "void main() { col = vec4(1.0); }\n";
+
 /* A texture decoder, as parallel-gamecubewii generates one: texels from
  * a buffer, a block shared across the workgroup, an image written. */
 static const char cs_decode[] =
@@ -482,6 +608,28 @@ static bool has_capability(const uint32_t *w, size_t n, uint32_t cap)
       i += len;
    }
    return false;
+}
+
+/* How many of the instruction there are, and the first one's words
+ * after its opcode in *at */
+static unsigned count_op(const uint32_t *w, size_t n, uint32_t op, size_t *at)
+{
+   size_t   i = 5;
+   unsigned k = 0;
+   while (i < n)
+   {
+      uint32_t len = w[i] >> 16;
+      if (!len)
+         break;
+      if ((w[i] & 0xffffu) == op)
+      {
+         if (!k && at)
+            *at = i + 1;
+         k++;
+      }
+      i += len;
+   }
+   return k;
 }
 
 static void write_spirv(const char *dir, const char *name, const struct rslc_result *res)
@@ -895,6 +1043,93 @@ int main(int argc, char **argv)
          cur_stage = RSLC_STAGE_COMPUTE;
          CHECK(!compile(cs_decode, RSLC_DST_DXBC, 40, &o, &r, err, sizeof(err)));
          CHECK(strstr(err, "shader model 5") != NULL);
+      }
+   }
+
+   /* the other sampler shapes and the shadow samplers (Sampled1D 43,
+    * SampledCubeArray 45, ImageQuery 50; the depth comparing ones'
+    * OpImageSampleDref* 89 and 90, OpImageDrefGather 97), the builtins
+    * redeclared, spirv_execution_mode, gl_PointCoord and a geometry
+    * stage's plain input arrays: SPIR-V only, every other destination
+    * refusing */
+   {
+      static const struct { const char *name, *src; enum rslc_stage stage; } sp[] = {
+         { "shapes", fs_shapes, RSLC_STAGE_FRAGMENT },
+         { "shadow", fs_shadow, RSLC_STAGE_FRAGMENT },
+         { "pervertex", vs_pervertex, RSLC_STAGE_VERTEX },
+         { "rte_bare", fs_rte_bare, RSLC_STAGE_FRAGMENT },
+         { "point", fs_point, RSLC_STAGE_FRAGMENT },
+         { "gs_arrays", gs_arrays, RSLC_STAGE_GEOMETRY }
+      };
+      unsigned i;
+      for (i = 0; i < sizeof(sp) / sizeof(sp[0]); i++)
+      {
+         char err[256];
+         struct rslc_opts   o;
+         struct rslc_result r;
+         size_t at = 0;
+         cur_stage = sp[i].stage;
+         memset(&r, 0, sizeof(r));
+         CHECK(compile(sp[i].src, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+         if (err[0])
+            fprintf(stderr, "%s: %s\n", sp[i].name, err);
+         if (!r.blob)
+            continue;
+         if (sp[i].src == fs_shapes)
+         {
+            CHECK(has_capability(r.spirv, r.spirv_len, 43));
+            CHECK(has_capability(r.spirv, r.spirv_len, 45));
+            CHECK(has_capability(r.spirv, r.spirv_len, 50));
+            CHECK(!count_op(r.spirv, r.spirv_len, 89, NULL));
+         }
+         if (sp[i].src == fs_shadow)
+         {
+            /* the implicit ones: 1D's two, 2D's three, 2D array's two,
+             * cube, cube array; the explicit ones: 1D's lod and grad,
+             * 2D's lod, lod offset and grad, 2D array's grad */
+            CHECK(count_op(r.spirv, r.spirv_len, 89, NULL) == 9);
+            CHECK(count_op(r.spirv, r.spirv_len, 90, NULL) == 6);
+            CHECK(count_op(r.spirv, r.spirv_len, 97, NULL) == 3);
+         }
+         if (sp[i].src == fs_rte_bare)
+         {
+            /* RoundingModeRTE 4467, SignedZeroInfNanPreserve 4466 */
+            CHECK(has_capability(r.spirv, r.spirv_len, 4467));
+            CHECK(has_capability(r.spirv, r.spirv_len, 4466));
+            CHECK(count_op(r.spirv, r.spirv_len, 10, &at) == 1
+                  && !memcmp(r.spirv + at, "SPV_KHR_float_controls", 22));
+         }
+         if (sp[i].src == vs_pervertex)
+         {
+            /* RoundingModeRTE 4467 with its extension, the mode on main */
+            CHECK(has_capability(r.spirv, r.spirv_len, 4467));
+            CHECK(count_op(r.spirv, r.spirv_len, 10, &at) == 1
+                  && !memcmp(r.spirv + at, "SPV_KHR_float_controls", 22));
+            CHECK(count_op(r.spirv, r.spirv_len, 16, &at) == 1
+                  && r.spirv[at + 1] == 4462 && r.spirv[at + 2] == 32);
+         }
+         write_spirv(dir, sp[i].name, &r);
+         rslc_result_free(&r, &o);
+         memset(&r, 0, sizeof(r));
+         if (sp[i].src != gs_arrays)
+         {
+            CHECK(!compile(sp[i].src, RSLC_DST_GLSL, 450, &o, &r, err, sizeof(err)));
+            CHECK(strstr(err, "only the SPIR-V destination") != NULL);
+            CHECK(!compile(sp[i].src, RSLC_DST_HLSL, 50, &o, &r, err, sizeof(err)));
+            CHECK(!compile(sp[i].src, RSLC_DST_MSL, 23, &o, &r, err, sizeof(err)));
+            CHECK(!compile(sp[i].src, RSLC_DST_DXBC, 50, &o, &r, err, sizeof(err)));
+         }
+      }
+      cur_stage = RSLC_STAGE_GEOMETRY;
+      {
+         char err[256];
+         struct rslc_opts   o;
+         struct rslc_result r;
+         CHECK(!compile(gs_array_early, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+         CHECK(strstr(err, "before the input primitive") != NULL);
+         cur_stage = RSLC_STAGE_FRAGMENT;
+         CHECK(!compile(fs_redecl_bad, RSLC_DST_SPIRV, 0, &o, &r, err, sizeof(err)));
+         CHECK(strstr(err, "another type") != NULL);
       }
    }
 

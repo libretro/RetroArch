@@ -216,6 +216,14 @@ enum rslc_kw
    RSLC_KW_SAMPLER2DARRAY, RSLC_KW_ISAMPLER2DARRAY, RSLC_KW_USAMPLER2DARRAY,
    RSLC_KW_SAMPLER2DMSARRAY, RSLC_KW_ISAMPLER2DMSARRAY, RSLC_KW_USAMPLER2DMSARRAY,
    RSLC_KW_SAMPLERBUFFER, RSLC_KW_ISAMPLERBUFFER, RSLC_KW_USAMPLERBUFFER,
+   /* RSLC_EXTENDED: the other shapes, float, int, uint of each */
+   RSLC_KW_SAMPLER1D, RSLC_KW_ISAMPLER1D, RSLC_KW_USAMPLER1D,
+   RSLC_KW_SAMPLER3D, RSLC_KW_ISAMPLER3D, RSLC_KW_USAMPLER3D,
+   RSLC_KW_SAMPLERCUBE, RSLC_KW_ISAMPLERCUBE, RSLC_KW_USAMPLERCUBE,
+   RSLC_KW_SAMPLERCUBEARRAY, RSLC_KW_ISAMPLERCUBEARRAY, RSLC_KW_USAMPLERCUBEARRAY,
+   /* RSLC_EXTENDED: the depth comparing ones */
+   RSLC_KW_SAMPLER1DSHADOW, RSLC_KW_SAMPLER2DSHADOW, RSLC_KW_SAMPLER2DARRAYSHADOW,
+   RSLC_KW_SAMPLERCUBESHADOW, RSLC_KW_SAMPLERCUBEARRAYSHADOW,
    /* RSLC_EXTENDED image types: float, int, uint of each */
    RSLC_KW_IMAGE2D, RSLC_KW_IIMAGE2D, RSLC_KW_UIMAGE2D,
    RSLC_KW_IMAGE2DARRAY, RSLC_KW_IIMAGE2DARRAY, RSLC_KW_UIMAGE2DARRAY,
@@ -253,8 +261,18 @@ enum rslc_tkind
    RSLC_TY_IMAGE2D,
    RSLC_TY_IMAGE2DARRAY,
    /* RSLC_EXTENDED: a float input attachment */
-   RSLC_TY_SUBPASSINPUT
+   RSLC_TY_SUBPASSINPUT,
+   /* RSLC_EXTENDED: any other sampler; rows is its RSLC_SDIM_*, cols its
+    * RSLC_SX_* */
+   RSLC_TY_SAMPLERX
 };
+
+#define RSLC_SDIM_1D   1
+#define RSLC_SDIM_2D   2
+#define RSLC_SDIM_3D   3
+#define RSLC_SDIM_CUBE 4
+#define RSLC_SX_ARRAY  1u
+#define RSLC_SX_SHADOW 2u
 
 #define RSLC_TY_IS_IMAGE(k) ((k) == RSLC_TY_IMAGE2D || (k) == RSLC_TY_IMAGE2DARRAY)
 /* A storage image type's rows: its access. */
@@ -282,7 +300,8 @@ enum rslc_tkind
 
 /* Every sampler kind: sampler2D, and the RSLC_EXTENDED ones. */
 #define RSLC_TY_IS_SAMPLER(k) ((k) == RSLC_TY_SAMPLER2D \
-      || ((k) >= RSLC_TY_SAMPLER2DARRAY && (k) <= RSLC_TY_SAMPLERBUFFER))
+      || ((k) >= RSLC_TY_SAMPLER2DARRAY && (k) <= RSLC_TY_SAMPLERBUFFER) \
+      || (k) == RSLC_TY_SAMPLERX)
 
 struct rslc_type;
 
@@ -402,6 +421,8 @@ struct rslc_var
 #define RSLC_BI_NUMWORKGROUPS      16
 #define RSLC_BI_LOCALINVOCATIONINDEX 17
 #define RSLC_BI_HELPERINVOCATION   18   /* RSLC_EXTENDED, fragment */
+#define RSLC_BI_POINTCOORD         19   /* RSLC_EXTENDED, fragment */
+#define RSLC_BI_PRIMITIVEID        20   /* RSLC_EXTENDED, geometry gl_PrimitiveIDIn */
 
 /* RSLC_EXTENDED: a geometry stage's primitives, in and out. */
 #define RSLC_GS_POINTS              1
@@ -598,6 +619,11 @@ enum rslc_bfn
    RSLC_BFN_COUNT
 };
 
+/* RSLC_EXTENDED: the capabilities, extensions and modes a stage's
+ * spirv_execution_mode declarations may add, each; a mode takes up to
+ * three literals. */
+#define RSLC_MAX_XMODE 16
+
 /* The parsed stage. */
 /* Uniform and push blocks one stage may declare. */
 #ifdef RSLC_EXTENDED
@@ -643,6 +669,18 @@ struct rslc_prog
    struct rslc_field      *glin_fields;
    uint8_t                 clip_in_n;
    uint8_t                 cull_in_n;
+   /* what the SPIR-V destination alone takes, named for the others'
+    * refusal; NULL when nothing is */
+   const char             *spirv_only;
+   /* spirv_execution_mode (GL_EXT_spirv_intrinsics): the capabilities
+    * and extensions it asks for, and each mode as its word count, the
+    * mode and its literals */
+   uint32_t                xcaps[RSLC_MAX_XMODE];
+   const char             *xexts[RSLC_MAX_XMODE];
+   uint32_t                xmodes[RSLC_MAX_XMODE * 5];
+   uint32_t                nxcaps;
+   uint32_t                nxexts;
+   uint32_t                nxmodes;   /* words in xmodes */
 #endif
 };
 
