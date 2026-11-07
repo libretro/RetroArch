@@ -2587,8 +2587,12 @@ static INLINE uint32_t rd_insert_end(uint32_t stop, uint32_t end)
    return stop < lim ? stop : lim;
 }
 
+/* `first` is the chain head rd_insert() returned for `pos` - the
+ * previous occurrence, zero-based - which the caller has already found
+ * to exist; an empty chain never gets here. */
 static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
-      uint32_t max_len, uint32_t best_start, uint32_t *dist_out)
+      int32_t first, uint32_t max_len, uint32_t best_start,
+      uint32_t *dist_out)
 {
    int      chain;
    uint32_t limit;
@@ -2597,13 +2601,10 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
    const uint8_t *scan = win + pos;
    uint32_t best_len   = best_start;   /* only a longer match is interesting */
    uint32_t best_dist  = 0;
-   /* The caller has already inserted `pos`; begin at the previous
-    * occurrence recorded in prev[].  Chain links are stored as
-    * position+1 with 0 for "empty" (see rd_insert), so `cur` is
-    * one-based throughout this walk and `cpos` is the position. */
-   int32_t cur         = s->prev[pos & RD_WMASK];
-   if (cur == 0)
-      return 0;
+   /* Chain links are stored as position+1 with 0 for "empty" (see
+    * rd_insert), so `cur` is one-based throughout this walk and `cpos`
+    * is the position. */
+   int32_t cur         = first + 1;
 
    {
       const int32_t *prev = s->prev;   /* hoisted: avoids repeated struct load */
@@ -2892,8 +2893,9 @@ static void rd_parse(struct rdeflate *s)
          {
             /* insert returns the previous head of this hash chain; only
              * bother searching when the chain is non-empty. */
-            if (rd_insert(s, s->pos) >= 0)
-               mlen = rd_longest_match(s, s->pos, max_len,
+            int32_t first = rd_insert(s, s->pos);
+            if (first >= 0)
+               mlen = rd_longest_match(s, s->pos, first, max_len,
                      (uint32_t)(RD_MIN_MATCH - 1), &mdist);
          }
          if (mlen >= RD_MIN_MATCH)
@@ -2939,12 +2941,16 @@ static void rd_parse(struct rdeflate *s)
       /* insert the current position into the hash chain and find a match */
       if (max_len >= RD_MIN_MATCH)
       {
-         rd_insert(s, s->pos);
+         /* An empty chain - about half of all positions on noisy
+          * input - has nothing to search, so the match finder is not
+          * entered for it; it would only have returned 0. */
+         int32_t first = rd_insert(s, s->pos);
          /* When a match is pending from the previous byte, only a strictly
           * longer match here matters -- start the search bar at prev_len. */
-         mlen = rd_longest_match(s, s->pos, max_len,
-               s->have_prev ? s->prev_len : (uint32_t)(RD_MIN_MATCH - 1),
-               &mdist);
+         if (first >= 0)
+            mlen = rd_longest_match(s, s->pos, first, max_len,
+                  s->have_prev ? s->prev_len : (uint32_t)(RD_MIN_MATCH - 1),
+                  &mdist);
       }
 
       if (s->have_prev)
