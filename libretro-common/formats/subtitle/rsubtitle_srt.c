@@ -1215,6 +1215,13 @@ int rsubtitle_srt_iterate(rsubtitle_srt_t *track, size_t work)
                      track->read++;
                   track->data[track->written++] = '\n';
                }
+               else if (track->written == track->read)
+               {
+                  /* Nothing compacted yet (no CR so far, the usual
+                   * case): the scalar is already where it belongs */
+                  track->read    += length;
+                  track->written += length;
+               }
                else
                {
                   for (i = 0; i < length; i++)
