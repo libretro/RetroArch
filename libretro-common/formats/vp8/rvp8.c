@@ -3817,6 +3817,11 @@ void rvp8_video_close(rvp8_video *v)
  * next picture without overwriting any reference still used to decode it. */
 int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
 {
+   /* The entropy context a frame starts from, for a frame whose
+    * refresh_entropy_probs is 0: its updates hold for it alone. */
+   uint8_t sv_cprob[sizeof(v->s.cprob)], sv_mvc[sizeof(v->s.mvc)];
+   uint8_t sv_ym[sizeof(v->s.ymode_prob)];
+   uint8_t sv_uvm[sizeof(v->s.uvmode_prob)];
    void *mb_info;
    unsigned work, i;
    int kf, ret;
@@ -3862,6 +3867,15 @@ int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
          memcpy(v->s.uvmode_prob, du, 3);
       }
    }
+   /* What this frame inherits, before it reads its updates; a key
+    * frame starts from the defaults, set again below if needed. */
+   if (!kf)
+   {
+      memcpy(sv_cprob, v->s.cprob, sizeof(sv_cprob));
+      memcpy(sv_mvc, v->s.mvc, sizeof(sv_mvc));
+      memcpy(sv_ym, v->s.ymode_prob, sizeof(sv_ym));
+      memcpy(sv_uvm, v->s.uvmode_prob, sizeof(sv_uvm));
+   }
    v->s.arena = v->arena[work];
    v->s.arena_len = v->arena_len[work];
    mb_info = v->s.mb_info;
@@ -3879,6 +3893,29 @@ int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
    while (rvp8_rows(&v->s, v->s.mbh) > 0)
       ;
    rvp8_filter_rows(&v->s, 0, v->s.mbh);
+
+   /* refresh_entropy_probs 0 (error-resilient streams send it on every
+    * frame): the probability updates this frame read applied to it
+    * alone, and the next frame starts from what this one started from
+    * - what it inherited, or for a key frame the defaults (the mode and
+    * MV sets are refilled with theirs when found cleared). */
+   if (!v->s.refresh_entropy)
+   {
+      if (kf)
+      {
+         vp8_init_default_cprob(v->s.cprob);
+         memset(v->s.mvc, 0, sizeof(v->s.mvc));
+         memset(v->s.ymode_prob, 0, sizeof(v->s.ymode_prob));
+         memset(v->s.uvmode_prob, 0, sizeof(v->s.uvmode_prob));
+      }
+      else
+      {
+         memcpy(v->s.cprob, sv_cprob, sizeof(sv_cprob));
+         memcpy(v->s.mvc, sv_mvc, sizeof(sv_mvc));
+         memcpy(v->s.ymode_prob, sv_ym, sizeof(sv_ym));
+         memcpy(v->s.uvmode_prob, sv_uvm, sizeof(sv_uvm));
+      }
+   }
 
    if (kf)
    {
