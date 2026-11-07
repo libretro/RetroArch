@@ -5813,6 +5813,7 @@ static void gl2_views_free_copies(gl2_t *gl)
          gl->views.tex[i][k]         = 0;
          gl->views.tex_dims[i][k]    = 0;
          gl->views.tex_written[i][k] = false;
+         gl->views.tex_params[i][k]  = 0;
       }
       gl2_views_target_retire(gl, &gl->views.feedback[i]);
       gl->views.feedback_dims[i] = 0;
@@ -6036,8 +6037,10 @@ static GLuint gl2_views_slot(gl2_t *gl, unsigned i,
       bool written)
 {
    GLuint *tex;
-   unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
-   unsigned k    = gl->views.head[i] % depth;
+   unsigned dims   = VIDEO_SCALE_PACK(v->width, v->height);
+   unsigned k      = gl->views.head[i] % depth;
+   unsigned params = (unsigned)gl->tex_min_filter
+      | ((unsigned)gl->wrap_mode << 16);
 
    if (fresh && depth > 1)
       k = (k + 1) % depth;
@@ -6061,13 +6064,19 @@ static GLuint gl2_views_slot(gl2_t *gl, unsigned i,
                GL_RGBA, GL_UNSIGNED_BYTE, NULL);
       gl->views.tex_dims[i][k]    = dims;
       gl->views.tex_written[i][k] = written;
+      gl->views.tex_params[i][k]  = 0;
    }
-   /* As the frame's textures are, for the preset's first pass */
    glBindTexture(GL_TEXTURE_2D, *tex);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
+   /* As the frame's textures are, for the preset's first pass: set when
+    * made or when the preset's filter or wrap moves, as theirs are */
+   if (gl->views.tex_params[i][k] != params)
+   {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
+      gl->views.tex_params[i][k] = params;
+   }
    return *tex;
 }
 

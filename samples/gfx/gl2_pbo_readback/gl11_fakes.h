@@ -4,7 +4,8 @@
  * the header supplies the pointers, aimed at its own functions.
  *
  * Texture names are handed out from gl11_next_name; glFinish only
- * counts, in gl11_finishes, for a harness that must never see one.
+ * counts, in gl11_finishes, for a harness that must never see one, and
+ * glTexParameteri in gl11_tex_params.
  * Included once, by the test, after the driver source. */
 
 #ifndef GL11_FAKES_H
@@ -12,6 +13,7 @@
 
 static GLuint   gl11_next_name = 1;
 static unsigned gl11_finishes;
+static unsigned gl11_tex_params;
 static void (*gl11_read_pixels)(GLsizei width, GLsizei height);
 
 #ifdef _WIN32
@@ -61,7 +63,8 @@ GL_FAKE(void, glScissor, (GLint a, GLint b, GLsizei c, GLsizei d))
 GL_FAKE(void, glTexImage2D, (GLenum a, GLint b, GLint c, GLsizei d, GLsizei e,
       GLint f, GLenum g, GLenum h, const GLvoid *i))
 { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-GL_FAKE(void, glTexParameteri, (GLenum a, GLenum b, GLint c)) { (void)a; (void)b; (void)c; }
+GL_FAKE(void, glTexParameteri, (GLenum a, GLenum b, GLint c))
+{ (void)a; (void)b; (void)c; gl11_tex_params++; }
 GL_FAKE(void, glTexSubImage2D, (GLenum a, GLint b, GLint c, GLint d, GLsizei e,
       GLsizei f, GLenum g, GLenum h, const GLvoid *i))
 { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }

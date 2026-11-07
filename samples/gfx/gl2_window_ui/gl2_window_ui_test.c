@@ -7,7 +7,8 @@
  *
  * Also a software frame's views through a preset with a screen in its
  * own window: each view, the window's too, is written straight in, and
- * the window draws what was written, with no copy out of the frame. */
+ * the window draws what was written, with no copy out of the frame,
+ * and a view's texture takes its filter and wrap only when they move. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -187,6 +188,19 @@ static void test_views_written(void)
          win_chains, rects, false, false, true, NULL, 0, false, 1);
    CHECK(gl.views.copy_fbo && fbos_made == 1,
          "a view not written is copied out of the frame");
+
+   /* A slot's filter and wrap go in when made or when they move only */
+   gl.tex_min_filter = GL_LINEAR;
+   gl.tex_mag_filter = GL_LINEAR;
+   gl.wrap_mode      = GL_CLAMP_TO_EDGE;
+   gl2_views_slot(&gl, 0, &vi.views.views[0], 1, false, true);
+   gl11_tex_params = 0;
+   gl2_views_slot(&gl, 0, &vi.views.views[0], 1, false, true);
+   CHECK(!gl11_tex_params, "a slot's filter is not set again unchanged");
+   gl.tex_min_filter = GL_NEAREST;
+   gl.tex_mag_filter = GL_NEAREST;
+   gl2_views_slot(&gl, 0, &vi.views.views[0], 1, false, true);
+   CHECK(gl11_tex_params == 4, "it is set again once the preset's moves");
 }
 
 int main(void)

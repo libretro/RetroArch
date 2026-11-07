@@ -343,6 +343,9 @@ struct gl2
       /* Made for a software frame's view written straight in, as the
        * frame's textures are, not for a copy drawn into it */
       bool                  tex_written[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
+      /* Its min filter and wrap as last set, wrap in the high half; 0
+       * none yet */
+      unsigned              tex_params[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
       unsigned              head[RETRO_VIDEO_VIEWS_MAX];
       /* A bit a view: written straight in this frame, which the screens'
        * own windows then draw as they are */
