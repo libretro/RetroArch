@@ -2854,18 +2854,9 @@ static void gfx_widgets_detach_tasks(dispgfx_widget_t *p_dispwidget)
 {
    size_t i;
 
-   /* Not displayed yet: discarded outright, with the updates nobody
-    * will apply. */
-   for (;;)
-   {
-      disp_widget_msg_t *msg_widget = gfx_widgets_pending_pop(p_dispwidget);
-
-      if (!msg_widget)
-         break;
-
-      gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
-      free(msg_widget);
-   }
+   /* Task updates not applied yet are discarded: nobody will apply
+    * them. The pending ring holds only plain messages, which wait for
+    * the next owner or for gfx_widgets_free(). */
    gfx_widgets_task_cmds_discard(p_dispwidget);
    gfx_widgets_task_pending_discard(p_dispwidget);
 
