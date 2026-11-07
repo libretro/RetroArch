@@ -3095,20 +3095,72 @@ static void rd_gen_lengths(struct rdeflate *s,
       return;
    }
 
-   /* sort symbols by frequency ascending (insertion sort; m <= 288) */
-   for (i = 1; i < m; i++)
+   /* Sort symbols by frequency ascending, ties in symbol order.  The
+    * symbols arrive in symbol order, so any stable sort gives that.
+    * A few symbols sort fastest by insertion; a full alphabet - every
+    * literal of a noisy block - took ~m*m/4 moves that way, so it goes
+    * by a stable byte-wise radix sort instead, one pass per byte the
+    * largest frequency uses (one or two, as a block holds at most
+    * RD_BLOCK_SYMS symbols).  gl_wt and gl_left are free until the
+    * tree build below and serve as the other half of the ping-pong. */
+   if (m <= 48)
    {
-      int      ti = idx[i];
-      uint32_t tf = fr[i];
-      int      j  = i - 1;
-      while (j >= 0 && fr[j] > tf)
+      for (i = 1; i < m; i++)
       {
-         fr[j + 1]  = fr[j];
-         idx[j + 1] = idx[j];
-         j--;
+         int      ti = idx[i];
+         uint32_t tf = fr[i];
+         int      j  = i - 1;
+         while (j >= 0 && fr[j] > tf)
+         {
+            fr[j + 1]  = fr[j];
+            idx[j + 1] = idx[j];
+            j--;
+         }
+         fr[j + 1]  = tf;
+         idx[j + 1] = ti;
       }
-      fr[j + 1]  = tf;
-      idx[j + 1] = ti;
+   }
+   else
+   {
+      uint32_t *sf   = fr;
+      int      *si   = idx;
+      uint32_t *df   = s->gl_wt;
+      int      *di   = s->gl_left;
+      uint32_t all   = 0;
+      unsigned shift = 0;
+      for (i = 0; i < m; i++)
+         all |= fr[i];
+      do
+      {
+         unsigned cnt[256];
+         unsigned sum = 0;
+         uint32_t *tf;
+         int      *ti;
+         for (i = 0; i < 256; i++)
+            cnt[i] = 0;
+         for (i = 0; i < m; i++)
+            cnt[(sf[i] >> shift) & 0xFF]++;
+         for (i = 0; i < 256; i++)
+         {
+            unsigned c = cnt[i];
+            cnt[i]     = sum;
+            sum       += c;
+         }
+         for (i = 0; i < m; i++)
+         {
+            unsigned d = cnt[(sf[i] >> shift) & 0xFF]++;
+            df[d]      = sf[i];
+            di[d]      = si[i];
+         }
+         tf = sf; sf = df; df = tf;
+         ti = si; si = di; di = ti;
+         shift += 8;
+      } while (shift < 32 && (all >> shift));
+      if (sf != fr)
+      {
+         memcpy(fr,  sf, (size_t)m * sizeof(*fr));
+         memcpy(idx, si, (size_t)m * sizeof(*idx));
+      }
    }
 
    /* Build the Huffman tree with the two-queue method.  The previous
