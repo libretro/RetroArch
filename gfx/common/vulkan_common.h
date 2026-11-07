@@ -215,7 +215,9 @@ enum vulkan_context_flags
     * to rebuild again. */
    VK_CTX_FLAG_SUBOPTIMAL_REBUILT           = (1 << 8),
    VK_CTX_FLAG_VIDEO_GENERAL                = (1 << 9),
-   VK_CTX_FLAG_ANDROID_IMAGES               = (1 << 10)
+   VK_CTX_FLAG_ANDROID_IMAGES               = (1 << 10),
+   VK_CTX_FLAG_DEFERRED_PRESENT             = (1 << 11),
+   VK_CTX_FLAG_FRAME_SLOT_PENDING           = (1 << 12)
 };
 
 enum gfx_ctx_vulkan_data_flags
@@ -719,6 +721,8 @@ retro_time_t vulkan_last_present_time(gfx_ctx_vulkan_data_t *vk);
    ((gfx_ctx_vulkan_data_t*)((char*)(ctx) - offsetof(gfx_ctx_vulkan_data_t, context)))
 
 void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk);
+/* Poll the next offscreen frame slot after a deferred present; never waits. */
+bool vulkan_context_continue_frame(gfx_ctx_vulkan_data_t *vk);
 
 /* Takes the acquire semaphore of the current frame, if one was
  * acquired, and every stale one, into sems[] and stages[] (each with

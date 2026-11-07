@@ -2925,6 +2925,9 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
    unsigned i;
    unsigned j;
 
+   vk->context.flags &= ~(VK_CTX_FLAG_DEFERRED_PRESENT
+         | VK_CTX_FLAG_FRAME_SLOT_PENDING);
+
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    /* Exclusive mode is bound to the swapchain; release it first. */
    if (vk->fse_acquired && vk->fse_release && vk->swapchain != VK_NULL_HANDLE)
@@ -3086,6 +3089,63 @@ static VkSemaphore vulkan_get_wsi_acquire_semaphore(struct vulkan_context *ctx)
    return sem;
 }
 
+static void vulkan_recycle_acquire_waits(struct vulkan_context *ctx,
+      unsigned index)
+{
+   unsigned j;
+   for (j = 0; j < ctx->swapchain_num_wait_semaphores[index]; j++)
+   {
+      VkSemaphore sem = ctx->swapchain_wait_semaphores[index][j];
+      if (sem == VK_NULL_HANDLE)
+         continue;
+      assert(ctx->num_recycled_acquire_semaphores < 2 * VULKAN_MAX_SWAPCHAIN_IMAGES + 1);
+      ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
+      ctx->swapchain_wait_semaphores[index][j] = VK_NULL_HANDLE;
+   }
+   ctx->swapchain_num_wait_semaphores[index] = 0;
+}
+
+bool vulkan_context_continue_frame(gfx_ctx_vulkan_data_t *vk)
+{
+   struct vulkan_context *ctx = &vk->context;
+   unsigned index;
+   VkFence *fence;
+   VkResult status;
+   if (!(ctx->flags & VK_CTX_FLAG_FRAME_SLOT_PENDING))
+      return true;
+   if (!ctx->num_swapchain_images)
+      return false;
+   index = (ctx->current_frame_index + 1) % ctx->num_swapchain_images;
+   fence = &ctx->swapchain_fences[index];
+   if (*fence != VK_NULL_HANDLE)
+   {
+      if (ctx->swapchain_fences_signalled[index])
+      {
+         status = vkGetFenceStatus(ctx->device, *fence);
+         if (status == VK_ERROR_DEVICE_LOST)
+            video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+         if (status != VK_SUCCESS)
+            return false;
+      }
+      if (vkResetFences(ctx->device, 1, fence) != VK_SUCCESS)
+         return false;
+   }
+   else
+   {
+      VkFenceCreateInfo info;
+      info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      if (vkCreateFence(ctx->device, &info, NULL, fence) != VK_SUCCESS)
+         return false;
+   }
+   ctx->swapchain_fences_signalled[index] = false;
+   vulkan_recycle_acquire_waits(ctx, index);
+   ctx->current_frame_index = index;
+   ctx->flags &= ~VK_CTX_FLAG_FRAME_SLOT_PENDING;
+   return true;
+}
+
 static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned index;
@@ -3115,20 +3175,7 @@ static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
 
    /* The fence covered the submission that waited on these, so
     * their signals are consumed and they can be acquired with. */
-   {
-      struct vulkan_context *ctx = &vk->context;
-      unsigned j;
-      for (j = 0; j < ctx->swapchain_num_wait_semaphores[index]; j++)
-      {
-         VkSemaphore sem = ctx->swapchain_wait_semaphores[index][j];
-         if (sem == VK_NULL_HANDLE)
-            continue;
-         assert(ctx->num_recycled_acquire_semaphores < 2 * VULKAN_MAX_SWAPCHAIN_IMAGES + 1);
-         ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
-         ctx->swapchain_wait_semaphores[index][j] = VK_NULL_HANDLE;
-      }
-      ctx->swapchain_num_wait_semaphores[index] = 0;
-   }
+   vulkan_recycle_acquire_waits(&vk->context, index);
 }
 
 #ifdef HAVE_OPENXR

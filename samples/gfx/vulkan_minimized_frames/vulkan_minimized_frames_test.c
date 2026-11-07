@@ -57,6 +57,7 @@ static void check(bool ok, const char *what)
 static bool     fence_live[MAX_FENCES];
 static bool     fence_pending[MAX_FENCES];
 static unsigned num_fences;
+static unsigned waits;
 
 /* per frame slot: the last submission's fence, 0 for none at all */
 static uintptr_t slot_fence[NUM_IMAGES];
@@ -103,6 +104,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL fake_wait_fences(VkDevice device,
       uint32_t count, const VkFence *fences, VkBool32 all, uint64_t timeout)
 {
    uint32_t n;
+   waits++;
    for (n = 0; n < count; n++)
    {
       unsigned i = fence_index(fences[n]);
@@ -110,6 +112,13 @@ static VKAPI_ATTR VkResult VKAPI_CALL fake_wait_fences(VkDevice device,
          fence_pending[i] = false;
    }
    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL fake_fence_status(VkDevice device,
+      VkFence fence)
+{
+   unsigned i = fence_index(fence);
+   return i < MAX_FENCES && fence_pending[i] ? VK_NOT_READY : VK_SUCCESS;
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL fake_reset_fences(VkDevice device,
@@ -188,6 +197,45 @@ static void draw_frame(unsigned frame)
    vk.context.swapchain_fences_signalled[slot] = true;
 }
 
+static void suspended_frames(void)
+{
+   unsigned frame, before = waits;
+   memset(fence_pending, 0, sizeof(fence_pending));
+   vk.context.flags = VK_CTX_FLAG_DEFERRED_PRESENT;
+   for (frame = 0; frame < NUM_FRAMES; frame++)
+   {
+      unsigned slot = vk.context.current_frame_index;
+      unsigned next = (slot + 1) % NUM_IMAGES;
+      unsigned i = fence_index(vk.context.swapchain_fences[next]);
+      bool ready;
+      draw_frame(frame);
+      vk.context.flags |= VK_CTX_FLAG_FRAME_SLOT_PENDING;
+      ready = vulkan_context_continue_frame(&vk);
+      if (i < MAX_FENCES && fence_pending[i])
+      {
+         check(!ready && vk.context.current_frame_index == slot,
+               "a busy suspended slot is not advanced");
+         check((vk.context.flags & VK_CTX_FLAG_FRAME_SLOT_PENDING) != 0,
+               "a busy suspended slot remains pending");
+         fence_pending[i] = false;
+         ready = vulkan_context_continue_frame(&vk);
+      }
+      check(ready && vk.context.current_frame_index == next,
+            "a completed suspended slot is advanced");
+      check(!(vk.context.flags & VK_CTX_FLAG_FRAME_SLOT_PENDING),
+            "the completed slot clears pending state");
+      check((vk.context.flags & VK_CTX_FLAG_DEFERRED_PRESENT)
+            && !(vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN),
+            "offscreen frames retain the deferred present without drawing it");
+      check(vulkan_context_continue_frame(&vk)
+            && vk.context.current_frame_index == next,
+            "an idle continuation does not advance twice");
+   }
+   check(waits == before, "suspended frames never wait for a fence");
+   printf("ok: %u suspended frames preserve pending slots without waits\n",
+         NUM_FRAMES);
+}
+
 int main(void)
 {
    unsigned frame;
@@ -197,6 +245,7 @@ int main(void)
    vkDestroyFence                            = fake_destroy_fence;
    vkWaitForFences                           = fake_wait_fences;
    vkResetFences                             = fake_reset_fences;
+   vkGetFenceStatus                          = fake_fence_status;
 
    /* As a present that came back out of date leaves the context of a
     * window just minimised: the swapchain and its fences are gone, the
@@ -219,6 +268,8 @@ int main(void)
             "an image was acquired with no swapchain");
       draw_frame(frame);
    }
+
+   suspended_frames();
 
    if (failures)
    {

@@ -12715,6 +12715,12 @@ static bool vulkan_frame(void *data, const void *frame,
          }
    }
 #endif
+#ifdef HAVE_WAYLAND
+   if ((vk->context->flags & VK_CTX_FLAG_FRAME_SLOT_PENDING)
+         && !vulkan_context_continue_frame(
+               VULKAN_CTX_DATA_FROM_CONTEXT(vk->context)))
+      return true;
+#endif
    frame = vulkan_movie_prepare(vk, frame);
    vk->movie_pending = false;
 
