@@ -3103,6 +3103,9 @@ jobs:
       - name: Vulkan synchronous readback slot
         run: python3 samples/gfx/vulkan_readback_slot/run.py
 
+      - name: Vulkan views in place from a mipmapped core image
+        run: python3 samples/gfx/vulkan_hw_level_view/run.py
+
       - name: Capture bounds, conversion failures and list allocation rollback
         shell: bash
         run: |

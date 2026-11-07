@@ -270,6 +270,10 @@ struct vk_per_frame
    /* View targets replaced while this slot's last frame may still have
     * used them, destroyed when the slot next comes round. */
    struct vk_image view_retired[2];
+   /* The top level of a core's mipmapped image, which this slot's
+    * frame read its views in place through; destroyed when the slot
+    * next comes round, as the image may not outlive the frame */
+   VkImageView hw_level_view;
    struct vk_buffer_chain vbo;         /* uint64_t alignment */
    struct vk_buffer_chain ubo;
    struct vk_descriptor_manager descriptor_manager;
@@ -6299,6 +6303,10 @@ static void vulkan_deinit_textures(vk_t *vk)
          if (vk->swapchain[i].view_retired[j].image)
             vulkan_destroy_hdr_buffer(vk->context->device,
                   &vk->swapchain[i].view_retired[j]);
+      if (vk->swapchain[i].hw_level_view != VK_NULL_HANDLE)
+         vkDestroyImageView(vk->context->device,
+               vk->swapchain[i].hw_level_view, NULL);
+      vk->swapchain[i].hw_level_view = VK_NULL_HANDLE;
    }
 
    if (vk->default_texture.memory != VK_NULL_HANDLE)
@@ -12482,6 +12490,25 @@ static void vulkan_draw_menu(vk_t *vk, video_frame_info_t *video_info,
 }
 #endif
 
+/* @slot's view of the top level of the core's mipmapped image, for the
+ * views to read in place as they would a copy of that level; made each
+ * frame, as the core's image may be gone once the frame is done. False
+ * when it can't be, and the views are copied. */
+static bool vulkan_hw_level_view(vk_t *vk, struct vk_per_frame *slot)
+{
+   VkImageViewCreateInfo info = vk->hw.image->create_info;
+   /* Chained structures the core's call pointed to are not ours */
+   if (info.pNext || info.subresourceRange.levelCount == 1)
+      return false;
+   if (slot->hw_level_view != VK_NULL_HANDLE)
+      return true;
+   info.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
+   info.subresourceRange.levelCount = 1;
+   info.subresourceRange.layerCount = 1;
+   return vkCreateImageView(vk->context->device, &info, NULL,
+         &slot->hw_level_view) == VK_SUCCESS;
+}
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -12741,6 +12768,11 @@ static bool vulkan_frame(void *data, const void *frame,
       if (chain->view_retired[j].image)
          vulkan_destroy_hdr_buffer(vk->context->device,
                &chain->view_retired[j]);
+   if (chain->hw_level_view != VK_NULL_HANDLE)
+   {
+      vkDestroyImageView(vk->context->device, chain->hw_level_view, NULL);
+      chain->hw_level_view = VK_NULL_HANDLE;
+   }
 
    manager->current = manager->head;
    manager->count = 0;
@@ -13046,12 +13078,12 @@ static bool vulkan_frame(void *data, const void *frame,
       views_direct = false;
 #endif
    /* A preset's views are read where they lie when every drawn view's
-    * chain can, from a frame of one level; not for the headset, which
-    * draws from the copies. */
+    * chain can, from a frame of one level, or the top level of a
+    * mipmapped one through a view of its own; not for the headset,
+    * which draws from the copies. */
    views_in_place = views && !views_direct
       && (!(vk->flags & VK_FLAG_HW_ENABLE)
-         || (   vk->hw.image && vk->hw.image->create_info.image
-             && vk->hw.image->create_info.subresourceRange.levelCount == 1));
+         || (vk->hw.image && vk->hw.image->create_info.image));
 #ifdef HAVE_OPENXR
    if (xr_map)
       views_in_place = false;
@@ -13063,6 +13095,9 @@ static bool vulkan_frame(void *data, const void *frame,
                && !vulkan_filter_chain_reads_in_place(view_chains[i]))
             views_in_place = false;
    }
+   if (     views_in_place && (vk->flags & VK_FLAG_HW_ENABLE)
+         && vk->hw.image->create_info.subresourceRange.levelCount != 1)
+      views_in_place = vulkan_hw_level_view(vk, chain);
    /* A hardware frame needs the core's image, and to be copied, in a
     * format a view image can take: vulkan_create_texture() widens
     * R5G6B5. */
@@ -13437,6 +13472,8 @@ static bool vulkan_frame(void *data, const void *frame,
             vin.dims        = VIDEO_SCALE_PACK(v->width, v->height);
             vin.padded_dims = input.dims;
             vin.origin      = VIDEO_SCALE_PACK(v->x, v->y);
+            if (chain->hw_level_view != VK_NULL_HANDLE)
+               vin.view     = chain->hw_level_view;
             vulkan_filter_chain_set_input_texture(view_chains[i], &vin);
          }
          if (!vk->views.in_place_seen)
