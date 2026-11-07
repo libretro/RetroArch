@@ -82,6 +82,12 @@ static unsigned video_windows_named(const video_window_display_t *displays,
    char key[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
    for (i = 0; i < count && i < VIDEO_WINDOW_DISPLAYS_MAX; i++)
    {
+      /* Every key starts with this much of its display's name: only
+       * those that do are built, each in O(count) */
+      size_t len = strlen(displays[i].name);
+      if (strncmp(name, displays[i].name,
+               MIN(len, VIDEO_WINDOW_DISPLAY_NAME_SIZE - 3)))
+         continue;
       video_windows_display_key(displays, i, key, sizeof(key));
       if (!strcmp(key, name))
          return (displays[i].valid && !displays[i].is_private)

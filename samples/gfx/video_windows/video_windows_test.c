@@ -284,6 +284,28 @@ static void test_place_where(void)
    strcpy(place_screen[1], "Nowhere");
    place_at(0);
    CHECK(placed(2, 2u, 1u, 0u, 0));
+   /* Names shared: the second listed is " 2", cut to fit when long */
+   {
+      char key[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+      strcpy(place_d[1].name, "HDMI");
+      strcpy(place_d[2].name, "HDMI");
+      strcpy(place_screen[1], "HDMI 2");
+      place_at(0);
+      CHECK(place_r.target[1] == 3);
+      strcpy(place_screen[1], "HDMI");
+      place_at(0);
+      CHECK(place_r.target[1] == 2);
+      memset(place_d[1].name, 'x', VIDEO_WINDOW_DISPLAY_NAME_SIZE - 1);
+      place_d[1].name[VIDEO_WINDOW_DISPLAY_NAME_SIZE - 1] = '\0';
+      memcpy(place_d[2].name, place_d[1].name, sizeof(place_d[2].name));
+      video_windows_display_key(place_d, 2, key, sizeof(key));
+      strcpy(place_screen[1], key);
+      place_at(0);
+      CHECK(place_r.target[1] == 3);
+      strcpy(place_screen[1], place_d[1].name);
+      place_at(0);
+      CHECK(place_r.target[1] == 2);
+   }
    /* Both on RetroArch's display: no Presentation */
    place_reset(2, 3);
    place_game(2, false);
