@@ -199,10 +199,12 @@ static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
    if (out->num_refs >= (unsigned)params->max_dec_pic_buffering) goto invalid;
    occupied = out->keep_references | out->keep_outputs;
    out->slot = s->slots;
+   /* Discarded output can still have a native write in flight. */
    for (i = 0; i < s->slots; i++)
    {
-      if (occupied & (UINT32_C(1) << i)) held++;
-      else if (out->slot == s->slots) out->slot = i;
+      unsigned slot = (i + (unsigned)((s->serial - 1) % s->slots)) % s->slots;
+      if (occupied & (UINT32_C(1) << slot)) held++;
+      else if (out->slot == s->slots) out->slot = slot;
    }
    if (out->slot == s->slots || held >= (unsigned)params->max_dec_pic_buffering)
    { memset(out, 0, sizeof(*out)); return 1; }

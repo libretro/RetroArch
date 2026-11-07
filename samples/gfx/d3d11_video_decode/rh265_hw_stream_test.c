@@ -13,6 +13,8 @@ static unsigned failures, opened, closed, accepted, calls, abandoned, exported;
 static int decode_busy, output_busy, refuse, require_sets;
 static int enable_drain, drain_busy, drain_error;
 static unsigned drains;
+static uint32_t decoder_slots_held;
+static int complete_later;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %u: %s\n", \
       (unsigned)__LINE__, #c); failures++; } } while (0)
 
@@ -35,6 +37,8 @@ static int decode(void *decoder, const rh265_video_params_t *params,
    CHECK(slices[0].data && slices[0].size && picture->serial);
    calls++;
    if (decode_busy) { decode_busy--; return 1; }
+   if (decoder_slots_held & (UINT32_C(1) << picture->slot)) return 1;
+   if (complete_later) decoder_slots_held |= UINT32_C(1) << picture->slot;
    accepted++;
    return 0;
 }
@@ -155,6 +159,56 @@ static void check_decoder(void)
    CHECK(ret >= 0 && rh265_video_plane(v, 0, NULL, NULL, NULL));
    rh265_video_close(v);
    refuse = 0;
+}
+
+static void check_discard(void)
+{
+   rh265_video *v;
+   unsigned before = accepted, prior_exported = exported;
+   int64_t timestamp = -1;
+   video_hw_frame_t frame;
+   enable_drain = 1;
+   v = start();
+   if (!v) { enable_drain = 0; return; }
+   memset(&frame, 0, sizeof(frame));
+   output_busy = 100;
+   complete_later = 1;
+   decoder_slots_held = 0;
+   CHECK(rh265_video_decode_timed_discard(NULL, hevc_sample8,
+            sizeof(hevc_sample8), 100, &timestamp) < 0);
+   CHECK(rh265_video_decode_timed_discard(v, NULL,
+            sizeof(hevc_sample8), 100, &timestamp) < 0);
+   CHECK(timestamp == -1 && accepted == before);
+   CHECK(rh265_video_decode_timed_discard(v, hevc_sample8,
+            sizeof(hevc_sample8), 100, &timestamp) == 1);
+   CHECK(accepted == before + 1 && timestamp == 100);
+   CHECK(output_busy == 100 && exported == prior_exported);
+   CHECK(rh265_video_hw_frame(v, &frame) < 0);
+   video_hw_frame_abandon(&frame);
+   decode_busy = 1;
+   CHECK(rh265_video_decode_timed_discard(v, hevc_sample8,
+            sizeof(hevc_sample8), 200, &timestamp) == 2);
+   CHECK(accepted == before + 1 && timestamp == 100);
+   CHECK(rh265_video_decode_timed_discard(v, hevc_sample8,
+            sizeof(hevc_sample8), 200, &timestamp) == 1);
+   CHECK(accepted == before + 2 && timestamp == 200);
+   CHECK(decoder_slots_held && (decoder_slots_held & (decoder_slots_held - 1)));
+   CHECK(output_busy == 100 && exported == prior_exported);
+   v->hw->session.state.outputs = 1;
+   v->hw->session.state.output_epoch[0] = 1;
+   v->hw->timestamp[0] = 300;
+   drain_busy = 1;
+   CHECK(rh265_video_drain_timed_discard(v, &timestamp) == 2);
+   CHECK(timestamp == 200 && v->hw->session.state.outputs == 1);
+   CHECK(!rh265_video_drain_timed_discard(v, &timestamp));
+   CHECK(timestamp == 300 && !v->hw->session.state.outputs);
+   CHECK(output_busy == 100 && exported == prior_exported);
+   CHECK(rh265_video_drain_timed_discard(v, &timestamp) == -1);
+   drain_error = 1;
+   CHECK(rh265_video_drain_timed_discard(v, &timestamp) == -2);
+   rh265_video_close(v);
+   enable_drain = drain_error = output_busy = complete_later = 0;
+   decoder_slots_held = 0;
 }
 
 static void check_pressure(void)
@@ -306,6 +360,7 @@ static void check_eof(void)
 int main(void)
 {
    check_decoder();
+   check_discard();
    check_pressure();
    check_eof();
    check_mp4();

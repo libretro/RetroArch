@@ -922,6 +922,15 @@ static int rmp4_video_hwf_take(rmp4_video_stream_t *s)
    return 0;
 }
 
+static int rmp4_video_h265_output(rmp4_video_stream_t *s, int discard)
+{
+   if (!discard)
+      return rmp4_video_hwf_take(s);
+   rmp4_video_hwf_drop(s);
+   s->rndr_kind = 0;
+   return 0;
+}
+
 static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
 {
    rmp4_video_hwf_drop(s);
@@ -1697,10 +1706,13 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
          s->h265_decode_sample++;
          return 0;
       }
-      dec = rh265_video_decode_timed(s->h265, pkt->data, pkt->size,
-            pkt->timestamp, &s->h265_timestamp);
+      dec = discard
+         ? rh265_video_decode_timed_discard(s->h265, pkt->data, pkt->size,
+               pkt->timestamp, &s->h265_timestamp)
+         : rh265_video_decode_timed(s->h265, pkt->data, pkt->size,
+               pkt->timestamp, &s->h265_timestamp);
       if (dec == 2) return 2;
-      if (dec == 3) return rmp4_video_hwf_take(s) == 0 ? 3 : -1;
+      if (dec == 3) return rmp4_video_h265_output(s, discard) == 0 ? 3 : -1;
       s->h265_decode_sample++;
       if (dec < 0)
       {
@@ -1717,7 +1729,7 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
          return 0;
       }
       if (rh265_video_is_hw(s->h265))
-         return rmp4_video_hwf_take(s) == 0 ? 1 : -1;
+         return rmp4_video_h265_output(s, discard) == 0 ? 1 : -1;
       /* Planes stay valid until the next decode; defer conversion. */
       if (!rh265_video_plane(s->h265, 0, NULL, NULL, NULL))
          return -1;
@@ -1906,8 +1918,9 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
          return 1;
       }
    }
-   if (s->h265 && (drained = rh265_video_drain_timed(s->h265,
-               &s->h265_timestamp)) == 2)
+   if (s->h265 && (drained = discard
+            ? rh265_video_drain_timed_discard(s->h265, &s->h265_timestamp)
+            : rh265_video_drain_timed(s->h265, &s->h265_timestamp)) == 2)
    {
       s->waiting = RMP4_VIDEO_WAIT_DECODER;
       return 2;
@@ -1919,7 +1932,7 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       s->rndr_kind = 0;   /* the drain replaced the current picture */
       if (rh265_video_is_hw(s->h265))
       {
-         if (rmp4_video_hwf_take(s) != 0) return -1;
+         if (rmp4_video_h265_output(s, discard) != 0) return -1;
          s->h265_picture_pending = 1;
          return rmp4_video_h265_picture(s, duration_ms);
       }

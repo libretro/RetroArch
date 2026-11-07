@@ -167,7 +167,7 @@ int main(void)
    restart_clock = media_player.play_ns;
    restart_pts = media_player.vpts_ns;
    restart_ordinal = media_player.vshown;
-   decode_busy = output_busy = 1;
+   decode_busy = 2; output_busy = 1;
    media_video_hw_ready();
    CHECK(media_player.hw_restart == 2);
    decoded = opened;

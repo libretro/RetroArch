@@ -5489,7 +5489,7 @@ int rh265_video_hw_frame(rh265_video *v, video_hw_frame_t *out)
    return 0;
 }
 
-static int rh265_hw_show(rh265_hw_t *hw, bool drain)
+static int rh265_hw_show(rh265_hw_t *hw, bool drain, bool discard)
 {
    int ret, slot;
    if (hw->session.broken)
@@ -5509,12 +5509,24 @@ static int rh265_hw_show(rh265_hw_t *hw, bool drain)
          drain || hw->session.pressure);
    if (slot < 0)
       return 0;
+   if (discard)
+   {
+      if (!rh265_hw_output_release(&hw->session.state, (unsigned)slot))
+      {
+         hw->session.broken = 1;
+         return -1;
+      }
+      hw->session.pressure = 0;
+      hw->shown_timestamp = hw->timestamp[slot];
+      return 1;
+   }
    ret = rh265_hw_session_output(&hw->session, drain, &hw->shown);
    if (!ret) hw->shown_timestamp = hw->timestamp[slot];
    return ret < 0 ? -1 : ret ? 2 : 1;
 }
 
-static int rh265_hw_decode(rh265_video *v, const uint8_t *data, size_t size)
+static int rh265_hw_decode(rh265_video *v, const uint8_t *data, size_t size,
+      bool discard)
 {
    rh265_hw_t *hw = v->hw;
    int ret;
@@ -5555,14 +5567,14 @@ static int rh265_hw_decode(rh265_video *v, const uint8_t *data, size_t size)
       {
          if (!hw->session.pressure)
             return 2;
-         ret = rh265_hw_show(hw, false);
+         ret = rh265_hw_show(hw, false, discard);
          return ret == 1 ? 3 : ret < 0 ? -1 : 2;
       }
       if (hw->session.state.serial != serial)
          hw->timestamp[hw->session.pending.slot] = v->packet_timestamp;
       hw->pending = 2;
    }
-   ret = rh265_hw_show(hw, false);
+   ret = rh265_hw_show(hw, false, discard);
    if (ret != 2)
    {
       hw->pending = 0;
@@ -6193,7 +6205,7 @@ int rh265_video_decode(rh265_video *v, const uint8_t *data, size_t len)
       return -1;
 
    if (v->hw)
-      return rh265_hw_decode(v, data, len);
+      return rh265_hw_decode(v, data, len, false);
 
    /* hvcC extradata fixes the framing as length-prefixed; a 4-byte
     * length in 256..511 is byte-identical to a start code, so once the
@@ -6272,20 +6284,23 @@ int rh265_video_decode_timed(rh265_video *v, const uint8_t *data, size_t len,
    return ret;
 }
 
+static int rh265_hw_drain(rh265_hw_t *hw, bool discard)
+{
+   int ret;
+   if (hw->pending)
+      return 2;
+   video_hw_frame_abandon(&hw->shown);
+   memset(&hw->shown, 0, sizeof(hw->shown));
+   ret = rh265_hw_show(hw, true, discard);
+   return ret == 1 ? 0 : ret == 2 ? 2 : ret < 0 ? -2 : -1;
+}
+
 int rh265_video_drain(rh265_video *v)
 {
    if (!v)
       return -1;
    if (v->hw)
-   {
-      int ret;
-      if (v->hw->pending)
-         return 2;
-      video_hw_frame_abandon(&v->hw->shown);
-      memset(&v->hw->shown, 0, sizeof(v->hw->shown));
-      ret = rh265_hw_show(v->hw, true);
-      return ret == 1 ? 0 : ret == 2 ? 2 : ret < 0 ? -2 : -1;
-   }
+      return rh265_hw_drain(v->hw, false);
    if (v->threaded)
    {
       int k;
@@ -6315,6 +6330,34 @@ int rh265_video_drain_timed(rh265_video *v, int64_t *output_timestamp)
    if (!ret)
       *output_timestamp = v->hw ? v->hw->shown_timestamp
          : v->dpb[v->out_pic].timestamp;
+   return ret;
+}
+
+int rh265_video_decode_timed_discard(rh265_video *v, const uint8_t *data,
+      size_t len, int64_t timestamp, int64_t *output_timestamp)
+{
+   int ret;
+   if (!v || !output_timestamp) return -1;
+   if (!v->hw)
+      return rh265_video_decode_timed(v, data, len, timestamp, output_timestamp);
+   v->dropped = 0;
+   if (!data || len < 4) return -1;
+   v->packet_timestamp = timestamp;
+   ret = rh265_hw_decode(v, data, len, true);
+   if (ret == 1 || ret == 3)
+      *output_timestamp = v->hw->shown_timestamp;
+   return ret;
+}
+
+int rh265_video_drain_timed_discard(rh265_video *v, int64_t *output_timestamp)
+{
+   int ret;
+   if (!v || !output_timestamp) return -2;
+   if (!v->hw)
+      return rh265_video_drain_timed(v, output_timestamp);
+   ret = rh265_hw_drain(v->hw, true);
+   if (!ret)
+      *output_timestamp = v->hw->shown_timestamp;
    return ret;
 }
 
