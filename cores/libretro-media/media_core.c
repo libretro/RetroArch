@@ -77,6 +77,16 @@
 #define MEDIA_AUDIO_RATE 48000
 #define MEDIA_AUDIO_CHUNK 256
 
+#ifdef HAVE_RMP4
+enum media_mp4_seek_state
+{
+   MEDIA_MP4_SEEK_NONE,
+   MEDIA_MP4_SEEK_SCAN,
+   MEDIA_MP4_SEEK_DECODE,
+   MEDIA_MP4_SEEK_PRESENT
+};
+#endif
+
 #ifdef MEDIA_HAVE_AUDIO
 /* Opus packet duration in 48 kHz frames from the TOC (RFC 6716 s3):
  * used to compute the exact decodable total so container end trimming
@@ -212,10 +222,8 @@ typedef struct
                                         reached                         */
    int          nvts_cap;
    int          vts_unsorted;        /* out-of-order arrival this pump  */
-   int64_t      pending_seek_ns;     /* a seek whose target lay beyond
-                                        the fill's wall: retried as the
-                                        file arrives until reachable
-                                        (<0 = none)                     */
+   int64_t      pending_seek_ns;     /* seek awaiting input or decoder
+                                        capacity; <0 means none         */
    int64_t      vpts_ns;             /* pts of the last presented frame */
    int64_t      play_ns;             /* wall clock: one frame interval
                                         per retro_run.  Presentation is
@@ -1296,6 +1304,7 @@ void MEDIA_CORE_PREFIX(retro_reset)(void)
 #ifdef HAVE_RMP4
    if (p->mp4vs)
    {
+      p->hw_restart = 0;
       rmp4_video_stream_rewind(p->mp4vs);
       p->hw_video = media_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
    }
@@ -1342,6 +1351,8 @@ void MEDIA_CORE_PREFIX(retro_reset)(void)
          memset(p->fb, 0, (size_t)p->width * p->height * sizeof(*p->fb));
    }
 #endif
+   p->seeking = 0;
+   p->pending_seek_ns = -1;
    p->vshown  = 0;
    p->play_ns = p->nvts ? p->vts[0] : 0;
    p->eof = 0;
@@ -1402,6 +1413,50 @@ static bool media_seek_audio(media_player_t *p, int64_t want)
       }
    }
    return p->apos == want;
+}
+#endif
+
+#ifdef HAVE_RMP4
+static bool media_mp4_seek_begin(media_player_t *p, int64_t target_ns)
+{
+   p->pending_seek_ns = target_ns;
+   p->seeking = rmp4_video_stream_seek_movie_begin_ns(p->mp4vs, target_ns)
+      ? MEDIA_MP4_SEEK_SCAN : MEDIA_MP4_SEEK_NONE;
+   if (!p->seeking)
+   {
+      p->pending_seek_ns = -1;
+      p->eof = 1;
+   }
+   return p->seeking != 0;
+}
+
+static int media_mp4_seek_step(media_player_t *p)
+{
+   int64_t position_us = 0;
+   int64_t delay = rmp4_video_stream_presentation_delay_ns(p->mp4vs);
+   int ready;
+   unsigned budget = 32;
+   int64_t started = cpu_features_get_time_usec();
+   do
+   {
+      ready = rmp4_video_stream_seek_movie_step(p->mp4vs, &position_us);
+      if (ready || rmp4_video_stream_waiting(p->mp4vs))
+         break;
+   } while (--budget && cpu_features_get_time_usec() - started < 4000);
+   if (ready != 1)
+      return ready;
+   p->vshown = rmp4_video_stream_frame_index(p->mp4vs);
+   p->vpts_ns = position_us * 1000;
+   if (p->vpts_ns < delay)
+      p->vpts_ns = delay;
+   p->play_ns = p->pending_seek_ns < p->vpts_ns
+      ? p->pending_seek_ns : p->vpts_ns;
+   p->seeking = MEDIA_MP4_SEEK_DECODE;
+#ifdef MEDIA_HAVE_AUDIO
+   if (p->actx)
+      media_seek_audio(p, (int64_t)((double)p->play_ns * 1e-9 * p->arate));
+#endif
+   return 1;
 }
 #endif
 
@@ -1472,6 +1527,13 @@ static int64_t media_seek_internal_resume(media_player_t *p, int64_t target_ns,
       int64_t delay = rmp4_video_stream_presentation_delay_ns(p->mp4vs);
       int64_t relative = target_ns > delay ? target_ns - delay : 0;
       media_drop_hw(p);
+      if (p->hw_video && !resume)
+      {
+         p->hw_restart = 0;
+         p->eof = 0;
+         media_mp4_seek_begin(p, target_ns);
+         return p->vpts_ns;
+      }
       ms = rmp4_video_stream_seek_ms(p->mp4vs, relative / 1000000);
       if (target_ns < delay && p->fb)
          memset(p->fb, 0, (size_t)p->width * p->height * sizeof(*p->fb));
@@ -1677,13 +1739,18 @@ static void media_check_input(media_player_t *p)
        * retrying from the fill pump until it is reachable, so a seek
        * ahead of the fill converges on exactly the position a
        * fully-read file would give. */
-      if (p->dt && !data_transfer_complete(p->dt)
-            && !data_transfer_failed(p->dt)
-            && !data_transfer_capped(p->dt)
-            && target > 0 && pos + 500000000 < target)
-         p->pending_seek_ns = target;
-      else
-         p->pending_seek_ns = -1;
+#ifdef HAVE_RMP4
+      if (!p->mp4vs || !p->seeking)
+#endif
+      {
+         if (p->dt && !data_transfer_complete(p->dt)
+               && !data_transfer_failed(p->dt)
+               && !data_transfer_capped(p->dt)
+               && target > 0 && pos + 500000000 < target)
+            p->pending_seek_ns = target;
+         else
+            p->pending_seek_ns = -1;
+      }
       ps = (unsigned)(pos / 1000000000);
       sprintf(text, "%u:%02u", ps / 60, ps % 60);
       if (p->dur_ns > 0)
@@ -1790,6 +1857,11 @@ void media_video_hw_ready(void)
             && media_hw_refresh(media_hw_user, NULL);
          p->hw_started = 1;
          p->hw_video = ready && rmp4_video_stream_set_hw(p->mp4vs, 1);
+      }
+      if (p->hw_restart && p->seeking)
+      {
+         media_mp4_seek_begin(p, p->pending_seek_ns);
+         p->hw_restart = 0;
       }
       if (p->hw_restart)
       {
@@ -2077,7 +2149,7 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
       {
          size_t avail = data_transfer_iterate(p->dt, 4 * 1024 * 1024);
          rmp4_video_stream_set_avail(p->mp4vs, avail);
-         if (p->pending_seek_ns >= 0)
+         if (p->pending_seek_ns >= 0 && !p->seeking)
          {
             int64_t pos = media_seek(p, p->pending_seek_ns);
             if (   data_transfer_complete(p->dt)
@@ -2092,6 +2164,33 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
             media_mp4_audio_pump(p);
          }
 #endif
+      }
+
+      if (p->seeking == MEDIA_MP4_SEEK_SCAN)
+      {
+         int ready = media_mp4_seek_step(p);
+         if (ready != 1)
+         {
+            MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+            if (ready < 0)
+            {
+               p->seeking = MEDIA_MP4_SEEK_NONE;
+               p->pending_seek_ns = -1;
+               p->eof = 1;
+               MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+            }
+            return;
+         }
+      }
+      if (p->seeking == MEDIA_MP4_SEEK_PRESENT)
+      {
+         media_present_mp4(p, 0);
+         if (!p->hw_frame.image)
+         {
+            p->seeking = MEDIA_MP4_SEEK_NONE;
+            p->pending_seek_ns = -1;
+         }
+         goto audio;
       }
 
       if (p->hw_restart)
@@ -2163,7 +2262,8 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
                         && !data_transfer_failed(p->dt))))
             {
                /* Hold the picture until input or decoder capacity returns. */
-               if ((p->mp4_hw_required || p->hw_video) && !p->vshown)
+               if (((p->mp4_hw_required || p->hw_video) && !p->vshown)
+                     || p->seeking == MEDIA_MP4_SEEK_DECODE)
                   p->play_ns -= p->frame_ns;
                break;
             }
@@ -2175,8 +2275,18 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
             have        = 1;
             p->vpts_ns += (int64_t)dur_ms * 1000000;
             p->vshown++;
+            if (p->seeking == MEDIA_MP4_SEEK_DECODE)
+            {
+               p->seeking = MEDIA_MP4_SEEK_PRESENT;
+               break;
+            }
          }
          media_present_mp4(p, have);
+         if (p->seeking == MEDIA_MP4_SEEK_PRESENT && !p->hw_frame.image)
+         {
+            p->seeking = MEDIA_MP4_SEEK_NONE;
+            p->pending_seek_ns = -1;
+         }
       }
       if (p->eof && !p->hw_frame.image)
       {
@@ -3188,6 +3298,7 @@ bool MEDIA_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
             || audio_pos > INT64_MAX || (d[5] & ~3))
          return false;
       p->pending_seek_ns = -1;
+      p->seeking = 0;
 #ifdef HAVE_RMP4
       if (p->mp4vs)
       {
