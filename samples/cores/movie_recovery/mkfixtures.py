@@ -21,7 +21,8 @@ command = [a.ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
            "-f", "lavfi", "-i", "testsrc2=size=256x192:rate=12",
            "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
            "-t", "16", "-c:v", "libx265", "-preset", "fast", "-pix_fmt", pixel_format,
-           "-x265-params", "pools=2:frame-threads=1:log-level=error:range=" + a.range,
+           "-x265-params", "pools=2:frame-threads=1:log-level=error:"
+           "colorprim=bt709:transfer=bt709:colormatrix=bt709:range=" + a.range,
            "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
            "-color_range", "pc" if full else "tv"]
 if full:
