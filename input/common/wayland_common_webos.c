@@ -30,7 +30,11 @@
 #include "../../gfx/common/wayland_common.h"
 #include "../../gfx/video_driver.h"
 #include "../../verbosity.h"
+#include "../../runloop.h"
 #include "../input_keymaps.h"
+#ifdef HAVE_MENU
+#include "../../menu/menu_input.h"
+#endif
 
 #include "../../gfx/common/wayland/webos-shell.h"
 
@@ -720,6 +724,18 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t *w
 }
 
 #ifdef HAVE_USERLAND
+/* Hold off the TV's screensaver only while content plays, not in the menu or paused */
+static bool webos_screensaver_hold(void)
+{
+   if (!input_config_get_suspend_screensaver_enable())
+      return false;
+#ifdef HAVE_MENU
+   if (menu_driver_alive())
+      return false;
+#endif
+   return !(runloop_get_flags() & RUNLOOP_FLAG_PAUSED);
+}
+
 static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
 {
    char *resp;
@@ -763,7 +779,7 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    if (strcmp(state, "Active") != 0)
       return true;
 
-   suspend_screensaver = input_config_get_suspend_screensaver_enable();
+   suspend_screensaver = webos_screensaver_hold();
 
    w                   = rjsonwriter_open_memory();
    rjsonwriter_raw(w, "{", 1);
