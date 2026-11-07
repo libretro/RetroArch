@@ -59,6 +59,7 @@
 #endif
 
 #include "cheevos.h"
+#include "cheevos_ciso.h"
 #include "cheevos_client.h"
 #include "cheevos_menu.h"
 #include "cheevos_locals.h"
@@ -2147,8 +2148,8 @@ bool rcheevos_load(const void *data)
 
 #ifdef CHEEVOS_RVZ_READER
       /* The file reader is kept from one load to the next, so it is
-       * set for every load: the RVZ one for a file it reads, the
-       * default for anything else. */
+       * set for every load: the RVZ or CISO one for a file it reads,
+       * the default for anything else. */
       const char* ext = path_get_extension(info->path);
       if (     (string_is_equal_noncase(ext, "rvz") || string_is_equal_noncase(ext, "wia"))
             && (console_id = rcheevos_rvz_get_console_id(info->path))
@@ -2164,8 +2165,13 @@ bool rcheevos_load(const void *data)
          rc_hash_init_custom_filereader(&filereader);
       }
       else
-         rc_hash_init_custom_filereader(NULL);
 #endif
+      if (     string_is_equal_noncase(path_get_extension(info->path), "ciso")
+            && (console_id = rcheevos_ciso_get_console_id(info->path))
+               != RC_CONSOLE_UNKNOWN)
+         rcheevos_ciso_filereader_init();
+      else
+         rc_hash_init_custom_filereader(NULL);
 
       {
 #ifdef HAVE_THREADS

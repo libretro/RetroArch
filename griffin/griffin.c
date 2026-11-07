@@ -234,6 +234,7 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
 #include "../cheevos/cheevos_badge.c"
+#include "../cheevos/cheevos_ciso.c"
 
 #if defined(HAVE_CHEEVOS_RVZ) && defined(HAVE_RZSTD)
 #include "../libretro-common/formats/rvz/rvz.c"
@@ -1850,6 +1851,8 @@ DATA RUNLOOP
 #include "../tasks/task_database.c"
 #ifdef HAVE_LIBRETRODB
 #include "../tasks/task_database_cue.c"
+#endif
+#if defined(HAVE_LIBRETRODB) || defined(HAVE_CHEEVOS)
 #include "../libretro-common/formats/ciso/ciso.c"
 #endif
 #if defined(HAVE_NETWORKING) && defined(HAVE_MENU)

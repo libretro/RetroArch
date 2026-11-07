@@ -2862,6 +2862,13 @@ ifeq ($(HAVE_NETWORKING), 1)
          endif
       endif
 
+      # CISO disc images for RetroAchievements; the scanner builds the
+      # reader with the database
+      OBJ += cheevos/cheevos_ciso.o
+      ifneq ($(HAVE_LIBRETRODB), 1)
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/ciso/ciso.o
+      endif
+
       # The hashes' AES (3DS titles) is the crypto library's wherever
       # crypto.o is built, rcheevos' own elsewhere.
       ifneq ($(filter 1,$(HAVE_CRYPTO) $(HAVE_CHEEVOS_RVZ)),)

@@ -3020,6 +3020,25 @@ jobs:
           make clean TARGET=progress_bounds_test.exe
           echo "[pass] progress_bounds_test (ASan + UBSan, and a mingw-w64 build)"
 
+      - name: Build and run ciso_hash_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/cheevos/ciso_hash
+        run: |
+          set -eu
+          # rc_hash reads a CISO through cheevos/cheevos_ciso.c as the
+          # disc image it stands for: a GameCube disc with blocks left
+          # out of the CISO must hash the same as its ISO, and the
+          # console check must tell GameCube, Wii and not-CISO apart.
+          make clean && make SANITIZER=address,undefined
+          ciso_dir="$(mktemp -d)"
+          ASAN_OPTIONS=detect_leaks=1 timeout 60 ./ciso_hash_test "$ciso_dir"
+          rm -rf "${ciso_dir:?}"
+          make clean
+          make CC=x86_64-w64-mingw32-gcc TARGET=ciso_hash_test.exe
+          test -f ciso_hash_test.exe
+          make clean TARGET=ciso_hash_test.exe
+          echo "[pass] ciso_hash_test (ASan + UBSan, and a mingw-w64 build)"
+
       - name: Build and run psp1_gfx_contracts_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/psp1_gfx_contracts
