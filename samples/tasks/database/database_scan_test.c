@@ -5574,14 +5574,16 @@ fixture:
 }
 
 #define TZU_ZIPS    24
-#define TZU_SLOW_MS 150
+#define TZU_SLOW_MS 500
 
 /* TorrentZip sets a zip database cannot hold by their size: once the
  * scan has kept one from a whole read, the readers stop reading the
  * next ones whole, whose CRCs the scan would drop.  Their whole reads
  * are slowed, so each reader has one under way when the scan rules on
  * the first set and may begin one more before it does: two rounds,
- * three allowed, of TZU_ZIPS without the stop. */
+ * three allowed, of TZU_ZIPS without the stop.  Slowed well past what
+ * the scan takes to rule: at 150 ms a sanitized scan on a loaded
+ * four-core runner ruled after four rounds. */
 static void tz_unsized_lane(const char *root)
 {
    static uint8_t d[2][MF_MEMBER_LEN];
