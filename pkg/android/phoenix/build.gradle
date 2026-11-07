@@ -160,6 +160,12 @@ android {
       jni.srcDirs = []
       res.srcDirs = ['res', '../phoenix-common/res']
     }
+    debug {
+      manifest.srcFile 'src/debug/AndroidManifest.xml'
+    }
+    release {
+      manifest.srcFile 'src/release/AndroidManifest.xml'
+    }
     normal {
       java.srcDirs += ['../play-core-stub']
     }
