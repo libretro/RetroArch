@@ -247,6 +247,7 @@ enum msg_file_type
    FILE_TYPE_RVZ,
    FILE_TYPE_WIA,
    FILE_TYPE_CISO,
+   FILE_TYPE_XISO,
 
    FILE_TYPE_DIRECT_LOAD,
 

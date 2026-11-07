@@ -1208,6 +1208,8 @@ static enum msg_file_type extension_to_file_type(const char *ext)
       return FILE_TYPE_WIA;
    if (string_is_equal(ext_lower, "ciso"))
       return FILE_TYPE_CISO;
+   if (string_is_equal(ext_lower, "xiso"))
+      return FILE_TYPE_XISO;
    if (string_is_equal(ext_lower, "pbp"))
       return FILE_TYPE_PBP;
    if (string_is_equal(ext_lower, "lutro"))
@@ -2173,8 +2175,18 @@ static int task_database_iterate_playlist(
          break;
       case FILE_TYPE_ISO:
          db_state->serial[0] = '\0';
-         intfstream_file_get_serial(name, 0, INT64_MAX, db_state->serial, sizeof(db_state->serial),&db_state->size);
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP_SIZEHINT;
+         /* An Xbox disc is looked for only when nothing else is found,
+          * so other discs read nothing more for it. Its size says
+          * nothing: an XISO is trimmed. */
+         if (     !intfstream_file_get_serial(name, 0, INT64_MAX, db_state->serial, sizeof(db_state->serial),&db_state->size)
+               && task_database_xbox_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
+            db->type         =  DATABASE_TYPE_SERIAL_LOOKUP;
+         break;
+      case FILE_TYPE_XISO:
+         db_state->serial[0] = '\0';
+         task_database_xbox_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size);
+         db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_CHD:
          db_state->serial[0] = '\0';

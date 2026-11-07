@@ -1851,6 +1851,7 @@ DATA RUNLOOP
 #include "../tasks/task_database.c"
 #ifdef HAVE_LIBRETRODB
 #include "../tasks/task_database_cue.c"
+#include "../libretro-common/formats/xdvdfs/xdvdfs.c"
 #endif
 #if defined(HAVE_LIBRETRODB) || defined(HAVE_CHEEVOS)
 #include "../libretro-common/formats/ciso/ciso.c"

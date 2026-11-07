@@ -28,6 +28,7 @@
 #include <streams/interface_stream.h>
 #include <encodings/crc32.h>
 #include <formats/ciso.h>
+#include <formats/xdvdfs.h>
 #include <string/stdstring.h>
 #include "task_database_cue.h"
 
@@ -2212,6 +2213,9 @@ bool is_chd_file_cdi(const char *path)
    return is_cdi;
 }
 
+static size_t detect_xbox_game(intfstream_t *fd, uint64_t pos,
+      char *s, size_t len);
+
 int task_database_chd_get_serial(const char *name, char *serial,
    size_t len, uint64_t *filesize)
 {
@@ -2230,6 +2234,10 @@ int task_database_chd_get_serial(const char *name, char *serial,
    /* TODO/FIXME: get the full CHD size instead */
    *filesize = intfstream_get_size(fd);
    result    = intfstream_get_serial(fd, serial, len, name);
+   /* An Xbox DVD is looked for only once nothing else has been found,
+    * so other discs read nothing more for it */
+   if (!result)
+      result = detect_xbox_game(fd, ~(uint64_t)0, serial, len) != 0;
    intfstream_close(fd);
    free(fd);
    return result;
@@ -2238,24 +2246,28 @@ int task_database_chd_get_serial(const char *name, char *serial,
 /* The disc header the GameCube and Wii detectors read */
 #define SCAN_CISO_PROBE_SIZE 0x440
 
+/* An image read for a reader that does no I/O of its own: each range
+ * goes straight to where the reader asks, and the file is only sought
+ * when a range does not start where the last one ended. */
 typedef struct
 {
    intfstream_t *fd;
    uint64_t      pos;
-} task_database_ciso_src_t;
+} task_database_src_t;
 
-/* The head and then the disc's first stored block, which follows it:
- * the reads run forward, and normally no seek is needed. */
-static size_t task_database_ciso_pull(task_database_ciso_src_t *src,
-      const ciso_request_t *req)
+static size_t task_database_pull(task_database_src_t *src,
+      uint64_t offset, uint8_t *dst, size_t length)
 {
    int64_t got;
-   if (     src->pos != req->offset
-         && intfstream_seek(src->fd, (int64_t)req->offset, SEEK_SET) < 0)
+   if (     src->pos != offset
+         && intfstream_seek(src->fd, (int64_t)offset, SEEK_SET) < 0)
       return 0;
-   src->pos = req->offset;
-   if ((got = intfstream_read(src->fd, req->dst, req->length)) <= 0)
+   src->pos = offset;
+   if ((got = intfstream_read(src->fd, dst, length)) <= 0)
+   {
+      src->pos = ~(uint64_t)0;
       return 0;
+   }
    src->pos += (uint64_t)got;
    return (size_t)got;
 }
@@ -2263,7 +2275,7 @@ static size_t task_database_ciso_pull(task_database_ciso_src_t *src,
 int task_database_ciso_get_serial(const char *name, char *s, size_t len,
    uint64_t *filesize)
 {
-   task_database_ciso_src_t src;
+   task_database_src_t src;
    ciso_request_t req;
    int rv            = 0;
    int err;
@@ -2288,12 +2300,12 @@ int task_database_ciso_get_serial(const char *name, char *s, size_t len,
       goto end;
 
    while ((err = ciso_open_step(c, &req)) == CISO_PENDING)
-      ciso_feed(c, task_database_ciso_pull(&src, &req));
+      ciso_feed(c, task_database_pull(&src, req.offset, req.dst, req.length));
    if (     err != CISO_OK
          || ciso_read_begin(c, 0, head, SCAN_CISO_PROBE_SIZE) != CISO_OK)
       goto end;
    while ((err = ciso_read_step(c, &req)) == CISO_PENDING)
-      ciso_feed(c, task_database_ciso_pull(&src, &req));
+      ciso_feed(c, task_database_pull(&src, req.offset, req.dst, req.length));
    if (err != CISO_OK)
       goto end;
 
@@ -2312,6 +2324,89 @@ end:
    intfstream_close(fd);
    free(fd);
    return rv;
+}
+
+/* The Redump serial of an Xbox title: the publisher's two letters and
+ * the title's number, "MS-004" for 0x4D530004 */
+static size_t xbox_title_serial(uint32_t title_id, char *s, size_t len)
+{
+   char     serial[16];
+   char     digits[8];
+   unsigned n    = title_id & 0xFFFF;
+   size_t   nd   = 0;
+   size_t   _len = 0;
+   int      i;
+
+   for (i = 0; i < 2; i++)
+   {
+      char c = (char)(title_id >> (24 - 8 * i));
+      if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
+         return 0;
+      serial[_len++] = c;
+   }
+   serial[_len++] = '-';
+   do
+   {
+      digits[nd++] = (char)('0' + n % 10);
+      n           /= 10;
+   } while (n);
+   while (nd < 3)
+      digits[nd++] = '0';
+   while (nd)
+      serial[_len++] = digits[--nd];
+   serial[_len] = '\0';
+   return strlcpy(s, serial, len);
+}
+
+/* An Xbox disc's serial, from the title of its default.xbe. @fd holds
+ * the disc image, @pos where the stream stands in it. */
+static size_t detect_xbox_game(intfstream_t *fd, uint64_t pos,
+      char *s, size_t len)
+{
+   task_database_src_t src;
+   xdvdfs_request_t    req;
+   uint32_t            title_id = 0;
+   size_t              _len     = 0;
+   int                 err;
+   int64_t             size     = intfstream_get_size(fd);
+   xdvdfs_t           *x;
+
+   if (size <= 0 || !(x = xdvdfs_new((uint64_t)size)))
+      return 0;
+   src.fd  = fd;
+   src.pos = pos;
+   while ((err = xdvdfs_open_step(x, &req)) == XDVDFS_PENDING)
+      xdvdfs_feed(x, task_database_pull(&src, req.offset, req.dst,
+               req.length));
+   if (err == XDVDFS_OK && xdvdfs_title_begin(x) == XDVDFS_OK)
+   {
+      while ((err = xdvdfs_title_step(x, &req, &title_id)) == XDVDFS_PENDING)
+         xdvdfs_feed(x, task_database_pull(&src, req.offset, req.dst,
+                  req.length));
+      if (err == XDVDFS_OK)
+         _len = xbox_title_serial(title_id, s, len);
+   }
+   xdvdfs_free(x);
+   return _len;
+}
+
+int task_database_xbox_get_serial(const char *name, char *s, size_t len,
+   uint64_t *filesize)
+{
+   size_t _len;
+   /* The descriptor path: the few ranges the probe needs land where
+    * it asks, with no stdio buffer filled around each one. */
+   intfstream_t *fd = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+
+   if (!fd)
+      return 0;
+   *filesize = (uint64_t)intfstream_get_size(fd);
+   _len      = detect_xbox_game(fd, 0, s, len);
+   intfstream_close(fd);
+   free(fd);
+   return _len != 0;
 }
 
 /* Opens what the scanner hashes for @name: the file itself, the data

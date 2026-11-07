@@ -236,6 +236,7 @@ jobs:
             chd_map_alloc_test
             rvz_test
             ciso_test
+            xdvdfs_test
             filestream_printf_test
             strlcpy_append_test
             http_parse_test
