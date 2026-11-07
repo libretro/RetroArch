@@ -3048,8 +3048,14 @@ static int rpng_reverse_filter_adam7(uint32_t **data_,
  * enough to sit in L1/L2 alongside the window.  64 KB does both.  This
  * also restores the incremental pacing the nbio callers were written
  * for: one bounded step per rpng_process_image call instead of one
- * unbounded one. */
-#define RPNG_INFLATE_SLICE 32768
+ * unbounded one.
+ *
+ * The slice also sets how much the inflate backend copies into its own
+ * 32 KB history window after each call - the last 32 KB of that call's
+ * output, so a later call's back-references still resolve.  At 32 KB,
+ * which this was, that was every decoded byte a second time; at 64 KB
+ * it is half of them. */
+#define RPNG_INFLATE_SLICE 65536
 
 static int rpng_load_image_argb_process_inflate_init(
       rpng_t *rpng, uint32_t **data)
