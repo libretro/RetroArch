@@ -147,6 +147,7 @@ typedef struct
 #define DB_EXTRACT_MD5      (1 << 4)
 #define DB_EXTRACT_SHA1     (1 << 5)
 #define DB_EXTRACT_ROM_NAME (1 << 6)
+#define DB_EXTRACT_REGION   (1 << 7)
 
 /* Preset used by the ROM scanner */
 #define DB_EXTRACT_SCAN_FIELDS \

@@ -34,7 +34,9 @@
  *
  * A title is read from the head of an XBE (little endian), the
  * optional headers of an XEX or the header of an STFS package (big
- * endian), each only as far as the title needs. */
+ * endian), each only as far as the title needs: the ID, the place in
+ * a set and the regions - an XBE's certificate holds them, an XEX's
+ * execution info and security info. */
 
 #include <stdlib.h>
 #include <string.h>
@@ -57,6 +59,8 @@
 #define XDVDFS_XEX_INFO_KEY 0x00040006u
 #define XDVDFS_XEX_INFO    24
 #define XDVDFS_STFS_FIELDS 0x360  /* title, platform, type, disc, discs */
+#define XDVDFS_XBE_REGION  0xA0   /* in the certificate */
+#define XDVDFS_XEX_REGION  0x178  /* in the security info */
 
 /* Where whole disc images keep the game partition, after a trimmed
  * XISO's start: XGD1, XGD3, XGD2, and two seen in development images */
@@ -78,6 +82,8 @@ static const uint32_t xdvdfs_parts[] = {
 #define XDVDFS_TITLE_XEX_TABLE 4
 #define XDVDFS_TITLE_XEX_INFO  5
 #define XDVDFS_TITLE_STFS      6
+#define XDVDFS_TITLE_XBE_REGION 7
+#define XDVDFS_TITLE_XEX_REGION 8
 
 struct xdvdfs
 {
@@ -86,6 +92,7 @@ struct xdvdfs
    uint64_t      dir;        /* the directory searched, in the image */
    uint64_t      root;
    xdvdfs_extent_t file;     /* what the lookup found, or the executable */
+   xdvdfs_title_t  title;    /* the title read so far */
    const char   *path;       /* the lookup's next component */
    size_t        got;        /* octets of the range in hand */
    size_t        cap;        /* octets of it asked for */
@@ -97,6 +104,7 @@ struct xdvdfs
    uint32_t      xex_head;   /* the XEX's header size */
    uint32_t      xex_count;  /* its optional headers */
    uint32_t      xex_index;  /* the next of them to look at */
+   uint32_t      xex_sec;    /* its security info */
    int           op;
    int           stage;      /* the title read's, or the partition probed */
    uint8_t       buf[XDVDFS_BUF]; /* an entry, or a run of an executable */
@@ -129,6 +137,8 @@ xdvdfs_t *xdvdfs_new(uint64_t image_size)
    x->xex_head    = 0;
    x->xex_count   = 0;
    x->xex_index   = 0;
+   x->xex_sec     = 0;
+   memset(&x->title, 0, sizeof(x->title));
    x->disc        = false;
    x->xbe         = false;
    x->op          = XDVDFS_OP_OPEN;
@@ -450,6 +460,7 @@ static int xdvdfs_title_run(xdvdfs_t *x, xdvdfs_request_t *req,
             else if (!memcmp(x->buf, "XEX2", 4) || !memcmp(x->buf, "XEX1", 4))
             {
                x->xex_head  = xdvdfs_be32(x->buf + 8);
+               x->xex_sec   = xdvdfs_be32(x->buf + 16);
                x->xex_count = xdvdfs_be32(x->buf + 20);
                x->xex_index = 0;
                if (     x->xex_head < XDVDFS_EXE_HEAD
@@ -473,17 +484,33 @@ static int xdvdfs_title_run(xdvdfs_t *x, xdvdfs_request_t *req,
             i      = xdvdfs_le32(x->buf + 0x14);    /* certificate */
             if (i < v || i - v > x->file.size || x->file.size - (i - v) < 12)
                return XDVDFS_ERROR_DATA;
-            x->exe_at = i - v + 8;
+            x->exe_at = i - v;
             x->stage  = XDVDFS_TITLE_XBE_ID;
             /* fall through */
          case XDVDFS_TITLE_XBE_ID:
             if (x->got < 4)
-               return xdvdfs_exe_ask(x, req, x->exe_at, 4);
-            x->got          = 0;
-            title->id       = xdvdfs_le32(x->buf);
-            title->platform = XDVDFS_XBOX;
-            title->disc     = 0;
-            title->discs    = 0;
+               return xdvdfs_exe_ask(x, req, x->exe_at + 8, 4);
+            x->got            = 0;
+            x->title.id       = xdvdfs_le32(x->buf);
+            x->title.platform = XDVDFS_XBOX;
+            x->title.disc     = 0;
+            x->title.discs    = 0;
+            x->title.regions  = 0;
+            x->stage          = XDVDFS_TITLE_XBE_REGION;
+            /* fall through */
+         case XDVDFS_TITLE_XBE_REGION:
+            /* a certificate too short to hold one says no region */
+            if (x->file.size - x->exe_at >= XDVDFS_XBE_REGION + 4)
+            {
+               if (x->got < 4)
+                  return xdvdfs_exe_ask(x, req,
+                        x->exe_at + XDVDFS_XBE_REGION, 4);
+               x->got           = 0;
+               x->title.regions = (uint8_t)(x->buf[0]
+                     & (XDVDFS_REGION_NA | XDVDFS_REGION_JAPAN
+                      | XDVDFS_REGION_REST));
+            }
+            *title = x->title;
             return XDVDFS_OK;
          case XDVDFS_TITLE_XEX_TABLE:
             /* the optional headers, as many at a time as the buffer
@@ -514,20 +541,42 @@ static int xdvdfs_title_run(xdvdfs_t *x, xdvdfs_request_t *req,
          case XDVDFS_TITLE_XEX_INFO:
             if (x->got < XDVDFS_XEX_INFO)
                return xdvdfs_exe_ask(x, req, x->exe_at, XDVDFS_XEX_INFO);
-            x->got          = 0;
-            title->id       = xdvdfs_be32(x->buf + 12);
-            title->platform = XDVDFS_XBOX360;
-            title->disc     = x->buf[18];
-            title->discs    = x->buf[19];
+            x->got            = 0;
+            x->title.id       = xdvdfs_be32(x->buf + 12);
+            x->title.platform = XDVDFS_XBOX360;
+            x->title.disc     = x->buf[18];
+            x->title.discs    = x->buf[19];
+            x->title.regions  = 0;
+            x->stage          = XDVDFS_TITLE_XEX_REGION;
+            /* fall through */
+         case XDVDFS_TITLE_XEX_REGION:
+            /* security info the header does not hold says no region */
+            if (     x->xex_sec <= x->xex_head
+                  && x->xex_head - x->xex_sec >= XDVDFS_XEX_REGION + 4)
+            {
+               if (x->got < 4)
+                  return xdvdfs_exe_ask(x, req,
+                        x->xex_sec + XDVDFS_XEX_REGION, 4);
+               x->got = 0;
+               /* NTSC-U, NTSC-J and PAL, a byte each, low to high */
+               v = xdvdfs_be32(x->buf);
+               x->title.regions = (uint8_t)(
+                       ((v & 0x000000FFu) ? XDVDFS_REGION_NA    : 0)
+                     | ((v & 0x0000FF00u) ? XDVDFS_REGION_JAPAN : 0)
+                     | ((v & 0x00FF0000u) ? XDVDFS_REGION_REST  : 0));
+            }
+            *title = x->title;
             return XDVDFS_OK;
          case XDVDFS_TITLE_STFS:
             if (x->got < 8)
                return xdvdfs_exe_ask(x, req, XDVDFS_STFS_FIELDS, 8);
-            x->got          = 0;
-            title->id       = xdvdfs_be32(x->buf);
-            title->platform = XDVDFS_XBOX360;
-            title->disc     = x->buf[6];
-            title->discs    = x->buf[7];
+            x->got            = 0;
+            x->title.id       = xdvdfs_be32(x->buf);
+            x->title.platform = XDVDFS_XBOX360;
+            x->title.disc     = x->buf[6];
+            x->title.discs    = x->buf[7];
+            x->title.regions  = 0;
+            *title            = x->title;
             return XDVDFS_OK;
          default:
             return XDVDFS_ERROR_STATE;

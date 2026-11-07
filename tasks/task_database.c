@@ -24,6 +24,7 @@
 #include <memory/mem_stats.h>
 #include <lists/string_list.h>
 #include <file/file_path.h>
+#include <formats/xdvdfs.h>
 #include <formats/logiqx_dat.h>
 #include <formats/rm3u.h>
 #include <formats/rm3u_stream.h>
@@ -346,6 +347,9 @@ typedef struct database_state_handle
    uint32_t crc_acc;
    uint8_t crc_dest;  /* enum db_crc_dest */
    uint8_t crc_fail;  /* enum db_crc_fail */
+   /* The XDVDFS_REGION_* an Xbox title's executable says it is for,
+    * or 0: picks among the releases its serial is shared by. */
+   uint8_t regions;
    bool crc_done;
    /* The index build in flight, run by task_database_index_step()
     * until index_ready, then taken by the lookup that began it. */
@@ -2126,6 +2130,7 @@ static int task_database_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
+   db_state->regions = 0;
    switch (extension_to_file_type(path_get_extension(name)))
    {
       case FILE_TYPE_COMPRESSED:
@@ -2186,17 +2191,17 @@ static int task_database_iterate_playlist(
           * so other discs read nothing more for it. Its size says
           * nothing: an XISO is trimmed. */
          if (     !intfstream_file_get_serial(name, 0, INT64_MAX, db_state->serial, sizeof(db_state->serial),&db_state->size)
-               && task_database_xbox_get_serial(name, true, db_state->serial, sizeof(db_state->serial),&db_state->size))
+               && task_database_xbox_get_serial(name, true, db_state->serial, sizeof(db_state->serial),&db_state->size,&db_state->regions))
             db->type         =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_XISO:
          db_state->serial[0] = '\0';
-         task_database_xbox_get_serial(name, true, db_state->serial, sizeof(db_state->serial),&db_state->size);
+         task_database_xbox_get_serial(name, true, db_state->serial, sizeof(db_state->serial),&db_state->size,&db_state->regions);
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_ZAR:
          db_state->serial[0] = '\0';
-         task_database_zar_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size);
+         task_database_zar_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size,&db_state->regions);
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       /* An Xbox 360 executable or package; anything else by these names
@@ -2204,7 +2209,7 @@ static int task_database_iterate_playlist(
       case FILE_TYPE_XEX:
       case FILE_TYPE_XCP:
          db_state->serial[0] = '\0';
-         if (task_database_xbox_get_serial(name, false, db_state->serial, sizeof(db_state->serial),&db_state->size))
+         if (task_database_xbox_get_serial(name, false, db_state->serial, sizeof(db_state->serial),&db_state->size,&db_state->regions))
          {
             db->type         =  DATABASE_TYPE_SERIAL_LOOKUP;
             break;
@@ -2215,7 +2220,7 @@ static int task_database_iterate_playlist(
                TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
       case FILE_TYPE_CHD:
          db_state->serial[0] = '\0';
-         if (task_database_chd_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
+         if (task_database_chd_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size,&db_state->regions))
             db->type         = DATABASE_TYPE_SERIAL_LOOKUP;
          else
          {
@@ -2366,8 +2371,10 @@ static int database_info_list_iterate_new(
       database_info_list_free(db_state->info);
       free(db_state->info);
    }
+   /* the records' regions only for a title that says its own */
    db_state->info = database_info_list_new_filtered(
-         new_database, query, DB_EXTRACT_SCAN_FIELDS);
+         new_database, query, DB_EXTRACT_SCAN_FIELDS
+         | (db_state->regions ? DB_EXTRACT_REGION : 0));
    return 0;
 }
 
@@ -3573,6 +3580,44 @@ static bool task_database_check_serial_and_crc(
            string_starts_with(db_name, "Sega - Dreamcast"));
 }
 
+/* The XDVDFS_REGION_* a Redump region list ("USA, Europe") names:
+ * the Xbox's three, North America, Japan with the rest of Asia, and
+ * the rest of the world */
+static uint8_t task_database_xbox_regions(const char *list)
+{
+   static const char *const na[]    = { "USA", "Canada", "Brazil" };
+   static const char *const japan[] = {
+      "Japan", "Asia", "Korea", "Taiwan", "China", "Hong Kong" };
+   uint8_t regions = 0;
+
+   while (list && *list)
+   {
+      const char *end;
+      size_t      len, i;
+      uint8_t     r = XDVDFS_REGION_REST;
+
+      while (*list == ' ' || *list == ',')
+         list++;
+      for (end = list; *end && *end != ','; end++) { }
+      len = (size_t)(end - list);
+      while (len && list[len - 1] == ' ')
+         len--;
+      if (!len)
+         break;
+      if (len == 5 && !strncmp(list, "World", 5))
+         r = XDVDFS_REGION_NA | XDVDFS_REGION_JAPAN | XDVDFS_REGION_REST;
+      for (i = 0; i < ARRAY_SIZE(na); i++)
+         if (strlen(na[i]) == len && !strncmp(list, na[i], len))
+            r = XDVDFS_REGION_NA;
+      for (i = 0; i < ARRAY_SIZE(japan); i++)
+         if (strlen(japan[i]) == len && !strncmp(list, japan[i], len))
+            r = XDVDFS_REGION_JAPAN;
+      regions |= r;
+      list     = end;
+   }
+   return regions;
+}
+
 static int task_database_iterate_serial_lookup(
       manual_scan_handle_t *_db,
       database_state_handle_t *db_state,
@@ -3710,7 +3755,8 @@ static int task_database_iterate_serial_lookup(
          if (db_state->serial_index[db_state->list_index])
             hits = database_info_list_new_serial(
                   db_state->serial_index[db_state->list_index], rdb,
-                  db_state->serial, DB_EXTRACT_SCAN_FIELDS);
+                  db_state->serial, DB_EXTRACT_SCAN_FIELDS
+                  | (db_state->regions ? DB_EXTRACT_REGION : 0));
       }
 
       if (hits)
@@ -3785,6 +3831,27 @@ serial_query_done:
          return database_info_list_iterate_next(db_state);
    }
 
+   /* An Xbox serial is shared by a title's releases, and by the
+    * extras that came with them: the regions its executable says it is
+    * for pick the first that fits, and when none does the first of them
+    * stands in, as the loop below finds it. */
+   if (db_state->info && db_state->regions && !db_state->entry_index)
+   {
+      size_t i;
+      for (i = 0; i < db_state->info->count; i++)
+      {
+         const database_info_t *rec = &db_state->info->list[i];
+         if (     rec->serial
+               && string_is_equal(db_state->serial, rec->serial)
+               && (task_database_xbox_regions(rec->region)
+                  & db_state->regions))
+         {
+            db_state->entry_index = i;
+            return database_info_list_iterate_found_match(_db,
+                  db_state, db, NULL);
+         }
+      }
+   }
    if (db_state->info)
    {
       /* A 3DS product code is shared by a title's revisions and

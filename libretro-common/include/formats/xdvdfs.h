@@ -64,6 +64,11 @@ RETRO_BEGIN_DECLS
 #define XDVDFS_XBOX    1
 #define XDVDFS_XBOX360 2
 
+/* the regions a title is for */
+#define XDVDFS_REGION_NA    1   /* North America */
+#define XDVDFS_REGION_JAPAN 2   /* Japan and Asia */
+#define XDVDFS_REGION_REST  4   /* the rest of the world */
+
 typedef struct xdvdfs xdvdfs_t;
 
 /**
@@ -92,6 +97,7 @@ typedef struct xdvdfs_title
    uint8_t  platform;   /* XDVDFS_XBOX or XDVDFS_XBOX360 */
    uint8_t  disc;       /* of the set, from 1; 0 when not said */
    uint8_t  discs;      /* in the set; 0 when not said */
+   uint8_t  regions;    /* XDVDFS_REGION_*; 0 when not said */
 } xdvdfs_title_t;
 
 /* @image_size: the image's size, so a partition past its end is not

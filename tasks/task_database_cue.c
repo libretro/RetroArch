@@ -2215,10 +2215,10 @@ bool is_chd_file_cdi(const char *path)
 }
 
 static size_t detect_xbox_game(intfstream_t *fd, uint64_t pos, bool disc,
-      char *s, size_t len);
+      char *s, size_t len, uint8_t *regions);
 
 int task_database_chd_get_serial(const char *name, char *serial,
-   size_t len, uint64_t *filesize)
+   size_t len, uint64_t *filesize, uint8_t *regions)
 {
    int result;
    /* CD-i discs store data in AUDIO-labeled tracks, so we must
@@ -2238,7 +2238,8 @@ int task_database_chd_get_serial(const char *name, char *serial,
    /* An Xbox DVD is looked for only once nothing else has been found,
     * so other discs read nothing more for it */
    if (!result)
-      result = detect_xbox_game(fd, ~(uint64_t)0, true, serial, len) != 0;
+      result = detect_xbox_game(fd, ~(uint64_t)0, true, serial, len,
+            regions) != 0;
    intfstream_close(fd);
    free(fd);
    return result;
@@ -2375,10 +2376,10 @@ static size_t xbox_title_serial(const xdvdfs_title_t *t, char *s,
 }
 
 /* An Xbox or Xbox 360 serial from the title of the executable @fd
- * holds, or with @disc of the one the disc image boots. @pos is where
- * the stream stands. */
+ * holds, or with @disc of the one the disc image boots, and the
+ * regions it is for. @pos is where the stream stands. */
 static size_t detect_xbox_game(intfstream_t *fd, uint64_t pos, bool disc,
-      char *s, size_t len)
+      char *s, size_t len, uint8_t *regions)
 {
    task_database_src_t src;
    xdvdfs_request_t    req;
@@ -2405,15 +2406,15 @@ static size_t detect_xbox_game(intfstream_t *fd, uint64_t pos, bool disc,
       while ((err = xdvdfs_title_step(x, &req, &title)) == XDVDFS_PENDING)
          xdvdfs_feed(x, task_database_pull(&src, req.offset, req.dst,
                   req.length));
-      if (err == XDVDFS_OK)
-         _len = xbox_title_serial(&title, s, len);
+      if (err == XDVDFS_OK && (_len = xbox_title_serial(&title, s, len)))
+         *regions = title.regions;
    }
    xdvdfs_free(x);
    return _len;
 }
 
 int task_database_xbox_get_serial(const char *name, bool disc, char *s,
-   size_t len, uint64_t *filesize)
+   size_t len, uint64_t *filesize, uint8_t *regions)
 {
    size_t _len;
    /* The descriptor path: the few ranges the probe needs land where
@@ -2425,7 +2426,7 @@ int task_database_xbox_get_serial(const char *name, bool disc, char *s,
    if (!fd)
       return 0;
    *filesize = (uint64_t)intfstream_get_size(fd);
-   _len      = detect_xbox_game(fd, 0, disc, s, len);
+   _len      = detect_xbox_game(fd, 0, disc, s, len, regions);
    intfstream_close(fd);
    free(fd);
    return _len != 0;
@@ -2455,7 +2456,7 @@ static size_t task_database_zar_pull(task_database_zar_src_t *zs,
 }
 
 int task_database_zar_get_serial(const char *name, char *s, size_t len,
-   uint64_t *filesize)
+   uint64_t *filesize, uint8_t *regions)
 {
    task_database_zar_src_t zs;
    zar_request_t           req;
@@ -2501,8 +2502,8 @@ int task_database_zar_get_serial(const char *name, char *s, size_t len,
    while ((err = xdvdfs_title_step(x, &xreq, &title)) == XDVDFS_PENDING)
       xdvdfs_feed(x, task_database_zar_pull(&zs, xreq.offset, xreq.dst,
                xreq.length));
-   if (err == XDVDFS_OK)
-      _len = xbox_title_serial(&title, s, len);
+   if (err == XDVDFS_OK && (_len = xbox_title_serial(&title, s, len)))
+      *regions = title.regions;
 
 end:
    xdvdfs_free(x);

@@ -73,15 +73,17 @@ int task_database_3ds_get_serial(const char *name, char *s, size_t len,
 int task_database_ciso_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize);
 /* An Xbox or Xbox 360 serial for @name: with @disc that of the disc
- * image's game, otherwise that of the executable or package it is */
+ * image's game, otherwise that of the executable or package it is.
+ * @regions gets the XDVDFS_REGION_* the title says it is for, or 0. */
 int task_database_xbox_get_serial(const char *name, bool disc, char *s,
-      size_t len, uint64_t *filesize);
-/* The Xbox 360 serial of the game a ZArchive holds */
+      size_t len, uint64_t *filesize, uint8_t *regions);
+/* The Xbox 360 serial of the game a ZArchive holds, @regions as above */
 int task_database_zar_get_serial(const char *name, char *s, size_t len,
-      uint64_t *filesize);
+      uint64_t *filesize, uint8_t *regions);
 bool is_chd_file_cdi(const char *path);
+/* @regions as for task_database_xbox_get_serial(), for an Xbox disc */
 int task_database_chd_get_serial(const char *name, char *serial, size_t len,
-      uint64_t *filesize);
+      uint64_t *filesize, uint8_t *regions);
 
 enum task_database_crc_kind
 {

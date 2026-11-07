@@ -144,27 +144,39 @@ static void entry(image_t *im, uint64_t dir, uint32_t off, uint16_t l,
 }
 
 /* An XEX at @at: @n optional headers, the execution info's last,
- * with @title, disc @disc of @discs */
-static void put_xex(image_t *im, uint64_t at, uint32_t n, uint32_t title,
-      uint8_t disc, uint8_t discs)
+ * with @title, disc @disc of @discs, then the security info with the
+ * region word @region, or none when @region is 0 */
+static void put_xex_region(image_t *im, uint64_t at, uint32_t n,
+      uint32_t title, uint8_t disc, uint8_t discs, uint32_t region)
 {
    uint32_t i;
-   uint32_t head = 24 + n * 8 + 32;
+   uint32_t info = 24 + n * 8;
+   uint32_t sec  = info + 24;
+   uint32_t head = region ? sec + 0x178 + 4 : sec + 8;
    uint8_t  d[2];
    put(im, at, "XEX2", 4);
    put_be32(im, at + 8, head);
+   put_be32(im, at + 16, sec);
    put_be32(im, at + 20, n);
+   if (region)
+      put_be32(im, at + sec + 0x178, region);
    for (i = 0; i + 1 < n; i++)
    {
       put_be32(im, at + 24 + i * 8, 0x00010000u + i);
       put_be32(im, at + 24 + i * 8 + 4, 0x11111111u);
    }
    put_be32(im, at + 24 + i * 8, 0x00040006u);
-   put_be32(im, at + 24 + i * 8 + 4, head - 24);
-   put_be32(im, at + head - 24 + 12, title);
+   put_be32(im, at + 24 + i * 8 + 4, info);
+   put_be32(im, at + info + 12, title);
    d[0] = disc;
    d[1] = discs;
-   put(im, at + head - 24 + 18, d, 2);
+   put(im, at + info + 18, d, 2);
+}
+
+static void put_xex(image_t *im, uint64_t at, uint32_t n, uint32_t title,
+      uint8_t disc, uint8_t discs)
+{
+   put_xex_region(im, at, n, title, disc, discs, 0);
 }
 
 /* The disc: a game partition at @base holding
@@ -197,13 +209,14 @@ static void make_disc_for(image_t *im, uint64_t base, uint64_t size,
 
    if (x360)
    {
-      put_xex(im, xbe, 3, title, 1, 2);
+      put_xex_region(im, xbe, 3, title, 1, 2, 0x00FF00FFu);
       return;
    }
    put(im, xbe, "XBEH", 4);
    put32(im, xbe + 0x104, 0x10000);
    put32(im, xbe + 0x118, 0x10000 + 0x178);
    put32(im, xbe + 0x178 + 8, title);
+   put32(im, xbe + 0x178 + 0xA0, 0x80000001u);
 }
 
 static void make_disc(image_t *im, uint64_t base, uint64_t size,
@@ -281,7 +294,13 @@ static void disc_lane(uint64_t base, uint64_t size, const char *what)
        * default.xbe found at the root entry, then the XBE's head, its
        * base and certificate addresses, the ID */
       sprintf(name, "%s: title reads only what it needs", what);
-      check(pass || im.asked == 25 + 25 + 25 + 24 + 24 + 4, name);
+      check(pass || im.asked == 25 + 25 + 25 + 24 + 24 + 4 + 4, name);
+      {
+         xdvdfs_title_t t;
+         sprintf(name, "%s: regions of default.xbe", what);
+         check(   title_of(&im, x, NULL, &t) == XDVDFS_OK
+               && t.regions == XDVDFS_REGION_NA, name);
+      }
 
       sprintf(name, "%s: nested lookup", what);
       check(   lookup(&im, x, "\\MEDIA/Intro.WMV", &ext) == XDVDFS_OK
@@ -322,10 +341,12 @@ static void x360_lanes(void)
       im.asked = 0;
       check(   title_of(&im, x, NULL, &t) == XDVDFS_OK
             && t.id == 0x41560817u && t.platform == XDVDFS_XBOX360
-            && t.disc == 1 && t.discs == 2, "360 XGD2: title of default.xex");
+            && t.disc == 1 && t.discs == 2
+            && t.regions == (XDVDFS_REGION_NA | XDVDFS_REGION_REST),
+            "360 XGD2: title of default.xex");
       /* default.xex at the root entry, the XEX's head, its three
        * optional headers, the execution info */
-      check(pass || im.asked == 25 + 24 + 3 * 8 + 24,
+      check(pass || im.asked == 25 + 24 + 3 * 8 + 24 + 4,
             "360 XGD2: title reads only what it needs");
       xdvdfs_free(x);
       image_free(&im);
@@ -340,8 +361,8 @@ static void x360_lanes(void)
    ext.size   = 0x10000;
    im.asked   = 0;
    check(   title_of(&im, x, &ext, &t) == XDVDFS_OK
-         && t.id == 0x4D5307E6u && t.platform == XDVDFS_XBOX360,
-         "XEX on its own, many optional headers");
+         && t.id == 0x4D5307E6u && t.platform == XDVDFS_XBOX360
+         && !t.regions, "XEX on its own, many optional headers");
    check(im.asked == 24 + 40 * 8 + 24, "XEX on its own: headers once each");
    xdvdfs_free(x);
    image_free(&im);
@@ -374,6 +395,19 @@ static void x360_lanes(void)
    im.asked = 0;
    check(   title_of(&im, x, &ext, &t) == XDVDFS_ERROR_NOT_FOUND
          && im.asked == 24, "other executable told by its head");
+   xdvdfs_free(x);
+   image_free(&im);
+
+   /* a certificate too short to hold the regions says none, and the
+    * read stays inside the XBE */
+   make_disc(&im, 0, 0x100000, 0x4D530004u);
+   entry(&im, 33 * SECTOR, 0, 7, 13, 50, 0x178 + 0x40, 0x20, "default.xbe");
+   open_image(&im, &x);
+   im.asked = 0;
+   check(   title_of(&im, x, NULL, &t) == XDVDFS_OK
+         && t.id == 0x4D530004u && !t.regions
+         && im.asked == 25 + 25 + 25 + 24 + 24 + 4,
+         "short certificate: no regions");
    xdvdfs_free(x);
    image_free(&im);
 

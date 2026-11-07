@@ -1269,8 +1269,10 @@ typedef struct
 
 /* One database holding @n records; a NULL serial or rom_name, or
  * unsized, leaves the key out. */
-static int write_db_set(const char *path, const db_rec_t *recs,
-      unsigned n)
+/* As write_db_set(), each record @i given the region @regions[i] when
+ * that is not NULL */
+static int write_db_set_regions(const char *path, const db_rec_t *recs,
+      const char *const *regions, unsigned n)
 {
    buf_t    body, meta;
    FILE    *f;
@@ -1285,8 +1287,14 @@ static int write_db_set(const char *path, const db_rec_t *recs,
    for (r = 0; r < n; r++)
    {
       bfixmap(&body, 2 + (recs[r].serial ? 1 : 0)
-            + (recs[r].rom_name ? 1 : 0) + (recs[r].unsized ? 0 : 1));
+            + (recs[r].rom_name ? 1 : 0) + (recs[r].unsized ? 0 : 1)
+            + (regions && regions[r] ? 1 : 0));
       bfixstr(&body, "name"); bfixstr(&body, recs[r].name);
+      if (regions && regions[r])
+      {
+         bfixstr(&body, "region");
+         bfixstr(&body, regions[r]);
+      }
       if (recs[r].rom_name)
       {
          bfixstr(&body, "rom_name");
@@ -1332,6 +1340,12 @@ static int write_db_set(const char *path, const db_rec_t *recs,
    free(body.d);
    free(meta.d);
    return 1;
+}
+
+static int write_db_set(const char *path, const db_rec_t *recs,
+      unsigned n)
+{
+   return write_db_set_regions(path, recs, NULL, n);
 }
 
 /* One database holding a single named record. */
@@ -2348,8 +2362,10 @@ static void xbox_xex(uint8_t *x, uint32_t title, uint8_t disc,
       uint8_t discs)
 {
    memcpy(x, "XEX2", 4);
-   xbox_put_be32(x + 8, 0x60);
+   xbox_put_be32(x + 8, 0x200);
+   xbox_put_be32(x + 16, 0x60);
    xbox_put_be32(x + 20, 1);
+   xbox_put_be32(x + 0x60 + 0x178, 0x000000FFu);
    xbox_put_be32(x + 24, 0x00040006u);
    xbox_put_be32(x + 28, 0x48);
    xbox_put_be32(x + 0x48 + 12, title);
@@ -2398,6 +2414,7 @@ static int write_xbox_disc(const char *path, uint32_t base, uint32_t size,
       xbox_put32(x + 0x104, 0x10000);
       xbox_put32(x + 0x118, 0x10000 + 0x178);
       xbox_put32(x + 0x178 + 8, title);
+      xbox_put32(x + 0x178 + 0xA0, 1);
    }
 
    if (!(f = fopen(path, "wb")))
@@ -2433,9 +2450,14 @@ static void xbox_lane(const char *root, const char *pl_dir,
 {
    /* sizes no trimmed image comes near, as Redump's do */
    static const db_rec_t xbox_recs[] = {
+      /* an extra of another region's release, ahead of the game */
+      { "Halo Extras",    "MS-004", 0x3B0E0004u, 0xF0000000u },
       { "Halo The Game",  "MS-004", 0x3B0E0001u, 0xF0000000u },
       { "Trim The Game",  "MS-012", 0x3B0E0002u, 0xF0000000u },
       { "Whole The Game", "EA-013", 0x3B0E0003u, 0xF0000000u }
+   };
+   static const char *const xbox_regions[] = {
+      "Japan", "USA, Europe", NULL, NULL
    };
    char *xbox_db = (char*)malloc(512);
    char *xbox_in = (char*)malloc(512);
@@ -2454,7 +2476,8 @@ static void xbox_lane(const char *root, const char *pl_dir,
    path_mkdir(xbox_in);
 
    sprintf(p, "%s/Test Xbox.rdb", xbox_db);
-   if (!write_db_set(p, xbox_recs, ARRAY_SIZE(xbox_recs)))
+   if (!write_db_set_regions(p, xbox_recs, xbox_regions,
+         ARRAY_SIZE(xbox_recs)))
    { check(0, "fixture", "could not write database"); goto end; }
 
    sprintf(p, "%s/60_halo.xiso", xbox_in);
@@ -2484,6 +2507,8 @@ static void xbox_lane(const char *root, const char *pl_dir,
    check(   file_contains(p, "60_halo.xiso")
          && file_contains(p, "Halo The Game"),
          "XISO matches by its XBE title", "60_halo.xiso");
+   check(!file_contains(p, "Halo Extras"),
+         "the XBE's regions pick the release", "not the extra");
    check(   file_contains(p, "61_trim.iso")
          && file_contains(p, "Trim The Game"),
          "trimmed .iso not ruled out by size", "61_trim.iso");
@@ -2576,10 +2601,15 @@ static void x360_lane(const char *root, const char *pl_dir,
 {
    static const db_rec_t x360_recs[] = {
       { "Set The Game (Disc 1)", "FO-2046-0", 0x3B360001u, 0xF0000000u },
+      { "Set The Game (Disc 2) (Japan)", "FO-2046-1", 0x3B360007u,
+        0xF0000000u },
       { "Set The Game (Disc 2)", "FO-2046-1", 0x3B360002u, 0xF0000000u },
       { "Exe The Game",          "AV-2071",   0x3B360003u, 0xF0000000u },
       { "Arcade The Game",       "XA-2209",   0x3B360004u, 0xF0000000u },
       { "Zar The Game",          "SE-2142",   0x3B360006u, 0xF0000000u }
+   };
+   static const char *const x360_regions[] = {
+      NULL, "Japan", "USA", NULL, NULL, NULL
    };
    char    *x_db = (char*)malloc(512);
    char    *x_in = (char*)malloc(512);
@@ -2599,7 +2629,8 @@ static void x360_lane(const char *root, const char *pl_dir,
    path_mkdir(x_in);
 
    sprintf(p, "%s/Test Xbox 360.rdb", x_db);
-   if (!write_db_set(p, x360_recs, ARRAY_SIZE(x360_recs)))
+   if (!write_db_set_regions(p, x360_recs, x360_regions,
+         ARRAY_SIZE(x360_recs)))
    { check(0, "fixture", "could not write database"); goto end; }
    sprintf(p, "%s/Test Atari.rdb", x_db);
    if (!write_db(p, "Atari The Game", 0x3B360005u, 0x1000))
@@ -2644,6 +2675,8 @@ static void x360_lane(const char *root, const char *pl_dir,
          && file_contains(p, "Set The Game (Disc 2)")
          && !file_contains(p, "Set The Game (Disc 1)"),
          "360 disc matches its place in the set", "70_disc2.iso");
+   check(!file_contains(p, "Set The Game (Disc 2) (Japan)"),
+         "the XEX's regions pick the release", "not the Japanese one");
    check(   file_contains(p, "71_game.xex")
          && file_contains(p, "Exe The Game"),
          "XEX matches by its title", "71_game.xex");

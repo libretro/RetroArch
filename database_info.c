@@ -219,20 +219,6 @@ char *bin_to_hex_alloc(const uint8_t *data, size_t len)
    return ret;
 }
 
-/* Field selection flags for database_cursor_iterate_filtered.
- * 0 = extract all fields (backward compatible). */
-#define DB_EXTRACT_NAME     (1 << 0)
-#define DB_EXTRACT_CRC      (1 << 1)
-#define DB_EXTRACT_SERIAL   (1 << 2)
-#define DB_EXTRACT_SIZE     (1 << 3)
-#define DB_EXTRACT_MD5      (1 << 4)
-#define DB_EXTRACT_SHA1     (1 << 5)
-#define DB_EXTRACT_ROM_NAME (1 << 6)
-
-/* Combination used by the scanner */
-#define DB_EXTRACT_SCAN_FIELDS \
-   (DB_EXTRACT_NAME | DB_EXTRACT_CRC | DB_EXTRACT_SERIAL | DB_EXTRACT_SIZE)
-
 static int database_cursor_iterate(libretrodb_cursor_t *cur,
       database_info_t *db_info)
 {
@@ -681,6 +667,16 @@ static int database_info_fill_from_dom(struct rmsgpack_dom_value *item,
                   const char *vs = val->val.string.buff;
                   if (vs && *vs)
                      db_info->serial = strdup(vs);
+               }
+            }
+            else if (   (fields & DB_EXTRACT_REGION)
+                     && memcmp(str, "region", 6) == 0)
+            {
+               if (val->type == RDT_STRING || val->type == RDT_BINARY)
+               {
+                  const char *vs = val->val.string.buff;
+                  if (vs && *vs)
+                     db_info->region = strdup(vs);
                }
             }
             break;
