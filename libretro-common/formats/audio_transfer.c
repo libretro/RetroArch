@@ -4735,9 +4735,17 @@ static int64_t audio_transfer_opus_seek_to(struct audio_transfer_opus *op,
    return pos;
 }
 
-static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
+/* Next packet's frames, made pending in op->pend - or, given a dst
+ * with room for the whole packet, decoded straight into it and
+ * reported in *direct instead (pending stays empty).  Only a packet
+ * whose frames all go out as decoded is taken that way: none of the
+ * pre-skip left to drop off its front, and no movie timeline to map
+ * it through.  The end bound still applies, by count alone. */
+static int audio_transfer_opus_fill_into(struct audio_transfer_opus *op,
+      int fmt, void *dst, size_t room, size_t *direct)
 {
    unsigned decoded = 0;
+   int      into    = 0;
    size_t elem = (fmt == 1) ? sizeof(int16_t) : sizeof(float);
 
    /* The decoder writes ROPUS_MAX_FRAME * channels samples into
@@ -4784,12 +4792,31 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
          if (!r && op->time.enabled) { op->time.eof = 1; op->wall = 0; }
          return r;
       }
-      if (fmt == 1)
-         r = ropus_decode_s16(op->handle, pdata, plen,
-               (int16_t*)op->pend, op->pend_samples);
-      else
-         r = ropus_decode_f32(op->handle, pdata, plen,
-               (float*)op->pend, op->pend_samples);
+      into = dst && !op->preskip_left && !op->time.enabled
+            && audio_transfer_opus_pkt_frames(pdata, plen) <= (int64_t)room;
+      r    = ROPUS_ERR_ROOM;
+      if (into)
+      {
+         if (fmt == 1)
+            r = ropus_decode_s16(op->handle, pdata, plen,
+                  (int16_t*)dst, room * op->channels);
+         else
+            r = ropus_decode_f32(op->handle, pdata, plen,
+                  (float*)dst, room * op->channels);
+      }
+      /* Refused for room before anything was decoded: the TOC
+       * undercounted a malformed packet, which pending can still take
+       * and the decoder then judges as it always has. */
+      if (r == ROPUS_ERR_ROOM)
+      {
+         into = 0;
+         if (fmt == 1)
+            r = ropus_decode_s16(op->handle, pdata, plen,
+                  (int16_t*)op->pend, op->pend_samples);
+         else
+            r = ropus_decode_f32(op->handle, pdata, plen,
+                  (float*)op->pend, op->pend_samples);
+      }
       if (r < 0)
          return -1;
       op->pend_frames = (size_t)r;
@@ -4860,7 +4887,18 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
                op->pend_frames)) return -1;
    }
    op->fmt = fmt;
+   if (into)
+   {
+      *direct         = op->pend_frames;
+      op->pend_frames = 0;
+      return (int)*direct;
+   }
    return (int)op->pend_frames;
+}
+
+static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
+{
+   return audio_transfer_opus_fill_into(op, fmt, NULL, 0, NULL);
 }
 
 static int audio_transfer_opus_movie_read(struct audio_transfer_opus *op,
@@ -5835,12 +5873,22 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          }
          while (produced < frames)
          {
-            size_t take;
-            int r = audio_transfer_opus_fill(op, 1);
+            size_t take, direct = 0;
+            /* With nothing pending, the next packet decodes straight
+             * into the caller's buffer when it fits there whole. */
+            int r = op->pend_frames ? (int)op->pend_frames
+               : audio_transfer_opus_fill_into(op, 1,
+                     out + produced * op->channels, frames - produced,
+                     &direct);
             if (r < 0)
                return AUDIO_PROCESS_ERROR;
             if (r == 0)
                break;
+            if (direct)
+            {
+               produced += direct;
+               continue;
+            }
             take = frames - produced;
             if (take > op->pend_frames)
                take = op->pend_frames;
@@ -6144,12 +6192,22 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          }
          while (produced < frames)
          {
-            size_t take;
-            int r = audio_transfer_opus_fill(op, 2);
+            size_t take, direct = 0;
+            /* With nothing pending, the next packet decodes straight
+             * into the caller's buffer when it fits there whole. */
+            int r = op->pend_frames ? (int)op->pend_frames
+               : audio_transfer_opus_fill_into(op, 2,
+                     out + produced * op->channels, frames - produced,
+                     &direct);
             if (r < 0)
                return AUDIO_PROCESS_ERROR;
             if (r == 0)
                break;
+            if (direct)
+            {
+               produced += direct;
+               continue;
+            }
             take = frames - produced;
             if (take > op->pend_frames)
                take = op->pend_frames;
