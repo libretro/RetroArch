@@ -2328,8 +2328,8 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
  * flush of a fast-forward seeds the averages at the configured fast-forward
  * ratio and returns its multiplier, and the measured speed takes over from
  * there; audio_driver_ff_mult_reset() arms that seed again once
- * fast-forward is released, so the idle time between two fast-forwards
- * is never read as one enormous flush interval.
+ * fast-forward is released and at every pause, resume or jump fade, so
+ * idle time is never read as one enormous flush interval.
  *
  * With the threaded pipeline the flush runs on the audio thread, whose
  * cadence is set by the device draining, not by the core: a flush
@@ -6418,6 +6418,10 @@ void audio_driver_pause_fade(bool paused)
    audio_driver_state_t *audio_st = &audio_driver_st;
    const audio_driver_t *audio    = audio_st->current_audio;
    bool was_silenced;
+
+   /* The paused interval is not a flush interval. Reset on the main
+    * thread, as the frame end resets it. */
+   audio_driver_ff_mult_reset(audio_st);
 
    if (     !audio
          || !audio->write
