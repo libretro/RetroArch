@@ -3795,6 +3795,14 @@ struct rvp8_video
    uint8_t *arena[4];
    uint8_t *ry[4], *ru[4], *rv[4];
    size_t arena_len[4];
+   /* The per-macroblock info inter frames build their motion vectors
+    * from, kept for the decoder's life and grown only when a key frame
+    * brings more macroblocks.  A key frame used to free it and the
+    * next inter frame calloc it again, so every key frame cost a
+    * free and an allocation mid-stream; now the first inter frame
+    * after one clears it, which is what the calloc gave it. */
+   rvp8_mbinfo *mbi;
+   size_t   mbi_cap;     /* entries */
    unsigned refs[3];
    int w, h, mbw, mbh, ys, uvs;
    int have_refs;
@@ -3811,7 +3819,9 @@ void rvp8_video_close(rvp8_video *v)
    if (!v) return;
    for (i = 0; i < 4; i++)
       free(v->arena[i]);
-   free(v->s.mb_info);
+   if (v->s.mb_info != v->mbi)
+      free(v->s.mb_info);
+   free(v->mbi);
    free(v);
 }
 
@@ -3824,7 +3834,6 @@ int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
    uint8_t sv_cprob[sizeof(v->s.cprob)], sv_mvc[sizeof(v->s.mvc)];
    uint8_t sv_ym[sizeof(v->s.ymode_prob)];
    uint8_t sv_uvm[sizeof(v->s.uvmode_prob)];
-   void *mb_info;
    unsigned work, i;
    int kf, ret;
    if (len < 3) return -1;
@@ -3840,12 +3849,26 @@ int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
    if (kf)
    {
       v->s.is_inter = 0;
-      free(v->s.mb_info);
-      v->s.mb_info = NULL;
+      v->s.mb_info  = NULL;
    }
    else
    {
       v->s.is_inter = 1;
+      if (!v->s.mb_info)
+      {
+         size_t n = (size_t)v->mbw * (size_t)v->mbh;
+         if (n > v->mbi_cap)
+         {
+            free(v->mbi);
+            v->mbi_cap = 0;
+            if (!(v->mbi = (rvp8_mbinfo*)calloc(n, sizeof(rvp8_mbinfo))))
+               return -1;
+            v->mbi_cap = n;
+         }
+         else
+            memset(v->mbi, 0, n * sizeof(rvp8_mbinfo));
+         v->s.mb_info = v->mbi;
+      }
       v->s.w = v->w; v->s.h = v->h;
       for (i = 0; i < 3; i++)
       {
@@ -3880,15 +3903,11 @@ int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
    }
    v->s.arena = v->arena[work];
    v->s.arena_len = v->arena_len[work];
-   mb_info = v->s.mb_info;
    ret = rvp8_begin(data, len, &v->s);
    v->arena[work] = v->s.arena;
    v->arena_len[work] = v->s.arena_len;
    if (ret != 0)
-   {
-      if (!v->s.mb_info) free(mb_info);
-      return -1;
-   }
+      return -1;   /* the abort cleared s.mb_info; v->mbi keeps it */
    v->ry[work] = v->s.yb;
    v->ru[work] = v->s.ub;
    v->rv[work] = v->s.vb;
