@@ -8398,7 +8398,7 @@ static int action_ok_push_dropdown_item_disk_index(const char *path,
    rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    settings_t *settings          = config_get_ptr();
    bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
-   bool disk_ejected             = false;
+   bool disk_changed;
 
    if (!settings || !sys_info)
       return -1;
@@ -8408,18 +8408,16 @@ static int action_ok_push_dropdown_item_disk_index(const char *path,
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 #endif
 
-   /* Get disk eject state *before* toggling drive status */
-   if (sys_info)
-      disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
+   disk_changed = disk_control_get_image_index(&sys_info->disk_control)
+         != disk_index;
+   if (!command_event(CMD_EVENT_DISK_INDEX, &disk_index))
+      return 0;
 
-   command_event(CMD_EVENT_DISK_INDEX, &disk_index);
-
-   /* If disk is now inserted and user has enabled
-    * 'menu_insert_disk_resume', resume running content */
-   if (!disk_ejected && menu_insert_disk_resume)
+   /* Resume so the core can observe the eject before insertion. */
+   if (     disk_changed && settings->bools.menu_auto_insert_disk
+         && menu_insert_disk_resume)
       generic_action_ok_command(CMD_EVENT_RESUME);
 
-   /* In all cases, return to the disk options menu */
    menu_entries_flush_stack(MENU_ENUM_LABEL_DISK_OPTIONS_STR, 0);
 
    return 0;
@@ -9101,6 +9099,10 @@ static int action_ok_video_shader_num_passes_dropdown_box_list(
 static int action_ok_disk_index_dropdown_box_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   if (    !config_get_ptr()->bools.menu_auto_insert_disk
+         && !disk_control_get_eject_state(
+               &runloop_state_get_ptr()->system.disk_control))
+      return 0;
    return generic_dropdown_box_list(idx,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX);
 }
@@ -9133,6 +9135,7 @@ static int action_ok_disk_cycle_tray_status(const char *path,
    settings_t *settings          = config_get_ptr();
    bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
    bool verbosity                = false;
+   bool disk_ejected;
 
    if (!settings || !sys_info)
       return -1;
@@ -9148,11 +9151,12 @@ static int action_ok_disk_cycle_tray_status(const char *path,
     * open, there is sufficient visual feedback
     * without a notification) */
    verbosity = menu_insert_disk_resume;
+   disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
 
    if (!command_event(CMD_EVENT_DISK_EJECT_TOGGLE, &verbosity))
-      return -1;
+      return 0;
 
-   if (menu_insert_disk_resume)
+   if (menu_insert_disk_resume && disk_ejected)
       generic_action_ok_command(CMD_EVENT_RESUME);
 
    return 0;
@@ -10080,6 +10084,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAY_REPLAY,                         action_ok_play_replay},
          {MENU_ENUM_LABEL_HALT_REPLAY,                         action_ok_halt_replay},
          {MENU_ENUM_LABEL_RESUME_CONTENT,                      action_ok_resume_content},
+         {MENU_ENUM_LABEL_DISK_INSERT_PENDING,                 action_ok_resume_content},
          {MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST,           action_ok_add_to_favorites_playlist},
          {MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,               action_ok_add_entry_to_playlist},
          {MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST_QUICKMENU,     action_ok_add_entry_to_playlist_quickmenu},

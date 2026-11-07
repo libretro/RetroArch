@@ -899,6 +899,7 @@ typedef struct settings
       bool menu_pause_libretro;
       bool menu_savestate_resume;
       bool menu_insert_disk_resume;
+      bool menu_auto_insert_disk;
       bool menu_timedate_enable;
       bool menu_battery_level_enable;
       bool menu_core_enable;

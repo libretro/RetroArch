@@ -1220,6 +1220,10 @@ MSG_HASH(
    "disk_tray_insert"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DISK_INSERT_PENDING,
+   "disk_insert_pending"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
    "disk_image_append"
    )
