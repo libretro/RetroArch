@@ -188,6 +188,8 @@ enum event_command
    /* Configuration saving. */
    CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG,
    CMD_EVENT_MENU_SAVE_CONFIG,
+   /* Starts the first-run asset downloads. */
+   CMD_EVENT_MENU_FIRST_RUN_DOWNLOAD,
    CMD_EVENT_MENU_SAVE_AS_CONFIG,
    CMD_EVENT_MENU_SAVE_MAIN_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG,

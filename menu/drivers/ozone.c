@@ -8050,9 +8050,11 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       float icon_x                           = x - (width / 2) + icon_size + (icon_padding * 3);
       float icon_y                           = video_height - y + (height / 2) - icon_size - (icon_padding * 2);
       float label_y                          = icon_y + (icon_size / 2.0f) + ozone->fonts.footer.line_centre_offset;
+      const char *str_cancel                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CANCEL);
+      int str_cancel_width                   = font_driver_get_message_width(ozone->fonts.footer.font, str_cancel, strlen(str_cancel), 1.0f);
       int cursor_x                           = icon_x - icon_padding;
       int cursor_y                           = icon_y - icon_padding;
-      int cursor_w                           = icon_size + (icon_padding * 4) + ozone->footer_labels.back.width;
+      int cursor_w                           = icon_size + (icon_padding * 4) + str_cancel_width;
       int cursor_h                           = icon_size + (icon_padding * 2);
 
       gfx_display_set_alpha(col, 0.25f);
@@ -8100,7 +8102,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
 
       gfx_display_draw_text(
             ozone->fonts.footer.font,
-            ozone->footer_labels.back.str,
+            str_cancel,
             icon_x + icon_size + icon_padding,
             label_y,
             video_dims,

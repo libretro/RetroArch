@@ -45,6 +45,8 @@
 
 #ifdef HAVE_NETWORKING
 #include "../network/netplay/netplay.h"
+#include "../tasks/task_file_transfer.h"
+#include <net/net_http.h>
 #endif
 
 #include "../audio/audio_driver.h"
@@ -54,6 +56,7 @@
 #include "menu_dirwalk.h"
 #include "menu_cbs.h"
 #include "../driver.h"
+#include "../file_path_special.h"
 #include "../list_special.h"
 #include "../msg_hash_lbl_str.h"
 #include "../paths.h"
@@ -3737,7 +3740,8 @@ static enum action_iterate_type action_iterate_type(const char *label, struct me
    /* a combination being set by holding its buttons: over any list */
    if (input_entry_capture_running())
       return ITERATE_TYPE_ENTRY_CAPTURE;
-   if (menu_st->dialog_st.confirm_msg && menu_st->dialog_st.confirm_cmd)
+   if (   (menu_st->dialog_st.confirm_msg || menu_st->dialog_st.confirm_text[0])
+       && menu_st->dialog_st.confirm_cmd)
       return ITERATE_TYPE_CONFIRM;
    if (!strcmp(label, "info_screen"))
       return ITERATE_TYPE_INFO;
@@ -4006,6 +4010,110 @@ static void bundle_decompressed(retro_task_t *task,
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 }
 
+#if defined(HAVE_ONLINE_UPDATER) && defined(HAVE_NETWORKING) && defined(HAVE_COMPRESSION)
+static void menu_download(enum msg_hash_enums enum_idx)
+{
+   char s[PATH_MAX_LENGTH];
+   char s2[PATH_MAX_LENGTH];
+   char s3[PATH_MAX_LENGTH];
+   const char *path;
+   file_transfer_t *transf      = NULL;
+   settings_t *settings         = config_get_ptr();
+   const char *network_buildbot_assets_url =
+      settings->paths.network_buildbot_assets_url;
+
+   fill_pathname_join_special(s,
+         network_buildbot_assets_url,
+         "frontend", sizeof(s));
+
+   switch (enum_idx)
+   {
+      case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
+         path = FILE_PATH_ASSETS_ZIP;
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
+         path = FILE_PATH_AUTOCONFIG_ZIP;
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
+         path = FILE_PATH_CORE_INFO_ZIP;
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
+         path = FILE_PATH_DATABASE_RDB_ZIP;
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
+         path = FILE_PATH_OVERLAYS_ZIP;
+         break;
+      default:
+         return;
+   }
+
+   transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
+   transf->enum_idx = enum_idx;
+   strlcpy(transf->path, path, sizeof(transf->path));
+   fill_pathname_join_special(s2, s, path, sizeof(s2));
+   net_http_urlencode_full(s3, s2, sizeof(s3));
+   task_push_http_transfer_file(s3, false,
+         msg_hash_to_str(enum_idx), cb_generic_download, transf);
+}
+
+/* Returns true if any asset is missing; downloads them if first run */
+static bool menu_first_run_download(settings_t *settings, bool start)
+{
+   bool needed = false;
+
+#ifdef HAVE_UPDATE_ASSETS
+   if (!path_is_directory(settings->paths.directory_assets) || path_is_empty_directory(settings->paths.directory_assets))
+   {
+      if (path_get_free_space(settings->paths.directory_assets) >= ASSETS_ZIP_PLUS_DECOMPRESSION_SIZE)
+      {
+         needed = true;
+         if (start)
+            menu_download(MENU_ENUM_LABEL_CB_UPDATE_ASSETS);
+      }
+   }
+#endif
+   if (!path_is_directory(settings->paths.directory_autoconfig) || path_is_empty_directory(settings->paths.directory_autoconfig))
+   {
+      needed = true;
+      if (start)
+         menu_download(MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES);
+   }
+#ifdef HAVE_UPDATE_CORE_INFO
+   if (!path_is_directory(settings->paths.path_libretro_info) || path_is_empty_directory(settings->paths.path_libretro_info))
+   {
+      needed = true;
+      if (start)
+         menu_download(MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES);
+   }
+#endif
+#if defined(HAVE_LIBRETRODB)
+   if (!path_is_directory(settings->paths.path_content_database) || path_is_empty_directory(settings->paths.path_content_database))
+   {
+      if (path_get_free_space(settings->paths.path_content_database) >= DATABASE_RDB_ZIP_PLUS_DECOMPRESSION_SIZE)
+      {
+         needed = true;
+         if (start)
+            menu_download(MENU_ENUM_LABEL_CB_UPDATE_DATABASES);
+      }
+   }
+#endif
+#if defined(RARCH_MOBILE) && defined(HAVE_OVERLAY)
+   if (!path_is_directory(settings->paths.directory_overlay) || path_is_empty_directory(settings->paths.directory_overlay))
+   {
+      needed = true;
+      if (start)
+         menu_download(MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS);
+   }
+#endif
+   return needed;
+}
+
+void menu_first_run_download_start(void)
+{
+   menu_first_run_download(config_get_ptr(), true);
+}
+#endif
+
 static bool rarch_menu_init(
       struct menu_state *menu_st,
       menu_dialog_t        *p_dialog,
@@ -4018,6 +4126,9 @@ static bool rarch_menu_init(
 #ifdef HAVE_CONFIGFILE
    bool menu_show_start_screen = settings->bools.menu_show_start_screen;
    bool config_save_on_exit    = settings->bools.config_save_on_exit;
+#endif
+#ifdef HAVE_COMPRESSION
+   bool have_bundled_assets = false;
 #endif
 
    /* thumbnail initialization */
@@ -4061,6 +4172,7 @@ static bool rarch_menu_init(
             != settings->uints.bundle_assets_extract_last_version)
       )
    {
+      have_bundled_assets = true;
       p_dialog->current_type         = MENU_DIALOG_HELP_EXTRACT;
       task_push_decompress(
             settings->paths.bundle_assets_src,
@@ -4077,6 +4189,24 @@ static bool rarch_menu_init(
       configuration_set_int(settings,
             settings->uints.bundle_assets_extract_last_version, 1);
    }
+#if defined(HAVE_ONLINE_UPDATER) && defined(HAVE_NETWORKING)
+   else
+   {
+#ifdef HAVE_CONFIGFILE
+   if (!menu_show_start_screen)
+      return true;
+#endif
+#ifdef HAVE_COMPRESSION
+   if (have_bundled_assets)
+      return true;
+#endif
+
+      if (menu_first_run_download(settings, false))
+         menu_dialog_confirm_set_text(menu_st,
+               msg_hash_to_str(MSG_FIRST_RUN_DOWNLOAD_PROMPT),
+               CMD_EVENT_MENU_FIRST_RUN_DOWNLOAD);
+   }
+#endif
 #endif
 
    return true;
@@ -5813,7 +5943,8 @@ unsigned menu_event(
          RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                             =
             BIT256_GET_PTR(p_input, menu_ok_btn)
-         || (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT);
+         || (   (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT)
+             && !menu_driver_state.dialog_st.confirm_cmd);
    unsigned ok_trigger                             = ok_current & ~ok_old;
    unsigned ok_trigger_release                     = !ok_current && ok_old;
    static unsigned navigation_initial              = 0;
@@ -6934,12 +7065,21 @@ MENU_NOINLINE static int menu_input_post_iterate(
           *   outside of Back/OK buttons */
          else if (messagebox_active)
          {
-            menu_input_pointer_close_messagebox(menu_st);
-
-            if (menu_st->dialog_st.confirm_hover_ok)
-               menu_dialog_confirm(menu_st);
-            else if (menu_st->dialog_st.confirm_hover_back)
-               menu_dialog_confirm_clear(menu_st);
+            if (menu_st->dialog_st.confirm_cmd)
+            {
+               if (menu_st->dialog_st.confirm_hover_ok)
+               {
+                  menu_input_pointer_close_messagebox(menu_st);
+                  menu_dialog_confirm(menu_st);
+               }
+               else
+               {
+                  menu_input_pointer_close_messagebox(menu_st);
+                  menu_dialog_confirm_clear(menu_st);
+               }
+            }
+            else
+               menu_input_pointer_close_messagebox(menu_st);
          }
          /* Normal menu input */
          else
@@ -8207,7 +8347,9 @@ static int generic_menu_iterate(
          break;
       case ITERATE_TYPE_CONFIRM:
          strlcpy(menu->menu_state_msg,
-               msg_hash_to_str((enum msg_hash_enums)menu_st->dialog_st.confirm_msg),
+               menu_st->dialog_st.confirm_text[0]
+               ? menu_st->dialog_st.confirm_text
+               : msg_hash_to_str((enum msg_hash_enums)menu_st->dialog_st.confirm_msg),
                sizeof(menu->menu_state_msg));
 
 #ifdef HAVE_ACCESSIBILITY
@@ -9590,6 +9732,7 @@ static void menu_dialog_confirm_reset(struct menu_state *menu_st)
 {
    menu_st->dialog_st.confirm_msg = MSG_UNKNOWN;
    menu_st->dialog_st.confirm_cmd = CMD_EVENT_NONE;
+   menu_st->dialog_st.confirm_text[0] = '\0';
 
    menu_st->dialog_st.confirm_hover_ok     = false;
    menu_st->dialog_st.confirm_hover_back   = false;
@@ -9602,6 +9745,17 @@ void menu_dialog_confirm_set(struct menu_state *menu_st, unsigned msg, unsigned 
 {
    menu_st->dialog_st.confirm_msg = msg;
    menu_st->dialog_st.confirm_cmd = cmd;
+   menu_st->dialog_st.confirm_text[0] = '\0';
+   menu_st->dialog_st.pending_cmd = CMD_EVENT_NONE;
+}
+
+void menu_dialog_confirm_set_text(struct menu_state *menu_st,
+      const char *text, unsigned cmd)
+{
+   menu_st->dialog_st.confirm_msg = MSG_UNKNOWN;
+   menu_st->dialog_st.confirm_cmd = cmd;
+   strlcpy(menu_st->dialog_st.confirm_text, text,
+         sizeof(menu_st->dialog_st.confirm_text));
    menu_st->dialog_st.pending_cmd = CMD_EVENT_NONE;
 }
 

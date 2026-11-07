@@ -5409,7 +5409,7 @@ static void rgui_render_messagebox(
 
       if (confirm_dialog)
       {
-         const char *str_back                   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK);
+         const char *str_back                   = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CANCEL);
          const char *str_ok                     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK);
          size_t str_back_width                  = strlen(str_back) * rgui->font_width_stride;
          size_t str_ok_width                    = strlen(str_ok) * rgui->font_width_stride;

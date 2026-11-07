@@ -26288,6 +26288,10 @@ MSG_HASH(
    "Back"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CANCEL,
+   "Cancel"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
    "OK"
    )
@@ -33704,6 +33708,12 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_RESET,
    "Press again to reset..."
+   )
+MSG_HASH(
+   MSG_FIRST_RUN_DOWNLOAD_PROMPT,
+   "RetroArch is missing assets, core & controller profiles as well as overlays.\n\n"
+   "Would you like to download them now? The process requires your internet connection.\n\n"
+   "Further downloads can be managed later in the online updater."
    )
 MSG_HASH(
    MSG_TO,
