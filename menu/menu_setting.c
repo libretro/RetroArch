@@ -3986,6 +3986,101 @@ bool menu_setting_video_screen_window_own(unsigned screen)
    return video_windows_display_own(displays, count,
          config_get_ptr()->arrays.video_screen_display[screen], screen);
 }
+
+/* Each screen's Display row in @list in @at, and in @rows how many of
+ * its window rows follow it; returns the screens listed, a bit each */
+static unsigned setting_video_screen_rows_find(const file_list_t *list,
+      size_t *at, unsigned char *rows)
+{
+   static const char *const names[] = {
+      MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN_STR,
+      MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH_STR,
+      MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT_STR,
+      MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X_STR,
+      MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y_STR
+   };
+   char name[64];
+   unsigned s;
+   size_t i        = 0;
+   unsigned listed = 0;
+   for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
+   {
+      snprintf(name, sizeof(name),
+            MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY_STR, s + 1);
+      while (i < list->size && !string_is_equal(list->list[i].label, name))
+         i++;
+      if (i == list->size)
+         break;
+      listed |= 1u << s;
+      at[s]   = i;
+      rows[s] = 0;
+      while (rows[s] < ARRAY_SIZE(names) && i + 1 < list->size)
+      {
+         snprintf(name, sizeof(name), names[rows[s]], s + 1);
+         if (!string_is_equal(list->list[i + 1].label, name))
+            break;
+         rows[s]++;
+         i++;
+      }
+   }
+   return listed;
+}
+
+void menu_setting_video_screen_windows_moved(void)
+{
+   size_t at[RETRO_VIDEO_VIEWS_MAX];
+   unsigned char rows[RETRO_VIDEO_VIEWS_MAX];
+   unsigned sized, listed, s;
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   file_list_t *list              = NULL;
+   if (!video_driver_window_rows_changed(&sized))
+      return;
+   disp_get_ptr()->flags         |= GFX_DISP_FLAG_FB_DIRTY;
+   if (sized && menu_st->entries.list)
+      list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   if (!list)
+      return;
+   listed = setting_video_screen_rows_find(list, at, rows) & sized;
+   /* Fullscreen, Width and Height without X and Y */
+   for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
+      if ((listed & (1u << s)) && rows[s] == 3)
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                         | MENU_ST_FLAG_PREVENT_POPULATE;
+}
+
+void menu_setting_video_screen_windows_follow(const file_list_t *list)
+{
+   /* The last build, which the cursor's index is into */
+   static size_t was_at[RETRO_VIDEO_VIEWS_MAX];
+   static unsigned char was_rows[RETRO_VIDEO_VIEWS_MAX];
+   static unsigned was_listed;
+   size_t at[RETRO_VIDEO_VIEWS_MAX];
+   unsigned char rows[RETRO_VIDEO_VIEWS_MAX];
+   unsigned s;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
+   size_t added               = 0;
+   size_t gone                = 0;
+   unsigned listed            = setting_video_screen_rows_find(list,
+         at, rows);
+   for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
+   {
+      if (     !(listed & was_listed & (1u << s))
+            || selection <= was_at[s] + MIN(rows[s], was_rows[s]))
+         continue;
+      if (selection > was_at[s] + was_rows[s])
+      {
+         added += rows[s];
+         gone  += was_rows[s];
+      }
+      else /* Its row went: the last one left */
+         gone  += selection - was_at[s] - rows[s];
+   }
+   menu_st->selection_ptr = selection + added - gone;
+   memcpy(was_at, at, sizeof(at));
+   memcpy(was_rows, rows, sizeof(rows));
+   was_listed             = listed;
+}
 #endif
 
 void menu_setting_video_screen_display_values(void)
@@ -4148,7 +4243,8 @@ static int setting_string_action_ok_video_screen_display(
 }
 
 #ifndef ANDROID
-/* The window rows step these; the settings keep both axes in a word */
+/* The window rows step these; the settings keep both axes in a word.
+ * Read again on each use: a moved window changes only the settings. */
 static int setting_video_screen_window_xy[RETRO_VIDEO_VIEWS_MAX][2];
 static unsigned setting_video_screen_window_wh[RETRO_VIDEO_VIEWS_MAX][2];
 
@@ -4217,6 +4313,7 @@ static size_t setting_get_string_representation_video_screen_window_size(
 {
    if (!setting)
       return 0;
+   setting_video_screen_window_read(setting);
    if (*setting->value.target.unsigned_integer == 0)
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
    return snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
@@ -4238,6 +4335,7 @@ static size_t setting_get_string_representation_video_screen_window_pos(
    settings_t *settings = config_get_ptr();
    if (!setting)
       return 0;
+   setting_video_screen_window_read(setting);
    if (!settings->bools.video_screen_window_pos_set[setting->index_offset])
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
    return snprintf(s, len, "%d", setting_int_get(setting));
@@ -9755,6 +9853,11 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    if (!setting)
       return -1;
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+   if (setting->actions->read == setting_video_screen_window_read)
+      setting_video_screen_window_read(setting);
+#endif
+
    switch (setting->type)
    {
       case ST_PATH:
@@ -11155,8 +11258,8 @@ static void general_write_handler(rarch_setting_t *setting)
          && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
       input_driver_ports_user_set(setting->index_offset);
 #ifdef HAVE_VIDEO_WINDOWS
-   /* a screen's window rows: its window is made again for them, after
-    * a close too */
+   /* a screen's window rows: its window follows them, after a close
+    * too */
    if (     setting->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
          && setting->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY_LAST)
       video_driver_edit_window(setting->enum_idx

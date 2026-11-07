@@ -170,6 +170,7 @@ bool android_get_vfs_authorized_locations(
 #include "menu/menu_cbs.h"
 #include "menu/menu_driver.h"
 #include "menu/menu_input.h"
+#include "menu/menu_setting.h"
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -8706,6 +8707,11 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_COMMAND
          /* a MENU request's action, run as the menu's own input is */
          action = (enum menu_action)command_menu_action(action);
+#endif
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+         /* Here, before the menu iterates: a redraw asked for from the
+          * frame is cleared when the menu's texture goes up */
+         menu_setting_video_screen_windows_moved();
 #endif
          if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
                   settings, action, current_time))

@@ -83,8 +83,8 @@ struct retro_hw_render_callback *video_driver_get_hw_context(void)
 unsigned video_driver_get_output_dims(void) { return 0; }
 void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits) { (void)set_bits; (void)clear_bits; }
 void video_driver_publish_window_bounds(unsigned window, unsigned screens,
-      unsigned pos, unsigned dims, bool moved)
-{ (void)window; (void)screens; (void)pos; (void)dims; (void)moved; }
+      unsigned edit, unsigned pos, unsigned dims, bool moved)
+{ (void)window; (void)screens; (void)edit; (void)pos; (void)dims; (void)moved; }
 void video_driver_publish_window_layout(unsigned window,
       unsigned generation, unsigned display,
       const video_views_layout_t *layout,

@@ -2889,6 +2889,8 @@ static void window_test_free(void *data)
 static retro_atomic_int_t window_test_bounds_reading;
 static retro_atomic_int_t window_test_bounds_done;
 #endif
+/* The edit count window 2 is made for while it is dragged */
+static unsigned window_test_bounds_edit;
 
 /* Publishes window 2's bounds as a renderer does through a drag, every
  * other one a move */
@@ -2901,7 +2903,7 @@ static void window_test_publish_bounds(void *data)
       ;
 #endif
    for (i = 1; i <= count; i++)
-      video_driver_publish_window_bounds(2, 4u,
+      video_driver_publish_window_bounds(2, 4u, window_test_bounds_edit,
             VIDEO_POS_PACK(i % 1000, 100), VIDEO_SCALE_PACK(200 + i, 300),
             (i & 1) != 0);
 #ifdef HAVE_THREADS
@@ -2971,8 +2973,8 @@ static void test_window_bounds_saved(void)
    /* Moved: pos, size and pos_set, with no edit and the Display kept */
    edit             = window_test_seen.settings[2].edit;
    settings->flags &= ~SETTINGS_FLG_MODIFIED;
-   video_driver_publish_window_bounds(2, 4u, VIDEO_POS_PACK(300, 200),
-         VIDEO_SCALE_PACK(500, 400), true);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(300, 200), VIDEO_SCALE_PACK(500, 400), true);
    window_test_run();
    CHECK(settings->uints.video_screen_window_pos[2]
          == VIDEO_POS_PACK(300, 200));
@@ -2992,19 +2994,19 @@ static void test_window_bounds_saved(void)
 
    /* Resized only: the position stays */
    settings->uints.video_screen_window_pos[2] = VIDEO_POS_PACK(1, 1);
-   video_driver_publish_window_bounds(2, 4u, VIDEO_POS_PACK(9, 9),
-         VIDEO_SCALE_PACK(600, 450), false);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(9, 9), VIDEO_SCALE_PACK(600, 450), false);
    window_test_run();
    CHECK(settings->uints.video_screen_window_dims[2]
          == VIDEO_SCALE_PACK(600, 450));
    CHECK(settings->uints.video_screen_window_pos[2] == VIDEO_POS_PACK(1, 1));
    /* The same again, and a move to where it is: nothing modified */
    settings->flags &= ~SETTINGS_FLG_MODIFIED;
-   video_driver_publish_window_bounds(2, 4u, VIDEO_POS_PACK(9, 9),
-         VIDEO_SCALE_PACK(600, 450), false);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(9, 9), VIDEO_SCALE_PACK(600, 450), false);
    window_test_run();
-   video_driver_publish_window_bounds(2, 4u, VIDEO_POS_PACK(1, 1),
-         VIDEO_SCALE_PACK(600, 450), true);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(1, 1), VIDEO_SCALE_PACK(600, 450), true);
    window_test_run();
    CHECK(!(settings->flags & SETTINGS_FLG_MODIFIED));
    /* Taken once: a frame with nothing new writes nothing */
@@ -3027,8 +3029,8 @@ static void test_window_bounds_saved(void)
    spare = video_windows_spare_window(window_test_seen.plan.separate_mask
          | 1u, window_test_seen.core.num_screens);
    CHECK(spare == 3);
-   video_driver_publish_window_bounds(spare, 1u, VIDEO_POS_PACK(40, 50),
-         VIDEO_SCALE_PACK(320, 240), true);
+   video_driver_publish_window_bounds(spare, 1u, video_st->windows_edit[0],
+         VIDEO_POS_PACK(40, 50), VIDEO_SCALE_PACK(320, 240), true);
    window_test_run();
    CHECK(settings->uints.video_screen_window_pos[0] == VIDEO_POS_PACK(40, 50));
    CHECK(settings->uints.video_screen_window_dims[0]
@@ -3039,8 +3041,8 @@ static void test_window_bounds_saved(void)
 
    /* Saved whatever Remember Window Position says */
    settings->bools.video_window_save_positions = false;
-   video_driver_publish_window_bounds(2, 4u, VIDEO_POS_PACK(310, 210),
-         VIDEO_SCALE_PACK(510, 410), true);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(310, 210), VIDEO_SCALE_PACK(510, 410), true);
    window_test_run();
    CHECK(settings->uints.video_screen_window_pos[2]
          == VIDEO_POS_PACK(310, 210));
@@ -3050,8 +3052,8 @@ static void test_window_bounds_saved(void)
 
    /* Wayland: a size alone never sets the position */
    settings->bools.video_screen_window_pos_set[2] = false;
-   video_driver_publish_window_bounds(2, 4u, 0,
-         VIDEO_SCALE_PACK(520, 420), false);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         0, VIDEO_SCALE_PACK(520, 420), false);
    window_test_run();
    CHECK(settings->uints.video_screen_window_dims[2]
          == VIDEO_SCALE_PACK(520, 420));
@@ -3059,21 +3061,22 @@ static void test_window_bounds_saved(void)
    CHECK(!window_test_seen.settings[2].pos_set);
 
    /* No window, no screens or no size: nothing */
-   video_driver_publish_window_bounds(0, 4u, 0, VIDEO_SCALE_PACK(1, 1),
+   video_driver_publish_window_bounds(0, 4u, video_st->windows_edit[2],
+         0, VIDEO_SCALE_PACK(1, 1), true);
+   video_driver_publish_window_bounds(RETRO_VIDEO_VIEWS_MAX, 4u,
+         video_st->windows_edit[2], 0, VIDEO_SCALE_PACK(1, 1), true);
+   video_driver_publish_window_bounds(2, 0u, 0, 0, VIDEO_SCALE_PACK(1, 1),
          true);
-   video_driver_publish_window_bounds(RETRO_VIDEO_VIEWS_MAX, 4u, 0,
-         VIDEO_SCALE_PACK(1, 1), true);
-   video_driver_publish_window_bounds(2, 0u, 0, VIDEO_SCALE_PACK(1, 1),
-         true);
-   video_driver_publish_window_bounds(2, 4u, 0, 0, true);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         0, 0, true);
    window_test_run();
    CHECK(settings->uints.video_screen_window_dims[2]
          == VIDEO_SCALE_PACK(520, 420));
    CHECK(!settings->bools.video_screen_window_pos_set[2]);
 
    /* A quit's config save takes what no frame has */
-   video_driver_publish_window_bounds(2, 4u, VIDEO_POS_PACK(320, 220),
-         VIDEO_SCALE_PACK(530, 430), true);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(320, 220), VIDEO_SCALE_PACK(530, 430), true);
    video_driver_take_window_bounds();
    CHECK(settings->uints.video_screen_window_pos[2]
          == VIDEO_POS_PACK(320, 220));
@@ -3083,8 +3086,8 @@ static void test_window_bounds_saved(void)
 
    /* A driver's teardown keeps what its last frames left, and the next
     * one's counts start again, and are taken */
-   video_driver_publish_window_bounds(2, 4u, VIDEO_POS_PACK(330, 230),
-         VIDEO_SCALE_PACK(540, 440), true);
+   video_driver_publish_window_bounds(2, 4u, video_st->windows_edit[2],
+         VIDEO_POS_PACK(330, 230), VIDEO_SCALE_PACK(540, 440), true);
    window_test_driver.free = window_test_free;
    video_driver_free_internal();
    CHECK(settings->uints.video_screen_window_pos[2]
@@ -3093,8 +3096,8 @@ static void test_window_bounds_saved(void)
          == VIDEO_SCALE_PACK(540, 440));
    video_st->data = &window_test_driver;
    video_st->poke = &window_test_poke;
-   video_driver_publish_window_bounds(spare, 1u, VIDEO_POS_PACK(60, 70),
-         VIDEO_SCALE_PACK(330, 250), true);
+   video_driver_publish_window_bounds(spare, 1u, video_st->windows_edit[0],
+         VIDEO_POS_PACK(60, 70), VIDEO_SCALE_PACK(330, 250), true);
    window_test_run();
    CHECK(settings->uints.video_screen_window_pos[0] == VIDEO_POS_PACK(60, 70));
    CHECK(settings->uints.video_screen_window_dims[0]
@@ -3102,6 +3105,7 @@ static void test_window_bounds_saved(void)
 
    /* A drag on the context's thread beside the frames: the last one
     * wins */
+   window_test_bounds_edit = video_st->windows_edit[2];
 #ifdef HAVE_THREADS
    {
       retro_time_t until;
@@ -3143,6 +3147,140 @@ static void test_window_bounds_saved(void)
       settings->uints.video_screen_window_dims[i]    = saved_dims[i];
       settings->bools.video_screen_window_pos_set[i] = saved_pos_set[i];
    }
+}
+
+/* A menu edit crossing a save of a dragged window, with a renderer's
+ * steps as gl2 and vulkan run them: the edit wins, and the window and
+ * the settings end the same */
+static void test_window_bounds_edit(void)
+{
+   static video_windows_held_t held;
+   video_window_display_t displays[2];
+   settings_t *settings               = config_get_ptr();
+   const video_window_settings_t *win = &held.made[1];
+   rarch_setting_t *x;
+   unsigned retire, create;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "RA-A");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "RA-B");
+   displays[0].monitor = displays[1].monitor = true;
+   load_fixture("");
+   settings->uints.video_screen_window_pos[1]     = VIDEO_POS_PACK(100, 50);
+   settings->uints.video_screen_window_dims[1]    = VIDEO_SCALE_PACK(640, 480);
+   settings->bools.video_screen_window_pos_set[1] = true;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.monitors);
+   memset(&held, 0, sizeof(held));
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(create == 2u);
+   held.live       = create;
+   held.display[1] = window_test_seen.display;
+   x = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X + 1));
+   CHECK(x != NULL);
+   if (!x)
+   {
+      window_test_end();
+      return;
+   }
+
+   /* A: Right on X is in the frame; the drag's save is judged before
+    * that frame's steps, and taken after */
+   CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_RIGHT, false) == 0);
+   window_test_run();
+   video_driver_publish_window_bounds(1, held.made_screens[1], win->edit,
+         VIDEO_POS_PACK(300, 200), VIDEO_SCALE_PACK(800, 600), true);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(300, 200),
+         VIDEO_SCALE_PACK(800, 600), true);
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!retire && !create && held.update == 2u);
+   CHECK(win->pos == VIDEO_POS_PACK(110, 50));
+   CHECK(win->dims == VIDEO_SCALE_PACK(640, 480));
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(110, 50));
+   CHECK(settings->uints.video_screen_window_dims[1]
+         == VIDEO_SCALE_PACK(640, 480));
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!retire && !create && !held.update);
+
+   /* C: the save is published, and Right on X comes before the frame
+    * that takes it */
+   video_driver_publish_window_bounds(1, held.made_screens[1], win->edit,
+         VIDEO_POS_PACK(400, 300), VIDEO_SCALE_PACK(820, 620), true);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(400, 300),
+         VIDEO_SCALE_PACK(820, 620), true);
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!held.update);
+   CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_RIGHT, false) == 0);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(120, 50));
+   CHECK(settings->uints.video_screen_window_dims[1]
+         == VIDEO_SCALE_PACK(640, 480));
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!retire && !create && held.update == 2u);
+   CHECK(win->pos == VIDEO_POS_PACK(120, 50));
+   CHECK(win->dims == VIDEO_SCALE_PACK(640, 480));
+
+   /* B: the save is taken first, with the edit it was made for, and the
+    * row steps from it */
+   video_driver_publish_window_bounds(1, held.made_screens[1], win->edit,
+         VIDEO_POS_PACK(500, 400), VIDEO_SCALE_PACK(840, 640), true);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(500, 400),
+         VIDEO_SCALE_PACK(840, 640), true);
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(500, 400));
+   CHECK(settings->uints.video_screen_window_dims[1]
+         == VIDEO_SCALE_PACK(840, 640));
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!retire && !create && !held.update);
+   CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_RIGHT, false) == 0);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(510, 400));
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(held.update == 2u);
+   CHECK(win->pos == VIDEO_POS_PACK(510, 400));
+   CHECK(win->dims == VIDEO_SCALE_PACK(840, 640));
+
+   /* A move from before an edit and a resize after it, taken together:
+    * the resize alone */
+   CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_RIGHT, false) == 0);
+   window_test_run();
+   video_driver_publish_window_bounds(1, held.made_screens[1], win->edit,
+         VIDEO_POS_PACK(600, 500), VIDEO_SCALE_PACK(860, 660), true);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(600, 500),
+         VIDEO_SCALE_PACK(860, 660), true);
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(held.update == 2u && win->pos == VIDEO_POS_PACK(520, 400));
+   video_driver_publish_window_bounds(1, held.made_screens[1], win->edit,
+         VIDEO_POS_PACK(520, 400), VIDEO_SCALE_PACK(880, 680), false);
+   video_windows_held_saved(&held, 1, VIDEO_POS_PACK(520, 400),
+         VIDEO_SCALE_PACK(880, 680), false);
+   window_test_run();
+   CHECK(settings->uints.video_screen_window_pos[1]
+         == VIDEO_POS_PACK(520, 400));
+   CHECK(settings->uints.video_screen_window_dims[1]
+         == VIDEO_SCALE_PACK(880, 680));
+   CHECK(settings->bools.video_screen_window_pos_set[1]);
+   video_windows_steps(&held, &window_test_seen, &retire, &create);
+   CHECK(!retire && !create && !held.update);
+   CHECK(win->pos == VIDEO_POS_PACK(520, 400));
+   CHECK(win->dims == VIDEO_SCALE_PACK(880, 680));
+
+   /* The list test_window_bounds_saved() left */
+   video_driver_publish_window_displays(displays, 1);
+   window_test_run();
+   window_test_end();
+   settings->uints.video_screen_window_pos[1]     = 0;
+   settings->uints.video_screen_window_dims[1]    = 0;
+   settings->bools.video_screen_window_pos_set[1] = false;
 }
 
 /* A driver reinit: the teardown clears every layout, and the next
@@ -5087,6 +5225,527 @@ static void test_window_menu_window_rows(void)
    }
 }
 
+/* A window dragged with its rows' list open: they step, reset and show
+ * what the drag left */
+static void test_window_menu_rows_moved(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   rarch_setting_t *width, *height, *x, *y;
+   char s[64];
+   load_fixture("");
+   settings->uints.video_screen_window_pos[1]     = VIDEO_POS_PACK(100, 50);
+   settings->uints.video_screen_window_dims[1]    = VIDEO_SCALE_PACK(640, 480);
+   settings->bools.video_screen_window_pos_set[1] = true;
+   window_test_begin();
+   window_test_run();
+   /* Found as the list is built */
+   width  = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH + 1));
+   height = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT + 1));
+   x      = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X + 1));
+   y      = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y + 1));
+   CHECK(width && height && x && y);
+   if (width && height && x && y)
+   {
+      video_driver_publish_window_bounds(1, 2u, video_st->windows_edit[1],
+            VIDEO_POS_PACK(300, 200), VIDEO_SCALE_PACK(800, 600), true);
+      window_test_run();
+      CHECK(settings->uints.video_screen_window_pos[1]
+            == VIDEO_POS_PACK(300, 200));
+      x->actions->repr(x, s, sizeof(s));
+      CHECK(string_is_equal(s, "300"));
+      y->actions->repr(y, s, sizeof(s));
+      CHECK(string_is_equal(s, "200"));
+      width->actions->repr(width, s, sizeof(s));
+      CHECK(string_is_equal(s, "800"));
+      height->actions->repr(height, s, sizeof(s));
+      CHECK(string_is_equal(s, "600"));
+      CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_RIGHT, false) == 0);
+      CHECK(settings->uints.video_screen_window_pos[1]
+            == VIDEO_POS_PACK(310, 200));
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(800, 600));
+      CHECK(settings->bools.video_screen_window_pos_set[1]);
+
+      video_driver_publish_window_bounds(1, 2u, video_st->windows_edit[1],
+            VIDEO_POS_PACK(320, 220), VIDEO_SCALE_PACK(700, 500), true);
+      window_test_run();
+      CHECK(menu_action_handle_setting(width, 0, MENU_ACTION_RIGHT, false)
+            == 0);
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(710, 500));
+      CHECK(settings->uints.video_screen_window_pos[1]
+            == VIDEO_POS_PACK(320, 220));
+      video_driver_publish_window_bounds(1, 2u, video_st->windows_edit[1],
+            VIDEO_POS_PACK(320, 220), VIDEO_SCALE_PACK(730, 530), false);
+      window_test_run();
+      CHECK(menu_action_handle_setting(height, 0, MENU_ACTION_LEFT, false)
+            == 0);
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(730, 520));
+
+      /* Start puts X alone back to Auto */
+      video_driver_publish_window_bounds(1, 2u, video_st->windows_edit[1],
+            VIDEO_POS_PACK(330, 230), VIDEO_SCALE_PACK(720, 520), true);
+      window_test_run();
+      CHECK(menu_action_handle_setting(x, 0, MENU_ACTION_START, false) == 0);
+      CHECK(settings->uints.video_screen_window_pos[1]
+            == VIDEO_POS_PACK(0, 230));
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(720, 520));
+      CHECK(!settings->bools.video_screen_window_pos_set[1]);
+   }
+   window_test_end();
+   settings->uints.video_screen_window_pos[1]     = 0;
+   settings->uints.video_screen_window_dims[1]    = 0;
+   settings->bools.video_screen_window_pos_set[1] = false;
+   menu_state_get_ptr()->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                  | MENU_ST_FLAG_PREVENT_POPULATE);
+}
+
+/* Where @label is listed, or the list's size */
+static size_t window_menu_index(const file_list_t *list, const char *label)
+{
+   size_t i;
+   for (i = 0; i < list->size; i++)
+      if (string_is_equal(list->list[i].label, label))
+         break;
+   return i;
+}
+
+/* A menu the rows' tests drive as the menu runs: a driver that is not
+ * the null one, so lists can be pushed, and a stack of its own */
+static menu_ctx_driver_t window_menu_ctx;
+static menu_handle_t window_menu_handle;
+static file_list_t window_menu_stack;
+static file_list_t window_menu_shown;
+static file_list_t *window_menu_stacks[1];
+static file_list_t *window_menu_selections[1];
+static menu_list_t window_menu_list;
+
+/* One press as the menu iterates it: the action on the row under the
+ * cursor, then the rebuild it or the frame asked for */
+static void window_menu_press(unsigned action)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t i                   = menu_st->selection_ptr;
+   menu_entry_t entry;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                | MENU_ENTRY_FLAG_LABEL_ENABLED;
+   menu_entry_get(&entry, 0, i, NULL, false);
+   generic_menu_entry_action(NULL, &entry, i, (enum menu_action)action);
+}
+
+/* The list on top of the menu's stack is @label's */
+static bool window_menu_top(enum msg_hash_enums label)
+{
+   return window_menu_stack.size && string_is_equal(
+         window_menu_stack.list[window_menu_stack.size - 1].label,
+         msg_hash_to_str(label));
+}
+
+/* The cursor is on @label */
+static bool window_menu_on(const char *label)
+{
+   size_t i = menu_state_get_ptr()->selection_ptr;
+   return i < window_menu_shown.size
+      && string_is_equal(window_menu_shown.list[i].label, label);
+}
+
+/* The cursor put on @label, as navigation puts it */
+static void window_menu_go(const char *label)
+{
+   menu_state_get_ptr()->selection_ptr = window_menu_index(
+         &window_menu_shown, label);
+   CHECK(window_menu_on(label));
+}
+
+/* Video's list, the Screen list's parent, built as the menu builds it */
+static void window_menu_open(void)
+{
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   memset(&window_menu_ctx, 0, sizeof(window_menu_ctx));
+   window_menu_ctx.ident               = "window_menu_test";
+   memset(&window_menu_handle, 0, sizeof(window_menu_handle));
+   window_menu_stacks[0]               = &window_menu_stack;
+   window_menu_selections[0]           = &window_menu_shown;
+   window_menu_list.menu_stack         = window_menu_stacks;
+   window_menu_list.menu_stack_size    = 1;
+   window_menu_list.selection_buf      = window_menu_selections;
+   window_menu_list.selection_buf_size = 1;
+   menu_st->driver_ctx                 = &window_menu_ctx;
+   menu_st->driver_data                = &window_menu_handle;
+   menu_st->entries.list               = &window_menu_list;
+   menu_entries_append(&window_menu_stack, "",
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST),
+         MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST, 0, 0, 0, NULL);
+   /* A refresh wants a list shown */
+   file_list_append(&window_menu_shown, "", "", 0, 0, 0);
+   menu_st->selection_ptr              = 0;
+   menu_st->flags                     |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   window_menu_press(MENU_ACTION_NOOP);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST));
+}
+
+/* The Screen list built again as a refresh builds it, with the screens
+ * in @mask at Auto size */
+static void window_menu_rows_build(unsigned mask)
+{
+   settings_t *settings       = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned s;
+   for (s = 0; s < 2; s++)
+      if (mask & (1u << s))
+      {
+         settings->uints.video_screen_window_dims[s]    = 0;
+         settings->bools.video_screen_window_pos_set[s] = false;
+      }
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                   | MENU_ST_FLAG_PREVENT_POPULATE;
+   window_menu_press(MENU_ACTION_NOOP);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST));
+}
+
+/* A key window_menu_rows_drag()'s frame presses on the row under the
+ * cursor, after the drag is taken */
+static unsigned window_menu_rows_key = MENU_ACTION_NOOP;
+
+/* A frame's take, Game Screen 2 dragged by @step: what it asks the
+ * menu for */
+static void window_menu_rows_take(unsigned step, bool *redraw,
+      bool *refresh)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   gfx_display_t *p_disp          = disp_get_ptr();
+   p_disp->flags                 &= ~GFX_DISP_FLAG_FB_DIRTY;
+   menu_st->flags                &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE);
+   if (step)
+      video_driver_publish_window_bounds(1, 2u, video_st->windows_edit[1],
+            VIDEO_POS_PACK(100 + step, 50), VIDEO_SCALE_PACK(640, 480 + step),
+            true);
+   window_test_run();
+   menu_setting_video_screen_windows_moved();
+   *redraw  = (p_disp->flags & GFX_DISP_FLAG_FB_DIRTY) != 0;
+   *refresh = (menu_st->flags & (MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+            | MENU_ST_FLAG_PREVENT_POPULATE))
+      == (MENU_ST_FLAG_ENTRIES_NEED_REFRESH | MENU_ST_FLAG_PREVENT_POPULATE);
+}
+
+/* A frame with the cursor on @label of the Screen list: the take, then
+ * the frame's key and any rebuild. The cursor must be on @label in the
+ * Screen list after. */
+static void window_menu_rows_drag(const char *label, unsigned step,
+      bool *redraw, bool *refresh)
+{
+   window_menu_go(label);
+   window_menu_rows_take(step, redraw, refresh);
+   window_menu_press(window_menu_rows_key);
+   window_menu_rows_key = MENU_ACTION_NOOP;
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST));
+   CHECK(window_menu_on(label));
+}
+
+/* A move redraws the rows; an Auto-size screen's first one lists X and
+ * Y too, and the cursor stays on its row whatever builds the list */
+static void test_window_menu_rows_redraw(void)
+{
+   settings_t *settings          = config_get_ptr();
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   gfx_display_t *p_disp         = disp_get_ptr();
+   const menu_ctx_driver_t *saved_ctx = menu_st->driver_ctx;
+   menu_handle_t *saved_menu     = menu_st->driver_data;
+   menu_list_t *saved_list       = menu_st->entries.list;
+   size_t saved_selection        = menu_st->selection_ptr;
+   uint16_t saved_menu_flags     = menu_st->flags;
+   uint8_t saved_disp_flags      = p_disp->flags;
+   const char *screen_row        = msg_hash_to_str(
+         MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS);
+   file_list_t *shown            = &window_menu_shown;
+   size_t display, height, restore;
+   bool redraw, refresh;
+   load_fixture("");
+   window_test_begin();
+   window_test_run();
+   /* What earlier tests' takes left */
+   menu_setting_video_screen_windows_moved();
+
+   /* Entered from Video with Game Screen 2 sized: the cursor on top */
+   settings->uints.video_screen_window_dims[1] = VIDEO_SCALE_PACK(640, 480);
+   window_menu_open();
+   window_menu_go(screen_row);
+   window_menu_press(MENU_ACTION_OK);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST));
+   CHECK(menu_st->selection_ptr == 0);
+   CHECK(window_menu_has(shown, "video_screen2_window_x"));
+
+   window_menu_rows_build(2u);
+   display = window_menu_index(shown, "video_screen2_display");
+   height  = window_menu_index(shown, "video_screen2_window_height");
+   restore = window_menu_index(shown, "video_screen_windows_restore");
+   CHECK(display < height && height < restore && restore < shown->size);
+   CHECK(!window_menu_has(shown, "video_screen2_window_x"));
+
+   /* No move, nothing asked */
+   window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+   CHECK(!redraw && !refresh);
+   /* Auto size, the cursor above Height: one refresh */
+   window_menu_rows_drag("video_screen2_display", 1, &redraw, &refresh);
+   CHECK(redraw && refresh);
+   CHECK(window_menu_has(shown, "video_screen2_window_x"));
+   /* The rest of that drag, sized now: a redraw alone */
+   window_menu_rows_drag("video_screen2_display", 2, &redraw, &refresh);
+   CHECK(redraw && !refresh);
+   /* Bounds as saved: nothing changed */
+   window_menu_rows_drag("video_screen2_display", 2, &redraw, &refresh);
+   CHECK(!redraw && !refresh);
+
+   /* The cursor on Height: X and Y go in below it */
+   window_menu_rows_build(2u);
+   window_menu_rows_drag("video_screen2_window_height", 3, &redraw,
+         &refresh);
+   CHECK(redraw && refresh);
+   CHECK(window_menu_has(shown, "video_screen2_window_x"));
+   /* Below it: they go in above the cursor, which follows its row */
+   window_menu_rows_build(2u);
+   window_menu_rows_drag("video_screen_windows_restore", 4, &redraw,
+         &refresh);
+   CHECK(redraw && refresh);
+   CHECK(window_menu_has(shown, "video_screen2_window_y"));
+   /* Its Display list open: a redraw alone; the return lists them */
+   window_menu_rows_build(2u);
+   window_menu_go("video_screen2_display");
+   window_menu_press(MENU_ACTION_OK);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST));
+   window_menu_rows_take(5, &redraw, &refresh);
+   CHECK(redraw && !refresh);
+   window_menu_press(MENU_ACTION_CANCEL);
+   CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST));
+   CHECK(window_menu_on("video_screen2_display"));
+   CHECK(window_menu_has(shown, "video_screen2_window_x"));
+
+   /* Game Screen 1 on a monitor, its rows above Game Screen 2's;
+    * window 2 shows it */
+   {
+      static video_window_display_t displays[1];
+      video_driver_state_t *video_st = video_state_get_ptr();
+      size_t display1;
+      window_test_named(&displays[0], 1, false, "DP-1", "", 0);
+      displays[0].monitor = true;
+      video_driver_publish_window_displays(displays, 1);
+      strlcpy(settings->arrays.video_screen_display[0], "DP-1",
+            sizeof(settings->arrays.video_screen_display[0]));
+      window_menu_rows_build(3u);
+      display1 = window_menu_index(shown, "video_screen1_display");
+      height   = window_menu_index(shown, "video_screen1_window_height");
+      display  = window_menu_index(shown, "video_screen2_display");
+      CHECK(display1 < height && height < display && display < shown->size);
+      CHECK(!window_menu_has(shown, "video_screen1_window_x"));
+      CHECK(!window_menu_has(shown, "video_screen2_window_x"));
+      /* The cursor on a later screen's row: Game Screen 1's X and Y
+       * go in above it */
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(60, 40), VIDEO_SCALE_PACK(320, 240), true);
+      window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+      CHECK(redraw && refresh);
+      CHECK(window_menu_has(shown, "video_screen1_window_x"));
+      /* On its own row: they go in below it */
+      window_menu_rows_build(1u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(61, 40), VIDEO_SCALE_PACK(320, 241), true);
+      window_menu_rows_drag("video_screen1_display", 0, &redraw, &refresh);
+      CHECK(redraw && refresh);
+      /* Both sized in one take, the cursor below both */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(62, 40), VIDEO_SCALE_PACK(320, 242), true);
+      window_menu_rows_drag("video_screen_windows_restore", 6, &redraw,
+            &refresh);
+      CHECK(redraw && refresh);
+      CHECK(settings->uints.video_screen_window_dims[0]
+            == VIDEO_SCALE_PACK(320, 242));
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(640, 486));
+      CHECK(window_menu_has(shown, "video_screen1_window_x"));
+      CHECK(window_menu_has(shown, "video_screen2_window_x"));
+      /* Both in one take, the cursor between them */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(63, 40), VIDEO_SCALE_PACK(320, 243), true);
+      window_menu_rows_drag("video_screen2_display", 7, &redraw, &refresh);
+      CHECK(redraw && refresh);
+      /* Across two takes, the cursor below both */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(64, 40), VIDEO_SCALE_PACK(320, 244), true);
+      window_menu_rows_drag("video_screen_windows_restore", 0, &redraw,
+            &refresh);
+      CHECK(redraw && refresh);
+      CHECK(!window_menu_has(shown, "video_screen2_window_x"));
+      window_menu_rows_drag("video_screen_windows_restore", 8, &redraw,
+            &refresh);
+      CHECK(redraw && refresh);
+      CHECK(window_menu_has(shown, "video_screen2_window_x"));
+      /* A Display step on Game Screen 2 in the drag's frame: its own
+       * refresh lists Game Screen 1's rows above it */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(65, 40), VIDEO_SCALE_PACK(320, 245), true);
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+      CHECK(redraw && refresh);
+      CHECK(settings->arrays.video_screen_display[1][0] != '\0');
+      CHECK(window_menu_has(shown, "video_screen1_window_x"));
+      settings->arrays.video_screen_display[1][0] = '\0';
+      /* The same in the next frame */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(66, 40), VIDEO_SCALE_PACK(320, 246), true);
+      window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+      CHECK(redraw && refresh);
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+      CHECK(!redraw && !refresh);
+      CHECK(settings->arrays.video_screen_display[1][0] != '\0');
+      settings->arrays.video_screen_display[1][0] = '\0';
+      /* A Size-from-Auto edit on Game Screen 2 in the drag's frame */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(67, 40), VIDEO_SCALE_PACK(320, 247), true);
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_window_width", 0, &redraw,
+            &refresh);
+      CHECK(redraw && refresh);
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(640, 480));
+      CHECK(window_menu_has(shown, "video_screen1_window_x"));
+      CHECK(window_menu_has(shown, "video_screen2_window_x"));
+      /* The same in the next frame */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(68, 40), VIDEO_SCALE_PACK(320, 248), true);
+      window_menu_rows_drag("video_screen2_window_width", 0, &redraw,
+            &refresh);
+      CHECK(redraw && refresh);
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_window_width", 0, &redraw,
+            &refresh);
+      CHECK(!redraw && !refresh);
+      CHECK(settings->uints.video_screen_window_dims[1]
+            == VIDEO_SCALE_PACK(640, 480));
+      /* OK in the drag's frame, after a repeat: it acts, on its row */
+      window_menu_rows_build(3u);
+      settings->bools.video_screen_window_fullscreen[1] = false;
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_window_fullscreen", 0, &redraw,
+            &refresh);
+      CHECK(settings->bools.video_screen_window_fullscreen[1]);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(69, 40), VIDEO_SCALE_PACK(320, 249), true);
+      window_menu_rows_key = MENU_ACTION_OK;
+      window_menu_rows_drag("video_screen2_window_fullscreen", 0, &redraw,
+            &refresh);
+      CHECK(redraw && refresh);
+      CHECK(!settings->bools.video_screen_window_fullscreen[1]);
+
+      /* OK on Game Screen 2's Display in the drag's frame opens its
+       * list; a pick returns with Game Screen 1's X and Y above */
+      window_menu_rows_build(3u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(70, 40), VIDEO_SCALE_PACK(320, 250), true);
+      window_menu_go("video_screen2_display");
+      window_menu_rows_take(0, &redraw, &refresh);
+      CHECK(redraw && refresh);
+      window_menu_press(MENU_ACTION_OK);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST));
+      /* Auto, its value now */
+      menu_st->selection_ptr = 0;
+      window_menu_press(MENU_ACTION_OK);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST));
+      CHECK(window_menu_on("video_screen2_display"));
+      CHECK(window_menu_has(shown, "video_screen1_window_x"));
+      CHECK(!settings->arrays.video_screen_display[1][0]);
+      /* The same, closed with Cancel */
+      window_menu_rows_build(1u);
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(71, 40), VIDEO_SCALE_PACK(320, 251), true);
+      window_menu_go("video_screen2_display");
+      window_menu_rows_take(0, &redraw, &refresh);
+      CHECK(redraw && refresh);
+      window_menu_press(MENU_ACTION_OK);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST));
+      window_menu_press(MENU_ACTION_CANCEL);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST));
+      CHECK(window_menu_on("video_screen2_display"));
+      CHECK(window_menu_has(shown, "video_screen1_window_x"));
+      /* Game Screen 1 first sized while that list is open: a redraw
+       * alone, and the return lists its X and Y above the cursor */
+      window_menu_rows_build(1u);
+      window_menu_go("video_screen2_display");
+      window_menu_press(MENU_ACTION_OK);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST));
+      video_driver_publish_window_bounds(2, 1u, video_st->windows_edit[0],
+            VIDEO_POS_PACK(72, 40), VIDEO_SCALE_PACK(320, 252), true);
+      window_menu_rows_take(0, &redraw, &refresh);
+      CHECK(redraw && !refresh);
+      window_menu_press(MENU_ACTION_CANCEL);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST));
+      CHECK(window_menu_on("video_screen2_display"));
+      CHECK(window_menu_has(shown, "video_screen1_window_x"));
+      /* Game Screen 1 Off from elsewhere: a Display step on Game
+       * Screen 2 drops its rows above the cursor */
+      strlcpy(settings->arrays.video_screen_display[0],
+            VIDEO_WINDOW_DISPLAY_OFF,
+            sizeof(settings->arrays.video_screen_display[0]));
+      window_menu_rows_key = MENU_ACTION_RIGHT;
+      window_menu_rows_drag("video_screen2_display", 0, &redraw, &refresh);
+      CHECK(!window_menu_has(shown, "video_screen1_window_fullscreen"));
+      CHECK(settings->arrays.video_screen_display[1][0] != '\0');
+      settings->arrays.video_screen_display[1][0] = '\0';
+      strlcpy(settings->arrays.video_screen_display[0], "DP-1",
+            sizeof(settings->arrays.video_screen_display[0]));
+      /* Left for Video and entered again, Game Screen 1 sized since:
+       * the cursor on top */
+      window_menu_rows_build(1u);
+      window_menu_go("video_screen_windows_restore");
+      window_menu_press(MENU_ACTION_CANCEL);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST));
+      CHECK(window_menu_on(screen_row));
+      settings->uints.video_screen_window_dims[0] = VIDEO_SCALE_PACK(320,
+            240);
+      window_menu_press(MENU_ACTION_OK);
+      CHECK(window_menu_top(MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST));
+      CHECK(menu_st->selection_ptr == 0);
+      CHECK(window_menu_has(shown, "video_screen1_window_x"));
+      video_driver_publish_window_displays(NULL, 0);
+      settings->arrays.video_screen_display[0][0]    = '\0';
+      settings->uints.video_screen_window_pos[0]     = 0;
+      settings->uints.video_screen_window_dims[0]    = 0;
+      settings->bools.video_screen_window_pos_set[0] = false;
+   }
+
+   file_list_deinitialize(&window_menu_stack);
+   file_list_deinitialize(&window_menu_shown);
+   memset(&window_menu_stack, 0, sizeof(window_menu_stack));
+   memset(&window_menu_shown, 0, sizeof(window_menu_shown));
+   window_test_end();
+   menu_st->driver_ctx    = saved_ctx;
+   menu_st->driver_data   = saved_menu;
+   menu_st->entries.list  = saved_list;
+   menu_st->selection_ptr = saved_selection;
+   menu_st->flags         = saved_menu_flags;
+   p_disp->flags          = saved_disp_flags;
+   settings->uints.video_screen_window_pos[1]     = 0;
+   settings->uints.video_screen_window_dims[1]    = 0;
+   settings->bools.video_screen_window_pos_set[1] = false;
+}
+
 #ifdef HAVE_THREADS
 static slock_t *snapshot_lock;
 static scond_t *snapshot_ready;
@@ -5632,11 +6291,29 @@ static void test_window_redraw_edit(void)
       edit = held.made[1].edit;
       window_test_redraw(threaded, data);
       CHECK(!redraw_made(&held, "redraw"));
+      CHECK(!held.update);
       CHECK(held.made[1].edit == edit);
       window_test_run();
       CHECK(window_test_seen.settings[1].monitor == 2);
       CHECK(redraw_bits(redraw_made(&held, "app")) == 1);
       CHECK(held.made[1].monitor == 2);
+
+      /* A placement edit: update() from that frame too, not the redraw */
+      strlcpy(settings->arrays.video_screen_display[1], "HDMI-A-1",
+            sizeof(settings->arrays.video_screen_display[1]));
+      video_driver_edit_window(1);
+      window_test_run();
+      CHECK(!redraw_made(&held, "app"));
+      settings->uints.video_screen_window_pos[1]     = VIDEO_POS_PACK(10, 20);
+      settings->bools.video_screen_window_pos_set[1] = true;
+      video_driver_edit_window(1);
+      window_test_redraw(threaded, data);
+      CHECK(!redraw_made(&held, "redraw"));
+      CHECK(!held.update);
+      window_test_run();
+      CHECK(!redraw_made(&held, "app"));
+      CHECK(held.update == 2u);
+      CHECK(held.made[1].pos == VIDEO_POS_PACK(10, 20));
 
       /* Reopened by a redraw on the old route: moved by the frame with
        * the edit */
@@ -6289,6 +6966,7 @@ int main(int argc, char **argv)
    test_window_frame();
    test_window_monitors_frame();
    test_window_bounds_saved();
+   test_window_bounds_edit();
    test_window_displays();
    test_window_display_names();
    test_window_moves();
@@ -6319,6 +6997,8 @@ int main(int argc, char **argv)
    test_window_menu_follows_screens();
    test_window_menu_list();
    test_window_menu_window_rows();
+   test_window_menu_rows_moved();
+   test_window_menu_rows_redraw();
    test_window_redraw();
    test_window_redraw_own_moved();
    test_window_redraw_edit();

@@ -1735,6 +1735,10 @@ typedef struct video_window_bounds
    unsigned dims;
    /* The screens of the window they are from */
    unsigned screens;
+   /* The edit count of what it was made for at the last save, and at
+    * the last move */
+   unsigned edit;
+   unsigned pos_edit;
    /* Count moves, and moves or resizes; 0 for none yet */
    unsigned moves;
    unsigned sizes;
@@ -2195,6 +2199,12 @@ typedef struct
    unsigned windows_retry;
    /* Each screen's video_window_settings_t::edit */
    unsigned windows_edit[RETRO_VIDEO_VIEWS_MAX];
+#ifdef HAVE_MENU
+   /* A bit a screen: rows a take changed, and of them those that had
+    * no size before, until the menu reads them; main thread */
+   unsigned windows_rows_moved;
+   unsigned windows_rows_sized;
+#endif
    /* A bit a window id: those the last snapshot wanted, 0 while
     * windows are off; main thread */
    unsigned windows_wanted;

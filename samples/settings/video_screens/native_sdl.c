@@ -234,18 +234,22 @@ static SDL_Rect native_sdl_expect(const SDL_Rect *monitor, int x, int y,
 }
 
 /* Pumps until the window's drawable area is 'want' (anywhere with an
- * empty one), and the record and, with 'event', the last geometry event
- * say so too. Where the compositor places windows, its size only. */
+ * empty one), and the record (or 'stale', where SDL keeps that size)
+ * and, with 'event', the last geometry event say so too. Where the
+ * compositor places windows, its size only. */
 static void native_sdl_wait_rect_at(const gfx_ctx_driver_t *ctx,
       void *data, const video_window_request_t *request,
       const video_window_native_t *window, SDL_Rect want, bool event,
-      int slack)
+      int slack, const SDL_Rect *stale)
 {
    SDL_Rect rect;
+   unsigned asked;
    SDL_Window *win       = (SDL_Window*)window->surface;
    bool anywhere         = !want.w;
    bool placed           = !native_sdl_driver("wayland");
    float density         = native_sdl_density(win);
+   unsigned kept         = stale ? VIDEO_SCALE_PACK(
+         (unsigned)(stale->w * density), (unsigned)(stale->h * density)) : 0;
    retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
    for (;;)
    {
@@ -253,14 +257,22 @@ static void native_sdl_wait_rect_at(const gfx_ctx_driver_t *ctx,
       rect = native_sdl_rect(win);
       if (anywhere)
          want = rect;
+      asked = VIDEO_SCALE_PACK((unsigned)(want.w * density),
+            (unsigned)(want.h * density));
       if (     rect.w == want.w && rect.h == want.h
-            && window->dims == VIDEO_SCALE_PACK(
-               (unsigned)(want.w * density), (unsigned)(want.h * density))
+            && (window->dims == asked || (stale && window->dims == kept))
             && (!placed || (abs(rect.x - want.x) <= slack
                   && abs(rect.y - want.y) <= slack
                   && (!event || native_window_pos
                      == VIDEO_POS_PACK(rect.x, rect.y)))))
+      {
+         if (window->dims != asked)
+            fprintf(stderr, "native window: record %ux%u, SDL's stale "
+                  "size, not %ux%u\n", VIDEO_SCALE_W(kept),
+                  VIDEO_SCALE_H(kept), VIDEO_SCALE_W(asked),
+                  VIDEO_SCALE_H(asked));
          return;
+      }
       if (cpu_features_get_time_usec() > deadline)
          break;
       retro_sleep(2);
@@ -277,7 +289,7 @@ static void native_sdl_wait_rect(const gfx_ctx_driver_t *ctx, void *data,
       const video_window_request_t *request,
       const video_window_native_t *window, SDL_Rect want)
 {
-   native_sdl_wait_rect_at(ctx, data, request, window, want, true, 0);
+   native_sdl_wait_rect_at(ctx, data, request, window, want, true, 0, NULL);
 }
 
 /* Pumps until the window is wholly on 'monitor' */
@@ -330,7 +342,7 @@ static void native_sdl_wait_fullscreen(const gfx_ctx_driver_t *ctx,
    }
    if (want)
       native_sdl_wait_rect_at(ctx, data, request, window, monitors[on],
-            !made, 0);
+            !made, 0, NULL);
 }
 
 /* The main window's state, which a secondary must leave alone */
@@ -419,6 +431,24 @@ static void native_sdl_push(SDL_Window *win, unsigned kind, int a, int b)
    event.window.data1    = a;
    event.window.data2    = b;
    CHECK(SDL_PushEvent(&event) > 0);
+}
+
+/* Moved or resized by SDL, with the event a drag brings: SDL 2 itself
+ * sends none for its own moves (sdl2-compat does) */
+static void native_sdl_move(SDL_Window *win, int x, int y)
+{
+   SDL_SetWindowPosition(win, x, y);
+#ifndef HAVE_SDL3
+   native_sdl_push(win, SDL_WINDOWEVENT_MOVED, x, y);
+#endif
+}
+
+static void native_sdl_size(SDL_Window *win, int w, int h)
+{
+   SDL_SetWindowSize(win, w, h);
+#ifndef HAVE_SDL3
+   native_sdl_push(win, SDL_WINDOWEVENT_SIZE_CHANGED, w, h);
+#endif
 }
 
 /* Moved or resized as a user would, from outside SDL, to drawable-area
@@ -1366,7 +1396,7 @@ static void native_sdl_saves(const gfx_ctx_driver_t *ctx, void *data,
    /* A drag */
    if (placed)
    {
-      SDL_SetWindowPosition(win, x + 260, y + 170);
+      native_sdl_move(win, x + 260, y + 170);
       CHECK(native_sdl_wait_save(ctx, data, &r));
       CHECK(native_window_saved.save_moved);
       CHECK(native_window_saved.save_pos == VIDEO_POS_PACK(x + 260, y + 170));
@@ -1375,7 +1405,7 @@ static void native_sdl_saves(const gfx_ctx_driver_t *ctx, void *data,
 
    /* A resize in place: the size alone, once. Where the compositor
     * places windows, never a position. */
-   SDL_SetWindowSize(win, (int)(420 / density), (int)(310 / density));
+   native_sdl_size(win, (int)(420 / density), (int)(310 / density));
    CHECK(native_sdl_wait_save(ctx, data, &r));
    CHECK(!native_window_saved.save_moved);
    CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(420, 310));
@@ -1411,9 +1441,9 @@ static void native_sdl_saves(const gfx_ctx_driver_t *ctx, void *data,
    native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
    native_sdl_no_save("settling again", &saves);
    if (placed)
-      SDL_SetWindowPosition(win, x + 280, y + 180);
+      native_sdl_move(win, x + 280, y + 180);
    else
-      SDL_SetWindowSize(win, (int)(400 / density), (int)(300 / density));
+      native_sdl_size(win, (int)(400 / density), (int)(300 / density));
    CHECK(native_sdl_wait_save(ctx, data, &r));
    CHECK(native_window_saved.save_moved == placed);
    CHECK(!placed
@@ -1429,8 +1459,8 @@ static void native_sdl_saves(const gfx_ctx_driver_t *ctx, void *data,
    win = (SDL_Window*)window->surface;
    native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
    if (placed)
-      SDL_SetWindowPosition(win, x + 100, y + 100);
-   SDL_SetWindowSize(win, (int)(300 / density), (int)(200 / density));
+      native_sdl_move(win, x + 100, y + 100);
+   native_sdl_size(win, (int)(300 / density), (int)(200 / density));
    native_window_settle(ctx, data, &r, 300000);
    native_sdl_no_save("fullscreen", &saves);
    r.settings.fullscreen = false;
@@ -1441,9 +1471,9 @@ static void native_sdl_saves(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(ctx->windows->create(data, &r, window));
    win = (SDL_Window*)window->surface;
    if (placed)
-      SDL_SetWindowPosition(win, x + 240, y + 190);
+      native_sdl_move(win, x + 240, y + 190);
    else
-      SDL_SetWindowSize(win, (int)(380 / density), (int)(280 / density));
+      native_sdl_size(win, (int)(380 / density), (int)(280 / density));
    native_sdl_map(ctx, data, window);
    native_window_settle(ctx, data, &r, 600000);
    native_sdl_no_save("moved at once", &saves);
@@ -1477,6 +1507,1088 @@ static void native_sdl_saves(const gfx_ctx_driver_t *ctx, void *data,
                - (int)VIDEO_SCALE_H(r.settings.dims)) <= s);
       native_sdl_no_save("remade", &saves);
       r.settings.dims = window->dims;
+   }
+
+   native_sdl_replace(ctx, data, request, window);
+   /* It came up where it was put, which no GEOMETRY says */
+   state = (native_sdl_state_t*)window->state;
+   if (state)
+      native_window_pos = state->common.pos;
+}
+
+/* Fullscreen on and off through update(): it fills the monitor, comes
+ * back at 'windowed', and none of it is a move of the user's. SDL leaves
+ * fullscreen to a window manager, so only where there is one. */
+static void native_sdl_toggle(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *r, video_window_native_t *window,
+      const SDL_Rect *monitors, unsigned on, SDL_Rect windowed)
+{
+   unsigned saves = native_window_saves;
+
+   r->settings.fullscreen = true;
+   ctx->windows->update(data, window, r);
+   native_sdl_wait_fullscreen(ctx, data, r, window, monitors, on, true,
+         false);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("fullscreen", &saves);
+   r->settings.fullscreen = false;
+   ctx->windows->update(data, window, r);
+   native_sdl_wait_fullscreen(ctx, data, r, window, monitors, on, false,
+         false);
+   native_sdl_wait_rect(ctx, data, r, window, windowed);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("a window again", &saves);
+   native_sdl_wait_rect(ctx, data, r, window, windowed);
+}
+
+/* Fullscreen through update() and a bigger size asked for while it is:
+ * it still fills the monitor, then comes back where it 'stood' at that
+ * size, moved wholly onto the monitor, and none of it is the user's */
+static void native_sdl_grown(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *r, video_window_native_t *window,
+      const SDL_Rect *monitors, unsigned on, SDL_Rect stood, float density)
+{
+   SDL_Rect want;
+   unsigned saves = native_window_saves;
+
+   r->settings.fullscreen = true;
+   ctx->windows->update(data, window, r);
+   native_sdl_wait_fullscreen(ctx, data, r, window, monitors, on, true,
+         false);
+   r->settings.dims = VIDEO_SCALE_PACK(500, 360);
+   ctx->windows->update(data, window, r);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_wait_fullscreen(ctx, data, r, window, monitors, on, true,
+         false);
+   native_sdl_no_save("a size while fullscreen", &saves);
+   r->settings.fullscreen = false;
+   want = native_sdl_expect(&monitors[on], stood.x, stood.y,
+         (int)(500 / density), (int)(360 / density), false);
+   ctx->windows->update(data, window, r);
+   native_sdl_wait_fullscreen(ctx, data, r, window, monitors, on, false,
+         false);
+   native_sdl_wait_rect(ctx, data, r, window, want);
+   if (!native_sdl_driver("wayland"))
+      native_sdl_wait_inside(ctx, data, r, window, &monitors[on]);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("a window again", &saves);
+   native_sdl_wait_rect(ctx, data, r, window, want);
+}
+
+#ifdef HAVE_X11
+/* Whether SDL has a frame for the window */
+static bool native_sdl_framed(SDL_Window *win)
+{
+   int top  = 0;
+   int left = 0;
+#if defined(HAVE_SDL3) || SDL_VERSION_ATLEAST(2, 0, 5)
+   SDL_GetWindowBordersSize(win, &top, &left, NULL, NULL);
+#endif
+   return top || left;
+}
+
+/* SDL 3 before 3.4 drops a size that arrives while it waits for the
+ * frame of a window that had one going in, so its own size can stay the
+ * fullscreen one */
+static bool native_sdl_stale_size(void)
+{
+#ifdef HAVE_SDL3
+   return SDL_GetVersion() < SDL_VERSIONNUM(3, 4, 0);
+#else
+   return false;
+#endif
+}
+
+/* Sets one of the window's properties from a connection of the
+ * fixture's own, as a window manager would */
+static bool native_sdl_set(SDL_Window *win, const char *name,
+      const char *type, const long *values, int count)
+{
+   Display *dpy;
+   Window xwin;
+   Display *fix = NULL;
+   if (native_sdl_x11(win, &dpy, &xwin))
+      fix = XOpenDisplay(DisplayString(dpy));
+   if (!fix)
+      return false;
+   XChangeProperty(fix, xwin, XInternAtom(fix, name, False),
+         XInternAtom(fix, type, False), 32, PropModeReplace,
+         (const unsigned char*)values, count);
+   XSync(fix, False);
+   XCloseDisplay(fix);
+   return true;
+}
+
+/* How a placement that waits for a frame ends, in native_sdl_unframed */
+#define NATIVE_UNFRAMED_LIMIT 0 /* the time limit */
+#define NATIVE_UNFRAMED_EDIT  1 /* an X/Y edit */
+#define NATIVE_UNFRAMED_MADE  2 /* made fullscreen; the time limit */
+#define NATIVE_UNFRAMED_AGAIN 3 /* a Fullscreen edit; the time limit */
+
+/* Takes the undecorated window out of fullscreen with nothing polled
+ * until SDL has it so; then a poll finds no frame, and the placement
+ * waits for one */
+static void native_sdl_unframed_leave(const gfx_ctx_driver_t *ctx,
+      void *data, video_window_request_t *r, video_window_native_t *window)
+{
+   static const long no_extents[4] = { 0, 0, 0, 0 };
+   SDL_Window *win           = (SDL_Window*)window->surface;
+   native_sdl_state_t *state = (native_sdl_state_t*)window->state;
+   retro_time_t deadline;
+
+   r->settings.fullscreen = false;
+   ctx->windows->update(data, window, r);
+   deadline = cpu_features_get_time_usec() + 3000000;
+   while (     (SDL_GetWindowFlags(win) & SDL_WINDOW_FULLSCREEN)
+            && cpu_features_get_time_usec() < deadline)
+   {
+      unsigned dims = VIDEO_SCALE_PACK(640, 480);
+      bool quit     = false;
+      bool resize   = false;
+      ctx->check_window(data, &quit, &resize, &dims);
+      retro_sleep(2);
+   }
+   CHECK(!(SDL_GetWindowFlags(win) & SDL_WINDOW_FULLSCREEN));
+   CHECK(state && state->apply);
+   /* Openbox writes its extents before the state, which leaves SDL
+    * waiting for them too; a manager that writes them after ends that */
+   CHECK(native_sdl_set(win, "_NET_FRAME_EXTENTS", "CARDINAL",
+         no_extents, 4));
+   native_window_drain(ctx, data, r);
+   CHECK(state && state->apply);
+}
+
+/* Fullscreen, then undecorated, so the window manager gives it no frame
+ * back as a window: it is placed where it is asked all the same, and
+ * then its moves are the user's. 'how' is a NATIVE_UNFRAMED_ value. */
+static void native_sdl_unframed(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *r, video_window_native_t *window,
+      const SDL_Rect *monitors, unsigned on, SDL_Rect want, unsigned how)
+{
+   /* _MOTIF_WM_HINTS with decorations alone, set to none */
+   static const long undecorated[5] = { 2, 0, 0, 0, 0 };
+   SDL_Window *win;
+   native_sdl_state_t *state;
+   unsigned saves;
+   retro_time_t deadline;
+   bool made             = how == NATIVE_UNFRAMED_MADE;
+   /* SDL shows one made fullscreen framed first; only AGAIN goes in
+    * (the second time) with no frame */
+   const SDL_Rect *stale = (how == NATIVE_UNFRAMED_AGAIN
+         || !native_sdl_stale_size()) ? NULL : &monitors[on];
+
+   r->settings.monitor    = 0;
+   r->settings.fullscreen = made;
+   r->settings.pos        = VIDEO_POS_PACK(want.x, want.y);
+   r->settings.pos_set    = true;
+   native_sdl_replace(ctx, data, r, window);
+   win   = (SDL_Window*)window->surface;
+   state = (native_sdl_state_t*)window->state;
+   if (!made)
+   {
+      deadline = cpu_features_get_time_usec() + 3000000;
+      while (     !native_sdl_framed(win)
+               && cpu_features_get_time_usec() < deadline)
+      {
+         native_window_drain(ctx, data, r);
+         retro_sleep(2);
+      }
+      CHECK(native_sdl_framed(win));
+      native_sdl_wait_rect_at(ctx, data, r, window, want, false, 0, NULL);
+      r->settings.fullscreen = true;
+      ctx->windows->update(data, window, r);
+   }
+   saves = native_window_saves;
+   native_sdl_wait_fullscreen(ctx, data, r, window, monitors, on, true,
+         made);
+   CHECK(native_sdl_set(win, "_MOTIF_WM_HINTS", "_MOTIF_WM_HINTS",
+         undecorated, 5));
+   native_sdl_unframed_leave(ctx, data, r, window);
+   if (how == NATIVE_UNFRAMED_EDIT)
+   {
+      want.x          += 40;
+      want.y          += 30;
+      r->settings.pos  = VIDEO_POS_PACK(want.x, want.y);
+      ctx->windows->update(data, window, r);
+      CHECK(state && !state->apply);
+   }
+   else
+   {
+      /* It may still get a frame back, so it waits for one again */
+      if (how == NATIVE_UNFRAMED_AGAIN)
+      {
+         r->settings.fullscreen = true;
+         ctx->windows->update(data, window, r);
+         CHECK(state && !state->apply);
+         native_sdl_wait_fullscreen(ctx, data, r, window, monitors, on,
+               true, false);
+         native_sdl_unframed_leave(ctx, data, r, window);
+      }
+      deadline = cpu_features_get_time_usec() + 3000000;
+      while (     state && state->apply
+               && cpu_features_get_time_usec() < deadline)
+      {
+         native_window_drain(ctx, data, r);
+         retro_sleep(2);
+      }
+      CHECK(state && !state->apply);
+   }
+   native_sdl_wait_rect_at(ctx, data, r, window, want, true, 0, stale);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("no frame back", &saves);
+   native_sdl_wait_rect_at(ctx, data, r, window, want, true, 0, stale);
+   native_sdl_move(win, want.x + 20, want.y + 10);
+   CHECK(native_sdl_wait_save(ctx, data, r));
+   CHECK(native_window_saved.save_pos
+         == VIDEO_POS_PACK(want.x + 20, want.y + 10));
+}
+#endif
+
+#ifdef HAVE_X11
+/* Whether _NET_WM_STATE has the window maximised, read from 'fix' */
+static bool native_sdl_x11_maximised(Display *fix, Window xwin)
+{
+   Atom type;
+   int format;
+   unsigned long i, count, after;
+   unsigned char *atoms = NULL;
+   bool on              = false;
+   Atom max             = XInternAtom(fix, "_NET_WM_STATE_MAXIMIZED_VERT",
+         False);
+   if (     XGetWindowProperty(fix, xwin,
+               XInternAtom(fix, "_NET_WM_STATE", False), 0, 32, False,
+               XA_ATOM, &type, &format, &count, &after, &atoms) == Success
+         && atoms && format == 32)
+      for (i = 0; i < count; i++)
+         if (((Atom*)atoms)[i] == max)
+            on = true;
+   if (atoms)
+      XFree(atoms);
+   return on;
+}
+
+/* A window manager that keeps the window maximised: it maximises it
+ * again as soon as SDL asks to restore it for an edit, before SDL hears
+ * of either. The edit is placed all the same, after the time limit, or
+ * with 'again' at once on a second edit. */
+static void native_sdl_kept_max(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *r, video_window_native_t *window,
+      SDL_Rect want, bool again)
+{
+   XEvent event;
+   Display *dpy;
+   Window xwin;
+   Atom wm_state;
+   SDL_Window *win;
+   native_sdl_state_t *state;
+   retro_time_t deadline;
+   unsigned changes = 0;
+   Display *fix     = NULL;
+
+   r->settings.monitor    = 0;
+   r->settings.fullscreen = false;
+   r->settings.pos        = VIDEO_POS_PACK(want.x, want.y);
+   r->settings.pos_set    = true;
+   native_sdl_replace(ctx, data, r, window);
+   win   = (SDL_Window*)window->surface;
+   state = (native_sdl_state_t*)window->state;
+   native_sdl_wait_rect_at(ctx, data, r, window, want, false, 0, NULL);
+   native_sdl_maximise(ctx, data, r, win, true, true);
+   if (native_sdl_x11(win, &dpy, &xwin))
+      fix = XOpenDisplay(DisplayString(dpy));
+   CHECK(fix != NULL && state != NULL);
+   if (!fix || !state)
+   {
+      if (fix)
+         XCloseDisplay(fix);
+      return;
+   }
+   wm_state = XInternAtom(fix, "_NET_WM_STATE", False);
+   XSelectInput(fix, xwin, PropertyChangeMask);
+   XSync(fix, False);
+
+   r->settings.pos = VIDEO_POS_PACK(want.x + 40, want.y + 30);
+   ctx->windows->update(data, window, r);
+   CHECK(state->apply);
+   /* after SDL's restore, so the manager takes that first */
+   XSync(dpy, False);
+   CHECK(native_sdl_wm_maximise(win, true));
+   deadline = cpu_features_get_time_usec() + 3000000;
+   for (;;)
+   {
+      while (XPending(fix))
+      {
+         XNextEvent(fix, &event);
+         if (     event.type == PropertyNotify
+               && event.xproperty.atom == wm_state)
+            changes++;
+      }
+      if (     (changes && native_sdl_x11_maximised(fix, xwin))
+            || cpu_features_get_time_usec() > deadline)
+         break;
+      retro_sleep(2);
+   }
+   CHECK(changes && native_sdl_x11_maximised(fix, xwin));
+   native_window_drain(ctx, data, r);
+   CHECK(SDL_GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED);
+
+   /* The time limit can pass while the manager is slow */
+   if (again && !state->apply)
+      fprintf(stderr, "native sdl: kept maximised, placed at the time "
+            "limit before the second edit: that edit not checked\n");
+   else if (again)
+   {
+      r->settings.pos = VIDEO_POS_PACK(want.x + 60, want.y + 40);
+      ctx->windows->update(data, window, r);
+      CHECK(!state->apply);
+   }
+   else
+   {
+      deadline = cpu_features_get_time_usec() + 3000000;
+      while (state->apply && cpu_features_get_time_usec() < deadline)
+      {
+         native_window_drain(ctx, data, r);
+         retro_sleep(2);
+      }
+      CHECK(!state->apply);
+   }
+   native_sdl_maximise(ctx, data, r, win, false, true);
+   XCloseDisplay(fix);
+}
+
+/* Counts the _NET_WM_STATE_FULLSCREEN requests 'fix' has taken as the
+ * window manager: REMOVE, and ADD or TOGGLE with the time of the first */
+static void native_sdl_wm_fullscreen(Display *fix, Window xwin,
+      unsigned *removes, unsigned *adds, retro_time_t *first_add)
+{
+   XEvent event;
+   Atom wm_state = XInternAtom(fix, "_NET_WM_STATE", False);
+   long fs       = (long)XInternAtom(fix, "_NET_WM_STATE_FULLSCREEN",
+         False);
+   while (XPending(fix))
+   {
+      XNextEvent(fix, &event);
+      if (     event.type != ClientMessage
+            || event.xclient.window != xwin
+            || event.xclient.message_type != wm_state
+            || (     event.xclient.data.l[1] != fs
+                  && event.xclient.data.l[2] != fs))
+         continue;
+      if (!event.xclient.data.l[0])
+         (*removes)++;
+      else if (!(*adds)++)
+         *first_add = cpu_features_get_time_usec();
+   }
+}
+
+/* A window manager slow to take the window out of fullscreen, played by
+ * the fixture: while SDL still has it fullscreen, neither the time limit
+ * nor an edit places it, which would have SDL ask for fullscreen again.
+ * 'kind' 1 and 2 edit X and Y 100 ms in, 2 on a window made fullscreen,
+ * which goes on waiting for its frame. It is placed once the manager
+ * answers. No manager may be running. */
+static void native_sdl_slow_leave(const gfx_ctx_driver_t *ctx,
+      void *data, video_window_request_t *r, video_window_native_t *window,
+      const SDL_Rect *monitors, unsigned on, SDL_Rect want, unsigned kind)
+{
+   Display *dpy;
+   Window xwin;
+   Atom wm_state;
+   long fs;
+   SDL_Window *win;
+   native_sdl_state_t *state;
+   retro_time_t start, now;
+   retro_time_t first_add = 0;
+   retro_time_t held      = 0;
+   unsigned removes       = 0;
+   unsigned adds          = 0;
+   bool edited            = kind == 0;
+   Display *fix           = NULL;
+
+   r->settings.monitor    = 0;
+   r->settings.fullscreen = kind == 2;
+   r->settings.pos        = VIDEO_POS_PACK(want.x, want.y);
+   r->settings.pos_set    = true;
+   native_sdl_replace(ctx, data, r, window);
+   win   = (SDL_Window*)window->surface;
+   state = (native_sdl_state_t*)window->state;
+   if (kind != 2)
+      native_sdl_wait_rect_at(ctx, data, r, window, want, false, 0, NULL);
+   if (native_sdl_x11(win, &dpy, &xwin))
+      fix = XOpenDisplay(DisplayString(dpy));
+   CHECK(fix != NULL && state != NULL);
+   if (!fix || !state)
+   {
+      if (fix)
+         XCloseDisplay(fix);
+      return;
+   }
+   wm_state = XInternAtom(fix, "_NET_WM_STATE", False);
+   fs       = (long)XInternAtom(fix, "_NET_WM_STATE_FULLSCREEN", False);
+
+   /* Made fullscreen, as a manager would */
+   r->settings.fullscreen = true;
+   ctx->windows->update(data, window, r);
+   XChangeProperty(fix, xwin, wm_state, XA_ATOM, 32, PropModeReplace,
+         (unsigned char*)&fs, 1);
+   XMoveResizeWindow(fix, xwin, monitors[on].x, monitors[on].y,
+         monitors[on].w, monitors[on].h);
+   XSync(fix, False);
+   native_sdl_wait_fullscreen(ctx, data, r, window, monitors, on, true,
+         kind == 2);
+
+   /* The manager takes the leave and does not answer */
+   XSelectInput(fix, DefaultRootWindow(fix), SubstructureRedirectMask);
+   XSync(fix, False);
+   r->settings.fullscreen = false;
+   ctx->windows->update(data, window, r);
+   start = cpu_features_get_time_usec();
+   do
+   {
+      native_window_drain(ctx, data, r);
+      native_sdl_wm_fullscreen(fix, xwin, &removes, &adds, &first_add);
+      now = cpu_features_get_time_usec();
+      if (removes && !held)
+      {
+         held = now;
+         /* SDL 2 leaves at once */
+         if (!(SDL_GetWindowFlags(win) & SDL_WINDOW_FULLSCREEN))
+         {
+            fprintf(stderr, "native sdl: slow leave not checked: SDL "
+                  "left fullscreen at once\n");
+            XSelectInput(fix, DefaultRootWindow(fix), NoEventMask);
+            XCloseDisplay(fix);
+            return;
+         }
+      }
+      if (!edited && now - start >= 100000)
+      {
+         want.x          += 40;
+         want.y          += 30;
+         r->settings.pos  = VIDEO_POS_PACK(want.x, want.y);
+         ctx->windows->update(data, window, r);
+         edited           = true;
+         if (kind == 2)
+            CHECK(state->framed);
+      }
+      retro_sleep(2);
+   } while (now - start < VIDEO_WINDOW_SETTLE_USEC * 2);
+   XSync(fix, False);
+   native_sdl_wm_fullscreen(fix, xwin, &removes, &adds, &first_add);
+   if (adds)
+      fprintf(stderr, "native sdl: fullscreen asked again %d ms after "
+            "the leave\n", (int)((first_add - start) / 1000));
+   CHECK(removes > 0);
+   CHECK(adds == 0);
+   CHECK(SDL_GetWindowFlags(win) & SDL_WINDOW_FULLSCREEN);
+   CHECK(state->apply);
+   /* the frame wait after it has the whole limit */
+   CHECK(!state->wait_by);
+
+   /* The answer */
+   XSelectInput(fix, DefaultRootWindow(fix), NoEventMask);
+   XDeleteProperty(fix, xwin, wm_state);
+   XSync(fix, False);
+   native_sdl_wait_fullscreen(ctx, data, r, window, monitors, on, false,
+         false);
+   native_sdl_wait_rect_at(ctx, data, r, window, want, false, 0, NULL);
+   CHECK(!state->apply);
+   XCloseDisplay(fix);
+}
+#endif
+
+#ifdef HAVE_X11
+/* The window manager 'fix' plays, with SubstructureRedirect on the root:
+ * the window's moves asked and answered, its fullscreen REMOVEs, and its
+ * fullscreen ADDs, with those that came while a move was out */
+typedef struct
+{
+   XWindowChanges changes;
+   retro_time_t first_add;
+   unsigned long mask;
+   unsigned asked;
+   unsigned answered;
+   unsigned removes;
+   unsigned adds;
+   unsigned early;
+} native_sdl_wm_t;
+
+/* Takes what came; with 'answer', makes the moves out as asked */
+static void native_sdl_wm_moves(Display *fix, Window xwin,
+      native_sdl_wm_t *wm, bool answer)
+{
+   XEvent event;
+   Atom wm_state = XInternAtom(fix, "_NET_WM_STATE", False);
+   long fs       = (long)XInternAtom(fix, "_NET_WM_STATE_FULLSCREEN",
+         False);
+   while (XPending(fix))
+   {
+      XNextEvent(fix, &event);
+      if (     event.type == ConfigureRequest
+            && event.xconfigurerequest.window == xwin)
+      {
+         XConfigureRequestEvent *req = &event.xconfigurerequest;
+         if (req->value_mask & CWX)
+            wm->changes.x      = req->x;
+         if (req->value_mask & CWY)
+            wm->changes.y      = req->y;
+         if (req->value_mask & CWWidth)
+            wm->changes.width  = req->width;
+         if (req->value_mask & CWHeight)
+            wm->changes.height = req->height;
+         wm->mask |= req->value_mask & (CWX | CWY | CWWidth | CWHeight);
+         wm->asked++;
+      }
+      else if (event.type == ClientMessage
+            && event.xclient.window == xwin
+            && event.xclient.message_type == wm_state
+            && (     event.xclient.data.l[1] == fs
+                  || event.xclient.data.l[2] == fs))
+      {
+         if (!event.xclient.data.l[0])
+            wm->removes++;
+         else
+         {
+            if (!wm->adds++)
+               wm->first_add = cpu_features_get_time_usec();
+            if (wm->answered < wm->asked)
+               wm->early++;
+         }
+      }
+   }
+   if (answer && wm->answered < wm->asked)
+   {
+      XConfigureWindow(fix, xwin, (unsigned)wm->mask, &wm->changes);
+      XSync(fix, False);
+      wm->mask     = 0;
+      wm->answered = wm->asked;
+   }
+}
+
+/* Fullscreen on the second display from a window on the first, with the
+ * fixture as the window manager: SDL is asked for fullscreen once the
+ * move there is answered ('kind' 0), at the time limit when it never is
+ * (1), and with an edit back to the first display 100 ms in, once the
+ * move back is answered (2). Kind 3 is fullscreen on the first display,
+ * which the manager moves to the second before an X/Y edit: once the
+ * leave puts it back where it stood, SDL is asked for fullscreen with no
+ * wait and no move. It lands on the latest request's display. No
+ * manager may be running. */
+static void native_sdl_fullscreen_move(const gfx_ctx_driver_t *ctx,
+      void *data, video_window_request_t *r, video_window_native_t *window,
+      const SDL_Rect *monitors, unsigned count, SDL_Rect want,
+      unsigned kind)
+{
+   Display *dpy;
+   Window xwin;
+   Window child;
+   Atom wm_state;
+   long fs;
+   int x, y;
+   unsigned i;
+   SDL_Window *win;
+   native_sdl_state_t *state;
+   XWindowAttributes stood;
+   native_sdl_wm_t wm;
+   retro_time_t start, now, deadline;
+   retro_time_t left = 0;
+   unsigned to   = kind >= 2 ? 0 : 1;
+   unsigned at   = 0;
+   bool edited   = kind != 2;
+   bool waited   = false;
+   Display *fix  = NULL;
+
+   memset(&wm, 0, sizeof(wm));
+   r->settings.monitor    = 1;
+   r->settings.fullscreen = false;
+   r->settings.pos        = VIDEO_POS_PACK(want.x, want.y);
+   r->settings.pos_set    = true;
+   native_sdl_replace(ctx, data, r, window);
+   win   = (SDL_Window*)window->surface;
+   state = (native_sdl_state_t*)window->state;
+   native_sdl_wait_rect_at(ctx, data, r, window, want, false, 0, NULL);
+   if (native_sdl_x11(win, &dpy, &xwin))
+      fix = XOpenDisplay(DisplayString(dpy));
+   CHECK(fix != NULL && state != NULL);
+   if (!fix || !state)
+   {
+      if (fix)
+         XCloseDisplay(fix);
+      return;
+   }
+   wm_state = XInternAtom(fix, "_NET_WM_STATE", False);
+   fs       = (long)XInternAtom(fix, "_NET_WM_STATE_FULLSCREEN", False);
+   XGetWindowAttributes(fix, xwin, &stood);
+   if (kind == 3)
+   {
+      /* Made fullscreen, then moved to the second display, as a manager
+       * would */
+      r->settings.fullscreen = true;
+      ctx->windows->update(data, window, r);
+      XChangeProperty(fix, xwin, wm_state, XA_ATOM, 32, PropModeReplace,
+            (unsigned char*)&fs, 1);
+      XMoveResizeWindow(fix, xwin, monitors[0].x, monitors[0].y,
+            monitors[0].w, monitors[0].h);
+      XSync(fix, False);
+      native_sdl_wait_fullscreen(ctx, data, r, window, monitors, 0, true,
+            false);
+      XMoveResizeWindow(fix, xwin, monitors[1].x, monitors[1].y,
+            monitors[1].w, monitors[1].h);
+      XSync(fix, False);
+      native_sdl_wait_fullscreen(ctx, data, r, window, monitors, 1, true,
+            false);
+      want.x          += 40;
+      want.y          += 30;
+      r->settings.pos  = VIDEO_POS_PACK(want.x, want.y);
+   }
+   else
+      r->settings.monitor = 2;
+   XSelectInput(fix, DefaultRootWindow(fix), SubstructureRedirectMask);
+   XSync(fix, False);
+
+   r->settings.fullscreen = true;
+   start = cpu_features_get_time_usec();
+   ctx->windows->update(data, window, r);
+   fprintf(stderr, "native sdl: %s asked in %d ms\n",
+         kind == 3 ? "an edit of the moved fullscreen"
+         : "fullscreen on display 2",
+         (int)((cpu_features_get_time_usec() - start) / 1000));
+   XSync(dpy, False);
+   XSync(fix, False);
+   native_sdl_wm_moves(fix, xwin, &wm, false);
+   /* the move or the leave alone, which waits for the manager */
+   CHECK(kind == 3 ? wm.removes > 0 : wm.asked > 0);
+   CHECK(wm.adds == 0);
+   CHECK(state->apply);
+   do
+   {
+      native_window_drain(ctx, data, r);
+      now = cpu_features_get_time_usec();
+      native_sdl_wm_moves(fix, xwin, &wm,
+            (kind == 0 || kind == 2) && now - start >= 200000);
+      /* the leave, which puts it back where it stood */
+      if (kind == 3 && wm.removes && !left)
+      {
+         XDeleteProperty(fix, xwin, wm_state);
+         XMoveResizeWindow(fix, xwin, stood.x, stood.y,
+               (unsigned)stood.width, (unsigned)stood.height);
+         XSync(fix, False);
+         left = cpu_features_get_time_usec();
+      }
+      if (left && state->wait_by)
+         waited = true;
+      if (!edited && now - start >= 100000)
+      {
+         r->settings.monitor = 1;
+         ctx->windows->update(data, window, r);
+         edited              = true;
+      }
+      if (wm.adds)
+         break;
+      retro_sleep(2);
+   } while (now - start < 4000000);
+   if (wm.adds)
+      fprintf(stderr, "native sdl: fullscreen asked %d ms in, %u move(s) "
+            "asked, %u answered, %u ADD(s) with a move out\n",
+            (int)((wm.first_add - start) / 1000), wm.asked, wm.answered,
+            wm.early);
+   if (wm.adds && left)
+      fprintf(stderr, "native sdl: fullscreen asked %d ms after the "
+            "leave, waited %d\n", (int)((wm.first_add - left) / 1000),
+            waited);
+   CHECK(wm.adds > 0);
+   if (kind == 1)
+      CHECK(wm.first_add - start >= VIDEO_WINDOW_SETTLE_USEC);
+   else
+      CHECK(wm.early == 0);
+   if (kind == 2)
+      CHECK(wm.asked >= 2);
+   /* not for the display it was fullscreen on */
+   if (kind == 3)
+      CHECK(!waited);
+
+   /* The manager makes the moves still out, then fullscreen where it is */
+   native_sdl_wm_moves(fix, xwin, &wm, true);
+   XSelectInput(fix, DefaultRootWindow(fix), NoEventMask);
+   XTranslateCoordinates(fix, xwin, DefaultRootWindow(fix), 0, 0, &x, &y,
+         &child);
+   for (i = 0; i < count; i++)
+      if (     x >= monitors[i].x && x < monitors[i].x + monitors[i].w
+            && y >= monitors[i].y && y < monitors[i].y + monitors[i].h)
+         at = i;
+   /* SDL takes the move before the fullscreen */
+   deadline = cpu_features_get_time_usec() + 3000000;
+   while (     native_sdl_display_of(win) != at
+         && cpu_features_get_time_usec() < deadline)
+   {
+      native_window_drain(ctx, data, r);
+      retro_sleep(2);
+   }
+   XChangeProperty(fix, xwin, wm_state, XA_ATOM, 32, PropModeReplace,
+         (unsigned char*)&fs, 1);
+   XMoveResizeWindow(fix, xwin, monitors[at].x, monitors[at].y,
+         monitors[at].w, monitors[at].h);
+   XSync(fix, False);
+   native_sdl_wait_fullscreen(ctx, data, r, window, monitors, to, true,
+         false);
+   XCloseDisplay(fix);
+}
+#endif
+
+/* Pumps, with nothing polled, until a drag's bounds wait for the next
+ * pump to judge them or, with 'judged', wait to go out */
+static bool native_sdl_wait_held(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_native_t *window, unsigned pos, unsigned size,
+      bool judged)
+{
+   native_sdl_state_t *state = (native_sdl_state_t*)window->state;
+   retro_time_t deadline     = cpu_features_get_time_usec() + 3000000;
+   for (;;)
+   {
+      bool quit     = false;
+      bool resize   = false;
+      unsigned dims = VIDEO_SCALE_PACK(640, 480);
+      ctx->check_window(data, &quit, &resize, &dims);
+      if (judged ? state->common.save_dims != 0
+            : (state->judge && state->judge_pos == pos
+               && state->judge_dims == size))
+         return true;
+      if (cpu_features_get_time_usec() > deadline)
+         return false;
+      retro_sleep(2);
+   }
+}
+
+/* An edit as the renderers hand it on. What update() puts a window at
+ * is not the user's, and the same request again moves nothing. */
+static void native_sdl_updates(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window,
+      const SDL_Rect *home)
+{
+   static bool done;
+   video_window_request_t r;
+   SDL_Rect monitors[8];
+   SDL_Rect want;
+   SDL_Window *win;
+   native_sdl_state_t *state;
+   unsigned i, on, saves, count;
+   bool managed;
+   float density;
+   bool placed = !native_sdl_driver("wayland");
+   int x       = home->x;
+   int y       = home->y;
+#ifdef HAVE_X11
+   XEvent event;
+   Display *dpy;
+   Window xwin;
+   Display *fix = NULL;
+#endif
+
+   if (done)
+      return;
+   done                  = true;
+   count                 = native_sdl_displays(monitors, 8);
+   r                     = *request;
+   r.settings.monitor    = 0;
+   r.settings.fullscreen = false;
+   r.settings.pos        = VIDEO_POS_PACK(x + 200, y + 150);
+   r.settings.dims       = VIDEO_SCALE_PACK(400, 300);
+   r.settings.pos_set    = true;
+   native_sdl_replace(ctx, data, &r, window);
+   win     = (SDL_Window*)window->surface;
+   density = native_sdl_density(win);
+   managed = native_sdl_managed(win);
+   on      = native_sdl_display_of(win);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+
+   /* Dragged, so the next requests carry its saved bounds; resized where
+    * the compositor places */
+   if (placed)
+      native_sdl_move(win, x + 260, y + 170);
+   else
+      native_sdl_size(win, (int)(410 / density), (int)(305 / density));
+   CHECK(native_sdl_wait_save(ctx, data, &r));
+   if (placed)
+      r.settings.pos = native_window_saved.save_pos;
+   r.settings.dims = native_window_saved.save_dims;
+   want            = native_sdl_rect(win);
+   want.x          = x + 260;
+   want.y          = y + 170;
+   native_sdl_wait_rect(ctx, data, &r, window, want);
+   if (managed)
+      native_sdl_toggle(ctx, data, &r, window, monitors, on, want);
+   saves = native_window_saves;
+
+   /* The X and Y rows, then the Size row */
+   r.settings.pos = VIDEO_POS_PACK(x + 300, y + 200);
+   want.x         = x + 300;
+   want.y         = y + 200;
+   ctx->windows->update(data, window, &r);
+   native_sdl_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("the X and Y rows", &saves);
+   r.settings.dims = VIDEO_SCALE_PACK(420, 310);
+   want.w          = (int)(420 / density);
+   want.h          = (int)(310 / density);
+   ctx->windows->update(data, window, &r);
+   native_sdl_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("the Size row", &saves);
+
+   /* The same request, twice: nothing moves */
+#ifdef HAVE_X11
+   if (native_sdl_x11(win, &dpy, &xwin))
+      fix = XOpenDisplay(DisplayString(dpy));
+   if (fix)
+   {
+      XSelectInput(fix, xwin, StructureNotifyMask);
+      XSync(fix, False);
+      while (XPending(fix))
+         XNextEvent(fix, &event);
+   }
+#endif
+   ctx->windows->update(data, window, &r);
+   ctx->windows->update(data, window, &r);
+   state = (native_sdl_state_t*)window->state;
+   CHECK(state && !state->apply);
+   CHECK(!(native_window_settle(ctx, data, &r, 200000)
+         & NATIVE_EVENT(GEOMETRY)));
+   native_sdl_no_save("the same request", &saves);
+#ifdef HAVE_X11
+   if (fix)
+   {
+      XSync(fix, False);
+      CHECK(!XCheckTypedWindowEvent(fix, xwin, ConfigureNotify, &event));
+      XCloseDisplay(fix);
+   }
+#endif
+
+   /* A drag on its way when an edit comes, its bounds still to be judged
+    * and then already judged: the edit stands */
+   for (i = 0; i < 2; i++)
+   {
+      unsigned pos  = VIDEO_POS_PACK(x + 340 + (int)i * 10, y + 220);
+      unsigned size = window->dims;
+      if (placed)
+         native_sdl_move(win, x + 340 + (int)i * 10, y + 220);
+      else
+      {
+         pos  = state->common.pos;
+         size = VIDEO_SCALE_PACK(440 + i * 10, 320);
+         native_sdl_size(win, (int)((440 + i * 10) / density),
+               (int)(320 / density));
+      }
+      CHECK(native_sdl_wait_held(ctx, data, window, pos, size, i == 1));
+      r.settings.pos = VIDEO_POS_PACK(x + 180 + (int)i * 10, y + 120);
+      want.x         = x + 180 + (int)i * 10;
+      want.y         = y + 120;
+      ctx->windows->update(data, window, &r);
+      native_sdl_wait_rect(ctx, data, &r, window, want);
+      native_window_settle(ctx, data, &r,
+            VIDEO_WINDOW_SETTLE_USEC + 100000);
+      native_sdl_no_save("a drag before an edit", &saves);
+      CHECK(state && state->common.request.settings.pos == r.settings.pos);
+   }
+
+   /* Settled again, the user's moves are saved */
+   if (placed)
+   {
+      native_sdl_move(win, x + 360, y + 230);
+      CHECK(native_sdl_wait_save(ctx, data, &r));
+      CHECK(native_window_saved.save_pos == VIDEO_POS_PACK(x + 360, y + 230));
+   }
+   else
+   {
+      native_sdl_size(win, (int)(470 / density), (int)(350 / density));
+      CHECK(native_sdl_wait_save(ctx, data, &r));
+      CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(470, 350));
+      CHECK(!native_window_saved.save_moved);
+   }
+   saves = native_window_saves;
+
+   /* An Auto window's first X or Y row: to no monitor, with a position */
+   r.settings.monitor = on + 1;
+   r.settings.pos     = VIDEO_POS_PACK(x + 30, y + 20);
+   r.settings.dims    = VIDEO_SCALE_PACK(400, 300);
+   r.settings.pos_set = false;
+   native_sdl_replace(ctx, data, &r, window);
+   win   = (SDL_Window*)window->surface;
+   state = (native_sdl_state_t*)window->state;
+   /* Made centred, not at its stale position */
+   want  = native_sdl_expect(&monitors[on], 0, 0, (int)(400 / density),
+         (int)(300 / density), true);
+   native_sdl_wait_rect_at(ctx, data, &r, window, want, false, 0, NULL);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("made Auto", &saves);
+   r.settings.monitor = 0;
+   r.settings.pos     = VIDEO_POS_PACK(x + 200, y + 150);
+   r.settings.pos_set = true;
+   want.x             = x + 200;
+   want.y             = y + 150;
+   want.w             = (int)(400 / density);
+   want.h             = (int)(300 / density);
+   ctx->windows->update(data, window, &r);
+   native_sdl_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("the first X row", &saves);
+   CHECK(window->surface == win);
+   CHECK(state && !state->common.request.settings.monitor);
+
+   /* Start on a row whose axis has its default: pos_set alone changes,
+    * and the window is centred again, not left where it was moved to */
+   r.settings.monitor = on + 1;
+   ctx->windows->destroy(data, window);
+   r.generation = video_driver_window_generation();
+   CHECK(ctx->windows->create(data, &r, window));
+   win = (SDL_Window*)window->surface;
+   native_sdl_move(win, x + 240, y + 190);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   want.x = x + 240;
+   want.y = y + 190;
+   native_sdl_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("placed at once", &saves);
+   r.settings.pos_set = false;
+   want = native_sdl_expect(&monitors[on], 0, 0, (int)(400 / density),
+         (int)(300 / density), true);
+   ctx->windows->update(data, window, &r);
+   native_sdl_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_sdl_no_save("Start", &saves);
+   state = (native_sdl_state_t*)window->state;
+   CHECK(state && !state->common.request.settings.pos_set);
+
+   /* Put there by update(), then a size asked for while fullscreen: it
+    * comes back where it stood, at that size */
+   if (managed)
+   {
+      native_sdl_grown(ctx, data, &r, window, monitors, on, want, density);
+
+      /* ... and from near the monitor's far corner, where that size
+       * would reach past it */
+      r.settings.dims = VIDEO_SCALE_PACK(400, 300);
+      ctx->windows->destroy(data, window);
+      r.generation = video_driver_window_generation();
+      CHECK(ctx->windows->create(data, &r, window));
+      win    = (SDL_Window*)window->surface;
+      want.x = monitors[on].x + monitors[on].w - (int)(450 / density);
+      want.y = monitors[on].y + monitors[on].h - (int)(340 / density);
+      want.w = (int)(400 / density);
+      want.h = (int)(300 / density);
+      native_sdl_move(win, want.x, want.y);
+      native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+      native_sdl_wait_rect(ctx, data, &r, window, want);
+      native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+      native_sdl_no_save("placed at once", &saves);
+      native_sdl_grown(ctx, data, &r, window, monitors, on, want, density);
+      saves = native_window_saves;
+   }
+
+   /* Never dragged, automatic and then with a size alone: where it was,
+    * not centred, and it gets no bounds */
+   for (i = 0; managed && i < 2; i++)
+   {
+      r.settings.monitor = 0;
+      r.settings.pos     = 0;
+      r.settings.dims    = i ? VIDEO_SCALE_PACK(400, 300) : 0;
+      r.settings.pos_set = false;
+      ctx->windows->destroy(data, window);
+      r.generation = video_driver_window_generation();
+      CHECK(ctx->windows->create(data, &r, window));
+      win = (SDL_Window*)window->surface;
+      native_sdl_move(win, x + 240, y + 190);
+      native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+      want   = native_sdl_rect(win);
+      want.x = x + 240;
+      want.y = y + 190;
+      native_sdl_wait_rect(ctx, data, &r, window, want);
+      native_window_settle(ctx, data, &r,
+            VIDEO_WINDOW_SETTLE_USEC + 100000);
+      native_sdl_no_save("placed at once", &saves);
+      native_sdl_toggle(ctx, data, &r, window, monitors, on, want);
+      state = (native_sdl_state_t*)window->state;
+      CHECK(state && !state->common.request.settings.pos_set
+            && (i || !state->common.request.settings.dims));
+   }
+
+#ifdef HAVE_X11
+   /* A window manager that gives it no frame back after fullscreen */
+   for (i = 0; managed && native_sdl_driver("x11") && i < 4; i++)
+   {
+      r.settings.dims = VIDEO_SCALE_PACK(400, 300);
+      want.x          = x + 200;
+      want.y          = y + 150;
+      want.w          = (int)(400 / density);
+      want.h          = (int)(300 / density);
+      native_sdl_unframed(ctx, data, &r, window, monitors, on, want, i);
+   }
+   /* One that keeps it maximised */
+   for (i = 0; managed && native_sdl_driver("x11") && i < 2; i++)
+   {
+      r.settings.dims = VIDEO_SCALE_PACK(400, 300);
+      want.x          = x + 200;
+      want.y          = y + 150;
+      want.w          = (int)(400 / density);
+      want.h          = (int)(300 / density);
+      native_sdl_kept_max(ctx, data, &r, window, want, i == 1);
+   }
+   /* One slow to take it out of fullscreen */
+   for (i = 0; !managed && native_sdl_driver("x11") && i < 3; i++)
+   {
+      r.settings.dims = VIDEO_SCALE_PACK(400, 300);
+      want.x          = x + 200;
+      want.y          = y + 150;
+      want.w          = (int)(400 / density);
+      want.h          = (int)(300 / density);
+      native_sdl_slow_leave(ctx, data, &r, window, monitors, on, want, i);
+   }
+   /* Fullscreen on another display, a step at a time */
+   if (!managed && native_sdl_driver("x11") && count < 2)
+      fprintf(stderr, "native sdl: fullscreen on another display not "
+            "checked: SDL has one display\n");
+   for (i = 0; !managed && native_sdl_driver("x11") && count >= 2 && i < 4;
+         i++)
+   {
+      r.settings.dims = VIDEO_SCALE_PACK(400, 300);
+      want.x          = monitors[0].x + 200;
+      want.y          = monitors[0].y + 150;
+      want.w          = (int)(400 / density);
+      want.h          = (int)(300 / density);
+      native_sdl_fullscreen_move(ctx, data, &r, window, monitors, count,
+            want, i);
+   }
+#endif
+   /* With a window manager: fullscreen on the second display, then on
+    * the first, then a window again where it stood */
+   if (managed && placed && count >= 2)
+   {
+      r.settings.monitor    = 1;
+      r.settings.fullscreen = false;
+      r.settings.pos        = VIDEO_POS_PACK(monitors[0].x + 200,
+            monitors[0].y + 150);
+      r.settings.dims       = VIDEO_SCALE_PACK(400, 300);
+      r.settings.pos_set    = true;
+      native_sdl_replace(ctx, data, &r, window);
+      want.x = monitors[0].x + 200;
+      want.y = monitors[0].y + 150;
+      want.w = (int)(400 / density);
+      want.h = (int)(300 / density);
+      native_sdl_wait_rect_at(ctx, data, &r, window, want, false, 0, NULL);
+      r.settings.monitor    = 2;
+      r.settings.fullscreen = true;
+      ctx->windows->update(data, window, &r);
+      native_sdl_wait_fullscreen(ctx, data, &r, window, monitors, 1, true,
+            false);
+      r.settings.monitor    = 1;
+      ctx->windows->update(data, window, &r);
+      native_sdl_wait_fullscreen(ctx, data, &r, window, monitors, 0, true,
+            false);
+      r.settings.fullscreen = false;
+      r.settings.pos_set    = false;
+      ctx->windows->update(data, window, &r);
+      native_sdl_wait_fullscreen(ctx, data, &r, window, monitors, 0, false,
+            false);
+      native_sdl_wait_rect(ctx, data, &r, window, want);
    }
 
    native_sdl_replace(ctx, data, request, window);
@@ -1576,7 +2688,7 @@ static void native_sdl_gone(const gfx_ctx_driver_t *ctx, void *data,
          right = MAX(right, displays[i].x + displays[i].w);
       /* past the settle of the display taken away */
       native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC);
-      SDL_SetWindowPosition(win, right + 200, before.y);
+      native_sdl_move(win, right + 200, before.y);
       CHECK(native_sdl_wait_save(ctx, data, &r));
       native_window_settle(ctx, data, &r, 100000);
       rect  = native_sdl_rect(win);
@@ -1606,14 +2718,14 @@ static void native_sdl_gone(const gfx_ctx_driver_t *ctx, void *data,
       saves = native_window_saves;
       CHECK(SDL_PushEvent(&event) > 0);
       native_window_settle(ctx, data, &r, 20000);
-      SDL_SetWindowPosition(win, before.x + 40 * (i + 1), before.y + 30);
+      native_sdl_move(win, before.x + 40 * (i + 1), before.y + 30);
       native_window_settle(ctx, data, &r, 200000);
       native_sdl_no_save(changes_seen[i], &saves);
    }
    if (native_sdl_driver("x11") && !native_sdl_managed(win))
    {
       native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
-      SDL_SetWindowPosition(win, before.x + 20, before.y + 20);
+      native_sdl_move(win, before.x + 20, before.y + 20);
       CHECK(native_sdl_wait_save(ctx, data, &r));
    }
 
@@ -1726,6 +2838,9 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_sdl_main_get(data, &main_state);
    density = native_sdl_density(secondary);
    native_sdl_saves(ctx, data, request, window, &home, mapped);
+   if (     native_sdl_driver("x11") || native_sdl_driver("wayland")
+         || native_sdl_driver("windows"))
+      native_sdl_updates(ctx, data, request, window, &home);
 #if defined(HAVE_SDL3) || SDL_VERSION_ATLEAST(2, 0, 14)
    native_sdl_gone(ctx, data, request, window, &home);
 #endif
@@ -1746,6 +2861,7 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
        * centred where they do not reach it, moved onto it where they do */
       request->settings.monitor = count;
       request->settings.pos     = VIDEO_POS_PACK(-200, -200);
+      request->settings.pos_set = true;
       ctx->windows->update(data, window, request);
       if (monitors[count - 1].x >= 120 || monitors[count - 1].y >= 40)
          native_sdl_wait_rect(ctx, data, request, window, native_sdl_expect(
@@ -1918,7 +3034,7 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
        * has no border): off by that, and saying where it is */
       native_sdl_wait_rect_at(ctx, data, request, window, native_sdl_expect(
             &monitors[0], monitors[0].x + 60, monitors[0].y + 60,
-            320, 240, false), true, 2);
+            320, 240, false), true, 2, NULL);
       CHECK(!(SDL_GetWindowFlags(secondary) & SDL_WINDOW_MAXIMIZED));
       CHECK(window->presentable);
    }
@@ -2096,7 +3212,8 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    if (placed)
       native_sdl_wait_rect_at(ctx, data, request, window, native_sdl_expect(
             &monitors[0], VIDEO_POS_X(request->settings.pos),
-            VIDEO_POS_Y(request->settings.pos), 320, 240, false), false, 0);
+            VIDEO_POS_Y(request->settings.pos), 320, 240, false), false, 0,
+            NULL);
 
    /* Made fullscreen on a chosen monitor; then a window with automatic
     * bounds: the main window's size, centred on its monitor */

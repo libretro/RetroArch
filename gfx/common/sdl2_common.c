@@ -335,14 +335,16 @@ void sdl2_video_monitors_publish(SDL_Window *primary, bool init)
  * display 'display' if not -1, else the preferred monitor (display
  * N-1), else with an automatic monitor the one the saved bounds are
  * mostly on, else the main window's, else the first. Saved bounds
- * partly off it are moved onto it; bounds not on it at all, and
- * automatic ones, are centred on it. Fullscreen covers it. */
+ * partly off it are moved onto it; bounds not on it at all, automatic
+ * ones and ones with no position set are centred on it. Fullscreen
+ * covers it. */
 static int sdl2_video_window_place(SDL_Window *primary,
       const video_window_settings_t *settings, int display, SDL_Rect *out)
 {
    SDL_Rect bounds;
    video_window_rect_t rect, area;
-   int count = SDL_GetNumVideoDisplays();
+   int count      = SDL_GetNumVideoDisplays();
+   bool automatic = !settings->dims || !settings->pos_set;
 
    out->x = VIDEO_POS_X(settings->pos);
    out->y = VIDEO_POS_Y(settings->pos);
@@ -360,7 +362,7 @@ static int sdl2_video_window_place(SDL_Window *primary,
 
    if (display < 0 && settings->monitor && (int)settings->monitor <= count)
       display = settings->monitor - 1;
-   if (display < 0 && !settings->monitor && settings->dims)
+   if (display < 0 && !settings->monitor && !automatic)
    {
       int i;
       int best = 0;
@@ -396,7 +398,7 @@ static int sdl2_video_window_place(SDL_Window *primary,
    area.y = bounds.y;
    area.w = bounds.w;
    area.h = bounds.h;
-   video_window_place_rect(&rect, &area, !settings->dims);
+   video_window_place_rect(&rect, &area, automatic);
    out->x = rect.x;
    out->y = rect.y;
    out->w = rect.w;
@@ -461,15 +463,34 @@ static void sdl2_video_windows_lost(bool removed)
    }
 }
 
+/* SDL's x11 places a window by its frame, which a window manager puts
+ * back some pumps after the window leaves fullscreen */
+static bool sdl2_video_window_framed(SDL_Window *win)
+{
+#if SDL_VERSION_ATLEAST(2, 0, 5)
+   int top  = 0;
+   int left = 0;
+   return string_is_equal(SDL_GetCurrentVideoDriver(), "x11")
+      && SDL_GetWindowBordersSize(win, &top, &left, NULL, NULL) == 0
+      && (top || left);
+#else
+   return false;
+#endif
+}
+
 /* Puts the window where its request has it */
 static void sdl2_video_window_apply(sdl2_video_window_t *state)
 {
    SDL_Rect rect;
    int display                        = -1;
+   int via                            = state->via;
+   bool left_fullscreen               = state->left_fullscreen;
    SDL_Window *win                    = state->win;
    const video_window_settings_t *now = &state->common.request.settings;
 
-   state->apply = false;
+   state->apply           = false;
+   state->via             = -1;
+   state->left_fullscreen = false;
    /* fullscreen on no monitor in particular is on the one it is on */
    if (now->fullscreen && !now->monitor)
       display = SDL_GetWindowDisplayIndex(win);
@@ -478,19 +499,44 @@ static void sdl2_video_window_apply(sdl2_video_window_t *state)
    {
       if (state->fullscreen && SDL_GetWindowDisplayIndex(win) == display)
          return;
+      video_window_placed(&state->common, VIDEO_POS_PACK(rect.x, rect.y),
+            VIDEO_SCALE_PACK(rect.w, rect.h), cpu_features_get_time_usec());
       /* window managers keep a fullscreen window where it is, so it
-       * moves by way of a window */
+       * moves by way of a window, a step at a time: SDL 3's x11 under
+       * sdl2-compat waits for a step to be answered before it takes the
+       * next */
       if (state->fullscreen)
+      {
          SDL_SetWindowFullscreen(win, 0);
-      else
+         state->fullscreen      = false;
+         state->left_fullscreen = true;
+         state->waiting         = SDL_WINDOW_FULLSCREEN;
+         state->apply           = true;
+         return;
+      }
+      if (via < 0 && !left_fullscreen)
       {
          SDL_GetWindowPosition(win, &state->windowed.x, &state->windowed.y);
          SDL_GetWindowSize(win, &state->windowed.w, &state->windowed.h);
          state->windowed_set = true;
+         state->framed       = state->framed
+            || sdl2_video_window_framed(win);
       }
-      if (SDL_GetWindowDisplayIndex(win) != display)
+      /* SDL fills the display the window is at, or else the one it was
+       * last moved to */
+      if (     via != display
+            && (via >= 0 || SDL_GetWindowDisplayIndex(win) != display))
+      {
          SDL_SetWindowPosition(win, SDL_WINDOWPOS_CENTERED_DISPLAY(display),
                SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+         if (     sdl2_video_window_placed()
+               && SDL_GetWindowDisplayIndex(win) != display)
+         {
+            state->via   = display;
+            state->apply = true;
+            return;
+         }
+      }
       SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN_DESKTOP);
    }
    else if (state->fullscreen)
@@ -504,10 +550,22 @@ static void sdl2_video_window_apply(sdl2_video_window_t *state)
    }
    else
    {
-      /* a window again with automatic bounds: where it stood before */
-      if (!now->dims && state->windowed_set)
-         rect = state->windowed;
+      /* a window again with no position of its own: where it stood
+       * before, at its own size if it has one, moved onto its monitor */
+      if ((!now->dims || !now->pos_set) && state->windowed_set)
+      {
+         video_window_settings_t place = *now;
+         place.pos     = VIDEO_POS_PACK(state->windowed.x,
+               state->windowed.y);
+         place.pos_set = true;
+         if (!now->dims)
+            place.dims = VIDEO_SCALE_PACK(state->windowed.w,
+                  state->windowed.h);
+         sdl2_video_window_place(state->primary, &place, -1, &rect);
+      }
       state->windowed_set = false;
+      video_window_placed(&state->common, VIDEO_POS_PACK(rect.x, rect.y),
+            VIDEO_SCALE_PACK(rect.w, rect.h), cpu_features_get_time_usec());
       SDL_SetWindowSize(win, rect.w, rect.h);
       SDL_SetWindowPosition(win, rect.x, rect.y);
    }
@@ -522,14 +580,38 @@ static void sdl2_video_window_apply(sdl2_video_window_t *state)
 static void sdl2_video_window_settle(sdl2_video_window_t *state)
 {
    Uint32 flags = SDL_GetWindowFlags(state->win);
+   bool frame;
+   /* SDL 3's x11 under sdl2-compat leaves fullscreen when the manager
+    * answers; a restore or move before then has SDL wait for it, and a
+    * move then asks for fullscreen again */
+   if (flags & state->waiting & SDL_WINDOW_FULLSCREEN)
+      return;
    if (     (flags & SDL_WINDOW_MAXIMIZED) && !(flags & SDL_WINDOW_MINIMIZED)
          && !(state->waiting & SDL_WINDOW_MAXIMIZED))
    {
       SDL_RestoreWindow(state->win);
       state->waiting |= SDL_WINDOW_MAXIMIZED;
    }
-   if (flags & (SDL_WINDOW_MINIMIZED | state->waiting))
+   if (flags & SDL_WINDOW_MINIMIZED)
       return;
+   frame = state->framed && !state->fullscreen
+      && !state->common.request.settings.fullscreen;
+   /* a window manager may keep it maximised, never put its frame back,
+    * or keep it off a display on the way to fullscreen */
+   if (     (flags & state->waiting)
+         || (frame && !sdl2_video_window_framed(state->win))
+         || (     state->via >= 0
+               && SDL_GetWindowDisplayIndex(state->win) != state->via))
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      if (!state->wait_by)
+         state->wait_by = now + VIDEO_WINDOW_SETTLE_USEC;
+      if (now < state->wait_by)
+         return;
+   }
+   if (frame)
+      state->framed = false;
+   state->wait_by = 0;
    state->waiting = 0;
    sdl2_video_window_apply(state);
 }
@@ -597,6 +679,12 @@ bool sdl2_video_window_create(void *owner, SDL_Window *primary,
    state->id             = SDL_GetWindowID(state->win);
    state->primary        = primary;
    state->fullscreen     = request->settings.fullscreen;
+   state->via            = -1;
+#if SDL_VERSION_ATLEAST(2, 0, 5)
+   /* no frame is known for it yet, so one is waited for */
+   state->framed         = state->fullscreen
+      && string_is_equal(SDL_GetCurrentVideoDriver(), "x11");
+#endif
    state->common.owner   = owner;
    state->common.native  = window;
    state->common.request = *request;
@@ -654,13 +742,25 @@ void sdl2_video_window_update(void *owner, video_window_native_t *window,
    if (     (now->dims && (!VIDEO_SCALE_W(now->dims) || !VIDEO_SCALE_H(now->dims)))
          || (     now->pos        == was->pos
                && now->dims       == was->dims
+               && now->pos_set    == was->pos_set
                && now->monitor    == was->monitor
                && now->fullscreen == was->fullscreen))
       return;
    state->common.request = *request;
    state->apply          = true;
-   /* What a check took before it is not what it asks */
-   state->judge          = false;
+   /* A drag not yet out does not overwrite this */
+   state->judge             = false;
+   state->common.save_dims  = 0;
+   state->common.save_moved = false;
+   /* An edit does not wait for the frame; a fullscreen one, or one
+    * while SDL still leaves fullscreen, keeps expecting it */
+   if (     !state->fullscreen && !now->fullscreen
+         && !(state->waiting & SDL_WINDOW_FULLSCREEN))
+      state->framed = false;
+   /* It ends a timed wait for SDL, but for a step on the way to
+    * fullscreen, which SDL's x11 must finish first */
+   if (state->wait_by && state->via < 0)
+      state->wait_by = cpu_features_get_time_usec();
    sdl2_video_window_settle(state);
 }
 

@@ -132,6 +132,16 @@ unsigned menu_setting_video_screens(void);
 /* Game Screen @screen has a window of its own by its Display setting
  * and the displays listed now. App thread. */
 bool menu_setting_video_screen_window_own(unsigned screen);
+
+/* The rows of screen windows the user moved show where they went; a
+ * screen that has just got a size asks for a refresh that lists its X
+ * and Y rows. App thread. */
+void menu_setting_video_screen_windows_moved(void);
+
+/* The Screen list @list just built: the cursor, an index into its
+ * last build, moves by the screen window rows added or removed above
+ * it, so it stays on its row. App thread. */
+void menu_setting_video_screen_windows_follow(const file_list_t *list);
 #endif
 
 /* Whether Menu Follows offers this value: a screen the menu lists, or

@@ -2475,6 +2475,9 @@ void wl_video_window_update(void *owner, video_window_native_t *window,
                && now->fullscreen == was->fullscreen))
       return;
 
+   /* A resize not yet out does not overwrite this */
+   state->common.save_dims  = 0;
+   state->common.save_moved = false;
    if (now->dims != was->dims)
    {
       state->floating_dims  = wl_video_window_dims(wl, now->dims);
@@ -2501,6 +2504,9 @@ void wl_video_window_update(void *owner, video_window_native_t *window,
          wl_video_window_resized(state);
       }
    }
+   /* The size it has as a window, whenever that comes */
+   video_window_placed(&state->common, 0, state->floating_dims,
+         cpu_features_get_time_usec());
    /* Position is the compositor's on Wayland. Another output for a
     * fullscreen window is a fullscreen request again, after leaving:
     * compositors keep a fullscreen window where it is. */

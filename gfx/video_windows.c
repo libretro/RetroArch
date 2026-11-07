@@ -874,25 +874,46 @@ static void video_windows_held_made(video_windows_held_t *held,
       | (frame->window_named & bit);
 }
 
-static bool video_windows_made_changed(const video_windows_held_t *held,
+enum video_windows_change
+{
+   VIDEO_WINDOWS_SAME = 0,
+   VIDEO_WINDOWS_UPDATE,
+   VIDEO_WINDOWS_REMAKE
+};
+
+static enum video_windows_change video_windows_made_change(
+      const video_windows_held_t *held,
       const video_windows_frame_t *frame, unsigned w)
 {
    const video_window_settings_t *a = &held->made[w];
    const video_window_settings_t *b = &frame->settings[w];
    if (     a->mode != b->mode
          || held->made_screens[w] != frame->window_screens[w])
-      return true;
+      return VIDEO_WINDOWS_REMAKE;
    if (a->edit != b->edit)
-      return     a->monitor    != b->monitor
-              || a->fullscreen != b->fullscreen
-              || a->dims       != b->dims
-              || a->pos        != b->pos
-              || a->pos_set    != b->pos_set;
+   {
+      /* An Auto window given saved bounds, which target no monitor, moves
+       * as a window; any other new monitor is a new placement */
+      if (     a->monitor != b->monitor
+            && (   b->monitor || !b->dims || !b->pos_set
+                || a->fullscreen || b->fullscreen
+                || ((held->made_named | frame->window_named) & (1u << w))))
+         return VIDEO_WINDOWS_REMAKE;
+      if (     a->fullscreen == b->fullscreen
+            && a->dims       == b->dims
+            && a->pos        == b->pos
+            && a->pos_set    == b->pos_set)
+         return VIDEO_WINDOWS_SAME;
+      return ((held->made_named ^ frame->window_named) & (1u << w))
+         ? VIDEO_WINDOWS_REMAKE : VIDEO_WINDOWS_UPDATE;
+   }
    /* Sticky: only a monitor that went, or a named one back */
-   return     a->monitor != b->monitor
-          && (   (frame->window_named & (1u << w))
-              || (a->monitor && !(frame->monitors_present
-                    & VIDEO_WINDOWS_ORDINAL_BIT(a->monitor))));
+   if (     a->monitor != b->monitor
+         && (   (frame->window_named & (1u << w))
+             || (a->monitor && !(frame->monitors_present
+                   & VIDEO_WINDOWS_ORDINAL_BIT(a->monitor)))))
+      return VIDEO_WINDOWS_REMAKE;
+   return VIDEO_WINDOWS_SAME;
 }
 
 void video_windows_steps(video_windows_held_t *held,
@@ -903,6 +924,7 @@ void video_windows_steps(video_windows_held_t *held,
    unsigned wanted = 0;
    unsigned kept   = 0;
    *retire         = 0;
+   held->update    = 0;
    if (frame)
    {
       if (frame->retry != held->retry)
@@ -926,12 +948,19 @@ void video_windows_steps(video_windows_held_t *held,
          /* A window taken from another driver is kept as first seen */
          else if (frame->monitors && !(kept & bit))
          {
-            if (!(held->made_known & bit))
-               video_windows_held_made(held, frame, w);
-            else if (video_windows_made_changed(held, frame, w))
+            enum video_windows_change change = VIDEO_WINDOWS_SAME;
+            if (held->made_known & bit)
+               change = video_windows_made_change(held, frame, w);
+            if (change == VIDEO_WINDOWS_REMAKE)
                *retire |= bit;
-            else if (held->made[w].edit != frame->settings[w].edit)
-               video_windows_held_made(held, frame, w);
+            else
+            {
+               if (change == VIDEO_WINDOWS_UPDATE)
+                  held->update |= bit;
+               if (     !(held->made_known & bit)
+                     || held->made[w].edit != frame->settings[w].edit)
+                  video_windows_held_made(held, frame, w);
+            }
          }
       }
    }

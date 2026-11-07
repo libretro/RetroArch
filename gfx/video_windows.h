@@ -501,8 +501,9 @@ typedef struct video_windows_frame
    /* The main window shows the idle logo */
    bool logo;
    /* Desktop: each screen's window from its Display setting
-    * (video_windows_resolve()); a live window is made again for an
-    * edit, or when its monitor goes or its named one comes back */
+    * (video_windows_resolve()); a live window follows an edit (in
+    * place, or made again for another monitor, mode or screens), and
+    * is made again when its monitor goes or its named one comes back */
    bool monitors;
    /* The main window's layout parameters, for a window's own */
    float single_aspect;
@@ -581,8 +582,8 @@ void video_driver_restore_windows(void);
 /* App thread: failed screens get another try (a new display list) */
 void video_driver_retry_windows(void);
 
-/* App thread: screen @screen's window rows changed; its window is made
- * again for them, after a close too */
+/* App thread: screen @screen's window rows changed; its window follows
+ * them, after a close too */
 void video_driver_edit_window(unsigned screen);
 
 /* UI thread, the only publisher: the platform's displays, latest wins,
@@ -632,13 +633,21 @@ void video_driver_publish_window_layout(unsigned window,
       unsigned window_dims);
 
 /* The context's thread: window @window, showing @screens, was left at
- * @dims, and at @pos where @moved; latest wins */
+ * @dims, and at @pos where @moved, while made for edit count @edit;
+ * latest wins. The main thread drops it after a later edit. */
 void video_driver_publish_window_bounds(unsigned window, unsigned screens,
-      unsigned pos, unsigned dims, bool moved);
+      unsigned edit, unsigned pos, unsigned dims, bool moved);
 
 /* Main thread: those bounds into their screens' settings now, as a
  * frame does, before a config save that runs no frame first */
 void video_driver_take_window_bounds(void);
+
+#ifdef HAVE_MENU
+/* Main thread: the screens whose rows a take changed since the last
+ * call, one bit per screen, and in *@sized those that had no size
+ * before */
+unsigned video_driver_window_rows_changed(unsigned *sized);
+#endif
 
 /* Main thread: a point in window @window to libretro coordinates in
  * the core's frame. Window 0 is the main window, through its viewport;
@@ -678,23 +687,27 @@ typedef struct video_windows_held
    unsigned made_known;
    /* Of made_known: those made on a named Display (window_named) */
    unsigned made_named;
+   /* Set by video_windows_steps(): live ids to update() this frame */
+   unsigned update;
 } video_windows_held_t;
 
 /* @frame's ids with screens, UI layers or a keep, a bit an id: those
  * it wants a window for, or holds one for (a keep). Pure, any thread. */
 unsigned video_windows_wanted(const video_windows_frame_t *frame);
 
-/* For @frame, NULL while windows are off: in *@retire the live ids to
- * let go of, those with nothing to show now or made for another
- * display, or on a monitors frame made for another mode or other
- * screens, for other settings after an edit, or on a monitor gone or
- * other than its named one;
- * in *@create the ids with screens or UI layers, no keep and no window,
- * those that failed since the retry count last moved, or were closed
- * since the restore count or their edit count did, left out. An id in
- * both is made again. The caller keeps live, failed, closed,
- * closed_edit and display as it makes and lets go of windows; made is
- * kept here. Pure, any thread. */
+/* @frame is NULL while windows are off. *@retire: the live ids to let
+ * go of, those with nothing to show now or made for another display, or
+ * on a monitors frame made for another mode or other screens, for
+ * another monitor after an edit (not an Auto window that stays a window
+ * and that edit gives saved bounds), or on a monitor gone or other than
+ * its named one. held->update: the others an edit changed the position,
+ * size or fullscreen of, which this frame's update() must reach: they
+ * count as made for it from here. *@create: the ids with screens or UI
+ * layers, no keep and no window, those that failed since the retry
+ * count last moved, or were closed since the restore count or their
+ * edit count did, left out. An id in both is made again. The caller
+ * keeps live, failed, closed, closed_edit and display as it makes and
+ * lets go of windows; made is kept here. Pure, any thread. */
 void video_windows_steps(video_windows_held_t *held,
       const video_windows_frame_t *frame, unsigned *retire,
       unsigned *create);

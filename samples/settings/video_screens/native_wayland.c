@@ -796,6 +796,253 @@ static void native_wl_maximise(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(state->floating != on);
 }
 
+/* Resized by the user, through KWin */
+static void native_wl_kwin_size(unsigned screen, unsigned w, unsigned h)
+{
+   char body[192];
+   snprintf(body, sizeof(body),
+         "var g = w.frameGeometry, c = w.clientGeometry;"
+         " w.frameGeometry = {x: g.x, y: g.y,"
+         " width: %u + g.width - c.width,"
+         " height: %u + g.height - c.height};", w, h);
+   native_wl_kwin(screen, body);
+}
+
+/* Pumps until the compositor has it fullscreen or not and, with 'dims',
+ * at that size */
+static void native_wl_wait_state(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request,
+      const video_window_native_t *window, bool fullscreen, unsigned dims)
+{
+   wl_video_window_t *state = (wl_video_window_t*)window->state;
+   retro_time_t deadline    = cpu_features_get_time_usec() + 3000000;
+   for (;;)
+   {
+      native_window_drain(ctx, data, request);
+      if (     state->fullscreen == fullscreen
+            && (!dims || (state->dims == dims
+                  && window->dims == native_wl_buffer(state,
+                     VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims)))))
+         return;
+      if (cpu_features_get_time_usec() > deadline)
+         break;
+      retro_sleep(2);
+   }
+   fprintf(stderr, "native wayland: fullscreen %d at %ux%u, wanted %d at "
+         "%ux%u\n", state->fullscreen, VIDEO_SCALE_W(state->dims),
+         VIDEO_SCALE_H(state->dims), fullscreen, VIDEO_SCALE_W(dims),
+         VIDEO_SCALE_H(dims));
+   CHECK(!"window state");
+}
+
+/* Pumps, with nothing polled, until a resize's size waits to go out */
+static bool native_wl_wait_judged(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_native_t *window, unsigned dims)
+{
+   wl_video_window_t *state = (wl_video_window_t*)window->state;
+   retro_time_t deadline    = cpu_features_get_time_usec() + 3000000;
+   for (;;)
+   {
+      bool quit     = false;
+      bool resize   = false;
+      unsigned size = VIDEO_SCALE_PACK(640, 480);
+      if (native_window_input)
+         native_window_input(data);
+      ctx->check_window(data, &quit, &resize, &size);
+      if (state->common.save_dims == dims)
+         return true;
+      if (cpu_features_get_time_usec() > deadline)
+         return false;
+      retro_sleep(2);
+   }
+}
+
+/* Fullscreen on and off through update(): back at 'dims', and none of
+ * it a resize of the user's */
+static void native_wl_toggle(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *r, video_window_native_t *window,
+      unsigned dims)
+{
+   unsigned saves = native_window_saves;
+   r->settings.fullscreen = true;
+   ctx->windows->update(data, window, r);
+   native_wl_wait_state(ctx, data, r, window, true, 0);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_wl_no_save("fullscreen", &saves);
+   r->settings.fullscreen = false;
+   ctx->windows->update(data, window, r);
+   native_wl_wait_state(ctx, data, r, window, false, dims);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_wl_no_save("a window again", &saves);
+   native_wl_wait_state(ctx, data, r, window, false, dims);
+}
+
+/* An edit as the renderers hand it on. The compositor has the position,
+ * what update() sizes a window to is not the user's, and the same
+ * request again does nothing. */
+static void native_wl_updates(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window,
+      bool kwin)
+{
+   static bool done;
+   video_window_request_t r;
+   wl_video_window_t *state;
+   retro_time_t settle;
+   void *surface;
+   unsigned dims, saves, screen;
+
+   if (done)
+      return;
+   done                  = true;
+   r                     = *request;
+   r.settings.monitor    = 0;
+   r.settings.fullscreen = false;
+   r.settings.pos        = 0;
+   r.settings.pos_set    = false;
+   r.settings.dims       = VIDEO_SCALE_PACK(360, 270);
+   screen                = video_window_title_screen(&r);
+   native_wl_replace(ctx, data, &r, window);
+   state = (wl_video_window_t*)window->state;
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   saves = native_window_saves;
+
+   /* Resized by the user, so the next requests carry its saved size */
+   if (kwin)
+   {
+      native_wl_kwin_size(screen, 400, 300);
+      CHECK(native_wl_wait_save(ctx, data, &r));
+      CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(400, 300));
+      r.settings.dims = native_window_saved.save_dims;
+      native_wl_wait_state(ctx, data, &r, window, false, r.settings.dims);
+      native_window_settle(ctx, data, &r, 200000);
+      saves = native_window_saves;
+   }
+   native_wl_toggle(ctx, data, &r, window, r.settings.dims);
+   saves = native_window_saves;
+
+   /* The X and Y rows: the compositor's, so nothing happens */
+   dims              = state->dims;
+   settle            = state->common.settle;
+   r.settings.pos    = VIDEO_POS_PACK(300, 200);
+   r.settings.pos_set = true;
+   ctx->windows->update(data, window, &r);
+   CHECK(!(native_window_settle(ctx, data, &r, 200000)
+         & NATIVE_EVENT(GEOMETRY)));
+   CHECK(state->common.settle == settle);
+   CHECK(state->dims == dims);
+   native_wl_no_save("the X and Y rows", &saves);
+
+   /* The Size row */
+   r.settings.dims = VIDEO_SCALE_PACK(420, 310);
+   ctx->windows->update(data, window, &r);
+   native_wl_wait_state(ctx, data, &r, window, false, r.settings.dims);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_wl_no_save("the Size row", &saves);
+   CHECK(state->dims == r.settings.dims);
+
+   /* The same request, twice: nothing at all */
+   settle = state->common.settle;
+   ctx->windows->update(data, window, &r);
+   ctx->windows->update(data, window, &r);
+   CHECK(state->common.settle == settle);
+   CHECK(!(native_window_settle(ctx, data, &r, 200000)
+         & NATIVE_EVENT(GEOMETRY)));
+   native_wl_no_save("the same request", &saves);
+
+   /* A size asked for while the compositor sizes the window: it comes
+    * with the next floating configure, however late */
+   native_wl_maximise(ctx, data, &r, window, true, false);
+   native_window_settle(ctx, data, &r, 100000);
+   r.settings.dims = VIDEO_SCALE_PACK(430, 320);
+   ctx->windows->update(data, window, &r);
+   CHECK(state->floating_asked);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_wl_no_save("a size while maximised", &saves);
+   native_wl_maximise(ctx, data, &r, window, false, false);
+   native_wl_wait_state(ctx, data, &r, window, false, r.settings.dims);
+   native_window_settle(ctx, data, &r, 200000);
+   native_wl_no_save("restored to a size asked for", &saves);
+
+   r.settings.fullscreen = true;
+   ctx->windows->update(data, window, &r);
+   native_wl_wait_state(ctx, data, &r, window, true, 0);
+   r.settings.dims = VIDEO_SCALE_PACK(440, 330);
+   ctx->windows->update(data, window, &r);
+   CHECK(state->floating_asked);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   r.settings.fullscreen = false;
+   ctx->windows->update(data, window, &r);
+   native_wl_wait_state(ctx, data, &r, window, false, r.settings.dims);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_wl_no_save("a size while fullscreen", &saves);
+
+   if (kwin)
+   {
+      /* A resize not yet out when an edit comes: the edit stands */
+      native_wl_kwin_size(screen, 460, 340);
+      CHECK(native_wl_wait_judged(ctx, data, window,
+               VIDEO_SCALE_PACK(460, 340)));
+      r.settings.dims = VIDEO_SCALE_PACK(410, 305);
+      ctx->windows->update(data, window, &r);
+      native_wl_wait_state(ctx, data, &r, window, false, r.settings.dims);
+      native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+      native_wl_no_save("a resize before an edit", &saves);
+      CHECK(state->common.request.settings.dims == r.settings.dims);
+
+      /* Its own size back is no edit: that resize still goes out */
+      native_wl_kwin_size(screen, 470, 350);
+      CHECK(native_wl_wait_judged(ctx, data, window,
+               VIDEO_SCALE_PACK(470, 350)));
+      r.settings.dims = VIDEO_SCALE_PACK(470, 350);
+      settle          = state->common.settle;
+      ctx->windows->update(data, window, &r);
+      CHECK(state->common.settle == settle);
+      native_window_settle(ctx, data, &r, 200000);
+      CHECK(native_window_saves == saves + 1);
+      CHECK(native_window_saved.save_dims == VIDEO_SCALE_PACK(470, 350));
+      native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+      saves = native_window_saves;
+   }
+
+   /* An Auto window's first X or Y row, windowed: to no monitor, and
+    * nothing shows */
+   r.settings.monitor = 1;
+   r.settings.pos     = 0;
+   r.settings.pos_set = false;
+   r.settings.dims    = VIDEO_SCALE_PACK(400, 300);
+   native_wl_replace(ctx, data, &r, window);
+   state = (wl_video_window_t*)window->state;
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_wl_no_save("made Auto", &saves);
+   surface            = window->surface;
+   r.settings.monitor = 0;
+   r.settings.pos     = VIDEO_POS_PACK(300, 200);
+   r.settings.pos_set = true;
+   ctx->windows->update(data, window, &r);
+   CHECK(!(native_window_settle(ctx, data, &r,
+               VIDEO_WINDOW_SETTLE_USEC + 100000)
+         & NATIVE_EVENT(GEOMETRY)));
+   CHECK(window->surface == surface);
+   CHECK(!state->fullscreen && state->floating);
+   CHECK(state->dims == r.settings.dims);
+   CHECK(!state->common.request.settings.monitor);
+   native_wl_no_save("the first X row", &saves);
+
+   /* Never resized: the size it had, and it gets no saved one */
+   r.settings.pos     = 0;
+   r.settings.pos_set = false;
+   r.settings.dims    = 0;
+   native_wl_replace(ctx, data, &r, window);
+   state = (wl_video_window_t*)window->state;
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_wl_no_save("made automatic", &saves);
+   dims = state->dims;
+   native_wl_toggle(ctx, data, &r, window, dims);
+   CHECK(!state->common.request.settings.dims);
+
+   native_wl_replace(ctx, data, request, window);
+}
+
 /* The size the user leaves a window at is saved once it has settled:
  * the surface's, never a position, and never the compositor's first
  * size, a maximised one or the one it was made at */
@@ -1297,6 +1544,7 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(native_wl_main_intact(wl, &main_window));
 
    native_wl_saves(ctx, data, request, window, kwin);
+   native_wl_updates(ctx, data, request, window, kwin);
    CHECK(native_wl_main_intact(wl, &main_window));
 }
 

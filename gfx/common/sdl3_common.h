@@ -251,20 +251,36 @@ typedef struct sdl3_video_window
    video_window_common_t common;
    /* When the check of judge_pos and judge_dims ran */
    retro_time_t judge_at;
+   /* When an update stops waiting for SDL: for a MAXIMIZED 'waiting',
+    * then for the frame of a 'framed' one or the display of 'via' */
+   retro_time_t wait_by;
    SDL_Window *win;
    /* What SDL is still to finish of what it was asked, which an
-    * update waits for, as it does for a minimised window */
+    * update waits for: MAXIMIZED until wait_by, FULLSCREEN as long as
+    * SDL has it so, as for a minimised window */
    SDL_WindowFlags waiting;
    /* SDL's flags at the last check */
    SDL_WindowFlags flags;
    /* Where it stood before it last went fullscreen */
    SDL_Rect windowed;
+   /* On its way to a fullscreen request's display as a window: the
+    * display it was moved to, which SDL is to have it on next; 0 when
+    * not. 'windowed' stays. */
+   SDL_DisplayID via;
    SDL_WindowID id;
    /* Bounds the next pump judges, where 'judge' */
    unsigned judge_pos;
    unsigned judge_dims;
    bool fullscreen;
    bool windowed_set;
+   /* It left fullscreen on its way to a fullscreen request's display:
+    * 'windowed' stays, and SDL puts it back where it stood, which is
+    * no display to wait for */
+   bool left_fullscreen;
+   /* It had a frame going fullscreen, or may have one: made fullscreen,
+    * or fullscreen again before the frame came back. Placing it as a
+    * window waits for the frame, until wait_by */
+   bool framed;
    /* An update that waits for the window */
    bool apply;
    /* Whether they were normal at that check */

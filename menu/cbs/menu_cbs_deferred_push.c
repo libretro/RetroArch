@@ -24,6 +24,7 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_displaylist.h"
+#include "../menu_setting.h"
 #include "../../msg_hash.h"
 
 #include "../../database_info.h"
@@ -89,6 +90,21 @@ static int deferred_push_database_manager_list_deferred(
    info->path_c    = NULL;
 
    return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY, settings);
+}
+
+static int deferred_push_video_stereo_settings_list(
+      menu_displaylist_info_t *info)
+{
+   settings_t *settings = config_get_ptr();
+   if (!menu_displaylist_ctl(DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST,
+            info, settings))
+      return -1;
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+   /* Before the cursor is clamped to the list */
+   menu_setting_video_screen_windows_follow(info->list);
+#endif
+   menu_displaylist_process(info);
+   return 0;
 }
 
 GENERIC_DEFERRED_PUSH(deferred_push_remappings_port,                DISPLAYLIST_OPTIONS_REMAPPINGS_PORT)
@@ -175,7 +191,6 @@ GENERIC_DEFERRED_PUSH(deferred_push_video_synchronization_settings_list,    DISP
 GENERIC_DEFERRED_PUSH(deferred_push_video_output_settings_list,    DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_scaling_settings_list,    DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_hdr_settings_list,        DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST)
-GENERIC_DEFERRED_PUSH(deferred_push_video_stereo_settings_list,     DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_dlss_nr_settings_list,    DISPLAYLIST_VIDEO_DLSS_NR_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_crt_switchres_settings_list,    DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_configuration_settings_list,    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST)

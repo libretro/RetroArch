@@ -2454,15 +2454,17 @@ static void win32_video_monitors_publish(void)
  * window), else with an automatic monitor the one the saved bounds are
  * mostly on, else the main window's, else the primary. Saved bounds
  * partly off its work area are moved onto it; bounds not on it at all,
- * and automatic ones, are centred on it. Fullscreen covers it. */
+ * automatic ones and ones with no position set are centred on it.
+ * Fullscreen covers it. */
 static void win32_video_window_place(
       const video_window_settings_t *settings, HMONITOR monitor, RECT *out)
 {
    RECT frame;
    MONITORINFO info;
    video_window_rect_t rect, work;
-   unsigned cw = VIDEO_SCALE_W(settings->dims);
-   unsigned ch = VIDEO_SCALE_H(settings->dims);
+   unsigned cw    = VIDEO_SCALE_W(settings->dims);
+   unsigned ch    = VIDEO_SCALE_H(settings->dims);
+   bool automatic = !settings->dims || !settings->pos_set;
 
    if (!settings->dims)
    {
@@ -2492,7 +2494,7 @@ static void win32_video_window_place(
       if (settings->monitor <= monitors.count)
          monitor = monitors.all[settings->monitor - 1];
    }
-   if (!monitor && !settings->monitor && settings->dims)
+   if (!monitor && !settings->monitor && !automatic)
       monitor = MonitorFromRect(&frame, MONITOR_DEFAULTTONULL);
    if (!monitor && main_window.hwnd)
       monitor = MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONULL);
@@ -2520,7 +2522,7 @@ static void win32_video_window_place(
    work.y = info.rcWork.top;
    work.w = info.rcWork.right  - info.rcWork.left;
    work.h = info.rcWork.bottom - info.rcWork.top;
-   video_window_place_rect(&rect, &work, !settings->dims);
+   video_window_place_rect(&rect, &work, automatic);
    out->left   = rect.x;
    out->top    = rect.y;
    out->right  = rect.x + rect.w;
@@ -2530,10 +2532,11 @@ static void win32_video_window_place(
 /* Puts the window where its request has it */
 static void win32_video_window_apply(win32_video_window_t *state)
 {
-   RECT rect;
+   RECT frame, rect;
    UINT flags                         = SWP_NOZORDER | SWP_NOACTIVATE;
    HMONITOR monitor                   = NULL;
    const video_window_settings_t *now = &state->common.request.settings;
+   video_window_settings_t place      = *now;
 
    state->apply = false;
    /* placed from its restored size, not its maximised one */
@@ -2542,12 +2545,26 @@ static void win32_video_window_apply(win32_video_window_t *state)
    /* fullscreen on no monitor in particular is on the one it is on */
    if (now->fullscreen && !now->monitor)
       monitor = MonitorFromWindow(state->hwnd, MONITOR_DEFAULTTONEAREST);
-   /* a window again, with automatic bounds: where it was */
+   /* a window again with no position of its own: where it was, at its
+    * own size if it has one, moved onto its monitor */
    if (     !now->fullscreen && state->fullscreen
-         && !now->dims && state->windowed_set)
-      rect = state->windowed;
-   else
-      win32_video_window_place(now, monitor, &rect);
+         && (!now->dims || !now->pos_set) && state->windowed_set)
+   {
+      RECT edge;
+      SetRectEmpty(&edge);
+      AdjustWindowRectEx(&edge, WIN32_VIDEO_WINDOW_STYLE, FALSE, 0);
+      /* placed by its client area */
+      place.pos     = VIDEO_POS_PACK(state->windowed.left - edge.left,
+            state->windowed.top - edge.top);
+      place.pos_set = true;
+      if (!now->dims)
+         place.dims = VIDEO_SCALE_PACK(
+               (state->windowed.right  - state->windowed.left)
+                  - (edge.right  - edge.left),
+               (state->windowed.bottom - state->windowed.top)
+                  - (edge.bottom - edge.top));
+   }
+   win32_video_window_place(&place, monitor, &rect);
    if (now->fullscreen != state->fullscreen)
    {
       if (now->fullscreen)
@@ -2560,6 +2577,17 @@ static void win32_video_window_apply(win32_video_window_t *state)
       state->fullscreen = now->fullscreen;
       flags            |= SWP_FRAMECHANGED;
    }
+   /* placed by its client area, as GEOMETRY reports it */
+   SetRectEmpty(&frame);
+   AdjustWindowRectEx(&frame, now->fullscreen
+         ? WIN32_VIDEO_WINDOW_FULLSCREEN_STYLE
+         : WIN32_VIDEO_WINDOW_STYLE, FALSE, 0);
+   video_window_placed(&state->common,
+         VIDEO_POS_PACK(rect.left - frame.left, rect.top - frame.top),
+         VIDEO_SCALE_PACK(
+            (rect.right  - rect.left) - (frame.right  - frame.left),
+            (rect.bottom - rect.top)  - (frame.bottom - frame.top)),
+         cpu_features_get_time_usec());
    SetWindowPos(state->hwnd, NULL, rect.left, rect.top,
          rect.right - rect.left, rect.bottom - rect.top, flags);
 }
@@ -2669,10 +2697,14 @@ void win32_video_window_update(void *owner, video_window_native_t *window,
    if (     (now->dims && (!VIDEO_SCALE_W(now->dims) || !VIDEO_SCALE_H(now->dims)))
          || (     now->pos        == was->pos
                && now->dims       == was->dims
+               && now->pos_set    == was->pos_set
                && now->monitor    == was->monitor
                && now->fullscreen == was->fullscreen))
       return;
-   state->common.request = *request;
+   state->common.request    = *request;
+   /* A drag not yet out does not overwrite this */
+   state->common.save_dims  = 0;
+   state->common.save_moved = false;
    /* a minimised window takes it once restored, in poll() */
    if (IsIconic(state->hwnd))
       state->apply = true;

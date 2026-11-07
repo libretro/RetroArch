@@ -2091,11 +2091,11 @@ static void test_windows_steps_follow(void)
    frame.settings[2].pos_set = true;
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 0u && create == 0u);
-   /* An edit that changes them: made again */
+   /* An edit that changes them: updated in place */
    frame.settings[2].fullscreen = true;
    frame.settings[2].edit++;
    video_windows_steps(&held, &frame, &retire, &create);
-   CHECK(retire == 4u && create == 4u);
+   CHECK(retire == 0u && create == 0u && held.update == 4u);
    /* An edit that changes nothing: recorded, not made again */
    frame.settings[2].edit++;
    video_windows_steps(&held, &frame, &retire, &create);
@@ -2146,6 +2146,354 @@ static void test_windows_steps_follow(void)
    CHECK(retire == 2u && create == 2u);
 }
 
+/* Desktop: an edit that changes only a window's placement goes to
+ * update(), for that frame alone */
+static void test_windows_steps_update(void)
+{
+   static video_windows_frame_t frame;
+   video_windows_held_t held;
+   unsigned retire;
+   unsigned create;
+   memset(&held, 0, sizeof(held));
+   memset(&frame, 0, sizeof(frame));
+   frame.monitors            = true;
+   frame.monitors_present    = VIDEO_WINDOWS_ORDINAL_BIT(1)
+      | VIDEO_WINDOWS_ORDINAL_BIT(2);
+   frame.window_screens[2]   = 4u;
+   frame.settings[2].mode    = VIDEO_WINDOW_SEPARATE;
+   frame.settings[2].monitor = 1;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 4u && held.update == 0u);
+   held.live = create;
+   /* Fullscreen */
+   frame.settings[2].fullscreen = true;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 4u);
+   CHECK(held.made[2].fullscreen);
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 0u);
+   /* X/Y */
+   frame.settings[2].pos     = VIDEO_POS_PACK(10, 20);
+   frame.settings[2].pos_set = true;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 4u);
+   CHECK(held.made[2].pos == VIDEO_POS_PACK(10, 20));
+   /* Size */
+   frame.settings[2].dims = VIDEO_SCALE_PACK(640, 480);
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 4u);
+   /* An edit that changes nothing: recorded, neither */
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 0u);
+   CHECK(held.made[2].edit == frame.settings[2].edit);
+   /* Monitor: made again */
+   frame.settings[2].monitor = 2;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+   /* Monitor and fullscreen together: made again */
+   frame.settings[2].monitor    = 1;
+   frame.settings[2].fullscreen = false;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+   /* Mode, or other screens, with a placement edit: made again */
+   frame.settings[2].mode       = VIDEO_WINDOW_ATTACHED;
+   frame.settings[2].fullscreen = true;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+   frame.settings[2].mode       = VIDEO_WINDOW_SEPARATE;
+   video_windows_steps(&held, &frame, &retire, &create);
+   frame.window_screens[2]      = 5u;
+   frame.settings[2].fullscreen = false;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+   frame.window_screens[2]      = 4u;
+   video_windows_steps(&held, &frame, &retire, &create);
+   /* Named or not, changed with a placement edit: made again; alone,
+    * recorded */
+   frame.settings[2].fullscreen = true;
+   frame.window_named           = 4u;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+   frame.window_named           = 0u;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 0u);
+   CHECK(!(held.made_named & 4u));
+   frame.settings[2].fullscreen = false;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(held.update == 4u);
+   /* Saved bounds without an edit: neither */
+   video_windows_held_saved(&held, 2, VIDEO_POS_PACK(30, 40),
+         VIDEO_SCALE_PACK(320, 240), true);
+   frame.settings[2].pos     = VIDEO_POS_PACK(30, 40);
+   frame.settings[2].dims    = VIDEO_SCALE_PACK(320, 240);
+   frame.settings[2].pos_set = true;
+   frame.settings[2].monitor = 0;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 0u);
+   /* A kept window is left */
+   frame.window_keep            = 4u;
+   frame.settings[2].fullscreen = true;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && held.update == 0u);
+   frame.window_keep            = 0u;
+   /* Android (no monitors): neither */
+   frame.monitors = false;
+   frame.settings[2].pos = VIDEO_POS_PACK(50, 60);
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 0u);
+   frame.monitors = true;
+   /* Set for one frame even when the next has no windows */
+   frame.settings[2].pos = VIDEO_POS_PACK(70, 80);
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(held.update == 4u);
+   video_windows_steps(&held, NULL, &retire, &create);
+   CHECK(retire == 4u && held.update == 0u);
+}
+
+/* An Auto window's first X or Y row gives it saved bounds, which target
+ * no monitor: in place, where it stays a window on no named monitor. To
+ * a monitor from none is a new placement. */
+static void test_windows_steps_auto_flip(void)
+{
+   static video_windows_frame_t frame;
+   video_windows_held_t held;
+   unsigned retire;
+   unsigned create;
+   video_window_settings_t *s = &frame.settings[2];
+   memset(&held, 0, sizeof(held));
+   memset(&frame, 0, sizeof(frame));
+   frame.monitors          = true;
+   frame.monitors_present  = VIDEO_WINDOWS_ORDINAL_BIT(1)
+      | VIDEO_WINDOWS_ORDINAL_BIT(2);
+   frame.window_screens[2] = 4u;
+   s->mode                 = VIDEO_WINDOW_SEPARATE;
+   s->monitor              = 2;
+   s->dims                 = VIDEO_SCALE_PACK(640, 480);
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(create == 4u);
+   held.live = create;
+
+   /* The flip: updated, once, and on no monitor from there */
+   s->pos     = VIDEO_POS_PACK(10, 0);
+   s->pos_set = true;
+   s->monitor = 0;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 4u);
+   CHECK(held.made[2].monitor == 0 && held.made[2].pos_set);
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 0u);
+   s->pos = VIDEO_POS_PACK(20, 0);
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 4u);
+
+   /* The reverse, Start on X or Y: made again */
+   s->pos_set = false;
+   s->monitor = 2;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+
+   /* And Size to Auto */
+   s->pos_set = true;
+   s->monitor = 0;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 4u);
+   s->dims    = 0;
+   s->pos_set = false;
+   s->monitor = 2;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+
+   /* The flip going fullscreen, or already fullscreen: made again */
+   s->dims = VIDEO_SCALE_PACK(640, 480);
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 4u);
+   s->pos_set    = true;
+   s->monitor    = 0;
+   s->fullscreen = true;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+   s->pos_set = false;
+   s->monitor = 2;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   s->pos_set = true;
+   s->monitor = 0;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+
+   /* Leaving fullscreen with it: not yet a window, so made again */
+   s->pos_set    = false;
+   s->monitor    = 2;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   s->pos_set    = true;
+   s->monitor    = 0;
+   s->fullscreen = false;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+
+   /* Bounds that are not saved ones: made again */
+   s->pos_set = false;
+   s->monitor = 2;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   s->monitor = 0;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+   s->monitor = 2;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   s->dims    = 0;
+   s->pos_set = true;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 4u);
+   s->monitor = 0;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+
+   /* Made on a named monitor, or named now: made again */
+   s->dims            = VIDEO_SCALE_PACK(640, 480);
+   s->pos_set         = false;
+   s->monitor         = 2;
+   frame.window_named = 4u;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   CHECK(held.made_named == 4u);
+   frame.window_named = 0u;
+   s->pos_set         = true;
+   s->monitor         = 0;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+   s->pos_set = false;
+   s->monitor = 2;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   CHECK(held.made_named == 0u);
+   frame.window_named = 4u;
+   s->pos_set         = true;
+   s->monitor         = 0;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u && held.update == 0u);
+   frame.window_named = 0u;
+
+   /* The flip with no edit stays sticky, and with nothing else changed
+    * it is recorded */
+   s->pos_set = false;
+   s->monitor = 2;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 4u && create == 4u);
+   s->pos_set = true;
+   s->monitor = 0;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 0u);
+   CHECK(held.made[2].monitor == 2);
+   held.made[2].pos_set = true;
+   s->edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 0u);
+   CHECK(held.made[2].monitor == 0);
+}
+
+/* A placement edit of a screen with no window reaches its make, with
+ * what the edit asked: update() is for a live window only */
+static void test_windows_steps_update_not_live(void)
+{
+   static video_windows_frame_t frame;
+   video_windows_held_t held;
+   unsigned retire;
+   unsigned create;
+   memset(&held, 0, sizeof(held));
+   memset(&frame, 0, sizeof(frame));
+   frame.monitors            = true;
+   frame.monitors_present    = VIDEO_WINDOWS_ORDINAL_BIT(1);
+   frame.window_screens[2]   = 4u;
+   frame.settings[2].mode    = VIDEO_WINDOW_SEPARATE;
+   frame.settings[2].monitor = 1;
+   video_windows_steps(&held, &frame, &retire, &create);
+   held.live = create;
+   /* Closed by the user, with the frames still wanting it: as the
+    * renderer's attach leaves it, made_known and all */
+   held.live           = 0u;
+   held.closed         = 4u;
+   held.closed_edit[2] = frame.settings[2].edit;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.closed == 4u);
+   frame.settings[2].fullscreen = true;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 4u && held.update == 0u);
+   CHECK(held.closed == 0u);
+   CHECK(held.made[2].fullscreen);
+   CHECK(held.made[2].edit == frame.settings[2].edit);
+   held.live = create;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 0u);
+   /* Closed, its screens back in the main window until the edit */
+   held.live           = 0u;
+   held.closed         = 4u;
+   held.closed_edit[2] = frame.settings[2].edit;
+   frame.window_screens[2] = 0u;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.closed == 0u);
+   frame.window_screens[2]   = 4u;
+   frame.settings[2].pos     = VIDEO_POS_PACK(10, 20);
+   frame.settings[2].pos_set = true;
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 4u && held.update == 0u);
+   CHECK(held.made[2].pos == VIDEO_POS_PACK(10, 20));
+   held.live = create;
+   /* Failed: an edit is a retry, and its make takes the edit */
+   held.live   = 0u;
+   held.failed = 4u;
+   frame.settings[2].dims = VIDEO_SCALE_PACK(640, 480);
+   frame.settings[2].edit++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 0u && held.update == 0u);
+   CHECK(held.failed == 4u);
+   frame.retry++;
+   video_windows_steps(&held, &frame, &retire, &create);
+   CHECK(retire == 0u && create == 4u && held.update == 0u);
+   CHECK(held.failed == 0u);
+   CHECK(held.made[2].dims == VIDEO_SCALE_PACK(640, 480));
+   CHECK(held.made[2].edit == frame.settings[2].edit);
+}
+
 /* Desktop: a window's saved bounds come back in the frames as what it
  * was made for, not as an edit */
 static void test_windows_held_saved(void)
@@ -2187,11 +2535,11 @@ static void test_windows_held_saved(void)
    frame.settings[1].edit++;
    video_windows_steps(&held, &frame, &retire, &create);
    CHECK(retire == 0u && create == 0u);
-   /* One that changes something does */
+   /* One that changes something updates it */
    frame.settings[1].fullscreen = true;
    frame.settings[1].edit++;
    video_windows_steps(&held, &frame, &retire, &create);
-   CHECK(retire == 2u && create == 2u);
+   CHECK(retire == 0u && create == 0u && held.update == 2u);
    /* Named: moved, and kept on its monitor */
    video_windows_held_saved(&held, 2, VIDEO_POS_PACK(40, 50),
          VIDEO_SCALE_PACK(320, 240), true);
@@ -2222,7 +2570,7 @@ static void test_windows_held_saved(void)
    frame.settings[1].pos_set = true;
    frame.settings[1].edit++;
    video_windows_steps(&held, &frame, &retire, &create);
-   CHECK(retire == 2u && create == 2u);
+   CHECK(retire == 0u && create == 0u && held.update == 2u);
    video_windows_held_saved(&held, 1, 0, VIDEO_SCALE_PACK(640, 480),
          false);
    CHECK(held.made[1].monitor == 0);
@@ -2364,6 +2712,9 @@ int main(void)
    test_window_place();
    test_windows_steps();
    test_windows_steps_follow();
+   test_windows_steps_update();
+   test_windows_steps_auto_flip();
+   test_windows_steps_update_not_live();
    test_windows_held_saved();
    test_windows_steps_ui();
    test_window_ui_drawn();

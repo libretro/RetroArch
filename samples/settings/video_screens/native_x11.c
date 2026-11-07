@@ -596,6 +596,97 @@ static void native_x11_max_first(const gfx_ctx_driver_t *ctx, void *data,
    native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
 }
 
+/* Takes events and answers without poll() until the window has bounds
+ * to judge and a _NET_WM_STATE read out, or with 'again' until another
+ * is to be asked once that is answered */
+static bool native_x11_pump_reads(const gfx_ctx_driver_t *ctx,
+      void *data, const x11_video_window_t *state, bool again)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   while (again ? !state->wm_state_again
+         : !(state->judge && state->wm_state))
+   {
+      bool quit     = false;
+      bool resize   = false;
+      unsigned dims = VIDEO_SCALE_PACK(640, 480);
+      if (cpu_features_get_time_usec() > deadline)
+         return false;
+      ctx->check_window(data, &quit, &resize, &dims);
+      retro_sleep(2);
+   }
+   return true;
+}
+
+/* One poll() while 'fix' grabs the server, so the read is still out;
+ * false if it judged the bounds */
+static bool native_x11_held(const gfx_ctx_driver_t *ctx, void *data,
+      const x11_video_window_t *state)
+{
+   video_window_event_t events[4];
+   unsigned i;
+   unsigned count = ctx->windows->poll(data, events, 4);
+   for (i = 0; i < count; i++)
+      if (     events[i].kind == VIDEO_WINDOW_EVENT_GEOMETRY
+            && events[i].save_dims)
+         native_window_saves++;
+   return state->judge;
+}
+
+/* Bounds that come while a _NET_WM_STATE read is out wait for it, and
+ * only for it: a move is saved, and a move while maximised is not, even
+ * when it is unmaximised before poll() has the answer, with a poll()
+ * before the answer came or none. Leaves the window at x+320,y+200
+ * 420x310. */
+static void native_x11_state_out(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *r, video_window_native_t *window,
+      Display *fix, native_rect_t monitor)
+{
+   int i;
+   unsigned saves            = native_window_saves;
+   x11_video_window_t *state = (x11_video_window_t*)window->state;
+   Window win                = native_x11_window(window);
+   if (!state)
+   {
+      CHECK(!"window state");
+      return;
+   }
+
+   XGrabServer(fix);
+   XChangeProperty(fix, win, XInternAtom(fix, "_NET_WM_STATE", False),
+         XA_ATOM, 32, PropModeReplace, (unsigned char*)&win, 0);
+   XMoveWindow(fix, win, monitor.x + 280, monitor.y + 190);
+   XSync(fix, False);
+   CHECK(native_x11_pump_reads(ctx, data, state, false));
+   CHECK(native_x11_held(ctx, data, state));
+   XUngrabServer(fix);
+   XSync(fix, False);
+   CHECK(native_window_saves == saves);
+   CHECK(native_x11_wait_save(ctx, data, r));
+   CHECK(native_window_saved.save_pos
+         == VIDEO_POS_PACK(monitor.x + 280, monitor.y + 190));
+
+   /* The answer, maximised, waits unread while the unmaximise comes */
+   for (i = 0; i < 2; i++)
+   {
+      saves = native_window_saves;
+      XGrabServer(fix);
+      native_x11_maximise(fix, win, true, false);
+      XMoveWindow(fix, win, monitor.x + 300 + i * 20, monitor.y + 200);
+      XSync(fix, False);
+      CHECK(native_x11_pump_reads(ctx, data, state, false));
+      if (!i)
+         CHECK(native_x11_held(ctx, data, state));
+      XUngrabServer(fix);
+      XSync(fix, False);
+      XSync(g_x11_dpy, False);
+      native_x11_maximise(fix, win, false, false);
+      XSync(fix, False);
+      CHECK(native_x11_pump_reads(ctx, data, state, true));
+      native_window_settle(ctx, data, r, 300000);
+      CHECK(native_window_saves == saves);
+   }
+}
+
 /* GEOMETRY saves where the user left a window: a move or a resize, but
  * nothing while it is maximised or fullscreen, nor where the window
  * manager places it. The user's moves come from a client of their own,
@@ -685,6 +776,7 @@ static void native_x11_saves(const gfx_ctx_driver_t *ctx, void *data,
    if (!managed)
    {
       native_x11_max_first(ctx, data, &r, window, fix, monitor);
+      native_x11_state_out(ctx, data, &r, window, fix, monitor);
       saves = native_window_saves;
    }
 
@@ -737,6 +829,295 @@ static void native_x11_saves(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(state && state->common.pos == saved_pos);
    CHECK(window->dims == saved_dims);
    CHECK(native_window_saves == saves);
+
+   XCloseDisplay(fix);
+   native_x11_remake(ctx, data, request, window);
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+}
+
+/* Fullscreen on and off through update(): it fills 'monitor', comes back
+ * at 'windowed', and none of it is a move of the user's. Each update()
+ * sends the move and the state, so never a round trip. */
+static void native_x11_toggle(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *r, video_window_native_t *window,
+      native_rect_t monitor, native_rect_t windowed, bool managed)
+{
+   unsigned long requests;
+   unsigned saves        = native_window_saves;
+
+   r->settings.fullscreen = true;
+   requests               = XNextRequest(g_x11_dpy);
+   ctx->windows->update(data, window, r);
+   CHECK(XNextRequest(g_x11_dpy) - requests <= 2);
+   native_x11_wait_rect(ctx, data, r, window, monitor);
+   if (managed)
+      native_x11_wait_fullscreen(ctx, data, r, window, true);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_window_saves == saves);
+
+   r->settings.fullscreen = false;
+   requests               = XNextRequest(g_x11_dpy);
+   ctx->windows->update(data, window, r);
+   CHECK(XNextRequest(g_x11_dpy) - requests <= 2);
+   native_x11_wait_rect(ctx, data, r, window, windowed);
+   if (managed)
+      native_x11_wait_fullscreen(ctx, data, r, window, false);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_window_saves == saves);
+   native_x11_wait_rect(ctx, data, r, window, windowed);
+}
+
+/* Takes the window's events and answers, leaving what poll() has for
+ * GEOMETRY unread, until a drag's bounds wait for poll() to judge them
+ * or, with 'judged', wait to go out */
+static bool native_x11_wait_held(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_native_t *window, bool judged)
+{
+   video_window_event_t none;
+   x11_video_window_t *state = (x11_video_window_t*)window->state;
+   retro_time_t deadline     = cpu_features_get_time_usec() + 3000000;
+   for (;;)
+   {
+      bool quit   = false;
+      bool resize = false;
+      unsigned dims = VIDEO_SCALE_PACK(640, 480);
+      ctx->check_window(data, &quit, &resize, &dims);
+      if (judged ? state->common.save_dims != 0 : state->judge)
+         return true;
+      ctx->windows->poll(data, &none, 0);
+      if (judged ? state->common.save_dims != 0 : state->judge)
+         return true;
+      if (cpu_features_get_time_usec() > deadline)
+         return false;
+      retro_sleep(2);
+   }
+}
+
+/* An edit as the renderers hand it on. What update() puts a window at
+ * is not the user's, and the same request again moves nothing. */
+static void native_x11_updates(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window,
+      native_rect_t monitor, unsigned ordinal, bool managed)
+{
+   static bool done;
+   video_window_request_t r;
+   native_rect_t want;
+   XEvent event;
+   x11_video_window_t *state;
+   Display *fix;
+   Window win;
+   unsigned i, saves;
+   unsigned long requests;
+   int x = monitor.x;
+   int y = monitor.y;
+
+   if (done)
+      return;
+   done = true;
+   if (!(fix = XOpenDisplay(DisplayString(g_x11_dpy))))
+   {
+      CHECK(!"fixture display");
+      return;
+   }
+   r                     = *request;
+   r.settings.monitor    = 0;
+   r.settings.fullscreen = false;
+   r.settings.pos        = VIDEO_POS_PACK(x + 200, y + 150);
+   r.settings.dims       = VIDEO_SCALE_PACK(400, 300);
+   r.settings.pos_set    = true;
+   win = native_x11_remake(ctx, data, &r, window);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+
+   /* Dragged, so the next requests carry its saved bounds */
+   XMoveResizeWindow(fix, win, x + 260, y + 170, 400, 300);
+   XFlush(fix);
+   CHECK(native_x11_wait_save(ctx, data, &r));
+   r.settings.pos  = native_window_saved.save_pos;
+   r.settings.dims = native_window_saved.save_dims;
+   want.x          = x + 260;
+   want.y          = y + 170;
+   want.w          = 400;
+   want.h          = 300;
+   native_x11_wait_rect(ctx, data, &r, window, want);
+   native_x11_toggle(ctx, data, &r, window, monitor, want, managed);
+   saves = native_window_saves;
+
+   /* The X and Y rows, then the Size row */
+   r.settings.pos = VIDEO_POS_PACK(x + 300, y + 200);
+   want.x         = x + 300;
+   want.y         = y + 200;
+   ctx->windows->update(data, window, &r);
+   native_x11_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_window_saves == saves);
+   r.settings.dims = VIDEO_SCALE_PACK(420, 310);
+   want.w          = 420;
+   want.h          = 310;
+   ctx->windows->update(data, window, &r);
+   native_x11_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_window_saves == saves);
+
+   /* The same request, twice: nothing goes out, nothing moves */
+   XSelectInput(fix, win, StructureNotifyMask);
+   XSync(fix, False);
+   while (XPending(fix))
+      XNextEvent(fix, &event);
+   requests = XNextRequest(g_x11_dpy);
+   ctx->windows->update(data, window, &r);
+   ctx->windows->update(data, window, &r);
+   CHECK(XNextRequest(g_x11_dpy) == requests);
+   native_window_settle(ctx, data, &r, 200000);
+   XSync(fix, False);
+   CHECK(!XCheckTypedWindowEvent(fix, win, ConfigureNotify, &event));
+   XSelectInput(fix, win, 0);
+   CHECK(native_window_saves == saves);
+
+   /* A drag on its way when an edit comes, its bounds still to be judged
+    * and then already judged: the edit stands */
+   state = (x11_video_window_t*)window->state;
+   for (i = 0; i < 2; i++)
+   {
+      XMoveResizeWindow(fix, win, x + 340 + (int)i * 10, y + 220,
+            want.w, want.h);
+      XFlush(fix);
+      CHECK(native_x11_wait_held(ctx, data, window, i == 1));
+      r.settings.pos = VIDEO_POS_PACK(x + 180 + (int)i * 10, y + 120);
+      want.x         = x + 180 + (int)i * 10;
+      want.y         = y + 120;
+      ctx->windows->update(data, window, &r);
+      native_x11_wait_rect(ctx, data, &r, window, want);
+      native_window_settle(ctx, data, &r,
+            VIDEO_WINDOW_SETTLE_USEC + 100000);
+      CHECK(native_window_saves == saves);
+      CHECK(state && state->common.request.settings.pos == r.settings.pos);
+      CHECK(native_x11_rect(fix, win).x == want.x);
+   }
+
+   /* Settled again, the user's moves are saved */
+   XMoveResizeWindow(fix, win, x + 360, y + 230, want.w, want.h);
+   XFlush(fix);
+   CHECK(native_x11_wait_save(ctx, data, &r));
+   CHECK(native_window_saved.save_pos == VIDEO_POS_PACK(x + 360, y + 230));
+   saves = native_window_saves;
+
+   /* Never dragged, automatic and then with a size alone: where it was,
+    * not centred, and it gets no bounds */
+   for (i = 0; i < 2; i++)
+   {
+      r.settings.pos     = 0;
+      r.settings.dims    = i ? VIDEO_SCALE_PACK(400, 300) : 0;
+      r.settings.pos_set = false;
+      win = native_x11_remake(ctx, data, &r, window);
+      XMoveWindow(fix, win, x + 240, y + 190);
+      XFlush(fix);
+      native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+      want   = native_x11_rect(fix, win);
+      want.x = x + 240;
+      want.y = y + 190;
+      native_x11_wait_rect(ctx, data, &r, window, want);
+      native_window_settle(ctx, data, &r,
+            VIDEO_WINDOW_SETTLE_USEC + 100000);
+      CHECK(native_window_saves == saves);
+      native_x11_toggle(ctx, data, &r, window, monitor, want, managed);
+      state = (x11_video_window_t*)window->state;
+      CHECK(state && !state->common.request.settings.pos_set);
+   }
+
+   /* An Auto window's first X or Y row: to no monitor, with a position */
+   r.settings.monitor = ordinal;
+   r.settings.pos     = 0;
+   r.settings.dims    = VIDEO_SCALE_PACK(400, 300);
+   r.settings.pos_set = false;
+   win = native_x11_remake(ctx, data, &r, window);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   /* It came up where it was put, which no GEOMETRY says */
+   state = (x11_video_window_t*)window->state;
+   if (state)
+      native_window_pos = state->common.pos;
+   native_x11_wait_rect(ctx, data, &r, window,
+         native_x11_centred(monitor, 400, 300));
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   r.settings.monitor = 0;
+   r.settings.pos     = VIDEO_POS_PACK(x + 200, y + 150);
+   r.settings.pos_set = true;
+   want.x             = x + 200;
+   want.y             = y + 150;
+   want.w             = 400;
+   want.h             = 300;
+   ctx->windows->update(data, window, &r);
+   native_x11_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_window_saves == saves);
+   CHECK(native_x11_window(window) == win);
+   state = (x11_video_window_t*)window->state;
+   CHECK(state && !state->common.request.settings.monitor);
+
+   /* Made fullscreen it has no rect to go back to: its request's */
+   r.settings.pos        = 0;
+   r.settings.pos_set    = false;
+   r.settings.fullscreen = true;
+   native_x11_remake(ctx, data, &r, window);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_window_settle(ctx, data, &r, 200000);
+   r.settings.fullscreen = false;
+   ctx->windows->update(data, window, &r);
+   native_x11_wait_rect(ctx, data, &r, window,
+         native_x11_centred(monitor, 400, 300));
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_window_saves == saves);
+
+   /* A size and no position: a size asked for while fullscreen, then
+    * with Fullscreen on, comes back where the window stood */
+   r.settings.monitor = 0;
+   win = native_x11_remake(ctx, data, &r, window);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   state = (x11_video_window_t*)window->state;
+   if (state)
+      native_window_pos = state->common.pos;
+   want = native_x11_centred(monitor, 400, 300);
+   native_x11_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   r.settings.fullscreen = true;
+   ctx->windows->update(data, window, &r);
+   native_x11_wait_rect(ctx, data, &r, window, monitor);
+   if (managed)
+      native_x11_wait_fullscreen(ctx, data, &r, window, true);
+   r.settings.dims = VIDEO_SCALE_PACK(500, 360);
+   ctx->windows->update(data, window, &r);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_x11_wait_rect(ctx, data, &r, window, monitor);
+   CHECK(native_window_saves == saves);
+   r.settings.fullscreen = false;
+   want.w                = 500;
+   want.h                = 360;
+   ctx->windows->update(data, window, &r);
+   native_x11_wait_rect(ctx, data, &r, window, want);
+   if (managed)
+      native_x11_wait_fullscreen(ctx, data, &r, window, false);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_window_saves == saves);
+   native_x11_wait_rect(ctx, data, &r, window, want);
+
+   r.settings.dims       = VIDEO_SCALE_PACK(520, 370);
+   r.settings.fullscreen = true;
+   ctx->windows->update(data, window, &r);
+   native_x11_wait_rect(ctx, data, &r, window, monitor);
+   if (managed)
+      native_x11_wait_fullscreen(ctx, data, &r, window, true);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_window_saves == saves);
+   r.settings.fullscreen = false;
+   want.w                = 520;
+   want.h                = 370;
+   ctx->windows->update(data, window, &r);
+   native_x11_wait_rect(ctx, data, &r, window, want);
+   if (managed)
+      native_x11_wait_fullscreen(ctx, data, &r, window, false);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   CHECK(native_window_saves == saves);
+   native_x11_wait_rect(ctx, data, &r, window, want);
 
    XCloseDisplay(fix);
    native_x11_remake(ctx, data, request, window);
@@ -2075,6 +2456,10 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
    CHECK(native_x11_primary_intact(display, primary));
    native_x11_saves(ctx, data, request, window, monitors[0], managed);
+   CHECK(native_x11_primary_intact(display, primary));
+   native_x11_updates(ctx, data, request, window,
+         monitors[g_x11_screen < count ? g_x11_screen : 0],
+         (g_x11_screen < count ? g_x11_screen : 0) + 1, managed);
    CHECK(native_x11_primary_intact(display, primary));
 #if defined(RARCH_HAVE_X11_MONITORS) && defined(HAVE_XRANDR) \
    && (RANDR_MAJOR > 1 || RANDR_MINOR >= 5)

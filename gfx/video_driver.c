@@ -1164,7 +1164,7 @@ void video_driver_publish_window_layout(unsigned window,
 }
 
 void video_driver_publish_window_bounds(unsigned window, unsigned screens,
-      unsigned pos, unsigned dims, bool moved)
+      unsigned edit, unsigned pos, unsigned dims, bool moved)
 {
    video_window_layouts_t *box;
    video_window_layout_t *slot;
@@ -1172,11 +1172,13 @@ void video_driver_publish_window_bounds(unsigned window, unsigned screens,
       return;
    box                 = &video_driver_st.window_layouts[window - 1];
    box->bounds.screens = screens;
+   box->bounds.edit    = edit;
    box->bounds.dims    = dims;
    box->bounds.sizes++;
    if (moved)
    {
-      box->bounds.pos = pos;
+      box->bounds.pos      = pos;
+      box->bounds.pos_edit = edit;
       box->bounds.moves++;
    }
    /* With the last layout, so input keeps mapping it */
@@ -4780,9 +4782,21 @@ static void video_driver_windows_bounds_take(video_driver_state_t *video_st,
          continue;
       while (!(b->screens & (1u << s)))
          s++;
+      /* Saved before the screen's last edit: the edit wins, and the
+       * window follows it */
+      if (b->edit != video_st->windows_edit[s])
+      {
+         box->bounds_moves = b->moves;
+         box->bounds_sizes = b->sizes;
+         continue;
+      }
       changed = settings->uints.video_screen_window_dims[s] != b->dims;
+#ifdef HAVE_MENU
+      if (!settings->uints.video_screen_window_dims[s])
+         video_st->windows_rows_sized |= 1u << s;
+#endif
       settings->uints.video_screen_window_dims[s] = b->dims;
-      if (b->moves != box->bounds_moves)
+      if (b->moves != box->bounds_moves && b->pos_edit == b->edit)
       {
          changed = changed
             || settings->uints.video_screen_window_pos[s] != b->pos
@@ -4793,7 +4807,12 @@ static void video_driver_windows_bounds_take(video_driver_state_t *video_st,
       box->bounds_moves = b->moves;
       box->bounds_sizes = b->sizes;
       if (changed)
+      {
          settings->flags |= SETTINGS_FLG_MODIFIED;
+#ifdef HAVE_MENU
+         video_st->windows_rows_moved |= 1u << s;
+#endif
+      }
    }
 }
 
@@ -4803,6 +4822,18 @@ void video_driver_take_window_bounds(void)
    if (settings)
       video_driver_windows_bounds_take(&video_driver_st, settings);
 }
+
+#ifdef HAVE_MENU
+unsigned video_driver_window_rows_changed(unsigned *sized)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   unsigned moved                 = video_st->windows_rows_moved;
+   *sized                         = video_st->windows_rows_sized;
+   video_st->windows_rows_moved   = 0;
+   video_st->windows_rows_sized   = 0;
+   return moved;
+}
+#endif
 
 /* This frame's windows, with or without content views, or NULL while
  * they are off or the driver has none; @now is the frame's clock

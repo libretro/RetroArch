@@ -7058,6 +7058,18 @@ static void gl2_window_attach(gl2_t *gl, const video_windows_frame_t *f,
       gl2_window_retire(gl, w, false);
 }
 
+/* What @f asks of window @w, at the generation it has */
+static void gl2_window_request(gl2_t *gl, const video_windows_frame_t *f,
+      unsigned w, video_window_request_t *out)
+{
+   memset(out, 0, sizeof(*out));
+   out->screen     = w;
+   out->screens    = f->window_screens[w];
+   out->generation = gl->windows.win[w].native.generation;
+   out->settings   = f->settings[w];
+   out->display    = f->display;
+}
+
 /* Window @w for @f's screens there, on @f's display */
 static bool gl2_window_make(gl2_t *gl, const video_windows_frame_t *f,
       unsigned w)
@@ -7065,13 +7077,9 @@ static bool gl2_window_make(gl2_t *gl, const video_windows_frame_t *f,
    video_window_request_t request;
    struct gl2_window *win = &gl->windows.win[w];
 
-   memset(&request, 0, sizeof(request));
    memset(win, 0, sizeof(*win));
-   request.screen     = w;
-   request.screens    = f->window_screens[w];
+   gl2_window_request(gl, f, w, &request);
    request.generation = video_driver_window_generation();
-   request.settings   = f->settings[w];
-   request.display    = f->display;
    if (     !request.generation
          || !gl->ctx_driver->windows->create(gl->ctx_data, &request,
             &win->native))
@@ -7230,7 +7238,8 @@ static bool gl2_windows_draw(gl2_t *gl,
                     && (gl->windows.held.made_known & (1u << id)))
          {
             video_driver_publish_window_bounds(id,
-                  gl->windows.held.made_screens[id], events[i].save_pos,
+                  gl->windows.held.made_screens[id],
+                  gl->windows.held.made[id].edit, events[i].save_pos,
                   events[i].save_dims, events[i].save_moved);
             video_windows_held_saved(&gl->windows.held, id,
                   events[i].save_pos, events[i].save_dims,
@@ -7259,6 +7268,13 @@ static bool gl2_windows_draw(gl2_t *gl,
             "What it shows stays in the main window.\n");
       gl2_window_attach(gl, f, w, false);
    }
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (gl->windows.held.update & gl->windows.held.live & (1u << w))
+      {
+         video_window_request_t request;
+         gl2_window_request(gl, f, w, &request);
+         ctx->update(gl->ctx_data, &gl->windows.win[w].native, &request);
+      }
    /* A kept window keeps its last image */
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (     (gl->windows.held.live & (1u << w))

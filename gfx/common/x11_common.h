@@ -132,14 +132,23 @@ typedef struct x11_video_window
    unsigned translate;
    /* The request reading _NET_WM_STATE, 0 for none */
    unsigned wm_state;
+   /* The _NET_WM_STATE read the bounds to judge wait for, 0 for none */
+   unsigned judge_read;
+   /* The wm_state read out when they came, 0 for none */
+   unsigned judge_state;
    /* Bounds the next poll() judges, where 'judge' */
    unsigned judge_pos;
    unsigned judge_dims;
+   /* Where it stood before it last went fullscreen, 0 dims for never */
+   unsigned windowed_pos;
+   unsigned windowed_dims;
    bool translate_again;
    bool wm_state_again;
    /* Not fullscreen, maximised or minimised, as last read */
    bool wm_normal;
    bool judge;
+   /* Whether they were normal at the first poll() after them */
+   bool judge_normal;
    /* The context has set its drawable's swap interval */
    bool interval_set;
    bool reparented;

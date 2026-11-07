@@ -11057,6 +11057,18 @@ static void vulkan_window_attach(vk_t *vk,
    vulkan_window_retire(vk, w, false);
 }
 
+/* What @f asks of window @w, at the generation it has */
+static void vulkan_window_request(vk_t *vk, const video_windows_frame_t *f,
+      unsigned w, video_window_request_t *out)
+{
+   memset(out, 0, sizeof(*out));
+   out->screen     = w;
+   out->screens    = f->window_screens[w];
+   out->generation = vk->windows.win[w].native.generation;
+   out->settings   = f->settings[w];
+   out->display    = f->display;
+}
+
 /* Window @w for @f's screens there, on @f's display */
 static bool vulkan_window_make(vk_t *vk, const video_windows_frame_t *f,
       unsigned w)
@@ -11064,13 +11076,9 @@ static bool vulkan_window_make(vk_t *vk, const video_windows_frame_t *f,
    video_window_request_t request;
    struct vk_window *win = &vk->windows.win[w];
 
-   memset(&request, 0, sizeof(request));
    memset(win, 0, sizeof(*win));
-   request.screen     = w;
-   request.screens    = f->window_screens[w];
+   vulkan_window_request(vk, f, w, &request);
    request.generation = video_driver_window_generation();
-   request.settings   = f->settings[w];
-   request.display    = f->display;
    if (     !request.generation
          || !vk->ctx_driver->windows->create(vk->ctx_data, &request,
             &win->native))
@@ -11397,7 +11405,8 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
                     && (vk->windows.held.made_known & (1u << id)))
          {
             video_driver_publish_window_bounds(id,
-                  vk->windows.held.made_screens[id], events[i].save_pos,
+                  vk->windows.held.made_screens[id],
+                  vk->windows.held.made[id].edit, events[i].save_pos,
                   events[i].save_dims, events[i].save_moved);
             video_windows_held_saved(&vk->windows.held, id,
                   events[i].save_pos, events[i].save_dims,
@@ -11433,6 +11442,15 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
             "What it shows stays in the main window.\n");
       vulkan_window_attach(vk, f, w, false);
    }
+   /* One still going is made again, from the frame's settings */
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (     (vk->windows.held.update & vk->windows.held.live & (1u << w))
+            && !(vk->windows.win[w].flags & VK_WINDOW_FLAG_CLOSE))
+      {
+         video_window_request_t request;
+         vulkan_window_request(vk, f, w, &request);
+         ctx->update(vk->ctx_data, &vk->windows.win[w].native, &request);
+      }
 
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
    {

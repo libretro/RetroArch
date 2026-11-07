@@ -1164,6 +1164,33 @@ static void x11_video_window_translate(x11_video_window_t *state,
    xcb_flush(conn);
 }
 
+/* Drops the _NET_WM_STATE read that bounds wait for */
+static void x11_video_window_unjudge(x11_video_window_t *state)
+{
+   if (state->judge_read)
+      xcb_discard_reply(XGetXCBConnection(g_x11_dpy), state->judge_read);
+   state->judge_read = 0;
+}
+
+/* Not fullscreen, maximised or minimised, by a _NET_WM_STATE reply */
+static bool x11_video_window_normal(xcb_get_property_reply_t *reply)
+{
+   unsigned j, k;
+   unsigned count          = 0;
+   const xcb_atom_t *atoms = NULL;
+   if (reply->format == 32 && reply->type == XCB_ATOM_ATOM)
+   {
+      atoms = (const xcb_atom_t*)xcb_get_property_value(reply);
+      count = (unsigned)xcb_get_property_value_length(reply)
+         / sizeof(*atoms);
+   }
+   for (j = 0; j < count; j++)
+      for (k = 1; k < ARRAY_SIZE(x11_video_window_states); k++)
+         if (atoms[j] == (xcb_atom_t)x11_video_window_states[k])
+            return false;
+   return true;
+}
+
 /* The bounds it is at, for GEOMETRY to save where the user left them,
  * as of 'at', when the event that told of them was taken. Before it is
  * mapped nothing is the user's. */
@@ -1172,29 +1199,60 @@ static void x11_video_window_moved(x11_video_window_t *state,
 {
    if (!state->common.native->presentable)
       video_window_unsettled(&state->common, at);
-   state->judge_at   = at;
-   state->judge_pos  = state->common.pos;
-   state->judge_dims = state->common.native->dims;
-   state->judge      = true;
+   state->judge_at    = at;
+   state->judge_pos   = state->common.pos;
+   state->judge_dims  = state->common.native->dims;
+   state->judge_state = state->wm_state;
+   state->judge       = true;
+   x11_video_window_unjudge(state);
 }
 
 /* A manager may set _NET_WM_STATE just after it configures, so bounds
- * wait one poll() for a change that came with them; while the state is
- * being read it counts as not normal. */
+ * wait one poll() for a change that came with them, and for the state
+ * read out when they came, if any; not for one asked since, so a later
+ * change cannot hold them. Its PropertyNotify can come pumps later, so
+ * they also wait for a read that poll() asks for. */
 static void x11_video_windows_judge(void)
 {
    unsigned i;
+   xcb_connection_t *conn = XGetXCBConnection(g_x11_dpy);
    for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
-      x11_video_window_t *state = x11_video_windows[i];
+      xcb_get_property_reply_t *reply = NULL;
+      xcb_generic_error_t *error      = NULL;
+      x11_video_window_t *state       = x11_video_windows[i];
       if (!state || !state->judge)
          continue;
+      if (!state->judge_read)
+      {
+         if (state->wm_state && state->wm_state == state->judge_state)
+            continue;
+         state->judge_normal = state->wm_normal
+            && !state->common.request.settings.fullscreen;
+         if (state->judge_normal && x11_video_window_states[0])
+         {
+            state->judge_read = xcb_get_property(conn, 0,
+                  (xcb_window_t)state->handle,
+                  (xcb_atom_t)x11_video_window_states[0], XCB_ATOM_ATOM,
+                  0, 32).sequence;
+            xcb_flush(conn);
+            continue;
+         }
+      }
+      else if (!xcb_poll_for_reply(conn, state->judge_read,
+               (void**)&reply, &error))
+         continue;
+      else
+      {
+         state->judge_read = 0;
+         if (!reply || !x11_video_window_normal(reply))
+            state->judge_normal = false;
+         free(reply);
+         free(error);
+      }
       state->judge = false;
       video_window_moved(&state->common, state->judge_pos, true,
-            state->judge_dims,
-            !state->wm_state && state->wm_normal
-            && !state->common.request.settings.fullscreen,
-            state->judge_at);
+            state->judge_dims, state->judge_normal, state->judge_at);
    }
 }
 
@@ -1218,7 +1276,7 @@ static void x11_video_window_read_state(x11_video_window_t *state)
 
 static void x11_video_windows_states(void)
 {
-   unsigned i, j, k;
+   unsigned i;
    for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
       xcb_get_property_reply_t *reply = NULL;
@@ -1230,21 +1288,7 @@ static void x11_video_windows_states(void)
          continue;
       state->wm_state = 0;
       if (reply)
-      {
-         const xcb_atom_t *atoms = NULL;
-         unsigned count          = 0;
-         if (reply->format == 32 && reply->type == XCB_ATOM_ATOM)
-         {
-            atoms = (const xcb_atom_t*)xcb_get_property_value(reply);
-            count = (unsigned)xcb_get_property_value_length(reply)
-               / sizeof(*atoms);
-         }
-         state->wm_normal = true;
-         for (j = 0; j < count; j++)
-            for (k = 1; k < ARRAY_SIZE(x11_video_window_states); k++)
-               if (atoms[j] == (xcb_atom_t)x11_video_window_states[k])
-                  state->wm_normal = false;
-      }
+         state->wm_normal = x11_video_window_normal(reply);
       free(reply);
       free(error);
       if (state->wm_state_again)
@@ -1691,6 +1735,20 @@ void x11_video_window_update(void *owner, video_window_native_t *window,
                && now->fullscreen == was->fullscreen))
       return;
 
+   /* A drag not yet out does not overwrite this */
+#ifdef HAVE_XCB
+   x11_video_window_unjudge(state);
+#endif
+   state->judge             = false;
+   state->common.save_dims  = 0;
+   state->common.save_moved = false;
+
+   if (!was->fullscreen && now->fullscreen)
+   {
+      state->windowed_pos  = state->common.pos;
+      state->windowed_dims = window->dims;
+   }
+
    /* Fullscreen on no monitor in particular is on the one it is on */
    place = *now;
    if (now->fullscreen && !now->monitor)
@@ -1699,11 +1757,21 @@ void x11_video_window_update(void *owner, video_window_native_t *window,
       place.dims    = window->dims;
       place.pos_set = true;
    }
+   /* A window again with no bounds of its own: where it stood before */
+   else if (was->fullscreen && !now->fullscreen && state->windowed_dims
+         && (!now->dims || !now->pos_set))
+   {
+      place.pos     = state->windowed_pos;
+      place.dims    = now->dims ? now->dims : state->windowed_dims;
+      place.pos_set = true;
+   }
    x11_video_window_place(&place, &x, &y, &width, &height);
    if (!(      was->fullscreen && now->fullscreen
             && state->common.pos   == VIDEO_POS_PACK(x, y)
             && window->dims == VIDEO_SCALE_PACK(width, height)))
    {
+      video_window_placed(&state->common, VIDEO_POS_PACK(x, y),
+            VIDEO_SCALE_PACK(width, height), cpu_features_get_time_usec());
       /* Window managers keep a fullscreen window where it is */
       if (was->fullscreen)
          x11_video_window_unfullscreen(state->handle);
@@ -1744,6 +1812,7 @@ void x11_video_window_destroy(void *owner, video_window_native_t *window)
       xcb_discard_reply(XGetXCBConnection(g_x11_dpy), state->translate);
    if (state->wm_state)
       xcb_discard_reply(XGetXCBConnection(g_x11_dpy), state->wm_state);
+   x11_video_window_unjudge(state);
 #endif
    if (!state->destroyed)
       XDestroyWindow(g_x11_dpy, state->handle);

@@ -893,6 +893,302 @@ static void native_w32_saves(const gfx_ctx_driver_t *ctx, void *data,
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
 }
 
+/* Nothing saved since '*saves', else what was; counts on from there */
+static void native_w32_no_save(const char *what, unsigned *saves)
+{
+   if (native_window_saves != *saves)
+      fprintf(stderr, "native win32: %s saved %u, the last %d,%d %ux%u\n",
+            what, native_window_saves - *saves,
+            VIDEO_POS_X(native_window_saved.save_pos),
+            VIDEO_POS_Y(native_window_saved.save_pos),
+            VIDEO_SCALE_W(native_window_saved.save_dims),
+            VIDEO_SCALE_H(native_window_saved.save_dims));
+   CHECK(native_window_saves == *saves);
+   *saves = native_window_saves;
+}
+
+/* The client area at x,y w*h */
+static RECT native_w32_rect(int x, int y, unsigned w, unsigned h)
+{
+   RECT rect;
+   rect.left   = x;
+   rect.top    = y;
+   rect.right  = x + (int)w;
+   rect.bottom = y + (int)h;
+   return rect;
+}
+
+/* Made with its client area at 'want' */
+static void native_w32_made_at(HWND win, RECT want)
+{
+   RECT made = native_w32_client(win);
+   if (!EqualRect(&made, &want))
+      fprintf(stderr, "native win32: made at %ld,%ld %ldx%ld, wanted "
+            "%ld,%ld %ldx%ld\n", (long)made.left, (long)made.top,
+            (long)(made.right - made.left), (long)(made.bottom - made.top),
+            (long)want.left, (long)want.top,
+            (long)(want.right - want.left), (long)(want.bottom - want.top));
+   CHECK(EqualRect(&made, &want));
+}
+
+/* Fullscreen on and off through update(): it fills the monitor, comes
+ * back at 'windowed', and none of it is a move of the user's */
+static void native_w32_toggle(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *r, video_window_native_t *window,
+      const RECT *monitor, RECT windowed)
+{
+   unsigned saves = native_window_saves;
+   HWND win       = native_w32_window(window);
+
+   r->settings.fullscreen = true;
+   ctx->windows->update(data, window, r);
+   CHECK(native_w32_fullscreen_style(win));
+   native_w32_wait_rect(ctx, data, r, window, *monitor);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("fullscreen", &saves);
+   r->settings.fullscreen = false;
+   ctx->windows->update(data, window, r);
+   CHECK(!native_w32_fullscreen_style(win));
+   native_w32_wait_rect(ctx, data, r, window, windowed);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("a window again", &saves);
+   native_w32_wait_rect(ctx, data, r, window, windowed);
+}
+
+/* Fullscreen through update() and a bigger size asked for while it is:
+ * it still fills the monitor, then comes back with its client area
+ * where it 'stood' at that size, its frame moved wholly onto the work
+ * area, and none of it is the user's */
+static void native_w32_grown(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *r, video_window_native_t *window,
+      const native_w32_monitor_t *home, RECT stood)
+{
+   RECT frame, want;
+   unsigned saves = native_window_saves;
+   HWND win       = native_w32_window(window);
+
+   r->settings.fullscreen = true;
+   ctx->windows->update(data, window, r);
+   CHECK(native_w32_fullscreen_style(win));
+   native_w32_wait_rect(ctx, data, r, window, home->rect);
+   r->settings.dims = VIDEO_SCALE_PACK(500, 360);
+   ctx->windows->update(data, window, r);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_wait_rect(ctx, data, r, window, home->rect);
+   native_w32_no_save("a size while fullscreen", &saves);
+   r->settings.fullscreen = false;
+   want = native_w32_expect(&home->work, stood.left, stood.top, 500, 360,
+         false);
+   ctx->windows->update(data, window, r);
+   CHECK(!native_w32_fullscreen_style(win));
+   native_w32_wait_rect(ctx, data, r, window, want);
+   GetWindowRect(win, &frame);
+   CHECK(   frame.left   >= home->work.left
+         && frame.top    >= home->work.top
+         && frame.right  <= home->work.right
+         && frame.bottom <= home->work.bottom);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("a window again", &saves);
+   native_w32_wait_rect(ctx, data, r, window, want);
+}
+
+/* An edit as the renderers hand it on. What update() puts a window at
+ * is not the user's, and the same request again moves nothing. */
+static void native_w32_updates(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window,
+      const native_w32_monitor_t *home, unsigned on)
+{
+   static bool done;
+   video_window_request_t r;
+   RECT made, want;
+   HWND win;
+   win32_video_window_t *state;
+   retro_time_t settle;
+   unsigned asked, saves;
+   int x = home->work.left;
+   int y = home->work.top;
+
+   if (done)
+      return;
+   done                  = true;
+   r                     = *request;
+   r.settings.monitor    = 0;
+   r.settings.fullscreen = false;
+   r.settings.pos        = VIDEO_POS_PACK(x + 200, y + 150);
+   r.settings.dims       = VIDEO_SCALE_PACK(400, 300);
+   r.settings.pos_set    = true;
+   win = native_w32_remake(ctx, data, &r, window);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   saves = native_window_saves;
+
+   /* Dragged, so the next requests carry its saved bounds */
+   native_w32_move(win, x + 260, y + 170, 400, 300);
+   native_window_settle(ctx, data, &r, 200000);
+   CHECK(native_window_saves == saves + 1);
+   r.settings.pos = VIDEO_POS_PACK(x + 260, y + 170);
+   want           = native_w32_rect(x + 260, y + 170, 400, 300);
+   native_w32_wait_rect(ctx, data, &r, window, want);
+   native_w32_toggle(ctx, data, &r, window, &home->rect, want);
+   saves = native_window_saves;
+
+   /* The X and Y rows, then the Size row */
+   r.settings.pos = VIDEO_POS_PACK(x + 300, y + 200);
+   want           = native_w32_rect(x + 300, y + 200, 400, 300);
+   ctx->windows->update(data, window, &r);
+   native_w32_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("the X and Y rows", &saves);
+   r.settings.dims = VIDEO_SCALE_PACK(420, 310);
+   want            = native_w32_rect(x + 300, y + 200, 420, 310);
+   ctx->windows->update(data, window, &r);
+   native_w32_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("the Size row", &saves);
+
+   /* The same request, twice: nothing moves */
+   state  = (win32_video_window_t*)window->state;
+   settle = state->common.settle;
+   ctx->windows->update(data, window, &r);
+   ctx->windows->update(data, window, &r);
+   CHECK(!state->apply);
+   CHECK(state->common.settle == settle);
+   CHECK(!(native_window_settle(ctx, data, &r, 200000)
+         & NATIVE_EVENT(GEOMETRY)));
+   native_w32_no_save("the same request", &saves);
+
+   /* A drag not yet out when an edit comes: the edit stands */
+   native_w32_move(win, x + 340, y + 220, 420, 310);
+   CHECK(state->common.save_dims != 0);
+   r.settings.pos = VIDEO_POS_PACK(x + 180, y + 120);
+   want           = native_w32_rect(x + 180, y + 120, 420, 310);
+   ctx->windows->update(data, window, &r);
+   native_w32_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("a drag before an edit", &saves);
+   CHECK(state->common.request.settings.pos == r.settings.pos);
+
+   /* Its own bounds back are no edit: that drag still goes out */
+   native_w32_move(win, x + 360, y + 230, 420, 310);
+   CHECK(state->common.save_dims != 0);
+   r.settings.pos = VIDEO_POS_PACK(x + 360, y + 230);
+   ctx->windows->update(data, window, &r);
+   native_window_settle(ctx, data, &r, 200000);
+   CHECK(native_window_saves == saves + 1);
+   CHECK(native_window_saved.save_pos == r.settings.pos);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   saves = native_window_saves;
+
+   /* Minimised: an edit is applied once restored, and placed only then */
+   ShowWindow(win, SW_MINIMIZE);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(SUSPEND), 0);
+   asked          = state->common.asked_pos;
+   r.settings.pos = VIDEO_POS_PACK(x + 220, y + 140);
+   want           = native_w32_rect(x + 220, y + 140, 420, 310);
+   ctx->windows->update(data, window, &r);
+   CHECK(state->apply);
+   CHECK(state->common.asked_pos == asked);
+   CHECK(state->common.placed_pos != r.settings.pos);
+   ShowWindow(win, SW_RESTORE);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_w32_wait_rect(ctx, data, &r, window, want);
+   CHECK(!state->apply);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("a minimised window's edit", &saves);
+
+   /* An Auto window's first X or Y row: to no monitor, with a position */
+   r.settings.monitor = on;
+   r.settings.pos     = 0;
+   r.settings.dims    = VIDEO_SCALE_PACK(400, 300);
+   r.settings.pos_set = false;
+   win  = native_w32_remake(ctx, data, &r, window);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("made Auto", &saves);
+   /* Centred, not at its stale position */
+   native_w32_made_at(win,
+         native_w32_expect(&home->work, 0, 0, 400, 300, true));
+   r.settings.monitor = 0;
+   r.settings.pos     = VIDEO_POS_PACK(x + 200, y + 150);
+   r.settings.pos_set = true;
+   want               = native_w32_rect(x + 200, y + 150, 400, 300);
+   ctx->windows->update(data, window, &r);
+   native_w32_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("the first X row", &saves);
+   CHECK(native_w32_window(window) == win);
+   state = (win32_video_window_t*)window->state;
+   CHECK(!state->common.request.settings.monitor);
+
+   /* Start on a row whose axis has its default: pos_set alone changes,
+    * and the window is centred again, not left where it was moved to */
+   r.settings.monitor = on;
+   win = native_w32_remake(ctx, data, &r, window);
+   native_w32_move(win, x + 240, y + 190, 400, 300);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_w32_wait_rect(ctx, data, &r, window,
+         native_w32_rect(x + 240, y + 190, 400, 300));
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("placed at once", &saves);
+   r.settings.pos_set = false;
+   want = native_w32_expect(&home->work, 0, 0, 400, 300, true);
+   ctx->windows->update(data, window, &r);
+   native_w32_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("Start", &saves);
+   state = (win32_video_window_t*)window->state;
+   CHECK(!state->common.request.settings.pos_set);
+
+   /* Put there by update(), then a size asked for while fullscreen: it
+    * comes back where it stood, at that size */
+   native_w32_grown(ctx, data, &r, window, home, want);
+
+   /* ... and from near the work area's far corner, where that size would
+    * reach past it */
+   r.settings.dims = VIDEO_SCALE_PACK(400, 300);
+   win  = native_w32_remake(ctx, data, &r, window);
+   want = native_w32_rect(home->work.right - 450, home->work.bottom - 340,
+         400, 300);
+   native_w32_move(win, want.left, want.top, 400, 300);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_w32_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("placed at once", &saves);
+   native_w32_grown(ctx, data, &r, window, home, want);
+   saves = native_window_saves;
+   r.settings.dims = VIDEO_SCALE_PACK(400, 300);
+
+   /* Made like that, with its stale position: centred */
+   win  = native_w32_remake(ctx, data, &r, window);
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   native_w32_made_at(win,
+         native_w32_expect(&home->work, 0, 0, 400, 300, true));
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("made with no position", &saves);
+
+   /* Never dragged: where it was, not centred, and it gets no bounds */
+   r.settings.monitor = 0;
+   r.settings.pos     = 0;
+   r.settings.dims    = 0;
+   r.settings.pos_set = false;
+   win  = native_w32_remake(ctx, data, &r, window);
+   made = native_w32_client(win);
+   native_w32_move(win, x + 240, y + 190,
+         (unsigned)(made.right - made.left),
+         (unsigned)(made.bottom - made.top));
+   native_window_wait(ctx, data, &r, window, NATIVE_EVENT(RESUME), 0);
+   want = native_w32_client(win);
+   native_w32_wait_rect(ctx, data, &r, window, want);
+   native_window_settle(ctx, data, &r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   native_w32_no_save("placed at once", &saves);
+   native_w32_toggle(ctx, data, &r, window, &home->rect, want);
+   state = (win32_video_window_t*)window->state;
+   CHECK(!state->common.request.settings.dims);
+
+   native_w32_remake(ctx, data, request, window);
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+}
+
 /* Focus given to the window and back to the main window */
 static void native_w32_focus(const gfx_ctx_driver_t *ctx, void *data,
       const video_window_request_t *request,
@@ -1021,6 +1317,8 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(window->configured && window->presentable);
    CHECK(native_w32_main_intact(&main_state));
    native_w32_saves(ctx, data, request, window, &home->work);
+   native_w32_updates(ctx, data, request, window, home,
+         (unsigned)(home - monitors) + 1);
    secondary = native_w32_window(window);
    CHECK(native_w32_main_intact(&main_state));
 
@@ -1041,6 +1339,7 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
     * onto it where they reach it, centred where they do not */
    request->settings.monitor = count;
    request->settings.pos     = VIDEO_POS_PACK(-200, -200);
+   request->settings.pos_set = true;
    ctx->windows->update(data, window, request);
    native_w32_wait_rect(ctx, data, request, window, native_w32_expect(
          &monitors[count - 1].work, -200, -200, 320, 240, false));
