@@ -29,6 +29,7 @@
 #include <encodings/crc32.h>
 #include <formats/ciso.h>
 #include <formats/xdvdfs.h>
+#include <formats/zar.h>
 #include <string/stdstring.h>
 #include "task_database_cue.h"
 
@@ -2425,6 +2426,87 @@ int task_database_xbox_get_serial(const char *name, bool disc, char *s,
       return 0;
    *filesize = (uint64_t)intfstream_get_size(fd);
    _len      = detect_xbox_game(fd, 0, disc, s, len);
+   intfstream_close(fd);
+   free(fd);
+   return _len != 0;
+}
+
+/* An Xbox 360 game in a ZArchive: the title of its default.xex, read
+ * through the archive's blocks */
+typedef struct
+{
+   task_database_src_t src;
+   zar_file_t          file;
+   zar_t              *z;
+} task_database_zar_src_t;
+
+static size_t task_database_zar_pull(task_database_zar_src_t *zs,
+      uint64_t offset, uint8_t *dst, size_t length)
+{
+   zar_request_t req;
+   int           err;
+   if (zar_read_begin(zs->z, &zs->file, offset, dst, length) != ZAR_OK)
+      return 0;
+   while ((err = zar_read_step(zs->z, &req)) == ZAR_PENDING)
+      zar_feed(zs->z, task_database_pull(&zs->src, req.offset, req.dst,
+               req.length));
+   /* what came before a failure is still read */
+   return zar_read_progress(zs->z);
+}
+
+int task_database_zar_get_serial(const char *name, char *s, size_t len,
+   uint64_t *filesize)
+{
+   task_database_zar_src_t zs;
+   zar_request_t           req;
+   xdvdfs_request_t        xreq;
+   xdvdfs_extent_t         exe;
+   xdvdfs_title_t          title;
+   xdvdfs_t               *x    = NULL;
+   zar_t                  *z    = NULL;
+   size_t                  _len = 0;
+   int                     err;
+   int64_t                 size;
+   /* The descriptor path: each range lands where the readers ask */
+   intfstream_t           *fd   = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+
+   if (!fd)
+      return 0;
+   size       = intfstream_get_size(fd);
+   *filesize  = (uint64_t)size;
+   zs.src.fd  = fd;
+   zs.src.pos = 0;
+   if (size <= 0 || !(z = zar_new((uint64_t)size)))
+      goto end;
+   zs.z = z;
+
+   while ((err = zar_open_step(zs.z, &req)) == ZAR_PENDING)
+      zar_feed(zs.z, task_database_pull(&zs.src, req.offset, req.dst,
+               req.length));
+   if (err != ZAR_OK || zar_lookup_begin(zs.z, "default.xex") != ZAR_OK)
+      goto end;
+   while ((err = zar_lookup_step(zs.z, &req, &zs.file)) == ZAR_PENDING)
+      zar_feed(zs.z, task_database_pull(&zs.src, req.offset, req.dst,
+               req.length));
+   if (err != ZAR_OK || !(x = xdvdfs_new(zs.file.size)))
+      goto end;
+
+   exe.offset = 0;
+   exe.size   = zs.file.size > 0xFFFFFFFFu
+         ? 0xFFFFFFFFu : (uint32_t)zs.file.size;
+   if (xdvdfs_title_begin(x, &exe) != XDVDFS_OK)
+      goto end;
+   while ((err = xdvdfs_title_step(x, &xreq, &title)) == XDVDFS_PENDING)
+      xdvdfs_feed(x, task_database_zar_pull(&zs, xreq.offset, xreq.dst,
+               xreq.length));
+   if (err == XDVDFS_OK)
+      _len = xbox_title_serial(&title, s, len);
+
+end:
+   xdvdfs_free(x);
+   zar_free(z);
    intfstream_close(fd);
    free(fd);
    return _len != 0;

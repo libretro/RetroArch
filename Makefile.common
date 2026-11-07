@@ -607,7 +607,8 @@ ifeq ($(HAVE_LIBRETRODB), 1)
           database_info.o \
           tasks/task_database_cue.o \
           $(LIBRETRO_COMM_DIR)/formats/ciso/ciso.o \
-          $(LIBRETRO_COMM_DIR)/formats/xdvdfs/xdvdfs.o
+          $(LIBRETRO_COMM_DIR)/formats/xdvdfs/xdvdfs.o \
+          $(LIBRETRO_COMM_DIR)/formats/zar/zar.o
 
    ifeq ($(HAVE_MENU), 1)
       OBJ += menu/menu_explore.o \

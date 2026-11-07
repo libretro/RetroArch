@@ -2497,6 +2497,76 @@ end:
    free(p);
 }
 
+/* A ZArchive holding default.xex (@title) and one other file, its one
+ * block compressed */
+static int write_zar(const char *path, uint32_t title)
+{
+   uint8_t *stream = (uint8_t*)calloc(1, 65536);
+   size_t   cap    = rzstd_compress_bound(65536);
+   uint8_t *out    = (uint8_t*)calloc(1, cap + 4096);
+   uint8_t  tree[3 * 16];
+   uint8_t  names[64];
+   size_t   nsize  = 0;
+   size_t   bsize  = 0;
+   size_t   at;
+   uint8_t *ft;
+   int      ok     = 0;
+
+   if (!stream || !out)
+      goto end;
+   xbox_xex(stream, title, 1, 1);
+   memcpy(stream + 0x1000, "readme", 6);
+   if (     rzstd_encode(out, cap, stream, 65536, 3, &bsize)
+               != RZSTD_PROCESS_END
+         || !bsize || bsize >= 65536)
+      goto end;
+
+   /* root: a.txt then default.xex */
+   names[nsize++] = 5;
+   memcpy(names + nsize, "a.txt", 5);
+   nsize += 5;
+   names[nsize++] = 11;
+   memcpy(names + nsize, "default.xex", 11);
+   nsize += 11;
+   memset(tree, 0, sizeof(tree));
+   xbox_put_be32(tree + 0, 0x7FFFFFFFu);
+   xbox_put_be32(tree + 4, 1);
+   xbox_put_be32(tree + 8, 2);
+   xbox_put_be32(tree + 16, 0x80000000u | 0);
+   xbox_put_be32(tree + 20, 0x1000);
+   xbox_put_be32(tree + 24, 6);
+   xbox_put_be32(tree + 32, 0x80000000u | 6);
+   xbox_put_be32(tree + 36, 0);
+   xbox_put_be32(tree + 40, 0x1000);
+
+   /* blocks, the record, names, tree, two empty sections, footer */
+   at = bsize;
+   memset(out + at, 0, 40);
+   out[at + 8] = (uint8_t)((bsize - 1) >> 8);
+   out[at + 9] = (uint8_t)(bsize - 1);
+   memcpy(out + at + 40, names, nsize);
+   memcpy(out + at + 40 + nsize, tree, sizeof(tree));
+   ft = out + at + 40 + nsize + sizeof(tree);
+   memset(ft, 0, 144);
+   xbox_put_be32(ft + 12, (uint32_t)bsize);
+   xbox_put_be32(ft + 20, (uint32_t)at);
+   xbox_put_be32(ft + 28, 40);
+   xbox_put_be32(ft + 36, (uint32_t)(at + 40));
+   xbox_put_be32(ft + 44, (uint32_t)nsize);
+   xbox_put_be32(ft + 52, (uint32_t)(at + 40 + nsize));
+   xbox_put_be32(ft + 60, sizeof(tree));
+   xbox_put_be32(ft + 68, (uint32_t)(ft - out));
+   xbox_put_be32(ft + 84, (uint32_t)(ft - out));
+   xbox_put_be32(ft + 132, (uint32_t)(ft - out + 144));
+   xbox_put_be32(ft + 136, 0x61BF3A01u);
+   xbox_put_be32(ft + 140, 0x169F52D6u);
+   ok = write_bytes(path, out, (size_t)(ft - out + 144));
+end:
+   free(stream);
+   free(out);
+   return ok;
+}
+
 /* Xbox 360 content takes the serial lookup by its title: a whole XGD3
  * disc, the second of a set, an XEX and an STFS package on their own;
  * a .xex that is no Xbox 360 executable (an Atari 8-bit one) still
@@ -2508,7 +2578,8 @@ static void x360_lane(const char *root, const char *pl_dir,
       { "Set The Game (Disc 1)", "FO-2046-0", 0x3B360001u, 0xF0000000u },
       { "Set The Game (Disc 2)", "FO-2046-1", 0x3B360002u, 0xF0000000u },
       { "Exe The Game",          "AV-2071",   0x3B360003u, 0xF0000000u },
-      { "Arcade The Game",       "XA-2209",   0x3B360004u, 0xF0000000u }
+      { "Arcade The Game",       "XA-2209",   0x3B360004u, 0xF0000000u },
+      { "Zar The Game",          "SE-2142",   0x3B360006u, 0xF0000000u }
    };
    char    *x_db = (char*)malloc(512);
    char    *x_in = (char*)malloc(512);
@@ -2548,6 +2619,9 @@ static void x360_lane(const char *root, const char *pl_dir,
    sprintf(p, "%s/72_arcade.xcp", x_in);
    if (!write_bytes(p, d, 0x1000))
    { check(0, "fixture", "could not write package"); goto end; }
+   sprintf(p, "%s/74_game.zar", x_in);
+   if (!write_zar(p, 0x5345085Eu))
+   { check(0, "fixture", "could not write archive"); goto end; }
    sprintf(p, "%s/73_atari.xex", x_in);
    if (!write_content(p, 0x3B360005u, 0x1000))
    { check(0, "fixture", "crc forcing failed"); goto end; }
@@ -2576,6 +2650,9 @@ static void x360_lane(const char *root, const char *pl_dir,
    check(   file_contains(p, "72_arcade.xcp")
          && file_contains(p, "Arcade The Game"),
          "STFS package matches by its title", "72_arcade.xcp");
+   check(   file_contains(p, "74_game.zar")
+         && file_contains(p, "Zar The Game"),
+         "ZArchive matches by its default.xex", "74_game.zar");
    sprintf(p, "%s/Test Atari.lpl", pl_dir);
    check(   file_contains(p, "73_atari.xex")
          && file_contains(p, "Atari The Game"),
@@ -11598,7 +11675,7 @@ int main(int argc, char **argv)
       fprintf(f,
             "display_name = \"Xbox 360 Test\"\n"
             "corename = \"X360Test\"\n"
-            "supported_extensions = \"iso|xex|xcp\"\n"
+            "supported_extensions = \"iso|xex|xcp|zar\"\n"
             "database = \"Test Xbox 360\"\n");
       fclose(f);
    }
