@@ -46,8 +46,13 @@
 #include <malloc.h>
 #endif
 
-/* SIMD acceleration: SSE2 on x86/x86-64, NEON on ARM */
-#if defined(__SSE2__)
+/* SIMD acceleration: SSE2 on x86/x86-64, NEON on ARM.  MSVC never
+ * defines __SSE2__, so its x64 builds - desktop and UWP - are named
+ * explicitly, as most of formats/ already does; SSE2 is part of the
+ * x64 baseline.  32-bit MSVC is left out: its by-value __m128i
+ * parameters are limited to three (C2719), and the Paeth kernels take
+ * more. */
+#if defined(__SSE2__) || (defined(_MSC_VER) && defined(_M_X64))
 #include <emmintrin.h>
 #define RPNG_SIMD_SSE2 1
 /* SSSE3's byte shuffle turns the 8-bit RGB and RGBA row conversions
