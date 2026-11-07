@@ -2942,6 +2942,23 @@ size_t rchd_read_progress(const rchd_t *chd)
 /* The byte-range worker. A sector-addressed read drives this directly
  * rather than going back through rchd_read_step, which would dispatch
  * straight back to the sector path. */
+/* A parent reference is a whole hunk's worth of the parent at a unit
+ * position.  For the child's last hunk that runs past the parent's
+ * logical end when the image ends mid-hunk, which a byte read rightly
+ * refuses; when it starts on one of the parent's hunks it is that whole
+ * hunk, padding and all, as a hunk read gives it. */
+static int rchd_parent_read_begin(rchd_t *chd, uint64_t offset,
+      uint8_t *dst)
+{
+   rchd_t  *p  = chd->parent;
+   uint32_t hb = chd->info.hunk_bytes;
+   if (     offset + hb > p->info.logical_bytes
+         && p->info.hunk_bytes == hb
+         && offset % hb == 0)
+      return rchd_read_hunk_begin(p, (uint32_t)(offset / hb), dst);
+   return rchd_read_begin(p, offset, dst, hb);
+}
+
 static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
 {
    if (!chd->reading)
@@ -2986,9 +3003,8 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
          {
             if (!chd->parent)
                return RCHD_ERROR_NO_PARENT;
-            err = rchd_read_begin(chd->parent,
-                  e->offset * chd->info.unit_bytes,
-                  chd->cache, chd->info.hunk_bytes);
+            err = rchd_parent_read_begin(chd,
+                  e->offset * chd->info.unit_bytes, chd->cache);
             if (err != RCHD_OK)
                return err;
             for (;;)
