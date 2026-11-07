@@ -52,10 +52,8 @@ struct rpng_ext_span
 enum rpng_pool_slot
 {
    RPNG_POOL_RING = 0,   /* the inflate ring                         */
-   RPNG_POOL_LINE0,      /* the three out-of-place scanlines          */
-   RPNG_POOL_LINE1,
-   RPNG_POOL_LINE2,
-   RPNG_POOL_PASS,       /* an Adam7 pass's pixels                    */
+   RPNG_POOL_LINES,      /* the three out-of-place scanlines, one block */
+   RPNG_POOL_PASS,       /* the Adam7 pass buffer                     */
    RPNG_POOL_OUT,        /* the decoded image, given back by the caller */
    RPNG_POOL_SLOTS
 };

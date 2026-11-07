@@ -212,6 +212,18 @@ struct rpng_process
     * Windows as STATUS_HEAP_CORRUPTION (c0000374) at a later free in
     * task_image_load_free.  The caller's pointer now never moves. */
    uint32_t *out_cursor;
+   size_t    out_stride;      /* pixels from one output row to the next:
+                               * the image width, the pass width into a
+                               * pass buffer, or twice the image width for
+                               * Adam7 pass 7, written in place          */
+   /* Kept for the whole decode rather than per pass: the three scanline
+    * buffers (one block, lines_cap bytes apiece, at the image's full
+    * pitch, which no pass exceeds) and the Adam7 pass buffer (pass_cap
+    * pixels, the largest of passes 1-6; pass 7 needs none). */
+   uint8_t  *lines;
+   size_t    lines_cap;
+   uint32_t *pass_buf;
+   size_t    pass_cap;
    size_t inflate_buf_size;   /* expected total inflated bytes (geometry) */
    size_t ring_size;          /* allocation size of inflate_base.  Equal to
                                * inflate_buf_size for interlaced images and
@@ -2342,9 +2354,8 @@ static void rpng_reverse_filter_deinit(struct rpng_process *pngp)
 {
    if (!pngp)
       return;
-   rpng_pool_give(pngp->pool, RPNG_POOL_LINE0, pngp->scratch[0], pngp->pitch);
-   rpng_pool_give(pngp->pool, RPNG_POOL_LINE1, pngp->scratch[1], pngp->pitch);
-   rpng_pool_give(pngp->pool, RPNG_POOL_LINE2, pngp->scratch[2], pngp->pitch);
+   /* The scanline buffers are views of pngp->lines, which outlives the
+    * pass and goes back with the rest of the process. */
    pngp->scratch[0] = NULL;
    pngp->scratch[1] = NULL;
    pngp->scratch[2] = NULL;
@@ -2352,6 +2363,35 @@ static void rpng_reverse_filter_deinit(struct rpng_process *pngp)
 
    pngp->flags           &= ~RPNG_PROCESS_FLAG_PASS_INITIALIZED;
    pngp->h                = 0;
+}
+
+/* The three scanline buffers at pitch bytes apiece or more, made once. */
+static bool rpng_lines_reserve(struct rpng_process *pngp, size_t pitch)
+{
+   uint8_t *nb;
+   if (pngp->lines_cap >= pitch)
+      return true;
+   rpng_pool_give(pngp->pool, RPNG_POOL_LINES, pngp->lines,
+         3 * pngp->lines_cap);
+   pngp->lines     = NULL;
+   pngp->lines_cap = 0;
+   if (   !(nb = (uint8_t*)rpng_pool_take(pngp->pool, RPNG_POOL_LINES,
+               3 * pitch))
+       && !(nb = (uint8_t*)malloc(3 * pitch)))
+      return false;
+   pngp->lines     = nb;
+   pngp->lines_cap = pitch;
+   return true;
+}
+
+/* Pixels in Adam7 pass p of an image, 0 if the pass is empty. */
+static size_t rpng_adam7_pass_pixels(const struct png_ihdr *ihdr, unsigned p)
+{
+   const struct adam7_pass *ps = &rpng_passes[p];
+   if (ihdr->width <= ps->x || ihdr->height <= ps->y)
+      return 0;
+   return (size_t)((ihdr->width  - ps->x + ps->stride_x - 1) / ps->stride_x)
+        * (size_t)((ihdr->height - ps->y + ps->stride_y - 1) / ps->stride_y);
 }
 
 static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
@@ -2372,12 +2412,44 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
       pngp->pass_height = (ihdr->height - rpng_passes[pngp->pass_pos].y +
             rpng_passes[pngp->pass_pos].stride_y - 1) / rpng_passes[pngp->pass_pos].stride_y;
 
-      if (   !(pngp->data = (uint32_t*)rpng_pool_take(pngp->pool,
-                  RPNG_POOL_PASS, (size_t)pngp->pass_width
-                  * (size_t)pngp->pass_height * sizeof(uint32_t)))
-          && !(pngp->data = (uint32_t*)malloc((size_t)pngp->pass_width
-                  * (size_t)pngp->pass_height * sizeof(uint32_t))))
-         return -1;
+      /* Every pass's scanlines fit the image's own pitch: reserve the
+       * line buffers at that once, before the first and smallest pass,
+       * rather than regrowing them pass by pass. */
+      {
+         unsigned full_pitch = 0;
+         rpng_pass_geom(ihdr, ihdr->width, ihdr->height,
+               NULL, &full_pitch, NULL);
+         if (!rpng_lines_reserve(pngp, full_pitch))
+            return -1;
+      }
+      /* Pass 7 (x 0, stride 1) is whole image rows - every odd one - so
+       * it is unfiltered straight into them (adam7_iterate) and needs no
+       * buffer: that is half the image not written twice.  Passes 1-6
+       * share one buffer, sized once for the largest of them. */
+      if (pngp->pass_pos == ARRAY_SIZE(rpng_passes) - 1)
+         pngp->data = NULL;
+      else
+      {
+         if ((size_t)pngp->pass_width * pngp->pass_height > pngp->pass_cap)
+         {
+            size_t   need = 0, n;
+            unsigned p;
+            for (p = 0; p + 1 < ARRAY_SIZE(rpng_passes); p++)
+               if ((n = rpng_adam7_pass_pixels(ihdr, p)) > need)
+                  need = n;
+            rpng_pool_give(pngp->pool, RPNG_POOL_PASS, pngp->pass_buf,
+                  pngp->pass_cap * sizeof(uint32_t));
+            pngp->pass_buf = NULL;
+            pngp->pass_cap = 0;
+            if (   !(pngp->pass_buf = (uint32_t*)rpng_pool_take(pngp->pool,
+                        RPNG_POOL_PASS, need * sizeof(uint32_t)))
+                && !(pngp->pass_buf = (uint32_t*)malloc(
+                        need * sizeof(uint32_t))))
+               return -1;
+            pngp->pass_cap = need;
+         }
+         pngp->data = pngp->pass_buf;
+      }
 
       pngp->ihdr        = *ihdr;
       pngp->ihdr.width  = pngp->pass_width;
@@ -2393,10 +2465,7 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
           * has ended it is a truncation (and the inflate end path
           * has already refused an under-produced stream, so this
           * arm is belt and braces). */
-         rpng_pool_give(pngp->pool, RPNG_POOL_PASS, pngp->data,
-               (size_t)pngp->pass_width * (size_t)pngp->pass_height
-               * sizeof(uint32_t));
-         pngp->data = NULL;
+         pngp->data = NULL;   /* a view of pass_buf, kept */
          if (!(pngp->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
             return RPNG_FILTER_WAIT;
          return -1;
@@ -2426,21 +2495,13 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
    /* scratch[0] doubles as row 0's zero prev; scratch_cur starts at 0
     * so the first out-of-place line (cur ^= 1) lands in scratch[1],
     * leaving the zeroes intact while anything still points at them. */
-   if ((pngp->scratch[0] = (uint8_t*)rpng_pool_take(pngp->pool,
-               RPNG_POOL_LINE0, pngp->pitch)))
-      memset(pngp->scratch[0], 0, pngp->pitch);
-   else
-      pngp->scratch[0]         = (uint8_t*)calloc(1, pngp->pitch);
-   if (!(pngp->scratch[1] = (uint8_t*)rpng_pool_take(pngp->pool,
-               RPNG_POOL_LINE1, pngp->pitch)))
-      pngp->scratch[1]         = (uint8_t*)malloc(pngp->pitch);
-   if (!(pngp->scratch[2] = (uint8_t*)rpng_pool_take(pngp->pool,
-               RPNG_POOL_LINE2, pngp->pitch)))
-      pngp->scratch[2]         = (uint8_t*)malloc(pngp->pitch);
-   pngp->scratch_cur           = 0;
-
-   if (!pngp->scratch[0] || !pngp->scratch[1] || !pngp->scratch[2])
+   if (!rpng_lines_reserve(pngp, pngp->pitch))
       goto error;
+   pngp->scratch[0]            = pngp->lines;
+   pngp->scratch[1]            = pngp->lines + pngp->lines_cap;
+   pngp->scratch[2]            = pngp->lines + 2 * pngp->lines_cap;
+   memset(pngp->scratch[0], 0, pngp->pitch);
+   pngp->scratch_cur           = 0;
    pngp->prev_line             = pngp->scratch[0];
 
    pngp->h                    = 0;
@@ -2679,7 +2740,7 @@ static int rpng_reverse_filter_regular_iterate(
             {
                rpng_reverse_filter_convert(pngp->out_cursor, ihdr, pngp,
                      dec0);
-               rpng_reverse_filter_convert(pngp->out_cursor + ihdr->width,
+               rpng_reverse_filter_convert(pngp->out_cursor + pngp->out_stride,
                      ihdr, pngp, dec1);
             }
             if (in_place)
@@ -2704,7 +2765,7 @@ static int rpng_reverse_filter_regular_iterate(
             if (    pngp->ring_size < pngp->inflate_buf_size
                 &&  pngp->inflate_buf == pngp->inflate_base + pngp->ring_size)
                pngp->inflate_buf = pngp->inflate_base;
-            pngp->out_cursor    += 2 * (size_t)ihdr->width;
+            pngp->out_cursor    += 2 * pngp->out_stride;
             return IMAGE_PROCESS_NEXT;
          }
       }
@@ -2746,7 +2807,7 @@ static int rpng_reverse_filter_regular_iterate(
        &&  pngp->inflate_buf == pngp->inflate_base + pngp->ring_size)
       pngp->inflate_buf = pngp->inflate_base;
 
-   pngp->out_cursor            += ihdr->width;
+   pngp->out_cursor            += pngp->out_stride;
 
    return IMAGE_PROCESS_NEXT;
 
@@ -2786,7 +2847,17 @@ static int rpng_reverse_filter_adam7_iterate(uint32_t **data_,
    if (rpng_reverse_filter_init(&pngp->ihdr, pngp) == -1)
       return IMAGE_PROCESS_ERROR;
 
-   pngp->out_cursor = pngp->data;
+   if (pngp->data)
+   {
+      pngp->out_cursor = pngp->data;
+      pngp->out_stride = pngp->pass_width;
+   }
+   else
+   {
+      /* Pass 7: its rows are the image's odd rows, whole */
+      pngp->out_cursor = data + ihdr->width;
+      pngp->out_stride = 2 * (size_t)ihdr->width;
+   }
 
    do
    {
@@ -2801,13 +2872,10 @@ static int rpng_reverse_filter_adam7_iterate(uint32_t **data_,
 
    pngp->total_out              -= pngp->pass_size;
 
-   rpng_reverse_filter_adam7_deinterlace_pass(data,
-         ihdr, pngp->data, pngp->pass_width, pngp->pass_height,
-         &rpng_passes[pngp->pass_pos]);
-
-   rpng_pool_give(pngp->pool, RPNG_POOL_PASS, pngp->data,
-         (size_t)pngp->pass_width * (size_t)pngp->pass_height
-         * sizeof(uint32_t));
+   if (pngp->data)
+      rpng_reverse_filter_adam7_deinterlace_pass(data,
+            ihdr, pngp->data, pngp->pass_width, pngp->pass_height,
+            &rpng_passes[pngp->pass_pos]);
 
    pngp->data                   = NULL;
    pngp->pass_width             = 0;
@@ -2840,13 +2908,7 @@ static int rpng_reverse_filter_adam7(uint32_t **data_,
          pngp->pass_pos++;
          return 0;
       case IMAGE_PROCESS_ERROR:
-         if (pngp->data)
-         {
-            rpng_pool_give(pngp->pool, RPNG_POOL_PASS, pngp->data,
-                  (size_t)pngp->pass_width * (size_t)pngp->pass_height
-                  * sizeof(uint32_t));
-            pngp->data = NULL;
-         }
+         pngp->data = NULL;   /* a view of pass_buf, kept */
          pngp->inflate_buf -= pngp->adam7_restore_buf_size;
          pngp->adam7_restore_buf_size = 0;
          return -1;
@@ -3063,6 +3125,7 @@ static int rpng_load_image_argb_process_output_init(
          return -1;
 
    process->out_cursor = *data;
+   process->out_stride = rpng->ihdr.width;
 
    process->flags |= RPNG_PROCESS_FLAG_OUTPUT_INITIALIZED;
    return 0;
@@ -3131,13 +3194,15 @@ static bool rpng_idat_append_span(struct idat_spans *sp,
  * all still be live when a decode is abandoned or fails. */
 static void rpng_process_give_back(struct rpng_process *p)
 {
-   rpng_pool_give(p->pool, RPNG_POOL_PASS, p->data,
-         (size_t)p->pass_width * (size_t)p->pass_height * sizeof(uint32_t));
-   rpng_pool_give(p->pool, RPNG_POOL_LINE0, p->scratch[0], p->pitch);
-   rpng_pool_give(p->pool, RPNG_POOL_LINE1, p->scratch[1], p->pitch);
-   rpng_pool_give(p->pool, RPNG_POOL_LINE2, p->scratch[2], p->pitch);
+   rpng_pool_give(p->pool, RPNG_POOL_PASS, p->pass_buf,
+         p->pass_cap * sizeof(uint32_t));
+   rpng_pool_give(p->pool, RPNG_POOL_LINES, p->lines, 3 * p->lines_cap);
    rpng_pool_give(p->pool, RPNG_POOL_RING, p->inflate_base, p->ring_size);
-   p->data       = NULL;
+   p->data       = NULL;   /* a view of pass_buf */
+   p->pass_buf   = NULL;
+   p->pass_cap   = 0;
+   p->lines      = NULL;
+   p->lines_cap  = 0;
    p->scratch[0] = p->scratch[1] = p->scratch[2] = NULL;
    p->inflate_base = NULL;
 }
