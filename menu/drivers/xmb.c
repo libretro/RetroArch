@@ -5011,6 +5011,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          else if (strstr(enum_label, "_gun_")
                || strstr(enum_label, "_aim_"))
             return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_INPUT_LGUN]);
+         else if (strstr(enum_label, "_touchpad"))
+            return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_OVERLAY]);
          else if (string_starts_with_size(enum_label, "input_device_reserv", STRLEN_CONST("input_device_reserv")))
             return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_OVERRIDE]);
       }

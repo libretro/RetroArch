@@ -2731,6 +2731,8 @@ static uintptr_t ozone_entries_icon_get_texture(
          else if (strstr(enum_label, "_gun_")
                || strstr(enum_label, "_aim_"))
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LGUN];
+         else if (strstr(enum_label, "_touchpad"))
+            return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_OVERLAY];
          else if (string_starts_with_size(enum_label, "input_device_reserv", STRLEN_CONST("input_device_reserv")))
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE];
       }

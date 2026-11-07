@@ -862,7 +862,7 @@ static int action_get_title_dropdown_input_description_common(
 
    /* Build title string */
    _len  = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
-   _len += snprintf(s + _len, len - _len, " %u - ", port + 1);
+   _len += snprintf(s + _len, len - _len, " %u: ", port + 1);
    if (input_label_ptr && *input_label_ptr)
       strlcpy(s + _len, input_label_ptr, len - _len);
    else
@@ -875,7 +875,7 @@ static int action_get_title_dropdown_input_description(
       const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
    unsigned port = (menu_type - MENU_SETTINGS_INPUT_DESC_BEGIN) /
-         (RARCH_FIRST_CUSTOM_BIND + 8);
+         RARCH_ANALOG_BIND_LIST_END;
 
    return action_get_title_dropdown_input_description_common(
       path, port, s, len);
@@ -885,7 +885,7 @@ static int action_get_title_dropdown_input_description_kbd(
       const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
    unsigned port = (menu_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) /
-         RARCH_FIRST_CUSTOM_BIND;
+         RARCH_ANALOG_BIND_LIST_END;
 
    return action_get_title_dropdown_input_description_common(
       path, port, s, len);

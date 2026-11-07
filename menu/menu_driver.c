@@ -8566,11 +8566,21 @@ static int generic_menu_iterate(
                      ret = 0;
                   }
                   /* Use detailed help text for 'Analog to Digital', which
-                   * is the first item in global input settings */
+                   * is the fourth item in global input settings, otherwise
+                   * use sublabels as usual. */
                   else if (type == MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE
-                        || type == MENU_SETTINGS_INPUT_BEGIN)
+                        || type == MENU_SETTINGS_INPUT_BEGIN + 3)
                      ret = msg_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
                            menu->menu_state_msg, sizeof(menu->menu_state_msg));
+                  else if (type >= MENU_SETTINGS_INPUT_BEGIN
+                        && type <  MENU_SETTINGS_INPUT_BINDS_BEGIN)
+                  {
+                     menu_driver_get_current_menu_sublabel(
+                           menu_st,
+                           menu->menu_state_msg, sizeof(menu->menu_state_msg));
+
+                     ret = 0;
+                  }
                   else
                   {
                      strlcpy(menu->menu_state_msg,
