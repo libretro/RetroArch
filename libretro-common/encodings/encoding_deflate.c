@@ -703,6 +703,38 @@ static const uint8_t rinf_rev8[256] = {
  * the bits there are not a code. An incomplete set (one code, the
  * degenerate distance tables zlib accepts) leaves indexes a hostile
  * stream could reach, so those are cleared. */
+/* The packed fast entry for symbol i, coded in len <= RINF_FAST_BITS
+ * bits; see rinf_huff.pfast. */
+static INLINE uint32_t rinf_pfast_entry(int table, int i, int len)
+{
+   if (table == RINF_TABLE_LEN)
+   {
+      if (i < 256)
+         return (uint32_t)len | RINF_PF_LIT | ((uint32_t)i << 16);
+      if (i == 256)
+         return (uint32_t)len | RINF_PF_EOB;
+      if (i - 257 < 29)
+         /* Bits [4:8] hold the code-plus-extra TOTAL, not the
+          * extra count: the critical-path shift that advances
+          * to the next code then uses the field directly, and
+          * the extra count for the value mask falls off the
+          * path as total - len. */
+         return (uint32_t)len
+              | ((uint32_t)(len + rinf_len_extra[i - 257]) << 4)
+              | ((uint32_t)rinf_len_base[i - 257] << 16);
+      return (uint32_t)len | RINF_PF_BAD;
+   }
+   if (table == RINF_TABLE_DIST)
+   {
+      if (i < 30)
+         return (uint32_t)len
+              | ((uint32_t)(len + rinf_dist_extra[i]) << 4)
+              | ((uint32_t)rinf_dist_base[i] << 16);
+      return (uint32_t)len | RINF_PF_BAD;
+   }
+   return 0;
+}
+
 static int rinf_build(struct rinf_huff *h, const uint8_t *lengths, int num,
       int table)
 {
@@ -753,63 +785,70 @@ static int rinf_build(struct rinf_huff *h, const uint8_t *lengths, int num,
    h->maxcode[RINF_MAX_BITS + 1] = 0xffff;
    h->num_symbols = num;
 
-   /* assign symbols in canonical order and populate the fast table */
+   /* Assign symbols in canonical order. */
    for (i = 0; i < num; i++)
    {
       int len = lengths[i];
-      int c, sym, rev;
+      int c, sym;
       if (!len)
          continue;
       c             = next_code[len]++;
       sym           = h->firstsym[len] + (c - h->firstcode[len]);
       h->size[sym]  = (uint8_t)len;
       h->value[sym] = (uint16_t)i;
+   }
 
-      /* the 'len' bits of c in reading order */
-      rev = ((rinf_rev8[c & 0xff] << 8) | rinf_rev8[(c >> 8) & 0xff])
-          >> (16 - len);
-      if (len > RINF_FAST_BITS)
+   /* Populate the fast tables by doubling, as libdeflate does.  A code
+    * of length len owns every entry whose low len bits are its bits in
+    * reading order - one entry in a table of 2^len, then a repeat
+    * every 2^len.  So the codes are placed length by length, each into
+    * a table exactly 2^len entries long, and the table is doubled by
+    * copying its lower half up before moving to the next length: the
+    * copy lays down every repeat of every shorter code at once.  This
+    * used to be a strided store loop over the whole 2^RINF_FAST_BITS
+    * table for every code, which on smooth image data - many short
+    * blocks, three tables each - was a tenth of a PNG decode.
+    *
+    * The result is entry for entry what the strided fill produced.  In
+    * a complete code each entry at the final size belongs to exactly
+    * one code: a short one, placed at its own level and then only ever
+    * copied, or a long one, whose prefix entry is zeroed below; so
+    * whatever a slot held from the previous block before its code
+    * reached it is always overwritten.  An incomplete code was zeroed
+    * whole above and the copies keep its gaps zero. */
+   {
+      int cur = 1;   /* entries the table currently spans */
+      int len;
+      for (len = 1; len <= RINF_FAST_BITS; len++)
       {
-         rev &= (1 << RINF_FAST_BITS) - 1;
-         h->fast[rev]  = 0;
-         h->pfast[rev] = 0;
+         int k, end;
+         memcpy(h->fast  + cur, h->fast,  (size_t)cur * sizeof(h->fast[0]));
+         memcpy(h->pfast + cur, h->pfast, (size_t)cur * sizeof(h->pfast[0]));
+         cur <<= 1;
+         end = h->firstsym[len] + sizes[len];
+         for (k = h->firstsym[len]; k < end; k++)
+         {
+            int sym = h->value[k];
+            int c   = h->firstcode[len] + (k - h->firstsym[len]);
+            /* the 'len' bits of c in reading order */
+            int rev = ((rinf_rev8[c & 0xff] << 8) | rinf_rev8[(c >> 8) & 0xff])
+                    >> (16 - len);
+            h->fast[rev]  = (uint16_t)((sym << 4) | len);
+            h->pfast[rev] = rinf_pfast_entry(table, sym, len);
+         }
       }
-      else
+      /* Codes longer than the table: their prefix entry says "slow
+       * path". */
+      for (len = RINF_FAST_BITS + 1; len <= RINF_MAX_BITS; len++)
       {
-         uint16_t f = (uint16_t)((i << 4) | len);
-         uint32_t e = 0;
-         int j;
-         if (table == RINF_TABLE_LEN)
+         int k, end = h->firstsym[len] + sizes[len];
+         for (k = h->firstsym[len]; k < end; k++)
          {
-            if (i < 256)
-               e = (uint32_t)len | RINF_PF_LIT | ((uint32_t)i << 16);
-            else if (i == 256)
-               e = (uint32_t)len | RINF_PF_EOB;
-            else if (i - 257 < 29)
-               /* Bits [4:8] hold the code-plus-extra TOTAL, not the
-                * extra count: the critical-path shift that advances
-                * to the next code then uses the field directly, and
-                * the extra count for the value mask falls off the
-                * path as total - len. */
-               e = (uint32_t)len
-                 | ((uint32_t)(len + rinf_len_extra[i - 257]) << 4)
-                 | ((uint32_t)rinf_len_base[i - 257] << 16);
-            else
-               e = (uint32_t)len | RINF_PF_BAD;
-         }
-         else if (table == RINF_TABLE_DIST)
-         {
-            if (i < 30)
-               e = (uint32_t)len
-                 | ((uint32_t)(len + rinf_dist_extra[i]) << 4)
-                 | ((uint32_t)rinf_dist_base[i] << 16);
-            else
-               e = (uint32_t)len | RINF_PF_BAD;
-         }
-         for (j = rev; j < (1 << RINF_FAST_BITS); j += (1 << len))
-         {
-            h->fast[j]  = f;
-            h->pfast[j] = e;
+            int c   = h->firstcode[len] + (k - h->firstsym[len]);
+            int rev = (((rinf_rev8[c & 0xff] << 8) | rinf_rev8[(c >> 8) & 0xff])
+                    >> (16 - len)) & ((1 << RINF_FAST_BITS) - 1);
+            h->fast[rev]  = 0;
+            h->pfast[rev] = 0;
          }
       }
    }
