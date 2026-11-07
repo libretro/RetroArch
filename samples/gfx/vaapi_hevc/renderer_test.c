@@ -5,6 +5,8 @@
 #undef VAAPI_CACHE_TEST_MAIN
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/common/vulkan_android_queue.h"
+#include <rthreads/rthreads.h>
+#include "../../../gfx/common/vulkan_common.h"
 
 struct vk_texture
 {
@@ -15,6 +17,7 @@ struct vk_texture
    VkFormat format;
    VkImageLayout layout;
    unsigned dims;
+   uint8_t flags;
 };
 
 static struct renderer_context
@@ -58,6 +61,9 @@ static void vulkan_destroy_texture(VkDevice d, struct vk_texture *texture)
    assert(d == device && texture == renderer_texture);
    assert(!live && !vf_images && !vf_views && !vf_allocations);
    renderer_destinations++;
+   texture->image = VK_NULL_HANDLE;
+   texture->view  = VK_NULL_HANDLE;
+   texture->flags = 0;
 }
 
 static VKAPI_ATTR void VKAPI_CALL renderer_update(VkDevice d, uint32_t n,
@@ -190,6 +196,8 @@ static PFN_vkGetInstanceProcAddr renderer_instance_proc(void)
          : renderer_get_instance;
 }
 
+#undef vkQueueSubmit
+#undef vkGetDeviceProcAddr
 #define vkQueueSubmit renderer_queue_submit
 #define vkGetDeviceProcAddr renderer_get_device
 #define vulkan_symbol_wrapper_instance_proc_addr renderer_instance_proc
@@ -281,14 +289,16 @@ static void renderer_setup(bool fp16, video_frame_import_t *input)
 int main(void)
 {
    video_frame_import_t input;
-   unsigned depth, fp16, lost, prepared_calls;
+   unsigned depth, fp16, teardown, lost, retained, prepared_calls;
    vulkan_video_layout_t expected;
    float linear = -1.0f;
    assert(!cache_unit_main());
    for (depth = 8; depth <= 10; depth += 2)
       for (fp16 = 0; fp16 < 2; fp16++)
-         for (lost = 0; lost < 2; lost++)
+         for (teardown = 0; teardown < 4; teardown++)
          {
+            lost     = teardown & 1;
+            retained = teardown & 2;
             ex_depth = depth;
             ex_mode  = 2;
             renderer_setup(fp16 != 0, &input);
@@ -361,9 +371,26 @@ int main(void)
             assert(renderer_texture->layout
                   == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             memset(&vf, 0, sizeof(vf));
-            vaapi_hevc_vulkan_cache_close(cache);
-            if (lost)
+            if (retained)
             {
+               if (!lost)
+                  vf_fence_result = VK_SUCCESS;
+               vulkan_vaapi_renderer_flush(&renderer);
+               assert(!renderer.vaapi_textures
+                     && !renderer_texture->vaapi_cache);
+               if (lost)
+               {
+                  vaapi_hevc_vulkan_cache_device_destroying(device);
+                  assert(renderer_destinations == 1 && !ex_closes);
+                  vaapi_hevc_vulkan_cache_device_destroyed(device);
+               }
+               assert(renderer_destinations == 1 && !renderer_texture->image
+                     && !renderer_texture->view);
+               free(renderer_texture);
+            }
+            else if (lost)
+            {
+               vaapi_hevc_vulkan_cache_close(cache);
                assert(!vaapi_hevc_vulkan_cache_free(cache));
                vaapi_hevc_vulkan_cache_defer(cache);
                vaapi_hevc_vulkan_cache_device_destroying(device);
@@ -372,6 +399,7 @@ int main(void)
             }
             else
             {
+               vaapi_hevc_vulkan_cache_close(cache);
                assert(vaapi_hevc_vulkan_cache_poll(cache) == 0);
                vf_fence_result = VK_SUCCESS;
                assert(vaapi_hevc_vulkan_cache_free(cache));

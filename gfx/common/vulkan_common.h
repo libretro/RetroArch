@@ -244,7 +244,8 @@ enum vk_texture_flags
    VK_TEX_FLAG_MIPMAP                       = (1 << 2),
    /* Streamed texture in device-local host-visible memory: written by
     * the CPU, never read by it. */
-   VK_TEX_FLAG_BAR_MAPPED                   = (1 << 3)
+   VK_TEX_FLAG_BAR_MAPPED                   = (1 << 3),
+   VK_TEX_FLAG_RETAIN_HANDLE                = (1 << 4)
 };
 
 /* The settings a swapchain is made from.  The thread that draws can

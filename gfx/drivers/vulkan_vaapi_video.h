@@ -13,8 +13,28 @@ static void vulkan_vaapi_renderer_destroy_destination(
       VkDevice device, void *destination)
 {
    struct vk_texture *texture = (struct vk_texture *)destination;
+   bool retained = (texture->flags & VK_TEX_FLAG_RETAIN_HANDLE) != 0;
    vulkan_destroy_texture(device, texture);
-   free(texture);
+   if (!retained)
+      free(texture);
+}
+
+static void vulkan_vaapi_renderer_flush(vk_t *vk)
+{
+   while (vk->vaapi_textures)
+   {
+      struct vk_texture *texture = vk->vaapi_textures;
+      vaapi_hevc_vulkan_cache_t *cache = texture->vaapi_cache;
+      vk->vaapi_textures = texture->vaapi_next;
+      texture->vaapi_next = NULL;
+      texture->vaapi_cache = NULL;
+      texture->flags |= VK_TEX_FLAG_RETAIN_HANDLE;
+      vaapi_hevc_vulkan_cache_close(cache);
+      if (!vaapi_hevc_vulkan_cache_free(cache))
+         vaapi_hevc_vulkan_cache_defer(cache);
+      else
+         vulkan_destroy_texture(vk->context->device, texture);
+   }
 }
 
 static vaapi_hevc_vulkan_cache_t *vulkan_vaapi_renderer_cache(

@@ -1974,9 +1974,7 @@ static void vulkan_stream_state_free(vk_t *vk, struct vk_stream_state *st)
    free(st);
 }
 
-/* Driver teardown, after the queue is idle: stream state of textures
- * the frontend never unloaded. The textures themselves are its to
- * leak or keep. */
+/* Retire device resources; the frontend retains the handle allocation. */
 static void vulkan_stream_states_flush(vk_t *vk)
 {
    struct vk_stream_state *st = vk->stream_states;
@@ -1984,7 +1982,9 @@ static void vulkan_stream_states_flush(vk_t *vk)
    while (st)
    {
       struct vk_stream_state *next = st->next;
+      struct vk_texture *texture = st->texture;
       vulkan_stream_state_free(vk, st);
+      vulkan_destroy_texture(vk->context->device, texture);
       st = next;
    }
 }
@@ -7551,6 +7551,10 @@ static void vulkan_destroy_hdr_buffer(VkDevice device, struct vk_image *img)
  * unsynchronised by racing the teardown at all. */
 static struct retro_hw_render_interface_vulkan vulkan_hw_iface;
 
+#ifdef HAVE_VAAPI
+static void vulkan_vaapi_renderer_flush(vk_t *vk);
+#endif
+
 static void vulkan_free(void *data)
 {
    vk_t *vk = (vk_t*)data;
@@ -7580,6 +7584,9 @@ static void vulkan_free(void *data)
       vulkan_windows_free(vk);
 #endif
       vulkan_deferred_textures_flush(vk);
+#ifdef HAVE_VAAPI
+      vulkan_vaapi_renderer_flush(vk);
+#endif
       vulkan_deferred_cmds_flush(vk);
       vulkan_stream_states_flush(vk);
       {
