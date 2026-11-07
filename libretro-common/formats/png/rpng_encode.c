@@ -311,12 +311,76 @@ static void copy_bgr24_line(uint8_t *dst, const uint8_t *src, unsigned width)
    }
 }
 
+/* The raw-framebuffer screenshot path - a core's own XRGB8888 or RGB565
+ * frame, no readback - converts each row here, and like the BGR24 swap
+ * both ran a pixel at a time ahead of vectorised filters.
+ *
+ * SSE2 builds each pixel as a 32-bit lane 0x00BBGGRR, which is R,G,B,0
+ * in memory, and then closes the gaps: within each 64-bit half the odd
+ * lane moves down a byte onto the even lane's zero, and the upper half
+ * moves down to follow the lower one - four pixels in the first 12
+ * bytes, the last four zero and rewritten by the next store or the
+ * scalar tail.  NEON works on channel planes and stores them with vst3. */
+#if defined(RPNG_ENC_SSE2)
+static INLINE __m128i rpng_pack_rgb0x4(__m128i v)
+{
+   const __m128i lo = _mm_set_epi32(0, 0x00FFFFFF, 0, 0x00FFFFFF);
+   const __m128i hi = _mm_set_epi32(0x0000FFFF, (int)0xFF000000,
+                                    0x0000FFFF, (int)0xFF000000);
+   __m128i e = _mm_or_si128(_mm_and_si128(v, lo),
+                            _mm_and_si128(_mm_srli_epi64(v, 8), hi));
+   return _mm_or_si128(_mm_move_epi64(e),
+                       _mm_slli_si128(_mm_srli_si128(e, 8), 6));
+}
+
+/* Four R5G6B5 values in 32-bit lanes -> 0x00BBGGRR, replicating each
+ * channel's top bits into its low ones as pixconv_rgb565_to_xbgr8888. */
+static INLINE __m128i rpng_rgb565_to_rgb0x4(__m128i c)
+{
+   const __m128i m_b  = _mm_set1_epi32(0x001F);
+   const __m128i m_r  = _mm_set1_epi32(0xF800);
+   const __m128i m_g  = _mm_set1_epi32(0x07E0);
+   const __m128i m_br = _mm_set1_epi32(0x070007);
+   const __m128i m_gl = _mm_set1_epi32(0x000300);
+   __m128i br = _mm_or_si128(_mm_slli_epi32(_mm_and_si128(c, m_b), 19),
+                             _mm_srli_epi32(_mm_and_si128(c, m_r), 8));
+   __m128i g  = _mm_slli_epi32(_mm_and_si128(c, m_g), 5);
+   br = _mm_or_si128(br, _mm_and_si128(_mm_srli_epi32(br, 5), m_br));
+   g  = _mm_or_si128(g,  _mm_and_si128(_mm_srli_epi32(g,  6), m_gl));
+   return _mm_or_si128(br, g);
+}
+#endif
+
 /* X8R8G8B8 -> PNG RGB.  The X byte is ignored. */
 static void copy_xrgb8888_line(uint8_t *dst, const uint32_t *src,
       unsigned width)
 {
-   unsigned i;
-   for (i = 0; i < width; i++)
+   unsigned i = 0;
+#if defined(RPNG_ENC_SSE2)
+   {
+      const __m128i m_rb = _mm_set1_epi32(0x00FF00FF);
+      const __m128i m_g  = _mm_set1_epi32(0x0000FF00);
+      for (; i + 6 <= width; i += 4)
+      {
+         __m128i v = _mm_loadu_si128((const __m128i*)(src + i));
+         /* rotate by 16: 0xXXRRGGBB -> 0xGGBBXXRR, keep B and R */
+         __m128i t = _mm_or_si128(_mm_slli_epi32(v, 16), _mm_srli_epi32(v, 16));
+         _mm_storeu_si128((__m128i*)(dst + (size_t)i * 3), rpng_pack_rgb0x4(
+                  _mm_or_si128(_mm_and_si128(t, m_rb), _mm_and_si128(v, m_g))));
+      }
+   }
+#elif defined(RPNG_ENC_NEON) && !defined(__ARM_BIG_ENDIAN)
+   for (; i + 16 <= width; i += 16)
+   {
+      uint8x16x4_t p = vld4q_u8((const uint8_t*)(src + i)); /* B,G,R,X */
+      uint8x16x3_t q;
+      q.val[0] = p.val[2];
+      q.val[1] = p.val[1];
+      q.val[2] = p.val[0];
+      vst3q_u8(dst + (size_t)i * 3, q);
+   }
+#endif
+   for (dst += (size_t)i * 3; i < width; i++)
    {
       uint32_t px = src[i];
       *dst++      = (uint8_t)(px >> 16); /* R */
@@ -331,8 +395,37 @@ static void copy_xrgb8888_line(uint8_t *dst, const uint32_t *src,
 static void copy_rgb565_line(uint8_t *dst, const uint16_t *src,
       unsigned width)
 {
-   unsigned i;
-   for (i = 0; i < width; i++)
+   unsigned i = 0;
+#if defined(RPNG_ENC_SSE2)
+   {
+      const __m128i z = _mm_setzero_si128();
+      for (; i + 10 <= width; i += 8)
+      {
+         __m128i c = _mm_loadu_si128((const __m128i*)(src + i));
+         uint8_t *d = dst + (size_t)i * 3;
+         _mm_storeu_si128((__m128i*)d, rpng_pack_rgb0x4(
+                  rpng_rgb565_to_rgb0x4(_mm_unpacklo_epi16(c, z))));
+         _mm_storeu_si128((__m128i*)(d + 12), rpng_pack_rgb0x4(
+                  rpng_rgb565_to_rgb0x4(_mm_unpackhi_epi16(c, z))));
+      }
+   }
+#elif defined(RPNG_ENC_NEON)
+   /* vsri keeps a byte's top bits and slides its own top bits in
+    * below them: the same replication, one instruction a channel. */
+   for (; i + 8 <= width; i += 8)
+   {
+      uint16x8_t  c = vld1q_u16(src + i);
+      uint8x8_t   r = vshrn_n_u16(c, 8);                /* rrrrrggg */
+      uint8x8_t   g = vshrn_n_u16(c, 3);                /* gggggg.. */
+      uint8x8_t   b = vmovn_u16(vshlq_n_u16(c, 3));     /* bbbbb000 */
+      uint8x8x3_t q;
+      q.val[0] = vsri_n_u8(r, r, 5);
+      q.val[1] = vsri_n_u8(g, g, 6);
+      q.val[2] = vsri_n_u8(b, b, 5);
+      vst3_u8(dst + (size_t)i * 3, q);
+   }
+#endif
+   for (dst += (size_t)i * 3; i < width; i++)
    {
       uint32_t px = pixconv_rgb565_to_xrgb8888(src[i]);
       *dst++      = (uint8_t)(px >> 16);
