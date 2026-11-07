@@ -529,7 +529,10 @@ static short rwav_mulaw_to_s16(unsigned char u)
    return (short)((u & 0x80) ? (0x84 - (t + 0x84)) : t);
 }
 
-static short rwav_clamp16(int v)
+/* Selects rather than branches, so compilers emit conditional moves:
+ * the ADPCM decoders run it once a sample on a dependency chain, where
+ * a mispredicted branch costs several times the arithmetic. */
+static INLINE short rwav_clamp16(int v)
 {
    if (v >  32767)
       return  32767;
@@ -538,17 +541,105 @@ static short rwav_clamp16(int v)
    return (short)v;
 }
 
-/* IMA step and index tables (IMA ADPCM, ANSI/IEEE). */
-static const short rwav_ima_step[89] = {
-   7,8,9,10,11,12,13,14,16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,
-   73,80,88,97,107,118,130,143,157,173,190,209,230,253,279,307,337,371,
-   408,449,494,544,598,658,724,796,876,963,1060,1166,1282,1411,1552,1707,
-   1878,2066,2272,2499,2749,3024,3327,3660,4026,4428,4871,5358,5894,6484,
-   7132,7845,8630,9493,10442,11487,12635,13899,15289,16818,18500,20350,
-   22385,24623,27086,29794,32767
-};
+/* IMA index table (IMA ADPCM, ANSI/IEEE); the step table is folded
+ * into rwav_ima_diff below. */
 static const signed char rwav_ima_index[16] = {
    -1,-1,-1,-1,2,4,6,8,-1,-1,-1,-1,2,4,6,8
+};
+/* The signed difference each nibble makes at each step index,
+ * ((2*(nib & 7) + 1) * step) >> 3 negated for the upper eight: the
+ * product, the shift and the sign are a lookup, done once here instead
+ * of once a sample. */
+static const int rwav_ima_diff[89 * 16] = {
+   0,2,4,6,7,9,11,13,0,-2,-4,-6,-7,-9,-11,-13,
+   1,3,5,7,9,11,13,15,-1,-3,-5,-7,-9,-11,-13,-15,
+   1,3,5,7,10,12,14,16,-1,-3,-5,-7,-10,-12,-14,-16,
+   1,3,6,8,11,13,16,18,-1,-3,-6,-8,-11,-13,-16,-18,
+   1,4,6,9,12,15,17,20,-1,-4,-6,-9,-12,-15,-17,-20,
+   1,4,7,10,13,16,19,22,-1,-4,-7,-10,-13,-16,-19,-22,
+   1,4,8,11,14,17,21,24,-1,-4,-8,-11,-14,-17,-21,-24,
+   1,5,8,12,15,19,22,26,-1,-5,-8,-12,-15,-19,-22,-26,
+   2,6,10,14,18,22,26,30,-2,-6,-10,-14,-18,-22,-26,-30,
+   2,6,10,14,19,23,27,31,-2,-6,-10,-14,-19,-23,-27,-31,
+   2,7,11,16,21,26,30,35,-2,-7,-11,-16,-21,-26,-30,-35,
+   2,7,13,18,23,28,34,39,-2,-7,-13,-18,-23,-28,-34,-39,
+   2,8,14,20,25,31,37,43,-2,-8,-14,-20,-25,-31,-37,-43,
+   3,9,15,21,28,34,40,46,-3,-9,-15,-21,-28,-34,-40,-46,
+   3,10,17,24,31,38,45,52,-3,-10,-17,-24,-31,-38,-45,-52,
+   3,11,19,27,34,42,50,58,-3,-11,-19,-27,-34,-42,-50,-58,
+   4,12,21,29,38,46,55,63,-4,-12,-21,-29,-38,-46,-55,-63,
+   4,13,23,32,41,50,60,69,-4,-13,-23,-32,-41,-50,-60,-69,
+   5,15,25,35,46,56,66,76,-5,-15,-25,-35,-46,-56,-66,-76,
+   5,16,28,39,50,61,73,84,-5,-16,-28,-39,-50,-61,-73,-84,
+   6,18,31,43,56,68,81,93,-6,-18,-31,-43,-56,-68,-81,-93,
+   6,20,34,48,61,75,89,103,-6,-20,-34,-48,-61,-75,-89,-103,
+   7,22,37,52,67,82,97,112,-7,-22,-37,-52,-67,-82,-97,-112,
+   8,24,41,57,74,90,107,123,-8,-24,-41,-57,-74,-90,-107,-123,
+   9,27,45,63,82,100,118,136,-9,-27,-45,-63,-82,-100,-118,-136,
+   10,30,50,70,90,110,130,150,-10,-30,-50,-70,-90,-110,-130,-150,
+   11,33,55,77,99,121,143,165,-11,-33,-55,-77,-99,-121,-143,-165,
+   12,36,60,84,109,133,157,181,-12,-36,-60,-84,-109,-133,-157,-181,
+   13,40,66,93,120,147,173,200,-13,-40,-66,-93,-120,-147,-173,-200,
+   14,44,73,103,132,162,191,221,-14,-44,-73,-103,-132,-162,-191,-221,
+   16,48,81,113,146,178,211,243,-16,-48,-81,-113,-146,-178,-211,-243,
+   17,53,89,125,160,196,232,268,-17,-53,-89,-125,-160,-196,-232,-268,
+   19,58,98,137,176,215,255,294,-19,-58,-98,-137,-176,-215,-255,-294,
+   21,64,108,151,194,237,281,324,-21,-64,-108,-151,-194,-237,-281,-324,
+   23,71,118,166,213,261,308,356,-23,-71,-118,-166,-213,-261,-308,-356,
+   26,78,130,182,235,287,339,391,-26,-78,-130,-182,-235,-287,-339,-391,
+   28,86,143,201,258,316,373,431,-28,-86,-143,-201,-258,-316,-373,-431,
+   31,94,158,221,284,347,411,474,-31,-94,-158,-221,-284,-347,-411,-474,
+   34,104,174,244,313,383,453,523,-34,-104,-174,-244,-313,-383,-453,-523,
+   38,115,191,268,345,422,498,575,-38,-115,-191,-268,-345,-422,-498,-575,
+   42,126,210,294,379,463,547,631,-42,-126,-210,-294,-379,-463,-547,-631,
+   46,139,231,324,417,510,602,695,-46,-139,-231,-324,-417,-510,-602,-695,
+   51,153,255,357,459,561,663,765,-51,-153,-255,-357,-459,-561,-663,-765,
+   56,168,280,392,505,617,729,841,-56,-168,-280,-392,-505,-617,-729,-841,
+   61,185,308,432,555,679,802,926,-61,-185,-308,-432,-555,-679,-802,-926,
+   68,204,340,476,612,748,884,1020,-68,-204,-340,-476,-612,-748,-884,-1020,
+   74,224,373,523,672,822,971,1121,-74,-224,-373,-523,-672,-822,-971,-1121,
+   82,246,411,575,740,904,1069,1233,-82,-246,-411,-575,-740,-904,-1069,-1233,
+   90,271,452,633,814,995,1176,1357,-90,-271,-452,-633,-814,-995,-1176,-1357,
+   99,298,497,696,895,1094,1293,1492,-99,-298,-497,-696,-895,-1094,-1293,-1492,
+   109,328,547,766,985,1204,1423,1642,-109,-328,-547,-766,-985,-1204,-1423,-1642,
+   120,361,601,842,1083,1324,1564,1805,-120,-361,-601,-842,-1083,-1324,-1564,-1805,
+   132,397,662,927,1192,1457,1722,1987,-132,-397,-662,-927,-1192,-1457,-1722,-1987,
+   145,437,728,1020,1311,1603,1894,2186,-145,-437,-728,-1020,-1311,-1603,-1894,-2186,
+   160,480,801,1121,1442,1762,2083,2403,-160,-480,-801,-1121,-1442,-1762,-2083,-2403,
+   176,529,881,1234,1587,1940,2292,2645,-176,-529,-881,-1234,-1587,-1940,-2292,-2645,
+   194,582,970,1358,1746,2134,2522,2910,-194,-582,-970,-1358,-1746,-2134,-2522,-2910,
+   213,640,1066,1493,1920,2347,2773,3200,-213,-640,-1066,-1493,-1920,-2347,-2773,-3200,
+   234,704,1173,1643,2112,2582,3051,3521,-234,-704,-1173,-1643,-2112,-2582,-3051,-3521,
+   258,774,1291,1807,2324,2840,3357,3873,-258,-774,-1291,-1807,-2324,-2840,-3357,-3873,
+   284,852,1420,1988,2556,3124,3692,4260,-284,-852,-1420,-1988,-2556,-3124,-3692,-4260,
+   312,937,1561,2186,2811,3436,4060,4685,-312,-937,-1561,-2186,-2811,-3436,-4060,-4685,
+   343,1030,1718,2405,3092,3779,4467,5154,-343,-1030,-1718,-2405,-3092,-3779,-4467,-5154,
+   378,1134,1890,2646,3402,4158,4914,5670,-378,-1134,-1890,-2646,-3402,-4158,-4914,-5670,
+   415,1247,2079,2911,3742,4574,5406,6238,-415,-1247,-2079,-2911,-3742,-4574,-5406,-6238,
+   457,1372,2287,3202,4117,5032,5947,6862,-457,-1372,-2287,-3202,-4117,-5032,-5947,-6862,
+   503,1509,2516,3522,4529,5535,6542,7548,-503,-1509,-2516,-3522,-4529,-5535,-6542,-7548,
+   553,1660,2767,3874,4981,6088,7195,8302,-553,-1660,-2767,-3874,-4981,-6088,-7195,-8302,
+   608,1826,3044,4262,5479,6697,7915,9133,-608,-1826,-3044,-4262,-5479,-6697,-7915,-9133,
+   669,2009,3348,4688,6027,7367,8706,10046,-669,-2009,-3348,-4688,-6027,-7367,-8706,-10046,
+   736,2210,3683,5157,6630,8104,9577,11051,-736,-2210,-3683,-5157,-6630,-8104,-9577,-11051,
+   810,2431,4052,5673,7294,8915,10536,12157,-810,-2431,-4052,-5673,-7294,-8915,-10536,-12157,
+   891,2674,4457,6240,8023,9806,11589,13372,-891,-2674,-4457,-6240,-8023,-9806,-11589,-13372,
+   980,2941,4903,6864,8825,10786,12748,14709,-980,-2941,-4903,-6864,-8825,-10786,-12748,-14709,
+   1078,3236,5393,7551,9708,11866,14023,16181,-1078,-3236,-5393,-7551,-9708,-11866,-14023,-16181,
+   1186,3559,5933,8306,10679,13052,15426,17799,-1186,-3559,-5933,-8306,-10679,-13052,-15426,-17799,
+   1305,3915,6526,9136,11747,14357,16968,19578,-1305,-3915,-6526,-9136,-11747,-14357,-16968,-19578,
+   1435,4307,7179,10051,12922,15794,18666,21538,-1435,-4307,-7179,-10051,-12922,-15794,-18666,-21538,
+   1579,4738,7896,11055,14214,17373,20531,23690,-1579,-4738,-7896,-11055,-14214,-17373,-20531,-23690,
+   1737,5212,8686,12161,15636,19111,22585,26060,-1737,-5212,-8686,-12161,-15636,-19111,-22585,-26060,
+   1911,5733,9555,13377,17200,21022,24844,28666,-1911,-5733,-9555,-13377,-17200,-21022,-24844,-28666,
+   2102,6306,10511,14715,18920,23124,27329,31533,-2102,-6306,-10511,-14715,-18920,-23124,-27329,-31533,
+   2312,6937,11562,16187,20812,25437,30062,34687,-2312,-6937,-11562,-16187,-20812,-25437,-30062,-34687,
+   2543,7631,12718,17806,22893,27981,33068,38156,-2543,-7631,-12718,-17806,-22893,-27981,-33068,-38156,
+   2798,8394,13990,19586,25183,30779,36375,41971,-2798,-8394,-13990,-19586,-25183,-30779,-36375,-41971,
+   3077,9233,15389,21545,27700,33856,40012,46168,-3077,-9233,-15389,-21545,-27700,-33856,-40012,-46168,
+   3385,10157,16928,23700,30471,37243,44014,50786,-3385,-10157,-16928,-23700,-30471,-37243,-44014,-50786,
+   3724,11172,18621,26069,33518,40966,48415,55863,-3724,-11172,-18621,-26069,-33518,-40966,-48415,-55863,
+   4095,12287,20479,28671,36862,45054,53246,61438,-4095,-12287,-20479,-28671,-36862,-45054,-53246,-61438
 };
 /* MS ADPCM adaptation table, and the coefficients a file may omit. */
 static const short rwav_ms_adapt[16] = {
@@ -579,163 +670,280 @@ static int rwav_ms_predict(int s1, int co1, int s2, int co2)
    return (int)(((int64_t)s1 * co1 + (int64_t)s2 * co2) / 256);
 }
 
-/* Decode one block into 'out', which must hold samplesperblock frames.
- * Returns frames produced, 0 on a malformed block. */
-/* Emit only the frames in [first, first + count) of the block, written
- * to @out relative to @first.  A block must still be decoded from its
- * start - the predictor state is what the samples continue from - but
- * nothing before @first has to be *stored*, so a window landing inside
- * a block needs no scratch buffer to be trimmed afterwards. */
-#define RWAV_PUT(idx, chan, v)                                          \
-   do {                                                                 \
-      unsigned rwav__i = (unsigned)(idx);                               \
-      if (rwav__i >= first && rwav__i - first < count)                   \
-         out[(rwav__i - first) * ch + (chan)] = (short)(v);              \
+/* ---- block decoding ----
+ *
+ * A block is decoded from its start - its preamble states the
+ * predictor the samples continue from - but only the frames in
+ * [first, end) are stored, at @out relative to @first, and nothing
+ * past @end is decoded.  So a window landing inside a block needs no
+ * scratch to be trimmed afterwards, and one ending early stops there.
+ *
+ * Each sample depends on the one before it, so the decode is a chain
+ * of dependent steps; the state of that chain is kept in locals for a
+ * run of samples at a time - eight nibbles of one IMA channel, or a
+ * whole block of MS mono or stereo - since state kept in arrays
+ * indexed by a runtime channel count goes through memory every sample,
+ * which costs several times the arithmetic. */
+
+/* One IMA nibble: the step from the index, ((2*delta + 1) * step) >> 3
+ * rather than the shift-and-accumulate form - the two disagree once
+ * the step is small enough for the shifts to truncate, step 7 giving 1
+ * against 2, and this is the one every reference decoder uses. */
+#define RWAV_IMA_STEP(p, x, nib)                                         \
+   do {                                                                  \
+      (p)  = rwav_clamp16((p) + rwav_ima_diff[(x) * 16 + (nib)]);         \
+      (x) += rwav_ima_index[nib];                                        \
+      (x)  = ((x) < 0) ? 0 : (((x) > 88) ? 88 : (x));                     \
    } while (0)
 
+/* One channel's run of eight IMA samples from the four bytes at @q,
+ * low nibble first.  All eight are decoded, for the state; sample k is
+ * stored at o[(k - klo) * stride] for klo <= k < khi. */
+static INLINE void rwav_ima_run(const unsigned char *q, int *pred,
+      int *index, short *o, unsigned stride, unsigned klo, unsigned khi)
+{
+   int      p = *pred;
+   int      x = *index;
+   unsigned k;
+   if (!klo && khi == 8)
+      /* the whole run is in the window: no test a sample */
+      for (k = 0; k < 8; k++)
+      {
+         unsigned nib = (q[k >> 1] >> ((k & 1) << 2)) & 0x0f;
+         RWAV_IMA_STEP(p, x, nib);
+         o[k * stride] = (short)p;
+      }
+   else
+      for (k = 0; k < 8; k++)
+      {
+         unsigned nib = (q[k >> 1] >> ((k & 1) << 2)) & 0x0f;
+         RWAV_IMA_STEP(p, x, nib);
+         if (k >= klo && k < khi)
+            o[(k - klo) * stride] = (short)p;
+      }
+   *pred  = p;
+   *index = x;
+}
+
+/* Stereo's two runs at once, whole runs only: two independent chains
+ * the core can overlap.  Left at @q, right at @q + 4, stored to @o,
+ * @o + 1 every two shorts. */
+static INLINE void rwav_ima_run_pair(const unsigned char *q, int *pred,
+      int *index, short *o)
+{
+   int      pl = pred[0],  pr = pred[1];
+   int      xl = index[0], xr = index[1];
+   unsigned k;
+   for (k = 0; k < 8; k++)
+   {
+      unsigned sh = (k & 1) << 2;
+      unsigned nl = (q[k >> 1]     >> sh) & 0x0f;
+      unsigned nr = (q[4 + (k >> 1)] >> sh) & 0x0f;
+      RWAV_IMA_STEP(pl, xl, nl);
+      RWAV_IMA_STEP(pr, xr, nr);
+      o[k * 2]     = (short)pl;
+      o[k * 2 + 1] = (short)pr;
+   }
+   pred[0]  = pl; pred[1]  = pr;
+   index[0] = xl; index[1] = xr;
+}
+
+#undef RWAV_IMA_STEP
+
+/* IMA, any channel count: a preamble of four bytes a channel (the
+ * first sample, the step index, a reserved byte), then the nibbles in
+ * runs of four bytes of one channel, then four of the next. */
+static unsigned rwav_ima_block(const rwav_t *wav, const unsigned char *b,
+      size_t blen, unsigned first, unsigned end, short *out)
+{
+   int      pred[16], idx[16];
+   unsigned ch   = wav->numchannels;
+   size_t   step = 4 * (size_t)ch;
+   size_t   off  = step;
+   unsigned c, i;
+   if (ch > 16 || blen < step)
+      return 0;
+   for (c = 0; c < ch; c++)
+   {
+      pred[c] = (short)rwav_u16(b + c * 4);
+      idx[c]  = (b[c * 4 + 2] > 88) ? 88 : b[c * 4 + 2];
+      if (!first)
+         out[c] = (short)pred[c];
+   }
+   for (i = 1; i < end && off + step <= blen; i += 8, off += step)
+   {
+      /* the part of this run inside the window, as nibble indices */
+      unsigned klo = (first > i) ? first - i : 0;
+      unsigned khi = (end - i < 8) ? end - i : 8;
+      short   *o   = (klo < khi) ? out + (size_t)(i + klo - first) * ch
+                                 : out;
+      if (ch == 2 && !klo && khi == 8)
+         rwav_ima_run_pair(b + off, pred, idx, o);
+      else
+         for (c = 0; c < ch; c++)
+            rwav_ima_run(b + off + c * 4, &pred[c], &idx[c], o + c, ch,
+                  klo, khi);
+   }
+   return end - first;
+}
+
+/* One MS ADPCM sample from a nibble, on a channel's state in locals. */
+#define RWAV_MS_STEP(p, nib, s1, s2, co1, co2, delta)                     \
+   do {                                                                  \
+      int rwav__n = (int)(nib);                                          \
+      (p)     = rwav_clamp16(rwav_ms_predict((s1), (co1), (s2), (co2))    \
+              + ((rwav__n ^ 8) - 8) * (delta));                          \
+      (s2)    = (s1);                                                    \
+      (s1)    = (p);                                                     \
+      (delta) = rwav_ms_adapt_delta(rwav__n, (delta));                   \
+   } while (0)
+
+/* MS ADPCM preamble: per channel a coefficient index, then per channel
+ * the step, the newer and the older priming sample, so each field is
+ * a run of all channels.  Returns 0 when a coefficient index is out of
+ * range. */
+static int rwav_ms_preamble(const rwav_t *wav, const unsigned char *b,
+      unsigned ch, unsigned c, int *co1, int *co2, int *delta,
+      int *s1, int *s2)
+{
+   unsigned pi = b[c];
+   if (pi >= wav->numcoef)
+      return 0;
+   *co1   = wav->coef[pi][0];
+   *co2   = wav->coef[pi][1];
+   *delta = (short)rwav_u16(b + ch + c * 2);
+   *s1    = (short)rwav_u16(b + ch * 3 + c * 2);
+   *s2    = (short)rwav_u16(b + ch * 5 + c * 2);
+   return 1;
+}
+
+/* MS mono: two samples a byte, high nibble first. */
+static unsigned rwav_ms_block_mono(const rwav_t *wav, const unsigned char *b,
+      size_t blen, unsigned first, unsigned end, short *out)
+{
+   int      co1, co2, delta, s1, s2, p;
+   size_t   off = 7;
+   unsigned i;
+   if (blen < 7 || !rwav_ms_preamble(wav, b, 1, 0,
+            &co1, &co2, &delta, &s1, &s2))
+      return 0;
+   if (first == 0)
+      out[0] = (short)s2;
+   if (first <= 1 && end > 1)
+      out[1 - first] = (short)s1;
+   for (i = 2; i < end && off < blen; off++)
+   {
+      unsigned byte = b[off];
+      RWAV_MS_STEP(p, byte >> 4, s1, s2, co1, co2, delta);
+      if (i >= first)
+         out[i - first] = (short)p;
+      if (++i >= end)
+         break;
+      RWAV_MS_STEP(p, byte & 0x0f, s1, s2, co1, co2, delta);
+      if (i >= first)
+         out[i - first] = (short)p;
+      i++;
+   }
+   return end - first;
+}
+
+/* MS stereo: a byte a frame, the left channel in the high nibble. */
+static unsigned rwav_ms_block_stereo(const rwav_t *wav,
+      const unsigned char *b, size_t blen, unsigned first, unsigned end,
+      short *out)
+{
+   int      l1, l2, ld, lc1, lc2, r1, r2, rd, rc1, rc2, pl, pr;
+   size_t   off = 14;
+   unsigned i;
+   if (     blen < 14
+         || !rwav_ms_preamble(wav, b, 2, 0, &lc1, &lc2, &ld, &l1, &l2)
+         || !rwav_ms_preamble(wav, b, 2, 1, &rc1, &rc2, &rd, &r1, &r2))
+      return 0;
+   if (first == 0)
+   {
+      out[0] = (short)l2;
+      out[1] = (short)r2;
+   }
+   if (first <= 1 && end > 1)
+   {
+      out[(1 - first) * 2]     = (short)l1;
+      out[(1 - first) * 2 + 1] = (short)r1;
+   }
+   for (i = 2; i < end && off < blen; i++, off++)
+   {
+      unsigned byte = b[off];
+      RWAV_MS_STEP(pl, byte >> 4,   l1, l2, lc1, lc2, ld);
+      RWAV_MS_STEP(pr, byte & 0x0f, r1, r2, rc1, rc2, rd);
+      if (i >= first)
+      {
+         out[(i - first) * 2]     = (short)pl;
+         out[(i - first) * 2 + 1] = (short)pr;
+      }
+   }
+   return end - first;
+}
+
+/* MS, any other channel count: the nibbles are one stream, high nibble
+ * first, a frame's channels in turn - so with an odd count a frame
+ * starts mid-byte. */
+static unsigned rwav_ms_block(const rwav_t *wav, const unsigned char *b,
+      size_t blen, unsigned first, unsigned end, short *out)
+{
+   int      co1[16], co2[16], delta[16], s1[16], s2[16];
+   unsigned ch   = wav->numchannels;
+   size_t   need = 7 * (size_t)ch;
+   size_t   n    = 0;   /* nibbles read since the preamble */
+   unsigned c, i;
+   if (ch > 16 || blen < need)
+      return 0;
+   for (c = 0; c < ch; c++)
+   {
+      if (!rwav_ms_preamble(wav, b, ch, c,
+               &co1[c], &co2[c], &delta[c], &s1[c], &s2[c]))
+         return 0;
+      if (first == 0)
+         out[c] = (short)s2[c];
+      if (first <= 1 && end > 1)
+         out[(1 - first) * ch + c] = (short)s1[c];
+   }
+   for (i = 2; i < end; i++)
+   {
+      for (c = 0; c < ch; c++, n++)
+      {
+         size_t o = need + (n >> 1);
+         int    p;
+         if (o >= blen)
+            return end - first;
+         RWAV_MS_STEP(p, (n & 1) ? (b[o] & 0x0f) : (b[o] >> 4),
+               s1[c], s2[c], co1[c], co2[c], delta[c]);
+         if (i >= first)
+            out[(size_t)(i - first) * ch + c] = (short)p;
+      }
+   }
+   return end - first;
+}
+
+#undef RWAV_MS_STEP
+
+/* Decode frames [first, first + count) of one block into @out.
+ * Returns the frames stored, 0 on a malformed block. */
 static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
       size_t blen, unsigned first, unsigned count, short *out)
 {
-   unsigned ch  = wav->numchannels;
    unsigned spb = wav->samplesperblock;
-   unsigned c, i;
-   unsigned end;
-
+   unsigned end = (count < spb - first) ? first + count : spb;
+   if (first >= spb)
+      return 0;
    if (wav->format == RWAV_FORMAT_IMA_ADPCM)
-   {
-      int pred[16], idx[16];
-      unsigned need = 4 * ch;
-      if (ch > 16 || blen < need)
-         return 0;
-      for (c = 0; c < ch; c++)
-      {
-         pred[c] = (short)rwav_u16(b + c * 4);
-         idx[c]  = b[c * 4 + 2];
-         if (idx[c] > 88)
-            idx[c] = 88;
-         RWAV_PUT(0, c, pred[c]);
-      }
-      /* After the preamble the nibbles come in eight-sample runs per
-       * channel: four bytes of one channel, then four of the next. */
-      i = 1;
-      {
-         size_t off = need;
-         while (i < spb && off + 4 * ch <= blen)
-         {
-            for (c = 0; c < ch; c++)
-            {
-               unsigned k;
-               for (k = 0; k < 8; k++)
-               {
-                  unsigned nib = (k & 1)
-                        ? (b[off + c * 4 + (k >> 1)] >> 4)
-                        : (b[off + c * 4 + (k >> 1)] & 0x0f);
-                  /* ((2*delta + 1) * step) >> 3, not the
-                   * shift-and-accumulate form.  The two disagree
-                   * once the step is small enough for the shifts to
-                   * truncate - step 7 gives 1 against 2 - and this
-                   * is the one every reference decoder uses. */
-                  int step  = rwav_ima_step[idx[c]];
-                  int delta = (int)(nib & 7);
-                  int diff  = ((2 * delta + 1) * step) >> 3;
-                  if (nib & 8)
-                     diff = -diff;
-                  pred[c] = rwav_clamp16(pred[c] + diff);
-                  idx[c] += rwav_ima_index[nib];
-                  if (idx[c] < 0)  idx[c] = 0;
-                  if (idx[c] > 88) idx[c] = 88;
-                  if (i + k < spb)
-                     RWAV_PUT(i + k, c, pred[c]);
-               }
-            }
-            off += 4 * ch;
-            i   += 8;
-         }
-      }
-      end = (spb < first + count) ? spb : first + count;
-      return (end > first) ? end - first : 0;
-   }
-
-   /* MS ADPCM: each channel states a coefficient index, a delta and
-    * two priming samples, and the nibbles follow interleaved. */
-   {
-      int co1[16], co2[16], delta[16], s1[16], s2[16];
-      unsigned need = 7 * ch;
-      size_t   off, n;
-      if (ch > 16 || blen < need || spb < 2)
-         return 0;
-      for (c = 0; c < ch; c++)
-      {
-         unsigned pi = b[c];
-         if (pi >= wav->numcoef)
-            return 0;
-         co1[c] = wav->coef[pi][0];
-         co2[c] = wav->coef[pi][1];
-      }
-      for (c = 0; c < ch; c++)
-         delta[c] = (short)rwav_u16(b + ch + c * 2);
-      for (c = 0; c < ch; c++)
-         s1[c] = (short)rwav_u16(b + ch * 3 + c * 2);
-      for (c = 0; c < ch; c++)
-         s2[c] = (short)rwav_u16(b + ch * 5 + c * 2);
-      for (c = 0; c < ch; c++)
-      {
-         RWAV_PUT(0, c, s2[c]);
-         RWAV_PUT(1, c, s1[c]);
-      }
-      /* The nibbles are one stream, high nibble first, a frame's
-       * channels in turn: with an odd channel count a frame starts
-       * mid-byte, so which half to take follows the stream, not the
-       * channel. */
-      off = need;
-      i   = 2;
-      n   = 0;
-      while (i < spb && off < blen)
-      {
-         for (c = 0; c < ch && i < spb; c++, n++)
-         {
-            unsigned byte = b[off];
-            int      nib  = (n & 1) ? (byte & 0x0f) : (byte >> 4);
-            int      sn   = (nib & 8) ? nib - 16 : nib;
-            int      p    = rwav_ms_predict(s1[c], co1[c], s2[c], co2[c])
-                          + sn * delta[c];
-            p        = rwav_clamp16(p);
-            s2[c]    = s1[c];
-            s1[c]    = p;
-            delta[c] = rwav_ms_adapt_delta(nib, delta[c]);
-            RWAV_PUT(i, c, p);
-            if (n & 1)
-               off++;
-            if (c == ch - 1)
-               i++;
-         }
-         if (ch == 1)
-         {
-            /* one channel packs two samples per byte */
-            if (i < spb)
-            {
-               unsigned byte = b[off];
-               int nib = byte & 0x0f;
-               int sn  = (nib & 8) ? nib - 16 : nib;
-               int p   = rwav_ms_predict(s1[0], co1[0], s2[0], co2[0])
-                       + sn * delta[0];
-               p        = rwav_clamp16(p);
-               s2[0]    = s1[0];
-               s1[0]    = p;
-               delta[0] = rwav_ms_adapt_delta(nib, delta[0]);
-               RWAV_PUT(i, 0, p);
-               i++;
-            }
-            off++;
-            n++;
-         }
-      }
-      end = (spb < first + count) ? spb : first + count;
-      return (end > first) ? end - first : 0;
-   }
+      return rwav_ima_block(wav, b, blen, first, end, out);
+   if (spb < 2)
+      return 0;
+   if (wav->numchannels == 1)
+      return rwav_ms_block_mono(wav, b, blen, first, end, out);
+   if (wav->numchannels == 2)
+      return rwav_ms_block_stereo(wav, b, blen, first, end, out);
+   return rwav_ms_block(wav, b, blen, first, end, out);
 }
-
-#undef RWAV_PUT
 
 size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
       size_t frames, short *out)
