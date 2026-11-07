@@ -122,6 +122,39 @@ extern bool RAIsVoiceOverRunning(void)
 #endif
 #endif /* OSX */
 
+#if TARGET_OS_IPHONE
+/* The screen the window is on, published by the main thread for any
+ * reader. On iPhone Duo mainScreen stays the outer display. */
+static retro_atomic_size_t cocoa_window_screen_points;
+static retro_atomic_size_t cocoa_window_screen_native;
+#endif
+
+#if TARGET_OS_IOS
+static void cocoa_publish_window_screen(UIScreen *screen)
+{
+   CGRect points, native;
+   size_t native_dims;
+
+   /* nativeBounds is iOS 8; a CGRect is returned in memory everywhere
+    * but arm64 */
+   if (!screen || !apple_runtime_available(0, APPLE_RUNTIME_VER(8, 0, 0), 0))
+      return;
+   points      = [screen bounds];
+   native      = apple_rt_get_large_struct(CGRect, screen,
+         sel_registerName("nativeBounds"));
+   native_dims = (size_t)VIDEO_SCALE_PACK((unsigned)native.size.width,
+         (unsigned)native.size.height);
+   retro_atomic_store_release_size(&cocoa_window_screen_points,
+         (size_t)VIDEO_SCALE_PACK((unsigned)points.size.width,
+            (unsigned)points.size.height));
+   if (native_dims != retro_atomic_load_acquire_size(&cocoa_window_screen_native))
+   {
+      retro_atomic_store_release_size(&cocoa_window_screen_native, native_dims);
+      video_driver_window_output_changed();
+   }
+}
+#endif
+
 id<ApplePlatform> apple_platform;
 
 static CocoaView* g_instance;
@@ -839,16 +872,19 @@ retro_time_t cocoa_last_vblank_time(void)
             return;
       }
 
+      /* Only apply safe area adjustments when in full screen mode */
+      UIWindow *window     = [[UIApplication sharedApplication] delegate].window;
+      if (!window)
+         return;
+
+      /* The window, as its screen need not be the chosen one */
+      screenSize           = window.bounds;
+
       if (settings->bools.video_notch_write_over_enable)
       {
          self.view.frame = screenSize;
          return;
       }
-
-      /* Only apply safe area adjustments when in full screen mode */
-      UIWindow *window     = [[UIApplication sharedApplication] delegate].window;
-      if (!window)
-         return;
 
       /* -[UIView safeAreaInsets] (iOS 11); the struct is returned in
        * memory everywhere but arm64 */
@@ -893,22 +929,18 @@ retro_time_t cocoa_last_vblank_time(void)
 
       switch (orientation)
       {
+         /* Sides are not always equal: iPhone Duo's cutout takes one */
          case UIInterfaceOrientationPortrait:
-            self.view.frame = CGRectMake(screenSize.origin.x,
+            self.view.frame = CGRectMake(screenSize.origin.x + inset.left,
                   screenSize.origin.y + inset.top,
-                  screenSize.size.width,
+                  screenSize.size.width - inset.left - inset.right,
                   screenSize.size.height - inset.top);
             break;
          case UIInterfaceOrientationLandscapeLeft:
-            self.view.frame = CGRectMake(screenSize.origin.x + inset.right,
-                  screenSize.origin.y,
-                  screenSize.size.width - inset.right * 2,
-                  screenSize.size.height);
-            break;
          case UIInterfaceOrientationLandscapeRight:
             self.view.frame = CGRectMake(screenSize.origin.x + inset.left,
                   screenSize.origin.y,
-                  screenSize.size.width - inset.left * 2,
+                  screenSize.size.width - inset.left - inset.right,
                   screenSize.size.height);
             break;
          default:
@@ -921,6 +953,43 @@ retro_time_t cocoa_last_vblank_time(void)
 - (void)viewWillLayoutSubviews
 {
    [self adjustViewFrameForSafeArea];
+}
+
+/* Where a display folds across its width (iPhone Duo half open and held
+ * sideways); nothing when it folds down the middle, with no top or bottom */
+- (void)updateDisplayFold
+{
+#if defined(RARCH_MOBILE)
+   unsigned top = 0, bottom = 0;
+   /* Reserved regions are iOS 27.1; by default only active ones are listed */
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(27, 1, 0), 0))
+   {
+      float scale  = cocoa_screen_get_native_scale();
+      id kind      = apple_rt_get_id(apple_rt_class("UIViewReservedRegionKind"),
+            sel_registerName("divisionRegionKind"));
+      id region;
+      for (region in (NSArray *)apple_rt_get_id_arg(self.view,
+               sel_registerName("reservedRegionsOfKind:"), kind))
+      {
+         /* A CGRect is returned in memory everywhere but arm64 */
+         CGRect frame = apple_rt_get_large_struct(CGRect, region,
+               sel_registerName("frame"));
+         if (frame.size.width > frame.size.height)
+         {
+            top    = (unsigned)(frame.origin.y * scale);
+            bottom = (unsigned)((frame.origin.y + frame.size.height) * scale);
+         }
+      }
+   }
+   video_driver_set_display_fold(top, bottom);
+#endif
+}
+
+- (void)viewDidLayoutSubviews
+{
+   [super viewDidLayoutSubviews];
+   cocoa_publish_window_screen(self.view.window.screen);
+   [self updateDisplayFold];
 #if defined(HAVE_OPENGL)
    /* Runs on the main thread; refresh the published backing size so a
     * threaded-video worker observes orientation/safe-area changes. Safe
@@ -1650,7 +1719,11 @@ void cocoa_get_video_output_size(unsigned *dims,
 {
 #if TARGET_OS_IPHONE
    UIScreen *screen = [UIScreen mainScreen];
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(8, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
+   unsigned  native = (unsigned)retro_atomic_load_acquire_size(
+         &cocoa_window_screen_native);
+   if (native)
+      *dims = native;
+   else if (apple_runtime_available(0, APPLE_RUNTIME_VER(8, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
    {
       /* nativeBounds (iOS 8) is physical pixels, orientation-independent;
        * a CGRect is returned in memory everywhere but arm64. */
@@ -1788,9 +1861,11 @@ bool cocoa_get_metrics(
 {
    RAScreen *screen              = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
    float   scale                 = cocoa_screen_get_native_scale();
+   unsigned points               = (unsigned)retro_atomic_load_acquire_size(
+         &cocoa_window_screen_points);
    CGRect  screen_rect           = [screen bounds];
-   float   physical_width        = screen_rect.size.width  * scale;
-   float   physical_height       = screen_rect.size.height * scale;
+   float   physical_width        = (points ? VIDEO_SCALE_W(points) : screen_rect.size.width)  * scale;
+   float   physical_height       = (points ? VIDEO_SCALE_H(points) : screen_rect.size.height) * scale;
    float   dpi                   = 160                     * scale;
    NSInteger idiom_type          = [[UIDevice currentDevice] userInterfaceIdiom];
 
@@ -1805,8 +1880,10 @@ bool cocoa_get_metrics(
       case UIUserInterfaceIdiomPhone:
          {
             CGFloat maxSize = fmaxf(physical_width, physical_height);
-            /* Larger iPhones: iPhone Plus, X, XR, XS, XS Max, 11, 11 Pro Max */
-            if (maxSize >= 2208.0)
+            CGFloat minSize = fminf(physical_width, physical_height);
+            /* Larger iPhones: iPhone Plus, X, XR, XS, XS Max, 11, 11 Pro Max.
+             * iPhone Duo's outer display is wide rather than tall. */
+            if (maxSize >= 2208.0 || minSize >= 1242.0)
                dpi = 81 * scale;
             else
                dpi = 163 * scale;
