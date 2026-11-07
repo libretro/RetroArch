@@ -2380,6 +2380,27 @@ static void rpng_reverse_filter_convert(uint32_t *data,
    }
 }
 
+/* Whether rows unfilter straight into the output: 8-bit RGBA wanted as
+ * R,G,B,A bytes on a little-endian host, where the conversion is the
+ * identity (rpng_reverse_filter_copy_line_rgba's memcpy).  Every
+ * kernel reads raw and writes the line it is given, so the output row
+ * is that line and the row above it the prev, and the copy out of the
+ * inflate ring is gone.  Interlaced images keep the ring path. */
+static INLINE int rpng_unfilter_direct(const struct png_ihdr *ihdr,
+      const struct rpng_process *pngp)
+{
+#if !defined(MSB_FIRST)
+   return    ihdr->color_type == PNG_IHDR_COLOR_RGBA
+          && ihdr->depth      == 8
+          && !ihdr->interlace
+          && pngp->supports_rgba;
+#else
+   (void)ihdr;
+   (void)pngp;
+   return 0;
+#endif
+}
+
 static int rpng_reverse_filter_copy_line(uint32_t *data,
       const struct png_ihdr *ihdr,
       struct rpng_process *pngp, unsigned filter)
@@ -2393,10 +2414,16 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
     * load stalls forwarding every pixel), so those combinations keep
     * their wide stores and decode into alternating scratch lines
     * instead. */
-   uint8_t       *dec = pngp->inflate_buf;
-   const uint8_t *raw = pngp->inflate_buf;
+   uint8_t       *dec    = pngp->inflate_buf;
+   const uint8_t *raw    = pngp->inflate_buf;
+   int            direct = rpng_unfilter_direct(ihdr, pngp);
+#if !defined(RPNG_SIMD_SSE2) && !defined(RPNG_SIMD_NEON)
+   unsigned i;
+#endif
+   if (direct)
+      dec = (uint8_t*)data;
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
-   if (!(   filter == PNG_FILTER_NONE
+   else if (!(   filter == PNG_FILTER_NONE
          || filter == PNG_FILTER_UP
          || (filter == PNG_FILTER_SUB
                && pngp->bpp != 3 && pngp->bpp != 6)
@@ -2405,14 +2432,19 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
       pngp->scratch_cur = (pngp->scratch_cur + 1) % 3;
       dec = pngp->scratch[pngp->scratch_cur];
    }
-#endif
-#if !defined(RPNG_SIMD_SSE2) && !defined(RPNG_SIMD_NEON)
-   unsigned i;
+#else
+   /* The scalar loops below unfilter in place */
+   if (dec != raw && filter != PNG_FILTER_UP)
+      memcpy(dec, raw, pngp->pitch);
 #endif
 
    switch (filter)
    {
       case PNG_FILTER_NONE:
+#if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
+         if (dec != raw)
+            memcpy(dec, raw, pngp->pitch);
+#endif
          break;
       case PNG_FILTER_SUB:
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
@@ -2458,7 +2490,8 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
          return IMAGE_PROCESS_ERROR_END;
    }
 
-rpng_reverse_filter_convert(data, ihdr, pngp, dec);
+   if (!direct)
+      rpng_reverse_filter_convert(data, ihdr, pngp, dec);
 
    /* The line just unfiltered becomes the previous line; its ring
     * slot stays protected through pngp->held until the next line has
@@ -2503,8 +2536,15 @@ static int rpng_reverse_filter_regular_iterate(
             const uint8_t *raw1 = raw0 + line;
             uint8_t *dec0;
             uint8_t *dec1;
-            int in_place = (pngp->bpp == 4 || pngp->bpp == 8);
-            if (in_place)
+            int direct   = rpng_unfilter_direct(ihdr, pngp);
+            int in_place = !direct && (pngp->bpp == 4 || pngp->bpp == 8);
+            if (direct)
+            {
+               /* Straight into the two output rows */
+               dec0 = (uint8_t*)pngp->out_cursor;
+               dec1 = dec0 + pngp->pitch;
+            }
+            else if (in_place)
             {
                /* Stride == window: the wide stores land exactly on
                 * their own next input, so decode in the ring. */
@@ -2527,10 +2567,13 @@ static int rpng_reverse_filter_regular_iterate(
             else
                rpng_filter_avg_pair(dec0, dec1, raw0, raw1,
                      pngp->prev_line, pngp->pitch, pngp->bpp);
-            rpng_reverse_filter_convert(pngp->out_cursor, ihdr, pngp,
-                  dec0);
-            rpng_reverse_filter_convert(pngp->out_cursor + ihdr->width,
-                  ihdr, pngp, dec1);
+            if (!direct)
+            {
+               rpng_reverse_filter_convert(pngp->out_cursor, ihdr, pngp,
+                     dec0);
+               rpng_reverse_filter_convert(pngp->out_cursor + ihdr->width,
+                     ihdr, pngp, dec1);
+            }
             if (in_place)
             {
                /* Release the line the pair's first row used as prev
@@ -2542,8 +2585,8 @@ static int rpng_reverse_filter_regular_iterate(
             }
             else
             {
-               /* Scratch lines need no ring protection: release both
-                * raw lines and anything held. */
+               /* Scratch or output lines need no ring protection:
+                * release both raw lines and anything held. */
                pngp->restore_buf_size += pngp->held + 2 * line;
                pngp->held              = 0;
             }
