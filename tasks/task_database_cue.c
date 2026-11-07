@@ -27,6 +27,7 @@
 #include <streams/file_stream.h>
 #include <streams/interface_stream.h>
 #include <encodings/crc32.h>
+#include <formats/ciso.h>
 #include <string/stdstring.h>
 #include "task_database_cue.h"
 
@@ -2232,6 +2233,85 @@ int task_database_chd_get_serial(const char *name, char *serial,
    intfstream_close(fd);
    free(fd);
    return result;
+}
+
+/* The disc header the GameCube and Wii detectors read */
+#define SCAN_CISO_PROBE_SIZE 0x440
+
+typedef struct
+{
+   intfstream_t *fd;
+   uint64_t      pos;
+} task_database_ciso_src_t;
+
+/* The head and then the disc's first stored block, which follows it:
+ * the reads run forward, and normally no seek is needed. */
+static size_t task_database_ciso_pull(task_database_ciso_src_t *src,
+      const ciso_request_t *req)
+{
+   int64_t got;
+   if (     src->pos != req->offset
+         && intfstream_seek(src->fd, (int64_t)req->offset, SEEK_SET) < 0)
+      return 0;
+   src->pos = req->offset;
+   if ((got = intfstream_read(src->fd, req->dst, req->length)) <= 0)
+      return 0;
+   src->pos += (uint64_t)got;
+   return (size_t)got;
+}
+
+int task_database_ciso_get_serial(const char *name, char *s, size_t len,
+   uint64_t *filesize)
+{
+   task_database_ciso_src_t src;
+   ciso_request_t req;
+   int rv            = 0;
+   int err;
+   uint8_t *head     = NULL;
+   ciso_t *c         = NULL;
+   intfstream_t *mem = NULL;
+   /* The descriptor path: every read lands where the reader asked,
+    * not through a stdio buffer. */
+   intfstream_t *fd  = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+
+   if (!fd)
+      return 0;
+
+   *filesize = (uint64_t)intfstream_get_size(fd);
+   src.fd    = fd;
+   src.pos   = 0;
+
+   if (     !(c    = ciso_new())
+         || !(head = (uint8_t*)malloc(SCAN_CISO_PROBE_SIZE)))
+      goto end;
+
+   while ((err = ciso_open_step(c, &req)) == CISO_PENDING)
+      ciso_feed(c, task_database_ciso_pull(&src, &req));
+   if (     err != CISO_OK
+         || ciso_read_begin(c, 0, head, SCAN_CISO_PROBE_SIZE) != CISO_OK)
+      goto end;
+   while ((err = ciso_read_step(c, &req)) == CISO_PENDING)
+      ciso_feed(c, task_database_ciso_pull(&src, &req));
+   if (err != CISO_OK)
+      goto end;
+
+   /* the serial detectors read the disc header where it was put */
+   if ((mem = intfstream_open_memory(head, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, ciso_read_progress(c))))
+   {
+      rv = intfstream_get_serial(mem, s, len, name);
+      intfstream_close(mem);
+      free(mem);
+   }
+
+end:
+   ciso_free(c);
+   free(head);
+   intfstream_close(fd);
+   free(fd);
+   return rv;
 }
 
 /* Opens what the scanner hashes for @name: the file itself, the data

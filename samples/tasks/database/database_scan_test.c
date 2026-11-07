@@ -2233,6 +2233,105 @@ end:
    free(p);
 }
 
+#define CISO_BLOCK 0x8000
+
+/* A CISO of one stored 32 KiB block, disc block @at, holding a disc
+ * header with @id and the system's @magic at @magic_at. */
+static int write_ciso(const char *path, unsigned at, const char *id,
+      const char *magic, unsigned magic_at)
+{
+   uint8_t *d = (uint8_t*)calloc(1, 2 * CISO_BLOCK);
+   int      ok;
+
+   if (!d)
+      return 0;
+   memcpy(d, "CISO", 4);
+   d[5]      = (uint8_t)(CISO_BLOCK >> 8);
+   d[8 + at] = 1;
+   memcpy(d + CISO_BLOCK, id, strlen(id));
+   memcpy(d + CISO_BLOCK + magic_at, magic, 4);
+   ok = write_bytes(path, d, 2 * CISO_BLOCK);
+   free(d);
+   return ok;
+}
+
+/* CISO files take the serial lookup through the disc image they stand
+ * for: a GameCube and a Wii image match by serial, and one whose disc
+ * starts with a block left out matches nothing, though its first
+ * stored block holds a header. */
+static void ciso_lane(const char *root, const char *pl_dir,
+      const char *db_dir)
+{
+   static const db_rec_t gc_recs[] = {
+      { "Cube The Game", "DL-DOL-GALE-USA", 0x3C150001u, 2 * CISO_BLOCK },
+      { "Gap The Game",  "DL-DOL-GAPE-USA", 0x3C150003u, 2 * CISO_BLOCK }
+   };
+   static const db_rec_t wii_recs[] = {
+      { "Wii The Game",  "RMCE01",          0x3C150002u, 2 * CISO_BLOCK }
+   };
+   char *ciso_db = (char*)malloc(512);
+   char *ciso_in = (char*)malloc(512);
+   char *p       = (char*)malloc(1024);
+   bool  started;
+
+   if (!ciso_db || !ciso_in || !p)
+   {
+      check(0, "ciso lane", "out of memory");
+      goto end;
+   }
+
+   sprintf(ciso_db, "%s/scan_db_ciso", root);
+   sprintf(ciso_in, "%s/scan_ciso",    root);
+   path_mkdir(ciso_db);
+   path_mkdir(ciso_in);
+
+   sprintf(p, "%s/Test GameCube.rdb", ciso_db);
+   if (!write_db_set(p, gc_recs, ARRAY_SIZE(gc_recs)))
+   { check(0, "fixture", "could not write database"); goto end; }
+   sprintf(p, "%s/Test Wii.rdb", ciso_db);
+   if (!write_db_set(p, wii_recs, ARRAY_SIZE(wii_recs)))
+   { check(0, "fixture", "could not write database"); goto end; }
+
+   sprintf(p, "%s/50_cube.ciso", ciso_in);
+   if (!write_ciso(p, 0, "GALE01", "\xc2\x33\x9f\x3d", 0x1c))
+   { check(0, "fixture", "could not write image"); goto end; }
+   sprintf(p, "%s/51_wii.ciso", ciso_in);
+   if (!write_ciso(p, 0, "RMCE01", "\x5d\x1c\x9e\xa3", 0x18))
+   { check(0, "fixture", "could not write image"); goto end; }
+   sprintf(p, "%s/52_gap.ciso", ciso_in);
+   if (!write_ciso(p, 1, "GAPE01", "\xc2\x33\x9f\x3d", 0x1c))
+   { check(0, "fixture", "could not write image"); goto end; }
+
+   strlcpy(config_get_ptr()->paths.path_content_database, ciso_db,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   started = run_scan(ciso_in);
+   strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   if (!started)
+   {
+      check(0, "ciso scan started", "task_push_dbscan refused");
+      goto end;
+   }
+
+   check(scan_completed, "ciso scan completed",
+         scan_completed ? "callback fired" : "timed out");
+   sprintf(p, "%s/Test GameCube.lpl", pl_dir);
+   check(   file_contains(p, "50_cube.ciso")
+         && file_contains(p, "Cube The Game"),
+         "GameCube CISO matches by serial", "50_cube.ciso");
+   check(!file_contains(p, "52_gap.ciso"),
+         "CISO read as its disc image", "52_gap.ciso unmatched");
+   sprintf(p, "%s/Test Wii.lpl", pl_dir);
+   check(   file_contains(p, "51_wii.ciso")
+         && file_contains(p, "Wii The Game"),
+         "Wii CISO matches by serial", "51_wii.ciso");
+
+end:
+   free(ciso_db);
+   free(ciso_in);
+   free(p);
+}
+
 /* The folder a playlist refreshes from, its default core and
  * whether it recurses.  False when the playlist holds no scan record. */
 static bool scan_record(const char *lpl, char *dir, char *core,
@@ -11207,6 +11306,20 @@ int main(int argc, char **argv)
    }
    sprintf(p, "%s/ctr_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/gcn_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"GameCube Test\"\n"
+            "corename = \"GcnTest\"\n"
+            "supported_extensions = \"ciso\"\n"
+            "database = \"Test GameCube|Test Wii\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/gcn_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
    sprintf(p, "%s/reader_libretro.info", info_dir);
    {
       FILE *f = fopen(p, "w");
@@ -12111,6 +12224,7 @@ int main(int argc, char **argv)
    }
 
    walk_lane(root, pl_dir, db_dir);
+   ciso_lane(root, pl_dir, db_dir);
    single_lane(root, pl_dir, crc_a, sz_a);
    counts_lane(root, pl_dir, crc_a, sz_a, crc_d, sz_d);
    failed_lane(root, pl_dir, db_dir, crc_a, sz_a);

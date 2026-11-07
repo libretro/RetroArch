@@ -102,6 +102,7 @@ SOURCES_C := \
 	$(CORE_DIR)/manual_content_scan.c \
 	$(CORE_DIR)/verbosity.c \
 	$(CORE_DIR)/samples/ui_companion_log_stub.c \
+	$(LIBRETRO_COMM_DIR)/formats/ciso/ciso.c \
 	$(LIBRETRO_COMM_DIR)/formats/m3u/rm3u.c \
 	$(LIBRETRO_COMM_DIR)/formats/logiqx_dat/logiqx_dat.c \
 	$(CORE_DIR)/libretro-db/bintree.c \

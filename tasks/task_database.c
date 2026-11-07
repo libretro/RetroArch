@@ -1206,6 +1206,8 @@ static enum msg_file_type extension_to_file_type(const char *ext)
       return FILE_TYPE_RVZ;
    if (string_is_equal(ext_lower, "wia"))
       return FILE_TYPE_WIA;
+   if (string_is_equal(ext_lower, "ciso"))
+      return FILE_TYPE_CISO;
    if (string_is_equal(ext_lower, "pbp"))
       return FILE_TYPE_PBP;
    if (string_is_equal(ext_lower, "lutro"))
@@ -2162,6 +2164,11 @@ static int task_database_iterate_playlist(
       case FILE_TYPE_WIA:
          db_state->serial[0] = '\0';
          intfstream_file_get_serial(name, 0, INT64_MAX, db_state->serial, sizeof(db_state->serial),&db_state->size);
+         db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
+         break;
+      case FILE_TYPE_CISO:
+         db_state->serial[0] = '\0';
+         task_database_ciso_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size);
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_ISO:

@@ -1850,6 +1850,7 @@ DATA RUNLOOP
 #include "../tasks/task_database.c"
 #ifdef HAVE_LIBRETRODB
 #include "../tasks/task_database_cue.c"
+#include "../libretro-common/formats/ciso/ciso.c"
 #endif
 #if defined(HAVE_NETWORKING) && defined(HAVE_MENU)
 #include "../tasks/task_core_updater.c"
