@@ -49,7 +49,6 @@
 #include <retro_inline.h>
 #include <boolean.h>
 #include <formats/image.h>
-#include <encodings/crc32.h>
 #include <formats/rpng.h>
 
 /* APNG dispose_op / blend_op (from the spec). */
@@ -614,11 +613,10 @@ static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
     * 8 bytes. The IHDR chunk here starts at o+8. */
    apng_wr32(o + pos + 8 + 0, f->width);
    apng_wr32(o + pos + 8 + 4, f->height);
-   /* recompute IHDR CRC over type+data (13+4 bytes) */
-   {
-      uint32_t crc = encoding_crc32(0, o + pos + 4, 4 + 13);
-      apng_wr32(o + pos + 8 + 13, crc);
-   }
+   /* The chunk CRCs are left zero: this PNG goes to rpng and nowhere
+    * else, and rpng does not check them, so hashing every frame's data
+    * (all of it, for IDAT) bought nothing. */
+   apng_wr32(o + pos + 8 + 13, 0);
    pos += s->ihdr_total - 8;
 
    if (s->plte_len)
@@ -643,16 +641,13 @@ static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
          dp += f->parts[i].len;
       }
    }
-   {
-      uint32_t crc = encoding_crc32(0, o + pos + 4, 4 + data_len);
-      apng_wr32(o + pos + 8 + data_len, crc);
-   }
+   apng_wr32(o + pos + 8 + data_len, 0);
    pos += 12 + data_len;
 
    /* IEND */
    apng_wr32(o + pos, 0);
    memcpy(o + pos + 4, "IEND", 4);
-   apng_wr32(o + pos + 8, encoding_crc32(0, o + pos + 4, 4));
+   apng_wr32(o + pos + 8, 0);
    pos += 12;
 
    *out_len = total;
@@ -796,11 +791,13 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
    if (f->dispose == APNG_DISPOSE_PREVIOUS)
    {
       int y;
-      uint32_t *ns = (uint32_t*)realloc(s->prev_save,
-            (size_t)f->width * f->height * sizeof(uint32_t));
-      if (ns)
+      /* Sized once, to the canvas, which every frame fits (checked when
+       * the frames are indexed): not reallocated frame by frame. */
+      if (!s->prev_save)
+         s->prev_save = (uint32_t*)malloc(
+               (size_t)s->canvas_w * s->canvas_h * sizeof(uint32_t));
+      if (s->prev_save)
       {
-         s->prev_save = ns;
          for (y = 0; y < (int)f->height; y++)
             memcpy(s->prev_save + (size_t)y * f->width,
                   s->canvas + (size_t)(f->y_off + y) * s->canvas_w
