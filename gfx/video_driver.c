@@ -10084,7 +10084,7 @@ void video_driver_frame(const void *data, unsigned width,
          msg_queue_entry_t msg_entry;
          bool msg_found                  = false;
 
-            msg_found                       = msg_queue_extract(
+         msg_found                       = msg_queue_extract(
                &runloop_st->msg_queue, &msg_entry);
          runloop_st->msg_queue_size      = msg_queue_size(
                &runloop_st->msg_queue);
@@ -10111,12 +10111,12 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
       {
          const char *msg                 = NULL;
-            msg                             = msg_queue_pull(&runloop_st->msg_queue);
+         msg                             = msg_queue_pull(&runloop_st->msg_queue);
          runloop_st->msg_queue_size      = msg_queue_size(&runloop_st->msg_queue);
 
          if (msg)
             strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
-         }
+      }
    }
 
    if (render_frame && video_info.statistics_show)
@@ -10178,11 +10178,11 @@ void video_driver_frame(const void *data, unsigned width,
          )
          video_info.widgets_visible = gfx_widgets_visible(&video_info);
 #endif
-/* The text this frame draws is drawn inside the driver's frame -
- * on the video thread when it is threaded, which marks the frame
- * there instead */
-if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
-   font_driver_frame_begin();
+      /* The text this frame draws is drawn inside the driver's frame -
+       * on the video thread when it is threaded, which marks the frame
+       * there instead */
+      if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
+         font_driver_frame_begin();
       if (frame_cb(
                video_st->data, data, dims,
                video_st->frame_count, (unsigned)pitch,
