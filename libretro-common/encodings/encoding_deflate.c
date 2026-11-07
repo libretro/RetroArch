@@ -1947,6 +1947,15 @@ fast_again:
                   }
                   s->copy_active = 0;
                   s->ld_step = 0;
+                  /* Back to the hand-back check above before decoding
+                   * the next symbol here.  Falling through instead kept
+                   * a run of back-to-back matches on this path for as
+                   * long as it lasted: only a literal ever reached the
+                   * check again, and smooth image data - long runs of
+                   * matches with no literal between them - spent most
+                   * of its decode in the per-byte copy above after a
+                   * single match had straddled a slice edge. */
+                  continue;
                }
                if (s->ld_step == 0)
                {
