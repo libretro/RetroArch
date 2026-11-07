@@ -754,6 +754,9 @@ struct rslc_sym *rslc_tok_sym(const struct rslc_ctx *c, const struct rslc_tok *t
  * first sight; rslc_intern is the string of that record.  NULL on
  * arena exhaustion. */
 struct rslc_sym *rslc_sym(struct rslc_ctx *c, const char *s, size_t len);
+/* rslc_sym with h = rslc_hash(s, len) already worked out */
+struct rslc_sym *rslc_sym_hashed(struct rslc_ctx *c, const char *s, size_t len,
+      uint32_t h);
 const char *rslc_intern(struct rslc_ctx *c, const char *s, size_t len);
 const char *rslc_intern_cstr(struct rslc_ctx *c, const char *s);
 uint32_t    rslc_hash(const char *s, size_t len);

@@ -290,6 +290,7 @@ struct dx_emit
    uint8_t          *reach;     /* functions main reaches */
    uint8_t          *used;      /* variables reachable code names */
    bool              cb_dynamic[RSLC_MAX_BLOCKS];
+   bool              cb_read[RSLC_MAX_BLOCKS];   /* named by the code emitted */
    uint32_t          tgsm_size[DX_MAX_TGSM];   /* bytes */
    uint32_t          ntgsm;
    uint32_t          cb_size[RSLC_MAX_BLOCKS];   /* registers */
@@ -1856,6 +1857,7 @@ static bool dx_load(struct dx_emit *e, const struct dx_path *p, struct dx_opnd *
       {
          struct dx_place pl = dx_place_of(DXO_CB, p->off / 16);
          pl.arr = dx_cb_slot(e, p->block);
+         e->cb_read[p->block] = true;
          if (p->dyn != RSLC_UNSET)
          {
             pl.rel = p->dyn;
@@ -4609,13 +4611,14 @@ static bool dx_decls(struct dx_emit *e)
    if (!dx_op0(e, DX_DCL_GLOBAL_FLAGS, flags))
       return false;
 
-   /* uniform blocks */
+   /* uniform blocks, those the code reads: as fxc does, as one declared
+    * is a binding the root signature or the pipeline layout must have */
    for (i = 0; i < RSLC_MAX_BLOCKS; i++)
    {
       const struct rslc_blockdecl *b = &pr->blocks[i];
       struct dx_opnd o;
       uint32_t a, size, st;
-      if (!pr->has_block[i] || b->buffer)
+      if (!pr->has_block[i] || b->buffer || !e->cb_read[i])
          continue;
       rslc_layout_of_type(b->type, dx_block_std140(e, i), &a, &size, &st);
       o = dx_reg(DXO_CB, dx_cb_slot(e, i), 4);

@@ -67,38 +67,93 @@ struct rslc_lex
    bool             bol;      /* next token is first on its line */
 };
 
-struct rslc_punct_def
+/* The punctuator at s, the longest spelling that matches: its length and
+ * kind, or 0 for none. */
+static unsigned rslc_lex_punct(const char *s, size_t avail, uint8_t *kind)
 {
-   const char *text;
-   uint8_t     len;
-   uint8_t     kind;
-};
+   const char c1 = avail > 1 ? s[1] : 0;
+   const char c2 = avail > 2 ? s[2] : 0;
 
-/* Longest spellings first so the scan takes the longest match. */
-static const struct rslc_punct_def rslc_puncts[] = {
-   { "<<=", 3, RSLC_P_LSHIFT_ASSIGN }, { ">>=", 3, RSLC_P_RSHIFT_ASSIGN },
-   { "<<", 2, RSLC_P_LSHIFT }, { ">>", 2, RSLC_P_RSHIFT },
-   { "++", 2, RSLC_P_INC }, { "--", 2, RSLC_P_DEC },
-   { "<=", 2, RSLC_P_LE }, { ">=", 2, RSLC_P_GE },
-   { "==", 2, RSLC_P_EQ }, { "!=", 2, RSLC_P_NE },
-   { "&&", 2, RSLC_P_AND }, { "||", 2, RSLC_P_OR }, { "^^", 2, RSLC_P_XOR },
-   { "+=", 2, RSLC_P_ADD_ASSIGN }, { "-=", 2, RSLC_P_SUB_ASSIGN },
-   { "*=", 2, RSLC_P_MUL_ASSIGN }, { "/=", 2, RSLC_P_DIV_ASSIGN },
-   { "%=", 2, RSLC_P_MOD_ASSIGN }, { "&=", 2, RSLC_P_BAND_ASSIGN },
-   { "|=", 2, RSLC_P_BOR_ASSIGN }, { "^=", 2, RSLC_P_BXOR_ASSIGN },
-   { "##", 2, RSLC_P_PASTE },
-   { "(", 1, RSLC_P_LPAREN }, { ")", 1, RSLC_P_RPAREN },
-   { "[", 1, RSLC_P_LBRACKET }, { "]", 1, RSLC_P_RBRACKET },
-   { "{", 1, RSLC_P_LBRACE }, { "}", 1, RSLC_P_RBRACE },
-   { ".", 1, RSLC_P_DOT }, { ",", 1, RSLC_P_COMMA },
-   { ":", 1, RSLC_P_COLON }, { ";", 1, RSLC_P_SEMI },
-   { "=", 1, RSLC_P_ASSIGN }, { "+", 1, RSLC_P_PLUS }, { "-", 1, RSLC_P_MINUS },
-   { "*", 1, RSLC_P_STAR }, { "/", 1, RSLC_P_SLASH }, { "%", 1, RSLC_P_PERCENT },
-   { "<", 1, RSLC_P_LT }, { ">", 1, RSLC_P_GT },
-   { "!", 1, RSLC_P_BANG }, { "~", 1, RSLC_P_TILDE },
-   { "&", 1, RSLC_P_AMP }, { "|", 1, RSLC_P_PIPE }, { "^", 1, RSLC_P_CARET },
-   { "?", 1, RSLC_P_QUESTION }, { "#", 1, RSLC_P_HASH }
-};
+   switch (s[0])
+   {
+      case '<':
+         if (c1 == '<' && c2 == '=') { *kind = RSLC_P_LSHIFT_ASSIGN; return 3; }
+         if (c1 == '<') { *kind = RSLC_P_LSHIFT; return 2; }
+         if (c1 == '=') { *kind = RSLC_P_LE; return 2; }
+         *kind = RSLC_P_LT;
+         return 1;
+      case '>':
+         if (c1 == '>' && c2 == '=') { *kind = RSLC_P_RSHIFT_ASSIGN; return 3; }
+         if (c1 == '>') { *kind = RSLC_P_RSHIFT; return 2; }
+         if (c1 == '=') { *kind = RSLC_P_GE; return 2; }
+         *kind = RSLC_P_GT;
+         return 1;
+      case '+':
+         if (c1 == '+') { *kind = RSLC_P_INC; return 2; }
+         if (c1 == '=') { *kind = RSLC_P_ADD_ASSIGN; return 2; }
+         *kind = RSLC_P_PLUS;
+         return 1;
+      case '-':
+         if (c1 == '-') { *kind = RSLC_P_DEC; return 2; }
+         if (c1 == '=') { *kind = RSLC_P_SUB_ASSIGN; return 2; }
+         *kind = RSLC_P_MINUS;
+         return 1;
+      case '=':
+         if (c1 == '=') { *kind = RSLC_P_EQ; return 2; }
+         *kind = RSLC_P_ASSIGN;
+         return 1;
+      case '!':
+         if (c1 == '=') { *kind = RSLC_P_NE; return 2; }
+         *kind = RSLC_P_BANG;
+         return 1;
+      case '&':
+         if (c1 == '&') { *kind = RSLC_P_AND; return 2; }
+         if (c1 == '=') { *kind = RSLC_P_BAND_ASSIGN; return 2; }
+         *kind = RSLC_P_AMP;
+         return 1;
+      case '|':
+         if (c1 == '|') { *kind = RSLC_P_OR; return 2; }
+         if (c1 == '=') { *kind = RSLC_P_BOR_ASSIGN; return 2; }
+         *kind = RSLC_P_PIPE;
+         return 1;
+      case '^':
+         if (c1 == '^') { *kind = RSLC_P_XOR; return 2; }
+         if (c1 == '=') { *kind = RSLC_P_BXOR_ASSIGN; return 2; }
+         *kind = RSLC_P_CARET;
+         return 1;
+      case '*':
+         if (c1 == '=') { *kind = RSLC_P_MUL_ASSIGN; return 2; }
+         *kind = RSLC_P_STAR;
+         return 1;
+      case '/':
+         if (c1 == '=') { *kind = RSLC_P_DIV_ASSIGN; return 2; }
+         *kind = RSLC_P_SLASH;
+         return 1;
+      case '%':
+         if (c1 == '=') { *kind = RSLC_P_MOD_ASSIGN; return 2; }
+         *kind = RSLC_P_PERCENT;
+         return 1;
+      case '#':
+         if (c1 == '#') { *kind = RSLC_P_PASTE; return 2; }
+         *kind = RSLC_P_HASH;
+         return 1;
+      case '(': *kind = RSLC_P_LPAREN;   return 1;
+      case ')': *kind = RSLC_P_RPAREN;   return 1;
+      case '[': *kind = RSLC_P_LBRACKET; return 1;
+      case ']': *kind = RSLC_P_RBRACKET; return 1;
+      case '{': *kind = RSLC_P_LBRACE;   return 1;
+      case '}': *kind = RSLC_P_RBRACE;   return 1;
+      case '.': *kind = RSLC_P_DOT;      return 1;
+      case ',': *kind = RSLC_P_COMMA;    return 1;
+      case ':': *kind = RSLC_P_COLON;    return 1;
+      case ';': *kind = RSLC_P_SEMI;     return 1;
+      case '~': *kind = RSLC_P_TILDE;    return 1;
+      case '?': *kind = RSLC_P_QUESTION; return 1;
+      default:
+         break;
+   }
+   return 0;
+}
 
 static int rslc_is_ident_start(char ch)
 {
@@ -123,75 +178,92 @@ static char rslc_lex_at(const struct rslc_lex *l, size_t off)
    return l->src[l->pos + off];
 }
 
-/* Skips "\\\n" and "\\\r\n" splices at pos, counting the lines. */
-static void rslc_lex_splice(struct rslc_lex *l)
-{
-   for (;;)
-   {
-      if (rslc_lex_at(l, 0) != '\\')
-         return;
-      if (rslc_lex_at(l, 1) == '\n')
-      {
-         l->pos += 2;
-         l->line++;
-      }
-      else if (rslc_lex_at(l, 1) == '\r' && rslc_lex_at(l, 2) == '\n')
-      {
-         l->pos += 3;
-         l->line++;
-      }
-      else
-         return;
-   }
-}
-
 /* Skips whitespace and comments, stopping at a newline (which the
  * caller tokenises).  A newline inside a block comment counts as a
  * line but not as a line break. */
 static void rslc_lex_skip(struct rslc_lex *l, bool *space)
 {
+   const char *s   = l->src + l->pos;
+   const char *end = l->src + l->len;
+
    *space = false;
    for (;;)
    {
       char ch;
-      rslc_lex_splice(l);
-      ch = rslc_lex_at(l, 0);
+      if (s >= end)
+         break;
+      ch = *s;
       if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\f' || ch == '\v')
       {
-         l->pos++;
+         s++;
          *space = true;
       }
-      else if (ch == '/' && rslc_lex_at(l, 1) == '/')
+      else if (ch == '\\')
       {
-         l->pos += 2;
+         /* a splice: "\\\n" or "\\\r\n" */
+         if (s + 1 < end && s[1] == '\n')
+         {
+            s += 2;
+            l->line++;
+         }
+         else if (s + 2 < end && s[1] == '\r' && s[2] == '\n')
+         {
+            s += 3;
+            l->line++;
+         }
+         else
+            break;
+      }
+      else if (ch == '/' && s + 1 < end && s[1] == '/')
+      {
+         /* to the newline that ends it: one right after a backslash
+          * (or a backslash and a carriage return) splices the next line on */
+         s += 2;
          for (;;)
          {
-            rslc_lex_splice(l);
-            if (l->pos >= l->len || rslc_lex_at(l, 0) == '\n')
+            const char *nl = (const char*)memchr(s, '\n', (size_t)(end - s));
+            if (!nl)
+            {
+               s = end;
                break;
-            l->pos++;
+            }
+            if (nl > s && nl[-1] == '\\')
+            {
+               s = nl + 1;
+               l->line++;
+               continue;
+            }
+            if (nl > s + 1 && nl[-1] == '\r' && nl[-2] == '\\')
+            {
+               s = nl + 1;
+               l->line++;
+               continue;
+            }
+            s = nl;
+            break;
          }
          *space = true;
       }
-      else if (ch == '/' && rslc_lex_at(l, 1) == '*')
+      else if (ch == '/' && s + 1 < end && s[1] == '*')
       {
-         l->pos += 2;
-         while (l->pos < l->len)
+         s += 2;
+         while (s < end)
          {
-            if (rslc_lex_at(l, 0) == '*' && rslc_lex_at(l, 1) == '/')
+            if (*s == '*' && s + 1 < end && s[1] == '/')
             {
-               l->pos += 2;
+               s += 2;
                break;
             }
-            if (rslc_lex_at(l, 0) == '\n')
+            if (*s == '\n')
                l->line++;
-            l->pos++;
+            s++;
          }
          *space = true;
       }
       else
-         return;
+         break;
    }
+   l->pos = (size_t)(s - l->src);
 }
 
 static void rslc_tok_set(struct rslc_tok *t, uint8_t kind, uint32_t ref,
@@ -238,9 +310,16 @@ static bool rslc_lex_next(struct rslc_lex *l, struct rslc_tok *t)
    if (rslc_is_ident_start(ch))
    {
       struct rslc_sym *sym;
-      while (l->pos < l->len && rslc_is_ident(l->src[l->pos]))
-         l->pos++;
-      sym = rslc_sym(l->c, l->src + start, l->pos - start);
+      const char      *s   = l->src + start;
+      const char      *end = l->src + l->len;
+      uint32_t         h   = 2166136261u; /* FNV-1a, as rslc_hash */
+      do
+      {
+         h ^= (uint8_t)*s++;
+         h *= 16777619u;
+      } while (s < end && rslc_is_ident(*s));
+      l->pos = (size_t)(s - l->src);
+      sym    = rslc_sym_hashed(l->c, l->src + start, l->pos - start, h);
       if (!sym)
          return false;
       rslc_tok_set(t, RSLC_TK_IDENT, sym->index, (uint32_t)(l->pos - start));
@@ -311,17 +390,14 @@ static bool rslc_lex_next(struct rslc_lex *l, struct rslc_tok *t)
    }
 
    {
-      unsigned i;
-      for (i = 0; i < sizeof(rslc_puncts) / sizeof(rslc_puncts[0]); i++)
+      uint8_t  kind;
+      unsigned plen = rslc_lex_punct(l->src + l->pos, l->len - l->pos, &kind);
+      if (plen)
       {
-         const struct rslc_punct_def *p = &rslc_puncts[i];
-         if (l->len - l->pos >= p->len && !memcmp(l->src + l->pos, p->text, p->len))
-         {
-            l->pos  += p->len;
-            rslc_tok_set(t, RSLC_TK_PUNCT, (uint32_t)start, p->len);
-            t->punct = p->kind;
-            return true;
-         }
+         l->pos  += plen;
+         rslc_tok_set(t, RSLC_TK_PUNCT, (uint32_t)start, plen);
+         t->punct = kind;
+         return true;
       }
    }
 

@@ -327,8 +327,13 @@ static bool rslc_intern_rehash(struct rslc_ctx *c)
 
 struct rslc_sym *rslc_sym(struct rslc_ctx *c, const char *s, size_t len)
 {
+   return rslc_sym_hashed(c, s, len, rslc_hash(s, len));
+}
+
+struct rslc_sym *rslc_sym_hashed(struct rslc_ctx *c, const char *s, size_t len,
+      uint32_t h)
+{
    struct rslc_intern *t = &c->intern;
-   uint32_t            h = rslc_hash(s, len);
    uint32_t            j;
    char               *copy;
    struct rslc_sym    *e;
@@ -714,20 +719,27 @@ uint32_t rslc_node_new(struct rslc_ctx *c, enum rslc_op op,
             memcpy(nt, c->node_chunks, chunk * sizeof(*nt));
          c->node_chunks = nt;
       }
-      nc = (struct rslc_node*)rslc_arena_zalloc(c, RSLC_NODE_CHUNK * sizeof(*nc));
+      /* not zeroed: a node is written whole as it is made */
+      nc = (struct rslc_node*)rslc_arena_alloc(c, RSLC_NODE_CHUNK * sizeof(*nc));
       if (!nc)
          return 0;
+      if (!chunk)
+         memset(&nc[0], 0, sizeof(nc[0]));   /* the sentinel */
       c->node_chunks[chunk] = nc;
       c->nnode_chunks++;
    }
-   n       = rslc_node_at(c, c->nnodes);
-   n->type = type;
-   n->a    = a;
-   n->b    = b;
-   n->c    = c_;
-   n->line = line;
-   n->op   = (uint16_t)op;
-   n->aux  = aux;
+   n              = rslc_node_at(c, c->nnodes);
+   n->type        = type;
+   n->a           = a;
+   n->b           = b;
+   n->c           = c_;
+   n->line        = line;
+   n->op          = (uint16_t)op;
+   n->aux         = aux;
+   n->prec        = 0;
+   n->nonconstant = 0;
+   n->pad[0]      = 0;
+   n->pad[1]      = 0;
    return c->nnodes++;
 }
 
