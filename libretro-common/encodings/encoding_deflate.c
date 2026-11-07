@@ -2961,88 +2961,136 @@ static void rd_parse(struct rdeflate *s)
 
    /* Lazy matching, modeled on the classic zlib deflate_slow structure.
     * match_available means we have a pending literal (prev byte) whose fate
-    * depends on whether the next position yields a longer match. */
-   while (s->pos < end)
+    * depends on whether the next position yields a longer match.
+    *
+    * The parse state lives in locals for the loop and goes back to the
+    * struct when it ends.  Held in the struct, every store into the
+    * symbol buffer or the frequency table could - as far as the
+    * compiler can tell - have changed pos, nsyms or the pending match,
+    * so each was reloaded after every symbol: on noisy input, where
+    * nearly every position is a literal, that was a good part of the
+    * per-byte cost.  Nothing called from the loop reads them: the match
+    * finder takes the position as an argument and the insert paths
+    * only touch win, head and prev. */
    {
-      uint32_t max_len;
-      uint32_t mlen = 0, mdist = 0;
+      uint32_t       pos       = s->pos;
+      uint32_t       nsyms     = s->nsyms;
+      uint32_t       fbits     = s->fixed_bits_acc;
+      int            have_prev = s->have_prev;
+      uint32_t       prev_len  = s->prev_len;
+      uint32_t       prev_dist = s->prev_dist;
+      uint32_t       prev_lit  = s->prev_lit;
+      const uint32_t nice      = (uint32_t)s->nice;
+      const uint32_t lazy      = (uint32_t)s->lazy;
+      const uint8_t *win       = s->win;
+      struct rd_sym *syms      = s->syms;
+      uint32_t      *freq_lit  = s->freq_lit;
 
-      if (s->nsyms >= RD_BLOCK_SYMS - 2)
-         break;
+/* rd_record_lit() against the locals */
+#define RD_PARSE_LIT(c) do { \
+      uint8_t        c_ = (uint8_t)(c); \
+      struct rd_sym *y_ = &syms[nsyms++]; \
+      y_->lit = c_; y_->dist = 0; y_->len = 0; \
+      freq_lit[c_]++; \
+      fbits += (c_ < 144) ? 8u : 9u; \
+   } while (0)
+/* rd_record_match() reads and updates nsyms and the bit count in the
+ * struct; hand them over and take them back */
+#define RD_PARSE_MATCH(l, d) do { \
+      s->nsyms = nsyms; s->fixed_bits_acc = fbits; \
+      rd_record_match(s, (l), (d)); \
+      nsyms = s->nsyms; fbits = s->fixed_bits_acc; \
+   } while (0)
 
-      max_len = end - s->pos;
-      if (max_len > RD_MAX_MATCH) max_len = RD_MAX_MATCH;
-
-      /* insert the current position into the hash chain and find a match */
-      if (max_len >= RD_MIN_MATCH)
+      while (pos < end)
       {
-         /* An empty chain - about half of all positions on noisy
-          * input - has nothing to search, so the match finder is not
-          * entered for it; it would only have returned 0. */
-         int32_t first = rd_insert(s, s->pos);
-         /* When a match is pending from the previous byte, only a strictly
-          * longer match here matters -- start the search bar at prev_len. */
-         if (first >= 0)
-            mlen = rd_longest_match(s, s->pos, first, max_len,
-                  s->have_prev ? s->prev_len : (uint32_t)(RD_MIN_MATCH - 1),
-                  &mdist);
-      }
+         uint32_t max_len;
+         uint32_t mlen = 0, mdist = 0;
 
-      if (s->have_prev)
-      {
-         /* a match (prev_len/prev_dist) was found at pos-1 and deferred */
-         if (mlen > s->prev_len)
+         if (nsyms >= RD_BLOCK_SYMS - 2)
+            break;
+
+         max_len = end - pos;
+         if (max_len > RD_MAX_MATCH) max_len = RD_MAX_MATCH;
+
+         /* insert the current position into the hash chain and find a match */
+         if (max_len >= RD_MIN_MATCH)
          {
-            /* longer match here: emit pos-1 as literal, defer this one */
-            rd_record_lit(s, (uint8_t)s->prev_lit);
-            s->prev_len  = mlen;
-            s->prev_dist = mdist;
-            s->prev_lit  = s->win[s->pos];
-            s->pos++;
+            /* An empty chain - about half of all positions on noisy
+             * input - has nothing to search, so the match finder is not
+             * entered for it; it would only have returned 0. */
+            int32_t first = rd_insert(s, pos);
+            /* When a match is pending from the previous byte, only a strictly
+             * longer match here matters -- start the search bar at prev_len. */
+            if (first >= 0)
+               mlen = rd_longest_match(s, pos, first, max_len,
+                     have_prev ? prev_len : (uint32_t)(RD_MIN_MATCH - 1),
+                     &mdist);
+         }
+
+         if (have_prev)
+         {
+            /* a match (prev_len/prev_dist) was found at pos-1 and deferred */
+            if (mlen > prev_len)
+            {
+               /* longer match here: emit pos-1 as literal, defer this one */
+               RD_PARSE_LIT(prev_lit);
+               prev_len  = mlen;
+               prev_dist = mdist;
+               prev_lit  = win[pos];
+               pos++;
+            }
+            else
+            {
+               /* take the deferred match at pos-1 */
+               uint32_t stop;
+               have_prev = 0;
+               RD_PARSE_MATCH(prev_len, prev_dist);
+               /* insert the interior positions the match covers.  pos-1 is
+                * already inserted; pos is already inserted (this iteration).
+                * Insert pos+1 .. (pos-1)+plen-1. */
+               stop = (pos - 1) + prev_len;
+               rd_insert_range(s, pos + 1, rd_insert_end(stop, end));
+               pos = stop;
+            }
+         }
+         else if (mlen >= RD_MIN_MATCH)
+         {
+            if (mlen >= nice || lazy == 0 || mlen > lazy)
+            {
+               /* strong enough: take immediately */
+               uint32_t stop;
+               RD_PARSE_MATCH(mlen, mdist);
+               stop = pos + mlen;
+               rd_insert_range(s, pos + 1, rd_insert_end(stop, end));
+               pos = stop;
+            }
+            else
+            {
+               /* defer one byte for lazy evaluation */
+               have_prev = 1;
+               prev_len  = mlen;
+               prev_dist = mdist;
+               prev_lit  = win[pos];
+               pos++;
+            }
          }
          else
          {
-            /* take the deferred match at pos-1 */
-            uint32_t plen = s->prev_len;
-            uint32_t pdist = s->prev_dist;
-            uint32_t stop;
-            s->have_prev = 0;
-            rd_record_match(s, plen, pdist);
-            /* insert the interior positions the match covers.  pos-1 is
-             * already inserted; pos is already inserted (this iteration).
-             * Insert pos+1 .. (pos-1)+plen-1. */
-            stop = (s->pos - 1) + plen;
-            rd_insert_range(s, s->pos + 1, rd_insert_end(stop, end));
-            s->pos = stop;
+            RD_PARSE_LIT(win[pos]);
+            pos++;
          }
       }
-      else if (mlen >= RD_MIN_MATCH)
-      {
-         if (mlen >= (uint32_t)s->nice || (uint32_t)s->lazy == 0
-             || mlen > (uint32_t)s->lazy)
-         {
-            /* strong enough: take immediately */
-            uint32_t stop;
-            rd_record_match(s, mlen, mdist);
-            stop = s->pos + mlen;
-            rd_insert_range(s, s->pos + 1, rd_insert_end(stop, end));
-            s->pos = stop;
-         }
-         else
-         {
-            /* defer one byte for lazy evaluation */
-            s->have_prev = 1;
-            s->prev_len  = mlen;
-            s->prev_dist = mdist;
-            s->prev_lit  = s->win[s->pos];
-            s->pos++;
-         }
-      }
-      else
-      {
-         rd_record_lit(s, s->win[s->pos]);
-         s->pos++;
-      }
+#undef RD_PARSE_LIT
+#undef RD_PARSE_MATCH
+
+      s->pos            = pos;
+      s->nsyms          = nsyms;
+      s->fixed_bits_acc = fbits;
+      s->have_prev      = have_prev;
+      s->prev_len       = prev_len;
+      s->prev_dist      = prev_dist;
+      s->prev_lit       = prev_lit;
    }
 
    /* flush a deferred match/literal at true end of input */
