@@ -7078,7 +7078,10 @@ void retroarch_save_for_suspend(void)
     * CMD_EVENT_SAVE_FILES exists to persist SRAM and game-specific
     * cheats, both of which require loaded content. */
    if (runloop_content_loaded())
+   {
       command_event(CMD_EVENT_SAVE_FILES, NULL);
+      runloop_runtime_log_save_state_slot(runloop_state_get_ptr(), settings);
+   }
 
    /* Core options: written unconditionally on core unload, so not
     * gated on config_save_on_exit here either. Without this, option

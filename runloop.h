@@ -1096,6 +1096,9 @@ bool runloop_core_probe_live(void);
 void runloop_performance_counter_register(
       struct retro_perf_counter *perf);
 
+void runloop_runtime_log_save_state_slot(runloop_state_t *runloop_st,
+      settings_t *settings);
+
 void runloop_runtime_log_deinit(
       runloop_state_t *runloop_st,
       bool content_runtime_log,
@@ -1202,6 +1205,8 @@ bool runloop_get_entry_state_path(char *path, size_t len, int slot);
 bool runloop_get_current_savestate_path(char *path, size_t len);
 
 bool runloop_get_savestate_path(char *path, size_t len, int slot);
+
+bool runloop_savestate_exists(int slot);
 
 bool runloop_get_replay_path(char *path, size_t len, int slot);
 

@@ -14,6 +14,9 @@ static unsigned initialize_after;
 static bool rolling;
 static bool runtime_present;
 static unsigned runtime_slot;
+static runtime_log_t saved_runtime;
+static unsigned runtime_saves, runtime_adds, runtime_dates;
+static bool runtime_open_fail, runtime_write_fail;
 static unsigned file_count;
 static char files[32][256];
 static struct string_list directory;
@@ -191,10 +194,32 @@ runtime_log_t *runtime_log_init(const char *content, const char *core,
    (void)playlist;
    (void)per_core;
    assert(log);
+   if (runtime_open_fail)
+   {
+      free(log);
+      return NULL;
+   }
+   *log = saved_runtime;
    log->state_slot = runtime_slot;
    strcpy(log->path, "test.lrtl");
    return log;
 }
+
+void runtime_log_save(runtime_log_t *log)
+{
+   runtime_saves++;
+   if (!runtime_write_fail)
+   {
+      saved_runtime = *log;
+      runtime_slot = log->state_slot;
+      runtime_present = true;
+   }
+}
+
+void runtime_log_add_runtime_usec(runtime_log_t *log, retro_time_t usec)
+{ (void)log; (void)usec; runtime_adds++; }
+void runtime_log_set_last_played_now(runtime_log_t *log)
+{ (void)log; runtime_dates++; }
 
 void runloop_msg_queue_push(const char *msg, size_t len,
       unsigned priority, unsigned duration, bool flush,
@@ -241,6 +266,9 @@ static void rolling_reset(void)
    delete_failure = NULL;
    runtime_present = true;
    runtime_slot = 9;
+   memset(&saved_runtime, 0, sizeof(saved_runtime));
+   runtime_saves = runtime_adds = runtime_dates = 0;
+   runtime_open_fail = runtime_write_fail = false;
    strcpy(runloop_state.name.savestate, "test.state");
    runloop_state.entry_state_slot = -1;
    test_settings.bools.savestate_auto_index = true;
@@ -272,6 +300,62 @@ static void finish_save(bool success)
       add_file(saved_path);
    if (cb)
       cb(NULL, saved_path, userdata, success ? NULL : "write failed");
+}
+
+static void test_suspend_slot(void)
+{
+   unsigned aggregate;
+   for (aggregate = 0; aggregate < 2; aggregate++)
+   {
+      rolling_reset();
+      test_settings.uints.savestate_max_keep = 3;
+      test_settings.bools.content_runtime_log = aggregate == 0;
+      test_settings.bools.content_runtime_log_aggregate = aggregate != 0;
+      add_slot(0);
+      add_slot(2);
+      add_slot(3);
+      runtime_slot = 2;
+      saved_runtime.play_count = 12;
+      saved_runtime.runtime.hours = 4;
+      saved_runtime.last_played.year = 2026;
+      runloop_state.core_runtime_usec = 2000000;
+      strcpy(runloop_state.runtime_content_path, "test.gba");
+      strcpy(runloop_state.runtime_core_path, "testcore.so");
+      test_settings.ints.state_slot = 0;
+      runtime_write_fail = true;
+      runloop_runtime_log_save_state_slot(&runloop_state, &test_settings);
+      CHECK_ROLLING(runtime_slot == 2 && runloop_state.core_runtime_usec == 2000000);
+      runtime_write_fail = false;
+      runloop_runtime_log_save_state_slot(&runloop_state, &test_settings);
+      runloop_runtime_log_save_state_slot(&runloop_state, &test_settings);
+      CHECK_ROLLING(runtime_slot == 0 && saved_runtime.play_count == 12);
+      CHECK_ROLLING(saved_runtime.runtime.hours == 4 && saved_runtime.last_played.year == 2026);
+      CHECK_ROLLING(runtime_adds == 0 && runtime_dates == 0);
+      CHECK_ROLLING(runloop_state.core_runtime_usec == 2000000);
+      CHECK_ROLLING(!strcmp(runloop_state.runtime_content_path, "test.gba"));
+      test_settings.ints.state_slot = -1;
+      command_event_set_savestate_auto_index(&test_settings);
+      CHECK_ROLLING(test_settings.ints.state_slot == 0);
+      runloop_runtime_log_init(&runloop_state);
+      CHECK_ROLLING(test_settings.ints.state_slot == 0);
+      CHECK_ROLLING(command_event_main_state(CMD_EVENT_LOAD_STATE));
+      CHECK_ROLLING(!strcmp(loaded_path, "test.state"));
+      /* A deliberate older selection is still remembered. */
+      test_settings.ints.state_slot = 2;
+      runloop_runtime_log_save_state_slot(&runloop_state, &test_settings);
+      test_settings.ints.state_slot = 0;
+      runloop_runtime_log_init(&runloop_state);
+      CHECK_ROLLING(test_settings.ints.state_slot == 2);
+   }
+   rolling_reset();
+   test_settings.bools.content_runtime_log = false;
+   runloop_runtime_log_save_state_slot(&runloop_state, &test_settings);
+   CHECK_ROLLING(runtime_saves == 0);
+   test_settings.bools.content_runtime_log = true;
+   runtime_open_fail = true;
+   runloop_runtime_log_save_state_slot(&runloop_state, &test_settings);
+   CHECK_ROLLING(runtime_saves == 0);
+   runtime_open_fail = false;
 }
 
 static void test_rolling_states(void)
@@ -451,6 +535,7 @@ static void test_rolling_states(void)
 int main(void)
 {
    unsigned i;
+   test_suspend_slot();
    reset(3, true);
    assert(command_event_load_auto_state());
    runloop_load_deferred_auto_state();

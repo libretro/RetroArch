@@ -1301,6 +1301,26 @@ static void runloop_update_runtime_log(
    free(runtime_log);
 }
 
+/* Persist selection at suspend without counting the still-running session. */
+void runloop_runtime_log_save_state_slot(runloop_state_t *runloop_st,
+      settings_t *settings)
+{
+   runtime_log_t *runtime_log;
+   if (     !settings->bools.content_runtime_log
+         && !settings->bools.content_runtime_log_aggregate)
+      return;
+
+   runtime_log = runtime_log_init(runloop_st->runtime_content_path,
+         runloop_st->runtime_core_path,
+         settings->paths.directory_runtime_log,
+         settings->paths.directory_playlist, true);
+   if (!runtime_log)
+      return;
+   runtime_log->state_slot = settings->ints.state_slot;
+   runtime_log_save(runtime_log);
+   free(runtime_log);
+}
+
 void runloop_runtime_log_deinit(
       runloop_state_t *runloop_st,
       bool content_runtime_log,
@@ -6508,15 +6528,10 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
       {
          if (     runloop_st->entry_state_slot < 0
                && path_is_valid(runtime_log->path)
-               && runtime_log->state_slot < 1000)
-         {
-            char state_path[PATH_MAX_LENGTH];
-            if (     !settings->bools.savestate_auto_index
-                  || (runloop_get_savestate_path(state_path, sizeof(state_path),
-                           (int)runtime_log->state_slot)
-                        && path_is_valid(state_path)))
-               configuration_set_int(settings, settings->ints.state_slot, runtime_log->state_slot);
-         }
+               && runtime_log->state_slot < 1000
+               && (     !settings->bools.savestate_auto_index
+                     || runloop_savestate_exists((int)runtime_log->state_slot)))
+            configuration_set_int(settings, settings->ints.state_slot, runtime_log->state_slot);
 
          free(runtime_log);
       }
@@ -11096,6 +11111,13 @@ bool runloop_get_savestate_path(char *s, size_t len, int state_slot)
    }
 
    return true;
+}
+
+bool runloop_savestate_exists(int slot)
+{
+   char path[PATH_MAX_LENGTH];
+   return runloop_get_savestate_path(path, sizeof(path), slot)
+         && path_is_valid(path);
 }
 
 bool runloop_get_replay_path(char *s, size_t len, int slot)
