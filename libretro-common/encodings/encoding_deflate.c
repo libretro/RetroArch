@@ -3045,12 +3045,22 @@ static int rd_emit_block_stored(struct rdeflate *s)
    }
    if (s->emit_phase == 2)
    {
+      /* The raw bytes go out in runs as long as the output has room
+       * for, not a byte at a time: incompressible data - noise, video
+       * frames, already-compressed members - is stored, and every byte
+       * of it passed through here. */
       while (s->trailer_cursor > 0)
       {
+         size_t n;
          if (s->out_pos >= s->out_size)
             return 0;
-         s->out[s->out_pos++] = s->win[s->sym_cursor++];
-         s->trailer_cursor--;
+         n = s->out_size - s->out_pos;
+         if (n > (size_t)s->trailer_cursor)
+            n = (size_t)s->trailer_cursor;
+         memcpy(s->out + s->out_pos, s->win + s->sym_cursor, n);
+         s->out_pos        += n;
+         s->sym_cursor     += (uint32_t)n;
+         s->trailer_cursor -= (int)n;
       }
       s->emit_phase = 3;
    }
