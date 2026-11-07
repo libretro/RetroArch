@@ -173,7 +173,7 @@ native_decode: weighted_data.h
 
 NATIVE_IMPORT_SOURCES := ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../gfx/common/vaapi_hevc_vulkan_resources.c ../../../libretro-common/formats/image/image_yuv_blit.c
 native_import: $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) native_import.h native_import_gpu.h native_rgb.h native_pixels.h weighted_data.h rh265_test.o
-	$(CC) $(CFLAGS) -DNATIVE_VULKAN_IMPORT $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) rh265_test.o -o $@ $(LDFLAGS) -ldl -lva -lvulkan -ldrm
+	$(CC) $(CFLAGS) -DNATIVE_VULKAN_IMPORT $(NATIVE_DECODE_SOURCES) $(NATIVE_IMPORT_SOURCES) rh265_test.o -o $@ $(LDFLAGS) -ldl -lva -lvulkan -ldrm -lm
 native-import-check: native_import
 	./native_import "$(VAAPI_RENDER_NODE)"
 .PHONY: native-import-check
