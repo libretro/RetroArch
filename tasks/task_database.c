@@ -5331,10 +5331,6 @@ static bool manual_scan_begin_setup(retro_task_t *task,
           * one does: the end step reports it. */
          if (!dbstate->list && !(dbstate->list = string_list_new()))
             return true;
-
-         RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->task_config->content_dir);
-         if (manual_scan->task_config->cli_scan_output)
-            printf("%s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->task_config->content_dir);
       }
    }
    else
@@ -5361,6 +5357,16 @@ static bool manual_scan_begin_setup(retro_task_t *task,
          manual_scan->fail_msg = _msg;
          return true;
       }
+   }
+
+   /* Log the folder being scanned on every path; plain (non-database)
+    * scans used to log nothing. */
+   {
+      const char *scan_start  = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START);
+      const char *content_dir = manual_scan->task_config->content_dir;
+      RARCH_LOG("[Scanner] %s\"%s\"...\n", scan_start, content_dir);
+      if (manual_scan->task_config->cli_scan_output)
+         printf("%s\"%s\"...\n", scan_start, content_dir);
    }
 
    manual_scan->status = MANUAL_SCAN_BEGIN_DIR_LIST;
