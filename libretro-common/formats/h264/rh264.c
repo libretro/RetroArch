@@ -189,15 +189,38 @@ static uint32_t rh264_ue(rh264_bits *b){
    return (v>>(31-2*z))-1u;
 }
 static int32_t rh264_se(rh264_bits *b){ uint32_t k=rh264_ue(b); uint32_t m=(k+1)>>1; return (k&1)?(int32_t)m:-(int32_t)m; }
-static uint8_t *rh264_unescape(const uint8_t *nal,size_t len,size_t *out_size){
-   uint8_t *r; size_t i,o=0; if(!(r=(uint8_t*)malloc(len?len:1))) return NULL;
-   for(i=0;i<len;i++){
-      if(i>=2&&nal[i]==0x03&&nal[i-1]==0x00&&nal[i-2]==0x00&&i+1<len&&nal[i+1]<=0x03) continue;
-      r[o++]=nal[i];
+/* NAL payload to RBSP (7.4.1): nal[0, len) into r, less every
+ * emulation_prevention_three_byte - a 0x03 after two zero bytes and
+ * before a byte of 0x03 or less, judged on the input as written.
+ * Returns the bytes written.  Such a byte is rare (a few per megabyte
+ * of coded data), so rather than move every byte through a test the
+ * scan jumps from one 0x03 to the next with memchr, checks the
+ * neighbours of each, and copies the stretches between the ones that
+ * qualify whole. */
+static size_t rh264_unescape_into(const uint8_t *nal, size_t len,
+      uint8_t *r)
+{
+   size_t i = 2, o = 0, from = 0;
+   while (i + 1 < len)
+   {
+      const uint8_t *p = (const uint8_t*)memchr(nal + i, 0x03,
+            len - 1 - i);
+      size_t k;
+      if (!p)
+         break;
+      k = (size_t)(p - nal);
+      if (!nal[k - 1] && !nal[k - 2] && nal[k + 1] <= 0x03)
+      {
+         memcpy(r + o, nal + from, k - from);
+         o   += k - from;
+         from = k + 1;
+      }
+      i = k + 1;
    }
-   *out_size=o; return r;
+   memcpy(r + o, nal + from, len - from);
+   return o + (len - from);
 }
-/* Same, into the decoder's scratch block, which only ever grows. */
+/* Into the decoder's scratch block, which only ever grows. */
 static uint8_t *rh264_unescape_scratch(struct rh264_video *v,
       const uint8_t *nal, size_t len, size_t *out_size);
 
@@ -5954,7 +5977,7 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
 static uint8_t *rh264_unescape_scratch(struct rh264_video *v,
       const uint8_t *nal, size_t len, size_t *out_size)
 {
-   uint8_t *r; size_t i, o = 0;
+   uint8_t *r;
    size_t need = len ? len : 1;
    if (need > v->cur->rbsp_scratch_cap)
    {
@@ -5963,13 +5986,8 @@ static uint8_t *rh264_unescape_scratch(struct rh264_video *v,
       v->cur->rbsp_scratch_cap = need;
    }
    r = v->cur->rbsp_scratch;
-   for (i = 0; i < len; i++)
-   {
-      if (i >= 2 && nal[i] == 0x03 && nal[i-1] == 0x00 && nal[i-2] == 0x00
-            && i + 1 < len && nal[i+1] <= 0x03) continue;
-      r[o++] = nal[i];
-   }
-   *out_size = o; return r;
+   *out_size = rh264_unescape_into(nal, len, r);
+   return r;
 }
 
 rh264_video *rh264_video_open(void)
@@ -6034,7 +6052,11 @@ void rh264_video_close(rh264_video *v)
    free(v);
 }
 
-/* parse one SPS or PPS NAL (RBSP already unescaped elsewhere). */
+/* Parse one SPS or PPS NAL.  Unescaped into the current context's
+ * scratch, as a slice is, rather than into an allocation of its own:
+ * streams repeat their parameter sets in band, often before every IDR,
+ * so this runs during playback.  Nothing of a slice is in the scratch
+ * between NALs - a queued slice took its buffer with it. */
 static void rh264_video_take_ps(rh264_video *v, const uint8_t *nal, size_t len)
 {
    int type;
@@ -6042,12 +6064,11 @@ static void rh264_video_take_ps(rh264_video *v, const uint8_t *nal, size_t len)
    uint8_t *rbsp;
    if (len < 1) return;
    type = nal[0] & 0x1f;
-   rbsp = rh264_unescape(nal + 1, len - 1, &rl);
+   rbsp = rh264_unescape_scratch(v, nal + 1, len - 1, &rl);
    if (!rbsp) return;
    if (type == 7) { if (rh264_parse_sps(rbsp, rl, &v->sps)) v->have_sps = 1; }
    else if (type == 8) { if (rh264_parse_pps(rbsp, rl, &v->pps,
          v->have_sps && v->sps.chroma_format_idc == 3)) v->have_pps = 1; }
-   free(rbsp);
 }
 
 int rh264_video_set_extradata(rh264_video *v, const uint8_t *avcc, size_t len)
