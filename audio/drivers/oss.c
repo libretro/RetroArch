@@ -76,6 +76,15 @@ typedef struct oss_audio
     * wait for room is the blocking write's, in the driver, on its own
     * fragment-done interrupt. */
    bool select_blind;
+#ifdef RETROFW
+   /* jz4760's DMA moves 16-byte units: it drops a write's remainder,
+    * and a write under one unit starts a transfer of none. Writes go
+    * out in whole units; the remainder leads the next one. */
+   uint8_t *units;
+   size_t   units_bytes;
+   uint8_t  carry[16];
+   size_t   carry_bytes;
+#endif
 } oss_audio_t;
 
 #define OSS_FRAME_BYTES (ossaudio->channels * sizeof(int16_t))
@@ -83,6 +92,59 @@ typedef struct oss_audio
 /* Iteration cap for oss_wait_writable(): bounds wakes that deliver no
  * space, so one call costs at most this many bounded waits. */
 #define OSS_WAIT_WRITABLE_LAPS 8
+
+#ifdef RETROFW
+#define OSS_DMA_UNIT 16
+
+/* @len bytes behind the carry, whole units to the device. Returns the
+ * bytes of @s taken, the remainder held among them. */
+static ssize_t oss_write_units(oss_audio_t *ossaudio,
+      const uint8_t *s, size_t len)
+{
+   ssize_t w;
+   size_t k     = ossaudio->carry_bytes;
+   size_t total = k + len;
+   size_t whole = total & ~(size_t)(OSS_DMA_UNIT - 1);
+   const uint8_t *out = s;
+
+   if (!whole)
+   {
+      memcpy(ossaudio->carry + k, s, len);
+      ossaudio->carry_bytes = total;
+      return (ssize_t)len;
+   }
+   if (k)
+   {
+      if (ossaudio->units_bytes < whole)
+      {
+         uint8_t *n = (uint8_t*)realloc(ossaudio->units, whole);
+         if (!n)
+            return -1;
+         ossaudio->units       = n;
+         ossaudio->units_bytes = whole;
+      }
+      memcpy(ossaudio->units, ossaudio->carry, k);
+      memcpy(ossaudio->units + k, s, whole - k);
+      out = ossaudio->units;
+   }
+   if ((w = write(ossaudio->fd, out, whole)) < 0)
+   {
+      if (errno == EAGAIN && (fcntl(ossaudio->fd, F_GETFL) & O_NONBLOCK))
+         return 0;
+      return -1;
+   }
+   if (!w)
+      return 0;
+   ossaudio->frames_written += (uint64_t)w / OSS_FRAME_BYTES;
+   ossaudio->carry_bytes     = 0;
+   /* Short, the rest stays with the caller; whole units always. */
+   if ((size_t)w < whole)
+      return w - (ssize_t)k;
+   memcpy(ossaudio->carry, s + (whole - k), total - whole);
+   ossaudio->carry_bytes = total - whole;
+   return (ssize_t)len;
+}
+#endif
 
 static void *oss_init(const char *device,
       unsigned rate, unsigned latency,
@@ -212,6 +274,9 @@ static ssize_t oss_write(void *data, const void *s, size_t len)
       s   = ossaudio->stage;
       len = frames * OSS_FRAME_BYTES;
    }
+#ifdef RETROFW
+   return oss_write_units(ossaudio, (const uint8_t*)s, len);
+#endif
    if ((_len = write(ossaudio->fd, s, len)) < 0)
    {
       if (errno == EAGAIN && (fcntl(ossaudio->fd, F_GETFL) & O_NONBLOCK))
@@ -327,6 +392,9 @@ static bool oss_stop(void *data)
 #endif
 
    ossaudio->is_paused = true;
+#ifdef RETROFW
+   ossaudio->carry_bytes = 0;
+#endif
    return true;
 }
 
@@ -377,6 +445,9 @@ static void oss_free(void *data)
             "its blocking write did.\n");
    close(ossaudio->fd);
    free(ossaudio->stage);
+#ifdef RETROFW
+   free(ossaudio->units);
+#endif
    free(data);
 }
 

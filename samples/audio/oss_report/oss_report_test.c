@@ -21,6 +21,11 @@
  * free() on a device whose SNDCTL_DSP_RESET fails returned before
  * closing it, leaking the descriptor, the stage and the driver.
  *
+ * Built with RETROFW=1: that driver's DMA moves 16-byte units, drops a
+ * node's remainder and starts no transfer for a node under one unit.
+ * The threaded pipeline writes any number of frames, and every
+ * remainder dropped was a click - static, at its rate of writes.
+ *
  * The driver is this translation unit; a closed descriptor makes the
  * real ioctl fail, and ioctl, select, write and close are wrapped
  * (--wrap) so one descriptor is the modelled device. */
@@ -64,6 +69,10 @@ static unsigned dev_write_sleeps;
  * that waits for a fragment and times out on a full device (0) */
 static int      dev_select_blind;
 static unsigned dev_closes;
+/* What the DMA played, and the nodes it could not play whole */
+static uint8_t  dev_played[1 << 16];
+static size_t   dev_played_bytes;
+static unsigned dev_cut_nodes;
 
 int __real_ioctl(int fd, unsigned long req, ...);
 int __real_select(int n, fd_set *r, fd_set *w, fd_set *e,
@@ -131,14 +140,29 @@ ssize_t __wrap_write(int fd, const void *buf, size_t len)
          dev_free_nodes++;
       }
       dev_free_nodes--;
-      done += n;
+      if (n % 16)
+         dev_cut_nodes++;
+      n -= n % 16;
+      if (dev_played_bytes + n <= sizeof(dev_played))
+         memcpy(dev_played + dev_played_bytes,
+               (const uint8_t*)buf + done, n);
+      dev_played_bytes += n;
+      done += len - done > DEV_FRAGSIZE ? DEV_FRAGSIZE : len - done;
    }
    return (ssize_t)done;
 }
 
+static void dev_close(oss_audio_t *oss)
+{
+#ifdef RETROFW
+   free(oss->units);
+#endif
+   memset(oss, 0, sizeof(*oss));
+}
+
 static void dev_open(oss_audio_t *oss, int blind)
 {
-   memset(oss, 0, sizeof(*oss));
+   dev_close(oss);
    oss->fd          = DEV_FD;
    oss->rate        = 32000;
    oss->channels    = 2;
@@ -146,6 +170,8 @@ static void dev_open(oss_audio_t *oss, int blind)
    dev_selects      = 0;
    dev_write_sleeps = 0;
    dev_select_blind = blind;
+   dev_played_bytes = 0;
+   dev_cut_nodes    = 0;
 }
 
 int main(void)
@@ -213,6 +239,35 @@ int main(void)
          room, 0);
    CHECK(dev_selects == 1, "after one bounded wait", dev_selects, 1);
    CHECK(!oss.select_blind, "and is not latched as poll-less", 1, 0);
+
+#ifdef RETROFW
+   /* Writes of any number of frames - one, three, a publish - play
+    * whole and in order, the last few frames held for the next. */
+   {
+      static uint8_t in[16384];
+      static const size_t frames[] = { 533, 1, 3, 2, 534, 7, 1066, 5 };
+      size_t i, off = 0;
+      for (i = 0; i < sizeof(in); i++)
+         in[i] = (uint8_t)(i * 7 + 3);
+      dev_open(&oss, 1);
+      dev_free_nodes = DEV_FRAGS;
+      for (i = 0; i < sizeof(frames) / sizeof(frames[0]); i++)
+      {
+         size_t bytes = frames[i] * 4;
+         CHECK(oss_write(&oss, in + off, bytes) == (ssize_t)bytes,
+               "a write is taken whole", i, bytes);
+         off += bytes;
+      }
+      CHECK(dev_cut_nodes == 0, "every node is whole DMA units",
+            dev_cut_nodes, 0);
+      CHECK(dev_played_bytes <= off && off - dev_played_bytes < 16,
+            "all but a remainder under a unit is played",
+            dev_played_bytes, off);
+      CHECK(!memcmp(dev_played, in, dev_played_bytes),
+            "what plays is what was written, in order", 0, 0);
+   }
+#endif
+   dev_close(&oss);
 
    /* SNDCTL_DSP_RESET fails on the modelled device: free() still closes
     * it, and LeakSanitizer sees the stage and the driver freed. */

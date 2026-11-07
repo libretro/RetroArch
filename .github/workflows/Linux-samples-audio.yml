@@ -633,6 +633,10 @@ jobs:
           make clean && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./oss_report_test
           echo "[pass] oss_report_test (ASan)"
+          # RetroFW's jz4760 driver plays whole 16-byte DMA units only.
+          make clean && make -j$(nproc) all RETROFW=1 SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./oss_report_test
+          echo "[pass] oss_report_test (RetroFW, ASan)"
 
       - name: Build and run live_drivers_test (a live PulseAudio server, a null ALSA PCM)
         shell: bash
