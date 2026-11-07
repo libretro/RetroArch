@@ -2470,6 +2470,55 @@ static INLINE size_t audio_driver_input_bound(double ratio, size_t output_frames
 #define AUDIO_OUTPUT_BOUND_CHECK(produced, bound) do {} while (0)
 #endif
 
+/* The fast-forward measurement (last_flush_time and the two averages)
+ * belongs to the one thread that takes it: the submitter on the inline
+ * pipeline, the main thread's frame end on the threaded one and for a
+ * callback core. That thread resets it outright; any other - the main
+ * thread's frame end, pause and stop inline, a callback core's audio
+ * thread, a producer submitting from a core's thread of its own - asks,
+ * and the measuring thread carries the reset out before it next
+ * measures. The ask is one flag, stored only when not already up, so an
+ * idle frame costs one load. */
+static INLINE void audio_driver_ff_mult_reset(audio_driver_state_t *audio_st)
+{
+   audio_st->last_flush_time = 0;
+}
+
+static INLINE void audio_driver_ff_mult_invalidate(audio_driver_state_t *audio_st)
+{
+#ifdef HAVE_THREADS
+   /* What the producer counted towards the next measurement goes too,
+    * taken by what is there: it may be adding beside this. */
+   size_t counted = retro_atomic_load_acquire_size(&audio_st->pipe_ff_frames);
+   if (counted)
+      retro_atomic_fetch_sub_size(&audio_st->pipe_ff_frames, counted);
+#endif
+   if (!retro_atomic_load_relaxed_int(&audio_st->ff_reset_req))
+      retro_atomic_store_release_int(&audio_st->ff_reset_req, 1);
+}
+
+/* A flush outside fast-forward. Inline it runs on the thread that
+ * measures, which resets outright - and the inline transport, whose
+ * render flushes with fast-forward off, puts its source stamp back over
+ * that reset afterwards. A callback core flushes on the audio thread,
+ * which only asks. */
+static INLINE void audio_driver_flush_ff_release(audio_driver_state_t *audio_st)
+{
+   if (audio_st->callback.callback)
+      audio_driver_ff_mult_invalidate(audio_st);
+   else
+      audio_driver_ff_mult_reset(audio_st);
+}
+
+/* fetch-and with zero takes the flag: exchange is not on every backend
+ * of retro_atomic.h (see audio_driver_take_reinit_request()). */
+static INLINE void audio_driver_ff_mult_sync(audio_driver_state_t *audio_st)
+{
+   if (     retro_atomic_load_acquire_int(&audio_st->ff_reset_req)
+         && retro_atomic_fetch_and_int(&audio_st->ff_reset_req, 0))
+      audio_driver_ff_mult_reset(audio_st);
+}
+
 static double audio_driver_fastforward_ratio_mult(
       audio_driver_state_t *audio_st, size_t input_frames)
 {
@@ -2478,6 +2527,8 @@ static double audio_driver_fastforward_ratio_mult(
    /* What we should see if the speed was 1.0x, converted to microsecs. */
    const double expected_flush_delta =
          (input_frames / audio_st->input * 1000000);
+
+   audio_driver_ff_mult_sync(audio_st);
 
    /* An interval past the average's whole window at 1x is a stall,
     * not a speed: seed again, as after a pause. */
@@ -2522,17 +2573,12 @@ static double audio_driver_fastforward_ratio_mult(
 static double audio_driver_inline_ff_mult(audio_driver_state_t *audio_st,
       size_t input_frames)
 {
-   bool seed   = !audio_st->last_flush_time;
-   double mult = audio_driver_fastforward_ratio_mult(audio_st, input_frames);
+   bool seed;
+   double mult;
+   audio_driver_ff_mult_sync(audio_st);
+   seed = !audio_st->last_flush_time;
+   mult = audio_driver_fastforward_ratio_mult(audio_st, input_frames);
    return seed ? 1.0 : mult;
-}
-
-static INLINE void audio_driver_ff_mult_reset(audio_driver_state_t *audio_st)
-{
-   audio_st->last_flush_time = 0;
-#ifdef HAVE_THREADS
-   audio_st->pipe_ff_frames = 0;
-#endif
 }
 
 #ifdef HAVE_THREADS
@@ -2565,13 +2611,16 @@ static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
 #ifdef HAVE_THREADS
    if (audio_st->pipe_threaded)
    {
-      size_t frames = audio_st->pipe_ff_frames;
+      /* Taken by what was there, not stored to zero: the submitter
+       * may add beside this, from a thread of its own. */
+      size_t frames = retro_atomic_load_acquire_size(&audio_st->pipe_ff_frames);
       if (audio_st->pipe_transport_follow)
          audio_st->pipe_transport_follow |= AUDIO_TRANSPORT_UPDATE;
       if (frames)
       {
-         double mult = audio_driver_fastforward_ratio_mult(audio_st, frames);
-         audio_st->pipe_ff_frames = 0;
+         double mult;
+         retro_atomic_fetch_sub_size(&audio_st->pipe_ff_frames, frames);
+         mult = audio_driver_fastforward_ratio_mult(audio_st, frames);
          if (audio_driver_pipe_ff_waits(audio_st))
             mult = MIN(AUDIO_MAX_RATIO, MAX(AUDIO_MIN_RATIO,
                      mult / audio_driver_pipe_ff_trim(audio_st)));
@@ -2581,14 +2630,15 @@ static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
       }
    }
 #endif
-   /* Keep intervals across batched audio, but exclude released/paused gaps. */
-   if (audio_st->last_flush_time)
+   /* Keep intervals across batched audio, but exclude released/paused
+    * gaps. Inline the submitter measures, perhaps on a thread of its
+    * own, so this only asks. */
    {
       int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
       if (!(snap & AUDIO_SNAP_FASTMOTION) || (snap & AUDIO_SNAP_PAUSED)
             || ((snap & AUDIO_SNAP_MENU_ALIVE) && (snap & AUDIO_SNAP_MENU_PAUSES)
                && (snap & AUDIO_SNAP_ALLOW_PAUSE)))
-         audio_driver_ff_mult_reset(audio_st);
+         audio_driver_ff_mult_invalidate(audio_st);
    }
 }
 
@@ -2608,9 +2658,9 @@ static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
  * Runs only when the snapshot carries the fastmotion bit, which
  * publish withholds for callback cores unless the person opted in
  * (audio_fastforward_callback), so the off state costs one load. The
- * reset stores race the audio thread's own idle reset at fast-forward
- * boundaries; both only ever store zeros and unity there, so the
- * worst case is one stale EMA sample that the next frame corrects. */
+ * measurement is this thread's: the audio thread's idle reset at a
+ * fast-forward boundary only asks for it (audio_driver_ff_mult_invalidate()),
+ * and the next measurement here carries it out. */
 static void audio_driver_ff_callback_frame_end(audio_driver_state_t *audio_st)
 {
    int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
@@ -2630,10 +2680,16 @@ static void audio_driver_ff_callback_frame_end(audio_driver_state_t *audio_st)
             (int)(audio_driver_fastforward_ratio_mult(audio_st, frames)
                * 65536.0));
    }
-   else if (audio_st->last_flush_time)
+   else
    {
-      audio_driver_ff_mult_reset(audio_st);
-      retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16, 65536);
+      /* This thread measures: it resets, taking the audio thread's ask
+       * with it, and publishes unity once on the way out. */
+      if (audio_st->last_flush_time)
+      {
+         audio_driver_ff_mult_sync(audio_st);
+         audio_driver_ff_mult_reset(audio_st);
+         retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16, 65536);
+      }
    }
 }
 
@@ -3800,7 +3856,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       /* Driver-side SRC needs the same speed multiplier as software SRC.
        * In the threaded path this reads the producer's cadence estimate. */
       if (!is_fastforward && !audio_st->pipe_threaded)
-         audio_driver_ff_mult_reset(audio_st);
+         audio_driver_flush_ff_release(audio_st);
       if (is_fastforward && ff_speedup)
          rate_adjust *= audio_driver_ff_mult(audio_st, frames);
 
@@ -3987,7 +4043,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             audio_st->src_ratio_curr = audio_st->src_ratio_orig
                   * audio_driver_sink_bias(audio_st);
          if (!is_fastforward && !audio_st->pipe_threaded)
-            audio_driver_ff_mult_reset(audio_st);
+            audio_driver_flush_ff_release(audio_st);
          i16_ratio = audio_driver_effective_ratio(audio_st, is_slowmotion,
                slowmotion_ratio,
                (is_fastforward && ff_speedup)
@@ -4374,7 +4430,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       audio_st->src_ratio_curr = audio_st->src_ratio_orig
             * audio_driver_sink_bias(audio_st);
    if (!is_fastforward && !audio_st->pipe_threaded)
-      audio_driver_ff_mult_reset(audio_st);
+      audio_driver_flush_ff_release(audio_st);
    src_data.ratio           = audio_driver_effective_ratio(audio_st,
          is_slowmotion, slowmotion_ratio,
          (is_fastforward && ff_speedup)
@@ -4824,14 +4880,19 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
    size_t left = frames;
    size_t frame;
    const uint8_t *source = (const uint8_t*)data;
-   retro_time_t old_time = audio_st->last_flush_time;
-   retro_time_t old_delta = audio_st->avg_flush_delta, source_time;
-   double old_expected = audio_st->avg_expected_delta;
+   retro_time_t old_time, old_delta, source_time;
+   double old_expected;
    double duration = slowmotion ? slowmotion_ratio : 1.0;
    uint64_t bits;
    uint32_t tempo, cutoff;
    bool supported, follow;
    if (!t) return false;
+   /* An asked reset first, so a restore below cannot bring back what it
+    * cleared. */
+   audio_driver_ff_mult_sync(audio_st);
+   old_time     = audio_st->last_flush_time;
+   old_delta    = audio_st->avg_flush_delta;
+   old_expected = audio_st->avg_expected_delta;
    follow = audio_driver_ff_follows(audio_st, (snap & AUDIO_SNAP_FF_SPEEDUP) != 0);
    frame = t->channels * (floating ? sizeof(float) : sizeof(int16_t));
    supported = floating == t->floating && !audio_st->extra.pending
@@ -5233,6 +5294,9 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       retro_atomic_int_init(&audio_driver_st.pipe_stalled, 0);
       retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
       audio_driver_ff_mult_reset(&audio_driver_st);
+      retro_atomic_int_init(&audio_driver_st.ff_reset_req, 0);
+      retro_atomic_size_init(&audio_driver_st.pipe_ff_frames, 0);
+      audio_driver_st.pipe_ff_held = false;
       retro_atomic_int_init(&audio_driver_st.pipe_data_gen, 0);
       retro_atomic_int_init(&audio_driver_st.pipe_wake, 0);
       if (     !retro_eventcount_init(&audio_driver_st.pipe_space)
@@ -6262,15 +6326,9 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
       {
          case 0:
             /* Without the threaded pipeline the ramp's arming is the
-             * submitter's, as is the rest of a pause and a resume -
-             * and the flush interval it measures, which the pause
-             * must not be read as. */
+             * submitter's, as is the rest of a pause and a resume. */
             if (!audio_st->pipe_threaded)
-            {
                audio_st->fade_in_pending = false;
-               if (!audio_st->callback.callback)
-                  audio_driver_ff_mult_reset(audio_st);
-            }
             audio_driver_pause_tail(audio_st, audio_st->current_audio,
                   write_tail);
             break;
@@ -6280,8 +6338,6 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
                      &audio_st->pipe_resume_topup) != 0;
                if (!audio_st->pipe_threaded && topup)
                   audio_st->fade_in_pending = true;
-               if (!audio_st->pipe_threaded && !audio_st->callback.callback)
-                  audio_driver_ff_mult_reset(audio_st);
                audio_driver_resume_reset(audio_st, topup);
             }
             break;
@@ -6438,16 +6494,9 @@ void audio_driver_pause_fade(bool paused)
    const audio_driver_t *audio    = audio_st->current_audio;
    bool was_silenced;
 
-   /* The paused interval is not a flush interval. The threaded
-    * pipeline's producer and a callback core measure at the frame end,
-    * on this thread, so reset here. Inline, the submitting thread
-    * measures, and a core may submit from a thread of its own: the
-    * pause and resume requests below reset it there, under the claim
-    * (see audio_driver_requests_apply()). */
-#ifdef HAVE_THREADS
-   if (audio_st->pipe_threaded || audio_st->callback.callback)
-#endif
-      audio_driver_ff_mult_reset(audio_st);
+   /* The paused interval is not a flush interval. Asked of whichever
+    * thread measures (see audio_driver_ff_mult_invalidate()). */
+   audio_driver_ff_mult_invalidate(audio_st);
 
    if (     !audio
          || !audio->write
@@ -7114,19 +7163,25 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
                 & AUDIO_SNAP_FF_SPEEDUP) != 0))
       {
          /* The first frame of a hold publishes the seed, so the tempo
-          * lands with this frame's source rather than a frame later. */
-         if (!audio_st->last_flush_time && !audio_st->pipe_ff_frames)
+          * lands with this frame's source rather than a frame later.
+          * Known from this thread's own state: the measurement is the
+          * main thread's. */
+         if (!audio_st->pipe_ff_held)
          {
             double ratio = audio_driver_snapshot_ffratio(audio_st);
+            audio_st->pipe_ff_held = true;
             if (ratio > 1.0)
                retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
                      (int)(65536.0 / ratio));
          }
-         audio_st->pipe_ff_frames = frames > SIZE_MAX - audio_st->pipe_ff_frames
-            ? SIZE_MAX : audio_st->pipe_ff_frames + frames;
+         retro_atomic_fetch_add_size(&audio_st->pipe_ff_frames, frames);
       }
       else
-         audio_driver_ff_mult_reset(audio_st);
+      {
+         /* Out of the hold: the measurement is asked to start again. */
+         audio_st->pipe_ff_held = false;
+         audio_driver_ff_mult_invalidate(audio_st);
+      }
       if (len && (audio_st->pipe_transport_follow & AUDIO_TRANSPORT_UPDATE)
             && !audio_driver_transport_update_runloop(audio_st))
          len = 0;
@@ -10488,7 +10543,7 @@ bool audio_driver_callback(void)
 
    /* This callback owns inline source timing; the main frame must not reset it. */
    if (core_paused || !(snap & AUDIO_SNAP_FASTMOTION))
-      audio_driver_ff_mult_reset(&audio_driver_st);
+      audio_driver_ff_mult_invalidate(&audio_driver_st);
 
    if (!core_paused)
    {
@@ -11558,7 +11613,7 @@ bool audio_driver_stop(void)
    if (stopped)
    {
       /* The stopped interval is not part of the source cadence. */
-      audio_driver_ff_mult_reset(audio_st);
+      audio_driver_ff_mult_invalidate(audio_st);
 #ifdef HAVE_THREADS
       retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16, 65536);
 #endif

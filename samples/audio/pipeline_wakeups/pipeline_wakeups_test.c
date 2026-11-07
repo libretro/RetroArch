@@ -1055,7 +1055,12 @@ static void wrapper_restart(void)
       parked_run(discard_parked, NULL);
       if (cycle & 1)
       {
-         if (!audio_driver_stop() || st->last_flush_time || st->pipe_ff_frames
+         /* The measurement is reset by the thread that takes it, or
+          * asked to be (see audio_driver_ff_mult_invalidate()). */
+         if (!audio_driver_stop()
+               || (st->last_flush_time
+                  && !retro_atomic_load_acquire_int(&st->ff_reset_req))
+               || retro_atomic_load_acquire_size(&st->pipe_ff_frames)
                || retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) != 65536)
          { fprintf(stderr, "frontend stop retained source cadence\n"); fixture_failures++; }
       }

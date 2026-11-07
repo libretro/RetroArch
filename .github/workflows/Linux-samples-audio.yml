@@ -325,7 +325,7 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./upmix_test
           echo "[pass] upmix_test (ASan)"
 
-      - name: Build and run discrete_multichannel_test (plain, ASan + UBSan)
+      - name: Build and run discrete_multichannel_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/audio/discrete_multichannel
         run: |
@@ -341,17 +341,26 @@ jobs:
           # 5.1 core reaches a Dolby Digital decoder as AC-3 bursts
           # that decode back to its own channels. Includes the
           # shipping audio_driver.c.
-          # The two builds in turn, the two runs at once: each run is
-          # one thread, so a runner's second core takes the other.
+          # The builds in turn, the runs at once: each run is one
+          # thread, so a runner's second core takes another.
+          # Under ThreadSanitizer only the lane with a core submitting
+          # from a thread of its own beside the main thread's frame
+          # ends, pauses and fast-forward changes: the fast-forward
+          # measurement is the submitter's, and no other thread may
+          # write it.
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/run-parallel.sh"
           make clean && make -j$(nproc) all
           mv discrete_multichannel_test discrete_multichannel_test_plain
+          make clean && make -j$(nproc) all SANITIZER=thread
+          mv discrete_multichannel_test discrete_multichannel_test_tsan
           make clean && make -j$(nproc) all SANITIZER=address,undefined
           par "discrete_multichannel_test" ./discrete_multichannel_test_plain
           par "discrete_multichannel_test (ASan)" env ASAN_OPTIONS=detect_leaks=0 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./discrete_multichannel_test
+          par "discrete_multichannel_test (TSan: core thread)" env DM_ONLY=inlinethread \
+             TSAN_OPTIONS=halt_on_error=1 ./discrete_multichannel_test_tsan
           par_wait
-          rm -f discrete_multichannel_test_plain
+          rm -f discrete_multichannel_test_plain discrete_multichannel_test_tsan
 
       - name: Build and run embedded_alsa_test (the embedded ALSA driver, mock kernel device)
         shell: bash

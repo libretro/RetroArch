@@ -860,6 +860,10 @@ typedef struct
    bool mixer_mute_enable;
 #endif
 
+   /* A reset of the fast-forward measurement below, asked for by a
+    * thread that does not take it; the measuring thread carries it out
+    * (see audio_driver_ff_mult_sync()). */
+   retro_atomic_int_t ff_reset_req;
    /* Sample the flush delta-time when fast forwarding to find the correct ratio. */
    retro_time_t last_flush_time;
    /* Exponential moving averages of the flush interval and of the
@@ -1096,8 +1100,13 @@ typedef struct
    void *pipe_transport_output;
    uint32_t pipe_transport_serial, pipe_transport_search;
    unsigned pipe_transport_rate;
-   /* Producer-owned source count for the current fast-forward frame. */
-   size_t pipe_ff_frames;
+   /* Source frames counted for the current fast-forward frame: added
+    * by the thread that submits, taken by the main thread's frame end,
+    * which may not be the same thread. */
+   retro_atomic_size_t pipe_ff_frames;
+   /* Whether the submitter is inside a fast-forward hold; the
+    * submitter's own. */
+   bool pipe_ff_held;
    /* A pause and a resume as ring positions, in the ring's own byte
     * count, published by the main thread and read by the consumer. What
     * the ring held at a pause is stale behind its tail: the consumer

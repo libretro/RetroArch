@@ -972,7 +972,10 @@ static void inline_format_cases(void)
             }
             st->last_flush_time = 123;
             CHECK(audio_driver_stop() && audio_stretch_stream_quiescent(saved->stream), "rebound stop");
-            CHECK(!st->last_flush_time, "rebound stop retained speed cadence");
+            /* Asked of the measuring thread: see audio_driver_ff_mult_invalidate(). */
+            CHECK(!st->last_flush_time
+                  || retro_atomic_load_acquire_int(&st->ff_reset_req),
+                  "rebound stop retained speed cadence");
             CHECK(audio_driver_start(false), "rebound restart");
             transport_fail_output = true;
             audio_driver_set_core_float(!native);

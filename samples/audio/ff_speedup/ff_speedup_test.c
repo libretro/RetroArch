@@ -67,6 +67,15 @@ static void fresh(void)
    fake_now              = 1000000;
 }
 
+/* Whether the fast-forward measurement is reset, or asked to be: only
+ * the thread that measures clears it, at its next measurement (see
+ * audio_driver_ff_mult_invalidate()). */
+static bool ff_measure_cleared(const audio_driver_state_t *st)
+{
+   return !st->last_flush_time
+      || retro_atomic_load_acquire_int(&st->ff_reset_req);
+}
+
 /* --- the measurement at the core's cadence ------------------------- */
 
 static void test_inline_measures_speed(void)
@@ -534,7 +543,7 @@ static void test_producer_publishes_at_its_cadence(void)
 
    /* Released: a 1.0x publish re-arms the seed. */
    audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, false, true);
-   CHECK(audio_driver_st.last_flush_time == 0,
+   CHECK(ff_measure_cleared(&audio_driver_st),
          "a publish outside fast-forward re-arms the seed");
 
    retro_spsc_free(&audio_driver_st.pipe_ring);
@@ -931,7 +940,8 @@ static void test_inline_silent_boundaries(void)
           * core's cadence resets in every mode - active fast-forward
           * included - and reentry always starts at unity. */
          CHECK((mode == 2 && !callback)
-                  ? st->last_flush_time == previous : st->last_flush_time == 0,
+                  ? st->last_flush_time == previous && !ff_measure_cleared(st)
+                  : ff_measure_cleared(st),
                "silent boundaries reset released/paused cadence and preserve active batching");
          if (mode != 2 || callback)
             CHECK(audio_driver_fastforward_ratio_mult(st, FRAMES) == 1.0,
@@ -947,7 +957,7 @@ static void test_inline_silent_boundaries(void)
    retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_FASTMOTION
          | AUDIO_SNAP_MENU_ALIVE | AUDIO_SNAP_MENU_PAUSES | AUDIO_SNAP_ALLOW_PAUSE);
    audio_driver_callback();
-   CHECK(!st->last_flush_time, "menu-paused callback discards idle cadence");
+   CHECK(ff_measure_cleared(st), "menu-paused callback discards idle cadence");
    fresh();
    runloop_state_get_ptr()->flags = 0;
 }
@@ -1049,7 +1059,7 @@ static void test_stop_excludes_idle_gap(void)
                   "failed stop preserves the running cadence");
             continue;
          }
-         CHECK(!st->last_flush_time && !st->pipe_ff_frames,
+         CHECK(ff_measure_cleared(st) && !st->pipe_ff_frames,
                "successful stop discards the old source cadence");
          CHECK(retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) == 65536,
                "restart cannot consume an old speed multiplier");
