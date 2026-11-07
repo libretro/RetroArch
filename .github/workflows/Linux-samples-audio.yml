@@ -1391,13 +1391,16 @@ jobs:
           # retried, since a host that takes the consumer off its core
           # shows the same with the cap off; only a cap that never runs
           # clean fails.
-          # Its five lanes run in real time on next to no CPU, so they
-          # run at once: the step takes as long as the longest lane.
+          # Its lanes run in real time on next to no CPU, so they run
+          # at once, one setting each: the step takes as long as the
+          # longest setting, about 12 s, not the longest case.
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/run-parallel.sh"
           make clean && make -j$(nproc)
           test -x pipeline_clocked_test
-          for lane in audio_paced_16 audio_paced_32 audio_paced_64 setpoint \
-                rate_control sync_off ff_exit; do
+          for lane in audio_paced_16 audio_paced_32 audio_paced_64 \
+                setpoint_16 setpoint_32 setpoint_64 \
+                rate_control_32 rate_control_64 sync_off \
+                ff_exit_1 ff_exit_2 ff_exit_3 ff_exit_4 ff_exit_5; do
              par "pipeline_clocked_test (fill cap: $lane)" \
                 env PACED_ONLY=$lane timeout 300 ./pipeline_clocked_test 3
           done

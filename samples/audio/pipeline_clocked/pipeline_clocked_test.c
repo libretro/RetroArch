@@ -28,9 +28,12 @@
  * Sync off, display-paced, the pipe deep and shallow; and the second
  * after fast-forward or a pause, which FF_EXIT_ONLY runs alone.
  * PACED_ONLY=1 runs those lanes alone; PACED_ONLY=audio_paced, setpoint,
- * rate_control, sync_off or ff_exit just that one, and audio_paced_16,
- * _32 or _64 one device latency of the first; JITTER_US makes the display-paced
- * core up to that late on each frame, its schedule kept.
+ * rate_control, sync_off or ff_exit just that one; audio_paced_16, _32
+ * or _64, setpoint_16, _32 or _64 and rate_control_32 or _64 one device
+ * latency of it, and ff_exit_1 to _5 one of its five transitions, so CI
+ * can run every setting at once. A name that matches nothing fails.
+ * JITTER_US makes the display-paced core up to that late on each frame,
+ * its schedule kept.
  *
  * Includes audio/audio_driver.c so the shipping producer and consumer
  * run.
@@ -735,13 +738,23 @@ static void audio_paced_case(double seconds, unsigned only_lat)
  * before the publish, or the publish where the buffer is smaller -
  * so each publish waits behind that and itself. Without it the device
  * runs between three quarters and full, a publish on top. */
-static void setpoint_case(double seconds)
+/* Settings a PACED_ONLY lane ran: none is a lane name that matched
+ * nothing, which must fail rather than pass on no run. */
+static unsigned paced_settings_run;
+
+/* only_lat: one device latency alone, so a runner can take them in
+ * parallel; 0 runs them all. */
+static void setpoint_case(double seconds, unsigned only_lat)
 {
    static const unsigned lat[] = { 16, 32, 64 };
    size_t i;
    printf("Audio Sync on, display-paced, against the inline setpoint:\n");
    for (i = 0; i < sizeof(lat) / sizeof(lat[0]); i++)
    {
+      if (only_lat && lat[i] != only_lat)
+         continue;
+      paced_settings_run++;
+      {
       double half  = lat[i] / 2.0, publish = 1000.0 / FPS;
       double set   = (half > publish ? half : publish) + publish;
       /* Priming lands on a whole publish past the setpoint, and rate
@@ -796,6 +809,7 @@ static void setpoint_case(double seconds)
                avg[1], set);
          paced_failures++;
       }
+      }
    }
 }
 
@@ -807,7 +821,7 @@ static void setpoint_case(double seconds)
  * that blocks with vsync off is a second clock the runloop cannot see,
  * and there the controller must still hold the fill short of the full
  * ring, a display faster than the content or slower. */
-static void rate_control_case(double seconds)
+static void rate_control_case(double seconds, unsigned only_lat)
 {
    static const unsigned lat[] = { 32, 64 };
    size_t i;
@@ -817,6 +831,9 @@ static void rate_control_case(double seconds)
       double avg, mx;
       size_t sp, held;
       int    path, attempt;
+      if (only_lat && lat[i] != only_lat)
+         continue;
+      paced_settings_run++;
       for (path = 0; path < 2; path++)
       {
          paced_inline = path == 0;
@@ -1042,7 +1059,9 @@ static bool ff_exit_once(bool inline_path, unsigned pace, bool paused,
    return true;
 }
 
-static void ff_exit_case(void)
+/* only: lane index + 1, so a runner can take them in parallel; 0 runs
+ * them all. */
+static void ff_exit_case(unsigned only)
 {
    static const struct { bool inl; unsigned pace; bool paused; const char *name; } lane[] = {
       { false, RUNLOOP_PACE_TIMER, false, "fast-forward, threaded, frame limiter" },
@@ -1058,6 +1077,9 @@ static void ff_exit_case(void)
       unsigned held = 0;
       double   worst = 0.0;
       int      attempt;
+      if (only && i + 1 != only)
+         continue;
+      paced_settings_run++;
       /* Held: over a millisecond; the longest under a frame. A host
        * that takes the core off its CPU holds a publish too, so only
        * a lane that never runs clean fails. */
@@ -1315,7 +1337,10 @@ int main(int argc, char **argv)
        * runner can take the lanes in parallel, each in real time */
       bool all = !strcmp(only, "1");
       if (all || !strcmp(only, "audio_paced"))
+      {
          audio_paced_case(seconds, 0);
+         paced_settings_run++;
+      }
       /* audio_paced_16, _32 or _64: that device latency alone */
       else if (!strncmp(only, "audio_paced_", 12))
       {
@@ -1326,29 +1351,47 @@ int main(int argc, char **argv)
             return 1;
          }
          audio_paced_case(seconds, l);
+         paced_settings_run++;
       }
+      /* setpoint_16/_32/_64, rate_control_32/_64 and ff_exit_1 to _5:
+       * one setting alone, so the longest lane, not the longest case,
+       * sets how long a runner waits */
       if (all || !strcmp(only, "setpoint"))
-         setpoint_case(seconds);
+         setpoint_case(seconds, 0);
+      else if (!strncmp(only, "setpoint_", 9))
+         setpoint_case(seconds, (unsigned)atoi(only + 9));
       if (all || !strcmp(only, "rate_control"))
-         rate_control_case(seconds);
+         rate_control_case(seconds, 0);
+      else if (!strncmp(only, "rate_control_", 13))
+         rate_control_case(seconds, (unsigned)atoi(only + 13));
       if (all || !strcmp(only, "sync_off"))
+      {
          sync_off_case(seconds);
+         paced_settings_run++;
+      }
       if (all || !strcmp(only, "ff_exit"))
-         ff_exit_case();
+         ff_exit_case(0);
+      else if (!strncmp(only, "ff_exit_", 8))
+         ff_exit_case((unsigned)atoi(only + 8));
+      if (!paced_settings_run)
+      {
+         printf("PACED_ONLY=%s: no such lane\n", only);
+         return 1;
+      }
       return (paced_failures || ff_exit_failures) ? 1 : 0;
    }
    if (getenv("FF_EXIT_ONLY"))
    {
-      ff_exit_case();
+      ff_exit_case(0);
       return ff_exit_failures ? 1 : 0;
    }
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds);
    audio_paced_case(seconds, 0);
-   setpoint_case(seconds);
-   rate_control_case(seconds);
+   setpoint_case(seconds, 0);
+   rate_control_case(seconds, 0);
    sync_off_case(seconds);
-   ff_exit_case();
+   ff_exit_case(0);
    stall_case();
    return (stall_failures || paced_failures || ff_exit_failures) ? 1 : 0;
 }
