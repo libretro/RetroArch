@@ -503,12 +503,32 @@ static int64_t media_audio_timeline_total(media_player_t *p)
       if (p->atimes[mid].end < p->atotal) lo = mid + 1;
       else hi = mid;
    }
-   if (lo == p->amapped) return p->atime_end;
-   t = &p->atimes[lo];
-   end = p->atotal < t->end ? p->atotal : t->end;
-   if (end < t->source) end = t->source;
-   end = t->media + (end - t->source);
-   return end > t->prior_end ? end : t->prior_end;
+   if (lo == p->amapped)
+      end = p->atime_end;
+   else
+   {
+      t = &p->atimes[lo];
+      end = p->atotal < t->end ? p->atotal : t->end;
+      if (end < t->source) end = t->source;
+      end = t->media + (end - t->source);
+      if (end < t->prior_end) end = t->prior_end;
+   }
+#ifdef HAVE_RMP4
+   if (p->agather)
+   {
+      const rmp4_track *track = rmp4_get_track(p->agather, p->agtrack);
+      int64_t length, delay;
+      if (track && track->presentation_duration_ns >= 0
+            && media_audio_ns_frames(track->presentation_duration_ns,
+               p->arate, &length)
+            && media_audio_ns_frames(track->presentation_delay_ns,
+               p->arate, &delay)
+            && delay >= 0 && length >= 0 && length <= INT64_MAX - delay
+            && end > delay + length)
+         end = delay + length;
+   }
+#endif
+   return end;
 }
 
 /* One shared reader for playback and seek. apos is the presentation
@@ -1593,6 +1613,8 @@ static int64_t media_seek_internal_resume(media_player_t *p, int64_t target_ns,
       p->vshown = rmp4_video_stream_frame_index(p->mp4vs);
       p->hw_video = media_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
       p->vpts_ns = ms >= 0 ? ms * 1000000 : delay;
+      if (p->vpts_ns < delay)
+         p->vpts_ns = delay;
       p->play_ns = target_ns < delay ? target_ns : p->vpts_ns;
       p->eof     = 0;
       (void)to_slot;   /* the mp4 glue's timestamp table is exact */
@@ -2387,7 +2409,10 @@ mp4_presented:
             audio_done = 0;
 #endif
          if (audio_done)
+         {
             MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+            return;
+         }
       }
       goto audio;
    }

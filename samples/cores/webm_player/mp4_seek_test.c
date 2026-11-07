@@ -116,10 +116,16 @@ static int check_file(const char *path)
          failures++;
       }
    }
-   if (rmp4_video_stream_seek_movie_ms(stream, -1)
-         != rmp4_video_stream_presentation_delay_ns(stream) / 1000000
+   if (rmp4_video_stream_seek_movie_ms(stream, -1) != 0
          || rmp4_video_stream_frame_index(stream) != 0)
       failures++;
+   {
+      int64_t tail = (times[frames - 1] - times[0]
+            + rmp4_video_stream_presentation_delay_ns(stream)) / 1000000 + 1000;
+      if (rmp4_video_stream_seek_movie_ms(stream, tail) != tail
+            || rmp4_video_stream_frame_index(stream) != frames - 1)
+         failures++;
+   }
    if (rmp4_video_stream_seek_movie_ms(stream, INT64_MAX) < 0
          || rmp4_video_stream_frame_index(stream) != frames - 1)
       failures++;

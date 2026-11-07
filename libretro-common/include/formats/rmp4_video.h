@@ -303,8 +303,8 @@ int64_t rmp4_video_stream_presentation_delay_ns(const rmp4_video_stream_t *strea
  * when no timestamp is available. Decoder-relative seek APIs are unchanged. */
 int64_t rmp4_video_stream_frame_time_ns(const rmp4_video_stream_t *stream);
 
-/* Synchronous movie-coordinate counterpart of seek_ms. Returns the selected
- * picture's movie timestamp in ms, leaving that picture for next/skip. */
+/* Synchronous movie-coordinate counterpart of seek_ms. Leaves the selected
+ * picture for next/skip; returns movie ms, preserving an empty-interval target. */
 int64_t rmp4_video_stream_seek_movie_ms(rmp4_video_stream_t *stream, int64_t ms);
 
 /* Movie-relative bounded seek, including leading and trailing empty

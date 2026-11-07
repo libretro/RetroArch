@@ -114,6 +114,17 @@ static void run_lane(const char *path,unsigned compare)
          printf("After-delay seek: base=%u pictures=%u audio_position=%ld\n",picture_base,
                shown_count,(long)media_player.apos);
       }
+      {
+         int64_t position=media_seek(&media_player,INT64_C(3500000000));
+         check(position==INT64_C(3500000000) && media_player.apos==168000,
+               "seek into trailing video gap rewound the audio movie clock");
+         capture_begin(1);picture_base=last_shown=(unsigned)media_player.vshown;
+         for(i=0;i<16 && !shutdowns;i++)retro_run();
+         check(shutdowns && shown_count==1 && samples==24000,
+               "trailing video gap seek changed the last picture or remaining audio");
+         printf("Trailing edit seek: pictures=%u remaining_audio=%lu\n",
+               shown_count,(unsigned long)samples);
+      }
    }
    retro_unload_game();
 }

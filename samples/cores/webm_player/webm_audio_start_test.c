@@ -49,14 +49,12 @@ int main(int argc,char **argv)
    START_CHECK(startup_nonzero && !media_player.aeof && !startup_shutdowns);
    for(i=0;i<512 && !startup_shutdowns;i++)retro_run();
    START_CHECK(startup_shutdowns==1 && media_player.aeof);
-   START_CHECK(media_player.atotal>0 && media_player.apos==media_player.atotal);
+   START_CHECK(media_player.atotal>0 && media_player.apos<=media_player.atotal);
    printf("Audio timeline: rate=%u callbacks=%lu position=%ld total=%ld\n",
          expected_rate,(unsigned long)startup_frames,
          (long)media_player.apos,(long)media_player.atotal);
-   START_CHECK(media_player.apos>=(int64_t)expected_rate*16 &&
-         media_player.apos<=(int64_t)expected_rate*16+1024);
-   START_CHECK(startup_frames>=(size_t)media_player.apos &&
-         startup_frames<=(size_t)media_player.apos+media_player.silence_frames);
+   START_CHECK(media_player.apos==(int64_t)expected_rate*16);
+   START_CHECK(startup_frames==(size_t)media_player.apos);
    retro_unload_game();retro_deinit();
    printf("Progressive MP4 audio startup: %u failures\n",startup_failures);
    return startup_failures?1:0;

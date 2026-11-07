@@ -237,7 +237,7 @@ ifeq ($(MP4)$(AUDIO),11)
 	$(RUNNER) ./$(AUDIO_START_TARGET) fixtures/hevc-aac44-audio-gap.mp4 44100
 endif
 ifeq ($(MP4),1)
-	$(RUNNER) ./$(MP4_SEEK_TARGET) fixtures/h264-seek-aac.mp4 fixtures/hevc-seek-aac.mp4 fixtures/h264-long-seek.mp4
+	$(RUNNER) ./$(MP4_SEEK_TARGET) fixtures/h264-seek-aac.mp4 fixtures/hevc-seek-aac.mp4 fixtures/h264-long-seek.mp4 fixtures/video-timeline-1.mp4
 	$(RUNNER) ./$(HW_TARGET)
 endif
 
