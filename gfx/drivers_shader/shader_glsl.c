@@ -31,6 +31,7 @@
 #endif
 
 #include "shader_glsl.h"
+#include "glsl_rect.h"
 #include "../video_shader_parse.h"
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
@@ -186,6 +187,24 @@ static const char *glsl_prefixes[] = {
 #endif
 #endif
 
+/* The first pass rewritten to read its frame where it lies
+ * (glsl_rect.h), for the views of a hardware frame */
+struct glsl_in_place
+{
+   struct shader_program_glsl_data prg;
+   struct shader_uniforms uni;
+   /* RECT, CLAMP and TEXELS */
+   GLint loc[3];
+   /* The frame's sampler names in the first pass */
+   char names[3][64];
+   /* 1 + the glsl_rect_mode last tried, 0 none */
+   unsigned key;
+   enum glsl_rect_mode mode;
+   bool ok;
+   /* In prg[1] and uniforms[1], the pass's own here */
+   bool swapped;
+};
+
 typedef struct glsl_shader_data
 {
    char alias_define[1024];
@@ -215,6 +234,9 @@ typedef struct glsl_shader_data
    /* The menu effects already compiled or tried, one bit each, so one
     * that will not compile is not tried again every frame */
    uint8_t menu_shaders_tried;
+   struct glsl_in_place in_place;
+   /* Compiling something that may fail, with the copy to fall back on */
+   bool quiet;
 } glsl_shader_data_t;
 
 /* A gfx_display mesh vertex: three floats, then texture coordinates and
@@ -501,19 +523,21 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    glCompileShader(shader);
 
    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-   gl_glsl_print_shader_log(shader);
+   if (!glsl->quiet)
+      gl_glsl_print_shader_log(shader);
 
    return status == GL_TRUE;
 }
 
-static bool gl_glsl_link_program(GLuint prog)
+static bool gl_glsl_link_program(GLuint prog, bool quiet)
 {
    GLint status;
 
    glLinkProgram(prog);
 
    glGetProgramiv(prog, GL_LINK_STATUS, &status);
-   gl_glsl_print_linker_log(prog);
+   if (!quiet)
+      gl_glsl_print_linker_log(prog);
 
    if (status != GL_TRUE)
       return false;
@@ -550,7 +574,8 @@ static bool gl_glsl_compile_program(
                "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n#define _HAS_SWAPCOUNT_UNIFORM\n",
                program_info->vertex))
       {
-         RARCH_ERR("[GLSL] Failed to compile vertex shader #%u.\n", idx);
+         if (!glsl->quiet)
+            RARCH_ERR("[GLSL] Failed to compile vertex shader #%u.\n", idx);
          goto error;
       }
 
@@ -565,7 +590,8 @@ static bool gl_glsl_compile_program(
                "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n#define _HAS_SWAPCOUNT_UNIFORM\n",
                program_info->fragment))
       {
-         RARCH_ERR("[GLSL] Failed to compile fragment shader #%u.\n", idx);
+         if (!glsl->quiet)
+            RARCH_ERR("[GLSL] Failed to compile fragment shader #%u.\n", idx);
          goto error;
       }
 
@@ -575,7 +601,7 @@ static bool gl_glsl_compile_program(
    if (program_info->vertex || program_info->fragment)
    {
       RARCH_LOG("[GLSL] Linking GLSL program.\n");
-      if (!gl_glsl_link_program(prog))
+      if (!gl_glsl_link_program(prog, glsl->quiet))
          goto error;
 
       /* Clean up dead memory. We're not going to relink the program.
@@ -602,8 +628,17 @@ static bool gl_glsl_compile_program(
    return true;
 
 error:
-   RARCH_ERR("[GLSL] Failed to link program #%u.\n", idx);
-   program->id = 0;
+   if (!glsl->quiet)
+      RARCH_ERR("[GLSL] Failed to link program #%u.\n", idx);
+   if (prog)
+      glDeleteProgram(prog);
+   if (program->vprg)
+      glDeleteShader(program->vprg);
+   if (program->fprg)
+      glDeleteShader(program->fprg);
+   program->vprg = 0;
+   program->fprg = 0;
+   program->id   = 0;
    return false;
 }
 
@@ -933,6 +968,11 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
 
    if (glsl->shader && glsl->shader->luts)
       glDeleteTextures(glsl->shader->luts, glsl->lut_textures);
+
+   /* The rewritten pass, or the pass itself while that is swapped in */
+   if (glsl->in_place.prg.id)
+      glDeleteProgram(glsl->in_place.prg.id);
+   memset(&glsl->in_place, 0, sizeof(glsl->in_place));
 
    memset(glsl->prg, 0, sizeof(glsl->prg));
    memset(glsl->uniforms, 0, sizeof(glsl->uniforms));
@@ -2142,6 +2182,213 @@ bool gl_glsl_draw_mesh(void *shader_data, unsigned vbo, unsigned ibo,
    /* Whatever the caller draws next draws with its own program */
    glUseProgram(glsl->prg[glsl->active_idx].id);
    return true;
+}
+
+#ifndef GL_CLAMP_TO_BORDER
+#define GL_CLAMP_TO_BORDER 0x812D
+#endif
+
+/* The first pass's frame sampler names into the in-place record: every
+ * sampler it reads is the frame, a LUT or its feedback, and no pass
+ * reads the original frame or earlier ones, which only copies hold */
+static bool gl_glsl_in_place_eligible(glsl_shader_data_t *glsl)
+{
+   unsigned p, k;
+   GLint i, count  = 0;
+   unsigned names  = 0;
+   GLuint prog     = glsl->prg[1].id;
+   struct glsl_in_place *ip = &glsl->in_place;
+
+   if (!glsl->shader || !glsl->shader->passes || !prog)
+      return false;
+   for (p = 1; p <= glsl->shader->passes; p++)
+   {
+      if (glsl->uniforms[p].orig.texture >= 0)
+         return false;
+      for (k = 0; k < PREV_TEXTURES; k++)
+         if (glsl->uniforms[p].prev[k].texture >= 0)
+            return false;
+   }
+   glGetProgramiv(prog, GL_ACTIVE_UNIFORMS, &count);
+   for (i = 0; i < count; i++)
+   {
+      char name[64];
+      char *bracket;
+      GLint size  = 0;
+      GLenum type = 0;
+      bool known  = false;
+      name[0]     = '\0';
+      glGetActiveUniform(prog, (GLuint)i, sizeof(name), NULL, &size, &type,
+            name);
+      if (type != GL_SAMPLER_2D)
+         continue;
+      if ((bracket = strchr(name, '[')))
+         *bracket = '\0';
+      for (k = 0; k < glsl->shader->luts && !known; k++)
+         known = string_is_equal(name, glsl->shader->lut[k].id);
+      if (!known)
+      {
+         size_t len = strlen(name);
+         if (len >= 7 && string_is_equal(name + len - 7, "Texture"))
+         {
+            /* "Texture" behind the preset's prefix or a stock one */
+            const char *pre[3];
+            pre[0] = glsl->shader->prefix;
+            pre[1] = glsl_prefixes[0];
+            pre[2] = glsl_prefixes[1];
+            for (k = 0; k < 3; k++)
+               if (     strlen(pre[k]) + 7 == len
+                     && !strncmp(name, pre[k], len - 7))
+               {
+                  if (names < 3)
+                     strlcpy(ip->names[names++], name, sizeof(ip->names[0]));
+                  known = true;
+                  break;
+               }
+            if (     !known && len >= 15
+                  && string_is_equal(name + len - 15, "FeedbackTexture"))
+               known = true;
+         }
+      }
+      if (!known)
+         return false;
+   }
+   return names > 0;
+}
+
+bool gl_glsl_in_place(void *shader_data, unsigned filter, unsigned wrap)
+{
+   unsigned key;
+   enum glsl_rect_mode mode;
+   struct shader_program_info info;
+   const char *names[3];
+   char *vertex             = NULL;
+   char *fragment           = NULL;
+   unsigned i, num          = 0;
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
+   struct glsl_in_place *ip;
+
+#if defined(VITA)
+   /* Its shaders name the frame vTexture, which is not looked for */
+   return false;
+#endif
+   if (!glsl)
+      return false;
+   ip = &glsl->in_place;
+   if (filter == GL_LINEAR && wrap == GL_CLAMP_TO_EDGE)
+      mode = GLSL_RECT_LINEAR_EDGE;
+   else if (filter == GL_NEAREST && wrap == GL_CLAMP_TO_EDGE)
+      mode = GLSL_RECT_NEAREST_EDGE;
+   else if (filter == GL_NEAREST && wrap == GL_REPEAT)
+      mode = GLSL_RECT_NEAREST_REPEAT;
+   else if (filter == GL_NEAREST && wrap == GL_MIRRORED_REPEAT)
+      mode = GLSL_RECT_NEAREST_MIRROR;
+   else if (filter == GL_NEAREST && wrap == GL_CLAMP_TO_BORDER)
+      mode = GLSL_RECT_NEAREST_BORDER;
+   else
+      return false;
+   key = 1 + (unsigned)mode;
+   if (ip->key == key)
+      return ip->ok;
+
+   /* Another filter or wrap: the rewrite for it, tried once */
+   gl_glsl_in_place_end(glsl);
+   if (ip->prg.id)
+      glDeleteProgram(ip->prg.id);
+   memset(ip, 0, sizeof(*ip));
+   ip->key  = key;
+   ip->mode = mode;
+   if (!gl_glsl_in_place_eligible(glsl))
+      return false;
+   for (i = 0; i < 3 && ip->names[i][0]; i++)
+      names[num++] = ip->names[i];
+   vertex   = glsl_rect_rewrite(glsl->shader->pass[0].source.string.vertex,
+         names, num, mode);
+   fragment = glsl_rect_rewrite(glsl->shader->pass[0].source.string.fragment,
+         names, num, mode);
+   if (vertex && fragment)
+   {
+      info.vertex   = vertex;
+      info.fragment = fragment;
+      info.is_file  = false;
+      glsl->quiet   = true;
+      ip->ok        = gl_glsl_compile_program(glsl, 1, &ip->prg, &info);
+      glsl->quiet   = false;
+   }
+   free(vertex);
+   free(fragment);
+   if (ip->ok)
+   {
+      gl_glsl_find_uniforms(glsl, 1, ip->prg.id, &ip->uni);
+      ip->loc[0] = glGetUniformLocation(ip->prg.id, GLSL_RECT_NAME_RECT);
+      ip->loc[1] = glGetUniformLocation(ip->prg.id, GLSL_RECT_NAME_CLAMP);
+      ip->loc[2] = glGetUniformLocation(ip->prg.id, GLSL_RECT_NAME_TEXELS);
+      RARCH_LOG("[GLSL] The first pass reads a hardware frame's views "
+            "where they lie.\n");
+   }
+   return ip->ok;
+}
+
+/* @a and @b exchanged, @size bytes, through a little stack */
+static void gl_glsl_swap_bytes(void *a, void *b, size_t size)
+{
+   unsigned char tmp[256];
+   unsigned char *x = (unsigned char*)a;
+   unsigned char *y = (unsigned char*)b;
+   while (size)
+   {
+      size_t n = size < sizeof(tmp) ? size : sizeof(tmp);
+      memcpy(tmp, x, n);
+      memcpy(x, y, n);
+      memcpy(y, tmp, n);
+      x    += n;
+      y    += n;
+      size -= n;
+   }
+}
+
+/* The pass's program and uniforms, and the rewritten ones, change
+ * places */
+static void gl_glsl_in_place_swap(glsl_shader_data_t *glsl)
+{
+   struct glsl_in_place *ip = &glsl->in_place;
+   gl_glsl_swap_bytes(&glsl->prg[1], &ip->prg, sizeof(ip->prg));
+   gl_glsl_swap_bytes(&glsl->uniforms[1], &ip->uni, sizeof(ip->uni));
+   /* Its MVP is not the other program's */
+   glsl->current_mat_data_pointer[1] = NULL;
+   ip->swapped = !ip->swapped;
+}
+
+void gl_glsl_in_place_begin(void *shader_data, bool flipped,
+      unsigned view_pos, unsigned view_dims, unsigned frame_h,
+      unsigned tex_dims)
+{
+   float v[12];
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
+   struct glsl_in_place *ip;
+   if (!glsl || !glsl->in_place.ok)
+      return;
+   ip = &glsl->in_place;
+   if (!ip->swapped)
+      gl_glsl_in_place_swap(glsl);
+   glsl_rect_values(ip->mode, flipped, (unsigned)VIDEO_POS_X(view_pos),
+         (unsigned)VIDEO_POS_Y(view_pos), VIDEO_SCALE_W(view_dims),
+         VIDEO_SCALE_H(view_dims), frame_h, VIDEO_SCALE_W(tex_dims),
+         VIDEO_SCALE_H(tex_dims), v);
+   glUseProgram(glsl->prg[1].id);
+   if (ip->loc[0] >= 0)
+      glUniform4fv(ip->loc[0], 1, v);
+   if (ip->loc[1] >= 0)
+      glUniform4fv(ip->loc[1], 1, v + 4);
+   if (ip->loc[2] >= 0)
+      glUniform4fv(ip->loc[2], 1, v + 8);
+}
+
+void gl_glsl_in_place_end(void *shader_data)
+{
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
+   if (glsl && glsl->in_place.swapped)
+      gl_glsl_in_place_swap(glsl);
 }
 
 const shader_backend_t gl_glsl_backend = {

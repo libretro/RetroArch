@@ -31,4 +31,18 @@ void gl_glsl_set_context_type(bool core_profile, unsigned major, unsigned minor)
 bool gl_glsl_draw_mesh(void *shader_data, unsigned vbo, unsigned ibo,
       unsigned count, bool strip, const float *mvp, const float *tint);
 
+/* Whether the first pass can read a frame's views where they lie in its
+ * texture, sampled with GL @filter and @wrap, as from a copy of each:
+ * made the first time it is asked for that filter and wrap. */
+bool gl_glsl_in_place(void *shader_data, unsigned filter, unsigned wrap);
+
+/* With gl_glsl_in_place() true, the first pass reads the view at
+ * @view_pos (VIDEO_POS_PACK) of @view_dims, from the top left of a frame
+ * @frame_h rows high in a texture of @tex_dims (VIDEO_SCALE_PACK), its
+ * rows bottom up when @flipped, until gl_glsl_in_place_end() */
+void gl_glsl_in_place_begin(void *shader_data, bool flipped,
+      unsigned view_pos, unsigned view_dims, unsigned frame_h,
+      unsigned tex_dims);
+void gl_glsl_in_place_end(void *shader_data);
+
 #endif

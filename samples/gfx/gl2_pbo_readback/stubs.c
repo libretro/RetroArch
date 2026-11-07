@@ -109,4 +109,11 @@ bool gl_glsl_draw_mesh(void *shader_data, unsigned vbo, unsigned ibo,
 { (void)shader_data; (void)vbo; (void)ibo; (void)count; (void)strip; (void)mvp; (void)tint; return false; }
 void gl_glsl_set_context_type(bool core_profile, unsigned major, unsigned minor)
 { (void)core_profile; (void)major; (void)minor; }
+bool gl_glsl_in_place(void *shader_data, unsigned filter, unsigned wrap)
+{ (void)shader_data; (void)filter; (void)wrap; return false; }
+void gl_glsl_in_place_begin(void *shader_data, bool flipped,
+      unsigned view_pos, unsigned view_dims, unsigned frame_h,
+      unsigned tex_dims)
+{ (void)shader_data; (void)flipped; (void)view_pos; (void)view_dims; (void)frame_h; (void)tex_dims; }
+void gl_glsl_in_place_end(void *shader_data) { (void)shader_data; }
 size_t video_driver_set_gpu_api_version_string(const char *str) { (void)str; return 0; }

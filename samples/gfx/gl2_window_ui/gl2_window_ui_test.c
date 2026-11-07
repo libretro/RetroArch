@@ -19,6 +19,14 @@
 extern unsigned stub_menu_frames;
 extern unsigned stub_menu_bound;
 extern unsigned stub_bound_window;
+extern bool     stub_in_place_ok;
+extern unsigned stub_in_place_begins;
+extern unsigned stub_in_place_ends;
+extern bool     stub_in_place_flipped;
+extern unsigned stub_in_place_pos[8];
+extern unsigned stub_in_place_dims[8];
+extern unsigned stub_in_place_frame_h;
+extern unsigned stub_in_place_tex_dims;
 
 /* The scripted GL: framebuffers counted, the rest accepted */
 static unsigned fbos_made;
@@ -203,6 +211,69 @@ static void test_views_written(void)
    CHECK(gl11_tex_params == 4, "it is set again once the preset's moves");
 }
 
+/* A hardware frame's two views through a GLSL preset whose first pass
+ * reads them in place: each drawn from the frame itself, no copy */
+static void test_views_in_place(void)
+{
+   static gl2_renderchain_data_t chain;
+   static video_views_layout_t   layout;
+   void *chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t rects[RETRO_VIDEO_VIEWS_MAX];
+   unsigned i;
+
+   printf("[gl2_window_ui] a hardware frame's views read in place\n");
+   setup(WIN_DIMS, false);
+   gl.shader                 = &gl_glsl_backend;
+   gl.renderchain_data       = &chain;
+   gl.views.preset           = true;
+   gl.base_size              = 4;
+   gl.flags                 |= GL2_FLAG_HW_RENDER_FBO_INIT;
+   gl.vertex_ptr             = vertexes;
+   gl.tex_info.tex           = 77;
+   gl.tex_info.input_size[0] = 32;
+   gl.tex_info.input_size[1] = 32;
+   gl.tex_info.tex_size[0]   = 64;
+   gl.tex_info.tex_size[1]   = 64;
+   vi.shader_active          = true;
+   vi.views.num_views        = 2;
+   for (i = 0; i < 2; i++)
+   {
+      vi.views.views[i].y      = i * 16;
+      vi.views.views[i].width  = 32;
+      vi.views.views[i].height = 16;
+      vi.views.views[i].screen = i;
+   }
+   memset(chains, 0, sizeof(chains));
+   memset(rects, 0, sizeof(rects));
+   chains[0] = chains[1] = &chain;
+   stub_in_place_ok     = true;
+   stub_in_place_begins = stub_in_place_ends = 0;
+
+   gl2_views_render(&gl, &vi, &layout, MAIN_DIMS, &gl.views.canvas,
+         chains, rects, false, false, true, NULL, 0, false, 1);
+   CHECK(stub_in_place_begins == 2 && stub_in_place_ends == 2,
+         "each view's draw reads in place, and gives the pass back");
+   CHECK(stub_in_place_pos[0] == VIDEO_POS_PACK(0, 0)
+         && stub_in_place_pos[1] == VIDEO_POS_PACK(0, 16)
+         && stub_in_place_dims[1] == VIDEO_SCALE_PACK(32, 16),
+         "at each view's rectangle");
+   CHECK(stub_in_place_flipped && stub_in_place_frame_h == 32
+         && stub_in_place_tex_dims == VIDEO_SCALE_PACK(64, 64),
+         "of the frame bottom up, in its texture");
+   CHECK(!gl.views.copy_fbo && !fbos_made && !gl.views.copies,
+         "no copy is made");
+   CHECK(!gl.views.in_place_tex && gl.tex_info.tex == 77,
+         "the frame's texture is the frame's again");
+
+   /* Without it, the copies */
+   stub_in_place_ok     = false;
+   stub_in_place_begins = 0;
+   gl2_views_render(&gl, &vi, &layout, MAIN_DIMS, &gl.views.canvas,
+         chains, rects, false, false, true, NULL, 0, false, 1);
+   CHECK(!stub_in_place_begins && gl.views.copy_fbo,
+         "a pass that can't read in place has its views copied");
+}
+
 int main(void)
 {
    unsigned away, draw;
@@ -278,6 +349,7 @@ int main(void)
 
    gl2_vv_target_drop(&gl, &gl.windows.ui_target, &gl.windows.ui);
    test_views_written();
+   test_views_in_place();
    if (fails)
    {
       printf("[gl2_window_ui] %d failure(s)\n", fails);

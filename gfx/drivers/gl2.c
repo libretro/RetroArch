@@ -6350,7 +6350,8 @@ static void gl2_views_preset_view(gl2_t *gl,
    unsigned dims                    = VIDEO_SCALE_PACK(v->width, v->height);
    int p;
 
-   gl->tex_info.tex           = gl->views.tex[i][gl->views.head[i]];
+   gl->tex_info.tex           = gl->views.in_place_tex
+      ? gl->views.in_place_tex : gl->views.tex[i][gl->views.head[i]];
    gl->tex_info.input_size[0] = v->width;
    gl->tex_info.input_size[1] = v->height;
    gl->tex_info.tex_size[0]   = v->width;
@@ -6513,6 +6514,30 @@ static bool gl2_views_setup(gl2_t *gl, const video_frame_info_t *video_info,
  * frame, else each through the preset, one view after another, from
  * its view of software frame @sw written straight in or else a copy of
  * it. */
+/* Whether a preset reads a hardware frame's views where they lie,
+ * through its first pass rewritten for it, not from copies: GLSL, no
+ * earlier frames read (@depth 1), no mipmapped input */
+static bool gl2_views_in_place(gl2_t *gl, unsigned depth, const void *sw)
+{
+#ifdef HAVE_GLSL
+   bool ok = !sw && depth == 1
+      && (gl->flags & GL2_FLAG_HW_RENDER_FBO_INIT)
+      && !(gl->flags & GL2_FLAG_TEXTURE_MIPMAP)
+      && gl->shader == &gl_glsl_backend && gl->tex_info.tex
+      && gl_glsl_in_place(gl->shader_data, gl->tex_min_filter,
+            gl->wrap_mode);
+   if (ok && !gl->views.in_place_seen)
+   {
+      gl->views.in_place_seen = true;
+      RARCH_LOG("[GL] Views' presets read the hardware frame where it "
+            "lies.\n");
+   }
+   return ok;
+#else
+   return false;
+#endif
+}
+
 static void gl2_views_render(gl2_t *gl,
       const video_frame_info_t *video_info,
       const video_views_layout_t *layout, unsigned dims,
@@ -6561,6 +6586,8 @@ static void gl2_views_render(gl2_t *gl,
       unsigned depth = gl->shader->get_prev_textures(gl->shader_data) + 1;
       bool feedback  = (gl->flags & GL2_FLAG_FBO_INITED)
          && (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE);
+      bool in_place  = gl2_views_in_place(gl, depth, sw);
+      (void)in_place;
       for (i = 0; i < video_info->views.num_views; i++)
       {
          if (!chains[i])
@@ -6574,6 +6601,21 @@ static void gl2_views_render(gl2_t *gl,
             if (!gl2_views_kept(gl, i, &video_info->views.views[i], depth))
                continue;
          }
+#ifdef HAVE_GLSL
+         /* Read where it lies in the hardware frame: no copy */
+         else if (in_place)
+         {
+            const struct retro_video_view *v = &video_info->views.views[i];
+            gl->views.in_place_tex = frame.tex;
+            gl_glsl_in_place_begin(gl->shader_data,
+                  gl->vertex_ptr == vertexes,
+                  VIDEO_POS_PACK(v->x, v->y),
+                  VIDEO_SCALE_PACK(v->width, v->height),
+                  (unsigned)frame.input_size[1],
+                  VIDEO_SCALE_PACK((unsigned)frame.tex_size[0],
+                     (unsigned)frame.tex_size[1]));
+         }
+#endif
          else if (     !(!fresh && gl2_views_kept(gl, i,
                         &video_info->views.views[i], depth))
                && !gl2_views_copy(gl, i, &video_info->views.views[i],
@@ -6585,6 +6627,13 @@ static void gl2_views_render(gl2_t *gl,
             one[j] = (j == i) ? chains[i] : NULL;
          gl2_vv_draw_placements(gl, &d, layout, one,
                blend || !layout->offscreen, target_dims, false, blend);
+#ifdef HAVE_GLSL
+         if (gl->views.in_place_tex)
+         {
+            gl_glsl_in_place_end(gl->shader_data);
+            gl->views.in_place_tex = 0;
+         }
+#endif
          if (depth > 1)
             gl2_views_push_prev(gl, i);
          if (feedback)

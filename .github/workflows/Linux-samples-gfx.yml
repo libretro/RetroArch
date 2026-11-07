@@ -1066,6 +1066,21 @@ jobs:
           EGL_PLATFORM=surfaceless LIBGL_ALWAYS_SOFTWARE=1 "$T/gles_lend"
           rm -rf "$T"
 
+      - name: GLSL presets reading a view in place, pixel oracle (Mesa EGL, ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/glsl_rect
+        run: |
+          set -eu
+          # A GLSL preset's first pass rewritten to read a hardware
+          # frame's view where it lies draws byte for byte what it draws
+          # from a copy of the view, every filter and wrap it takes, both
+          # row orders, GLES 3 and 2; what it can't read keeps the copy.
+          make clean
+          LIBGL_ALWAYS_SOFTWARE=1 ASAN_OPTIONS=detect_leaks=0 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 make check SANITIZER=address,undefined
+          echo "[pass] glsl_rect_test, glsl_in_place_test"
+
       - name: GLES texture loan capability and ownership (ASan + UBSan)
         shell: bash
         run: |

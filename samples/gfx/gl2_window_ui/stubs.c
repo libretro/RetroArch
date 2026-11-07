@@ -110,10 +110,45 @@ void video_windows_steps(video_windows_held_t *held,
       unsigned *create)
 { (void)held; (void)frame; *retire = 0; *create = 0; }
 
-const shader_backend_t gl_glsl_backend = { 0 };
+static void stub_glsl_use(void *data, void *shader_data, unsigned index,
+      bool set_active)
+{ (void)data; (void)shader_data; (void)index; (void)set_active; }
+static unsigned stub_glsl_prev_textures(void *data) { (void)data; return 0; }
+const shader_backend_t gl_glsl_backend = {
+   .use               = stub_glsl_use,
+   .get_prev_textures = stub_glsl_prev_textures };
 bool gl_glsl_draw_mesh(void *shader_data, unsigned vbo, unsigned ibo,
       unsigned count, bool strip, const float *mvp, const float *tint)
 { (void)shader_data; (void)vbo; (void)ibo; (void)count; (void)strip; (void)mvp; (void)tint; return false; }
 void gl_glsl_set_context_type(bool core_profile, unsigned major, unsigned minor)
 { (void)core_profile; (void)major; (void)minor; }
+/* The first pass reading in place: whether it may, and what each view
+ * asked of it */
+bool     stub_in_place_ok;
+unsigned stub_in_place_begins;
+unsigned stub_in_place_ends;
+bool     stub_in_place_flipped;
+unsigned stub_in_place_pos[8];
+unsigned stub_in_place_dims[8];
+unsigned stub_in_place_frame_h;
+unsigned stub_in_place_tex_dims;
+bool gl_glsl_in_place(void *shader_data, unsigned filter, unsigned wrap)
+{ (void)shader_data; (void)filter; (void)wrap; return stub_in_place_ok; }
+void gl_glsl_in_place_begin(void *shader_data, bool flipped,
+      unsigned view_pos, unsigned view_dims, unsigned frame_h,
+      unsigned tex_dims)
+{
+   (void)shader_data;
+   if (stub_in_place_begins < 8)
+   {
+      stub_in_place_pos[stub_in_place_begins]  = view_pos;
+      stub_in_place_dims[stub_in_place_begins] = view_dims;
+   }
+   stub_in_place_begins++;
+   stub_in_place_flipped  = flipped;
+   stub_in_place_frame_h  = frame_h;
+   stub_in_place_tex_dims = tex_dims;
+}
+void gl_glsl_in_place_end(void *shader_data)
+{ (void)shader_data; stub_in_place_ends++; }
 size_t video_driver_set_gpu_api_version_string(const char *str) { (void)str; return 0; }

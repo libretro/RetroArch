@@ -373,6 +373,10 @@ struct gl2
       bool                  ui_pass;
       bool                  direct_seen;
       bool                  written_seen;
+      bool                  in_place_seen;
+      /* This view: the preset reads the frame where it lies, in this
+       * texture, not a copy; 0 for a copy */
+      GLuint                in_place_tex;
       /* Some copy or feedback target is held */
       bool                  copies;
       /* Each view's prev is filled */
