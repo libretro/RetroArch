@@ -1199,50 +1199,71 @@ static void alph_unfilter_row(int filter, const uint8_t *prev,
    }
 }
 
-/* Decode an ALPH chunk into a w*h byte plane. Returns NULL on failure
- * (caller keeps opaque alpha). */
-static uint8_t *alph_decode(const uint8_t *data, size_t len,
-      unsigned w, unsigned h)
+/* Decode an ALPH chunk straight into the alpha byte (the top byte of
+ * the word, in either channel order) of the w*h frame at pix.  No
+ * plane: each row's filtered bytes go through a two-row buffer - the
+ * row, and the one above it that the vertical and gradient filters
+ * predict from - and are merged as soon as they are unfiltered, so
+ * the frame is walked once while it is cache-warm instead of building
+ * a w*h plane, unfiltering it and merging it in passes of their own.
+ * Returns 0, with pix untouched (opaque alpha kept), on any failure:
+ * every check that can fail is made before the first row is written. */
+static int alph_apply(const uint8_t *data, size_t len,
+      unsigned w, unsigned h, uint32_t *pix)
 {
    int method, filter, rsrv;
-   uint8_t *plane;
-   unsigned y;
+   uint8_t  *lines, *row, *prev;
+   uint32_t *src32 = NULL;
+   unsigned  x, y;
 
    if (len < 1 || w == 0 || h == 0)
-      return NULL;
+      return 0;
    method = data[0] & 3;
    filter = (data[0] >> 2) & 3;
    rsrv   = (data[0] >> 6) & 3;
    if (method > 1 || rsrv != 0)
-      return NULL;
-
-   plane = (uint8_t*)malloc((size_t)w * h);
-   if (!plane)
-      return NULL;
-
+      return 0;
    if (method == 0)
    {
-      if (len - 1 < (size_t)w * h) { free(plane); return NULL; }
-      memcpy(plane, data + 1, (size_t)w * h);
+      if (len - 1 < (size_t)w * h)
+         return 0;
    }
    else
    {
       vbr br;
-      uint32_t *pix;
-      size_t n = (size_t)w * h, k;
       vbr_init(&br, data + 1, len - 1);
-      pix = vl_decode_body(&br, w, h, 0);
-      if (!pix) { free(plane); return NULL; }
-      for (k = 0; k < n; k++)
-         plane[k] = (uint8_t)((pix[k] >> 8) & 0xFF); /* green */
-      free(pix);
+      if (!(src32 = vl_decode_body(&br, w, h, 0)))
+         return 0;
    }
-
+   if (!(lines = (uint8_t*)malloc((size_t)w * 2)))
+   {
+      free(src32);
+      return 0;
+   }
+   row  = lines;
+   prev = lines + w;
    for (y = 0; y < h; y++)
-      alph_unfilter_row(filter, y ? plane + (size_t)(y-1)*w : NULL,
-            plane + (size_t)y*w, (int)w);
-
-   return plane;
+   {
+      uint32_t *out = pix + (size_t)y * w;
+      uint8_t  *t;
+      if (src32)
+      {
+         const uint32_t *s = src32 + (size_t)y * w;
+         for (x = 0; x < w; x++)
+            row[x] = (uint8_t)((s[x] >> 8) & 0xFF); /* green */
+      }
+      else
+         memcpy(row, data + 1 + (size_t)y * w, w);
+      alph_unfilter_row(filter, y ? prev : NULL, row, (int)w);
+      for (x = 0; x < w; x++)
+         out[x] = (out[x] & 0x00FFFFFFu) | ((uint32_t)row[x] << 24);
+      t    = prev;
+      prev = row;
+      row  = t;
+   }
+   free(lines);
+   free(src32);
+   return 1;
 }
 
 
@@ -1266,16 +1287,7 @@ static uint32_t *rwebp_do(const uint8_t *buf, size_t len,
    {
       pix = rvp8_decode(c.vp8, c.vp8s, w, h, rgba ? 1 : 0);
       if (pix && c.alph && c.alphs > 0)
-      {
-         uint8_t *ap = alph_decode(c.alph, c.alphs, *w, *h);
-         if (ap)
-         {
-            size_t k, n = (size_t)*w * *h;
-            for (k = 0; k < n; k++)
-               pix[k] = (pix[k] & 0x00FFFFFFu) | ((uint32_t)ap[k] << 24);
-            free(ap);
-         }
-      }
+         alph_apply(c.alph, c.alphs, *w, *h, pix);
    }
    return pix;
 }
@@ -1316,16 +1328,7 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
          *out_opaque = 1;
       pix = rvp8_decode(fv, fvs, &w, &h, swap_rb); /* canvas order */
       if (pix && fa && fas > 0)
-      {
-         uint8_t *ap = alph_decode(fa, fas, w, h);
-         if (ap)
-         {
-            size_t k, n = (size_t)w * h;
-            for (k = 0; k < n; k++)
-               pix[k] = (pix[k] & 0x00FFFFFFu) | ((uint32_t)ap[k] << 24);
-            free(ap);
-         }
-      }
+         alph_apply(fa, fas, w, h, pix);
    }
    if (!pix) return NULL;
    /* Frames of both kinds decode straight into the canvas's current
