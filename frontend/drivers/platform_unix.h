@@ -583,7 +583,10 @@ void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *rel);
 
 void frontend_android_get_version_sdk(int32_t *sdk);
 
-bool android_core_path_allowed(const char *path);
+/* Resolves @path, symlinks included, into @s; true only when the
+ * result lies in one of the app's own core folders.  Open @s, not
+ * @path: the checked path is then the opened one. */
+bool android_core_path_resolve(const char *path, char *s, size_t len);
 
 bool is_screen_reader_enabled(void);
 

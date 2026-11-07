@@ -842,8 +842,11 @@ void libretro_get_environment_info(
 dylib_t runloop_core_dylib_load(const char *path, bool quiet)
 {
 #if defined(ANDROID)
-   /* Another app's intent can name the core */
-   if (!android_core_path_allowed(path))
+   /* Another app's intent can name the core.  The resolved path that
+    * passed the check is the one opened, so no symlink on the way can
+    * be swapped between the check and the open. */
+   char real_path[PATH_MAX_LENGTH];
+   if (!android_core_path_resolve(path, real_path, sizeof(real_path)))
    {
       if (!quiet)
          RARCH_ERR("[Core] Not loading \"%s\": not found in the app's own folders.\n",
@@ -852,8 +855,10 @@ dylib_t runloop_core_dylib_load(const char *path, bool quiet)
       dylib_error();
       return NULL;
    }
-#endif
+   return dylib_load(real_path);
+#else
    return dylib_load(path);
+#endif
 }
 
 /* Whether the core path is resolved through symlinks before it is

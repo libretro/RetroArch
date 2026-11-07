@@ -1558,16 +1558,12 @@ static void android_env_derive_application_info(JNIEnv *env, jobject activity)
    (*env)->DeleteLocalRef(env, appinfo);
 }
 
-bool android_core_path_allowed(const char *path)
+static bool android_core_real_path_allowed(const char *real_path)
 {
-   char real_path[PATH_MAX_LENGTH];
    const char *s;
    size_t _len;
    size_t i;
 
-   strlcpy(real_path, path, sizeof(real_path));
-   if (!path_resolve_realpath(real_path, sizeof(real_path), true))
-      *real_path = '\0';
    for (i = 0; i < ARRAY_SIZE(android_core_dirs); i++)
    {
       _len = strlen(android_core_dirs[i]);
@@ -1593,6 +1589,20 @@ bool android_core_path_allowed(const char *path)
    return (!strncmp(s, android_code_prefix, _len)
          && s[_len] != '/'
          && strchr(s + _len, '/'));
+}
+
+bool android_core_path_resolve(const char *path, char *s, size_t len)
+{
+   if (     !path || !*path
+         || strlcpy(s, path, len) >= len
+         || !path_resolve_realpath(s, len, true)
+         || !android_core_real_path_allowed(s))
+   {
+      if (len)
+         *s = '\0';
+      return false;
+   }
+   return true;
 }
 
 /* getPackageManager().getPackageInfo(getPackageName(), 0).versionCode. */
