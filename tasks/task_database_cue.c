@@ -1484,11 +1484,16 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
  * back an open stream on the winning data track (or NULL if that file
  * could not be opened during the parse) together with its size, so
  * the caller's serial/CRC probe does not pay a second open of a file
- * this parse already opened to learn its size.  A non-zero
- * @force_track parses that track as data (session 2 fallback). */
+ * this parse already opened to learn its size.
+ *
+ * A sheet with no data track at all but a second session (Atari
+ * Jaguar CD labels every track AUDIO and boots from the first track
+ * of session 2) answers the CRC path (!first) with that track.  Its
+ * span, path and stream are noted during the one parse, so no
+ * second pass reopens every track file. */
 static int cue_find_track_internal(const char *cue_path, bool first,
       uint64_t *offset, size_t *size, char *s, size_t len,
-      intfstream_t **track_fd, int64_t *track_fsize, int32_t force_track)
+      intfstream_t **track_fd, int64_t *track_fsize)
 {
    int rv;
    intfstream_info_t info;
@@ -1506,7 +1511,15 @@ static int cue_find_track_internal(const char *cue_path, bool first,
    int32_t cand_track         = -1;
    int32_t track              = 0;
    int32_t session            = 1;
-   int32_t session2_track     = 0;
+   /* the session 2 fallback; its path is kept in @s, which no
+    * candidate has written while no data track has been seen */
+   intfstream_t *fb_fd        = NULL;
+   int64_t fb_fsize           = -1;
+   int64_t fb_start           = -1;
+   int64_t fb_end             = -1;
+   int32_t fb_track           = 0;
+   bool fb_in_file            = false; /* last_file is fb's file      */
+   bool session2_seen         = false;
    uint64_t largest           = 0;
    int64_t volatile file_size = -1;
    bool is_data               = false;
@@ -1556,6 +1569,20 @@ static int cue_find_track_internal(const char *cue_path, bool first,
          /* Set last index to last EOF */
          if (file_size != -1)
             last_index = file_size;
+
+         if (fb_in_file)
+         {
+            if (fb_end == -1)
+               fb_end = last_index;
+            /* keep its stream for the CRC pass, as a candidate's is */
+            if (!has_data && cur_fd)
+            {
+               fb_fd    = cur_fd;
+               fb_fsize = file_size;
+               cur_fd   = NULL;
+            }
+            fb_in_file = false;
+         }
 
          /* We're changing files since the candidate, update it */
          if (update_cand(&cand_index, &last_index,
@@ -1620,15 +1647,14 @@ static int cue_find_track_internal(const char *cue_path, bool first,
             }
          }
 
-         /* Special case: Atari Jaguar CD labels every track AUDIO and
-          * boots from the first track of session 2.  The fallback pass
-          * below treats that track as the data track. */
-         if (session >= 2 && session2_track == 0)
-            session2_track = track;
-         if (force_track && track == force_track)
-            is_data = true;
          if (is_data)
             has_data = true;
+         /* Atari Jaguar CD: note session 2's first track while no
+          * data track has turned up (see the comment above) */
+         else if (session >= 2 && !session2_seen && !has_data && !first)
+            fb_track = track;
+         if (session >= 2)
+            session2_seen = true;
       }
       else if (string_is_equal_noncase(tmp_token, "INDEX"))
       {
@@ -1671,6 +1697,20 @@ static int cue_find_track_internal(const char *cue_path, bool first,
          }
 
          last_index = (size_t)(((_m * 60 + _s) * 75) + _f) * 2352;
+         if (fb_track)
+         {
+            if (track == fb_track)
+            {
+               if (fb_start == -1 && !has_data)
+               {
+                  fb_start   = last_index;
+                  fb_in_file = true;
+                  strlcpy(s, last_file, len);
+               }
+            }
+            else if (fb_in_file && fb_end == -1)
+               fb_end = last_index;
+         }
          /* If we've changed tracks since the candidate, update it */
          if (     (cand_track != -1)
                && (track != cand_track)
@@ -1706,6 +1746,34 @@ static int cue_find_track_internal(const char *cue_path, bool first,
       rv = 0;
    }
 
+   if (fb_in_file)
+   {
+      if (fb_end == -1)
+         fb_end = last_index;
+      if (!has_data && cur_fd)
+      {
+         fb_fd    = cur_fd;
+         fb_fsize = file_size;
+         cur_fd   = NULL;
+      }
+   }
+
+   /* No data track, but a second session: hash its first track */
+   if (rv != 0 && !has_data && fb_start != -1 && fb_end > fb_start)
+   {
+#ifdef DEBUG
+      RARCH_LOG("[Scanner] No data track, using session 2 track %d\n",
+            (int)fb_track);
+#endif
+      *offset    = (uint64_t)fb_start;
+      *size      = (size_t)(fb_end - fb_start);
+      cue_track_stream_close(cand_fd);
+      cand_fd    = fb_fd;
+      cand_fsize = fb_fsize;
+      fb_fd      = NULL;
+      rv         = 0;
+   }
+
 clean:
    intfstream_close(fd);
    free(fd);
@@ -1717,22 +1785,7 @@ clean:
    }
    else
       cue_track_stream_close(cand_fd);
-
-   /* No data track, but a second session: hash its first track.
-    * Only the CRC path (!first) does this; serial probes skip it. */
-   if (     rv != 0
-         && !first
-         && !force_track
-         && !has_data
-         && session2_track > 0)
-   {
-#ifdef DEBUG
-      RARCH_LOG("[Scanner] No data track, using session 2 track %d\n",
-            (int)session2_track);
-#endif
-      return cue_find_track_internal(cue_path, first, offset, size,
-            s, len, track_fd, track_fsize, session2_track);
-   }
+   cue_track_stream_close(fb_fd);
    return rv;
 
 error:
@@ -1743,6 +1796,7 @@ error:
    }
    cue_track_stream_close(cur_fd);
    cue_track_stream_close(cand_fd);
+   cue_track_stream_close(fb_fd);
    return -1;
 }
 
@@ -1750,7 +1804,7 @@ int cue_find_track(const char *cue_path, bool first,
       uint64_t *offset, size_t *size, char *s, size_t len)
 {
    return cue_find_track_internal(cue_path, first, offset, size,
-         s, len, NULL, NULL, 0);
+         s, len, NULL, NULL);
 }
 
 bool cue_next_file(intfstream_t *fd,
@@ -2124,7 +2178,7 @@ int task_database_cue_get_serial(const char *name, char *s, size_t len,
    track_path[0]       = '\0';
 
    if (cue_find_track_internal(name, true, &offset, &_len,
-         track_path, sizeof(track_path), &track, &track_fsize, 0) < 0)
+         track_path, sizeof(track_path), &track, &track_fsize) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("[Scanner] %s\n",
@@ -2806,7 +2860,7 @@ intfstream_t *task_database_crc_open(const char *name,
    {
       size_t _len = 0;
       if (cue_find_track_internal(name, false, &offset, &_len,
-            track_path, sizeof(track_path), &fd, &file_size, 0) < 0)
+            track_path, sizeof(track_path), &fd, &file_size) < 0)
       {
 #ifdef DEBUG
          RARCH_LOG("[Scanner] %s\n",
