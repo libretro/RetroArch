@@ -1573,16 +1573,15 @@ static int rmp4_video_vp9_hw_packet(rmp4_video_stream_t *s,
 static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       const rmp4_packet *pkt, int discard)
 {
-   /* Any decode below can invalidate the previously recorded
-    * picture's planes; re-record on display.  (The wait_key early
-    * return clears too - harmless, callers only render after a
-    * displayed step.) */
+   /* Decoder-owned planes expire on decode; an exported lease stays
+    * valid until a replacement picture arrives or the caller takes it. */
    (void)discard;
 #ifdef HAVE_RAV1
    if (s->codec == RMP4_CODEC_AV1)
       return rmp4_video_av1_packet(s, pkt, discard);
 #endif
-   s->rndr_kind = 0;
+   if (s->rndr_kind != 5)
+      s->rndr_kind = 0;
 #ifdef HAVE_RVP9
    if (s->vp9_hw)
       return rmp4_video_vp9_hw_packet(s, pkt, discard);

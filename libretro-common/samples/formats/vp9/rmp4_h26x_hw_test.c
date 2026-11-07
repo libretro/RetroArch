@@ -13,7 +13,7 @@ static struct
    unsigned width, height, slots, opened, closed, acquired, released;
    unsigned errors;
    unsigned char live[4096];
-   int poc[32], decode_busy, output_busy;
+   int poc[32], decode_busy, output_busy, hold;
 } fake;
 
 static void abandon(void *owner, uint64_t done, uint64_t value)
@@ -31,6 +31,7 @@ static void abandon(void *owner, uint64_t done, uint64_t value)
 static int output(void *decoder, unsigned slot, video_hw_frame_t *frame)
 {
    (void)decoder;
+   if (fake.hold) return 1;
    if (!fake.output_busy) { fake.output_busy = 1; return 1; }
    fake.output_busy = 0;
    if (slot >= fake.slots) return -1;
@@ -59,6 +60,7 @@ static void *open264(void *user, const rh264_hw_sps_t *sps, unsigned slots)
 static int decode264(void *decoder, const rh264_hw_pic_t *picture)
 {
    (void)decoder;
+   if (fake.hold) return 1;
    if (!fake.decode_busy) { fake.decode_busy = 1; return 1; }
    fake.decode_busy = 0;
    if (picture->slot < 0 || (unsigned)picture->slot >= fake.slots) return -1;
@@ -77,6 +79,7 @@ static int decode265(void *decoder, const rh265_video_params_t *params,
       const rh265_hw_picture_t *picture)
 {
    (void)decoder; (void)params; (void)au; (void)slices;
+   if (fake.hold) return 1;
    if (!fake.decode_busy) { fake.decode_busy = 1; return 1; }
    fake.decode_busy = 0;
    if (picture->slot >= fake.slots) return -1;
@@ -185,6 +188,20 @@ int main(int argc, char **argv)
       CHECK(polls < 1000 && count == 24 && rmp4_video_stream_completed(stream));
       rmp4_video_stream_rewind(stream);
    }
+   polls = 0;
+   while (rmp4_video_stream_skip(stream, &duration) != 1 && polls++ < 1000)
+      CHECK(rmp4_video_stream_waiting(stream));
+   CHECK(polls < 1000);
+   fake.hold = 1;
+   CHECK(rmp4_video_stream_skip(stream, &duration) == 2);
+   CHECK(rmp4_video_stream_wait_reason(stream) == RMP4_VIDEO_WAIT_DECODER);
+   CHECK(rmp4_video_stream_hw_frame(stream, &frame));
+   CHECK(frame.image && frame.width == 64 && frame.height == 64);
+   CHECK(frame.done_value == fake.acquired && fake.live[fake.acquired]);
+   CHECK(!rmp4_video_stream_hw_frame(stream, &duplicate));
+   video_hw_frame_abandon(&frame);
+   fake.hold = 0;
+   rmp4_video_stream_rewind(stream);
    CHECK(rmp4_video_stream_seek_movie_begin_ns(stream, expected[12]));
    polls = 0; result = 0;
    while (!result && polls++ < 1000)
