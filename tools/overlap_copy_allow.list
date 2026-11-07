@@ -60,3 +60,9 @@ network/netplay/netplay_frontend.c|memcpy|netplay->buffer|netplay->buffer
 tasks/task_patch.c|memcpy|bps.target_data|bps.target_data
 ui/drivers/ui_qt_widgets.cpp|memcpy|menu_shader->pass|menu_shader->pass
 ui/drivers/ui_qt_widgets.cpp|memcpy|video_shader->pass|video_shader->pass
+# rinf_build doubles the fast table in place: fast[cur..2cur) from
+# fast[0..cur), disjoint halves of one array
+libretro-common/encodings/encoding_deflate.c|memcpy|h->fast|h->fast
+libretro-common/encodings/encoding_deflate.c|memcpy|h->pfast|h->pfast
+# place_d[2].name from place_d[1].name: distinct elements
+samples/gfx/video_windows/video_windows_test.c|memcpy|place_d|place_d
