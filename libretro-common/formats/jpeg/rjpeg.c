@@ -598,6 +598,40 @@ static void rjpeg_grow_buffer_unsafe(rjpeg_jpeg *j)
    {
       ptrdiff_t remaining = s->img_buffer_end - s->img_buffer;
 
+#if RJPEG_BITBUF_BITS == 64
+      /* Whole refill in one step.  The loop below takes bytes until
+       * the count passes the target, which from code_bits is exactly
+       * k = (FILL - code_bits) / 8 + 1 of them, each landing at
+       * FILL - (code_bits + 8i).  When none of the next eight bytes is
+       * 0xFF - nearly always, in entropy-coded data - those k bytes
+       * read as one big-endian number go in with one shift and one OR,
+       * leaving the buffer, the count and the read position exactly as
+       * the loop would.  An 0xFF anywhere in the eight, fewer than
+       * eight bytes left, or the 24-bit prefix-decoding target take
+       * the byte path. */
+      if (remaining >= 8 && fill == RJPEG_BITBUF_FILL)
+      {
+         const uint64_t ones = ((uint64_t)0x01010101u << 32) | 0x01010101u;
+         const uint8_t *p    = s->img_buffer;
+         /* big-endian, assembled so that GCC and Clang emit one load
+          * and a byte swap on little-endian hosts */
+         uint64_t       v    = ((uint64_t)p[0] << 56) | ((uint64_t)p[1] << 48)
+                             | ((uint64_t)p[2] << 40) | ((uint64_t)p[3] << 32)
+                             | ((uint64_t)p[4] << 24) | ((uint64_t)p[5] << 16)
+                             | ((uint64_t)p[6] <<  8) |  (uint64_t)p[7];
+         uint64_t       x    = ~v; /* a zero byte here is an 0xFF in v */
+         if (!((x - ones) & ~x & (ones << 7)))
+         {
+            int k = ((RJPEG_BITBUF_FILL - j->code_bits) >> 3) + 1;
+            j->code_buffer |= (rjpeg_bitbuf)((v >> (64 - 8 * k))
+                  << (64 - j->code_bits - 8 * k));
+            j->code_bits   += 8 * k;
+            s->img_buffer  += k;
+            return;
+         }
+      }
+#endif
+
       if (remaining >= 4)
       {
          /* Load 4 bytes.  We scan for 0xFF from left to right,
