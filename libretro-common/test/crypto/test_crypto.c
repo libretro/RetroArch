@@ -673,6 +673,75 @@ START_TEST (test_p256)
 }
 END_TEST
 
+struct p256_ecdsa_vector
+{
+   unsigned id;
+   uint8_t  key;        /* index into the file's key table */
+   uint8_t  valid;
+   uint8_t  digest_len;
+   uint8_t  digest[64];
+   uint8_t  sig[64];    /* r || s */
+};
+
+struct p256_ecdsa_der_vector
+{
+   unsigned id;
+   uint8_t  key;
+   uint8_t  valid;
+   uint8_t  sig_len;
+   uint8_t  digest[32];
+   uint8_t  sig[80];    /* ECDSA-Sig-Value */
+};
+
+#include "test_p256_edge_vectors.h"
+#include "test_p256_wycheproof.h"
+
+static void p256_check_vectors(const char *name, const uint8_t (*keys)[65],
+      const struct p256_ecdsa_vector *v, size_t n)
+{
+   size_t i;
+   for (i = 0; i < n; i++, v++)
+   {
+      int r = p256_ecdsa_verify(keys[v->key], v->digest, v->digest_len,
+            v->sig, v->sig + 32);
+      if (r != (v->valid ? 0 : -1))
+         fprintf(stderr, "%s vector %u: got %d\n", name, v->id, r);
+      ck_assert_int_eq(r, v->valid ? 0 : -1);
+   }
+}
+
+START_TEST (test_p256_vectors)
+{
+   p256_check_vectors("P-256 edge", p256_edge_keys, p256_edge_vectors,
+         sizeof(p256_edge_vectors) / sizeof(p256_edge_vectors[0]));
+   p256_check_vectors("Wycheproof SHA-256", p256_wycheproof_keys,
+         p256_wycheproof_sha256,
+         sizeof(p256_wycheproof_sha256) / sizeof(p256_wycheproof_sha256[0]));
+   p256_check_vectors("Wycheproof SHA-512", p256_wycheproof_keys,
+         p256_wycheproof_sha512,
+         sizeof(p256_wycheproof_sha512) / sizeof(p256_wycheproof_sha512[0]));
+}
+END_TEST
+
+START_TEST (test_p256_der)
+{
+   struct x509_cert key;
+   size_t i;
+   memset(&key, 0, sizeof(key));
+   key.key_type = X509_KEY_P256;
+   for (i = 0; i < sizeof(p256_wycheproof_der) / sizeof(p256_wycheproof_der[0]); i++)
+   {
+      const struct p256_ecdsa_der_vector *v = &p256_wycheproof_der[i];
+      int r;
+      key.ec_point = p256_wycheproof_keys[v->key];
+      r = x509_verify_ecdsa_digest(&key, v->digest, 32, v->sig, v->sig_len);
+      if (r != (v->valid ? 0 : -1))
+         fprintf(stderr, "Wycheproof DER vector %u: got %d\n", v->id, r);
+      ck_assert_int_eq(r, v->valid ? 0 : -1);
+   }
+}
+END_TEST
+
 START_TEST (test_p384)
 {
    uint8_t pub[97], shared[48], bad[97], sig[48];
@@ -1632,6 +1701,8 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_x25519);
    tcase_add_test(tc_core, test_x509_policy);
    tcase_add_test(tc_core, test_p256);
+   tcase_add_test(tc_core, test_p256_vectors);
+   tcase_add_test(tc_core, test_p256_der);
    tcase_add_test(tc_core, test_p384);
    tcase_add_test(tc_core, test_b233);
    tcase_add_test(tc_core, test_rsa_sign);
