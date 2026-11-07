@@ -157,7 +157,7 @@ struct rjpeg
 
    /* Progressive finish-phase tracking (RJPEG_ITER_FINISH_PROG) */
    int                     iter_finish_comp;  /* current component index       */
-   int                     iter_finish_row;   /* current block-row within comp */
+   int                     iter_finish_row;   /* MCU rows inverse-transformed  */
 
    /* Fused iterate+resample state: when iterating baseline interleaved,
     * the resample for MCU-row N runs after MCU-row N+1's entropy decode.
@@ -2883,10 +2883,22 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
          z->img_comp[i].ring_h2  = z->img_comp[i].h2;
          z->img_comp[i].coeff_w  = (z->img_comp[i].w2 + 7) >> 3;
          z->img_comp[i].coeff_h  = (z->img_comp[i].h2 + 7) >> 3;
+         /* The scans only ever fill coefficients; the planes are
+          * written by the finish phase, which on the iterative path
+          * inverse-transforms and emits one MCU row at a time - so, as
+          * for baseline, three MCU-row spans of plane are all that is
+          * ever live.  The monolithic path (plane_ring 0) finishes
+          * whole planes and keeps them whole. */
+         if (z->plane_ring)
+         {
+            int span = z->img_comp[i].v * 8 * 3;
+            if (span < z->img_comp[i].ring_h2)
+               z->img_comp[i].ring_h2 = span;
+         }
 
-         /* raw_data: w2*h2 bytes + 15 for alignment */
+         /* raw_data: w2*ring_h2 bytes + 15 for alignment */
          offsets_data[i] = arena_size;
-         arena_size += (size_t)z->img_comp[i].w2 * z->img_comp[i].h2 + 15;
+         arena_size += (size_t)z->img_comp[i].w2 * z->img_comp[i].ring_h2 + 15;
          arena_size = (arena_size + 15) & ~(size_t)15;
 
          /* raw_coeff: coeff_w * coeff_h * 64 shorts + 15 for alignment */
@@ -5073,7 +5085,16 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
 
          if (m == JPEG_MARKER_EOI)
          {
-            /* All scans consumed — transition to IDCT phase */
+            /* All scans consumed - transition to IDCT phase, which
+             * emits the output as it goes (see FINISH_PROG): the
+             * planes may be ring-sized, so there is no later pass that
+             * could read them whole. */
+            if (!rjpeg->iter_resample_ready
+                  && !rjpeg_iterate_init_resample(rjpeg))
+            {
+               rjpeg->iter_state = RJPEG_ITER_ERROR;
+               return false;
+            }
             rjpeg->iter_finish_comp = 0;
             rjpeg->iter_finish_row  = 0;
             rjpeg->iter_state       = RJPEG_ITER_FINISH_PROG;
@@ -5148,46 +5169,54 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
        * ----------------------------------------------------------- */
       case RJPEG_ITER_FINISH_PROG:
       {
-         int n = rjpeg->iter_finish_comp;
+         /* One MCU row per call, across every component: dequantise
+          * and inverse-transform its block rows into the (ring) planes,
+          * then emit the output rows that are now complete - one MCU
+          * row behind, as the baseline fusion does, because the
+          * vertical resampler's far row for the tail of a span is the
+          * first plane row of the next.  The planes never exist whole
+          * and are never read back cold in a separate resample pass;
+          * rjpeg_process_image finds the output already made. */
+         int m = rjpeg->iter_finish_row;
+         int n;
 
-         /* Find next component that has work remaining */
-         while (n < j->img_n)
+         if (m < j->img_mcu_y)
          {
-            int w = (j->img_comp[n].x + 7) >> 3;
-            int h = (j->img_comp[n].y + 7) >> 3;
-            int row = rjpeg->iter_finish_row;
-
-            if (row < h)
+            unsigned max_row;
+            for (n = 0; n < j->img_n; ++n)
             {
-               /* Process one block-row of this component */
-               int i;
-               for (i = 0; i < w; ++i)
+               int v   = j->img_comp[n].v;
+               int wb  = (j->img_comp[n].x + 7) >> 3;
+               int hb  = (j->img_comp[n].y + 7) >> 3;
+               int br  = m * v;
+               int end = br + v < hb ? br + v : hb;
+               for (; br < end; ++br)
                {
-                  short *data = j->img_comp[n].coeff
-                     + 64 * (i + row * j->img_comp[n].coeff_w);
-                  j->dequant_idct_block_kernel(
-                        j->img_comp[n].data
-                        + j->img_comp[n].w2 * row * 8 + i * 8,
-                        j->img_comp[n].w2, data,
-                        j->dequant[j->img_comp[n].tq]);
+                  uint8_t *dst = j->img_comp[n].data
+                     + (size_t)j->img_comp[n].w2
+                     * (size_t)((br * 8) % j->img_comp[n].ring_h2);
+                  const short *src = j->img_comp[n].coeff
+                     + (size_t)64 * ((size_t)br * j->img_comp[n].coeff_w);
+                  int i;
+                  for (i = 0; i < wb; ++i)
+                     j->dequant_idct_block_kernel(dst + i * 8,
+                           j->img_comp[n].w2, (short*)src + 64 * i,
+                           j->dequant[j->img_comp[n].tq]);
                }
-
-               rjpeg->iter_finish_row = row + 1;
-
-               /* Check if this component is done */
-               if (rjpeg->iter_finish_row >= h)
-               {
-                  /* Move to next component */
-                  rjpeg->iter_finish_comp = n + 1;
-                  rjpeg->iter_finish_row  = 0;
-               }
-               return true; /* yield after each block-row */
             }
+            rjpeg->iter_finish_row = ++m;
 
-            /* This component done, try next */
-            n++;
-            rjpeg->iter_finish_comp = n;
-            rjpeg->iter_finish_row  = 0;
+            rjpeg->iter_rgba_used = rjpeg->supports_rgba;
+            if (m >= j->img_mcu_y)
+               max_row = j->img_y;
+            else
+               max_row = (unsigned)(m - 1) * j->img_v_max * 8;
+            if (max_row > j->img_y)
+               max_row = j->img_y;
+            rjpeg_output_rows(j, rjpeg->iter_res, rjpeg->iter_output,
+                  &rjpeg->iter_out_row, max_row, rjpeg->supports_rgba);
+            if (m < j->img_mcu_y)
+               return true; /* yield after each MCU row */
          }
 
          /* All components finished */
