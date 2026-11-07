@@ -84,6 +84,13 @@ struct trans_stream_backend
    /* Perform a transcoding, flushing/finalizing if asked to. Writes out how
     * many bytes were read and written. Error target optional. */
    bool  (*trans)(void *, bool, uint32_t *, uint32_t *, enum trans_stream_error *);
+
+   /* (Optional, NULL where not provided) Return a stream to the state
+    * stream_new gave it, keeping its allocations and whatever define()
+    * set, so a caller decoding many streams in a row can reuse one
+    * instead of freeing and making another.  Last, so a backend that
+    * lists only the members above leaves it NULL. */
+   void  (*reset)(void *);
 };
 
 /**

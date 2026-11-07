@@ -253,6 +253,21 @@ static bool deflate_trans(
    return true;
 }
 
+/* The built-in inflater rewinds in place (rinflate_reset), keeping its
+ * 32 KB window and tables allocated rather than calloc'ing 70 KB anew. */
+static void inflate_reset(void *data)
+{
+   struct deflate_trans_stream *st = (struct deflate_trans_stream*)data;
+   if (!st)
+      return;
+   if (st->stream)
+      rinflate_reset(st->stream, st->window_bits);
+   st->finished = 0;
+   st->in_size  = 0;
+   st->in_done  = 0;
+   st->out_size = 0;
+}
+
 const struct trans_stream_backend deflate_deflate_backend;
 const struct trans_stream_backend deflate_inflate_backend;
 
@@ -264,7 +279,8 @@ const struct trans_stream_backend deflate_deflate_backend = {
    deflate_define,
    deflate_set_in,
    deflate_set_out,
-   deflate_trans
+   deflate_trans,
+   NULL
 };
 
 const struct trans_stream_backend deflate_inflate_backend = {
@@ -275,5 +291,6 @@ const struct trans_stream_backend deflate_inflate_backend = {
    inflate_define,
    inflate_set_in,
    deflate_set_out,
-   deflate_trans
+   deflate_trans,
+   inflate_reset
 };

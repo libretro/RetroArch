@@ -150,7 +150,8 @@ const struct trans_stream_backend rzstd_encode_backend = {
    rzstd_define,
    rzstd_set_in,
    rzstd_set_out,
-   rzstd_encode_trans
+   rzstd_encode_trans,
+   NULL
 };
 
 const struct trans_stream_backend rzstd_decode_backend = {
@@ -161,7 +162,8 @@ const struct trans_stream_backend rzstd_decode_backend = {
    NULL,
    rzstd_set_in,
    rzstd_set_out,
-   rzstd_decode_trans
+   rzstd_decode_trans,
+   NULL
 };
 
 const struct trans_stream_backend *trans_stream_get_rzstd_encode_backend(void)

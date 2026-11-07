@@ -60,10 +60,16 @@ enum rpng_pool_slot
    RPNG_POOL_SLOTS
 };
 
+struct trans_stream_backend;
+
 struct rpng_pool
 {
    void  *buf[RPNG_POOL_SLOTS];
    size_t cap[RPNG_POOL_SLOTS];
+   /* An inflate stream finished with, kept for the next decode when
+    * its backend can reset one (trans_stream_backend.reset). */
+   void  *stream;
+   const struct trans_stream_backend *stream_backend;
 };
 
 void  rpng_set_pool(rpng_t *rpng, struct rpng_pool *pool);

@@ -319,6 +319,21 @@ static bool zlib_inflate_trans(
    return ret;
 }
 
+/* inflateReset keeps the window inflateInit2 allocated and the window
+ * size it was made with. */
+static void zlib_inflate_reset(void *data)
+{
+   struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
+   if (!z)
+      return;
+   if (z->inited)
+      inflateReset(&z->z);
+   z->z.next_in   = NULL;
+   z->z.avail_in  = 0;
+   z->z.next_out  = NULL;
+   z->z.avail_out = 0;
+}
+
 const struct trans_stream_backend zlib_deflate_backend = {
    "zlib_deflate",
    &zlib_inflate_backend,
@@ -327,7 +342,8 @@ const struct trans_stream_backend zlib_deflate_backend = {
    zlib_deflate_define,
    zlib_deflate_set_in,
    zlib_set_out,
-   zlib_deflate_trans
+   zlib_deflate_trans,
+   NULL
 };
 
 const struct trans_stream_backend zlib_inflate_backend = {
@@ -338,5 +354,6 @@ const struct trans_stream_backend zlib_inflate_backend = {
    zlib_inflate_define,
    zlib_inflate_set_in,
    zlib_set_out,
-   zlib_inflate_trans
+   zlib_inflate_trans,
+   zlib_inflate_reset
 };

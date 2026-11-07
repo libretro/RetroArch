@@ -119,5 +119,6 @@ const struct trans_stream_backend pipe_backend = {
    NULL,
    pipe_set_in,
    pipe_set_out,
-   pipe_trans
+   pipe_trans,
+   NULL
 };

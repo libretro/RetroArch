@@ -2283,11 +2283,47 @@ void rpng_pool_give(struct rpng_pool *pool, int slot, void *p, size_t size)
    pool->cap[slot] = size;
 }
 
+/* The inflate stream: kept only where its backend can reset it, and
+ * reset as it is taken, so a decode starts from exactly what
+ * stream_new would have given it. */
+static void *rpng_pool_take_stream(struct rpng_pool *pool,
+      const struct trans_stream_backend *backend)
+{
+   void *st;
+   if (   !pool || !pool->stream || pool->stream_backend != backend
+       || !backend->reset)
+      return NULL;
+   st           = pool->stream;
+   pool->stream = NULL;
+   backend->reset(st);
+   return st;
+}
+
+static void rpng_pool_give_stream(struct rpng_pool *pool,
+      const struct trans_stream_backend *backend, void *st)
+{
+   if (!st)
+      return;
+   if (!pool || !backend->reset)
+   {
+      backend->stream_free(st);
+      return;
+   }
+   if (pool->stream)
+      pool->stream_backend->stream_free(pool->stream);
+   pool->stream         = st;
+   pool->stream_backend = backend;
+}
+
 void rpng_pool_release(struct rpng_pool *pool)
 {
    int i;
    if (!pool)
       return;
+   if (pool->stream)
+      pool->stream_backend->stream_free(pool->stream);
+   pool->stream         = NULL;
+   pool->stream_backend = NULL;
    for (i = 0; i < RPNG_POOL_SLOTS; i++)
    {
       free(pool->buf[i]);
@@ -2979,7 +3015,8 @@ end:
     * is finished. */
    if (process->avail_out > 0 && rpng->ihdr.interlace != 1)
       goto error;
-   process->stream_backend->stream_free(process->stream);
+   rpng_pool_give_stream(process->pool, process->stream_backend,
+         process->stream);
    process->stream = NULL;
 
    process->flags |=  RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
@@ -3160,7 +3197,9 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
          process->ring_size = process->inflate_buf_size;
    }
 
-   process->stream = process->stream_backend->stream_new();
+   if (!(process->stream = rpng_pool_take_stream(rpng->pool,
+               process->stream_backend)))
+      process->stream = process->stream_backend->stream_new();
 
    if (!process->stream)
    {
@@ -3656,7 +3695,8 @@ error:
        * buffers and the inflate window may all still be live here. */
       rpng_process_give_back(rpng->process);
       if (rpng->process->stream)
-         rpng->process->stream_backend->stream_free(rpng->process->stream);
+         rpng_pool_give_stream(rpng->process->pool,
+               rpng->process->stream_backend, rpng->process->stream);
       free(rpng->process);
       rpng->process = NULL;
    }
@@ -3681,7 +3721,8 @@ void rpng_free(rpng_t *rpng)
       {
          if (   rpng->process->stream_backend 
              && rpng->process->stream_backend->stream_free)
-            rpng->process->stream_backend->stream_free(rpng->process->stream);
+            rpng_pool_give_stream(rpng->process->pool,
+                  rpng->process->stream_backend, rpng->process->stream);
          else
             free(rpng->process->stream);
       }
