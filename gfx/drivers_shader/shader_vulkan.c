@@ -333,10 +333,11 @@ typedef struct vulkan_filter_chain_create_info vulkan_filter_chain_create_info;
        * next pass until the mipchain is complete. */
    }
 
+   /* @src_image from @src_origin (VIDEO_SCALE_PACK), as large as @image */
    static void vulkan_framebuffer_copy(VkImage image,
          unsigned size_width, unsigned size_height,
          VkCommandBuffer cmd,
-         VkImage src_image, VkImageLayout src_layout)
+         VkImage src_image, VkImageLayout src_layout, unsigned src_origin)
    {
       VkImageCopy region;
 
@@ -361,8 +362,8 @@ typedef struct vulkan_filter_chain_create_info vulkan_filter_chain_create_info;
       region.srcSubresource.mipLevel       = 0;
       region.srcSubresource.baseArrayLayer = 0;
       region.srcSubresource.layerCount     = 1;
-      region.srcOffset.x                   = 0;
-      region.srcOffset.y                   = 0;
+      region.srcOffset.x                   = (int32_t)VIDEO_SCALE_W(src_origin);
+      region.srcOffset.y                   = (int32_t)VIDEO_SCALE_H(src_origin);
       region.srcOffset.z                   = 0;
       region.dstSubresource                = region.srcSubresource;
       region.dstOffset.x                   = 0;
@@ -1970,9 +1971,11 @@ static void slang_chain_update_history(struct vulkan_filter_chain *chain,
    if (copy_history)
    {
       chain->history_ring_index = next_history_ring_index;
+      /* A frame read where it lies is copied from there */
       vulkan_framebuffer_copy(target->image,
             VIDEO_SCALE_W(target->size_dims), VIDEO_SCALE_H(target->size_dims),
-            cmd, chain->input_texture.image, src_layout);
+            cmd, chain->input_texture.image, src_layout,
+            chain->input_texture.padded_dims ? chain->input_texture.origin : 0);
    }
    else
       RARCH_ERR("[Vulkan] Failed to resize shader history framebuffer.\n");
@@ -2315,12 +2318,12 @@ static void slang_chain_set_pass_info(struct vulkan_filter_chain *chain,
    }
 }
 
-/* Whether frames can be read where they lie, once every pass is built
- * and the history is known: history is copied from the frame. */
+/* Whether frames can be read where they lie, once every pass is built.
+ * History is copied straight out of where the frame lies. */
 static void slang_chain_init_frame_in_place(struct vulkan_filter_chain *chain)
 {
    size_t i;
-   chain->frame_in_place = chain->common.frame_rect && !chain->num_history;
+   chain->frame_in_place = chain->common.frame_rect;
    for (i = 0; i < chain->pass_count && chain->frame_in_place; i++)
       if (chain->passes[i]->frame_copy)
          chain->frame_in_place = false;

@@ -494,6 +494,65 @@ static void test_history_spare(struct vulkan_filter_chain *chain)
    memset(&last->reflection, 0, sizeof(last->reflection));
 }
 
+/* The history copy: its source and region */
+static VkImage     copied_from;
+static VkImageCopy copied_region;
+static unsigned    copies;
+static void VKAPI_CALL mock_copy_image(VkCommandBuffer c, VkImage src,
+      VkImageLayout src_layout, VkImage dst, VkImageLayout dst_layout,
+      uint32_t n, const VkImageCopy *regions)
+{
+   (void)c; (void)src_layout; (void)dst; (void)dst_layout; (void)n;
+   copied_from   = src;
+   copied_region = regions[0];
+   copies++;
+}
+
+/* A frame read where it lies in a larger image keeps the chain reading
+ * it there with history too: the frame's end copies the history
+ * straight out of the frame's rectangle. A frame of its own is copied
+ * from its corner. */
+static void test_history_in_place(struct vulkan_filter_chain *chain)
+{
+   unsigned i;
+   vkCmdCopyImage = mock_copy_image;
+   chain->common.frame_rect = true;
+   for (i = 0; i < chain->pass_count; i++)
+      chain->passes[i]->frame_copy = false;
+   slang_chain_init_frame_in_place(chain);
+   CHECK(chain->num_history && vulkan_filter_chain_reads_in_place(chain),
+         "a chain with history reads frames where they lie");
+
+   memset(&chain->input_texture, 0, sizeof(chain->input_texture));
+   chain->input_texture.image       = (VkImage)(uintptr_t)0x2001;
+   chain->input_texture.layout      = VK_IMAGE_LAYOUT_GENERAL;
+   chain->input_texture.dims        = VIDEO_SCALE_PACK(64, 32);
+   chain->input_texture.padded_dims = VIDEO_SCALE_PACK(256, 128);
+   chain->input_texture.origin      = VIDEO_SCALE_PACK(16, 8);
+   chain->input_texture.format      = VK_FORMAT_R8G8B8A8_UNORM;
+   copies = 0;
+   slang_chain_update_history(chain, &chain->deferred_calls[0],
+         VK_NULL_HANDLE);
+   CHECK(copies == 1 && copied_from == (VkImage)(uintptr_t)0x2001,
+         "history: %u copies", copies);
+   CHECK(     copied_region.srcOffset.x == 16 && copied_region.srcOffset.y == 8
+         && copied_region.extent.width == 64 && copied_region.extent.height == 32
+         && !copied_region.dstOffset.x && !copied_region.dstOffset.y,
+         "history copied from (%d, %d), %ux%u",
+         copied_region.srcOffset.x, copied_region.srcOffset.y,
+         copied_region.extent.width, copied_region.extent.height);
+
+   chain->input_texture.padded_dims = 0;
+   chain->input_texture.origin      = 0;
+   slang_chain_update_history(chain, &chain->deferred_calls[0],
+         VK_NULL_HANDLE);
+   CHECK(copies == 2 && !copied_region.srcOffset.x && !copied_region.srcOffset.y,
+         "a frame of its own copied from (%d, %d)",
+         copied_region.srcOffset.x, copied_region.srcOffset.y);
+   chain->common.frame_rect = false;
+   slang_chain_init_frame_in_place(chain);
+}
+
 static bool chain_whole(const struct vulkan_filter_chain *chain)
 {
    return chain->pass_count == PASSES && chain->num_deferred == INDICES;
@@ -558,6 +617,7 @@ int main(void)
       test_scanline_band(chain);
       test_replay(chain);
       test_history_spare(chain);
+      test_history_in_place(chain);
       slang_chain_free(chain);
    }
 

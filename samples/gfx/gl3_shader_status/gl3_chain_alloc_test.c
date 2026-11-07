@@ -294,6 +294,7 @@ static struct slang_blob *stock_blob(const uint32_t *words, size_t len)
  * once the blob table hands the same stages to each of them, with the
  * text rslc printed for them. */
 static bool chain_replay;
+static bool chain_frame_rect;
 static struct gl3_filter_chain *chain_of(unsigned passes,
       struct slang_blob *vs, struct slang_blob *fs)
 {
@@ -302,7 +303,8 @@ static struct gl3_filter_chain *chain_of(unsigned passes,
    unsigned i;
    if (!chain)
       return NULL;
-   chain->replay = chain_replay;
+   chain->replay            = chain_replay;
+   chain->common.frame_rect = chain_frame_rect;
    pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_x       = 1.0f;
@@ -581,6 +583,91 @@ static void test_replay(void)
    gl3_chain_free(chain);
 }
 
+/* A frame read where it lies in a larger texture, with history: the
+ * passes read it there, and the frame's end copies the history straight
+ * out of that rectangle, through the chain's own quad buffer; the frame
+ * is not copied out first. */
+extern struct test_partial_copy
+{
+   unsigned fb_id, vbo, w, h, image, calls;
+   float ox, oy, rx, ry;
+} test_partial_copy;
+static unsigned whole_copies;
+static void count_whole_copy(unsigned fb_id) { (void)fb_id; whole_copies++; }
+static void test_history_in_place(void)
+{
+   struct gl3_filter_chain_texture texture;
+   struct gl3_viewport vp;
+   struct gl3_filter_chain *chain;
+   struct gl3_framebuffer *newest;
+   float mvp[16];
+   uint32_t words[] = { 0x07230203u, 0x00010000u };
+   struct slang_blob *vs = stock_blob(words, sizeof(words));
+   struct slang_blob *fs = stock_blob(words, sizeof(words));
+
+   replay_reflect   = true;
+   chain_frame_rect = true;
+   chain            = chain_of(2, vs, fs);
+   chain_frame_rect = false;
+   replay_reflect   = false;
+   slang_blob_unref(vs);
+   slang_blob_unref(fs);
+   CHECK(chain && chain->num_original_history,
+         "a chain reading history was not built");
+   if (!chain)
+      return;
+   /* The stock stages are not slang's: as passes the rewrite took */
+   chain->passes[0]->frame_copy = false;
+   chain->passes[1]->frame_copy = false;
+   gl3_chain_init_frame_in_place(chain);
+   CHECK(gl3_filter_chain_reads_in_place(chain),
+         "a chain with history reads frames where they lie");
+
+   memset(&texture, 0, sizeof(texture));
+   texture.image       = 0x2001;
+   texture.dims        = VIDEO_SCALE_PACK(64, 32);
+   texture.padded_dims = VIDEO_SCALE_PACK(256, 128);
+   texture.origin      = VIDEO_SCALE_PACK(16, 8);
+   texture.format      = GL_RGBA8;
+   vp.pos              = 0;
+   vp.dims             = VIDEO_SCALE_PACK(64, 32);
+   gl3_build_default_matrix(mvp);
+   memset(&test_partial_copy, 0, sizeof(test_partial_copy));
+   whole_copies            = 0;
+   test_framebuffer_copied = count_whole_copy;
+   gl3_filter_chain_set_input_texture(chain, &texture);
+   CHECK(!chain->copy_framebuffer && !test_partial_copy.calls,
+         "the frame was copied out of its texture");
+   gl3_filter_chain_build_offscreen_passes(chain, &vp);
+   mock_bind_framebuffer(GL_FRAMEBUFFER, 0);
+   gl3_filter_chain_build_viewport_pass(chain, &vp, mvp);
+   gl3_filter_chain_end_frame(chain);
+   test_framebuffer_copied = NULL;
+   newest = chain->original_history[0];
+   CHECK(test_partial_copy.calls == 1 && !whole_copies,
+         "history: %u copies from the rectangle, %u of the whole texture",
+         test_partial_copy.calls, whole_copies);
+   CHECK(     test_partial_copy.fb_id == newest->framebuffer
+         && test_partial_copy.image == 0x2001
+         && test_partial_copy.w == 64 && test_partial_copy.h == 32,
+         "history copied into %u from %u, %ux%u",
+         test_partial_copy.fb_id, test_partial_copy.image,
+         test_partial_copy.w, test_partial_copy.h);
+   CHECK(     test_partial_copy.ox == 16.0f / 256.0f
+         && test_partial_copy.oy == 8.0f / 128.0f
+         && test_partial_copy.rx == 64.0f / 256.0f
+         && test_partial_copy.ry == 32.0f / 128.0f,
+         "history copied from (%g, %g) size (%g, %g)",
+         test_partial_copy.ox, test_partial_copy.oy,
+         test_partial_copy.rx, test_partial_copy.ry);
+   CHECK(test_partial_copy.vbo && test_partial_copy.vbo == chain->common.partial_vbo
+         && test_partial_copy.vbo != chain->common.quad_vbo,
+         "the copy drew through buffer %u, not the chain's own",
+         test_partial_copy.vbo);
+   gl3_chain_free(chain);
+   check_gl_objects();
+}
+
 int main(void)
 {
    unsigned allocs, k;
@@ -643,6 +730,7 @@ int main(void)
    test_shared_programs();
    test_unread_luts();
    test_replay();
+   test_history_in_place();
 
    if (failures)
    {

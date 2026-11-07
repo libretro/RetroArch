@@ -102,6 +102,7 @@ RETRO_BEGIN_DECLS
    void gl3_framebuffer_copy_partial(
          GLuint fb_id,
          GLuint quad_program,
+         GLuint vbo,
          GLint flat_ubo_vertex,
          unsigned size_width, unsigned size_height,
          GLuint image,
@@ -958,6 +959,8 @@ struct gl3_common_resources
 
    GLuint quad_program;
    GLuint quad_vbo;
+   /* The quad of a copy out of part of a texture, written each copy */
+   GLuint partial_vbo;
    gl3_buffer_locations quad_loc;
    unsigned source_hdr;
    unsigned passthrough;
@@ -990,6 +993,9 @@ static void gl3_common_resources_init(gl3_common_resources *common)
    glGenBuffers(1, &common->quad_vbo);
    glBindBuffer(GL_ARRAY_BUFFER, common->quad_vbo);
    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STATIC_DRAW);
+   glGenBuffers(1, &common->partial_vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, common->partial_vbo);
+   glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), NULL, GL_STREAM_DRAW);
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
    common->quad_program = gl3_cross_compile_program(
@@ -1026,6 +1032,8 @@ static void gl3_common_resources_free(gl3_common_resources *common)
       glDeleteProgram(common->quad_program);
    if (common->quad_vbo != 0)
       glDeleteBuffers(1, &common->quad_vbo);
+   if (common->partial_vbo != 0)
+      glDeleteBuffers(1, &common->partial_vbo);
 }
 
 struct gl3_framebuffer
@@ -3276,7 +3284,25 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
          gl3_framebuffer_set_size(tmp, chain->input_texture.dims,
                chain->input_texture.format);
 
-      if (tmp->complete)
+      /* A frame read where it lies is copied from there */
+      if (tmp->complete && chain->input_texture.padded_dims)
+      {
+         const gl3_filter_chain_texture *in = &chain->input_texture;
+         float pw = (float)VIDEO_SCALE_W(in->padded_dims);
+         float ph = (float)VIDEO_SCALE_H(in->padded_dims);
+         gl3_framebuffer_copy_partial(
+               tmp->framebuffer,
+               chain->common.quad_program,
+               chain->common.partial_vbo,
+               chain->common.quad_loc.flat_ubo_vertex,
+               VIDEO_SCALE_W(tmp->size_dims), VIDEO_SCALE_H(tmp->size_dims),
+               in->image,
+               (float)VIDEO_SCALE_W(in->origin) / pw,
+               (float)VIDEO_SCALE_H(in->origin) / ph,
+               (float)VIDEO_SCALE_W(in->dims)   / pw,
+               (float)VIDEO_SCALE_H(in->dims)   / ph);
+      }
+      else if (tmp->complete)
          gl3_framebuffer_copy(
                tmp->framebuffer,
                chain->common.quad_program,
@@ -3582,14 +3608,12 @@ static void gl3_chain_set_pass_info(struct gl3_filter_chain *chain, unsigned pas
    }
 }
 
-/* Whether frames can be read where they lie, once every pass is built
- * and the history is known: history is copied from the frame on its
- * own. */
+/* Whether frames can be read where they lie, once every pass is built.
+ * History is copied straight out of where the frame lies. */
 static void gl3_chain_init_frame_in_place(struct gl3_filter_chain *chain)
 {
    size_t i;
-   chain->frame_in_place = chain->common.frame_rect
-      && !chain->num_original_history;
+   chain->frame_in_place = chain->common.frame_rect;
    for (i = 0; i < chain->num_passes && chain->frame_in_place; i++)
       if (chain->passes[i]->frame_copy)
          chain->frame_in_place = false;
@@ -4109,6 +4133,7 @@ static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl
          gl3_framebuffer_copy_partial(
                chain->copy_framebuffer->framebuffer,
                chain->common.quad_program,
+               chain->common.partial_vbo,
                chain->common.quad_loc.flat_ubo_vertex,
                VIDEO_SCALE_W(chain->copy_framebuffer->size_dims),
                VIDEO_SCALE_H(chain->copy_framebuffer->size_dims),
