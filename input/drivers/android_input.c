@@ -67,6 +67,7 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../input_driver.h"
+#include "android_pointers.h"
 
 #ifdef HAVE_THREADS
 #include "../../gfx/video_thread_wrapper.h"
@@ -185,15 +186,6 @@ typedef struct
    float z;
 } sensor_t;
 
-/* A touch's position three ways, each x, y as VIDEO_POS_PACK: in the
- * viewport, confined to it, and in the whole screen. */
-struct input_pointer
-{
-   uint32_t pos;
-   uint32_t confined_pos;
-   uint32_t full_pos;
-};
-
 static input_groups_t android_groups;
 static int kbd_id[MAX_NUM_KEYBOARDS];
 static int kbd_num = 0;
@@ -244,6 +236,9 @@ typedef struct android_input
    unsigned second_pointer_count;
    /* The bound_surface those fingers are on */
    int32_t second_surface;
+   /* ... and the window and generation they were placed in */
+   unsigned second_window;
+   unsigned second_generation;
    /* What this poll has changed */
    android_poll_changes_t changes;
    char device_model[256];
@@ -943,8 +938,8 @@ static void android_input_focus_lost(struct android_app *android_app)
    retro_atomic_store_release_int(&android_app->unfocused, 1);
 }
 
-/* After a poll's rings and commands: acted on once, and only when the
- * focus of the two windows changed */
+/* After a poll's commands: acted on once, and only when the Activity's
+ * focus changed */
 static void android_input_focus_settle(struct android_app *android_app)
 {
    switch (android_focus_settle(&android_app->focus))
@@ -1128,8 +1123,7 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_GAINED_FOCUS:
       case APP_CMD_LOST_FOCUS:
          android_focus_activity(&android_app->focus,
-               cmd == APP_CMD_GAINED_FOCUS,
-               (int64_t)cpu_features_get_time_usec());
+               cmd == APP_CMD_GAINED_FOCUS);
          break;
 
       case APP_CMD_DESTROY:
@@ -1140,20 +1134,13 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_SECOND_WINDOW_CHANGED:
          video_driver_restore_windows();
          break;
-
-      case APP_CMD_SECOND_GAINED_FOCUS:
-      case APP_CMD_SECOND_LOST_FOCUS:
-         android_focus_second(&android_app->focus,
-               cmd == APP_CMD_SECOND_GAINED_FOCUS,
-               (int64_t)cpu_features_get_time_usec());
-         break;
    }
 }
 
-/* The second display's touches since the last poll, mapped through the
- * window that shows it as android_pointer_set() maps the main display's;
- * one from another surface is dropped. They never move the mouse or
- * count as a quick tap. */
+/* The second display's touches since the last poll, in its window's
+ * pixels, for the frontend to place (android_pointers.h); one from
+ * another surface is dropped. They never move the mouse or count as a
+ * quick tap. */
 static void android_input_poll_second_touches(android_input_t *android,
       struct android_app *android_app)
 {
@@ -1180,7 +1167,6 @@ static void android_input_poll_second_touches(android_input_t *android,
       /* Window 0 would map through the main viewport: a clear raced */
       if (!surface || !window || touch.generation != surface)
          continue;
-      android_focus_second_input(&android_app->focus);
       for (i = 0; i < count; i++)
          if (android->second_pointer_id[i] == touch.pointer_id)
             break;
@@ -1205,15 +1191,10 @@ static void android_input_poll_second_touches(android_input_t *android,
          android->second_pointer_id[i] = touch.pointer_id;
          android->second_pointer_count++;
       }
-      if (!video_driver_translate_window_point(window, generation,
-               touch.x, touch.y, false,
-               &android->second_pointer[i].confined_pos))
-         android->second_pointer[i].confined_pos =
-            VIDEO_POS_PACK(-0x8000, -0x8000);
-      if (!video_driver_translate_window_point(window, generation,
-               touch.x, touch.y, true, &android->second_pointer[i].pos))
-         android->second_pointer[i].pos = VIDEO_POS_PACK(-0x8000, -0x8000);
-      android->second_pointer[i].full_pos = VIDEO_POS_PACK(-0x8000, -0x8000);
+      android->second_pointer[i].pos    = VIDEO_POS_PACK(touch.x, touch.y);
+      android->second_pointer[i].placed = true;
+      android->second_window            = window;
+      android->second_generation        = generation;
    }
 }
 
@@ -1479,24 +1460,19 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    android->mouse_pos = VIDEO_POS_PACK(x, y);
 }
 
-/* Touch @i at screen @x, @y: the confined variant for the pointer
- * query, the plain one for the true offscreen value Android needs. */
+/* Touch @i at window @x, @y; the frontend places it (android_pointers.h) */
 static void android_pointer_set(android_input_t *android, unsigned i,
-      struct video_viewport *vp, float x, float y)
+      float x, float y)
 {
-   /* a translation that fails (no viewport) leaves what was there */
-   input_driver_translate_coord_viewport_confined_wrap(vp, x, y,
-         &android->pointer[i].confined_pos, &android->pointer[i].full_pos);
-   input_driver_translate_coord_viewport_wrap(vp, x, y,
-         &android->pointer[i].pos, &android->pointer[i].full_pos);
+   android->pointer[i].pos    = VIDEO_POS_PACK(x, y);
+   android->pointer[i].placed = true;
 }
 
 /* The pen's position, written to pointer 0. */
 static void android_stylus_set_position(android_input_t *android,
       float x, float y)
 {
-   struct video_viewport vp = {0};
-   android_pointer_set(android, 0, &vp, x, y);
+   android_pointer_set(android, 0, x, y);
 }
 
 /* One pen event: the decision is android_stylus_map.h's, and this
@@ -1784,11 +1760,10 @@ static INLINE void android_input_poll_event_type_motion(
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
-         struct video_viewport vp = {0};
          float x = ev->pointer[motion_ptr].x;
          float y = ev->pointer[motion_ptr].y;
 
-         android_pointer_set(android, motion_ptr, &vp, x, y);
+         android_pointer_set(android, motion_ptr, x, y);
          android->contact[motion_ptr]       = OVERLAY_CONTACT_PACK(
                ev->pointer[motion_ptr].major, ev->pointer[motion_ptr].minor);
          android->contact_angle[motion_ptr] = ev->pointer[motion_ptr].angle;
@@ -2565,8 +2540,7 @@ static void android_input_key_read(AInputEvent *event, int source,
    key->meta_state = AKeyEvent_getMetaState(event);
 }
 
-/* A key from the input queue or the second display's window; *handled
- * is the queue's answer, which SecondDisplayController repeats */
+/* A key from the input queue; *handled is the queue's answer */
 static void android_input_key_fields(int port, bool is_keyboard,
       const android_input_fields_t *key, int *handled)
 {
@@ -3160,35 +3134,6 @@ static void android_input_poll_events(android_input_t *android,
       retro_eventcount_notify(&r->room);
 }
 
-/* The keys and stick moves the second display's window received since
- * the last poll, handled as the input queue's are */
-static void android_input_poll_second_inputs(android_input_t *android,
-      struct android_app *android_app)
-{
-   android_input_fields_t in;
-   retro_spsc_t *ring = &android_app->second_display.inputs;
-
-   while (retro_spsc_read_avail(ring) >= sizeof(in))
-   {
-      bool is_keyboard;
-      int port;
-      int handled = 1;
-
-      retro_spsc_read(ring, &in, sizeof(in));
-      port = android_input_resolve_port(android, android_app,
-            android_input_map_id(in.device_id), in.source, &is_keyboard);
-      if (in.type == AINPUT_EVENT_TYPE_KEY)
-         android_input_key_fields(port, is_keyboard, &in, &handled);
-      else
-         android_input_dpad_fields(android_app, port, in.axes,
-               p_AMotionEvent_getAxisValue != NULL);
-      /* A canceled up comes as the focus leaves the window: not use */
-      if (     in.type != AINPUT_EVENT_TYPE_KEY
-            || !(in.flags & AKEY_EVENT_FLAG_CANCELED))
-         android_focus_second_input(&android_app->focus);
-   }
-}
-
 static void android_input_poll_user(android_input_t *android)
 {
    struct android_app *android_app = (struct android_app*)g_android;
@@ -3408,6 +3353,29 @@ static void android_input_poll_press_groups(void)
    }
 }
 
+/* The mouse and every touch, each with its window, to the frontend's
+ * pointer publication; app thread, at each return of the poll */
+static void android_input_publish(android_input_t *android)
+{
+   android_pointers_t p;
+   if (!android)
+      return;
+   p.main_slots               = android->pointer;
+   p.slots                    = MAX_TOUCH;
+   p.main_count               = android->pointer_count;
+   p.second                   = android->second_pointer;
+   p.second_count             = android->second_pointer_count;
+   p.second_window.window     = android->second_window;
+   p.second_window.generation = android->second_generation;
+   p.mouse_pos                = android->mouse_pos;
+   p.mouse_buttons            = (uint16_t)(
+           (android->mouse_l ? INPUT_POINTER_LEFT   : 0)
+         | (android->mouse_r ? INPUT_POINTER_RIGHT  : 0)
+         | (android->mouse_m ? INPUT_POINTER_MIDDLE : 0));
+   p.mouse_used               = android->mouse_activated;
+   android_pointers_publish(&p);
+}
+
 static void android_input_poll(void *data)
 {
    int ident;
@@ -3457,11 +3425,13 @@ static void android_input_poll(void *data)
       if (android_app->destroyRequested != 0)
       {
          input_driver_platform_request(INPUT_PLATFORM_SHUTDOWN);
+         android_input_publish(android);
          return;
       }
 
       if (android_app->reinitRequested != 0)
       {
+         android_input_publish(android);
          android_input_reinit();
          return;
       }
@@ -3472,8 +3442,9 @@ static void android_input_poll(void *data)
       android_input_poll_events(android, android_app);
       /* After the looper: a ring write that woke it is settled now */
       android_input_poll_second_touches(android, android_app);
-      android_input_poll_second_inputs(android, android_app);
    }
+
+   android_input_publish(android);
 
    android_input_poll_press_groups();
 
@@ -3637,20 +3608,19 @@ static int16_t android_input_state(
          {
             /* Same lightgun state is reported for all ports. */
             int val = 0;
+            unsigned fingers = android_pointers_gun_fingers(
+                  android->pointer_count, video_driver_get_views_layout());
             switch (id)
             {
-               /* Favor mouse for lightgun control. */
+               /* Favor mouse for lightgun control: the frontend aims
+                * it at a touch otherwise (INPUT_POINTERS_GUN_AT_TOUCH) */
                case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
                   if (android->mouse_activated)
                      return VIDEO_POS_X(android->mouse_viewport_screen_pos);
-                  else if (idx < MAX_TOUCH)
-                     return VIDEO_POS_X(android->pointer[idx].pos);
                   return 0;
                case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
                   if (android->mouse_activated)
                      return VIDEO_POS_Y(android->mouse_viewport_screen_pos);
-                  else if (idx < MAX_TOUCH)
-                     return VIDEO_POS_Y(android->pointer[idx].pos);
                   return 0;
                /* Deprecated relative lightgun. */
                case RETRO_DEVICE_ID_LIGHTGUN_X:
@@ -3665,15 +3635,15 @@ static int16_t android_input_state(
                   return val;
                case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
                case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-                  return android->mouse_m || android->pointer_count == 3;
+                  return android->mouse_m || fingers == 3;
                case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
                   return android->mouse_r && android->mouse_l;
                case RETRO_DEVICE_ID_LIGHTGUN_START:
                case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
-                  return android->mouse_r || android->pointer_count == 2;
+                  return android->mouse_r || fingers == 2;
                case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                   if (android->mouse_activated)
-                     return android->mouse_l || android->pointer_count == 1;
+                     return android->mouse_l || fingers == 1;
                   else
                   {
                      /* Suppress quick-tap emulation while a stylus is nearby;
@@ -3684,91 +3654,25 @@ static int16_t android_input_state(
                                        && !g_hover_guard_active;
 
                      if (allow_quick_tap)
-                        return android_check_quick_tap(android) || android->pointer_count == 1;
+                        return android_check_quick_tap(android) || fingers == 1;
                      else
                      {
                         android->quick_tap_time = 0; /* cancel any pending quick tap when stylus nearby */
-                        return android->pointer_count == 1;
+                        return fingers == 1;
                      }
                   }
-               case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                  if (idx >= MAX_TOUCH)
-                     return 0;
-                  return input_driver_pointer_is_offscreen(VIDEO_POS_X(android->pointer[idx].pos), VIDEO_POS_Y(android->pointer[idx].pos));
             }
          }
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         /* Same pointer state is reported for all ports.
-          * idx is core/frontend-controlled: bounds-check it before
-          * any pointer[] access. PRESSED already range-checks via
-          * pointer_count (<= MAX_TOUCH). */
-         switch (id)
+         /* The frontend answers the rest (android_pointers.h) */
+         if (id == RARCH_DEVICE_ID_POINTER_BACK)
          {
-            case RETRO_DEVICE_ID_POINTER_X:
-               if (idx >= MAX_TOUCH)
-                  return 0;
-               if (device == RARCH_DEVICE_POINTER_SCREEN)
-                  return VIDEO_POS_X(android->pointer[idx].full_pos);
-               return VIDEO_POS_X(android->pointer[idx].confined_pos);
-            case RETRO_DEVICE_ID_POINTER_Y:
-               if (idx >= MAX_TOUCH)
-                  return 0;
-               if (device == RARCH_DEVICE_POINTER_SCREEN)
-                  return VIDEO_POS_Y(android->pointer[idx].full_pos);
-               return VIDEO_POS_Y(android->pointer[idx].confined_pos);
-            case RETRO_DEVICE_ID_POINTER_PRESSED:
-#ifdef DEBUG_ANDROID_INPUT
-               RARCH_LOG("[PtrQuery] count=%d x0=%d y0=%d\n",
-                         android->pointer_count,
-                         android->pointer_count > 0 ? VIDEO_POS_X(android->pointer[0].confined_pos) : 0,
-                         android->pointer_count > 0 ? VIDEO_POS_Y(android->pointer[0].confined_pos) : 0);
-#endif
-               /* On mobile platforms, touches outside screen / core viewport are not reported. */
-               if (device == RARCH_DEVICE_POINTER_SCREEN)
-                  return (idx < android->pointer_count) &&
-                     (VIDEO_POS_X(android->pointer[idx].full_pos) != -0x8000) &&
-                     (VIDEO_POS_Y(android->pointer[idx].full_pos) != -0x8000);
-               return (idx < android->pointer_count) &&
-                  (VIDEO_POS_X(android->pointer[idx].pos) != -0x8000) &&
-                  (VIDEO_POS_Y(android->pointer[idx].pos) != -0x8000);
-            case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-               if (idx >= MAX_TOUCH)
-                  return 0;
-               return input_driver_pointer_is_offscreen(VIDEO_POS_X(android->pointer[idx].pos), VIDEO_POS_Y(android->pointer[idx].pos));
-            case RETRO_DEVICE_ID_POINTER_COUNT:
-               return android->pointer_count;
-            case RARCH_DEVICE_ID_POINTER_BACK:
-            {
-               const struct retro_keybind *keyptr =
-                  input_autoconf_bind(0, RARCH_MENU_TOGGLE);
-               if (keyptr->joykey == 0)
-                  return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);
-            }
-         }
-         break;
-      case RARCH_DEVICE_POINTER_SECOND:
-         if (id == RETRO_DEVICE_ID_POINTER_COUNT)
-            return android->second_pointer_count;
-         if (idx < android->second_pointer_count)
-         {
-            const struct input_pointer *p = &android->second_pointer[idx];
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_POINTER_X:
-                  return VIDEO_POS_X(p->confined_pos);
-               case RETRO_DEVICE_ID_POINTER_Y:
-                  return VIDEO_POS_Y(p->confined_pos);
-               case RETRO_DEVICE_ID_POINTER_PRESSED:
-                  return (VIDEO_POS_X(p->pos) != -0x8000)
-                     && (VIDEO_POS_Y(p->pos) != -0x8000);
-               case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                  return input_driver_pointer_is_offscreen(
-                        VIDEO_POS_X(p->pos), VIDEO_POS_Y(p->pos));
-               default:
-                  break;
-            }
+            const struct retro_keybind *keyptr =
+               input_autoconf_bind(0, RARCH_MENU_TOGGLE);
+            if (keyptr->joykey == 0)
+               return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);
          }
          break;
    }

@@ -1,10 +1,11 @@
 # Android's content rectangle, from the UI thread to the video thread.
 #
-# The two ends are the shipping functions, taken out of their files at
+# The functions are the shipping ones, taken out of their files at
 # build time by extract.awk: onContentRectChanged() from
-# frontend/drivers/platform_unix.c and the Vulkan context's
-# check_window() from gfx/drivers_context/android_vk_ctx.c. The test
-# supplies the few types they touch, so it builds and runs on the host.
+# frontend/drivers/platform_unix.c, and check_window() from the Vulkan
+# and gl contexts in gfx/drivers_context/android_vk_ctx.c and
+# android_ctx.c. The test supplies the few types they touch, so it
+# builds and runs on the host.
 TARGET := android_content_rect_test
 
 CORE_DIR          := ../../..
@@ -22,11 +23,14 @@ endif
 all: $(TARGET)
 
 content_rect_driver.h: extract.awk $(CORE_DIR)/frontend/drivers/platform_unix.c \
-		$(CORE_DIR)/gfx/drivers_context/android_vk_ctx.c
+		$(CORE_DIR)/gfx/drivers_context/android_vk_ctx.c \
+		$(CORE_DIR)/gfx/drivers_context/android_ctx.c
 	( awk -v FUNCS=onContentRectChanged -f extract.awk \
 	     $(CORE_DIR)/frontend/drivers/platform_unix.c && \
 	  awk -v FUNCS=android_gfx_ctx_vk_check_window -f extract.awk \
-	     $(CORE_DIR)/gfx/drivers_context/android_vk_ctx.c ) > $@.tmp
+	     $(CORE_DIR)/gfx/drivers_context/android_vk_ctx.c && \
+	  awk -v FUNCS=android_gfx_ctx_check_window -f extract.awk \
+	     $(CORE_DIR)/gfx/drivers_context/android_ctx.c ) > $@.tmp
 	mv $@.tmp $@
 
 $(TARGET): android_content_rect_test.c content_rect_driver.h

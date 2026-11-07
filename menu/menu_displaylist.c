@@ -12702,31 +12702,37 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
+#ifdef ANDROID
+            /* Only Android places screens and the menu */
             if (settings->bools.video_windows_enable)
             {
-               /* Screen 2, and each further one the core has */
-               video_driver_state_t *video_st = video_state_get_ptr();
-               unsigned screens               = 2;
+               unsigned screens = menu_setting_video_screens();
                unsigned screen;
-               if (     video_st->views_presented
-                     && video_st->views_core.num_screens > screens)
-                  screens = video_st->views_core.num_screens;
-               if (screens > RETRO_VIDEO_VIEWS_MAX)
-                  screens = RETRO_VIDEO_VIEWS_MAX;
-               for (screen = 1; screen < screens; screen++)
+               menu_setting_video_screen_display_values();
+               for (screen = 0; screen < screens; screen++)
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            (enum msg_hash_enums)
-                           (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + screen),
-                           PARSE_ONLY_UINT, false) == 0)
-                     count++;
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           (enum msg_hash_enums)
-                           (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR + screen),
-                           PARSE_ONLY_UINT, false) == 0)
+                           (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + screen),
+                           PARSE_ONLY_STRING_OPTIONS, false) == 0)
                      count++;
                }
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_MENU_FOLLOWS,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+               if (     settings->uints.video_menu_follows
+                        == VIDEO_MENU_FOLLOWS_SEPARATE
+                     && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY,
+                        PARSE_ONLY_STRING_OPTIONS, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_NOTIFICATIONS_WINDOW,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
             }
+#endif
          }
 #endif
 #ifdef HAVE_OPENXR
@@ -18997,6 +19003,14 @@ static bool menu_displaylist_ctl_internal(
                                           && val != (int)orig_value
                                           && !input_config_mouse_offered((unsigned)val))
                                        continue;
+#ifdef HAVE_VIDEO_WINDOWS
+                                    /* Menu Follows: the screens listed,
+                                     * Separate, and the one chosen now */
+                                    if (     setting->enum_idx == MENU_ENUM_LABEL_VIDEO_MENU_FOLLOWS
+                                          && val != (int)orig_value
+                                          && !menu_setting_video_menu_follows_offered((unsigned)val))
+                                       continue;
+#endif
                                     /* Keyboard Index: "All" and the
                                      * keyboards there are */
                                     if (menu_displaylist_keyboard_index(setting))
@@ -19017,7 +19031,7 @@ static bool menu_displaylist_ctl_internal(
                                              val_s,
                                              val_d,
                                              MENU_ENUM_LABEL_NO_ITEMS,
-                                             setting_type, val, 0, NULL))
+                                             setting_type, val, val, NULL))
                                        count++;
 
                                     if (!checked_found && val == (int)orig_value)
@@ -19042,7 +19056,7 @@ static bool menu_displaylist_ctl_internal(
                                              val_s,
                                              val_d,
                                              MENU_ENUM_LABEL_NO_ITEMS,
-                                             setting_type, val, 0, NULL))
+                                             setting_type, val, val, NULL))
                                        count++;
 
                                     if (!checked_found && val == (int)orig_value)

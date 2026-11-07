@@ -2293,6 +2293,12 @@ void input_driver_publish_window_touches(const uint32_t *pos,
 {
    input_pointer_touches_set(pos, windows, count, present, down);
 }
+
+bool input_driver_window_touch(unsigned window, unsigned idx,
+      uint32_t *screen_pos, bool *down)
+{
+   return input_pointer_window_touch(window, idx, screen_pos, down);
+}
 #endif
 
 /* The keys a port's binds name, compiled when the binds change, and
@@ -15538,6 +15544,12 @@ const input_pointer_view_t *input_driver_pointer_view(void)
 {
    static input_pointer_view_t view;
    static unsigned             compiled;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* the menu's window's touch: its last place */
+   static uint32_t             window_pos;
+   unsigned window;
+   bool down;
+#endif
 
    if (compiled == input_poll_generation)
       return &view;
@@ -15582,6 +15594,26 @@ const input_pointer_view_t *input_driver_pointer_view(void)
    if (input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
             RARCH_DEVICE_ID_POINTER_BACK))
       view.flags |= INPUT_PTR_VIEW_SCR_BACK;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The menu in a window of its own reads that window's first touch
+    * alone: every read above is made all the same, as the driver
+    * takes some by reading */
+   window = video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU);
+   if (window)
+   {
+      uint32_t pos;
+      view.flags    &= INPUT_PTR_VIEW_VALID | INPUT_PTR_VIEW_SCR_BACK;
+      view.mouse_pos = 0;
+      view.ptr_pos   = 0;
+      if (input_driver_window_touch(window, 0, &pos, &down))
+         window_pos  = pos;
+      else
+         down        = false;
+      view.scr_pos   = window_pos;
+      if (down)
+         view.flags |= INPUT_PTR_VIEW_SCR_PRESSED;
+   }
+#endif
    return &view;
 }
 

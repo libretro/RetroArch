@@ -343,7 +343,12 @@ enum vk_window_flags
    /* this frame: an image free, the views' chains picked */
    VK_WINDOW_FLAG_PREPARED = (1 << 3),
    /* this frame: drawn, presented after the submission */
-   VK_WINDOW_FLAG_DRAWN    = (1 << 4)
+   VK_WINDOW_FLAG_DRAWN    = (1 << 4),
+   /* this frame: its screens are drawn too */
+   VK_WINDOW_FLAG_SCREENS  = (1 << 5),
+   /* this frame: made, shown and its output kept, an image free or
+    * not; the UI drawn there needs no fallback */
+   VK_WINDOW_FLAG_UP       = (1 << 6)
 };
 
 /* A screen window: the context's record and the output drawn into it */
@@ -421,6 +426,15 @@ typedef struct vk
        * where stock views draw straight from it */
       math_matrix_4x4 mvp;
       struct vk_texture *direct;
+      /* The UI layers drawn in another window, in one image */
+      struct vk_image ui;
+      video_views_target_t ui_target;
+      /* This frame: the window the image is still to go in, 0 for
+       * none */
+      unsigned ui_window;
+      /* While the image is drawn: its size, which display draws place
+       * against; 0 otherwise */
+      unsigned ui_pass_dims;
    } windows;
 #endif
 #ifdef HAVE_OPENXR
@@ -3258,6 +3272,17 @@ static const float *gfx_display_vk_get_default_tex_coords(void)
    return &vk_tex_coords[0];
 }
 
+/* The size display draws are placed in: the swapchain's, or the window
+ * UI image's while it is drawn */
+static unsigned vulkan_display_dims(const vk_t *vk)
+{
+#ifdef HAVE_VIDEO_WINDOWS
+   if (vk->windows.ui_pass_dims)
+      return vk->windows.ui_pass_dims;
+#endif
+   return vk->context->swapchain_dims;
+}
+
 #ifdef HAVE_SHADERPIPELINE
 static VkPipeline vulkan_effect_pipeline(vk_t *vk, unsigned i, bool sdr);
 
@@ -3307,8 +3332,8 @@ static void gfx_display_vk_draw_pipeline(
    draw->pos                        = VIDEO_POS_PACK(0, 0);
    draw->matrix_data                = NULL;
 
-   output_size[0]                   = (float)VIDEO_SCALE_W(vk->context->swapchain_dims);
-   output_size[1]                   = (float)VIDEO_SCALE_H(vk->context->swapchain_dims);
+   output_size[0]                   = (float)VIDEO_SCALE_W(vulkan_display_dims(vk));
+   output_size[1]                   = (float)VIDEO_SCALE_H(vulkan_display_dims(vk));
 
    switch (draw->pipeline_id)
    {
@@ -3705,7 +3730,7 @@ static bool gfx_display_vk_mesh_draw(void *data, unsigned video_dims,
    /* The whole display, as draw() sets it for a strip at the origin;
     * the viewport a quad before this one left is its own */
    vk->vk_vp.x        = 0;
-   vk->vk_vp.y        = (int)VIDEO_SCALE_H(vk->context->swapchain_dims)
+   vk->vk_vp.y        = (int)VIDEO_SCALE_H(vulkan_display_dims(vk))
       - (int)VIDEO_SCALE_H(video_dims);
    vk->vk_vp.width    = VIDEO_SCALE_W(video_dims);
    vk->vk_vp.height   = VIDEO_SCALE_H(video_dims);
@@ -3791,7 +3816,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
     * outlives this draw wants vk->video_vp. */
    vk->vk_vp.x                    = VIDEO_POS_X(draw->pos);
    vk->vk_vp.y                    = VIDEO_POS_FLIP_Y(
-         VIDEO_SCALE_H(vk->context->swapchain_dims), draw->pos, draw->dims);
+         VIDEO_SCALE_H(vulkan_display_dims(vk)), draw->pos, draw->dims);
    vk->vk_vp.width                = VIDEO_SCALE_W(draw->dims);
    vk->vk_vp.height               = VIDEO_SCALE_H(draw->dims);
    vk->vk_vp.minDepth             = 0.0f;
@@ -6472,6 +6497,12 @@ static void vulkan_deinit_framebuffers(vk_t *vk)
    if (vk->views.ui.image)
       vulkan_destroy_hdr_buffer(vk->context->device, &vk->views.ui);
    memset(&vk->views.ui_target, 0, sizeof(vk->views.ui_target));
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Its framebuffer is ui_render_pass's, which goes below */
+   if (vk->windows.ui.image)
+      vulkan_destroy_hdr_buffer(vk->context->device, &vk->windows.ui);
+   memset(&vk->windows.ui_target, 0, sizeof(vk->windows.ui_target));
+#endif
    vkDestroyRenderPass(vk->context->device, vk->views.render_pass, NULL);
    vkDestroyRenderPass(vk->context->device, vk->views.ui_render_pass, NULL);
 }
@@ -6824,6 +6855,7 @@ static bool vulkan_views_make(vk_t *vk, struct vk_image *img, unsigned dims);
 static bool vulkan_views_retire(vk_t *vk, struct vk_image *img);
 #ifdef HAVE_VIDEO_WINDOWS
 static void vulkan_windows_free(vk_t *vk);
+static void vulkan_windows_take(vk_t *vk);
 #endif
 
 /* The views compositor, with these calls bound in */
@@ -8343,6 +8375,9 @@ static void *vulkan_init(const video_info_t *video)
    vk->context->flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
    vulkan_note_built(vk);
    vulkan_views_publish(vk);
+#ifdef HAVE_VIDEO_WINDOWS
+   vulkan_windows_take(vk);
+#endif
    return vk;
 
 error:
@@ -10663,6 +10698,10 @@ static bool vulkan_views_make(vk_t *vk, struct vk_image *img, unsigned dims)
    const VkPhysicalDeviceLimits *lim = &vk->context->gpu_properties.limits;
    unsigned w                        = VIDEO_SCALE_W(dims);
    unsigned h                        = VIDEO_SCALE_H(dims);
+#ifdef HAVE_VIDEO_WINDOWS
+   if (img == &vk->windows.ui)
+      ui = true;
+#endif
    /* A canvas twice the window's width can pass the device's limits. */
    if (     w <= lim->maxImageDimension2D && h <= lim->maxImageDimension2D
          && w <= lim->maxFramebufferWidth && h <= lim->maxFramebufferHeight)
@@ -10851,23 +10890,29 @@ static void vulkan_views_ui_end(vk_t *vk, video_frame_info_t *video_info,
 #define VK_WINDOW_EVENTS 8
 
 /* Window @w let go of: its output retired, then the context's window,
- * and input stops mapping into it. Never waits: while its output is
- * not done the id stays live, and a later frame finishes it. */
-static void vulkan_window_retire(vk_t *vk, unsigned w)
+ * which @keep leaves up for the next driver where the context can, and
+ * input stops mapping into it. Never waits: while its output is not
+ * done the id stays live, and a later frame finishes it. */
+static void vulkan_window_retire(vk_t *vk, unsigned w, bool keep)
 {
-   struct vk_window *win = &vk->windows.win[w];
+   struct vk_window *win              = &vk->windows.win[w];
+   const gfx_ctx_window_driver_t *ctx = vk->ctx_driver->windows;
    if (!(vk->windows.held.live & (1u << w)))
       return;
    if (!(win->flags & VK_WINDOW_FLAG_CLOSE))
    {
       win->flags |= VK_WINDOW_FLAG_CLOSE;
-      video_driver_publish_window_layout(w, 0, NULL, NULL, 0, 0);
+      video_driver_publish_window_layout(w, 0, 0, NULL, NULL, 0, 0);
    }
-   win->flags &= ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_DRAWN);
+   win->flags &= ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_DRAWN
+         | VK_WINDOW_FLAG_SCREENS | VK_WINDOW_FLAG_UP);
    if (     (win->flags & VK_WINDOW_FLAG_OUTPUT)
          && !vulkan_output_retire(&win->output))
       return;
-   vk->ctx_driver->windows->destroy(vk->ctx_data, &win->native);
+   if (keep && ctx->keep)
+      ctx->keep(vk->ctx_data, &win->native);
+   else
+      ctx->destroy(vk->ctx_data, &win->native);
    memset(win, 0, sizeof(*win));
    vk->windows.held.live &= ~(1u << w);
 }
@@ -10880,7 +10925,7 @@ static void vulkan_window_attach(vk_t *vk,
    if (f)
       video_driver_attach_windows(f->window_screens[w], f->restore);
    vk->windows.held.failed |= 1u << w;
-   vulkan_window_retire(vk, w);
+   vulkan_window_retire(vk, w, false);
 }
 
 /* Window @w for @f's screens there, on @f's display */
@@ -10903,6 +10948,169 @@ static bool vulkan_window_make(vk_t *vk, const video_windows_frame_t *f,
    vk->windows.held.live       |= 1u << w;
    vk->windows.held.display[w]  = f->display;
    return true;
+}
+
+/* The window UI image as one quad over the whole of @dims, in the pass
+ * begun on the current target. It was drawn over transparent black, so
+ * its colour is premultiplied. */
+static void vulkan_window_ui_quad(vk_t *vk, unsigned dims)
+{
+   struct vk_texture tex;
+   struct vk_draw_quad quad;
+   struct video_viewport vp;
+   VkViewport vk_vp;
+
+   /* The scissor follows vk->vp. */
+   vp                 = vk->vp;
+   vk_vp              = vk->vk_vp;
+   vk->vp.pos         = VIDEO_POS_PACK(0, 0);
+   vk->vp.dims        = dims;
+   vk->vk_vp.x        = 0.0f;
+   vk->vk_vp.y        = 0.0f;
+   vk->vk_vp.width    = (float)VIDEO_SCALE_W(dims);
+   vk->vk_vp.height   = (float)VIDEO_SCALE_H(dims);
+   vk->vk_vp.minDepth = 0.0f;
+   vk->vk_vp.maxDepth = 1.0f;
+   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   vulkan_views_texture(&vk->windows.ui, vk->windows.ui_target.dims,
+         vk->views.ui_format, &tex);
+   quad.texture  = &tex;
+   quad.mvp      = &vk->mvp_no_rot;
+   quad.pipeline = vk->pipelines.alpha_premult;
+   quad.sampler  = vk->samplers.linear;
+   quad.color    = RGBA16_WHITE;
+   vulkan_draw_quad(vk, &quad);
+   /* What draws next keeps its own viewport */
+   vk->vp             = vp;
+   vk->vk_vp          = vk_vp;
+   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+}
+
+/* This frame's UI layers drawn in another window, as
+ * VIDEO_WINDOW_UI_BIT()s; 0 when every layer stays in the main window,
+ * also when the image cannot be made. In *@draw those the image is
+ * drawn with, none when they have nothing to draw, and *@in_main true
+ * when it goes over the main window at once because that window is not
+ * drawn this frame. */
+static unsigned vulkan_window_ui_prepare(vk_t *vk,
+      video_frame_info_t *video_info, const char *msg,
+      unsigned *draw, bool *in_main)
+{
+   unsigned l;
+   unsigned w                     = 0;
+   unsigned dims                  = 0;
+   unsigned layers                = 0;
+   unsigned drawn                 = 0;
+   const video_windows_frame_t *f = video_info->windows;
+   bool menu                      = (vk->flags & VK_FLAG_MENU_ENABLE)
+      ? true : false;
+   bool ready;
+
+   *draw                 = 0;
+   *in_main              = false;
+   vk->windows.ui_window = 0;
+   if (f)
+      for (l = 0; l < VIDEO_WINDOW_UI_LAYERS; l++)
+      {
+         unsigned lw = f->ui[l].window;
+         if (!lw || lw >= RETRO_VIDEO_VIEWS_MAX || (w && lw != w))
+            continue;
+         if (!w)
+         {
+            w    = lw;
+            dims = f->ui[l].dims;
+         }
+         layers |= VIDEO_WINDOW_UI_BIT(l);
+      }
+   if (!layers)
+   {
+      vulkan_vv_target_drop(vk, &vk->windows.ui_target, &vk->windows.ui);
+      return 0;
+   }
+   if (!vulkan_views_allowed(vk) || !vk->pipelines.alpha_premult)
+      return 0;
+   drawn = VIDEO_WINDOW_UI_DRAWN(layers, menu, msg,
+         video_info->statistics_show, video_info->widgets_visible);
+   if (     !drawn
+         || !vulkan_vv_target_ensure(vk, &vk->windows.ui_target,
+            &vk->windows.ui, dims))
+      return drawn ? 0 : layers;
+   /* vulkan_windows_draw() draws a prepared window with views or UI */
+   ready = (vk->windows.win[w].flags & VK_WINDOW_FLAG_PREPARED)
+      && (vk->views.active || f->window_ui[w]);
+   /* Up with no free image: its last image stays, the layers skip
+    * this frame */
+   if (!ready && (vk->windows.win[w].flags & VK_WINDOW_FLAG_UP))
+      return layers;
+   for (l = 0; l < VIDEO_WINDOW_UI_LAYERS; l++)
+      if (     (drawn & VIDEO_WINDOW_UI_BIT(l))
+            && (ready || !f->ui[l].wait))
+         *draw |= VIDEO_WINDOW_UI_BIT(l);
+   if (*draw && ready)
+      vk->windows.ui_window = w;
+   *in_main = *draw && !ready;
+   return layers;
+}
+
+/* Out of the frame's pass and into the window UI image, laid out at
+ * @dims */
+static void vulkan_window_ui_begin(vk_t *vk, video_frame_info_t *video_info,
+      video_views_ui_dims_t *saved, unsigned dims)
+{
+   vkCmdEndRenderPass(vk->cmd);
+   vulkan_views_begin(vk, &vk->windows.ui, dims, vk->views.ui_render_pass);
+   if (vk->views.ui_sdr)
+      vk->flags |= VK_FLAG_SDR_PIPELINE;
+   vk->windows.ui_pass_dims = dims;
+   /* Menus and widgets size from video_info->dims, fonts from
+    * video_dims. The viewport as the main window's: fitted without
+    * views. */
+   video_views_ui_enter(saved, &video_info->dims, &vk->video_dims, dims);
+   vulkan_set_viewport(vk, dims, vk->views.active, true);
+}
+
+/* Back into the frame's pass on @backbuffer; with @in_main, the image
+ * over the whole of it at once */
+static void vulkan_window_ui_end(vk_t *vk, video_frame_info_t *video_info,
+      const struct vk_image *backbuffer, const video_views_ui_dims_t *saved,
+      bool in_main)
+{
+   VkRenderPassBeginInfo rp;
+
+   vulkan_views_end(vk, &vk->windows.ui);
+   vk->flags               &= ~VK_FLAG_SDR_PIPELINE;
+   vk->windows.ui_pass_dims = 0;
+   video_views_ui_leave(saved, &video_info->dims, &vk->video_dims);
+
+   /* The pass drawing the views stored it; this one loads it. */
+   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, backbuffer->image,
+         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+         | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+   rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+   rp.pNext                    = NULL;
+   rp.renderPass               = vk->keep_render_pass;
+   rp.framebuffer              = backbuffer->framebuffer;
+   rp.renderArea.offset.x      = 0;
+   rp.renderArea.offset.y      = 0;
+   rp.renderArea.extent.width  = VIDEO_SCALE_W(vk->context->swapchain_dims);
+   rp.renderArea.extent.height = VIDEO_SCALE_H(vk->context->swapchain_dims);
+   rp.clearValueCount          = 0;
+   rp.pClearValues             = NULL;
+   vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
+   vk->tracker.pipeline = VK_NULL_HANDLE;
+
+   vulkan_set_viewport(vk, video_info->dims, true, true);
+   if (in_main)
+      vulkan_window_ui_quad(vk, vk->context->swapchain_dims);
+   /* A frame drawn whole keeps its viewport, for touch and readback. */
+   if (!vk->views.active)
+      vulkan_set_viewport(vk, video_info->dims, false, true);
 }
 
 /* @win's output for the surface it has now: made the first time,
@@ -10951,11 +11159,12 @@ static int vulkan_window_output(vk_t *vk, struct vk_window *win)
 
 /* The windows' part of a frame, before its views are settled: each one
  * made or let go of, polled, and given an output and a free image.
- * Those that will draw put their views' chains, sized for them, in
- * @view_chains and @view_rects beside the main window's, so the frame
- * copies those views and runs their passes too: a view is in one
- * window only. @views and @stock as vulkan_views_prepare() left them.
- * Never waits. */
+ * Those that will draw their screens put their views' chains, sized for
+ * them, in @view_chains and @view_rects beside the main window's, so
+ * the frame copies those views and runs their passes too: a view is in
+ * one window only. A window that shows UI is prepared on every frame;
+ * its screens are drawn again on a repeat. @views and @stock as
+ * vulkan_views_prepare() left them. Never waits. */
 static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       const video_frame_info_t *video_info, bool new_frame, bool views,
       bool stock, vulkan_filter_chain_t **view_chains,
@@ -10988,18 +11197,19 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       /* Those let go of on an earlier frame whose output is done now */
       for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
          if (vk->windows.win[w].flags & VK_WINDOW_FLAG_CLOSE)
-            vulkan_window_retire(vk, w);
+            vulkan_window_retire(vk, w, false);
    }
    video_windows_steps(&vk->windows.held, f, &retire, &create);
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (retire & (1u << w))
-         vulkan_window_retire(vk, w);
+         vulkan_window_retire(vk, w, false);
    if (!f)
       return;
    /* Marked after steps(), which clears the marks when this frame's
     * restore count moved, so a closed window waits for the next one */
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
-      if ((closed & (1u << w)) && f->window_screens[w])
+      if (     (closed & (1u << w))
+            && (f->window_screens[w] || f->window_ui[w]))
          vulkan_window_attach(vk, f, w);
    create &= ~closed;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
@@ -11010,18 +11220,20 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
             || vulkan_window_make(vk, f, w))
          continue;
       RARCH_WARN("[Vulkan] A screen window can't be made. "
-            "Its screens stay in the main window.\n");
+            "What it shows stays in the main window.\n");
       vulkan_window_attach(vk, f, w);
    }
 
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
    {
       int state;
+      bool screens;
       struct vk_window *win = &vk->windows.win[w];
       vulkan_output_t *out  = &win->output;
 
-      /* A frame that ended before its draw left it set */
-      win->flags &= ~VK_WINDOW_FLAG_PREPARED;
+      /* A frame that ended before its draw left them set */
+      win->flags &= ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_SCREENS
+            | VK_WINDOW_FLAG_UP);
       /* Its surface was taken back: the output goes, on later frames
        * while the presentation engine still has an image */
       if (     (vk->windows.held.live & (1u << w))
@@ -11034,16 +11246,24 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       }
       if (     !(vk->windows.held.live & (1u << w))
             || (win->flags & VK_WINDOW_FLAG_CLOSE)
-            || !f->window_screens[w]
+            || !(f->window_screens[w] || f->window_ui[w])
+            || (f->window_keep & (1u << w))
             || !win->native.configured || !win->native.presentable
             || !win->native.surface
             || !VIDEO_SCALE_W(win->native.dims)
             || !VIDEO_SCALE_H(win->native.dims))
          continue;
-      state = vulkan_window_output(vk, win);
-      /* Views the main window draws whole are not drawn here either,
-       * and a repeat keeps the last image */
-      if (state > 0 && !(new_frame && views))
+      /* Views the main window draws whole are not drawn here either; a
+       * repeat keeps the last image unless the UI is drawn there */
+      screens = views && f->window_screens[w]
+         && (new_frame || f->window_ui[w]);
+      state   = vulkan_window_output(vk, win);
+      if (state > 0 && !screens && !f->window_ui[w])
+         state = 0;
+      /* Once a frame, not again from the BFI, sub-frame and swap
+       * interval calls; still up, so its UI is drawn nowhere there */
+      if (     state > 0
+            && (vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
          state = 0;
       if (state > 0 && !vulkan_output_acquire(out))
          state = (out->flags & VK_OUTPUT_FLAG_LOST) ? -1 : 0;
@@ -11054,45 +11274,81 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
          vulkan_window_attach(vk, f, w);
          continue;
       }
+      /* No free image is no failure: its last image stays */
+      win->flags |= VK_WINDOW_FLAG_UP;
       if (!state)
          continue;
 
-      video_driver_window_layout_screens(f, f->window_screens[w],
-            out->dims, &win->layout);
-      if (!vulkan_vv_pick_chains(vk, &vk->views.chains,
-               &video_info->views, &win->layout, stock,
-               !win->layout.offscreen, out->dims, win->chains, rects))
-         continue;
-      for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (screens)
       {
-         if (!win->chains[i])
-            continue;
-         /* A view drawn in two places would run its passes twice */
-         if (view_chains[i])
+         video_driver_window_layout_screens(f, f->window_screens[w],
+               out->dims, &win->layout);
+         screens = vulkan_vv_pick_chains(vk, &vk->views.chains,
+               &video_info->views, &win->layout, stock,
+               !win->layout.offscreen, out->dims, win->chains, rects);
+      }
+      if (screens)
+      {
+         for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
          {
-            win->chains[i] = NULL;
-            continue;
+            if (!win->chains[i])
+               continue;
+            /* A view drawn in two places would run its passes twice */
+            if (view_chains[i])
+            {
+               win->chains[i] = NULL;
+               continue;
+            }
+            view_chains[i] = win->chains[i];
+            view_rects[i]  = rects[i];
          }
-         view_chains[i] = win->chains[i];
-         view_rects[i]  = rects[i];
+         win->flags |= VK_WINDOW_FLAG_SCREENS;
+      }
+      else
+      {
+         /* The image stays acquired for the next frame that draws */
+         if (!f->window_ui[w])
+            continue;
+         memset(win->chains, 0, sizeof(win->chains));
       }
       win->flags |= VK_WINDOW_FLAG_PREPARED;
    }
 }
 
+/* View @i, through @chain, out of the window that would draw it this
+ * frame; false when no window does */
+static bool vulkan_windows_drop_view(vk_t *vk, unsigned i,
+      const vulkan_filter_chain_t *chain)
+{
+   unsigned w;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      struct vk_window *win = &vk->windows.win[w];
+      if (     (win->flags & VK_WINDOW_FLAG_SCREENS)
+            && win->chains[i] == chain)
+      {
+         win->chains[i] = NULL;
+         return true;
+      }
+   }
+   return false;
+}
+
 /* The screens' own windows, each prepared one drawn into its image in
  * the frame's command buffer: after the main pass, before the chains
  * end their frame, so the views' copies and passes are where the main
- * window's draw left them. Views only: the menu, OSD, widgets and
- * overlay stay in the main window. True when a window was drawn, whose
- * semaphore the frame's submission then signals. */
+ * window's draw left them, then the window UI image where it is for
+ * that window. The input overlay stays in the main window. True when a
+ * window was drawn, whose semaphore the frame's submission then
+ * signals. */
 static bool vulkan_windows_draw(vk_t *vk,
-      const video_frame_info_t *video_info, bool new_frame)
+      const video_frame_info_t *video_info)
 {
    unsigned w;
    struct vulkan_views_draw_ctx d;
-   math_matrix_4x4 mvp = vk->mvp;
-   bool drawn          = false;
+   math_matrix_4x4 mvp            = vk->mvp;
+   const video_windows_frame_t *f = video_info->windows;
+   bool drawn                     = false;
 
    d.video_info        = video_info;
    d.direct            = vk->windows.direct;
@@ -11102,15 +11358,25 @@ static bool vulkan_windows_draw(vk_t *vk,
    {
       VkClearValue clear;
       VkRenderPassBeginInfo rp;
+      bool screens;
       struct vk_window *win = &vk->windows.win[w];
       vulkan_output_t *out  = &win->output;
 
       if (!(win->flags & VK_WINDOW_FLAG_PREPARED))
          continue;
-      win->flags &= ~VK_WINDOW_FLAG_PREPARED;
+      screens     = (win->flags & VK_WINDOW_FLAG_SCREENS)
+         && vk->views.active;
+      win->flags &= ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_SCREENS);
       /* The image stays acquired for the next frame that draws */
-      if (!new_frame || !vk->views.active)
+      if (     !screens
+            && (!(f && f->window_ui[w]) || vk->windows.ui_window != w))
          continue;
+      if (!screens)
+      {
+         /* Its touches map off-screen */
+         memset(&win->layout, 0, sizeof(win->layout));
+         win->layout.canvas_dims = out->dims;
+      }
 
       /* Its acquire fence has signalled: nothing reads it any more */
       VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, out->images[out->index],
@@ -11136,8 +11402,11 @@ static bool vulkan_windows_draw(vk_t *vk,
       vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
       vk->tracker.pipeline = VK_NULL_HANDLE;
-      vulkan_vv_draw_placements(vk, &d, &win->layout, win->chains,
-            !win->layout.offscreen, out->dims, d.direct != NULL);
+      if (screens)
+         vulkan_vv_draw_placements(vk, &d, &win->layout, win->chains,
+               !win->layout.offscreen, out->dims, d.direct != NULL);
+      if (vk->windows.ui_window == w)
+         vulkan_window_ui_quad(vk, out->dims);
       vkCmdEndRenderPass(vk->cmd);
       VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, out->images[out->index],
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -11148,7 +11417,8 @@ static bool vulkan_windows_draw(vk_t *vk,
       win->flags |= VK_WINDOW_FLAG_DRAWN;
       drawn       = true;
    }
-   vk->mvp = mvp;
+   vk->windows.ui_window = 0;
+   vk->mvp               = mvp;
    if (drawn)
    {
       /* The chains bound descriptor sets of their own. */
@@ -11203,12 +11473,14 @@ static void vulkan_windows_present(vk_t *vk,
       }
       if (f)
          video_driver_publish_window_layout(w, win->native.generation,
-               &win->layout, &f->core, f->core_dims, win->native.dims);
+               vk->windows.held.display[w], &win->layout, &f->core,
+               f->core_dims, win->native.dims);
    }
 }
 
 /* The driver's teardown, after its own submissions: every window let
- * go of, waiting on each output's own fences */
+ * go of, waiting on each output's own fences, and left up where the
+ * context can keep it */
 static void vulkan_windows_free(vk_t *vk)
 {
    unsigned w;
@@ -11216,11 +11488,38 @@ static void vulkan_windows_free(vk_t *vk)
       return;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
    {
+      bool keep;
       if (!(vk->windows.held.live & (1u << w)))
          continue;
+      /* A window placement already dropped goes */
+      keep = !(vk->windows.win[w].flags & VK_WINDOW_FLAG_CLOSE);
       if (vk->windows.win[w].flags & VK_WINDOW_FLAG_OUTPUT)
          vulkan_output_finish(&vk->windows.win[w].output);
-      vulkan_window_retire(vk, w);
+      vulkan_window_retire(vk, w, keep);
+   }
+}
+
+/* The windows the last driver left up, adopted as they are: still
+ * shown, touches off-screen, until a frame draws them */
+static void vulkan_windows_take(vk_t *vk)
+{
+   static const video_views_layout_t no_layout;
+   static const video_views_map_t no_map;
+   unsigned w;
+   const gfx_ctx_window_driver_t *ctx = vk->ctx_driver
+      ? vk->ctx_driver->windows : NULL;
+   if (!ctx || !ctx->take)
+      return;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      struct vk_window *win = &vk->windows.win[w];
+      unsigned display      = 0;
+      if (!ctx->take(vk->ctx_data, w, &win->native, &display))
+         continue;
+      vk->windows.held.live       |= 1u << w;
+      vk->windows.held.display[w]  = display;
+      video_driver_publish_window_layout(w, win->native.generation,
+            display, &no_layout, &no_map, 0, win->native.dims);
    }
 }
 #endif
@@ -12059,6 +12358,51 @@ static VkResult vulkan_record_submit(vk_t *vk, const VkSubmitInfo *submit,
 }
 #endif
 
+#if defined(HAVE_MENU)
+/* The menu, and the texture of a menu driver that draws into one, in a
+ * target laid out at @dims */
+static void vulkan_draw_menu(vk_t *vk, video_frame_info_t *video_info,
+      bool menu_is_alive, unsigned dims)
+{
+   menu_driver_frame(menu_is_alive, video_info);
+
+   if (vk->menu.textures[vk->menu.last_index].image  != VK_NULL_HANDLE ||
+       vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE
+     || vk->menu.textures_optimal[vk->menu.last_index].image != VK_NULL_HANDLE)
+   {
+      struct vk_draw_quad quad;
+      struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
+      bool menu_linear_filter    = video_info->menu_linear_filter;
+
+      vulkan_set_viewport(vk, dims, ((vk->flags &
+               VK_FLAG_MENU_FULLSCREEN) > 0), false);
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+      quad.pipeline              = (vk->flags & VK_FLAG_SDR_PIPELINE)
+         ? vk->pipelines.alpha_blend_sdr
+         : vk->pipelines.alpha_blend;
+#else
+      quad.pipeline              = vk->pipelines.alpha_blend;
+#endif
+      quad.texture               = &vk->menu.textures[vk->menu.last_index];
+
+      if (optimal->memory != VK_NULL_HANDLE)
+         quad.texture = optimal;
+
+      if (menu_linear_filter)
+         quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP)
+            ? vk->samplers.mipmap_linear : vk->samplers.linear;
+      else
+         quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP)
+            ? vk->samplers.mipmap_nearest : vk->samplers.nearest;
+
+      quad.mvp        = &vk->mvp_menu;
+      quad.color      = rgba16_white(vk->menu.alpha);
+      vulkan_draw_quad(vk, &quad);
+   }
+}
+#endif
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -12151,6 +12495,9 @@ static bool vulkan_frame(void *data, const void *frame,
    bool views_ui                                 = false;
    bool views_ui_menu                            = false;
    unsigned ui_layer_dims                        = 0;
+   /* The menu and the notifications are drawn in the main window */
+   bool menu_here                                = true;
+   bool notes_here                               = true;
 #ifdef HAVE_OPENXR
    vulkan_filter_chain_t *xr_chains[RETRO_VIDEO_VIEWS_MAX];
    vulkan_filter_chain_t *xr_frame               = NULL;
@@ -12169,6 +12516,10 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Recording's readback was already taken this frame, before the UI. */
    bool record_readback_done                     = false;
 #ifdef HAVE_VIDEO_WINDOWS
+   video_views_ui_dims_t window_ui_saved;
+   unsigned window_ui_away                       = 0;
+   unsigned window_ui_draw                       = 0;
+   bool window_ui_main                           = false;
    bool windows_drawn                            = false;
 #endif
    bool movie_frame                              = vk->movie_pending;
@@ -12705,7 +13056,18 @@ static bool vulkan_frame(void *data, const void *frame,
                && (!(vk->views.copied & (1u << i))
                   || !vk->swapchain[vk->views.last_index]
                      .view_images[i].image))
+         {
+#ifdef HAVE_VIDEO_WINDOWS
+            /* A window's view the last new frame did not copy: only
+             * that window goes without it */
+            if (vulkan_windows_drop_view(vk, i, view_chains[i]))
+            {
+               view_chains[i] = NULL;
+               continue;
+            }
+#endif
             views = false;
+         }
    }
 #ifdef HAVE_OPENXR
    /* Nor may the headset: a view only it shows waits for a real frame,
@@ -13092,18 +13454,28 @@ static bool vulkan_frame(void *data, const void *frame,
    if (!ui_layer_dims && xr_draw)
       ui_layer_dims = video_info->dims;
 #endif
-   /* The UI layer is drawn and composited only when there is UI, by
-    * the same test the HDR composite makes. Overlays are hidden per
-    * eye, and drawn around the layer when it is for a headset. */
-   views_ui_menu = (vk->flags & VK_FLAG_MENU_ENABLE) ? true : false;
+#ifdef HAVE_VIDEO_WINDOWS
+   window_ui_away = vulkan_window_ui_prepare(vk, video_info, msg,
+         &window_ui_draw, &window_ui_main);
+   menu_here      = !(window_ui_away
+         & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU));
+   notes_here     = !(window_ui_away
+         & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS));
+#endif
+   /* The UI layer is drawn and composited only when there is UI in
+    * this window, by the same test the HDR composite makes. Overlays
+    * are hidden per eye, and drawn around the layer when it is for a
+    * headset. */
+   views_ui_menu = menu_here && (vk->flags & VK_FLAG_MENU_ENABLE);
 #ifdef HAVE_OPENXR
    /* Edit mode moves the menu's quad: it stays up, empty. */
-   if (xr_draw && video_info->headset_editing)
+   if (menu_here && xr_draw && video_info->headset_editing)
       views_ui_menu = true;
 #endif
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         views_ui_menu, msg, statistics_show,
-         video_info->widgets_visible)
+         views_ui_menu, notes_here ? msg : NULL,
+         notes_here && statistics_show,
+         notes_here && video_info->widgets_visible)
       && vk->pipelines.alpha_premult
       && vulkan_vv_target_ensure(vk, &vk->views.ui_target, &vk->views.ui,
             ui_layer_dims);
@@ -13292,12 +13664,51 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_GFX_WIDGETS)
+      /* Nothing else to show here: the logo on the cleared black */
+      if (views && video_info->windows && video_info->windows->logo)
+         gfx_widgets_draw_idle_logo(video_info,
+               video_info->windows->logo_texture);
+#endif
+
       /* Touch overlays would straddle both eyes, and stay out of the UI
        * layer a headset shows. */
 #ifdef HAVE_OVERLAY
       if (     (vk->flags & VK_FLAG_OVERLAY_ENABLE) && overlay_behind_menu
             && !views_per_eye)
          vulkan_render_overlay(vk, video_info->dims);
+#endif
+
+#ifdef HAVE_VIDEO_WINDOWS
+      /* The layers drawn in another window go into its image first */
+      if (window_ui_draw)
+      {
+         unsigned ui_dims = vk->windows.ui_target.dims;
+         vulkan_window_ui_begin(vk, video_info, &window_ui_saved, ui_dims);
+#if defined(HAVE_MENU)
+         if (     (window_ui_draw & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU))
+               && (vk->flags & VK_FLAG_MENU_ENABLE))
+            vulkan_draw_menu(vk, video_info, menu_is_alive, ui_dims);
+         else if ((window_ui_draw
+                  & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS))
+               && !(vk->flags & VK_FLAG_MENU_ENABLE)
+               && statistics_show && osd_params)
+            font_driver_render_msg(vk, stat_text,
+                  video_info->stat_text_len, osd_params, NULL);
+#endif
+         if (window_ui_draw
+               & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS))
+         {
+            if (message_visible)
+               font_driver_render_msg(vk, msg, strlen(msg), NULL, NULL);
+#ifdef HAVE_GFX_WIDGETS
+            if (widgets_active)
+               gfx_widgets_frame(video_info);
+#endif
+         }
+         vulkan_window_ui_end(vk, video_info, backbuffer, &window_ui_saved,
+               window_ui_main);
+      }
 #endif
 
       if (views_ui)
@@ -13310,44 +13721,11 @@ static bool vulkan_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
       if (vk->flags & VK_FLAG_MENU_ENABLE)
       {
-         menu_driver_frame(menu_is_alive, video_info);
-
-         if (vk->menu.textures[vk->menu.last_index].image  != VK_NULL_HANDLE ||
-             vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE
-           || vk->menu.textures_optimal[vk->menu.last_index].image != VK_NULL_HANDLE)
-         {
-            struct vk_draw_quad quad;
-            struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
-            bool menu_linear_filter    = video_info->menu_linear_filter;
-
-            vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height), ((vk->flags &
-                     VK_FLAG_MENU_FULLSCREEN) > 0), false);
-
-#ifdef VULKAN_HDR_SWAPCHAIN
-            quad.pipeline              = (vk->flags & VK_FLAG_SDR_PIPELINE)
-               ? vk->pipelines.alpha_blend_sdr
-               : vk->pipelines.alpha_blend;
-#else
-            quad.pipeline              = vk->pipelines.alpha_blend;
-#endif
-            quad.texture               = &vk->menu.textures[vk->menu.last_index];
-
-            if (optimal->memory != VK_NULL_HANDLE)
-               quad.texture = optimal;
-
-            if (menu_linear_filter)
-               quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP)
-                  ? vk->samplers.mipmap_linear : vk->samplers.linear;
-            else
-               quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP)
-                  ? vk->samplers.mipmap_nearest : vk->samplers.nearest;
-
-            quad.mvp        = &vk->mvp_menu;
-            quad.color      = rgba16_white(vk->menu.alpha);
-            vulkan_draw_quad(vk, &quad);
-         }
+         if (menu_here)
+            vulkan_draw_menu(vk, video_info, menu_is_alive,
+                  VIDEO_SCALE_PACK(width, height));
       }
-      else if (statistics_show)
+      else if (statistics_show && notes_here)
       {
          if (osd_params)
             font_driver_render_msg(vk,
@@ -13362,11 +13740,11 @@ static bool vulkan_frame(void *data, const void *frame,
          vulkan_render_overlay(vk, video_info->dims);
 #endif
 
-      if (message_visible)
+      if (message_visible && notes_here)
           font_driver_render_msg(vk, msg, strlen(msg), NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
-      if (widgets_active)
+      if (widgets_active && notes_here)
          gfx_widgets_frame(video_info);
 #endif
 
@@ -13456,6 +13834,16 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
    }
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The window UI image was not drawn: its window keeps its last
+    * image, with the UI */
+   else if (vk->windows.ui_window)
+   {
+      vk->windows.win[vk->windows.ui_window].flags &=
+         ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_SCREENS);
+      vk->windows.ui_window = 0;
+   }
+#endif
 
 #ifdef HAVE_OPENXR
    if (xr_draw)
@@ -13471,8 +13859,7 @@ static bool vulkan_frame(void *data, const void *frame,
    if (vk->windows.held.live)
    {
       vk->windows.direct = views_direct_tex;
-      windows_drawn      = vulkan_windows_draw(vk, video_info,
-            frame || movie_frame);
+      windows_drawn      = vulkan_windows_draw(vk, video_info);
    }
 #endif
 

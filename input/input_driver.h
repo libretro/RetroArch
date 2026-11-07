@@ -1499,7 +1499,35 @@ enum input_pointers_flags
    INPUT_POINTERS_GUN_BUTTONS_BOUND = (1 << 6),
    /* ... and one bound to a mouse button reads the one mouse at every
     * port, whatever each port's Mouse Index */
-   INPUT_POINTERS_GUN_BUTTONS_EVERY_PORT = (1 << 7)
+   INPUT_POINTERS_GUN_BUTTONS_EVERY_PORT = (1 << 7),
+   /* A touch is pressed only inside what it is read against: as
+    * RETRO_DEVICE_POINTER or RARCH_DEVICE_POINTER_SECOND the viewport
+    * or its window's screens, as RARCH_DEVICE_POINTER_SCREEN the
+    * screen. Android reports no touch outside them. */
+   INPUT_POINTERS_PRESSED_INSIDE = (1 << 8),
+   /* Touches in a screen's own window are a second list,
+    * RARCH_DEVICE_POINTER_SECOND, in the order published, which the
+    * frontend reads after the main one; RETRO_DEVICE_POINTER,
+    * RARCH_DEVICE_POINTER_SCREEN and the lightgun have the main
+    * window's alone. Android's second display. */
+   INPUT_POINTERS_WINDOWS_SECOND = (1 << 9),
+   /* The driver answers the mouse itself, as RETRO_DEVICE_MOUSE and
+    * RARCH_DEVICE_MOUSE_SCREEN, and the lightgun's X and Y and, aimed
+    * by the mouse (no GUN_AT_TOUCH), its SCREEN_X and SCREEN_Y; the
+    * published mouse is for binds to its buttons. Android: its motion
+    * and wheel go with each read. */
+   INPUT_POINTERS_MOUSE_BY_DRIVER = (1 << 10),
+   /* A touch index is a slot that keeps its place when its finger
+    * lifts: an index with no touch reads 0 and no mouse stands for
+    * one; IS_OFFSCREEN is the touch's place in the viewport, read
+    * either way; the lightgun read at index n has touch n's
+    * IS_OFFSCREEN whatever aims it and, with GUN_AT_TOUCH, its aim.
+    * Android's. */
+   INPUT_POINTERS_TOUCH_SLOTS = (1 << 11),
+   /* A pointer id the frontend does not hold - Android's
+    * RARCH_DEVICE_ID_POINTER_BACK - is the driver's to answer; without
+    * this it reads 0 */
+   INPUT_POINTERS_POINTER_IDS_BY_DRIVER = (1 << 12)
 };
 
 /* From the driver's poll. @count devices, at most MAX_USERS.
@@ -1547,7 +1575,7 @@ bool input_driver_poll_viewport(struct video_viewport *vp);
 unsigned input_driver_pointer_read_as(unsigned i);
 
 /* A driver with a touchscreen, with the mice, in its poll. For each of
- * @count places, at most 16: where the contact is in the window, as
+ * @count places, at most 32: where the contact is in the window, as
  * VIDEO_POS_PACK; a bit in @present if there is a contact there at
  * all; a bit in @down if it is pressed. The three are separate: a
  * contact at 0,0 is a contact, and one that has lifted may keep its
@@ -1568,6 +1596,14 @@ void input_driver_publish_touches(const uint32_t *pos, unsigned count,
 void input_driver_publish_window_touches(const uint32_t *pos,
       const input_video_window_t *windows, unsigned count,
       unsigned present, unsigned down);
+
+/* Touch @idx of those published in window @window (not 0) at this
+ * poll: its place over that window's whole client area, as
+ * RARCH_DEVICE_POINTER_SCREEN places one over the main window's, and
+ * whether it is down. False when there is no such touch, or the window
+ * has not shown (video_driver_window_shown()). App thread. */
+bool input_driver_window_touch(unsigned window, unsigned idx,
+      uint32_t *screen_pos, bool *down);
 #endif
 
 typedef struct input_pointer_view

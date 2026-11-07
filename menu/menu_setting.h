@@ -119,6 +119,20 @@ void menu_setting_free(rarch_setting_t *setting);
  * name of the keyboard listed there. */
 size_t menu_setting_keyboard_index_name(unsigned idx, char *s, size_t len);
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* Rebuilds the display rows' values: Auto, then each listed display's
+ * key. App thread; the list is built from it. */
+void menu_setting_video_screen_display_values(void);
+
+/* The screens the menu lists: Game Screens 1 and 2, and each further one
+ * the core has */
+unsigned menu_setting_video_screens(void);
+
+/* Whether Menu Follows offers this value: a screen the menu lists, or
+ * Separate */
+bool menu_setting_video_menu_follows_offered(unsigned follows);
+#endif
+
 RETRO_END_DECLS
 
 #endif

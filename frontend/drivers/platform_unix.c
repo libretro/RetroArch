@@ -318,6 +318,32 @@ void android_second_display_request(unsigned ordinal, bool given_up)
          android_app->setSecondDisplay, (jint)ordinal, (jint)number);
 }
 
+void android_activity_move_request(unsigned ordinal)
+{
+   JNIEnv *env;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   if (!android_app)
+      return;
+   /* Not asked is a failure placement hears of on the next frame */
+   if (     !android_app->moveToDisplay
+         || !(env = jni_thread_getenv()))
+   {
+      retro_atomic_store_release_int(
+            &android_app->second_display.move_failed, 1);
+      return;
+   }
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
+         android_app->moveToDisplay, (jint)ordinal);
+}
+
+bool android_activity_move_failed(void)
+{
+   struct android_app *android_app = (struct android_app*)g_android;
+   return android_app && retro_atomic_exchange_int(
+         &android_app->second_display.move_failed, 0) != 0;
+}
+
 /* UI thread: the second display's window goes. Never waits for the
  * renderer: its own references keep the window alive, a frame still
  * drawing into it gets an error from the abandoned queue, and the
@@ -339,9 +365,31 @@ static void android_second_surface_term(struct android_app *android_app)
       android_app_write_cmd(android_app, APP_CMD_SECOND_WINDOW_CHANGED);
 }
 
+/* Element @i of @strings into @s, "" for none */
+static void android_jni_string_at(JNIEnv *env, jobjectArray strings,
+      jsize i, char *s, size_t len)
+{
+   jstring str = (jstring)(*env)->GetObjectArrayElement(env, strings, i);
+   s[0]        = '\0';
+   if (!str)
+      return;
+   {
+      const char *utf = (*env)->GetStringUTFChars(env, str, NULL);
+      if (utf)
+      {
+         strlcpy(s, utf, len);
+         (*env)->ReleaseStringUTFChars(env, str, utf);
+      }
+      else
+         JNI_EXCEPTION(env);
+   }
+   (*env)->DeleteLocalRef(env, str);
+}
+
 JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeDisplaysChanged(
       JNIEnv *env, jclass clazz, jintArray connections, jintArray flags,
-      jintArray widths, jintArray heights, jobjectArray names)
+      jintArray widths, jintArray heights, jobjectArray names,
+      jobjectArray models)
 {
    video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
    jint conn[VIDEO_WINDOW_DISPLAYS_MAX];
@@ -352,7 +400,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    struct android_app *android_app = g_android_early;
 
    if (     !android_app || !connections || !flags || !widths || !heights
-         || !names)
+         || !names || !models)
       return;
    count = (*env)->GetArrayLength(env, connections);
    if (count > VIDEO_WINDOW_DISPLAYS_MAX)
@@ -360,7 +408,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    if (     (*env)->GetArrayLength(env, flags)   < count
          || (*env)->GetArrayLength(env, widths)  < count
          || (*env)->GetArrayLength(env, heights) < count
-         || (*env)->GetArrayLength(env, names)   < count)
+         || (*env)->GetArrayLength(env, names)   < count
+         || (*env)->GetArrayLength(env, models)  < count)
       return;
    (*env)->GetIntArrayRegion(env, connections, 0, count, conn);
    (*env)->GetIntArrayRegion(env, flags, 0, count, bits);
@@ -370,8 +419,6 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    for (i = 0; i < count; i++)
    {
       video_window_display_t *d = &list[i];
-      jstring name              = (jstring)
-         (*env)->GetObjectArrayElement(env, names, i);
       memset(d, 0, sizeof(*d));
       d->ordinal    = (unsigned)i + 1;
       d->connection = (conn[i] >= 0
@@ -382,20 +429,12 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
       d->on         = (bits[i] & ANDROID_DISPLAY_ON)       != 0;
       d->is_private = (bits[i] & ANDROID_DISPLAY_PRIVATE)  != 0;
       d->physical   = (bits[i] & ANDROID_DISPLAY_PHYSICAL) != 0;
+      d->refused    = (bits[i] & ANDROID_DISPLAY_REFUSED)  != 0;
+      d->is_default = (bits[i] & ANDROID_DISPLAY_DEFAULT)  != 0;
       d->dims       = (w[i] > 0 && h[i] > 0)
          ? VIDEO_SCALE_PACK(w[i], h[i]) : 0;
-      if (name)
-      {
-         const char *utf = (*env)->GetStringUTFChars(env, name, NULL);
-         if (utf)
-         {
-            strlcpy(d->name, utf, sizeof(d->name));
-            (*env)->ReleaseStringUTFChars(env, name, utf);
-         }
-         else
-            JNI_EXCEPTION(env);
-         (*env)->DeleteLocalRef(env, name);
-      }
+      android_jni_string_at(env, names, i, d->name, sizeof(d->name));
+      android_jni_string_at(env, models, i, d->model, sizeof(d->model));
    }
 
    video_driver_publish_window_displays(list, (unsigned)count);
@@ -528,75 +567,16 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    android_second_wake(android_app);
 }
 
-/* A down or a move keeps room in the ring for ups */
-static void android_second_input_write(struct android_app *android_app,
-      const android_input_fields_t *in, bool up)
-{
-   retro_spsc_t *ring = &android_app->second_display.inputs;
-   size_t need        = up ? sizeof(*in)
-      : (ANDROID_SECOND_INPUT_UPS + 1) * sizeof(*in);
-
-   if (retro_spsc_write_avail(ring) < need)
-      return;
-   retro_spsc_write(ring, in, sizeof(*in));
-   android_second_wake(android_app);
-}
-
-/* A key the second display's window received; @event_time is
- * KeyEvent.getEventTime(), milliseconds */
-JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeKey(
-      JNIEnv *env, jclass clazz, jint device_id, jint source, jint action,
-      jint keycode, jint flags, jint meta_state, jlong event_time)
-{
-   android_input_fields_t key;
-   struct android_app *android_app = g_android_early;
-
-   if (!android_app)
-      return;
-   memset(&key, 0, sizeof(key));
-   key.event_time = (int64_t)event_time * 1000000;
-   key.type       = AINPUT_EVENT_TYPE_KEY;
-   key.device_id  = device_id;
-   key.source     = source;
-   key.action     = action;
-   key.keycode    = keycode;
-   key.flags      = flags;
-   key.meta_state = meta_state;
-   android_second_input_write(android_app, &key,
-         action == AKEY_EVENT_ACTION_UP);
-}
-
-/* A stick or hat move the second display's window received: the axes
- * in ANDROID_JOYSTICK_AXES' order */
-JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeMotion(
-      JNIEnv *env, jclass clazz, jint device_id, jint source,
-      jfloatArray axes)
-{
-   android_input_fields_t move;
-   struct android_app *android_app = g_android_early;
-
-   if (     !android_app || !axes
-         || (*env)->GetArrayLength(env, axes) < ANDROID_JOYSTICK_AXES)
-      return;
-   memset(&move, 0, sizeof(move));
-   move.type      = AINPUT_EVENT_TYPE_MOTION;
-   move.device_id = device_id;
-   move.source    = source;
-   (*env)->GetFloatArrayRegion(env, axes, 0, ANDROID_JOYSTICK_AXES,
-         move.axes);
-   android_second_input_write(android_app, &move, false);
-}
-
-/* The second display's window gained or lost focus; Java also sends a
- * loss when it dismisses it */
-JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeFocusChanged(
-      JNIEnv *env, jclass clazz, jboolean focused)
+/* Java could not start the move android_activity_move_request() asked
+ * for */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeMoveFailed(
+      JNIEnv *env, jclass clazz)
 {
    struct android_app *android_app = g_android_early;
 
    if (android_app)
-      android_app_write_cmd(android_app, focused != JNI_FALSE
-            ? APP_CMD_SECOND_GAINED_FOCUS : APP_CMD_SECOND_LOST_FOCUS);
+      retro_atomic_store_release_int(
+            &android_app->second_display.move_failed, 1);
 }
 
 /* Upper bound on how long a lifecycle callback will block waiting for the
@@ -699,7 +679,6 @@ static void android_app_free(struct android_app* android_app)
          android_second_surface_free(node);
    }
    retro_spsc_free(&android_app->second_display.touches);
-   retro_spsc_free(&android_app->second_display.inputs);
    retro_spsc_free(&android_app->input_reader.events);
    retro_eventcount_free(&android_app->input_reader.room);
 
@@ -975,12 +954,10 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->msgread  = msgpipe[0];
    android_app->msgwrite = msgpipe[1];
 
-   /* A ring that cannot be made drops the second display's touches or
-    * keys; nothing else depends on them */
+   /* A ring that cannot be made drops the second display's touches;
+    * nothing else depends on them */
    retro_spsc_init(&android_app->second_display.touches,
          64 * sizeof(android_second_touch_t));
-   retro_spsc_init(&android_app->second_display.inputs,
-         ANDROID_SECOND_INPUTS * sizeof(android_input_fields_t));
 
    android_app->thread   = sthread_create(android_app_entry, android_app);
    /* NULL-check sthread_create: on OOM the thread won't be
@@ -995,7 +972,6 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       if (android_app->savedState)
          free(android_app->savedState);
       retro_spsc_free(&android_app->second_display.touches);
-      retro_spsc_free(&android_app->second_display.inputs);
       android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
@@ -1031,7 +1007,6 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       if (android_app->savedState)
          free(android_app->savedState);
       retro_spsc_free(&android_app->second_display.touches);
-      retro_spsc_free(&android_app->second_display.inputs);
       android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
@@ -4076,6 +4051,8 @@ static void frontend_unix_init(void *data)
          "hideKeyboard", "()V");
    GET_METHOD_ID(env, android_app->setSecondDisplay, class,
          "setSecondDisplay", "(II)V");
+   GET_METHOD_ID(env, android_app->moveToDisplay, class,
+         "moveToDisplay", "(I)V");
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
    GET_METHOD_ID(env, android_app->addSafeStartShortcut, class,
          "addSafeStartShortcut", "()V");

@@ -74,10 +74,11 @@ struct retro_hw_render_callback *video_driver_get_hw_context(void)
 unsigned video_driver_get_output_dims(void) { return 0; }
 void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits) { (void)set_bits; (void)clear_bits; }
 void video_driver_publish_window_layout(unsigned window,
-      unsigned generation, const video_views_layout_t *layout,
+      unsigned generation, unsigned display,
+      const video_views_layout_t *layout,
       const video_views_map_t *core_map, unsigned core_dims,
       unsigned window_dims)
-{ (void)window; (void)generation; (void)layout; (void)core_map; (void)core_dims; (void)window_dims; }
+{ (void)window; (void)generation; (void)display; (void)layout; (void)core_map; (void)core_dims; (void)window_dims; }
 void video_driver_set_output_dims(unsigned dims) { (void)dims; }
 bool video_driver_test_all_flags(enum display_flags testflag) { (void)testflag; return false; }
 bool video_driver_thread_wrapper_active(void) { return false; }

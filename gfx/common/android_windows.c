@@ -134,19 +134,17 @@ unsigned android_windows_poll(void *owner, video_window_event_t *events,
    return video_windows_drain(owner, android_windows_at, events, capacity);
 }
 
-void android_windows_destroy(void *owner, video_window_native_t *window)
+/* @state's window gone: its surface released, input unmapped, and
+ * Java asked to hide it */
+static void android_windows_let_go(android_window_t *state)
 {
    struct android_app *android_app = (struct android_app*)g_android;
-   android_window_t *state = window ? (android_window_t*)window->state : NULL;
-   unsigned screen, i;
-   if (!state || state->common.owner != owner)
-      return;
-   screen                  = state->common.request.screen;
-   android_windows[screen] = NULL;
+   unsigned screen                 = state->common.request.screen;
+   unsigned i;
+   android_windows[screen]         = NULL;
    if (state->node)
       android_second_surface_free(state->node);
    free(state);
-   memset(window, 0, sizeof(*window));
    if (android_app)
    {
       struct android_second_display *second = &android_app->second_display;
@@ -164,6 +162,58 @@ void android_windows_destroy(void *owner, video_window_native_t *window)
          break;
    /* Holding nothing now: the surfaces asked for so far need no handoff */
    android_second_display_request(0, i == RETRO_VIDEO_VIEWS_MAX);
+}
+
+void android_windows_destroy(void *owner, video_window_native_t *window)
+{
+   android_window_t *state = window ? (android_window_t*)window->state : NULL;
+   if (!state || state->common.owner != owner)
+      return;
+   memset(window, 0, sizeof(*window));
+   android_windows_let_go(state);
+}
+
+void android_windows_keep(void *owner, video_window_native_t *window)
+{
+   android_window_t *state = window ? (android_window_t*)window->state : NULL;
+   if (!state || state->common.owner != owner)
+      return;
+   state->common.owner   = NULL;
+   state->common.native  = NULL;
+   state->common.pending = 0;
+   memset(window, 0, sizeof(*window));
+}
+
+bool android_windows_take(void *owner, unsigned screen,
+      video_window_native_t *window, unsigned *display)
+{
+   android_window_t *state = screen < RETRO_VIDEO_VIEWS_MAX
+      ? android_windows[screen] : NULL;
+   struct android_second_surface *node;
+   if (!state || state->common.owner)
+      return false;
+   node                 = state->node;
+   state->common.owner  = owner;
+   state->common.native = window;
+   window->state        = state;
+   window->display      = NULL;
+   window->surface      = node ? node->window : NULL;
+   window->kind         = VIDEO_WINDOW_NATIVE_ANDROID;
+   window->generation   = state->common.request.generation;
+   window->dims         = node ? node->dims : 0;
+   window->configured   = node != NULL;
+   window->focused      = false;
+   window->presentable  = node != NULL;
+   *display             = state->common.request.display;
+   return true;
+}
+
+void android_windows_release_kept(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (android_windows[i] && !android_windows[i]->common.owner)
+         android_windows_let_go(android_windows[i]);
 }
 
 android_window_t *android_windows_find(void *owner, unsigned screen)

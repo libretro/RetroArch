@@ -6670,14 +6670,19 @@ static void gl2_views_ui_end(gl2_t *gl, video_frame_info_t *video_info)
 /* Events a frame takes from the context's windows */
 #define GL2_WINDOW_EVENTS 8
 
-/* Window @w let go: its GPU objects, then the context's window, and
- * input stops mapping into it */
-static void gl2_window_retire(gl2_t *gl, unsigned w)
+/* Window @w let go: its GPU objects, then the context's window, which
+ * @keep leaves up for the next driver where the context can, and input
+ * stops mapping into it */
+static void gl2_window_retire(gl2_t *gl, unsigned w, bool keep)
 {
-   struct gl2_window *win = &gl->windows.win[w];
+   struct gl2_window *win             = &gl->windows.win[w];
+   const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
    gl2_vv_target_drop(gl, &win->canvas_target, &win->canvas);
-   gl->ctx_driver->windows->destroy(gl->ctx_data, &win->native);
-   video_driver_publish_window_layout(w, 0, NULL, NULL, 0, 0);
+   if (keep && ctx->keep)
+      ctx->keep(gl->ctx_data, &win->native);
+   else
+      ctx->destroy(gl->ctx_data, &win->native);
+   video_driver_publish_window_layout(w, 0, 0, NULL, NULL, 0, 0);
    memset(win, 0, sizeof(*win));
    gl->windows.held.live &= ~(1u << w);
 }
@@ -6687,7 +6692,184 @@ static void gl2_windows_retire_all(gl2_t *gl)
    unsigned w;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (gl->windows.held.live & (1u << w))
-         gl2_window_retire(gl, w);
+         gl2_window_retire(gl, w, true);
+   gl2_vv_target_drop(gl, &gl->windows.ui_target, &gl->windows.ui);
+}
+
+/* Window @w can be drawn this frame: made, configured, presentable and
+ * not kept */
+static bool gl2_window_ready(const gl2_t *gl,
+      const video_windows_frame_t *f, unsigned w)
+{
+   const struct gl2_window *win = &gl->windows.win[w];
+   return (gl->windows.held.live & (1u << w))
+      && !(f->window_keep & (1u << w))
+      && win->native.configured && win->native.presentable
+      && VIDEO_SCALE_W(win->native.dims)
+      && VIDEO_SCALE_H(win->native.dims);
+}
+
+/* The window UI image over the whole of the bound target, sized @dims.
+ * It was drawn over transparent black, so its colour is premultiplied. */
+static void gl2_window_ui_quad(gl2_t *gl, unsigned dims)
+{
+   glViewport(0, 0, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   glDisable(GL_SCISSOR_TEST);
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+   glBlendEquation(GL_FUNC_ADD);
+   glBindTexture(GL_TEXTURE_2D, gl->windows.ui.tex);
+   gl2_views_quad(gl, &gl->views.layer, &gl->mvp_no_rot, tex_coords);
+   glUseProgram(0);
+   glDisable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glBindTexture(GL_TEXTURE_2D, gl->tex_info.tex);
+   /* The next frame draws in the current viewport */
+   glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos),
+         VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+}
+
+/* This frame's UI layers drawn in another window, as
+ * VIDEO_WINDOW_UI_BIT()s; 0 when every layer stays in the main window,
+ * also when the image cannot be made. In *@draw those the image is
+ * drawn with, none when they have nothing to draw, and *@in_main true
+ * when it goes over the main window at once because that window cannot
+ * be drawn. */
+static unsigned gl2_window_ui_prepare(gl2_t *gl,
+      video_frame_info_t *video_info, const char *msg,
+      unsigned *draw, bool *in_main)
+{
+   unsigned l;
+   unsigned w                     = 0;
+   unsigned dims                  = 0;
+   unsigned layers                = 0;
+   unsigned drawn                 = 0;
+   const video_windows_frame_t *f = video_info->windows;
+   bool menu                      = (gl->flags
+         & GL2_FLAG_MENU_TEXTURE_ENABLE) ? true : false;
+   bool ready;
+
+   *draw                 = 0;
+   *in_main              = false;
+   gl->windows.ui_window = 0;
+   if (f)
+      for (l = 0; l < VIDEO_WINDOW_UI_LAYERS; l++)
+      {
+         unsigned lw = f->ui[l].window;
+         if (!lw || lw >= RETRO_VIDEO_VIEWS_MAX || (w && lw != w))
+            continue;
+         if (!w)
+         {
+            w    = lw;
+            dims = f->ui[l].dims;
+         }
+         layers |= VIDEO_WINDOW_UI_BIT(l);
+      }
+   if (!layers)
+   {
+      gl2_vv_target_drop(gl, &gl->windows.ui_target, &gl->windows.ui);
+      return 0;
+   }
+   if (!gl->views.tried)
+      gl2_views_init(gl);
+   if (gl->views.failed || gl->scrgb.active)
+      return 0;
+   drawn = VIDEO_WINDOW_UI_DRAWN(layers, menu, msg,
+         video_info->statistics_show, video_info->widgets_visible);
+   if (     !drawn
+         || !gl2_vv_target_ensure(gl, &gl->windows.ui_target,
+            &gl->windows.ui, dims))
+      return drawn ? 0 : layers;
+   ready = gl2_window_ready(gl, f, w);
+   for (l = 0; l < VIDEO_WINDOW_UI_LAYERS; l++)
+      if (     (drawn & VIDEO_WINDOW_UI_BIT(l))
+            && (ready || !f->ui[l].wait))
+         *draw |= VIDEO_WINDOW_UI_BIT(l);
+   if (*draw && ready)
+      gl->windows.ui_window = w;
+   *in_main = *draw && !ready;
+   return layers;
+}
+
+/* Moves UI drawing into the window UI image, laid out at @dims */
+static void gl2_window_ui_begin(gl2_t *gl, video_frame_info_t *video_info,
+      video_views_ui_dims_t *saved, unsigned dims)
+{
+   glBindTexture(GL_TEXTURE_2D, gl->windows.ui.tex);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glBindTexture(GL_TEXTURE_2D, 0);
+
+   gl2_bind_fb(gl->windows.ui.fbo);
+   glDisable(GL_SCISSOR_TEST);
+   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   /* Menus and widgets size from video_info->dims, fonts from
+    * video_dims. Not forced full, as in the main window: RGUI keeps
+    * its aspect without views. */
+   video_views_ui_enter(saved, &video_info->dims, &gl->video_dims, dims);
+   gl->views.ui_pass = true;
+   gl2_set_viewport(gl, video_info->dims, false, true);
+}
+
+/* Back onto the back buffer; with @in_main, the image over it at once */
+static void gl2_window_ui_end(gl2_t *gl, video_frame_info_t *video_info,
+      const video_views_ui_dims_t *saved, bool in_main)
+{
+   gl->views.ui_pass = false;
+   video_views_ui_leave(saved, &video_info->dims, &gl->video_dims);
+   gl2_renderchain_bind_backbuffer();
+   if (in_main)
+      gl2_window_ui_quad(gl, video_info->dims);
+   /* gl->vp is the window again, for the readbacks after. */
+   gl2_set_viewport(gl, video_info->dims, false, true);
+}
+
+/* The image's window was not drawn after all: over the main window's
+ * back buffer before the swap, unless all its layers wait. True when
+ * it was. */
+static bool gl2_window_ui_fallback(gl2_t *gl,
+      const video_frame_info_t *video_info)
+{
+   unsigned l;
+   const video_windows_frame_t *f = video_info->windows;
+   bool wait                      = true;
+
+   gl->windows.ui_window = 0;
+   if (!f)
+      return false;
+   for (l = 0; l < VIDEO_WINDOW_UI_LAYERS; l++)
+      if (f->ui[l].window && !f->ui[l].wait)
+         wait = false;
+   if (wait)
+      return false;
+   gl2_renderchain_bind_backbuffer();
+   gl2_window_ui_quad(gl, video_info->dims);
+   return true;
+}
+
+/* The windows the last driver left up, adopted as they are: still
+ * shown, touches off-screen, until a frame draws them */
+static void gl2_windows_take(gl2_t *gl)
+{
+   static const video_views_layout_t no_layout;
+   static const video_views_map_t no_map;
+   unsigned w;
+   const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
+   if (!ctx || !ctx->take)
+      return;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+   {
+      struct gl2_window *win = &gl->windows.win[w];
+      unsigned display       = 0;
+      if (!ctx->take(gl->ctx_data, w, &win->native, &display))
+         continue;
+      gl->windows.held.live       |= 1u << w;
+      gl->windows.held.display[w]  = display;
+      video_driver_publish_window_layout(w, win->native.generation,
+            display, &no_layout, &no_map, 0, win->native.dims);
+   }
 }
 
 /* Window @w's screens back in the main window, until the next restore
@@ -6699,7 +6881,7 @@ static void gl2_window_attach(gl2_t *gl, const video_windows_frame_t *f,
       video_driver_attach_windows(f->window_screens[w], f->restore);
    gl->windows.held.failed |= 1u << w;
    if (gl->windows.held.live & (1u << w))
-      gl2_window_retire(gl, w);
+      gl2_window_retire(gl, w, false);
 }
 
 /* Window @w for @f's screens there, on @f's display */
@@ -6747,15 +6929,15 @@ static void gl2_windows_fit_chain(gl2_t *gl,
    }
 }
 
-/* Window @w's screens drawn as the main window's views were this
- * frame, and shown. Without a surface it can show, it keeps its last
- * image. */
+/* Window @w drawn: its screens as the main window's views were this
+ * frame, then the window UI image where it is for this window, and
+ * shown. Without a surface it can show, it keeps its last image. */
 static bool gl2_window_draw(gl2_t *gl,
       const video_frame_info_t *video_info, unsigned w, bool new_frame)
 {
    void *chains[RETRO_VIDEO_VIEWS_MAX];
    video_views_rect_t rects[RETRO_VIDEO_VIEWS_MAX];
-   bool blend;
+   bool blend                         = false;
    const video_windows_frame_t *f     = video_info->windows;
    const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
    struct gl2_window *win             = &gl->windows.win[w];
@@ -6763,21 +6945,36 @@ static bool gl2_window_draw(gl2_t *gl,
    unsigned dims                      = win->native.dims;
    bool stock                         = !video_info->shader_active
       || !gl->views.preset;
+   /* Views the main window drew whole are not drawn here either */
+   bool screens                       = gl->views.active
+      && f->window_screens[w];
 
-   if (     !win->native.configured || !win->native.presentable
+   if (     (!screens && !f->window_ui[w])
+         || !win->native.configured || !win->native.presentable
          || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return false;
-   video_driver_window_layout_screens(f, f->window_screens[w], dims,
-         layout);
-   blend = layout->offscreen
-      && gl2_vv_target_ensure(gl, &win->canvas_target, &win->canvas,
-            layout->canvas_dims);
-   if (!layout->offscreen)
-      gl2_vv_target_drop(gl, &win->canvas_target, &win->canvas);
-   if (!gl2_vv_pick_chains(gl, &gl->views.chains, &video_info->views,
-            layout, stock, blend || !layout->offscreen,
-            blend ? layout->canvas_dims : dims, chains, rects))
-      return false;
+   if (screens)
+   {
+      video_driver_window_layout_screens(f, f->window_screens[w], dims,
+            layout);
+      blend = layout->offscreen
+         && gl2_vv_target_ensure(gl, &win->canvas_target, &win->canvas,
+               layout->canvas_dims);
+      if (!layout->offscreen)
+         gl2_vv_target_drop(gl, &win->canvas_target, &win->canvas);
+      screens = gl2_vv_pick_chains(gl, &gl->views.chains,
+            &video_info->views, layout, stock, blend || !layout->offscreen,
+            blend ? layout->canvas_dims : dims, chains, rects);
+   }
+   if (!screens)
+   {
+      /* Nothing drawn in it this frame: its last image stays */
+      if (!f->window_ui[w] || gl->windows.ui_window != w)
+         return false;
+      /* Its touches map off-screen */
+      memset(layout, 0, sizeof(*layout));
+      layout->canvas_dims = dims;
+   }
    if (!ctx->bind_gl(gl->ctx_data, &win->native))
    {
       ctx->bind_gl(gl->ctx_data, NULL);
@@ -6786,24 +6983,38 @@ static bool gl2_window_draw(gl2_t *gl,
       gl2_window_attach(gl, f, w);
       return false;
    }
-   if (!stock)
-      gl2_windows_fit_chain(gl, video_info, chains, rects);
-   gl2_views_render(gl, video_info, layout, dims, &win->canvas, chains,
-         rects, blend, stock, new_frame, NULL, 0, false,
-         gl->windows.frame_count);
+   if (screens)
+   {
+      if (!stock)
+         gl2_windows_fit_chain(gl, video_info, chains, rects);
+      gl2_views_render(gl, video_info, layout, dims, &win->canvas, chains,
+            rects, blend, stock, new_frame, NULL, 0, false,
+            gl->windows.frame_count);
+   }
+   else
+   {
+      gl2_renderchain_bind_backbuffer();
+      glDisable(GL_SCISSOR_TEST);
+      glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+   }
+   if (gl->windows.ui_window == w)
+   {
+      gl2_window_ui_quad(gl, dims);
+      gl->windows.ui_window = 0;
+   }
    /* False: not shown this time, its last image stays */
    ctx->present_gl(gl->ctx_data, &win->native);
    ctx->bind_gl(gl->ctx_data, NULL);
-   video_driver_publish_window_layout(w, win->native.generation, layout,
-         &f->core, f->core_dims, dims);
+   video_driver_publish_window_layout(w, win->native.generation,
+         gl->windows.held.display[w], layout, &f->core, f->core_dims, dims);
    return true;
 }
 
 /* The screens' own windows for this frame: made, let go of, and drawn
  * after the main window's frame and before its swap, which stays the
- * only one that waits; a window swaps at interval 0. Views only: the
- * menu, OSD, widgets and overlay stay in the main window. True when a
- * window was drawn. */
+ * only one that waits; a window swaps at interval 0. The input overlay
+ * stays in the main window. True when anything was drawn. */
 static bool gl2_windows_draw(gl2_t *gl,
       const video_frame_info_t *video_info, bool new_frame)
 {
@@ -6834,13 +7045,14 @@ static bool gl2_windows_draw(gl2_t *gl,
    video_windows_steps(&gl->windows.held, f, &retire, &create);
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (retire & (1u << w))
-         gl2_window_retire(gl, w);
+         gl2_window_retire(gl, w, false);
    if (!f)
       return false;
    /* Marked after steps(), which clears the marks when this frame's
     * restore count moved, so a closed window waits for the next one */
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
-      if ((closed & (1u << w)) && f->window_screens[w])
+      if (     (closed & (1u << w))
+            && (f->window_screens[w] || f->window_ui[w]))
          gl2_window_attach(gl, f, w);
    create &= ~closed;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
@@ -6848,16 +7060,17 @@ static bool gl2_windows_draw(gl2_t *gl,
       if (!(create & (1u << w)) || gl2_window_make(gl, f, w))
          continue;
       RARCH_WARN("[GL] A screen window can't be made. "
-            "Its screens stay in the main window.\n");
+            "What it shows stays in the main window.\n");
       gl2_window_attach(gl, f, w);
    }
-   /* Views the main window drew whole are not drawn here either */
-   if (!gl->views.active)
-      return false;
+   /* A kept window keeps its last image */
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (     (gl->windows.held.live & (1u << w))
+            && !(f->window_keep & (1u << w))
             && gl2_window_draw(gl, video_info, w, new_frame))
          drawn = true;
+   if (gl->windows.ui_window && gl2_window_ui_fallback(gl, video_info))
+      drawn = true;
    return drawn;
 }
 #endif
@@ -6894,6 +7107,15 @@ static bool gl2_frame(void *data, const void *frame,
    bool overlay_behind_menu            = video_info->overlay_behind_menu;
    bool video_scale_integer            = video_info->scale_integer;
    bool views_per_eye                  = false;
+   /* The menu and the notifications are drawn in the main window */
+   bool menu_here                      = true;
+   bool notes_here                     = true;
+#if defined(GL2_VIEWS) && defined(HAVE_VIDEO_WINDOWS)
+   video_views_ui_dims_t window_ui_saved;
+   unsigned window_ui_away             = 0;
+   unsigned window_ui_draw             = 0;
+   bool window_ui_main                 = false;
+#endif
 #ifdef GL2_VIEWS
    void *view_chains[RETRO_VIDEO_VIEWS_MAX];
    video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
@@ -7208,6 +7430,14 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
 #ifdef GL2_VIEWS
+#ifdef HAVE_VIDEO_WINDOWS
+   window_ui_away = gl2_window_ui_prepare(gl, video_info, msg,
+         &window_ui_draw, &window_ui_main);
+   menu_here      = !(window_ui_away
+         & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU));
+   notes_here     = !(window_ui_away
+         & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS));
+#endif
    /* As the main thread laid the UI out, also in a frame drawn whole:
     * it lays out later frames whole once it reads the fallback. */
    views_per_eye = video_views_ui_per_eye(&video_info->views,
@@ -7215,12 +7445,22 @@ static bool gl2_frame(void *data, const void *frame,
    /* A real frame without it frees the UI layer. */
    if (frame && !views_per_eye)
       gl2_vv_target_drop(gl, &gl->views.ui_target, &gl->views.ui);
-   /* Drawn and composited only when there is UI; overlays are hidden. */
+   /* Drawn and composited only when there is UI in this window;
+    * overlays are hidden. */
    views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
-         (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE), msg, statistics_show,
-         video_info->widgets_visible)
+         menu_here && (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE),
+         notes_here ? msg : NULL, notes_here && statistics_show,
+         notes_here && video_info->widgets_visible)
       && gl2_vv_target_ensure(gl, &gl->views.ui_target, &gl->views.ui,
             video_info->views_layout.ui_dims);
+#endif
+
+#if defined(GL2_VIEWS) && defined(HAVE_VIDEO_WINDOWS) \
+   && defined(HAVE_GFX_WIDGETS)
+   /* Nothing else to show here: the logo on the cleared black */
+   if (views && video_info->windows && video_info->windows->logo)
+      gfx_widgets_draw_idle_logo(video_info,
+            video_info->windows->logo_texture);
 #endif
 
    /* Touch overlays would straddle both eyes. */
@@ -7228,6 +7468,40 @@ static bool gl2_frame(void *data, const void *frame,
    if (     (gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu
          && !views_per_eye)
       gl2_render_overlay(gl);
+#endif
+
+#if defined(GL2_VIEWS) && defined(HAVE_VIDEO_WINDOWS)
+   /* The layers drawn in another window go into its image first */
+   if (window_ui_draw)
+   {
+      gl2_window_ui_begin(gl, video_info, &window_ui_saved,
+            gl->windows.ui_target.dims);
+#if defined(HAVE_MENU)
+      if (     (window_ui_draw & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU))
+            && (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
+      {
+         menu_driver_frame(menu_is_alive, video_info);
+         if (gl->menu_texture)
+            gl2_draw_texture(gl);
+      }
+      else if ((window_ui_draw
+               & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS))
+            && !(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE)
+            && statistics_show && osd_params)
+         font_driver_render_msg(gl, stat_text, video_info->stat_text_len,
+               (const struct font_params*)osd_params, NULL);
+#endif
+      if (window_ui_draw & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS))
+      {
+#ifdef HAVE_GFX_WIDGETS
+         if (widgets_active)
+            gfx_widgets_frame(video_info);
+#endif
+         if (msg && *msg)
+            font_driver_render_msg(gl, msg, strlen(msg), NULL, NULL);
+      }
+      gl2_window_ui_end(gl, video_info, &window_ui_saved, window_ui_main);
+   }
 #endif
 
 #ifdef GL2_VIEWS
@@ -7238,12 +7512,15 @@ static bool gl2_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
    if (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE)
    {
-      menu_driver_frame(menu_is_alive, video_info);
+      if (menu_here)
+      {
+         menu_driver_frame(menu_is_alive, video_info);
 
-      if (gl->menu_texture)
-         gl2_draw_texture(gl);
+         if (gl->menu_texture)
+            gl2_draw_texture(gl);
+      }
    }
-   else if (statistics_show)
+   else if (statistics_show && notes_here)
    {
       if (osd_params)
          font_driver_render_msg(gl, stat_text, video_info->stat_text_len,
@@ -7258,11 +7535,11 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (widgets_active)
+   if (widgets_active && notes_here)
       gfx_widgets_frame(video_info);
 #endif
 
-   if (msg && *msg)
+   if (notes_here && msg && *msg)
       font_driver_render_msg(gl, msg, strlen(msg), NULL, NULL);
 
 #ifdef GL2_VIEWS
@@ -8705,6 +8982,9 @@ static void *gl2_init(const video_info_t *video)
 #ifdef GL2_VIEWS
    /* get_flags reads it before the first frame too */
    gl2_views_publish(gl);
+#ifdef HAVE_VIDEO_WINDOWS
+   gl2_windows_take(gl);
+#endif
 #endif
 
    /* Init leaves the core's context current for context_reset on this

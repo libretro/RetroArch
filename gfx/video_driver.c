@@ -24,6 +24,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <file/file_path.h>
 #include <retro_math.h>
 #include <memalign.h>
 #include <retro_timers.h>
@@ -51,6 +52,10 @@
 #include "gfx_instrument.h"
 #ifdef HAVE_OPENXR
 #include "video_xr.h"
+#endif
+#if defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS)
+#include "../frontend/drivers/platform_unix.h"
+#include "common/android_windows.h"
 #endif
 
 /* Decided here, at the top, because an #ifdef on a macro defined
@@ -206,6 +211,13 @@ void gfx_ctx_wl_release_kept(void);
 #define VIDEO_WIN32_RELEASE_KEPT_WINDOW() win32_window_release_kept()
 #else
 #define VIDEO_WIN32_RELEASE_KEPT_WINDOW() ((void)0)
+#endif
+
+/* and the second display's (gfx/common/android_windows.c) */
+#if defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS)
+#define VIDEO_ANDROID_RELEASE_KEPT_WINDOWS() android_windows_release_kept()
+#else
+#define VIDEO_ANDROID_RELEASE_KEPT_WINDOWS() ((void)0)
 #endif
 
 /* Forward declarations */
@@ -1057,7 +1069,8 @@ void video_driver_attach_windows(unsigned screens, unsigned restore)
 }
 
 void video_driver_publish_window_layout(unsigned window,
-      unsigned generation, const video_views_layout_t *layout,
+      unsigned generation, unsigned display,
+      const video_views_layout_t *layout,
       const video_views_map_t *core_map, unsigned core_dims,
       unsigned window_dims)
 {
@@ -1073,6 +1086,8 @@ void video_driver_publish_window_layout(unsigned window,
       slot->core_map    = *core_map;
       slot->core_dims   = core_dims;
       slot->window_dims = window_dims;
+      slot->display     = display;
+      slot->serial      = video_driver_st.windows_drawn;
       slot->generation  = generation;
    }
    else
@@ -1136,6 +1151,31 @@ bool video_driver_translate_window_point(unsigned window,
          VIDEO_SCALE_H(slot->window_dims));
    return video_views_map_point(&slot->layout, &slot->core_map,
          slot->core_dims, x, y, report_oob, result);
+}
+
+unsigned video_driver_window_shown(unsigned window, unsigned *dims)
+{
+   video_window_layouts_t *box;
+   const video_window_layout_t *slot;
+   if (dims)
+      *dims = 0;
+   if (!window || window >= RETRO_VIDEO_VIEWS_MAX)
+      return 0;
+   box = &video_driver_st.window_layouts[window - 1];
+   video_window_slot_take(&box->published, &box->held);
+   if (!box->held)
+      return 0;
+   slot = &box->slot[box->held - 1];
+   /* Drawn before the snapshot that last asked for the window
+    * differently: under the threaded wrapper, a window that may be
+    * going. Wrap-safe: from 'from' up to the newest snapshot. */
+   if (     !slot->generation
+         || slot->serial - box->from
+            > video_driver_st.windows.serial - box->from)
+      return 0;
+   if (dims)
+      *dims = slot->window_dims;
+   return slot->display;
 }
 #endif
 
@@ -2259,6 +2299,8 @@ const char *pixel_format_name(enum retro_pixel_format pix_fmt)
  * coordinates based on viewport info. If report_oob is true,
  * -0x8000 will be returned for the coordinate which is offscreen,
  * otherwise offscreen coordinate is clamped to 0x7fff / -0x7fff.
+ * A window whose views layout shows no screen gives @res_pos -0x8000
+ * either way.
  *
  * Returns: true (1) if successful, false if video driver doesn't support
  * viewport info.
@@ -2306,6 +2348,13 @@ bool video_driver_translate_coord_viewport(
    {
       video_driver_state_t *video_st     = &video_driver_st;
       const video_views_layout_t *layout = video_driver_get_views_layout();
+      /* A window that shows no screen: off-screen, confined too */
+      if (layout && !layout->num_placements)
+      {
+         *res_pos        = VIDEO_POS_PACK(-0x8000, -0x8000);
+         *res_screen_pos = VIDEO_POS_PACK(scaled_screen_x, scaled_screen_y);
+         return true;
+      }
       if (     layout
             && video_views_map_point(layout,
                &video_st->views_core, video_st->views_frame_dims,
@@ -3702,6 +3751,37 @@ void video_driver_hw_request_restore(const struct video_hw_request *req)
          (int)req->cb.context_type);
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_GFX_WIDGETS)
+/* The idle logo, loaded the first frame it is wanted; app thread */
+static gfx_surface_t *video_driver_windows_logo = NULL;
+
+/* The logo from the widgets' icon set, once the widgets know where it
+ * is. Its own frame keeps the path off the frame function's stack. */
+static VIDEO_NOINLINE void video_driver_windows_logo_load(void)
+{
+   char path[PATH_MAX_LENGTH];
+   const char *dir = dispwidget_get_ptr()->monochrome_png_path;
+   if (!*dir)
+      return;
+   video_driver_windows_logo = gfx_surface_new_still(
+         gfx_display_texture_filter());
+   if (!video_driver_windows_logo)
+      return;
+   fill_pathname_join_special(path, dir, "retroarch.png", sizeof(path));
+   gfx_surface_submit_path(video_driver_windows_logo, path,
+         gfx_surface_wants_rgba());
+}
+
+/* The logo's texture when @want; 0 while it loads, or without its
+ * file, which is not tried again until the driver is made again */
+static uintptr_t video_driver_windows_logo_texture(bool want)
+{
+   if (want && !video_driver_windows_logo)
+      video_driver_windows_logo_load();
+   return GFX_SURFACE_HANDLE(video_driver_windows_logo);
+}
+#endif
+
 void video_driver_free_internal(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
@@ -3745,6 +3825,12 @@ void video_driver_free_internal(void)
          video_driver_shader_deferred_cancel("The video driver went away.");
    }
 
+#if defined(HAVE_VIDEO_WINDOWS) && defined(HAVE_GFX_WIDGETS)
+   /* Its texture is this driver's */
+   gfx_surface_free(video_driver_windows_logo);
+   video_driver_windows_logo = NULL;
+#endif
+
    /* Drop the OSD font before the driver that owns its GPU objects
     * goes away. Only for drivers that have handed the lifecycle up;
     * the rest still free it inside their own free(). Keyed on
@@ -3762,6 +3848,11 @@ void video_driver_free_internal(void)
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
+#if defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS)
+   /* No driver follows to take what this one left up */
+   if (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+      android_windows_release_kept();
+#endif
    video_driver_set_hdr_output_mode(0);
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 0);
 
@@ -4144,6 +4235,36 @@ unsigned video_driver_get_ui_dims(void)
          video_driver_get_output_dims());
 }
 
+unsigned video_frame_ui_layer_dims(const video_frame_info_t *video_info,
+      unsigned layer)
+{
+   const video_windows_frame_t *f = video_info->windows;
+   if (     f && layer < VIDEO_WINDOW_UI_LAYERS
+         && f->ui[layer].window && f->ui[layer].dims)
+      return f->ui[layer].dims;
+   return video_views_ui_dims(&video_info->views_layout, video_info->dims);
+}
+
+unsigned video_driver_get_ui_layer_window(unsigned layer)
+{
+#ifdef HAVE_VIDEO_WINDOWS
+   if (layer < VIDEO_WINDOW_UI_LAYERS)
+      return video_driver_st.windows_ui[layer].window;
+#endif
+   return 0;
+}
+
+unsigned video_driver_get_ui_layer_dims(unsigned layer)
+{
+#ifdef HAVE_VIDEO_WINDOWS
+   if (     layer < VIDEO_WINDOW_UI_LAYERS
+         && video_driver_st.windows_ui[layer].window
+         && video_driver_st.windows_ui[layer].dims)
+      return video_driver_st.windows_ui[layer].dims;
+#endif
+   return video_driver_get_ui_dims();
+}
+
 const video_views_layout_t *video_driver_get_views_layout(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
@@ -4363,9 +4484,140 @@ void video_driver_window_layout_screens(const video_windows_frame_t *frame,
    video_views_layout(&params, out);
 }
 
-/* The screens' own windows for a frame presented with views, or NULL
- * while they are off or the driver has none. Not inlined: the frame's
- * stack has no room to spare. */
+/* App thread: placement's inputs from the settings, the content and the
+ * menu, and RetroArch's move asked for. @in has the frame's shown, now
+ * and menu_open. */
+static void video_driver_windows_place(video_driver_state_t *video_st,
+      settings_t *settings, const video_window_display_t *list,
+      unsigned count, video_windows_place_in_t *in,
+      video_windows_route_t *route)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool running                =
+         (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+      && runloop_st->current_core_type != CORE_TYPE_DUMMY;
+   in->displays       = list;
+   in->count          = count;
+   in->screen_display = (const char (*)[VIDEO_WINDOW_DISPLAY_NAME_SIZE])
+      settings->arrays.video_screen_display;
+   in->menu_display   = settings->arrays.video_menu_display;
+   in->menu_follows   = settings->uints.video_menu_follows;
+   in->notifications  = settings->uints.video_notifications_window;
+   in->num_screens    = !running ? 0
+      : video_st->views.num_views ? video_st->views.num_screens : 1;
+   in->mapless        = running && !video_st->views.num_views;
+   in->switching      = runloop_st->content_switching;
+   in->move_failed    = false;
+#ifdef ANDROID
+   {
+      unsigned i;
+      bool routed = false;
+      for (i = 0; i < count && !routed; i++)
+         routed = list[i].own;
+      /* Reading clears it; placement hears it only with an own display */
+      if (routed)
+         in->move_failed = android_activity_move_failed();
+   }
+#endif
+   video_windows_place(&video_st->windows_host, in, route);
+#ifdef ANDROID
+   if (route->move)
+      android_activity_move_request(route->move);
+#endif
+   /* A redraw reuses the stored route; it must not ask again */
+   route->move = 0;
+}
+
+/* App thread: the snapshot's UI targets are those this frame was laid
+ * out with; then the next frame's, from @route. @in has the frame's
+ * shown, now and menu_open; @client is the shown window's size. */
+static void video_driver_windows_ui(video_driver_state_t *video_st,
+      const video_window_display_t *list, unsigned count,
+      const video_windows_route_t *route,
+      const video_windows_place_in_t *in, unsigned client,
+      video_windows_frame_t *out)
+{
+   unsigned i, layer;
+   unsigned planned = 0;
+   unsigned use     = 0;
+   unsigned ui_dims = video_driver_get_ui_dims();
+   unsigned on      = route->display ? route->display : route->menu;
+   retro_time_t now = in->now;
+   bool shown       = route->display && in->shown == route->display;
+   bool waiting;
+   memcpy(out->ui, video_st->windows_ui, sizeof(out->ui));
+   /* The menu while open; notifications while the window is up for
+    * something else */
+   if (route->display)
+   {
+      if (in->menu_open)
+         use |= route->ui & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU);
+      if (use || route->screens)
+         use |= route->ui
+            & VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS);
+   }
+   out->window_ui[VIDEO_WINDOWS_PRESENTATION] = use;
+   /* 1 once shown, so a later loss falls back at once */
+   if (!use)
+      video_st->windows_ui_asked = 0;
+   else if (shown)
+      video_st->windows_ui_asked = 1;
+   else if (!video_st->windows_ui_asked)
+      video_st->windows_ui_asked = now;
+   waiting = use && !shown
+      && now - video_st->windows_ui_asked < VIDEO_WINDOWS_UI_WAIT_USEC;
+   /* The display's size until the window has its own */
+   for (i = 0; i < count; i++)
+      if (list[i].ordinal == on)
+         planned = list[i].dims;
+   if (shown && client)
+      planned = client;
+   if (!planned)
+      planned = ui_dims;
+   for (layer = 0; layer < VIDEO_WINDOW_UI_LAYERS; layer++)
+   {
+      video_window_ui_target_t *t = &video_st->windows_ui[layer];
+      unsigned bit                = VIDEO_WINDOW_UI_BIT(layer);
+      t->window = 0;
+      t->dims   = ui_dims;
+      t->wait   = false;
+      if (!(route->ui & bit))
+         continue;
+      if (use & bit)
+      {
+         if (!shown && !waiting)
+            continue;
+      }
+      /* A closed menu keeps laying out for its window, waiting for it
+       * on the frame it opens */
+      else if (layer != VIDEO_WINDOW_UI_MENU)
+         continue;
+      t->window = VIDEO_WINDOWS_PRESENTATION;
+      t->dims   = planned;
+      t->wait   = !shown;
+   }
+}
+
+/* App thread: a window @out asks for differently from the last
+ * snapshot, or on another display, counts as shown only from a layout
+ * drawn from @out, as the threaded wrapper draws behind */
+static void video_driver_windows_asked(video_driver_state_t *video_st,
+      const video_windows_frame_t *out, unsigned display_was)
+{
+   unsigned w;
+   unsigned wanted  = video_windows_wanted(out);
+   unsigned changed = wanted ^ video_st->windows_wanted;
+   if (out->display != display_was)
+      changed |= wanted;
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (changed & (1u << w))
+         video_st->window_layouts[w - 1].from = out->serial;
+   video_st->windows_wanted = wanted;
+}
+
+/* This frame's windows, with or without content views, or NULL while
+ * they are off or the driver has none. Not inlined: the frame's stack
+ * has no room to spare. */
 static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       video_driver_state_t *video_st, settings_t *settings,
       uint32_t flags, bool redraw)
@@ -4374,10 +4626,26 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    video_windows_route_t route;
    unsigned i;
    unsigned forced            = video_st->windows_forced_attached;
+   unsigned display_was       = 0;
    video_windows_frame_t *out = &video_st->windows;
    if (     !settings->bools.video_windows_enable
          || !BIT32_GET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS))
+   {
+      /* Off: the driver lets every window go */
+      if (!redraw)
+         video_st->windows_wanted = 0;
+      /* The UI in the main window; placement starts afresh when they
+       * are back */
+      if (!redraw && video_st->windows_host.names)
+      {
+         memset(video_st->windows_ui, 0, sizeof(video_st->windows_ui));
+         memset(&video_st->windows_route, 0,
+               sizeof(video_st->windows_route));
+         video_st->windows_ui_asked = 0;
+         video_windows_host_reset(&video_st->windows_host);
+      }
       return NULL;
+   }
 #ifdef HAVE_THREADS
    if (redraw)
       out = &video_st->windows_redraw;
@@ -4388,7 +4656,9 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       w->pos        = settings->uints.video_screen_window_pos[i];
       w->dims       = settings->uints.video_screen_window_dims[i];
       w->monitor    = settings->uints.video_screen_window_monitor[i];
-      w->mode       = settings->uints.video_screen_window_mode[i];
+      w->mode       = string_is_equal(settings->arrays.video_screen_display[i],
+            VIDEO_WINDOW_DISPLAY_OFF) ? VIDEO_WINDOW_HIDDEN
+         : i ? VIDEO_WINDOW_SEPARATE : VIDEO_WINDOW_ATTACHED;
       w->fullscreen = settings->bools.video_screen_window_fullscreen[i];
    }
    out->core          = video_st->views_core;
@@ -4401,14 +4671,35 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    out->stretch       = params.stretch;
    out->scale_integer = params.scale_integer;
    out->swap_eyes     = params.swap_eyes;
-   /* Only the app thread takes display lists; a redraw keeps the last route */
+   /* Only the app thread takes display lists and lays out the UI; a
+    * redraw keeps the last route */
+   memset(out->window_ui, 0, sizeof(out->window_ui));
    if (redraw)
-      route = video_st->windows_route;
+   {
+      route       = video_st->windows_route;
+      out->serial = video_st->windows_drawn;
+      memset(out->ui, 0, sizeof(out->ui));
+      if (route.display)
+         out->window_ui[VIDEO_WINDOWS_PRESENTATION] = route.ui;
+   }
    else
    {
+      video_windows_place_in_t in;
       unsigned count;
+      unsigned client = 0;
       const video_window_display_t *list;
       memset(&route, 0, sizeof(route));
+      display_was = out->display;
+      out->serial++;
+      /* Read once, so placement and the UI agree */
+      in.shown     = video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION,
+            &client);
+      in.now       = cpu_features_get_time_usec();
+      in.menu_open = false;
+#ifdef HAVE_MENU
+      in.menu_open =
+         (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
+#endif
       {
          /* Not those of frames laid out before the last restore */
          int failed = retro_atomic_exchange_int(&video_st->windows_failed, 0);
@@ -4419,35 +4710,35 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       list   = video_driver_take_window_displays(video_st, &count);
       forced = video_st->windows_forced_attached;
       if (list)
-         video_windows_route(list, count, out->settings,
-               out->core.num_screens, &route);
+         video_driver_windows_place(video_st, settings, list, count,
+               &in, &route);
+      video_driver_windows_ui(video_st, list, count, &route, &in, client,
+            out);
       if (memcmp(&route, &video_st->windows_route, sizeof(route)))
          video_st->windows_route = route;
    }
-   forced      |= route.unplaced;
-   out->restore = video_st->windows_restore;
+   out->restore     = video_st->windows_restore;
    video_windows_plan(&out->core, out->settings, true, true,
-         forced, route.attached, &out->plan);
-   out->display = route.display;
+         forced, route.own ? &route : NULL, &out->plan);
+   out->display     = route.display;
+   out->window_keep = route.keep ? 1u << VIDEO_WINDOWS_PRESENTATION : 0;
+   out->logo        = route.logo;
+#ifdef HAVE_GFX_WIDGETS
+   /* Only the app thread loads it; a redraw shows what it has */
+   out->logo_texture = redraw ? video_st->windows.logo_texture
+      : video_driver_windows_logo_texture(out->logo);
+#endif
    memset(out->window_screens, 0, sizeof(out->window_screens));
+   /* With a display, its one window, whatever it shows */
    if (out->display)
-   {
-      /* One window for the display, led by its lowest screen; screen 0
-       * leads from the attached screen's id, id 0 being the main
-       * window's */
-      unsigned lead = 0;
-      while (     lead < RETRO_VIDEO_VIEWS_MAX
-            && !(out->plan.separate_mask & (1u << lead)))
-         lead++;
-      if (!lead)
-         lead = route.attached;
-      if (lead && lead < RETRO_VIDEO_VIEWS_MAX)
-         out->window_screens[lead] = out->plan.separate_mask;
-   }
+      out->window_screens[VIDEO_WINDOWS_PRESENTATION] =
+         out->plan.separate_mask;
    else
       for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
          if (out->plan.separate_mask & (1u << i))
             out->window_screens[i] = 1u << i;
+   if (!redraw)
+      video_driver_windows_asked(video_st, out, display_was);
    return out;
 }
 #endif
@@ -4464,14 +4755,18 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
    bool allowed;
    bool presented;
    bool redraw = false;
+   bool windows = false;
 #ifdef HAVE_THREADS
    /* A Win32 window drag has the video thread redraw the cached frame
     * beside the main thread, whose state this is: it lays out what was
     * last presented and writes nothing. */
    redraw      = video_thread_is_video_thread();
 #endif
+#ifdef HAVE_VIDEO_WINDOWS
+   windows     = settings->bools.video_windows_enable;
+#endif
    flags.flags = 0;
-   if (video_st->views.num_views)
+   if (video_st->views.num_views || windows)
       video_context_driver_get_flags(&flags);
    allowed     = video_st->views.num_views
       && BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
@@ -4489,12 +4784,13 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
          video_st->views_frame_dims = core_dims;
       }
    }
+#ifdef HAVE_VIDEO_WINDOWS
+   /* With or without views: the menu and the idle logo use them too */
+   video_info->windows = video_driver_windows_frame(video_st, settings,
+         flags.flags, redraw);
+#endif
    if (presented)
    {
-#ifdef HAVE_VIDEO_WINDOWS
-      video_info->windows = video_driver_windows_frame(video_st, settings,
-            flags.flags, redraw);
-#endif
       /* Laid out from the core's own map: a CPU filter's scaling must
        * not change a view's shape. The indices match the scaled map. */
       video_info->views = video_st->views_frame;
@@ -7277,7 +7573,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
          (     video_info->widgets_active
             && retro_atomic_load_relaxed_int(&p_dispwidget->worker))
       ? gfx_widgets_scale_factor(video_info->disp_userdata, settings,
-            video_driver_get_ui_dims(), video_info->fullscreen)
+            video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_NOTIFICATIONS),
+            video_info->fullscreen)
       : 0.0f;
 #endif
 
@@ -8428,6 +8725,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          gfx_ctx_wl_release_kept();
 #endif
          VIDEO_WIN32_RELEASE_KEPT_WINDOW();
+         VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
          RARCH_ERR("[Video] Cannot open threaded video driver. Exiting...\n");
          return false;
       }
@@ -8454,6 +8752,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          && (video_st->data = video_st->current_video->init(&video)))
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 #endif
+   /* Android's after the GLES fallback, which takes them too */
+   VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
 
    if (!video_st->data)
    {
@@ -9847,6 +10147,12 @@ void video_driver_frame(const void *data, unsigned width,
       video_driver_frame_t frame_cb = vid->frame;
 #endif
       video_info.current_subframe = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+      /* The snapshot the driver's window layouts are drawn from; the
+       * video thread stamps it under the wrapper */
+      if (video_info.windows && !video_driver_thread_wrapper_active())
+         video_st->windows_drawn = video_info.windows->serial;
+#endif
 #ifdef HAVE_THREADS
       /* The video thread owns and stamps this under the wrapper. */
       if (!video_st->thread_wrapper_active)

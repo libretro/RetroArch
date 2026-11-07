@@ -26,6 +26,10 @@
 #include "../../../menu/menu_cbs.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/video_thread_wrapper.h"
+#ifdef HAVE_GFX_WIDGETS
+#include "../../../gfx/gfx_display.h"
+#include "../../../gfx/gfx_widgets.h"
+#endif
 #include "../../../input/input_driver.h"
 #include "../../../input/input_defines.h"
 #include "../../../input/input_remapping.h"
@@ -72,13 +76,14 @@ static void test_window_config(void)
    unsigned i, j, minimal;
    int value;
    bool flag;
+   char text[64];
    memset(&system_info, 0, sizeof(system_info));
    system_info.info.library_name = "video_screens_test";
    load_fixture("");
    CHECK(!settings->bools.video_windows_enable);
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
-      CHECK(settings->uints.video_screen_window_mode[i] == (i ? VIDEO_WINDOW_SEPARATE : VIDEO_WINDOW_ATTACHED));
+      CHECK(!settings->arrays.video_screen_display[i][0]);
       CHECK(settings->uints.video_screen_window_dims[i] == 0);
       CHECK(settings->uints.video_screen_window_pos[i] == 0);
       CHECK(settings->uints.video_screen_window_monitor[i] == 0);
@@ -113,9 +118,10 @@ static void test_window_config(void)
             "video_screen2_window_fullscreen = \"true\"\n"
             "video_screen8_window_mode = \"0\"\n");
       CHECK(settings->bools.video_windows_enable);
-      CHECK(settings->uints.video_screen_window_mode[0] == VIDEO_WINDOW_ATTACHED);
-      CHECK(settings->uints.video_screen_window_mode[1] == VIDEO_WINDOW_HIDDEN);
-      CHECK(settings->uints.video_screen_window_mode[1] == VIDEO_WINDOW_HIDDEN);
+      CHECK(string_is_equal(settings->arrays.video_screen_display[0],
+               VIDEO_WINDOW_DISPLAY_OFF));
+      CHECK(string_is_equal(settings->arrays.video_screen_display[1],
+               VIDEO_WINDOW_DISPLAY_OFF));
       CHECK(settings->uints.video_screen_window_pos[1] == VIDEO_POS_PACK(-1200, -30));
       settings->bools.config_save_minimal = minimal != 0;
       CHECK(config_save_file(saved_path));
@@ -125,9 +131,11 @@ static void test_window_config(void)
       CHECK(settings->uints.video_screen_window_dims[1] == VIDEO_SCALE_PACK(640, 480));
       CHECK(settings->uints.video_screen_window_monitor[1] == 3);
       CHECK(settings->bools.video_screen_window_fullscreen[1]);
-      CHECK(settings->uints.video_screen_window_mode[7] == VIDEO_WINDOW_ATTACHED);
+      CHECK(string_is_equal(settings->arrays.video_screen_display[1],
+               VIDEO_WINDOW_DISPLAY_OFF));
+      CHECK(!settings->arrays.video_screen_display[7][0]);
       write_config(override_path, "video_windows_enable = \"false\"\n"
-            "video_screen2_window_mode = \"0\"\n"
+            "video_screen2_display = \"\"\n"
             "video_screen2_window_x = \"0\"\n"
             "video_screen2_window_y = \"0\"\n"
             "video_screen2_window_width = \"800\"\n"
@@ -136,7 +144,7 @@ static void test_window_config(void)
             "video_screen2_window_fullscreen = \"false\"\n");
       CHECK(config_load_override_file(override_path));
       CHECK(!settings->bools.video_windows_enable);
-      CHECK(settings->uints.video_screen_window_mode[1] == VIDEO_WINDOW_ATTACHED);
+      CHECK(!settings->arrays.video_screen_display[1][0]);
       CHECK(settings->uints.video_screen_window_pos[1] == VIDEO_POS_PACK(0, 0));
       CHECK(settings->uints.video_screen_window_dims[1] == VIDEO_SCALE_PACK(800, 600));
       path_set(RARCH_PATH_BASENAME, "window_game.rom");
@@ -149,14 +157,16 @@ static void test_window_config(void)
          CHECK(config_get_int(conf, "video_screen2_window_x", &value) && value == 0);
          CHECK(config_get_int(conf, "video_screen2_window_width", &value) && value == 800);
          CHECK(config_get_int(conf, "video_screen2_window_monitor", &value) && value == 0);
-         CHECK(config_get_int(conf, "video_screen2_window_mode", &value)
-               && value == VIDEO_WINDOW_ATTACHED);
+         CHECK(config_get_array(conf, "video_screen2_display", text, sizeof(text))
+               && !text[0]);
+         CHECK(config_get_entry(conf, "video_screen2_window_mode") == NULL);
          CHECK(config_get_bool(conf, "video_windows_enable", &flag) && !flag);
          config_file_free(conf);
       }
       CHECK(config_unload_override());
       CHECK(settings->bools.video_windows_enable);
-      CHECK(settings->uints.video_screen_window_mode[1] == VIDEO_WINDOW_HIDDEN);
+      CHECK(string_is_equal(settings->arrays.video_screen_display[1],
+               VIDEO_WINDOW_DISPLAY_OFF));
       CHECK(settings->uints.video_screen_window_pos[1] == VIDEO_POS_PACK(-1200, -30));
       CHECK(config_load_override_file(generated_path));
       CHECK(settings->uints.video_screen_window_pos[1] == VIDEO_POS_PACK(0, 0));
@@ -175,8 +185,8 @@ static void test_window_config(void)
          "video_screen3_window_y = \"32767\"\n"
          "video_screen3_window_width = \"65535\"\n"
          "video_screen3_window_height = \"65535\"\n");
-   CHECK(settings->uints.video_screen_window_mode[0] == VIDEO_WINDOW_ATTACHED);
-   CHECK(settings->uints.video_screen_window_mode[1] == VIDEO_WINDOW_SEPARATE);
+   CHECK(!settings->arrays.video_screen_display[0][0]);
+   CHECK(!settings->arrays.video_screen_display[1][0]);
    CHECK(settings->uints.video_screen_window_pos[1] == 0);
    CHECK(settings->uints.video_screen_window_dims[1] == 0);
    CHECK(settings->uints.video_screen_window_pos[2] == VIDEO_POS_PACK(-32768, 32767));
@@ -1174,6 +1184,8 @@ static const video_poke_interface_t *window_test_saved_poke;
 static void *window_test_saved_data;
 static uint32_t window_test_saved_flags;
 static unsigned window_test_saved_dims;
+static uint32_t window_test_saved_runloop;
+static enum rarch_core_type window_test_saved_core;
 
 static bool window_test_frame(void *data, const void *frame, unsigned dims,
       uint64_t count, unsigned pitch, const char *msg,
@@ -1206,19 +1218,28 @@ static uint32_t window_test_get_flags(void *data)
    return window_test_flags;
 }
 
-/* Two 4x2 screens side by side in an 8x2 frame, drawn by the test
- * driver into an 800x480 window, the second screen Separate */
-static void window_test_begin(void)
+/* Two 4x2 screens side by side in an 8x2 frame */
+static void window_test_views(void)
 {
    static struct retro_video_view views[2];
    struct retro_video_views map;
-   video_driver_state_t *video_st = video_state_get_ptr();
-   settings_t *settings           = config_get_ptr();
    memset(views, 0, sizeof(views));
    views[0].width  = views[1].width  = 4;
    views[0].height = views[1].height = 2;
    views[1].x      = 4;
    views[1].screen = 1;
+   memset(&map, 0, sizeof(map));
+   map.views     = views;
+   map.num_views = 2;
+   CHECK(video_driver_set_views(&map));
+}
+
+/* window_test_views() drawn by the test driver into an 800x480
+ * window, the second screen Separate */
+static void window_test_begin(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
    memset(&window_test_driver, 0, sizeof(window_test_driver));
    window_test_driver.frame         = window_test_frame;
    window_test_driver.viewport_info = window_test_viewport;
@@ -1237,14 +1258,17 @@ static void window_test_begin(void)
    video_st->data           = &window_test_driver;
    video_st->main_flags    |= VIDEO_FLAG_ACTIVE;
    video_driver_set_output_dims(VIDEO_SCALE_PACK(800, 480));
+   /* A core runs, and placement decides afresh */
+   window_test_saved_runloop = runloop_state_get_ptr()->flags;
+   window_test_saved_core    = runloop_state_get_ptr()->current_core_type;
+   runloop_state_get_ptr()->flags            |= RUNLOOP_FLAG_CORE_RUNNING;
+   runloop_state_get_ptr()->current_core_type = CORE_TYPE_PLAIN;
+   video_windows_host_reset(&video_st->windows_host);
    settings->bools.video_windows_enable          = true;
-   settings->uints.video_screen_window_mode[1]   = VIDEO_WINDOW_SEPARATE;
+   settings->arrays.video_screen_display[1][0]   = '\0';
    window_test_flags = (1u << GFX_CTX_FLAGS_VIDEO_VIEWS)
                      | (1u << GFX_CTX_FLAGS_VIDEO_WINDOWS);
-   memset(&map, 0, sizeof(map));
-   map.views     = views;
-   map.num_views = 2;
-   CHECK(video_driver_set_views(&map));
+   window_test_views();
 }
 
 static void window_test_run(void)
@@ -1266,12 +1290,263 @@ static void window_test_end(void)
    video_st->main_flags    = window_test_saved_flags;
    video_driver_set_output_dims(window_test_saved_dims);
    config_get_ptr()->bools.video_windows_enable = false;
+   runloop_state_get_ptr()->flags             = window_test_saved_runloop;
+   runloop_state_get_ptr()->current_core_type = window_test_saved_core;
 }
 
 static unsigned window_test_placements(void)
 {
    const video_views_layout_t *layout = video_driver_get_views_layout();
    return layout ? layout->num_placements : 0;
+}
+
+/* video_screenN_display: saved, overridden, and Auto when absent */
+static void test_window_display_config(void)
+{
+   static rarch_system_info_t system_info;
+   settings_t *settings = config_get_ptr();
+   config_file_t *conf;
+   char value[64];
+   unsigned i;
+   memset(&system_info, 0, sizeof(system_info));
+   system_info.info.library_name = "video_screens_test";
+   load_fixture("");
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      CHECK(!settings->arrays.video_screen_display[i][0]);
+
+   load_fixture("video_screen1_window_mode = \"1\"\n"
+         "video_screen1_display = \"DP Screen\"\n"
+         "video_screen2_display = \"Screen-2 2\"\n"
+         "video_screen1_window_monitor = \"0\"\n");
+   CHECK(string_is_equal(settings->arrays.video_screen_display[0], "DP Screen"));
+   CHECK(string_is_equal(settings->arrays.video_screen_display[1], "Screen-2 2"));
+   CHECK(!settings->arrays.video_screen_display[2][0]);
+
+   /* A minimal save keeps only names that are set */
+   settings->bools.config_save_minimal = true;
+   CHECK(config_save_file(saved_path));
+   conf = config_file_new_from_path_to_string(saved_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_array(conf, "video_screen1_display", value, sizeof(value))
+            && string_is_equal(value, "DP Screen"));
+      CHECK(config_get_array(conf, "video_screen2_display", value, sizeof(value))
+            && string_is_equal(value, "Screen-2 2"));
+      CHECK(config_get_entry(conf, "video_screen3_display") == NULL);
+      config_file_free(conf);
+   }
+   settings->bools.config_save_minimal = false;
+   CHECK(config_save_file(saved_path));
+   conf = config_file_new_from_path_to_string(saved_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_entry(conf, "video_screen8_display") != NULL);
+      config_file_free(conf);
+   }
+
+   /* An override sets and clears names; only the changed ones are
+    * written */
+   write_config(override_path, "video_screen1_display = \"\"\n"
+         "video_screen3_display = \"Screen-2\"\n");
+   CHECK(config_load_override_file(override_path));
+   CHECK(!settings->arrays.video_screen_display[0][0]);
+   CHECK(string_is_equal(settings->arrays.video_screen_display[1], "Screen-2 2"));
+   CHECK(string_is_equal(settings->arrays.video_screen_display[2], "Screen-2"));
+   path_set(RARCH_PATH_BASENAME, "window_names.rom");
+   CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+   strlcpy(generated_path, path_get(RARCH_PATH_CONFIG_OVERRIDE), sizeof(generated_path));
+   conf = config_file_new_from_path_to_string(generated_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_array(conf, "video_screen1_display", value, sizeof(value))
+            && !value[0]);
+      CHECK(config_get_array(conf, "video_screen3_display", value, sizeof(value))
+            && string_is_equal(value, "Screen-2"));
+      CHECK(config_get_entry(conf, "video_screen2_display") == NULL);
+      config_file_free(conf);
+   }
+   CHECK(config_unload_override());
+   CHECK(string_is_equal(settings->arrays.video_screen_display[0], "DP Screen"));
+   CHECK(!settings->arrays.video_screen_display[2][0]);
+   path_clear(RARCH_PATH_BASENAME);
+
+   /* A load starts from Auto */
+   load_fixture("");
+   CHECK(!settings->arrays.video_screen_display[0][0]);
+}
+
+/* video_screenN_window_mode, saved before a display could be Off: read
+ * on load, never written again */
+static void test_window_migration(void)
+{
+   static rarch_system_info_t system_info;
+   settings_t *settings = config_get_ptr();
+   config_file_t *conf;
+   char value[64];
+   unsigned minimal;
+   memset(&system_info, 0, sizeof(system_info));
+   system_info.info.library_name = "video_screens_test";
+
+   /* migration: old Hidden becomes Off */
+   load_fixture("video_screen1_window_mode = \"2\"\n"
+         "video_screen3_window_mode = \"2\"\n"
+         "video_screen3_display = \"\"\n");
+   CHECK(string_is_equal(settings->arrays.video_screen_display[0],
+            VIDEO_WINDOW_DISPLAY_OFF));
+   CHECK(!settings->arrays.video_screen_display[1][0]);
+   CHECK(string_is_equal(settings->arrays.video_screen_display[2],
+            VIDEO_WINDOW_DISPLAY_OFF));
+
+   /* migration: old With RetroArch and Separate become Auto */
+   load_fixture("video_screen1_window_mode = \"0\"\n"
+         "video_screen2_window_mode = \"1\"\n");
+   CHECK(!settings->arrays.video_screen_display[0][0]);
+   CHECK(!settings->arrays.video_screen_display[1][0]);
+
+   /* migration: a display key wins over the old mode */
+   load_fixture("video_screen1_window_mode = \"2\"\n"
+         "video_screen1_display = \"Screen-2\"\n"
+         "video_screen2_window_mode = \"0\"\n"
+         "video_screen2_display = \"off\"\n");
+   CHECK(string_is_equal(settings->arrays.video_screen_display[0],
+            "Screen-2"));
+   CHECK(string_is_equal(settings->arrays.video_screen_display[1],
+            VIDEO_WINDOW_DISPLAY_OFF));
+
+   /* An old override's Hidden over a base saved since */
+   load_fixture("video_screen2_display = \"\"\n");
+   write_config(override_path, "video_screen2_window_mode = \"2\"\n");
+   CHECK(config_load_override_file(override_path));
+   CHECK(string_is_equal(settings->arrays.video_screen_display[1],
+            VIDEO_WINDOW_DISPLAY_OFF));
+   path_set(RARCH_PATH_BASENAME, "window_migration.rom");
+   CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+   strlcpy(generated_path, path_get(RARCH_PATH_CONFIG_OVERRIDE),
+         sizeof(generated_path));
+   conf = config_file_new_from_path_to_string(generated_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_array(conf, "video_screen2_display", value, sizeof(value))
+            && string_is_equal(value, VIDEO_WINDOW_DISPLAY_OFF));
+      CHECK(config_get_entry(conf, "video_screen2_window_mode") == NULL);
+      config_file_free(conf);
+   }
+   CHECK(config_unload_override());
+   CHECK(!settings->arrays.video_screen_display[1][0]);
+   path_clear(RARCH_PATH_BASENAME);
+
+   /* migration: the old mode key is not written */
+   for (minimal = 0; minimal < 2; minimal++)
+   {
+      write_config(saved_path, "video_screen2_window_mode = \"2\"\n");
+      load_fixture("video_screen2_window_mode = \"2\"\n");
+      settings->bools.config_save_minimal = minimal != 0;
+      CHECK(config_save_file(saved_path));
+      conf = config_file_new_from_path_to_string(saved_path);
+      CHECK(conf != NULL);
+      if (conf)
+      {
+         CHECK(config_get_entry(conf, "video_screen2_window_mode") == NULL);
+         CHECK(config_get_array(conf, "video_screen2_display", value,
+                  sizeof(value))
+               && string_is_equal(value, VIDEO_WINDOW_DISPLAY_OFF));
+         config_file_free(conf);
+      }
+   }
+   settings->bools.config_save_minimal = false;
+   load_fixture("");
+}
+
+/* The menu's keys: defaults, saved, overridden, and kept in range */
+static void test_window_menu_config(void)
+{
+   static rarch_system_info_t system_info;
+   settings_t *settings = config_get_ptr();
+   config_file_t *conf;
+   char value[64];
+   int number;
+   memset(&system_info, 0, sizeof(system_info));
+   system_info.info.library_name = "video_screens_test";
+   CHECK(sizeof(settings->arrays.video_menu_display)
+         == VIDEO_WINDOW_DISPLAY_NAME_SIZE);
+   load_fixture("");
+   CHECK(settings->uints.video_menu_follows == 0);
+   CHECK(settings->uints.video_notifications_window
+         == VIDEO_NOTIFICATIONS_WITH_GAME);
+   CHECK(!settings->arrays.video_menu_display[0]);
+   settings->bools.config_save_minimal = true;
+   CHECK(config_save_file(saved_path));
+   conf = config_file_new_from_path_to_string(saved_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_entry(conf, "video_menu_follows") == NULL);
+      CHECK(config_get_entry(conf, "video_menu_display") == NULL);
+      CHECK(config_get_entry(conf, "video_notifications_window") == NULL);
+      config_file_free(conf);
+   }
+
+   load_fixture("video_menu_follows = \"8\"\n"
+         "video_menu_display = \"Screen-2\"\n"
+         "video_notifications_window = \"1\"\n");
+   CHECK(settings->uints.video_menu_follows == VIDEO_MENU_FOLLOWS_SEPARATE);
+   CHECK(string_is_equal(settings->arrays.video_menu_display, "Screen-2"));
+   CHECK(settings->uints.video_notifications_window
+         == VIDEO_NOTIFICATIONS_WITH_MENU);
+   CHECK(config_save_file(saved_path));
+   conf = config_file_new_from_path_to_string(saved_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_int(conf, "video_menu_follows", &number)
+            && number == VIDEO_MENU_FOLLOWS_SEPARATE);
+      CHECK(config_get_array(conf, "video_menu_display", value, sizeof(value))
+            && string_is_equal(value, "Screen-2"));
+      CHECK(config_get_int(conf, "video_notifications_window", &number)
+            && number == VIDEO_NOTIFICATIONS_WITH_MENU);
+      config_file_free(conf);
+   }
+   settings->bools.config_save_minimal = false;
+
+   /* An override changes two; only those are written */
+   write_config(override_path, "video_menu_follows = \"1\"\n"
+         "video_menu_display = \"\"\n");
+   CHECK(config_load_override_file(override_path));
+   CHECK(settings->uints.video_menu_follows == 1);
+   CHECK(!settings->arrays.video_menu_display[0]);
+   CHECK(settings->uints.video_notifications_window
+         == VIDEO_NOTIFICATIONS_WITH_MENU);
+   path_set(RARCH_PATH_BASENAME, "window_menu.rom");
+   CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+   strlcpy(generated_path, path_get(RARCH_PATH_CONFIG_OVERRIDE),
+         sizeof(generated_path));
+   conf = config_file_new_from_path_to_string(generated_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_int(conf, "video_menu_follows", &number)
+            && number == 1);
+      CHECK(config_get_array(conf, "video_menu_display", value, sizeof(value))
+            && !value[0]);
+      CHECK(config_get_entry(conf, "video_notifications_window") == NULL);
+      config_file_free(conf);
+   }
+   CHECK(config_unload_override());
+   CHECK(settings->uints.video_menu_follows == VIDEO_MENU_FOLLOWS_SEPARATE);
+   CHECK(string_is_equal(settings->arrays.video_menu_display, "Screen-2"));
+   path_clear(RARCH_PATH_BASENAME);
+
+   /* Out of range: the defaults */
+   load_fixture("video_menu_follows = \"9\"\n"
+         "video_notifications_window = \"2\"\n");
+   CHECK(settings->uints.video_menu_follows == 0);
+   CHECK(settings->uints.video_notifications_window
+         == VIDEO_NOTIFICATIONS_WITH_GAME);
+   load_fixture("");
 }
 
 /* A screen's own window, laid out from a frame's snapshot */
@@ -1349,12 +1624,15 @@ static void test_window_frame(void)
    CHECK(window_test_seen.core_dims == VIDEO_SCALE_PACK(8, 2));
    restore = window_test_seen.restore;
 
-   /* Hidden: in no window */
-   settings->uints.video_screen_window_mode[1] = VIDEO_WINDOW_HIDDEN;
+   /* Off: in no window */
+   strlcpy(settings->arrays.video_screen_display[1], VIDEO_WINDOW_DISPLAY_OFF,
+         sizeof(settings->arrays.video_screen_display[1]));
    settings->uints.video_screen_window_pos[1]  = VIDEO_POS_PACK(-20, 30);
    window_test_run();
    CHECK(window_test_placements() == 1);
    CHECK(window_test_seen.plan.hidden_mask == 2u);
+   CHECK(window_test_seen.settings[1].mode == VIDEO_WINDOW_HIDDEN);
+   CHECK(window_test_seen.settings[0].mode == VIDEO_WINDOW_ATTACHED);
    CHECK(window_test_seen.settings[1].pos == VIDEO_POS_PACK(-20, 30));
    /* The layout's settings; a stereo mode places screen 1 once an eye */
    settings->bools.video_scale_integer         = true;
@@ -1373,7 +1651,7 @@ static void test_window_frame(void)
    settings->bools.video_stereo_swap_eyes      = false;
 
    /* A close attaches a screen until the windows are restored */
-   settings->uints.video_screen_window_mode[1] = VIDEO_WINDOW_SEPARATE;
+   settings->arrays.video_screen_display[1][0] = '\0';
    video_st->windows_forced_attached           = 2u;
    window_test_run();
    CHECK(window_test_placements() == 2);
@@ -1403,6 +1681,8 @@ static void window_test_display(video_window_display_t *d,
    d->valid      = true;
    d->on         = true;
    d->physical   = true;
+   /* Listed first, as Android lists its default display */
+   d->is_default = ordinal == 1;
    strlcpy(d->name, name, sizeof(d->name));
 }
 
@@ -1477,16 +1757,19 @@ static void test_window_displays(void)
    window_test_run();
    CHECK(window_test_seen.plan.separate_mask == 2u);
 
-   /* An external monitor takes screen 0; screen 1 stays, with touch */
+   /* An external monitor takes Game Screen 1, so RetroArch is to move there;
+    * first Game Screen 2's Presentation on the display it leaves */
    video_driver_publish_window_displays(displays, 3);
    window_test_run();
-   CHECK(window_test_seen.display == 3);
-   CHECK(window_test_seen.plan.main_mask == 2u);
-   CHECK(window_test_seen.plan.separate_mask == 1u);
-   CHECK(window_test_seen.window_screens[0] == 0u);
-   CHECK(window_test_seen.window_screens[1] == 1u);
+   CHECK(window_test_seen.display == 1);
+   CHECK(window_test_seen.plan.main_mask == 1u);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+         == 2u);
+   CHECK(video_state_get_ptr()->windows_host.make == 1);
+   CHECK(video_state_get_ptr()->windows_host.host == 3);
    CHECK(window_test_placements() == 1
-         && video_driver_get_views_layout()->placements[0].view == 1);
+         && video_driver_get_views_layout()->placements[0].view == 0);
 
    /* Nowhere to go: the screen stays attached */
    displays[1].on = false;
@@ -1517,6 +1800,984 @@ static void test_window_displays(void)
    window_test_end();
 }
 
+/* The touch's screen position, as a touch driver reports it */
+static uint32_t menu_test_screen_pos;
+/* A pointer's back, held */
+static bool menu_test_back;
+
+static int16_t menu_test_input_state(void *data,
+      const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info,
+      const retro_keybind_set *binds,
+      unsigned port, unsigned device, unsigned idx, unsigned id)
+{
+   (void)data;
+   (void)joypad;
+   (void)joypad_info;
+   (void)binds;
+   (void)idx;
+   if (port || device != RARCH_DEVICE_POINTER_SCREEN)
+      return 0;
+   if (id == RETRO_DEVICE_ID_POINTER_X)
+      return VIDEO_POS_X(menu_test_screen_pos);
+   if (id == RETRO_DEVICE_ID_POINTER_Y)
+      return VIDEO_POS_Y(menu_test_screen_pos);
+   if (id == RARCH_DEVICE_ID_POINTER_BACK)
+      return menu_test_back;
+   return 0;
+}
+
+static void menu_test_set_texture(void *data)
+{
+   (void)data;
+}
+
+/* Where menu_event() puts a touch at window (x, y) */
+static uint32_t menu_test_touch(struct video_viewport *vp, int x, int y)
+{
+   static input_bits_t none;
+   menu_input_pointer_t pointer;
+   uint32_t pos;
+   CHECK(video_driver_translate_coord_viewport(vp, x, y, &pos,
+            &menu_test_screen_pos, false));
+   input_driver_poll_devices();
+   menu_event(config_get_ptr(), &none, &none, false);
+   menu_input_get_pointer_state(&pointer);
+   return pointer.pos;
+}
+
+static bool menu_test_near(uint32_t pos, int x, int y)
+{
+   return abs(VIDEO_POS_X(pos) - x) <= 1 && abs(VIDEO_POS_Y(pos) - y) <= 1;
+}
+
+/* The menu's touches on the 800x480 main window: where they are on it,
+ * and for RGUI through its 320x240 framebuffer, fitted 4:3 at x 80 */
+static void window_test_menu_touch(struct video_viewport *vp)
+{
+   static input_driver_t driver;
+   static menu_ctx_driver_t rgui_ctx;
+   static menu_handle_t rgui;
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   gfx_display_t *p_disp          = disp_get_ptr();
+   input_driver_t *saved_driver   = input_st->current_driver;
+   menu_handle_t *saved_menu      = menu_st->driver_data;
+   unsigned saved_fb              = p_disp->framebuf_dims;
+   float saved_aspect             = VIDEO_DRIVER_ASPECT_RATIO(video_st);
+   bool saved_pointer             = settings->bools.menu_pointer_enable;
+   bool saved_mouse               = settings->bools.menu_mouse_enable;
+   bool saved_overlay             = settings->bools.input_overlay_enable;
+   memset(&driver, 0, sizeof(driver));
+   driver.input_state             = menu_test_input_state;
+   driver.ident                   = "menu_test";
+   input_st->current_driver       = &driver;
+   settings->bools.menu_pointer_enable  = true;
+   settings->bools.menu_mouse_enable    = false;
+   settings->bools.input_overlay_enable = false;
+   p_disp->framebuf_dims          = VIDEO_SCALE_PACK(800, 480);
+   CHECK(menu_test_near(menu_test_touch(vp, 600, 120), 600, 120));
+   memset(&rgui_ctx, 0, sizeof(rgui_ctx));
+   rgui_ctx.set_texture           = menu_test_set_texture;
+   memset(&rgui, 0, sizeof(rgui));
+   rgui.driver_ctx                = &rgui_ctx;
+   menu_st->driver_data           = &rgui;
+   p_disp->framebuf_dims          = VIDEO_SCALE_PACK(320, 240);
+   video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits, 4.0f / 3.0f);
+   video_driver_publish_vp_params();
+   CHECK(menu_test_near(menu_test_touch(vp, 560, 360), 240, 180));
+   video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits, saved_aspect);
+   video_driver_publish_vp_params();
+   menu_st->driver_data           = saved_menu;
+   p_disp->framebuf_dims          = saved_fb;
+   input_st->current_driver       = saved_driver;
+   settings->bools.menu_pointer_enable  = saved_pointer;
+   settings->bools.menu_mouse_enable    = saved_mouse;
+   settings->bools.input_overlay_enable = saved_overlay;
+}
+
+/* What menu_event() last returned in menu_test_window_touch() */
+static unsigned menu_test_action;
+
+/* Where menu_event() puts @count touches (0 or 1) at (x, y) of the
+ * Presentation, generation @gen, or of the main window */
+static uint32_t menu_test_window_touch(unsigned gen, bool presentation,
+      unsigned count, int x, int y, bool *pressed)
+{
+   static input_bits_t none;
+   input_pointer_frame_t frame;
+   input_video_window_t window;
+   menu_input_pointer_t pointer;
+   uint32_t touch = VIDEO_POS_PACK(x, y);
+   memset(&frame, 0, sizeof(frame));
+   window.window     = presentation ? VIDEO_WINDOWS_PRESENTATION : 0;
+   window.generation = presentation ? gen : 0;
+   input_driver_publish_window_pointers(&frame, NULL, 1,
+         INPUT_POINTERS_WINDOWS_SECOND);
+   input_driver_publish_window_touches(&touch, &window, count,
+         count ? 1 : 0, count ? 1 : 0);
+   input_driver_poll_devices();
+   menu_test_action = menu_event(config_get_ptr(), &none, &none, false);
+   menu_input_get_pointer_state(&pointer);
+   *pressed = (pointer.flags & MENU_INP_PTR_FLG_PRESSED) != 0;
+   return pointer.pos;
+}
+
+/* menu_event() with no touch, the mouse's @buttons and a pointer's back
+ * held or not (the driver's to answer); whether the menu's cancel is
+ * inhibited */
+static bool menu_test_cancel(uint16_t buttons, bool back)
+{
+   static input_bits_t none;
+   input_pointer_frame_t frame;
+   uint32_t none_pos = 0;
+   memset(&frame, 0, sizeof(frame));
+   frame.buttons  = buttons;
+   menu_test_back = back;
+   input_driver_publish_window_pointers(&frame, NULL, 1,
+         INPUT_POINTERS_WINDOWS_SECOND
+         | INPUT_POINTERS_POINTER_IDS_BY_DRIVER);
+   input_driver_publish_window_touches(&none_pos, NULL, 0, 0, 0);
+   input_driver_poll_devices();
+   menu_event(config_get_ptr(), &none, &none, false);
+   return menu_state_get_ptr()->input_state.cancel_inhibit;
+}
+
+/* The menu in the Presentation (00 I3): its touches over that window at
+ * the menu layer's size, none of the main window's; RGUI through its
+ * framebuffer as it is fitted to the layer */
+static void test_window_menu_touch_window(void)
+{
+   static input_driver_t driver;
+   static menu_ctx_driver_t rgui_ctx;
+   static menu_handle_t rgui;
+   static menu_file_list_cbs_t resume_cbs;
+   static struct item_file resume_item;
+   static file_list_t resume_rows;
+   static file_list_t no_rows;
+   static file_list_t *resume_selection[1];
+   static file_list_t *resume_stack[1];
+   static menu_list_t resume_list;
+   video_views_layout_t ui_only;
+   video_views_map_t no_map;
+   input_pointer_frame_t frame;
+   uint32_t none_pos              = 0;
+   unsigned dims                  = 0;
+   unsigned gen;
+   unsigned i;
+   unsigned j;
+   bool pressed                   = false;
+   float saved_aspect;
+   video_window_ui_target_t saved_ui;
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   gfx_display_t *p_disp          = disp_get_ptr();
+   input_driver_t *saved_driver   = input_st->current_driver;
+   menu_handle_t *saved_menu      = menu_st->driver_data;
+   menu_list_t *saved_list        = menu_st->entries.list;
+   size_t saved_selection         = menu_st->selection_ptr;
+   unsigned saved_fb              = p_disp->framebuf_dims;
+   uint16_t saved_menu_flags      = menu_st->flags;
+   retro_keyboard_event_t saved_key_event = runloop_st->key_event;
+   retro_keyboard_event_t saved_frontend_key_event =
+      runloop_st->frontend_key_event;
+   bool saved_pointer             = settings->bools.menu_pointer_enable;
+   bool saved_mouse               = settings->bools.menu_mouse_enable;
+   bool saved_overlay             = settings->bools.input_overlay_enable;
+
+   window_test_begin();
+   saved_aspect = VIDEO_DRIVER_ASPECT_RATIO(video_st);
+   saved_ui     = video_st->windows_ui[VIDEO_WINDOW_UI_MENU];
+   gen          = video_driver_window_generation();
+   memset(&driver, 0, sizeof(driver));
+   driver.input_state             = menu_test_input_state;
+   driver.ident                   = "menu_window_test";
+   input_st->current_driver       = &driver;
+   memset(&rgui, 0, sizeof(rgui));
+   menu_st->driver_data           = &rgui;
+   settings->bools.menu_pointer_enable  = true;
+   settings->bools.menu_mouse_enable    = false;
+   settings->bools.input_overlay_enable = false;
+
+   /* The Presentation has drawn at 640x360; the menu lays out there */
+   memset(&ui_only, 0, sizeof(ui_only));
+   memset(&no_map, 0, sizeof(no_map));
+   ui_only.canvas_dims = VIDEO_SCALE_PACK(640, 360);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, gen, 4,
+         &ui_only, &no_map, 0, VIDEO_SCALE_PACK(640, 360));
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, &dims) == 4);
+   CHECK(dims == VIDEO_SCALE_PACK(640, 360));
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].dims   =
+      VIDEO_SCALE_PACK(640, 360);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait   = false;
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(640, 360));
+
+   /* The menu there, then a touch there acts where it is */
+   menu_test_window_touch(gen, true, 0, 0, 0, &pressed);
+   CHECK(menu_test_near(menu_test_window_touch(gen, true, 1, 480, 90,
+               &pressed), 480, 90));
+   CHECK(pressed);
+   /* The main window's touches never reach it; it keeps its place */
+   CHECK(menu_test_near(menu_test_window_touch(gen, false, 1, 400, 240,
+               &pressed), 480, 90));
+   CHECK(!pressed);
+   CHECK(menu_test_near(menu_test_window_touch(gen, true, 0, 0, 0,
+               &pressed), 480, 90));
+   CHECK(!pressed);
+
+   /* A press held as the menu changes window is dropped, not a tap in
+    * the other window's layout. menu_input_post_iterate(), which this
+    * does not run, lifts the inhibit once select is let go. */
+   menu_test_window_touch(gen, true, 1, 480, 90, &pressed);
+   CHECK(pressed);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   menu_test_window_touch(gen, true, 1, 480, 90, &pressed);
+   CHECK(!pressed);
+   CHECK(menu_st->input_state.select_inhibit);
+   CHECK(!(menu_st->input_pointer_hw_state.flags
+            & MENU_INP_PTR_FLG_PRESS_SELECT));
+   menu_st->input_state.select_inhibit = false;
+   /* A finger already down where it goes is not the menu's until it
+    * lifts; the next one is */
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   menu_test_window_touch(gen, false, 1, 400, 240, &pressed);
+   CHECK(!pressed);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   menu_test_window_touch(gen, false, 1, 400, 240, &pressed);
+   CHECK(!pressed);
+   menu_test_window_touch(gen, false, 1, 420, 250, &pressed);
+   CHECK(!pressed);
+   CHECK(!(menu_st->input_state.pointer.flags
+            & (MENU_INP_PTR_FLG_ACTIVE | MENU_INP_PTR_FLG_DRAGGED)));
+   menu_test_window_touch(gen, false, 0, 0, 0, &pressed);
+   CHECK(!pressed);
+   CHECK(!(menu_st->input_pointer_hw_state.flags
+            & MENU_INP_PTR_FLG_PRESS_SELECT));
+   menu_st->input_state.select_inhibit = false;
+   menu_test_window_touch(gen, false, 1, 400, 240, &pressed);
+   CHECK(pressed);
+   menu_test_window_touch(gen, false, 0, 0, 0, &pressed);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   menu_test_window_touch(gen, true, 0, 0, 0, &pressed);
+   CHECK(!pressed);
+
+   /* A press already down as the menu opens is dropped until it lifts,
+    * in the Presentation and in the main window, and the release of one
+    * held as it closed is no tap. Opening it again while it is up (a
+    * load that failed) leaves a press be. */
+   for (i = 0; i < 2; i++)
+   {
+      bool presentation = (i == 0);
+      int x             = presentation ? 480 : 400;
+      int y             = presentation ?  90 : 240;
+      video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+         presentation ? VIDEO_WINDOWS_PRESENTATION : 0;
+      menu_test_window_touch(gen, presentation, 0, 0, 0, &pressed);
+      menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+      retroarch_menu_running();
+      menu_test_window_touch(gen, presentation, 1, x, y, &pressed);
+      CHECK(!pressed);
+      CHECK(menu_st->input_state.select_inhibit);
+      menu_test_window_touch(gen, presentation, 1, x + 20, y + 10, &pressed);
+      CHECK(!pressed);
+      CHECK(!(menu_st->input_state.pointer.flags
+               & (MENU_INP_PTR_FLG_ACTIVE | MENU_INP_PTR_FLG_DRAGGED)));
+      menu_test_window_touch(gen, presentation, 0, 0, 0, &pressed);
+      CHECK(!pressed);
+      CHECK(!(menu_st->input_pointer_hw_state.flags
+               & MENU_INP_PTR_FLG_PRESS_SELECT));
+      menu_st->input_state.select_inhibit = false;
+      menu_test_window_touch(gen, presentation, 1, x, y, &pressed);
+      CHECK(pressed);
+      retroarch_menu_running();
+      menu_test_window_touch(gen, presentation, 1, x, y, &pressed);
+      CHECK(pressed);
+      CHECK(!menu_st->input_state.select_inhibit);
+      menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+      retroarch_menu_running();
+      menu_test_window_touch(gen, presentation, 0, 0, 0, &pressed);
+      CHECK(!pressed);
+      CHECK(menu_st->input_state.select_inhibit);
+      CHECK(!(menu_st->input_pointer_hw_state.flags
+               & MENU_INP_PTR_FLG_PRESS_SELECT));
+      menu_st->input_state.select_inhibit = false;
+   }
+
+   /* So is a cancel down as the menu opens, or down already where it
+    * goes: a pointer's back in either window, the mouse's right button
+    * in the main one. menu_input_post_iterate() would cancel on its
+    * press, unless inhibited, and lift the inhibit once it is up. */
+   for (i = 0; i < 2; i++)
+   {
+      video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+         i ? 0 : VIDEO_WINDOWS_PRESENTATION;
+      menu_test_cancel(0, false);
+      menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+      retroarch_menu_running();
+      CHECK(menu_test_cancel(0, true));
+      CHECK((menu_st->input_pointer_hw_state.flags
+               & MENU_INP_PTR_FLG_PRESS_CANCEL) != 0);
+      menu_test_cancel(0, false);
+      CHECK(!(menu_st->input_pointer_hw_state.flags
+               & MENU_INP_PTR_FLG_PRESS_CANCEL));
+      menu_st->input_state.cancel_inhibit = false;
+   }
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   menu_test_cancel(0, false);
+   CHECK(!menu_test_cancel(0, true));
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   CHECK(menu_test_cancel(0, true));
+   menu_test_cancel(0, false);
+   menu_st->input_state.cancel_inhibit = false;
+   settings->bools.menu_mouse_enable = true;
+   menu_test_cancel(0, false);
+   menu_test_cancel(0, false);
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   retroarch_menu_running();
+   CHECK(menu_test_cancel(INPUT_POINTER_RIGHT, false));
+   CHECK(menu_st->input_state.pointer.type == MENU_POINTER_MOUSE);
+   CHECK((menu_st->input_pointer_hw_state.flags
+            & MENU_INP_PTR_FLG_PRESS_CANCEL) != 0);
+   menu_test_cancel(0, false);
+   CHECK(!(menu_st->input_pointer_hw_state.flags
+            & MENU_INP_PTR_FLG_PRESS_CANCEL));
+   menu_st->input_state.cancel_inhibit = false;
+   settings->bools.menu_mouse_enable = false;
+
+   /* Nor does such a press act on Resume, which acts on OK's release:
+    * held through an open in either window (90 frames, a long press at
+    * 60 Hz), held as the menu leaves the Presentation, or down where it
+    * goes. The next tap does. */
+   resume_cbs.enum_idx            = MENU_ENUM_LABEL_RESUME_CONTENT;
+   resume_item.actiondata         = &resume_cbs;
+   resume_rows.list               = &resume_item;
+   resume_rows.capacity           = 1;
+   resume_rows.size               = 1;
+   resume_selection[0]            = &resume_rows;
+   resume_stack[0]                = &no_rows;
+   resume_list.selection_buf      = resume_selection;
+   resume_list.selection_buf_size = 1;
+   resume_list.menu_stack         = resume_stack;
+   resume_list.menu_stack_size    = 1;
+   menu_st->entries.list          = &resume_list;
+   menu_st->selection_ptr         = 0;
+   for (i = 0; i < 4; i++)
+   {
+      bool in_presentation  = (i == 0 || i == 2);
+      bool tap_presentation = (i == 0);
+      int x                 = in_presentation ? 480 : 400;
+      int y                 = in_presentation ?  90 : 240;
+      video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+         (i == 1) ? 0 : VIDEO_WINDOWS_PRESENTATION;
+      menu_test_window_touch(gen, i != 1, 0, 0, 0, &pressed);
+      if (i < 2)
+      {
+         menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+         retroarch_menu_running();
+      }
+      else
+      {
+         menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
+         menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
+         CHECK(menu_test_action == MENU_ACTION_NOOP);
+         video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+      }
+      for (j = 0; j < 90; j++)
+      {
+         menu_test_window_touch(gen, in_presentation, 1, x, y, &pressed);
+         CHECK(menu_test_action == MENU_ACTION_NOOP);
+      }
+      for (j = 0; j < 3; j++)
+      {
+         menu_test_window_touch(gen, in_presentation, 0, 0, 0, &pressed);
+         CHECK(menu_test_action == MENU_ACTION_NOOP);
+         menu_st->input_state.select_inhibit = false;
+      }
+      x = tap_presentation ? 480 : 400;
+      y = tap_presentation ?  90 : 240;
+      menu_test_window_touch(gen, tap_presentation, 1, x, y, &pressed);
+      CHECK(pressed);
+      menu_test_window_touch(gen, tap_presentation, 0, 0, 0, &pressed);
+      CHECK(menu_test_action == MENU_ACTION_NOOP);
+      menu_test_window_touch(gen, tap_presentation, 0, 0, 0, &pressed);
+      CHECK(menu_test_action == MENU_ACTION_OK);
+   }
+   menu_st->entries.list          = saved_list;
+   menu_st->selection_ptr         = saved_selection;
+
+   menu_st->flags                 = saved_menu_flags;
+   runloop_st->key_event          = saved_key_event;
+   runloop_st->frontend_key_event = saved_frontend_key_event;
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window =
+      VIDEO_WINDOWS_PRESENTATION;
+   menu_test_window_touch(gen, true, 0, 0, 0, &pressed);
+
+   /* RGUI: its 320x240 framebuffer fitted 4:3 into 640x360, at x 80 */
+   memset(&rgui_ctx, 0, sizeof(rgui_ctx));
+   rgui_ctx.set_texture           = menu_test_set_texture;
+   rgui.driver_ctx                = &rgui_ctx;
+   p_disp->framebuf_dims          = VIDEO_SCALE_PACK(320, 240);
+   video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits, 4.0f / 3.0f);
+   video_driver_publish_vp_params();
+   CHECK(menu_test_near(menu_test_window_touch(gen, true, 1, 320, 180,
+               &pressed), 160, 120));
+
+   video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits, saved_aspect);
+   video_driver_publish_vp_params();
+   memset(&frame, 0, sizeof(frame));
+   input_driver_publish_window_pointers(&frame, NULL, 0, 0);
+   input_driver_publish_window_touches(&none_pos, NULL, 0, 0, 0);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, gen, 0,
+         NULL, NULL, 0, 0);
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU] = saved_ui;
+   menu_st->driver_data           = saved_menu;
+   p_disp->framebuf_dims          = saved_fb;
+   input_st->current_driver       = saved_driver;
+   settings->bools.menu_pointer_enable  = saved_pointer;
+   settings->bools.menu_mouse_enable    = saved_mouse;
+   settings->bools.input_overlay_enable = saved_overlay;
+   window_test_end();
+}
+
+/* Screens by name, as on the Thor; a main window with no screen keeps
+ * the menu's touches and shows the idle logo */
+static void test_window_display_names(void)
+{
+   const uint32_t oob = VIDEO_POS_PACK(-0x8000, -0x8000);
+   video_window_display_t displays[3];
+   struct video_viewport vp;
+   uint32_t pos, screen_pos, main_screen;
+   settings_t *settings       = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   uint16_t saved_menu        = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   window_test_display(&displays[2], 3, VIDEO_WINDOW_CONNECTION_DIRECT,
+         false, "DP Screen");
+   CHECK(sizeof(settings->arrays.video_screen_display[0])
+         == VIDEO_WINDOW_DISPLAY_NAME_SIZE);
+   window_test_begin();
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   video_driver_publish_window_displays(displays, 3);
+   /* By name, where Auto would give Game Screen 1 the DP monitor */
+   strlcpy(settings->arrays.video_screen_display[0], "Built-in Screen",
+         sizeof(settings->arrays.video_screen_display[0]));
+   strlcpy(settings->arrays.video_screen_display[1], "Screen-2",
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.plan.main_mask == 1u);
+   CHECK(window_test_seen.window_screens[0] == 0u);
+   CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+         == 2u);
+   CHECK(!window_test_seen.logo);
+   /* A touch on the main window lands on the screen it shows */
+   CHECK(video_driver_get_viewport_info(&vp));
+   CHECK(video_driver_translate_coord_viewport(&vp, 400, 240, &pos,
+            &screen_pos, true));
+   CHECK(VIDEO_POS_X(pos) < -0x2000);
+   /* The menu on a display that refused, both screens on Screen-2: the
+    * main window shows none, keeps the menu's touches and idles */
+   displays[0].refused = true;
+   video_driver_publish_window_displays(displays, 3);
+   settings->uints.video_menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   strlcpy(settings->arrays.video_menu_display, "Built-in Screen",
+         sizeof(settings->arrays.video_menu_display));
+   strlcpy(settings->arrays.video_screen_display[0], "Screen-2",
+         sizeof(settings->arrays.video_screen_display[0]));
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(window_test_seen.plan.separate_mask == 3u);
+   CHECK(window_test_seen.logo);
+   CHECK(!video_state_get_ptr()->windows_host.moving);
+   CHECK(video_driver_get_views_layout() != NULL);
+   CHECK(window_test_placements() == 0);
+   CHECK(video_driver_translate_coord_viewport(&vp, 400, 240, &pos,
+            &main_screen, true));
+   CHECK(pos == oob);
+   CHECK(main_screen == screen_pos);
+   CHECK(video_driver_translate_coord_viewport(&vp, 400, 240, &pos,
+            &main_screen, false));
+   CHECK(pos == oob);
+   CHECK(main_screen == screen_pos);
+   window_test_menu_touch(&vp);
+   settings->uints.video_menu_follows          = 0;
+   settings->arrays.video_menu_display[0]      = '\0';
+   settings->arrays.video_screen_display[0][0] = '\0';
+   settings->arrays.video_screen_display[1][0] = '\0';
+   menu_st->flags                              = saved_menu;
+   window_test_end();
+}
+
+/* The frame path asks for each move once and never keeps one in the
+ * route a redraw reuses; make before break at start, the Presentation
+ * kept at close. Menu Follows Game Screen 2, the Thor's bottom panel. */
+static void test_window_moves(void)
+{
+   video_window_display_t displays[2];
+   video_views_layout_t layout;
+   unsigned i;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   /* Cocoon starts RetroArch on the bottom panel */
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Screen-2");
+   settings->uints.video_menu_follows = 1;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   /* A two-screen game: Game Screen 2's Presentation on RetroArch's display
+    * first, the main window showing Game Screen 1 */
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.plan.main_mask == 1u);
+   CHECK(video_st->windows_host.make == 2);
+   CHECK(!video_st->windows_host.moving);
+   /* It drew there: the move is asked once, and not kept for a redraw */
+   video_driver_window_layout_screens(&window_test_seen, 2u,
+         VIDEO_SCALE_PACK(1240, 1080), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 1, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1240, 1080));
+   window_test_run();
+   CHECK(video_st->windows_host.moving == 1);
+   CHECK(!video_st->windows_host.make);
+   CHECK(video_st->windows_route.move == 0);
+   CHECK(window_test_seen.display == 2);
+   window_test_run();
+   CHECK(video_st->windows_host.moving == 1);
+   /* The list shows RetroArch on the top panel */
+   displays[0].own = true;
+   displays[1].own = false;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   CHECK(window_test_seen.display == 2);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(!window_test_seen.window_keep);
+   /* The game closes: RetroArch goes back under the Presentation, which
+    * is kept, not drawn, until RetroArch has drawn there */
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_CORE_RUNNING;
+   video_driver_clear_views();
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(window_test_seen.window_keep
+         == 1u << VIDEO_WINDOWS_PRESENTATION);
+   CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+         == 0u);
+   CHECK(video_st->windows_host.moving == 2);
+   CHECK(video_st->windows_route.move == 0);
+   displays[0].own = false;
+   displays[1].own = true;
+   video_driver_publish_window_displays(displays, 2);
+   for (i = 0; i < VIDEO_WINDOWS_HOLD_FRAMES; i++)
+   {
+      window_test_run();
+      CHECK(window_test_seen.window_keep
+            == 1u << VIDEO_WINDOWS_PRESENTATION);
+   }
+   window_test_run();
+   CHECK(!window_test_seen.window_keep);
+   CHECK(window_test_seen.display == 0);
+   CHECK(!video_st->windows_host.moving);
+   settings->uints.video_menu_follows = 0;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+   /* The list the later tests expect */
+   video_driver_publish_window_displays(displays, 2);
+}
+
+/* The Presentation drawn from the last snapshot on its display, as a
+ * driver publishes it */
+static void window_test_draw(unsigned generation)
+{
+   video_views_layout_t layout;
+   video_driver_window_layout_screens(&window_test_seen,
+         window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION],
+         VIDEO_SCALE_PACK(1240, 1080), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION,
+         generation, window_test_seen.display, &layout,
+         &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1240, 1080));
+}
+
+/* The threaded wrapper draws behind the app thread: a layout drawn
+ * before the snapshot that last let the Presentation go or moved it is
+ * not shown, so make before break holds. Nothing is published here
+ * until the test says the video side drew. */
+static void test_window_shown_lag(void)
+{
+   video_window_display_t displays[2];
+   unsigned i;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Screen-2");
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   /* No lag: drawn from the snapshot that asked, it shows at once */
+   window_test_run();
+   CHECK(video_st->windows_host.make == 2);
+   window_test_draw(1);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.make);
+   CHECK(video_st->windows_host.moving == 1);
+   displays[0].own = true;
+   displays[1].own = false;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   /* The game closes; RetroArch arrives under the kept Presentation,
+    * which is then let go of */
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_CORE_RUNNING;
+   video_driver_clear_views();
+   window_test_run();
+   CHECK(window_test_seen.window_keep
+         == 1u << VIDEO_WINDOWS_PRESENTATION);
+   displays[0].own = false;
+   displays[1].own = true;
+   video_driver_publish_window_displays(displays, 2);
+   for (i = 0; i <= VIDEO_WINDOWS_HOLD_FRAMES; i++)
+      window_test_run();
+   CHECK(!window_test_seen.window_keep);
+   CHECK(window_test_seen.display == 0);
+   /* Not drawn yet: the newest layout still names display 2 */
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   /* The game starts again at once: display 2 gets a new Presentation,
+    * which must draw before RetroArch leaves */
+   runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_CORE_RUNNING;
+   window_test_views();
+   window_test_run();
+   CHECK(video_st->windows_host.make == 2);
+   CHECK(!video_st->windows_host.moving);
+   window_test_run();
+   CHECK(video_st->windows_host.make == 2);
+   CHECK(!video_st->windows_host.moving);
+   window_test_draw(2);
+   window_test_run();
+   CHECK(!video_st->windows_host.make);
+   CHECK(video_st->windows_host.moving == 1);
+   displays[0].own = true;
+   displays[1].own = false;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   /* Without a map, the menu following Game Screen 2: open, the
+    * Presentation shows it on display 2 */
+   video_driver_clear_views();
+   window_test_run();
+   CHECK(window_test_seen.display == 0);
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   window_test_draw(3);
+   window_test_run();
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(!video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   /* Closed and opened again: the wrapper took back the snapshot that
+    * let it go, so the window lives on and draws the later one. Before
+    * that draw, what it showed does not count. */
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 0);
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   window_test_draw(3);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   window_test_run();
+   CHECK(!video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   window_test_run();
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   /* Closed, then at once Game Screen 1 is set to display 2: RetroArch moves
+    * there, and keeps no Presentation that is being let go of */
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 0);
+   strlcpy(settings->arrays.video_screen_display[0], "Screen-2",
+         sizeof(settings->arrays.video_screen_display[0]));
+   window_test_run();
+   CHECK(video_st->windows_host.moving == 2);
+   CHECK(!video_st->windows_host.keep);
+   CHECK(!window_test_seen.window_keep);
+   settings->arrays.video_screen_display[0][0] = '\0';
+   settings->uints.video_menu_follows          = 0;
+   menu_st->flags                              = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+   /* The list the later tests expect */
+   displays[0].own = false;
+   displays[1].own = true;
+   video_driver_publish_window_displays(displays, 2);
+}
+
+static void window_test_free(void *data)
+{
+   (void)data;
+}
+
+/* A driver reinit: the teardown clears every layout, and the next
+ * driver's init takes the kept Presentation and publishes it again,
+ * with no screens. Still shown on display 2, so a close no placement
+ * saw before the reinit keeps it there. */
+static void test_window_shown_reinit(void)
+{
+   static video_views_layout_t layout;
+   static video_views_map_t map;
+   video_window_display_t displays[2];
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Screen-2");
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   /* Game Screen 2 shown on display 2, RetroArch moved to display 1 */
+   window_test_run();
+   window_test_draw(1);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   window_test_run();
+   displays[0].own = true;
+   displays[1].own = false;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   window_test_driver.free = window_test_free;
+   video_driver_free_internal();
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   video_st->data = &window_test_driver;
+   video_st->poke = &window_test_poke;
+   memset(&layout, 0, sizeof(layout));
+   memset(&map, 0, sizeof(map));
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 1, 2,
+         &layout, &map, 0, VIDEO_SCALE_PACK(1240, 1080));
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   /* The game closed before the reinit */
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_CORE_RUNNING;
+   video_driver_clear_views();
+   window_test_run();
+   CHECK(window_test_seen.window_keep
+         == 1u << VIDEO_WINDOWS_PRESENTATION);
+   CHECK(window_test_seen.display == 2);
+   settings->uints.video_menu_follows = 0;
+   menu_st->flags                     = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+   /* The list the later tests expect */
+   displays[0].own = false;
+   displays[1].own = true;
+   video_driver_publish_window_displays(displays, 2);
+}
+
+/* The Presentation moved to another display while still wanted: what
+ * it drew on the old display, or on the new one before the move, is
+ * not shown until it draws from the snapshot that moved it */
+static void test_window_shown_moved(void)
+{
+   video_window_display_t displays[3];
+   settings_t *settings       = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   uint16_t saved_menu        = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   window_test_display(&displays[2], 3, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-3");
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 3);
+   /* Game Screen 2 on Auto: the second panel */
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   window_test_draw(1);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 2);
+   /* Moved to display 3: the newest layout is on display 2 */
+   strlcpy(settings->arrays.video_screen_display[1], "Screen-3",
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.display == 3);
+   CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+         == 2u);
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   window_test_draw(2);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 3);
+   /* Back to 2 and on to 3 again before it draws: the layout on 3 is
+    * from before the move */
+   settings->arrays.video_screen_display[1][0] = '\0';
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   strlcpy(settings->arrays.video_screen_display[1], "Screen-3",
+         sizeof(settings->arrays.video_screen_display[1]));
+   window_test_run();
+   CHECK(window_test_seen.display == 3);
+   CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+         == 2u);
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   window_test_draw(4);
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL) == 3);
+   settings->arrays.video_screen_display[1][0] = '\0';
+   menu_st->flags = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+   /* The list the later tests expect */
+   displays[0].own = false;
+   displays[1].own = true;
+   video_driver_publish_window_displays(displays, 2);
+}
+
+/* With windows on, a frame has them without content views too; each UI
+ * layer's window and size, the wait for the Presentation, and the
+ * accessors */
+static void test_window_ui_targets(void)
+{
+   video_window_display_t displays[2];
+   video_views_layout_t layout;
+   unsigned dims;
+   unsigned ui;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   window_test_begin();
+   ui = video_driver_get_ui_dims();
+   video_driver_publish_window_displays(displays, 2);
+   /* A game without a map, the menu following Game Screen 2: closed, it
+    * lays out for the bottom panel and nothing is shown there */
+   video_driver_clear_views();
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_handed != NULL);
+   CHECK(window_test_seen.display == 0);
+   CHECK(!window_test_seen.window_ui[VIDEO_WINDOWS_PRESENTATION]);
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1240, 1080));
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_NOTIFICATIONS)
+         == 0);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_NOTIFICATIONS)
+         == ui);
+   /* It opens: the Presentation is wanted for the menu alone, which
+    * waits for it */
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(window_test_seen.window_ui[VIDEO_WINDOWS_PRESENTATION]
+         == VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU));
+   CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+         == 0u);
+   CHECK(window_test_seen.ui[VIDEO_WINDOW_UI_MENU].window
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(window_test_seen.ui[VIDEO_WINDOW_UI_MENU].wait);
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   /* Its window drew there: the menu lays out at its client size, and
+    * the snapshot carries what the frame was laid out with */
+   video_driver_window_layout_screens(&window_test_seen, 0,
+         VIDEO_SCALE_PACK(1000, 900), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 7, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1000, 900));
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, &dims)
+         == 2);
+   CHECK(dims == VIDEO_SCALE_PACK(1000, 900));
+   window_test_run();
+   CHECK(!video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1000, 900));
+   CHECK(window_test_seen.ui[VIDEO_WINDOW_UI_MENU].wait);
+   /* The Presentation goes: the menu is the main window's at once */
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_run();
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU) == 0);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU) == ui);
+   /* Closed and opened again, it waits for the new one; past the wait
+    * the main window has it */
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 0);
+   CHECK(!video_st->windows_ui_asked);
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   video_st->windows_ui_asked -= VIDEO_WINDOWS_UI_WAIT_USEC;
+   window_test_run();
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU) == 0);
+   CHECK(!video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   /* With the Menu, notifications go with it */
+   settings->uints.video_notifications_window =
+      VIDEO_NOTIFICATIONS_WITH_MENU;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 8, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1000, 900));
+   window_test_run();
+   CHECK(window_test_seen.window_ui[VIDEO_WINDOWS_PRESENTATION]
+         == (VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU)
+            | VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS)));
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_NOTIFICATIONS)
+         == VIDEO_WINDOWS_PRESENTATION);
+   settings->uints.video_notifications_window =
+      VIDEO_NOTIFICATIONS_WITH_GAME;
+   /* Windows off: the main window has everything, and placement starts
+    * afresh */
+   settings->bools.video_windows_enable = false;
+   window_test_run();
+   CHECK(window_test_handed == NULL);
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU) == 0);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU) == ui);
+   CHECK(!video_st->windows_host.names);
+   settings->uints.video_menu_follows = 0;
+   menu_st->flags                     = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+}
+
 static video_views_layout_t window_test_layouts[2];
 static video_views_map_t window_test_map;
 static unsigned window_test_generation;
@@ -1537,7 +2798,7 @@ static void window_test_publish(void *data)
       ;
 #endif
    for (i = 0; i < count; i++)
-      video_driver_publish_window_layout(1, window_test_generation,
+      video_driver_publish_window_layout(1, window_test_generation, 2,
             &window_test_layouts[i & 1], &window_test_map,
             VIDEO_SCALE_PACK(800, 480), VIDEO_SCALE_PACK(800, 480));
 #ifdef HAVE_THREADS
@@ -1784,8 +3045,243 @@ static void test_window_pointer_mapping(void)
 #endif
 
    /* A window retired */
-   video_driver_publish_window_layout(1, gen, NULL, NULL, 0, 0);
+   video_driver_publish_window_layout(1, gen, 0, NULL, NULL, 0, 0);
    CHECK(!video_driver_translate_window_point(1, gen, 400, 240, true, &pos));
+}
+
+/* Game Screen 2's window turned: drawn again at the swapped size, the menu
+ * lays out at that size */
+static void test_window_turned(void)
+{
+   video_window_display_t displays[2];
+   video_views_layout_t layout;
+   unsigned dims;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   /* The menu open in Game Screen 2's window, drawn at 1240x1080 */
+   video_driver_clear_views();
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   video_driver_window_layout_screens(&window_test_seen, 0,
+         VIDEO_SCALE_PACK(1240, 1080), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 7, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1240, 1080));
+   window_test_run();
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1240, 1080));
+   /* Turned: the same window drawn at 1080x1240 */
+   video_driver_window_layout_screens(&window_test_seen, 0,
+         VIDEO_SCALE_PACK(1080, 1240), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 7, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1080, 1240));
+   CHECK(video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, &dims)
+         == 2);
+   CHECK(dims == VIDEO_SCALE_PACK(1080, 1240));
+   window_test_run();
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1080, 1240));
+   CHECK(!video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   /* The next frame is laid out at it */
+   window_test_run();
+   CHECK(window_test_seen.ui[VIDEO_WINDOW_UI_MENU].dims
+         == VIDEO_SCALE_PACK(1080, 1240));
+   settings->uints.video_menu_follows = 0;
+   menu_st->flags                     = saved_menu;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+}
+
+/* A touch on a turned window maps through the layout drawn at the new
+ * size, from the first read after it was published */
+static void test_window_turned_touch(void)
+{
+   const uint32_t oob = VIDEO_POS_PACK(-0x8000, -0x8000);
+   video_windows_frame_t snap;
+   struct retro_video_view v[3];
+   video_views_layout_t wide;
+   video_views_layout_t tall;
+   const video_views_rect_t *dst = &tall.placements[0].dst;
+   uint32_t pos;
+   unsigned gen;
+   int x, y;
+   memset(&snap, 0, sizeof(snap));
+   memset(v, 0, sizeof(v));
+   /* The 3DS map of test_window_pointer_mapping(): the lower screen,
+    * 320x240 at (240, 240) of an 800x480 frame */
+   v[0].width = v[1].width = 400;
+   v[0].height = v[1].height = 240;
+   v[1].x      = 400;
+   v[0].eye    = RETRO_VIDEO_VIEW_EYE_LEFT;
+   v[1].eye    = RETRO_VIDEO_VIEW_EYE_RIGHT;
+   v[2].x      = 240;
+   v[2].y      = 240;
+   v[2].width  = 320;
+   v[2].height = 240;
+   v[2].screen = 1;
+   CHECK(video_views_validate(v, 3, &snap.core));
+   snap.core_dims = VIDEO_SCALE_PACK(800, 480);
+   video_driver_window_layout(&snap, 1, VIDEO_SCALE_PACK(1240, 1080),
+         &wide);
+   video_driver_window_layout(&snap, 1, VIDEO_SCALE_PACK(1080, 1240),
+         &tall);
+   CHECK(wide.num_placements == 1 && tall.num_placements == 1);
+   /* Above the tall layout's screen, on the wide one's */
+   x = (int)VIDEO_SCALE_W(dst->dims) / 2;
+   y = VIDEO_POS_Y(dst->pos) / 2;
+   CHECK(y > VIDEO_POS_Y(wide.placements[0].dst.pos));
+   gen = video_driver_window_generation();
+   video_driver_publish_window_layout(1, gen, 2, &wide, &snap.core,
+         snap.core_dims, VIDEO_SCALE_PACK(1240, 1080));
+   /* Drawn there, and seen by a frame */
+   CHECK(video_driver_window_shown(1, NULL) == 2);
+   CHECK(video_driver_translate_window_point(1, gen, x, y, true, &pos));
+   CHECK(pos != oob);
+   /* Turned, and read before any frame looks */
+   video_driver_publish_window_layout(1, gen, 2, &tall, &snap.core,
+         snap.core_dims, VIDEO_SCALE_PACK(1080, 1240));
+   CHECK(video_driver_translate_window_point(1, gen, x, y, true, &pos));
+   CHECK(pos == oob);
+   x = VIDEO_POS_X(dst->pos) + (int)VIDEO_SCALE_W(dst->dims) / 2;
+   y = VIDEO_POS_Y(dst->pos) + (int)VIDEO_SCALE_H(dst->dims) / 2;
+   CHECK(video_driver_translate_window_point(1, gen, x, y, true, &pos));
+   CHECK(window_test_pixel(VIDEO_POS_X(pos), 800) == 400);
+   CHECK(window_test_pixel(VIDEO_POS_Y(pos), 480) == 360);
+   video_driver_publish_window_layout(1, gen, 0, NULL, NULL, 0, 0);
+   CHECK(!video_driver_translate_window_point(1, gen, x, y, true, &pos));
+}
+
+/* A display turned: the list again with its size swapped, the names
+ * the same. Placement goes by name, so nothing moves, and a move
+ * RetroArch gave up is not asked again. Cocoon's start on the bottom
+ * panel, as in test_window_moves(). */
+static void test_window_turned_display(void)
+{
+   video_window_display_t displays[2];
+   video_views_layout_t layout;
+   unsigned display, separate, main_mask, host;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Screen-2");
+   displays[0].dims = VIDEO_SCALE_PACK(1920, 1080);
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   settings->uints.video_menu_follows = 1;
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   video_driver_window_layout_screens(&window_test_seen, 2u,
+         VIDEO_SCALE_PACK(1240, 1080), &layout);
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 1, 2,
+         &layout, &window_test_seen.core, window_test_seen.core_dims,
+         VIDEO_SCALE_PACK(1240, 1080));
+   window_test_run();
+   CHECK(video_st->windows_host.moving == 1);
+   /* The move never lands and is given up */
+   video_st->windows_host.asked -= VIDEO_WINDOWS_MOVE_USEC;
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   display   = window_test_seen.display;
+   separate  = window_test_seen.plan.separate_mask;
+   main_mask = window_test_seen.plan.main_mask;
+   host      = video_st->windows_host.host;
+   /* The top panel turns */
+   displays[0].dims = VIDEO_SCALE_PACK(1080, 1920);
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!video_st->windows_host.moving);
+   CHECK(video_st->windows_host.host == host);
+   CHECK(window_test_seen.display == display);
+   CHECK(window_test_seen.plan.separate_mask == separate);
+   CHECK(window_test_seen.plan.main_mask == main_mask);
+   settings->uints.video_menu_follows = 0;
+   video_driver_publish_window_layout(VIDEO_WINDOWS_PRESENTATION, 0, 0,
+         NULL, NULL, 0, 0);
+   window_test_end();
+   /* The list the later tests expect */
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   video_driver_publish_window_displays(displays, 2);
+}
+
+/* Game Screen 2's display turned while the menu waits for its window: the
+ * menu lays out at the size listed now */
+static void test_window_turned_waiting(void)
+{
+   video_window_display_t displays[2];
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   uint16_t saved_menu            = menu_st->flags;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   window_test_begin();
+   video_driver_publish_window_displays(displays, 2);
+   /* The menu opens for Game Screen 2, whose window has not drawn */
+   video_driver_clear_views();
+   settings->uints.video_menu_follows = 1;
+   menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(!video_st->windows_ui_asked);
+   menu_st->flags |= MENU_ST_FLAG_ALIVE;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(!video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION, NULL));
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1240, 1080));
+   /* Game Screen 2 turns while the menu waits; the test restamps the wait,
+    * so the clock cannot run it out */
+   displays[1].dims = VIDEO_SCALE_PACK(1080, 1240);
+   video_driver_publish_window_displays(displays, 2);
+   video_st->windows_ui_asked = 0;
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(video_st->windows_ui[VIDEO_WINDOW_UI_MENU].wait);
+   CHECK(video_driver_get_ui_layer_window(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_WINDOWS_PRESENTATION);
+   CHECK(video_driver_get_ui_layer_dims(VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1080, 1240));
+   /* The next frame is laid out at it */
+   window_test_run();
+   CHECK(window_test_seen.ui[VIDEO_WINDOW_UI_MENU].dims
+         == VIDEO_SCALE_PACK(1080, 1240));
+   /* The list the later tests expect, taken while windows are on */
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(!retro_atomic_load_acquire_int(
+         &video_st->window_displays.published));
+   /* Windows off, so the tests after start afresh */
+   settings->bools.video_windows_enable = false;
+   window_test_run();
+   CHECK(!video_st->windows_ui_asked);
+   settings->uints.video_menu_follows = 0;
+   menu_st->flags                     = saved_menu;
+   window_test_end();
 }
 
 #ifdef HAVE_THREADS
@@ -1844,55 +3340,36 @@ static void test_window_generation(void)
    retro_atomic_store_release_int(&video_st->window_generation, saved);
 }
 
-/* Screens 2 and up each have a window mode and a display in the menu;
- * the display picker goes through Auto and the displays published */
+/* Game Screens 2 and up have a display picker that goes through Auto and
+ * the displays published */
 static void test_window_menu_settings(void)
 {
    static video_window_display_t displays[2];
    settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    unsigned *picked               = &settings->uints.video_screen_window_monitor[1];
-   rarch_setting_t *mode;
    rarch_setting_t *monitor;
    rarch_setting_t *enable;
    char s[128];
    load_fixture("");
    video_driver_publish_window_displays(displays, 0);
+   /* No mode rows */
    CHECK(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE) == NULL);
-   CHECK(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR) == NULL);
    CHECK(menu_setting_find_enum((enum msg_hash_enums)
-            (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + RETRO_VIDEO_VIEWS_MAX - 1)) != NULL);
-   mode    = menu_setting_find_enum((enum msg_hash_enums)
-         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + 1));
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + 1)) == NULL);
+   CHECK(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR) == NULL);
    monitor = menu_setting_find_enum((enum msg_hash_enums)
          (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR + 1));
    enable  = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE);
-   CHECK(mode != NULL);
    CHECK(monitor != NULL);
    CHECK(enable != NULL);
-   if (!mode || !monitor || !enable)
+   if (!monitor || !enable)
       return;
-   CHECK(string_is_equal(mode->name, "video_screen2_window_mode"));
-   CHECK(string_is_equal(mode->short_description, "Screen 2"));
-   CHECK(mode->value.target.unsigned_integer
-         == &settings->uints.video_screen_window_mode[1]);
    CHECK(string_is_equal(monitor->name, "video_screen2_window_monitor"));
    CHECK(string_is_equal(monitor->short_description, "Screen 2 Display"));
    CHECK(monitor->value.target.unsigned_integer == picked);
-   mode->actions->repr(mode, s, sizeof(s));
-   CHECK(string_is_equal(s, "Separate"));
-   settings->uints.video_screen_window_mode[1] = VIDEO_WINDOW_HIDDEN;
-   mode->actions->repr(mode, s, sizeof(s));
-   CHECK(string_is_equal(s, "Hidden"));
-   settings->uints.video_screen_window_mode[1] = VIDEO_WINDOW_ATTACHED;
-   mode->actions->repr(mode, s, sizeof(s));
-   CHECK(string_is_equal(s, "Attached"));
-   CHECK(mode->max == (float)VIDEO_WINDOW_HIDDEN);
 
-   /* A change to any of them gives closed windows another try */
-   video_st->windows_forced_attached = 2u;
-   mode->actions->change(mode);
-   CHECK(video_st->windows_forced_attached == 0u);
+   /* A change to either gives closed windows another try */
    video_st->windows_forced_attached = 2u;
    monitor->actions->change(monitor);
    CHECK(video_st->windows_forced_attached == 0u);
@@ -1969,6 +3446,468 @@ static void test_window_menu_settings(void)
    load_fixture("");
 }
 
+static void window_test_named(video_window_display_t *d, unsigned ordinal,
+      bool own, const char *name, const char *model, unsigned dims)
+{
+   window_test_display(d, ordinal, VIDEO_WINDOW_CONNECTION_UNKNOWN, own,
+         name);
+   strlcpy(d->model, model, sizeof(d->model));
+   d->dims = dims;
+}
+
+/* The display row: Auto, each display by name, then Off */
+static void test_window_menu_display(void)
+{
+   static video_window_display_t displays[3];
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   char *picked                   = settings->arrays.video_screen_display[1];
+   rarch_setting_t *row;
+   rarch_setting_t *first;
+   char s[128];
+   load_fixture("");
+   row   = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + 1));
+   first = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY);
+   CHECK(row != NULL);
+   CHECK(first != NULL);
+   CHECK(menu_setting_find_enum((enum msg_hash_enums)
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + RETRO_VIDEO_VIEWS_MAX - 1)) != NULL);
+   if (!row || !first)
+      return;
+   CHECK(string_is_equal(row->name, "video_screen2_display"));
+   CHECK(string_is_equal(row->short_description, "Game Screen 2 Display"));
+   CHECK(string_is_equal(first->name, "video_screen1_display"));
+   CHECK(row->type == ST_STRING_OPTIONS);
+   CHECK(row->value.target.string == picked);
+
+   /* Nothing published: Auto and Off */
+   video_driver_publish_window_displays(displays, 0);
+   menu_setting_video_screen_display_values();
+   CHECK(string_is_equal(row->aux.values, "|off"));
+   row->actions->repr(row, s, sizeof(s));
+   CHECK(string_is_equal(s, "Auto"));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_OFF));
+   row->actions->repr(row, s, sizeof(s));
+   CHECK(string_is_equal(s, "OFF"));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(!picked[0]);
+
+   /* The Thor, with a monitor on DP */
+   window_test_named(&displays[0], 1, true, "Built-in Screen", "",
+         VIDEO_SCALE_PACK(1920, 1080));
+   window_test_named(&displays[1], 2, false, "Screen-2", "AYN",
+         VIDEO_SCALE_PACK(1240, 1080));
+   window_test_named(&displays[2], 3, false, "DP Screen", "DELL U2720Q", 0);
+   video_driver_publish_window_displays(displays, 3);
+   menu_setting_video_screen_display_values();
+   CHECK(string_is_equal(row->aux.values,
+            "|Built-in Screen|Screen-2|DP Screen|off"));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, "Built-in Screen"));
+   row->actions->repr(row, s, sizeof(s));
+   CHECK(string_is_equal(s, "Display: Built-in Screen (1920x1080)"));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   row->actions->repr(row, s, sizeof(s));
+   CHECK(string_is_equal(s, "Display: Screen-2 (AYN 1240x1080)"));
+   /* A short buffer: cut, and nothing written past it */
+   memset(s, 'x', sizeof(s) - 1);
+   s[sizeof(s) - 1] = '\0';
+   CHECK(row->actions->repr(row, s, 12) == strlen("Display: Screen-2"));
+   CHECK(string_is_equal(s, "Display: Sc"));
+   CHECK(strspn(s + 12, "x") == sizeof(s) - 13);
+   CHECK(row->actions->right(row, 0, false) == 0);
+   row->actions->repr(row, s, sizeof(s));
+   CHECK(string_is_equal(s, "Display: DP Screen (DELL U2720Q)"));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_OFF));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(!picked[0]);
+   CHECK(row->actions->left(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_OFF));
+   CHECK(row->actions->left(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, "DP Screen"));
+
+   /* Unplugged: shown as saved; right goes to Auto, left to Off */
+   video_driver_publish_window_displays(displays, 2);
+   row->actions->repr(row, s, sizeof(s));
+   CHECK(string_is_equal(s, "Display: DP Screen"));
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(!picked[0]);
+   strlcpy(picked, "DP Screen", 64);
+   CHECK(row->actions->left(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_OFF));
+
+   /* A repeated name: the second is offered and saved with " 2" */
+   strlcpy(displays[2].name, "Screen-2", sizeof(displays[2].name));
+   video_driver_publish_window_displays(displays, 3);
+   menu_setting_video_screen_display_values();
+   CHECK(string_is_equal(row->aux.values,
+            "|Built-in Screen|Screen-2|Screen-2 2|off"));
+   strlcpy(picked, "Screen-2", 64);
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(string_is_equal(picked, "Screen-2 2"));
+
+   /* A change gives closed windows another try */
+   video_st->windows_forced_attached = 2u;
+   row->actions->change(row);
+   CHECK(video_st->windows_forced_attached == 0u);
+   picked[0] = '\0';
+   video_driver_publish_window_displays(displays, 0);
+}
+
+/* OK on a row, as menu_action_handle_setting() presses it */
+static int window_display_ok(rarch_setting_t *row)
+{
+   CHECK(row->actions->ok != NULL);
+   if (!row->actions->ok)
+      return -1;
+   return row->actions->ok(row, 0, false);
+}
+
+/* The list OK opens, which the menu builds from the path OK pushes:
+ * the row's enum */
+static size_t window_display_dropdown(file_list_t *list,
+      const rarch_setting_t *row)
+{
+   menu_displaylist_info_t info;
+   char path[16];
+   snprintf(path, sizeof(path), "%d", (int)row->enum_idx);
+   memset(list, 0, sizeof(*list));
+   menu_displaylist_info_init(&info);
+   info.list = list;
+   info.path = strdup(path);
+   menu_displaylist_ctl(DISPLAYLIST_DROPDOWN_LIST, &info, config_get_ptr());
+   menu_displaylist_info_free(&info);
+   return list->size;
+}
+
+/* A dropdown entry pressed, bound as under the menu's dropdown, which
+ * this harness has no stack for */
+static void window_display_pick(file_list_t *list, size_t i)
+{
+   const char *dropdown      = msg_hash_to_str(
+         MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST);
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         list->list[i].actiondata;
+   CHECK(cbs != NULL);
+   if (!cbs)
+      return;
+   menu_cbs_init_bind_ok(cbs, list->list[i].path, list->list[i].label,
+         strlen(list->list[i].label), list->list[i].type, i,
+         dropdown, strlen(dropdown));
+   CHECK(cbs->action_ok != NULL);
+   if (cbs->action_ok)
+      cbs->action_ok(list->list[i].path, list->list[i].label,
+            list->list[i].type, i, list->list[i].entry_idx);
+}
+
+/* OK on a display row: Auto, each display listed now, then Off; the
+ * menu's row has no Off */
+static void test_window_menu_display_dropdown(void)
+{
+   static video_window_display_t displays[2];
+   settings_t *settings       = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   char *picked               = settings->arrays.video_screen_display[1];
+   menu_file_list_cbs_t *cbs;
+   rarch_setting_t *row;
+   rarch_setting_t *menu;
+   file_list_t list;
+   unsigned i;
+   load_fixture("");
+   row  = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + 1));
+   menu = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY);
+   CHECK(row != NULL);
+   CHECK(menu != NULL);
+   if (!row || !menu)
+      return;
+   /* menu_entries_clear() wants a menu driver: the null one */
+   for (i = 0; menu_ctx_drivers[i]; i++)
+      if (string_is_equal(menu_ctx_drivers[i]->ident, "null"))
+         menu_st->driver_ctx = menu_ctx_drivers[i];
+   CHECK(menu_st->driver_ctx != NULL);
+   if (!menu_st->driver_ctx)
+      return;
+
+   /* Nothing published: Auto and Off */
+   video_driver_publish_window_displays(displays, 0);
+   CHECK(window_display_ok(row) == 1);
+   CHECK(window_display_dropdown(&list, row) == 2);
+   if (list.size == 2)
+   {
+      CHECK(string_is_equal(list.list[0].path, "Auto"));
+      CHECK(string_is_equal(list.list[1].path, "OFF"));
+   }
+   file_list_deinitialize(&list);
+
+   /* Published since the Stereo 3D & Screens list was built */
+   window_test_named(&displays[0], 1, true, "Built-in Screen", "",
+         VIDEO_SCALE_PACK(1920, 1080));
+   window_test_named(&displays[1], 2, false, "Screen-2", "AYN",
+         VIDEO_SCALE_PACK(1240, 1080));
+   video_driver_publish_window_displays(displays, 2);
+   strlcpy(picked, "Screen-2", 64);
+   CHECK(window_display_ok(row) == 1);
+   CHECK(window_display_dropdown(&list, row) == 4);
+   if (list.size == 4)
+   {
+      CHECK(string_is_equal(list.list[0].path, "Auto"));
+      CHECK(string_is_equal(list.list[1].path,
+               "Display: Built-in Screen (1920x1080)"));
+      CHECK(string_is_equal(list.list[2].path,
+               "Display: Screen-2 (AYN 1240x1080)"));
+      CHECK(string_is_equal(list.list[3].path, "OFF"));
+      cbs = (menu_file_list_cbs_t*)list.list[2].actiondata;
+      CHECK(cbs && cbs->checked);
+      CHECK(string_is_equal(picked, "Screen-2"));
+      window_display_pick(&list, 1);
+      CHECK(string_is_equal(picked, "Built-in Screen"));
+      window_display_pick(&list, 3);
+      CHECK(string_is_equal(picked, VIDEO_WINDOW_DISPLAY_OFF));
+      window_display_pick(&list, 0);
+      CHECK(!picked[0]);
+      window_display_pick(&list, 2);
+      CHECK(string_is_equal(picked, "Screen-2"));
+   }
+   file_list_deinitialize(&list);
+
+   /* Menu Display: the same displays, no Off */
+   CHECK(window_display_ok(menu) == 1);
+   CHECK(window_display_dropdown(&list, menu) == 3);
+   if (list.size == 3)
+   {
+      CHECK(string_is_equal(list.list[0].path, "Auto"));
+      CHECK(string_is_equal(list.list[2].path,
+               "Display: Screen-2 (AYN 1240x1080)"));
+      window_display_pick(&list, 2);
+      CHECK(string_is_equal(settings->arrays.video_menu_display,
+               "Screen-2"));
+   }
+   file_list_deinitialize(&list);
+   menu_st->driver_ctx = NULL;
+   picked[0] = '\0';
+   settings->arrays.video_menu_display[0] = '\0';
+   video_driver_publish_window_displays(displays, 0);
+}
+
+/* Menu Follows, Menu Display and Notifications */
+static void test_window_menu_rows(void)
+{
+   static video_window_display_t displays[2];
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   char *picked                   = settings->arrays.video_menu_display;
+   rarch_setting_t *follows;
+   rarch_setting_t *menu;
+   rarch_setting_t *notes;
+   char s[128];
+   load_fixture("");
+   follows = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MENU_FOLLOWS);
+   menu    = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY);
+   notes   = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_NOTIFICATIONS_WINDOW);
+   CHECK(follows != NULL);
+   CHECK(menu != NULL);
+   CHECK(notes != NULL);
+   if (!follows || !menu || !notes)
+      return;
+
+   CHECK(string_is_equal(follows->name, "video_menu_follows"));
+   CHECK(string_is_equal(follows->short_description, "Menu Follows"));
+   CHECK(follows->value.target.unsigned_integer
+         == &settings->uints.video_menu_follows);
+   CHECK(follows->max == (float)VIDEO_MENU_FOLLOWS_SEPARATE);
+   follows->actions->repr(follows, s, sizeof(s));
+   CHECK(string_is_equal(s, "Game Screen 1"));
+   /* The list shows or hides Menu Display */
+   menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   CHECK(follows->actions->right(follows, 0, false) == 0);
+   CHECK(settings->uints.video_menu_follows == 1);
+   CHECK(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH);
+   menu_st->flags &= ~(MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+         | MENU_ST_FLAG_PREVENT_POPULATE);
+   follows->actions->repr(follows, s, sizeof(s));
+   CHECK(string_is_equal(s, "Game Screen 2"));
+   settings->uints.video_menu_follows = VIDEO_MENU_FOLLOWS_SEPARATE;
+   follows->actions->repr(follows, s, sizeof(s));
+   CHECK(string_is_equal(s, "Separate"));
+
+   CHECK(string_is_equal(notes->name, "video_notifications_window"));
+   CHECK(string_is_equal(notes->short_description, "Notifications"));
+   CHECK(notes->max == 1.0f);
+   notes->actions->repr(notes, s, sizeof(s));
+   CHECK(string_is_equal(s, "With the Game"));
+   settings->uints.video_notifications_window = VIDEO_NOTIFICATIONS_WITH_MENU;
+   notes->actions->repr(notes, s, sizeof(s));
+   CHECK(string_is_equal(s, "With the Menu"));
+
+   CHECK(string_is_equal(menu->name, "video_menu_display"));
+   CHECK(string_is_equal(menu->short_description, "Menu Display"));
+   CHECK(menu->type == ST_STRING_OPTIONS);
+   CHECK(menu->value.target.string == picked);
+
+   /* Auto and each display; never Off */
+   video_driver_publish_window_displays(displays, 0);
+   menu_setting_video_screen_display_values();
+   CHECK(string_is_equal(menu->aux.values, "|"));
+   window_test_named(&displays[0], 1, true, "Built-in Screen", "",
+         VIDEO_SCALE_PACK(1920, 1080));
+   window_test_named(&displays[1], 2, false, "Screen-2", "AYN",
+         VIDEO_SCALE_PACK(1240, 1080));
+   video_driver_publish_window_displays(displays, 2);
+   menu_setting_video_screen_display_values();
+   CHECK(string_is_equal(menu->aux.values, "|Built-in Screen|Screen-2"));
+   CHECK(menu->actions->right(menu, 0, false) == 0);
+   CHECK(string_is_equal(picked, "Built-in Screen"));
+   CHECK(menu->actions->right(menu, 0, false) == 0);
+   menu->actions->repr(menu, s, sizeof(s));
+   CHECK(string_is_equal(s, "Display: Screen-2 (AYN 1240x1080)"));
+   CHECK(menu->actions->right(menu, 0, false) == 0);
+   CHECK(!picked[0]);
+   CHECK(menu->actions->left(menu, 0, false) == 0);
+   CHECK(string_is_equal(picked, "Screen-2"));
+   /* "off" here is Auto */
+   strlcpy(picked, VIDEO_WINDOW_DISPLAY_OFF, 64);
+   menu->actions->repr(menu, s, sizeof(s));
+   CHECK(string_is_equal(s, "Auto"));
+   CHECK(menu->actions->right(menu, 0, false) == 0);
+   CHECK(!picked[0]);
+   /* A display whose key is "off" is never offered */
+   strlcpy(displays[1].name, VIDEO_WINDOW_DISPLAY_OFF,
+         sizeof(displays[1].name));
+   video_driver_publish_window_displays(displays, 2);
+   menu_setting_video_screen_display_values();
+   CHECK(string_is_equal(menu->aux.values, "|Built-in Screen"));
+
+   /* A change to any of them gives closed windows another try */
+   video_st->windows_forced_attached = 2u;
+   follows->actions->change(follows);
+   CHECK(video_st->windows_forced_attached == 0u);
+   video_st->windows_forced_attached = 2u;
+   menu->actions->change(menu);
+   CHECK(video_st->windows_forced_attached == 0u);
+   video_st->windows_forced_attached = 2u;
+   notes->actions->change(notes);
+   CHECK(video_st->windows_forced_attached == 0u);
+
+   picked[0] = '\0';
+   video_driver_publish_window_displays(displays, 0);
+   load_fixture("");
+}
+
+/* Menu Follows offers the screens the Display rows list, then Separate;
+ * one chosen beyond them stays until moved off */
+static void test_window_menu_follows_screens(void)
+{
+   settings_t *settings       = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned *follows          = &settings->uints.video_menu_follows;
+   menu_file_list_cbs_t *cbs;
+   rarch_setting_t *row;
+   file_list_t list;
+   char s[128];
+   unsigned i;
+   load_fixture("");
+   row = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MENU_FOLLOWS);
+   CHECK(row != NULL);
+   if (!row)
+      return;
+   for (i = 0; menu_ctx_drivers[i]; i++)
+      if (string_is_equal(menu_ctx_drivers[i]->ident, "null"))
+         menu_st->driver_ctx = menu_ctx_drivers[i];
+   CHECK(menu_st->driver_ctx != NULL);
+   if (!menu_st->driver_ctx)
+      return;
+   settings->bools.menu_navigation_wraparound_enable = true;
+
+   /* No game: Game Screen 1, Game Screen 2, Separate */
+   set_menu_map(0);
+   CHECK(window_display_ok(row) == 1);
+   CHECK(window_display_dropdown(&list, row) == 3);
+   if (list.size == 3)
+   {
+      CHECK(string_is_equal(list.list[0].path, "Game Screen 1"));
+      CHECK(string_is_equal(list.list[1].path, "Game Screen 2"));
+      CHECK(string_is_equal(list.list[2].path, "Separate"));
+      window_display_pick(&list, 2);
+      CHECK(*follows == VIDEO_MENU_FOLLOWS_SEPARATE);
+      window_display_pick(&list, 1);
+      CHECK(*follows == 1);
+   }
+   file_list_deinitialize(&list);
+   *follows = 1;
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(*follows == VIDEO_MENU_FOLLOWS_SEPARATE);
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(*follows == 0);
+   CHECK(row->actions->left(row, 0, false) == 0);
+   CHECK(*follows == VIDEO_MENU_FOLLOWS_SEPARATE);
+   CHECK(row->actions->left(row, 0, false) == 0);
+   CHECK(*follows == 1);
+
+   /* A DS game: the same */
+   set_menu_map(2);
+   CHECK(window_display_dropdown(&list, row) == 3);
+   file_list_deinitialize(&list);
+
+   /* Game Screen 4, from a 4-screen core: listed and kept, gone once left */
+   *follows = 3;
+   row->actions->repr(row, s, sizeof(s));
+   CHECK(string_is_equal(s, "Game Screen 4"));
+   CHECK(window_display_dropdown(&list, row) == 4);
+   CHECK(*follows == 3);
+   if (list.size == 4)
+   {
+      cbs = (menu_file_list_cbs_t*)list.list[2].actiondata;
+      CHECK(string_is_equal(list.list[2].path, "Game Screen 4"));
+      CHECK(cbs && cbs->checked);
+      CHECK(string_is_equal(list.list[3].path, "Separate"));
+      window_display_pick(&list, 2);
+      CHECK(*follows == 3);
+      window_display_pick(&list, 3);
+      CHECK(*follows == VIDEO_MENU_FOLLOWS_SEPARATE);
+   }
+   file_list_deinitialize(&list);
+   *follows = 3;
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(*follows == VIDEO_MENU_FOLLOWS_SEPARATE);
+   *follows = 3;
+   CHECK(row->actions->left(row, 0, false) == 0);
+   CHECK(*follows == 1);
+   CHECK(window_display_dropdown(&list, row) == 3);
+   file_list_deinitialize(&list);
+   *follows = 3;
+   CHECK(row->actions->start(row) == 0);
+   CHECK(*follows == 0);
+
+   /* A 4-screen core: Game Screens 1 to 4 */
+   set_menu_map(4);
+   CHECK(window_display_dropdown(&list, row) == 5);
+   if (list.size == 5)
+   {
+      CHECK(string_is_equal(list.list[3].path, "Game Screen 4"));
+      window_display_pick(&list, 4);
+      CHECK(*follows == VIDEO_MENU_FOLLOWS_SEPARATE);
+   }
+   file_list_deinitialize(&list);
+   *follows = 2;
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(*follows == 3);
+   CHECK(row->actions->right(row, 0, false) == 0);
+   CHECK(*follows == VIDEO_MENU_FOLLOWS_SEPARATE);
+
+   /* No more than the screens there are rows for */
+   video_state_get_ptr()->views_core.num_screens = RETRO_VIDEO_VIEWS_MAX + 1;
+   CHECK(menu_setting_video_screens() == RETRO_VIDEO_VIEWS_MAX);
+
+   set_menu_map(0);
+   menu_st->driver_ctx = NULL;
+   load_fixture("");
+}
+
 static bool window_menu_has(const file_list_t *list, const char *label)
 {
    size_t i;
@@ -1978,8 +3917,8 @@ static bool window_menu_has(const file_list_t *list, const char *label)
    return false;
 }
 
-/* The screens' rows sit in Stereo 3D & Screens where the driver has
- * windows: the switch, then each screen the core has from 2 on */
+/* The switch sits in Stereo 3D & Screens where the driver has windows;
+ * the screens' and the menu's rows are Android's */
 static void test_window_menu_list(void)
 {
    settings_t *settings = config_get_ptr();
@@ -1999,10 +3938,15 @@ static void test_window_menu_list(void)
    menu_displaylist_build_list(&list, settings,
          DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, false);
    CHECK(window_menu_has(&list, "video_windows_enable"));
-   CHECK(window_menu_has(&list, "video_screen2_window_mode"));
-   CHECK(window_menu_has(&list, "video_screen2_window_monitor"));
+   /* The screens' and the menu's rows are Android's (06 rows) */
    CHECK(!window_menu_has(&list, "video_screen1_window_mode"));
-   CHECK(!window_menu_has(&list, "video_screen3_window_mode"));
+   CHECK(!window_menu_has(&list, "video_screen2_window_mode"));
+   CHECK(!window_menu_has(&list, "video_screen2_window_monitor"));
+   CHECK(!window_menu_has(&list, "video_screen1_display"));
+   CHECK(!window_menu_has(&list, "video_screen2_display"));
+   CHECK(!window_menu_has(&list, "video_menu_follows"));
+   CHECK(!window_menu_has(&list, "video_menu_display"));
+   CHECK(!window_menu_has(&list, "video_notifications_window"));
    CHECK(!window_menu_has(&list, "video_screen2_window_x"));
    file_list_deinitialize(&list);
 
@@ -2015,14 +3959,26 @@ static void test_window_menu_list(void)
    file_list_deinitialize(&list);
    window_test_end();
 
-   menu_cbs_sublabel_for_enum((enum msg_hash_enums)
-         (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE + 1), 0, 0, s, sizeof(s));
+   menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_MENU_FOLLOWS,
+         0, 0, s, sizeof(s));
    CHECK(string_is_equal(s,
-            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MODE)));
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_MENU_FOLLOWS)));
+   menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY,
+         0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_MENU_DISPLAY)));
+   menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_NOTIFICATIONS_WINDOW,
+         0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_NOTIFICATIONS_WINDOW)));
    menu_cbs_sublabel_for_enum((enum msg_hash_enums)
          (MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR + 7), 0, 0, s, sizeof(s));
    CHECK(string_is_equal(s,
             msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_MONITOR)));
+   menu_cbs_sublabel_for_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + 7), 0, 0, s, sizeof(s));
+   CHECK(string_is_equal(s,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY)));
    menu_cbs_sublabel_for_enum(MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE,
          0, 0, s, sizeof(s));
    CHECK(string_is_equal(s,
@@ -2035,6 +3991,7 @@ static scond_t *snapshot_ready;
 static bool snapshot_done;
 static const video_windows_frame_t *snapshot_windows_at;
 static video_windows_frame_t snapshot_windows;
+static unsigned snapshot_drawn;
 static int snapshot_data;
 
 static void *snapshot_init(const video_info_t *info)
@@ -2057,6 +4014,8 @@ static bool snapshot_frame(void *data, const void *frame, unsigned dims,
    snapshot_windows_at = info->windows;
    if (info->windows)
       snapshot_windows = *info->windows;
+   /* The serial a window layout published now carries */
+   snapshot_drawn = video_state_get_ptr()->windows_drawn;
    snapshot_done = true;
    scond_signal(snapshot_ready);
    slock_unlock(snapshot_lock);
@@ -2070,7 +4029,8 @@ static void snapshot_free(void *data)
 #endif
 
 /* The threaded wrapper hands the video thread its own copy of the
- * frame's windows, never the main thread's */
+ * frame's windows, never the main thread's, and stamps its serial
+ * before the driver draws it */
 static void test_window_frame_snapshot(void)
 {
 #ifdef HAVE_THREADS
@@ -2082,7 +4042,7 @@ static void test_window_frame_snapshot(void)
    video_info_t info;
    uint32_t pixel = 0;
    bool initialized;
-   unsigned restore;
+   unsigned restore, serial;
    window_test_begin();
    window_test_run();
    window_test_end();
@@ -2090,6 +4050,8 @@ static void test_window_frame_snapshot(void)
    memset(&frame, 0, sizeof(frame));
    frame.windows = window_test_handed;
    restore       = owned->restore;
+   /* A snapshot the main thread's frames have not drawn */
+   serial        = ++owned->serial;
    memset(&driver, 0, sizeof(driver));
    memset(&info, 0, sizeof(info));
    driver.init        = snapshot_init;
@@ -2115,6 +4077,7 @@ static void test_window_frame_snapshot(void)
       owned->settings[1].mode   = VIDEO_WINDOW_HIDDEN;
       owned->plan.separate_mask = 0;
       owned->restore++;
+      owned->serial++;
       if (!snapshot_done)
          scond_wait_timeout(snapshot_ready, snapshot_lock, 2000000);
       CHECK(snapshot_done);
@@ -2123,6 +4086,7 @@ static void test_window_frame_snapshot(void)
       CHECK(snapshot_windows.settings[1].mode == VIDEO_WINDOW_SEPARATE);
       CHECK(snapshot_windows.plan.separate_mask == 2u);
       CHECK(snapshot_windows.restore == restore);
+      CHECK(snapshot_drawn == serial);
       slock_unlock(snapshot_lock);
       /* A frame without windows hands none on */
       frame.windows = NULL;
@@ -2292,8 +4256,15 @@ static void test_window_redraw(void)
    static video_driver_t driver;
    const video_driver_t *threaded = NULL;
    void *data                     = NULL;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   const unsigned both            =
+        VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_MENU)
+      | VIDEO_WINDOW_UI_BIT(VIDEO_WINDOW_UI_NOTIFICATIONS);
    video_window_display_t displays[3];
+   video_window_ui_target_t ui[VIDEO_WINDOW_UI_LAYERS];
+   video_windows_route_t route;
    video_info_t info;
+   unsigned layer;
    window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
          true, "Built-in Screen");
    window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
@@ -2313,15 +4284,45 @@ static void test_window_redraw(void)
    window_test_begin();
    if (video_init_thread(&threaded, &data, &driver, info))
    {
-      /* An external monitor takes screen 0 */
+      /* The main thread's frames go straight to the test driver, as
+       * without the wrapper; window_test_redraw() installs it */
+      video_st->thread_wrapper_active = false;
+      /* An external monitor takes Game Screen 1: Game Screen 2's Presentation
+       * first on RetroArch's display; a redraw keeps the route */
       video_driver_publish_window_displays(displays, 3);
       window_test_run();
-      CHECK(window_test_seen.display == 3);
+      CHECK(window_test_seen.display == 1);
       window_test_redraw(threaded, data);
-      CHECK(window_test_seen.display == 3);
-      CHECK(window_test_seen.plan.main_mask == 2u);
-      CHECK(window_test_seen.plan.separate_mask == 1u);
-      CHECK(window_test_seen.window_screens[1] == 1u);
+      CHECK(window_test_seen.display == 1);
+      CHECK(window_test_seen.plan.main_mask == 1u);
+      CHECK(window_test_seen.plan.separate_mask == 2u);
+      CHECK(window_test_seen.window_screens[VIDEO_WINDOWS_PRESENTATION]
+            == 2u);
+      CHECK(window_test_seen.serial == video_st->windows.serial);
+
+      /* With the UI, a keep and the logo routed: every UI layer is the
+       * main window's, the rest as routed */
+      route                        = video_st->windows_route;
+      memcpy(ui, video_st->windows_ui, sizeof(ui));
+      video_st->windows_route.ui   = both;
+      video_st->windows_route.keep = 1;
+      video_st->windows_route.logo = true;
+      for (layer = 0; layer < VIDEO_WINDOW_UI_LAYERS; layer++)
+         video_st->windows_ui[layer].window = VIDEO_WINDOWS_PRESENTATION;
+      window_test_redraw(threaded, data);
+      for (layer = 0; layer < VIDEO_WINDOW_UI_LAYERS; layer++)
+      {
+         CHECK(window_test_seen.ui[layer].window == 0);
+         CHECK(!window_test_seen.ui[layer].wait);
+      }
+      CHECK(window_test_seen.window_ui[VIDEO_WINDOWS_PRESENTATION]
+            == both);
+      CHECK(window_test_seen.window_keep
+            == 1u << VIDEO_WINDOWS_PRESENTATION);
+      CHECK(window_test_seen.logo);
+      CHECK(window_test_seen.serial == video_st->windows.serial);
+      video_st->windows_route = route;
+      memcpy(video_st->windows_ui, ui, sizeof(ui));
 
       /* Nowhere to go: still attached */
       displays[1].on = false;
@@ -2341,6 +4342,79 @@ static void test_window_redraw(void)
    window_test_end();
 #endif
 }
+
+/* A UI layer in another window lays out at its target's size, waiting
+ * or not; one in the main window at the main window's UI size */
+static void test_window_ui_layer_dims(void)
+{
+   static video_frame_info_t info;
+   static video_windows_frame_t frame;
+   memset(&info, 0, sizeof(info));
+   memset(&frame, 0, sizeof(frame));
+   info.dims = VIDEO_SCALE_PACK(800, 480);
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(800, 480));
+   info.views_layout.ui_per_eye = true;
+   info.views_layout.ui_dims    = VIDEO_SCALE_PACK(400, 480);
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_NOTIFICATIONS)
+         == VIDEO_SCALE_PACK(400, 480));
+   info.windows = &frame;
+   frame.ui[VIDEO_WINDOW_UI_MENU].window = VIDEO_WINDOWS_PRESENTATION;
+   frame.ui[VIDEO_WINDOW_UI_MENU].dims   = VIDEO_SCALE_PACK(1240, 1080);
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1240, 1080));
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_NOTIFICATIONS)
+         == VIDEO_SCALE_PACK(400, 480));
+   frame.ui[VIDEO_WINDOW_UI_MENU].wait   = true;
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(1240, 1080));
+   frame.ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_MENU)
+         == VIDEO_SCALE_PACK(400, 480));
+   CHECK(video_frame_ui_layer_dims(&info, VIDEO_WINDOW_UI_LAYERS)
+         == VIDEO_SCALE_PACK(400, 480));
+}
+
+#ifdef HAVE_GFX_WIDGETS
+static gfx_display_ctx_draw_t logo_test_seen;
+static unsigned logo_test_draws;
+
+static void logo_test_draw(gfx_display_ctx_draw_t *draw, void *data,
+      unsigned video_dims)
+{
+   (void)data;
+   (void)video_dims;
+   logo_test_seen = *draw;
+   logo_test_draws++;
+}
+
+/* The idle logo: one quad, centred, a quarter of the shorter side; no
+ * texture, nothing drawn */
+static void test_window_idle_logo(void)
+{
+   static video_frame_info_t info;
+   static gfx_display_ctx_driver_t driver;
+   gfx_display_t *p_disp           = disp_get_ptr();
+   gfx_display_ctx_driver_t *saved = p_disp->dispctx;
+   memset(&info, 0, sizeof(info));
+   memset(&driver, 0, sizeof(driver));
+   driver.draw              = logo_test_draw;
+   driver.handles_transform = true;
+   p_disp->dispctx          = &driver;
+   info.disp_userdata       = p_disp;
+   info.dims                = VIDEO_SCALE_PACK(800, 480);
+   logo_test_draws          = 0;
+   gfx_widgets_draw_idle_logo(&info, 0);
+   CHECK(logo_test_draws == 0);
+   gfx_widgets_draw_idle_logo(&info, 7);
+   CHECK(logo_test_draws == 1);
+   CHECK(logo_test_seen.texture == 7);
+   CHECK(logo_test_seen.dims == VIDEO_SCALE_PACK(120, 120));
+   CHECK(logo_test_seen.pos
+         == VIDEO_POS_PACK(VIDEO_PX(340.0f), VIDEO_PX(180.0f)));
+   p_disp->dispctx = saved;
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -2363,6 +4437,9 @@ int main(int argc, char **argv)
    if (argc == 2)
    {
       test_window_config();
+      test_window_display_config();
+      test_window_migration();
+      test_window_menu_config();
       test_xr_config_roundtrip();
       test_xr_minimal_save();
       test_xr_override_unload();
@@ -2372,10 +4449,29 @@ int main(int argc, char **argv)
    test_window_layout();
    test_window_frame();
    test_window_displays();
+   test_window_display_names();
+   test_window_moves();
+   test_window_shown_lag();
+   test_window_shown_moved();
+   test_window_shown_reinit();
+   test_window_ui_targets();
+   test_window_turned();
+   test_window_turned_touch();
+   test_window_turned_display();
+   test_window_turned_waiting();
    test_window_pointer_mapping();
+   test_window_menu_touch_window();
    test_window_generation();
+   test_window_ui_layer_dims();
+#ifdef HAVE_GFX_WIDGETS
+   test_window_idle_logo();
+#endif
    test_window_frame_snapshot();
    test_window_menu_settings();
+   test_window_menu_display();
+   test_window_menu_display_dropdown();
+   test_window_menu_rows();
+   test_window_menu_follows_screens();
    test_window_menu_list();
    test_window_redraw();
    test_screen_frame_snapshot();

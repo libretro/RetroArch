@@ -15,10 +15,11 @@
 package com.retroarch.browser.retroactivity;
 
 import android.annotation.TargetApi;
-import android.app.ActivityManager;
+import android.app.ActivityOptions;
 import android.app.Presentation;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Point;
@@ -33,9 +34,6 @@ import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Choreographer;
 import android.view.Display;
-import android.view.InputDevice;
-import android.view.KeyCharacterMap;
-import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -60,11 +58,17 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static final int FLAG_ON       = 4;
   static final int FLAG_PRIVATE  = 8;
   static final int FLAG_PHYSICAL = 16;
+  static final int FLAG_REFUSED  = 32;
+  static final int FLAG_DEFAULT  = 64;
 
   private static final String TAG = "RetroArch";
+  private static final int REFOCUS_TIMEOUT_MS = 1000;
 
   private final RetroActivityCommon activity;
   private final DisplayManager displayManager;
+  /* For bare(): managers whose contexts are on two different displays */
+  private final DisplayManager[] bareManagers = new DisplayManager[2];
+  private final int[] bareIds = new int[2];
   private final Handler handler = new Handler(Looper.getMainLooper());
   /* The last published list, without the failure marking; its ids by
    * ordinal - 1 */
@@ -73,8 +77,8 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   private int wantedId = -1;
   /* The request that asked for it; its Presentations' surfaces carry it */
   private int wantedRequest;
-  /* Displays show() failed on, published invalid until the list
-   * changes or onStart */
+  /* Displays show() failed on, published refused until onStart or a
+   * list change other than RetroArch's own display */
   private final SparseBooleanArray failedIds = new SparseBooleanArray();
   private boolean started;
   private boolean publishPending;
@@ -83,22 +87,13 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   private Screen presentationScreen;
   /* The screen whose surface native code holds */
   private Screen surfaceOwner;
-  /* What native code was last told of the Presentation's focus */
-  private boolean presentationFocused;
-
-  /* nativeMotion()'s axes, ANDROID_JOYSTICK_AXES' order */
-  private static final int[] AXES = {
-    MotionEvent.AXIS_X, MotionEvent.AXIS_Y, MotionEvent.AXIS_Z,
-    MotionEvent.AXIS_RZ, MotionEvent.AXIS_HAT_X, MotionEvent.AXIS_HAT_Y,
-    MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_RTRIGGER,
-    MotionEvent.AXIS_BRAKE, MotionEvent.AXIS_GAS
-  };
-  /* Sources native code reads as touches or a mouse, never as a stick
-   * (android_input.c); compile-time constants, so safe below API 26 */
-  private static final int POINTER_SOURCES = InputDevice.SOURCE_TOUCHPAD
-      | InputDevice.SOURCE_TOUCHSCREEN | InputDevice.SOURCE_MOUSE_RELATIVE
-      | InputDevice.SOURCE_STYLUS | InputDevice.SOURCE_MOUSE;
-  private final float[] axisValues = new float[AXES.length];
+  /* The display a move went to, -1 for none, until the Activity has
+   * held the focus since */
+  private int movedId = -1;
+  /* Moves started, so a gain's check never ends a later move */
+  private int moves;
+  /* refocusAfterMove() has made the window unfocusable */
+  private boolean refocusing;
 
   private final Choreographer.FrameCallback publishFrame =
       new Choreographer.FrameCallback() {
@@ -109,13 +104,23 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
             return;
           list = listDisplays();
           /* A Presentation coming or going may report a change that
-           * is none; failed displays must stay invalid through it */
+           * is none; failed displays must stay refused through it */
           if (list.sameAs(published))
             return;
-          failedIds.clear();
+          if (!list.sameAsBut(published, FLAG_OWN))
+            failedIds.clear();
           publish(list);
+          refocusAfterMove();
         }
       };
+
+  /* Android had no focus to take: the loss was real */
+  private final Runnable refocusTimeout = new Runnable() {
+    @Override public void run() {
+      endRefocus();
+      movedId = -1;
+    }
+  };
 
   private final Runnable reshow = new Runnable() {
     @Override public void run() {
@@ -136,7 +141,6 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
           presentation       = null;
           presentationId     = -1;
           presentationScreen = null;
-          reportFocus(false);
           if (!started || wantedId != id)
             return;
           /* One that cancels before it draws would do so again */
@@ -202,6 +206,124 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       showOn(wantedId);
   }
 
+  /** Moves the Activity onto display @ordinal of the last published
+   * list. Native code hears back only when the move cannot start; one
+   * that starts but never shows is its timeout's to find. */
+  void moveTo(int ordinal)
+  {
+    int id = ordinal > 0 && ordinal <= published.ids.length
+        ? published.ids[ordinal - 1] : -1;
+    if (Build.VERSION.SDK_INT < 26 || id < 0
+        || displayManager.getDisplay(id) == null)
+    {
+      moveFailed(id, null);
+      return;
+    }
+    if (refocusing)
+      endRefocus();
+    try
+    {
+      startOn(id);
+      movedId = id;
+      moves++;
+    }
+    catch (RuntimeException e)
+    {
+      moveFailed(id, e);
+    }
+  }
+
+  /* The running Activity, as a copy of its own intent so onNewIntent()
+   * sees the same content; the flags of the launch it came from would
+   * clear the task */
+  @TargetApi(26)
+  private void startOn(int displayId)
+  {
+    Intent move = activity.getIntent() != null
+        ? new Intent(activity.getIntent()) : new Intent();
+    ActivityOptions options = ActivityOptions.makeBasic();
+    move.setClass(activity, activity.getClass());
+    move.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    options.setLaunchDisplayId(displayId);
+    activity.startActivity(move, options.toBundle());
+  }
+
+  /** The Activity's window gained or lost the focus. */
+  void onFocusChanged(boolean focused)
+  {
+    final int move     = moves;
+    final boolean held = refocusing;
+    /* Android has answered the flag; a loss is the focus it took, and
+     * clearing the flag gives it back */
+    if (held)
+      endRefocus();
+    if (!focused)
+    {
+      if (!held)
+        refocusAfterMove();
+      return;
+    }
+    if (movedId < 0)
+      return;
+    /* The old display's loss can still follow: the move ends only
+     * once the gain has outlasted a traversal */
+    Choreographer.getInstance().postFrameCallback(
+        new Choreographer.FrameCallback() {
+          private boolean traversed;
+          @Override public void doFrame(long frameTimeNanos) {
+            if (!traversed)
+            {
+              traversed = true;
+              Choreographer.getInstance().postFrameCallback(this);
+              return;
+            }
+            /* Behind a focus message already read */
+            handler.post(new Runnable() {
+              @Override public void run() {
+                Display own = activity.getWindowManager().getDefaultDisplay();
+                if (started && move == moves && own != null
+                    && own.getDisplayId() == movedId
+                    && activity.hasWindowFocus())
+                  movedId = -1;
+              }
+            });
+          }
+        });
+  }
+
+  /* A focused window moved to another display can hear the old
+   * display's focus loss after the new display's gain: unfocused
+   * while it is the focused window, RetroArch would pause for good.
+   * Unfocusable until Android has taken the focus, the window is then
+   * sent the gain again; a loaded system can miss a shorter toggle. */
+  private void refocusAfterMove()
+  {
+    Window window = activity.getWindow();
+    Display own   = activity.getWindowManager().getDefaultDisplay();
+    if (movedId < 0 || refocusing || !started || window == null
+        || own == null || own.getDisplayId() != movedId
+        || activity.hasWindowFocus())
+      return;
+    refocusing = true;
+    window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+    handler.postDelayed(refocusTimeout, REFOCUS_TIMEOUT_MS);
+  }
+
+  private void endRefocus()
+  {
+    Window window = activity.getWindow();
+    refocusing    = false;
+    handler.removeCallbacks(refocusTimeout);
+    if (window != null)
+      window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+  }
+
+  private void moveFailed(int displayId, RuntimeException e)
+  {
+    Log.w(TAG, "[SecondDisplay] Cannot move to display " + displayId, e);
+    nativeMoveFailed();
+  }
+
   @Override public void onDisplayAdded(int displayId)
   {
     publishSoon();
@@ -236,6 +358,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
         ? own.getDisplayId() : Display.DEFAULT_DISPLAY;
     DisplayList list   = new DisplayList(displays.length);
     Point size         = new Point();
+    boolean ownListed  = false;
 
     for (int i = 0; i < displays.length; i++)
     {
@@ -243,13 +366,19 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       int f       = 0;
       list.ids[i] = d.getDisplayId();
       if (list.ids[i] == ownId)
+      {
         f |= FLAG_OWN;
+        ownListed = true;
+      }
+      if (list.ids[i] == Display.DEFAULT_DISPLAY)
+        f |= FLAG_DEFAULT;
       if (d.isValid())
         f |= FLAG_VALID;
       if (Build.VERSION.SDK_INT < 20 || d.getState() == Display.STATE_ON)
         f |= FLAG_ON;
       if ((d.getFlags() & Display.FLAG_PRIVATE) != 0)
         f |= FLAG_PRIVATE;
+      list.models[i] = "";
       if (Build.VERSION.SDK_INT >= 31)
       {
         int connection = ProductInfo.connection(d);
@@ -258,14 +387,50 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
           f |= FLAG_PHYSICAL;
           list.connections[i] = connection;
         }
+        list.models[i] = ProductInfo.model(d);
       }
       list.flags[i] = f;
-      d.getRealSize(size);
+      /* From API 31 getRealSize() can report the Activity's window,
+       * which follows RetroArch's own moves */
+      if (Build.VERSION.SDK_INT >= 31)
+        bare(displays, d).getRealSize(size);
+      else
+        d.getRealSize(size);
       list.widths[i]  = size.x;
       list.heights[i] = size.y;
       list.names[i]   = d.getName();
     }
+    /* A removed display's Activity moves to the default display */
+    if (!ownListed)
+      for (int i = 0; i < displays.length; i++)
+        if (list.ids[i] == Display.DEFAULT_DISPLAY)
+          list.flags[i] |= FLAG_OWN;
     return list;
+  }
+
+  /* d from a context on another display: a Display made for its
+   * context's own display reports that context's configuration, which
+   * follows RetroArch's moves. d itself when it is the only display. */
+  private Display bare(Display[] displays, Display d)
+  {
+    int id = d.getDisplayId();
+    for (int s = 0; s < bareManagers.length; s++)
+    {
+      Display b;
+      for (int i = 0; bareManagers[s] == null && i < displays.length; i++)
+        if (displays[i].getDisplayId() != id)
+        {
+          bareIds[s]      = displays[i].getDisplayId();
+          bareManagers[s] = (DisplayManager)activity.getApplicationContext()
+              .createDisplayContext(displays[i])
+              .getSystemService(Context.DISPLAY_SERVICE);
+        }
+      if (bareManagers[s] == null)
+        break;
+      if (bareIds[s] != id && (b = bareManagers[s].getDisplay(id)) != null)
+        return b;
+    }
+    return d;
   }
 
   private void publish(DisplayList list)
@@ -273,10 +438,10 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     int[] flags = list.flags.clone();
     for (int i = 0; i < flags.length; i++)
       if (failedIds.get(list.ids[i]))
-        flags[i] &= ~FLAG_VALID;
+        flags[i] |= FLAG_REFUSED;
     published = list;
     nativeDisplaysChanged(list.connections, flags, list.widths,
-        list.heights, list.names);
+        list.heights, list.names, list.models);
   }
 
   private void showOn(int displayId)
@@ -293,17 +458,16 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     if ((display = displayManager.getDisplay(displayId)) == null)
       return;
 
-    p      = new SecondPresentation(display);
+    p      = new Presentation(activity, display);
     /* From Android 12 a Presentation has a window context of its own */
     if (Build.VERSION.SDK_INT < 31)
       updateMetrics(p.getResources(), display);
     window = p.getWindow();
-    /* It takes focus, so a focus mode or a tap can give it the pad; it
-     * never takes the soft keyboard itself */
+    /* Never focused: a tap would leave its display the pad, and the app
+     * under it would get it once the Presentation goes */
     if (window != null)
-      window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
-          | WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
-    /* BACK goes to native code; never cancel on it */
+      window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+          | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
     p.setCancelable(false);
     view   = new SurfaceView(p.getContext());
     screen = new Screen(wantedRequest);
@@ -361,55 +525,6 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     res.updateConfiguration(config, now);
   }
 
-  /* Native code counts the Presentation's focus with the Activity's */
-  private void reportFocus(boolean focused)
-  {
-    if (focused == presentationFocused)
-      return;
-    presentationFocused = focused;
-    nativeFocusChanged(focused);
-  }
-
-  /* Every key goes to native code, as the Activity's do; the answer is
-   * native code's, so a key it uses never comes back as a fallback key
-   * (BUTTON_B as BACK, BUTTON_MODE as HOME) */
-  private boolean relayKey(KeyEvent e)
-  {
-    nativeKey(e.getDeviceId(), e.getSource(), e.getAction(),
-        e.getKeyCode(), e.getFlags(), e.getMetaState(), e.getEventTime());
-    return nativeUses(e);
-  }
-
-  /* android_input.c leaves the volume keys to the system, and the soft
-   * keyboard's keys but BACK to the text field while that is open */
-  private boolean nativeUses(KeyEvent e)
-  {
-    int code = e.getKeyCode();
-    if (code == KeyEvent.KEYCODE_VOLUME_UP
-        || code == KeyEvent.KEYCODE_VOLUME_DOWN)
-      return false;
-    return code == KeyEvent.KEYCODE_BACK
-        || !activity.isKeyboardActive()
-        || ((e.getFlags() & KeyEvent.FLAG_SOFT_KEYBOARD) == 0
-            && e.getDeviceId() != KeyCharacterMap.VIRTUAL_KEYBOARD);
-  }
-
-  /* A stick or hat move goes to native code, as the Activity's do;
-   * touches and mouse moves stay with the view */
-  private boolean relayMotion(MotionEvent e)
-  {
-    int index = e.getActionIndex();
-    if ((e.getSource() & POINTER_SOURCES) != 0)
-      return false;
-    /* Sent as the focus leaves; it repeats the last axes */
-    if (e.getActionMasked() == MotionEvent.ACTION_CANCEL)
-      return true;
-    for (int i = 0; i < AXES.length; i++)
-      axisValues[i] = e.getAxisValue(AXES[i], index);
-    nativeMotion(e.getDeviceId(), e.getSource(), axisValues);
-    return true;
-  }
-
   private void showFailed(int displayId, RuntimeException e)
   {
     Log.w(TAG, "[SecondDisplay] Cannot show on display " + displayId, e);
@@ -423,11 +538,6 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     presentation       = null;
     presentationId     = -1;
     presentationScreen = null;
-    /* With one focus for all displays, it would pass to this
-     * display's launcher; take it back first */
-    if (p != null && presentationFocused && started)
-      takeFocusBack();
-    reportFocus(false);
     if (p == null)
       return;
     /* The display may already be gone */
@@ -440,20 +550,6 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     }
   }
 
-  private void takeFocusBack()
-  {
-    ActivityManager am = (ActivityManager)
-        activity.getSystemService(Context.ACTIVITY_SERVICE);
-    try
-    {
-      am.moveTaskToFront(activity.getTaskId(), 0);
-    }
-    catch (RuntimeException e)
-    {
-      Log.w(TAG, "[SecondDisplay] Cannot take the focus back", e);
-    }
-  }
-
   /** A display list, one entry per display in getDisplays() order. */
   private static final class DisplayList
   {
@@ -463,6 +559,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     final int[] widths;
     final int[] heights;
     final String[] names;
+    final String[] models;
 
     DisplayList(int count)
     {
@@ -472,16 +569,26 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       widths      = new int[count];
       heights     = new int[count];
       names       = new String[count];
+      models      = new String[count];
     }
 
     boolean sameAs(DisplayList o)
     {
-      return Arrays.equals(ids, o.ids)
-          && Arrays.equals(connections, o.connections)
-          && Arrays.equals(flags, o.flags)
+      return sameAsBut(o, 0);
+    }
+
+    boolean sameAsBut(DisplayList o, int ignoredFlags)
+    {
+      if (!Arrays.equals(ids, o.ids))
+        return false;
+      for (int i = 0; i < flags.length; i++)
+        if (((flags[i] ^ o.flags[i]) & ~ignoredFlags) != 0)
+          return false;
+      return Arrays.equals(connections, o.connections)
           && Arrays.equals(widths, o.widths)
           && Arrays.equals(heights, o.heights)
-          && Arrays.equals(names, o.names);
+          && Arrays.equals(names, o.names)
+          && Arrays.equals(models, o.models);
     }
   }
 
@@ -557,33 +664,6 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     }
   }
 
-  /** The second display's window: it takes focus, and passes the keys
-   * and sticks it gets to native code. */
-  private final class SecondPresentation extends Presentation
-  {
-    SecondPresentation(Display display)
-    {
-      super(activity, display);
-    }
-
-    @Override public boolean dispatchKeyEvent(KeyEvent e)
-    {
-      return relayKey(e) || super.dispatchKeyEvent(e);
-    }
-
-    @Override public boolean dispatchGenericMotionEvent(MotionEvent e)
-    {
-      return relayMotion(e) || super.dispatchGenericMotionEvent(e);
-    }
-
-    @Override public void onWindowFocusChanged(boolean hasFocus)
-    {
-      super.onWindowFocusChanged(hasFocus);
-      if (this == presentation)
-        reportFocus(hasFocus);
-    }
-  }
-
   /** API 31: a real panel or monitor has product info; casts and
    * screen shares have none. Its own class, so older systems never
    * load the type. */
@@ -596,18 +676,22 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       DeviceProductInfo info = display.getDeviceProductInfo();
       return info != null ? info.getConnectionToSinkType() : -1;
     }
+
+    /* The product's name, "" without product info */
+    static String model(Display display)
+    {
+      DeviceProductInfo info = display.getDeviceProductInfo();
+      String name            = info != null ? info.getName() : null;
+      return name != null ? name : "";
+    }
   }
 
   static native void nativeDisplaysChanged(int[] connections, int[] flags,
-      int[] widths, int[] heights, String[] names);
+      int[] widths, int[] heights, String[] names, String[] models);
   static native int nativeSurfaceChanged(Surface surface, int width,
       int height, int request);
   static native void nativeSurfaceDestroyed();
   static native void nativeTouch(int pointerId, int x, int y,
       boolean down, int generation);
-  static native void nativeKey(int deviceId, int source, int action,
-      int keyCode, int flags, int metaState, long eventTime);
-  static native void nativeMotion(int deviceId, int source,
-      float[] axes);
-  static native void nativeFocusChanged(boolean focused);
+  static native void nativeMoveFailed();
 }

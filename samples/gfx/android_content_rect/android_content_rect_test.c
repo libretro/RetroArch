@@ -2,7 +2,7 @@
  *
  * onContentRectChanged() runs on the Android UI thread and publishes
  * the new size; the Vulkan context's check_window() reads it on the
- * video thread. Held here, on the shipping code of both ends:
+ * video thread. Held here, on the shipping code:
  *
  *  - a size read back is one the UI thread published: a change landing
  *    between the reader's atomic operations never pairs one change's
@@ -10,7 +10,10 @@
  *  - a change raised while check_window() is reading is not cleared
  *    unseen: the next check still asks for a new swapchain, even when
  *    the size did not move;
- *  - a size round-trips, and an unchanged one asks for no resize.
+ *  - a size round-trips, and an unchanged one asks for no resize;
+ *  - a quarter turn asks for one resize, at the swapped size, on the
+ *    Vulkan context and on the gl one, which reads its size from the
+ *    EGL surface instead.
  *
  * Deterministic, not a race: the reader's atomics go through a hook,
  * which delivers the UI thread's change after the reader's first,
@@ -74,12 +77,23 @@ typedef struct
 static struct android_app *g_android;
 #define RARCH_LOG(...) ((void)0)
 
+/* The gl context's surface, as eglQuerySurface() reports it */
+#define HAVE_EGL
+typedef struct { unsigned dims; } egl_ctx_data_t;
+typedef struct { egl_ctx_data_t egl; } android_ctx_data_t;
+
+static void egl_get_video_size(egl_ctx_data_t *egl, unsigned *dims)
+{
+   *dims = egl->dims;
+}
+
 #include "content_rect_driver.h"
 
 static unsigned failures;
 static struct android_app app;
 static ANativeActivity activity;
 static android_ctx_data_vk_t ctx;
+static android_ctx_data_t gl_ctx;
 static unsigned dims;
 
 static void ui_change(int w, int h)
@@ -97,6 +111,13 @@ static bool check(void)
    bool quit = false, resize = false;
    ctx.vk.flags &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    android_gfx_ctx_vk_check_window(&ctx, &quit, &resize, &dims);
+   return resize;
+}
+
+static bool gl_check(void)
+{
+   bool quit = false, resize = false;
+   android_gfx_ctx_check_window(&gl_ctx, &quit, &resize, &dims);
    return resize;
 }
 
@@ -171,6 +192,33 @@ int main(void)
       fail("a change raised during the read was cleared unseen");
    else
       printf("   ok   a change raised during the read is seen next check\n");
+
+   /* A quarter turn: the width and height swap */
+   ui_change(1920, 1080);
+   if (!check() || VIDEO_SCALE_W(dims) != 1920 || VIDEO_SCALE_H(dims) != 1080)
+      fail("vulkan: 1920x1080 published, read");
+   ui_change(1080, 1920);
+   if (!check() || VIDEO_SCALE_W(dims) != 1080 || VIDEO_SCALE_H(dims) != 1920)
+      fail("vulkan: a turn asks a resize at the swapped size");
+   else if (check())
+      fail("vulkan: the turn asked a second resize");
+   else
+      printf("   ok   vulkan: 1920x1080 turned to 1080x1920, one resize\n");
+
+   /* gl asks a resize only when the size moves: start from another */
+   dims            = VIDEO_SCALE_PACK(1280, 720);
+   gl_ctx.egl.dims = VIDEO_SCALE_PACK(1920, 1080);
+   if (     !gl_check()
+         || VIDEO_SCALE_W(dims) != 1920 || VIDEO_SCALE_H(dims) != 1080)
+      fail("gl: a 1920x1080 surface, read");
+   gl_ctx.egl.dims = VIDEO_SCALE_PACK(1080, 1920);
+   if (     !gl_check()
+         || VIDEO_SCALE_W(dims) != 1080 || VIDEO_SCALE_H(dims) != 1920)
+      fail("gl: a turn asks a resize at the swapped size");
+   else if (gl_check())
+      fail("gl: the turn asked a second resize");
+   else
+      printf("   ok   gl: 1920x1080 turned to 1080x1920, one resize\n");
 
    if (failures)
    {
