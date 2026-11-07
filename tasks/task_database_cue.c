@@ -2492,7 +2492,7 @@ int task_database_zar_get_serial(const char *name, char *s, size_t len,
    while ((err = zar_lookup_step(zs.z, &req, &zs.file)) == ZAR_PENDING)
       zar_feed(zs.z, task_database_pull(&zs.src, req.offset, req.dst,
                req.length));
-   if (err != ZAR_OK || !(x = xdvdfs_new(zs.file.size)))
+   if (err != ZAR_OK || zs.file.dir || !(x = xdvdfs_new(zs.file.size)))
       goto end;
 
    exe.offset = 0;
@@ -2704,7 +2704,8 @@ int task_database_wua_get_serial(const char *name, char *s, size_t len,
    while ((err = zar_lookup_step(z, &req, &zs.file)) == ZAR_PENDING)
       zar_feed(z, task_database_pull(&zs.src, req.offset, req.dst,
                req.length));
-   if (err != ZAR_OK || !(xml = (char*)malloc(WIIU_META_HEAD + 1)))
+   if (     err != ZAR_OK || zs.file.dir
+         || !(xml = (char*)malloc(WIIU_META_HEAD + 1)))
       goto end;
    n      = task_database_zar_pull(&zs, 0, (uint8_t*)xml, WIIU_META_HEAD);
    xml[n] = '\0';

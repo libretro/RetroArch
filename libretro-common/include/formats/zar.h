@@ -47,10 +47,11 @@ RETRO_BEGIN_DECLS
  *    while ((err = zar_open_step(z, &req)) == ZAR_PENDING)
  *       zar_feed(z, pull(req.offset, req.dst, req.length));
  *
- * Nothing is read that an operation does not look at: a directory's
- * entries a run at a time, a name only when its length matches, a
- * block's place from its one record. A read of a block kept as it is
- * asks for its octets straight into the read's destination; a
+ * Nothing is read that an operation does not look at: a lookup reads
+ * the entries and names its binary search of each directory probes, a
+ * listing a directory's entries a run at a time, a block's place comes
+ * from its one record. A read of a block kept as it is asks for its
+ * octets straight into the read's destination; a
  * compressed block is decoded into the destination when the read
  * wants all of it, and otherwise into a block kept for the reads that
  * follow. */
@@ -64,6 +65,7 @@ RETRO_BEGIN_DECLS
 #define ZAR_ERROR_STATE      (-4)
 #define ZAR_ERROR_NOT_FOUND  (-5)
 #define ZAR_ERROR_UNSUPPORTED (-6)
+#define ZAR_ERROR_WRITE      (-7)
 
 typedef struct zar zar_t;
 
@@ -80,11 +82,13 @@ typedef struct zar_request
    uint8_t *dst;      /* where they go */
 } zar_request_t;
 
-/* A file in the archive: its octets in the stream */
+/* A file in the archive, or a directory: a file's octets in the
+ * stream, a directory's first entry's node and its entry count */
 typedef struct zar_file
 {
    uint64_t offset;
    uint64_t size;
+   unsigned dir;
 } zar_file_t;
 
 /* @file_size: the archive's size, which its footer must agree with */
@@ -115,7 +119,8 @@ int zar_feed(zar_t *z, size_t len);
 /**
  * zar_lookup_begin:
  * @path : '/' or '\' separated, matched without regard to ASCII case;
- *         it must stay valid until the lookup is over
+ *         it must stay valid until the lookup is over. A file or a
+ *         directory; an empty path is the root.
  *
  * Returns: ZAR_OK, or ZAR_ERROR_STATE before the archive is open.
  **/
@@ -137,6 +142,7 @@ typedef struct zar_dirent
    const char *name;
    size_t      len;
    int         is_dir;
+   zar_file_t  file;
 } zar_dirent_t;
 
 /**
@@ -153,12 +159,17 @@ int zar_dir_begin(zar_t *z, const char *path);
 /**
  * zar_dir_step:
  *
- * Returns: ZAR_OK with @ent filled in for each entry in the archive's
- * order, ZAR_END past the last one, ZAR_PENDING with @req filled in
+ * Returns: ZAR_OK with @ent filled in for each entry in name order,
+ * ZAR_END past the last one, ZAR_PENDING with @req filled in
  * when it needs a range of the file, ZAR_ERROR_NOT_FOUND when @path is
  * no directory, or another negative code.
  **/
 int zar_dir_step(zar_t *z, zar_request_t *req, zar_dirent_t *ent);
+
+/* Where the octets past the stream's blocks start, from which a caller
+ * can keep the rest of the file in memory and answer every request a
+ * lookup or listing makes without I/O; 0 before the archive is open */
+uint64_t zar_index_offset(const zar_t *z);
 
 /**
  * zar_read_begin:
@@ -166,7 +177,8 @@ int zar_dir_step(zar_t *z, zar_request_t *req, zar_dirent_t *ent);
  * Arms a read of @len octets of @file at @off into @dst, short at the
  * end of the file, abandoning a read or lookup in progress.
  *
- * Returns: ZAR_OK, or ZAR_ERROR_STATE before the archive is open.
+ * Returns: ZAR_OK, ZAR_ERROR_PARAM for a directory, or ZAR_ERROR_STATE
+ * before the archive is open.
  **/
 int zar_read_begin(zar_t *z, const zar_file_t *file, uint64_t off,
       void *dst, size_t len);
@@ -182,6 +194,53 @@ int zar_read_step(zar_t *z, zar_request_t *req);
 
 /* octets the armed read has put at its @dst so far */
 size_t zar_read_progress(const zar_t *z);
+
+/* The writer, in zar_write.c: an archive built front to back, every
+ * octet handed to @write as it is made. Blocks are compressed with
+ * Zstandard at @level (1 to 9) where that shrinks them and HAVE_RZSTD
+ * is defined, and kept as they are otherwise. Paths are matched without
+ * regard to ASCII case, as the reader matches them. */
+
+typedef struct zar_writer zar_writer_t;
+
+/* Returns nonzero when all @len octets were written */
+typedef int (*zar_write_fn)(void *ud, const void *data, size_t len);
+
+zar_writer_t *zar_writer_new(zar_write_fn write, void *ud, int level);
+
+void zar_writer_free(zar_writer_t *w);
+
+/**
+ * zar_writer_dir:
+ *
+ * Adds directory @path and those above it that are missing.
+ *
+ * Returns: ZAR_OK, or ZAR_ERROR_PARAM when a part of it is a file.
+ **/
+int zar_writer_dir(zar_writer_t *w, const char *path);
+
+/**
+ * zar_writer_file:
+ *
+ * Adds file @path, the directories above it that are missing, and
+ * makes it the one zar_writer_append() adds to.
+ *
+ * Returns: ZAR_OK, or ZAR_ERROR_PARAM when it is there already or a
+ * part above it is a file.
+ **/
+int zar_writer_file(zar_writer_t *w, const char *path);
+
+int zar_writer_append(zar_writer_t *w, const void *data, size_t len);
+
+/**
+ * zar_writer_finish:
+ *
+ * Writes the rest of the archive.
+ *
+ * Returns: ZAR_OK, ZAR_ERROR_WRITE when @write failed, or
+ * ZAR_ERROR_MEM.
+ **/
+int zar_writer_finish(zar_writer_t *w);
 
 RETRO_END_DECLS
 

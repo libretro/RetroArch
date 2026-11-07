@@ -33,7 +33,8 @@
  * for a file), then a file's place and size in the stream (48 bits
  * each, their top 16 bits in the last word) or a directory's first
  * child and count. A name is its length, in one octet or two, and its
- * octets. */
+ * octets. A directory's entries are sorted by name, A-Z folded to a-z,
+ * octets compared unsigned and a prefix first. */
 
 #include <stdlib.h>
 #include <string.h>
@@ -67,10 +68,13 @@
 #define ZAR_OP_DIR      4
 
 /* the lookup */
-#define ZAR_L_DIR       0   /* the directory's own node */
-#define ZAR_L_BATCH     1   /* a run of its entries */
-#define ZAR_L_NAME      2   /* one entry's name */
-#define ZAR_L_LIST      3   /* a listed entry's name, in full */
+#define ZAR_L_ROOT      0   /* the root's node */
+#define ZAR_L_HAVE      1   /* a node in hand, the path's next part to find */
+#define ZAR_L_PROBE     2   /* the middle entry of the range left */
+#define ZAR_L_NAME      3   /* its name */
+/* the listing */
+#define ZAR_L_BATCH     4   /* a run of its entries */
+#define ZAR_L_LIST      5   /* a listed entry's name, in full */
 
 /* where the range asked for goes */
 #define ZAR_TO_BUF      0
@@ -88,7 +92,6 @@ struct zar
    uint64_t      rec_group;   /* the record held, ZAR_NONE for none */
    uint64_t      blk_index;   /* the decoded block held, ZAR_NONE for none */
    uint64_t      rd_off;      /* in the stream */
-   zar_file_t    file;        /* what the lookup found */
    uint8_t      *rd_dst;
    uint8_t      *packed;      /* a compressed block, as stored */
    uint8_t      *block;       /* a decoded block, for partial reads */
@@ -103,6 +106,8 @@ struct zar
    uint32_t      nodes;
    uint32_t      dir_first;
    uint32_t      dir_count;
+   uint32_t      lo;          /* the entries the name may be among */
+   uint32_t      hi;
    uint32_t      dir_index;   /* the first entry of the run in hand */
    uint32_t      batch;       /* entries in the run */
    uint32_t      entry;       /* the one whose name is looked at */
@@ -111,12 +116,12 @@ struct zar
    int           stage;
    int           to;
    uint8_t       buf[ZAR_BATCH * ZAR_NODE];
+   uint8_t       node[ZAR_NODE];  /* the lookup's, in hand */
    uint8_t       name[ZAR_NAME_MAX + 3]; /* length, octets, terminator */
    uint8_t       rec[ZAR_RECORD];
    bool          fetching;
    bool          failed;
-   bool          want_dir;    /* a listing's directory is looked up */
-   bool          listing;     /* and found */
+   bool          listing;     /* a listing's directory is found */
 };
 
 static uint32_t zar_be32(const uint8_t *p)
@@ -148,8 +153,6 @@ zar_t *zar_new(uint64_t file_size)
    z->rec_group   = ZAR_NONE;
    z->blk_index   = ZAR_NONE;
    z->rd_off      = 0;
-   z->file.offset = 0;
-   z->file.size   = 0;
    z->rd_dst      = NULL;
    z->packed      = NULL;
    z->block       = NULL;
@@ -164,6 +167,8 @@ zar_t *zar_new(uint64_t file_size)
    z->nodes       = 0;
    z->dir_first   = 0;
    z->dir_count   = 0;
+   z->lo          = 0;
+   z->hi          = 0;
    z->dir_index   = 0;
    z->batch       = 0;
    z->entry       = 0;
@@ -173,7 +178,6 @@ zar_t *zar_new(uint64_t file_size)
    z->to          = ZAR_TO_BUF;
    z->fetching    = false;
    z->failed      = false;
-   z->want_dir    = false;
    z->listing     = false;
    return z;
 }
@@ -246,8 +250,7 @@ static int zar_open_run(zar_t *z, zar_request_t *req)
          z->sec_size[i] = size;
       }
    }
-   if (     !z->sec_size[ZAR_SEC_RECORDS]
-         || z->sec_size[ZAR_SEC_RECORDS] > 0xFFFFFFFFu
+   if (     z->sec_size[ZAR_SEC_RECORDS] > 0xFFFFFFFFu
          || z->sec_size[ZAR_SEC_RECORDS] % ZAR_RECORD
          || z->sec_size[ZAR_SEC_NAMES] > 0x7FFFFFFFu
          || !z->sec_size[ZAR_SEC_TREE]
@@ -281,13 +284,11 @@ int zar_lookup_begin(zar_t *z, const char *path)
    if (z->op == ZAR_OP_OPEN)
       return ZAR_ERROR_STATE;
    z->op        = ZAR_OP_LOOKUP;
-   z->stage     = ZAR_L_DIR;
+   z->stage     = ZAR_L_ROOT;
    z->path      = path;
-   z->dir_first = 0;
    z->got       = 0;
    z->fetching  = false;
    z->failed    = false;
-   z->want_dir  = false;
    z->listing   = false;
    return ZAR_OK;
 }
@@ -296,153 +297,147 @@ int zar_dir_begin(zar_t *z, const char *path)
 {
    int e = zar_lookup_begin(z, path);
    if (e == ZAR_OK)
-   {
-      z->op       = ZAR_OP_DIR;
-      z->want_dir = true;
-   }
+      z->op = ZAR_OP_DIR;
    return e;
 }
 
-static int zar_upper(int c)
+static int zar_lower(int c)
 {
-   return (c >= 'a' && c <= 'z') ? c - ('a' - 'A') : c;
+   return (c >= 'A' && c <= 'Z') ? c + ('a' - 'A') : c;
 }
 
-/* The tree, from the root: each directory's entries looked at a run at
- * a time; an entry's name read only as far as it can match */
+/* A tree node as the caller sees it */
+static int zar_node_file(const zar_t *z, const uint8_t *n, zar_file_t *out)
+{
+   if (n[0] & 0x80)
+   {
+      out->offset = zar_be32(n + 4)
+            | ((uint64_t)(zar_be32(n + 12) & 0xFFFFu) << 32);
+      out->size   = zar_be32(n + 8)
+            | ((uint64_t)(zar_be32(n + 12) & 0xFFFF0000u) << 16);
+      out->dir    = 0;
+      if (     out->offset > z->blocks * ZAR_BLOCK
+            || out->size > z->blocks * ZAR_BLOCK - out->offset)
+         return ZAR_ERROR_DATA;
+   }
+   else
+   {
+      out->offset = zar_be32(n + 4);
+      out->size   = zar_be32(n + 8);
+      out->dir    = 1;
+      if (     out->offset > z->nodes
+            || out->size > z->nodes - out->offset)
+         return ZAR_ERROR_DATA;
+   }
+   return ZAR_OK;
+}
+
+/* Asks for the name @n points at, at most @want octets of it past its
+ * length; *@hdr and *@nlen say where it starts and how long it is */
+static int zar_name(zar_t *z, zar_request_t *req, const uint8_t *n,
+      size_t want, size_t *cap, size_t *hdr, size_t *nlen)
+{
+   uint32_t name_at = zar_be32(n) & 0x7FFFFFFFu;
+   if (     name_at == ZAR_NO_NAME
+         || name_at >= z->sec_size[ZAR_SEC_NAMES])
+      return ZAR_ERROR_DATA;
+   *cap = 2 + want;
+   if (*cap > z->sec_size[ZAR_SEC_NAMES] - name_at)
+      *cap = (size_t)(z->sec_size[ZAR_SEC_NAMES] - name_at);
+   if (z->got < *cap)
+      return zar_ask(z, req, ZAR_TO_NAME,
+            z->sec_off[ZAR_SEC_NAMES] + name_at, z->name, *cap);
+   z->got = 0;
+   *nlen  = z->name[0] & 0x7F;
+   *hdr   = 1;
+   if (z->name[0] & 0x80)
+   {
+      if (*cap < 2)
+         return ZAR_ERROR_DATA;
+      *nlen |= (size_t)z->name[1] << 7;
+      *hdr   = 2;
+   }
+   return ZAR_OK;
+}
+
+/* Down the tree from the root, a binary search of each directory's
+ * sorted entries for the path's next part */
 static int zar_lookup_run(zar_t *z, zar_request_t *req, zar_file_t *out)
 {
    for (;;)
    {
-      const char    *p;
-      const uint8_t *n;
-      size_t         plen;
-      size_t         cap;
-      size_t         hdr;
-      size_t         nlen;
-      size_t         i;
-      uint32_t       name_at;
+      const char *p;
+      size_t      plen;
+      size_t      cap;
+      size_t      hdr;
+      size_t      nlen;
+      size_t      i;
+      int         c;
+      int         e;
 
       while (*z->path == '/' || *z->path == '\\')
          z->path++;
       p = z->path;
       for (plen = 0; p[plen] && p[plen] != '/' && p[plen] != '\\'; plen++) { }
-      /* a listing of the root looks up no name */
-      if (     (!plen && !(z->want_dir && z->stage == ZAR_L_DIR))
-            || plen > ZAR_NAME_MAX)
-         return ZAR_ERROR_NOT_FOUND;
 
       switch (z->stage)
       {
-         case ZAR_L_DIR:
-            /* the directory node z->dir_first names */
-            if (z->dir_first >= z->nodes)
-               return ZAR_ERROR_DATA;
+         case ZAR_L_ROOT:
+            if (z->got < ZAR_NODE)
+               return zar_ask(z, req, ZAR_TO_BUF,
+                     z->sec_off[ZAR_SEC_TREE], z->node, ZAR_NODE);
+            z->got   = 0;
+            z->stage = ZAR_L_HAVE;
+            break;
+         case ZAR_L_HAVE:
+            if ((e = zar_node_file(z, z->node, out)) != ZAR_OK)
+               return e;
+            if (!plen)
+               return ZAR_OK;
+            if (!out->dir || plen > ZAR_NAME_MAX)
+               return ZAR_ERROR_NOT_FOUND;
+            z->dir_first = (uint32_t)out->offset;
+            z->lo        = 0;
+            z->hi        = (uint32_t)out->size;
+            z->stage     = ZAR_L_PROBE;
+            break;
+         case ZAR_L_PROBE:
+            if (z->lo >= z->hi)
+               return ZAR_ERROR_NOT_FOUND;
+            z->entry = z->dir_first + z->lo + (z->hi - z->lo) / 2;
             if (z->got < ZAR_NODE)
                return zar_ask(z, req, ZAR_TO_BUF,
                      z->sec_off[ZAR_SEC_TREE]
-                     + (uint64_t)z->dir_first * ZAR_NODE, z->buf, ZAR_NODE);
-            z->got = 0;
-            if (z->buf[0] & 0x80)
-               return ZAR_ERROR_NOT_FOUND;
-            z->dir_first = zar_be32(z->buf + 4);
-            z->dir_count = zar_be32(z->buf + 8);
-            if (     z->dir_first > z->nodes
-                  || z->dir_count > z->nodes - z->dir_first)
-               return ZAR_ERROR_DATA;
-            z->dir_index = 0;
-            z->batch     = 0;
-            z->stage     = ZAR_L_BATCH;
-            if (!plen)
-               return ZAR_OK;
-            break;
-         case ZAR_L_BATCH:
-            if (z->dir_index >= z->dir_count)
-               return ZAR_ERROR_NOT_FOUND;
-            z->batch = z->dir_count - z->dir_index;
-            if (z->batch > ZAR_BATCH)
-               z->batch = ZAR_BATCH;
-            if (z->got < (size_t)z->batch * ZAR_NODE)
-               return zar_ask(z, req, ZAR_TO_BUF,
-                     z->sec_off[ZAR_SEC_TREE]
-                     + ((uint64_t)z->dir_first + z->dir_index) * ZAR_NODE,
-                     z->buf, (size_t)z->batch * ZAR_NODE);
+                     + (uint64_t)z->entry * ZAR_NODE, z->buf, ZAR_NODE);
             z->got   = 0;
-            z->entry = 0;
             z->stage = ZAR_L_NAME;
             break;
          case ZAR_L_NAME:
-            if (z->entry >= z->batch)
-            {
-               z->dir_index += z->batch;
-               z->stage      = ZAR_L_BATCH;
-               break;
-            }
-            n       = z->buf + z->entry * ZAR_NODE;
-            name_at = zar_be32(n) & 0x7FFFFFFFu;
-            if (     name_at == ZAR_NO_NAME
-                  || name_at >= z->sec_size[ZAR_SEC_NAMES])
+            if ((e = zar_name(z, req, z->buf, plen,
+                        &cap, &hdr, &nlen)) != ZAR_OK)
+               return e;
+            if (hdr + (nlen < plen ? nlen : plen) > cap)
                return ZAR_ERROR_DATA;
-            cap = 2 + plen;
-            if (cap > z->sec_size[ZAR_SEC_NAMES] - name_at)
-               cap = (size_t)(z->sec_size[ZAR_SEC_NAMES] - name_at);
-            if (z->got < cap)
-               return zar_ask(z, req, ZAR_TO_NAME,
-                     z->sec_off[ZAR_SEC_NAMES] + name_at, z->name, cap);
-            z->got = 0;
-            nlen   = z->name[0] & 0x7F;
-            hdr    = 1;
-            if (z->name[0] & 0x80)
+            c = 0;
+            for (i = 0; i < plen && i < nlen && !c; i++)
+               c = zar_lower((unsigned char)p[i])
+                     - zar_lower(z->name[hdr + i]);
+            if (!c)
+               c = (plen > nlen) - (plen < nlen);
+            if (c)
             {
-               if (cap < 2)
-                  return ZAR_ERROR_DATA;
-               nlen |= (size_t)z->name[1] << 7;
-               hdr   = 2;
-            }
-            if (nlen != plen || hdr + nlen > cap)
-            {
-               z->entry++;
+               uint32_t mid = z->entry - z->dir_first;
+               if (c < 0)
+                  z->hi = mid;
+               else
+                  z->lo = mid + 1;
+               z->stage = ZAR_L_PROBE;
                break;
             }
-            for (i = 0; i < plen; i++)
-               if (     zar_upper((unsigned char)p[i])
-                     != zar_upper(z->name[hdr + i]))
-                  break;
-            if (i < plen)
-            {
-               z->entry++;
-               break;
-            }
+            memcpy(z->node, z->buf, ZAR_NODE);
             z->path += plen;
-            while (*z->path == '/' || *z->path == '\\')
-               z->path++;
-            if (*z->path || z->want_dir)
-            {
-               /* down into this entry, which must be a directory */
-               if (n[0] & 0x80)
-                  return ZAR_ERROR_NOT_FOUND;
-               z->dir_first = zar_be32(n + 4);
-               z->dir_count = zar_be32(n + 8);
-               if (     z->dir_first > z->nodes
-                     || z->dir_count > z->nodes - z->dir_first)
-                  return ZAR_ERROR_DATA;
-               z->dir_index = 0;
-               z->batch     = 0;
-               z->stage     = ZAR_L_BATCH;
-               if (!*z->path)
-                  return ZAR_OK;
-               break;
-            }
-            if (!(n[0] & 0x80))
-               return ZAR_ERROR_NOT_FOUND;
-            out->offset = zar_be32(n + 4)
-                  | ((uint64_t)(zar_be32(n + 12) & 0xFFFFu) << 32);
-            out->size   = zar_be32(n + 8)
-                  | ((uint64_t)(zar_be32(n + 12) & 0xFFFF0000u) << 16);
-            if (     out->offset > z->blocks * ZAR_BLOCK
-                  || out->size > z->blocks * ZAR_BLOCK - out->offset)
-               return ZAR_ERROR_DATA;
-            return ZAR_OK;
+            z->stage = ZAR_L_HAVE;
+            break;
          default:
             return ZAR_ERROR_STATE;
       }
@@ -472,7 +467,7 @@ static int zar_list_run(zar_t *z, zar_request_t *req, zar_dirent_t *ent)
       size_t         cap;
       size_t         hdr;
       size_t         nlen;
-      uint32_t       name_at;
+      int            e;
 
       switch (z->stage)
       {
@@ -498,33 +493,18 @@ static int zar_list_run(zar_t *z, zar_request_t *req, zar_dirent_t *ent)
                z->stage      = ZAR_L_BATCH;
                break;
             }
-            n       = z->buf + z->entry * ZAR_NODE;
-            name_at = zar_be32(n) & 0x7FFFFFFFu;
-            if (     name_at == ZAR_NO_NAME
-                  || name_at >= z->sec_size[ZAR_SEC_NAMES])
-               return ZAR_ERROR_DATA;
-            cap = 2 + ZAR_NAME_MAX;
-            if (cap > z->sec_size[ZAR_SEC_NAMES] - name_at)
-               cap = (size_t)(z->sec_size[ZAR_SEC_NAMES] - name_at);
-            if (z->got < cap)
-               return zar_ask(z, req, ZAR_TO_NAME,
-                     z->sec_off[ZAR_SEC_NAMES] + name_at, z->name, cap);
-            z->got = 0;
-            nlen   = z->name[0] & 0x7F;
-            hdr    = 1;
-            if (z->name[0] & 0x80)
-            {
-               if (cap < 2)
-                  return ZAR_ERROR_DATA;
-               nlen |= (size_t)z->name[1] << 7;
-               hdr   = 2;
-            }
+            n = z->buf + z->entry * ZAR_NODE;
+            if ((e = zar_name(z, req, n, ZAR_NAME_MAX,
+                        &cap, &hdr, &nlen)) != ZAR_OK)
+               return e;
             if (nlen > ZAR_NAME_MAX || hdr + nlen > cap)
                return ZAR_ERROR_DATA;
+            if ((e = zar_node_file(z, n, &ent->file)) != ZAR_OK)
+               return e;
             z->name[hdr + nlen] = '\0';
             ent->name   = (const char*)z->name + hdr;
             ent->len    = nlen;
-            ent->is_dir = !(n[0] & 0x80);
+            ent->is_dir = (int)ent->file.dir;
             z->entry++;
             return ZAR_OK;
          default:
@@ -544,20 +524,48 @@ int zar_dir_step(zar_t *z, zar_request_t *req, zar_dirent_t *ent)
       e = ZAR_ERROR_DATA;
    else if (z->listing)
       e = zar_list_run(z, req, ent);
-   else if ((e = zar_lookup_run(z, req, NULL)) == ZAR_OK)
+   else
    {
-      z->listing = true;
-      e          = zar_list_run(z, req, ent);
+      zar_file_t d;
+      if ((e = zar_lookup_run(z, req, &d)) == ZAR_OK)
+      {
+         if (!d.dir)
+            e = ZAR_ERROR_NOT_FOUND;
+         else
+         {
+            z->dir_first = (uint32_t)d.offset;
+            z->dir_count = (uint32_t)d.size;
+            z->dir_index = 0;
+            z->batch     = 0;
+            z->got       = 0;
+            z->stage     = ZAR_L_BATCH;
+            z->listing   = true;
+            e            = zar_list_run(z, req, ent);
+         }
+      }
    }
    if (e != ZAR_PENDING && e != ZAR_OK)
       z->op = ZAR_OP_NONE;
    return e;
 }
 
+uint64_t zar_index_offset(const zar_t *z)
+{
+   uint64_t off;
+   if (!z || !z->nodes)
+      return 0;
+   off = z->sec_off[ZAR_SEC_RECORDS];
+   if (z->sec_off[ZAR_SEC_NAMES] < off)
+      off = z->sec_off[ZAR_SEC_NAMES];
+   if (z->sec_off[ZAR_SEC_TREE] < off)
+      off = z->sec_off[ZAR_SEC_TREE];
+   return off;
+}
+
 int zar_read_begin(zar_t *z, const zar_file_t *file, uint64_t off,
       void *dst, size_t len)
 {
-   if (!z || !file || (!dst && len))
+   if (!z || !file || file->dir || (!dst && len))
       return ZAR_ERROR_PARAM;
    if (z->op == ZAR_OP_OPEN)
       return ZAR_ERROR_STATE;
