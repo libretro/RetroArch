@@ -1098,7 +1098,9 @@ jobs:
         run: |
           set -eu
           # The menu in another window, laid out at its size, is drawn
-          # on that window's back buffer with no offscreen image.
+          # on that window's back buffer with no offscreen image; a
+          # window's views of a software frame are written straight in,
+          # not copied out of the frame.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./gl2_window_ui_test

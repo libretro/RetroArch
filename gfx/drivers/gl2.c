@@ -6081,8 +6081,6 @@ static bool gl2_views_write_wanted(const gl2_t *gl,
 {
    return video_info->views.num_views
       && gl->views.preset && video_info->shader_active
-      /* A screen's own window copies its views from the frame too */
-      && !(video_info->windows && video_info->windows->plan.separate_mask)
       && !(gl->flags & GL2_FLAG_TEXTURE_MIPMAP)
       && !(chain->flags & GL2_CHAIN_FLAG_EGL_IMAGES)
 #ifdef HAVE_OPENGLES
@@ -6100,6 +6098,7 @@ static void gl2_views_write(gl2_t *gl, unsigned i,
       const void *frame, unsigned pitch, bool use_rgba)
 {
    gl2_views_slot(gl, i, v, depth, true, true);
+   gl->views.written |= 1u << i;
    gl2_renderchain_copy_frame(gl,
          (gl2_renderchain_data_t*)gl->renderchain_data, use_rgba,
          (const uint8_t*)frame + (size_t)v->y * pitch
@@ -6560,6 +6559,12 @@ static void gl2_views_render(gl2_t *gl,
          if (sw)
             gl2_views_write(gl, i, &video_info->views.views[i], depth,
                   sw, pitch, use_rgba);
+         /* Written for this window by the main window's draw */
+         else if (gl->views.written & (1u << i))
+         {
+            if (!gl2_views_kept(gl, i, &video_info->views.views[i], depth))
+               continue;
+         }
          else if (     !(!fresh && gl2_views_kept(gl, i,
                         &video_info->views.views[i], depth))
                && !gl2_views_copy(gl, i, &video_info->views.views[i],
@@ -6577,6 +6582,18 @@ static void gl2_views_render(gl2_t *gl,
             gl2_views_swap_feedback(gl, i);
          gl->tex_info = frame;
       }
+#ifdef HAVE_VIDEO_WINDOWS
+      /* The screens' own windows' views too, as the frame was not */
+      if (sw && video_info->windows)
+         for (i = 0; i < video_info->views.num_views; i++)
+         {
+            const struct retro_video_view *v = &video_info->views.views[i];
+            if (     !chains[i] && v->screen < RETRO_VIDEO_VIEWS_MAX
+                  && (video_info->windows->plan.separate_mask
+                     & (1u << v->screen)))
+               gl2_views_write(gl, i, v, depth, sw, pitch, use_rgba);
+         }
+#endif
       gl->coords.vertex    = gl->vertex_ptr;
       gl->coords.tex_coord = gl->tex_info.coord;
       gl->coords.color     = gl->white_color_ptr;
@@ -7420,6 +7437,7 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
 #ifdef GL2_VIEWS
+   gl->views.written = 0;
    views = gl2_views_setup(gl, video_info, frame, &views_blend,
          &views_direct, view_chains, view_rects);
    /* Views through the preset have theirs written straight in; drawn

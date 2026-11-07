@@ -3,7 +3,11 @@
  * on that window's back buffer, with no offscreen image made and the
  * main window's viewport left as it was. Laid out at another size, or
  * with the window not drawn after all, the image carries it, and the
- * menu's frame still runs once. */
+ * menu's frame still runs once.
+ *
+ * Also a software frame's views through a preset with a screen in its
+ * own window: each view, the window's too, is written straight in, and
+ * the window draws what was written, with no copy out of the frame. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +49,15 @@ static void fake_vertex_attrib_pointer(GLuint i, GLint s, GLenum t,
 static void fake_blend_equation(GLenum m) { (void)m; }
 static void fake_blend_func_separate(GLenum a, GLenum b, GLenum c,
       GLenum d) { (void)a; (void)b; (void)c; (void)d; }
+static void fake_active_texture(GLenum t) { (void)t; }
+static void fake_uniform_4f(GLint l, GLfloat a, GLfloat b, GLfloat c,
+      GLfloat d) { (void)l; (void)a; (void)b; (void)c; (void)d; }
+
+/* The preset: no earlier frames read */
+static void fake_shader_use(void *data, void *shader_data, unsigned index,
+      bool set_active)
+{ (void)data; (void)shader_data; (void)index; (void)set_active; }
+static unsigned fake_prev_textures(void *data) { (void)data; return 0; }
 
 #include "../gl2_pbo_readback/gl11_fakes.h"
 
@@ -118,6 +131,64 @@ static void setup(unsigned dims, bool wait)
    stub_bound_window           = 0;
 }
 
+/* Two 16x16 views side by side, screen 1's in its own window */
+static void test_views_written(void)
+{
+   static uint32_t sw[32 * 16];
+   static shader_backend_t       shader;
+   static gl2_renderchain_data_t chain;
+   static video_views_layout_t   layout;
+   void *main_chains[RETRO_VIDEO_VIEWS_MAX];
+   void *win_chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t rects[RETRO_VIDEO_VIEWS_MAX];
+   unsigned i;
+
+   printf("[gl2_window_ui] views written straight in, one in a window\n");
+   setup(WIN_DIMS, false);
+   shader.use               = fake_shader_use;
+   shader.get_prev_textures = fake_prev_textures;
+   gl.shader                = &shader;
+   gl.renderchain_data      = &chain;
+   gl.views.preset          = true;
+   gl.base_size             = 4;
+   vi.shader_active         = true;
+   vi.views.num_views       = 2;
+   for (i = 0; i < 2; i++)
+   {
+      vi.views.views[i].x      = i * 16;
+      vi.views.views[i].width  = 16;
+      vi.views.views[i].height = 16;
+      vi.views.views[i].screen = i;
+   }
+   frame.plan.separate_mask = 1u << 1;
+   memset(main_chains, 0, sizeof(main_chains));
+   memset(win_chains, 0, sizeof(win_chains));
+   memset(rects, 0, sizeof(rects));
+   main_chains[0] = &chain;
+   win_chains[1]  = &chain;
+
+   CHECK(gl2_views_write_wanted(&gl, &chain, &vi, false),
+         "a screen in its own window keeps the views written straight in");
+   gl.views.written = 0;
+   gl2_views_render(&gl, &vi, &layout, MAIN_DIMS, &gl.views.canvas,
+         main_chains, rects, false, false, true, sw, 32 * 4, false, 1);
+   CHECK(gl.views.written == 3u,
+         "the main window's draw writes the window's view too");
+   gl2_views_render(&gl, &vi, &layout, WIN_DIMS, &gl.views.canvas,
+         win_chains, rects, false, false, true, NULL, 0, false, 1);
+   CHECK(!gl.views.copy_fbo && !fbos_made,
+         "the window draws it as written, no copy out of the frame");
+   CHECK(gl.tex_info.tex == gl.texture[gl.tex_index],
+         "the frame's texture is the frame's again");
+
+   /* Not written: the window copies it out of the frame */
+   gl.views.written = 0;
+   gl2_views_render(&gl, &vi, &layout, WIN_DIMS, &gl.views.canvas,
+         win_chains, rects, false, false, true, NULL, 0, false, 1);
+   CHECK(gl.views.copy_fbo && fbos_made == 1,
+         "a view not written is copied out of the frame");
+}
+
 int main(void)
 {
    unsigned away, draw;
@@ -139,6 +210,8 @@ int main(void)
    __rglgen_glVertexAttribPointer     = fake_vertex_attrib_pointer;
    __rglgen_glBlendEquation           = fake_blend_equation;
    __rglgen_glBlendFuncSeparate       = fake_blend_func_separate;
+   __rglgen_glUniform4f               = fake_uniform_4f;
+   __rglgen_glActiveTexture           = fake_active_texture;
    test_windows.bind_gl               = fake_bind_gl;
    test_windows.present_gl            = fake_present_gl;
    test_windows.destroy               = fake_destroy;
@@ -190,6 +263,7 @@ int main(void)
    CHECK(!stub_menu_frames && !fbos_made, "nor is anything drawn");
 
    gl2_vv_target_drop(&gl, &gl.windows.ui_target, &gl.windows.ui);
+   test_views_written();
    if (fails)
    {
       printf("[gl2_window_ui] %d failure(s)\n", fails);

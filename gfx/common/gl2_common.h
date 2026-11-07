@@ -344,6 +344,9 @@ struct gl2
        * frame's textures are, not for a copy drawn into it */
       bool                  tex_written[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
       unsigned              head[RETRO_VIDEO_VIEWS_MAX];
+      /* A bit a view: written straight in this frame, which the screens'
+       * own windows then draw as they are */
+      unsigned              written;
       struct video_tex_info prev[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
       /* What a feedback pass drew for each view the frame before */
       struct gl2_views_fbo  feedback[RETRO_VIDEO_VIEWS_MAX];
