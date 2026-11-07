@@ -82,9 +82,14 @@ int main(void)
    media_video_hw_ready();
    CHECK(media_player.hw_video && media_player.hw_started);
    decode_busy = output_busy = 1; sink_busy = 2;
+   restart_clock = media_player.play_ns;
    retro_run();
    CHECK(!media_player.eof && !sink_calls
          && rmp4_video_stream_wait_reason(media_player.mp4vs) == RMP4_VIDEO_WAIT_DECODER);
+   CHECK(media_player.play_ns == restart_clock && !media_player.vshown);
+   retro_run();
+   CHECK(!sink_calls && !media_player.vshown
+         && media_player.play_ns == restart_clock);
    for (i = 0; i < 30 && !stopped; i++)
    {
       decoded = accepted;

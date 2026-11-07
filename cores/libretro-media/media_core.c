@@ -2163,7 +2163,7 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
                         && !data_transfer_failed(p->dt))))
             {
                /* Hold the picture until input or decoder capacity returns. */
-               if (p->mp4_hw_required && !p->vshown)
+               if ((p->mp4_hw_required || p->hw_video) && !p->vshown)
                   p->play_ns -= p->frame_ns;
                break;
             }
