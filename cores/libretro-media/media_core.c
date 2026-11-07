@@ -83,7 +83,8 @@ enum media_mp4_seek_state
    MEDIA_MP4_SEEK_NONE,
    MEDIA_MP4_SEEK_SCAN,
    MEDIA_MP4_SEEK_DECODE,
-   MEDIA_MP4_SEEK_PRESENT
+   MEDIA_MP4_SEEK_PRESENT,
+   MEDIA_MP4_SEEK_BLANK
 };
 #endif
 
@@ -631,15 +632,21 @@ void media_suspend_video_hw(void)
    p->hw_video = p->hw_started = 0;
 }
 
-static bool media_make_framebuffer(media_player_t *p)
+static bool media_make_framebuffer(media_player_t *p, bool blank)
 {
-   if (p->fb)
-      return true;
-   if (p->webm_hw_required
+   if (!blank && (p->webm_hw_required
 #ifdef HAVE_RMP4
-         || p->mp4_hw_required
+            || p->mp4_hw_required
 #endif
-         || !p->width || !p->height
+         ))
+      return false;
+   if (p->fb)
+   {
+      if (blank)
+         memset(p->fb, 0, (size_t)p->width * p->height * sizeof(*p->fb));
+      return true;
+   }
+   if (!p->width || !p->height
          || (size_t)p->width > SIZE_MAX / sizeof(uint32_t) / p->height)
       return false;
    p->fb = (uint32_t*)calloc((size_t)p->width * p->height,
@@ -663,7 +670,7 @@ static void media_present_mp4(media_player_t *p, int have)
 {
    if (!p->hw_video)
    {
-      if (!media_make_framebuffer(p))
+      if (!media_make_framebuffer(p, false))
       {
          p->eof = 1;
          MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
@@ -1444,7 +1451,7 @@ static int media_mp4_restore_step(media_player_t *p)
       if (!rmp4_video_stream_hw_frame(p->mp4vs, &p->hw_frame))
          return -1;
    }
-   else if (!media_make_framebuffer(p)
+   else if (!media_make_framebuffer(p, false)
          || !rmp4_video_stream_render(p->mp4vs))
       return -1;
    p->mp4_restoring = 0;
@@ -1488,6 +1495,12 @@ static int media_mp4_seek_step(media_player_t *p)
    p->play_ns = p->pending_seek_ns < p->vpts_ns
       ? p->pending_seek_ns : p->vpts_ns;
    p->seeking = MEDIA_MP4_SEEK_DECODE;
+   if (p->play_ns < delay)
+   {
+      if (!media_make_framebuffer(p, true))
+         return -1;
+      p->seeking = MEDIA_MP4_SEEK_BLANK;
+   }
 #ifdef MEDIA_HAVE_AUDIO
    if (p->actx)
       media_seek_audio(p, (int64_t)((double)p->play_ns * 1e-9 * p->arate));
@@ -1598,7 +1611,7 @@ static int64_t media_seek_internal_resume(media_player_t *p, int64_t target_ns,
       rwebm_packet pkt;
       int64_t kts = 0;
       int     tidx, kf_idx = 0, total = 0, below = 0;
-      if (!media_make_framebuffer(p))
+      if (!media_make_framebuffer(p, false))
       {
          p->eof = 1;
          return p->vpts_ns;
@@ -1958,7 +1971,7 @@ void media_video_hw_ready(void)
 static void media_run_webm_cpu(media_player_t *p, int advance_clock)
 {
    rwebm_packet pkt;
-   if (!media_make_framebuffer(p))
+   if (!media_make_framebuffer(p, false))
    {
       p->eof = 1;
       MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
@@ -2249,6 +2262,15 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
             return;
          }
       }
+      if (p->seeking == MEDIA_MP4_SEEK_BLANK)
+      {
+         p->seeking = MEDIA_MP4_SEEK_NONE;
+         p->pending_seek_ns = -1;
+         p->play_ns += p->frame_ns;
+         MEDIA_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
+               p->width * sizeof(uint32_t));
+         goto mp4_presented;
+      }
       if (p->seeking == MEDIA_MP4_SEEK_PRESENT)
       {
          media_present_mp4(p, 0);
@@ -2347,6 +2369,8 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
                p->seeking = MEDIA_MP4_SEEK_PRESENT;
                break;
             }
+            if (p->hw_video && p->vshown == 1)
+               break;
          }
          media_present_mp4(p, have);
          if (p->seeking == MEDIA_MP4_SEEK_PRESENT && !p->hw_frame.image)
@@ -2355,6 +2379,7 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
             p->pending_seek_ns = -1;
          }
       }
+mp4_presented:
       if (p->eof && !p->hw_frame.image)
       {
          int audio_done = 1;
@@ -2872,7 +2897,7 @@ static bool media_load_mp4(media_player_t *p)
       p->fps = 30.0;
 
    if (!p->mp4_hw_required && !media_hw_refresh
-         && !media_make_framebuffer(p))
+         && !media_make_framebuffer(p, false))
       return false;
    p->silence_frames = (size_t)(media_audio_rate(p) / p->fps) + 1;
    p->frame_ns       = (int64_t)(1000000000.0 / p->fps + 0.5);
@@ -3234,7 +3259,7 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 #endif
 
    if (!p->webm_hw_required && !media_hw_refresh
-         && !media_make_framebuffer(p))
+         && !media_make_framebuffer(p, false))
       goto error;
    p->silence_frames = (size_t)(media_audio_rate(p) / p->fps) + 1;
    p->frame_ns       = (int64_t)(1000000000.0 / p->fps + 0.5);
@@ -3390,7 +3415,7 @@ bool MEDIA_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
                p->pending_seek_ns = (int64_t)v;
             }
             else if (rmp4_video_stream_skip(p->mp4vs, NULL) != 1
-                  || !media_make_framebuffer(p)
+                  || !media_make_framebuffer(p, false)
                   || !rmp4_video_stream_render(p->mp4vs))
                return false;
          }
@@ -3414,6 +3439,12 @@ bool MEDIA_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
       p->aeof = (d[5] & 2) != 0;
 #endif
 #ifdef HAVE_RMP4
+      if (p->mp4vs && p->hw_video && !s && p->play_ns < p->vpts_ns)
+      {
+         if (!media_make_framebuffer(p, true))
+            return false;
+         p->seeking = MEDIA_MP4_SEEK_BLANK;
+      }
       if (p->mp4_restoring && media_mp4_restore_step(p) < 0)
       {
          p->mp4_restoring = 0;

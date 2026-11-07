@@ -325,6 +325,16 @@ int main(void)
    CHECK(media_player.eof && !media_player.mp4_restoring);
    retro_unload_game();
    CHECK(opened == closed && exported == abandoned);
+   media_player.width = 64; media_player.height = 48;
+   media_player.mp4_hw_required = 1;
+   CHECK(!media_make_framebuffer(&media_player, false));
+   CHECK(media_make_framebuffer(&media_player, true));
+   for (i = 0; i < 64 * 48; i++) CHECK(!media_player.fb[i]);
+   media_player.fb[0] = 123;
+   CHECK(media_make_framebuffer(&media_player, true) && !media_player.fb[0]);
+   CHECK(!media_make_framebuffer(&media_player, false));
+   free(media_player.fb); media_player.fb = NULL;
+   media_player.mp4_hw_required = 0;
    CHECK(media_set_video_hw_refresh(NULL, NULL));
    rh265_set_hw_backend(NULL);
    printf("Movie GPU lease handoff: %u failures\n", failures);
