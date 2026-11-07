@@ -69,9 +69,18 @@ static bool start_core(int hardware)
    return true;
 }
 
+static void check_seek_state_busy(void)
+{
+   uint8_t state[40];
+   unsigned i;
+   memset(state, 0x5a, sizeof(state));
+   CHECK(!retro_serialize(state, sizeof(state)));
+   for (i = 0; i < sizeof(state); i++) CHECK(state[i] == 0x5a);
+}
+
 int main(void)
 {
-   unsigned i, before, decoded;
+   unsigned i, before, decoded, seek_phases = 0;
    int64_t restart_clock, restart_pts, restart_ordinal;
    uint8_t state[40];
    hevc_stream_checks_main();
@@ -216,12 +225,22 @@ int main(void)
    CHECK(media_player.seeking && media_player.pending_seek_ns == 200000000);
    for (i = 0; i < 40 && sink_taken == before; i++)
    {
+      seek_phases |= 1u << media_player.seeking;
+      if (media_player.seeking == MEDIA_MP4_SEEK_SCAN
+            || media_player.seeking == MEDIA_MP4_SEEK_DECODE)
+         check_seek_state_busy();
+      else if (media_player.seeking == MEDIA_MP4_SEEK_PRESENT)
+         CHECK(retro_serialize(state, sizeof(state)));
       restart_clock = media_player.play_ns;
       decoded = media_player.hw_frame.image != 0;
       retro_run();
       if (decoded) CHECK(media_player.play_ns == restart_clock);
    }
    CHECK(sink_taken == before + 1 && media_player.vshown == 3);
+   CHECK((seek_phases & ((1u << MEDIA_MP4_SEEK_SCAN)
+               | (1u << MEDIA_MP4_SEEK_DECODE) | (1u << MEDIA_MP4_SEEK_PRESENT)))
+         == ((1u << MEDIA_MP4_SEEK_SCAN) | (1u << MEDIA_MP4_SEEK_DECODE)
+            | (1u << MEDIA_MP4_SEEK_PRESENT)));
    CHECK(!media_player.seeking && media_player.pending_seek_ns < 0);
    before = sink_taken;
    media_seek(&media_player, 200000000);

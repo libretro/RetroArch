@@ -3361,6 +3361,12 @@ bool MEDIA_CORE_PREFIX(retro_serialize)(void *data, size_t size)
    int i;
    if (size < MEDIA_STATE_SIZE || !d || !p->file_buf)
       return false;
+#ifdef HAVE_RMP4
+   if (p->mp4vs && !p->mp4_restoring
+         && (p->seeking == MEDIA_MP4_SEEK_SCAN
+            || p->seeking == MEDIA_MP4_SEEK_DECODE))
+      return false;
+#endif
 #ifdef MEDIA_HAVE_AUDIO
    audio_pos = (uint64_t)p->apos;
 #endif
