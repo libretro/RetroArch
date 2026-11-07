@@ -2847,6 +2847,42 @@ static int rpng_load_image_argb_process_inflate_init(
    process->total_out     += wn;
    process->inflated_total += wn;
 
+   /* The span ran out with room left in the slice and another span to
+    * come: hand that one over and carry on into the same output.  Going
+    * back round with a fresh set_out instead made the decoder treat
+    * everything before it as history, and the back-references that
+    * reach over the seam then came out of its window a byte at a time
+    * - several times the cost per byte, at every IDAT boundary, and
+    * libpng and most other writers split the data at 8 KB. */
+   {
+      uint32_t rd_all = rd, wn_all = wn;
+      while (   zstatus && err == TRANS_STREAM_ERROR_AGAIN
+             && wn_all < slice
+             && process->span_idx + 1 < rpng->idat_buf.n
+             && process->span_pos >= rpng->idat_buf.v[process->span_idx].len)
+      {
+         const struct idat_span *sp;
+         process->span_idx++;
+         process->span_pos = 0;
+         sp = &rpng->idat_buf.v[process->span_idx];
+         process->stream_backend->set_in(process->stream,
+               rpng->buff_start + sp->off, sp->len);
+         zstatus = process->stream_backend->trans(
+            process->stream, false, &rd, &wn, &err);
+         if (!zstatus && err != TRANS_STREAM_ERROR_BUFFER_FULL)
+            goto error;
+         process->avail_in      -= rd;
+         process->span_pos      += rd;
+         process->avail_out     -= wn;
+         process->total_out     += wn;
+         process->inflated_total += wn;
+         rd_all += rd;
+         wn_all += wn;
+      }
+      rd = rd_all;
+      wn = wn_all;
+   }
+
    /* No input taken and no output made means the backend cannot get any
     * further - a truncated or corrupt stream.  Without this the
     * avail_in > 0 condition above was doing double duty as the
