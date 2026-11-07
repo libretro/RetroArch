@@ -212,6 +212,9 @@ int  gt_content_loaded;
 bool runloop_is_content_switching(void) { return gt_content_switching != 0; }
 bool runloop_content_loaded(void)       { return gt_content_loaded    != 0; }
 void dir_set(int t, const char *p) { (void)t; (void)p; }
+/* The configured savestate folder the state preview starts from */
+static char gt_dir_savestate[1];
+char *dir_get_ptr(int t) { (void)t; return gt_dir_savestate; }
 void runloop_path_set_redirect(void *a, const char *b, const char *c)
 { (void)a; (void)b; (void)c; }
 const char *msg_hash_to_str(unsigned id) { (void)id; return ""; }
