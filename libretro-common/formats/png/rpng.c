@@ -46,13 +46,14 @@
 #include <malloc.h>
 #endif
 
-/* SIMD acceleration: SSE2 on x86/x86-64, NEON on ARM.  MSVC never
- * defines __SSE2__, so its x64 builds - desktop and UWP - are named
- * explicitly, as most of formats/ already does; SSE2 is part of the
- * x64 baseline.  32-bit MSVC is left out: its by-value __m128i
- * parameters are limited to three (C2719), and the Paeth kernels take
- * more. */
-#if defined(__SSE2__) || (defined(_MSC_VER) && defined(_M_X64))
+/* SIMD acceleration: SSE2 on x86/x86-64, NEON on ARM.  MSVC does not
+ * define __SSE2__ itself; retro_environment.h spells its x64 and
+ * /arch:SSE2 targets that way, as pixconv.c and the audio converters
+ * rely on.  Griffin includes it first, so this keeps the file compiled
+ * on its own on the same path as the unity build. */
+#include <retro_environment.h>
+
+#if defined(__SSE2__)
 #include <emmintrin.h>
 #define RPNG_SIMD_SSE2 1
 /* SSSE3's byte shuffle turns the 8-bit RGB and RGBA row conversions
@@ -689,24 +690,27 @@ static void rpng_filter_avg_simd(uint8_t *decoded,
  * predictor's is eleven.
  *
  * SSE2 lacks abs_epi16; max(x, -x) is the standard substitute. */
-static INLINE __m128i rpng_paeth_step_epi16(__m128i a, __m128i b,
-      __m128i c, __m128i r, __m128i sb, __m128i sc, __m128i mask)
-{
-   __m128i bc = _mm_sub_epi16(b, c);
-   __m128i ac = _mm_sub_epi16(a, c);
-   __m128i sm = _mm_add_epi16(bc, ac);
-   __m128i z  = _mm_setzero_si128();
-   __m128i pa = _mm_max_epi16(bc, _mm_sub_epi16(z, bc));
-   __m128i pb = _mm_max_epi16(ac, _mm_sub_epi16(z, ac));
-   __m128i pc = _mm_max_epi16(sm, _mm_sub_epi16(z, sm));
-   __m128i not_a  = _mm_cmpgt_epi16(pa, _mm_min_epi16(pb, pc));
-   __m128i pick_c = _mm_cmpgt_epi16(pb, pc);
-   __m128i sa     = _mm_and_si128(_mm_add_epi16(r, a), mask);
-   __m128i bc_sel = _mm_or_si128(_mm_andnot_si128(pick_c, sb),
-                                 _mm_and_si128(   pick_c, sc));
-   return            _mm_or_si128(_mm_andnot_si128(not_a, sa),
-                                  _mm_and_si128(   not_a, bc_sel));
-}
+/* A macro rather than a function: it takes seven vectors, and 32-bit
+ * MSVC - which griffin builds with this path on, retro_environment.h
+ * defining __SSE2__ for /arch:SSE2 - passes only three __m128i
+ * arguments by value and rejects the rest (C2719).  Every input is read
+ * into a temporary before `out` is assigned, so out may name a. */
+#define RPNG_PAETH_STEP_EPI16(out, a, b, c, r, sb, sc, mask) do { \
+   __m128i bc_     = _mm_sub_epi16((b), (c)); \
+   __m128i ac_     = _mm_sub_epi16((a), (c)); \
+   __m128i sm_     = _mm_add_epi16(bc_, ac_); \
+   __m128i z_      = _mm_setzero_si128(); \
+   __m128i pa_     = _mm_max_epi16(bc_, _mm_sub_epi16(z_, bc_)); \
+   __m128i pb_     = _mm_max_epi16(ac_, _mm_sub_epi16(z_, ac_)); \
+   __m128i pc_     = _mm_max_epi16(sm_, _mm_sub_epi16(z_, sm_)); \
+   __m128i not_a_  = _mm_cmpgt_epi16(pa_, _mm_min_epi16(pb_, pc_)); \
+   __m128i pick_c_ = _mm_cmpgt_epi16(pb_, pc_); \
+   __m128i sa_     = _mm_and_si128(_mm_add_epi16((r), (a)), (mask)); \
+   __m128i bc_sel_ = _mm_or_si128(_mm_andnot_si128(pick_c_, (sb)), \
+                                  _mm_and_si128(   pick_c_, (sc))); \
+   (out)           = _mm_or_si128(_mm_andnot_si128(not_a_, sa_), \
+                                  _mm_and_si128(   not_a_, bc_sel_)); \
+} while (0)
 
 /* Paeth reverse filter for any pixel stride from 1 to 8 bytes, i.e.
  * every bpp rpng can produce: 1 (gray/palette 8), 2 (gray+alpha 8,
@@ -749,7 +753,8 @@ static void rpng_filter_paeth_simd(uint8_t *decoded,
          __m128i sb   = _mm_and_si128(_mm_add_epi16(r, pv), mask);
          __m128i sc   = _mm_and_si128(_mm_add_epi16(r, prev_upper_left),
                mask);
-         __m128i out  = rpng_paeth_step_epi16(prev_pixel, pv,
+         __m128i out;
+         RPNG_PAETH_STEP_EPI16(out, prev_pixel, pv,
                prev_upper_left, r, sb, sc, mask);
          rpng_store4_u16_to_u8(decoded + i, out);
          prev_pixel      = out;
@@ -765,7 +770,8 @@ static void rpng_filter_paeth_simd(uint8_t *decoded,
          __m128i sb   = _mm_and_si128(_mm_add_epi16(r, pv), mask);
          __m128i sc   = _mm_and_si128(_mm_add_epi16(r, prev_upper_left),
                mask);
-         __m128i out  = rpng_paeth_step_epi16(prev_pixel, pv,
+         __m128i out;
+         RPNG_PAETH_STEP_EPI16(out, prev_pixel, pv,
                prev_upper_left, r, sb, sc, mask);
          rpng_store8_u16_to_u8(decoded + i, out);
          prev_pixel      = out;
@@ -824,7 +830,7 @@ static void rpng_filter_paeth_pair(uint8_t *dec0, uint8_t *dec1,
          __m128i r0 = rpng_load4_u8_to_u16(raw0);
          __m128i sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
          __m128i sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
-         a0  = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+         RPNG_PAETH_STEP_EPI16(a0, a0, b0, c0, r0, sb, sc, mask);
          rpng_store4_u16_to_u8(dec0, a0);
          c0  = b0;
          a0p = a0;
@@ -835,13 +841,13 @@ static void rpng_filter_paeth_pair(uint8_t *dec0, uint8_t *dec1,
             r0 = rpng_load4_u8_to_u16(raw0 + i);
             sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
             sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
-            a0 = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+            RPNG_PAETH_STEP_EPI16(a0, a0, b0, c0, r0, sb, sc, mask);
             rpng_store4_u16_to_u8(dec0 + i, a0);
             c0 = b0;
             r1 = rpng_load4_u8_to_u16(raw1 + i - bpp);
             sb = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
             sc = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
-            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, sb, sc, mask);
+            RPNG_PAETH_STEP_EPI16(a1, a1, a0p, c1, r1, sb, sc, mask);
             rpng_store4_u16_to_u8(dec1 + i - bpp, a1);
             c1  = a0p;
             a0p = a0;
@@ -850,7 +856,7 @@ static void rpng_filter_paeth_pair(uint8_t *dec0, uint8_t *dec1,
             __m128i r1 = rpng_load4_u8_to_u16(raw1 + i - bpp);
             __m128i s1 = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
             __m128i s2 = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
-            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, s1, s2, mask);
+            RPNG_PAETH_STEP_EPI16(a1, a1, a0p, c1, r1, s1, s2, mask);
             rpng_store4_u16_to_u8(dec1 + i - bpp, a1);
          }
       }
@@ -863,7 +869,7 @@ static void rpng_filter_paeth_pair(uint8_t *dec0, uint8_t *dec1,
          __m128i r0 = rpng_load8_u8_to_u16(raw0);
          __m128i sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
          __m128i sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
-         a0  = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+         RPNG_PAETH_STEP_EPI16(a0, a0, b0, c0, r0, sb, sc, mask);
          rpng_store8_u16_to_u8(dec0, a0);
          c0  = b0;
          a0p = a0;
@@ -874,13 +880,13 @@ static void rpng_filter_paeth_pair(uint8_t *dec0, uint8_t *dec1,
             r0 = rpng_load8_u8_to_u16(raw0 + i);
             sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
             sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
-            a0 = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+            RPNG_PAETH_STEP_EPI16(a0, a0, b0, c0, r0, sb, sc, mask);
             rpng_store8_u16_to_u8(dec0 + i, a0);
             c0 = b0;
             r1 = rpng_load8_u8_to_u16(raw1 + i - bpp);
             sb = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
             sc = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
-            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, sb, sc, mask);
+            RPNG_PAETH_STEP_EPI16(a1, a1, a0p, c1, r1, sb, sc, mask);
             rpng_store8_u16_to_u8(dec1 + i - bpp, a1);
             c1  = a0p;
             a0p = a0;
@@ -889,7 +895,7 @@ static void rpng_filter_paeth_pair(uint8_t *dec0, uint8_t *dec1,
             __m128i r1 = rpng_load8_u8_to_u16(raw1 + i - bpp);
             __m128i s1 = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
             __m128i s2 = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
-            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, s1, s2, mask);
+            RPNG_PAETH_STEP_EPI16(a1, a1, a0p, c1, r1, s1, s2, mask);
             rpng_store8_u16_to_u8(dec1 + i - bpp, a1);
          }
       }

@@ -31,9 +31,11 @@
 #include <gfx/scaler/pixconv.h>
 
 /* SIMD acceleration: SSE2 on x86/x86-64, NEON on ARM.  Same gating as
- * the decoder in rpng.c, including MSVC x64, which never defines
- * __SSE2__. */
-#if defined(__SSE2__) || (defined(_MSC_VER) && defined(_M_X64))
+ * the decoder in rpng.c: retro_environment.h spells MSVC's SSE2
+ * targets as __SSE2__. */
+#include <retro_environment.h>
+
+#if defined(__SSE2__)
 #include <emmintrin.h>
 #define RPNG_ENC_SSE2 1
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
