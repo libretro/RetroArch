@@ -72,8 +72,10 @@ int task_database_3ds_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize);
 int task_database_ciso_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize);
-int task_database_xbox_get_serial(const char *name, char *s, size_t len,
-      uint64_t *filesize);
+/* An Xbox or Xbox 360 serial for @name: with @disc that of the disc
+ * image's game, otherwise that of the executable or package it is */
+int task_database_xbox_get_serial(const char *name, bool disc, char *s,
+      size_t len, uint64_t *filesize);
 bool is_chd_file_cdi(const char *path);
 int task_database_chd_get_serial(const char *name, char *serial, size_t len,
       uint64_t *filesize);

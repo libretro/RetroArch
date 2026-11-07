@@ -1,15 +1,18 @@
-/* xdvdfs_test: makes up Xbox disc images and checks that formats/xdvdfs
- * finds their game partition, looks files up in their directory trees
- * and reads the title of their default.xbe.
+/* xdvdfs_test: makes up Xbox and Xbox 360 disc images and checks that
+ * formats/xdvdfs finds their game partition, looks files up in their
+ * directory trees and reads the title of the executable they boot -
+ * default.xbe or default.xex - and of an XEX or STFS package on its
+ * own.
  *
  * The images are a trimmed XISO and whole discs with the game
  * partition where XGD1, XGD2 and XGD3 keep it, held sparsely: a few
  * runs of octets, zeros elsewhere. Ranges are supplied short now and
  * then. Every octet the reader asks for is counted, and the counts are
  * checked to be exactly what an operation needs: an entry's head and
- * as much of its name as decides the order, the XBE's head, the title
- * ID - nothing read ahead. Broken trees, XBEs and supplies must fail
- * without hanging. */
+ * as much of its name as decides the order, an executable's head and
+ * the fields that lead to the title - nothing read ahead. A file that
+ * is no Xbox executable is told after its head alone. Broken trees,
+ * executables and supplies must fail without hanging. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,6 +71,16 @@ static uint8_t *at(image_t *im, uint64_t off)
 static void put(image_t *im, uint64_t off, const void *d, size_t n)
 {
    memcpy(at(im, off), d, n);
+}
+
+static void put_be32(image_t *im, uint64_t off, uint32_t v)
+{
+   uint8_t b[4];
+   b[0] = (uint8_t)(v >> 24);
+   b[1] = (uint8_t)(v >> 16);
+   b[2] = (uint8_t)(v >> 8);
+   b[3] = (uint8_t)v;
+   put(im, off, b, 4);
 }
 
 static void put32(image_t *im, uint64_t off, uint32_t v)
@@ -130,11 +143,36 @@ static void entry(image_t *im, uint64_t dir, uint32_t off, uint16_t l,
    put(im, dir + off + 14, name, strlen(name));
 }
 
+/* An XEX at @at: @n optional headers, the execution info's last,
+ * with @title, disc @disc of @discs */
+static void put_xex(image_t *im, uint64_t at, uint32_t n, uint32_t title,
+      uint8_t disc, uint8_t discs)
+{
+   uint32_t i;
+   uint32_t head = 24 + n * 8 + 32;
+   uint8_t  d[2];
+   put(im, at, "XEX2", 4);
+   put_be32(im, at + 8, head);
+   put_be32(im, at + 20, n);
+   for (i = 0; i + 1 < n; i++)
+   {
+      put_be32(im, at + 24 + i * 8, 0x00010000u + i);
+      put_be32(im, at + 24 + i * 8 + 4, 0x11111111u);
+   }
+   put_be32(im, at + 24 + i * 8, 0x00040006u);
+   put_be32(im, at + 24 + i * 8 + 4, head - 24);
+   put_be32(im, at + head - 24 + 12, title);
+   d[0] = disc;
+   d[1] = discs;
+   put(im, at + head - 24 + 18, d, 2);
+}
+
 /* The disc: a game partition at @base holding
  *    ALPHA.TXT  default.xbe  media/{a.bin, intro.wmv}  Zed
- * with default.xbe's title @title */
-static void make_disc(image_t *im, uint64_t base, uint64_t size,
-      uint32_t title)
+ * with default.xbe's title @title, or for an Xbox 360 disc default.xex
+ * in its place, disc 1 of 2 */
+static void make_disc_for(image_t *im, uint64_t base, uint64_t size,
+      uint32_t title, bool x360)
 {
    uint64_t root  = base + 33 * SECTOR;
    uint64_t media = base + 40 * SECTOR;
@@ -149,17 +187,29 @@ static void make_disc(image_t *im, uint64_t base, uint64_t size,
 
    /* default.xbe at 0, ALPHA.TXT at 28 left of it, media at 52 right
     * of it, Zed at 72 right of media */
-   entry(im, root, 0,  7, 13, 50, 0x1000, 0x20, "default.xbe");
+   entry(im, root, 0,  7, 13, 50, 0x1000, 0x20,
+         x360 ? "default.xex" : "default.xbe");
    entry(im, root, 28, 0, 0,  60, 5,      0x20, "ALPHA.TXT");
    entry(im, root, 52, 0, 18, 40, SECTOR, 0x10, "media");
    entry(im, root, 72, 0, 0,  61, 7,      0x20, "Zed");
    entry(im, media, 0,  0, 5, 62, 9,      0x20, "a.bin");
    entry(im, media, 20, 0, 0, 63, 0x777,  0x20, "intro.wmv");
 
+   if (x360)
+   {
+      put_xex(im, xbe, 3, title, 1, 2);
+      return;
+   }
    put(im, xbe, "XBEH", 4);
    put32(im, xbe + 0x104, 0x10000);
    put32(im, xbe + 0x118, 0x10000 + 0x178);
    put32(im, xbe + 0x178 + 8, title);
+}
+
+static void make_disc(image_t *im, uint64_t base, uint64_t size,
+      uint32_t title)
+{
+   make_disc_for(im, base, size, title, false);
 }
 
 static int open_image(image_t *im, xdvdfs_t **out)
@@ -184,14 +234,24 @@ static int lookup(image_t *im, xdvdfs_t *x, const char *path,
    return err;
 }
 
-static int title(image_t *im, xdvdfs_t *x, uint32_t *id)
+static int title_of(image_t *im, xdvdfs_t *x, const xdvdfs_extent_t *exe,
+      xdvdfs_title_t *t)
 {
    xdvdfs_request_t req;
    int err;
-   if ((err = xdvdfs_title_begin(x)) != XDVDFS_OK)
+   if ((err = xdvdfs_title_begin(x, exe)) != XDVDFS_OK)
       return err;
-   while ((err = xdvdfs_title_step(x, &req, id)) == XDVDFS_PENDING)
+   while ((err = xdvdfs_title_step(x, &req, t)) == XDVDFS_PENDING)
       xdvdfs_feed(x, pull(im, &req));
+   return err;
+}
+
+static int title(image_t *im, xdvdfs_t *x, uint32_t *id)
+{
+   xdvdfs_title_t t;
+   int err = title_of(im, x, NULL, &t);
+   if (err == XDVDFS_OK)
+      *id = t.platform == XDVDFS_XBOX ? t.id : 0;
    return err;
 }
 
@@ -217,9 +277,11 @@ static void disc_lane(uint64_t base, uint64_t size, const char *what)
       im.asked = 0;
       sprintf(name, "%s: title", what);
       check(title(&im, x, &id) == XDVDFS_OK && id == 0x4D530004u, name);
-      /* the root entry and "default.xbe", the XBE head, the ID */
+      /* default.xex looked for at the root entry and right of it,
+       * default.xbe found at the root entry, then the XBE's head, its
+       * base and certificate addresses, the ID */
       sprintf(name, "%s: title reads only what it needs", what);
-      check(pass || im.asked == 14 + 11 + 0x11C + 4, name);
+      check(pass || im.asked == 25 + 25 + 25 + 24 + 24 + 4, name);
 
       sprintf(name, "%s: nested lookup", what);
       check(   lookup(&im, x, "\\MEDIA/Intro.WMV", &ext) == XDVDFS_OK
@@ -243,6 +305,99 @@ static void disc_lane(uint64_t base, uint64_t size, const char *what)
    }
 }
 
+static void x360_lanes(void)
+{
+   image_t         im;
+   xdvdfs_t       *x;
+   xdvdfs_title_t  t;
+   xdvdfs_extent_t ext;
+   int             pass;
+
+   for (pass = 0; pass < 2; pass++)
+   {
+      make_disc_for(&im, 0xFD90000, 0xFD90000 + 0x100000, 0x41560817u, true);
+      im.shorten = pass == 1;
+      check(open_image(&im, &x) == XDVDFS_OK
+            && xdvdfs_partition(x) == 0xFD90000, "360 XGD2: opens");
+      im.asked = 0;
+      check(   title_of(&im, x, NULL, &t) == XDVDFS_OK
+            && t.id == 0x41560817u && t.platform == XDVDFS_XBOX360
+            && t.disc == 1 && t.discs == 2, "360 XGD2: title of default.xex");
+      /* default.xex at the root entry, the XEX's head, its three
+       * optional headers, the execution info */
+      check(pass || im.asked == 25 + 24 + 3 * 8 + 24,
+            "360 XGD2: title reads only what it needs");
+      xdvdfs_free(x);
+      image_free(&im);
+   }
+
+   /* an XEX whose execution info is past the first run of headers */
+   memset(&im, 0, sizeof(im));
+   im.size = 0x10000;
+   put_xex(&im, 0, 40, 0x4D5307E6u, 0, 0);
+   x = xdvdfs_new(im.size);
+   ext.offset = 0;
+   ext.size   = 0x10000;
+   im.asked   = 0;
+   check(   title_of(&im, x, &ext, &t) == XDVDFS_OK
+         && t.id == 0x4D5307E6u && t.platform == XDVDFS_XBOX360,
+         "XEX on its own, many optional headers");
+   check(im.asked == 24 + 40 * 8 + 24, "XEX on its own: headers once each");
+   xdvdfs_free(x);
+   image_free(&im);
+
+   /* an STFS package */
+   memset(&im, 0, sizeof(im));
+   im.size = 0x10000;
+   put(&im, 0, "LIVE", 4);
+   put_be32(&im, 0x360, 0x584108A1u);
+   {
+      uint8_t d[4] = { 2, 1, 2, 3 };
+      put(&im, 0x364, d, 4);
+   }
+   x = xdvdfs_new(im.size);
+   im.asked = 0;
+   check(   title_of(&im, x, &ext, &t) == XDVDFS_OK
+         && t.id == 0x584108A1u && t.disc == 2 && t.discs == 3
+         && im.asked == 24 + 8, "STFS package");
+   xdvdfs_free(x);
+   image_free(&im);
+
+   /* not an Xbox executable: an Atari 8-bit one */
+   memset(&im, 0, sizeof(im));
+   im.size = 0x1000;
+   {
+      static const uint8_t atari[6] = { 0xFF, 0xFF, 0x00, 0x20, 0xFF, 0x20 };
+      put(&im, 0, atari, sizeof(atari));
+   }
+   x = xdvdfs_new(im.size);
+   im.asked = 0;
+   check(   title_of(&im, x, &ext, &t) == XDVDFS_ERROR_NOT_FOUND
+         && im.asked == 24, "other executable told by its head");
+   xdvdfs_free(x);
+   image_free(&im);
+
+   /* an empty root: one sector of padding */
+   make_disc(&im, 0, 0x100000, 1);
+   {
+      uint8_t ff[64];
+      memset(ff, 0xFF, sizeof(ff));
+      put(&im, 33 * SECTOR, ff, sizeof(ff));
+   }
+   open_image(&im, &x);
+   check(title_of(&im, x, NULL, &t) == XDVDFS_ERROR_NOT_FOUND,
+         "empty root holds nothing");
+   xdvdfs_free(x);
+   image_free(&im);
+
+   /* a root too small to hold an entry is no partition */
+   make_disc(&im, 0, 0x100000, 1);
+   put32(&im, 32 * SECTOR + 0x18, 0);
+   check(open_image(&im, &x) == XDVDFS_ERROR_NOT_FOUND, "empty root size");
+   xdvdfs_free(x);
+   image_free(&im);
+}
+
 static void broken_lanes(void)
 {
    image_t         im;
@@ -261,9 +416,10 @@ static void broken_lanes(void)
    /* no magic anywhere */
    memset(&im, 0, sizeof(im));
    im.size = 0x20000000;
-   check(open_image(&im, &x) == XDVDFS_ERROR_NOT_FOUND && im.requests == 4,
+   check(open_image(&im, &x) == XDVDFS_ERROR_NOT_FOUND && im.requests == 6,
          "no partition: each place looked at once");
-   check(xdvdfs_title_begin(x) == XDVDFS_ERROR_STATE, "title before open");
+   check(xdvdfs_title_begin(x, NULL) == XDVDFS_ERROR_STATE,
+         "title before open");
    xdvdfs_free(x);
    image_free(&im);
 
@@ -289,7 +445,8 @@ static void broken_lanes(void)
    make_disc(&im, 0, 0x100000, 1);
    put(&im, 50 * SECTOR, "XBEX", 4);
    open_image(&im, &x);
-   check(title(&im, x, &id) == XDVDFS_ERROR_DATA, "bad XBE magic");
+   check(title(&im, x, &id) == XDVDFS_ERROR_NOT_FOUND,
+         "no executable's magic");
    put(&im, 50 * SECTOR, "XBEH", 4);
    put32(&im, 50 * SECTOR + 0x118, 0x10000 + 0x1000);
    check(title(&im, x, &id) == XDVDFS_ERROR_DATA, "certificate outside");
@@ -325,6 +482,8 @@ int main(void)
    disc_lane(0x18300000, 0x18300000 + 0x100000, "XGD1");
    disc_lane(0xFD90000,  0xFD90000 + 0x100000,  "XGD2");
    disc_lane(0x2080000,  0x2080000 + 0x100000,  "XGD3");
+   disc_lane(0xFB20,     0xFB20 + 0x100000,     "0xFB20");
+   x360_lanes();
    broken_lanes();
 
    if (failures)

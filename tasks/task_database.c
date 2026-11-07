@@ -1210,6 +1210,10 @@ static enum msg_file_type extension_to_file_type(const char *ext)
       return FILE_TYPE_CISO;
    if (string_is_equal(ext_lower, "xiso"))
       return FILE_TYPE_XISO;
+   if (string_is_equal(ext_lower, "xex"))
+      return FILE_TYPE_XEX;
+   if (string_is_equal(ext_lower, "xcp"))
+      return FILE_TYPE_XCP;
    if (string_is_equal(ext_lower, "pbp"))
       return FILE_TYPE_PBP;
    if (string_is_equal(ext_lower, "lutro"))
@@ -2180,14 +2184,28 @@ static int task_database_iterate_playlist(
           * so other discs read nothing more for it. Its size says
           * nothing: an XISO is trimmed. */
          if (     !intfstream_file_get_serial(name, 0, INT64_MAX, db_state->serial, sizeof(db_state->serial),&db_state->size)
-               && task_database_xbox_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
+               && task_database_xbox_get_serial(name, true, db_state->serial, sizeof(db_state->serial),&db_state->size))
             db->type         =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_XISO:
          db_state->serial[0] = '\0';
-         task_database_xbox_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size);
+         task_database_xbox_get_serial(name, true, db_state->serial, sizeof(db_state->serial),&db_state->size);
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
+      /* An Xbox 360 executable or package; anything else by these names
+       * (an Atari 8-bit .xex) goes on to the CRC lookup */
+      case FILE_TYPE_XEX:
+      case FILE_TYPE_XCP:
+         db_state->serial[0] = '\0';
+         if (task_database_xbox_get_serial(name, false, db_state->serial, sizeof(db_state->serial),&db_state->size))
+         {
+            db->type         =  DATABASE_TYPE_SERIAL_LOOKUP;
+            break;
+         }
+         db_state->serial[0] = '\0';
+         db->type            = DATABASE_TYPE_CRC_LOOKUP;
+         return task_database_crc_begin(db_state, name,
+               TASK_DATABASE_CRC_FILE, DB_CRC_DEST_FILE, DB_CRC_FAIL_ERROR);
       case FILE_TYPE_CHD:
          db_state->serial[0] = '\0';
          if (task_database_chd_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))

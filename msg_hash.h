@@ -248,6 +248,8 @@ enum msg_file_type
    FILE_TYPE_WIA,
    FILE_TYPE_CISO,
    FILE_TYPE_XISO,
+   FILE_TYPE_XEX,
+   FILE_TYPE_XCP,
 
    FILE_TYPE_DIRECT_LOAD,
 

@@ -30,10 +30,12 @@
 
 RETRO_BEGIN_DECLS
 
-/* XDVDFS, the file system of Xbox game discs, and the title of the
- * XBE a disc boots. The game partition is found where a whole disc
- * image keeps it (XGD1, XGD2, XGD3) or at the start of the image, as a
- * trimmed XISO has it.
+/* XDVDFS (GDFX), the file system of Xbox and Xbox 360 game discs, and
+ * the title of the executable a disc boots: default.xex on an Xbox 360
+ * disc, default.xbe on an Xbox one. The game partition is found where a
+ * whole disc image keeps it (XGD1, XGD2, XGD3) or at the start of the
+ * image, as a trimmed XISO has it. A title is also read from an XEX,
+ * an XBE or an STFS package (CON, LIVE, PIRS) on its own.
  *
  * The reader does no file I/O of its own and holds no file. Each range
  * of the image it needs is described to the caller as a request, which
@@ -59,6 +61,9 @@ RETRO_BEGIN_DECLS
 #define XDVDFS_ERROR_STATE    (-4)
 #define XDVDFS_ERROR_NOT_FOUND (-5)
 
+#define XDVDFS_XBOX    1
+#define XDVDFS_XBOX360 2
+
 typedef struct xdvdfs xdvdfs_t;
 
 /**
@@ -80,6 +85,14 @@ typedef struct xdvdfs_extent
    uint64_t offset;
    uint32_t size;
 } xdvdfs_extent_t;
+
+typedef struct xdvdfs_title
+{
+   uint32_t id;
+   uint8_t  platform;   /* XDVDFS_XBOX or XDVDFS_XBOX360 */
+   uint8_t  disc;       /* of the set, from 1; 0 when not said */
+   uint8_t  discs;      /* in the set; 0 when not said */
+} xdvdfs_title_t;
 
 /* @image_size: the image's size, so a partition past its end is not
  * looked for */
@@ -131,19 +144,29 @@ int xdvdfs_lookup_begin(xdvdfs_t *x, const char *path);
 int xdvdfs_lookup_step(xdvdfs_t *x, xdvdfs_request_t *req,
       xdvdfs_extent_t *out);
 
-/* Arms a read of the title ID of the disc's default.xbe */
-int xdvdfs_title_begin(xdvdfs_t *x);
+/**
+ * xdvdfs_title_begin:
+ * @exe : the executable or package to read, or NULL for the one the
+ *        open disc boots
+ *
+ * Arms a read of a title, abandoning one in progress. With @exe the
+ * image need not be open.
+ *
+ * Returns: XDVDFS_OK, or XDVDFS_ERROR_STATE with no @exe before the
+ * image is open.
+ **/
+int xdvdfs_title_begin(xdvdfs_t *x, const xdvdfs_extent_t *exe);
 
 /**
  * xdvdfs_title_step:
  *
- * Returns: XDVDFS_OK with @title_id filled in, XDVDFS_PENDING with
- * @req filled in when it needs a range of the image,
- * XDVDFS_ERROR_NOT_FOUND without a default.xbe, or another negative
- * code.
+ * Returns: XDVDFS_OK with @title filled in, XDVDFS_PENDING with @req
+ * filled in when it needs a range of the image,
+ * XDVDFS_ERROR_NOT_FOUND when the disc boots neither executable or
+ * @exe is none of them, or another negative code.
  **/
 int xdvdfs_title_step(xdvdfs_t *x, xdvdfs_request_t *req,
-      uint32_t *title_id);
+      xdvdfs_title_t *title);
 
 RETRO_END_DECLS
 

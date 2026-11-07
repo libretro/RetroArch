@@ -2213,7 +2213,7 @@ bool is_chd_file_cdi(const char *path)
    return is_cdi;
 }
 
-static size_t detect_xbox_game(intfstream_t *fd, uint64_t pos,
+static size_t detect_xbox_game(intfstream_t *fd, uint64_t pos, bool disc,
       char *s, size_t len);
 
 int task_database_chd_get_serial(const char *name, char *serial,
@@ -2237,7 +2237,7 @@ int task_database_chd_get_serial(const char *name, char *serial,
    /* An Xbox DVD is looked for only once nothing else has been found,
     * so other discs read nothing more for it */
    if (!result)
-      result = detect_xbox_game(fd, ~(uint64_t)0, serial, len) != 0;
+      result = detect_xbox_game(fd, ~(uint64_t)0, true, serial, len) != 0;
    intfstream_close(fd);
    free(fd);
    return result;
@@ -2326,20 +2326,22 @@ end:
    return rv;
 }
 
-/* The Redump serial of an Xbox title: the publisher's two letters and
- * the title's number, "MS-004" for 0x4D530004 */
-static size_t xbox_title_serial(uint32_t title_id, char *s, size_t len)
+/* The Redump serial of an Xbox or Xbox 360 title: the publisher's two
+ * letters and the title's number, "MS-004" for 0x4D530004; an Xbox
+ * 360 disc of a set adds its place in it from 0, "FO-2046-1" */
+static size_t xbox_title_serial(const xdvdfs_title_t *t, char *s,
+      size_t len)
 {
-   char     serial[16];
+   char     serial[24];
    char     digits[8];
-   unsigned n    = title_id & 0xFFFF;
+   unsigned n    = t->id & 0xFFFF;
    size_t   nd   = 0;
    size_t   _len = 0;
    int      i;
 
    for (i = 0; i < 2; i++)
    {
-      char c = (char)(title_id >> (24 - 8 * i));
+      char c = (char)(t->id >> (24 - 8 * i));
       if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
          return 0;
       serial[_len++] = c;
@@ -2354,44 +2356,63 @@ static size_t xbox_title_serial(uint32_t title_id, char *s, size_t len)
       digits[nd++] = '0';
    while (nd)
       serial[_len++] = digits[--nd];
+   if (     t->platform == XDVDFS_XBOX360
+         && t->discs > 1 && t->disc >= 1 && t->disc <= t->discs)
+   {
+      n = t->disc - 1u;
+      serial[_len++] = '-';
+      do
+      {
+         digits[nd++] = (char)('0' + n % 10);
+         n           /= 10;
+      } while (n);
+      while (nd)
+         serial[_len++] = digits[--nd];
+   }
    serial[_len] = '\0';
    return strlcpy(s, serial, len);
 }
 
-/* An Xbox disc's serial, from the title of its default.xbe. @fd holds
- * the disc image, @pos where the stream stands in it. */
-static size_t detect_xbox_game(intfstream_t *fd, uint64_t pos,
+/* An Xbox or Xbox 360 serial from the title of the executable @fd
+ * holds, or with @disc of the one the disc image boots. @pos is where
+ * the stream stands. */
+static size_t detect_xbox_game(intfstream_t *fd, uint64_t pos, bool disc,
       char *s, size_t len)
 {
    task_database_src_t src;
    xdvdfs_request_t    req;
-   uint32_t            title_id = 0;
-   size_t              _len     = 0;
-   int                 err;
-   int64_t             size     = intfstream_get_size(fd);
+   xdvdfs_extent_t     exe;
+   xdvdfs_title_t      title;
+   size_t              _len = 0;
+   int                 err  = XDVDFS_OK;
+   int64_t             size = intfstream_get_size(fd);
    xdvdfs_t           *x;
 
    if (size <= 0 || !(x = xdvdfs_new((uint64_t)size)))
       return 0;
-   src.fd  = fd;
-   src.pos = pos;
-   while ((err = xdvdfs_open_step(x, &req)) == XDVDFS_PENDING)
-      xdvdfs_feed(x, task_database_pull(&src, req.offset, req.dst,
-               req.length));
-   if (err == XDVDFS_OK && xdvdfs_title_begin(x) == XDVDFS_OK)
+   src.fd     = fd;
+   src.pos    = pos;
+   exe.offset = 0;
+   exe.size   = size > 0xFFFFFFFF ? 0xFFFFFFFFu : (uint32_t)size;
+   if (disc)
+      while ((err = xdvdfs_open_step(x, &req)) == XDVDFS_PENDING)
+         xdvdfs_feed(x, task_database_pull(&src, req.offset, req.dst,
+                  req.length));
+   if (     err == XDVDFS_OK
+         && xdvdfs_title_begin(x, disc ? NULL : &exe) == XDVDFS_OK)
    {
-      while ((err = xdvdfs_title_step(x, &req, &title_id)) == XDVDFS_PENDING)
+      while ((err = xdvdfs_title_step(x, &req, &title)) == XDVDFS_PENDING)
          xdvdfs_feed(x, task_database_pull(&src, req.offset, req.dst,
                   req.length));
       if (err == XDVDFS_OK)
-         _len = xbox_title_serial(title_id, s, len);
+         _len = xbox_title_serial(&title, s, len);
    }
    xdvdfs_free(x);
    return _len;
 }
 
-int task_database_xbox_get_serial(const char *name, char *s, size_t len,
-   uint64_t *filesize)
+int task_database_xbox_get_serial(const char *name, bool disc, char *s,
+   size_t len, uint64_t *filesize)
 {
    size_t _len;
    /* The descriptor path: the few ranges the probe needs land where
@@ -2403,7 +2424,7 @@ int task_database_xbox_get_serial(const char *name, char *s, size_t len,
    if (!fd)
       return 0;
    *filesize = (uint64_t)intfstream_get_size(fd);
-   _len      = detect_xbox_game(fd, 0, s, len);
+   _len      = detect_xbox_game(fd, 0, disc, s, len);
    intfstream_close(fd);
    free(fd);
    return _len != 0;
