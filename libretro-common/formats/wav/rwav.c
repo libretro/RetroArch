@@ -555,6 +555,30 @@ static const short rwav_ms_adapt[16] = {
    230,230,230,230,307,409,512,614,768,614,512,409,307,230,230,230
 };
 
+/* MS ADPCM's step, kept inside an int.  The file states each block's
+ * opening delta, and a run of large nibbles grows it by 768/256 a
+ * sample without bound, so a crafted block overflows the multiply
+ * within a few dozen samples; the cap is the largest delta that the
+ * next adaptation and the nibble times delta (at most 8x) still hold,
+ * as reference decoders cap it.  No real encoder gets near it: past
+ * 32767 every sample already clamps. */
+#define RWAV_MS_DELTA_MAX (0x7FFFFFFF / 768)
+static int rwav_ms_adapt_delta(int nib, int delta)
+{
+   if (delta > RWAV_MS_DELTA_MAX)
+      delta = RWAV_MS_DELTA_MAX;
+   delta = (rwav_ms_adapt[nib] * delta) / 256;
+   return (delta < 16) ? 16 : delta;
+}
+
+/* The prediction from the two previous samples.  Samples are 16-bit
+ * but the coefficients are the file's, so two products at -32768 each
+ * sum to 2^31: summed wide, then divided as before. */
+static int rwav_ms_predict(int s1, int co1, int s2, int co2)
+{
+   return (int)(((int64_t)s1 * co1 + (int64_t)s2 * co2) / 256);
+}
+
 /* Decode one block into 'out', which must hold samplesperblock frames.
  * Returns frames produced, 0 on a malformed block. */
 /* Emit only the frames in [first, first + count) of the block, written
@@ -668,14 +692,12 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
             unsigned byte = b[off];
             int      nib  = (c & 1) ? (byte & 0x0f) : (byte >> 4);
             int      sn   = (nib & 8) ? nib - 16 : nib;
-            int      p    = (s1[c] * co1[c] + s2[c] * co2[c]) / 256
+            int      p    = rwav_ms_predict(s1[c], co1[c], s2[c], co2[c])
                           + sn * delta[c];
             p        = rwav_clamp16(p);
             s2[c]    = s1[c];
             s1[c]    = p;
-            delta[c] = (rwav_ms_adapt[nib] * delta[c]) / 256;
-            if (delta[c] < 16)
-               delta[c] = 16;
+            delta[c] = rwav_ms_adapt_delta(nib, delta[c]);
             RWAV_PUT(i, c, p);
             if (c & 1)
                off++;
@@ -690,14 +712,12 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
                unsigned byte = b[off];
                int nib = byte & 0x0f;
                int sn  = (nib & 8) ? nib - 16 : nib;
-               int p   = (s1[0] * co1[0] + s2[0] * co2[0]) / 256
+               int p   = rwav_ms_predict(s1[0], co1[0], s2[0], co2[0])
                        + sn * delta[0];
                p        = rwav_clamp16(p);
                s2[0]    = s1[0];
                s1[0]    = p;
-               delta[0] = (rwav_ms_adapt[nib] * delta[0]) / 256;
-               if (delta[0] < 16)
-                  delta[0] = 16;
+               delta[0] = rwav_ms_adapt_delta(nib, delta[0]);
                RWAV_PUT(i, 0, p);
                i++;
             }

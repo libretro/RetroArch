@@ -2516,6 +2516,43 @@ START_TEST (test_rwav_adpcm_block_frames_bound)
 }
 END_TEST
 
+/* MS ADPCM grows its step by up to 768/256 a sample.  A block of the
+ * largest nibbles drives it far past any real file's within a few
+ * dozen samples; decoding one must stay defined (UBSan watches the
+ * multiplies) and keep clamping, not wrap back to small values. */
+START_TEST (test_rwav_ms_adpcm_delta_growth)
+{
+   rwav_t   h;
+   size_t   i, frames, data_at;
+   short   *out;
+   uint8_t *buf = (uint8_t*)malloc(sizeof(wav_ms));
+   ck_assert(buf != NULL);
+   memcpy(buf, wav_ms, sizeof(wav_ms));
+   ck_assert_int_eq(rwav_parse(&h, buf, sizeof(wav_ms)),
+         RWAV_ITERATE_DONE);
+   data_at = h.dataoffset;
+   /* every block: predictor 0, the largest opening delta, then nibbles
+    * of 7 (+7, the second-largest adaptation) */
+   for (i = 0; i + h.blockalign <= h.subchunk2size; i += h.blockalign)
+   {
+      uint8_t *b = buf + data_at + i;
+      b[0] = 0;
+      b[1] = 0xFF;
+      b[2] = 0x7F;
+      memset(b + 7, 0x77, h.blockalign - 7);
+   }
+   out = (short*)malloc(h.numsamples * h.numchannels * sizeof(short));
+   ck_assert(out != NULL);
+   frames = rwav_decode_s16(&h, buf, 0, h.numsamples, out);
+   ck_assert_uint_eq(frames, h.numsamples);
+   /* once the step is large every +7 saturates: the block's last
+    * sample is pinned at the top */
+   ck_assert_int_eq(out[h.samplesperblock - 1], 32767);
+   free(out);
+   free(buf);
+}
+END_TEST
+
 static Suite *rwav_suite(void)
 {
    Suite *s       = suite_create(SUITE_NAME);
@@ -2526,6 +2563,7 @@ static Suite *rwav_suite(void)
    tcase_add_test(tc_core, test_rwav_windowed_equals_whole);
    tcase_add_test(tc_core, test_rwav_truncation_robustness);
    tcase_add_test(tc_core, test_rwav_adpcm_block_frames_bound);
+   tcase_add_test(tc_core, test_rwav_ms_adpcm_delta_growth);
    suite_add_tcase(s, tc_core);
    return s;
 }
