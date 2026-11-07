@@ -148,7 +148,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL allocate(VkDevice d,
          plan.dedicated || failed(6) || (!plan.flags && failed(7));
    assert(d == device && !a && live_image
          && info->sType == VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO
-         && info->allocationSize == 8192 && info->memoryTypeIndex == 1);
+         && info->allocationSize == (failed(11) ? 16384u : 8192u)
+         && info->memoryTypeIndex == 1);
    assert(import && import->sType == VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR
          && import->handleType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT
          && import->fd == (int)current + 8 && fds[current]);
@@ -332,7 +333,8 @@ int main(void)
                reset(disjoint, count);
                fault     = kind;
                fail_slot = slot;
-               expected  = kind == 7 || (kind == 6 && !disjoint);
+               expected  = kind == 7 || kind == 11
+                     || (kind == 6 && !disjoint);
                assert(create() == expected);
                if (expected)
                   vulkan_prime_image_destroy(device, &ops, &image);

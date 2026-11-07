@@ -105,7 +105,7 @@ static bool vulkan_prime_image_memory(VkDevice device,
       return false;
    memset(&properties, 0, sizeof(properties));
    properties.sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR;
-   if (!ops->size(fd, &size) || size != plane->allocation_size
+   if (!ops->size(fd, &size) || size < plane->allocation_size
          || size < requirements.memoryRequirements.size
          || ops->fd_properties(device,
                   VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT, fd,
