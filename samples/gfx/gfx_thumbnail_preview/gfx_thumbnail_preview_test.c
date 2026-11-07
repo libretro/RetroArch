@@ -384,12 +384,19 @@ static void env_set(const char *name, const char *value)
  * behind, which ASan's leak check holds to. */
 extern int stub_playlist_entry_set(const char *savestate_dir,
       const char *entry_path);
+extern void stub_dir_savestate_set(const char *d);
 static void lane_savestate_thumbnail_path(void)
 {
    int  i;
    int  wrong = 0;
    char path[512];
-   int  ok    = stub_playlist_entry_set("/states", "/roms/Some Game.zip");
+   int  ok;
+
+   /* The configured folder is the base, not the current one, which
+    * still holds where the last content's states were redirected */
+   stub_dir_savestate_set(".");
+   ok = stub_playlist_entry_set("/states/Other/othercore",
+         "/roms/Some Game.zip");
 
    check("savestate path", "the playlist entry is laid out", ok);
    for (i = 0; ok && i < 64; i++)
@@ -397,8 +404,8 @@ static void lane_savestate_thumbnail_path(void)
       gfx_savestate_thumbnail_get_path(path, sizeof(path),
             "ignored", (i & 1) ? 3 : 0);
       if (strcmp(path, (i & 1)
-               ? "/states/Some Game.state3.png"
-               : "/states/Some Game.state.png"))
+               ? "./Some Game.state3.png"
+               : "./Some Game.state.png"))
       {
          if (!wrong++)
             printf("      savestate thumbnail path: %s\n", path);
@@ -406,6 +413,14 @@ static void lane_savestate_thumbnail_path(void)
    }
    check("savestate path", "built from the entry in the state folder",
          ok && !wrong);
+
+   /* A configured folder that is missing: states sit beside the
+    * content, named after it */
+   stub_dir_savestate_set("./no-such-state-folder");
+   gfx_savestate_thumbnail_get_path(path, sizeof(path), "ignored", 0);
+   check("savestate path", "beside the content when the folder is missing",
+         ok && !strcmp(path, "/roms/Some Game.state.png"));
+   stub_dir_savestate_set(NULL);
    stub_playlist_entry_set(NULL, NULL);
 }
 

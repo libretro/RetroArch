@@ -213,6 +213,11 @@ int stub_playlist_entry_set(const char *savestate_dir, const char *entry_path)
          savestate_dir, entry_path);
    return g_playlist_entry != NULL;
 }
+/* The configured savestate folder (RARCH_DIR_SAVESTATE) */
+static char g_dir_savestate[256];
+void stub_dir_savestate_set(const char *d)
+{ snprintf(g_dir_savestate, sizeof(g_dir_savestate), "%s", d ? d : ""); }
+char *dir_get_ptr(unsigned t) { (void)t; return g_dir_savestate; }
 void runloop_path_set_redirect(void *a, char *b, char *c)
 { (void)a; (void)b; (void)c; }
 void dir_set(unsigned t, const char *p) { (void)t; (void)p; }

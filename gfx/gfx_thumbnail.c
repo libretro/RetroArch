@@ -3527,12 +3527,17 @@ void gfx_savestate_thumbnail_get_path(
          char *new_savestate_dir = pb ? pb->new_savestate_dir : NULL;
          settings_t *settings    = config_get_ptr();
          const char *core        = runloop_st->system.info.library_name;
+         bool sorted             = false;
          char *delim;
 
          if (!pb)
             return;
 
-         strlcpy(new_savestate_dir, runloop_st->savestate_dir, PATH_MAX_LENGTH);
+         /* The configured folder, as a content load starts from: the
+          * current one is whatever the last content was redirected to,
+          * or empty when none has run. */
+         strlcpy(new_savestate_dir, dir_get_ptr(RARCH_DIR_SAVESTATE),
+               PATH_MAX_LENGTH);
 
          fill_pathname_expand_special(new_path, entry->path, PATH_MAX_LENGTH);
          if ((delim = (char*)path_get_archive_delim(new_path)))
@@ -3554,7 +3559,8 @@ void gfx_savestate_thumbnail_get_path(
 
          _len = strcspn(new_path, "/\\");
 
-         if (     core && *core
+         if (     *new_savestate_dir
+               && core && *core
                && !string_is_equal(core, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
                && !(   settings->bools.sort_savestates_by_content_enable
                     && _len && new_path[_len - 1] == ':'
@@ -3569,7 +3575,14 @@ void gfx_savestate_thumbnail_get_path(
             if (settings->bools.sort_savestates_enable)
                fill_pathname_join(new_savestate_dir, new_savestate_dir,
                      core, PATH_MAX_LENGTH);
+            sorted =    settings->bools.sort_savestates_enable
+                     || settings->bools.sort_savestates_by_content_enable;
          }
+
+         /* A load creates a sorted folder; an unsorted one that is
+          * missing leaves states named after the content, beside it */
+         if (!sorted && !path_is_directory(new_savestate_dir))
+            fill_pathname_basedir(new_savestate_dir, new_path, PATH_MAX_LENGTH);
 
          fill_pathname_join_special(new_path,
                new_savestate_dir, entry_basename, PATH_MAX_LENGTH);
