@@ -112,8 +112,10 @@ static int der_read_uint(struct der *d, const uint8_t **val, size_t *val_len)
       return -1;
    if (**val & 0x80)
       return -1;   /* negative */
-   while (*val_len > 1 && **val == 0)
+   if (*val_len > 1 && **val == 0)
    {
+      if (!((*val)[1] & 0x80))
+         return -1;   /* not minimal: not DER */
       (*val)++;
       (*val_len)--;
    }
@@ -662,6 +664,7 @@ int x509_verify_ecdsa_digest(const struct x509_cert *key,
    d.p   = sig;
    d.end = sig + sig_len;
    if (der_enter(&d, DER_SEQUENCE, &sv) != 0
+         || d.p != d.end
          || der_read_uint(&sv, &r, &rl) != 0
          || der_read_uint(&sv, &s, &sl) != 0
          || rl > n || sl > n || sv.p != sv.end)
