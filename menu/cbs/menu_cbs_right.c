@@ -237,6 +237,9 @@ static int action_right_scroll(unsigned type, const char *label,
    unsigned fast_scroll_speed = 10 * scroll_speed;
    size_t entries_end         = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
 
+   if (!config_get_ptr()->bools.menu_scroll_quick)
+      return 0;
+
    if (selection + fast_scroll_speed < entries_end)
    {
       size_t idx             = selection + fast_scroll_speed;
