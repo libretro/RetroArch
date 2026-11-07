@@ -10,7 +10,8 @@
  * a time and for each name only as far as it can match, exactly that
  * many octets; a read of a block kept as it is lands in the read's own
  * destination; a compressed block is fetched once for the partial
- * reads that follow it. A footer that is not one, a size that
+ * reads that follow it. A directory is listed in the archive's order,
+ * each name read whole. A footer that is not one, a size that
  * disagrees and a block that does not decode must fail. */
 
 #include <stdio.h>
@@ -325,6 +326,73 @@ static void lookup_lane(void)
    free(f.data);
 }
 
+/* Lists @path, checking each entry against @names; returns how many
+ * matched in order, or -1 when the listing fails */
+static int list(file_t *f, zar_t *z, const char *path,
+      const char *const *names, const int *dirs, int n)
+{
+   zar_request_t req;
+   zar_dirent_t  ent;
+   int           err, i = 0;
+   if (zar_dir_begin(z, path) != ZAR_OK)
+      return -1;
+   for (;;)
+   {
+      while ((err = zar_dir_step(z, &req, &ent)) == ZAR_PENDING)
+         zar_feed(z, pull(f, &req));
+      if (err != ZAR_OK)
+         break;
+      if (     i >= n || strcmp(ent.name, names[i])
+            || ent.len != strlen(names[i]) || !ent.is_dir != !dirs[i])
+         return -1;
+      i++;
+   }
+   return err == ZAR_END ? i : -1;
+}
+
+static void list_lane(void)
+{
+   static const char *const media[]  = { "a.bin", "intro.wmv" };
+   static const int         mdirs[]  = { 0, 0 };
+   const char               *root[FILLERS + 2];
+   int                       rdirs[FILLERS + 2];
+   char                      fill[FILLERS][16];
+   file_t     f;
+   zar_t     *z;
+   zar_file_t zf;
+   int        i, pass;
+
+   for (i = 0; i < FILLERS; i++)
+   {
+      sprintf(fill[i], "file%02u.bin", (unsigned)i);
+      root[i]  = fill[i];
+      rdirs[i] = 0;
+   }
+   root[FILLERS]      = "media";
+   rdirs[FILLERS]     = 1;
+   root[FILLERS + 1]  = "default.xex";
+   rdirs[FILLERS + 1] = 0;
+
+   for (pass = 0; pass < 2; pass++)
+   {
+      make_archive(&f, -1);
+      f.shorten = pass == 1;
+      open_zar(&f, &z);
+      check(list(&f, z, "", root, rdirs, FILLERS + 2) == FILLERS + 2,
+            "the root, in order");
+      check(list(&f, z, "\\MEDIA\\", media, mdirs, 2) == 2,
+            "a directory, in order");
+      check(   list(&f, z, "nope", media, mdirs, 2) == -1
+            && list(&f, z, "default.xex", media, mdirs, 2) == -1,
+            "a missing directory and a file are not listed");
+      /* a lookup after a listing */
+      check(   lookup(&f, z, "media/a.bin", &zf) == ZAR_OK
+            && zf.size == 5, "lookup after a listing");
+      zar_free(z);
+      free(f.data);
+   }
+}
+
 static void read_lane(void)
 {
    file_t     f;
@@ -433,6 +501,7 @@ static void broken_lanes(void)
 int main(void)
 {
    lookup_lane();
+   list_lane();
    read_lane();
    broken_lanes();
    free(stream);

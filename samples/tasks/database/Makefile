@@ -105,6 +105,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/formats/ciso/ciso.c \
 	$(LIBRETRO_COMM_DIR)/formats/xdvdfs/xdvdfs.c \
 	$(LIBRETRO_COMM_DIR)/formats/zar/zar.c \
+	$(LIBRETRO_COMM_DIR)/formats/wux/wux.c \
 	$(LIBRETRO_COMM_DIR)/formats/m3u/rm3u.c \
 	$(LIBRETRO_COMM_DIR)/formats/logiqx_dat/logiqx_dat.c \
 	$(CORE_DIR)/libretro-db/bintree.c \

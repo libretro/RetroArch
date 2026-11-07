@@ -237,6 +237,7 @@ jobs:
             rvz_test
             ciso_test
             xdvdfs_test
+            wux_test
             zar_test
             filestream_printf_test
             strlcpy_append_test

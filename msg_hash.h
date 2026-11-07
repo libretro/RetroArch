@@ -251,6 +251,8 @@ enum msg_file_type
    FILE_TYPE_XEX,
    FILE_TYPE_XCP,
    FILE_TYPE_ZAR,
+   FILE_TYPE_WUD,
+   FILE_TYPE_WUA,
 
    FILE_TYPE_DIRECT_LOAD,
 

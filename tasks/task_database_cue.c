@@ -30,6 +30,7 @@
 #include <formats/ciso.h>
 #include <formats/xdvdfs.h>
 #include <formats/zar.h>
+#include <formats/wux.h>
 #include <string/stdstring.h>
 #include "task_database_cue.h"
 
@@ -2511,6 +2512,223 @@ end:
    intfstream_close(fd);
    free(fd);
    return _len != 0;
+}
+
+/* A Wii U product code's four characters, from "WUP-?-" and them;
+ * @code gets them, terminated */
+static bool wiiu_product_code(const uint8_t *p, size_t n, char *code)
+{
+   size_t i;
+   if (     n < 10
+         || p[0] != 'W' || p[1] != 'U' || p[2] != 'P' || p[3] != '-'
+         || p[4] < 'A'  || p[4] > 'Z' || p[5] != '-')
+      return false;
+   for (i = 0; i < 4; i++)
+   {
+      uint8_t c = p[6 + i];
+      if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
+         return false;
+      code[i] = (char)c;
+   }
+   code[4] = '\0';
+   return true;
+}
+
+/* The disc header a Wii U product code is read from */
+#define WIIU_HEAD 10
+
+int task_database_wiiu_get_serial(const char *name, char *s, size_t len,
+   uint64_t *filesize)
+{
+   task_database_src_t src;
+   wux_request_t       req;
+   uint8_t             head[WIIU_HEAD];
+   char                code[5];
+   size_t              got;
+   int                 err;
+   int                 rv = 0;
+   int64_t             size;
+   wux_t              *w  = NULL;
+   /* The descriptor path: the few octets the probe needs land where
+    * it asks */
+   intfstream_t       *fd = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+
+   if (!fd)
+      return 0;
+   size      = intfstream_get_size(fd);
+   *filesize = (uint64_t)size;
+   src.fd    = fd;
+   src.pos   = 0;
+   if (size < WIIU_HEAD)
+      goto end;
+   for (got = 0; got < WIIU_HEAD; )
+   {
+      size_t n = task_database_pull(&src, got, head + got, WIIU_HEAD - got);
+      if (!n)
+         goto end;
+      got += n;
+   }
+
+   /* A WUX: the same octets of the disc it stands for */
+   if (wux_is_wux(head))
+   {
+      if (!(w = wux_new((uint64_t)size)))
+         goto end;
+      while ((err = wux_open_step(w, &req)) == WUX_PENDING)
+         wux_feed(w, task_database_pull(&src, req.offset, req.dst,
+                  req.length));
+      if (     err != WUX_OK
+            || wux_read_begin(w, 0, head, WIIU_HEAD) != WUX_OK)
+         goto end;
+      while ((err = wux_read_step(w, &req)) == WUX_PENDING)
+         wux_feed(w, task_database_pull(&src, req.offset, req.dst,
+                  req.length));
+      if (err != WUX_OK || wux_read_progress(w) != WIIU_HEAD)
+         goto end;
+   }
+
+   /* a disc says "WUP-P-" */
+   if (head[4] == 'P' && wiiu_product_code(head, WIIU_HEAD, code))
+      rv = strlcpy(s, code, len) < len;
+
+end:
+   wux_free(w);
+   intfstream_close(fd);
+   free(fd);
+   return rv;
+}
+
+/* The text of the first <@tag> element of @xml, which is terminated;
+ * NULL when there is none. *@n gets its length. */
+static const char *wiiu_xml_value(const char *xml, const char *tag,
+      size_t *n)
+{
+   size_t      tlen = strlen(tag);
+   const char *p    = xml;
+   while ((p = strchr(p, '<')))
+   {
+      const char *v;
+      p++;
+      if (strncmp(p, tag, tlen) || (p[tlen] != '>' && p[tlen] != ' '))
+         continue;
+      if (!(v = strchr(p + tlen, '>')))
+         return NULL;
+      v++;
+      for (*n = 0; v[*n] && v[*n] != '<'; (*n)++) { }
+      return v[*n] ? v : NULL;
+   }
+   return NULL;
+}
+
+/* meta.xml's head, which names the product and company first */
+#define WIIU_META_HEAD 2048
+
+int task_database_wua_get_serial(const char *name, char *s, size_t len,
+   uint64_t *filesize, char *maker)
+{
+   task_database_zar_src_t zs;
+   zar_request_t           req;
+   zar_dirent_t            ent;
+   char                    path[64];
+   char                    code[5];
+   char                   *xml = NULL;
+   const char             *v;
+   size_t                  n;
+   int                     err;
+   int                     rv   = 0;
+   int64_t                 size;
+   zar_t                  *z    = NULL;
+   /* The descriptor path: each range lands where the reader asks */
+   intfstream_t           *fd   = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+
+   if (!fd)
+      return 0;
+   maker[0]   = '\0';
+   path[0]    = '\0';
+   size       = intfstream_get_size(fd);
+   *filesize  = (uint64_t)size;
+   zs.src.fd  = fd;
+   zs.src.pos = 0;
+   if (size <= 0 || !(z = zar_new((uint64_t)size)))
+      goto end;
+   zs.z = z;
+
+   while ((err = zar_open_step(z, &req)) == ZAR_PENDING)
+      zar_feed(z, task_database_pull(&zs.src, req.offset, req.dst,
+               req.length));
+   if (err != ZAR_OK || zar_dir_begin(z, "") != ZAR_OK)
+      goto end;
+
+   /* A title's directory is its ID, 16 hex digits, then "_v" and its
+    * version. The first base title (00050000...) is the game; any
+    * other title stands in when there is none, as an update or the
+    * content of one names the same product. */
+   for (;;)
+   {
+      size_t i;
+      while ((err = zar_dir_step(z, &req, &ent)) == ZAR_PENDING)
+         zar_feed(z, task_database_pull(&zs.src, req.offset, req.dst,
+                  req.length));
+      if (err != ZAR_OK)
+         break;
+      if (     !ent.is_dir || ent.len < 18 || ent.len > 40
+            || ent.name[16] != '_' || (ent.name[17] | 0x20) != 'v')
+         continue;
+      for (i = 0; i < 16; i++)
+      {
+         char c = ent.name[i];
+         if (!(   (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')
+               || (c >= 'a' && c <= 'f')))
+            break;
+      }
+      if (i < 16)
+         continue;
+      if (!path[0] || !strncmp(ent.name, "00050000", 8))
+      {
+         memcpy(path, ent.name, ent.len);
+         path[ent.len] = '\0';
+         if (!strncmp(ent.name, "00050000", 8))
+            break;
+      }
+   }
+   if (!path[0])
+      goto end;
+   strlcat(path, "/meta/meta.xml", sizeof(path));
+
+   if (zar_lookup_begin(z, path) != ZAR_OK)
+      goto end;
+   while ((err = zar_lookup_step(z, &req, &zs.file)) == ZAR_PENDING)
+      zar_feed(z, task_database_pull(&zs.src, req.offset, req.dst,
+               req.length));
+   if (err != ZAR_OK || !(xml = (char*)malloc(WIIU_META_HEAD + 1)))
+      goto end;
+   n      = task_database_zar_pull(&zs, 0, (uint8_t*)xml, WIIU_META_HEAD);
+   xml[n] = '\0';
+
+   if (     !(v = wiiu_xml_value(xml, "product_code", &n))
+         || !wiiu_product_code((const uint8_t*)v, n, code))
+      goto end;
+   /* the maker: the company code's last two characters */
+   if (     (v = wiiu_xml_value(xml, "company_code", &n)) && n >= 2
+         && ISALNUM((unsigned char)v[n - 2])
+         && ISALNUM((unsigned char)v[n - 1]))
+   {
+      maker[0] = (char)TOUPPER((unsigned char)v[n - 2]);
+      maker[1] = (char)TOUPPER((unsigned char)v[n - 1]);
+      maker[2] = '\0';
+   }
+   rv = strlcpy(s, code, len) < len;
+
+end:
+   free(xml);
+   zar_free(z);
+   intfstream_close(fd);
+   free(fd);
+   return rv;
 }
 
 /* Opens what the scanner hashes for @name: the file itself, the data

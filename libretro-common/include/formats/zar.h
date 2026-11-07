@@ -57,6 +57,7 @@ RETRO_BEGIN_DECLS
 
 #define ZAR_OK                 0
 #define ZAR_PENDING            1
+#define ZAR_END                2   /* a listing is over */
 #define ZAR_ERROR_DATA       (-1)
 #define ZAR_ERROR_PARAM      (-2)
 #define ZAR_ERROR_MEM        (-3)
@@ -128,6 +129,36 @@ int zar_lookup_begin(zar_t *z, const char *path);
  * ZAR_ERROR_NOT_FOUND, or another negative code.
  **/
 int zar_lookup_step(zar_t *z, zar_request_t *req, zar_file_t *out);
+
+/* A directory's entry. @name is terminated, and valid until the next
+ * call on the same zar_t. */
+typedef struct zar_dirent
+{
+   const char *name;
+   size_t      len;
+   int         is_dir;
+} zar_dirent_t;
+
+/**
+ * zar_dir_begin:
+ * @path : the directory, as for zar_lookup_begin(); "" for the root
+ *
+ * Arms a listing of a directory, abandoning a read, lookup or listing
+ * in progress.
+ *
+ * Returns: ZAR_OK, or ZAR_ERROR_STATE before the archive is open.
+ **/
+int zar_dir_begin(zar_t *z, const char *path);
+
+/**
+ * zar_dir_step:
+ *
+ * Returns: ZAR_OK with @ent filled in for each entry in the archive's
+ * order, ZAR_END past the last one, ZAR_PENDING with @req filled in
+ * when it needs a range of the file, ZAR_ERROR_NOT_FOUND when @path is
+ * no directory, or another negative code.
+ **/
+int zar_dir_step(zar_t *z, zar_request_t *req, zar_dirent_t *ent);
 
 /**
  * zar_read_begin:

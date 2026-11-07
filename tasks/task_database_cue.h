@@ -80,6 +80,15 @@ int task_database_xbox_get_serial(const char *name, bool disc, char *s,
 /* The Xbox 360 serial of the game a ZArchive holds, @regions as above */
 int task_database_zar_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize, uint8_t *regions);
+/* The product code of a Wii U disc, a WUD or a WUX (or a disc image
+ * by another name), four characters: a release's serial may add the
+ * maker's two */
+int task_database_wiiu_get_serial(const char *name, char *s, size_t len,
+      uint64_t *filesize);
+/* The same for the game a Wii U archive (.wua) holds, @maker getting
+ * the maker's two characters from its company code, or "" */
+int task_database_wua_get_serial(const char *name, char *s, size_t len,
+      uint64_t *filesize, char *maker);
 bool is_chd_file_cdi(const char *path);
 /* @regions as for task_database_xbox_get_serial(), for an Xbox disc */
 int task_database_chd_get_serial(const char *name, char *serial, size_t len,

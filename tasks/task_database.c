@@ -350,6 +350,11 @@ typedef struct database_state_handle
    /* The XDVDFS_REGION_* an Xbox title's executable says it is for,
     * or 0: picks among the releases its serial is shared by. */
    uint8_t regions;
+   /* A Wii U serial is a product code, which a release's serial may
+    * follow with its maker's two characters: those, when the content
+    * says them, pick among the releases the code is shared by. */
+   bool wiiu;
+   char wiiu_maker[3];
    bool crc_done;
    /* The index build in flight, run by task_database_index_step()
     * until index_ready, then taken by the lookup that began it. */
@@ -1220,6 +1225,11 @@ static enum msg_file_type extension_to_file_type(const char *ext)
       return FILE_TYPE_XCP;
    if (string_is_equal(ext_lower, "zar"))
       return FILE_TYPE_ZAR;
+   if (     string_is_equal(ext_lower, "wud")
+         || string_is_equal(ext_lower, "wux"))
+      return FILE_TYPE_WUD;
+   if (string_is_equal(ext_lower, "wua"))
+      return FILE_TYPE_WUA;
    if (string_is_equal(ext_lower, "pbp"))
       return FILE_TYPE_PBP;
    if (string_is_equal(ext_lower, "lutro"))
@@ -2130,7 +2140,9 @@ static int task_database_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
-   db_state->regions = 0;
+   db_state->regions       = 0;
+   db_state->wiiu          = false;
+   db_state->wiiu_maker[0] = '\0';
    switch (extension_to_file_type(path_get_extension(name)))
    {
       case FILE_TYPE_COMPRESSED:
@@ -2187,16 +2199,34 @@ static int task_database_iterate_playlist(
       case FILE_TYPE_ISO:
          db_state->serial[0] = '\0';
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP_SIZEHINT;
-         /* An Xbox disc is looked for only when nothing else is found,
-          * so other discs read nothing more for it. Its size says
-          * nothing: an XISO is trimmed. */
-         if (     !intfstream_file_get_serial(name, 0, INT64_MAX, db_state->serial, sizeof(db_state->serial),&db_state->size)
-               && task_database_xbox_get_serial(name, true, db_state->serial, sizeof(db_state->serial),&db_state->size,&db_state->regions))
-            db->type         =  DATABASE_TYPE_SERIAL_LOOKUP;
+         /* A Wii U disc, then an Xbox one, is looked for only when
+          * nothing else is found, so other discs read nothing more for
+          * them. The size says nothing: an XISO is trimmed, and a Wii U
+          * database has no sizes. */
+         if (!intfstream_file_get_serial(name, 0, INT64_MAX, db_state->serial, sizeof(db_state->serial),&db_state->size))
+         {
+            if (task_database_wiiu_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
+            {
+               db_state->wiiu = true;
+               db->type       = DATABASE_TYPE_SERIAL_LOOKUP;
+            }
+            else if (task_database_xbox_get_serial(name, true, db_state->serial, sizeof(db_state->serial),&db_state->size,&db_state->regions))
+               db->type       = DATABASE_TYPE_SERIAL_LOOKUP;
+         }
          break;
       case FILE_TYPE_XISO:
          db_state->serial[0] = '\0';
          task_database_xbox_get_serial(name, true, db_state->serial, sizeof(db_state->serial),&db_state->size,&db_state->regions);
+         db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
+         break;
+      case FILE_TYPE_WUD:
+         db_state->serial[0] = '\0';
+         db_state->wiiu      = task_database_wiiu_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size) != 0;
+         db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
+         break;
+      case FILE_TYPE_WUA:
+         db_state->serial[0] = '\0';
+         db_state->wiiu      = task_database_wua_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size,db_state->wiiu_maker) != 0;
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_ZAR:
@@ -3618,6 +3648,48 @@ static uint8_t task_database_xbox_regions(const char *list)
    return regions;
 }
 
+/* The database a Wii U product code is looked up in */
+static bool task_database_is_wiiu_db(const char *rdb)
+{
+   return rdb && string_is_equal(path_basename(rdb), "Nintendo - Wii U.rdb");
+}
+
+/* Of the records a Wii U product code's stem query found, the one the
+ * content is: the maker's release when the content names its maker;
+ * otherwise, for a game from an archive, the record of the code alone,
+ * as a title sold as a download is; for a disc, a disc release, whose
+ * serial adds its maker. Returns the record's index, or the count when
+ * none is a release of the code. */
+static size_t task_database_wiiu_pick(const database_info_list_t *info,
+      const char *code, const char *maker)
+{
+   size_t i;
+   size_t pick     = info->count;
+   size_t code_len = strlen(code);
+   int    best     = 3;
+   for (i = 0; i < info->count && best; i++)
+   {
+      const char *serial = info->list[i].serial;
+      size_t      len;
+      int         rank   = 2;
+      if (!serial || strncmp(serial, code, code_len))
+         continue;
+      len = strlen(serial);
+      if (len != code_len && len != code_len + 2)
+         continue;
+      if (*maker && len == code_len + 2 && !strcmp(serial + code_len, maker))
+         rank = 0;
+      else if (len == (*maker ? code_len : code_len + 2))
+         rank = 1;
+      if (rank < best)
+      {
+         best = rank;
+         pick = i;
+      }
+   }
+   return pick;
+}
+
 static int task_database_iterate_serial_lookup(
       manual_scan_handle_t *_db,
       database_state_handle_t *db_state,
@@ -3667,6 +3739,12 @@ static int task_database_iterate_serial_lookup(
        && task_database_skip_unclaimed(db_state, name, NULL,
             path_contains_compressed_file))
       return SCAN_VERDICT_CONTINUE;
+
+   /* A Wii U product code means nothing to another database */
+   if (   db_state->wiiu
+       && !task_database_is_wiiu_db(
+          db_state->list->elems[db_state->list_index].data))
+      return database_info_list_iterate_next(db_state);
 
    /* If size boundaries are not filled for this DB, run the queries */
    if (   !(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED)
@@ -3752,7 +3830,10 @@ static int task_database_iterate_serial_lookup(
             db_state->serial_index[db_state->list_index] = si;
          }
 
-         if (db_state->serial_index[db_state->list_index])
+         /* the index answers whole serials, not a product code's
+          * stem */
+         if (     db_state->serial_index[db_state->list_index]
+               && !db_state->wiiu)
             hits = database_info_list_new_serial(
                   db_state->serial_index[db_state->list_index], rdb,
                   db_state->serial, DB_EXTRACT_SCAN_FIELDS
@@ -3767,6 +3848,23 @@ static int task_database_iterate_serial_lookup(
             free(db_state->info);
          }
          db_state->info = hits;
+         goto serial_query_done;
+      }
+
+      /* A Wii U product code, four characters the probe checked:
+       * the releases that are it, with a maker or without */
+      if (db_state->wiiu)
+      {
+         static const char head[] = "{'serial':glob('";
+         static const char tail[] = "*')}";
+         size_t code_len = strlen(db_state->serial);
+         if (code_len + sizeof(head) + sizeof(tail) > sizeof(query_buf))
+            return database_info_list_iterate_next(db_state);
+         memcpy(query_buf, head, sizeof(head) - 1);
+         memcpy(query_buf + sizeof(head) - 1, db_state->serial, code_len);
+         memcpy(query_buf + sizeof(head) - 1 + code_len, tail,
+               sizeof(tail));
+         database_info_list_iterate_new(db_state, query_buf);
          goto serial_query_done;
       }
 
@@ -3850,6 +3948,20 @@ serial_query_done:
             return database_info_list_iterate_found_match(_db,
                   db_state, db, NULL);
          }
+      }
+   }
+   if (db_state->info && db_state->wiiu && !db_state->entry_index)
+   {
+      size_t i = task_database_wiiu_pick(db_state->info, db_state->serial,
+            db_state->wiiu_maker);
+      if (i < db_state->info->count)
+      {
+         /* the playlist names the release found */
+         strlcpy(db_state->serial, db_state->info->list[i].serial,
+               sizeof(db_state->serial));
+         db_state->entry_index = i;
+         return database_info_list_iterate_found_match(_db,
+               db_state, db, NULL);
       }
    }
    if (db_state->info)

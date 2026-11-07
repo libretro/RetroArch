@@ -303,6 +303,21 @@ static struct rmsgpack_dom_value query_func_glob(
             input.val.string.buff,
             0
             ) == 0;
+   /* A field kept as binary, as a serial is: matched as text when it
+    * holds no NUL and is short enough to terminate here */
+   else if (input.type == RDT_BINARY && input.val.binary.buff)
+   {
+      char     text[256];
+      uint32_t len = input.val.binary.len;
+      if (     len < sizeof(text)
+            && !memchr(input.val.binary.buff, '\0', len))
+      {
+         memcpy(text, input.val.binary.buff, len);
+         text[len]     = '\0';
+         res.val.bool_ = rl_fnmatch(
+               argv[0].a.value.val.string.buff, text, 0) == 0;
+      }
+   }
    return res;
 }
 

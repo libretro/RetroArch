@@ -1853,6 +1853,7 @@ DATA RUNLOOP
 #include "../tasks/task_database_cue.c"
 #include "../libretro-common/formats/xdvdfs/xdvdfs.c"
 #include "../libretro-common/formats/zar/zar.c"
+#include "../libretro-common/formats/wux/wux.c"
 #endif
 #if defined(HAVE_LIBRETRODB) || defined(HAVE_CHEEVOS)
 #include "../libretro-common/formats/ciso/ciso.c"

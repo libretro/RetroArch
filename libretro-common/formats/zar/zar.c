@@ -64,11 +64,13 @@
 #define ZAR_OP_NONE     1
 #define ZAR_OP_LOOKUP   2
 #define ZAR_OP_READ     3
+#define ZAR_OP_DIR      4
 
 /* the lookup */
 #define ZAR_L_DIR       0   /* the directory's own node */
 #define ZAR_L_BATCH     1   /* a run of its entries */
 #define ZAR_L_NAME      2   /* one entry's name */
+#define ZAR_L_LIST      3   /* a listed entry's name, in full */
 
 /* where the range asked for goes */
 #define ZAR_TO_BUF      0
@@ -109,10 +111,12 @@ struct zar
    int           stage;
    int           to;
    uint8_t       buf[ZAR_BATCH * ZAR_NODE];
-   uint8_t       name[ZAR_NAME_MAX + 2];
+   uint8_t       name[ZAR_NAME_MAX + 3]; /* length, octets, terminator */
    uint8_t       rec[ZAR_RECORD];
    bool          fetching;
    bool          failed;
+   bool          want_dir;    /* a listing's directory is looked up */
+   bool          listing;     /* and found */
 };
 
 static uint32_t zar_be32(const uint8_t *p)
@@ -169,6 +173,8 @@ zar_t *zar_new(uint64_t file_size)
    z->to          = ZAR_TO_BUF;
    z->fetching    = false;
    z->failed      = false;
+   z->want_dir    = false;
+   z->listing     = false;
    return z;
 }
 
@@ -281,7 +287,20 @@ int zar_lookup_begin(zar_t *z, const char *path)
    z->got       = 0;
    z->fetching  = false;
    z->failed    = false;
+   z->want_dir  = false;
+   z->listing   = false;
    return ZAR_OK;
+}
+
+int zar_dir_begin(zar_t *z, const char *path)
+{
+   int e = zar_lookup_begin(z, path);
+   if (e == ZAR_OK)
+   {
+      z->op       = ZAR_OP_DIR;
+      z->want_dir = true;
+   }
+   return e;
 }
 
 static int zar_upper(int c)
@@ -308,7 +327,9 @@ static int zar_lookup_run(zar_t *z, zar_request_t *req, zar_file_t *out)
          z->path++;
       p = z->path;
       for (plen = 0; p[plen] && p[plen] != '/' && p[plen] != '\\'; plen++) { }
-      if (!plen || plen > ZAR_NAME_MAX)
+      /* a listing of the root looks up no name */
+      if (     (!plen && !(z->want_dir && z->stage == ZAR_L_DIR))
+            || plen > ZAR_NAME_MAX)
          return ZAR_ERROR_NOT_FOUND;
 
       switch (z->stage)
@@ -332,6 +353,8 @@ static int zar_lookup_run(zar_t *z, zar_request_t *req, zar_file_t *out)
             z->dir_index = 0;
             z->batch     = 0;
             z->stage     = ZAR_L_BATCH;
+            if (!plen)
+               return ZAR_OK;
             break;
          case ZAR_L_BATCH:
             if (z->dir_index >= z->dir_count)
@@ -393,7 +416,7 @@ static int zar_lookup_run(zar_t *z, zar_request_t *req, zar_file_t *out)
             z->path += plen;
             while (*z->path == '/' || *z->path == '\\')
                z->path++;
-            if (*z->path)
+            if (*z->path || z->want_dir)
             {
                /* down into this entry, which must be a directory */
                if (n[0] & 0x80)
@@ -404,7 +427,10 @@ static int zar_lookup_run(zar_t *z, zar_request_t *req, zar_file_t *out)
                      || z->dir_count > z->nodes - z->dir_first)
                   return ZAR_ERROR_DATA;
                z->dir_index = 0;
+               z->batch     = 0;
                z->stage     = ZAR_L_BATCH;
+               if (!*z->path)
+                  return ZAR_OK;
                break;
             }
             if (!(n[0] & 0x80))
@@ -432,6 +458,98 @@ int zar_lookup_step(zar_t *z, zar_request_t *req, zar_file_t *out)
       return ZAR_ERROR_STATE;
    e = z->failed ? ZAR_ERROR_DATA : zar_lookup_run(z, req, out);
    if (e != ZAR_PENDING)
+      z->op = ZAR_OP_NONE;
+   return e;
+}
+
+/* The directory's entries a run at a time, each one's name read in
+ * full */
+static int zar_list_run(zar_t *z, zar_request_t *req, zar_dirent_t *ent)
+{
+   for (;;)
+   {
+      const uint8_t *n;
+      size_t         cap;
+      size_t         hdr;
+      size_t         nlen;
+      uint32_t       name_at;
+
+      switch (z->stage)
+      {
+         case ZAR_L_BATCH:
+            if (z->dir_index >= z->dir_count)
+               return ZAR_END;
+            z->batch = z->dir_count - z->dir_index;
+            if (z->batch > ZAR_BATCH)
+               z->batch = ZAR_BATCH;
+            if (z->got < (size_t)z->batch * ZAR_NODE)
+               return zar_ask(z, req, ZAR_TO_BUF,
+                     z->sec_off[ZAR_SEC_TREE]
+                     + ((uint64_t)z->dir_first + z->dir_index) * ZAR_NODE,
+                     z->buf, (size_t)z->batch * ZAR_NODE);
+            z->got   = 0;
+            z->entry = 0;
+            z->stage = ZAR_L_LIST;
+            break;
+         case ZAR_L_LIST:
+            if (z->entry >= z->batch)
+            {
+               z->dir_index += z->batch;
+               z->stage      = ZAR_L_BATCH;
+               break;
+            }
+            n       = z->buf + z->entry * ZAR_NODE;
+            name_at = zar_be32(n) & 0x7FFFFFFFu;
+            if (     name_at == ZAR_NO_NAME
+                  || name_at >= z->sec_size[ZAR_SEC_NAMES])
+               return ZAR_ERROR_DATA;
+            cap = 2 + ZAR_NAME_MAX;
+            if (cap > z->sec_size[ZAR_SEC_NAMES] - name_at)
+               cap = (size_t)(z->sec_size[ZAR_SEC_NAMES] - name_at);
+            if (z->got < cap)
+               return zar_ask(z, req, ZAR_TO_NAME,
+                     z->sec_off[ZAR_SEC_NAMES] + name_at, z->name, cap);
+            z->got = 0;
+            nlen   = z->name[0] & 0x7F;
+            hdr    = 1;
+            if (z->name[0] & 0x80)
+            {
+               if (cap < 2)
+                  return ZAR_ERROR_DATA;
+               nlen |= (size_t)z->name[1] << 7;
+               hdr   = 2;
+            }
+            if (nlen > ZAR_NAME_MAX || hdr + nlen > cap)
+               return ZAR_ERROR_DATA;
+            z->name[hdr + nlen] = '\0';
+            ent->name   = (const char*)z->name + hdr;
+            ent->len    = nlen;
+            ent->is_dir = !(n[0] & 0x80);
+            z->entry++;
+            return ZAR_OK;
+         default:
+            return ZAR_ERROR_STATE;
+      }
+   }
+}
+
+int zar_dir_step(zar_t *z, zar_request_t *req, zar_dirent_t *ent)
+{
+   int e;
+   if (!z || !req || !ent)
+      return ZAR_ERROR_PARAM;
+   if (z->op != ZAR_OP_DIR)
+      return ZAR_ERROR_STATE;
+   if (z->failed)
+      e = ZAR_ERROR_DATA;
+   else if (z->listing)
+      e = zar_list_run(z, req, ent);
+   else if ((e = zar_lookup_run(z, req, NULL)) == ZAR_OK)
+   {
+      z->listing = true;
+      e          = zar_list_run(z, req, ent);
+   }
+   if (e != ZAR_PENDING && e != ZAR_OK)
       z->op = ZAR_OP_NONE;
    return e;
 }

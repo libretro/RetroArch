@@ -2698,6 +2698,252 @@ end:
    free(d);
 }
 
+/* A Wii U disc of @sectors 32 KiB sectors whose header says @code;
+ * with @wux, as a WUX that keeps the empty sectors once */
+static int write_wiiu_disc(const char *path, const char *code,
+      unsigned sectors, bool wux)
+{
+   uint8_t *d  = (uint8_t*)calloc(sectors + 1, 0x8000);
+   size_t   n  = (size_t)sectors * 0x8000;
+   int      ok = 0;
+   unsigned i;
+
+   if (!d)
+      return 0;
+   memcpy(d, "WUP-P-", 6);
+   memcpy(d + 6, code, 4);
+   memcpy(d + 10, "-0-00", 5);
+   if (wux)
+   {
+      /* the header, the index (sector 0, then the empty one for the
+       * rest), padding to a sector, then the two sectors */
+      uint8_t *w = (uint8_t*)calloc(3, 0x8000);
+      if (!w)
+      {
+         free(d);
+         return 0;
+      }
+      memcpy(w, "WUX0", 4);
+      w[4] = 0x2E; w[5] = 0xD0; w[6] = 0x99; w[7] = 0x10;
+      w[9] = 0x80;
+      w[16] = (uint8_t)n; w[17] = (uint8_t)(n >> 8);
+      w[18] = (uint8_t)(n >> 16); w[19] = (uint8_t)(n >> 24);
+      for (i = 1; i < sectors; i++)
+         w[32 + i * 4] = 1;
+      memcpy(w + 0x8000, d, 0x8000);
+      ok = write_bytes(path, w, 3 * 0x8000);
+      free(w);
+   }
+   else
+      ok = write_bytes(path, d, n);
+   free(d);
+   return ok;
+}
+
+/* A Wii U archive of two titles - an update listed first, then the
+ * base game - each with meta/meta.xml; the update's names @upd_code,
+ * the game's @code and @company. Its one block is kept as it is. */
+static int write_wua(const char *path, const char *code,
+      const char *company, const char *upd_code)
+{
+   static const char *const dirs[2] = {
+      "0005000E101C9500_v32", "00050000101C9500_v0" };
+   uint8_t *out = (uint8_t*)calloc(1, 65536 + 4096);
+   uint8_t  tree[7 * 16];
+   uint8_t  names[128];
+   uint32_t name_at[7];
+   size_t   nsize = 0;
+   size_t   xml_len[2];
+   size_t   at;
+   uint8_t *ft;
+   int      ok    = 0;
+   unsigned i;
+
+   if (!out)
+      return 0;
+   /* the stream: the update's meta.xml, then the game's at 2048 */
+   for (i = 0; i < 2; i++)
+      xml_len[i] = (size_t)sprintf((char*)out + i * 2048,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+            "<menu type=\"complex\" access=\"777\">\n"
+            "  <version type=\"unsignedInt\" length=\"4\">33</version>\n"
+            "  <product_code type=\"string\" length=\"32\">WUP-%c-%s"
+            "</product_code>\n"
+            "  <content_platform type=\"string\" length=\"32\">WUP"
+            "</content_platform>\n"
+            "  <company_code type=\"string\" length=\"8\">%s"
+            "</company_code>\n</menu>\n",
+            i ? 'P' : 'N', i ? code : upd_code, i ? company : "0001");
+
+   /* names: the two titles, "meta" twice, "meta.xml" twice */
+   name_at[0] = 0x7FFFFFFFu;
+   for (i = 1; i < 7; i++)
+   {
+      const char *nm = (i < 3) ? dirs[i - 1] : (i < 5) ? "meta" : "meta.xml";
+      size_t      l  = strlen(nm);
+      name_at[i]     = (uint32_t)nsize;
+      names[nsize++] = (uint8_t)l;
+      memcpy(names + nsize, nm, l);
+      nsize         += l;
+   }
+   /* root: the titles; each title: its meta; each meta: its meta.xml */
+   memset(tree, 0, sizeof(tree));
+   for (i = 0; i < 7; i++)
+      xbox_put_be32(tree + i * 16, name_at[i] | (i >= 5 ? 0x80000000u : 0));
+   xbox_put_be32(tree + 0 * 16 + 4, 1); xbox_put_be32(tree + 0 * 16 + 8, 2);
+   xbox_put_be32(tree + 1 * 16 + 4, 3); xbox_put_be32(tree + 1 * 16 + 8, 1);
+   xbox_put_be32(tree + 2 * 16 + 4, 4); xbox_put_be32(tree + 2 * 16 + 8, 1);
+   xbox_put_be32(tree + 3 * 16 + 4, 5); xbox_put_be32(tree + 3 * 16 + 8, 1);
+   xbox_put_be32(tree + 4 * 16 + 4, 6); xbox_put_be32(tree + 4 * 16 + 8, 1);
+   xbox_put_be32(tree + 5 * 16 + 4, 0);
+   xbox_put_be32(tree + 5 * 16 + 8, (uint32_t)xml_len[0]);
+   xbox_put_be32(tree + 6 * 16 + 4, 2048);
+   xbox_put_be32(tree + 6 * 16 + 8, (uint32_t)xml_len[1]);
+
+   /* the block, the record, names, tree, two empty sections, footer */
+   at = 65536;
+   memset(out + at, 0, 40);
+   out[at + 8] = 0xFF;
+   out[at + 9] = 0xFF;
+   memcpy(out + at + 40, names, nsize);
+   memcpy(out + at + 40 + nsize, tree, sizeof(tree));
+   ft = out + at + 40 + nsize + sizeof(tree);
+   memset(ft, 0, 144);
+   xbox_put_be32(ft + 12, 65536);
+   xbox_put_be32(ft + 20, (uint32_t)at);
+   xbox_put_be32(ft + 28, 40);
+   xbox_put_be32(ft + 36, (uint32_t)(at + 40));
+   xbox_put_be32(ft + 44, (uint32_t)nsize);
+   xbox_put_be32(ft + 52, (uint32_t)(at + 40 + nsize));
+   xbox_put_be32(ft + 60, sizeof(tree));
+   xbox_put_be32(ft + 68, (uint32_t)(ft - out));
+   xbox_put_be32(ft + 84, (uint32_t)(ft - out));
+   xbox_put_be32(ft + 132, (uint32_t)(ft - out + 144));
+   xbox_put_be32(ft + 136, 0x61BF3A01u);
+   xbox_put_be32(ft + 140, 0x169F52D6u);
+   ok = write_bytes(path, out, (size_t)(ft - out + 144));
+   free(out);
+   return ok;
+}
+
+/* Wii U content takes the serial lookup by its product code, in the
+ * Wii U database alone: a release's serial adds its maker's two
+ * characters, or nothing for a title sold as a download. A WUD, a WUX
+ * and a Wii U disc named .iso match a disc release; an archive matches
+ * the release of the maker its meta.xml names, and the download when
+ * there is none, reading its base title rather than the update listed
+ * before it. Another database holding the code alone is not
+ * consulted. */
+static void wiiu_lane(const char *root, const char *pl_dir,
+      const char *db_dir)
+{
+   static const db_rec_t wiiu_recs[] = {
+      { "Kart Download (USA)",  "AMKE",   0, 0, NULL, true },
+      { "Kart Disc (USA)",      "AMKE01", 0, 0, NULL, true },
+      { "Kart Other (USA)",     "AMKEXY", 0, 0, NULL, true },
+      { "Kart Long (USA)",      "AMKE01Z", 0, 0, NULL, true },
+      { "Pikmin Disc (Europe)", "AC3P01", 0, 0, NULL, true },
+      { "Zelda Disc (USA)",     "ALZE01", 0, 0, NULL, true },
+      { "Splat Disc (USA)",     "WSPE01", 0, 0, NULL, true },
+      { "Splat Download (USA)", "WSPE",   0, 0, NULL, true },
+      { "Mii Other (Japan)",    "WMIJ01", 0, 0, NULL, true },
+      { "Mii Maker (Japan)",    "WMIJ8P", 0, 0, NULL, true },
+      { "Update Trap (USA)",    "UPDE",   0, 0, NULL, true }
+   };
+   static const db_rec_t decoy_recs[] = {
+      { "Decoy Pikmin", "AC3P", 0, 0, NULL, true },
+      { "Decoy Zelda",  "ALZE", 0, 0, NULL, true },
+      { "Decoy Kart",   "AMKE", 0, 0, NULL, true }
+   };
+   char *w_db = (char*)malloc(512);
+   char *w_in = (char*)malloc(512);
+   char *p    = (char*)malloc(1024);
+   bool  started;
+
+   if (!w_db || !w_in || !p)
+   {
+      check(0, "wiiu lane", "out of memory");
+      goto end;
+   }
+
+   sprintf(w_db, "%s/scan_db_wiiu", root);
+   sprintf(w_in, "%s/scan_wiiu",    root);
+   path_mkdir(w_db);
+   path_mkdir(w_in);
+
+   sprintf(p, "%s/Nintendo - Wii U.rdb", w_db);
+   if (!write_db_set(p, wiiu_recs, ARRAY_SIZE(wiiu_recs)))
+   { check(0, "fixture", "could not write database"); goto end; }
+   sprintf(p, "%s/Test Decoy.rdb", w_db);
+   if (!write_db_set(p, decoy_recs, ARRAY_SIZE(decoy_recs)))
+   { check(0, "fixture", "could not write database"); goto end; }
+
+   sprintf(p, "%s/80_kart.wud", w_in);
+   if (!write_wiiu_disc(p, "AMKE", 4, false))
+   { check(0, "fixture", "could not write image"); goto end; }
+   sprintf(p, "%s/81_pikmin.wux", w_in);
+   if (!write_wiiu_disc(p, "AC3P", 4, true))
+   { check(0, "fixture", "could not write image"); goto end; }
+   sprintf(p, "%s/82_zelda.iso", w_in);
+   if (!write_wiiu_disc(p, "ALZE", 4, false))
+   { check(0, "fixture", "could not write image"); goto end; }
+   sprintf(p, "%s/83_splat.wua", w_in);
+   if (!write_wua(p, "WSPE", "0099", "UPDE"))
+   { check(0, "fixture", "could not write archive"); goto end; }
+   sprintf(p, "%s/84_mii.wua", w_in);
+   if (!write_wua(p, "WMIJ", "008P", "UPDE"))
+   { check(0, "fixture", "could not write archive"); goto end; }
+
+   strlcpy(config_get_ptr()->paths.path_content_database, w_db,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   started = run_scan(w_in);
+   strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+         sizeof(config_get_ptr()->paths.path_content_database));
+   if (!started)
+   {
+      check(0, "wiiu scan started", "task_push_dbscan refused");
+      goto end;
+   }
+
+   check(scan_completed, "wiiu scan completed",
+         scan_completed ? "callback fired" : "timed out");
+   sprintf(p, "%s/Nintendo - Wii U.lpl", pl_dir);
+   check(   file_contains(p, "80_kart.wud")
+         && file_contains(p, "Kart Disc (USA)")
+         && file_contains(p, "AMKE01|serial")
+         && !file_contains(p, "Kart Download")
+         && !file_contains(p, "Kart Other")
+         && !file_contains(p, "Kart Long"),
+         "a WUD matches a disc release of its product code",
+         "80_kart.wud");
+   check(   file_contains(p, "81_pikmin.wux")
+         && file_contains(p, "Pikmin Disc (Europe)"),
+         "a WUX is read through its index", "81_pikmin.wux");
+   check(   file_contains(p, "82_zelda.iso")
+         && file_contains(p, "Zelda Disc (USA)"),
+         "a Wii U disc named .iso", "82_zelda.iso");
+   check(   file_contains(p, "83_splat.wua")
+         && file_contains(p, "Splat Download (USA)")
+         && !file_contains(p, "Splat Disc"),
+         "an archive whose maker has no release takes the download",
+         "83_splat.wua");
+   check(   file_contains(p, "84_mii.wua")
+         && file_contains(p, "Mii Maker (Japan)")
+         && !file_contains(p, "Mii Other"),
+         "an archive's maker picks the release", "84_mii.wua");
+   check(!file_contains(p, "Update Trap"),
+         "an archive's base title, not its update", "UPDE");
+   sprintf(p, "%s/Test Decoy.lpl", pl_dir);
+   check(!path_is_valid(p) || !file_contains(p, "Decoy"),
+         "a product code is looked up in the Wii U database alone",
+         "Test Decoy.lpl");
+
+end:
+   free(w_db);
+   free(w_in);
+   free(p);
+}
+
 /* The folder a playlist refreshes from, its default core and
  * whether it recurses.  False when the playlist holds no scan record. */
 static bool scan_record(const char *lpl, char *dir, char *core,
@@ -11714,6 +11960,20 @@ int main(int argc, char **argv)
    }
    sprintf(p, "%s/x360_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/wiiu_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"Wii U Test\"\n"
+            "corename = \"WiiUTest\"\n"
+            "supported_extensions = \"wud|wux|wua|iso\"\n"
+            "database = \"Nintendo - Wii U\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/wiiu_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
    sprintf(p, "%s/atari_libretro.info", info_dir);
    {
       FILE *f = fopen(p, "w");
@@ -12635,6 +12895,7 @@ int main(int argc, char **argv)
    ciso_lane(root, pl_dir, db_dir);
    xbox_lane(root, pl_dir, db_dir);
    x360_lane(root, pl_dir, db_dir);
+   wiiu_lane(root, pl_dir, db_dir);
    single_lane(root, pl_dir, crc_a, sz_a);
    counts_lane(root, pl_dir, crc_a, sz_a, crc_d, sz_d);
    failed_lane(root, pl_dir, db_dir, crc_a, sz_a);
