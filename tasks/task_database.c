@@ -1287,12 +1287,16 @@ static int task_database_crc_cmp(const void *a, const void *b)
  * member left in that stores no CRC means there is none. */
 static uint32_t task_database_members_fp(const scan_members_t *m)
 {
-   uint32_t  fp = 0;
-   uint32_t *crcs;
-   size_t    n  = 0;
+   uint32_t  local[64];
+   uint32_t  fp   = 0;
+   uint32_t *crcs = local;
+   size_t    n    = 0;
    size_t    i;
 
-   if (!m->count || !(crcs = (uint32_t*)malloc(m->count * sizeof(*crcs))))
+   if (!m->count)
+      return 0;
+   if (   m->count > ARRAY_SIZE(local)
+       && !(crcs = (uint32_t*)malloc(m->count * sizeof(*crcs))))
       return 0;
    for (i = 0; i < m->count; i++)
    {
@@ -1321,7 +1325,8 @@ static uint32_t task_database_members_fp(const scan_members_t *m)
       be[3] = (uint8_t)(crcs[i]);
       fp    = encoding_crc32(fp, be, sizeof(be));
    }
-   free(crcs);
+   if (crcs != local)
+      free(crcs);
    return fp;
 }
 

@@ -1594,12 +1594,15 @@ static int db_index_collect(void *ctx, const uint8_t *key, size_t key_len,
    struct db_index_build *b = (struct db_index_build*)ctx;
 
    /* The walk reads set_fpm1 where it reads the serial.  A record can
-    * carry both fingerprints; each indexes it. */
+    * carry both fingerprints; each indexes it, once when they agree, as
+    * for a set with no clones. */
    if (b->want_setfp)
    {
       if (!b->crc.failed)
          db_crc_collect(&b->crc, key, key_len, offset, NULL);
-      if (!b->crc.failed)
+      if (   !b->crc.failed
+          && !(   key_len == serial_len
+               && !memcmp(key, serial, key_len)))
          db_crc_collect(&b->crc, serial, serial_len, offset, NULL);
       return b->crc.failed;
    }

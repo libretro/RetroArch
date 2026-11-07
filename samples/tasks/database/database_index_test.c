@@ -320,7 +320,7 @@ static int write_db_archives(const char *path, bool unsized)
    int   i;
 
    memset(&body, 0, sizeof(body));
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < 4; i++)
    {
       char    name[32];
       uint8_t crc[4];
@@ -911,26 +911,28 @@ static void check_archive_sizes(const char *dir)
    }
 }
 
-/* Three records: both fingerprints, set_fp1 alone, neither. */
+/* Four records: both fingerprints, set_fp1 alone, neither, and both
+ * the same, as a set with no clones carries. */
 static int write_db_setfp(const char *path)
 {
-   static const uint32_t fp1[2] = { 0x5E7F0001u, 0x5E7F0003u };
+   static const uint32_t fp1[4] = { 0x5E7F0001u, 0x5E7F0003u, 0,
+      0x5E7F0004u };
    buf_t body;
    int   i;
 
    memset(&body, 0, sizeof(body));
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < 4; i++)
    {
       char    name[32];
       uint8_t crc[4], key[4];
 
       crc[0] = 0xA2; crc[1] = 0; crc[2] = 0; crc[3] = (uint8_t)i;
       sprintf(name, "FP %d", i);
-      bfixmap(&body, 3 + (i < 2 ? 1 : 0) + (i == 0 ? 1 : 0));
+      bfixmap(&body, 3 + (fp1[i] ? 1 : 0) + (i == 0 || i == 3 ? 1 : 0));
       bfixstr(&body, "name"); bfixstr(&body, name);
       bfixstr(&body, "crc");  bbin(&body, crc, 4);
       bfixstr(&body, "size"); buint16(&body, (uint16_t)(100 + i));
-      if (i < 2)
+      if (fp1[i])
       {
          key[0] = (uint8_t)(fp1[i] >> 24);
          key[1] = (uint8_t)(fp1[i] >> 16);
@@ -941,6 +943,10 @@ static int write_db_setfp(const char *path)
       if (i == 0)
       {
          key[0] = 0x5E; key[1] = 0x7F; key[2] = 0x00; key[3] = 0x02;
+         bfixstr(&body, "set_fpm1"); bbin(&body, key, 4);
+      }
+      if (i == 3)
+      {
          bfixstr(&body, "set_fpm1"); bbin(&body, key, 4);
       }
    }
@@ -964,8 +970,11 @@ static void check_setfp_index(const char *dir)
       check(0, "set fingerprint index built", "no index");
    else
    {
-      check(database_info_crc_index_count(idx) == 3,
-            "set fingerprints: both keys indexed", "3 entries");
+      database_info_list_t *l;
+
+      check(database_info_crc_index_count(idx) == 4,
+            "set fingerprints: both keys indexed, a shared one once",
+            "4 entries");
       crc_lookup(idx, path, 0x5E7F0001u, name, sizeof(name));
       check(!strcmp(name, "FP 0"),
             "set fingerprints: set_fp1 finds its record", name);
@@ -975,6 +984,16 @@ static void check_setfp_index(const char *dir)
       crc_lookup(idx, path, 0x5E7F0003u, name, sizeof(name));
       check(!strcmp(name, "FP 1"),
             "set fingerprints: a second record", name);
+      l = database_info_list_new_crc(idx, path, 0x5E7F0004u, 0,
+            DB_EXTRACT_SCAN_FIELDS);
+      check(l && l->count == 1,
+            "set fingerprints: equal keys give their record once",
+            "0x5E7F0004");
+      if (l)
+      {
+         database_info_list_free(l);
+         free(l);
+      }
       crc_lookup(idx, path, 0xA2000000u, name, sizeof(name));
       check(!*name, "set fingerprints: not keyed on crc", name);
       database_info_crc_index_free(idx);
