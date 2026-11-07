@@ -1765,6 +1765,7 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
       uint32_t *sub;
       int is_key, x, y;
       int sub_opaque = 0;
+      int swapped;
 
       if (s->cursor >= s->num_anmf)
       {
@@ -1812,14 +1813,22 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
       else
          is_key = s->prev_disp_bg && (s->prev_full || s->prev_key);
 
-      if (is_key)
+      /* A frame that covers the canvas and is copied rather than
+       * blended (no_blend, or a source with every alpha byte 0xFF)
+       * replaces every canvas pixel, and its decoded buffer is exactly
+       * canvas-sized: it becomes the canvas, and the old one is freed
+       * in its place, instead of being copied over - and nothing the
+       * copy would overwrite (the key-frame clear, the previous frame's
+       * disposal) needs doing first. */
+      swapped = (no_blend || sub_opaque) && rwebp_full_frame(fw, fh, cw, ch);
+      if (swapped)
       {
-         /* When a full-canvas opaque copy follows, the memset would be
-          * overwritten entirely - skip it. */
-         if (!(   (no_blend || sub_opaque)
-               && rwebp_full_frame(fw, fh, cw, ch)))
-            memset(s->canvas, 0, (size_t)cw * ch * sizeof(uint32_t));
+         uint32_t *old = s->canvas;
+         s->canvas     = sub;
+         sub           = old;
       }
+      else if (is_key)
+         memset(s->canvas, 0, (size_t)cw * ch * sizeof(uint32_t));
       else if (s->prev_disp_bg)
       {
          /* Lazily apply the previous frame's dispose-to-background:
@@ -1830,18 +1839,21 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
                   0, (size_t)s->prev_fw * sizeof(uint32_t));
       }
 
-      for (y = 0; y < fh; y++)
+      if (!swapped)
       {
-         uint32_t *crow = s->canvas + (size_t)(fy + y) * cw + fx;
-         const uint32_t *srow = sub + (size_t)y * fw;
-         /* A fully opaque source blends to a plain copy (the per-pixel
-          * fast path in rwebp_blend_px), so frames known opaque at
-          * parse time skip the per-pixel loop entirely. */
-         if (no_blend || sub_opaque)
-            memcpy(crow, srow, (size_t)fw * sizeof(uint32_t));
-         else
-            for (x = 0; x < fw; x++)
-               crow[x] = rwebp_blend_px(srow[x], crow[x]);
+         for (y = 0; y < fh; y++)
+         {
+            uint32_t *crow = s->canvas + (size_t)(fy + y) * cw + fx;
+            const uint32_t *srow = sub + (size_t)y * fw;
+            /* A fully opaque source blends to a plain copy (the per-pixel
+             * fast path in rwebp_blend_px), so frames known opaque at
+             * parse time skip the per-pixel loop entirely. */
+            if (no_blend || sub_opaque)
+               memcpy(crow, srow, (size_t)fw * sizeof(uint32_t));
+            else
+               for (x = 0; x < fw; x++)
+                  crow[x] = rwebp_blend_px(srow[x], crow[x]);
+         }
       }
       free(sub);
 
