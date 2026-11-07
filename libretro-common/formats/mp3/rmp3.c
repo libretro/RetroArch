@@ -3081,7 +3081,12 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
       rmp3dec_frame_info info;
       const uint8_t     *src;
       size_t             avail;
+      size_t             left;
       int                samples;
+      int                direct_in;
+      void              *dst;
+      int16_t           *ps;
+      float             *pf;
       int                parse_only =
             ((!s->out && !s->outf) || !s->out_frames);
 
@@ -3121,8 +3126,17 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
          break;
       }
 
+      /* With nothing held and the window holding as much as a full
+       * hold would (or all there will be), the frame is decoded where
+       * it lies: the decoder is handed exactly the bytes the hold would
+       * have been given, so nothing it does changes, and the hold only
+       * reassembles a frame that straddles two windows. */
+      left      = s->in_size - s->in_pos;
+      direct_in = !s->hold_len && left
+         && (left >= RMP3_STREAM_HOLD || s->eof_in);
+
       /* Top the hold up so a frame split across windows is whole. */
-      if (s->hold_len < RMP3_STREAM_HOLD)
+      if (!direct_in && s->hold_len < RMP3_STREAM_HOLD)
       {
          size_t take = RMP3_STREAM_HOLD - s->hold_len;
          if (take > s->in_size - s->in_pos)
@@ -3136,8 +3150,16 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
          }
       }
 
-      src   = s->hold;
-      avail = s->hold_len;
+      if (direct_in)
+      {
+         src   = s->in + s->in_pos;
+         avail = (left < RMP3_STREAM_HOLD) ? left : RMP3_STREAM_HOLD;
+      }
+      else
+      {
+         src   = s->hold;
+         avail = s->hold_len;
+      }
 
       if (!avail)
       {
@@ -3158,7 +3180,7 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
        * not all arrived from junk - and acting on that discards the
        * frame.  So wait until the hold is full, or until the caller
        * says nothing more is coming and a short tail is all there is. */
-      if (s->hold_len < RMP3_STREAM_HOLD && !s->eof_in)
+      if (!direct_in && s->hold_len < RMP3_STREAM_HOLD && !s->eof_in)
       {
          ret = RMP3_STREAM_NEED_IN;
          break;
@@ -3169,13 +3191,36 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
        * this is the offset a caller would seek back to. */
       s->frame_off = s->in_total - (uint64_t)s->hold_len;
 
+      /* With room for any frame the stream can carry - a frame is at
+       * most 1152 frames of up to two channels, and a channel change
+       * is fixed up in place - the frame is decoded straight into the
+       * caller's buffer rather than into pcm to be copied out.  The
+       * synthesis stores sample by sample, so any alignment will do. */
+      dst = parse_only ? NULL : (void*)&s->pcm;
+      if (     !parse_only && s->started
+            && (s->out_frames - s->out_pos) * (size_t)s->channels
+               >= (size_t)RMP3_MAX_SAMPLES_PER_FRAME)
+         dst = s->f32_mode
+            ? (void*)(s->outf + s->out_pos * (size_t)s->channels)
+            : (void*)(s->out  + s->out_pos * (size_t)s->channels);
+      ps = (int16_t*)dst;
+      pf = (float*)dst;
+
       memset(&info, 0, sizeof(info));
       samples = rmp3dec_decode_frame(&s->dec, src, (int)avail,
-            parse_only ? NULL : (void*)&s->pcm, &info,
-            (int)s->f32_mode);
+            dst, &info, (int)s->f32_mode);
 
       if (!samples && !info.frame_bytes)
       {
+         /* A window read in place leaves what it holds in the hold, as
+          * reading it through the hold would have */
+         if (direct_in)
+         {
+            memcpy(s->hold, src, avail);
+            s->hold_len  = avail;
+            s->in_pos   += avail;
+            s->in_total += avail;
+         }
          /* A full hold with no frame in it is a stream this cannot
           * make progress on; short of that, more input is wanted. */
          ret = (s->eof_in && s->hold_len < RMP3_STREAM_HOLD)
@@ -3194,10 +3239,18 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
       if (info.frame_bytes > 0)
       {
          size_t used = (size_t)info.frame_bytes;
-         if (used > s->hold_len)
-            used = s->hold_len;
-         memmove(s->hold, s->hold + used, s->hold_len - used);
-         s->hold_len -= used;
+         if (used > avail)
+            used = avail;
+         if (direct_in)
+         {
+            s->in_pos   += used;
+            s->in_total += used;
+         }
+         else
+         {
+            memmove(s->hold, s->hold + used, s->hold_len - used);
+            s->hold_len -= used;
+         }
       }
 
       if (samples > 0)
@@ -3225,12 +3278,10 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
                int i = samples;
                if (s->f32_mode)
                   while (i-- > 0)
-                     s->pcm.f32[2*i] = s->pcm.f32[2*i + 1]
-                                     = s->pcm.f32[i];
+                     pf[2*i] = pf[2*i + 1] = pf[i];
                else
                   while (i-- > 0)
-                     s->pcm.s16[2*i] = s->pcm.s16[2*i + 1]
-                                     = s->pcm.s16[i];
+                     ps[2*i] = ps[2*i + 1] = ps[i];
             }
             else
             {
@@ -3240,12 +3291,11 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
                int i;
                if (s->f32_mode)
                   for (i = 0; i < samples; i++)
-                     s->pcm.f32[i] = (s->pcm.f32[2*i]
-                           + s->pcm.f32[2*i + 1]) * 0.5f;
+                     pf[i] = (pf[2*i] + pf[2*i + 1]) * 0.5f;
                else
                   for (i = 0; i < samples; i++)
-                     s->pcm.s16[i] = (int16_t)(((int32_t)s->pcm.s16[2*i]
-                           + (int32_t)s->pcm.s16[2*i + 1]) >> 1);
+                     ps[i] = (int16_t)(((int32_t)ps[2*i]
+                           + (int32_t)ps[2*i + 1]) >> 1);
             }
          }
 
@@ -3260,8 +3310,13 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
             ret = RMP3_STREAM_OK;
             break;
          }
-         s->pending = (unsigned)samples;
-         s->drained = 0;
+         if (dst != (void*)&s->pcm)
+            s->out_pos += (size_t)samples;   /* already in place */
+         else
+         {
+            s->pending = (unsigned)samples;
+            s->drained = 0;
+         }
       }
    }
 
