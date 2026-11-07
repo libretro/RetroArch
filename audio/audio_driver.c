@@ -2328,8 +2328,9 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
  * flush of a fast-forward seeds the averages at the configured fast-forward
  * ratio and returns its multiplier, and the measured speed takes over from
  * there; audio_driver_ff_mult_reset() arms that seed again once
- * fast-forward is released and at every pause, resume or jump fade, so
- * idle time is never read as one enormous flush interval.
+ * fast-forward is released and at every pause, resume or jump fade, and
+ * an interval past the average's window seeds it too, so idle time is
+ * never read as one enormous flush interval.
  *
  * With the threaded pipeline the flush runs on the audio thread, whose
  * cadence is set by the device draining, not by the core: a flush
@@ -2478,7 +2479,11 @@ static double audio_driver_fastforward_ratio_mult(
    const double expected_flush_delta =
          (input_frames / audio_st->input * 1000000);
 
-   if (audio_st->last_flush_time > 0)
+   /* An interval past the average's whole window at 1x is a stall,
+    * not a speed: seed again, as after a pause. */
+   if (     audio_st->last_flush_time > 0
+         && flush_time - audio_st->last_flush_time
+            <= audio_st->avg_expected_delta * AUDIO_FF_EXP_AVG_SAMPLES)
    {
       const retro_time_t n      = AUDIO_FF_EXP_AVG_SAMPLES;
       audio_st->avg_flush_delta = audio_st->avg_flush_delta * (n - 1) / n +
@@ -4842,9 +4847,15 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
       && duration >= 1.0 / 32.0 && duration <= 4.0;
    if (!supported)
    {
-      audio_st->last_flush_time = old_time;
-      audio_st->avg_flush_delta = old_delta;
-      audio_st->avg_expected_delta = old_expected;
+      /* Restored only for a Speedup fallback, which may measure this
+       * interval again; otherwise every later flush would measure from
+       * the old stamp. */
+      if (snap & AUDIO_SNAP_FF_SPEEDUP)
+      {
+         audio_st->last_flush_time = old_time;
+         audio_st->avg_flush_delta = old_delta;
+         audio_st->avg_expected_delta = old_expected;
+      }
       if (!t->bypassed)
       {
          bool pending = audio_st->extra.pending;

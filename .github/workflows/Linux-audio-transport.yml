@@ -90,6 +90,12 @@ jobs:
           ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
         run: make check-pause SANITIZER='${{ matrix.sanitizer }}'
+      - name: Fast-forward stall on the real wrapper
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: make check-ff-stall SANITIZER='${{ matrix.sanitizer }}'
       - name: Consumer leaving under a parked producer
         working-directory: samples/audio/pipeline_wakeups
         env:
@@ -118,4 +124,5 @@ jobs:
           # pipe_consumer_gone handshake and a stopped wrapper beside the
           # state rebuilt under it, which only the race detector can judge.
           make clean
-          make check-consumer-exit check-kept-device check-menu SANITIZER=thread
+          make check-consumer-exit check-kept-device check-menu check-ff-stall \
+            SANITIZER=thread

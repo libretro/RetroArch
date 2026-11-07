@@ -2802,9 +2802,10 @@ static void inline_hold_frame(const float *input)
 
 /* A gap inside a fast-forward hold, with Speedup off so only the
  * stretch follows the measured speed. A pause is not measured at all:
- * the estimate holds the hold's speed through it. A stall is back on
- * within a few frames, not once fast-forward is released. */
-static void inline_hold_gap_case(bool pause)
+ * the estimate holds the hold's speed through it. A stall seeds it
+ * again, so the stretch stays on. After a slow spell the stretch is
+ * back within a few frames, not once fast-forward is released. */
+static void inline_hold_gap_case(bool pause, bool slow)
 {
    static float input[735 * 2];
    audio_driver_state_t *st = &audio_driver_st;
@@ -2845,6 +2846,18 @@ static void inline_hold_gap_case(bool pause)
       fake_now += 125000;
       audio_driver_pause_fade(false);
    }
+   else if (slow)
+   {
+      /* 0.2x, each interval under a gap, until the estimate leaves
+       * the stretch's range. */
+      for (i = 0; i < 64 && !st->inline_transport->bypassed; i++)
+      {
+         fake_now += (retro_time_t)(735 * 1000000.0 / 44100.0) * 9 / 2;
+         inline_hold_frame(input);
+      }
+      CHECK(st->inline_transport->bypassed,
+            "inline slow spell stayed in the stretch's range");
+   }
    else
       fake_now += 3 * 1000000;
    for (i = 0; i < 64; i++)
@@ -2863,8 +2876,11 @@ static void inline_hold_gap_case(bool pause)
       CHECK(drift < 0, "inline pause measured: off the hold's speed until %d",
             drift);
    }
+   else if (slow)
+      CHECK(last_off < 8, "inline stretch still off %d frames after a slow spell",
+            last_off + 1);
    else
-      CHECK(last_off < 24, "inline stretch still off %d frames after a stall",
+      CHECK(last_off < 0, "inline stretch off %d frames after a stall",
             last_off + 1);
    fake_clock = false;
    runloop_state_get_ptr()->flags = 0;
@@ -2872,8 +2888,8 @@ static void inline_hold_gap_case(bool pause)
    settings->floats.fastforward_ratio = 0.0f;
    audio_driver_publish_runloop();
    audio_driver_deinit_internal(true);
-   printf("inline fast-forward %s: %u failures\n", pause ? "pause" : "stall",
-         failures - before);
+   printf("inline fast-forward %s: %u failures\n",
+         pause ? "pause" : slow ? "slow spell" : "stall", failures - before);
 }
 
 #include "inline_wide.h"
@@ -2901,7 +2917,9 @@ int main(void)
    RUN("inlineformat", inline_format_cases());
    RUN("callbackcontinuity", inline_callback_cases());
    RUN("inline", inline_transport_cases());
-   RUN("inlinehold", inline_hold_gap_case(true));
+   RUN("inlinehold", inline_hold_gap_case(true, false));
+   RUN("inlinehold", inline_hold_gap_case(false, false));
+   RUN("inlinehold", inline_hold_gap_case(false, true));
    RUN("canonicalreserve", canonical_reserve_cases());
    RUN("transportowner", transport_owner_cases());
    RUN("transportdiscard", transport_discard_cases());
