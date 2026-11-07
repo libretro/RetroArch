@@ -585,7 +585,7 @@ bool bsv_movie_handle_read_input_event(bsv_movie_t *movie,
       if (   (evt.port   == port)
           && (evt.device == dev)
           && (evt.idx    == idx)
-          && (evt.id     == id))
+          && (swap_if_big16(evt.id) == id))
       {
          *val = swap_if_big16(evt.value);
          return true;

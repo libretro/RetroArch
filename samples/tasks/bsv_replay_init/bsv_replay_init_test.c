@@ -559,6 +559,8 @@ static void lane_stray(void)
 }
 
 void bsv_movie_free(bsv_movie_t *handle);   /* tasks/task_movie.c */
+bool bsv_movie_handle_read_input_event(bsv_movie_t *movie,
+      uint8_t port, uint8_t dev, uint8_t idx, uint16_t id, int16_t *val);
 
 /* One checkpoint body: the three size words, then @payload_len bytes. */
 static bsv_movie_t *checkpoint_handle(uint8_t *buf, uint32_t size,
@@ -1264,6 +1266,33 @@ static void lane_event_capacity(void)
    lane_done("event_capacity", NULL);
 }
 
+static void lane_input_events(void)
+{
+   bsv_movie_t *h = (bsv_movie_t*)calloc(1, sizeof(*h));
+   int16_t value = 0;
+
+   reset_counters();
+   h->version = 2;
+   bsv_movie_push_input_event(h, 0, RETRO_DEVICE_JOYPAD, 0,
+         RETRO_DEVICE_ID_JOYPAD_MASK, 8);
+   bsv_movie_push_input_event(h, 1, RETRO_DEVICE_JOYPAD, 0,
+         RETRO_DEVICE_ID_JOYPAD_MASK, 32);
+   bsv_movie_push_input_event(h, 0, RETRO_DEVICE_ANALOG, 1, 0, -1234);
+   CHECK(bsv_movie_handle_read_input_event(h, 0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_MASK, &value) && value == 8,
+         "first port joypad mask was not replayed");
+   CHECK(bsv_movie_handle_read_input_event(h, 1, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_MASK, &value) && value == 32,
+         "second port joypad mask was not replayed");
+   CHECK(bsv_movie_handle_read_input_event(h, 0, RETRO_DEVICE_ANALOG, 1, 0,
+            &value) && value == -1234,
+         "signed analog input was not replayed");
+   CHECK(!bsv_movie_handle_read_input_event(h, 0, RETRO_DEVICE_ANALOG, 0, 0,
+            &value), "input from a different index was replayed");
+   free(h);
+   lane_done("input_events", NULL);
+}
+
 /* Seeking to a frame in a replay with no checkpoint before it has
  * nowhere to go, and says so. */
 static void lane_seek_no_checkpoint(void)
@@ -1460,6 +1489,7 @@ int main(int argc, char **argv)
    lane_state_replay_len();
    lane_serialize_short(path);
    lane_event_capacity();
+   lane_input_events();
    lane_seek_no_checkpoint();
    lane_checkpoint_seek();
    lane_skips();
