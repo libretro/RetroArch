@@ -2876,7 +2876,11 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
 
    {
       int16_t held;
-      if (input_pointer_frame_read(_port, device, idx, id, &held))
+      /* the pointer frame answers for none of these */
+      if (     device != RETRO_DEVICE_JOYPAD
+            && device != RETRO_DEVICE_ANALOG
+            && device != RETRO_DEVICE_KEYBOARD
+            && input_pointer_frame_read(_port, device, idx, id, &held))
          ret |= held;
       else if (  device == RETRO_DEVICE_JOYPAD && binds
               && input && input->keys_down && _port < MAX_USERS)
