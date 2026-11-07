@@ -270,6 +270,12 @@ typedef struct
     * ever deliver it, so the slot must be re-requested rather than
     * waited on. */
    uint64_t list_id;
+   /* 64-bit FNV-1a of the file this thumbnail was last requested
+    * from, 0 when none; cleared by gfx_thumbnail_reset.  Lets
+    * gfx_thumbnail_has_file recognise a still (or an animation that
+    * fell back to one) without keeping a path buffer per thumbnail,
+    * so the viewer takes what the browser already decoded. */
+   uint64_t file_hash;
    /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
    unsigned dims;
    float alpha;

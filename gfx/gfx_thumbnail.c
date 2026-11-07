@@ -992,11 +992,46 @@ static bool gfx_thumb_frame_budget(void *ud, size_t avail, size_t len)
    return cpu_features_get_time_usec() - *(int64_t*)ud < 2000;
 }
 
+/* 64-bit FNV-1a; never 0 for a non-empty path, so 0 means "none". */
+static uint64_t gfx_thumbnail_file_hash(const char *path)
+{
+   uint64_t h = 0xcbf29ce484222325ULL;
+   if (!path || !*path)
+      return 0;
+   while (*path)
+      h = (h ^ (unsigned char)*path++) * 0x100000001b3ULL;
+   return h ? h : 1;
+}
+
+/* Whether @thumbnail already holds @path, shown or on its way.
+ *
+ * Asking only the animation session left out every still - and every
+ * animation the preview budget refused, which lands as a still - so
+ * opening the viewer on the image the file browser was showing reset
+ * the thumbnail and read and decoded the file all over again. */
 bool gfx_thumbnail_has_file(const gfx_thumbnail_t *thumbnail, const char *path)
 {
-   const gfx_anim_preview_t *session = thumbnail
-      ? (const gfx_anim_preview_t*)thumbnail->anim_sess : NULL;
-   return session && string_is_equal(session->path, path);
+   const gfx_anim_preview_t *session;
+   if (!thumbnail || !path || !*path)
+      return false;
+   if ((session = (const gfx_anim_preview_t*)thumbnail->anim_sess))
+      return string_is_equal(session->path, path);
+   if (!thumbnail->file_hash)
+      return false;
+   switch (GFX_THUMB_STATUS_LOAD(
+         (retro_atomic_int_t*)&thumbnail->status))
+   {
+      case GFX_THUMBNAIL_STATUS_AVAILABLE:
+         break;
+      case GFX_THUMBNAIL_STATUS_PENDING:
+         /* superseded: nothing will ever deliver it */
+         if (thumbnail->list_id != gfx_thumb_st.list_id)
+            return false;
+         break;
+      default:
+         return false;
+   }
+   return thumbnail->file_hash == gfx_thumbnail_file_hash(path);
 }
 
 /* Main-thread transport command; the audio mixer applies its request
@@ -1717,6 +1752,9 @@ void gfx_thumbnail_request(
             {
                gfx_thumbnail_tag_t *thumbnail_tag;
 
+               thumbnail->file_hash = gfx_thumbnail_file_hash(
+                     thumbnail_path);
+
                /* A WebM or MP4 that serves as its own thumbnail takes
                 * the sliding window rather than the whole-file still
                 * decode; see gfx_thumbnail_try_video_open. */
@@ -1839,6 +1877,8 @@ void gfx_thumbnail_request_file(
        || !path_is_valid(file_path))
       return;
 
+   thumbnail->file_hash = gfx_thumbnail_file_hash(file_path);
+
    /* Video containers take the sliding window before the still task
     * is ever queued; see gfx_thumbnail_try_video_open. */
    if (gfx_thumbnail_try_video_open(thumbnail, file_path))
@@ -1941,6 +1981,7 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
     * thread learn on delivery that this reset happened. */
    GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_UNKNOWN);
    thumbnail->texture     = 0;
+   thumbnail->file_hash   = 0;
    thumbnail->dims        = 0;
    thumbnail->alpha       = 0.0f;
    thumbnail->delay_timer = 0.0f;
