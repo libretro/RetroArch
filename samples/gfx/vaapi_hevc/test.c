@@ -72,7 +72,7 @@ static VAStatus packet_create(VADisplay d, VAContextID c, VABufferType type,
                && !memcmp(data, long_work.slices, bytes * elements));
    }
    else if (type == VASubsetsParameterBufferType)
-      assert(bytes == sizeof(uint32_t) && elements == long_work.num_entries
+      assert(bytes == sizeof(uint32_t) * long_work.num_entries && elements == 1
             && !memcmp(data, long_work.entries, bytes * elements));
    else if (packet_session.slice_mode == VA_DEC_SLICE_MODE_BASE)
       assert(type == VASliceDataBufferType && bytes == packed_size

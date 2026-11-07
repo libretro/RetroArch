@@ -108,8 +108,8 @@ static bool vaapi_hevc_submit_buffers(vaapi_hevc_submit_t *t,
       VAAPI_HEVC_BUFFER(VAIQMatrixBufferType, sizeof(*matrix), 1, matrix);
    VAAPI_HEVC_BUFFER(VASliceParameterBufferType, element, count, slices);
    if (num_entries)
-      VAAPI_HEVC_BUFFER(VASubsetsParameterBufferType, sizeof(*entries),
-            num_entries, entries);
+      VAAPI_HEVC_BUFFER(VASubsetsParameterBufferType,
+            num_entries * sizeof(*entries), 1, entries);
    VAAPI_HEVC_BUFFER(VASliceDataBufferType, size, 1, data);
 #undef VAAPI_HEVC_BUFFER
    t->poisoned = true;

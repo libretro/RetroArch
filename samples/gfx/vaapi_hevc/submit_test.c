@@ -41,7 +41,7 @@ static VAStatus ss_create(VADisplay display, VAContextID context,
                               : sizeof(ss_long[0])));
    else if (kind == 3 && ss_subset)
       assert(type == VASubsetsParameterBufferType
-            && size == sizeof(ss_entries[0]) && count == 2
+            && size == sizeof(ss_entries) && count == 1
             && !memcmp(data, ss_entries, sizeof(ss_entries)));
    else
       assert(type == VASliceDataBufferType && size == 8 && count == 1
