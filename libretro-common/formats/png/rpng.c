@@ -50,6 +50,35 @@
 #if defined(__SSE2__)
 #include <emmintrin.h>
 #define RPNG_SIMD_SSE2 1
+/* SSSE3's byte shuffle turns the 8-bit RGB and RGBA row conversions
+ * into one instruction per four pixels.  A stock x86-64 build has no
+ * flag enabling it, so where the toolchain can build a function for
+ * SSSE3 without one, the choice is made per decode at run time (see
+ * rpng_process_init).  Same predicate shape as the CRC32 hash in
+ * encoding_deflate.c, for the same reason: Clang reports itself as GCC
+ * 4.2 forever, so a bare version comparison would reject every Clang
+ * build. */
+#if defined(__SSSE3__)
+#include <tmmintrin.h>
+#define RPNG_SSSE3 1
+#define RPNG_SSSE3_TARGET
+#elif defined(__has_attribute) && defined(__has_include)
+#if __has_attribute(target) && __has_include(<tmmintrin.h>)
+#include <tmmintrin.h>
+#define RPNG_SSSE3 1
+#define RPNG_SSSE3_RUNTIME 1
+#define RPNG_SSSE3_TARGET __attribute__((target("ssse3")))
+#endif
+#elif !defined(__clang__) && defined(__GNUC__) \
+   && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))
+#include <tmmintrin.h>
+#define RPNG_SSSE3 1
+#define RPNG_SSSE3_RUNTIME 1
+#define RPNG_SSSE3_TARGET __attribute__((target("ssse3")))
+#endif
+#if defined(RPNG_SSSE3_RUNTIME)
+#include <features/features_cpu.h>
+#endif
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
 #if !defined(VITA) && !defined(WEBOS) && !defined(HAVE_LIBNX)
 #include <arm_neon.h>
@@ -175,6 +204,10 @@ struct rpng_process
 {
    uint32_t *data;
    uint32_t *palette;
+#if defined(RPNG_SSSE3)
+   /* the row conversions may use SSSE3; settled in rpng_process_init */
+   bool ssse3;
+#endif
    void *stream;
    const struct trans_stream_backend *stream_backend;
    /* Unfiltering runs in place inside the inflate ring wherever a
@@ -1553,6 +1586,65 @@ static void rpng_copy_line_rgba_sse2(uint32_t *data,
 }
 #endif /* RPNG_SIMD_SSE2 */
 
+/* The same two conversions with SSSE3's byte shuffle: each output word
+ * is picked straight out of the 16-byte load, alpha ORed in for RGB -
+ * one shuffle per four pixels where SSE2 takes four shifts and masks
+ * plus a channel swap.  Bounds and scalar tails as the SSE2 versions,
+ * so the output is identical. */
+#if defined(RPNG_SSSE3)
+static RPNG_SSSE3_TARGET void rpng_copy_line_rgb_ssse3(uint32_t *data,
+      const uint8_t *src, unsigned width, bool supports_rgba)
+{
+   unsigned i = 0;
+   /* ABGR32 wants R,G,B in memory order, ARGB32 B,G,R; -1 zeroes */
+   const __m128i shuf = supports_rgba
+         ? _mm_setr_epi8(0, 1, 2, -1, 3, 4, 5, -1,
+                         6, 7, 8, -1, 9, 10, 11, -1)
+         : _mm_setr_epi8(2, 1, 0, -1, 5, 4, 3, -1,
+                         8, 7, 6, -1, 11, 10, 9, -1);
+   const __m128i ma   = _mm_set1_epi32((int)0xFF000000u);
+
+   /* the load reads 4 bytes past the 12 consumed */
+   for (; (int)(width - i) >= 6; i += 4)
+      _mm_storeu_si128((__m128i*)(data + i), _mm_or_si128(_mm_shuffle_epi8(
+            _mm_loadu_si128((const __m128i*)(src + (size_t)i * 3)), shuf),
+            ma));
+
+   if (supports_rgba)
+   {
+      for (; i < width; i++)
+         data[i] = 0xFF000000u
+                 | ((unsigned)src[i*3+2] << 16)
+                 | ((unsigned)src[i*3+1] <<  8)
+                 | ((unsigned)src[i*3+0]      );
+   }
+   else
+   {
+      for (; i < width; i++)
+         data[i] = 0xFF000000u
+                 | ((unsigned)src[i*3+0] << 16)
+                 | ((unsigned)src[i*3+1] <<  8)
+                 | ((unsigned)src[i*3+2]      );
+   }
+}
+
+/* RGBA -> ARGB32 (the supports_rgba case is a plain copy and never
+ * gets here): R and B trade places in every word. */
+static RPNG_SSSE3_TARGET void rpng_copy_line_rgba_argb_ssse3(uint32_t *data,
+      const uint8_t *src, unsigned width)
+{
+   unsigned i = 0;
+   const __m128i shuf = _mm_setr_epi8(2, 1, 0, 3, 6, 5, 4, 7,
+                                      10, 9, 8, 11, 14, 13, 12, 15);
+   for (; (int)(width - i) >= 4; i += 4)
+      _mm_storeu_si128((__m128i*)(data + i), _mm_shuffle_epi8(
+            _mm_loadu_si128((const __m128i*)(src + (size_t)i * 4)), shuf));
+   for (; i < width; i++)
+      data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
+              | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
+}
+#endif /* RPNG_SSSE3 */
+
 /* NEON RGBA → ARGB32/ABGR32 conversion: vld4_u8 de-interleaves all 4 channels. */
 #if defined(RPNG_SIMD_NEON)
 static void rpng_copy_line_rgba_neon(uint32_t *data,
@@ -2530,6 +2622,14 @@ static void rpng_reverse_filter_convert(uint32_t *data,
                ihdr->depth);
          break;
       case PNG_IHDR_COLOR_RGB:
+#if defined(RPNG_SSSE3)
+         if (pngp->ssse3 && ihdr->depth == 8)
+         {
+            rpng_copy_line_rgb_ssse3(data, decoded, ihdr->width,
+                  pngp->supports_rgba);
+            break;
+         }
+#endif
          rpng_reverse_filter_copy_line_rgb(data, decoded, ihdr->width,
                ihdr->depth, pngp->supports_rgba, pngp->want_10bit);
          break;
@@ -2542,6 +2642,13 @@ static void rpng_reverse_filter_convert(uint32_t *data,
                data, decoded, ihdr->width, ihdr->depth);
          break;
       case PNG_IHDR_COLOR_RGBA:
+#if defined(RPNG_SSSE3)
+         if (pngp->ssse3 && ihdr->depth == 8 && !pngp->supports_rgba)
+         {
+            rpng_copy_line_rgba_argb_ssse3(data, decoded, ihdr->width);
+            break;
+         }
+#endif
          rpng_reverse_filter_copy_line_rgba(
                data, decoded, ihdr->width, ihdr->depth,
                pngp->supports_rgba);
@@ -3215,6 +3322,12 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
 
    if (!process)
       return NULL;
+
+#if defined(RPNG_SSSE3_RUNTIME)
+   process->ssse3 = (cpu_features_get() & RETRO_SIMD_SSSE3) != 0;
+#elif defined(RPNG_SSSE3)
+   process->ssse3 = true;
+#endif
 
    process->stream_backend         = trans_stream_get_zlib_inflate_backend();
 
