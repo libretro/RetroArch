@@ -2481,6 +2481,41 @@ START_TEST (test_rwav_truncation_robustness)
 }
 END_TEST
 
+/* An ADPCM header may state fewer frames a block than the block holds,
+ * never more: past the predictor preamble a block has room for only
+ * so many nibbles, and a larger claim inflates the frame count of a
+ * small payload.  Both fixtures state exactly what their blocks hold. */
+static int rwav_test_parse_spb(const uint8_t *src, size_t len,
+      unsigned spb)
+{
+   rwav_t   h;
+   int      ok;
+   uint8_t *buf = (uint8_t*)malloc(len);
+   ck_assert(buf != NULL);
+   memcpy(buf, src, len);
+   buf[38] = (uint8_t)(spb & 0xFF);    /* the fmt extension's frame */
+   buf[39] = (uint8_t)(spb >> 8);      /* count, past cbSize         */
+   ok = rwav_parse(&h, buf, len) == RWAV_ITERATE_DONE;
+   free(buf);
+   return ok;
+}
+
+START_TEST (test_rwav_adpcm_block_frames_bound)
+{
+   /* IMA mono, 1024-byte blocks: 4 preamble bytes, one frame there
+    * and two a byte after, 2041 in all */
+   ck_assert(rwav_test_parse_spb(wav_ima, sizeof(wav_ima), 2041));
+   ck_assert(rwav_test_parse_spb(wav_ima, sizeof(wav_ima), 1000));
+   ck_assert(!rwav_test_parse_spb(wav_ima, sizeof(wav_ima), 2042));
+   ck_assert(!rwav_test_parse_spb(wav_ima, sizeof(wav_ima), 65535));
+   /* MS mono, 1024-byte blocks: 7 preamble bytes carrying two frames,
+    * 2036 in all */
+   ck_assert(rwav_test_parse_spb(wav_ms, sizeof(wav_ms), 2036));
+   ck_assert(!rwav_test_parse_spb(wav_ms, sizeof(wav_ms), 2037));
+   ck_assert(!rwav_test_parse_spb(wav_ms, sizeof(wav_ms), 65535));
+}
+END_TEST
+
 static Suite *rwav_suite(void)
 {
    Suite *s       = suite_create(SUITE_NAME);
@@ -2490,6 +2525,7 @@ static Suite *rwav_suite(void)
    tcase_add_test(tc_core, test_rwav_load_matches_decode);
    tcase_add_test(tc_core, test_rwav_windowed_equals_whole);
    tcase_add_test(tc_core, test_rwav_truncation_robustness);
+   tcase_add_test(tc_core, test_rwav_adpcm_block_frames_bound);
    suite_add_tcase(s, tc_core);
    return s;
 }
