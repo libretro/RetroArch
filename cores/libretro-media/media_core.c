@@ -159,6 +159,7 @@ typedef struct
 #ifdef HAVE_RMP4
    rmp4_video_stream_t *mp4vs;       /* video stream when playing MP4   */
    int          mp4_hw_required;
+   int          mp4_restoring;
 #endif
    int          vtrack;              /* video track index               */
    enum rwebm_codec codec;
@@ -1304,6 +1305,7 @@ void MEDIA_CORE_PREFIX(retro_reset)(void)
 #ifdef HAVE_RMP4
    if (p->mp4vs)
    {
+      p->mp4_restoring = 0;
       p->hw_restart = 0;
       rmp4_video_stream_rewind(p->mp4vs);
       p->hw_video = media_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
@@ -1417,6 +1419,40 @@ static bool media_seek_audio(media_player_t *p, int64_t want)
 #endif
 
 #ifdef HAVE_RMP4
+static int media_mp4_restore_step(media_player_t *p)
+{
+   int result;
+   unsigned budget = 32;
+   int64_t started = cpu_features_get_time_usec();
+   while (rmp4_video_stream_frame_index(p->mp4vs) < p->vshown - 1)
+   {
+      result = rmp4_video_stream_discard(p->mp4vs, NULL);
+      if (result == 2)
+         return 0;
+      if (result != 1)
+         return -1;
+      if (!--budget || cpu_features_get_time_usec() - started >= 4000)
+         return 0;
+   }
+   result = rmp4_video_stream_skip(p->mp4vs, NULL);
+   if (result == 2)
+      return 0;
+   if (result != 1)
+      return -1;
+   if (p->hw_video)
+   {
+      if (!rmp4_video_stream_hw_frame(p->mp4vs, &p->hw_frame))
+         return -1;
+   }
+   else if (!media_make_framebuffer(p)
+         || !rmp4_video_stream_render(p->mp4vs))
+      return -1;
+   p->mp4_restoring = 0;
+   p->seeking = MEDIA_MP4_SEEK_NONE;
+   p->pending_seek_ns = -1;
+   return 1;
+}
+
 static bool media_mp4_seek_begin(media_player_t *p, int64_t target_ns)
 {
    p->pending_seek_ns = target_ns;
@@ -1526,6 +1562,9 @@ static int64_t media_seek_internal_resume(media_player_t *p, int64_t target_ns,
       int64_t ms;
       int64_t delay = rmp4_video_stream_presentation_delay_ns(p->mp4vs);
       int64_t relative = target_ns > delay ? target_ns - delay : 0;
+      p->mp4_restoring = 0;
+      p->seeking = MEDIA_MP4_SEEK_NONE;
+      p->pending_seek_ns = -1;
       media_drop_hw(p);
       if (p->hw_video && !resume)
       {
@@ -1858,7 +1897,18 @@ void media_video_hw_ready(void)
          p->hw_started = 1;
          p->hw_video = ready && rmp4_video_stream_set_hw(p->mp4vs, 1);
       }
-      if (p->hw_restart && p->seeking)
+      if (p->hw_restart && p->mp4_restoring)
+      {
+         if (rmp4_video_stream_seek_frame(p->mp4vs, (int)p->vshown - 1) < 0)
+         {
+            p->mp4_restoring = 0;
+            p->seeking = MEDIA_MP4_SEEK_NONE;
+            p->pending_seek_ns = -1;
+            p->eof = 1;
+         }
+         p->hw_restart = 0;
+      }
+      else if (p->hw_restart && p->seeking)
       {
          media_mp4_seek_begin(p, p->pending_seek_ns);
          p->hw_restart = 0;
@@ -2166,6 +2216,23 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
 #endif
       }
 
+      if (p->mp4_restoring)
+      {
+         int ready = media_mp4_restore_step(p);
+         if (ready != 1)
+         {
+            MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+            if (ready < 0)
+            {
+               p->mp4_restoring = 0;
+               p->seeking = MEDIA_MP4_SEEK_NONE;
+               p->pending_seek_ns = -1;
+               p->eof = 1;
+               MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+            }
+            return;
+         }
+      }
       if (p->seeking == MEDIA_MP4_SEEK_SCAN)
       {
          int ready = media_mp4_seek_step(p);
@@ -3307,6 +3374,7 @@ bool MEDIA_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
             data_transfer_refill(p->dt, 0);
             p->discarded = 0;
          }
+         p->mp4_restoring = 0;
          media_drop_hw(p);
          if (rmp4_video_stream_seek_frame(p->mp4vs,
                s > 0 ? (int)s - 1 : 0) < 0)
@@ -3314,11 +3382,15 @@ bool MEDIA_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
          p->hw_video = media_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
          if (s > 0)
          {
-            if (rmp4_video_stream_skip(p->mp4vs, NULL) != 1)
-               return false;
             if (p->hw_video)
-               rmp4_video_stream_hw_frame(p->mp4vs, &p->hw_frame);
-            else if (!media_make_framebuffer(p)
+            {
+               p->hw_restart = 0;
+               p->mp4_restoring = 1;
+               p->seeking = MEDIA_MP4_SEEK_SCAN;
+               p->pending_seek_ns = (int64_t)v;
+            }
+            else if (rmp4_video_stream_skip(p->mp4vs, NULL) != 1
+                  || !media_make_framebuffer(p)
                   || !rmp4_video_stream_render(p->mp4vs))
                return false;
          }
@@ -3340,6 +3412,15 @@ bool MEDIA_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
          return false;
       p->apos = (int64_t)audio_pos;
       p->aeof = (d[5] & 2) != 0;
+#endif
+#ifdef HAVE_RMP4
+      if (p->mp4_restoring && media_mp4_restore_step(p) < 0)
+      {
+         p->mp4_restoring = 0;
+         p->seeking = MEDIA_MP4_SEEK_NONE;
+         p->pending_seek_ns = -1;
+         return false;
+      }
 #endif
       return true;
    }
