@@ -30,9 +30,10 @@
  * and each frame is blended onto it.
  *
  * Each APNG frame is decoded by synthesising a minimal standalone PNG -
- * the file's own IHDR (with the frame's fcTL sub-dimensions), the
- * frame's IDAT/fdAT data payload re-tagged as IDAT, and IEND - and
- * running it through the ordinary rpng decode path.  That reuses all of
+ * the file's own IHDR (with the frame's fcTL sub-dimensions), PLTE and
+ * tRNS, an empty IDAT and IEND, with the frame's IDAT/fdAT payloads
+ * handed to rpng as spans where they lie in the file - and running it
+ * through the ordinary rpng decode path.  That reuses all of
  * rpng's inflate/unfilter/colour handling instead of duplicating it;
  * the only APNG-specific logic here is chunk indexing and the
  * dispose/blend compositing rules from the APNG specification.
@@ -51,6 +52,8 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 
+#include "rpng_internal.h"
+
 /* APNG dispose_op / blend_op (from the spec). */
 enum apng_dispose
 {
@@ -63,15 +66,6 @@ enum apng_blend
 {
    APNG_BLEND_SOURCE = 0,        /* overwrite the region               */
    APNG_BLEND_OVER   = 1         /* alpha-composite onto the region    */
-};
-
-/* One IDAT/fdAT payload run belonging to a frame.  Named (rather than
- * anonymous) so the realloc results below can be cast explicitly, which
- * C++ requires. */
-struct apng_part
-{
-   size_t off;
-   size_t len;
 };
 
 /* One animation frame: its fcTL geometry/timing plus the byte range of
@@ -90,7 +84,7 @@ struct apng_frame
     * individual (payload offset, payload length) so the synthesised
     * PNG concatenates exactly the compressed bytes with no chunk
     * framing or fdAT sequence numbers. */
-   struct apng_part *parts;
+   struct rpng_ext_span *parts;
    int      num_parts;
    /* Byte span of the frame's data chunks, first chunk header to the
     * last chunk's CRC end: what must be resident to decode it. */
@@ -172,9 +166,6 @@ static INLINE void apng_wr32(uint8_t *p, uint32_t v)
    p[2] = (uint8_t)(v >> 8);  p[3] = (uint8_t)v;
 }
 
-static const uint8_t apng_png_sig[8] =
-   { 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A };
-
 void rpng_apng_stream_close(rpng_apng_stream_t *s)
 {
    int i;
@@ -212,7 +203,7 @@ bool rpng_is_apng_ex(const uint8_t *buf, size_t len, int *need_more)
          *need_more = 1;
       return false;
    }
-   if (memcmp(buf, apng_png_sig, 8) != 0)
+   if (memcmp(buf, png_magic, 8) != 0)
       return false;   /* not a PNG at all: conclusive */
    for (;;)
    {
@@ -267,7 +258,7 @@ static bool apng_index(rpng_apng_stream_t *s)
 
    if (s->index_done)
       return true;
-   if (s->len < 8 || memcmp(s->buf, apng_png_sig, 8) != 0)
+   if (s->len < 8 || memcmp(s->buf, png_magic, 8) != 0)
       return false;
 
    while (p + 12 <= s->avail)
@@ -363,7 +354,7 @@ static bool apng_index(rpng_apng_stream_t *s)
          if (cur_frame == 0)
          {
             struct apng_frame *f = &s->frames[0];
-            struct apng_part *np = (struct apng_part*)realloc(f->parts,
+            struct rpng_ext_span *np = (struct rpng_ext_span*)realloc(f->parts,
                   sizeof(*f->parts) * (size_t)(f->num_parts + 1));
             if (!np)
                return false;
@@ -385,7 +376,7 @@ static bool apng_index(rpng_apng_stream_t *s)
             return false;
          f = &s->frames[cur_frame];
          {
-            struct apng_part *np = (struct apng_part*)realloc(f->parts,
+            struct rpng_ext_span *np = (struct rpng_ext_span*)realloc(f->parts,
                   sizeof(*f->parts) * (size_t)(f->num_parts + 1));
             if (!np)
                return false;
@@ -572,26 +563,24 @@ void rpng_apng_stream_get_info(const rpng_apng_stream_t *s,
    if (loop_count) *loop_count = s->loop_count;
 }
 
-/* Build a standalone single-image PNG for frame f in *out (malloc'd),
- * returning its length, or 0 on failure.  Layout: signature, IHDR (with
- * the frame's sub-dimensions), optional PLTE/tRNS copied verbatim, one
- * IDAT with all of the frame's concatenated data payloads, IEND. */
+/* The PNG frame f decodes as, less its image data: signature, IHDR
+ * (with the frame's sub-dimensions), PLTE/tRNS copied verbatim, an
+ * empty IDAT and IEND.  The data itself - the frame's IDAT/fdAT
+ * payloads - is handed to rpng where it lies in the file
+ * (rpng_add_idat_spans), so it is never copied: this used to append
+ * every frame's compressed bytes here as one IDAT.  Built in the
+ * stream's reusable scratch; returns it with its length, or NULL. */
 static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
       const struct apng_frame *f, size_t *out_len)
 {
-   size_t data_len = 0;
    size_t total, pos;
    uint8_t *o;
-   int i;
-
-   for (i = 0; i < f->num_parts; i++)
-      data_len += f->parts[i].len;
 
    total  = 8;                             /* signature            */
    total += s->ihdr_total - 8;             /* IHDR chunk           */
    if (s->plte_len) total += s->plte_len;
    if (s->trns_len) total += s->trns_len;
-   total += 12 + data_len;                 /* IDAT chunk           */
+   total += 12;                            /* empty IDAT chunk     */
    total += 12;                            /* IEND chunk           */
 
    if (total > s->synth_cap)
@@ -606,7 +595,7 @@ static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
    pos = 0;
 
    /* signature + IHDR, then patch IHDR width/height to the frame's. */
-   memcpy(o, apng_png_sig, 8);
+   memcpy(o, png_magic, 8);
    pos = 8;
    memcpy(o + pos, s->ihdr, s->ihdr_total - 8);
    /* IHDR data begins at (chunk start + 8); width/height are its first
@@ -614,8 +603,7 @@ static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
    apng_wr32(o + pos + 8 + 0, f->width);
    apng_wr32(o + pos + 8 + 4, f->height);
    /* The chunk CRCs are left zero: this PNG goes to rpng and nowhere
-    * else, and rpng does not check them, so hashing every frame's data
-    * (all of it, for IDAT) bought nothing. */
+    * else, and rpng does not check them. */
    apng_wr32(o + pos + 8 + 13, 0);
    pos += s->ihdr_total - 8;
 
@@ -630,19 +618,12 @@ static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
       pos += s->trns_len;
    }
 
-   /* IDAT: length, "IDAT", concatenated data, CRC. */
-   apng_wr32(o + pos, (uint32_t)data_len);
+   /* An empty IDAT, which PNG allows: it puts the image data where the
+    * chunk order wants it, the payloads coming in as spans. */
+   apng_wr32(o + pos, 0);
    memcpy(o + pos + 4, "IDAT", 4);
-   {
-      size_t dp = pos + 8;
-      for (i = 0; i < f->num_parts; i++)
-      {
-         memcpy(o + dp, s->buf + f->parts[i].off, f->parts[i].len);
-         dp += f->parts[i].len;
-      }
-   }
-   apng_wr32(o + pos + 8 + data_len, 0);
-   pos += 12 + data_len;
+   apng_wr32(o + pos + 8, 0);
+   pos += 12;
 
    /* IEND */
    apng_wr32(o + pos, 0);
@@ -673,6 +654,11 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
       return NULL;   /* png is the stream's reusable scratch: not freed */
    }
    while (rpng_iterate_image(r)) ;
+   if (!rpng_add_idat_spans(r, s->buf, f->parts, f->num_parts))
+   {
+      rpng_free(r);
+      return NULL;
+   }
    /* Channel order: the animation contract's default (emit_argb == 0)
     * is memory R,G,B,A, which rpng produces with supports_rgba = true
     * (ABGR32 word on LE).  emit_argb == 1 wants ARGB words (BGRA

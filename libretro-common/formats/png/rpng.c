@@ -268,6 +268,10 @@ struct rpng
     * resident) when never set. */
    uint8_t *avail_end;
    bool     need_more;   /* last iterate stopped at the resident wall */
+   /* What the IDAT spans' offsets are relative to: buff_start, unless
+    * rpng_add_idat_spans gave them a buffer of their own (an APNG
+    * frame's data, read where it lies in the animation file). */
+   const uint8_t *idat_base;
    struct idat_spans idat_buf; /* ptr alignment */
    struct png_ihdr ihdr; /* uint32 alignment */
    uint32_t palette[256];
@@ -2798,7 +2802,8 @@ static int rpng_load_image_argb_process_inflate_init(
    {
       const struct idat_span *sp = &rpng->idat_buf.v[process->span_idx];
       process->stream_backend->set_in(process->stream,
-            rpng->buff_start + sp->off + process->span_pos,
+            (rpng->idat_base ? rpng->idat_base : rpng->buff_start)
+            + sp->off + process->span_pos,
             sp->len - process->span_pos);
    }
    else
@@ -2866,7 +2871,8 @@ static int rpng_load_image_argb_process_inflate_init(
          process->span_pos = 0;
          sp = &rpng->idat_buf.v[process->span_idx];
          process->stream_backend->set_in(process->stream,
-               rpng->buff_start + sp->off, sp->len);
+               (rpng->idat_base ? rpng->idat_base : rpng->buff_start)
+               + sp->off, sp->len);
          zstatus = process->stream_backend->trans(
             process->stream, false, &rd, &wn, &err);
          if (!zstatus && err != TRANS_STREAM_ERROR_BUFFER_FULL)
@@ -3607,6 +3613,33 @@ void rpng_free(rpng_t *rpng)
    }
 
    free(rpng);
+}
+
+/* The compressed image data, given as payload spans of another buffer
+ * instead of IDAT chunks in this one.  For APNG: each frame is decoded
+ * as a PNG made of the file's IHDR (with the frame's size), PLTE and
+ * tRNS, an empty IDAT and an IEND, with the frame's IDAT/fdAT payloads
+ * added here where they lie in the animation, rather than copied into
+ * that PNG.  Called after the chunk walk has finished and before the
+ * first rpng_process_image; the buffer must outlive the decode.  The
+ * same span limits as file IDAT chunks apply. */
+bool rpng_add_idat_spans(rpng_t *rpng, const uint8_t *base,
+      const struct rpng_ext_span *v, int n)
+{
+   int i;
+   if (!rpng || !base || rpng->process
+         || (rpng->idat_buf.n && rpng->idat_base != base))
+      return false;
+   rpng->idat_base = base;
+   for (i = 0; i < n; i++)
+   {
+      if (v[i].len != (uint32_t)v[i].len)
+         return false;
+      if (v[i].len && !rpng_idat_append_span(&rpng->idat_buf,
+               v[i].off, (uint32_t)v[i].len))
+         return false;
+   }
+   return true;
 }
 
 bool rpng_start(rpng_t *rpng)
