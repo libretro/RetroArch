@@ -31,11 +31,12 @@ static int fails;
    else { printf("  [FAIL] %s\n", what); fails++; } \
 } while (0)
 
-static const char *frame_names[] = { "Texture", "rubyTexture" };
+/* The last as RetroArch names a sampler nothing binds, which keeps unit 0 */
+static const char *frame_names[] = { "Texture", "rubyTexture", "s_p" };
 
 static char *rewrite(const char *src, enum glsl_rect_mode mode)
 {
-   return glsl_rect_rewrite(src, frame_names, 2, mode);
+   return glsl_rect_rewrite(src, frame_names, 3, mode);
 }
 
 static bool supported(const char *src)
@@ -94,6 +95,18 @@ static const char *shader_blur =
    "}\n"
    "#endif\n";
 
+/* The frame under two names in one stage, both at unit 0 */
+static const char *shader_two =
+   COMPAT_HEAD
+   "uniform sampler2D s_p;\n"
+   "void main()\n"
+   "{\n"
+   "   vec2 d = 0.75 / TextureSize;\n"
+   "   FragColor = COMPAT_TEXTURE(Source, vTex + d) * 0.5\n"
+   "      + COMPAT_TEXTURE(s_p, vTex - d) * 0.5;\n"
+   "}\n"
+   "#endif\n";
+
 #ifdef GLSL_RECT_ORACLE
 /* Well past the rectangle on every side */
 static const char *shader_wide =
@@ -114,8 +127,14 @@ int test_rewrite(void)
    CHECK(out && !strstr(out, "COMPAT_TEXTURE(Source")
          && strstr(out, "RARCH_frame(vTex + vec2(d.x, 0.0))"),
          "reads through macros naming the read and the frame go in place");
-   CHECK(out && strstr(out, "uniform sampler2D Texture;\n#ifndef RARCH_HP"),
+   CHECK(out && strstr(out,
+         "uniform sampler2D Texture;\n#ifndef RARCH_FRAME_HELPER"),
          "the helper follows the frame's declaration");
+   free(out);
+   out = rewrite(shader_two, GLSL_RECT_LINEAR_EDGE);
+   CHECK(out && strstr(out, "uniform sampler2D s_p;\n#ifndef RARCH_FRAME_HELPER")
+         && strstr(out, "RARCH_frame(vTex - d)"),
+         "a second name for the frame in one stage reads through one helper");
    free(out);
 
    CHECK(supported(
@@ -147,6 +166,19 @@ int test_rewrite(void)
          "vec4 g(vec2 c, sampler2D s) { return f(s, c) * 0.5; }\n"
          "void main() { gl_FragColor = g(t, Source) + f(Texture, t); }\n"),
          "a function every call gives the frame, through another");
+   CHECK(supported(
+         "uniform sampler2D Texture;\nvarying vec2 t;\n"
+         "#define Source Texture\n"
+         "#define GET(c) texture2D(Source, c)\n"
+         "vec4 f(sampler2D Source, vec2 c) { return GET(c); }\n"
+         "void main() { gl_FragColor = f(Texture, t) + GET(t); }\n"),
+         "a define naming a frame parameter that shadows the frame's name");
+   CHECK(!supported(
+         "uniform sampler2D Texture;\nvarying vec2 t;\n"
+         "#define GET(c) texture2D(tex, c)\n"
+         "vec4 f(sampler2D tex, vec2 c) { return GET(c); }\n"
+         "void main() { gl_FragColor = f(Texture, t); }\n"),
+         "a define reading a frame parameter out of the body keeps the copy");
    CHECK(supported(
          "uniform sampler2D Texture;\nvarying vec2 t;\n"
          "#define tex2D(c, d) texture2D(c, d)\n"
@@ -428,9 +460,11 @@ static int test_oracle(EGLint client_version, const char *version,
       { 0, 0, 40, 15 },   /* the top screen of two */
       { 0, 15, 40, 15 },  /* the bottom one */
       { 19, 3, 1, 1 } };  /* one texel */
-   const char *shaders[2];
+   static const char *const kinds[] = { "blur", "wide", "two-name" };
+   const char *shaders[3];
    shaders[0] = shader_blur;
    shaders[1] = shader_wide;
+   shaders[2] = shader_two;
 
    if (     dpy == EGL_NO_DISPLAY || !eglInitialize(dpy, NULL, NULL)
          || !eglBindAPI(EGL_OPENGL_ES_API))
@@ -461,7 +495,7 @@ static int test_oracle(EGLint client_version, const char *version,
       if (m == GLSL_RECT_NEAREST_BORDER
             && !strstr((const char*)glGetString(GL_VERSION), "3.2"))
          continue;
-      for (s = 0; s < 2; s++)
+      for (s = 0; s < 3; s++)
       {
          bool all = true, compiled = true;
          char what_case[160];
@@ -478,7 +512,7 @@ static int test_oracle(EGLint client_version, const char *version,
          }
          snprintf(what_case, sizeof(what_case),
                "%s shader, %s: in place matches the copy byte for byte",
-               s ? "wide" : "blur", mode_names[m]);
+               kinds[s], mode_names[m]);
          if (client_version < 3 && m == GLSL_RECT_NEAREST_REPEAT)
             continue;
          CHECK(compiled && all, what_case);

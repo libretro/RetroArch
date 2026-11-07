@@ -115,6 +115,18 @@ static const char *shader_prev =
    "}\n"
    "#endif\n";
 
+/* The frame under a name nothing binds, left at unit 0 */
+static const char *shader_unbound =
+   SHADER_HEAD
+   "uniform sampler2D decal;\n"
+   "void main()\n"
+   "{\n"
+   "   vec2 d = 0.75 / TextureSize;\n"
+   "   FragColor = COMPAT_TEXTURE(decal, vTex + d) * 0.5\n"
+   "      + COMPAT_TEXTURE(Texture, vTex - d) * 0.5;\n"
+   "}\n"
+   "#endif\n";
+
 static const char *shader_fetch =
    SHADER_HEAD
    "void main()\n"
@@ -335,6 +347,46 @@ static void test_orig(void)
    free_glsl(glsl);
 }
 
+/* A sampler nothing binds reads unit 0: the frame in the first pass, the
+ * pass before's output after it; a look-up texture's name is not one */
+static void test_unbound(void)
+{
+   static uint8_t img_a[4 * 64 * 64], img_b[4 * 64 * 64];
+   const unsigned ow = vw * 2 + 1, oh = vh * 2 + 3;
+   const char *src[2];
+   glsl_shader_data_t *glsl;
+   GLuint pass1, t_slot, t_frame;
+
+   printf("[glsl_in_place] a sampler nothing binds\n");
+   src[0] = shader_unbound;
+   src[1] = shader_unbound;
+   glsl   = make_glsl(src, 2);
+   pass1  = glsl->prg[1].id;
+   CHECK(gl_glsl_in_place(glsl, GL_LINEAR, GL_CLAMP_TO_EDGE)
+         && glsl->in_place.count == 1 && glsl->in_place.pass[0].idx == 1,
+         "the first pass is rewritten, the second keeps its input");
+
+   make_inputs(&t_slot, &t_frame);
+   draw(pass1, t_slot, 0, vw, vh, ow, oh, img_a);
+   begin(glsl);
+   draw(glsl->prg[1].id, t_frame, 0, vw, vh, ow, oh, img_b);
+   CHECK(!memcmp(img_a, img_b, ow * oh * 4),
+         "both names read from the frame, byte for byte as from the copy");
+   gl_glsl_in_place_end(glsl);
+   glDeleteTextures(1, &t_slot);
+   glDeleteTextures(1, &t_frame);
+   free_glsl(glsl);
+
+   glsl = make_glsl(src, 1);
+   glsl->shader->luts = 1;
+   strlcpy(glsl->shader->lut[0].id, "decal", sizeof(glsl->shader->lut[0].id));
+   CHECK(gl_glsl_in_place(glsl, GL_LINEAR, GL_CLAMP_TO_EDGE)
+         && glsl->in_place.count == 1
+         && glGetUniformLocation(glsl->in_place.pass[0].prg.id, "decal") >= 0,
+         "as a look-up texture's name it is left alone");
+   free_glsl(glsl);
+}
+
 static void test_kept(const char *src, const char *what)
 {
    glsl_shader_data_t *glsl = make_glsl(&src, 1);
@@ -377,6 +429,7 @@ int main(void)
    printf("[glsl_in_place] %s\n", (const char*)glGetString(GL_RENDERER));
    test_blur();
    test_orig();
+   test_unbound();
    test_kept(shader_prev, "a preset reading earlier frames keeps its copy");
    test_kept(shader_fetch, "one fetching the frame's texels keeps its copy");
 

@@ -640,9 +640,25 @@ static void glsl_rect_frame_params(struct glsl_rect_scan *s,
       nf++;
       i = end;
    }
+   /* A define naming the parameter reads it wherever it is expanded,
+    * out of sight of the function's body; unless the name is the frame
+    * everywhere, as a parameter shadowing it must be */
    for (p = 0; p < np; p++)
+   {
+      const struct glsl_rect_token *pt = &s->tok[param[p].tok];
       if (func[param[p].func].overloaded)
          param[p].alive = false;
+      if (glsl_rect_resolves_to(s, pt->start, pt->len, frame, num_frame,
+               0) == 1)
+         continue;
+      for (i = 0; param[p].alive && i < s->num_tok; i++)
+         if (     s->tok[i].region
+               && s->tok[i].type == GLSL_RECT_TOK_IDENT
+               && s->tok[i].len == pt->len
+               && !memcmp(s->src + s->tok[i].start, s->src + pt->start,
+                  pt->len))
+            param[p].alive = false;
+   }
    /* Each call must give the frame, or a caller's own such parameter */
    while (changed)
    {
@@ -777,8 +793,12 @@ static const char *glsl_rect_helper(enum glsl_rect_mode mode)
    return NULL;
 }
 
+/* Once per stage: two frame names declared in one stage both hold the
+ * frame, so the first's helper serves the second's reads too */
 #define GLSL_RECT_PRELUDE \
-   "\n#ifndef RARCH_HP\n" \
+   "\n#ifndef RARCH_FRAME_HELPER\n" \
+   "#define RARCH_FRAME_HELPER\n" \
+   "#ifndef RARCH_HP\n" \
    "#ifdef GL_ES\n" \
    "#if defined(GL_FRAGMENT_PRECISION_HIGH) || defined(VERTEX)\n" \
    "#define RARCH_HP highp\n" \
@@ -801,6 +821,7 @@ static const char *glsl_rect_helper(enum glsl_rect_mode mode)
    "uniform RARCH_HP vec4 " GLSL_RECT_NAME_TEXELS ";\n" \
    "vec4 RARCH_frame(RARCH_HP vec2 c)\n" \
    "{\n"
+#define GLSL_RECT_POSTLUDE "}\n#endif\n"
 
 static int glsl_rect_edit_cmp(const void *a, const void *b)
 {
@@ -957,7 +978,8 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
             }
       }
       out_len += edit[i].decl
-         ? strlen(GLSL_RECT_PRELUDE) + strlen(helper) + edit[i].arg_len + 8
+         ? strlen(GLSL_RECT_PRELUDE) + strlen(helper) + edit[i].arg_len
+            + strlen(GLSL_RECT_POSTLUDE)
          : edit[i].arg_len + 16;
    }
    if (!(out = (char*)malloc(out_len)))
@@ -980,8 +1002,8 @@ static char *glsl_rect_rewrite(const char *src, const char *const *frame,
          o += edit[i].arg_len;
          memcpy(out + o, pct + 2, strlen(pct + 2));
          o += strlen(pct + 2);
-         memcpy(out + o, "}\n", 2);
-         o += 2;
+         memcpy(out + o, GLSL_RECT_POSTLUDE, strlen(GLSL_RECT_POSTLUDE));
+         o += strlen(GLSL_RECT_POSTLUDE);
       }
       else
       {

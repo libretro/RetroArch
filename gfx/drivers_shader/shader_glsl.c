@@ -2211,7 +2211,9 @@ static void gl_glsl_in_place_free(glsl_shader_data_t *glsl)
 /* 1 when @name is the frame in program @p (the first pass's input, the
  * original, or PassPrev@p, which is the original too), 0 when it is a
  * sampler the pass is given otherwise, -1 when it is anything else:
- * earlier frames, which only copies hold, or a sampler nothing binds */
+ * earlier frames, which only copies hold, or a *Texture name nothing
+ * binds. A name not ending in Texture is never bound, so it keeps the
+ * unit 0 every sampler links with, which holds the pass's input */
 static int gl_glsl_in_place_sampler(const glsl_shader_data_t *glsl,
       unsigned p, const char *name)
 {
@@ -2222,7 +2224,7 @@ static int gl_glsl_in_place_sampler(const glsl_shader_data_t *glsl,
       if (string_is_equal(name, glsl->shader->lut[k].id))
          return 0;
    if (len < 7 || !string_is_equal(name + len - 7, "Texture"))
-      return -1;
+      return p == 1 ? 1 : 0;
    pre[0] = glsl->shader->prefix;
    pre[1] = glsl_prefixes[0];
    pre[2] = glsl_prefixes[1];
