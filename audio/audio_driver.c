@@ -3752,6 +3752,26 @@ static INLINE void audio_driver_flush_offered(audio_driver_state_t *audio_st,
       audio_st->sink_accepted += (uint64_t)w / fb;
 }
 
+/* The s16 path's master gain, a deterministic Q16 multiply: round half
+ * away from zero on the shift, saturate (see audio_driver_flush()). @src
+ * may be @dst. */
+static void audio_driver_gain_s16(int16_t *dst, const int16_t *src,
+      unsigned total, float gain)
+{
+   int32_t  gain_q16 = (int32_t)(gain * 65536.0f + 0.5f);
+   unsigned k;
+   for (k = 0; k < total; k++)
+   {
+      int64_t p = (int64_t)src[k] * gain_q16;
+      int64_t v = (p >= 0)
+            ?  ((  p + 0x8000) >> 16)
+            : -(((-p + 0x8000) >> 16));
+      if      (v >  32767) v =  32767;
+      else if (v < -32768) v = -32768;
+      dst[k] = (int16_t)v;
+   }
+}
+
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       const void *data, size_t samples, bool is_float,
@@ -3958,6 +3978,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          unsigned rs_frames   = (unsigned)(samples >> 1);
          double   i16_ratio;
          unsigned out_frames;
+         /* The master gain already applied on the way into the output
+          * scratch (see the unity branch). */
+         bool gained          = false;
          bool     synth_on    = midi_driver_synth_active()
                && audio_st->synth_buf && audio_st->input_data_int16;
          /* Writable view of the input for the synth sum and the DSP
@@ -3977,27 +4000,24 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
           * is added unscaled; the output stage applies the master volume gain
           * to the combined signal, matching the float path's (game+synth)*gain
           * ordering. */
-         if (synth_on)
+         /* The sum is written straight from the game audio into the
+          * writable view, one pass; a synth that rendered nothing
+          * leaves the game audio where it is, uncopied. */
+         if (synth_on && midi_driver_render_audio(audio_st->synth_buf,
+                  rs_frames, (unsigned)audio_st->input))
          {
+            const int16_t *game = (const int16_t*)rs_in;
+            size_t s;
             if (!work)
-            {
-               memcpy(audio_st->input_data_int16, data,
-                     samples * sizeof(int16_t));
                work = audio_st->input_data_int16;
-            }
-            if (midi_driver_render_audio(audio_st->synth_buf, rs_frames,
-                     (unsigned)audio_st->input))
+            for (s = 0; s < samples; s++)
             {
-               size_t s;
-               for (s = 0; s < samples; s++)
-               {
-                  int32_t v  = (int32_t)work[s]
-                            + audio_float_to_s16_sat(
-                                 audio_st->synth_buf[s]);
-                  if      (v >  32767) v =  32767;
-                  else if (v < -32768) v = -32768;
-                  work[s] = (int16_t)v;
-               }
+               int32_t v  = (int32_t)game[s]
+                         + audio_float_to_s16_sat(
+                              audio_st->synth_buf[s]);
+               if      (v >  32767) v =  32767;
+               else if (v < -32768) v = -32768;
+               work[s] = (int16_t)v;
             }
             rs_in = work;
          }
@@ -4086,6 +4106,14 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             }
             if (aflags & AUDIO_FLAG_USE_FLOAT)
                res_src = rs_in;
+            else if (audio_volume_gain != 1.0f)
+            {
+               /* The gain carries the audio across: one pass, not a
+                * copy and then the gain over it. */
+               audio_driver_gain_s16(audio_st->output_samples_int16, rs_in,
+                     rs_frames * 2, audio_volume_gain);
+               gained = true;
+            }
             else
                memcpy(audio_st->output_samples_int16, rs_in,
                      (size_t)rs_frames * 2 * sizeof(int16_t));
@@ -4193,23 +4221,10 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
              * No overflow risk: the largest |p| is 32768 * gain_q16,
              * and gain_q16 tops out at 260904 (+12 dB), so |p| stays
              * under 2^33. */
-            if (audio_volume_gain != 1.0f)
-            {
-               int32_t  gain_q16 = (int32_t)(audio_volume_gain * 65536.0f + 0.5f);
-               unsigned k;
-               unsigned total    = out_frames * 2;
-               int16_t *ob       = audio_st->output_samples_int16;
-               for (k = 0; k < total; k++)
-               {
-                  int64_t p = (int64_t)ob[k] * gain_q16;
-                  int64_t v = (p >= 0)
-                        ?  ((  p + 0x8000) >> 16)
-                        : -(((-p + 0x8000) >> 16));
-                  if      (v >  32767) v =  32767;
-                  else if (v < -32768) v = -32768;
-                  ob[k] = (int16_t)v;
-               }
-            }
+            if (audio_volume_gain != 1.0f && !gained)
+               audio_driver_gain_s16(audio_st->output_samples_int16,
+                     audio_st->output_samples_int16, out_frames * 2,
+                     audio_volume_gain);
 #ifdef HAVE_AUDIOMIXER
             /* Sum the mixer voices onto the int16 game audio, in the integer
              * domain.  Voices played on the s16 path (the common case here,
@@ -4292,7 +4307,11 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * resampler reads data_in scalar-wise or with unaligned loads, and so
     * does the bypass clamp. */
    {
-      bool synth_on   = midi_driver_synth_active() && audio_st->synth_buf;
+      /* Rendered first, so a synth that has nothing this batch costs
+       * the game audio no copy. */
+      bool synth_on   = midi_driver_synth_active() && audio_st->synth_buf
+            && midi_driver_render_audio(audio_st->synth_buf, samples >> 1,
+                  (unsigned)audio_st->input);
       bool copy_input = !is_float
             || (audio_volume_gain != 1.0f)
             || synth_on
@@ -4319,32 +4338,31 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          src_data.data_in            = (const float*)data;
       else
       {
+         /* Mix in-process MIDI synth output (e.g. fmsynth) into the float
+          * input before resampling, so it shares the core's resampler, gain
+          * and output path; audio_st->synth_buf is allocated to the same
+          * size as input_data. A float core's sum is written in the same
+          * pass that brings its audio in: each sample as the copy, then
+          * the add, left it. */
          if (is_float)
          {
             const float *fin = (const float*)data;
-            if (audio_volume_gain == 1.0f)
+            size_t s;
+            if (synth_on)
+               for (s = 0; s < samples; s++)
+                  audio_st->input_data[s] = (float)(fin[s] * audio_volume_gain)
+                        + audio_st->synth_buf[s] * audio_volume_gain;
+            else if (audio_volume_gain == 1.0f)
                memcpy(audio_st->input_data, fin, samples * sizeof(float));
             else
-            {
-               size_t s;
                for (s = 0; s < samples; s++)
                   audio_st->input_data[s] = fin[s] * audio_volume_gain;
-            }
          }
          else
+         {
             convert_s16_to_float(audio_st->input_data,
                   (const int16_t*)data, samples, audio_volume_gain);
-
-         /* Mix in-process MIDI synth output (e.g. fmsynth) into the float
-          * input before resampling, so it shares the core's resampler, gain
-          * and output path. No-op unless a render-capable MIDI driver is
-          * active and sounding.  audio_st->synth_buf is allocated to the
-          * same size as input_data. */
-         if (synth_on)
-         {
-            size_t frames = samples >> 1;
-            if (midi_driver_render_audio(audio_st->synth_buf, frames,
-                     (unsigned)audio_st->input))
+            if (synth_on)
             {
                size_t s;
                for (s = 0; s < samples; s++)

@@ -183,6 +183,99 @@ static void float_device_case(void)
    audio_driver_deinit();
 }
 
+/* The integer front pair with a master gain, which now carries the batch
+ * into the output scratch in one pass instead of a copy and a gain over
+ * it: every sample must still be the Q16 multiply of the source - round
+ * half away from zero, saturated - with no conversion on the way, at an
+ * attenuation and at a boost that saturates. */
+static void integer_gain_case(float volume)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   int32_t gain_q16 = (int32_t)(volume * 65536.0f + 0.5f);
+   unsigned m = 0;
+   size_t i;
+   setup(false, false, false, true, volume);
+   batch(false);
+   for (i = 0; i < FRAMES * 2; i++)
+   {
+      int64_t p = (int64_t)source_i[i] * gain_q16;
+      int64_t v = (p >= 0) ? ((p + 0x8000) >> 16) : -(((-p + 0x8000) >> 16));
+      if (v > 32767) v = 32767; else if (v < -32768) v = -32768;
+      if (captured_i[i] != (int16_t)v)
+         m++;
+   }
+   if (     captured_samples != FRAMES * 2 || m
+         || s16_to_float_calls || float_to_s16_calls
+         || !st->resampler_bypassed)
+   {
+      printf("FAIL integer gain %.2f: frames=%u mismatches=%u s16->f=%u f->s16=%u bypassed=%d\n",
+            volume, (unsigned)(captured_samples / 2), m,
+            s16_to_float_calls, float_to_s16_calls,
+            (int)st->resampler_bypassed);
+      failures++;
+   }
+   else
+      printf("integer gain %.2f: the Q16 multiply bit for bit\n",
+            volume);
+   audio_driver_deinit();
+}
+
+extern bool test_synth_on, test_synth_silent;
+static float synth_at(size_t i) { return (float)((int)(i % 64) - 32) / 256.0f; }
+
+/* An in-process MIDI synth summed into the game audio. On the integer
+ * front pair the sum is written from the game audio into the writable
+ * view in one pass; for a float core in the pass that brings its audio
+ * in. Both must give what the copy and then the add gave, and a synth
+ * that renders nothing must leave the batch on its passthrough. */
+static void synth_case(bool fastpath_s16, bool core_float, bool silent)
+{
+   const char *what = silent
+         ? (fastpath_s16 ? "silent synth, integer front pair"
+                         : "silent synth, float path")
+         : core_float ? "synth, float core" : "synth, integer front pair";
+   unsigned m = 0;
+   size_t i;
+   test_synth_on     = true;
+   test_synth_silent = silent;
+   setup(core_float, false, false, fastpath_s16, 1.0f);
+   if (core_float)
+   {
+      audio_driver_set_core_float(true);
+      audio_driver_sample_batch_float(source_f, FRAMES);
+   }
+   else
+      batch(false);
+   for (i = 0; i < FRAMES * 2; i++)
+   {
+      if (silent)
+         m += captured_i[i] != source_i[i];
+      else if (core_float)
+         m += captured_f[i] != (float)(source_f[i] * 1.0f) + synth_at(i) * 1.0f;
+      else
+      {
+         int32_t v = (int32_t)source_i[i] + audio_float_to_s16_sat(synth_at(i));
+         if (v > 32767) v = 32767; else if (v < -32768) v = -32768;
+         m += fastpath_s16 && captured_i[i] != (int16_t)v;
+      }
+   }
+   if (captured_samples != FRAMES * 2 || m
+         || (silent && (s16_to_float_calls || float_to_s16_calls)))
+   {
+      printf("FAIL %s: frames=%u mismatches=%u s16->f=%u f->s16=%u\n", what,
+            (unsigned)(captured_samples / 2), m,
+            s16_to_float_calls, float_to_s16_calls);
+      failures++;
+   }
+   else
+      printf("%s: %s\n", what, silent
+            ? "the batch stays on its passthrough"
+            : "the sum as the copy and the add left it");
+   audio_driver_deinit();
+   audio_driver_set_core_float(false);
+   test_synth_on = test_synth_silent = false;
+}
+
 static void staged_case(const char *what, bool rate_control, float volume,
       unsigned fade_frames, bool expect_bypassed)
 {
@@ -245,6 +338,12 @@ int main(void)
    identity_case(false, true);
    float_device_case();
    staged_case("gain",         false, 0.5f, 0, true);
+   integer_gain_case(0.5f);
+   integer_gain_case(3.98f);
+   synth_case(true,  false, false);
+   synth_case(false, true,  false);
+   synth_case(true,  false, true);
+   synth_case(false, false, true);
    staged_case("resume ramp",  false, 1.0f, 8, true);
    staged_case("rate control", true,  1.0f, 0, false);
    if (failures)
