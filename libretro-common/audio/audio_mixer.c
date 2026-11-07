@@ -2003,6 +2003,19 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
  * a mode flip with the sound still loaded (a core switch), and it now
  * builds from the source instead of from the other pipeline. */
 #ifdef HAVE_RWAV
+/* Whether a WAV's pipelines can be sized at all: two output samples a
+ * frame, padded to 16 and held as floats, a decode scratch of one s16
+ * a channel a frame where more than two are folded, and the frame
+ * count kept as an unsigned.  rwav bounds the count by the payload,
+ * but the pipelines expand it up to eightfold (8-bit mono to stereo
+ * float), which still wraps a 32-bit size_t on a large enough file. */
+static bool wav_pipeline_fits(const rwav_t *wav)
+{
+   size_t ch = (wav->numchannels > 2) ? (size_t)wav->numchannels : 2;
+   return     wav->numsamples <= (SIZE_MAX / sizeof(float) - 16) / ch
+          &&  (size_t)(unsigned)wav->numsamples == wav->numsamples;
+}
+
 static bool wav_build_float(audio_mixer_sound_t* sound,
       const char *resampler_ident, enum resampler_quality quality)
 {
@@ -2011,7 +2024,8 @@ static bool wav_build_float(audio_mixer_sound_t* sound,
 
    if (sound->types.wav.pcm)
       return true;
-   if (!sound->types.wav.src)
+   if (     !sound->types.wav.src
+         || !wav_pipeline_fits(&sound->types.wav.hdr))
       return false;
 
    samples = sound->types.wav.hdr.numsamples * 2;
@@ -2049,7 +2063,8 @@ static bool wav_build_s16(audio_mixer_sound_t* sound,
 
    if (sound->types.wav.pcm_s16)
       return true;
-   if (!sound->types.wav.src)
+   if (     !sound->types.wav.src
+         || !wav_pipeline_fits(&sound->types.wav.hdr))
       return false;
 
    samples = sound->types.wav.hdr.numsamples * 2;
