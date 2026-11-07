@@ -261,14 +261,53 @@ static void copy_rgba_line(uint8_t *dst, const uint8_t *src, unsigned width)
    memcpy(dst, src, (size_t)width * 4);
 }
 
+/* B,G,R -> R,G,B: the outer two bytes of every pixel trade places.  This
+ * ran a byte at a time ahead of filters that are all vectorised, and on
+ * a 3840x2160 capture it was two thirds of the row work outside deflate.
+ *
+ * SSE2 has no byte shuffle, but none is needed.  A 16-byte load that
+ * starts on a pixel boundary holds each byte's partner two places away,
+ * in a pattern that repeats every three bytes: the red slot takes the
+ * byte two to the right, the blue slot the byte two to the left, green
+ * stays.  Two whole-register byte shifts and three fixed masks build the
+ * swap.  The first four pixels (12 bytes) are then complete; the last
+ * four bytes are a half-built fifth pixel that the next step's store -
+ * 12 bytes on - overwrites, as does the scalar tail after the last
+ * step.  NEON loads the three channels as planes and stores them back
+ * crossed. */
 static void copy_bgr24_line(uint8_t *dst, const uint8_t *src, unsigned width)
 {
-   unsigned i;
-   for (i = 0; i < width; i++, dst += 3, src += 3)
+   size_t i   = 0;
+   size_t len = (size_t)width * 3;
+#if defined(RPNG_ENC_SSE2)
    {
-      dst[2] = src[0];
-      dst[1] = src[1];
-      dst[0] = src[2];
+      const __m128i m_r = _mm_setr_epi8(-1,0,0, -1,0,0, -1,0,0, -1,0,0, -1,0,0, -1);
+      const __m128i m_g = _mm_setr_epi8(0,-1,0, 0,-1,0, 0,-1,0, 0,-1,0, 0,-1,0, 0);
+      const __m128i m_b = _mm_setr_epi8(0,0,-1, 0,0,-1, 0,0,-1, 0,0,-1, 0,0,-1, 0);
+      for (; i + 16 <= len; i += 12)
+      {
+         __m128i v = _mm_loadu_si128((const __m128i*)(src + i));
+         _mm_storeu_si128((__m128i*)(dst + i), _mm_or_si128(
+                  _mm_and_si128(v, m_g),
+                  _mm_or_si128(_mm_and_si128(_mm_srli_si128(v, 2), m_r),
+                               _mm_and_si128(_mm_slli_si128(v, 2), m_b))));
+      }
+   }
+#elif defined(RPNG_ENC_NEON)
+   for (; i + 48 <= len; i += 48)
+   {
+      uint8x16x3_t p = vld3q_u8(src + i);
+      uint8x16_t   t = p.val[0];
+      p.val[0]       = p.val[2];
+      p.val[2]       = t;
+      vst3q_u8(dst + i, p);
+   }
+#endif
+   for (; i < len; i += 3)
+   {
+      dst[i + 2] = src[i    ];
+      dst[i + 1] = src[i + 1];
+      dst[i    ] = src[i + 2];
    }
 }
 
