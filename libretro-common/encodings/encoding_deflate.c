@@ -2455,13 +2455,34 @@ static void rd_fixed_lit_lengths(uint8_t *ll)
 #  endif
 #endif
 
+#if defined(RD_CRC32_HASH_DIRECT) || defined(RD_CRC32_HASH_RUNTIME)
+/* The three bytes at p as the CRC hash key, p[0] lowest.  On a
+ * little-endian target that is one 32-bit load with the top byte
+ * dropped, in place of three byte loads, two shifts and two ors - the
+ * key is built at every position inserted, which on the content
+ * screenshots hold is nearly every position.  The fourth byte read
+ * always lies inside win[]: a key is only taken where three bytes
+ * remain before win_len, and win[] carries an 8-byte margin past its
+ * largest win_len for the word compares in rd_longest_match(). */
+static INLINE uint32_t rd_key3(const uint8_t *p)
+{
+#if RETRO_IS_BIG_ENDIAN
+   return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
+#else
+   uint32_t k;
+   memcpy(&k, p, 4);
+   return k & 0x00FFFFFFu;
+#endif
+}
+#endif
+
 #if defined(RD_CRC32_HASH_RUNTIME)
 #include <features/features_cpu.h>
 #if defined(_MSC_VER)
 #include <nmmintrin.h>
 static uint32_t rd_hash_crc(const uint8_t *p)
 {
-   uint32_t k = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
+   uint32_t k = rd_key3(p);
    return _mm_crc32_u32(0, k) & RD_HASH_MASK;
 }
 #else
@@ -2473,7 +2494,7 @@ static uint32_t rd_hash_crc(const uint8_t *p)
  * selects this path when cpu_features_get() reports SSE4.2. */
 static uint32_t rd_hash_crc(const uint8_t *p)
 {
-   uint32_t k = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
+   uint32_t k = rd_key3(p);
    uint32_t r = 0;
    __asm__("crc32l %1, %0" : "+r"(r) : "rm"(k));
    return r & RD_HASH_MASK;
@@ -2493,11 +2514,11 @@ static uint32_t rd_hash_soft(const uint8_t *p)
 static uint32_t rd_hash(struct rdeflate *s, const uint8_t *p)
 {
 #if defined(__SSE4_2__)
-   uint32_t k = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
+   uint32_t k = rd_key3(p);
    (void)s;
    return _mm_crc32_u32(0, k) & RD_HASH_MASK;
 #elif defined(__ARM_FEATURE_CRC32)
-   uint32_t k = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
+   uint32_t k = rd_key3(p);
    (void)s;
    return __crc32w(0, k) & RD_HASH_MASK;
 #elif defined(RD_CRC32_HASH_RUNTIME)
