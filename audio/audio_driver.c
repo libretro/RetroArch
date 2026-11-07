@@ -6262,9 +6262,15 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
       {
          case 0:
             /* Without the threaded pipeline the ramp's arming is the
-             * submitter's, as is the rest of a pause and a resume. */
+             * submitter's, as is the rest of a pause and a resume -
+             * and the flush interval it measures, which the pause
+             * must not be read as. */
             if (!audio_st->pipe_threaded)
+            {
                audio_st->fade_in_pending = false;
+               if (!audio_st->callback.callback)
+                  audio_driver_ff_mult_reset(audio_st);
+            }
             audio_driver_pause_tail(audio_st, audio_st->current_audio,
                   write_tail);
             break;
@@ -6274,6 +6280,8 @@ static void audio_driver_requests_apply(audio_driver_state_t *audio_st,
                      &audio_st->pipe_resume_topup) != 0;
                if (!audio_st->pipe_threaded && topup)
                   audio_st->fade_in_pending = true;
+               if (!audio_st->pipe_threaded && !audio_st->callback.callback)
+                  audio_driver_ff_mult_reset(audio_st);
                audio_driver_resume_reset(audio_st, topup);
             }
             break;
@@ -6430,9 +6438,16 @@ void audio_driver_pause_fade(bool paused)
    const audio_driver_t *audio    = audio_st->current_audio;
    bool was_silenced;
 
-   /* The paused interval is not a flush interval. Reset on the main
-    * thread, as the frame end resets it. */
-   audio_driver_ff_mult_reset(audio_st);
+   /* The paused interval is not a flush interval. The threaded
+    * pipeline's producer and a callback core measure at the frame end,
+    * on this thread, so reset here. Inline, the submitting thread
+    * measures, and a core may submit from a thread of its own: the
+    * pause and resume requests below reset it there, under the claim
+    * (see audio_driver_requests_apply()). */
+#ifdef HAVE_THREADS
+   if (audio_st->pipe_threaded || audio_st->callback.callback)
+#endif
+      audio_driver_ff_mult_reset(audio_st);
 
    if (     !audio
          || !audio->write
