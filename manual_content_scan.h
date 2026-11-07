@@ -309,13 +309,13 @@ void manual_content_scan_fs_free(manual_content_scan_fs_t *fs);
 bool manual_content_scan_set_menu_content_dir_fs(const char *content_dir,
       const manual_content_scan_fs_t *fs);
 
-/* As manual_content_scan_set_menu_content_dir(), of @kind: an smb://
- * path of known kind is not stat'd, as that can wait on the server. */
+/* As manual_content_scan_set_menu_content_dir(), of @kind:
+ * a path of known kind is not stat'd again. */
 bool manual_content_scan_set_menu_content_dir_kind(const char *content_dir,
       enum manual_content_scan_path_kind kind);
 
-/* path_stat() of @path, the content directory last set, or for an
- * smb:// one of known kind what its kind says. */
+/* Stat flags for @path, the content directory last set:
+ * its known kind, or path_stat() when unknown. */
 int manual_content_scan_content_stat(const char *path);
 
 bool manual_content_scan_set_menu_scan_method(

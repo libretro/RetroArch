@@ -10473,10 +10473,9 @@ static int smb_kind_chain(task_dbscan_item_t *items, const char *out,
  * before its scan is pushed: Scan Directory and Scan File, the menu's
  * folder pick, a lone refresh, and the chain's --scan and refresh
  * items, whose path or load task stats it off the main thread
- * instead.  Unknown kind, and a local path whatever its kind, are
- * stat'd.  A single smb:// file keeps its folder's playlist name, its
- * single-file database scan, saves no settings and ignores
- * Overwrite, as when the stat told it. */
+ * instead.  Unknown kind is stat'd.  A single smb:// file keeps its
+ * folder's playlist name and single-file database scan, saves no
+ * settings and ignores Overwrite, as when the stat told it. */
 static void smb_kind_lane(const char *root, bool threaded)
 {
    const char *dir  = "smb://host/share/roms";
@@ -10650,7 +10649,7 @@ static void smb_kind_lane(const char *root, bool threaded)
          && !strcmp(cfg[0].content_dir, file), what, detail);
 
    /* One file: the folder's playlist name, no Overwrite, from the
-    * kind as from the stat; a local path stats whatever its kind. */
+    * kind as from the stat. */
    manual_content_scan_reset_settings();
    manual_content_scan_set_menu_scan_method(
          MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
@@ -10676,9 +10675,9 @@ static void smb_kind_lane(const char *root, bool threaded)
          what, detail);
    sprintf(p, "%s/02_beta.bin", loc);
    ok = manual_content_scan_set_menu_content_dir_kind(p,
-         MANUAL_CONTENT_SCAN_PATH_FOLDER)
+         MANUAL_CONTENT_SCAN_PATH_FILE)
       && manual_content_scan_get_task_config(&cfg[0], pl);
-   sprintf(what, "smb kind %s: a local file read as a folder", q);
+   sprintf(what, "smb kind %s: a local file's playlist", q);
    check(   ok && cfg[0].content_is_file
          && !strcmp(path_basename(cfg[0].playlist_file),
                "smb_kind_local.lpl"), what,
@@ -11145,6 +11144,8 @@ fixture:
 static bool     fs_main_watch;
 static unsigned fs_main_calls;
 static char     fs_main_last[64];
+static const char *stat_watch_path;
+static unsigned    stat_watch_calls;
 
 static void fs_main_note(const char *fn)
 {
@@ -11163,6 +11164,11 @@ int __real_path_stat(const char *path);
 int __wrap_path_stat(const char *path)
 {
    fs_main_note("path_stat");
+#ifdef HAVE_THREADS
+   if (current_tid() == main_tid)
+#endif
+      if (stat_watch_path && !strcmp(path, stat_watch_path))
+         stat_watch_calls++;
    return __real_path_stat(path);
 }
 
@@ -11194,6 +11200,163 @@ char *__wrap_path_resolve_realpath(char *s, size_t len,
 {
    fs_main_note("path_resolve_realpath");
    return __real_path_resolve_realpath(s, len, resolve_symlinks);
+}
+
+static void local_refresh_lane(const char *root, const char *pl_dir,
+      bool threaded)
+{
+   char dir[512], lpl[512], ref[512], entry[1024], what[128], detail[128];
+   playlist_config_t *cfg = (playlist_config_t*)calloc(1, sizeof(*cfg));
+   playlist_t *playlist = NULL;
+   void *data = NULL;
+   int64_t len;
+   unsigned replaced, overwrite;
+   const char *q = threaded ? "threaded" : "regular";
+
+   sprintf(lpl, "%s/Local Offline.lpl", pl_dir);
+   sprintf(ref, "%s/local_refresh.ref", root);
+   if (!cfg)
+      goto fixture;
+   use_queue(threaded);
+   for (replaced = 0; replaced < 2; replaced++)
+   {
+      sprintf(dir, "%s/local_refresh_%s", root,
+            replaced ? "file.bin" : "missing");
+      if (replaced && !write_content(dir, 0x52A3ED00u, 1024))
+         goto fixture;
+      sprintf(entry, "%s/game.bin", dir);
+      for (overwrite = 0; overwrite < 2; overwrite++)
+      {
+         bool pushed;
+         time_t started;
+
+         filestream_delete(lpl);
+         if (!refresh_write(lpl, dir, NULL, entry))
+            goto fixture;
+         playlist_config_set_path(cfg, lpl);
+         cfg->capacity = COLLECTION_SIZE;
+         if (!(playlist = playlist_init(cfg)))
+            goto fixture;
+         playlist_set_scan_db_usage(playlist, MANUAL_CONTENT_SCAN_USE_DB_NONE);
+         playlist_set_scan_overwrite_playlist(playlist, overwrite != 0);
+         playlist_write_file(playlist);
+         if (   !filestream_read_file(lpl, &data, &len)
+             || !filestream_write_file(ref, data, len))
+            goto fixture;
+         free(data);
+         data = NULL;
+         manual_content_scan_reset_settings();
+         stat_watch_calls = 0;
+         stat_watch_path = dir;
+         pushed = manual_content_scan_set_menu_from_playlist_list(
+               playlist, NULL) == MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK;
+         playlist_free(playlist);
+         playlist = NULL;
+         loop_active = true;
+         scan_completed = false;
+         pushed = pushed && task_push_manual_content_scan(
+               false, scan_cb, &scan_result);
+         stat_watch_path = NULL;
+         started = time(NULL);
+         while (pushed && loop_active
+               && difftime(time(NULL), started) <= SCAN_TIMEOUT_SECONDS)
+         {
+            task_queue_check();
+            retro_sleep(1);
+         }
+         sprintf(what, "local refresh (%s): %s, overwrite %u", q,
+               replaced ? "folder replaced" : "offline", overwrite);
+         sprintf(detail, "%u main stats, failed %d, unchanged %d",
+               stat_watch_calls, (int)scan_result.failed, files_equal(ref, lpl));
+         check(   pushed && scan_completed && scan_result.failed
+               && stat_watch_calls == 0 && files_equal(ref, lpl), what, detail);
+      }
+   }
+   goto done;
+
+fixture:
+   check(0, "fixture", "could not build the local refresh lane");
+done:
+   stat_watch_path = NULL;
+   filestream_delete(lpl);
+   filestream_delete(ref);
+   playlist_free(playlist);
+   free(data);
+   free(cfg);
+   manual_content_scan_reset_settings();
+}
+
+static void local_kind_lane(const char *root, const char *pl_dir)
+{
+   char dir[512], path[1024], what[96], detail[128];
+   manual_content_scan_task_config_t *cfg = (manual_content_scan_task_config_t*)
+         calloc(1, sizeof(*cfg));
+   unsigned file, source;
+
+   if (!cfg)
+      goto fixture;
+   sprintf(dir, "%s/local_kind", root);
+   path_mkdir(dir);
+   sprintf(path, "%s/game.bin", dir);
+   if (!write_content(path, 0x52A3ED00u, 1024))
+      goto fixture;
+
+   for (file = 0; file < 2; file++)
+   {
+      if (file)
+         sprintf(path, "%s/game.bin", dir);
+      else
+         strlcpy(path, dir, sizeof(path));
+      for (source = 0; source < 3; source++)
+      {
+         manual_content_scan_fs_t *fs = NULL;
+         bool ok;
+
+         manual_content_scan_reset_settings();
+         manual_content_scan_set_menu_scan_method(
+               MANUAL_CONTENT_SCAN_METHOD_CUSTOM);
+         manual_content_scan_set_menu_scan_use_db(
+               MANUAL_CONTENT_SCAN_USE_DB_NONE);
+         *manual_content_scan_get_overwrite_playlist_ptr() = true;
+         *manual_content_scan_get_validate_entries_ptr() = true;
+         if (source == 2 && !(fs = manual_content_scan_fs_read(
+                     path, NULL, NULL, NULL)))
+            goto fixture;
+
+         stat_watch_calls = 0;
+         stat_watch_path  = path;
+         if (source == 2)
+            ok = manual_content_scan_set_menu_content_dir_fs(path, fs);
+         else
+            ok = manual_content_scan_set_menu_content_dir_kind(path,
+                  source == 0 ? MANUAL_CONTENT_SCAN_PATH_UNKNOWN
+                  : file ? MANUAL_CONTENT_SCAN_PATH_FILE
+                         : MANUAL_CONTENT_SCAN_PATH_FOLDER);
+         ok = ok && manual_content_scan_get_task_config(cfg, pl_dir);
+         stat_watch_path = NULL;
+         manual_content_scan_fs_free(fs);
+
+         sprintf(what, "local %s: %s kind", file ? "file" : "folder",
+               source == 0 ? "unknown" : source == 1 ? "supplied" : "snapshot");
+         sprintf(detail, "%u stats, file %d, overwrite %d, validate %d",
+               stat_watch_calls, (int)cfg->content_is_file,
+               (int)cfg->overwrite_playlist, (int)cfg->validate_entries);
+         check(   ok && stat_watch_calls == (source == 0 ? 2u : 0u)
+               && cfg->content_is_file == (file != 0)
+               && cfg->overwrite_playlist == (file == 0)
+               && cfg->validate_entries
+               && !strcmp(path_basename(cfg->playlist_file), "local_kind.lpl"),
+               what, detail);
+      }
+   }
+   goto done;
+
+fixture:
+   check(0, "fixture", "could not build the local kind lane");
+done:
+   stat_watch_path = NULL;
+   manual_content_scan_reset_settings();
+   free(cfg);
 }
 
 /* On a threaded queue the chain asks the file system nothing on the
@@ -12537,6 +12700,9 @@ int main(int argc, char **argv)
    chain_lane(root, pl_dir, crc_a, sz_a, true);
    refresh_lane(root, pl_dir, crc_a, sz_a, false);
    refresh_lane(root, pl_dir, crc_a, sz_a, true);
+   local_kind_lane(root, pl_dir);
+   local_refresh_lane(root, pl_dir, false);
+   local_refresh_lane(root, pl_dir, true);
    fs_main_lane(root, pl_dir);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, false);
    menu_refresh_all_lane(root, pl_dir, crc_a, sz_a, true);
