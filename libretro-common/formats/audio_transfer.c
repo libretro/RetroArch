@@ -2850,10 +2850,12 @@ static int audio_transfer_flac_feed(struct audio_transfer_flac *fl)
 #endif
       )
    {
-      /* Buffer mode: one span, handed over once. */
+      /* Buffer mode: one span, handed over once, and it is the whole
+       * stream - which lets the decoder skip its rewind points. */
       if (fl->fed_hdr)
          return 0;
       rflac_set_in(fl->handle, (const uint8_t*)fl->data, fl->size);
+      rflac_set_eof(fl->handle);
       fl->fed_hdr = 1;
       return 1;
    }
@@ -2949,6 +2951,7 @@ static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
          rflac_seek_resumed(fl->handle, 0);
          rflac_set_in(fl->handle, (const uint8_t*)fl->data + at,
                fl->size - (size_t)at);
+         rflac_set_eof(fl->handle);
          fl->fed_hdr = 1;
          fl->cursor  = (size_t)at;
          /* The table names the boundary, not the frame; close the

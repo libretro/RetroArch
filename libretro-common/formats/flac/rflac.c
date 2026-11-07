@@ -6784,10 +6784,18 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
     * reads ahead of the frame it is decoding, so it can and does, and
     * the branch below then read that underrun as the end of the
     * stream.  What ends a stream is the caller saying so. */
-   if (!f->saved && !(f->saved = (rflac*)malloc(sizeof(rflac))))
-      return RFLAC_PROCESS_ERROR;
-   memcpy(f->saved, f->dec, sizeof(rflac));
-   f->saved_pos = f->src.pos;
+   /* ...unless the caller has said no more input comes: an underrun
+    * is then the end of the stream, kept rather than rolled back (see
+    * below), so the point would never be used.  A whole file handed
+    * over at once no longer copies the decoder (4 KB and more) before
+    * every frame. */
+   if (!f->eof_in)
+   {
+      if (!f->saved && !(f->saved = (rflac*)malloc(sizeof(rflac))))
+         return RFLAC_PROCESS_ERROR;
+      memcpy(f->saved, f->dec, sizeof(rflac));
+      f->saved_pos = f->src.pos;
+   }
 
    f->src.underrun = 0;
 
