@@ -2520,13 +2520,71 @@ static uint32_t rd_hash(struct rdeflate *s, const uint8_t *p)
  * With a zero sentinel the fill disappears and the pages are faulted
  * in on demand, so a short input only ever touches the buckets it
  * uses. */
-static int32_t rd_insert(struct rdeflate *s, uint32_t pos)
+static INLINE int32_t rd_insert(struct rdeflate *s, uint32_t pos)
 {
    uint32_t h    = rd_hash(s, s->win + pos);
    int32_t  prev = s->head[h];
    s->prev[pos & RD_WMASK] = prev;
    s->head[h] = (int32_t)pos + 1;
    return prev - 1;
+}
+
+/* Insert every position in [q, stop) - the interior of a match just
+ * taken, which is where nearly all insertions happen on the repetitive
+ * content screenshots are made of.  The same chains rd_insert would
+ * build one call at a time, but with the hash chosen once for the run
+ * rather than per position, the tables held in registers, and the
+ * shift-xor hash rolled from one position to the next instead of
+ * recomputed from three loads: ((h << SHIFT) ^ next) & MASK is exactly
+ * rd_hash_soft of the next position, since what the mask drops from h
+ * would be shifted out past it anyway.  The caller has already bounded
+ * stop so every position has its three bytes. */
+static void rd_insert_range(struct rdeflate *s, uint32_t q, uint32_t stop)
+{
+   const uint8_t *w    = s->win;
+   int32_t       *head = s->head;
+   int32_t       *prev = s->prev;
+   if (q >= stop)
+      return;
+#if defined(RD_CRC32_HASH_DIRECT)
+   for (; q < stop; q++)
+   {
+      uint32_t h = rd_hash(s, w + q);
+      prev[q & RD_WMASK] = head[h];
+      head[h]            = (int32_t)q + 1;
+   }
+#else
+#if defined(RD_CRC32_HASH_RUNTIME)
+   if (s->use_crc_hash)
+   {
+      for (; q < stop; q++)
+      {
+         uint32_t h = rd_hash_crc(w + q);
+         prev[q & RD_WMASK] = head[h];
+         head[h]            = (int32_t)q + 1;
+      }
+      return;
+   }
+#endif
+   {
+      uint32_t h = ((uint32_t)w[q] << RD_HASH_SHIFT) ^ w[q + 1];
+      for (; q < stop; q++)
+      {
+         h = ((h << RD_HASH_SHIFT) ^ w[q + 2]) & RD_HASH_MASK;
+         prev[q & RD_WMASK] = head[h];
+         head[h]            = (int32_t)q + 1;
+      }
+   }
+#endif
+}
+
+/* Last position in a parse window [.., end) whose three hash bytes are
+ * all inside it, plus one: the bound the interior loops used to test
+ * position by position (q + RD_MIN_MATCH <= end). */
+static INLINE uint32_t rd_insert_end(uint32_t stop, uint32_t end)
+{
+   uint32_t lim = (end >= RD_MIN_MATCH) ? end - RD_MIN_MATCH + 1 : 0;
+   return stop < lim ? stop : lim;
 }
 
 static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
@@ -2846,18 +2904,12 @@ static void rd_parse(struct rdeflate *s)
              * but for long matches skip most interiors to save time (a small
              * ratio cost that pays off in speed at fast levels). */
             if (mlen <= 32)
-            {
-               for (q = s->pos + 1; q < stop; q++)
-                  if (q + RD_MIN_MATCH <= end)
-                     rd_insert(s, q);
-            }
+               rd_insert_range(s, s->pos + 1, rd_insert_end(stop, end));
             else
             {
                /* hash only a few positions near the start of the match */
-               uint32_t lim = s->pos + 8;
-               for (q = s->pos + 1; q < lim && q < stop; q++)
-                  if (q + RD_MIN_MATCH <= end)
-                     rd_insert(s, q);
+               q = s->pos + 8 < stop ? s->pos + 8 : stop;
+               rd_insert_range(s, s->pos + 1, rd_insert_end(q, end));
             }
             s->pos = stop;
          }
@@ -2912,16 +2964,14 @@ static void rd_parse(struct rdeflate *s)
             /* take the deferred match at pos-1 */
             uint32_t plen = s->prev_len;
             uint32_t pdist = s->prev_dist;
-            uint32_t stop, q;
+            uint32_t stop;
             s->have_prev = 0;
             rd_record_match(s, plen, pdist);
             /* insert the interior positions the match covers.  pos-1 is
              * already inserted; pos is already inserted (this iteration).
              * Insert pos+1 .. (pos-1)+plen-1. */
             stop = (s->pos - 1) + plen;
-            for (q = s->pos + 1; q < stop; q++)
-               if (q + RD_MIN_MATCH <= end)
-                  rd_insert(s, q);
+            rd_insert_range(s, s->pos + 1, rd_insert_end(stop, end));
             s->pos = stop;
          }
       }
@@ -2931,12 +2981,10 @@ static void rd_parse(struct rdeflate *s)
              || mlen > (uint32_t)s->lazy)
          {
             /* strong enough: take immediately */
-            uint32_t stop, q;
+            uint32_t stop;
             rd_record_match(s, mlen, mdist);
             stop = s->pos + mlen;
-            for (q = s->pos + 1; q < stop; q++)
-               if (q + RD_MIN_MATCH <= end)
-                  rd_insert(s, q);
+            rd_insert_range(s, s->pos + 1, rd_insert_end(stop, end));
             s->pos = stop;
          }
          else
