@@ -1,12 +1,14 @@
 from pathlib import Path
-import argparse, os, shutil, subprocess, sys, tempfile
+import argparse, os, re, shutil, subprocess, sys, tempfile
 p=argparse.ArgumentParser();p.add_argument('fixture');p.add_argument('--objdir',default='obj-unix/release');p.add_argument('--c89',action='store_true');p.add_argument('--shell',default='bash');p.add_argument('--driver',choices=['rgui','materialui','xmb','ozone'],default='rgui');p.add_argument('--video-driver',default='null');p.add_argument('--threaded',action='store_true');p.add_argument('--assets');p.add_argument('--gpu-surface',action='store_true',help='require RGUI GPU surface playback');p.add_argument('--hardware-decode',action='store_true',help='require hardware decoding as well as GPU presentation');p.add_argument('--continuous',action='store_true',help='test natural folder playback using three temporary fixture links/copies');p.add_argument('--first-video-us',type=int,default=0,help='first visible video timestamp used for capture comparisons');p.add_argument('--continuous-error',action='store_true',help='test that an invalid next movie stops folder playback');p.add_argument('--fullscreen-settings',action='store_true',help='test the shared fullscreen settings action');p.add_argument("--external",action="store_true",help="open the fixture as OS/command-line content");p.add_argument("--browser-image",action="store_true",help="activate an image through the real file browser");p.add_argument("--wallpaper-pick",action="store_true",help="pick the image through the menu Background setting browser");p.add_argument("--history-image",action="store_true",help="view the image from the Images history list and go back to it");p.add_argument("--window-toggle",action="store_true",help="verify pixels and seeking across application fullscreen transitions");p.add_argument("--dxgi",action="store_true",help="use the Windows DXGI presentation bridge");p.add_argument("--first-frame",action="store_true",help="require black loading frames before the external viewer is ready");p.add_argument("--startup-failure",action="store_true",help="require startup recovery from an undecodable media fixture");p.add_argument('--subtitles',action='store_true',help='verify the generated UTF-8 sidecar through the real menu adapter');p.add_argument('--modal',choices=['move','resize']);p.add_argument('--audio-driver',default='wasapi');p.add_argument('--cadence-hz',type=float,help='require measured movie cadence in Hz');p.add_argument('--require-cadence',action='store_true',help='require fullscreen display source in the folder fixture');p.add_argument('--desktop-refresh',action='store_true',help='exercise fullscreen refresh source and settings lifecycle');p.add_argument('--refresh-pixels',action='store_true',help='require changing movie pixels during fullscreen refresh matching')
 p.add_argument('--first-import-refusal',action='store_true',help='require recovery after a real asynchronous native import is refused')
 p.add_argument('--cold-cancel',action='store_true',help='close and reopen while native decoder admission is held on the worker')
 p.add_argument('--cold-reset',action='store_true',help='reinitialize video while native decoder admission is held on the worker')
 p.add_argument('--audio-latency',type=int)
 p.add_argument('--audio-sync',choices=['true','false'])
+p.add_argument('--validation',action='store_true',help='enable Vulkan validation and fail on any VUID')
 a=p.parse_args()
+if a.validation and a.video_driver!='vulkan':p.error('--validation requires Vulkan')
 if a.audio_latency is not None and a.audio_latency<0:p.error("--audio-latency must be nonnegative")
 if a.cadence_hz is not None and not 5<=a.cadence_hz<=240:p.error('--cadence-hz needs a rate from 5 through 240')
 if a.refresh_pixels:a.desktop_refresh=True
@@ -75,6 +77,9 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  native_cmd=cmd
  if os.name=='nt' and os.environ.get('GDB')=='1':cmd=['gdb','--batch','-return-child-result','-ex','run','-ex','thread apply all bt','--args']+cmd
  env=os.environ.copy();env['MEDIA_TEST_VIDEO_DRIVER']=a.video_driver
+ if a.validation:
+  layers=env.get('VK_INSTANCE_LAYERS','').split(':')
+  env['VK_INSTANCE_LAYERS']=':'.join(dict.fromkeys(x for x in layers+['VK_LAYER_KHRONOS_validation'] if x))
  if a.cadence_hz is not None:env['MEDIA_TEST_CADENCE_HZ']=str(a.cadence_hz)
  if a.modal:env['MEDIA_TEST_MODAL_MODE']=a.modal
  if a.subtitles:env['MEDIA_TEST_SUBTITLES']='1'
@@ -96,7 +101,7 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  if a.gpu_surface:env['MEDIA_TEST_GPU_SURFACE']='1'
  if a.hardware_decode:env['MEDIA_TEST_HW_DECODE']='1'
  env['MEDIA_TEST_FIRST_VIDEO_US']=str(a.first_video_us)
- if a.dxgi:
+ if a.dxgi or a.validation:
   result=subprocess.run(cmd,cwd=r,env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8',errors='replace')
   print(result.stdout,flush=True)
  else:result=subprocess.run(cmd,cwd=r,env=env)
@@ -110,4 +115,7 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
    subprocess.run(['gdb','--batch','-ex','run','-ex','thread apply all bt','--args']+native_cmd,cwd=r,env=debug_env)
   except OSError as error:print('Debugger replay unavailable: '+str(error),file=sys.stderr)
  result.check_returncode()
+ if a.validation:
+  ids=sorted(set(re.findall(r'\[\s*(VUID-[^\s\]]+)\s*\]',result.stdout or '')))
+  if ids:raise RuntimeError('Vulkan validation failed: '+', '.join(ids))
  if a.dxgi and ('DXGI presentation active.' not in result.stdout or 'DXGI presentation unavailable' in result.stdout):raise RuntimeError('DXGI presentation was not retained')

@@ -18,6 +18,10 @@ python3 samples/menu/rgui_media/run.py --video-driver vulkan --gpu-surface --har
 python3 samples/menu/rgui_media/run.py --video-driver vulkan --gpu-surface --hardware-decode --threaded movie.mp4
 ```
 
+Add `--validation` to enable the Vulkan validation layer and fail on any VUID,
+even when the playback assertions succeed. The layer must be installed or exposed
+through `VK_LAYER_PATH`.
+
 Use `--objdir` to select the frontend build directory, `--shell` for the build
 shell, and `--assets` for the menu assets. On Windows the runner uses GDB.
 With `--hardware-decode`, an imported hardware surface must supply the picture;
