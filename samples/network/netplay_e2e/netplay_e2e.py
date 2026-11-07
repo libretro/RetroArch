@@ -235,9 +235,19 @@ def run(retroarch, core, analog, label, host_extra=None, client_extra=None,
                 fails.append("%s: the core was given device 0x%x" % (label, dev))
                 break
         if fails:
+            # which side lost the stick: the client's own frames show
+            # whether its network gamepad was read at all, the devices
+            # whether the ports were the analog joypads sync needs
+            own = sum(1 for n in shared if client[n][0] != 0)
+            print("  the client's own stick moved in %d of %d frames" % (own, len(shared)))
+            print("  host devices %s, client devices %s" % (
+                " ".join("0x%x" % v for v in host_dev) or "none",
+                " ".join("0x%x" % v for v in client_dev) or "none"))
             for n in ("host.txt", "client.txt"):
                 with open(os.path.join(d, n), errors="replace") as f:
-                    lines = [l.rstrip() for l in f if "[Netplay]" in l or "rror" in l]
+                    lines = [l.rstrip() for l in f if "[Netplay]" in l
+                             or "[Network]" in l or "rror" in l
+                             or "bind" in l]
                 print("  %s:" % n)
                 for l in lines[-25:]:
                     print("    " + l)
