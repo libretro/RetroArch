@@ -141,14 +141,34 @@ bool gfx_thumbnail_set_repeat(gfx_thumbnail_t *t, bool repeat)
 { (void)t; (void)repeat; return false; }
 bool gfx_thumbnail_take_completed(gfx_thumbnail_t *t)
 { (void)t; return false; }
+/* Thumbnail loads are tested in gfx_thumbnail_anim; only viewer_title
+ * opens files here, and every other lane must not reach them. */
+static bool viewer_opening;
+static unsigned viewer_requests;
 bool gfx_thumbnail_has_file(const gfx_thumbnail_t *t, const char *path)
-{ (void)t; (void)path; abort(); return false; }
-void gfx_thumbnail_reset(gfx_thumbnail_t *t) { (void)t; abort(); }
+{ (void)t; (void)path; if (!viewer_opening) abort(); return false; }
+void gfx_thumbnail_reset(gfx_thumbnail_t *t)
+{ (void)t; if (!viewer_opening) abort(); }
 void gfx_thumbnail_request_file(const char *path, gfx_thumbnail_t *t, unsigned n)
-{ (void)path; (void)t; (void)n; abort(); }
+{ (void)path; (void)t; (void)n; if (!viewer_opening) abort(); viewer_requests++; }
 bool gfx_thumbnail_set_content_image(gfx_thumbnail_path_data_t *p,
       const char *dir, const char *name)
-{ (void)p; (void)dir; (void)name; abort(); return false; }
+{
+   if (!viewer_opening) abort();
+   snprintf(p->content_path, sizeof(p->content_path), "%s/%s", dir, name);
+   return true;
+}
+/* What menu_driver.c gives a file browser row: its rich label, else its
+ * name. */
+size_t menu_update_fullscreen_thumbnail_label(char *s, size_t len,
+      bool is_quick_menu, const char *title)
+{
+   file_list_t *list = MENU_LIST_GET_SELECTION(test_menu.entries.list, 0);
+   const char *name  = list->list[test_menu.selection_ptr].path;
+   (void)title;
+   if (!viewer_opening || is_quick_menu) abort();
+   return *name ? strlcpy(s, name, len) : 0;
+}
 task_subtitle_catalog_t *task_subtitle_discover(const char *path)
 { (void)path; abort(); return NULL; }
 int task_subtitle_catalog_status(const task_subtitle_catalog_t *catalog)
@@ -225,6 +245,72 @@ static void folder_queue(void)
    file_list_free(selection[0]); file_list_free(stack[0]);
    test_menu.entries.list = NULL;
    test_menu.driver_ctx = NULL;
+}
+
+/* The viewer's title follows the file shown.  Ozone's viewer opened with
+ * OK refreshed its title only when the fullscreen view had been asked for
+ * with START, so Up/Down to the next image kept the first one's name;
+ * the title now belongs to menu_media_open_selected_file, which every
+ * step through the viewer goes through, in Ozone and XMB alike. */
+static void viewer_title(void)
+{
+   static menu_list_t lists;
+   static gfx_thumbnail_path_data_t paths;
+   gfx_thumbnail_t left, right;
+   file_list_t *selection[1], *stack[1];
+   char title[64];
+   memset(&left, 0, sizeof(left));
+   memset(&right, 0, sizeof(right));
+   selection[0] = (file_list_t*)calloc(1, sizeof(file_list_t));
+   stack[0] = (file_list_t*)calloc(1, sizeof(file_list_t));
+   CHECK(selection[0] && stack[0]);
+   lists.selection_buf = selection; lists.selection_buf_size = 1;
+   lists.menu_stack = stack; lists.menu_stack_size = 1;
+   test_menu.entries.list = &lists;
+   test_menu.thumbnail_path_data = &paths;
+   CHECK(file_list_append(stack[0], "/pics", "", FILE_TYPE_DIRECTORY, 0, 0));
+   CHECK(file_list_append(selection[0], "first.png", "", FILE_TYPE_IMAGEVIEWER, 0, 0));
+   CHECK(file_list_append(selection[0], "second.jpg", "", FILE_TYPE_IMAGEVIEWER, 0, 0));
+   CHECK(file_list_append(selection[0], "folder", "", FILE_TYPE_DIRECTORY, 0, 0));
+   CHECK(file_list_append(selection[0], "third.gif", "", FILE_TYPE_IMAGEVIEWER, 0, 0));
+   viewer_opening = true;
+   /* OK opens the viewer on the first image */
+   test_menu.selection_ptr = 0;
+   strlcpy(title, "stale", sizeof(title));
+   CHECK(menu_media_open_selected_file(&test_menu, &left, &right,
+         title, sizeof(title)));
+   CHECK(!strcmp(title, "first.png"));
+   /* Down: the next image, and its name */
+   test_menu.selection_ptr = 1;
+   CHECK(menu_media_open_selected_file(&test_menu, &left, &right,
+         title, sizeof(title)));
+   CHECK(!strcmp(title, "second.jpg"));
+   CHECK(!strcmp(paths.content_path, "/pics/second.jpg"));
+   /* a row the viewer cannot show leaves the title of the one shown */
+   test_menu.selection_ptr = 2;
+   CHECK(!menu_media_open_selected_file(&test_menu, &left, &right,
+         title, sizeof(title)));
+   CHECK(!strcmp(title, "second.jpg"));
+   /* Down again, past it */
+   test_menu.selection_ptr = 3;
+   CHECK(menu_media_open_selected_file(&test_menu, &left, &right,
+         title, sizeof(title)));
+   CHECK(!strcmp(title, "third.gif"));
+   /* Up: back to the first */
+   test_menu.selection_ptr = 0;
+   CHECK(menu_media_open_selected_file(&test_menu, &left, &right,
+         title, sizeof(title)));
+   CHECK(!strcmp(title, "first.png"));
+   /* truncated to the buffer, never past it */
+   CHECK(menu_media_open_selected_file(&test_menu, &left, &right, title, 4));
+   CHECK(!strcmp(title, "fir"));
+   /* no title buffer: the file still opens */
+   CHECK(menu_media_open_selected_file(&test_menu, &left, &right, NULL, 0));
+   CHECK(viewer_requests == 6);
+   viewer_opening = false;
+   file_list_free(selection[0]); file_list_free(stack[0]);
+   test_menu.entries.list = NULL;
+   test_menu.thumbnail_path_data = NULL;
 }
 
 /* Loading is tested separately; this drawing oracle publishes cue views. */
@@ -1274,6 +1360,7 @@ int main(void)
    display_races();
 #endif
    folder_queue();
+   viewer_title();
    combined_subtitle_toolbar();
    subtitle_button();
    subtitles_without_transport();

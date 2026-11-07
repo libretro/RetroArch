@@ -261,7 +261,8 @@ bool menu_media_selected_in_history(struct menu_state *menu_st)
 }
 
 bool menu_media_open_selected_file(struct menu_state *menu_st,
-      gfx_thumbnail_t *primary, gfx_thumbnail_t *secondary)
+      gfx_thumbnail_t *primary, gfx_thumbnail_t *secondary,
+      char *title, size_t title_len)
 {
 #if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
    char history_dir[DIR_MAX_LENGTH];
@@ -302,5 +303,13 @@ bool menu_media_open_selected_file(struct menu_state *menu_st,
       gfx_thumbnail_request_file(paths->content_path, primary,
             config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
    }
+   /* The title goes with the file shown.  Left to the menu drivers, it
+    * was only refreshed when the fullscreen view had been asked for
+    * with START: Ozone's viewer opened by OK kept the first file's
+    * title through every Up/Down to the next image. */
+   if (title && title_len
+         && !menu_update_fullscreen_thumbnail_label(title, title_len,
+            false, NULL))
+      *title = '\0';
    return true;
 }

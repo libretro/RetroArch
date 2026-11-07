@@ -9177,7 +9177,9 @@ static enum menu_action ozone_parse_menu_entry_action(
                && menu_media_selected_in_history(menu_st)))
          && !(ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
          && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
-         && menu_media_open_selected_file(menu_st, &ozone->thumbnails.left, &ozone->thumbnails.right))
+         && menu_media_open_selected_file(menu_st, &ozone->thumbnails.left, &ozone->thumbnails.right,
+               ozone->fullscreen_thumbnail_label,
+               sizeof(ozone->fullscreen_thumbnail_label)))
    {
       ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
       ozone->flags |= OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
@@ -10837,7 +10839,9 @@ static void ozone_context_reset(void *data, bool is_threaded)
             && ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
                || menu_media_selected_in_history(menu_state_get_ptr()))
             && menu_media_open_selected_file(menu_state_get_ptr(),
-                  &ozone->thumbnails.left, &ozone->thumbnails.right))
+                  &ozone->thumbnails.left, &ozone->thumbnails.right,
+               ozone->fullscreen_thumbnail_label,
+               sizeof(ozone->fullscreen_thumbnail_label)))
          ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
       ozone_update_savestate_thumbnail_image(ozone);
 
@@ -12993,7 +12997,9 @@ static void ozone_navigation_set(void *data, bool scroll)
          && ((ozone->flags & OZONE_FLAG_IS_FILE_LIST)
             || menu_media_selected_in_history(menu_state_get_ptr()))
          && menu_media_open_selected_file(menu_state_get_ptr(),
-               &ozone->thumbnails.left, &ozone->thumbnails.right))
+               &ozone->thumbnails.left, &ozone->thumbnails.right,
+               ozone->fullscreen_thumbnail_label,
+               sizeof(ozone->fullscreen_thumbnail_label)))
       ozone->thumbnails.pending = OZONE_PENDING_THUMBNAIL_NONE;
 }
 

@@ -6222,7 +6222,9 @@ static enum menu_action xmb_parse_menu_entry_action(
                && menu_media_selected_in_history(menu_st)))
          && !xmb->show_fullscreen_thumbnails
          && (action == MENU_ACTION_OK || action == MENU_ACTION_SELECT || action == MENU_ACTION_START)
-         && menu_media_open_selected_file(menu_st, &xmb->thumbnails.left, &xmb->thumbnails.right))
+         && menu_media_open_selected_file(menu_st, &xmb->thumbnails.left, &xmb->thumbnails.right,
+               xmb->fullscreen_thumbnail_label,
+               sizeof(xmb->fullscreen_thumbnail_label)))
    {
       xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
       xmb->fullscreen_thumbnails_available = true;
@@ -7369,7 +7371,9 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
          && (xmb->is_file_list
             || (xmb->is_playlist && menu_media_selected_in_history(menu_st)))
          && menu_media_open_selected_file(menu_st,
-               &xmb->thumbnails.left, &xmb->thumbnails.right))
+               &xmb->thumbnails.left, &xmb->thumbnails.right,
+               xmb->fullscreen_thumbnail_label,
+               sizeof(xmb->fullscreen_thumbnail_label)))
       xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
 
    /* Have to reset this, otherwise savestate
@@ -10070,7 +10074,9 @@ static void xmb_navigation_set(void *data, bool scroll)
          && (xmb->is_file_list || (xmb->is_playlist
                && menu_media_selected_in_history(menu_state_get_ptr())))
          && menu_media_open_selected_file(menu_state_get_ptr(),
-               &xmb->thumbnails.left, &xmb->thumbnails.right))
+               &xmb->thumbnails.left, &xmb->thumbnails.right,
+               xmb->fullscreen_thumbnail_label,
+               sizeof(xmb->fullscreen_thumbnail_label)))
       xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
 }
 
