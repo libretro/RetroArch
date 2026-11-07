@@ -2041,7 +2041,15 @@ block_done:
 suspend:
    status = RDEFLATE_PROCESS_NEXT;
 done:
-   rinf_window_commit(s);
+   /* The window only resolves back-references once the caller binds
+    * another output buffer; a stream that has ended decodes nothing
+    * more until a reset, so its last slice need not go in.  A one-shot
+    * inflate - every CHD zlib hunk, a whole zip or 7z member - no
+    * longer copies its last 32 KB into a window nothing will read.
+    * The commit cannot move to rinflate_set_out instead: callers such
+    * as rpng unfilter the output in place before they rebind. */
+   if (status != RDEFLATE_PROCESS_END)
+      rinf_window_commit(s);
    if (s->out_pos > fold_start)
    {
       if (s->wrap == RINF_WRAP_ZLIB)
