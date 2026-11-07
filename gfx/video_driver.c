@@ -4616,11 +4616,11 @@ static void video_driver_windows_asked(video_driver_state_t *video_st,
 }
 
 /* This frame's windows, with or without content views, or NULL while
- * they are off or the driver has none. Not inlined: the frame's stack
- * has no room to spare. */
+ * they are off or the driver has none; @now is the frame's clock
+ * sample. Not inlined: the frame's stack has no room to spare. */
 static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       video_driver_state_t *video_st, settings_t *settings,
-      uint32_t flags, bool redraw)
+      uint32_t flags, bool redraw, retro_time_t now)
 {
    video_views_layout_params_t params;
    video_windows_route_t route;
@@ -4694,7 +4694,7 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       /* Read once, so placement and the UI agree */
       in.shown     = video_driver_window_shown(VIDEO_WINDOWS_PRESENTATION,
             &client);
-      in.now       = cpu_features_get_time_usec();
+      in.now       = now;
       in.menu_open = false;
 #ifdef HAVE_MENU
       in.menu_open =
@@ -4745,10 +4745,11 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
 
 /* Fills the frame's views and layout. A repeated frame (no data), or one
  * that will not be presented (frameskip), reuses the last map, since the
- * driver's last presented (or repeated) textures still match it. */
+ * driver's last presented (or repeated) textures still match it. @now
+ * is the frame's clock sample. */
 static void video_driver_views_frame(video_driver_state_t *video_st,
       settings_t *settings, const void *data, bool render_frame,
-      unsigned core_dims, unsigned dims,
+      unsigned core_dims, unsigned dims, retro_time_t now,
       video_frame_info_t *video_info)
 {
    gfx_ctx_flags_t flags;
@@ -4787,7 +4788,9 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
 #ifdef HAVE_VIDEO_WINDOWS
    /* With or without views: the menu and the idle logo use them too */
    video_info->windows = video_driver_windows_frame(video_st, settings,
-         flags.flags, redraw);
+         flags.flags, redraw, now);
+#else
+   (void)now;
 #endif
    if (presented)
    {
@@ -10063,7 +10066,7 @@ void video_driver_frame(const void *data, unsigned width,
             &view_dims, dims);
 #endif
    video_driver_views_frame(video_st, settings, data, render_frame,
-         core_dims, view_dims, &video_info);
+         core_dims, view_dims, new_time, &video_info);
 
    if (runloop_st->msg_queue_delay > 0)
       runloop_st->msg_queue_delay--;
