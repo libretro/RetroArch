@@ -1169,6 +1169,23 @@ jobs:
           make clean
           echo "[pass] scan_begin_budget_test (TSan)"
 
+      - name: Build and run database_index_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -eu
+          # The scan's crc, serial and set-fingerprint index lookups,
+          # against databases the test writes itself.
+          make clean SANITIZER=address,undefined && make -j$(nproc) database_index_test SANITIZER=address,undefined
+          test -x database_index_test
+          index_root="$(mktemp -d)"
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 900 \
+             ./database_index_test "$index_root"
+          rm -rf "${index_root:?}"
+          make clean
+          echo "[pass] database_index_test (ASan)"
+
       - name: Build and run database_scan_test (ASan + UBSan)
         shell: bash
         working-directory: samples/tasks/database
