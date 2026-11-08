@@ -903,6 +903,8 @@ typedef struct
    bool core_hold_armed;
    /* tested with core_hold_armed in the core's read */
    bool enabler_tap_active;
+   /* Tap Delay's idle_mask is set: also tested there */
+   bool enabler_tap_idle;
    /* any of cmd_buttons or cmd_analog is held */
    bool cmd_input;
    /* The same for what the run loop and the menu see - the RetroPad

@@ -19397,30 +19397,31 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       }
    }
 
-   /* Tap Delay: a press of an idle enabler, polled after the hotkey pass */
-   if (     input_enabler_tap.idle_mask
-         && port == input_enabler_tap.port
-         && (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD
-         && idx == 0)
-   {
-      uint16_t bits = (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         ? (uint16_t)result
-         : (id < RARCH_FIRST_CUSTOM_BIND && result)
-         ? (uint16_t)(1u << id) : 0;
-      if (bits & input_enabler_tap.idle_mask)
-      {
-         uint16_t first = input_enabler_tap_first(input_st);
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            result = (int16_t)((uint16_t)result & ~first);
-         else if (first & bits)
-            result = 0;
-      }
-   }
-
    /* buttons and keys held back since the menu closed, until let go;
     * and the enabler's game buttons (Hotkey Enable Tap Delay) */
-   if (input_st->core_hold_armed | input_st->enabler_tap_active)
+   if (     input_st->core_hold_armed | input_st->enabler_tap_active
+         |  input_st->enabler_tap_idle)
    {
+      /* Tap Delay: a press of an idle enabler, polled after the hotkey
+       * pass */
+      if (     input_enabler_tap.idle_mask
+            && port == input_enabler_tap.port
+            && (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD
+            && idx == 0)
+      {
+         uint16_t bits = (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+            ? (uint16_t)result
+            : (id < RARCH_FIRST_CUSTOM_BIND && result)
+            ? (uint16_t)(1u << id) : 0;
+         if (bits & input_enabler_tap.idle_mask)
+         {
+            uint16_t first = input_enabler_tap_first(input_st);
+            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+               result = (int16_t)((uint16_t)result & ~first);
+            else if (first & bits)
+               result = 0;
+         }
+      }
       if (     input_st->enabler_tap_active
             && port == input_enabler_tap.port
             && (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD
@@ -20146,6 +20147,7 @@ static void input_enabler_tap_idle(input_driver_state_t *input_st)
    input_enabler_tap.withhold   = input_enabler_tap.force = 0;
    input_enabler_tap.idle       = input_enabler_tap.idle_mask = 0;
    input_st->enabler_tap_active = false;
+   input_st->enabler_tap_idle   = false;
 }
 
 /* The core's poll comes after the hotkey pass, so it has an enabler's
@@ -20310,6 +20312,7 @@ INPUT_NOINLINE static void input_enabler_tap_frame(
             ? input_enabler_tap.mask : 0)
          | input_enabler_tap_sharers(
             input_enabler_tap.idle & ~(1U << hotkey_port))));
+   input_st->enabler_tap_idle   = input_enabler_tap.idle_mask != 0;
 }
 
 void input_driver_collect_system_input(input_driver_state_t *input_st,
@@ -20704,6 +20707,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       /* nothing kept for when it is turned on */
       input_enabler_tap.down = input_enabler_tap.hot = 0;
       input_enabler_tap.read = input_enabler_tap.idle_mask = 0;
+      input_st->enabler_tap_idle = false;
       BIT256_CLEAR_ALL(input_enabler_tap.solo);
       if (input_enabler_tap.busy)
          input_enabler_tap_idle(input_st);
