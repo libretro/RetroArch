@@ -15,6 +15,19 @@
 
 default_platform(:ios)
 
+# altool from Xcode 27.2 logs "ERROR: ... Failed to create URL for
+# 'CDUploaderStateInfoResumeFilePath'" on uploads that succeed, and
+# fastlane treats any ERROR line from altool as a failed upload. Drop
+# that one line so pilot goes on to processing and distribution.
+require 'fastlane_core/itunes_transporter'
+module RAIgnoreAltoolResumeStateError
+  def parse_line(line, *rest)
+    return if line.include?("CDUploaderStateInfoResumeFilePath")
+    super
+  end
+end
+FastlaneCore::AltoolTransporterExecutor.prepend(RAIgnoreAltoolResumeStateError)
+
 doc = <<-DESC
 Build and optionally upload the app to App Store Connect.
 
