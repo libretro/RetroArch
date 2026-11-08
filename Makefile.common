@@ -908,7 +908,8 @@ OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
 ifeq ($(HAVE_RWMA),1)
 DEFINES += -DHAVE_RWMA
 OBJ += $(LIBRETRO_COMM_DIR)/formats/wma/rwma_pro.o \
-       $(LIBRETRO_COMM_DIR)/formats/wma/rwma_standard.o
+       $(LIBRETRO_COMM_DIR)/formats/wma/rwma_standard.o \
+       $(LIBRETRO_COMM_DIR)/formats/wma/rwma_stream.o
 endif
 
 # AC-3: the frame layer, decoder and encoder from ATSC A/52 and the

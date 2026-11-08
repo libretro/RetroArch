@@ -30,5 +30,12 @@ lookups directly from the saved curve, without copying a resampled curve.
 It returns the overlap accumulator by reference rather than copying a PCM
 frame into a second output buffer.
 
+The ASF field walk in `rwma_stream.c` adapts WaxFlow's MIT `container/asf`
+reader at the same commit. The incremental borrowed payload cursor and
+bounded reusable object assembly are original C code. RIFF/WAVE/XWMA object
+layout follows Microsoft's DirectXTK Wave Formats documentation. Implicit
+xWMA setup words (WMA2 `0x001f`, Pro `0x00e0` with 16-bit precision) were also
+checked through the separate FFmpeg demuxer's reported configuration.
+
 FFmpeg is used as a separate test oracle. Linking a test executable against
 it does not make it a runtime dependency of rwma.

@@ -58,6 +58,7 @@ check() {
 }
 
 AUDIO="libretro-common/formats/audio_transfer.c libretro-common/audio/audio_mixer.c"
+check "wma only" "-DHAVE_RWMA" $AUDIO
 
 echo "== audio codec combinations =="
 # the sets real platform makefiles select, plus each codec alone and none

@@ -26,7 +26,7 @@ typedef struct rwma_standard
    std_size sizes[5];
    unsigned length, length_bits, flags, count, selector, book, noise_at;
    unsigned use_noise, v2, prev, current, next, reset_lengths;
-   unsigned failed, pending, frames, skip, in_packet, left, drained;
+   unsigned failed, pending, in_packet, left, drained;
    float noise_mult;
 } rwma_standard;
 
@@ -52,11 +52,10 @@ void rwma_std_reset(void *opaque)
       s->maximum[c] = 0;
    }
    s->carry_bits = s->packet_bit = 0;
-   s->failed = s->pending = s->frames = s->in_packet = s->left = s->drained = 0;
+   s->failed = s->pending = s->in_packet = s->left = s->drained = 0;
    s->noise_at = 0;
    s->packet = NULL;
    s->reset_lengths = 1;
-   s->skip = 0;
 }
 
 static double std_high(unsigned rate, double bps, double weighted, unsigned *noise)
@@ -114,6 +113,8 @@ int rwma_std_create(void **out, const rwma_config *cfg)
    s->flags = cfg->extra && cfg->extra_size >= extra_at + 2
                   ? cfg->extra[extra_at] | ((unsigned)cfg->extra[extra_at + 1] << 8)
                   : 0;
+   if (s->v2 && s->flags == 13)
+      s->flags &= ~4u;
    s->length_bits = cfg->sample_rate <= 16000 ? 9
                     : cfg->sample_rate <= 22050 || (!s->v2 && cfg->sample_rate <= 32000)
                         ? 10
@@ -588,26 +589,17 @@ static int std_frame(rwma_standard *s, rwma_reader *r, rwma_frame *out)
       std_transform(s, coded, ms, n, at);
       at += n;
    }
-   if (s->skip)
+   out->samples = s->length;
+   out->channels = s->config.channels;
+   out->sample_rate = s->config.sample_rate;
+   for (c = 0; c < s->config.channels; c++)
    {
-      s->skip = 0;
-      out->samples = 0;
-   }
-   else
-   {
-      out->samples = s->length;
-      out->channels = s->config.channels;
-      out->sample_rate = s->config.sample_rate;
-      for (c = 0; c < s->config.channels; c++)
-      {
-         out->planes[c] = s->acc[c];
-         for (i = 0; i < s->length; i++)
-            if (!rwma_finite(s->acc[c][i]))
-               return RWMA_BAD_DATA;
-      }
+      out->planes[c] = s->acc[c];
+      for (i = 0; i < s->length; i++)
+         if (!rwma_finite(s->acc[c][i]))
+            return RWMA_BAD_DATA;
    }
    s->pending = 1;
-   s->frames++;
    return RWMA_OK;
 }
 

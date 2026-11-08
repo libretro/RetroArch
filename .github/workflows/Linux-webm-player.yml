@@ -8,6 +8,7 @@ on:
       - 'samples/cores/webm_player/**'
       - 'samples/gfx/d3d11_video_decode/**'
       - 'libretro-common/samples/formats/audio_transfer/**'
+      - 'libretro-common/samples/formats/audio_transfer_wma/**'
       - 'libretro-common/formats/**'
       - 'libretro-common/include/formats/**'
       - '.github/workflows/Linux-webm-player.yml'
@@ -18,6 +19,7 @@ on:
       - 'samples/cores/webm_player/**'
       - 'samples/gfx/d3d11_video_decode/**'
       - 'libretro-common/samples/formats/audio_transfer/**'
+      - 'libretro-common/samples/formats/audio_transfer_wma/**'
       - 'libretro-common/formats/**'
       - 'libretro-common/include/formats/**'
       - '.github/workflows/Linux-webm-player.yml'
@@ -71,6 +73,8 @@ jobs:
           make -j2 check AUDIO=0 SAMPLE_OBJDIR=obj-noaudio TARGET=webm_player_noaudio SANITIZER=address,undefined
           make -j2 check MP4=0 SAMPLE_OBJDIR=obj-webm TARGET=webm_player_webm SANITIZER=address,undefined
           make -j2 check THREADS=0 SAMPLE_OBJDIR=obj-nothreads TARGET=webm_player_nothreads SANITIZER=address,undefined
+          make -j2 check-wma SANITIZER=address,undefined SAMPLE_OBJDIR=obj-wma
+          make -j2 check-wma WMA=0 SANITIZER=address,undefined SAMPLE_OBJDIR=obj-wma-disabled
         env:
           ASAN_OPTIONS: detect_leaks=1
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
@@ -80,3 +84,4 @@ jobs:
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -j2 check CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-win RUNNER=wine
+          make -j2 check-wma CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-win RUNNER=wine

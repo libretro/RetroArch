@@ -9889,6 +9889,11 @@ static bool audio_driver_mixer_add_stream_internal(
             handle = audio_mixer_load_ac3(buf, params->bufsize);
    #endif
             break;
+         case AUDIO_MIXER_TYPE_WMA:
+   #ifdef HAVE_RWMA
+            handle = audio_mixer_load_wma(buf, params->bufsize);
+   #endif
+            break;
          case AUDIO_MIXER_TYPE_LPCM:
    #ifdef HAVE_RLPCM
             handle = audio_mixer_load_lpcm(buf, params->bufsize);

@@ -115,6 +115,7 @@ jobs:
           # failure.  These are built AND executed.
           declare -a RUN_TARGETS=(
             rwma_test
+            audio_transfer_wma_test
             flv_mux_test
             rtmp_chunk_test
             rtmp_handshake_test
@@ -935,6 +936,13 @@ jobs:
 
           make clean
           CC=clang make check SANITIZER=thread
+
+      - name: WMA codec disabled
+        if: matrix.group == 'formats'
+        working-directory: libretro-common/samples/formats/audio_transfer_wma
+        run: |
+          make -j2 WMA=0 SAMPLE_OBJDIR=obj-disabled TARGET=audio_transfer_wma_disabled_test SANITIZER=address,undefined
+          ./audio_transfer_wma_disabled_test
 
       - name: Run rzip_parallel_test under Clang + ThreadSanitizer
         if: matrix.group == 'core'

@@ -631,7 +631,12 @@ enum msg_file_type msg_hash_to_file_type(const char *value)
       { "ps",        FILE_TYPE_PS },
       { "ts",        FILE_TYPE_TS },
       { "mxf",       FILE_TYPE_MXF },
+#endif
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_RWMA)
       { "wma",       FILE_TYPE_WMA },
+#endif
+#ifdef HAVE_RWMA
+      { "xwma",      FILE_TYPE_WMA },
 #endif
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
 #if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RMP3)

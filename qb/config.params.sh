@@ -252,6 +252,7 @@ HAVE_ROPUS=yes             # ropus Opus audio support
 HAVE_RAAC=yes              # raac AAC audio support
 HAVE_RMP3=yes              # rmp3 MP3 audio support
 HAVE_RFLAC=yes             # rflac FLAC audio support
+HAVE_RWMA=no               # native XMA and WMA audio support
 HAVE_FLAC=no               # Link against libFLAC (unused by default; FLAC decode is provided by rflac)
 HAVE_RMODTRACKER=yes       # rmodtracker MOD/S3M/XM support
 HAVE_RWEBM=yes             # RWEBM (WebM/Matroska demuxer) support

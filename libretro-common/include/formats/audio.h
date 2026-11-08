@@ -83,12 +83,13 @@ enum audio_type_enum
                      * from a caller that filled the format in before
                      * starting - raw samples say nothing about
                      * themselves                                      */
-   AUDIO_TYPE_AC3   /* AC-3 or E-AC-3 (rac3); a buffer of syncframes
+   AUDIO_TYPE_AC3,  /* AC-3 or E-AC-3 (rac3); a buffer of syncframes
                     * (.ac3, .eac3, .ec3). Up
                     * to 5.1, handed over in the WAV shape for its
                     * channel count (the mixer folds by count): a
                     * lone surround becomes a phantom pair, and the
                     * LFE is kept only in 5.1                           */
+   AUDIO_TYPE_WMA   /* Native WMA1/WMA2/Pro in ASF or RIFF/XWMA. */
 };
 
 /* The linear-PCM format an AUDIO_TYPE_LPCM handle will use, for a

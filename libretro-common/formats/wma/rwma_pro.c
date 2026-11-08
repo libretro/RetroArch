@@ -32,7 +32,7 @@ struct rwma_t
    int edges[8][29], band_count[8], remap[8][8][29];
    float sine[33];
    unsigned frame_length, depth, length_bits, bps;
-   unsigned failed, pending, frames, drop_first, flags, in_packet, more;
+   unsigned failed, pending, drop_first, flags, in_packet, more;
    int participants[8], n_participants, n_groups, explicit_limit;
 };
 
@@ -569,7 +569,6 @@ static int pro_frame(rwma_t *d, rwma_reader *r, size_t extent, rwma_frame *out)
    out->channels = d->config.channels;
    out->sample_rate = d->config.sample_rate;
    d->pending = 1;
-   d->frames++;
    return RWMA_OK;
 }
 void rwma_reset(rwma_t *d)
@@ -590,7 +589,7 @@ void rwma_reset(rwma_t *d)
       memset(pcm, 0, d->frame_length * 3 / 2 * sizeof(float));
       d->lane[c].previous = d->frame_length;
    }
-   d->pending = d->frames = d->failed = d->in_packet = 0;
+   d->pending = d->failed = d->in_packet = 0;
    d->carry_bits = 0;
    d->packet = NULL;
    d->drop_first = d->config.codec == RWMA_PRO;

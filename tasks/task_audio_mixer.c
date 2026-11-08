@@ -1058,7 +1058,7 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
 }
 
 #if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3) \
-      || defined(HAVE_RFLAC) || defined(HAVE_RWAV))
+      || defined(HAVE_RFLAC) || defined(HAVE_RWAV) || defined(HAVE_RWMA))
 /* ---- windowed streaming for large background music ----
  * Files past the threshold, in codecs whose buffer-mode access
  * pattern is head-bounded-open + monotonic reads + loop-to-head
@@ -1291,9 +1291,28 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
       const uint8_t *base   = NULL;
 
       if (!(w->dt = data_transfer_open_window(w->path,
-            AMIX_WINDOW_KEEP)))
+            w->mtype == AUDIO_MIXER_TYPE_WMA ? 64*1024 : AMIX_WINDOW_KEEP)))
          goto bail;
       base = data_transfer_window_base(w->dt, &flen);
+#ifdef HAVE_RWMA
+      if (w->mtype == AUDIO_MIXER_TYPE_WMA)
+      {
+         size_t keep = flen < 64*1024 ? flen : 64*1024;
+         if (flen >= 30 && !memcmp(base,"\x30\x26\xb2\x75\x8e\x66\xcf\x11",8))
+         {
+            uint64_t header = 0;
+            unsigned i;
+            for (i = 0; i < 8; i++) header |= (uint64_t)base[16+i] << (i*8);
+            if (header > 16*1024*1024 || header > flen || flen-(size_t)header < 50)
+               goto bail;
+            w->punch_hi = (size_t)header + 50;
+            keep = w->punch_hi > (size_t)-1 - 64*1024 ? flen : w->punch_hi + 64*1024;
+            if (keep > flen) keep = flen;
+            if (!data_transfer_window_grow_keep(w->dt, keep)) goto bail;
+         }
+         w->avail = keep;
+      }
+#endif
 
       if (w->mtype == AUDIO_MIXER_TYPE_OGG)
       {
@@ -1542,6 +1561,13 @@ bail:
       data_transfer_free(w->dt);
       w->dt = NULL;
    }
+#ifdef HAVE_RWMA
+   if (w->mtype == AUDIO_MIXER_TYPE_WMA)
+   {
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+#endif
    /* fall back to the classic full-load path */
    if (w->play)
       task_push_audio_mixer_load_and_play(w->path, NULL, NULL,
@@ -1586,6 +1612,10 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
 
    if (!ext)
       return false;
+#ifdef HAVE_RWMA
+   if (string_is_equal_noncase(ext, "wma") || string_is_equal_noncase(ext, "xwma"))
+      mtype = AUDIO_MIXER_TYPE_WMA;
+#endif
 #ifdef HAVE_RVORBIS
    if (string_is_equal_noncase(ext, "ogg"))
       mtype = AUDIO_MIXER_TYPE_OGG;
@@ -1646,9 +1676,9 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
     * on some platforms and, on one that has no accounting to consult, a
     * probe that transiently allocates most of RAM.  Menu sounds come
     * through here, and they are kilobytes. */
-   if (sz < (int64_t)AMIX_WINDOW_THRESHOLD)
+   if (mtype != AUDIO_MIXER_TYPE_WMA && sz < (int64_t)AMIX_WINDOW_THRESHOLD)
       return false;
-   if (sz < task_audio_mixer_threshold(mtype))
+   if (mtype != AUDIO_MIXER_TYPE_WMA && sz < task_audio_mixer_threshold(mtype))
       return false;
 
    if (!(t = task_init()))
@@ -1696,7 +1726,7 @@ bool task_push_audio_mixer_load_and_play(
       enum audio_mixer_slot_selection_type slot_selection_type,
       int slot_selection_idx)
 {
-#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3))
+#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RWMA))
    if (task_audio_mixer_try_windowed(fullpath, system, true,
          slot_selection_type, slot_selection_idx))
       return true;
@@ -1872,7 +1902,7 @@ bool task_push_audio_mixer_load(
       enum audio_mixer_slot_selection_type slot_selection_type,
       int slot_selection_idx)
 {
-#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3))
+#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RWMA))
    if (task_audio_mixer_try_windowed(fullpath, system, false,
          slot_selection_type, slot_selection_idx))
       return true;

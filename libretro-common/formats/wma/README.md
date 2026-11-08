@@ -8,14 +8,15 @@ threading or playback pacing.
 The implementation provides raw XMA frames, length-prefixed WMA Pro packets,
 and WMA1/WMA2 frames with VLC/LSP exponents, noise coding, variable blocks
 and bit-reservoir input. This is not yet a complete replacement for FFmpeg
-in a core or media player. RetroArch builds include it only with `HAVE_RWMA=1`.
+for all FFmpeg use in a core. RetroArch builds include it only with
+`HAVE_RWMA=1` (`./configure --enable-rwma`); the default remains disabled.
 
 ## Ownership
 
 Input is borrowed for the duration of `rwma_decode_xma`. The bit span may
 start at any bit offset and requires no padding past its declared bytes.
 
-`rwma_decode_packet` pulls one frame at a time from a WMA Pro block.
+`rwma_decode_packet` pulls one frame at a time from a WMA1/WMA2/Pro block.
 Keep passing the same block while `consumed` is zero. A successful call
 can return zero samples while retaining an incomplete frame or discarding
 the initial overlap-priming frame. A nonzero `consumed` releases the block.
@@ -49,8 +50,27 @@ coverage, decoder state serialization and guest-output differential tests.
 The current WMA Pro packet path does not implement frames whose length
 exceeds one block, or recovery from a sequence discontinuity.
 
-The requested frontend integration includes separately gated rwma decoding,
-ASF/XWMA container input for `audio_transfer`, streaming mixer loaders,
-RetroArch's built-in media player, and enabled/disabled build tests. Container
-input must use borrowed packet spans or reusable assembly storage; it must
-not require loading or decoding the entire file before playback.
+## Playback integration
+
+`rwma_stream` reads WMA1/WMA2/Pro from ASF or RIFF/XWMA with a stable borrowed
+input base and a resident-byte bound. Complete media objects are borrowed;
+only fragmented objects use the preallocated assembly area. No decoded PCM
+copy is held by the stream wrapper. Unknown codecs, encrypted streams and
+non-identity ASF audio spreading are refused.
+
+`audio_transfer` exposes this as `AUDIO_TYPE_WMA`; reads pack borrowed planes
+directly into caller output. It reports the native sample rate, supports
+looping to frame zero and treats a partial-read frontier as starvation.
+Arbitrary seeks and caller-demuxed input are not implemented by this arm.
+`audio_mixer_load_wma` uses the existing streaming mixer paths. RetroArch's
+music loader uses VFS-backed moving windows for WMA, including small files.
+
+The built-in media player accepts `.wma` and `.xwma` when enabled. It keeps
+one bounded output interval, prefers float callbacks and falls back to S16
+for older frontends. Source-rate intervals use integer remainder accounting,
+without a resampler or host clock. Its input is a single-owner data_transfer
+window. Audio-only position states and seek controls are not yet exposed.
+Existing FFmpeg/MPV player selection takes precedence when built in.
+
+Raw XMA is available through the decoder API; XMA file-container playback is
+not yet implemented by the frontend wrappers.
