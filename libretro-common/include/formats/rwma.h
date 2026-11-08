@@ -36,6 +36,10 @@ typedef struct rwma_xma_view
    const float *history[2];
    size_t history_samples[2];
 } rwma_xma_view;
+/* Reuse the raw context at 24/32/44.1/48 kHz, up to its creation channel
+ * count. A changed profile resets history; the same profile preserves it.
+ * No allocation; invalid profiles leave the decoder unchanged. */
+int rwma_xma_configure(rwma_t *decoder, unsigned sample_rate, unsigned channels);
 /* Quiescent raw-XMA contexts only. Capture borrows history until the next
  * decode/reset/restore/free. Restore validates before changing the destination,
  * allocates nothing, and copies directly into its final overlap storage.

@@ -574,8 +574,54 @@ static void checkpoint_test(void)
    rwma_free(b);
 }
 
+static void configure_test(void)
+{
+   static const unsigned rates[4] = {24000, 32000, 44100, 48000};
+   static float history[2][256];
+   rwma_config cfg;
+   rwma_t *d = NULL, *mono = NULL;
+   rwma_xma_view view, after;
+   unsigned r, c, i;
+   memset(&cfg, 0, sizeof(cfg));
+   cfg.codec = RWMA_XMA_RAW; cfg.sample_rate = 48000; cfg.channels = 2;
+   check(!rwma_create(&d, &cfg), "reserved stereo context");
+   cfg.channels = 1;
+   check(!rwma_create(&mono, &cfg), "reserved mono context");
+   check(rwma_xma_configure(mono, 48000, 2) == RWMA_UNSUPPORTED,
+         "configuration cannot grow its reserved channels");
+   for (r = 0; r < 4; r++) for (c = 1; c <= 2; c++)
+   {
+      check(!rwma_xma_configure(d, rates[r], c) && !rwma_xma_capture(d, &view),
+            "configure reserved profile");
+      check(view.state.sample_rate == rates[r] && view.state.channels == c &&
+            !view.state.pending && !view.state.failed && !view.history[0],
+            "profile change resets history and status");
+      view.state.pending = 1;
+      for (i = 0; i < c; i++)
+      {
+         unsigned sample;
+         for (sample = 0; sample < 256; sample++) history[i][sample] = (float)sample / 1024;
+         view.history[i] = history[i]; view.history_samples[i] = 256;
+      }
+      check(!rwma_xma_restore(d, &view), "seed reusable profile history");
+      check(!rwma_xma_configure(d, rates[r], c) && !rwma_xma_capture(d, &after),
+            "unchanged profile preserves history");
+      check(!memcmp(&view.state, &after.state, sizeof(view.state)), "same profile metadata");
+      for (i = 0; i < c; i++)
+         check(!memcmp(after.history[i],history[i],sizeof(history[i])), "same profile overlap");
+      check(rwma_xma_configure(d, 12345, c) == RWMA_UNSUPPORTED &&
+            rwma_xma_configure(d, rates[r], 3) == RWMA_UNSUPPORTED &&
+            !rwma_xma_capture(d, &after), "invalid profile does not mutate decoder");
+      check(!memcmp(&view.state, &after.state, sizeof(view.state)), "invalid profile metadata");
+      for (i = 0; i < c; i++)
+         check(!memcmp(after.history[i],history[i],sizeof(history[i])), "invalid profile overlap");
+   }
+   rwma_free(mono); rwma_free(d);
+}
+
 int main(void)
 {
+   configure_test();
    checkpoint_test();
    raw_test();
    packet_test();

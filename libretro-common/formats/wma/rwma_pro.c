@@ -28,10 +28,10 @@ struct rwma_t
    rwma_config config;
    uint8_t *carry;
    const uint8_t *packet;
-   size_t carry_bits, carry_capacity, packet_at;
+   size_t carry_bits, carry_capacity, packet_at, allocation_floats;
    int edges[8][29], band_count[8], remap[8][8][29];
    float sine[33];
-   unsigned frame_length, depth, length_bits, bps;
+   unsigned frame_length, depth, length_bits, bps, capacity_channels;
    unsigned failed, pending, drop_first, flags, in_packet, more, drained;
    int participants[8], n_participants, n_groups, explicit_limit;
 };
@@ -648,10 +648,50 @@ int rwma_parse_wave(rwma_config *cfg, const uint8_t *p, size_t bytes)
    cfg->extra_size = RWMA_MIN(bytes - 18, extra);
    return RWMA_OK;
 }
+static int pro_setup_bands(rwma_t *d)
+{
+   unsigned k, j, b;
+   for (k = 0; k <= d->depth; k++)
+   {
+      unsigned length = d->frame_length >> k, rate = d->config.sample_rate, n = 1;
+      if (d->config.codec == RWMA_XMA_RAW)
+         rate = rate > 44100   ? 48000
+                : rate > 32000 ? 44100
+                : rate > 24000 ? 32000
+                               : 24000;
+      d->edges[k][0] = 0;
+      for (j = 0; j < 28; j++)
+      {
+         unsigned edge = (length * 2 * bandEdgeFreqs[j] / rate + 2) & ~3u;
+         if (edge > (unsigned)d->edges[k][n - 1])
+            d->edges[k][n++] = edge;
+         if (edge >= length)
+            break;
+      }
+      if (n < 2 || n > 29)
+      {
+         return RWMA_BAD_DATA;
+      }
+      d->edges[k][n - 1] = length;
+      d->band_count[k] = n - 1;
+   }
+   for (k = 0; k <= d->depth; k++)
+      for (j = 0; j <= d->depth; j++)
+         for (b = 0; b < (unsigned)d->band_count[k]; b++)
+         {
+            unsigned at = 0, mid = ((d->edges[k][b] + d->edges[k][b + 1] - 1) << k) / 2;
+            while (at + 1 < (unsigned)d->band_count[j] &&
+                   ((unsigned)d->edges[j][at + 1] << j) < mid)
+               at++;
+            d->remap[k][j][b] = at;
+         }
+   return RWMA_OK;
+}
+
 int rwma_create(rwma_t **out, const rwma_config *cfg)
 {
    rwma_t *d;
-   unsigned c, k, j, b, flags = 0x10d6;
+   unsigned c, flags = 0x10d6;
    size_t floats;
    float *p;
    if (!out)
@@ -687,6 +727,7 @@ int rwma_create(rwma_t **out, const rwma_config *cfg)
    if (!d)
       return RWMA_NO_MEMORY;
    d->config = *cfg;
+   d->capacity_channels = cfg->channels;
    d->frame_length = 512;
    d->bps = 16;
    d->length_bits = 15;
@@ -732,6 +773,7 @@ int rwma_create(rwma_t **out, const rwma_config *cfg)
    floats = d->frame_length * 9 + d->frame_length * cfg->channels * 3 / 2;
    if (cfg->codec == RWMA_PRO)
       floats += d->frame_length * cfg->channels / 2;
+   d->allocation_floats = floats;
    d->allocation = (float *)calloc(floats, sizeof(float));
    if (!d->allocation)
    {
@@ -761,41 +803,11 @@ int rwma_create(rwma_t **out, const rwma_config *cfg)
       d->undo = d->allocation + floats - d->frame_length * cfg->channels / 2;
    for (c = 0; c <= 32; c++)
       d->sine[c] = (float)sin(c * RWMA_PI / 64);
-   for (k = 0; k <= d->depth; k++)
+   if (pro_setup_bands(d))
    {
-      unsigned length = d->frame_length >> k, rate = cfg->sample_rate, n = 1;
-      if (cfg->codec == RWMA_XMA_RAW)
-         rate = rate > 44100   ? 48000
-                : rate > 32000 ? 44100
-                : rate > 24000 ? 32000
-                               : 24000;
-      d->edges[k][0] = 0;
-      for (j = 0; j < 28; j++)
-      {
-         unsigned edge = (length * 2 * bandEdgeFreqs[j] / rate + 2) & ~3u;
-         if (edge > (unsigned)d->edges[k][n - 1])
-            d->edges[k][n++] = edge;
-         if (edge >= length)
-            break;
-      }
-      if (n < 2 || n > 29)
-      {
-         rwma_free(d);
-         return RWMA_BAD_DATA;
-      }
-      d->edges[k][n - 1] = length;
-      d->band_count[k] = n - 1;
+      rwma_free(d);
+      return RWMA_BAD_DATA;
    }
-   for (k = 0; k <= d->depth; k++)
-      for (j = 0; j <= d->depth; j++)
-         for (b = 0; b < (unsigned)d->band_count[k]; b++)
-         {
-            unsigned at = 0, mid = ((d->edges[k][b] + d->edges[k][b + 1] - 1) << k) / 2;
-            while (at + 1 < (unsigned)d->band_count[j] &&
-                   ((unsigned)d->edges[j][at + 1] << j) < mid)
-               at++;
-            d->remap[k][j][b] = at;
-         }
    rwma_reset(d);
    *out = d;
    return RWMA_OK;
@@ -1118,9 +1130,7 @@ int rwma_xma_restore(rwma_t *d, const rwma_xma_view *source)
       return RWMA_BAD_DATA;
    samples = view.state.pending ? d->frame_length / 2 : 0;
    storage = (uintptr_t)d->allocation;
-   storage_bytes =
-       (d->frame_length * 9 + d->frame_length * d->config.channels * 3 / 2) *
-       sizeof(float);
+   storage_bytes = d->allocation_floats * sizeof(float);
    for (c = 0; c < 2; c++)
    {
       unsigned i;
@@ -1166,5 +1176,29 @@ int rwma_xma_restore(rwma_t *d, const rwma_xma_view *source)
    d->pending = view.state.pending;
    d->drained = view.state.drained;
    d->failed = view.state.failed;
+   return RWMA_OK;
+}
+
+int rwma_xma_configure(rwma_t *d, unsigned rate, unsigned channels)
+{
+   unsigned previous_rate;
+   if (!d)
+      return RWMA_BAD_DATA;
+   if (d->config.codec != RWMA_XMA_RAW || !channels ||
+       channels > d->capacity_channels ||
+       (rate != 24000 && rate != 32000 && rate != 44100 && rate != 48000))
+      return RWMA_UNSUPPORTED;
+   if (rate == d->config.sample_rate && channels == d->config.channels)
+      return RWMA_OK;
+   previous_rate = d->config.sample_rate;
+   d->config.sample_rate = rate;
+   if (pro_setup_bands(d))
+   {
+      d->config.sample_rate = previous_rate;
+      (void)pro_setup_bands(d);
+      return RWMA_BAD_DATA;
+   }
+   d->config.channels = channels;
+   rwma_reset(d);
    return RWMA_OK;
 }

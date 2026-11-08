@@ -112,3 +112,8 @@ open frame is discarded according to the continuation boundary. The procedural
 regression spans five packets and exercises several rollback retries followed by
 a normal frame. The Windows-encoded WaxFlow long-frame corpus also matches the
 independent FFmpeg reference for all output samples.
+`rwma_xma_configure` reuses a raw decoder for the four XMA sample rates and up to
+its creation channel count. Create a stereo context to reserve both channel lanes;
+it can then switch between mono and stereo without allocation. A changed profile
+rebuilds its band mapping and resets overlap; an unchanged profile preserves its
+history. Invalid profiles leave the decoder unchanged. FFT/window storage is reused.
