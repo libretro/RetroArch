@@ -1064,6 +1064,11 @@ static void run_sited_frames(unsigned n)
    unsigned i;
    for (i = 0; i < n; i++)
    {
+      /* The stamp is in microseconds and these frames take well under
+       * one: start each on a new microsecond, so the poll's stamp moves
+       * every frame and not only when the clock happened to tick */
+      retro_time_t t = cpu_features_get_time_usec();
+      while (cpu_features_get_time_usec() == t) { }
       site_mark = poll_calls;
       runloop_iterate();
       site_take(SITE_AFTER_RUN);
@@ -1131,9 +1136,8 @@ static void lane_input_poll_sites(const char *loaded_with)
       /* The stamp is the poll's: it moves where this mode polls, once
        * a frame, and nowhere else - also after the mode was switched
        * while running - and each new one lies inside the stretch it
-       * was taken in. (Two polls a frame apart can land on the same
-       * microsecond when frames are this short, so "once a frame" is
-       * held to within a few.) */
+       * was taken in. (Each frame starts on a new microsecond, and
+       * "once a frame" is still held only to within a few.) */
       {
          bool stamp_ok = (stamp_outside == 0)
             && stamp_moves[home[m]] <= site_runs
