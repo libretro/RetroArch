@@ -30,6 +30,9 @@ BACKEND_SOURCES := ../../../libretro-common/rthreads/rthreads.c \
  ../../../libretro-common/rthreads/retro_eventcount.c
 all: vp9_params_test$(EXE) vp9_submit_test$(EXE) vp9_pool_test$(EXE) vp9_decoder_test$(EXE) vp9_owner_test$(EXE) vp9_backend_test$(EXE) vp9_backend_nothreads_test$(EXE) vp9_backend_volatile_test$(EXE)
 all: av1_params_test$(EXE)
+all: av1_owner_test$(EXE)
+av1_owner_test$(EXE): av1_owner_test.c runtime_test.c session_test.c submit_test.c ../../../gfx/common/vaapi_av1_owner.c ../../../gfx/common/vaapi_av1_owner.h ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_decoder.h ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_pool.h ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_av1_submit.h ../../../gfx/common/vaapi_av1.h ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_export.c
+	$(CC) $(CFLAGS) av1_owner_test.c ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_export.c -o $@ $(LDFLAGS)
 all: av1_decoder_test$(EXE)
 av1_decoder_test$(EXE): av1_decoder_test.c av1_pool_test.c ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_decoder.h ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_pool.h ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_av1_submit.h ../../../gfx/common/vaapi_av1.h ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_export.c
 	$(CC) $(CFLAGS) av1_decoder_test.c ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_export.c -o $@ $(LDFLAGS)
@@ -139,6 +142,7 @@ all: long_slice_test$(EXE) long_packet_test$(EXE)
 test$(EXE): ../../../gfx/common/vaapi_hevc_slice.h
 test$(EXE): ../../../gfx/common/vaapi_hevc_long_packet.h
 check: all
+	$(RUNNER) ./av1_owner_test$(EXE)
 	$(RUNNER) ./av1_decoder_test$(EXE)
 	$(RUNNER) ./av1_pool_test$(EXE)
 	$(RUNNER) ./av1_submit_test$(EXE)
@@ -183,6 +187,7 @@ ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
+	rm -f av1_owner_test av1_owner_test.exe
 	rm -f av1_decoder_test av1_decoder_test.exe
 	rm -f av1_pool_test av1_pool_test.exe
 	rm -f av1_submit_test av1_submit_test.exe
