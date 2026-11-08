@@ -905,6 +905,12 @@ OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
        $(LIBRETRO_COMM_DIR)/audio/conversion/mono_to_stereo_float.o \
        $(LIBRETRO_COMM_DIR)/audio/conversion/stereo_to_mono_float.o \
 
+ifeq ($(HAVE_RWMA),1)
+DEFINES += -DHAVE_RWMA
+OBJ += $(LIBRETRO_COMM_DIR)/formats/wma/rwma_pro.o \
+       $(LIBRETRO_COMM_DIR)/formats/wma/rwma_standard.o
+endif
+
 # AC-3: the frame layer, decoder and encoder from ATSC A/52 and the
 # IEC 61937 burst framing, no dependencies. The decoder is an arm of
 # audio_transfer (an .ac3 file in the mixer); the encoder and the

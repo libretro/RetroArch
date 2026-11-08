@@ -114,6 +114,7 @@ jobs:
           # self-contained test and exits 0 on success / non-zero on
           # failure.  These are built AND executed.
           declare -a RUN_TARGETS=(
+            rwma_test
             flv_mux_test
             rtmp_chunk_test
             rtmp_handshake_test
