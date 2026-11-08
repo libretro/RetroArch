@@ -17,6 +17,21 @@ Subdirectories with rules of their own carry their own AGENTS.md.
 `tools/compile_commands.py`, after ./configure, writes compile_commands.json
 for clangd and other code navigation.
 
+## Copies
+
+Remove a copy wherever one can be removed, on every change: look for one
+each time a data path is written or touched, not only when asked.
+
+- Hand data over by borrow or lend. Have the producer write into the memory
+  the consumer reads (driver frame memory, a ring's write span, a device
+  buffer), or have the consumer read the producer's memory in place.
+- Give a borrow a stated owner and lifetime, and retire it through the rings,
+  atomics and fences above, never a lock or a wait.
+- A lend is an offer: it can be declined, so the copy stays as its fallback.
+- Keep a copy only where nothing else can work (the owner frees or rewrites
+  the memory before the reader is done, or uncached memory would be read
+  back).
+
 ## Threads
 
 - Nothing may block: no sleeping, busy-waiting, wait-for-idle or round-trip
