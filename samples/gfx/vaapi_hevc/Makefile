@@ -26,7 +26,9 @@ FRAME_THREAD_FLAGS = -pthread
 endif
 endif
 all: backend_nothreads_test$(EXE) backend_volatile_test$(EXE) node_test$(EXE) backend_test$(EXE) test$(EXE) session_test$(EXE) runtime_test$(EXE) submit_test$(EXE) pool_test$(EXE) export_test$(EXE) identity_test$(EXE) prime_device_test$(EXE) prime_format_test$(EXE) prime_surface_test$(EXE) prime_image_test$(EXE) prime_frame_test$(EXE) prime_submit_test$(EXE) frame_test$(EXE) lease_test$(EXE) resources_test$(EXE) cache_test$(EXE) renderer_test$(EXE) decoder_test$(EXE) owner_test$(EXE) abi-check $(NATIVE_PROBE)
-all: vp9_params_test$(EXE) vp9_submit_test$(EXE) vp9_pool_test$(EXE)
+all: vp9_params_test$(EXE) vp9_submit_test$(EXE) vp9_pool_test$(EXE) vp9_decoder_test$(EXE)
+vp9_decoder_test$(EXE): vp9_decoder_test.c vp9_pool_test.c ../../../gfx/common/vaapi_vp9_decoder.c ../../../gfx/common/vaapi_vp9_decoder.h ../../../gfx/common/vaapi_vp9_pool.c ../../../gfx/common/vaapi_vp9_pool.h ../../../gfx/common/vaapi_vp9_submit.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_export.c ../../../libretro-common/formats/vp9/rvp9.c
+	$(CC) $(CFLAGS) vp9_decoder_test.c ../../../gfx/common/vaapi_vp9_decoder.c ../../../gfx/common/vaapi_vp9_pool.c ../../../gfx/common/vaapi_vp9_submit.c ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_export.c ../../../libretro-common/formats/vp9/rvp9.c -o $@ $(LDFLAGS)
 vp9_pool_test$(EXE): vp9_pool_test.c ../../../gfx/common/vaapi_vp9_pool.c ../../../gfx/common/vaapi_vp9_pool.h ../../../gfx/common/vaapi_vp9_submit.c ../../../gfx/common/vaapi_vp9_submit.h ../../../gfx/common/vaapi_hevc_submit.c ../../../libretro-common/formats/vp9/rvp9.c ../../../libretro-common/formats/vp9/rvp9_recon.inc
 	$(CC) $(CFLAGS) vp9_pool_test.c ../../../gfx/common/vaapi_vp9_pool.c ../../../gfx/common/vaapi_vp9_submit.c ../../../gfx/common/vaapi_hevc_submit.c ../../../libretro-common/formats/vp9/rvp9.c -o $@ $(LDFLAGS)
 vp9_submit_test$(EXE): vp9_submit_test.c ../../../gfx/common/vaapi_vp9_submit.c ../../../gfx/common/vaapi_vp9_submit.h ../../../gfx/common/vaapi_hevc_submit.c ../../../gfx/common/vaapi_hevc_submit.h ../../../gfx/common/vaapi_vp9.h ../../../gfx/common/vaapi_vp9_session.h
@@ -113,6 +115,7 @@ all: long_slice_test$(EXE) long_packet_test$(EXE)
 test$(EXE): ../../../gfx/common/vaapi_hevc_slice.h
 test$(EXE): ../../../gfx/common/vaapi_hevc_long_packet.h
 check: all
+	$(RUNNER) ./vp9_decoder_test$(EXE)
 	$(RUNNER) ./vp9_pool_test$(EXE)
 	$(RUNNER) ./vp9_submit_test$(EXE)
 	$(RUNNER) ./vp9_params_test$(EXE)
@@ -148,6 +151,7 @@ ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
+	rm -f vp9_decoder_test vp9_decoder_test.exe
 	rm -f vp9_pool_test vp9_pool_test.exe
 	rm -f vp9_submit_test vp9_submit_test.exe
 	rm -f vp9_params_test vp9_params_test.exe
