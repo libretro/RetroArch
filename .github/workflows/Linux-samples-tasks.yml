@@ -2265,6 +2265,9 @@ jobs:
           # connection that keeps dropping (more than three resumes) fail
           # and remove the partial file. Every interrupted download used
           # to fail outright.
+          # A file already at the path is replaced only by a download that
+          # succeeds: a 404, a dropped or refused connection and a cancel
+          # leave it as it was and no temporary file behind.
           make -f Makefile.resume clean SANITIZER=address,undefined && make -f Makefile.resume -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 300 \

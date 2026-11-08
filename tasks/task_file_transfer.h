@@ -118,9 +118,9 @@ typedef struct
  * receive window, not the payload.
  *
  * The completion callback gets status and headers but data == NULL
- * and len == 0; the body is already on disk.  The partial file is
- * removed unless the transfer finished cleanly with a 2xx.  The
- * output directory must already exist.
+ * and len == 0; the body is already on disk.  @path is replaced only
+ * by a transfer that finished cleanly with a 2xx; otherwise it is left
+ * as it was.  The output directory must already exist.
  **/
 void *task_push_http_download_file(const char *url, const char *path,
       bool mute, const char *title,
