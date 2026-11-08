@@ -8704,7 +8704,9 @@ static bool d3d9_hlsl_frame_body(void *data, const void *frame,
 #else
    bool menu_is_alive                  = false;
 #endif
+#ifdef HAVE_OVERLAY
    bool overlay_behind_menu            = video_info->overlay_behind_menu;
+#endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                 = video_info->widgets_active;
 #endif

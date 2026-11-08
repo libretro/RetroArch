@@ -978,11 +978,15 @@ static void views_hw_copy_run(HWND w, bool ex)
       small.y     = 4;
       small.width = 50;
       small.height = 30;
+      c->chain.prev.last_dims[0] = 0;
       CHECK(d3d9_hlsl_views_hw_copy(c, core, &big)
             && target_holds(dev, slot, &big),
             "a view copied texel for texel, black past it");
-      CHECK(c->chain.prev.last_dims[0] == VIDEO_SCALE_PACK(100, 60),
-            "the slot holds the view's size");
+      /* The first pass makes the slot's vertices for the view's size
+       * when it differs from last_dims: a copy setting it would leave
+       * them unmade */
+      CHECK(c->chain.prev.last_dims[0] == 0,
+            "the slot's size is left to the first pass");
       CHECK(d3d9_hlsl_views_hw_copy(c, core, &small)
             && target_holds(dev, slot, &small),
             "a smaller view after it leaves black past it");
