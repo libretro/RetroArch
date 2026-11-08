@@ -4,15 +4,17 @@ TARGET := core_signature_test
 
 # Core signature checks: .sig parsing and verification against
 # fixtures from tools/core_sign.py (gen_fixtures.py), file identity and
-# hashing from an open file, the trust store and the check itself.
-# Builds on Linux and with mingw-w64.
+# hashing from an open file, the trust store, the check itself and loading
+# a core from the file that was checked. Builds on Linux and with mingw-w64.
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 SOURCES := core_signature_test.c \
            $(REPO_ROOT)/core_signature.c \
            $(REPO_ROOT)/core_signature_io.c \
+           $(REPO_ROOT)/core_load_file.c \
            $(LIBRETRO_COMM_DIR)/crypto/pk.c \
+           $(LIBRETRO_COMM_DIR)/dynamic/dylib.c \
            $(LIBRETRO_COMM_DIR)/crypto/crypto.c \
            $(LIBRETRO_COMM_DIR)/crypto/kdf.c \
            $(LIBRETRO_COMM_DIR)/utils/md5.c \
@@ -32,10 +34,14 @@ SOURCES := core_signature_test.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c
 
 ifneq ($(findstring mingw,$(CC)),)
-   EXE := .exe
+   EXE       := .exe
+   LIB_EXT   := .dll
+   LIB_FLAGS :=
 else
-   EXE :=
-   LIBS += -lpthread
+   EXE       :=
+   LIB_EXT   := .so
+   LIB_FLAGS := -fPIC
+   LIBS += -lpthread -ldl
    ifeq ($(shell uname -s),Darwin)
       # core_file_in_package looks up RetroArch's .app bundle
       LIBS += -framework CoreFoundation
@@ -43,7 +49,7 @@ else
 endif
 
 CFLAGS += -Wall -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT) \
-          -DHAVE_CRYPTO -DHAVE_THREADS
+          -DHAVE_CRYPTO -DHAVE_THREADS -DHAVE_DYNAMIC
 
 # TEST_KEY=1: as configure --enable-core_signing_test_key builds it
 TEST_KEY ?= 0
@@ -57,7 +63,8 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 # the test as C89
 STRICT_OBJS  := core_signature_test.o \
                 $(call sample_objs,$(REPO_ROOT)/core_signature.o) \
-                $(call sample_objs,$(REPO_ROOT)/core_signature_io.o)
+                $(call sample_objs,$(REPO_ROOT)/core_signature_io.o) \
+                $(call sample_objs,$(REPO_ROOT)/core_load_file.o)
 STRICT_FLAGS := -std=c89 -pedantic -Wno-long-long \
                 -Wdeclaration-after-statement -Wframe-larger-than=4096 -Werror
 ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
@@ -71,7 +78,16 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)$(EXE)
+# One library built twice, told apart by what core_load_test_id returns
+TEST_LIBS := core_load_test_a$(LIB_EXT) core_load_test_b$(LIB_EXT)
+
+all: $(TARGET)$(EXE) $(TEST_LIBS)
+
+core_load_test_a$(LIB_EXT): core_load_lib.c
+	$(CC) -shared $(LIB_FLAGS) -DCORE_LOAD_ID=1 -o $@ $<
+
+core_load_test_b$(LIB_EXT): core_load_lib.c
+	$(CC) -shared $(LIB_FLAGS) -DCORE_LOAD_ID=2 -o $@ $<
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -88,6 +104,6 @@ check: all
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR) core_signature_test_tmp
-	rm -f $(TARGET) $(TARGET).exe $(OBJS)
+	rm -f $(TARGET) $(TARGET).exe $(OBJS) core_load_test_a.so core_load_test_b.so core_load_test_a.dll core_load_test_b.dll
 
 .PHONY: all check clean
