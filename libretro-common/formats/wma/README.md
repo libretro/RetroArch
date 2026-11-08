@@ -117,3 +117,18 @@ its creation channel count. Create a stereo context to reserve both channel lane
 it can then switch between mono and stereo without allocation. A changed profile
 rebuilds its band mapping and resets overlap; an unchanged profile preserves its
 history. Invalid profiles leave the decoder unchanged. FFT/window storage is reused.
+Raw XMA performance work uses bounded 32-bit bit-reader lookahead, immutable
+8-bit Huffman prefix tables, cached binary32 gains and SSE2 transform/matrix
+strides. Small transforms write their FFT permutation directly, and paired
+post-rotation stores each output sample once. Other targets retain scalar
+implementations; `RWMA_NO_SIMD` tests that path. No decoder allocation or file I/O
+is added to playback. The sample checks prefix/tree identity, reader bounds,
+gain values and transform accuracy before real-stream differential timing.
+
+On the measured Windows x64 MSVC `/O2` corpus, native raw XMA beats the existing
+FFmpeg raw decoder: approximately 6.1 versus 6.4 microseconds per 512-sample
+stereo frame across 376 frames. Separate 17-frame stereo/mono streams measure
+about 3.5/1.4 versus 4.9/1.7 microseconds. These are alternating-order offline
+runs with preallocated decoder/packet storage, not gameplay, all WMA formats or
+all platforms. Native/FFmpeg float error stays below 3.6e-7 in the 376-frame
+comparison; the existing guest S16 conversion differs by at most one LSB.

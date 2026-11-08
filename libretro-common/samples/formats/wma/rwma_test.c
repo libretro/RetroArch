@@ -2,6 +2,9 @@
 #include "../../../formats/wma/rwma_internal.h"
 #include "../../../formats/wma/rwma_mdct.h"
 #include <formats/rwma.h>
+#include "../../../formats/wma/rwma_pro_data.h"
+#include "../../../formats/wma/rwma_pro_prefix.h"
+#include "../../../formats/wma/rwma_pro_gain.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -619,8 +622,101 @@ static void configure_test(void)
    rwma_free(mono); rwma_free(d);
 }
 
+static void reader_test(void)
+{
+   static const unsigned char bytes[] = {0xd6, 0x39, 0xa5, 0x78,
+                                         0x2f, 0xc1, 0x43, 0xeb};
+   unsigned start, end, count, i;
+   for (start = 0; start < 16; start++)
+      for (end = start; end <= 64; end++)
+         for (count = 0; count <= 33; count++)
+         {
+            rwma_reader r;
+            unsigned expected = 0;
+            r.p = bytes;
+            r.pos = start;
+            r.end = end;
+            r.error = 0;
+            if (count <= 32 && count <= end - start)
+            {
+               for (i = 0; i < count; i++)
+                  expected = (expected << 1) |
+                             ((bytes[(start + i) / 8] >> (7 - ((start + i) & 7))) & 1);
+               check(rwma_read(&r, count) == expected && !r.error &&
+                         r.pos == start + count,
+                     "bounded word reader bit oracle");
+            }
+            else
+               check(!rwma_read(&r, count) && r.error && r.pos == start,
+                     "short word reader preserves cursor");
+         }
+}
+static void prefix_test(void)
+{
+   static const rwma_book *books[] = {scaleDelta, scaleRunLevel, vec4, vec2,
+                                      vec1,       coef0,         coef1};
+   static const uint32_t *prefixes[] = {
+       scaleDelta_prefix, scaleRunLevel_prefix, vec4_prefix, vec2_prefix,
+       vec1_prefix,       coef0_prefix,         coef1_prefix};
+   unsigned book, value, offset, end, pattern;
+   unsigned char bytes[8];
+   for (book = 0; book < 7; book++)
+      for (value = 0; value < 256; value++)
+      {
+         int node = 0;
+         unsigned depth;
+         uint32_t entry;
+         for (depth = 0; depth < 8;)
+         {
+            node = books[book][node].edge[(value >> (7 - depth)) & 1];
+            depth++;
+            if (node <= 0)
+               break;
+         }
+         entry = node < 0 ? (0x80000000u | ((unsigned)(-1 - node) << 5) | depth)
+                          : ((unsigned)node << 5) | depth;
+         check(entry == prefixes[book][value], "prefix table matches code tree");
+         for (offset = 0; offset < 8; offset++)
+            for (pattern = 0; pattern < 4; pattern++)
+            {
+               writer w;
+               memset(bytes,
+                      pattern == 0   ? 0
+                      : pattern == 1 ? 255
+                      : pattern == 2 ? 0x55
+                                     : 0xa3,
+                      sizeof(bytes));
+               w.data = bytes;
+               w.bit = offset;
+               put(&w, 8, value);
+               for (end = 0; end <= 32; end++)
+               {
+                  rwma_reader a, b;
+                  int x, y;
+                  a.p = bytes;
+                  a.pos = offset;
+                  a.end = offset + end;
+                  a.error = 0;
+                  b = a;
+                  x = rwma_symbol(&a, books[book]);
+                  y = rwma_symbol_prefix(&b, books[book], prefixes[book]);
+                  check(x == y && a.pos == b.pos && a.error == b.error,
+                        "prefix matches tree result, cursor and truncation");
+               }
+            }
+      }
+   for (value = 0; value < 913; value++)
+   {
+      float expected = (float)pow(10.0, ((int)value - 512) / 20.0);
+      check(!memcmp(&expected, &pro_gain[value], sizeof(expected)),
+            "cached gain matches binary32 pow");
+   }
+}
+
 int main(void)
 {
+   reader_test();
+   prefix_test();
    configure_test();
    checkpoint_test();
    raw_test();

@@ -4,6 +4,8 @@
 #include "rwma_internal.h"
 #include "rwma_mdct.h"
 #include "rwma_pro_data.h"
+#include "rwma_pro_gain.h"
+#include "rwma_pro_prefix.h"
 
 typedef struct rwma_lane
 {
@@ -134,7 +136,7 @@ static int pro_envelope(rwma_t *d, rwma_reader *r, rwma_lane *l, int k)
          value = 45 / l->resolution;
          for (b = 0; b < nb; b++)
          {
-            int symbol = rwma_symbol(r, scaleDelta);
+            int symbol = rwma_symbol_prefix(r, scaleDelta, scaleDelta_prefix);
             if (symbol < 0)
                return RWMA_BAD_DATA;
             value += symbol - 60;
@@ -144,7 +146,8 @@ static int pro_envelope(rwma_t *d, rwma_reader *r, rwma_lane *l, int k)
       else
          for (b = 0; b < nb; b++)
          {
-            int skip, value, positive, symbol = rwma_symbol(r, scaleRunLevel);
+            int skip, value, positive,
+                symbol = rwma_symbol_prefix(r, scaleRunLevel, scaleRunLevel_prefix);
             if (symbol < 0)
                return RWMA_BAD_DATA;
             if (symbol == 1)
@@ -219,10 +222,10 @@ static int pro_quant(rwma_t *d, rwma_reader *r, int k, int length)
          return RWMA_BAD_DATA;
    return r->error ? RWMA_BAD_DATA : RWMA_OK;
 }
-static int pro_vectors(rwma_reader *r, unsigned magnitude[4])
+static RWMA_INLINE int pro_vectors(rwma_reader *r, unsigned magnitude[4])
 {
    int v, h, j;
-   v = rwma_symbol(r, vec4);
+   v = rwma_symbol_prefix(r, vec4, vec4_prefix);
    if (v < 0)
       return RWMA_BAD_DATA;
    if (v)
@@ -234,7 +237,7 @@ static int pro_vectors(rwma_reader *r, unsigned magnitude[4])
    }
    for (h = 0; h < 2; h++)
    {
-      v = rwma_symbol(r, vec2);
+      v = rwma_symbol_prefix(r, vec2, vec2_prefix);
       if (v < 0)
          return RWMA_BAD_DATA;
       if (v)
@@ -245,7 +248,7 @@ static int pro_vectors(rwma_reader *r, unsigned magnitude[4])
       else
          for (j = 0; j < 2; j++)
          {
-            v = rwma_symbol(r, vec1);
+            v = rwma_symbol_prefix(r, vec1, vec1_prefix);
             if (v < 0)
                return RWMA_BAD_DATA;
             magnitude[2 * h + j] = (unsigned)v + (v == 100 ? pro_large(r) : 0);
@@ -261,15 +264,17 @@ static int pro_coefficients(rwma_t *d, rwma_reader *r, rwma_lane *l, int length)
    const float *levels = book ? level1 : level0;
    while ((d->explicit_limit || !sparse) && cur + 3 < l->limit)
    {
-      unsigned magnitude[4];
+      unsigned magnitude[4], signs, count;
       if (pro_vectors(r, magnitude))
          return RWMA_BAD_DATA;
+      count = !!magnitude[0] + !!magnitude[1] + !!magnitude[2] + !!magnitude[3];
+      signs = rwma_read(r, count);
       for (j = 0; j < 4; j++, cur++)
       {
          float value = (float)magnitude[j];
          if (magnitude[j])
          {
-            value = rwma_read(r, 1) ? value : -value;
+            value = (signs & (1u << --count)) ? value : -value;
             zeros = 0;
          }
          else if (++zeros > (length >> 8))
@@ -280,7 +285,7 @@ static int pro_coefficients(rwma_t *d, rwma_reader *r, rwma_lane *l, int length)
    memset(l->spectrum + cur, 0, (length - cur) * sizeof(float));
    for (; cur < length; cur++)
    {
-      int symbol = rwma_symbol(r, codes);
+      int symbol = rwma_symbol_prefix(r, codes, book ? coef1_prefix : coef0_prefix);
       float value;
       if (symbol < 0)
          return RWMA_BAD_DATA;
@@ -408,6 +413,61 @@ static void pro_mix(rwma_t *d, int k, int length)
       if (live)
          for (i = 0; i < group->count; i++)
             d->lane[group->members[i]].active = 1;
+      if (group->count == 2)
+      {
+         float *left = d->lane[group->members[0]].spectrum;
+         float *right = d->lane[group->members[1]].spectrum;
+         for (b = 0; b < d->band_count[k]; b++)
+         {
+            int end = RWMA_MIN(d->edges[k][b + 1], length);
+            y = d->edges[k][b];
+#ifdef RWMA_MDCT_SSE2
+            if (group->bands[b])
+            {
+               __m128 m0 = _mm_set1_ps(group->matrix[0]);
+               __m128 m1 = _mm_set1_ps(group->matrix[1]);
+               __m128 m2 = _mm_set1_ps(group->matrix[2]);
+               __m128 m3 = _mm_set1_ps(group->matrix[3]);
+               __m128 zero = _mm_setzero_ps();
+               for (; y + 3 < end; y += 4)
+               {
+                  __m128 a = _mm_loadu_ps(left + y);
+                  __m128 z = _mm_loadu_ps(right + y);
+                  _mm_storeu_ps(left + y,
+                                _mm_add_ps(_mm_add_ps(zero, _mm_mul_ps(a, m0)),
+                                           _mm_mul_ps(z, m1)));
+                  _mm_storeu_ps(right + y,
+                                _mm_add_ps(_mm_add_ps(zero, _mm_mul_ps(a, m2)),
+                                           _mm_mul_ps(z, m3)));
+               }
+            }
+            else if (d->config.channels == 2)
+            {
+               __m128 gain = _mm_set1_ps(181.0f / 128);
+               for (; y + 3 < end; y += 4)
+               {
+                  _mm_storeu_ps(left + y, _mm_mul_ps(_mm_loadu_ps(left + y), gain));
+                  _mm_storeu_ps(right + y, _mm_mul_ps(_mm_loadu_ps(right + y), gain));
+               }
+            }
+#endif
+            for (; y < end; y++)
+            {
+               float a = left[y], z = right[y];
+               if (group->bands[b])
+               {
+                  left[y] = (0.0f + a * group->matrix[0]) + z * group->matrix[1];
+                  right[y] = (0.0f + a * group->matrix[2]) + z * group->matrix[3];
+               }
+               else if (d->config.channels == 2)
+               {
+                  left[y] *= 181.0f / 128;
+                  right[y] *= 181.0f / 128;
+               }
+            }
+         }
+         continue;
+      }
       for (b = 0; b < d->band_count[k]; b++)
          for (y = d->edges[k][b]; y < d->edges[k][b + 1] && y < length; y++)
          {
@@ -481,6 +541,7 @@ static int pro_subframe(rwma_t *d, rwma_reader *r, int offset, int length)
    {
       rwma_lane *l = &d->lane[d->participants[p]];
       int overlap = RWMA_MIN(l->previous, length), base = d->frame_length / 2 + offset;
+      const float *window = d->transform.windows[rwma_log2(overlap) - 6];
       if (l->active)
       {
          for (b = 0; b < d->band_count[k]; b++)
@@ -489,19 +550,45 @@ static int pro_subframe(rwma_t *d, rwma_reader *r, int offset, int length)
             float gain;
             if (exponent > 400)
                return RWMA_BAD_DATA;
-            gain = (float)pow(10.0, exponent / 20.0);
-            for (y = d->edges[k][b]; y < d->edges[k][b + 1]; y++)
+            gain = exponent >= -512 ? pro_gain[exponent + 512]
+                                    : (float)pow(10.0, exponent / 20.0);
+            y = d->edges[k][b];
+#ifdef RWMA_MDCT_SSE2
+            {
+               __m128 factor = _mm_set1_ps(gain);
+               for (; y + 3 < d->edges[k][b + 1]; y += 4)
+                  _mm_storeu_ps(d->spectrum + y,
+                                _mm_mul_ps(_mm_loadu_ps(l->spectrum + y), factor));
+            }
+#endif
+            for (; y < d->edges[k][b + 1]; y++)
                d->spectrum[y] = l->spectrum[y] * gain;
          }
          rwma_mdct_run(&d->transform, l->spectrum, d->spectrum, length,
-                       (float)(2.0 / length * pow(2.0, 1 - (int)d->bps)));
+                       (d->bps == 16 ? 0.00006103515625f : 0.0000002384185791015625f) /
+                           length);
       }
       else
          memset(l->spectrum, 0, length * sizeof(float));
-      for (y = 0; y < overlap / 2; y++)
+      y = 0;
+#ifdef RWMA_MDCT_SSE2
+      for (; y + 3 < overlap / 2; y += 4)
+      {
+         int a = base - overlap / 2 + y, z = base + overlap / 2 - 4 - y;
+         __m128 x = _mm_loadu_ps(l->pcm + a), v = _mm_loadu_ps(l->pcm + z);
+         __m128 low = _mm_loadu_ps(window + y);
+         __m128 high = _mm_loadu_ps(window + overlap - 4 - y), value;
+         v = _mm_shuffle_ps(v, v, _MM_SHUFFLE(0, 1, 2, 3));
+         high = _mm_shuffle_ps(high, high, _MM_SHUFFLE(0, 1, 2, 3));
+         value = _mm_add_ps(_mm_mul_ps(x, low), _mm_mul_ps(v, high));
+         _mm_storeu_ps(l->pcm + a, _mm_sub_ps(_mm_mul_ps(x, high), _mm_mul_ps(v, low)));
+         _mm_storeu_ps(l->pcm + z,
+                       _mm_shuffle_ps(value, value, _MM_SHUFFLE(0, 1, 2, 3)));
+      }
+#endif
+      for (; y < overlap / 2; y++)
       {
          int a = base - overlap / 2 + y, z = base + overlap / 2 - 1 - y;
-         const float *window = d->transform.windows[rwma_log2(overlap) - 6];
          float x = l->pcm[a], v = l->pcm[z], low = window[y],
                high = window[overlap - 1 - y];
          l->pcm[a] = x * high - v * low;
@@ -570,7 +657,17 @@ static int pro_frame(rwma_t *d, rwma_reader *r, size_t extent, rwma_frame *out)
    {
       unsigned i;
       out->planes[c] = d->lane[c].pcm;
-      for (i = 0; i < d->frame_length; i++)
+      i = 0;
+#ifdef RWMA_MDCT_SSE2
+      for (; i + 3 < d->frame_length; i += 4)
+      {
+         __m128i mask = _mm_set1_epi32(0x7f800000);
+         __m128i v = _mm_castps_si128(_mm_loadu_ps(out->planes[c] + i));
+         if (_mm_movemask_epi8(_mm_cmpeq_epi32(_mm_and_si128(v, mask), mask)))
+            return RWMA_BAD_DATA;
+      }
+#endif
+      for (; i < d->frame_length; i++)
          if (!rwma_finite(out->planes[c][i]))
             return RWMA_BAD_DATA;
    }

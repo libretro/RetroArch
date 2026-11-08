@@ -12,7 +12,7 @@ REFERENCE_TARGET = rwma_reference
 
 all: $(TARGET)
 
-$(TARGET): $(SOURCES) ../../../formats/wma/rwma_internal.h ../../../formats/wma/rwma_mdct.h ../../../formats/wma/rwma_pro_data.h ../../../include/formats/rwma.h
+$(TARGET): $(SOURCES) ../../../formats/wma/rwma_internal.h ../../../formats/wma/rwma_mdct.h ../../../formats/wma/rwma_pro_data.h ../../../formats/wma/rwma_pro_prefix.h ../../../formats/wma/rwma_pro_gain.h ../../../include/formats/rwma.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(WARN) $(SOURCES) $(LDFLAGS) -lm -o $@
 
 test: $(TARGET)
