@@ -12,6 +12,12 @@ typedef struct vaapi_vp9_decoder vaapi_vp9_decoder_t;
 bool vaapi_vp9_decoder_open(vaapi_vp9_pool_t *pool,
       const rvp9_hdr *header, const video_color_metadata_t *color,
       const vaapi_hevc_export_ops_t *exports, rvp9_hw_ops_t *ops);
+/* Explicit sample position: 1 left/vertical-center, 2 colocated with luma.
+ * The ordinary VP9 constructor uses the colocated default. */
+bool vaapi_vp9_decoder_open_position(vaapi_vp9_pool_t *pool,
+      const rvp9_hdr *header, const video_color_metadata_t *color,
+      unsigned chroma_position, const vaapi_hevc_export_ops_t *exports,
+      rvp9_hw_ops_t *ops);
 /* Owner thread, including paused and closing ticks. One bounded pass over
  * completion checks and renderer returns: 1 idle, 0 pending, negative failure. */
 int vaapi_vp9_decoder_poll(vaapi_vp9_decoder_t *decoder);

@@ -12,7 +12,7 @@ struct vaapi_vp9_decoder
    vaapi_vp9_pool_t *pool;
    vaapi_frame_pool_t *frames;
    video_color_metadata_t container, colors[32];
-   unsigned width, height;
+   unsigned width, height, chroma_position;
    bool closed, failed;
 };
 
@@ -114,17 +114,20 @@ static int vaapi_vp9_decoder_output(void *opaque, unsigned slot,
    if (color->range == 2)
       yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
    return vaapi_frame_export_position(decoder->frames, &decoder->pending,
-         0, 0, decoder->width, decoder->height, yuv, 1, color, out);
+         0, 0, decoder->width, decoder->height, yuv,
+         decoder->chroma_position, color, out);
 }
 
-bool vaapi_vp9_decoder_open(vaapi_vp9_pool_t *pool,
+bool vaapi_vp9_decoder_open_position(vaapi_vp9_pool_t *pool,
       const rvp9_hdr *header, const video_color_metadata_t *color,
-      const vaapi_hevc_export_ops_t *exports, rvp9_hw_ops_t *ops)
+      unsigned chroma_position, const vaapi_hevc_export_ops_t *exports,
+      rvp9_hw_ops_t *ops)
 {
    vaapi_vp9_decoder_t *decoder;
    video_color_metadata_t resolved;
    const vaapi_vp9_session_t *session;
    if (!pool || !pool->active || pool->broken || !ops || ops->decoder
+         || chroma_position < 1 || chroma_position > 2
          || !exports || !exports->surface || !exports->cloexec
          || !exports->close || !exports->identity
          || !rvp9_color_resolve(header, color, &resolved))
@@ -151,11 +154,19 @@ bool vaapi_vp9_decoder_open(vaapi_vp9_pool_t *pool,
       decoder->container = *color;
    decoder->width = session->width;
    decoder->height = session->height;
+   decoder->chroma_position = chroma_position;
    memset(ops, 0, sizeof(*ops));
    ops->decoder = decoder;
    ops->decode = vaapi_vp9_decoder_decode;
    ops->output = vaapi_vp9_decoder_output;
    return true;
+}
+
+bool vaapi_vp9_decoder_open(vaapi_vp9_pool_t *pool,
+      const rvp9_hdr *header, const video_color_metadata_t *color,
+      const vaapi_hevc_export_ops_t *exports, rvp9_hw_ops_t *ops)
+{
+   return vaapi_vp9_decoder_open_position(pool, header, color, 2, exports, ops);
 }
 
 vaapi_vp9_decoder_t *vaapi_vp9_decoder_detach(rvp9_hw_ops_t *ops)

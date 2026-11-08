@@ -110,7 +110,7 @@ static void lifecycle(unsigned depth)
    assert(vaapi_frame_claim(frames[0].owner, frames[0].done,
          frames[0].done_value, frames[0].image, &view));
    assert(view.source->native_owner == &pool && view.source->slot == 0
-         && view.chroma_position == 1 && view.color.matrix == 1);
+         && view.chroma_position == 2 && view.color.matrix == 1);
    memset(&taken, 0, sizeof(taken));
    assert(vaapi_frame_take(frames[0].owner, frames[0].done,
          frames[0].done_value, &taken));
@@ -207,6 +207,31 @@ static void admission(void)
    assert(vaapi_vp9_decoder_retire(decoder) && vaapi_vp9_pool_close(&pool));
 }
 
+static void explicit_position(void)
+{
+   vaapi_vp9_decoder_t *decoder;
+   vaapi_frame_view_t view;
+   identity_fault = false;
+   setup(8, 12);
+   memset(&decoder_ops, 0, sizeof(decoder_ops));
+   assert(!vaapi_vp9_decoder_open_position(&pool, &picture.header, NULL,
+         0, &exports, &decoder_ops));
+   assert(!vaapi_vp9_decoder_open_position(&pool, &picture.header, NULL,
+         3, &exports, &decoder_ops));
+   assert(vaapi_vp9_decoder_open_position(&pool, &picture.header, NULL,
+         1, &exports, &decoder_ops));
+   decoder = (vaapi_vp9_decoder_t *)decoder_ops.decoder;
+   assert(!submit() && !decoder_ops.output(decoder, 0, &frames[0]));
+   assert(vaapi_frame_claim(frames[0].owner, frames[0].done,
+         frames[0].done_value, frames[0].image, &view));
+   assert(view.chroma_position == 1);
+   assert(vaapi_frame_unclaim(frames[0].owner, frames[0].done,
+         frames[0].done_value, NULL));
+   video_hw_frame_abandon(&frames[0]);
+   assert(vaapi_vp9_decoder_detach(&decoder_ops) == decoder);
+   assert(vaapi_vp9_decoder_retire(decoder) && vaapi_vp9_pool_close(&pool));
+}
+
 int main(void)
 {
    lifecycle(8);
@@ -214,6 +239,7 @@ int main(void)
    busy();
    failed_export();
    admission();
+   explicit_position();
    assert(!vaapi_vp9_decoder_detach(NULL));
    assert(vaapi_vp9_decoder_retire(NULL));
    puts("PASS: VP9 opaque exports, repeated leases, color snapshots and renderer return retirement");
