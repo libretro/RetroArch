@@ -47,7 +47,7 @@ static struct
    char trust[PATH_MAX_LENGTH];
    char prep[PATH_MAX_LENGTH];   /* the zip a pick's task was pushed for */
    const char *core;             /* of the open() in progress */
-   bool mesa;                    /* of the last driver open() returned */
+   void *loader;                 /* the last one open() returned */
    bool ready;
    bool pruned;
    bool safe_mode;
@@ -58,20 +58,67 @@ static struct
 /* dladdr target: a data address needs no function-to-object cast. */
 static const char custom_driver_anchor = 0;
 
-static void custom_driver_msg(enum vulkan_custom_driver_msg msg)
+/* The gist of why a driver was not used, as its notice and its sublabel
+ * say it. False for a message that is not a failure. */
+static bool custom_driver_why(enum vulkan_custom_driver_msg msg,
+      const char *detail, char *s, size_t len)
 {
-   const char *s;
    enum msg_hash_enums id;
    switch (msg)
    {
-      case VULKAN_CUSTOM_DRIVER_MSG_FAILED:
-         id = MSG_VULKAN_CUSTOM_DRIVER_FAILED;
+      case VULKAN_CUSTOM_DRIVER_MSG_INVALID:
+         id = string_is_empty(detail)
+               ? MSG_VULKAN_CUSTOM_DRIVER_WHY_FAILED
+               : MSG_VULKAN_CUSTOM_DRIVER_WHY_PACKAGE;
          break;
+      case VULKAN_CUSTOM_DRIVER_MSG_FAILED:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_FAILED;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_LIBRARY;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_NO_GPU:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_ADRENO:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_ADRENO;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_MALI:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_MALI;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_LOADER:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_LOADER;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_NO_START:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_START;
+         break;
+      default:
+         return false;
+   }
+   if (s)
+      snprintf(s, len, msg_hash_to_str(id), detail);
+   return true;
+}
+
+static void custom_driver_msg(enum vulkan_custom_driver_msg msg,
+      const char *detail)
+{
+   char why[VULKAN_CUSTOM_DRIVER_WHY_MAX];
+   char text[VULKAN_CUSTOM_DRIVER_WHY_MAX + 64];
+   const char *s;
+   enum msg_hash_enums id;
+   if (custom_driver_why(msg, detail, why, sizeof(why)))
+   {
+      snprintf(text, sizeof(text),
+            msg_hash_to_str(MSG_VULKAN_CUSTOM_DRIVER_NOT_USED), why);
+      runloop_msg_queue_push(text, strlen(text), 2, 360, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      return;
+   }
+   switch (msg)
+   {
       case VULKAN_CUSTOM_DRIVER_MSG_CRASHED:
          id = MSG_VULKAN_CUSTOM_DRIVER_CRASHED;
-         break;
-      case VULKAN_CUSTOM_DRIVER_MSG_INVALID:
-         id = MSG_VULKAN_CUSTOM_DRIVER_INVALID;
          break;
       case VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED:
          id = MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED;
@@ -426,7 +473,7 @@ static void custom_driver_shortcut(void)
 /* vulkan_custom_driver_load_t: runs on a loader cache miss only. */
 static void *custom_driver_load(void *data, const char *path, uint32_t key,
       struct vulkan_custom_driver_meta *meta,
-      enum vulkan_custom_driver_msg *msg)
+      enum vulkan_custom_driver_msg *msg, const char **why)
 {
    void *handle                 = NULL;
    const char *reason           = NULL;
@@ -438,6 +485,7 @@ static void *custom_driver_load(void *data, const char *path, uint32_t key,
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: out of memory.\n",
             path);
       *msg = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
+      *why = "out of memory";
       return NULL;
    }
    if (!custom_driver_st.pruned)
@@ -482,6 +530,7 @@ static void *custom_driver_load(void *data, const char *path, uint32_t key,
    if (reason)
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: %s.\n",
             path, reason);
+   *why = reason;
    free(w);
    return handle;
 }
@@ -562,6 +611,7 @@ dylib_t vulkan_custom_driver_open(void)
 {
    struct vulkan_custom_driver_request req;
    const struct vulkan_custom_driver_meta *meta = NULL;
+   const char *detail                           = NULL;
    enum vulkan_custom_driver_msg msg            = VULKAN_CUSTOM_DRIVER_MSG_NONE;
    settings_t *settings                         = config_get_ptr();
    int64_t mtime                                = 0;
@@ -597,8 +647,10 @@ dylib_t vulkan_custom_driver_open(void)
    custom_driver_st.core = req.core;
    handle = vulkan_custom_driver_session_open(&custom_driver_st.session,
          &req, &meta, &msg);
-   custom_driver_msg(msg);
-   custom_driver_st.mesa = handle && meta->mesa;
+   vulkan_custom_driver_session_why(&custom_driver_st.session, req.path,
+         &detail);
+   custom_driver_msg(msg, detail);
+   custom_driver_st.loader = handle;
    /* The load callback warns for the INVALID it returns. */
    if (msg == VULKAN_CUSTOM_DRIVER_MSG_INVALID && req.size < 0)
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: zip missing or not readable.\n",
@@ -614,7 +666,7 @@ dylib_t vulkan_custom_driver_open(void)
       custom_driver_mark(req.path, req.core);
       RARCH_LOG("[Vulkan] Custom driver: \"%s\" (%s), version \"%s\", core \"%s\".\n",
             meta->name, meta->library_name, meta->version, req.core);
-      if (!custom_driver_st.mesa)
+      if (!meta->mesa)
          RARCH_WARN("[Vulkan] Custom driver vendor \"%s\" is untested.\n",
                meta->vendor);
    }
@@ -623,16 +675,30 @@ dylib_t vulkan_custom_driver_open(void)
 
 void vulkan_custom_driver_failed(void)
 {
+   char detail[VULKAN_CUSTOM_DRIVER_DETAIL_MAX];
    const struct vulkan_custom_driver_path *p;
+   const char *error;
    enum vulkan_custom_driver_msg msg;
    if (!custom_driver_st.ready)
       return;
+   /* Instance failures skip answered(); the hook still outranks the
+    * VkResult */
+   if (     vulkan_custom_driver_session_current(&custom_driver_st.session)
+         && custom_driver_st.session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE
+         && vulkan_custom_driver_linker_hook(custom_driver_st.loader, &error)
+            == VULKAN_CUSTOM_DRIVER_HOOK_FAILED)
+   {
+      RARCH_WARN("[Vulkan] Custom driver library did not load: %s\n", error);
+      vulkan_custom_driver_trim_dlerror(detail, sizeof(detail), error);
+      vulkan_custom_driver_session_reason(&custom_driver_st.session,
+            VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED, detail);
+   }
    p   = custom_driver_st.session.current;
    msg = vulkan_custom_driver_session_failed(&custom_driver_st.session);
    if (msg == VULKAN_CUSTOM_DRIVER_MSG_FAILED)
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: failed to start.\n",
             p->path);
-   custom_driver_msg(msg);
+   custom_driver_msg(msg, p ? p->detail : "");
    filestream_delete(custom_driver_st.marker);
 }
 
@@ -655,9 +721,36 @@ bool vulkan_custom_driver_current(void)
           &&  vulkan_custom_driver_session_current(&custom_driver_st.session);
 }
 
-bool vulkan_custom_driver_mesa(void)
+void vulkan_custom_driver_result(int result)
 {
-   return custom_driver_st.mesa;
+   if (custom_driver_st.ready)
+      vulkan_custom_driver_session_result(&custom_driver_st.session,
+            result);
+}
+
+bool vulkan_custom_driver_answered(uint32_t gpus)
+{
+   char detail[VULKAN_CUSTOM_DRIVER_DETAIL_MAX];
+   const char *error;
+   enum vulkan_custom_driver_msg msg = vulkan_custom_driver_verdict(
+         vulkan_custom_driver_linker_hook(custom_driver_st.loader, &error),
+         gpus);
+   if (msg == VULKAN_CUSTOM_DRIVER_MSG_NONE)
+      return true;
+   detail[0] = '\0';
+   if (msg == VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED)
+   {
+      RARCH_WARN("[Vulkan] Custom driver library did not load: %s\n", error);
+      vulkan_custom_driver_trim_dlerror(detail, sizeof(detail), error);
+   }
+   else if (msg == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU)
+      msg = vulkan_custom_driver_no_gpu(path_is_valid("/dev/kgsl-3d0"),
+            path_is_valid("/dev/mali0"));
+   else
+      RARCH_WARN("[Vulkan] Custom driver not used: the system Vulkan loader did not call the hook.\n");
+   vulkan_custom_driver_session_reason(&custom_driver_st.session, msg,
+         detail);
+   return false;
 }
 
 /* 0 until asked, then 1 or 2. Asked once: the menu asks each time it
@@ -676,6 +769,17 @@ bool vulkan_custom_driver_supported(void)
       retro_atomic_store_release_int(&custom_driver_supported_st, known);
    }
    return known == 1;
+}
+
+bool vulkan_custom_driver_why(const char *path, char *s, size_t len)
+{
+   const char *detail;
+   enum vulkan_custom_driver_msg why;
+   if (!custom_driver_st.ready)
+      return false;
+   why = vulkan_custom_driver_session_why(&custom_driver_st.session, path,
+         &detail);
+   return custom_driver_why(why, detail, s, len);
 }
 
 bool vulkan_custom_driver_crashed(const char *path)
@@ -772,7 +876,7 @@ void vulkan_custom_driver_picked(const char *path)
       return;
    len = custom_driver_st.session.state_len;
    custom_driver_msg(vulkan_custom_driver_session_picked(
-            &custom_driver_st.session, path));
+            &custom_driver_st.session, path), "");
    if (custom_driver_st.session.state_len != len)
       custom_driver_save_state();
    custom_driver_prepare(path);

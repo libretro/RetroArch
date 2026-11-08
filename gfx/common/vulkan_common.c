@@ -1311,7 +1311,15 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
       vk->context.xr = NULL;
    }
 #endif
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+   {
+      VkResult res = vkCreateDevice(gpu, info, allocator, device);
+      vulkan_custom_driver_result(res);
+      return res;
+   }
+#else
    return vkCreateDevice(gpu, info, allocator, device);
+#endif
 }
 
 #ifdef HAVE_OPENXR
@@ -2598,7 +2606,11 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       }
    }
 
-   if ((res = vulkan_context_create_instance(vk, &info, &instance)) != VK_SUCCESS)
+   res = vulkan_context_create_instance(vk, &info, &instance);
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+   vulkan_custom_driver_result(res);
+#endif
+   if (res != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan] Failed to create Vulkan instance (%d).\n", res);
       RARCH_ERR("[Vulkan] If VULKAN_DEBUG=1 is enabled, make sure Vulkan validation layers are installed.\n");
@@ -5227,6 +5239,9 @@ dxgi_unavailable:
       {
          RARCH_ERR("[Vulkan] Failed to create swapchain (err = %d).\n",
                (int)res);
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+         vulkan_custom_driver_result(res);
+#endif
          /* Leave the context in the same "no swapchain yet" state the
           * zero-extent path uses, so the acquire path retries the
           * create on a later frame instead of presenting to a retired
@@ -5529,48 +5544,22 @@ static void vulkan_context_openxr_init(gfx_ctx_vulkan_data_t *vk,
 #endif
 
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
-/* A custom driver has to see a GPU. A Mesa one must also not report the
- * system driver's ID: the hook loads that driver when the custom library
- * fails to. Other vendors' builds may report that ID themselves. */
-static bool vulkan_context_custom_driver_ok(gfx_ctx_vulkan_data_t *vk,
-      uint32_t api_version)
+/* The hook knows whether the custom library or the system driver
+ * answered; the custom one also has to see a GPU. */
+static bool vulkan_context_custom_driver_ok(gfx_ctx_vulkan_data_t *vk)
 {
-   VkPhysicalDeviceDriverProperties driver;
-   VkPhysicalDeviceProperties2 props;
-   PFN_vkGetPhysicalDeviceProperties2 get_props2 = NULL;
-   VkPhysicalDevice gpu                          = VK_NULL_HANDLE;
-   uint32_t count                                = 1;
-   VkResult res                                  = vkEnumeratePhysicalDevices(
+   VkPhysicalDevice gpu = VK_NULL_HANDLE;
+   uint32_t count       = 1;
+   VkResult res         = vkEnumeratePhysicalDevices(
          vk->context.instance, &count, &gpu);
 
    if ((res != VK_SUCCESS && res != VK_INCOMPLETE) || !count || !gpu)
    {
-      RARCH_WARN("[Vulkan] Custom driver found no GPU.\n");
-      return false;
+      RARCH_WARN("[Vulkan] Custom driver found no GPU (result %d, count %u).\n",
+            (int)res, (unsigned)count);
+      count = 0;
    }
-   if (!vulkan_custom_driver_mesa())
-   {
-      RARCH_WARN("[Vulkan] Custom driver is not Mesa: its load cannot be confirmed.\n");
-      return true;
-   }
-   if (api_version >= VK_API_VERSION_1_1)
-      get_props2 = (PFN_vkGetPhysicalDeviceProperties2)
-         vulkan_symbol_wrapper_instance_proc_addr()(vk->context.instance,
-               "vkGetPhysicalDeviceProperties2");
-   if (!get_props2)
-      return true;
-   memset(&driver, 0, sizeof(driver));
-   memset(&props, 0, sizeof(props));
-   driver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-   props.sType  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-   props.pNext  = &driver;
-   get_props2(gpu, &props);
-   if (driver.driverID == VK_DRIVER_ID_QUALCOMM_PROPRIETARY)
-   {
-      RARCH_WARN("[Vulkan] Custom driver did not load; the system one did.\n");
-      return false;
-   }
-   return true;
+   return vulkan_custom_driver_answered(count);
 }
 
 /* The custom driver failed before its surface: init once more. Its path
@@ -5861,7 +5850,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    }
 
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
-   if (custom_driver && !vulkan_context_custom_driver_ok(vk, app.apiVersion))
+   if (custom_driver && !vulkan_context_custom_driver_ok(vk))
       return vulkan_context_init_system(vk, type);
 #endif
 

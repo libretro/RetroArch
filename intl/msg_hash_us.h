@@ -7670,6 +7670,10 @@ MSG_HASH(
    "Crashed last run, using System"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_NOT_USED,
+   "Not used: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    "System (Safe start)"
    )
@@ -34328,16 +34332,8 @@ MSG_HASH(
    "On + Boost"
    )
 MSG_HASH(
-   MSG_VULKAN_CUSTOM_DRIVER_FAILED,
-   "Custom Vulkan driver failed to start. Using the system driver."
-   )
-MSG_HASH(
    MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
    "Custom Vulkan driver crashed before and is off for this core. Pick it again to retry."
-   )
-MSG_HASH(
-   MSG_VULKAN_CUSTOM_DRIVER_INVALID,
-   "Custom Vulkan driver package is not usable. Using the system driver."
    )
 MSG_HASH(
    MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
@@ -34354,6 +34350,42 @@ MSG_HASH(
 MSG_HASH(
    MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
    "Custom Vulkan driver was not picked in the menu or has changed. Pick it again to use it."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_NOT_USED,
+   "Custom Vulkan driver not used: %s. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_PACKAGE,
+   "bad package (%s)"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_LIBRARY,
+   "library did not load (%s)"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU,
+   "it found no GPU it supports"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_ADRENO,
+   "it found no GPU it supports (this device has an Adreno GPU)"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_MALI,
+   "it found no GPU it supports (this device has a Mali GPU)"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_LOADER,
+   "the system Vulkan loader did not use it"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_START,
+   "it failed to start (%s)"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_FAILED,
+   "it failed to start"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

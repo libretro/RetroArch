@@ -402,19 +402,21 @@ struct fake_loader
 
 static void *fake_load(void *data, const char *path, uint32_t key,
       struct vulkan_custom_driver_meta *meta,
-      enum vulkan_custom_driver_msg *msg)
+      enum vulkan_custom_driver_msg *msg, const char **reason)
 {
    struct fake_loader *f = (struct fake_loader*)data;
    (void)key;
    f->loads++;
    if (strstr(path, "bad") && !f->fixed)
    {
-      *msg = VULKAN_CUSTOM_DRIVER_MSG_INVALID;
+      *msg    = VULKAN_CUSTOM_DRIVER_MSG_INVALID;
+      *reason = "meta.json is not valid JSON";
       return NULL;
    }
    if (strstr(path, "broken"))
    {
-      *msg = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
+      *msg    = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
+      *reason = "linker namespaces unavailable";
       return NULL;
    }
    strcpy(meta->library_name, path + strlen(path) - 5);
@@ -582,6 +584,279 @@ static void test_session(void)
          == VULKAN_CUSTOM_DRIVER_MSG_RESTART);
    CHECK(!open_drv("/d/A.zip", "Core", &msg)
          && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE && loader.loads == 2);
+}
+
+static enum vulkan_custom_driver_msg why(const char *path,
+      const char **detail)
+{
+   return vulkan_custom_driver_session_why(&session, path, detail);
+}
+
+static void test_session_why(void)
+{
+   enum vulkan_custom_driver_msg msg;
+   struct vulkan_custom_driver_request req;
+   const char *detail;
+
+   /* a bad package keeps its reason after its message is shown */
+   begin(NULL, NULL);
+   CHECK(!open_drv("/d/bad.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+   CHECK(why("/d/bad.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+   CHECK(!strcmp(detail, "meta.json is not valid JSON"));
+   CHECK(!open_drv("/d/bad.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(why("/d/bad.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+
+   /* picked again: the reason goes before it is tried again */
+   CHECK(vulkan_custom_driver_session_picked(&session, "/d/bad.zip")
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(why("/d/bad.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!*detail);
+   /* and fixed: it loads */
+   loader.fixed = true;
+   CHECK(open_drv("/d/bad.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(why("/d/bad.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!*detail);
+
+   /* a missing zip */
+   req      = request("/d/gone.zip", "Core");
+   req.size = -1;
+   CHECK(!open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+   CHECK(why("/d/gone.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+   CHECK(!strcmp(detail, "the zip is missing or not readable"));
+
+   /* failed to load, or to start: for the rest of the session */
+   CHECK(!open_drv("/d/broken.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(why("/d/broken.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(!strcmp(detail, "linker namespaces unavailable"));
+   /* picked again, it waits for a restart and keeps its reason */
+   CHECK(vulkan_custom_driver_session_picked(&session, "/d/broken.zip")
+         == VULKAN_CUSTOM_DRIVER_MSG_RESTART);
+   CHECK(why("/d/broken.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(!strcmp(detail, "linker namespaces unavailable"));
+   CHECK(open_drv("/d/A.zip", "Core", &msg));
+   CHECK(why("/d/A.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(why("/d/A.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(!*detail);
+   CHECK(!open_drv("/d/A.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(why("/d/A.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+
+   /* never tried */
+   CHECK(why("/d/other.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!*detail);
+   CHECK(why(NULL, &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+}
+
+static const char *trim(const char *err, size_t len)
+{
+   static char out[256];
+   memset(out, 'x', sizeof(out));
+   vulkan_custom_driver_trim_dlerror(out, len, err);
+   return out;
+}
+
+static void test_trim_dlerror(void)
+{
+   char err[256];
+   const char *s;
+
+   /* bionic's text for a missing DT_NEEDED */
+   CHECK(!strcmp(trim("dlopen failed: library \"libnope.so\" not found: "
+         "needed by /data/user/0/com.retroarch/files/vulkan_drivers/"
+         "0a1b2c3d/vulkan.broken.so in namespace vulkan.adreno.so",
+         sizeof(err)), "library \"libnope.so\" not found"));
+   CHECK(!strcmp(trim("dlopen failed: library \"vulkan.x.so\" not found",
+         sizeof(err)), "library \"vulkan.x.so\" not found"));
+   CHECK(!strcmp(trim("cannot locate symbol \"vkGetInstanceProcAddr\"",
+         sizeof(err)), "cannot locate symbol \"vkGetInstanceProcAddr\""));
+   /* a missing symbol: the library that wanted it goes */
+   CHECK(!strcmp(trim("dlopen failed: cannot locate symbol "
+         "\"AHardwareBuffer_getId\" referenced by \"/data/user/0/"
+         "com.retroarch/files/vulkan_drivers/0a1b2c3d/vulkan.broken.so\"...",
+         sizeof(err)), "cannot locate symbol \"AHardwareBuffer_getId\""));
+   /* a library the namespace cannot see: the path in the middle goes */
+   CHECK(!strcmp(trim("dlopen failed: library \"libgsl.so\" needed or "
+         "dlopened by \"/data/user/0/com.retroarch/files/vulkan_drivers/"
+         "0a1b2c3d/vulkan.broken.so\" is not accessible for the namespace "
+         "\"vulkan.mali.so\"", sizeof(err)),
+         "library \"libgsl.so\" is not accessible for the namespace "
+         "\"vulkan.mali.so\""));
+   CHECK(!strcmp(trim("dlopen failed: library \"libgsl.so\" needed or "
+         "dlopened by \"(unknown)\" is not accessible for the namespace "
+         "\"vulkan.mali.so\"", 30), "library \"libgsl.so\" is not..."));
+   /* nothing left after trimming: kept whole */
+   CHECK(!strcmp(trim("dlopen failed: ", sizeof(err)), "dlopen failed: "));
+   CHECK(!strcmp(trim(": needed by x", sizeof(err)), ": needed by x"));
+   CHECK(!strcmp(trim("", sizeof(err)), ""));
+   CHECK(!strcmp(trim(NULL, sizeof(err)), ""));
+
+   /* cut to the buffer, marked */
+   memset(err, 'a', 200);
+   err[200] = '\0';
+   s = trim(err, VULKAN_CUSTOM_DRIVER_DETAIL_MAX);
+   CHECK(strlen(s) == VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 1);
+   CHECK(!strcmp(s + VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 4, "..."));
+   CHECK(s[VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 5] == 'a');
+   /* the cut never splits a UTF-8 sequence */
+   memcpy(err + VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 5, "\xC3\xA9", 2);
+   s = trim(err, VULKAN_CUSTOM_DRIVER_DETAIL_MAX);
+   CHECK(strlen(s) == VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 2);
+   CHECK(!strcmp(s + VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 5, "..."));
+   /* an exact fit is not cut */
+   err[VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 1] = '\0';
+   memset(err, 'b', VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 1);
+   s = trim(err, VULKAN_CUSTOM_DRIVER_DETAIL_MAX);
+   CHECK(strlen(s) == VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 1 && s[2] == 'b');
+   CHECK(s[VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 2] == 'b');
+   /* a buffer too small for the mark */
+   CHECK(!strcmp(trim("abcdef", 3), "ab"));
+}
+
+static void test_verdict(void)
+{
+   /* the hook's state decides; the GPU count only once it loaded */
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_LOADED, 1)
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_LOADED, 0)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU);
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_FAILED, 1)
+         == VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED);
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_FAILED, 0)
+         == VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED);
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_NOT_CALLED, 1)
+         == VULKAN_CUSTOM_DRIVER_MSG_LOADER);
+   /* a stub HAL with no GPU: the uncalled hook decides, not the count */
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_NOT_CALLED, 0)
+         == VULKAN_CUSTOM_DRIVER_MSG_LOADER);
+
+   /* the GPU is named when one device node says which */
+   CHECK(vulkan_custom_driver_no_gpu(false, false)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU);
+   CHECK(vulkan_custom_driver_no_gpu(true, false)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_ADRENO);
+   CHECK(vulkan_custom_driver_no_gpu(false, true)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_MALI);
+   CHECK(vulkan_custom_driver_no_gpu(true, true)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU);
+}
+
+static void test_session_reason(void)
+{
+   enum vulkan_custom_driver_msg msg;
+   const char *detail;
+
+   /* the reason replaces FAILED, once, and stays for the path */
+   begin(NULL, NULL);
+   CHECK(open_drv("/d/A.zip", "Core", &msg));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED,
+         "library \"libnope.so\" not found");
+   /* the first one stands */
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_LOADER, NULL);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED);
+   CHECK(why("/d/A.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED);
+   CHECK(!strcmp(detail, "library \"libnope.so\" not found"));
+   CHECK(!open_drv("/d/A.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+
+   /* no reason: FAILED */
+   CHECK(open_drv("/d/B.zip", "Core", &msg));
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(why("/d/B.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(!*detail);
+
+   /* an earlier init's reason does not carry over */
+   CHECK(open_drv("/d/C.zip", "Core", &msg));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_MALI, NULL);
+   CHECK(vulkan_custom_driver_session_started(&session));
+   CHECK(open_drv("/d/D.zip", "Core", &msg));
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(why("/d/C.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+
+   /* nothing this init's to fail: ignored */
+   begin(NULL, NULL);
+   CHECK(open_drv("/d/E.zip", "Core", &msg));
+   vulkan_custom_driver_session_kept(&session);
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_LOADER, NULL);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(why("/d/E.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+}
+
+static const char *result_text(int result)
+{
+   static char out[VULKAN_CUSTOM_DRIVER_DETAIL_MAX];
+   vulkan_custom_driver_result_text(out, sizeof(out), result);
+   return out;
+}
+
+static void test_result(void)
+{
+   enum vulkan_custom_driver_msg msg;
+   const char *detail;
+
+   /* VkResult values from vulkan_core.h */
+   CHECK(!strcmp(result_text(-3), "VK_ERROR_INITIALIZATION_FAILED"));
+   CHECK(!strcmp(result_text(-7), "VK_ERROR_EXTENSION_NOT_PRESENT"));
+   CHECK(!strcmp(result_text(-9), "VK_ERROR_INCOMPATIBLE_DRIVER"));
+   CHECK(!strcmp(result_text(-13), "VK_ERROR_UNKNOWN"));
+   CHECK(!strcmp(result_text(-1000000001),
+         "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR"));
+   CHECK(!strcmp(result_text(-1000001004), "VK_ERROR_OUT_OF_DATE_KHR"));
+   CHECK(!strcmp(result_text(-1000174001), "VK_ERROR_NOT_PERMITTED_KHR"));
+   CHECK(!strcmp(result_text(-42), "VkResult -42"));
+   CHECK(!strcmp(result_text(-2147483647 - 1), "VkResult -2147483648"));
+
+   /* the last step's result names a failure that has no reason */
+   begin(NULL, NULL);
+   CHECK(open_drv("/d/A.zip", "Core", &msg));
+   vulkan_custom_driver_session_result(&session, -8);
+   vulkan_custom_driver_session_result(&session, 0);
+   vulkan_custom_driver_session_result(&session, -3);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_START);
+   CHECK(why("/d/A.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NO_START);
+   CHECK(!strcmp(detail, "VK_ERROR_INITIALIZATION_FAILED"));
+
+   /* a later success clears an earlier failure */
+   CHECK(open_drv("/d/B.zip", "Core", &msg));
+   vulkan_custom_driver_session_result(&session, -8);
+   vulkan_custom_driver_session_result(&session, 0);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+
+   /* a reason comes first */
+   CHECK(open_drv("/d/C.zip", "Core", &msg));
+   vulkan_custom_driver_session_result(&session, -3);
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_LOADER, NULL);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_LOADER);
+
+   /* started, or a new init: an old result does not count */
+   CHECK(open_drv("/d/D.zip", "Core", &msg));
+   vulkan_custom_driver_session_result(&session, -3);
+   CHECK(vulkan_custom_driver_session_started(&session));
+   vulkan_custom_driver_session_result(&session, -4);
+   CHECK(session.result == -3);
+   begin(NULL, NULL);
+   CHECK(open_drv("/d/E.zip", "Core", &msg));
+   vulkan_custom_driver_session_result(&session, -3);
+   CHECK(open_drv("/d/F.zip", "Core", &msg));
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
 }
 
 static void test_trust(void)
@@ -1024,6 +1299,11 @@ int main(void)
    test_key();
    test_crash_state();
    test_session();
+   test_session_why();
+   test_trim_dlerror();
+   test_verdict();
+   test_session_reason();
+   test_result();
    test_trust();
    test_session_table();
    test_crash_marker();
