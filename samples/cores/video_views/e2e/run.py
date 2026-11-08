@@ -156,6 +156,11 @@ HW_CASES = {
     'd3d12': [(name, 'd3d12')
               for name in ('3ds-2d', '3ds-sbs-full', '3ds-anaglyph',
                            '3ds-interlaced', '3ds-sbs-full-threaded')],
+    # The core's own Direct3D 9 textures, its views drawn straight from
+    # them
+    'd3d9_hlsl': [(name, 'd3d9')
+                  for name in ('3ds-2d', '3ds-sbs-full', '3ds-anaglyph',
+                               '3ds-interlaced', '3ds-sbs-full-threaded')],
 }
 
 # A frame past the declared maximum in the core's own Vulkan image.
@@ -264,6 +269,7 @@ EXACT_CASES = [
     ('exact-3ds', '3ds', NOISE, 'vulkan'),
     ('exact-3ds', '3ds', NOISE, 'd3d11'),
     ('exact-3ds', '3ds', NOISE, 'd3d12'),
+    ('exact-3ds', '3ds', NOISE, 'd3d9'),
     # No map: the frame drawn whole. A core's GL framebuffer as large as
     # its maximum holds the frame in a corner, so the stock chain would
     # copy it out; glcore draws it straight from there instead.
@@ -273,7 +279,7 @@ EXACT_CASES = [
 EXACT_HW = {'gl': ('off', 'gl_compat'),
             'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan'),
             'gl1': ('off',), 'd3d10': ('off',), 'd3d11': ('off', 'd3d11'),
-            'd3d12': ('off', 'd3d12'), 'd3d9_hlsl': ('off',),
+            'd3d12': ('off', 'd3d12'), 'd3d9_hlsl': ('off', 'd3d9'),
             'sdl2': ('off',), 'sdl3': ('off',), 'd3d8': ('off',),
             'gdi': ('off',), 'sdl': ('off',), 'x11': ('off',)}
 # Drivers whose views take a preset: on the others a preset draws the
@@ -1537,8 +1543,10 @@ def driver_jobs(retroarch, root, driver):
         if driver == 'glcore':
             runs.append(('-preset-blit', NO_COPY_IMAGE,
                          'framebuffer blits', HISTORY_PRESET))
-        runs += [(suffix, None, None, preset)
-                 for suffix, preset in DRIVER_PRESETS.get(driver, [])]
+        # A D3D9 core's texture through a preset is drawn whole
+        if not (driver == 'd3d9_hlsl' and case[3] != 'off'):
+            runs += [(suffix, None, None, preset)
+                     for suffix, preset in DRIVER_PRESETS.get(driver, [])]
         first, lines, failed = None, [], 0
         for suffix, env_extra, path, preset in runs:
             errors, rows = run_exact_case(

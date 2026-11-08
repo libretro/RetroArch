@@ -8712,8 +8712,10 @@ static bool d3d9_hlsl_frame_body(void *data, const void *frame,
 #ifdef D3D9_VIEWS
    d3d->views.frame_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
 #ifdef D3D9_HW_RENDER
-   /* A core's texture is drawn whole */
-   if (!hw_frame)
+   /* A core's texture has its views drawn straight from it, where they
+    * lie; a preset, whose chains each take a view of a software frame,
+    * draws it whole */
+   if (!hw_frame || !d3d9_hlsl_views_preset(d3d))
 #endif
    views = d3d9_hlsl_views_setup(d3d, video_info, msg,
          d3d->menu && d3d->menu->enabled, &views_blend, &views_direct,
@@ -8786,6 +8788,12 @@ static bool d3d9_hlsl_frame_body(void *data, const void *frame,
       d.tex_dims   = first->info.tex_dims;
       d.filter     = (DWORD)d3d_translate_filter(first->info.pass->filter);
       d.rotation   = d3d->dev_rotation;
+#ifdef D3D9_HW_RENDER
+      /* The core's texture, as the first pass was sized for it */
+      if (hw_frame)
+         d.tex     = _chain->chain.hw_tex;
+      else
+#endif
       if (views_direct)
       {
          unsigned src_pitch = pitch;
@@ -8802,10 +8810,15 @@ static bool d3d9_hlsl_frame_body(void *data, const void *frame,
             d3d9_sw_fb_src_end(&d3d->sw_fb, frame, d.tex);
          }
       }
-      d3d9_hlsl_views_render(d3d, &d, view_chains, views_blend,
-            views_direct);
+      if (d.tex)
+         d3d9_hlsl_views_render(d3d, &d, view_chains, views_blend,
+               views_direct);
       if (!views_direct)
          d3d9_hlsl_views_end(view_chains);
+#ifdef D3D9_HW_RENDER
+      /* views_render unbound it: the core draws into it next */
+      _chain->chain.hw_tex = NULL;
+#endif
       IDirect3DDevice9_SetVertexShader(d3d->dev,
             (LPDIRECT3DVERTEXSHADER9)_chain->stock_shader.vprg);
       IDirect3DDevice9_SetPixelShader(d3d->dev,

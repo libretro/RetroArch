@@ -26,7 +26,9 @@
  * images of its own handed over with set_image, or on Windows into
  * D3D11 textures of its own, one per sync index, handed over with
  * set_texture (libretro_d3d11.h version 2), or into D3D12 textures
- * handed over with set_texture_fenced (libretro_d3d12.h version 2). With
+ * handed over with set_texture_fenced (libretro_d3d12.h version 2), or
+ * into Direct3D 9 render target textures handed over with set_texture
+ * (libretro_d3d9.h), which the d3d9_hlsl driver takes. With
  * video_views_test_max it declares a far larger maximum than it draws.
  * With video_views_test_map_change it changes to another map, or with
  * none clears its map, once video_views_test_map_change_frame frames
@@ -78,6 +80,7 @@
 #ifdef _WIN32
 #include <libretro_d3d11.h>
 #include <libretro_d3d12.h>
+#include <libretro_d3d9.h>
 #endif
 
 #define MAX_W 800
@@ -123,7 +126,8 @@ enum hw_kind
    HW_VULKAN,
    HW_VULKAN_KEEP,
    HW_D3D11,
-   HW_D3D12
+   HW_D3D12,
+   HW_D3D9
 };
 
 /* The Vulkan modes, by the order above. */
@@ -950,6 +954,8 @@ static void read_options(void)
          hw_kind = HW_D3D11;
       else if (!strcmp(var.value, "d3d12"))
          hw_kind = HW_D3D12;
+      else if (!strcmp(var.value, "d3d9"))
+         hw_kind = HW_D3D9;
 #endif
    }
 
@@ -1060,7 +1066,7 @@ void retro_set_environment(retro_environment_t cb)
       { "video_views_test_map_change_frame",
         "Frames before the map changes; 60|5|10|30|180|300|600" },
       { "video_views_test_hw",
-        "Hardware rendering; off|gl|gl_topleft|gl_compat|vulkan|vulkan_keep|d3d11|d3d12|gles3" },
+        "Hardware rendering; off|gl|gl_topleft|gl_compat|vulkan|vulkan_keep|d3d11|d3d12|d3d9|gles3" },
       { "video_views_test_max",
         "Declared maximum size; normal|large" },
       { "video_views_test_fps",
@@ -1344,6 +1350,122 @@ static bool d3d_send(unsigned fw, unsigned fh)
    d3d->set_texture(d3d->handle, d3d_tex[i]);
    d3d->unlock_context(d3d->handle);
    return true;
+}
+
+/* The D3D9 mode: frame_buf written into a system memory surface and
+ * copied with UpdateSurface into a render target texture per sync
+ * index, then handed over with set_texture. With the large maximum the
+ * textures are the regular maximum's size, as in the D3D11 mode. */
+static const struct retro_hw_render_interface_d3d9 *d9;
+static LPDIRECT3DTEXTURE9 d9_tex[D3D_TEXTURES];
+static unsigned           d9_dims[D3D_TEXTURES];
+static LPDIRECT3DSURFACE9 d9_sys;
+static unsigned           d9_sys_dims;
+
+static void d9_context_destroy(void)
+{
+   unsigned i;
+   if (d9)
+      d9->lock_context(d9->handle);
+   for (i = 0; i < D3D_TEXTURES; i++)
+   {
+      if (d9_tex[i])
+         d9_tex[i]->lpVtbl->Release(d9_tex[i]);
+      d9_tex[i]  = NULL;
+      d9_dims[i] = 0;
+   }
+   if (d9_sys)
+      d9_sys->lpVtbl->Release(d9_sys);
+   d9_sys      = NULL;
+   d9_sys_dims = 0;
+   if (d9)
+      d9->unlock_context(d9->handle);
+   d9 = NULL;
+}
+
+static void d9_context_reset(void)
+{
+   d9 = NULL;
+   if (     !environ_cb(RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE,
+               (void*)&d9)
+         || !d9
+         || d9->interface_type    != RETRO_HW_RENDER_INTERFACE_D3D9
+         || d9->interface_version <  RETRO_HW_RENDER_INTERFACE_D3D9_VERSION)
+   {
+      log_cb(RETRO_LOG_ERROR, "[video_views] no D3D9 interface\n");
+      d9 = NULL;
+   }
+}
+
+static bool d9_send(unsigned fw, unsigned fh)
+{
+   unsigned i, y;
+   RECT rect;
+   POINT at;
+   D3DLOCKED_RECT lr;
+   LPDIRECT3DSURFACE9 level = NULL;
+   LPDIRECT3DDEVICE9 dev;
+   unsigned tw = (large_max && fw <= MAX_W && fh <= MAX_H) ? MAX_W : fw;
+   unsigned th = (large_max && fw <= MAX_W && fh <= MAX_H) ? MAX_H : fh;
+   bool ok     = false;
+   if (!d9)
+      return false;
+   i = d9->get_sync_index(d9->handle);
+   if (i >= D3D_TEXTURES)
+      return false;
+   d9->wait_sync_index(d9->handle);
+   d9->lock_context(d9->handle);
+   dev = d9->device;
+   if (!d9_tex[i] || d9_dims[i] != (tw << 16 | th))
+   {
+      if (d9_tex[i])
+         d9_tex[i]->lpVtbl->Release(d9_tex[i]);
+      d9_tex[i]  = NULL;
+      d9_dims[i] = 0;
+      if (FAILED(dev->lpVtbl->CreateTexture(dev, tw, th, 1,
+                  D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT,
+                  &d9_tex[i], NULL)))
+         d9_tex[i] = NULL;
+      else
+         d9_dims[i] = tw << 16 | th;
+   }
+   if (!d9_sys || d9_sys_dims != (fw << 16 | fh))
+   {
+      if (d9_sys)
+         d9_sys->lpVtbl->Release(d9_sys);
+      d9_sys_dims = 0;
+      if (FAILED(dev->lpVtbl->CreateOffscreenPlainSurface(dev, fw, fh,
+                  D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &d9_sys, NULL)))
+         d9_sys = NULL;
+      else
+         d9_sys_dims = fw << 16 | fh;
+   }
+   if (     d9_tex[i] && d9_sys
+         && SUCCEEDED(d9_sys->lpVtbl->LockRect(d9_sys, &lr, NULL, 0)))
+   {
+      for (y = 0; y < fh; y++)
+         memcpy((uint8_t*)lr.pBits + (size_t)y * lr.Pitch,
+               frame_buf + (size_t)y * fw, fw * sizeof(uint32_t));
+      d9_sys->lpVtbl->UnlockRect(d9_sys);
+      rect.left   = 0;
+      rect.top    = 0;
+      rect.right  = (LONG)fw;
+      rect.bottom = (LONG)fh;
+      at.x        = 0;
+      at.y        = 0;
+      if (     SUCCEEDED(d9_tex[i]->lpVtbl->GetSurfaceLevel(d9_tex[i], 0,
+                  &level))
+            && SUCCEEDED(dev->lpVtbl->UpdateSurface(dev, d9_sys, &rect,
+                  level, &at)))
+      {
+         d9->set_texture(d9->handle, d9_tex[i]);
+         ok = true;
+      }
+      if (level)
+         level->lpVtbl->Release(level);
+   }
+   d9->unlock_context(d9->handle);
+   return ok;
 }
 
 /* The D3D12 mode: frame_buf copied through an upload buffer into a
@@ -1962,6 +2084,14 @@ void retro_run(void)
          return;
       }
    }
+   else if (hw_kind == HW_D3D9)
+   {
+      if (!d9)
+      {
+         video_cb(NULL, fw, fh, 0);
+         return;
+      }
+   }
 #endif
    else if (hw_kind != HW_OFF)
    {
@@ -2049,6 +2179,9 @@ void retro_run(void)
             fw, fh, 0);
    else if (hw_kind == HW_D3D12)
       video_cb(d12_send(fw, fh) ? RETRO_HW_FRAME_BUFFER_VALID : NULL,
+            fw, fh, 0);
+   else if (hw_kind == HW_D3D9)
+      video_cb(d9_send(fw, fh) ? RETRO_HW_FRAME_BUFFER_VALID : NULL,
             fw, fh, 0);
 #endif
    else if (hw_kind != HW_OFF)
@@ -2151,6 +2284,16 @@ bool retro_load_game(const struct retro_game_info *game)
             && probe.interface_version >= 1)
          environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE,
                &d12_nego);
+   }
+   else if (hw_kind == HW_D3D9)
+   {
+      memset(&hw_render, 0, sizeof(hw_render));
+      hw_render.context_type    = RETRO_HW_CONTEXT_D3D9;
+      hw_render.version_major   = 9;
+      hw_render.context_reset   = d9_context_reset;
+      hw_render.context_destroy = d9_context_destroy;
+      if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
+         return false;
    }
 #endif
    else if (hw_kind != HW_OFF)
