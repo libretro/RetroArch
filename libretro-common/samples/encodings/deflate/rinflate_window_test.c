@@ -35,6 +35,10 @@
  *   dict      - the window lane after a dictionary primed the ring.
  *
  * Every lane compares the decoded bytes with the original.
+ *
+ *   small     - rdeflate writing through an output of a few bytes,
+ *               rebound before every call, in each container: the
+ *               stream must be the one written in one go.
  */
 
 #include <stdio.h>
@@ -244,6 +248,104 @@ static void lane(const char *name, const uint8_t *comp, size_t comp_len,
    CHECK(same, "decoded bytes differ from the original");
 }
 
+/* Compresses @in with @window_bits through an output of @slice bytes,
+ * bound before every call, into @out.  Returns the stream's length, or
+ * (size_t)-1 on an error, an overrun of @cap or a stream that does not
+ * end. */
+static size_t deflate_sliced(const uint8_t *in, size_t in_len,
+      int window_bits, size_t slice, uint8_t *out, size_t cap)
+{
+   size_t used = 0;
+   unsigned calls;
+   void *z     = rdeflate_new(6, window_bits);
+
+   if (!z)
+      return (size_t)-1;
+   rdeflate_set_in(z, in, in_len);
+   rdeflate_finish(z);
+   for (calls = 0; calls < 4000000; calls++)
+   {
+      size_t r = 0, w = 0;
+      size_t n = cap - used;
+      int st;
+
+      if (n > slice)
+         n = slice;
+      rdeflate_set_out(z, out + used, n);
+      st    = rdeflate_process(z, &r, &w);
+      used += w;
+      if (st == RDEFLATE_PROCESS_END)
+      {
+         rdeflate_free(z);
+         return used;
+      }
+      if (st == RDEFLATE_PROCESS_ERROR || used == cap)
+         break;
+   }
+   rdeflate_free(z);
+   return (size_t)-1;
+}
+
+/* Inflates @comp, one call, and compares it with @orig */
+static bool inflate_matches(const uint8_t *comp, size_t comp_len,
+      int window_bits, const uint8_t *orig, size_t orig_len, uint8_t *dst)
+{
+   size_t r = 0, w = 0;
+   int st;
+   void *z = rinflate_new(window_bits);
+
+   if (!z)
+      return false;
+   rinflate_set_in(z, comp, comp_len);
+   rinflate_set_out(z, dst, orig_len + 1);
+   st = rinflate_process(z, &r, &w);
+   rinflate_free(z);
+   return st == RDEFLATE_PROCESS_END && r == comp_len && w == orig_len
+      && !memcmp(dst, orig, orig_len);
+}
+
+static void small_out_lanes(const uint8_t *orig, uint8_t *dst)
+{
+   static const int    wbits[]  = { -15, 15, 31 };
+   static const size_t lens[]   = { 0, 1, 100, 5000, 70000 };
+   static const size_t slices[] = { 1, 2, 3, 7 };
+   size_t cap    = 70000 + 70000 / 8 + 4096;
+   uint8_t *one  = (uint8_t*)malloc(cap);
+   uint8_t *part = (uint8_t*)malloc(cap);
+   size_t i, j, k;
+
+   if (!one || !part)
+   {
+      CHECK(0, "out of memory");
+      free(one);
+      free(part);
+      return;
+   }
+   for (i = 0; i < sizeof(wbits) / sizeof(wbits[0]); i++)
+      for (j = 0; j < sizeof(lens) / sizeof(lens[0]); j++)
+      {
+         size_t whole = deflate_sliced(orig, lens[j], wbits[i],
+               cap, one, cap);
+         CHECK(whole != (size_t)-1, "one-shot compress failed");
+         if (whole == (size_t)-1)
+            continue;
+         CHECK(inflate_matches(one, whole, wbits[i], orig, lens[j], dst),
+               "one-shot stream does not decode to its input");
+         for (k = 0; k < sizeof(slices) / sizeof(slices[0]); k++)
+         {
+            size_t got = deflate_sliced(orig, lens[j], wbits[i],
+                  slices[k], part, cap);
+            bool same  = got == whole && !memcmp(part, one, whole);
+            printf("[small ] bits %3d, %6lu bytes, output %lu at a time: %s\n",
+                  wbits[i], (unsigned long)lens[j], (unsigned long)slices[k],
+                  same ? "matches" : "differs");
+            CHECK(same, "sliced output differs from the one-shot stream");
+         }
+      }
+   free(one);
+   free(part);
+}
+
 int main(void)
 {
    static const size_t windows[] = { 32768, 65536, 100003, 262144 };
@@ -294,6 +396,8 @@ int main(void)
       CHECK(got == DATA_SIZE && !memcmp(dst, orig, DATA_SIZE),
             "decoded bytes differ after a dictionary");
    }
+
+   small_out_lanes(orig, dst);
 
    free(comp);
    free(orig);
