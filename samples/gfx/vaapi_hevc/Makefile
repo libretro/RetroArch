@@ -30,6 +30,9 @@ BACKEND_SOURCES := ../../../libretro-common/rthreads/rthreads.c \
  ../../../libretro-common/rthreads/retro_eventcount.c
 all: vp9_params_test$(EXE) vp9_submit_test$(EXE) vp9_pool_test$(EXE) vp9_decoder_test$(EXE) vp9_owner_test$(EXE) vp9_backend_test$(EXE) vp9_backend_nothreads_test$(EXE) vp9_backend_volatile_test$(EXE)
 all: av1_params_test$(EXE)
+all: av1_pool_test$(EXE)
+av1_pool_test$(EXE): av1_pool_test.c ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_pool.h ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_av1_submit.h ../../../gfx/common/vaapi_av1.h $(wildcard ../../../libretro-common/include/formats/rav1*.h) ../../../gfx/common/vaapi_hevc_submit.c
+	$(CC) $(CFLAGS) av1_pool_test.c ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_hevc_submit.c -o $@ $(LDFLAGS)
 all: av1_submit_test$(EXE)
 av1_submit_test$(EXE): av1_submit_test.c ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_av1_submit.h ../../../gfx/common/vaapi_av1.h ../../../gfx/common/vaapi_hevc_submit.c
 	$(CC) $(CFLAGS) av1_submit_test.c ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_hevc_submit.c -o $@ $(LDFLAGS)
@@ -133,6 +136,7 @@ all: long_slice_test$(EXE) long_packet_test$(EXE)
 test$(EXE): ../../../gfx/common/vaapi_hevc_slice.h
 test$(EXE): ../../../gfx/common/vaapi_hevc_long_packet.h
 check: all
+	$(RUNNER) ./av1_pool_test$(EXE)
 	$(RUNNER) ./av1_submit_test$(EXE)
 	$(RUNNER) ./av1_params_test$(EXE)
 	$(RUNNER) ./vp9_backend_test$(EXE)
@@ -175,6 +179,7 @@ ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
+	rm -f av1_pool_test av1_pool_test.exe
 	rm -f av1_submit_test av1_submit_test.exe
 	rm -f av1_params_test av1_params_test.exe
 	rm -f vp9_backend_test vp9_backend_test.exe vp9_backend_tsan_test vp9_backend_tsan_test.exe vp9_backend_nothreads_test vp9_backend_nothreads_test.exe vp9_backend_volatile_test vp9_backend_volatile_test.exe

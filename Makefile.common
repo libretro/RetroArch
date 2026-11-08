@@ -1860,7 +1860,8 @@ ifeq ($(HAVE_VULKAN), 1)
                 gfx/common/vaapi_vp9_pool.o
       endif
       ifeq ($(HAVE_RAV1), 1)
-         OBJ += gfx/common/vaapi_av1_submit.o
+         OBJ += gfx/common/vaapi_av1_submit.o \
+                gfx/common/vaapi_av1_pool.o
       endif
    endif
 
