@@ -1011,6 +1011,7 @@ static int action_bind_sublabel_input_remap_port(
       char *s, size_t len)
 {
    size_t _len;
+   unsigned with, core;
    unsigned user_idx     = 0;
    unsigned display_port = 0;
    menu_entry_t entry;
@@ -1048,12 +1049,24 @@ static int action_bind_sublabel_input_remap_port(
          return 0;
    }
 
+   if (display_port)
+      user_idx = display_port - 1;
+
+   /* playing as another user's player, it feeds that user's core
+    * port, whatever its own Mapped Port holds; the join can change
+    * while this is shown, so it is not kept */
+   if (     (with = input_remapping_join_user(user_idx)) < MAX_USERS
+         && (core = input_remapping_user_port(user_idx)) < MAX_USERS)
+   {
+      snprintf(s, len,
+            msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT_SHARING),
+            with + 1, core + 1);
+      return 0;
+   }
+
    _len = snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT),
          display_port);
-
-   if (display_port)
-      user_idx = display_port - 1;
 
    /* Remove trailing dot */
    snprintf(s + _len - 1, len - _len - 1, ": %s",
@@ -1597,6 +1610,61 @@ size_t menu_cbs_sublabel_for_enum(enum msg_hash_enums enum_idx,
    return strlen(s);
 }
 
+/* Settings > Input > Controllers and Port N Controls: the player it
+ * plays as, and where. */
+static int action_bind_sublabel_input_plays_as(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   unsigned player, port;
+   unsigned row  = type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN;
+   /* Port N Controls' rows carry N */
+   size_t page   = (list && i < list->size) ? list->list[i].entry_idx : 0;
+   enum input_plays_as_where where = input_config_plays_as_where(row,
+         &player, &port);
+
+   if (page && port)
+   {
+      if (port == page)
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_THIS_PORT),
+               len);
+      else
+         snprintf(s, len,
+               msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARED_BINDS),
+               port);
+      return 0;
+   }
+   switch (where)
+   {
+      case INPUT_PLAYS_AS_NO_PORT:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_NO_PORT),
+               len);
+         break;
+      case INPUT_PLAYS_AS_ABOVE_MAX_USERS:
+         snprintf(s, len,
+               msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_ABOVE_MAX_USERS),
+               player);
+         break;
+      case INPUT_PLAYS_AS_SHARING:
+         snprintf(s, len,
+               msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_SHARING),
+               player, port);
+         break;
+      case INPUT_PLAYS_AS_OWN_PORT:
+         snprintf(s, len,
+               msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_PLAYER),
+               player);
+         break;
+      default:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_GONE),
+               len);
+         break;
+   }
+   return 0;
+}
+
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path,
       const char *label, size_t lbl_len,
@@ -1667,6 +1735,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          MENU_SETTINGS_REMAPPING_PORT_BEGIN,
          MENU_SETTINGS_REMAPPING_PORT_END,
          action_bind_sublabel_user_remap_settings
+      },
+      {
+         MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN,
+         MENU_SETTINGS_INPUT_PLAYS_AS_END,
+         action_bind_sublabel_input_plays_as
       },
 
    };
@@ -1966,6 +2039,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME, MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME },
       { MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS, MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS },
       { MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS, MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS },
+      { MENU_ENUM_LABEL_INPUT_CONTROLLERS, MENU_ENUM_SUBLABEL_INPUT_CONTROLLERS },
       { MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS, MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS },
       { MENU_ENUM_LABEL_INPUT_TURBO_ENABLE, MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE },
       { MENU_ENUM_LABEL_INPUT_TURBO_MODE, MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE },
@@ -2210,6 +2284,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_SNAP_ANGLES, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_SNAP_ANGLES },
       { MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_HINGE_GAP, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_HINGE_GAP },
       { MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_SMOOTHING, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_EDIT_SMOOTHING },
+      { MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_TOUCH_HANDS },
+      { MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_TOUCH_BUTTON },
+      { MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH },
       { MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SELECTED },
       { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_X, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_X },
       { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_Y, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_XR_Y },

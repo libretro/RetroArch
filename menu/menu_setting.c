@@ -140,6 +140,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #endif
 #include "../gfx/video_views.h"
 #include "../gfx/video_windows.h"
+#ifdef HAVE_OPENXR
+#include "../input/common/input_openxr.h"
+#endif
 #ifdef HAVE_MODELINE
 #include "../gfx/video_crt_switch.h"
 #endif
@@ -1211,6 +1214,13 @@ static int setting_bind_action_start(rarch_setting_t *setting)
 
    keybind->joykey  = NO_BTN;
    keybind->joyaxis = AXIS_NONE;
+   /* a hotkey's: the controllers' own go with it */
+   if (bind_type - MENU_SETTINGS_BIND_BEGIN >= RARCH_FIRST_META_KEY)
+   {
+      input_config_plays_as_clear_hotkey(
+            bind_type - MENU_SETTINGS_BIND_BEGIN);
+      config_get_ptr()->flags |= SETTINGS_FLG_MODIFIED;
+   }
 
    /* Clear old mapping bit */
    input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(keybind));
@@ -1775,6 +1785,7 @@ static size_t setting_get_string_representation_st_string(rarch_setting_t *setti
 static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting,
       char *s, size_t len)
 {
+   size_t _len;
    unsigned index_offset                 = 0;
    unsigned id                           = 0;
    const struct retro_keybind* keybind   = NULL;
@@ -1788,9 +1799,14 @@ static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting
    keybind      = input_config_bind(index_offset, id);
    auto_bind    = (const struct retro_keybind*)
       input_config_get_bind_auto(index_offset, id);
-   return input_config_get_bind_string(settings, s, keybind, auto_bind,
-         input_config_bind_names(index_offset, id),
+   _len         = input_config_get_bind_string(settings, s, keybind,
+         auto_bind, input_config_bind_names(index_offset, id),
          input_autoconf_bind_names(index_offset, id), len);
+   /* a hotkey's, then the controllers' own */
+   if (id >= RARCH_FIRST_META_KEY && _len < len)
+      _len     += input_config_plays_as_hotkey_string(id, s + _len,
+            len - _len);
+   return _len;
 }
 
 static int setting_action_action_ok(
@@ -4316,6 +4332,100 @@ static size_t setting_get_string_representation_video_openxr_edit_pause(
    return strlcpy(s, msg_hash_to_str(*setting->value.target.boolean
             ? MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON
             : MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_OFF), len);
+}
+
+static size_t setting_get_string_representation_video_openxr_touch_hands(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_OPENXR_TOUCH_HANDS_BOTH:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_BOTH), len);
+         case VIDEO_OPENXR_TOUCH_HANDS_LEFT:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_LEFT), len);
+         case VIDEO_OPENXR_TOUCH_HANDS_RIGHT:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_RIGHT), len);
+         case VIDEO_OPENXR_TOUCH_HANDS_NONE:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_HANDS_NONE), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_openxr_touch_button(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   enum msg_hash_enums name;
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_GRIP:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_GRIP;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_STICK:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_STICK;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_BUMPER:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_BUMPER;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_A:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_A;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_B:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_B;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_X:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_X;
+         break;
+      case VIDEO_OPENXR_TOUCH_BUTTON_Y:
+         name = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_Y;
+         break;
+      default:
+         return 0;
+   }
+#ifdef HAVE_OPENXR
+   if (!input_openxr_touch_offered(*setting->value.target.unsigned_integer))
+      return snprintf(s, len, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_TOUCH_BUTTON_MISSING),
+            msg_hash_to_str(name));
+#endif
+   return strlcpy(s, msg_hash_to_str(name), len);
+}
+
+/* The next or previous Touch Button the controllers have, round. The
+ * row is listed only with HAVE_OPENXR. */
+static int setting_uint_step_video_openxr_touch_button(
+      rarch_setting_t *setting, bool forward)
+{
+   if (!setting)
+      return -1;
+#ifdef HAVE_OPENXR
+   *setting->value.target.unsigned_integer = input_openxr_touch_step(
+         *setting->value.target.unsigned_integer, forward);
+#endif
+   return 0;
+}
+
+static int setting_uint_action_left_video_openxr_touch_button(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_uint_step_video_openxr_touch_button(setting, false);
+}
+
+static int setting_uint_action_right_video_openxr_touch_button(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_uint_step_video_openxr_touch_button(setting, true);
 }
 
 static size_t setting_get_string_representation_video_openxr_placement(
@@ -7174,7 +7284,7 @@ static int setting_action_left_input_remap_port(
       return -1;
 
    port = setting->index_offset;
-   was  = settings->uints.input_remap_ports[port];
+   was  = input_remapping_user_port(port);
 
    /* MAX_USERS is 'None', between the last port and the first */
    if (settings->uints.input_remap_ports[port] > 0)
@@ -7182,7 +7292,7 @@ static int setting_action_left_input_remap_port(
    else
       settings->uints.input_remap_ports[port] = MAX_USERS;
    setting_input_remap_port_follow(menu_st, was,
-         settings->uints.input_remap_ports[port]);
+         input_remapping_user_port(port));
    input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
@@ -7266,6 +7376,9 @@ static int setting_action_left_input_device_index(
    *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
+   /* Port N Controls' controller rows follow it */
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -9980,6 +10093,9 @@ static int setting_action_start_input_device_index(rarch_setting_t *setting)
          settings->uints.input_joypad_index[setting->index_offset],
          setting->index_offset);
    input_driver_deadzones_refresh();
+   /* Port N Controls' controller rows follow it */
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -10110,7 +10226,7 @@ static int setting_action_start_libretro_device_type(rarch_setting_t *setting)
 
 static int setting_action_start_input_remap_port(rarch_setting_t *setting)
 {
-   unsigned port;
+   unsigned port, was;
    settings_t *settings                    = config_get_ptr();
    struct menu_state *menu_st              = menu_state_get_ptr();
 
@@ -10118,9 +10234,10 @@ static int setting_action_start_input_remap_port(rarch_setting_t *setting)
       return -1;
 
    port                                    = setting->index_offset;
-   setting_input_remap_port_follow(menu_st,
-         settings->uints.input_remap_ports[port], port);
+   was                                     = input_remapping_user_port(port);
    settings->uints.input_remap_ports[port] = port;
+   setting_input_remap_port_follow(menu_st, was,
+         input_remapping_user_port(port));
    input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
@@ -10253,14 +10370,14 @@ static int setting_action_right_input_remap_port(
       return -1;
 
    port = setting->index_offset;
-   was  = settings->uints.input_remap_ports[port];
+   was  = input_remapping_user_port(port);
 
    if (settings->uints.input_remap_ports[port] < MAX_USERS)
       settings->uints.input_remap_ports[port]++;
    else
       settings->uints.input_remap_ports[port] = 0;
    setting_input_remap_port_follow(menu_st, was,
-         settings->uints.input_remap_ports[port]);
+         input_remapping_user_port(port));
    input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
@@ -10300,6 +10417,9 @@ static int setting_action_right_input_device_index(
    *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
+   /* Port N Controls' controller rows follow it */
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
 }
 
@@ -10945,6 +11065,10 @@ static void general_write_handler(rarch_setting_t *setting)
    if (     setting->enum_idx >= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX
          && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_LAST)
       input_keyboard_pin_from_index(setting->index_offset);
+   /* and a controller, over Plays As moves or the headset's */
+   if (     setting->enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+         && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST)
+      input_driver_ports_user_set(setting->index_offset);
 #ifdef HAVE_VIDEO_WINDOWS
    /* a screen sent back to the main window gets another try at the
     * window or display it is now given */
@@ -11437,6 +11561,9 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+         /* a player past Max Users plays Auto: placed again */
+         if (input_config_plays_as_active())
+            input_autoconfigure_reallocate_ports(MAX_USERS);
          break;
 #ifdef ANDROID
       case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:

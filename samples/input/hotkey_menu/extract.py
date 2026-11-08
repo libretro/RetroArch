@@ -4,7 +4,7 @@ import pathlib
 import re
 
 here = pathlib.Path(__file__).resolve().parent
-source = (here.parents[2] / 'input/input_driver.c').read_text()
+source = (here.parents[2] / 'input/input_driver.c').read_text(encoding='utf-8')
 
 
 def block(start):
@@ -31,6 +31,7 @@ end += len('BIT256_SET_PTR(p_new_state, i);')
 parts.append('static void press(input_hotkey_block_t blk, unsigned i,\n'
              '      bool other_pressed, bool kb_blocked, input_bits_t *p_new_state)\n'
              '{ input_driver_state_t *input_st = blk.input_st;\n'
+             '  bool bit_pressed = true; uint32_t shared_pressed = 0;\n'
              '  (void)other_pressed; (void)kb_blocked; do {\n'
              + source[start:end] + '\n} while (0); }')
 start = source.index('if (i == RARCH_MENU_TOGGLE)', end)
@@ -38,4 +39,4 @@ parts.append('static void release(input_driver_state_t *input_st,\n'
              '      input_bits_t *p_new_state)\n'
              '{ unsigned i = RARCH_MENU_TOGGLE; unsigned input_hotkey_block_delay = 0;\n'
              + block(start) + '\n}')
-(here / 'driver_code.inc').write_text('\n\n'.join(parts) + '\n')
+(here / 'driver_code.inc').write_text('\n\n'.join(parts) + '\n', encoding='utf-8')

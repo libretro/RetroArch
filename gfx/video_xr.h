@@ -832,15 +832,16 @@ bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
 void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out);
 
 /* The nearest live quad the ray meets, as an index into set->quads, or
- * -1; of a stereo screen's two quads, the first. t is in units of
- * dir's length. Edit mode's laser passes fixed slots' quads and meets
+ * -1; of a stereo screen's two quads, the first. With menu_only, only
+ * the open menu: its quad, or a window it is drawn over. t is in units
+ * of dir's length. Edit mode's laser passes fixed slots' quads and meets
  * the menu only around its handle, at (u, v) in the menu's own frame:
  * on the bar before anything, even a nearer screen; in its margin,
  * which on a small menu reaches onto the menu's bottom edge, only where
  * it meets nothing else. Through the menu, what is behind. Edit mode
  * meets either face, so an item turned away stays in reach. */
 int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
-      bool menu_open, const video_xr_vec3_t *origin,
+      bool menu_open, bool menu_only, const video_xr_vec3_t *origin,
       const video_xr_vec3_t *dir, float *u, float *v, float *t);
 
 /* video_xr_pick with edit mode's laser, for a hand whose laser has the

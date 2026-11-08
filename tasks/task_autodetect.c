@@ -44,6 +44,7 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
+#include "../msg_hash_lbl_str.h"
 #endif
 
 #include "../retroarch.h"
@@ -105,6 +106,11 @@ typedef struct
  * main thread by the callbacks. */
 static retro_atomic_int_t autoconfig_port_seq[MAX_INPUT_DEVICES];
 
+/* The number of the last reconnect on each port that a driver's report
+ * of the same device replaced; that report shows the toast instead.
+ * Read by the connect scan. */
+static retro_atomic_int_t autoconfig_port_replaced[MAX_INPUT_DEVICES];
+
 /* What is still pending on one port, as seen by
  * autoconfigure_port_finder: the newest queued connect or disconnect
  * and, for a connect, the device it names. */
@@ -117,6 +123,7 @@ typedef struct
    uint32_t name_hash;
    uint8_t  found;
    uint8_t  is_connect;
+   uint8_t  reconnect;
 } autoconfig_port_pending_t;
 
 /* Whether @handle's operation is still the newest on its port */
@@ -1265,8 +1272,6 @@ static void reallocate_leading_ports(
 
       if (*settings_value)
       {
-         char *endptr;
-         char *colon;
          unsigned long parsed_vid;
          unsigned long parsed_pid;
 
@@ -1276,27 +1281,13 @@ static void reallocate_leading_ports(
                    settings->uints.input_device_reservation_type[player],
                    settings_value, vendor_id, product_id);
 
-         colon      = strchr(settings_value, ':');
-         parsed_vid = strtoul(settings_value, &endptr, 16);
-
-         if (colon && endptr == colon)
+         if (input_config_parse_vid_pid(settings_value,
+                  &parsed_vid, &parsed_pid, NULL))
          {
-            parsed_pid = strtoul(colon + 1, &endptr, 16);
-            if (endptr != colon + 1 && (*endptr == ' ' || *endptr == '\0'))
-            {
-               settings_value_vendor_id  = (unsigned int)parsed_vid;
-               settings_value_product_id = (unsigned int)parsed_pid;
-               device_has_reserved_slot  = (  vendor_id  == settings_value_vendor_id
-                                           && product_id == settings_value_product_id);
-            }
-            else
-            {
-               strlcpy(settings_value_device_name, settings_value,
-                       sizeof(settings_value_device_name));
-               device_has_reserved_slot =
-                     string_is_equal(device_name, settings_value_device_name)
-                  || string_is_equal(device_display_name, settings_value_device_name);
-            }
+            settings_value_vendor_id  = (unsigned int)parsed_vid;
+            settings_value_product_id = (unsigned int)parsed_pid;
+            device_has_reserved_slot  = (  vendor_id  == settings_value_vendor_id
+                                        && product_id == settings_value_product_id);
          }
          else
          {
@@ -1393,18 +1384,91 @@ static void reallocate_port_if_needed(
       unsigned int vendor_id,
       unsigned int product_id,
       const char *device_name,
-      const char *device_display_name)
+      const char *device_display_name,
+      bool connect)
 {
    uint8_t leader[MAX_USERS];
+   bool runtime;
 
    if (detected_port >= MAX_USERS)
       return;
    input_config_sanitize_joypad_indices();
+   /* placed by Plays As, else as the reservations place it */
+   if (input_config_plays_as_place(detected_port, connect))
+      return;
+   runtime = input_driver_ports_runtime();
    input_config_shared_ports(leader);
    reallocate_leading_ports(leader, detected_port, vendor_id, product_id,
          device_name, device_display_name);
    input_config_follow_shared_ports(leader);
+   /* placed over runtime moves, the reservation's are runtime too */
+   if (runtime)
+      input_driver_ports_runtime_moved();
 }
+
+/* Only what a Player, Max Users or override change moves is placed
+ * again, as its connect placed it: no other controller moves into a
+ * port emptied since. No driver restarts; the headset's hands follow
+ * on the next poll. */
+static void input_autoconfigure_place_again(const uint8_t *again)
+{
+   unsigned s;
+   for (s = 0; s < MAX_USERS; s++)
+   {
+      const char *name = input_config_get_device_name(s);
+      if (!again[s] || !name)
+         continue;
+      reallocate_port_if_needed(s,
+            input_config_get_device_vid(s),
+            input_config_get_device_pid(s),
+            name,
+            input_config_get_device_display_name(s), false);
+   }
+   /* the ports may have changed controllers: their deadzones with them,
+    * and the hotkeys a sharer reads by its controller */
+   input_driver_deadzones_refresh();
+   input_config_binds_changed();
+}
+
+void input_autoconfigure_reallocate_ports(unsigned slot)
+{
+   uint8_t again[MAX_USERS];
+
+   if (slot < MAX_USERS)
+   {
+      memset(again, 0, sizeof(again));
+      again[slot] = 1;
+   }
+   else
+      input_config_plays_as_max_users_changed(again);
+   input_autoconfigure_place_again(again);
+}
+
+void input_autoconfigure_plays_as_reread(const uint8_t *before)
+{
+   uint8_t again[MAX_USERS];
+   input_config_plays_as_reread(before, again);
+   input_autoconfigure_place_again(again);
+}
+
+#ifdef HAVE_MENU
+/* Settings > Input > Controllers and Port N Controls, and the Quick
+ * Menu's Port N Controls, have rows for controllers: if shown, the
+ * list is made again. */
+static void input_autoconfigure_refresh_controllers(void)
+{
+   const char *menu_label = NULL;
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   if (     string_is_equal(menu_label,
+               MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST_STR)
+         || string_is_equal(menu_label,
+               MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR)
+         || string_is_equal(menu_label,
+               MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST_STR))
+      menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   | MENU_ST_FLAG_PREVENT_POPULATE;
+}
+#endif
 
 /*************************/
 /* Autoconfigure Connect */
@@ -1519,7 +1583,8 @@ static void cb_input_autoconfigure_connect(
    reallocate_port_if_needed(port,autoconfig_handle->device_info.vid,
          autoconfig_handle->device_info.pid,
          autoconfig_handle->device_info.name,
-         autoconfig_handle->device_info.display_name);
+         autoconfig_handle->device_info.display_name,
+         !(autoconfig_handle->flags & AUTOCONF_FLAG_RECONNECT));
    /* the ports may have changed controllers: their deadzones with them */
    input_driver_deadzones_refresh();
 
@@ -1532,6 +1597,9 @@ static void cb_input_autoconfigure_connect(
          autoconfig_handle->device_info.phys,
          autoconfig_handle->device_info.vid,
          autoconfig_handle->device_info.pid);
+#ifdef HAVE_MENU
+   input_autoconfigure_refresh_controllers();
+#endif
 }
 
 static void input_autoconfigure_connect_handler(retro_task_t *task)
@@ -1705,9 +1773,12 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    }
 #endif
 
-   /* Update task title */
+   /* Update task title, unless a driver's report replaced this
+    * reconnect: that one shows its own */
    task_free_title(task);
-   if (*task_title)
+   if (     *task_title
+         && autoconfig_handle->seq != (unsigned)retro_atomic_load_acquire_int(
+               &autoconfig_port_replaced[autoconfig_handle->port]))
    {
       task_set_title(task, strdup(task_title));
       RARCH_LOG("[Autoconf] %s.\n", task_title);
@@ -1854,6 +1925,8 @@ static bool autoconfigure_port_finder(retro_task_t *task, void *user_data)
 
    pending->found      = 1;
    pending->is_connect = is_connect ? 1 : 0;
+   pending->reconnect  = (autoconfig_handle->flags
+         & AUTOCONF_FLAG_RECONNECT) ? 1 : 0;
    pending->seq        = autoconfig_handle->seq;
    pending->vid        = autoconfig_handle->device_info.vid;
    pending->pid        = autoconfig_handle->device_info.pid;
@@ -1949,6 +2022,7 @@ static bool input_autoconfigure_connect_main(
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
    bool driver_valid                      = false;
+   bool replaces                          = false;
    settings_t *settings                   = config_get_ptr();
    bool autoconfig_enabled                = settings ?
          settings->bools.input_autodetect_enable : false;
@@ -1966,7 +2040,9 @@ static bool input_autoconfigure_connect_main(
     * newest thing queued for the port changes nothing.  Anything
     * else is queued behind what is pending - a different device, or
     * this one again after a disconnect - and wins when it completes,
-    * however long the earlier scan takes. */
+    * however long the earlier scan takes. A driver's report is not
+    * dropped behind a reconnect either: the reconnect takes no Plays
+    * As entry, and a joypad driver restart's report must. */
    name_hash          = djb2_calculate((name && *name) ? name : "");
    memset(&pending, 0, sizeof(pending));
    pending.port       = port;
@@ -1979,7 +2055,11 @@ static bool input_autoconfigure_connect_main(
          && pending.vid       == vid
          && pending.pid       == pid
          && pending.name_hash == name_hash)
-      return false;
+   {
+      if (!pending.reconnect || (flags & AUTOCONF_FLAG_RECONNECT))
+         return false;
+      replaces = true;
+   }
 
    /* Configure handle */
    if (!(autoconfig_handle = (autoconfig_handle_t*)
@@ -2097,6 +2177,9 @@ static bool input_autoconfigure_connect_main(
    task->cleanup  = input_autoconfigure_free;
    task->flags   &= ~RETRO_TASK_FLG_MUTE;
 
+   if (replaces)
+      retro_atomic_store_release_int(&autoconfig_port_replaced[port],
+            (int)pending.seq);
    autoconfig_handle->seq = (unsigned)retro_atomic_fetch_add_int(
          &autoconfig_port_seq[port], 1) + 1;
    task_queue_push(task);
@@ -2129,14 +2212,15 @@ bool input_autoconfigure_reconnect(unsigned port)
    if (!name || !*name)
       return false;
 
-   return input_autoconfigure_connect(
+   return input_autoconfigure_connect_ex(
          name,
          NULL,
          input_config_get_device_phys(port),
          input_config_get_device_joypad_driver(port),
          port,
          input_config_get_device_vid(port),
-         input_config_get_device_pid(port));
+         input_config_get_device_pid(port),
+         AUTOCONF_FLAG_RECONNECT);
 }
 
 /****************************/
@@ -2176,8 +2260,12 @@ static void cb_input_autoconfigure_disconnect(
    input_config_set_device_pid(port, 0);
    input_config_set_device_autoconfigured(port, false);
    input_config_reset_autoconfig_binds(port);
+   input_config_plays_as_release(port);
 
    input_driver_registry_disconnect(port);
+#ifdef HAVE_MENU
+   input_autoconfigure_refresh_controllers();
+#endif
 }
 
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)

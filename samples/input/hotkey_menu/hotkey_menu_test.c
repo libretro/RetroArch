@@ -7,6 +7,8 @@
 #define INPUT_CONFIG_BIND(port, i) (&input_config_binds[0][i])
 #define input_state_wrap(input, data, pad, info, binds, blocked, port, device, idx, id) \
    source_down(device, id)
+/* pressed on the port's own controller: no sharer's binds are read */
+#define input_share_uses_enable(b, pressed, i) (abort(), false)
 
 static retro_keybind_set binds;
 struct retro_keybind *input_config_binds[MAX_USERS] = { binds };

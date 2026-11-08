@@ -22,7 +22,7 @@ static int test_load(const retro_atomic_int_t *value)
 static retro_time_t test_now;
 static bool test_focused;
 static bool test_menu_open, test_frame, test_navigation;
-static unsigned picked_laser, picks;
+static unsigned picked_laser, picks, screen_picks;
 static bool picked_menu;
 static unsigned applies[2], stops[2];
 static float amplitudes[2];
@@ -96,6 +96,9 @@ bool input_config_get_device_autoconfigured(unsigned port)
 { return test_device_auto[port]; }
 void input_driver_exchange_ports(unsigned a, unsigned b)
 { (void)a; (void)b; }
+unsigned input_config_plays_as_named(const char *name)
+{ (void)name; return 0; }
+unsigned input_config_plays_as_generation(void) { return 0; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void video_xr_rotate(const video_xr_quat_t *q, const video_xr_vec3_t *v,
@@ -108,11 +111,13 @@ bool video_xr_quad_to_frame(const video_xr_quad_t *q, float u, float v,
 bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser, bool menu)
 { (void)q; (void)laser; (void)menu; return false; }
 int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser, bool menu,
-      const video_xr_vec3_t *o, const video_xr_vec3_t *d,
+      bool menu_only, const video_xr_vec3_t *o, const video_xr_vec3_t *d,
       float *u, float *v, float *t)
 {
    (void)set; (void)o; (void)d; (void)u; (void)v; (void)t;
    picked_laser = laser; picked_menu = menu; picks++;
+   if (!menu_only)
+      screen_picks++;
    return -1;
 }
 int video_xr_pick_edit(const video_xr_quad_set_t *set, bool stuck,
@@ -343,6 +348,13 @@ static XrResult XRAPI_CALL read_float(XrSession session,
 static XrResult XRAPI_CALL read_vector(XrSession session,
       const XrActionStateGetInfo *info, XrActionStateVector2f *out)
 { (void)session; (void)info; out->isActive = XR_FALSE; return XR_SUCCESS; }
+static XrResult XRAPI_CALL current_profile(XrSession session, XrPath user,
+      XrInteractionProfileState *out)
+{
+   (void)session; (void)user;
+   out->interactionProfile = XR_NULL_PATH;
+   return XR_SUCCESS;
+}
 
 static XrResult XRAPI_CALL apply(XrSession session,
       const XrHapticActionInfo *info, const XrHapticBaseHeader *haptic)
@@ -375,6 +387,7 @@ static void setup(void)
    input_openxr_clear(&input_openxr_st);
    input_openxr_st.ApplyHapticFeedback = apply;
    input_openxr_st.StopHapticFeedback = stop;
+   input_openxr_st.GetCurrentInteractionProfile = current_profile;
    input_openxr_st.hands[0] = 1;
    input_openxr_st.hands[1] = 2;
    memset(&test_host_frame, 0, sizeof(test_host_frame));
@@ -414,13 +427,15 @@ static bool set_rumble(unsigned slot, enum retro_rumble_effect effect,
       uint16_t strength)
 { return input_openxr_joypad(&test_pad_driver)->set_rumble(slot, effect, strength); }
 
+static unsigned test_touch_hands = VIDEO_OPENXR_TOUCH_HANDS_BOTH;
 static void publish_pointer(unsigned laser, bool menu)
 {
    openxr_frame_t *frame = input_openxr_st.frame;
    test_menu_open = menu;
    input_openxr_st.frame = NULL;
    input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, laser,
-         VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
+         VIDEO_OPENXR_LASER_BEAM_EDIT, test_touch_hands,
+         VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER, false, 0.5f);
    input_openxr_st.frame = frame;
 }
 static void replace_pointer(void)
@@ -453,6 +468,25 @@ static void pointer_tests(void)
          layers, 2, &test_under);
    CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_AUTO
          && !picked_menu, "a laser past the choices was not Auto");
+   /* Touch Hands: the screens are searched for the dots of the hands
+    * that may touch them, the menu alone for the others. */
+   test_touch_hands = VIDEO_OPENXR_TOUCH_HANDS_LEFT;
+   publish_pointer(VIDEO_OPENXR_LASER_ALWAYS, false);
+   picks        = 0;
+   screen_picks = 0;
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2, &test_under);
+   CHECK(picks == 2 && screen_picks == 1,
+         "Touch Hands Left: the screens were not searched for the left hand's dot alone");
+   test_touch_hands = VIDEO_OPENXR_TOUCH_HANDS_NONE;
+   publish_pointer(VIDEO_OPENXR_LASER_ALWAYS, false);
+   picks        = 0;
+   screen_picks = 0;
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2, &test_under);
+   CHECK(picks == 2 && screen_picks == 0,
+         "Touch Hands None: the screens were searched for a dot, or the menu was not");
+   test_touch_hands = VIDEO_OPENXR_TOUCH_HANDS_BOTH;
    publish_pointer(VIDEO_OPENXR_LASER_AUTO, false);
    after_load = replace_pointer;
    picks = 0;
@@ -480,14 +514,18 @@ static void pointer_tests(void)
    input_openxr_st.GetActionStateVector2f = read_vector;
    test_navigation = test_menu_open = true;
    input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
-         VIDEO_OPENXR_LASER_ALWAYS, VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
+         VIDEO_OPENXR_LASER_ALWAYS, VIDEO_OPENXR_LASER_BEAM_EDIT,
+         VIDEO_OPENXR_TOUCH_HANDS_BOTH, VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER,
+         false, 0.5f);
    picks = 0;
    input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
          layers, 2, &test_under);
    CHECK(picks == 0, "post-navigation publication did not hide pointer");
    test_navigation = test_menu_open = false;
    input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
-         VIDEO_OPENXR_LASER_ALWAYS, VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
+         VIDEO_OPENXR_LASER_ALWAYS, VIDEO_OPENXR_LASER_BEAM_EDIT,
+         VIDEO_OPENXR_TOUCH_HANDS_BOTH, VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER,
+         false, 0.5f);
    input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
          layers, 2, &test_under);
    CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_ALWAYS
@@ -569,7 +607,8 @@ int main(void)
    CHECK(input_openxr_st.haptic[0] == 0.0f, "unfocused result cached as applied");
    test_focused = false;
    input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF,
-         VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
+         VIDEO_OPENXR_LASER_BEAM_EDIT, VIDEO_OPENXR_TOUCH_HANDS_BOTH,
+         VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER, false, 0.5f);
    test_focused = true;
    apply_result[0] = XR_SUCCESS;
    service(false, false);

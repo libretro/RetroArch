@@ -21,11 +21,13 @@ At run time an OpenXR runtime has to be active (SteamVR or Monado on
 Linux). Then turn on **Settings > Video > Stereo 3D & Screens > Headset
 Output (OpenXR)**. Under it come Edit Screens, Snap to Screens, Snap to
 Angles, Hinge Gap, Edit Smoothing and While Editing Screens, described
-below, then Headset Refresh Rate, Headset Controllers, Laser Pointer,
-Laser Beam, Screen Placement (Fixed in Room, Follow Head, Lazy Follow),
-Screen Distance and Screen Width. The Recenter Headset Screens, Laser
-Pointer (Toggle) and Edit Headset Screens hotkeys are unbound by
-default.
+below, then Headset Refresh Rate, Headset Performance Boost, Screen
+Placement (Fixed in Room, Follow Head, Lazy Follow), Screen Distance and
+Screen Width. The controllers' rows end **Settings > Input >
+Controllers**: OpenXR Controller Layout, Laser Pointer, Laser Beam,
+Touch Hands, Touch Button and Touch Passthrough (see below). The
+Recenter Headset Screens, Laser Pointer (Toggle) and Edit Headset
+Screens hotkeys are unbound by default.
 
 **Laser Beam** draws a thin line from each controller to its laser's
 dot, turned to face you. It shows only where the dot can: outside edit
@@ -37,6 +39,41 @@ at nothing, the line is 1.5 m long and fades out.
 
 Without a runtime or a headset, RetroArch says so once and shows its
 window as usual.
+
+## The controllers
+
+The headset's controllers are a gamepad: one for both hands (OpenXR
+Controller Layout Combined) or one per hand (Separate), with a profile
+of their own that can be changed like any controller's. The menu button
+is button 16 (on Touch controllers in Combined it is Start, and button
+16 once held a second), with Menu Toggle on it by default, so Menu
+Toggle can be bound to another button and button 16 to something else.
+Hotkey Enable applies to it as to a pad's Guide button. In Edit Screens
+the menu button always opens the menu, whatever is bound and whether or
+not Hotkey Enable is held.
+
+A controller also points. Laser Pointer says where: Auto, the menu
+while it is open and second screens such as a touch screen; Always,
+every screen, for light guns; Off, nowhere. The trigger clicks the
+menu, with either hand.
+
+Pointed at a screen, the Touch Button touches it, or on Always fires
+the gun:
+
+- Touch Hands: the hands that can touch (Both, Left, Right or None).
+  Only those show a dot on the screens; the other hand still points at
+  the menu. None turns touch off for the headset's controllers, and the
+  screens stay the mouse's and the overlay's.
+- Touch Button: Trigger, Grip, Stick Click, Bumper, A, B, X or Y. Only
+  the buttons the controllers have are offered; a hand without the
+  chosen one cannot touch. Where the hand points when the button goes
+  down decides: anywhere else it is a plain button until let go. Every
+  other button, the trigger too when it is not the Touch Button, is a
+  plain button on the screens.
+- Touch Passthrough: Off holds back what the Touch Button is bound to
+  while it touches; On presses that too.
+
+Overrides save all three per game, core or content directory.
 
 ## Adjusting floating screens
 
@@ -355,9 +392,9 @@ headset. It may need:
 
 - A controller profile: one entry in `input_openxr_profiles[]`
   (`input/common/input_openxr.c`) that maps its interaction profile's
-  paths. Without one the runtime remaps a profile that is already there
-  (Index, Touch, Vive, Steam Frame, or the simple controller), which
-  can lose buttons.
+  paths, with a table of its Touch Button rows. Without one the runtime
+  remaps a profile that is already there (Index, Touch, Vive, Steam
+  Frame, or the simple controller), which can lose buttons.
 - On Android, its loader and instance set-up through
   `openxr_runtime_platform_t`, and a build flavour like `quest`.
 

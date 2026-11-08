@@ -2,9 +2,11 @@
 # Builds the Stereo 3D & Screens list harness.
 #
 # Like playlist_nav, this links the SHIPPING objects of a built
-# RetroArch with only main() replaced - nothing is stubbed.  The list
-# is built the way the menu builds it, with Headset Output off and on,
-# and the Headset Output row is toggled through its real handler.
+# RetroArch with only main() replaced; the Touch Buttons the
+# controllers have are wrapped at link time (--wrap), as no headset
+# session runs to find them.  The list is built the way the menu
+# builds it, with Headset Output off and on, and the Headset Output
+# row is toggled through its real handler.
 #
 # Requires a completed NON-Qt build with OpenXR: with Qt enabled
 # main() lives in ui_qt.o, which drags the whole Qt UI in with it.
@@ -61,7 +63,7 @@ if [ ! -s "$ld_line" ]; then
    exit 1
 fi
 
-sed -e 's#obj-unix/release/retroarch\.o#samples/menu/stereo_headset/retroarch_nomain.o samples/menu/stereo_headset/harness_main.o#' \
+sed -e 's#obj-unix/release/retroarch\.o#samples/menu/stereo_headset/retroarch_nomain.o samples/menu/stereo_headset/harness_main.o -Wl,--wrap=input_openxr_touch_offered -Wl,--wrap=input_openxr_touch_step#' \
     -e 's#-o retroarch #-o samples/menu/stereo_headset/stereo_headset_test #' \
    "$ld_line" | sh
 

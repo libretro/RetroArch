@@ -321,6 +321,8 @@ typedef struct settings
       unsigned video_openxr_edit_snap_angles;
       unsigned video_openxr_edit_hinge_gap;
       unsigned video_openxr_edit_smoothing;
+      unsigned video_openxr_touch_hands;
+      unsigned video_openxr_touch_button;
       unsigned video_openxr_placement;
       unsigned video_fse_negotiation;
       unsigned video_hw_decode;
@@ -724,6 +726,7 @@ typedef struct settings
       bool video_openxr_perf_boost;
       bool video_openxr_edit_pause;
       bool video_openxr_edit_snap;
+      bool video_openxr_touch_passthrough;
       bool video_ctx_scaling;
       bool video_force_aspect;
       bool video_frame_delay_auto;

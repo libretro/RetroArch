@@ -45,7 +45,7 @@
 #endif
 
 #define INPUT_OPENXR_HANDS     2
-#define INPUT_OPENXR_MAX_BINDS 48
+#define INPUT_OPENXR_MAX_BINDS 64
 /* With XR_EXT_palm_pose, every profile gets both hands' palm too. */
 #define INPUT_OPENXR_PALM_BINDS 2
 /* A steady rumble is applied again this often (us), each time for
@@ -70,7 +70,7 @@
  * that end it: a runtime can read a binding inactive for a sync around
  * a controller change. */
 #define INPUT_OPENXR_EDIT_UNBOUND  3
-/* Touch's one menu button opens the RetroArch menu once held this long
+/* Touch's one menu button is the menu button too once held this long
  * (us). */
 #define INPUT_OPENXR_MENU_HOLD     1000000
 /* Edit mode's longest stick step (s): a stalled poll does not fling the
@@ -144,8 +144,19 @@ enum input_openxr_action
    IXA_E_EDIT,
    IXA_E_NEXT,
    IXA_E_PREV,
+   /* Each hand's Touch Button, in enum video_openxr_touch_button order
+    * from Grip; the Trigger is the pad set's trigger. */
+   IXA_T_GRIP,
+   IXA_T_STICK,
+   IXA_T_BUMPER,
+   IXA_T_A,
+   IXA_T_B,
+   IXA_T_X,
+   IXA_T_Y,
    IXA_COUNT
 };
+
+#define IXA_TOUCH(c) (IXA_T_GRIP + (c) - VIDEO_OPENXR_TOUCH_BUTTON_GRIP)
 
 typedef struct input_openxr_action_def
 {
@@ -205,7 +216,14 @@ static const input_openxr_action_def_t input_openxr_actions[IXA_COUNT] = {
    { INPUT_OPENXR_SET_EDIT,     "menu",        "RetroArch Menu", XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_EDIT,     "edit_screens", "Edit Screens",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_EDIT,     "select_next", "Select Next",    XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
-   { INPUT_OPENXR_SET_EDIT,     "select_previous", "Select Previous", XR_ACTION_TYPE_BOOLEAN_INPUT, true }
+   { INPUT_OPENXR_SET_EDIT,     "select_previous", "Select Previous", XR_ACTION_TYPE_BOOLEAN_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_grip",   "Touch Button: Grip",        XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_stick",  "Touch Button: Stick Click", XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_bumper", "Touch Button: Bumper",      XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_a",      "Touch Button: A",           XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_b",      "Touch Button: B",           XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_x",      "Touch Button: X",           XR_ACTION_TYPE_FLOAT_INPUT, true },
+   { INPUT_OPENXR_SET_POINTER,  "touch_y",      "Touch Button: Y",           XR_ACTION_TYPE_FLOAT_INPUT, true }
 };
 
 static const char *const input_openxr_set_names[INPUT_OPENXR_SETS] = {
@@ -286,7 +304,8 @@ static const input_openxr_bind_t input_openxr_touch[] = {
 
 /* Steam Frame: A, B, X and Y on the right, a D-pad on the left; View
  * is Select, Menu is Start, and the right stick's click is the
- * RetroArch menu in place of R3. The grips stay free. */
+ * RetroArch menu in place of R3. The grips are left to edit mode and
+ * the Touch Button. */
 static const input_openxr_bind_t input_openxr_frame[] = {
    IXB_R(IXA_C_B,      "a/click"),
    IXB_R(IXA_C_A,      "b/click"),
@@ -401,12 +420,48 @@ static const input_openxr_bind_t input_openxr_simple_edit[] = {
    IXB_L(IXA_E_MENU,     "menu/click")
 };
 
+/* Each profile's Touch Button rows: its buttons by their names on the
+ * controller (Index's A and B are on both hands, the Frame's A to Y on
+ * the right). The simple controller has only its trigger. */
+static const input_openxr_bind_t input_openxr_touch_rows_index[] = {
+   IXB_BOTH(IXA_T_GRIP,  "squeeze/value"),
+   IXB_BOTH(IXA_T_STICK, "thumbstick/click"),
+   IXB_BOTH(IXA_T_A,     "a/click"),
+   IXB_BOTH(IXA_T_B,     "b/click")
+};
+
+static const input_openxr_bind_t input_openxr_touch_rows_touch[] = {
+   IXB_BOTH(IXA_T_GRIP,  "squeeze/value"),
+   IXB_BOTH(IXA_T_STICK, "thumbstick/click"),
+   IXB_R(IXA_T_A,        "a/click"),
+   IXB_R(IXA_T_B,        "b/click"),
+   IXB_L(IXA_T_X,        "x/click"),
+   IXB_L(IXA_T_Y,        "y/click")
+};
+
+static const input_openxr_bind_t input_openxr_touch_rows_frame[] = {
+   IXB_BOTH(IXA_T_GRIP,   "squeeze/value"),
+   IXB_BOTH(IXA_T_STICK,  "thumbstick/click"),
+   IXB_BOTH(IXA_T_BUMPER, "bumper/click"),
+   IXB_R(IXA_T_A,         "a/click"),
+   IXB_R(IXA_T_B,         "b/click"),
+   IXB_R(IXA_T_X,         "x/click"),
+   IXB_R(IXA_T_Y,         "y/click")
+};
+
+static const input_openxr_bind_t input_openxr_touch_rows_vive[] = {
+   IXB_BOTH(IXA_T_GRIP,  "squeeze/click"),
+   IXB_BOTH(IXA_T_STICK, "trackpad/click")
+};
+
 typedef struct input_openxr_profile
 {
    const char *path;
    const input_openxr_bind_t *binds;
+   const input_openxr_bind_t *touch; /* its Touch Button rows, or NULL */
    const input_openxr_bind_t *edit;
    unsigned count;
+   unsigned touch_count;
    unsigned edit_count;
    /* Only with XR_VALVE_frame_controller_interaction. */
    bool frame;
@@ -414,30 +469,38 @@ typedef struct input_openxr_profile
 
 static const input_openxr_profile_t input_openxr_profiles[] = {
    { "/interaction_profiles/valve/index_controller",
-      input_openxr_index,  input_openxr_index_edit,
-      ARRAY_SIZE(input_openxr_index),  ARRAY_SIZE(input_openxr_index_edit),
-      false },
+      input_openxr_index,  input_openxr_touch_rows_index,
+      input_openxr_index_edit,
+      ARRAY_SIZE(input_openxr_index),
+      ARRAY_SIZE(input_openxr_touch_rows_index),
+      ARRAY_SIZE(input_openxr_index_edit), false },
    { "/interaction_profiles/oculus/touch_controller",
-      input_openxr_touch,  input_openxr_touch_edit,
-      ARRAY_SIZE(input_openxr_touch),  ARRAY_SIZE(input_openxr_touch_edit),
-      false },
+      input_openxr_touch,  input_openxr_touch_rows_touch,
+      input_openxr_touch_edit,
+      ARRAY_SIZE(input_openxr_touch),
+      ARRAY_SIZE(input_openxr_touch_rows_touch),
+      ARRAY_SIZE(input_openxr_touch_edit), false },
    { "/interaction_profiles/valve/frame_controller_valve",
-      input_openxr_frame,  input_openxr_frame_edit,
-      ARRAY_SIZE(input_openxr_frame),  ARRAY_SIZE(input_openxr_frame_edit),
-      true  },
+      input_openxr_frame,  input_openxr_touch_rows_frame,
+      input_openxr_frame_edit,
+      ARRAY_SIZE(input_openxr_frame),
+      ARRAY_SIZE(input_openxr_touch_rows_frame),
+      ARRAY_SIZE(input_openxr_frame_edit), true  },
    { "/interaction_profiles/htc/vive_controller",
-      input_openxr_vive,   input_openxr_vive_edit,
-      ARRAY_SIZE(input_openxr_vive),   ARRAY_SIZE(input_openxr_vive_edit),
-      false },
+      input_openxr_vive,  input_openxr_touch_rows_vive,
+      input_openxr_vive_edit,
+      ARRAY_SIZE(input_openxr_vive),
+      ARRAY_SIZE(input_openxr_touch_rows_vive),
+      ARRAY_SIZE(input_openxr_vive_edit), false },
    { "/interaction_profiles/khr/simple_controller",
-      input_openxr_simple, input_openxr_simple_edit,
-      ARRAY_SIZE(input_openxr_simple), ARRAY_SIZE(input_openxr_simple_edit),
-      false }
+      input_openxr_simple, NULL, input_openxr_simple_edit,
+      ARRAY_SIZE(input_openxr_simple), 0,
+      ARRAY_SIZE(input_openxr_simple_edit), false }
 };
 
 typedef struct input_openxr_pad
 {
-   uint16_t buttons;     /* 1 << RETRO_DEVICE_ID_JOYPAD_* */
+   uint32_t buttons;     /* 1 << RETRO_DEVICE_ID_JOYPAD_*, INPUT_OPENXR_BUTTON_MENU */
    int16_t analog[4];    /* left x, left y, right x, right y */
    int16_t trigger[2];   /* analog L2, R2 */
 } input_openxr_pad_t;
@@ -450,11 +513,11 @@ typedef struct input_openxr_trigger
    unsigned slot;
 } input_openxr_trigger_t;
 
-/* What a trigger does from its pull until it is let go. */
+/* What a trigger, or a Touch Button, does from its press until it is let go. */
 enum input_openxr_role
 {
    INPUT_OPENXR_ROLE_UP = 0,
-   INPUT_OPENXR_ROLE_PAD,   /* L2 or R2 */
+   INPUT_OPENXR_ROLE_PAD,   /* its own binds */
    INPUT_OPENXR_ROLE_TOUCH, /* the core's pointer and gun */
    INPUT_OPENXR_ROLE_MENU,  /* the menu's press */
    INPUT_OPENXR_ROLE_SPENT  /* nothing */
@@ -490,6 +553,10 @@ typedef struct input_openxr
    /* The profiles that refused edit mode's bindings. */
    XrPath edit_refused[ARRAY_SIZE(input_openxr_profiles)];
    unsigned num_edit_refused;
+   /* Each profile's path once suggested, or none, and whether its Touch
+    * Button rows were taken. */
+   XrPath profile_paths[ARRAY_SIZE(input_openxr_profiles)];
+   bool touch_bound[ARRAY_SIZE(input_openxr_profiles)];
    PFN_xrStringToPath StringToPath;
    PFN_xrPathToString PathToString;
    PFN_xrCreateActionSet CreateActionSet;
@@ -517,6 +584,12 @@ typedef struct input_openxr
    /* Main thread. */
    XrPath profile_path[INPUT_OPENXR_HANDS]; /* profile[]'s, or none */
    char profile[INPUT_OPENXR_HANDS][XR_MAX_PATH_LENGTH];
+   int hand_profile[INPUT_OPENXR_HANDS];  /* input_openxr_profiles[]'s, or -1 */
+   /* Each hand's Touch Button, whether it can touch, and Touch
+    * Passthrough, taken while it touches nothing. */
+   unsigned touch_c[INPUT_OPENXR_HANDS];
+   bool can_touch[INPUT_OPENXR_HANDS];
+   bool touch_pass[INPUT_OPENXR_HANDS];
    input_openxr_pad_t pads[INPUT_OPENXR_PADS];
    input_openxr_trigger_t trig[INPUT_OPENXR_HANDS];
    XrResult sync_result; /* the last xrSyncActions */
@@ -545,6 +618,9 @@ typedef struct input_openxr
    float hit_v[INPUT_OPENXR_HANDS];
    bool trig_down[INPUT_OPENXR_HANDS];
    enum input_openxr_role role[INPUT_OPENXR_HANDS];
+   float touch[INPUT_OPENXR_HANDS];     /* this read's Touch Button */
+   bool touch_down[INPUT_OPENXR_HANDS];
+   enum input_openxr_role touch_role[INPUT_OPENXR_HANDS];
    int pointer;                         /* the hand that points, or -1 */
    bool ptr_owned;
    bool ptr_on;
@@ -560,7 +636,7 @@ typedef struct input_openxr
    /* The laser's yield to the controllers: the last read's buttons and
     * sticks past half. */
    bool yield;
-   uint16_t last_buttons[INPUT_OPENXR_PADS];
+   uint32_t last_buttons[INPUT_OPENXR_PADS];
    unsigned last_sticks[INPUT_OPENXR_PADS];
 
    /* XR thread: the dots, the beams, edit mode's outlines, the menu's
@@ -651,14 +727,16 @@ typedef struct input_openxr_edit
 
 static input_openxr_edit_t input_openxr_edit;
 
-/* The main thread's laser mode, menu, Laser Beam and edit mode's Edit
- * Smoothing, for the XR thread's dots, beams and aims. */
+/* The main thread's laser mode, menu, Laser Beam, edit mode's Edit
+ * Smoothing and the hands that can touch (INPUT_OPENXR_TOUCH_HAND <<
+ * hand), for the XR thread's dots, beams and aims. */
 #define INPUT_OPENXR_LASER_MASK   3
 #define INPUT_OPENXR_MENU_OPEN    4
 #define INPUT_OPENXR_BEAM_SHIFT   3
 #define INPUT_OPENXR_BEAM_MASK    3
 #define INPUT_OPENXR_SMOOTH_SHIFT 5
 #define INPUT_OPENXR_SMOOTH_MASK  3
+#define INPUT_OPENXR_TOUCH_HAND   128
 static retro_atomic_int_t input_openxr_pointer_config;
 
 /* A core's rumble per pad, strong in the high half and weak in the
@@ -668,6 +746,11 @@ static retro_atomic_int_t input_openxr_pointer_config;
 static retro_atomic_int_t input_openxr_rumble[INPUT_OPENXR_PADS];
 static retro_atomic_int_t input_openxr_rumble_slots;
 static retro_atomic_int_t input_openxr_ready;
+
+/* The Touch Buttons neither hand's controller has, a bit each; none,
+ * as it starts, while no controller is known. Atomic: with threaded
+ * video, XMB draws the Touch Button's value on the video thread. */
+static retro_atomic_int_t input_openxr_lacking;
 
 /* The pads as joypad devices. Main thread; apart from input_openxr_st,
  * which a session's release clears, so a session remade before the
@@ -679,10 +762,18 @@ typedef struct input_openxr_devices
    unsigned count;                 /* named for 1 (Combined) or 2 pads */
    bool landed[INPUT_OPENXR_PADS]; /* its last connect was applied */
    bool warned;
+   /* placed as a player's (Plays As), sharing it from a high slot */
+   bool join[INPUT_OPENXR_PADS];
+   /* each pad's player, as looked up for player_want devices and the
+    * entries' generation player_gen */
+   uint8_t player[INPUT_OPENXR_PADS];
+   unsigned player_want;
+   unsigned player_gen;
 } input_openxr_devices_t;
 
 static input_openxr_devices_t input_openxr_devs = {
-   { -1, -1 }, { -1, -1 }, 0, { false, false }, false };
+   { -1, -1 }, { -1, -1 }, 0, { false, false }, false, { false, false },
+   { 0, 0 }, 0, 0 };
 
 /* The joypad driver under the devices' slots, and two tables to hand
  * out: a new driver under them gets the other, as the snapshot bridge
@@ -698,10 +789,14 @@ static unsigned input_openxr_wrap_cur;
 static void input_openxr_clear(input_openxr_t *st)
 {
    memset(st, 0, sizeof(*st));
-   /* a trigger held across a session's restart is no new pull: none
-    * until it is let go, as after a loss */
-   st->trig_down[0] = true;
-   st->trig_down[1] = true;
+   /* a trigger or Touch Button held across a session's restart is no
+    * new press: none until it is let go, as after a loss */
+   st->trig_down[0]    = true;
+   st->trig_down[1]    = true;
+   st->touch_down[0]   = true;
+   st->touch_down[1]   = true;
+   st->hand_profile[0] = -1;
+   st->hand_profile[1] = -1;
    st->mode    = -1;
    st->hit[0]  = -1;
    st->hit[1]  = -1;
@@ -731,40 +826,53 @@ static bool input_openxr_load(input_openxr_t *st,
       && INPUT_OPENXR_PROC(st, get, inst, StopHapticFeedback);
 }
 
-/* One profile's suggestions, edit mode's and the palm's with them. A
- * runtime that refuses either keeps the rest; one without the profile,
- * or that refuses a path, only loses that profile. Returns whether edit
- * mode's were taken. */
+/* One profile's suggestions, its Touch Button rows, edit mode's and the
+ * palm's with them. A runtime that refuses some keeps the rest; one
+ * without the profile, or that refuses a path, only loses that profile.
+ * @path is set to the profile's once suggested and @touch_bound to
+ * whether its Touch Button rows were taken. Returns whether edit mode's
+ * were. */
 static bool input_openxr_suggest(input_openxr_t *st,
-      const input_openxr_profile_t *p)
+      const input_openxr_profile_t *p, XrPath *path, bool *touch_bound)
 {
    unsigned i;
+   unsigned drop;
    unsigned count;
    unsigned palms;
-   unsigned edit = p->edit_count;
+   unsigned touch = p->touch_count;
+   unsigned edit  = p->edit_count;
    XrResult res;
    XrPath profile = XR_NULL_PATH;
    XrActionSuggestedBinding binds[INPUT_OPENXR_MAX_BINDS
+      + INPUT_OPENXR_PALM_BINDS];
+   /* Each try after a refusal copies from the whole binds: 2 KiB with
+    * it, once per profile as a session is made. */
+   XrActionSuggestedBinding kept[INPUT_OPENXR_MAX_BINDS
       + INPUT_OPENXR_PALM_BINDS];
    XrInteractionProfileSuggestedBinding sb;
    static const char *const palm[INPUT_OPENXR_PALM_BINDS] = {
       "/user/hand/left/input/palm_ext/pose",
       "/user/hand/right/input/palm_ext/pose" };
 
-   if (p->count > INPUT_OPENXR_MAX_BINDS)
+   if (p->count + touch > INPUT_OPENXR_MAX_BINDS)
+   {
+      RARCH_WARN("[OpenXR] Too many bindings for %s (%u, at most %d).\n",
+            p->path, p->count + touch, INPUT_OPENXR_MAX_BINDS);
       return false;
+   }
    /* Past one suggestion's room, the rest go without edit mode's. */
-   if (p->count + edit > INPUT_OPENXR_MAX_BINDS)
+   if (p->count + touch + edit > INPUT_OPENXR_MAX_BINDS)
       edit = 0;
    if (XR_FAILED(res = st->StringToPath(st->instance, p->path, &profile)))
    {
       RARCH_WARN("[OpenXR] No path %s (%d).\n", p->path, (int)res);
       return false;
    }
-   for (i = 0; i < p->count + edit; i++)
+   for (i = 0; i < p->count + touch + edit; i++)
    {
-      const input_openxr_bind_t *b = (i < p->count)
-         ? &p->binds[i] : &p->edit[i - p->count];
+      const input_openxr_bind_t *b = (i < p->count) ? &p->binds[i]
+         : (i < p->count + touch) ? &p->touch[i - p->count]
+         : &p->edit[i - p->count - touch];
       binds[i].action = st->actions[b->action];
       if (XR_FAILED(res = st->StringToPath(st->instance, b->path,
                   &binds[i].binding)))
@@ -773,7 +881,7 @@ static bool input_openxr_suggest(input_openxr_t *st,
          return false;
       }
    }
-   count = p->count + edit;
+   count = p->count + touch + edit;
    if (st->palm_pose)
       for (i = 0; i < INPUT_OPENXR_PALM_BINDS; i++)
       {
@@ -782,7 +890,7 @@ static bool input_openxr_suggest(input_openxr_t *st,
                      &binds[count].binding)))
             count++;
       }
-   palms                     = count - p->count - edit;
+   palms                     = count - p->count - touch - edit;
    sb.type                   = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
    sb.next                   = NULL;
    sb.interactionProfile     = profile;
@@ -790,30 +898,37 @@ static bool input_openxr_suggest(input_openxr_t *st,
    sb.suggestedBindings      = binds;
    res = st->SuggestInteractionProfileBindings(st->instance, &sb);
 
-   /* Refused: without the palm, then without edit mode's, then the rest
-    * on their own. */
-   if (XR_FAILED(res) && palms && edit)
+   /* Refused: without the palm (1), the Touch Button's (2) or edit
+    * mode's (4), the least lost first: the palm, the Touch Button's,
+    * both, edit mode's, then edit mode's with those; lastly the rest on
+    * their own. */
+   for (drop = 1; XR_FAILED(res) && drop < 8; drop++)
    {
-      sb.countSuggestedBindings = p->count + edit;
+      unsigned n = 0;
+      if (     ((drop & 1) && !palms)
+            || ((drop & 2) && !touch)
+            || ((drop & 4) && !edit))
+         continue;
+      for (i = 0; i < count; i++)
+      {
+         unsigned group = (i < p->count) ? 0
+            : (i < p->count + touch) ? 2
+            : (i < p->count + touch + edit) ? 4 : 1;
+         if (!(drop & group))
+            kept[n++] = binds[i];
+      }
+      sb.countSuggestedBindings = n;
+      sb.suggestedBindings      = kept;
       if (XR_SUCCEEDED(res = st->SuggestInteractionProfileBindings(
                   st->instance, &sb)))
-         palms = 0;
-   }
-   if (XR_FAILED(res) && edit)
-   {
-      for (i = 0; i < palms; i++)
-         binds[p->count + i] = binds[p->count + edit + i];
-      sb.countSuggestedBindings = p->count + palms;
-      if (XR_SUCCEEDED(res = st->SuggestInteractionProfileBindings(
-                  st->instance, &sb)))
-         edit = 0;
-   }
-   if (XR_FAILED(res) && palms)
-   {
-      sb.countSuggestedBindings = p->count;
-      res = st->SuggestInteractionProfileBindings(st->instance, &sb);
-      edit  = 0;
-      palms = 0;
+      {
+         if (drop & 1)
+            palms = 0;
+         if (drop & 2)
+            touch = 0;
+         if (drop & 4)
+            edit  = 0;
+      }
    }
    if (XR_FAILED(res))
    {
@@ -821,12 +936,17 @@ static bool input_openxr_suggest(input_openxr_t *st,
             (int)res);
       return false;
    }
+   if (touch < p->touch_count)
+      RARCH_WARN("[OpenXR] Touch Button bindings refused for %s.\n",
+            p->path);
    if (edit < p->edit_count)
    {
       RARCH_WARN("[OpenXR] Edit Screens bindings refused for %s.\n",
             p->path);
       st->edit_refused[st->num_edit_refused++] = profile;
    }
+   *path        = profile;
+   *touch_bound = touch == p->touch_count;
    RARCH_LOG("[OpenXR] Bindings suggested for %s%s.\n", p->path,
          palms ? ", with the palm" : "");
    return edit > 0;
@@ -836,6 +956,7 @@ static void input_openxr_release(input_openxr_t *st)
 {
    unsigned i;
    retro_atomic_store_release_int(&input_openxr_ready, 0);
+   retro_atomic_store_release_int(&input_openxr_lacking, 0);
    for (i = 0; i < INPUT_OPENXR_HANDS; i++)
    {
       if (st->aim[i] && st->DestroySpace)
@@ -977,7 +1098,8 @@ static void input_openxr_session_created(void *user,
 
    for (i = 0; i < ARRAY_SIZE(input_openxr_profiles); i++)
       if (     (!input_openxr_profiles[i].frame || h->frame_controller)
-            && input_openxr_suggest(st, &input_openxr_profiles[i]))
+            && input_openxr_suggest(st, &input_openxr_profiles[i],
+               &st->profile_paths[i], &st->touch_bound[i]))
          st->edit_ok = true;
 
    /* All four are attached; each poll syncs the pointer set and the pad
@@ -1141,9 +1263,9 @@ static void input_openxr_stick(input_openxr_t *st, unsigned a, XrPath hand,
    xy[1] = input_openxr_axis(-s.currentState.y);
 }
 
-/* Touch's one menu button: Start while it is held, and the RetroArch
- * menu too when let go after a second. A press that opened the menu
- * from edit mode is neither until let go. */
+/* Touch's one menu button: Start while it is held, and the menu button
+ * too once held a second. A press that opened the menu from edit mode
+ * is neither until let go. */
 static void input_openxr_start_menu(input_openxr_t *st, bool down,
       input_openxr_pad_t *pad)
 {
@@ -1164,7 +1286,7 @@ static void input_openxr_start_menu(input_openxr_t *st, bool down,
    }
    pad->buttons |= (uint16_t)(1u << RETRO_DEVICE_ID_JOYPAD_START);
    if (now - st->start_menu_since >= INPUT_OPENXR_MENU_HOLD)
-      st->menu_toggle = true;
+      pad->buttons |= 1u << INPUT_OPENXR_BUTTON_MENU;
 }
 
 static void input_openxr_read_combined(input_openxr_t *st)
@@ -1185,7 +1307,8 @@ static void input_openxr_read_combined(input_openxr_t *st)
    st->trig[1].value = input_openxr_float(st, IXA_C_R2, XR_NULL_PATH);
    st->trig[1].pad   = 0;
    st->trig[1].slot  = 1;
-   st->menu_toggle   = input_openxr_bool(st, IXA_C_MENU, XR_NULL_PATH);
+   if (input_openxr_bool(st, IXA_C_MENU, XR_NULL_PATH))
+      pad->buttons |= 1u << INPUT_OPENXR_BUTTON_MENU;
    st->recenter      = input_openxr_bool(st, IXA_C_RECENTER, XR_NULL_PATH);
    st->laser_toggle  = input_openxr_bool(st, IXA_C_LASER, XR_NULL_PATH);
    st->view_toggle   = input_openxr_bool(st, IXA_C_VIEW, XR_NULL_PATH);
@@ -1194,7 +1317,7 @@ static void input_openxr_read_combined(input_openxr_t *st)
          input_openxr_bool(st, IXA_C_START_MENU, XR_NULL_PATH), pad);
 }
 
-/* The left hand player 1, the right player 2. */
+/* The left hand pad 0, the right pad 1. */
 static void input_openxr_read_separate(input_openxr_t *st)
 {
    unsigned h;
@@ -1216,11 +1339,131 @@ static void input_openxr_read_separate(input_openxr_t *st)
       st->trig[h].pad   = h;
       st->trig[h].slot  = 1;
    }
-   st->menu_toggle  = input_openxr_bool(st, IXA_S_MENU, XR_NULL_PATH);
+   /* Bound on the left hand only. */
+   if (input_openxr_bool(st, IXA_S_MENU, XR_NULL_PATH))
+      st->pads[0].buttons |= 1u << INPUT_OPENXR_BUTTON_MENU;
    st->recenter     = input_openxr_bool(st, IXA_S_RECENTER, XR_NULL_PATH);
    st->laser_toggle = input_openxr_bool(st, IXA_S_LASER, XR_NULL_PATH);
    st->view_toggle  = input_openxr_bool(st, IXA_S_VIEW, XR_NULL_PATH);
    st->edit_toggle  = input_openxr_bool(st, IXA_S_EDIT, XR_NULL_PATH);
+}
+
+/* Each hand's controller, as its profile in input_openxr_profiles[] or
+ * -1: from the sync just made, for the polls after. */
+static void input_openxr_hand_profiles(input_openxr_t *st)
+{
+   unsigned h, i;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      XrInteractionProfileState ps;
+      ps.type             = XR_TYPE_INTERACTION_PROFILE_STATE;
+      ps.next             = NULL;
+      st->hand_profile[h] = -1;
+      if (     XR_FAILED(st->GetCurrentInteractionProfile(st->session,
+                  st->hands[h], &ps))
+            || ps.interactionProfile == XR_NULL_PATH)
+         continue;
+      for (i = 0; i < ARRAY_SIZE(input_openxr_profiles); i++)
+         if (st->profile_paths[i] == ps.interactionProfile)
+            st->hand_profile[h] = (int)i;
+   }
+}
+
+/* The input of hand @h that Touch Button @c is in profile @prof, or
+ * NULL: none there, or the trigger, which has no row of its own. */
+static const char *input_openxr_touch_path(const input_openxr_t *st,
+      int prof, unsigned h, unsigned c)
+{
+   unsigned i;
+   const input_openxr_profile_t *p;
+   if (     prof < 0 || !st->touch_bound[prof]
+         || c == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER)
+      return NULL;
+   p = &input_openxr_profiles[prof];
+   for (i = 0; i < p->touch_count; i++)
+      if (     p->touch[i].action == IXA_TOUCH(c)
+            && string_starts_with(p->touch[i].path,
+               h ? "/user/hand/right/" : "/user/hand/left/"))
+         return p->touch[i].path;
+   return NULL;
+}
+
+/* Whether hand @h has Touch Button @c in profile @prof: the trigger
+ * always, another only in a known profile that has it. */
+static bool input_openxr_has_button(const input_openxr_t *st, int prof,
+      unsigned h, unsigned c)
+{
+   return c == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER
+      || input_openxr_touch_path(st, prof, h, c);
+}
+
+/* The Touch Buttons the hands' controllers lack, for
+ * input_openxr_touch_offered(). */
+static void input_openxr_publish_lacking(const input_openxr_t *st)
+{
+   unsigned h, c;
+   int offered = 0;
+   bool known  = false;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      if (st->hand_profile[h] < 0)
+         continue;
+      known = true;
+      for (c = 0; c < VIDEO_OPENXR_TOUCH_BUTTON_LAST; c++)
+         if (input_openxr_has_button(st, st->hand_profile[h], h, c))
+            offered |= 1 << c;
+   }
+   retro_atomic_store_release_int(&input_openxr_lacking, known
+         ? ~offered & ((1 << VIDEO_OPENXR_TOUCH_BUTTON_LAST) - 1) : 0);
+}
+
+/* Each hand's Touch Button, whether it can touch and Touch Passthrough,
+ * taken while it touches nothing, so a change waits for the next
+ * press. A hand can touch when Touch Hands has it and its controller
+ * has the button. */
+static void input_openxr_touch_latch(input_openxr_t *st, unsigned hands,
+      unsigned button, bool passthrough)
+{
+   unsigned h;
+   unsigned mask = (hands == VIDEO_OPENXR_TOUCH_HANDS_LEFT)  ? 1
+                 : (hands == VIDEO_OPENXR_TOUCH_HANDS_RIGHT) ? 2
+                 : (hands == VIDEO_OPENXR_TOUCH_HANDS_NONE)  ? 0 : 3;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      bool can;
+      if (     st->touch_role[h] == INPUT_OPENXR_ROLE_TOUCH
+            || st->touch_role[h] == INPUT_OPENXR_ROLE_SPENT)
+         continue;
+      can = (mask & (1u << h))
+         && button < VIDEO_OPENXR_TOUCH_BUTTON_LAST
+         && input_openxr_has_button(st, st->hand_profile[h], h, button);
+      /* a button held through a change is no new press; only the
+       * trigger's last read is known, so another counts as held
+       * until let go */
+      if (button != st->touch_c[h] || can != st->can_touch[h])
+         st->touch_down[h] = button != VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER
+            || st->trig_down[h];
+      st->touch_c[h]    = button;
+      st->touch_pass[h] = passthrough;
+      st->can_touch[h]  = can;
+   }
+}
+
+/* Each hand's Touch Button as the laser reads it: the trigger's value,
+ * or its own action's; nothing from a hand that cannot touch. */
+static void input_openxr_read_touch(input_openxr_t *st)
+{
+   unsigned h;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      if (!st->can_touch[h])
+         st->touch[h] = 0.0f;
+      else if (st->touch_c[h] == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER)
+         st->touch[h] = st->trig[h].value;
+      else
+         st->touch[h] = input_openxr_float(st, IXA_TOUCH(st->touch_c[h]),
+               st->hands[h]);
+   }
 }
 
 static bool input_openxr_pressing(enum input_openxr_role role)
@@ -1229,8 +1472,8 @@ static bool input_openxr_pressing(enum input_openxr_role role)
       || role == INPUT_OPENXR_ROLE_MENU;
 }
 
-/* The triggers were not read: a press ends, and a trigger still held
- * when they are read again is no new pull. */
+/* The triggers and Touch Buttons were not read: a press ends, and one
+ * still held when they are read again is no new press. */
 static void input_openxr_triggers_lost(input_openxr_t *st)
 {
    unsigned h;
@@ -1238,31 +1481,12 @@ static void input_openxr_triggers_lost(input_openxr_t *st)
    {
       if (input_openxr_pressing(st->role[h]))
          st->role[h] = INPUT_OPENXR_ROLE_SPENT;
-      st->trig_down[h] = true;
+      if (input_openxr_pressing(st->touch_role[h]))
+         st->touch_role[h] = INPUT_OPENXR_ROLE_SPENT;
+      st->trig_down[h]  = true;
+      st->touch_down[h] = true;
    }
    st->touch_on = false;
-}
-
-/* Each hand's trigger into its L2 or R2: the value, and the button
- * past the threshold. Before its pull, a hand on a live quad or the
- * pointer keeps its trigger for the laser. */
-static void input_openxr_triggers(input_openxr_t *st, float threshold)
-{
-   unsigned h;
-   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
-   {
-      input_openxr_pad_t *pad = &st->pads[st->trig[h].pad];
-      float v                 = st->trig[h].value;
-      if (     v <= 0.0f
-            || (st->role[h] != INPUT_OPENXR_ROLE_PAD
-               && (st->role[h] != INPUT_OPENXR_ROLE_UP
-                  || st->hit[h] >= 0 || (int)h == st->pointer)))
-         continue;
-      pad->trigger[st->trig[h].slot] = input_openxr_axis(v);
-      if (v > threshold)
-         pad->buttons |= (uint16_t)(1u
-               << (RETRO_DEVICE_ID_JOYPAD_L2 + st->trig[h].slot));
-   }
 }
 
 /* A space's pose in another at time, when the runtime finds it. Either
@@ -1431,11 +1655,39 @@ static bool input_openxr_on_menu(const video_xr_quad_t *q, bool menu_open)
       || (q->kind == VIDEO_XR_QUAD_WINDOW && menu_open);
 }
 
+/* Whether hand @h points at the menu (@menu) or else at a screen. */
+static bool input_openxr_aims(const input_openxr_t *st, unsigned h,
+      bool menu_open, bool menu)
+{
+   return st->hit[h] >= 0 && input_openxr_on_menu(
+         &st->quads.quads[st->hit[h]], menu_open) == menu;
+}
+
+/* Whether @v is a new press past @threshold, *@down holding the last
+ * read's, and the role it gives a trigger or Touch Button: its own
+ * binds from the press, none once let go, nothing once let up short of
+ * a press while it was pressing. */
+static bool input_openxr_role_step(float v, float threshold, bool *down,
+      enum input_openxr_role *role)
+{
+   bool now     = v > threshold;
+   bool pressed = now && !*down;
+   *down        = now;
+   if (pressed)
+      *role = INPUT_OPENXR_ROLE_PAD;
+   else if (v <= 0.0f)
+      *role = INPUT_OPENXR_ROLE_UP;
+   else if (!now && input_openxr_pressing(*role))
+      *role = INPUT_OPENXR_ROLE_SPENT;
+   return pressed;
+}
+
 /* Where each hand points, which hand is the pointer, and what it points
  * at: a point in the core's frame, the menu, or in Always nothing (an
- * off-screen shot). A trigger's role is set by its pull and kept until
- * it is let go, so a press needs a pull of its own. was_pressed is the
- * last poll's press. */
+ * off-screen shot). The trigger's pull clicks the menu; the Touch
+ * Button's press touches. Each one's role is set by its press and kept
+ * until it is let go, so a press needs a press of its own. was_pressed
+ * is the last poll's press. */
 static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
       bool menu_open, float threshold, bool was_pressed)
 {
@@ -1444,6 +1696,7 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
    bool lift;
    bool can[INPUT_OPENXR_HANDS];
    bool pulled[INPUT_OPENXR_HANDS];
+   bool pressed[INPUT_OPENXR_HANDS];
    bool tracked[INPUT_OPENXR_HANDS];
    XrTime time              = 0;
    XrSpace space            = XR_NULL_HANDLE;
@@ -1453,19 +1706,14 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
    int prev                 = st->pointer;
 
    st->touch_on = false;
+   /* Each one's own binds, unless the menu takes the trigger's pull or a
+    * live screen the Touch Button's press below. */
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
    {
-      float v          = st->trig[h].value;
-      bool down        = v > threshold;
-      pulled[h]        = down && !st->trig_down[h];
-      st->trig_down[h] = down;
-      /* L2 or R2, unless a live quad takes the pull below. */
-      if (pulled[h])
-         st->role[h] = INPUT_OPENXR_ROLE_PAD;
-      else if (v <= 0.0f)
-         st->role[h] = INPUT_OPENXR_ROLE_UP;
-      else if (!down && input_openxr_pressing(st->role[h]))
-         st->role[h] = INPUT_OPENXR_ROLE_SPENT;
+      pulled[h]  = input_openxr_role_step(st->trig[h].value, threshold,
+            &st->trig_down[h], &st->role[h]);
+      pressed[h] = input_openxr_role_step(st->touch[h], threshold,
+            &st->touch_down[h], &st->touch_role[h]);
    }
 
    st->pointer         = -1;
@@ -1478,18 +1726,21 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
       const video_xr_quad_t *lq = &st->quads.quads[i];
       if (!video_xr_quad_live(lq, laser, menu_open))
          continue;
-      /* Without a live screen, the mouse and the overlay keep the
-       * core's pointer and gun. */
+      /* Without a live screen a hand can touch, the mouse and the
+       * overlay keep the core's pointer and gun. */
       if (input_openxr_on_menu(lq, menu_open))
          menu_live     = true;
-      else
+      else if (st->can_touch[0] || st->can_touch[1])
          st->ptr_owned = true;
    }
    /* A press ends with its quads. */
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
-      if (     (st->role[h] == INPUT_OPENXR_ROLE_MENU && !menu_live)
-            || (st->role[h] == INPUT_OPENXR_ROLE_TOUCH && !st->ptr_owned))
+   {
+      if (st->role[h] == INPUT_OPENXR_ROLE_MENU && !menu_live)
          st->role[h] = INPUT_OPENXR_ROLE_SPENT;
+      if (st->touch_role[h] == INPUT_OPENXR_ROLE_TOUCH && !st->ptr_owned)
+         st->touch_role[h] = INPUT_OPENXR_ROLE_SPENT;
+   }
    if (!menu_live && !st->ptr_owned)
       return;
 
@@ -1499,22 +1750,28 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
       float t;
       video_xr_vec3_t o, d;
       /* A press keeps its hand off the quads too. */
-      can[h]     = input_openxr_pressing(st->role[h]);
+      can[h]     = input_openxr_pressing(st->role[h])
+         || input_openxr_pressing(st->touch_role[h]);
       tracked[h] = input_openxr_ray(st, h, space, time, &o, &d);
       if (tracked[h])
       {
-         st->hit[h] = video_xr_pick(&st->quads, laser, menu_open, &o, &d,
-               &st->hit_u[h], &st->hit_v[h], &t);
-         /* Always: a hand off every screen still aims the gun. */
-         if (st->hit[h] >= 0 || laser == VIDEO_OPENXR_LASER_ALWAYS)
+         st->hit[h] = video_xr_pick(&st->quads, laser, menu_open,
+               !st->can_touch[h], &o, &d, &st->hit_u[h], &st->hit_v[h],
+               &t);
+         /* Always: a hand that can touch aims the gun off every screen
+          * too. */
+         if (     st->hit[h] >= 0
+               || (laser == VIDEO_OPENXR_LASER_ALWAYS && st->can_touch[h]))
             can[h] = true;
       }
-      /* With both hands on the screens, the last pull points. */
-      if (pulled[h] && st->hit[h] >= 0)
+      /* With both hands on the quads, the last press points. */
+      if (     (pulled[h]  && input_openxr_aims(st, h, menu_open, true))
+            || (pressed[h] && input_openxr_aims(st, h, menu_open, false)))
          st->pointer = (int)h;
    }
    /* Always: the gun stays with its hand through a tracking loss. */
-   if (laser == VIDEO_OPENXR_LASER_ALWAYS && prev >= 0)
+   if (     laser == VIDEO_OPENXR_LASER_ALWAYS && prev >= 0
+         && st->can_touch[prev])
       can[prev] = true;
    if (!can[0] && !can[1])
       st->pointer = -1;
@@ -1522,22 +1779,28 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
       st->pointer = can[1] ? 1 : 0;
    p = st->pointer;
 
-   /* Only the pointer presses: a pull on a live quad, or in Always its
-    * pull anywhere. */
+   /* Only the pointer presses: the trigger's pull on the menu, the
+    * Touch Button's on a live screen, or in Always anywhere but the
+    * menu. */
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
    {
+      bool on_menu   = input_openxr_aims(st, h, menu_open, true);
+      bool on_screen = input_openxr_aims(st, h, menu_open, false);
       if ((int)h != p)
       {
          if (     input_openxr_pressing(st->role[h])
-               || (pulled[h] && st->hit[h] >= 0))
+               || (pulled[h] && on_menu))
             st->role[h] = INPUT_OPENXR_ROLE_SPENT;
+         if (     input_openxr_pressing(st->touch_role[h])
+               || (pressed[h] && on_screen))
+            st->touch_role[h] = INPUT_OPENXR_ROLE_SPENT;
+         continue;
       }
-      else if (pulled[h] && st->hit[h] >= 0)
-         st->role[h] = input_openxr_on_menu(
-               &st->quads.quads[st->hit[h]], menu_open)
-            ? INPUT_OPENXR_ROLE_MENU : INPUT_OPENXR_ROLE_TOUCH;
-      else if (pulled[h] && laser == VIDEO_OPENXR_LASER_ALWAYS)
-         st->role[h] = INPUT_OPENXR_ROLE_TOUCH;
+      if (pulled[h] && on_menu)
+         st->role[h] = INPUT_OPENXR_ROLE_MENU;
+      if (pressed[h] && (on_screen
+               || (laser == VIDEO_OPENXR_LASER_ALWAYS && !on_menu)))
+         st->touch_role[h] = INPUT_OPENXR_ROLE_TOUCH;
    }
    if (p < 0)
       return;
@@ -1569,32 +1832,156 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
             &st->ptr_x, &st->ptr_y);
    /* Untracked mid-press, a touch holds its last point, as the menu's
     * press does. */
-   else if (     !tracked[p] && touch_on && p == prev && !pulled[p]
-             && st->role[p] == INPUT_OPENXR_ROLE_TOUCH)
+   else if (     !tracked[p] && touch_on && p == prev && !pressed[p]
+             && st->touch_role[p] == INPUT_OPENXR_ROLE_TOUCH)
       st->ptr_on = true;
    /* Held, a touch lifts off the screens and lands again back on them,
     * as a stylus does; Always's gun fires off them too. */
    st->ptr_pressed = !lift && st->ptr_on
-      && st->role[p] == INPUT_OPENXR_ROLE_TOUCH;
+      && st->touch_role[p] == INPUT_OPENXR_ROLE_TOUCH;
    st->touch_on    = st->ptr_pressed;
    st->gun_pressed = st->ptr_pressed || (!lift
          && laser == VIDEO_OPENXR_LASER_ALWAYS
-         && st->role[p] == INPUT_OPENXR_ROLE_TOUCH);
+         && st->touch_role[p] == INPUT_OPENXR_ROLE_TOUCH);
+}
+
+/* Whether hand @h's Touch Button is the laser's: its press touching or
+ * taken by the laser until let go, or not pressed yet while a press
+ * would touch. */
+static bool input_openxr_touch_held(const input_openxr_t *st, unsigned h,
+      unsigned laser, bool menu_open)
+{
+   if (!st->can_touch[h])
+      return false;
+   if (     st->touch_role[h] == INPUT_OPENXR_ROLE_TOUCH
+         || st->touch_role[h] == INPUT_OPENXR_ROLE_SPENT)
+      return true;
+   return st->touch_role[h] == INPUT_OPENXR_ROLE_UP
+      && (input_openxr_aims(st, h, menu_open, false)
+         || (laser == VIDEO_OPENXR_LASER_ALWAYS && (int)h == st->pointer
+            && !input_openxr_aims(st, h, menu_open, true)));
+}
+
+/* Each hand's trigger into its L2 or R2: the value, and the button
+ * past the threshold. The menu's press holds it back, and so does
+ * pointing at the menu before a pull; as the Touch Button, so does the
+ * laser's hold on it, unless Touch Passthrough is on. */
+static void input_openxr_triggers(input_openxr_t *st, unsigned laser,
+      bool menu_open, float threshold)
+{
+   unsigned h;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      input_openxr_pad_t *pad = &st->pads[st->trig[h].pad];
+      float v                 = st->trig[h].value;
+      if (     v <= 0.0f
+            || (st->role[h] != INPUT_OPENXR_ROLE_PAD
+               && (st->role[h] != INPUT_OPENXR_ROLE_UP
+                  || input_openxr_aims(st, h, menu_open, true)))
+            || (st->touch_c[h] == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER
+               && !st->touch_pass[h]
+               && input_openxr_touch_held(st, h, laser, menu_open)))
+         continue;
+      pad->trigger[st->trig[h].slot] = input_openxr_axis(v);
+      if (v > threshold)
+         pad->buttons |= 1u << (RETRO_DEVICE_ID_JOYPAD_L2
+               + st->trig[h].slot);
+   }
+}
+
+/* The buttons input @path feeds in profile @p's pad rows, on pad *pad:
+ * Combined's one, or in Separate the hand's. */
+static uint32_t input_openxr_fed(const input_openxr_profile_t *p,
+      bool separate, unsigned h, const char *path, unsigned *pad)
+{
+   unsigned i;
+   uint32_t bits = 0;
+   *pad          = separate ? h : 0;
+   for (i = 0; i < p->count; i++)
+   {
+      unsigned a = p->binds[i].action;
+      if (!string_is_equal(p->binds[i].path, path))
+         continue;
+      if (separate)
+      {
+         if (a == IXA_S_B)
+            bits |= 1u << RETRO_DEVICE_ID_JOYPAD_B;
+         else if (a == IXA_S_A)
+            bits |= 1u << RETRO_DEVICE_ID_JOYPAD_A;
+         else if (a == IXA_S_R)
+            bits |= 1u << RETRO_DEVICE_ID_JOYPAD_R;
+         else if (a == IXA_S_START)
+            bits |= 1u << RETRO_DEVICE_ID_JOYPAD_START;
+         else if (a == IXA_S_MENU)
+            bits |= 1u << INPUT_OPENXR_BUTTON_MENU;
+      }
+      else if (a <= IXA_C_R3)
+         bits |= 1u << (a - IXA_C_B);
+      else if (a == IXA_C_MENU)
+         bits |= 1u << INPUT_OPENXR_BUTTON_MENU;
+      else if (a == IXA_C_START_MENU)
+         bits |= (1u << RETRO_DEVICE_ID_JOYPAD_START)
+            | (1u << INPUT_OPENXR_BUTTON_MENU);
+   }
+   return bits;
+}
+
+/* OpenXR gives an input to every action bound to it: while a Touch
+ * Button other than the trigger is the laser's, what else that input
+ * presses is let go, unless Touch Passthrough is on. */
+static void input_openxr_hold_back(input_openxr_t *st, bool separate,
+      unsigned laser, bool menu_open)
+{
+   unsigned h;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      unsigned pad;
+      uint32_t bits;
+      const char *path;
+      int prof = st->hand_profile[h];
+      if (     st->touch_pass[h]
+            || !input_openxr_touch_held(st, h, laser, menu_open)
+            || !(path = input_openxr_touch_path(st, prof, h,
+                  st->touch_c[h])))
+         continue;
+      bits                   = input_openxr_fed(
+            &input_openxr_profiles[prof], separate, h, path, &pad);
+      st->pads[pad].buttons &= ~bits;
+   }
 }
 
 /* Whether this read newly presses a button other than the triggers' L2
- * and R2, or pushes a stick past half. */
-static bool input_openxr_new_press(input_openxr_t *st)
+ * and R2, the menu button (it navigates nothing) or what a Touch
+ * Button's input feeds (it may touch), or pushes a stick past half. */
+static bool input_openxr_new_press(input_openxr_t *st, bool separate)
 {
-   unsigned p, s;
+   unsigned h, p, s;
+   uint32_t touch[INPUT_OPENXR_PADS];
    bool press = false;
+   for (p = 0; p < INPUT_OPENXR_PADS; p++)
+      touch[p] = 0;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      unsigned pad;
+      uint32_t bits;
+      const char *path;
+      int prof = st->hand_profile[h];
+      if (     !st->can_touch[h]
+            || !(path = input_openxr_touch_path(st, prof, h,
+                  st->touch_c[h])))
+         continue;
+      bits        = input_openxr_fed(&input_openxr_profiles[prof],
+            separate, h, path, &pad);
+      touch[pad] |= bits;
+   }
    for (p = 0; p < INPUT_OPENXR_PADS; p++)
    {
       const input_openxr_pad_t *pad = &st->pads[p];
       unsigned sticks               = 0;
-      uint16_t buttons              = (uint16_t)(pad->buttons
+      uint32_t buttons              = pad->buttons & ~touch[p]
             & ~((1u << RETRO_DEVICE_ID_JOYPAD_L2)
-               | (1u << RETRO_DEVICE_ID_JOYPAD_R2)));
+               | (1u << RETRO_DEVICE_ID_JOYPAD_R2)
+               | (1u << INPUT_OPENXR_BUTTON_MENU));
       for (s = 0; s < 2; s++)
          if (     abs(pad->analog[s * 2])     > INPUT_OPENXR_YIELD_STICK
                || abs(pad->analog[s * 2 + 1]) > INPUT_OPENXR_YIELD_STICK)
@@ -1614,11 +2001,11 @@ static bool input_openxr_new_press(input_openxr_t *st)
  * press alone tilts one by over 3 degrees on the Steam Frame.
  * That pull is spent, with a press's or without: an unseen laser must
  * not click. */
-static void input_openxr_yield(input_openxr_t *st, unsigned laser,
-      bool menu_open, float threshold)
+static void input_openxr_yield(input_openxr_t *st, bool separate,
+      unsigned laser, bool menu_open, float threshold)
 {
    unsigned h;
-   bool press = input_openxr_new_press(st);
+   bool press = input_openxr_new_press(st, separate);
 
    if (     !menu_open || laser == VIDEO_OPENXR_LASER_OFF
          || (!st->yield && !press))
@@ -1627,9 +2014,15 @@ static void input_openxr_yield(input_openxr_t *st, unsigned laser,
    {
       if (st->trig[h].value > threshold && !st->trig_down[h])
       {
-         /* No pull until let go, as after a loss. */
+         /* No pull until let go, as after a loss; nor a touch, when the
+          * trigger is the Touch Button. */
          st->trig_down[h] = true;
          st->role[h]      = INPUT_OPENXR_ROLE_SPENT;
+         if (st->touch_c[h] == VIDEO_OPENXR_TOUCH_BUTTON_TRIGGER)
+         {
+            st->touch_down[h] = true;
+            st->touch_role[h] = INPUT_OPENXR_ROLE_SPENT;
+         }
          st->yield        = false;
       }
    }
@@ -2102,6 +2495,8 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       float t                   = 0.0f;
       video_xr_pose_t pose;
       XrCompositionLayerQuad *l = &st->cursors[dots];
+      bool menu_only            = !(config
+            & (INPUT_OPENXR_TOUCH_HAND << h));
       if (!input_openxr_frame_pose(st, h, space, time, &aim))
          continue;
       input_openxr_aim_ray(&aim, &o[rays], &d[rays]);
@@ -2109,8 +2504,8 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
          ? video_xr_pick_edit(set,
                ((st->frame->grabs.stuck >> h) & 1u) != 0, &o[rays],
                &d[rays], &u, &v, &t, NULL)
-         : video_xr_pick(set, (unsigned)laser, menu_open, &o[rays],
-               &d[rays], &u, &v, &t);
+         : video_xr_pick(set, (unsigned)laser, menu_open, menu_only,
+               &o[rays], &d[rays], &u, &v, &t);
       hit[rays]   = q >= 0;
       reach[rays] = (q >= 0) ? t : VIDEO_XR_BEAM_REACH;
       ray_of[h]   = (int)rays;
@@ -2210,8 +2605,8 @@ static bool input_openxr_frame_aim(void *user, unsigned hand,
             pose);
 }
 
-/* Rumble into each hand's haptics: in Combined player 1's strong motor
- * is the left hand and its weak the right; in Separate each player's
+/* Rumble into each hand's haptics: in Combined the pad's strong motor
+ * is the left hand and its weak the right; in Separate each pad's
  * hand takes the stronger of its two. Paused, the refresh would keep
  * the rumble going for the whole pause: stop it until resumed. */
 static void input_openxr_haptics(input_openxr_t *st, bool separate,
@@ -2308,12 +2703,18 @@ static void input_openxr_slots_publish(void)
    retro_atomic_store_release_int(&input_openxr_rumble_slots, (int)slots);
 }
 
-static const char *input_openxr_device_name(unsigned p)
+/* Pad @p's device's name, of @count devices. */
+static const char *input_openxr_name(unsigned p, unsigned count)
 {
    if (p)
       return INPUT_OPENXR_JOYPAD_RIGHT;
-   return input_openxr_devs.count < 2 ? INPUT_OPENXR_JOYPAD_COMBINED
+   return count < 2 ? INPUT_OPENXR_JOYPAD_COMBINED
       : INPUT_OPENXR_JOYPAD_LEFT;
+}
+
+static const char *input_openxr_device_name(unsigned p)
+{
+   return input_openxr_name(p, input_openxr_devs.count);
 }
 
 /* Pad @p's device reported in its slot. Its layout is RetroArch's own,
@@ -2327,14 +2728,47 @@ static void input_openxr_announce(unsigned p)
          AUTOCONF_FLAG_AUTOCONFIG_ENABLED);
 }
 
-/* The lowest slot no controller has, as a pad plugged in gets. */
-static int input_openxr_free_slot(void)
+/* The lowest slot no controller has, as a pad plugged in gets; for a
+ * device that plays as a player, the highest below Max Users, so pads
+ * keep the low ones. */
+static int input_openxr_free_slot(unsigned max_users, bool join)
 {
    unsigned s;
+   if (join)
+   {
+      if (max_users > MAX_USERS)
+         max_users = MAX_USERS;
+      for (s = max_users; s-- > 0; )
+         if (!input_config_get_device_name(s) && input_openxr_pad_of(s) < 0)
+            return (int)s;
+   }
    for (s = 0; s < MAX_USERS; s++)
       if (!input_config_get_device_name(s) && input_openxr_pad_of(s) < 0)
          return (int)s;
    return -1;
+}
+
+/* Pad @p's device out of its slot. */
+static void input_openxr_unplace(unsigned p)
+{
+   input_autoconfigure_disconnect((unsigned)input_openxr_devs.slot[p],
+         input_openxr_device_name(p));
+   input_openxr_devs.slot[p]   = -1;
+   input_openxr_devs.landed[p] = false;
+}
+
+/* Pad @p's device placed as a player's and now not, or the other way
+ * round, or a player's past Max Users with a slot below it free. */
+static bool input_openxr_misplaced(unsigned p, unsigned max_users,
+      bool join, bool pending)
+{
+   int s = input_openxr_devs.slot[p];
+   if (join != input_openxr_devs.join[p])
+      return true;
+   if (!join || pending || (unsigned)s < max_users)
+      return false;
+   s = input_openxr_free_slot(max_users, true);
+   return s >= 0 && (unsigned)s < max_users;
 }
 
 /* A device for each pad the session's controllers make: none without
@@ -2343,6 +2777,7 @@ static int input_openxr_free_slot(void)
 static void input_openxr_devices(unsigned max_users, bool separate)
 {
    unsigned p;
+   bool join[INPUT_OPENXR_PADS];
    input_openxr_devices_t *dv = &input_openxr_devs;
    input_openxr_t *st         = &input_openxr_st;
    /* an ended session keeps its controllers until the driver goes */
@@ -2353,18 +2788,37 @@ static void input_openxr_devices(unsigned max_users, bool separate)
    /* a connect still to come may be for a slot that looks free */
    bool pending               = input_autoconfigure_pending();
 
+   /* each pad's player (Plays As, Player 1 by default), looked up only
+    * when the devices or the entries have changed */
+   if (     want != dv->player_want
+         || input_config_plays_as_generation() != dv->player_gen)
+   {
+      dv->player_want = want;
+      dv->player_gen  = input_config_plays_as_generation();
+      for (p = 0; p < INPUT_OPENXR_PADS; p++)
+         dv->player[p] = (p < want) ? (uint8_t)input_config_plays_as_named(
+               input_openxr_name(p, want)) : 0;
+   }
+   /* placed again by a later poll, as it plays now; one still landing
+    * once it has */
+   for (p = 0; p < INPUT_OPENXR_PADS; p++)
+   {
+      join[p] = dv->player[p] && dv->player[p] <= max_users;
+      if (     dv->slot[p] < 0
+            || !dv->landed[p]
+            || !input_openxr_misplaced(p, max_users, join[p], pending))
+         continue;
+      input_openxr_unplace(p);
+      pending = true;
+   }
+
    /* Gone once its connect has landed, so the registry is told of the
     * one before the other. */
    for (p = want; p < INPUT_OPENXR_PADS; p++)
    {
       dv->lost[p] = -1;
       if (dv->slot[p] >= 0 && dv->landed[p])
-      {
-         input_autoconfigure_disconnect((unsigned)dv->slot[p],
-               input_openxr_device_name(p));
-         dv->slot[p]   = -1;
-         dv->landed[p] = false;
-      }
+         input_openxr_unplace(p);
    }
    if (!want)
    {
@@ -2394,7 +2848,7 @@ static void input_openxr_devices(unsigned max_users, bool separate)
       }
       if (pending)
          continue;
-      if ((s = input_openxr_free_slot()) < 0)
+      if ((s = input_openxr_free_slot(max_users, join[p])) < 0)
       {
          if (!dv->warned)
             RARCH_WARN("[OpenXR] No free slot for the headset's controllers.\n");
@@ -2402,8 +2856,10 @@ static void input_openxr_devices(unsigned max_users, bool separate)
          continue;
       }
       dv->slot[p] = s;
-      /* a pad took its slot: the port goes where it went, for this run */
-      if (dv->lost[p] >= 0)
+      dv->join[p] = join[p];
+      /* a pad took its slot: the port goes where it went, for this run;
+       * a player's is placed by its player instead */
+      if (dv->lost[p] >= 0 && !join[p])
          input_driver_exchange_ports((unsigned)dv->lost[p], (unsigned)s);
       dv->lost[p] = -1;
       input_openxr_announce(p);
@@ -2449,7 +2905,7 @@ static int32_t input_openxr_joypad_button(unsigned port, uint16_t joykey)
    if (!pad)
       return input_openxr_inner->button
          ? input_openxr_inner->button(port, joykey) : 0;
-   return joykey < RARCH_FIRST_CUSTOM_BIND
+   return joykey < INPUT_OPENXR_BUTTONS
       && (pad->buttons & (1u << joykey));
 }
 
@@ -2509,7 +2965,7 @@ static void input_openxr_joypad_get_buttons(unsigned port,
       return;
    }
    BIT256_CLEAR_ALL_PTR(state);
-   for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+   for (id = 0; id < INPUT_OPENXR_BUTTONS; id++)
       if (pad->buttons & (1u << id))
          BIT256_SET_PTR(state, id);
 }
@@ -2547,6 +3003,15 @@ static const char *input_openxr_joypad_name(unsigned pad)
    if (p >= 0)
       return input_openxr_device_name((unsigned)p);
    return input_openxr_inner->name ? input_openxr_inner->name(pad) : NULL;
+}
+
+/* The controllers' slots have no view to lend: the snapshot copies
+ * them through the calls above. */
+static const input_pad_view_t *input_openxr_joypad_view(unsigned pad)
+{
+   if (input_openxr_slot_pad(pad))
+      return NULL;
+   return input_openxr_inner->view ? input_openxr_inner->view(pad) : NULL;
 }
 
 /* Whether set shows slot's item, and as one. */
@@ -3525,8 +3990,16 @@ static void input_openxr_edit_poll(input_openxr_t *st,
    input_openxr_edit_publish(st, e);
 }
 
+/* The hands that can touch, for the XR thread's dots. */
+static int input_openxr_touch_config(const input_openxr_t *st)
+{
+   return (st->can_touch[0] ? INPUT_OPENXR_TOUCH_HAND      : 0)
+      |   (st->can_touch[1] ? INPUT_OPENXR_TOUCH_HAND << 1 : 0);
+}
+
 void input_openxr_poll(unsigned max_users, unsigned controllers,
-      unsigned laser, unsigned beam, float threshold)
+      unsigned laser, unsigned beam, unsigned touch_hands,
+      unsigned touch_button, bool touch_passthrough, float threshold)
 {
    unsigned p;
    XrResult res;
@@ -3551,6 +4024,8 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
       beam = VIDEO_OPENXR_LASER_BEAM_EDIT;
 
    input_openxr_devices(max_users, separate);
+   input_openxr_touch_latch(st, touch_hands, touch_button,
+         touch_passthrough);
 
    /* A pause edit mode made that the user lifted is no longer its own. */
    if (e->paused && !(run_flags & RUNLOOP_FLAG_PAUSED))
@@ -3576,7 +4051,8 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
             | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0)))
          | ((int)beam << INPUT_OPENXR_BEAM_SHIFT)
          | (e->on ? (int)(e->smoothing & INPUT_OPENXR_SMOOTH_MASK)
-            << INPUT_OPENXR_SMOOTH_SHIFT : 0));
+            << INPUT_OPENXR_SMOOTH_SHIFT : 0)
+         | input_openxr_touch_config(st));
 
    /* Nothing stops the last rumble of a core closed behind a menu that
     * ran it; no later content may inherit it. */
@@ -3643,6 +4119,8 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
       return;
    }
    st->sync_result = XR_SUCCESS;
+   input_openxr_hand_profiles(st);
+   input_openxr_publish_lacking(st);
    if (st->mode != (int)separate)
    {
       RARCH_LOG("[OpenXR] Controllers: %s.\n",
@@ -3671,15 +4149,18 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
          input_openxr_read_separate(st);
       else
          input_openxr_read_combined(st);
-      input_openxr_yield(st, laser, menu_open, threshold);
+      input_openxr_read_touch(st);
+      input_openxr_yield(st, separate, laser, menu_open, threshold);
       if (st->yield)
          laser = VIDEO_OPENXR_LASER_OFF;
       retro_atomic_store_release_int(&input_openxr_pointer_config,
             (int)laser | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0)
-            | ((int)beam << INPUT_OPENXR_BEAM_SHIFT));
+            | ((int)beam << INPUT_OPENXR_BEAM_SHIFT)
+            | input_openxr_touch_config(st));
       input_openxr_laser_poll(st, laser, menu_open, threshold,
             was_pressed);
-      input_openxr_triggers(st, threshold);
+      input_openxr_triggers(st, laser, menu_open, threshold);
+      input_openxr_hold_back(st, separate, laser, menu_open);
    }
    input_openxr_haptics(st, separate,
          (run_flags & RUNLOOP_FLAG_PAUSED) ? true : false);
@@ -3707,6 +4188,8 @@ const input_device_driver_t *input_openxr_joypad(
       wrap->name             = input_openxr_joypad_name;
       if (joypad->get_buttons)
          wrap->get_buttons   = input_openxr_joypad_get_buttons;
+      if (joypad->view)
+         wrap->view          = input_openxr_joypad_view;
       input_openxr_inner     = joypad;
    }
    return &input_openxr_wrap[input_openxr_wrap_cur];
@@ -3856,13 +4339,51 @@ void input_openxr_edit_release(void)
    input_openxr_edit_let_go_all(&input_openxr_edit);
 }
 
-bool input_openxr_pointer(unsigned port, unsigned device, unsigned idx,
+bool input_openxr_touch_offered(unsigned button)
+{
+   return button < VIDEO_OPENXR_TOUCH_BUTTON_LAST
+      && !((retro_atomic_load_acquire_int(&input_openxr_lacking) >> button)
+         & 1);
+}
+
+unsigned input_openxr_touch_step(unsigned cur, bool forward)
+{
+   unsigned i;
+   const unsigned n = VIDEO_OPENXR_TOUCH_BUTTON_LAST;
+   int lacking      = retro_atomic_load_acquire_int(&input_openxr_lacking);
+   cur %= n;
+   for (i = 1; i < n; i++)
+   {
+      unsigned b = forward ? (cur + i) % n : (cur + n - i) % n;
+      if (!((lacking >> b) & 1))
+         return b;
+   }
+   return cur;
+}
+
+bool input_openxr_pointer(uint32_t slots, unsigned device, unsigned idx,
       unsigned id, int16_t *res)
 {
+   unsigned p;
+   bool on;
+   bool aims                = false;
+   bool mine                = false;
    const input_openxr_t *st = &input_openxr_st;
-   bool on                  = st->ptr_on && idx == 0;
-   if (port != 0 || !st->ptr_owned)
+   if (!st->ptr_owned)
       return false;
+   for (p = 0; p < INPUT_OPENXR_PADS; p++)
+   {
+      int s = input_openxr_devs.slot[p];
+      if (s < 0 || s >= 32 || !(slots & (1u << s)))
+         continue;
+      mine = true;
+      /* Combined's one pad points with either hand */
+      if (input_openxr_devs.count < 2 || (int)p == st->pointer)
+         aims = true;
+   }
+   if (!mine)
+      return false;
+   on = aims && st->ptr_on && idx == 0;
    if (device == RETRO_DEVICE_POINTER)
    {
       switch (id)
@@ -3891,17 +4412,17 @@ bool input_openxr_pointer(unsigned port, unsigned device, unsigned idx,
       switch (id)
       {
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            *res = st->ptr_on ? st->ptr_x : -0x8000;
+            *res = (aims && st->ptr_on) ? st->ptr_x : -0x8000;
             return true;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            *res = st->ptr_on ? st->ptr_y : -0x8000;
+            *res = (aims && st->ptr_on) ? st->ptr_y : -0x8000;
             return true;
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            *res = st->ptr_on ? 0 : 1;
+            *res = (aims && st->ptr_on) ? 0 : 1;
             return true;
          case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
             /* Off the screens too: the usual reload. */
-            *res = st->gun_pressed ? 1 : 0;
+            *res = (aims && st->gun_pressed) ? 1 : 0;
             return true;
          default:
             break;

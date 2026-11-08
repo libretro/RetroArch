@@ -42,13 +42,13 @@ S_BOOL(video_openxr_perf_boost, VIDEO_OPENXR_PERF_BOOST,
 S_UINT_EX(video_openxr_controllers, VIDEO_OPENXR_CONTROLLERS,
       "video_openxr_controllers",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_controllers, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
-      "Headset Controllers",
-      "How the headset's controllers play. Combined makes both one gamepad for player 1. Separate makes the left controller player 1 and the right player 2.")
+      "OpenXR Controller Layout",
+      "How the headset's controllers appear. Combined makes both one gamepad. Separate makes each hand a gamepad of its own. Each plays as the player set for it above, player 1 unless set otherwise.")
 S_UINT_EX(video_openxr_laser, VIDEO_OPENXR_LASER,
       "video_openxr_laser",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_laser, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Laser Pointer",
-      "Where a controller's trigger points and touches instead of pressing L2 or R2. Auto: the menu while it is open, and second screens such as a touch screen. Always: every screen, for light guns. Off: nowhere.")
+      "Where a controller points, for the Touch Button to touch a screen and the trigger to click the menu. Auto: the menu while it is open, and second screens such as a touch screen. Always: every screen, for light guns. Off: nowhere.")
 S_UINT_EX(video_openxr_laser_beam, VIDEO_OPENXR_LASER_BEAM,
       "video_openxr_laser_beam",
       1, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_laser_beam, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
@@ -79,3 +79,18 @@ S_UINT_EX(video_openxr_edit_smoothing, VIDEO_OPENXR_EDIT_SMOOTHING,
       2, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_edit_smoothing, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Edit Smoothing",
       "Steadies the controllers' aim while Edit Screens moves the screens, so a screen held far out does not shake with the hand: a slow hand is smoothed a lot, a fast one little. Off: the aim as tracked.")
+S_UINT_EX(video_openxr_touch_hands, VIDEO_OPENXR_TOUCH_HANDS,
+      "video_openxr_touch_hands",
+      0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_touch_hands, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Touch Hands",
+      "The hands that touch a screen they point at, such as a touch screen. The other hand still points at the menu. None turns touch off for the headset's controllers, leaving the screens to the mouse and the overlay.")
+S_UINT_EX(video_openxr_touch_button, VIDEO_OPENXR_TOUCH_BUTTON,
+      "video_openxr_touch_button",
+      0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 7, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_touch_button, NULL, NULL, setting_uint_action_left_video_openxr_touch_button, setting_uint_action_right_video_openxr_touch_button, ST_UI_TYPE_UINT_COMBOBOX,
+      "Touch Button",
+      "The button that touches where a hand points. Pointed anywhere else it presses what it is bound to. A hand without this button cannot touch. The trigger always clicks the menu.")
+S_BOOL(video_openxr_touch_passthrough, VIDEO_OPENXR_TOUCH_PASSTHROUGH,
+      "video_openxr_touch_passthrough",
+      false, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Touch Passthrough",
+      "Also press what the Touch Button is bound to while it touches. Off holds those binds back for the whole touch.")
