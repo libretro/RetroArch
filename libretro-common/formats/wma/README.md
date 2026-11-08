@@ -47,8 +47,7 @@ reject it. No encoded fixtures or FFmpeg libraries are shipped with rwma.
 
 Before replacing the core's decoder, complete variable packet continuation
 coverage, versioned checkpoint integration and guest-output differential tests.
-The current WMA Pro packet path does not implement frames whose length
-exceeds one block, or recovery from a sequence discontinuity.
+The WMA Pro packet path does not yet recover from a sequence discontinuity.
 
 ## Playback integration
 
@@ -99,3 +98,17 @@ into the destination are rejected. A rejected restore leaves the decoder unchang
 This is a runtime view, not a serialized struct. Save scalar fields and samples in
 the consumer's versioned state format, never the pointers or native struct padding.
 The next decoded frame remains a borrowed 512-sample view as before.
+## WMA Pro frames spanning packets
+
+The packet-size frame-length sentinel selects an open frame walk. Continuation
+packets accumulate in reusable storage bounded by sixteen block sizes (at most
+512 KiB), rather than a fixed 1 MiB allocation. Literal frame lengths retain the
+bounded-frame path. Complete frames still decode from borrowed packet spans.
+
+An incomplete open walk restores only the overlap prefix and previous subframe
+lengths before waiting for more input. That undo storage is reserved at creation;
+no decode-time allocation or partial PCM publication occurs. Stale data after an
+open frame is discarded according to the continuation boundary. The procedural
+regression spans five packets and exercises several rollback retries followed by
+a normal frame. The Windows-encoded WaxFlow long-frame corpus also matches the
+independent FFmpeg reference for all output samples.

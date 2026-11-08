@@ -160,6 +160,106 @@ static void packet_test(void)
    rwma_free(d);
 }
 
+static void long_packet_test(void)
+{
+   rwma_config cfg;
+   rwma_t *d = NULL;
+   rwma_frame f;
+   unsigned char extra[18], packet[6][8], frame[32];
+   writer w;
+   size_t used;
+   unsigned i, at = 34;
+   memset(&cfg, 0, sizeof(cfg));
+   memset(extra, 0, sizeof(extra));
+   memset(packet, 0, sizeof(packet));
+   memset(frame, 0, sizeof(frame));
+   extra[0] = 16;
+   extra[14] = 64 + (5 << 3);
+   cfg.codec = RWMA_PRO;
+   cfg.sample_rate = 48000;
+   cfg.channels = 1;
+   cfg.block_align = 8;
+   cfg.extra = extra;
+   cfg.extra_size = sizeof(extra);
+   check(!rwma_create(&d, &cfg), "clamped frame context");
+   w.data = frame;
+   w.bit = 0;
+   put(&w, 7, 64);
+   put(&w, 1, 1);
+   for (i = 0; i < 31; i++) put(&w, 3, 5);
+   put(&w, 1, 0);
+   for (i = 0; i < 32; i++) put(&w, 3, 0);
+   put(&w, 2, 0);
+   check(w.bit == 200, "procedural long-frame extent");
+   w.data = packet[0]; w.bit = 0;
+   put(&w, 6, 0); put(&w, 7, 0);
+   put(&w, 7, 17); put(&w, 1, 1); put(&w, 3, 0);
+   put(&w, 6, 1);
+   put_span(&w, frame, 0, at);
+   for (i = 1; i < 5; i++)
+   {
+      unsigned count = i == 4 ? 13 : 51;
+      w.data = packet[i]; w.bit = 0;
+      put(&w, 6, i << 2); put(&w, 7, 64);
+      put_span(&w, frame, at, count); at += count;
+   }
+   w.data = packet[5]; w.bit = 0;
+   put(&w, 6, 5 << 2); put(&w, 7, 0);
+   put(&w, 7, 17); put(&w, 1, 1); put(&w, 3, 0); put(&w, 6, 0);
+   for (i = 0; i < 4; i++)
+   {
+      check(!rwma_decode_packet(d, packet[i], 8, &used, &f),
+            "clamped frame accumulates full continuation packets");
+      check(used == 8 && !f.samples, "incomplete frame has no published PCM");
+   }
+   check(!rwma_decode_packet(d, packet[4], 8, &used, &f) && !used,
+         "complete clamped frame after rollback retries");
+   zero_frame(&f, 2048);
+   check(!rwma_decode_packet(d, packet[4], 8, &used, &f) && used == 8 && !f.samples,
+         "release whole continuation packet");
+   check(!rwma_decode_packet(d, packet[5], 8, &used, &f) && used == 8,
+         "frame after clamped continuation");
+   zero_frame(&f, 2048);
+   rwma_free(d);
+}
+
+static void long_packet_damage_test(void)
+{
+   rwma_config cfg;
+   rwma_t *d = NULL;
+   rwma_frame frame;
+   unsigned char extra[18], packet[8];
+   writer w;
+   unsigned i;
+   size_t used;
+   int status = 0;
+   memset(&cfg, 0, sizeof(cfg));
+   memset(extra, 0, sizeof(extra));
+   memset(packet, 0, sizeof(packet));
+   extra[0] = 16;
+   extra[14] = 64 + (5 << 3);
+   cfg.codec = RWMA_PRO; cfg.sample_rate = 48000; cfg.channels = 1;
+   cfg.block_align = 8; cfg.extra = extra; cfg.extra_size = sizeof(extra);
+   check(!rwma_create(&d, &cfg), "bounded continuation context");
+   w.data = packet; w.bit = 0;
+   put(&w, 6, 0); put(&w, 7, 0); put(&w, 7, 64);
+   put(&w, 1, 1); put(&w, 3, 0); put(&w, 1, 0);
+   put(&w, 1, 1); put(&w, 2, 0); put(&w, 4, 15); put(&w, 15, 32766);
+   check(!rwma_decode_packet(d, packet, 8, &used, &frame) && used == 8 && !frame.samples,
+         "retain maliciously oversized frame prefix");
+   for (i = 1; i <= 32 && !status; i++)
+   {
+      memset(packet, 0, sizeof(packet)); w.bit = 0;
+      put(&w, 6, (i & 15) << 2); put(&w, 7, 64);
+      status = rwma_decode_packet(d, packet, 8, &used, &frame);
+      check(!frame.samples && !frame.planes[0], "oversized continuation publishes no PCM");
+   }
+   check(status == RWMA_BAD_DATA && i <= 22, "bounded carry rejects oversized frame");
+   check(rwma_decode_packet(d,packet,8,&used,&frame)==RWMA_BAD_DATA,
+         "oversized frame requires reset");
+   rwma_free(d);
+}
+
 static void transform_test(void)
 {
    rwma_mdct m;
@@ -476,6 +576,8 @@ int main(void)
    checkpoint_test();
    raw_test();
    packet_test();
+   long_packet_test();
+   long_packet_damage_test();
    transform_test();
    damaged_test();
    standard_test();

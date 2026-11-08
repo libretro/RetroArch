@@ -21,14 +21,14 @@ typedef struct rwma_group
 struct rwma_t
 {
    void *standard;
-   float *allocation, *spectrum;
+   float *allocation, *spectrum, *undo;
    rwma_mdct transform;
    rwma_lane lane[8];
    rwma_group group[8];
    rwma_config config;
    uint8_t *carry;
    const uint8_t *packet;
-   size_t carry_bits, packet_at;
+   size_t carry_bits, carry_capacity, packet_at;
    int edges[8][29], band_count[8], remap[8][8][29];
    float sine[33];
    unsigned frame_length, depth, length_bits, bps;
@@ -446,7 +446,10 @@ static int pro_subframe(rwma_t *d, rwma_reader *r, int offset, int length)
          fill = rwma_read(r, w) + 1;
       }
       if (fill > r->end - r->pos)
+      {
+         r->error = 1;
          return RWMA_BAD_DATA;
+      }
       r->pos += fill;
    }
    if (rwma_read(r, 1))
@@ -514,7 +517,8 @@ static int pro_frame(rwma_t *d, rwma_reader *r, size_t extent, rwma_frame *out)
 {
    int c, steps, offset, length;
    unsigned declared = rwma_read(r, d->length_bits);
-   if (declared != extent || declared <= d->length_bits)
+   if ((extent ? declared != extent : declared != d->config.block_align * 8) ||
+       declared <= d->length_bits)
       return RWMA_BAD_DATA;
    if (pro_tiles(d, r))
       return RWMA_BAD_DATA;
@@ -553,10 +557,15 @@ static int pro_frame(rwma_t *d, rwma_reader *r, size_t extent, rwma_frame *out)
       if (!length || pro_subframe(d, r, offset, length))
          return RWMA_BAD_DATA;
    }
-   if (steps > 32 * (int)d->config.channels || r->error || r->pos >= r->end)
+   if (steps > 32 * (int)d->config.channels || r->error || (extent && r->pos >= r->end))
       return RWMA_BAD_DATA;
-   r->pos = r->end - 1;
+   if (extent)
+      r->pos = r->end - 1;
+   else
+      (void)rwma_read(r, 1);
    d->more = rwma_read(r, 1);
+   if (r->error)
+      return RWMA_BAD_DATA;
    for (c = 0; c < (int)d->config.channels; c++)
    {
       unsigned i;
@@ -721,6 +730,8 @@ int rwma_create(rwma_t **out, const rwma_config *cfg)
    }
    /* 8N transform plan + N quantised spectrum + 1.5N output per channel. */
    floats = d->frame_length * 9 + d->frame_length * cfg->channels * 3 / 2;
+   if (cfg->codec == RWMA_PRO)
+      floats += d->frame_length * cfg->channels / 2;
    d->allocation = (float *)calloc(floats, sizeof(float));
    if (!d->allocation)
    {
@@ -729,7 +740,8 @@ int rwma_create(rwma_t **out, const rwma_config *cfg)
    }
    if (cfg->codec == RWMA_PRO)
    {
-      d->carry = (uint8_t *)calloc(1024 * 1024, 1);
+      d->carry_capacity = (size_t)cfg->block_align * 8 * 16;
+      d->carry = (uint8_t *)calloc((d->carry_capacity + 7) / 8, 1);
       if (!d->carry)
       {
          rwma_free(d);
@@ -745,6 +757,8 @@ int rwma_create(rwma_t **out, const rwma_config *cfg)
    d->spectrum = p;
    p += d->frame_length;
    rwma_mdct_init(&d->transform, p, d->frame_length);
+   if (cfg->codec == RWMA_PRO)
+      d->undo = d->allocation + floats - d->frame_length * cfg->channels / 2;
    for (c = 0; c <= 32; c++)
       d->sine[c] = (float)sin(c * RWMA_PI / 64);
    for (k = 0; k <= d->depth; k++)
@@ -853,7 +867,7 @@ static void pro_roll(rwma_t *d)
 }
 static int pro_save(rwma_t *d, rwma_reader *r, size_t count)
 {
-   return rwma_append(d->carry, &d->carry_bits, 8u * 1024 * 1024, r, count);
+   return rwma_append(d->carry, &d->carry_bits, d->carry_capacity, r, count);
 }
 static void pro_finish(rwma_t *d, rwma_reader *r, size_t *used)
 {
@@ -863,6 +877,29 @@ static void pro_finish(rwma_t *d, rwma_reader *r, size_t *used)
    d->in_packet = 0;
    d->packet = NULL;
    *used = d->config.block_align;
+}
+/* A clamped prefix has no end offset: retry only after restoring its overlap. */
+static int pro_open_frame(rwma_t *d, rwma_reader *reader, rwma_frame *out)
+{
+   int previous[8], status;
+   unsigned c;
+   size_t count = d->frame_length / 2;
+   for (c = 0; c < d->config.channels; c++)
+   {
+      memcpy(d->undo + c * count, d->lane[c].pcm, count * sizeof(float));
+      previous[c] = d->lane[c].previous;
+   }
+   status = pro_frame(d, reader, 0, out);
+   if (!status)
+      return RWMA_OK;
+   for (c = 0; c < d->config.channels; c++)
+   {
+      memcpy(d->lane[c].pcm, d->undo + c * count, count * sizeof(float));
+      d->lane[c].previous = previous[c];
+   }
+   d->pending = 0;
+   memset(out, 0, sizeof(*out));
+   return reader->error ? 1 : status;
 }
 int rwma_decode_packet(rwma_t *d, const uint8_t *data, size_t bytes, size_t *used,
                        rwma_frame *out)
@@ -893,31 +930,60 @@ int rwma_decode_packet(rwma_t *d, const uint8_t *data, size_t bytes, size_t *use
    r.error = 0;
    if (!d->in_packet)
    {
-      unsigned previous;
+      unsigned previous, available, continuation;
       (void)rwma_read(&r, 6);
       previous = rwma_read(&r, d->length_bits);
-      if (r.error || previous > r.end - r.pos)
+      if (r.error)
          goto invalid;
+      available = (unsigned)(r.end - r.pos);
+      continuation = RWMA_MIN(previous, available);
       d->packet = data;
       d->in_packet = 1;
-      d->packet_at = r.pos + previous;
+      d->packet_at = r.pos + continuation;
       if (previous && d->carry_bits)
       {
          rwma_reader joined;
          unsigned length;
-         if (pro_save(d, &r, previous))
+         if (pro_save(d, &r, continuation))
             goto invalid;
          joined.p = d->carry;
          joined.pos = 0;
          joined.end = d->carry_bits;
          joined.error = 0;
          length = rwma_read(&joined, d->length_bits);
-         if (length > d->carry_bits || length <= d->length_bits)
+         if (length <= d->length_bits)
             goto invalid;
          joined.pos = 0;
-         joined.end = length;
-         if (pro_frame(d, &joined, length, out))
-            goto invalid;
+         if (length == d->config.block_align * 8)
+         {
+            int status = pro_open_frame(d, &joined, out);
+            if (status < 0)
+               goto invalid;
+            if (status)
+            {
+               if (previous <= available)
+                  goto invalid;
+               d->in_packet = 0;
+               d->packet = NULL;
+               *used = d->config.block_align;
+               return RWMA_OK;
+            }
+         }
+         else
+         {
+            if (length > d->carry_bits)
+            {
+               if (previous <= available)
+                  goto invalid;
+               d->in_packet = 0;
+               d->packet = NULL;
+               *used = d->config.block_align;
+               return RWMA_OK;
+            }
+            joined.end = length;
+            if (pro_frame(d, &joined, length, out))
+               goto invalid;
+         }
          d->carry_bits = 0;
          if (d->drop_first)
          {
@@ -933,6 +999,13 @@ int rwma_decode_packet(rwma_t *d, const uint8_t *data, size_t bytes, size_t *use
       }
       else
          d->carry_bits = 0;
+      if (previous > available)
+      {
+         d->in_packet = 0;
+         d->packet = NULL;
+         *used = d->config.block_align;
+         return RWMA_OK;
+      }
    }
    for (step = 0; step < 256; step++)
    {
