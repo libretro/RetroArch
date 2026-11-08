@@ -5,7 +5,7 @@
 static unsigned failures, opens, closes, lives, submitted, exported, retired;
 static unsigned taken, cpu_frames, gpu_ticks, sink_busy, ready = 1, refuse;
 static unsigned stopped;
-static unsigned immediate;
+static unsigned immediate, output_stall;
 static uint64_t pcm_frames, pcm_nonzero;
 static video_hw_frame_t held;
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); failures++; } } while (0)
@@ -54,6 +54,8 @@ static int decode(void *owner, const uint8_t *packet, size_t size,
 static int output(void *owner, unsigned slot, video_hw_frame_t *out)
 {
    mock_t *m = (mock_t*)owner;
+   if (output_stall)
+      return 1;
    if (!immediate && !m->output_busy)
    {
       m->output_busy = 1;
@@ -291,6 +293,22 @@ static void check_private_prefetch(void)
    retro_run();
    CHECK(cpu_frames == decoded + 1 && media_player.vshown == 1);
    CHECK(media_player.webm_prefetched && media_player.hw_frame.image);
+   unload();
+   ready = 0;
+   if (!load()) return;
+   retro_run();
+   media_suspend_video_hw();
+   ready = 1;
+   output_stall = 1;
+   media_video_hw_ready();
+   retro_run();
+   CHECK(media_player.vshown == 2 && media_player.webm_hw_shown == 1);
+   CHECK(retro_serialize(before, sizeof(before)));
+   output_stall = 0;
+   media_prefetch_webm(&media_player);
+   CHECK(media_player.webm_prefetched && media_player.webm_hw_shown == 3);
+   CHECK(retro_serialize(after, sizeof(after)));
+   CHECK(!memcmp(before, after, sizeof(before)));
    unload();
    immediate = 0;
    pcm_frames = pcm_nonzero = 0;

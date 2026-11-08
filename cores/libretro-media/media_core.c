@@ -852,10 +852,17 @@ static void media_prefetch_webm(media_player_t *p)
       if (!skipped)
       {
          if (!rwebm_video_stream_hw_frame(p->webmvs, &p->hw_frame))
+         {
             p->eof = 1;
-         else
+            return;
+         }
+         if (p->webm_hw_shown > p->vshown)
+         {
             p->webm_prefetched = 1;
-         return;
+            return;
+         }
+         video_hw_frame_abandon(&p->hw_frame);
+         memset(&p->hw_frame, 0, sizeof(p->hw_frame));
       }
    } while (--budget && cpu_features_get_time_usec() - started < 4000);
 }
