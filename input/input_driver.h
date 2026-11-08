@@ -901,10 +901,13 @@ typedef struct
    uint32_t core_hold_gun[MAX_USERS];
    uint8_t  core_hold_pointer[MAX_USERS];
    bool core_hold_armed;
-   /* tested with core_hold_armed in the core's read */
+   /* the enabler's game buttons are withheld or forced (Tap Delay) */
    bool enabler_tap_active;
-   /* Tap Delay's idle_mask is set: also tested there */
+   /* Tap Delay's idle_mask is set */
    bool enabler_tap_idle;
+   /* Any of the three above: the one byte the core's read tests. Set
+    * with them by input_core_read_gate_set(). */
+   bool core_read_gate;
    /* any of cmd_buttons or cmd_analog is held */
    bool cmd_input;
    /* The same for what the run loop and the menu see - the RetroPad

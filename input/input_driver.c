@@ -164,6 +164,12 @@
 
 #define HOLD_BTN_DELAY_SEC 2
 
+static INLINE void input_core_read_gate_set(input_driver_state_t *st)
+{
+   st->core_read_gate = st->core_hold_armed | st->enabler_tap_active
+      | st->enabler_tap_idle;
+}
+
 /* Precomputed reciprocals used in analog input scaling.
  * 0x8000 = 32768 is the full int16 range (unsigned half),
  * 0x7fff = 32767 is the max positive int16 value. */
@@ -17555,6 +17561,7 @@ static void input_driver_hold_core_input(void)
       }
    }
    input_driver_st.core_hold_armed = true;
+   input_core_read_gate_set(&input_driver_st);
 }
 
 void input_driver_hold_held_input(void)
@@ -17577,6 +17584,7 @@ void input_driver_hold_clear(void)
          sizeof(input_driver_st.core_hold_pointer));
    input_driver_st.core_hold_armed = false;
    input_driver_st.held_bits_phase = 0;
+   input_core_read_gate_set(&input_driver_st);
 }
 
 /* A hotkey that changes the window - fullscreen, with F - fired again
@@ -19129,7 +19137,10 @@ void input_driver_poll(void)
          }
       }
       if (!any)
+      {
          input_st->core_hold_armed = false;
+         input_core_read_gate_set(input_st);
+      }
    }
 }
 
@@ -19459,8 +19470,7 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 
    /* buttons and keys held back since the menu closed, until let go;
     * and the enabler's game buttons (Hotkey Enable Tap Delay) */
-   if (     input_st->core_hold_armed | input_st->enabler_tap_active
-         |  input_st->enabler_tap_idle)
+   if (input_st->core_read_gate)
    {
       /* Tap Delay: a press of an idle enabler, polled after the hotkey
        * pass */
@@ -20206,6 +20216,7 @@ static void input_enabler_tap_idle(input_driver_state_t *input_st)
    input_enabler_tap.idle       = input_enabler_tap.idle_mask = 0;
    input_st->enabler_tap_active = false;
    input_st->enabler_tap_idle   = false;
+   input_core_read_gate_set(input_st);
 }
 
 /* The core's poll comes after the hotkey pass, so it has an enabler's
@@ -20371,6 +20382,7 @@ INPUT_NOINLINE static void input_enabler_tap_frame(
          | input_enabler_tap_sharers(
             input_enabler_tap.idle & ~(1U << hotkey_port))));
    input_st->enabler_tap_idle   = input_enabler_tap.idle_mask != 0;
+   input_core_read_gate_set(input_st);
 }
 
 void input_driver_collect_system_input(input_driver_state_t *input_st,
@@ -20767,6 +20779,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       input_enabler_tap.down = input_enabler_tap.hot = 0;
       input_enabler_tap.read = input_enabler_tap.idle_mask = 0;
       input_st->enabler_tap_idle = false;
+      input_core_read_gate_set(input_st);
       BIT256_CLEAR_ALL(input_enabler_tap.solo);
       if (input_enabler_tap.busy)
          input_enabler_tap_idle(input_st);
