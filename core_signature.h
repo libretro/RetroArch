@@ -296,6 +296,14 @@ bool core_mode_writable(const struct core_owner *who, unsigned long uid,
 bool core_mode_exempt(const struct core_owner *who, unsigned long self_uid,
       unsigned long uid, unsigned long gid, unsigned mode,
       bool read_only_mount);
+/* core_mode_exempt's platform rules: gid 0 is root's group (Linux,
+ * Android), and uid and gid 1000, Android's system, count as root */
+#define CORE_MODE_ROOT_GROUP  (1 << 0)
+#define CORE_MODE_SYSTEM_ROOT (1 << 1)
+/* core_mode_exempt with the rules given, for tests */
+bool core_mode_exempt_with(const struct core_owner *who,
+      unsigned long self_uid, unsigned long uid, unsigned long gid,
+      unsigned mode, bool read_only_mount, unsigned rules);
 
 /* RetroArch's own binary or library */
 struct core_self
@@ -306,11 +314,16 @@ struct core_self
 
 /* POSIX: false when unknown, and always on Windows */
 bool core_self_find(struct core_self *self);
+/* The part of RetroArch's library path to stat: the APK, for a library
+ * loaded from inside it (<apk>!/<path in it>, Android). 0 when not
+ * absolute. */
+size_t core_self_path_len(const char *path);
 /* The exemption, POSIX only (none on Windows): the file is on self->dev
  * (self NULL when unknown), and it and every folder up to / aren't
  * writable by us, are owned by root or RetroArch's owner, never the
  * overflow uid, and have no group write unless a sticky folder or, on
- * Linux and Android, gid 0; read-only mounts skip owner and group.
+ * Linux and Android, gid 0; on Android system (uid and gid 1000) counts
+ * as root. Read-only mounts skip owner and group.
  * Android: other apps' library folders are system's too, so
  * android_core_path_resolve must come first. */
 bool core_file_unwritable(core_file_t *f, const char *path,

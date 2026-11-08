@@ -506,8 +506,24 @@ bool core_self_find(struct core_self *self)
 #if defined(__linux__) && !defined(ANDROID)
    if (stat("/proc/self/exe", &st) != 0)
       return false;
+#elif defined(ANDROID)
+   /* /proc/self/exe is app_process: our own library, or the APK it was
+    * loaded from inside */
+   Dl_info info;
+   char *own;
+   size_t n;
+   bool ok;
+   if (     !dladdr((const void*)(uintptr_t)core_self_find, &info)
+         || !(n = core_self_path_len(info.dli_fname))
+         || !(own = (char*)malloc(n + 1)))
+      return false;
+   memcpy(own, info.dli_fname, n);
+   own[n] = '\0';
+   ok     = stat(own, &st) == 0;
+   free(own);
+   if (!ok)
+      return false;
 #else
-   /* Android's /proc/self/exe is app_process: find our own library */
    Dl_info info;
    if (     !dladdr((const void*)(uintptr_t)core_self_find, &info)
          || !info.dli_fname
@@ -522,10 +538,11 @@ bool core_self_find(struct core_self *self)
 }
 
 #ifndef _WIN32
-/* Off Linux, with no user namespaces to read, 65534 is only a fallback */
+/* Off Linux, with no user namespaces to read, and on Android, whose
+ * SELinux denies the read, 65534 is only a fallback */
 static unsigned long core_overflow_uid(void)
 {
-#ifdef __linux__
+#if defined(__linux__) && !defined(ANDROID)
    unsigned long uid = CORE_UID_UNKNOWN;
    FILE *fp          = fopen("/proc/sys/kernel/overflowuid", "r");
    if (fp)

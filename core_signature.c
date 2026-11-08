@@ -859,24 +859,48 @@ bool core_mode_writable(const struct core_owner *who, unsigned long uid,
    return false;
 }
 
-bool core_mode_exempt(const struct core_owner *who, unsigned long self_uid,
-      unsigned long uid, unsigned long gid, unsigned mode,
-      bool read_only_mount)
+bool core_mode_exempt_with(const struct core_owner *who,
+      unsigned long self_uid, unsigned long uid, unsigned long gid,
+      unsigned mode, bool read_only_mount, unsigned rules)
 {
    /* Its group can't rename or replace what it doesn't own */
    bool sticky_dir = (mode & 0171000) == 0041000;
    /* With no overflow uid known, RetroArch's owner may be it */
    bool self_known = who->overflow_uid != CORE_UID_UNKNOWN;
-#if defined(__linux__) || defined(ANDROID)
-   bool root_group = gid == 0;
-#else
-   /* gid 0 is wheel on macOS and the BSDs: admin users */
-   bool root_group = false;
-#endif
+   bool sys_root   = (rules & CORE_MODE_SYSTEM_ROOT) != 0;
+   bool root_owner = uid == 0 || (sys_root && uid == 1000);
+   bool root_group = ((rules & CORE_MODE_ROOT_GROUP) && gid == 0)
+      || (sys_root && gid == 1000);
    return !core_mode_writable(who, uid, gid, mode, read_only_mount)
-      && (read_only_mount || ((uid == 0 || (self_known && uid == self_uid))
+      && (read_only_mount || ((root_owner || (self_known && uid == self_uid))
             && uid != who->overflow_uid
             && (root_group || !(mode & 0020) || sticky_dir)));
+}
+
+bool core_mode_exempt(const struct core_owner *who, unsigned long self_uid,
+      unsigned long uid, unsigned long gid, unsigned mode,
+      bool read_only_mount)
+{
+#if defined(ANDROID)
+   unsigned rules = CORE_MODE_ROOT_GROUP | CORE_MODE_SYSTEM_ROOT;
+#elif defined(__linux__)
+   unsigned rules = CORE_MODE_ROOT_GROUP;
+#else
+   /* gid 0 is wheel on macOS and the BSDs: admin users */
+   unsigned rules = 0;
+#endif
+   return core_mode_exempt_with(who, self_uid, uid, gid, mode,
+         read_only_mount, rules);
+}
+
+size_t core_self_path_len(const char *path)
+{
+   const char *zip;
+   if (!path || path[0] != '/')
+      return 0;
+   if ((zip = strstr(path, "!/")))
+      return (size_t)(zip - path);
+   return strlen(path);
 }
 
 void core_check_finish(const core_trust_set_t *s,

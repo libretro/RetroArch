@@ -1713,6 +1713,80 @@ static void test_owner(void)
    CHECK( core_mode_exempt(&me, 1001, 1001, 1001, 0100644, true));
 }
 
+/* Android's system account (uid and gid 1000) counts as root: the Thor's
+ * folders on the way to nativeLibraryDir */
+static void test_owner_android(void)
+{
+   static const unsigned long groups[] = { 3003, 9997, 20234, 50234 };
+   const unsigned android = CORE_MODE_ROOT_GROUP | CORE_MODE_SYSTEM_ROOT;
+   const unsigned desktop = CORE_MODE_ROOT_GROUP;
+   struct core_owner app;
+   app.gids         = groups;
+   app.num_gids     = 4;
+   app.uid          = 10234;
+   app.overflow_uid = 65534;
+   /* / root:root 0755, read-only */
+   CHECK( core_mode_exempt_with(&app, 1000, 0, 0, 040755, true, android));
+   /* /data, /data/app, /data/user/0: system:system 0771 */
+   CHECK( core_mode_exempt_with(&app, 1000, 1000, 1000, 040771, false, android));
+   /* /data/app/~~X, <package>-Y: system:system 0775 */
+   CHECK( core_mode_exempt_with(&app, 1000, 1000, 1000, 040775, false, android));
+   /* lib folders 0755, base.apk 0644, a core 0755, /data/user 0711 */
+   CHECK( core_mode_exempt_with(&app, 1000, 1000, 1000, 040755, false, android));
+   CHECK( core_mode_exempt_with(&app, 1000, 1000, 1000, 0100644, false, android));
+   CHECK( core_mode_exempt_with(&app, 1000, 1000, 1000, 0100755, false, android));
+   CHECK( core_mode_exempt_with(&app, 1000, 1000, 1000, 040711, false, android));
+   /* Group write by system only with its rule */
+   CHECK(!core_mode_exempt_with(&app, 1000, 1000, 1000, 040775, false, desktop));
+   CHECK(!core_mode_exempt_with(&app, 1000, 1000, 1000, 040771, false, 0));
+   /* and root's group only with its own */
+   CHECK(!core_mode_exempt_with(&app, 1000, 0, 0, 040775, false,
+            CORE_MODE_SYSTEM_ROOT));
+   CHECK( core_mode_exempt_with(&app, 1000, 0, 0, 040775, false, android));
+   /* RetroArch's owner unknown (overflowuid unreadable): system's still
+    * pass, by the rule alone */
+   app.overflow_uid = CORE_UID_UNKNOWN;
+   CHECK( core_mode_exempt_with(&app, 1000, 1000, 1000, 040771, false, android));
+   CHECK(!core_mode_exempt_with(&app, 1000, 1000, 1000, 040755, false, desktop));
+   app.overflow_uid = 65534;
+   /* Not another app's, nor ours, nor another group's write, nor a
+    * world-writable one */
+   CHECK(!core_mode_exempt_with(&app, 1000, 10111, 10111, 0100644, false, android));
+   CHECK(!core_mode_exempt_with(&app, 1000, 10234, 10234, 040700, false, android));
+   CHECK(!core_mode_exempt_with(&app, 1000, 1000, 1001, 040775, false, android));
+   CHECK(!core_mode_exempt_with(&app, 1000, 1001, 1000, 040755, false, android));
+   CHECK(!core_mode_exempt_with(&app, 1000, 1000, 1000, 040777, false, android));
+   /* nor the overflow uid, even as 1000 */
+   app.overflow_uid = 1000;
+   CHECK(!core_mode_exempt_with(&app, 1000, 1000, 1000, 040755, false, android));
+#if !defined(ANDROID)
+   /* Elsewhere uid 1000 is a user's: its folders aren't root's */
+   app.uid          = 1001;
+   app.overflow_uid = 65534;
+   CHECK(!core_mode_exempt(&app, 1001, 1000, 1000, 040755, false));
+#endif
+}
+
+/* RetroArch's own library on Android: inside its APK, the APK */
+static void test_self_path(void)
+{
+   static const char apk[] =
+      "/data/app/~~Xy==/com.retroarch.aarch64-Zw==/base.apk";
+   static const char inside[] =
+      "/data/app/~~Xy==/com.retroarch.aarch64-Zw==/base.apk!/lib/arm64-v8a/libretroarch.so";
+   static const char extracted[] =
+      "/data/app/~~Xy==/com.retroarch.aarch64-Zw==/lib/arm64/libretroarch.so";
+   CHECK(core_self_path_len(inside) == sizeof(apk) - 1);
+   CHECK(core_self_path_len(extracted) == sizeof(extracted) - 1);
+   CHECK(core_self_path_len("/data/a!b/libretroarch.so")
+         == strlen("/data/a!b/libretroarch.so"));
+   CHECK(core_self_path_len("/x.apk!/a!/b.so") == strlen("/x.apk"));
+   CHECK(core_self_path_len("libretroarch.so") == 0);
+   CHECK(core_self_path_len("!/lib/libretroarch.so") == 0);
+   CHECK(core_self_path_len("") == 0);
+   CHECK(core_self_path_len(NULL) == 0);
+}
+
 static void test_check_finish(core_trust_t *t)
 {
    uint8_t core_sha[CORE_SHA256_LEN];
@@ -2049,6 +2123,8 @@ int main(int argc, char *argv[])
    test_store_device();
    test_self_device();
    test_owner();
+   test_owner_android();
+   test_self_path();
    test_check();
    test_self_find();
    clean();
