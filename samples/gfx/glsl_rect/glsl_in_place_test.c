@@ -53,6 +53,18 @@ static int fails;
    else { printf("  [FAIL] %s\n", what); fails++; } \
 } while (0)
 
+/* The rewritten pass against the copy, linearly filtered: equal but for
+ * a step either way, which glsl_rect.h allows a read landing on a texel
+ * edge (llvmpipe on LLVM 21 takes it for a hardware-ordered frame) */
+static bool same_linear(const uint8_t *a, const uint8_t *b, size_t n)
+{
+   size_t i;
+   for (i = 0; i < n; i++)
+      if (a[i] - b[i] > 1 || b[i] - a[i] > 1)
+         return false;
+   return true;
+}
+
 #define SHADER_HEAD \
    "#version 130\n" \
    "#if defined(VERTEX)\n" \
@@ -295,8 +307,8 @@ static void test_blur(void)
          && glsl->in_place.pass[0].prg.id == pass_id,
          "a view swaps the rewritten pass in");
    draw(glsl->prg[1].id, t_frame, 0, vw, vh, ow, oh, img_b);
-   CHECK(!memcmp(img_a, img_b, ow * oh * 4),
-         "drawn from the frame, byte for byte as from the copy");
+   CHECK(same_linear(img_a, img_b, ow * oh * 4),
+         "drawn from the frame as from the copy");
    gl_glsl_in_place_end(glsl);
    CHECK(!glsl->in_place.swapped && glsl->prg[1].id == pass_id,
          "and gives the pass back");
@@ -336,8 +348,8 @@ static void test_orig(void)
    begin(glsl);
    CHECK(glsl->prg[2].id != pass2, "a view swaps the second in too");
    draw(glsl->prg[2].id, t_prev, t_frame, vw, vh, ow, oh, img_b);
-   CHECK(!memcmp(img_a, img_b, ow * oh * 4),
-         "its original read from the frame, byte for byte as from the copy");
+   CHECK(same_linear(img_a, img_b, ow * oh * 4),
+         "its original read from the frame as from the copy");
    gl_glsl_in_place_end(glsl);
    CHECK(glsl->prg[2].id == pass2, "and gives it back");
 
@@ -370,8 +382,8 @@ static void test_unbound(void)
    draw(pass1, t_slot, 0, vw, vh, ow, oh, img_a);
    begin(glsl);
    draw(glsl->prg[1].id, t_frame, 0, vw, vh, ow, oh, img_b);
-   CHECK(!memcmp(img_a, img_b, ow * oh * 4),
-         "both names read from the frame, byte for byte as from the copy");
+   CHECK(same_linear(img_a, img_b, ow * oh * 4),
+         "both names read from the frame as from the copy");
    gl_glsl_in_place_end(glsl);
    glDeleteTextures(1, &t_slot);
    glDeleteTextures(1, &t_frame);

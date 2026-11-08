@@ -8,7 +8,10 @@
  * the CI runners), the oracle: each shader is drawn from a texture
  * holding just the view, as gl2's copy is, and rewritten from the whole
  * frame, software and hardware ordered, for every filter and wrap the
- * rewrite takes; the two images must match byte for byte. */
+ * rewrite takes; the two images must match byte for byte, but for one
+ * step either way under linear filtering, where glsl_rect.h says a read
+ * landing on a texel edge may weigh its texels one step apart (llvmpipe
+ * on LLVM 21 does for the blur shader's hardware-ordered frame). */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -518,7 +521,8 @@ static bool oracle_case(const char *version, const char *src,
          }
          printf("      %u bytes differ, by up to %u (%s)\n", n, worst,
                flipped ? "hardware order" : "software order");
-         same = false;
+         if (filter != GL_LINEAR || worst > 1)
+            same = false;
       }
       glDeleteTextures(1, &t_slot);
       glDeleteTextures(1, &t_frame);
@@ -606,7 +610,7 @@ static int test_oracle(EGLint client_version, const char *version,
             compiled = compiled && c;
          }
          snprintf(what_case, sizeof(what_case),
-               "%s shader, %s: in place matches the copy byte for byte",
+               "%s shader, %s: in place matches the copy",
                kinds[s], mode_names[m]);
          if (client_version < 3 && m == GLSL_RECT_NEAREST_REPEAT)
             continue;
