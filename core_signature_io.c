@@ -148,6 +148,13 @@ int64_t core_file_read(core_file_t *f, void *buf, size_t len)
 #endif
 }
 
+#ifndef _WIN32
+int core_file_fd(core_file_t *f)
+{
+   return f->fd;
+}
+#endif
+
 #ifdef _WIN32
 /* FILE_BASIC_INFO and FILE_ID_INFO, which older SDKs lack */
 struct core_file_basic_info

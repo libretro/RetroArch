@@ -101,6 +101,11 @@ void core_file_close(core_file_t *f);
 /* Bytes read, 0 at the end, -1 on error */
 int64_t core_file_read(core_file_t *f, void *buf, size_t len);
 bool core_file_identity(core_file_t *f, struct core_identity *id);
+#ifndef _WIN32
+/* The open file itself, for loading the core from it. It stays f's:
+ * close f, never it. */
+int core_file_fd(core_file_t *f);
+#endif
 
 /* <path>.sig, for free(); NULL when out of memory */
 char *core_sig_path(const char *path);

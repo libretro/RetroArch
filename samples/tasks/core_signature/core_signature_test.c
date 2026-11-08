@@ -9,6 +9,7 @@
 #include <string.h>
 
 #ifndef _WIN32
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -315,6 +316,37 @@ static void test_identity(void)
 #endif
    core_file_close(f);
 }
+
+#ifndef _WIN32
+/* The open file itself, for loading from it */
+static void test_file_fd(void)
+{
+   uint8_t buf[4];
+   struct core_identity id;
+   struct stat st;
+   uint64_t ino = 0;
+   core_file_t *f;
+   unsigned i;
+   int fd;
+   CHECK(filestream_write_file(tmp("native.so"), fx_core, FX_CORE_SIZE));
+   CHECK((f = core_file_open(tmp("native.so"))) != NULL);
+   if (!f)
+      return;
+   CHECK(core_file_identity(f, &id));
+   fd = core_file_fd(f);
+   CHECK(fd >= 0 && fstat(fd, &st) == 0);
+   for (i = 0; i < 8; i++)
+      ino = (ino << 8) | id.ino[8 + i];
+   CHECK((uint64_t)st.st_dev == id.dev && (uint64_t)st.st_ino == ino
+         && (uint64_t)st.st_size == FX_CORE_SIZE);
+   CHECK(read(fd, buf, sizeof(buf)) == (ssize_t)sizeof(buf));
+   CHECK(!memcmp(buf, fx_core, sizeof(buf)));
+   /* Closed with f */
+   core_file_close(f);
+   CHECK(fcntl(fd, F_GETFD) == -1);
+   filestream_delete(tmp("native.so"));
+}
+#endif
 
 static void check_of(struct core_check *c, const char *name,
       uint64_t file, uint8_t hash_byte, uint64_t build_time)
@@ -1933,7 +1965,8 @@ static void test_self_find(void)
 
 static void clean(void)
 {
-   static const char *const names[] = { "a.so", "b.so", "fifo", "fifo.bad",
+   static const char *const names[] = { "a.so", "b.so", "native.so",
+      "fifo", "fifo.bad",
       FX_NAME, FX_NAME ".sig", "copy_libretro.so", "core_trust",
       "core_trust.bad", "core_trust_dir",
       "core_trust_dir.bad", "locked/core_trust", "locked", "loop_a",
@@ -1998,6 +2031,9 @@ int main(int argc, char *argv[])
    test_sig();
    test_builtin_keys();
    test_identity();
+#ifndef _WIN32
+   test_file_fd();
+#endif
    test_trust();
    test_trust_newest_full();
    test_trust_newest_cap();
