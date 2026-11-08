@@ -1,5 +1,9 @@
 /* Copyright (C) 2026 The RetroArch team
  * SPDX-License-Identifier: GPL-3.0-or-later */
+#if defined(__linux__) && !defined(_XOPEN_SOURCE)
+/* symlink and lstat; strict C89 hides them */
+#define _XOPEN_SOURCE 700
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +11,7 @@
 #ifndef _WIN32
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #endif
 #ifdef __linux__
 #include <sys/vfs.h>
@@ -22,6 +27,7 @@
 
 #include "../../../core_signature.h"
 #include "../../../core_signing_keys.h"
+#include "../../../file_path_special.h"
 #include "core_signature_fixtures.h"
 
 /* Matches the .gitignore's samples/ patterns */
@@ -418,16 +424,16 @@ static void test_trust(void)
    CHECK(core_trust_flags(s0) == CORE_TRUST_SEEDED);
    core_trust_set_put(s0);
 
-   /* Any damage makes it unreadable */
+   /* Any damage is found */
    for (i = 0; i < len; i += 7)
    {
       buf[i] ^= 0x10;
-      CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_UNREADABLE);
+      CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_DAMAGED);
       buf[i] ^= 0x10;
    }
-   CHECK(core_trust_parse(u, buf, len - 1) == CORE_TRUST_LOAD_UNREADABLE);
+   CHECK(core_trust_parse(u, buf, len - 1) == CORE_TRUST_LOAD_DAMAGED);
    CHECK(core_trust_parse(u, buf, CORE_TRUST_FILE_MAX + 1)
-         == CORE_TRUST_LOAD_UNREADABLE);
+         == CORE_TRUST_LOAD_DAMAGED);
    free(buf);
 
    /* A record the parser would refuse is never stored */
@@ -478,20 +484,20 @@ static void test_trust(void)
    memcpy(more + 2, buf + 14, 4);
    memcpy(more + 6, buf + CORE_TRUST_HEAD_LEN, rec_len);
    CHECK(parse_spliced(u, buf, len, 12, 6, more, 6 + rec_len)
-         == CORE_TRUST_LOAD_UNREADABLE);
+         == CORE_TRUST_LOAD_DAMAGED);
    more[0] = CORE_ID_VERITY_MAX + 1;
    CHECK(parse_spliced(u, buf, len, CORE_TRUST_HEAD_LEN + 56, 1, more, 1)
-         == CORE_TRUST_LOAD_UNREADABLE);
+         == CORE_TRUST_LOAD_DAMAGED);
    /* An empty name, and one with a NUL */
    CHECK(parse_spliced(u, buf, len, name_at, 1 + buf[name_at], zero, 1)
-         == CORE_TRUST_LOAD_UNREADABLE);
+         == CORE_TRUST_LOAD_DAMAGED);
    CHECK(parse_spliced(u, buf, len, name_at + 1, 1, zero, 1)
-         == CORE_TRUST_LOAD_UNREADABLE);
+         == CORE_TRUST_LOAD_DAMAGED);
    /* A byte too many, and one too few */
    CHECK(parse_spliced(u, buf, len, len - CORE_SHA256_LEN, 0, zero, 1)
-         == CORE_TRUST_LOAD_UNREADABLE);
+         == CORE_TRUST_LOAD_DAMAGED);
    CHECK(parse_spliced(u, buf, len, len - CORE_SHA256_LEN - 1, 1, zero, 0)
-         == CORE_TRUST_LOAD_UNREADABLE);
+         == CORE_TRUST_LOAD_DAMAGED);
    free(buf);
 
    core_trust_free(t);
@@ -675,11 +681,590 @@ static void test_trust_threads(void)
    core_trust_free(t);
 }
 
+static bool file_is(const char *path, const void *data, size_t len)
+{
+   void *buf   = NULL;
+   int64_t got = 0;
+   bool same   = filestream_read_file(path, &buf, &got)
+      && got == (int64_t)len && !memcmp(buf, data, len);
+   free(buf);
+   return same;
+}
+
+/* core_trust_default_path's folder, here the test's own */
+bool fill_pathname_application_data(char *s, size_t len)
+{
+   strlcpy(s, TMP_DIR, len);
+   return true;
+}
+
+static const char junk[] = "not a trust store";
+
+static void test_trust_file_write(core_trust_t *t, core_trust_t *u)
+{
+   static const char junk2[] = "nor is this";
+   core_trust_set_t *s;
+   struct core_check c;
+   char path[256];
+   char bad[256];
+   core_trust_write_t *w;
+   uint8_t *buf;
+   size_t len;
+
+   CHECK(core_trust_default_path(path, sizeof(path)));
+   CHECK(string_ends_with(path, CORE_TRUST_FILE_NAME));
+   CHECK(strstr(path, TMP_DIR) == path);
+#ifdef _WIN32
+   CHECK(strstr(path, "RetroArch") != NULL);
+#endif
+   strlcpy(path, tmp("core_trust"), sizeof(path));
+   strlcpy(bad, tmp("core_trust.bad"), sizeof(bad));
+   CHECK(core_trust_load_file(t, path) == CORE_TRUST_LOAD_MISSING);
+   CHECK(core_trust_load_file(u, tmp("nowhere/core_trust"))
+         == CORE_TRUST_LOAD_MISSING);
+   CHECK(core_trust_set_device(t, &fx_dev, NULL));
+
+   /* Written whole, through a temporary, and read back */
+   check_of(&c, "a_libretro.so", 1, 0xaa, 100);
+   CHECK(core_trust_apply(t, &c));
+   CHECK(core_trust_set_flag(t, CORE_TRUST_SEEDED, true));
+   CHECK((w = core_trust_write_begin(t)) != NULL);
+   CHECK(core_trust_write_run(w, path));
+   CHECK((buf = core_trust_serialize(t, &len)) != NULL);
+   CHECK(file_is(path, buf, len));
+   free(buf);
+   CHECK(!core_trust_write_end(t, w, true));
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_OK);
+   s = core_trust_get(u);
+   CHECK(core_trust_flags(s) == CORE_TRUST_SEEDED);
+   CHECK(core_trust_has_identity(s, &c.rec.id, "a_libretro.so"));
+   core_trust_set_put(s);
+
+   /* One write at a time; a change meanwhile writes again after */
+   CHECK((w = core_trust_write_begin(t)) != NULL);
+   CHECK(core_trust_set_flag(t, CORE_TRUST_NOTICE_SHOWN, true));
+   CHECK(!core_trust_write_begin(t));
+   CHECK(core_trust_write_end(t, w, false));
+   CHECK((w = core_trust_write_begin(t)) != NULL);
+   CHECK(!core_trust_write_end(t, w, false));
+
+   /* A damaged file is set aside and the store begins again, seed
+    * and all */
+   CHECK(filestream_write_file(path, junk, sizeof(junk)));
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_RESET);
+   CHECK(file_is(bad, junk, sizeof(junk)));
+   CHECK(!path_is_valid(path));
+   s = core_trust_get(u);
+   CHECK(core_trust_flags(s) == 0);
+   CHECK(!core_trust_has_identity(s, &c.rec.id, "a_libretro.so"));
+   CHECK(core_trust_newest(s, nowhere, "a_libretro.so") == 0);
+   core_trust_set_put(s);
+   CHECK(core_trust_set_device(u, &fx_dev, NULL));
+   check_of(&c, "b_libretro.so", 2, 0xbb, 200);
+   CHECK(core_trust_apply(u, &c));
+   CHECK((w = core_trust_write_begin(u)) != NULL);
+   CHECK(core_trust_write_run(w, path));
+   CHECK(!core_trust_write_end(u, w, true));
+   CHECK(core_trust_load_file(t, path) == CORE_TRUST_LOAD_OK);
+   s = core_trust_get(t);
+   CHECK(core_trust_has_identity(s, &c.rec.id, "b_libretro.so"));
+   core_trust_set_put(s);
+
+   /* Damage alone leaves the store read-only, until set aside */
+   CHECK(core_trust_parse(u, (const uint8_t*)junk, sizeof(junk))
+         == CORE_TRUST_LOAD_DAMAGED);
+   if ((w = core_trust_write_begin(u)))
+   {
+      core_trust_write_end(u, w, false);
+      CHECK(!"a damaged store is writable");
+   }
+
+   /* An older .bad is replaced */
+   CHECK(filestream_write_file(path, junk2, sizeof(junk2)));
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_RESET);
+   CHECK(file_is(bad, junk2, sizeof(junk2)));
+}
+
+static void test_trust_file_kept(core_trust_t *t, core_trust_t *u)
+{
+   char path[256];
+   char bad[256];
+   core_trust_write_t *w;
+   uint8_t *big;
+   uint8_t *buf;
+   size_t len;
+
+   strlcpy(path, tmp("core_trust"), sizeof(path));
+   strlcpy(bad, tmp("core_trust.bad"), sizeof(bad));
+
+   /* Too big to be a store is damage too */
+   big = (uint8_t*)calloc(1, CORE_TRUST_FILE_MAX + 1);
+   CHECK(filestream_write_file(path, big, CORE_TRUST_FILE_MAX + 1));
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_RESET);
+   CHECK(file_is(bad, big, CORE_TRUST_FILE_MAX + 1));
+
+   /* A newer version's store, however big, is left for it */
+   CHECK((buf = core_trust_serialize(t, &len)) != NULL);
+   buf[sizeof(CORE_TRUST_MAGIC) - 2] = '2';
+   CHECK(filestream_write_file(path, buf, (int64_t)len));
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_UNREADABLE);
+   if ((w = core_trust_write_begin(u)))
+   {
+      core_trust_write_end(u, w, false);
+      CHECK(!"a newer store is writable");
+   }
+   CHECK(file_is(path, buf, len));
+   CHECK(file_is(bad, big, CORE_TRUST_FILE_MAX + 1));
+   buf[sizeof(CORE_TRUST_MAGIC) - 2] = '9';
+   CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_UNREADABLE);
+   buf[sizeof(CORE_TRUST_MAGIC) - 2] = ':';
+   CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_DAMAGED);
+   buf[sizeof(CORE_TRUST_MAGIC) - 2] = '0';
+   CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_DAMAGED);
+   free(buf);
+   memcpy(big, "RACTRST2", 8);
+   CHECK(filestream_write_file(path, big, CORE_TRUST_FILE_MAX + 1));
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_UNREADABLE);
+   CHECK(file_is(path, big, CORE_TRUST_FILE_MAX + 1));
+   free(big);
+
+   /* One that cannot be set aside is never written over */
+   CHECK(!filestream_delete(bad));
+   CHECK(path_mkdir(bad));
+   CHECK(filestream_write_file(path, junk, sizeof(junk)));
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_UNREADABLE);
+   if ((w = core_trust_write_begin(u)))
+   {
+      core_trust_write_end(u, w, false);
+      CHECK(!"wrote over a store not set aside");
+   }
+   CHECK(file_is(path, junk, sizeof(junk)));
+   CHECK(path_is_directory(bad));
+}
+
+static void test_trust_file_unreadable(void)
+{
+   core_trust_t *u;
+#ifndef _WIN32
+   char path[256];
+#endif
+   char dir[256];
+   core_trust_write_t *w;
+
+   /* Anything but a file is unreadable, and stays where it is */
+   strlcpy(dir, tmp("core_trust_dir"), sizeof(dir));
+   CHECK(path_mkdir(dir));
+   u = core_trust_new();
+   CHECK(core_trust_load_file(u, dir) == CORE_TRUST_LOAD_UNREADABLE);
+   if ((w = core_trust_write_begin(u)))
+   {
+      core_trust_write_end(u, w, false);
+      CHECK(!"an unreadable store is writable");
+   }
+   CHECK(path_is_directory(dir));
+   CHECK(!path_is_valid(tmp("core_trust_dir.bad")));
+#ifndef _WIN32
+   /* Refused without waiting for a writer */
+   CHECK(!mkfifo(tmp("fifo"), 0600));
+   CHECK(core_trust_load_file(u, tmp("fifo")) == CORE_TRUST_LOAD_UNREADABLE);
+   CHECK(!path_is_valid(tmp("fifo.bad")));
+   filestream_delete(tmp("fifo"));
+
+   /* Can't be looked at is not missing */
+   strlcpy(dir, tmp("locked"), sizeof(dir));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(path, dir, "core_trust", sizeof(path));
+   CHECK(filestream_write_file(path, junk, sizeof(junk)));
+   if (geteuid() == 0)
+      printf("note: running as root, unsearchable folder not checked\n");
+   else
+   {
+      core_trust_free(u);
+      u = core_trust_new();
+      CHECK(!chmod(dir, 0600));
+      CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_UNREADABLE);
+      CHECK(!chmod(dir, 0700));
+      if ((w = core_trust_write_begin(u)))
+      {
+         core_trust_write_end(u, w, false);
+         CHECK(!"an unsearchable store is writable");
+      }
+      CHECK(file_is(path, junk, sizeof(junk)));
+   }
+   {
+      struct stat st;
+      core_trust_free(u);
+      u = core_trust_new();
+      CHECK(!symlink("loop_b", tmp("loop_a")));
+      CHECK(!symlink("loop_a", tmp("loop_b")));
+      CHECK(core_trust_load_file(u, tmp("loop_a"))
+            == CORE_TRUST_LOAD_UNREADABLE);
+      if ((w = core_trust_write_begin(u)))
+      {
+         core_trust_write_end(u, w, false);
+         CHECK(!"a store behind a symlink loop is writable");
+      }
+      CHECK(!lstat(tmp("loop_a"), &st) && S_ISLNK(st.st_mode));
+      CHECK(!path_is_valid(tmp("loop_a.bad")));
+   }
+#endif
+
+   core_trust_free(u);
+}
+
+static void test_trust_file(void)
+{
+   core_trust_t *t = core_trust_new();
+   core_trust_t *u = core_trust_new();
+
+   test_trust_file_write(t, u);
+   test_trust_file_kept(t, u);
+   core_trust_free(u);
+   test_trust_file_unreadable();
+   core_trust_free(t);
+}
+
+static bool save(core_trust_t *t, const char *path)
+{
+   core_trust_write_t *w = core_trust_write_begin(t);
+   bool ok;
+   if (!w)
+      return false;
+   ok = core_trust_write_run(w, path);
+   core_trust_write_end(t, w, ok);
+   return ok;
+}
+
+static void test_trust_merge(void)
+{
+   core_trust_t *t = core_trust_new();
+   core_trust_t *a = core_trust_new();
+   core_trust_t *b = core_trust_new();
+   core_trust_t *v = core_trust_new();
+   core_trust_set_t *s;
+   struct core_check c;
+   uint8_t h[CORE_SHA256_LEN];
+   uint8_t *buf;
+   size_t len;
+   char path[256];
+   strlcpy(path, tmp("merge_trust"), sizeof(path));
+   /* B turns the check on while A, started with it off, runs on */
+   CHECK(core_trust_set_flag(t, CORE_TRUST_CHECK_OFF, true));
+   CHECK(core_trust_set_flag(t, CORE_TRUST_SEEDED, true));
+   CHECK(save(t, path));
+   CHECK(core_trust_load_file(a, path) == CORE_TRUST_LOAD_OK);
+   CHECK(core_trust_load_file(b, path) == CORE_TRUST_LOAD_OK);
+   CHECK(core_trust_set_device(a, &fx_dev, NULL));
+   CHECK(core_trust_set_device(b, &fx_dev, NULL));
+   CHECK(core_trust_set_flag(b, CORE_TRUST_CHECK_OFF, false));
+   CHECK(save(b, path));
+   check_of(&c, "a_libretro.so", 11, 0x11, 0);
+   CHECK(core_trust_apply(a, &c));
+   CHECK(save(a, path));
+   CHECK(core_trust_load_file(v, path) == CORE_TRUST_LOAD_OK);
+   s = core_trust_get(v);
+   CHECK(core_trust_flags(s) == CORE_TRUST_SEEDED);
+   CHECK(core_trust_has_identity(s, &c.rec.id, "a_libretro.so"));
+   core_trust_set_put(s);
+   core_trust_free(a);
+   core_trust_free(b);
+
+   /* The newest date is the larger, and trusted hashes are the union */
+   a = core_trust_new();
+   b = core_trust_new();
+   CHECK(core_trust_load_file(a, path) == CORE_TRUST_LOAD_OK);
+   CHECK(core_trust_load_file(b, path) == CORE_TRUST_LOAD_OK);
+   CHECK(core_trust_set_device(a, &fx_dev, NULL));
+   CHECK(core_trust_set_device(b, &fx_dev, NULL));
+   check_of(&c, "x_libretro.so", 21, 0x21, 200);
+   CHECK(core_trust_apply(a, &c));
+   CHECK(core_trust_always(a, &c));
+   check_of(&c, "x_libretro.so", 22, 0x22, 100);
+   CHECK(core_trust_apply(b, &c));
+   CHECK(core_trust_always(b, &c));
+   check_of(&c, "y_libretro.so", 23, 0x23, 50);
+   CHECK(core_trust_apply(b, &c));
+   CHECK(save(a, path));
+   CHECK(save(b, path));
+   CHECK(core_trust_load_file(v, path) == CORE_TRUST_LOAD_OK);
+   s = core_trust_get(v);
+   CHECK(core_trust_newest(s, nowhere, "x_libretro.so") == 200);
+   CHECK(core_trust_newest(s, nowhere, "y_libretro.so") == 50);
+   memset(h, 0x21, sizeof(h));
+   CHECK(core_trust_has_hash(s, h));
+   memset(h, 0x22, sizeof(h));
+   CHECK(core_trust_has_hash(s, h));
+   check_of(&c, "x_libretro.so", 21, 0x21, 200);
+   CHECK(core_trust_has_identity(s, &c.rec.id, "x_libretro.so"));
+   check_of(&c, "x_libretro.so", 22, 0x22, 100);
+   CHECK(core_trust_has_identity(s, &c.rec.id, "x_libretro.so"));
+   core_trust_set_put(s);
+   check_of(&c, "x_libretro.so", 24, 0x24, 300);
+   CHECK(core_trust_apply(a, &c));
+   CHECK(save(a, path));
+   CHECK(core_trust_load_file(v, path) == CORE_TRUST_LOAD_OK);
+   s = core_trust_get(v);
+   CHECK(core_trust_newest(s, nowhere, "x_libretro.so") == 300);
+   CHECK(core_trust_newest(s, nowhere, "y_libretro.so") == 50);
+   memset(h, 0x22, sizeof(h));
+   CHECK(core_trust_has_hash(s, h));
+   core_trust_set_put(s);
+
+   /* A newer version's file found at save time is left as it is */
+   CHECK((buf = core_trust_serialize(v, &len)) != NULL);
+   buf[sizeof(CORE_TRUST_MAGIC) - 2] = '2';
+   CHECK(filestream_write_file(path, buf, (int64_t)len));
+   CHECK(core_trust_set_flag(a, CORE_TRUST_NOTICE_SHOWN, true));
+   CHECK(!save(a, path));
+   CHECK(file_is(path, buf, len));
+   /* and what was not written goes with the next write */
+   buf[sizeof(CORE_TRUST_MAGIC) - 2] = '1';
+   CHECK(filestream_write_file(path, buf, (int64_t)len));
+   free(buf);
+   CHECK(save(a, path));
+   CHECK(core_trust_load_file(v, path) == CORE_TRUST_LOAD_OK);
+   s = core_trust_get(v);
+   CHECK(core_trust_flags(s)
+         == (CORE_TRUST_SEEDED | CORE_TRUST_NOTICE_SHOWN));
+   CHECK(core_trust_newest(s, nowhere, "y_libretro.so") == 50);
+   core_trust_set_put(s);
+
+   core_trust_free(t);
+   core_trust_free(a);
+   core_trust_free(b);
+   core_trust_free(v);
+}
+
+/* A save that finds no room on disk for a hash keeps it for the next */
+static void test_trust_merge_full(void)
+{
+   core_trust_t *a = core_trust_new();
+   core_trust_t *b = core_trust_new();
+   core_trust_t *v = core_trust_new();
+   core_trust_set_t *s;
+   struct core_check c;
+   char path[256];
+   unsigned i;
+   strlcpy(path, tmp("full_trust"), sizeof(path));
+   CHECK(save(a, path));
+   CHECK(core_trust_load_file(b, path) == CORE_TRUST_LOAD_OK);
+   /* A fills the trusted hashes and the newest list */
+   for (i = 0; i < CORE_TRUST_MAX_HASHES; i++)
+   {
+      check_of(&c, "a_libretro.so", 100 + i, 0xa0, 0);
+      c.rec.sha256[1] = (uint8_t)i;
+      CHECK(core_trust_always(a, &c));
+   }
+   for (i = 0; i < CORE_TRUST_MAX_NEWEST; i++)
+   {
+      check_of(&c, "a_libretro.so", 1, 0xa0, 1);
+      c.folder[0] = (uint8_t)(i + 1);
+      c.folder[1] = (uint8_t)((i + 1) >> 8);
+      c.record    = false;
+      CHECK(core_trust_apply(a, &c));
+   }
+   CHECK(save(a, path));
+   /* B's Always Trust finds no room; the rest of B is saved */
+   check_of(&c, "b_libretro.so", 2, 0xb0, 7);
+   CHECK(core_trust_apply(b, &c));
+   CHECK(core_trust_always(b, &c));
+   CHECK(core_trust_set_flag(b, CORE_TRUST_NOTICE_SHOWN, true));
+   CHECK(save(b, path));
+   CHECK(core_trust_load_file(v, path) == CORE_TRUST_LOAD_OK);
+   s = core_trust_get(v);
+   CHECK(core_trust_flags(s) == CORE_TRUST_NOTICE_SHOWN);
+   CHECK(!core_trust_has_hash(s, c.rec.sha256));
+   CHECK(core_trust_newest(s, nowhere, "b_libretro.so") == 7);
+   /* All as old: the lowest key made the room */
+   memset(c.folder, 0, sizeof(c.folder));
+   c.folder[1] = 1;
+   CHECK(core_trust_newest(s, c.folder, "a_libretro.so") == 0);
+   c.folder[0] = 1;
+   c.folder[1] = 0;
+   CHECK(core_trust_newest(s, c.folder, "a_libretro.so") == 1);
+   core_trust_set_put(s);
+   /* Another instance sets a damaged file aside: B's next save has room
+    * for the hash, and raises nothing it saved before */
+   CHECK(filestream_write_file(path, "junk", 4));
+   core_trust_free(a);
+   a = core_trust_new();
+   CHECK(core_trust_load_file(a, path) == CORE_TRUST_LOAD_RESET);
+   CHECK(save(a, path));
+   CHECK(core_trust_set_flag(b, CORE_TRUST_SEEDED, true));
+   CHECK(save(b, path));
+   CHECK(core_trust_load_file(v, path) == CORE_TRUST_LOAD_OK);
+   s = core_trust_get(v);
+   CHECK(core_trust_has_hash(s, c.rec.sha256));
+   CHECK(core_trust_newest(s, nowhere, "b_libretro.so") == 0);
+   core_trust_set_put(s);
+   core_trust_free(a);
+   core_trust_free(b);
+   core_trust_free(v);
+}
+
+/* Two instances at the cap: each save raises only its own, so neither
+ * brings back what the other's evicted */
+static void test_trust_merge_cap(void)
+{
+   core_trust_t *a = core_trust_new();
+   core_trust_t *b = core_trust_new();
+   core_trust_t *v = core_trust_new();
+   core_trust_set_t *s;
+   struct core_check c;
+   char path[256];
+   void *settled  = NULL;
+   int64_t len    = 0;
+   unsigned i, round, lost_a, lost_b;
+   strlcpy(path, tmp("cap_trust"), sizeof(path));
+   for (i = 0; i < CORE_TRUST_MAX_NEWEST; i++)
+   {
+      newest_of(&c, 0x800000UL + i, 0, 100 + i);
+      CHECK(core_trust_apply(a, &c));
+   }
+   CHECK(save(a, path));
+   CHECK(core_trust_load_file(b, path) == CORE_TRUST_LOAD_OK);
+   for (i = 0; i < 50; i++)
+   {
+      newest_of(&c, 0x200000UL + i, 0, 500);
+      CHECK(core_trust_apply(a, &c));
+      newest_of(&c, 0x300000UL + i, 0, 600);
+      CHECK(core_trust_apply(b, &c));
+   }
+   for (round = 0; round < 4; round++)
+   {
+      CHECK(save((round & 1) ? b : a, path));
+      CHECK(core_trust_load_file(v, path) == CORE_TRUST_LOAD_OK);
+      s = core_trust_get(v);
+      for (i = lost_a = lost_b = 0; i < 50; i++)
+      {
+         lost_a += newest_is(s, 0x200000UL + i, 0) != 500;
+         lost_b += newest_is(s, 0x300000UL + i, 0) != 600;
+      }
+      core_trust_set_put(s);
+      CHECK(lost_a == 0);
+      CHECK(lost_b == (round ? 0 : 50));
+      /* Saves with nothing new of their own change nothing */
+      if (round == 1)
+         CHECK(filestream_read_file(path, &settled, &len));
+      else if (round > 1)
+         CHECK(settled && file_is(path, settled, (size_t)len));
+   }
+   free(settled);
+   core_trust_free(a);
+   core_trust_free(b);
+   core_trust_free(v);
+}
+
+static int RETRO_CALLCONV refuse_rename(const char *old_path,
+      const char *new_path)
+{
+   (void)old_path;
+   (void)new_path;
+   return -1;
+}
+
+static void test_trust_temp(void)
+{
+   static struct retro_vfs_interface iface;
+   struct retro_vfs_interface_info info;
+   core_trust_t *a = core_trust_new();
+   core_trust_t *b = core_trust_new();
+   core_trust_t *v = core_trust_new();
+   struct core_check c;
+   char dir[256];
+   char path[256];
+   char other[256];
+   char name[256];
+   void *old       = NULL;
+   int64_t old_len = 0;
+   uint8_t *buf;
+   size_t len;
+   RFILE *file;
+
+   CHECK(core_trust_temp_name(other, sizeof(other), "x", 1, 5));
+   CHECK(core_trust_temp_name(name, sizeof(name), "x", 2, 5));
+   CHECK(strcmp(other, name) != 0);
+   CHECK(core_trust_temp_name(name, sizeof(name), "x", 1, 6));
+   CHECK(strcmp(other, name) != 0);
+   CHECK(strcmp(other, "x.tmp") != 0 && string_starts_with(other, "x."));
+   CHECK(!core_trust_temp_name(name, 4, "x", 1, 5));
+
+   strlcpy(dir, tmp("race"), sizeof(dir));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(path, dir, "core_trust", sizeof(path));
+   CHECK(core_trust_set_flag(a, CORE_TRUST_SEEDED, true));
+   CHECK(save(a, path));
+   CHECK(core_trust_load_file(b, path) == CORE_TRUST_LOAD_OK);
+   check_of(&c, "a_libretro.so", 31, 0x31, 100);
+   CHECK(core_trust_apply(a, &c));
+   check_of(&c, "b_libretro.so", 32, 0x32, 200);
+   CHECK(core_trust_apply(b, &c));
+
+   /* B, another process, has all but its last byte in its temporary
+    * when A saves; then B's rename lands */
+   CHECK(core_trust_temp_name(other, sizeof(other), path, 0, 0));
+   CHECK((buf = core_trust_serialize(b, &len)) != NULL);
+   CHECK((file = filestream_open(other, RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE)) != NULL);
+   if (file)
+   {
+      CHECK(filestream_write(file, buf, (int64_t)len - 1)
+            == (int64_t)len - 1);
+      CHECK(!filestream_flush(file));
+      CHECK(save(a, path));
+      CHECK(filestream_write(file, buf + len - 1, 1) == 1);
+      CHECK(!filestream_close(file));
+   }
+   CHECK(!filestream_rename(other, path));
+   CHECK(core_trust_load_file(v, path) == CORE_TRUST_LOAD_OK);
+   CHECK(file_is(path, buf, len));
+   free(buf);
+
+   /* Not the shared name: a folder there doesn't stop a save */
+   fill_pathname_join_special(name, dir, "core_trust.tmp", sizeof(name));
+   CHECK(path_mkdir(name));
+   CHECK(save(a, path));
+   CHECK(path_is_directory(name));
+   CHECK(path_rmdir(name));
+
+   /* A failed write takes its temporary with it, and only that */
+   CHECK(filestream_read_file(path, &old, &old_len));
+   CHECK(core_trust_set_flag(a, CORE_TRUST_NOTICE_SHOWN, true));
+   iface.rename                    = refuse_rename;
+   info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
+   info.iface                      = &iface;
+   filestream_vfs_init(&info);
+   CHECK(!save(a, path));
+   info.iface = NULL;
+   filestream_vfs_init(&info);
+   CHECK(file_is(path, old, (size_t)old_len));
+   free(old);
+   /* Nothing is left beside the store */
+   CHECK(!filestream_delete(path));
+   CHECK(path_rmdir(dir));
+
+   core_trust_free(a);
+   core_trust_free(b);
+   core_trust_free(v);
+}
+
 static void clean(void)
 {
-   static const char *const names[] = { "a.so", "b.so", "fifo", FX_NAME,
-      FX_NAME ".sig", "copy_libretro.so", "core_trust", "core_trust.tmp" };
+   static const char *const names[] = { "a.so", "b.so", "fifo", "fifo.bad",
+      FX_NAME, FX_NAME ".sig", "copy_libretro.so", "core_trust",
+      "core_trust.bad", "core_trust_dir",
+      "core_trust_dir.bad", "locked/core_trust", "locked", "loop_a",
+      "loop_b", "merge_trust", "merge_trust.tmp",
+      "race/core_trust", "race/core_trust.bad", "race/core_trust.tmp",
+      "race", "full_trust", "full_trust.bad", "cap_trust" };
+   char other[256];
    size_t i;
+#ifndef _WIN32
+   chmod(tmp("locked"), 0700);
+#endif
+   if (core_trust_temp_name(other, sizeof(other), tmp("race/core_trust"),
+            0, 0))
+      filestream_delete(other);
    for (i = 0; i < sizeof(names) / sizeof(names[0]); i++)
       filestream_delete(tmp(names[i]));
    path_rmdir(tmp("RetroArch"));
@@ -703,6 +1288,11 @@ int main(void)
    test_trust_newest_full();
    test_trust_newest_cap();
    test_trust_threads();
+   test_trust_file();
+   test_trust_merge();
+   test_trust_merge_full();
+   test_trust_merge_cap();
+   test_trust_temp();
    clean();
    free(fx_core);
    printf("%u checks, %u failures\n", checks, failures);

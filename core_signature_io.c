@@ -5,6 +5,7 @@
 #define _XOPEN_SOURCE 700
 #endif
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,13 +28,23 @@
 #endif
 #endif
 
+#include <compat/strl.h>
 #include <encodings/utf.h>
+#include <features/features_cpu.h>
 #include <file/file_path.h>
 #include <lrc_hash.h>
+#include <streams/file_stream.h>
+#include <string/stdstring.h>
 
 #include "core_signature.h"
+#include "file_path_special.h"
+#ifdef ANDROID
+#include "frontend/drivers/platform_unix.h"
+#endif
 
 #define CORE_HASH_CHUNK (64 * 1024)
+/* .<pid>.<stamp>.tmp, 64-bit numbers */
+#define CORE_TRUST_TEMP_TAIL 48
 
 struct core_file
 {
@@ -262,4 +273,214 @@ void core_hash_free(struct core_hash *h)
 {
    free(h->buf);
    h->buf = NULL;
+}
+
+/* 1 a file, 0 missing, -1 anything else: what can't be looked at, a
+ * directory, or a FIFO, whose open would wait for a writer */
+static int core_trust_file_kind(const char *path)
+{
+#ifdef _WIN32
+   DWORD attr, err;
+#ifdef LEGACY_WIN32
+   attr = GetFileAttributesA(path);
+   err  = GetLastError();
+#else
+   wchar_t *wpath = utf8_to_utf16_string_alloc(path);
+   if (!wpath)
+      return -1;
+   attr = GetFileAttributesW(wpath);
+   err  = GetLastError();
+   free(wpath);
+#endif
+   if (attr == INVALID_FILE_ATTRIBUTES)
+      return (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND)
+         ? 0 : -1;
+   return (attr & FILE_ATTRIBUTE_DIRECTORY) ? -1 : 1;
+#else
+   struct stat st;
+   if (stat(path, &st) != 0)
+      return errno == ENOENT ? 0 : -1;
+   return S_ISREG(st.st_mode) ? 1 : -1;
+#endif
+}
+
+/* The device of the folder holding path; Windows has no records */
+static bool core_trust_folder_dev(const char *path, uint64_t *dev)
+{
+#ifdef _WIN32
+   return false;
+#else
+   struct stat st;
+   size_t n  = (size_t)(path_basename_nocompression(path) - path);
+   char *dir = (char*)malloc(n + 2);
+   bool ok;
+   if (!dir)
+      return false;
+   memcpy(dir, path, n);
+   if (!n)
+      dir[n++] = '.';
+   dir[n] = '\0';
+   if ((ok = stat(dir, &st) == 0))
+      *dev = (uint64_t)st.st_dev;
+   free(dir);
+   return ok;
+#endif
+}
+
+enum core_trust_load core_trust_load_file(core_trust_t *t,
+      const char *path)
+{
+   void *buf    = NULL;
+   int64_t len  = 0;
+   bool renamed = false;
+   uint64_t dev;
+   int64_t size;
+   size_t n;
+   char *bad;
+   enum core_trust_load ret;
+   int kind;
+   core_trust_set_device(t, core_trust_folder_dev(path, &dev) ? &dev : NULL,
+         NULL);
+   if (!(kind = core_trust_file_kind(path)))
+      return CORE_TRUST_LOAD_MISSING;
+   /* core_trust_parse(t, NULL, 0) is UNREADABLE and read-only */
+   if (kind < 0 || (size = path_get_size(path)) < 0)
+      return core_trust_parse(t, NULL, 0);
+   if (size > CORE_TRUST_FILE_MAX)
+   {
+      /* Too big for ours: only its magic, which may say a newer one's */
+      uint8_t head[sizeof(CORE_TRUST_MAGIC) - 1];
+      int64_t got = -1;
+      RFILE *file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (file)
+      {
+         got = filestream_read(file, head, sizeof(head));
+         filestream_close(file);
+      }
+      if (got != (int64_t)sizeof(head))
+         return core_trust_parse(t, NULL, 0);
+      ret = core_trust_parse(t, head, sizeof(head));
+   }
+   else
+   {
+      if (!filestream_read_file(path, &buf, &len))
+      {
+         free(buf);
+         return core_trust_parse(t, NULL, 0);
+      }
+      ret = core_trust_parse(t, (const uint8_t*)buf, (size_t)len);
+      free(buf);
+   }
+   if (ret != CORE_TRUST_LOAD_DAMAGED)
+      return ret;
+   /* Set aside over any older .bad; what can't be is never written over */
+   n = strlen(path) + sizeof(".bad");
+   if ((bad = (char*)malloc(n)))
+   {
+      strlcpy(bad, path, n);
+      strlcat(bad, ".bad", n);
+      renamed = filestream_rename(path, bad) == 0;
+      free(bad);
+   }
+   if (!renamed || !core_trust_reset(t))
+      return core_trust_parse(t, NULL, 0);
+   return CORE_TRUST_LOAD_RESET;
+}
+
+bool core_trust_temp_name(char *s, size_t len, const char *path,
+      unsigned long pid, unsigned long stamp)
+{
+   char tail[CORE_TRUST_TEMP_TAIL];
+   snprintf(tail, sizeof(tail), ".%lu.%lx.tmp", pid, stamp);
+   strlcpy(s, path, len);
+   return strlcat(s, tail, len) < len;
+}
+
+/* As filestream_write_file_atomic, through a temporary of our own */
+static bool core_trust_save(const char *path, const uint8_t *buf,
+      size_t len)
+{
+   RFILE *file;
+   bool ok;
+   size_t n   = strlen(path) + CORE_TRUST_TEMP_TAIL;
+   char *temp = (char*)malloc(n);
+#ifdef _WIN32
+   unsigned long pid = (unsigned long)GetCurrentProcessId();
+#else
+   unsigned long pid = (unsigned long)getpid();
+#endif
+   if (     !temp
+         || !core_trust_temp_name(temp, n, path, pid,
+            (unsigned long)cpu_features_get_time_usec())
+         || !(file = filestream_open(temp, RETRO_VFS_FILE_ACCESS_WRITE,
+            RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
+   {
+      free(temp);
+      return false;
+   }
+   ok = filestream_write(file, buf, (int64_t)len) == (int64_t)len;
+   /* A full disk can show only at close */
+   if (filestream_close(file) != 0)
+      ok = false;
+   if (!ok || filestream_rename(temp, path) != 0)
+   {
+      filestream_delete(temp);
+      ok = false;
+   }
+   free(temp);
+   return ok;
+}
+
+bool core_trust_write_run(core_trust_write_t *w, const char *path)
+{
+   core_trust_t *disk = core_trust_new();
+   uint8_t *buf       = NULL;
+   bool ok            = false;
+   size_t len         = 0;
+   if (!disk)
+      return false;
+   switch (core_trust_load_file(disk, path))
+   {
+      case CORE_TRUST_LOAD_OK:
+         buf = core_trust_write_bytes(w, disk, &len);
+         break;
+      /* Gone, or damaged and now set aside: this store whole */
+      case CORE_TRUST_LOAD_MISSING:
+      case CORE_TRUST_LOAD_RESET:
+         buf = core_trust_write_bytes(w, NULL, &len);
+         break;
+      default:
+         break;
+   }
+   if (buf)
+      ok = core_trust_save(path, buf, len);
+   free(buf);
+   core_trust_free(disk);
+   return ok;
+}
+
+bool core_trust_default_path(char *s, size_t len)
+{
+#ifdef ANDROID
+   if (     !g_android
+         || !g_android->activity
+         || string_is_empty(g_android->activity->internalDataPath))
+      return false;
+   fill_pathname_join_special(s, g_android->activity->internalDataPath,
+         CORE_TRUST_FILE_NAME, len);
+   return true;
+#else
+   if (!fill_pathname_application_data(s, len))
+      return false;
+#ifdef _WIN32
+   /* That is %APPDATA% itself, shared with every program */
+   fill_pathname_slash(s, len);
+   strlcat(s, "RetroArch", len);
+#endif
+   path_mkdir(s);
+   fill_pathname_slash(s, len);
+   strlcat(s, CORE_TRUST_FILE_NAME, len);
+   return true;
+#endif
 }
