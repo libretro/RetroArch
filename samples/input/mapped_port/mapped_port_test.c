@@ -364,6 +364,31 @@ static void t_reset(void)
 }
 
 /* User @user on core port @port (MAX_USERS: None). */
+/* After every poll: the join it kept is the one it would make now.
+ * The poll makes it again only when something it is made from moved;
+ * a change that does not say so leaves a stale one, and fails here. */
+static void t_join_check(void)
+{
+   unsigned u;
+   unsigned max_users = settings.uints.input_max_users;
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   for (u = 0; u < max_users; u++)
+   {
+      unsigned player = input_config_user_player(u);
+      CHECK(input_remapping_join_user(u)
+            == ((player != u) ? player : MAX_USERS),
+            "the poll kept a stale join");
+   }
+}
+
+static void t_driver_poll(void)
+{
+   input_driver_poll();
+   t_join_check();
+}
+#define input_driver_poll() t_driver_poll()
+
 static void t_map(unsigned user, unsigned port)
 {
    settings.uints.input_remap_ports[user] = port;

@@ -10842,6 +10842,10 @@ void input_autoconf_binds_none(unsigned port)
    }
 }
 
+/* Plays As: moves on whenever an entry's controller or player, or a
+ * controller's name, may have */
+static unsigned input_plays_as_gen;
+
 /* Every connected controller is forgotten: its names and numbers, and
  * what its profile gave. They come back when the joypad driver next
  * starts and finds them again - so this is for a start, or for a reset
@@ -10852,6 +10856,7 @@ void input_config_forget_controllers(void)
    unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
 
+   input_plays_as_gen++;
    for (i = 0; i < MAX_USERS; i++)
    {
       /* Note: Don't use input_config_clear_device_name()
@@ -11009,8 +11014,6 @@ static uint8_t input_plays_as_claim[MAX_INPUT_DEVICES];
 /* by slot: the player Auto gives its controller, set as it connects:
  * 1 for the headset's that no reservation names, else 0 */
 static uint8_t input_plays_as_auto[MAX_INPUT_DEVICES];
-/* moves on whenever an entry's controller or player may have */
-static unsigned input_plays_as_gen;
 /* by slot: for an Auto controller placed to share with the user whose
  * reservation names it, that user and one, kept while it stays
  * connected; 0 for none */
@@ -11203,6 +11206,7 @@ static void input_plays_as_take(unsigned slot, uint32_t skip)
 
    if (had && input_plays_as_names_slot(had - 1, slot))
       return;
+   input_plays_as_gen++;
    input_plays_as_claim[slot]    = 0;
    if (!*d->name)
       return;
@@ -11260,6 +11264,7 @@ static void input_plays_as_reclaim(void)
    unsigned s;
    uint8_t had[MAX_INPUT_DEVICES];
    memcpy(had, input_plays_as_claim, sizeof(had));
+   input_plays_as_gen++;
    memset(input_plays_as_claim, 0, sizeof(input_plays_as_claim));
    for (s = 0; s < MAX_INPUT_DEVICES; s++)
       if (had[s] && input_plays_as_names_slot(had[s] - 1, s))
@@ -11270,6 +11275,7 @@ static void input_plays_as_reclaim(void)
 static void input_plays_as_drop(unsigned e)
 {
    unsigned s;
+   input_plays_as_gen++;
    input_plays_as[e].device[0] = '\0';
    input_plays_as[e].player    = 0;
    input_plays_as[e].own_hot   = false;
@@ -11558,6 +11564,7 @@ void input_config_plays_as_set_entry(unsigned e, unsigned player)
 
 static void input_plays_as_let_go(unsigned slot)
 {
+   input_plays_as_gen++;
    input_plays_as_claim[slot]  = 0;
    input_plays_as_auto[slot]   = 0;
    input_plays_as_shares[slot] = 0;
@@ -12414,6 +12421,7 @@ bool input_config_plays_as_place(unsigned slot, bool connect)
    input_plays_as_placed_max_users = max_users;
    if (connect)
       input_plays_as_take(slot, 0);
+   input_plays_as_gen++;
    /* the headset's Auto is player 1's, unless a reservation names it */
    input_plays_as_auto[slot]   = (uint8_t)(input_plays_as_headset_slot(slot)
          && !input_plays_as_reserved(settings, slot));
@@ -12580,6 +12588,32 @@ static unsigned input_join_of(const settings_t *settings, unsigned u,
    return (player != u + 1) ? player : 0;
 }
 
+/* What the poll last made the join from. */
+static struct
+{
+   unsigned gen;
+   unsigned max_users;
+   unsigned slot[MAX_USERS];
+} input_join_from = { (unsigned)-1 };
+
+/* Whether anything the join is made from moved since the poll last made
+ * it: Plays As and the controllers' names (input_plays_as_gen), Max
+ * Users or a user's Device Index. Notes it as made. */
+static bool input_join_stale(const settings_t *settings)
+{
+   if (     input_join_from.gen       == input_plays_as_gen
+         && input_join_from.max_users == settings->uints.input_max_users
+         && !memcmp(input_join_from.slot,
+            settings->uints.input_joypad_index,
+            sizeof(input_join_from.slot)))
+      return false;
+   input_join_from.gen       = input_plays_as_gen;
+   input_join_from.max_users = settings->uints.input_max_users;
+   memcpy(input_join_from.slot, settings->uints.input_joypad_index,
+         sizeof(input_join_from.slot));
+   return true;
+}
+
 /* What input_join_to is to hold now, into @join. */
 static void input_join_make(const settings_t *settings, uint8_t *join)
 {
@@ -12673,6 +12707,7 @@ input_plays_as_copy_t *input_plays_as_copy_new(void)
 
 void input_plays_as_copy_restore(const input_plays_as_copy_t *copy)
 {
+   input_plays_as_gen++;
    memcpy(input_plays_as, copy->entries, sizeof(input_plays_as));
    memcpy(input_plays_as_claim, copy->claim, sizeof(input_plays_as_claim));
    memcpy(input_plays_as_unplugged, copy->unplugged,
@@ -12963,6 +12998,7 @@ void input_config_set_device_name(unsigned port, const char *name)
 
    strlcpy(input_st->input_device_info[port].name, name,
          sizeof(input_st->input_device_info[port].name));
+   input_plays_as_gen++;
    /* another controller: what its triggers rest at is learned anew */
    if (port < MAX_USERS)
    {
@@ -13112,6 +13148,7 @@ void input_config_clear_device_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
    input_st->input_device_info[port].name[0] = '\0';
+   input_plays_as_gen++;
    input_config_reindex_device_names(input_st);
 }
 
@@ -18321,6 +18358,7 @@ void input_driver_poll(void)
          settings->bools.video_openxr_touch_passthrough,
          input_axis_threshold);
 #endif
+   if (input_join_stale(settings))
    {
       uint8_t join[MAX_USERS];
       input_join_make(settings, join);
