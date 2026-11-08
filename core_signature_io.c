@@ -23,6 +23,7 @@
 #include <dlfcn.h>
 #endif
 #if defined(__linux__)
+#include <sys/ioctl.h>
 #include <sys/vfs.h>
 #define CORE_FS_MAGIC
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) \
@@ -289,6 +290,95 @@ void core_hash_free(struct core_hash *h)
 {
    free(h->buf);
    h->buf = NULL;
+}
+
+#ifdef __linux__
+/* <linux/fsverity.h>'s, which older NDKs lack */
+struct core_verity_enable
+{
+   uint32_t version;
+   uint32_t hash_algorithm;
+   uint32_t block_size;
+   uint32_t salt_size;
+   uint64_t salt_ptr;
+   uint32_t sig_size;
+   uint32_t reserved1;
+   uint64_t sig_ptr;
+   uint64_t reserved2[11];
+};
+
+struct core_verity_head
+{
+   uint16_t algorithm;
+   uint16_t size;
+};
+
+struct core_verity_digest
+{
+   struct core_verity_head head;
+   uint8_t digest[CORE_ID_VERITY_MAX];
+};
+
+/* The ioctl numbers carry these sizes */
+typedef char core_verity_enable_size[
+      sizeof(struct core_verity_enable) == 128 ? 1 : -1];
+typedef char core_verity_head_size[
+      sizeof(struct core_verity_head) == 4 ? 1 : -1];
+
+#define CORE_VERITY_SHA256         1
+#define CORE_FS_IOC_ENABLE_VERITY  _IOW('f', 133, struct core_verity_enable)
+#define CORE_FS_IOC_MEASURE_VERITY _IOWR('f', 134, struct core_verity_head)
+#endif
+
+bool core_file_verity_measure(core_file_t *f, struct core_identity *id)
+{
+#ifdef __linux__
+   struct core_verity_digest d;
+   memset(&d, 0, sizeof(d));
+   d.head.size = CORE_ID_VERITY_MAX;
+   if (     ioctl(f->fd, CORE_FS_IOC_MEASURE_VERITY, &d) != 0
+         || !d.head.size
+         || d.head.size > CORE_ID_VERITY_MAX)
+      return false;
+   memcpy(id->verity, d.digest, d.head.size);
+   id->verity_len = (uint8_t)d.head.size;
+   return true;
+#else
+   (void)f;
+   (void)id;
+   return false;
+#endif
+}
+
+int core_file_verity_enable(core_file_t *f)
+{
+#ifdef __linux__
+   struct core_verity_enable arg;
+   memset(&arg, 0, sizeof(arg));
+   arg.version        = 1;
+   arg.hash_algorithm = CORE_VERITY_SHA256;
+   arg.block_size     = 4096;
+   if (ioctl(f->fd, CORE_FS_IOC_ENABLE_VERITY, &arg) == 0 || errno == EEXIST)
+      return 1;
+   switch (errno)
+   {
+      /* Not this filesystem, mount or kernel, not ours (Play's
+       * nativeLibraryDir), or open for writing somewhere */
+      case EOPNOTSUPP:
+      case ENOTTY:
+      case EROFS:
+      case EACCES:
+      case EPERM:
+      case ETXTBSY:
+         return 0;
+      default:
+         break;
+   }
+   return -1;
+#else
+   (void)f;
+   return 0;
+#endif
 }
 
 /* 1 a file, 0 missing, -1 anything else: what can't be looked at, a
@@ -817,6 +907,9 @@ bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
       c->result = CORE_CHECK_ERROR;
       return true;
    }
+   /* A record with an fs-verity digest holds only with the kernel's */
+   if (core_check_wants_verity(s, c))
+      core_file_verity_measure(f, &c->rec.id);
    return core_check_record(s, c)
       || core_file_unwritable(f, path,
             core_self_find(&self) ? &self : NULL)

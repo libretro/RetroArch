@@ -114,7 +114,8 @@ enum core_check_result core_sig_verify(const struct core_sig *sig,
    return CORE_CHECK_MODIFIED;
 }
 
-bool core_identity_equal(const struct core_identity *a,
+/* Every field but the fs-verity digest */
+static bool core_identity_same_file(const struct core_identity *a,
       const struct core_identity *b)
 {
    return   a->dev        == b->dev
@@ -123,9 +124,15 @@ bool core_identity_equal(const struct core_identity *a,
          && a->mtime_nsec == b->mtime_nsec
          && a->ctime      == b->ctime
          && a->ctime_nsec == b->ctime_nsec
+         && !memcmp(a->ino, b->ino, sizeof(a->ino));
+}
+
+bool core_identity_equal(const struct core_identity *a,
+      const struct core_identity *b)
+{
+   return   core_identity_same_file(a, b)
          && a->verity_len == b->verity_len
          && a->verity_len <= CORE_ID_VERITY_MAX
-         && !memcmp(a->ino, b->ino, sizeof(a->ino))
          && !memcmp(a->verity, b->verity, a->verity_len);
 }
 
@@ -369,6 +376,20 @@ bool core_check_record(const core_trust_set_t *s, const struct core_check *c)
    const struct core_trust_record *r = core_trust_may_record(s, &c->rec.id)
       ? core_trust_find(s, &c->rec.id, c->rec.name) : NULL;
    return r && !core_trust_too_old(s, r, c->folder);
+}
+
+bool core_check_wants_verity(const core_trust_set_t *s,
+      const struct core_check *c)
+{
+   unsigned i;
+   if (!core_trust_may_record(s, &c->rec.id))
+      return false;
+   for (i = 0; i < s->num_records; i++)
+      if (     s->records[i].id.verity_len
+            && core_identity_same_file(&s->records[i].id, &c->rec.id)
+            && string_is_equal(s->records[i].name, c->rec.name))
+         return true;
+   return false;
 }
 
 /* One record per file; when full the oldest goes, and its core is

@@ -106,6 +106,14 @@ bool core_file_identity(core_file_t *f, struct core_identity *id);
  * close f, never it. */
 int core_file_fd(core_file_t *f);
 #endif
+/* fs-verity, Linux and Android, where the filesystem has it. The digest
+ * the kernel keeps for f, into id->verity: false when it has none. */
+bool core_file_verity_measure(core_file_t *f, struct core_identity *id);
+/* Makes f read-only for good, every block checked as it is read. Reads
+ * the whole file, so only in a task. 1 when on (or on already), 0 when
+ * the filesystem or kernel can't, the file isn't ours or a writer has it
+ * open, -1 on any other failure. */
+int core_file_verity_enable(core_file_t *f);
 
 /* <path>.sig, for free(); NULL when out of memory */
 char *core_sig_path(const char *path);
@@ -356,6 +364,10 @@ bool core_folder_key_with(const char *path, bool per_folder, uint8_t *key);
 /* A record of this file, for a build no older than the newest seen in
  * c->folder unless the record may be older */
 bool core_check_record(const core_trust_set_t *s, const struct core_check *c);
+/* A record matches this file in all but its fs-verity digest and has
+ * one: the file's must be measured for the record to hold */
+bool core_check_wants_verity(const core_trust_set_t *s,
+      const struct core_check *c);
 /* The check up to hashing: true when c->result is final.
  * Fills c->rec.name, and c->rec.id and c->folder unless the check is
  * off, for core_check_finish(). */

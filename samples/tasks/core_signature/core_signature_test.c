@@ -2140,6 +2140,154 @@ static void test_in_package(void)
    core_trust_free(t);
 }
 
+#define VERITY_LEN 4000
+
+/* fs-verity's digest (SHA-256, 4096-byte blocks, no salt) of a file of
+ * one block at most: its tree's root is that block's hash */
+static void verity_digest(const uint8_t *data, size_t len, uint8_t *out)
+{
+   static uint8_t block[4096];
+   static uint8_t desc[256];
+   size_t i;
+   memset(block, 0, sizeof(block));
+   memcpy(block, data, len);
+   memset(desc, 0, sizeof(desc));
+   desc[0] = 1;  /* version */
+   desc[1] = 1;  /* SHA-256 */
+   desc[2] = 12; /* log2 of the block size */
+   for (i = 0; i < 8; i++)
+      desc[8 + i] = (uint8_t)((uint64_t)len >> (8 * i));
+   sha(block, sizeof(block), desc + 16);
+   sha(desc, sizeof(desc), out);
+}
+
+/* The quick check measures a file whose record has a digest */
+static void test_verity_quick(const char *core)
+{
+   core_trust_t *t = real_store();
+   core_trust_set_t *s;
+   core_file_t *f  = core_file_open(core);
+   struct core_check c, c2;
+   bool kept       = records_for(core);
+   CHECK(f != NULL);
+   if (!f)
+   {
+      core_trust_free(t);
+      return;
+   }
+   s = core_trust_get(t);
+   CHECK(!core_check_quick(s, f, core, &c));
+   core_trust_set_put(s);
+   /* Recorded with its digest, as the check task records it */
+   CHECK(core_file_verity_measure(f, &c.rec.id));
+   sha(fx_core, VERITY_LEN, c.rec.sha256);
+   c.result = CORE_CHECK_OK;
+   c.record = true;
+   CHECK(core_trust_apply(t, &c));
+   s = core_trust_get(t);
+   CHECK(core_check_quick(s, f, core, &c2) == kept);
+   core_trust_set_put(s);
+   /* Another digest on record doesn't hold */
+   c.rec.id.verity[0] ^= 1;
+   CHECK(core_trust_apply(t, &c));
+   s = core_trust_get(t);
+   CHECK(!core_check_quick(s, f, core, &c2));
+   core_trust_set_put(s);
+   core_file_close(f);
+   core_trust_free(t);
+}
+
+static void test_verity(void)
+{
+   core_trust_t *t = fx_store();
+   core_trust_set_t *s;
+   struct core_check c, d;
+   struct core_identity id;
+   uint8_t want[CORE_SHA256_LEN];
+   char core[512];
+   core_file_t *f;
+   int on;
+
+   /* A record with a digest holds only with that digest measured */
+   check_of(&c, "v_libretro.so", 1, 0x11, 10);
+   c.rec.id.verity_len = CORE_SHA256_LEN;
+   memset(c.rec.id.verity, 0xab, CORE_SHA256_LEN);
+   CHECK(core_trust_apply(t, &c));
+   check_of(&d, "w_libretro.so", 2, 0x22, 10);
+   CHECK(core_trust_apply(t, &d));
+   s = core_trust_get(t);
+   d = c;
+   d.rec.id.verity_len = 0;
+   memset(d.rec.id.verity, 0, sizeof(d.rec.id.verity));
+   CHECK(core_check_wants_verity(s, &d));
+   CHECK(!core_check_record(s, &d));
+   d.rec.id.verity_len = CORE_SHA256_LEN;
+   memset(d.rec.id.verity, 0xab, CORE_SHA256_LEN);
+   CHECK(core_check_record(s, &d));
+   d.rec.id.verity[0] ^= 1;
+   CHECK(!core_check_record(s, &d));
+   /* nothing to measure for another file or name */
+   check_of(&d, "v_libretro.so", 3, 0x11, 10);
+   CHECK(!core_check_wants_verity(s, &d));
+   check_of(&d, "x_libretro.so", 1, 0x11, 10);
+   CHECK(!core_check_wants_verity(s, &d));
+   /* nor for a record without one */
+   check_of(&d, "w_libretro.so", 2, 0x22, 10);
+   CHECK(!core_check_wants_verity(s, &d));
+   CHECK(core_check_record(s, &d));
+   /* nor where records aren't honoured */
+   check_of(&d, "v_libretro.so", 1, 0x11, 10);
+   d.rec.id.ctime_kept = false;
+   CHECK(!core_check_wants_verity(s, &d));
+   core_trust_set_put(s);
+   core_trust_free(t);
+
+   /* Real files, where the filesystem has fs-verity */
+   strlcpy(core, tmp("verity_libretro.so"), sizeof(core));
+   CHECK(filestream_write_file(core, fx_core, VERITY_LEN));
+   CHECK((f = core_file_open(core)) != NULL);
+   on = f ? core_file_verity_enable(f) : -1;
+   CHECK(on >= 0);
+   memset(&id, 0, sizeof(id));
+   if (on == 0)
+   {
+      printf("note: no fs-verity on %s's filesystem, not checked\n", TMP_DIR);
+      CHECK(f && !core_file_verity_measure(f, &id));
+      /* A digest on record, with none to measure, fails closed */
+      t = real_store();
+      s = core_trust_get(t);
+      CHECK(!core_check_quick(s, f, core, &c));
+      core_trust_set_put(s);
+      sha(fx_core, VERITY_LEN, c.rec.sha256);
+      c.result = CORE_CHECK_OK;
+      c.record = true;
+      CHECK(core_trust_apply(t, &c));
+      s = core_trust_get(t);
+      CHECK(core_check_quick(s, f, core, &d) == records_for(core));
+      core_trust_set_put(s);
+      c.rec.id.verity_len = CORE_SHA256_LEN;
+      verity_digest(fx_core, VERITY_LEN, c.rec.id.verity);
+      CHECK(core_trust_apply(t, &c));
+      s = core_trust_get(t);
+      CHECK(!core_check_quick(s, f, core, &d));
+      core_trust_set_put(s);
+      core_trust_free(t);
+   }
+   else if (on > 0)
+   {
+      CHECK(core_file_verity_measure(f, &id)
+            && id.verity_len == CORE_SHA256_LEN);
+      verity_digest(fx_core, VERITY_LEN, want);
+      CHECK(!memcmp(id.verity, want, CORE_SHA256_LEN));
+      CHECK(core_file_verity_enable(f) == 1);
+      /* never written again */
+      CHECK(!filestream_write_file(core, fx_core, 1));
+      test_verity_quick(core);
+   }
+   core_file_close(f);
+   filestream_delete(core);
+}
+
 static void test_self_find(void)
 {
    struct core_self self;
@@ -2169,7 +2317,7 @@ static void clean(void)
       "gone/" FX_NAME, "gone",
       "four/" FX_NAME, "four/" FX_NAME ".sig", "four",
       "five/" FX_NAME, "five/" FX_NAME ".sig", "five",
-      "pkg_libretro.so" };
+      "pkg_libretro.so", "verity_libretro.so" };
    char other[256];
    size_t i;
 #ifndef _WIN32
@@ -2257,6 +2405,7 @@ int main(int argc, char *argv[])
 #if defined(__linux__) && !defined(ANDROID)
    test_fd_mount();
 #endif
+   test_verity();
    test_self_find();
    clean();
    free(fx_core);
