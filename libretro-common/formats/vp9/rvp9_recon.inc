@@ -2547,6 +2547,10 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
          if (d->fbs[fb].w != hd->w || d->fbs[fb].h != hd->h) return -6;
       }
 
+   if (!hd->first_partition_size || hd->uncomp_size >= len
+         || (size_t)hd->first_partition_size >= len - hd->uncomp_size)
+      return -1;
+
    d->mi_cols = hd->mi_cols;
    d->mi_rows = hd->mi_rows;
    d->tile_col_start = 0;             /* set per tile before decoding  */
