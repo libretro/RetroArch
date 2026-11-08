@@ -118,6 +118,100 @@ int core_hash_step(struct core_hash *h, core_file_t *f);
 void core_hash_final(struct core_hash *h, uint8_t *sha256);
 void core_hash_free(struct core_hash *h);
 
+/* The trust store: identity records, trusted hashes, the newest build
+ * time seen per core name in each folder and a few flags.
+ *
+ * Only the main thread holds a core_trust_t, changes it and writes it
+ * out. Every change publishes a new core_trust_set_t and never touches
+ * one already handed out, so a set is immutable once published. A task
+ * gets its own reference from core_trust_get() at push, on the main
+ * thread, and drops it with core_trust_set_put() from any thread. */
+#define CORE_TRUST_CHECK_OFF     (1 << 0)
+#define CORE_TRUST_SEEDED        (1 << 1)
+#define CORE_TRUST_NOTICE_SHOWN  (1 << 2)
+
+/* Bump the digit on any format change, or older builds set the store aside */
+#define CORE_TRUST_MAGIC         "RACTRST1"
+#define CORE_TRUST_MAX_RECORDS   512
+#define CORE_TRUST_MAX_HASHES    256
+#define CORE_TRUST_MAX_NEWEST    4096
+#define CORE_TRUST_HEAD_LEN      18
+#define CORE_TRUST_RECORD_FIXED  (8 + 16 + 8 + 8 + 4 + 8 + 4 + 1 + CORE_ID_VERITY_MAX + 8 + CORE_SHA256_LEN + 1 + 1)
+#define CORE_TRUST_NEWEST_FIXED  (8 + CORE_SHA256_LEN + 1)
+#define CORE_TRUST_FILE_MAX      (CORE_TRUST_HEAD_LEN + CORE_SHA256_LEN \
+      + CORE_TRUST_MAX_RECORDS * (CORE_TRUST_RECORD_FIXED + CORE_SIG_NAME_MAX) \
+      + CORE_TRUST_MAX_HASHES  * CORE_SHA256_LEN \
+      + CORE_TRUST_MAX_NEWEST  * (CORE_TRUST_NEWEST_FIXED + CORE_SIG_NAME_MAX))
+
+enum core_trust_load
+{
+   CORE_TRUST_LOAD_OK = 0,
+   /* Never written over, so nothing it holds is lost */
+   CORE_TRUST_LOAD_UNREADABLE
+};
+
+/* Always Trust, or a restore: still matches once a newer build is seen */
+#define CORE_TRUST_RECORD_ANY_AGE (1 << 0)
+
+struct core_trust_record
+{
+   struct core_identity id;
+   uint64_t build_time;
+   uint8_t  sha256[CORE_SHA256_LEN];
+   uint8_t  flags;
+   char     name[CORE_SIG_NAME_MAX + 1];
+};
+
+/* A check's outcome, for the main thread to record */
+struct core_check
+{
+   struct core_trust_record rec;
+   /* Key of the folder the core is installed in */
+   uint8_t folder[CORE_SHA256_LEN];
+   enum core_check_result result;
+   bool record;
+   bool raise_newest;
+};
+
+typedef struct core_trust core_trust_t;
+typedef struct core_trust_set core_trust_set_t;
+
+core_trust_t *core_trust_new(void);
+void core_trust_free(core_trust_t *t);
+enum core_trust_load core_trust_parse(core_trust_t *t,
+      const uint8_t *buf, size_t len);
+/* The file's bytes, malloc'd */
+uint8_t *core_trust_serialize(const core_trust_t *t, size_t *len);
+
+core_trust_set_t *core_trust_get(core_trust_t *t);
+void core_trust_set_put(core_trust_set_t *s);
+
+/* Each returns false, changing nothing, when out of memory; always
+ * also when the trusted hashes are full. Apply and always also refuse
+ * an empty name or a verity_len over CORE_ID_VERITY_MAX, and always a
+ * check that ended in ERROR. Apply also refuses to record a build older
+ * than the newest now known for its folder, unless the check allowed
+ * older. Neither records a file whose identity isn't ctime_kept or that
+ * is on neither the store's device nor RetroArch's. A full newest list
+ * drops its oldest build. */
+bool core_trust_apply(core_trust_t *t, const struct core_check *c);
+bool core_trust_always(core_trust_t *t, const struct core_check *c);
+bool core_trust_set_flag(core_trust_t *t, unsigned flag, bool on);
+/* Records are made and honoured only for files on dev, the store's own
+ * filesystem, or on self_dev, RetroArch's own: whoever can write either
+ * raw can rewrite the store or RetroArch itself. NULL when unknown; a
+ * new store has neither, so no records. */
+bool core_trust_set_device(core_trust_t *t, const uint64_t *dev,
+      const uint64_t *self_dev);
+
+unsigned core_trust_flags(const core_trust_set_t *s);
+bool core_trust_has_identity(const core_trust_set_t *s,
+      const struct core_identity *id, const char *name);
+bool core_trust_has_hash(const core_trust_set_t *s, const uint8_t *sha256);
+/* 0 when the name was never seen in that folder */
+uint64_t core_trust_newest(const core_trust_set_t *s, const uint8_t *folder,
+      const char *name);
+
 RETRO_END_DECLS
 
 #endif

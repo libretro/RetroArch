@@ -1049,17 +1049,19 @@ jobs:
           make clean
           echo "[pass] core_backup_io_test (TSan)"
 
-      - name: Build and run core_signature_test (ASan + UBSan, mingw-w64)
+      - name: Build and run core_signature_test (ASan + UBSan, TSan, mingw-w64)
         shell: bash
         working-directory: samples/tasks/core_signature
         run: |
           set -eu
           # Core signature checks: .sig parsing and verification against
           # the committed fixtures, file identity and hashing from an open
-          # file.
+          # file and the trust store.
           make clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              make -j$(nproc) SANITIZER=address,undefined \
              RUNNER="timeout 600" check
+          make clean && TSAN_OPTIONS=halt_on_error=1 \
+             make -j$(nproc) SANITIZER=thread RUNNER="timeout 600" check
           make clean
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -j$(nproc) CC=x86_64-w64-mingw32-gcc \
