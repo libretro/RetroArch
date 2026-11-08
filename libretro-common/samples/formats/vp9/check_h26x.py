@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Matroska codec, timing, partial-input and lease regressions."""
 import argparse
+from decimal import Decimal
 import importlib.util
 import json
 import os
 from pathlib import Path
 import shlex
+import shutil
 import subprocess
 import tempfile
 
@@ -17,6 +19,20 @@ executable = FIXTURES.executable
 elements = FIXTURES.elements
 hide_element = FIXTURES.hide_element
 hevc_nonoutput_fixture = FIXTURES.hevc_nonoutput_fixture
+with_default_duration = FIXTURES.with_default_duration
+
+
+def verify_timing(ffprobe, movie, timestamps, rate):
+    result = json.loads(subprocess.check_output([
+        ffprobe, '-v', 'error', '-select_streams', 'v:0', '-show_entries',
+        'frame=pts_time:format=duration', '-of', 'json', str(movie)], text=True))
+    actual = [Decimal(frame['pts_time']) * 1000 for frame in result['frames']]
+    if actual != timestamps:
+        raise ValueError('Encoded fixture timestamps differ from the requested timeline')
+    end = Decimal(result['format']['duration']) * 1000
+    expected_end = Decimal(timestamps[-1]) + Decimal(1000) / rate
+    if abs(end - expected_end) > 1 or end <= timestamps[-1]:
+        raise ValueError('Encoded fixture omits the final picture interval')
 
 
 def metadata_packet(data, hevc, laced=False, block_duration=False):
@@ -93,12 +109,17 @@ def main():
     parser.add_argument('--stream-test', default='./rwebm_h26x_stream_test')
     parser.add_argument('--hardware-test', default='./rwebm_h26x_hw_test')
     parser.add_argument('--ffmpeg', default=os.environ.get('FFMPEG', 'ffmpeg'))
+    parser.add_argument('--ffprobe', default=os.environ.get('FFPROBE'))
     parser.add_argument('--runner', default=os.environ.get('RUNNER', ''))
     parser.add_argument('--codec', choices=('h264', 'hevc', 'both'), default='both')
     parser.add_argument('--pixel-format', default='yuv420p')
     parser.add_argument('--full-range', action='store_true')
     parser.add_argument('--laced', action='store_true')
     args = parser.parse_args()
+    ffmpeg_path = Path(shutil.which(args.ffmpeg) or args.ffmpeg)
+    probe_name = 'ffprobe.exe' if ffmpeg_path.suffix.lower() == '.exe' else 'ffprobe'
+    sibling_probe = ffmpeg_path.with_name(probe_name)
+    ffprobe = args.ffprobe or (str(sibling_probe) if sibling_probe.is_file() else 'ffprobe')
     stream_test = executable(args.stream_test)
     hardware_test = executable(args.hardware_test)
     runner = shlex.split(args.runner)
@@ -117,7 +138,7 @@ def main():
                 command = [args.ffmpeg, '-v', 'error', '-f', 'lavfi', '-i', source]
                 filters = []
                 if variable:
-                    filters.append('setpts=(N+floor(N/3))/24/TB')
+                    filters.extend(('settb=1/24000', 'setpts=(N+floor(N/3))*1000'))
                 if args.full_range:
                     filters.append('scale=in_range=tv:out_range=pc')
                 if filters:
@@ -136,7 +157,12 @@ def main():
                                 + (':range=full' if args.full_range else '')]
                 if args.laced:
                     command += ['-cluster_time_limit', '1000', '-cluster_size_limit', '10000000']
+                command += ['-bsf:v', f'setts=pts=PTS:dts=DTS:duration=1/{rate}/TB']
                 subprocess.run(command + ['-y', str(movie)], check=True)
+                movie.write_bytes(with_default_duration(movie.read_bytes(), 1000000000 // rate))
+                timestamps = [((i + (i // 3 if variable else 0)) * 1000 + rate // 2) // rate
+                              for i in range(24)]
+                verify_timing(ffprobe, movie, timestamps, rate)
                 # Match the player's point chroma sampling.
                 subprocess.run([args.ffmpeg, '-v', 'error', '-i', str(movie),
                                 '-fps_mode', 'passthrough', '-f', 'rawvideo',
@@ -144,8 +170,6 @@ def main():
                                 '-pix_fmt', 'rgba', '-y', str(reference)], check=True)
                 if reference.stat().st_size != 24 * 64 * 64 * 4:
                     raise ValueError('Reference does not contain 24 RGBA frames')
-                timestamps = [((i + (i // 3 if variable else 0)) * 1000 + rate // 2) // rate
-                              for i in range(24)]
                 times.write_text(''.join(str(t) + '\n' for t in timestamps), encoding='ascii')
                 subprocess.run(runner + [stream_test, str(movie), str(reference), str(times)], check=True)
                 results.append(name)

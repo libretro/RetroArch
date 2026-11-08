@@ -61,6 +61,53 @@ def hide_element(data, element):
     return bytes(output)
 
 
+def with_default_duration(data, duration_ns):
+    if not 0 < duration_ns < 1 << 64:
+        raise ValueError('Invalid fixture default duration')
+    tracks = 0
+
+    def rebuild(begin, end):
+        nonlocal tracks
+        output = bytearray()
+        for kind, start, size_at, width, body, stop in elements(data, begin, end):
+            header = data[start:size_at]
+            payload = data[body:stop]
+            if kind in (0x18538067, 0x1654ae6b):
+                payload = rebuild(body, stop)
+            elif kind == 0xae:
+                rows = list(elements(data, body, stop))
+                if not any(k == 0x83 and int.from_bytes(data[a:b], 'big') == 1
+                           for k, _, _, _, a, b in rows):
+                    raise ValueError('Expected a video-only fixture')
+                parts = []
+                for child, child_start, child_size, _, _, child_end in rows:
+                    if child == 0x23e383:
+                        continue
+                    prefix = b'\xec' if child == 0xbf else data[child_start:child_size]
+                    parts.append(prefix + data[child_size:child_end])
+                payload = b''.join(parts)
+                size = (duration_ns.bit_length() + 7) // 8
+                payload += b'\x23\xe3\x83' + bytes([0x80 | size])
+                payload += duration_ns.to_bytes(size, 'big')
+                tracks += 1
+            elif kind in (0x114d9b74, 0x1c53bb6b):
+                header = (kind + 1).to_bytes(len(header), 'big')
+            elif kind == 0xbf:
+                header = b'\xec'
+            while len(payload) >= (1 << (7 * width)) - 1:
+                width += 1
+                if width > 8:
+                    raise ValueError('Fixture element size cannot be encoded')
+            output += header + (len(payload) | (1 << (7 * width))).to_bytes(width, 'big')
+            output += payload
+        return bytes(output)
+
+    result = rebuild(0, len(data))
+    if tracks != 1:
+        raise ValueError('Expected exactly one fixture video track')
+    return result
+
+
 def hevc_nonoutput_fixture(ffmpeg, root, size=64, reordered=False, discard_prior=False):
     if discard_prior and not reordered:
         raise ValueError('Prior-output discard fixture needs reordering')
