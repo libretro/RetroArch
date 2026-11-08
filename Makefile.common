@@ -1843,6 +1843,7 @@ ifeq ($(HAVE_VULKAN), 1)
              gfx/common/vaapi_hevc_session.o \
              gfx/common/vaapi_hevc_runtime.o \
              gfx/common/vaapi_hevc_submit.o \
+             gfx/common/vaapi_vp9_submit.o \
              gfx/common/vaapi_hevc_pool.o \
              gfx/common/vaapi_hevc_export.o \
              gfx/common/vulkan_prime_image.o \
