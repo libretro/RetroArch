@@ -510,6 +510,9 @@ def write_cfg(path, d, driver, settings, port):
         'confirm_quit': 'false',
         'quit_press_twice': 'false',
         'config_save_on_exit': 'false',
+        # A first run offers the missing downloads in a dialog over the
+        # menu, which then holds the menu's input.
+        'rgui_show_start_screen': 'false',
         'network_cmd_enable': 'true',
         'network_cmd_port': str(port),
         'history_list_enable': 'false',

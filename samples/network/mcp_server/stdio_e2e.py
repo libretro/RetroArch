@@ -40,6 +40,8 @@ with open(cfg, 'w') as f:
             'menu_driver = "rgui"\nlog_verbosity = "true"\nfrontend_log_level = "1"\n'
             'pause_nonactive = "false"\nconfig_save_on_exit = "false"\n'
             'video_shader_enable = "false"\n'
+            # no first-run download prompt over the menu it drives
+            'rgui_show_start_screen = "false"\n'
             'libretro_directory = "%s"\nplaylist_directory = "%s"\n'
             'screenshot_directory = "%s"\n'
             % (coredir, listdir, shotdir))
