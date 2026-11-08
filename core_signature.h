@@ -121,8 +121,8 @@ void core_hash_free(struct core_hash *h);
 /* The trust store: identity records, trusted hashes, the newest build
  * time seen per core name in each folder and a few flags.
  *
- * Only the main thread holds a core_trust_t, changes it and writes it
- * out. Every change publishes a new core_trust_set_t and never touches
+ * Only the main thread holds a core_trust_t, changes it and starts its
+ * writes. Every change publishes a new core_trust_set_t and never touches
  * one already handed out, so a set is immutable once published. A task
  * gets its own reference from core_trust_get() at push, on the main
  * thread, and drops it with core_trust_set_put() from any thread. */
@@ -146,8 +146,15 @@ void core_hash_free(struct core_hash *h);
 enum core_trust_load
 {
    CORE_TRUST_LOAD_OK = 0,
-   /* Never written over, so nothing it holds is lost */
-   CORE_TRUST_LOAD_UNREADABLE
+   /* No file yet: an empty store, written on the first change */
+   CORE_TRUST_LOAD_MISSING,
+   /* Never written over, so nothing it holds is lost. The store's
+    * flags mean nothing then: don't seed from it. */
+   CORE_TRUST_LOAD_UNREADABLE,
+   /* Read, but not a store: from core_trust_parse only */
+   CORE_TRUST_LOAD_DAMAGED,
+   /* Was damaged, now <path>.bad; an empty store, every flag clear */
+   CORE_TRUST_LOAD_RESET
 };
 
 /* Always Trust, or a restore: still matches once a newer build is seen */
@@ -178,6 +185,8 @@ typedef struct core_trust_set core_trust_set_t;
 
 core_trust_t *core_trust_new(void);
 void core_trust_free(core_trust_t *t);
+/* Anything but OK leaves the store as it was and read-only. A NULL buf
+ * is a file that could not be read. */
 enum core_trust_load core_trust_parse(core_trust_t *t,
       const uint8_t *buf, size_t len);
 /* The file's bytes, malloc'd */
@@ -200,7 +209,8 @@ bool core_trust_set_flag(core_trust_t *t, unsigned flag, bool on);
 /* Records are made and honoured only for files on dev, the store's own
  * filesystem, or on self_dev, RetroArch's own: whoever can write either
  * raw can rewrite the store or RetroArch itself. NULL when unknown; a
- * new store has neither, so no records. */
+ * new store has neither, so no records. core_trust_load_file takes dev
+ * from the store's folder. */
 bool core_trust_set_device(core_trust_t *t, const uint64_t *dev,
       const uint64_t *self_dev);
 
@@ -211,6 +221,43 @@ bool core_trust_has_hash(const core_trust_set_t *s, const uint8_t *sha256);
 /* 0 when the name was never seen in that folder */
 uint64_t core_trust_newest(const core_trust_set_t *s, const uint8_t *folder,
       const char *name);
+
+#define CORE_TRUST_FILE_NAME "core_trust"
+
+/* Another instance can be saving the same file, so a write reads it
+ * again and puts this store's own changes since it was last loaded or
+ * saved over what is there now.
+ *
+ * After every change, on the main thread: NULL means a write is still
+ * out (it runs again after), the file could not be read at load, or out
+ * of memory. */
+typedef struct core_trust_write core_trust_write_t;
+core_trust_write_t *core_trust_write_begin(core_trust_t *t);
+/* In a task: false when nothing was written, as when the file there
+ * now can't be read or is a newer version's */
+bool core_trust_write_run(core_trust_write_t *w, const char *path);
+/* On the main thread, with what run returned; frees w. True means
+ * begin again. */
+bool core_trust_write_end(core_trust_t *t, core_trust_write_t *w,
+      bool written);
+/* The bytes run writes over disk, a store loaded from the file, or NULL
+ * when there is none; malloc'd. A hash disk has no room for stays a
+ * change for the next write. */
+uint8_t *core_trust_write_bytes(core_trust_write_t *w,
+      const core_trust_t *disk, size_t *len);
+/* The temporary run writes before its rename, one of its own so two
+ * instances' saves can't mix: <path>.<pid>.<stamp>.tmp. stamp is the
+ * clock, as Flatpak's PID namespaces repeat pids. */
+bool core_trust_temp_name(char *s, size_t len, const char *path,
+      unsigned long pid, unsigned long stamp);
+
+/* An empty, writable store, for once a damaged file is set aside */
+bool core_trust_reset(core_trust_t *t);
+enum core_trust_load core_trust_load_file(core_trust_t *t,
+      const char *path);
+/* Android: internalDataPath. Elsewhere: the platform's default config
+ * folder, never a path from a config file. */
+bool core_trust_default_path(char *s, size_t len);
 
 RETRO_END_DECLS
 

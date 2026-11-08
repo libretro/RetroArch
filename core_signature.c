@@ -169,12 +169,24 @@ struct core_trust_set
 struct core_trust
 {
    core_trust_set_t *cur;
+   /* cur as last loaded or saved */
+   core_trust_set_t *base;
    /* Given to each set published */
    uint64_t dev;
    uint64_t self_dev;
    bool has_dev;
    bool has_self_dev;
    bool read_only;
+   bool writing;
+   bool dirty;
+};
+
+struct core_trust_write
+{
+   core_trust_set_t *cur;
+   core_trust_set_t *base;
+   /* cur less the hashes the file had no room for, when there were any */
+   core_trust_set_t *kept;
 };
 
 static void core_trust_set_free(core_trust_set_t *s)
@@ -229,10 +241,15 @@ void core_trust_set_put(core_trust_set_t *s)
       core_trust_set_free(s);
 }
 
+static core_trust_set_t *core_trust_set_ref(core_trust_set_t *s)
+{
+   retro_atomic_fetch_add_int(&s->refs, 1);
+   return s;
+}
+
 core_trust_set_t *core_trust_get(core_trust_t *t)
 {
-   retro_atomic_fetch_add_int(&t->cur->refs, 1);
-   return t->cur;
+   return core_trust_set_ref(t->cur);
 }
 
 static void core_trust_publish(core_trust_t *t, core_trust_set_t *s)
@@ -245,6 +262,12 @@ static void core_trust_publish(core_trust_t *t, core_trust_set_t *s)
    t->cur = s;
 }
 
+static void core_trust_rebase(core_trust_t *t)
+{
+   core_trust_set_put(t->base);
+   t->base = core_trust_set_ref(t->cur);
+}
+
 core_trust_t *core_trust_new(void)
 {
    core_trust_t *t = (core_trust_t*)calloc(1, sizeof(*t));
@@ -255,6 +278,7 @@ core_trust_t *core_trust_new(void)
       free(t);
       return NULL;
    }
+   t->base = core_trust_set_ref(t->cur);
    return t;
 }
 
@@ -263,6 +287,7 @@ void core_trust_free(core_trust_t *t)
    if (!t)
       return;
    core_trust_set_put(t->cur);
+   core_trust_set_put(t->base);
    free(t);
 }
 
@@ -496,9 +521,9 @@ static bool core_trust_get_name(const uint8_t **p, const uint8_t *end,
    return true;
 }
 
-uint8_t *core_trust_serialize(const core_trust_t *t, size_t *len)
+static uint8_t *core_trust_serialize_set(const core_trust_set_t *s,
+      size_t *len)
 {
-   const core_trust_set_t *s = t->cur;
    size_t cap = CORE_TRUST_HEAD_LEN + CORE_SHA256_LEN
       + s->num_records * (CORE_TRUST_RECORD_FIXED + CORE_SIG_NAME_MAX)
       + s->num_hashes  * CORE_SHA256_LEN
@@ -547,6 +572,14 @@ uint8_t *core_trust_serialize(const core_trust_t *t, size_t *len)
    return buf;
 }
 
+uint8_t *core_trust_serialize(const core_trust_t *t, size_t *len)
+{
+   return core_trust_serialize_set(t->cur, len);
+}
+
+/* The version digit after RACTRST */
+#define CORE_TRUST_VER_AT (sizeof(CORE_TRUST_MAGIC) - 2)
+
 enum core_trust_load core_trust_parse(core_trust_t *t,
       const uint8_t *buf, size_t len)
 {
@@ -554,21 +587,31 @@ enum core_trust_load core_trust_parse(core_trust_t *t,
    const uint8_t *p, *end;
    core_trust_set_t *s = NULL;
    unsigned nr, nh, nn, i;
+   if (!buf)
+      goto unreadable;
+   /* A newer version's: kept for it */
+   if (     len > CORE_TRUST_VER_AT
+         && !memcmp(buf, CORE_TRUST_MAGIC, CORE_TRUST_VER_AT)
+         && buf[CORE_TRUST_VER_AT] >  CORE_TRUST_MAGIC[CORE_TRUST_VER_AT]
+         && buf[CORE_TRUST_VER_AT] <= '9')
+      goto unreadable;
    if (     len < CORE_TRUST_HEAD_LEN + CORE_SHA256_LEN
          || len > CORE_TRUST_FILE_MAX
          || memcmp(buf, CORE_TRUST_MAGIC, sizeof(CORE_TRUST_MAGIC) - 1))
-      goto unreadable;
+      goto damaged;
    end = buf + len - CORE_SHA256_LEN;
    core_sig_sha256(buf, (size_t)(end - buf), digest);
    if (memcmp(digest, end, CORE_SHA256_LEN))
-      goto unreadable;
+      goto damaged;
    nr = (unsigned)core_get_be(buf + 12, 2);
    nh = (unsigned)core_get_be(buf + 14, 2);
    nn = (unsigned)core_get_be(buf + 16, 2);
    if (     nr > CORE_TRUST_MAX_RECORDS
          || nh > CORE_TRUST_MAX_HASHES
-         || nn > CORE_TRUST_MAX_NEWEST
-         || !(s = core_trust_set_alloc(nr, nh, nn)))
+         || nn > CORE_TRUST_MAX_NEWEST)
+      goto damaged;
+   /* Out of memory is not damage: the file stays */
+   if (!(s = core_trust_set_alloc(nr, nh, nn)))
       goto unreadable;
    s->flags = (unsigned)core_get_be(buf + 8, 4);
    p        = buf + CORE_TRUST_HEAD_LEN;
@@ -576,7 +619,7 @@ enum core_trust_load core_trust_parse(core_trust_t *t,
    {
       struct core_trust_record *r = &s->records[i];
       if ((size_t)(end - p) < CORE_TRUST_RECORD_FIXED)
-         goto unreadable;
+         goto damaged;
       r->id.dev        = core_get_be(p, 8);
       memcpy(r->id.ino, p + 8, sizeof(r->id.ino));
       r->id.size       = core_get_be(p + 24, 8);
@@ -592,34 +635,192 @@ enum core_trust_load core_trust_parse(core_trust_t *t,
       p               += CORE_TRUST_RECORD_FIXED - 1;
       if (     r->id.verity_len > CORE_ID_VERITY_MAX
             || !core_trust_get_name(&p, end, r->name))
-         goto unreadable;
+         goto damaged;
    }
    if ((size_t)(end - p) < (size_t)nh * CORE_SHA256_LEN)
-      goto unreadable;
+      goto damaged;
    memcpy(s->hashes, p, (size_t)nh * CORE_SHA256_LEN);
    p += (size_t)nh * CORE_SHA256_LEN;
    for (i = 0; i < nn; i++)
    {
       if ((size_t)(end - p) < 8 + CORE_SHA256_LEN)
-         goto unreadable;
+         goto damaged;
       s->newest[i].build_time = core_get_be(p, 8);
       memcpy(s->newest[i].folder, p + 8, CORE_SHA256_LEN);
       p += 8 + CORE_SHA256_LEN;
       if (!core_trust_get_name(&p, end, s->newest[i].name))
-         goto unreadable;
+         goto damaged;
    }
    if (p != end)
-      goto unreadable;
+      goto damaged;
    s->num_records = nr;
    s->num_hashes  = nh;
    s->num_newest  = nn;
    core_trust_publish(t, s);
+   core_trust_rebase(t);
    t->read_only   = false;
    return CORE_TRUST_LOAD_OK;
 
-unreadable:
+damaged:
    if (s)
       core_trust_set_free(s);
    t->read_only = true;
+   return CORE_TRUST_LOAD_DAMAGED;
+
+unreadable:
+   t->read_only = true;
    return CORE_TRUST_LOAD_UNREADABLE;
+}
+
+bool core_trust_reset(core_trust_t *t)
+{
+   core_trust_set_t *s = core_trust_set_alloc(0, 0, 0);
+   if (!s)
+      return false;
+   core_trust_publish(t, s);
+   core_trust_rebase(t);
+   t->read_only = false;
+   return true;
+}
+
+core_trust_write_t *core_trust_write_begin(core_trust_t *t)
+{
+   core_trust_write_t *w;
+   if (t->read_only)
+      return NULL;
+   if (t->writing)
+   {
+      t->dirty = true;
+      return NULL;
+   }
+   if (!(w = (core_trust_write_t*)malloc(sizeof(*w))))
+      return NULL;
+   w->cur     = core_trust_get(t);
+   w->base    = core_trust_set_ref(t->base);
+   w->kept    = NULL;
+   t->writing = true;
+   return w;
+}
+
+bool core_trust_write_end(core_trust_t *t, core_trust_write_t *w,
+      bool written)
+{
+   bool again = t->dirty;
+   /* Not written: the changes go out with the next write, as does a hash
+    * that found no room */
+   if (written)
+   {
+      core_trust_set_put(t->base);
+      t->base = w->kept ? w->kept : core_trust_set_ref(w->cur);
+      w->kept = NULL;
+   }
+   core_trust_set_put(w->kept);
+   core_trust_set_put(w->cur);
+   core_trust_set_put(w->base);
+   free(w);
+   t->writing = false;
+   t->dirty   = false;
+   return again;
+}
+
+static bool core_trust_record_equal(const struct core_trust_record *a,
+      const struct core_trust_record *b)
+{
+   return   core_identity_equal(&a->id, &b->id)
+         && a->build_time == b->build_time
+         && a->flags      == b->flags
+         && !memcmp(a->sha256, b->sha256, CORE_SHA256_LEN)
+         && string_is_equal(a->name, b->name);
+}
+
+static bool core_trust_has_record(const core_trust_set_t *s,
+      const struct core_trust_record *rec)
+{
+   unsigned i;
+   for (i = 0; i < s->num_records; i++)
+      if (core_trust_record_equal(&s->records[i], rec))
+         return true;
+   return false;
+}
+
+/* *kept, a copy of cur made on first use, without sha256 */
+static bool core_trust_unhash(core_trust_set_t **kept,
+      const core_trust_set_t *cur, const uint8_t *sha256)
+{
+   core_trust_set_t *k;
+   unsigned i;
+   if (!*kept && !(*kept = core_trust_set_clone(cur)))
+      return false;
+   k = *kept;
+   for (i = 0; i < k->num_hashes; i++)
+      if (!memcmp(k->hashes[i], sha256, CORE_SHA256_LEN))
+      {
+         memmove(k->hashes[i], k->hashes[i + 1],
+               (k->num_hashes - i - 1) * CORE_SHA256_LEN);
+         k->num_hashes--;
+         break;
+      }
+   return true;
+}
+
+/* disk, with what changed from base to cur. A new hash with no room
+ * leaves *kept, so it is still a change for the next write. */
+static core_trust_set_t *core_trust_merge(const core_trust_set_t *disk,
+      const core_trust_set_t *cur, const core_trust_set_t *base,
+      core_trust_set_t **kept)
+{
+   unsigned changed = cur->flags ^ base->flags;
+   unsigned i;
+   core_trust_set_t *s = core_trust_set_alloc(CORE_TRUST_MAX_RECORDS,
+         CORE_TRUST_MAX_HASHES, CORE_TRUST_MAX_NEWEST);
+   if (!s)
+      return NULL;
+   memcpy(s->records, disk->records, disk->num_records * sizeof(*s->records));
+   memcpy(s->newest, disk->newest, disk->num_newest * sizeof(*s->newest));
+   s->num_records = disk->num_records;
+   s->num_newest  = disk->num_newest;
+   s->flags       = (disk->flags & ~changed) | (cur->flags & changed);
+   for (i = 0; i < disk->num_hashes; i++)
+      if (     core_trust_has_hash(cur, disk->hashes[i])
+            || !core_trust_has_hash(base, disk->hashes[i]))
+         memcpy(s->hashes[s->num_hashes++], disk->hashes[i],
+               CORE_SHA256_LEN);
+   for (i = 0; i < cur->num_hashes; i++)
+   {
+      if (     core_trust_has_hash(base, cur->hashes[i])
+            || core_trust_has_hash(s, cur->hashes[i]))
+         continue;
+      if (s->num_hashes < CORE_TRUST_MAX_HASHES)
+         memcpy(s->hashes[s->num_hashes++], cur->hashes[i],
+               CORE_SHA256_LEN);
+      else if (!core_trust_unhash(kept, cur, cur->hashes[i]))
+      {
+         core_trust_set_free(s);
+         return NULL;
+      }
+   }
+   /* Only what this instance raised; the rest may be what another evicted */
+   for (i = 0; i < cur->num_newest; i++)
+      if (cur->newest[i].build_time > core_trust_newest(base,
+               cur->newest[i].folder, cur->newest[i].name))
+         core_trust_raise(s, cur->newest[i].folder, cur->newest[i].name,
+               cur->newest[i].build_time);
+   for (i = 0; i < cur->num_records; i++)
+      if (!core_trust_has_record(base, &cur->records[i]))
+         core_trust_put_record(s, &cur->records[i]);
+   return s;
+}
+
+uint8_t *core_trust_write_bytes(core_trust_write_t *w,
+      const core_trust_t *disk, size_t *len)
+{
+   core_trust_set_t *s;
+   uint8_t *buf;
+   if (!disk)
+      return core_trust_serialize_set(w->cur, len);
+   if (!(s = core_trust_merge(disk->cur, w->cur, w->base, &w->kept)))
+      return NULL;
+   buf = core_trust_serialize_set(s, len);
+   core_trust_set_free(s);
+   return buf;
 }
