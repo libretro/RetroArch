@@ -198,6 +198,14 @@ VP9_HW_TARGET := webm_vp9_hw_test$(EXE)
 $(VP9_HW_TARGET): webm_vp9_hw_test.c $(ROOT)/cores/libretro-media/media_core.c $(VP9_HW_OBJS)
 	$(CC) $(CFLAGS) -o $@ webm_vp9_hw_test.c $(VP9_HW_OBJS) $(LDFLAGS) $(LDLIBS)
 
+ifeq ($(MP4),1)
+MP4_PREFETCH_TARGET := mp4_hw_prefetch_test$(EXE)
+$(MP4_PREFETCH_TARGET): mp4_hw_prefetch_test.c webm_vp9_hw_test.c $(ROOT)/cores/libretro-media/media_core.c $(RESIDENCY_OBJS)
+	$(CC) $(CFLAGS) -o $@ mp4_hw_prefetch_test.c $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
+all: $(MP4_PREFETCH_TARGET)
+check: $(MP4_PREFETCH_TARGET)
+endif
+
 DEVICE_TARGET := webm_vp9_device_test$(EXE)
 ifeq ($(EXE),.exe)
 $(DEVICE_TARGET): webm_vp9_device_test.c $(ROOT)/cores/libretro-media/media_core.c \
@@ -259,10 +267,12 @@ ifeq ($(MP4)$(AUDIO),11)
 endif
 ifeq ($(MP4),1)
 	$(RUNNER) ./$(MP4_SEEK_TARGET) fixtures/h264-seek-aac.mp4 fixtures/hevc-seek-aac.mp4 fixtures/h264-long-seek.mp4 fixtures/video-timeline-1.mp4
+	$(RUNNER) ./$(MP4_PREFETCH_TARGET)
 	$(RUNNER) ./$(HW_TARGET)
 endif
 
 clean:
+	rm -f mp4_hw_prefetch_test mp4_hw_prefetch_test.exe
 	rm -f wma_player_test wma_player_test.exe wma_player_disabled_test wma_player_disabled_test.exe
 	rm -f video_timeline_test video_timeline_test.exe
 	rm -f webm_audio_timeline_test webm_audio_timeline_test.exe

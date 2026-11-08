@@ -226,7 +226,7 @@ static void unload(void)
 static void test_container(void)
 {
    FILE *file;
-   unsigned i, before, accepted;
+   unsigned i, before, accepted, delivered;
    uint8_t state[40];
    if (container)
       make_webm(container == 2, 1, 1, 0);
@@ -270,9 +270,10 @@ static void test_container(void)
    for (i = 0; i < 32 && !stopped; i++)
    {
       accepted = decoded;
+      delivered = taken;
       before = media_player.hw_frame.image != 0;
       retro_run();
-      if (before)
+      if (before && delivered == taken)
          CHECK(accepted == decoded);
    }
    CHECK(stopped && taken && ticks && !media_player.hw_frame.image);

@@ -17,6 +17,7 @@ cases = [
     ("av1-vorbis.webm", ["-s", "64x64", "-c:v", "libaom-av1", "-cpu-used", "8", "-threads", "2", "-g", "8", "-c:a", "libvorbis"]),
     ("vp8-opus.webm", ["-c:v", "libvpx", "-deadline", "best", "-c:a", "libopus"]),
     ("vp9-vorbis.webm", ["-c:v", "libvpx-vp9", "-c:a", "libvorbis"]),
+    ("vp9-prefetch.mp4", ["-c:v", "libvpx-vp9", "-deadline", "good", "-cpu-used", "4", "-g", "12", "-lag-in-frames", "0", "-auto-alt-ref", "0", "-an", "-movflags", "+faststart"]),
     ("h264-aac.mp4", ["-c:v", "libx264", "-bf", "2", "-g", "12", "-c:a", "aac", "-movflags", "+faststart"]),
     ("h264-aac.mkv", ["-c:v", "libx264", "-bf", "2", "-g", "12", "-c:a", "aac"]),
     ("hevc-aac.mp4", ["-c:v", "libx265", "-x265-params", "pools=1:frame-threads=1:log-level=error", "-c:a", "aac"]),
