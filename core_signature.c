@@ -353,6 +353,13 @@ static bool core_trust_may_record(const core_trust_set_t *s,
             || (s->has_self_dev && id->dev == s->self_dev));
 }
 
+bool core_check_record(const core_trust_set_t *s, const struct core_check *c)
+{
+   const struct core_trust_record *r = core_trust_may_record(s, &c->rec.id)
+      ? core_trust_find(s, &c->rec.id, c->rec.name) : NULL;
+   return r && !core_trust_too_old(s, r, c->folder);
+}
+
 /* One record per file; when full the oldest goes, and its core is
  * hashed again next time */
 static struct core_trust_record *core_trust_put_record(core_trust_set_t *s,
@@ -823,4 +830,76 @@ uint8_t *core_trust_write_bytes(core_trust_write_t *w,
    buf = core_trust_serialize_set(s, len);
    core_trust_set_free(s);
    return buf;
+}
+
+bool core_mode_writable(const struct core_owner *who, unsigned long uid,
+      unsigned long gid, unsigned mode, bool read_only_mount)
+{
+   size_t i;
+   if (read_only_mount)
+      return false;
+   /* An owner can chmod, whatever the bits say */
+   if (who->uid == 0 || who->uid == uid || (mode & 0002))
+      return true;
+   if (mode & 0020)
+      for (i = 0; i < who->num_gids; i++)
+         if (who->gids[i] == gid)
+            return true;
+   return false;
+}
+
+bool core_mode_exempt(const struct core_owner *who, unsigned long self_uid,
+      unsigned long uid, unsigned long gid, unsigned mode,
+      bool read_only_mount)
+{
+   /* Its group can't rename or replace what it doesn't own */
+   bool sticky_dir = (mode & 0171000) == 0041000;
+   /* With no overflow uid known, RetroArch's owner may be it */
+   bool self_known = who->overflow_uid != CORE_UID_UNKNOWN;
+#if defined(__linux__) || defined(ANDROID)
+   bool root_group = gid == 0;
+#else
+   /* gid 0 is wheel on macOS and the BSDs: admin users */
+   bool root_group = false;
+#endif
+   return !core_mode_writable(who, uid, gid, mode, read_only_mount)
+      && (read_only_mount || ((uid == 0 || (self_known && uid == self_uid))
+            && uid != who->overflow_uid
+            && (root_group || !(mode & 0020) || sticky_dir)));
+}
+
+void core_check_finish(const core_trust_set_t *s,
+      const uint8_t *keys, size_t num_keys,
+      const uint8_t *sha256, const uint8_t *sig_buf, size_t sig_len,
+      unsigned flags, struct core_check *c)
+{
+   struct core_sig sig;
+   memcpy(c->rec.sha256, sha256, CORE_SHA256_LEN);
+   c->rec.build_time = 0;
+   c->rec.flags      = (flags & CORE_CHECK_ALLOW_OLDER)
+      ? CORE_TRUST_RECORD_ANY_AGE : 0;
+   c->record         = false;
+   c->raise_newest   = false;
+   if (core_trust_has_hash(s, sha256))
+   {
+      c->result = CORE_CHECK_OK;
+      c->record = true;
+   }
+   else if (!sig_buf || !sig_len)
+      c->result = CORE_CHECK_UNSIGNED;
+   else if (!core_sig_parse(&sig, sig_buf, sig_len))
+      c->result = CORE_CHECK_MODIFIED;
+   else if ((c->result = core_sig_verify(&sig, c->rec.name, sha256,
+               keys, num_keys)) == CORE_CHECK_OK)
+   {
+      c->rec.build_time = sig.build_time;
+      if (     !(flags & CORE_CHECK_ALLOW_OLDER)
+            && sig.build_time < core_trust_newest(s, c->folder, c->rec.name))
+         c->result = CORE_CHECK_OLDER;
+      else
+      {
+         c->record       = true;
+         c->raise_newest = true;
+      }
+   }
 }

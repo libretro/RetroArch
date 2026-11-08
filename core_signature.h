@@ -195,7 +195,9 @@ uint8_t *core_trust_serialize(const core_trust_t *t, size_t *len);
 core_trust_set_t *core_trust_get(core_trust_t *t);
 void core_trust_set_put(core_trust_set_t *s);
 
-/* Each returns false, changing nothing, when out of memory; always
+/* Apply and always take a check core_check_finish ended, as
+ * core_check_file's: before it c->rec.sha256 is unset.
+ * Each returns false, changing nothing, when out of memory; always
  * also when the trusted hashes are full. Apply and always also refuse
  * an empty name or a verity_len over CORE_ID_VERITY_MAX, and always a
  * check that ended in ERROR. Apply also refuses to record a build older
@@ -210,7 +212,7 @@ bool core_trust_set_flag(core_trust_t *t, unsigned flag, bool on);
  * filesystem, or on self_dev, RetroArch's own: whoever can write either
  * raw can rewrite the store or RetroArch itself. NULL when unknown; a
  * new store has neither, so no records. core_trust_load_file takes dev
- * from the store's folder. */
+ * from the store's folder and self_dev from core_self_find. */
 bool core_trust_set_device(core_trust_t *t, const uint64_t *dev,
       const uint64_t *self_dev);
 
@@ -258,6 +260,79 @@ enum core_trust_load core_trust_load_file(core_trust_t *t,
 /* Android: internalDataPath. Elsewhere: the platform's default config
  * folder, never a path from a config file. */
 bool core_trust_default_path(char *s, size_t len);
+
+#define CORE_CHECK_ALLOW_OLDER   (1 << 0)
+
+/* Whose writes a file's owner and mode bits allow */
+struct core_owner
+{
+   const unsigned long *gids;
+   size_t num_gids;
+   unsigned long uid;
+   /* Whom a user namespace shows for the accounts it doesn't map, or
+    * CORE_UID_UNKNOWN */
+   unsigned long overflow_uid;
+};
+
+#define CORE_UID_UNKNOWN ((unsigned long)-1)
+
+bool core_mode_writable(const struct core_owner *who, unsigned long uid,
+      unsigned long gid, unsigned mode, bool read_only_mount);
+/* One file or folder's part of core_file_unwritable's rule, self_uid
+ * being the owner of RetroArch's own binary or library and mode st_mode,
+ * type bits and all */
+bool core_mode_exempt(const struct core_owner *who, unsigned long self_uid,
+      unsigned long uid, unsigned long gid, unsigned mode,
+      bool read_only_mount);
+
+/* RetroArch's own binary or library */
+struct core_self
+{
+   uint64_t dev;
+   unsigned long uid;
+};
+
+/* POSIX: false when unknown, and always on Windows */
+bool core_self_find(struct core_self *self);
+/* The exemption, POSIX only (none on Windows): the file is on self->dev
+ * (self NULL when unknown), and it and every folder up to / aren't
+ * writable by us, are owned by root or RetroArch's owner, never the
+ * overflow uid, and have no group write unless a sticky folder or, on
+ * Linux and Android, gid 0; read-only mounts skip owner and group.
+ * Android: other apps' library folders are system's too, so
+ * android_core_path_resolve must come first. */
+bool core_file_unwritable(core_file_t *f, const char *path,
+      const struct core_self *self);
+
+/* The key of the folder holding path, for its newest build times: its
+ * canonical path, so ., .., repeated separators and symlinks (POSIX) or
+ * case (Windows) don't change it. On Android every folder has one key,
+ * so a config file naming a fresh folder can't reset them, and the
+ * folder isn't looked up. Elsewhere false when it can't be found. */
+bool core_folder_key(const char *path, uint8_t *key);
+/* Either rule, per_folder false being Android's, for tests */
+bool core_folder_key_with(const char *path, bool per_folder, uint8_t *key);
+
+/* A record of this file, for a build no older than the newest seen in
+ * c->folder unless the record may be older */
+bool core_check_record(const core_trust_set_t *s, const struct core_check *c);
+/* The check up to hashing: true when c->result is final.
+ * Fills c->rec.name, and c->rec.id and c->folder unless the check is
+ * off, for core_check_finish(). */
+bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
+      const char *path, struct core_check *c);
+/* The rest, given the core's SHA-256 and its .sig (NULL or empty when none) */
+void core_check_finish(const core_trust_set_t *s,
+      const uint8_t *keys, size_t num_keys,
+      const uint8_t *sha256, const uint8_t *sig_buf, size_t sig_len,
+      unsigned flags, struct core_check *c);
+/* The whole check in one call, hashing without a pause. It opens path
+ * itself, so it suits a file nothing else can replace (a staged install,
+ * tests); a load check runs core_check_quick() and core_check_finish() on
+ * the file it loads from. */
+enum core_check_result core_check_file(const core_trust_set_t *s,
+      const uint8_t *keys, size_t num_keys,
+      const char *path, unsigned flags, struct core_check *c);
 
 RETRO_END_DECLS
 

@@ -4,7 +4,7 @@ TARGET := core_signature_test
 
 # Core signature checks: .sig parsing and verification against
 # fixtures from tools/core_sign.py (gen_fixtures.py), file identity and
-# hashing from an open file and the trust store.
+# hashing from an open file, the trust store and the check itself.
 # Builds on Linux and with mingw-w64.
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
