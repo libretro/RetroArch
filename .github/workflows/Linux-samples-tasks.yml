@@ -1567,8 +1567,8 @@ jobs:
           # task" - a NULL condition makes both queue implementations
           # loop until the queue is EMPTY.  A caller blocking on one
           # HTTP round trip therefore also waits out every unrelated
-          # task in flight: a content scan, a core download, a
-          # thumbnail pack.  Where a wait is still necessary it must
+          # task in flight: a content scan, a core download, an
+          # assets update.  Where a wait is still necessary it must
           # name a condition that describes the caller's own work, so
           # the block is bounded by that work and nothing else.
           #

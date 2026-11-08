@@ -540,13 +540,10 @@ static const struct
    char s_a38500d8[12];
    char s_9544161a[8];
    char s_76ac1944[25];
-   char s_ded7e809[31];
    char s_b893853f[6];
    char s_11121f30[18];
    char s_01badaa0[21];
    char s_6127cc52[29];
-   char s_9d52f73c[14];
-   char s_bc30b87a[19];
    char s_a2a28187[23];
    char s_674d9226[17];
    char s_5dff78c4[43];
@@ -574,7 +571,6 @@ static const struct
    char s_f24476fa[10];
    char s_97d90c67[10];
    char s_6d08238d[5];
-   char s_033bf99f[14];
    char s_8076aea7[15];
    char s_a00583cf[23];
    char s_e8a86d57[8];
@@ -589,7 +585,6 @@ static const struct
    char s_08785e85[13];
    char s_094e2bc9[4];
    char s_b71e6907[13];
-   char s_fef383d2[31];
    char s_4707850d[12];
    char s_78b36202[9];
    char s_8b826990[17];
@@ -1821,13 +1816,10 @@ static const struct
    "<Sp\303\270r meg>",
    "Versjon",
    "Kunne ikke slette filen.",
-   "Kunne ikke gi filen nytt navn.",
    "Slett",
    "Slett spilleliste",
    "Ikke vis dette igjen",
    "Last ned alle miniatyrbilder",
-   "Hele systemet",
-   "Denne spillelisten",
    "Last ned miniatyrbilde",
    "Slipp bildet her",
    "Vennligst angi nytt navn p\303\245 spillelisten:",
@@ -1855,7 +1847,6 @@ static const struct
    "Flytt Ned",
    "Flytt opp",
    "Navn",
-   "Nettverksfeil",
    "Ny spilleliste",
    "Spilleliste Oppf\303\270ring",
    "Kjerne:",
@@ -1870,7 +1861,6 @@ static const struct
    "Filutforsker",
    "Opp",
    "Spillelister",
-   "Miniatyrbilder ble lastet ned.",
    "Skjermbilde",
    "Advarsel",
    "Vis 'Juksekoder'",
@@ -2629,7 +2619,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29324u
+      (sizeof(msg_hash_no_blob) == (29215u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3299,13 +3289,10 @@ static const msg_hash_id_t msg_hash_no_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
@@ -3333,7 +3320,6 @@ static const msg_hash_id_t msg_hash_no_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -3348,7 +3334,6 @@ static const msg_hash_id_t msg_hash_no_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_WARNING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,

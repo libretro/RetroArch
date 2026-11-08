@@ -5837,8 +5837,6 @@ static const char *download_dir_for_transfer(
 {
    switch (enum_idx)
    {
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         return settings->paths.directory_thumbnails;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          return settings->paths.directory_core_assets;
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
@@ -5900,17 +5898,16 @@ static const char *download_dir_for_transfer(
 }
 
 /* The kinds of transfer whose destination is known at push time and
- * whose body is streamed straight to it.  These are the bundles - a
- * thumbnail pack, assets.zip, cheats.zip - that run to tens or
- * hundreds of megabytes: holding one in memory until the transfer
- * completes is a large contiguous allocation on top of everything the
- * menu already has, which on a console is what fails or starves the
- * GPU allocator.  The rest are small and keep the in-memory hand-off. */
+ * whose body is streamed straight to it.  These are the bundles -
+ * assets.zip, cheats.zip - that run to tens or hundreds of megabytes:
+ * holding one in memory until the transfer completes is a large
+ * contiguous allocation on top of everything the menu already has,
+ * which on a console is what fails or starves the GPU allocator.  The
+ * rest are small and keep the in-memory hand-off. */
 static bool download_streams_to_disk(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
    {
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
@@ -6235,9 +6232,6 @@ static int action_ok_download_generic(const char *path,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
          path = FILE_PATH_SHADERS_CG_ZIP;
          break;
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         strlcpy(s, FILE_PATH_CORE_THUMBNAILPACKS_URL, sizeof(s));
-         break;
       default:
          strlcpy(s, network_buildbot_url, sizeof(s));
          break;
@@ -6454,7 +6448,6 @@ int action_ok_download_bundle(enum msg_hash_enums enum_idx)
 }
 
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_system_files_download, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD)
-DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_download_url, MENU_ENUM_LABEL_CB_DOWNLOAD_URL)
 #ifdef HAVE_LAKKA
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_lakka_download, MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD)
@@ -10735,11 +10728,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_core_system_files_download);
-#endif
-            break;
-         case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
-#ifdef HAVE_NETWORKING
-            BIND_ACTION_OK(cbs, action_ok_core_content_thumbnails);
 #endif
             break;
          case FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT:

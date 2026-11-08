@@ -1616,7 +1616,6 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_downloadingPlaylistThumbnails(false)
    ,m_thumbnailDownloadProgressDialog(new QProgressDialog(this))
    ,m_pendingThumbnailDownloadTypes()
-   ,m_thumbnailPackDownloadProgressDialog(new QProgressDialog(this))
    ,m_playlistThumbnailDownloadProgressDialog(new QProgressDialog(this))
    ,m_pendingPlaylistThumbnails()
    ,m_downloadedThumbnails(0)
@@ -1649,7 +1648,6 @@ MainWindow::MainWindow(QWidget *parent) :
    /* Cancel all progress dialogs immediately since
     * they show as soon as they're constructed. */
    m_thumbnailDownloadProgressDialog->cancel();
-   m_thumbnailPackDownloadProgressDialog->cancel();
    m_playlistThumbnailDownloadProgressDialog->cancel();
 
    /* m_playlistViewsAndFooter holds the playlist/grid views on top
@@ -2038,11 +2036,6 @@ void MainWindow::setupSignalConnections()
          m_thumbnailDownloadProgressDialog, SLOT(cancel()));
    connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()),
          this, SLOT(onThumbnailDownloadCanceled()));
-
-   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()),
-         m_thumbnailPackDownloadProgressDialog, SLOT(cancel()));
-   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()),
-         this, SLOT(onThumbnailPackDownloadCanceled()));
 
    connect(this, SIGNAL(itemChanged()), this, SLOT(onItemChanged()));
 
@@ -4572,16 +4565,6 @@ static void ui_companion_qt_core_on_thumbnail_downloaded(void *ud,
             QString::fromUtf8(path ? path : ""), success);
 }
 
-static void ui_companion_qt_core_on_thumbnail_pack_finished(void *ud,
-      enum companion_download_result result)
-{
-   ui_companion_qt_t *handle  = (ui_companion_qt_t*)ud;
-   ui_window_qt_t *win_handle = NULL;
-   if (handle && (win_handle = (ui_window_qt_t*)handle->window)
-         && win_handle->qtWindow)
-      win_handle->qtWindow->onCoreThumbnailPackFinished((int)result);
-}
-
 static void ui_companion_qt_core_on_browse_changed(void *ud)
 {
    (void)ud;
@@ -4597,7 +4580,6 @@ static const companion_callbacks_t ui_companion_qt_core_callbacks = {
    NULL, /* on_notify_refresh */
    ui_companion_qt_core_on_scan_finished,
    ui_companion_qt_core_on_thumbnail_downloaded,
-   ui_companion_qt_core_on_thumbnail_pack_finished,
    ui_companion_qt_core_on_browse_changed
 };
 

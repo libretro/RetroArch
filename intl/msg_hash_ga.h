@@ -1756,7 +1756,6 @@ static const struct
    char s_a38500d8[18];
    char s_9544161a[7];
    char s_76ac1944[40];
-   char s_ded7e809[42];
    char s_d8820ed7[46];
    char s_4c11d465[20];
    char s_50a04cd9[20];
@@ -1764,8 +1763,6 @@ static const struct
    char s_11121f30[19];
    char s_01badaa0[25];
    char s_6127cc52[30];
-   char s_9d52f73c[15];
-   char s_bc30b87a[19];
    char s_2fd5302f[40];
    char s_2dff21ec[33];
    char s_a2a28187[25];
@@ -1828,7 +1825,6 @@ static const struct
    char s_f24476fa[10];
    char s_97d90c67[9];
    char s_6d08238d[5];
-   char s_033bf99f[17];
    char s_8076aea7[16];
    char s_a00583cf[22];
    char s_e8a86d57[7];
@@ -1869,7 +1865,6 @@ static const struct
    char s_b71e6907[14];
    char s_d725639f[14];
    char s_ea5b5020[7];
-   char s_fef383d2[45];
    char s_4707850d[17];
    char s_cbddcf50[18];
    char s_9abb40fc[24];
@@ -7105,7 +7100,6 @@ static const struct
    "<Fiafraigh d\303\255om>",
    "Leagan",
    "N\303\255orbh fh\303\251idir an comhad a scriosadh.",
-   "N\303\255orbh fh\303\251idir an comhad a athainmni\303\272.",
    "Earr\303\241id ag nuashonr\303\272 iontr\303\241il seinmliosta.",
    "Sc\303\241thad\303\263ir reatha",
    "T\303\251ama Saincheaptha",
@@ -7113,8 +7107,6 @@ static const struct
    "Scrios Seinmliosta",
    "N\303\241 taispe\303\241in seo ar\303\255s",
    "\303\215osl\303\263d\303\241il Gach Mionsamhail",
-   "C\303\263ras Ioml\303\241n",
-   "An Seinmliosta seo",
    "T\303\241 \303\255osl\303\263d\303\241il ar si\303\272l cheana f\303\251in.",
    "D'\303\251irigh leis: %1 Theip air: %2",
    "\303\215osl\303\263d\303\241il mionsamhail",
@@ -7177,7 +7169,6 @@ static const struct
    "Bog S\303\255os",
    "Bog Suas",
    "Ainm",
-   "Earr\303\241id L\303\255onra",
    "Seinmliosta Nua",
    "Iontr\303\241il Seinmliosta",
    "Cro\303\255:",
@@ -7228,7 +7219,6 @@ static const struct
    "Seinmliosta\303\255",
    "Eala\303\255n Bosca",
    "L\303\263g\303\263",
-   "\303\215osl\303\263d\303\241ladh na mionsamhlacha go rath\303\272il.",
    "Seat sc\303\241ile\303\241in",
    "Sc\303\241ile\303\241n Teidil",
    "Theip ar an nuashonr\303\272.",
@@ -12271,7 +12261,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (269897u
+      (sizeof(msg_hash_ga_blob) == (269759u
 #ifdef ANDROID
        + 390u
 #endif
@@ -14583,7 +14573,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
@@ -14591,8 +14580,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
@@ -14655,7 +14642,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -14695,7 +14681,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,

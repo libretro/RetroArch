@@ -1322,7 +1322,6 @@ static const struct
    char s_a38500d8[7];
    char s_9544161a[7];
    char s_76ac1944[28];
-   char s_ded7e809[38];
    char s_d8820ed7[45];
    char s_4c11d465[19];
    char s_50a04cd9[17];
@@ -1330,8 +1329,6 @@ static const struct
    char s_11121f30[19];
    char s_01badaa0[31];
    char s_6127cc52[29];
-   char s_9d52f73c[19];
-   char s_bc30b87a[19];
    char s_2fd5302f[26];
    char s_2dff21ec[30];
    char s_a2a28187[21];
@@ -1393,7 +1390,6 @@ static const struct
    char s_f24476fa[13];
    char s_97d90c67[14];
    char s_6d08238d[5];
-   char s_033bf99f[12];
    char s_8076aea7[17];
    char s_a00583cf[19];
    char s_e8a86d57[6];
@@ -1433,7 +1429,6 @@ static const struct
    char s_094e2bc9[6];
    char s_b71e6907[13];
    char s_d725639f[10];
-   char s_fef383d2[39];
    char s_4707850d[13];
    char s_cbddcf50[12];
    char s_9abb40fc[24];
@@ -4871,7 +4866,6 @@ static const struct
    "<Kysy>",
    "Versio",
    "Tiedostoa ei voitu poistaa.",
-   "Tiedostoa ei voitu nimet\303\244 uudelleen.",
    "Virhe soittolistan kohdetta p\303\244ivitt\303\244ess\303\244.",
    "Nykyinen varjostin",
    "Mukautettu teema",
@@ -4879,8 +4873,6 @@ static const struct
    "Poista soittolista",
    "\303\204l\303\244 n\303\244yt\303\244 t\303\244t\303\244 uudelleen",
    "Lataa kaikki esikatselukuvat",
-   "Koko j\303\244rjestelm\303\244",
-   "T\303\244m\303\244 soittolista",
    "Lataus on jo k\303\244ynniss\303\244.",
    "Onnistui: %1 Ep\303\244onnistui: %2",
    "Lataa esikatselukuva",
@@ -4942,7 +4934,6 @@ static const struct
    "Siirr\303\244 alas",
    "Siirr\303\244 yl\303\266s",
    "Nimi",
-   "Verkkovirhe",
    "Uusi soittolista",
    "Soittolistan kohde",
    "Ydin:",
@@ -4989,7 +4980,6 @@ static const struct
    "Yl\303\266s",
    "Soittolistat",
    "Kansikuva",
-   "Esikatselukuvat ladattu onnistuneesti.",
    "Kuvakaappaus",
    "Otsikkokuva",
    "P\303\244ivitys ep\303\244onnistui.",
@@ -7576,7 +7566,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123449u
+      (sizeof(msg_hash_fi_blob) == (123322u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9224,7 +9214,6 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
@@ -9232,8 +9221,6 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
@@ -9295,7 +9282,6 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -9334,7 +9320,6 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,

@@ -1506,7 +1506,6 @@ static const struct
    char s_a38500d8[17];
    char s_9544161a[8];
    char s_76ac1944[34];
-   char s_ded7e809[35];
    char s_d8820ed7[53];
    char s_4c11d465[17];
    char s_50a04cd9[14];
@@ -1514,8 +1513,6 @@ static const struct
    char s_11121f30[23];
    char s_01badaa0[22];
    char s_6127cc52[31];
-   char s_9d52f73c[18];
-   char s_bc30b87a[25];
    char s_2fd5302f[35];
    char s_2dff21ec[27];
    char s_a2a28187[26];
@@ -1577,7 +1574,6 @@ static const struct
    char s_f24476fa[18];
    char s_97d90c67[19];
    char s_6d08238d[5];
-   char s_033bf99f[16];
    char s_8076aea7[17];
    char s_a00583cf[25];
    char s_e8a86d57[5];
@@ -1617,7 +1613,6 @@ static const struct
    char s_b71e6907[15];
    char s_d725639f[11];
    char s_ea5b5020[6];
-   char s_fef383d2[35];
    char s_4707850d[15];
    char s_cbddcf50[18];
    char s_9abb40fc[24];
@@ -5966,7 +5961,6 @@ static const struct
    "<K\303\251rdezzen r\303\241>",
    "Verzi\303\263",
    "A f\303\241jlt nem siker\303\274lt t\303\266r\303\266lni.",
-   "A f\303\241jlt nem siker\303\274lt \303\241tnevezni.",
    "Hiba a j\303\241t\303\251klista bejegyz\303\251s\303\251nek friss\303\255t\303\251sekor.",
    "Jelenlegi shader",
    "Egy\303\251ni t\303\251ma",
@@ -5974,8 +5968,6 @@ static const struct
    "J\303\241t\303\251klista t\303\266rl\303\251se",
    "Ne jelenjen meg \303\272jra",
    "Minden b\303\251lyegk\303\251p let\303\266lt\303\251se",
-   "A teljes rendszer",
-   "Ehhez a j\303\241t\303\251klist\303\241hoz",
    "A let\303\266lt\303\251s m\303\241r folyamatban van.",
    "Sikeres: %1 Sikertelen: %2",
    "B\303\251lyegk\303\251pek let\303\266lt\303\251se",
@@ -6039,7 +6031,6 @@ static const struct
    "Mozgat\303\241s lefel\303\251",
    "Mozgat\303\241s felfel\303\251",
    "N\303\251v",
-   "H\303\241l\303\263zati hiba",
    "\303\232j j\303\241t\303\251klista",
    "J\303\241t\303\251klista bejegyz\303\251se",
    "Mag:",
@@ -6088,7 +6079,6 @@ static const struct
    "J\303\241t\303\251klist\303\241k",
    "Doboz k\303\251p",
    "Log\303\263",
-   "B\303\251lyegk\303\251pek sikeresen let\303\266ltve.",
    "K\303\251perny\305\221k\303\251p",
    "Kezd\305\221 k\303\251perny\305\221",
    "Friss\303\255t\303\251s sikertelen.",
@@ -9812,7 +9802,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (187172u
+      (sizeof(msg_hash_hu_blob) == (187043u
 #ifdef ANDROID
        + 316u
 #endif
@@ -11749,7 +11739,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
@@ -11757,8 +11746,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
@@ -11820,7 +11807,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -11859,7 +11845,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
