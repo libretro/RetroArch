@@ -41,7 +41,7 @@ jobs:
         group: [codecs, formats, core]
     env:
       SAMPLE_GROUP: ${{ matrix.group }}
-      APT_PKGS: build-essential zlib1g-dev clang ffmpeg ccache
+      APT_PKGS: build-essential zlib1g-dev clang ffmpeg libavcodec-dev libavformat-dev libavutil-dev pkg-config ccache
     timeout-minutes: 15
 
     steps:
@@ -397,6 +397,9 @@ jobs:
             # stereo stream (tones, gain points, swap and negate masks)
             # and a mono one, then bad frames and garbage.
             ratrac3p_test
+            # Raw XMA analytical PCM, WMA packet history, malformed
+            # input and allocation-free decode/reset.
+            rwma_test
             # Animation playback against a scripted stream: order,
             # pacing, loops, catch-up, the worker's two jobs.
             video_player_test
@@ -984,6 +987,22 @@ jobs:
           cd libretro-common/samples/formats/data_transfer
           INERT_ONLY=1 ./data_transfer_prefix_test
           ./data_transfer_window_test
+
+      - name: Compare WMA decoders with FFmpeg
+        if: ${{ always() && matrix.group == 'codecs' }}
+        shell: bash
+        working-directory: libretro-common/samples/formats/wma
+        run: |
+          set -eu
+          make -j2 reference SANITIZER=address,undefined
+          out="$RUNNER_TEMP/rwma-fixtures"
+          mkdir -p "$out"
+          ffmpeg -v error -f lavfi -i 'sine=frequency=997:sample_rate=22050:duration=1' -c:a wmav1 -b:a 32k -flags +bitexact -y "$out/v1.wma"
+          ffmpeg -v error -f lavfi -i 'aevalsrc=0.3*sin(2*PI*997*t)|0.2*sin(2*PI*2399*t):s=48000:d=1' -c:a wmav2 -b:a 128k -flags +bitexact -y "$out/v2-stereo.wma"
+          ffmpeg -v error -f lavfi -i 'sine=frequency=733:sample_rate=48000:duration=1' -c:a wmav2 -b:a 24k -flags +bitexact -y "$out/v2-noise.wma"
+          for file in "$out"/*.wma; do
+            ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 ./rwma_reference "$file"
+          done
 
       - name: ccache statistics
         if: ${{ !cancelled() }}
