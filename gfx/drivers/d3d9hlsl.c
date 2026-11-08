@@ -6972,11 +6972,11 @@ static bool d3d9_hlsl_views_hw_copy(hlsl_renderchain_t *c,
    to.top      = 0;
    to.right    = (LONG)v->width;
    to.bottom   = (LONG)v->height;
+   /* The slot's last_dims stays the size its vertices were made for:
+    * the first pass makes them again when the view's differs, and the
+    * chain's end records the new one */
    ok = SUCCEEDED(IDirect3DDevice9_StretchRect(c->chain.dev, s, &from, t,
             &to, D3DTEXF_POINT));
-   /* The size the first pass reads it at, as a software frame's put
-    * leaves it */
-   c->chain.prev.last_dims[slot] = dims;
 end:
    if (s)
       IDirect3DSurface9_Release(s);
