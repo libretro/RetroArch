@@ -1,7 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team
  * SPDX-License-Identifier: GPL-3.0-or-later */
 #if defined(__linux__) && !defined(_XOPEN_SOURCE)
-/* st_mtim and O_CLOEXEC; strict C89 hides them */
+/* fstatvfs, realpath, st_mtim and O_CLOEXEC; strict C89 hides them */
 #define _XOPEN_SOURCE 700
 #endif
 
@@ -15,8 +15,12 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/types.h>
 #include <unistd.h>
+#if !defined(__linux__) || defined(ANDROID)
+#include <dlfcn.h>
+#endif
 #if defined(__linux__)
 #include <sys/vfs.h>
 #define CORE_FS_MAGIC
@@ -333,6 +337,7 @@ enum core_trust_load core_trust_load_file(core_trust_t *t,
    void *buf    = NULL;
    int64_t len  = 0;
    bool renamed = false;
+   struct core_self self;
    uint64_t dev;
    int64_t size;
    size_t n;
@@ -340,7 +345,7 @@ enum core_trust_load core_trust_load_file(core_trust_t *t,
    enum core_trust_load ret;
    int kind;
    core_trust_set_device(t, core_trust_folder_dev(path, &dev) ? &dev : NULL,
-         NULL);
+         core_self_find(&self) ? &self.dev : NULL);
    if (!(kind = core_trust_file_kind(path)))
       return CORE_TRUST_LOAD_MISSING;
    /* core_trust_parse(t, NULL, 0) is UNREADABLE and read-only */
@@ -483,4 +488,284 @@ bool core_trust_default_path(char *s, size_t len)
    strlcat(s, CORE_TRUST_FILE_NAME, len);
    return true;
 #endif
+}
+
+bool core_self_find(struct core_self *self)
+{
+#ifdef _WIN32
+   return false;
+#else
+   struct stat st;
+#if defined(__linux__) && !defined(ANDROID)
+   if (stat("/proc/self/exe", &st) != 0)
+      return false;
+#else
+   /* Android's /proc/self/exe is app_process: find our own library */
+   Dl_info info;
+   if (     !dladdr((const void*)(uintptr_t)core_self_find, &info)
+         || !info.dli_fname
+         || info.dli_fname[0] != '/'
+         || stat(info.dli_fname, &st) != 0)
+      return false;
+#endif
+   self->dev = (uint64_t)st.st_dev;
+   self->uid = (unsigned long)st.st_uid;
+   return true;
+#endif
+}
+
+#ifndef _WIN32
+/* Off Linux, with no user namespaces to read, 65534 is only a fallback */
+static unsigned long core_overflow_uid(void)
+{
+#ifdef __linux__
+   unsigned long uid = CORE_UID_UNKNOWN;
+   FILE *fp          = fopen("/proc/sys/kernel/overflowuid", "r");
+   if (fp)
+   {
+      if (fscanf(fp, "%lu", &uid) != 1)
+         uid = CORE_UID_UNKNOWN;
+      fclose(fp);
+   }
+   return uid;
+#else
+   return 65534;
+#endif
+}
+
+static bool core_path_exempt(const struct core_owner *who,
+      unsigned long self_uid, const struct stat *st, bool read_only_mount,
+      const char *path)
+{
+   /* access() also sees ACLs and read-only mounts */
+   return core_mode_exempt(who, self_uid, (unsigned long)st->st_uid,
+         (unsigned long)st->st_gid, (unsigned)st->st_mode, read_only_mount)
+      && access(path, W_OK) != 0;
+}
+#endif
+
+bool core_file_unwritable(core_file_t *f, const char *path,
+      const struct core_self *self)
+{
+#ifdef _WIN32
+   return false;
+#else
+   struct stat st, pst;
+   struct statvfs vfs;
+   struct core_owner who;
+   unsigned long *gids = NULL;
+   gid_t *list         = NULL;
+   char *dir           = NULL;
+   char *slash;
+   bool ok             = false;
+   int n, i;
+   /* Only beside RetroArch: a disk or image the user mounted is not */
+   if (     !self
+         || fstat(f->fd, &st) != 0
+         || (uint64_t)st.st_dev != self->dev
+         || (n = getgroups(0, NULL)) < 0)
+      return false;
+   list = (gid_t*)malloc(((size_t)n + 1) * sizeof(*list));
+   gids = (unsigned long*)malloc(((size_t)n + 1) * sizeof(*gids));
+   if (!list || !gids || (n = getgroups(n, list)) < 0)
+      goto end;
+   for (i = 0; i < n; i++)
+      gids[i] = (unsigned long)list[i];
+   gids[n]      = (unsigned long)getegid();
+   who.gids     = gids;
+   who.num_gids = (size_t)n + 1;
+   who.uid      = (unsigned long)geteuid();
+   who.overflow_uid = core_overflow_uid();
+   if (!core_mode_exempt(&who, self->uid, (unsigned long)st.st_uid,
+            (unsigned long)st.st_gid, (unsigned)st.st_mode,
+            fstatvfs(f->fd, &vfs) == 0 && (vfs.f_flag & ST_RDONLY)))
+      goto end;
+   /* The folders of the real path, which must name this same file */
+   if (     !(dir = realpath(path, NULL))
+         || stat(dir, &pst) != 0
+         || pst.st_dev != st.st_dev
+         || pst.st_ino != st.st_ino
+         || access(dir, W_OK) == 0)
+      goto end;
+   for (;;)
+   {
+      if (!(slash = strrchr(dir, '/')))
+         goto end;
+      slash[slash == dir ? 1 : 0] = '\0';
+      if (     stat(dir, &pst) != 0
+            || !core_path_exempt(&who, self->uid, &pst,
+                  statvfs(dir, &vfs) == 0 && (vfs.f_flag & ST_RDONLY), dir))
+         goto end;
+      if (string_is_equal(dir, "/"))
+         break;
+   }
+   ok = true;
+end:
+   free(list);
+   free(gids);
+   free(dir);
+   return ok;
+#endif
+}
+
+/* The folder's full path in one spelling, malloc'd, and its size */
+static void *core_folder_full(const char *dir, size_t *size)
+{
+#ifdef _WIN32
+   DWORD n = 0, len = 0;
+#ifdef LEGACY_WIN32
+   char *full = NULL;
+   if (     (n = GetFullPathNameA(dir, 0, NULL, NULL))
+         && (full = (char*)malloc(n)))
+      len = GetFullPathNameA(dir, n, full, NULL);
+#else
+   wchar_t *full = NULL;
+   wchar_t *wdir = utf8_to_utf16_string_alloc(dir);
+   if (     wdir
+         && (n = GetFullPathNameW(wdir, 0, NULL, NULL))
+         && (full = (wchar_t*)malloc(n * sizeof(*full))))
+      len = GetFullPathNameW(wdir, n, full, NULL);
+   free(wdir);
+#endif
+   if (!full || !len || len >= n)
+   {
+      free(full);
+      return NULL;
+   }
+   /* Absolute and without . or ..; now one case, no trailing separator */
+   while (len > 3 && (full[len - 1] == '\\' || full[len - 1] == '/'))
+      len--;
+#ifdef LEGACY_WIN32
+   CharUpperBuffA(full, len);
+#else
+   CharUpperBuffW(full, len);
+#endif
+   *size = len * sizeof(*full);
+   return full;
+#else
+   char *full = realpath(dir, NULL);
+   if (full)
+      *size = strlen(full);
+   return full;
+#endif
+}
+
+bool core_folder_key_with(const char *path, bool per_folder, uint8_t *key)
+{
+   struct sha256_state sha;
+   size_t n   = (size_t)(path_basename_nocompression(path) - path);
+   bool ok    = false;
+   char *dir;
+   void *full;
+   size_t size;
+   sha256_stream_init(&sha, 0);
+   /* One key for every folder, so none is looked up */
+   if (!per_folder)
+   {
+      sha256_stream_final(&sha, key);
+      return true;
+   }
+   if (!(dir = (char*)malloc(n + 2)))
+      return false;
+   memcpy(dir, path, n);
+   if (!n)
+      dir[n++] = '.';
+   dir[n] = '\0';
+   if ((full = core_folder_full(dir, &size)))
+   {
+      sha256_stream_update(&sha, (const uint8_t*)full, size);
+      sha256_stream_final(&sha, key);
+      free(full);
+      ok = true;
+   }
+   free(dir);
+   return ok;
+}
+
+bool core_folder_key(const char *path, uint8_t *key)
+{
+#ifdef ANDROID
+   return core_folder_key_with(path, false, key);
+#else
+   return core_folder_key_with(path, true, key);
+#endif
+}
+
+bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
+      const char *path, struct core_check *c)
+{
+   struct core_self self;
+   memset(c, 0, sizeof(*c));
+   c->result = CORE_CHECK_OK;
+   strlcpy(c->rec.name, path_basename_nocompression(path),
+         sizeof(c->rec.name));
+   if (core_trust_flags(s) & CORE_TRUST_CHECK_OFF)
+      return true;
+   if (     !core_file_identity(f, &c->rec.id)
+         || !core_folder_key(path, c->folder))
+   {
+      c->result = CORE_CHECK_ERROR;
+      return true;
+   }
+   return core_check_record(s, c)
+      || core_file_unwritable(f, path,
+            core_self_find(&self) ? &self : NULL);
+}
+
+enum core_check_result core_check_file(const core_trust_set_t *s,
+      const uint8_t *keys, size_t num_keys,
+      const char *path, unsigned flags, struct core_check *c)
+{
+   uint8_t sig[CORE_SIG_MAX_LEN + 1];
+   uint8_t sha256[CORE_SHA256_LEN];
+   struct core_hash h;
+   int64_t got      = 0;
+   int64_t sig_len  = -1;
+   size_t path_len  = strlen(path);
+   char *sig_path   = NULL;
+   int step         = -1;
+   core_file_t *f   = core_file_open(path);
+   if (!f || core_check_quick(s, f, path, c))
+   {
+      if (!f)
+      {
+         memset(c, 0, sizeof(*c));
+         c->result = CORE_CHECK_ERROR;
+      }
+      core_file_close(f);
+      return c->result;
+   }
+   if (core_hash_init(&h))
+      do
+         step = core_hash_step(&h, f);
+      while (step > 0);
+   core_file_close(f);
+   if (step < 0 || h.done != c->rec.id.size)
+   {
+      core_hash_free(&h);
+      c->result = CORE_CHECK_ERROR;
+      return c->result;
+   }
+   core_hash_final(&h, sha256);
+   /* <core>.sig, read no further than the longest valid one */
+   if ((sig_path = (char*)malloc(path_len + sizeof(".sig"))))
+   {
+      memcpy(sig_path, path, path_len);
+      memcpy(sig_path + path_len, ".sig", sizeof(".sig"));
+      if ((f = core_file_open(sig_path)))
+      {
+         for (sig_len = 0; (size_t)sig_len < sizeof(sig); sig_len += got)
+            if ((got = core_file_read(f, sig + (size_t)sig_len,
+                        sizeof(sig) - (size_t)sig_len)) <= 0)
+               break;
+         core_file_close(f);
+         if (got < 0)
+            sig_len = 0;
+      }
+      free(sig_path);
+   }
+   core_check_finish(s, keys, num_keys, sha256,
+         sig_len < 0 ? NULL : sig, sig_len < 0 ? 0 : (size_t)sig_len,
+         flags, c);
+   return c->result;
 }

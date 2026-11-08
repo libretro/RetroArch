@@ -35,6 +35,7 @@
 
 static unsigned checks;
 static unsigned failures;
+static const char *self_path = "";
 
 #define CHECK(cond) do { checks++; if (!(cond)) { failures++; \
    printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } } while (0)
@@ -343,6 +344,15 @@ static core_trust_t *fx_store(void)
 {
    core_trust_t *t = core_trust_new();
    CHECK(core_trust_set_device(t, &fx_dev, NULL));
+   return t;
+}
+
+/* One as RetroArch loads it, for records of the test's own files */
+static core_trust_t *real_store(void)
+{
+   core_trust_t *t = core_trust_new();
+   CHECK(core_trust_load_file(t, tmp("store_trust"))
+         == CORE_TRUST_LOAD_MISSING);
    return t;
 }
 
@@ -924,6 +934,80 @@ static void test_trust_file(void)
    core_trust_free(t);
 }
 
+static void put_core(const char *core, const uint8_t *sig, size_t sig_len)
+{
+   char sig_path[256];
+   strlcpy(sig_path, core, sizeof(sig_path));
+   strlcat(sig_path, ".sig", sizeof(sig_path));
+   CHECK(filestream_write_file_atomic(core, fx_core, FX_CORE_SIZE));
+   CHECK(filestream_write_file(sig_path, sig, (int64_t)sig_len));
+}
+
+static enum core_check_result check_path(core_trust_t *t, const char *path,
+      unsigned flags, struct core_check *c)
+{
+   core_trust_set_t *s = core_trust_get(t);
+   enum core_check_result r = core_check_file(s, fx_keys, 2, path, flags, c);
+   core_trust_set_put(s);
+   return r;
+}
+
+static void test_newest_folders(void)
+{
+   static const char *const same[] = {
+      TMP_DIR "/one/./" FX_NAME, "./" TMP_DIR "/one/" FX_NAME,
+      TMP_DIR "//one//" FX_NAME, TMP_DIR "/two/../one/" FX_NAME };
+#ifdef _WIN32
+   static const char *const spelt[] = {
+      TMP_DIR "\\ONE\\" FX_NAME, TMP_DIR "\\one/" FX_NAME,
+      "./CORE_signature_test_tmp/One\\\\" FX_NAME };
+#endif
+   core_trust_t *t = core_trust_new();
+   struct core_check c;
+   uint8_t key[CORE_SHA256_LEN], other[CORE_SHA256_LEN];
+   char one[256], two[256];
+   size_t i;
+   CHECK(path_mkdir(tmp("one")) && path_mkdir(tmp("two")));
+   /* One key per folder, however the path spells it */
+   CHECK(core_folder_key(tmp("one/" FX_NAME), key));
+   for (i = 0; i < sizeof(same) / sizeof(same[0]); i++)
+      CHECK(     core_folder_key(same[i], other)
+            && !memcmp(key, other, sizeof(key)));
+#ifdef _WIN32
+   for (i = 0; i < sizeof(spelt) / sizeof(spelt[0]); i++)
+      CHECK(     core_folder_key(spelt[i], other)
+            && !memcmp(key, other, sizeof(key)));
+#else
+   CHECK(!core_folder_key(tmp("nowhere/" FX_NAME), other));
+#endif
+   CHECK(core_folder_key(tmp("two/" FX_NAME), other));
+   CHECK(memcmp(key, other, sizeof(key)));
+   CHECK(core_folder_key(tmp(FX_NAME), other));
+   CHECK(memcmp(key, other, sizeof(key)));
+   /* Android: one key for every folder */
+   CHECK(core_folder_key_with(tmp("two/" FX_NAME), true, other));
+   CHECK(memcmp(key, other, sizeof(key)));
+   CHECK(core_folder_key_with(tmp("one/" FX_NAME), false, key));
+   CHECK(core_folder_key_with(tmp("two/" FX_NAME), false, other));
+   CHECK(!memcmp(key, other, sizeof(key)));
+   /* which needs no folder found */
+   CHECK(core_folder_key_with(tmp("nowhere/" FX_NAME), false, other));
+   CHECK(!memcmp(key, other, sizeof(key)));
+   strlcpy(one, tmp("one/" FX_NAME), sizeof(one));
+   strlcpy(two, tmp("two/" FX_NAME), sizeof(two));
+   put_core(one, fx_sig_good, sizeof(fx_sig_good));
+   CHECK(check_path(t, one, 0, &c) == CORE_CHECK_OK);
+   CHECK(core_trust_apply(t, &c));
+   /* Another install's folder keeps its own */
+   put_core(two, fx_sig_older, sizeof(fx_sig_older));
+   CHECK(check_path(t, two, 0, &c) == CORE_CHECK_OK);
+   /* The same folder, however spelled, is still older */
+   put_core(one, fx_sig_older, sizeof(fx_sig_older));
+   for (i = 0; i < sizeof(same) / sizeof(same[0]); i++)
+      CHECK(check_path(t, same[i], 0, &c) == CORE_CHECK_OLDER);
+   core_trust_free(t);
+}
+
 static bool save(core_trust_t *t, const char *path)
 {
    core_trust_write_t *w = core_trust_write_begin(t);
@@ -1248,15 +1332,625 @@ static void test_trust_temp(void)
    core_trust_free(v);
 }
 
+static void test_record_older(void)
+{
+   core_trust_t *t = real_store();
+   core_trust_t *u = real_store();
+   core_trust_set_t *s;
+   core_file_t *f;
+   struct core_check c, c2;
+   uint8_t core_sha[CORE_SHA256_LEN];
+   uint8_t *buf;
+   size_t len;
+   char core[256];
+   bool kept;
+   sha(fx_core, FX_CORE_SIZE, core_sha);
+   CHECK(path_mkdir(tmp("three")));
+   strlcpy(core, tmp("three/" FX_NAME), sizeof(core));
+   put_core(core, fx_sig_older, sizeof(fx_sig_older));
+   kept = records_for(core);
+   CHECK(check_path(t, core, 0, &c) == CORE_CHECK_OK);
+   CHECK(core_trust_apply(t, &c));
+   /* A newer build seen in the same folder since */
+   s = core_trust_get(t);
+   memset(&c2, 0, sizeof(c2));
+   strlcpy(c2.rec.name, FX_NAME, sizeof(c2.rec.name));
+   CHECK(core_folder_key(core, c2.folder));
+   c2.rec.id.dev = 99;
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_good,
+         sizeof(fx_sig_good), 0, &c2);
+   core_trust_set_put(s);
+   CHECK(c2.result == CORE_CHECK_OK);
+   CHECK(core_trust_apply(t, &c2));
+   /* so the record no longer answers alone */
+   s = core_trust_get(t);
+   CHECK((f = core_file_open(core)) != NULL);
+   CHECK(!core_check_quick(s, f, core, &c));
+   core_file_close(f);
+   core_trust_set_put(s);
+   CHECK(check_path(t, core, 0, &c) == CORE_CHECK_OLDER);
+
+   /* A restored backup's record still answers, where there are records */
+   put_core(core, fx_sig_older, sizeof(fx_sig_older));
+   CHECK(check_path(t, core, CORE_CHECK_ALLOW_OLDER, &c) == CORE_CHECK_OK);
+   CHECK(core_trust_apply(t, &c));
+   CHECK(check_path(t, core, 0, &c)
+         == (kept ? CORE_CHECK_OK : CORE_CHECK_OLDER) && !c.record);
+   CHECK((buf = core_trust_serialize(t, &len)) != NULL);
+   CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_OK);
+   free(buf);
+   CHECK(check_path(u, core, 0, &c)
+         == (kept ? CORE_CHECK_OK : CORE_CHECK_OLDER) && !c.record);
+   /* So does Always Trust's; without records its hash does */
+   put_core(core, fx_sig_older, sizeof(fx_sig_older));
+   CHECK(check_path(t, core, 0, &c) == CORE_CHECK_OLDER);
+   CHECK(core_trust_always(t, &c));
+   CHECK(check_path(t, core, 0, &c) == CORE_CHECK_OK && c.record == !kept);
+
+   /* Two checks in flight: the older one is not recorded */
+   core_trust_free(t);
+   t = fx_store();
+   s = core_trust_get(t);
+   memset(&c, 0, sizeof(c));
+   strlcpy(c.rec.name, FX_NAME, sizeof(c.rec.name));
+   c.rec.id.dev        = fx_dev;
+   c.rec.id.ctime_kept = true;
+   c2 = c;
+   c.rec.id.ino[0]  = 1;
+   c2.rec.id.ino[0] = 2;
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_good,
+         sizeof(fx_sig_good), 0, &c);
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_older,
+         sizeof(fx_sig_older), 0, &c2);
+   core_trust_set_put(s);
+   CHECK(c.result == CORE_CHECK_OK && c2.result == CORE_CHECK_OK);
+   CHECK(core_trust_apply(t, &c));
+   CHECK(!core_trust_apply(t, &c2));
+   s = core_trust_get(t);
+   CHECK(!core_trust_has_identity(s, &c2.rec.id, FX_NAME));
+   /* Unless it is a restore */
+   c2.rec.id.ino[0] = 3;
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_older,
+         sizeof(fx_sig_older), CORE_CHECK_ALLOW_OLDER, &c2);
+   core_trust_set_put(s);
+   CHECK(core_trust_apply(t, &c2));
+   s = core_trust_get(t);
+   CHECK(core_trust_has_identity(s, &c2.rec.id, FX_NAME));
+   core_trust_set_put(s);
+   core_trust_free(t);
+   core_trust_free(u);
+}
+
+static void test_ctime_kept(void)
+{
+   core_trust_t *t = core_trust_new();
+   core_trust_set_t *s;
+   core_file_t *f;
+   struct core_check c, c2;
+   uint8_t core_sha[CORE_SHA256_LEN];
+   char core[256];
+   bool kept;
+   sha(fx_core, FX_CORE_SIZE, core_sha);
+   CHECK(path_mkdir(tmp("four")));
+   strlcpy(core, tmp("four/" FX_NAME), sizeof(core));
+   put_core(core, fx_sig_good, sizeof(fx_sig_good));
+   s = core_trust_get(t);
+   CHECK((f = core_file_open(core)) != NULL);
+   CHECK(!core_check_quick(s, f, core, &c));
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_good,
+         sizeof(fx_sig_good), 0, &c);
+   core_trust_set_put(s);
+   CHECK(c.result == CORE_CHECK_OK && c.record);
+   kept = c.rec.id.ctime_kept;
+   /* The store on its device, so only ctime decides */
+   CHECK(core_trust_set_device(t, &c.rec.id.dev, NULL));
+   /* Marked as on a filesystem that doesn't keep ctime: no record, but
+    * the newest build and Always Trust's hash still count */
+   c.rec.id.ctime_kept = false;
+   CHECK(core_trust_apply(t, &c));
+   CHECK(core_trust_always(t, &c));
+   s = core_trust_get(t);
+   CHECK(!core_trust_has_identity(s, &c.rec.id, FX_NAME));
+   CHECK(core_trust_newest(s, c.folder, FX_NAME) == FX_TIME);
+   CHECK(core_trust_has_hash(s, core_sha));
+   core_trust_set_put(s);
+   /* nor is a record honoured for one */
+   core_trust_free(t);
+   t = core_trust_new();
+   CHECK(core_trust_set_device(t, &c.rec.id.dev, NULL));
+   c.rec.id.ctime_kept = true;
+   CHECK(core_trust_apply(t, &c));
+   s = core_trust_get(t);
+   CHECK(core_check_record(s, &c));
+   c.rec.id.ctime_kept = false;
+   CHECK(!core_check_record(s, &c));
+   /* This file, as its own filesystem has it */
+   CHECK(core_check_quick(s, f, core, &c2) == kept);
+   core_file_close(f);
+   core_trust_set_put(s);
+   core_trust_free(t);
+}
+
+/* Records only of files on the store's own filesystem */
+static void test_store_device(void)
+{
+   core_trust_t *t = core_trust_new();
+   core_trust_set_t *s;
+   core_file_t *f;
+   struct core_check c, c2;
+   uint64_t other;
+   char core[256];
+   bool kept;
+   /* None with no device known */
+   check_of(&c, "d_libretro.so", 1, 0xdd, 10);
+   CHECK(core_trust_apply(t, &c));
+   CHECK(core_trust_always(t, &c));
+   s = core_trust_get(t);
+   CHECK(!core_trust_has_identity(s, &c.rec.id, c.rec.name));
+   CHECK(core_trust_has_hash(s, c.rec.sha256));
+   CHECK(core_trust_newest(s, nowhere, c.rec.name) == 10);
+   core_trust_set_put(s);
+   core_trust_free(t);
+   /* as when the store's folder can't be found */
+   t = core_trust_new();
+   CHECK(core_trust_load_file(t, tmp("nowhere/core_trust"))
+         == CORE_TRUST_LOAD_MISSING);
+   CHECK(core_trust_apply(t, &c));
+   s = core_trust_get(t);
+   CHECK(!core_trust_has_identity(s, &c.rec.id, c.rec.name));
+   core_trust_set_put(s);
+   core_trust_free(t);
+
+   /* A core beside the store keeps its record */
+   CHECK(path_mkdir(tmp("five")));
+   strlcpy(core, tmp("five/" FX_NAME), sizeof(core));
+   put_core(core, fx_sig_good, sizeof(fx_sig_good));
+   kept = records_for(core);
+   t    = real_store();
+   CHECK(check_path(t, core, 0, &c) == CORE_CHECK_OK && c.record);
+   CHECK(core_trust_apply(t, &c));
+   s = core_trust_get(t);
+   CHECK(core_trust_has_identity(s, &c.rec.id, FX_NAME) == kept);
+   CHECK(core_check_record(s, &c) == kept);
+   core_trust_set_put(s);
+   /* The store on another device: not honoured */
+   other = c.rec.id.dev + 1;
+   CHECK(core_trust_set_device(t, &other, NULL));
+   s = core_trust_get(t);
+   CHECK(!core_check_record(s, &c));
+   CHECK((f = core_file_open(core)) != NULL);
+   CHECK(!core_check_quick(s, f, core, &c2));
+   core_file_close(f);
+   core_trust_set_put(s);
+   core_trust_free(t);
+   /* nor stored, but the newest build and the hash count */
+   t = core_trust_new();
+   CHECK(core_trust_set_device(t, &other, NULL));
+   CHECK(core_trust_apply(t, &c));
+   CHECK(core_trust_always(t, &c));
+   s = core_trust_get(t);
+   CHECK(!core_trust_has_identity(s, &c.rec.id, FX_NAME));
+   CHECK(core_trust_newest(s, c.folder, FX_NAME) == FX_TIME);
+   CHECK(core_trust_has_hash(s, c.rec.sha256));
+   core_trust_set_put(s);
+   CHECK(check_path(t, core, 0, &c) == CORE_CHECK_OK && c.record);
+   core_trust_free(t);
+}
+
+/* and of files on RetroArch's own */
+static void test_self_device(void)
+{
+   static const uint64_t store = 2, self = 3, other = 4;
+   core_trust_t *t = core_trust_new();
+   core_trust_set_t *s;
+   struct core_check c, d;
+   struct core_self me;
+   bool known;
+   /* The store on one device and RetroArch on another: a core on
+    * RetroArch's keeps its record */
+   CHECK(core_trust_set_device(t, &store, &self));
+   check_of(&c, "e_libretro.so", 1, 0xee, 10);
+   check_of(&d, "f_libretro.so", 2, 0xff, 10);
+   c.rec.id.dev = self;
+   d.rec.id.dev = self;
+   CHECK(core_trust_apply(t, &c));
+   CHECK(core_trust_always(t, &d));
+   s = core_trust_get(t);
+   CHECK(core_trust_has_identity(s, &c.rec.id, c.rec.name));
+   CHECK(core_check_record(s, &c));
+   CHECK(core_check_record(s, &d));
+   core_trust_set_put(s);
+   /* not once RetroArch's is unknown */
+   CHECK(core_trust_set_device(t, &store, NULL));
+   s = core_trust_get(t);
+   CHECK(!core_check_record(s, &c));
+   CHECK(!core_check_record(s, &d));
+   core_trust_set_put(s);
+   core_trust_free(t);
+   /* nor made then, nor for a core on neither device */
+   t = core_trust_new();
+   CHECK(core_trust_set_device(t, &store, NULL));
+   CHECK(core_trust_apply(t, &c));
+   CHECK(core_trust_set_device(t, &store, &self));
+   d.rec.id.dev = other;
+   CHECK(core_trust_apply(t, &d));
+   CHECK(core_trust_always(t, &d));
+   s = core_trust_get(t);
+   CHECK(!core_trust_has_identity(s, &c.rec.id, c.rec.name));
+   CHECK(!core_trust_has_identity(s, &d.rec.id, d.rec.name));
+   CHECK(!core_check_record(s, &d));
+   CHECK(core_trust_has_hash(s, d.rec.sha256));
+   core_trust_set_put(s);
+   core_trust_free(t);
+
+   /* core_trust_load_file finds RetroArch's own where it can */
+   known = core_self_find(&me);
+   t     = core_trust_new();
+   CHECK(core_trust_load_file(t, tmp("nowhere/core_trust"))
+         == CORE_TRUST_LOAD_MISSING);
+   c.rec.id.dev = known ? me.dev : self;
+   CHECK(core_trust_apply(t, &c));
+   s = core_trust_get(t);
+   CHECK(core_trust_has_identity(s, &c.rec.id, c.rec.name) == known);
+   core_trust_set_put(s);
+   core_trust_free(t);
+}
+
+static void test_owner(void)
+{
+   static const unsigned long groups[] = { 20, 1000 };
+   struct core_owner me;
+   me.gids     = groups;
+   me.num_gids = 2;
+   me.uid      = 1000;
+   me.overflow_uid = 65534;
+   CHECK( core_mode_writable(&me, 1000, 0, 0444, false));
+   CHECK(!core_mode_writable(&me, 1000, 0, 0644, true));
+   CHECK(!core_mode_writable(&me, 0, 0, 0755, false));
+   CHECK( core_mode_writable(&me, 0, 0, 0757, false));
+   CHECK( core_mode_writable(&me, 0, 20, 0775, false));
+   CHECK(!core_mode_writable(&me, 0, 30, 0775, false));
+   CHECK(!core_mode_writable(&me, 0, 20, 0755, false));
+   me.uid = 0;
+   CHECK( core_mode_writable(&me, 1000, 0, 0444, false));
+
+   /* Exempt: not ours to write, and root's or RetroArch's owner's */
+   me.uid = 1000;
+   CHECK( core_mode_exempt(&me, 1000, 0, 0, 0755, false));
+   CHECK(!core_mode_exempt(&me, 1000, 0, 0, 0757, false));
+   CHECK(!core_mode_exempt(&me, 1000, 1000, 0, 0555, false));
+   /* Another account's, in its own 0755 folders */
+   CHECK(!core_mode_exempt(&me, 1000, 1001, 1001, 0644, false));
+   CHECK(!core_mode_exempt(&me, 1000, 1001, 1001, 0755, false));
+   CHECK(!core_mode_exempt(&me, 0, 1001, 1001, 0755, false));
+   /* Linuxbrew: that account owns RetroArch too */
+   CHECK( core_mode_exempt(&me, 1001, 1001, 1001, 0755, false));
+   /* Any owner on a read-only mount, as Flatpak's / */
+   CHECK( core_mode_exempt(&me, 1000, 1000, 1000, 0755, true));
+   CHECK( core_mode_exempt(&me, 0, 1001, 1001, 0644, true));
+   /* No group write, but for root's group on Linux and Android, even
+    * when not ours; elsewhere gid 0 is wheel, admin users */
+   CHECK(!core_mode_exempt(&me, 1000, 0, 30, 0775, false));
+   CHECK(!core_mode_exempt(&me, 0, 0, 30, 0775, false));
+   CHECK(!core_mode_exempt(&me, 1001, 1001, 1001, 0775, false));
+   CHECK(!core_mode_exempt(&me, 1001, 1001, 30, 0664, false));
+#if defined(__linux__) || defined(ANDROID)
+   CHECK( core_mode_exempt(&me, 1000, 0, 0, 0775, false));
+   CHECK( core_mode_exempt(&me, 1001, 1001, 0, 0775, false));
+   CHECK( core_mode_exempt(&me, 1000, 0, 0, 0100664, false));
+#else
+   CHECK(!core_mode_exempt(&me, 1000, 0, 0, 0775, false));
+   CHECK(!core_mode_exempt(&me, 1001, 1001, 0, 0775, false));
+   CHECK(!core_mode_exempt(&me, 1000, 0, 0, 0100664, false));
+#endif
+   CHECK( core_mode_exempt(&me, 1000, 0, 0, 041775, false));
+   CHECK( core_mode_exempt(&me, 1000, 0, 30, 0755, false));
+   CHECK( core_mode_exempt(&me, 1000, 0, 30, 0775, true));
+   CHECK( core_mode_exempt(&me, 1001, 1001, 1001, 0775, true));
+   /* A sticky folder (040000 folder, 01000 sticky) may have group write:
+    * multi-user Nix's /nix/store, root:nixbld 1775, and what's below */
+   CHECK( core_mode_exempt(&me, 1000, 0, 30000, 041775, false));
+   CHECK( core_mode_exempt(&me, 0, 0, 30000, 041775, false));
+   CHECK( core_mode_exempt(&me, 1001, 1001, 30, 043775, false));
+   CHECK( core_mode_exempt(&me, 1000, 0, 0, 040555, false));
+   CHECK( core_mode_exempt(&me, 1000, 0, 0, 0100444, false));
+   CHECK(!core_mode_exempt(&me, 1000, 0, 30000, 040775, false));
+   CHECK(!core_mode_exempt(&me, 1000, 0, 30000, 042775, false));
+   CHECK(!core_mode_exempt(&me, 1000, 0, 30000, 0100664, false));
+   CHECK(!core_mode_exempt(&me, 1000, 0, 30000, 0101775, false));
+   CHECK(!core_mode_exempt(&me, 1000, 0, 30000, 01775, false));
+   /* Still not ours to write, nor anyone's */
+   CHECK(!core_mode_exempt(&me, 1000, 0, 20, 041775, false));
+   CHECK(!core_mode_exempt(&me, 1000, 0, 30000, 041777, false));
+   CHECK(!core_mode_exempt(&me, 1000, 1001, 30000, 041775, false));
+   /* In a user namespace, host root and every unmapped account show as
+    * the overflow uid: never root, nor RetroArch's owner */
+   CHECK(!core_mode_exempt(&me, 65534, 65534, 65534, 0100644, false));
+   CHECK(!core_mode_exempt(&me, 65534, 65534, 65534, 040755, false));
+   CHECK(!core_mode_exempt(&me, 65534, 65534, 0, 040755, false));
+   CHECK( core_mode_exempt(&me, 65534, 0, 0, 040755, false));
+   CHECK( core_mode_exempt(&me, 65534, 0, 0, 0100444, false));
+   CHECK(!core_mode_exempt(&me, 1000, 65534, 65534, 0100644, false));
+   CHECK( core_mode_exempt(&me, 65534, 65534, 65534, 0100644, true));
+   me.overflow_uid = 4242;
+   CHECK(!core_mode_exempt(&me, 4242, 4242, 4242, 0100644, false));
+   CHECK( core_mode_exempt(&me, 65534, 65534, 65534, 0100644, false));
+   me.overflow_uid = 0;
+   CHECK(!core_mode_exempt(&me, 1000, 0, 0, 040755, false));
+   /* Not known: any owner but root could be it */
+   me.overflow_uid = CORE_UID_UNKNOWN;
+   CHECK(!core_mode_exempt(&me, 1001, 1001, 1001, 0100644, false));
+   CHECK(!core_mode_exempt(&me, 1001, 1001, 1001, 040755, false));
+   CHECK(!core_mode_exempt(&me, 65534, 65534, 65534, 0100644, false));
+   CHECK( core_mode_exempt(&me, 1001, 0, 0, 040755, false));
+   CHECK( core_mode_exempt(&me, 65534, 0, 0, 0100444, false));
+   CHECK( core_mode_exempt(&me, 1001, 1001, 1001, 0100644, true));
+}
+
+static void test_check_finish(core_trust_t *t)
+{
+   uint8_t core_sha[CORE_SHA256_LEN];
+   uint8_t other_sha[CORE_SHA256_LEN];
+   core_trust_set_t *s;
+   struct core_check c;
+
+   sha(fx_core, FX_CORE_SIZE, core_sha);
+
+   /* core_check_finish's order, from buffers */
+   s = core_trust_get(t);
+   memset(&c, 0, sizeof(c));
+   strlcpy(c.rec.name, FX_NAME, sizeof(c.rec.name));
+   CHECK(core_folder_key(tmp(FX_NAME), c.folder));
+   core_check_finish(s, fx_keys, 2, core_sha, NULL, 0, 0, &c);
+   CHECK(c.result == CORE_CHECK_UNSIGNED && !c.record);
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_good, 0, 0, &c);
+   CHECK(c.result == CORE_CHECK_UNSIGNED && !c.record);
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_good,
+         sizeof(fx_sig_good) - 1, 0, &c);
+   CHECK(c.result == CORE_CHECK_MODIFIED && !c.record);
+   core_check_finish(s, fx_keys, 1, core_sha, fx_sig_key2,
+         sizeof(fx_sig_key2), 0, &c);
+   CHECK(c.result == CORE_CHECK_UNKNOWN_KEY && !c.record);
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_good,
+         sizeof(fx_sig_good), 0, &c);
+   CHECK(c.result == CORE_CHECK_OK && c.record && c.raise_newest);
+   CHECK(c.rec.build_time == FX_TIME);
+   core_trust_set_put(s);
+   CHECK(core_trust_apply(t, &c));
+   s = core_trust_get(t);
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_older,
+         sizeof(fx_sig_older), 0, &c);
+   CHECK(c.result == CORE_CHECK_OLDER && !c.record);
+   /* Restoring RetroArch's own backup */
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_older,
+         sizeof(fx_sig_older), CORE_CHECK_ALLOW_OLDER, &c);
+   CHECK(c.result == CORE_CHECK_OK && c.record);
+   /* The same build again is not older */
+   core_check_finish(s, fx_keys, 2, core_sha, fx_sig_good,
+         sizeof(fx_sig_good), 0, &c);
+   CHECK(c.result == CORE_CHECK_OK);
+   core_trust_set_put(s);
+   /* A trusted hash goes before any .sig */
+   sha(fx_core, FX_CORE_SIZE - 1, other_sha);
+   memcpy(c.rec.sha256, other_sha, CORE_SHA256_LEN);
+   CHECK(core_trust_always(t, &c));
+   s = core_trust_get(t);
+   core_check_finish(s, fx_keys, 2, other_sha, (const uint8_t*)"junk", 4,
+         0, &c);
+   CHECK(c.result == CORE_CHECK_OK && c.record);
+   core_trust_set_put(s);
+}
+
+static void test_check_files(core_trust_t *t)
+{
+   core_trust_set_t *s;
+   struct core_check c;
+#ifndef _WIN32
+   core_file_t *f;
+#endif
+   char core[256];
+   char sig_path[256];
+
+   /* Whole checks of real files */
+   strlcpy(core, tmp(FX_NAME), sizeof(core));
+   strlcpy(sig_path, core, sizeof(sig_path));
+   strlcat(sig_path, ".sig", sizeof(sig_path));
+   CHECK(filestream_write_file(core, fx_core, FX_CORE_SIZE));
+   filestream_delete(sig_path);
+   s = core_trust_get(t);
+   CHECK(core_check_file(s, fx_keys, 2, core, 0, &c) == CORE_CHECK_UNSIGNED);
+   /* An empty .sig is no .sig */
+   CHECK(filestream_write_file(sig_path, "", 0));
+   CHECK(core_check_file(s, fx_keys, 2, core, 0, &c) == CORE_CHECK_UNSIGNED);
+   filestream_delete(sig_path);
+#ifndef _WIN32
+   /* A FIFO .sig must not wait for a writer */
+   CHECK(!mkfifo(sig_path, 0600));
+   CHECK(core_check_file(s, fx_keys, 2, core, 0, &c) == CORE_CHECK_UNSIGNED);
+   filestream_delete(sig_path);
+#endif
+   /* A .sig longer than any valid one is read no further than that */
+   memset(edited, 0x5a, sizeof(edited));
+   memcpy(edited, fx_sig_good, sizeof(fx_sig_good));
+   CHECK(filestream_write_file(sig_path, edited, sizeof(edited)));
+   CHECK(core_check_file(s, fx_keys, 2, core, 0, &c) == CORE_CHECK_MODIFIED);
+   CHECK(filestream_write_file(sig_path, fx_sig_older, sizeof(fx_sig_older)));
+   CHECK(core_check_file(s, fx_keys, 2, core, 0, &c) == CORE_CHECK_OLDER);
+   CHECK(filestream_write_file(sig_path, fx_sig_good, sizeof(fx_sig_good)));
+   CHECK(core_check_file(s, fx_keys, 2, core, 0, &c) == CORE_CHECK_OK);
+   CHECK(c.record);
+   core_trust_set_put(s);
+   CHECK(core_trust_apply(t, &c));
+   /* The identity record now answers without the .sig, where there
+    * are records */
+   filestream_delete(sig_path);
+   s = core_trust_get(t);
+   CHECK(core_check_file(s, fx_keys, 2, core, 0, &c) == (records_for(core)
+            ? CORE_CHECK_OK : CORE_CHECK_UNSIGNED));
+   CHECK(!c.record);
+   core_trust_set_put(s);
+   /* Replaced: hashed again, and unsigned */
+   fx_core[0] ^= 1;
+   CHECK(filestream_write_file_atomic(core, fx_core, FX_CORE_SIZE));
+   fx_core[0] ^= 1;
+   s = core_trust_get(t);
+   CHECK(core_check_file(s, fx_keys, 2, core, 0, &c) == CORE_CHECK_UNSIGNED);
+   core_trust_set_put(s);
+   /* Always Trust: the hash, wherever the file is */
+   CHECK(core_trust_always(t, &c));
+   fx_core[0] ^= 1;
+   CHECK(filestream_write_file(tmp("copy_libretro.so"), fx_core,
+            FX_CORE_SIZE));
+   fx_core[0] ^= 1;
+   s = core_trust_get(t);
+   CHECK(core_check_file(s, fx_keys, 2, tmp("copy_libretro.so"), 0, &c)
+         == CORE_CHECK_OK);
+   CHECK(c.record);
+   core_trust_set_put(s);
+   /* Turned off: anything goes, unhashed */
+   CHECK(filestream_write_file(sig_path, "junk", 4));
+   CHECK(filestream_write_file(core, "x", 1));
+   CHECK(core_trust_set_flag(t, CORE_TRUST_CHECK_OFF, true));
+   s = core_trust_get(t);
+   CHECK(core_check_file(s, fx_keys, 2, core, 0, &c) == CORE_CHECK_OK);
+   CHECK(!c.record);
+   core_trust_set_put(s);
+   CHECK(core_trust_set_flag(t, CORE_TRUST_CHECK_OFF, false));
+   s = core_trust_get(t);
+   CHECK(core_check_file(s, fx_keys, 2, core, 0, &c)
+         == CORE_CHECK_MODIFIED);
+   /* Could not be checked: an error, not a modified core */
+   CHECK(core_check_file(s, fx_keys, 2, tmp("missing.so"), 0, &c)
+         == CORE_CHECK_ERROR && !c.record);
+#ifndef _WIN32
+   /* Its folder gone since it was opened */
+   CHECK(path_mkdir(tmp("gone")));
+   CHECK(filestream_write_file(tmp("gone/" FX_NAME), fx_core, FX_CORE_SIZE));
+   CHECK((f = core_file_open(tmp("gone/" FX_NAME))) != NULL);
+   filestream_delete(tmp("gone/" FX_NAME));
+   path_rmdir(tmp("gone"));
+   CHECK(core_check_quick(s, f, tmp("gone/" FX_NAME), &c)
+         && c.result == CORE_CHECK_ERROR && !c.record);
+   core_file_close(f);
+#endif
+   /* and Always Trust has no hash to take */
+   check_of(&c, "e_libretro.so", 7, 0xee, 0);
+   c.result = CORE_CHECK_ERROR;
+   CHECK(!core_trust_always(t, &c));
+   core_trust_set_put(s);
+}
+
+static void test_check_exempt(core_trust_t *t)
+{
+   core_trust_set_t *s = core_trust_get(t);
+   struct core_identity id;
+   struct core_self self;
+   core_file_t *f;
+
+   /* Our own files are writable; on Windows nothing is exempt */
+   CHECK((f = core_file_open(tmp(FX_NAME))) != NULL);
+   CHECK(core_file_identity(f, &id));
+   self.dev = id.dev;
+   self.uid = 0;
+   CHECK(!core_file_unwritable(f, tmp(FX_NAME), &self));
+   core_file_close(f);
+#ifndef _WIN32
+   /* A system file */
+   if ((f = core_file_open("/bin/sh")))
+   {
+      struct core_self mine;
+      struct core_check c;
+
+      CHECK(core_file_identity(f, &id));
+      /* Only on RetroArch's own filesystem, which must be known */
+      self.dev = id.dev + 1;
+      CHECK(!core_file_unwritable(f, "/bin/sh", &self));
+      CHECK(!core_file_unwritable(f, "/bin/sh", NULL));
+      /* Exempt when this user is not root */
+      self.dev = id.dev;
+      if (!core_file_unwritable(f, "/bin/sh", &self))
+         printf("note: /bin/sh is writable here (root?), not checked\n");
+      else
+      {
+         CHECK(core_check_quick(s, f, "/bin/sh", &c)
+                  == (core_self_find(&mine) && mine.dev == id.dev)
+               && c.result == CORE_CHECK_OK);
+      }
+      core_file_close(f);
+   }
+   /* A service account's file, where there is one: exempt only when
+    * that account owns RetroArch too */
+   {
+      static const char *const others[] = { "/var/lib/systemd/timesync/clock",
+         "/var/cache/man/index.db", "/usr/bin/at" };
+      unsigned found = 0;
+      size_t i;
+      for (i = 0; i < sizeof(others) / sizeof(others[0]); i++)
+      {
+         struct stat st;
+         if (     stat(others[i], &st) != 0
+               || st.st_uid == 0
+               || st.st_uid == geteuid()
+               || !(f = core_file_open(others[i])))
+            continue;
+         CHECK(core_file_identity(f, &id));
+         self.dev = id.dev;
+         self.uid = (unsigned long)st.st_uid;
+         if (core_file_unwritable(f, others[i], &self))
+         {
+            found++;
+            self.uid = 0;
+            CHECK(!core_file_unwritable(f, others[i], &self));
+            self.uid = (unsigned long)geteuid();
+            CHECK(!core_file_unwritable(f, others[i], &self));
+         }
+         core_file_close(f);
+      }
+      if (!found)
+         printf("note: no service account's file here, not checked\n");
+   }
+#endif
+   core_trust_set_put(s);
+}
+
+static void test_check(void)
+{
+   core_trust_t *t = real_store();
+
+   test_check_finish(t);
+   test_check_files(t);
+   test_check_exempt(t);
+   core_trust_free(t);
+}
+
+static void test_self_find(void)
+{
+   struct core_self self;
+#ifdef _WIN32
+   CHECK(!core_self_find(&self));
+#else
+   struct stat st;
+   /* The harness's own path, found apart from how the code finds it */
+   CHECK(core_self_find(&self));
+   CHECK(stat(self_path, &st) == 0 && self.dev == (uint64_t)st.st_dev
+         && self.uid == (unsigned long)st.st_uid);
+#endif
+}
+
 static void clean(void)
 {
    static const char *const names[] = { "a.so", "b.so", "fifo", "fifo.bad",
       FX_NAME, FX_NAME ".sig", "copy_libretro.so", "core_trust",
       "core_trust.bad", "core_trust_dir",
       "core_trust_dir.bad", "locked/core_trust", "locked", "loop_a",
-      "loop_b", "merge_trust", "merge_trust.tmp",
-      "race/core_trust", "race/core_trust.bad", "race/core_trust.tmp",
-      "race", "full_trust", "full_trust.bad", "cap_trust" };
+      "loop_b", "one/" FX_NAME, "one/" FX_NAME ".sig", "two/" FX_NAME,
+      "two/" FX_NAME ".sig", "three/" FX_NAME, "three/" FX_NAME ".sig",
+      "one", "two", "three", "merge_trust",
+      "race/core_trust", "race/core_trust.tmp",
+      "race", "full_trust", "full_trust.bad", "cap_trust",
+      "gone/" FX_NAME, "gone",
+      "four/" FX_NAME, "four/" FX_NAME ".sig", "four",
+      "five/" FX_NAME, "five/" FX_NAME ".sig", "five" };
    char other[256];
    size_t i;
 #ifndef _WIN32
@@ -1271,10 +1965,12 @@ static void clean(void)
    path_rmdir(TMP_DIR);
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
    /* FAIL lines survive a crash or a sanitizer exit */
    setvbuf(stdout, NULL, _IONBF, 0);
+   if (argc > 0)
+      self_path = argv[0];
    fx_make_core();
    clean();
    if (!path_mkdir(TMP_DIR))
@@ -1289,10 +1985,18 @@ int main(void)
    test_trust_newest_cap();
    test_trust_threads();
    test_trust_file();
+   test_newest_folders();
    test_trust_merge();
    test_trust_merge_full();
    test_trust_merge_cap();
    test_trust_temp();
+   test_record_older();
+   test_ctime_kept();
+   test_store_device();
+   test_self_device();
+   test_owner();
+   test_check();
+   test_self_find();
    clean();
    free(fx_core);
    printf("%u checks, %u failures\n", checks, failures);
