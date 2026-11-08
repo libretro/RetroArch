@@ -111,6 +111,10 @@ bool input_openxr_touch_offered(unsigned button);
  * other. For the menu's left and right. */
 unsigned input_openxr_touch_step(unsigned cur, bool forward);
 
+/* Whether the laser drives a core's pointer this poll: when not,
+ * input_openxr_pointer() answers false for every port. */
+bool input_openxr_pointer_owned(void);
+
 /* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on a core
  * port whose users read @slots (a bit per slot), while it can point
  * (the headset focused, a screen live for the laser and a hand that can

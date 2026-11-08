@@ -168,6 +168,7 @@ static uint32_t t_laser_slots;
 static uint32_t t_laser_aim;
 #define T_LASER_X 1000
 #define T_LASER_Y (-2000)
+bool input_openxr_pointer_owned(void) { return t_laser_slots != 0; }
 bool input_openxr_pointer(uint32_t slots, unsigned device, unsigned idx,
       unsigned id, int16_t *res)
 {

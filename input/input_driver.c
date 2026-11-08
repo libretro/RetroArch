@@ -5371,7 +5371,8 @@ static int16_t input_state_internal(
    /* The headset's laser is the whole of each core port its
     * controllers play on: OR'd with a sharer's mouse it would point
     * nowhere. */
-   if (device == RETRO_DEVICE_POINTER || device == RETRO_DEVICE_LIGHTGUN)
+   if (     (device == RETRO_DEVICE_POINTER || device == RETRO_DEVICE_LIGHTGUN)
+         && input_openxr_pointer_owned())
    {
       unsigned i;
       int16_t res    = 0;

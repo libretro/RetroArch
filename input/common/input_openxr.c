@@ -4361,6 +4361,11 @@ unsigned input_openxr_touch_step(unsigned cur, bool forward)
    return cur;
 }
 
+bool input_openxr_pointer_owned(void)
+{
+   return input_openxr_st.ptr_owned;
+}
+
 bool input_openxr_pointer(uint32_t slots, unsigned device, unsigned idx,
       unsigned id, int16_t *res)
 {

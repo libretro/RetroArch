@@ -1404,6 +1404,8 @@ static void test_laser(void)
    CHECK(!input_openxr_pointer(t_on(0), RETRO_DEVICE_LIGHTGUN, 0,
             RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X, &x),
          "Auto took a whole frame's gun");
+   CHECK(!input_openxr_pointer_owned(),
+         "Auto: the pointer is owned, and every core read asks for it");
    /* So does a config's value past the choices: Auto, not edit mode's. */
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_LAST);
    CHECK(!input_openxr_pointer(t_on(0), RETRO_DEVICE_LIGHTGUN, 0,
@@ -1421,6 +1423,8 @@ static void test_laser(void)
             RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y, &y)
          && abs(x) < 100 && abs(y) < 100,
          "the gun at %d,%d, want the middle", x, y);
+   CHECK(input_openxr_pointer_owned(),
+         "Always: the pointer is not owned, and no core read asks for it");
    CHECK(t_located_base == t_xr_session.local_space,
          "the aim was located in another space");
    /* Screens that follow the head are in VIEW, and so is the aim. */
