@@ -1859,6 +1859,9 @@ ifeq ($(HAVE_VULKAN), 1)
                 gfx/common/vaapi_vp9_submit.o \
                 gfx/common/vaapi_vp9_pool.o
       endif
+      ifeq ($(HAVE_RAV1), 1)
+         OBJ += gfx/common/vaapi_av1_submit.o
+      endif
    endif
 
    # H.264/HEVC previews decoded on the GPU
