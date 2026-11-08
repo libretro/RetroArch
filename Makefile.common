@@ -1863,7 +1863,8 @@ ifeq ($(HAVE_VULKAN), 1)
          OBJ += gfx/common/vaapi_av1_submit.o \
                 gfx/common/vaapi_av1_pool.o \
                 gfx/common/vaapi_av1_decoder.o \
-                gfx/common/vaapi_av1_owner.o
+                gfx/common/vaapi_av1_owner.o \
+                gfx/common/vaapi_av1_backend.o
       endif
    endif
 

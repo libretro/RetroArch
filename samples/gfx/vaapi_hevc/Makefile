@@ -30,6 +30,7 @@ BACKEND_SOURCES := ../../../libretro-common/rthreads/rthreads.c \
  ../../../libretro-common/rthreads/retro_eventcount.c
 all: vp9_params_test$(EXE) vp9_submit_test$(EXE) vp9_pool_test$(EXE) vp9_decoder_test$(EXE) vp9_owner_test$(EXE) vp9_backend_test$(EXE) vp9_backend_nothreads_test$(EXE) vp9_backend_volatile_test$(EXE)
 all: av1_params_test$(EXE)
+all: av1_backend_test$(EXE) av1_backend_nothreads_test$(EXE) av1_backend_volatile_test$(EXE)
 all: av1_owner_test$(EXE)
 av1_owner_test$(EXE): av1_owner_test.c runtime_test.c session_test.c submit_test.c ../../../gfx/common/vaapi_av1_owner.c ../../../gfx/common/vaapi_av1_owner.h ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_decoder.h ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_pool.h ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_av1_submit.h ../../../gfx/common/vaapi_av1.h ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_export.c
 	$(CC) $(CFLAGS) av1_owner_test.c ../../../gfx/common/vaapi_av1_decoder.c ../../../gfx/common/vaapi_av1_pool.c ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_hevc_export.c -o $@ $(LDFLAGS)
@@ -44,6 +45,14 @@ av1_submit_test$(EXE): av1_submit_test.c ../../../gfx/common/vaapi_av1_submit.c 
 	$(CC) $(CFLAGS) av1_submit_test.c ../../../gfx/common/vaapi_av1_submit.c ../../../gfx/common/vaapi_hevc_submit.c -o $@ $(LDFLAGS)
 av1_params_test$(EXE): av1_params_test.c ../../../gfx/common/vaapi_av1.h ../../../libretro-common/formats/av1/rav1_hw.c $(wildcard ../../../libretro-common/include/formats/rav1*.h)
 	$(CC) $(CFLAGS) av1_params_test.c ../../../libretro-common/formats/av1/rav1_hw.c -o $@ $(LDFLAGS)
+av1_backend_test$(EXE): av1_backend_test.c ../../../gfx/common/vaapi_av1_backend.c ../../../gfx/common/vaapi_av1_backend.h ../../../gfx/drivers/vulkan_vaapi_av1_backend.h $(BACKEND_SOURCES)
+	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS -D_DEFAULT_SOURCE -pthread av1_backend_test.c $(BACKEND_SOURCES) -o $@ $(LDFLAGS) -lm
+av1_backend_tsan_test$(EXE): av1_backend_test.c ../../../gfx/common/vaapi_av1_backend.c ../../../gfx/common/vaapi_av1_backend.h ../../../gfx/drivers/vulkan_vaapi_av1_backend.h $(BACKEND_SOURCES)
+	$(CC) $(filter-out -fsanitize=%,$(CFLAGS)) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS -D_DEFAULT_SOURCE -pthread -fsanitize=thread -fno-omit-frame-pointer av1_backend_test.c $(BACKEND_SOURCES) -o $@ $(filter-out -fsanitize=%,$(LDFLAGS)) -fsanitize=thread -lm
+av1_backend_nothreads_test$(EXE): av1_backend_disabled_test.c ../../../gfx/common/vaapi_av1_backend.c ../../../gfx/common/vaapi_av1_backend.h
+	$(CC) $(CFLAGS) av1_backend_disabled_test.c ../../../gfx/common/vaapi_av1_backend.c -o $@ $(LDFLAGS)
+av1_backend_volatile_test$(EXE): av1_backend_disabled_test.c ../../../gfx/common/vaapi_av1_backend.c ../../../gfx/common/vaapi_av1_backend.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS -DRETRO_ATOMIC_FORCE_VOLATILE -DRETRO_ATOMIC_SUPPRESS_WARNING av1_backend_disabled_test.c ../../../gfx/common/vaapi_av1_backend.c -o $@ $(LDFLAGS)
 vp9_backend_test$(EXE): vp9_backend_test.c ../../../gfx/common/vaapi_vp9_backend.c ../../../gfx/common/vaapi_vp9_backend.h ../../../gfx/drivers/vulkan_vaapi_vp9_backend.h $(BACKEND_SOURCES)
 	$(CC) $(CFLAGS) $(BACKEND_HOST_FLAGS) -DHAVE_THREADS -D_DEFAULT_SOURCE -pthread vp9_backend_test.c $(BACKEND_SOURCES) -o $@ $(LDFLAGS) -lm
 vp9_backend_tsan_test$(EXE): vp9_backend_test.c ../../../gfx/common/vaapi_vp9_backend.c ../../../gfx/common/vaapi_vp9_backend.h ../../../gfx/drivers/vulkan_vaapi_vp9_backend.h $(BACKEND_SOURCES)
@@ -118,7 +127,8 @@ frame_tsan_test$(EXE): frame_test.c prime_frame_test.c export_test.c ../../../gf
 	$(CC) $(filter-out -fsanitize=%,$(CFLAGS)) -fsanitize=thread -fno-omit-frame-pointer frame_test.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c $(FRAME_THREAD_SOURCES) rh265_tsan.o -o $@ $(filter-out -fsanitize=%,$(LDFLAGS)) -fsanitize=thread $(FRAME_THREAD_FLAGS)
 lease_tsan_test$(EXE): lease_test.c prime_submit_test.c prime_frame_test.c export_test.c ../../../gfx/common/vaapi_hevc_vulkan_lease.c ../../../gfx/common/vaapi_hevc_vulkan_lease.h ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vaapi_frame.h ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_frame.h ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../gfx/common/vaapi_hevc_vulkan_submit.h ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vulkan_prime_image.h $(FRAME_THREAD_SOURCES)
 	$(CC) $(filter-out -fsanitize=%,$(CFLAGS)) -fsanitize=thread -fno-omit-frame-pointer lease_test.c ../../../gfx/common/vaapi_hevc_vulkan_lease.c ../../../gfx/common/vaapi_frame.c ../../../gfx/common/vulkan_prime_image.c ../../../gfx/common/vaapi_hevc_vulkan_frame.c ../../../gfx/common/vaapi_hevc_vulkan_submit.c ../../../libretro-common/formats/image/image_yuv_blit.c $(FRAME_THREAD_SOURCES) rh265_tsan.o -o $@ $(filter-out -fsanitize=%,$(LDFLAGS)) -fsanitize=thread $(FRAME_THREAD_FLAGS) -lm
-tsan-check: vp9_backend_tsan_test$(EXE) backend_tsan_test$(EXE) frame_tsan_test$(EXE) lease_tsan_test$(EXE)
+tsan-check: av1_backend_tsan_test$(EXE) vp9_backend_tsan_test$(EXE) backend_tsan_test$(EXE) frame_tsan_test$(EXE) lease_tsan_test$(EXE)
+	TSAN_OPTIONS=halt_on_error=1 $(RUNNER) ./av1_backend_tsan_test$(EXE)
 	TSAN_OPTIONS=halt_on_error=1 $(RUNNER) ./vp9_backend_tsan_test$(EXE)
 	TSAN_OPTIONS=halt_on_error=1 $(RUNNER) ./backend_tsan_test$(EXE)
 	TSAN_OPTIONS=halt_on_error=1 $(RUNNER) ./frame_tsan_test$(EXE)
@@ -142,6 +152,9 @@ all: long_slice_test$(EXE) long_packet_test$(EXE)
 test$(EXE): ../../../gfx/common/vaapi_hevc_slice.h
 test$(EXE): ../../../gfx/common/vaapi_hevc_long_packet.h
 check: all
+	$(RUNNER) ./av1_backend_test$(EXE)
+	$(RUNNER) ./av1_backend_nothreads_test$(EXE)
+	$(RUNNER) ./av1_backend_volatile_test$(EXE)
 	$(RUNNER) ./av1_owner_test$(EXE)
 	$(RUNNER) ./av1_decoder_test$(EXE)
 	$(RUNNER) ./av1_pool_test$(EXE)
@@ -187,6 +200,7 @@ ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
+	rm -f av1_backend_test av1_backend_test.exe av1_backend_tsan_test av1_backend_tsan_test.exe av1_backend_nothreads_test av1_backend_nothreads_test.exe av1_backend_volatile_test av1_backend_volatile_test.exe
 	rm -f av1_owner_test av1_owner_test.exe
 	rm -f av1_decoder_test av1_decoder_test.exe
 	rm -f av1_pool_test av1_pool_test.exe

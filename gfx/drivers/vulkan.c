@@ -62,6 +62,9 @@
 #ifdef HAVE_RVP9
 #include "../common/vaapi_vp9_backend.h"
 #endif
+#ifdef HAVE_RAV1
+#include "../common/vaapi_av1_backend.h"
+#endif
 #include "../common/vulkan_android_queue.h"
 #endif
 #ifdef HAVE_TEMPORAL_UPSCALER
@@ -869,6 +872,9 @@ typedef struct vk
 #include "vulkan_vaapi_backend.h"
 #ifdef HAVE_RVP9
 #include "vulkan_vaapi_vp9_backend.h"
+#endif
+#ifdef HAVE_RAV1
+#include "vulkan_vaapi_av1_backend.h"
 #endif
 #endif
 
@@ -7574,6 +7580,9 @@ static void vulkan_free(void *data)
 #ifdef HAVE_RVP9
    vaapi_vp9_backend_withdraw(&vulkan_vaapi_vp9_backend, vk);
 #endif
+#ifdef HAVE_RAV1
+   vaapi_av1_backend_withdraw(&vulkan_vaapi_av1_backend, vk);
+#endif
 #endif
 
    if (vk->context && vk->context->device)
@@ -8401,6 +8410,9 @@ static void *vulkan_init(const video_info_t *video)
          vulkan_vaapi_decoder_publish(vk, native_video);
 #ifdef HAVE_RVP9
          vulkan_vaapi_vp9_decoder_publish(vk, native_video);
+#endif
+#ifdef HAVE_RAV1
+         vulkan_vaapi_av1_decoder_publish(vk, native_video);
 #endif
       }
 #elif defined(VULKAN_ANDROID_DECODERS)
