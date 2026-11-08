@@ -339,7 +339,8 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     bit reservoir of their predecessors, so the top is the only
  *     sample-accurate way in, which is also what the resident decoder
  *     did, minus its habit of carrying stale synthesis state through
- *     the rewind.
+ *     the rewind. Windowed input supports refill during priming and
+ *     rewind; nonzero seeks require fully available input.
  *     Length and gapless trim from the Xing/Info or VBRI header in the
  *     first frame: that frame carries no audio but is decoded like any
  *     other, so the priming dropped is its own length plus the encoder
@@ -782,7 +783,8 @@ struct audio_transfer_vorbis
 struct audio_transfer_mp3
 {
    const void *data;
-   size_t      size;
+   size_t      size, avail;
+   int         wall;
    rmp3_stream_t *stream; /* opened decoder, NULL until start() succeeds    */
    size_t      off;      /* consumption cursor: the compressed frontier      */
    unsigned    channels; /* from the first frame's header, read at start()   */
@@ -2337,9 +2339,18 @@ void audio_transfer_set_avail(void *data, enum audio_type_enum type,
  * readable and handed the decoder packets on pages the window never
  * committed. */
 #if defined(HAVE_RWEBM) || defined(HAVE_RVORBIS) || defined(HAVE_ROPUS) \
- || defined(HAVE_RAAC) || defined(HAVE_RFLAC) || defined(HAVE_RAC3) || defined(HAVE_RWMA)
+ || defined(HAVE_RAAC) || defined(HAVE_RFLAC) || defined(HAVE_RAC3) || defined(HAVE_RWMA) || defined(HAVE_RMP3)
    switch (type)
    {
+#ifdef HAVE_RMP3
+      case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         if (m) m->avail = avail;
+         return;
+      }
+#endif
+
 #ifdef HAVE_RWMA
       case AUDIO_TYPE_WMA:
       {
@@ -2718,6 +2729,8 @@ static size_t audio_transfer_mp3_pull(struct audio_transfer_mp3 *m,
       int s16, int16_t *o16, float *of, size_t frames)
 {
    size_t done = 0;
+   size_t avail = m->avail && m->avail < m->size ? m->avail : m->size;
+   m->wall = 0;
    if (!m->stream || !frames)
       return 0;
    while (done < frames)
@@ -2731,12 +2744,17 @@ static size_t audio_transfer_mp3_pull(struct audio_transfer_mp3 *m,
          rmp3_stream_set_out_f32(m->stream,
                of + done * (size_t)m->channels, frames - done);
       rmp3_stream_set_in(m->stream,
-            (const uint8_t*)m->data + m->off, m->size - m->off);
+            (const uint8_t*)m->data + m->off, avail - m->off);
       r = rmp3_stream_process(m->stream, &rd, &wr);
       m->off += rd;
       done   += wr;
       if (r == RMP3_STREAM_ERROR || r == RMP3_STREAM_END)
          break;
+      if (r == RMP3_STREAM_NEED_IN && avail < m->size)
+      {
+         m->wall = 1;
+         break;
+      }
       if (r == RMP3_STREAM_NEED_IN && m->off >= m->size)
       {
          /* A frame must be presented whole, so the tail of the stream
@@ -2810,7 +2828,7 @@ static size_t audio_transfer_mp3_read(struct audio_transfer_mp3 *m,
             skip.s16, skip.f32, want);
       if (!n)
       {
-         m->trim_left = 0;         /* stream ended inside the priming */
+         if (!m->wall) m->trim_left = 0; /* true end inside priming */
          return 0;
       }
       m->trim_left -= n;
@@ -3725,8 +3743,10 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_MP3:
       {
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         size_t avail;
          if (!m || !m->data)
             return false;
+         avail = m->avail && m->avail < m->size ? m->avail : m->size;
          if (!(m->stream = rmp3_stream_new()))
             return false;
          /* Walk parse-only until the first frame is located, which is
@@ -3743,11 +3763,17 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             int    r;
             rmp3_stream_set_out_s16(m->stream, NULL, 0);
             rmp3_stream_set_in(m->stream,
-                  (const uint8_t*)m->data + m->off, m->size - m->off);
+                  (const uint8_t*)m->data + m->off, avail - m->off);
             r = rmp3_stream_process(m->stream, &rd, &wr);
             m->off += rd;
             if (rmp3_stream_info(m->stream, &m->channels, &m->rate))
                break;
+            if (r == RMP3_STREAM_NEED_IN && avail < m->size)
+            {
+               rmp3_stream_free(m->stream);
+               m->stream = NULL;
+               return false;
+            }
             if (r == RMP3_STREAM_NEED_IN && m->off >= m->size
                   && !m->eof_sent)
             {
@@ -3776,11 +3802,11 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          {
             uint64_t fr = 0, delay = 0;
             if (!audio_transfer_mp3_gapless((const uint8_t*)m->data,
-                     m->size, &fr, &delay))
+                     avail, &fr, &delay))
             {
                /* No header to state a length; count the frames. */
-               uint64_t walked = audio_transfer_mp3_walk(
-                     (const uint8_t*)m->data, m->size);
+               uint64_t walked = avail == m->size ? audio_transfer_mp3_walk(
+                     (const uint8_t*)m->data, m->size) : 0;
                if (walked)
                   m->limit = (int64_t)walked;
             }
@@ -4408,6 +4434,18 @@ bool audio_transfer_stereo_matrix(void *data, enum audio_type_enum type,
    (void)data; (void)type; (void)matrix;
 #endif
    return false;
+}
+
+bool audio_transfer_stereo_matrix_f32(void *data, enum audio_type_enum type,
+      float matrix[8][2])
+{
+   int32_t fixed[8][2];
+   unsigned i, c;
+   if (!matrix || !audio_transfer_stereo_matrix(data,type,fixed)) return false;
+   for (i=0;i<8;i++) for(c=0;c<2;c++)
+      matrix[i][c] = fixed[i][c] == 23170 ? 0.7071067811865475244f
+            : fixed[i][c] / 32768.0f;
+   return true;
 }
 
 bool audio_transfer_info(void *data, enum audio_type_enum type,
@@ -5923,6 +5961,11 @@ static int audio_transfer_wall_stalled(void *data,
 {
    switch (type)
    {
+#ifdef HAVE_RMP3
+      case AUDIO_TYPE_MP3:
+         return ((struct audio_transfer_mp3*)data)->wall;
+#endif
+
 #ifdef HAVE_RVORBIS
       case AUDIO_TYPE_VORBIS:
          return ((struct audio_transfer_vorbis*)data)->wall;
@@ -6440,6 +6483,16 @@ size_t audio_transfer_buffer_read_end(void *data, enum audio_type_enum type)
    if (!data) return 0;
    switch (type)
    {
+#ifdef HAVE_RMP3
+      case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         if (m->wall && m->avail && m->avail < m->size)
+            return m->size - m->avail < 16384 ? m->size : m->avail + 16384;
+         return 0;
+      }
+#endif
+
 #ifdef HAVE_RWMA
       case AUDIO_TYPE_WMA:
          return rwma_stream_read_end(((struct audio_transfer_wma*)data)->stream);
@@ -6870,17 +6923,19 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
             return false;
          /* Where the length is known, refuse to be sent past it rather
           * than walk to the end and report failure from there. */
-         if (m->limit >= 0 && (int64_t)frame > m->limit)
+         if (frame > (uint64_t)INT64_MAX ||
+             (m->limit >= 0 && (int64_t)frame > m->limit) ||
+             (frame && m->avail < m->size))
             return false;
-         if (frame == 0 && !m->start_trim)
+         if (frame == 0)
          {
-            /* Loop-to-start with nothing to prime past: a rewind, done
-             * here rather than deferred. */
+            /* Priming can resume after a window refill. */
             rmp3_stream_reset(m->stream);
             m->off       = 0;
             m->eof_sent  = 0;
+            m->wall      = 0;
             m->seek_to   = -1;
-            m->trim_left = 0;
+            m->trim_left = m->start_trim;
             m->emitted   = 0;
             return true;
          }

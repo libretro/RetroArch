@@ -159,6 +159,15 @@ data_transfer_t *data_transfer_open_source(size_t len,
 uint8_t *data_transfer_source_detach(data_transfer_t *dt, size_t *len);
 
 data_transfer_t *data_transfer_open_window(const char *path, size_t keep);
+
+/* Borrow a seekable source for the window's lifetime. The callback writes
+ * directly into final window storage, returning bytes read or -1 on error.
+ * A short read fails the operation. Closing the window does not close ud. */
+typedef int64_t (*data_transfer_read_at_t)(void *ud, uint64_t offset,
+      uint8_t *dst, size_t bytes);
+data_transfer_t *data_transfer_open_window_reader(size_t length, size_t keep,
+      data_transfer_read_at_t read_at, void *ud);
+
 const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len);
 /* True when the transfer is genuinely windowed - address space was
  * reserved and only the window is committed.  False when the platform

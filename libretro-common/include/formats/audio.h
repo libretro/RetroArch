@@ -231,6 +231,9 @@ void  audio_transfer_free(void *data, enum audio_type_enum type);
 /* WAVE speaker-mask downmix for native WMA/XMA. False for other arms. */
 bool audio_transfer_stereo_matrix(void *data, enum audio_type_enum type,
       int32_t matrix[8][2]);
+/* Float mixing keeps sqrt(1/2) coefficients without Q15 rounding. */
+bool audio_transfer_stereo_matrix_f32(void *data, enum audio_type_enum type,
+      float matrix[8][2]);
 
 bool  audio_transfer_info(void *data, enum audio_type_enum type,
       unsigned *channels, unsigned *rate, uint64_t *total_frames);

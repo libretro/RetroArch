@@ -59,6 +59,13 @@ jobs:
       - name: Generate media
         working-directory: samples/cores/webm_player
         run: python3 mkfixtures.py
+      - name: Float MP3 progressive windows and rewind
+        working-directory: libretro-common/samples/formats/audio_transfer
+        run: |
+          set -eu
+          ffmpeg -nostdin -v error -y -f lavfi -i 'sine=frequency=997:sample_rate=44100:duration=8' -ac 2 -c:a libmp3lame -b:a 128k /tmp/rmp3-window.mp3
+          make -B -j2 audio_transfer_window_mp3_test TARGET=audio_transfer_window_mp3_test SAMPLE_OBJDIR=obj-mp3-window WINDOW_TEST_FLAGS='-DTEST_FLOAT -DKEEP=1024 -DLOOKAHEAD=2048 -DMARGIN=4096'
+          ./audio_transfer_window_mp3_test /tmp/rmp3-window.mp3
       - name: Metadata-only demuxed audio setup
         run: |
           make -j2 -C libretro-common/samples/formats/audio_transfer check-empty SANITIZER=address,undefined SAMPLE_OBJDIR=obj-player-meta

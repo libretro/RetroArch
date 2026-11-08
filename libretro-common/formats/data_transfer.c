@@ -304,6 +304,8 @@ struct data_transfer
 {
    /* file-backed reader (open_prefix, and open_window over it)      */
    RFILE  *f;
+   data_transfer_read_at_t read_at;
+   void *read_ud;
    uint8_t *map;     /* reserved (or fallback-allocated) buffer      */
    size_t  map_len;  /* reserved bytes (page-rounded), 0 = fallback  */
    size_t  committed;/* commit high-water mark; discards/inert holes
@@ -393,8 +395,14 @@ static int data_transfer_read_at(data_transfer_t *dt, size_t off,
 /* open_prefix's body.  allow_pool is 0 for open_window, which builds
  * on a prefix handle but reads map_len in punch/peek and so needs it
  * to be the file's own rounded length rather than a pool slot's. */
+static data_transfer_t *data_transfer_open_reader_ex(const char *path,
+      size_t commit_cap, int allow_pool, data_transfer_read_at_t read_at,
+      size_t length, void *ud);
 static data_transfer_t *data_transfer_open_prefix_ex(const char *path,
-      size_t commit_cap, int allow_pool);
+      size_t commit_cap, int allow_pool)
+{
+   return data_transfer_open_reader_ex(path,commit_cap,allow_pool,NULL,0,NULL);
+}
 /* The fill proper.  data_transfer_iterate() refuses to run it on a
  * window; open_window's no-reservation path genuinely needs it and
  * calls it here directly. */
@@ -530,9 +538,8 @@ uint8_t *data_transfer_source_detach(data_transfer_t *dt, size_t *len)
    return out;
 }
 
-data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
+static data_transfer_t *data_transfer_start_window(data_transfer_t *dt, size_t keep)
 {
-   data_transfer_t *dt = data_transfer_open_prefix_ex(path, 0, 0);
    if (!dt)
       return NULL;
    dt->window = 1;
@@ -566,6 +573,18 @@ data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
    }
    dt->avail = dt->len;          /* the consumer sees the full length */
    return dt;
+}
+
+data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
+{
+   return data_transfer_start_window(data_transfer_open_prefix_ex(path,0,0),keep);
+}
+data_transfer_t *data_transfer_open_window_reader(size_t length,size_t keep,
+      data_transfer_read_at_t read_at,void *ud)
+{
+   if (!read_at) return NULL;
+   return data_transfer_start_window(
+         data_transfer_open_reader_ex(NULL,0,0,read_at,length,ud),keep);
 }
 
 bool data_transfer_reserve_supported(void)
@@ -882,11 +901,12 @@ bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
          margin, 0, NULL);
 }
 
-static data_transfer_t *data_transfer_open_prefix_ex(const char *path,
-      size_t commit_cap, int allow_pool)
+static data_transfer_t *data_transfer_open_reader_ex(const char *path,
+      size_t commit_cap, int allow_pool, data_transfer_read_at_t read_at,
+      size_t length, void *ud)
 {
    data_transfer_t *dt;
-   RFILE *f;
+   RFILE *f = NULL;
    int64_t l;
    /* filestream: 64-bit lengths and offsets everywhere (a plain long
     * ftell caps at 2 GB on LLP64 and 32-bit targets), and the read
@@ -894,20 +914,30 @@ static data_transfer_t *data_transfer_open_prefix_ex(const char *path,
     * paths only the VFS can open - archive members, Android
     * content:// documents, frontend overrides - work like any
     * other. */
-   if (!(f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-      return NULL;
-   if ((l = filestream_get_size(f)) <= 0)
+   if (read_at)
    {
-      filestream_close(f);
-      return NULL;
+      if (!length || (uint64_t)length > INT64_MAX) return NULL;
+      l = (int64_t)length;
+   }
+   else
+   {
+      if (!(f = filestream_open(path,RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE))) return NULL;
+      l = filestream_get_size(f);
+      if (l <= 0 || (uint64_t)l > SIZE_MAX)
+      {
+         filestream_close(f);
+         return NULL;
+      }
    }
    if (!(dt = (data_transfer_t*)calloc(1, sizeof(*dt))))
    {
-      filestream_close(f);
+      if (f) filestream_close(f);
       return NULL;
    }
    dt->f   = f;
+   dt->read_at = read_at;
+   dt->read_ud = ud;
    dt->len = (size_t)l;
    dt->cap = commit_cap;
 
@@ -920,6 +950,11 @@ static data_transfer_t *data_transfer_open_prefix_ex(const char *path,
        * mempagesize() reports 0 there; 4096 is the conventional
        * stand-in and only affects arithmetic, since without map_len
        * nothing is committed or decommitted. */
+      if (pg && dt->len > SIZE_MAX - (pg - 1))
+      {
+         data_transfer_free(dt);
+         return NULL;
+      }
       dt->page = pg ? pg : 4096;
 
       if (pg)
@@ -984,7 +1019,7 @@ static data_transfer_t *data_transfer_open_prefix_ex(const char *path,
       dt->cap = w;
       if (!(dt->map = (uint8_t*)malloc(w ? w : 1)))
       {
-         filestream_close(f);
+         if (f) filestream_close(f);
          free(dt);
          return NULL;
       }
@@ -1189,9 +1224,10 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
          continue;
       }
       {
-         int64_t r = filestream_read(dt->f, dt->map + dt->avail,
-               (int64_t)chunk);
-         got = r > 0 ? (size_t)r : 0;
+         int64_t r = dt->read_at
+               ? dt->read_at(dt->read_ud,dt->avail,dt->map+dt->avail,chunk)
+               : filestream_read(dt->f,dt->map+dt->avail,(int64_t)chunk);
+         got = r > 0 && (uint64_t)r <= chunk ? (size_t)r : 0;
       }
       dt->avail += got;
       spent += got;
@@ -1220,8 +1256,10 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
 static int data_transfer_read_at(data_transfer_t *dt, size_t off,
       uint8_t *dst, size_t n)
 {
-   int64_t save = filestream_tell(dt->f);
-   int64_t r;
+   int64_t save, r;
+   if (dt->read_at)
+      return dt->read_at(dt->read_ud,off,dst,n) == (int64_t)n;
+   save = filestream_tell(dt->f);
    if (save < 0
          || (save != (int64_t)off
             && filestream_seek(dt->f, (int64_t)off,

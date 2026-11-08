@@ -8,7 +8,7 @@ LIBRETRO_COMM_DIR := ../../..
 # The window test's whole point is that pages outside the window are
 # not merely absent but unreadable, so strictness is on by default
 # here; the test says so itself if it is ever built without it.
-DEFINES := -DDT_STRICT -DHAVE_RWEBM -DHAVE_RVORBIS -DHAVE_ROPUS -DHAVE_RAAC
+DEFINES := -DDT_STRICT -DHAVE_RWEBM -DHAVE_RVORBIS -DHAVE_ROPUS -DHAVE_RAAC -DHAVE_RMP3
 
 COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
@@ -19,6 +19,7 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/formats/audio_transfer.c \
+	$(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.c \
 	$(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
 	$(LIBRETRO_COMM_DIR)/formats/aac/raac.c \
 	$(LIBRETRO_COMM_DIR)/formats/opus/ropus.c \
@@ -32,11 +33,11 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 COMMON_OBJS := $(call sample_objs,$(COMMON_SOURCES:.c=.o))
-OBJS        := audio_transfer_window_test.o $(COMMON_OBJS)
-EMPTY_OBJ   := $(call sample_objs,audio_transfer_empty_test.o)
+OBJS        := $(SAMPLE_OBJDIR)/audio_transfer_window_test.o $(COMMON_OBJS)
+EMPTY_OBJ   := $(SAMPLE_OBJDIR)/audio_transfer_empty_test.o
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include \
-	$(DEFINES)
+	$(DEFINES) $(WINDOW_TEST_FLAGS)
 LDFLAGS += -lm
 
 ifneq ($(SANITIZER),)

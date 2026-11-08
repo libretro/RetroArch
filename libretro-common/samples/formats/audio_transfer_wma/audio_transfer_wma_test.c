@@ -181,6 +181,23 @@ static void truncated_object_test(void)
          "incomplete object is not clean EOF");
    audio_transfer_free(context, AUDIO_TYPE_WMA);
 }
+static void float_matrix_test(void)
+{
+   static uint8_t data[80+4096];
+   float matrix[8][2];
+   int32_t fixed[8][2];
+   void *context;
+   size_t size=xma_wave(data,1);
+   context=audio_transfer_new(AUDIO_TYPE_WMA);
+   audio_transfer_set_buffer_ptr(context,AUDIO_TYPE_WMA,data,size);
+   check(audio_transfer_start(context,AUDIO_TYPE_WMA),"mono XMA header for float matrix");
+   check(audio_transfer_stereo_matrix(context,AUDIO_TYPE_WMA,fixed) &&
+         audio_transfer_stereo_matrix_f32(context,AUDIO_TYPE_WMA,matrix),"float speaker matrix");
+   check(fixed[0][0]==23170 && matrix[0][0]==0.7071067811865475244f &&
+         matrix[0][1]==matrix[0][0] && matrix[0][0]!=fixed[0][0]/32768.0f,
+         "float downmix avoids Q15 coefficient quantization");
+   audio_transfer_free(context,AUDIO_TYPE_WMA);
+}
 static void xma_test(void)
 {
    static uint8_t data[80+4096];
@@ -215,6 +232,7 @@ int main(void)
 {
    uint8_t data[512];
    size_t size;
+   float_matrix_test();
    xma_test();
    expected();
    size = wave(data);

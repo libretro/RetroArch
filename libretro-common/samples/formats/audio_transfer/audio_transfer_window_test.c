@@ -67,9 +67,15 @@
 
 /* task_audio_mixer.c's own figures, so the window this test feeds is
  * shaped the way the mixer's is. */
+#ifndef KEEP
 #define KEEP      (2 * 1024 * 1024)
+#endif
+#ifndef LOOKAHEAD
 #define LOOKAHEAD (2 * 1024 * 1024)
+#endif
+#ifndef MARGIN
 #define MARGIN    (1 * 1024 * 1024)
+#endif
 
 /* Frames per read.  The buffers below are sized in samples, so what a
  * read may ask for is this divided by the channel count - not this
@@ -86,6 +92,13 @@ static size_t chunk_frames(unsigned ch)
    return f > CHUNK ? (size_t)CHUNK : f;
 }
 
+#ifdef TEST_FLOAT
+#define test_sample float
+#define test_audio_read audio_transfer_read_f32
+#else
+#define test_sample int16_t
+#define test_audio_read audio_transfer_read_s16
+#endif
 static int bad;
 
 static void ok(const char *what)   { printf("[ok]   %s\n", what); }
@@ -93,7 +106,7 @@ static void fail(const char *what) { printf("[FAIL] %s\n", what); bad = 1; }
 
 /* Decode the whole file held in memory: the reference every windowed
  * run is measured against. */
-static int16_t *decode_resident(const char *path, enum audio_type_enum ty,
+static test_sample *decode_resident(const char *path, enum audio_type_enum ty,
       size_t *frames_out, unsigned *ch_out)
 {
    FILE     *f = fopen(path, "rb");
@@ -101,7 +114,7 @@ static int16_t *decode_resident(const char *path, enum audio_type_enum ty,
    uint8_t  *buf;
    void     *ctx;
    unsigned  ch = 0;
-   int16_t  *pcm = NULL;
+   test_sample  *pcm = NULL;
    size_t    cap = 0, frames = 0;
 
    if (!f)
@@ -142,14 +155,14 @@ static int16_t *decode_resident(const char *path, enum audio_type_enum ty,
       if (frames + CHUNK > cap)
       {
          size_t   ncap = cap ? cap * 2 : ((size_t)CHUNK * 64);
-         int16_t *np   = (int16_t*)realloc(pcm,
-               ncap * ch * sizeof(int16_t));
+         test_sample *np   = (test_sample*)realloc(pcm,
+               ncap * ch * sizeof(test_sample));
          if (!np)
             break;
          pcm = np;
          cap = ncap;
       }
-      audio_transfer_read_s16(ctx, ty, pcm + frames * ch,
+      test_audio_read(ctx, ty, pcm + frames * ch,
             chunk_frames(ch), &got);
       if (!got)
          break;
@@ -166,14 +179,14 @@ static int16_t *decode_resident(const char *path, enum audio_type_enum ty,
  * tick does.  'starve' skips the feed, which is the control: under
  * DT_STRICT that must not survive.  Returns frames decoded, or 0. */
 static size_t decode_windowed(const char *path, enum audio_type_enum ty,
-      int16_t *ref, size_t ref_frames, unsigned ch, int starve, int *mismatch)
+      test_sample *ref, size_t ref_frames, unsigned ch, int starve, int *mismatch)
 {
    data_transfer_t *dt;
    const uint8_t   *base;
    size_t           flen = 0, avail, floor_ = 0, frames = 0;
    rwebm_t         *probe;
    void            *ctx;
-   static int16_t   out[CHUNK_SAMPLES];
+   static test_sample   out[CHUNK_SAMPLES];
 
    *mismatch = 0;
    if (!(dt = data_transfer_open_window(path, KEEP)))
@@ -183,15 +196,18 @@ static size_t decode_windowed(const char *path, enum audio_type_enum ty,
    /* The feeder's first tick: parse the container header bounded by
     * the head, and grow the head to cover the media floor - below it
     * is header material the demuxer keeps borrowed pointers into. */
-   probe = rwebm_open_memory_avail(base, flen,
-         flen < KEEP ? flen : KEEP, NULL);
-   if (!probe)
+   if (ty != AUDIO_TYPE_MP3)
    {
-      data_transfer_free(dt);
-      return 0;
+      probe = rwebm_open_memory_avail(base, flen,
+            flen < KEEP ? flen : KEEP, NULL);
+      if (!probe)
+      {
+         data_transfer_free(dt);
+         return 0;
+      }
+      floor_ = rwebm_media_floor(probe);
+      rwebm_close(probe);
    }
-   floor_ = rwebm_media_floor(probe);
-   rwebm_close(probe);
    if (   floor_ + MARGIN > KEEP
        && !data_transfer_window_grow_keep(dt, floor_ + MARGIN))
    {
@@ -226,17 +242,24 @@ static size_t decode_windowed(const char *path, enum audio_type_enum ty,
       return 0;
    }
 
+   if (ty == AUDIO_TYPE_MP3 && avail < flen && !starve) {
+      size_t before = audio_transfer_buffer_tell(ctx, ty);
+      if (audio_transfer_seek(ctx, ty, 1) ||
+            audio_transfer_buffer_tell(ctx, ty) != before)
+         *mismatch = 1;
+   }
+
    for (;;)
    {
       size_t got = 0, tell;
-      audio_transfer_read_s16(ctx, ty, out, chunk_frames(ch), &got);
+      int status = test_audio_read(ctx, ty, out, chunk_frames(ch), &got);
       if (got)
       {
          if (   ref
              && !*mismatch
              && (   frames + got > ref_frames
                  || memcmp(out, ref + frames * ch,
-                       got * ch * sizeof(int16_t))))
+                       got * ch * sizeof(test_sample))))
             *mismatch = 1;
          frames += got;
       }
@@ -250,7 +273,7 @@ static size_t decode_windowed(const char *path, enum audio_type_enum ty,
             avail = flen;
          audio_transfer_set_avail(ctx, ty, avail);
       }
-      if (!got)
+      if (!got && status != AUDIO_PROCESS_NEXT)
          break;
    }
 
@@ -259,19 +282,25 @@ static size_t decode_windowed(const char *path, enum audio_type_enum ty,
     * the head; under DT_STRICT a rewind into released pages faults. */
    if (audio_transfer_seek(ctx, ty, 0))
    {
-      size_t looped = 0;
-      while (looped < CHUNK * 16)
+      size_t looped = 0, loop_limit = CHUNK * 16;
+      if (loop_limit > ref_frames) loop_limit = ref_frames;
+      while (looped < loop_limit)
       {
          size_t got = 0, tell;
-         audio_transfer_read_s16(ctx, ty, out, chunk_frames(ch), &got);
-         if (!got)
-            break;
+         size_t want = loop_limit - looped;
+         int status;
+         if (want > chunk_frames(ch)) want = chunk_frames(ch);
+         status = test_audio_read(ctx, ty, out, want, &got);
+         if (got && ref && memcmp(out, ref + looped * ch,
+                  got * ch * sizeof(test_sample))) *mismatch = 1;
          looped += got;
          tell = audio_transfer_buffer_tell(ctx, ty);
-         if (!starve)
-            data_transfer_window_feed(dt, tell, LOOKAHEAD, MARGIN);
+         if (!starve) data_transfer_window_feed(dt, tell, LOOKAHEAD, MARGIN);
+         if (!got && status != AUDIO_PROCESS_NEXT) break;
       }
+      if (looped != loop_limit) *mismatch = 1;
    }
+   else *mismatch = 1;
 
    audio_transfer_free(ctx, ty);
    data_transfer_free(dt);
@@ -329,7 +358,7 @@ static void strictness_check(const char *path, enum audio_type_enum ty,
 int main(int argc, char **argv)
 {
    enum audio_type_enum ty;
-   int16_t *ref;
+   test_sample *ref;
    size_t   ref_frames = 0, win_frames;
    unsigned ch = 0;
    int      mismatch = 0;
@@ -353,8 +382,8 @@ int main(int argc, char **argv)
       size_t  n;
       if (!f)
       {
-         printf("[skip] %s: cannot open\n", argv[1]);
-         return 0;
+         fprintf(stderr,"[fail] %s: cannot open\n", argv[1]);
+         return 1;
       }
       n = fread(head, 1, sizeof(head), f);
       fclose(f);
@@ -363,12 +392,13 @@ int main(int argc, char **argv)
          ty = audio_decode_get_type(argv[1]);
       if (ty == AUDIO_TYPE_NONE)
       {
-         printf("[skip] %s: not a WebM audio type this build decodes\n",
+         printf("[fail] %s: not an audio type this build decodes\n",
                argv[1]);
-         return 0;
+         return 1;
       }
-      printf("[info] %s: %s in WebM\n", argv[1],
-            ty == AUDIO_TYPE_OPUS ? "Opus" : "Vorbis");
+      printf("[info] %s: %s\n", argv[1],
+            ty == AUDIO_TYPE_MP3 ? "MP3" :
+            ty == AUDIO_TYPE_OPUS ? "Opus in WebM" : "Vorbis in WebM");
    }
 
    if (!data_transfer_reserve_supported())

@@ -957,6 +957,80 @@ done:
    return rv;
 }
 
+typedef struct callback_source
+{
+   size_t length, calls;
+   int short_read, error, oversized;
+} callback_source;
+static int64_t callback_read_at(void *ud, uint64_t offset, uint8_t *dst, size_t bytes)
+{
+   callback_source *source = (callback_source*)ud;
+   size_t i;
+   source->calls++;
+   if (offset > source->length || bytes > source->length - (size_t)offset)
+      return -1;
+   if (source->error) return -1;
+   if (source->oversized) return (int64_t)bytes + 1;
+   if (source->short_read && bytes) bytes--;
+   for (i = 0; i < bytes; i++) dst[i] = (uint8_t)((offset + i) * 17 + 3);
+   return (int64_t)bytes;
+}
+static int callback_window_check(void)
+{
+   callback_source source;
+   data_transfer_t *dt;
+   const uint8_t *base;
+   size_t length, offset, i, calls;
+   memset(&source,0,sizeof(source)); source.length = 8 * 1024 * 1024;
+   if (data_transfer_open_window_reader(0,KEEP,callback_read_at,&source) ||
+       data_transfer_open_window_reader(source.length,KEEP,NULL,&source))
+      fail("callback window rejects missing source/length");
+   dt = data_transfer_open_window_reader(source.length,KEEP,callback_read_at,&source);
+   if (!dt) { fail("callback window open"); return 1; }
+   base = data_transfer_ptr(dt,&length);
+   if (!base || length != source.length) fail("callback window stable shape");
+   for (offset = KEEP; offset < source.length; offset += LOOKAHD)
+   {
+      size_t end = offset + LOOKAHD;
+      if (end > source.length) end = source.length;
+      if (!data_transfer_window_feed(dt,offset,LOOKAHD,MARGIN) ||
+          data_transfer_ptr(dt,NULL) != base)
+      { fail("callback window fill/advance"); break; }
+      for (i = offset; i < end; i++)
+         if (base[i] != (uint8_t)(i * 17 + 3))
+         { fail("callback window direct destination bytes"); break; }
+   }
+   data_transfer_window_rewind(dt);
+   if (!data_transfer_window_extend(dt,KEEP + 4096) ||
+       base[KEEP + 123] != (uint8_t)((KEEP + 123) * 17 + 3))
+      fail("callback window rewind");
+   if (data_transfer_window_is_reserved(dt) &&
+       data_transfer_window_resident(dt) > KEEP + LOOKAHD + MARGIN + 65536)
+      fail("callback window bounded residency");
+   calls = source.calls; data_transfer_free(dt);
+   if (source.calls != calls) fail("closing borrowed source performs no read");
+   source.short_read = 1;
+   if (data_transfer_open_window_reader(source.length,KEEP,callback_read_at,&source))
+      fail("callback short head is rejected");
+   source.short_read = 0;
+   dt = data_transfer_open_window_reader(source.length,KEEP,callback_read_at,&source);
+   if (!dt) { fail("callback error fixture"); return 1; }
+   if (data_transfer_window_is_reserved(dt))
+   {
+      source.error = 1;
+      if (data_transfer_window_extend(dt,KEEP+4096) || !data_transfer_failed(dt))
+         fail("callback I/O failure settles window");
+      calls = source.calls;
+      if (data_transfer_window_extend(dt,KEEP+8192) || source.calls != calls)
+         fail("settled callback window remains inert");
+   }
+   data_transfer_free(dt); source.error = 0; source.oversized = 1;
+   if (data_transfer_open_window_reader(source.length,KEEP,callback_read_at,&source))
+      fail("callback oversized count is rejected");
+   ok("borrowed callback window: direct reads, rewind, bounded residency and faults");
+   return 0;
+}
+
 int main(void)
 {
    const char *path = "dtwin.bin";
@@ -1063,6 +1137,7 @@ int main(void)
    printf("[skip] residency bound: not measurable on this platform\n");
 #endif
 
+   bad |= callback_window_check();
    bad |= sparse_skip_check();
    bad |= pin_check();
    bad |= feed_budget_check();
