@@ -1,8 +1,9 @@
 /* Copyright (C) 2026 The RetroArch team
  * SPDX-License-Identifier: GPL-3.0-or-later */
-#if defined(__linux__) && !defined(_XOPEN_SOURCE)
-/* fstatvfs, realpath, st_mtim and O_CLOEXEC; strict C89 hides them */
-#define _XOPEN_SOURCE 700
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+/* statx, fstatvfs, realpath, st_mtim, O_CLOEXEC and O_PATH; strict C89
+ * hides them */
+#define _GNU_SOURCE
 #endif
 
 #include <stdio.h>
@@ -29,6 +30,10 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 #define CORE_FS_NAME
+#endif
+#if defined(__APPLE__)
+#include <limits.h>
+#include <CoreFoundation/CoreFoundation.h>
 #endif
 #endif
 
@@ -632,6 +637,87 @@ end:
 #endif
 }
 
+#if defined(__linux__) && !defined(ANDROID)
+/* The mount fd is on: statx's STATX_MNT_ID (Linux 5.8), else /proc's */
+bool core_fd_mount(int fd, uint64_t *mnt)
+{
+   char text[512];
+   char name[64];
+   size_t got;
+   FILE *fp;
+#ifdef STATX_MNT_ID
+   struct statx stx;
+   if (     statx(fd, "", AT_EMPTY_PATH, STATX_MNT_ID, &stx) == 0
+         && (stx.stx_mask & STATX_MNT_ID))
+   {
+      *mnt = (uint64_t)stx.stx_mnt_id;
+      return true;
+   }
+#endif
+   snprintf(name, sizeof(name), "/proc/self/fdinfo/%d", fd);
+   if (!(fp = fopen(name, "r")))
+      return false;
+   got       = fread(text, 1, sizeof(text) - 1, fp);
+   text[got] = '\0';
+   fclose(fp);
+   return core_fdinfo_mount(text, mnt);
+}
+#endif
+
+bool core_file_in_package(core_file_t *f, const char *path)
+{
+#if defined(__APPLE__)
+   char bundle[PATH_MAX];
+   struct stat st, rst;
+   CFBundleRef app = CFBundleGetMainBundle();
+   CFURLRef url    = app ? CFBundleCopyBundleURL(app) : NULL;
+   char *core_real = NULL;
+   char *app_real  = NULL;
+   bool ok         = false;
+   if (!url)
+      return false;
+   /* The real path must name the file that was checked */
+   if (     CFURLGetFileSystemRepresentation(url, true, (UInt8*)bundle,
+               sizeof(bundle))
+         && (app_real = realpath(bundle, NULL))
+         && (core_real = realpath(path, NULL))
+         && fstat(f->fd, &st) == 0
+         && stat(core_real, &rst) == 0
+         && st.st_dev == rst.st_dev
+         && st.st_ino == rst.st_ino)
+      ok = core_path_in_app(core_real, app_real);
+   CFRelease(url);
+   free(core_real);
+   free(app_real);
+   return ok;
+#elif defined(__linux__) && !defined(ANDROID)
+   struct statvfs vfs;
+   uint64_t mnt, self_mnt;
+   bool has_mnt  = core_fd_mount(f->fd, &mnt);
+   bool has_self = false;
+   int self_fd;
+#ifdef O_PATH
+   /* The binary itself, even one we may only execute */
+   int flags     = O_PATH | O_CLOEXEC;
+#else
+   int flags     = O_RDONLY | O_CLOEXEC;
+#endif
+   (void)path;
+   if ((self_fd = open("/proc/self/exe", flags)) >= 0)
+   {
+      has_self = core_fd_mount(self_fd, &self_mnt);
+      close(self_fd);
+   }
+   return core_mount_in_package(has_mnt ? &mnt : NULL,
+         has_self ? &self_mnt : NULL,
+         fstatvfs(f->fd, &vfs) == 0 && (vfs.f_flag & ST_RDONLY));
+#else
+   (void)f;
+   (void)path;
+   return false;
+#endif
+}
+
 /* The folder's full path in one spelling, malloc'd, and its size */
 static void *core_folder_full(const char *dir, size_t *size)
 {
@@ -733,7 +819,8 @@ bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
    }
    return core_check_record(s, c)
       || core_file_unwritable(f, path,
-            core_self_find(&self) ? &self : NULL);
+            core_self_find(&self) ? &self : NULL)
+      || core_file_in_package(f, path);
 }
 
 char *core_sig_path(const char *path)

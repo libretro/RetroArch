@@ -131,7 +131,8 @@ ifneq ($(findstring Darwin,$(OS)),)
    OSX := 1
    # IOKit for the power-source query in platform_darwin.m, which every
    # macOS build makes; the HID driver adds nothing beyond it.
-   LIBS += -framework AppKit -framework IOKit
+   # CoreFoundation for the app bundle lookup in core_signature_io.c.
+   LIBS += -framework AppKit -framework IOKit -framework CoreFoundation
    ARCHFLAGS=
    MINVERFLAGS=
    ifeq ($(shell uname -p),arm)

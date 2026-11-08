@@ -2023,6 +2023,123 @@ static void test_check(void)
    core_trust_free(t);
 }
 
+#ifdef __linux__
+/* The mount /proc gives for an open file, 0 when none */
+static uint64_t fdinfo_mount(core_file_t *f)
+{
+   char name[64];
+   char text[512];
+   uint64_t mnt = 0;
+   size_t got;
+   FILE *fp;
+   snprintf(name, sizeof(name), "/proc/self/fdinfo/%d", core_file_fd(f));
+   if (!(fp = fopen(name, "r")))
+      return 0;
+   got       = fread(text, 1, sizeof(text) - 1, fp);
+   text[got] = '\0';
+   fclose(fp);
+   return core_fdinfo_mount(text, &mnt) ? mnt : 0;
+}
+#endif
+
+#if defined(__linux__) && !defined(ANDROID)
+/* The in-package rule's own mount lookup */
+static void test_fd_mount(void)
+{
+   uint64_t a = 0, b = 0, p = 0;
+   core_file_t *one  = core_file_open(self_path);
+   core_file_t *two  = core_file_open(self_path);
+   core_file_t *proc = core_file_open("/proc/self/status");
+   CHECK(one && two);
+   if (!proc)
+      printf("note: no /proc, mount lookup not checked\n");
+   else if (one && two)
+   {
+      /* One file's two opens share a mount, the one /proc gives; /proc
+       * is another */
+      CHECK(core_fd_mount(core_file_fd(one), &a));
+      CHECK(core_fd_mount(core_file_fd(two), &b));
+      CHECK(core_fd_mount(core_file_fd(proc), &p));
+      CHECK(a && a == b && a == fdinfo_mount(one));
+      CHECK(p && p != a);
+   }
+   core_file_close(one);
+   core_file_close(two);
+   core_file_close(proc);
+}
+#endif
+
+/* Cores inside RetroArch's own package */
+static void test_in_package(void)
+{
+   static const char app[] = "/Applications/RetroArch.app";
+   const uint64_t one = 1, two = 2;
+   uint64_t mnt = 0;
+   core_trust_t *t = core_trust_new();
+   core_trust_set_t *s;
+   struct core_check c;
+   core_file_t *g;
+   char core[512];
+
+   /* Apple: inside RetroArch's own .app, by real paths */
+   CHECK( core_path_in_app("/Applications/RetroArch.app/Contents/Frameworks/snes9x_libretro.framework/snes9x_libretro", app));
+   CHECK( core_path_in_app("/Applications/RetroArch.app/Contents/Frameworks/x.dylib", "/Applications/RetroArch.app/"));
+   CHECK( core_path_in_app("/Applications/RetroArch.app/Contents/Frameworks/x.dylib", "/Applications/RetroArch.app//"));
+   CHECK( core_path_in_app("/private/var/containers/Bundle/Application/0A1B/RetroArch.app/Frameworks/x.framework/x", "/private/var/containers/Bundle/Application/0A1B/RetroArch.app"));
+   CHECK(!core_path_in_app("/Applications/RetroArch.app2/Contents/Frameworks/x.dylib", app));
+   CHECK(!core_path_in_app("/Users/me/Library/Application Support/RetroArch/cores/x.dylib", app));
+   CHECK(!core_path_in_app(app, app));
+   CHECK(!core_path_in_app("/Applications/RetroArch.app/", app));
+   /* A command-line build's main bundle is its binary's folder */
+   CHECK(!core_path_in_app("/usr/local/bin/cores/x.dylib", "/usr/local/bin"));
+   CHECK(!core_path_in_app("/x.dylib", "/"));
+   CHECK(!core_path_in_app(NULL, app));
+   CHECK(!core_path_in_app("/Applications/RetroArch.app/x", NULL));
+
+   /* Linux: RetroArch's own mount, read-only */
+   CHECK( core_mount_in_package(&one, &one, true));
+   CHECK(!core_mount_in_package(&one, &one, false));
+   CHECK(!core_mount_in_package(&one, &two, true));
+   CHECK(!core_mount_in_package(NULL, &one, true));
+   CHECK(!core_mount_in_package(&one, NULL, true));
+   CHECK(core_fdinfo_mount("pos:\t0\nflags:\t02100000\nmnt_id:\t144\nino:\t1234\n", &mnt) && mnt == 144);
+   CHECK(core_fdinfo_mount("pos:\t0\nflags:\t0100000\nmnt_id:\t29", &mnt) && mnt == 29);
+   CHECK(!core_fdinfo_mount("pos:\t0\nflags:\t02100000\n", &mnt));
+   CHECK(!core_fdinfo_mount("pos:\t0\nxmnt_id:\t5\n", &mnt));
+   CHECK(!core_fdinfo_mount("mnt_id:\t\nino:\t5\n", &mnt));
+   CHECK(!core_fdinfo_mount("mnt_id:\t12x\n", &mnt));
+   CHECK(!core_fdinfo_mount("", &mnt));
+
+   /* Our own files are on a writable mount: never in the package, so
+    * an unsigned one needs hashing */
+   strlcpy(core, tmp("pkg_libretro.so"), sizeof(core));
+   CHECK(filestream_write_file(core, fx_core, 1024));
+   CHECK((g = core_file_open(core)) != NULL);
+   if (g)
+   {
+      CHECK(!core_file_in_package(g, core));
+      s = core_trust_get(t);
+      CHECK(!core_check_quick(s, g, core, &c));
+      core_trust_set_put(s);
+#ifdef __linux__
+      {
+         /* /proc's own text: the harness and its files share a mount,
+          * /proc is another */
+         core_file_t *self = core_file_open(self_path);
+         core_file_t *proc = core_file_open("/proc/self/stat");
+         uint64_t a = self ? fdinfo_mount(self) : 0;
+         uint64_t b = fdinfo_mount(g);
+         uint64_t p = proc ? fdinfo_mount(proc) : 0;
+         CHECK(a && a == b && p && p != a);
+         core_file_close(self);
+         core_file_close(proc);
+      }
+#endif
+      core_file_close(g);
+   }
+   core_trust_free(t);
+}
+
 static void test_self_find(void)
 {
    struct core_self self;
@@ -2051,7 +2168,8 @@ static void clean(void)
       "race", "full_trust", "full_trust.bad", "cap_trust",
       "gone/" FX_NAME, "gone",
       "four/" FX_NAME, "four/" FX_NAME ".sig", "four",
-      "five/" FX_NAME, "five/" FX_NAME ".sig", "five" };
+      "five/" FX_NAME, "five/" FX_NAME ".sig", "five",
+      "pkg_libretro.so" };
    char other[256];
    size_t i;
 #ifndef _WIN32
@@ -2093,6 +2211,15 @@ int main(int argc, char *argv[])
 {
    /* FAIL lines survive a crash or a sanitizer exit */
    setvbuf(stdout, NULL, _IONBF, 0);
+   /* For a run inside a read-only bind mount, outside CI */
+   if (argc == 3 && string_is_equal(argv[1], "--in-package"))
+   {
+      core_file_t *f = core_file_open(argv[2]);
+      bool in        = f && core_file_in_package(f, argv[2]);
+      core_file_close(f);
+      printf("%s\n", in ? "in package" : "not in package");
+      return 0;
+   }
    if (argc > 0)
       self_path = argv[0];
    fx_make_core();
@@ -2126,6 +2253,10 @@ int main(int argc, char *argv[])
    test_owner_android();
    test_self_path();
    test_check();
+   test_in_package();
+#if defined(__linux__) && !defined(ANDROID)
+   test_fd_mount();
+#endif
    test_self_find();
    clean();
    free(fx_core);
