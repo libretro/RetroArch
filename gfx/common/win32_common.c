@@ -677,11 +677,9 @@ static void win32_save_position(void)
       {
          bool ui_menubar_enable                     = settings->bools.ui_menubar_enable;
          bool window_show_decor                     = settings->bools.video_window_show_decorations;
-         unsigned win_w                             =
-               VIDEO_SCALE_W(g_win32->pos_dims);
-         unsigned win_h                             =
-               VIDEO_SCALE_H(g_win32->pos_dims);
-         settings->uints.window_position_pos        = g_win32->pos;
+         unsigned win_w                             = VIDEO_SCALE_W(g_win32->pos_dims);
+         unsigned win_h                             = VIDEO_SCALE_H(g_win32->pos_dims);
+
          /* The frame the window reports includes whatever chrome it
           * is wearing; the setting holds the client area, so take the
           * chrome off both axes before the pair is stored. */
@@ -695,11 +693,12 @@ static void win32_save_position(void)
          }
          if (ui_menubar_enable)
          {
-            int menu_bar_height   = GetSystemMetrics(SM_CYMENU);
+            int menu_bar_height                     = GetSystemMetrics(SM_CYMENU);
             win_h                                  -= menu_bar_height;
          }
-         settings->uints.window_position_dims       =
-               VIDEO_SCALE_PACK(win_w, win_h);
+
+         settings->uints.window_position_pos        = g_win32->pos;
+         settings->uints.window_position_dims       = VIDEO_SCALE_PACK(win_w, win_h);
       }
    }
 }
@@ -2154,8 +2153,10 @@ void win32_check_window(void *data,
    if (g_win32_flags & WIN32_CMN_FLAG_RESIZED)
    {
       *resize             = true;
-      *dims              = VIDEO_SCALE_PACK(g_win32_resize_width, g_win32_resize_height);
+      *dims               = VIDEO_SCALE_PACK(g_win32_resize_width, g_win32_resize_height);
       g_win32_flags      &= ~WIN32_CMN_FLAG_RESIZED;
+      /* Save the current position and size if set so. */
+      win32_save_position();
    }
 }
 #endif
@@ -2235,37 +2236,50 @@ bool win32_has_focus(void *data)
 {
    settings_t *settings           = config_get_ptr();
 
-   /* Ensure window size is big enough for core geometry. */
+   /* Apply/enforce windowed mode size. */
    if (      settings
-         && !settings->bools.video_fullscreen
-         && !settings->bools.video_window_save_positions)
+         && !settings->bools.video_fullscreen)
    {
-      unsigned extra_width        = 0;
-      unsigned extra_height       = 0;
-      unsigned min_width          = 0;
-      unsigned min_height         = 0;
+      bool window_save_positions = settings->bools.video_window_save_positions;
+      unsigned extra_w           = 0;
+      unsigned extra_h           = 0;
+      unsigned win_w             = 0;
+      unsigned win_h             = 0;
 
-      win32_get_av_info_geometry(&min_width, &min_height);
+      /* Follow windowed mode size options in realtime when remembering position. */
+      if (window_save_positions)
+      {
+         win_w = VIDEO_SCALE_W(settings->uints.window_position_dims);
+         win_h = VIDEO_SCALE_H(settings->uints.window_position_dims);
+      }
+      /* Ensure window size is big enough for core geometry. */
+      else
+         win32_get_av_info_geometry(&win_w, &win_h);
 
       if (settings->bools.video_window_show_decorations)
       {
          int border_thickness     = GetSystemMetrics(SM_CXSIZEFRAME);
          int title_bar_height     = GetSystemMetrics(SM_CYCAPTION);
 
-         extra_width             += border_thickness * 2;
-         extra_height            += border_thickness * 2 + title_bar_height;
+         extra_w                 += border_thickness * 2;
+         extra_h                 += border_thickness * 2 + title_bar_height;
       }
 
       if (settings->bools.ui_menubar_enable)
-         extra_height            += GetSystemMetrics(SM_CYMENU);
+         extra_h                 += GetSystemMetrics(SM_CYMENU);
 
-      if (     (     g_win32_resize_width  < min_width
-                  || g_win32_resize_height < min_height)
-            && min_width  - g_win32_resize_width  < MIN_WIDTH  / 1.5f
-            && min_height - g_win32_resize_height < MIN_HEIGHT / 1.5f)
+      if (     (  window_save_positions
+               && (  win_w != g_win32_resize_width
+                  || win_h != g_win32_resize_height))
+            || (  !window_save_positions
+               && (  win_w > g_win32_resize_width
+                  || win_h > g_win32_resize_height)
+               && win_w - g_win32_resize_width  < MIN_WIDTH  / 1.5f
+               && win_h - g_win32_resize_height < MIN_HEIGHT / 1.5f)
+         )
          SetWindowPos(main_window.hwnd, NULL, 0, 0,
-               min_width  + extra_width,
-               min_height + extra_height,
+               win_w + extra_w,
+               win_h + extra_h,
                SWP_NOMOVE);
    }
 
@@ -2439,7 +2453,7 @@ bool win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    {
       win32_common_state_t *g_win32    = (win32_common_state_t*)&win32_st;
       bool position_set_from_config    = false;
-      bool video_window_save_positions = settings->bools.video_window_save_positions;
+      bool window_save_positions       = settings->bools.video_window_save_positions;
       bool window_show_decor           = settings->bools.video_window_show_decorations;
 
       *style          = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
@@ -2454,18 +2468,15 @@ bool win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 
       AdjustWindowRect(rect, *style, FALSE);
 
-      if (video_window_save_positions)
+      if (window_save_positions)
       {
          /* Set position from config */
          int border_thickness             = window_show_decor ? GetSystemMetrics(SM_CXSIZEFRAME) : 0;
          int title_bar_height             = window_show_decor ? GetSystemMetrics(SM_CYCAPTION) : 0;
-         unsigned window_position_width   =
-               VIDEO_SCALE_W(settings->uints.window_position_dims);
-         unsigned window_position_height  =
-               VIDEO_SCALE_H(settings->uints.window_position_dims);
+         unsigned window_position_width   = VIDEO_SCALE_W(settings->uints.window_position_dims);
+         unsigned window_position_height  = VIDEO_SCALE_H(settings->uints.window_position_dims);
 
-         g_win32->pos                     =
-               settings->uints.window_position_pos;
+         g_win32->pos                     = settings->uints.window_position_pos;
          g_win32->pos_set                 = true;
          g_win32->pos_dims                = VIDEO_SCALE_PACK(
                window_position_width  + border_thickness * 2,
