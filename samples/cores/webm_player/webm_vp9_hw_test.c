@@ -298,10 +298,45 @@ static void check_private_prefetch(void)
    submitted = 0;
 }
 
+static void check_range_conversion(void)
+{
+   static const unsigned matrix[3] = {6, 1, 9};
+   static const double kr[3] = {0.299, 0.2126, 0.2627};
+   static const double kb[3] = {0.114, 0.0722, 0.0593};
+   static const uint8_t y[12] = {0, 16, 64, 128, 235, 255,
+      255, 235, 128, 64, 16, 0};
+   static const uint8_t u[3] = {128, 96, 176};
+   static const uint8_t v[3] = {128, 180, 64};
+   uint32_t pixels[12];
+   unsigned m, full, i, c;
+   for (m = 0; m < 3; m++)
+      for (full = 0; full < 2; full++)
+      {
+         media_blit_i420(pixels, 6, 2, y, 6, u, v, 3, matrix[m], full);
+         for (i = 0; i < 12; i++)
+         {
+            double luma = full ? y[i] : ((double)y[i] - 16) * 255 / 219;
+            double cb = ((double)u[(i % 6) / 2] - 128) * (full ? 1 : 255.0 / 224);
+            double cr = ((double)v[(i % 6) / 2] - 128) * (full ? 1 : 255.0 / 224);
+            double rgb[3];
+            rgb[0] = luma + 2 * (1 - kr[m]) * cr;
+            rgb[2] = luma + 2 * (1 - kb[m]) * cb;
+            rgb[1] = (luma - kr[m] * rgb[0] - kb[m] * rgb[2]) / (1 - kr[m] - kb[m]);
+            for (c = 0; c < 3; c++)
+            {
+               int actual = (pixels[i] >> (16 - c * 8)) & 255;
+               int expected = rgb[c] < 0 ? 0 : (rgb[c] > 255 ? 255 : (int)(rgb[c] + 0.5));
+               CHECK(abs(actual - expected) <= 1);
+            }
+         }
+      }
+}
+
 int main(void)
 {
    unsigned i, before, decoded, delivered;
    uint8_t state[40], after[40];
+   check_range_conversion();
    check_software_skip("fixtures/vp9-vorbis.webm");
    check_software_skip("fixtures/vp8-opus.webm");
    check_hidden_timeline();

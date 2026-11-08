@@ -861,13 +861,16 @@ static void media_prefetch_webm(media_player_t *p)
 }
 
 /* -------------------------------------------------------------------- */
-/* Limited-range I420 -> XRGB8888.  Coefficients follow the Colour       */
+/* I420 -> XRGB8888.  Coefficients follow the Colour                     */
 /* element's MatrixCoefficients; untagged content defaults to BT.601     */
 /* below 720 lines and BT.709 at or above (industry convention).         */
 /* -------------------------------------------------------------------- */
 static const int16_t media_coef_601[4]  = { 409, 100, 208, 516 };
 static const int16_t media_coef_709[4]  = { 459,  55, 136, 541 };
 static const int16_t media_coef_2020[4] = { 431,  48, 167, 548 };
+static const int16_t media_full_601[4] = { 359, 88, 183, 454 };
+static const int16_t media_full_709[4] = { 403, 48, 120, 475 };
+static const int16_t media_full_2020[4] = { 377, 42, 146, 482 };
 
 static const int16_t *media_yuv_coefs(unsigned matrix, unsigned height)
 {
@@ -880,9 +883,10 @@ static const int16_t *media_yuv_coefs(unsigned matrix, unsigned height)
    }
 }
 
-static INLINE uint32_t media_yuv_px(int y, int u, int v, const int16_t *k)
+static INLINE uint32_t media_yuv_px(int y, int u, int v, const int16_t *k,
+      int full)
 {
-   int c = 298 * (y - 16) + 128;
+   int c = full ? 256 * y + 128 : 298 * (y - 16) + 128;
    int r = (c + k[0] * (v - 128)) >> 8;
    int g = (c - k[1] * (u - 128) - k[2] * (v - 128)) >> 8;
    int b = (c + k[3] * (u - 128)) >> 8;
@@ -920,10 +924,13 @@ static void media_expand_8888_to_2101010(uint32_t *dst, unsigned stride,
 
 static void media_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
       const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
-      unsigned matrix, int cvsh)
+      unsigned matrix, int cvsh, int full)
 {
    const int16_t *k = media_yuv_coefs(matrix, h);
    unsigned i, j;
+   if (full)
+      k = k == media_coef_709 ? media_full_709
+         : (k == media_coef_2020 ? media_full_2020 : media_full_601);
    for (j = 0; j < h; j++)
    {
       const uint8_t *yr = y + j * ys;
@@ -931,16 +938,16 @@ static void media_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
       const uint8_t *vr = v + (j >> cvsh) * uvs;
       uint32_t *dr      = dst + j * w;
       for (i = 0; i < w; i++)
-         dr[i] = media_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k);
+         dr[i] = media_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k, full);
    }
 }
 
 /* 4:2:0: two luma rows share a chroma row. */
 static void media_blit_i420(uint32_t *dst, unsigned w, unsigned h,
       const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
-      unsigned matrix)
+      unsigned matrix, int full)
 {
-   media_blit_yuv(dst, w, h, y, ys, u, v, uvs, matrix, 1);
+   media_blit_yuv(dst, w, h, y, ys, u, v, uvs, matrix, 1, full);
 }
 
 /* -------------------------------------------------------------------- */
@@ -1084,7 +1091,9 @@ static int media_present_vp9(media_player_t *p, int show)
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
          media_blit_i420(p->fb, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
-            p->vp9->uvs, ct ? ct->matrix_coefficients : 0);
+            p->vp9->uvs, ct ? ct->matrix_coefficients : 0,
+            ct && ct->colour_range ? ct->colour_range == 2
+               : p->vp9->hd.color_range);
          if (p->pix10)
             media_expand_8888_to_2101010(p->fb, p->width, w, h);
       }
@@ -1171,7 +1180,7 @@ static int media_decode_packet(media_player_t *p, const rwebm_packet *pkt)
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
          media_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
-            ct ? ct->matrix_coefficients : 0);
+            ct ? ct->matrix_coefficients : 0, 0);
          if (p->pix10)
             media_expand_8888_to_2101010(p->fb, p->width,
                (unsigned)w, (unsigned)h);
@@ -1221,7 +1230,7 @@ static int media_decode_packet(media_player_t *p, const rwebm_packet *pkt)
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
          media_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
             ct ? ct->matrix_coefficients : 0,
-               (ch < h) ? 1 : 0);
+               (ch < h) ? 1 : 0, 0);
          if (p->pix10)
             media_expand_8888_to_2101010(p->fb, p->width,
                (unsigned)w, (unsigned)h);
@@ -1257,7 +1266,7 @@ static int media_drain_h264(media_player_t *p)
       const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
       media_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
          ct ? ct->matrix_coefficients : 0,
-         (ch < h) ? 1 : 0);
+         (ch < h) ? 1 : 0, 0);
       if (p->pix10)
          media_expand_8888_to_2101010(p->fb, p->width,
             (unsigned)w, (unsigned)h);
