@@ -1853,7 +1853,8 @@ ifeq ($(HAVE_VULKAN), 1)
              gfx/common/vaapi_hevc_vulkan_cache.o \
              gfx/common/vulkan_android_queue.o
       ifeq ($(HAVE_RVP9), 1)
-         OBJ += gfx/common/vaapi_vp9_decoder.o \
+         OBJ += gfx/common/vaapi_vp9_owner.o \
+                gfx/common/vaapi_vp9_decoder.o \
                 gfx/common/vaapi_vp9_submit.o \
                 gfx/common/vaapi_vp9_pool.o
       endif
