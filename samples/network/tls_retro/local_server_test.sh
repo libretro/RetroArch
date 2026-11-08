@@ -12,6 +12,17 @@ make -s tls_fetch
 # MinGW build of the tools
 RUN=${RUNNER:-}
 EXE=${EXE:-}
+# Until a server listens on port $1, five seconds at most. It is asked of
+# the socket table, not by connecting: a server that counts its
+# connections would count a probe. Without ss, the old fixed wait.
+listening() {
+   command -v ss >/dev/null 2>&1 || { sleep 0.4; return 0; }
+   n=0
+   until ss -ltnH "sport = :$1" 2>/dev/null | grep -q .; do
+      n=$((n + 1)); [ $n -ge 250 ] && return 0
+      sleep 0.02
+   done
+}
 openssl req -x509 -newkey rsa:2048 -nodes -keyout $D/ca.key -out $D/ca.pem -days 2 -subj "/CN=tls_retro test CA" 2>/dev/null
 mkcert() { # name keyalg [pkeyopt]
    openssl req -newkey "$2" $3 -nodes -keyout $D/$1.key -out $D/$1.csr -subj "/CN=$1" 2>/dev/null
@@ -68,7 +79,7 @@ mkleaf viap384 ip384
 run() { # label cert cipher curve expect_rc host mode ca [rounds] [server opts]
    CHAIN=""; [ -f $D/$2.chain.pem ] && CHAIN="-cert_chain $D/$2.chain.pem"
    openssl s_server -accept 44331 -cert $D/$2.pem $CHAIN -key $D/$2.key -tls1_2 -cipher "$3" -named_curve $4 -www ${10:-} >/dev/null 2>&1 &
-   SRV=$!; sleep 0.4
+   SRV=$!; listening 44331
    set +e; $RUN ./tls_fetch$EXE $6 44331 $7 "$8" ${9:-1} >/dev/null 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
    if [ $rc -eq $5 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $5)"; exit 1; fi
@@ -107,7 +118,7 @@ run "chain: server omitting the intermediate is refused" nointer ECDHE-RSA-AES12
 run13() { # label cert ciphersuite expect_rc host mode ca [rounds] [server opts]
    CHAIN=""; [ -f $D/$2.chain.pem ] && CHAIN="-cert_chain $D/$2.chain.pem"
    openssl s_server -accept 44331 -cert $D/$2.pem $CHAIN -key $D/$2.key -tls1_3 -ciphersuites "$3" -www ${9:-} >/dev/null 2>&1 &
-   SRV=$!; sleep 0.4
+   SRV=$!; listening 44331
    set +e; $RUN ./tls_fetch$EXE $5 44331 $6 "$7" ${8:-1} >/dev/null 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
    if [ $rc -eq $4 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $4)"; exit 1; fi
@@ -156,7 +167,7 @@ fi
 make -s tls_threads
 for key in rsa p256; do
    openssl s_server -accept 44331 -cert $D/$key.pem -key $D/$key.key -www >/dev/null 2>&1 &
-   SRV=$!; sleep 0.4
+   SRV=$!; listening 44331
    set +e; $RUN ./tls_threads$EXE localhost 44331 $D/ca.pem > $D/thr.out 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
    if [ $rc -eq 0 ]; then echo "ok:   concurrent first-use verification from six threads ($key)"; else echo "FAIL: threads ($key): $(cat $D/thr.out)"; exit 1; fi
@@ -166,7 +177,7 @@ done
 make -s tls_fetch_noaes
 noaes() { # label version-option expected-suite
    openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key $2 -www >/dev/null 2>&1 &
-   SRV=$!; sleep 0.4
+   SRV=$!; listening 44331
    set +e; TLS_FETCH_SUITE=1 $RUN ./tls_fetch_noaes$EXE localhost 44331 0 $D/ca.pem > $D/noaes.out 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
    if [ $rc -eq 0 ] && grep -q "^suite $3" $D/noaes.out; then echo "ok:   $1"
@@ -183,7 +194,7 @@ head -c 3158073 /dev/urandom > $D/www/body.bin
 SUM=$(openssl dgst -sha256 -r $D/www/body.bin | cut -d' ' -f1)
 http() { # label version cipher-option cipher
    (cd $D/www && exec openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key $2 $3 "$4" -WWW) >/dev/null 2>&1 &
-   SRV=$!; sleep 0.4
+   SRV=$!; listening 44331
    set +e; $RUN ./tls_http$EXE 44331 body.bin $SUM $D/ca.pem > $D/http.out 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
    if [ $rc -eq 0 ]; then echo "ok:   $1"; else echo "FAIL: $1: $(cat $D/http.out)"; exit 1; fi
@@ -213,7 +224,7 @@ cfg() { # label expect_rc want_output server-options -- client-options
    L=$1; W=$2; O=$3; shift 3
    SOPT=""; while [ "$1" != "--" ]; do SOPT="$SOPT $1"; shift; done; shift
    (cd $D/cfgwww && exec openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key $SOPT -WWW) >/dev/null 2>&1 &
-   SRV=$!; sleep 0.4
+   SRV=$!; listening 44331
    set +e; $RUN ./tls_config$EXE "$@" > $D/cfg.out 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
    if [ $rc -eq $W ] && grep -q "$O" $D/cfg.out; then echo "ok:   $L"
@@ -258,7 +269,7 @@ printf 'subjectAltName=DNS:localhost\nbasicConstraints=CA:FALSE\n' > $D/untr.ext
 openssl x509 -req -in $D/untr.csr -CA $D/cca.pem -CAkey $D/cca.key -CAcreateserial -out $D/untr.pem -days 2 -extfile $D/untr.ext 2>/dev/null
 openssl x509 -in $D/cca.pem -outform DER -out $D/cca.der
 (cd $D/www && exec openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key -tls1_2 -cipher AES256-SHA -Verify 1 -CAfile $D/cca.pem -WWW) >/dev/null 2>&1 &
-SRV=$!; sleep 0.4
+SRV=$!; listening 44331
 set +e; $RUN ./tls_http$EXE 44331 body.bin $SUM $D/ca.pem -t $D/ca.der -c $D/cli.der -k $D/cli.key.der -s 0035 -g > $D/http.out 2>&1; rc=$?; set -e
 kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
 if [ $rc -eq 0 ]; then echo "ok:   net_http with its own settings: client certificate, AES-256-CBC"
@@ -287,7 +298,7 @@ PYEOF
 pool() { # label leaf want-rc want-output want-connections -- steps
    L=$1; LEAF=$2; W=$3; O=$4; C=$5; shift 6
    rm -f $D/ka.log
-   python3 $D/ka.py 44331 $D/$LEAF.pem $D/$LEAF.key $D/www $D/ka.log & SRV=$!; sleep 0.8
+   python3 $D/ka.py 44331 $D/$LEAF.pem $D/$LEAF.key $D/www $D/ka.log & SRV=$!; listening 44331
    set +e; $RUN ./tls_http$EXE 44331 body.bin $SUM $D/ca.pem "$@" > $D/http.out 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
    N=$(wc -l < $D/ka.log 2>/dev/null || echo 0)
@@ -321,7 +332,7 @@ c.close()
 PYEOF
 for s in AES256-SHA:0035 AES128-SHA256:003c ECDHE-RSA-AES256-SHA384:c028; do
    (cd $D/cfgwww && exec openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key -tls1_2 -cipher ${s%%:*} -WWW) >/dev/null 2>&1 &
-   SRV=$!; python3 $D/flip.py & PRX=$!; sleep 0.5
+   SRV=$!; python3 $D/flip.py & PRX=$!; listening 44331; listening 44332
    set +e; $RUN ./tls_config$EXE localhost 44332 -t $D/ca.der -s ${s##*:} $G > $D/cfg.out 2>&1; rc=$?; set -e
    kill $SRV $PRX 2>/dev/null || true; wait $SRV $PRX 2>/dev/null || true
    if [ $rc -eq 1 ] && grep -q "receive error -4" $D/cfg.out; then echo "ok:   ${s%%:*}: a record changed in flight is refused"
