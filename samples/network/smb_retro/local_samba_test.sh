@@ -35,6 +35,16 @@ stop() {
 # instead of the one this script configured - it maps the unknown
 # user to guest and knows no [share].
 port_busy() { ss -ltn 2>/dev/null | grep -q ':445 '; }
+# smbd's listener gone, or there, two seconds at most each; without ss
+# the fixed waits they replace
+port_free() {
+   command -v ss >/dev/null 2>&1 || { sleep 0.3; return 0; }
+   i=0; while port_busy && [ $i -lt 40 ]; do sleep 0.05; i=$((i + 1)); done
+}
+port_up() {
+   command -v ss >/dev/null 2>&1 || { sleep 1; return 0; }
+   i=0; until port_busy || [ $i -ge 40 ]; do sleep 0.05; i=$((i + 1)); done
+}
 if port_busy; then
    systemctl stop smbd nmbd samba-ad-dc 2>/dev/null || true
    pkill -x smbd 2>/dev/null || true
@@ -80,7 +90,7 @@ conf SMB3_11 default
 run() { # label max_protocol encrypt expect_rc password
    # smbd and the samba-dcerpcd it spawned for this config; a stale
    # rpc daemon from a previous run answers the srvsvc pipe for nobody
-   stop; sleep 0.3
+   stop; port_free
    conf $2 $3 "${SIGN_ALGS:-}"
    smbd -s $D/smb.conf -D
    # wait for the listener rather than guessing a delay
@@ -148,7 +158,7 @@ cat > $D/smb.conf << EOC
    force user = root
 EOC
 }
-stop; sleep 0.3; guestconf; smbd -s $D/smb.conf -D
+stop; port_free; guestconf; smbd -s $D/smb.conf -D
 i=0; while [ $i -lt 50 ] && ! $RUN ./smb_test$EXE 127.0.0.1 public nobody x RETRO >$D/out 2>&1; do
    grep -q "bad signature" $D/out && break
    i=$((i + 1)); sleep 0.2
@@ -241,7 +251,7 @@ rm -f $D/share/rsmb_test.bin
 # first call after the restart is the one that finds it gone.
 restart_round() { # binary order label
    rm -f $D/share/idle.bin $D/share/idle_w.bin
-   stop; sleep 0.3; conf SMB3_11 default; smbd -s $D/smb.conf -D; sleep 1
+   stop; port_free; conf SMB3_11 default; smbd -s $D/smb.conf -D; port_up
    $RUN ./$1$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO 10 $2 >$D/out 2>&1 &
    idler=$!
    sleep 3
@@ -257,7 +267,7 @@ restart_round() { # binary order label
 # streams still lets their connections go (the sanitizer lane's LSan).
 gone_round() { # binary label
    rm -f $D/share/idle.bin $D/share/idle_w.bin
-   stop; sleep 0.3; conf SMB3_11 default; smbd -s $D/smb.conf -D; sleep 1
+   stop; port_free; conf SMB3_11 default; smbd -s $D/smb.conf -D; port_up
    $RUN ./$1$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO 10 g >$D/out 2>&1 &
    idler=$!
    sleep 3
