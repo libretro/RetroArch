@@ -14710,6 +14710,9 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
                chain->texture.format, /* Ensure we use the non-remapped format. */
                NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
       }
+      /* Sampled whenever it exists, and of the old format */
+      else if (chain->texture_optimal.memory != VK_NULL_HANDLE)
+         vulkan_texture_defer_copy(vk, &chain->texture_optimal);
    }
 
    /* If the driver picked a row pitch wider than width*bpp for this linear

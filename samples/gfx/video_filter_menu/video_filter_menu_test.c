@@ -24,6 +24,9 @@
  *    with the format and scale the frames now have, nothing is set up
  *    again, and a change the frames do not make tells it nothing.
  *
+ * With the null driver a stand-in poke lends memory for the filter to
+ * draw into: taken when cached, declined when not.
+ *
  * HARNESS_VIDEO_DRIVER=gl, glcore, vulkan or (on macOS) metal, under a
  * display (Xvfb on Linux), runs the same steps on that driver, which
  * takes them in place: nothing is set up again, and after each step
@@ -529,6 +532,101 @@ static void lane_told_in_place(void)
             "told each change once, with what the frames now are\n");
 }
 
+/* A filter draws straight into memory the driver lends, at the driver's
+ * pitch, while that memory reads back at cached speed; otherwise into
+ * the frontend's own buffer. */
+#define LEND_PITCH (512 * sizeof(uint32_t))
+static uint32_t     lend_mem[512 * 400];
+static unsigned     lend_flags;
+static const void  *lend_seen;
+static unsigned     lend_seen_pitch;
+static bool (*lend_inner)(void*, const void*, unsigned, uint64_t, unsigned,
+      const char*, video_frame_info_t*);
+
+static bool lend_framebuffer(void *data, struct retro_framebuffer *fb)
+{
+   (void)data;
+   fb->data         = lend_mem;
+   fb->pitch        = LEND_PITCH;
+   fb->format       = RETRO_PIXEL_FORMAT_XRGB8888;
+   fb->memory_flags = lend_flags;
+   return fb->width <= 512 && fb->height <= 400;
+}
+
+static bool lend_frame(void *data, const void *frame, unsigned dims,
+      uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t *video_info)
+{
+   lend_seen       = frame;
+   lend_seen_pitch = pitch;
+   return lend_inner(data, frame, dims, frame_count, pitch, msg, video_info);
+}
+
+static void lend_drain(void)
+{
+   pump(4);
+#ifdef HAVE_THREADS
+   if (video_state_get_ptr()->thread_wrapper_active)
+      video_thread_wait_idle();
+#endif
+}
+
+static void lane_filter_lent(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned had = failures;
+   size_t i;
+   bool drawn   = false;
+
+   choose_filter("widen32.filt");       /* 480x320, XRGB8888 */
+   menu_open(false);
+   pump(2);
+   if (video_st->thread_wrapper_active)
+   {
+#ifdef HAVE_THREADS
+      /* Drawn on the video thread, into what its driver lends */
+      thread_video_t *thr = (thread_video_t*)video_st->data;
+      video_thread_wait_idle();
+      if (thr->poke)
+         fake_poke = *thr->poke;
+      fake_poke.get_current_software_framebuffer = lend_framebuffer;
+      thr->poke  = &fake_poke;
+      lend_inner = thr->driver->frame;
+      hold_driver       = *thr->driver;
+      hold_driver.frame = lend_frame;
+      video_thread_run_blocking(hold_install, &hold_driver);
+#endif
+   }
+   else
+   {
+      hook_install();
+      fake_poke                                  = *video_st->poke;
+      fake_poke.get_current_software_framebuffer = lend_framebuffer;
+      video_st->poke                             = &fake_poke;
+      lend_inner                                 = hooked_video.frame;
+      hooked_video.frame                         = lend_frame;
+   }
+
+   lend_flags = RETRO_MEMORY_TYPE_CACHED;
+   lend_drain();
+   CHECK(lend_seen == lend_mem, "a filter draws into cached lent memory");
+   CHECK(lend_seen_pitch == LEND_PITCH, "at the pitch the driver lent");
+   for (i = 0; i < sizeof(lend_mem) / sizeof(lend_mem[0]); i++)
+      drawn = drawn || lend_mem[i];
+   CHECK(drawn, "and the picture is there");
+
+   lend_flags = 0;
+   lend_drain();
+   CHECK(lend_seen == video_st->state_buffer,
+         "uncached lent memory is left alone");
+   CHECK(lend_seen_pitch == 480 * sizeof(uint32_t),
+         "and the frontend's buffer is packed");
+
+   menu_open(true);
+   if (failures == had)
+      fprintf(stderr, "[pass] a filter draws where the driver lends\n");
+}
+
 /* ------------------------------------------------------------------ */
 
 int main(int argc, char *argv[])
@@ -670,7 +768,10 @@ int main(int argc, char *argv[])
    lane_swap_unwaited();
 #endif
    if (!real_driver)
+   {
       lane_told_in_place();
+      lane_filter_lent();
+   }
 
 #ifdef __APPLE__
    /* main_exit() terminates the Cocoa application; the status goes

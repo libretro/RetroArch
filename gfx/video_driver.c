@@ -6960,6 +6960,14 @@ void video_driver_cached_frame_invalidate(void)
  * the cached pointer is one of its own allocations. */
 void video_driver_cached_frame_retire(void)
 {
+#ifdef HAVE_THREADS
+   {
+      size_t keeper = retro_atomic_load_acquire_size(
+            &video_driver_st.frame_cache_keeper);
+      if (keeper && keeper == (size_t)sthread_get_current_thread_id())
+         return;
+   }
+#endif
    video_driver_cached_frame_invalidate();
 #ifdef FRAME_CACHE_HAZARDS
    /* Bump first, then scan: a reader that armed before the bump is
@@ -10033,14 +10041,19 @@ void video_driver_frame(const void *data, unsigned width,
    {
       unsigned output_dims  = 0;
       unsigned output_pitch = 0;
+      void    *output       = NULL;
 
       rarch_softfilter_get_output_size(video_st->state_filter,
             &output_dims, dims);
 
       output_pitch = VIDEO_SCALE_W(output_dims) * video_st->state_out_bpp;
+      if (!(output = video_driver_filter_lend(video_st->poke,
+                  video_st->data, output_dims, video_st->state_out_bpp,
+                  &output_pitch)))
+         output    = video_st->state_buffer;
 
       rarch_softfilter_process(video_st->state_filter,
-            video_st->state_buffer, output_pitch,
+            output, output_pitch,
             data, dims, pitch);
 
       if (     video_info.post_filter_record
@@ -10048,10 +10061,10 @@ void video_driver_frame(const void *data, unsigned width,
             && recording_st->driver
             && recording_st->driver->push_video)
          recording_dump_frame(
-               video_st->state_buffer, output_dims, output_pitch,
+               output, output_dims, output_pitch,
                runloop_idle, runloop_st->perfcnt_enable);
 
-      data   = video_st->state_buffer;
+      data   = output;
       dims   = output_dims;
       pitch  = output_pitch;
    }

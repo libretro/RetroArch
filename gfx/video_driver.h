@@ -1826,6 +1826,10 @@ typedef struct
     * the main thread only, once the wrapper is built and once it has
     * been torn down and the thread joined. */
    bool thread_wrapper_active;
+#ifdef HAVE_THREADS
+   /* The id of a thread whose retires leave the cached frame be */
+   retro_atomic_size_t frame_cache_keeper;
+#endif
 #if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_PTR)
    /* Only the backend without pointer atomics has a lock here, and
     * only for the window-title fallback protocol; on every other
@@ -2590,6 +2594,34 @@ float video_driver_get_aspect_ratio(void);
 /* The aspect ratio, as the bits of the float in an atomic word. A
  * union, not a cast through a pointer, so it stays inside what the
  * standard allows and MSVC's aliasing rules. */
+/* Where a software filter draws: memory the driver lends, read back at
+ * cached speed as filters may, in the format and size of the frames it
+ * makes. NULL when there is none; *pitch is then left alone. */
+static INLINE void *video_driver_filter_lend(
+      const video_poke_interface_t *poke, void *driver_data,
+      unsigned dims, unsigned bpp, unsigned *pitch)
+{
+   struct retro_framebuffer fb;
+   if (     !poke || !poke->get_current_software_framebuffer || !driver_data)
+      return NULL;
+   fb.data         = NULL;
+   fb.width        = VIDEO_SCALE_W(dims);
+   fb.height       = VIDEO_SCALE_H(dims);
+   fb.pitch        = 0;
+   fb.format       = RETRO_PIXEL_FORMAT_UNKNOWN;
+   fb.access_flags = RETRO_MEMORY_ACCESS_READ | RETRO_MEMORY_ACCESS_WRITE;
+   fb.memory_flags = 0;
+   if (     !poke->get_current_software_framebuffer(driver_data, &fb)
+         || !fb.data
+         || !(fb.memory_flags & RETRO_MEMORY_TYPE_CACHED)
+         || fb.format != (bpp == sizeof(uint32_t)
+            ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565)
+         || fb.pitch < (size_t)fb.width * bpp)
+      return NULL;
+   *pitch = (unsigned)fb.pitch;
+   return fb.data;
+}
+
 static INLINE float video_driver_aspect_ratio_of(
       const retro_atomic_int_t *bits)
 {
