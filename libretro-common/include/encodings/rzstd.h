@@ -30,15 +30,17 @@
  * That covers raw, RLE and compressed blocks; literals sections in raw,
  * RLE, Huffman and Huffman-repeat modes including the four-stream
  * layout; sequence sections in predefined, RLE, FSE and repeat modes;
- * repeated offsets; skippable frames; and the optional whole-frame
- * XXH64 checksum. Dictionaries are the one omission: no format this
- * tree reads uses them, and a dictionary-compressed frame is rejected
- * rather than silently mis-decoded.
+ * repeated offsets; skippable frames; the optional whole-frame XXH64
+ * checksum; and dictionaries, raw content or formatted with entropy
+ * tables (section 5), through the _dict entry points. A frame naming a
+ * dictionary is refused by the others rather than mis-decoded.
  *
  * Encoding is minimal: it produces frames any conforming decoder reads,
  * but makes no attempt to match the reference implementation's ratio or
- * its output byte-for-byte. There is no optimal parse, no long-distance
- * matching and no dictionary support. This is sized for the one caller
+ * its output byte-for-byte. There is no optimal parse and no
+ * long-distance matching; with a dictionary, matches reach into its
+ * content and the first block starts from its recent offsets, but the
+ * blocks write tables of their own. This is sized for the one caller
  * that compresses -- input replay payloads -- where the input is small,
  * the work happens off the critical path, and a few percent of ratio is
  * not worth an order of magnitude more code.
@@ -153,6 +155,43 @@ void rzstd_decoder_free(rzstd_decoder_t *decoder);
 int rzstd_decode_reuse(rzstd_decoder_t *decoder, uint8_t *dst, size_t dst_len,
       const uint8_t *src, size_t src_len, size_t *wrote);
 
+/* -------- dictionaries -------- */
+
+typedef struct rzstd_dict rzstd_dict_t;
+
+/**
+ * rzstd_dict_new:
+ * @dict       : a dictionary as the reference trainer writes it (magic
+ *               0xEC30A437, ID, entropy tables, recent offsets, then
+ *               content), or anything else, taken as content alone
+ * @len        : length of @dict
+ *
+ * Copies what it needs, so @dict may be freed after. The result is
+ * only read from, and may be shared by any number of threads.
+ *
+ * Returns: the dictionary, or NULL when out of memory or when a
+ * formatted dictionary's tables are malformed.
+ */
+rzstd_dict_t *rzstd_dict_new(const uint8_t *dict, size_t len);
+void rzstd_dict_free(rzstd_dict_t *dict);
+
+/* The ID a formatted dictionary carries; 0 for content alone. */
+uint32_t rzstd_dict_id(const rzstd_dict_t *dict);
+
+/**
+ * rzstd_decode_dict:
+ *
+ * rzstd_decode() for a frame compressed with @dict. A frame naming a
+ * dictionary that is not @dict is an error; one naming none is decoded
+ * with @dict, as the reference does. @dict may be NULL.
+ */
+int rzstd_decode_dict(uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len, const rzstd_dict_t *dict,
+      size_t *wrote);
+int rzstd_decode_reuse_dict(rzstd_decoder_t *decoder, uint8_t *dst,
+      size_t dst_len, const uint8_t *src, size_t src_len,
+      const rzstd_dict_t *dict, size_t *wrote);
+
 /**
  * rzstd_compress_bound:
  * @src_len    : length of the input to be compressed
@@ -179,6 +218,16 @@ size_t rzstd_compress_bound(size_t src_len);
  */
 int rzstd_encode(uint8_t *dst, size_t dst_len,
       const uint8_t *src, size_t src_len, int level, size_t *wrote);
+
+/**
+ * rzstd_encode_dict:
+ *
+ * rzstd_encode() with @dict: the frame names it (when it has an ID)
+ * and needs it to decode. @dict may be NULL.
+ */
+int rzstd_encode_dict(uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len, int level,
+      const rzstd_dict_t *dict, size_t *wrote);
 
 /* Window size the decoder is willing to allocate for a frame. Frames
  * declaring a larger window are rejected; this is well above what any

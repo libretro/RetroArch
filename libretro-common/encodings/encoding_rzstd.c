@@ -390,11 +390,6 @@ static int rzstd_read_frame_header(const uint8_t *src, size_t len,
                    : n == 2 ? rzstd_rd16(src + at)
                             : rzstd_rd32(src + at);
       at += n;
-
-      /* A frame needing a dictionary cannot be decoded without it, and
-       * nothing this reads uses one. Refused rather than decoded to
-       * something that looks like data. */
-      return RZ_UNSUPPORTED;
    }
 
    {
@@ -2619,10 +2614,34 @@ typedef struct rzstd_frame_state
    uint8_t            literals[RZSTD_BLOCK_MAX + 128];
 } rzstd_frame_state_t;
 
+/* A dictionary (section 5): content a frame's matches reach back into
+ * as if it came before the frame, and, in the formatted kind, the
+ * entropy tables and recent offsets the first block starts from. Read
+ * only once built, so any number of threads can share one. */
+#define RZSTD_DICT_MAGIC    0xEC30A437U
+#define RZSTD_DICT_HASH_LOG 16
+
+struct rzstd_dict
+{
+   rzstd_huf_t        huf;
+   rzstd_seq_tables_t tables;
+   uint8_t           *content;
+   /* the encoder's index of the content: the newest position for each
+    * hash and the one before each position, both plus one */
+   uint32_t          *head;
+   uint32_t          *chain;
+   size_t             content_len;
+   uint32_t           id;
+   uint32_t           repeat[3];
+   int                entropy;
+};
+
 /* The frame's header read and the state its blocks share set, ready
- * for its first block; *@at is where that is. */
+ * for its first block; *@at is where that is. A frame naming a
+ * dictionary needs that one in @dict. */
 static int rzstd_frame_begin(const uint8_t *src, size_t src_len,
-      rzstd_frame_header_t *h, size_t *at, rzstd_frame_state_t *st)
+      rzstd_frame_header_t *h, size_t *at, rzstd_frame_state_t *st,
+      const rzstd_dict_t *dict)
 {
    int e;
 
@@ -2651,6 +2670,21 @@ static int rzstd_frame_begin(const uint8_t *src, size_t src_len,
 
    if ((e = rzstd_read_frame_header(src, src_len, h)) != RZ_OK)
       return e;
+   if (h->dict_id && (!dict || h->dict_id != dict->id))
+      return RZ_UNSUPPORTED;
+   if (dict && dict->entropy)
+   {
+      memcpy(st->huf.entry, dict->huf.entry, sizeof(st->huf.entry));
+      st->huf.max_bits     = dict->huf.max_bits;
+      st->huf_valid        = 1;
+      st->tables.ll_fse    = dict->tables.ll_fse;
+      st->tables.ml_fse    = dict->tables.ml_fse;
+      st->tables.of_fse    = dict->tables.of_fse;
+      st->tables.valid     = 1;
+      st->repeat[0]        = dict->repeat[0];
+      st->repeat[1]        = dict->repeat[1];
+      st->repeat[2]        = dict->repeat[2];
+   }
    *at = h->header_len;
    return RZ_OK;
 }
@@ -2779,8 +2813,11 @@ static int rzstd_frame_end(const uint8_t *src, size_t src_len,
  * frames can walk them. */
 static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
       uint8_t *dst, size_t dst_len, size_t *wrote, size_t *used,
-      rzstd_frame_state_t *st)
+      rzstd_frame_state_t *st, const rzstd_dict_t *dict)
 {
+   const uint8_t       *ext_end = dict ? dict->content + dict->content_len
+                                       : NULL;
+   size_t               ext_len = dict ? dict->content_len : 0;
    rzstd_frame_header_t h;
    xxh64_state_t        xs;
    size_t               at   = 0;
@@ -2788,14 +2825,14 @@ static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
    int                  last = 0;
    int                  e;
 
-   if ((e = rzstd_frame_begin(src, src_len, &h, &at, st)) != RZ_OK)
+   if ((e = rzstd_frame_begin(src, src_len, &h, &at, st, dict)) != RZ_OK)
       return e;
    xxh64_reset(&xs, 0);
    while (!last)
    {
       size_t from = out;
       if ((e = rzstd_frame_block(src, src_len, &at, dst, dst_len, &out,
-                  st, &last, NULL, 0)) != RZ_OK)
+                  st, &last, ext_end, ext_len)) != RZ_OK)
          return e;
       /* while the block is still in cache */
       if (h.has_checksum)
@@ -2921,7 +2958,8 @@ rzstd_blocks_t *rzstd_blocks_begin(const uint8_t *src, size_t src_len)
       return NULL;
    z->src     = src;
    z->src_len = src_len;
-   if (     rzstd_frame_begin(src, src_len, &z->h, &z->at, &z->st) != RZ_OK
+   if (     rzstd_frame_begin(src, src_len, &z->h, &z->at, &z->st, NULL)
+                != RZ_OK
          || !rzstd_blocks_buffer(z))
    {
       free(z);
@@ -3005,7 +3043,7 @@ int rzstd_blocks_give(rzstd_blocks_t *z, const uint8_t *src, size_t len,
          size_t at = 0;
          memcpy(z->head + 5, src, len);
          if (     rzstd_frame_begin(z->head, 5 + len - 3, &z->h, &at,
-                     &z->st) != RZ_OK
+                     &z->st, NULL) != RZ_OK
                || at != 5 + len - 3
                || !rzstd_blocks_buffer(z))
             return RZSTD_PROCESS_ERROR;
@@ -3071,8 +3109,9 @@ void rzstd_decoder_free(rzstd_decoder_t *decoder)
    free(decoder);
 }
 
-int rzstd_decode_reuse(rzstd_decoder_t *st, uint8_t *dst, size_t dst_len,
-      const uint8_t *src, size_t src_len, size_t *wrote)
+int rzstd_decode_reuse_dict(rzstd_decoder_t *st, uint8_t *dst,
+      size_t dst_len, const uint8_t *src, size_t src_len,
+      const rzstd_dict_t *dict, size_t *wrote)
 {
    size_t               out  = 0;
    size_t               used = 0;
@@ -3083,7 +3122,8 @@ int rzstd_decode_reuse(rzstd_decoder_t *st, uint8_t *dst, size_t dst_len,
    if (!st || !dst || !src)
       return RZSTD_PROCESS_ERROR;
 
-   e = rzstd_decode_frame(src, src_len, dst, dst_len, &out, &used, st);
+   e = rzstd_decode_frame(src, src_len, dst, dst_len, &out, &used, st,
+         dict);
 
    if (e != RZ_OK)
       return RZSTD_PROCESS_ERROR;
@@ -3100,13 +3140,125 @@ int rzstd_decode_reuse(rzstd_decoder_t *st, uint8_t *dst, size_t dst_len,
    return RZSTD_PROCESS_END;
 }
 
+int rzstd_decode_reuse(rzstd_decoder_t *st, uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len, size_t *wrote)
+{
+   return rzstd_decode_reuse_dict(st, dst, dst_len, src, src_len, NULL,
+         wrote);
+}
+
+int rzstd_decode_dict(uint8_t *dst, size_t dst_len, const uint8_t *src,
+      size_t src_len, const rzstd_dict_t *dict, size_t *wrote)
+{
+   rzstd_decoder_t *decoder = rzstd_decoder_new();
+   int status = rzstd_decode_reuse_dict(decoder, dst, dst_len, src,
+         src_len, dict, wrote);
+   rzstd_decoder_free(decoder);
+   return status;
+}
+
 int rzstd_decode(uint8_t *dst, size_t dst_len, const uint8_t *src,
       size_t src_len, size_t *wrote)
 {
-   rzstd_decoder_t *decoder = rzstd_decoder_new();
-   int status = rzstd_decode_reuse(decoder, dst, dst_len, src, src_len, wrote);
-   rzstd_decoder_free(decoder);
-   return status;
+   return rzstd_decode_dict(dst, dst_len, src, src_len, NULL, wrote);
+}
+
+static uint32_t rzstd_dict_hash(const uint8_t *p)
+{
+   return (((uint32_t)p[0] | ((uint32_t)p[1] << 8)
+         | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24))
+         * 2654435761u) >> (32 - RZSTD_DICT_HASH_LOG);
+}
+
+rzstd_dict_t *rzstd_dict_new(const uint8_t *data, size_t len)
+{
+   size_t        at = 0;
+   size_t        i;
+   rzstd_dict_t *d;
+
+   if (!data && len)
+      return NULL;
+   if (!(d = (rzstd_dict_t*)calloc(1, sizeof(*d))))
+      return NULL;
+   d->repeat[0] = 1;
+   d->repeat[1] = 4;
+   d->repeat[2] = 8;
+
+   /* Section 5: the formatted kind is the magic, its ID, the literals'
+    * Huffman tree, the offset, match length and literals length tables
+    * in that order, and the three recent offsets; what does not start
+    * with the magic is content alone. */
+   if (len >= 8 && rzstd_rd32(data) == RZSTD_DICT_MAGIC)
+   {
+      size_t used = 0;
+
+      d->id = rzstd_rd32(data + 4);
+      at    = 8;
+      if (rzstd_huf_read(&d->huf, data + at, len - at, &used) != RZ_OK)
+         goto error;
+      at += used;
+      if (rzstd_seq_table(&d->tables.of_fse, d->tables.of, RZSTD_SEQ_FSE,
+               rzstd_of_default, 29, 5, 31, 8, data + at, len - at, &used,
+               0, rzstd_of_predef) != RZ_OK)
+         goto error;
+      at += used;
+      if (rzstd_seq_table(&d->tables.ml_fse, d->tables.ml, RZSTD_SEQ_FSE,
+               rzstd_ml_default, 53, 6, 52, 9, data + at, len - at, &used,
+               0, rzstd_ml_predef) != RZ_OK)
+         goto error;
+      at += used;
+      if (rzstd_seq_table(&d->tables.ll_fse, d->tables.ll, RZSTD_SEQ_FSE,
+               rzstd_ll_default, 36, 6, 35, 9, data + at, len - at, &used,
+               0, rzstd_ll_predef) != RZ_OK)
+         goto error;
+      at += used;
+      if (len - at < 12)
+         goto error;
+      for (i = 0; i < 3; i++)
+         d->repeat[i] = rzstd_rd32(data + at + 4 * i);
+      at        += 12;
+      d->entropy = 1;
+      for (i = 0; i < 3; i++)
+         if (!d->repeat[i] || d->repeat[i] > len - at)
+            goto error;
+   }
+
+   d->content_len = len - at;
+   d->content     = (uint8_t*)malloc(d->content_len ? d->content_len : 1);
+   d->head        = (uint32_t*)calloc((size_t)1 << RZSTD_DICT_HASH_LOG,
+         sizeof(uint32_t));
+   d->chain       = (uint32_t*)malloc((d->content_len ? d->content_len : 1)
+         * sizeof(uint32_t));
+   if (!d->content || !d->head || !d->chain)
+      goto error;
+   if (d->content_len)
+      memcpy(d->content, data + at, d->content_len);
+   for (i = 0; i + 4 <= d->content_len; i++)
+   {
+      uint32_t h  = rzstd_dict_hash(d->content + i);
+      d->chain[i] = d->head[h];
+      d->head[h]  = (uint32_t)(i + 1);
+   }
+   return d;
+
+error:
+   rzstd_dict_free(d);
+   return NULL;
+}
+
+void rzstd_dict_free(rzstd_dict_t *dict)
+{
+   if (!dict)
+      return;
+   free(dict->content);
+   free(dict->head);
+   free(dict->chain);
+   free(dict);
+}
+
+uint32_t rzstd_dict_id(const rzstd_dict_t *dict)
+{
+   return dict ? dict->id : 0;
 }
 
 int rzstd_frame_header_size(const uint8_t *src, size_t src_len)
@@ -3166,7 +3318,7 @@ int rzstd_probe_frame(const uint8_t *src, size_t src_len,
    static rzstd_frame_state_t state;
 
    return rzstd_decode_frame(src, src_len, dst, dst_len, wrote, used,
-         &state);
+         &state, NULL);
 }
 
 /* Builds an FSE table from given counts and reports the widths it
@@ -3512,11 +3664,13 @@ size_t rzstd_compress_bound(size_t src_len)
 }
 
 /* Writes a frame header stating the content size, so a decoder can size
- * its output before decoding (3.1.1.1). Single-segment, no checksum, no
- * dictionary. */
-static size_t rzstd_write_frame_header(uint8_t *dst, uint64_t size)
+ * its output before decoding (3.1.1.1). Single-segment, no checksum,
+ * and the dictionary's ID when @dict_id is not 0. */
+static size_t rzstd_write_frame_header(uint8_t *dst, uint64_t size,
+      uint32_t dict_id)
 {
-   size_t at = 0;
+   size_t  at   = 0;
+   uint8_t dict = dict_id ? 3 : 0;            /* a four-byte ID */
 
    dst[at++] = (uint8_t)(RZSTD_MAGIC & 255);
    dst[at++] = (uint8_t)((RZSTD_MAGIC >> 8) & 255);
@@ -3525,21 +3679,25 @@ static size_t rzstd_write_frame_header(uint8_t *dst, uint64_t size)
 
    /* Single segment means no window descriptor: the content size is the
     * window, which is what lets a decoder allocate exactly once. */
-   if (size < 256)
+   dst[at++] = (uint8_t)((size < 256 ? 0x20
+                        : size < 65536 + 256 ? 0x60 : 0xa0) | dict);
+   if (dict_id)
    {
-      dst[at++] = 0x20;                       /* fcs 1 byte    */
-      dst[at++] = (uint8_t)size;
+      dst[at++] = (uint8_t)dict_id;
+      dst[at++] = (uint8_t)(dict_id >> 8);
+      dst[at++] = (uint8_t)(dict_id >> 16);
+      dst[at++] = (uint8_t)(dict_id >> 24);
    }
+   if (size < 256)                            /* fcs 1 byte    */
+      dst[at++] = (uint8_t)size;
    else if (size < 65536 + 256)
    {
       uint32_t v = (uint32_t)(size - 256);    /* stored biased */
-      dst[at++] = 0x60;                       /* fcs 2 bytes   */
       dst[at++] = (uint8_t)v;
       dst[at++] = (uint8_t)(v >> 8);
    }
    else
    {
-      dst[at++] = 0xa0;                       /* fcs 4 bytes   */
       dst[at++] = (uint8_t)size;
       dst[at++] = (uint8_t)(size >> 8);
       dst[at++] = (uint8_t)(size >> 16);
@@ -4388,6 +4546,13 @@ literals_done:
 int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
       size_t src_len, int level, size_t *wrote)
 {
+   return rzstd_encode_dict(dst, dst_len, src, src_len, level, NULL,
+         wrote);
+}
+
+int rzstd_encode_dict(uint8_t *dst, size_t dst_len, const uint8_t *src,
+      size_t src_len, int level, const rzstd_dict_t *dict, size_t *wrote)
+{
    size_t    at   = 0;
    size_t    in   = 0;
    uint32_t  enc_log;
@@ -4434,11 +4599,12 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
       enc_log = want;
    }
 
-   rep[0] = 1;
-   rep[1] = 4;
-   rep[2] = 8;
+   rep[0] = dict ? dict->repeat[0] : 1;
+   rep[1] = dict ? dict->repeat[1] : 4;
+   rep[2] = dict ? dict->repeat[2] : 8;
 
-   at = rzstd_write_frame_header(dst, (uint64_t)src_len);
+   at = rzstd_write_frame_header(dst, (uint64_t)src_len,
+         dict ? dict->id : 0);
 
    /* An empty input still needs a block, because a frame with none is
     * not a frame. */
@@ -4612,7 +4778,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
 
                {
                   size_t best_len  = 0;
-                  size_t best_from = 0;
+                  size_t best_off  = 0;
                   int    depth     = depth_max;
 
                   while (cand && depth--)
@@ -4650,7 +4816,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      if (n > best_len)
                      {
                         best_len  = n;
-                        best_from = from;
+                        best_off  = in + pos - from;
                      }
                      /* A match this long will not be beaten by
                       * enough to pay for finding out. Walking on costs
@@ -4663,6 +4829,37 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      cand = chain[abs_from & (((size_t)1 << enc_log) - 1)];
                      if (cand && (size_t)cand - 1 >= abs_from)
                         break;   /* not strictly older: stop */
+                  }
+
+                  /* Then the dictionary, as if its content came just
+                   * before the input. A match stops at its end. */
+                  if (dict && best_len < 64)
+                  {
+                     uint32_t dc = dict->head[rzstd_dict_hash(p)];
+                     int      dd = depth_max;
+
+                     while (dc && dd--)
+                     {
+                        size_t         dfrom = (size_t)dc - 1;
+                        const uint8_t *q     = dict->content + dfrom;
+                        size_t         lim   = dict->content_len - dfrom;
+                        size_t         n;
+
+                        if (lim > take - pos)
+                           lim = take - pos;
+                        if (     lim >= RZSTD_ENC_MIN_MATCH
+                              && memcmp(q, p, 4) == 0
+                              && (n = rzstd_match_len(p, q, lim)) > best_len)
+                        {
+                           best_len = n;
+                           best_off = in + pos + dict->content_len - dfrom;
+                           if (best_len >= 64)
+                              break;
+                        }
+                        dc = dict->chain[dfrom];
+                        if (dc && (size_t)dc - 1 >= dfrom)
+                           break;
+                     }
                   }
 
                   /* The repeat wins unless the search found something
@@ -4739,9 +4936,10 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                    * took out of the literals: on a memory image the
                    * matches are mostly short and far. A remembered
                    * offset has no extra bits and is always worth it. */
-                  if (window && best_len >= RZSTD_ENC_MIN_MATCH && best_len < 8)
+                  if ((window || dict) && best_len >= RZSTD_ENC_MIN_MATCH
+                        && best_len < 8)
                   {
-                     uint32_t off  = (uint32_t)(in + pos - best_from);
+                     uint32_t off  = (uint32_t)best_off;
                      uint32_t bits = 16;
                      if (off != rep[0] && off != rep[1] && off != rep[2])
                         bits += rzstd_of_code(off + 3);
@@ -4751,7 +4949,6 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
 
                   if (best_len >= RZSTD_ENC_MIN_MATCH)
                   {
-                     size_t from = best_from;
                      size_t n    = best_len;
 
                      rzstd_seq_t *sq = &seq[nseq++];
@@ -4759,7 +4956,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      sq->literals = (uint32_t)(pos - lit_from);
                      sq->match    = (uint32_t)n;
                      sq->offset = rzstd_enc_offset(rep,
-                           (uint32_t)(in + pos - from), sq->literals);
+                           (uint32_t)best_off, sq->literals);
 
                      memcpy(lits + lit_len, src + in + lit_from,
                            sq->literals);
