@@ -17,6 +17,9 @@
 #ifdef __linux__
 #include <sys/vfs.h>
 #endif
+#ifdef ANDROID
+#include <dlfcn.h>
+#endif
 
 #include <compat/strl.h>
 #include <file/file_path.h>
@@ -27,12 +30,19 @@
 #include <string/stdstring.h>
 
 #include "../../../core_signature.h"
+#include "../../../core_load_file.h"
 #include "../../../core_signing_keys.h"
 #include "../../../file_path_special.h"
 #include "core_signature_fixtures.h"
 
 /* Matches the .gitignore's samples/ patterns */
 #define TMP_DIR "core_signature_test_tmp"
+
+#ifdef _WIN32
+#define LIB_EXT ".dll"
+#else
+#define LIB_EXT ".so"
+#endif
 
 static unsigned checks;
 static unsigned failures;
@@ -2140,6 +2150,141 @@ static void test_in_package(void)
    core_trust_free(t);
 }
 
+typedef int (*load_id_t)(void);
+
+/* What the loaded build of core_load_lib.c returns, 0 for none */
+static int loaded_id(dylib_t lib)
+{
+   function_t fn = lib ? dylib_proc(lib, "core_load_test_id") : NULL;
+   load_id_t id  = (load_id_t)fn;
+   return fn ? id() : 0;
+}
+
+/* Copies from to to, and puts to's absolute path in s
+ * (path_resolve_realpath needs RARCH_INTERNAL) */
+static bool place(const char *from, const char *to, char *s, size_t len)
+{
+   void *buf   = NULL;
+   int64_t got = 0;
+   char *real  = NULL;
+   bool ok;
+   *s = '\0';
+   ok = filestream_read_file(from, &buf, &got)
+      && filestream_write_file(to, buf, got);
+   free(buf);
+#ifdef _WIN32
+   real = _fullpath(NULL, to, 0);
+#else
+   real = realpath(to, NULL);
+#endif
+   ok   = ok && real && strlcpy(s, real, len) < len;
+   free(real);
+   return ok;
+}
+
+static void test_load(void)
+{
+   char one[512];
+   char two[512];
+   char two_new[512];
+   char bad[512];
+   char name[64];
+   core_file_t *f;
+   dylib_t lib;
+#ifdef ANDROID
+   Dl_info info;
+   function_t fn;
+   void *addr;
+#endif
+
+   /* Loaded from the file the check opened */
+   CHECK(place("core_load_test_a" LIB_EXT,
+            tmp("load_one_libretro" LIB_EXT), one, sizeof(one)));
+   CHECK((f = core_file_open(one)) != NULL);
+   lib = f ? core_load_file(f, one) : NULL;
+   CHECK(loaded_id(lib) == 1);
+#ifdef ANDROID
+   /* named for the core, not /proc/self/fd/N */
+   fn = lib ? dylib_proc(lib, "core_load_test_id") : NULL;
+   memcpy(&addr, &fn, sizeof(addr));
+   CHECK(fn && dladdr(addr, &info) && info.dli_fname
+         && string_is_equal(info.dli_fname, one));
+#endif
+   if (lib)
+      dylib_close(lib);
+   core_file_close(f);
+
+   /* Replaced once checked: Android loads what was checked, Windows
+    * refuses the swap while the check holds the file, and elsewhere the
+    * path loads (same-user swaps there are out of scope) */
+   CHECK(place("core_load_test_a" LIB_EXT,
+            tmp("load_two_libretro" LIB_EXT), two, sizeof(two)));
+   CHECK(place("core_load_test_b" LIB_EXT,
+            tmp("load_two_new" LIB_EXT), two_new, sizeof(two_new)));
+   CHECK((f = core_file_open(two)) != NULL);
+#ifdef _WIN32
+   CHECK(!MoveFileExA(two_new, two, MOVEFILE_REPLACE_EXISTING));
+   /* nor moved away or deleted, which frees the path for another */
+   strlcpy(bad, tmp("load_two_moved" LIB_EXT), sizeof(bad));
+   CHECK(!MoveFileExA(two, bad, 0));
+   MoveFileExA(bad, two, 0);
+   CHECK(!DeleteFileA(two));
+   CopyFileA(two_new, two, TRUE);
+#else
+   CHECK(filestream_rename(two_new, two) == 0);
+#endif
+   lib = f ? core_load_file(f, two) : NULL;
+#if defined(_WIN32) || defined(ANDROID)
+   CHECK(loaded_id(lib) == 1);
+#else
+   CHECK(loaded_id(lib) == 2);
+#endif
+   if (lib)
+      dylib_close(lib);
+   core_file_close(f);
+#ifdef _WIN32
+   /* and lets go once closed */
+   CHECK(MoveFileExA(two_new, two, MOVEFILE_REPLACE_EXISTING));
+#endif
+
+   /* Not a library */
+   strlcpy(bad, tmp("load_bad_libretro" LIB_EXT), sizeof(bad));
+   CHECK(filestream_write_file(bad, fx_core, FX_CORE_SIZE));
+   CHECK((f = core_file_open(bad)) != NULL);
+   CHECK(f && !core_load_file(f, bad));
+   CHECK(dylib_error() != NULL);
+   /* A second call frees glibc's message */
+   dylib_error();
+   core_file_close(f);
+
+   /* Apple's .framework folder: the binary named for it inside */
+   CHECK(core_load_framework_binary(
+            "/Applications/RetroArch.app/Contents/Frameworks/snes9x_libretro.framework",
+            one, sizeof(one))
+         && string_is_equal(one,
+            "/Applications/RetroArch.app/Contents/Frameworks/snes9x_libretro.framework/snes9x_libretro"));
+   CHECK(core_load_framework_binary("a.framework", name, sizeof(name))
+         && string_is_equal(name, "a.framework/a"));
+   /* named as dylib_load names it, cut at an archive's '#' */
+   CHECK(core_load_framework_binary("/c/a.zip#b.framework", name,
+            sizeof(name))
+         && string_is_equal(name, "/c/a.zip#b.framework/b"));
+   CHECK(core_load_framework_binary("/c/x.zip#d/snes9x_libretro.framework",
+            one, sizeof(one))
+         && string_is_equal(one,
+            "/c/x.zip#d/snes9x_libretro.framework/d/snes9x_libretro"));
+   CHECK(!core_load_framework_binary("/cores/snes9x_libretro.dylib", name,
+            sizeof(name)));
+   CHECK(!core_load_framework_binary("/cores/x.framework/", name,
+            sizeof(name)));
+   CHECK(!core_load_framework_binary("/cores/.framework", name,
+            sizeof(name)));
+   CHECK(!core_load_framework_binary(NULL, name, sizeof(name)));
+   /* "/a/b.framework/b" and its end need 17 bytes */
+   CHECK(!core_load_framework_binary("/a/b.framework", name, 16));
+   CHECK( core_load_framework_binary("/a/b.framework", name, 17));
+}
+
 #define VERITY_LEN 4000
 
 /* fs-verity's digest (SHA-256, 4096-byte blocks, no salt) of a file of
@@ -2317,7 +2462,9 @@ static void clean(void)
       "gone/" FX_NAME, "gone",
       "four/" FX_NAME, "four/" FX_NAME ".sig", "four",
       "five/" FX_NAME, "five/" FX_NAME ".sig", "five",
-      "pkg_libretro.so", "verity_libretro.so" };
+      "pkg_libretro.so", "verity_libretro.so",
+      "load_one_libretro" LIB_EXT, "load_two_libretro" LIB_EXT,
+      "load_two_new" LIB_EXT, "load_bad_libretro" LIB_EXT };
    char other[256];
    size_t i;
 #ifndef _WIN32
@@ -2405,6 +2552,7 @@ int main(int argc, char *argv[])
 #if defined(__linux__) && !defined(ANDROID)
    test_fd_mount();
 #endif
+   test_load();
    test_verity();
    test_self_find();
    clean();
