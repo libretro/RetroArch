@@ -26,6 +26,9 @@ FRAME_THREAD_FLAGS = -pthread
 endif
 endif
 all: backend_nothreads_test$(EXE) backend_volatile_test$(EXE) node_test$(EXE) backend_test$(EXE) test$(EXE) session_test$(EXE) runtime_test$(EXE) submit_test$(EXE) pool_test$(EXE) export_test$(EXE) identity_test$(EXE) prime_device_test$(EXE) prime_format_test$(EXE) prime_surface_test$(EXE) prime_image_test$(EXE) prime_frame_test$(EXE) prime_submit_test$(EXE) frame_test$(EXE) lease_test$(EXE) resources_test$(EXE) cache_test$(EXE) renderer_test$(EXE) decoder_test$(EXE) owner_test$(EXE) abi-check $(NATIVE_PROBE)
+all: vp9_params_test$(EXE)
+vp9_params_test$(EXE): vp9_params_test.c ../../../gfx/common/vaapi_vp9.h ../../../libretro-common/formats/vp9/rvp9.c ../../../libretro-common/formats/vp9/rvp9_recon.inc ../../../libretro-common/include/formats/rvp9_hw.h
+	$(CC) $(CFLAGS) vp9_params_test.c ../../../libretro-common/formats/vp9/rvp9.c -o $@ $(LDFLAGS)
 backend_nothreads_test$(EXE): backend_disabled_test.c ../../../gfx/common/vaapi_hevc_backend.c ../../../gfx/common/vaapi_hevc_backend.h
 	$(CC) $(CFLAGS) backend_disabled_test.c ../../../gfx/common/vaapi_hevc_backend.c -o $@ $(LDFLAGS) -lm
 backend_volatile_test$(EXE): backend_disabled_test.c ../../../gfx/common/vaapi_hevc_backend.c ../../../gfx/common/vaapi_hevc_backend.h
@@ -106,6 +109,7 @@ all: long_slice_test$(EXE) long_packet_test$(EXE)
 test$(EXE): ../../../gfx/common/vaapi_hevc_slice.h
 test$(EXE): ../../../gfx/common/vaapi_hevc_long_packet.h
 check: all
+	$(RUNNER) ./vp9_params_test$(EXE)
 	$(RUNNER) ./weighted_test$(EXE)
 	$(RUNNER) ./native_pixels_test$(EXE)
 	$(RUNNER) ./long_packet_test$(EXE)
@@ -138,6 +142,7 @@ ifneq ($(NATIVE_PROBE),)
 	./native_probe
 endif
 clean:
+	rm -f vp9_params_test vp9_params_test.exe
 	rm -f native_import_gpu_test native_import_gpu_test.exe
 	rm -f weighted_test weighted_test.exe
 	rm -f native_import native_decode native_pixels_test native_pixels_test.exe
