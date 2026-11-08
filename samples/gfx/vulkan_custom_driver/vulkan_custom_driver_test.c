@@ -485,7 +485,7 @@ static void test_session(void)
    CHECK(!open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
    CHECK(loader.loads == 0);
 
-   /* not Adreno: UNSUPPORTED once per path */
+   /* below API 28: UNSUPPORTED once per path */
    req           = request("/d/A.zip", "Core");
    req.supported = false;
    CHECK(!open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED);

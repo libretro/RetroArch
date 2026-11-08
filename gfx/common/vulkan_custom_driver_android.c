@@ -764,8 +764,7 @@ bool vulkan_custom_driver_supported(void)
    {
       known = (     g_android
                 &&  g_android->activity
-                &&  g_android->activity->sdkVersion >= 28
-                &&  path_is_valid("/dev/kgsl-3d0")) ? 1 : 2;
+                &&  g_android->activity->sdkVersion >= 28) ? 1 : 2;
       retro_atomic_store_release_int(&custom_driver_supported_st, known);
    }
    return known == 1;

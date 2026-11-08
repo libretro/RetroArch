@@ -34337,7 +34337,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
-   "Custom Vulkan drivers need an Adreno GPU and Android 9. Using the system driver."
+   "Custom Vulkan drivers need Android 9 or newer. Using the system driver."
    )
 MSG_HASH(
    MSG_VULKAN_CUSTOM_DRIVER_RESTART,
