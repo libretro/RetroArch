@@ -236,11 +236,12 @@ jobs:
 
       - name: Configure
         # Non-Qt, as the harness requires (with Qt, main() lives in
-        # ui_qt.o). Everything else at its default so the Vulkan driver
-        # is built with every path a release build has.
+        # ui_qt.o). Select SDL2 for the views cases below; other defaults
+        # keep every Vulkan path a release build has.
         run: |
-          ./configure --disable-qt
+          ./configure --disable-qt --enable-sdl2 --disable-sdl3
           grep -q '^HAVE_VULKAN = 1' config.mk
+          grep -q '^HAVE_SDL2 = 1' config.mk
 
       - name: Build with VULKAN_DEBUG=1
         # VULKAN_DEBUG enables VK_LAYER_KHRONOS_validation and the
