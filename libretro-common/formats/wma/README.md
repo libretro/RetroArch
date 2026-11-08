@@ -46,7 +46,7 @@ to compare packet output counts and every float sample. The explicit
 reject it. No encoded fixtures or FFmpeg libraries are shipped with rwma.
 
 Before replacing the core's decoder, complete variable packet continuation
-coverage, decoder state serialization and guest-output differential tests.
+coverage, versioned checkpoint integration and guest-output differential tests.
 The current WMA Pro packet path does not implement frames whose length
 exceeds one block, or recovery from a sequence discontinuity.
 
@@ -82,3 +82,20 @@ Explicit WAVE speaker masks select stereo weights at voice creation, including
 FL/FR/LFE files; LFE is omitted from stereo as in the existing mixer policy.
 Noncanonical mono/stereo layouts are refused rather than silently remapped.
 XMA1/legacy XMA2 headers and embedded loop regions are not implemented.
+
+## Raw XMA checkpoints
+
+`rwma_xma_capture` returns versioned scalar metadata and borrowed 256-sample
+transform-overlap tails per channel. It does not allocate or copy PCM. Cold
+and failed states have no history payload; drained states cannot emit a tail
+again until reset. The caller keeps the decoder quiescent while using a view.
+
+`rwma_xma_restore` validates the entire source before changing the destination,
+including configuration, flags, block lengths, finite history and storage aliasing.
+It copies history directly into the destination's final overlap storage without
+allocation. Its own exact captured view is accepted; cross-lane or partial aliases
+into the destination are rejected. A rejected restore leaves the decoder unchanged.
+
+This is a runtime view, not a serialized struct. Save scalar fields and samples in
+the consumer's versioned state format, never the pointers or native struct padding.
+The next decoded frame remains a borrowed 512-sample view as before.

@@ -997,3 +997,101 @@ invalid:
    memset(out, 0, sizeof(*out));
    return RWMA_BAD_DATA;
 }
+
+int rwma_xma_capture(const rwma_t *d, rwma_xma_view *out)
+{
+   unsigned c;
+   if (!out)
+      return RWMA_BAD_DATA;
+   memset(out, 0, sizeof(*out));
+   if (!d)
+      return RWMA_BAD_DATA;
+   if (d->config.codec != RWMA_XMA_RAW)
+      return RWMA_UNSUPPORTED;
+   out->state.version = 1;
+   out->state.sample_rate = d->config.sample_rate;
+   out->state.channels = d->config.channels;
+   out->state.failed = d->failed != 0;
+   out->state.pending = !d->failed && d->pending;
+   out->state.drained = !d->failed && d->drained;
+   for (c = 0; c < d->config.channels; c++)
+   {
+      out->state.previous[c] =
+          d->failed ? d->frame_length : (unsigned)d->lane[c].previous;
+      if (out->state.pending)
+      {
+         out->history[c] = d->lane[c].pcm + d->frame_length;
+         out->history_samples[c] = d->frame_length / 2;
+      }
+   }
+   return RWMA_OK;
+}
+
+int rwma_xma_restore(rwma_t *d, const rwma_xma_view *source)
+{
+   rwma_xma_view view;
+   uintptr_t storage;
+   size_t storage_bytes;
+   unsigned c, samples;
+   if (!d || !source)
+      return RWMA_BAD_DATA;
+   if (d->config.codec != RWMA_XMA_RAW)
+      return RWMA_UNSUPPORTED;
+   view = *source;
+   if (view.state.version != 1 || view.state.sample_rate != d->config.sample_rate ||
+       view.state.channels != d->config.channels || view.state.pending > 1 ||
+       view.state.drained > view.state.pending || view.state.failed > 1 ||
+       (view.state.failed && view.state.pending))
+      return RWMA_BAD_DATA;
+   samples = view.state.pending ? d->frame_length / 2 : 0;
+   storage = (uintptr_t)d->allocation;
+   storage_bytes =
+       (d->frame_length * 9 + d->frame_length * d->config.channels * 3 / 2) *
+       sizeof(float);
+   for (c = 0; c < 2; c++)
+   {
+      unsigned i;
+      uintptr_t address;
+      size_t bytes = samples * sizeof(float);
+      if (c >= view.state.channels)
+      {
+         if (view.state.previous[c] || view.history[c] || view.history_samples[c])
+            return RWMA_BAD_DATA;
+         continue;
+      }
+      if (view.history_samples[c] != samples || (!!view.history[c] != !!samples) ||
+          (view.state.previous[c] != 128 && view.state.previous[c] != 256 &&
+           view.state.previous[c] != 512) ||
+          (!view.state.pending && view.state.previous[c] != 512))
+         return RWMA_BAD_DATA;
+      if (!samples)
+         continue;
+      address = (uintptr_t)view.history[c];
+      if (address % sizeof(float) || address > UINTPTR_MAX - bytes)
+         return RWMA_BAD_DATA;
+      if (address < storage + storage_bytes && address + bytes > storage &&
+          view.history[c] != d->lane[c].pcm + d->frame_length)
+         return RWMA_BAD_DATA;
+      for (i = 0; i < samples; i++)
+         if (!rwma_finite(view.history[c][i]))
+            return RWMA_BAD_DATA;
+   }
+   for (c = 0; c < view.state.channels; c++)
+      if (samples)
+         memmove(d->lane[c].pcm + d->frame_length, view.history[c],
+                 samples * sizeof(float));
+   for (c = 0; c < view.state.channels; c++)
+   {
+      rwma_lane *lane = &d->lane[c];
+      float *pcm = lane->pcm;
+      memset(lane, 0, sizeof(*lane));
+      lane->pcm = pcm;
+      lane->previous = view.state.previous[c];
+      if (!samples)
+         memset(pcm, 0, d->frame_length * 3 / 2 * sizeof(float));
+   }
+   d->pending = view.state.pending;
+   d->drained = view.state.drained;
+   d->failed = view.state.failed;
+   return RWMA_OK;
+}

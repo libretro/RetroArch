@@ -25,6 +25,24 @@ typedef struct rwma_frame
    const float *planes[8];
    unsigned samples, channels, sample_rate, trim_start, trim_end;
 } rwma_frame;
+typedef struct rwma_xma_state
+{
+   uint32_t version, sample_rate, channels, pending, drained, failed;
+   uint32_t previous[2];
+} rwma_xma_state;
+typedef struct rwma_xma_view
+{
+   rwma_xma_state state;
+   const float *history[2];
+   size_t history_samples[2];
+} rwma_xma_view;
+/* Quiescent raw-XMA contexts only. Capture borrows history until the next
+ * decode/reset/restore/free. Restore validates before changing the destination,
+ * allocates nothing, and copies directly into its final overlap storage.
+ * A source may be the destination's exact captured view, but may not otherwise
+ * overlap its storage. Serialize metadata and samples, never the pointers. */
+int rwma_xma_capture(const rwma_t *decoder, rwma_xma_view *out);
+int rwma_xma_restore(rwma_t *decoder, const rwma_xma_view *source);
 /* One exclusive owner per context. Decode/reset allocate nothing. Output
  * borrows decoder storage until its next decode/reset/free. No device I/O,
  * resampling, mixing, sleeping or playback pacing. */

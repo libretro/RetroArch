@@ -316,8 +316,164 @@ static void wave_test(void)
          !cfg.codec, "byte-rate overflow");
 }
 
+static void reject_checkpoint(rwma_t *d, const rwma_xma_view *bad)
+{
+   static float saved[2][256];
+   rwma_xma_view before, after;
+   unsigned c;
+   check(!rwma_xma_capture(d, &before), "capture before rejected checkpoint");
+   for (c = 0; c < before.state.channels; c++)
+      if (before.history_samples[c])
+         memcpy(saved[c], before.history[c], sizeof(saved[c]));
+   check(rwma_xma_restore(d, bad) == RWMA_BAD_DATA, "reject invalid checkpoint");
+   check(!rwma_xma_capture(d, &after) &&
+             !memcmp(&before.state, &after.state, sizeof(before.state)),
+         "rejected checkpoint preserves metadata");
+   for (c = 0; c < before.state.channels; c++)
+      check(before.history[c] == after.history[c] &&
+                before.history_samples[c] == after.history_samples[c] &&
+                (!before.history_samples[c] ||
+                 !memcmp(saved[c], after.history[c], sizeof(saved[c]))),
+            "rejected checkpoint preserves overlap");
+}
+
+static void checkpoint_test(void)
+{
+   static float history[2][256];
+   rwma_config cfg;
+   rwma_t *a = NULL, *b = NULL;
+   rwma_xma_view cold, view, bad;
+   rwma_frame first, second;
+   unsigned char data[8];
+   uint32_t nan_bits = 0x7fc00000;
+   writer w;
+   unsigned i, c;
+   memset(&cfg, 0, sizeof(cfg));
+   cfg.codec = RWMA_XMA_RAW;
+   cfg.channels = 2;
+   cfg.sample_rate = 48000;
+   check(!rwma_create(&a, &cfg) && !rwma_create(&b, &cfg),
+         "checkpoint decoder creation");
+   check(!rwma_xma_capture(a, &cold) && !cold.state.pending && !cold.history[0],
+         "cold checkpoint has no history payload");
+   view = cold;
+   view.state.pending = 1;
+   for (c = 0; c < 2; c++)
+   {
+      for (i = 0; i < 256; i++)
+         history[c][i] = (float)((int)i - 128 + c * 37) / 1024;
+      view.state.previous[c] = c ? 256 : 128;
+      view.history[c] = history[c];
+      view.history_samples[c] = 256;
+   }
+   check(!rwma_xma_restore(a, &view), "restore nonzero overlap");
+   check(!rwma_xma_capture(a, &view), "borrow nonzero overlap");
+   for (c = 0; c < 2; c++)
+      check(view.history[c] != history[c] &&
+                !memcmp(view.history[c], history[c], sizeof(history[c])),
+            "history in final decoder storage");
+   bad = view;
+   bad.state.version++;
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.state.sample_rate++;
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.state.channels = 1;
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.state.pending = 2;
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.state.drained = 2;
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.state.failed = 1;
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.state.previous[1] = 64;
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.history_samples[1]--;
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.history[1] = NULL;
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.history[1] = view.history[0];
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.history[0] = view.history[0] + 1;
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.history[1] = (const float *)(UINTPTR_MAX & ~(uintptr_t)3);
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.history[1] = (const float *)((const uint8_t *)history[1] + 1);
+   reject_checkpoint(a, &bad);
+   bad = view;
+   bad.history[0] = history[0];
+   bad.history[1] = history[1];
+   history[0][0] = 0.75f;
+   memcpy(&history[1][0], &nan_bits, sizeof(nan_bits));
+   reject_checkpoint(a, &bad);
+   check(!rwma_xma_restore(a, &view), "self restore borrowed overlap");
+   rwma_reset(b);
+   check(!rwma_xma_restore(b, &view), "restore into reset decoder");
+   memset(data, 0, sizeof(data));
+   w.data = data;
+   w.bit = 0;
+   put(&w, 15, 40);
+   put(&w, 1, 1);
+   put(&w, 1, 0);
+   put(&w, 1, 0);
+   put(&w, 8, 0);
+   put(&w, 1, 0);
+   put(&w, 1, 0);
+   put(&w, 1, 0);
+   put(&w, 1, 0);
+   put(&w, 1, 1);
+   put(&w, 1, 0);
+   put(&w, 1, 0);
+   put(&w, 1, 0);
+   check(!rwma_decode_xma(a, data, sizeof(data), 0, 40, &first) &&
+             !rwma_decode_xma(b, data, sizeof(data), 0, 40, &second),
+         "decode after checkpoint restore");
+   for (c = 0; c < 2; c++)
+      check(!memcmp(first.planes[c], second.planes[c], 512 * sizeof(float)),
+            "resumed PCM is bit identical");
+   check(!rwma_xma_capture(a, &view) && !rwma_xma_restore(b, &view),
+         "checkpoint before tail");
+   check(!rwma_drain_xma(a, &first) && !rwma_drain_xma(b, &second),
+         "drain restored tail");
+   for (c = 0; c < 2; c++)
+      check(!memcmp(first.planes[c], second.planes[c], 256 * sizeof(float)),
+            "restored tail is bit identical");
+   check(!rwma_xma_capture(a, &view) && view.state.drained, "capture drained state");
+   check(!rwma_xma_restore(b, &view) && !rwma_drain_xma(b, &second) && !second.samples,
+         "drained checkpoint cannot duplicate tail");
+   check(!rwma_xma_restore(b, &cold) &&
+             !rwma_decode_xma(b, data, sizeof(data), 0, 40, &second),
+         "restore cold state clears old overlap");
+   for (c = 0; c < 2; c++)
+      for (i = 0; i < 512; i++)
+         check(second.planes[c][i] == 0, "cold state PCM");
+   data[1] = 0;
+   check(rwma_decode_xma(b, data, sizeof(data), 0, 40, &second) == RWMA_BAD_DATA,
+         "poison malformed frame");
+   check(!rwma_xma_capture(b, &view) && view.state.failed && !view.state.pending &&
+             !view.history[0],
+         "failed state is canonical without stale PCM");
+   check(!rwma_xma_restore(a, &view), "restore failed state");
+   check(rwma_decode_xma(a, data, sizeof(data), 0, 40, &first) == RWMA_BAD_DATA,
+         "failed checkpoint requires reset");
+   rwma_free(a);
+   rwma_free(b);
+}
+
 int main(void)
 {
+   checkpoint_test();
    raw_test();
    packet_test();
    transform_test();
