@@ -12584,6 +12584,16 @@ void input_config_plays_as_reread(const uint8_t *before, uint8_t *again)
  * saved. */
 static uint8_t input_join_to[MAX_USERS];
 
+/* User @user's core port, through the controller it plays as: as
+ * input_remapping_user_port(), for the poll's own loops. */
+static INLINE unsigned input_user_port(const settings_t *settings,
+      unsigned user)
+{
+   if (input_join_to[user])
+      user = input_join_to[user] - 1u;
+   return settings->uints.input_remap_ports[user];
+}
+
 /* The player user @u's controller plays as when it is not @u's own:
  * its player, or an Auto one's that it shares by a reservation; 0 for
  * its own or none. */
@@ -18499,7 +18509,7 @@ void input_driver_poll(void)
          : settings->floats.input_overlay_opacity;
 
       {
-         unsigned mapped_port   = input_remapping_user_port(0);
+         unsigned mapped_port   = input_user_port(settings, 0);
          input_analog_dpad_mode = input_analog_dpad_mode_in_effect(
                input_analog_dpad_mode,
                mapped_port < MAX_USERS
@@ -18643,7 +18653,7 @@ void input_driver_poll(void)
             input_st->first_press_pending = INPUT_FIRST_PRESS_GIVE_UP;
          else if (  input_st->first_press_live
                && !menu_alive
-               && input_remapping_user_port((unsigned)i) >= MAX_USERS
+               && input_user_port(settings, (unsigned)i) >= MAX_USERS
                && joypad)
          {
             /* The d-pad does not count: idle axes of some receivers
@@ -18695,7 +18705,7 @@ void input_driver_poll(void)
          if (do_remap)
          {
          input_bits_t current_inputs;
-         unsigned mapped_port            = input_remapping_user_port((unsigned)i);
+         unsigned mapped_port            = input_user_port(settings, (unsigned)i);
          /* mapped to no core port: nothing to remap */
          unsigned device                 = (mapped_port < MAX_USERS)
             ? (settings->uints.input_libretro_device[mapped_port] & RETRO_DEVICE_MASK)
@@ -19865,9 +19875,7 @@ unsigned input_remapping_user_port(unsigned user)
 {
    if (user >= MAX_USERS)
       return MAX_USERS;
-   if (input_join_to[user])
-      user = input_join_to[user] - 1u;
-   return config_get_ptr()->uints.input_remap_ports[user];
+   return input_user_port(config_get_ptr(), user);
 }
 
 void input_remapping_update_port_map(void)
