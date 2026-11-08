@@ -59,6 +59,9 @@
 #ifdef HAVE_VAAPI
 #include "../common/vaapi_hevc_vulkan_cache.h"
 #include "../common/vaapi_hevc_backend.h"
+#ifdef HAVE_RVP9
+#include "../common/vaapi_vp9_backend.h"
+#endif
 #include "../common/vulkan_android_queue.h"
 #endif
 #ifdef HAVE_TEMPORAL_UPSCALER
@@ -864,6 +867,9 @@ typedef struct vk
 
 #ifdef HAVE_VAAPI
 #include "vulkan_vaapi_backend.h"
+#ifdef HAVE_RVP9
+#include "vulkan_vaapi_vp9_backend.h"
+#endif
 #endif
 
 #if defined(ANDROID) && defined(HAVE_THREADS) \
@@ -7565,6 +7571,9 @@ static void vulkan_free(void *data)
 #endif
 #ifdef HAVE_VAAPI
    vaapi_hevc_backend_withdraw(&vulkan_vaapi_backend, vk);
+#ifdef HAVE_RVP9
+   vaapi_vp9_backend_withdraw(&vulkan_vaapi_vp9_backend, vk);
+#endif
 #endif
 
    if (vk->context && vk->context->device)
@@ -8387,7 +8396,13 @@ static void *vulkan_init(const video_info_t *video)
 #if defined(HAVE_RMP4) || defined(HAVE_RWEBM)
       /* previews decoded on the GPU, where the device can */
 #ifdef HAVE_VAAPI
-      vulkan_vaapi_decoder_publish(vk, vulkan_video_decode_init(vk->context));
+      {
+         bool native_video = vulkan_video_decode_init(vk->context);
+         vulkan_vaapi_decoder_publish(vk, native_video);
+#ifdef HAVE_RVP9
+         vulkan_vaapi_vp9_decoder_publish(vk, native_video);
+#endif
+      }
 #elif defined(VULKAN_ANDROID_DECODERS)
       vulkan_android_decoder_publish(vk, vulkan_video_decode_init(vk->context));
 #else
