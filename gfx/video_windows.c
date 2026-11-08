@@ -397,9 +397,9 @@ void video_windows_place(video_windows_host_t *host,
          || in->switching   != host->switching)
    {
       /* Content start and close are events, and so is any map change
-       * soon after a start; later ones move nothing, nor let a make the
-       * start asked move. Content replaced is a close and a start once
-       * the new one is up, never sooner. */
+       * soon after a start; later ones move nothing and cancel a move
+       * the start was still preparing. Content replaced is a close and
+       * a start once the new one is up, never sooner. */
       if (!in->switching)
       {
          if (host->switching || !in->num_screens || !host->num_screens)

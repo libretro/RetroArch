@@ -1945,7 +1945,7 @@ static bool menu_test_cancel(uint16_t buttons, bool back)
    return menu_state_get_ptr()->input_state.cancel_inhibit;
 }
 
-/* The menu in the Presentation (00 I3): its touches over that window at
+/* The menu in the Presentation: its touches over that window at
  * the menu layer's size, none of the main window's; RGUI through its
  * framebuffer as it is fitted to the layer */
 static void test_window_menu_touch_window(void)

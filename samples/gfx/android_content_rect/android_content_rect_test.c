@@ -57,7 +57,7 @@ static int hooked_exchange_int(retro_atomic_int_t *p, int nv)
 #undef  retro_atomic_exchange_int
 #define retro_atomic_exchange_int(p, v)  hooked_exchange_int(p, v)
 
-/* What the two functions touch, and nothing more. */
+/* What the functions touch, and nothing more. */
 typedef struct { void *instance; } ANativeActivity;
 typedef struct { int left, top, right, bottom; } ARect;
 struct android_app

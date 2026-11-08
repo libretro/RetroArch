@@ -3858,11 +3858,9 @@ void video_driver_free_internal(void)
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
-#if defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS)
    /* No driver follows to take what this one left up */
    if (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
-      android_windows_release_kept();
-#endif
+      VIDEO_ANDROID_RELEASE_KEPT_WINDOWS();
    video_driver_set_hdr_output_mode(0);
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 0);
 
@@ -4810,7 +4808,8 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
       }
    }
 #ifdef HAVE_VIDEO_WINDOWS
-   /* With or without views: the menu and the idle logo use them too */
+   /* With or without views: it also places the menu and decides the
+    * idle logo */
    video_info->windows = video_driver_windows_frame(video_st, settings,
          flags.flags, redraw, now);
 #else

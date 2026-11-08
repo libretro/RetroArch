@@ -7140,7 +7140,7 @@ static bool gl2_window_draw(gl2_t *gl,
    {
       ctx->bind_gl(gl->ctx_data, NULL);
       RARCH_WARN("[GL] A screen window can't be drawn. "
-            "Its screens go back to the main window.\n");
+            "What it shows stays in the main window.\n");
       gl2_window_attach(gl, f, w);
       return false;
    }

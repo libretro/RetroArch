@@ -11419,7 +11419,7 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       if (state < 0)
       {
          RARCH_WARN("[Vulkan] A screen window can't be drawn. "
-               "Its screens go back to the main window.\n");
+               "What it shows stays in the main window.\n");
          vulkan_window_attach(vk, f, w);
          continue;
       }
@@ -11631,7 +11631,7 @@ static void vulkan_windows_present(vk_t *vk,
          if (win->output.flags & VK_OUTPUT_FLAG_LOST)
          {
             RARCH_WARN("[Vulkan] A screen window's surface is gone. "
-                  "Its screens go back to the main window.\n");
+                  "What it shows stays in the main window.\n");
             vulkan_window_attach(vk, f, w);
          }
          continue;

@@ -29,9 +29,9 @@
 /* The main window's 16 slots and the second display's 16 fingers */
 #define ANDROID_POINTERS_MAX 32
 
-/* A touch slot: index n is the n-th finger down. A lifted finger's
- * slot keeps its place and the slots above it shift down, so an index
- * that is not down still reads a place. */
+/* A touch slot: index n is the n-th finger down. The slots above a
+ * lifted finger's shift down onto it and the top one keeps its place,
+ * so an index that is not down still reads a place. */
 struct input_pointer
 {
    uint32_t pos;    /* in its window, VIDEO_POS_PACK */
