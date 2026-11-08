@@ -1,5 +1,4 @@
 # Future
-- LIBRETRO-COMMON: Add optional C89 XMA raw-frame and WMA v1/v2/Pro decoders with borrowed float PCM, reusable storage and no FFmpeg runtime dependency
 - D3D11: Software-rendering cores draw straight into lent staging textures, copied to the frame texture on the GPU instead of by the CPU
 - VULKAN: Keep the pipeline cache on disk between runs, one file per GPU, so stock and slang shader pipelines are not recompiled by the driver on every launch, preset load or driver reinit
 - LINUX: Game Mode implemented natively (I/O priority plus a power-profiles-daemon performance hold); Feral libgamemode is no longer loaded and deps/feralgamemode is removed

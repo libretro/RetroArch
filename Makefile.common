@@ -2301,12 +2301,6 @@ ifeq ($(HAVE_RAAC), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/aac/raac.o
 endif
 
-ifeq ($(HAVE_RWMA), 1)
-   DEFINES += -DHAVE_RWMA
-   OBJ += $(LIBRETRO_COMM_DIR)/formats/wma/rwma_pro.o \
-          $(LIBRETRO_COMM_DIR)/formats/wma/rwma_standard.o
-endif
-
 ifeq ($(HAVE_ROPUS), 1)
    DEFINES += -DHAVE_ROPUS
    OBJ += $(LIBRETRO_COMM_DIR)/formats/opus/ropus.o
