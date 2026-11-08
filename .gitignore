@@ -283,6 +283,9 @@ gfx/common/wayland/wlr-output-management-unstable-v1.h
 samples/**/*_test
 libretro-common/test/formats/rxml_oom_test
 samples/**/*_test_*
+# the media harnesses' link arguments and up-to-date keys
+samples/menu/*_media/link.args
+samples/menu/*_media/*_media_test.key
 samples/audio/stretch/stretch_bench
 samples/gfx/rslc_corpus/rslc_corpus_dump
 samples/gfx/rslc_reflect/rslc_reflect_check

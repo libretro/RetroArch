@@ -1,6 +1,6 @@
 """Relink a built non-Qt frontend with a real menu translation unit."""
 from pathlib import Path
-import argparse, os, shlex, shutil, subprocess, sys
+import argparse, json, os, shlex, shutil, subprocess, sys
 p=argparse.ArgumentParser();p.add_argument('--objdir',default='obj-unix/release');p.add_argument('--c89',action='store_true');p.add_argument('--shell',default='bash');p.add_argument('--driver',default='rgui');p.add_argument('--test-source');p.add_argument('--output');a=p.parse_args()
 if (os.environ.get('MEDIA_TEST_IMPORT_REFUSAL') or os.environ.get('MEDIA_TEST_COLD_CANCEL') or os.environ.get('MEDIA_TEST_COLD_RESET')) and a.driver!='rgui':p.error('native import refusal uses the RGUI harness')
 r=Path(__file__).resolve().parents[3];here=Path(__file__).resolve().parent
@@ -26,14 +26,14 @@ def run(c):
   sys.stdout.buffer.write(result.stdout);sys.stdout.buffer.flush()
   result.check_returncode()
  else:subprocess.run(c,cwd=r,check=True)
-cc=compile_line('retroarch.c');retro_object=cc[cc.index('-o')+1]
-cc[cc.index('-o')+1]=str(objects/'retroarch_nomain.o');cc.extend(['-Umain','-Dmain=rarch_harness_unused_main']);run(cc)
+retro_cc=compile_line('retroarch.c');retro_object=retro_cc[retro_cc.index('-o')+1]
+retro_cc[retro_cc.index('-o')+1]=str(objects/'retroarch_nomain.o');retro_cc.extend(['-Umain','-Dmain=rarch_harness_unused_main'])
 cc=compile_line(driver_source);rgui_object=cc[cc.index('-o')+1]
 cc[cc.index('-o')+1]=str(objects/'harness.o');cc[cc.index(driver_source)]=str(test_source)
 if os.environ.get('MEDIA_TEST_IMPORT_REFUSAL'):cc.append('-DMEDIA_TEST_IMPORT_REFUSAL')
 if os.environ.get('MEDIA_TEST_COLD_CANCEL') or os.environ.get('MEDIA_TEST_COLD_RESET'):cc.append('-DMEDIA_TEST_COLD_CANCEL')
 if os.environ.get('MEDIA_TEST_COLD_RESET'):cc.append('-DMEDIA_TEST_COLD_RESET')
-run(cc)
+harness_cc=cc
 links=[c for c in commands if '-c' not in c and '-o' in c and c[c.index('-o')+1] in {'retroarch','retroarch.exe'}]
 if len(links)!=1:raise RuntimeError('Expected one frontend link command')
 c=links[0];c[c.index('-o')+1]=str(output)
@@ -42,7 +42,37 @@ c[c.index(retro_object)]=str(objects/'retroarch_nomain.o');c[c.index(rgui_object
 if os.environ.get('MEDIA_TEST_IMPORT_REFUSAL'):c.append('-Wl,--wrap=gfx_surface_submit_import')
 if os.environ.get('MEDIA_TEST_COLD_CANCEL') or os.environ.get('MEDIA_TEST_COLD_RESET'):c.append('-Wl,--wrap=image_transfer_anim_stream_set_hw')
 if os.environ.get('MEDIA_TEST_COLD_RESET'):c.extend(['-Wl,--wrap=gfx_thumbnail_anim_worker_deinit','-Wl,--wrap=video_driver_free_internal'])
-response=objects/'link.args'
-response.write_text('\n'.join('"'+arg.replace('\\','\\\\').replace('"','\\"')+'"' for arg in c[1:])+'\n',encoding='utf-8')
-run([c[0],'@'+str(response)])
+# A job builds the same harness for step after step: nothing to do when
+# the commands are the ones it was built with and nothing it was made
+# from - sources, headers (from the compiler's .d files), the
+# frontend's objects - is newer.
+key=json.dumps([retro_cc,harness_cc,c])
+stamp=output.with_name(output.name+'.key')
+def deps(d):
+ try:text=Path(d).read_text(encoding='utf-8',errors='replace')
+ except OSError:return None
+ return text.replace('\\\n',' ').split(':',1)[-1].split()
+def newest():
+ files=[x for x in c[1:] if not x.startswith('-') and x!=str(output)]
+ for d in (objects/'retroarch_nomain.d',objects/'harness.d'):
+  found=deps(d)
+  if found is None:return None
+  files+=found
+ files+=['retroarch.c',str(test_source)]
+ latest=0.0
+ for f in files:
+  try:latest=max(latest,(r/f).stat().st_mtime)
+  except OSError:
+   if f.endswith(('.o','.c','.h','.a')):return None
+ return latest
+latest=newest() if output.exists() and stamp.exists() and stamp.read_text(encoding='utf-8')==key else None
+if latest is not None and output.stat().st_mtime>=latest:
+ print('+ up to date:',output,flush=True)
+else:
+ run(retro_cc)
+ run(harness_cc)
+ response=objects/'link.args'
+ response.write_text('\n'.join('"'+arg.replace('\\','\\\\').replace('"','\\"')+'"' for arg in c[1:])+'\n',encoding='utf-8')
+ run([c[0],'@'+str(response)])
+ stamp.write_text(key,encoding='utf-8')
 print(output)
