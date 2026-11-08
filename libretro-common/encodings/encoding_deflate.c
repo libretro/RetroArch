@@ -4027,7 +4027,11 @@ static INLINE void rinf64_need(struct rinf64 *s, unsigned k)
    }
    while (s->n < k)
    {
-      uint64_t b = s->p < s->end ? *s->p++ : (s->over++, 0u);
+      uint64_t b = 0;
+      if (s->p < s->end)
+         b = *s->p++;
+      else
+         s->over++;
       s->bits   |= b << s->n;
       s->n      += 8;
    }

@@ -2836,7 +2836,7 @@ static int decode_stage_begin(r7z_archive_t *a, const folder_t *f)
    }
 
    /* Stand up a decoder that survives between slices. */
-   a->pend_method = c->method;
+   a->pend_method = (uint32_t)c->method; /* resumable IDs fit 32 bits */
    if (c->method == METHOD_PPMD)
       return ppmd_open(a, c, a->pend_in, a->pend_in_len,
             (r7z_ppmd_t **)&a->pend_dec);

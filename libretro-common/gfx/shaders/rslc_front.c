@@ -4056,8 +4056,8 @@ static uint32_t rslc_p_primary(struct rslc_parser *p)
       return 0;
    }
    if (t->kind == RSLC_TK_EOF)
-      return rslc_p_fail(p, "unexpected end of source", NULL), 0;
-   return rslc_p_fail(p, "unexpected token in expression: ", rslc_p_here(p)), 0;
+      return rslc_p_fail(p, "unexpected end of source", NULL);
+   return rslc_p_fail(p, "unexpected token in expression: ", rslc_p_here(p));
 }
 
 static uint32_t rslc_p_postfix(struct rslc_parser *p)
@@ -4149,7 +4149,7 @@ static uint32_t rslc_p_postfix_ops(struct rslc_parser *p, uint32_t e)
          const struct rslc_tok *ft = P_TOK(p);
          const struct rslc_type *bt = n->type;
          if (ft->kind != RSLC_TK_IDENT)
-            return rslc_p_fail(p, "expected a field name", NULL), 0;
+            return rslc_p_fail(p, "expected a field name", NULL);
          rslc_p_next(p);
          if (bt->kind == RSLC_TY_STRUCT)
          {
@@ -4245,7 +4245,7 @@ static uint32_t rslc_p_unary(struct rslc_parser *p)
       {
          case RSLC_UN_NEG:
             if (!rslc_ty_is_numeric(n->type))
-               return rslc_p_fail(p, "unary - on a non-numeric", NULL), 0;
+               return rslc_p_fail(p, "unary - on a non-numeric", NULL);
             if (n->op == RSLC_OP_CONST && n->type->kind == RSLC_TY_SCALAR)
             {
                if (n->type->base == RSLC_BASE_FLOAT)
@@ -4257,15 +4257,15 @@ static uint32_t rslc_p_unary(struct rslc_parser *p)
             break;
          case RSLC_UN_NOT:
             if (n->type != p->t_bool)
-               return rslc_p_fail(p, "! on a non-bool", NULL), 0;
+               return rslc_p_fail(p, "! on a non-bool", NULL);
             break;
          case RSLC_UN_BITNOT:
             if (!rslc_ty_is_integer(n->type))
-               return rslc_p_fail(p, "~ on a non-integer", NULL), 0;
+               return rslc_p_fail(p, "~ on a non-integer", NULL);
             break;
          default:
             if (!rslc_p_is_lvalue(p, e) || !rslc_ty_is_numeric(n->type))
-               return rslc_p_fail(p, "++/-- needs a numeric lvalue", NULL), 0;
+               return rslc_p_fail(p, "++/-- needs a numeric lvalue", NULL);
             break;
       }
       return rslc_p_mk(p, RSLC_OP_UNARY, n->type, e, 0, 0, un, line, n->prec);
@@ -4485,7 +4485,7 @@ static uint32_t rslc_p_cond_expr(struct rslc_parser *p)
       uint32_t a, b;
       const struct rslc_type *ta, *tb;
       if (rslc_p_node(p, cond)->type != p->t_bool)
-         return rslc_p_fail(p, "?: condition is not a bool", NULL), 0;
+         return rslc_p_fail(p, "?: condition is not a bool", NULL);
       a = rslc_p_expr(p);
       if (!a || !rslc_p_expect(p, RSLC_P_COLON, "':'"))
          return 0;
@@ -4547,7 +4547,7 @@ static uint32_t rslc_p_assign_expr(struct rslc_parser *p)
       return lhs;
    rslc_p_next(p);
    if (!rslc_p_is_lvalue(p, lhs))
-      return rslc_p_fail(p, "assignment to a non-lvalue", NULL), 0;
+      return rslc_p_fail(p, "assignment to a non-lvalue", NULL);
    rhs = rslc_p_assign_expr(p);
    if (!rhs)
       return 0;
@@ -5054,7 +5054,7 @@ static uint32_t rslc_p_block(struct rslc_parser *p, bool new_scope)
    {
       uint32_t s;
       if (P_TOK(p)->kind == RSLC_TK_EOF)
-         return rslc_p_fail(p, "unexpected end of source in block", NULL), 0;
+         return rslc_p_fail(p, "unexpected end of source in block", NULL);
       s = rslc_p_statement(p);
       if (!s)
          return 0;
@@ -5078,7 +5078,7 @@ static uint32_t rslc_p_cond_in_parens(struct rslc_parser *p)
    if (!e || !rslc_p_expect(p, RSLC_P_RPAREN, "')'"))
       return 0;
    if (rslc_p_node(p, e)->type != p->t_bool)
-      return rslc_p_fail(p, "condition is not a bool", NULL), 0;
+      return rslc_p_fail(p, "condition is not a bool", NULL);
    return e;
 }
 
@@ -5144,7 +5144,7 @@ static uint32_t rslc_p_statement(struct rslc_parser *p)
                if (!parts[1])
                   return 0;
                if (rslc_p_node(p, parts[1])->type != p->t_bool)
-                  return rslc_p_fail(p, "for condition is not a bool", NULL), 0;
+                  return rslc_p_fail(p, "for condition is not a bool", NULL);
             }
             if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
                return 0;
@@ -5189,7 +5189,7 @@ static uint32_t rslc_p_statement(struct rslc_parser *p)
             if (!body)
                return 0;
             if (!rslc_p_accept_kw(p, RSLC_KW_WHILE))
-               return rslc_p_fail(p, "expected while after do body", NULL), 0;
+               return rslc_p_fail(p, "expected while after do body", NULL);
             cond = rslc_p_cond_in_parens(p);
             if (!cond || !rslc_p_expect(p, RSLC_P_SEMI, "';'"))
                return 0;
@@ -5206,7 +5206,7 @@ static uint32_t rslc_p_statement(struct rslc_parser *p)
                return 0;
             if (rslc_p_node(p, e)->type->kind != RSLC_TY_SCALAR
                   || !rslc_ty_is_integer(rslc_p_node(p, e)->type))
-               return rslc_p_fail(p, "switch needs an integer", NULL), 0;
+               return rslc_p_fail(p, "switch needs an integer", NULL);
             p->switch_depth++;
             body = rslc_p_block(p, true);
             p->switch_depth--;
@@ -5219,39 +5219,39 @@ static uint32_t rslc_p_statement(struct rslc_parser *p)
             uint32_t e;
             int32_t  v;
             if (!p->switch_depth)
-               return rslc_p_fail(p, "case outside switch", NULL), 0;
+               return rslc_p_fail(p, "case outside switch", NULL);
             rslc_p_next(p);
             e = rslc_p_expr(p);
             if (!e || !rslc_p_expect(p, RSLC_P_COLON, "':'"))
                return 0;
             if (!rslc_p_eval_int(p, e, &v))
-               return rslc_p_fail(p, "case label is not a constant", NULL), 0;
+               return rslc_p_fail(p, "case label is not a constant", NULL);
             return rslc_p_mk(p, RSLC_OP_CASE, NULL, rslc_p_const_int(p, v, line), 0, 0, 0, line, 0);
          }
          case RSLC_KW_DEFAULT:
             if (!p->switch_depth)
-               return rslc_p_fail(p, "default outside switch", NULL), 0;
+               return rslc_p_fail(p, "default outside switch", NULL);
             rslc_p_next(p);
             if (!rslc_p_expect(p, RSLC_P_COLON, "':'"))
                return 0;
             return rslc_p_mk(p, RSLC_OP_CASE, NULL, 0, 0, 0, 0, line, 0);
          case RSLC_KW_BREAK:
             if (!p->loop_depth && !p->switch_depth)
-               return rslc_p_fail(p, "break outside loop or switch", NULL), 0;
+               return rslc_p_fail(p, "break outside loop or switch", NULL);
             rslc_p_next(p);
             if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
                return 0;
             return rslc_p_mk(p, RSLC_OP_BREAK, NULL, 0, 0, 0, 0, line, 0);
          case RSLC_KW_CONTINUE:
             if (!p->loop_depth)
-               return rslc_p_fail(p, "continue outside loop", NULL), 0;
+               return rslc_p_fail(p, "continue outside loop", NULL);
             rslc_p_next(p);
             if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
                return 0;
             return rslc_p_mk(p, RSLC_OP_CONTINUE, NULL, 0, 0, 0, 0, line, 0);
          case RSLC_KW_DISCARD:
             if (p->c->stage != RSLC_STAGE_FRAGMENT)
-               return rslc_p_fail(p, "discard outside a fragment shader", NULL), 0;
+               return rslc_p_fail(p, "discard outside a fragment shader", NULL);
             rslc_p_next(p);
             if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
                return 0;
@@ -5266,12 +5266,12 @@ static uint32_t rslc_p_statement(struct rslc_parser *p)
                if (!e)
                   return 0;
                if (p->cur_fn->ret == p->t_void)
-                  return rslc_p_fail(p, "return with a value in a void function", NULL), 0;
+                  return rslc_p_fail(p, "return with a value in a void function", NULL);
                if (!rslc_p_coerce(p, &e, p->cur_fn->ret, "return"))
                   return 0;
             }
             else if (p->cur_fn->ret != p->t_void)
-               return rslc_p_fail(p, "return without a value", NULL), 0;
+               return rslc_p_fail(p, "return without a value", NULL);
             if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
                return 0;
             return rslc_p_mk(p, RSLC_OP_RETURN, NULL, e, 0, 0, 0, line, 0);
@@ -5319,7 +5319,7 @@ static uint32_t rslc_p_init_list(struct rslc_parser *p, const struct rslc_type *
 
    if (ty->kind != RSLC_TY_ARRAY && ty->kind != RSLC_TY_STRUCT
          && ty->kind != RSLC_TY_VEC && ty->kind != RSLC_TY_MAT)
-      return rslc_p_fail(p, "initializer list for a scalar", NULL), 0;
+      return rslc_p_fail(p, "initializer list for a scalar", NULL);
    rslc_p_next(p);   /* '{' */
    al.v = NULL; al.n = 0; al.cap = 0;
    rslc_scratch_mark(p->c, &mark);
@@ -5336,7 +5336,7 @@ static uint32_t rslc_p_init_list(struct rslc_parser *p, const struct rslc_type *
       else
          et = rslc_ty_scalar_of(p, ty);
       if (!et)
-         return rslc_p_fail(p, "too many initializers", NULL), 0;
+         return rslc_p_fail(p, "too many initializers", NULL);
       if (rslc_p_is(p, RSLC_P_LBRACE))
          e = rslc_p_init_list(p, et);
       else
@@ -5533,7 +5533,7 @@ static uint32_t rslc_p_function(struct rslc_parser *p, struct rslc_quals *q,
       return 1;   /* prototype */
    }
    if (!rslc_p_is(p, RSLC_P_LBRACE))
-      return rslc_p_fail(p, "expected '{' or ';' after function header", NULL), 0;
+      return rslc_p_fail(p, "expected '{' or ';' after function header", NULL);
    if (f->body)
    {
       rslc_err(p->c, "function defined twice: ", name->str, line);
@@ -6056,7 +6056,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       else if (rslc_p_accept_kw(p, RSLC_KW_MEDIUMP)) prec = RSLC_PREC_MEDIUM;
       else if (rslc_p_accept_kw(p, RSLC_KW_HIGHP))   prec = RSLC_PREC_HIGH;
       else
-         return rslc_p_fail(p, "expected a precision", NULL), 0;
+         return rslc_p_fail(p, "expected a precision", NULL);
       if (rslc_p_accept_kw(p, RSLC_KW_FLOAT))
          p->scope->prec_float = prec;
       else if (rslc_p_accept_kw(p, RSLC_KW_INT))
@@ -6064,7 +6064,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       else if (rslc_p_accept_kw(p, RSLC_KW_SAMPLER2D))
          ;
       else
-         return rslc_p_fail(p, "precision statement needs float, int or sampler2D", NULL), 0;
+         return rslc_p_fail(p, "precision statement needs float, int or sampler2D", NULL);
       if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
          return 0;
       return global ? 1 : rslc_p_mk(p, RSLC_OP_BLOCK, NULL, 0, 0, 0, RSLC_BLOCK_GROUP, line, 0);
@@ -6084,7 +6084,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
    {
       struct rslc_sym *bname = rslc_tok_sym(p->c, P_TOK(p));
       if (!global)
-         return rslc_p_fail(p, "block inside a function", NULL), 0;
+         return rslc_p_fail(p, "block inside a function", NULL);
       rslc_p_next(p);
       if (!strcmp(bname->str, "gl_PerVertex"))
          return rslc_p_pervertex_redecl(p) ? 1 : 0;
@@ -6094,7 +6094,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
    if (q.early_fragment_tests)
    {
       if (!global || !q.is_in || p->c->stage != RSLC_STAGE_FRAGMENT)
-         return rslc_p_fail(p, "early_fragment_tests belongs on a fragment 'in;'", NULL), 0;
+         return rslc_p_fail(p, "early_fragment_tests belongs on a fragment 'in;'", NULL);
       if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
          return 0;
       p->c->prog.early_fragment_tests = true;
@@ -6105,7 +6105,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
    {
       unsigned k;
       if (!global || !q.is_in || p->c->stage != RSLC_STAGE_COMPUTE)
-         return rslc_p_fail(p, "a local size belongs on a compute 'in;'", NULL), 0;
+         return rslc_p_fail(p, "a local size belongs on a compute 'in;'", NULL);
       if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
          return 0;
       for (k = 0; k < 3; k++)
@@ -6118,17 +6118,17 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
    {
       struct rslc_prog *pr = &p->c->prog;
       if (!global || p->c->stage != RSLC_STAGE_GEOMETRY || (q.is_in == q.is_out))
-         return rslc_p_fail(p, "a primitive layout belongs on a geometry 'in;' or 'out;'", NULL), 0;
+         return rslc_p_fail(p, "a primitive layout belongs on a geometry 'in;' or 'out;'", NULL);
       if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
          return 0;
       if (q.is_in)
       {
          if (q.gs_prim > RSLC_GS_TRIANGLES_ADJACENCY || q.gs_max_vertices)
-            return rslc_p_fail(p, "not an input primitive layout", NULL), 0;
+            return rslc_p_fail(p, "not an input primitive layout", NULL);
          if (q.gs_prim)
          {
             if (pr->gs_in && pr->gs_in != q.gs_prim)
-               return rslc_p_fail(p, "a second input primitive", NULL), 0;
+               return rslc_p_fail(p, "a second input primitive", NULL);
             pr->gs_in = q.gs_prim;
             if (!rslc_p_declare_gl_in(p))
                return 0;
@@ -6140,7 +6140,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       {
          if ((q.gs_prim && q.gs_prim != RSLC_GS_POINTS && q.gs_prim < RSLC_GS_LINE_STRIP)
                || q.gs_invocations)
-            return rslc_p_fail(p, "not an output primitive layout", NULL), 0;
+            return rslc_p_fail(p, "not an output primitive layout", NULL);
          if (q.gs_prim)
             pr->gs_out = q.gs_prim;
          if (q.gs_max_vertices)
@@ -6161,7 +6161,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
    {
       struct rslc_sym *bname = rslc_tok_sym(p->c, P_TOK(p));
       if (!global)
-         return rslc_p_fail(p, "block inside a function", NULL), 0;
+         return rslc_p_fail(p, "block inside a function", NULL);
       rslc_p_next(p);
       if (!rslc_p_block_decl(p, &q, bname, line))
          return 0;
@@ -6188,14 +6188,14 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       uint32_t                vline = nt->line;
 
       if (nt->kind != RSLC_TK_IDENT || rslc_tok_sym(p->c, nt)->kw != RSLC_KW_NONE)
-         return rslc_p_fail(p, "expected a name in declaration", NULL), 0;
+         return rslc_p_fail(p, "expected a name in declaration", NULL);
       name = rslc_tok_sym(p->c, nt);
       rslc_p_next(p);
 
       if (rslc_p_accept(p, RSLC_P_LPAREN))
       {
          if (!global || ndecls)
-            return rslc_p_fail(p, "function declaration not allowed here", NULL), 0;
+            return rslc_p_fail(p, "function declaration not allowed here", NULL);
          return rslc_p_function(p, &q, ty, name, line);
       }
 
@@ -6203,7 +6203,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       if (!vt)
          return 0;
       if (vt == p->t_void)
-         return rslc_p_fail(p, "variable of type void", NULL), 0;
+         return rslc_p_fail(p, "variable of type void", NULL);
 
 #ifdef RSLC_EXTENDED
       /* in vec4 gl_FragCoord; - a builtin the stage has, redeclared */
@@ -6212,7 +6212,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
             && ((struct rslc_var*)name->decl->ptr)->storage == RSLC_ST_BUILTIN)
       {
          if (((struct rslc_var*)name->decl->ptr)->type != vt)
-            return rslc_p_fail(p, "a builtin redeclared with another type: ", name->str), 0;
+            return rslc_p_fail(p, "a builtin redeclared with another type: ", name->str);
          if (rslc_p_accept(p, RSLC_P_COMMA))
             continue;
          if (!rslc_p_expect(p, RSLC_P_SEMI, "';'"))
@@ -6224,7 +6224,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
             && vt->kind == RSLC_TY_ARRAY && !vt->array_len)
       {
          if (!p->c->prog.gs_in)
-            return rslc_p_fail(p, "a geometry input array before the input primitive: ", name->str), 0;
+            return rslc_p_fail(p, "a geometry input array before the input primitive: ", name->str);
          vt = rslc_type_array(p->c, vt->elem, RSLC_GS_IN_VERTICES(p->c->prog.gs_in));
          if (!vt)
             return 0;
@@ -6240,7 +6240,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       v->location  = q.location;
 #ifdef RSLC_EXTENDED
       if (q.index > 1)
-         return rslc_p_fail(p, "a fragment output's index is 0 or 1", NULL), 0;
+         return rslc_p_fail(p, "a fragment output's index is 0 or 1", NULL);
       v->index     = (uint8_t)q.index;
 #endif
       v->binding   = q.binding;
@@ -6251,9 +6251,9 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       if (RSLC_TY_IS_IMAGE(vt->kind))
       {
          if (!global || !q.is_uniform)
-            return rslc_p_fail(p, "an image must be a global uniform", NULL), 0;
+            return rslc_p_fail(p, "an image must be a global uniform", NULL);
          if (!q.img_fmt)
-            return rslc_p_fail(p, "an image needs its format in the layout", NULL), 0;
+            return rslc_p_fail(p, "an image needs its format in the layout", NULL);
          /* rows carries the access: 1 read-write, 2 write only, 3 read only */
          v->type = rslc_type_basic(p->c, (enum rslc_tkind)vt->kind, (enum rslc_base)vt->base,
                q.writeonly ? RSLC_IMG_WRITEONLY : q.readonly ? RSLC_IMG_READONLY : RSLC_IMG_READWRITE,
@@ -6270,9 +6270,9 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       {
          /* an input attachment: the fragment stage's framebuffer read */
          if (!global || !q.is_uniform || p->c->stage != RSLC_STAGE_FRAGMENT)
-            return rslc_p_fail(p, "a subpassInput must be a fragment stage\'s global uniform", NULL), 0;
+            return rslc_p_fail(p, "a subpassInput must be a fragment stage\'s global uniform", NULL);
          if (q.input_att == RSLC_UNSET)
-            return rslc_p_fail(p, "a subpassInput needs its input_attachment_index", NULL), 0;
+            return rslc_p_fail(p, "a subpassInput needs its input_attachment_index", NULL);
          v->storage   = RSLC_ST_SUBPASS;
          v->member    = q.input_att;
          v->precision = 0;
@@ -6280,7 +6280,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       else if (q.is_shared)
       {
          if (!global || p->c->stage != RSLC_STAGE_COMPUTE)
-            return rslc_p_fail(p, "shared memory belongs to a compute stage\'s globals", NULL), 0;
+            return rslc_p_fail(p, "shared memory belongs to a compute stage\'s globals", NULL);
          v->storage = RSLC_ST_SHARED;
       }
       else
@@ -6293,7 +6293,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
             )
       {
          if (!global || !q.is_uniform)
-            return rslc_p_fail(p, "a sampler must be a global uniform", NULL), 0;
+            return rslc_p_fail(p, "a sampler must be a global uniform", NULL);
          v->storage = RSLC_ST_SAMPLER;
 #ifdef RSLC_EXTENDED
          if (vt->kind == RSLC_TY_SAMPLERX
@@ -6302,7 +6302,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
 #endif
       }
       else if (q.is_uniform)
-         return rslc_p_fail(p, "loose uniforms are not supported; use a block", NULL), 0;
+         return rslc_p_fail(p, "loose uniforms are not supported; use a block", NULL);
       else if (q.is_in && global)
          v->storage = RSLC_ST_IN;
       else if (q.is_out && global)
@@ -6320,7 +6320,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       if (rslc_p_accept(p, RSLC_P_ASSIGN))
       {
          if (v->storage == RSLC_ST_IN || v->storage == RSLC_ST_SAMPLER)
-            return rslc_p_fail(p, "initialiser on an input", NULL), 0;
+            return rslc_p_fail(p, "initialiser on an input", NULL);
          v->init = rslc_p_var_init(p, v);
          if (!v->init)
             return 0;
@@ -6338,10 +6338,10 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
          }
       }
       else if (v->storage == RSLC_ST_CONST)
-         return rslc_p_fail(p, "const without an initialiser: ", name->str), 0;
+         return rslc_p_fail(p, "const without an initialiser: ", name->str);
 
       if (v->type->kind == RSLC_TY_ARRAY && !v->type->array_len)
-         return rslc_p_fail(p, "unsized array: ", name->str), 0;
+         return rslc_p_fail(p, "unsized array: ", name->str);
 
       if (rslc_p_find_here(p, name))
       {
@@ -6356,7 +6356,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       if (!global)
       {
          if (ndecls == 32)
-            return rslc_p_fail(p, "too many declarators", NULL), 0;
+            return rslc_p_fail(p, "too many declarators", NULL);
          decls[ndecls++] = rslc_p_mk(p, RSLC_OP_DECL, NULL, v->id, 0, 0, 0, vline, 0);
       }
 

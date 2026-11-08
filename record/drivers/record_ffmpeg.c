@@ -1796,9 +1796,9 @@ static void *ffmpeg_new(const struct record_params *params)
       goto error;
 
    {
-      bool ok;
-      bool opened = false;
+      bool ok = false;
 #ifdef FFMPEG_HAVE_THREAD_NICE
+      bool opened = false;
       /* In drop mode the encoders are opened on a thread that has
        * lowered itself, so the threads they start run lowered. */
       if (handle->allow_frame_drop)
@@ -1815,8 +1815,8 @@ static void *ffmpeg_new(const struct record_params *params)
             opened = true;
          }
       }
-#endif
       if (!opened)
+#endif
          ok = ffmpeg_init_video(handle)
             && (  !handle->config.audio_enable
                 || ffmpeg_init_audio(handle, params->audio_resampler));

@@ -6135,7 +6135,6 @@ static bool gl2_views_copy(gl2_t *gl, unsigned i,
    float top, bottom;
    bool ok;
    float tw   = gl->tex_info.tex_size[0];
-   float th   = gl->tex_info.tex_size[1];
    float s0   = (float)v->x / tw;
    float s1   = (float)(v->x + v->width) / tw;
    GLuint tex = gl2_views_slot(gl, i, v, depth, fresh, false);
