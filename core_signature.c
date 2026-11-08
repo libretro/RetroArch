@@ -100,3 +100,42 @@ enum core_check_result core_sig_verify(const struct core_sig *sig,
       return CORE_CHECK_OK;
    return CORE_CHECK_MODIFIED;
 }
+
+bool core_identity_equal(const struct core_identity *a,
+      const struct core_identity *b)
+{
+   return   a->dev        == b->dev
+         && a->size       == b->size
+         && a->mtime      == b->mtime
+         && a->mtime_nsec == b->mtime_nsec
+         && a->ctime      == b->ctime
+         && a->ctime_nsec == b->ctime_nsec
+         && a->verity_len == b->verity_len
+         && a->verity_len <= CORE_ID_VERITY_MAX
+         && !memcmp(a->ino, b->ino, sizeof(a->ino))
+         && !memcmp(a->verity, b->verity, a->verity_len);
+}
+
+bool core_fs_magic_keeps_ctime(unsigned long f_type)
+{
+   /* ext2/3/4, xfs, btrfs, f2fs, tmpfs, zfs, bcachefs */
+   static const unsigned long kept[] = { 0xEF53UL, 0x58465342UL,
+      0x9123683EUL, 0xF2F52010UL, 0x01021994UL, 0x2FC12FC1UL,
+      0xCA451A4EUL };
+   size_t i;
+   for (i = 0; i < sizeof(kept) / sizeof(kept[0]); i++)
+      if (f_type == kept[i])
+         return true;
+   return false;
+}
+
+bool core_fs_name_keeps_ctime(const char *name)
+{
+   static const char *const kept[] = { "apfs", "hfs", "ufs", "ffs", "zfs",
+      "tmpfs" };
+   size_t i;
+   for (i = 0; i < sizeof(kept) / sizeof(kept[0]); i++)
+      if (string_is_equal(name, kept[i]))
+         return true;
+   return false;
+}

@@ -1055,7 +1055,8 @@ jobs:
         run: |
           set -eu
           # Core signature checks: .sig parsing and verification against
-          # the committed fixtures.
+          # the committed fixtures, file identity and hashing from an open
+          # file.
           make clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              make -j$(nproc) SANITIZER=address,undefined \
              RUNNER="timeout 600" check

@@ -3,13 +3,15 @@ include ../../sample_objdir.mk
 TARGET := core_signature_test
 
 # Core signature checks: .sig parsing and verification against
-# fixtures from tools/core_sign.py (gen_fixtures.py).
+# fixtures from tools/core_sign.py (gen_fixtures.py), file identity and
+# hashing from an open file.
 # Builds on Linux and with mingw-w64.
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 SOURCES := core_signature_test.c \
            $(REPO_ROOT)/core_signature.c \
+           $(REPO_ROOT)/core_signature_io.c \
            $(LIBRETRO_COMM_DIR)/crypto/pk.c \
            $(LIBRETRO_COMM_DIR)/crypto/crypto.c \
            $(LIBRETRO_COMM_DIR)/crypto/kdf.c \
@@ -44,7 +46,8 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 # libretro-common is built as the tree builds it; core_signature*.c and
 # the test as C89
 STRICT_OBJS  := core_signature_test.o \
-                $(call sample_objs,$(REPO_ROOT)/core_signature.o)
+                $(call sample_objs,$(REPO_ROOT)/core_signature.o) \
+                $(call sample_objs,$(REPO_ROOT)/core_signature_io.o)
 STRICT_FLAGS := -std=c89 -pedantic -Wno-long-long \
                 -Wdeclaration-after-statement -Wframe-larger-than=4096 -Werror
 ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
