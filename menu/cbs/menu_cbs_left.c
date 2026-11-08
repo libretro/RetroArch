@@ -1094,7 +1094,7 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
             {
                configuration_set_int(settings,
                      settings->ints.d3d10_gpu_index,
-                     list->size - 1);
+                     (int)list->size - 1);
             }
             video_driver_gpu_index_select(api,
                   settings->ints.d3d10_gpu_index);
@@ -1122,7 +1122,7 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
             {
                configuration_set_int(settings,
                      settings->ints.d3d11_gpu_index,
-                     list->size - 1);
+                     (int)list->size - 1);
             }
             video_driver_gpu_index_select(api,
                   settings->ints.d3d11_gpu_index);
@@ -1150,7 +1150,7 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
             {
                configuration_set_int(settings,
                      settings->ints.d3d12_gpu_index,
-                     list->size - 1);
+                     (int)list->size - 1);
             }
             video_driver_gpu_index_select(api,
                   settings->ints.d3d12_gpu_index);

@@ -460,8 +460,8 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
                size_t new_rate = 0;
                RARCH_LOG("[XAudio2] Found device #%d: \"%s\".\n", i,
                      list->elems[i].data);
-               idx_found = i;
-               new_rate  = xa_device_get_samplerate(i);
+               idx_found = (int32_t)i;
+               new_rate  = xa_device_get_samplerate((int)i);
                if (new_rate > 0)
                {
                   /* Re-derive the format at the device's native rate,
@@ -469,7 +469,7 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
                    * previously hardcoded float, silently overriding an
                    * int16 negotiation whenever a named device was
                    * matched. */
-                  xaudio2_set_format(&desired_wf, float_fmt, channels, layout, new_rate);
+                  xaudio2_set_format(&desired_wf, float_fmt, channels, layout, (unsigned)new_rate);
                   *rate = desired_wf.Format.nSamplesPerSec;
                }
                break;
@@ -600,7 +600,7 @@ static bool xa_submit(xaudio2_t *handle)
    XAUDIO2_BUFFER xa2buffer;
 
    xa2buffer.Flags      = 0;
-   xa2buffer.AudioBytes = handle->bufsize;
+   xa2buffer.AudioBytes = (UINT32)handle->bufsize;
    xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
    xa2buffer.PlayBegin  = 0;
    xa2buffer.PlayLength = 0;
@@ -622,7 +622,7 @@ static bool xa_submit(xaudio2_t *handle)
 static ssize_t xa_write(void *data, const void *s, size_t len)
 {
    size_t _len           = 0;
-   unsigned bytes        = len;
+   unsigned bytes        = (unsigned)len;
    xa_t *xa              = (xa_t*)data;
    xaudio2_t *handle     = xa->xa;
    const uint8_t *buffer = (const uint8_t*)s;
@@ -634,12 +634,15 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
       if (avail == 0)
          return 0;
       if (avail < len)
-         bytes = len = avail;
+      {
+         len   = avail;
+         bytes = (unsigned)avail;
+      }
    }
 
    while (bytes)
    {
-      unsigned need   = MIN(bytes, handle->bufsize - handle->bufptr);
+      unsigned need   = (unsigned)MIN(bytes, handle->bufsize - handle->bufptr);
 
       if (need > 0)
       {

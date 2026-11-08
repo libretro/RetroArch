@@ -1838,7 +1838,7 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
 #if defined(VITA)
          ssize_t _got   = (ssize_t)sceIoRead((SceUID)stream->fd, p, (SceSize)_chunk);
 #else
-         ssize_t _got   = read(stream->fd, p, _chunk);
+         ssize_t _got   = read(stream->fd, p, (unsigned)_chunk);
 #endif
          if (_got < 0)
             return (total != 0) ? (int64_t)total : -1;
@@ -1925,7 +1925,7 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
 #if defined(VITA)
          ssize_t _put   = (ssize_t)sceIoWrite((SceUID)stream->fd, p, (SceSize)_chunk);
 #else
-         ssize_t _put   = write(stream->fd, p, _chunk);
+         ssize_t _put   = write(stream->fd, p, (unsigned)_chunk);
 #endif
          if (_put < 0)
          {

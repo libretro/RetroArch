@@ -283,7 +283,7 @@ static void network_command_reply(command_t *cmd,
 {
    command_network_t *netcmd = (command_network_t*)cmd->userptr;
    /* Respond (fire and forget since it's UDP) */
-   sendto(netcmd->net_fd, s, len, 0,
+   sendto(netcmd->net_fd, s, (int)len, 0,
       (struct sockaddr*)&netcmd->cmd_source, netcmd->cmd_source_len);
 }
 
@@ -311,7 +311,7 @@ static void network_command_reply_to(command_t *cmd, void *data,
 {
    command_network_t      *netcmd = (command_network_t*)cmd->userptr;
    command_network_dest_t *dest   = (command_network_dest_t*)data;
-   sendto(netcmd->net_fd, s, len, 0,
+   sendto(netcmd->net_fd, s, (int)len, 0,
       (struct sockaddr*)&dest->addr, dest->addr_len);
 }
 
@@ -1918,13 +1918,13 @@ static bool udp_send_packet(const char *host, uint16_t port, const char *msg)
 
    do
    {
-      int fd = socket(tmp_info->ai_family,
+      int fd = (int)socket(tmp_info->ai_family,
          tmp_info->ai_socktype, tmp_info->ai_protocol);
 
       if (fd < 0)
          continue;
 
-      if (sendto(fd, msg, len, 0, tmp_info->ai_addr, tmp_info->ai_addrlen) ==
+      if (sendto(fd, msg, (int)len, 0, tmp_info->ai_addr, (socklen_t)tmp_info->ai_addrlen) ==
             (ssize_t)len)
          ret = true;
 

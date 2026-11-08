@@ -521,7 +521,7 @@ void *mmdevice_init_device(const char *id, unsigned data_flow)
             {
                RARCH_LOG("[MMDevice] Found device #%d: \"%s\".\n", d,
                      list->elems[d].data);
-               idx_found = d;
+               idx_found = (int32_t)d;
                break;
             }
          }

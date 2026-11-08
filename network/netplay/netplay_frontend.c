@@ -452,7 +452,7 @@ static bool netplay_lan_ad_client_query(void)
 
    /* And send it off */
    if (sendto(net_st->lan_ad_client_fd, (char*)&header, sizeof(header), 0,
-         addr->ai_addr, addr->ai_addrlen) == sizeof(header))
+         addr->ai_addr, (socklen_t)addr->ai_addrlen) == sizeof(header))
       ret = true;
    else
       RARCH_ERR("[Discovery] Failed to send netplay discovery query.\n");
@@ -1573,7 +1573,7 @@ static bool netplay_handshake_sync(netplay_t *netplay,
 
    /* Send basic sync info */
    cmd[0] = htonl(NETPLAY_CMD_SYNC);
-   cmd[1] = htonl(2*sizeof(uint32_t)
+   cmd[1] = htonl((uint32_t)(2*sizeof(uint32_t)
       /* Controller devices */
       + MAX_INPUT_DEVICES*sizeof(uint32_t)
       /* Share modes */
@@ -1583,7 +1583,7 @@ static bool netplay_handshake_sync(netplay_t *netplay,
       /* Client nick */
       + NETPLAY_NICK_LEN
       /* And finally, sram */
-      + sram_size);
+      + sram_size));
    cmd[2] = htonl(netplay->self_frame_count);
    cmd[3] = htonl(client_num);
 
@@ -3966,7 +3966,7 @@ static int handle_connection(netplay_t *netplay, netplay_address_t *addr,
 {
    struct sockaddr_storage their_addr;
    socklen_t addr_size = sizeof(their_addr);
-   int new_fd          = accept(netplay->listen_fd,
+   int new_fd          = (int)accept(netplay->listen_fd,
       (struct sockaddr*)&their_addr, &addr_size);
    if (new_fd < 0)
    {
@@ -4198,7 +4198,7 @@ static int handle_mitm_connection(netplay_t *netplay, netplay_address_t *addr,
                   break;
             if (i < ARRAY_SIZE(netplay->mitm_handler->pending))
             {
-               int fd = socket(
+               int fd = (int)socket(
                   netplay->mitm_handler->addr->ai_family,
                   netplay->mitm_handler->addr->ai_socktype,
                   netplay->mitm_handler->addr->ai_protocol
@@ -5123,7 +5123,7 @@ static void netplay_delayed_state_change(netplay_t *netplay)
 
       /* Something was delayed! Prepare the MODE command */
       payload.frame = htonl(connection->delay_frame);
-      payload.mode  = htonl(i + 1);
+      payload.mode  = htonl((uint32_t)(i + 1));
       memcpy(payload.nick, connection->nick, sizeof(payload.nick));
 
       netplay_send_raw_cmd_all(netplay, connection,
@@ -5167,7 +5167,7 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
          buffer[bufused+i] = htonl(istate->data[i]);
       bufused += istate->size;
    }
-   buffer[1] = htonl((bufused - 2) * sizeof(uint32_t));
+   buffer[1] = htonl((uint32_t)((bufused - 2) * sizeof(uint32_t)));
 
 #ifdef DEBUG_NETPLAY_STEPS
    RARCH_LOG("[Netplay] Sending input for client %u\n", (unsigned) client_num);
@@ -5280,7 +5280,7 @@ bool netplay_send_raw_cmd(netplay_t *netplay,
    uint32_t cmdbuf[2];
 
    cmdbuf[0] = htonl(cmd);
-   cmdbuf[1] = htonl(len);
+   cmdbuf[1] = htonl((uint32_t)len);
 
    if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmdbuf,
          sizeof(cmdbuf)))
@@ -7688,7 +7688,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
    char msg[512];
    char host[256], port[6];
    const char *_msg = NULL;
-   int fd           = socket(addr->ai_family, addr->ai_socktype,
+   int fd           = (int)socket(addr->ai_family, addr->ai_socktype,
       addr->ai_protocol);
 
    if (fd < 0)
@@ -7710,7 +7710,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
             return fd;
       }
 
-      if (!getnameinfo_retro(addr->ai_addr, addr->ai_addrlen,
+      if (!getnameinfo_retro(addr->ai_addr, (socklen_t)addr->ai_addrlen,
             host, sizeof(host), port, sizeof(port),
             NI_NUMERICHOST | NI_NUMERICSERV))
       {
@@ -7765,7 +7765,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
       }
       else
       {
-         if (!getnameinfo_retro(addr->ai_addr, addr->ai_addrlen,
+         if (!getnameinfo_retro(addr->ai_addr, (socklen_t)addr->ai_addrlen,
                host, sizeof(host), port, sizeof(port),
                NI_NUMERICHOST | NI_NUMERICSERV))
          {
@@ -7799,7 +7799,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
       }
       else
       {
-         if (!getnameinfo_retro(addr->ai_addr, addr->ai_addrlen,
+         if (!getnameinfo_retro(addr->ai_addr, (socklen_t)addr->ai_addrlen,
                NULL, 0, port, sizeof(port), NI_NUMERICSERV))
          {
             snprintf(msg, sizeof(msg),
@@ -8488,7 +8488,7 @@ static void netplay_send_savestate(netplay_t *netplay,
    header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
    header[1] = htonl(wn + 2*sizeof(uint32_t));
    header[2] = htonl(netplay->run_frame_count);
-   header[3] = htonl(serial_info->size);
+   header[3] = htonl((uint32_t)serial_info->size);
 
    for (i = 0; i < netplay->connections_size; i++)
    {
@@ -11479,7 +11479,7 @@ static void netplay_send_cmd_netpacket(netplay_t *netplay, size_t conn_idx,
    if (connection->mode != NETPLAY_CONNECTION_PLAYING) return;
 
    cmdbuf[0] = htonl(NETPLAY_CMD_NETPACKET);
-   cmdbuf[1] = htonl(len);
+   cmdbuf[1] = htonl((uint32_t)len);
    cmdbuf[2] = htonl(pkt_client_id);
 
    sbuf = &connection->send_packet_buffer;

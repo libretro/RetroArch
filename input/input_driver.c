@@ -183,11 +183,7 @@
 struct input_remote
 {
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#ifdef _WIN32
-   SOCKET net_fd[MAX_USERS];
-#else
    int net_fd[MAX_USERS];
-#endif
    /* "First Sender Only": the address each user listens to, once a
     * first message has come */
    uint32_t sender[MAX_USERS];
@@ -4269,13 +4265,8 @@ static void input_remote_poll(input_driver_state_t *input_st,
 
       if (!settings->bools.network_remote_enable_user[user])
          continue;
-#if defined(_WIN32)
-      if (input_st->remote->net_fd[user] == INVALID_SOCKET)
-#else
-      if (input_st->remote->net_fd[user] < 0)
-#endif
+      if ((fd = input_st->remote->net_fd[user]) < 0)
          continue;
-      fd = (int)input_st->remote->net_fd[user];
 
       for (n = 0; n < INPUT_REMOTE_DRAIN_MAX; n++)
       {

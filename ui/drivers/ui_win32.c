@@ -1193,7 +1193,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
       default:
          if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
          {
-            unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
+            unsigned idx = (unsigned)(mode - (ID_M_WINDOW_SCALE_1X-1));
             retroarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
             command_event(CMD_EVENT_RESIZE_WINDOWED_SCALE, NULL);
          }
@@ -1207,7 +1207,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          else if (mode >= (ID_M_STATE_INDEX_AUTO+1)
                && mode <= (ID_M_STATE_INDEX_AUTO+10))
          {
-            signed           idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
+            signed           idx = (signed)(mode - (ID_M_STATE_INDEX_AUTO+1));
             settings_t *settings = config_get_ptr();
             configuration_set_int(
                   settings, settings->ints.state_slot, idx);
@@ -1452,7 +1452,7 @@ void win32_localize_menu(HMENU menu)
          /* Convert string from UTF-8, then assign menu text */
          new_label_unicode         = utf8_to_utf16_string_alloc(new_label2);
          final_len                 = wcslen(new_label_unicode);
-         menu_item_info.cch        = final_len;
+         menu_item_info.cch        = (UINT)final_len;
          menu_item_info.dwTypeData = new_label_unicode;
          SetMenuItemInfoW(menu, index, true, &menu_item_info);
          free(new_label_unicode);

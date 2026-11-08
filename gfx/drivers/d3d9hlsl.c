@@ -1893,7 +1893,7 @@ static void d3d9_font_render_msg(
          line_vbuf = !!(verts_s = d3d9_menu_vbuf_map(d3d, \
                   (unsigned)(bytes) * 12, &vb_start)); \
          if (!line_vbuf) \
-            verts_s = d3d9_font_get_scratch(font, (bytes) * 12); \
+            verts_s = d3d9_font_get_scratch(font, (unsigned)(bytes) * 12); \
          if (!(line_ok = !!verts_s)) \
             break; \
          verts_f   = verts_s + fg_off; \

@@ -97,7 +97,7 @@ bool natt_init(struct natt_discovery *discovery)
       goto failure;
 
    if (sendto(fd, msearch, STRLEN_CONST(msearch), 0,
-            msearch_addr->ai_addr, msearch_addr->ai_addrlen)
+            msearch_addr->ai_addr, (socklen_t)msearch_addr->ai_addrlen)
          != STRLEN_CONST(msearch))
       goto failure;
 

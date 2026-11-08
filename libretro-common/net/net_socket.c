@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -31,6 +32,14 @@
 #include <features/features_cpu.h>
 
 #include <net/net_socket.h>
+
+/* Winsock's send/recv count in int: a larger request is clamped and the
+ * callers' loops send or receive the rest. */
+#ifdef _WIN32
+#define NET_IO_LEN(n) ((int)((n) > INT_MAX ? INT_MAX : (n)))
+#else
+#define NET_IO_LEN(n) (n)
+#endif
 
 int socket_init(void **address, uint16_t port, const char *server,
       enum socket_type type, int family)
@@ -77,7 +86,7 @@ int socket_init(void **address, uint16_t port, const char *server,
    if (!addr)
       return -1;
 
-   return socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+   return (int)socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 }
 
 int socket_next(void **address)
@@ -86,7 +95,7 @@ int socket_next(void **address)
    struct addrinfo *addr      = *addrinfo;
 
    if ((*addrinfo = addr = addr->ai_next))
-      return socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+      return (int)socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
    return -1;
 }
@@ -94,7 +103,7 @@ int socket_next(void **address)
 ssize_t socket_receive_all_nonblocking(int fd, bool *err,
       void *data_, size_t len)
 {
-   ssize_t ret = recv(fd, (char*)data_, len, 0);
+   ssize_t ret = recv(fd, (char*)data_, NET_IO_LEN(len), 0);
    if (ret > 0)
       return ret;
    if (ret < 0 && isagain((int)ret))
@@ -109,7 +118,7 @@ bool socket_receive_all_blocking(int fd, void *data_, size_t len)
 
    while (len)
    {
-      ssize_t ret = recv(fd, (char*)data, len, 0);
+      ssize_t ret = recv(fd, (char*)data, NET_IO_LEN(len), 0);
 
       if (!ret)
          return false;
@@ -142,7 +151,7 @@ bool socket_receive_all_blocking_with_timeout(int fd,
 
    while (len)
    {
-      ssize_t ret = recv(fd, (char*)data, len, 0);
+      ssize_t ret = recv(fd, (char*)data, NET_IO_LEN(len), 0);
 
       if (!ret)
          return false;
@@ -638,7 +647,7 @@ bool socket_send_all_blocking(int fd, const void *data_, size_t len,
 
    while (len)
    {
-      ssize_t ret = send(fd, (const char*)data, len, flags);
+      ssize_t ret = send(fd, (const char*)data, NET_IO_LEN(len), flags);
 
       if (!ret)
          continue;
@@ -673,7 +682,7 @@ bool socket_send_all_blocking_with_timeout(int fd,
 
    while (len)
    {
-      ssize_t ret = send(fd, (const char*)data, len, flags);
+      ssize_t ret = send(fd, (const char*)data, NET_IO_LEN(len), flags);
 
       if (!ret)
          continue;
@@ -711,7 +720,7 @@ ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t len,
 
    while (len)
    {
-      ssize_t ret = send(fd, (const char*)data, len, flags);
+      ssize_t ret = send(fd, (const char*)data, NET_IO_LEN(len), flags);
 
       if (!ret)
          break;
@@ -744,7 +753,7 @@ bool socket_bind(int fd, void *data)
          (char*)&on, sizeof(on));
    }
 
-   return !bind(fd, addr->ai_addr, addr->ai_addrlen);
+   return !bind(fd, addr->ai_addr, (socklen_t)addr->ai_addrlen);
 }
 
 int socket_connect(int fd, void *data)
@@ -770,7 +779,7 @@ int socket_connect(int fd, void *data)
    }
 #endif
 
-   return connect(fd, addr->ai_addr, addr->ai_addrlen);
+   return connect(fd, addr->ai_addr, (socklen_t)addr->ai_addrlen);
 }
 
 /* Where the platform keeps socket errors in errno (or WSAGetLastError
@@ -819,7 +828,7 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
    }
 #endif
 
-   res = connect(fd, addr->ai_addr, addr->ai_addrlen);
+   res = connect(fd, addr->ai_addr, (socklen_t)addr->ai_addrlen);
    if (res)
    {
       bool ready = true;
@@ -940,7 +949,7 @@ int socket_create(
 #ifdef VITA
    return sceNetSocket(name, domain, type, protocol);
 #else
-   return socket(domain, type, protocol);
+   return (int)socket(domain, type, protocol);
 #endif
 }
 

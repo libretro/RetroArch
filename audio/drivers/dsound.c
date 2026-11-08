@@ -653,7 +653,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
                if (string_is_equal(dev, list->elems[i].data))
                {
                   RARCH_DBG("[DirectSound] Found device #%d: \"%s\".\n", i, list->elems[i].data);
-                  idx_found       = i;
+                  idx_found       = (int32_t)i;
                   selected_device = (LPGUID)list->elems[idx_found].userdata;
                   break;
                }

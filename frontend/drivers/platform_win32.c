@@ -1682,12 +1682,12 @@ static bool create_win32_process(char* cmd, const char * input)
       DWORD dummy;
       HANDLE wr;
       size_t input_len = strlen(input);
-      if (!CreatePipe(&rd, &wr, NULL, input_len))
+      if (!CreatePipe(&rd, &wr, NULL, (DWORD)input_len))
          return false;
 
       SetHandleInformation(rd, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
 
-      WriteFile(wr, input, input_len, &dummy, NULL);
+      WriteFile(wr, input, (DWORD)input_len, &dummy, NULL);
       CloseHandle(wr);
 
       si.dwFlags    |= STARTF_USESTDHANDLES;

@@ -99,7 +99,7 @@ size_t read_stdin(char *s, size_t len)
          {
             has_key = true;
             echo    = true;
-            avail   = len;
+            avail   = (DWORD)len;
             break;
          }
       }
@@ -115,7 +115,7 @@ size_t read_stdin(char *s, size_t len)
       return 0;
 
    if (avail > len)
-      avail = len;
+      avail = (DWORD)len;
 
    if (!ReadFile(hnd, s, avail, &has_read, NULL))
       return 0;

@@ -1281,7 +1281,7 @@ static void net_http_conn_pool_remove_expired(void)
    {
       if (!entry->in_use && entry->fd >= 0 && entry->fd < FD_SETSIZE)
       {
-         FD_SET(entry->fd, &fds);
+         FD_SET((unsigned)entry->fd, &fds);
          if (entry->fd >= max)
             max = entry->fd + 1;
       }
@@ -1574,7 +1574,7 @@ static int net_http_socket_for(struct addrinfo **addr)
    struct addrinfo *a;
    for (a = *addr; a; a = a->ai_next)
    {
-      int fd = socket(a->ai_family, a->ai_socktype, a->ai_protocol);
+      int fd = (int)socket(a->ai_family, a->ai_socktype, a->ai_protocol);
       if (fd >= 0)
       {
          *addr = a;

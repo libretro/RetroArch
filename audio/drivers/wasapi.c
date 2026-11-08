@@ -1322,7 +1322,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
             mic->device_name, mmdevice_hresult_name(hr));
          return -1;
       }
-      bytes_read = frames_read * mic->frame_size;
+      bytes_read = (UINT32)(frames_read * mic->frame_size);
 
       /* If the queue has room for the packets we just got,
        * then enqueue the bytes directly from the mic's buffer */
@@ -1359,7 +1359,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
          next_packet_size = 0;
    }
    while (next_packet_size != 0);
-   return FIFO_READ_AVAIL(mic->buffer);
+   return (int)FIFO_READ_AVAIL(mic->buffer);
 }
 
 /**
@@ -1411,7 +1411,7 @@ static int wasapi_microphone_read_buffered(
    DWORD timeout)
 {
    int bytes_read      = 0; /* Number of bytes sent to the core */
-   int bytes_available = FIFO_READ_AVAIL(mic->buffer);
+   int bytes_available = (int)FIFO_READ_AVAIL(mic->buffer);
 
    /* If we don't have any queued samples to give to the core... */
    if (!bytes_available)
@@ -1606,7 +1606,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
          if (FAILED(hr))
             goto error;
 
-         sh_buffer_length = (dev_period * rate / 10000000) * 2;
+         sh_buffer_length = (unsigned)((dev_period * rate / 10000000) * 2);
          /* Default buffer seems to be too small, resulting in slowdown.
           * Doubling it seems to work okay. Dunno why. */
       }
@@ -2050,7 +2050,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
             if (FAILED(hr))
                goto error;
 
-            sh_buffer_length = dev_period * rate / 10000000;
+            sh_buffer_length = (unsigned)(dev_period * rate / 10000000);
             break;
          default:
             break;

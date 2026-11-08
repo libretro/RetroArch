@@ -6101,7 +6101,7 @@ static void d3d11_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
          pass->frame_count = frame_count
             % c->shader_preset->pass[i].frame_count_mod;
       else
-         pass->frame_count = frame_count;
+         pass->frame_count = (uint32_t)frame_count;
       pass->frame_direction  = frame_direction;
       pass->frame_time_delta = frame_time_delta;
       pass->original_fps     = original_fps;

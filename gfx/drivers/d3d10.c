@@ -1555,7 +1555,7 @@ static void d3d10_font_render_msg(
 #undef D3D10_FONT_SPRITE
    }
 
-   count = v - v_begin;
+   count = (unsigned)(v - v_begin);
    d3d10->sprites.vbo->lpVtbl->Unmap(d3d10->sprites.vbo);
 
    if (!count)
@@ -3304,7 +3304,7 @@ static void d3d10_chain_frame(d3d10_video_t *d3d10, d3d10_chain_t *c,
          pass->frame_count = frame_count
             % c->shader_preset->pass[i].frame_count_mod;
       else
-         pass->frame_count = frame_count;
+         pass->frame_count = (uint32_t)frame_count;
       pass->frame_direction  = frame_direction;
       pass->frame_time_delta = frame_time_delta;
       pass->original_fps     = original_fps;

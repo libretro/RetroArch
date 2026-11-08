@@ -203,6 +203,20 @@ FWD_DECLARE(IXAudio2MasteringVoice);
 FWD_DECLARE(IXAudio2EngineCallback);
 FWD_DECLARE(IXAudio2VoiceCallback);
 
+/* In C the forward typedefs above already name each interface, so the
+ * interfaces below are declared without DECLARE_INTERFACE's own typedef
+ * of the interface name. */
+#ifdef __cplusplus
+#define XA2_DECLARE_INTERFACE(iface)        DECLARE_INTERFACE(iface)
+#define XA2_DECLARE_INTERFACE_(iface, base) DECLARE_INTERFACE_(iface, base)
+#else
+#define XA2_DECLARE_INTERFACE(iface) \
+   interface iface { CONST_VTBL struct iface##Vtbl *lpVtbl; }; \
+   typedef CONST_VTBL struct iface##Vtbl iface##Vtbl; \
+   CONST_VTBL struct iface##Vtbl
+#define XA2_DECLARE_INTERFACE_(iface, base) XA2_DECLARE_INTERFACE(iface)
+#endif
+
 /**************************************************************************
  *
  * XAudio2 structures and enumerations.
@@ -418,7 +432,7 @@ typedef struct XAUDIO2_DEBUG_CONFIGURATION
 
 #undef INTERFACE
 #define INTERFACE IXAudio2
-DECLARE_INTERFACE_(IXAudio2, IUnknown)
+XA2_DECLARE_INTERFACE_(IXAudio2, IUnknown)
 {
    STDMETHOD(QueryInterface) (THIS_ REFIID riid, _Outptr_ void** ppvInterface) PURE;
    STDMETHOD_(ULONG, AddRef) (THIS) PURE;
@@ -460,7 +474,7 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 #undef INTERFACE
 #define INTERFACE IXAudio2Voice
 
-DECLARE_INTERFACE(IXAudio2Voice)
+XA2_DECLARE_INTERFACE(IXAudio2Voice)
 {
 #define Declare_IXAudio2Voice_Methods() \
    STDMETHOD_(void, GetVoiceDetails) (THIS_ _Out_ XAUDIO2_VOICE_DETAILS* pVoiceDetails) PURE; \
@@ -512,7 +526,7 @@ DECLARE_INTERFACE(IXAudio2Voice)
 
 #undef INTERFACE
 #define INTERFACE IXAudio2SourceVoice
-DECLARE_INTERFACE_(IXAudio2SourceVoice, IXAudio2Voice)
+XA2_DECLARE_INTERFACE_(IXAudio2SourceVoice, IXAudio2Voice)
 {
    Declare_IXAudio2Voice_Methods();
    STDMETHOD(Start) (THIS_ UINT32 Flags X2DEFAULT(0), UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE;
@@ -536,7 +550,7 @@ DECLARE_INTERFACE_(IXAudio2SourceVoice, IXAudio2Voice)
 
 #undef INTERFACE
 #define INTERFACE IXAudio2SubmixVoice
-DECLARE_INTERFACE_(IXAudio2SubmixVoice, IXAudio2Voice)
+XA2_DECLARE_INTERFACE_(IXAudio2SubmixVoice, IXAudio2Voice)
 {
    Declare_IXAudio2Voice_Methods();
 };
@@ -549,7 +563,7 @@ DECLARE_INTERFACE_(IXAudio2SubmixVoice, IXAudio2Voice)
 
 #undef INTERFACE
 #define INTERFACE IXAudio2MasteringVoice
-DECLARE_INTERFACE_(IXAudio2MasteringVoice, IXAudio2Voice)
+XA2_DECLARE_INTERFACE_(IXAudio2MasteringVoice, IXAudio2Voice)
 {
    Declare_IXAudio2Voice_Methods();
    STDMETHOD(GetChannelMask) (THIS_ _Out_ DWORD* pChannelmask) PURE;
@@ -569,7 +583,7 @@ DECLARE_INTERFACE_(IXAudio2MasteringVoice, IXAudio2Voice)
 
 #undef INTERFACE
 #define INTERFACE IXAudio2EngineCallback
-DECLARE_INTERFACE(IXAudio2EngineCallback)
+XA2_DECLARE_INTERFACE(IXAudio2EngineCallback)
 {
    STDMETHOD_(void, OnProcessingPassStart) (THIS) PURE;
    STDMETHOD_(void, OnProcessingPassEnd) (THIS) PURE;
@@ -589,7 +603,7 @@ DECLARE_INTERFACE(IXAudio2EngineCallback)
 
 #undef INTERFACE
 #define INTERFACE IXAudio2VoiceCallback
-DECLARE_INTERFACE(IXAudio2VoiceCallback)
+XA2_DECLARE_INTERFACE(IXAudio2VoiceCallback)
 {
    STDMETHOD_(void, OnVoiceProcessingPassStart) (THIS_ UINT32 BytesRequired) PURE;
    STDMETHOD_(void, OnVoiceProcessingPassEnd) (THIS) PURE;

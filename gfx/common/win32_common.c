@@ -992,7 +992,7 @@ static LRESULT CALLBACK wnd_proc_common(
              * WM_CHAR and WM_KEYDOWN properly.
              */
             input_keyboard_event(true, RETROK_UNKNOWN,
-                  wparam, mod, RETRO_DEVICE_KEYBOARD);
+                  (uint32_t)wparam, mod, RETRO_DEVICE_KEYBOARD);
          }
          return TRUE;
       case WM_CLOSE:

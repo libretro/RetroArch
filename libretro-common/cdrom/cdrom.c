@@ -320,7 +320,7 @@ static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stre
 
    sptd.s.TimeOutValue       = 5;
    sptd.s.DataBuffer         = buf;
-   sptd.s.DataTransferLength = len;
+   sptd.s.DataTransferLength = (ULONG)len;
    sptd.s.SenseInfoLength    = sizeof(sptd.sense);
    sptd.s.SenseInfoOffset    = offsetof(struct sptd_with_sense, sense);
 

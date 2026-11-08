@@ -844,8 +844,8 @@ static void task_cloud_sync_update_progress(retro_task_t *task)
    /* Entries of a directory whose sync toggle is off are stepped over
     * in one go, so counting them would leave the bar short of 100 when
     * they sort last - and stuck below the in-scope share otherwise. */
-   val = (sync_state->server_idx - sync_state->server_skipped)
-       + sync_state->current_idx;
+   val = (unsigned long)((sync_state->server_idx - sync_state->server_skipped)
+       + sync_state->current_idx);
 
    if (sync_state->server_manifest)
       count += sync_state->server_manifest->size
