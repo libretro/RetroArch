@@ -184,7 +184,7 @@ bool file_watch_poll(file_watch_t *watch)
     * answers the poll; a re-read of the changed file sees the new
     * contents through the page cache without any explicit flush, so
     * there is nothing to do here beyond the match. */
-   while ((length = read(watch->fd, buf, FILE_WATCH_READ_BUF_LEN)) > 0)
+   while ((length = (int)read(watch->fd, buf, FILE_WATCH_READ_BUF_LEN)) > 0)
    {
       int i = 0;
 

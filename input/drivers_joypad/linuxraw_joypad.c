@@ -143,7 +143,7 @@ retry:
          size_t event_size  = sizeof(struct inotify_event) + NAME_MAX + 1;
          uint8_t *event_buf = (uint8_t*)calloc(1, event_size);
 
-         while ((rc = read(linuxraw_inotify, event_buf, event_size)) >= 0)
+         while ((rc = (int)read(linuxraw_inotify, event_buf, event_size)) >= 0)
          {
             struct inotify_event *event = (struct inotify_event*)&event_buf[0];
 
@@ -160,7 +160,7 @@ retry:
                if (strstr(event->name, "js") != event->name)
                   continue;
 
-               idx = strtoul(event->name + 2, NULL, 0);
+               idx = (unsigned)strtoul(event->name + 2, NULL, 0);
                if (idx >= MAX_USERS)
                   continue;
 
@@ -224,7 +224,8 @@ retry:
 
 static void *linuxraw_joypad_init(void *data)
 {
-   size_t i, _len;
+   unsigned i;
+   size_t _len;
    char path[PATH_MAX_LENGTH];
    int fd      = epoll_create(32);
    bool init_ok;

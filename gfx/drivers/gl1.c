@@ -3625,10 +3625,8 @@ static void gl1_viewport_info(void *data, struct video_viewport *vp)
 static bool gl1_read_viewport_internal(gl1_t *gl1, uint8_t *buffer,
       bool is_idle, bool bgrx)
 {
-   unsigned num_pixels = 0;
-
-   num_pixels                      = VIDEO_SCALE_AREA(gl1->vp.dims);
-   gl1->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
+   gl1->readback_buffer_screenshot = malloc(
+         VIDEO_SCALE_AREA(gl1->vp.dims) * sizeof(uint32_t));
 
    if (!gl1->readback_buffer_screenshot)
       return false;
@@ -4179,8 +4177,8 @@ static bool gl1_overlay_alloc(gl1_t *gl, unsigned num_images,
    for (i = 0; i < num_images; i++)
    {
       /* Default. Stretch to whole screen. */
-      gl1_overlay_tex_geom(gl, i, 0, 0, 1, 1);
-      gl1_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
+      gl1_overlay_tex_geom(gl, (unsigned)i, 0, 0, 1, 1);
+      gl1_overlay_vertex_geom(gl, (unsigned)i, 0, 0, 1, 1);
 
       for (j = 0; j < 16; j++)
          gl->overlay_color_coord[16 * i + j] = 1.0f;

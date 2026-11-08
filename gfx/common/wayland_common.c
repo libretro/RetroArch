@@ -674,7 +674,7 @@ static int create_shm_file(off_t size)
 {
    int fd, ret;
 #ifndef __FreeBSD__
-   if ((fd = syscall(SYS_memfd_create, SPLASH_SHM_NAME,
+   if ((fd = (int)syscall(SYS_memfd_create, SPLASH_SHM_NAME,
                MFD_CLOEXEC | MFD_ALLOW_SEALING)) >= 0)
 #else
    if ((fd = memfd_create(SPLASH_SHM_NAME,
@@ -788,7 +788,7 @@ static void shm_buffer_paint_icon(
    {
       for (x = 0; x < width; x++)
       {
-         uint32_t color = retroarch_icon_data[16 * ((y / icon_scale) % 16) + ((x / icon_scale) % 16)];
+         uint32_t color = (uint32_t)retroarch_icon_data[16 * ((y / icon_scale) % 16) + ((x / icon_scale) % 16)];
          int sx;
          if (color >> 4)
          {

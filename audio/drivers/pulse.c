@@ -568,7 +568,7 @@ static void *pulse_init(const char *device, unsigned rate,
    pa_stream_set_buffer_attr_callback(pa->stream, pulse_buffer_attr_cb, pa);
 
    buffer_attr.maxlength = -1;
-   buffer_attr.tlength   = pa_usec_to_bytes(latency * PA_USEC_PER_MSEC, &spec);
+   buffer_attr.tlength   = (uint32_t)pa_usec_to_bytes(latency * PA_USEC_PER_MSEC, &spec);
    buffer_attr.prebuf    = -1;
    buffer_attr.minreq    = -1;
    buffer_attr.fragsize  = -1;

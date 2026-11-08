@@ -1306,7 +1306,7 @@ static bool x11_display_server_modeline_add(void *data,
 
       memset(&xmode, 0, sizeof(xmode));
       xmode.name       = name;
-      xmode.nameLength = strlen(name);
+      xmode.nameLength = (unsigned)strlen(name);
       xmode.dotClock   = mode->pclock;
       xmode.width      = mode->hactive;
       xmode.hSyncStart = mode->hbegin;

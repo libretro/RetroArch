@@ -1066,7 +1066,9 @@ static void rdds_bcdec_bc6h_float(const void* compressedBlock, void* decompresse
 }
 
 static void rdds_bcdec__swap_values(int* a, int* b) {
-    a[0] ^= b[0], b[0] ^= a[0], a[0] ^= b[0];
+    a[0] ^= b[0];
+    b[0] ^= a[0];
+    a[0] ^= b[0];
 }
 
 static void rdds_bcdec_bc7(const void* compressedBlock, void* decompressedBlock, int destinationPitch) {

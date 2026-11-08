@@ -446,7 +446,7 @@ static bool alsa_midi_write(void *p, const midi_event_t *event)
    {
       ev.flags |= SND_SEQ_EVENT_LENGTH_VARIABLE;
       ev.data.ext.ptr = event->data;
-      ev.data.ext.len = event->data_size;
+      ev.data.ext.len = (unsigned)event->data_size;
    }
 
    r = snd_seq_event_output(d->seq, &ev);

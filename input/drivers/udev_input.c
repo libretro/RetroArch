@@ -3753,7 +3753,7 @@ static void udev_input_poll(void *data)
          udev_input_device_t *device = (udev_input_device_t*)events[i].udata;
 #endif
 
-         while ((len = read(device->fd,
+         while ((len = (int)read(device->fd,
                      input_events, sizeof(input_events))) > 0)
          {
             len /= sizeof(*input_events);

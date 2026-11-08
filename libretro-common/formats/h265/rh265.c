@@ -2897,8 +2897,8 @@ static void rh265_mv_scale(rh265_mv *dst, const rh265_mv *src,
    int tx, sf, v;
    td = td < -128 ? -128 : (td > 127 ? 127 : td);
    tb = tb < -128 ? -128 : (tb > 127 ? 127 : tb);
-   tx = (0x4000 + (td < 0 ? -td / 2 : td / 2)) / td;
-   sf = (tb * tx + 32) >> 6;
+   tx = (int)((0x4000 + (td < 0 ? -td / 2 : td / 2)) / td);
+   sf = (int)((tb * tx + 32) >> 6);
    sf = sf < -4096 ? -4096 : (sf > 4095 ? 4095 : sf);
    v = sf * src->x;
    dst->x = (int16_t)rh265_clip_int16((v + 127 + (v < 0)) >> 8);

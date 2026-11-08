@@ -217,7 +217,7 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
       size -= frames;
    }
 
-   return FRAMES_TO_BYTES(read, mic->stream_info.frame_bits);
+   return (int)FRAMES_TO_BYTES(read, mic->stream_info.frame_bits);
 }
 
 static bool alsa_microphone_mic_alive(const void *driver_context, const void *mic_context)
@@ -600,7 +600,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
          {
             if (frames == -EPIPE)
                retro_atomic_fetch_add_size(&alsa->underruns, 1);
-            if (alsa_recover(alsa, frames) < 0)
+            if (alsa_recover(alsa, (int)frames) < 0)
                return -1;
 
             break;
@@ -640,7 +640,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
          {
             if (frames == -EPIPE)
                retro_atomic_fetch_add_size(&alsa->underruns, 1);
-            if (alsa_recover(alsa, frames) < 0)
+            if (alsa_recover(alsa, (int)frames) < 0)
                return -1;
             break;
          }

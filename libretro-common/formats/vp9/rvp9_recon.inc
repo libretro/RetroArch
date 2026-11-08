@@ -197,14 +197,14 @@ static void rvp9_iadst8(const rvp9_tran *input, rvp9_tran *output)
    x3 = rvp9_round_shift(s3);
    x6 = rvp9_round_shift(s6);
    x7 = rvp9_round_shift(s7);
-   output[0] = x0;
-   output[1] = -x4;
-   output[2] = x6;
-   output[3] = -x2;
-   output[4] = x3;
-   output[5] = -x7;
-   output[6] = x5;
-   output[7] = -x1;
+   output[0] = (rvp9_tran)(x0);
+   output[1] = (rvp9_tran)(-x4);
+   output[2] = (rvp9_tran)(x6);
+   output[3] = (rvp9_tran)(-x2);
+   output[4] = (rvp9_tran)(x3);
+   output[5] = (rvp9_tran)(-x7);
+   output[6] = (rvp9_tran)(x5);
+   output[7] = (rvp9_tran)(-x1);
 }
 
 static void rvp9_idct16(const rvp9_tran *input, rvp9_tran *output) {
@@ -522,22 +522,22 @@ static void rvp9_iadst16(const rvp9_tran *input, rvp9_tran *output) {
   x14 = RVP9_WRAP(rvp9_round_shift(s14));
   x15 = RVP9_WRAP(rvp9_round_shift(s15));
 
-  output[0] = RVP9_WRAP(x0);
-  output[1] = RVP9_WRAP(-x8);
-  output[2] = RVP9_WRAP(x12);
-  output[3] = RVP9_WRAP(-x4);
-  output[4] = RVP9_WRAP(x6);
-  output[5] = RVP9_WRAP(x14);
-  output[6] = RVP9_WRAP(x10);
-  output[7] = RVP9_WRAP(x2);
-  output[8] = RVP9_WRAP(x3);
-  output[9] = RVP9_WRAP(x11);
-  output[10] = RVP9_WRAP(x15);
-  output[11] = RVP9_WRAP(x7);
-  output[12] = RVP9_WRAP(x5);
-  output[13] = RVP9_WRAP(-x13);
-  output[14] = RVP9_WRAP(x9);
-  output[15] = RVP9_WRAP(-x1);
+  output[0] = (rvp9_tran)(x0);
+  output[1] = (rvp9_tran)(-x8);
+  output[2] = (rvp9_tran)(x12);
+  output[3] = (rvp9_tran)(-x4);
+  output[4] = (rvp9_tran)(x6);
+  output[5] = (rvp9_tran)(x14);
+  output[6] = (rvp9_tran)(x10);
+  output[7] = (rvp9_tran)(x2);
+  output[8] = (rvp9_tran)(x3);
+  output[9] = (rvp9_tran)(x11);
+  output[10] = (rvp9_tran)(x15);
+  output[11] = (rvp9_tran)(x7);
+  output[12] = (rvp9_tran)(x5);
+  output[13] = (rvp9_tran)(-x13);
+  output[14] = (rvp9_tran)(x9);
+  output[15] = (rvp9_tran)(-x1);
 }
 
 static void rvp9_idct32(const rvp9_tran *input, rvp9_tran *output) {

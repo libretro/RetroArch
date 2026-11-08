@@ -231,7 +231,7 @@ static void parport_free_pad(struct parport_joypad *pad)
 static void *parport_joypad_init(void *data)
 {
    int j;
-   size_t i;
+   unsigned i;
    char path[PATH_MAX_LENGTH];
    bool found_enabled_button             = false;
    bool found_disabled_button            = false;

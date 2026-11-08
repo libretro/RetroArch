@@ -170,7 +170,7 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
    uint32s_insert_result_t result;
    size_t size_bytes      = index->object_size * sizeof(uint32_t);
    uint32_t hash          = uint32s_hash_bytes((uint8_t *)object, size_bytes);
-   uint32_t additions_len = RBUF_LEN(index->additions);
+   uint32_t additions_len = (uint32_t)RBUF_LEN(index->additions);
    result.index  = 0;
    result.is_new = false;
    if (RHMAP_HAS(index->index, hash))
@@ -187,7 +187,7 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
 
          RARCH_LOG("[STATESTREAM] accessed collected index %u\n", result.index);
       }
-      idx  = RBUF_LEN(index->objects);
+      idx  = (uint32_t)RBUF_LEN(index->objects);
       if (     !uint32s_index_reserve(index)
             || !(copy = (uint32_t*)malloc(size_bytes)))
       {
@@ -212,7 +212,7 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
    else
    {
       struct uint32s_bucket new_bucket;
-      idx  = RBUF_LEN(index->objects);
+      idx  = (uint32_t)RBUF_LEN(index->objects);
       if (     !uint32s_index_reserve(index)
             || !(copy = (uint32_t*)malloc(size_bytes)))
       {
@@ -251,7 +251,7 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
       return false;
    size_bytes = index->object_size * sizeof(uint32_t);
    hash = uint32s_hash_bytes((uint8_t *)object, size_bytes);
-   additions_len = RBUF_LEN(index->additions);
+   additions_len = (uint32_t)RBUF_LEN(index->additions);
    if (RHMAP_HAS(index->index, hash))
    {
       bucket = RHMAP_PTR(index->index, hash);
@@ -286,7 +286,7 @@ void uint32s_index_commit(uint32s_index_t *index)
 {
    uint32_t i, interval=index->commit_interval,threshold=index->commit_threshold;
    struct uint32s_frame_addition prev,cur;
-   uint32_t additions_len = RBUF_LEN(index->additions), limit;
+   uint32_t additions_len = (uint32_t)RBUF_LEN(index->additions), limit;
    /* The interval comes from the replay header.  Below 2 there is no
     * addition after the one being collected, so cur would be read one
     * past the end of the log; collect nothing instead. */
@@ -333,7 +333,7 @@ uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which)
    {
       int i;
       RARCH_LOG("[STATESTREAM] accessed garbage collected block %u\n", which);
-      for (i = RBUF_LEN(index->additions); i != 0; i--)
+      for (i = (int)RBUF_LEN(index->additions); i != 0; i--)
       {
          if (which >= index->additions[i - 1].first_index)
          {
@@ -359,7 +359,7 @@ void uint32s_index_pop(uint32s_index_t *index)
       RARCH_ERR("[STATESTREAM] trying to pop from empty index\n");
       return;
    }
-   idx  = RBUF_LEN(index->objects) - 1;
+   idx  = (uint32_t)RBUF_LEN(index->objects) - 1;
    hash = index->hashes[idx];
    /* RHMAP_PTR has add-on-miss semantics; gate on RHMAP_HAS so a
     * corrupted hashes[] entry that points to a no-longer-present hash
@@ -395,7 +395,7 @@ void uint32s_index_pop(uint32s_index_t *index)
 void uint32s_index_remove_after(uint32s_index_t *index, uint64_t frame)
 {
    int i;
-   for(i = RBUF_LEN(index->additions)-1; i >= 0; i--)
+   for(i = (int)RBUF_LEN(index->additions)-1; i >= 0; i--)
    {
       struct uint32s_frame_addition add = index->additions[i];
       if (add.frame_counter <= frame)
@@ -448,7 +448,7 @@ uint32_t uint32s_index_count(uint32s_index_t *index)
 {
    if (!index || !index->objects)
       return 0;
-   return RBUF_LEN(index->objects);
+   return (uint32_t)RBUF_LEN(index->objects);
 }
 
 #if DEBUG

@@ -311,8 +311,8 @@ static bool font_rasterizer_ft_render_glyph(void *data, uint32_t code,
 
    /* Some glyphs can be blank. */
    glyph->dims          = VIDEO_SCALE_PACK(copy_w, copy_h);
-   glyph->advance_x     = slot->advance.x >> 6;
-   glyph->advance_y     = slot->advance.y >> 6;
+   glyph->advance_x     = (int)(slot->advance.x >> 6);
+   glyph->advance_y     = (int)(slot->advance.y >> 6);
    glyph->draw_offset_x = slot->bitmap_left;
    glyph->draw_offset_y = -slot->bitmap_top;
    return true;

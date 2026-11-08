@@ -274,7 +274,7 @@ static void x11_set_window_pid(Display *dpy, Window win)
         RARCH_WARN("[X11] Failed to get hostname.\n");
     else
         XChangeProperty(dpy, win, XA_WM_CLIENT_MACHINE, XA_STRING, 8,
-            PropModeReplace, (unsigned char *)hostname, strlen(hostname));
+            PropModeReplace, (unsigned char *)hostname, (int)strlen(hostname));
     free(hostname);
 }
 
@@ -536,7 +536,7 @@ static void xdg_screensaver_inhibit(Window wnd)
       if (title_len == 0)
          title_len = strlcpy_lit(title, " ", sizeof(title));
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
-            8, PropModeReplace, (const unsigned char*) title, title_len);
+            8, PropModeReplace, (const unsigned char*) title, (int)title_len);
 
 #ifdef X_HAVE_UTF8_STRING
       /* Also set the EWMH _NET_WM_NAME (UTF8_STRING). Without this, a
@@ -556,11 +556,11 @@ static void xdg_screensaver_inhibit(Window wnd)
             if (XA_NET_WM_NAME)
                XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_NAME,
                      XA_UTF8_STRING, 8, PropModeReplace,
-                     (const unsigned char*)title, title_len);
+                     (const unsigned char*)title, (int)title_len);
             if (XA_NET_WM_ICON_NAME)
                XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_ICON_NAME,
                      XA_UTF8_STRING, 8, PropModeReplace,
-                     (const unsigned char*)title, title_len);
+                     (const unsigned char*)title, (int)title_len);
          }
       }
 #endif
@@ -888,7 +888,7 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event,
           * which makes mbrtowc a bit impractical.
           *
           * Use custom UTF8 -> UTF-32 conversion. */
-         num = utf8_conv_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
+         num = (int)utf8_conv_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
 #else
          num = XLookupString(&event->xkey, keybuf,
                sizeof(keybuf), &keysym, NULL); /* ASCII only. */
@@ -1330,7 +1330,7 @@ void x11_update_title(void *data)
        * preserved as-is to avoid changing long-standing behaviour for
        * old clients, which is exactly what they receive today. */
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
-            8, PropModeReplace, (const unsigned char*)title, _len);
+            8, PropModeReplace, (const unsigned char*)title, (int)_len);
 
 #ifdef X_HAVE_UTF8_STRING
       /* EWMH properties. Window managers that implement EWMH prefer
@@ -1349,11 +1349,11 @@ void x11_update_title(void *data)
             if (XA_NET_WM_NAME)
                XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_NAME,
                      XA_UTF8_STRING, 8, PropModeReplace,
-                     (const unsigned char*)title, _len);
+                     (const unsigned char*)title, (int)_len);
             if (XA_NET_WM_ICON_NAME)
                XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_ICON_NAME,
                      XA_UTF8_STRING, 8, PropModeReplace,
-                     (const unsigned char*)title, _len);
+                     (const unsigned char*)title, (int)_len);
          }
       }
 #endif

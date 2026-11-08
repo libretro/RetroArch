@@ -386,7 +386,7 @@ static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stre
    sgio.cmd_len      = cmd_len;
    sgio.cmdp         = cmd;
    sgio.dxferp       = buf;
-   sgio.dxfer_len    = len;
+   sgio.dxfer_len    = (unsigned)len;
    sgio.sbp          = sense;
    sgio.mx_sb_len    = sense_len;
    sgio.timeout      = 5000;
