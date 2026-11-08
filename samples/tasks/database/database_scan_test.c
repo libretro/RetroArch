@@ -3530,7 +3530,7 @@ static bool run_scan_cancel_setfp(const char *dir)
 
    loop_active    = true;
    scan_completed = false;
-   if (!task_push_dbscan(dir, scan_cb))
+   if (!task_push_dbscan(dir, scan_cb, NULL))
       return false;
    finder.func     = find_scan;
    finder.userdata = NULL;
