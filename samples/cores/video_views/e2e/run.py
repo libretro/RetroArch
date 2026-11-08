@@ -316,6 +316,11 @@ SW_IN_PLACE_DRIVERS = ('glcore', 'vulkan')
 WRITE_SW_RE = re.compile(
     r'\] Views\' presets have each view of a software frame written '
     r'straight in\.')
+# d3d9_hlsl's presets on a core's Direct3D 9 texture: each view copied
+# out of it on the GPU
+D3D9_HW_COPY_RE = re.compile(
+    r'\] Views\' presets have each view of a hardware frame copied out '
+    r'of the core\'s texture\.')
 # Drivers on shader model 4, where the rect presets' gathers of more than
 # the red component do not compile.
 SM4_DRIVERS = ('d3d10',)
@@ -1262,6 +1267,10 @@ def run_exact_case(retroarch, root, driver, case, suffix='',
     if driver in WRITE_SW_VIEWS and direct_drawn(d, WRITE_SW_RE) != written:
         errors.append('views %s straight in'
                       % ('not written' if written else 'written'))
+    if driver == 'd3d9_hlsl' and hw == 'd3d9' and mapopt != 'none' \
+            and direct_drawn(d, D3D9_HW_COPY_RE) != bool(preset):
+        errors.append('views %s out of the core\'s texture'
+                      % ('copied' if not preset else 'not copied'))
     shots = sorted(x for x in os.listdir(os.path.join(d, 'shots'))
                    if x.endswith('.png'))
     if not shots:
@@ -1543,10 +1552,8 @@ def driver_jobs(retroarch, root, driver):
         if driver == 'glcore':
             runs.append(('-preset-blit', NO_COPY_IMAGE,
                          'framebuffer blits', HISTORY_PRESET))
-        # A D3D9 core's texture through a preset is drawn whole
-        if not (driver == 'd3d9_hlsl' and case[3] != 'off'):
-            runs += [(suffix, None, None, preset)
-                     for suffix, preset in DRIVER_PRESETS.get(driver, [])]
+        runs += [(suffix, None, None, preset)
+                 for suffix, preset in DRIVER_PRESETS.get(driver, [])]
         first, lines, failed = None, [], 0
         for suffix, env_extra, path, preset in runs:
             errors, rows = run_exact_case(

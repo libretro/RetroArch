@@ -336,8 +336,9 @@ static bool D3D9V_FN(views_setup)(d3d9_video_t *d3d,
       d3d->views.preset_seen = true;
       RARCH_LOG(D3D9V_TAG " Views drawn through the preset, each by a "
             "chain of its own.\n");
-      RARCH_LOG(D3D9V_TAG " Views' presets have each view of a software "
-            "frame written straight in.\n");
+      if (!d3d->views.hw_frame)
+         RARCH_LOG(D3D9V_TAG " Views' presets have each view of a "
+               "software frame written straight in.\n");
    }
    return views;
 }

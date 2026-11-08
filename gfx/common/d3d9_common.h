@@ -110,6 +110,10 @@ typedef struct d3d9_views
    bool                  active;
    bool                  direct_seen;
    bool                  preset_seen;
+   /* The frame drawn is a hardware core's texture: the preset chains'
+    * frames are render targets each view is copied into */
+   bool                  hw_frame;
+   bool                  hw_seen;
 } d3d9_views_t;
 #endif
 

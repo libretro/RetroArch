@@ -872,6 +872,135 @@ static void ring_run(HWND w, bool ex, bool dupe)
    IDirect3DDevice9_Release(d3d.dev);
 }
 
+/* A render target's top level, TEX_W x TEX_H, into @out */
+static bool read_target(LPDIRECT3DDEVICE9 dev, LPDIRECT3DTEXTURE9 rt,
+      uint32_t *out)
+{
+   D3DLOCKED_RECT lr;
+   unsigned y;
+   bool ok                  = false;
+   LPDIRECT3DTEXTURE9 sys   = NULL;
+   LPDIRECT3DSURFACE9 s_rt  = NULL, s_sys = NULL;
+   if (FAILED(IDirect3DDevice9_CreateTexture(dev, TEX_W, TEX_H, 1, 0,
+               D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &sys, NULL)))
+      return false;
+   IDirect3DTexture9_GetSurfaceLevel(rt, 0, &s_rt);
+   IDirect3DTexture9_GetSurfaceLevel(sys, 0, &s_sys);
+   if (     SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(dev, s_rt, s_sys))
+         && SUCCEEDED(IDirect3DTexture9_LockRect(sys, 0, &lr, NULL,
+               D3DLOCK_READONLY)))
+   {
+      for (y = 0; y < TEX_H; y++)
+         memcpy(out + y * TEX_W, (uint8_t*)lr.pBits + y * lr.Pitch,
+               TEX_W * 4);
+      IDirect3DTexture9_UnlockRect(sys, 0);
+      ok = true;
+   }
+   IDirect3DSurface9_Release(s_rt);
+   IDirect3DSurface9_Release(s_sys);
+   IDirect3DTexture9_Release(sys);
+   return ok;
+}
+
+/* @rt holds frame 1's @v at its corner and black past it */
+static bool target_holds(LPDIRECT3DDEVICE9 dev, LPDIRECT3DTEXTURE9 rt,
+      const struct retro_video_view *v)
+{
+   static uint32_t buf[TEX_W * TEX_H];
+   unsigned x, y;
+   if (!read_target(dev, rt, buf))
+      return false;
+   for (y = 0; y < TEX_H; y++)
+      for (x = 0; x < TEX_W; x++)
+      {
+         uint32_t got = buf[y * TEX_W + x] & 0xffffff;
+         if (x < v->width && y < v->height
+               ? got != px(1, v->x + x, v->y + y) : got != 0)
+            return false;
+      }
+   return true;
+}
+
+/* A hardware frame's view copied out of the core's render target into
+ * a preset chain's, d3d9_hlsl_views_hw_copy: its texels as they are at
+ * the corner, black past them, however large the view the slot held */
+static void views_hw_copy_run(HWND w, bool ex)
+{
+   static uint8_t frame[TEX_W * 4 * TEX_H];
+   struct retro_video_view big, small;
+   LPDIRECT3DDEVICE9 dev   = make_device(w, ex, D3DSWAPEFFECT_DISCARD);
+   LPDIRECT3DTEXTURE9 core = NULL, slot = NULL, sys = NULL;
+   LPDIRECT3DSURFACE9 s_sys = NULL, s_core = NULL;
+   hlsl_renderchain_t *c   = (hlsl_renderchain_t*)calloc(1, sizeof(*c));
+   D3DLOCKED_RECT lr;
+   unsigned y;
+
+   printf("%s: a hardware frame's views into a preset's chain\n",
+         ex ? "D3D9Ex" : "D3D9");
+   if (!dev || !c)
+   {
+      CHECK(false, "views copy device created");
+      free(c);
+      return;
+   }
+   write_frame(frame, TEX_W * 4, 1, TEX_W, TEX_H);
+   CHECK(     SUCCEEDED(IDirect3DDevice9_CreateTexture(dev, TEX_W, TEX_H, 1,
+                  D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT,
+                  &core, NULL))
+         && SUCCEEDED(IDirect3DDevice9_CreateTexture(dev, TEX_W, TEX_H, 1,
+                  D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT,
+                  &slot, NULL))
+         && SUCCEEDED(IDirect3DDevice9_CreateTexture(dev, TEX_W, TEX_H, 1,
+                  0, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &sys, NULL)),
+         "the core's and the chain's render targets");
+   if (core && slot && sys
+         && SUCCEEDED(IDirect3DTexture9_LockRect(sys, 0, &lr, NULL, 0)))
+   {
+      for (y = 0; y < TEX_H; y++)
+         memcpy((uint8_t*)lr.pBits + y * lr.Pitch, frame + y * TEX_W * 4,
+               TEX_W * 4);
+      IDirect3DTexture9_UnlockRect(sys, 0);
+      IDirect3DTexture9_GetSurfaceLevel(sys, 0, &s_sys);
+      IDirect3DTexture9_GetSurfaceLevel(core, 0, &s_core);
+      IDirect3DDevice9_UpdateSurface(dev, s_sys, NULL, s_core, NULL);
+      IDirect3DSurface9_Release(s_sys);
+      IDirect3DSurface9_Release(s_core);
+
+      c->chain.dev         = dev;
+      c->chain.prev.tex[0] = slot;
+      memset(&big, 0, sizeof(big));
+      big.x       = 40;
+      big.y       = 24;
+      big.width   = 100;
+      big.height  = 60;
+      small       = big;
+      small.x     = 8;
+      small.y     = 4;
+      small.width = 50;
+      small.height = 30;
+      CHECK(d3d9_hlsl_views_hw_copy(c, core, &big)
+            && target_holds(dev, slot, &big),
+            "a view copied texel for texel, black past it");
+      CHECK(c->chain.prev.last_dims[0] == VIDEO_SCALE_PACK(100, 60),
+            "the slot holds the view's size");
+      CHECK(d3d9_hlsl_views_hw_copy(c, core, &small)
+            && target_holds(dev, slot, &small),
+            "a smaller view after it leaves black past it");
+      CHECK(d3d9_hlsl_views_hw_copy(c, core, &small)
+            && target_holds(dev, slot, &small),
+            "and again the same");
+      c->chain.prev.tex[0] = NULL;
+   }
+   if (sys)
+      IDirect3DTexture9_Release(sys);
+   if (slot)
+      IDirect3DTexture9_Release(slot);
+   if (core)
+      IDirect3DTexture9_Release(core);
+   free(c);
+   IDirect3DDevice9_Release(dev);
+}
+
 int main(void)
 {
    HWND w = CreateWindowA("STATIC", "d3d9_ex_test", WS_OVERLAPPEDWINDOW,
@@ -894,6 +1023,8 @@ int main(void)
    ring_run(w, true, false);
    ring_run(w, false, true);
    ring_run(w, true, true);
+   views_hw_copy_run(w, false);
+   views_hw_copy_run(w, true);
    DestroyWindow(w);
    return fails ? 1 : 0;
 }

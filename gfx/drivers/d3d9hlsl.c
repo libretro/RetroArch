@@ -696,6 +696,9 @@ typedef struct hlsl_renderchain
    unsigned          sized_dims;
    unsigned          last_dims;
    bool              ran;
+   /* Its frames are render targets a hardware frame's view is copied
+    * into, in the core's texture's format */
+   bool              hw;
 } hlsl_renderchain_t;
 
 static bool hlsl_d3d9_pipeline_ready(hlsl_renderchain_t *chain,
@@ -6808,12 +6811,38 @@ static hlsl_renderchain_t *d3d9_hlsl_views_chain_new(d3d9_video_t *d3d,
    if (FAILED(IDirect3DTexture9_GetLevelDesc(main->chain.prev.tex[0], 0,
                &desc)))
       goto error;
+#ifdef D3D9_HW_RENDER
+   /* A hardware frame's views are copied on the GPU, as they lie */
+   if ((c->hw = d3d->views.hw_frame) && (!d3d->hw.tex
+            || FAILED(IDirect3DTexture9_GetLevelDesc(d3d->hw.tex, 0, &desc))))
+      goto error;
+#endif
    for (i = 0; i < TEXTURES; i++)
    {
-      if (     FAILED(IDirect3DDevice9_CreateVertexBuffer(c->chain.dev,
+      if (FAILED(IDirect3DDevice9_CreateVertexBuffer(c->chain.dev,
                   4 * sizeof(struct Vertex), D3DUSAGE_WRITEONLY, 0,
-                  D3DPOOL_DEFAULT, &c->chain.prev.vertex_buf[i], NULL))
-            || FAILED(d3d9_tex_create(c->chain.dev, tw, th, 1,
+                  D3DPOOL_DEFAULT, &c->chain.prev.vertex_buf[i], NULL)))
+         goto error;
+      if (c->hw)
+      {
+         LPDIRECT3DSURFACE9 surf = NULL;
+         if (FAILED(IDirect3DDevice9_CreateTexture(c->chain.dev, tw, th, 1,
+                     D3DUSAGE_RENDERTARGET, desc.Format, D3DPOOL_DEFAULT,
+                     (LPDIRECT3DTEXTURE9*)&c->chain.prev.tex[i], NULL)))
+         {
+            c->chain.prev.tex[i] = NULL;
+            goto error;
+         }
+         /* What a view smaller than it leaves is black, as a software
+          * frame's texture is */
+         if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(
+                     (LPDIRECT3DTEXTURE9)c->chain.prev.tex[i], 0, &surf)))
+         {
+            IDirect3DDevice9_ColorFill(c->chain.dev, surf, NULL, 0);
+            IDirect3DSurface9_Release(surf);
+         }
+      }
+      else if (FAILED(d3d9_tex_create(c->chain.dev, tw, th, 1,
                   0, desc.Format,
                   (LPDIRECT3DTEXTURE9*)&c->chain.prev.tex[i])))
          goto error;
@@ -6837,15 +6866,25 @@ static void d3d9_hlsl_views_free_chains(d3d9_video_t *d3d, unsigned first)
    }
 }
 
-/* A preset chain for each of the map's views [0, count) that has none */
+/* A preset chain for each of the map's views [0, count) that has none,
+ * or one made for the other kind of frame */
 static void d3d9_hlsl_views_build_chains(d3d9_video_t *d3d,
       const video_views_map_t *map)
 {
    unsigned i;
    for (i = 0; i < d3d->views.chains.count && i < map->num_views; i++)
+   {
+      hlsl_renderchain_t *c = (hlsl_renderchain_t*)
+         d3d->views.chains.preset[i];
+      if (c && c->hw != d3d->views.hw_frame)
+      {
+         hlsl_d3d9_renderchain_free(c);
+         d3d->views.chains.preset[i] = NULL;
+      }
       if (!d3d->views.chains.preset[i])
          d3d->views.chains.preset[i] = d3d9_hlsl_views_chain_new(d3d, i,
                map->views[i].width, map->views[i].height);
+   }
 }
 
 /* The MVP that puts a pass's quad over @dst within viewport @vp, turned
@@ -6905,9 +6944,52 @@ static void d3d9_hlsl_views_draw_pass(d3d9_video_t *d3d,
       (LPDIRECT3DPIXELSHADER9)(d)->views.ps[i])
 #include "../common/d3d9_views.h"
 
+#ifdef D3D9_HW_RENDER
+/* View @v of the core's texture @src copied into @c's frame for this
+ * draw, the texels as they are; false if it can't be */
+static bool d3d9_hlsl_views_hw_copy(hlsl_renderchain_t *c,
+      LPDIRECT3DTEXTURE9 src, const struct retro_video_view *v)
+{
+   RECT from, to;
+   LPDIRECT3DSURFACE9 s  = NULL;
+   LPDIRECT3DSURFACE9 t  = NULL;
+   bool ok               = false;
+   unsigned slot         = c->chain.prev.ptr;
+   unsigned dims         = VIDEO_SCALE_PACK(v->width, v->height);
+   LPDIRECT3DTEXTURE9 dst = (LPDIRECT3DTEXTURE9)c->chain.prev.tex[slot];
+   if (     !src || !dst
+         || FAILED(IDirect3DTexture9_GetSurfaceLevel(src, 0, &s))
+         || FAILED(IDirect3DTexture9_GetSurfaceLevel(dst, 0, &t)))
+      goto end;
+   /* A larger view this slot held before leaves black behind */
+   if (c->chain.prev.last_dims[slot] != dims)
+      IDirect3DDevice9_ColorFill(c->chain.dev, t, NULL, 0);
+   from.left   = (LONG)v->x;
+   from.top    = (LONG)v->y;
+   from.right  = (LONG)(v->x + v->width);
+   from.bottom = (LONG)(v->y + v->height);
+   to.left     = 0;
+   to.top      = 0;
+   to.right    = (LONG)v->width;
+   to.bottom   = (LONG)v->height;
+   ok = SUCCEEDED(IDirect3DDevice9_StretchRect(c->chain.dev, s, &from, t,
+            &to, D3DTEXF_POINT));
+   /* The size the first pass reads it at, as a software frame's put
+    * leaves it */
+   c->chain.prev.last_dims[slot] = dims;
+end:
+   if (s)
+      IDirect3DSurface9_Release(s);
+   if (t)
+      IDirect3DSurface9_Release(t);
+   return ok;
+}
+#endif
+
 /* @c's last pass over @dst, cut to @cut; with @again its frame was run
  * for an earlier placement. Each view of a software frame is written
- * straight from it into the chain's own texture. */
+ * straight from it into the chain's own texture, of a hardware frame
+ * copied out of the core's on the GPU. */
 static void d3d9_hlsl_views_draw_pass(d3d9_video_t *d3d,
       const struct d3d9_views_draw *d, void *data,
       const video_views_rect_t *dst, const video_views_rect_t *cut,
@@ -6918,10 +7000,27 @@ static void d3d9_hlsl_views_draw_pass(d3d9_video_t *d3d,
    hlsl_renderchain_t *c            = (hlsl_renderchain_t*)data;
    const struct retro_video_view *v = &d->video_info->views.views[c->view];
 
+#ifdef D3D9_HW_RENDER
+   /* Made for the other kind of frame: made again on the next */
+   if (c->hw != d3d->views.hw_frame)
+      return;
+#endif
    if (!again)
    {
       unsigned old  = c->chain.passes->data[0].info.tex_dims;
       unsigned size = d->rects[c->view].dims;
+#ifdef D3D9_HW_RENDER
+      if (c->hw)
+      {
+         /* Its render targets are made at the view's size, with the
+          * map: one larger than them is not drawn */
+         if (     v->width  > VIDEO_SCALE_W(old)
+               || v->height > VIDEO_SCALE_H(old)
+               || !d3d9_hlsl_views_hw_copy(c, d->tex, v))
+            return;
+      }
+      else
+#endif
       if (!d3d9_hlsl_renderchain_fit_frame(&c->chain, v->width, v->height))
          return;
       if (     c->sized_dims != size
@@ -6934,6 +7033,18 @@ static void d3d9_hlsl_views_draw_pass(d3d9_video_t *d3d,
                &c->view_vp);
          c->sized_dims     = size;
       }
+#ifdef D3D9_HW_RENDER
+      /* Read as it was copied: nothing to upload */
+      if (c->hw)
+      {
+         c->chain.hw_tex = (LPDIRECT3DTEXTURE9)
+            c->chain.prev.tex[c->chain.prev.ptr];
+         d3d9_hlsl_renderchain_run(d3d, c, NULL, v->width, v->height, 0,
+               &c->last_dims);
+         c->chain.hw_tex = NULL;
+      }
+      else
+#endif
       d3d9_hlsl_renderchain_run(d3d, c, (const uint8_t*)d->frame
             + (size_t)v->y * d->pitch + (size_t)v->x * c->chain.pixel_size,
             v->width, v->height, d->pitch, &c->last_dims);
@@ -8713,9 +8824,17 @@ static bool d3d9_hlsl_frame_body(void *data, const void *frame,
    d3d->views.frame_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
 #ifdef D3D9_HW_RENDER
    /* A core's texture has its views drawn straight from it, where they
-    * lie; a preset, whose chains each take a view of a software frame,
-    * draws it whole */
-   if (!hw_frame || !d3d9_hlsl_views_preset(d3d))
+    * lie, or through a preset from copies of them made on the GPU */
+   d3d->views.hw_frame = hw_frame;
+   if (     hw_frame && d3d9_hlsl_views_preset(d3d)
+         && video_info->views.num_views && !d3d->views.hw_seen)
+   {
+      d3d->views.hw_seen = true;
+      RARCH_LOG("[D3D9 HLSL] Views' presets have each view of a hardware "
+            "frame copied out of the core's texture.\n");
+   }
+   /* None handed over: nothing to draw them from */
+   if (!hw_frame || d3d->hw.tex)
 #endif
    views = d3d9_hlsl_views_setup(d3d, video_info, msg,
          d3d->menu && d3d->menu->enabled, &views_blend, &views_direct,
