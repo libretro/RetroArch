@@ -1070,6 +1070,8 @@ typedef struct
       int16_t  *pair_out_i;
       float    *out_f;           /* the resampled extras, frames * channels */
       int16_t  *out_i;
+      const float   *read_f;     /* out_f, or in_f borrowed at unity */
+      const int16_t *read_i;
       size_t    cap_in;          /* frames the in buffers hold */
       size_t    cap_out;         /* frames the out and pair buffers hold */
       size_t    in_frames;       /* pending in this flush */

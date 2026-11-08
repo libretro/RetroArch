@@ -886,6 +886,8 @@ static void audio_driver_extra_resample(audio_driver_state_t *audio_st,
    size_t f, out_frames = 0;
    if (!audio_st->extra.pending)
       return;
+   audio_st->extra.read_f = audio_st->extra.out_f;
+   audio_st->extra.read_i = audio_st->extra.out_i;
    if (input_frames > audio_st->extra.in_frames)
       input_frames = audio_st->extra.in_frames;
    /* Keep the extra histories fresh while the front pair bypasses SRC.
@@ -921,14 +923,14 @@ static void audio_driver_extra_resample(audio_driver_state_t *audio_st,
          if (audio_st->extra.is_float)
             convert_float_to_s16(audio_st->extra.out_i, audio_st->extra.in_f, samples);
          else
-            memcpy(audio_st->extra.out_i, audio_st->extra.in_i, samples * sizeof(int16_t));
+            audio_st->extra.read_i = audio_st->extra.in_i;
       }
       else
       {
          if (!audio_st->extra.is_float)
             convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.in_i, samples, 1.0f);
          else
-            memcpy(audio_st->extra.out_f, audio_st->extra.in_f, samples * sizeof(float));
+            audio_st->extra.read_f = audio_st->extra.in_f;
       }
       audio_st->extra.out_frames = n;
       audio_st->extra.pending    = false;
@@ -2961,7 +2963,7 @@ static void audio_driver_extra_merge_layout_f32(audio_driver_state_t *audio_st,
    }
    for (f = 0; f < frames; f++)
    {
-      const float *e = audio_st->extra.out_f + (first + f) * ch;
+      const float *e = audio_st->extra.read_f + (first + f) * ch;
       float *d = dev + f * och;
       for (k = 0; k < n; k++)
       {
@@ -3017,7 +3019,7 @@ static void audio_driver_extra_merge_s16(audio_driver_state_t *audio_st,
    }
    for (f = 0; f < frames; f++)
    {
-      const int16_t *e = audio_st->extra.out_i + (first + f) * ch;
+      const int16_t *e = audio_st->extra.read_i + (first + f) * ch;
       int16_t *d = dev + f * och;
       for (k = 0; k < n; k++)
       {
@@ -3230,8 +3232,11 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
       if (audio_st->extra.out_frames >= frames && audio_st->extra.channels)
       {
          if (audio_st->extra.res_int16)
-            convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.out_i,
+         {
+            convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.read_i,
                   frames * audio_st->extra.channels, 1.0f);
+            audio_st->extra.read_f = audio_st->extra.out_f;
+         }
          audio_driver_extra_merge_layout_f32(audio_st, audio_st->virt_buf,
                0, frames, AUDIO_LAYOUT_5POINT1, 6);
          audio_st->extra.out_frames = 0;
@@ -3274,7 +3279,10 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
       ssize_t w;
       /* extras resampled as float behind an int16 front: narrow */
       if (u.merge && !audio_st->extra.res_int16)
-         convert_float_to_s16(audio_st->extra.out_i, audio_st->extra.out_f, frames * audio_st->extra.channels);
+      {
+         convert_float_to_s16(audio_st->extra.out_i, audio_st->extra.read_f, frames * audio_st->extra.channels);
+         audio_st->extra.read_i = audio_st->extra.out_i;
+      }
       w = audio_driver_stage_write(audio_st, audio, audio_stage_upmix_s16,
             &u, frames, audio_st->out_channels * sizeof(int16_t),
             (uint8_t*)audio_st->upmix_i16, wait_room);
@@ -3283,7 +3291,10 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
       return w;
    }
    if (u.merge && audio_st->extra.res_int16)
-      convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.out_i, frames * audio_st->extra.channels, 1.0f);
+   {
+      convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.read_i, frames * audio_st->extra.channels, 1.0f);
+      audio_st->extra.read_f = audio_st->extra.out_f;
+   }
    {
       ssize_t w;
       if (!stereo_is_float)

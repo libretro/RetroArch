@@ -232,7 +232,7 @@ static void check_bypass(void)
       st.extra.pending = true;
       audio_driver_extra_resample(&st, 1.0, 256, true, false);
       CHECK(st.extra.out_frames == 256);
-      CHECK(memcmp(st.extra.out_f, st.extra.in_f, 256 * 4 * sizeof(float)) == 0);
+      CHECK(st.extra.read_f == st.extra.in_f);
       CHECK(reset_calls == 2);
    }
    memset(st.extra.in_f, 0, 256 * 4 * sizeof(float));
@@ -314,8 +314,12 @@ static void check_direct_bypass(void)
                audio_driver_extra_resample(&st, 1, counts[pass], true, integer != 0);
                CHECK(!st.extra.pending && st.extra.out_frames == n);
                CHECK(heap_calls == before);
-               if (integer) CHECK(memcmp(st.extra.out_i, expected_i, n * ch * sizeof(int16_t)) == 0);
-               else CHECK(memcmp(st.extra.out_f, expected_f, n * ch * sizeof(float)) == 0);
+               if (integer) CHECK(memcmp(st.extra.read_i, expected_i, n * ch * sizeof(int16_t)) == 0);
+               else CHECK(memcmp(st.extra.read_f, expected_f, n * ch * sizeof(float)) == 0);
+               /* The same format reads the input where it lies */
+               if (integer != source_float)
+                  CHECK(integer ? st.extra.read_i == st.extra.in_i
+                        : st.extra.read_f == st.extra.in_f);
                if (ch != 2)
                {
                   for (i = 0; !integer && i < 32 * 2 * sizeof(float); i++)
@@ -334,9 +338,9 @@ static void check_direct_bypass(void)
                   CHECK(!st.extra.pair_in && !st.extra.pair_out);
                   CHECK(!st.extra.pair_in_i && !st.extra.pair_out_i);
                }
-               for (i = (unsigned)(n * ch * sizeof(float)); i < 32 * ch * sizeof(float); i++)
+               for (i = (integer != source_float || integer) ? 0 : (unsigned)(n * ch * sizeof(float)); i < 32 * ch * sizeof(float); i++)
                   CHECK(((unsigned char*)st.extra.out_f)[i] == 0x5a);
-               for (i = (unsigned)(n * ch * sizeof(int16_t)); i < 32 * ch * sizeof(int16_t); i++)
+               for (i = (integer != source_float || !integer) ? 0 : (unsigned)(n * ch * sizeof(int16_t)); i < 32 * ch * sizeof(int16_t); i++)
                   CHECK(((unsigned char*)st.extra.out_i)[i] == 0x5a);
             }
             st.resampler = &sinc_resampler;
