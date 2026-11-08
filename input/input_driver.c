@@ -151,6 +151,17 @@
 #define INPUT_NOINLINE
 #endif
 
+/* The other way: a once-a-port-a-frame helper with a single call site
+ * that the compiler's size limits would leave out of line. Not at -O0
+ * or -Os. */
+#if defined(__GNUC__) && defined(__OPTIMIZE__) && !defined(__OPTIMIZE_SIZE__)
+#define INPUT_FORCEINLINE INLINE __attribute__((always_inline))
+#elif defined(_MSC_VER) && _MSC_VER >= 1200
+#define INPUT_FORCEINLINE __forceinline
+#else
+#define INPUT_FORCEINLINE
+#endif
+
 #define HOLD_BTN_DELAY_SEC 2
 
 /* Precomputed reciprocals used in analog input scaling.
@@ -16289,7 +16300,7 @@ static struct
    uint8_t      hotkey_port;
 } input_enabler_tap;
 
-static void input_keys_pressed(
+static INPUT_FORCEINLINE void input_keys_pressed(
       unsigned port,
       unsigned hotkey_port,
       bool is_menu,
