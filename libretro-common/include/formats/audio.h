@@ -228,6 +228,10 @@ void  audio_transfer_free(void *data, enum audio_type_enum type);
 
 /* Stream format, valid after a successful start. Any out pointer may be
  * NULL. total_frames is 0 when the stream length is unknown. */
+/* WAVE speaker-mask downmix for native WMA/XMA. False for other arms. */
+bool audio_transfer_stereo_matrix(void *data, enum audio_type_enum type,
+      int32_t matrix[8][2]);
+
 bool  audio_transfer_info(void *data, enum audio_type_enum type,
       unsigned *channels, unsigned *rate, uint64_t *total_frames);
 

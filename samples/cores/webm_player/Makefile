@@ -77,6 +77,8 @@ OBJS := $(SAMPLE_OBJDIR)/webm_player_test.o \
 
 all: $(TARGET)
 
+$(call sample_objs,$(COMMON)/formats/wma/rwma_stream.o): $(COMMON)/formats/wma/rwma_xma_stream.h
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 

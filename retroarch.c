@@ -3285,7 +3285,7 @@ enum rarch_content_type path_is_media_type(const char *path)
    }
 
 #if defined(HAVE_RWMA) && (defined(HAVE_WEBMPLAYER) || defined(HAVE_AUDIOMIXER))
-   if (string_is_equal(ext_lower, "wma") || string_is_equal(ext_lower, "xwma"))
+   if (string_is_equal(ext_lower, "wma") || string_is_equal(ext_lower, "xwma") || string_is_equal(ext_lower, "xma"))
       return RARCH_CONTENT_MUSIC;
 #endif
    switch (msg_hash_to_file_type(ext_lower))
@@ -10033,7 +10033,8 @@ bool retroarch_main_init_core(int argc, char *argv[],
 #ifdef HAVE_RWMA
                         || (cont_type == RARCH_CONTENT_MUSIC &&
                            (string_is_equal_noncase(path_get_extension(fullpath), "wma") ||
-                            string_is_equal_noncase(path_get_extension(fullpath), "xwma")))
+                            string_is_equal_noncase(path_get_extension(fullpath), "xwma") ||
+                            string_is_equal_noncase(path_get_extension(fullpath), "xma")))
 #endif
                      )
                   {

@@ -35,6 +35,8 @@ void rwma_free(rwma_t *decoder);
 void rwma_reset(rwma_t *decoder);
 int rwma_decode_xma(rwma_t *decoder, const uint8_t *data, size_t bytes,
                     size_t bit_offset, size_t bit_count, rwma_frame *out);
+/* Final overlap tail, borrowed once. Reset before decoding again. */
+int rwma_drain_xma(rwma_t *decoder, rwma_frame *out);
 int rwma_decode_packet(rwma_t *decoder, const uint8_t *data, size_t bytes,
                        size_t *consumed, rwma_frame *out);
 RETRO_END_DECLS

@@ -23,7 +23,12 @@ reference: $(REFERENCE_TARGET)
 $(REFERENCE_TARGET): rwma_reference.c $(SOURCES)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -std=gnu89 -Wdeclaration-after-statement rwma_reference.c ../../../formats/wma/rwma_pro.c ../../../formats/wma/rwma_standard.c $$(pkg-config --cflags --libs libavformat libavcodec libavutil) $(LDFLAGS) -lm -o $@
 
-clean:
-	rm -f $(TARGET) $(REFERENCE_TARGET)
+file-reference: rwma_file_reference
 
-.PHONY: all test clean reference
+rwma_file_reference: rwma_file_reference.c $(SOURCES) ../../../formats/wma/rwma_stream.c ../../../formats/wma/rwma_xma_stream.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(WARN) rwma_file_reference.c ../../../formats/wma/rwma_pro.c ../../../formats/wma/rwma_standard.c ../../../formats/wma/rwma_stream.c $(LDFLAGS) -lm -o $@
+
+clean:
+	rm -f $(TARGET) $(REFERENCE_TARGET) rwma_file_reference rwma_file_reference.exe
+
+.PHONY: all test clean reference file-reference

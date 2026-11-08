@@ -65,12 +65,20 @@ Arbitrary seeks and caller-demuxed input are not implemented by this arm.
 `audio_mixer_load_wma` uses the existing streaming mixer paths. RetroArch's
 music loader uses VFS-backed moving windows for WMA, including small files.
 
-The built-in media player accepts `.wma` and `.xwma` when enabled. It keeps
+The built-in media player accepts `.wma`, `.xwma` and `.xma` when enabled. It keeps
 one bounded output interval, prefers float callbacks and falls back to S16
 for older frontends. Source-rate intervals use integer remainder accounting,
 without a resampler or host clock. Its input is a single-owner data_transfer
 window. Audio-only position states and seek controls are not yet exposed.
 Existing FFmpeg/MPV player selection takes precedence when built in.
 
-Raw XMA is available through the decoder API; XMA file-container playback is
-not yet implemented by the frontend wrappers.
+XMA2 WAVE files use up to four interleaved mono/stereo streams. Complete
+frames borrow packet storage; only frames crossing packets use bounded
+compressed scratch. Startup alignment and PlayBegin/PlayLength are applied
+without copying PCM. The final transform overlap is borrowed once through
+`rwma_drain_xma`; reset is required before reusing a drained raw decoder.
+The raw-frame API retains its original untrimmed 512-sample contract.
+Explicit WAVE speaker masks select stereo weights at voice creation, including
+FL/FR/LFE files; LFE is omitted from stereo as in the existing mixer policy.
+Noncanonical mono/stereo layouts are refused rather than silently remapped.
+XMA1/legacy XMA2 headers and embedded loop regions are not implemented.

@@ -18,6 +18,12 @@ static const uint8_t asf_audio[16] = {0x40, 0x9e, 0x69, 0xf8, 0x4d, 0x5b, 0xcf, 
 static const uint8_t asf_spread[16] = {0x50, 0xcd, 0xc3, 0xbf, 0x8f, 0x61, 0xcf, 0x11,
                                        0x8b, 0xb2, 0,    0xaa, 0,    0xb4, 0xe2, 0x20};
 
+typedef struct stream_xma_cursor
+{
+   size_t packet, next;
+   unsigned position, left, active;
+} stream_xma_cursor;
+
 struct rwma_stream
 {
    const uint8_t *data, *object;
@@ -29,6 +35,12 @@ struct rwma_stream
    unsigned channels, rate, align, packet_size, stream_number;
    unsigned payloads, num_type, off_type, rep_type, pay_type;
    unsigned multi, asf, object_number, failed;
+   rwma_t *xma[4];
+   rwma_frame xma_frames[4];
+   stream_xma_cursor xma_cursor[4];
+   uint64_t xma_begin, xma_length, xma_skip, xma_left;
+   uint32_t channel_mask;
+   unsigned xma_streams, xma_ready;
 };
 
 static uint32_t stream_u32(const uint8_t *p)
@@ -44,12 +56,16 @@ static size_t stream_available(const rwma_stream *s)
 {
    return s->avail ? RWMA_MIN(s->avail, s->size) : s->size;
 }
+#include "rwma_xma_stream.h"
 
 void rwma_stream_close(rwma_stream *s)
 {
+   unsigned i;
    if (!s)
       return;
    rwma_free(s->decoder);
+   for (i = 0; i < 4; i++)
+      rwma_free(s->xma[i]);
    free(s->assembly);
    free(s);
 }
@@ -77,9 +93,14 @@ static int stream_wave(rwma_stream *s, rwma_config *cfg)
          int status;
          if (next > available)
             return RWMA_STREAM_WAIT;
-         status = rwma_parse_wave(cfg, s->data + at + 8, bytes);
+         if (bytes >= 52 && s->data[at + 8] == 0x66 && s->data[at + 9] == 1)
+            status = stream_xma_format(s, cfg, s->data + at + 8);
+         else
+            status = rwma_parse_wave(cfg, s->data + at + 8, bytes);
          if (status)
             return status;
+         if (cfg->codec == RWMA_PRO && cfg->extra_size >= 6)
+            s->channel_mask = stream_u32(cfg->extra + 2);
          if (!memcmp(s->data + 8, "XWMA", 4))
          {
             static const uint8_t v2[6] = {0, 0, 0, 0, 31, 0};
@@ -170,6 +191,8 @@ static int stream_asf(rwma_stream *s, rwma_config *cfg)
          {
             found = 1;
             s->stream_number = flags & 127;
+            if (cfg->codec == RWMA_PRO && cfg->extra_size >= 6)
+               s->channel_mask = stream_u32(cfg->extra + 2);
          }
          else if (status != RWMA_UNSUPPORTED)
             return status;
@@ -228,7 +251,22 @@ int rwma_stream_open(rwma_stream **out, const uint8_t *data, size_t size, size_t
       status = RWMA_STREAM_WAIT;
    else
       status = RWMA_UNSUPPORTED;
-   if (!status)
+   if (!status && cfg.codec == RWMA_PRO && cfg.extra_size >= 6)
+      s->channel_mask = stream_u32(cfg.extra + 2);
+   if (!status && s->xma_streams)
+   {
+      unsigned i;
+      if ((s->end - s->start) % 2048 || s->end - s->start < 2048 * s->xma_streams)
+         status = RWMA_BAD_DATA;
+      for (i = 0; !status && i < s->xma_streams; i++)
+      {
+         rwma_config lane = cfg;
+         lane.channels = RWMA_MIN(2, cfg.channels - i * 2);
+         status = rwma_create(&s->xma[i], &lane);
+         s->xma_cursor[i].packet = s->start + i * 2048;
+      }
+   }
+   else if (!status)
       status = rwma_create(&s->decoder, &cfg);
    if (status)
    {
@@ -239,8 +277,10 @@ int rwma_stream_open(rwma_stream **out, const uint8_t *data, size_t size, size_t
    s->rate = cfg.sample_rate;
    s->align = cfg.block_align;
    s->capacity = 16u * cfg.block_align;
-   if (s->asf)
+   if (s->asf || s->xma_streams)
    {
+      if (s->xma_streams)
+         s->capacity = s->xma_streams * 4096;
       s->assembly = (uint8_t *)malloc(s->capacity);
       if (!s->assembly)
       {
@@ -420,6 +460,16 @@ int rwma_stream_next(rwma_stream *s, rwma_frame *frame)
    memset(frame, 0, sizeof(*frame));
    if (!s || s->failed)
       return RWMA_BAD_DATA;
+   if (s->xma_streams)
+   {
+      int status = stream_xma_next(s, frame);
+      if (status < 0)
+      {
+         s->failed = 1;
+         memset(frame, 0, sizeof(*frame));
+      }
+      return status;
+   }
    for (steps = 0; steps < 256; steps++)
    {
       const uint8_t *p;
@@ -472,9 +522,19 @@ invalid:
 
 void rwma_stream_rewind(rwma_stream *s)
 {
+   unsigned i;
    if (!s)
       return;
    rwma_reset(s->decoder);
+   s->xma_ready = 0;
+   s->xma_skip = s->xma_begin;
+   s->xma_left = s->xma_length;
+   for (i = 0; i < s->xma_streams; i++)
+   {
+      rwma_reset(s->xma[i]);
+      memset(&s->xma_cursor[i], 0, sizeof(s->xma_cursor[i]));
+      s->xma_cursor[i].packet = s->start + i * 2048;
+   }
    s->cursor = s->start;
    s->packet_start = s->start;
    s->payloads = s->failed = 0;
@@ -498,6 +558,19 @@ size_t rwma_stream_tell(const rwma_stream *s)
 {
    if (!s)
       return 0;
+   if (s->xma_streams)
+   {
+      size_t tell = s->end;
+      unsigned i;
+      for (i = 0; i < s->xma_streams; i++)
+      {
+         const stream_xma_cursor *c = &s->xma_cursor[i];
+         size_t at = c->active && !c->left ? c->next : c->packet;
+         if (at < tell)
+            tell = at;
+      }
+      return tell;
+   }
    return s->asf && (s->payloads || s->object_pos < s->object_size ||
                      s->compressed_at < s->compressed_end)
               ? s->packet_start
@@ -506,4 +579,8 @@ size_t rwma_stream_tell(const rwma_stream *s)
 size_t rwma_stream_read_end(const rwma_stream *s)
 {
    return s ? s->demand : 0;
+}
+uint32_t rwma_stream_channel_mask(const rwma_stream *s)
+{
+   return s ? s->channel_mask : 0;
 }

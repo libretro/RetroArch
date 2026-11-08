@@ -95,6 +95,13 @@ static void raw_test(void)
             "unaligned raw frame");
       zero_frame(&f, 512);
    }
+   check(!rwma_drain_xma(d, &f), "raw overlap drain");
+   zero_frame(&f, 256);
+   check(!rwma_drain_xma(d, &f) && !f.samples, "drain once");
+   check(rwma_decode_xma(d,data,sizeof(data),7,40,&f)==RWMA_BAD_DATA,
+         "reset required after drain");
+   rwma_reset(d);
+   check(!rwma_decode_xma(d,data,sizeof(data),7,40,&f), "decode after drain reset");
    check(rwma_decode_xma(d, data, 1, 0, 40, &f) == RWMA_BAD_DATA, "truncated raw span");
    check(!f.samples && !f.planes[0], "clear failed raw view");
    rwma_reset(d);

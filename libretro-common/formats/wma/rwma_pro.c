@@ -32,7 +32,7 @@ struct rwma_t
    int edges[8][29], band_count[8], remap[8][8][29];
    float sine[33];
    unsigned frame_length, depth, length_bits, bps;
-   unsigned failed, pending, drop_first, flags, in_packet, more;
+   unsigned failed, pending, drop_first, flags, in_packet, more, drained;
    int participants[8], n_participants, n_groups, explicit_limit;
 };
 
@@ -574,6 +574,8 @@ static int pro_frame(rwma_t *d, rwma_reader *r, size_t extent, rwma_frame *out)
 void rwma_reset(rwma_t *d)
 {
    unsigned c;
+   if (d)
+      d->drained = 0;
    if (!d)
       return;
    if (d->standard)
@@ -793,7 +795,7 @@ int rwma_decode_xma(rwma_t *d, const uint8_t *data, size_t bytes, size_t offset,
    if (!out)
       return RWMA_BAD_DATA;
    memset(out, 0, sizeof(*out));
-   if (!d || d->config.codec != RWMA_XMA_RAW || d->failed || !data ||
+   if (!d || d->config.codec != RWMA_XMA_RAW || d->failed || d->drained || !data ||
        bytes > INT_MAX / 8 || offset > bytes * 8 || bits < 18 ||
        bits > bytes * 8 - offset)
       return RWMA_BAD_DATA;
@@ -812,6 +814,32 @@ int rwma_decode_xma(rwma_t *d, const uint8_t *data, size_t bytes, size_t offset,
       memset(out, 0, sizeof(*out));
    }
    return status;
+}
+int rwma_drain_xma(rwma_t *d, rwma_frame *out)
+{
+   unsigned c;
+   if (!out)
+      return RWMA_BAD_DATA;
+   memset(out, 0, sizeof(*out));
+   if (!d || d->config.codec != RWMA_XMA_RAW || d->failed)
+      return RWMA_BAD_DATA;
+   if (d->drained || !d->pending)
+      return RWMA_OK;
+   for (c = 0; c < d->config.channels; c++)
+   {
+      rwma_lane *lane = &d->lane[c];
+      unsigned y, length = lane->previous;
+      float *tail = lane->pcm + d->frame_length;
+      const float *window = d->transform.windows[rwma_log2(length) - 6];
+      for (y = 0; y < length / 2; y++)
+         tail[d->frame_length / 2 - length / 2 + y] *= window[length - 1 - y];
+      out->planes[c] = tail;
+   }
+   out->samples = d->frame_length / 2;
+   out->channels = d->config.channels;
+   out->sample_rate = d->config.sample_rate;
+   d->drained = 1;
+   return RWMA_OK;
 }
 static void pro_roll(rwma_t *d)
 {

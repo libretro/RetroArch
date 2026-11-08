@@ -945,7 +945,7 @@ enum audio_type_enum audio_decode_get_type(const char *path)
    if (string_is_empty(ext))
       return AUDIO_TYPE_NONE;
 #ifdef HAVE_RWMA
-   if (string_is_equal_noncase(ext, "wma") || string_is_equal_noncase(ext, "xwma"))
+   if (string_is_equal_noncase(ext, "wma") || string_is_equal_noncase(ext, "xwma") || string_is_equal_noncase(ext, "xma"))
       return AUDIO_TYPE_WMA;
 #endif
    if (string_is_equal_noncase(ext, "flac"))
@@ -4364,6 +4364,49 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
       default:
          break;
    }
+   return false;
+}
+
+bool audio_transfer_stereo_matrix(void *data, enum audio_type_enum type,
+      int32_t matrix[8][2])
+{
+#ifdef HAVE_RWMA
+   if (data && matrix && type == AUDIO_TYPE_WMA)
+   {
+      static const uint32_t defaults[9] = {0,4,3,7,51,55,63,1807,1599};
+      struct audio_transfer_wma *a = (struct audio_transfer_wma*)data;
+      uint32_t mask;
+      unsigned lane = 0, bit;
+      if (!a->stream || !a->channels || a->channels > 8)
+         return false;
+      mask = rwma_stream_channel_mask(a->stream);
+      if (!mask) mask = defaults[a->channels];
+      if ((a->channels <= 2 && mask != defaults[a->channels]) || (mask & ~0x7ffu))
+         return false;
+      memset(matrix, 0, 8 * 2 * sizeof(int32_t));
+      for (bit = 0; bit < 11; bit++)
+         if (mask & (1u << bit))
+         {
+            int left = 0, right = 0;
+            if (lane >= a->channels) return false;
+            switch (bit)
+            {
+               case 0: left = 32768; break;
+               case 1: right = 32768; break;
+               case 2: left = right = 23170; break;
+               case 3: break;
+               case 4: case 6: case 9: left = 23170; break;
+               case 5: case 7: case 10: right = 23170; break;
+               case 8: left = right = 16384; break;
+            }
+            matrix[lane][0] = left;
+            matrix[lane++][1] = right;
+         }
+      return lane == a->channels;
+   }
+#else
+   (void)data; (void)type; (void)matrix;
+#endif
    return false;
 }
 

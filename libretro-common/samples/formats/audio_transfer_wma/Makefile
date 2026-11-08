@@ -61,6 +61,7 @@ endif
 all: $(TARGET)
 
 $(SAMPLE_OBJDIR)/audio_transfer_wma_test.o: wma_fixture.h
+$(call sample_objs,$(LIBRETRO_COMM_DIR)/formats/wma/rwma_stream.o): $(LIBRETRO_COMM_DIR)/formats/wma/rwma_xma_stream.h
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)

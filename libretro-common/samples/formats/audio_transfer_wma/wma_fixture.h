@@ -145,4 +145,35 @@ static size_t asf(uint8_t *p, int fragment)
    return size;
 }
 
+static size_t xma_wave(uint8_t *p, unsigned channels)
+{
+   unsigned streams = (channels+1)/2, stream;
+   size_t size = 80 + streams*2048;
+   memset(p,0,size);
+   memcpy(p,"RIFF",4); le32(p+4,(unsigned)size-8); memcpy(p+8,"WAVEfmt ",8);
+   le32(p+16,52); p[20]=0x66; p[21]=1; p[22]=(uint8_t)channels;
+   le32(p+24,48000); p[32]=(uint8_t)(channels*2); p[34]=16; p[36]=34;
+   p[38]=(uint8_t)streams; le32(p+40,channels==3 ? 11:channels==2 ? 3:4);
+   le32(p+44,1024); le32(p+48,streams*2048); le32(p+56,512);
+   p[69]=4; p[70]=1; memcpy(p+72,"data",4); le32(p+76,streams*2048);
+   for (stream=0;stream<streams;stream++)
+   {
+      uint8_t *packet=p+80+stream*2048;
+      unsigned frame, lanes=channels-stream*2>=2 ? 2:1;
+      packet[0]=8; packet[3]=(uint8_t)(streams-1);
+      for (frame=0;frame<2;frame++)
+      {
+         unsigned pos=32+frame*40, lane;
+         bits(packet,&pos,15,40); bits(packet,&pos,1,1); bits(packet,&pos,1,0);
+         if(lanes==2) bits(packet,&pos,1,0);
+         bits(packet,&pos,8,0); bits(packet,&pos,1,0);
+         bits(packet,&pos,1,0); bits(packet,&pos,1,0);
+         if(lanes==2)
+         { bits(packet,&pos,1,0); bits(packet,&pos,1,1); bits(packet,&pos,1,0); }
+         for(lane=0;lane<lanes;lane++) bits(packet,&pos,1,0);
+         pos=32+frame*40+39; bits(packet,&pos,1,frame==0);
+      }
+   }
+   return size;
+}
 #endif

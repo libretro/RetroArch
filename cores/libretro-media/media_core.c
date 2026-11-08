@@ -225,6 +225,7 @@ typedef struct
    int          aeof;
 #ifdef HAVE_RWMA
    float       *wma_pcm;
+   int32_t      wma_matrix[8][2];
    int16_t     *wma_s16;
    retro_audio_sample_batch_float_t wma_batch;
    size_t       wma_ready, wma_offset, wma_want;
@@ -1336,7 +1337,7 @@ void MEDIA_CORE_PREFIX(retro_get_system_info)(
       "|mp4|m4v|mov"
 #endif
 #ifdef HAVE_RWMA
-      "|wma|xwma"
+      "|wma|xwma|xma"
 #endif
       ;
 }
@@ -2299,7 +2300,6 @@ static void media_run_webm_hw(media_player_t *p)
 static void media_wma_stereo(media_player_t *p, size_t frames)
 {
    size_t i;
-   const float surround = 23170.0f / 32768;
    if (p->ach == 1)
    {
       for (i = frames; i; i--)
@@ -2309,15 +2309,13 @@ static void media_wma_stereo(media_player_t *p, size_t frames)
       for (i = 0; i < frames; i++)
       {
          const float *s = p->wma_pcm + i * p->ach;
-         float l = s[0], r = s[1];
-         if (p->ach != 4) { l += s[2] * surround; r += s[2] * surround; }
-         if (p->ach == 4) { l += s[2] * surround; r += s[3] * surround; }
-         if (p->ach == 5) { l += s[3] * surround; r += s[4] * surround; }
-         if (p->ach == 6) { l += s[4] * surround; r += s[5] * surround; }
-         if (p->ach == 7)
-         { l += s[4]*0.5f+s[5]*surround; r += s[4]*0.5f+s[6]*surround; }
-         if (p->ach == 8)
-         { l += (s[4]+s[6])*surround; r += (s[5]+s[7])*surround; }
+         float l = 0, r = 0;
+         unsigned c;
+         for (c = 0; c < p->ach; c++)
+         {
+            l += s[c] * (float)p->wma_matrix[c][0] * (1.0f / 32768);
+            r += s[c] * (float)p->wma_matrix[c][1] * (1.0f / 32768);
+         }
          p->wma_pcm[2*i] = l; p->wma_pcm[2*i+1] = r;
       }
 }
@@ -3194,6 +3192,7 @@ static bool media_load_wma(media_player_t *p, const char *path)
          !audio_transfer_info(p->actx, p->atype, &p->ach, &p->arate, NULL) ||
          !p->ach || p->ach > 8 || p->arate < 8000 || p->arate > 192000)
       return false;
+   if (!audio_transfer_stereo_matrix(p->actx,p->atype,p->wma_matrix)) return false;
    capacity = (p->arate + 59) / 60;
    p->wma_pcm = (float*)malloc(capacity * (p->ach > 2 ? p->ach : 2) * sizeof(float));
    memset(&callback, 0, sizeof(callback));
@@ -3233,7 +3232,7 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 #ifdef HAVE_RWMA
    {
       const char *ext = path_get_extension(info->path);
-      if (string_is_equal_noncase(ext, "wma") || string_is_equal_noncase(ext, "xwma"))
+      if (string_is_equal_noncase(ext, "wma") || string_is_equal_noncase(ext, "xwma") || string_is_equal_noncase(ext, "xma"))
       {
          if (media_load_wma(p, info->path)) return true;
          goto error;

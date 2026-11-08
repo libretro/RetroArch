@@ -181,10 +181,41 @@ static void truncated_object_test(void)
          "incomplete object is not clean EOF");
    audio_transfer_free(context, AUDIO_TYPE_WMA);
 }
+static void xma_test(void)
+{
+   static uint8_t data[80+4096];
+   void *context;
+   size_t size=xma_wave(data,3), got=0, i;
+   int32_t matrix[8][2];
+   unsigned channels=0, rate=0;
+   check(audio_decode_get_type("test.xma")==AUDIO_TYPE_WMA,"XMA extension");
+   context=audio_transfer_new(AUDIO_TYPE_WMA);
+   audio_transfer_set_buffer_ptr(context,AUDIO_TYPE_WMA,data,size);
+   audio_transfer_set_avail(context,AUDIO_TYPE_WMA,80+2048);
+   check(audio_transfer_start(context,AUDIO_TYPE_WMA),"XMA2 header");
+   check(audio_transfer_info(context,AUDIO_TYPE_WMA,&channels,&rate,NULL) &&
+         channels==3 && rate==48000,"XMA2 native format");
+   check(audio_transfer_stereo_matrix(context,AUDIO_TYPE_WMA,matrix) &&
+         matrix[2][0]==0 && matrix[2][1]==0,"LFE is not centre");
+   check(audio_transfer_read_f32(context,AUDIO_TYPE_WMA,output,512,&got)==AUDIO_PROCESS_NEXT && !got,
+         "multistream waits for other stream");
+   audio_transfer_set_avail(context,AUDIO_TYPE_WMA,size);
+   check(audio_transfer_read_f32(context,AUDIO_TYPE_WMA,output,512,&got)!=AUDIO_PROCESS_ERROR && got==512,
+         "XMA2 priming and overlap tail");
+   for(i=0;i<got*channels;i++) check(output[i]==0,"XMA2 silent PCM");
+   check(audio_transfer_read_f32(context,AUDIO_TYPE_WMA,output,1,&got)==AUDIO_PROCESS_END && !got,
+         "XMA2 exact EOF");
+   check(audio_transfer_seek(context,AUDIO_TYPE_WMA,0),"XMA2 rewind");
+   check(audio_transfer_read_f32(context,AUDIO_TYPE_WMA,output,512,&got)!=AUDIO_PROCESS_ERROR && got==512,
+         "XMA2 reset overlap");
+   mixer_test(data,size);
+   audio_transfer_free(context,AUDIO_TYPE_WMA);
+}
 int main(void)
 {
    uint8_t data[512];
    size_t size;
+   xma_test();
    expected();
    size = wave(data);
    transfer_test(data, size, 56);

@@ -216,6 +216,9 @@ struct audio_mixer_voice
          unsigned    samples;
          unsigned    buf_samples;
          unsigned    channels;    /* source channels; mono is duplicated */
+#ifdef HAVE_RWMA
+         int32_t     wma_matrix[8][2];
+#endif
          /* Both resampler APIs take the ratio as a double, and the s16
           * path computes it as one. Holding it as a float here meant
           * that value was narrowed on the way in and widened again on
@@ -489,8 +492,12 @@ static const int32_t audio_mixer_downmix_wav_q15[9][8][2] = {
 
 /* Which order an arm hands its channels over in. */
 static const int32_t (*audio_mixer_downmix_table(
-      enum audio_type_enum type, unsigned ch))[2]
+      enum audio_type_enum type, unsigned ch, const audio_mixer_voice_t *voice))[2]
 {
+   (void)voice;
+#ifdef HAVE_RWMA
+   if (type == AUDIO_TYPE_WMA) return voice->types.stream.wma_matrix;
+#endif
    switch (type)
    {
       case AUDIO_TYPE_VORBIS:
@@ -2282,6 +2289,10 @@ static bool audio_mixer_play_stream(
       if (ch < 1 || ch > 8)
          goto error;
       voice->types.stream.channels = ch;
+#ifdef HAVE_RWMA
+      if (type == AUDIO_TYPE_WMA && !audio_transfer_stereo_matrix(xfer,type,voice->types.stream.wma_matrix))
+         goto error;
+#endif
    }
 
    if (rate != s_rate)
@@ -2445,6 +2456,10 @@ static bool audio_mixer_play_stream_s16(
     * float path used to set it, which was harmless while this one was
     * stereo-only and its fill assumed as much. */
    voice->types.stream.channels = channels;
+#ifdef HAVE_RWMA
+   if (type == AUDIO_TYPE_WMA && !audio_transfer_stereo_matrix(xfer,type,voice->types.stream.wma_matrix))
+      goto error;
+#endif
 
    if (rate != s_rate)
    {
@@ -3004,7 +3019,7 @@ again:
                   audio_mixer_frames_for(sch, AUDIO_MIXER_TEMP_BUFFER),
                   &got);
             audio_mixer_downmix_f32(temp_buffer, got, sch,
-                  audio_mixer_downmix_table(type, sch));
+                  audio_mixer_downmix_table(type, sch, voice));
          }
          temp_samples = (unsigned)(got * 2);
       }
@@ -3156,7 +3171,7 @@ again:
                   audio_mixer_frames_for(sch, AUDIO_MIXER_TEMP_BUFFER),
                   &got);
             audio_mixer_downmix_s16(temp_buffer, got, sch,
-                  audio_mixer_downmix_table(type, sch));
+                  audio_mixer_downmix_table(type, sch, voice));
          }
          else
             st = audio_transfer_read_s16(voice->types.stream.stream, type,

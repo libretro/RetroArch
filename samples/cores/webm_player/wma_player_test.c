@@ -8,6 +8,7 @@
 #include <string.h>
 
 static unsigned float_mode, partial, shutdowns, videos, samples;
+static unsigned xma_mode;
 static unsigned source_rate, source_length, calls;
 static const char *path = "wma-player-test-input.wma";
 
@@ -25,6 +26,7 @@ static double expected_sample(unsigned sample)
    double n = source_length;
    double transform = -cos(pi / n * (sample + 0.5 + n / 2) * 0.5);
    double window = sin((sample + 0.5) * pi / (2 * n));
+   if (xma_mode) return 0;
    return (source_length / 8) * 100000.0 * (2.0 / n) / 32768 * transform * window;
 }
 static void interval(size_t frames)
@@ -106,7 +108,7 @@ static void play(unsigned mode, unsigned fragmented, unsigned backpressure,
    struct retro_game_info game;
    struct retro_system_av_info av;
    RFILE *file;
-   uint8_t bytes[512];
+   static uint8_t bytes[80+4096];
    size_t length;
    unsigned runs = 0;
    memset(&game, 0, sizeof(game));
@@ -115,7 +117,9 @@ static void play(unsigned mode, unsigned fragmented, unsigned backpressure,
    shutdowns = videos = samples = calls = 0;
    source_rate = rate;
    source_length = rate <= 16000 ? 512 : rate <= 22050 ? 1024 : 2048;
-   length = fragmented ? asf(bytes, 1) : wave_rate(bytes, rate);
+   if (xma_mode)
+   { source_length=512; path="wma-player-test-input.xma"; length=xma_wave(bytes,3); }
+   else length = fragmented ? asf(bytes, 1) : wave_rate(bytes, rate);
    check(!filestream_exists(path), "fixture path already exists");
    file = filestream_open(path, RETRO_VFS_FILE_ACCESS_WRITE,
                           RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -160,6 +164,9 @@ int main(void)
    play(1, 1, 1, 48000);
    play(1, 0, 0, 8000);
    play(0, 0, 0, 44100);
+   xma_mode=1;
+   play(1,0,0,48000);
+   play(0,0,1,48000);
    retro_deinit();
 #ifdef HAVE_RWMA
    puts("PASS native WMA player float, legacy, reset and callback backpressure");

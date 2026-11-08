@@ -16,5 +16,6 @@ void rwma_stream_rewind(rwma_stream *stream);
 void rwma_stream_info(const rwma_stream *stream, unsigned *channels, unsigned *rate);
 size_t rwma_stream_tell(const rwma_stream *stream);
 size_t rwma_stream_read_end(const rwma_stream *stream);
+uint32_t rwma_stream_channel_mask(const rwma_stream *stream);
 RETRO_END_DECLS
 #endif
