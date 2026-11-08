@@ -2018,6 +2018,9 @@ static INLINE LONGLONG retro_atomic_msvc_xchg_64_(LONGLONG volatile *p,
 #endif
 
 typedef LONGLONG volatile retro_atomic_64_t;
+/* No <stdint.h> before Visual Studio 2010: the MSVC paths spell their
+ * 64-bit integer as LONGLONG, never int64_t. */
+#define RETRO_ATOMIC_INT64_ LONGLONG
 #define retro_atomic_64_init(p, v)     (*(p) = (v))
 #define retro_atomic_load_acquire_64(p) \
    RETRO_ATOMIC_MSVC_CMPX64_((p), 0, 0)
@@ -2040,7 +2043,7 @@ static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, LONGLONG expec
  * fallbacks elsewhere in this header: the operation is always
  * offered, the cost is what the target can do. */
 #if defined(_WIN64)
-#define retro_atomic_load_relaxed_64(p)      ((int64_t)(*(p)))
+#define retro_atomic_load_relaxed_64(p)      ((LONGLONG)(*(p)))
 #define retro_atomic_store_relaxed_64(p, v)  do { *(p) = (LONGLONG)(v); } while (0)
 #else
 #define retro_atomic_load_relaxed_64(p) \
@@ -2049,11 +2052,11 @@ static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, LONGLONG expec
    ((void)RETRO_ATOMIC_MSVC_XCHG64_((p), (LONGLONG)(v)))
 #endif
 #if defined(RETRO_ATOMIC_MSVC_NATIVE_WORD) && defined(_WIN64)
-static INLINE int64_t retro_atomic_msvc_load_acquire_64_(const volatile LONGLONG *p)
+static INLINE LONGLONG retro_atomic_msvc_load_acquire_64_(const volatile LONGLONG *p)
 {
    LONGLONG value = *p;
    _ReadWriteBarrier();
-   return (int64_t)value;
+   return value;
 }
 static INLINE void retro_atomic_msvc_store_release_64_(volatile LONGLONG *p, LONGLONG value)
 {
@@ -2299,14 +2302,17 @@ static INLINE int64_t retro_atomic_ee_fetch_op_64_(retro_atomic_64_t *p,
    retro_atomic_ee_fetch_op_64_((p), (int64_t)(v), 2)
 #else
 /* 32-bit MSVC and Apple OSAtomic: compare-and-swap loops. */
-static INLINE int64_t retro_atomic_fetch_op_64_cas_(retro_atomic_64_t *p,
-      int64_t v, int op)
+#ifndef RETRO_ATOMIC_INT64_
+#define RETRO_ATOMIC_INT64_ int64_t
+#endif
+static INLINE RETRO_ATOMIC_INT64_ retro_atomic_fetch_op_64_cas_(retro_atomic_64_t *p,
+      RETRO_ATOMIC_INT64_ v, int op)
 {
-   int64_t old;
-   int64_t nv;
+   RETRO_ATOMIC_INT64_ old;
+   RETRO_ATOMIC_INT64_ nv;
    do
    {
-      old = (int64_t)retro_atomic_load_relaxed_64(p);
+      old = (RETRO_ATOMIC_INT64_)retro_atomic_load_relaxed_64(p);
       if (op == 0)
          nv = old + v;
       else if (op == 1)
@@ -2317,13 +2323,13 @@ static INLINE int64_t retro_atomic_fetch_op_64_cas_(retro_atomic_64_t *p,
    return old;
 }
 #define retro_atomic_fetch_add_64(p, v) \
-   retro_atomic_fetch_op_64_cas_((p), (int64_t)(v), 0)
+   retro_atomic_fetch_op_64_cas_((p), (RETRO_ATOMIC_INT64_)(v), 0)
 #define retro_atomic_fetch_sub_64(p, v) \
-   retro_atomic_fetch_op_64_cas_((p), -(int64_t)(v), 0)
+   retro_atomic_fetch_op_64_cas_((p), -(RETRO_ATOMIC_INT64_)(v), 0)
 #define retro_atomic_fetch_or_64(p, v) \
-   retro_atomic_fetch_op_64_cas_((p), (int64_t)(v), 1)
+   retro_atomic_fetch_op_64_cas_((p), (RETRO_ATOMIC_INT64_)(v), 1)
 #define retro_atomic_fetch_and_64(p, v) \
-   retro_atomic_fetch_op_64_cas_((p), (int64_t)(v), 2)
+   retro_atomic_fetch_op_64_cas_((p), (RETRO_ATOMIC_INT64_)(v), 2)
 #endif
 #endif /* RETRO_ATOMIC_HAS_64 */
 
