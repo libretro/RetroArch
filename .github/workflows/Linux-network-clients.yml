@@ -228,7 +228,7 @@ jobs:
           # client with the fuzzer's input), under ASan + UBSan, from a
           # seed corpus recorded off real servers. Any crash, timeout or
           # leak artifact fails the step.
-          make -C libretro-common/test/fuzz fuzz-run FUZZ_SECONDS=30
+          make -j$(nproc) -C libretro-common/test/fuzz fuzz-run FUZZ_SECONDS=30
           if ls libretro-common/test/fuzz/crash-* libretro-common/test/fuzz/leak-* libretro-common/test/fuzz/timeout-* >/dev/null 2>&1; then
             echo "fuzzer artifacts found"; exit 1
           fi

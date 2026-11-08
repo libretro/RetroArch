@@ -26,14 +26,21 @@ fuzz_x509: net_fuzz.c $(CRYPTO_SRC) $(NET_SRC)
 
 fuzz-all: fuzz_tls fuzz_smb fuzz_nfs fuzz_x509
 
-# a seed corpus of real traffic makes the first minutes count
+# a seed corpus of real traffic makes the first minutes count; the four
+# run side by side, each for the whole FUZZ_SECONDS
 fuzz-run: fuzz-all
-	@for t in x509 tls smb nfs; do \
+	@pids=""; for t in x509 tls smb nfs; do \
 	   mkdir -p corpus_$$t; \
+	   ./fuzz_$$t -max_total_time=$(FUZZ_SECONDS) -max_len=16384 -timeout=10 corpus_$$t > fuzz_$$t.log 2>&1 & \
+	   pids="$$pids $$!"; \
+	done; \
+	rc=0; for p in $$pids; do wait $$p || rc=1; done; \
+	for t in x509 tls smb nfs; do \
 	   echo "== fuzz_$$t for $(FUZZ_SECONDS)s"; \
-	   ./fuzz_$$t -max_total_time=$(FUZZ_SECONDS) -max_len=16384 -timeout=10 corpus_$$t 2>&1 | grep -E "DONE|Done|crash|ERROR|SUMMARY|timeout-|Slowest" | tail -3 || exit 1; \
-	done
+	   grep -E "DONE|Done|crash|ERROR|SUMMARY|timeout-|Slowest" fuzz_$$t.log | tail -3; \
+	done; \
+	exit $$rc
 
 clean:
-	rm -f fuzz_tls fuzz_smb fuzz_nfs fuzz_x509 crash-* leak-* timeout-*
+	rm -f fuzz_tls fuzz_smb fuzz_nfs fuzz_x509 fuzz_*.log crash-* leak-* timeout-*
 .PHONY: fuzz-all fuzz-run clean
