@@ -109,6 +109,15 @@ round "1"       1
 round "2"       2
 round "0, 1, 2" 2
 
+# until the idler says its files are open (a slow client under Wine
+# or a sanitizer takes longer to get there), fifteen seconds at most
+idling() {
+   n=0
+   until grep -q "idle for" $1 2>/dev/null || [ $n -ge 150 ]; do
+      n=$((n + 1)); sleep 0.1
+   done
+}
+
 # Files kept open across a pause - the game paused, a long cutscene -
 # must still read and write afterwards: past a short lease on a server
 # that reclaims, and across a server restart (a NAS rebooting), where
@@ -131,17 +140,18 @@ EOF
    rm -rf $D/export/*
 }
 for m in 0 1; do
-   serve $m 5
-   if $RUN ./nfs_idle_test$EXE 127.0.0.1 /export $PORT 0 4 12 > $D/res 2>&1; then
+   serve $m 3
+   if $RUN ./nfs_idle_test$EXE 127.0.0.1 /export $PORT 0 4 7 > $D/res 2>&1; then
       echo "ok:   NFSv4.$m: a file read and written after idling past the lease"
    else
       echo "FAIL: NFSv4.$m idle past the lease: $(cat $D/res)"; exit 1
    fi
    stop
-   serve $m 5
-   $RUN ./nfs_idle_test$EXE 127.0.0.1 /export $PORT 0 4 12 w > $D/res 2>&1 &
+   serve $m 3
+   rm -f $D/res
+   $RUN ./nfs_idle_test$EXE 127.0.0.1 /export $PORT 0 4 7 w > $D/res 2>&1 &
    idler=$!
-   sleep 4
+   idling $D/res
    stop_keep() {
       kill $(cat $D/run/g.pid 2>/dev/null) 2>/dev/null || true
       i=0; while pgrep -x ganesha.nfsd >/dev/null 2>&1 && [ $i -lt 30 ]; do sleep 0.2; i=$((i + 1)); done
