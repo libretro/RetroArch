@@ -127,7 +127,7 @@ static void capture(unsigned index,const char *out)
 }
 int main(int argc,char **argv)
 {
-   char cfg_path[1024];char *args[6];FILE *f;unsigned i, restart_hold = 0, recovery_cpu = 0;
+   char cfg_path[1024];char *args[8];FILE *f;unsigned i, restart_hold = 0, recovery_cpu = 0;
    bool threaded, continuous;
    int iterate_result;
    struct retro_system_av_info av;
@@ -155,8 +155,8 @@ int main(int argc,char **argv)
    verbosity_enable();
    config_file_set_io_default(config_file_io_filestream());rtime_init();retroarch_config_init();
    retroarch_ctl(RARCH_CTL_STATE_FREE,NULL);frontend_driver_init_first(NULL);
-   args[0]=(char*)"retroarch";args[1]=(char*)"--config";args[2]=cfg_path;args[3]=argv[1];args[4]=NULL;
-   if(!retroarch_main_init(4,args))return 2;
+   args[0]=(char*)"retroarch";args[1]=(char*)"--config";args[2]=cfg_path;args[3]=(char*)"-L";args[4]=(char*)"webm";args[5]=argv[1];args[6]=NULL;
+   if(!retroarch_main_init(6,args))return 2;
    quiet_input_begin();
    CHECK(video_driver_thread_wrapper_active()==threaded);
    loop=runloop_state_get_ptr();CHECK(loop->current_core_type==CORE_TYPE_WEBM);
@@ -173,7 +173,7 @@ int main(int argc,char **argv)
    video_state_get_ptr()->poke=&fault_poke;
    for(i=0;i<12;i++)
    {
-      unsigned cpu_before=cpu, gpu_before=gpu;
+      unsigned startup=0, cpu_before=cpu, gpu_before=gpu;
       if(window_mode!=MOVIE_WINDOW_STEADY && i==2)
          CHECK(video_driver_set_video_mode(window_mode==MOVIE_WINDOW_FULLSCREEN
                   ? video_driver_window_dims(true):VIDEO_SCALE_PACK(512,384),
@@ -194,10 +194,27 @@ int main(int argc,char **argv)
          loop->current_core.retro_set_audio_sample_batch(audio);
       }
       /* Null audio supplies no throttle. Pace this test at the core rate. */
-      retro_sleep_until_us(cpu_features_get_time_usec()+frame_us);
-      iterate_result=runloop_iterate();
-      CHECK(iterate_result>=0);task_queue_check();
-      CHECK(!(loop->flags&(RUNLOOP_FLAG_PAUSED|RUNLOOP_FLAG_FASTMOTION)));
+      do
+      {
+         retro_sleep_until_us(cpu_features_get_time_usec()+frame_us);
+         iterate_result=runloop_iterate();
+         CHECK(iterate_result>=0);task_queue_check();
+         CHECK(!(loop->flags&(RUNLOOP_FLAG_PAUSED|RUNLOOP_FLAG_FASTMOTION)));
+         if (!i && !gpu && !cpu)
+         {
+            uint8_t state[40] = {0};
+            uint64_t audio_pos = 0;
+            uint64_t lead = (uint64_t)(av.timing.sample_rate / av.timing.fps) + 1;
+            unsigned j;
+            CHECK(loop->current_core.retro_serialize(state,sizeof(state)));
+            CHECK(memcmp(state,"WPOS",4)==0 && state[4]==3);
+            for (j=16;j<32;j++) CHECK(!state[j]);
+            for (j=0;j<8;j++) audio_pos |= (uint64_t)state[32+j] << (8*j);
+            CHECK(audio_pos==samples && samples<=lead);
+            printf("PREROLL tick=%u audio=%lu\n",startup,(unsigned long)samples);
+         }
+      } while (!i && !gpu && !cpu && ++startup<60);
+      CHECK(i || gpu || cpu);
       printf("ITER_STATE tick=%u rc=%d flags=%x focus=%u callbacks=%u samples=%lu\n",
             i,iterate_result,(unsigned)loop->flags,video_driver_has_focus()?1:0,frames,(unsigned long)samples);
 #ifdef HAVE_MENU

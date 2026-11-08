@@ -18,6 +18,12 @@ Use --drivers d3d11,d3d12,vulkan to include Vulkan Video.
 Native Windows, GDB, and real hardware decode/import are required.
 Unsupported hardware or CPU fallback fails the GPU acceptance assertions.
 
+The harness selects the builtin media core explicitly. Before the first picture,
+up to 60 paced startup calls may return no image. Each pending call must retain
+zero picture/clock state and at most one frame of audio preroll. Picture zero then
+starts the twelve-picture sequence; its fixed ordinals, callback totals and pixel
+tolerance are unchanged.
+
 The shipping core decodes a reordered HEVC/AAC movie. A test-only poke rejects
 one movie image, causing CPU fallback; the actual reinit command then replaces
 the driver and restores GPU delivery. Twelve pictures, including a repeat of
