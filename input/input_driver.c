@@ -9772,13 +9772,22 @@ static void input_rumble_write(unsigned slot, int value, void *userdata)
 {
    settings_t *settings = (settings_t*)userdata;
    const unsigned *user = settings->uints.input_remap_port_map[slot / 2];
+   uint32_t written     = 0;
    bool ok              = false;
 
-   /* every user the core port is fed by */
+   /* every pad the core port is fed by, once: users can share a pad */
    for (; *user < MAX_USERS; user++)
-      ok = input_driver_set_rumble(*user,
-            settings->uints.input_joypad_index[*user],
+   {
+      unsigned pad = settings->uints.input_joypad_index[*user];
+      if (pad < 32)
+      {
+         if (written & (1u << pad))
+            continue;
+         written |= 1u << pad;
+      }
+      ok = input_driver_set_rumble(*user, pad,
             (enum retro_rumble_effect)(slot & 1), (uint16_t)value) || ok;
+   }
 
    retro_atomic_store_release_int(&input_rumble_answer[slot], ok ? 2 : 1);
 }

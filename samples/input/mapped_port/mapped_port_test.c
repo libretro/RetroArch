@@ -451,6 +451,20 @@ static void test_rumble_answer(void)
          "core port 1 answered true with both motors refusing");
 }
 
+/* Users 1 and 2 on core port 1 and on the same pad: that pad's motor
+ * is written once a frame, not once for each. */
+static void test_rumble_one_pad(void)
+{
+   t_reset();
+   settings.uints.input_joypad_index[1] = 0;
+   t_map(1, 0);
+   CHECK(t_rumble_port(0, 1040) == 1u << 0,
+         "one pad: core port 1's rumble reached another slot");
+   CHECK(t_rumbled[0] == 1,
+         "one pad: written more than once for one frame");
+   settings.uints.input_joypad_index[1] = 1;
+}
+
 /* Users 1 and 2 swapped: each core port's rumble follows its user. */
 static void test_swapped_ports(void)
 {
@@ -6444,6 +6458,7 @@ int main(void)
    test_swapped_ports();
    test_port_2_users();
    test_rumble_answer();
+   test_rumble_one_pad();
    test_vid_pid_parse();
    test_plays_as_match();
    test_plays_as_entry_name();
