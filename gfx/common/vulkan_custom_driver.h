@@ -300,7 +300,7 @@ bool    vulkan_custom_driver_current(void);             /* this init opened a cu
 bool    vulkan_custom_driver_answered(uint32_t gpus);   /* after vkEnumeratePhysicalDevices; false: failed() says why */
 void    vulkan_custom_driver_result(int result);        /* a VkResult of this init's start, for failed() */
 /* Desktop: valid only during Vulkan init. */
-bool    vulkan_custom_driver_supported(void);           /* Adreno and API >= 28; desktop: the loader loads drivers directly; macOS: open_no_loader()'s answer */
+bool    vulkan_custom_driver_supported(void);           /* API >= 28; desktop: the loader loads drivers directly; macOS: open_no_loader()'s answer */
 bool    vulkan_custom_driver_crashed(const char *path); /* off for the running core after a crash */
 bool    vulkan_custom_driver_why(const char *path, char *s, size_t len); /* why path did not load this session; s NULL: only ask */
 void    vulkan_custom_driver_picked(const char *path);  /* trusts path; clears its crash state and INVALID mark */
