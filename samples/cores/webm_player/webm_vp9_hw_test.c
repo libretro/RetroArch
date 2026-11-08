@@ -5,6 +5,7 @@
 static unsigned failures, opens, closes, lives, submitted, exported, retired;
 static unsigned taken, cpu_frames, gpu_ticks, sink_busy, ready = 1, refuse;
 static unsigned stopped;
+static unsigned immediate;
 static uint64_t pcm_frames, pcm_nonzero;
 static video_hw_frame_t held;
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); failures++; } } while (0)
@@ -38,12 +39,13 @@ static int decode(void *owner, const uint8_t *packet, size_t size,
 {
    mock_t *m = (mock_t*)owner;
    CHECK(picture->slot >= 0 && size > 0);
-   if (!m->packet)
+   if (!immediate && !m->packet)
    {
       m->packet = packet; m->size = size; m->first = packet[0];
       return 1;
    }
-   CHECK(packet == m->packet && size == m->size && packet[0] == m->first);
+   if (!immediate)
+      CHECK(packet == m->packet && size == m->size && packet[0] == m->first);
    m->packet = NULL;
    submitted++;
    return 0;
@@ -52,7 +54,7 @@ static int decode(void *owner, const uint8_t *packet, size_t size,
 static int output(void *owner, unsigned slot, video_hw_frame_t *out)
 {
    mock_t *m = (mock_t*)owner;
-   if (!m->output_busy)
+   if (!immediate && !m->output_busy)
    {
       m->output_busy = 1;
       return 1;
@@ -249,10 +251,57 @@ static void check_hidden_timeline(void)
    rwebm_close(p.wgather); free(p.vts);
 }
 
+static void check_private_prefetch(void)
+{
+   uint8_t before[40], after[40];
+   unsigned decoded, delivered;
+   immediate = 1;
+   if (!load()) return;
+   media_video_hw_ready();
+   retro_run();
+   CHECK(media_player.vshown == 1 && media_player.webm_hw_shown == 2);
+   CHECK(media_player.webm_prefetched && media_player.hw_frame.image);
+   CHECK(retro_serialize(before, sizeof(before)));
+   media_prefetch_webm(&media_player);
+   CHECK(retro_serialize(after, sizeof(after)));
+   CHECK(!memcmp(before, after, sizeof(before)));
+   sink_busy = 2;
+   decoded = submitted;
+   delivered = taken;
+   retro_run();
+   CHECK(submitted == decoded && taken == delivered);
+   retro_run();
+   CHECK(submitted == decoded && taken == delivered);
+   retro_run();
+   CHECK(submitted > decoded && taken > delivered);
+   unload();
+   ready = 0;
+   if (!load()) return;
+   retro_run();
+   CHECK(!media_player.webmvs && media_player.vshown == 1);
+   CHECK(retro_serialize(before, sizeof(before)));
+   media_suspend_video_hw();
+   ready = 1;
+   media_video_hw_ready();
+   CHECK(media_player.webm_prefetched && media_player.webm_hw_shown == 2);
+   CHECK(retro_serialize(after, sizeof(after)));
+   CHECK(!memcmp(before, after, sizeof(before)));
+   decoded = cpu_frames;
+   media_player.vts[1] += 4 * media_player.frame_ns;
+   retro_run();
+   CHECK(cpu_frames == decoded + 1 && media_player.vshown == 1);
+   CHECK(media_player.webm_prefetched && media_player.hw_frame.image);
+   unload();
+   immediate = 0;
+   pcm_frames = pcm_nonzero = 0;
+   taken = cpu_frames = gpu_ticks = 0;
+   submitted = 0;
+}
+
 int main(void)
 {
-   unsigned i, before, decoded;
-   uint8_t state[40];
+   unsigned i, before, decoded, delivered;
+   uint8_t state[40], after[40];
    check_software_skip("fixtures/vp9-vorbis.webm");
    check_software_skip("fixtures/vp8-opus.webm");
    check_hidden_timeline();
@@ -261,12 +310,16 @@ int main(void)
    retro_set_environment(env); retro_set_video_refresh(video);
    retro_set_input_poll(poll); retro_set_input_state(input);
    retro_set_audio_sample_batch(audio);
+   check_private_prefetch();
    if (!load()) return 1;
    media_video_hw_ready();
    CHECK(media_player.webmvs && media_player.hw_video && !submitted);
    rwebm_video_stream_set_avail(media_player.webmvs,
          rwebm_video_stream_media_floor(media_player.webmvs));
+   CHECK(retro_serialize(state, sizeof(state)));
    retro_run();
+   CHECK(retro_serialize(after, sizeof(after)));
+   CHECK(!memcmp(state + 16, after + 16, 16));
    CHECK(!media_player.eof && !submitted
          && rwebm_video_stream_waiting(media_player.webmvs));
    rwebm_video_stream_set_avail(media_player.webmvs,
@@ -275,9 +328,10 @@ int main(void)
    for (i = 0; i < 512 && !stopped; i++)
    {
       decoded = submitted;
-      before = media_player.hw_frame.image != 0;
+      delivered = taken;
+      before = media_player.hw_frame.image != 0 && !media_player.webm_prefetched;
       retro_run();
-      if (before) CHECK(decoded == submitted);
+      if (before && delivered == taken) CHECK(decoded == submitted);
    }
    CHECK(stopped && gpu_ticks && taken && !cpu_frames);
 #ifdef MEDIA_HAVE_AUDIO

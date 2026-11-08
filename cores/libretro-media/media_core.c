@@ -157,6 +157,7 @@ typedef struct
    int          webm_step;
    int          webm_restore_clock;
    int          webm_cpu_resume;
+   int          webm_prefetched;
    video_hw_frame_t hw_frame;
    int          hw_video;
    int64_t      hw_restart_ns;
@@ -614,6 +615,7 @@ static void media_drop_hw(media_player_t *p)
    if (p->hw_frame.image)
       video_hw_frame_abandon(&p->hw_frame);
    memset(&p->hw_frame, 0, sizeof(p->hw_frame));
+   p->webm_prefetched = 0;
 #ifdef HAVE_RMP4
    p->mp4_prefetched = p->mp4_prefetching = p->mp4_prefetch_count = 0;
    p->mp4_prefetch_ns = p->mp4_prefetch_start_ns = 0;
@@ -817,6 +819,46 @@ static void media_present_mp4(media_player_t *p, int have)
    media_present_hw(p);
 }
 #endif
+
+static void media_prefetch_webm(media_player_t *p)
+{
+   int64_t started = cpu_features_get_time_usec();
+   unsigned budget = 32;
+   if (!p->webmvs || !p->hw_video || p->hw_frame.image || p->eof
+         || p->webm_seek_slot >= 0 || p->webm_restore_clock || p->seeking
+         || p->pending_seek_ns >= 0)
+      return;
+   do
+   {
+      int ret, skipped;
+      if (!p->webm_step)
+         p->webm_step = p->webm_hw_shown < p->vshown ? 2 : 1;
+      skipped = p->webm_step == 2;
+      if (skipped)
+         ret = rwebm_video_stream_skip(p->webmvs, NULL);
+      else if (rwebm_video_stream_next(p->webmvs, NULL))
+         ret = 1;
+      else
+         ret = rwebm_video_stream_waiting(p->webmvs) ? 2 : 0;
+      if (ret == 2)
+         return;
+      p->webm_step = 0;
+      if (ret != 1)
+      {
+         p->eof = 1;
+         return;
+      }
+      p->webm_hw_shown++;
+      if (!skipped)
+      {
+         if (!rwebm_video_stream_hw_frame(p->webmvs, &p->hw_frame))
+            p->eof = 1;
+         else
+            p->webm_prefetched = 1;
+         return;
+      }
+   } while (--budget && cpu_features_get_time_usec() - started < 4000);
+}
 
 /* -------------------------------------------------------------------- */
 /* Limited-range I420 -> XRGB8888.  Coefficients follow the Colour       */
@@ -2038,6 +2080,8 @@ void media_video_hw_ready(void)
                p->pending_seek_ns = target;
          }
       }
+      if (p->vshown)
+         media_prefetch_webm(p);
    }
 #ifdef HAVE_RMP4
    if (p->mp4vs)
@@ -2234,6 +2278,7 @@ static void media_run_webm_cpu(media_player_t *p, int advance_clock)
 static void media_run_webm_hw(media_player_t *p)
 {
    int64_t started = cpu_features_get_time_usec();
+   int64_t clock = p->play_ns;
    int64_t target = p->webm_seek_slot;
    if (p->webm_restore_clock)
    {
@@ -2247,6 +2292,28 @@ static void media_run_webm_hw(media_player_t *p)
       while (target + 1 < p->nvts
             && p->vts[target + 1] + p->frame_ns / 2 <= p->play_ns)
          target++;
+   }
+   if (p->webm_prefetched)
+   {
+      if (p->webm_hw_shown - 1 < target)
+         media_drop_hw(p);
+      else if (p->webm_hw_shown - 1 == target)
+      {
+         p->webm_prefetched = 0;
+         p->webm_cpu_resume = 0;
+         p->vshown = p->webm_hw_shown;
+         p->vpts_ns = p->vts && p->vshown <= p->nvts
+               ? p->vts[p->vshown - 1] : p->vpts_ns;
+      }
+      else
+      {
+         if (p->webm_cpu_resume && p->fb)
+            MEDIA_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
+                  p->width * sizeof(uint32_t));
+         else
+            MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+         return;
+      }
    }
    while ((!p->eof || p->webm_seek_slot >= 0)
          && !p->hw_frame.image && p->webm_hw_shown <= target)
@@ -2263,6 +2330,8 @@ static void media_run_webm_hw(media_player_t *p)
          ret = rwebm_video_stream_waiting(p->webmvs) ? 2 : 0;
       if (ret != 1)
       {
+         if (ret == 2 && !p->vshown && p->webm_seek_slot < 0)
+            p->play_ns = clock;
          if (ret != 2)
          {
             p->eof = 1;
@@ -2302,6 +2371,7 @@ static void media_run_webm_hw(media_player_t *p)
             p->width * sizeof(uint32_t));
    else
       media_present_hw(p);
+   media_prefetch_webm(p);
    if (!p->hw_frame.image && p->nvts > 0 && p->webm_hw_shown >= p->nvts
          && (!p->dt || data_transfer_complete(p->dt) || data_transfer_failed(p->dt)))
       p->eof = 1;
