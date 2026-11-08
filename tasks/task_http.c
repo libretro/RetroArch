@@ -54,9 +54,11 @@ struct http_handle
    /* Streaming sink, used by task_push_http_download_file(): the
     * body is written straight to disk as it arrives instead of being
     * accumulated and then written in one go.  NULL for every other
-    * entry point. */
+    * entry point.  sink_temp is the file written, renamed over
+    * sink_path at the end; NULL when sink_path is written itself. */
    RFILE *sink_file;
    char  *sink_path;
+   char  *sink_temp;
    /* Resume of an interrupted sink download (see task_http_resume()).
     * validator is the first response's strong ETag or Last-Modified,
     * owned; sink_written is the file's length so far; attempt_base is
@@ -319,23 +321,43 @@ static char *task_http_error_body(const char *path, size_t *len)
    return body;
 }
 
-/* Close the output file, removing it unless the transfer succeeded.
- * A partial file left behind would otherwise be indistinguishable
- * from a good one on the next run. */
-static void task_http_sink_close(http_handle_t *http, bool keep)
+/* Close the output file and put it in place if @keep, otherwise
+ * remove it, leaving a file already at the path alone.  A partial file
+ * left behind would otherwise be indistinguishable from a good one on
+ * the next run.  Returns 0 when the download is in place, 1 when an
+ * existing file could not be replaced and was kept, -1 otherwise. */
+static int task_http_sink_close(http_handle_t *http, bool keep)
 {
+   int ret;
    if (http->sink_file)
    {
-      filestream_close(http->sink_file);
+      if (filestream_close(http->sink_file) != 0)
+         keep = false;
       http->sink_file = NULL;
    }
+   ret = keep ? 0 : -1;
+   if (http->sink_temp)
+   {
+      ret = filestream_finish_atomic(http->sink_path, keep);
+      /* A VFS that cannot rename over a file (Android SAF).  A copy
+       * would truncate a file already there, so that one is kept. */
+      if (ret == 1)
+      {
+         if (!path_is_valid(http->sink_path))
+            ret = filestream_copy(http->sink_temp, http->sink_path);
+         filestream_delete(http->sink_temp);
+      }
+      free(http->sink_temp);
+      http->sink_temp = NULL;
+   }
+   else if (http->sink_path && !keep)
+      filestream_delete(http->sink_path);
    if (http->sink_path)
    {
-      if (!keep)
-         filestream_delete(http->sink_path);
       free(http->sink_path);
       http->sink_path = NULL;
    }
+   return ret;
 }
 
 static int task_http_con_iterate_transfer(http_handle_t *http)
@@ -456,7 +478,7 @@ static void task_http_transfer_handler(retro_task_t *task)
    size_t error_body_len      = 0;
    uint8_t flg                = task_get_flags(task);
 
-   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0 || http->error)
       goto task_finished;
 
    switch (http->status)
@@ -496,6 +518,7 @@ task_finished:
              && !http->sink_failed
              && !net_http_error(http->handle)
              && ((flg & RETRO_TASK_FLG_CANCELLED) == 0);
+      int  ret;
       /* An HTTP error response: its start, for the callback to log */
       if (     !ok && http->handle && http->sink_file
             && !http->sink_failed
@@ -504,12 +527,25 @@ task_finished:
       {
          filestream_close(http->sink_file);
          http->sink_file = NULL;
-         error_body      = task_http_error_body(http->sink_path,
+         error_body      = task_http_error_body(
+               http->sink_temp ? http->sink_temp : http->sink_path,
                &error_body_len);
       }
-      task_http_sink_close(http, ok);
-      if (!ok && !task_get_error(task))
-         task_set_error(task, task_http_failure_string(http->handle));
+      ret = task_http_sink_close(http, ok);
+      if (ret != 0 && !task_get_error(task))
+      {
+         if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
+            task_set_error(task,
+                  strldup("Task cancelled.", sizeof("Task cancelled.")));
+         else if (ret == 1)
+            task_set_error(task, strdup("Download failed: cannot replace "
+                     "the existing file on this storage."));
+         else if (ok)
+            task_set_error(task,
+                  strdup("Download failed: cannot write the file."));
+         else
+            task_set_error(task, task_http_failure_string(http->handle));
+      }
    }
 
    if (http->handle)
@@ -531,8 +567,9 @@ task_finished:
          if (tmp)
             free(tmp);
 
-         task_set_error(task,
-               strldup("Task cancelled.", sizeof("Task cancelled.")));
+         if (!task_get_error(task))
+            task_set_error(task,
+                  strldup("Task cancelled.", sizeof("Task cancelled.")));
       }
       else
       {
@@ -580,7 +617,7 @@ task_finished:
       }
       net_http_delete(http->handle);
    }
-   else if (http->error)
+   else if (http->error && !task_get_error(task))
       task_set_error(task, strldup("Internal error.",
                sizeof("Internal error.")));
    free(error_body);
@@ -710,6 +747,7 @@ static void *task_push_http_transfer_generic_titled(
    http->headers_accept_err = headers_accept_err;
    http->sink_file           = NULL;
    http->sink_path           = NULL;
+   http->sink_temp           = NULL;
    http->sink_failed         = false;
    http->validator           = NULL;
    http->sink_written        = 0;
@@ -726,18 +764,45 @@ static void *task_push_http_transfer_generic_titled(
     * cb_http_conn_default(). */
    if (sink_path)
    {
+      size_t _len = strlen(sink_path) + sizeof(".tmp");
       if (!(http->sink_path = strdup(sink_path)))
          goto error;
-      if (!(http->sink_file = filestream_open(sink_path,
-                  RETRO_VFS_FILE_ACCESS_WRITE,
-                  RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
-         goto error;
-      net_http_connection_set_sink_spans(conn, task_http_file_sink_spans,
-            http);
+      if (     (http->sink_temp = (char*)malloc(_len))
+            && filestream_atomic_temp_name(http->sink_temp, _len, sink_path))
+         http->sink_file = filestream_open(http->sink_temp,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+      if (!http->sink_file)
+      {
+         free(http->sink_temp);
+         http->sink_temp = NULL;
+         /* No file to lose: write it in place.  Otherwise the task
+          * fails as soon as it runs, leaving that file alone. */
+         if (!path_is_valid(sink_path))
+         {
+            if (!(http->sink_file = filestream_open(sink_path,
+                        RETRO_VFS_FILE_ACCESS_WRITE,
+                        RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)))
+               goto error;
+         }
+         else
+         {
+            free(http->sink_path);
+            http->sink_path = NULL;
+            http->error     = true;
+         }
+      }
+      if (http->sink_file)
+         net_http_connection_set_sink_spans(conn,
+               task_http_file_sink_spans, http);
    }
 
    if (!(t = task_init()))
       goto error;
+
+   if (http->error)
+      task_set_error(t, strdup("Download failed: cannot create a "
+               "temporary file beside the existing one."));
 
    t->handler              = task_http_transfer_handler;
    t->state                = http;
@@ -1136,8 +1201,10 @@ void *task_push_http_transfer_with_source(const char *url,
  *
  * The completion callback receives an http_transfer_data_t with
  * status and headers populated but data == NULL and len == 0 -- the
- * body is already on disk.  The partial file is removed unless the
- * transfer finished cleanly with a 2xx.
+ * body is already on disk.  The body goes to a temporary file beside
+ * @path, which replaces @path only once the transfer has finished
+ * cleanly with a 2xx; otherwise it is removed and @path is left as
+ * it was.
  *
  * The output directory must exist; this does not create it.
  **/

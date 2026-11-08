@@ -278,11 +278,44 @@ task_finished:
       }
       else
       {
+         http_transfer_data_t *resp = http->response;
          bool mute      = ((task_get_flags(task) & RETRO_TASK_FLG_MUTE) > 0);
-         int  status    = http->response->status;
-         task_set_data(task, http->response);
+         bool failed    = false;
+         int  status;
+         /* Written here, past the cancel check.  Only a whole 2xx body
+          * replaces the file; it is written in place only when there
+          * is no file to lose. */
+         if (http->sink_path)
+         {
+            if (     resp->status >= 200 && resp->status <= 299 && resp->data
+                  && !filestream_write_file_atomic(http->sink_path,
+                        resp->data, (int64_t)resp->len))
+            {
+               if (path_is_valid(http->sink_path))
+                  failed = true;
+               else if (!filestream_write_file(http->sink_path, resp->data,
+                        (int64_t)resp->len))
+               {
+                  filestream_delete(http->sink_path);
+                  failed = true;
+               }
+            }
+            if (failed)
+            {
+               RARCH_ERR("[HTTP] Failed writing %s\n", http->sink_path);
+               resp->status = -1;
+            }
+            free(resp->data);
+            resp->data = NULL;
+            resp->len  = 0;
+         }
+         status         = resp->status;
+         task_set_data(task, resp);
          http->response = NULL;
-         if (!mute && status >= 400)
+         if (failed)
+            task_set_error(task,
+                  strdup("Download failed: cannot write the file."));
+         else if (!mute && status >= 400)
             task_set_error(task, strldup("Download failed.",
                sizeof("Download failed.")));
       }
@@ -355,26 +388,9 @@ static void http_fetch_settle(emscripten_fetch_t *fetch)
        * emscripten_fetch_close(), so it has to be copied out.  The
        * old wget2 path handed the callback's buffer straight to the
        * caller, which worked only because wget2 transferred
-       * ownership; fetch does not. */
-      if (http->sink_path)
-      {
-         /* Write straight through; the caller gets status and headers
-          * only.  A failed or non-2xx transfer leaves no file behind,
-          * matching the native backend. */
-         if (     fetch->status >= 200 && fetch->status <= 299
-               && fetch->numBytes > 0 && fetch->data)
-         {
-            if (!filestream_write_file(http->sink_path, fetch->data,
-                     (int64_t)fetch->numBytes))
-            {
-               RARCH_ERR("[HTTP] Failed writing %s\n", http->sink_path);
-               resp->status = -1;
-            }
-         }
-         else
-            filestream_delete(http->sink_path);
-      }
-      else if (fetch->numBytes > 0 && fetch->data)
+       * ownership; fetch does not.  A download's body is written by
+       * the handler, which sees a cancel. */
+      if (fetch->numBytes > 0 && fetch->data)
       {
          if ((resp->data = (char*)malloc((size_t)fetch->numBytes)))
          {
@@ -382,10 +398,14 @@ static void http_fetch_settle(emscripten_fetch_t *fetch)
             resp->len = (size_t)fetch->numBytes;
          }
          else
+         {
             /* Keep the status and headers so the caller still sees a
              * coherent, if empty, response. */
             RARCH_ERR("[HTTP] Out of memory buffering %llu byte response.\n",
                   (unsigned long long)fetch->numBytes);
+            if (http->sink_path)
+               resp->status = -1;
+         }
       }
 
       http->response = resp;

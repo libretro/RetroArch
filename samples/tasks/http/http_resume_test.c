@@ -14,7 +14,12 @@
  *   drops again and again       -> at most three resumes, then failure.
  *
  * Before resume existed, every interrupted download failed outright and
- * the partial file was deleted. */
+ * the partial file was deleted.
+ *
+ * A file already at the path is replaced only by a download that
+ * succeeds: a 404, a dropped or refused connection, a cancel and a
+ * storage that cannot rename over it leave it as it was, and no
+ * temporary file behind. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +34,9 @@
 #include <net/net_http.h>
 #include <net/net_compat.h>
 #include <queues/task_queue.h>
+#include <file/file_path.h>
+#include <streams/file_stream.h>
+#include <vfs/vfs_implementation.h>
 
 #include "../../../tasks/tasks_internal.h"
 #include "../../../tasks/task_file_transfer.h"
@@ -65,7 +73,9 @@ enum step_kind
    S_PARTIAL,           /* 206 from the requested offset to the end */
    S_PARTIAL_DROP,      /* 206 from the requested offset, cut at .cut */
    S_PARTIAL_WRONG,     /* 206 claiming to start 7 bytes later */
-   S_FULL_NEW           /* 200, the whole resource, changed (seed 2) */
+   S_FULL_NEW,          /* 200, the whole resource, changed (seed 2) */
+   S_NOT_FOUND,         /* 404 */
+   S_HOLD               /* 200, body up to .cut, then waits for g_release */
 };
 
 struct step { enum step_kind kind; size_t cut; };
@@ -80,6 +90,7 @@ static char   g_ifrange[MAX_REQS][64];
 static char   g_accenc[MAX_REQS][64];
 static int    g_listen_fd = -1, g_port;
 static int    g_stop;
+static int    g_held, g_release;
 static pthread_t g_th;
 
 static void send_all(int fd, const void *p, size_t n)
@@ -204,6 +215,27 @@ static void serve_one(int cs)
          send_all(cs, head, strlen(head));
          send_body(cs, 0, BODY_LEN, 2);
          break;
+      case S_NOT_FOUND:
+         snprintf(head, sizeof(head), "HTTP/1.1 404 Not Found\r\n"
+               "Content-Length: 9\r\nConnection: close\r\n\r\nnot found");
+         send_all(cs, head, strlen(head));
+         break;
+      case S_HOLD:
+         snprintf(head, sizeof(head),
+               "HTTP/1.1 200 OK\r\nContent-Length: %u\r\n"
+               "Connection: close\r\n\r\n", BODY_LEN);
+         send_all(cs, head, strlen(head));
+         send_body(cs, 0, st->cut, 1);
+         pthread_mutex_lock(&g_lock);
+         g_held = 1;
+         while (!g_release)
+         {
+            pthread_mutex_unlock(&g_lock);
+            usleep(1000);
+            pthread_mutex_lock(&g_lock);
+         }
+         pthread_mutex_unlock(&g_lock);
+         break;
    }
 }
 
@@ -250,9 +282,11 @@ static int srv_start(void)
 
 /* ---- task side ---- */
 
-struct obs { int fired; int had_error; int status; };
+struct obs { int fired; int had_error; int status; char err[128]; };
 static struct obs g_obs;
 static char g_path[128];
+static char g_temp[160];
+static const char g_seed[] = "art the user already had\n";
 
 static void done_cb(retro_task_t *task, void *task_data, void *user_data,
       const char *err)
@@ -263,6 +297,7 @@ static void done_cb(retro_task_t *task, void *task_data, void *user_data,
    g_obs.fired     = 1;
    g_obs.had_error = (err && *err);
    g_obs.status    = data ? data->status : 0;
+   snprintf(g_obs.err, sizeof(g_obs.err), "%s", err ? err : "");
    pthread_mutex_unlock(&g_lock);
 }
 
@@ -286,10 +321,11 @@ static long file_matches(int seed, int *ok)
    return n;
 }
 
-static void run(const char *label, const struct step *script, int n)
+static void *push(const char *label, const struct step *script, int n,
+      int port)
 {
-   char url[128];
-   int  spins = 0;
+   char  url[128];
+   void *t;
 
    printf("  %s\n", label);
    pthread_mutex_lock(&g_lock);
@@ -303,12 +339,15 @@ static void run(const char *label, const struct step *script, int n)
 
    net_http_deinit();
    net_http_init();
-   snprintf(url, sizeof(url), "http://127.0.0.1:%d/file.bin", g_port);
-   if (!task_push_http_download_file(url, g_path, true, NULL, done_cb, NULL))
-   {
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d/file.bin", port);
+   if (!(t = task_push_http_download_file(url, g_path, true, NULL, done_cb, NULL)))
       CHECK(0, "%s: push refused", label);
-      return;
-   }
+   return t;
+}
+
+static void wait_done(const char *label)
+{
+   int spins = 0;
    while (spins++ < 100000)
    {
       int fired;
@@ -323,6 +362,93 @@ static void run(const char *label, const struct step *script, int n)
    task_queue_wait(NULL, NULL);
    task_queue_check();
    CHECK(g_obs.fired, "%s: callback never ran", label);
+}
+
+static void run(const char *label, const struct step *script, int n)
+{
+   if (push(label, script, n, g_port))
+      wait_done(label);
+}
+
+static void seed_target(void)
+{
+   FILE *f = fopen(g_path, "wb");
+   if (f)
+   {
+      fwrite(g_seed, 1, sizeof(g_seed) - 1, f);
+      fclose(f);
+   }
+}
+
+/* g_path holds exactly the bytes seed_target() wrote */
+static int seed_intact(void)
+{
+   char   buf[sizeof(g_seed)];
+   size_t n;
+   FILE  *f = fopen(g_path, "rb");
+   if (!f)
+      return 0;
+   n = fread(buf, 1, sizeof(buf), f);
+   fclose(f);
+   return n == sizeof(g_seed) - 1 && !memcmp(buf, g_seed, n);
+}
+
+/* A failed download over an existing file: the file is unchanged right
+ * after the push and after the failure. */
+static void run_seeded_fail(const char *label, const struct step *script,
+      int n, int port)
+{
+   int ok;
+   seed_target();
+   if (!push(label, script, n, port))
+      return;
+   CHECK(seed_intact(), "%s: existing file is %ld bytes after the push",
+         label, file_matches(0, &ok));
+   wait_done(label);
+   CHECK(g_obs.had_error, "%s: no error reported", label);
+   CHECK(seed_intact() && !path_is_valid(g_temp),
+         "%s: existing file %s, temporary file %s", label,
+         seed_intact() ? "kept" : "lost",
+         path_is_valid(g_temp) ? "left behind" : "removed");
+   remove(g_path);
+}
+
+static int RETRO_CALLCONV refuse_rename(const char *old_path,
+      const char *new_path)
+{
+   (void)old_path;
+   (void)new_path;
+   return -1;
+}
+
+/* A refused frontend rename is retried after removing the file;
+ * refusing that too leaves the file in place, as a refused built-in
+ * rename does (Android SAF). */
+static int RETRO_CALLCONV keep_target(const char *path)
+{
+   if (!strcmp(path, g_path))
+      return -1;
+   return remove(path) == 0 ? 0 : -1;
+}
+
+/* Writes to g_path stop short */
+static int64_t RETRO_CALLCONV short_write(struct retro_vfs_file_handle *stream,
+      const void *s, uint64_t len)
+{
+   libretro_vfs_implementation_file *f =
+      (libretro_vfs_implementation_file*)stream;
+   const char *path = retro_vfs_file_get_path_impl(f);
+   if (path && !strcmp(path, g_path) && len > 1000)
+      len = 1000;
+   return retro_vfs_file_write_impl(f, s, len);
+}
+
+static void set_vfs(struct retro_vfs_interface *vfs)
+{
+   struct retro_vfs_interface_info info;
+   info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
+   info.iface                      = vfs;
+   filestream_vfs_init(&info);
 }
 
 static int nreqs(void)
@@ -352,9 +478,19 @@ int main(void)
       { S_FULL_DROP, 100000 }, { S_PARTIAL_DROP, 200000 },
       { S_PARTIAL_DROP, 300000 }, { S_PARTIAL_DROP, 400000 },
       { S_PARTIAL, 0 } };
+   static const struct step s_full[]      = { { S_FULL_NEW, 0 } };
+   static const struct step s_not_found[] = { { S_NOT_FOUND, 0 } };
+   static const struct step s_hold[]      = { { S_HOLD, 200000 } };
+   struct retro_vfs_interface      vfs;
+   struct sockaddr_in a;
+   socklen_t al = sizeof(a);
+   int   dead_fd, dead_port = 0;
+   void *t;
+   FILE *f;
 
    printf("task_http download resume\n\n");
    snprintf(g_path, sizeof(g_path), "/tmp/http_resume_test_%ld.bin", (long)getpid());
+   filestream_atomic_temp_name(g_temp, sizeof(g_temp), g_path);
    network_init();
    net_http_init();
    if (!srv_start())
@@ -399,19 +535,160 @@ int main(void)
    remove(g_path);
 
    run("206 from the wrong offset", s_wrong, 2);
-   CHECK(g_obs.had_error && file_matches(1, &ok) < 0,
+   CHECK(g_obs.had_error && file_matches(1, &ok) < 0 && !path_is_valid(g_temp),
          "wrong Content-Range: err=%d, partial file %s", g_obs.had_error,
-         file_matches(1, &ok) < 0 ? "removed" : "left behind");
+         file_matches(1, &ok) < 0 && !path_is_valid(g_temp)
+         ? "removed" : "left behind");
 
    run("no Accept-Ranges, no validator", s_bare, 2);
-   CHECK(g_obs.had_error && nreqs() == 1 && file_matches(1, &ok) < 0,
+   CHECK(g_obs.had_error && nreqs() == 1 && file_matches(1, &ok) < 0
+         && !path_is_valid(g_temp),
          "no validator: err=%d requests=%d (no resume may be tried)",
          g_obs.had_error, nreqs());
 
    run("drops on every attempt", s_flaky, 5);
-   CHECK(g_obs.had_error && nreqs() == 4 && file_matches(1, &ok) < 0,
+   CHECK(g_obs.had_error && nreqs() == 4 && file_matches(1, &ok) < 0
+         && !path_is_valid(g_temp),
          "flaky: err=%d requests=%d, expected failure after 3 resumes",
          g_obs.had_error, nreqs());
+
+   run_seeded_fail("existing file, 404", s_not_found, 1, g_port);
+   CHECK(strstr(g_obs.err, "404") != NULL,
+         "404: error '%s' does not say why", g_obs.err);
+
+   run_seeded_fail("existing file, dropped without resume", s_bare, 2, g_port);
+
+   /* Bound but not listening: a connect is refused */
+   dead_fd = socket(AF_INET, SOCK_STREAM, 0);
+   memset(&a, 0, sizeof(a));
+   a.sin_family      = AF_INET;
+   a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   if (   !bind(dead_fd, (struct sockaddr*)&a, sizeof(a))
+       && !getsockname(dead_fd, (struct sockaddr*)&a, &al))
+      dead_port = ntohs(a.sin_port);
+   CHECK(dead_port != 0, "cannot reserve a refusing port");
+   if (dead_port)
+      run_seeded_fail("existing file, connection refused", NULL, 0, dead_port);
+   close(dead_fd);
+
+   seed_target();
+   if ((t = push("existing file, cancelled mid-download", s_hold, 1, g_port)))
+   {
+      int spins = 0, held = 0;
+      CHECK(seed_intact(), "cancel: existing file is %ld bytes after the push",
+            file_matches(0, &ok));
+      while (!held && spins++ < 100000)
+      {
+         task_queue_check();
+         pthread_mutex_lock(&g_lock);
+         held = g_held;
+         pthread_mutex_unlock(&g_lock);
+         if (!held)
+            usleep(200);
+      }
+      CHECK(held, "cancel: server never sent the first part");
+      CHECK(seed_intact(), "cancel: existing file is %ld bytes mid-download",
+            file_matches(0, &ok));
+      task_queue_cancel_task(t);
+      wait_done("cancel");
+      CHECK(g_obs.had_error && seed_intact() && !path_is_valid(g_temp),
+            "cancel: err=%d, existing file %s, temporary file %s",
+            g_obs.had_error, seed_intact() ? "kept" : "lost",
+            path_is_valid(g_temp) ? "left behind" : "removed");
+   }
+   pthread_mutex_lock(&g_lock);
+   g_release = 1;
+   pthread_mutex_unlock(&g_lock);
+   remove(g_path);
+
+   seed_target();
+   run("existing file, replaced by a download", s_full, 1);
+   len = file_matches(2, &ok);
+   CHECK(!g_obs.had_error && len == (long)BODY_LEN && ok && !path_is_valid(g_temp),
+         "replace: err=%d len=%ld ok=%d temporary file %s", g_obs.had_error,
+         len, ok, path_is_valid(g_temp) ? "left behind" : "removed");
+   remove(g_path);
+
+   seed_target();
+   run("existing file, replaced by a resumed download", s_resume, 2);
+   len = file_matches(1, &ok);
+   CHECK(!g_obs.had_error && len == (long)BODY_LEN && ok && !path_is_valid(g_temp),
+         "replace by resume: err=%d len=%ld ok=%d temporary file %s",
+         g_obs.had_error, len, ok,
+         path_is_valid(g_temp) ? "left behind" : "removed");
+   remove(g_path);
+
+   /* A temporary file a crash left behind is written over */
+   if ((f = fopen(g_temp, "wb")))
+   {
+      fputs("left by a crash", f);
+      fclose(f);
+   }
+   seed_target();
+   run("existing file, leftover temporary file", s_full, 1);
+   len = file_matches(2, &ok);
+   CHECK(!g_obs.had_error && len == (long)BODY_LEN && ok && !path_is_valid(g_temp),
+         "leftover temporary file: err=%d len=%ld ok=%d temporary file %s",
+         g_obs.had_error, len, ok,
+         path_is_valid(g_temp) ? "left behind" : "removed");
+   remove(g_temp);
+   remove(g_path);
+
+   /* A VFS that cannot rename over the file (Android SAF): copying
+    * would truncate the file first, so it is kept */
+   memset(&vfs, 0, sizeof(vfs));
+   vfs.rename = refuse_rename;
+   vfs.remove = keep_target;
+   set_vfs(&vfs);
+   seed_target();
+   run("existing file, rename refused", s_full, 1);
+   set_vfs(NULL);
+   CHECK(g_obs.had_error && strstr(g_obs.err, "replace") && seed_intact()
+         && !path_is_valid(g_temp),
+         "rename refused: err=\"%s\", existing file %s, temporary file %s",
+         g_obs.err, seed_intact() ? "kept" : "lost",
+         path_is_valid(g_temp) ? "left behind" : "removed");
+   remove(g_path);
+
+   /* No file to lose: copied */
+   set_vfs(&vfs);
+   run("no existing file, rename refused", s_full, 1);
+   set_vfs(NULL);
+   len = file_matches(2, &ok);
+   CHECK(!g_obs.had_error && len == (long)BODY_LEN && ok && !path_is_valid(g_temp),
+         "rename refused, copied: err=%d len=%ld ok=%d temporary file %s",
+         g_obs.had_error, len, ok,
+         path_is_valid(g_temp) ? "left behind" : "removed");
+   remove(g_path);
+
+   /* The copy fails part way */
+   memset(&vfs, 0, sizeof(vfs));
+   vfs.rename = refuse_rename;
+   vfs.write  = short_write;
+   set_vfs(&vfs);
+   run("no existing file, rename refused, copy fails", s_full, 1);
+   set_vfs(NULL);
+   CHECK(g_obs.had_error && file_matches(2, &ok) < 0 && !path_is_valid(g_temp),
+         "copy failed: err=%d, file is %ld bytes, temporary file %s",
+         g_obs.had_error, file_matches(2, &ok),
+         path_is_valid(g_temp) ? "left behind" : "removed");
+   remove(g_path);
+
+   /* The temporary name cannot be opened (a directory holds it) */
+   path_mkdir(g_temp);
+   run("no existing file, temporary file unavailable", s_full, 1);
+   len = file_matches(2, &ok);
+   CHECK(!g_obs.had_error && len == (long)BODY_LEN && ok,
+         "no temporary file: err=%d len=%ld ok=%d, expected a direct write",
+         g_obs.had_error, len, ok);
+   remove(g_path);
+   seed_target();
+   run("existing file, temporary file unavailable", s_full, 1);
+   CHECK(g_obs.had_error && seed_intact() && path_is_directory(g_temp),
+         "no temporary file: err=%d, existing file %s", g_obs.had_error,
+         seed_intact() ? "kept" : "lost");
+   path_rmdir(g_temp);
+   remove(g_path);
 
    task_queue_deinit();
    pthread_mutex_lock(&g_lock);
