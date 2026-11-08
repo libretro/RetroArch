@@ -328,6 +328,21 @@ size_t core_self_path_len(const char *path);
  * android_core_path_resolve must come first. */
 bool core_file_unwritable(core_file_t *f, const char *path,
       const struct core_self *self);
+/* RetroArch's own package: Apple, a core whose real path lies inside
+ * RetroArch's .app bundle; Linux, one on the read-only mount RetroArch's
+ * binary is on (Flatpak, AppImage, Snap). Never on Windows, Android or
+ * the BSDs. */
+bool core_file_in_package(core_file_t *f, const char *path);
+/* Its parts, for tests: real paths; mount ids, NULL when unknown; the
+ * mnt_id line of /proc/self/fdinfo/<fd> */
+bool core_path_in_app(const char *core_real, const char *app_real);
+bool core_mount_in_package(const uint64_t *core_mnt,
+      const uint64_t *self_mnt, bool read_only);
+bool core_fdinfo_mount(const char *text, uint64_t *mnt);
+#if defined(__linux__) && !defined(ANDROID)
+/* The mount fd is on */
+bool core_fd_mount(int fd, uint64_t *mnt);
+#endif
 
 /* The key of the folder holding path, for its newest build times: its
  * canonical path, so ., .., repeated separators and symlinks (POSIX) or

@@ -903,6 +903,55 @@ size_t core_self_path_len(const char *path)
    return strlen(path);
 }
 
+bool core_path_in_app(const char *core_real, const char *app_real)
+{
+   size_t n;
+   if (!core_real || !app_real)
+      return false;
+   n = strlen(app_real);
+   while (n > 1 && app_real[n - 1] == '/')
+      n--;
+   /* Only an .app: a command-line build's bundle is its binary's folder */
+   return   n > 4
+         && !memcmp(app_real + n - 4, ".app", 4)
+         && !strncmp(core_real, app_real, n)
+         && core_real[n] == '/'
+         && core_real[n + 1] != '\0';
+}
+
+bool core_mount_in_package(const uint64_t *core_mnt,
+      const uint64_t *self_mnt, bool read_only)
+{
+   return core_mnt && self_mnt && *core_mnt == *self_mnt && read_only;
+}
+
+bool core_fdinfo_mount(const char *text, uint64_t *mnt)
+{
+   static const char key[] = "mnt_id:";
+   const char *s = text;
+   while (s && *s)
+   {
+      if (!strncmp(s, key, sizeof(key) - 1))
+      {
+         char *end;
+         unsigned long v;
+         s += sizeof(key) - 1;
+         while (*s == ' ' || *s == '\t')
+            s++;
+         if (*s < '0' || *s > '9')
+            return false;
+         v = strtoul(s, &end, 10);
+         if (*end != '\n' && *end != '\0')
+            return false;
+         *mnt = (uint64_t)v;
+         return true;
+      }
+      if ((s = strchr(s, '\n')))
+         s++;
+   }
+   return false;
+}
+
 void core_check_finish(const core_trust_set_t *s,
       const uint8_t *keys, size_t num_keys,
       const uint8_t *sha256, const uint8_t *sig_buf, size_t sig_len,

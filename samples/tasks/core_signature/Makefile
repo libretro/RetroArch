@@ -36,6 +36,10 @@ ifneq ($(findstring mingw,$(CC)),)
 else
    EXE :=
    LIBS += -lpthread
+   ifeq ($(shell uname -s),Darwin)
+      # core_file_in_package looks up RetroArch's .app bundle
+      LIBS += -framework CoreFoundation
+   endif
 endif
 
 CFLAGS += -Wall -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT) \
