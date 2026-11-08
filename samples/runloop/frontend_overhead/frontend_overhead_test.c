@@ -5102,6 +5102,96 @@ static void lane_sticks_read_once(void)
 #endif
 }
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_MENU)
+/* Whether the menu's input has @bit with the right stick as held and
+ * the menu list's first entry typed @type. */
+static bool menu_stick_bit(unsigned type, unsigned bit)
+{
+   input_bits_t bits;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   file_list_t *list              = menu_st->entries.list
+      ? menu_st->entries.list->selection_buf[0] : NULL;
+   unsigned had;
+   if (!list || !list->size)
+      return false;
+   had                = list->list[0].type;
+   list->list[0].type = type;
+   input_driver_poll();
+   BIT256_CLEAR_ALL(bits);
+   input_driver_collect_system_input(input_st, config_get_ptr(), &bits);
+   list->list[0].type = had;
+   return BIT256_GET(bits, bit) != 0;
+}
+#endif
+
+/* In a playlist the menu's right stick cycles thumbnails; elsewhere it
+ * is the D-pad. */
+static void lane_menu_playlist_stick(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_MENU)
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_auto[8];
+   bool saved_right     = settings->bools.menu_disable_right_analog;
+   unsigned had         = failures;
+   unsigned i;
+
+   if (!joypad_real)
+   {
+      CHECK(false, "menu playlist stick: no joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat     = 0;
+   syn_buttons = 0;
+   memcpy(saved_auto, &input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS],
+         sizeof(saved_auto));
+   for (i = 0; i < 4; i++)
+   {
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i].joyaxis     = AXIS_POS(i);
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i + 1].joyaxis = AXIS_NEG(i);
+   }
+   input_config_binds_changed();
+   settings->bools.menu_disable_right_analog = false;
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(2);
+   CHECK(menu_is_up(), "menu playlist stick: the menu did not open");
+
+   memset(syn_axes, 0, sizeof(syn_axes));
+   syn_axes[2] = 30000;
+   CHECK(menu_stick_bit(FILE_TYPE_RPL_ENTRY, RARCH_ANALOG_RIGHT_X_PLUS)
+         && !menu_stick_bit(FILE_TYPE_RPL_ENTRY, RETRO_DEVICE_ID_JOYPAD_RIGHT),
+         "menu playlist stick: in a playlist the right stick was not its own bind");
+   CHECK(menu_stick_bit(FILE_TYPE_NONE, RETRO_DEVICE_ID_JOYPAD_RIGHT)
+         && !menu_stick_bit(FILE_TYPE_NONE, RARCH_ANALOG_RIGHT_X_PLUS),
+         "menu playlist stick: outside a playlist the right stick was not the D-pad");
+
+   memset(syn_axes, 0, sizeof(syn_axes));
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto,
+         sizeof(saved_auto));
+   input_config_binds_changed();
+   settings->bools.menu_disable_right_analog = saved_right;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(3);
+
+   if (failures == had)
+      printf("[pass] menu playlist stick: in a playlist the right stick cycles"
+            " thumbnails, elsewhere it is the D-pad\n");
+#else
+   printf("[skip] menu playlist stick: needs the test drivers and the menu\n");
+#endif
+}
+
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
 /* one frame with the stand-in pad's buttons @down: what the core saw */
 static unsigned map_frame(uint32_t down, void (*trace_last)(unsigned*, int*))
@@ -10492,6 +10582,7 @@ int main(int argc, char *argv[])
       lane_quit_combo();
       lane_restart_hold();
       lane_sticks_read_once();
+      lane_menu_playlist_stick();
       lane_deadzone_numbers();
       lane_dpad_sticks_once();
       lane_stick_sources();

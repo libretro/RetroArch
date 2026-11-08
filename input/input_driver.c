@@ -20514,11 +20514,12 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                   /* Replace right analog stick navigation in playlists to thumbnail cycling. */
                   if (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                   {
-                     menu_entry_t entry;
-                     MENU_ENTRY_INITIALIZE(entry);
-                     menu_entry_get(&entry, 0, 0, NULL, true);
+                     /* the list's first entry says what list it is */
+                     struct menu_state *menu_st = menu_state_get_ptr();
+                     file_list_t *list          =
+                        MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, 0);
 
-                     switch (entry.type)
+                     switch ((list && list->size) ? list->list[0].type : 0)
                      {
                         case FILE_TYPE_RPL_ENTRY:
                         case FILE_TYPE_PLAYLIST_ENTRY:
