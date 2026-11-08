@@ -63,6 +63,61 @@ enum core_check_result core_sig_verify(const struct core_sig *sig,
       const char *file_name, const uint8_t *core_sha256,
       const uint8_t *keys, size_t num_keys);
 
+/* What identifies a file without reading it. Times are in the
+ * platform's own epoch and units: only equality is ever asked. */
+#define CORE_ID_VERITY_MAX   64
+
+struct core_identity
+{
+   uint64_t dev;
+   uint64_t size;
+   int64_t  mtime;
+   int64_t  ctime;
+   uint32_t mtime_nsec;
+   uint32_t ctime_nsec;
+   uint8_t  ino[16];
+   /* fs-verity digest (Android), when enabled */
+   uint8_t  verity[CORE_ID_VERITY_MAX];
+   uint8_t  verity_len;
+   /* Its filesystem keeps ctime itself, so no writer can forge a record
+    * of it: only then is one made or honoured. Never stored. */
+   bool     ctime_kept;
+};
+
+bool core_identity_equal(const struct core_identity *a,
+      const struct core_identity *b);
+
+/* Filesystems whose kernel keeps ctime and that aren't stacked on
+ * another: Linux's statfs f_type, the BSDs' and macOS's f_fstypename */
+bool core_fs_magic_keeps_ctime(unsigned long f_type);
+bool core_fs_name_keeps_ctime(const char *name);
+
+/* A core opened for checking. On Windows nothing can write or delete
+ * it until it is closed. */
+typedef struct core_file core_file_t;
+
+core_file_t *core_file_open(const char *path);
+void core_file_close(core_file_t *f);
+/* Bytes read, 0 at the end, -1 on error */
+int64_t core_file_read(core_file_t *f, void *buf, size_t len);
+bool core_file_identity(core_file_t *f, struct core_identity *id);
+
+/* Hashes an open core a chunk per step, so a task can pace it */
+struct core_hash
+{
+   struct sha256_state sha;
+   uint8_t *buf;
+   uint64_t done;
+};
+
+bool core_hash_init(struct core_hash *h);
+/* 1 while there is more, 0 at the end, -1 on a read error */
+int core_hash_step(struct core_hash *h, core_file_t *f);
+/* Writes the digest and frees what init took. It is the file's only
+ * when h.done equals the size in the file's identity. */
+void core_hash_final(struct core_hash *h, uint8_t *sha256);
+void core_hash_free(struct core_hash *h);
+
 RETRO_END_DECLS
 
 #endif
