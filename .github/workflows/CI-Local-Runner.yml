@@ -21,7 +21,7 @@ jobs:
     name: tools/ci_local.py reads and runs every workflow
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: python3-yaml
+      APT_PKGS: python3-yaml openssl
     timeout-minutes: 10
 
     steps:
@@ -86,6 +86,17 @@ jobs:
         run: |
           set -eu
           python3 tools/compile_commands.py --selftest
+
+      - name: core_sign.py self-test and core signature fixtures
+        shell: bash
+        run: |
+          set -eu
+          # core_sign.py refuses OpenSSL older than 3.2 with status 3, so
+          # on such a runner the self-test runs only its offline checks.
+          # The fixture check rebuilds the signed headers and verifies the
+          # signatures on any OpenSSL, and signs them again only on 3.2.
+          python3 -I tools/core_sign.py --self-test || test $? -eq 3
+          python3 -I samples/tasks/core_signature/gen_fixtures.py --check
 
       - name: A checker workflow, run through the runner
         shell: bash
