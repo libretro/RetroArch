@@ -306,6 +306,9 @@ int64_t rmp4_video_stream_presentation_delay_ns(const rmp4_video_stream_t *strea
  * after a successful next/skip. -1 before a frame, after rewind, or
  * when no timestamp is available. Decoder-relative seek APIs are unchanged. */
 int64_t rmp4_video_stream_frame_time_ns(const rmp4_video_stream_t *stream);
+/* Upcoming frame's end on the millisecond pacing clock, in ns; -1 if unknown.
+ * Reads metadata only and does not advance the stream. */
+int64_t rmp4_video_stream_next_end_time_ns(const rmp4_video_stream_t *stream);
 
 /* Synchronous movie-coordinate counterpart of seek_ms. Leaves the selected
  * picture for next/skip; returns movie ms, preserving an empty-interval target. */

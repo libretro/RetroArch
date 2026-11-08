@@ -177,7 +177,7 @@ static bool vaapi_hevc_backend_open(void *opaque, const rh265_video *source,
    pthread_attr_t attr;
    pthread_t thread;
    char path[1024];
-   unsigned major_id, minor_id, yuv;
+   unsigned major_id, minor_id, yuv, extra, capacity;
    int epoch, active, result;
    if (!ops || ops->decoder || !backend || !source || !params || slots < 2
          || slots > 32 || params->pps_id < 0
@@ -192,6 +192,12 @@ static bool vaapi_hevc_backend_open(void *opaque, const rh265_video *source,
    if (retro_atomic_load_acquire_int(&backend->epoch) != epoch
          || rh265_video_get_color(source, (unsigned)params->pps_id, &coded))
       return false;
+   if (params->max_num_reorder_pics < 0 || params->max_num_reorder_pics > 31
+         || params->max_num_reorder_pics > params->max_dec_pic_buffering)
+      return false;
+   /* Cached and prefetched leases can outlive reordered decode reads. */
+   extra = (unsigned)params->max_num_reorder_pics + 2;
+   capacity = extra > 32 - slots ? 32 : slots + extra;
    memset(&color, 0, sizeof(color));
    color.primaries = coded.primaries;
    color.transfer  = coded.transfer;
@@ -250,7 +256,7 @@ static bool vaapi_hevc_backend_open(void *opaque, const rh265_video *source,
       return false;
    }
    if (!vaapi_hevc_owner_open_source(&session->retired, source, path, major_id,
-             minor_id, params, &color, yuv, slots < 32 ? slots + 1 : slots, backend->max_input,
+             minor_id, params, &color, yuv, capacity, backend->max_input,
              &session->native))
    {
       vaapi_hevc_backend_release(session);

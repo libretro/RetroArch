@@ -127,6 +127,98 @@ static void check_prefetch(void)
    CHECK(opened == closed && exported == abandoned);
 }
 
+static void check_prefetch_catchup(void)
+{
+   unsigned i, before;
+   sink_busy = decode_busy = output_busy = 0;
+   CHECK(start_core(1));
+   media_video_hw_ready();
+   for (i = 0; i < 40 && !media_player.mp4_prefetched; i++) retro_run();
+   CHECK(media_player.mp4_prefetched && media_player.vshown == 1);
+   before = sink_taken;
+   media_player.play_ns = 3 * media_player.frame_ns;
+   retro_run();
+   CHECK(sink_taken == before + 1 && last_sink_ordinal == 3);
+   CHECK(media_player.vshown == 3);
+   retro_unload_game();
+   CHECK(opened == closed && exported == abandoned);
+}
+
+static void check_prefetch_cancel(unsigned action)
+{
+   unsigned i, before, released;
+   int64_t shown, pts;
+   uint8_t state[40], after[40];
+   sink_busy = decode_busy = output_busy = 0;
+   CHECK(start_core(1));
+   media_video_hw_ready();
+   for (i = 0; i < 40 && !media_player.mp4_prefetched; i++) retro_run();
+   CHECK(media_player.mp4_prefetched && media_player.vshown == 1);
+   shown = media_player.vshown;
+   pts = media_player.vpts_ns;
+   before = sink_taken;
+   output_busy = action == 4 ? 0 : 16;
+   media_player.play_ns = 3 * media_player.frame_ns;
+   if (action == 4)
+      media_prefetch_mp4(&media_player,
+            media_player.play_ns + media_player.frame_ns / 2);
+   else retro_run();
+   CHECK(media_player.mp4_prefetching
+         && (media_player.mp4_prefetched != 0) == (action == 4));
+   CHECK(media_player.mp4_prefetch_count > 0
+         && (media_player.hw_frame.image != 0) == (action == 4));
+   CHECK(sink_taken == before && media_player.vshown == shown
+         && media_player.vpts_ns == pts);
+   CHECK(retro_serialize(state, sizeof(state)) && state[16] == shown);
+   released = abandoned;
+   if (!action) retro_reset();
+   else if (action == 1) media_suspend_video_hw();
+   else if (action == 2) media_seek(&media_player, 0);
+   else
+   {
+      CHECK(retro_unserialize(state, sizeof(state)));
+      CHECK(retro_serialize(after, sizeof(after)));
+      CHECK(!memcmp(state, after, sizeof(state)));
+   }
+   CHECK(!media_player.mp4_prefetching && !media_player.mp4_prefetched
+         && !media_player.mp4_prefetch_count && !media_player.mp4_prefetch_ns);
+   if (action == 4) CHECK(abandoned > released);
+   if (action >= 3)
+   {
+      for (i = 0; i < 40 && sink_taken == before; i++) retro_run();
+      CHECK(sink_taken == before + 1 && last_sink_ordinal == shown);
+   }
+   retro_unload_game();
+   output_busy = 0;
+   CHECK(opened == closed && exported == abandoned);
+}
+
+static void check_prefetch_saturated(void)
+{
+   unsigned i;
+   uint64_t clock;
+   uint8_t state[40];
+   sink_busy = decode_busy = output_busy = 0;
+   CHECK(start_core(1));
+   CHECK(rmp4_video_stream_next_end_time_ns(media_player.mp4vs) == 100000000);
+   media_video_hw_ready();
+   for (i = 0; i < 40 && !media_player.mp4_prefetched; i++) retro_run();
+   CHECK(media_player.mp4_prefetched && media_player.vshown == 1);
+   CHECK(retro_serialize(state, sizeof(state)));
+   clock = (uint64_t)(INT64_MAX - media_player.frame_ns);
+   for (i = 0; i < 8; i++)
+   {
+      state[8 + i] = (uint8_t)((uint64_t)INT64_MAX >> (8 * i));
+      state[24 + i] = (uint8_t)(clock >> (8 * i));
+   }
+   CHECK(retro_unserialize(state, sizeof(state)));
+   retro_run();
+   CHECK(media_player.play_ns == INT64_MAX && media_player.vpts_ns == INT64_MAX);
+   CHECK(media_player.vshown == 1);
+   retro_unload_game();
+   CHECK(opened == closed && exported == abandoned);
+}
+
 int main(void)
 {
    unsigned i, before, decoded, seek_phases = 0;
@@ -394,6 +486,10 @@ int main(void)
    retro_unload_game();
    CHECK(opened == closed && exported == abandoned);
    check_prefetch();
+   check_prefetch_catchup();
+   for (i = 0; i < 5; i++) check_prefetch_cancel(i);
+   CHECK(rmp4_video_stream_next_end_time_ns(NULL) == -1);
+   check_prefetch_saturated();
    media_player.width = 64; media_player.height = 48;
    media_player.mp4_hw_required = 1;
    CHECK(!media_make_framebuffer(&media_player, false));

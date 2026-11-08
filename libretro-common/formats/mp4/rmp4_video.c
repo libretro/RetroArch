@@ -2635,6 +2635,18 @@ int64_t rmp4_video_stream_frame_time_ns(const rmp4_video_stream_t *s)
    return s ? rmp4_video_stream_movie_time_ns(s, s->disp_idx - 1) : -1;
 }
 
+int64_t rmp4_video_stream_next_end_time_ns(const rmp4_video_stream_t *s)
+{
+   int64_t delay, ms;
+   if (!s || s->disp_idx < 0 || s->disp_idx >= s->ts_count - 1)
+      return -1;
+   delay = rmp4_video_stream_presentation_delay_ns(s);
+   ms = s->ts[s->disp_idx + 1] / 1000000 - s->ts[0] / 1000000;
+   if (delay < 0 || ms < 0 || ms > (INT64_MAX - delay) / 1000000)
+      return -1;
+   return delay + ms * 1000000;
+}
+
 int rmp4_video_stream_seek_movie_begin_ns(rmp4_video_stream_t *s, int64_t ns)
 {
    const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);

@@ -25,7 +25,7 @@ static retro_atomic_int_t gate, polls, destroyed, opened, entered, hold;
 static pthread_t caller;
 static int path_fail, color_fail, native_fail, allocation_fail;
 static int event_fail, attr_fail, detach_fail, thread_fail, notify_race;
-static unsigned paths, seen_yuv;
+static unsigned paths, seen_yuv, test_slots = 5;
 static video_color_metadata_t seen_color;
 static unsigned seen_major, seen_minor;
 
@@ -78,7 +78,7 @@ static int test_output(void *owner, unsigned slot, video_hw_frame_t *frame)
 static int test_available(void *owner, unsigned *capacity, uint32_t *slots)
 {
    assert(owner && capacity && slots);
-   *capacity = 4;
+   *capacity = test_slots;
    *slots = UINT32_C(10);
    return 11;
 }
@@ -95,7 +95,7 @@ bool vaapi_hevc_owner_open_source(vaapi_hevc_owner_t **out,
       const video_color_metadata_t *color, unsigned yuv, unsigned slots,
       size_t max_input, rh265_hw_ops_t *ops)
 {
-   assert(source && !*out && !ops->decoder && p == &params && slots == 4
+   assert(source && !*out && !ops->decoder && p == &params && slots == test_slots
          && max_input == 4096 && !strcmp(path, "/dev/dri/renderD128")
          && major_id == seen_major && minor_id == seen_minor);
    seen_yuv   = yuv;
@@ -285,6 +285,42 @@ static void *setup_thread(void *opaque)
    return NULL;
 }
 
+static void check_capacity(void)
+{
+   rh265_hw_ops_t ops;
+   unsigned capacity, before;
+   uint32_t writable;
+   memset(&ops, 0, sizeof(ops));
+   params.max_dec_pic_buffering = 4;
+   params.max_num_reorder_pics = 2;
+   test_slots = 7;
+   assert(test_open(&ops));
+   assert(ops.available(ops.decoder, &capacity, &writable) == 11
+         && capacity == test_slots && writable == UINT32_C(10));
+   backend.offer.close(&ops);
+   wait_value(&backend.active, 0);
+   test_slots = 32;
+   assert(backend.offer.open(backend.offer.user,
+            (const rh265_video *)&params, &params, 31, &ops));
+   backend.offer.close(&ops);
+   wait_value(&backend.active, 0);
+   assert(backend.offer.open(backend.offer.user,
+            (const rh265_video *)&params, &params, 32, &ops));
+   backend.offer.close(&ops);
+   wait_value(&backend.active, 0);
+   before = (unsigned)retro_atomic_load_acquire_int(&opened);
+   params.max_num_reorder_pics = -1;
+   assert(!test_open(&ops) && !ops.decoder);
+   params.max_num_reorder_pics = 32;
+   assert(!test_open(&ops) && !ops.decoder);
+   params.max_num_reorder_pics = 5;
+   assert(!test_open(&ops) && !ops.decoder);
+   assert((unsigned)retro_atomic_load_acquire_int(&opened) == before
+         && !retro_atomic_load_acquire_int(&backend.active));
+   params.max_dec_pic_buffering = params.max_num_reorder_pics = 0;
+   test_slots = 5;
+}
+
 int main(void)
 {
    rh265_hw_ops_t first, second, refused;
@@ -339,7 +375,7 @@ int main(void)
    assert(first.output(first.decoder, 2, NULL) == 8);
    assert(first.drain(first.decoder) == 9);
    assert(first.available(first.decoder, &capacity, &writable) == 11
-         && capacity == 4 && writable == UINT32_C(10));
+         && capacity == test_slots && writable == UINT32_C(10));
    backend.offer.close(&first);
    backend.offer.close(&second);
    assert(!first.decoder && !second.decoder);
@@ -349,6 +385,7 @@ int main(void)
    retro_atomic_store_release_int(&gate, 1);
    wait_value(&backend.active, 0);
    assert(retro_atomic_load_acquire_int(&destroyed) == 2);
+   check_capacity();
    notify_race = 1;
    for (native_fail = 1; native_fail <= 2; native_fail++)
    {
@@ -374,7 +411,7 @@ int main(void)
    assert(!registered && !test_open(&refused));
    assert(first.drain(first.decoder) == 9);
    assert(first.available(first.decoder, &capacity, &writable) == 11
-         && capacity == 4 && writable == UINT32_C(10));
+         && capacity == test_slots && writable == UINT32_C(10));
    backend.offer.close(&first);
    wait_value(&backend.active, 0);
    assert(vaapi_hevc_backend_publish(&backend, owners, 226, 129));

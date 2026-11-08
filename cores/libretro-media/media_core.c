@@ -158,10 +158,12 @@ typedef struct
    int          hw_started;
    int          hw_restart;
 #ifdef HAVE_RMP4
+   int64_t      mp4_prefetch_ns, mp4_prefetch_start_ns;
    rmp4_video_stream_t *mp4vs;       /* video stream when playing MP4   */
    int          mp4_hw_required;
    int          mp4_restoring;
-   int          mp4_prefetched, mp4_prefetch_ms;
+   int          mp4_prefetched, mp4_prefetching, mp4_prefetch_count;
+   int          mp4_prefetch_discard, mp4_prefetch_last;
 #endif
    int          vtrack;              /* video track index               */
    enum rwebm_codec codec;
@@ -599,7 +601,10 @@ static void media_drop_hw(media_player_t *p)
       video_hw_frame_abandon(&p->hw_frame);
    memset(&p->hw_frame, 0, sizeof(p->hw_frame));
 #ifdef HAVE_RMP4
-   p->mp4_prefetched = 0;
+   p->mp4_prefetched = p->mp4_prefetching = p->mp4_prefetch_count = 0;
+   p->mp4_prefetch_ns = p->mp4_prefetch_start_ns = 0;
+   p->mp4_prefetch_discard = -1;
+   p->mp4_prefetch_last = 0;
 #endif
 }
 
@@ -690,19 +695,76 @@ static void media_present_hw(media_player_t *p)
 }
 
 #ifdef HAVE_RMP4
-static void media_prefetch_mp4(media_player_t *p)
+static void media_prefetch_mp4(media_player_t *p, int64_t target)
 {
-   int duration = 0;
+   int64_t started;
+   unsigned budget = 32;
    if (!p->hw_video || !rmp4_video_stream_h265(p->mp4vs)
-         || p->hw_frame.image || p->eof || !p->vshown
-         || p->seeking || p->mp4_restoring || p->pending_seek_ns >= 0)
+         || p->eof || !p->vshown || p->seeking || p->mp4_restoring
+         || p->pending_seek_ns >= 0)
       return;
-   if (rmp4_video_stream_skip(p->mp4vs, &duration) == 1
-         && rmp4_video_stream_hw_frame(p->mp4vs, &p->hw_frame))
+   if (p->hw_frame.image)
    {
-      p->mp4_prefetched = 1;
-      p->mp4_prefetch_ms = duration;
+      if (!p->mp4_prefetched || p->mp4_prefetch_last
+            || p->vpts_ns > target
+            || p->mp4_prefetch_ns > target - p->vpts_ns)
+         return;
+      video_hw_frame_abandon(&p->hw_frame);
+      memset(&p->hw_frame, 0, sizeof(p->hw_frame));
+      p->mp4_prefetched = 0;
    }
+   if (!p->mp4_prefetching)
+   {
+      p->mp4_prefetching = 1;
+      p->mp4_prefetch_ns = p->mp4_prefetch_start_ns = 0;
+      p->mp4_prefetch_count = 0;
+      p->mp4_prefetch_discard = -1;
+   }
+   started = cpu_features_get_time_usec();
+   do
+   {
+      int duration = 0, ret;
+      if (p->mp4_prefetch_discard < 0)
+      {
+         int64_t end = rmp4_video_stream_next_end_time_ns(p->mp4vs);
+         p->mp4_prefetch_last = end < 0;
+         p->mp4_prefetch_discard = end >= 0 && end <= target;
+      }
+      ret = p->mp4_prefetch_discard
+         ? rmp4_video_stream_discard(p->mp4vs, &duration)
+         : rmp4_video_stream_skip(p->mp4vs, &duration);
+      if (ret == 2) return;
+      if (ret != 1)
+      {
+         p->eof = 1;
+         p->mp4_prefetching = 0;
+         return;
+      }
+      p->mp4_prefetch_start_ns = p->mp4_prefetch_ns;
+      if ((int64_t)duration * 1000000 > INT64_MAX - p->mp4_prefetch_ns)
+         p->mp4_prefetch_ns = INT64_MAX;
+      else
+         p->mp4_prefetch_ns += (int64_t)duration * 1000000;
+      p->mp4_prefetch_count++;
+      if (!p->mp4_prefetch_discard)
+      {
+         if (!rmp4_video_stream_hw_frame(p->mp4vs, &p->hw_frame))
+         {
+            p->eof = 1;
+            p->mp4_prefetching = 0;
+            return;
+         }
+         p->mp4_prefetched = 1;
+         p->mp4_prefetch_discard = -1;
+         if (p->mp4_prefetch_last || p->vpts_ns > target
+               || p->mp4_prefetch_ns > target - p->vpts_ns)
+            return;
+         video_hw_frame_abandon(&p->hw_frame);
+         memset(&p->hw_frame, 0, sizeof(p->hw_frame));
+         p->mp4_prefetched = 0;
+      }
+      p->mp4_prefetch_discard = -1;
+   } while (--budget && cpu_features_get_time_usec() - started < 4000);
 }
 
 static void media_present_mp4(media_player_t *p, int have)
@@ -2376,16 +2438,22 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
       p->play_ns += p->frame_ns;
       {
          int have = 0;
-         if (p->mp4_prefetched)
+         if (p->mp4_prefetching)
          {
-            if (p->vpts_ns > p->play_ns - p->frame_ns / 2)
+            media_prefetch_mp4(p, p->play_ns - p->frame_ns / 2);
+            if (!p->mp4_prefetched || p->vpts_ns > p->play_ns - p->frame_ns / 2
+                  || p->mp4_prefetch_start_ns
+                     > p->play_ns - p->frame_ns / 2 - p->vpts_ns)
             {
                MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
-               goto mp4_presented;
+               goto audio;
             }
-            p->vpts_ns += (int64_t)p->mp4_prefetch_ms * 1000000;
-            p->vshown++;
-            p->mp4_prefetched = 0;
+            if (p->mp4_prefetch_ns > INT64_MAX - p->vpts_ns)
+               p->vpts_ns = INT64_MAX;
+            else
+               p->vpts_ns += p->mp4_prefetch_ns;
+            p->vshown += p->mp4_prefetch_count;
+            p->mp4_prefetched = p->mp4_prefetching = 0;
             have = 1;
          }
          while (!p->eof && !p->hw_frame.image
@@ -2432,7 +2500,8 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
          }
       }
 mp4_presented:
-      media_prefetch_mp4(p);
+      media_prefetch_mp4(p, p->play_ns > INT64_MAX - p->frame_ns / 2
+            ? INT64_MAX : p->play_ns + p->frame_ns / 2);
       if (p->eof && !p->hw_frame.image)
       {
          int audio_done = 1;
