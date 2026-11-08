@@ -957,6 +957,14 @@ jobs:
           make clean
           CC=clang make check SANITIZER=thread
 
+      - name: WMA checkpoint validation under fast-math
+        if: matrix.group == 'formats'
+        shell: bash
+        working-directory: libretro-common/samples/formats/wma
+        run: |
+          set -eu
+          make -j2 test TARGET=rwma_fast_math_test CFLAGS='-O2 -ffast-math'
+
       - name: WMA codec disabled
         if: matrix.group == 'formats'
         working-directory: libretro-common/samples/formats/audio_transfer_wma

@@ -29,6 +29,7 @@ rwma_file_reference: rwma_file_reference.c $(SOURCES) ../../../formats/wma/rwma_
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(WARN) rwma_file_reference.c ../../../formats/wma/rwma_pro.c ../../../formats/wma/rwma_standard.c ../../../formats/wma/rwma_stream.c $(LDFLAGS) -lm -o $@
 
 clean:
+	rm -f rwma_fast_math_test rwma_fast_math_test.exe
 	rm -f $(TARGET) $(REFERENCE_TARGET) rwma_file_reference rwma_file_reference.exe
 
 .PHONY: all test clean reference file-reference

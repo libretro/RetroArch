@@ -445,7 +445,7 @@ static void checkpoint_test(void)
    rwma_xma_view cold, view, bad;
    rwma_frame first, second;
    unsigned char data[8];
-   uint32_t nan_bits = 0x7fc00000;
+   static const uint32_t bad_bits[4] = {0x7f800000u, 0xff800000u, 0x7fc00000u, 0x7f800001u};
    writer w;
    unsigned i, c;
    memset(&cfg, 0, sizeof(cfg));
@@ -515,8 +515,11 @@ static void checkpoint_test(void)
    bad.history[0] = history[0];
    bad.history[1] = history[1];
    history[0][0] = 0.75f;
-   memcpy(&history[1][0], &nan_bits, sizeof(nan_bits));
-   reject_checkpoint(a, &bad);
+   for (i = 0; i < 4; i++)
+   {
+      memcpy(&history[1][0], &bad_bits[i], sizeof(bad_bits[i]));
+      reject_checkpoint(a, &bad);
+   }
    check(!rwma_xma_restore(a, &view), "self restore borrowed overlap");
    rwma_reset(b);
    check(!rwma_xma_restore(b, &view), "restore into reset decoder");

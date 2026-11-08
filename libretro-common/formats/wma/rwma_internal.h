@@ -65,9 +65,13 @@ static INLINE unsigned rwma_log2(unsigned value)
       bits++;
    return bits;
 }
+typedef char rwma_binary32_float[(sizeof(float) == sizeof(uint32_t) &&
+      FLT_RADIX == 2 && FLT_MANT_DIG == 24 && FLT_MAX_EXP == 128) ? 1 : -1];
 static INLINE int rwma_finite(float v)
 {
-   return v <= FLT_MAX && v >= -FLT_MAX;
+   uint32_t bits;
+   memcpy(&bits, &v, sizeof(bits));
+   return (bits & 0x7f800000u) != 0x7f800000u;
 }
 static INLINE int rwma_append(uint8_t *dst, size_t *end, size_t capacity,
                               rwma_reader *r, size_t count)
