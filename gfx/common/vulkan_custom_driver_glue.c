@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,10 +24,67 @@ struct vulkan_custom_driver_glue *vulkan_custom_driver_glue_get_ptr(void)
    return &custom_driver_st;
 }
 
-void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg)
+/* The gist of why a driver was not used, as its notice and its sublabel
+ * say it. False for a message that is not a failure, and off Android. */
+static bool custom_driver_why(enum vulkan_custom_driver_msg msg,
+      const char *detail, char *s, size_t len)
 {
+#ifdef ANDROID
+   enum msg_hash_enums id;
+   switch (msg)
+   {
+      case VULKAN_CUSTOM_DRIVER_MSG_INVALID:
+         id = string_is_empty(detail)
+               ? MSG_VULKAN_CUSTOM_DRIVER_WHY_FAILED
+               : MSG_VULKAN_CUSTOM_DRIVER_WHY_PACKAGE;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_FAILED:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_FAILED;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_LIBRARY;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_NO_GPU:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_ADRENO:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_ADRENO;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_MALI:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_MALI;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_LOADER:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_LOADER;
+         break;
+      case VULKAN_CUSTOM_DRIVER_MSG_NO_START:
+         id = MSG_VULKAN_CUSTOM_DRIVER_WHY_START;
+         break;
+      default:
+         return false;
+   }
+   if (s)
+      snprintf(s, len, msg_hash_to_str(id), detail);
+   return true;
+#else
+   return false;
+#endif
+}
+
+void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg,
+      const char *detail)
+{
+   char why[VULKAN_CUSTOM_DRIVER_WHY_MAX];
+   char text[VULKAN_CUSTOM_DRIVER_WHY_MAX + 64];
    const char *s;
    enum msg_hash_enums id;
+   if (custom_driver_why(msg, detail, why, sizeof(why)))
+   {
+      snprintf(text, sizeof(text),
+            msg_hash_to_str(MSG_VULKAN_CUSTOM_DRIVER_NOT_USED), why);
+      runloop_msg_queue_push(text, strlen(text), 2, 360, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      return;
+   }
    switch (msg)
    {
       case VULKAN_CUSTOM_DRIVER_MSG_FAILED:
@@ -36,11 +94,7 @@ void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg)
          id = MSG_VULKAN_CUSTOM_DRIVER_CRASHED;
          break;
       case VULKAN_CUSTOM_DRIVER_MSG_INVALID:
-#ifdef ANDROID
-         id = MSG_VULKAN_CUSTOM_DRIVER_INVALID;
-#else
          id = MSG_VULKAN_CUSTOM_DRIVER_INVALID_ICD;
-#endif
          break;
       case VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED:
 #ifdef ANDROID
@@ -160,6 +214,7 @@ void *vulkan_custom_driver_glue_open(struct vulkan_custom_driver_request *req,
 {
    settings_t *settings = config_get_ptr();
    int64_t mtime        = 0;
+   const char *detail;
    void *handle;
 
    *meta = NULL;
@@ -210,7 +265,9 @@ void *vulkan_custom_driver_glue_open(struct vulkan_custom_driver_request *req,
    custom_driver_st.core = req->core;
    handle = vulkan_custom_driver_session_open(&custom_driver_st.session,
          req, meta, msg);
-   vulkan_custom_driver_glue_msg(*msg);
+   vulkan_custom_driver_session_why(&custom_driver_st.session, req->path,
+         &detail);
+   vulkan_custom_driver_glue_msg(*msg, detail);
    if (custom_driver_st.session.full)
       RARCH_LOG("[Vulkan] Custom driver \"%s\" not used: too many drivers tried this session.\n",
             req->path);
@@ -236,7 +293,7 @@ bool vulkan_custom_driver_glue_failed(void)
    else if (msg == VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES)
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: it lacks features RetroArch needs.\n",
             p->path);
-   vulkan_custom_driver_glue_msg(msg);
+   vulkan_custom_driver_glue_msg(msg, p ? p->detail : "");
    filestream_delete(custom_driver_st.marker);
    return p != NULL;
 }
@@ -258,6 +315,17 @@ bool vulkan_custom_driver_current(void)
 {
    return     custom_driver_st.ready
           &&  vulkan_custom_driver_session_current(&custom_driver_st.session);
+}
+
+bool vulkan_custom_driver_why(const char *path, char *s, size_t len)
+{
+   const char *detail;
+   enum vulkan_custom_driver_msg why;
+   if (!custom_driver_st.ready)
+      return false;
+   why = vulkan_custom_driver_session_why(&custom_driver_st.session, path,
+         &detail);
+   return custom_driver_why(why, detail, s, len);
 }
 
 bool vulkan_custom_driver_crashed(const char *path)
@@ -283,7 +351,7 @@ void vulkan_custom_driver_picked(const char *path)
       return;
    len = custom_driver_st.session.state_len;
    vulkan_custom_driver_glue_msg(vulkan_custom_driver_session_picked(
-            &custom_driver_st.session, path));
+            &custom_driver_st.session, path), "");
    if (custom_driver_st.session.state_len != len)
       custom_driver_save_state();
    vulkan_custom_driver_platform_picked(path);

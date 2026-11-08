@@ -63,28 +63,60 @@ const char *vulkan_custom_driver_icd_library(const char *json_path,
 size_t vulkan_custom_driver_icd_folder(const char *json_path,
       char *out, size_t size);
 
+/* dlerror() text for a notification: no "dlopen failed: " prefix, no
+ * requesting library, cut with "..." to fit len. Kept whole when that
+ * leaves nothing. */
+void vulkan_custom_driver_trim_dlerror(char *s, size_t len, const char *err);
+
 /* A new zip or .json version gets a new key. On Android it names the
  * extraction dir, as "%08x". */
 uint32_t vulkan_custom_driver_key(const char *path,
       int64_t size, int64_t mtime);
 
+/* What the hook saw when the loader opened its HAL */
+enum vulkan_custom_driver_hook
+{
+   VULKAN_CUSTOM_DRIVER_HOOK_NOT_CALLED = 0,
+   VULKAN_CUSTOM_DRIVER_HOOK_LOADED,  /* dlopen()ed; the loader may still refuse it */
+   VULKAN_CUSTOM_DRIVER_HOOK_FAILED   /* it did not load; the stock HAL did */
+};
+
 #define VULKAN_CUSTOM_DRIVER_SLOTS       4
 #define VULKAN_CUSTOM_DRIVER_PATHS       8
 #define VULKAN_CUSTOM_DRIVER_STATE_MAX   8192
+#define VULKAN_CUSTOM_DRIVER_DETAIL_MAX  96
 
 enum vulkan_custom_driver_msg
 {
    VULKAN_CUSTOM_DRIVER_MSG_NONE = 0,
    VULKAN_CUSTOM_DRIVER_MSG_FAILED,
    VULKAN_CUSTOM_DRIVER_MSG_CRASHED,
-   VULKAN_CUSTOM_DRIVER_MSG_INVALID,
+   VULKAN_CUSTOM_DRIVER_MSG_INVALID,       /* detail: the package check's reason */
    VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED,
    VULKAN_CUSTOM_DRIVER_MSG_RESTART,
    VULKAN_CUSTOM_DRIVER_MSG_UNTRUSTED,
    VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED,  /* desktop FAILED: the headset runtime */
    VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES, /* desktop FAILED: extensions, interface */
-   VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED       /* macOS INVALID: the library is quarantined */
+   VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED,      /* macOS INVALID: the library is quarantined */
+   VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED,    /* detail: the trimmed dlerror() */
+   VULKAN_CUSTOM_DRIVER_MSG_NO_GPU,
+   VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_ADRENO,
+   VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_MALI,
+   VULKAN_CUSTOM_DRIVER_MSG_LOADER,        /* the hook was not called */
+   VULKAN_CUSTOM_DRIVER_MSG_NO_START       /* detail: the VkResult's name */
 };
+
+/* After vkEnumeratePhysicalDevices on a custom driver: NONE when the
+ * hook loaded it and it sees a GPU, else why not. The hook's state comes
+ * first: an uncalled hook with no GPU is LOADER. */
+enum vulkan_custom_driver_msg vulkan_custom_driver_verdict(
+      enum vulkan_custom_driver_hook hook, uint32_t gpus);
+/* The VK_ERROR_... name of a VkResult, or "VkResult <n>". */
+void vulkan_custom_driver_result_text(char *s, size_t len, int result);
+/* NO_GPU, with the GPU named when only one of /dev/kgsl-3d0 (kgsl) and
+ * /dev/mali0 (mali) exists. */
+enum vulkan_custom_driver_msg vulkan_custom_driver_no_gpu(bool kgsl,
+      bool mali);
 
 /* Crash state: one "<core>\t<zip or .json path>\n" line per driver that
  * took the process down in init with that core; the menu's core is "".
@@ -109,10 +141,11 @@ size_t vulkan_custom_driver_trust_add(char *trust, size_t len, size_t cap,
 /* Loads the driver at path, on Android into the extraction dir named by
  * key. Returns its handle with *meta filled in, or NULL with *msg set to
  * VULKAN_CUSTOM_DRIVER_MSG_INVALID (bad package), _QUARANTINED (macOS:
- * off until picked again, as INVALID) or _FAILED. */
+ * off until picked again, as INVALID) or _FAILED, and *reason to why, or
+ * NULL. */
 typedef void *(*vulkan_custom_driver_load_t)(void *data, const char *path,
       uint32_t key, struct vulkan_custom_driver_meta *meta,
-      enum vulkan_custom_driver_msg *msg);
+      enum vulkan_custom_driver_msg *msg, const char **reason);
 
 struct vulkan_custom_driver_request
 {
@@ -137,6 +170,8 @@ struct vulkan_custom_driver_path
    unsigned shown;    /* 1 << msg for each message shown */
    bool failed;       /* failed to start: the system driver all session */
    bool invalid;      /* bad package: the system driver until picked again */
+   enum vulkan_custom_driver_msg why; /* it did not load this session, or NONE */
+   char detail[VULKAN_CUSTOM_DRIVER_DETAIL_MAX]; /* of why */
    char path[PATH_MAX_LENGTH];
 };
 
@@ -154,6 +189,8 @@ typedef struct vulkan_custom_driver_session
    bool kept;         /* this init took a kept instance */
    bool restart_shown; /* RESTART shown for a system init on a custom library */
    enum vulkan_custom_driver_msg reason; /* this init's, for session_failed() */
+   int result;        /* this init's last VkResult while it starts */
+   char detail[VULKAN_CUSTOM_DRIVER_DETAIL_MAX]; /* reason's */
    struct vulkan_custom_driver_path paths[VULKAN_CUSTOM_DRIVER_PATHS];
    char state[VULKAN_CUSTOM_DRIVER_STATE_MAX];
 } vulkan_custom_driver_session_t;
@@ -177,11 +214,15 @@ void *vulkan_custom_driver_session_open(vulkan_custom_driver_session_t *s,
  * for its path all session. Returns the message to show. */
 enum vulkan_custom_driver_msg vulkan_custom_driver_session_failed(
       vulkan_custom_driver_session_t *s);
-/* Desktop: the message session_failed() returns in place of FAILED for
- * the custom driver this init opened, while it starts. The first one
- * stands; open() clears it. */
+/* Why the custom driver this init opened is failing: session_failed()
+ * returns it in place of FAILED. The first one stands; open() clears it. */
 void vulkan_custom_driver_session_reason(vulkan_custom_driver_session_t *s,
-      enum vulkan_custom_driver_msg msg);
+      enum vulkan_custom_driver_msg msg, const char *detail);
+/* The VkResult of each start step of the driver this init opened; the
+ * last one counts. With no reason set, a failed one makes
+ * session_failed() return NO_START. */
+void vulkan_custom_driver_session_result(vulkan_custom_driver_session_t *s,
+      int result);
 /* The driver opened last is up, or no longer starting. Returns true when
  * the crash marker is to be deleted. */
 bool vulkan_custom_driver_session_started(vulkan_custom_driver_session_t *s);
@@ -191,9 +232,15 @@ void vulkan_custom_driver_session_kept(vulkan_custom_driver_session_t *s);
 /* True while the custom driver this init opened has not started. */
 bool vulkan_custom_driver_session_current(
       const vulkan_custom_driver_session_t *s);
+/* Why path did not load this session, with *detail set: INVALID, FAILED
+ * or the reason failed() returned. NONE when it loaded or was not tried. */
+enum vulkan_custom_driver_msg vulkan_custom_driver_session_why(
+      const vulkan_custom_driver_session_t *s, const char *path,
+      const char **detail);
 /* The user picked path again: its crash state goes for every core, and a
- * bad package is tried again. Returns RESTART when path failed to start
- * this session, as it may still be mapped, or has no room in the table. */
+ * bad package loses its reason and is tried again. Returns RESTART when
+ * path failed to start this session, as it may still be mapped, or has no
+ * room in the table. */
 enum vulkan_custom_driver_msg vulkan_custom_driver_session_picked(
       vulkan_custom_driver_session_t *s, const char *path);
 
@@ -236,10 +283,12 @@ bool vulkan_custom_driver_patch_soname(uint8_t *elf, size_t len,
       const char *patch);
 
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
+#define VULKAN_CUSTOM_DRIVER_WHY_MAX     192 /* the gist of why it did not load */
+
 /* Glue: vulkan_custom_driver_glue.c with vulkan_custom_driver_android.c,
  * or _desktop.c on Linux, Windows and macOS. Context init and surface
- * creation call open, kept, failed, started and current; the menu and
- * the frontend call the rest. */
+ * creation call open, kept, answered and result (Android), failed,
+ * started and current; the menu and the frontend call the rest. */
 /* Desktop: returns the ICD library, after the loader's global symbols
  * load; macOS: through open_no_loader(), before any Vulkan library. */
 dylib_t vulkan_custom_driver_open(void);                /* NULL: the system driver */
@@ -248,10 +297,12 @@ void    vulkan_custom_driver_failed(void);              /* current custom driver
 void    vulkan_custom_driver_started(void);             /* first surface up */
 void    vulkan_custom_driver_kept(void);                /* a kept instance is used, open skipped */
 bool    vulkan_custom_driver_current(void);             /* this init opened a custom driver, not started yet */
-bool    vulkan_custom_driver_mesa(void);                /* the driver open() returned is Mesa */
+bool    vulkan_custom_driver_answered(uint32_t gpus);   /* after vkEnumeratePhysicalDevices; false: failed() says why */
+void    vulkan_custom_driver_result(int result);        /* a VkResult of this init's start, for failed() */
 /* Desktop: valid only during Vulkan init. */
 bool    vulkan_custom_driver_supported(void);           /* Adreno and API >= 28; desktop: the loader loads drivers directly; macOS: open_no_loader()'s answer */
 bool    vulkan_custom_driver_crashed(const char *path); /* off for the running core after a crash */
+bool    vulkan_custom_driver_why(const char *path, char *s, size_t len); /* why path did not load this session; s NULL: only ask */
 void    vulkan_custom_driver_picked(const char *path);  /* trusts path; clears its crash state and INVALID mark */
 void    vulkan_custom_driver_set_safe_mode(bool safe_mode); /* true: system driver until the process ends */
 bool    vulkan_custom_driver_safe_mode(void);           /* Safe start: system driver for this process */
@@ -284,7 +335,8 @@ struct vulkan_custom_driver_glue
    bool safe_mode_msg;
 };
 struct vulkan_custom_driver_glue *vulkan_custom_driver_glue_get_ptr(void);
-void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg);
+void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg,
+      const char *detail);
 /* A whole small file, NUL-terminated; NULL with *len 0 when missing. */
 char *vulkan_custom_driver_glue_read(const char *path, int64_t *len);
 /* The crash marker: written before driver code runs, deleted once it is
@@ -307,7 +359,7 @@ bool vulkan_custom_driver_platform_dir(char *s, size_t len);
 void vulkan_custom_driver_platform_init(void);
 void *vulkan_custom_driver_platform_load(void *data, const char *path,
       uint32_t key, struct vulkan_custom_driver_meta *meta,
-      enum vulkan_custom_driver_msg *msg);
+      enum vulkan_custom_driver_msg *msg, const char **reason);
 bool vulkan_custom_driver_platform_trusted(const char *path, int64_t size,
       int64_t mtime);
 void vulkan_custom_driver_platform_picked(const char *path);
@@ -318,6 +370,11 @@ void vulkan_custom_driver_platform_picked(const char *path);
 void *vulkan_custom_driver_linker_open(const char *hook_dir,
       const char *driver_dir, const char *driver_name, const char *tmp_dir,
       int flags, const char **reason);
+/* The hook state of a loader from linker_open(); when FAILED, *error is
+ * the dlerror() text. Read it on the thread that called the loader,
+ * after vkCreateInstance. */
+enum vulkan_custom_driver_hook vulkan_custom_driver_linker_hook(
+      const void *loader, const char **error);
 #endif
 
 RETRO_END_DECLS

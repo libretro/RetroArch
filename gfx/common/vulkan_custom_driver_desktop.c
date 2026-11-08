@@ -174,7 +174,7 @@ static void custom_driver_close(dylib_t handle)
 /* vulkan_custom_driver_load_t: runs on a cache miss only. */
 void *vulkan_custom_driver_platform_load(void *data, const char *path,
       uint32_t key, struct vulkan_custom_driver_meta *meta,
-      enum vulkan_custom_driver_msg *msg)
+      enum vulkan_custom_driver_msg *msg, const char **why)
 {
    struct vulkan_custom_driver_glue *glue =
       vulkan_custom_driver_glue_get_ptr();
@@ -436,7 +436,7 @@ bool vulkan_custom_driver_device(function_t queue_submit)
    else if (msg == VULKAN_CUSTOM_DRIVER_MSG_RESTART)
       RARCH_WARN("[Vulkan] The system driver runs on custom driver library \"%s\".\n",
             custom_driver_module_name(addr));
-   vulkan_custom_driver_glue_msg(msg);
+   vulkan_custom_driver_glue_msg(msg, "");
    return ok;
 }
 
@@ -445,5 +445,5 @@ void vulkan_custom_driver_reason(enum vulkan_custom_driver_msg msg)
    struct vulkan_custom_driver_glue *glue =
       vulkan_custom_driver_glue_get_ptr();
    if (glue->ready)
-      vulkan_custom_driver_session_reason(&glue->session, msg);
+      vulkan_custom_driver_session_reason(&glue->session, msg, NULL);
 }

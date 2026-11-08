@@ -39,7 +39,7 @@ static struct
 {
    char trust[PATH_MAX_LENGTH];
    char prep[PATH_MAX_LENGTH];   /* the zip a pick's task was pushed for */
-   bool mesa;                    /* of the last driver open() returned */
+   void *loader;                 /* the last one open() returned */
    bool pruned;
    bool shortcut;
 } custom_driver_android_st;
@@ -342,7 +342,7 @@ static void custom_driver_shortcut(void)
 /* vulkan_custom_driver_load_t: runs on a loader cache miss only. */
 void *vulkan_custom_driver_platform_load(void *data, const char *path,
       uint32_t key, struct vulkan_custom_driver_meta *meta,
-      enum vulkan_custom_driver_msg *msg)
+      enum vulkan_custom_driver_msg *msg, const char **why)
 {
    struct vulkan_custom_driver_glue *glue =
       vulkan_custom_driver_glue_get_ptr();
@@ -356,6 +356,7 @@ void *vulkan_custom_driver_platform_load(void *data, const char *path,
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: out of memory.\n",
             path);
       *msg = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
+      *why = "out of memory";
       return NULL;
    }
    if (!custom_driver_android_st.pruned)
@@ -400,6 +401,7 @@ void *vulkan_custom_driver_platform_load(void *data, const char *path,
    if (reason)
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: %s.\n",
             path, reason);
+   *why = reason;
    free(w);
    return handle;
 }
@@ -460,7 +462,7 @@ dylib_t vulkan_custom_driver_open(void)
    enum vulkan_custom_driver_msg msg;
    void *handle = vulkan_custom_driver_glue_open(&req, &meta, &msg);
 
-   custom_driver_android_st.mesa = handle && meta->mesa;
+   custom_driver_android_st.loader = handle;
    /* The load callback warns for the INVALID it returns. */
    if (msg == VULKAN_CUSTOM_DRIVER_MSG_INVALID && req.size < 0)
       RARCH_WARN("[Vulkan] Custom driver \"%s\" not used: zip missing or not readable.\n",
@@ -472,7 +474,7 @@ dylib_t vulkan_custom_driver_open(void)
    {
       RARCH_LOG("[Vulkan] Custom driver: \"%s\" (%s), version \"%s\", core \"%s\".\n",
             meta->name, meta->library_name, meta->version, req.core);
-      if (!custom_driver_android_st.mesa)
+      if (!meta->mesa)
          RARCH_WARN("[Vulkan] Custom driver vendor \"%s\" is untested.\n",
                meta->vendor);
    }
@@ -481,12 +483,56 @@ dylib_t vulkan_custom_driver_open(void)
 
 void vulkan_custom_driver_failed(void)
 {
+   char detail[VULKAN_CUSTOM_DRIVER_DETAIL_MAX];
+   struct vulkan_custom_driver_glue *glue =
+      vulkan_custom_driver_glue_get_ptr();
+   const char *error;
+   /* Instance failures skip answered(); the hook still outranks the
+    * VkResult */
+   if (     vulkan_custom_driver_current()
+         && glue->session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE
+         && vulkan_custom_driver_linker_hook(custom_driver_android_st.loader,
+            &error) == VULKAN_CUSTOM_DRIVER_HOOK_FAILED)
+   {
+      RARCH_WARN("[Vulkan] Custom driver library did not load: %s\n", error);
+      vulkan_custom_driver_trim_dlerror(detail, sizeof(detail), error);
+      vulkan_custom_driver_session_reason(&glue->session,
+            VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED, detail);
+   }
    vulkan_custom_driver_glue_failed();
 }
 
-bool vulkan_custom_driver_mesa(void)
+void vulkan_custom_driver_result(int result)
 {
-   return custom_driver_android_st.mesa;
+   struct vulkan_custom_driver_glue *glue =
+      vulkan_custom_driver_glue_get_ptr();
+   if (glue->ready)
+      vulkan_custom_driver_session_result(&glue->session, result);
+}
+
+bool vulkan_custom_driver_answered(uint32_t gpus)
+{
+   char detail[VULKAN_CUSTOM_DRIVER_DETAIL_MAX];
+   const char *error;
+   enum vulkan_custom_driver_msg msg = vulkan_custom_driver_verdict(
+         vulkan_custom_driver_linker_hook(custom_driver_android_st.loader,
+            &error), gpus);
+   if (msg == VULKAN_CUSTOM_DRIVER_MSG_NONE)
+      return true;
+   detail[0] = '\0';
+   if (msg == VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED)
+   {
+      RARCH_WARN("[Vulkan] Custom driver library did not load: %s\n", error);
+      vulkan_custom_driver_trim_dlerror(detail, sizeof(detail), error);
+   }
+   else if (msg == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU)
+      msg = vulkan_custom_driver_no_gpu(path_is_valid("/dev/kgsl-3d0"),
+            path_is_valid("/dev/mali0"));
+   else
+      RARCH_WARN("[Vulkan] Custom driver not used: the system Vulkan loader did not call the hook.\n");
+   vulkan_custom_driver_session_reason(
+         &vulkan_custom_driver_glue_get_ptr()->session, msg, detail);
+   return false;
 }
 
 /* 0 until asked, then 1 or 2. Asked once: the menu asks each time it
