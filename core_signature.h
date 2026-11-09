@@ -102,6 +102,13 @@ void core_file_close(core_file_t *f);
 int64_t core_file_read(core_file_t *f, void *buf, size_t len);
 bool core_file_identity(core_file_t *f, struct core_identity *id);
 
+/* <path>.sig, for free(); NULL when out of memory */
+char *core_sig_path(const char *path);
+/* <path>.sig into sig, which holds CORE_SIG_MAX_LEN + 1 bytes: read no
+ * further than the longest valid one and a byte, so a longer one stays
+ * invalid. Its length, or -1 when there is none or it can't be read. */
+int64_t core_sig_read(const char *path, uint8_t *sig);
+
 /* Hashes an open core a chunk per step, so a task can pace it */
 struct core_hash
 {
