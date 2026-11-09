@@ -12907,8 +12907,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,    PARSE_ONLY_INT,  false},
                {MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES, PARSE_ONLY_UINT, false},
 #if defined(HAVE_D3DKMT) || defined(HAVE_KMS)
-               {MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC,        PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET, PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC,        PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET, PARSE_ONLY_UINT, false},
 #endif
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,     PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,          PARSE_ONLY_UINT, true},
@@ -12991,11 +12991,10 @@ unsigned menu_displaylist_build_list(
                      }
                      break;
                   case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC:
-                  case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET:
-                     /* Kept while on, so it can be turned off */
-                     build_list[i].checked = video_display_server_has_scanline()
-                        || settings->bools.video_scanline_sync;
+                     build_list[i].checked = video_display_server_has_scanline();
                      break;
+                  case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET:
+                     build_list[i].checked = settings->bools.video_scanline_sync;
                   default:
                      break;
                }
@@ -13882,17 +13881,19 @@ unsigned menu_displaylist_build_list(
             }
 
 #if defined(HAVE_D3DKMT) || defined(HAVE_KMS)
-            if (     video_display_server_has_scanline()
-                  || settings->bools.video_scanline_sync)
+            if (video_display_server_has_scanline())
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC,
                      PARSE_ONLY_BOOL, false) == 0)
                   count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET,
-                     PARSE_ONLY_UINT, false) == 0)
-                  count++;
+               if (settings->bools.video_scanline_sync)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET,
+                        PARSE_ONLY_UINT, false) == 0)
+                     count++;
+               }
             }
 #endif
 #ifdef HAVE_RUNAHEAD
