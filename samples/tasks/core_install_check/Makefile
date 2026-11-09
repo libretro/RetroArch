@@ -1,0 +1,83 @@
+include ../../sample_objdir.mk
+
+TARGET := core_install_check_test
+
+# A core staged for install (core_install_check.c): the check, its
+# .sig and the move into place, with the test key that signed the
+# fixtures. Linux and mingw-w64.
+REPO_ROOT         := ../../..
+LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
+
+SOURCES := core_install_check_test.c \
+           $(REPO_ROOT)/core_install_check.c \
+           $(REPO_ROOT)/core_signature.c \
+           $(REPO_ROOT)/core_signature_io.c \
+           $(LIBRETRO_COMM_DIR)/crypto/pk.c \
+           $(LIBRETRO_COMM_DIR)/crypto/crypto.c \
+           $(LIBRETRO_COMM_DIR)/crypto/kdf.c \
+           $(LIBRETRO_COMM_DIR)/utils/md5.c \
+           $(LIBRETRO_COMM_DIR)/hash/lrc_hash.c \
+           $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+           $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
+           $(LIBRETRO_COMM_DIR)/file/file_path.c \
+           $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+           $(LIBRETRO_COMM_DIR)/string/stdstring.c \
+           $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
+           $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+           $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
+           $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+           $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
+           $(LIBRETRO_COMM_DIR)/time/rtime.c
+
+ifneq ($(findstring mingw,$(CC)),)
+   EXE := .exe
+else
+   EXE :=
+   LIBS += -lpthread
+endif
+
+CFLAGS += -Wall -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT) \
+          -DHAVE_CRYPTO -DHAVE_THREADS -DHAVE_CORE_SIGNATURES \
+          -DHAVE_CORE_SIGNING_TEST_KEY
+
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
+
+# The module and the test as C89, as the tree's C89_BUILD holds them
+STRICT_OBJS  := core_install_check_test.o \
+                $(call sample_objs,$(REPO_ROOT)/core_install_check.o)
+STRICT_FLAGS := -std=c89 -pedantic -Wno-long-long \
+                -Wdeclaration-after-statement -Wframe-larger-than=4096 -Werror
+ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
+# boolean.h uses the compiler _Bool spelling in C89 builds.
+STRICT_FLAGS += -Wno-c99-extensions -Wno-c11-extensions
+endif
+$(STRICT_OBJS): CFLAGS += $(STRICT_FLAGS)
+
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
+all: $(TARGET)$(EXE)
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGET)$(EXE): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+check: all
+	rm -rf core_install_check_test_tmp
+	$(RUNNER) ./$(TARGET)$(EXE)
+
+clean:
+	rm -rf $(SAMPLE_OBJDIR) core_install_check_test_tmp
+	rm -f $(TARGET) $(TARGET).exe $(OBJS)
+
+.PHONY: all check clean
