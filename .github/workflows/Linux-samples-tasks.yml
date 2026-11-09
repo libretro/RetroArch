@@ -1059,10 +1059,14 @@ jobs:
         run: |
           set -eu
           # Backups keep the core's .sig; restores and Install or Restore
-          # a Core are checked before they replace a core. TEST_KEY=0 has
-          # no keys at all: today's restore.
+          # a Core are checked before they replace a core. PLAY=1 builds
+          # the task as for a Play Store build. TEST_KEY=0 has no keys at
+          # all: today's restore.
           make -f Makefile.sig clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              make -f Makefile.sig -j$(nproc) SANITIZER=address,undefined \
+             RUNNER="timeout 600" check
+          make -f Makefile.sig clean && UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make -f Makefile.sig -j$(nproc) PLAY=1 SANITIZER=address,undefined \
              RUNNER="timeout 600" check
           make -f Makefile.sig clean && make -f Makefile.sig -j$(nproc) \
              TEST_KEY=0 RUNNER="timeout 600" check
