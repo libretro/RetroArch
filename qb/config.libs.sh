@@ -1074,7 +1074,7 @@ check_enabled 'SPIRV_CROSS RSLC' OPENGL_CORE 'OpenGL core' 'SPIRV-Cross is' fals
 check_enabled 'SPIRV_CROSS RSLC' VULKAN vulkan 'SPIRV-Cross is' false
 check_enabled 'SPIRV_CROSS RSLC' METAL metal 'SPIRV-Cross is' false
 
-check_platform 'Linux Win32' VULKAN_CUSTOM_DRIVER 'Custom Vulkan drivers are' true
+check_platform 'Linux Win32 Darwin' VULKAN_CUSTOM_DRIVER 'Custom Vulkan drivers are' true
 check_enabled VULKAN VULKAN_CUSTOM_DRIVER 'custom Vulkan drivers' 'Vulkan is' false
 check_enabled DYLIB VULKAN_CUSTOM_DRIVER 'custom Vulkan drivers' 'Dynamic loading is' false
 
