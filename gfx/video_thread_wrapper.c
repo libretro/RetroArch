@@ -3289,9 +3289,11 @@ static void video_thread_loop(void *data)
             thr->frame.mem_busy |= 1u << frame_mem;
             retro_atomic_store_release_int(&thr->frame.mem[frame_mem].busy, 1);
          }
-         video_thread_ring_complete(thr);
+         /* Before the slot goes: whoever waited for an idle ring may
+          * use the driver the moment it sees one */
          if (thr->views_shrink_left && !--thr->views_shrink_left)
             video_thread_views_apply(thr, thr->views_shrink_to);
+         video_thread_ring_complete(thr);
 
          if (tex_retire)
          {

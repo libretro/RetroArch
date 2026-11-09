@@ -5894,7 +5894,9 @@ static void vshrink_set_view_count(void *data, unsigned count)
       vshrink_wait_cmd();
    }
    vshrink_count = count;
-   vshrink_note('S', count, 0);
+   /* Whether a frame's slot was still held when it reached the driver */
+   vshrink_note('S', count, VIDEO_THREAD_RING_BUSY_OF(
+            retro_atomic_load_acquire_int(&vshrink_thr->frame.state)));
 }
 
 static void vshrink_get_poke(void *data, const video_poke_interface_t **iface)
@@ -6008,8 +6010,14 @@ static void vshrink_case(const char *name, video_frame_info_t *info,
       CHECK(s >= 0 && s < f, "%s: the grow to %u reached the driver at "
             "%d, after the frame queued ahead of it (%d)", name, to, s, f);
    else
+   {
       CHECK(s > f, "%s: the shrink to %u reached the driver at %d, "
             "before the frame queued ahead of it (%d)", name, to, s, f);
+      CHECK(s >= 0 && vshrink_log[s].views,
+            "%s: the shrink to %u reached the driver after its frame's "
+            "slot was released, with the ring already reading idle",
+            name, to);
+   }
    f = vshrink_find('F', last + 1);
    CHECK(f >= 0 && vshrink_log[f].count == to,
          "%s: the frame after the count change drew at count %u, wanted %u",
