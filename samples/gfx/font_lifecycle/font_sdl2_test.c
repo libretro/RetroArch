@@ -245,7 +245,7 @@ int main(void)
             font_driver_frame_begin();
             clear_surface();
             sdl2_raster_font_render_message(rf, msg, sizeof(msg) - 1, 1.0f,
-                  white, 0.1f, 0.5f, TEXT_ALIGN_LEFT, SURF_W, SURF_H);
+                  white, 0.1f, 0.5f, TEXT_ALIGN_LEFT, SURF_W, SURF_H, 1.0f);
             CHECK(!a->dirty, "raster: a glyph cached mid-line is sent");
             CHECK(surface_ink() > 0, "raster: the line is drawn");
             CHECK(tex_matches(rf->tex, rf->atlas),
