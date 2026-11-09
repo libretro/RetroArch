@@ -33,8 +33,10 @@
  * for a file), then a file's place and size in the stream (48 bits
  * each, their top 16 bits in the last word) or a directory's first
  * child and count. A name is its length, in one octet or two, and its
- * octets. A directory's entries are sorted by name, A-Z folded to a-z,
- * octets compared unsigned and a prefix first. */
+ * octets. A writer may sort a directory's entries, but Cemu's reader
+ * does not count on it: it takes the first entry whose name matches,
+ * A-Z folded to a-z, and archives made by other tools hold directories
+ * out of order and names more than once. So does this reader. */
 
 #include <stdlib.h>
 #include <string.h>
@@ -70,8 +72,8 @@
 /* the lookup */
 #define ZAR_L_ROOT      0   /* the root's node */
 #define ZAR_L_HAVE      1   /* a node in hand, the path's next part to find */
-#define ZAR_L_PROBE     2   /* the middle entry of the range left */
-#define ZAR_L_NAME      3   /* its name */
+#define ZAR_L_SCAN      2   /* the directory's next run of entries */
+#define ZAR_L_NAME      3   /* a name of the run */
 /* the listing */
 #define ZAR_L_BATCH     4   /* a run of its entries */
 #define ZAR_L_LIST      5   /* a listed entry's name, in full */
@@ -106,8 +108,6 @@ struct zar
    uint32_t      nodes;
    uint32_t      dir_first;
    uint32_t      dir_count;
-   uint32_t      lo;          /* the entries the name may be among */
-   uint32_t      hi;
    uint32_t      dir_index;   /* the first entry of the run in hand */
    uint32_t      batch;       /* entries in the run */
    uint32_t      entry;       /* the one whose name is looked at */
@@ -167,8 +167,6 @@ zar_t *zar_new(uint64_t file_size)
    z->nodes       = 0;
    z->dir_first   = 0;
    z->dir_count   = 0;
-   z->lo          = 0;
-   z->hi          = 0;
    z->dir_index   = 0;
    z->batch       = 0;
    z->entry       = 0;
@@ -360,20 +358,21 @@ static int zar_name(zar_t *z, zar_request_t *req, const uint8_t *n,
    return ZAR_OK;
 }
 
-/* Down the tree from the root, a binary search of each directory's
- * sorted entries for the path's next part */
+/* Down the tree from the root, each directory's entries in their
+ * order, a run at a time, for the first named the path's next part */
 static int zar_lookup_run(zar_t *z, zar_request_t *req, zar_file_t *out)
 {
    for (;;)
    {
-      const char *p;
-      size_t      plen;
-      size_t      cap;
-      size_t      hdr;
-      size_t      nlen;
-      size_t      i;
-      int         c;
-      int         e;
+      const uint8_t *n;
+      const char    *p;
+      size_t         plen;
+      size_t         cap;
+      size_t         hdr;
+      size_t         nlen;
+      size_t         i;
+      bool           same;
+      int            e;
 
       while (*z->path == '/' || *z->path == '\\')
          z->path++;
@@ -397,44 +396,47 @@ static int zar_lookup_run(zar_t *z, zar_request_t *req, zar_file_t *out)
             if (!out->dir || plen > ZAR_NAME_MAX)
                return ZAR_ERROR_NOT_FOUND;
             z->dir_first = (uint32_t)out->offset;
-            z->lo        = 0;
-            z->hi        = (uint32_t)out->size;
-            z->stage     = ZAR_L_PROBE;
+            z->dir_count = (uint32_t)out->size;
+            z->dir_index = 0;
+            z->stage     = ZAR_L_SCAN;
             break;
-         case ZAR_L_PROBE:
-            if (z->lo >= z->hi)
+         case ZAR_L_SCAN:
+            if (z->dir_index >= z->dir_count)
                return ZAR_ERROR_NOT_FOUND;
-            z->entry = z->dir_first + z->lo + (z->hi - z->lo) / 2;
-            if (z->got < ZAR_NODE)
+            z->batch = z->dir_count - z->dir_index;
+            if (z->batch > ZAR_BATCH)
+               z->batch = ZAR_BATCH;
+            if (z->got < (size_t)z->batch * ZAR_NODE)
                return zar_ask(z, req, ZAR_TO_BUF,
                      z->sec_off[ZAR_SEC_TREE]
-                     + (uint64_t)z->entry * ZAR_NODE, z->buf, ZAR_NODE);
+                     + ((uint64_t)z->dir_first + z->dir_index) * ZAR_NODE,
+                     z->buf, (size_t)z->batch * ZAR_NODE);
             z->got   = 0;
+            z->entry = 0;
             z->stage = ZAR_L_NAME;
             break;
          case ZAR_L_NAME:
-            if ((e = zar_name(z, req, z->buf, plen,
-                        &cap, &hdr, &nlen)) != ZAR_OK)
+            if (z->entry >= z->batch)
+            {
+               z->dir_index += z->batch;
+               z->stage      = ZAR_L_SCAN;
+               break;
+            }
+            n = z->buf + z->entry * ZAR_NODE;
+            if ((e = zar_name(z, req, n, plen, &cap, &hdr, &nlen)) != ZAR_OK)
                return e;
             if (hdr + (nlen < plen ? nlen : plen) > cap)
                return ZAR_ERROR_DATA;
-            c = 0;
-            for (i = 0; i < plen && i < nlen && !c; i++)
-               c = zar_lower((unsigned char)p[i])
-                     - zar_lower(z->name[hdr + i]);
-            if (!c)
-               c = (plen > nlen) - (plen < nlen);
-            if (c)
+            same = nlen == plen;
+            for (i = 0; i < plen && same; i++)
+               same = zar_lower((unsigned char)p[i])
+                     == zar_lower(z->name[hdr + i]);
+            if (!same)
             {
-               uint32_t mid = z->entry - z->dir_first;
-               if (c < 0)
-                  z->hi = mid;
-               else
-                  z->lo = mid + 1;
-               z->stage = ZAR_L_PROBE;
+               z->entry++;
                break;
             }
-            memcpy(z->node, z->buf, ZAR_NODE);
+            memcpy(z->node, n, ZAR_NODE);
             z->path += plen;
             z->stage = ZAR_L_HAVE;
             break;

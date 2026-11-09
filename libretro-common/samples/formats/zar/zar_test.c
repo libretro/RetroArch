@@ -6,8 +6,10 @@
  * kept as they are (data that does not compress), a file crossing
  * them, a directory with more entries than a listing asks for at once
  * and a nested one. Ranges are supplied short now and then. Every
- * request is checked: a lookup bisects each directory's sorted entries
- * and reads each probed name only as far as it can match; a read of a
+ * request is checked: a lookup reads a directory's entries a run at a
+ * time and each name only as far as it can match, and takes the first
+ * that does, as Cemu's reader does - a directory out of order and a
+ * name held twice, as other tools write them, look up the same; a read of a
  * block kept as it is lands in the read's own destination; a
  * compressed block is fetched once for the partial reads that follow
  * it. A directory is listed in name order, each name read whole, each
@@ -314,9 +316,9 @@ static void lookup_lane(void)
    f.asked = 0;
    check(   lookup(&f, z, "\\DEFAULT.XEX", &zf) == ZAR_OK
          && zf.offset == 0 && zf.size == XEX_SIZE, "lookup by name");
-   /* the root's node, then six probes of the forty entries, each an
-    * entry's node and its name as far as an eleven-octet name can go */
-   check(f.asked == 16 + 6 * (16 + 13), "lookup reads only what it needs");
+   /* the root's node, the first run of its forty entries, and the
+    * first entry's name as far as an eleven-octet name can go */
+   check(f.asked == 16 + 32 * 16 + 13, "lookup reads only what it needs");
 
    check(   lookup(&f, z, "media/Intro.WMV", &zf) == ZAR_OK
          && zf.size == 100, "nested lookup");
@@ -346,6 +348,60 @@ static void lookup_lane(void)
    }
    check(zar_index_offset(z) == f.size - 144 - (16 * N_NODES)
          - names_size - 40, "where the index starts");
+   zar_free(z);
+   free(f.data);
+}
+
+static uint64_t rd64(const uint8_t *p)
+{
+   return ((uint64_t)p[0] << 56) | ((uint64_t)p[1] << 48)
+        | ((uint64_t)p[2] << 40) | ((uint64_t)p[3] << 32)
+        | ((uint64_t)p[4] << 24) | ((uint64_t)p[5] << 16)
+        | ((uint64_t)p[6] << 8)  |  (uint64_t)p[7];
+}
+
+/* The root's entries reversed, and the second of them - file37.bin -
+ * named default.xex too, as the tools that append to a directory leave
+ * it (Breath of the Wild's meta/ holds meta.xml first and last, the
+ * rest unsorted between): every name is found, the first of a name
+ * held twice the one a lookup gives */
+static void unordered_lane(void)
+{
+   file_t     f;
+   zar_t     *z;
+   zar_file_t zf;
+   uint8_t   *tree;
+   uint8_t    t[16];
+   unsigned   i;
+   bool       all = true;
+
+   make_archive(&f, -1);
+   tree = f.data + rd64(f.data + f.size - 144 + 48);
+   for (i = 0; i < (FILLERS + 2) / 2; i++)
+   {
+      uint8_t *a = tree + (1 + i) * 16;
+      uint8_t *b = tree + (FILLERS + 2 - i) * 16;
+      memcpy(t, a, 16);
+      memcpy(a, b, 16);
+      memcpy(b, t, 16);
+   }
+   be32(tree + 2 * 16, 0x80000000u); /* default.xex's name, the first */
+
+   check(open_zar(&f, &z) == ZAR_OK, "opens out of order");
+   check(   lookup(&f, z, "default.xex", &zf) == ZAR_OK
+         && !zf.dir && zf.size == 10, "the first of a name held twice");
+   check(   lookup(&f, z, "Media/intro.wmv", &zf) == ZAR_OK
+         && zf.size == 100, "a directory out of order holds its own");
+   for (i = 0; i < FILLERS; i++)
+   {
+      char name[32];
+      sprintf(name, "file%02u.bin", i);
+      if (     (lookup(&f, z, name, &zf) == ZAR_OK) != (i != FILLERS - 1)
+            || (i != FILLERS - 1 && zf.size != 10))
+         all = false;
+   }
+   check(all, "every entry out of order found, the renamed one not");
+   check(lookup(&f, z, "zzz", &zf) == ZAR_ERROR_NOT_FOUND, "still missing");
    zar_free(z);
    free(f.data);
 }
@@ -748,6 +804,7 @@ static void writer_lane(void)
 int main(void)
 {
    lookup_lane();
+   unordered_lane();
    list_lane();
    read_lane();
    broken_lanes();

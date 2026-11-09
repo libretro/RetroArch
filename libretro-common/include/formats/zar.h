@@ -48,8 +48,9 @@ RETRO_BEGIN_DECLS
  *       zar_feed(z, pull(req.offset, req.dst, req.length));
  *
  * Nothing is read that an operation does not look at: a lookup reads
- * the entries and names its binary search of each directory probes, a
- * listing a directory's entries a run at a time, a block's place comes
+ * each directory's entries a run at a time up to the first that
+ * matches, and of each name only as far as it can match; a listing
+ * reads a directory's entries a run at a time, a block's place comes
  * from its one record. A read of a block kept as it is asks for its
  * octets straight into the read's destination; a
  * compressed block is decoded into the destination when the read
