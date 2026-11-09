@@ -412,6 +412,11 @@ static void *fake_load(void *data, const char *path, uint32_t key,
       *msg = VULKAN_CUSTOM_DRIVER_MSG_INVALID;
       return NULL;
    }
+   if (strstr(path, "quarantined") && !f->fixed)
+   {
+      *msg = VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED;
+      return NULL;
+   }
    if (strstr(path, "broken"))
    {
       *msg = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
@@ -1359,6 +1364,32 @@ static void test_icd_folder(void)
    CHECK(!strcmp(small, ".../mes"));
 }
 
+static void test_session_quarantined(void)
+{
+   enum vulkan_custom_driver_msg msg;
+
+   begin(NULL, NULL);
+   /* its own notice once, and the system driver until picked again */
+   CHECK(!open_drv("/d/quarantined.json", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED);
+   CHECK(!open_drv("/d/quarantined.json", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(loader.loads == 1);
+   /* never opened: picking it again retries it, no restart */
+   CHECK(vulkan_custom_driver_session_picked(&session,
+            "/d/quarantined.json") == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!open_drv("/d/quarantined.json", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED);
+   CHECK(loader.loads == 2);
+   /* cleared: it loads */
+   loader.fixed = true;
+   CHECK(vulkan_custom_driver_session_picked(&session,
+            "/d/quarantined.json") == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(open_drv("/d/quarantined.json", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(loader.loads == 3);
+}
+
 int main(void)
 {
    test_meta();
@@ -1378,6 +1409,7 @@ int main(void)
    test_session_reason();
    test_loader_exts();
    test_icd_folder();
+   test_session_quarantined();
    printf("vulkan_custom_driver_test: %u checks, %u failures\n",
          checks, failures);
    return failures ? 1 : 0;
