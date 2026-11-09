@@ -1656,6 +1656,7 @@ typedef struct
    HANDLE          filter;
    wdmks_packet_t  packets[WDMKS_PACKETS];
    size_t          packet_bytes;
+   unsigned char  *lend_packet;   /* the packet write_begin lent */
    unsigned        next;         /* the packet a write fills */
    unsigned        frame_bytes;
    unsigned        rate;
@@ -4024,6 +4025,20 @@ static size_t wdmks_write_begin(void *data, size_t len, void **region)
 {
    wdmks_t *w = (wdmks_t*)data;
    *region    = NULL;
+   if (     w && !w->stream.looped && !w->ac3
+         && w->stream.handle != INVALID_HANDLE_VALUE
+         && !retro_atomic_load_acquire_int(&w->dead))
+   {
+      /* The packet next to go, once the device has given it back */
+      wdmks_packet_t *p = &w->packets[w->next];
+      size_t span       = len > w->packet_bytes ? w->packet_bytes : len;
+      span             -= span % w->frame_bytes;
+      if (!span || !wdmks_packet_done(w, p))
+         return 0;
+      w->lend_packet = p->data;
+      *region        = p->data;
+      return span;
+   }
 #ifdef HAVE_THREADS
    if (     !w || !w->running || !w->stream.looped || !w->rt_thread
          || w->ac3 || retro_atomic_load_acquire_int(&w->dead))
@@ -4056,6 +4071,21 @@ static size_t wdmks_write_begin(void *data, size_t len, void **region)
 static ssize_t wdmks_write_end(void *data, size_t len)
 {
    wdmks_t *w = (wdmks_t*)data;
+   if (w->lend_packet)
+   {
+      unsigned char *span = w->lend_packet;
+      w->lend_packet      = NULL;
+      len                -= len % w->frame_bytes;
+      if (!len)
+         return 0;
+      if (w->cvt)
+         convert_float_to_s32((int32_t*)span, (const float*)span,
+               len / sizeof(float), w->stream.fmt.bits);
+      if (!wdmks_packet_submit(w, &w->packets[w->next], len))
+         return -1;
+      w->next = (w->next + 1) % WDMKS_PACKETS;
+      return (ssize_t)len;
+   }
 #ifdef HAVE_THREADS
    len -= len % w->frame_bytes;
    if (len && w->cvt)

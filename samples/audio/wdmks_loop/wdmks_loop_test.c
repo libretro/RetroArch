@@ -49,6 +49,26 @@ static bool test_wait_timeout(retro_eventcount_t *ec, int key, int64_t usec);
 retro_time_t test_time_usec(void);
 #define cpu_features_get_time_usec test_time_usec
 
+/* A packet goes to a device that takes it at once. */
+static unsigned ioctl_calls;
+static BOOL test_ioctl(HANDLE h, DWORD code, LPVOID in, DWORD in_size,
+      LPVOID out, DWORD out_size, LPDWORD returned, LPOVERLAPPED ov)
+{
+   (void)h; (void)code; (void)in; (void)in_size;
+   (void)out; (void)out_size; (void)returned; (void)ov;
+   ioctl_calls++;
+   return TRUE;
+}
+#define DeviceIoControl test_ioctl
+/* And a packet the device holds is one it has not finished. */
+static BOOL test_overlapped(HANDLE h, LPOVERLAPPED ov, LPDWORD moved, BOOL wait)
+{
+   (void)h; (void)ov; (void)moved; (void)wait;
+   SetLastError(ERROR_IO_INCOMPLETE);
+   return FALSE;
+}
+#define GetOverlappedResult test_overlapped
+
 /* The driver whole, as wdmks_abi_check.c includes it. */
 #include "audio/drivers/wdmks.c"
 #undef retro_eventcount_commit_wait_timeout
@@ -956,7 +976,51 @@ static void run_lend(void)
          "the bit-stream path refuses");
    w.ac3 = NULL;
    w.stream.looped = false;
-   check(!wdmks_write_begin(&w, 64, &region), "a packet pin refuses");
+   {
+      static unsigned char pkt[WDMKS_PACKETS][1024];
+      size_t i;
+      unsigned calls = ioctl_calls;
+      for (i = 0; i < WDMKS_PACKETS; i++)
+         w.packets[i].data = pkt[i];
+      w.packet_bytes = sizeof(pkt[0]);
+      w.next         = 0;
+      got = wdmks_write_begin(&w, sizeof(pkt[0]) * 2 + 1, &region);
+      check(region == (void*)pkt[0] && got == sizeof(pkt[0]),
+            "a packet pin lends the next packet, at most its size");
+      memset(region, 0x5a, got);
+      check(wdmks_write_end(&w, got) == (ssize_t)got,
+            "and sends it");
+      check(ioctl_calls == calls + 1 && w.next == 1
+            && w.packets[0].header.DataUsed == sizeof(pkt[0])
+            && w.packets[0].header.Data == pkt[0],
+            "to the device, the bytes that were written");
+      got = wdmks_write_begin(&w, 64, &region);
+      check(got == 64 && region == (void*)pkt[1], "the next packet follows");
+      check(wdmks_write_end(&w, 0) == 0 && w.next == 1
+            && ioctl_calls == calls + 1, "abandoned, nothing is sent");
+
+      /* An integer pin: float in the packet, s32 as it goes */
+      for (i = 0; i < 256; i++)
+         flt[i] = (float)((int)(i % 200) - 100) / 128.0f;
+      convert_float_to_s32(want, flt, 256, 24);
+      w.cvt             = (unsigned char*)malloc(16);
+      w.stream.fmt.bits = 24;
+      got = wdmks_write_begin(&w, 256 * sizeof(float), &region);
+      memcpy(region, flt, got);
+      wdmks_write_end(&w, got);
+      check(!memcmp(pkt[1], want, 256 * sizeof(int32_t)),
+            "converted in place to the pin's integers");
+      free(w.cvt);
+      w.cvt = NULL;
+
+      w.packets[w.next].pending = true;
+      check(!wdmks_write_begin(&w, 64, &region) && !region,
+            "a packet the device still holds is not lent");
+      w.packets[w.next].pending = false;
+      retro_atomic_int_init(&w.dead, 0);
+      for (i = 0; i < WDMKS_PACKETS; i++)
+         w.packets[i].data = NULL;
+   }
    w.stream.looped = true;
    w.rt_thread = NULL;
    check(!wdmks_write_begin(&w, 64, &region),
