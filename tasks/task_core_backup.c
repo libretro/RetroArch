@@ -37,6 +37,10 @@
 #include "../core_backup.h"
 #include "tasks_internal.h"
 
+#ifdef HAVE_CORE_SIGNATURES
+#include "../core_install_check.h"
+#endif
+
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
 #include "../menu/menu_driver.h"
 #endif
@@ -572,8 +576,25 @@ static void task_core_backup_handler(retro_task_t *task)
                if (filestream_rename(backup_handle->core_path,
                         backup_handle->backup_path) == 0)
                {
-                  if (filestream_rename(backup_handle->staged_path,
-                           backup_handle->core_path) == 0)
+                  bool moved;
+#ifdef HAVE_CORE_SIGNATURES
+                  /* The replaced core's .sig goes with it, and is set
+                   * aside before the new core goes in, so a crash never
+                   * leaves it beside the new one */
+                  core_install_copy_sig(backup_handle->core_path,
+                        backup_handle->backup_path);
+                  core_install_set_aside_sig(backup_handle->core_path);
+#endif
+                  moved = filestream_rename(backup_handle->staged_path,
+                        backup_handle->core_path) == 0;
+#ifdef HAVE_CORE_SIGNATURES
+                  core_install_end_aside_sig(backup_handle->core_path,
+                        moved);
+                  /* The copy below takes it again once it is done */
+                  if (!moved)
+                     core_install_drop_sig(backup_handle->backup_path);
+#endif
+                  if (moved)
                   {
                      backup_handle->installed = true;
                      backup_handle->success   = true;
@@ -666,6 +687,10 @@ static void task_core_backup_handler(retro_task_t *task)
                else if (status == RETRO_VFS_COPY_DONE)
                {
                   backup_handle->success = true;
+#ifdef HAVE_CORE_SIGNATURES
+                  core_install_copy_sig(backup_handle->core_path,
+                        backup_handle->backup_path);
+#endif
                   backup_handle->status  = (backup_handle->backup_mode ==
                         CORE_BACKUP_MODE_AUTO) ?
                               CORE_BACKUP_CHECK_HISTORY : CORE_BACKUP_END;
@@ -753,6 +778,10 @@ static void task_core_backup_handler(retro_task_t *task)
                backup_handle->backup_file = NULL;
 
                backup_handle->success = true;
+#ifdef HAVE_CORE_SIGNATURES
+               core_install_copy_sig(backup_handle->core_path,
+                     backup_handle->backup_path);
+#endif
 
                /* If this is an automatic backup, check whether
                 * any old backup files should be deleted.
@@ -846,6 +875,9 @@ static void task_core_backup_handler(retro_task_t *task)
                   /* Delete backup file (if it exists) */
                   if (path_is_valid(entry->backup_path))
                      filestream_delete(entry->backup_path);
+#ifdef HAVE_CORE_SIGNATURES
+                  core_install_drop_sig(entry->backup_path);
+#endif
 
                   backup_handle->num_auto_backups_to_remove--;
                   backup_handle->backup_index++;
@@ -879,9 +911,16 @@ static void task_core_backup_handler(retro_task_t *task)
              * failed, and nothing else. */
             if (backup_handle->staged_path && !backup_handle->installed)
             {
+               bool cancelled = (task_get_flags(task)
+                     & RETRO_TASK_FLG_CANCELLED) > 0;
                core_backup_handle_release_io(backup_handle);
                task_free_error(task);
-               if (     !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+#ifdef HAVE_CORE_SIGNATURES
+               /* Set aside, as in the move */
+               if (!cancelled)
+                  core_install_set_aside_sig(backup_handle->core_path);
+#endif
+               if (     !cancelled
                      && filestream_rename(backup_handle->staged_path,
                            backup_handle->core_path) == 0)
                   backup_handle->installed = true;
@@ -891,6 +930,11 @@ static void task_core_backup_handler(retro_task_t *task)
                         backup_handle->core_path);
                   task_set_error(task, strdup("Failed to install core."));
                }
+#ifdef HAVE_CORE_SIGNATURES
+               if (!cancelled)
+                  core_install_end_aside_sig(backup_handle->core_path,
+                        backup_handle->installed);
+#endif
             }
             else if (backup_handle->staged_path)
                task_free_error(task);
