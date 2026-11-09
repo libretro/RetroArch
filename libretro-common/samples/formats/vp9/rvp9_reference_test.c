@@ -16,6 +16,8 @@ static void bits(unsigned value, unsigned count)
    }
 }
 
+static unsigned explicit_w = 64, explicit_h = 48;
+
 static size_t inter_header(unsigned selected, unsigned slot, int explicit_size)
 {
    unsigned i;
@@ -34,13 +36,15 @@ static size_t inter_header(unsigned selected, unsigned slot, int explicit_size)
       bits(!explicit_size && i == selected, 1);
       if (!explicit_size && i == selected) break;
    }
-   if (explicit_size) { bits(63, 16); bits(47, 16); }
+   if (explicit_size) { bits(explicit_w - 1, 16); bits(explicit_h - 1, 16); }
    bits(0, 1);                       /* render size */
    bits(0, 1); bits(1, 1);           /* high precision, switchable */
    bits(0, 2);                       /* context */
    bits(0, 6); bits(0, 3); bits(0, 1); /* loop filter */
    bits(0, 8); bits(0, 3);           /* quantizer and deltas */
-   bits(0, 1); bits(0, 1);           /* segmentation, tile rows */
+   bits(0, 1);                       /* segmentation */
+   if (explicit_size && explicit_w > 1024) bits(0, 1); /* tile cols */
+   bits(0, 1);                       /* tile rows */
    bits(1, 16);                      /* compressed header size */
    return (bit_pos + 7) / 8;
 }
@@ -60,6 +64,23 @@ static size_t key_header(int ten_bit, unsigned partition_size)
    bits(0, 8); bits(0, 3);           /* quantizer and deltas */
    bits(0, 1); bits(0, 1);           /* segmentation, tile rows */
    bits(partition_size, 16);
+   return (bit_pos + 7) / 8;
+}
+
+static size_t sized_key_header(unsigned w, unsigned h)
+{
+   memset(packet, 0, sizeof(packet));
+   bit_pos = 0;
+   bits(2, 2); bits(0, 2); bits(0, 1); /* marker, profile, show existing */
+   bits(0, 1); bits(1, 1); bits(1, 1); /* key, show, resilient */
+   bits(0x49, 8); bits(0x83, 8); bits(0x42, 8);
+   bits(1, 3); bits(0, 1);           /* color space, range */
+   bits(w - 1, 16); bits(h - 1, 16); bits(0, 1); /* size, render size */
+   bits(0, 2);                       /* context */
+   bits(0, 6); bits(0, 3); bits(0, 1); /* loop filter */
+   bits(0, 8); bits(0, 3);           /* quantizer and deltas */
+   bits(0, 1); bits(0, 1); bits(0, 1); /* segmentation, tile cols, rows */
+   bits(1, 16);                      /* compressed header size */
    return (bit_pos + 7) / 8;
 }
 
@@ -148,6 +169,28 @@ int main(void)
       return 6;
    if (truncated_partition_tests(d)) return 9;
    if (marker_bit_tests()) return 10;
+
+   /* Coded size limit, on both explicitly sized header forms. */
+   len = sized_key_header(16832, 16832);
+   if (rvp9_parse_uncompressed(packet, len, &hd, NULL)
+         || hd.w != 16832 || hd.h != 16832
+         || hd.first_partition_size != 1)
+      return 11;
+   len = sized_key_header(16833, 1);
+   if (rvp9_parse_uncompressed(packet, len, &hd, NULL) != -1) return 12;
+   len = sized_key_header(1, 16833);
+   if (rvp9_parse_uncompressed(packet, len, &hd, NULL) != -1) return 13;
+   len = sized_key_header(65536, 65536);
+   if (rvp9_parse_uncompressed(packet, len, &hd, NULL) != -1) return 14;
+   explicit_w = 16832; explicit_h = 16832;
+   len = inter_header(0, 0, 1);
+   if (rvp9_parse_uncompressed(packet, len, &hd, NULL)
+         || hd.w != 16832 || hd.h != 16832
+         || hd.first_partition_size != 1)
+      return 15;
+   explicit_w = 16833; explicit_h = 1;
+   len = inter_header(0, 0, 1);
+   if (rvp9_parse_uncompressed(packet, len, &hd, NULL) != -1) return 16;
    free(d);
    puts("VP9 reference-slot size tests passed (21 selections)");
    return 0;

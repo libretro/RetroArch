@@ -1263,6 +1263,9 @@ static void rvp9_get_tile_n_bits(int mi_cols, int *min_log2, int *max_log2)
    *max_log2 = mx;
 }
 
+/* Largest coded dimension of any VP9 level (6.x). */
+#define RVP9_MAX_DIM 16832
+
 static int rvp9_read_frame_size(rvp9_rb *rb, int *w, int *h)
 {
    *w = rvp9_rb_lit(rb, 16) + 1;
@@ -1421,9 +1424,7 @@ static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
       }
    }
 
-   /* Full 16-bit dimensions overflow padded plane sizes on 32-bit.
-    * Match the maximum dimension accepted by the VP8 decoder. */
-   if (hd->w <= 0 || hd->h <= 0 || hd->w > 16384 || hd->h > 16384)
+   if (hd->w > RVP9_MAX_DIM || hd->h > RVP9_MAX_DIM)
       return -1;
 
    if (!hd->error_resilient)
@@ -1550,7 +1551,7 @@ int rvp9_parse_frame_header(const uint8_t *data, size_t len,
    else memset(out, 0, sizeof(*out));
    ret = rvp9_parse_uncompressed(data, len, out, ref_dims);
    if (ret) return ret;
-   if (out->w <= 0 || out->h <= 0 || !rvp9_first_partition_fits(out, len))
+   if (!rvp9_first_partition_fits(out, len))
       return -1;
    return 0;
 }
