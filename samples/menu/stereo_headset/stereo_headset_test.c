@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* The Stereo 3D & Screens list with Headset Output off and on.
+/* The Stereo 3D, Game Screens and Headset lists with Headset Output off and on.
  *
  * Links the shipping objects with only main() replaced (the
  * playlist_nav pattern). A headset gives each eye its own image, so
@@ -145,6 +145,15 @@ static int row(const char *label)
    return -1;
 }
 
+/* The list on top of the menu's stack is @label's. */
+static bool top_is(const char *label)
+{
+   menu_list_t *menu_list = menu_state_get_ptr()->entries.list;
+   file_list_t *stack     = menu_list ? MENU_LIST_GET(menu_list, 0) : NULL;
+   return stack && stack->size && string_is_equal(
+         stack->list[stack->size - 1].label, label);
+}
+
 static void run_frame(void)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -185,13 +194,45 @@ static void set_headset(bool on)
    configuration_set_bool(settings, settings->bools.video_openxr_enable, on);
 }
 
-/* What OK on "Stereo 3D & Screens" in Video settings does; the pushed
- * list is built on the next frame. */
+/* What OK on "Stereo 3D" in Video settings does; the pushed list is
+ * built on the next frame. */
 static void open_stereo_list(void)
 {
    generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
          ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST);
    run_frame();
+   CHECK(top_is(MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST_STR),
+         "fixture: Stereo 3D did not open");
+}
+
+/* What OK on "Game Screens" in Video settings does. */
+static void open_game_screens_list(void)
+{
+   generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
+         ACTION_OK_DL_VIDEO_GAME_SCREENS_SETTINGS_LIST);
+   run_frame();
+   CHECK(top_is(MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST_STR),
+         "fixture: Game Screens did not open");
+}
+
+/* What OK on "Headset" in Video settings does. */
+static void open_headset_list(void)
+{
+   generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
+         ACTION_OK_DL_VIDEO_HEADSET_SETTINGS_LIST);
+   run_frame();
+   CHECK(top_is(MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST_STR),
+         "fixture: Headset did not open");
+}
+
+/* What OK on Settings > Video does. */
+static void open_video_list(void)
+{
+   generic_action_ok_displaylist_push("", NULL, "", 0, 0, 0,
+         ACTION_OK_DL_VIDEO_SETTINGS_LIST);
+   run_frame();
+   CHECK(top_is(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST_STR),
+         "fixture: Video did not open");
 }
 
 /* What OK on Settings > Input > Controllers does. */
@@ -229,30 +270,34 @@ static void lane_off(void)
 {
    set_headset(false);
    set_driver(lane_driver);
-   open_stereo_list();
-
+   open_headset_list();
    CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR) >= 0,
          "fixture: Headset Output is not listed under %s", lane_driver);
+   open_stereo_list();
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
          "Stereo Mode is not listed with Headset Output off");
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES_STR) >= 0,
          "Swap Eyes is not listed with Headset Output off");
+   CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR) < 0,
+         "Headset Output is listed in Stereo 3D");
+   open_game_screens_list();
    CHECK(row(MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT_STR) >= 0,
-         "Screen Layout is not listed with Headset Output off");
+         "Screen Layout is not listed in Game Screens");
 }
 
 static void lane_on(void)
 {
    set_headset(true);
    set_driver(lane_driver);
-   open_stereo_list();
-
+   open_headset_list();
    CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR) >= 0,
          "fixture: Headset Output is not listed under %s", lane_driver);
+   open_stereo_list();
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) < 0,
          "Stereo Mode is listed with Headset Output on");
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES_STR) >= 0,
          "Swap Eyes is not listed with Headset Output on");
+   open_game_screens_list();
    CHECK(row(MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT_STR) >= 0,
          "Screen Layout is not listed with Headset Output on");
 }
@@ -263,17 +308,18 @@ static void lane_on_other_driver(void)
 {
    set_headset(true);
    set_driver(NO_PATH_DRIVER);
-   open_stereo_list();
-
+   open_headset_list();
    CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR) < 0,
          "fixture: Headset Output is listed under " NO_PATH_DRIVER);
+   open_stereo_list();
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
          "Stereo Mode is not listed under " NO_PATH_DRIVER
          " with the setting on");
 }
 
-/* The headset's rows follow the driver's headset path: all of them, in
- * order, under one that has it; none under one that has not. */
+/* The headset's rows, and Video's Headset row between Game Screens and
+ * Stereo 3D, follow the driver's headset path: all of them, in order,
+ * under one that has it; none under one that has not. */
 static void lane_headset_rows(void)
 {
    static const char *const rows[] = {
@@ -307,7 +353,7 @@ static void lane_headset_rows(void)
    {
       int last = -1;
       set_driver(headset_drivers[d]);
-      open_stereo_list();
+      open_headset_list();
       for (i = 0; i < ARRAY_SIZE(rows); i++)
       {
          int r = row(rows[i]);
@@ -318,13 +364,36 @@ static void lane_headset_rows(void)
       CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR) < 0,
             "%s: Laser Pointer is listed with the headset's video rows",
             headset_drivers[d]);
+      open_video_list();
+      CHECK(row(MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS_STR) >= 0
+            && row(MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS_STR)
+            == row(MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS_STR) + 1
+            && row(MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS_STR)
+            == row(MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS_STR) + 1,
+            "%s: Video lists Game Screens at row %d, Headset at %d, "
+            "Stereo 3D at %d",
+            headset_drivers[d],
+            row(MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS_STR),
+            row(MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS_STR),
+            row(MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS_STR));
    }
 
    set_driver(NO_PATH_DRIVER);
-   open_stereo_list();
+   open_headset_list();
    for (i = 0; i < ARRAY_SIZE(rows); i++)
       CHECK(row(rows[i]) < 0, "%s is listed under " NO_PATH_DRIVER,
             rows[i]);
+   open_video_list();
+   CHECK(row(MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS_STR) >= 0,
+         "fixture: Video does not list Game Screens under " NO_PATH_DRIVER);
+   CHECK(row(MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS_STR) < 0,
+         "Video lists Headset under " NO_PATH_DRIVER);
+   CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS_STR)
+         == row(MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS_STR) + 1,
+         "Video lists Stereo 3D at row %d, Game Screens at %d under "
+         NO_PATH_DRIVER,
+         row(MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS_STR),
+         row(MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS_STR));
    set_driver(HEADSET_DRIVER);
 }
 
@@ -347,7 +416,7 @@ static void lane_controller_layout(void)
    struct menu_state *menu_st = menu_state_get_ptr();
 
    set_driver(HEADSET_DRIVER);
-   open_stereo_list();
+   open_headset_list();
    for (i = 0; i < ARRAY_SIZE(rows); i++)
       CHECK(row(rows[i]) < 0, "%s is listed with the headset's video rows",
             rows[i]);
@@ -627,39 +696,52 @@ static void lane_toggle(void)
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
          "fixture: Stereo Mode is not listed before the press");
 
+   open_headset_list();
    press_headset_output(MENU_ACTION_OK);
    run_frame();
    CHECK(config_get_ptr()->bools.video_openxr_enable,
          "fixture: pressing Headset Output did not turn it on");
-   CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) < 0,
-         "Stereo Mode is still listed after turning Headset Output on");
    CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR) >= 0,
          "the list lost Headset Output after the press");
    CHECK(cursor_on_headset_output(),
          "the cursor left Headset Output when it was turned on");
+   CHECK(row(MENU_ENUM_LABEL_VIDEO_SCREEN_XR_EDIT_STR) >= 0,
+         "Edit Screens is not listed after turning Headset Output on");
+   open_stereo_list();
+   CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) < 0,
+         "Stereo Mode is still listed after turning Headset Output on");
 
+   open_headset_list();
    press_headset_output(MENU_ACTION_OK);
    run_frame();
    CHECK(!config_get_ptr()->bools.video_openxr_enable,
          "fixture: pressing Headset Output again did not turn it off");
-   CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
-         "Stereo Mode is not back after turning Headset Output off");
    CHECK(cursor_on_headset_output(),
          "the cursor left Headset Output when it was turned off");
+   CHECK(row(MENU_ENUM_LABEL_VIDEO_SCREEN_XR_EDIT_STR) < 0,
+         "Edit Screens is still listed after turning Headset Output off");
+   open_stereo_list();
+   CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
+         "Stereo Mode is not back after turning Headset Output off");
 
    /* Start puts it back to off, its default. */
+   open_headset_list();
    press_headset_output(MENU_ACTION_RIGHT);
    run_frame();
    CHECK(config_get_ptr()->bools.video_openxr_enable,
          "fixture: right on Headset Output did not turn it on");
    CHECK(cursor_on_headset_output(),
          "the cursor left Headset Output when right turned it on");
+   CHECK(row(MENU_ENUM_LABEL_VIDEO_SCREEN_XR_EDIT_STR) >= 0,
+         "Edit Screens is not listed after right turned Headset Output on");
    press_headset_output(MENU_ACTION_START);
    run_frame();
    CHECK(!config_get_ptr()->bools.video_openxr_enable,
          "fixture: Start on Headset Output did not turn it off");
    CHECK(cursor_on_headset_output(),
          "the cursor left Headset Output when Start turned it off");
+   CHECK(row(MENU_ENUM_LABEL_VIDEO_SCREEN_XR_EDIT_STR) < 0,
+         "Edit Screens is still listed after Start turned Headset Output off");
 }
 
 /* Right after the edit rows Headset Output shows. With no headset to
@@ -680,7 +762,7 @@ static void lane_refresh_rate(void)
 
    set_headset(true);
    set_driver(HEADSET_DRIVER);
-   open_stereo_list();
+   open_headset_list();
    edit   = row(msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_PAUSE));
    rate   = row(MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE_STR);
    CHECK(rate >= 0 && rate == edit + 1,

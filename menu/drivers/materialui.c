@@ -12800,6 +12800,8 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_DLSS_NR_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_AUDIO_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS_STR)
@@ -12937,6 +12939,16 @@ static void materialui_list_insert(void *userdata,
                   }
                }
             }
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+            else if (string_starts_with_size(label, "video_screen",
+                     STRLEN_CONST("video_screen"))
+                  && menu_setting_video_screen_page(label)
+                  < RETRO_VIDEO_VIEWS_MAX)
+            {
+               node->icon_texture_index = MUI_TEXTURE_SETTINGS;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            }
+#endif
             /* Playlist manager icons */
             else if (string_is_equal(fullpath, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST)))
             {

@@ -1978,6 +1978,34 @@ static size_t menu_action_setting_disp_set_label(file_list_t* list,
    return _len;
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+static size_t menu_action_setting_disp_set_label_video_screen_settings(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   size_t _len               = 0;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      list->list[i].actiondata;
+   rarch_setting_t *display  = NULL;
+   *w                        = 19;
+   if (cbs->setting)
+      display = menu_setting_find_enum((enum msg_hash_enums)
+            (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY
+             + cbs->setting->index_offset));
+   if (display && display->actions->repr)
+      _len = display->actions->repr(display, s, len);
+   else
+      *s = '\0';
+   if (path && *path)
+      strlcpy(s2, path, len2);
+   return _len;
+}
+#endif
+
 static size_t menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -2599,6 +2627,16 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
             break;
       }
    }
+
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+   if (     cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS
+         && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS_LAST)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_video_screen_settings);
+      return 0;
+   }
+#endif
 
    if (cbs->setting && !cbs->setting->actions->repr)
    {

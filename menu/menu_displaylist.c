@@ -10599,11 +10599,22 @@ unsigned menu_displaylist_build_list(
                   { MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS, PARSE_ACTION, false },
                   { MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS, PARSE_ACTION, false },
                   { MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS, PARSE_ACTION, false },
-                  { MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS, PARSE_ACTION, false },
+                  { MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS, PARSE_ACTION, false },
                };
                count += menu_displaylist_parse_settings_rows(list, settings,
                      dl_rows_6, (unsigned)ARRAY_SIZE(dl_rows_6));
             }
+#ifdef HAVE_OPENXR
+            if (     video_driver_has_headset_path(settings->arrays.video_driver)
+                  && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
+#endif
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
 
             if (video_display_server_get_flags(&flags))
             {
@@ -13149,6 +13160,8 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
+         break;
+      case DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT,
                   PARSE_ONLY_UINT, false) == 0)
@@ -13164,17 +13177,23 @@ unsigned menu_displaylist_build_list(
             {
                unsigned screens = menu_setting_video_screens();
                unsigned screen;
+#ifdef ANDROID
                menu_setting_video_screen_display_values();
+#endif
                for (screen = 0; screen < screens; screen++)
                {
+#ifdef ANDROID
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            (enum msg_hash_enums)
                            (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + screen),
                            PARSE_ONLY_STRING_OPTIONS, false) == 0)
                      count++;
-#ifndef ANDROID
-                  count += menu_displaylist_video_screen_window_rows(list,
-                        settings, screen);
+#else
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           (enum msg_hash_enums)
+                           (MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS + screen),
+                           PARSE_ACTION, false) == 0)
+                     count++;
 #endif
                }
 #ifdef ANDROID
@@ -13202,6 +13221,8 @@ unsigned menu_displaylist_build_list(
             }
          }
 #endif
+         break;
+      case DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST:
 #ifdef HAVE_OPENXR
          if (video_driver_has_headset_path(settings->arrays.video_driver))
          {
@@ -18002,6 +18023,8 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST:
+         case DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST:
+         case DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_DLSS_NR_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
@@ -18816,6 +18839,34 @@ static bool menu_displaylist_ctl_internal(
                count++;
 
             info->flags      |=  MD_FLAG_NEED_ENTRIES_REFRESH;
+            break;
+         case DISPLAYLIST_VIDEO_SCREEN_SETTINGS_LIST:
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+            {
+               unsigned screen = menu_setting_video_screen_page(info->path);
+               menu_entries_clear(info->list);
+               /* None for a screen the core no longer has */
+               if (screen < menu_setting_video_screens())
+               {
+                  menu_setting_video_screen_display_values();
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                           (enum msg_hash_enums)
+                           (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + screen),
+                           PARSE_ONLY_STRING_OPTIONS, false) == 0)
+                     count++;
+                  count += menu_displaylist_video_screen_window_rows(
+                        info->list, settings, screen);
+               }
+               if (!count)
+                  menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                        MENU_ENUM_LABEL_NO_SETTINGS_FOUND_STR,
+                        MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                        0, 0, 0, NULL);
+               info->flags |= MD_FLAG_NEED_REFRESH
+                            | MD_FLAG_NEED_PUSH;
+            }
+#endif
             break;
          case DISPLAYLIST_USER_BINDS_LIST:
             {

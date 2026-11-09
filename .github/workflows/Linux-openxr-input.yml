@@ -325,9 +325,9 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # The Stereo 3D & Screens list, with Headset Output off and
-          # on under each driver that has a headset path, against the
-          # shipping menu objects.
+          # The Stereo 3D, Game Screens and Headset lists, with Headset
+          # Output off and on under each driver that has a headset path,
+          # against the shipping menu objects.
           samples/menu/stereo_headset/build.sh
           ./samples/menu/stereo_headset/stereo_headset_test
           make -C samples/menu/stereo_headset clean

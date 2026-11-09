@@ -401,6 +401,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST;
+      case ACTION_OK_DL_VIDEO_GAME_SCREENS_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST;
+      case ACTION_OK_DL_VIDEO_HEADSET_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_DLSS_NR_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_OUTPUT_SETTINGS_LIST:
@@ -1081,6 +1085,14 @@ int generic_action_ok_displaylist_push(
          info_path          = label;
          info_label         = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR;
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_VIDEO_SCREEN_SETTINGS_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = label;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_MUSIC:
@@ -1878,6 +1890,8 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_VIDEO_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_HDR_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST:
+      case ACTION_OK_DL_VIDEO_GAME_SCREENS_SETTINGS_LIST:
+      case ACTION_OK_DL_VIDEO_HEADSET_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_DLSS_NR_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
@@ -2071,6 +2085,8 @@ static const ok_dl_map_t ok_dl_map[] = {
    { MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS, ACTION_OK_DL_VIDEO_SCALING_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS, ACTION_OK_DL_VIDEO_HDR_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS, ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS, ACTION_OK_DL_VIDEO_GAME_SCREENS_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS, ACTION_OK_DL_VIDEO_HEADSET_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_DLSS_NR_SETTINGS, ACTION_OK_DL_VIDEO_DLSS_NR_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS, ACTION_OK_DL_VIDEO_OUTPUT_SETTINGS_LIST },
    { MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS, ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST },
@@ -7411,6 +7427,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_smb_client_settings_list, ACTION_OK
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_nfs_client_settings_list, ACTION_OK_DL_NFS_CLIENT_SETTINGS_LIST)
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_LIST)
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_video_screen_settings_list, ACTION_OK_DL_VIDEO_SCREEN_SETTINGS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
 #ifdef HAVE_LAKKA
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC)
@@ -10016,6 +10035,15 @@ static int action_ok_smb_browse(const char *path,
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+   if (     cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS
+         && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS_LAST)
+   {
+      BIND_ACTION_OK(cbs, action_ok_push_video_screen_settings_list);
+      return 0;
+   }
+#endif
+
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
       const char     *str = msg_hash_to_str(cbs->enum_idx);

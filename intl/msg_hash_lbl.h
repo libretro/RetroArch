@@ -1180,8 +1180,24 @@ MSG_HASH(
    "deferred_video_stereo_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST,
+   "deferred_video_game_screens_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST,
+   "deferred_video_headset_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST,
+   "deferred_video_screen_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST,
    "deferred_video_dlss_nr_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS,
+   "video_screen%u_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY,
