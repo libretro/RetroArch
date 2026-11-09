@@ -177,9 +177,10 @@ jobs:
           set -eu
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make clean && make -j$(nproc) check SANITIZER=address,undefined
-          make clean && make thread_test session_test SANITIZER=thread
+          make clean && make thread_test session_test vulkan_thread_test SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./thread_test
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./session_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./vulkan_thread_test
           make clean && make -j$(nproc) check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 

@@ -14,7 +14,7 @@ record_mediacodec_file_t *record_mediacodec_file_new(
       const char *path, int *error);
 /* Caller must have created a NEW empty file exclusively, with no other writer
  * or shared descriptor. This also admits a fresh detached document-provider fd.
- * Verifies regular/read-write/non-append/empty/position-zero on Android, and
+ * Verifies regular/read-write/non-append/empty/position-zero on Linux/Android, and
  * disables inheritance. Success sets *owned_fd=-1; failure takes nothing.
  * Descriptor checks alone cannot prove exclusive creation provenance. */
 record_mediacodec_file_t *record_mediacodec_file_adopt_fresh(
